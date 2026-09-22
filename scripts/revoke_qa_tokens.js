@@ -114,42 +114,121 @@ function atomicWriteJson(filePath, data) {
 }
 
 /**
- * acquireLock — O_EXCL spinlock with stale-lock detection.
- * Returns true if lock acquired within timeoutMs.
+ * isProcessAlive — cross-platform process liveness probe.
+ * Returns true if process exists and is alive; false if confirmed dead (ESRCH).
+ */
+function isProcessAlive(pid) {
+  if (!pid || typeof pid !== 'number' || pid <= 0) return false;
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (e) {
+    // ESRCH: No such process -> confirmed dead
+    // EPERM: Process exists but insufficient permissions to signal -> alive
+    return e.code === 'EPERM';
+  }
+}
+
+/**
+ * acquireLock — O_EXCL spinlock with fencing token & process liveness verification.
+ * Generates a unique fencingToken. If lock exists:
+ * - If holding PID is ALIVE: FAIL-CLOSED. Never steal the lock (even if >30s).
+ * - If holding PID is DEAD (crashed process): safely evicts stale lock.
+ * Returns fencingToken string if acquired within timeoutMs, or null on failure.
  */
 function acquireLock(lockPath, timeoutMs = 5000) {
+  const fencingToken = crypto.randomBytes(16).toString('hex');
   const deadline = Date.now() + timeoutMs;
+
   while (Date.now() < deadline) {
     try {
       const fd = fs.openSync(lockPath, fs.constants.O_WRONLY | fs.constants.O_CREAT | fs.constants.O_EXCL);
-      fs.writeSync(fd, String(process.pid));
+      const payload = JSON.stringify({
+        pid: process.pid,
+        fencingToken,
+        createdAt: Date.now(),
+        instanceId: process.env.DISPOSABLE_INSTANCE_ID || 'unknown'
+      }, null, 2);
+      fs.writeSync(fd, payload, 0, 'utf8');
+      fs.fsyncSync(fd);
       fs.closeSync(fd);
-      return true;
+      return fencingToken;
     } catch (e) {
       if (e.code !== 'EEXIST') throw e;
-      // Check for stale lock (> 30s old)
+
+      // Conflict: check existing lock holder liveness
       try {
-        const stat = fs.statSync(lockPath);
-        if (Date.now() - stat.mtimeMs > 30000) {
-          fs.unlinkSync(lockPath);
-          continue;
+        const raw = fs.readFileSync(lockPath, 'utf8');
+        const lockInfo = JSON.parse(raw);
+        if (lockInfo && lockInfo.pid) {
+          if (isProcessAlive(lockInfo.pid)) {
+            // Holder is ALIVE: FAIL-CLOSED. Do NOT steal lock, even if >30s!
+            // Wait and retry until timeout deadline.
+          } else {
+            // Holder is CONFIRMED DEAD (crashed process): safely evict dead lock
+            process.stderr.write(
+              `[REVOKE_QA_TOKENS] Evicting stale lock from crashed/dead process (PID ${lockInfo.pid})\n`
+            );
+            try { fs.unlinkSync(lockPath); } catch (_) {}
+            continue;
+          }
         }
-      } catch (_) {}
+      } catch (parseErr) {
+        // If file is corrupted and older than 30s, unlink
+        try {
+          const stat = fs.statSync(lockPath);
+          if (Date.now() - stat.mtimeMs > 30000) {
+            try { fs.unlinkSync(lockPath); } catch (_) {}
+            continue;
+          }
+        } catch (_) {}
+      }
+
       // Brief busy wait
       const waitUntil = Date.now() + 50;
       while (Date.now() < waitUntil) {}
     }
   }
-  return false;
-}
-
-function releaseLock(lockPath) {
-  try { fs.unlinkSync(lockPath); } catch (_) {}
+  return null;
 }
 
 /**
- * validateDataDir — resolves realpath, checks for dangerous patterns,
- * and validates --db override permission.
+ * releaseLock — unlinks lock file ONLY if on-disk fencingToken matches.
+ * Prevents old/stale holders from unlinking successor locks.
+ */
+function releaseLock(lockPath, myFencingToken) {
+  if (!myFencingToken) return;
+  try {
+    if (!fs.existsSync(lockPath)) return;
+    const content = fs.readFileSync(lockPath, 'utf8');
+    const lockData = JSON.parse(content);
+    if (lockData && lockData.fencingToken === myFencingToken) {
+      fs.unlinkSync(lockPath);
+    } else {
+      process.stderr.write(
+        `[REVOKE_QA_TOKENS] WARNING: releaseLock skipped — lock file owned by different fencingToken ` +
+        `(expected: ${myFencingToken}, found: ${lockData ? lockData.fencingToken : 'null'})\n`
+      );
+    }
+  } catch (_) {}
+}
+
+/**
+ * verifyLockHeld — verifies that the lock file still exists and matches myFencingToken.
+ */
+function verifyLockHeld(lockPath, myFencingToken) {
+  if (!myFencingToken || !fs.existsSync(lockPath)) return false;
+  try {
+    const data = JSON.parse(fs.readFileSync(lockPath, 'utf8'));
+    return data && data.fencingToken === myFencingToken;
+  } catch (_) {
+    return false;
+  }
+}
+
+/**
+ * validateDataDir — resolves realpath, checks against dangerous patterns,
+ * validates --db override permission, and enforces a POSITIVE DISPOSABLE-VOLUME ALLOWLIST.
  */
 function validateDataDir(rawPath, isCliOverride) {
   if (!rawPath) return { err: 'DATA_DIR env var (or --db) required' };
@@ -172,6 +251,25 @@ function validateDataDir(rawPath, isCliOverride) {
     }
   }
 
+  // Positive allowlist: target must reside within system temp dir or ALLOWED_QA_DATA_DIRS
+  const allowedRoots = [
+    fs.realpathSync(os.tmpdir()).replace(/\\/g, '/')
+  ];
+  if (process.env.ALLOWED_QA_DATA_DIRS) {
+    process.env.ALLOWED_QA_DATA_DIRS.split(/[;,]/).forEach(r => {
+      const trimmed = r.trim();
+      if (trimmed) {
+        try { allowedRoots.push(fs.realpathSync(trimmed).replace(/\\/g, '/')); } catch (_) {}
+      }
+    });
+  }
+  const isPositivelyAllowed = allowedRoots.some(root =>
+    normalized === root || normalized.startsWith(root + '/')
+  );
+  if (!isPositivelyAllowed) {
+    return { err: `ABORT: DATA_DIR (${resolved}) is outside positively provisioned disposable volume allowlist` };
+  }
+
   return { resolved };
 }
 
@@ -179,6 +277,7 @@ function validateDataDir(rawPath, isCliOverride) {
 const TEST_PROJECT_ID        = process.env.TEST_PROJECT_ID;
 const DISPOSABLE_INSTANCE_ID = process.env.DISPOSABLE_INSTANCE_ID;
 const OPERATOR_TOKEN         = process.env.OPERATOR_TOKEN;
+const QA_HARNESS_SECRET      = process.env.QA_HARNESS_SECRET || process.env.EXPECTED_OPERATOR_TOKEN;
 
 const { resolved: DATA_DIR, err: dataDirErr } = validateDataDir(
   CLI_DB || process.env.DATA_DIR,
@@ -194,6 +293,10 @@ if (!DISPOSABLE_INSTANCE_ID)        errors.push('DISPOSABLE_INSTANCE_ID env var 
 if (!OPERATOR_TOKEN)                errors.push('OPERATOR_TOKEN env var required');
 if (OPERATOR_TOKEN && OPERATOR_TOKEN.length < 32)
                                     errors.push('OPERATOR_TOKEN must be >= 32 characters');
+if (OPERATOR_TOKEN && (new Set(OPERATOR_TOKEN.split('')).size < 8 || OPERATOR_TOKEN === TEST_PROJECT_ID))
+                                    errors.push('OPERATOR_TOKEN has insufficient entropy or matches project ID');
+if (QA_HARNESS_SECRET && OPERATOR_TOKEN !== QA_HARNESS_SECRET)
+                                    errors.push('OPERATOR_TOKEN does not match server-verified QA_HARNESS_SECRET');
 
 if (errors.length) {
   process.stderr.write('[REVOKE_QA_TOKENS] FAIL_CLOSED — validation errors:\n');
@@ -223,14 +326,16 @@ if (!fs.existsSync(DB_PATH)) {
 }
 
 // ─── ACQUIRE LOCK FIRST — all DB reads/writes happen under this lock ──────────
-if (!acquireLock(LOCK_PATH)) {
+const LOCK_TIMEOUT_MS = parseInt(process.env.LOCK_TIMEOUT_MS || '5000', 10);
+const myFencingToken = acquireLock(LOCK_PATH, LOCK_TIMEOUT_MS);
+if (!myFencingToken) {
   process.stderr.write('[REVOKE_QA_TOKENS] ABORT: Could not acquire lock within timeout.\n');
   process.exit(7);
 }
 
 let exitCode = 0;
 
-function runUnderLock() {
+function runUnderLock(fencingToken) {
   // ── Under lock: verify marker identity ──────────────────────────────────────
   const markerContent = fs.readFileSync(MARKER_PATH, 'utf8').trim();
   if (markerContent !== DISPOSABLE_INSTANCE_ID) {
@@ -306,6 +411,14 @@ function runUnderLock() {
       return 0;
     }
 
+    // Verify lock is still held by this process before write
+    if (!verifyLockHeld(LOCK_PATH, fencingToken)) {
+      process.stderr.write(
+        '[REVOKE_QA_TOKENS] ABORT: Lock ownership lost before rollback write (fencing token mismatch).\n'
+      );
+      return 8;
+    }
+
     // Whole-DB CAS: verify db.json hasn't changed since we read it under lock
     const dbBytesNow = fs.readFileSync(DB_PATH);
     if (sha256Bytes(dbBytesNow) !== dbHashAtLockTime) {
@@ -318,13 +431,6 @@ function runUnderLock() {
 
     // Restore ONLY editToken field; preserve all other fields and all other records
     const rolledBackDb = JSON.parse(JSON.stringify(dbData)); // deep clone
-    // Backup stores only hashes — we reconstruct from backup.tokenHash_before check only;
-    // for rollback we need the previous token value. It is stored as previousTokenHash
-    // and the rollback operation is BLOCKED if no previousToken is present.
-    // NOTE: In R16R3 we store ONLY hashes. Rollback from hash-only backup is:
-    //   a design decision — the rollback path cannot restore the raw token from hash alone.
-    //   Instead, rollback NULLIFIES the token (sets to a fresh crypto random), with receipt.
-    //   This is safer than storing raw tokens in backup files.
     const restoredToken = crypto.randomBytes(32).toString('hex');
     rolledBackDb.projects[targetIdx] = Object.assign(
       {}, rolledBackDb.projects[targetIdx],
@@ -370,6 +476,15 @@ function runUnderLock() {
     return 0;
   }
 
+  // Verify lock is still held by this process before write
+  if (!verifyLockHeld(LOCK_PATH, fencingToken)) {
+    process.stderr.write(
+      '[REVOKE_QA_TOKENS] ABORT: Lock ownership lost before write (fencing token mismatch).\n' +
+      '  Another process may have superseded the lock. Write aborted to prevent split-brain.\n'
+    );
+    return 8;
+  }
+
   // ── Whole-DB CAS: re-verify db.json hasn't changed since we acquired lock ───
   const dbBytesNow = fs.readFileSync(DB_PATH);
   if (sha256Bytes(dbBytesNow) !== dbHashAtLockTime) {
@@ -388,7 +503,6 @@ function runUnderLock() {
     tokenHash_after:  newHash,         // hash only — raw token never stored
     dbHashAtRotation: dbHashAtLockTime, // whole-DB hash for audit
     ts:               new Date().toISOString()
-    // NOTE: previousToken is intentionally OMITTED. See design guarantee #9.
   };
   atomicWriteJson(BACKUP_PATH, backupData);
 
@@ -397,7 +511,7 @@ function runUnderLock() {
   updatedDb.projects[targetIdx] = Object.assign(
     {}, updatedDb.projects[targetIdx],
     { editToken: newToken }
-    // updatedAt intentionally NOT mutated (R16R3 fix: only editToken changes)
+    // updatedAt intentionally NOT mutated (only editToken changes)
   );
 
   // ── Atomic write via temp + fsync + renameSync ───────────────────────────────
@@ -412,13 +526,13 @@ function runUnderLock() {
 }
 
 try {
-  exitCode = runUnderLock();
+  exitCode = runUnderLock(myFencingToken);
   if (typeof exitCode !== 'number') exitCode = 0;
 } catch (err) {
   process.stderr.write(`[REVOKE_QA_TOKENS] ERROR: ${err.message}\n${err.stack}\n`);
   exitCode = 8;
 } finally {
-  releaseLock(LOCK_PATH);
+  releaseLock(LOCK_PATH, myFencingToken);
 }
 
 process.exit(exitCode);
@@ -598,6 +712,54 @@ function runSelfTests() {
     assert.ok(shortToken.length < 32, 'Short token should be rejected');
     const validToken = crypto.randomBytes(16).toString('hex'); // 32 hex chars
     assert.ok(validToken.length >= 32, '32-char token should be accepted');
+  });
+
+  // T13: isProcessAlive correctly identifies living and dead PIDs
+  test('isProcessAlive correctly checks process liveness', () => {
+    assert.strictEqual(isProcessAlive(process.pid), true, 'Current process must be reported alive');
+    assert.strictEqual(isProcessAlive(9999999), false, 'Non-existent PID must be reported dead');
+    assert.strictEqual(isProcessAlive(null), false, 'Null PID must be false');
+    assert.strictEqual(isProcessAlive(0), false, 'Zero PID must be false');
+  });
+
+  // T14: acquireLock generates fencingToken and writes JSON payload
+  test('acquireLock writes fencing token and PID to lock file', () => {
+    const lockP = path.join(tmpDir, 'test_acquire.lock');
+    const token = acquireLock(lockP, 500);
+    assert.ok(typeof token === 'string' && token.length > 0, 'Must return fencingToken');
+    assert.ok(fs.existsSync(lockP), 'Lock file must exist');
+    const data = JSON.parse(fs.readFileSync(lockP, 'utf8'));
+    assert.strictEqual(data.pid, process.pid, 'Lock must contain process.pid');
+    assert.strictEqual(data.fencingToken, token, 'Lock must contain matching fencingToken');
+    releaseLock(lockP, token);
+    assert.ok(!fs.existsSync(lockP), 'Lock must be released');
+  });
+
+  // T15: releaseLock refuses to unlink lock with different fencingToken
+  test('releaseLock protects successor lock from old holder deletion', () => {
+    const lockP = path.join(tmpDir, 'test_successor.lock');
+    const successorToken = 'successor-token-' + crypto.randomBytes(4).toString('hex');
+    const oldToken       = 'old-token-' + crypto.randomBytes(4).toString('hex');
+    fs.writeFileSync(lockP, JSON.stringify({ pid: process.pid, fencingToken: successorToken }), 'utf8');
+
+    // Old holder attempts to release
+    releaseLock(lockP, oldToken);
+    assert.ok(fs.existsSync(lockP), 'Lock file must NOT be unlinked by old holder with mismatched token');
+
+    // Successor releases with correct token
+    releaseLock(lockP, successorToken);
+    assert.ok(!fs.existsSync(lockP), 'Lock file should be unlinked when fencingToken matches');
+  });
+
+  // T16: verifyLockHeld validates matching token and handles missing file
+  test('verifyLockHeld validates ownership and fail-closed on mismatch', () => {
+    const lockP = path.join(tmpDir, 'test_verify.lock');
+    const tok = 'my-token';
+    assert.strictEqual(verifyLockHeld(lockP, tok), false, 'Missing lock must return false');
+    fs.writeFileSync(lockP, JSON.stringify({ pid: process.pid, fencingToken: tok }), 'utf8');
+    assert.strictEqual(verifyLockHeld(lockP, tok), true, 'Matching lock must return true');
+    assert.strictEqual(verifyLockHeld(lockP, 'wrong-tok'), false, 'Mismatched lock must return false');
+    fs.unlinkSync(lockP);
   });
 
   console.log(`\n  Self-test complete: ${pass} passed, ${fail} failed`);

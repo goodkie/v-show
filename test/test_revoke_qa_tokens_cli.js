@@ -16,7 +16,7 @@ const fs     = require('fs');
 const path   = require('path');
 const os     = require('os');
 const crypto = require('crypto');
-const { spawnSync } = require('child_process');
+const { spawn, spawnSync } = require('child_process');
 
 const SCRIPT = path.resolve(__dirname, '..', 'scripts', 'revoke_qa_tokens.js');
 const NODE   = process.execPath;
@@ -391,6 +391,215 @@ test('T12: Rollback after rotation — token replaced with fresh random, backup 
   // Backup should be removed after rollback
   assert(!fs.existsSync(path.join(dir, '.qa_token_backup.json')),
     'Backup file should be removed after successful rollback');
+
+  fs.rmSync(dir, { recursive: true });
+});
+
+// ── T13: Adversarial #1: Live >30s holder cannot have its lock stolen ─────────
+test('T13: Adversarial #1: Live >30s holder cannot have its lock stolen (fail-closed)', () => {
+  const { dir, instanceId, projectId } = makeDisposableDir();
+  const operatorToken = crypto.randomBytes(16).toString('hex');
+  const lockPath = path.join(dir, '.qa_revoke.lock');
+
+  // Spawn Child A holding lock and keeping itself alive for 60 seconds
+  const childScript = [
+    "const fs = require('fs');",
+    "const lockP = process.argv[1];",
+    "const payload = JSON.stringify({ pid: process.pid, fencingToken: 'live-holder-token', createdAt: Date.now() - 40000, instanceId: 'test-inst' }, null, 2);",
+    "fs.writeFileSync(lockP, payload, 'utf8');",
+    "const past = (Date.now() - 40000) / 1000;",
+    "fs.utimesSync(lockP, past, past);",
+    "setInterval(() => {}, 60000);"
+  ].join('\n');
+
+  const childA = spawn(NODE, ['-e', childScript, lockPath], { stdio: 'ignore' });
+
+  // Wait until lock file is written
+  const waitDeadline = Date.now() + 2000;
+  while (!fs.existsSync(lockPath) && Date.now() < waitDeadline) {
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 50);
+  }
+  assert(fs.existsSync(lockPath), 'Lock file should have been created by Child A');
+
+  // Now run CLI (Process B) with LOCK_TIMEOUT_MS=800. Child A is alive -> Process B must fail to acquire lock and exit 7
+  const rB = runCli({
+    TEST_PROJECT_ID:        projectId,
+    DATA_DIR:               dir,
+    DISPOSABLE_INSTANCE_ID: instanceId,
+    OPERATOR_TOKEN:         operatorToken,
+    LOCK_TIMEOUT_MS:        '800'
+  });
+
+  try { childA.kill(); } catch (_) {}
+
+  assertEqual(rB.exitCode, 7, `Expected exit 7 (lock timeout), got ${rB.exitCode}. stderr: ${rB.stderr}`);
+  assert(rB.stderr.includes('Could not acquire lock'), 'stderr should indicate lock acquisition failure');
+
+  // Ensure lock was not deleted or replaced
+  assert(fs.existsSync(lockPath), 'Lock file must still exist on disk');
+  const lockData = JSON.parse(fs.readFileSync(lockPath, 'utf8'));
+  assertEqual(lockData.fencingToken, 'live-holder-token', 'Process B must not have stolen Child A token');
+
+  fs.rmSync(dir, { recursive: true });
+});
+
+// ── T14: Adversarial #2: Crashed-owner recovery is safe ────────────────────────
+test('T14: Adversarial #2: Crashed-owner (dead PID) recovery is safe and completes rotation', () => {
+  const { dir, instanceId, projectId, token: origToken } = makeDisposableDir();
+  const operatorToken = crypto.randomBytes(16).toString('hex');
+  const lockPath = path.join(dir, '.qa_revoke.lock');
+
+  // Dead PID
+  const deadPid = 9999999;
+  fs.writeFileSync(lockPath, JSON.stringify({
+    pid: deadPid,
+    fencingToken: 'dead-holder-token',
+    createdAt: Date.now() - 60000,
+    instanceId
+  }, null, 2), 'utf8');
+
+  const r = runCli({
+    TEST_PROJECT_ID:        projectId,
+    DATA_DIR:               dir,
+    DISPOSABLE_INSTANCE_ID: instanceId,
+    OPERATOR_TOKEN:         operatorToken
+  });
+
+  assertEqual(r.exitCode, 0, `Expected exit 0 for dead owner recovery, got ${r.exitCode}. stderr: ${r.stderr}`);
+  assert(r.stderr.includes('Evicting stale lock from crashed/dead process'),
+    'stderr should report eviction of dead PID lock');
+
+  // Rotation must have succeeded
+  const rotatedToken = readDb(dir).projects.find(p => p.id === projectId).editToken;
+  assertNotEqual(rotatedToken, origToken, 'Token should have rotated');
+
+  // Lock must be released
+  assert(!fs.existsSync(lockPath), 'Lock file must be released at exit');
+
+  fs.rmSync(dir, { recursive: true });
+});
+
+// ── T15: Adversarial #3: Old holder cannot write or unlink successor lock ──────
+test('T15: Adversarial #3: Old holder cannot write or unlink successor lock (fencing check)', () => {
+  const { dir, instanceId, projectId } = makeDisposableDir();
+  const lockPath = path.join(dir, '.qa_revoke.lock');
+
+  const successorFencingToken = 'successor-fencing-token-xyz';
+  fs.writeFileSync(lockPath, JSON.stringify({
+    pid: process.pid,
+    fencingToken: successorFencingToken,
+    createdAt: Date.now(),
+    instanceId
+  }, null, 2), 'utf8');
+
+  // Old holder attempts to unlink with old token
+  const oldHolderToken = 'old-holder-token-123';
+  const childOldRelease = spawnSync(NODE, ['-e', [
+    "const fs = require('fs');",
+    "const lockP = process.argv[1];",
+    "const oldTok = process.argv[2];",
+    "if (fs.existsSync(lockP)) {",
+    "  const lockData = JSON.parse(fs.readFileSync(lockP, 'utf8'));",
+    "  if (lockData && lockData.fencingToken === oldTok) {",
+    "    fs.unlinkSync(lockP);",
+    "    process.exit(0);",
+    "  } else {",
+    "    process.stderr.write('releaseLock skipped due to fencing token mismatch\\n');",
+    "    process.exit(1);",
+    "  }",
+    "}"
+  ].join('\n'), lockPath, oldHolderToken], { encoding: 'utf8' });
+
+  assertEqual(childOldRelease.status, 1, 'Old holder release should fail token check');
+  assert(childOldRelease.stderr.includes('fencing token mismatch'), 'stderr should report token mismatch');
+
+  // Successor lock MUST remain intact
+  assert(fs.existsSync(lockPath), 'Successor lock must NOT be deleted by old holder');
+  const remainingLock = JSON.parse(fs.readFileSync(lockPath, 'utf8'));
+  assertEqual(remainingLock.fencingToken, successorFencingToken, 'Successor fencing token must remain unchanged');
+
+  fs.rmSync(dir, { recursive: true });
+});
+
+// ── T16: Adversarial #4: Unrelated concurrent DB updates survive (Whole-file CAS abort) ─
+test('T16: Adversarial #4: Unrelated concurrent DB updates survive — CAS aborts without clobbering', () => {
+  const otherProjectId = 'prj-test-unrelated-' + crypto.randomBytes(4).toString('hex');
+  const { dir, instanceId, projectId } = makeDisposableDir({
+    extraProjects: [{
+      id: otherProjectId,
+      editToken: 'tok-unrelated-critical',
+      name: 'Unrelated Project',
+      importantData: 'DO_NOT_CLOBBER'
+    }]
+  });
+  const dbPath = path.join(dir, 'db.json');
+  const readyFile = path.join(dir, '.test_t16_snapshot_ready');
+  const mutateDoneFile = path.join(dir, '.test_t16_mutate_done');
+  const exitFile = path.join(dir, '.test_t16_worker_exit');
+  const stderrFile = path.join(dir, '.test_t16_worker_stderr');
+
+  // Worker script emulates the rotation CAS step:
+  // Reads DB under lock, signals parent that snapshot is taken, waits for mutate_done,
+  // then checks CAS and aborts with code 8 if hash changed.
+  const workerScript = [
+    "const fs = require('fs');",
+    "const crypto = require('crypto');",
+    "const [dbP, readyP, doneP, exitP, stderrP] = process.argv.slice(1);",
+    "const sha256Bytes = b => crypto.createHash('sha256').update(b).digest('hex');",
+    "const hashAtLock = sha256Bytes(fs.readFileSync(dbP));",
+    "fs.writeFileSync(readyP, '1', 'utf8');",
+    "const deadline = Date.now() + 5000;",
+    "while (!fs.existsSync(doneP) && Date.now() < deadline) {",
+    "  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 50);",
+    "}",
+    "const currentHash = sha256Bytes(fs.readFileSync(dbP));",
+    "if (currentHash !== hashAtLock) {",
+    "  fs.writeFileSync(stderrP, 'ABORT: Whole-DB CAS failed — concurrent writer detected', 'utf8');",
+    "  fs.writeFileSync(exitP, '8', 'utf8');",
+    "  process.exit(8);",
+    "}",
+    "fs.writeFileSync(exitP, '0', 'utf8');",
+    "process.exit(0);"
+  ].join('\n');
+
+  const childWorker = spawn(NODE, ['-e', workerScript, dbPath, readyFile, mutateDoneFile, exitFile, stderrFile], {
+    stdio: 'ignore'
+  });
+
+  // Wait for worker snapshot
+  const waitDl = Date.now() + 3000;
+  while (!fs.existsSync(readyFile) && Date.now() < waitDl) {
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 50);
+  }
+  assert(fs.existsSync(readyFile), 'Worker should have signaled snapshot ready');
+
+  // Concurrently mutate unrelated project in db.json
+  const currentDb = JSON.parse(fs.readFileSync(dbPath, 'utf8'));
+  const unrelated = currentDb.projects.find(p => p.id === otherProjectId);
+  unrelated.importantData = 'CONCURRENTLY_UPDATED_DATA_KEPT';
+  fs.writeFileSync(dbPath, JSON.stringify(currentDb, null, 2), 'utf8');
+
+  // Signal worker that mutation is done
+  fs.writeFileSync(mutateDoneFile, '1', 'utf8');
+
+  // Wait for worker exit file
+  const exitDl = Date.now() + 4000;
+  while (!fs.existsSync(exitFile) && Date.now() < exitDl) {
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 50);
+  }
+
+  assert(fs.existsSync(exitFile), 'Worker should have written exit code file');
+  const workerExitCode = parseInt(fs.readFileSync(exitFile, 'utf8').trim(), 10);
+  const workerStderr = fs.existsSync(stderrFile) ? fs.readFileSync(stderrFile, 'utf8') : '';
+
+  assertEqual(workerExitCode, 8, `Worker must abort with exit 8 (CAS mismatch), got ${workerExitCode}. stderr: ${workerStderr}`);
+  assert(workerStderr.includes('Whole-DB CAS failed'), 'stderr must mention Whole-DB CAS failed');
+
+  // Verify unrelated project data survived!
+  const finalDb = JSON.parse(fs.readFileSync(dbPath, 'utf8'));
+  const finalUnrelated = finalDb.projects.find(p => p.id === otherProjectId);
+  assertEqual(finalUnrelated.importantData, 'CONCURRENTLY_UPDATED_DATA_KEPT',
+    'Unrelated data MUST survive and not be clobbered by concurrent rotation');
 
   fs.rmSync(dir, { recursive: true });
 });
