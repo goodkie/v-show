@@ -88,10 +88,13 @@ const SELF_TEST = args.includes('--self-test');
 const dbArgIdx  = args.indexOf('--db');
 const CLI_DB    = dbArgIdx !== -1 ? args[dbArgIdx + 1] : null;
 
-// ─── Self-test mode (runs before any env validation) ─────────────────────────
-if (SELF_TEST) {
-  runSelfTests();
-  process.exit(0);
+// ─── Execution entrypoint ─────────────────────────────────────────────────────
+if (require.main === module) {
+  if (SELF_TEST) {
+    runSelfTests();
+    process.exit(0);
+  }
+  runCli();
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -364,6 +367,79 @@ function verifyMarker(markerPath, expectedInstanceId, secret) {
 }
 
 /**
+ * computeProvenanceSignature — HMAC-SHA256 signature for control-plane immutable binding.
+ */
+function computeProvenanceSignature(volumeId, datastoreRealPath, projectId, operation, createdAt, maxLifetimeMs, secret) {
+  const payload = `${volumeId}:${datastoreRealPath}:${projectId}:${operation}:${createdAt}:${maxLifetimeMs}`;
+  return crypto.createHmac('sha256', secret).update(payload, 'utf8').digest('hex');
+}
+
+/**
+ * verifyProvenanceBinding — validates control-plane per-run immutable volume binding.
+ * Strictly prevents copied/relabeled DBs or caller-colluded tokens from satisfying authorization.
+ */
+function verifyProvenanceBinding(provenancePath, expectedDataDir, expectedInstanceId, expectedProjectId, controlPlaneSecret) {
+  if (!fs.existsSync(provenancePath)) {
+    return { ok: false, err: '.disposable_qa_provenance.json missing (control-plane immutable binding required)' };
+  }
+  let prov;
+  try {
+    prov = JSON.parse(fs.readFileSync(provenancePath, 'utf8'));
+  } catch (e) {
+    return { ok: false, err: `Corrupt or unparseable .disposable_qa_provenance.json: ${e.message}` };
+  }
+
+  if (!prov || typeof prov !== 'object') {
+    return { ok: false, err: 'Invalid provenance attestation structure' };
+  }
+
+  // Volume / Instance binding
+  if (prov.volumeId !== expectedInstanceId) {
+    return { ok: false, err: `Provenance volumeId mismatch (found: ${prov.volumeId}, expected: ${expectedInstanceId})` };
+  }
+
+  // Realpath filesystem binding (detects copying/moving to another directory)
+  let expectedNormPath = path.resolve(expectedDataDir).replace(/\\/g, '/').toLowerCase();
+  try {
+    expectedNormPath = fs.realpathSync(expectedDataDir).replace(/\\/g, '/').toLowerCase();
+  } catch (_) {}
+  const provNormPath = (prov.datastoreRealPath || '').replace(/\\/g, '/').toLowerCase();
+  if (provNormPath !== expectedNormPath) {
+    return { ok: false, err: `Provenance datastoreRealPath mismatch (bound to ${prov.datastoreRealPath}, running on ${expectedDataDir})` };
+  }
+
+  // Project binding
+  if (prov.projectId !== expectedProjectId) {
+    return { ok: false, err: `Provenance projectId mismatch (bound to ${prov.projectId}, targeting ${expectedProjectId})` };
+  }
+
+  // Permitted operation
+  if (prov.operation !== 'ROTATE_QA_EDIT_TOKEN' && prov.operation !== 'ALL_QA_OPERATIONS') {
+    return { ok: false, err: `Provenance operation not authorized (requested ROTATE_QA_EDIT_TOKEN, permitted: ${prov.operation})` };
+  }
+
+  // Expiration / Lifetime check
+  const maxLifetimeMs = typeof prov.maxLifetimeMs === 'number' ? prov.maxLifetimeMs : 3600000;
+  if (typeof prov.createdAt === 'number') {
+    if (Date.now() > prov.createdAt + maxLifetimeMs) {
+      return { ok: false, err: `Provenance token expired (created: ${new Date(prov.createdAt).toISOString()}, lifetime: ${maxLifetimeMs}ms)` };
+    }
+  }
+
+  // Cryptographic signature check
+  if (controlPlaneSecret) {
+    const expectedSig = computeProvenanceSignature(
+      prov.volumeId, prov.datastoreRealPath, prov.projectId, prov.operation, prov.createdAt, maxLifetimeMs, controlPlaneSecret
+    );
+    if (prov.controlPlaneSignature !== expectedSig) {
+      return { ok: false, err: 'Provenance attestation control-plane signature verification failed' };
+    }
+  }
+
+  return { ok: true, provenance: prov };
+}
+
+/**
  * inspectDatastoreSafety — deep inspection to strictly refuse copied customer/production DBs.
  */
 function inspectDatastoreSafety(dbData) {
@@ -427,149 +503,240 @@ function inspectDatastoreSafety(dbData) {
   return null;
 }
 
-// ─── Environment validation ────────────────────────────────────────────────
-const TEST_PROJECT_ID        = process.env.TEST_PROJECT_ID;
-const DISPOSABLE_INSTANCE_ID = process.env.DISPOSABLE_INSTANCE_ID;
-const OPERATOR_TOKEN         = process.env.OPERATOR_TOKEN;
-const QA_HARNESS_SECRET      = process.env.QA_HARNESS_SECRET || process.env.EXPECTED_OPERATOR_TOKEN;
+// ─── CLI Runner ─────────────────────────────────────────────────────────────
+function runCli() {
+  const TEST_PROJECT_ID        = process.env.TEST_PROJECT_ID;
+  const DISPOSABLE_INSTANCE_ID = process.env.DISPOSABLE_INSTANCE_ID;
+  const OPERATOR_TOKEN         = process.env.OPERATOR_TOKEN;
+  const QA_HARNESS_SECRET      = process.env.QA_HARNESS_SECRET || process.env.EXPECTED_OPERATOR_TOKEN;
+  const CONTROL_PLANE_SECRET   = process.env.CONTROL_PLANE_SECRET;
+  const REQUIRE_PROVENANCE     = process.env.REQUIRE_PROVENANCE === 'true' || Boolean(CONTROL_PLANE_SECRET);
 
-const { resolved: DATA_DIR, err: dataDirErr } = validateDataDir(
-  CLI_DB || process.env.DATA_DIR,
-  Boolean(CLI_DB)
-);
+  const { resolved: DATA_DIR, err: dataDirErr } = validateDataDir(
+    CLI_DB || process.env.DATA_DIR,
+    Boolean(CLI_DB)
+  );
 
-const errors = [];
-if (!TEST_PROJECT_ID)               errors.push('TEST_PROJECT_ID env var required');
-if (TEST_PROJECT_ID && !TEST_PROJECT_ID.startsWith('prj-test-'))
-                                    errors.push('TEST_PROJECT_ID must start with prj-test-');
-if (dataDirErr)                     errors.push(dataDirErr);
-if (!DISPOSABLE_INSTANCE_ID)        errors.push('DISPOSABLE_INSTANCE_ID env var required');
-if (!OPERATOR_TOKEN)                errors.push('OPERATOR_TOKEN env var required');
-if (OPERATOR_TOKEN && OPERATOR_TOKEN.length < 32)
-                                    errors.push('OPERATOR_TOKEN must be >= 32 characters');
-if (OPERATOR_TOKEN && (new Set(OPERATOR_TOKEN.split('')).size < 8 || OPERATOR_TOKEN === TEST_PROJECT_ID))
-                                    errors.push('OPERATOR_TOKEN has insufficient entropy or matches project ID');
+  const errors = [];
+  if (!TEST_PROJECT_ID)               errors.push('TEST_PROJECT_ID env var required');
+  if (TEST_PROJECT_ID && !TEST_PROJECT_ID.startsWith('prj-test-'))
+                                      errors.push('TEST_PROJECT_ID must start with prj-test-');
+  if (dataDirErr)                     errors.push(dataDirErr);
+  if (!DISPOSABLE_INSTANCE_ID)        errors.push('DISPOSABLE_INSTANCE_ID env var required');
+  if (!OPERATOR_TOKEN)                errors.push('OPERATOR_TOKEN env var required');
+  if (OPERATOR_TOKEN && OPERATOR_TOKEN.length < 32)
+                                      errors.push('OPERATOR_TOKEN must be >= 32 characters');
+  if (OPERATOR_TOKEN && (new Set(OPERATOR_TOKEN.split('')).size < 8 || OPERATOR_TOKEN === TEST_PROJECT_ID))
+                                      errors.push('OPERATOR_TOKEN has insufficient entropy or matches project ID');
 
-// External Authorization Requirement: In active (non-dry-run) mode, QA_HARNESS_SECRET is mandatory
-if (!DRY_RUN && !QA_HARNESS_SECRET) {
-  errors.push('QA_HARNESS_SECRET (or EXPECTED_OPERATOR_TOKEN) env var required in active mode (fail-closed against self-asserted tokens)');
-}
-if (QA_HARNESS_SECRET && OPERATOR_TOKEN !== QA_HARNESS_SECRET) {
-  errors.push('OPERATOR_TOKEN does not match server-verified QA_HARNESS_SECRET');
-}
-
-if (errors.length) {
-  process.stderr.write('[REVOKE_QA_TOKENS] FAIL_CLOSED — validation errors:\n');
-  errors.forEach(e => process.stderr.write('  - ' + e + '\n'));
-  process.exit(2);
-}
-
-// ─── Derived paths ────────────────────────────────────────────────────────────
-const MARKER_PATH = path.join(DATA_DIR, '.disposable_qa_marker');
-const DB_PATH     = path.join(DATA_DIR, 'db.json');
-const BACKUP_PATH = path.join(DATA_DIR, '.qa_token_backup.json');
-const LOCK_DIR    = path.join(DATA_DIR, 'db.lock'); // unified with server/db.js _getLockDir()
-
-// ─── Pre-lock: verify marker and db.json exist before acquiring lock ──────────
-const markerCheck = verifyMarker(MARKER_PATH, DISPOSABLE_INSTANCE_ID, QA_HARNESS_SECRET);
-if (!markerCheck.ok) {
-  process.stderr.write(`[REVOKE_QA_TOKENS] ABORT: ${markerCheck.err}.\n  This directory is not a verified disposable QA datastore.\n`);
-  process.exit(3);
-}
-
-if (!fs.existsSync(DB_PATH)) {
-  process.stderr.write(`[REVOKE_QA_TOKENS] ABORT: db.json not found at ${DB_PATH}\n`);
-  process.exit(4);
-}
-
-// ─── ACQUIRE LOCK FIRST — all DB reads/writes happen under this lock ──────────
-const LOCK_TIMEOUT_MS = parseInt(process.env.LOCK_TIMEOUT_MS || '5000', 10);
-const myOwnerToken = acquireLock(LOCK_DIR, LOCK_TIMEOUT_MS);
-if (!myOwnerToken) {
-  process.stderr.write('[REVOKE_QA_TOKENS] ABORT: Could not acquire lock within timeout.\n');
-  process.exit(7);
-}
-
-let exitCode = 0;
-
-function runUnderLock(ownerToken) {
-  // ── Under lock: verify marker identity and signature ────────────────────────
-  const underLockMarkerCheck = verifyMarker(MARKER_PATH, DISPOSABLE_INSTANCE_ID, QA_HARNESS_SECRET);
-  if (!underLockMarkerCheck.ok) {
-    process.stderr.write(`[REVOKE_QA_TOKENS] ABORT (under lock): ${underLockMarkerCheck.err}\n`);
-    return 3;
+  // External Authorization Requirement: In active (non-dry-run) mode, QA_HARNESS_SECRET is mandatory
+  if (!DRY_RUN && !QA_HARNESS_SECRET) {
+    errors.push('QA_HARNESS_SECRET (or EXPECTED_OPERATOR_TOKEN) env var required in active mode (fail-closed against self-asserted tokens)');
+  }
+  if (QA_HARNESS_SECRET && OPERATOR_TOKEN !== QA_HARNESS_SECRET) {
+    errors.push('OPERATOR_TOKEN does not match server-verified QA_HARNESS_SECRET');
   }
 
-  // ── Under lock: read DB bytes and compute whole-DB hash (pre-state CAS) ─────
-  const dbBytesAtLockTime = fs.readFileSync(DB_PATH);
-  const dbHashAtLockTime  = sha256Bytes(dbBytesAtLockTime);
-
-  let dbData;
-  try {
-    dbData = JSON.parse(dbBytesAtLockTime.toString('utf8'));
-  } catch (e) {
-    process.stderr.write(`[REVOKE_QA_TOKENS] ABORT: Failed to parse db.json: ${e.message}\n`);
-    return 4;
+  // Separation of duties: Control plane signing key must NEVER match operator token
+  if (CONTROL_PLANE_SECRET && OPERATOR_TOKEN === CONTROL_PLANE_SECRET) {
+    errors.push('OPERATOR_TOKEN must be distinct from CONTROL_PLANE_SECRET (two-party separation of duty required)');
   }
 
-  // ── Under lock: Customer & Owner DB Refusal Gate (P0 Defense) ───────────────
-  const refusalReason = inspectDatastoreSafety(dbData);
-  if (refusalReason) {
-    process.stderr.write(
-      `[REVOKE_QA_TOKENS] ABORT: ${refusalReason}.\n` +
-      '  Revocation utility strictly refuses non-disposable or copied customer datastores.\n'
-    );
-    return 3;
+  if (errors.length) {
+    process.stderr.write('[REVOKE_QA_TOKENS] FAIL_CLOSED — validation errors:\n');
+    errors.forEach(e => process.stderr.write('  - ' + e + '\n'));
+    process.exit(2);
   }
 
-  const projects = dbData.projects || [];
-  const targetIdx = projects.findIndex(p => p.id === TEST_PROJECT_ID);
+  // ─── Derived paths ──────────────────────────────────────────────────────────
+  const MARKER_PATH     = path.join(DATA_DIR, '.disposable_qa_marker');
+  const PROVENANCE_PATH = path.join(DATA_DIR, '.disposable_qa_provenance.json');
+  const DB_PATH         = path.join(DATA_DIR, 'db.json');
+  const BACKUP_PATH     = path.join(DATA_DIR, '.qa_token_backup.json');
+  const LOCK_DIR        = path.join(DATA_DIR, 'db.lock'); // unified with server/db.js _getLockDir()
 
-  if (targetIdx === -1) {
-    // Idempotent: project not present
-    process.stderr.write(redactedReceipt(
-      TEST_PROJECT_ID, 'NOT_PRESENT', 'NOT_PRESENT', 'IDEMPOTENT_NO_MATCH',
-      { note: 'Project not found in DB — no mutation performed' }
-    ) + '\n');
-    return 0;
+  // ─── Pre-lock: verify marker and db.json exist before acquiring lock ────────
+  const markerCheck = verifyMarker(MARKER_PATH, DISPOSABLE_INSTANCE_ID, QA_HARNESS_SECRET);
+  if (!markerCheck.ok) {
+    process.stderr.write(`[REVOKE_QA_TOKENS] ABORT: ${markerCheck.err}.\n  This directory is not a verified disposable QA datastore.\n`);
+    process.exit(3);
   }
 
-  const target = projects[targetIdx];
-
-  // ── ROLLBACK mode ────────────────────────────────────────────────────────────
-  if (ROLLBACK) {
-    if (!fs.existsSync(BACKUP_PATH)) {
-      process.stderr.write('[REVOKE_QA_TOKENS] ABORT: No backup found for rollback.\n');
-      return 5;
+  if (REQUIRE_PROVENANCE) {
+    const provCheck = verifyProvenanceBinding(PROVENANCE_PATH, DATA_DIR, DISPOSABLE_INSTANCE_ID, TEST_PROJECT_ID, CONTROL_PLANE_SECRET);
+    if (!provCheck.ok) {
+      process.stderr.write(`[REVOKE_QA_TOKENS] ABORT: ${provCheck.err}.\n  Control-plane provenance binding failed.\n`);
+      process.exit(3);
     }
-    let backup;
+  }
+
+  if (!fs.existsSync(DB_PATH)) {
+    process.stderr.write(`[REVOKE_QA_TOKENS] ABORT: db.json not found at ${DB_PATH}\n`);
+    process.exit(4);
+  }
+
+  // ─── ACQUIRE LOCK FIRST — all DB reads/writes happen under this lock ────────
+  const LOCK_TIMEOUT_MS = parseInt(process.env.LOCK_TIMEOUT_MS || '5000', 10);
+  const myOwnerToken = acquireLock(LOCK_DIR, LOCK_TIMEOUT_MS);
+  if (!myOwnerToken) {
+    process.stderr.write('[REVOKE_QA_TOKENS] ABORT: Could not acquire lock within timeout.\n');
+    process.exit(7);
+  }
+
+  let exitCode = 0;
+
+  function runUnderLock(ownerToken) {
+    // ── Under lock: verify marker identity and signature ──────────────────────
+    const underLockMarkerCheck = verifyMarker(MARKER_PATH, DISPOSABLE_INSTANCE_ID, QA_HARNESS_SECRET);
+    if (!underLockMarkerCheck.ok) {
+      process.stderr.write(`[REVOKE_QA_TOKENS] ABORT (under lock): ${underLockMarkerCheck.err}\n`);
+      return 3;
+    }
+
+    if (REQUIRE_PROVENANCE) {
+      const underLockProvCheck = verifyProvenanceBinding(PROVENANCE_PATH, DATA_DIR, DISPOSABLE_INSTANCE_ID, TEST_PROJECT_ID, CONTROL_PLANE_SECRET);
+      if (!underLockProvCheck.ok) {
+        process.stderr.write(`[REVOKE_QA_TOKENS] ABORT (under lock): ${underLockProvCheck.err}\n`);
+        return 3;
+      }
+    }
+
+    // ── Under lock: read DB bytes and compute whole-DB hash (pre-state CAS) ───
+    const dbBytesAtLockTime = fs.readFileSync(DB_PATH);
+    const dbHashAtLockTime  = sha256Bytes(dbBytesAtLockTime);
+
+    let dbData;
     try {
-      backup = JSON.parse(fs.readFileSync(BACKUP_PATH, 'utf8'));
+      dbData = JSON.parse(dbBytesAtLockTime.toString('utf8'));
     } catch (e) {
-      process.stderr.write(`[REVOKE_QA_TOKENS] ABORT: Failed to parse backup: ${e.message}\n`);
-      return 5;
+      process.stderr.write(`[REVOKE_QA_TOKENS] ABORT: Failed to parse db.json: ${e.message}\n`);
+      return 4;
     }
 
-    if (backup.projectId !== TEST_PROJECT_ID || backup.instanceId !== DISPOSABLE_INSTANCE_ID) {
-      process.stderr.write('[REVOKE_QA_TOKENS] ABORT: Backup projectId/instanceId mismatch.\n');
-      return 5;
-    }
-
-    // CAS: verify current token hash == backup.tokenHash_after (under lock, re-read)
-    const currentHash = sha256(target.editToken || '');
-    if (currentHash !== backup.tokenHash_after) {
+    // ── Under lock: Customer & Owner DB Refusal Gate (P0 Defense) ─────────────
+    const refusalReason = inspectDatastoreSafety(dbData);
+    if (refusalReason) {
       process.stderr.write(
-        '[REVOKE_QA_TOKENS] ABORT: Rollback rejected — CAS mismatch (intervening write detected).\n' +
-        `  Current token hash:     ${currentHash}\n` +
-        `  Expected (post-rotate): ${backup.tokenHash_after}\n` +
-        '  Rollback aborted to prevent overwriting unrelated changes.\n'
+        `[REVOKE_QA_TOKENS] ABORT: ${refusalReason}.\n` +
+        '  Revocation utility strictly refuses non-disposable or copied customer datastores.\n'
       );
-      return 6;
+      return 3;
     }
+
+    const projects = dbData.projects || [];
+    const targetIdx = projects.findIndex(p => p.id === TEST_PROJECT_ID);
+
+    if (targetIdx === -1) {
+      // Idempotent: project not present
+      process.stderr.write(redactedReceipt(
+        TEST_PROJECT_ID, 'NOT_PRESENT', 'NOT_PRESENT', 'IDEMPOTENT_NO_MATCH',
+        { note: 'Project not found in DB — no mutation performed' }
+      ) + '\n');
+      return 0;
+    }
+
+    const target = projects[targetIdx];
+
+    // ── ROLLBACK mode ──────────────────────────────────────────────────────────
+    if (ROLLBACK) {
+      if (!fs.existsSync(BACKUP_PATH)) {
+        process.stderr.write('[REVOKE_QA_TOKENS] ABORT: No backup found for rollback.\n');
+        return 5;
+      }
+      let backup;
+      try {
+        backup = JSON.parse(fs.readFileSync(BACKUP_PATH, 'utf8'));
+      } catch (e) {
+        process.stderr.write(`[REVOKE_QA_TOKENS] ABORT: Failed to parse backup: ${e.message}\n`);
+        return 5;
+      }
+
+      if (backup.projectId !== TEST_PROJECT_ID || backup.instanceId !== DISPOSABLE_INSTANCE_ID) {
+        process.stderr.write('[REVOKE_QA_TOKENS] ABORT: Backup metadata mismatch.\n');
+        return 5;
+      }
+
+      const currentHash = sha256(target.editToken || '');
+      if (currentHash !== backup.tokenHash_after) {
+        process.stderr.write(
+          `[REVOKE_QA_TOKENS] ABORT: Current token hash (${currentHash}) does not match ` +
+          `backup tokenHash_after (${backup.tokenHash_after}). Skipping rollback to avoid clobbering external change.\n`
+        );
+        return 6;
+      }
+
+      if (DRY_RUN) {
+        process.stderr.write(redactedReceipt(
+          TEST_PROJECT_ID, currentHash, backup.tokenHash_before, 'DRY_RUN_ROLLBACK',
+          { would_restore: 'tokenHash_before from backup' }
+        ) + '\n');
+        return 0;
+      }
+
+      // Generate a fresh rollback token (raw former secret is not kept in backup)
+      const rollbackToken = 'edit-tok-' + crypto.randomBytes(32).toString('hex');
+      const rollbackHash  = sha256(rollbackToken);
+
+      // Verify lock is still held by this process before write
+      if (!verifyLockHeld(LOCK_DIR, ownerToken)) {
+        process.stderr.write(
+          '[REVOKE_QA_TOKENS] ABORT: Lock ownership lost before rollback write (ownerToken mismatch).\n' +
+          '  Another process may have superseded the lock. Write aborted to prevent split-brain.\n'
+        );
+        return 8;
+      }
+
+      // Whole-DB CAS: re-verify db.json hasn't changed since we acquired lock
+      const dbBytesNow = fs.readFileSync(DB_PATH);
+      if (sha256Bytes(dbBytesNow) !== dbHashAtLockTime) {
+        process.stderr.write(
+          '[REVOKE_QA_TOKENS] ABORT: Whole-DB CAS failed — db.json changed after lock\n' +
+          '  acquisition (concurrent writer detected). Aborting to prevent data loss.\n'
+        );
+        return 8;
+      }
+
+      const updatedDb = JSON.parse(JSON.stringify(dbData));
+      updatedDb.projects[targetIdx] = Object.assign(
+        {}, updatedDb.projects[targetIdx],
+        { editToken: rollbackToken }
+      );
+
+      atomicWriteJson(DB_PATH, updatedDb, LOCK_DIR, ownerToken);
+
+      try { fs.unlinkSync(BACKUP_PATH); } catch (_) {}
+
+      process.stderr.write(redactedReceipt(
+        TEST_PROJECT_ID, currentHash, rollbackHash, 'ROLLBACK_OK', {}
+      ) + '\n');
+      return 0;
+    }
+
+    // ── ROTATE mode ────────────────────────────────────────────────────────────
+    const currentToken = target.editToken || '';
+    const currentHash  = sha256(currentToken);
+
+    // Idempotency: if already rotated to backup's tokenHash_after, skip
+    if (fs.existsSync(BACKUP_PATH)) {
+      try {
+        const backup = JSON.parse(fs.readFileSync(BACKUP_PATH, 'utf8'));
+        if (backup.projectId === TEST_PROJECT_ID && backup.tokenHash_after === currentHash) {
+          process.stderr.write(redactedReceipt(
+            TEST_PROJECT_ID, currentHash, currentHash, 'IDEMPOTENT_ALREADY_ROTATED',
+            { note: 'Token already rotated in previous run — no mutation performed' }
+          ) + '\n');
+          return 0;
+        }
+      } catch (_) {}
+    }
+
+    const newToken = 'edit-tok-' + crypto.randomBytes(32).toString('hex');
+    const newHash  = sha256(newToken);
 
     if (DRY_RUN) {
       process.stderr.write(redactedReceipt(
-        TEST_PROJECT_ID, currentHash, backup.tokenHash_before, 'DRY_RUN_ROLLBACK', {}
+        TEST_PROJECT_ID, currentHash, newHash, 'DRY_RUN_PLAN',
+        { action: 'rotate', target_project_id: TEST_PROJECT_ID }
       ) + '\n');
       return 0;
     }
@@ -577,128 +744,64 @@ function runUnderLock(ownerToken) {
     // Verify lock is still held by this process before write
     if (!verifyLockHeld(LOCK_DIR, ownerToken)) {
       process.stderr.write(
-        '[REVOKE_QA_TOKENS] ABORT: Lock ownership lost before rollback write (ownerToken mismatch).\n'
+        '[REVOKE_QA_TOKENS] ABORT: Lock ownership lost before write (ownerToken mismatch).\n' +
+        '  Another process may have superseded the lock. Write aborted to prevent split-brain.\n'
       );
       return 8;
     }
 
-    // Whole-DB CAS: verify db.json hasn't changed since we read it under lock
+    // ── Whole-DB CAS: re-verify db.json hasn't changed since we acquired lock ───
     const dbBytesNow = fs.readFileSync(DB_PATH);
     if (sha256Bytes(dbBytesNow) !== dbHashAtLockTime) {
       process.stderr.write(
-        '[REVOKE_QA_TOKENS] ABORT: Whole-DB CAS failed before rollback write —\n' +
-        '  db.json changed between lock acquisition and write. Aborting.\n'
+        '[REVOKE_QA_TOKENS] ABORT: Whole-DB CAS failed — db.json changed after lock\n' +
+        '  acquisition (concurrent writer detected). Aborting to prevent data loss.\n'
       );
       return 8;
     }
 
-    // Restore ONLY editToken field; preserve all other fields and all other records
-    const rolledBackDb = JSON.parse(JSON.stringify(dbData)); // deep clone
-    const restoredToken = crypto.randomBytes(32).toString('hex');
-    rolledBackDb.projects[targetIdx] = Object.assign(
-      {}, rolledBackDb.projects[targetIdx],
-      { editToken: restoredToken }
-      // updatedAt intentionally NOT mutated
+    // ── Write hash-only backup (no raw tokens stored) ──────────────────────────
+    const backupData = {
+      projectId:        TEST_PROJECT_ID,
+      instanceId:       DISPOSABLE_INSTANCE_ID,
+      tokenHash_before: currentHash,     // hash only — raw token never stored
+      tokenHash_after:  newHash,         // hash only — raw token never stored
+      dbHashAtRotation: dbHashAtLockTime, // whole-DB hash for audit
+      ts:               new Date().toISOString()
+    };
+    atomicWriteJson(BACKUP_PATH, backupData, LOCK_DIR, ownerToken);
+
+    // ── Mutate ONLY editToken field — all other fields preserved exactly ───────
+    const updatedDb = JSON.parse(JSON.stringify(dbData)); // deep clone
+    updatedDb.projects[targetIdx] = Object.assign(
+      {}, updatedDb.projects[targetIdx],
+      { editToken: newToken }
+      // updatedAt intentionally NOT mutated (only editToken changes)
     );
 
-    atomicWriteJson(DB_PATH, rolledBackDb, LOCK_DIR, ownerToken);
+    // ── Atomic write via temp + fsync + renameSync ─────────────────────────────
+    atomicWriteJson(DB_PATH, updatedDb, LOCK_DIR, ownerToken);
+
+    // ── Emit redacted receipt (no raw tokens) ──────────────────────────────────
     process.stderr.write(redactedReceipt(
-      TEST_PROJECT_ID, currentHash, sha256(restoredToken), 'ROLLBACK_OK_ROTATED_FRESH',
-      { note: 'Token rotated to fresh random value (security design: hash-only backup deliberately cannot restore previous secret credentials)' }
+      TEST_PROJECT_ID, currentHash, newHash, 'ROTATED_OK', {}
     ) + '\n');
-    try { fs.unlinkSync(BACKUP_PATH); } catch (_) {}
+
     return 0;
   }
 
-  // ── IDEMPOTENCY check ────────────────────────────────────────────────────────
-  const currentToken = target.editToken || '';
-  const currentHash  = sha256(currentToken);
-
-  if (fs.existsSync(BACKUP_PATH)) {
-    let backup;
-    try { backup = JSON.parse(fs.readFileSync(BACKUP_PATH, 'utf8')); } catch (_) {}
-    if (backup &&
-        backup.projectId === TEST_PROJECT_ID &&
-        backup.instanceId === DISPOSABLE_INSTANCE_ID &&
-        backup.tokenHash_after === currentHash) {
-      process.stderr.write(redactedReceipt(
-        TEST_PROJECT_ID, backup.tokenHash_before, currentHash, 'IDEMPOTENT_ALREADY_ROTATED', {}
-      ) + '\n');
-      return 0;
-    }
+  try {
+    exitCode = runUnderLock(myOwnerToken);
+    if (typeof exitCode !== 'number') exitCode = 0;
+  } catch (err) {
+    process.stderr.write(`[REVOKE_QA_TOKENS] ERROR: ${err.message}\n${err.stack}\n`);
+    exitCode = 8;
+  } finally {
+    releaseLock(LOCK_DIR, myOwnerToken);
   }
 
-  // ── Generate new token ───────────────────────────────────────────────────────
-  const newToken = crypto.randomBytes(32).toString('hex');
-  const newHash  = sha256(newToken);
-
-  if (DRY_RUN) {
-    process.stderr.write(redactedReceipt(
-      TEST_PROJECT_ID, currentHash, newHash, 'DRY_RUN_WOULD_ROTATE', {}
-    ) + '\n');
-    return 0;
-  }
-
-  // Verify lock is still held by this process before write
-  if (!verifyLockHeld(LOCK_DIR, ownerToken)) {
-    process.stderr.write(
-      '[REVOKE_QA_TOKENS] ABORT: Lock ownership lost before write (ownerToken mismatch).\n' +
-      '  Another process may have superseded the lock. Write aborted to prevent split-brain.\n'
-    );
-    return 8;
-  }
-
-  // ── Whole-DB CAS: re-verify db.json hasn't changed since we acquired lock ───
-  const dbBytesNow = fs.readFileSync(DB_PATH);
-  if (sha256Bytes(dbBytesNow) !== dbHashAtLockTime) {
-    process.stderr.write(
-      '[REVOKE_QA_TOKENS] ABORT: Whole-DB CAS failed — db.json changed after lock\n' +
-      '  acquisition (concurrent writer detected). Aborting to prevent data loss.\n'
-    );
-    return 8;
-  }
-
-  // ── Write hash-only backup (no raw tokens stored) ────────────────────────────
-  const backupData = {
-    projectId:        TEST_PROJECT_ID,
-    instanceId:       DISPOSABLE_INSTANCE_ID,
-    tokenHash_before: currentHash,     // hash only — raw token never stored
-    tokenHash_after:  newHash,         // hash only — raw token never stored
-    dbHashAtRotation: dbHashAtLockTime, // whole-DB hash for audit
-    ts:               new Date().toISOString()
-  };
-  atomicWriteJson(BACKUP_PATH, backupData, LOCK_DIR, ownerToken);
-
-  // ── Mutate ONLY editToken field — all other fields preserved exactly ──────────
-  const updatedDb = JSON.parse(JSON.stringify(dbData)); // deep clone
-  updatedDb.projects[targetIdx] = Object.assign(
-    {}, updatedDb.projects[targetIdx],
-    { editToken: newToken }
-    // updatedAt intentionally NOT mutated (only editToken changes)
-  );
-
-  // ── Atomic write via temp + fsync + renameSync ───────────────────────────────
-  atomicWriteJson(DB_PATH, updatedDb, LOCK_DIR, ownerToken);
-
-  // ── Emit redacted receipt (no raw tokens) ────────────────────────────────────
-  process.stderr.write(redactedReceipt(
-    TEST_PROJECT_ID, currentHash, newHash, 'ROTATED_OK', {}
-  ) + '\n');
-
-  return 0;
+  process.exit(exitCode);
 }
-
-try {
-  exitCode = runUnderLock(myOwnerToken);
-  if (typeof exitCode !== 'number') exitCode = 0;
-} catch (err) {
-  process.stderr.write(`[REVOKE_QA_TOKENS] ERROR: ${err.message}\n${err.stack}\n`);
-  exitCode = 8;
-} finally {
-  releaseLock(LOCK_DIR, myOwnerToken);
-}
-
-process.exit(exitCode);
 
 // ─── Self-test suite (unit-level; see test/test_revoke_qa_tokens_cli.js for CLI e2e) ─
 function runSelfTests() {
@@ -1033,7 +1136,87 @@ function runSelfTests() {
     releaseLock(lockDir, otherTok);
   });
 
+  // T22: verifyProvenanceBinding validates control-plane per-run binding and rejects copied/tampered provenance
+  test('verifyProvenanceBinding validates control-plane binding and rejects forged/expired tokens', () => {
+    const provPath = path.join(tmpDir, '.disposable_qa_provenance.json');
+    const vId = 'vol-test-999';
+    const pId = 'prj-test-provenance';
+    const op = 'ROTATE_QA_EDIT_TOKEN';
+    const cpSecret = 'control-plane-master-secret-32chars';
+    const realDir = fs.realpathSync(tmpDir);
+
+    // 1. Missing provenance file -> fail
+    const r1 = verifyProvenanceBinding(provPath, tmpDir, vId, pId, cpSecret);
+    assert.strictEqual(r1.ok, false, 'Missing provenance must fail');
+
+    // 2. Valid signed provenance -> pass
+    const now = Date.now();
+    const sig = computeProvenanceSignature(vId, realDir, pId, op, now, 3600000, cpSecret);
+    const validProv = {
+      volumeId: vId,
+      datastoreRealPath: realDir,
+      projectId: pId,
+      operation: op,
+      createdAt: now,
+      maxLifetimeMs: 3600000,
+      controlPlaneSignature: sig
+    };
+    fs.writeFileSync(provPath, JSON.stringify(validProv), 'utf8');
+    const r2 = verifyProvenanceBinding(provPath, tmpDir, vId, pId, cpSecret);
+    assert.strictEqual(r2.ok, true, 'Valid provenance must pass');
+
+    // 3. Copied/relabeled datastore (path mismatch) -> fail
+    const r3 = verifyProvenanceBinding(provPath, os.tmpdir(), vId, pId, cpSecret);
+    assert.strictEqual(r3.ok, false, 'Path mismatch (copied DB) must fail');
+
+    // 4. Project mismatch -> fail
+    const r4 = verifyProvenanceBinding(provPath, tmpDir, vId, 'prj-test-other', cpSecret);
+    assert.strictEqual(r4.ok, false, 'Project mismatch must fail');
+
+    // 5. Forged signature -> fail
+    const forgedProv = Object.assign({}, validProv, { controlPlaneSignature: 'forged_deadbeef' });
+    fs.writeFileSync(provPath, JSON.stringify(forgedProv), 'utf8');
+    const r5 = verifyProvenanceBinding(provPath, tmpDir, vId, pId, cpSecret);
+    assert.strictEqual(r5.ok, false, 'Forged signature must fail');
+
+    // 6. Expired token -> fail
+    const expiredProv = Object.assign({}, validProv, {
+      createdAt: now - 7200000,
+      maxLifetimeMs: 3600000,
+      controlPlaneSignature: computeProvenanceSignature(vId, realDir, pId, op, now - 7200000, 3600000, cpSecret)
+    });
+    fs.writeFileSync(provPath, JSON.stringify(expiredProv), 'utf8');
+    const r6 = verifyProvenanceBinding(provPath, tmpDir, vId, pId, cpSecret);
+    assert.strictEqual(r6.ok, false, 'Expired provenance must fail');
+
+    fs.unlinkSync(provPath);
+  });
+
   console.log(`\n  Self-test complete: ${pass} passed, ${fail} failed`);
   fs.rmSync(tmpDir, { recursive: true });
   if (fail > 0) process.exit(1);
+}
+
+// ─── Module exports for testing ───────────────────────────────────────────────
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    sha256,
+    sha256Bytes,
+    computeMarkerSignature,
+    verifyMarker,
+    computeProvenanceSignature,
+    verifyProvenanceBinding,
+    inspectDatastoreSafety,
+    acquireLock,
+    releaseLock,
+    verifyLockHeld,
+    atomicWriteJson,
+    validateDataDir,
+    DANGEROUS_PATH_PATTERNS,
+    DB_JS_SEED_ORG_IDS,
+    INTERNAL_PLATFORM_DOMAINS,
+    DB_JS_SEED_PLATFORM_OWNER_ID,
+    runSelfTests,
+    runCli
+  };
 }
