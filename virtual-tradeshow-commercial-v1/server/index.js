@@ -1462,56 +1462,102 @@ function getReqCookie(req, name) {
   return match ? decodeURIComponent(match[1]) : null;
 }
 
-// C12.9-P2R6: Auto-provision Disposable QA Project for Test Sandbox ONLY
-// SECURITY: Static editToken removed. Token is cryptographically random per call.
-// MUST NOT be called in production context — gate at all call sites.
-function ensureAuthoritativeQaProject(targetProjectId = 'prj-free-b0c6f3ea') {
-  if (process.env.NODE_ENV !== 'test' || !process.env.DISPOSABLE_INSTANCE_ID) {
-    // Fail-closed: never auto-provision QA projects outside explicit test sandbox
-    return null;
+// Tracks the dynamically generated foreign-tenant sandbox project ID for test introspection only
+let _sandboxForeignProjectId = null;
+
+function ensureAuthoritativeQaProject() {
+  const isTestSandbox = process.env.NODE_ENV === 'test' && !!process.env.DISPOSABLE_INSTANCE_ID;
+  if (!isTestSandbox) {
+    if (process.env.NODE_ENV === 'test') {
+      console.error('[QA_PROJECT_HYDRATION] SKIP: NODE_ENV=test but DISPOSABLE_INSTANCE_ID absent. Refusing to auto-provision.');
+    }
+    return;
   }
   const crypto = require('crypto');
   try {
-    let p = db.getProject(targetProjectId);
-    if (!p) {
-      const newProj = {
-        id: targetProjectId,
+    const foreignTenantId = 'prj-foreign-' + crypto.randomBytes(8).toString('hex');
+    _sandboxForeignProjectId = foreignTenantId;
+
+    const projectsToProvision = [
+      {
+        id: process.env.TEST_PROJECT_ID || (() => { throw new Error('FAIL_CLOSED: TEST_PROJECT_ID must be set explicitly for QA sandbox provisioning.'); })(),
         name: 'Stage2 QA Sandbox Project',
         company: 'QA Sandbox',
         contactEmail: 'qa-sandbox@internal.test',
         customerEmail: 'qa-sandbox@internal.test',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        status: 'ACTIVE',
-        commercialState: 'ACTIVE',
-        // Disposable: cryptographically random per sandbox instance, never static
-        editToken: crypto.randomBytes(24).toString('hex'),
-        activeTourId: 'tour-' + crypto.randomBytes(8).toString('hex'),
-        defaultViewpointId: 'vp-' + crypto.randomBytes(8).toString('hex'),
-        viewpoints: [],
-        tours: [],
-        panoramaVersions: [],
-        products: []
-      };
-      db.mutate(data => {
-        data.projects = data.projects || [];
-        if (!data.projects.some(x => x.id === targetProjectId)) {
-          data.projects.push(newProj);
-        }
-      });
-      p = newProj;
-      process.stderr.write(`[QA_PROJECT_HYDRATION] Provisioned disposable project ${targetProjectId} (instance: ${process.env.DISPOSABLE_INSTANCE_ID})\n`);
+        editToken: crypto.randomBytes(24).toString('hex')
+      },
+      {
+        id: foreignTenantId,
+        name: 'Stage2 QA Foreign Tenant Sandbox',
+        company: 'QA Foreign Tenant',
+        contactEmail: 'foreign-qa@internal.test',
+        customerEmail: 'foreign-qa@internal.test',
+        editToken: crypto.randomBytes(24).toString('hex')
+      }
+    ];
+
+    for (const projSpec of projectsToProvision) {
+      let p = db.getProject(projSpec.id);
+      if (!p) {
+        const newProj = {
+          id: projSpec.id,
+          name: projSpec.name,
+          company: projSpec.company,
+          contactEmail: projSpec.contactEmail,
+          customerEmail: projSpec.customerEmail,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          status: 'ACTIVE',
+          commercialState: 'ACTIVE',
+          editToken: projSpec.editToken,
+          activeTourId: 'tour-' + crypto.randomBytes(8).toString('hex'),
+          defaultViewpointId: 'vp-' + crypto.randomBytes(8).toString('hex'),
+          viewpoints: [],
+          tours: [],
+          panoramaVersions: [],
+          products: []
+        };
+        db.mutate(data => {
+          data.projects = data.projects || [];
+          if (!data.projects.some(x => x.id === projSpec.id)) {
+            data.projects.push(newProj);
+          }
+        });
+        process.stderr.write(`[QA_PROJECT_HYDRATION] Provisioned disposable sandbox project ${projSpec.id} (instance: ${process.env.DISPOSABLE_INSTANCE_ID})\n`);
+      }
     }
-    return p;
   } catch (err) {
     console.error('[QA_PROJECT_HYDRATION_ERROR]', err.message);
-    return null;
+    if (err.message && err.message.includes('FAIL_CLOSED')) {
+      process.exit(1);
+    }
   }
 }
-// Gate: only auto-provision at startup in explicit test sandbox
 if (process.env.NODE_ENV === 'test' && process.env.DISPOSABLE_INSTANCE_ID) {
-  ensureAuthoritativeQaProject('prj-free-b0c6f3ea');
+  ensureAuthoritativeQaProject();
 }
+
+app.get('/api/test/qa-sandbox-meta', (req, res) => {
+  if (process.env.NODE_ENV !== 'test' || !process.env.DISPOSABLE_INSTANCE_ID) {
+    return res.status(404).json({ error: 'Not found' });
+  }
+  const clientIp = req.ip || (req.connection && req.connection.remoteAddress) || (req.socket && req.socket.remoteAddress) || '';
+  const isLoopback = clientIp.includes('127.0.0.1') || clientIp === '::1' || clientIp.includes('::ffff:127.0.0.1');
+  if (!isLoopback) {
+    return res.status(403).json({ error: 'Forbidden: Loopback only' });
+  }
+  const expectedAuth = process.env.QA_HARNESS_SECRET;
+  const providedAuth = req.headers['x-qa-harness-auth'];
+  if (!expectedAuth || !providedAuth || providedAuth !== expectedAuth) {
+    return res.status(403).json({ error: 'Forbidden: Valid X-QA-Harness-Auth header required' });
+  }
+  res.json({
+    instanceId: process.env.DISPOSABLE_INSTANCE_ID,
+    primaryProjectId: process.env.TEST_PROJECT_ID || null,
+    foreignProjectId: _sandboxForeignProjectId || null
+  });
+});
 
 
 function verifyQaAccess(req) {
