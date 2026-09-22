@@ -36,22 +36,19 @@ function mkTmp(prefix = 'cli_test_') {
 
 const dirSecretMap = new Map();
 
-const PINNED_CP_PUBLIC_KEY = `-----BEGIN PUBLIC KEY-----
-MCowBQYDK2VwAyEAB/M7fy6smzOv4OHONRvRl6GKOJGEgfYIlGB9stf0rOs=
------END PUBLIC KEY-----`;
-
-const PINNED_CP_PRIVATE_KEY = `-----BEGIN PRIVATE KEY-----
-MC4CAQAwBQYDK2VwBCIEICgeZ6NpZ8X9apjX+zUcjp/mqOlwmlm8QsDXHuco5JS/
------END PRIVATE KEY-----`;
+// Ephemeral in-memory Ed25519 keypair for local test execution (NEVER hardcoded or committed)
+const { publicKey: _ephemeralPubKey, privateKey: _ephemeralPrivKey } = crypto.generateKeyPairSync('ed25519');
+const EPHEMERAL_TEST_PUBLIC_KEY = _ephemeralPubKey.export({ type: 'spki', format: 'pem' });
+const EPHEMERAL_TEST_PRIVATE_KEY = _ephemeralPrivKey;
 
 function computeMarkerSignature(instanceId, secret) {
   if (!secret) return '';
   return crypto.createHmac('sha256', secret).update(instanceId).digest('hex').slice(0, 32);
 }
 
-const DEFAULT_CP_KEY = PINNED_CP_PRIVATE_KEY;
+const DEFAULT_CP_KEY = EPHEMERAL_TEST_PRIVATE_KEY;
 
-function writeProvenance(dir, instanceId, projectId, privKey = PINNED_CP_PRIVATE_KEY) {
+function writeProvenance(dir, instanceId, projectId, privKey = DEFAULT_CP_KEY) {
   let realDir = dir;
   try { realDir = fs.realpathSync(dir); } catch (_) {}
   const now = Date.now();
@@ -105,7 +102,13 @@ function makeDisposableDir(opts = {}) {
 }
 
 function runCli(env = {}, extraArgs = []) {
-  const mergedEnv = { ...process.env, ...env };
+  const mergedEnv = {
+    NODE_ENV: 'test',
+    ALLOW_TEST_CONTROL_PLANE_KEY: 'true',
+    TEST_CONTROL_PLANE_PUBLIC_KEY: EPHEMERAL_TEST_PUBLIC_KEY,
+    ...process.env,
+    ...env
+  };
   if (mergedEnv.DATA_DIR && dirSecretMap.has(mergedEnv.DATA_DIR) && !env.TEST_MISMATCH_INTENTIONAL) {
     const dirSecret = dirSecretMap.get(mergedEnv.DATA_DIR);
     if (!env.OPERATOR_TOKEN || env.OPERATOR_TOKEN.length >= 32) {

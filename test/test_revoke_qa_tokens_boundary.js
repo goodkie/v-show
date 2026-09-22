@@ -52,9 +52,19 @@ function runCase(name, fn) {
   }
 }
 
+// Ephemeral in-memory Ed25519 keypair for local test execution (NEVER committed or hardcoded)
+const { publicKey: _testPubKey, privateKey: _testPrivKey } = crypto.generateKeyPairSync('ed25519');
+const TEST_CP_PUBLIC_KEY = _testPubKey.export({ type: 'spki', format: 'pem' });
+const TEST_CP_PRIVATE_KEY = _testPrivKey;
+
 // Helper: run CLI as subprocess
 function runCliSubprocess(env, args = []) {
-  const mergedEnv = Object.assign({}, process.env, env);
+  const defaultEnv = {
+    NODE_ENV: 'test',
+    ALLOW_TEST_CONTROL_PLANE_KEY: 'true',
+    TEST_CONTROL_PLANE_PUBLIC_KEY: TEST_CP_PUBLIC_KEY
+  };
+  const mergedEnv = Object.assign({}, defaultEnv, process.env, env);
   const res = spawnSync(process.execPath, [CLI_SCRIPT, ...args], {
     env: mergedEnv,
     encoding: 'utf8'
@@ -72,10 +82,6 @@ const realVolumeDir = fs.realpathSync(tmpVolume);
 const INSTANCE_ID = 'inst-boundary-' + crypto.randomBytes(4).toString('hex');
 const HARNESS_SECRET = 'harness-secret-key-boundary-test-32chars';
 
-const PINNED_CP_PRIVATE_KEY = `-----BEGIN PRIVATE KEY-----
-MC4CAQAwBQYDK2VwBCIEICgeZ6NpZ8X9apjX+zUcjp/mqOlwmlm8QsDXHuco5JS/
------END PRIVATE KEY-----`;
-
 function writeFixtureDb(dbObject) {
   fs.writeFileSync(path.join(tmpVolume, 'db.json'), JSON.stringify(dbObject, null, 2), 'utf8');
 }
@@ -88,7 +94,7 @@ function writeValidMarker() {
 function writeValidProvenance(projectId) {
   const now = Date.now();
   const maxLifetimeMs = 3600000;
-  const sig = computeProvenanceSignature(INSTANCE_ID, realVolumeDir, projectId, 'ROTATE_QA_EDIT_TOKEN', now, maxLifetimeMs, PINNED_CP_PRIVATE_KEY, 'ed25519');
+  const sig = computeProvenanceSignature(INSTANCE_ID, realVolumeDir, projectId, 'ROTATE_QA_EDIT_TOKEN', now, maxLifetimeMs, TEST_CP_PRIVATE_KEY, 'ed25519');
   const prov = {
     volumeId: INSTANCE_ID,
     datastoreRealPath: realVolumeDir,
@@ -444,7 +450,7 @@ runCase('M4: Copied / Expired / Mismatched Attestation Fails Closed', () => {
     createdAt: now,
     maxLifetimeMs: 3600000,
     controlPlaneSignature: computeProvenanceSignature(
-      INSTANCE_ID, '/tmp/copied_from_another_volume', projectId, 'ROTATE_QA_EDIT_TOKEN', now, 3600000, PINNED_CP_PRIVATE_KEY, 'ed25519'
+      INSTANCE_ID, '/tmp/copied_from_another_volume', projectId, 'ROTATE_QA_EDIT_TOKEN', now, 3600000, TEST_CP_PRIVATE_KEY, 'ed25519'
     )
   };
   fs.writeFileSync(path.join(tmpVolume, '.disposable_qa_provenance.json'), JSON.stringify(mismatchPathProv, null, 2), 'utf8');
@@ -469,7 +475,7 @@ runCase('M4: Copied / Expired / Mismatched Attestation Fails Closed', () => {
     createdAt: now - 7200000, // 2 hours ago
     maxLifetimeMs: 3600000,   // 1 hour lifetime
     controlPlaneSignature: computeProvenanceSignature(
-      INSTANCE_ID, realVolumeDir, projectId, 'ROTATE_QA_EDIT_TOKEN', now - 7200000, 3600000, PINNED_CP_PRIVATE_KEY, 'ed25519'
+      INSTANCE_ID, realVolumeDir, projectId, 'ROTATE_QA_EDIT_TOKEN', now - 7200000, 3600000, TEST_CP_PRIVATE_KEY, 'ed25519'
     )
   };
   fs.writeFileSync(path.join(tmpVolume, '.disposable_qa_provenance.json'), JSON.stringify(expiredProv, null, 2), 'utf8');
@@ -494,7 +500,7 @@ runCase('M4: Copied / Expired / Mismatched Attestation Fails Closed', () => {
     createdAt: now,
     maxLifetimeMs: 3600000,
     controlPlaneSignature: computeProvenanceSignature(
-      INSTANCE_ID, realVolumeDir, 'prj-test-different', 'ROTATE_QA_EDIT_TOKEN', now, 3600000, PINNED_CP_PRIVATE_KEY, 'ed25519'
+      INSTANCE_ID, realVolumeDir, 'prj-test-different', 'ROTATE_QA_EDIT_TOKEN', now, 3600000, TEST_CP_PRIVATE_KEY, 'ed25519'
     )
   };
   fs.writeFileSync(path.join(tmpVolume, '.disposable_qa_provenance.json'), JSON.stringify(mismatchProjectProv, null, 2), 'utf8');
@@ -508,6 +514,51 @@ runCase('M4: Copied / Expired / Mismatched Attestation Fails Closed', () => {
   });
   assert.strictEqual(res4c.code, 3, 'Project mismatch must exit 3');
   assert.ok(res4c.stderr.includes('Provenance projectId mismatch'), 'stderr must report projectId mismatch');
+});
+
+// ─── M5: ChatGPT P0 Mandatory: Untrusted / Repo-Known Key Refused Against Pinned Trust Anchor ──
+runCase('M5: Untrusted / self-generated keys strictly refused when pinned trust anchor enforced', () => {
+  const projectId = 'prj-test-m5';
+  writeFixtureDb({
+    projects: [{ id: projectId, editToken: 'initial-m5-token' }]
+  });
+
+  // Generate an arbitrary unauthorized keypair
+  const { privateKey: roguePrivKey } = crypto.generateKeyPairSync('ed25519');
+  const now = Date.now();
+  const sig = computeProvenanceSignature(
+    INSTANCE_ID, realVolumeDir, projectId, 'ROTATE_QA_EDIT_TOKEN', now, 3600000, roguePrivKey, 'ed25519'
+  );
+  const rogueProv = {
+    volumeId: INSTANCE_ID,
+    datastoreRealPath: realVolumeDir,
+    projectId,
+    operation: 'ROTATE_QA_EDIT_TOKEN',
+    algorithm: 'ed25519',
+    createdAt: now,
+    maxLifetimeMs: 3600000,
+    controlPlaneSignature: sig
+  };
+  fs.writeFileSync(path.join(tmpVolume, '.disposable_qa_provenance.json'), JSON.stringify(rogueProv, null, 2), 'utf8');
+
+  // Explicitly run with ALLOW_TEST_CONTROL_PLANE_KEY='false' and empty TEST_CONTROL_PLANE_PUBLIC_KEY
+  // to enforce the production PINNED_CONTROL_PLANE_PUBLIC_KEY trust anchor
+  const resM5 = runCliSubprocess({
+    TEST_PROJECT_ID: projectId,
+    DATA_DIR: tmpVolume,
+    DISPOSABLE_INSTANCE_ID: INSTANCE_ID,
+    OPERATOR_TOKEN: HARNESS_SECRET,
+    QA_HARNESS_SECRET: HARNESS_SECRET,
+    ALLOWED_QA_DATA_DIRS: os.tmpdir(),
+    ALLOW_TEST_CONTROL_PLANE_KEY: 'false',
+    TEST_CONTROL_PLANE_PUBLIC_KEY: ''
+  });
+
+  assert.strictEqual(resM5.code, 3, 'Must fail closed (exit 3) when signed by untrusted key against pinned trust anchor');
+  assert.ok(
+    resM5.stderr.includes('Provenance attestation asymmetric Ed25519 signature verification failed'),
+    `stderr must state signature verification failed. Got: ${resM5.stderr}`
+  );
 });
 
 // Clean up

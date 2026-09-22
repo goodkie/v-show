@@ -39,8 +39,18 @@ async function runTest(name, fn) {
   }
 }
 
+// Ephemeral in-memory Ed25519 keypair for local test execution (NEVER committed or hardcoded)
+const { publicKey: _testPubKey, privateKey: _testPrivKey } = crypto.generateKeyPairSync('ed25519');
+const TEST_CP_PUBLIC_KEY = _testPubKey.export({ type: 'spki', format: 'pem' });
+const TEST_CP_PRIVATE_KEY = _testPrivKey;
+
 function runCliSubprocess(env, args = []) {
-  const mergedEnv = Object.assign({}, process.env, env);
+  const defaultEnv = {
+    NODE_ENV: 'test',
+    ALLOW_TEST_CONTROL_PLANE_KEY: 'true',
+    TEST_CONTROL_PLANE_PUBLIC_KEY: TEST_CP_PUBLIC_KEY
+  };
+  const mergedEnv = Object.assign({}, defaultEnv, process.env, env);
   const res = spawnSync(process.execPath, [CLI_SCRIPT, ...args], {
     env: mergedEnv,
     encoding: 'utf8'
@@ -128,9 +138,6 @@ function startDisposableServer(dataDir) {
   const PROJECT_ID = 'prj-test-session';
   const OLD_TOKEN = 'edit-tok-initial-' + crypto.randomBytes(16).toString('hex');
   const HARNESS_SECRET = 'harness-secret-session-test-32chars-long';
-  const PINNED_CP_PRIVATE_KEY = `-----BEGIN PRIVATE KEY-----
-MC4CAQAwBQYDK2VwBCIEICgeZ6NpZ8X9apjX+zUcjp/mqOlwmlm8QsDXHuco5JS/
------END PRIVATE KEY-----`;
 
   // Seed DB
   const initialDb = {
@@ -148,7 +155,7 @@ MC4CAQAwBQYDK2VwBCIEICgeZ6NpZ8X9apjX+zUcjp/mqOlwmlm8QsDXHuco5JS/
   fs.writeFileSync(path.join(tmpDir, '.disposable_qa_marker'), `${INSTANCE_ID}:${sig}`, 'utf8');
 
   const now = Date.now();
-  const provSig = computeProvenanceSignature(INSTANCE_ID, realDir, PROJECT_ID, 'ROTATE_QA_EDIT_TOKEN', now, 3600000, PINNED_CP_PRIVATE_KEY, 'ed25519');
+  const provSig = computeProvenanceSignature(INSTANCE_ID, realDir, PROJECT_ID, 'ROTATE_QA_EDIT_TOKEN', now, 3600000, TEST_CP_PRIVATE_KEY, 'ed25519');
   fs.writeFileSync(path.join(tmpDir, '.disposable_qa_provenance.json'), JSON.stringify({
     volumeId: INSTANCE_ID,
     datastoreRealPath: realDir,

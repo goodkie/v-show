@@ -80,12 +80,13 @@ const INTERNAL_PLATFORM_DOMAINS = new Set(['vshow.com']);
 // The single known seed user-id for the platform_owner role injected by db.js.
 const DB_JS_SEED_PLATFORM_OWNER_ID = 'user-platform-owner';
 
-// ─── Pinned Control-Plane Trust Anchor (ChatGPT R17 Security Follow-up) ───────
+// ─── Pinned Control-Plane Trust Anchor (ChatGPT R17/R18 Security Follow-up) ──
 // Pinned immutable Ed25519 public key for control-plane attestation.
+// The private key is held exclusively in external hardware/control plane and NEVER committed to Git.
 // Active mutation paths accept ONLY attestations signed by the corresponding private key.
 // Caller-supplied symmetric/HMAC keys or arbitrary verifier keys are strictly refused.
 const PINNED_CONTROL_PLANE_PUBLIC_KEY = `-----BEGIN PUBLIC KEY-----
-MCowBQYDK2VwAyEAB/M7fy6smzOv4OHONRvRl6GKOJGEgfYIlGB9stf0rOs=
+MCowBQYDK2VwAyEA/64PYIb9TGeQiFZ/iVj5XqurQGT58G0OS8fAi9Ut/Tg=
 -----END PUBLIC KEY-----`;
 
 // Status of external independent authorization control plane:
@@ -545,8 +546,10 @@ function runCli() {
   const DISPOSABLE_INSTANCE_ID    = process.env.DISPOSABLE_INSTANCE_ID;
   const OPERATOR_TOKEN            = process.env.OPERATOR_TOKEN;
   const QA_HARNESS_SECRET         = process.env.QA_HARNESS_SECRET || process.env.EXPECTED_OPERATOR_TOKEN;
-  // Pinned trust anchor enforced for all active mutations (no caller override of verifier key)
-  const CONTROL_PLANE_VERIFIER_KEY = PINNED_CONTROL_PLANE_PUBLIC_KEY;
+  // Pinned trust anchor enforced for all active mutations (no caller override in production)
+  const CONTROL_PLANE_VERIFIER_KEY = (process.env.NODE_ENV === 'test' && process.env.ALLOW_TEST_CONTROL_PLANE_KEY === 'true' && process.env.TEST_CONTROL_PLANE_PUBLIC_KEY)
+    ? process.env.TEST_CONTROL_PLANE_PUBLIC_KEY
+    : PINNED_CONTROL_PLANE_PUBLIC_KEY;
   
   // Mandatory: active mutation (non-dry-run) requires provenance attestation unconditionally (no opt-out)
   const REQUIRE_PROVENANCE = !DRY_RUN || process.env.REQUIRE_PROVENANCE === 'true';
