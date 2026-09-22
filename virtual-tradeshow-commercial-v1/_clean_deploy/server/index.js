@@ -1466,6 +1466,10 @@ function getReqCookie(req, name) {
 // SECURITY: Static editToken seeds removed. Tokens are generated as cryptographically
 // random disposables at runtime, scoped strictly to the current DISPOSABLE_INSTANCE_ID.
 // This function MUST NOT be called in production/non-test contexts.
+
+// Tracks the dynamically generated foreign-tenant sandbox project ID for test introspection only
+let _sandboxForeignProjectId = null;
+
 function ensureAuthoritativeQaProject() {
   const isTestSandbox = process.env.NODE_ENV === 'test' && !!process.env.DISPOSABLE_INSTANCE_ID;
   if (!isTestSandbox) {
@@ -1477,10 +1481,15 @@ function ensureAuthoritativeQaProject() {
   }
   const crypto = require('crypto');
   try {
+    // Generate a per-run disposable foreign tenant ID
+    const foreignTenantId = 'prj-foreign-' + crypto.randomBytes(8).toString('hex');
+    _sandboxForeignProjectId = foreignTenantId;
+
     const projectsToProvision = [
       {
-        id: process.env.TEST_PROJECT_ID || 'prj-free-b0c6f3ea',
-        name: 'Stage2 QA Sandbox Project',
+        // FAIL-CLOSED: TEST_PROJECT_ID must be explicitly provided — no static fallback
+        id: process.env.TEST_PROJECT_ID || (() => { throw new Error('FAIL_CLOSED: TEST_PROJECT_ID must be set explicitly for QA sandbox provisioning.'); })()
+,        name: 'Stage2 QA Sandbox Project',
         company: 'QA Sandbox',
         contactEmail: 'qa-sandbox@internal.test',
         customerEmail: 'qa-sandbox@internal.test',
@@ -1488,7 +1497,8 @@ function ensureAuthoritativeQaProject() {
         editToken: crypto.randomBytes(24).toString('hex')
       },
       {
-        id: 'prj-free-aeb87eb4',
+        // Disposable foreign-tenant ID generated per sandbox run — never a fixed QA project ID
+        id: foreignTenantId,
         name: 'Stage2 QA Foreign Tenant Sandbox',
         company: 'QA Foreign Tenant',
         contactEmail: 'foreign-qa@internal.test',
@@ -1537,6 +1547,20 @@ function ensureAuthoritativeQaProject() {
 if (process.env.NODE_ENV === 'test' && process.env.DISPOSABLE_INSTANCE_ID) {
   ensureAuthoritativeQaProject();
 }
+
+// Test-sandbox-only introspection endpoint: exposes disposable sandbox project IDs for test harness use
+// Strictly gated: only reachable when NODE_ENV=test AND DISPOSABLE_INSTANCE_ID present
+app.get('/api/test/qa-sandbox-meta', (req, res) => {
+  if (process.env.NODE_ENV !== 'test' || !process.env.DISPOSABLE_INSTANCE_ID) {
+    return res.status(404).json({ error: 'Not found' });
+  }
+  res.json({
+    instanceId: process.env.DISPOSABLE_INSTANCE_ID,
+    primaryProjectId: process.env.TEST_PROJECT_ID || null,
+    foreignProjectId: _sandboxForeignProjectId || null
+  });
+});
+
 
 
 function verifyQaAccess(req) {

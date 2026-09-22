@@ -842,7 +842,12 @@ async function runRealGenerationPipelineTests() {
     assert.ok(createdCandidateId);
     const testNegativeCandIds = [];
     const privateArtifactsRoot = path.join(ACTIVE_DATA_DIR, 'panorama_artifacts');
-    const foreignProjectId = 'prj-free-aeb87eb4';
+    // Dynamically resolve disposable foreign-tenant project ID from sandbox meta endpoint
+    // This avoids any static QA project ID dependency
+    const sandboxMetaRes = await makeHttpRequest('GET', '/api/test/qa-sandbox-meta');
+    const foreignProjectId = sandboxMetaRes.json && sandboxMetaRes.json.foreignProjectId;
+    assert.ok(foreignProjectId && foreignProjectId.startsWith('prj-foreign-'), `[20] qa-sandbox-meta must return a valid disposable foreignProjectId, got: ${foreignProjectId}`);
+
 
     try {
       // Negative Auth: Unauthorized candidate retrieval without token rejected (403)
