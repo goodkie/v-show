@@ -35,10 +35,30 @@ function mkTmp(prefix = 'cli_test_') {
 }
 
 const dirSecretMap = new Map();
+const DEFAULT_CP_KEY = 'cp-master-control-plane-secret-key-32c';
 
 function computeMarkerSignature(instanceId, secret) {
   if (!secret) return '';
   return crypto.createHmac('sha256', secret).update(instanceId).digest('hex').slice(0, 32);
+}
+
+function writeProvenance(dir, instanceId, projectId, cpKey = DEFAULT_CP_KEY) {
+  let realDir = dir;
+  try { realDir = fs.realpathSync(dir); } catch (_) {}
+  const now = Date.now();
+  const lifetime = 3600000;
+  const payload = `${instanceId}:${realDir}:${projectId}:ROTATE_QA_EDIT_TOKEN:${now}:${lifetime}`;
+  const sig = crypto.createHmac('sha256', cpKey).update(payload, 'utf8').digest('hex');
+  const prov = {
+    volumeId: instanceId,
+    datastoreRealPath: realDir,
+    projectId: projectId,
+    operation: 'ROTATE_QA_EDIT_TOKEN',
+    createdAt: now,
+    maxLifetimeMs: lifetime,
+    controlPlaneSignature: sig
+  };
+  fs.writeFileSync(path.join(dir, '.disposable_qa_provenance.json'), JSON.stringify(prov, null, 2), 'utf8');
 }
 
 function makeDisposableDir(opts = {}) {
@@ -59,6 +79,12 @@ function makeDisposableDir(opts = {}) {
 
   dirSecretMap.set(dir, secret);
   fs.writeFileSync(path.join(dir, '.disposable_qa_marker'), markerContent, 'utf8');
+
+  // Control-plane immutable provenance attestation
+  if (opts.provenance !== false) {
+    writeProvenance(dir, instanceId, projectId, opts.cpKey || DEFAULT_CP_KEY);
+  }
+
   const db = { projects: [{ id: projectId, editToken: token, name: 'QA Test Project' }] };
   if (opts.extraProjects) db.projects.push(...opts.extraProjects);
   if (opts.users) db.users = opts.users;
@@ -81,6 +107,11 @@ function runCli(env = {}, extraArgs = []) {
       mergedEnv.QA_HARNESS_SECRET = mergedEnv.OPERATOR_TOKEN;
     }
   }
+
+  if (!mergedEnv.CONTROL_PLANE_VERIFIER_KEY && !mergedEnv.CONTROL_PLANE_PUBLIC_KEY && env.CONTROL_PLANE_VERIFIER_KEY !== null) {
+    mergedEnv.CONTROL_PLANE_VERIFIER_KEY = DEFAULT_CP_KEY;
+  }
+
   const result = spawnSync(NODE, [SCRIPT, ...extraArgs], {
     env: mergedEnv,
     encoding: 'utf8',
@@ -645,6 +676,7 @@ test('T17: Customer & Owner DB Refusal Gate — strictly rejects non-test projec
   const dirA = mkTmp();
   const sigA = computeMarkerSignature('inst-refusal-a', secretKey);
   fs.writeFileSync(path.join(dirA, '.disposable_qa_marker'), `inst-refusal-a:${sigA}`, 'utf8');
+  writeProvenance(dirA, 'inst-refusal-a', 'prj-test-1234');
   const dbA = {
     projects: [
       { id: 'prj-test-1234', editToken: 'tok-test' },
@@ -674,6 +706,7 @@ test('T17: Customer & Owner DB Refusal Gate — strictly rejects non-test projec
   const dirB = mkTmp();
   const sigB = computeMarkerSignature('inst-refusal-b', secretKey);
   fs.writeFileSync(path.join(dirB, '.disposable_qa_marker'), `inst-refusal-b:${sigB}`, 'utf8');
+  writeProvenance(dirB, 'inst-refusal-b', 'prj-test-valid');
   const dbB = {
     projects: [{ id: 'prj-test-valid', editToken: 'tok-test' }],
     users: [{ id: 'user-1', email: 'owner@vshow.com', role: 'platform_owner' }]
@@ -832,6 +865,7 @@ test('T19: Cryptographic HMAC Disposable Marker & Secret Enforcement', () => {
 
   // Subcase 4: Valid signature on marker
   fs.writeFileSync(path.join(dir, '.disposable_qa_marker'), `${instId}:${validSig}`, 'utf8');
+  writeProvenance(dir, instId, projectId);
   const r4 = runCli({
     TEST_PROJECT_ID:        projectId,
     DATA_DIR:               dir,

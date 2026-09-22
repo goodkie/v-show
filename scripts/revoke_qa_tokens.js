@@ -367,18 +367,22 @@ function verifyMarker(markerPath, expectedInstanceId, secret) {
 }
 
 /**
- * computeProvenanceSignature — HMAC-SHA256 signature for control-plane immutable binding.
+ * computeProvenanceSignature — Signs control-plane immutable binding via Ed25519 or HMAC-SHA256.
  */
-function computeProvenanceSignature(volumeId, datastoreRealPath, projectId, operation, createdAt, maxLifetimeMs, secret) {
+function computeProvenanceSignature(volumeId, datastoreRealPath, projectId, operation, createdAt, maxLifetimeMs, signingKey, algorithm = 'hmac') {
   const payload = `${volumeId}:${datastoreRealPath}:${projectId}:${operation}:${createdAt}:${maxLifetimeMs}`;
-  return crypto.createHmac('sha256', secret).update(payload, 'utf8').digest('hex');
+  if (algorithm === 'ed25519' || (signingKey && typeof signingKey === 'object' && signingKey.type === 'private')) {
+    return crypto.sign(null, Buffer.from(payload, 'utf8'), signingKey).toString('hex');
+  }
+  return crypto.createHmac('sha256', signingKey).update(payload, 'utf8').digest('hex');
 }
 
 /**
  * verifyProvenanceBinding — validates control-plane per-run immutable volume binding.
  * Strictly prevents copied/relabeled DBs or caller-colluded tokens from satisfying authorization.
+ * Supports both asymmetric Ed25519 verification and HMAC-SHA256.
  */
-function verifyProvenanceBinding(provenancePath, expectedDataDir, expectedInstanceId, expectedProjectId, controlPlaneSecret) {
+function verifyProvenanceBinding(provenancePath, expectedDataDir, expectedInstanceId, expectedProjectId, verifierKey) {
   if (!fs.existsSync(provenancePath)) {
     return { ok: false, err: '.disposable_qa_provenance.json missing (control-plane immutable binding required)' };
   }
@@ -426,11 +430,28 @@ function verifyProvenanceBinding(provenancePath, expectedDataDir, expectedInstan
     }
   }
 
-  // Cryptographic signature check
-  if (controlPlaneSecret) {
-    const expectedSig = computeProvenanceSignature(
-      prov.volumeId, prov.datastoreRealPath, prov.projectId, prov.operation, prov.createdAt, maxLifetimeMs, controlPlaneSecret
-    );
+  // Cryptographic signature check (mandatory verifier key)
+  if (!verifierKey) {
+    return { ok: false, err: 'No control-plane verification key provided (fail-closed)' };
+  }
+
+  const payload = `${prov.volumeId}:${prov.datastoreRealPath}:${prov.projectId}:${prov.operation}:${prov.createdAt}:${maxLifetimeMs}`;
+  if (prov.algorithm === 'ed25519' || (typeof verifierKey === 'string' && verifierKey.includes('PUBLIC KEY')) || (typeof verifierKey === 'object' && verifierKey.type === 'public')) {
+    try {
+      const verified = crypto.verify(
+        null,
+        Buffer.from(payload, 'utf8'),
+        verifierKey,
+        Buffer.from(prov.controlPlaneSignature, 'hex')
+      );
+      if (!verified) {
+        return { ok: false, err: 'Provenance attestation asymmetric Ed25519 signature verification failed' };
+      }
+    } catch (e) {
+      return { ok: false, err: `Asymmetric signature verification error: ${e.message}` };
+    }
+  } else {
+    const expectedSig = crypto.createHmac('sha256', verifierKey).update(payload, 'utf8').digest('hex');
     if (prov.controlPlaneSignature !== expectedSig) {
       return { ok: false, err: 'Provenance attestation control-plane signature verification failed' };
     }
@@ -439,9 +460,6 @@ function verifyProvenanceBinding(provenancePath, expectedDataDir, expectedInstan
   return { ok: true, provenance: prov };
 }
 
-/**
- * inspectDatastoreSafety — deep inspection to strictly refuse copied customer/production DBs.
- */
 function inspectDatastoreSafety(dbData) {
   if (Array.isArray(dbData.projects)) {
     for (const proj of dbData.projects) {
@@ -505,12 +523,14 @@ function inspectDatastoreSafety(dbData) {
 
 // ─── CLI Runner ─────────────────────────────────────────────────────────────
 function runCli() {
-  const TEST_PROJECT_ID        = process.env.TEST_PROJECT_ID;
-  const DISPOSABLE_INSTANCE_ID = process.env.DISPOSABLE_INSTANCE_ID;
-  const OPERATOR_TOKEN         = process.env.OPERATOR_TOKEN;
-  const QA_HARNESS_SECRET      = process.env.QA_HARNESS_SECRET || process.env.EXPECTED_OPERATOR_TOKEN;
-  const CONTROL_PLANE_SECRET   = process.env.CONTROL_PLANE_SECRET;
-  const REQUIRE_PROVENANCE     = process.env.REQUIRE_PROVENANCE === 'true' || Boolean(CONTROL_PLANE_SECRET);
+  const TEST_PROJECT_ID           = process.env.TEST_PROJECT_ID;
+  const DISPOSABLE_INSTANCE_ID    = process.env.DISPOSABLE_INSTANCE_ID;
+  const OPERATOR_TOKEN            = process.env.OPERATOR_TOKEN;
+  const QA_HARNESS_SECRET         = process.env.QA_HARNESS_SECRET || process.env.EXPECTED_OPERATOR_TOKEN;
+  const CONTROL_PLANE_VERIFIER_KEY = process.env.CONTROL_PLANE_PUBLIC_KEY || process.env.CONTROL_PLANE_VERIFIER_KEY || process.env.CONTROL_PLANE_SECRET;
+  
+  // Mandatory: active mutation (non-dry-run) requires provenance attestation unconditionally (no opt-out)
+  const REQUIRE_PROVENANCE = !DRY_RUN || process.env.REQUIRE_PROVENANCE === 'true' || Boolean(CONTROL_PLANE_VERIFIER_KEY);
 
   const { resolved: DATA_DIR, err: dataDirErr } = validateDataDir(
     CLI_DB || process.env.DATA_DIR,
@@ -529,16 +549,22 @@ function runCli() {
   if (OPERATOR_TOKEN && (new Set(OPERATOR_TOKEN.split('')).size < 8 || OPERATOR_TOKEN === TEST_PROJECT_ID))
                                       errors.push('OPERATOR_TOKEN has insufficient entropy or matches project ID');
 
-  // External Authorization Requirement: In active (non-dry-run) mode, QA_HARNESS_SECRET is mandatory
-  if (!DRY_RUN && !QA_HARNESS_SECRET) {
-    errors.push('QA_HARNESS_SECRET (or EXPECTED_OPERATOR_TOKEN) env var required in active mode (fail-closed against self-asserted tokens)');
+  // External Authorization & Provenance Requirements: In active mutation mode, both are strictly mandatory
+  if (!DRY_RUN) {
+    if (!QA_HARNESS_SECRET) {
+      errors.push('QA_HARNESS_SECRET (or EXPECTED_OPERATOR_TOKEN) env var is mandatory in active mutation mode (no opt-out permitted)');
+    }
+    if (!CONTROL_PLANE_VERIFIER_KEY) {
+      errors.push('CONTROL_PLANE_PUBLIC_KEY (or CONTROL_PLANE_VERIFIER_KEY) is mandatory in active mutation mode (no opt-out permitted)');
+    }
   }
+
   if (QA_HARNESS_SECRET && OPERATOR_TOKEN !== QA_HARNESS_SECRET) {
     errors.push('OPERATOR_TOKEN does not match server-verified QA_HARNESS_SECRET');
   }
 
-  // Separation of duties: Control plane signing key must NEVER match operator token
-  if (CONTROL_PLANE_SECRET && OPERATOR_TOKEN === CONTROL_PLANE_SECRET) {
+  // Separation of duties: Control plane verifier key must NEVER match operator token
+  if (CONTROL_PLANE_VERIFIER_KEY && OPERATOR_TOKEN === CONTROL_PLANE_VERIFIER_KEY) {
     errors.push('OPERATOR_TOKEN must be distinct from CONTROL_PLANE_SECRET (two-party separation of duty required)');
   }
 
@@ -563,7 +589,7 @@ function runCli() {
   }
 
   if (REQUIRE_PROVENANCE) {
-    const provCheck = verifyProvenanceBinding(PROVENANCE_PATH, DATA_DIR, DISPOSABLE_INSTANCE_ID, TEST_PROJECT_ID, CONTROL_PLANE_SECRET);
+    const provCheck = verifyProvenanceBinding(PROVENANCE_PATH, DATA_DIR, DISPOSABLE_INSTANCE_ID, TEST_PROJECT_ID, CONTROL_PLANE_VERIFIER_KEY);
     if (!provCheck.ok) {
       process.stderr.write(`[REVOKE_QA_TOKENS] ABORT: ${provCheck.err}.\n  Control-plane provenance binding failed.\n`);
       process.exit(3);
@@ -594,7 +620,7 @@ function runCli() {
     }
 
     if (REQUIRE_PROVENANCE) {
-      const underLockProvCheck = verifyProvenanceBinding(PROVENANCE_PATH, DATA_DIR, DISPOSABLE_INSTANCE_ID, TEST_PROJECT_ID, CONTROL_PLANE_SECRET);
+      const underLockProvCheck = verifyProvenanceBinding(PROVENANCE_PATH, DATA_DIR, DISPOSABLE_INSTANCE_ID, TEST_PROJECT_ID, CONTROL_PLANE_VERIFIER_KEY);
       if (!underLockProvCheck.ok) {
         process.stderr.write(`[REVOKE_QA_TOKENS] ABORT (under lock): ${underLockProvCheck.err}\n`);
         return 3;
@@ -1136,8 +1162,8 @@ function runSelfTests() {
     releaseLock(lockDir, otherTok);
   });
 
-  // T22: verifyProvenanceBinding validates control-plane per-run binding and rejects copied/tampered provenance
-  test('verifyProvenanceBinding validates control-plane binding and rejects forged/expired tokens', () => {
+  // T22: verifyProvenanceBinding validates HMAC & Ed25519 asymmetric control-plane binding
+  test('verifyProvenanceBinding validates HMAC & Ed25519 signatures and rejects forged/expired tokens', () => {
     const provPath = path.join(tmpDir, '.disposable_qa_provenance.json');
     const vId = 'vol-test-999';
     const pId = 'prj-test-provenance';
@@ -1149,46 +1175,69 @@ function runSelfTests() {
     const r1 = verifyProvenanceBinding(provPath, tmpDir, vId, pId, cpSecret);
     assert.strictEqual(r1.ok, false, 'Missing provenance must fail');
 
-    // 2. Valid signed provenance -> pass
+    // 2. Valid signed HMAC provenance -> pass
     const now = Date.now();
-    const sig = computeProvenanceSignature(vId, realDir, pId, op, now, 3600000, cpSecret);
-    const validProv = {
+    const sigHmac = computeProvenanceSignature(vId, realDir, pId, op, now, 3600000, cpSecret);
+    const validHmacProv = {
       volumeId: vId,
       datastoreRealPath: realDir,
       projectId: pId,
       operation: op,
       createdAt: now,
       maxLifetimeMs: 3600000,
-      controlPlaneSignature: sig
+      controlPlaneSignature: sigHmac
     };
-    fs.writeFileSync(provPath, JSON.stringify(validProv), 'utf8');
+    fs.writeFileSync(provPath, JSON.stringify(validHmacProv), 'utf8');
     const r2 = verifyProvenanceBinding(provPath, tmpDir, vId, pId, cpSecret);
-    assert.strictEqual(r2.ok, true, 'Valid provenance must pass');
+    assert.strictEqual(r2.ok, true, 'Valid HMAC provenance must pass');
 
-    // 3. Copied/relabeled datastore (path mismatch) -> fail
-    const r3 = verifyProvenanceBinding(provPath, os.tmpdir(), vId, pId, cpSecret);
-    assert.strictEqual(r3.ok, false, 'Path mismatch (copied DB) must fail');
+    // 3. Valid signed Asymmetric Ed25519 provenance -> pass
+    const { publicKey, privateKey } = crypto.generateKeyPairSync('ed25519');
+    const sigEd25519 = computeProvenanceSignature(vId, realDir, pId, op, now, 3600000, privateKey, 'ed25519');
+    const validEd25519Prov = {
+      volumeId: vId,
+      datastoreRealPath: realDir,
+      projectId: pId,
+      operation: op,
+      algorithm: 'ed25519',
+      createdAt: now,
+      maxLifetimeMs: 3600000,
+      controlPlaneSignature: sigEd25519
+    };
+    fs.writeFileSync(provPath, JSON.stringify(validEd25519Prov), 'utf8');
+    const r3 = verifyProvenanceBinding(provPath, tmpDir, vId, pId, publicKey);
+    assert.strictEqual(r3.ok, true, 'Valid Ed25519 provenance must pass with public key');
 
-    // 4. Project mismatch -> fail
-    const r4 = verifyProvenanceBinding(provPath, tmpDir, vId, 'prj-test-other', cpSecret);
-    assert.strictEqual(r4.ok, false, 'Project mismatch must fail');
-
-    // 5. Forged signature -> fail
-    const forgedProv = Object.assign({}, validProv, { controlPlaneSignature: 'forged_deadbeef' });
+    // 4. Forged Ed25519 signature from untrusted private key -> fail against legitimate public key
+    const { privateKey: untrustedKey } = crypto.generateKeyPairSync('ed25519');
+    const forgedSig = computeProvenanceSignature(vId, realDir, pId, op, now, 3600000, untrustedKey, 'ed25519');
+    const forgedProv = Object.assign({}, validEd25519Prov, { controlPlaneSignature: forgedSig });
     fs.writeFileSync(provPath, JSON.stringify(forgedProv), 'utf8');
-    const r5 = verifyProvenanceBinding(provPath, tmpDir, vId, pId, cpSecret);
-    assert.strictEqual(r5.ok, false, 'Forged signature must fail');
+    const r4 = verifyProvenanceBinding(provPath, tmpDir, vId, pId, publicKey);
+    assert.strictEqual(r4.ok, false, 'Forged Ed25519 signature must fail against control-plane public key');
 
-    // 6. Expired token -> fail
-    const expiredProv = Object.assign({}, validProv, {
+    // 5. Expired token -> fail
+    const expiredProv = Object.assign({}, validHmacProv, {
       createdAt: now - 7200000,
       maxLifetimeMs: 3600000,
       controlPlaneSignature: computeProvenanceSignature(vId, realDir, pId, op, now - 7200000, 3600000, cpSecret)
     });
     fs.writeFileSync(provPath, JSON.stringify(expiredProv), 'utf8');
-    const r6 = verifyProvenanceBinding(provPath, tmpDir, vId, pId, cpSecret);
-    assert.strictEqual(r6.ok, false, 'Expired provenance must fail');
+    const r5 = verifyProvenanceBinding(provPath, tmpDir, vId, pId, cpSecret);
+    assert.strictEqual(r5.ok, false, 'Expired provenance must fail');
 
+    fs.unlinkSync(provPath);
+  });
+
+  // T23: verifyProvenanceBinding strictly fails closed if no verifier key is provided
+  test('verifyProvenanceBinding fails closed if no verification key provided', () => {
+    const provPath = path.join(tmpDir, '.disposable_qa_provenance.json');
+    fs.writeFileSync(provPath, JSON.stringify({
+      volumeId: 'v1', datastoreRealPath: fs.realpathSync(tmpDir), projectId: 'prj-test-1', operation: 'ROTATE_QA_EDIT_TOKEN'
+    }), 'utf8');
+    const res = verifyProvenanceBinding(provPath, tmpDir, 'v1', 'prj-test-1', null);
+    assert.strictEqual(res.ok, false, 'Must fail closed when verifierKey is null/empty');
+    assert.ok(res.err.includes('No control-plane verification key provided'), 'Error must specify missing verifier key');
     fs.unlinkSync(provPath);
   });
 

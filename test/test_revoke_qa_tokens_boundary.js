@@ -2,8 +2,13 @@
 /**
  * test/test_revoke_qa_tokens_boundary.js
  *
- * Standalone, reproducible 9-case safety boundary test suite (N1–N7, P1–P2)
- * plus Provenance Negatives (PN1–PN2) for revoke_qa_tokens.js.
+ * Standalone, reproducible safety boundary test suite (N1–N7, P1–P2)
+ * plus ChatGPT P0 Mandatory Negative Verification Suite (M1–M4):
+ *
+ * M1: Missing provenance file or missing control-plane verifier key fails closed (exit 2 or 3).
+ * M2: Missing trusted operator verifier (QA_HARNESS_SECRET) or token mismatch fails closed (exit 2).
+ * M3: Caller-supplied distinct arbitrary keys cannot mint/authorize provenance (asymmetric Ed25519 verification fails, exit 3).
+ * M4: Copied/relabeled volume, expired lifetime, or project-mismatched attestation fails closed (exit 3).
  *
  * Runs BOTH:
  *  1) Direct in-process assertions against inspectDatastoreSafety() & verifyProvenanceBinding()
@@ -65,9 +70,12 @@ function runCliSubprocess(env, args = []) {
 const tmpVolume = fs.mkdtempSync(path.join(os.tmpdir(), 'vshow_boundary_test_'));
 const realVolumeDir = fs.realpathSync(tmpVolume);
 const INSTANCE_ID = 'inst-boundary-' + crypto.randomBytes(4).toString('hex');
-const HARNESS_SECRET = 'harness-secret-key-boundary-test-32c';
-const CP_SECRET = 'control-plane-master-secret-key-32c';
-const VALID_OPERATOR_TOKEN = 'operator-auth-token-boundary-test-32c';
+const HARNESS_SECRET = 'harness-secret-key-boundary-test-32chars';
+const CP_SECRET = 'control-plane-master-secret-key-32chars';
+
+// Generate Ed25519 control-plane keypair for asymmetric verification tests
+const { publicKey: CP_PUBLIC_KEY, privateKey: CP_PRIVATE_KEY } = crypto.generateKeyPairSync('ed25519');
+const CP_PUBLIC_KEY_PEM = CP_PUBLIC_KEY.export({ type: 'spki', format: 'pem' });
 
 function writeFixtureDb(dbObject) {
   fs.writeFileSync(path.join(tmpVolume, 'db.json'), JSON.stringify(dbObject, null, 2), 'utf8');
@@ -106,12 +114,14 @@ runCase('N1: platform_owner role with non-seed user ID (lookalike email)', () =>
   assert.ok(reason && reason.includes('Target DB contains platform owner account'), `Must reject non-seed platform_owner. Got: ${reason}`);
 
   writeFixtureDb(fixture);
+  writeValidProvenance('prj-test-n1');
   const cliRes = runCliSubprocess({
     TEST_PROJECT_ID: 'prj-test-n1',
     DATA_DIR: tmpVolume,
     DISPOSABLE_INSTANCE_ID: INSTANCE_ID,
     OPERATOR_TOKEN: HARNESS_SECRET,
     QA_HARNESS_SECRET: HARNESS_SECRET,
+    CONTROL_PLANE_VERIFIER_KEY: CP_SECRET,
     ALLOWED_QA_DATA_DIRS: os.tmpdir()
   });
   assert.strictEqual(cliRes.code, 3, 'CLI must exit 3 on refused DB');
@@ -128,12 +138,14 @@ runCase('N2: platform_owner role with unknown ID (user-fake-owner)', () => {
   assert.ok(reason && reason.includes('Target DB contains platform owner account (user-fake-owner)'), `Must reject unknown platform_owner. Got: ${reason}`);
 
   writeFixtureDb(fixture);
+  writeValidProvenance('prj-test-n2');
   const cliRes = runCliSubprocess({
     TEST_PROJECT_ID: 'prj-test-n2',
     DATA_DIR: tmpVolume,
     DISPOSABLE_INSTANCE_ID: INSTANCE_ID,
     OPERATOR_TOKEN: HARNESS_SECRET,
     QA_HARNESS_SECRET: HARNESS_SECRET,
+    CONTROL_PLANE_VERIFIER_KEY: CP_SECRET,
     ALLOWED_QA_DATA_DIRS: os.tmpdir()
   });
   assert.strictEqual(cliRes.code, 3);
@@ -150,12 +162,14 @@ runCase('N3: billing_admin role with internal vshow.com domain', () => {
   assert.ok(reason && reason.includes('privileged operational role (billing_admin)'), `Must reject billing_admin. Got: ${reason}`);
 
   writeFixtureDb(fixture);
+  writeValidProvenance('prj-test-n3');
   const cliRes = runCliSubprocess({
     TEST_PROJECT_ID: 'prj-test-n3',
     DATA_DIR: tmpVolume,
     DISPOSABLE_INSTANCE_ID: INSTANCE_ID,
     OPERATOR_TOKEN: HARNESS_SECRET,
     QA_HARNESS_SECRET: HARNESS_SECRET,
+    CONTROL_PLANE_VERIFIER_KEY: CP_SECRET,
     ALLOWED_QA_DATA_DIRS: os.tmpdir()
   });
   assert.strictEqual(cliRes.code, 3);
@@ -172,12 +186,14 @@ runCase('N4: customer user email domain (accountant@client-corp.com)', () => {
   assert.ok(reason && reason.includes('customer user email domain'), `Must reject customer email domain. Got: ${reason}`);
 
   writeFixtureDb(fixture);
+  writeValidProvenance('prj-test-n4');
   const cliRes = runCliSubprocess({
     TEST_PROJECT_ID: 'prj-test-n4',
     DATA_DIR: tmpVolume,
     DISPOSABLE_INSTANCE_ID: INSTANCE_ID,
     OPERATOR_TOKEN: HARNESS_SECRET,
     QA_HARNESS_SECRET: HARNESS_SECRET,
+    CONTROL_PLANE_VERIFIER_KEY: CP_SECRET,
     ALLOWED_QA_DATA_DIRS: os.tmpdir()
   });
   assert.strictEqual(cliRes.code, 3);
@@ -194,12 +210,14 @@ runCase('N5: non-seed commercial org ID (org-client-corp-xyz)', () => {
   assert.ok(reason && reason.includes('customer/commercial organization entity (org-client-corp-xyz)'), `Must reject non-seed org. Got: ${reason}`);
 
   writeFixtureDb(fixture);
+  writeValidProvenance('prj-test-n5');
   const cliRes = runCliSubprocess({
     TEST_PROJECT_ID: 'prj-test-n5',
     DATA_DIR: tmpVolume,
     DISPOSABLE_INSTANCE_ID: INSTANCE_ID,
     OPERATOR_TOKEN: HARNESS_SECRET,
     QA_HARNESS_SECRET: HARNESS_SECRET,
+    CONTROL_PLANE_VERIFIER_KEY: CP_SECRET,
     ALLOWED_QA_DATA_DIRS: os.tmpdir()
   });
   assert.strictEqual(cliRes.code, 3);
@@ -215,12 +233,14 @@ runCase('N6: non-prj-test project ID (prj-free-b0c6f3ea)', () => {
   assert.ok(reason && reason.includes('production/customer project (prj-free-b0c6f3ea)'), `Must reject non-test project. Got: ${reason}`);
 
   writeFixtureDb(fixture);
+  writeValidProvenance('prj-test-dummy');
   const cliRes = runCliSubprocess({
     TEST_PROJECT_ID: 'prj-test-dummy',
     DATA_DIR: tmpVolume,
     DISPOSABLE_INSTANCE_ID: INSTANCE_ID,
     OPERATOR_TOKEN: HARNESS_SECRET,
     QA_HARNESS_SECRET: HARNESS_SECRET,
+    CONTROL_PLANE_VERIFIER_KEY: CP_SECRET,
     ALLOWED_QA_DATA_DIRS: os.tmpdir()
   });
   assert.strictEqual(cliRes.code, 3);
@@ -236,12 +256,14 @@ runCase('N7: enterprise commercial tier project (prj-test-n7, tier: enterprise)'
   assert.ok(reason && reason.includes('commercial/production tier'), `Must reject enterprise tier. Got: ${reason}`);
 
   writeFixtureDb(fixture);
+  writeValidProvenance('prj-test-n7');
   const cliRes = runCliSubprocess({
     TEST_PROJECT_ID: 'prj-test-n7',
     DATA_DIR: tmpVolume,
     DISPOSABLE_INSTANCE_ID: INSTANCE_ID,
     OPERATOR_TOKEN: HARNESS_SECRET,
     QA_HARNESS_SECRET: HARNESS_SECRET,
+    CONTROL_PLANE_VERIFIER_KEY: CP_SECRET,
     ALLOWED_QA_DATA_DIRS: os.tmpdir()
   });
   assert.strictEqual(cliRes.code, 3);
@@ -262,12 +284,14 @@ runCase('P1: known seed orgs + seed platform_owner (user-platform-owner + vshow.
   assert.strictEqual(reason, null, `Seed allowlist identities must be accepted. Got rejection: ${reason}`);
 
   writeFixtureDb(fixture);
+  writeValidProvenance('prj-test-p1');
   const cliRes = runCliSubprocess({
     TEST_PROJECT_ID: 'prj-test-p1',
     DATA_DIR: tmpVolume,
     DISPOSABLE_INSTANCE_ID: INSTANCE_ID,
     OPERATOR_TOKEN: HARNESS_SECRET,
     QA_HARNESS_SECRET: HARNESS_SECRET,
+    CONTROL_PLANE_VERIFIER_KEY: CP_SECRET,
     ALLOWED_QA_DATA_DIRS: os.tmpdir()
   });
   assert.strictEqual(cliRes.code, 0, `CLI rotation must succeed on clean seed test DB. Output: ${cliRes.stderr}`);
@@ -285,65 +309,206 @@ runCase('P2: qa-only users (@test.local) and test projects', () => {
   assert.strictEqual(reason, null, `Clean QA fixture must be accepted. Got: ${reason}`);
 
   writeFixtureDb(fixture);
+  writeValidProvenance('prj-test-p2');
   const cliRes = runCliSubprocess({
     TEST_PROJECT_ID: 'prj-test-p2',
     DATA_DIR: tmpVolume,
     DISPOSABLE_INSTANCE_ID: INSTANCE_ID,
     OPERATOR_TOKEN: HARNESS_SECRET,
     QA_HARNESS_SECRET: HARNESS_SECRET,
+    CONTROL_PLANE_VERIFIER_KEY: CP_SECRET,
     ALLOWED_QA_DATA_DIRS: os.tmpdir()
   });
   assert.strictEqual(cliRes.code, 0, `CLI rotation must succeed on QA fixture. Output: ${cliRes.stderr}`);
   assert.ok(cliRes.stderr.includes('ROTATED_OK'));
 });
 
-// ─── PN1: Provenance Negative — missing or path-mismatched provenance ─────────
-runCase('PN1: Provenance Negative — Copied datastore without immutable provenance binding', () => {
-  const fixture = {
-    projects: [{ id: 'prj-test-pn1', editToken: 'tok-pn1-init' }],
-    users: [{ id: 'user-qa-pn1', email: 'tester@test.local', role: 'qa' }]
-  };
+// ─── M1: Missing Provenance / Verification Key Fails Closed ────────────────────
+runCase('M1: Mandatory Provenance Failure — Missing provenance file & missing verifier key in active mode', () => {
+  const fixture = { projects: [{ id: 'prj-test-m1', editToken: 'tok-m1' }] };
   writeFixtureDb(fixture);
 
-  // Remove provenance file to simulate a copied datastore
+  // 1a: Missing provenance file entirely
   const provPath = path.join(tmpVolume, '.disposable_qa_provenance.json');
   try { fs.unlinkSync(provPath); } catch (_) {}
-
-  const cliRes = runCliSubprocess({
-    TEST_PROJECT_ID: 'prj-test-pn1',
+  const res1a = runCliSubprocess({
+    TEST_PROJECT_ID: 'prj-test-m1',
     DATA_DIR: tmpVolume,
     DISPOSABLE_INSTANCE_ID: INSTANCE_ID,
     OPERATOR_TOKEN: HARNESS_SECRET,
     QA_HARNESS_SECRET: HARNESS_SECRET,
-    CONTROL_PLANE_SECRET: CP_SECRET,
-    REQUIRE_PROVENANCE: 'true',
+    CONTROL_PLANE_VERIFIER_KEY: CP_SECRET,
     ALLOWED_QA_DATA_DIRS: os.tmpdir()
   });
-  assert.strictEqual(cliRes.code, 3, 'CLI must exit 3 when provenance binding is missing');
-  assert.ok(cliRes.stderr.includes('Control-plane provenance binding failed') || cliRes.stderr.includes('.disposable_qa_provenance.json missing'));
-});
+  assert.strictEqual(res1a.code, 3, 'Missing provenance file must exit 3');
+  assert.ok(res1a.stderr.includes('.disposable_qa_provenance.json missing'), 'stderr must report missing provenance');
 
-// ─── PN2: Two-party Separation of Duty Negative — caller colluded secrets ─────
-runCase('PN2: Two-party Separation Negative — OPERATOR_TOKEN matches CONTROL_PLANE_SECRET', () => {
-  const fixture = {
-    projects: [{ id: 'prj-test-pn2', editToken: 'tok-pn2-init' }]
-  };
-  writeFixtureDb(fixture);
-  writeValidProvenance('prj-test-pn2');
-
-  const colludedSecret = 'colluded-secret-matching-token-32c';
-  const cliRes = runCliSubprocess({
-    TEST_PROJECT_ID: 'prj-test-pn2',
+  // 1b: Missing CONTROL_PLANE_PUBLIC_KEY / verifier key in active mode
+  writeValidProvenance('prj-test-m1');
+  const res1b = runCliSubprocess({
+    TEST_PROJECT_ID: 'prj-test-m1',
     DATA_DIR: tmpVolume,
     DISPOSABLE_INSTANCE_ID: INSTANCE_ID,
-    OPERATOR_TOKEN: colludedSecret,
-    QA_HARNESS_SECRET: colludedSecret,
-    CONTROL_PLANE_SECRET: colludedSecret, // Collusion: caller asserts both operator token and control plane key
-    REQUIRE_PROVENANCE: 'true',
+    OPERATOR_TOKEN: HARNESS_SECRET,
+    QA_HARNESS_SECRET: HARNESS_SECRET,
+    // Omit CONTROL_PLANE_VERIFIER_KEY
     ALLOWED_QA_DATA_DIRS: os.tmpdir()
   });
-  assert.strictEqual(cliRes.code, 2, 'CLI must exit 2 (validation error) when operator colludes with control-plane secret');
-  assert.ok(cliRes.stderr.includes('OPERATOR_TOKEN must be distinct from CONTROL_PLANE_SECRET'));
+  assert.strictEqual(res1b.code, 2, 'Missing control plane verifier key in active mode must exit 2');
+  assert.ok(res1b.stderr.includes('CONTROL_PLANE_PUBLIC_KEY (or CONTROL_PLANE_VERIFIER_KEY) is mandatory'), 'stderr must report mandatory verifier key');
+});
+
+// ─── M2: Missing or Mismatched Trusted Operator Verifier Fails Closed ─────────
+runCase('M2: Mandatory Operator Verifier Failure — Missing or mismatched QA_HARNESS_SECRET', () => {
+  const fixture = { projects: [{ id: 'prj-test-m2', editToken: 'tok-m2' }] };
+  writeFixtureDb(fixture);
+  writeValidProvenance('prj-test-m2');
+
+  // 2a: Missing QA_HARNESS_SECRET
+  const res2a = runCliSubprocess({
+    TEST_PROJECT_ID: 'prj-test-m2',
+    DATA_DIR: tmpVolume,
+    DISPOSABLE_INSTANCE_ID: INSTANCE_ID,
+    OPERATOR_TOKEN: HARNESS_SECRET,
+    CONTROL_PLANE_VERIFIER_KEY: CP_SECRET,
+    ALLOWED_QA_DATA_DIRS: os.tmpdir()
+  });
+  assert.strictEqual(res2a.code, 2, 'Missing QA_HARNESS_SECRET must exit 2');
+  assert.ok(res2a.stderr.includes('QA_HARNESS_SECRET (or EXPECTED_OPERATOR_TOKEN) env var is mandatory'), 'stderr must report mandatory QA_HARNESS_SECRET');
+
+  // 2b: OPERATOR_TOKEN mismatch with QA_HARNESS_SECRET
+  const res2b = runCliSubprocess({
+    TEST_PROJECT_ID: 'prj-test-m2',
+    DATA_DIR: tmpVolume,
+    DISPOSABLE_INSTANCE_ID: INSTANCE_ID,
+    OPERATOR_TOKEN: 'different-operator-token-32chars-xyz',
+    QA_HARNESS_SECRET: HARNESS_SECRET,
+    CONTROL_PLANE_VERIFIER_KEY: CP_SECRET,
+    ALLOWED_QA_DATA_DIRS: os.tmpdir()
+  });
+  assert.strictEqual(res2b.code, 2, 'Mismatched OPERATOR_TOKEN must exit 2');
+  assert.ok(res2b.stderr.includes('OPERATOR_TOKEN does not match server-verified QA_HARNESS_SECRET'));
+});
+
+// ─── M3: Caller-Supplied Distinct Secrets Cannot Mint Provenance (Asymmetric) ─
+runCase('M3: Asymmetric Ed25519 Cryptographic Proof — Caller cannot mint valid provenance with untrusted key', () => {
+  const projectId = 'prj-test-m3';
+  const fixture = { projects: [{ id: projectId, editToken: 'tok-m3' }] };
+  writeFixtureDb(fixture);
+
+  // Attacker caller generates their own separate Ed25519 keypair and tries to mint an attestation
+  const { privateKey: untrustedAttackerPrivateKey } = crypto.generateKeyPairSync('ed25519');
+  const now = Date.now();
+  const attackerSig = computeProvenanceSignature(
+    INSTANCE_ID, realVolumeDir, projectId, 'ROTATE_QA_EDIT_TOKEN', now, 3600000, untrustedAttackerPrivateKey, 'ed25519'
+  );
+  const forgedProv = {
+    volumeId: INSTANCE_ID,
+    datastoreRealPath: realVolumeDir,
+    projectId,
+    operation: 'ROTATE_QA_EDIT_TOKEN',
+    algorithm: 'ed25519',
+    createdAt: now,
+    maxLifetimeMs: 3600000,
+    controlPlaneSignature: attackerSig
+  };
+  fs.writeFileSync(path.join(tmpVolume, '.disposable_qa_provenance.json'), JSON.stringify(forgedProv, null, 2), 'utf8');
+
+  // When verified by CLI using trusted CP_PUBLIC_KEY, signature MUST fail
+  const cliRes = runCliSubprocess({
+    TEST_PROJECT_ID: projectId,
+    DATA_DIR: tmpVolume,
+    DISPOSABLE_INSTANCE_ID: INSTANCE_ID,
+    OPERATOR_TOKEN: HARNESS_SECRET,
+    QA_HARNESS_SECRET: HARNESS_SECRET,
+    CONTROL_PLANE_PUBLIC_KEY: CP_PUBLIC_KEY_PEM, // CLI only has the legitimate public key
+    ALLOWED_QA_DATA_DIRS: os.tmpdir()
+  });
+  assert.strictEqual(cliRes.code, 3, 'CLI must exit 3 when caller self-mints provenance with untrusted key');
+  assert.ok(cliRes.stderr.includes('asymmetric Ed25519 signature verification failed'), 'stderr must report Ed25519 verification failure');
+});
+
+// ─── M4: Copied, Expired, or Path-Mismatched Attestation Fails Closed ──────────
+runCase('M4: Copied / Expired / Mismatched Attestation Fails Closed', () => {
+  const projectId = 'prj-test-m4';
+  const fixture = { projects: [{ id: projectId, editToken: 'tok-m4' }] };
+  writeFixtureDb(fixture);
+
+  // 4a: Path-mismatch (DB copied to a different directory)
+  const now = Date.now();
+  const mismatchPathProv = {
+    volumeId: INSTANCE_ID,
+    datastoreRealPath: '/tmp/copied_from_another_volume',
+    projectId,
+    operation: 'ROTATE_QA_EDIT_TOKEN',
+    createdAt: now,
+    maxLifetimeMs: 3600000,
+    controlPlaneSignature: computeProvenanceSignature(
+      INSTANCE_ID, '/tmp/copied_from_another_volume', projectId, 'ROTATE_QA_EDIT_TOKEN', now, 3600000, CP_SECRET
+    )
+  };
+  fs.writeFileSync(path.join(tmpVolume, '.disposable_qa_provenance.json'), JSON.stringify(mismatchPathProv, null, 2), 'utf8');
+  const res4a = runCliSubprocess({
+    TEST_PROJECT_ID: projectId,
+    DATA_DIR: tmpVolume,
+    DISPOSABLE_INSTANCE_ID: INSTANCE_ID,
+    OPERATOR_TOKEN: HARNESS_SECRET,
+    QA_HARNESS_SECRET: HARNESS_SECRET,
+    CONTROL_PLANE_VERIFIER_KEY: CP_SECRET,
+    ALLOWED_QA_DATA_DIRS: os.tmpdir()
+  });
+  assert.strictEqual(res4a.code, 3, 'Path mismatch (copied volume) must exit 3');
+  assert.ok(res4a.stderr.includes('Provenance datastoreRealPath mismatch'), 'stderr must report realPath mismatch');
+
+  // 4b: Expired lifetime
+  const expiredProv = {
+    volumeId: INSTANCE_ID,
+    datastoreRealPath: realVolumeDir,
+    projectId,
+    operation: 'ROTATE_QA_EDIT_TOKEN',
+    createdAt: now - 7200000, // 2 hours ago
+    maxLifetimeMs: 3600000,   // 1 hour lifetime
+    controlPlaneSignature: computeProvenanceSignature(
+      INSTANCE_ID, realVolumeDir, projectId, 'ROTATE_QA_EDIT_TOKEN', now - 7200000, 3600000, CP_SECRET
+    )
+  };
+  fs.writeFileSync(path.join(tmpVolume, '.disposable_qa_provenance.json'), JSON.stringify(expiredProv, null, 2), 'utf8');
+  const res4b = runCliSubprocess({
+    TEST_PROJECT_ID: projectId,
+    DATA_DIR: tmpVolume,
+    DISPOSABLE_INSTANCE_ID: INSTANCE_ID,
+    OPERATOR_TOKEN: HARNESS_SECRET,
+    QA_HARNESS_SECRET: HARNESS_SECRET,
+    CONTROL_PLANE_VERIFIER_KEY: CP_SECRET,
+    ALLOWED_QA_DATA_DIRS: os.tmpdir()
+  });
+  assert.strictEqual(res4b.code, 3, 'Expired provenance token must exit 3');
+  assert.ok(res4b.stderr.includes('Provenance token expired'), 'stderr must report expired token');
+
+  // 4c: Project mismatch
+  const mismatchProjectProv = {
+    volumeId: INSTANCE_ID,
+    datastoreRealPath: realVolumeDir,
+    projectId: 'prj-test-different',
+    operation: 'ROTATE_QA_EDIT_TOKEN',
+    createdAt: now,
+    maxLifetimeMs: 3600000,
+    controlPlaneSignature: computeProvenanceSignature(
+      INSTANCE_ID, realVolumeDir, 'prj-test-different', 'ROTATE_QA_EDIT_TOKEN', now, 3600000, CP_SECRET
+    )
+  };
+  fs.writeFileSync(path.join(tmpVolume, '.disposable_qa_provenance.json'), JSON.stringify(mismatchProjectProv, null, 2), 'utf8');
+  const res4c = runCliSubprocess({
+    TEST_PROJECT_ID: projectId,
+    DATA_DIR: tmpVolume,
+    DISPOSABLE_INSTANCE_ID: INSTANCE_ID,
+    OPERATOR_TOKEN: HARNESS_SECRET,
+    QA_HARNESS_SECRET: HARNESS_SECRET,
+    CONTROL_PLANE_VERIFIER_KEY: CP_SECRET,
+    ALLOWED_QA_DATA_DIRS: os.tmpdir()
+  });
+  assert.strictEqual(res4c.code, 3, 'Project mismatch must exit 3');
+  assert.ok(res4c.stderr.includes('Provenance projectId mismatch'), 'stderr must report projectId mismatch');
 });
 
 // Clean up
