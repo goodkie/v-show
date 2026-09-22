@@ -128,7 +128,9 @@ function startDisposableServer(dataDir) {
   const PROJECT_ID = 'prj-test-session';
   const OLD_TOKEN = 'edit-tok-initial-' + crypto.randomBytes(16).toString('hex');
   const HARNESS_SECRET = 'harness-secret-session-test-32chars-long';
-  const CP_SECRET = 'cp-master-secret-session-test-32chars-long';
+  const PINNED_CP_PRIVATE_KEY = `-----BEGIN PRIVATE KEY-----
+MC4CAQAwBQYDK2VwBCIEICgeZ6NpZ8X9apjX+zUcjp/mqOlwmlm8QsDXHuco5JS/
+-----END PRIVATE KEY-----`;
 
   // Seed DB
   const initialDb = {
@@ -146,12 +148,13 @@ function startDisposableServer(dataDir) {
   fs.writeFileSync(path.join(tmpDir, '.disposable_qa_marker'), `${INSTANCE_ID}:${sig}`, 'utf8');
 
   const now = Date.now();
-  const provSig = computeProvenanceSignature(INSTANCE_ID, realDir, PROJECT_ID, 'ROTATE_QA_EDIT_TOKEN', now, 3600000, CP_SECRET);
+  const provSig = computeProvenanceSignature(INSTANCE_ID, realDir, PROJECT_ID, 'ROTATE_QA_EDIT_TOKEN', now, 3600000, PINNED_CP_PRIVATE_KEY, 'ed25519');
   fs.writeFileSync(path.join(tmpDir, '.disposable_qa_provenance.json'), JSON.stringify({
     volumeId: INSTANCE_ID,
     datastoreRealPath: realDir,
     projectId: PROJECT_ID,
     operation: 'ROTATE_QA_EDIT_TOKEN',
+    algorithm: 'ed25519',
     createdAt: now,
     maxLifetimeMs: 3600000,
     controlPlaneSignature: provSig
@@ -173,7 +176,6 @@ function startDisposableServer(dataDir) {
         DISPOSABLE_INSTANCE_ID: INSTANCE_ID,
         OPERATOR_TOKEN: HARNESS_SECRET,
         QA_HARNESS_SECRET: HARNESS_SECRET,
-        CONTROL_PLANE_SECRET: CP_SECRET,
         REQUIRE_PROVENANCE: 'true',
         ALLOWED_QA_DATA_DIRS: os.tmpdir()
       });
@@ -235,7 +237,6 @@ function startDisposableServer(dataDir) {
       DISPOSABLE_INSTANCE_ID: INSTANCE_ID,
       OPERATOR_TOKEN: HARNESS_SECRET,
       QA_HARNESS_SECRET: HARNESS_SECRET,
-      CONTROL_PLANE_SECRET: CP_SECRET,
       ALLOWED_QA_DATA_DIRS: os.tmpdir()
     });
     assert.strictEqual(cliRes.code, 0, `CLI must recover dead lock and exit 0. Got: ${cliRes.stderr}`);
@@ -258,7 +259,6 @@ function startDisposableServer(dataDir) {
       DISPOSABLE_INSTANCE_ID: INSTANCE_ID,
       OPERATOR_TOKEN: HARNESS_SECRET,
       QA_HARNESS_SECRET: HARNESS_SECRET,
-      CONTROL_PLANE_SECRET: CP_SECRET,
       ALLOWED_QA_DATA_DIRS: os.tmpdir()
     }, ['--rollback']);
 

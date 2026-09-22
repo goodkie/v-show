@@ -35,25 +35,35 @@ function mkTmp(prefix = 'cli_test_') {
 }
 
 const dirSecretMap = new Map();
-const DEFAULT_CP_KEY = 'cp-master-control-plane-secret-key-32c';
+
+const PINNED_CP_PUBLIC_KEY = `-----BEGIN PUBLIC KEY-----
+MCowBQYDK2VwAyEAB/M7fy6smzOv4OHONRvRl6GKOJGEgfYIlGB9stf0rOs=
+-----END PUBLIC KEY-----`;
+
+const PINNED_CP_PRIVATE_KEY = `-----BEGIN PRIVATE KEY-----
+MC4CAQAwBQYDK2VwBCIEICgeZ6NpZ8X9apjX+zUcjp/mqOlwmlm8QsDXHuco5JS/
+-----END PRIVATE KEY-----`;
 
 function computeMarkerSignature(instanceId, secret) {
   if (!secret) return '';
   return crypto.createHmac('sha256', secret).update(instanceId).digest('hex').slice(0, 32);
 }
 
-function writeProvenance(dir, instanceId, projectId, cpKey = DEFAULT_CP_KEY) {
+const DEFAULT_CP_KEY = PINNED_CP_PRIVATE_KEY;
+
+function writeProvenance(dir, instanceId, projectId, privKey = PINNED_CP_PRIVATE_KEY) {
   let realDir = dir;
   try { realDir = fs.realpathSync(dir); } catch (_) {}
   const now = Date.now();
   const lifetime = 3600000;
   const payload = `${instanceId}:${realDir}:${projectId}:ROTATE_QA_EDIT_TOKEN:${now}:${lifetime}`;
-  const sig = crypto.createHmac('sha256', cpKey).update(payload, 'utf8').digest('hex');
+  const sig = crypto.sign(null, Buffer.from(payload, 'utf8'), privKey).toString('hex');
   const prov = {
     volumeId: instanceId,
     datastoreRealPath: realDir,
     projectId: projectId,
     operation: 'ROTATE_QA_EDIT_TOKEN',
+    algorithm: 'ed25519',
     createdAt: now,
     maxLifetimeMs: lifetime,
     controlPlaneSignature: sig

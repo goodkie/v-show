@@ -80,6 +80,18 @@ const INTERNAL_PLATFORM_DOMAINS = new Set(['vshow.com']);
 // The single known seed user-id for the platform_owner role injected by db.js.
 const DB_JS_SEED_PLATFORM_OWNER_ID = 'user-platform-owner';
 
+// ─── Pinned Control-Plane Trust Anchor (ChatGPT R17 Security Follow-up) ───────
+// Pinned immutable Ed25519 public key for control-plane attestation.
+// Active mutation paths accept ONLY attestations signed by the corresponding private key.
+// Caller-supplied symmetric/HMAC keys or arbitrary verifier keys are strictly refused.
+const PINNED_CONTROL_PLANE_PUBLIC_KEY = `-----BEGIN PUBLIC KEY-----
+MCowBQYDK2VwAyEAB/M7fy6smzOv4OHONRvRl6GKOJGEgfYIlGB9stf0rOs=
+-----END PUBLIC KEY-----`;
+
+// Status of external independent authorization control plane:
+const INDEPENDENT_AUTHORIZATION = 'NOT_IMPLEMENTED';
+const LIVE_QA_REVOCATION_STATUS = 'BLOCKED_PENDING_INDEPENDENT_CONTROL_PLANE';
+
 // ─── CLI parsing ─────────────────────────────────────────────────────────────
 const args      = process.argv.slice(2);
 const DRY_RUN   = args.includes('--dry-run');
@@ -436,7 +448,11 @@ function verifyProvenanceBinding(provenancePath, expectedDataDir, expectedInstan
   }
 
   const payload = `${prov.volumeId}:${prov.datastoreRealPath}:${prov.projectId}:${prov.operation}:${prov.createdAt}:${maxLifetimeMs}`;
-  if (prov.algorithm === 'ed25519' || (typeof verifierKey === 'string' && verifierKey.includes('PUBLIC KEY')) || (typeof verifierKey === 'object' && verifierKey.type === 'public')) {
+
+  if ((typeof verifierKey === 'string' && verifierKey.includes('PUBLIC KEY')) || (typeof verifierKey === 'object' && verifierKey.type === 'public')) {
+    if (prov.algorithm && prov.algorithm !== 'ed25519') {
+      return { ok: false, err: 'Provenance attestation algorithm mismatch: asymmetric Ed25519 required (HMAC strictly prohibited)' };
+    }
     try {
       const verified = crypto.verify(
         null,
@@ -450,6 +466,8 @@ function verifyProvenanceBinding(provenancePath, expectedDataDir, expectedInstan
     } catch (e) {
       return { ok: false, err: `Asymmetric signature verification error: ${e.message}` };
     }
+  } else if (prov.algorithm === 'ed25519') {
+    return { ok: false, err: 'Asymmetric Ed25519 provenance signature supplied but verifierKey is not a public key' };
   } else {
     const expectedSig = crypto.createHmac('sha256', verifierKey).update(payload, 'utf8').digest('hex');
     if (prov.controlPlaneSignature !== expectedSig) {
@@ -527,10 +545,11 @@ function runCli() {
   const DISPOSABLE_INSTANCE_ID    = process.env.DISPOSABLE_INSTANCE_ID;
   const OPERATOR_TOKEN            = process.env.OPERATOR_TOKEN;
   const QA_HARNESS_SECRET         = process.env.QA_HARNESS_SECRET || process.env.EXPECTED_OPERATOR_TOKEN;
-  const CONTROL_PLANE_VERIFIER_KEY = process.env.CONTROL_PLANE_PUBLIC_KEY || process.env.CONTROL_PLANE_VERIFIER_KEY || process.env.CONTROL_PLANE_SECRET;
+  // Pinned trust anchor enforced for all active mutations (no caller override of verifier key)
+  const CONTROL_PLANE_VERIFIER_KEY = PINNED_CONTROL_PLANE_PUBLIC_KEY;
   
   // Mandatory: active mutation (non-dry-run) requires provenance attestation unconditionally (no opt-out)
-  const REQUIRE_PROVENANCE = !DRY_RUN || process.env.REQUIRE_PROVENANCE === 'true' || Boolean(CONTROL_PLANE_VERIFIER_KEY);
+  const REQUIRE_PROVENANCE = !DRY_RUN || process.env.REQUIRE_PROVENANCE === 'true';
 
   const { resolved: DATA_DIR, err: dataDirErr } = validateDataDir(
     CLI_DB || process.env.DATA_DIR,
