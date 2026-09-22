@@ -1543,7 +1543,7 @@ app.get('/api/test/qa-sandbox-meta', (req, res) => {
     return res.status(404).json({ error: 'Not found' });
   }
   const clientIp = req.ip || (req.connection && req.connection.remoteAddress) || (req.socket && req.socket.remoteAddress) || '';
-  const isLoopback = clientIp.includes('127.0.0.1') || clientIp === '::1' || clientIp.includes('::ffff:127.0.0.1');
+  const isLoopback = ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes((clientIp || '').trim());
   if (!isLoopback) {
     return res.status(403).json({ error: 'Forbidden: Loopback only' });
   }
