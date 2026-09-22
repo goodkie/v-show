@@ -1462,30 +1462,34 @@ function getReqCookie(req, name) {
   return match ? decodeURIComponent(match[1]) : null;
 }
 
-// C12.9-P2R6: Auto-provision and Seed Authoritative Owner QA Project
+// C12.9-P2R6: Auto-provision Disposable QA Project for Test Sandbox ONLY
+// SECURITY: Static editToken removed. Token is cryptographically random per call.
+// MUST NOT be called in production context — gate at all call sites.
 function ensureAuthoritativeQaProject(targetProjectId = 'prj-free-b0c6f3ea') {
+  if (process.env.NODE_ENV !== 'test' || !process.env.DISPOSABLE_INSTANCE_ID) {
+    // Fail-closed: never auto-provision QA projects outside explicit test sandbox
+    return null;
+  }
+  const crypto = require('crypto');
   try {
     let p = db.getProject(targetProjectId);
     if (!p) {
       const newProj = {
         id: targetProjectId,
-        name: 'Apex Robotics Inc. Virtual Booth (Owner QA)',
-        company: 'Apex Robotics Inc.',
-        contactEmail: 'owner@vshow.com',
-        customerEmail: 'owner@vshow.com',
+        name: 'Stage2 QA Sandbox Project',
+        company: 'QA Sandbox',
+        contactEmail: 'qa-sandbox@internal.test',
+        customerEmail: 'qa-sandbox@internal.test',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         status: 'ACTIVE',
         commercialState: 'ACTIVE',
-        editToken: 'tok-cac33e74b3aaa8e552df9915e092ac22',
-        activeTourId: 'tour-1788794765310-wtfv5',
-        defaultViewpointId: 'vp-1788794765375-5c6ia',
-        viewpoints: [
-          { id: 'vp-1788794765375-5c6ia', name: 'Entrance', x: 50, y: 85, photos: [], panoramaUrl: '', status: 'PENDING' }
-        ],
-        tours: [
-          { id: 'tour-1788794765310-wtfv5', name: 'Main Tour', viewpoints: ['vp-1788794765375-5c6ia'] }
-        ],
+        // Disposable: cryptographically random per sandbox instance, never static
+        editToken: crypto.randomBytes(24).toString('hex'),
+        activeTourId: 'tour-' + crypto.randomBytes(8).toString('hex'),
+        defaultViewpointId: 'vp-' + crypto.randomBytes(8).toString('hex'),
+        viewpoints: [],
+        tours: [],
         panoramaVersions: [],
         products: []
       };
@@ -1496,15 +1500,18 @@ function ensureAuthoritativeQaProject(targetProjectId = 'prj-free-b0c6f3ea') {
         }
       });
       p = newProj;
-      console.log(`[QA_PROJECT_HYDRATION] Successfully provisioned authoritative project ${targetProjectId} in db.projects.`);
+      process.stderr.write(`[QA_PROJECT_HYDRATION] Provisioned disposable project ${targetProjectId} (instance: ${process.env.DISPOSABLE_INSTANCE_ID})\n`);
     }
     return p;
   } catch (err) {
-    console.warn('[QA_PROJECT_HYDRATION_ERROR]', err.message);
+    console.error('[QA_PROJECT_HYDRATION_ERROR]', err.message);
     return null;
   }
 }
-ensureAuthoritativeQaProject('prj-free-b0c6f3ea');
+// Gate: only auto-provision at startup in explicit test sandbox
+if (process.env.NODE_ENV === 'test' && process.env.DISPOSABLE_INSTANCE_ID) {
+  ensureAuthoritativeQaProject('prj-free-b0c6f3ea');
+}
 
 
 function verifyQaAccess(req) {

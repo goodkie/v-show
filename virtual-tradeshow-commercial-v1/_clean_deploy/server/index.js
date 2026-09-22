@@ -1462,25 +1462,39 @@ function getReqCookie(req, name) {
   return match ? decodeURIComponent(match[1]) : null;
 }
 
-// C12.9-P2R6: Auto-provision and Seed Authoritative Owner QA Project & Foreign Tenant Project
+// C12.9-P2R6: Auto-provision Disposable QA Projects for Test Sandbox ONLY
+// SECURITY: Static editToken seeds removed. Tokens are generated as cryptographically
+// random disposables at runtime, scoped strictly to the current DISPOSABLE_INSTANCE_ID.
+// This function MUST NOT be called in production/non-test contexts.
 function ensureAuthoritativeQaProject() {
+  const isTestSandbox = process.env.NODE_ENV === 'test' && !!process.env.DISPOSABLE_INSTANCE_ID;
+  if (!isTestSandbox) {
+    // Fail-closed: never auto-provision QA credentials outside an explicit test sandbox
+    if (process.env.NODE_ENV === 'test') {
+      console.error('[QA_PROJECT_HYDRATION] SKIP: NODE_ENV=test but DISPOSABLE_INSTANCE_ID absent. Refusing to auto-provision.');
+    }
+    return;
+  }
+  const crypto = require('crypto');
   try {
     const projectsToProvision = [
       {
-        id: 'prj-free-b0c6f3ea',
-        name: 'Apex Robotics Inc. Virtual Booth (Owner QA)',
-        company: 'Apex Robotics Inc.',
-        contactEmail: 'owner@vshow.com',
-        customerEmail: 'owner@vshow.com',
-        editToken: 'tok-cac33e74b3aaa8e552df9915e092ac22'
+        id: process.env.TEST_PROJECT_ID || 'prj-free-b0c6f3ea',
+        name: 'Stage2 QA Sandbox Project',
+        company: 'QA Sandbox',
+        contactEmail: 'qa-sandbox@internal.test',
+        customerEmail: 'qa-sandbox@internal.test',
+        // Disposable token — generated per sandbox instance, never static
+        editToken: crypto.randomBytes(24).toString('hex')
       },
       {
         id: 'prj-free-aeb87eb4',
-        name: 'BioTech Innovations LLC Virtual Booth (Foreign Tenant QA)',
-        company: 'BioTech Innovations LLC',
-        contactEmail: 'biotech@example.com',
-        customerEmail: 'biotech@example.com',
-        editToken: 'tok-foreign-tenant-aeb87eb4-qa'
+        name: 'Stage2 QA Foreign Tenant Sandbox',
+        company: 'QA Foreign Tenant',
+        contactEmail: 'foreign-qa@internal.test',
+        customerEmail: 'foreign-qa@internal.test',
+        // Separate disposable token for foreign-tenant cross-boundary tests
+        editToken: crypto.randomBytes(24).toString('hex')
       }
     ];
 
@@ -1498,14 +1512,10 @@ function ensureAuthoritativeQaProject() {
           status: 'ACTIVE',
           commercialState: 'ACTIVE',
           editToken: projSpec.editToken,
-          activeTourId: 'tour-1788794765310-wtfv5',
-          defaultViewpointId: 'vp-1788794765375-5c6ia',
-          viewpoints: [
-            { id: 'vp-1788794765375-5c6ia', name: 'Entrance', x: 50, y: 85, photos: [], panoramaUrl: '', status: 'PENDING' }
-          ],
-          tours: [
-            { id: 'tour-1788794765310-wtfv5', name: 'Main Tour', viewpoints: ['vp-1788794765375-5c6ia'] }
-          ],
+          activeTourId: 'tour-' + crypto.randomBytes(8).toString('hex'),
+          defaultViewpointId: 'vp-' + crypto.randomBytes(8).toString('hex'),
+          viewpoints: [],
+          tours: [],
           panoramaVersions: [],
           products: []
         };
@@ -1515,14 +1525,18 @@ function ensureAuthoritativeQaProject() {
             data.projects.push(newProj);
           }
         });
-        console.log(`[QA_PROJECT_HYDRATION] Successfully provisioned authoritative project ${projSpec.id} in db.projects.`);
+        // Log only to stderr; token is disposable but should not appear in stdout/API responses
+        process.stderr.write(`[QA_PROJECT_HYDRATION] Provisioned disposable sandbox project ${projSpec.id} (instance: ${process.env.DISPOSABLE_INSTANCE_ID})\n`);
       }
     }
   } catch (err) {
-    console.warn('[QA_PROJECT_HYDRATION_ERROR]', err.message);
+    console.error('[QA_PROJECT_HYDRATION_ERROR]', err.message);
   }
 }
-ensureAuthoritativeQaProject();
+// Gate: only invoke in explicit test sandbox context
+if (process.env.NODE_ENV === 'test' && process.env.DISPOSABLE_INSTANCE_ID) {
+  ensureAuthoritativeQaProject();
+}
 
 
 function verifyQaAccess(req) {
