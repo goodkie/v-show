@@ -9535,7 +9535,9 @@ return event;
     this.ensureProjectToken(project);
     if (!token) return false;
     if (process.env.NODE_ENV === 'test' && process.env.STAGE2_EPHEMERAL_TEST_TOKEN && token === process.env.STAGE2_EPHEMERAL_TEST_TOKEN) {
-      return true;
+      if (!project || project.id === (process.env.TEST_PROJECT_ID || 'prj-free-b0c6f3ea')) {
+        return true;
+      }
     }
     if (token === project.editToken) return true;
 

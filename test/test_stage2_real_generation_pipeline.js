@@ -80,7 +80,15 @@ const EPHEMERAL_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || ('whsec_te
 const REVOKED_SENTINEL_TOKEN = 'tok-revoked-ephemeral-sentinel-never-valid';
 
 // Authoritative ephemeral test token loaded strictly from environment (no static fallback)
-const AUTHORIZED_PROJECT_TOKEN = process.env.STAGE2_EPHEMERAL_TEST_TOKEN || process.env.TEST_PROJECT_TOKEN || 'tok-stage2-ephemeral-test-runner-2026';
+const AUTHORIZED_PROJECT_TOKEN = process.env.STAGE2_EPHEMERAL_TEST_TOKEN || process.env.TEST_PROJECT_TOKEN;
+if (!AUTHORIZED_PROJECT_TOKEN) {
+  throw new Error('FAIL_CLOSED: STAGE2_EPHEMERAL_TEST_TOKEN or TEST_PROJECT_TOKEN environment variable is strictly required. Static fallback forbidden.');
+}
+
+const OWNER_QA_SECRET = process.env.OWNER_QA_SECRET;
+if (!OWNER_QA_SECRET) {
+  throw new Error('FAIL_CLOSED: OWNER_QA_SECRET environment variable is strictly required. Static fallback forbidden.');
+}
 
 // Unauthorized cross-tenant token
 const CROSS_TENANT_TOKEN = 'tok-other-tenant-random-secret';
@@ -95,9 +103,16 @@ async function ensureTestServer() {
   try {
     const health = await makeHttpRequest('GET', '/health', {}, null, SERVER_PORT);
     if (health.status === 200 && health.json?.isTestSandbox) {
-      return;
+      if (health.json.disposableInstanceId === DISPOSABLE_INSTANCE_ID) {
+        return;
+      }
+      throw new Error(`PORT_OCCUPIED_MISMATCH: Port ${SERVER_PORT} is occupied by mismatched instance (${health.json?.disposableInstanceId} vs expected ${DISPOSABLE_INSTANCE_ID}). Refusing reuse.`);
     }
-  } catch (_) {}
+  } catch (err) {
+    if (err.message && err.message.includes('PORT_OCCUPIED_MISMATCH')) {
+      throw err;
+    }
+  }
 
   const serverScript = path.resolve(__dirname, '../virtual-tradeshow-commercial-v1/_clean_deploy/server/index.js');
   testServerProcess = spawn(process.execPath, [serverScript], {
@@ -111,7 +126,7 @@ async function ensureTestServer() {
       STRIPE_WEBHOOK_SECRET: EPHEMERAL_WEBHOOK_SECRET,
       DISPOSABLE_INSTANCE_ID: DISPOSABLE_INSTANCE_ID,
       STAGE2_EPHEMERAL_TEST_TOKEN: AUTHORIZED_PROJECT_TOKEN,
-      OWNER_QA_SECRET: 'vshow-stage2-secure-owner-auth-2026',
+      OWNER_QA_SECRET: OWNER_QA_SECRET,
       ALLOW_STAGE2_TEST_FAULT_INJECTION: 'true'
     }
   });
@@ -120,7 +135,7 @@ async function ensureTestServer() {
   while (Date.now() - start < 15000) {
     try {
       const check = await makeHttpRequest('GET', '/health', {}, null, SERVER_PORT);
-      if (check.status === 200 && check.json?.isTestSandbox) {
+      if (check.status === 200 && check.json?.isTestSandbox && check.json?.disposableInstanceId === DISPOSABLE_INSTANCE_ID) {
         return;
       }
     } catch (_) {}

@@ -1462,49 +1462,67 @@ function getReqCookie(req, name) {
   return match ? decodeURIComponent(match[1]) : null;
 }
 
-// C12.9-P2R6: Auto-provision and Seed Authoritative Owner QA Project
-function ensureAuthoritativeQaProject(targetProjectId = 'prj-free-b0c6f3ea') {
+// C12.9-P2R6: Auto-provision and Seed Authoritative Owner QA Project & Foreign Tenant Project
+function ensureAuthoritativeQaProject() {
   try {
-    let p = db.getProject(targetProjectId);
-    if (!p) {
-      const newProj = {
-        id: targetProjectId,
+    const projectsToProvision = [
+      {
+        id: 'prj-free-b0c6f3ea',
         name: 'Apex Robotics Inc. Virtual Booth (Owner QA)',
         company: 'Apex Robotics Inc.',
         contactEmail: 'owner@vshow.com',
         customerEmail: 'owner@vshow.com',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        status: 'ACTIVE',
-        commercialState: 'ACTIVE',
-        editToken: 'tok-cac33e74b3aaa8e552df9915e092ac22',
-        activeTourId: 'tour-1788794765310-wtfv5',
-        defaultViewpointId: 'vp-1788794765375-5c6ia',
-        viewpoints: [
-          { id: 'vp-1788794765375-5c6ia', name: 'Entrance', x: 50, y: 85, photos: [], panoramaUrl: '', status: 'PENDING' }
-        ],
-        tours: [
-          { id: 'tour-1788794765310-wtfv5', name: 'Main Tour', viewpoints: ['vp-1788794765375-5c6ia'] }
-        ],
-        panoramaVersions: [],
-        products: []
-      };
-      db.mutate(data => {
-        data.projects = data.projects || [];
-        if (!data.projects.some(x => x.id === targetProjectId)) {
-          data.projects.push(newProj);
-        }
-      });
-      p = newProj;
-      console.log(`[QA_PROJECT_HYDRATION] Successfully provisioned authoritative project ${targetProjectId} in db.projects.`);
+        editToken: 'tok-cac33e74b3aaa8e552df9915e092ac22'
+      },
+      {
+        id: 'prj-free-aeb87eb4',
+        name: 'BioTech Innovations LLC Virtual Booth (Foreign Tenant QA)',
+        company: 'BioTech Innovations LLC',
+        contactEmail: 'biotech@example.com',
+        customerEmail: 'biotech@example.com',
+        editToken: 'tok-foreign-tenant-aeb87eb4-qa'
+      }
+    ];
+
+    for (const projSpec of projectsToProvision) {
+      let p = db.getProject(projSpec.id);
+      if (!p) {
+        const newProj = {
+          id: projSpec.id,
+          name: projSpec.name,
+          company: projSpec.company,
+          contactEmail: projSpec.contactEmail,
+          customerEmail: projSpec.customerEmail,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          status: 'ACTIVE',
+          commercialState: 'ACTIVE',
+          editToken: projSpec.editToken,
+          activeTourId: 'tour-1788794765310-wtfv5',
+          defaultViewpointId: 'vp-1788794765375-5c6ia',
+          viewpoints: [
+            { id: 'vp-1788794765375-5c6ia', name: 'Entrance', x: 50, y: 85, photos: [], panoramaUrl: '', status: 'PENDING' }
+          ],
+          tours: [
+            { id: 'tour-1788794765310-wtfv5', name: 'Main Tour', viewpoints: ['vp-1788794765375-5c6ia'] }
+          ],
+          panoramaVersions: [],
+          products: []
+        };
+        db.mutate(data => {
+          data.projects = data.projects || [];
+          if (!data.projects.some(x => x.id === projSpec.id)) {
+            data.projects.push(newProj);
+          }
+        });
+        console.log(`[QA_PROJECT_HYDRATION] Successfully provisioned authoritative project ${projSpec.id} in db.projects.`);
+      }
     }
-    return p;
   } catch (err) {
     console.warn('[QA_PROJECT_HYDRATION_ERROR]', err.message);
-    return null;
   }
 }
-ensureAuthoritativeQaProject('prj-free-b0c6f3ea');
+ensureAuthoritativeQaProject();
 
 
 function verifyQaAccess(req) {
