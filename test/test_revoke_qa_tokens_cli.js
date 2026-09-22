@@ -399,27 +399,28 @@ test('T12: Rollback after rotation — token replaced with fresh random, backup 
 test('T13: Adversarial #1: Live >30s holder cannot have its lock stolen (fail-closed)', () => {
   const { dir, instanceId, projectId } = makeDisposableDir();
   const operatorToken = crypto.randomBytes(16).toString('hex');
-  const lockPath = path.join(dir, '.qa_revoke.lock');
+  const lockDir = path.join(dir, 'db.lock');
 
-  // Spawn Child A holding lock and keeping itself alive for 60 seconds
+  // Spawn Child A holding directory lock and keeping itself alive for 60 seconds
   const childScript = [
     "const fs = require('fs');",
-    "const lockP = process.argv[1];",
-    "const payload = JSON.stringify({ pid: process.pid, fencingToken: 'live-holder-token', createdAt: Date.now() - 40000, instanceId: 'test-inst' }, null, 2);",
-    "fs.writeFileSync(lockP, payload, 'utf8');",
-    "const past = (Date.now() - 40000) / 1000;",
-    "fs.utimesSync(lockP, past, past);",
+    "const path = require('path');",
+    "const lockD = process.argv[1];",
+    "fs.mkdirSync(lockD, { recursive: true });",
+    "const payload = JSON.stringify({ pid: process.pid, ownerToken: 'live-holder-token', createdAt: Date.now() - 40000, instanceId: 'test-inst' }, null, 2);",
+    "fs.writeFileSync(path.join(lockD, 'meta.json'), payload, 'utf8');",
+    "fs.writeFileSync(path.join(lockD, 'live-holder-token'), '', 'utf8');",
     "setInterval(() => {}, 60000);"
   ].join('\n');
 
-  const childA = spawn(NODE, ['-e', childScript, lockPath], { stdio: 'ignore' });
+  const childA = spawn(NODE, ['-e', childScript, lockDir], { stdio: 'ignore' });
 
-  // Wait until lock file is written
+  // Wait until lock directory is written
   const waitDeadline = Date.now() + 2000;
-  while (!fs.existsSync(lockPath) && Date.now() < waitDeadline) {
+  while (!fs.existsSync(path.join(lockDir, 'meta.json')) && Date.now() < waitDeadline) {
     Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 50);
   }
-  assert(fs.existsSync(lockPath), 'Lock file should have been created by Child A');
+  assert(fs.existsSync(path.join(lockDir, 'meta.json')), 'Lock meta should have been created by Child A');
 
   // Now run CLI (Process B) with LOCK_TIMEOUT_MS=800. Child A is alive -> Process B must fail to acquire lock and exit 7
   const rB = runCli({
@@ -436,9 +437,9 @@ test('T13: Adversarial #1: Live >30s holder cannot have its lock stolen (fail-cl
   assert(rB.stderr.includes('Could not acquire lock'), 'stderr should indicate lock acquisition failure');
 
   // Ensure lock was not deleted or replaced
-  assert(fs.existsSync(lockPath), 'Lock file must still exist on disk');
-  const lockData = JSON.parse(fs.readFileSync(lockPath, 'utf8'));
-  assertEqual(lockData.fencingToken, 'live-holder-token', 'Process B must not have stolen Child A token');
+  assert(fs.existsSync(lockDir), 'Lock directory must still exist on disk');
+  const lockData = JSON.parse(fs.readFileSync(path.join(lockDir, 'meta.json'), 'utf8'));
+  assertEqual(lockData.ownerToken, 'live-holder-token', 'Process B must not have stolen Child A token');
 
   fs.rmSync(dir, { recursive: true });
 });
@@ -447,13 +448,14 @@ test('T13: Adversarial #1: Live >30s holder cannot have its lock stolen (fail-cl
 test('T14: Adversarial #2: Crashed-owner (dead PID) recovery is safe and completes rotation', () => {
   const { dir, instanceId, projectId, token: origToken } = makeDisposableDir();
   const operatorToken = crypto.randomBytes(16).toString('hex');
-  const lockPath = path.join(dir, '.qa_revoke.lock');
+  const lockDir = path.join(dir, 'db.lock');
 
   // Dead PID
   const deadPid = 9999999;
-  fs.writeFileSync(lockPath, JSON.stringify({
+  fs.mkdirSync(lockDir, { recursive: true });
+  fs.writeFileSync(path.join(lockDir, 'meta.json'), JSON.stringify({
     pid: deadPid,
-    fencingToken: 'dead-holder-token',
+    ownerToken: 'dead-holder-token',
     createdAt: Date.now() - 60000,
     instanceId
   }, null, 2), 'utf8');
@@ -474,134 +476,185 @@ test('T14: Adversarial #2: Crashed-owner (dead PID) recovery is safe and complet
   assertNotEqual(rotatedToken, origToken, 'Token should have rotated');
 
   // Lock must be released
-  assert(!fs.existsSync(lockPath), 'Lock file must be released at exit');
+  assert(!fs.existsSync(lockDir), 'Lock directory must be released at exit');
 
   fs.rmSync(dir, { recursive: true });
 });
 
-// ── T15: Adversarial #3: Old holder cannot write or unlink successor lock ──────
-test('T15: Adversarial #3: Old holder cannot write or unlink successor lock (fencing check)', () => {
+// ── T15: Adversarial #3: Old holder / CLI cannot write or unlink successor lock ─
+test('T15: Adversarial #3: Real CLI cannot overwrite or release successor lock', () => {
   const { dir, instanceId, projectId } = makeDisposableDir();
-  const lockPath = path.join(dir, '.qa_revoke.lock');
+  const operatorToken = crypto.randomBytes(16).toString('hex');
+  const lockDir = path.join(dir, 'db.lock');
 
-  const successorFencingToken = 'successor-fencing-token-xyz';
-  fs.writeFileSync(lockPath, JSON.stringify({
+  // Successor process creates db.lock
+  const successorToken = 'successor-fencing-token-xyz';
+  fs.mkdirSync(lockDir, { recursive: true });
+  fs.writeFileSync(path.join(lockDir, 'meta.json'), JSON.stringify({
     pid: process.pid,
-    fencingToken: successorFencingToken,
+    ownerToken: successorToken,
     createdAt: Date.now(),
     instanceId
   }, null, 2), 'utf8');
 
-  // Old holder attempts to unlink with old token
-  const oldHolderToken = 'old-holder-token-123';
-  const childOldRelease = spawnSync(NODE, ['-e', [
-    "const fs = require('fs');",
-    "const lockP = process.argv[1];",
-    "const oldTok = process.argv[2];",
-    "if (fs.existsSync(lockP)) {",
-    "  const lockData = JSON.parse(fs.readFileSync(lockP, 'utf8'));",
-    "  if (lockData && lockData.fencingToken === oldTok) {",
-    "    fs.unlinkSync(lockP);",
-    "    process.exit(0);",
-    "  } else {",
-    "    process.stderr.write('releaseLock skipped due to fencing token mismatch\\n');",
-    "    process.exit(1);",
-    "  }",
-    "}"
-  ].join('\n'), lockPath, oldHolderToken], { encoding: 'utf8' });
+  // Attempt to run the actual CLI with short timeout while successor holds lock
+  const r = runCli({
+    TEST_PROJECT_ID:        projectId,
+    DATA_DIR:               dir,
+    DISPOSABLE_INSTANCE_ID: instanceId,
+    OPERATOR_TOKEN:         operatorToken,
+    LOCK_TIMEOUT_MS:        '500'
+  });
 
-  assertEqual(childOldRelease.status, 1, 'Old holder release should fail token check');
-  assert(childOldRelease.stderr.includes('fencing token mismatch'), 'stderr should report token mismatch');
+  assertEqual(r.exitCode, 7, `CLI must fail-closed with exit 7, got ${r.exitCode}`);
+  assert(r.stderr.includes('Could not acquire lock'), 'stderr should report lock failure');
 
-  // Successor lock MUST remain intact
-  assert(fs.existsSync(lockPath), 'Successor lock must NOT be deleted by old holder');
-  const remainingLock = JSON.parse(fs.readFileSync(lockPath, 'utf8'));
-  assertEqual(remainingLock.fencingToken, successorFencingToken, 'Successor fencing token must remain unchanged');
+  // Successor lock MUST remain intact on disk with successorToken
+  assert(fs.existsSync(lockDir), 'Successor lock must NOT be deleted by CLI');
+  const remainingLock = JSON.parse(fs.readFileSync(path.join(lockDir, 'meta.json'), 'utf8'));
+  assertEqual(remainingLock.ownerToken, successorToken, 'Successor token must remain unchanged');
 
   fs.rmSync(dir, { recursive: true });
 });
 
-// ── T16: Adversarial #4: Unrelated concurrent DB updates survive (Whole-file CAS abort) ─
-test('T16: Adversarial #4: Unrelated concurrent DB updates survive — CAS aborts without clobbering', () => {
+// ── T16: Adversarial #4: Real interleaving with actual db.js ──────────────────
+test('T16: Real interleaving with actual db.js — db.lock mutual exclusion & CAS preservation', () => {
   const otherProjectId = 'prj-test-unrelated-' + crypto.randomBytes(4).toString('hex');
-  const { dir, instanceId, projectId } = makeDisposableDir({
+  const { dir, instanceId, projectId, token: origToken } = makeDisposableDir({
     extraProjects: [{
       id: otherProjectId,
       editToken: 'tok-unrelated-critical',
       name: 'Unrelated Project',
-      importantData: 'DO_NOT_CLOBBER'
+      data: 'ORIGINAL_DATA'
     }]
   });
-  const dbPath = path.join(dir, 'db.json');
-  const readyFile = path.join(dir, '.test_t16_snapshot_ready');
-  const mutateDoneFile = path.join(dir, '.test_t16_mutate_done');
-  const exitFile = path.join(dir, '.test_t16_worker_exit');
-  const stderrFile = path.join(dir, '.test_t16_worker_stderr');
+  const operatorToken = crypto.randomBytes(16).toString('hex');
+  const dbLockDir = path.join(dir, 'db.lock');
+  const readyFile = path.join(dir, '.test_t16_ready');
+  const releaseFile = path.join(dir, '.test_t16_release');
 
-  // Worker script emulates the rotation CAS step:
-  // Reads DB under lock, signals parent that snapshot is taken, waits for mutate_done,
-  // then checks CAS and aborts with code 8 if hash changed.
-  const workerScript = [
+  // Spawn a child process that requires the actual application db.js and holds db.lock!
+  const dbWorkerScript = [
     "const fs = require('fs');",
-    "const crypto = require('crypto');",
-    "const [dbP, readyP, doneP, exitP, stderrP] = process.argv.slice(1);",
-    "const sha256Bytes = b => crypto.createHash('sha256').update(b).digest('hex');",
-    "const hashAtLock = sha256Bytes(fs.readFileSync(dbP));",
-    "fs.writeFileSync(readyP, '1', 'utf8');",
-    "const deadline = Date.now() + 5000;",
-    "while (!fs.existsSync(doneP) && Date.now() < deadline) {",
-    "  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 50);",
-    "}",
-    "const currentHash = sha256Bytes(fs.readFileSync(dbP));",
-    "if (currentHash !== hashAtLock) {",
-    "  fs.writeFileSync(stderrP, 'ABORT: Whole-DB CAS failed — concurrent writer detected', 'utf8');",
-    "  fs.writeFileSync(exitP, '8', 'utf8');",
-    "  process.exit(8);",
-    "}",
-    "fs.writeFileSync(exitP, '0', 'utf8');",
-    "process.exit(0);"
+    "const path = require('path');",
+    "const [dir, readyP, relP] = process.argv.slice(1);",
+    "process.env.DATA_DIR = dir;",
+    "const db = require(path.resolve('virtual-tradeshow-commercial-v1/_clean_deploy/server/db'));",
+    "db.acquireFileLock().then(tok => {",
+    "  fs.writeFileSync(readyP, 'LOCKED', 'utf8');",
+    "  const dl = Date.now() + 6000;",
+    "  while (!fs.existsSync(relP) && Date.now() < dl) {",
+    "    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 50);",
+    "  }",
+    "  // Mutate unrelated project before releasing lock, keeping users sanitized to test role",
+    "  const data = db.read();",
+    "  data.users = [{ id: 'user-qa-1', email: 'qa@test.local', role: 'qa_tester' }];",
+    "  const un = data.projects.find(p => p.id === '" + otherProjectId + "');",
+    "  if (un) un.data = 'CONCURRENT_MUTATION_BY_REAL_DB_JS';",
+    "  db._writeUnderLock(data);",
+    "  db.releaseFileLock(tok);",
+    "  fs.writeFileSync(readyP + '.done', 'RELEASED', 'utf8');",
+    "  process.exit(0);",
+    "});"
   ].join('\n');
 
-  const childWorker = spawn(NODE, ['-e', workerScript, dbPath, readyFile, mutateDoneFile, exitFile, stderrFile], {
-    stdio: 'ignore'
-  });
+  const dbWorker = spawn(NODE, ['-e', dbWorkerScript, dir, readyFile, releaseFile], { stdio: 'ignore' });
 
-  // Wait for worker snapshot
+  // 1. Wait for db.js to acquire db.lock
   const waitDl = Date.now() + 3000;
   while (!fs.existsSync(readyFile) && Date.now() < waitDl) {
     Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 50);
   }
-  assert(fs.existsSync(readyFile), 'Worker should have signaled snapshot ready');
+  assert(fs.existsSync(readyFile), 'db.js should have acquired lock');
+  assert(fs.existsSync(dbLockDir), 'db.lock directory must exist on disk while db.js holds it');
 
-  // Concurrently mutate unrelated project in db.json
-  const currentDb = JSON.parse(fs.readFileSync(dbPath, 'utf8'));
-  const unrelated = currentDb.projects.find(p => p.id === otherProjectId);
-  unrelated.importantData = 'CONCURRENTLY_UPDATED_DATA_KEPT';
-  fs.writeFileSync(dbPath, JSON.stringify(currentDb, null, 2), 'utf8');
+  // 2. While db.js holds db.lock, run actual CLI: it MUST fail to acquire lock and exit 7!
+  const r1 = runCli({
+    TEST_PROJECT_ID:        projectId,
+    DATA_DIR:               dir,
+    DISPOSABLE_INSTANCE_ID: instanceId,
+    OPERATOR_TOKEN:         operatorToken,
+    LOCK_TIMEOUT_MS:        '600'
+  });
+  assertEqual(r1.exitCode, 7, `CLI must exit 7 while db.js holds lock. Got ${r1.exitCode}`);
 
-  // Signal worker that mutation is done
-  fs.writeFileSync(mutateDoneFile, '1', 'utf8');
-
-  // Wait for worker exit file
-  const exitDl = Date.now() + 4000;
-  while (!fs.existsSync(exitFile) && Date.now() < exitDl) {
+  // 3. Signal db.js worker to mutate and release lock
+  fs.writeFileSync(releaseFile, '1', 'utf8');
+  const waitDone = Date.now() + 3000;
+  while (!fs.existsSync(readyFile + '.done') && Date.now() < waitDone) {
     Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 50);
   }
 
-  assert(fs.existsSync(exitFile), 'Worker should have written exit code file');
-  const workerExitCode = parseInt(fs.readFileSync(exitFile, 'utf8').trim(), 10);
-  const workerStderr = fs.existsSync(stderrFile) ? fs.readFileSync(stderrFile, 'utf8') : '';
+  // 4. Now that lock is released, run CLI again: it should acquire lock and succeed!
+  const r2 = runCli({
+    TEST_PROJECT_ID:        projectId,
+    DATA_DIR:               dir,
+    DISPOSABLE_INSTANCE_ID: instanceId,
+    OPERATOR_TOKEN:         operatorToken,
+    LOCK_TIMEOUT_MS:        '5000'
+  });
+  assertEqual(r2.exitCode, 0, `CLI should succeed after db.js releases lock. stderr: ${r2.stderr}`);
 
-  assertEqual(workerExitCode, 8, `Worker must abort with exit 8 (CAS mismatch), got ${workerExitCode}. stderr: ${workerStderr}`);
-  assert(workerStderr.includes('Whole-DB CAS failed'), 'stderr must mention Whole-DB CAS failed');
+  // 5. Verify the unrelated project mutation performed by db.js survived!
+  const finalDb = readDb(dir);
+  const unrelated = finalDb.projects.find(p => p.id === otherProjectId);
+  assertEqual(unrelated.data, 'CONCURRENT_MUTATION_BY_REAL_DB_JS',
+    'Unrelated mutation by real db.js MUST survive and not be clobbered by CLI');
 
-  // Verify unrelated project data survived!
-  const finalDb = JSON.parse(fs.readFileSync(dbPath, 'utf8'));
-  const finalUnrelated = finalDb.projects.find(p => p.id === otherProjectId);
-  assertEqual(finalUnrelated.importantData, 'CONCURRENTLY_UPDATED_DATA_KEPT',
-    'Unrelated data MUST survive and not be clobbered by concurrent rotation');
-
+  try { dbWorker.kill(); } catch (_) {}
   fs.rmSync(dir, { recursive: true });
+});
+
+// ── T17: Adversarial #5: Customer & Owner DB Refusal Gate ─────────────────────
+test('T17: Customer & Owner DB Refusal Gate — strictly rejects non-test project records', () => {
+  // Scenario A: DB containing real customer project ID (prj-free-b0c6f3ea)
+  const dirA = mkTmp();
+  fs.writeFileSync(path.join(dirA, '.disposable_qa_marker'), 'inst-refusal-a', 'utf8');
+  const dbA = {
+    projects: [
+      { id: 'prj-test-1234', editToken: 'tok-test' },
+      { id: 'prj-free-b0c6f3ea', editToken: 'tok-prod', name: 'Real Customer Project' }
+    ]
+  };
+  fs.writeFileSync(path.join(dirA, 'db.json'), JSON.stringify(dbA, null, 2), 'utf8');
+
+  const rA = runCli({
+    TEST_PROJECT_ID:        'prj-test-1234',
+    DATA_DIR:               dirA,
+    DISPOSABLE_INSTANCE_ID: 'inst-refusal-a',
+    OPERATOR_TOKEN:         crypto.randomBytes(16).toString('hex')
+  });
+
+  assertEqual(rA.exitCode, 3, `Expected exit 3 for customer project DB, got ${rA.exitCode}`);
+  assert(rA.stderr.includes('production/customer project (prj-free-b0c6f3ea)'),
+    'stderr should report refusal due to customer project');
+
+  // Verify db.json was NOT mutated
+  const dbAfterA = JSON.parse(fs.readFileSync(path.join(dirA, 'db.json'), 'utf8'));
+  assertEqual(dbAfterA.projects[0].editToken, 'tok-test', 'No mutation should occur');
+  fs.rmSync(dirA, { recursive: true });
+
+  // Scenario B: DB containing platform owner user
+  const dirB = mkTmp();
+  fs.writeFileSync(path.join(dirB, '.disposable_qa_marker'), 'inst-refusal-b', 'utf8');
+  const dbB = {
+    projects: [{ id: 'prj-test-valid', editToken: 'tok-test' }],
+    users: [{ id: 'user-1', email: 'owner@vshow.com', role: 'platform_owner' }]
+  };
+  fs.writeFileSync(path.join(dirB, 'db.json'), JSON.stringify(dbB, null, 2), 'utf8');
+
+  const rB = runCli({
+    TEST_PROJECT_ID:        'prj-test-valid',
+    DATA_DIR:               dirB,
+    DISPOSABLE_INSTANCE_ID: 'inst-refusal-b',
+    OPERATOR_TOKEN:         crypto.randomBytes(16).toString('hex')
+  });
+
+  assertEqual(rB.exitCode, 3, `Expected exit 3 for platform owner DB, got ${rB.exitCode}`);
+  assert(rB.stderr.includes('platform owner account'),
+    'stderr should report refusal due to platform owner account');
+
+  fs.rmSync(dirB, { recursive: true });
 });
 
 // ─── Summary ─────────────────────────────────────────────────────────────────

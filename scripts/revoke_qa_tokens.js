@@ -130,97 +130,138 @@ function isProcessAlive(pid) {
 }
 
 /**
- * acquireLock — O_EXCL spinlock with fencing token & process liveness verification.
- * Generates a unique fencingToken. If lock exists:
- * - If holding PID is ALIVE: FAIL-CLOSED. Never steal the lock (even if >30s).
- * - If holding PID is DEAD (crashed process): safely evicts stale lock.
- * Returns fencingToken string if acquired within timeoutMs, or null on failure.
+ * readLockMeta — reads and parses metadata from a db.lock directory or file.
+ * Returns parsed object or null if absent or unparseable.
  */
-function acquireLock(lockPath, timeoutMs = 5000) {
-  const fencingToken = crypto.randomBytes(16).toString('hex');
-  const deadline = Date.now() + timeoutMs;
+function readLockMeta(lockDir) {
+  if (!fs.existsSync(lockDir)) return null;
+  try {
+    const stat = fs.statSync(lockDir);
+    if (stat.isDirectory()) {
+      const metaFile = path.join(lockDir, 'meta.json');
+      if (fs.existsSync(metaFile)) {
+        return JSON.parse(fs.readFileSync(metaFile, 'utf8'));
+      }
+    } else {
+      return JSON.parse(fs.readFileSync(lockDir, 'utf8'));
+    }
+  } catch (_) {}
+  return null;
+}
 
+/**
+ * acquireLock — standard application lock matching db.js (_getLockDir: DATA_DIR/db.lock).
+ * Uses atomic fs.mkdirSync(lockDir) with meta.json and ownerToken.
+ *
+ * FAIL-CLOSED on corrupted or unparseable lock files: NEVER unlinks on parseErr!
+ * Dead-owner recovery allowed ONLY when holder PID is confirmed dead (ESRCH) via tombstone rename.
+ */
+function acquireLock(lockDir, timeoutMs = 5000) {
+  const ownerToken = `${process.pid}_${Date.now()}_${crypto.randomBytes(8).toString('hex')}`;
+  const startTime  = Date.now() - Math.floor(process.uptime() * 1000);
+  const meta = {
+    ownerToken,
+    pid: process.pid,
+    startTime,
+    createdAt: Date.now(),
+    fencingToken: ownerToken,
+    instanceId: process.env.DISPOSABLE_INSTANCE_ID || 'unknown'
+  };
+
+  const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
     try {
-      const fd = fs.openSync(lockPath, fs.constants.O_WRONLY | fs.constants.O_CREAT | fs.constants.O_EXCL);
-      const payload = JSON.stringify({
-        pid: process.pid,
-        fencingToken,
-        createdAt: Date.now(),
-        instanceId: process.env.DISPOSABLE_INSTANCE_ID || 'unknown'
-      }, null, 2);
-      fs.writeSync(fd, payload, 0, 'utf8');
-      fs.fsyncSync(fd);
-      fs.closeSync(fd);
-      return fencingToken;
+      fs.mkdirSync(lockDir);
+      fs.writeFileSync(path.join(lockDir, ownerToken), '', 'utf8');
+      fs.writeFileSync(path.join(lockDir, 'meta.json'), JSON.stringify(meta, null, 2), 'utf8');
+      return ownerToken;
     } catch (e) {
       if (e.code !== 'EEXIST') throw e;
 
-      // Conflict: check existing lock holder liveness
-      try {
-        const raw = fs.readFileSync(lockPath, 'utf8');
-        const lockInfo = JSON.parse(raw);
-        if (lockInfo && lockInfo.pid) {
-          if (isProcessAlive(lockInfo.pid)) {
-            // Holder is ALIVE: FAIL-CLOSED. Do NOT steal lock, even if >30s!
-            // Wait and retry until timeout deadline.
-          } else {
-            // Holder is CONFIRMED DEAD (crashed process): safely evict dead lock
-            process.stderr.write(
-              `[REVOKE_QA_TOKENS] Evicting stale lock from crashed/dead process (PID ${lockInfo.pid})\n`
-            );
-            try { fs.unlinkSync(lockPath); } catch (_) {}
-            continue;
-          }
-        }
-      } catch (parseErr) {
-        // If file is corrupted and older than 30s, unlink
-        try {
-          const stat = fs.statSync(lockPath);
-          if (Date.now() - stat.mtimeMs > 30000) {
-            try { fs.unlinkSync(lockPath); } catch (_) {}
-            continue;
-          }
-        } catch (_) {}
+      // Lock conflict: inspect existing lock holder
+      let existing = null;
+      // Retry readLockMeta up to 5 times (10-30ms) to accommodate in-flight writes
+      for (let attempt = 0; attempt < 5; attempt++) {
+        existing = readLockMeta(lockDir);
+        if (existing) break;
+        Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 15);
       }
 
-      // Brief busy wait
-      const waitUntil = Date.now() + 50;
-      while (Date.now() < waitUntil) {}
+      if (existing && existing.pid) {
+        if (isProcessAlive(existing.pid)) {
+          // Holder is ALIVE: FAIL-CLOSED. Never steal the lock!
+          // Wait and retry until timeout deadline.
+        } else {
+          // Holder is CONFIRMED DEAD (crashed process): safely recover via tombstone rename (matching db.js)
+          const dataDir = path.dirname(lockDir);
+          const tombstone = path.join(dataDir, `db.lock.dead.${existing.pid}.${Date.now()}.${crypto.randomBytes(4).toString('hex')}`);
+          process.stderr.write(
+            `[REVOKE_QA_TOKENS] Evicting stale lock from crashed/dead process (PID ${existing.pid})\n`
+          );
+          try {
+            fs.renameSync(lockDir, tombstone);
+            try {
+              const stat = fs.statSync(tombstone);
+              if (stat.isDirectory()) {
+                for (const f of fs.readdirSync(tombstone)) {
+                  try { fs.unlinkSync(path.join(tombstone, f)); } catch (_) {}
+                }
+                fs.rmdirSync(tombstone);
+              } else {
+                fs.unlinkSync(tombstone);
+              }
+            } catch (_) {}
+            continue;
+          } catch (_) {}
+        }
+      } else {
+        // Unparseable / corrupted lock or unknown owner: FAIL-CLOSED!
+        // Do NOT unlink or steal! Wait for retry. If unparseable until timeout, acquireLock will return null.
+      }
+
+      // Backoff jitter (20-50ms)
+      const jitter = 20 + Math.floor(Math.random() * 30);
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, jitter);
     }
   }
   return null;
 }
 
 /**
- * releaseLock — unlinks lock file ONLY if on-disk fencingToken matches.
- * Prevents old/stale holders from unlinking successor locks.
+ * releaseLock — releases lockDir ONLY if on-disk meta.ownerToken === myOwnerToken.
+ * Prevents old/stale holders from releasing successor locks.
  */
-function releaseLock(lockPath, myFencingToken) {
-  if (!myFencingToken) return;
+function releaseLock(lockDir, myOwnerToken) {
+  if (!myOwnerToken || !fs.existsSync(lockDir)) return;
   try {
-    if (!fs.existsSync(lockPath)) return;
-    const content = fs.readFileSync(lockPath, 'utf8');
-    const lockData = JSON.parse(content);
-    if (lockData && lockData.fencingToken === myFencingToken) {
-      fs.unlinkSync(lockPath);
+    const meta = readLockMeta(lockDir);
+    if (meta && (meta.ownerToken === myOwnerToken || meta.fencingToken === myOwnerToken)) {
+      const stat = fs.statSync(lockDir);
+      if (stat.isDirectory()) {
+        for (const f of fs.readdirSync(lockDir)) {
+          try { fs.unlinkSync(path.join(lockDir, f)); } catch (_) {}
+        }
+        fs.rmdirSync(lockDir);
+      } else {
+        fs.unlinkSync(lockDir);
+      }
     } else {
       process.stderr.write(
-        `[REVOKE_QA_TOKENS] WARNING: releaseLock skipped — lock file owned by different fencingToken ` +
-        `(expected: ${myFencingToken}, found: ${lockData ? lockData.fencingToken : 'null'})\n`
+        `[REVOKE_QA_TOKENS] WARNING: releaseLock skipped — lock owned by different token ` +
+        `(expected: ${myOwnerToken}, found: ${meta ? (meta.ownerToken || meta.fencingToken) : 'null'})\n`
       );
     }
   } catch (_) {}
 }
 
 /**
- * verifyLockHeld — verifies that the lock file still exists and matches myFencingToken.
+ * verifyLockHeld — verifies that lockDir still exists and is owned by myOwnerToken.
  */
-function verifyLockHeld(lockPath, myFencingToken) {
-  if (!myFencingToken || !fs.existsSync(lockPath)) return false;
+function verifyLockHeld(lockDir, myOwnerToken) {
+  if (!myOwnerToken || !fs.existsSync(lockDir)) return false;
   try {
-    const data = JSON.parse(fs.readFileSync(lockPath, 'utf8'));
-    return data && data.fencingToken === myFencingToken;
+    const meta = readLockMeta(lockDir);
+    return meta && (meta.ownerToken === myOwnerToken || meta.fencingToken === myOwnerToken);
   } catch (_) {
     return false;
   }
@@ -308,7 +349,7 @@ if (errors.length) {
 const MARKER_PATH = path.join(DATA_DIR, '.disposable_qa_marker');
 const DB_PATH     = path.join(DATA_DIR, 'db.json');
 const BACKUP_PATH = path.join(DATA_DIR, '.qa_token_backup.json');
-const LOCK_PATH   = path.join(DATA_DIR, '.qa_revoke.lock');
+const LOCK_DIR    = path.join(DATA_DIR, 'db.lock'); // unified with server/db.js _getLockDir()
 
 // ─── Pre-lock: verify marker and db.json exist before acquiring lock ──────────
 if (!fs.existsSync(MARKER_PATH)) {
@@ -327,15 +368,15 @@ if (!fs.existsSync(DB_PATH)) {
 
 // ─── ACQUIRE LOCK FIRST — all DB reads/writes happen under this lock ──────────
 const LOCK_TIMEOUT_MS = parseInt(process.env.LOCK_TIMEOUT_MS || '5000', 10);
-const myFencingToken = acquireLock(LOCK_PATH, LOCK_TIMEOUT_MS);
-if (!myFencingToken) {
+const myOwnerToken = acquireLock(LOCK_DIR, LOCK_TIMEOUT_MS);
+if (!myOwnerToken) {
   process.stderr.write('[REVOKE_QA_TOKENS] ABORT: Could not acquire lock within timeout.\n');
   process.exit(7);
 }
 
 let exitCode = 0;
 
-function runUnderLock(fencingToken) {
+function runUnderLock(ownerToken) {
   // ── Under lock: verify marker identity ──────────────────────────────────────
   const markerContent = fs.readFileSync(MARKER_PATH, 'utf8').trim();
   if (markerContent !== DISPOSABLE_INSTANCE_ID) {
@@ -357,6 +398,31 @@ function runUnderLock(fencingToken) {
   } catch (e) {
     process.stderr.write(`[REVOKE_QA_TOKENS] ABORT: Failed to parse db.json: ${e.message}\n`);
     return 4;
+  }
+
+  // ── Under lock: Customer & Owner DB Refusal Gate (P0 Defense) ───────────────
+  // Strictly refuse to mutate any DB that contains non-test projects or owner accounts
+  if (Array.isArray(dbData.projects)) {
+    for (const proj of dbData.projects) {
+      if (proj && proj.id && !proj.id.startsWith('prj-test-')) {
+        process.stderr.write(
+          `[REVOKE_QA_TOKENS] ABORT: Target DB contains production/customer project (${proj.id}).\n` +
+          '  Revocation utility strictly refuses non-disposable datastores, even under temp directories.\n'
+        );
+        return 3;
+      }
+    }
+  }
+  if (Array.isArray(dbData.users)) {
+    for (const user of dbData.users) {
+      if (user && (user.role === 'platform_owner' || (user.email && user.email.includes('owner@')))) {
+        process.stderr.write(
+          `[REVOKE_QA_TOKENS] ABORT: Target DB contains platform owner account (${user.email || user.id}).\n` +
+          '  Revocation utility strictly refuses production/owner datastores.\n'
+        );
+        return 3;
+      }
+    }
   }
 
   const projects = dbData.projects || [];
@@ -412,9 +478,9 @@ function runUnderLock(fencingToken) {
     }
 
     // Verify lock is still held by this process before write
-    if (!verifyLockHeld(LOCK_PATH, fencingToken)) {
+    if (!verifyLockHeld(LOCK_DIR, ownerToken)) {
       process.stderr.write(
-        '[REVOKE_QA_TOKENS] ABORT: Lock ownership lost before rollback write (fencing token mismatch).\n'
+        '[REVOKE_QA_TOKENS] ABORT: Lock ownership lost before rollback write (ownerToken mismatch).\n'
       );
       return 8;
     }
@@ -477,9 +543,9 @@ function runUnderLock(fencingToken) {
   }
 
   // Verify lock is still held by this process before write
-  if (!verifyLockHeld(LOCK_PATH, fencingToken)) {
+  if (!verifyLockHeld(LOCK_DIR, ownerToken)) {
     process.stderr.write(
-      '[REVOKE_QA_TOKENS] ABORT: Lock ownership lost before write (fencing token mismatch).\n' +
+      '[REVOKE_QA_TOKENS] ABORT: Lock ownership lost before write (ownerToken mismatch).\n' +
       '  Another process may have superseded the lock. Write aborted to prevent split-brain.\n'
     );
     return 8;
@@ -526,13 +592,13 @@ function runUnderLock(fencingToken) {
 }
 
 try {
-  exitCode = runUnderLock(myFencingToken);
+  exitCode = runUnderLock(myOwnerToken);
   if (typeof exitCode !== 'number') exitCode = 0;
 } catch (err) {
   process.stderr.write(`[REVOKE_QA_TOKENS] ERROR: ${err.message}\n${err.stack}\n`);
   exitCode = 8;
 } finally {
-  releaseLock(LOCK_PATH, myFencingToken);
+  releaseLock(LOCK_DIR, myOwnerToken);
 }
 
 process.exit(exitCode);
@@ -722,44 +788,76 @@ function runSelfTests() {
     assert.strictEqual(isProcessAlive(0), false, 'Zero PID must be false');
   });
 
-  // T14: acquireLock generates fencingToken and writes JSON payload
-  test('acquireLock writes fencing token and PID to lock file', () => {
-    const lockP = path.join(tmpDir, 'test_acquire.lock');
-    const token = acquireLock(lockP, 500);
-    assert.ok(typeof token === 'string' && token.length > 0, 'Must return fencingToken');
-    assert.ok(fs.existsSync(lockP), 'Lock file must exist');
-    const data = JSON.parse(fs.readFileSync(lockP, 'utf8'));
-    assert.strictEqual(data.pid, process.pid, 'Lock must contain process.pid');
-    assert.strictEqual(data.fencingToken, token, 'Lock must contain matching fencingToken');
-    releaseLock(lockP, token);
-    assert.ok(!fs.existsSync(lockP), 'Lock must be released');
+  // T14: acquireLock generates ownerToken and creates directory lock with meta.json
+  test('acquireLock creates db.lock directory with meta.json matching db.js', () => {
+    const lockDir = path.join(tmpDir, 'test_acquire_dir.lock');
+    const token = acquireLock(lockDir, 500);
+    assert.ok(typeof token === 'string' && token.length > 0, 'Must return ownerToken');
+    assert.ok(fs.existsSync(lockDir), 'Lock directory must exist');
+    const meta = readLockMeta(lockDir);
+    assert.strictEqual(meta.pid, process.pid, 'Lock must contain process.pid');
+    assert.strictEqual(meta.ownerToken, token, 'Lock must contain matching ownerToken');
+    releaseLock(lockDir, token);
+    assert.ok(!fs.existsSync(lockDir), 'Lock directory must be released');
   });
 
-  // T15: releaseLock refuses to unlink lock with different fencingToken
-  test('releaseLock protects successor lock from old holder deletion', () => {
-    const lockP = path.join(tmpDir, 'test_successor.lock');
+  // T15: releaseLock refuses to unlink directory lock with different ownerToken
+  test('releaseLock protects successor directory lock from old holder deletion', () => {
+    const lockDir = path.join(tmpDir, 'test_successor_dir.lock');
+    fs.mkdirSync(lockDir, { recursive: true });
     const successorToken = 'successor-token-' + crypto.randomBytes(4).toString('hex');
     const oldToken       = 'old-token-' + crypto.randomBytes(4).toString('hex');
-    fs.writeFileSync(lockP, JSON.stringify({ pid: process.pid, fencingToken: successorToken }), 'utf8');
+    fs.writeFileSync(path.join(lockDir, 'meta.json'), JSON.stringify({ pid: process.pid, ownerToken: successorToken }), 'utf8');
 
     // Old holder attempts to release
-    releaseLock(lockP, oldToken);
-    assert.ok(fs.existsSync(lockP), 'Lock file must NOT be unlinked by old holder with mismatched token');
+    releaseLock(lockDir, oldToken);
+    assert.ok(fs.existsSync(lockDir), 'Lock directory must NOT be unlinked by old holder with mismatched token');
 
     // Successor releases with correct token
-    releaseLock(lockP, successorToken);
-    assert.ok(!fs.existsSync(lockP), 'Lock file should be unlinked when fencingToken matches');
+    releaseLock(lockDir, successorToken);
+    assert.ok(!fs.existsSync(lockDir), 'Lock directory should be unlinked when ownerToken matches');
   });
 
-  // T16: verifyLockHeld validates matching token and handles missing file
-  test('verifyLockHeld validates ownership and fail-closed on mismatch', () => {
-    const lockP = path.join(tmpDir, 'test_verify.lock');
+  // T16: verifyLockHeld validates matching token and handles missing directory
+  test('verifyLockHeld validates directory lock ownership and fail-closed on mismatch', () => {
+    const lockDir = path.join(tmpDir, 'test_verify_dir.lock');
     const tok = 'my-token';
-    assert.strictEqual(verifyLockHeld(lockP, tok), false, 'Missing lock must return false');
-    fs.writeFileSync(lockP, JSON.stringify({ pid: process.pid, fencingToken: tok }), 'utf8');
-    assert.strictEqual(verifyLockHeld(lockP, tok), true, 'Matching lock must return true');
-    assert.strictEqual(verifyLockHeld(lockP, 'wrong-tok'), false, 'Mismatched lock must return false');
-    fs.unlinkSync(lockP);
+    assert.strictEqual(verifyLockHeld(lockDir, tok), false, 'Missing lock must return false');
+    fs.mkdirSync(lockDir, { recursive: true });
+    fs.writeFileSync(path.join(lockDir, 'meta.json'), JSON.stringify({ pid: process.pid, ownerToken: tok }), 'utf8');
+    assert.strictEqual(verifyLockHeld(lockDir, tok), true, 'Matching lock must return true');
+    assert.strictEqual(verifyLockHeld(lockDir, 'wrong-tok'), false, 'Mismatched lock must return false');
+    releaseLock(lockDir, tok);
+  });
+
+  // T17: Customer / Owner DB refusal gate
+  test('Refuses DB containing production/customer projects or platform owner', () => {
+    const custDb = {
+      projects: [{ id: 'prj-free-b0c6f3ea', name: 'Real Customer Project' }],
+      users: []
+    };
+    const hasCust = custDb.projects.some(p => !p.id.startsWith('prj-test-'));
+    assert.strictEqual(hasCust, true, 'Must detect customer project');
+
+    const ownerDb = {
+      projects: [{ id: 'prj-test-valid', name: 'Test' }],
+      users: [{ email: 'owner@vshow.com', role: 'platform_owner' }]
+    };
+    const hasOwner = ownerDb.users.some(u => u.role === 'platform_owner' || u.email.includes('owner@'));
+    assert.strictEqual(hasOwner, true, 'Must detect platform owner');
+  });
+
+  // T18: Corrupted/unparseable lock is fail-closed (never unlinked by acquireLock)
+  test('Corrupted/unparseable lock directory is fail-closed — never stolen', () => {
+    const corruptLockDir = path.join(tmpDir, 'corrupt.lock');
+    fs.mkdirSync(corruptLockDir, { recursive: true });
+    fs.writeFileSync(path.join(corruptLockDir, 'meta.json'), 'INVALID_JSON_CORRUPT', 'utf8');
+    
+    // acquireLock with short timeout must fail (return null) and NOT delete the lock
+    const acquired = acquireLock(corruptLockDir, 200);
+    assert.strictEqual(acquired, null, 'Must fail to acquire corrupt lock (fail-closed)');
+    assert.ok(fs.existsSync(corruptLockDir), 'Corrupt lock must NOT be deleted');
+    fs.rmSync(corruptLockDir, { recursive: true });
   });
 
   console.log(`\n  Self-test complete: ${pass} passed, ${fail} failed`);
