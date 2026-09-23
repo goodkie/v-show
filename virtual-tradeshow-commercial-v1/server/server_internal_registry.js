@@ -149,30 +149,88 @@ function assertNoStaticOverlap(targetPath) {
   }
 }
 
+function isProcessAlive(pid) {
+  if (typeof pid !== 'number' || pid <= 0 || !Number.isInteger(pid)) return false;
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (err) {
+    return err.code === 'EPERM';
+  }
+}
+
+function fsyncDirectorySafe(dirPath) {
+  try {
+    const fd = fs.openSync(dirPath, fs.constants.O_RDONLY);
+    try {
+      fs.fsyncSync(fd);
+    } finally {
+      fs.closeSync(fd);
+    }
+  } catch (_) {
+    // Directory fsync is not supported or permitted on all filesystems/OSes (e.g. Windows)
+  }
+}
+
 /**
- * Cross-Process Advisory Lock Utility
+ * Cross-Process Ownership-Aware Advisory Lock Utility (Round 44 P0-2)
  * Synchronizes atomic write/read operations across multiple Node processes.
+ * Enforces ownership-aware liveness checks (isProcessAlive) to prevent lock-stealing
+ * from active processes, and safe ownership verification before unlinking.
  */
-function withStoreLock(lockFilePath, actionFn) {
+function withStoreLock(lockFilePath, actionFn, options = {}) {
   fs.mkdirSync(path.dirname(lockFilePath), { recursive: true });
-  const maxRetries = 250;
-  const retryDelayMs = 20;
-  const staleTimeoutMs = 10000;
+  const maxRetries = options.maxRetries || 250;
+  const retryDelayMs = options.retryDelayMs || 20;
+  const staleTimeoutMs = options.staleTimeoutMs || (process.env.STAGE2_LOCK_STALE_MS ? parseInt(process.env.STAGE2_LOCK_STALE_MS, 10) : 10000);
   let lockFd = null;
+  let lockToken = null;
 
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
       lockFd = fs.openSync(lockFilePath, 'wx');
-      fs.writeFileSync(lockFd, JSON.stringify({ pid: process.pid, time: Date.now() }), 'utf8');
+      lockToken = `${process.pid}_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+      const meta = JSON.stringify({
+        pid: process.pid,
+        createdAt: Date.now(),
+        fencingToken: lockToken,
+        host: os.hostname()
+      });
+      fs.writeFileSync(lockFd, meta, 'utf8');
+      fs.fsyncSync(lockFd);
       break;
     } catch (err) {
       if (err.code === 'EEXIST') {
+        let isOwnerDead = false;
+        let isCorrupt = false;
         try {
-          const stat = fs.statSync(lockFilePath);
-          if (Date.now() - stat.mtimeMs > staleTimeoutMs) {
-            try { fs.unlinkSync(lockFilePath); } catch (_) {}
+          const content = fs.readFileSync(lockFilePath, 'utf8');
+          const meta = JSON.parse(content);
+          if (meta && typeof meta.pid === 'number') {
+            if (!isProcessAlive(meta.pid)) {
+              isOwnerDead = true;
+            } else {
+              // Living owner: NEVER unlink or steal lock, preserve mutual exclusion!
+              isOwnerDead = false;
+            }
+          } else {
+            isCorrupt = true;
           }
-        } catch (_) {}
+        } catch (_) {
+          isCorrupt = true;
+        }
+
+        if (isOwnerDead) {
+          try { fs.unlinkSync(lockFilePath); } catch (_) {}
+        } else if (isCorrupt) {
+          try {
+            const stat = fs.statSync(lockFilePath);
+            if (Date.now() - stat.mtimeMs > staleTimeoutMs) {
+              try { fs.unlinkSync(lockFilePath); } catch (_) {}
+            }
+          } catch (_) {}
+        }
+
         const start = Date.now();
         while (Date.now() - start < retryDelayMs) {}
         continue;
@@ -188,10 +246,16 @@ function withStoreLock(lockFilePath, actionFn) {
   }
 
   try {
-    return actionFn();
+    return actionFn(lockToken);
   } finally {
     try { fs.closeSync(lockFd); } catch (_) {}
-    try { fs.unlinkSync(lockFilePath); } catch (_) {}
+    try {
+      const currentContent = fs.readFileSync(lockFilePath, 'utf8');
+      const currentMeta = JSON.parse(currentContent);
+      if (currentMeta && currentMeta.fencingToken === lockToken && currentMeta.pid === process.pid) {
+        fs.unlinkSync(lockFilePath);
+      }
+    } catch (_) {}
   }
 }
 
@@ -247,6 +311,7 @@ function persistRevokedTokens(set) {
     fs.closeSync(fd);
     fd = null;
     fs.renameSync(tmpFile, REVOCATION_FILE);
+    fsyncDirectorySafe(DURABLE_AUTH_DIR);
   } catch (writeErr) {
     if (fd !== null) {
       try { fs.closeSync(fd); } catch (_) {}
@@ -460,20 +525,34 @@ function loadJobLedgerFromDisk() {
   if (!fs.existsSync(JOB_LEDGER_FILE)) {
     return new Map();
   }
+  let raw;
   try {
-    const raw = fs.readFileSync(JOB_LEDGER_FILE, 'utf8');
-    const list = JSON.parse(raw);
-    if (Array.isArray(list)) {
-      const map = new Map();
-      for (const item of list) {
-        if (item && item.jobId) {
-          map.set(item.jobId, item);
-        }
-      }
-      return map;
+    raw = fs.readFileSync(JOB_LEDGER_FILE, 'utf8');
+  } catch (readErr) {
+    const err = new Error(`ERR_JOB_LEDGER_UNAVAILABLE: Failed to read job ledger: ${readErr.message}`);
+    err.code = 'ERR_JOB_LEDGER_UNAVAILABLE';
+    throw err;
+  }
+  let list;
+  try {
+    list = JSON.parse(raw);
+  } catch (jsonErr) {
+    const err = new Error(`ERR_JOB_LEDGER_CORRUPTED: Job ledger corrupted JSON: ${jsonErr.message}`);
+    err.code = 'ERR_JOB_LEDGER_CORRUPTED';
+    throw err;
+  }
+  if (!Array.isArray(list)) {
+    const err = new Error('ERR_JOB_LEDGER_CORRUPTED: Job ledger data must be a JSON array');
+    err.code = 'ERR_JOB_LEDGER_CORRUPTED';
+    throw err;
+  }
+  const map = new Map();
+  for (const item of list) {
+    if (item && item.jobId) {
+      map.set(item.jobId, item);
     }
-  } catch (_) {}
-  return new Map();
+  }
+  return map;
 }
 
 function persistJobLedgerToDisk(jobMap) {
@@ -488,40 +567,100 @@ function persistJobLedgerToDisk(jobMap) {
     fs.closeSync(fd);
     fd = null;
     fs.renameSync(tmpFile, JOB_LEDGER_FILE);
+    fsyncDirectorySafe(DURABLE_AUTH_DIR);
   } catch (writeErr) {
     if (fd !== null) {
       try { fs.closeSync(fd); } catch (_) {}
     }
     try { fs.unlinkSync(tmpFile); } catch (_) {}
-    throw writeErr;
+    const err = new Error(`ERR_JOB_LEDGER_WRITE_FAILED: Failed to persist job ledger: ${writeErr.message}`);
+    err.code = 'ERR_JOB_LEDGER_WRITE_FAILED';
+    throw err;
   }
 }
 
 function syncActiveJobsFromLedger() {
+  const diskMap = loadJobLedgerFromDisk();
+  for (const [id, job] of diskMap.entries()) {
+    if (!activeServerJobs.has(id)) {
+      activeServerJobs.set(id, job);
+    } else {
+      const local = activeServerJobs.get(id);
+      if (job.status === 'CLEANUP_FAILED' || job.status === 'CONSUMED' || job.status === 'CANCELLED' || job.status === 'ORPHANED_WORKSPACE') {
+        local.status = job.status;
+        if (job.cleanupError) local.cleanupError = job.cleanupError;
+        if (job.consumedAt) local.consumedAt = job.consumedAt;
+      }
+    }
+  }
+  return activeServerJobs;
+}
+
+/**
+ * Orphan Workspace Reconciliation (Round 44 P0-1)
+ * Scans physical workspace roots under SERVER_TRUSTED_WORKSPACE_BASE.
+ * Reconciles untracked directories left behind by crashed/interrupted processes
+ * into activeServerJobs under status ORPHANED_WORKSPACE so that physical directories
+ * are strictly accounted in concurrent job quotas and cannot bypass capacity gates.
+ */
+function reconcileOrphanWorkspaces() {
+  if (!fs.existsSync(SERVER_TRUSTED_WORKSPACE_BASE)) {
+    return { reconciled: 0, orphansFound: 0 };
+  }
+  let orphansFound = 0;
+  let reconciled = 0;
+
   try {
-    const diskMap = loadJobLedgerFromDisk();
-    for (const [id, job] of diskMap.entries()) {
-      if (!activeServerJobs.has(id)) {
-        activeServerJobs.set(id, job);
-      } else {
-        const local = activeServerJobs.get(id);
-        if (job.status === 'CLEANUP_FAILED' || job.status === 'CONSUMED' || job.status === 'CANCELLED') {
-          local.status = job.status;
-          if (job.cleanupError) local.cleanupError = job.cleanupError;
-          if (job.consumedAt) local.consumedAt = job.consumedAt;
+    const tenants = fs.readdirSync(SERVER_TRUSTED_WORKSPACE_BASE);
+    for (const tenant of tenants) {
+      const tenantDir = path.join(SERVER_TRUSTED_WORKSPACE_BASE, tenant);
+      let stat;
+      try { stat = fs.statSync(tenantDir); } catch (_) { continue; }
+      if (!stat.isDirectory()) continue;
+
+      const entries = fs.readdirSync(tenantDir);
+      for (const entry of entries) {
+        if (!entry.startsWith('job_')) continue;
+        const jobDir = path.join(tenantDir, entry);
+        let jStat;
+        try { jStat = fs.statSync(jobDir); } catch (_) { continue; }
+        if (!jStat.isDirectory()) continue;
+
+        if (!activeServerJobs.has(entry)) {
+          orphansFound++;
+          activeServerJobs.set(entry, {
+            jobId: entry,
+            tenantId: tenant,
+            projectId: 'untracked_orphan_reconciled',
+            ownerId: 'untracked_orphan_reconciled',
+            sessionTokenHash: 'untracked_orphan_reconciled',
+            status: 'ORPHANED_WORKSPACE',
+            jobRoot: jobDir,
+            scratch: path.join(jobDir, 'scratch'),
+            input: path.join(jobDir, 'input'),
+            output: path.join(jobDir, 'output'),
+            provisionedAt: jStat.birthtimeMs || jStat.mtimeMs || Date.now(),
+            expiresAt: (jStat.mtimeMs || Date.now()) + 300000 // 5m expiry window
+          });
+          reconciled++;
         }
       }
     }
   } catch (_) {}
+
+  return { reconciled, orphansFound };
 }
 
-// Initial sync on module startup
-syncActiveJobsFromLedger();
+// Initial sync on module startup (suppressed at boot so require succeeds; fail-closed on first runtime operation)
+try {
+  syncActiveJobsFromLedger();
+} catch (_) {}
 
 /**
  * Active eviction of expired and terminal entries.
  * Cleans physical workspace directories upon eviction.
  * Retains jobs in CLEANUP_FAILED status to account for orphaned storage until safe reclaim.
+ * Fails closed if persisting updated ledger to disk fails.
  */
 function evictExpiredJobs() {
   const now = Date.now();
@@ -532,7 +671,7 @@ function evictExpiredJobs() {
     if (job.status === 'CLEANUP_FAILED') {
       continue;
     }
-    if (now > job.expiresAt || job.status === 'COMPLETED' || job.status === 'CANCELLED') {
+    if (now > job.expiresAt || job.status === 'COMPLETED' || job.status === 'CANCELLED' || (job.status === 'ORPHANED_WORKSPACE' && now > job.expiresAt)) {
       let cleanupOk = true;
       try {
         if (job.jobRoot && fs.existsSync(job.jobRoot)) {
@@ -552,9 +691,7 @@ function evictExpiredJobs() {
     }
   }
   if (ledgerChanged) {
-    try {
-      persistJobLedgerToDisk(activeServerJobs);
-    } catch (_) {}
+    persistJobLedgerToDisk(activeServerJobs);
   }
   return evicted;
 }
@@ -596,6 +733,7 @@ function registerServerJob(jobRequest = {}, authContext = {}) {
 
   return withStoreLock(JOB_LOCK_FILE, () => {
     syncActiveJobsFromLedger();
+    reconcileOrphanWorkspaces();
     evictExpiredJobs();
 
     if (activeServerJobs.size >= MAX_CONCURRENT_JOBS) {
@@ -787,5 +925,9 @@ module.exports = {
   isSessionRevoked,
   assertNoStaticOverlap,
   getServedStaticRoots,
-  SERVER_TRUSTED_WORKSPACE_BASE
+  SERVER_TRUSTED_WORKSPACE_BASE,
+  reconcileOrphanWorkspaces,
+  withStoreLock,
+  isProcessAlive,
+  loadJobLedgerFromDisk
 };

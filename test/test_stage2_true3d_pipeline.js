@@ -91,7 +91,11 @@ const {
   isSessionRevoked,
   assertNoStaticOverlap,
   getServedStaticRoots,
-  SERVER_TRUSTED_WORKSPACE_BASE
+  SERVER_TRUSTED_WORKSPACE_BASE,
+  reconcileOrphanWorkspaces,
+  withStoreLock,
+  isProcessAlive,
+  loadJobLedgerFromDisk
 } = require('./helpers/test_harness_bootstrap');
 
 
@@ -1871,6 +1875,12 @@ async function main() {
       expiresAt: p2cExpiresAt,
       signature: p2cSignature
     };
+    // Reset durable ledger for clean multi-process test state
+    const testAuthStoreDir = process.env.STAGE2_AUTH_STORE_DIR
+      ? path.resolve(process.env.STAGE2_AUTH_STORE_DIR)
+      : path.resolve(os.tmpdir(), 'vshow_stage2_auth_store');
+    fs.mkdirSync(testAuthStoreDir, { recursive: true });
+    fs.writeFileSync(path.join(testAuthStoreDir, 'server_jobs_ledger.json'), '[]', 'utf8');
 
     // Pre-seed parent revocation in durable store to test cross-process propagation
     revokeTestSessionToken(parentToChildToken);
@@ -2140,6 +2150,132 @@ async function main() {
     assert.ok(isSessionRevoked(tokenConc2), 'tokenConc2 must be durably revoked in store');
 
     console.log('    - Adversarial production, genuine signed proof revocation & concurrent lost-update test: PASS (zero test hooks, durable lock, multi-process custody verified)');
+
+    // ── [ROUND 44 ENHANCEMENTS] ──────────────────────────────────────────────
+    // 1. P0-1: Job Ledger Fail-Closed on Read/Parse/Corruption across Processes
+    const durableAuthDir = process.env.STAGE2_AUTH_STORE_DIR
+      ? path.resolve(process.env.STAGE2_AUTH_STORE_DIR)
+      : path.resolve(os.tmpdir(), 'vshow_stage2_auth_store');
+    const jobLedgerPath = path.join(durableAuthDir, 'server_jobs_ledger.json');
+
+    // Backup current ledger content if exists
+    let origLedgerContent = null;
+    if (fs.existsSync(jobLedgerPath)) {
+      origLedgerContent = fs.readFileSync(jobLedgerPath, 'utf8');
+    }
+
+    const r44TestProof = mintTestSessionProof({
+      tenantId: testTenantId,
+      ownerId: testOwnerId,
+      projectId: testProjectId,
+      sessionTokenHash: 'r44_test_proof_hash_' + runNonce
+    });
+
+    try {
+      // Intentionally corrupt the durable job ledger
+      fs.writeFileSync(jobLedgerPath, '{"invalid_truncated_json": ', 'utf8');
+
+      // (a) loadJobLedgerFromDisk must fail closed with ERR_JOB_LEDGER_CORRUPTED
+      assert.throws(
+        () => loadJobLedgerFromDisk(),
+        /ERR_JOB_LEDGER_CORRUPTED/,
+        'Corrupted job ledger must fail closed with ERR_JOB_LEDGER_CORRUPTED in loadJobLedgerFromDisk'
+      );
+
+      // (b) Fresh process requiring server_internal_registry and attempting registerServerJob must FAIL CLOSED
+      const freshProcessFailClosedScript = `
+        const internal = require('./virtual-tradeshow-commercial-v1/server/server_internal_registry');
+        try {
+          internal.registerServerJob({ projectId: '${testProjectId}' }, { sessionProof: ${JSON.stringify(r44TestProof)} });
+          process.exit(1); // Must not succeed!
+        } catch (err) {
+          if (err.code === 'ERR_JOB_LEDGER_CORRUPTED') {
+            process.exit(0);
+          }
+          process.exit(2);
+        }
+      `;
+      const freshProcRes = spawnSync(process.execPath, ['-e', freshProcessFailClosedScript], {
+        cwd: REPO_ROOT,
+        env: { ...advChildEnv, SERVER_SESSION_SIGNING_SECRET: PROD_TEST_SECRET }
+      });
+      assert.strictEqual(freshProcRes.status, 0, 'Fresh process must fail closed with ERR_JOB_LEDGER_CORRUPTED on corrupted ledger');
+
+      // (c) In parent process, attempting registration on corrupt ledger must fail closed
+      assert.throws(
+        () => registerServerJob({ projectId: testProjectId }, { sessionProof: r44TestProof }),
+        /ERR_JOB_LEDGER_CORRUPTED/,
+        'Parent registerServerJob must fail closed on corrupted job ledger'
+      );
+    } finally {
+      if (origLedgerContent !== null) {
+        fs.writeFileSync(jobLedgerPath, origLedgerContent, 'utf8');
+      } else {
+        try { fs.unlinkSync(jobLedgerPath); } catch (_) {}
+      }
+    }
+
+    // 2. P0-1: Orphan Workspace Reconciliation Test
+    // Create an untracked physical directory under trusted workspace base
+    const orphanJobId = `job_orphan_test_${runNonce}_${crypto.randomBytes(4).toString('hex')}`;
+    const orphanDir = path.join(SERVER_TRUSTED_WORKSPACE_BASE, testTenantId, orphanJobId);
+    fs.mkdirSync(path.join(orphanDir, 'scratch'), { recursive: true });
+    fs.mkdirSync(path.join(orphanDir, 'input'), { recursive: true });
+    fs.mkdirSync(path.join(orphanDir, 'output'), { recursive: true });
+
+    try {
+      const reconcileRes = reconcileOrphanWorkspaces();
+      assert.ok(reconcileRes.orphansFound >= 1, 'Reconciliation must detect untracked physical workspace on disk');
+      assert.ok(reconcileRes.reconciled >= 1, 'Orphan directory must be reconciled into active tracking');
+    } finally {
+      try { fs.rmSync(orphanDir, { recursive: true, force: true }); } catch (_) {}
+    }
+
+    // 3. P0-2: Ownership-Aware Lock & Living Process Protection Falsification Test
+    // Proves that Writer B CANNOT steal a lock from living Writer A, even if hold time exceeds staleTimeoutMs
+    const testR44LockPath = path.join(durableAuthDir, `r44_falsify_lock_${runNonce}.lock`);
+    let writerBConcurrentlyEntered = false;
+
+    withStoreLock(testR44LockPath, (lockTokenA) => {
+      // Writer A holds the lock. Stale threshold configured to 50ms.
+      // Writer A intentionally holds beyond the 50ms stale threshold.
+      const waitStart = Date.now();
+      while (Date.now() - waitStart < 70) {} // 70ms > 50ms stale threshold
+
+      let bTimedOut = false;
+      try {
+        withStoreLock(testR44LockPath, () => {
+          writerBConcurrentlyEntered = true;
+        }, { staleTimeoutMs: 50, maxRetries: 4, retryDelayMs: 15 });
+      } catch (err) {
+        if (err.code === 'ERR_STORE_LOCK_TIMEOUT') {
+          bTimedOut = true;
+        } else {
+          throw err;
+        }
+      }
+
+      assert.strictEqual(bTimedOut, true, 'Writer B must time out and fail to acquire lock while Writer A is alive');
+      assert.strictEqual(writerBConcurrentlyEntered, false, 'Writer B must NEVER enter concurrently while Writer A is alive');
+    }, { staleTimeoutMs: 50 });
+
+    // After Writer A releases, Writer B acquires successfully
+    let writerBEnteredAfterRelease = false;
+    withStoreLock(testR44LockPath, () => {
+      writerBEnteredAfterRelease = true;
+    }, { staleTimeoutMs: 50, maxRetries: 10, retryDelayMs: 15 });
+    assert.strictEqual(writerBEnteredAfterRelease, true, 'Writer B must acquire cleanly after Writer A releases');
+
+    // Dead PID recovery: lock left by deceased process with fake PID is safely reclaimed
+    fs.writeFileSync(testR44LockPath, JSON.stringify({ pid: 999999, createdAt: Date.now() - 60000, fencingToken: 'dead_token' }), 'utf8');
+    let deadOwnerReclaimed = false;
+    withStoreLock(testR44LockPath, () => {
+      deadOwnerReclaimed = true;
+    }, { staleTimeoutMs: 50 });
+    assert.strictEqual(deadOwnerReclaimed, true, 'Dead process lock must be safely reclaimed');
+    try { fs.unlinkSync(testR44LockPath); } catch (_) {}
+
+    console.log('    - Fail-closed job ledger, orphan reconciliation & ownership-aware lock falsification test: PASS (R44 P0-1, P0-2 verified)');
 
     const publicWorker = require('../virtual-tradeshow-commercial-v1/server/spatial_reconstruction_worker');
 
@@ -2534,7 +2670,7 @@ async function main() {
   const engineDiscoveryProbes = probeReconstructionEngines();
 
   const receipt = {
-    receiptSchemaVersion: 'R43_EXECUTION_RECEIPT_V1',
+    receiptSchemaVersion: 'R44_EXECUTION_RECEIPT_V1',
     executionTimestamps: {
       startTime: suiteStartTime,
       endTime: suiteEndTime,
@@ -2580,7 +2716,8 @@ async function main() {
     executionBoundaryAudit: {
       trustedExecutionBoundary: 'CANONICAL_ABSOLUTE_PATH_AND_INFRASTRUCTURE_TRUST_POLICY',
       trustedRootRegistry: 'CLOSURE_PRIVATE_SERVER_REGISTRY',
-      serverJobRegistry: 'TRANSACTIONAL_LOCKED_LEDGER_AND_ISOLATED_CONTRACT_VERIFIED',
+      serverJobRegistry: 'FAIL_CLOSED_TRANSACTIONAL_LEDGER_WITH_ORPHAN_RECONCILIATION',
+      crossProcessLock: 'OWNERSHIP_AWARE_PID_LIVENESS_AND_FENCING_PROTECTION',
       callerRootOverrideDefense: 'STRICTLY_REJECTED',
       siblingPrefixEscapeDefense: 'PATH_SEPARATOR_BOUNDARY_CHECK',
       mandatoryOptionsEnforcement: 'ENFORCED_PER_SUBCOMMAND_SCHEMA',
@@ -2630,6 +2767,11 @@ async function main() {
       MODULE_AUTHORITY_BOUNDARY: 'CLOSURE_PRIVATE_AUTHORITY_VERIFIED',
       WORKSPACE_STATIC_ISOLATION: 'SOURCE_CHECK_ONLY',
       OWNER_DECISION_NOTE: 'READ_ONLY_BOUNDED_ZERO_SPEND_DEFAULT',
+      JOB_LEDGER_FAIL_CLOSED: 'FAIL_CLOSED_VERIFIED',
+      LOCK_STALE_OWNER_MUTEX: 'OWNERSHIP_AWARE_VERIFIED',
+      ORPHAN_WORKSPACE_RECONCILIATION: 'VERIFIED_BY_TEST',
+      DURABLE_ACROSS_REDEPLOY_REPLICA: 'NOT_VERIFIED',
+      PROJECT_MEMBERSHIP_CLASSIFICATION: 'ISOLATED_CONTRACT_ONLY',
       ACTUAL_ENGINE_EXECUTION: 'NOT_VERIFIED',
       OWNER_REVIEW_GATE: 'HOLD',
       ENGINEERING_HOLD: 'ACTIVE',
@@ -2639,14 +2781,14 @@ async function main() {
 
   const receiptOutPath = path.join(
     REPO_ROOT,
-    'virtual-tradeshow-commercial-v1/production_artifacts/R43_TEST_EXECUTION_RECEIPT.json'
+    'virtual-tradeshow-commercial-v1/production_artifacts/R44_TEST_EXECUTION_RECEIPT.json'
   );
   fs.writeFileSync(receiptOutPath, JSON.stringify(receipt, null, 2), 'utf8');
   const savedReceiptBytes = fs.readFileSync(receiptOutPath);
   const receiptByteSha256 = crypto.createHash('sha256').update(savedReceiptBytes).digest('hex');
 
-  console.log('--- Final Execution Receipt (R43 Machine Verifiable) ---');
-  console.log(`  File:           virtual-tradeshow-commercial-v1/production_artifacts/R43_TEST_EXECUTION_RECEIPT.json`);
+  console.log('--- Final Execution Receipt (R44 Machine Verifiable) ---');
+  console.log(`  File:           virtual-tradeshow-commercial-v1/production_artifacts/R44_TEST_EXECUTION_RECEIPT.json`);
   console.log(`  Byte SHA-256:   ${receiptByteSha256}`);
   console.log(`  Tested Commit:  ${suiteCurrentHead}`);
   console.log(`  Expected Head:  ${expectedHead || '(none - unbound)'}`);

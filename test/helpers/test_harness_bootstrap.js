@@ -103,5 +103,9 @@ module.exports = {
   getAuthoritativeProject: internal.getAuthoritativeProject,
   assertNoStaticOverlap: internal.assertNoStaticOverlap,
   getServedStaticRoots: internal.getServedStaticRoots,
-  SERVER_TRUSTED_WORKSPACE_BASE: internal.SERVER_TRUSTED_WORKSPACE_BASE
+  SERVER_TRUSTED_WORKSPACE_BASE: internal.SERVER_TRUSTED_WORKSPACE_BASE,
+  reconcileOrphanWorkspaces: internal.reconcileOrphanWorkspaces,
+  withStoreLock: internal.withStoreLock,
+  isProcessAlive: internal.isProcessAlive,
+  loadJobLedgerFromDisk: internal.loadJobLedgerFromDisk
 };
