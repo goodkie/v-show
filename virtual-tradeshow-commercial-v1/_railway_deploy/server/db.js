@@ -6351,43 +6351,51 @@ return event;
         db.stripeEvents.push(eventRecord);
       }
 
-      // 1. Authoritative verification: Check existing pending checkout record if available
+      // 1. Authoritative verification: Check existing pending checkout record (MANDATORY)
       const sessionId = session.id;
       db.pendingCheckouts = db.pendingCheckouts || [];
       const pending = sessionId ? db.pendingCheckouts.find(p => p.sessionId === sessionId) : null;
 
-      if (pending) {
-        if (pending.status === 'COMPLETED') {
-          eventRecord.status = 'PROCESSED';
-          return { success: true, duplicate: true, code: 'SESSION_ALREADY_COMPLETED' };
-        }
+      if (!pending) {
+        eventRecord.status = 'FAILED';
+        eventRecord.failureReason = 'NO_AUTHORITATIVE_PENDING_CHECKOUT';
+        return {
+          success: false,
+          code: 'NO_AUTHORITATIVE_PENDING_CHECKOUT',
+          message: 'No authoritative pending checkout record found for session.'
+        };
+      }
 
-        if (pending.status !== 'PENDING') {
-          eventRecord.status = 'FAILED';
-          eventRecord.failureReason = `INVALID_PENDING_STATUS_${pending.status}`;
-          return {
-            success: false,
-            code: 'INVALID_PENDING_STATUS',
-            message: `Pending checkout has non-pending status: ${pending.status}`
-          };
-        }
+      if (pending.status === 'COMPLETED') {
+        eventRecord.status = 'PROCESSED';
+        return { success: true, duplicate: true, code: 'SESSION_ALREADY_COMPLETED' };
+      }
 
-        if (pending.expiresAt && now > new Date(pending.expiresAt).getTime()) {
-          eventRecord.status = 'FAILED';
-          eventRecord.failureReason = 'PENDING_CHECKOUT_EXPIRED';
-          pending.status = 'EXPIRED';
-          return {
-            success: false,
-            code: 'PENDING_CHECKOUT_EXPIRED',
-            message: 'Pending checkout record has expired.'
-          };
-        }
+      if (pending.status !== 'PENDING') {
+        eventRecord.status = 'FAILED';
+        eventRecord.failureReason = `INVALID_PENDING_STATUS_${pending.status}`;
+        return {
+          success: false,
+          code: 'INVALID_PENDING_STATUS',
+          message: `Pending checkout has non-pending status: ${pending.status}`
+        };
+      }
+
+      if (pending.expiresAt && now > new Date(pending.expiresAt).getTime()) {
+        eventRecord.status = 'FAILED';
+        eventRecord.failureReason = 'PENDING_CHECKOUT_EXPIRED';
+        pending.status = 'EXPIRED';
+        return {
+          success: false,
+          code: 'PENDING_CHECKOUT_EXPIRED',
+          message: 'Pending checkout record has expired.'
+        };
       }
 
       // 2. Payment status verification: must be paid
-      if (session.payment_status && session.payment_status !== 'paid') {
+      if (!session.payment_status || session.payment_status !== 'paid') {
         eventRecord.status = 'FAILED';
-        eventRecord.failureReason = `UNPAID_PAYMENT_STATUS_${session.payment_status}`;
+        eventRecord.failureReason = `UNPAID_PAYMENT_STATUS_${session.payment_status || 'MISSING'}`;
         return {
           success: false,
           code: 'PAYMENT_NOT_PAID',
@@ -6395,15 +6403,37 @@ return event;
         };
       }
 
-      // 3. Organization verification: must exist
-      const orgId = pending ? pending.organizationId : (params.organizationId || session.metadata?.organizationId);
+      // 2b. Stripe customer and subscription linkage verification
+      const customerId = session.customer;
+      const subscriptionId = session.subscription;
+      if (!customerId) {
+        eventRecord.status = 'FAILED';
+        eventRecord.failureReason = 'MISSING_STRIPE_CUSTOMER';
+        return {
+          success: false,
+          code: 'MISSING_STRIPE_CUSTOMER',
+          message: 'Checkout session is missing customer ID.'
+        };
+      }
+      if (!subscriptionId) {
+        eventRecord.status = 'FAILED';
+        eventRecord.failureReason = 'MISSING_STRIPE_SUBSCRIPTION';
+        return {
+          success: false,
+          code: 'MISSING_STRIPE_SUBSCRIPTION',
+          message: 'Checkout session is missing subscription ID.'
+        };
+      }
+
+      // 3. Organization verification: strictly from pending.organizationId (ZERO fallback)
+      const orgId = pending.organizationId;
       if (!orgId) {
         eventRecord.status = 'FAILED';
         eventRecord.failureReason = 'ORGANIZATION_NOT_SPECIFIED';
         return {
           success: false,
           code: 'ORGANIZATION_NOT_SPECIFIED',
-          message: 'No organization specified in pending checkout or session metadata.'
+          message: 'Pending checkout record contains no organizationId.'
         };
       }
 
@@ -6419,8 +6449,8 @@ return event;
         };
       }
 
-      // 4. Project ownership / Tenant isolation verification
-      const projectId = pending ? pending.projectId : (params.projectId || session.metadata?.projectId);
+      // 4. Project ownership / Tenant isolation verification (strictly from pending.projectId)
+      const projectId = pending.projectId;
       if (projectId) {
         db.projects = db.projects || [];
         db.freePreviewProjects = db.freePreviewProjects || [];
@@ -6445,37 +6475,64 @@ return event;
         }
       }
 
-      // 5. Approved Catalog Price / Currency verification
-      const effectivePlan = ((pending ? pending.requestedPlan : (params.plan || session.metadata?.requestedPlan)) || 'pro').toLowerCase();
+      // 5. Approved Catalog Price / Currency / Amount verification
+      const effectivePlan = (pending.requestedPlan || '').toLowerCase();
       const CATALOG = {
-        'pro': { amountTotal: 29900, currency: 'usd' },
-        'business': { amountTotal: 79900, currency: 'usd' }
+        'pro': { amountTotal: 29900, currency: 'usd', priceId: process.env.STRIPE_PRICE_PRO_MONTHLY || 'price_test_pro_monthly' },
+        'business': { amountTotal: 79900, currency: 'usd', priceId: process.env.STRIPE_PRICE_BUSINESS_MONTHLY || 'price_test_biz_monthly' }
       };
       const expectedCatalog = CATALOG[effectivePlan];
-      if (expectedCatalog) {
-        if (session.currency && session.currency.toLowerCase() !== expectedCatalog.currency) {
+      if (!expectedCatalog) {
+        eventRecord.status = 'FAILED';
+        eventRecord.failureReason = 'UNSUPPORTED_PLAN';
+        return {
+          success: false,
+          code: 'UNSUPPORTED_PLAN',
+          message: `Requested plan "${effectivePlan}" is not a recognized subscription plan.`
+        };
+      }
+
+      // Exact Currency verification
+      const sessionCurrency = (session.currency || '').toLowerCase();
+      const expectedCurrency = (pending.currencyExpected || expectedCatalog.currency).toLowerCase();
+      if (!sessionCurrency || sessionCurrency !== expectedCurrency) {
+        eventRecord.status = 'FAILED';
+        eventRecord.failureReason = 'CURRENCY_MISMATCH';
+        return {
+          success: false,
+          code: 'CURRENCY_MISMATCH',
+          message: `Currency mismatch: expected ${expectedCurrency}, got ${sessionCurrency || 'MISSING'}`
+        };
+      }
+
+      // Exact Amount verification
+      const sessionAmount = typeof session.amount_total === 'number' ? session.amount_total : null;
+      const expectedAmount = pending.amountExpected !== undefined ? pending.amountExpected : expectedCatalog.amountTotal;
+      if (sessionAmount === null || sessionAmount !== expectedAmount || sessionAmount !== expectedCatalog.amountTotal) {
+        eventRecord.status = 'FAILED';
+        eventRecord.failureReason = 'AMOUNT_MISMATCH';
+        return {
+          success: false,
+          code: 'AMOUNT_MISMATCH',
+          message: `Amount mismatch: expected ${expectedAmount}, got ${sessionAmount}`
+        };
+      }
+
+      // Exact Price ID verification (if present in pending or line items)
+      if (pending.priceId && session.line_items?.data?.[0]?.price?.id) {
+        if (session.line_items.data[0].price.id !== pending.priceId) {
           eventRecord.status = 'FAILED';
-          eventRecord.failureReason = 'CURRENCY_MISMATCH';
+          eventRecord.failureReason = 'PRICE_ID_MISMATCH';
           return {
             success: false,
-            code: 'CURRENCY_MISMATCH',
-            message: `Currency mismatch: expected ${expectedCatalog.currency}, got ${session.currency}`
-          };
-        }
-        if (typeof session.amount_total === 'number' && session.amount_total !== expectedCatalog.amountTotal) {
-          eventRecord.status = 'FAILED';
-          eventRecord.failureReason = 'AMOUNT_MISMATCH';
-          return {
-            success: false,
-            code: 'AMOUNT_MISMATCH',
-            message: `Amount mismatch: expected ${expectedCatalog.amountTotal}, got ${session.amount_total}`
+            code: 'PRICE_ID_MISMATCH',
+            message: `Price ID mismatch: expected ${pending.priceId}, got ${session.line_items.data[0].price.id}`
           };
         }
       }
 
       // All validations succeeded! Execute atomic business state transition
-      const customerId = session.customer || params.customerId;
-      const subscriptionId = session.subscription || params.subscriptionId;
+      // customerId and subscriptionId are already verified from session above
 
       // 1. Update Organization Subscription
       org.subscription = {
@@ -6599,11 +6656,7 @@ return event;
         org = db.organizations.find(o => o.subscription?.stripeSubscriptionId === subscriptionId);
       }
       if (!org && customerId) {
-        org = db.organizations.find(o => o.subscription?.stripeCustomerId === customerId);
-      }
-      // If caller provided explicit organizationId in test harness, verify it matches
-      if (!org && params.organizationId) {
-        org = db.organizations.find(o => o.id === params.organizationId);
+        org = db.organizations.find(o => o.subscription?.stripeCustomerId === customerId && (!subscriptionId || !o.subscription?.stripeSubscriptionId || o.subscription?.stripeSubscriptionId === subscriptionId));
       }
 
       if (!org) {
