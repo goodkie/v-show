@@ -127,7 +127,9 @@ function executeReconstructionJob(options = {}) {
   const repoRoot = options.repoRoot || path.resolve(__dirname, '../..');
   const imageDir = options.imageDir || path.join(repoRoot, 'virtual-tradeshow-commercial-v1/_clean_deploy/client/assets/demo/wilo/authentic-booth');
   const calibrationFile = options.calibrationFile || path.join(repoRoot, 'virtual-tradeshow-commercial-v1/production_artifacts/R6_CAMERA_TRANSFORMS.json');
-  const modelDir = options.modelDir || path.join(repoRoot, 'virtual-tradeshow-commercial-v1/_clean_deploy/client/assets/demo/wilo/models');
+  const defaultPrivateDir = path.join(repoRoot, 'virtual-tradeshow-commercial-v1/_clean_deploy/data/private_models/org-wilo-golden-demo/models');
+  const fallbackOrgDir = path.join(repoRoot, 'virtual-tradeshow-commercial-v1/_clean_deploy/data/uploads/organizations/org-wilo-golden-demo/booths/booth-wilo-golden-demo/models/WILO-GEOMETRY-60-01');
+  const modelDir = options.modelDir || (fs.existsSync(defaultPrivateDir) ? defaultPrivateDir : fallbackOrgDir);
   const receiptPath = options.receiptPath || path.join(repoRoot, 'virtual-tradeshow-commercial-v1/production_artifacts/R20_BENCHMARK_ARTIFACT_INSPECTION_RECEIPT.json');
 
   const jobId = options.jobId || `audit-job-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
