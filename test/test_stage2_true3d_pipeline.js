@@ -863,8 +863,11 @@ async function main() {
     console.log(`    - Current HEAD SHA:  ${currentHead}`);
     assert.ok(currentHead.length === 40, 'HEAD SHA must be a 40-character git hash');
 
-    // 2. Strict HEAD Binding (if EXPECTED_HEAD_SHA is supplied)
-    const expectedHead = process.env.EXPECTED_HEAD_SHA ? process.env.EXPECTED_HEAD_SHA.trim() : null;
+    // 2. Strict HEAD Binding (via CLI flag or env var)
+    const argHead = (process.argv.find(a => a.startsWith('--expected-head=')) || '').split('=')[1];
+    const expectedHead = (argHead || process.env.EXPECTED_HEAD_SHA || '').trim() || null;
+    const requireClean = process.argv.includes('--require-clean-worktree') || process.env.REQUIRE_CLEAN_WORKTREE === '1';
+
     if (expectedHead) {
       console.log(`    - Expected HEAD SHA: ${expectedHead}`);
       assert.strictEqual(
@@ -895,7 +898,7 @@ async function main() {
     const isWorktreeClean = worktreeLines.length === 0;
     console.log(`    - Worktree Status:   ${isWorktreeClean ? 'CLEAN (zero uncommitted/untracked tracked changes)' : 'DIRTY: ' + worktreeLines.join('; ')}`);
 
-    if (process.env.REQUIRE_CLEAN_WORKTREE === '1') {
+    if (requireClean) {
       assert.strictEqual(
         isWorktreeClean,
         true,
