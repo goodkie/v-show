@@ -67,18 +67,59 @@ function assertNoStaticOverlap(targetPath) {
     }
   }
 
+  // Canonical realpath traversal check to detect symlinks, junctions, or mount re-directions
+  let testExisting = normTarget;
+  while (!fs.existsSync(testExisting)) {
+    const parent = path.dirname(testExisting);
+    if (parent === testExisting) break;
+    testExisting = parent;
+  }
+  let realTarget = normTarget;
+  if (fs.existsSync(testExisting)) {
+    try {
+      const realExisting = fs.realpathSync(testExisting);
+      realTarget = path.resolve(realExisting, path.relative(testExisting, normTarget));
+    } catch (_) {}
+  }
+
   const servedRoots = getServedStaticRoots();
   for (const sRoot of servedRoots) {
     const normStatic = path.resolve(sRoot).toLowerCase();
-    const rel1 = path.relative(normStatic, lowerTarget);
-    const rel2 = path.relative(lowerTarget, normStatic);
-    if (!rel1.startsWith('..') && !path.isAbsolute(rel1)) {
-      throw new Error(`ERR_TRUSTED_ROOT_PROHIBITED_MOUNT: Target path "${targetPath}" is inside served static root "${sRoot}"`);
+    let realStatic = normStatic;
+    if (fs.existsSync(sRoot)) {
+      try {
+        realStatic = path.resolve(fs.realpathSync(sRoot)).toLowerCase();
+      } catch (_) {}
     }
-    if (!rel2.startsWith('..') && !path.isAbsolute(rel2)) {
-      throw new Error(`ERR_TRUSTED_ROOT_PROHIBITED_MOUNT: Target path "${targetPath}" contains served static root "${sRoot}"`);
+
+    for (const t of [lowerTarget, realTarget.toLowerCase()]) {
+      for (const s of [normStatic, realStatic]) {
+        const rel1 = path.relative(s, t);
+        const rel2 = path.relative(t, s);
+        if (!rel1.startsWith('..') && !path.isAbsolute(rel1)) {
+          throw new Error(`ERR_TRUSTED_ROOT_PROHIBITED_MOUNT: Target path "${targetPath}" is inside served static root "${sRoot}"`);
+        }
+        if (!rel2.startsWith('..') && !path.isAbsolute(rel2)) {
+          throw new Error(`ERR_TRUSTED_ROOT_PROHIBITED_MOUNT: Target path "${targetPath}" contains served static root "${sRoot}"`);
+        }
+      }
     }
   }
+}
+
+/**
+ * Server-Side Session Revocation Registry (Closure-Private)
+ */
+const revokedSessionTokens = new Set();
+
+function revokeSessionToken(sessionTokenHash) {
+  if (sessionTokenHash && typeof sessionTokenHash === 'string') {
+    revokedSessionTokens.add(sessionTokenHash);
+  }
+}
+
+function isSessionRevoked(sessionTokenHash) {
+  return revokedSessionTokens.has(sessionTokenHash);
 }
 
 /**
@@ -144,9 +185,30 @@ function verifySessionProof(sessionProof) {
   }
 
   const now = Date.now();
+  const CLOCK_SKEW_TOLERANCE_MS = 5000;
+  const MAX_SESSION_TTL_MS = 24 * 60 * 60 * 1000;
+
+  if (issuedAt > now + CLOCK_SKEW_TOLERANCE_MS) {
+    const err = new Error('ERR_SESSION_FUTURE_TIMESTAMP: Session proof issued in the future');
+    err.code = 'ERR_SESSION_FUTURE_TIMESTAMP';
+    throw err;
+  }
+
   if (now > expiresAt) {
     const err = new Error('ERR_REGISTRY_SESSION_EXPIRED: Authenticated session proof has expired');
     err.code = 'ERR_REGISTRY_SESSION_EXPIRED';
+    throw err;
+  }
+
+  if (expiresAt <= issuedAt || (expiresAt - issuedAt) > MAX_SESSION_TTL_MS) {
+    const err = new Error('ERR_SESSION_INVALID_LIFETIME: Session TTL exceeds maximum permissible lifetime or is invalid');
+    err.code = 'ERR_SESSION_INVALID_LIFETIME';
+    throw err;
+  }
+
+  if (isSessionRevoked(sessionTokenHash)) {
+    const err = new Error('ERR_SESSION_REVOKED: Authenticated session token has been revoked');
+    err.code = 'ERR_SESSION_REVOKED';
     throw err;
   }
 
@@ -358,14 +420,24 @@ function resolveJobRoots(jobId, sessionContext = {}) {
     throw err;
   }
 
-  // Single-use lifecycle transition
-  job.status = 'CONSUMED';
+  // Exact session identity check: prevents session-swapping across multiple sessions of the same owner
+  if (principal.sessionTokenHash !== job.sessionTokenHash) {
+    const err = new Error('ERR_ADAPTER_SESSION_TOKEN_MISMATCH: Session token does not match registered job session identity');
+    err.code = 'ERR_ADAPTER_SESSION_TOKEN_MISMATCH';
+    throw err;
+  }
 
+  // Preflight validation: workspace roots and static non-overlap MUST exist BEFORE status transitions to CONSUMED
   if (!fs.existsSync(job.scratch) || !fs.existsSync(job.input) || !fs.existsSync(job.output)) {
     const err = new Error('ERR_ADAPTER_WORKSPACE_NOT_PROVISIONED: One or more workspace roots do not exist on disk');
     err.code = 'ERR_ADAPTER_WORKSPACE_NOT_PROVISIONED';
     throw err;
   }
+  assertNoStaticOverlap(job.jobRoot);
+
+  // Documented atomic transition: ONLY after all preflight checks pass
+  job.status = 'CONSUMED';
+  job.consumedAt = Date.now();
 
   return Object.freeze({
     scratch: job.scratch,
@@ -399,17 +471,24 @@ function cancelServerJob(jobId, sessionContext = {}) {
   return { cancelled: true, jobId };
 }
 
-// Module Exports: Zero private authority tokens, zero harness factories, zero mutable singletons
+// Module Exports: Shipped production surface has ZERO proof minting, ZERO project insertion, ZERO harness tokens
 module.exports = {
   registerServerJob,
   resolveJobRoots,
   cancelServerJob,
   evictExpiredJobs,
-  mintSessionProof,
   verifySessionProof,
-  registerAuthoritativeProject,
   getAuthoritativeProject,
   assertNoStaticOverlap,
   getServedStaticRoots,
   SERVER_TRUSTED_WORKSPACE_BASE
 };
+
+// Isolated test-only internal hook: available ONLY under dual server-side test flags
+if (process.env.NODE_ENV === 'test' && process.env.STAGE2_ALLOW_TEST_HARNESS_MOCKS === '1') {
+  module.exports.__testInternalHook = {
+    mintTestSessionProof: mintSessionProof,
+    registerAuthoritativeProject,
+    revokeSessionToken
+  };
+}

@@ -54,7 +54,7 @@ const crypto = require('crypto');
 const assert = require('assert');
 const { execSync } = require('child_process');
 const os = require('os');
-const { execFile } = require('child_process');
+const { execFile, execFileSync } = require('child_process');
 
 const {
   parsePlyHeader,
@@ -88,6 +88,7 @@ const {
   evictExpiredJobs,
   registerAuthoritativeProject,
   getAuthoritativeProject,
+  revokeTestSessionToken,
   assertNoStaticOverlap,
   getServedStaticRoots,
   SERVER_TRUSTED_WORKSPACE_BASE
@@ -709,17 +710,17 @@ async function main() {
       TRUSTED_ROOT_AUTHORITY: 'CLOSURE_PRIVATE_SERVER_REGISTRY', // R40: closure-private unexported registry
       JOB_WORKSPACE_PROVISIONING: 'CRYPTO_PRINCIPAL_BOUND_AND_EVICTION_VERIFIED', // R40: cryptographic session HMAC + authoritative project lookup
       COMMAND_ARGV_VALIDATOR: 'MANDATORY_FAIL_CLOSED_NO_PROBE_BYPASS', // R39/R40: mandatory argv, probes rejected as stage
-      PUBLIC_MODULE_TOKEN_EXPOSURE: 'ZERO_EXPORT_VERIFIED_ALL_SHIPPED_MODULES', // R40: zero export across all shipped modules
-      MODULE_AUTHORITY_BOUNDARY: 'CLOSURE_PRIVATE_AUTHORITY_VERIFIED', // R40: authority closure-private
-      WORKSPACE_STATIC_ISOLATION: 'VERIFIED_NON_OVERLAPPING', // R39/R40: zero overlap with static served roots
-      OWNER_DECISION_NOTE: 'READ_ONLY_BOUNDED_ZERO_SPEND_DEFAULT', // R39/R40: read-only note with $0 default
+      PUBLIC_MODULE_TOKEN_EXPOSURE: 'ZERO_EXPORT_VERIFIED_ALL_SHIPPED_MODULES', // R40/R41: zero export across all shipped modules
+      MODULE_AUTHORITY_BOUNDARY: 'CLOSURE_PRIVATE_AUTHORITY_VERIFIED', // R40/R41: authority closure-private
+      WORKSPACE_STATIC_ISOLATION: 'SOURCE_CHECK_ONLY', // R41: source check only until runtime config verified
+      OWNER_DECISION_NOTE: 'READ_ONLY_BOUNDED_ZERO_SPEND_DEFAULT', // R39/R40/R41: read-only note with $0 default
       ACTUAL_ENGINE_EXECUTION: 'NOT_VERIFIED',         // R37: local contract check only; actual process spawn unverified
       LIVE_QA_REVOCATION: 'BLOCKED_PENDING_INDEPENDENT_CONTROL_PLANE',
       OWNER_REVIEW_GATE: 'HOLD',
       ENGINEERING_HOLD: 'ACTIVE'
     };
 
-    console.log('\n  Authoritative Gate Status Matrix (R40 Honest Ledger):');
+    console.log('\n  Authoritative Gate Status Matrix (R41 Honest Ledger):');
     for (const [gate, status] of Object.entries(gates)) {
       console.log(`    - ${gate.padEnd(42)} : ${status}`);
     }
@@ -749,7 +750,7 @@ async function main() {
     assert.strictEqual(gates.COMMAND_ARGV_VALIDATOR, 'MANDATORY_FAIL_CLOSED_NO_PROBE_BYPASS', 'Command argv validator must be MANDATORY_FAIL_CLOSED_NO_PROBE_BYPASS');
     assert.strictEqual(gates.PUBLIC_MODULE_TOKEN_EXPOSURE, 'ZERO_EXPORT_VERIFIED_ALL_SHIPPED_MODULES', 'Public module must not export privileged token');
     assert.strictEqual(gates.MODULE_AUTHORITY_BOUNDARY, 'CLOSURE_PRIVATE_AUTHORITY_VERIFIED', 'Module authority must be closure-private');
-    assert.strictEqual(gates.WORKSPACE_STATIC_ISOLATION, 'VERIFIED_NON_OVERLAPPING', 'Workspace must not overlap served static roots');
+    assert.strictEqual(gates.WORKSPACE_STATIC_ISOLATION, 'SOURCE_CHECK_ONLY', 'Workspace static isolation must remain SOURCE_CHECK_ONLY pending runtime config');
     assert.strictEqual(gates.OWNER_DECISION_NOTE, 'READ_ONLY_BOUNDED_ZERO_SPEND_DEFAULT', 'Owner decision note must be READ_ONLY_BOUNDED_ZERO_SPEND_DEFAULT');
     assert.strictEqual(gates.ACTUAL_ENGINE_EXECUTION, 'NOT_VERIFIED', 'Actual engine execution must remain NOT_VERIFIED');
     assert.strictEqual(gates.LIVE_QA_REVOCATION, 'BLOCKED_PENDING_INDEPENDENT_CONTROL_PLANE');
@@ -1836,7 +1837,77 @@ async function main() {
       assert.strictEqual(mod.ServerJobRegistry, undefined, `${modRel} must NOT export ServerJobRegistry class`);
       assert.strictEqual(mod.TrustedRootRegistry, undefined, `${modRel} must NOT export TrustedRootRegistry class`);
       assert.strictEqual(mod.SERVER_JOB_REGISTRY, undefined, `${modRel} must NOT export SERVER_JOB_REGISTRY mutable singleton`);
+      assert.strictEqual(mod.mintSessionProof, undefined, `${modRel} must NOT export mintSessionProof signing oracle`);
+      assert.strictEqual(mod.registerAuthoritativeProject, undefined, `${modRel} must NOT export registerAuthoritativeProject mutation`);
     }
+
+    // (0) Separate-Process Production Mode Falsification Test (R41 P0-1, P0-2, P0-3)
+    // Executes in clean child Node process under strict NODE_ENV=production.
+    // Proves that shipped modules export zero authority, forged sessions fail closed,
+    // and test bootstrap is rejected in production.
+    const separateProcessScript = `
+      const assert = require('assert');
+      const internal = require('./virtual-tradeshow-commercial-v1/server/server_internal_registry');
+      const worker = require('./virtual-tradeshow-commercial-v1/server/spatial_reconstruction_worker');
+
+      // 1. Shipped modules must not export authority tools
+      assert.strictEqual(internal.mintSessionProof, undefined, 'mintSessionProof must be undefined in production');
+      assert.strictEqual(internal.registerAuthoritativeProject, undefined, 'registerAuthoritativeProject must be undefined in production');
+      assert.strictEqual(internal.__testInternalHook, undefined, '__testInternalHook must be undefined in production');
+      assert.strictEqual(worker.HARNESS_AUTHORIZATION_TOKEN, undefined, 'HARNESS_AUTHORIZATION_TOKEN must be undefined');
+      assert.strictEqual(worker.createTestHarnessAdapter, undefined, 'createTestHarnessAdapter must be undefined in worker');
+
+      // 2. Attacker attempts to register a job with forged session proof
+      let forgedCaught = false;
+      try {
+        internal.registerServerJob({ projectId: 'project_true3d_beta' }, {
+          sessionProof: {
+            tenantId: 'tenant_commercial_alpha',
+            ownerId: 'owner_operator_gamma',
+            sessionTokenHash: 'attacker_forged_hash',
+            issuedAt: Date.now(),
+            expiresAt: Date.now() + 3600000,
+            signature: 'attacker_forged_signature_hex'
+          }
+        });
+      } catch (err) {
+        assert.strictEqual(err.code, 'ERR_REGISTRY_UNVERIFIED_PRINCIPAL', 'Forged proof must fail with ERR_REGISTRY_UNVERIFIED_PRINCIPAL');
+        forgedCaught = true;
+      }
+      assert.ok(forgedCaught, 'Forged session proof must be rejected');
+
+      // 3. Attacker attempts to register a job without proof
+      let unauthCaught = false;
+      try {
+        internal.registerServerJob({ projectId: 'project_true3d_beta' });
+      } catch (err) {
+        assert.strictEqual(err.code, 'ERR_REGISTRY_UNAUTHORIZED_REGISTRATION', 'Unauthenticated registration must fail');
+        unauthCaught = true;
+      }
+      assert.ok(unauthCaught, 'Unauthenticated job registration must be rejected');
+
+      // 4. Attacker attempts to load test harness bootstrap in production
+      let bootstrapBlocked = false;
+      try {
+        require('./test/helpers/test_harness_bootstrap');
+      } catch (err) {
+        assert.ok(/ERR_TEST_HARNESS_BOOTSTRAP_FORBIDDEN/.test(err.message), 'test_harness_bootstrap must be blocked in production');
+        bootstrapBlocked = true;
+      }
+      assert.ok(bootstrapBlocked, 'Loading test harness bootstrap in production must be forbidden');
+
+      process.stdout.write('ADVERSARIAL_PRODUCTION_TEST_OK');
+    `;
+
+    const advChildEnv = { ...process.env, NODE_ENV: 'production' };
+    delete advChildEnv.STAGE2_ALLOW_TEST_HARNESS_MOCKS;
+    const childProcOut = execFileSync(process.execPath, ['-e', separateProcessScript], {
+      cwd: REPO_ROOT,
+      env: advChildEnv,
+      encoding: 'utf8'
+    });
+    assert.ok(childProcOut.includes('ADVERSARIAL_PRODUCTION_TEST_OK'), 'Adversarial production test must succeed');
+    console.log('    - Adversarial production separate-process test: PASS (zero signing/mutation oracle, forged proofs fail closed)');
 
     const publicWorker = require('../virtual-tradeshow-commercial-v1/server/spatial_reconstruction_worker');
 
@@ -1892,6 +1963,51 @@ async function main() {
       () => registerServerJob({ projectId: testProjectId }, { sessionProof: expiredProof }),
       /ERR_REGISTRY_SESSION_EXPIRED/,
       'Expired session proof must fail closed'
+    );
+
+    // (a2-1) Future-issued timestamp rejection (R41 P0-3)
+    const futureProof = {
+      tenantId: testTenantId,
+      ownerId: testOwnerId,
+      sessionTokenHash: testSessionTokenHash,
+      issuedAt: Date.now() + 60000, // 1 minute in future
+      expiresAt: Date.now() + 3600000,
+      signature: 'test_future'
+    };
+    assert.throws(
+      () => verifySessionProof(futureProof),
+      /ERR_SESSION_FUTURE_TIMESTAMP/,
+      'Future-issued session proof must fail closed with ERR_SESSION_FUTURE_TIMESTAMP'
+    );
+
+    // (a2-2) Invalid session TTL exceeding maximum (R41 P0-3)
+    const excessiveTtlProof = {
+      tenantId: testTenantId,
+      ownerId: testOwnerId,
+      sessionTokenHash: testSessionTokenHash,
+      issuedAt: Date.now(),
+      expiresAt: Date.now() + (48 * 3600000), // 48 hours exceeds 24 hour max
+      signature: 'test_ttl'
+    };
+    assert.throws(
+      () => verifySessionProof(excessiveTtlProof),
+      /ERR_SESSION_INVALID_LIFETIME/,
+      'Excessive session TTL must fail closed with ERR_SESSION_INVALID_LIFETIME'
+    );
+
+    // (a2-3) Revoked session token rejection (R41 P0-3)
+    const revokedTokenHash = 'revoked_session_token_hash_alpha_99';
+    const proofToRevoke = mintTestSessionProof({
+      tenantId: testTenantId,
+      ownerId: testOwnerId,
+      sessionTokenHash: revokedTokenHash
+    });
+    assert.strictEqual(verifySessionProof(proofToRevoke).verified, true, 'Proof must be verified prior to revocation');
+    revokeTestSessionToken(revokedTokenHash);
+    assert.throws(
+      () => verifySessionProof(proofToRevoke),
+      /ERR_SESSION_REVOKED/,
+      'Revoked session token must fail closed with ERR_SESSION_REVOKED'
     );
 
     // (a3) Non-existent project rejection from authoritative storage
@@ -1987,6 +2103,18 @@ async function main() {
     });
     assert.strictEqual(mismatchTenantRes.errorCode, 'ERR_ADAPTER_TENANT_MISMATCH', 'Cross-tenant session context must be rejected');
 
+    // Multiple sessions of same owner: session A cannot be resolved by session B (R41 P0-3)
+    const sessionProofB = mintTestSessionProof({
+      tenantId: testTenantId,
+      ownerId: testOwnerId,
+      sessionTokenHash: 'different_session_token_hash_owner_same'
+    });
+    assert.throws(
+      () => resolveJobRoots(registeredJob.jobId, sessionProofB),
+      /ERR_ADAPTER_SESSION_TOKEN_MISMATCH/,
+      'Different session of same owner must be rejected with ERR_ADAPTER_SESSION_TOKEN_MISMATCH'
+    );
+
     delete process.env.RECONSTRUCTION_ENTITLEMENT_SECRET;
     delete process.env.RECONSTRUCTION_ADAPTER_AUTHORIZED;
 
@@ -2024,6 +2152,24 @@ async function main() {
       ]
     });
     assert.strictEqual(secondExecutionRes.errorCode, 'ERR_ADAPTER_JOB_ALREADY_CONSUMED', 'Re-executing consumed job must fail closed with ERR_ADAPTER_JOB_ALREADY_CONSUMED');
+
+    // (d1) Preflight workspace check and atomic non-consumption (R41 P0-3)
+    const jobPreflight = registerServerJob(
+      { projectId: testProjectId },
+      { sessionProof: validSessionProof }
+    );
+    assert.strictEqual(jobPreflight.status, 'PROVISIONED');
+    // Remove scratch directory to trigger preflight failure
+    fs.rmSync(jobPreflight.scratch, { recursive: true, force: true });
+    assert.throws(
+      () => resolveJobRoots(jobPreflight.jobId, validSessionProof),
+      /ERR_ADAPTER_WORKSPACE_NOT_PROVISIONED/,
+      'Absent workspace root must fail closed with ERR_ADAPTER_WORKSPACE_NOT_PROVISIONED'
+    );
+    // Re-create scratch directory to verify job remained PROVISIONED and was NOT marked consumed
+    fs.mkdirSync(jobPreflight.scratch, { recursive: true });
+    const resolvedAfterPreflightFixed = resolveJobRoots(jobPreflight.jobId, validSessionProof);
+    assert.ok(resolvedAfterPreflightFixed.scratch, 'Job must be resolvable once preflight succeeds, proving non-consumption on prior failure');
 
     // (e) Job cancellation and physical workspace deletion
     const jobToCancel = registerServerJob({ projectId: testProjectId }, { sessionProof: validSessionProof });
@@ -2092,7 +2238,7 @@ async function main() {
   const engineDiscoveryProbes = probeReconstructionEngines();
 
   const receipt = {
-    receiptSchemaVersion: 'R40_EXECUTION_RECEIPT_V1',
+    receiptSchemaVersion: 'R41_EXECUTION_RECEIPT_V1',
     executionTimestamps: {
       startTime: suiteStartTime,
       endTime: suiteEndTime,
@@ -2161,7 +2307,7 @@ async function main() {
       remoteHandshakeClassification: 'LOCAL_SPEC_VALIDATION_ONLY_NO_NETWORK',
       publicModuleTokenExposure: 'ZERO_EXPORT_VERIFIED_ALL_SHIPPED_MODULES',
       moduleAuthorityBoundary: 'CLOSURE_PRIVATE_AUTHORITY_VERIFIED',
-      workspaceStaticIsolation: 'VERIFIED_NON_OVERLAPPING',
+      workspaceStaticIsolation: 'SOURCE_CHECK_ONLY',
       ownerDecisionMinimumStatus: 'READ_ONLY_NOTE_ZERO_SPEND_DEFAULT'
     },
     engineDiscoveryProbes,
@@ -2186,7 +2332,7 @@ async function main() {
       COMMAND_ARGV_VALIDATOR: 'MANDATORY_FAIL_CLOSED_NO_PROBE_BYPASS',
       PUBLIC_MODULE_TOKEN_EXPOSURE: 'ZERO_EXPORT_VERIFIED_ALL_SHIPPED_MODULES',
       MODULE_AUTHORITY_BOUNDARY: 'CLOSURE_PRIVATE_AUTHORITY_VERIFIED',
-      WORKSPACE_STATIC_ISOLATION: 'VERIFIED_NON_OVERLAPPING',
+      WORKSPACE_STATIC_ISOLATION: 'SOURCE_CHECK_ONLY',
       OWNER_DECISION_NOTE: 'READ_ONLY_BOUNDED_ZERO_SPEND_DEFAULT',
       ACTUAL_ENGINE_EXECUTION: 'NOT_VERIFIED',
       OWNER_REVIEW_GATE: 'HOLD',
@@ -2197,14 +2343,14 @@ async function main() {
 
   const receiptOutPath = path.join(
     REPO_ROOT,
-    'virtual-tradeshow-commercial-v1/production_artifacts/R40_TEST_EXECUTION_RECEIPT.json'
+    'virtual-tradeshow-commercial-v1/production_artifacts/R41_TEST_EXECUTION_RECEIPT.json'
   );
   fs.writeFileSync(receiptOutPath, JSON.stringify(receipt, null, 2), 'utf8');
   const savedReceiptBytes = fs.readFileSync(receiptOutPath);
   const receiptByteSha256 = crypto.createHash('sha256').update(savedReceiptBytes).digest('hex');
 
-  console.log('--- Final Execution Receipt (R40 Machine Verifiable) ---');
-  console.log(`  File:           virtual-tradeshow-commercial-v1/production_artifacts/R40_TEST_EXECUTION_RECEIPT.json`);
+  console.log('--- Final Execution Receipt (R41 Machine Verifiable) ---');
+  console.log(`  File:           virtual-tradeshow-commercial-v1/production_artifacts/R41_TEST_EXECUTION_RECEIPT.json`);
   console.log(`  Byte SHA-256:   ${receiptByteSha256}`);
   console.log(`  Tested Commit:  ${suiteCurrentHead}`);
   console.log(`  Expected Head:  ${expectedHead || '(none - unbound)'}`);

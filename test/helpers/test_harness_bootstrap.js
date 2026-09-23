@@ -64,16 +64,19 @@ function createTestHarnessAdapter(options = {}) {
   return new TestHarnessExecutionAdapter(options);
 }
 
+const hook = internal.__testInternalHook || {};
+
 module.exports = {
   createTestHarnessAdapter,
   TestHarnessExecutionAdapter,
-  mintTestSessionProof: internal.mintSessionProof,
+  mintTestSessionProof: hook.mintTestSessionProof,
+  registerAuthoritativeProject: hook.registerAuthoritativeProject,
+  revokeTestSessionToken: hook.revokeSessionToken,
   verifySessionProof: internal.verifySessionProof,
   registerServerJob: internal.registerServerJob,
   resolveJobRoots: internal.resolveJobRoots,
   cancelServerJob: internal.cancelServerJob,
   evictExpiredJobs: internal.evictExpiredJobs,
-  registerAuthoritativeProject: internal.registerAuthoritativeProject,
   getAuthoritativeProject: internal.getAuthoritativeProject,
   assertNoStaticOverlap: internal.assertNoStaticOverlap,
   getServedStaticRoots: internal.getServedStaticRoots,
