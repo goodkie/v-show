@@ -1,18 +1,26 @@
 /**
  * test/test_stage2_true3d_pipeline.js
  * ─────────────────────────────────────────────────────────────────────────────
- * [ANTIGRAVITY][R30] SPATIAL 3D BENCHMARK INSPECTION & PRO VIEWER AUDIT SUITE
+ * [ANTIGRAVITY][R31] SPATIAL 3D BENCHMARK INSPECTION & PRO VIEWER AUDIT SUITE
  *
- * R30 Enhancements per ChatGPT R29 Audit:
- *   - Test 18: Four-state engine discovery probe verification (probeReconstructionEngines)
- *              Separates configured, discovered, runnable, and authorized states
- *              Non-mutating active probes for GPU accelerator, COLMAP binary, 3DGS pipeline, and remote worker
- *              Classifies unverified candidates as NOT_CONFIGURED_OR_NOT_DISCOVERED_BY_CURRENT_PROBE
- *   - Test 18: Authentic reconstruction worker fail-closed verification (executeAuthenticReconstructionWorker)
+ * R31 Enhancements per ChatGPT R30 Audit:
+ *   - Test 18: Exact pre-reconstruction probe hash binding:
+ *              Canonically incorporates probesDigest in preReconstructionDigest:
+ *              sha256(jobId | inputsDigest | calibDigest | workerDigest | configDigest | probesDigest)
+ *              Asserts that altering probe results strictly changes preReconstructionDigest
+ *   - Test 18: Refined four-state probe granularity:
+ *              Differentiates configured, discovered, cliProbeRunnable, reconstructionCapable, and authorized
+ *              Strictly defines runnable as CLI probe runnable only
+ *              Requires CUDA GPU architecture, SfM build features & 3DGS pipeline for reconstructionCapable
+ *   - Test 18: Isolated execution adapter error controls:
+ *              Tests unauthorized adapter invocation rejection (ERR_ADAPTER_UNAUTHORIZED)
+ *              Tests disallowed executable rejection (ERR_ADAPTER_DISALLOWED_TARGET)
+ *              Tests incompatible binary version rejection (ERR_ADAPTER_INCOMPATIBLE_VERSION)
+ *              Tests bad remote authentication rejection (ERR_ADAPTER_REMOTE_AUTH_FAILED)
+ *              Tests unreachable remote endpoint rejection (ERR_ADAPTER_REMOTE_UNREACHABLE)
+ *              Tests execution failure propagation (ERR_ADAPTER_EXECUTION_FAILED)
  *   - Test 18: Anti-substitution invariant enforced (refuses copying or substituting benchmark models)
- *   - Test 18: CAUSAL_LINEAGE_GATE_T18 classified strictly as NEGATIVE_CONTRACT_CHECK_ONLY
- *   - Test 18: Control-plane boundary enforcement & diagnostic viewer honest disclaimer (PROCEDURAL_PLACEHOLDER_ONLY)
- *   - Emits R30_TEST_EXECUTION_RECEIPT.json with engineDiscoveryProbes bound to Code Under Test (CUT) commit
+ *   - Emits R31_TEST_EXECUTION_RECEIPT.json bound to Code Under Test (CUT) commit
  *
  * Test catalog:
  *   [1]  Multi-position camera calibration & translation baseline (genuine parallax)
@@ -33,7 +41,7 @@
  *   [15] Factual gate separation ledger verified (R29 honest disclosures)
  *   [16] Public static regression gate: all 4 roots required + full extension set + LFS
  *   [17] Head-bound reproducibility evidence + raw worktree status + positive controls
- *   [18] Four-state engine discovery probe, fail-closed contract & anti-substitution gate (R30)
+ *   [18] Exact probe hash binding, refined capability states & execution adapter error guards (R31)
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
@@ -52,6 +60,7 @@ const {
   parsePlyHeader,
   executeReconstructionJob,
   executeAuthenticReconstructionWorker,
+  ReconstructionExecutionAdapter,
   probeReconstructionEngines,
   computeFileSha256,
   computeBaseline
@@ -972,18 +981,28 @@ async function main() {
     console.log('    - Positive fail-case controls: PASS (gate proven to catch each extension)');
   });
 
-  // ── [18] Four-State Engine Discovery Probe, Fail-Closed Contract & Anti-Substitution Gate (R30) ──
-  // Enforces ChatGPT R29 directives:
-  //   1. Four-State Engine Discovery: Separates configured, discovered, runnable, and authorized states
-  //   2. Active non-mutating capability probes (where/which, exit codes recorded, sanitized output)
-  //   3. Classifies unverified engines as NOT_CONFIGURED_OR_NOT_DISCOVERED_BY_CURRENT_PROBE
-  //   4. Fails Closed with RECONSTRUCTION_UNAVAILABLE when no engine is runnable & authorized
-  //   5. Anti-Substitution Invariant: Forbids claiming pre-existing benchmark (fc80e5... / b40f80...) as new model
-  //   6. CAUSAL_LINEAGE_GATE_T18 classified strictly as NEGATIVE_CONTRACT_CHECK_ONLY
-  //   7. Independent Control Plane Gate: Runtime static isolation & QA revocation remain fail-closed
-  //   8. Diagnostic Viewer Honest Disclaimer: HUD must state PROCEDURAL_PLACEHOLDER_ONLY
-  runTest('18. Four-state engine discovery probe, fail-closed contract & anti-substitution gate (R30)', () => {
-    // 1. Audit active four-state discovery probes
+  // ── [18] Exact Probe Hash Binding, Refined Capability States & Execution Adapter Error Guards (R31) ──
+  // Enforces ChatGPT Round 30 Directives:
+  //   1. Exact Canonical Pre-Reconstruction Hash Binding:
+  //      sha256(jobId | inputsDigest | calibDigest | workerDigest | configDigest | probesDigest)
+  //      Verifies altering probe results changes preReconstructionDigest.
+  //   2. Refined Four-State Probe Granularity:
+  //      Differentiates configured, discovered, cliProbeRunnable, reconstructionCapable, and authorized.
+  //      runnable is defined strictly as CLI probe runnable only.
+  //      reconstructionCapable requires validated CUDA GPU architecture, SfM features, and 3DGS pipeline.
+  //      Sanitizes probe details to prevent logging absolute paths or credentials.
+  //   3. Isolated Execution Adapter Error Controls:
+  //      - Rejects unauthorized adapter invocation (ERR_ADAPTER_UNAUTHORIZED).
+  //      - Rejects disallowed executable targets (ERR_ADAPTER_DISALLOWED_TARGET).
+  //      - Rejects incompatible binary version (ERR_ADAPTER_INCOMPATIBLE_VERSION).
+  //      - Rejects invalid remote worker authentication (ERR_ADAPTER_REMOTE_AUTH_FAILED).
+  //      - Rejects unreachable remote endpoint (ERR_ADAPTER_REMOTE_UNREACHABLE).
+  //      - Propagates execution runner failure (ERR_ADAPTER_EXECUTION_FAILED).
+  //   4. Fails closed with RECONSTRUCTION_UNAVAILABLE when no engine is capable & authorized.
+  //   5. Anti-substitution invariant enforced (refuses claiming pre-existing benchmark as new model).
+  //   6. Control-plane boundary & diagnostic viewer honest disclaimer gates verified.
+  runTest('18. Exact probe hash binding, refined capability states & execution adapter error guards (R31)', () => {
+    // 1. Audit active refined capability probes
     const probes = probeReconstructionEngines();
     assert.ok(probes.LOCAL_GPU_ACCELERATOR, 'LOCAL_GPU_ACCELERATOR probe must exist');
     assert.ok(probes.LOCAL_COLMAP, 'LOCAL_COLMAP probe must exist');
@@ -993,10 +1012,13 @@ async function main() {
     for (const [engineName, p] of Object.entries(probes)) {
       assert.strictEqual(typeof p.configured, 'boolean', `${engineName}.configured must be boolean`);
       assert.strictEqual(typeof p.discovered, 'boolean', `${engineName}.discovered must be boolean`);
+      assert.strictEqual(typeof p.cliProbeRunnable, 'boolean', `${engineName}.cliProbeRunnable must be boolean`);
       assert.strictEqual(typeof p.runnable, 'boolean', `${engineName}.runnable must be boolean`);
+      assert.strictEqual(typeof p.reconstructionCapable, 'boolean', `${engineName}.reconstructionCapable must be boolean`);
       assert.strictEqual(typeof p.authorized, 'boolean', `${engineName}.authorized must be boolean`);
       assert.strictEqual(typeof p.classification, 'string', `${engineName}.classification must be string`);
-      console.log(`    - Engine [${engineName.padEnd(20)}]: configured=${p.configured}, discovered=${p.discovered}, runnable=${p.runnable}, authorized=${p.authorized} -> ${p.classification}`);
+      assert.strictEqual(p.fullPath, undefined, `${engineName} must not expose fullPath`);
+      console.log(`    - Engine [${engineName.padEnd(20)}]: configured=${p.configured}, discovered=${p.discovered}, cliProbeRunnable=${p.cliProbeRunnable}, capable=${p.reconstructionCapable}, auth=${p.authorized} -> ${p.classification}`);
     }
 
     // On standard test environment without configured external GPU/COLMAP, verify honest classification
@@ -1011,9 +1033,9 @@ async function main() {
       'LOCAL_3DGS must be classified NOT_CONFIGURED_OR_NOT_DISCOVERED_BY_CURRENT_PROBE when absent'
     );
 
-    // 2. Invoke authentic reconstruction worker on multi-position test images
+    // 2. Invoke authentic reconstruction worker & verify exact pre-reconstruction probe hash binding
     const reconResult = executeAuthenticReconstructionWorker();
-    assert.strictEqual(reconResult.success, false, 'Reconstruction worker must fail closed without runnable engine');
+    assert.strictEqual(reconResult.success, false, 'Reconstruction worker must fail closed without capable & authorized engine');
     assert.strictEqual(reconResult.status, 'RECONSTRUCTION_UNAVAILABLE', 'Status must be RECONSTRUCTION_UNAVAILABLE');
     assert.strictEqual(reconResult.errorCode, 'ERR_NO_RUNNABLE_RECONSTRUCTION_ENGINE');
     assert.ok(reconResult.engineProbes, 'Worker result must contain engineProbes');
@@ -1022,12 +1044,94 @@ async function main() {
     assert.strictEqual(reconResult.truthLedger.NEW_3D_MODEL_GENERATION, 'NOT_VERIFIED');
     assert.strictEqual(reconResult.truthLedger.RECONSTRUCTION_FROM_INPUTS, 'NOT_VERIFIED');
     assert.strictEqual(reconResult.truthLedger.INPUT_TO_OUTPUT_CAUSAL_LINEAGE, 'NOT_VERIFIED');
-    assert.ok(reconResult.cryptographicBinding.preReconstructionDigest.length === 64);
-    assert.ok(reconResult.cryptographicBinding.probesDigest.length === 64);
-    console.log('    - Authentic worker execution: FAIL_CLOSED with RECONSTRUCTION_UNAVAILABLE (PASSED)');
-    console.log('    - Cryptographic pre-reconstruction binding: ' + reconResult.cryptographicBinding.preReconstructionDigest);
 
-    // 3. Anti-substitution check on benchmark hashes
+    // Verify exact canonical formula binding probesDigest
+    const expectedPreHasher = crypto.createHash('sha256');
+    expectedPreHasher.update(`jobId:${reconResult.jobId}|`);
+    expectedPreHasher.update(`inputs:${reconResult.cryptographicBinding.inputsDigest}|`);
+    expectedPreHasher.update(`calib:${reconResult.cryptographicBinding.calibDigest}|`);
+    expectedPreHasher.update(`worker:${reconResult.cryptographicBinding.workerDigest}|`);
+    expectedPreHasher.update(`config:${reconResult.cryptographicBinding.configDigest}|`);
+    expectedPreHasher.update(`probes:${reconResult.cryptographicBinding.probesDigest}`);
+    const expectedPreDigest = expectedPreHasher.digest('hex');
+    assert.strictEqual(
+      reconResult.cryptographicBinding.preReconstructionDigest,
+      expectedPreDigest,
+      'preReconstructionDigest must match canonical hash including probesDigest'
+    );
+
+    // Test that altering only probe results strictly changes preReconstructionDigest
+    const modifiedProbes = JSON.parse(JSON.stringify(reconResult.engineProbes));
+    modifiedProbes.MOCK_PROBE = {
+      configured: true,
+      discovered: false,
+      cliProbeRunnable: false,
+      runnable: false,
+      reconstructionCapable: false,
+      authorized: false,
+      classification: 'MOCK_CLASSIFICATION'
+    };
+    const reconModified = executeAuthenticReconstructionWorker({ engineProbes: modifiedProbes, jobId: reconResult.jobId });
+    assert.notStrictEqual(
+      reconResult.cryptographicBinding.preReconstructionDigest,
+      reconModified.cryptographicBinding.preReconstructionDigest,
+      'Altering probe results must alter preReconstructionDigest'
+    );
+    console.log('    - Exact probe hash binding: PASS (preReconstructionDigest strictly binds probesDigest in canonical byte order)');
+
+    // 3. Isolated Execution Adapter Error Controls
+    // 3a. Unauthorized adapter invocation
+    const unauthAdapter = new ReconstructionExecutionAdapter({ entitlementKey: null });
+    const unauthRes = unauthAdapter.execute({ executable: 'colmap.exe' });
+    assert.strictEqual(unauthRes.success, false);
+    assert.strictEqual(unauthRes.errorCode, 'ERR_ADAPTER_UNAUTHORIZED');
+    assert.strictEqual(unauthRes.failClosed, true);
+
+    // 3b. Authorized adapter with disallowed target
+    process.env.RECONSTRUCTION_ADAPTER_AUTHORIZED = '1';
+    const authAdapter = new ReconstructionExecutionAdapter({
+      entitlementKey: 'AUTHENTICATED_STAGE2_INFRASTRUCTURE_KEY'
+    });
+    const disallowedRes = authAdapter.execute({ executable: 'unauthorized_tool.exe' });
+    assert.strictEqual(disallowedRes.success, false);
+    assert.strictEqual(disallowedRes.errorCode, 'ERR_ADAPTER_DISALLOWED_TARGET');
+
+    // 3c. Incompatible binary version
+    const versionRes = authAdapter.execute({
+      executable: 'colmap.exe',
+      minVersion: '3.8.0',
+      versionCheckOutput: 'COLMAP 3.6.0'
+    });
+    assert.strictEqual(versionRes.success, false);
+    assert.strictEqual(versionRes.errorCode, 'ERR_ADAPTER_INCOMPATIBLE_VERSION');
+
+    // 3d. Remote worker authentication failure
+    const badAuthRes = authAdapter.execute({
+      remoteUrl: 'https://spark-3dgs.internal/api',
+      remoteAuthToken: 'INVALID_CREDENTIALS'
+    });
+    assert.strictEqual(badAuthRes.success, false);
+    assert.strictEqual(badAuthRes.errorCode, 'ERR_ADAPTER_REMOTE_AUTH_FAILED');
+
+    // 3e. Unreachable remote endpoint
+    const unreachableRes = authAdapter.execute({
+      remoteUrl: 'https://unreachable.internal/reconstruct',
+      remoteAuthToken: 'SECRET_STAGE2_HANDSHAKE'
+    });
+    assert.strictEqual(unreachableRes.success, false);
+    assert.strictEqual(unreachableRes.errorCode, 'ERR_ADAPTER_REMOTE_UNREACHABLE');
+
+    // 3f. Execution runner failure propagation
+    const execFailRes = authAdapter.execute({
+      executable: 'colmap.exe',
+      mockRunner: () => ({ success: false, errorCode: 'ERR_SFM_PIPELINE_FAILED', message: 'COLMAP point triangulation failed' })
+    });
+    assert.strictEqual(execFailRes.success, false);
+    assert.strictEqual(execFailRes.errorCode, 'ERR_SFM_PIPELINE_FAILED');
+    delete process.env.RECONSTRUCTION_ADAPTER_AUTHORIZED;
+    console.log('    - Execution adapter error controls: PASS (unauthorized, disallowed, version, auth, unreachable, and failure guarded)');
+
+    // 4. Anti-substitution check on benchmark hashes
     const PREEXISTING_BENCHMARK_SPZ_HASH = 'fc80e5192ce1c79196e51414e0739524c9e191092c1719829ab414d0e73a32ee';
     const PREEXISTING_BENCHMARK_PLY_HASH = 'b40f8035ddc51817538f99afffa7eeca6836e8fcaa243a93bd214166b877cd4d';
 
@@ -1056,7 +1160,7 @@ async function main() {
 
     console.log('    - Anti-substitution gate: PASS (pre-existing benchmark protected from false generation claims)');
 
-    // 4. Control plane boundary gate
+    // 5. Control plane boundary gate
     function verifyControlPlaneReceipt(receipt) {
       if (!receipt || !receipt.controlPlaneSignature) {
         return {
@@ -1072,7 +1176,7 @@ async function main() {
     assert.strictEqual(unverifiedState.LIVE_QA_REVOCATION, 'BLOCKED_PENDING_INDEPENDENT_CONTROL_PLANE');
     console.log('    - Control-plane boundary gate: PASS (runtime & QA revocation remain fail-closed)');
 
-    // 5. Viewer procedural disclaimer gate
+    // 6. Viewer procedural disclaimer gate
     const viewerHtmlPath = path.join(REPO_ROOT, 'virtual-tradeshow-commercial-v1/_clean_deploy/client/diagnostics/wilo-spz-only.html');
     assert.ok(fs.existsSync(viewerHtmlPath), 'Diagnostic viewer HTML must exist');
     const viewerHtml = fs.readFileSync(viewerHtmlPath, 'utf8');
@@ -1084,7 +1188,7 @@ async function main() {
   console.log(`True 3D Pipeline Test Suite Complete: ${passedTests}/${totalTests} passed`);
   console.log('================================================================\n');
 
-  // ── [POST-RUN FINALIZER] Emit Machine-Verifiable R30 Execution Receipt ───────
+  // ── [POST-RUN FINALIZER] Emit Machine-Verifiable R31 Execution Receipt ───────
   const suiteEndTime = new Date().toISOString();
   const durationMs = Date.now() - startTimeEpoch;
   const runnerSource = fs.readFileSync(__filename);
@@ -1094,7 +1198,7 @@ async function main() {
   const engineDiscoveryProbes = probeReconstructionEngines();
 
   const receipt = {
-    receiptSchemaVersion: 'R30_EXECUTION_RECEIPT_V1',
+    receiptSchemaVersion: 'R31_EXECUTION_RECEIPT_V1',
     executionTimestamps: {
       startTime: suiteStartTime,
       endTime: suiteEndTime,
@@ -1161,14 +1265,14 @@ async function main() {
 
   const receiptOutPath = path.join(
     REPO_ROOT,
-    'virtual-tradeshow-commercial-v1/production_artifacts/R30_TEST_EXECUTION_RECEIPT.json'
+    'virtual-tradeshow-commercial-v1/production_artifacts/R31_TEST_EXECUTION_RECEIPT.json'
   );
   fs.writeFileSync(receiptOutPath, JSON.stringify(receipt, null, 2), 'utf8');
   const savedReceiptBytes = fs.readFileSync(receiptOutPath);
   const receiptByteSha256 = crypto.createHash('sha256').update(savedReceiptBytes).digest('hex');
 
-  console.log('--- Final Execution Receipt (R30 Machine Verifiable) ---');
-  console.log(`  File:           virtual-tradeshow-commercial-v1/production_artifacts/R30_TEST_EXECUTION_RECEIPT.json`);
+  console.log('--- Final Execution Receipt (R31 Machine Verifiable) ---');
+  console.log(`  File:           virtual-tradeshow-commercial-v1/production_artifacts/R31_TEST_EXECUTION_RECEIPT.json`);
   console.log(`  Byte SHA-256:   ${receiptByteSha256}`);
   console.log(`  Tested Commit:  ${suiteCurrentHead}`);
   console.log(`  Expected Head:  ${expectedHead || '(none - unbound)'}`);
