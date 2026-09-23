@@ -6242,7 +6242,12 @@ return event;
 
   isStripeEventProcessed(eventId) {
     const status = this.getStripeEventStatus(eventId);
-    return status === 'PROCESSED' || status === 'PROCESSING';
+    return status === 'PROCESSED';
+  }
+
+  isStripeEventProcessing(eventId) {
+    const status = this.getStripeEventStatus(eventId);
+    return status === 'PROCESSING';
   }
 
   async logStripeEvent(eventData, status = 'PROCESSED') {
@@ -6361,15 +6366,25 @@ return event;
       db.billingEvents.push({
         id: `bil-${uuidv4().substring(0, 8)}`,
         organizationId,
-        plan: requestedPlan,
+        plan: effectivePlan,
         type: 'checkout_completed',
         stripeCustomerId: customerId,
         stripeSubscriptionId: subscriptionId,
-        amount: amountTotal ? amountTotal / 100 : (requestedPlan === 'pro' ? 299 : 799),
+        amount: amountTotal ? amountTotal / 100 : (effectivePlan === 'business' ? 799 : 299),
         currency: currency || 'USD',
         status: 'success',
         createdAt: new Date().toISOString()
       });
+
+      // 3b. Mark Pending Checkout Record COMPLETED
+      if (sessionId && db.pendingCheckouts) {
+        const pending = db.pendingCheckouts.find(p => p.sessionId === sessionId);
+        if (pending) {
+          pending.status = 'COMPLETED';
+          pending.completedAt = new Date().toISOString();
+          pending.eventId = eventId;
+        }
+      }
 
       // 4. Mark Stripe Event PROCESSED
       const entry = {

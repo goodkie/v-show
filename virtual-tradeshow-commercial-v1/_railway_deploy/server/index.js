@@ -682,6 +682,15 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
     return res.json({ received: true, duplicate: true });
   }
 
+  // Concurrency guard: If event is already in-flight, return retryable status so Stripe retries
+  if (typeof db.isStripeEventProcessing === 'function' && db.isStripeEventProcessing(event.id)) {
+    return res.status(409).json({
+      error: 'STRIPE_EVENT_IN_FLIGHT',
+      message: 'Event is currently being processed by another worker; retry requested.',
+      retryable: true
+    });
+  }
+
   // Record event in inbox as PROCESSING
   await db.logStripeEvent(event, 'PROCESSING');
 
@@ -689,58 +698,49 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object;
-        const orgId = session.metadata?.organizationId;
-        const projectId = session.metadata?.projectId;
-        const requestedPlan = session.metadata?.requestedPlan || session.metadata?.targetPlan || 'pro';
+        const sessionId = session.id;
         const customerId = session.customer;
         const subscriptionId = session.subscription;
 
-        // C11 Free Funnel Project Upgrade Handler
-        if (session.metadata && session.metadata.projectId) {
-          const pid = session.metadata.projectId;
-          const reqPlan = (session.metadata.requestedPlan || 'PRO').toUpperCase();
-          let upgradedState = null;
-          await db.mutate(fresh => {
-            const proj = (fresh.freePreviewProjects || []).find(p => p.id === pid);
-            if (proj) {
-              proj.entitlementState = reqPlan === 'BUSINESS' ? 'ACTIVE_BUSINESS' : 'ACTIVE_PRO';
-              proj.plan = reqPlan;
-              proj.stripeCustomerId = customerId;
-              proj.stripeSubscriptionId = subscriptionId;
-              proj.stripeSessionId = session.id;
-              proj.paymentCorrelationId = session.metadata.paymentCorrelationId || 'pay_corr_webhook';
-              proj.activatedAt = new Date().toISOString();
-              proj.publishStatus = 'APPROVED';
-              upgradedState = proj.entitlementState;
-            }
-          });
-          if (upgradedState) {
-            console.log(`✅ C11 Project ${pid} upgraded to ${upgradedState} via Stripe Webhook`);
+        // Correlate with server-side pending checkout record
+        const pending = typeof db.getPendingCheckout === 'function' ? db.getPendingCheckout(sessionId) : null;
+
+        const orgId = pending?.organizationId || session.metadata?.organizationId;
+        const projectId = pending?.projectId || session.metadata?.projectId;
+        const requestedPlan = pending?.requestedPlan || session.metadata?.requestedPlan || session.metadata?.targetPlan || 'pro';
+
+        // Fail-closed verification: organization must exist
+        const org = orgId ? db.getOrganizationById(orgId) : null;
+        if (!org) {
+          throw new Error(`Orphaned or unverified checkout session: organizationId "${orgId}" not found in database.`);
+        }
+
+        // Multi-tenant isolation verification
+        if (projectId) {
+          const allProjects = db.read().projects || [];
+          const allFreeProjects = db.read().freePreviewProjects || [];
+          const project = allProjects.find(p => p.id === projectId) || allFreeProjects.find(p => p.id === projectId);
+          if (project && project.organizationId && project.organizationId !== org.id) {
+            throw new Error(`Project tenant mismatch: project "${projectId}" does not belong to organization "${org.id}".`);
           }
         }
 
-        if (orgId) {
-          await db.updateOrganizationSubscription(orgId, {
-            plan: requestedPlan,
-            status: 'active',
-            stripeCustomerId: customerId,
-            stripeSubscriptionId: subscriptionId,
-            upgradedAt: new Date().toISOString()
-          });
-          await db.logBillingEvent({
-            organizationId: orgId,
-            plan: requestedPlan,
-            type: 'checkout_completed',
-            stripeCustomerId: customerId,
-            stripeSubscriptionId: subscriptionId,
-            amount: session.amount_total ? session.amount_total / 100 : (requestedPlan === 'pro' ? 299 : 799)
-          });
-        }
+        // Atomic transaction: updates org subscription, project commercialState, logs billing event, marks event PROCESSED
+        const result = await db.applyStripeCheckoutCompletedAtomic({
+          eventId: event.id,
+          eventType: event.type,
+          sessionId,
+          organizationId: org.id,
+          projectId,
+          requestedPlan,
+          customerId,
+          subscriptionId,
+          amountTotal: session.amount_total,
+          currency: session.currency
+        });
 
-        // C09/C10 Project Commercial State Activation (Zero Data Re-entry)
-        if (projectId) {
-          const newState = requestedPlan === 'business' ? 'ACTIVE_BUSINESS' : 'ACTIVE_PRO';
-          await db.updateProjectCommercialState(projectId, newState, requestedPlan);
+        if (result && result.duplicate) {
+          return res.json({ received: true, duplicate: true });
         }
         break;
       }
@@ -755,58 +755,41 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
           const allOrgs = db.getOrganizations ? db.getOrganizations() : (db.read().organizations || []);
           org = allOrgs.find(o => o.subscription?.stripeSubscriptionId === sub.id);
         }
-        if (org) {
-          const plan = sub.metadata?.requestedPlan || (sub.items?.data[0]?.price?.unit_amount >= 50000 ? 'business' : 'pro');
-          await db.updateOrganizationSubscription(org.id, {
-            plan,
-            status: sub.status,
-            stripeSubscriptionId: sub.id,
-            currentPeriodStart: sub.current_period_start ? new Date(sub.current_period_start * 1000).toISOString() : null,
-            currentPeriodEnd: sub.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : null,
-            cancelAtPeriodEnd: Boolean(sub.cancel_at_period_end)
-          });
-          await db.logBillingEvent({
-            organizationId: org.id,
-            plan,
-            type: event.type === 'customer.subscription.created' ? 'subscription_created' : 'subscription_updated',
-            stripeCustomerId: sub.customer,
-            stripeSubscriptionId: sub.id,
-            status: sub.status
-          });
+        const plan = sub.metadata?.requestedPlan || (sub.items?.data[0]?.price?.unit_amount >= 50000 ? 'business' : 'pro');
 
-          // Sync linked projects
-          const orgProjects = (db.read().projects || []).filter(p => p.organizationId === org.id);
-          for (const prj of orgProjects) {
-            let prjState = prj.commercialState;
-            if (sub.status === 'active') {
-              prjState = plan === 'business' ? 'ACTIVE_BUSINESS' : 'ACTIVE_PRO';
-            } else if (sub.status === 'past_due') {
-              prjState = 'PAST_DUE';
-            } else if (sub.status === 'canceled') {
-              prjState = 'CANCELLED';
-            }
-            await db.updateProjectCommercialState(prj.id, prjState, plan);
-          }
+        const result = await db.applyStripeSubscriptionUpdatedAtomic({
+          eventId: event.id,
+          eventType: event.type,
+          subscriptionId: sub.id,
+          customerId: sub.customer,
+          status: sub.status,
+          plan,
+          organizationId: org?.id,
+          currentPeriodStart: sub.current_period_start ? new Date(sub.current_period_start * 1000).toISOString() : null,
+          currentPeriodEnd: sub.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : null,
+          cancelAtPeriodEnd: Boolean(sub.cancel_at_period_end)
+        });
+
+        if (result && result.duplicate) {
+          return res.json({ received: true, duplicate: true });
         }
         break;
       }
       case 'customer.subscription.deleted': {
         const sub = event.data.object;
-        const org = db.getOrganizationByStripeCustomerId(sub.customer);
-        if (org) {
-          await db.updateOrganizationSubscription(org.id, {
-            plan: 'free',
-            status: 'canceled',
-            cancelledAt: new Date().toISOString()
-          });
-          await db.logBillingEvent({
-            organizationId: org.id,
-            plan: 'free',
-            type: 'cancelled',
-            stripeCustomerId: sub.customer,
-            stripeSubscriptionId: sub.id,
-            status: 'canceled'
-          });
+        let org = db.getOrganizationByStripeCustomerId(sub.customer);
+        if (!org && sub.metadata?.organizationId) {
+          org = db.getOrganizationById(sub.metadata.organizationId);
+        }
+        const result = await db.applyStripeSubscriptionCancelledAtomic({
+          eventId: event.id,
+          eventType: event.type,
+          subscriptionId: sub.id,
+          customerId: sub.customer,
+          organizationId: org?.id
+        });
+        if (result && result.duplicate) {
+          return res.json({ received: true, duplicate: true });
         }
         break;
       }
@@ -825,27 +808,27 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
             status: 'paid'
           });
         }
+        await db.logStripeEvent(event, 'PROCESSED');
         break;
       }
       case 'invoice.payment_failed': {
         const invoice = event.data.object;
-        const org = db.getOrganizationByStripeCustomerId(invoice.customer);
-        if (org) {
-          await db.updateOrganizationSubscription(org.id, {
-            status: 'past_due'
-          });
-          await db.logBillingEvent({
-            organizationId: org.id,
-            plan: org.subscription?.plan || 'pro',
-            type: 'payment_failed',
-            stripeCustomerId: invoice.customer,
-            status: 'past_due'
-          });
-          db.logIncident('BILLING', 'medium', `Payment failed for customer ${org.name} (Invoice ${invoice.id})`, { organizationId: org.id });
+        let org = db.getOrganizationByStripeCustomerId(invoice.customer);
+        const result = await db.applyStripePaymentFailedAtomic({
+          eventId: event.id,
+          eventType: event.type,
+          invoiceId: invoice.id,
+          customerId: invoice.customer,
+          subscriptionId: invoice.subscription,
+          organizationId: org?.id
+        });
+        if (result && result.duplicate) {
+          return res.json({ received: true, duplicate: true });
         }
         break;
       }
       default:
+        await db.logStripeEvent(event, 'PROCESSED');
         break;
     }
     // Mark as PROCESSED only after atomic business state mutation completes
