@@ -94,6 +94,7 @@ module.exports = {
   TestHarnessExecutionAdapter,
   mintTestSessionProof,
   revokeTestSessionToken: internal.revokeSessionToken,
+  isSessionRevoked: internal.isSessionRevoked,
   verifySessionProof: internal.verifySessionProof,
   registerServerJob: internal.registerServerJob,
   resolveJobRoots: internal.resolveJobRoots,

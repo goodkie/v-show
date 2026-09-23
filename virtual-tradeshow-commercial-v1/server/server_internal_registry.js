@@ -63,11 +63,22 @@ function getServedStaticRoots() {
   return [
     path.join(projectRoot, 'client'),
     path.join(projectRoot, 'client', 'assets'),
+    path.join(projectRoot, 'client', 'diagnostics'),
+    path.join(projectRoot, 'client', 'vendor'),
     path.join(projectRoot, 'assets'),
+    path.join(projectRoot, 'assets', 'demo'),
+    path.join(projectRoot, 'assets', 'demo', 'wilo'),
+    path.join(projectRoot, 'assets', 'demo', 'wilo', 'models'),
     path.join(projectRoot, 'uploads'),
     path.join(projectRoot, '_clean_deploy'),
+    path.join(projectRoot, '_clean_deploy', 'client'),
+    path.join(projectRoot, '_clean_deploy', 'client', 'assets'),
     path.join(projectRoot, '_railway_deploy'),
+    path.join(projectRoot, '_railway_deploy', 'client'),
+    path.join(projectRoot, '_railway_deploy', 'client', 'assets'),
     path.join(projectRoot, 'app_build'),
+    path.join(projectRoot, 'app_build', 'client'),
+    path.join(projectRoot, 'app_build', 'client', 'assets'),
     path.join(projectRoot, 'customer_uploads')
   ];
 }
@@ -139,44 +150,127 @@ function assertNoStaticOverlap(targetPath) {
 }
 
 /**
- * Server-Side Session Revocation Registry (Durable File-Backed Store)
- * Survives process restarts and propagates across independent processes.
+ * Cross-Process Advisory Lock Utility
+ * Synchronizes atomic write/read operations across multiple Node processes.
+ */
+function withStoreLock(lockFilePath, actionFn) {
+  fs.mkdirSync(path.dirname(lockFilePath), { recursive: true });
+  const maxRetries = 250;
+  const retryDelayMs = 20;
+  const staleTimeoutMs = 10000;
+  let lockFd = null;
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      lockFd = fs.openSync(lockFilePath, 'wx');
+      fs.writeFileSync(lockFd, JSON.stringify({ pid: process.pid, time: Date.now() }), 'utf8');
+      break;
+    } catch (err) {
+      if (err.code === 'EEXIST') {
+        try {
+          const stat = fs.statSync(lockFilePath);
+          if (Date.now() - stat.mtimeMs > staleTimeoutMs) {
+            try { fs.unlinkSync(lockFilePath); } catch (_) {}
+          }
+        } catch (_) {}
+        const start = Date.now();
+        while (Date.now() - start < retryDelayMs) {}
+        continue;
+      }
+      throw err;
+    }
+  }
+
+  if (lockFd === null) {
+    const err = new Error(`ERR_STORE_LOCK_TIMEOUT: Timed out waiting for store lock: ${lockFilePath}`);
+    err.code = 'ERR_STORE_LOCK_TIMEOUT';
+    throw err;
+  }
+
+  try {
+    return actionFn();
+  } finally {
+    try { fs.closeSync(lockFd); } catch (_) {}
+    try { fs.unlinkSync(lockFilePath); } catch (_) {}
+  }
+}
+
+/**
+ * Server-Side Session Revocation Registry (Durable File-Backed Store with Fail-Closed I/O)
+ * Survives process restarts and propagates atomically across independent processes.
  */
 const DURABLE_AUTH_DIR = process.env.STAGE2_AUTH_STORE_DIR
   ? path.resolve(process.env.STAGE2_AUTH_STORE_DIR)
   : path.resolve(os.tmpdir(), 'vshow_stage2_auth_store');
 const REVOCATION_FILE = path.join(DURABLE_AUTH_DIR, 'revoked_tokens.json');
+const REVOCATION_LOCK_FILE = path.join(DURABLE_AUTH_DIR, 'revoked_tokens.lock');
 
 const revokedSessionTokens = new Set();
 
 function getRevokedTokensFromFile() {
+  if (!fs.existsSync(REVOCATION_FILE)) {
+    return new Set();
+  }
+  let raw;
   try {
-    if (fs.existsSync(REVOCATION_FILE)) {
-      const data = JSON.parse(fs.readFileSync(REVOCATION_FILE, 'utf8'));
-      if (Array.isArray(data)) {
-        return new Set(data);
-      }
-    }
-  } catch (_) {}
-  return new Set();
+    raw = fs.readFileSync(REVOCATION_FILE, 'utf8');
+  } catch (readErr) {
+    const err = new Error(`ERR_REVOCATION_STORE_UNAVAILABLE: Failed to read revocation store: ${readErr.message}`);
+    err.code = 'ERR_REVOCATION_STORE_UNAVAILABLE';
+    throw err;
+  }
+  let data;
+  try {
+    data = JSON.parse(raw);
+  } catch (jsonErr) {
+    const err = new Error(`ERR_REVOCATION_STORE_CORRUPTED: Revocation store corrupted JSON: ${jsonErr.message}`);
+    err.code = 'ERR_REVOCATION_STORE_CORRUPTED';
+    throw err;
+  }
+  if (!Array.isArray(data)) {
+    const err = new Error('ERR_REVOCATION_STORE_CORRUPTED: Revocation store data must be a JSON array');
+    err.code = 'ERR_REVOCATION_STORE_CORRUPTED';
+    throw err;
+  }
+  return new Set(data);
 }
 
 function persistRevokedTokens(set) {
+  fs.mkdirSync(DURABLE_AUTH_DIR, { recursive: true });
+  const tmpFile = path.join(DURABLE_AUTH_DIR, `revoked_${process.pid}_${Date.now()}_${crypto.randomBytes(4).toString('hex')}.tmp`);
+  const payload = JSON.stringify(Array.from(set));
+  let fd = null;
   try {
-    fs.mkdirSync(DURABLE_AUTH_DIR, { recursive: true });
-    const tmpFile = path.join(DURABLE_AUTH_DIR, `revoked_tokens_${process.pid}_${Date.now()}.tmp`);
-    fs.writeFileSync(tmpFile, JSON.stringify(Array.from(set)), 'utf8');
+    fd = fs.openSync(tmpFile, 'w');
+    fs.writeFileSync(fd, payload, 'utf8');
+    fs.fsyncSync(fd);
+    fs.closeSync(fd);
+    fd = null;
     fs.renameSync(tmpFile, REVOCATION_FILE);
-  } catch (_) {}
+  } catch (writeErr) {
+    if (fd !== null) {
+      try { fs.closeSync(fd); } catch (_) {}
+    }
+    try { fs.unlinkSync(tmpFile); } catch (_) {}
+    const err = new Error(`ERR_REVOCATION_STORE_WRITE_FAILED: Failed to persist revocation store: ${writeErr.message}`);
+    err.code = 'ERR_REVOCATION_STORE_WRITE_FAILED';
+    throw err;
+  }
 }
 
 function revokeSessionToken(sessionTokenHash) {
-  if (sessionTokenHash && typeof sessionTokenHash === 'string') {
-    revokedSessionTokens.add(sessionTokenHash);
+  if (!sessionTokenHash || typeof sessionTokenHash !== 'string') {
+    const err = new Error('ERR_REVOCATION_INVALID_TOKEN: sessionTokenHash must be a non-empty string');
+    err.code = 'ERR_REVOCATION_INVALID_TOKEN';
+    throw err;
+  }
+  withStoreLock(REVOCATION_LOCK_FILE, () => {
     const diskSet = getRevokedTokensFromFile();
     diskSet.add(sessionTokenHash);
     persistRevokedTokens(diskSet);
-  }
+    revokedSessionTokens.add(sessionTokenHash);
+  });
+  return true;
 }
 
 function isSessionRevoked(sessionTokenHash) {
@@ -204,6 +298,7 @@ function computeSessionSignature(tenantId, ownerId, projectId, sessionTokenHash,
  * Verify cryptographic validity, expiration, and project binding of session proof.
  * Throws ERR_REGISTRY_UNVERIFIED_PRINCIPAL on forged / invalid signatures.
  * Throws ERR_REGISTRY_PROJECT_PROOF_MISMATCH on same-tenant cross-project replay.
+ * Fails closed with ERR_REVOCATION_STORE_UNAVAILABLE or ERR_REVOCATION_STORE_CORRUPTED if store unreadable.
  */
 function verifySessionProof(sessionProof, expectedProjectId = null) {
   if (!sessionProof || typeof sessionProof !== 'object') {
@@ -268,7 +363,17 @@ function verifySessionProof(sessionProof, expectedProjectId = null) {
     throw err;
   }
 
-  if (isSessionRevoked(sessionTokenHash)) {
+  // Revocation status check: FAIL-CLOSED on store unavailability or corruption
+  let revoked = false;
+  try {
+    revoked = isSessionRevoked(sessionTokenHash);
+  } catch (revErr) {
+    const err = new Error(`ERR_REVOCATION_STORE_UNAVAILABLE: Revocation status cannot be verified due to store failure: ${revErr.message}`);
+    err.code = revErr.code || 'ERR_REVOCATION_STORE_UNAVAILABLE';
+    throw err;
+  }
+
+  if (revoked) {
     const err = new Error('ERR_SESSION_REVOKED: Authenticated session token has been revoked');
     err.code = 'ERR_SESSION_REVOKED';
     throw err;
@@ -298,26 +403,120 @@ function verifySessionProof(sessionProof, expectedProjectId = null) {
   };
 }
 
-// Authoritative Server-Side Project Storage (Pre-configured Authoritative Registry)
-// Maps projectId -> { projectId, tenantId, title }
+// Authoritative Server-Side Project Storage (Pre-configured Authoritative Registry with Owner Entitlement Memberships)
+// Maps projectId -> { projectId, tenantId, ownerMembers, title }
 const AUTHORITATIVE_PROJECTS = new Map([
-  ['project_true3d_beta', { projectId: 'project_true3d_beta', tenantId: 'tenant_commercial_alpha', title: 'Wilo True3D Beta' }],
-  ['project_same_tenant_other', { projectId: 'project_same_tenant_other', tenantId: 'tenant_commercial_alpha', title: 'Same Tenant Other Project' }],
-  ['project_foreign_tenant', { projectId: 'project_foreign_tenant', tenantId: 'other_tenant_id', title: 'Foreign Project' }],
-  ['project_client_mount', { projectId: 'project_client_mount', tenantId: 'client', title: 'Client Mount Project' }],
-  ['org-wilo-golden-demo', { projectId: 'org-wilo-golden-demo', tenantId: 'org-wilo-golden-demo', title: 'Wilo Golden Demo' }],
-  ['booth-wilo-golden-demo', { projectId: 'booth-wilo-golden-demo', tenantId: 'org-wilo-golden-demo', title: 'Wilo Booth' }]
+  ['project_true3d_beta', {
+    projectId: 'project_true3d_beta',
+    tenantId: 'tenant_commercial_alpha',
+    ownerMembers: new Set(['owner_operator_gamma']),
+    title: 'Wilo True3D Beta'
+  }],
+  ['project_same_tenant_other', {
+    projectId: 'project_same_tenant_other',
+    tenantId: 'tenant_commercial_alpha',
+    ownerMembers: new Set(['owner_operator_gamma']),
+    title: 'Same Tenant Other Project'
+  }],
+  ['project_foreign_tenant', {
+    projectId: 'project_foreign_tenant',
+    tenantId: 'other_tenant_id',
+    ownerMembers: new Set(['owner_operator_gamma', 'foreign_owner']),
+    title: 'Foreign Project'
+  }],
+  ['project_client_mount', {
+    projectId: 'project_client_mount',
+    tenantId: 'client',
+    ownerMembers: new Set(['owner_operator_gamma', 'client_owner']),
+    title: 'Client Mount Project'
+  }],
+  ['org-wilo-golden-demo', {
+    projectId: 'org-wilo-golden-demo',
+    tenantId: 'org-wilo-golden-demo',
+    ownerMembers: new Set(['owner_operator_gamma']),
+    title: 'Wilo Golden Demo'
+  }],
+  ['booth-wilo-golden-demo', {
+    projectId: 'booth-wilo-golden-demo',
+    tenantId: 'org-wilo-golden-demo',
+    ownerMembers: new Set(['owner_operator_gamma']),
+    title: 'Wilo Booth'
+  }]
 ]);
 
 function getAuthoritativeProject(projectId) {
   return AUTHORITATIVE_PROJECTS.get(projectId) || null;
 }
 
-// Closure-Private Active Server Jobs Map
-// Strictly non-exported to prevent direct caller mutation or clears
+// Closure-Private Multi-Process Durable Server Jobs Ledger
+const JOB_LEDGER_FILE = path.join(DURABLE_AUTH_DIR, 'server_jobs_ledger.json');
+const JOB_LOCK_FILE = path.join(DURABLE_AUTH_DIR, 'server_jobs_ledger.lock');
+
 const activeServerJobs = new Map();
 const MAX_CONCURRENT_JOBS = 100;
 const MAX_JOB_LIFETIME_MS = 3600000; // 1 hour
+
+function loadJobLedgerFromDisk() {
+  if (!fs.existsSync(JOB_LEDGER_FILE)) {
+    return new Map();
+  }
+  try {
+    const raw = fs.readFileSync(JOB_LEDGER_FILE, 'utf8');
+    const list = JSON.parse(raw);
+    if (Array.isArray(list)) {
+      const map = new Map();
+      for (const item of list) {
+        if (item && item.jobId) {
+          map.set(item.jobId, item);
+        }
+      }
+      return map;
+    }
+  } catch (_) {}
+  return new Map();
+}
+
+function persistJobLedgerToDisk(jobMap) {
+  fs.mkdirSync(DURABLE_AUTH_DIR, { recursive: true });
+  const tmpFile = path.join(DURABLE_AUTH_DIR, `job_ledger_${process.pid}_${Date.now()}_${crypto.randomBytes(4).toString('hex')}.tmp`);
+  const payload = JSON.stringify(Array.from(jobMap.values()));
+  let fd = null;
+  try {
+    fd = fs.openSync(tmpFile, 'w');
+    fs.writeFileSync(fd, payload, 'utf8');
+    fs.fsyncSync(fd);
+    fs.closeSync(fd);
+    fd = null;
+    fs.renameSync(tmpFile, JOB_LEDGER_FILE);
+  } catch (writeErr) {
+    if (fd !== null) {
+      try { fs.closeSync(fd); } catch (_) {}
+    }
+    try { fs.unlinkSync(tmpFile); } catch (_) {}
+    throw writeErr;
+  }
+}
+
+function syncActiveJobsFromLedger() {
+  try {
+    const diskMap = loadJobLedgerFromDisk();
+    for (const [id, job] of diskMap.entries()) {
+      if (!activeServerJobs.has(id)) {
+        activeServerJobs.set(id, job);
+      } else {
+        const local = activeServerJobs.get(id);
+        if (job.status === 'CLEANUP_FAILED' || job.status === 'CONSUMED' || job.status === 'CANCELLED') {
+          local.status = job.status;
+          if (job.cleanupError) local.cleanupError = job.cleanupError;
+          if (job.consumedAt) local.consumedAt = job.consumedAt;
+        }
+      }
+    }
+  } catch (_) {}
+}
+
+// Initial sync on module startup
+syncActiveJobsFromLedger();
 
 /**
  * Active eviction of expired and terminal entries.
@@ -327,6 +526,8 @@ const MAX_JOB_LIFETIME_MS = 3600000; // 1 hour
 function evictExpiredJobs() {
   const now = Date.now();
   let evicted = 0;
+  let ledgerChanged = false;
+
   for (const [id, job] of activeServerJobs.entries()) {
     if (job.status === 'CLEANUP_FAILED') {
       continue;
@@ -341,20 +542,27 @@ function evictExpiredJobs() {
         cleanupOk = false;
         job.status = 'CLEANUP_FAILED';
         job.cleanupError = rmErr.message;
+        ledgerChanged = true;
       }
       if (cleanupOk) {
         activeServerJobs.delete(id);
         evicted++;
+        ledgerChanged = true;
       }
     }
+  }
+  if (ledgerChanged) {
+    try {
+      persistJobLedgerToDisk(activeServerJobs);
+    } catch (_) {}
   }
   return evicted;
 }
 
 /**
  * Register a reconstruction job under authenticated server custody.
- * Requires cryptographically verified sessionProof bound to the exact projectId
- * and project resolution from authoritative storage.
+ * Requires cryptographically verified sessionProof bound to the exact projectId,
+ * project resolution from authoritative storage, and owner entitlement verification.
  */
 function registerServerJob(jobRequest = {}, authContext = {}) {
   const projectId = jobRequest.projectId;
@@ -380,67 +588,76 @@ function registerServerJob(jobRequest = {}, authContext = {}) {
     throw err;
   }
 
-  // Active eviction before quota check
-  evictExpiredJobs();
-
-  if (activeServerJobs.size >= MAX_CONCURRENT_JOBS) {
-    const err = new Error('ERR_REGISTRY_QUOTA_EXCEEDED: Server job registry concurrent quota reached');
-    err.code = 'ERR_REGISTRY_QUOTA_EXCEEDED';
+  if (project.ownerMembers && !project.ownerMembers.has(principal.ownerId)) {
+    const err = new Error(`ERR_REGISTRY_OWNER_NOT_ENTITLED: Owner "${principal.ownerId}" is not authorized on project "${projectId}"`);
+    err.code = 'ERR_REGISTRY_OWNER_NOT_ENTITLED';
     throw err;
   }
 
-  // Cryptographic random server ID (unpredictable, unforgeable)
-  const serverJobId = 'job_' + crypto.randomBytes(24).toString('hex');
-  const jobRoot = path.join(SERVER_TRUSTED_WORKSPACE_BASE, principal.tenantId, serverJobId);
+  return withStoreLock(JOB_LOCK_FILE, () => {
+    syncActiveJobsFromLedger();
+    evictExpiredJobs();
 
-  // Verify non-overlap with static served mounts
-  assertNoStaticOverlap(jobRoot);
+    if (activeServerJobs.size >= MAX_CONCURRENT_JOBS) {
+      const err = new Error('ERR_REGISTRY_QUOTA_EXCEEDED: Server job registry concurrent quota reached');
+      err.code = 'ERR_REGISTRY_QUOTA_EXCEEDED';
+      throw err;
+    }
 
-  const scratch = path.join(jobRoot, 'scratch');
-  const input = path.join(jobRoot, 'input');
-  const output = path.join(jobRoot, 'output');
+    // Cryptographic random server ID (unpredictable, unforgeable)
+    const serverJobId = 'job_' + crypto.randomBytes(24).toString('hex');
+    const jobRoot = path.join(SERVER_TRUSTED_WORKSPACE_BASE, principal.tenantId, serverJobId);
 
-  fs.mkdirSync(scratch, { recursive: true });
-  fs.mkdirSync(input, { recursive: true });
-  fs.mkdirSync(output, { recursive: true });
+    // Verify non-overlap with static served mounts
+    assertNoStaticOverlap(jobRoot);
 
-  try {
-    fs.accessSync(scratch, fs.constants.W_OK | fs.constants.R_OK);
-    fs.accessSync(output, fs.constants.W_OK | fs.constants.R_OK);
-    fs.accessSync(input, fs.constants.R_OK);
-  } catch (permErr) {
-    throw new Error(`ERR_SERVER_JOB_WORKSPACE_PERMISSION_FAILED: Workspace permission check failed: ${permErr.message}`);
-  }
+    const scratch = path.join(jobRoot, 'scratch');
+    const input = path.join(jobRoot, 'input');
+    const output = path.join(jobRoot, 'output');
 
-  const now = Date.now();
-  const jobEntry = {
-    jobId: serverJobId,
-    tenantId: principal.tenantId,
-    projectId,
-    ownerId: principal.ownerId,
-    sessionTokenHash: principal.sessionTokenHash,
-    status: 'PROVISIONED',
-    jobRoot,
-    scratch,
-    input,
-    output,
-    provisionedAt: now,
-    expiresAt: now + MAX_JOB_LIFETIME_MS
-  };
+    fs.mkdirSync(scratch, { recursive: true });
+    fs.mkdirSync(input, { recursive: true });
+    fs.mkdirSync(output, { recursive: true });
 
-  activeServerJobs.set(serverJobId, jobEntry);
+    try {
+      fs.accessSync(scratch, fs.constants.W_OK | fs.constants.R_OK);
+      fs.accessSync(output, fs.constants.W_OK | fs.constants.R_OK);
+      fs.accessSync(input, fs.constants.R_OK);
+    } catch (permErr) {
+      throw new Error(`ERR_SERVER_JOB_WORKSPACE_PERMISSION_FAILED: Workspace permission check failed: ${permErr.message}`);
+    }
 
-  return Object.freeze({
-    jobId: serverJobId,
-    tenantId: principal.tenantId,
-    projectId,
-    ownerId: principal.ownerId,
-    status: 'PROVISIONED',
-    scratch,
-    input,
-    output,
-    provisionedAt: now,
-    expiresAt: jobEntry.expiresAt
+    const now = Date.now();
+    const jobEntry = {
+      jobId: serverJobId,
+      tenantId: principal.tenantId,
+      projectId,
+      ownerId: principal.ownerId,
+      sessionTokenHash: principal.sessionTokenHash,
+      status: 'PROVISIONED',
+      jobRoot,
+      scratch,
+      input,
+      output,
+      provisionedAt: now,
+      expiresAt: now + MAX_JOB_LIFETIME_MS
+    };
+
+    activeServerJobs.set(serverJobId, jobEntry);
+    persistJobLedgerToDisk(activeServerJobs);
+
+    return Object.freeze({
+      jobId: serverJobId,
+      tenantId: principal.tenantId,
+      projectId,
+      ownerId: principal.ownerId,
+      status: 'PROVISIONED',
+      scratch,
+      input,
+      output,
+      provisionedAt: now,
+      expiresAt: jobEntry.expiresAt
+    });
   });
 }
 
@@ -455,68 +672,72 @@ function resolveJobRoots(jobId, sessionContext = {}) {
     throw err;
   }
 
-  evictExpiredJobs();
+  return withStoreLock(JOB_LOCK_FILE, () => {
+    syncActiveJobsFromLedger();
+    evictExpiredJobs();
 
-  const job = activeServerJobs.get(jobId);
-  if (!job) {
-    const err = new Error(`ERR_ADAPTER_JOB_NOT_FOUND: Job "${jobId}" is not registered in server job registry`);
-    err.code = 'ERR_ADAPTER_JOB_NOT_FOUND';
-    throw err;
-  }
+    const job = activeServerJobs.get(jobId);
+    if (!job) {
+      const err = new Error(`ERR_ADAPTER_JOB_NOT_FOUND: Job "${jobId}" is not registered in server job registry`);
+      err.code = 'ERR_ADAPTER_JOB_NOT_FOUND';
+      throw err;
+    }
 
-  if (Date.now() > job.expiresAt) {
-    const err = new Error(`ERR_ADAPTER_JOB_EXPIRED: Job "${jobId}" has expired`);
-    err.code = 'ERR_ADAPTER_JOB_EXPIRED';
-    throw err;
-  }
+    if (Date.now() > job.expiresAt) {
+      const err = new Error(`ERR_ADAPTER_JOB_EXPIRED: Job "${jobId}" has expired`);
+      err.code = 'ERR_ADAPTER_JOB_EXPIRED';
+      throw err;
+    }
 
-  if (job.status === 'CONSUMED' || job.status === 'COMPLETED' || job.status === 'CANCELLED' || job.status === 'CLEANUP_FAILED') {
-    const err = new Error(`ERR_ADAPTER_JOB_ALREADY_CONSUMED: Job "${jobId}" has already reached terminal status "${job.status}"`);
-    err.code = 'ERR_ADAPTER_JOB_ALREADY_CONSUMED';
-    throw err;
-  }
+    if (job.status === 'CONSUMED' || job.status === 'COMPLETED' || job.status === 'CANCELLED' || job.status === 'CLEANUP_FAILED') {
+      const err = new Error(`ERR_ADAPTER_JOB_ALREADY_CONSUMED: Job "${jobId}" has already reached terminal status "${job.status}"`);
+      err.code = 'ERR_ADAPTER_JOB_ALREADY_CONSUMED';
+      throw err;
+    }
 
-  // Cryptographic session verification binding expected projectId
-  const principal = verifySessionProof(sessionContext, job.projectId);
-  if (principal.tenantId !== job.tenantId) {
-    const err = new Error(`ERR_ADAPTER_TENANT_MISMATCH: Session tenant "${principal.tenantId}" does not match job tenant "${job.tenantId}"`);
-    err.code = 'ERR_ADAPTER_TENANT_MISMATCH';
-    throw err;
-  }
-  if (principal.ownerId !== job.ownerId) {
-    const err = new Error(`ERR_ADAPTER_JOB_AUTHORIZATION_FAILED: Session owner "${principal.ownerId}" is not authorized for job "${jobId}"`);
-    err.code = 'ERR_ADAPTER_JOB_AUTHORIZATION_FAILED';
-    throw err;
-  }
-  if (principal.projectId !== job.projectId) {
-    const err = new Error(`ERR_ADAPTER_PROJECT_MISMATCH: Session project "${principal.projectId}" does not match job project "${job.projectId}"`);
-    err.code = 'ERR_ADAPTER_PROJECT_MISMATCH';
-    throw err;
-  }
+    // Cryptographic session verification binding expected projectId
+    const principal = verifySessionProof(sessionContext, job.projectId);
+    if (principal.tenantId !== job.tenantId) {
+      const err = new Error(`ERR_ADAPTER_TENANT_MISMATCH: Session tenant "${principal.tenantId}" does not match job tenant "${job.tenantId}"`);
+      err.code = 'ERR_ADAPTER_TENANT_MISMATCH';
+      throw err;
+    }
+    if (principal.ownerId !== job.ownerId) {
+      const err = new Error(`ERR_ADAPTER_JOB_AUTHORIZATION_FAILED: Session owner "${principal.ownerId}" is not authorized for job "${jobId}"`);
+      err.code = 'ERR_ADAPTER_JOB_AUTHORIZATION_FAILED';
+      throw err;
+    }
+    if (principal.projectId !== job.projectId) {
+      const err = new Error(`ERR_ADAPTER_PROJECT_MISMATCH: Session project "${principal.projectId}" does not match job project "${job.projectId}"`);
+      err.code = 'ERR_ADAPTER_PROJECT_MISMATCH';
+      throw err;
+    }
 
-  // Exact session identity check: prevents session-swapping across multiple sessions of the same owner
-  if (principal.sessionTokenHash !== job.sessionTokenHash) {
-    const err = new Error('ERR_ADAPTER_SESSION_TOKEN_MISMATCH: Session token does not match registered job session identity');
-    err.code = 'ERR_ADAPTER_SESSION_TOKEN_MISMATCH';
-    throw err;
-  }
+    // Exact session identity check: prevents session-swapping across multiple sessions of the same owner
+    if (principal.sessionTokenHash !== job.sessionTokenHash) {
+      const err = new Error('ERR_ADAPTER_SESSION_TOKEN_MISMATCH: Session token does not match registered job session identity');
+      err.code = 'ERR_ADAPTER_SESSION_TOKEN_MISMATCH';
+      throw err;
+    }
 
-  // Preflight validation: workspace roots and static non-overlap MUST exist BEFORE status transitions to CONSUMED
-  if (!fs.existsSync(job.scratch) || !fs.existsSync(job.input) || !fs.existsSync(job.output)) {
-    const err = new Error('ERR_ADAPTER_WORKSPACE_NOT_PROVISIONED: One or more workspace roots do not exist on disk');
-    err.code = 'ERR_ADAPTER_WORKSPACE_NOT_PROVISIONED';
-    throw err;
-  }
-  assertNoStaticOverlap(job.jobRoot);
+    // Preflight validation: workspace roots and static non-overlap MUST exist BEFORE status transitions to CONSUMED
+    if (!fs.existsSync(job.scratch) || !fs.existsSync(job.input) || !fs.existsSync(job.output)) {
+      const err = new Error('ERR_ADAPTER_WORKSPACE_NOT_PROVISIONED: One or more workspace roots do not exist on disk');
+      err.code = 'ERR_ADAPTER_WORKSPACE_NOT_PROVISIONED';
+      throw err;
+    }
+    assertNoStaticOverlap(job.jobRoot);
 
-  // Documented atomic transition: ONLY after all preflight checks pass
-  job.status = 'CONSUMED';
-  job.consumedAt = Date.now();
+    // Documented atomic transition: ONLY after all preflight checks pass
+    job.status = 'CONSUMED';
+    job.consumedAt = Date.now();
+    persistJobLedgerToDisk(activeServerJobs);
 
-  return Object.freeze({
-    scratch: job.scratch,
-    input: job.input,
-    output: job.output
+    return Object.freeze({
+      scratch: job.scratch,
+      input: job.input,
+      output: job.output
+    });
   });
 }
 
@@ -525,28 +746,33 @@ function resolveJobRoots(jobId, sessionContext = {}) {
  * If deletion fails, records CLEANUP_FAILED status and retains in map/quota.
  */
 function cancelServerJob(jobId, sessionContext = {}) {
-  const job = activeServerJobs.get(jobId);
-  if (!job) {
-    return { cancelled: false, reason: 'ERR_JOB_NOT_FOUND' };
-  }
-  const principal = verifySessionProof(sessionContext, job.projectId);
-  if (job.tenantId !== principal.tenantId || job.ownerId !== principal.ownerId) {
-    const err = new Error('ERR_ADAPTER_JOB_AUTHORIZATION_FAILED: Unauthorized to cancel job');
-    err.code = 'ERR_ADAPTER_JOB_AUTHORIZATION_FAILED';
-    throw err;
-  }
-
-  try {
-    if (job.jobRoot && fs.existsSync(job.jobRoot)) {
-      fs.rmSync(job.jobRoot, { recursive: true, force: true });
+  return withStoreLock(JOB_LOCK_FILE, () => {
+    syncActiveJobsFromLedger();
+    const job = activeServerJobs.get(jobId);
+    if (!job) {
+      return { cancelled: false, reason: 'ERR_JOB_NOT_FOUND' };
     }
-    job.status = 'CANCELLED';
-    return { cancelled: true, jobId, status: 'CANCELLED' };
-  } catch (rmErr) {
-    job.status = 'CLEANUP_FAILED';
-    job.cleanupError = rmErr.message;
-    return { cancelled: false, jobId, status: 'CLEANUP_FAILED', reason: 'ERR_WORKSPACE_CLEANUP_FAILED', error: rmErr.message };
-  }
+    const principal = verifySessionProof(sessionContext, job.projectId);
+    if (job.tenantId !== principal.tenantId || job.ownerId !== principal.ownerId) {
+      const err = new Error('ERR_ADAPTER_JOB_AUTHORIZATION_FAILED: Unauthorized to cancel job');
+      err.code = 'ERR_ADAPTER_JOB_AUTHORIZATION_FAILED';
+      throw err;
+    }
+
+    try {
+      if (job.jobRoot && fs.existsSync(job.jobRoot)) {
+        fs.rmSync(job.jobRoot, { recursive: true, force: true });
+      }
+      job.status = 'CANCELLED';
+      persistJobLedgerToDisk(activeServerJobs);
+      return { cancelled: true, jobId, status: 'CANCELLED' };
+    } catch (rmErr) {
+      job.status = 'CLEANUP_FAILED';
+      job.cleanupError = rmErr.message;
+      persistJobLedgerToDisk(activeServerJobs);
+      return { cancelled: false, jobId, status: 'CLEANUP_FAILED', reason: 'ERR_WORKSPACE_CLEANUP_FAILED', error: rmErr.message };
+    }
+  });
 }
 
 // Module Exports: Shipped production surface has ZERO proof minting, ZERO project insertion, ZERO test hooks
@@ -558,6 +784,7 @@ module.exports = {
   verifySessionProof,
   getAuthoritativeProject,
   revokeSessionToken,
+  isSessionRevoked,
   assertNoStaticOverlap,
   getServedStaticRoots,
   SERVER_TRUSTED_WORKSPACE_BASE
