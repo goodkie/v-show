@@ -38,6 +38,7 @@ const path = require('path');
 const http = require('http');
 const crypto = require('crypto');
 const assert = require('assert');
+const { execSync } = require('child_process');
 const os = require('os');
 const { execFile } = require('child_process');
 
@@ -609,8 +610,8 @@ async function main() {
     console.log('    - Negative output hash check: passed (no template-copy masquerading as new 3D model)');
   });
 
-  // ── [15] Factual Gate Separation Ledger Verification (R22/R23) ──────────────
-  runTest('15. Factual gate separation ledger verified (R22/R23 honest disclosures)', () => {
+  // ── [15] Factual Gate Separation Ledger Verification (R24) ──────────────────
+  runTest('15. Factual gate separation ledger verified (R24 honest disclosures)', () => {
     const gates = {
       SYNTHETIC_PANORAMA: 'VERIFIED',
       REAL_DEVICE_12: 'NOT_VERIFIED',
@@ -629,12 +630,13 @@ async function main() {
       STATIC_ROUTE_BYPASS_PROTECTED: 'VERIFIED',  // Private model route mounted before static middleware
       CURRENT_RUNTIME_STATIC_ISOLATION: 'VERIFIED_BY_TEST', // Verified via real Express server auth + bypass tests
       HISTORICAL_PUBLIC_ARTIFACT_EXPOSURE: 'REQUIRES_ASSESSMENT', // Historical Git-LFS commit risk per R22 audit
+      COMMERCIAL_REDISTRIBUTION_RIGHTS: 'REQUIRES_OWNER_ATTESTATION', // Requires owner attestation per R23 audit
       LIVE_QA_REVOCATION: 'BLOCKED_PENDING_INDEPENDENT_CONTROL_PLANE',
       OWNER_REVIEW_GATE: 'HOLD',
       ENGINEERING_HOLD: 'ACTIVE'
     };
 
-    console.log('\n  Authoritative Gate Status Matrix (R23 Honest Ledger):');
+    console.log('\n  Authoritative Gate Status Matrix (R24 Honest Ledger):');
     for (const [gate, status] of Object.entries(gates)) {
       console.log(`    - ${gate.padEnd(38)} : ${status}`);
     }
@@ -653,31 +655,32 @@ async function main() {
     assert.strictEqual(gates.STATIC_ROUTE_BYPASS_PROTECTED, 'VERIFIED', 'Static route bypass must be prevented');
     assert.strictEqual(gates.CURRENT_RUNTIME_STATIC_ISOLATION, 'VERIFIED_BY_TEST', 'Current runtime static isolation must be VERIFIED_BY_TEST');
     assert.strictEqual(gates.HISTORICAL_PUBLIC_ARTIFACT_EXPOSURE, 'REQUIRES_ASSESSMENT', 'Historical artifact exposure requires assessment');
+    assert.strictEqual(gates.COMMERCIAL_REDISTRIBUTION_RIGHTS, 'REQUIRES_OWNER_ATTESTATION', 'Commercial redistribution rights require owner attestation');
     assert.strictEqual(gates.LIVE_QA_REVOCATION, 'BLOCKED_PENDING_INDEPENDENT_CONTROL_PLANE');
     assert.strictEqual(gates.OWNER_REVIEW_GATE, 'HOLD');
     assert.strictEqual(gates.ENGINEERING_HOLD, 'ACTIVE');
   });
 
-  // ── [16] Public Static Path Regression Gate & Provenance Verification (R23) ──
+  // ── [16] Public Static Path Regression Gate & Provenance Verification (R24) ──
   runTest('16. Public static regression gate: Zero model files (*.spz, *.ply, *.splat, *.ksplat) or Git-LFS pointers in public client/assets', () => {
-    // 1. Verify git tracked files under client/assets
+    // 1. Mandatory fail-closed verification of git tracked files under client/assets
+    let gitTracked;
     try {
-      const gitTracked = execSync('git ls-files "*client/assets*"', {
+      gitTracked = execSync('git ls-files "*client/assets*"', {
         cwd: REPO_ROOT,
         encoding: 'utf8',
         maxBuffer: 10 * 1024 * 1024
       }).split('\n').map(s => s.trim()).filter(Boolean);
-
-      const prohibitedTracked = gitTracked.filter(f => /\.(spz|ply|splat|ksplat)$/i.test(f));
-      assert.strictEqual(
-        prohibitedTracked.length,
-        0,
-        `Prohibited 3D model files found tracked in Git under client/assets: ${JSON.stringify(prohibitedTracked)}`
-      );
-    } catch (e) {
-      if (e.message.includes('Prohibited')) throw e;
-      // if git is not available in environment, fallback to filesystem check
+    } catch (err) {
+      assert.fail(`FAIL_CLOSED: Mandatory git ls-files command execution failed: ${err.message}`);
     }
+
+    const prohibitedTracked = gitTracked.filter(f => /\.(spz|ply|splat|ksplat)$/i.test(f));
+    assert.strictEqual(
+      prohibitedTracked.length,
+      0,
+      `Prohibited 3D model files found tracked in Git under client/assets: ${JSON.stringify(prohibitedTracked)}`
+    );
 
     // 2. Scan physical directories on disk under public client/assets roots
     const candidateRoots = [
@@ -708,7 +711,6 @@ async function main() {
             fs.closeSync(fd);
             const str = head.toString('utf8', 0, bytesRead);
             if (str.startsWith('version https://git-lfs.github.com/spec/v1')) {
-              // If an LFS pointer is pointing to a 3D model
               if (/\.(spz|ply|splat|ksplat)$/i.test(entry.name) || str.includes('models/')) {
                 lfsPointersFound.push(full);
               }
@@ -733,22 +735,45 @@ async function main() {
       `Prohibited Git-LFS pointers on disk under client/assets: ${JSON.stringify(lfsPointersFound)}`
     );
 
-    // 3. Verify WILO_BENCHMARK_PROVENANCE_CLASSIFICATION exists and is valid
+    // 3. Non-circular verification: Verify independent forensic provenance audit documents
+    const forensicDocPath = path.join(
+      REPO_ROOT,
+      'virtual-tradeshow-commercial-v1/production_artifacts/r6/02_MODEL_PROVENANCE.md'
+    );
+    assert.ok(fs.existsSync(forensicDocPath), 'Independent forensic provenance document 02_MODEL_PROVENANCE.md must exist');
+    const forensicDocContent = fs.readFileSync(forensicDocPath, 'utf8');
+    assert.ok(forensicDocContent.includes('MODEL_PROVENANCE=IDENTIFIED_SYNTHETIC_STUDIO_SOURCE'), 'Must document synthetic studio source');
+    assert.ok(forensicDocContent.includes('GAUSSIAN_COUNT=526941'), 'Must document 526,941 Gaussian count');
+    assert.ok(forensicDocContent.includes('FC80E5192CE1C79196E51414E0739524C9E191092C1719829AB414D0E73A32EE'), 'Must bind to exact SPZ hash');
+
+    // Verify SfM failure audit on real photos exists
+    const sfmAuditPath = path.join(
+      REPO_ROOT,
+      'virtual-tradeshow-commercial-v1/production_artifacts/PHASE_10_7N_G_REAL_WILO_RECONSTRUCTION.md'
+    );
+    assert.ok(fs.existsSync(sfmAuditPath), 'PHASE_10_7N_G_REAL_WILO_RECONSTRUCTION.md must exist');
+    const sfmAuditContent = fs.readFileSync(sfmAuditPath, 'utf8');
+    assert.ok(sfmAuditContent.includes('0 cameras registered (0.0%)'), 'Must document real SfM failure on initial photos');
+
+    // 4. Verify WILO_BENCHMARK_PROVENANCE_CLASSIFICATION exists and is valid
     const provPath = path.join(
       REPO_ROOT,
       'virtual-tradeshow-commercial-v1/production_artifacts/WILO_BENCHMARK_PROVENANCE_CLASSIFICATION.json'
     );
     assert.ok(fs.existsSync(provPath), 'WILO_BENCHMARK_PROVENANCE_CLASSIFICATION.json must exist');
     const provData = JSON.parse(fs.readFileSync(provPath, 'utf8'));
-    assert.strictEqual(provData.classification.category, 'PUBLIC_DEMO_BENCHMARK');
+    assert.strictEqual(provData.classification.category, 'REPOSITORY_INTERNAL_DEMO_FIXTURE');
+    assert.strictEqual(provData.classification.technicalNature, 'SYNTHETIC_THREEJS_STUDIO_GAUSSIAN_RECONSTRUCTION');
     assert.strictEqual(provData.classification.containsCustomerPii, false);
     assert.strictEqual(provData.securityAndGovernanceEvaluation.CURRENT_RUNTIME_STATIC_ISOLATION, 'VERIFIED_BY_TEST');
     assert.strictEqual(provData.securityAndGovernanceEvaluation.HISTORICAL_PUBLIC_ARTIFACT_EXPOSURE, 'REQUIRES_ASSESSMENT');
+    assert.strictEqual(provData.securityAndGovernanceEvaluation.COMMERCIAL_REDISTRIBUTION_RIGHTS, 'REQUIRES_OWNER_ATTESTATION');
 
-    console.log('    - Public static git tracked model count: 0 (PASSED)');
+    console.log('    - Public static git tracked model count: 0 (PASSED - fail-closed)');
     console.log('    - Public static filesystem model count:  0 (PASSED)');
     console.log('    - Public static Git-LFS pointer count:   0 (PASSED)');
-    console.log('    - Benchmark classification verified:     PUBLIC_DEMO_BENCHMARK (PASSED)');
+    console.log('    - Forensic lineage audit verified:       IDENTIFIED_SYNTHETIC_STUDIO_SOURCE (PASSED)');
+    console.log('    - Rights governance verified:            REQUIRES_OWNER_ATTESTATION (PASSED)');
   });
 
   console.log('\n================================================================');

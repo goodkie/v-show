@@ -1,13 +1,15 @@
 {
-  "schemaVersion": "1.0.0",
+  "schemaVersion": "2.0.0",
   "document": "WILO_BENCHMARK_PROVENANCE_CLASSIFICATION",
-  "evaluatedAt": "2026-09-23T02:15:00Z",
+  "evaluatedAt": "2026-09-23T04:15:00Z",
+  "chronologyNote": "Evaluated during Round 24 audit. Corrects previous forward-dated manual timestamp error.",
   "classification": {
-    "category": "PUBLIC_DEMO_BENCHMARK",
-    "sensitivity": "NON_SENSITIVE_SYNTHETIC_EXHIBITION_FIXTURE",
+    "category": "REPOSITORY_INTERNAL_DEMO_FIXTURE",
+    "technicalNature": "SYNTHETIC_THREEJS_STUDIO_GAUSSIAN_RECONSTRUCTION",
     "targetTenant": "org-wilo-golden-demo",
     "containsCustomerPii": false,
     "containsProductionSecrets": false,
+    "containsCustomerDatabaseRecords": false,
     "containsCustomerProprietaryData": false
   },
   "benchmarkArtifacts": {
@@ -25,21 +27,26 @@
       "format": "COMPRESSED_GAUSSIAN_RADIANCE_FIELD"
     }
   },
-  "provenanceHistory": {
-    "originPhase": "Phase 10.7N",
-    "purpose": "Reference industrial exhibition showroom demonstration booth ('Golden Demo') used to validate 3D Gaussian radiance field visualization against 2D photo tour captures",
-    "exhibitionObjects": [
-      "SiBoost Smart (water pressure booster system)",
-      "Stratos MAXO (smart circulation pump)",
-      "Rexa FIT (industrial submersible wastewater pump)",
-      "Reception desk counter and showroom overhead lighting truss"
-    ]
+  "nonCircularForensicLineage": {
+    "primaryAuditDocument": "virtual-tradeshow-commercial-v1/production_artifacts/r6/02_MODEL_PROVENANCE.md",
+    "secondaryAuditDocument": "virtual-tradeshow-commercial-v1/production_artifacts/PHASE_10_7N_G_REAL_WILO_RECONSTRUCTION.md",
+    "rejectedSyntheticModelArchive": "virtual-tradeshow-commercial-v1/production_artifacts/r6/rejected_synthetic_model/",
+    "forensicOriginTrace": {
+      "step1_virtualSceneSource": "phase9_5-synthetic-pilot/booth/scene/studio.js (Three.js procedural geometry: smart factory/automation booth)",
+      "step2_brandOverlayInjection": "wilo-real-recon-02/scene/build_studio.py (injected 'WILO ISH FRANKFURT 2026', 'Pioneering for You' text textures onto 3D mesh)",
+      "step3_syntheticRenders": "Rendered 60 synthetic camera trajectory images (wilo_60_001.jpg ~ wilo_60_060.jpg)",
+      "step4_colmapSfM": "COLMAP SfM executed on 60 synthetic images -> 60/60 registered (54,800 sparse points)",
+      "step5_splatfactoTraining": "Splatfacto trained 526,941 Gaussians -> exported PLY (130,682,925 B) -> compressed SPZ (111,539,801 B)",
+      "step6_forensicRejection": "Phase 10.7N-R6 forensic audit rejected artifact as authentic physical capture photogrammetry (MODEL_PROVENANCE=IDENTIFIED_SYNTHETIC_STUDIO_SOURCE), archived under rejected_synthetic_model, and retained exclusively as a rendering/camera coordinate benchmark"
+    }
   },
   "securityAndGovernanceEvaluation": {
     "CURRENT_RUNTIME_STATIC_ISOLATION": "VERIFIED_BY_TEST",
-    "runtimeDetails": "Model route mounted ahead of static middleware; unauthenticated requests receive 401; cross-tenant requests receive 403; model files stored strictly in private directories; static route bypass blocked",
+    "runtimeDetails": "Express server model route mounted ahead of static middleware; unauthenticated requests receive 401; cross-tenant requests receive 403; model files stored strictly in private directories; static route bypass blocked; Test 16 confirms zero 3D models or LFS pointers in client/assets",
     "HISTORICAL_PUBLIC_ARTIFACT_EXPOSURE": "REQUIRES_ASSESSMENT",
-    "historicalDetails": "Prior commit bdd23c9 on PR #5 contains Git-LFS pointer under client/assets/demo/wilo/models/ with same SHA (fc80e5...). Git/LFS history retains historical object pointers. Destructive Git history rewriting is strictly prohibited without explicit repository owner authorization."
+    "historicalDetails": "Historical commit bdd23c9... on PR #5 contains Git-LFS pointer under client/assets/demo/wilo/models/ with same SHA (fc80e5...). Git/LFS history retains historical object pointers. Destructive Git history rewriting is strictly prohibited without explicit repository owner authorization.",
+    "COMMERCIAL_REDISTRIBUTION_RIGHTS": "REQUIRES_OWNER_ATTESTATION",
+    "rightsDetails": "While 3D geometry is procedurally synthetic (studio.js), text/branding overlays reference demonstration booth materials ('WILO ISH FRANKFURT 2026'). Commercial publication and redistribution rights cannot be self-asserted and strictly require independent repository owner attestation."
   },
   "operatingGates": {
     "OWNER_REVIEW_GATE": "HOLD",
