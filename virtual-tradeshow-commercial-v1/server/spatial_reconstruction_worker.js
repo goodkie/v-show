@@ -503,20 +503,144 @@ const TYPED_ARGV_SCHEMAS = Object.freeze({
 // Infrastructure Base Root for Trusted Workspaces
 const SERVER_TRUSTED_WORKSPACE_BASE = path.resolve(__dirname, '..', 'data', 'reconstruction_workspaces');
 
+// Private unforgeable token for test harness authorization (R38)
+const HARNESS_AUTHORIZATION_TOKEN = Symbol('STAGE2_TEST_HARNESS_AUTH_TOKEN');
+
 /**
- * Infrastructure-Owned Trusted Root Registry (R37)
- * Prohibits caller-supplied root overrides; manages immutable job roots and cross-checks mounts.
+ * Server-Owned Job & Workspace Registry (R38)
+ * Manages immutable job metadata, tenant binding, and physical workspace provisioning.
+ */
+class ServerJobRegistry {
+  constructor(options = {}) {
+    this.jobs = new Map();
+    this.baseRoot = SERVER_TRUSTED_WORKSPACE_BASE;
+  }
+
+  registerJob(jobRecord = {}) {
+    const { jobId, tenantId, projectId, ownerId } = jobRecord;
+    if (!jobId || typeof jobId !== 'string' || !/^[a-zA-Z0-9_-]{8,64}$/.test(jobId)) {
+      throw new Error('ERR_SERVER_JOB_INVALID_JOB_ID: Job ID must be 8-64 alphanumeric/dash characters');
+    }
+    if (!tenantId || typeof tenantId !== 'string' || !/^[a-zA-Z0-9_-]{3,64}$/.test(tenantId)) {
+      throw new Error('ERR_SERVER_JOB_INVALID_TENANT_ID: Tenant ID must be 3-64 alphanumeric/dash characters');
+    }
+    if (!projectId || typeof projectId !== 'string') {
+      throw new Error('ERR_SERVER_JOB_INVALID_PROJECT_ID: Project ID is required');
+    }
+    if (!ownerId || typeof ownerId !== 'string') {
+      throw new Error('ERR_SERVER_JOB_INVALID_OWNER_ID: Owner ID is required');
+    }
+
+    const jobRoot = path.join(this.baseRoot, tenantId, jobId);
+
+    // Cross-check against prohibited mounts (public web assets, static client dirs, system dirs, customer upload dirs)
+    const prohibitedSubstrings = [
+      path.sep + 'client' + path.sep,
+      path.sep + 'assets' + path.sep,
+      path.sep + 'app_build' + path.sep,
+      path.sep + '_clean_deploy' + path.sep,
+      path.sep + '_railway_deploy' + path.sep,
+      path.sep + 'windows' + path.sep,
+      path.sep + 'system32' + path.sep,
+      path.sep + 'customer_uploads' + path.sep,
+      path.sep + 'public' + path.sep,
+      path.sep + 'static' + path.sep
+    ];
+    const lowerJobRoot = jobRoot.toLowerCase();
+    for (const p of prohibitedSubstrings) {
+      if (lowerJobRoot.includes(p)) {
+        throw new Error('ERR_TRUSTED_ROOT_PROHIBITED_MOUNT: Root collides with prohibited directory structure');
+      }
+    }
+
+    const scratch = path.join(jobRoot, 'scratch');
+    const input = path.join(jobRoot, 'input');
+    const output = path.join(jobRoot, 'output');
+
+    // Physical workspace provisioning under server custody
+    fs.mkdirSync(scratch, { recursive: true });
+    fs.mkdirSync(input, { recursive: true });
+    fs.mkdirSync(output, { recursive: true });
+
+    // Verify directory permissions
+    try {
+      fs.accessSync(scratch, fs.constants.W_OK | fs.constants.R_OK);
+      fs.accessSync(output, fs.constants.W_OK | fs.constants.R_OK);
+      fs.accessSync(input, fs.constants.R_OK);
+    } catch (permErr) {
+      throw new Error(`ERR_SERVER_JOB_WORKSPACE_PERMISSION_FAILED: Failed workspace permission check: ${permErr.message}`);
+    }
+
+    const record = Object.freeze({
+      jobId,
+      tenantId,
+      projectId,
+      ownerId,
+      status: 'PROVISIONED',
+      jobRoot,
+      scratch,
+      input,
+      output,
+      createdAt: Date.now()
+    });
+
+    this.jobs.set(jobId, record);
+    return record;
+  }
+
+  getJob(jobId) {
+    return this.jobs.get(jobId) || null;
+  }
+
+  clear() {
+    this.jobs.clear();
+  }
+}
+
+// Global server job registry singleton
+const SERVER_JOB_REGISTRY = new ServerJobRegistry();
+
+/**
+ * Infrastructure-Owned Trusted Root Registry (R38)
+ * Prohibits caller-supplied root overrides; manages immutable job roots and binds to ServerJobRegistry.
  */
 class TrustedRootRegistry {
-  constructor(options = {}) {
-    this.baseRoot = options.baseRoot ? path.resolve(options.baseRoot) : SERVER_TRUSTED_WORKSPACE_BASE;
-    this.allowHarnessRoots = !!options.allowHarnessRoots;
+  constructor(options = {}, privateToken = null) {
+    if (options.baseRoot !== undefined) {
+      throw new Error('ERR_ADAPTER_CALLER_BASE_ROOT_OVERRIDE_FORBIDDEN: Caller-supplied baseRoot is strictly forbidden; roots are server-owned');
+    }
+    if (options.allowHarnessRoots !== undefined && privateToken !== HARNESS_AUTHORIZATION_TOKEN) {
+      throw new Error('ERR_ADAPTER_CALLER_HARNESS_ROOTS_OVERRIDE_FORBIDDEN: Harness root capability forbidden outside verified test harness');
+    }
+    this.baseRoot = SERVER_TRUSTED_WORKSPACE_BASE;
+    this.allowHarnessRoots = (privateToken === HARNESS_AUTHORIZATION_TOKEN);
     this.harnessRegisteredRoots = new Map();
   }
 
-  registerHarnessRoot(rootId, roots) {
-    if (!this.allowHarnessRoots) {
+  registerHarnessRoot(rootId, roots, privateToken = null) {
+    if (!this.allowHarnessRoots && privateToken !== HARNESS_AUTHORIZATION_TOKEN) {
       throw new Error('ERR_TRUSTED_ROOT_HARNESS_FORBIDDEN: Harness root registration forbidden outside test harness mode');
+    }
+    for (const [key, rPath] of Object.entries(roots)) {
+      const resolved = path.resolve(rPath);
+      const lower = resolved.toLowerCase();
+      const prohibitedSubstrings = [
+        path.sep + 'client' + path.sep,
+        path.sep + 'assets' + path.sep,
+        path.sep + 'app_build' + path.sep,
+        path.sep + '_clean_deploy' + path.sep,
+        path.sep + '_railway_deploy' + path.sep,
+        path.sep + 'windows' + path.sep,
+        path.sep + 'system32' + path.sep,
+        path.sep + 'customer_uploads' + path.sep,
+        path.sep + 'public' + path.sep,
+        path.sep + 'static' + path.sep
+      ];
+      for (const p of prohibitedSubstrings) {
+        if (lower.includes(p)) {
+          throw new Error(`ERR_TRUSTED_ROOT_PROHIBITED_MOUNT: Harness root "${key}" collides with prohibited directory structure`);
+        }
+      }
     }
     const resolved = {
       scratch: path.resolve(roots.scratch),
@@ -536,32 +660,43 @@ class TrustedRootRegistry {
       throw new Error('ERR_TRUSTED_ROOT_INVALID_JOB_ID: Job ID must be 8-64 alphanumeric/dash characters');
     }
 
-    const jobRoot = path.join(this.baseRoot, jobId);
-
-    // Cross-check against prohibited mounts (public web assets, static client dirs, system dirs)
-    const prohibitedSubstrings = [
-      path.sep + 'client' + path.sep,
-      path.sep + 'assets' + path.sep,
-      path.sep + 'app_build' + path.sep,
-      path.sep + '_clean_deploy' + path.sep,
-      path.sep + '_railway_deploy' + path.sep,
-      path.sep + 'windows' + path.sep,
-      path.sep + 'system32' + path.sep
-    ];
-    const lowerJobRoot = jobRoot.toLowerCase();
-    for (const p of prohibitedSubstrings) {
-      if (lowerJobRoot.includes(p)) {
-        throw new Error('ERR_TRUSTED_ROOT_PROHIBITED_MOUNT: Root collides with prohibited directory structure');
-      }
+    // 1. Mandatory server job registry lookup (R38 P0-1)
+    const job = SERVER_JOB_REGISTRY.getJob(jobId);
+    if (!job) {
+      const err = new Error(`ERR_ADAPTER_JOB_NOT_FOUND: Job "${jobId}" is not registered in server job registry`);
+      err.code = 'ERR_ADAPTER_JOB_NOT_FOUND';
+      throw err;
     }
 
-    const roots = {
-      scratch: path.join(jobRoot, 'scratch'),
-      input: path.join(jobRoot, 'input'),
-      output: path.join(jobRoot, 'output')
-    };
+    // 2. Mandatory session context binding (R38 P0-1)
+    if (!sessionContext || typeof sessionContext !== 'object') {
+      const err = new Error('ERR_ADAPTER_SESSION_CONTEXT_REQUIRED: Valid session context is required to resolve job roots');
+      err.code = 'ERR_ADAPTER_SESSION_CONTEXT_REQUIRED';
+      throw err;
+    }
+    if (!sessionContext.tenantId || sessionContext.tenantId !== job.tenantId) {
+      const err = new Error(`ERR_ADAPTER_TENANT_MISMATCH: Session tenant "${sessionContext.tenantId}" does not match job tenant "${job.tenantId}"`);
+      err.code = 'ERR_ADAPTER_TENANT_MISMATCH';
+      throw err;
+    }
+    if (!sessionContext.ownerId || sessionContext.ownerId !== job.ownerId) {
+      const err = new Error(`ERR_ADAPTER_JOB_AUTHORIZATION_FAILED: Session owner "${sessionContext.ownerId}" is not authorized for job "${jobId}"`);
+      err.code = 'ERR_ADAPTER_JOB_AUTHORIZATION_FAILED';
+      throw err;
+    }
 
-    return Object.freeze(roots);
+    // 3. Physical workspace existence verification (R38 P0-3)
+    if (!fs.existsSync(job.scratch) || !fs.existsSync(job.input) || !fs.existsSync(job.output)) {
+      const err = new Error('ERR_ADAPTER_WORKSPACE_NOT_PROVISIONED: One or more workspace roots do not exist on disk');
+      err.code = 'ERR_ADAPTER_WORKSPACE_NOT_PROVISIONED';
+      throw err;
+    }
+
+    return Object.freeze({
+      scratch: job.scratch,
+      input: job.input,
+      output: job.output
+    });
   }
 }
 
@@ -955,20 +1090,32 @@ const PROCESS_EXECUTION_CONTRACT = Object.freeze({
 });
 
 /**
- * Create formal process launch descriptor (R37).
+ * Create formal process launch descriptor (R38).
  * Constructs complete execution specification without triggering actual spawn.
+ * Derives scrubbed child environment internally rather than accepting caller secrets.
  */
-function createProcessLaunchDescriptor(executable, args, scrubbedEnv) {
+function createProcessLaunchDescriptor(executable, args, options = {}) {
+  const scrubbedEnv = getScrubbedProcessEnv();
+  const cwd = options.cwd ? path.resolve(options.cwd) : null;
   return Object.freeze({
     contractVersion: PROCESS_EXECUTION_CONTRACT.specVersion,
     executable: path.resolve(executable),
     argv: Object.freeze([...(args || [])]),
+    cwd,
     options: Object.freeze({
       shell: false,
       windowsHide: true,
-      env: Object.freeze(scrubbedEnv || getScrubbedProcessEnv()),
+      env: Object.freeze(scrubbedEnv),
       timeout: PROCESS_EXECUTION_CONTRACT.resourceQuotas.maxWallClockTimeMs,
       maxBuffer: PROCESS_EXECUTION_CONTRACT.resourceQuotas.maxOutputSizeBytes
+    }),
+    lifecycleSpecs: Object.freeze({
+      processTreeTermination: 'TREE_KILL_MANDATORY',
+      windowsMechanism: 'taskkill /T /F /PID <child_pid>',
+      posixMechanism: 'process.kill(-child_pid, "SIGKILL")',
+      streamingQuotaBytes: PROCESS_EXECUTION_CONTRACT.resourceQuotas.maxOutputSizeBytes,
+      wallClockQuotaMs: PROCESS_EXECUTION_CONTRACT.resourceQuotas.maxWallClockTimeMs,
+      scratchLifecycle: 'CLEANED_ON_TERMINATION'
     }),
     executionStatus: 'NOT_VERIFIED_LAUNCH_BLOCKED',
     contract: PROCESS_EXECUTION_CONTRACT
@@ -1012,7 +1159,7 @@ function getScrubbedProcessEnv() {
  *  11. Module Boundary: Prohibits mockRunner in production invocation (ERR_ADAPTER_MOCK_RUNNER_FORBIDDEN_IN_PRODUCTION).
  */
 class ReconstructionExecutionAdapter {
-  constructor(options = {}) {
+  constructor(options = {}, privateToken = null) {
     // 1. Immutable infrastructure trust policy: caller overrides strictly forbidden
     if (options.allowlist !== undefined) {
       throw new Error('ERR_ADAPTER_CALLER_ALLOWLIST_FORBIDDEN: Caller-supplied allowlist overrides are strictly forbidden; trust policy is infrastructure-owned');
@@ -1023,25 +1170,35 @@ class ReconstructionExecutionAdapter {
     if (options.trustPolicy !== undefined) {
       throw new Error('ERR_ADAPTER_CALLER_TRUST_POLICY_OVERRIDE_FORBIDDEN: Caller-supplied trust policy overrides are strictly forbidden');
     }
+    // 2. Caller root overrides strictly forbidden (R38)
+    if (options.trustedRootRegistry !== undefined) {
+      throw new Error('ERR_ADAPTER_CALLER_ROOT_REGISTRY_OVERRIDE_FORBIDDEN: Caller-supplied trustedRootRegistry is strictly forbidden; registry is server-owned');
+    }
+    if (options.baseRoot !== undefined) {
+      throw new Error('ERR_ADAPTER_CALLER_BASE_ROOT_OVERRIDE_FORBIDDEN: Caller-supplied baseRoot is strictly forbidden; roots are server-owned');
+    }
+    if (options.allowHarnessRoots !== undefined && privateToken !== HARNESS_AUTHORIZATION_TOKEN) {
+      throw new Error('ERR_ADAPTER_CALLER_HARNESS_ROOTS_OVERRIDE_FORBIDDEN: Caller-supplied allowHarnessRoots is strictly forbidden');
+    }
+    if (options.allowedRoots !== undefined) {
+      throw new Error('ERR_ADAPTER_CALLER_ROOT_OVERRIDE_FORBIDDEN: Caller-supplied allowedRoots overrides are strictly forbidden; roots are infrastructure-governed');
+    }
 
     this.allowlist = APPROVED_RECONSTRUCTION_TARGETS;
     this.trustPolicy = INFRASTRUCTURE_TRUST_POLICY;
     this.entitlementKey = options.entitlementKey || process.env.RECONSTRUCTION_ENTITLEMENT_KEY || null;
     this.timeoutMs = Number.isFinite(options.timeoutMs) ? options.timeoutMs : 30000;
 
-    // 2. Mock mode strictly bounded to test environment with explicit dual-flag requirement
+    // 3. Mock mode strictly bounded to test environment with explicit dual-flag requirement & private token
     const envAllowsTestMode = (process.env.NODE_ENV === 'test' && process.env.STAGE2_ALLOW_TEST_HARNESS_MOCKS === '1');
     if (options.isTestMode && !envAllowsTestMode) {
       throw new Error('ERR_ADAPTER_MOCK_RUNNER_FORBIDDEN_IN_PRODUCTION: Test mode and mock runner injection forbidden without server-side test environment authorization');
     }
-    this.isTestMode = Boolean(options.isTestMode === true && envAllowsTestMode && options.mockAuthProvider);
+    this.isTestMode = Boolean(options.isTestMode === true && envAllowsTestMode && options.mockAuthProvider && privateToken === HARNESS_AUTHORIZATION_TOKEN);
     this.mockAuthProvider = this.isTestMode ? options.mockAuthProvider : null;
 
-    // 3. Trusted root registry: caller-supplied root overrides strictly forbidden
-    if (options.allowedRoots !== undefined) {
-      throw new Error('ERR_ADAPTER_CALLER_ROOT_OVERRIDE_FORBIDDEN: Caller-supplied allowedRoots overrides are strictly forbidden; roots are infrastructure-governed');
-    }
-    this.trustedRootRegistry = options.trustedRootRegistry || new TrustedRootRegistry({ allowHarnessRoots: this.isTestMode });
+    // 4. Server-owned trusted root registry
+    this.trustedRootRegistry = new TrustedRootRegistry({}, this.isTestMode ? HARNESS_AUTHORIZATION_TOKEN : null);
   }
 
   isAuthorized() {
@@ -1140,58 +1297,6 @@ class ReconstructionExecutionAdapter {
         };
       }
 
-      // Reject caller-supplied root overrides (R37 Directive 1)
-      if (
-        commandConfig.scratchRoot !== undefined ||
-        commandConfig.inputRoot !== undefined ||
-        commandConfig.outputRoot !== undefined ||
-        commandConfig.scratchDir !== undefined ||
-        commandConfig.imageDir !== undefined
-      ) {
-        if (!this.isTestMode || !commandConfig.isHarnessApprovedRoot) {
-          return {
-            success: false,
-            errorCode: 'ERR_ADAPTER_CALLER_ROOT_OVERRIDE_FORBIDDEN',
-            message: 'Caller-declared root overrides are strictly forbidden; roots must be provisioned by TrustedRootRegistry',
-            failClosed: true
-          };
-        }
-      }
-
-      let allowedRoots = {};
-      if (commandConfig.jobId) {
-        try {
-          allowedRoots = this.trustedRootRegistry.resolveJobRoots(commandConfig.jobId, commandConfig.sessionContext);
-        } catch (jobRootErr) {
-          return {
-            success: false,
-            errorCode: 'ERR_ADAPTER_JOB_ROOT_RESOLUTION_FAILED',
-            message: jobRootErr.message,
-            failClosed: true
-          };
-        }
-      } else if (this.isTestMode && commandConfig.harnessRootId) {
-        allowedRoots = this.trustedRootRegistry.getHarnessRoots(commandConfig.harnessRootId) || {};
-      } else if (this.isTestMode && commandConfig.isHarnessApprovedRoot) {
-        allowedRoots = {
-          scratch: commandConfig.scratchRoot,
-          input: commandConfig.inputRoot,
-          output: commandConfig.outputRoot
-        };
-      }
-
-      // Enforce typed permitted argument allowlist against infrastructure trust policy
-      if (commandConfig.args !== undefined) {
-        const argCheck = validateTypedCommandArgv(baseName, commandConfig.args, allowedRoots);
-        if (!argCheck.success) {
-          return {
-            success: false,
-            errorCode: argCheck.errorCode,
-            message: argCheck.message,
-            failClosed: true
-          };
-        }
-      }
 
       // Check parent directory realpath & symlinks
       const parentDir = path.dirname(executable);
@@ -1406,7 +1511,88 @@ class ReconstructionExecutionAdapter {
       }
     }
 
-    // 5. Scratch Directory Isolation & Execution Quota / Timeout
+    // 5. Root Overrides & Server-Owned Job Registry Resolution (R38 P0-1, P0-3)
+    if (
+      commandConfig.scratchRoot !== undefined ||
+      commandConfig.inputRoot !== undefined ||
+      commandConfig.outputRoot !== undefined ||
+      commandConfig.scratchDir !== undefined ||
+      commandConfig.imageDir !== undefined
+    ) {
+      if (!this.isTestMode || !commandConfig.isHarnessApprovedRoot) {
+        return {
+          success: false,
+          errorCode: 'ERR_ADAPTER_CALLER_ROOT_OVERRIDE_FORBIDDEN',
+          message: 'Caller-declared root overrides are strictly forbidden; roots must be provisioned by TrustedRootRegistry',
+          failClosed: true
+        };
+      }
+    }
+
+    let allowedRoots = {};
+    if (commandConfig.jobId) {
+      try {
+        allowedRoots = this.trustedRootRegistry.resolveJobRoots(commandConfig.jobId, commandConfig.sessionContext);
+      } catch (jobRootErr) {
+        const errCode = jobRootErr.code || (jobRootErr.message.startsWith('ERR_') ? jobRootErr.message.split(':')[0] : 'ERR_ADAPTER_JOB_ROOT_RESOLUTION_FAILED');
+        return {
+          success: false,
+          errorCode: errCode,
+          message: jobRootErr.message,
+          failClosed: true
+        };
+      }
+    } else if (this.isTestMode && commandConfig.harnessRootId) {
+      allowedRoots = this.trustedRootRegistry.getHarnessRoots(commandConfig.harnessRootId) || {};
+    } else if (this.isTestMode && commandConfig.isHarnessApprovedRoot) {
+      allowedRoots = {
+        scratch: commandConfig.scratchRoot,
+        input: commandConfig.inputRoot,
+        output: commandConfig.outputRoot
+      };
+    }
+
+    // 6. Mandatory Command Arguments Check at Adapter Boundary (R38 P0-2)
+    if (executable) {
+      const baseName = path.basename(executable).toLowerCase();
+      if (commandConfig.args === undefined) {
+        return {
+          success: false,
+          errorCode: 'ERR_ADAPTER_MISSING_COMMAND_ARGUMENTS',
+          message: 'Command arguments array is mandatory for execution',
+          failClosed: true
+        };
+      }
+      if (!Array.isArray(commandConfig.args)) {
+        return {
+          success: false,
+          errorCode: 'ERR_ADAPTER_INVALID_ARGUMENTS_FORMAT',
+          message: 'Command arguments must be an array of strings',
+          failClosed: true
+        };
+      }
+      if (commandConfig.args.length === 0) {
+        return {
+          success: false,
+          errorCode: 'ERR_ADAPTER_MISSING_COMMAND_ARGUMENTS',
+          message: 'Command arguments array cannot be empty',
+          failClosed: true
+        };
+      }
+
+      // Enforce typed permitted argument validation against infrastructure trust policy
+      const argCheck = validateTypedCommandArgv(baseName, commandConfig.args, allowedRoots);
+      if (!argCheck.success) {
+        return {
+          success: false,
+          errorCode: argCheck.errorCode,
+          message: argCheck.message,
+          failClosed: true
+        };
+      }
+    }
+
+    // 7. Scratch Directory Isolation & Execution Quota / Timeout
     const scratchDir = fs.mkdtempSync(path.join(os.tmpdir(), 'recon-adapter-scratch-'));
     try {
       if (mockRunner) {
@@ -1438,8 +1624,8 @@ class ReconstructionExecutionAdapter {
 
       const launchDescriptor = createProcessLaunchDescriptor(
         executable,
-        commandConfig.args || [],
-        getScrubbedProcessEnv()
+        commandConfig.args,
+        { cwd: allowedRoots.scratch }
       );
 
       return {
@@ -1809,11 +1995,96 @@ function probeReconstructionEngines(options = {}) {
   return probes;
 }
 
+/**
+ * Test Harness Factory (R38)
+ * Creates isolated test-harness adapter authorized with internal unforgeable token.
+ */
+function createTestHarnessAdapter(options = {}) {
+  const envAllowsTestMode = (process.env.NODE_ENV === 'test' && process.env.STAGE2_ALLOW_TEST_HARNESS_MOCKS === '1');
+  if (!envAllowsTestMode) {
+    throw new Error('ERR_ADAPTER_TEST_HARNESS_FORBIDDEN: createTestHarnessAdapter is strictly forbidden outside test environment');
+  }
+  return new ReconstructionExecutionAdapter(
+    { ...options, isTestMode: true },
+    HARNESS_AUTHORIZATION_TOKEN
+  );
+}
+
+/**
+ * Owner-Decision Minimum Specification (R38)
+ * Formulates bounded, concise options for future owner review without inferred consent.
+ */
+const OWNER_DECISION_MINIMUM_SPEC = Object.freeze({
+  specVersion: '1.0.0-R38',
+  status: 'AWAITING_OWNER_AUTHORIZATION',
+  defaultGateStatus: Object.freeze({
+    OWNER_REVIEW_GATE: 'HOLD',
+    ENGINEERING_HOLD: 'ACTIVE',
+    RECONSTRUCTION_UNAVAILABLE: 'BLOCKED_ON_APPROVED_ENGINE',
+    ACTUAL_ENGINE_EXECUTION: 'NOT_VERIFIED',
+    SPEND_ALLOCATION: 'ZERO_SPEND_DEFAULT',
+    DEPLOY_ALLOCATION: 'ZERO_DEPLOY_DEFAULT'
+  }),
+  decisionOptions: Object.freeze({
+    enginePath: Object.freeze({
+      description: 'Host & Engine Execution Architecture',
+      options: Object.freeze([
+        {
+          id: 'LOCAL_PINNED_CONTAINER',
+          summary: 'Isolated containerized execution with pinned hash on dedicated host',
+          requiresHardwareGpu: true,
+          riskProfile: 'ISOLATED_HOST'
+        },
+        {
+          id: 'DEDICATED_EPHEMERAL_WORKER',
+          summary: 'Single-job ephemeral cloud worker (AWS/GCP/RunPod) with zero persistence',
+          requiresHardwareGpu: true,
+          riskProfile: 'EPHEMERAL_CLOUD_ISOLATED'
+        },
+        {
+          id: 'HOLD_NO_EXECUTION',
+          summary: 'Maintain current zero-spend, zero-execution engineering hold',
+          requiresHardwareGpu: false,
+          riskProfile: 'ZERO_RISK_DEFAULT'
+        }
+      ])
+    }),
+    budgetAndLicensing: Object.freeze({
+      description: 'Bounded Compute Budget & Open-Source License Provenance',
+      costBoundUsd: 0.00,
+      maxPerJobBudgetUsd: 5.00,
+      approvedLicenses: Object.freeze([
+        { tool: 'COLMAP', license: 'BSD-3-Clause', commercialPermitted: true },
+        { tool: 'Nerfstudio', license: 'Apache-2.0', commercialPermitted: true },
+        { tool: 'gsplat', license: 'Apache-2.0', commercialPermitted: true }
+      ])
+    }),
+    trainingDataBoundary: Object.freeze({
+      description: 'Multi-Position Input Data Source Permitted',
+      permittedSources: Object.freeze([
+        'SYNTHETIC_GENERATED_DATASET_ONLY',
+        'PUBLIC_DOMAIN_BENCHMARK_WITH_CC_ATTRIBUTION',
+        'OWNER_AUTHENTICATED_CAPTURES_ONLY'
+      ]),
+      prohibitedSources: Object.freeze([
+        'UNATTESTED_CUSTOMER_UPLOAD',
+        'PROPRIETARY_UNLICENSED_DATA'
+      ])
+    }),
+    controlPlaneAndRetention: Object.freeze({
+      description: 'Control Plane Credentials & Asset Retention Policy',
+      credentialIsolation: 'SECRETS_MANAGER_ONLY_NO_CODEBASE_FALLBACK',
+      assetRetentionPolicy: 'TRANSIENT_OUTPUT_CONFINED_TO_TENANT_LIFECYCLE'
+    })
+  })
+});
+
 module.exports = {
   parsePlyHeader,
   executeReconstructionJob,
   executeAuthenticReconstructionWorker,
   ReconstructionExecutionAdapter,
+  createTestHarnessAdapter,
   probeReconstructionEngines,
   probeBinaryInPath,
   computeSha256,
@@ -1828,10 +2099,14 @@ module.exports = {
   TYPED_ARGV_SCHEMAS,
   validateTypedCommandArgv,
   getScrubbedProcessEnv,
+  ServerJobRegistry,
+  SERVER_JOB_REGISTRY,
   TrustedRootRegistry,
+  HARNESS_AUTHORIZATION_TOKEN,
   validatePathConfinement,
   PROCESS_EXECUTION_CONTRACT,
   createProcessLaunchDescriptor,
+  OWNER_DECISION_MINIMUM_SPEC,
   TYPE_SIZES
 };
 

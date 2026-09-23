@@ -73,10 +73,15 @@ const {
   TYPED_ARGV_SCHEMAS,
   validateTypedCommandArgv,
   getScrubbedProcessEnv,
+  ServerJobRegistry,
+  SERVER_JOB_REGISTRY,
   TrustedRootRegistry,
+  HARNESS_AUTHORIZATION_TOKEN,
+  createTestHarnessAdapter,
   validatePathConfinement,
   PROCESS_EXECUTION_CONTRACT,
-  createProcessLaunchDescriptor
+  createProcessLaunchDescriptor,
+  OWNER_DECISION_MINIMUM_SPEC
 } = require('../virtual-tradeshow-commercial-v1/server/spatial_reconstruction_worker');
 
 const REPO_ROOT = path.resolve(__dirname, '..');
@@ -691,13 +696,16 @@ async function main() {
       STATIC_ASSET_ISOLATION_GATE_T16: 'VERIFIED_ALL_ROOTS_ALL_EXTENSIONS', // R25: extended to glb/gltf/bin + railway root
       STATIC_ASSET_ISOLATION_GATE_T17: 'VERIFIED_POSITIVE_FAIL_CONTROLS',   // R25: positive fail-case controls confirmed
       CAUSAL_LINEAGE_GATE_T18: 'NEGATIVE_CONTRACT_CHECK_ONLY', // R29: negative contract check only per ChatGPT R28 audit
+      TRUSTED_ROOT_AUTHORITY: 'SERVER_OWNED_IMMUTABLE_REGISTRY', // R38: caller registry/baseRoot injection rejected
+      JOB_WORKSPACE_PROVISIONING: 'SERVER_BOUND_VERIFIED', // R38: physical workspace provisioned under server custody
+      COMMAND_ARGV_VALIDATOR: 'MANDATORY_FAIL_CLOSED', // R38: mandatory argv contract at adapter boundary
       ACTUAL_ENGINE_EXECUTION: 'NOT_VERIFIED',         // R37: local contract check only; actual process spawn unverified
       LIVE_QA_REVOCATION: 'BLOCKED_PENDING_INDEPENDENT_CONTROL_PLANE',
       OWNER_REVIEW_GATE: 'HOLD',
       ENGINEERING_HOLD: 'ACTIVE'
     };
 
-    console.log('\n  Authoritative Gate Status Matrix (R37 Honest Ledger):');
+    console.log('\n  Authoritative Gate Status Matrix (R38 Honest Ledger):');
     for (const [gate, status] of Object.entries(gates)) {
       console.log(`    - ${gate.padEnd(42)} : ${status}`);
     }
@@ -722,6 +730,9 @@ async function main() {
     assert.strictEqual(gates.STATIC_ASSET_ISOLATION_GATE_T16, 'VERIFIED_ALL_ROOTS_ALL_EXTENSIONS', 'T16 must cover all roots and all extensions');
     assert.strictEqual(gates.STATIC_ASSET_ISOLATION_GATE_T17, 'VERIFIED_POSITIVE_FAIL_CONTROLS', 'T17 must verify positive fail-case controls');
     assert.strictEqual(gates.CAUSAL_LINEAGE_GATE_T18, 'NEGATIVE_CONTRACT_CHECK_ONLY', 'T18 must verify negative contract check only per ChatGPT R28 audit');
+    assert.strictEqual(gates.TRUSTED_ROOT_AUTHORITY, 'SERVER_OWNED_IMMUTABLE_REGISTRY', 'Trusted root authority must be SERVER_OWNED_IMMUTABLE_REGISTRY');
+    assert.strictEqual(gates.JOB_WORKSPACE_PROVISIONING, 'SERVER_BOUND_VERIFIED', 'Job workspace provisioning must be SERVER_BOUND_VERIFIED');
+    assert.strictEqual(gates.COMMAND_ARGV_VALIDATOR, 'MANDATORY_FAIL_CLOSED', 'Command argv validator must be MANDATORY_FAIL_CLOSED');
     assert.strictEqual(gates.ACTUAL_ENGINE_EXECUTION, 'NOT_VERIFIED', 'Actual engine execution must remain NOT_VERIFIED');
     assert.strictEqual(gates.LIVE_QA_REVOCATION, 'BLOCKED_PENDING_INDEPENDENT_CONTROL_PLANE');
     assert.strictEqual(gates.OWNER_REVIEW_GATE, 'HOLD');
@@ -1149,8 +1160,7 @@ async function main() {
     const mockAuthProvider = {
       validate: (k) => (k === 'TEST_ONLY_MOCK_ENTITLEMENT_KEY_ENTROPY' ? { authorized: true } : { authorized: false, reason: 'MOCK_KEY_REJECTED' })
     };
-    const testHarnessAdapter = new ReconstructionExecutionAdapter({
-      isTestMode: true,
+    const testHarnessAdapter = createTestHarnessAdapter({
       mockAuthProvider,
       entitlementKey: 'TEST_ONLY_MOCK_ENTITLEMENT_KEY_ENTROPY'
     });
@@ -1175,6 +1185,39 @@ async function main() {
       () => new ReconstructionExecutionAdapter({ isTestMode: true, mockAuthProvider, trustPolicy: {} }),
       /ERR_ADAPTER_CALLER_TRUST_POLICY_OVERRIDE_FORBIDDEN/,
       'Caller-supplied trust policy overrides must be rejected'
+    );
+
+    // Caller cannot supply trustedRootRegistry override (R38 P0-1)
+    assert.throws(
+      () => new ReconstructionExecutionAdapter({ isTestMode: true, mockAuthProvider, trustedRootRegistry: {} }),
+      /ERR_ADAPTER_CALLER_ROOT_REGISTRY_OVERRIDE_FORBIDDEN/,
+      'Caller-supplied trustedRootRegistry override must be rejected'
+    );
+
+    // Caller cannot supply baseRoot override (R38 P0-1)
+    assert.throws(
+      () => new ReconstructionExecutionAdapter({ isTestMode: true, mockAuthProvider, baseRoot: 'C:\\bad' }),
+      /ERR_ADAPTER_CALLER_BASE_ROOT_OVERRIDE_FORBIDDEN/,
+      'Caller-supplied baseRoot override must be rejected'
+    );
+
+    // Caller cannot supply allowHarnessRoots without private token (R38 P0-1)
+    assert.throws(
+      () => new ReconstructionExecutionAdapter({ isTestMode: true, mockAuthProvider, allowHarnessRoots: true }),
+      /ERR_ADAPTER_CALLER_HARNESS_ROOTS_OVERRIDE_FORBIDDEN/,
+      'Caller-supplied allowHarnessRoots override must be rejected'
+    );
+
+    // TrustedRootRegistry direct constructor injection defense (R38 P0-1)
+    assert.throws(
+      () => new TrustedRootRegistry({ baseRoot: 'C:\\bad' }),
+      /ERR_ADAPTER_CALLER_BASE_ROOT_OVERRIDE_FORBIDDEN/,
+      'Direct baseRoot override in TrustedRootRegistry must be rejected'
+    );
+    assert.throws(
+      () => new TrustedRootRegistry({ allowHarnessRoots: true }),
+      /ERR_ADAPTER_CALLER_HARNESS_ROOTS_OVERRIDE_FORBIDDEN/,
+      'Direct allowHarnessRoots in TrustedRootRegistry must be rejected'
     );
 
     // Caller injection defense in executeAuthenticReconstructionWorker outside test harness
@@ -1293,6 +1336,7 @@ async function main() {
       executable: path.resolve('colmap.exe'),
       minVersion: '3.8.0',
       versionCheckOutput: 'COLMAP 3.10.0',
+      args: ['--help'],
       mockRunner: () => ({ success: false, errorCode: 'ERR_SFM_PIPELINE_FAILED', message: 'COLMAP point triangulation failed' })
     });
     assert.strictEqual(semverOkRes.errorCode, 'ERR_SFM_PIPELINE_FAILED', 'Semver 3.10 >= 3.8 must pass version guard and proceed to runner');
@@ -1310,6 +1354,15 @@ async function main() {
     });
 
     try {
+      // (a0) Omitted arguments array (args === undefined - R38 P0-2)
+      const missingArgRes = testHarnessAdapter.execute({
+        executable: path.resolve('colmap.exe'),
+        minVersion: '3.8.0',
+        versionCheckOutput: 'COLMAP 3.8.0',
+        mockRunner: () => ({ success: true })
+      });
+      assert.strictEqual(missingArgRes.errorCode, 'ERR_ADAPTER_MISSING_COMMAND_ARGUMENTS');
+
       // (a) Invalid arguments format (non-array, undefined, empty)
       const badArgTypeRes = testHarnessAdapter.execute({
         executable: path.resolve('colmap.exe'),
@@ -1665,8 +1718,7 @@ async function main() {
     console.log('    - Remote worker guards: PASS (HTTPS, origin allowlist, secret provisioning, auth, and reachability enforced)');
 
     // 8. Process Lifecycle & Timeout Quota Controls
-    const timedOutAdapter = new ReconstructionExecutionAdapter({
-      isTestMode: true,
+    const timedOutAdapter = createTestHarnessAdapter({
       mockAuthProvider,
       entitlementKey: 'TEST_ONLY_MOCK_ENTITLEMENT_KEY_ENTROPY',
       timeoutMs: 50
@@ -1674,6 +1726,7 @@ async function main() {
     const timeoutRes = timedOutAdapter.execute({
       executable: path.resolve('colmap.exe'),
       versionCheckOutput: 'COLMAP 3.8.0',
+      args: ['--help'],
       mockRunner: () => ({ success: false, timedOut: true })
     });
     assert.strictEqual(timeoutRes.success, false);
@@ -1732,13 +1785,123 @@ async function main() {
     const viewerHtml = fs.readFileSync(viewerHtmlPath, 'utf8');
     assert.ok(viewerHtml.includes('PROCEDURAL_PLACEHOLDER_ONLY'), 'Viewer HUD must disclose procedural placeholder status');
     console.log('    - Diagnostic viewer disclaimer: PASS (HUD states PROCEDURAL_PLACEHOLDER_ONLY)');
+
+    // 12. Server-Owned Job Registry, Tenant Binding & Workspace Verification (R38 P0-1, P0-3)
+    const testJobId = 'job_r38_true3d_test_01';
+    const testTenantId = 'tenant_commercial_alpha';
+    const testProjectId = 'project_true3d_beta';
+    const testOwnerId = 'owner_operator_gamma';
+
+    // (a) Prohibited mount rejection in job registration
+    assert.throws(
+      () => SERVER_JOB_REGISTRY.registerJob({
+        jobId: 'bad_job_client',
+        tenantId: 'client',
+        projectId: testProjectId,
+        ownerId: testOwnerId
+      }),
+      /ERR_TRUSTED_ROOT_PROHIBITED_MOUNT/,
+      'Job registration colliding with client mount must fail closed'
+    );
+
+    // (b) Physical workspace provisioning under server custody
+    const registeredJob = SERVER_JOB_REGISTRY.registerJob({
+      jobId: testJobId,
+      tenantId: testTenantId,
+      projectId: testProjectId,
+      ownerId: testOwnerId
+    });
+    assert.strictEqual(registeredJob.status, 'PROVISIONED');
+    assert.ok(fs.existsSync(registeredJob.scratch), 'Scratch workspace must be physically provisioned');
+    assert.ok(fs.existsSync(registeredJob.input), 'Input workspace must be physically provisioned');
+    assert.ok(fs.existsSync(registeredJob.output), 'Output workspace must be physically provisioned');
+
+    // (c) Fabricated job ID rejection
+    const unregJobRes = testHarnessAdapter.execute({
+      executable: path.resolve('colmap.exe'),
+      minVersion: '3.8.0',
+      versionCheckOutput: 'COLMAP 3.8.0',
+      mockRunner: () => ({ success: true }),
+      jobId: 'fabricated_nonexistent_job_id',
+      sessionContext: { tenantId: testTenantId, ownerId: testOwnerId },
+      args: ['feature_extractor', '--database_path=' + path.join(registeredJob.scratch, 'db.db'), '--image_path=' + registeredJob.input]
+    });
+    assert.strictEqual(unregJobRes.errorCode, 'ERR_ADAPTER_JOB_NOT_FOUND', 'Fabricated job ID must be rejected');
+
+    // (d) Missing session context rejection
+    const noSessionRes = testHarnessAdapter.execute({
+      executable: path.resolve('colmap.exe'),
+      minVersion: '3.8.0',
+      versionCheckOutput: 'COLMAP 3.8.0',
+      mockRunner: () => ({ success: true }),
+      jobId: testJobId,
+      sessionContext: null,
+      args: ['feature_extractor', '--database_path=' + path.join(registeredJob.scratch, 'db.db'), '--image_path=' + registeredJob.input]
+    });
+    assert.strictEqual(noSessionRes.errorCode, 'ERR_ADAPTER_SESSION_CONTEXT_REQUIRED', 'Missing session context must be rejected');
+
+    // (e) Cross-tenant job selection rejection (tenant mismatch)
+    const crossTenantRes = testHarnessAdapter.execute({
+      executable: path.resolve('colmap.exe'),
+      minVersion: '3.8.0',
+      versionCheckOutput: 'COLMAP 3.8.0',
+      mockRunner: () => ({ success: true }),
+      jobId: testJobId,
+      sessionContext: { tenantId: 'attacker_tenant_intruder', ownerId: testOwnerId },
+      args: ['feature_extractor', '--database_path=' + path.join(registeredJob.scratch, 'db.db'), '--image_path=' + registeredJob.input]
+    });
+    assert.strictEqual(crossTenantRes.errorCode, 'ERR_ADAPTER_TENANT_MISMATCH', 'Cross-tenant job selection must be rejected');
+
+    // (f) Unauthorized owner rejection
+    const badOwnerRes = testHarnessAdapter.execute({
+      executable: path.resolve('colmap.exe'),
+      minVersion: '3.8.0',
+      versionCheckOutput: 'COLMAP 3.8.0',
+      mockRunner: () => ({ success: true }),
+      jobId: testJobId,
+      sessionContext: { tenantId: testTenantId, ownerId: 'unauthorized_attacker_user' },
+      args: ['feature_extractor', '--database_path=' + path.join(registeredJob.scratch, 'db.db'), '--image_path=' + registeredJob.input]
+    });
+    assert.strictEqual(badOwnerRes.errorCode, 'ERR_ADAPTER_JOB_AUTHORIZATION_FAILED', 'Unauthorized owner must be rejected');
+
+    // (g) Legitimate server-provisioned workspace execution
+    const jobValidDb = path.join(registeredJob.scratch, 'database.db');
+    const genuineJobRes = testHarnessAdapter.execute({
+      executable: path.resolve('colmap.exe'),
+      minVersion: '3.8.0',
+      versionCheckOutput: 'COLMAP 3.8.0',
+      mockRunner: () => ({ success: true }),
+      jobId: testJobId,
+      sessionContext: { tenantId: testTenantId, ownerId: testOwnerId },
+      args: [
+        'feature_extractor',
+        `--database_path=${jobValidDb}`,
+        `--image_path=${registeredJob.input}`
+      ]
+    });
+    assert.strictEqual(genuineJobRes.errorCode, 'ERR_RECONSTRUCTION_ENGINE_NOT_CONFIGURED', 'Genuine provisioned job passes validation and fails closed at engine boundary');
+    assert.ok(genuineJobRes.launchDescriptor, 'Launch descriptor must be attached');
+    assert.strictEqual(genuineJobRes.launchDescriptor.cwd, registeredJob.scratch, 'Working directory must be confined to scratch');
+    assert.strictEqual(genuineJobRes.launchDescriptor.options.shell, false, 'Shell must be strictly false');
+    assert.strictEqual(genuineJobRes.launchDescriptor.lifecycleSpecs.processTreeTermination, 'TREE_KILL_MANDATORY');
+    console.log('    - Server job registry & workspace binding: PASS (physical provisioning, tenant binding, and cwd isolation verified)');
+
+    // 13. Owner-Decision Minimum Specification Verification (R38 P0-6)
+    assert.ok(OWNER_DECISION_MINIMUM_SPEC, 'OWNER_DECISION_MINIMUM_SPEC must be exported');
+    assert.strictEqual(OWNER_DECISION_MINIMUM_SPEC.defaultGateStatus.OWNER_REVIEW_GATE, 'HOLD');
+    assert.strictEqual(OWNER_DECISION_MINIMUM_SPEC.defaultGateStatus.ENGINEERING_HOLD, 'ACTIVE');
+    assert.strictEqual(OWNER_DECISION_MINIMUM_SPEC.defaultGateStatus.ACTUAL_ENGINE_EXECUTION, 'NOT_VERIFIED');
+    assert.strictEqual(OWNER_DECISION_MINIMUM_SPEC.defaultGateStatus.SPEND_ALLOCATION, 'ZERO_SPEND_DEFAULT');
+    assert.strictEqual(OWNER_DECISION_MINIMUM_SPEC.decisionOptions.budgetAndLicensing.costBoundUsd, 0.00);
+    assert.ok(Object.isFrozen(OWNER_DECISION_MINIMUM_SPEC), 'OWNER_DECISION_MINIMUM_SPEC must be frozen');
+    console.log('    - Owner-decision minimum spec: PASS (bounded options, zero-spend default, and immutable HOLD confirmed)');
   });
 
   console.log('\n================================================================');
   console.log(`True 3D Pipeline Test Suite Complete: ${passedTests}/${totalTests} passed`);
   console.log('================================================================\n');
 
-  // ── [POST-RUN FINALIZER] Emit Machine-Verifiable R37 Execution Receipt ───────
+  // ── [POST-RUN FINALIZER] Emit Machine-Verifiable R38 Execution Receipt ───────
   const suiteEndTime = new Date().toISOString();
   const durationMs = Date.now() - startTimeEpoch;
   const runnerSource = fs.readFileSync(__filename);
@@ -1748,7 +1911,7 @@ async function main() {
   const engineDiscoveryProbes = probeReconstructionEngines();
 
   const receipt = {
-    receiptSchemaVersion: 'R37_EXECUTION_RECEIPT_V1',
+    receiptSchemaVersion: 'R38_EXECUTION_RECEIPT_V1',
     executionTimestamps: {
       startTime: suiteStartTime,
       endTime: suiteEndTime,
@@ -1793,7 +1956,8 @@ async function main() {
     },
     executionBoundaryAudit: {
       trustedExecutionBoundary: 'CANONICAL_ABSOLUTE_PATH_AND_INFRASTRUCTURE_TRUST_POLICY',
-      trustedRootRegistry: 'INFRASTRUCTURE_OWNED_IMMUTABLE_WORKSPACE_REGISTRY',
+      trustedRootRegistry: 'SERVER_OWNED_IMMUTABLE_WORKSPACE_REGISTRY',
+      serverJobRegistry: 'PHYSICALLY_PROVISIONED_AND_TENANT_BOUND',
       callerRootOverrideDefense: 'STRICTLY_REJECTED',
       siblingPrefixEscapeDefense: 'PATH_SEPARATOR_BOUNDARY_CHECK',
       mandatoryOptionsEnforcement: 'ENFORCED_PER_SUBCOMMAND_SCHEMA',
@@ -1801,11 +1965,11 @@ async function main() {
       callerBinaryHashOverride: 'FORBIDDEN',
       callerTrustPolicyOverride: 'FORBIDDEN',
       callerWorkerInjectionDefense: 'FORBIDDEN_IN_PRODUCTION',
-      commandArgvEnforcement: 'STRICT_PERMITTED_ARGS_ALLOWLIST_AND_METACHARACTER_DEFENSE',
+      commandArgvEnforcement: 'MANDATORY_PER_STAGE_FAIL_CLOSED_AT_ADAPTER_BOUNDARY',
       typedArgvSchemaStatus: 'TYPED_PER_ENGINE_SCHEMA_WITH_ROOT_CONFINEMENT_AND_NUMERIC_BOUNDS',
       responseFileIndirectionDefense: 'REJECTED_VIA_PREFIX_GUARD',
       duplicateFlagDefense: 'REJECTED_VIA_FLAG_UNIQUENESS',
-      processEnvScrubbing: 'SCRUBBED_MINIMAL_SAFE_KEYS_ONLY',
+      processEnvScrubbing: 'INTERNAL_CLEAN_ENVIRONMENT_DERIVATION',
       processExecutionContract: 'SHELL_FALSE_MANDATORY_AND_NON_EXECUTING_SPEC',
       actualEngineExecution: 'NOT_VERIFIED',
       engineProvenanceStatus: 'NOT_VERIFIED_ZERO_AUTHORIZED_ENGINES_PROVISIONED',
@@ -1813,7 +1977,8 @@ async function main() {
       semverComparisonModel: 'NUMERIC_COMPONENT_ORDERING_WITH_FIXED_FLOOR',
       versionProbeTruthfulness: 'CALLER_VERSION_STRING_VALIDATION_ONLY',
       mockTimeoutClassification: 'MOCK_TIMEOUT_NEGATIVE_TEST_ONLY',
-      remoteHandshakeClassification: 'LOCAL_SPEC_VALIDATION_ONLY_NO_NETWORK'
+      remoteHandshakeClassification: 'LOCAL_SPEC_VALIDATION_ONLY_NO_NETWORK',
+      ownerDecisionMinimumStatus: 'SPECIFIED_AWAITING_OWNER_AUTHORIZATION'
     },
     engineDiscoveryProbes,
     operatingGates: {
@@ -1832,6 +1997,9 @@ async function main() {
       COMMERCIAL_REDISTRIBUTION_RIGHTS: 'REQUIRES_OWNER_ATTESTATION',
       LIVE_QA_REVOCATION: 'BLOCKED_PENDING_INDEPENDENT_CONTROL_PLANE',
       CAUSAL_LINEAGE_GATE_T18: 'NEGATIVE_CONTRACT_CHECK_ONLY',
+      TRUSTED_ROOT_AUTHORITY: 'SERVER_OWNED_IMMUTABLE_REGISTRY',
+      JOB_WORKSPACE_PROVISIONING: 'SERVER_BOUND_VERIFIED',
+      COMMAND_ARGV_VALIDATOR: 'MANDATORY_FAIL_CLOSED',
       ACTUAL_ENGINE_EXECUTION: 'NOT_VERIFIED',
       OWNER_REVIEW_GATE: 'HOLD',
       ENGINEERING_HOLD: 'ACTIVE',
@@ -1841,14 +2009,14 @@ async function main() {
 
   const receiptOutPath = path.join(
     REPO_ROOT,
-    'virtual-tradeshow-commercial-v1/production_artifacts/R37_TEST_EXECUTION_RECEIPT.json'
+    'virtual-tradeshow-commercial-v1/production_artifacts/R38_TEST_EXECUTION_RECEIPT.json'
   );
   fs.writeFileSync(receiptOutPath, JSON.stringify(receipt, null, 2), 'utf8');
   const savedReceiptBytes = fs.readFileSync(receiptOutPath);
   const receiptByteSha256 = crypto.createHash('sha256').update(savedReceiptBytes).digest('hex');
 
-  console.log('--- Final Execution Receipt (R37 Machine Verifiable) ---');
-  console.log(`  File:           virtual-tradeshow-commercial-v1/production_artifacts/R37_TEST_EXECUTION_RECEIPT.json`);
+  console.log('--- Final Execution Receipt (R38 Machine Verifiable) ---');
+  console.log(`  File:           virtual-tradeshow-commercial-v1/production_artifacts/R38_TEST_EXECUTION_RECEIPT.json`);
   console.log(`  Byte SHA-256:   ${receiptByteSha256}`);
   console.log(`  Tested Commit:  ${suiteCurrentHead}`);
   console.log(`  Expected Head:  ${expectedHead || '(none - unbound)'}`);
