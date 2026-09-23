@@ -500,13 +500,11 @@ const TYPED_ARGV_SCHEMAS = Object.freeze({
   })
 });
 
-// Infrastructure Base Root for Trusted Workspaces & Internal Subsystems (R39)
+// Infrastructure Base Root for Trusted Workspaces & Internal Subsystems (R40)
 const {
-  HARNESS_AUTHORIZATION_TOKEN,
-  SERVER_TRUSTED_WORKSPACE_BASE,
-  SERVER_JOB_REGISTRY,
-  TrustedRootRegistry,
-  assertNoStaticOverlap
+  resolveJobRoots,
+  assertNoStaticOverlap,
+  SERVER_TRUSTED_WORKSPACE_BASE
 } = require('./server_internal_registry');
 
 
@@ -974,7 +972,7 @@ function getScrubbedProcessEnv() {
  *  11. Module Boundary: Prohibits mockRunner in production invocation (ERR_ADAPTER_MOCK_RUNNER_FORBIDDEN_IN_PRODUCTION).
  */
 class ReconstructionExecutionAdapter {
-  constructor(options = {}, privateToken = null) {
+  constructor(options = {}) {
     // 1. Immutable infrastructure trust policy: caller overrides strictly forbidden
     if (options.allowlist !== undefined) {
       throw new Error('ERR_ADAPTER_CALLER_ALLOWLIST_FORBIDDEN: Caller-supplied allowlist overrides are strictly forbidden; trust policy is infrastructure-owned');
@@ -985,18 +983,25 @@ class ReconstructionExecutionAdapter {
     if (options.trustPolicy !== undefined) {
       throw new Error('ERR_ADAPTER_CALLER_TRUST_POLICY_OVERRIDE_FORBIDDEN: Caller-supplied trust policy overrides are strictly forbidden');
     }
-    // 2. Caller root overrides strictly forbidden (R38)
+    // 2. Caller root overrides strictly forbidden (R38/R40)
     if (options.trustedRootRegistry !== undefined) {
       throw new Error('ERR_ADAPTER_CALLER_ROOT_REGISTRY_OVERRIDE_FORBIDDEN: Caller-supplied trustedRootRegistry is strictly forbidden; registry is server-owned');
     }
     if (options.baseRoot !== undefined) {
       throw new Error('ERR_ADAPTER_CALLER_BASE_ROOT_OVERRIDE_FORBIDDEN: Caller-supplied baseRoot is strictly forbidden; roots are server-owned');
     }
-    if (options.allowHarnessRoots !== undefined && privateToken !== HARNESS_AUTHORIZATION_TOKEN) {
+    if (options.allowHarnessRoots !== undefined) {
       throw new Error('ERR_ADAPTER_CALLER_HARNESS_ROOTS_OVERRIDE_FORBIDDEN: Caller-supplied allowHarnessRoots is strictly forbidden');
     }
     if (options.allowedRoots !== undefined) {
       throw new Error('ERR_ADAPTER_CALLER_ROOT_OVERRIDE_FORBIDDEN: Caller-supplied allowedRoots overrides are strictly forbidden; roots are infrastructure-governed');
+    }
+
+    // 3. Test mode or mock auth provider requires dual server-side test environment authorization
+    if (options.isTestMode || options.mockAuthProvider !== undefined) {
+      if (process.env.NODE_ENV !== 'test' || process.env.STAGE2_ALLOW_TEST_HARNESS_MOCKS !== '1') {
+        throw new Error('ERR_ADAPTER_MOCK_RUNNER_FORBIDDEN_IN_PRODUCTION: Test mode is strictly forbidden without dual server-side test authorization flags (NODE_ENV=test and STAGE2_ALLOW_TEST_HARNESS_MOCKS=1)');
+      }
     }
 
     this.allowlist = APPROVED_RECONSTRUCTION_TARGETS;
@@ -1004,16 +1009,10 @@ class ReconstructionExecutionAdapter {
     this.entitlementKey = options.entitlementKey || process.env.RECONSTRUCTION_ENTITLEMENT_KEY || null;
     this.timeoutMs = Number.isFinite(options.timeoutMs) ? options.timeoutMs : 30000;
 
-    // 3. Mock mode strictly bounded to test environment with explicit dual-flag requirement & private token
-    const envAllowsTestMode = (process.env.NODE_ENV === 'test' && process.env.STAGE2_ALLOW_TEST_HARNESS_MOCKS === '1');
-    if (options.isTestMode && !envAllowsTestMode) {
-      throw new Error('ERR_ADAPTER_MOCK_RUNNER_FORBIDDEN_IN_PRODUCTION: Test mode and mock runner injection forbidden without server-side test environment authorization');
-    }
-    this.isTestMode = Boolean(options.isTestMode === true && envAllowsTestMode && options.mockAuthProvider && privateToken === HARNESS_AUTHORIZATION_TOKEN);
-    this.mockAuthProvider = this.isTestMode ? options.mockAuthProvider : null;
-
-    // 4. Server-owned trusted root registry
-    this.trustedRootRegistry = new TrustedRootRegistry({}, this.isTestMode ? HARNESS_AUTHORIZATION_TOKEN : null);
+    // Production adapter is NEVER in test mode; mock runner is strictly null
+    this.isTestMode = false;
+    this.mockAuthProvider = null;
+    this.resolveJobRoots = resolveJobRoots;
   }
 
   isAuthorized() {
@@ -1125,8 +1124,8 @@ class ReconstructionExecutionAdapter {
     }
 
     let allowedRoots = {};
-    if (this.isTestMode && commandConfig.isHarnessApprovedRoot && commandConfig.harnessRootId) {
-      allowedRoots = this.trustedRootRegistry.getHarnessRoots(commandConfig.harnessRootId) || {};
+    if (this.isTestMode && typeof this.getHarnessRoots === 'function' && commandConfig.isHarnessApprovedRoot && commandConfig.harnessRootId) {
+      allowedRoots = this.getHarnessRoots(commandConfig.harnessRootId) || {};
     } else if (this.isTestMode && commandConfig.isHarnessApprovedRoot) {
       allowedRoots = {
         scratch: commandConfig.scratchRoot,
@@ -1135,7 +1134,7 @@ class ReconstructionExecutionAdapter {
       };
     } else if (commandConfig.jobId) {
       try {
-        allowedRoots = this.trustedRootRegistry.resolveJobRoots(commandConfig.jobId, commandConfig.sessionContext);
+        allowedRoots = this.resolveJobRoots(commandConfig.jobId, commandConfig.sessionContext);
       } catch (jobRootErr) {
         const errCode = jobRootErr.code || (jobRootErr.message.startsWith('ERR_') ? jobRootErr.message.split(':')[0] : 'ERR_ADAPTER_JOB_ROOT_RESOLUTION_FAILED');
         return {
@@ -1145,8 +1144,8 @@ class ReconstructionExecutionAdapter {
           failClosed: true
         };
       }
-    } else if (this.isTestMode) {
-      allowedRoots = this.trustedRootRegistry.getHarnessRoots('default_test_harness') || {};
+    } else if (this.isTestMode && typeof this.getHarnessRoots === 'function') {
+      allowedRoots = this.getHarnessRoots('default_test_harness') || {};
     }
 
     // 3. Executable Validation & Integrity via INFRASTRUCTURE_TRUST_POLICY

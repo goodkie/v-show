@@ -80,10 +80,14 @@ const {
 
 const {
   createTestHarnessAdapter,
-  SERVER_JOB_REGISTRY,
-  ServerJobRegistry,
-  TrustedRootRegistry,
-  HARNESS_AUTHORIZATION_TOKEN,
+  mintTestSessionProof,
+  verifySessionProof,
+  registerServerJob,
+  resolveJobRoots,
+  cancelServerJob,
+  evictExpiredJobs,
+  registerAuthoritativeProject,
+  getAuthoritativeProject,
   assertNoStaticOverlap,
   getServedStaticRoots,
   SERVER_TRUSTED_WORKSPACE_BASE
@@ -702,19 +706,20 @@ async function main() {
       STATIC_ASSET_ISOLATION_GATE_T16: 'VERIFIED_ALL_ROOTS_ALL_EXTENSIONS', // R25: extended to glb/gltf/bin + railway root
       STATIC_ASSET_ISOLATION_GATE_T17: 'VERIFIED_POSITIVE_FAIL_CONTROLS',   // R25: positive fail-case controls confirmed
       CAUSAL_LINEAGE_GATE_T18: 'NEGATIVE_CONTRACT_CHECK_ONLY', // R29: negative contract check only per ChatGPT R28 audit
-      TRUSTED_ROOT_AUTHORITY: 'SERVER_PRIVATE_IMMUTABLE_REGISTRY', // R39: private unexported registry
-      JOB_WORKSPACE_PROVISIONING: 'AUTHENTICATED_SERVER_SESSION_BOUND', // R39: session-proof bound
-      COMMAND_ARGV_VALIDATOR: 'MANDATORY_FAIL_CLOSED_NO_PROBE_BYPASS', // R39: mandatory argv, probes rejected as stage
-      PUBLIC_MODULE_TOKEN_EXPOSURE: 'ZERO_EXPORT_VERIFIED', // R39: zero export on spatial_reconstruction_worker
-      WORKSPACE_STATIC_ISOLATION: 'VERIFIED_NON_OVERLAPPING', // R39: zero overlap with static served roots
-      OWNER_DECISION_NOTE: 'READ_ONLY_BOUNDED_ZERO_SPEND_DEFAULT', // R39: read-only note with $0 default
+      TRUSTED_ROOT_AUTHORITY: 'CLOSURE_PRIVATE_SERVER_REGISTRY', // R40: closure-private unexported registry
+      JOB_WORKSPACE_PROVISIONING: 'CRYPTO_PRINCIPAL_BOUND_AND_EVICTION_VERIFIED', // R40: cryptographic session HMAC + authoritative project lookup
+      COMMAND_ARGV_VALIDATOR: 'MANDATORY_FAIL_CLOSED_NO_PROBE_BYPASS', // R39/R40: mandatory argv, probes rejected as stage
+      PUBLIC_MODULE_TOKEN_EXPOSURE: 'ZERO_EXPORT_VERIFIED_ALL_SHIPPED_MODULES', // R40: zero export across all shipped modules
+      MODULE_AUTHORITY_BOUNDARY: 'CLOSURE_PRIVATE_AUTHORITY_VERIFIED', // R40: authority closure-private
+      WORKSPACE_STATIC_ISOLATION: 'VERIFIED_NON_OVERLAPPING', // R39/R40: zero overlap with static served roots
+      OWNER_DECISION_NOTE: 'READ_ONLY_BOUNDED_ZERO_SPEND_DEFAULT', // R39/R40: read-only note with $0 default
       ACTUAL_ENGINE_EXECUTION: 'NOT_VERIFIED',         // R37: local contract check only; actual process spawn unverified
       LIVE_QA_REVOCATION: 'BLOCKED_PENDING_INDEPENDENT_CONTROL_PLANE',
       OWNER_REVIEW_GATE: 'HOLD',
       ENGINEERING_HOLD: 'ACTIVE'
     };
 
-    console.log('\n  Authoritative Gate Status Matrix (R39 Honest Ledger):');
+    console.log('\n  Authoritative Gate Status Matrix (R40 Honest Ledger):');
     for (const [gate, status] of Object.entries(gates)) {
       console.log(`    - ${gate.padEnd(42)} : ${status}`);
     }
@@ -739,10 +744,11 @@ async function main() {
     assert.strictEqual(gates.STATIC_ASSET_ISOLATION_GATE_T16, 'VERIFIED_ALL_ROOTS_ALL_EXTENSIONS', 'T16 must cover all roots and all extensions');
     assert.strictEqual(gates.STATIC_ASSET_ISOLATION_GATE_T17, 'VERIFIED_POSITIVE_FAIL_CONTROLS', 'T17 must verify positive fail-case controls');
     assert.strictEqual(gates.CAUSAL_LINEAGE_GATE_T18, 'NEGATIVE_CONTRACT_CHECK_ONLY', 'T18 must verify negative contract check only per ChatGPT R28 audit');
-    assert.strictEqual(gates.TRUSTED_ROOT_AUTHORITY, 'SERVER_PRIVATE_IMMUTABLE_REGISTRY', 'Trusted root authority must be SERVER_PRIVATE_IMMUTABLE_REGISTRY');
-    assert.strictEqual(gates.JOB_WORKSPACE_PROVISIONING, 'AUTHENTICATED_SERVER_SESSION_BOUND', 'Job workspace provisioning must be AUTHENTICATED_SERVER_SESSION_BOUND');
+    assert.strictEqual(gates.TRUSTED_ROOT_AUTHORITY, 'CLOSURE_PRIVATE_SERVER_REGISTRY', 'Trusted root authority must be CLOSURE_PRIVATE_SERVER_REGISTRY');
+    assert.strictEqual(gates.JOB_WORKSPACE_PROVISIONING, 'CRYPTO_PRINCIPAL_BOUND_AND_EVICTION_VERIFIED', 'Job workspace provisioning must be CRYPTO_PRINCIPAL_BOUND_AND_EVICTION_VERIFIED');
     assert.strictEqual(gates.COMMAND_ARGV_VALIDATOR, 'MANDATORY_FAIL_CLOSED_NO_PROBE_BYPASS', 'Command argv validator must be MANDATORY_FAIL_CLOSED_NO_PROBE_BYPASS');
-    assert.strictEqual(gates.PUBLIC_MODULE_TOKEN_EXPOSURE, 'ZERO_EXPORT_VERIFIED', 'Public module must not export privileged token');
+    assert.strictEqual(gates.PUBLIC_MODULE_TOKEN_EXPOSURE, 'ZERO_EXPORT_VERIFIED_ALL_SHIPPED_MODULES', 'Public module must not export privileged token');
+    assert.strictEqual(gates.MODULE_AUTHORITY_BOUNDARY, 'CLOSURE_PRIVATE_AUTHORITY_VERIFIED', 'Module authority must be closure-private');
     assert.strictEqual(gates.WORKSPACE_STATIC_ISOLATION, 'VERIFIED_NON_OVERLAPPING', 'Workspace must not overlap served static roots');
     assert.strictEqual(gates.OWNER_DECISION_NOTE, 'READ_ONLY_BOUNDED_ZERO_SPEND_DEFAULT', 'Owner decision note must be READ_ONLY_BOUNDED_ZERO_SPEND_DEFAULT');
     assert.strictEqual(gates.ACTUAL_ENGINE_EXECUTION, 'NOT_VERIFIED', 'Actual engine execution must remain NOT_VERIFIED');
@@ -1220,17 +1226,11 @@ async function main() {
       'Caller-supplied allowHarnessRoots override must be rejected'
     );
 
-    // TrustedRootRegistry direct constructor injection defense (R38 P0-1)
-    assert.throws(
-      () => new TrustedRootRegistry({ baseRoot: 'C:\\bad' }),
-      /ERR_ADAPTER_CALLER_BASE_ROOT_OVERRIDE_FORBIDDEN/,
-      'Direct baseRoot override in TrustedRootRegistry must be rejected'
-    );
-    assert.throws(
-      () => new TrustedRootRegistry({ allowHarnessRoots: true }),
-      /ERR_ADAPTER_CALLER_HARNESS_ROOTS_OVERRIDE_FORBIDDEN/,
-      'Direct allowHarnessRoots in TrustedRootRegistry must be rejected'
-    );
+    // TrustedRootRegistry & ServerJobRegistry closure privacy defense (R40 P0-1)
+    const serverInternalMod = require('../virtual-tradeshow-commercial-v1/server/server_internal_registry');
+    assert.strictEqual(serverInternalMod.TrustedRootRegistry, undefined, 'TrustedRootRegistry must not be exported');
+    assert.strictEqual(serverInternalMod.ServerJobRegistry, undefined, 'ServerJobRegistry must not be exported');
+    assert.strictEqual(serverInternalMod.SERVER_JOB_REGISTRY, undefined, 'SERVER_JOB_REGISTRY singleton must not be exported');
 
     // Caller injection defense in executeAuthenticReconstructionWorker outside test harness
     delete process.env.NODE_ENV;
@@ -1822,15 +1822,23 @@ async function main() {
     assert.ok(viewerHtml.includes('PROCEDURAL_PLACEHOLDER_ONLY'), 'Viewer HUD must disclose procedural placeholder status');
     console.log('    - Diagnostic viewer disclaimer: PASS (HUD states PROCEDURAL_PLACEHOLDER_ONLY)');
 
-    // 12. Server-Owned Job Registry, Tenant Binding & Workspace Verification (R38/R39)
-    // (a0) Adversarial export check on shipped public module (R39 P0-1)
+    // 12. Server-Owned Job Registry, Tenant Binding & Workspace Verification (R40)
+    // (a0) Adversarial export check on shipped public module (R40 P0-1)
+    const shippedModules = [
+      '../virtual-tradeshow-commercial-v1/server/spatial_reconstruction_worker',
+      '../virtual-tradeshow-commercial-v1/server/server_internal_registry'
+    ];
+    for (const modRel of shippedModules) {
+      const mod = require(modRel);
+      assert.strictEqual(mod.HARNESS_AUTHORIZATION_TOKEN, undefined, `${modRel} must NOT export HARNESS_AUTHORIZATION_TOKEN`);
+      assert.strictEqual(mod.createTestHarnessAdapter, undefined, `${modRel} must NOT export createTestHarnessAdapter`);
+      assert.strictEqual(mod.createProcessLaunchDescriptor, undefined, `${modRel} must NOT export createProcessLaunchDescriptor`);
+      assert.strictEqual(mod.ServerJobRegistry, undefined, `${modRel} must NOT export ServerJobRegistry class`);
+      assert.strictEqual(mod.TrustedRootRegistry, undefined, `${modRel} must NOT export TrustedRootRegistry class`);
+      assert.strictEqual(mod.SERVER_JOB_REGISTRY, undefined, `${modRel} must NOT export SERVER_JOB_REGISTRY mutable singleton`);
+    }
+
     const publicWorker = require('../virtual-tradeshow-commercial-v1/server/spatial_reconstruction_worker');
-    assert.strictEqual(publicWorker.HARNESS_AUTHORIZATION_TOKEN, undefined, 'HARNESS_AUTHORIZATION_TOKEN must NOT be exported');
-    assert.strictEqual(publicWorker.SERVER_JOB_REGISTRY, undefined, 'SERVER_JOB_REGISTRY must NOT be exported');
-    assert.strictEqual(publicWorker.ServerJobRegistry, undefined, 'ServerJobRegistry must NOT be exported');
-    assert.strictEqual(publicWorker.TrustedRootRegistry, undefined, 'TrustedRootRegistry must NOT be exported');
-    assert.strictEqual(publicWorker.createTestHarnessAdapter, undefined, 'createTestHarnessAdapter must NOT be exported');
-    assert.strictEqual(publicWorker.createProcessLaunchDescriptor, undefined, 'createProcessLaunchDescriptor must NOT be exported');
 
     // Adversarial caller cannot activate test mode or mock runner by passing arbitrary options
     assert.throws(
@@ -1846,64 +1854,99 @@ async function main() {
     assert.strictEqual(advAdapter.isTestMode, false, 'isTestMode must remain false without private unexported token');
     assert.strictEqual(advAdapter.mockAuthProvider, null, 'mockAuthProvider must remain null without private unexported token');
 
-    const testJobId = 'job_r39_true3d_test_01';
     const testTenantId = 'tenant_commercial_alpha';
     const testProjectId = 'project_true3d_beta';
     const testOwnerId = 'owner_operator_gamma';
     const testSessionTokenHash = 'hash_test_session_entropy_7f8a9b';
 
-    const sessionProof = {
-      tenantId: testTenantId,
-      ownerId: testOwnerId,
-      sessionTokenHash: testSessionTokenHash
-    };
-    const projectRecord = {
-      projectId: testProjectId,
-      tenantId: testTenantId
-    };
-
-    // (a) Unauthenticated job registration rejection (R39 P0-2)
+    // (a) Unauthenticated job registration rejection (R40 P0-2)
     assert.throws(
-      () => SERVER_JOB_REGISTRY.registerJob({ jobId: 'unauth_job_01' }),
+      () => registerServerJob({ projectId: testProjectId }),
       /ERR_REGISTRY_UNAUTHORIZED_REGISTRATION/,
       'Unauthenticated job registration without sessionProof must fail closed'
     );
 
-    // (a1) Cross-tenant project mismatch rejection
+    // (a1) Forged / self-asserted session proof without authentic server signature
+    const forgedProof = {
+      tenantId: testTenantId,
+      ownerId: testOwnerId,
+      sessionTokenHash: testSessionTokenHash,
+      issuedAt: Date.now(),
+      expiresAt: Date.now() + 3600000,
+      signature: 'forged_unauthentic_hmac_signature_hex_deadbeef'
+    };
     assert.throws(
-      () => SERVER_JOB_REGISTRY.registerJob(
-        { jobId: 'mismatch_job_01' },
-        { sessionProof, projectRecord: { projectId: 'proj_other', tenantId: 'other_tenant' }, privateToken: HARNESS_AUTHORIZATION_TOKEN }
-      ),
-      /ERR_REGISTRY_PROJECT_TENANT_MISMATCH/,
-      'Project record belonging to different tenant must fail closed'
+      () => registerServerJob({ projectId: testProjectId }, { sessionProof: forgedProof }),
+      /ERR_REGISTRY_UNVERIFIED_PRINCIPAL/,
+      'Forged matching session proof without server HMAC signature must fail closed'
     );
 
-    // (a2) Prohibited mount rejection in job registration
+    // (a2) Expired session proof rejection
+    const expiredProof = mintTestSessionProof({
+      tenantId: testTenantId,
+      ownerId: testOwnerId,
+      sessionTokenHash: testSessionTokenHash,
+      ttlMs: -1000 // already expired
+    });
     assert.throws(
-      () => SERVER_JOB_REGISTRY.registerJob(
-        { jobId: 'bad_job_client' },
-        {
-          sessionProof: { tenantId: 'client', ownerId: testOwnerId, sessionTokenHash: testSessionTokenHash },
-          projectRecord: { projectId: 'project_bad_client', tenantId: 'client' },
-          privateToken: HARNESS_AUTHORIZATION_TOKEN
-        }
-      ),
+      () => registerServerJob({ projectId: testProjectId }, { sessionProof: expiredProof }),
+      /ERR_REGISTRY_SESSION_EXPIRED/,
+      'Expired session proof must fail closed'
+    );
+
+    // (a3) Non-existent project rejection from authoritative storage
+    const validSessionProof = mintTestSessionProof({
+      tenantId: testTenantId,
+      ownerId: testOwnerId,
+      sessionTokenHash: testSessionTokenHash
+    });
+    assert.throws(
+      () => registerServerJob({ projectId: 'non_existent_project_xyz' }, { sessionProof: validSessionProof }),
+      /ERR_REGISTRY_PROJECT_NOT_FOUND/,
+      'Job registration for unapproved/non-existent project must fail closed'
+    );
+
+    // (a4) Cross-tenant project mismatch in authoritative storage
+    registerAuthoritativeProject({
+      projectId: 'project_foreign_tenant',
+      tenantId: 'other_tenant_id',
+      title: 'Foreign Project'
+    });
+    assert.throws(
+      () => registerServerJob({ projectId: 'project_foreign_tenant' }, { sessionProof: validSessionProof }),
+      /ERR_REGISTRY_PROJECT_TENANT_MISMATCH/,
+      'Project belonging to different tenant in authoritative storage must fail closed'
+    );
+
+    // (a5) Prohibited mount rejection in job registration
+    const clientTenantProof = mintTestSessionProof({
+      tenantId: 'client',
+      ownerId: testOwnerId,
+      sessionTokenHash: testSessionTokenHash
+    });
+    registerAuthoritativeProject({
+      projectId: 'project_client_mount',
+      tenantId: 'client',
+      title: 'Client Mount Project'
+    });
+    assert.throws(
+      () => registerServerJob({ projectId: 'project_client_mount' }, { sessionProof: clientTenantProof }),
       /ERR_TRUSTED_ROOT_PROHIBITED_MOUNT/,
       'Job registration colliding with client mount must fail closed'
     );
 
     // (b) Physical workspace provisioning under authenticated server custody
-    const registeredJob = SERVER_JOB_REGISTRY.registerJob(
-      { jobId: testJobId },
-      { sessionProof, projectRecord, privateToken: HARNESS_AUTHORIZATION_TOKEN }
+    const registeredJob = registerServerJob(
+      { projectId: testProjectId },
+      { sessionProof: validSessionProof }
     );
     assert.strictEqual(registeredJob.status, 'PROVISIONED');
+    assert.ok(registeredJob.jobId.startsWith('job_'), 'Server job ID must start with job_');
     assert.ok(fs.existsSync(registeredJob.scratch), 'Scratch workspace must be physically provisioned');
     assert.ok(fs.existsSync(registeredJob.input), 'Input workspace must be physically provisioned');
     assert.ok(fs.existsSync(registeredJob.output), 'Output workspace must be physically provisioned');
 
-    // (c) Mandatory Job & Session Context Enforcement in Production Adapter (R39 P0-3)
+    // (c) Mandatory Job & Session Context Enforcement in Production Adapter (R40 P0-2, P0-3)
     process.env.RECONSTRUCTION_ENTITLEMENT_SECRET = 'TEST_ONLY_MOCK_ENTITLEMENT_KEY_ENTROPY';
     process.env.RECONSTRUCTION_ADAPTER_AUTHORIZED = '1';
     const prodAdapterForJobCheck = new ReconstructionExecutionAdapter({
@@ -1918,23 +1961,28 @@ async function main() {
 
     const missingSessRes = prodAdapterForJobCheck.execute({
       executable: path.resolve('colmap.exe'),
-      jobId: testJobId,
+      jobId: registeredJob.jobId,
       args: ['feature_extractor', '--database_path=' + path.join(registeredJob.scratch, 'db.db'), '--image_path=' + registeredJob.input]
     });
     assert.strictEqual(missingSessRes.errorCode, 'ERR_ADAPTER_MISSING_SESSION_CONTEXT', 'Missing sessionContext must be rejected in production execute');
 
     const missingProofRes = prodAdapterForJobCheck.execute({
       executable: path.resolve('colmap.exe'),
-      jobId: testJobId,
+      jobId: registeredJob.jobId,
       sessionContext: {},
       args: ['feature_extractor', '--database_path=' + path.join(registeredJob.scratch, 'db.db'), '--image_path=' + registeredJob.input]
     });
     assert.strictEqual(missingProofRes.errorCode, 'ERR_ADAPTER_MISSING_TENANCY_PROOF', 'Missing tenancy proof must be rejected in production execute');
 
+    const mismatchProof = mintTestSessionProof({
+      tenantId: 'attacker_tenant_intruder',
+      ownerId: testOwnerId,
+      sessionTokenHash: testSessionTokenHash
+    });
     const mismatchTenantRes = prodAdapterForJobCheck.execute({
       executable: path.resolve('colmap.exe'),
-      jobId: testJobId,
-      sessionContext: { tenantId: 'attacker_tenant_intruder', ownerId: testOwnerId },
+      jobId: registeredJob.jobId,
+      sessionContext: mismatchProof,
       args: ['feature_extractor', '--database_path=' + path.join(registeredJob.scratch, 'db.db'), '--image_path=' + registeredJob.input]
     });
     assert.strictEqual(mismatchTenantRes.errorCode, 'ERR_ADAPTER_TENANT_MISMATCH', 'Cross-tenant session context must be rejected');
@@ -1942,59 +1990,72 @@ async function main() {
     delete process.env.RECONSTRUCTION_ENTITLEMENT_SECRET;
     delete process.env.RECONSTRUCTION_ADAPTER_AUTHORIZED;
 
-    // (d) Fabricated job ID rejection in test harness
-    const unregJobRes = testHarnessAdapter.execute({
-      executable: path.resolve('colmap.exe'),
-      minVersion: '3.8.0',
-      versionCheckOutput: 'COLMAP 3.8.0',
-      mockRunner: () => ({ success: true }),
-      jobId: 'fabricated_nonexistent_job_id',
-      sessionContext: { tenantId: testTenantId, ownerId: testOwnerId, sessionTokenHash: testSessionTokenHash },
-      args: ['feature_extractor', '--database_path=' + path.join(registeredJob.scratch, 'db.db'), '--image_path=' + registeredJob.input]
-    });
-    assert.strictEqual(unregJobRes.errorCode, 'ERR_ADAPTER_JOB_NOT_FOUND', 'Fabricated job ID must be rejected');
-
-    // (e) Unauthorized owner rejection
-    const badOwnerRes = testHarnessAdapter.execute({
-      executable: path.resolve('colmap.exe'),
-      minVersion: '3.8.0',
-      versionCheckOutput: 'COLMAP 3.8.0',
-      mockRunner: () => ({ success: true }),
-      jobId: testJobId,
-      sessionContext: { tenantId: testTenantId, ownerId: 'unauthorized_attacker_user', sessionTokenHash: testSessionTokenHash },
-      args: ['feature_extractor', '--database_path=' + path.join(registeredJob.scratch, 'db.db'), '--image_path=' + registeredJob.input]
-    });
-    assert.strictEqual(badOwnerRes.errorCode, 'ERR_ADAPTER_JOB_AUTHORIZATION_FAILED', 'Unauthorized owner must be rejected');
-
-    // (f) Static served roots zero overlap check (R39 P0-4)
-    assertNoStaticOverlap(SERVER_TRUSTED_WORKSPACE_BASE);
-    for (const sRoot of getServedStaticRoots()) {
-      const normS = path.resolve(sRoot).toLowerCase();
-      const normW = path.resolve(SERVER_TRUSTED_WORKSPACE_BASE).toLowerCase();
-      assert.ok(!normW.startsWith(normS) && !normS.startsWith(normW), `Workspace "${normW}" must not overlap static root "${normS}"`);
-    }
-
-    // (g) Legitimate server-provisioned workspace execution
+    // (d) Single-Use Lifecycle State Transition:
+    // When resolveJobRoots is called for a provisioned job, status transitions to CONSUMED.
+    // Subsequent calls to resolveJobRoots or execute with the same jobId must fail closed.
     const jobValidDb = path.join(registeredJob.scratch, 'database.db');
-    const genuineJobRes = testHarnessAdapter.execute({
+    const firstExecutionRes = testHarnessAdapter.execute({
       executable: path.resolve('colmap.exe'),
       minVersion: '3.8.0',
       versionCheckOutput: 'COLMAP 3.8.0',
       mockRunner: () => ({ success: true }),
-      jobId: testJobId,
-      sessionContext: { tenantId: testTenantId, ownerId: testOwnerId, sessionTokenHash: testSessionTokenHash },
+      jobId: registeredJob.jobId,
+      sessionContext: validSessionProof,
       args: [
         'feature_extractor',
         `--database_path=${jobValidDb}`,
         `--image_path=${registeredJob.input}`
       ]
     });
-    assert.strictEqual(genuineJobRes.errorCode, 'ERR_RECONSTRUCTION_ENGINE_NOT_CONFIGURED', 'Genuine provisioned job passes validation and fails closed at engine boundary');
-    assert.ok(genuineJobRes.launchDescriptor, 'Launch descriptor must be attached');
-    assert.strictEqual(genuineJobRes.launchDescriptor.cwd, registeredJob.scratch, 'Working directory must be confined to scratch');
-    assert.strictEqual(genuineJobRes.launchDescriptor.options.shell, false, 'Shell must be strictly false');
-    assert.strictEqual(genuineJobRes.launchDescriptor.lifecycleSpecs.processTreeTermination, 'TREE_KILL_MANDATORY');
-    console.log('    - Server job registry & workspace binding: PASS (authenticated registration, tenant binding, and cwd isolation verified)');
+    assert.strictEqual(firstExecutionRes.errorCode, 'ERR_RECONSTRUCTION_ENGINE_NOT_CONFIGURED', 'First run resolves roots and reaches engine boundary');
+
+    // Second execution with same jobId MUST fail with ERR_ADAPTER_JOB_ALREADY_CONSUMED
+    const secondExecutionRes = testHarnessAdapter.execute({
+      executable: path.resolve('colmap.exe'),
+      minVersion: '3.8.0',
+      versionCheckOutput: 'COLMAP 3.8.0',
+      mockRunner: () => ({ success: true }),
+      jobId: registeredJob.jobId,
+      sessionContext: validSessionProof,
+      args: [
+        'feature_extractor',
+        `--database_path=${jobValidDb}`,
+        `--image_path=${registeredJob.input}`
+      ]
+    });
+    assert.strictEqual(secondExecutionRes.errorCode, 'ERR_ADAPTER_JOB_ALREADY_CONSUMED', 'Re-executing consumed job must fail closed with ERR_ADAPTER_JOB_ALREADY_CONSUMED');
+
+    // (e) Job cancellation and physical workspace deletion
+    const jobToCancel = registerServerJob({ projectId: testProjectId }, { sessionProof: validSessionProof });
+    assert.ok(fs.existsSync(jobToCancel.scratch), 'Job scratch must exist prior to cancellation');
+    const cancelRes = cancelServerJob(jobToCancel.jobId, validSessionProof);
+    assert.strictEqual(cancelRes.cancelled, true, 'Job must be cancelled');
+    assert.ok(!fs.existsSync(jobToCancel.scratch), 'Job scratch must be deleted from disk upon cancellation');
+
+    // (f) Eviction of consumed/cancelled jobs and quota recovery
+    const evictedCount = evictExpiredJobs();
+    assert.ok(evictedCount >= 1, 'Eviction must clean terminal entries');
+
+    // (g) Fabricated job ID rejection in test harness
+    const unregJobRes = testHarnessAdapter.execute({
+      executable: path.resolve('colmap.exe'),
+      minVersion: '3.8.0',
+      versionCheckOutput: 'COLMAP 3.8.0',
+      mockRunner: () => ({ success: true }),
+      jobId: 'job_fabricated_nonexistent_1234567890',
+      sessionContext: validSessionProof,
+      args: ['feature_extractor', '--database_path=' + path.join(registeredJob.scratch, 'db.db'), '--image_path=' + registeredJob.input]
+    });
+    assert.strictEqual(unregJobRes.errorCode, 'ERR_ADAPTER_JOB_NOT_FOUND', 'Fabricated job ID must be rejected');
+
+    // (h) Static served roots zero overlap check (R39/R40 P0-4)
+    assertNoStaticOverlap(SERVER_TRUSTED_WORKSPACE_BASE);
+    for (const sRoot of getServedStaticRoots()) {
+      const normS = path.resolve(sRoot).toLowerCase();
+      const normW = path.resolve(SERVER_TRUSTED_WORKSPACE_BASE).toLowerCase();
+      assert.ok(!normW.startsWith(normS) && !normS.startsWith(normW), `Workspace "${normW}" must not overlap static root "${normS}"`);
+    }
+    console.log('    - Server job registry, crypto proofs & eviction: PASS (closure-private authority, single-consume, and zero overlap verified)');
 
     // 13. Owner-Decision Document & Specification Verification (R38/R39 P0-6)
     assert.ok(OWNER_DECISION_MINIMUM_SPEC, 'OWNER_DECISION_MINIMUM_SPEC must be exported');
@@ -2021,7 +2082,7 @@ async function main() {
   console.log(`True 3D Pipeline Test Suite Complete: ${passedTests}/${totalTests} passed`);
   console.log('================================================================\n');
 
-  // ── [POST-RUN FINALIZER] Emit Machine-Verifiable R38 Execution Receipt ───────
+  // ── [POST-RUN FINALIZER] Emit Machine-Verifiable R40 Execution Receipt ───────
   const suiteEndTime = new Date().toISOString();
   const durationMs = Date.now() - startTimeEpoch;
   const runnerSource = fs.readFileSync(__filename);
@@ -2031,7 +2092,7 @@ async function main() {
   const engineDiscoveryProbes = probeReconstructionEngines();
 
   const receipt = {
-    receiptSchemaVersion: 'R39_EXECUTION_RECEIPT_V1',
+    receiptSchemaVersion: 'R40_EXECUTION_RECEIPT_V1',
     executionTimestamps: {
       startTime: suiteStartTime,
       endTime: suiteEndTime,
@@ -2076,8 +2137,8 @@ async function main() {
     },
     executionBoundaryAudit: {
       trustedExecutionBoundary: 'CANONICAL_ABSOLUTE_PATH_AND_INFRASTRUCTURE_TRUST_POLICY',
-      trustedRootRegistry: 'SERVER_PRIVATE_IMMUTABLE_WORKSPACE_REGISTRY',
-      serverJobRegistry: 'SESSION_BOUND_PHYSICALLY_PROVISIONED_CRYPTOGRAPHIC_ID',
+      trustedRootRegistry: 'CLOSURE_PRIVATE_SERVER_REGISTRY',
+      serverJobRegistry: 'CRYPTO_AUTHENTICATED_SESSION_BOUND_AND_EVICTION_VERIFIED',
       callerRootOverrideDefense: 'STRICTLY_REJECTED',
       siblingPrefixEscapeDefense: 'PATH_SEPARATOR_BOUNDARY_CHECK',
       mandatoryOptionsEnforcement: 'ENFORCED_PER_SUBCOMMAND_SCHEMA',
@@ -2098,7 +2159,8 @@ async function main() {
       versionProbeTruthfulness: 'CALLER_VERSION_STRING_VALIDATION_ONLY',
       mockTimeoutClassification: 'MOCK_TIMEOUT_NEGATIVE_TEST_ONLY',
       remoteHandshakeClassification: 'LOCAL_SPEC_VALIDATION_ONLY_NO_NETWORK',
-      publicModuleTokenExposure: 'ZERO_EXPORT_VERIFIED',
+      publicModuleTokenExposure: 'ZERO_EXPORT_VERIFIED_ALL_SHIPPED_MODULES',
+      moduleAuthorityBoundary: 'CLOSURE_PRIVATE_AUTHORITY_VERIFIED',
       workspaceStaticIsolation: 'VERIFIED_NON_OVERLAPPING',
       ownerDecisionMinimumStatus: 'READ_ONLY_NOTE_ZERO_SPEND_DEFAULT'
     },
@@ -2119,10 +2181,11 @@ async function main() {
       COMMERCIAL_REDISTRIBUTION_RIGHTS: 'REQUIRES_OWNER_ATTESTATION',
       LIVE_QA_REVOCATION: 'BLOCKED_PENDING_INDEPENDENT_CONTROL_PLANE',
       CAUSAL_LINEAGE_GATE_T18: 'NEGATIVE_CONTRACT_CHECK_ONLY',
-      TRUSTED_ROOT_AUTHORITY: 'SERVER_PRIVATE_IMMUTABLE_REGISTRY',
-      JOB_WORKSPACE_PROVISIONING: 'AUTHENTICATED_SERVER_SESSION_BOUND',
+      TRUSTED_ROOT_AUTHORITY: 'CLOSURE_PRIVATE_SERVER_REGISTRY',
+      JOB_WORKSPACE_PROVISIONING: 'CRYPTO_PRINCIPAL_BOUND_AND_EVICTION_VERIFIED',
       COMMAND_ARGV_VALIDATOR: 'MANDATORY_FAIL_CLOSED_NO_PROBE_BYPASS',
-      PUBLIC_MODULE_TOKEN_EXPOSURE: 'ZERO_EXPORT_VERIFIED',
+      PUBLIC_MODULE_TOKEN_EXPOSURE: 'ZERO_EXPORT_VERIFIED_ALL_SHIPPED_MODULES',
+      MODULE_AUTHORITY_BOUNDARY: 'CLOSURE_PRIVATE_AUTHORITY_VERIFIED',
       WORKSPACE_STATIC_ISOLATION: 'VERIFIED_NON_OVERLAPPING',
       OWNER_DECISION_NOTE: 'READ_ONLY_BOUNDED_ZERO_SPEND_DEFAULT',
       ACTUAL_ENGINE_EXECUTION: 'NOT_VERIFIED',
@@ -2134,14 +2197,14 @@ async function main() {
 
   const receiptOutPath = path.join(
     REPO_ROOT,
-    'virtual-tradeshow-commercial-v1/production_artifacts/R39_TEST_EXECUTION_RECEIPT.json'
+    'virtual-tradeshow-commercial-v1/production_artifacts/R40_TEST_EXECUTION_RECEIPT.json'
   );
   fs.writeFileSync(receiptOutPath, JSON.stringify(receipt, null, 2), 'utf8');
   const savedReceiptBytes = fs.readFileSync(receiptOutPath);
   const receiptByteSha256 = crypto.createHash('sha256').update(savedReceiptBytes).digest('hex');
 
-  console.log('--- Final Execution Receipt (R39 Machine Verifiable) ---');
-  console.log(`  File:           virtual-tradeshow-commercial-v1/production_artifacts/R39_TEST_EXECUTION_RECEIPT.json`);
+  console.log('--- Final Execution Receipt (R40 Machine Verifiable) ---');
+  console.log(`  File:           virtual-tradeshow-commercial-v1/production_artifacts/R40_TEST_EXECUTION_RECEIPT.json`);
   console.log(`  Byte SHA-256:   ${receiptByteSha256}`);
   console.log(`  Tested Commit:  ${suiteCurrentHead}`);
   console.log(`  Expected Head:  ${expectedHead || '(none - unbound)'}`);

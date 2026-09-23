@@ -1,9 +1,9 @@
 /**
- * Test Harness Bootstrap (Stage 2 Round 39)
+ * Test Harness Bootstrap (Stage 2 Round 40 Test Isolation)
  *
  * Dedicated test-only module loaded strictly in test environment.
- * Provides privileged test harness factories and server job registry authority
- * without exposing tokens or factories on the public exports of spatial_reconstruction_worker.js.
+ * Subclasses ReconstructionExecutionAdapter to provide mock runner capabilities
+ * without exposing tokens, factories, or mutable singletons in shipped runtime modules.
  */
 
 'use strict';
@@ -14,19 +14,67 @@ if (!envAllowsTestMode) {
   throw new Error('ERR_TEST_HARNESS_BOOTSTRAP_FORBIDDEN: Test harness bootstrap cannot be loaded outside authorized test runtime');
 }
 
+const path = require('path');
 const { ReconstructionExecutionAdapter } = require('../../virtual-tradeshow-commercial-v1/server/spatial_reconstruction_worker');
 const internal = require('../../virtual-tradeshow-commercial-v1/server/server_internal_registry');
 
+/**
+ * Isolated Test-Only Execution Adapter Subclass.
+ * Enables mockRunner and harness roots strictly for unit contract testing.
+ */
+class TestHarnessExecutionAdapter extends ReconstructionExecutionAdapter {
+  constructor(options = {}) {
+    super(options);
+    this.isTestMode = true;
+    this.mockAuthProvider = options.mockAuthProvider || null;
+    this.harnessRegisteredRoots = new Map();
+    this.trustedRootRegistry = {
+      registerHarnessRoot: (id, roots) => this.registerHarnessRoot(id, roots),
+      getHarnessRoots: (id) => this.getHarnessRoots(id)
+    };
+  }
+
+  isAuthorized() {
+    if (this.mockAuthProvider && typeof this.mockAuthProvider.validate === 'function') {
+      return this.mockAuthProvider.validate(this.entitlementKey);
+    }
+    return super.isAuthorized();
+  }
+
+  registerHarnessRoot(rootId, roots) {
+    for (const [key, rPath] of Object.entries(roots)) {
+      const resolved = path.resolve(rPath);
+      internal.assertNoStaticOverlap(resolved);
+    }
+    const resolved = {
+      scratch: path.resolve(roots.scratch),
+      input: path.resolve(roots.input),
+      output: path.resolve(roots.output)
+    };
+    this.harnessRegisteredRoots.set(rootId, resolved);
+    return resolved;
+  }
+
+  getHarnessRoots(rootId) {
+    return this.harnessRegisteredRoots.get(rootId) || null;
+  }
+}
+
 function createTestHarnessAdapter(options = {}) {
-  return internal.createTestHarnessAdapter(ReconstructionExecutionAdapter, options);
+  return new TestHarnessExecutionAdapter(options);
 }
 
 module.exports = {
   createTestHarnessAdapter,
-  SERVER_JOB_REGISTRY: internal.SERVER_JOB_REGISTRY,
-  ServerJobRegistry: internal.ServerJobRegistry,
-  TrustedRootRegistry: internal.TrustedRootRegistry,
-  HARNESS_AUTHORIZATION_TOKEN: internal.HARNESS_AUTHORIZATION_TOKEN,
+  TestHarnessExecutionAdapter,
+  mintTestSessionProof: internal.mintSessionProof,
+  verifySessionProof: internal.verifySessionProof,
+  registerServerJob: internal.registerServerJob,
+  resolveJobRoots: internal.resolveJobRoots,
+  cancelServerJob: internal.cancelServerJob,
+  evictExpiredJobs: internal.evictExpiredJobs,
+  registerAuthoritativeProject: internal.registerAuthoritativeProject,
+  getAuthoritativeProject: internal.getAuthoritativeProject,
   assertNoStaticOverlap: internal.assertNoStaticOverlap,
   getServedStaticRoots: internal.getServedStaticRoots,
   SERVER_TRUSTED_WORKSPACE_BASE: internal.SERVER_TRUSTED_WORKSPACE_BASE
