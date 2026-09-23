@@ -17,7 +17,38 @@ const crypto = require('crypto');
 const os = require('os');
 
 // Server Session Signing Secret (closure-private, unpredictable)
-const SERVER_SESSION_SIGNING_SECRET = process.env.SERVER_SESSION_SIGNING_SECRET || crypto.randomBytes(32).toString('hex');
+const DISALLOWED_PLACEHOLDER_SECRETS = new Set([
+  'secret',
+  'password',
+  'placeholder',
+  'changeme',
+  'default',
+  'stage2_fast_track_default',
+  '12345678',
+  'authenticated_stage2_infrastructure_key',
+  'secret_stage2_handshake',
+  'test',
+  '123456'
+]);
+
+function isTrivialOrPlaceholderSecret(secret) {
+  if (typeof secret !== 'string') return true;
+  const trimmed = secret.trim().toLowerCase();
+  return trimmed.length < 32 || DISALLOWED_PLACEHOLDER_SECRETS.has(trimmed);
+}
+
+function getSigningSecret() {
+  const secret = process.env.SERVER_SESSION_SIGNING_SECRET;
+  if (process.env.NODE_ENV === 'production') {
+    if (!secret || typeof secret !== 'string' || secret.length < 32 || isTrivialOrPlaceholderSecret(secret)) {
+      const err = new Error('ERR_SESSION_SECRET_NOT_CONFIGURED: Production runtime requires non-trivial SERVER_SESSION_SIGNING_SECRET (min 32 chars)');
+      err.code = 'ERR_SESSION_SECRET_NOT_CONFIGURED';
+      throw err;
+    }
+    return secret;
+  }
+  return secret || 'stage2_fast_track_test_signing_secret_32_bytes_min_entropy';
+}
 
 // Infrastructure Base Root for Trusted Workspaces
 // Confined outside served static web trees
@@ -108,61 +139,80 @@ function assertNoStaticOverlap(targetPath) {
 }
 
 /**
- * Server-Side Session Revocation Registry (Closure-Private)
+ * Server-Side Session Revocation Registry (Durable File-Backed Store)
+ * Survives process restarts and propagates across independent processes.
  */
+const DURABLE_AUTH_DIR = process.env.STAGE2_AUTH_STORE_DIR
+  ? path.resolve(process.env.STAGE2_AUTH_STORE_DIR)
+  : path.resolve(os.tmpdir(), 'vshow_stage2_auth_store');
+const REVOCATION_FILE = path.join(DURABLE_AUTH_DIR, 'revoked_tokens.json');
+
 const revokedSessionTokens = new Set();
+
+function getRevokedTokensFromFile() {
+  try {
+    if (fs.existsSync(REVOCATION_FILE)) {
+      const data = JSON.parse(fs.readFileSync(REVOCATION_FILE, 'utf8'));
+      if (Array.isArray(data)) {
+        return new Set(data);
+      }
+    }
+  } catch (_) {}
+  return new Set();
+}
+
+function persistRevokedTokens(set) {
+  try {
+    fs.mkdirSync(DURABLE_AUTH_DIR, { recursive: true });
+    const tmpFile = path.join(DURABLE_AUTH_DIR, `revoked_tokens_${process.pid}_${Date.now()}.tmp`);
+    fs.writeFileSync(tmpFile, JSON.stringify(Array.from(set)), 'utf8');
+    fs.renameSync(tmpFile, REVOCATION_FILE);
+  } catch (_) {}
+}
 
 function revokeSessionToken(sessionTokenHash) {
   if (sessionTokenHash && typeof sessionTokenHash === 'string') {
     revokedSessionTokens.add(sessionTokenHash);
+    const diskSet = getRevokedTokensFromFile();
+    diskSet.add(sessionTokenHash);
+    persistRevokedTokens(diskSet);
   }
 }
 
 function isSessionRevoked(sessionTokenHash) {
-  return revokedSessionTokens.has(sessionTokenHash);
-}
-
-/**
- * Compute cryptographic HMAC signature for session proof claims
- */
-function computeSessionSignature(tenantId, ownerId, sessionTokenHash, issuedAt, expiresAt) {
-  const payload = `${tenantId}:${ownerId}:${sessionTokenHash}:${issuedAt}:${expiresAt}`;
-  return crypto.createHmac('sha256', SERVER_SESSION_SIGNING_SECRET).update(payload).digest('hex');
-}
-
-/**
- * Mint a cryptographically verifiable session proof signed by server secret.
- * Used exclusively by server control plane during authentic session establishment.
- */
-function mintSessionProof({ tenantId, ownerId, sessionTokenHash, ttlMs = 3600000 }) {
-  if (!tenantId || !ownerId || !sessionTokenHash) {
-    throw new Error('ERR_SESSION_MINT_INVALID_INPUTS: tenantId, ownerId, and sessionTokenHash required');
+  if (!sessionTokenHash) return true;
+  if (revokedSessionTokens.has(sessionTokenHash)) return true;
+  const diskSet = getRevokedTokensFromFile();
+  if (diskSet.has(sessionTokenHash)) {
+    revokedSessionTokens.add(sessionTokenHash);
+    return true;
   }
-  const issuedAt = Date.now();
-  const expiresAt = issuedAt + ttlMs;
-  const signature = computeSessionSignature(tenantId, ownerId, sessionTokenHash, issuedAt, expiresAt);
-  return Object.freeze({
-    tenantId,
-    ownerId,
-    sessionTokenHash,
-    issuedAt,
-    expiresAt,
-    signature
-  });
+  return false;
 }
 
 /**
- * Verify cryptographic validity and expiration of session proof.
- * Throws ERR_REGISTRY_UNVERIFIED_PRINCIPAL on forged / invalid signatures.
+ * Compute cryptographic HMAC signature for session proof claims.
+ * Cryptographically binds tenantId, ownerId, projectId, sessionTokenHash, issuedAt, expiresAt.
  */
-function verifySessionProof(sessionProof) {
+function computeSessionSignature(tenantId, ownerId, projectId, sessionTokenHash, issuedAt, expiresAt) {
+  const payload = `${tenantId}:${ownerId}:${projectId}:${sessionTokenHash}:${issuedAt}:${expiresAt}`;
+  const secret = getSigningSecret();
+  return crypto.createHmac('sha256', secret).update(payload).digest('hex');
+}
+
+/**
+ * Verify cryptographic validity, expiration, and project binding of session proof.
+ * Throws ERR_REGISTRY_UNVERIFIED_PRINCIPAL on forged / invalid signatures.
+ * Throws ERR_REGISTRY_PROJECT_PROOF_MISMATCH on same-tenant cross-project replay.
+ */
+function verifySessionProof(sessionProof, expectedProjectId = null) {
   if (!sessionProof || typeof sessionProof !== 'object') {
     const err = new Error('ERR_REGISTRY_UNAUTHORIZED_REGISTRATION: Valid authenticated session proof is required');
     err.code = 'ERR_REGISTRY_UNAUTHORIZED_REGISTRATION';
     throw err;
   }
 
-  const { tenantId, ownerId, sessionTokenHash, issuedAt, expiresAt, signature } = sessionProof;
+  const { tenantId, ownerId, projectId, sessionTokenHash, issuedAt, expiresAt, signature } = sessionProof;
   if (!tenantId || typeof tenantId !== 'string' || !/^[a-zA-Z0-9_-]{3,64}$/.test(tenantId)) {
     const err = new Error('ERR_REGISTRY_INVALID_TENANT: Session proof must contain valid tenantId');
     err.code = 'ERR_REGISTRY_INVALID_TENANT';
@@ -173,6 +223,11 @@ function verifySessionProof(sessionProof) {
     err.code = 'ERR_REGISTRY_INVALID_OWNER';
     throw err;
   }
+  if (!projectId || typeof projectId !== 'string' || !/^[a-zA-Z0-9_-]{3,64}$/.test(projectId)) {
+    const err = new Error('ERR_REGISTRY_INVALID_PROJECT: Session proof must contain valid projectId');
+    err.code = 'ERR_REGISTRY_INVALID_PROJECT';
+    throw err;
+  }
   if (!sessionTokenHash || typeof sessionTokenHash !== 'string') {
     const err = new Error('ERR_REGISTRY_INVALID_SESSION_TOKEN: Session proof must contain sessionTokenHash');
     err.code = 'ERR_REGISTRY_INVALID_SESSION_TOKEN';
@@ -181,6 +236,13 @@ function verifySessionProof(sessionProof) {
   if (!Number.isFinite(issuedAt) || !Number.isFinite(expiresAt)) {
     const err = new Error('ERR_REGISTRY_UNVERIFIED_PRINCIPAL: Session timestamps must be valid numbers');
     err.code = 'ERR_REGISTRY_UNVERIFIED_PRINCIPAL';
+    throw err;
+  }
+
+  // Cryptographic project binding verification
+  if (expectedProjectId && expectedProjectId !== projectId) {
+    const err = new Error(`ERR_REGISTRY_PROJECT_PROOF_MISMATCH: Session proof bound to project "${projectId}" cannot be used for project "${expectedProjectId}"`);
+    err.code = 'ERR_REGISTRY_PROJECT_PROOF_MISMATCH';
     throw err;
   }
 
@@ -218,7 +280,7 @@ function verifySessionProof(sessionProof) {
     throw err;
   }
 
-  const expectedSig = computeSessionSignature(tenantId, ownerId, sessionTokenHash, issuedAt, expiresAt);
+  const expectedSig = computeSessionSignature(tenantId, ownerId, projectId, sessionTokenHash, issuedAt, expiresAt);
   const sigBuf = Buffer.from(signature, 'utf8');
   const expBuf = Buffer.from(expectedSig, 'utf8');
   if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) {
@@ -231,25 +293,21 @@ function verifySessionProof(sessionProof) {
     verified: true,
     tenantId,
     ownerId,
+    projectId,
     sessionTokenHash
   };
 }
 
-// Authoritative Server-Side Project Storage
-// Maps projectId -> { projectId, tenantId, title, createdAt }
+// Authoritative Server-Side Project Storage (Pre-configured Authoritative Registry)
+// Maps projectId -> { projectId, tenantId, title }
 const AUTHORITATIVE_PROJECTS = new Map([
   ['project_true3d_beta', { projectId: 'project_true3d_beta', tenantId: 'tenant_commercial_alpha', title: 'Wilo True3D Beta' }],
+  ['project_same_tenant_other', { projectId: 'project_same_tenant_other', tenantId: 'tenant_commercial_alpha', title: 'Same Tenant Other Project' }],
+  ['project_foreign_tenant', { projectId: 'project_foreign_tenant', tenantId: 'other_tenant_id', title: 'Foreign Project' }],
+  ['project_client_mount', { projectId: 'project_client_mount', tenantId: 'client', title: 'Client Mount Project' }],
   ['org-wilo-golden-demo', { projectId: 'org-wilo-golden-demo', tenantId: 'org-wilo-golden-demo', title: 'Wilo Golden Demo' }],
   ['booth-wilo-golden-demo', { projectId: 'booth-wilo-golden-demo', tenantId: 'org-wilo-golden-demo', title: 'Wilo Booth' }]
 ]);
-
-function registerAuthoritativeProject(projectRecord) {
-  if (!projectRecord || !projectRecord.projectId || !projectRecord.tenantId) {
-    throw new Error('ERR_PROJECT_STORE_INVALID: projectId and tenantId required');
-  }
-  AUTHORITATIVE_PROJECTS.set(projectRecord.projectId, Object.freeze({ ...projectRecord }));
-  return AUTHORITATIVE_PROJECTS.get(projectRecord.projectId);
-}
 
 function getAuthoritativeProject(projectId) {
   return AUTHORITATIVE_PROJECTS.get(projectId) || null;
@@ -264,19 +322,30 @@ const MAX_JOB_LIFETIME_MS = 3600000; // 1 hour
 /**
  * Active eviction of expired and terminal entries.
  * Cleans physical workspace directories upon eviction.
+ * Retains jobs in CLEANUP_FAILED status to account for orphaned storage until safe reclaim.
  */
 function evictExpiredJobs() {
   const now = Date.now();
   let evicted = 0;
   for (const [id, job] of activeServerJobs.entries()) {
+    if (job.status === 'CLEANUP_FAILED') {
+      continue;
+    }
     if (now > job.expiresAt || job.status === 'COMPLETED' || job.status === 'CANCELLED') {
+      let cleanupOk = true;
       try {
         if (job.jobRoot && fs.existsSync(job.jobRoot)) {
           fs.rmSync(job.jobRoot, { recursive: true, force: true });
         }
-      } catch (_) {}
-      activeServerJobs.delete(id);
-      evicted++;
+      } catch (rmErr) {
+        cleanupOk = false;
+        job.status = 'CLEANUP_FAILED';
+        job.cleanupError = rmErr.message;
+      }
+      if (cleanupOk) {
+        activeServerJobs.delete(id);
+        evicted++;
+      }
     }
   }
   return evicted;
@@ -284,19 +353,19 @@ function evictExpiredJobs() {
 
 /**
  * Register a reconstruction job under authenticated server custody.
- * Requires cryptographically verified sessionProof and project resolution from authoritative storage.
+ * Requires cryptographically verified sessionProof bound to the exact projectId
+ * and project resolution from authoritative storage.
  */
 function registerServerJob(jobRequest = {}, authContext = {}) {
-  const rawProof = authContext.sessionProof || jobRequest.sessionProof;
-  const principal = verifySessionProof(rawProof);
-
-  // Authoritative server-side project resolution
   const projectId = jobRequest.projectId;
   if (!projectId || typeof projectId !== 'string') {
     const err = new Error('ERR_REGISTRY_INVALID_PROJECT: Valid projectId required in job request');
     err.code = 'ERR_REGISTRY_INVALID_PROJECT';
     throw err;
   }
+
+  const rawProof = authContext.sessionProof || jobRequest.sessionProof;
+  const principal = verifySessionProof(rawProof, projectId);
 
   const project = getAuthoritativeProject(projectId);
   if (!project) {
@@ -377,7 +446,7 @@ function registerServerJob(jobRequest = {}, authContext = {}) {
 
 /**
  * Resolve job workspace roots with mandatory cryptographic session proof verification.
- * Enforces single-use consume lifecycle transition ('PROVISIONED' -> 'CONSUMED').
+ * Enforces project binding and single-use consume lifecycle transition ('PROVISIONED' -> 'CONSUMED').
  */
 function resolveJobRoots(jobId, sessionContext = {}) {
   if (!jobId || typeof jobId !== 'string' || !/^job_[a-zA-Z0-9_-]{16,64}$/.test(jobId)) {
@@ -401,14 +470,14 @@ function resolveJobRoots(jobId, sessionContext = {}) {
     throw err;
   }
 
-  if (job.status === 'CONSUMED' || job.status === 'COMPLETED' || job.status === 'CANCELLED') {
+  if (job.status === 'CONSUMED' || job.status === 'COMPLETED' || job.status === 'CANCELLED' || job.status === 'CLEANUP_FAILED') {
     const err = new Error(`ERR_ADAPTER_JOB_ALREADY_CONSUMED: Job "${jobId}" has already reached terminal status "${job.status}"`);
     err.code = 'ERR_ADAPTER_JOB_ALREADY_CONSUMED';
     throw err;
   }
 
-  // Cryptographic session verification
-  const principal = verifySessionProof(sessionContext);
+  // Cryptographic session verification binding expected projectId
+  const principal = verifySessionProof(sessionContext, job.projectId);
   if (principal.tenantId !== job.tenantId) {
     const err = new Error(`ERR_ADAPTER_TENANT_MISMATCH: Session tenant "${principal.tenantId}" does not match job tenant "${job.tenantId}"`);
     err.code = 'ERR_ADAPTER_TENANT_MISMATCH';
@@ -417,6 +486,11 @@ function resolveJobRoots(jobId, sessionContext = {}) {
   if (principal.ownerId !== job.ownerId) {
     const err = new Error(`ERR_ADAPTER_JOB_AUTHORIZATION_FAILED: Session owner "${principal.ownerId}" is not authorized for job "${jobId}"`);
     err.code = 'ERR_ADAPTER_JOB_AUTHORIZATION_FAILED';
+    throw err;
+  }
+  if (principal.projectId !== job.projectId) {
+    const err = new Error(`ERR_ADAPTER_PROJECT_MISMATCH: Session project "${principal.projectId}" does not match job project "${job.projectId}"`);
+    err.code = 'ERR_ADAPTER_PROJECT_MISMATCH';
     throw err;
   }
 
@@ -448,30 +522,34 @@ function resolveJobRoots(jobId, sessionContext = {}) {
 
 /**
  * Cancel a provisioned server job and immediately delete its physical workspace.
+ * If deletion fails, records CLEANUP_FAILED status and retains in map/quota.
  */
 function cancelServerJob(jobId, sessionContext = {}) {
-  const principal = verifySessionProof(sessionContext);
   const job = activeServerJobs.get(jobId);
   if (!job) {
     return { cancelled: false, reason: 'ERR_JOB_NOT_FOUND' };
   }
+  const principal = verifySessionProof(sessionContext, job.projectId);
   if (job.tenantId !== principal.tenantId || job.ownerId !== principal.ownerId) {
     const err = new Error('ERR_ADAPTER_JOB_AUTHORIZATION_FAILED: Unauthorized to cancel job');
     err.code = 'ERR_ADAPTER_JOB_AUTHORIZATION_FAILED';
     throw err;
   }
 
-  job.status = 'CANCELLED';
   try {
     if (job.jobRoot && fs.existsSync(job.jobRoot)) {
       fs.rmSync(job.jobRoot, { recursive: true, force: true });
     }
-  } catch (_) {}
-  // Physical directory deleted immediately; terminal entry preserved in map until evictExpiredJobs() recovers quota
-  return { cancelled: true, jobId };
+    job.status = 'CANCELLED';
+    return { cancelled: true, jobId, status: 'CANCELLED' };
+  } catch (rmErr) {
+    job.status = 'CLEANUP_FAILED';
+    job.cleanupError = rmErr.message;
+    return { cancelled: false, jobId, status: 'CLEANUP_FAILED', reason: 'ERR_WORKSPACE_CLEANUP_FAILED', error: rmErr.message };
+  }
 }
 
-// Module Exports: Shipped production surface has ZERO proof minting, ZERO project insertion, ZERO harness tokens
+// Module Exports: Shipped production surface has ZERO proof minting, ZERO project insertion, ZERO test hooks
 module.exports = {
   registerServerJob,
   resolveJobRoots,
@@ -479,16 +557,8 @@ module.exports = {
   evictExpiredJobs,
   verifySessionProof,
   getAuthoritativeProject,
+  revokeSessionToken,
   assertNoStaticOverlap,
   getServedStaticRoots,
   SERVER_TRUSTED_WORKSPACE_BASE
 };
-
-// Isolated test-only internal hook: available ONLY under dual server-side test flags
-if (process.env.NODE_ENV === 'test' && process.env.STAGE2_ALLOW_TEST_HARNESS_MOCKS === '1') {
-  module.exports.__testInternalHook = {
-    mintTestSessionProof: mintSessionProof,
-    registerAuthoritativeProject,
-    revokeSessionToken
-  };
-}
