@@ -73,16 +73,22 @@ const {
   TYPED_ARGV_SCHEMAS,
   validateTypedCommandArgv,
   getScrubbedProcessEnv,
-  ServerJobRegistry,
-  SERVER_JOB_REGISTRY,
-  TrustedRootRegistry,
-  HARNESS_AUTHORIZATION_TOKEN,
-  createTestHarnessAdapter,
   validatePathConfinement,
   PROCESS_EXECUTION_CONTRACT,
-  createProcessLaunchDescriptor,
   OWNER_DECISION_MINIMUM_SPEC
 } = require('../virtual-tradeshow-commercial-v1/server/spatial_reconstruction_worker');
+
+const {
+  createTestHarnessAdapter,
+  SERVER_JOB_REGISTRY,
+  ServerJobRegistry,
+  TrustedRootRegistry,
+  HARNESS_AUTHORIZATION_TOKEN,
+  assertNoStaticOverlap,
+  getServedStaticRoots,
+  SERVER_TRUSTED_WORKSPACE_BASE
+} = require('./helpers/test_harness_bootstrap');
+
 
 const REPO_ROOT = path.resolve(__dirname, '..');
 
@@ -696,16 +702,19 @@ async function main() {
       STATIC_ASSET_ISOLATION_GATE_T16: 'VERIFIED_ALL_ROOTS_ALL_EXTENSIONS', // R25: extended to glb/gltf/bin + railway root
       STATIC_ASSET_ISOLATION_GATE_T17: 'VERIFIED_POSITIVE_FAIL_CONTROLS',   // R25: positive fail-case controls confirmed
       CAUSAL_LINEAGE_GATE_T18: 'NEGATIVE_CONTRACT_CHECK_ONLY', // R29: negative contract check only per ChatGPT R28 audit
-      TRUSTED_ROOT_AUTHORITY: 'SERVER_OWNED_IMMUTABLE_REGISTRY', // R38: caller registry/baseRoot injection rejected
-      JOB_WORKSPACE_PROVISIONING: 'SERVER_BOUND_VERIFIED', // R38: physical workspace provisioned under server custody
-      COMMAND_ARGV_VALIDATOR: 'MANDATORY_FAIL_CLOSED', // R38: mandatory argv contract at adapter boundary
+      TRUSTED_ROOT_AUTHORITY: 'SERVER_PRIVATE_IMMUTABLE_REGISTRY', // R39: private unexported registry
+      JOB_WORKSPACE_PROVISIONING: 'AUTHENTICATED_SERVER_SESSION_BOUND', // R39: session-proof bound
+      COMMAND_ARGV_VALIDATOR: 'MANDATORY_FAIL_CLOSED_NO_PROBE_BYPASS', // R39: mandatory argv, probes rejected as stage
+      PUBLIC_MODULE_TOKEN_EXPOSURE: 'ZERO_EXPORT_VERIFIED', // R39: zero export on spatial_reconstruction_worker
+      WORKSPACE_STATIC_ISOLATION: 'VERIFIED_NON_OVERLAPPING', // R39: zero overlap with static served roots
+      OWNER_DECISION_NOTE: 'READ_ONLY_BOUNDED_ZERO_SPEND_DEFAULT', // R39: read-only note with $0 default
       ACTUAL_ENGINE_EXECUTION: 'NOT_VERIFIED',         // R37: local contract check only; actual process spawn unverified
       LIVE_QA_REVOCATION: 'BLOCKED_PENDING_INDEPENDENT_CONTROL_PLANE',
       OWNER_REVIEW_GATE: 'HOLD',
       ENGINEERING_HOLD: 'ACTIVE'
     };
 
-    console.log('\n  Authoritative Gate Status Matrix (R38 Honest Ledger):');
+    console.log('\n  Authoritative Gate Status Matrix (R39 Honest Ledger):');
     for (const [gate, status] of Object.entries(gates)) {
       console.log(`    - ${gate.padEnd(42)} : ${status}`);
     }
@@ -730,9 +739,12 @@ async function main() {
     assert.strictEqual(gates.STATIC_ASSET_ISOLATION_GATE_T16, 'VERIFIED_ALL_ROOTS_ALL_EXTENSIONS', 'T16 must cover all roots and all extensions');
     assert.strictEqual(gates.STATIC_ASSET_ISOLATION_GATE_T17, 'VERIFIED_POSITIVE_FAIL_CONTROLS', 'T17 must verify positive fail-case controls');
     assert.strictEqual(gates.CAUSAL_LINEAGE_GATE_T18, 'NEGATIVE_CONTRACT_CHECK_ONLY', 'T18 must verify negative contract check only per ChatGPT R28 audit');
-    assert.strictEqual(gates.TRUSTED_ROOT_AUTHORITY, 'SERVER_OWNED_IMMUTABLE_REGISTRY', 'Trusted root authority must be SERVER_OWNED_IMMUTABLE_REGISTRY');
-    assert.strictEqual(gates.JOB_WORKSPACE_PROVISIONING, 'SERVER_BOUND_VERIFIED', 'Job workspace provisioning must be SERVER_BOUND_VERIFIED');
-    assert.strictEqual(gates.COMMAND_ARGV_VALIDATOR, 'MANDATORY_FAIL_CLOSED', 'Command argv validator must be MANDATORY_FAIL_CLOSED');
+    assert.strictEqual(gates.TRUSTED_ROOT_AUTHORITY, 'SERVER_PRIVATE_IMMUTABLE_REGISTRY', 'Trusted root authority must be SERVER_PRIVATE_IMMUTABLE_REGISTRY');
+    assert.strictEqual(gates.JOB_WORKSPACE_PROVISIONING, 'AUTHENTICATED_SERVER_SESSION_BOUND', 'Job workspace provisioning must be AUTHENTICATED_SERVER_SESSION_BOUND');
+    assert.strictEqual(gates.COMMAND_ARGV_VALIDATOR, 'MANDATORY_FAIL_CLOSED_NO_PROBE_BYPASS', 'Command argv validator must be MANDATORY_FAIL_CLOSED_NO_PROBE_BYPASS');
+    assert.strictEqual(gates.PUBLIC_MODULE_TOKEN_EXPOSURE, 'ZERO_EXPORT_VERIFIED', 'Public module must not export privileged token');
+    assert.strictEqual(gates.WORKSPACE_STATIC_ISOLATION, 'VERIFIED_NON_OVERLAPPING', 'Workspace must not overlap served static roots');
+    assert.strictEqual(gates.OWNER_DECISION_NOTE, 'READ_ONLY_BOUNDED_ZERO_SPEND_DEFAULT', 'Owner decision note must be READ_ONLY_BOUNDED_ZERO_SPEND_DEFAULT');
     assert.strictEqual(gates.ACTUAL_ENGINE_EXECUTION, 'NOT_VERIFIED', 'Actual engine execution must remain NOT_VERIFIED');
     assert.strictEqual(gates.LIVE_QA_REVOCATION, 'BLOCKED_PENDING_INDEPENDENT_CONTROL_PLANE');
     assert.strictEqual(gates.OWNER_REVIEW_GATE, 'HOLD');
@@ -1331,18 +1343,7 @@ async function main() {
     assert.strictEqual(semverGarbledRes.success, false);
     assert.strictEqual(semverGarbledRes.errorCode, 'ERR_ADAPTER_INVALID_VERSION_FORMAT');
 
-    // 6g. Compatible semver version (3.10.0 >= 3.8.0)
-    const semverOkRes = testHarnessAdapter.execute({
-      executable: path.resolve('colmap.exe'),
-      minVersion: '3.8.0',
-      versionCheckOutput: 'COLMAP 3.10.0',
-      args: ['--help'],
-      mockRunner: () => ({ success: false, errorCode: 'ERR_SFM_PIPELINE_FAILED', message: 'COLMAP point triangulation failed' })
-    });
-    assert.strictEqual(semverOkRes.errorCode, 'ERR_SFM_PIPELINE_FAILED', 'Semver 3.10 >= 3.8 must pass version guard and proceed to runner');
-    assert.strictEqual(semverOkRes.versionValidationClassification, 'CALLER_VERSION_STRING_VALIDATION_ONLY');
-
-    // 6g2. Typed Command Argument Schema & Injection Defenses (R37)
+    // 6g2. Typed Command Argument Schema & Injection Defenses (R37/R39)
     const scratchTestRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'test-r37-scratch-'));
     const inputTestRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'test-r37-input-'));
     const validDbPath = path.join(scratchTestRoot, 'database.db');
@@ -1352,6 +1353,23 @@ async function main() {
       input: inputTestRoot,
       output: scratchTestRoot
     });
+
+    // 6g. Compatible semver version (3.10.0 >= 3.8.0)
+    const semverOkRes = testHarnessAdapter.execute({
+      executable: path.resolve('colmap.exe'),
+      minVersion: '3.8.0',
+      versionCheckOutput: 'COLMAP 3.10.0',
+      harnessRootId,
+      isHarnessApprovedRoot: true,
+      args: [
+        'feature_extractor',
+        `--database_path=${validDbPath}`,
+        `--image_path=${inputTestRoot}`
+      ],
+      mockRunner: () => ({ success: false, errorCode: 'ERR_SFM_PIPELINE_FAILED', message: 'COLMAP point triangulation failed' })
+    });
+    assert.strictEqual(semverOkRes.errorCode, 'ERR_SFM_PIPELINE_FAILED', 'Semver 3.10 >= 3.8 must pass version guard and proceed to runner');
+    assert.strictEqual(semverOkRes.versionValidationClassification, 'CALLER_VERSION_STRING_VALIDATION_ONLY');
 
     try {
       // (a0) Omitted arguments array (args === undefined - R38 P0-2)
@@ -1576,7 +1594,7 @@ async function main() {
       });
       assert.strictEqual(spacePathRes.errorCode, 'ERR_RECONSTRUCTION_ENGINE_NOT_CONFIGURED');
 
-      // (s) Standalone probe flag (--help) passes
+      // (s) Standalone probe flag (--help) rejected as reconstruction stage (R39 P0-3)
       const probeHelpRes = testHarnessAdapter.execute({
         executable: path.resolve('colmap.exe'),
         minVersion: '3.8.0',
@@ -1584,7 +1602,7 @@ async function main() {
         mockRunner: () => ({ success: true }),
         args: ['--help']
       });
-      assert.strictEqual(probeHelpRes.errorCode, 'ERR_RECONSTRUCTION_ENGINE_NOT_CONFIGURED');
+      assert.strictEqual(probeHelpRes.errorCode, 'ERR_ADAPTER_INVALID_RECONSTRUCTION_STAGE');
 
       // (t) Valid structured typed command passes schema validation and fails closed at engine boundary
       const validTypedRes = testHarnessAdapter.execute({
@@ -1717,23 +1735,41 @@ async function main() {
     delete process.env.SPARK_3DGS_ALLOWED_ORIGINS;
     console.log('    - Remote worker guards: PASS (HTTPS, origin allowlist, secret provisioning, auth, and reachability enforced)');
 
-    // 8. Process Lifecycle & Timeout Quota Controls
     const timedOutAdapter = createTestHarnessAdapter({
       mockAuthProvider,
       entitlementKey: 'TEST_ONLY_MOCK_ENTITLEMENT_KEY_ENTROPY',
       timeoutMs: 50
     });
-    const timeoutRes = timedOutAdapter.execute({
-      executable: path.resolve('colmap.exe'),
-      versionCheckOutput: 'COLMAP 3.8.0',
-      args: ['--help'],
-      mockRunner: () => ({ success: false, timedOut: true })
+    const timeoutScratch = fs.mkdtempSync(path.join(os.tmpdir(), 'test-timeout-scratch-'));
+    const timeoutInput = fs.mkdtempSync(path.join(os.tmpdir(), 'test-timeout-input-'));
+    const timeoutDb = path.join(timeoutScratch, 'db.db');
+    timedOutAdapter.trustedRootRegistry.registerHarnessRoot('timeout_harness_root', {
+      scratch: timeoutScratch,
+      input: timeoutInput,
+      output: timeoutScratch
     });
-    assert.strictEqual(timeoutRes.success, false);
-    assert.strictEqual(timeoutRes.errorCode, 'ERR_ADAPTER_TIMEOUT');
-    assert.strictEqual(timeoutRes.timeoutClassification, 'MOCK_TIMEOUT_NEGATIVE_TEST_ONLY');
-    assert.strictEqual(timeoutRes.processTreeKill, 'NOT_APPLICABLE_IN_MOCK_MODE');
-    assert.strictEqual(timeoutRes.scratchCleaned, true);
+    try {
+      const timeoutRes = timedOutAdapter.execute({
+        executable: path.resolve('colmap.exe'),
+        versionCheckOutput: 'COLMAP 3.8.0',
+        harnessRootId: 'timeout_harness_root',
+        isHarnessApprovedRoot: true,
+        args: [
+          'feature_extractor',
+          `--database_path=${timeoutDb}`,
+          `--image_path=${timeoutInput}`
+        ],
+        mockRunner: () => ({ success: false, timedOut: true })
+      });
+      assert.strictEqual(timeoutRes.success, false);
+      assert.strictEqual(timeoutRes.errorCode, 'ERR_ADAPTER_TIMEOUT');
+      assert.strictEqual(timeoutRes.timeoutClassification, 'MOCK_TIMEOUT_NEGATIVE_TEST_ONLY');
+      assert.strictEqual(timeoutRes.processTreeKill, 'NOT_APPLICABLE_IN_MOCK_MODE');
+      assert.strictEqual(timeoutRes.scratchCleaned, true);
+    } finally {
+      try { fs.rmSync(timeoutScratch, { recursive: true, force: true }); } catch (_) {}
+      try { fs.rmSync(timeoutInput, { recursive: true, force: true }); } catch (_) {}
+    }
     console.log('    - Process lifecycle & quota: PASS (timeoutMs quota and scratch cleanup verified with MOCK_TIMEOUT_NEGATIVE_TEST_ONLY)');
 
     // 9. Anti-substitution check on benchmark hashes
@@ -1786,83 +1822,157 @@ async function main() {
     assert.ok(viewerHtml.includes('PROCEDURAL_PLACEHOLDER_ONLY'), 'Viewer HUD must disclose procedural placeholder status');
     console.log('    - Diagnostic viewer disclaimer: PASS (HUD states PROCEDURAL_PLACEHOLDER_ONLY)');
 
-    // 12. Server-Owned Job Registry, Tenant Binding & Workspace Verification (R38 P0-1, P0-3)
-    const testJobId = 'job_r38_true3d_test_01';
+    // 12. Server-Owned Job Registry, Tenant Binding & Workspace Verification (R38/R39)
+    // (a0) Adversarial export check on shipped public module (R39 P0-1)
+    const publicWorker = require('../virtual-tradeshow-commercial-v1/server/spatial_reconstruction_worker');
+    assert.strictEqual(publicWorker.HARNESS_AUTHORIZATION_TOKEN, undefined, 'HARNESS_AUTHORIZATION_TOKEN must NOT be exported');
+    assert.strictEqual(publicWorker.SERVER_JOB_REGISTRY, undefined, 'SERVER_JOB_REGISTRY must NOT be exported');
+    assert.strictEqual(publicWorker.ServerJobRegistry, undefined, 'ServerJobRegistry must NOT be exported');
+    assert.strictEqual(publicWorker.TrustedRootRegistry, undefined, 'TrustedRootRegistry must NOT be exported');
+    assert.strictEqual(publicWorker.createTestHarnessAdapter, undefined, 'createTestHarnessAdapter must NOT be exported');
+    assert.strictEqual(publicWorker.createProcessLaunchDescriptor, undefined, 'createProcessLaunchDescriptor must NOT be exported');
+
+    // Adversarial caller cannot activate test mode or mock runner by passing arbitrary options
+    assert.throws(
+      () => new publicWorker.ReconstructionExecutionAdapter({ allowHarnessRoots: true }),
+      /ERR_ADAPTER_CALLER_HARNESS_ROOTS_OVERRIDE_FORBIDDEN/,
+      'Adversarial allowHarnessRoots must be rejected'
+    );
+
+    const advAdapter = new publicWorker.ReconstructionExecutionAdapter({
+      isTestMode: true,
+      mockAuthProvider: { validate: () => ({ authorized: true }) }
+    });
+    assert.strictEqual(advAdapter.isTestMode, false, 'isTestMode must remain false without private unexported token');
+    assert.strictEqual(advAdapter.mockAuthProvider, null, 'mockAuthProvider must remain null without private unexported token');
+
+    const testJobId = 'job_r39_true3d_test_01';
     const testTenantId = 'tenant_commercial_alpha';
     const testProjectId = 'project_true3d_beta';
     const testOwnerId = 'owner_operator_gamma';
+    const testSessionTokenHash = 'hash_test_session_entropy_7f8a9b';
 
-    // (a) Prohibited mount rejection in job registration
+    const sessionProof = {
+      tenantId: testTenantId,
+      ownerId: testOwnerId,
+      sessionTokenHash: testSessionTokenHash
+    };
+    const projectRecord = {
+      projectId: testProjectId,
+      tenantId: testTenantId
+    };
+
+    // (a) Unauthenticated job registration rejection (R39 P0-2)
     assert.throws(
-      () => SERVER_JOB_REGISTRY.registerJob({
-        jobId: 'bad_job_client',
-        tenantId: 'client',
-        projectId: testProjectId,
-        ownerId: testOwnerId
-      }),
+      () => SERVER_JOB_REGISTRY.registerJob({ jobId: 'unauth_job_01' }),
+      /ERR_REGISTRY_UNAUTHORIZED_REGISTRATION/,
+      'Unauthenticated job registration without sessionProof must fail closed'
+    );
+
+    // (a1) Cross-tenant project mismatch rejection
+    assert.throws(
+      () => SERVER_JOB_REGISTRY.registerJob(
+        { jobId: 'mismatch_job_01' },
+        { sessionProof, projectRecord: { projectId: 'proj_other', tenantId: 'other_tenant' }, privateToken: HARNESS_AUTHORIZATION_TOKEN }
+      ),
+      /ERR_REGISTRY_PROJECT_TENANT_MISMATCH/,
+      'Project record belonging to different tenant must fail closed'
+    );
+
+    // (a2) Prohibited mount rejection in job registration
+    assert.throws(
+      () => SERVER_JOB_REGISTRY.registerJob(
+        { jobId: 'bad_job_client' },
+        {
+          sessionProof: { tenantId: 'client', ownerId: testOwnerId, sessionTokenHash: testSessionTokenHash },
+          projectRecord: { projectId: 'project_bad_client', tenantId: 'client' },
+          privateToken: HARNESS_AUTHORIZATION_TOKEN
+        }
+      ),
       /ERR_TRUSTED_ROOT_PROHIBITED_MOUNT/,
       'Job registration colliding with client mount must fail closed'
     );
 
-    // (b) Physical workspace provisioning under server custody
-    const registeredJob = SERVER_JOB_REGISTRY.registerJob({
-      jobId: testJobId,
-      tenantId: testTenantId,
-      projectId: testProjectId,
-      ownerId: testOwnerId
-    });
+    // (b) Physical workspace provisioning under authenticated server custody
+    const registeredJob = SERVER_JOB_REGISTRY.registerJob(
+      { jobId: testJobId },
+      { sessionProof, projectRecord, privateToken: HARNESS_AUTHORIZATION_TOKEN }
+    );
     assert.strictEqual(registeredJob.status, 'PROVISIONED');
     assert.ok(fs.existsSync(registeredJob.scratch), 'Scratch workspace must be physically provisioned');
     assert.ok(fs.existsSync(registeredJob.input), 'Input workspace must be physically provisioned');
     assert.ok(fs.existsSync(registeredJob.output), 'Output workspace must be physically provisioned');
 
-    // (c) Fabricated job ID rejection
+    // (c) Mandatory Job & Session Context Enforcement in Production Adapter (R39 P0-3)
+    process.env.RECONSTRUCTION_ENTITLEMENT_SECRET = 'TEST_ONLY_MOCK_ENTITLEMENT_KEY_ENTROPY';
+    process.env.RECONSTRUCTION_ADAPTER_AUTHORIZED = '1';
+    const prodAdapterForJobCheck = new ReconstructionExecutionAdapter({
+      entitlementKey: 'TEST_ONLY_MOCK_ENTITLEMENT_KEY_ENTROPY'
+    });
+
+    const missingJobRes = prodAdapterForJobCheck.execute({
+      executable: path.resolve('colmap.exe'),
+      args: ['feature_extractor', '--database_path=' + path.join(registeredJob.scratch, 'db.db'), '--image_path=' + registeredJob.input]
+    });
+    assert.strictEqual(missingJobRes.errorCode, 'ERR_ADAPTER_MISSING_JOB_ID', 'Missing jobId must be rejected in production execute');
+
+    const missingSessRes = prodAdapterForJobCheck.execute({
+      executable: path.resolve('colmap.exe'),
+      jobId: testJobId,
+      args: ['feature_extractor', '--database_path=' + path.join(registeredJob.scratch, 'db.db'), '--image_path=' + registeredJob.input]
+    });
+    assert.strictEqual(missingSessRes.errorCode, 'ERR_ADAPTER_MISSING_SESSION_CONTEXT', 'Missing sessionContext must be rejected in production execute');
+
+    const missingProofRes = prodAdapterForJobCheck.execute({
+      executable: path.resolve('colmap.exe'),
+      jobId: testJobId,
+      sessionContext: {},
+      args: ['feature_extractor', '--database_path=' + path.join(registeredJob.scratch, 'db.db'), '--image_path=' + registeredJob.input]
+    });
+    assert.strictEqual(missingProofRes.errorCode, 'ERR_ADAPTER_MISSING_TENANCY_PROOF', 'Missing tenancy proof must be rejected in production execute');
+
+    const mismatchTenantRes = prodAdapterForJobCheck.execute({
+      executable: path.resolve('colmap.exe'),
+      jobId: testJobId,
+      sessionContext: { tenantId: 'attacker_tenant_intruder', ownerId: testOwnerId },
+      args: ['feature_extractor', '--database_path=' + path.join(registeredJob.scratch, 'db.db'), '--image_path=' + registeredJob.input]
+    });
+    assert.strictEqual(mismatchTenantRes.errorCode, 'ERR_ADAPTER_TENANT_MISMATCH', 'Cross-tenant session context must be rejected');
+
+    delete process.env.RECONSTRUCTION_ENTITLEMENT_SECRET;
+    delete process.env.RECONSTRUCTION_ADAPTER_AUTHORIZED;
+
+    // (d) Fabricated job ID rejection in test harness
     const unregJobRes = testHarnessAdapter.execute({
       executable: path.resolve('colmap.exe'),
       minVersion: '3.8.0',
       versionCheckOutput: 'COLMAP 3.8.0',
       mockRunner: () => ({ success: true }),
       jobId: 'fabricated_nonexistent_job_id',
-      sessionContext: { tenantId: testTenantId, ownerId: testOwnerId },
+      sessionContext: { tenantId: testTenantId, ownerId: testOwnerId, sessionTokenHash: testSessionTokenHash },
       args: ['feature_extractor', '--database_path=' + path.join(registeredJob.scratch, 'db.db'), '--image_path=' + registeredJob.input]
     });
     assert.strictEqual(unregJobRes.errorCode, 'ERR_ADAPTER_JOB_NOT_FOUND', 'Fabricated job ID must be rejected');
 
-    // (d) Missing session context rejection
-    const noSessionRes = testHarnessAdapter.execute({
-      executable: path.resolve('colmap.exe'),
-      minVersion: '3.8.0',
-      versionCheckOutput: 'COLMAP 3.8.0',
-      mockRunner: () => ({ success: true }),
-      jobId: testJobId,
-      sessionContext: null,
-      args: ['feature_extractor', '--database_path=' + path.join(registeredJob.scratch, 'db.db'), '--image_path=' + registeredJob.input]
-    });
-    assert.strictEqual(noSessionRes.errorCode, 'ERR_ADAPTER_SESSION_CONTEXT_REQUIRED', 'Missing session context must be rejected');
-
-    // (e) Cross-tenant job selection rejection (tenant mismatch)
-    const crossTenantRes = testHarnessAdapter.execute({
-      executable: path.resolve('colmap.exe'),
-      minVersion: '3.8.0',
-      versionCheckOutput: 'COLMAP 3.8.0',
-      mockRunner: () => ({ success: true }),
-      jobId: testJobId,
-      sessionContext: { tenantId: 'attacker_tenant_intruder', ownerId: testOwnerId },
-      args: ['feature_extractor', '--database_path=' + path.join(registeredJob.scratch, 'db.db'), '--image_path=' + registeredJob.input]
-    });
-    assert.strictEqual(crossTenantRes.errorCode, 'ERR_ADAPTER_TENANT_MISMATCH', 'Cross-tenant job selection must be rejected');
-
-    // (f) Unauthorized owner rejection
+    // (e) Unauthorized owner rejection
     const badOwnerRes = testHarnessAdapter.execute({
       executable: path.resolve('colmap.exe'),
       minVersion: '3.8.0',
       versionCheckOutput: 'COLMAP 3.8.0',
       mockRunner: () => ({ success: true }),
       jobId: testJobId,
-      sessionContext: { tenantId: testTenantId, ownerId: 'unauthorized_attacker_user' },
+      sessionContext: { tenantId: testTenantId, ownerId: 'unauthorized_attacker_user', sessionTokenHash: testSessionTokenHash },
       args: ['feature_extractor', '--database_path=' + path.join(registeredJob.scratch, 'db.db'), '--image_path=' + registeredJob.input]
     });
     assert.strictEqual(badOwnerRes.errorCode, 'ERR_ADAPTER_JOB_AUTHORIZATION_FAILED', 'Unauthorized owner must be rejected');
+
+    // (f) Static served roots zero overlap check (R39 P0-4)
+    assertNoStaticOverlap(SERVER_TRUSTED_WORKSPACE_BASE);
+    for (const sRoot of getServedStaticRoots()) {
+      const normS = path.resolve(sRoot).toLowerCase();
+      const normW = path.resolve(SERVER_TRUSTED_WORKSPACE_BASE).toLowerCase();
+      assert.ok(!normW.startsWith(normS) && !normS.startsWith(normW), `Workspace "${normW}" must not overlap static root "${normS}"`);
+    }
 
     // (g) Legitimate server-provisioned workspace execution
     const jobValidDb = path.join(registeredJob.scratch, 'database.db');
@@ -1872,7 +1982,7 @@ async function main() {
       versionCheckOutput: 'COLMAP 3.8.0',
       mockRunner: () => ({ success: true }),
       jobId: testJobId,
-      sessionContext: { tenantId: testTenantId, ownerId: testOwnerId },
+      sessionContext: { tenantId: testTenantId, ownerId: testOwnerId, sessionTokenHash: testSessionTokenHash },
       args: [
         'feature_extractor',
         `--database_path=${jobValidDb}`,
@@ -1884,17 +1994,27 @@ async function main() {
     assert.strictEqual(genuineJobRes.launchDescriptor.cwd, registeredJob.scratch, 'Working directory must be confined to scratch');
     assert.strictEqual(genuineJobRes.launchDescriptor.options.shell, false, 'Shell must be strictly false');
     assert.strictEqual(genuineJobRes.launchDescriptor.lifecycleSpecs.processTreeTermination, 'TREE_KILL_MANDATORY');
-    console.log('    - Server job registry & workspace binding: PASS (physical provisioning, tenant binding, and cwd isolation verified)');
+    console.log('    - Server job registry & workspace binding: PASS (authenticated registration, tenant binding, and cwd isolation verified)');
 
-    // 13. Owner-Decision Minimum Specification Verification (R38 P0-6)
+    // 13. Owner-Decision Document & Specification Verification (R38/R39 P0-6)
     assert.ok(OWNER_DECISION_MINIMUM_SPEC, 'OWNER_DECISION_MINIMUM_SPEC must be exported');
     assert.strictEqual(OWNER_DECISION_MINIMUM_SPEC.defaultGateStatus.OWNER_REVIEW_GATE, 'HOLD');
     assert.strictEqual(OWNER_DECISION_MINIMUM_SPEC.defaultGateStatus.ENGINEERING_HOLD, 'ACTIVE');
     assert.strictEqual(OWNER_DECISION_MINIMUM_SPEC.defaultGateStatus.ACTUAL_ENGINE_EXECUTION, 'NOT_VERIFIED');
     assert.strictEqual(OWNER_DECISION_MINIMUM_SPEC.defaultGateStatus.SPEND_ALLOCATION, 'ZERO_SPEND_DEFAULT');
     assert.strictEqual(OWNER_DECISION_MINIMUM_SPEC.decisionOptions.budgetAndLicensing.costBoundUsd, 0.00);
-    assert.ok(Object.isFrozen(OWNER_DECISION_MINIMUM_SPEC), 'OWNER_DECISION_MINIMUM_SPEC must be frozen');
-    console.log('    - Owner-decision minimum spec: PASS (bounded options, zero-spend default, and immutable HOLD confirmed)');
+
+    const decisionNotePath = path.join(REPO_ROOT, 'virtual-tradeshow-commercial-v1/production_artifacts/R39_OWNER_DECISION_NOTE.json');
+    assert.ok(fs.existsSync(decisionNotePath), 'R39_OWNER_DECISION_NOTE.json must exist');
+    const decisionNote = JSON.parse(fs.readFileSync(decisionNotePath, 'utf8'));
+    assert.strictEqual(decisionNote.status.OWNER_REVIEW_GATE, 'HOLD');
+    assert.strictEqual(decisionNote.status.ENGINEERING_HOLD, 'ACTIVE');
+    assert.strictEqual(decisionNote.status.SPEND_AUTHORIZED, false);
+    assert.strictEqual(decisionNote.defaultPolicy.monthlySpendLimitUsd, 0.0);
+    assert.ok(decisionNote.concreteProvisioningOption, 'Concrete isolated provisioning option must be detailed');
+    assert.ok(decisionNote.concreteProvisioningOption.hardwareCostModel, 'Itemized hardware cost model must exist');
+    assert.ok(decisionNote.concreteProvisioningOption.licenseAndProvenanceLedger, 'License and provenance ledger must exist');
+    console.log('    - Owner-decision minimum spec & decision note: PASS (bounded options, itemized hardware costs, zero-spend default)');
   });
 
   console.log('\n================================================================');
@@ -1911,7 +2031,7 @@ async function main() {
   const engineDiscoveryProbes = probeReconstructionEngines();
 
   const receipt = {
-    receiptSchemaVersion: 'R38_EXECUTION_RECEIPT_V1',
+    receiptSchemaVersion: 'R39_EXECUTION_RECEIPT_V1',
     executionTimestamps: {
       startTime: suiteStartTime,
       endTime: suiteEndTime,
@@ -1956,8 +2076,8 @@ async function main() {
     },
     executionBoundaryAudit: {
       trustedExecutionBoundary: 'CANONICAL_ABSOLUTE_PATH_AND_INFRASTRUCTURE_TRUST_POLICY',
-      trustedRootRegistry: 'SERVER_OWNED_IMMUTABLE_WORKSPACE_REGISTRY',
-      serverJobRegistry: 'PHYSICALLY_PROVISIONED_AND_TENANT_BOUND',
+      trustedRootRegistry: 'SERVER_PRIVATE_IMMUTABLE_WORKSPACE_REGISTRY',
+      serverJobRegistry: 'SESSION_BOUND_PHYSICALLY_PROVISIONED_CRYPTOGRAPHIC_ID',
       callerRootOverrideDefense: 'STRICTLY_REJECTED',
       siblingPrefixEscapeDefense: 'PATH_SEPARATOR_BOUNDARY_CHECK',
       mandatoryOptionsEnforcement: 'ENFORCED_PER_SUBCOMMAND_SCHEMA',
@@ -1978,7 +2098,9 @@ async function main() {
       versionProbeTruthfulness: 'CALLER_VERSION_STRING_VALIDATION_ONLY',
       mockTimeoutClassification: 'MOCK_TIMEOUT_NEGATIVE_TEST_ONLY',
       remoteHandshakeClassification: 'LOCAL_SPEC_VALIDATION_ONLY_NO_NETWORK',
-      ownerDecisionMinimumStatus: 'SPECIFIED_AWAITING_OWNER_AUTHORIZATION'
+      publicModuleTokenExposure: 'ZERO_EXPORT_VERIFIED',
+      workspaceStaticIsolation: 'VERIFIED_NON_OVERLAPPING',
+      ownerDecisionMinimumStatus: 'READ_ONLY_NOTE_ZERO_SPEND_DEFAULT'
     },
     engineDiscoveryProbes,
     operatingGates: {
@@ -1997,9 +2119,12 @@ async function main() {
       COMMERCIAL_REDISTRIBUTION_RIGHTS: 'REQUIRES_OWNER_ATTESTATION',
       LIVE_QA_REVOCATION: 'BLOCKED_PENDING_INDEPENDENT_CONTROL_PLANE',
       CAUSAL_LINEAGE_GATE_T18: 'NEGATIVE_CONTRACT_CHECK_ONLY',
-      TRUSTED_ROOT_AUTHORITY: 'SERVER_OWNED_IMMUTABLE_REGISTRY',
-      JOB_WORKSPACE_PROVISIONING: 'SERVER_BOUND_VERIFIED',
-      COMMAND_ARGV_VALIDATOR: 'MANDATORY_FAIL_CLOSED',
+      TRUSTED_ROOT_AUTHORITY: 'SERVER_PRIVATE_IMMUTABLE_REGISTRY',
+      JOB_WORKSPACE_PROVISIONING: 'AUTHENTICATED_SERVER_SESSION_BOUND',
+      COMMAND_ARGV_VALIDATOR: 'MANDATORY_FAIL_CLOSED_NO_PROBE_BYPASS',
+      PUBLIC_MODULE_TOKEN_EXPOSURE: 'ZERO_EXPORT_VERIFIED',
+      WORKSPACE_STATIC_ISOLATION: 'VERIFIED_NON_OVERLAPPING',
+      OWNER_DECISION_NOTE: 'READ_ONLY_BOUNDED_ZERO_SPEND_DEFAULT',
       ACTUAL_ENGINE_EXECUTION: 'NOT_VERIFIED',
       OWNER_REVIEW_GATE: 'HOLD',
       ENGINEERING_HOLD: 'ACTIVE',
@@ -2009,14 +2134,14 @@ async function main() {
 
   const receiptOutPath = path.join(
     REPO_ROOT,
-    'virtual-tradeshow-commercial-v1/production_artifacts/R38_TEST_EXECUTION_RECEIPT.json'
+    'virtual-tradeshow-commercial-v1/production_artifacts/R39_TEST_EXECUTION_RECEIPT.json'
   );
   fs.writeFileSync(receiptOutPath, JSON.stringify(receipt, null, 2), 'utf8');
   const savedReceiptBytes = fs.readFileSync(receiptOutPath);
   const receiptByteSha256 = crypto.createHash('sha256').update(savedReceiptBytes).digest('hex');
 
-  console.log('--- Final Execution Receipt (R38 Machine Verifiable) ---');
-  console.log(`  File:           virtual-tradeshow-commercial-v1/production_artifacts/R38_TEST_EXECUTION_RECEIPT.json`);
+  console.log('--- Final Execution Receipt (R39 Machine Verifiable) ---');
+  console.log(`  File:           virtual-tradeshow-commercial-v1/production_artifacts/R39_TEST_EXECUTION_RECEIPT.json`);
   console.log(`  Byte SHA-256:   ${receiptByteSha256}`);
   console.log(`  Tested Commit:  ${suiteCurrentHead}`);
   console.log(`  Expected Head:  ${expectedHead || '(none - unbound)'}`);

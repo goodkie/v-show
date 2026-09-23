@@ -1,0 +1,87 @@
+{
+  "documentVersion": "R39_OWNER_DECISION_NOTE_V1",
+  "generatedTimestamp": "2026-09-23T10:46:00Z",
+  "purpose": "Read-only decision note providing bounded hardware-hour estimates, licensed engine options, training data boundaries, data retention, and zero-spend default for Owner Review Gate.",
+  "status": {
+    "OWNER_REVIEW_GATE": "HOLD",
+    "ENGINEERING_HOLD": "ACTIVE",
+    "RECONSTRUCTION_UNAVAILABLE": "BLOCKED_ON_APPROVED_ENGINE",
+    "LIVE_QA_REVOCATION": "BLOCKED_PENDING_INDEPENDENT_CONTROL_PLANE",
+    "DESTRUCTIVE_GIT_REWRITE": "FORBIDDEN",
+    "ACTUAL_ENGINE_EXECUTION": "NOT_VERIFIED",
+    "NEW_3D_MODEL_GENERATION": "NOT_VERIFIED",
+    "SPEND_AUTHORIZED": false,
+    "DECISION_SELECTION": "NONE_PENDING_OWNER_DECISION"
+  },
+  "defaultPolicy": {
+    "name": "ZERO_SPEND_DEFAULT",
+    "monthlySpendLimitUsd": 0.0,
+    "perJobBudgetUsd": 0.0,
+    "provisioningAction": "FAIL_CLOSED_NO_EXECUTION",
+    "rationale": "In the absence of an explicit signed affirmative owner decision, zero cloud resources may be provisioned, zero third-party APIs called, and zero compute budget spent."
+  },
+  "concreteProvisioningOption": {
+    "id": "OPT-ISOLATED-DEDICATED-GPU",
+    "name": "Isolated Self-Hosted Container on Dedicated GPU Instance",
+    "classification": "RECOMMENDED_ISOLATED_PATH",
+    "architecture": "Ephemeral Docker container spun up on-demand; terminates immediately upon job completion with zero standing idle compute.",
+    "hardwareTarget": {
+      "gpu": "1x NVIDIA RTX 4090 (24GB VRAM) or NVIDIA A10G (24GB VRAM)",
+      "cpu": "4 vCPU minimum",
+      "ram": "32 GB RAM",
+      "disk": "50 GB ephemeral NVMe SSD"
+    },
+    "hardwareCostModel": {
+      "hourlyRateUsd": {
+        "onDemandRange": "$0.44 - $0.69 USD/hour",
+        "referenceProviders": [
+          "RunPod Secure Cloud (RTX 4090 @ $0.44/hr)",
+          "AWS EC2 g5.xlarge (A10G @ $1.006/hr on-demand, ~$0.40 spot)"
+        ]
+      },
+      "jobRuntimeEstimates": {
+        "sfmColmapMinutes": "3 - 5 minutes",
+        "gaussianSplattingMinutes": "7 - 10 minutes",
+        "spzPackagingMinutes": "< 1 minute",
+        "totalJobRuntimeMinutes": "10 - 15 minutes (0.17 - 0.25 GPU-hours)"
+      },
+      "estimatedCostPerReconstructionJobUsd": "$0.09 - $0.15 USD",
+      "standingMonthlyIdleCostUsd": "$0.00 USD (zero standing instances, container destroyed after job execution)"
+    },
+    "licenseAndProvenanceLedger": {
+      "sfmEngine": {
+        "name": "COLMAP",
+        "license": "BSD-3-Clause",
+        "commercialUsePermitted": true,
+        "provenance": "Open-source SfM by Johannes L. Schonberger; source compiled directly in container"
+      },
+      "gaussianSplattingEngine": {
+        "name": "gsplat / Nerfstudio",
+        "license": "Apache 2.0",
+        "commercialUsePermitted": true,
+        "provenance": "Open-source CUDA rasterization library maintained by Nerfstudio team; no proprietary 3DGS-inria non-commercial restrictions"
+      },
+      "modelWeights": {
+        "status": "ZERO_PRETRAINED_WEIGHTS_REQUIRED",
+        "explanation": "Gaussian splatting directly optimizes 3D Gaussians from multi-view camera inputs using gradient descent; zero pre-trained weights or foundational model licenses involved."
+      },
+      "preexistingBenchmarkAssets": {
+        "wiloBenchmark": "IDENTIFIED_SYNTHETIC_STUDIO_SOURCE",
+        "status": "REQUIRES_OWNER_ATTESTATION",
+        "restriction": "Strictly isolated from commercial distribution until owner provides affirmative intellectual property and redistribution attestation."
+      }
+    },
+    "dataAndRetentionBoundaries": {
+      "customerDataIsolation": "Customer multi-position images ingested solely into tenant-isolated ephemeral workspace.",
+      "telemetryAndTraining": "Zero customer data telemetry, zero sharing with third parties, zero training of foundation models.",
+      "retentionPolicy": "Scratch directory destroyed immediately upon pipeline completion or error via recursive directory wipe.",
+      "outputArtifacts": "Generated SPZ/PLY models stored strictly under customer tenant vault with authenticated cryptographic download tokens."
+    }
+  },
+  "affirmativeOwnerDecisionRequirements": [
+    "1. Explicit selection of reconstruction compute path (Isolated Container vs Managed Cloud vs Deferred).",
+    "2. Explicit signed authorization of monthly compute budget ceiling (e.g. $50/mo cap).",
+    "3. Affirmative intellectual property attestation for commercial redistribution of Wilo demo booth assets.",
+    "4. Written directive lifting OWNER_REVIEW_GATE=HOLD."
+  ]
+}
