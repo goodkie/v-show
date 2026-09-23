@@ -20,3 +20,8 @@
 - `LIVE_QA_REVOCATION=BLOCKED_PENDING_INDEPENDENT_CONTROL_PLANE`: No QA token revocation.
 - `DESTRUCTIVE_GIT_REWRITE=FORBIDDEN`: No force-push, no history rewriting.
 - These gates are the ONLY things that require explicit human authorization. Everything else runs autonomously.
+
+## 4. Completion Signal
+- **After every completed round of work** (tests pass + commit + push + Issue #4 report posted), display the following signal prominently at the end of the response:
+
+# ☎
