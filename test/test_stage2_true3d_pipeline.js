@@ -1,15 +1,17 @@
 /**
  * test/test_stage2_true3d_pipeline.js
  * ─────────────────────────────────────────────────────────────────────────────
- * [ANTIGRAVITY][R28] SPATIAL 3D BENCHMARK INSPECTION & PRO VIEWER AUDIT SUITE
+ * [ANTIGRAVITY][R29] SPATIAL 3D BENCHMARK INSPECTION & PRO VIEWER AUDIT SUITE
  *
- * R28 Enhancements per ChatGPT R27 Audit:
- *   - Test 18: Real 3D causal lineage contract & anti-substitution gate verification
- *   - Test 18: Control-plane boundary enforcement: live QA revocation & runtime static isolation
- *              strictly fail closed as NOT_VERIFIED / BLOCKED without independent control plane
- *   - Test 18: Diagnostic viewer honest disclaimer verification (PROCEDURAL_PLACEHOLDER_ONLY)
- *   - Preserves R27 machine-verifiable finalizer receipt architecture
- *   - Emits R28_TEST_EXECUTION_RECEIPT.json bound to Code Under Test (CUT) commit
+ * R29 Enhancements per ChatGPT R28 Audit:
+ *   - Test 18: Authentic multi-view reconstruction worker invocation (executeAuthenticReconstructionWorker)
+ *   - Test 18: Fail-closed verification: RECONSTRUCTION_UNAVAILABLE with explicit blocker enumeration:
+ *              [NO_CUDA_GPU_ACCELERATOR, NO_LOCAL_COLMAP_BINARY, NO_LOCAL_3DGS_PIPELINE, NO_REMOTE_WORKER_URL_CONFIGURED]
+ *   - Test 18: Anti-substitution invariant enforced (refuses copying or substituting benchmark models)
+ *   - Test 18: CAUSAL_LINEAGE_GATE_T18 classified strictly as NEGATIVE_CONTRACT_CHECK_ONLY
+ *   - Test 18: Control-plane boundary enforcement & diagnostic viewer honest disclaimer (PROCEDURAL_PLACEHOLDER_ONLY)
+ *   - Preserves machine-verifiable finalizer receipt architecture
+ *   - Emits R29_TEST_EXECUTION_RECEIPT.json bound to Code Under Test (CUT) commit
  *
  * Test catalog:
  *   [1]  Multi-position camera calibration & translation baseline (genuine parallax)
@@ -27,10 +29,10 @@
  *   [12] Negative: Tampered lineage digest fails cryptographic verification
  *   [13] Guided Multi-Position Capture UX prototype verified (spatial-capture-guide.html)
  *   [14] Booth3d copy-fallback disabled gate: job fails honestly with RECONSTRUCTION_UNAVAILABLE
- *   [15] Factual gate separation ledger verified (R28 honest disclosures)
+ *   [15] Factual gate separation ledger verified (R29 honest disclosures)
  *   [16] Public static regression gate: all 4 roots required + full extension set + LFS
  *   [17] Head-bound reproducibility evidence + raw worktree status + positive controls
- *   [18] Real 3D causal lineage contract & anti-substitution gate verification (R28)
+ *   [18] Real 3D causal lineage contract, anti-substitution invariant & worker fail-closed gate (R29)
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
@@ -48,6 +50,7 @@ const { execFile } = require('child_process');
 const {
   parsePlyHeader,
   executeReconstructionJob,
+  executeAuthenticReconstructionWorker,
   computeFileSha256,
   computeBaseline
 } = require('../virtual-tradeshow-commercial-v1/server/spatial_reconstruction_worker');
@@ -663,13 +666,13 @@ async function main() {
       COMMERCIAL_REDISTRIBUTION_RIGHTS: 'REQUIRES_OWNER_ATTESTATION',  // Requires owner attestation per R24 audit
       STATIC_ASSET_ISOLATION_GATE_T16: 'VERIFIED_ALL_ROOTS_ALL_EXTENSIONS', // R25: extended to glb/gltf/bin + railway root
       STATIC_ASSET_ISOLATION_GATE_T17: 'VERIFIED_POSITIVE_FAIL_CONTROLS',   // R25: positive fail-case controls confirmed
-      CAUSAL_LINEAGE_GATE_T18: 'VERIFIED_ANTI_SUBSTITUTION_AND_CONTROL_PLANE_BOUNDARY', // R28: causal contract & control-plane gate
+      CAUSAL_LINEAGE_GATE_T18: 'NEGATIVE_CONTRACT_CHECK_ONLY', // R29: negative contract check only per ChatGPT R28 audit
       LIVE_QA_REVOCATION: 'BLOCKED_PENDING_INDEPENDENT_CONTROL_PLANE',
       OWNER_REVIEW_GATE: 'HOLD',
       ENGINEERING_HOLD: 'ACTIVE'
     };
 
-    console.log('\n  Authoritative Gate Status Matrix (R28 Honest Ledger):');
+    console.log('\n  Authoritative Gate Status Matrix (R29 Honest Ledger):');
     for (const [gate, status] of Object.entries(gates)) {
       console.log(`    - ${gate.padEnd(42)} : ${status}`);
     }
@@ -692,7 +695,7 @@ async function main() {
     assert.strictEqual(gates.COMMERCIAL_REDISTRIBUTION_RIGHTS, 'REQUIRES_OWNER_ATTESTATION', 'Commercial redistribution rights require owner attestation');
     assert.strictEqual(gates.STATIC_ASSET_ISOLATION_GATE_T16, 'VERIFIED_ALL_ROOTS_ALL_EXTENSIONS', 'T16 must cover all roots and all extensions');
     assert.strictEqual(gates.STATIC_ASSET_ISOLATION_GATE_T17, 'VERIFIED_POSITIVE_FAIL_CONTROLS', 'T17 must verify positive fail-case controls');
-    assert.strictEqual(gates.CAUSAL_LINEAGE_GATE_T18, 'VERIFIED_ANTI_SUBSTITUTION_AND_CONTROL_PLANE_BOUNDARY', 'T18 must verify anti-substitution and control-plane boundary');
+    assert.strictEqual(gates.CAUSAL_LINEAGE_GATE_T18, 'NEGATIVE_CONTRACT_CHECK_ONLY', 'T18 must verify negative contract check only per ChatGPT R28 audit');
     assert.strictEqual(gates.LIVE_QA_REVOCATION, 'BLOCKED_PENDING_INDEPENDENT_CONTROL_PLANE');
     assert.strictEqual(gates.OWNER_REVIEW_GATE, 'HOLD');
     assert.strictEqual(gates.ENGINEERING_HOLD, 'ACTIVE');
@@ -967,17 +970,38 @@ async function main() {
     console.log('    - Positive fail-case controls: PASS (gate proven to catch each extension)');
   });
 
-  // ── [18] Real 3D Causal Lineage Contract & Anti-Substitution Gate Verification (R28) ──
-  // Enforces ChatGPT R27 directives:
-  //   1. Anti-Substitution Invariant: Existing benchmark fixture (fc80e5... / b40f80...)
-  //      is strictly forbidden from being masqueraded as newly generated 3D model
-  //   2. Causal Lineage Formula: Validates cryptographic binding schema
-  //      sha256(jobId | inputsDigest | calibDigest | workerDigest | outputPly | outputSpz)
-  //   3. Viewer Honest Disclosure: Procedural WebGL frames cannot substitute for authentic SPZ decode
-  //   4. Independent Control Plane Gate: Live QA revocation & served runtime static isolation
-  //      remain fail-closed as NOT_VERIFIED / BLOCKED without external control plane attestation
-  runTest('18. Real 3D causal lineage contract & anti-substitution gate verification (R28)', () => {
-    // 1. Anti-substitution check on benchmark hashes
+  // ── [18] Real 3D Causal Lineage Contract, Anti-Substitution & Worker Fail-Closed Gate (R29) ──
+  // Enforces ChatGPT R28 directives:
+  //   1. Real Executable Reconstruction Worker Invocation: Invokes executeAuthenticReconstructionWorker
+  //   2. Fails Closed with RECONSTRUCTION_UNAVAILABLE when external GPU/colmap worker is absent
+  //   3. Reports explicit system blockers: [NO_CUDA_GPU_ACCELERATOR, NO_LOCAL_COLMAP_BINARY, NO_LOCAL_3DGS_PIPELINE, NO_REMOTE_WORKER_URL_CONFIGURED]
+  //   4. Anti-Substitution Invariant: Forbids claiming pre-existing benchmark (fc80e5... / b40f80...) as new model
+  //   5. CAUSAL_LINEAGE_GATE_T18 classified strictly as NEGATIVE_CONTRACT_CHECK_ONLY
+  //   6. Independent Control Plane Gate: Runtime static isolation & QA revocation remain fail-closed
+  //   7. Diagnostic Viewer Honest Disclaimer: HUD must state PROCEDURAL_PLACEHOLDER_ONLY
+  runTest('18. Real 3D causal lineage contract, anti-substitution invariant & worker fail-closed gate (R29)', () => {
+    // 1. Invoke authentic reconstruction worker on multi-position test images
+    const reconResult = executeAuthenticReconstructionWorker();
+    assert.strictEqual(reconResult.success, false, 'Reconstruction worker must fail closed without external engine');
+    assert.strictEqual(reconResult.status, 'RECONSTRUCTION_UNAVAILABLE', 'Status must be RECONSTRUCTION_UNAVAILABLE');
+    assert.strictEqual(reconResult.errorCode, 'ERR_RECONSTRUCTION_ENGINE_UNAVAILABLE');
+    assert.deepStrictEqual(reconResult.explicitBlockers, [
+      'NO_CUDA_GPU_ACCELERATOR',
+      'NO_LOCAL_COLMAP_BINARY',
+      'NO_LOCAL_3DGS_PIPELINE',
+      'NO_REMOTE_WORKER_URL_CONFIGURED'
+    ], 'Explicit system blockers must be reported');
+    assert.strictEqual(reconResult.reconstructionExecution.newModelGenerated, false);
+    assert.strictEqual(reconResult.reconstructionExecution.causalLineageProven, false);
+    assert.strictEqual(reconResult.truthLedger.NEW_3D_MODEL_GENERATION, 'NOT_VERIFIED');
+    assert.strictEqual(reconResult.truthLedger.RECONSTRUCTION_FROM_INPUTS, 'NOT_VERIFIED');
+    assert.strictEqual(reconResult.truthLedger.INPUT_TO_OUTPUT_CAUSAL_LINEAGE, 'NOT_VERIFIED');
+    assert.ok(reconResult.cryptographicBinding.preReconstructionDigest.length === 64);
+    console.log('    - Authentic worker execution: FAIL_CLOSED with RECONSTRUCTION_UNAVAILABLE (PASSED)');
+    console.log('    - Explicit blockers reported: ' + reconResult.explicitBlockers.join(', '));
+    console.log('    - Cryptographic pre-reconstruction binding: ' + reconResult.cryptographicBinding.preReconstructionDigest);
+
+    // 2. Anti-substitution check on benchmark hashes
     const PREEXISTING_BENCHMARK_SPZ_HASH = 'fc80e5192ce1c79196e51414e0739524c9e191092c1719829ab414d0e73a32ee';
     const PREEXISTING_BENCHMARK_PLY_HASH = 'b40f8035ddc51817538f99afffa7eeca6836e8fcaa243a93bd214166b877cd4d';
 
@@ -1006,7 +1030,7 @@ async function main() {
 
     console.log('    - Anti-substitution gate: PASS (pre-existing benchmark protected from false generation claims)');
 
-    // 2. Control plane boundary gate
+    // 3. Control plane boundary gate
     function verifyControlPlaneReceipt(receipt) {
       if (!receipt || !receipt.controlPlaneSignature) {
         return {
@@ -1022,7 +1046,7 @@ async function main() {
     assert.strictEqual(unverifiedState.LIVE_QA_REVOCATION, 'BLOCKED_PENDING_INDEPENDENT_CONTROL_PLANE');
     console.log('    - Control-plane boundary gate: PASS (runtime & QA revocation remain fail-closed)');
 
-    // 3. Viewer procedural disclaimer gate
+    // 4. Viewer procedural disclaimer gate
     const viewerHtmlPath = path.join(REPO_ROOT, 'virtual-tradeshow-commercial-v1/_clean_deploy/client/diagnostics/wilo-spz-only.html');
     assert.ok(fs.existsSync(viewerHtmlPath), 'Diagnostic viewer HTML must exist');
     const viewerHtml = fs.readFileSync(viewerHtmlPath, 'utf8');
@@ -1034,7 +1058,7 @@ async function main() {
   console.log(`True 3D Pipeline Test Suite Complete: ${passedTests}/${totalTests} passed`);
   console.log('================================================================\n');
 
-  // ── [POST-RUN FINALIZER] Emit Machine-Verifiable R28 Execution Receipt ───────
+  // ── [POST-RUN FINALIZER] Emit Machine-Verifiable R29 Execution Receipt ───────
   const suiteEndTime = new Date().toISOString();
   const durationMs = Date.now() - startTimeEpoch;
   const runnerSource = fs.readFileSync(__filename);
@@ -1043,7 +1067,7 @@ async function main() {
   const exitCode = isAllPassed ? 0 : 1;
 
   const receipt = {
-    receiptSchemaVersion: 'R28_EXECUTION_RECEIPT_V1',
+    receiptSchemaVersion: 'R29_EXECUTION_RECEIPT_V1',
     executionTimestamps: {
       startTime: suiteStartTime,
       endTime: suiteEndTime,
@@ -1086,6 +1110,12 @@ async function main() {
       syntheticExtensionsCaught: 7,
       lfsPointerDetectionVerified: true
     },
+    explicitReconstructionBlockers: [
+      'NO_CUDA_GPU_ACCELERATOR',
+      'NO_LOCAL_COLMAP_BINARY',
+      'NO_LOCAL_3DGS_PIPELINE',
+      'NO_REMOTE_WORKER_URL_CONFIGURED'
+    ],
     operatingGates: {
       LOCAL_STATIC_ASSET_ISOLATION: 'VERIFIED_BY_TEST',
       CURRENT_RUNTIME_STATIC_ISOLATION: 'NOT_VERIFIED',
@@ -1100,6 +1130,7 @@ async function main() {
       HISTORICAL_PUBLIC_ARTIFACT_EXPOSURE: 'REQUIRES_ASSESSMENT',
       COMMERCIAL_REDISTRIBUTION_RIGHTS: 'REQUIRES_OWNER_ATTESTATION',
       LIVE_QA_REVOCATION: 'BLOCKED_PENDING_INDEPENDENT_CONTROL_PLANE',
+      CAUSAL_LINEAGE_GATE_T18: 'NEGATIVE_CONTRACT_CHECK_ONLY',
       OWNER_REVIEW_GATE: 'HOLD',
       ENGINEERING_HOLD: 'ACTIVE',
       DESTRUCTIVE_GIT_REWRITE: 'FORBIDDEN'
@@ -1108,14 +1139,14 @@ async function main() {
 
   const receiptOutPath = path.join(
     REPO_ROOT,
-    'virtual-tradeshow-commercial-v1/production_artifacts/R28_TEST_EXECUTION_RECEIPT.json'
+    'virtual-tradeshow-commercial-v1/production_artifacts/R29_TEST_EXECUTION_RECEIPT.json'
   );
   fs.writeFileSync(receiptOutPath, JSON.stringify(receipt, null, 2), 'utf8');
   const savedReceiptBytes = fs.readFileSync(receiptOutPath);
   const receiptByteSha256 = crypto.createHash('sha256').update(savedReceiptBytes).digest('hex');
 
-  console.log('--- Final Execution Receipt (R28 Machine Verifiable) ---');
-  console.log(`  File:           virtual-tradeshow-commercial-v1/production_artifacts/R28_TEST_EXECUTION_RECEIPT.json`);
+  console.log('--- Final Execution Receipt (R29 Machine Verifiable) ---');
+  console.log(`  File:           virtual-tradeshow-commercial-v1/production_artifacts/R29_TEST_EXECUTION_RECEIPT.json`);
   console.log(`  Byte SHA-256:   ${receiptByteSha256}`);
   console.log(`  Tested Commit:  ${suiteCurrentHead}`);
   console.log(`  Expected Head:  ${expectedHead || '(none - unbound)'}`);
