@@ -386,9 +386,41 @@ function compareSemver(v1, v2) {
   return p1.patch - p2.patch;
 }
 
-// Immutable approved binary allowlist (no caller override permitted)
+// Read-Only, Infrastructure-Owned Binary Trust Policy (R34)
+// Caller options, request payloads, or job configs cannot override this policy.
+const INFRASTRUCTURE_TRUST_POLICY = Object.freeze({
+  policyVersion: 'R34_INFRASTRUCTURE_POLICY_V1',
+  approvedTargets: Object.freeze({
+    colmap: Object.freeze({
+      canonicalBaseNames: Object.freeze(['colmap.exe', 'colmap']),
+      minVersion: '3.8.0',
+      permittedArgs: Object.freeze(['--help', 'feature_extractor', 'exhaustive_matcher', 'point_triangulator', '--version']),
+      vendor: 'COLMAP Community',
+      license: 'BSD-3-Clause',
+      get expectedSha256() { return process.env.COLMAP_BINARY_SHA256 || null; }
+    }),
+    nsTrain: Object.freeze({
+      canonicalBaseNames: Object.freeze(['ns-train.exe', 'ns-train']),
+      minVersion: '1.0.0',
+      permittedArgs: Object.freeze(['--help', 'nerfacto', 'splatfacto', '--version']),
+      vendor: 'Nerfstudio Team',
+      license: 'Apache-2.0',
+      get expectedSha256() { return process.env.NSTRAIN_BINARY_SHA256 || null; }
+    }),
+    gsplatTrain: Object.freeze({
+      canonicalBaseNames: Object.freeze(['gsplat_train', 'gsplat_train.exe']),
+      minVersion: '0.1.0',
+      permittedArgs: Object.freeze(['--help', '--version']),
+      vendor: 'Gsplat Community',
+      license: 'Apache-2.0',
+      get expectedSha256() { return process.env.GSPLAT_BINARY_SHA256 || null; }
+    })
+  })
+});
+
+// Immutable approved binary allowlist derived from infrastructure trust policy
 const APPROVED_RECONSTRUCTION_TARGETS = Object.freeze([
-  'colmap.exe', 'colmap', 'ns-train.exe', 'ns-train', 'gsplat_train'
+  'colmap.exe', 'colmap', 'ns-train.exe', 'ns-train', 'gsplat_train', 'gsplat_train.exe'
 ]);
 
 // Mandatory minimum versions for allowlisted binaries
@@ -397,48 +429,49 @@ const APPROVED_TARGET_MIN_VERSIONS = Object.freeze({
   'colmap': '3.8.0',
   'ns-train.exe': '1.0.0',
   'ns-train': '1.0.0',
-  'gsplat_train': '0.1.0'
+  'gsplat_train': '0.1.0',
+  'gsplat_train.exe': '0.1.0'
 });
 
 /**
  * Isolated Reconstruction Execution Adapter
  *
- * Strict execution boundary per ChatGPT Round 31/32/33 directives:
+ * Strict execution boundary per ChatGPT Round 31/32/33/34 directives:
  *   1. Zero Fallback Secrets: Rejects missing, trivial (<16 chars), or known placeholder secrets.
  *   2. Independent Secret Provisioning: Requires independently provisioned secrets from environment/vault.
- *   3. Isolated Mock Auth Provider: Only allowed in explicit test harness mode (`isTestMode === true && mockAuthProvider`)
- *      and strictly conditioned on server-side test environment authorization (NODE_ENV === 'test' or STAGE2_ALLOW_TEST_HARNESS_MOCKS === '1').
- *   4. Immutable Target Allowlist: Preapproved targets only; caller cannot expand or override allowlist.
+ *   3. Infrastructure-Owned Trust Policy: Binary paths, expected digests, and version floors are owned by
+ *      INFRASTRUCTURE_TRUST_POLICY; caller overrides (expectedBinaryHashes, allowlist, trustPolicy) are strictly rejected.
+ *   4. Isolated Mock Auth Provider: Only allowed in explicit test harness mode (`isTestMode === true && mockAuthProvider`)
+ *      and strictly conditioned on dual server-side test environment authorization (NODE_ENV === 'test' && STAGE2_ALLOW_TEST_HARNESS_MOCKS === '1').
  *   5. Canonical Absolute Paths: Executable must be specified by an absolute path; relative/bare paths rejected fail-closed.
  *   6. Symlink Rejection & Realpath Check: Traversal or symlinks in executable or parent directory rejected via fs.realpathSync.
- *   7. Mandatory SHA-256 Digest Binding: Mandatory expected SHA-256 digest binding; fails closed if expected hash missing or mismatched.
- *   8. Mandatory Numeric Semver Version Check: Non-mutating probe output strictly verified against approved minimum version.
+ *   7. Mandatory SHA-256 Digest Binding: Mandatory expected SHA-256 digest from infrastructure policy; fails closed if missing or mismatched.
+ *   8. Mandatory Numeric Semver Version Check: Non-mutating probe output strictly verified against approved minimum version floor.
  *   9. Remote Endpoint Guard: Requires HTTPS protocol and explicitly provisioned origins in SPARK_3DGS_ALLOWED_ORIGINS (no fallback origins).
- *      Classified strictly as LOCAL_SPEC_VALIDATION_ONLY.
+ *      Classified strictly as LOCAL_SPEC_VALIDATION_ONLY_NO_NETWORK.
  *  10. Process Lifecycle & Quotas: Enforces timeout quota labeled as MOCK_TIMEOUT_NEGATIVE_TEST_ONLY; temporary scratch cleaned up.
  *  11. Module Boundary: Prohibits mockRunner in production invocation (ERR_ADAPTER_MOCK_RUNNER_FORBIDDEN_IN_PRODUCTION).
  */
 class ReconstructionExecutionAdapter {
   constructor(options = {}) {
-    // 1. Immutable allowlist: caller cannot expand or override allowlist
-    this.allowlist = APPROVED_RECONSTRUCTION_TARGETS;
-    if (options.allowlist) {
-      if (!Array.isArray(options.allowlist)) {
-        throw new Error('ERR_ADAPTER_CALLER_ALLOWLIST_FORBIDDEN: Caller-supplied allowlist must be an array if provided');
-      }
-      for (const item of options.allowlist) {
-        if (!APPROVED_RECONSTRUCTION_TARGETS.includes(String(item).toLowerCase())) {
-          throw new Error(`ERR_ADAPTER_CALLER_ALLOWLIST_FORBIDDEN: Target "${item}" is not in approved allowlist`);
-        }
-      }
+    // 1. Immutable infrastructure trust policy: caller overrides strictly forbidden
+    if (options.allowlist !== undefined) {
+      throw new Error('ERR_ADAPTER_CALLER_ALLOWLIST_FORBIDDEN: Caller-supplied allowlist overrides are strictly forbidden; trust policy is infrastructure-owned');
+    }
+    if (options.expectedBinaryHashes !== undefined) {
+      throw new Error('ERR_ADAPTER_CALLER_TRUST_POLICY_OVERRIDE_FORBIDDEN: Caller-supplied binary hash overrides are strictly forbidden; trust policy is infrastructure-owned');
+    }
+    if (options.trustPolicy !== undefined) {
+      throw new Error('ERR_ADAPTER_CALLER_TRUST_POLICY_OVERRIDE_FORBIDDEN: Caller-supplied trust policy overrides are strictly forbidden');
     }
 
+    this.allowlist = APPROVED_RECONSTRUCTION_TARGETS;
+    this.trustPolicy = INFRASTRUCTURE_TRUST_POLICY;
     this.entitlementKey = options.entitlementKey || process.env.RECONSTRUCTION_ENTITLEMENT_KEY || null;
     this.timeoutMs = Number.isFinite(options.timeoutMs) ? options.timeoutMs : 30000;
-    this.expectedBinaryHashes = options.expectedBinaryHashes || {};
 
-    // 2. Mock mode strictly bounded to test environment
-    const envAllowsTestMode = process.env.NODE_ENV === 'test' || process.env.STAGE2_ALLOW_TEST_HARNESS_MOCKS === '1';
+    // 2. Mock mode strictly bounded to test environment with explicit dual-flag requirement
+    const envAllowsTestMode = (process.env.NODE_ENV === 'test' && process.env.STAGE2_ALLOW_TEST_HARNESS_MOCKS === '1');
     if (options.isTestMode && !envAllowsTestMode) {
       throw new Error('ERR_ADAPTER_MOCK_RUNNER_FORBIDDEN_IN_PRODUCTION: Test mode and mock runner injection forbidden without server-side test environment authorization');
     }
@@ -506,7 +539,7 @@ class ReconstructionExecutionAdapter {
       };
     }
 
-    // 3. Executable Validation & Integrity
+    // 3. Executable Validation & Integrity via INFRASTRUCTURE_TRUST_POLICY
     if (executable) {
       if (typeof executable !== 'string' || executable.trim().length === 0) {
         return {
@@ -528,11 +561,16 @@ class ReconstructionExecutionAdapter {
       }
 
       const baseName = path.basename(executable).toLowerCase();
-      if (!this.allowlist.map(a => a.toLowerCase()).includes(baseName)) {
+      // Locate policy entry in INFRASTRUCTURE_TRUST_POLICY
+      const policyEntry = Object.values(this.trustPolicy.approvedTargets).find(
+        target => target.canonicalBaseNames.map(b => b.toLowerCase()).includes(baseName)
+      );
+
+      if (!policyEntry) {
         return {
           success: false,
           errorCode: 'ERR_ADAPTER_DISALLOWED_TARGET',
-          message: `Executable target "${baseName}" is not on approved allowlist`,
+          message: `Executable target "${baseName}" is not on approved infrastructure trust policy`,
           failClosed: true
         };
       }
@@ -590,47 +628,49 @@ class ReconstructionExecutionAdapter {
         };
       }
 
-      // Mandatory expected hash check (in production or if binary exists)
-      const expectedHash = this.expectedBinaryHashes[baseName] || this.expectedBinaryHashes[executable];
+      // Mandatory expected hash check against infrastructure policy
+      const policyExpectedHash = policyEntry.expectedSha256;
       if (!this.isTestMode || !mockRunner) {
-        if (!expectedHash) {
+        if (!policyExpectedHash) {
           return {
             success: false,
             errorCode: 'ERR_ADAPTER_MANDATORY_HASH_MISSING',
-            message: `Mandatory expected SHA-256 digest missing for executable "${baseName}"`,
+            message: `Infrastructure trust policy does not have an approved SHA-256 digest for "${baseName}"`,
             failClosed: true
           };
         }
         const actualHash = computeFileSha256(executable);
-        if (actualHash !== expectedHash) {
+        if (actualHash !== policyExpectedHash) {
           return {
             success: false,
             errorCode: 'ERR_ADAPTER_BINARY_HASH_MISMATCH',
-            message: `Executable hash mismatch for "${baseName}"`,
+            message: `Executable hash mismatch for "${baseName}" against infrastructure policy`,
             failClosed: true
           };
         }
-      } else if (expectedHash && fileExists) {
+      } else if (policyExpectedHash && fileExists) {
         const actualHash = computeFileSha256(executable);
-        if (actualHash !== expectedHash) {
+        if (actualHash !== policyExpectedHash) {
           return {
             success: false,
             errorCode: 'ERR_ADAPTER_BINARY_HASH_MISMATCH',
-            message: `Executable hash mismatch for "${baseName}"`,
+            message: `Executable hash mismatch for "${baseName}" against infrastructure policy`,
             failClosed: true
           };
         }
       }
 
-      // Mandatory Version Check Guard using Numeric Semver
-      const targetMinVersion = minVersion || APPROVED_TARGET_MIN_VERSIONS[baseName];
-      if (!targetMinVersion) {
-        return {
-          success: false,
-          errorCode: 'ERR_ADAPTER_MIN_VERSION_UNSPECIFIED',
-          message: `Mandatory minimum version is not specified or approved for "${baseName}"`,
-          failClosed: true
-        };
+      // Mandatory Version Check Guard: floor is fixed by infrastructure policy
+      const requiredMinVersion = policyEntry.minVersion;
+      if (minVersion && minVersion !== requiredMinVersion) {
+        if (compareSemver(minVersion, requiredMinVersion) < 0) {
+          return {
+            success: false,
+            errorCode: 'ERR_ADAPTER_VERSION_FLOOR_DOWNGRADE_FORBIDDEN',
+            message: `Caller cannot lower minimum version below policy floor ${requiredMinVersion}`,
+            failClosed: true
+          };
+        }
       }
 
       if (!versionCheckOutput || typeof versionCheckOutput !== 'string' || versionCheckOutput.trim().length === 0) {
@@ -643,12 +683,12 @@ class ReconstructionExecutionAdapter {
       }
 
       const parsedDetected = parseSemver(versionCheckOutput);
-      const parsedMin = parseSemver(targetMinVersion);
+      const parsedMin = parseSemver(requiredMinVersion);
       if (!parsedDetected || !parsedMin) {
         return {
           success: false,
           errorCode: 'ERR_ADAPTER_INVALID_VERSION_FORMAT',
-          message: 'Failed to parse numeric semver from version output or minVersion',
+          message: 'Failed to parse numeric semver from version output or policy minVersion',
           failClosed: true
         };
       }
@@ -771,6 +811,7 @@ class ReconstructionExecutionAdapter {
             success: false,
             errorCode: mockResult.errorCode || 'ERR_ADAPTER_EXECUTION_FAILED',
             message: mockResult.message || 'Execution runner failed',
+            versionValidationClassification: versionCheckOutput ? 'CALLER_VERSION_STRING_VALIDATION_ONLY' : undefined,
             failClosed: true,
             scratchCleaned: true
           };
@@ -781,6 +822,7 @@ class ReconstructionExecutionAdapter {
         success: false,
         errorCode: 'ERR_RECONSTRUCTION_ENGINE_NOT_CONFIGURED',
         message: 'No authorized, capable reconstruction engine is provisioned in the current environment',
+        versionValidationClassification: versionCheckOutput ? 'CALLER_VERSION_STRING_VALIDATION_ONLY' : undefined,
         remoteHandshakeStatus: commandConfig.remoteUrl ? 'LOCAL_SPEC_VALIDATION_ONLY_NO_NETWORK' : undefined,
         failClosed: true,
         scratchCleaned: true
@@ -813,6 +855,14 @@ function executeAuthenticReconstructionWorker(options = {}) {
   const outputDir = options.outputDir;
   const jobId = options.jobId || `recon-job-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
   const config = options.config || { qualityTier: 'BOOTH_HIGH', iterations: 30000 };
+
+  // Caller Injection Defense: In non-test paths, caller cannot inject adapter, probes, or mock shortcuts
+  const envAllowsTest = (process.env.NODE_ENV === 'test' && process.env.STAGE2_ALLOW_TEST_HARNESS_MOCKS === '1');
+  if (!envAllowsTest) {
+    if (options.executionAdapter || options.engineProbes || options.adapterOptions || options.commandConfig?.mockRunner) {
+      throw new Error('ERR_WORKER_CALLER_INJECTION_FORBIDDEN: Caller-injected adapter, probes, or mockRunner strictly forbidden in production worker paths');
+    }
+  }
 
   // 1. Audit Source Views
   if (!fs.existsSync(imageDir)) {
@@ -933,17 +983,9 @@ function executeAuthenticReconstructionWorker(options = {}) {
 
   // If runnable & authorized & capable engine is claimed, route through isolated execution adapter
   // In production paths, caller payload options cannot inject test mocks
-  const envAllowsTest = process.env.NODE_ENV === 'test' || process.env.STAGE2_ALLOW_TEST_HARNESS_MOCKS === '1';
-  const safeAdapterOptions = { ...options.adapterOptions };
-  if (!envAllowsTest) {
-    delete safeAdapterOptions.isTestMode;
-    delete safeAdapterOptions.mockAuthProvider;
-  }
-  const adapter = options.executionAdapter || new ReconstructionExecutionAdapter(safeAdapterOptions);
-  const safeCommandConfig = { jobId, inputsDigest, calibSha, ...options.commandConfig };
-  if (!envAllowsTest) {
-    delete safeCommandConfig.mockRunner;
-  }
+  const safeAdapterOptions = envAllowsTest ? { ...options.adapterOptions } : {};
+  const adapter = envAllowsTest ? (options.executionAdapter || new ReconstructionExecutionAdapter(safeAdapterOptions)) : new ReconstructionExecutionAdapter({});
+  const safeCommandConfig = { jobId, inputsDigest, calibSha, ...(envAllowsTest ? options.commandConfig : {}) };
   return adapter.execute(safeCommandConfig);
 }
 
@@ -1157,6 +1199,7 @@ module.exports = {
   isPlaceholderOrTrivialSecret,
   APPROVED_RECONSTRUCTION_TARGETS,
   APPROVED_TARGET_MIN_VERSIONS,
+  INFRASTRUCTURE_TRUST_POLICY,
   TYPE_SIZES
 };
 

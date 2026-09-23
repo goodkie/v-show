@@ -68,7 +68,8 @@ const {
   compareSemver,
   isPlaceholderOrTrivialSecret,
   APPROVED_RECONSTRUCTION_TARGETS,
-  APPROVED_TARGET_MIN_VERSIONS
+  APPROVED_TARGET_MIN_VERSIONS,
+  INFRASTRUCTURE_TRUST_POLICY
 } = require('../virtual-tradeshow-commercial-v1/server/spatial_reconstruction_worker');
 
 const REPO_ROOT = path.resolve(__dirname, '..');
@@ -1004,7 +1005,7 @@ async function main() {
   //   7. Pre-Reconstruction Exact Hash Binding & Anti-Substitution:
   //      Canonically incorporates probesDigest in preReconstructionDigest.
   //      Anti-substitution invariant enforced (refuses claiming pre-existing benchmark as new model).
-  runTest('18. Trusted execution boundary, mandatory digest binding, numeric semver & isolated mock guards (R33)', () => {
+  runTest('18. Trusted execution boundary, mandatory digest binding, numeric semver & isolated mock guards (R34)', () => {
     // 1. Audit active refined capability probes
     const probes = probeReconstructionEngines();
     assert.ok(probes.LOCAL_GPU_ACCELERATOR, 'LOCAL_GPU_ACCELERATOR probe must exist');
@@ -1152,6 +1153,46 @@ async function main() {
       'Caller-supplied allowlist override with unapproved targets must be rejected'
     );
 
+    // Caller cannot supply expectedBinaryHashes override (trust policy is infrastructure-owned)
+    assert.throws(
+      () => new ReconstructionExecutionAdapter({ isTestMode: true, mockAuthProvider, expectedBinaryHashes: { 'colmap.exe': '0000000000000000000000000000000000000000000000000000000000000000' } }),
+      /ERR_ADAPTER_CALLER_TRUST_POLICY_OVERRIDE_FORBIDDEN/,
+      'Caller-supplied binary hash overrides must be rejected'
+    );
+
+    // Caller cannot supply trustPolicy override
+    assert.throws(
+      () => new ReconstructionExecutionAdapter({ isTestMode: true, mockAuthProvider, trustPolicy: {} }),
+      /ERR_ADAPTER_CALLER_TRUST_POLICY_OVERRIDE_FORBIDDEN/,
+      'Caller-supplied trust policy overrides must be rejected'
+    );
+
+    // Caller injection defense in executeAuthenticReconstructionWorker outside test harness
+    delete process.env.NODE_ENV;
+    delete process.env.STAGE2_ALLOW_TEST_HARNESS_MOCKS;
+    assert.throws(
+      () => executeAuthenticReconstructionWorker({ executionAdapter: {} }),
+      /ERR_WORKER_CALLER_INJECTION_FORBIDDEN/,
+      'Caller-injected executionAdapter must be forbidden in production paths'
+    );
+    assert.throws(
+      () => executeAuthenticReconstructionWorker({ engineProbes: {} }),
+      /ERR_WORKER_CALLER_INJECTION_FORBIDDEN/,
+      'Caller-injected engineProbes must be forbidden in production paths'
+    );
+    assert.throws(
+      () => executeAuthenticReconstructionWorker({ adapterOptions: {} }),
+      /ERR_WORKER_CALLER_INJECTION_FORBIDDEN/,
+      'Caller-injected adapterOptions must be forbidden in production paths'
+    );
+    assert.throws(
+      () => executeAuthenticReconstructionWorker({ commandConfig: { mockRunner: () => {} } }),
+      /ERR_WORKER_CALLER_INJECTION_FORBIDDEN/,
+      'Caller-injected mockRunner must be forbidden in production paths'
+    );
+    process.env.NODE_ENV = 'test';
+    process.env.STAGE2_ALLOW_TEST_HARNESS_MOCKS = '1';
+
     // Production mode rejects mockRunner injection
     const prodAdapterWithMockRunner = new ReconstructionExecutionAdapter({
       isTestMode: false,
@@ -1217,6 +1258,16 @@ async function main() {
     assert.strictEqual(semverOldRes.success, false);
     assert.strictEqual(semverOldRes.errorCode, 'ERR_ADAPTER_INCOMPATIBLE_VERSION');
 
+    // 6e2. Caller cannot downgrade minVersion below policy floor
+    const downgradeRes = testHarnessAdapter.execute({
+      executable: path.resolve('colmap.exe'),
+      minVersion: '3.0.0',
+      versionCheckOutput: 'COLMAP 3.8.0',
+      mockRunner: () => ({ success: true })
+    });
+    assert.strictEqual(downgradeRes.success, false);
+    assert.strictEqual(downgradeRes.errorCode, 'ERR_ADAPTER_VERSION_FLOOR_DOWNGRADE_FORBIDDEN');
+
     // 6f. Garbled version format
     const semverGarbledRes = testHarnessAdapter.execute({
       executable: path.resolve('colmap.exe'),
@@ -1235,11 +1286,13 @@ async function main() {
       mockRunner: () => ({ success: false, errorCode: 'ERR_SFM_PIPELINE_FAILED', message: 'COLMAP point triangulation failed' })
     });
     assert.strictEqual(semverOkRes.errorCode, 'ERR_SFM_PIPELINE_FAILED', 'Semver 3.10 >= 3.8 must pass version guard and proceed to runner');
+    assert.strictEqual(semverOkRes.versionValidationClassification, 'CALLER_VERSION_STRING_VALIDATION_ONLY');
 
-    // 6h. Mandatory expected SHA-256 missing in non-mock / production mode
+    // 6h. Mandatory expected SHA-256 missing in non-mock / production mode when unprovisioned in policy
     const dummyExe = path.join(os.tmpdir(), 'colmap.exe');
     fs.writeFileSync(dummyExe, 'dummy binary content for test');
     try {
+      delete process.env.COLMAP_BINARY_SHA256;
       const prodAdapterNoHash = new ReconstructionExecutionAdapter({
         isTestMode: false,
         entitlementKey: 'TEST_ONLY_MOCK_ENTITLEMENT_KEY_ENTROPY'
@@ -1252,24 +1305,25 @@ async function main() {
       });
       assert.strictEqual(missingHashRes.errorCode, 'ERR_ADAPTER_MANDATORY_HASH_MISSING');
 
-      // 6i. Binary hash mismatch in production mode
-      const prodAdapterWithBadHash = new ReconstructionExecutionAdapter({
+      // 6i. Binary hash mismatch against infrastructure trust policy
+      process.env.COLMAP_BINARY_SHA256 = '0000000000000000000000000000000000000000000000000000000000000000';
+      const prodAdapterWithPolicyHash = new ReconstructionExecutionAdapter({
         isTestMode: false,
-        entitlementKey: 'TEST_ONLY_MOCK_ENTITLEMENT_KEY_ENTROPY',
-        expectedBinaryHashes: { 'colmap.exe': '0000000000000000000000000000000000000000000000000000000000000000' }
+        entitlementKey: 'TEST_ONLY_MOCK_ENTITLEMENT_KEY_ENTROPY'
       });
-      const mismatchHashRes = prodAdapterWithBadHash.execute({
+      const mismatchHashRes = prodAdapterWithPolicyHash.execute({
         executable: dummyExe,
         versionCheckOutput: 'COLMAP 3.8.0'
       });
       assert.strictEqual(mismatchHashRes.errorCode, 'ERR_ADAPTER_BINARY_HASH_MISMATCH');
+      delete process.env.COLMAP_BINARY_SHA256;
       delete process.env.RECONSTRUCTION_ENTITLEMENT_SECRET;
       delete process.env.RECONSTRUCTION_ADAPTER_AUTHORIZED;
     } finally {
       try { fs.unlinkSync(dummyExe); } catch (_) {}
     }
 
-    console.log('    - Allowlist & semver controls: PASS (disallowed target, non-absolute path, invalid path, semver 3.6 rejected, 3.10 accepted, hash enforced)');
+    console.log('    - Allowlist & semver controls: PASS (disallowed target, non-absolute path, invalid path, semver 3.6 rejected, 3.10 accepted, hash enforced, caller downgrade rejected)');
 
     // 7. Remote Worker Origin & Protocol Controls
     // 7a. Insecure HTTP protocol rejected
@@ -1403,7 +1457,7 @@ async function main() {
   console.log(`True 3D Pipeline Test Suite Complete: ${passedTests}/${totalTests} passed`);
   console.log('================================================================\n');
 
-  // ── [POST-RUN FINALIZER] Emit Machine-Verifiable R33 Execution Receipt ───────
+  // ── [POST-RUN FINALIZER] Emit Machine-Verifiable R34 Execution Receipt ───────
   const suiteEndTime = new Date().toISOString();
   const durationMs = Date.now() - startTimeEpoch;
   const runnerSource = fs.readFileSync(__filename);
@@ -1413,7 +1467,7 @@ async function main() {
   const engineDiscoveryProbes = probeReconstructionEngines();
 
   const receipt = {
-    receiptSchemaVersion: 'R33_EXECUTION_RECEIPT_V1',
+    receiptSchemaVersion: 'R34_EXECUTION_RECEIPT_V1',
     executionTimestamps: {
       startTime: suiteStartTime,
       endTime: suiteEndTime,
@@ -1457,10 +1511,14 @@ async function main() {
       lfsPointerDetectionVerified: true
     },
     executionBoundaryAudit: {
-      trustedExecutionBoundary: 'CANONICAL_ABSOLUTE_PATH_AND_MANDATORY_SHA256',
+      trustedExecutionBoundary: 'CANONICAL_ABSOLUTE_PATH_AND_INFRASTRUCTURE_TRUST_POLICY',
       callerAllowlistOverride: 'FORBIDDEN',
+      callerBinaryHashOverride: 'FORBIDDEN',
+      callerTrustPolicyOverride: 'FORBIDDEN',
+      callerWorkerInjectionDefense: 'FORBIDDEN_IN_PRODUCTION',
       symlinkResolution: 'REJECTED_VIA_REALPATH',
-      semverComparisonModel: 'NUMERIC_COMPONENT_ORDERING',
+      semverComparisonModel: 'NUMERIC_COMPONENT_ORDERING_WITH_FIXED_FLOOR',
+      versionProbeTruthfulness: 'CALLER_VERSION_STRING_VALIDATION_ONLY',
       mockTimeoutClassification: 'MOCK_TIMEOUT_NEGATIVE_TEST_ONLY',
       remoteHandshakeClassification: 'LOCAL_SPEC_VALIDATION_ONLY_NO_NETWORK'
     },
@@ -1488,14 +1546,14 @@ async function main() {
 
   const receiptOutPath = path.join(
     REPO_ROOT,
-    'virtual-tradeshow-commercial-v1/production_artifacts/R33_TEST_EXECUTION_RECEIPT.json'
+    'virtual-tradeshow-commercial-v1/production_artifacts/R34_TEST_EXECUTION_RECEIPT.json'
   );
   fs.writeFileSync(receiptOutPath, JSON.stringify(receipt, null, 2), 'utf8');
   const savedReceiptBytes = fs.readFileSync(receiptOutPath);
   const receiptByteSha256 = crypto.createHash('sha256').update(savedReceiptBytes).digest('hex');
 
-  console.log('--- Final Execution Receipt (R33 Machine Verifiable) ---');
-  console.log(`  File:           virtual-tradeshow-commercial-v1/production_artifacts/R33_TEST_EXECUTION_RECEIPT.json`);
+  console.log('--- Final Execution Receipt (R34 Machine Verifiable) ---');
+  console.log(`  File:           virtual-tradeshow-commercial-v1/production_artifacts/R34_TEST_EXECUTION_RECEIPT.json`);
   console.log(`  Byte SHA-256:   ${receiptByteSha256}`);
   console.log(`  Tested Commit:  ${suiteCurrentHead}`);
   console.log(`  Expected Head:  ${expectedHead || '(none - unbound)'}`);
