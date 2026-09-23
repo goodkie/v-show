@@ -2574,8 +2574,9 @@ async function main() {
         childReg.stderr.on('data', d => regErr += d.toString());
         childRec.stderr.on('data', d => recErr += d.toString());
 
-        const exitA = await new Promise(r => childReg.on('close', r));
-        const exitB = await new Promise(r => childRec.on('close', r));
+        const pExitA = new Promise(r => childReg.on('close', r));
+        const pExitB = new Promise(r => childRec.on('close', r));
+        const [exitA, exitB] = await Promise.all([pExitA, pExitB]);
 
         if (exitA !== 0 || exitB !== 0) {
           console.error('Exit codes:', exitA, exitB, 'Errors:', regErr, recErr);
