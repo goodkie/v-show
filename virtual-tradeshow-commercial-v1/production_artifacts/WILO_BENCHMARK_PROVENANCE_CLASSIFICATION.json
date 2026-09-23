@@ -41,8 +41,9 @@
     }
   },
   "securityAndGovernanceEvaluation": {
-    "CURRENT_RUNTIME_STATIC_ISOLATION": "VERIFIED_BY_TEST",
-    "runtimeDetails": "Express server model route mounted ahead of static middleware; unauthenticated requests receive 401; cross-tenant requests receive 403; model files stored strictly in private directories; static route bypass blocked; Test 16 confirms zero 3D models or LFS pointers in client/assets",
+    "LOCAL_STATIC_ASSET_ISOLATION": "VERIFIED_BY_TEST",
+    "CURRENT_RUNTIME_STATIC_ISOLATION": "NOT_VERIFIED",
+    "runtimeDetails": "Local filesystem and Git-tracked tree test confirms zero 3D models or LFS pointers across all 4 client/assets and deploy roots (LOCAL_STATIC_ASSET_ISOLATION=VERIFIED_BY_TEST). Remote served Railway runtime static isolation is classified NOT_VERIFIED pending sanitized served-runtime mapping receipt.",
     "HISTORICAL_PUBLIC_ARTIFACT_EXPOSURE": "REQUIRES_ASSESSMENT",
     "historicalDetails": "Historical commit bdd23c9... on PR #5 contains Git-LFS pointer under client/assets/demo/wilo/models/ with same SHA (fc80e5...). Git/LFS history retains historical object pointers. Destructive Git history rewriting is strictly prohibited without explicit repository owner authorization.",
     "COMMERCIAL_REDISTRIBUTION_RIGHTS": "REQUIRES_OWNER_ATTESTATION",
