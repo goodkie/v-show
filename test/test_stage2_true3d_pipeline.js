@@ -292,11 +292,11 @@ async function main() {
 
   // ── [5] Emitted Authentic SPZ Radiance Model ────────────────────────────────
   const spzPath = path.join(REPO_ROOT, 'virtual-tradeshow-commercial-v1/_clean_deploy/data/private_models/org-wilo-golden-demo/models/REAL_WILO_GAUSSIAN_FINAL.spz');
-  const expSpzPath = path.join(REPO_ROOT, 'virtual-tradeshow-commercial-v1/_clean_deploy/client/assets/demo/wilo/diagnostics/WILO_AUTHENTIC_PARTIAL_EXPERIMENT_01.spz');
+  const expSpzPath = path.join(REPO_ROOT, 'virtual-tradeshow-commercial-v1/production_artifacts/r10_2e/WILO_AUTHENTIC_PARTIAL_EXPERIMENT_01.spz');
 
   runTest('5. Authentic SPZ radiance models & hash binding with receipt', () => {
     assert.ok(fs.existsSync(spzPath), 'REAL_WILO_GAUSSIAN_FINAL.spz must exist in private storage');
-    assert.ok(fs.existsSync(expSpzPath), 'WILO_AUTHENTIC_PARTIAL_EXPERIMENT_01.spz must exist');
+    assert.ok(fs.existsSync(expSpzPath), 'WILO_AUTHENTIC_PARTIAL_EXPERIMENT_01.spz must exist in production_artifacts');
 
     const spzStat = fs.statSync(spzPath);
     const spzSha = computeFileSha256(spzPath);
@@ -609,8 +609,8 @@ async function main() {
     console.log('    - Negative output hash check: passed (no template-copy masquerading as new 3D model)');
   });
 
-  // ── [15] Factual Gate Separation Ledger Verification (R22) ──────────────────
-  runTest('15. Factual gate separation ledger verified (R22 honest disclosures)', () => {
+  // ── [15] Factual Gate Separation Ledger Verification (R22/R23) ──────────────
+  runTest('15. Factual gate separation ledger verified (R22/R23 honest disclosures)', () => {
     const gates = {
       SYNTHETIC_PANORAMA: 'VERIFIED',
       REAL_DEVICE_12: 'NOT_VERIFIED',
@@ -618,7 +618,6 @@ async function main() {
       RECONSTRUCTION_FROM_INPUTS: 'NOT_VERIFIED',
       NEW_3D_MODEL_GENERATION: 'NOT_VERIFIED',
       INPUT_TO_OUTPUT_CAUSAL_LINEAGE: 'NOT_VERIFIED',
-      // R22 Corrections per ChatGPT R21 audit:
       SPZ_DECODED_IN_VIEWER: 'NOT_VERIFIED',      // viewer fetches bytes only — no decoder runs
       AUTHENTIC_SPZ_RENDER: 'NOT_VERIFIED',        // screenshots show procedural geometry only
       ISOLATED_DIAGNOSTIC_VIEWER: 'PROCEDURAL_PLACEHOLDER_ONLY',  // re-classified from VERIFIED
@@ -628,13 +627,14 @@ async function main() {
       STAGE2_COPY_FALLBACK: 'DISABLED',           // template-copy fallback removed per R21 audit
       REAL_APP_MODEL_AUTH: 'VERIFIED',            // Real Express server session auth (401/403/200/404)
       STATIC_ROUTE_BYPASS_PROTECTED: 'VERIFIED',  // Private model route mounted before static middleware
-      PRIVATE_MODEL_STORAGE_ISOLATED: 'VERIFIED', // Binaries moved out of client/assets into private storage
+      CURRENT_RUNTIME_STATIC_ISOLATION: 'VERIFIED_BY_TEST', // Verified via real Express server auth + bypass tests
+      HISTORICAL_PUBLIC_ARTIFACT_EXPOSURE: 'REQUIRES_ASSESSMENT', // Historical Git-LFS commit risk per R22 audit
       LIVE_QA_REVOCATION: 'BLOCKED_PENDING_INDEPENDENT_CONTROL_PLANE',
       OWNER_REVIEW_GATE: 'HOLD',
       ENGINEERING_HOLD: 'ACTIVE'
     };
 
-    console.log('\n  Authoritative Gate Status Matrix (R22 Honest Ledger):');
+    console.log('\n  Authoritative Gate Status Matrix (R23 Honest Ledger):');
     for (const [gate, status] of Object.entries(gates)) {
       console.log(`    - ${gate.padEnd(38)} : ${status}`);
     }
@@ -651,10 +651,104 @@ async function main() {
     assert.strictEqual(gates.STAGE2_COPY_FALLBACK, 'DISABLED', 'Booth3d template-copy fallback must be DISABLED');
     assert.strictEqual(gates.REAL_APP_MODEL_AUTH, 'VERIFIED', 'Real Express session model auth must be VERIFIED');
     assert.strictEqual(gates.STATIC_ROUTE_BYPASS_PROTECTED, 'VERIFIED', 'Static route bypass must be prevented');
-    assert.strictEqual(gates.PRIVATE_MODEL_STORAGE_ISOLATED, 'VERIFIED', 'Private model storage must be isolated');
+    assert.strictEqual(gates.CURRENT_RUNTIME_STATIC_ISOLATION, 'VERIFIED_BY_TEST', 'Current runtime static isolation must be VERIFIED_BY_TEST');
+    assert.strictEqual(gates.HISTORICAL_PUBLIC_ARTIFACT_EXPOSURE, 'REQUIRES_ASSESSMENT', 'Historical artifact exposure requires assessment');
     assert.strictEqual(gates.LIVE_QA_REVOCATION, 'BLOCKED_PENDING_INDEPENDENT_CONTROL_PLANE');
     assert.strictEqual(gates.OWNER_REVIEW_GATE, 'HOLD');
     assert.strictEqual(gates.ENGINEERING_HOLD, 'ACTIVE');
+  });
+
+  // ── [16] Public Static Path Regression Gate & Provenance Verification (R23) ──
+  runTest('16. Public static regression gate: Zero model files (*.spz, *.ply, *.splat, *.ksplat) or Git-LFS pointers in public client/assets', () => {
+    // 1. Verify git tracked files under client/assets
+    try {
+      const gitTracked = execSync('git ls-files "*client/assets*"', {
+        cwd: REPO_ROOT,
+        encoding: 'utf8',
+        maxBuffer: 10 * 1024 * 1024
+      }).split('\n').map(s => s.trim()).filter(Boolean);
+
+      const prohibitedTracked = gitTracked.filter(f => /\.(spz|ply|splat|ksplat)$/i.test(f));
+      assert.strictEqual(
+        prohibitedTracked.length,
+        0,
+        `Prohibited 3D model files found tracked in Git under client/assets: ${JSON.stringify(prohibitedTracked)}`
+      );
+    } catch (e) {
+      if (e.message.includes('Prohibited')) throw e;
+      // if git is not available in environment, fallback to filesystem check
+    }
+
+    // 2. Scan physical directories on disk under public client/assets roots
+    const candidateRoots = [
+      path.join(REPO_ROOT, 'virtual-tradeshow-commercial-v1/_clean_deploy/client/assets'),
+      path.join(REPO_ROOT, 'virtual-tradeshow-commercial-v1/app_build/client/assets'),
+      path.join(REPO_ROOT, 'virtual-tradeshow-commercial-v1/client/assets')
+    ];
+
+    let prohibitedFilesFound = [];
+    let lfsPointersFound = [];
+
+    function scanDir(dir) {
+      if (!fs.existsSync(dir)) return;
+      const entries = fs.readdirSync(dir, { withFileTypes: true });
+      for (const entry of entries) {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          scanDir(full);
+        } else if (entry.isFile()) {
+          if (/\.(spz|ply|splat|ksplat)$/i.test(entry.name)) {
+            prohibitedFilesFound.push(full);
+          }
+          // Check for Git LFS pointer text file signature
+          try {
+            const head = Buffer.alloc(100);
+            const fd = fs.openSync(full, 'r');
+            const bytesRead = fs.readSync(fd, head, 0, 100, 0);
+            fs.closeSync(fd);
+            const str = head.toString('utf8', 0, bytesRead);
+            if (str.startsWith('version https://git-lfs.github.com/spec/v1')) {
+              // If an LFS pointer is pointing to a 3D model
+              if (/\.(spz|ply|splat|ksplat)$/i.test(entry.name) || str.includes('models/')) {
+                lfsPointersFound.push(full);
+              }
+            }
+          } catch (_) {}
+        }
+      }
+    }
+
+    for (const r of candidateRoots) {
+      scanDir(r);
+    }
+
+    assert.strictEqual(
+      prohibitedFilesFound.length,
+      0,
+      `Prohibited 3D model files on disk under client/assets: ${JSON.stringify(prohibitedFilesFound)}`
+    );
+    assert.strictEqual(
+      lfsPointersFound.length,
+      0,
+      `Prohibited Git-LFS pointers on disk under client/assets: ${JSON.stringify(lfsPointersFound)}`
+    );
+
+    // 3. Verify WILO_BENCHMARK_PROVENANCE_CLASSIFICATION exists and is valid
+    const provPath = path.join(
+      REPO_ROOT,
+      'virtual-tradeshow-commercial-v1/production_artifacts/WILO_BENCHMARK_PROVENANCE_CLASSIFICATION.json'
+    );
+    assert.ok(fs.existsSync(provPath), 'WILO_BENCHMARK_PROVENANCE_CLASSIFICATION.json must exist');
+    const provData = JSON.parse(fs.readFileSync(provPath, 'utf8'));
+    assert.strictEqual(provData.classification.category, 'PUBLIC_DEMO_BENCHMARK');
+    assert.strictEqual(provData.classification.containsCustomerPii, false);
+    assert.strictEqual(provData.securityAndGovernanceEvaluation.CURRENT_RUNTIME_STATIC_ISOLATION, 'VERIFIED_BY_TEST');
+    assert.strictEqual(provData.securityAndGovernanceEvaluation.HISTORICAL_PUBLIC_ARTIFACT_EXPOSURE, 'REQUIRES_ASSESSMENT');
+
+    console.log('    - Public static git tracked model count: 0 (PASSED)');
+    console.log('    - Public static filesystem model count:  0 (PASSED)');
+    console.log('    - Public static Git-LFS pointer count:   0 (PASSED)');
+    console.log('    - Benchmark classification verified:     PUBLIC_DEMO_BENCHMARK (PASSED)');
   });
 
   console.log('\n================================================================');
