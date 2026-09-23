@@ -1,0 +1,206 @@
+{
+  "documentVersion": "R47_ACTIVATION_READINESS_MATRIX_V1",
+  "generatedTimestamp": "2026-09-23T16:15:00Z",
+  "governance": "Stage 2 Fast Track Protocol / ChatGPT Round 46 Source Audit & Directives",
+  "status": {
+    "OWNER_REVIEW_GATE": "HOLD",
+    "ENGINEERING_HOLD": "ACTIVE",
+    "ACTUAL_ENGINE_EXECUTION": "NOT_VERIFIED",
+    "NEW_3D_MODEL_GENERATION": "NOT_VERIFIED",
+    "SPEND_ALLOCATION": "ZERO_SPEND_DEFAULT",
+    "ZERO_PROVISION_DEFAULT": true
+  },
+  "pillar1_executableWorkerIdentity": {
+    "smallestApprovedPath": "LOCAL_PINNED_CLI_OR_EPHEMERAL_CONTAINER",
+    "canonicalExecutables": {
+      "sfmEngine": {
+        "name": "colmap",
+        "canonicalBaseNames": [
+          "colmap.exe",
+          "colmap"
+        ],
+        "minVersion": "3.8.0",
+        "license": "BSD-3-Clause",
+        "commercialUsePermitted": true,
+        "digestEnvironmentBinding": "COLMAP_BINARY_SHA256",
+        "capabilityProbes": [
+          "colmap -h",
+          "colmap --version"
+        ]
+      },
+      "gaussianSplattingEngine": {
+        "name": "nerfstudio_splatfacto_or_gsplat",
+        "canonicalBaseNames": [
+          "ns-train.exe",
+          "ns-train",
+          "gsplat_train.exe",
+          "gsplat_train"
+        ],
+        "minVersion": "1.0.0",
+        "license": "Apache-2.0",
+        "commercialUsePermitted": true,
+        "digestEnvironmentBinding": "NSTRAIN_BINARY_SHA256",
+        "capabilityProbes": [
+          "ns-train --help",
+          "ns-train --version"
+        ]
+      }
+    },
+    "hardwareAccelerator": {
+      "deviceRequirement": "NVIDIA_GPU_COMPUTE_CAPABILITY_7_5_PLUS",
+      "probeCommand": "nvidia-smi -L",
+      "cudaFloor": "11.8"
+    },
+    "licenseProvenanceClassification": "OPEN_SOURCE_COMMERCIAL_PERMITTED_NO_INRIA_RESTRICTION"
+  },
+  "pillar2_requiredPersistentRoots": {
+    "inputRoot": {
+      "role": "READ_ONLY_MULTI_POSITION_CAPTURES",
+      "allowedExtensions": [
+        ".jpg",
+        ".jpeg",
+        ".png"
+      ],
+      "mountType": "RO_CONFUSED_DEPUTY_GUARDED",
+      "webStaticOverlapForbidden": true
+    },
+    "scratchRoot": {
+      "role": "TRANSIENT_EPHEMERAL_WORKSPACE",
+      "baseDirectory": "SERVER_TRUSTED_WORKSPACE_BASE",
+      "lifecycle": "DESTROYED_ON_SUCCESS_OR_QUARANTINED_ON_FAILURE",
+      "webStaticOverlapForbidden": true
+    },
+    "outputRoot": {
+      "role": "AUTHENTICATED_TENANT_STAGING",
+      "producedModels": [
+        "reconstruction.ply",
+        "reconstruction.spz"
+      ],
+      "hashingPolicy": "MANDATORY_SERVER_SIDE_SHA256_ON_CREATION",
+      "webStaticOverlapForbidden": true
+    },
+    "databaseRoot": {
+      "role": "EPHEMERAL_COLMAP_SQLITE_STORAGE",
+      "location": "<scratchRoot>/colmap.db"
+    }
+  },
+  "pillar3_exactFailClosedConfig": {
+    "requiredEnvironmentGates": {
+      "RECONSTRUCTION_ADAPTER_AUTHORIZED": "1",
+      "RECONSTRUCTION_ENTITLEMENT_SECRET": "VAULT_STORED_ENTROPY_MIN_32_CHARS",
+      "COLMAP_AUTHORIZED": "1",
+      "COLMAP_BINARY_SHA256": "64_CHAR_HEX_SHA256_BOUND_TO_BINARY",
+      "CUDA_VISIBLE_DEVICES": "PINNED_DEVICE_ORDINAL"
+    },
+    "typedArgvEnforcement": {
+      "schemaSource": "TYPED_ARGV_SCHEMAS",
+      "shell": false,
+      "windowsHide": true,
+      "prohibitResponseFiles": true,
+      "prohibitDuplicateFlags": true,
+      "environmentScrubbing": "INTERNAL_CLEAN_ENVIRONMENT_DERIVATION"
+    },
+    "failClosedInvariants": [
+      {
+        "condition": "Binary SHA-256 does not match infrastructure policy",
+        "action": "FAIL_CLOSED",
+        "code": "ERR_ADAPTER_BINARY_HASH_MISMATCH"
+      },
+      {
+        "condition": "Binary semver version is below floor",
+        "action": "FAIL_CLOSED",
+        "code": "ERR_ADAPTER_BINARY_VERSION_INCOMPATIBLE"
+      },
+      {
+        "condition": "Path escapes allowed roots",
+        "action": "FAIL_CLOSED",
+        "code": "ERR_ADAPTER_PATH_TRAVERSAL_OR_UNCONFINED"
+      },
+      {
+        "condition": "Execution exceeds wall-clock timeout quota",
+        "action": "TERMINATE_TREE_AND_FAIL",
+        "code": "ERR_ADAPTER_TIMEOUT_QUOTA_EXCEEDED"
+      },
+      {
+        "condition": "Missing or placeholder entitlement key/secret",
+        "action": "FAIL_CLOSED",
+        "code": "ERR_ADAPTER_KEY_TRIVIAL_OR_PLACEHOLDER"
+      },
+      {
+        "condition": "Insufficient input views (< 3) or zero baseline (< 0.05m)",
+        "action": "FAIL_CLOSED",
+        "code": "ERR_INSUFFICIENT_VIEWS_OR_BASELINE"
+      }
+    ]
+  },
+  "pillar4_boundedResourceEnvelope": {
+    "gpuVram": {
+      "floorBytes": 8589934592,
+      "recommendedBytes": 25769803776
+    },
+    "hostRamMaxBytes": 34359738368,
+    "wallClockTimeoutMs": 1800000,
+    "maxOutputSizeBytes": 52428800,
+    "maxScratchDiskBytes": 21474836480,
+    "processTreeKillMechanism": {
+      "windows": "taskkill /PID <PID> /T /F",
+      "posix": "SIGTERM_GRACE_PERIOD_THEN_SIGKILL_PROCESS_GROUP"
+    },
+    "budgetAndCostBounds": {
+      "currentSpendAllocationUsd": 0.0,
+      "maxPerJobBudgetCeilingUsd": 5.0,
+      "standingMonthlyCostUsd": 0.0,
+      "authorizationRequirement": "EXPLICIT_AFFIRMATIVE_WRITTEN_OWNER_AUTHORIZATION"
+    }
+  },
+  "pillar5_deterministicEvidenceSequence": {
+    "description": "Deterministic causal chain from authorized non-owner inputs to PRO Viewer render",
+    "sequenceSteps": [
+      {
+        "step": 1,
+        "name": "INPUT_INGESTION_AND_BASELINE",
+        "detail": "Ingest 12 multi-position captures, compute SHA-256 per input, verify translation baseline > 0.05m."
+      },
+      {
+        "step": 2,
+        "name": "BINARY_DIGEST_VERIFICATION",
+        "detail": "Probe executable realpath and verify SHA-256 against infrastructure policy before spawn."
+      },
+      {
+        "step": 3,
+        "name": "ISOLATED_PROCESS_SPAWN",
+        "detail": "Launch with scrubbed environment and typed argv within transient scratch directory."
+      },
+      {
+        "step": 4,
+        "name": "AUTHENTIC_RECONSTRUCTION_EXECUTION",
+        "detail": "COLMAP feature extraction & matching + 3DGS radiance optimization."
+      },
+      {
+        "step": 5,
+        "name": "SERVER_BOUND_MODEL_HASHING",
+        "detail": "Compute server-side SHA-256 for newly created .ply and .spz artifacts directly in staging root."
+      },
+      {
+        "step": 6,
+        "name": "STRICT_SCHEMA_AUDIT",
+        "detail": "Verify PLY 248-byte stride, Gaussian element schema, and SPZ compression validity."
+      },
+      {
+        "step": 7,
+        "name": "PRO_VIEWER_DECODE_AND_RENDER",
+        "detail": "Pass exact SPZ byte stream and hash to Pro Viewer; decode in WebGL/WebGPU context; capture optical render buffer proofs (Front/Left/Top)."
+      },
+      {
+        "step": 8,
+        "name": "HEAD_BOUND_EXECUTION_RECEIPT",
+        "detail": "Publish execution receipt binding input hashes, engine digest, model hashes, and optical proof."
+      },
+      {
+        "step": 9,
+        "name": "FAIL_CLOSED_INTEGRITY_INVARIANT",
+        "detail": "Failure at any step halts pipeline immediately and reports FAIL; failure states cannot count as PASS."
+      }
+    ]
+  }
+}

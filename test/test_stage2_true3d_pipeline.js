@@ -75,7 +75,8 @@ const {
   getScrubbedProcessEnv,
   validatePathConfinement,
   PROCESS_EXECUTION_CONTRACT,
-  OWNER_DECISION_MINIMUM_SPEC
+  OWNER_DECISION_MINIMUM_SPEC,
+  NON_OWNER_ENGINE_ACTIVATION_MATRIX
 } = require('../virtual-tradeshow-commercial-v1/server/spatial_reconstruction_worker');
 
 const {
@@ -2990,13 +2991,74 @@ async function main() {
     assert.ok(decisionNote.concreteProvisioningOption.hardwareCostModel, 'Itemized hardware cost model must exist');
     assert.ok(decisionNote.concreteProvisioningOption.licenseAndProvenanceLedger, 'License and provenance ledger must exist');
     console.log('    - Owner-decision minimum spec & decision note: PASS (bounded options, itemized hardware costs, zero-spend default)');
+
+    // 14. Non-Owner Engine Activation-Readiness Matrix (R47)
+    assert.ok(NON_OWNER_ENGINE_ACTIVATION_MATRIX, 'NON_OWNER_ENGINE_ACTIVATION_MATRIX must be exported');
+    assert.strictEqual(NON_OWNER_ENGINE_ACTIVATION_MATRIX.specVersion, 'R47_ACTIVATION_READINESS_MATRIX_V1');
+    assert.strictEqual(NON_OWNER_ENGINE_ACTIVATION_MATRIX.status, 'NON_EXECUTING_SPECIFICATION_HOLD');
+    assert.strictEqual(NON_OWNER_ENGINE_ACTIVATION_MATRIX.operatingGates.OWNER_REVIEW_GATE, 'HOLD');
+    assert.strictEqual(NON_OWNER_ENGINE_ACTIVATION_MATRIX.operatingGates.ENGINEERING_HOLD, 'ACTIVE');
+    assert.strictEqual(NON_OWNER_ENGINE_ACTIVATION_MATRIX.operatingGates.ACTUAL_ENGINE_EXECUTION, 'NOT_VERIFIED');
+    assert.strictEqual(NON_OWNER_ENGINE_ACTIVATION_MATRIX.operatingGates.SPEND_ALLOCATION, 'ZERO_SPEND_DEFAULT');
+    assert.strictEqual(NON_OWNER_ENGINE_ACTIVATION_MATRIX.operatingGates.ZERO_PROVISION_DEFAULT, true);
+
+    // Pillar 1: Identity, Digest, Version, Capability
+    const p1 = NON_OWNER_ENGINE_ACTIVATION_MATRIX.pillar1_executableWorkerIdentity;
+    assert.strictEqual(p1.smallestApprovedPath, 'LOCAL_PINNED_CLI_OR_EPHEMERAL_CONTAINER');
+    assert.strictEqual(p1.canonicalExecutables.sfmEngine.name, 'colmap');
+    assert.strictEqual(p1.canonicalExecutables.sfmEngine.minVersion, '3.8.0');
+    assert.strictEqual(p1.canonicalExecutables.sfmEngine.digestEnvironmentBinding, 'COLMAP_BINARY_SHA256');
+    assert.strictEqual(p1.canonicalExecutables.gaussianSplattingEngine.minVersion, '1.0.0');
+    assert.strictEqual(p1.canonicalExecutables.gaussianSplattingEngine.digestEnvironmentBinding, 'NSTRAIN_BINARY_SHA256');
+    assert.strictEqual(p1.hardwareAccelerator.deviceRequirement, 'NVIDIA_GPU_COMPUTE_CAPABILITY_7_5_PLUS');
+    assert.strictEqual(p1.licenseProvenanceClassification, 'OPEN_SOURCE_COMMERCIAL_PERMITTED_NO_INRIA_RESTRICTION');
+
+    // Pillar 2: Persistent Roots & Static Non-Overlap
+    const p2 = NON_OWNER_ENGINE_ACTIVATION_MATRIX.pillar2_requiredPersistentRoots;
+    assert.strictEqual(p2.inputRoot.webStaticOverlapForbidden, true);
+    assert.strictEqual(p2.scratchRoot.webStaticOverlapForbidden, true);
+    assert.strictEqual(p2.outputRoot.webStaticOverlapForbidden, true);
+    assert.deepStrictEqual([...p2.inputRoot.allowedExtensions], ['.jpg', '.jpeg', '.png']);
+
+    // Pillar 3: Fail-Closed Configuration
+    const p3 = NON_OWNER_ENGINE_ACTIVATION_MATRIX.pillar3_exactFailClosedConfig;
+    assert.strictEqual(p3.requiredEnvironmentGates.RECONSTRUCTION_ADAPTER_AUTHORIZED, '1');
+    assert.strictEqual(p3.typedArgvEnforcement.shell, false);
+    assert.strictEqual(p3.typedArgvEnforcement.prohibitResponseFiles, true);
+    assert.ok(Array.isArray(p3.failClosedInvariants) && p3.failClosedInvariants.length >= 6);
+
+    // Pillar 4: Bounded Resource Envelope & Spending Ceiling
+    const p4 = NON_OWNER_ENGINE_ACTIVATION_MATRIX.pillar4_boundedResourceEnvelope;
+    assert.strictEqual(p4.budgetAndCostBounds.currentSpendAllocationUsd, 0.00);
+    assert.strictEqual(p4.budgetAndCostBounds.maxPerJobBudgetCeilingUsd, 5.00);
+    assert.strictEqual(p4.wallClockTimeoutMs, 1800000);
+    assert.strictEqual(p4.hostRamMaxBytes, 32 * 1024 * 1024 * 1024);
+
+    // Pillar 5: Deterministic Evidence Sequence
+    const p5 = NON_OWNER_ENGINE_ACTIVATION_MATRIX.pillar5_deterministicEvidenceSequence;
+    assert.ok(Array.isArray(p5.sequenceSteps) && p5.sequenceSteps.length === 9);
+    assert.strictEqual(p5.sequenceSteps[0].name, 'INPUT_INGESTION_AND_BASELINE');
+    assert.strictEqual(p5.sequenceSteps[6].name, 'PRO_VIEWER_DECODE_AND_RENDER');
+    assert.strictEqual(p5.sequenceSteps[7].name, 'HEAD_BOUND_EXECUTION_RECEIPT');
+    assert.strictEqual(p5.sequenceSteps[8].name, 'FAIL_CLOSED_INTEGRITY_INVARIANT');
+
+    // Matrix Artifact on disk validation
+    const matrixDocPath = path.join(REPO_ROOT, 'virtual-tradeshow-commercial-v1/docs/ACTIVATION_READINESS_MATRIX.md');
+    const matrixArtifactPath = path.join(REPO_ROOT, 'virtual-tradeshow-commercial-v1/production_artifacts/R47_ACTIVATION_READINESS_MATRIX.json');
+    assert.ok(fs.existsSync(matrixDocPath), 'ACTIVATION_READINESS_MATRIX.md must exist');
+    assert.ok(fs.existsSync(matrixArtifactPath), 'R47_ACTIVATION_READINESS_MATRIX.json must exist');
+    const parsedMatrix = JSON.parse(fs.readFileSync(matrixArtifactPath, 'utf8'));
+    assert.strictEqual(parsedMatrix.status.OWNER_REVIEW_GATE, 'HOLD');
+    assert.strictEqual(parsedMatrix.status.ENGINEERING_HOLD, 'ACTIVE');
+    assert.strictEqual(parsedMatrix.status.SPEND_ALLOCATION, 'ZERO_SPEND_DEFAULT');
+    console.log('    - Non-owner engine activation-readiness matrix: PASS (5 pillars verified, bounded resources, zero-spend hold)');
   });
 
   console.log('\n================================================================');
   console.log(`True 3D Pipeline Test Suite Complete: ${passedTests}/${totalTests} passed`);
   console.log('================================================================\n');
 
-  // ── [POST-RUN FINALIZER] Emit Machine-Verifiable R42 Execution Receipt ───────
+  // ── [POST-RUN FINALIZER] Emit Machine-Verifiable R47 Execution Receipt ───────
   const suiteEndTime = new Date().toISOString();
   const durationMs = Date.now() - startTimeEpoch;
   const runnerSource = fs.readFileSync(__filename);
@@ -3006,7 +3068,7 @@ async function main() {
   const engineDiscoveryProbes = probeReconstructionEngines();
 
   const receipt = {
-    receiptSchemaVersion: 'R46_EXECUTION_RECEIPT_V1',
+    receiptSchemaVersion: 'R47_EXECUTION_RECEIPT_V1',
     executionTimestamps: {
       startTime: suiteStartTime,
       endTime: suiteEndTime,
@@ -3077,7 +3139,8 @@ async function main() {
       publicModuleTokenExposure: 'ZERO_EXPORT_VERIFIED_ALL_SHIPPED_MODULES',
       moduleAuthorityBoundary: 'CLOSURE_PRIVATE_AUTHORITY_VERIFIED',
       workspaceStaticIsolation: 'SOURCE_CHECK_ONLY',
-      ownerDecisionMinimumStatus: 'READ_ONLY_NOTE_ZERO_SPEND_DEFAULT'
+      ownerDecisionMinimumStatus: 'READ_ONLY_NOTE_ZERO_SPEND_DEFAULT',
+      activationReadinessMatrixStatus: 'NON_SECRET_SPEC_FORMALIZED_AND_VERIFIED'
     },
     engineDiscoveryProbes,
     operatingGates: {
@@ -3109,6 +3172,7 @@ async function main() {
       DURABLE_ACROSS_REDEPLOY_REPLICA: 'NOT_VERIFIED',
       PROJECT_MEMBERSHIP_CLASSIFICATION: 'ISOLATED_CONTRACT_ONLY',
       ACTUAL_ENGINE_EXECUTION: 'NOT_VERIFIED',
+      ACTIVATION_READINESS_MATRIX: 'VERIFIED_NON_SECRET_SPEC',
       OWNER_REVIEW_GATE: 'HOLD',
       ENGINEERING_HOLD: 'ACTIVE',
       DESTRUCTIVE_GIT_REWRITE: 'FORBIDDEN'
@@ -3117,14 +3181,14 @@ async function main() {
 
   const receiptOutPath = path.join(
     REPO_ROOT,
-    'virtual-tradeshow-commercial-v1/production_artifacts/R46_TEST_EXECUTION_RECEIPT.json'
+    'virtual-tradeshow-commercial-v1/production_artifacts/R47_TEST_EXECUTION_RECEIPT.json'
   );
   fs.writeFileSync(receiptOutPath, JSON.stringify(receipt, null, 2), 'utf8');
   const savedReceiptBytes = fs.readFileSync(receiptOutPath);
   const receiptByteSha256 = crypto.createHash('sha256').update(savedReceiptBytes).digest('hex');
 
-  console.log('--- Final Execution Receipt (R46 Machine Verifiable) ---');
-  console.log(`  File:           virtual-tradeshow-commercial-v1/production_artifacts/R46_TEST_EXECUTION_RECEIPT.json`);
+  console.log('--- Final Execution Receipt (R47 Machine Verifiable) ---');
+  console.log(`  File:           virtual-tradeshow-commercial-v1/production_artifacts/R47_TEST_EXECUTION_RECEIPT.json`);
   console.log(`  Byte SHA-256:   ${receiptByteSha256}`);
   console.log(`  Tested Commit:  ${suiteCurrentHead}`);
   console.log(`  Expected Head:  ${expectedHead || '(none - unbound)'}`);

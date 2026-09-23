@@ -1933,6 +1933,140 @@ const OWNER_DECISION_MINIMUM_SPEC = Object.freeze({
   })
 });
 
+/**
+ * Non-Secret Activation-Readiness Matrix for Smallest Approved Non-Owner Engine Path (R47)
+ * Formulated per ChatGPT Round 46 Audit / Round 47 Directives.
+ * Defines the complete 5-pillar activation specification for non-owner execution readiness:
+ *   1. Executable / Worker Identity + Digest / Version / Capability
+ *   2. Required Persistent Roots & Storage Mounts
+ *   3. Exact Fail-Closed Configuration Schema & Invariant Boundaries
+ *   4. Bounded Resource Envelope & Spending Quotas
+ *   5. Deterministic End-to-End Evidence Sequence (Inputs -> Engine -> Model Hash -> Pro Viewer)
+ *
+ * Immutable Status: Zero cloud spend, zero engine spawn, zero owner contact without written authorization.
+ */
+const NON_OWNER_ENGINE_ACTIVATION_MATRIX = Object.freeze({
+  specVersion: 'R47_ACTIVATION_READINESS_MATRIX_V1',
+  status: 'NON_EXECUTING_SPECIFICATION_HOLD',
+  operatingGates: Object.freeze({
+    OWNER_REVIEW_GATE: 'HOLD',
+    ENGINEERING_HOLD: 'ACTIVE',
+    ACTUAL_ENGINE_EXECUTION: 'NOT_VERIFIED',
+    NEW_3D_MODEL_GENERATION: 'NOT_VERIFIED',
+    SPEND_ALLOCATION: 'ZERO_SPEND_DEFAULT',
+    ZERO_PROVISION_DEFAULT: true
+  }),
+  pillar1_executableWorkerIdentity: Object.freeze({
+    smallestApprovedPath: 'LOCAL_PINNED_CLI_OR_EPHEMERAL_CONTAINER',
+    canonicalExecutables: Object.freeze({
+      sfmEngine: Object.freeze({
+        name: 'colmap',
+        canonicalBaseNames: Object.freeze(['colmap.exe', 'colmap']),
+        minVersion: '3.8.0',
+        license: 'BSD-3-Clause',
+        commercialUsePermitted: true,
+        digestEnvironmentBinding: 'COLMAP_BINARY_SHA256',
+        capabilityProbes: Object.freeze(['colmap -h', 'colmap --version'])
+      }),
+      gaussianSplattingEngine: Object.freeze({
+        name: 'nerfstudio_splatfacto_or_gsplat',
+        canonicalBaseNames: Object.freeze(['ns-train.exe', 'ns-train', 'gsplat_train.exe', 'gsplat_train']),
+        minVersion: '1.0.0',
+        license: 'Apache-2.0',
+        commercialUsePermitted: true,
+        digestEnvironmentBinding: 'NSTRAIN_BINARY_SHA256',
+        capabilityProbes: Object.freeze(['ns-train --help', 'ns-train --version'])
+      })
+    }),
+    hardwareAccelerator: Object.freeze({
+      deviceRequirement: 'NVIDIA_GPU_COMPUTE_CAPABILITY_7_5_PLUS',
+      probeCommand: 'nvidia-smi -L',
+      cudaFloor: '11.8'
+    }),
+    licenseProvenanceClassification: 'OPEN_SOURCE_COMMERCIAL_PERMITTED_NO_INRIA_RESTRICTION'
+  }),
+  pillar2_requiredPersistentRoots: Object.freeze({
+    inputRoot: Object.freeze({
+      role: 'READ_ONLY_MULTI_POSITION_CAPTURES',
+      allowedExtensions: Object.freeze(['.jpg', '.jpeg', '.png']),
+      mountType: 'RO_CONFUSED_DEPUTY_GUARDED',
+      webStaticOverlapForbidden: true
+    }),
+    scratchRoot: Object.freeze({
+      role: 'TRANSIENT_EPHEMERAL_WORKSPACE',
+      baseDirectory: 'SERVER_TRUSTED_WORKSPACE_BASE',
+      lifecycle: 'DESTROYED_ON_SUCCESS_OR_QUARANTINED_ON_FAILURE',
+      webStaticOverlapForbidden: true
+    }),
+    outputRoot: Object.freeze({
+      role: 'AUTHENTICATED_TENANT_STAGING',
+      producedModels: Object.freeze(['reconstruction.ply', 'reconstruction.spz']),
+      hashingPolicy: 'MANDATORY_SERVER_SIDE_SHA256_ON_CREATION',
+      webStaticOverlapForbidden: true
+    }),
+    databaseRoot: Object.freeze({
+      role: 'EPHEMERAL_COLMAP_SQLITE_STORAGE',
+      location: '<scratchRoot>/colmap.db'
+    })
+  }),
+  pillar3_exactFailClosedConfig: Object.freeze({
+    requiredEnvironmentGates: Object.freeze({
+      RECONSTRUCTION_ADAPTER_AUTHORIZED: '1',
+      RECONSTRUCTION_ENTITLEMENT_SECRET: 'VAULT_STORED_ENTROPY_MIN_32_CHARS',
+      COLMAP_AUTHORIZED: '1',
+      COLMAP_BINARY_SHA256: '64_CHAR_HEX_SHA256_BOUND_TO_BINARY',
+      CUDA_VISIBLE_DEVICES: 'PINNED_DEVICE_ORDINAL'
+    }),
+    typedArgvEnforcement: Object.freeze({
+      schemaSource: 'TYPED_ARGV_SCHEMAS',
+      shell: false,
+      windowsHide: true,
+      prohibitResponseFiles: true,
+      prohibitDuplicateFlags: true,
+      environmentScrubbing: 'INTERNAL_CLEAN_ENVIRONMENT_DERIVATION'
+    }),
+    failClosedInvariants: Object.freeze([
+      { condition: 'Binary SHA-256 does not match infrastructure policy', action: 'FAIL_CLOSED', code: 'ERR_ADAPTER_BINARY_HASH_MISMATCH' },
+      { condition: 'Binary semver version is below floor', action: 'FAIL_CLOSED', code: 'ERR_ADAPTER_BINARY_VERSION_INCOMPATIBLE' },
+      { condition: 'Path escapes allowed roots', action: 'FAIL_CLOSED', code: 'ERR_ADAPTER_PATH_TRAVERSAL_OR_UNCONFINED' },
+      { condition: 'Execution exceeds wall-clock timeout quota', action: 'TERMINATE_TREE_AND_FAIL', code: 'ERR_ADAPTER_TIMEOUT_QUOTA_EXCEEDED' },
+      { condition: 'Missing or placeholder entitlement key/secret', action: 'FAIL_CLOSED', code: 'ERR_ADAPTER_KEY_TRIVIAL_OR_PLACEHOLDER' },
+      { condition: 'Insufficient input views (< 3) or zero baseline (< 0.05m)', action: 'FAIL_CLOSED', code: 'ERR_INSUFFICIENT_VIEWS_OR_BASELINE' }
+    ])
+  }),
+  pillar4_boundedResourceEnvelope: Object.freeze({
+    gpuVram: Object.freeze({ floorBytes: 8 * 1024 * 1024 * 1024, recommendedBytes: 24 * 1024 * 1024 * 1024 }),
+    hostRamMaxBytes: 32 * 1024 * 1024 * 1024,
+    wallClockTimeoutMs: 1800000,
+    maxOutputSizeBytes: 50 * 1024 * 1024,
+    maxScratchDiskBytes: 20 * 1024 * 1024 * 1024,
+    processTreeKillMechanism: Object.freeze({
+      windows: 'taskkill /PID <PID> /T /F',
+      posix: 'SIGTERM_GRACE_PERIOD_THEN_SIGKILL_PROCESS_GROUP'
+    }),
+    budgetAndCostBounds: Object.freeze({
+      currentSpendAllocationUsd: 0.00,
+      maxPerJobBudgetCeilingUsd: 5.00,
+      standingMonthlyCostUsd: 0.00,
+      authorizationRequirement: 'EXPLICIT_AFFIRMATIVE_WRITTEN_OWNER_AUTHORIZATION'
+    })
+  }),
+  pillar5_deterministicEvidenceSequence: Object.freeze({
+    description: 'Deterministic causal chain from authorized non-owner inputs to PRO Viewer render',
+    sequenceSteps: Object.freeze([
+      { step: 1, name: 'INPUT_INGESTION_AND_BASELINE', detail: 'Ingest 12 multi-position captures, compute SHA-256 per input, verify translation baseline > 0.05m.' },
+      { step: 2, name: 'BINARY_DIGEST_VERIFICATION', detail: 'Probe executable realpath and verify SHA-256 against infrastructure policy before spawn.' },
+      { step: 3, name: 'ISOLATED_PROCESS_SPAWN', detail: 'Launch with scrubbed environment and typed argv within transient scratch directory.' },
+      { step: 4, name: 'AUTHENTIC_RECONSTRUCTION_EXECUTION', detail: 'COLMAP feature extraction & matching + 3DGS radiance optimization.' },
+      { step: 5, name: 'SERVER_BOUND_MODEL_HASHING', detail: 'Compute server-side SHA-256 for newly created .ply and .spz artifacts directly in staging root.' },
+      { step: 6, name: 'STRICT_SCHEMA_AUDIT', detail: 'Verify PLY 248-byte stride, Gaussian element schema, and SPZ compression validity.' },
+      { step: 7, name: 'PRO_VIEWER_DECODE_AND_RENDER', detail: 'Pass exact SPZ byte stream and hash to Pro Viewer; decode in WebGL/WebGPU context; capture optical render buffer proofs (Front/Left/Top).' },
+      { step: 8, name: 'HEAD_BOUND_EXECUTION_RECEIPT', detail: 'Publish execution receipt binding input hashes, engine digest, model hashes, and optical proof.' },
+      { step: 9, name: 'FAIL_CLOSED_INTEGRITY_INVARIANT', detail: 'Failure at any step halts pipeline immediately and reports FAIL; failure states cannot count as PASS.' }
+    ])
+  })
+});
+
 module.exports = {
   parsePlyHeader,
   executeReconstructionJob,
@@ -1955,6 +2089,7 @@ module.exports = {
   validatePathConfinement,
   PROCESS_EXECUTION_CONTRACT,
   OWNER_DECISION_MINIMUM_SPEC,
+  NON_OWNER_ENGINE_ACTIVATION_MATRIX,
   TYPE_SIZES
 };
 
