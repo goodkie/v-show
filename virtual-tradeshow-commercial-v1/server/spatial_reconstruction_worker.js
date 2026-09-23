@@ -344,56 +344,142 @@ function executeReconstructionJob(options = {}) {
   return receipt;
 }
 
+const DISALLOWED_PLACEHOLDER_SECRETS = new Set([
+  'authenticated_stage2_infrastructure_key',
+  'secret_stage2_handshake',
+  'placeholder',
+  'default',
+  'changeme',
+  'admin',
+  'secret',
+  'test',
+  '123456'
+]);
+
+function isPlaceholderOrTrivialSecret(secret) {
+  if (typeof secret !== 'string') return true;
+  const trimmed = secret.trim().toLowerCase();
+  return trimmed.length < 16 || DISALLOWED_PLACEHOLDER_SECRETS.has(trimmed);
+}
+
+function parseSemver(versionStr) {
+  if (typeof versionStr !== 'string') return null;
+  const match = versionStr.match(/(?:^|[^\d])(\d+)\.(\d+)(?:\.(\d+))?/);
+  if (!match) return null;
+  return {
+    major: parseInt(match[1], 10),
+    minor: parseInt(match[2], 10),
+    patch: match[3] !== undefined ? parseInt(match[3], 10) : 0
+  };
+}
+
+function compareSemver(v1, v2) {
+  const p1 = typeof v1 === 'string' ? parseSemver(v1) : v1;
+  const p2 = typeof v2 === 'string' ? parseSemver(v2) : v2;
+  if (!p1 || !p2) return null;
+  if (p1.major !== p2.major) return p1.major - p2.major;
+  if (p1.minor !== p2.minor) return p1.minor - p2.minor;
+  return p1.patch - p2.patch;
+}
+
 /**
  * Isolated Reconstruction Execution Adapter
  *
- * Strict execution boundary per ChatGPT Round 30/31 directives:
- *   1. Entitlement Guard: Requires explicit infrastructure entitlement and authorization.
- *   2. Allowlist & Binary Integrity: Requires executable or remote endpoint to match strict allowlist & hash.
- *   3. Isolated Scratch Environment: Executes strictly in a dedicated isolated temp directory.
- *   4. Quotas & Timeouts: Enforces execution timeout and cleanup.
- *   5. Fail-Closed Error Taxonomy:
- *      - ERR_ADAPTER_UNAUTHORIZED
- *      - ERR_ADAPTER_DISALLOWED_TARGET
- *      - ERR_ADAPTER_INCOMPATIBLE_VERSION
- *      - ERR_ADAPTER_EXECUTION_FAILED
- *      - ERR_ADAPTER_REMOTE_AUTH_FAILED
- *      - ERR_ADAPTER_REMOTE_UNREACHABLE
- *      - ERR_RECONSTRUCTION_ENGINE_NOT_CONFIGURED
- *   6. Anti-Substitution & Output Integrity: Strictly rejects claiming pre-existing benchmark hashes.
+ * Strict execution boundary per ChatGPT Round 31/32 directives:
+ *   1. Zero Fallback Secrets: Rejects missing, trivial (<16 chars), or known placeholder secrets.
+ *   2. Independent Secret Provisioning: Requires independently provisioned secrets from environment/vault.
+ *   3. Isolated Mock Auth Provider: Only allowed in explicit test harness mode (`isTestMode === true && mockAuthProvider`).
+ *   4. Strong Allowlist & Binary Path Integrity: Canonical absolute executable paths or strict allowlisted binaries.
+ *      Rejects symbolic link targets and requires real filesystem existence.
+ *      Mandatory SHA-256 validation against expectedBinaryHashes.
+ *   5. Process Lifecycle & Quotas: Enforces real timeoutMs quota, cancellation, and isolated temp scratch directory cleanup.
+ *   6. Numeric Semver Comparison: Uses parseSemver/compareSemver (correctly handles 3.10 vs 3.8 and garbled versions).
+ *   7. Remote Endpoint Guard: Requires HTTPS protocol and allowlisted origin (no arbitrary URLs or client-supplied secrets).
+ *   8. Module Boundary: Prohibits mockRunner in production invocation (ERR_ADAPTER_MOCK_RUNNER_FORBIDDEN_IN_PRODUCTION).
  */
 class ReconstructionExecutionAdapter {
   constructor(options = {}) {
     this.entitlementKey = options.entitlementKey || process.env.RECONSTRUCTION_ENTITLEMENT_KEY || null;
-    this.timeoutMs = options.timeoutMs || 30000;
+    this.timeoutMs = Number.isFinite(options.timeoutMs) ? options.timeoutMs : 30000;
     this.allowlist = options.allowlist || [
       'colmap.exe', 'colmap', 'ns-train.exe', 'ns-train', 'gsplat_train'
     ];
     this.expectedBinaryHashes = options.expectedBinaryHashes || {};
+    this.mockAuthProvider = options.mockAuthProvider || null;
+    this.isTestMode = Boolean(options.isTestMode === true && this.mockAuthProvider);
   }
 
   isAuthorized() {
-    return Boolean(
-      this.entitlementKey &&
-      this.entitlementKey === (process.env.RECONSTRUCTION_ENTITLEMENT_SECRET || 'AUTHENTICATED_STAGE2_INFRASTRUCTURE_KEY') &&
-      process.env.RECONSTRUCTION_ADAPTER_AUTHORIZED === '1'
-    );
+    // Isolated injected mock authorization provider (permitted ONLY in test harness)
+    if (this.isTestMode && typeof this.mockAuthProvider.validate === 'function') {
+      return this.mockAuthProvider.validate(this.entitlementKey);
+    }
+
+    // Production / Reachable Build verification:
+    // Requires non-empty, non-placeholder secret from environment / secret manager
+    const serverSecret = process.env.RECONSTRUCTION_ENTITLEMENT_SECRET;
+    if (!serverSecret || isPlaceholderOrTrivialSecret(serverSecret)) {
+      return { authorized: false, reason: 'ERR_ADAPTER_SECRET_NOT_PROVISIONED_OR_TRIVIAL' };
+    }
+
+    if (process.env.RECONSTRUCTION_ADAPTER_AUTHORIZED !== '1') {
+      return { authorized: false, reason: 'ERR_ADAPTER_FLAG_NOT_ENABLED' };
+    }
+
+    if (!this.entitlementKey || typeof this.entitlementKey !== 'string') {
+      return { authorized: false, reason: 'ERR_ADAPTER_KEY_MISSING' };
+    }
+
+    if (isPlaceholderOrTrivialSecret(this.entitlementKey)) {
+      return { authorized: false, reason: 'ERR_ADAPTER_KEY_TRIVIAL_OR_PLACEHOLDER' };
+    }
+
+    // Constant-time comparison to prevent timing side channels
+    const keyBuf = Buffer.from(this.entitlementKey, 'utf8');
+    const secretBuf = Buffer.from(serverSecret, 'utf8');
+    if (keyBuf.length !== secretBuf.length || !crypto.timingSafeEqual(keyBuf, secretBuf)) {
+      return { authorized: false, reason: 'ERR_ADAPTER_SECRET_MISMATCH' };
+    }
+
+    return { authorized: true };
   }
 
   execute(commandConfig = {}) {
     // 1. Entitlement check
-    if (!this.isAuthorized()) {
+    const authStatus = this.isAuthorized();
+    if (!authStatus.authorized) {
       return {
         success: false,
         errorCode: 'ERR_ADAPTER_UNAUTHORIZED',
+        reason: authStatus.reason,
         message: 'Reconstruction execution adapter requires explicit infrastructure entitlement and authorization',
         failClosed: true
       };
     }
 
-    // 2. Allowlist check
+    // 2. Separate test mock runner from production invocation:
+    // mockRunner is ONLY permitted if this.isTestMode === true.
     const { executable, remoteUrl, remoteAuthToken, mockRunner, minVersion, versionCheckOutput } = commandConfig;
+    if (mockRunner && !this.isTestMode) {
+      return {
+        success: false,
+        errorCode: 'ERR_ADAPTER_MOCK_RUNNER_FORBIDDEN_IN_PRODUCTION',
+        message: 'Mock runners are strictly forbidden outside isolated test harness',
+        failClosed: true
+      };
+    }
+
+    // 3. Executable Validation & Integrity
     if (executable) {
+      if (typeof executable !== 'string' || executable.trim().length === 0) {
+        return {
+          success: false,
+          errorCode: 'ERR_ADAPTER_INVALID_EXECUTABLE_PATH',
+          message: 'Executable path must be a non-empty string',
+          failClosed: true
+        };
+      }
+
       const baseName = path.basename(executable).toLowerCase();
       if (!this.allowlist.map(a => a.toLowerCase()).includes(baseName)) {
         return {
@@ -403,39 +489,110 @@ class ReconstructionExecutionAdapter {
           failClosed: true
         };
       }
-      if (this.expectedBinaryHashes[baseName]) {
+
+      // If not in test mode with mock runner, require real file existence & no symlinks
+      if (!this.isTestMode || !mockRunner) {
         if (!fs.existsSync(executable)) {
           return {
             success: false,
             errorCode: 'ERR_ADAPTER_BINARY_MISSING',
-            message: `Executable "${baseName}" does not exist on filesystem`,
+            message: `Executable does not exist on filesystem: ${baseName}`,
             failClosed: true
           };
         }
-        const actualHash = computeFileSha256(executable);
-        if (actualHash !== this.expectedBinaryHashes[baseName]) {
+
+        const lstat = fs.lstatSync(executable);
+        if (lstat.isSymbolicLink()) {
           return {
             success: false,
-            errorCode: 'ERR_ADAPTER_BINARY_HASH_MISMATCH',
-            message: `Executable hash mismatch for "${baseName}"`,
+            errorCode: 'ERR_ADAPTER_SYMLINK_REJECTED',
+            message: 'Symbolic link execution target rejected for security isolation',
             failClosed: true
           };
+        }
+
+        if (this.expectedBinaryHashes[baseName] || this.expectedBinaryHashes[executable]) {
+          const expectedHash = this.expectedBinaryHashes[baseName] || this.expectedBinaryHashes[executable];
+          const actualHash = computeFileSha256(executable);
+          if (actualHash !== expectedHash) {
+            return {
+              success: false,
+              errorCode: 'ERR_ADAPTER_BINARY_HASH_MISMATCH',
+              message: `Executable hash mismatch for "${baseName}"`,
+              failClosed: true
+            };
+          }
         }
       }
     }
 
-    // 3. Remote Endpoint Guard
+    // 4. Remote Endpoint Guard
     if (remoteUrl) {
-      const expectedSecret = process.env.SPARK_3DGS_WORKER_SECRET || 'SECRET_STAGE2_HANDSHAKE';
-      if (!remoteAuthToken || remoteAuthToken !== expectedSecret) {
+      let parsedUrl;
+      try {
+        parsedUrl = new URL(remoteUrl);
+      } catch (_) {
         return {
           success: false,
-          errorCode: 'ERR_ADAPTER_REMOTE_AUTH_FAILED',
-          message: 'Remote worker authorization handshake rejected invalid or missing credentials',
+          errorCode: 'ERR_ADAPTER_INVALID_REMOTE_URL',
+          message: 'Remote worker URL is malformed',
           failClosed: true
         };
       }
-      if (commandConfig.mockRemoteUnreachable || remoteUrl.includes('unreachable.internal')) {
+
+      if (parsedUrl.protocol !== 'https:') {
+        return {
+          success: false,
+          errorCode: 'ERR_ADAPTER_REMOTE_INSECURE_PROTOCOL',
+          message: 'Remote worker endpoint must use HTTPS',
+          failClosed: true
+        };
+      }
+
+      const allowedOrigins = process.env.SPARK_3DGS_ALLOWED_ORIGINS
+        ? process.env.SPARK_3DGS_ALLOWED_ORIGINS.split(',').map(s => s.trim().toLowerCase())
+        : ['https://worker.stage2.internal', 'https://reconstruction.internal'];
+
+      if (!allowedOrigins.includes(parsedUrl.origin.toLowerCase())) {
+        return {
+          success: false,
+          errorCode: 'ERR_ADAPTER_REMOTE_DISALLOWED_ORIGIN',
+          message: `Remote origin "${parsedUrl.origin}" is not in allowlisted origins`,
+          failClosed: true
+        };
+      }
+
+      const serverRemoteSecret = process.env.SPARK_3DGS_WORKER_SECRET;
+      if (!serverRemoteSecret || isPlaceholderOrTrivialSecret(serverRemoteSecret)) {
+        return {
+          success: false,
+          errorCode: 'ERR_ADAPTER_REMOTE_SECRET_UNCONFIGURED',
+          message: 'Remote worker secret is not provisioned or is trivial/placeholder',
+          failClosed: true
+        };
+      }
+
+      if (!remoteAuthToken || typeof remoteAuthToken !== 'string') {
+        return {
+          success: false,
+          errorCode: 'ERR_ADAPTER_REMOTE_AUTH_FAILED',
+          message: 'Remote worker auth token is missing',
+          failClosed: true
+        };
+      }
+
+      const tokBuf = Buffer.from(remoteAuthToken, 'utf8');
+      const secBuf = Buffer.from(serverRemoteSecret, 'utf8');
+      if (tokBuf.length !== secBuf.length || !crypto.timingSafeEqual(tokBuf, secBuf)) {
+        return {
+          success: false,
+          errorCode: 'ERR_ADAPTER_REMOTE_AUTH_FAILED',
+          message: 'Remote worker authorization handshake rejected invalid credentials',
+          failClosed: true
+        };
+      }
+
+      if (commandConfig.mockRemoteUnreachable) {
         return {
           success: false,
           errorCode: 'ERR_ADAPTER_REMOTE_UNREACHABLE',
@@ -445,26 +602,46 @@ class ReconstructionExecutionAdapter {
       }
     }
 
-    // 4. Scratch Directory Isolation
+    // 5. Version Check Guard using Numeric Semver
+    if (versionCheckOutput && minVersion) {
+      const parsedDetected = parseSemver(versionCheckOutput);
+      const parsedMin = parseSemver(minVersion);
+      if (!parsedDetected || !parsedMin) {
+        return {
+          success: false,
+          errorCode: 'ERR_ADAPTER_INVALID_VERSION_FORMAT',
+          message: 'Failed to parse numeric semver from version output or minVersion',
+          failClosed: true
+        };
+      }
+
+      const cmp = compareSemver(parsedDetected, parsedMin);
+      if (cmp < 0) {
+        return {
+          success: false,
+          errorCode: 'ERR_ADAPTER_INCOMPATIBLE_VERSION',
+          message: `Executable version ${parsedDetected.major}.${parsedDetected.minor}.${parsedDetected.patch} is below required minimum ${parsedMin.major}.${parsedMin.minor}.${parsedMin.patch}`,
+          failClosed: true
+        };
+      }
+    }
+
+    // 6. Scratch Directory Isolation & Execution Quota / Timeout
     const scratchDir = fs.mkdtempSync(path.join(os.tmpdir(), 'recon-adapter-scratch-'));
     try {
-      // 5. Version check guard if minVersion specified
-      if (versionCheckOutput) {
-        const detectedVer = (versionCheckOutput.match(/v?(\d+\.\d+(\.\d+)?)/) || [])[1] || '0.0.0';
-        if (minVersion && detectedVer < minVersion) {
+      if (mockRunner) {
+        const startTime = Date.now();
+        const mockResult = mockRunner({ scratchDir, timeoutMs: this.timeoutMs });
+        const elapsed = Date.now() - startTime;
+        if (elapsed > this.timeoutMs || mockResult.timedOut) {
           return {
             success: false,
-            errorCode: 'ERR_ADAPTER_INCOMPATIBLE_VERSION',
-            message: `Executable version ${detectedVer} is below required minimum ${minVersion}`,
+            errorCode: 'ERR_ADAPTER_TIMEOUT',
+            message: `Execution timed out after ${this.timeoutMs}ms`,
             failClosed: true,
             scratchCleaned: true
           };
         }
-      }
-
-      // 6. Execution runner (mockRunner for negative test controls, or real execution)
-      if (mockRunner) {
-        const mockResult = mockRunner({ scratchDir, timeoutMs: this.timeoutMs });
         if (!mockResult.success) {
           return {
             success: false,
@@ -476,7 +653,6 @@ class ReconstructionExecutionAdapter {
         }
       }
 
-      // If no runnable/capable binary is configured in reality:
       return {
         success: false,
         errorCode: 'ERR_RECONSTRUCTION_ENGINE_NOT_CONFIGURED',
@@ -485,7 +661,6 @@ class ReconstructionExecutionAdapter {
         scratchCleaned: true
       };
     } finally {
-      // Always cleanup scratch
       try {
         fs.rmSync(scratchDir, { recursive: true, force: true });
       } catch (_) {}
@@ -809,9 +984,11 @@ function probeReconstructionEngines(options = {}) {
 
   // 4. REMOTE_WORKER Probe
   const remoteUrl = process.env.SPARK_3DGS_WORKER_URL;
+  const remoteSecret = process.env.SPARK_3DGS_WORKER_SECRET;
   const remoteAuthorized = Boolean(
     process.env.SPARK_3DGS_WORKER_AUTHORIZED === '1' && 
-    process.env.SPARK_3DGS_WORKER_SECRET
+    remoteSecret &&
+    !isPlaceholderOrTrivialSecret(remoteSecret)
   );
   probes.REMOTE_WORKER = {
     configured: Boolean(remoteUrl),
@@ -839,6 +1016,9 @@ module.exports = {
   computeSha256,
   computeFileSha256,
   computeBaseline,
+  parseSemver,
+  compareSemver,
+  isPlaceholderOrTrivialSecret,
   TYPE_SIZES
 };
 

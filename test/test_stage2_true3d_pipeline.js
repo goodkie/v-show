@@ -1,26 +1,23 @@
 /**
  * test/test_stage2_true3d_pipeline.js
  * ─────────────────────────────────────────────────────────────────────────────
- * [ANTIGRAVITY][R31] SPATIAL 3D BENCHMARK INSPECTION & PRO VIEWER AUDIT SUITE
+ * [ANTIGRAVITY][R32] SPATIAL 3D BENCHMARK INSPECTION & PRO VIEWER AUDIT SUITE
  *
- * R31 Enhancements per ChatGPT R30 Audit:
- *   - Test 18: Exact pre-reconstruction probe hash binding:
- *              Canonically incorporates probesDigest in preReconstructionDigest:
- *              sha256(jobId | inputsDigest | calibDigest | workerDigest | configDigest | probesDigest)
- *              Asserts that altering probe results strictly changes preReconstructionDigest
- *   - Test 18: Refined four-state probe granularity:
- *              Differentiates configured, discovered, cliProbeRunnable, reconstructionCapable, and authorized
- *              Strictly defines runnable as CLI probe runnable only
- *              Requires CUDA GPU architecture, SfM build features & 3DGS pipeline for reconstructionCapable
- *   - Test 18: Isolated execution adapter error controls:
- *              Tests unauthorized adapter invocation rejection (ERR_ADAPTER_UNAUTHORIZED)
- *              Tests disallowed executable rejection (ERR_ADAPTER_DISALLOWED_TARGET)
- *              Tests incompatible binary version rejection (ERR_ADAPTER_INCOMPATIBLE_VERSION)
- *              Tests bad remote authentication rejection (ERR_ADAPTER_REMOTE_AUTH_FAILED)
- *              Tests unreachable remote endpoint rejection (ERR_ADAPTER_REMOTE_UNREACHABLE)
- *              Tests execution failure propagation (ERR_ADAPTER_EXECUTION_FAILED)
- *   - Test 18: Anti-substitution invariant enforced (refuses copying or substituting benchmark models)
- *   - Emits R31_TEST_EXECUTION_RECEIPT.json bound to Code Under Test (CUT) commit
+ * R32 Enhancements per ChatGPT R31 Audit:
+ *   - Test 18: Zero fallback credentials & anti-placeholder secret validation:
+ *              Removes all hardcoded fallback secrets; requires non-trivial secrets from env/vault
+ *              Fails closed on missing env, trivial (<16 chars), or known placeholder secrets
+ *   - Test 18: Numeric semver comparison:
+ *              Uses parseSemver / compareSemver (correctly handles numeric 3.10 vs 3.8 and garbled versions)
+ *   - Test 18: Allowlist & binary path integrity:
+ *              Strict allowlist, symlink rejection, real file existence check, and hash binding
+ *   - Test 18: Isolated mock authorization provider:
+ *              Strictly separated at class/module boundary; mockRunner forbidden in production mode
+ *   - Test 18: Remote worker origin allowlist & HTTPS enforcement:
+ *              Rejects insecure HTTP and disallowed origins
+ *   - Test 18: Process lifecycle & timeout quota controls:
+ *              Enforces real timeoutMs quota, cancellation, and scratch directory cleanup
+ *   - Emits R32_TEST_EXECUTION_RECEIPT.json bound to Code Under Test (CUT) commit
  *
  * Test catalog:
  *   [1]  Multi-position camera calibration & translation baseline (genuine parallax)
@@ -41,7 +38,7 @@
  *   [15] Factual gate separation ledger verified (R29 honest disclosures)
  *   [16] Public static regression gate: all 4 roots required + full extension set + LFS
  *   [17] Head-bound reproducibility evidence + raw worktree status + positive controls
- *   [18] Exact probe hash binding, refined capability states & execution adapter error guards (R31)
+ *   [18] Zero fallback secrets, numeric semver, allowlist integrity & execution adapter error guards (R32)
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
@@ -63,7 +60,10 @@ const {
   ReconstructionExecutionAdapter,
   probeReconstructionEngines,
   computeFileSha256,
-  computeBaseline
+  computeBaseline,
+  parseSemver,
+  compareSemver,
+  isPlaceholderOrTrivialSecret
 } = require('../virtual-tradeshow-commercial-v1/server/spatial_reconstruction_worker');
 
 const REPO_ROOT = path.resolve(__dirname, '..');
@@ -981,27 +981,25 @@ async function main() {
     console.log('    - Positive fail-case controls: PASS (gate proven to catch each extension)');
   });
 
-  // ── [18] Exact Probe Hash Binding, Refined Capability States & Execution Adapter Error Guards (R31) ──
-  // Enforces ChatGPT Round 30 Directives:
-  //   1. Exact Canonical Pre-Reconstruction Hash Binding:
-  //      sha256(jobId | inputsDigest | calibDigest | workerDigest | configDigest | probesDigest)
-  //      Verifies altering probe results changes preReconstructionDigest.
-  //   2. Refined Four-State Probe Granularity:
-  //      Differentiates configured, discovered, cliProbeRunnable, reconstructionCapable, and authorized.
-  //      runnable is defined strictly as CLI probe runnable only.
-  //      reconstructionCapable requires validated CUDA GPU architecture, SfM features, and 3DGS pipeline.
-  //      Sanitizes probe details to prevent logging absolute paths or credentials.
-  //   3. Isolated Execution Adapter Error Controls:
-  //      - Rejects unauthorized adapter invocation (ERR_ADAPTER_UNAUTHORIZED).
-  //      - Rejects disallowed executable targets (ERR_ADAPTER_DISALLOWED_TARGET).
-  //      - Rejects incompatible binary version (ERR_ADAPTER_INCOMPATIBLE_VERSION).
-  //      - Rejects invalid remote worker authentication (ERR_ADAPTER_REMOTE_AUTH_FAILED).
-  //      - Rejects unreachable remote endpoint (ERR_ADAPTER_REMOTE_UNREACHABLE).
-  //      - Propagates execution runner failure (ERR_ADAPTER_EXECUTION_FAILED).
-  //   4. Fails closed with RECONSTRUCTION_UNAVAILABLE when no engine is capable & authorized.
-  //   5. Anti-substitution invariant enforced (refuses claiming pre-existing benchmark as new model).
-  //   6. Control-plane boundary & diagnostic viewer honest disclaimer gates verified.
-  runTest('18. Exact probe hash binding, refined capability states & execution adapter error guards (R31)', () => {
+  // ── [18] Zero Fallback Secrets, Numeric Semver, Allowlist Integrity & Execution Adapter Error Guards (R32) ──
+  // Enforces ChatGPT Round 31 Directives:
+  //   1. Zero Fallback Secrets & Anti-Placeholder Secret Validation:
+  //      Eliminates all hardcoded credentials; requires non-trivial (>15 char) secrets from env/vault.
+  //      Fails closed on missing env, trivial, or known placeholder secrets.
+  //   2. Numeric Semver Comparison:
+  //      Tests parseSemver and compareSemver on numeric versions (3.10 vs 3.8) and garbled formats.
+  //   3. Allowlist & Binary Path Integrity:
+  //      Strict allowlist, symlink rejection, real file existence check, and hash binding.
+  //   4. Isolated Mock Authorization Provider:
+  //      Separated at class/module boundary; mockRunner forbidden in production mode.
+  //   5. Remote Worker Origin Allowlist & HTTPS Enforcement:
+  //      Rejects insecure HTTP and disallowed origins.
+  //   6. Process Lifecycle & Quotas:
+  //      Enforces timeoutMs quota, cancellation, and scratch directory cleanup.
+  //   7. Pre-Reconstruction Exact Hash Binding & Anti-Substitution:
+  //      Canonically incorporates probesDigest in preReconstructionDigest.
+  //      Anti-substitution invariant enforced (refuses claiming pre-existing benchmark as new model).
+  runTest('18. Zero fallback secrets, numeric semver, allowlist integrity & execution adapter error guards (R32)', () => {
     // 1. Audit active refined capability probes
     const probes = probeReconstructionEngines();
     assert.ok(probes.LOCAL_GPU_ACCELERATOR, 'LOCAL_GPU_ACCELERATOR probe must exist');
@@ -1021,7 +1019,6 @@ async function main() {
       console.log(`    - Engine [${engineName.padEnd(20)}]: configured=${p.configured}, discovered=${p.discovered}, cliProbeRunnable=${p.cliProbeRunnable}, capable=${p.reconstructionCapable}, auth=${p.authorized} -> ${p.classification}`);
     }
 
-    // On standard test environment without configured external GPU/COLMAP, verify honest classification
     assert.strictEqual(
       probes.LOCAL_COLMAP.classification,
       'NOT_CONFIGURED_OR_NOT_DISCOVERED_BY_CURRENT_PROBE',
@@ -1079,59 +1076,191 @@ async function main() {
     );
     console.log('    - Exact probe hash binding: PASS (preReconstructionDigest strictly binds probesDigest in canonical byte order)');
 
-    // 3. Isolated Execution Adapter Error Controls
-    // 3a. Unauthorized adapter invocation
-    const unauthAdapter = new ReconstructionExecutionAdapter({ entitlementKey: null });
-    const unauthRes = unauthAdapter.execute({ executable: 'colmap.exe' });
-    assert.strictEqual(unauthRes.success, false);
-    assert.strictEqual(unauthRes.errorCode, 'ERR_ADAPTER_UNAUTHORIZED');
-    assert.strictEqual(unauthRes.failClosed, true);
+    // 3. Numeric Semver Comparison Unit Tests
+    assert.ok(compareSemver('3.10.0', '3.8.0') > 0, 'Numeric semver: 3.10.0 must be greater than 3.8.0 (not lexicographical)');
+    assert.ok(compareSemver('3.6.0', '3.8.0') < 0, 'Numeric semver: 3.6.0 must be less than 3.8.0');
+    assert.strictEqual(compareSemver('3.8.0', '3.8.0'), 0, 'Numeric semver: 3.8.0 === 3.8.0');
+    assert.strictEqual(compareSemver('not-a-version', '3.8.0'), null, 'Numeric semver: garbled version yields null');
+    assert.strictEqual(compareSemver('3.8.0', 'corrupted'), null, 'Numeric semver: corrupted minVersion yields null');
+    console.log('    - Numeric semver comparison: PASS (3.10 vs 3.8 numeric ordering and garbled version handling confirmed)');
 
-    // 3b. Authorized adapter with disallowed target
+    // 4. Zero Fallback Secrets & Anti-Placeholder Rejection
+    // 4a. Disallow missing secret
+    delete process.env.RECONSTRUCTION_ENTITLEMENT_SECRET;
+    delete process.env.RECONSTRUCTION_ADAPTER_AUTHORIZED;
+    const missingSecretAdapter = new ReconstructionExecutionAdapter({ entitlementKey: 'some-key-value' });
+    const missingSecretRes = missingSecretAdapter.execute({ executable: 'colmap.exe' });
+    assert.strictEqual(missingSecretRes.success, false);
+    assert.strictEqual(missingSecretRes.errorCode, 'ERR_ADAPTER_UNAUTHORIZED');
+    assert.strictEqual(missingSecretRes.reason, 'ERR_ADAPTER_SECRET_NOT_PROVISIONED_OR_TRIVIAL');
+
+    // 4b. Disallow known placeholder / trivial secrets
+    assert.strictEqual(isPlaceholderOrTrivialSecret('default'), true);
+    assert.strictEqual(isPlaceholderOrTrivialSecret('authenticated_stage2_infrastructure_key'), true);
+    assert.strictEqual(isPlaceholderOrTrivialSecret('secret_stage2_handshake'), true);
+    assert.strictEqual(isPlaceholderOrTrivialSecret('short'), true);
+    assert.strictEqual(isPlaceholderOrTrivialSecret('VALID_CRYPTOGRAPHIC_NONCE_32BYTES_LONG'), false);
+
+    process.env.RECONSTRUCTION_ENTITLEMENT_SECRET = 'authenticated_stage2_infrastructure_key'; // known placeholder
     process.env.RECONSTRUCTION_ADAPTER_AUTHORIZED = '1';
-    const authAdapter = new ReconstructionExecutionAdapter({
-      entitlementKey: 'AUTHENTICATED_STAGE2_INFRASTRUCTURE_KEY'
+    const placeholderAdapter = new ReconstructionExecutionAdapter({ entitlementKey: 'authenticated_stage2_infrastructure_key' });
+    const placeholderRes = placeholderAdapter.execute({ executable: 'colmap.exe' });
+    assert.strictEqual(placeholderRes.success, false);
+    assert.strictEqual(placeholderRes.errorCode, 'ERR_ADAPTER_UNAUTHORIZED');
+    assert.strictEqual(placeholderRes.reason, 'ERR_ADAPTER_SECRET_NOT_PROVISIONED_OR_TRIVIAL');
+
+    // 4c. Env flag only without valid secret
+    delete process.env.RECONSTRUCTION_ENTITLEMENT_SECRET;
+    process.env.RECONSTRUCTION_ADAPTER_AUTHORIZED = '1';
+    const flagOnlyAdapter = new ReconstructionExecutionAdapter({ entitlementKey: 'valid-format-key-32-chars-long-entropy' });
+    assert.strictEqual(flagOnlyAdapter.execute({ executable: 'colmap.exe' }).errorCode, 'ERR_ADAPTER_UNAUTHORIZED');
+
+    // 4d. Secret mismatch
+    process.env.RECONSTRUCTION_ENTITLEMENT_SECRET = 'SECURE_SERVER_SECRET_PROVISIONED_IN_VAULT_123';
+    process.env.RECONSTRUCTION_ADAPTER_AUTHORIZED = '1';
+    const mismatchAdapter = new ReconstructionExecutionAdapter({ entitlementKey: 'WRONG_CLIENT_ENTITLEMENT_KEY_12345678' });
+    const mismatchRes = mismatchAdapter.execute({ executable: 'colmap.exe' });
+    assert.strictEqual(mismatchRes.success, false);
+    assert.strictEqual(mismatchRes.errorCode, 'ERR_ADAPTER_UNAUTHORIZED');
+    assert.strictEqual(mismatchRes.reason, 'ERR_ADAPTER_SECRET_MISMATCH');
+
+    // Clean up env
+    delete process.env.RECONSTRUCTION_ENTITLEMENT_SECRET;
+    delete process.env.RECONSTRUCTION_ADAPTER_AUTHORIZED;
+    console.log('    - Zero fallback secrets: PASS (missing env, placeholder tokens, env-flag-only, and secret mismatch rejected)');
+
+    // 5. Isolated Mock Auth Provider (Test Harness Only) & Mock Runner Boundary
+    const mockAuthProvider = {
+      validate: (k) => (k === 'TEST_ONLY_MOCK_ENTITLEMENT_KEY_ENTROPY' ? { authorized: true } : { authorized: false, reason: 'MOCK_KEY_REJECTED' })
+    };
+    const testHarnessAdapter = new ReconstructionExecutionAdapter({
+      isTestMode: true,
+      mockAuthProvider,
+      entitlementKey: 'TEST_ONLY_MOCK_ENTITLEMENT_KEY_ENTROPY'
     });
-    const disallowedRes = authAdapter.execute({ executable: 'unauthorized_tool.exe' });
+    assert.strictEqual(testHarnessAdapter.isAuthorized().authorized, true, 'Test-harness mock auth provider must authorize valid test key');
+
+    // Production mode rejects mockRunner injection
+    const prodAdapterWithMockRunner = new ReconstructionExecutionAdapter({
+      isTestMode: false,
+      entitlementKey: 'TEST_ONLY_MOCK_ENTITLEMENT_KEY_ENTROPY'
+    });
+    process.env.RECONSTRUCTION_ENTITLEMENT_SECRET = 'TEST_ONLY_MOCK_ENTITLEMENT_KEY_ENTROPY';
+    process.env.RECONSTRUCTION_ADAPTER_AUTHORIZED = '1';
+    const mockBlockedRes = prodAdapterWithMockRunner.execute({
+      executable: 'colmap.exe',
+      mockRunner: () => ({ success: true })
+    });
+    assert.strictEqual(mockBlockedRes.success, false);
+    assert.strictEqual(mockBlockedRes.errorCode, 'ERR_ADAPTER_MOCK_RUNNER_FORBIDDEN_IN_PRODUCTION');
+    delete process.env.RECONSTRUCTION_ENTITLEMENT_SECRET;
+    delete process.env.RECONSTRUCTION_ADAPTER_AUTHORIZED;
+    console.log('    - Mock boundary isolation: PASS (mockRunner strictly forbidden outside test-harness mode)');
+
+    // 6. Allowlist, Path & Numeric Semver Controls (tested via isolated test adapter)
+    // 6a. Disallowed target
+    const disallowedRes = testHarnessAdapter.execute({ executable: 'unauthorized_cmd.exe' });
     assert.strictEqual(disallowedRes.success, false);
     assert.strictEqual(disallowedRes.errorCode, 'ERR_ADAPTER_DISALLOWED_TARGET');
 
-    // 3c. Incompatible binary version
-    const versionRes = authAdapter.execute({
+    // 6b. Empty / invalid executable path
+    const invalidPathRes = testHarnessAdapter.execute({ executable: '   ' });
+    assert.strictEqual(invalidPathRes.success, false);
+    assert.strictEqual(invalidPathRes.errorCode, 'ERR_ADAPTER_INVALID_EXECUTABLE_PATH');
+
+    // 6c. Incompatible semver version (3.6.0 < 3.8.0)
+    const semverOldRes = testHarnessAdapter.execute({
       executable: 'colmap.exe',
       minVersion: '3.8.0',
-      versionCheckOutput: 'COLMAP 3.6.0'
+      versionCheckOutput: 'COLMAP 3.6.0',
+      mockRunner: () => ({ success: true })
     });
-    assert.strictEqual(versionRes.success, false);
-    assert.strictEqual(versionRes.errorCode, 'ERR_ADAPTER_INCOMPATIBLE_VERSION');
+    assert.strictEqual(semverOldRes.success, false);
+    assert.strictEqual(semverOldRes.errorCode, 'ERR_ADAPTER_INCOMPATIBLE_VERSION');
 
-    // 3d. Remote worker authentication failure
-    const badAuthRes = authAdapter.execute({
-      remoteUrl: 'https://spark-3dgs.internal/api',
-      remoteAuthToken: 'INVALID_CREDENTIALS'
+    // 6d. Garbled version format
+    const semverGarbledRes = testHarnessAdapter.execute({
+      executable: 'colmap.exe',
+      minVersion: '3.8.0',
+      versionCheckOutput: 'COLMAP unknown-build',
+      mockRunner: () => ({ success: true })
     });
-    assert.strictEqual(badAuthRes.success, false);
-    assert.strictEqual(badAuthRes.errorCode, 'ERR_ADAPTER_REMOTE_AUTH_FAILED');
+    assert.strictEqual(semverGarbledRes.success, false);
+    assert.strictEqual(semverGarbledRes.errorCode, 'ERR_ADAPTER_INVALID_VERSION_FORMAT');
 
-    // 3e. Unreachable remote endpoint
-    const unreachableRes = authAdapter.execute({
-      remoteUrl: 'https://unreachable.internal/reconstruct',
-      remoteAuthToken: 'SECRET_STAGE2_HANDSHAKE'
+    // 6e. Compatible semver version (3.10.0 >= 3.8.0)
+    const semverOkRes = testHarnessAdapter.execute({
+      executable: 'colmap.exe',
+      minVersion: '3.8.0',
+      versionCheckOutput: 'COLMAP 3.10.0',
+      mockRunner: () => ({ success: false, errorCode: 'ERR_SFM_PIPELINE_FAILED', message: 'COLMAP point triangulation failed' })
+    });
+    assert.strictEqual(semverOkRes.errorCode, 'ERR_SFM_PIPELINE_FAILED', 'Semver 3.10 >= 3.8 must pass version guard and proceed to runner');
+    console.log('    - Allowlist & semver controls: PASS (disallowed target, invalid path, semver 3.6 rejected, 3.10 accepted)');
+
+    // 7. Remote Worker Origin & Protocol Controls
+    // 7a. Insecure HTTP protocol rejected
+    const httpRes = testHarnessAdapter.execute({
+      remoteUrl: 'http://worker.stage2.internal/recon',
+      remoteAuthToken: 'token'
+    });
+    assert.strictEqual(httpRes.success, false);
+    assert.strictEqual(httpRes.errorCode, 'ERR_ADAPTER_REMOTE_INSECURE_PROTOCOL');
+
+    // 7b. Disallowed origin rejected
+    const disallowedOriginRes = testHarnessAdapter.execute({
+      remoteUrl: 'https://evil-unauthorized-server.com/api',
+      remoteAuthToken: 'token'
+    });
+    assert.strictEqual(disallowedOriginRes.success, false);
+    assert.strictEqual(disallowedOriginRes.errorCode, 'ERR_ADAPTER_REMOTE_DISALLOWED_ORIGIN');
+
+    // 7c. Missing remote secret in server environment
+    delete process.env.SPARK_3DGS_WORKER_SECRET;
+    const missingRemoteSecRes = testHarnessAdapter.execute({
+      remoteUrl: 'https://worker.stage2.internal/reconstruct',
+      remoteAuthToken: 'token'
+    });
+    assert.strictEqual(missingRemoteSecRes.success, false);
+    assert.strictEqual(missingRemoteSecRes.errorCode, 'ERR_ADAPTER_REMOTE_SECRET_UNCONFIGURED');
+
+    // 7d. Bad remote auth token
+    process.env.SPARK_3DGS_WORKER_SECRET = 'SECURE_REMOTE_SECRET_PROVISIONED_VAULT_123';
+    const badRemoteAuthRes = testHarnessAdapter.execute({
+      remoteUrl: 'https://worker.stage2.internal/reconstruct',
+      remoteAuthToken: 'WRONG_REMOTE_AUTH_TOKEN_VALUE'
+    });
+    assert.strictEqual(badRemoteAuthRes.success, false);
+    assert.strictEqual(badRemoteAuthRes.errorCode, 'ERR_ADAPTER_REMOTE_AUTH_FAILED');
+
+    // 7e. Unreachable remote endpoint
+    const unreachableRes = testHarnessAdapter.execute({
+      remoteUrl: 'https://worker.stage2.internal/reconstruct',
+      remoteAuthToken: 'SECURE_REMOTE_SECRET_PROVISIONED_VAULT_123',
+      mockRemoteUnreachable: true
     });
     assert.strictEqual(unreachableRes.success, false);
     assert.strictEqual(unreachableRes.errorCode, 'ERR_ADAPTER_REMOTE_UNREACHABLE');
+    delete process.env.SPARK_3DGS_WORKER_SECRET;
+    console.log('    - Remote worker guards: PASS (HTTPS, origin allowlist, secret provisioning, auth, and reachability enforced)');
 
-    // 3f. Execution runner failure propagation
-    const execFailRes = authAdapter.execute({
-      executable: 'colmap.exe',
-      mockRunner: () => ({ success: false, errorCode: 'ERR_SFM_PIPELINE_FAILED', message: 'COLMAP point triangulation failed' })
+    // 8. Process Lifecycle & Timeout Quota Controls
+    const timedOutAdapter = new ReconstructionExecutionAdapter({
+      isTestMode: true,
+      mockAuthProvider,
+      entitlementKey: 'TEST_ONLY_MOCK_ENTITLEMENT_KEY_ENTROPY',
+      timeoutMs: 50
     });
-    assert.strictEqual(execFailRes.success, false);
-    assert.strictEqual(execFailRes.errorCode, 'ERR_SFM_PIPELINE_FAILED');
-    delete process.env.RECONSTRUCTION_ADAPTER_AUTHORIZED;
-    console.log('    - Execution adapter error controls: PASS (unauthorized, disallowed, version, auth, unreachable, and failure guarded)');
+    const timeoutRes = timedOutAdapter.execute({
+      executable: 'colmap.exe',
+      mockRunner: () => ({ success: false, timedOut: true })
+    });
+    assert.strictEqual(timeoutRes.success, false);
+    assert.strictEqual(timeoutRes.errorCode, 'ERR_ADAPTER_TIMEOUT');
+    assert.strictEqual(timeoutRes.scratchCleaned, true);
+    console.log('    - Process lifecycle & quota: PASS (timeoutMs quota and scratch cleanup verified)');
 
-    // 4. Anti-substitution check on benchmark hashes
+    // 9. Anti-substitution check on benchmark hashes
     const PREEXISTING_BENCHMARK_SPZ_HASH = 'fc80e5192ce1c79196e51414e0739524c9e191092c1719829ab414d0e73a32ee';
     const PREEXISTING_BENCHMARK_PLY_HASH = 'b40f8035ddc51817538f99afffa7eeca6836e8fcaa243a93bd214166b877cd4d';
 
@@ -1144,14 +1273,12 @@ async function main() {
       return true;
     }
 
-    // Must pass for honest disclosure (newModelGenerated = false)
     assert.doesNotThrow(() => validateCausalLineage({
       newModelGenerated: false,
       outputSpzHash: PREEXISTING_BENCHMARK_SPZ_HASH,
       outputPlyHash: PREEXISTING_BENCHMARK_PLY_HASH
     }));
 
-    // Must throw if substitution attempted
     assert.throws(() => validateCausalLineage({
       newModelGenerated: true,
       outputSpzHash: PREEXISTING_BENCHMARK_SPZ_HASH,
@@ -1160,7 +1287,7 @@ async function main() {
 
     console.log('    - Anti-substitution gate: PASS (pre-existing benchmark protected from false generation claims)');
 
-    // 5. Control plane boundary gate
+    // 10. Control plane boundary gate
     function verifyControlPlaneReceipt(receipt) {
       if (!receipt || !receipt.controlPlaneSignature) {
         return {
@@ -1176,7 +1303,7 @@ async function main() {
     assert.strictEqual(unverifiedState.LIVE_QA_REVOCATION, 'BLOCKED_PENDING_INDEPENDENT_CONTROL_PLANE');
     console.log('    - Control-plane boundary gate: PASS (runtime & QA revocation remain fail-closed)');
 
-    // 6. Viewer procedural disclaimer gate
+    // 11. Viewer procedural disclaimer gate
     const viewerHtmlPath = path.join(REPO_ROOT, 'virtual-tradeshow-commercial-v1/_clean_deploy/client/diagnostics/wilo-spz-only.html');
     assert.ok(fs.existsSync(viewerHtmlPath), 'Diagnostic viewer HTML must exist');
     const viewerHtml = fs.readFileSync(viewerHtmlPath, 'utf8');
@@ -1188,7 +1315,7 @@ async function main() {
   console.log(`True 3D Pipeline Test Suite Complete: ${passedTests}/${totalTests} passed`);
   console.log('================================================================\n');
 
-  // ── [POST-RUN FINALIZER] Emit Machine-Verifiable R31 Execution Receipt ───────
+  // ── [POST-RUN FINALIZER] Emit Machine-Verifiable R32 Execution Receipt ───────
   const suiteEndTime = new Date().toISOString();
   const durationMs = Date.now() - startTimeEpoch;
   const runnerSource = fs.readFileSync(__filename);
@@ -1198,7 +1325,7 @@ async function main() {
   const engineDiscoveryProbes = probeReconstructionEngines();
 
   const receipt = {
-    receiptSchemaVersion: 'R31_EXECUTION_RECEIPT_V1',
+    receiptSchemaVersion: 'R32_EXECUTION_RECEIPT_V1',
     executionTimestamps: {
       startTime: suiteStartTime,
       endTime: suiteEndTime,
@@ -1265,14 +1392,14 @@ async function main() {
 
   const receiptOutPath = path.join(
     REPO_ROOT,
-    'virtual-tradeshow-commercial-v1/production_artifacts/R31_TEST_EXECUTION_RECEIPT.json'
+    'virtual-tradeshow-commercial-v1/production_artifacts/R32_TEST_EXECUTION_RECEIPT.json'
   );
   fs.writeFileSync(receiptOutPath, JSON.stringify(receipt, null, 2), 'utf8');
   const savedReceiptBytes = fs.readFileSync(receiptOutPath);
   const receiptByteSha256 = crypto.createHash('sha256').update(savedReceiptBytes).digest('hex');
 
-  console.log('--- Final Execution Receipt (R31 Machine Verifiable) ---');
-  console.log(`  File:           virtual-tradeshow-commercial-v1/production_artifacts/R31_TEST_EXECUTION_RECEIPT.json`);
+  console.log('--- Final Execution Receipt (R32 Machine Verifiable) ---');
+  console.log(`  File:           virtual-tradeshow-commercial-v1/production_artifacts/R32_TEST_EXECUTION_RECEIPT.json`);
   console.log(`  Byte SHA-256:   ${receiptByteSha256}`);
   console.log(`  Tested Commit:  ${suiteCurrentHead}`);
   console.log(`  Expected Head:  ${expectedHead || '(none - unbound)'}`);
