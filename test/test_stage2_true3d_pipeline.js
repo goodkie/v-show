@@ -44,6 +44,9 @@
 
 'use strict';
 
+process.env.NODE_ENV = 'test';
+process.env.STAGE2_ALLOW_TEST_HARNESS_MOCKS = '1';
+
 const fs = require('fs');
 const path = require('path');
 const http = require('http');
@@ -63,7 +66,9 @@ const {
   computeBaseline,
   parseSemver,
   compareSemver,
-  isPlaceholderOrTrivialSecret
+  isPlaceholderOrTrivialSecret,
+  APPROVED_RECONSTRUCTION_TARGETS,
+  APPROVED_TARGET_MIN_VERSIONS
 } = require('../virtual-tradeshow-commercial-v1/server/spatial_reconstruction_worker');
 
 const REPO_ROOT = path.resolve(__dirname, '..');
@@ -999,7 +1004,7 @@ async function main() {
   //   7. Pre-Reconstruction Exact Hash Binding & Anti-Substitution:
   //      Canonically incorporates probesDigest in preReconstructionDigest.
   //      Anti-substitution invariant enforced (refuses claiming pre-existing benchmark as new model).
-  runTest('18. Zero fallback secrets, numeric semver, allowlist integrity & execution adapter error guards (R32)', () => {
+  runTest('18. Trusted execution boundary, mandatory digest binding, numeric semver & isolated mock guards (R33)', () => {
     // 1. Audit active refined capability probes
     const probes = probeReconstructionEngines();
     assert.ok(probes.LOCAL_GPU_ACCELERATOR, 'LOCAL_GPU_ACCELERATOR probe must exist');
@@ -1140,6 +1145,13 @@ async function main() {
     });
     assert.strictEqual(testHarnessAdapter.isAuthorized().authorized, true, 'Test-harness mock auth provider must authorize valid test key');
 
+    // Caller cannot supply allowlist override with unapproved targets
+    assert.throws(
+      () => new ReconstructionExecutionAdapter({ isTestMode: true, mockAuthProvider, allowlist: ['malicious_tool.exe'] }),
+      /ERR_ADAPTER_CALLER_ALLOWLIST_FORBIDDEN/,
+      'Caller-supplied allowlist override with unapproved targets must be rejected'
+    );
+
     // Production mode rejects mockRunner injection
     const prodAdapterWithMockRunner = new ReconstructionExecutionAdapter({
       isTestMode: false,
@@ -1148,29 +1160,56 @@ async function main() {
     process.env.RECONSTRUCTION_ENTITLEMENT_SECRET = 'TEST_ONLY_MOCK_ENTITLEMENT_KEY_ENTROPY';
     process.env.RECONSTRUCTION_ADAPTER_AUTHORIZED = '1';
     const mockBlockedRes = prodAdapterWithMockRunner.execute({
-      executable: 'colmap.exe',
+      executable: path.resolve('colmap.exe'),
+      versionCheckOutput: 'COLMAP 3.8.0',
       mockRunner: () => ({ success: true })
     });
     assert.strictEqual(mockBlockedRes.success, false);
     assert.strictEqual(mockBlockedRes.errorCode, 'ERR_ADAPTER_MOCK_RUNNER_FORBIDDEN_IN_PRODUCTION');
     delete process.env.RECONSTRUCTION_ENTITLEMENT_SECRET;
     delete process.env.RECONSTRUCTION_ADAPTER_AUTHORIZED;
+
+    // Test mode requires server-side test environment authorization
+    delete process.env.NODE_ENV;
+    delete process.env.STAGE2_ALLOW_TEST_HARNESS_MOCKS;
+    assert.throws(
+      () => new ReconstructionExecutionAdapter({ isTestMode: true, mockAuthProvider }),
+      /ERR_ADAPTER_MOCK_RUNNER_FORBIDDEN_IN_PRODUCTION/,
+      'Test mode must be forbidden without server-side test environment authorization'
+    );
+    process.env.NODE_ENV = 'test';
+    process.env.STAGE2_ALLOW_TEST_HARNESS_MOCKS = '1';
+
     console.log('    - Mock boundary isolation: PASS (mockRunner strictly forbidden outside test-harness mode)');
 
     // 6. Allowlist, Path & Numeric Semver Controls (tested via isolated test adapter)
     // 6a. Disallowed target
-    const disallowedRes = testHarnessAdapter.execute({ executable: 'unauthorized_cmd.exe' });
+    const disallowedRes = testHarnessAdapter.execute({ executable: path.resolve('unauthorized_cmd.exe'), versionCheckOutput: 'COLMAP 3.8.0' });
     assert.strictEqual(disallowedRes.success, false);
     assert.strictEqual(disallowedRes.errorCode, 'ERR_ADAPTER_DISALLOWED_TARGET');
 
-    // 6b. Empty / invalid executable path
+    // 6b. Non-absolute path rejected
+    const relativeRes = testHarnessAdapter.execute({ executable: 'colmap.exe', versionCheckOutput: 'COLMAP 3.8.0' });
+    assert.strictEqual(relativeRes.success, false);
+    assert.strictEqual(relativeRes.errorCode, 'ERR_ADAPTER_NON_ABSOLUTE_PATH');
+
+    // 6c. Empty / invalid executable path
     const invalidPathRes = testHarnessAdapter.execute({ executable: '   ' });
     assert.strictEqual(invalidPathRes.success, false);
     assert.strictEqual(invalidPathRes.errorCode, 'ERR_ADAPTER_INVALID_EXECUTABLE_PATH');
 
-    // 6c. Incompatible semver version (3.6.0 < 3.8.0)
+    // 6d. Missing version output
+    const missingVerRes = testHarnessAdapter.execute({
+      executable: path.resolve('colmap.exe'),
+      versionCheckOutput: '',
+      mockRunner: () => ({ success: true })
+    });
+    assert.strictEqual(missingVerRes.success, false);
+    assert.strictEqual(missingVerRes.errorCode, 'ERR_ADAPTER_VERSION_OUTPUT_MISSING');
+
+    // 6e. Incompatible semver version (3.6.0 < 3.8.0)
     const semverOldRes = testHarnessAdapter.execute({
-      executable: 'colmap.exe',
+      executable: path.resolve('colmap.exe'),
       minVersion: '3.8.0',
       versionCheckOutput: 'COLMAP 3.6.0',
       mockRunner: () => ({ success: true })
@@ -1178,9 +1217,9 @@ async function main() {
     assert.strictEqual(semverOldRes.success, false);
     assert.strictEqual(semverOldRes.errorCode, 'ERR_ADAPTER_INCOMPATIBLE_VERSION');
 
-    // 6d. Garbled version format
+    // 6f. Garbled version format
     const semverGarbledRes = testHarnessAdapter.execute({
-      executable: 'colmap.exe',
+      executable: path.resolve('colmap.exe'),
       minVersion: '3.8.0',
       versionCheckOutput: 'COLMAP unknown-build',
       mockRunner: () => ({ success: true })
@@ -1188,15 +1227,49 @@ async function main() {
     assert.strictEqual(semverGarbledRes.success, false);
     assert.strictEqual(semverGarbledRes.errorCode, 'ERR_ADAPTER_INVALID_VERSION_FORMAT');
 
-    // 6e. Compatible semver version (3.10.0 >= 3.8.0)
+    // 6g. Compatible semver version (3.10.0 >= 3.8.0)
     const semverOkRes = testHarnessAdapter.execute({
-      executable: 'colmap.exe',
+      executable: path.resolve('colmap.exe'),
       minVersion: '3.8.0',
       versionCheckOutput: 'COLMAP 3.10.0',
       mockRunner: () => ({ success: false, errorCode: 'ERR_SFM_PIPELINE_FAILED', message: 'COLMAP point triangulation failed' })
     });
     assert.strictEqual(semverOkRes.errorCode, 'ERR_SFM_PIPELINE_FAILED', 'Semver 3.10 >= 3.8 must pass version guard and proceed to runner');
-    console.log('    - Allowlist & semver controls: PASS (disallowed target, invalid path, semver 3.6 rejected, 3.10 accepted)');
+
+    // 6h. Mandatory expected SHA-256 missing in non-mock / production mode
+    const dummyExe = path.join(os.tmpdir(), 'colmap.exe');
+    fs.writeFileSync(dummyExe, 'dummy binary content for test');
+    try {
+      const prodAdapterNoHash = new ReconstructionExecutionAdapter({
+        isTestMode: false,
+        entitlementKey: 'TEST_ONLY_MOCK_ENTITLEMENT_KEY_ENTROPY'
+      });
+      process.env.RECONSTRUCTION_ENTITLEMENT_SECRET = 'TEST_ONLY_MOCK_ENTITLEMENT_KEY_ENTROPY';
+      process.env.RECONSTRUCTION_ADAPTER_AUTHORIZED = '1';
+      const missingHashRes = prodAdapterNoHash.execute({
+        executable: dummyExe,
+        versionCheckOutput: 'COLMAP 3.8.0'
+      });
+      assert.strictEqual(missingHashRes.errorCode, 'ERR_ADAPTER_MANDATORY_HASH_MISSING');
+
+      // 6i. Binary hash mismatch in production mode
+      const prodAdapterWithBadHash = new ReconstructionExecutionAdapter({
+        isTestMode: false,
+        entitlementKey: 'TEST_ONLY_MOCK_ENTITLEMENT_KEY_ENTROPY',
+        expectedBinaryHashes: { 'colmap.exe': '0000000000000000000000000000000000000000000000000000000000000000' }
+      });
+      const mismatchHashRes = prodAdapterWithBadHash.execute({
+        executable: dummyExe,
+        versionCheckOutput: 'COLMAP 3.8.0'
+      });
+      assert.strictEqual(mismatchHashRes.errorCode, 'ERR_ADAPTER_BINARY_HASH_MISMATCH');
+      delete process.env.RECONSTRUCTION_ENTITLEMENT_SECRET;
+      delete process.env.RECONSTRUCTION_ADAPTER_AUTHORIZED;
+    } finally {
+      try { fs.unlinkSync(dummyExe); } catch (_) {}
+    }
+
+    console.log('    - Allowlist & semver controls: PASS (disallowed target, non-absolute path, invalid path, semver 3.6 rejected, 3.10 accepted, hash enforced)');
 
     // 7. Remote Worker Origin & Protocol Controls
     // 7a. Insecure HTTP protocol rejected
@@ -1207,7 +1280,17 @@ async function main() {
     assert.strictEqual(httpRes.success, false);
     assert.strictEqual(httpRes.errorCode, 'ERR_ADAPTER_REMOTE_INSECURE_PROTOCOL');
 
-    // 7b. Disallowed origin rejected
+    // 7b. Missing allowed origins configuration in environment
+    delete process.env.SPARK_3DGS_ALLOWED_ORIGINS;
+    const missingOriginRes = testHarnessAdapter.execute({
+      remoteUrl: 'https://worker.stage2.internal/recon',
+      remoteAuthToken: 'token'
+    });
+    assert.strictEqual(missingOriginRes.success, false);
+    assert.strictEqual(missingOriginRes.errorCode, 'ERR_ADAPTER_REMOTE_ORIGIN_CONFIG_MISSING');
+
+    // 7c. Disallowed origin rejected
+    process.env.SPARK_3DGS_ALLOWED_ORIGINS = 'https://worker.stage2.internal';
     const disallowedOriginRes = testHarnessAdapter.execute({
       remoteUrl: 'https://evil-unauthorized-server.com/api',
       remoteAuthToken: 'token'
@@ -1215,7 +1298,7 @@ async function main() {
     assert.strictEqual(disallowedOriginRes.success, false);
     assert.strictEqual(disallowedOriginRes.errorCode, 'ERR_ADAPTER_REMOTE_DISALLOWED_ORIGIN');
 
-    // 7c. Missing remote secret in server environment
+    // 7d. Missing remote secret in server environment
     delete process.env.SPARK_3DGS_WORKER_SECRET;
     const missingRemoteSecRes = testHarnessAdapter.execute({
       remoteUrl: 'https://worker.stage2.internal/reconstruct',
@@ -1224,7 +1307,7 @@ async function main() {
     assert.strictEqual(missingRemoteSecRes.success, false);
     assert.strictEqual(missingRemoteSecRes.errorCode, 'ERR_ADAPTER_REMOTE_SECRET_UNCONFIGURED');
 
-    // 7d. Bad remote auth token
+    // 7e. Bad remote auth token
     process.env.SPARK_3DGS_WORKER_SECRET = 'SECURE_REMOTE_SECRET_PROVISIONED_VAULT_123';
     const badRemoteAuthRes = testHarnessAdapter.execute({
       remoteUrl: 'https://worker.stage2.internal/reconstruct',
@@ -1233,7 +1316,7 @@ async function main() {
     assert.strictEqual(badRemoteAuthRes.success, false);
     assert.strictEqual(badRemoteAuthRes.errorCode, 'ERR_ADAPTER_REMOTE_AUTH_FAILED');
 
-    // 7e. Unreachable remote endpoint
+    // 7f. Unreachable remote endpoint (simulated)
     const unreachableRes = testHarnessAdapter.execute({
       remoteUrl: 'https://worker.stage2.internal/reconstruct',
       remoteAuthToken: 'SECURE_REMOTE_SECRET_PROVISIONED_VAULT_123',
@@ -1241,7 +1324,9 @@ async function main() {
     });
     assert.strictEqual(unreachableRes.success, false);
     assert.strictEqual(unreachableRes.errorCode, 'ERR_ADAPTER_REMOTE_UNREACHABLE');
+    assert.strictEqual(unreachableRes.handshakeClassification, 'LOCAL_SPEC_VALIDATION_ONLY');
     delete process.env.SPARK_3DGS_WORKER_SECRET;
+    delete process.env.SPARK_3DGS_ALLOWED_ORIGINS;
     console.log('    - Remote worker guards: PASS (HTTPS, origin allowlist, secret provisioning, auth, and reachability enforced)');
 
     // 8. Process Lifecycle & Timeout Quota Controls
@@ -1252,13 +1337,16 @@ async function main() {
       timeoutMs: 50
     });
     const timeoutRes = timedOutAdapter.execute({
-      executable: 'colmap.exe',
+      executable: path.resolve('colmap.exe'),
+      versionCheckOutput: 'COLMAP 3.8.0',
       mockRunner: () => ({ success: false, timedOut: true })
     });
     assert.strictEqual(timeoutRes.success, false);
     assert.strictEqual(timeoutRes.errorCode, 'ERR_ADAPTER_TIMEOUT');
+    assert.strictEqual(timeoutRes.timeoutClassification, 'MOCK_TIMEOUT_NEGATIVE_TEST_ONLY');
+    assert.strictEqual(timeoutRes.processTreeKill, 'NOT_APPLICABLE_IN_MOCK_MODE');
     assert.strictEqual(timeoutRes.scratchCleaned, true);
-    console.log('    - Process lifecycle & quota: PASS (timeoutMs quota and scratch cleanup verified)');
+    console.log('    - Process lifecycle & quota: PASS (timeoutMs quota and scratch cleanup verified with MOCK_TIMEOUT_NEGATIVE_TEST_ONLY)');
 
     // 9. Anti-substitution check on benchmark hashes
     const PREEXISTING_BENCHMARK_SPZ_HASH = 'fc80e5192ce1c79196e51414e0739524c9e191092c1719829ab414d0e73a32ee';
@@ -1315,7 +1403,7 @@ async function main() {
   console.log(`True 3D Pipeline Test Suite Complete: ${passedTests}/${totalTests} passed`);
   console.log('================================================================\n');
 
-  // ── [POST-RUN FINALIZER] Emit Machine-Verifiable R32 Execution Receipt ───────
+  // ── [POST-RUN FINALIZER] Emit Machine-Verifiable R33 Execution Receipt ───────
   const suiteEndTime = new Date().toISOString();
   const durationMs = Date.now() - startTimeEpoch;
   const runnerSource = fs.readFileSync(__filename);
@@ -1325,7 +1413,7 @@ async function main() {
   const engineDiscoveryProbes = probeReconstructionEngines();
 
   const receipt = {
-    receiptSchemaVersion: 'R32_EXECUTION_RECEIPT_V1',
+    receiptSchemaVersion: 'R33_EXECUTION_RECEIPT_V1',
     executionTimestamps: {
       startTime: suiteStartTime,
       endTime: suiteEndTime,
@@ -1368,6 +1456,14 @@ async function main() {
       syntheticExtensionsCaught: 7,
       lfsPointerDetectionVerified: true
     },
+    executionBoundaryAudit: {
+      trustedExecutionBoundary: 'CANONICAL_ABSOLUTE_PATH_AND_MANDATORY_SHA256',
+      callerAllowlistOverride: 'FORBIDDEN',
+      symlinkResolution: 'REJECTED_VIA_REALPATH',
+      semverComparisonModel: 'NUMERIC_COMPONENT_ORDERING',
+      mockTimeoutClassification: 'MOCK_TIMEOUT_NEGATIVE_TEST_ONLY',
+      remoteHandshakeClassification: 'LOCAL_SPEC_VALIDATION_ONLY_NO_NETWORK'
+    },
     engineDiscoveryProbes,
     operatingGates: {
       LOCAL_STATIC_ASSET_ISOLATION: 'VERIFIED_BY_TEST',
@@ -1392,14 +1488,14 @@ async function main() {
 
   const receiptOutPath = path.join(
     REPO_ROOT,
-    'virtual-tradeshow-commercial-v1/production_artifacts/R32_TEST_EXECUTION_RECEIPT.json'
+    'virtual-tradeshow-commercial-v1/production_artifacts/R33_TEST_EXECUTION_RECEIPT.json'
   );
   fs.writeFileSync(receiptOutPath, JSON.stringify(receipt, null, 2), 'utf8');
   const savedReceiptBytes = fs.readFileSync(receiptOutPath);
   const receiptByteSha256 = crypto.createHash('sha256').update(savedReceiptBytes).digest('hex');
 
-  console.log('--- Final Execution Receipt (R32 Machine Verifiable) ---');
-  console.log(`  File:           virtual-tradeshow-commercial-v1/production_artifacts/R32_TEST_EXECUTION_RECEIPT.json`);
+  console.log('--- Final Execution Receipt (R33 Machine Verifiable) ---');
+  console.log(`  File:           virtual-tradeshow-commercial-v1/production_artifacts/R33_TEST_EXECUTION_RECEIPT.json`);
   console.log(`  Byte SHA-256:   ${receiptByteSha256}`);
   console.log(`  Tested Commit:  ${suiteCurrentHead}`);
   console.log(`  Expected Head:  ${expectedHead || '(none - unbound)'}`);

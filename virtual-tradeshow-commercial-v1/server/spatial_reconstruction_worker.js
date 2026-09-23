@@ -364,12 +364,16 @@ function isPlaceholderOrTrivialSecret(secret) {
 
 function parseSemver(versionStr) {
   if (typeof versionStr !== 'string') return null;
-  const match = versionStr.match(/(?:^|[^\d])(\d+)\.(\d+)(?:\.(\d+))?/);
+  // Match standard semantic versions: major.minor.patch with optional prerelease
+  // e.g. "3.8.0", "COLMAP 3.8.0", "3.10.0-rc1"
+  // Reject arbitrary strings without valid numeric dot-separated major.minor
+  const match = versionStr.match(/(?:^|[\s/v])(\d+)\.(\d+)(?:\.(\d+))?(?:-([0-9A-Za-z.-]+))?(?:$|[\s+])/);
   if (!match) return null;
   return {
     major: parseInt(match[1], 10),
     minor: parseInt(match[2], 10),
-    patch: match[3] !== undefined ? parseInt(match[3], 10) : 0
+    patch: match[3] !== undefined ? parseInt(match[3], 10) : 0,
+    prerelease: match[4] || null
   };
 }
 
@@ -382,31 +386,64 @@ function compareSemver(v1, v2) {
   return p1.patch - p2.patch;
 }
 
+// Immutable approved binary allowlist (no caller override permitted)
+const APPROVED_RECONSTRUCTION_TARGETS = Object.freeze([
+  'colmap.exe', 'colmap', 'ns-train.exe', 'ns-train', 'gsplat_train'
+]);
+
+// Mandatory minimum versions for allowlisted binaries
+const APPROVED_TARGET_MIN_VERSIONS = Object.freeze({
+  'colmap.exe': '3.8.0',
+  'colmap': '3.8.0',
+  'ns-train.exe': '1.0.0',
+  'ns-train': '1.0.0',
+  'gsplat_train': '0.1.0'
+});
+
 /**
  * Isolated Reconstruction Execution Adapter
  *
- * Strict execution boundary per ChatGPT Round 31/32 directives:
+ * Strict execution boundary per ChatGPT Round 31/32/33 directives:
  *   1. Zero Fallback Secrets: Rejects missing, trivial (<16 chars), or known placeholder secrets.
  *   2. Independent Secret Provisioning: Requires independently provisioned secrets from environment/vault.
- *   3. Isolated Mock Auth Provider: Only allowed in explicit test harness mode (`isTestMode === true && mockAuthProvider`).
- *   4. Strong Allowlist & Binary Path Integrity: Canonical absolute executable paths or strict allowlisted binaries.
- *      Rejects symbolic link targets and requires real filesystem existence.
- *      Mandatory SHA-256 validation against expectedBinaryHashes.
- *   5. Process Lifecycle & Quotas: Enforces real timeoutMs quota, cancellation, and isolated temp scratch directory cleanup.
- *   6. Numeric Semver Comparison: Uses parseSemver/compareSemver (correctly handles 3.10 vs 3.8 and garbled versions).
- *   7. Remote Endpoint Guard: Requires HTTPS protocol and allowlisted origin (no arbitrary URLs or client-supplied secrets).
- *   8. Module Boundary: Prohibits mockRunner in production invocation (ERR_ADAPTER_MOCK_RUNNER_FORBIDDEN_IN_PRODUCTION).
+ *   3. Isolated Mock Auth Provider: Only allowed in explicit test harness mode (`isTestMode === true && mockAuthProvider`)
+ *      and strictly conditioned on server-side test environment authorization (NODE_ENV === 'test' or STAGE2_ALLOW_TEST_HARNESS_MOCKS === '1').
+ *   4. Immutable Target Allowlist: Preapproved targets only; caller cannot expand or override allowlist.
+ *   5. Canonical Absolute Paths: Executable must be specified by an absolute path; relative/bare paths rejected fail-closed.
+ *   6. Symlink Rejection & Realpath Check: Traversal or symlinks in executable or parent directory rejected via fs.realpathSync.
+ *   7. Mandatory SHA-256 Digest Binding: Mandatory expected SHA-256 digest binding; fails closed if expected hash missing or mismatched.
+ *   8. Mandatory Numeric Semver Version Check: Non-mutating probe output strictly verified against approved minimum version.
+ *   9. Remote Endpoint Guard: Requires HTTPS protocol and explicitly provisioned origins in SPARK_3DGS_ALLOWED_ORIGINS (no fallback origins).
+ *      Classified strictly as LOCAL_SPEC_VALIDATION_ONLY.
+ *  10. Process Lifecycle & Quotas: Enforces timeout quota labeled as MOCK_TIMEOUT_NEGATIVE_TEST_ONLY; temporary scratch cleaned up.
+ *  11. Module Boundary: Prohibits mockRunner in production invocation (ERR_ADAPTER_MOCK_RUNNER_FORBIDDEN_IN_PRODUCTION).
  */
 class ReconstructionExecutionAdapter {
   constructor(options = {}) {
+    // 1. Immutable allowlist: caller cannot expand or override allowlist
+    this.allowlist = APPROVED_RECONSTRUCTION_TARGETS;
+    if (options.allowlist) {
+      if (!Array.isArray(options.allowlist)) {
+        throw new Error('ERR_ADAPTER_CALLER_ALLOWLIST_FORBIDDEN: Caller-supplied allowlist must be an array if provided');
+      }
+      for (const item of options.allowlist) {
+        if (!APPROVED_RECONSTRUCTION_TARGETS.includes(String(item).toLowerCase())) {
+          throw new Error(`ERR_ADAPTER_CALLER_ALLOWLIST_FORBIDDEN: Target "${item}" is not in approved allowlist`);
+        }
+      }
+    }
+
     this.entitlementKey = options.entitlementKey || process.env.RECONSTRUCTION_ENTITLEMENT_KEY || null;
     this.timeoutMs = Number.isFinite(options.timeoutMs) ? options.timeoutMs : 30000;
-    this.allowlist = options.allowlist || [
-      'colmap.exe', 'colmap', 'ns-train.exe', 'ns-train', 'gsplat_train'
-    ];
     this.expectedBinaryHashes = options.expectedBinaryHashes || {};
-    this.mockAuthProvider = options.mockAuthProvider || null;
-    this.isTestMode = Boolean(options.isTestMode === true && this.mockAuthProvider);
+
+    // 2. Mock mode strictly bounded to test environment
+    const envAllowsTestMode = process.env.NODE_ENV === 'test' || process.env.STAGE2_ALLOW_TEST_HARNESS_MOCKS === '1';
+    if (options.isTestMode && !envAllowsTestMode) {
+      throw new Error('ERR_ADAPTER_MOCK_RUNNER_FORBIDDEN_IN_PRODUCTION: Test mode and mock runner injection forbidden without server-side test environment authorization');
+    }
+    this.isTestMode = Boolean(options.isTestMode === true && envAllowsTestMode && options.mockAuthProvider);
+    this.mockAuthProvider = this.isTestMode ? options.mockAuthProvider : null;
   }
 
   isAuthorized() {
@@ -480,27 +517,52 @@ class ReconstructionExecutionAdapter {
         };
       }
 
+      // Enforce canonical absolute path
+      if (!path.isAbsolute(executable)) {
+        return {
+          success: false,
+          errorCode: 'ERR_ADAPTER_NON_ABSOLUTE_PATH',
+          message: `Executable path "${executable}" must be an absolute canonical path`,
+          failClosed: true
+        };
+      }
+
       const baseName = path.basename(executable).toLowerCase();
       if (!this.allowlist.map(a => a.toLowerCase()).includes(baseName)) {
         return {
           success: false,
           errorCode: 'ERR_ADAPTER_DISALLOWED_TARGET',
-          message: `Executable target "${baseName}" is not on allowlist`,
+          message: `Executable target "${baseName}" is not on approved allowlist`,
           failClosed: true
         };
       }
 
-      // If not in test mode with mock runner, require real file existence & no symlinks
-      if (!this.isTestMode || !mockRunner) {
-        if (!fs.existsSync(executable)) {
+      // Check parent directory realpath & symlinks
+      const parentDir = path.dirname(executable);
+      if (fs.existsSync(parentDir)) {
+        try {
+          const realParent = fs.realpathSync(parentDir);
+          if (path.resolve(realParent) !== path.resolve(parentDir)) {
+            return {
+              success: false,
+              errorCode: 'ERR_ADAPTER_SYMLINK_REJECTED',
+              message: 'Parent directory involves a symbolic link or non-canonical resolution',
+              failClosed: true
+            };
+          }
+        } catch (err) {
           return {
             success: false,
-            errorCode: 'ERR_ADAPTER_BINARY_MISSING',
-            message: `Executable does not exist on filesystem: ${baseName}`,
+            errorCode: 'ERR_ADAPTER_SYMLINK_CHECK_FAILED',
+            message: `Parent realpath check failed: ${err.message}`,
             failClosed: true
           };
         }
+      }
 
+      // Check executable existence & symlinks
+      const fileExists = fs.existsSync(executable);
+      if (fileExists) {
         const lstat = fs.lstatSync(executable);
         if (lstat.isSymbolicLink()) {
           return {
@@ -510,23 +572,99 @@ class ReconstructionExecutionAdapter {
             failClosed: true
           };
         }
-
-        if (this.expectedBinaryHashes[baseName] || this.expectedBinaryHashes[executable]) {
-          const expectedHash = this.expectedBinaryHashes[baseName] || this.expectedBinaryHashes[executable];
-          const actualHash = computeFileSha256(executable);
-          if (actualHash !== expectedHash) {
-            return {
-              success: false,
-              errorCode: 'ERR_ADAPTER_BINARY_HASH_MISMATCH',
-              message: `Executable hash mismatch for "${baseName}"`,
-              failClosed: true
-            };
-          }
+        const realExe = fs.realpathSync(executable);
+        if (path.resolve(realExe) !== path.resolve(executable)) {
+          return {
+            success: false,
+            errorCode: 'ERR_ADAPTER_SYMLINK_REJECTED',
+            message: 'Executable target resolves through symbolic link or alias',
+            failClosed: true
+          };
         }
+      } else if (!this.isTestMode || !mockRunner) {
+        return {
+          success: false,
+          errorCode: 'ERR_ADAPTER_BINARY_MISSING',
+          message: `Executable does not exist on filesystem: ${baseName}`,
+          failClosed: true
+        };
+      }
+
+      // Mandatory expected hash check (in production or if binary exists)
+      const expectedHash = this.expectedBinaryHashes[baseName] || this.expectedBinaryHashes[executable];
+      if (!this.isTestMode || !mockRunner) {
+        if (!expectedHash) {
+          return {
+            success: false,
+            errorCode: 'ERR_ADAPTER_MANDATORY_HASH_MISSING',
+            message: `Mandatory expected SHA-256 digest missing for executable "${baseName}"`,
+            failClosed: true
+          };
+        }
+        const actualHash = computeFileSha256(executable);
+        if (actualHash !== expectedHash) {
+          return {
+            success: false,
+            errorCode: 'ERR_ADAPTER_BINARY_HASH_MISMATCH',
+            message: `Executable hash mismatch for "${baseName}"`,
+            failClosed: true
+          };
+        }
+      } else if (expectedHash && fileExists) {
+        const actualHash = computeFileSha256(executable);
+        if (actualHash !== expectedHash) {
+          return {
+            success: false,
+            errorCode: 'ERR_ADAPTER_BINARY_HASH_MISMATCH',
+            message: `Executable hash mismatch for "${baseName}"`,
+            failClosed: true
+          };
+        }
+      }
+
+      // Mandatory Version Check Guard using Numeric Semver
+      const targetMinVersion = minVersion || APPROVED_TARGET_MIN_VERSIONS[baseName];
+      if (!targetMinVersion) {
+        return {
+          success: false,
+          errorCode: 'ERR_ADAPTER_MIN_VERSION_UNSPECIFIED',
+          message: `Mandatory minimum version is not specified or approved for "${baseName}"`,
+          failClosed: true
+        };
+      }
+
+      if (!versionCheckOutput || typeof versionCheckOutput !== 'string' || versionCheckOutput.trim().length === 0) {
+        return {
+          success: false,
+          errorCode: 'ERR_ADAPTER_VERSION_OUTPUT_MISSING',
+          message: `Authentic version output missing for "${baseName}"`,
+          failClosed: true
+        };
+      }
+
+      const parsedDetected = parseSemver(versionCheckOutput);
+      const parsedMin = parseSemver(targetMinVersion);
+      if (!parsedDetected || !parsedMin) {
+        return {
+          success: false,
+          errorCode: 'ERR_ADAPTER_INVALID_VERSION_FORMAT',
+          message: 'Failed to parse numeric semver from version output or minVersion',
+          failClosed: true
+        };
+      }
+
+      const cmp = compareSemver(parsedDetected, parsedMin);
+      if (cmp < 0) {
+        return {
+          success: false,
+          errorCode: 'ERR_ADAPTER_INCOMPATIBLE_VERSION',
+          message: `Executable version ${parsedDetected.major}.${parsedDetected.minor}.${parsedDetected.patch} is below required minimum ${parsedMin.major}.${parsedMin.minor}.${parsedMin.patch}`,
+          failClosed: true
+        };
       }
     }
 
-    // 4. Remote Endpoint Guard
+    // 4. Remote Endpoint Guard (Specification & Contract Validation Only)
     if (remoteUrl) {
       let parsedUrl;
       try {
@@ -549,10 +687,17 @@ class ReconstructionExecutionAdapter {
         };
       }
 
-      const allowedOrigins = process.env.SPARK_3DGS_ALLOWED_ORIGINS
-        ? process.env.SPARK_3DGS_ALLOWED_ORIGINS.split(',').map(s => s.trim().toLowerCase())
-        : ['https://worker.stage2.internal', 'https://reconstruction.internal'];
+      const rawOrigins = process.env.SPARK_3DGS_ALLOWED_ORIGINS;
+      if (!rawOrigins || !rawOrigins.trim()) {
+        return {
+          success: false,
+          errorCode: 'ERR_ADAPTER_REMOTE_ORIGIN_CONFIG_MISSING',
+          message: 'Remote worker allowed origins not provisioned in SPARK_3DGS_ALLOWED_ORIGINS',
+          failClosed: true
+        };
+      }
 
+      const allowedOrigins = rawOrigins.split(',').map(s => s.trim().toLowerCase());
       if (!allowedOrigins.includes(parsedUrl.origin.toLowerCase())) {
         return {
           success: false,
@@ -597,36 +742,13 @@ class ReconstructionExecutionAdapter {
           success: false,
           errorCode: 'ERR_ADAPTER_REMOTE_UNREACHABLE',
           message: 'Remote worker endpoint unreachable or timed out',
+          handshakeClassification: 'LOCAL_SPEC_VALIDATION_ONLY',
           failClosed: true
         };
       }
     }
 
-    // 5. Version Check Guard using Numeric Semver
-    if (versionCheckOutput && minVersion) {
-      const parsedDetected = parseSemver(versionCheckOutput);
-      const parsedMin = parseSemver(minVersion);
-      if (!parsedDetected || !parsedMin) {
-        return {
-          success: false,
-          errorCode: 'ERR_ADAPTER_INVALID_VERSION_FORMAT',
-          message: 'Failed to parse numeric semver from version output or minVersion',
-          failClosed: true
-        };
-      }
-
-      const cmp = compareSemver(parsedDetected, parsedMin);
-      if (cmp < 0) {
-        return {
-          success: false,
-          errorCode: 'ERR_ADAPTER_INCOMPATIBLE_VERSION',
-          message: `Executable version ${parsedDetected.major}.${parsedDetected.minor}.${parsedDetected.patch} is below required minimum ${parsedMin.major}.${parsedMin.minor}.${parsedMin.patch}`,
-          failClosed: true
-        };
-      }
-    }
-
-    // 6. Scratch Directory Isolation & Execution Quota / Timeout
+    // 5. Scratch Directory Isolation & Execution Quota / Timeout
     const scratchDir = fs.mkdtempSync(path.join(os.tmpdir(), 'recon-adapter-scratch-'));
     try {
       if (mockRunner) {
@@ -638,6 +760,8 @@ class ReconstructionExecutionAdapter {
             success: false,
             errorCode: 'ERR_ADAPTER_TIMEOUT',
             message: `Execution timed out after ${this.timeoutMs}ms`,
+            timeoutClassification: 'MOCK_TIMEOUT_NEGATIVE_TEST_ONLY',
+            processTreeKill: 'NOT_APPLICABLE_IN_MOCK_MODE',
             failClosed: true,
             scratchCleaned: true
           };
@@ -657,6 +781,7 @@ class ReconstructionExecutionAdapter {
         success: false,
         errorCode: 'ERR_RECONSTRUCTION_ENGINE_NOT_CONFIGURED',
         message: 'No authorized, capable reconstruction engine is provisioned in the current environment',
+        remoteHandshakeStatus: commandConfig.remoteUrl ? 'LOCAL_SPEC_VALIDATION_ONLY_NO_NETWORK' : undefined,
         failClosed: true,
         scratchCleaned: true
       };
@@ -807,8 +932,19 @@ function executeAuthenticReconstructionWorker(options = {}) {
   }
 
   // If runnable & authorized & capable engine is claimed, route through isolated execution adapter
-  const adapter = options.executionAdapter || new ReconstructionExecutionAdapter(options.adapterOptions);
-  return adapter.execute({ jobId, inputsDigest, calibSha, ...options.commandConfig });
+  // In production paths, caller payload options cannot inject test mocks
+  const envAllowsTest = process.env.NODE_ENV === 'test' || process.env.STAGE2_ALLOW_TEST_HARNESS_MOCKS === '1';
+  const safeAdapterOptions = { ...options.adapterOptions };
+  if (!envAllowsTest) {
+    delete safeAdapterOptions.isTestMode;
+    delete safeAdapterOptions.mockAuthProvider;
+  }
+  const adapter = options.executionAdapter || new ReconstructionExecutionAdapter(safeAdapterOptions);
+  const safeCommandConfig = { jobId, inputsDigest, calibSha, ...options.commandConfig };
+  if (!envAllowsTest) {
+    delete safeCommandConfig.mockRunner;
+  }
+  return adapter.execute(safeCommandConfig);
 }
 
 /**
@@ -1019,6 +1155,8 @@ module.exports = {
   parseSemver,
   compareSemver,
   isPlaceholderOrTrivialSecret,
+  APPROVED_RECONSTRUCTION_TARGETS,
+  APPROVED_TARGET_MIN_VERSIONS,
   TYPE_SIZES
 };
 
