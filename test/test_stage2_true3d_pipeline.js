@@ -2527,10 +2527,10 @@ async function main() {
           { projectId: '${testProjectId}' },
           { sessionProof: ${JSON.stringify(r46Proof)} }
         );
-        process.stdout.write('JOB_ID:' + job.jobId + '\\n');
-        process.exit(0);
+        console.log('JOB_ID:' + job.jobId);
+        process.exitCode = 0;
       } catch (err) {
-        process.stderr.write('REG_ERR:' + err.message + '\\n');
+        console.error('REG_ERR:' + err.message);
         process.exit(1);
       }
     `;
@@ -2539,10 +2539,10 @@ async function main() {
       const internal = require('./virtual-tradeshow-commercial-v1/server/server_internal_registry');
       try {
         const res = internal.reconcileOrphanWorkspaces();
-        process.stdout.write('RECON_OK:' + res.reconciled + '\\n');
-        process.exit(0);
+        console.log('RECON_OK:' + res.reconciled);
+        process.exitCode = 0;
       } catch (err) {
-        process.stderr.write('RECON_ERR:' + err.message + '\\n');
+        console.error('RECON_ERR:' + err.message);
         process.exit(1);
       }
     `;
@@ -2581,8 +2581,9 @@ async function main() {
           console.error('Exit codes:', exitA, exitB, 'Errors:', regErr, recErr);
           process.exit(1);
         }
-        process.stdout.write(regOut + recOut);
-        process.exit(0);
+        process.stdout.write(regOut + recOut, () => {
+          process.exit(0);
+        });
       }
       run();
     `;
