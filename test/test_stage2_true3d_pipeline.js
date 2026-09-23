@@ -72,7 +72,11 @@ const {
   INFRASTRUCTURE_TRUST_POLICY,
   TYPED_ARGV_SCHEMAS,
   validateTypedCommandArgv,
-  getScrubbedProcessEnv
+  getScrubbedProcessEnv,
+  TrustedRootRegistry,
+  validatePathConfinement,
+  PROCESS_EXECUTION_CONTRACT,
+  createProcessLaunchDescriptor
 } = require('../virtual-tradeshow-commercial-v1/server/spatial_reconstruction_worker');
 
 const REPO_ROOT = path.resolve(__dirname, '..');
@@ -676,7 +680,7 @@ async function main() {
       ISOLATED_DIAGNOSTIC_VIEWER: 'PROCEDURAL_PLACEHOLDER_ONLY',  // re-classified from VERIFIED
       REAL_MULTIPOSITION_CAPTURE: 'NOT_VERIFIED',
       OWNER_PRO_3D_VIEWER: 'NOT_VERIFIED',
-      OLD_OWNER_CAPTURE_RECOVERY: 'NOT_RECOVERED',
+      OLD_OWNER_CAPTURE_RECOVERY: 'NOT_RECOVERED/RECOVERABILITY_UNVERIFIED',
       STAGE2_COPY_FALLBACK: 'DISABLED',                // template-copy fallback removed per R21 audit
       REAL_APP_MODEL_AUTH: 'VERIFIED',                 // Real Express server session auth (401/403/200/404)
       STATIC_ROUTE_BYPASS_PROTECTED: 'VERIFIED',       // Private model route mounted before static middleware
@@ -687,12 +691,13 @@ async function main() {
       STATIC_ASSET_ISOLATION_GATE_T16: 'VERIFIED_ALL_ROOTS_ALL_EXTENSIONS', // R25: extended to glb/gltf/bin + railway root
       STATIC_ASSET_ISOLATION_GATE_T17: 'VERIFIED_POSITIVE_FAIL_CONTROLS',   // R25: positive fail-case controls confirmed
       CAUSAL_LINEAGE_GATE_T18: 'NEGATIVE_CONTRACT_CHECK_ONLY', // R29: negative contract check only per ChatGPT R28 audit
+      ACTUAL_ENGINE_EXECUTION: 'NOT_VERIFIED',         // R37: local contract check only; actual process spawn unverified
       LIVE_QA_REVOCATION: 'BLOCKED_PENDING_INDEPENDENT_CONTROL_PLANE',
       OWNER_REVIEW_GATE: 'HOLD',
       ENGINEERING_HOLD: 'ACTIVE'
     };
 
-    console.log('\n  Authoritative Gate Status Matrix (R29 Honest Ledger):');
+    console.log('\n  Authoritative Gate Status Matrix (R37 Honest Ledger):');
     for (const [gate, status] of Object.entries(gates)) {
       console.log(`    - ${gate.padEnd(42)} : ${status}`);
     }
@@ -706,6 +711,7 @@ async function main() {
     assert.strictEqual(gates.ISOLATED_DIAGNOSTIC_VIEWER, 'PROCEDURAL_PLACEHOLDER_ONLY', 'Diagnostic viewer must be classified PROCEDURAL_PLACEHOLDER_ONLY');
     assert.strictEqual(gates.REAL_MULTIPOSITION_CAPTURE, 'NOT_VERIFIED', 'Real multi-position capture is NOT_VERIFIED');
     assert.strictEqual(gates.OWNER_PRO_3D_VIEWER, 'NOT_VERIFIED', 'Owner PRO viewer must remain NOT_VERIFIED under HOLD');
+    assert.strictEqual(gates.OLD_OWNER_CAPTURE_RECOVERY, 'NOT_RECOVERED/RECOVERABILITY_UNVERIFIED', 'Old capture recovery must be NOT_RECOVERED/RECOVERABILITY_UNVERIFIED');
     assert.strictEqual(gates.STAGE2_COPY_FALLBACK, 'DISABLED', 'Booth3d template-copy fallback must be DISABLED');
     assert.strictEqual(gates.REAL_APP_MODEL_AUTH, 'VERIFIED', 'Real Express session model auth must be VERIFIED');
     assert.strictEqual(gates.STATIC_ROUTE_BYPASS_PROTECTED, 'VERIFIED', 'Static route bypass must be prevented');
@@ -716,6 +722,7 @@ async function main() {
     assert.strictEqual(gates.STATIC_ASSET_ISOLATION_GATE_T16, 'VERIFIED_ALL_ROOTS_ALL_EXTENSIONS', 'T16 must cover all roots and all extensions');
     assert.strictEqual(gates.STATIC_ASSET_ISOLATION_GATE_T17, 'VERIFIED_POSITIVE_FAIL_CONTROLS', 'T17 must verify positive fail-case controls');
     assert.strictEqual(gates.CAUSAL_LINEAGE_GATE_T18, 'NEGATIVE_CONTRACT_CHECK_ONLY', 'T18 must verify negative contract check only per ChatGPT R28 audit');
+    assert.strictEqual(gates.ACTUAL_ENGINE_EXECUTION, 'NOT_VERIFIED', 'Actual engine execution must remain NOT_VERIFIED');
     assert.strictEqual(gates.LIVE_QA_REVOCATION, 'BLOCKED_PENDING_INDEPENDENT_CONTROL_PLANE');
     assert.strictEqual(gates.OWNER_REVIEW_GATE, 'HOLD');
     assert.strictEqual(gates.ENGINEERING_HOLD, 'ACTIVE');
@@ -1008,7 +1015,7 @@ async function main() {
   //   7. Pre-Reconstruction Exact Hash Binding & Anti-Substitution:
   //      Canonically incorporates probesDigest in preReconstructionDigest.
   //      Anti-substitution invariant enforced (refuses claiming pre-existing benchmark as new model).
-  runTest('18. Trusted execution boundary, mandatory digest binding, numeric semver & isolated mock guards (R36)', () => {
+  runTest('18. Trusted execution boundary, mandatory digest binding, numeric semver & isolated mock guards (R37)', () => {
     // 1. Audit active refined capability probes
     const probes = probeReconstructionEngines();
     assert.ok(probes.LOCAL_GPU_ACCELERATOR, 'LOCAL_GPU_ACCELERATOR probe must exist');
@@ -1291,12 +1298,19 @@ async function main() {
     assert.strictEqual(semverOkRes.errorCode, 'ERR_SFM_PIPELINE_FAILED', 'Semver 3.10 >= 3.8 must pass version guard and proceed to runner');
     assert.strictEqual(semverOkRes.versionValidationClassification, 'CALLER_VERSION_STRING_VALIDATION_ONLY');
 
-    // 6g2. Typed Command Argument Schema & Injection Defenses (R36)
-    const scratchTestRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'test-r36-scratch-'));
-    const inputTestRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'test-r36-input-'));
+    // 6g2. Typed Command Argument Schema & Injection Defenses (R37)
+    const scratchTestRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'test-r37-scratch-'));
+    const inputTestRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'test-r37-input-'));
     const validDbPath = path.join(scratchTestRoot, 'database.db');
+    const harnessRootId = 'test_harness_roots_r37';
+    testHarnessAdapter.trustedRootRegistry.registerHarnessRoot(harnessRootId, {
+      scratch: scratchTestRoot,
+      input: inputTestRoot,
+      output: scratchTestRoot
+    });
+
     try {
-      // (a) Invalid arguments format (non-array)
+      // (a) Invalid arguments format (non-array, undefined, empty)
       const badArgTypeRes = testHarnessAdapter.execute({
         executable: path.resolve('colmap.exe'),
         minVersion: '3.8.0',
@@ -1305,6 +1319,15 @@ async function main() {
         args: 'not-an-array'
       });
       assert.strictEqual(badArgTypeRes.errorCode, 'ERR_ADAPTER_INVALID_ARGUMENTS_FORMAT');
+
+      const emptyArgRes = testHarnessAdapter.execute({
+        executable: path.resolve('colmap.exe'),
+        minVersion: '3.8.0',
+        versionCheckOutput: 'COLMAP 3.8.0',
+        mockRunner: () => ({ success: true }),
+        args: []
+      });
+      assert.strictEqual(emptyArgRes.errorCode, 'ERR_ADAPTER_MISSING_COMMAND_ARGUMENTS');
 
       // (b) Shell metacharacter injection
       const injectionArgRes = testHarnessAdapter.execute({
@@ -1362,9 +1385,9 @@ async function main() {
         minVersion: '3.8.0',
         versionCheckOutput: 'COLMAP 3.8.0',
         mockRunner: () => ({ success: true }),
-        scratchRoot: scratchTestRoot,
-        inputRoot: inputTestRoot,
-        args: ['feature_extractor', `--database_path=${validDbPath}`, `--database_path=${validDbPath}`]
+        harnessRootId,
+        isHarnessApprovedRoot: true,
+        args: ['feature_extractor', `--database_path=${validDbPath}`, `--database_path=${validDbPath}`, `--image_path=${inputTestRoot}`]
       });
       assert.strictEqual(duplicateFlagRes.errorCode, 'ERR_ADAPTER_DUPLICATE_FLAG_FORBIDDEN');
 
@@ -1374,9 +1397,9 @@ async function main() {
         minVersion: '3.8.0',
         versionCheckOutput: 'COLMAP 3.8.0',
         mockRunner: () => ({ success: true }),
-        scratchRoot: scratchTestRoot,
-        inputRoot: inputTestRoot,
-        args: ['feature_extractor', `--database_path=${scratchTestRoot}${path.sep}..${path.sep}escape.db`]
+        harnessRootId,
+        isHarnessApprovedRoot: true,
+        args: ['feature_extractor', `--database_path=${scratchTestRoot}${path.sep}..${path.sep}escape.db`, `--image_path=${inputTestRoot}`]
       });
       assert.strictEqual(traversalRes.errorCode, 'ERR_ADAPTER_PATH_TRAVERSAL_DETECTED');
 
@@ -1387,50 +1410,120 @@ async function main() {
         minVersion: '3.8.0',
         versionCheckOutput: 'COLMAP 3.8.0',
         mockRunner: () => ({ success: true }),
-        scratchRoot: scratchTestRoot,
-        inputRoot: inputTestRoot,
-        args: ['feature_extractor', `--database_path=${escapingRootPath}`]
+        harnessRootId,
+        isHarnessApprovedRoot: true,
+        args: ['feature_extractor', `--database_path=${escapingRootPath}`, `--image_path=${inputTestRoot}`]
       });
       assert.strictEqual(confinementRes.errorCode, 'ERR_ADAPTER_PATH_CONFINEMENT_VIOLATION');
 
-      // (j) Invalid path extension (.txt instead of .db)
+      // (j) Sibling-prefix escape attempt (P0 Defect 2: job vs job-extra)
+      const authorizedJobRoot = path.join(scratchTestRoot, 'job');
+      fs.mkdirSync(authorizedJobRoot, { recursive: true });
+      const siblingJobRoot = path.join(scratchTestRoot, 'job-extra');
+      fs.mkdirSync(siblingJobRoot, { recursive: true });
+      const siblingEscapeDb = path.join(siblingJobRoot, 'database.db');
+      const siblingRes = validatePathConfinement(siblingEscapeDb, authorizedJobRoot);
+      assert.strictEqual(siblingRes.errorCode, 'ERR_ADAPTER_PATH_CONFINEMENT_VIOLATION');
+
+      // (k) Non-existent root fail-closed
+      const nonExistentRoot = path.join(scratchTestRoot, 'non_existent_directory_root');
+      const missingRootRes = validatePathConfinement(path.join(nonExistentRoot, 'data.db'), nonExistentRoot);
+      assert.strictEqual(missingRootRes.errorCode, 'ERR_ADAPTER_ROOT_NON_EXISTENT');
+
+      // (l) Caller-declared root override forbidden (P0 Defect 1)
+      const attackerDeclaredRoot = path.resolve('C:\\arbitrary_attacker_root');
+      const callerOverrideRes = testHarnessAdapter.execute({
+        executable: path.resolve('colmap.exe'),
+        minVersion: '3.8.0',
+        versionCheckOutput: 'COLMAP 3.8.0',
+        mockRunner: () => ({ success: true }),
+        scratchRoot: attackerDeclaredRoot,
+        args: ['feature_extractor', `--database_path=${path.join(attackerDeclaredRoot, 'hacked.db')}`, `--image_path=${inputTestRoot}`]
+      });
+      assert.strictEqual(callerOverrideRes.errorCode, 'ERR_ADAPTER_CALLER_ROOT_OVERRIDE_FORBIDDEN');
+
+      // (m) Invalid path extension (.txt instead of .db)
       const invalidExtPath = path.join(scratchTestRoot, 'database.txt');
       const extRes = testHarnessAdapter.execute({
         executable: path.resolve('colmap.exe'),
         minVersion: '3.8.0',
         versionCheckOutput: 'COLMAP 3.8.0',
         mockRunner: () => ({ success: true }),
-        scratchRoot: scratchTestRoot,
-        inputRoot: inputTestRoot,
-        args: ['feature_extractor', `--database_path=${invalidExtPath}`]
+        harnessRootId,
+        isHarnessApprovedRoot: true,
+        args: ['feature_extractor', `--database_path=${invalidExtPath}`, `--image_path=${inputTestRoot}`]
       });
       assert.strictEqual(extRes.errorCode, 'ERR_ADAPTER_INVALID_PATH_EXTENSION');
 
-      // (k) Malformed numeric bounds
+      // (n) Malformed numeric bounds
       const numBoundsRes = testHarnessAdapter.execute({
         executable: path.resolve('colmap.exe'),
         minVersion: '3.8.0',
         versionCheckOutput: 'COLMAP 3.8.0',
         mockRunner: () => ({ success: true }),
-        scratchRoot: scratchTestRoot,
-        inputRoot: inputTestRoot,
-        args: ['feature_extractor', `--database_path=${validDbPath}`, '--SiftExtraction.max_image_size=999999']
+        harnessRootId,
+        isHarnessApprovedRoot: true,
+        args: ['feature_extractor', `--database_path=${validDbPath}`, `--image_path=${inputTestRoot}`, '--SiftExtraction.max_image_size=999999']
       });
       assert.strictEqual(numBoundsRes.errorCode, 'ERR_ADAPTER_INVALID_NUMERIC_BOUNDS');
 
-      // (l) Invalid enum value
+      // (o) Invalid enum value
       const enumRes = testHarnessAdapter.execute({
         executable: path.resolve('colmap.exe'),
         minVersion: '3.8.0',
         versionCheckOutput: 'COLMAP 3.8.0',
         mockRunner: () => ({ success: true }),
-        scratchRoot: scratchTestRoot,
-        inputRoot: inputTestRoot,
-        args: ['feature_extractor', `--database_path=${validDbPath}`, '--ImageReader.camera_model=INVALID_CAMERA_MODEL']
+        harnessRootId,
+        isHarnessApprovedRoot: true,
+        args: ['feature_extractor', `--database_path=${validDbPath}`, `--image_path=${inputTestRoot}`, '--ImageReader.camera_model=INVALID_CAMERA_MODEL']
       });
       assert.strictEqual(enumRes.errorCode, 'ERR_ADAPTER_INVALID_ENUM_VALUE');
 
-      // (m) Standalone probe flag (--help) passes
+      // (p) Missing mandatory stage option (P0 Defect 3: missing mandatory --image_path)
+      const missingMandatoryRes = testHarnessAdapter.execute({
+        executable: path.resolve('colmap.exe'),
+        minVersion: '3.8.0',
+        versionCheckOutput: 'COLMAP 3.8.0',
+        mockRunner: () => ({ success: true }),
+        harnessRootId,
+        isHarnessApprovedRoot: true,
+        args: ['feature_extractor', `--database_path=${validDbPath}`]
+      });
+      assert.strictEqual(missingMandatoryRes.errorCode, 'ERR_ADAPTER_MISSING_MANDATORY_OPTION');
+
+      // (q) Missing option value (flag requiring value followed by another flag)
+      const missingValRes = testHarnessAdapter.execute({
+        executable: path.resolve('colmap.exe'),
+        minVersion: '3.8.0',
+        versionCheckOutput: 'COLMAP 3.8.0',
+        mockRunner: () => ({ success: true }),
+        harnessRootId,
+        isHarnessApprovedRoot: true,
+        args: ['feature_extractor', '--database_path', '--image_path']
+      });
+      assert.strictEqual(missingValRes.errorCode, 'ERR_ADAPTER_MISSING_OPTION_VALUE');
+
+      // (r) Legitimate path with spaces permitted (P0 Defect 3: Windows paths with spaces)
+      const spaceScratchDir = path.join(scratchTestRoot, 'path with spaces');
+      fs.mkdirSync(spaceScratchDir, { recursive: true });
+      const spaceDbPath = path.join(spaceScratchDir, 'valid spaced db.db');
+      const spacePathRes = testHarnessAdapter.execute({
+        executable: path.resolve('colmap.exe'),
+        minVersion: '3.8.0',
+        versionCheckOutput: 'COLMAP 3.8.0',
+        mockRunner: () => ({ success: true }),
+        harnessRootId,
+        isHarnessApprovedRoot: true,
+        args: [
+          'feature_extractor',
+          `--database_path=${spaceDbPath}`,
+          `--image_path=${inputTestRoot}`,
+          '--ImageReader.camera_model=PINHOLE'
+        ]
+      });
+      assert.strictEqual(spacePathRes.errorCode, 'ERR_RECONSTRUCTION_ENGINE_NOT_CONFIGURED');
+
+      // (s) Standalone probe flag (--help) passes
       const probeHelpRes = testHarnessAdapter.execute({
         executable: path.resolve('colmap.exe'),
         minVersion: '3.8.0',
@@ -1440,14 +1533,14 @@ async function main() {
       });
       assert.strictEqual(probeHelpRes.errorCode, 'ERR_RECONSTRUCTION_ENGINE_NOT_CONFIGURED');
 
-      // (n) Valid structured typed command passes schema validation and fails closed at engine boundary
+      // (t) Valid structured typed command passes schema validation and fails closed at engine boundary
       const validTypedRes = testHarnessAdapter.execute({
         executable: path.resolve('colmap.exe'),
         minVersion: '3.8.0',
         versionCheckOutput: 'COLMAP 3.8.0',
         mockRunner: () => ({ success: true }),
-        scratchRoot: scratchTestRoot,
-        inputRoot: inputTestRoot,
+        harnessRootId,
+        isHarnessApprovedRoot: true,
         args: [
           'feature_extractor',
           `--database_path=${validDbPath}`,
@@ -1457,6 +1550,10 @@ async function main() {
         ]
       });
       assert.strictEqual(validTypedRes.errorCode, 'ERR_RECONSTRUCTION_ENGINE_NOT_CONFIGURED', 'Valid typed arguments must pass schema and fail closed at engine boundary');
+      assert.ok(validTypedRes.launchDescriptor, 'Launch descriptor must be attached');
+      assert.strictEqual(validTypedRes.launchDescriptor.options.shell, false, 'Shell must be strictly false');
+      assert.strictEqual(validTypedRes.launchDescriptor.executionStatus, 'NOT_VERIFIED_LAUNCH_BLOCKED');
+      assert.strictEqual(PROCESS_EXECUTION_CONTRACT.status.ACTUAL_ENGINE_EXECUTION, 'NOT_VERIFIED');
     } finally {
       try { fs.rmSync(scratchTestRoot, { recursive: true, force: true }); } catch (_) {}
       try { fs.rmSync(inputTestRoot, { recursive: true, force: true }); } catch (_) {}
@@ -1641,7 +1738,7 @@ async function main() {
   console.log(`True 3D Pipeline Test Suite Complete: ${passedTests}/${totalTests} passed`);
   console.log('================================================================\n');
 
-  // ── [POST-RUN FINALIZER] Emit Machine-Verifiable R36 Execution Receipt ───────
+  // ── [POST-RUN FINALIZER] Emit Machine-Verifiable R37 Execution Receipt ───────
   const suiteEndTime = new Date().toISOString();
   const durationMs = Date.now() - startTimeEpoch;
   const runnerSource = fs.readFileSync(__filename);
@@ -1651,7 +1748,7 @@ async function main() {
   const engineDiscoveryProbes = probeReconstructionEngines();
 
   const receipt = {
-    receiptSchemaVersion: 'R36_EXECUTION_RECEIPT_V1',
+    receiptSchemaVersion: 'R37_EXECUTION_RECEIPT_V1',
     executionTimestamps: {
       startTime: suiteStartTime,
       endTime: suiteEndTime,
@@ -1696,6 +1793,10 @@ async function main() {
     },
     executionBoundaryAudit: {
       trustedExecutionBoundary: 'CANONICAL_ABSOLUTE_PATH_AND_INFRASTRUCTURE_TRUST_POLICY',
+      trustedRootRegistry: 'INFRASTRUCTURE_OWNED_IMMUTABLE_WORKSPACE_REGISTRY',
+      callerRootOverrideDefense: 'STRICTLY_REJECTED',
+      siblingPrefixEscapeDefense: 'PATH_SEPARATOR_BOUNDARY_CHECK',
+      mandatoryOptionsEnforcement: 'ENFORCED_PER_SUBCOMMAND_SCHEMA',
       callerAllowlistOverride: 'FORBIDDEN',
       callerBinaryHashOverride: 'FORBIDDEN',
       callerTrustPolicyOverride: 'FORBIDDEN',
@@ -1705,7 +1806,8 @@ async function main() {
       responseFileIndirectionDefense: 'REJECTED_VIA_PREFIX_GUARD',
       duplicateFlagDefense: 'REJECTED_VIA_FLAG_UNIQUENESS',
       processEnvScrubbing: 'SCRUBBED_MINIMAL_SAFE_KEYS_ONLY',
-      processExecutionContract: 'SHELL_FALSE_MANDATORY',
+      processExecutionContract: 'SHELL_FALSE_MANDATORY_AND_NON_EXECUTING_SPEC',
+      actualEngineExecution: 'NOT_VERIFIED',
       engineProvenanceStatus: 'NOT_VERIFIED_ZERO_AUTHORIZED_ENGINES_PROVISIONED',
       symlinkResolution: 'REJECTED_VIA_REALPATH',
       semverComparisonModel: 'NUMERIC_COMPONENT_ORDERING_WITH_FIXED_FLOOR',
@@ -1725,10 +1827,12 @@ async function main() {
       SPZ_DECODED_IN_VIEWER: 'NOT_VERIFIED',
       AUTHENTIC_SPZ_RENDER: 'NOT_VERIFIED',
       OWNER_PRO_3D_VIEWER: 'NOT_VERIFIED',
+      OLD_OWNER_CAPTURE_RECOVERY: 'NOT_RECOVERED/RECOVERABILITY_UNVERIFIED',
       HISTORICAL_PUBLIC_ARTIFACT_EXPOSURE: 'REQUIRES_ASSESSMENT',
       COMMERCIAL_REDISTRIBUTION_RIGHTS: 'REQUIRES_OWNER_ATTESTATION',
       LIVE_QA_REVOCATION: 'BLOCKED_PENDING_INDEPENDENT_CONTROL_PLANE',
       CAUSAL_LINEAGE_GATE_T18: 'NEGATIVE_CONTRACT_CHECK_ONLY',
+      ACTUAL_ENGINE_EXECUTION: 'NOT_VERIFIED',
       OWNER_REVIEW_GATE: 'HOLD',
       ENGINEERING_HOLD: 'ACTIVE',
       DESTRUCTIVE_GIT_REWRITE: 'FORBIDDEN'
@@ -1737,14 +1841,14 @@ async function main() {
 
   const receiptOutPath = path.join(
     REPO_ROOT,
-    'virtual-tradeshow-commercial-v1/production_artifacts/R36_TEST_EXECUTION_RECEIPT.json'
+    'virtual-tradeshow-commercial-v1/production_artifacts/R37_TEST_EXECUTION_RECEIPT.json'
   );
   fs.writeFileSync(receiptOutPath, JSON.stringify(receipt, null, 2), 'utf8');
   const savedReceiptBytes = fs.readFileSync(receiptOutPath);
   const receiptByteSha256 = crypto.createHash('sha256').update(savedReceiptBytes).digest('hex');
 
-  console.log('--- Final Execution Receipt (R36 Machine Verifiable) ---');
-  console.log(`  File:           virtual-tradeshow-commercial-v1/production_artifacts/R36_TEST_EXECUTION_RECEIPT.json`);
+  console.log('--- Final Execution Receipt (R37 Machine Verifiable) ---');
+  console.log(`  File:           virtual-tradeshow-commercial-v1/production_artifacts/R37_TEST_EXECUTION_RECEIPT.json`);
   console.log(`  Byte SHA-256:   ${receiptByteSha256}`);
   console.log(`  Tested Commit:  ${suiteCurrentHead}`);
   console.log(`  Expected Head:  ${expectedHead || '(none - unbound)'}`);

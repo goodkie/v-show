@@ -433,11 +433,12 @@ const APPROVED_TARGET_MIN_VERSIONS = Object.freeze({
   'gsplat_train.exe': '0.1.0'
 });
 
-// Typed Command Argv Schemas with Root Confinements & Parameter Bounds (R36)
+// Typed Command Argv Schemas with Root Confinements & Parameter Bounds (R37)
 const TYPED_ARGV_SCHEMAS = Object.freeze({
   colmap: Object.freeze({
     subcommands: Object.freeze({
       feature_extractor: Object.freeze({
+        requiredOptions: Object.freeze(['--database_path', '--image_path']),
         options: Object.freeze({
           '--database_path': Object.freeze({ type: 'path', rootType: 'scratch', allowedExtensions: ['.db'] }),
           '--image_path': Object.freeze({ type: 'path', rootType: 'input' }),
@@ -447,12 +448,14 @@ const TYPED_ARGV_SCHEMAS = Object.freeze({
         })
       }),
       exhaustive_matcher: Object.freeze({
+        requiredOptions: Object.freeze(['--database_path']),
         options: Object.freeze({
           '--database_path': Object.freeze({ type: 'path', rootType: 'scratch', allowedExtensions: ['.db'] }),
           '--SiftMatching.guided_matching': Object.freeze({ type: 'integer', min: 0, max: 1 })
         })
       }),
       point_triangulator: Object.freeze({
+        requiredOptions: Object.freeze(['--database_path', '--image_path', '--output_path']),
         options: Object.freeze({
           '--database_path': Object.freeze({ type: 'path', rootType: 'scratch', allowedExtensions: ['.db'] }),
           '--image_path': Object.freeze({ type: 'path', rootType: 'input' }),
@@ -465,6 +468,7 @@ const TYPED_ARGV_SCHEMAS = Object.freeze({
   nsTrain: Object.freeze({
     subcommands: Object.freeze({
       splatfacto: Object.freeze({
+        requiredOptions: Object.freeze(['--data', '--output-dir']),
         options: Object.freeze({
           '--data': Object.freeze({ type: 'path', rootType: 'input' }),
           '--output-dir': Object.freeze({ type: 'path', rootType: 'output' }),
@@ -473,6 +477,7 @@ const TYPED_ARGV_SCHEMAS = Object.freeze({
         })
       }),
       nerfacto: Object.freeze({
+        requiredOptions: Object.freeze(['--data', '--output-dir']),
         options: Object.freeze({
           '--data': Object.freeze({ type: 'path', rootType: 'input' }),
           '--output-dir': Object.freeze({ type: 'path', rootType: 'output' }),
@@ -484,6 +489,7 @@ const TYPED_ARGV_SCHEMAS = Object.freeze({
   gsplatTrain: Object.freeze({
     subcommands: Object.freeze({
       train: Object.freeze({
+        requiredOptions: Object.freeze(['--data-dir', '--result-dir']),
         options: Object.freeze({
           '--data-dir': Object.freeze({ type: 'path', rootType: 'input' }),
           '--result-dir': Object.freeze({ type: 'path', rootType: 'output' }),
@@ -494,13 +500,198 @@ const TYPED_ARGV_SCHEMAS = Object.freeze({
   })
 });
 
+// Infrastructure Base Root for Trusted Workspaces
+const SERVER_TRUSTED_WORKSPACE_BASE = path.resolve(__dirname, '..', 'data', 'reconstruction_workspaces');
+
 /**
- * Validate structured typed command argv against engine schema.
+ * Infrastructure-Owned Trusted Root Registry (R37)
+ * Prohibits caller-supplied root overrides; manages immutable job roots and cross-checks mounts.
+ */
+class TrustedRootRegistry {
+  constructor(options = {}) {
+    this.baseRoot = options.baseRoot ? path.resolve(options.baseRoot) : SERVER_TRUSTED_WORKSPACE_BASE;
+    this.allowHarnessRoots = !!options.allowHarnessRoots;
+    this.harnessRegisteredRoots = new Map();
+  }
+
+  registerHarnessRoot(rootId, roots) {
+    if (!this.allowHarnessRoots) {
+      throw new Error('ERR_TRUSTED_ROOT_HARNESS_FORBIDDEN: Harness root registration forbidden outside test harness mode');
+    }
+    const resolved = {
+      scratch: path.resolve(roots.scratch),
+      input: path.resolve(roots.input),
+      output: path.resolve(roots.output)
+    };
+    this.harnessRegisteredRoots.set(rootId, resolved);
+    return resolved;
+  }
+
+  getHarnessRoots(rootId) {
+    return this.harnessRegisteredRoots.get(rootId) || null;
+  }
+
+  resolveJobRoots(jobId, sessionContext = {}) {
+    if (!jobId || typeof jobId !== 'string' || !/^[a-zA-Z0-9_-]{8,64}$/.test(jobId)) {
+      throw new Error('ERR_TRUSTED_ROOT_INVALID_JOB_ID: Job ID must be 8-64 alphanumeric/dash characters');
+    }
+
+    const jobRoot = path.join(this.baseRoot, jobId);
+
+    // Cross-check against prohibited mounts (public web assets, static client dirs, system dirs)
+    const prohibitedSubstrings = [
+      path.sep + 'client' + path.sep,
+      path.sep + 'assets' + path.sep,
+      path.sep + 'app_build' + path.sep,
+      path.sep + '_clean_deploy' + path.sep,
+      path.sep + '_railway_deploy' + path.sep,
+      path.sep + 'windows' + path.sep,
+      path.sep + 'system32' + path.sep
+    ];
+    const lowerJobRoot = jobRoot.toLowerCase();
+    for (const p of prohibitedSubstrings) {
+      if (lowerJobRoot.includes(p)) {
+        throw new Error('ERR_TRUSTED_ROOT_PROHIBITED_MOUNT: Root collides with prohibited directory structure');
+      }
+    }
+
+    const roots = {
+      scratch: path.join(jobRoot, 'scratch'),
+      input: path.join(jobRoot, 'input'),
+      output: path.join(jobRoot, 'output')
+    };
+
+    return Object.freeze(roots);
+  }
+}
+
+/**
+ * Validate path confinement strictly under a designated root (R37).
+ * Rejects path traversal (..), null bytes, non-existent root, sibling-prefix escapes,
+ * and symlink / junction escapes.
+ */
+function validatePathConfinement(targetPath, designatedRoot, isInput = false) {
+  if (!targetPath || typeof targetPath !== 'string') {
+    return { success: false, errorCode: 'ERR_ADAPTER_INVALID_PATH_VALUE', message: 'Path value missing or not a string' };
+  }
+  if (targetPath.includes('\0')) {
+    return { success: false, errorCode: 'ERR_ADAPTER_PATH_TRAVERSAL_DETECTED', message: 'Null bytes forbidden in path' };
+  }
+
+  // Traversal checks: detect raw '..' segments
+  const normalizedSeparators = targetPath.replace(/\\/g, '/');
+  const segments = normalizedSeparators.split('/');
+  if (segments.includes('..')) {
+    return { success: false, errorCode: 'ERR_ADAPTER_PATH_TRAVERSAL_DETECTED', message: 'Path traversal (..) detected in path' };
+  }
+
+  if (!path.isAbsolute(targetPath)) {
+    return { success: false, errorCode: 'ERR_ADAPTER_NON_ABSOLUTE_PATH', message: `Path "${targetPath}" must be absolute` };
+  }
+
+  // Designated root existence check (missing root fails closed)
+  if (!designatedRoot || typeof designatedRoot !== 'string') {
+    return { success: false, errorCode: 'ERR_ADAPTER_ROOT_NON_EXISTENT', message: 'Designated root is missing or invalid' };
+  }
+  if (!fs.existsSync(designatedRoot)) {
+    return { success: false, errorCode: 'ERR_ADAPTER_ROOT_NON_EXISTENT', message: `Designated root "${designatedRoot}" does not exist` };
+  }
+
+  // Canonicalize root realpath
+  let realRoot;
+  try {
+    realRoot = fs.realpathSync(designatedRoot);
+  } catch (err) {
+    return { success: false, errorCode: 'ERR_ADAPTER_ROOT_RESOLUTION_FAILED', message: `Failed to resolve realpath for root "${designatedRoot}": ${err.message}` };
+  }
+
+  // Normalized relative check
+  const normTarget = path.resolve(targetPath);
+  const rel = path.relative(realRoot, normTarget);
+
+  // Sibling prefix escape check: if rel starts with '..' or is absolute (different drive)
+  if (rel.startsWith('..') || path.isAbsolute(rel)) {
+    return {
+      success: false,
+      errorCode: 'ERR_ADAPTER_PATH_CONFINEMENT_VIOLATION',
+      message: `Path "${targetPath}" escapes designated root "${designatedRoot}"`
+    };
+  }
+
+  // Separator boundary check to prevent sibling root prefix matching (e.g. job vs job-extra)
+  const rootWithSep = realRoot.endsWith(path.sep) ? realRoot : realRoot + path.sep;
+  const normTargetLower = normTarget.toLowerCase();
+  const realRootLower = realRoot.toLowerCase();
+  if (normTargetLower !== realRootLower && !normTargetLower.startsWith(rootWithSep.toLowerCase())) {
+    return {
+      success: false,
+      errorCode: 'ERR_ADAPTER_PATH_CONFINEMENT_VIOLATION',
+      message: `Path "${normTarget}" is not under root directory "${rootWithSep}" (sibling prefix escape rejected)`
+    };
+  }
+
+  // Realpath / symlink verification
+  if (isInput) {
+    if (!fs.existsSync(normTarget)) {
+      return { success: false, errorCode: 'ERR_ADAPTER_INPUT_PATH_MISSING', message: `Input path "${normTarget}" does not exist` };
+    }
+    try {
+      const realTarget = fs.realpathSync(normTarget);
+      const realTargetLower = realTarget.toLowerCase();
+      if (realTargetLower !== realRootLower && !realTargetLower.startsWith(rootWithSep.toLowerCase())) {
+        return {
+          success: false,
+          errorCode: 'ERR_ADAPTER_SYMLINK_ESCAPE_DETECTED',
+          message: `Input path realpath "${realTarget}" escapes approved root via symlink/junction`
+        };
+      }
+    } catch (e) {
+      return { success: false, errorCode: 'ERR_ADAPTER_INPUT_RESOLUTION_FAILED', message: `Failed resolving input realpath: ${e.message}` };
+    }
+  } else {
+    // For output, check existing ancestor realpath
+    let curr = path.dirname(normTarget);
+    while (curr && !fs.existsSync(curr)) {
+      const parent = path.dirname(curr);
+      if (parent === curr) break;
+      curr = parent;
+    }
+    if (fs.existsSync(curr)) {
+      try {
+        const realAncestor = fs.realpathSync(curr);
+        const normRealRoot = realRoot.toLowerCase();
+        const normRealAncestor = realAncestor.toLowerCase();
+        if (normRealAncestor !== normRealRoot && !normRealAncestor.startsWith(rootWithSep.toLowerCase())) {
+          return {
+            success: false,
+            errorCode: 'ERR_ADAPTER_SYMLINK_ESCAPE_DETECTED',
+            message: `Output path ancestor "${curr}" realpath "${realAncestor}" escapes approved root via symlink/junction`
+          };
+        }
+      } catch (e) {
+        return { success: false, errorCode: 'ERR_ADAPTER_OUTPUT_RESOLUTION_FAILED', message: `Failed resolving ancestor realpath: ${e.message}` };
+      }
+    }
+  }
+
+  return { success: true, resolvedPath: normTarget };
+}
+
+/**
+ * Validate structured typed command argv against engine schema (R37).
  * Rejects shell injection, metacharacters, response files, duplicate flags,
  * option smuggling, path traversal, out-of-bounds numbers, and unauthorized roots.
+ * Permits spaces within validated path values while disallowing embedded options.
  */
 function validateTypedCommandArgv(baseName, args, allowedRoots = {}) {
-  if (args === undefined) return { success: true };
+  if (args === undefined || (Array.isArray(args) && args.length === 0)) {
+    return {
+      success: false,
+      errorCode: 'ERR_ADAPTER_MISSING_COMMAND_ARGUMENTS',
+      message: 'Command arguments must be a non-empty array of strings',
+      failClosed: true
+    };
+  }
   if (!Array.isArray(args)) {
     return {
       success: false,
@@ -538,23 +729,9 @@ function validateTypedCommandArgv(baseName, args, allowedRoots = {}) {
         failClosed: true
       };
     }
-    // Reject internal argument whitespace smuggling (e.g. "--flag1 --flag2" in one argv slot)
-    if (/\s/.test(arg)) {
-      return {
-        success: false,
-        errorCode: 'ERR_ADAPTER_FLAG_SMUGGLING_DETECTED',
-        message: `Argument "${arg}" contains unescaped whitespace / flag smuggling`,
-        failClosed: true
-      };
-    }
   }
 
-  // Allow standalone non-mutating probes
-  if (args.length === 1 && (args[0] === '--help' || args[0] === '--version')) {
-    return { success: true, isProbeOnly: true, subcommand: null, options: {} };
-  }
-
-  // Find schema by canonical baseName
+  // 2. Find schema by canonical baseName FIRST (probes cannot bypass engine verification)
   const lowerBase = (baseName || '').toLowerCase();
   const engineKey = Object.keys(TYPED_ARGV_SCHEMAS).find(k => {
     const targets = INFRASTRUCTURE_TRUST_POLICY.approvedTargets[k];
@@ -570,8 +747,21 @@ function validateTypedCommandArgv(baseName, args, allowedRoots = {}) {
     };
   }
 
+  // 3. Standalone non-mutating probes ONLY on approved engine
+  if (args.length === 1 && (args[0] === '--help' || args[0] === '--version')) {
+    return { success: true, isProbeOnly: true, subcommand: null, options: {} };
+  }
+
   const engineSchema = TYPED_ARGV_SCHEMAS[engineKey];
   const subcmd = args[0];
+  if (/\s/.test(subcmd) || subcmd.startsWith('-')) {
+    return {
+      success: false,
+      errorCode: 'ERR_ADAPTER_FLAG_SMUGGLING_DETECTED',
+      message: `Subcommand token "${subcmd}" contains unescaped whitespace or flag smuggling`,
+      failClosed: true
+    };
+  }
   const subcmdSchema = engineSchema.subcommands[subcmd];
   if (!subcmdSchema) {
     return {
@@ -582,7 +772,7 @@ function validateTypedCommandArgv(baseName, args, allowedRoots = {}) {
     };
   }
 
-  // Parse and validate options
+  // 4. Parse and validate options
   const seenFlags = new Set();
   const parsedOptions = {};
   let i = 1;
@@ -593,10 +783,35 @@ function validateTypedCommandArgv(baseName, args, allowedRoots = {}) {
       const eqIdx = rawArg.indexOf('=');
       flag = rawArg.substring(0, eqIdx);
       val = rawArg.substring(eqIdx + 1);
+      if (/\s/.test(flag)) {
+        return {
+          success: false,
+          errorCode: 'ERR_ADAPTER_FLAG_SMUGGLING_DETECTED',
+          message: `Flag "${flag}" contains forbidden whitespace`,
+          failClosed: true
+        };
+      }
       i++;
     } else if (rawArg.startsWith('--') || rawArg.startsWith('-')) {
       flag = rawArg;
-      if (i + 1 < args.length && !args[i + 1].startsWith('-')) {
+      if (/\s/.test(flag)) {
+        return {
+          success: false,
+          errorCode: 'ERR_ADAPTER_FLAG_SMUGGLING_DETECTED',
+          message: `Flag "${flag}" contains forbidden whitespace`,
+          failClosed: true
+        };
+      }
+      const optRule = subcmdSchema.options[flag];
+      if (optRule && optRule.type !== 'boolean') {
+        if (i + 1 >= args.length || args[i + 1].startsWith('-')) {
+          return {
+            success: false,
+            errorCode: 'ERR_ADAPTER_MISSING_OPTION_VALUE',
+            message: `Option "${flag}" requires a non-empty value`,
+            failClosed: true
+          };
+        }
         val = args[i + 1];
         i += 2;
       } else {
@@ -632,29 +847,27 @@ function validateTypedCommandArgv(baseName, args, allowedRoots = {}) {
       };
     }
 
+    // Flag smuggling check inside value: reject embedded flags
+    if (val.trim().startsWith('-') || val.includes(' --') || val.includes(' -')) {
+      return {
+        success: false,
+        errorCode: 'ERR_ADAPTER_FLAG_SMUGGLING_DETECTED',
+        message: `Value for "${flag}" contains embedded option tokens (flag smuggling)`,
+        failClosed: true
+      };
+    }
+
     // Type validation
     if (optRule.type === 'path') {
-      if (!val || typeof val !== 'string') {
-        return { success: false, errorCode: 'ERR_ADAPTER_INVALID_PATH_VALUE', message: `Path value missing for "${flag}"`, failClosed: true };
-      }
-      if (val.includes('..') || val.includes('\0')) {
-        return { success: false, errorCode: 'ERR_ADAPTER_PATH_TRAVERSAL_DETECTED', message: `Path traversal detected in "${val}"`, failClosed: true };
-      }
-      if (!path.isAbsolute(val)) {
-        return { success: false, errorCode: 'ERR_ADAPTER_NON_ABSOLUTE_PATH', message: `Path "${val}" must be absolute`, failClosed: true };
-      }
       const designatedRoot = allowedRoots[optRule.rootType];
-      if (designatedRoot) {
-        const normVal = path.resolve(val).toLowerCase();
-        const normRoot = path.resolve(designatedRoot).toLowerCase();
-        if (!normVal.startsWith(normRoot)) {
-          return {
-            success: false,
-            errorCode: 'ERR_ADAPTER_PATH_CONFINEMENT_VIOLATION',
-            message: `Path "${val}" escapes approved ${optRule.rootType} root "${designatedRoot}"`,
-            failClosed: true
-          };
-        }
+      const confRes = validatePathConfinement(val, designatedRoot, optRule.rootType === 'input');
+      if (!confRes.success) {
+        return {
+          success: false,
+          errorCode: confRes.errorCode,
+          message: confRes.message,
+          failClosed: true
+        };
       }
       if (optRule.allowedExtensions) {
         const ext = path.extname(val).toLowerCase();
@@ -692,7 +905,74 @@ function validateTypedCommandArgv(baseName, args, allowedRoots = {}) {
     parsedOptions[flag] = val;
   }
 
+  // 5. Mandatory stage-specific options check
+  if (subcmdSchema.requiredOptions) {
+    for (const reqOpt of subcmdSchema.requiredOptions) {
+      if (!parsedOptions[reqOpt]) {
+        return {
+          success: false,
+          errorCode: 'ERR_ADAPTER_MISSING_MANDATORY_OPTION',
+          message: `Mandatory option "${reqOpt}" is missing for subcommand "${subcmd}"`,
+          failClosed: true
+        };
+      }
+    }
+  }
+
   return { success: true, isProbeOnly: false, subcommand: subcmd, options: parsedOptions };
+}
+
+/**
+ * Formal Process Execution Launch Contract & Quotas (R37)
+ * Defines specification for non-executing launch descriptor with env scrubbing and tree termination.
+ */
+const PROCESS_EXECUTION_CONTRACT = Object.freeze({
+  specVersion: 'R37_PROCESS_LAUNCH_CONTRACT_V1',
+  shell: false,
+  windowsHide: true,
+  envScrubbingPolicy: Object.freeze({
+    scrubberFunction: 'getScrubbedProcessEnv',
+    disallowedKeyPatterns: Object.freeze(['*SECRET*', '*TOKEN*', '*KEY*', '*PASS*']),
+    permittedKeys: Object.freeze([
+      'PATH', 'PATHEXT', 'SYSTEMROOT', 'WINDIR', 'TEMP', 'TMP', 'COMSPEC',
+      'NODE_ENV', 'LOCALAPPDATA', 'PROGRAMDATA', 'PROGRAMFILES', 'PROGRAMFILES(X86)'
+    ])
+  }),
+  resourceQuotas: Object.freeze({
+    maxCpuTimeSeconds: 1800,
+    maxWallClockTimeMs: 1800000,
+    maxMemoryBytes: 32 * 1024 * 1024 * 1024,
+    maxOutputSizeBytes: 50 * 1024 * 1024,
+    processTreeTermination: process.platform === 'win32'
+      ? 'taskkill /PID <PID> /T /F'
+      : 'SIGTERM_GRACE_PERIOD_THEN_SIGKILL_PROCESS_GROUP'
+  }),
+  status: Object.freeze({
+    ACTUAL_ENGINE_EXECUTION: 'NOT_VERIFIED',
+    EXECUTION_PERMITTED: false,
+    REASON: 'BLOCKED_ON_APPROVED_ENGINE_AND_OWNER_AUTHORIZATION'
+  })
+});
+
+/**
+ * Create formal process launch descriptor (R37).
+ * Constructs complete execution specification without triggering actual spawn.
+ */
+function createProcessLaunchDescriptor(executable, args, scrubbedEnv) {
+  return Object.freeze({
+    contractVersion: PROCESS_EXECUTION_CONTRACT.specVersion,
+    executable: path.resolve(executable),
+    argv: Object.freeze([...(args || [])]),
+    options: Object.freeze({
+      shell: false,
+      windowsHide: true,
+      env: Object.freeze(scrubbedEnv || getScrubbedProcessEnv()),
+      timeout: PROCESS_EXECUTION_CONTRACT.resourceQuotas.maxWallClockTimeMs,
+      maxBuffer: PROCESS_EXECUTION_CONTRACT.resourceQuotas.maxOutputSizeBytes
+    }),
+    executionStatus: 'NOT_VERIFIED_LAUNCH_BLOCKED',
+    contract: PROCESS_EXECUTION_CONTRACT
+  });
 }
 
 /**
@@ -756,6 +1036,12 @@ class ReconstructionExecutionAdapter {
     }
     this.isTestMode = Boolean(options.isTestMode === true && envAllowsTestMode && options.mockAuthProvider);
     this.mockAuthProvider = this.isTestMode ? options.mockAuthProvider : null;
+
+    // 3. Trusted root registry: caller-supplied root overrides strictly forbidden
+    if (options.allowedRoots !== undefined) {
+      throw new Error('ERR_ADAPTER_CALLER_ROOT_OVERRIDE_FORBIDDEN: Caller-supplied allowedRoots overrides are strictly forbidden; roots are infrastructure-governed');
+    }
+    this.trustedRootRegistry = options.trustedRootRegistry || new TrustedRootRegistry({ allowHarnessRoots: this.isTestMode });
   }
 
   isAuthorized() {
@@ -854,13 +1140,48 @@ class ReconstructionExecutionAdapter {
         };
       }
 
+      // Reject caller-supplied root overrides (R37 Directive 1)
+      if (
+        commandConfig.scratchRoot !== undefined ||
+        commandConfig.inputRoot !== undefined ||
+        commandConfig.outputRoot !== undefined ||
+        commandConfig.scratchDir !== undefined ||
+        commandConfig.imageDir !== undefined
+      ) {
+        if (!this.isTestMode || !commandConfig.isHarnessApprovedRoot) {
+          return {
+            success: false,
+            errorCode: 'ERR_ADAPTER_CALLER_ROOT_OVERRIDE_FORBIDDEN',
+            message: 'Caller-declared root overrides are strictly forbidden; roots must be provisioned by TrustedRootRegistry',
+            failClosed: true
+          };
+        }
+      }
+
+      let allowedRoots = {};
+      if (commandConfig.jobId) {
+        try {
+          allowedRoots = this.trustedRootRegistry.resolveJobRoots(commandConfig.jobId, commandConfig.sessionContext);
+        } catch (jobRootErr) {
+          return {
+            success: false,
+            errorCode: 'ERR_ADAPTER_JOB_ROOT_RESOLUTION_FAILED',
+            message: jobRootErr.message,
+            failClosed: true
+          };
+        }
+      } else if (this.isTestMode && commandConfig.harnessRootId) {
+        allowedRoots = this.trustedRootRegistry.getHarnessRoots(commandConfig.harnessRootId) || {};
+      } else if (this.isTestMode && commandConfig.isHarnessApprovedRoot) {
+        allowedRoots = {
+          scratch: commandConfig.scratchRoot,
+          input: commandConfig.inputRoot,
+          output: commandConfig.outputRoot
+        };
+      }
+
       // Enforce typed permitted argument allowlist against infrastructure trust policy
       if (commandConfig.args !== undefined) {
-        const allowedRoots = {
-          scratch: commandConfig.scratchRoot || commandConfig.scratchDir || os.tmpdir(),
-          input: commandConfig.inputRoot || commandConfig.imageDir || (executable ? path.dirname(executable) : os.tmpdir()),
-          output: commandConfig.outputRoot || (executable ? path.dirname(executable) : os.tmpdir())
-        };
         const argCheck = validateTypedCommandArgv(baseName, commandConfig.args, allowedRoots);
         if (!argCheck.success) {
           return {
@@ -1115,10 +1436,17 @@ class ReconstructionExecutionAdapter {
         }
       }
 
+      const launchDescriptor = createProcessLaunchDescriptor(
+        executable,
+        commandConfig.args || [],
+        getScrubbedProcessEnv()
+      );
+
       return {
         success: false,
         errorCode: 'ERR_RECONSTRUCTION_ENGINE_NOT_CONFIGURED',
         message: 'No authorized, capable reconstruction engine is provisioned in the current environment',
+        launchDescriptor,
         versionValidationClassification: versionCheckOutput ? 'CALLER_VERSION_STRING_VALIDATION_ONLY' : undefined,
         remoteHandshakeStatus: commandConfig.remoteUrl ? 'LOCAL_SPEC_VALIDATION_ONLY_NO_NETWORK' : undefined,
         failClosed: true,
@@ -1500,6 +1828,10 @@ module.exports = {
   TYPED_ARGV_SCHEMAS,
   validateTypedCommandArgv,
   getScrubbedProcessEnv,
+  TrustedRootRegistry,
+  validatePathConfinement,
+  PROCESS_EXECUTION_CONTRACT,
+  createProcessLaunchDescriptor,
   TYPE_SIZES
 };
 
