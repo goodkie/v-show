@@ -69,7 +69,10 @@ const {
   isPlaceholderOrTrivialSecret,
   APPROVED_RECONSTRUCTION_TARGETS,
   APPROVED_TARGET_MIN_VERSIONS,
-  INFRASTRUCTURE_TRUST_POLICY
+  INFRASTRUCTURE_TRUST_POLICY,
+  TYPED_ARGV_SCHEMAS,
+  validateTypedCommandArgv,
+  getScrubbedProcessEnv
 } = require('../virtual-tradeshow-commercial-v1/server/spatial_reconstruction_worker');
 
 const REPO_ROOT = path.resolve(__dirname, '..');
@@ -1005,7 +1008,7 @@ async function main() {
   //   7. Pre-Reconstruction Exact Hash Binding & Anti-Substitution:
   //      Canonically incorporates probesDigest in preReconstructionDigest.
   //      Anti-substitution invariant enforced (refuses claiming pre-existing benchmark as new model).
-  runTest('18. Trusted execution boundary, mandatory digest binding, numeric semver & isolated mock guards (R35)', () => {
+  runTest('18. Trusted execution boundary, mandatory digest binding, numeric semver & isolated mock guards (R36)', () => {
     // 1. Audit active refined capability probes
     const probes = probeReconstructionEngines();
     assert.ok(probes.LOCAL_GPU_ACCELERATOR, 'LOCAL_GPU_ACCELERATOR probe must exist');
@@ -1288,39 +1291,186 @@ async function main() {
     assert.strictEqual(semverOkRes.errorCode, 'ERR_SFM_PIPELINE_FAILED', 'Semver 3.10 >= 3.8 must pass version guard and proceed to runner');
     assert.strictEqual(semverOkRes.versionValidationClassification, 'CALLER_VERSION_STRING_VALIDATION_ONLY');
 
-    // 6g2. Command argument validation & injection defense (R35)
-    const badArgTypeRes = testHarnessAdapter.execute({
-      executable: path.resolve('colmap.exe'),
-      minVersion: '3.8.0',
-      versionCheckOutput: 'COLMAP 3.8.0',
-      args: 'not-an-array'
-    });
-    assert.strictEqual(badArgTypeRes.errorCode, 'ERR_ADAPTER_INVALID_ARGUMENTS_FORMAT');
+    // 6g2. Typed Command Argument Schema & Injection Defenses (R36)
+    const scratchTestRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'test-r36-scratch-'));
+    const inputTestRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'test-r36-input-'));
+    const validDbPath = path.join(scratchTestRoot, 'database.db');
+    try {
+      // (a) Invalid arguments format (non-array)
+      const badArgTypeRes = testHarnessAdapter.execute({
+        executable: path.resolve('colmap.exe'),
+        minVersion: '3.8.0',
+        versionCheckOutput: 'COLMAP 3.8.0',
+        mockRunner: () => ({ success: true }),
+        args: 'not-an-array'
+      });
+      assert.strictEqual(badArgTypeRes.errorCode, 'ERR_ADAPTER_INVALID_ARGUMENTS_FORMAT');
 
-    const injectionArgRes = testHarnessAdapter.execute({
-      executable: path.resolve('colmap.exe'),
-      minVersion: '3.8.0',
-      versionCheckOutput: 'COLMAP 3.8.0',
-      args: ['--help; rm -rf /']
-    });
-    assert.strictEqual(injectionArgRes.errorCode, 'ERR_ADAPTER_DISALLOWED_SHELL_METACHARACTERS');
+      // (b) Shell metacharacter injection
+      const injectionArgRes = testHarnessAdapter.execute({
+        executable: path.resolve('colmap.exe'),
+        minVersion: '3.8.0',
+        versionCheckOutput: 'COLMAP 3.8.0',
+        mockRunner: () => ({ success: true }),
+        args: ['--help; rm -rf /']
+      });
+      assert.strictEqual(injectionArgRes.errorCode, 'ERR_ADAPTER_DISALLOWED_SHELL_METACHARACTERS');
 
-    const disallowedArgRes = testHarnessAdapter.execute({
-      executable: path.resolve('colmap.exe'),
-      minVersion: '3.8.0',
-      versionCheckOutput: 'COLMAP 3.8.0',
-      args: ['--unapproved-malicious-flag']
-    });
-    assert.strictEqual(disallowedArgRes.errorCode, 'ERR_ADAPTER_DISALLOWED_ARGUMENT');
+      // (c) Response file option indirection (@file)
+      const responseFileRes = testHarnessAdapter.execute({
+        executable: path.resolve('colmap.exe'),
+        minVersion: '3.8.0',
+        versionCheckOutput: 'COLMAP 3.8.0',
+        mockRunner: () => ({ success: true }),
+        args: ['@options.rsp']
+      });
+      assert.strictEqual(responseFileRes.errorCode, 'ERR_ADAPTER_RESPONSE_FILE_INDIRECTION_FORBIDDEN');
 
-    const permittedArgRes = testHarnessAdapter.execute({
-      executable: path.resolve('colmap.exe'),
-      minVersion: '3.8.0',
-      versionCheckOutput: 'COLMAP 3.8.0',
-      args: ['--help'],
-      mockRunner: () => ({ success: true })
-    });
-    assert.strictEqual(permittedArgRes.errorCode, 'ERR_RECONSTRUCTION_ENGINE_NOT_CONFIGURED', 'Permitted argument --help must pass argument allowlist and fail closed at unprovisioned engine boundary');
+      // (d) Internal whitespace / flag smuggling
+      const smugglingRes = testHarnessAdapter.execute({
+        executable: path.resolve('colmap.exe'),
+        minVersion: '3.8.0',
+        versionCheckOutput: 'COLMAP 3.8.0',
+        mockRunner: () => ({ success: true }),
+        args: ['--help --malicious_smuggled']
+      });
+      assert.strictEqual(smugglingRes.errorCode, 'ERR_ADAPTER_FLAG_SMUGGLING_DETECTED');
+
+      // (e) Unapproved subcommand
+      const badSubcmdRes = testHarnessAdapter.execute({
+        executable: path.resolve('colmap.exe'),
+        minVersion: '3.8.0',
+        versionCheckOutput: 'COLMAP 3.8.0',
+        mockRunner: () => ({ success: true }),
+        args: ['unapproved_subcommand']
+      });
+      assert.strictEqual(badSubcmdRes.errorCode, 'ERR_ADAPTER_UNAPPROVED_SUBCOMMAND');
+
+      // (f) Disallowed option flag
+      const disallowedArgRes = testHarnessAdapter.execute({
+        executable: path.resolve('colmap.exe'),
+        minVersion: '3.8.0',
+        versionCheckOutput: 'COLMAP 3.8.0',
+        mockRunner: () => ({ success: true }),
+        args: ['feature_extractor', '--unapproved_flag=1']
+      });
+      assert.strictEqual(disallowedArgRes.errorCode, 'ERR_ADAPTER_DISALLOWED_ARGUMENT');
+
+      // (g) Duplicate conflicting flags
+      const duplicateFlagRes = testHarnessAdapter.execute({
+        executable: path.resolve('colmap.exe'),
+        minVersion: '3.8.0',
+        versionCheckOutput: 'COLMAP 3.8.0',
+        mockRunner: () => ({ success: true }),
+        scratchRoot: scratchTestRoot,
+        inputRoot: inputTestRoot,
+        args: ['feature_extractor', `--database_path=${validDbPath}`, `--database_path=${validDbPath}`]
+      });
+      assert.strictEqual(duplicateFlagRes.errorCode, 'ERR_ADAPTER_DUPLICATE_FLAG_FORBIDDEN');
+
+      // (h) Path traversal attempt
+      const traversalRes = testHarnessAdapter.execute({
+        executable: path.resolve('colmap.exe'),
+        minVersion: '3.8.0',
+        versionCheckOutput: 'COLMAP 3.8.0',
+        mockRunner: () => ({ success: true }),
+        scratchRoot: scratchTestRoot,
+        inputRoot: inputTestRoot,
+        args: ['feature_extractor', `--database_path=${scratchTestRoot}${path.sep}..${path.sep}escape.db`]
+      });
+      assert.strictEqual(traversalRes.errorCode, 'ERR_ADAPTER_PATH_TRAVERSAL_DETECTED');
+
+      // (i) Root confinement violation (path outside designated root)
+      const escapingRootPath = path.resolve('C:\\Windows\\System32\\unauthorized.db');
+      const confinementRes = testHarnessAdapter.execute({
+        executable: path.resolve('colmap.exe'),
+        minVersion: '3.8.0',
+        versionCheckOutput: 'COLMAP 3.8.0',
+        mockRunner: () => ({ success: true }),
+        scratchRoot: scratchTestRoot,
+        inputRoot: inputTestRoot,
+        args: ['feature_extractor', `--database_path=${escapingRootPath}`]
+      });
+      assert.strictEqual(confinementRes.errorCode, 'ERR_ADAPTER_PATH_CONFINEMENT_VIOLATION');
+
+      // (j) Invalid path extension (.txt instead of .db)
+      const invalidExtPath = path.join(scratchTestRoot, 'database.txt');
+      const extRes = testHarnessAdapter.execute({
+        executable: path.resolve('colmap.exe'),
+        minVersion: '3.8.0',
+        versionCheckOutput: 'COLMAP 3.8.0',
+        mockRunner: () => ({ success: true }),
+        scratchRoot: scratchTestRoot,
+        inputRoot: inputTestRoot,
+        args: ['feature_extractor', `--database_path=${invalidExtPath}`]
+      });
+      assert.strictEqual(extRes.errorCode, 'ERR_ADAPTER_INVALID_PATH_EXTENSION');
+
+      // (k) Malformed numeric bounds
+      const numBoundsRes = testHarnessAdapter.execute({
+        executable: path.resolve('colmap.exe'),
+        minVersion: '3.8.0',
+        versionCheckOutput: 'COLMAP 3.8.0',
+        mockRunner: () => ({ success: true }),
+        scratchRoot: scratchTestRoot,
+        inputRoot: inputTestRoot,
+        args: ['feature_extractor', `--database_path=${validDbPath}`, '--SiftExtraction.max_image_size=999999']
+      });
+      assert.strictEqual(numBoundsRes.errorCode, 'ERR_ADAPTER_INVALID_NUMERIC_BOUNDS');
+
+      // (l) Invalid enum value
+      const enumRes = testHarnessAdapter.execute({
+        executable: path.resolve('colmap.exe'),
+        minVersion: '3.8.0',
+        versionCheckOutput: 'COLMAP 3.8.0',
+        mockRunner: () => ({ success: true }),
+        scratchRoot: scratchTestRoot,
+        inputRoot: inputTestRoot,
+        args: ['feature_extractor', `--database_path=${validDbPath}`, '--ImageReader.camera_model=INVALID_CAMERA_MODEL']
+      });
+      assert.strictEqual(enumRes.errorCode, 'ERR_ADAPTER_INVALID_ENUM_VALUE');
+
+      // (m) Standalone probe flag (--help) passes
+      const probeHelpRes = testHarnessAdapter.execute({
+        executable: path.resolve('colmap.exe'),
+        minVersion: '3.8.0',
+        versionCheckOutput: 'COLMAP 3.8.0',
+        mockRunner: () => ({ success: true }),
+        args: ['--help']
+      });
+      assert.strictEqual(probeHelpRes.errorCode, 'ERR_RECONSTRUCTION_ENGINE_NOT_CONFIGURED');
+
+      // (n) Valid structured typed command passes schema validation and fails closed at engine boundary
+      const validTypedRes = testHarnessAdapter.execute({
+        executable: path.resolve('colmap.exe'),
+        minVersion: '3.8.0',
+        versionCheckOutput: 'COLMAP 3.8.0',
+        mockRunner: () => ({ success: true }),
+        scratchRoot: scratchTestRoot,
+        inputRoot: inputTestRoot,
+        args: [
+          'feature_extractor',
+          `--database_path=${validDbPath}`,
+          `--image_path=${inputTestRoot}`,
+          '--ImageReader.camera_model=PINHOLE',
+          '--SiftExtraction.max_image_size=2048'
+        ]
+      });
+      assert.strictEqual(validTypedRes.errorCode, 'ERR_RECONSTRUCTION_ENGINE_NOT_CONFIGURED', 'Valid typed arguments must pass schema and fail closed at engine boundary');
+    } finally {
+      try { fs.rmSync(scratchTestRoot, { recursive: true, force: true }); } catch (_) {}
+      try { fs.rmSync(inputTestRoot, { recursive: true, force: true }); } catch (_) {}
+    }
+
+    // 6g3. Child Process Environment Scrubbing Verification
+    process.env.SPARK_3DGS_WORKER_SECRET = 'TEST_SECRET_PROVISIONED_VAULT_SENSITIVE';
+    process.env.RECONSTRUCTION_ENTITLEMENT_SECRET = 'TEST_ENTITLEMENT_SECRET_SENSITIVE';
+    const scrubbedEnv = getScrubbedProcessEnv();
+    assert.strictEqual(scrubbedEnv.SPARK_3DGS_WORKER_SECRET, undefined, 'Worker secret must be scrubbed from child process environment');
+    assert.strictEqual(scrubbedEnv.RECONSTRUCTION_ENTITLEMENT_SECRET, undefined, 'Entitlement secret must be scrubbed from child process environment');
+    assert.ok(scrubbedEnv.PATH || scrubbedEnv.SystemRoot || scrubbedEnv.TEMP, 'Safe system path/temp keys must be preserved');
+    delete process.env.SPARK_3DGS_WORKER_SECRET;
+    delete process.env.RECONSTRUCTION_ENTITLEMENT_SECRET;
 
     // 6h. Mandatory expected SHA-256 missing in non-mock / production mode when unprovisioned in policy
     const dummyExe = path.join(os.tmpdir(), 'colmap.exe');
@@ -1491,7 +1641,7 @@ async function main() {
   console.log(`True 3D Pipeline Test Suite Complete: ${passedTests}/${totalTests} passed`);
   console.log('================================================================\n');
 
-  // ── [POST-RUN FINALIZER] Emit Machine-Verifiable R35 Execution Receipt ───────
+  // ── [POST-RUN FINALIZER] Emit Machine-Verifiable R36 Execution Receipt ───────
   const suiteEndTime = new Date().toISOString();
   const durationMs = Date.now() - startTimeEpoch;
   const runnerSource = fs.readFileSync(__filename);
@@ -1501,7 +1651,7 @@ async function main() {
   const engineDiscoveryProbes = probeReconstructionEngines();
 
   const receipt = {
-    receiptSchemaVersion: 'R35_EXECUTION_RECEIPT_V1',
+    receiptSchemaVersion: 'R36_EXECUTION_RECEIPT_V1',
     executionTimestamps: {
       startTime: suiteStartTime,
       endTime: suiteEndTime,
@@ -1551,6 +1701,11 @@ async function main() {
       callerTrustPolicyOverride: 'FORBIDDEN',
       callerWorkerInjectionDefense: 'FORBIDDEN_IN_PRODUCTION',
       commandArgvEnforcement: 'STRICT_PERMITTED_ARGS_ALLOWLIST_AND_METACHARACTER_DEFENSE',
+      typedArgvSchemaStatus: 'TYPED_PER_ENGINE_SCHEMA_WITH_ROOT_CONFINEMENT_AND_NUMERIC_BOUNDS',
+      responseFileIndirectionDefense: 'REJECTED_VIA_PREFIX_GUARD',
+      duplicateFlagDefense: 'REJECTED_VIA_FLAG_UNIQUENESS',
+      processEnvScrubbing: 'SCRUBBED_MINIMAL_SAFE_KEYS_ONLY',
+      processExecutionContract: 'SHELL_FALSE_MANDATORY',
       engineProvenanceStatus: 'NOT_VERIFIED_ZERO_AUTHORIZED_ENGINES_PROVISIONED',
       symlinkResolution: 'REJECTED_VIA_REALPATH',
       semverComparisonModel: 'NUMERIC_COMPONENT_ORDERING_WITH_FIXED_FLOOR',
@@ -1582,14 +1737,14 @@ async function main() {
 
   const receiptOutPath = path.join(
     REPO_ROOT,
-    'virtual-tradeshow-commercial-v1/production_artifacts/R35_TEST_EXECUTION_RECEIPT.json'
+    'virtual-tradeshow-commercial-v1/production_artifacts/R36_TEST_EXECUTION_RECEIPT.json'
   );
   fs.writeFileSync(receiptOutPath, JSON.stringify(receipt, null, 2), 'utf8');
   const savedReceiptBytes = fs.readFileSync(receiptOutPath);
   const receiptByteSha256 = crypto.createHash('sha256').update(savedReceiptBytes).digest('hex');
 
-  console.log('--- Final Execution Receipt (R35 Machine Verifiable) ---');
-  console.log(`  File:           virtual-tradeshow-commercial-v1/production_artifacts/R35_TEST_EXECUTION_RECEIPT.json`);
+  console.log('--- Final Execution Receipt (R36 Machine Verifiable) ---');
+  console.log(`  File:           virtual-tradeshow-commercial-v1/production_artifacts/R36_TEST_EXECUTION_RECEIPT.json`);
   console.log(`  Byte SHA-256:   ${receiptByteSha256}`);
   console.log(`  Tested Commit:  ${suiteCurrentHead}`);
   console.log(`  Expected Head:  ${expectedHead || '(none - unbound)'}`);

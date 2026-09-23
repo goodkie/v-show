@@ -386,10 +386,10 @@ function compareSemver(v1, v2) {
   return p1.patch - p2.patch;
 }
 
-// Read-Only, Infrastructure-Owned Binary Trust Policy (R34)
+// Read-Only, Infrastructure-Owned Binary Trust Policy (R36)
 // Caller options, request payloads, or job configs cannot override this policy.
 const INFRASTRUCTURE_TRUST_POLICY = Object.freeze({
-  policyVersion: 'R34_INFRASTRUCTURE_POLICY_V1',
+  policyVersion: 'R36_INFRASTRUCTURE_POLICY_V1',
   approvedTargets: Object.freeze({
     colmap: Object.freeze({
       canonicalBaseNames: Object.freeze(['colmap.exe', 'colmap']),
@@ -432,6 +432,285 @@ const APPROVED_TARGET_MIN_VERSIONS = Object.freeze({
   'gsplat_train': '0.1.0',
   'gsplat_train.exe': '0.1.0'
 });
+
+// Typed Command Argv Schemas with Root Confinements & Parameter Bounds (R36)
+const TYPED_ARGV_SCHEMAS = Object.freeze({
+  colmap: Object.freeze({
+    subcommands: Object.freeze({
+      feature_extractor: Object.freeze({
+        options: Object.freeze({
+          '--database_path': Object.freeze({ type: 'path', rootType: 'scratch', allowedExtensions: ['.db'] }),
+          '--image_path': Object.freeze({ type: 'path', rootType: 'input' }),
+          '--ImageReader.camera_model': Object.freeze({ type: 'enum', allowedValues: ['PINHOLE', 'SIMPLE_PINHOLE', 'OPENCV'] }),
+          '--SiftExtraction.max_image_size': Object.freeze({ type: 'integer', min: 512, max: 4096 }),
+          '--SiftExtraction.max_num_features': Object.freeze({ type: 'integer', min: 1000, max: 32768 })
+        })
+      }),
+      exhaustive_matcher: Object.freeze({
+        options: Object.freeze({
+          '--database_path': Object.freeze({ type: 'path', rootType: 'scratch', allowedExtensions: ['.db'] }),
+          '--SiftMatching.guided_matching': Object.freeze({ type: 'integer', min: 0, max: 1 })
+        })
+      }),
+      point_triangulator: Object.freeze({
+        options: Object.freeze({
+          '--database_path': Object.freeze({ type: 'path', rootType: 'scratch', allowedExtensions: ['.db'] }),
+          '--image_path': Object.freeze({ type: 'path', rootType: 'input' }),
+          '--input_path': Object.freeze({ type: 'path', rootType: 'scratch' }),
+          '--output_path': Object.freeze({ type: 'path', rootType: 'scratch' })
+        })
+      })
+    })
+  }),
+  nsTrain: Object.freeze({
+    subcommands: Object.freeze({
+      splatfacto: Object.freeze({
+        options: Object.freeze({
+          '--data': Object.freeze({ type: 'path', rootType: 'input' }),
+          '--output-dir': Object.freeze({ type: 'path', rootType: 'output' }),
+          '--max-num-iterations': Object.freeze({ type: 'integer', min: 1000, max: 100000 }),
+          '--pipeline.model.cull-alpha-thresh': Object.freeze({ type: 'float', min: 0.001, max: 0.1 })
+        })
+      }),
+      nerfacto: Object.freeze({
+        options: Object.freeze({
+          '--data': Object.freeze({ type: 'path', rootType: 'input' }),
+          '--output-dir': Object.freeze({ type: 'path', rootType: 'output' }),
+          '--max-num-iterations': Object.freeze({ type: 'integer', min: 1000, max: 100000 })
+        })
+      })
+    })
+  }),
+  gsplatTrain: Object.freeze({
+    subcommands: Object.freeze({
+      train: Object.freeze({
+        options: Object.freeze({
+          '--data-dir': Object.freeze({ type: 'path', rootType: 'input' }),
+          '--result-dir': Object.freeze({ type: 'path', rootType: 'output' }),
+          '--iterations': Object.freeze({ type: 'integer', min: 1000, max: 50000 })
+        })
+      })
+    })
+  })
+});
+
+/**
+ * Validate structured typed command argv against engine schema.
+ * Rejects shell injection, metacharacters, response files, duplicate flags,
+ * option smuggling, path traversal, out-of-bounds numbers, and unauthorized roots.
+ */
+function validateTypedCommandArgv(baseName, args, allowedRoots = {}) {
+  if (args === undefined) return { success: true };
+  if (!Array.isArray(args)) {
+    return {
+      success: false,
+      errorCode: 'ERR_ADAPTER_INVALID_ARGUMENTS_FORMAT',
+      message: 'Command arguments must be an array of strings',
+      failClosed: true
+    };
+  }
+
+  // 1. Structural String & Metacharacter Integrity
+  for (const arg of args) {
+    if (typeof arg !== 'string') {
+      return {
+        success: false,
+        errorCode: 'ERR_ADAPTER_INVALID_ARGUMENT_TYPE',
+        message: 'Each command argument must be a string',
+        failClosed: true
+      };
+    }
+    // Reject shell injection metacharacters, control characters, null bytes
+    if (/[\0;&|`$<>\r\n]/.test(arg)) {
+      return {
+        success: false,
+        errorCode: 'ERR_ADAPTER_DISALLOWED_SHELL_METACHARACTERS',
+        message: `Argument "${arg}" contains forbidden shell metacharacters or control bytes`,
+        failClosed: true
+      };
+    }
+    // Reject response-file option indirection (@file syntax)
+    if (arg.startsWith('@')) {
+      return {
+        success: false,
+        errorCode: 'ERR_ADAPTER_RESPONSE_FILE_INDIRECTION_FORBIDDEN',
+        message: `Response file indirection ("${arg}") is strictly forbidden`,
+        failClosed: true
+      };
+    }
+    // Reject internal argument whitespace smuggling (e.g. "--flag1 --flag2" in one argv slot)
+    if (/\s/.test(arg)) {
+      return {
+        success: false,
+        errorCode: 'ERR_ADAPTER_FLAG_SMUGGLING_DETECTED',
+        message: `Argument "${arg}" contains unescaped whitespace / flag smuggling`,
+        failClosed: true
+      };
+    }
+  }
+
+  // Allow standalone non-mutating probes
+  if (args.length === 1 && (args[0] === '--help' || args[0] === '--version')) {
+    return { success: true, isProbeOnly: true, subcommand: null, options: {} };
+  }
+
+  // Find schema by canonical baseName
+  const lowerBase = (baseName || '').toLowerCase();
+  const engineKey = Object.keys(TYPED_ARGV_SCHEMAS).find(k => {
+    const targets = INFRASTRUCTURE_TRUST_POLICY.approvedTargets[k];
+    return targets && targets.canonicalBaseNames.map(b => b.toLowerCase()).includes(lowerBase);
+  });
+
+  if (!engineKey || !TYPED_ARGV_SCHEMAS[engineKey]) {
+    return {
+      success: false,
+      errorCode: 'ERR_ADAPTER_UNAPPROVED_ENGINE_SCHEMA',
+      message: `No approved typed argv schema for executable "${baseName}"`,
+      failClosed: true
+    };
+  }
+
+  const engineSchema = TYPED_ARGV_SCHEMAS[engineKey];
+  const subcmd = args[0];
+  const subcmdSchema = engineSchema.subcommands[subcmd];
+  if (!subcmdSchema) {
+    return {
+      success: false,
+      errorCode: 'ERR_ADAPTER_UNAPPROVED_SUBCOMMAND',
+      message: `Subcommand "${subcmd}" is not recognized or permitted for "${baseName}"`,
+      failClosed: true
+    };
+  }
+
+  // Parse and validate options
+  const seenFlags = new Set();
+  const parsedOptions = {};
+  let i = 1;
+  while (i < args.length) {
+    const rawArg = args[i];
+    let flag, val;
+    if (rawArg.includes('=')) {
+      const eqIdx = rawArg.indexOf('=');
+      flag = rawArg.substring(0, eqIdx);
+      val = rawArg.substring(eqIdx + 1);
+      i++;
+    } else if (rawArg.startsWith('--') || rawArg.startsWith('-')) {
+      flag = rawArg;
+      if (i + 1 < args.length && !args[i + 1].startsWith('-')) {
+        val = args[i + 1];
+        i += 2;
+      } else {
+        val = 'true';
+        i++;
+      }
+    } else {
+      return {
+        success: false,
+        errorCode: 'ERR_ADAPTER_UNEXPECTED_POSITIONAL_ARGUMENT',
+        message: `Unexpected positional argument "${rawArg}" in subcommand "${subcmd}"`,
+        failClosed: true
+      };
+    }
+
+    if (seenFlags.has(flag)) {
+      return {
+        success: false,
+        errorCode: 'ERR_ADAPTER_DUPLICATE_FLAG_FORBIDDEN',
+        message: `Duplicate conflicting flag "${flag}" is strictly forbidden`,
+        failClosed: true
+      };
+    }
+    seenFlags.add(flag);
+
+    const optRule = subcmdSchema.options[flag];
+    if (!optRule) {
+      return {
+        success: false,
+        errorCode: 'ERR_ADAPTER_DISALLOWED_ARGUMENT',
+        message: `Option "${flag}" is not in approved schema for "${subcmd}"`,
+        failClosed: true
+      };
+    }
+
+    // Type validation
+    if (optRule.type === 'path') {
+      if (!val || typeof val !== 'string') {
+        return { success: false, errorCode: 'ERR_ADAPTER_INVALID_PATH_VALUE', message: `Path value missing for "${flag}"`, failClosed: true };
+      }
+      if (val.includes('..') || val.includes('\0')) {
+        return { success: false, errorCode: 'ERR_ADAPTER_PATH_TRAVERSAL_DETECTED', message: `Path traversal detected in "${val}"`, failClosed: true };
+      }
+      if (!path.isAbsolute(val)) {
+        return { success: false, errorCode: 'ERR_ADAPTER_NON_ABSOLUTE_PATH', message: `Path "${val}" must be absolute`, failClosed: true };
+      }
+      const designatedRoot = allowedRoots[optRule.rootType];
+      if (designatedRoot) {
+        const normVal = path.resolve(val).toLowerCase();
+        const normRoot = path.resolve(designatedRoot).toLowerCase();
+        if (!normVal.startsWith(normRoot)) {
+          return {
+            success: false,
+            errorCode: 'ERR_ADAPTER_PATH_CONFINEMENT_VIOLATION',
+            message: `Path "${val}" escapes approved ${optRule.rootType} root "${designatedRoot}"`,
+            failClosed: true
+          };
+        }
+      }
+      if (optRule.allowedExtensions) {
+        const ext = path.extname(val).toLowerCase();
+        if (!optRule.allowedExtensions.includes(ext)) {
+          return {
+            success: false,
+            errorCode: 'ERR_ADAPTER_INVALID_PATH_EXTENSION',
+            message: `Path "${val}" does not have approved extension (${optRule.allowedExtensions.join(',')})`,
+            failClosed: true
+          };
+        }
+      }
+    } else if (optRule.type === 'integer') {
+      if (!/^-?\d+$/.test(val)) {
+        return { success: false, errorCode: 'ERR_ADAPTER_INVALID_NUMERIC_BOUNDS', message: `Invalid integer "${val}" for "${flag}"`, failClosed: true };
+      }
+      const num = parseInt(val, 10);
+      if (num < optRule.min || num > optRule.max) {
+        return { success: false, errorCode: 'ERR_ADAPTER_INVALID_NUMERIC_BOUNDS', message: `Integer ${num} out of bounds [${optRule.min}, ${optRule.max}] for "${flag}"`, failClosed: true };
+      }
+    } else if (optRule.type === 'float') {
+      if (!/^-?\d+(?:\.\d+)?$/.test(val)) {
+        return { success: false, errorCode: 'ERR_ADAPTER_INVALID_NUMERIC_BOUNDS', message: `Invalid float "${val}" for "${flag}"`, failClosed: true };
+      }
+      const flt = parseFloat(val);
+      if (flt < optRule.min || flt > optRule.max) {
+        return { success: false, errorCode: 'ERR_ADAPTER_INVALID_NUMERIC_BOUNDS', message: `Float ${flt} out of bounds [${optRule.min}, ${optRule.max}] for "${flag}"`, failClosed: true };
+      }
+    } else if (optRule.type === 'enum') {
+      if (!optRule.allowedValues.includes(val)) {
+        return { success: false, errorCode: 'ERR_ADAPTER_INVALID_ENUM_VALUE', message: `Invalid enum value "${val}" for "${flag}"; must be one of: ${optRule.allowedValues.join(',')}`, failClosed: true };
+      }
+    }
+
+    parsedOptions[flag] = val;
+  }
+
+  return { success: true, isProbeOnly: false, subcommand: subcmd, options: parsedOptions };
+}
+
+/**
+ * Scrub child process environment to strip application secrets, tokens, and keys.
+ */
+function getScrubbedProcessEnv() {
+  const allowedEnvKeys = new Set([
+    'PATH', 'PATHEXT', 'SYSTEMROOT', 'WINDIR', 'TEMP', 'TMP', 'COMSPEC',
+    'NODE_ENV', 'LOCALAPPDATA', 'PROGRAMDATA', 'PROGRAMFILES', 'PROGRAMFILES(X86)'
+  ]);
+  const scrubbed = {};
+  for (const [key, val] of Object.entries(process.env)) {
+    if (allowedEnvKeys.has(key.toUpperCase())) {
+      scrubbed[key] = val;
+    }
+  }
+  return scrubbed;
+}
 
 /**
  * Isolated Reconstruction Execution Adapter
@@ -575,41 +854,21 @@ class ReconstructionExecutionAdapter {
         };
       }
 
-      // Enforce permitted argument allowlist against infrastructure trust policy
+      // Enforce typed permitted argument allowlist against infrastructure trust policy
       if (commandConfig.args !== undefined) {
-        if (!Array.isArray(commandConfig.args)) {
+        const allowedRoots = {
+          scratch: commandConfig.scratchRoot || commandConfig.scratchDir || os.tmpdir(),
+          input: commandConfig.inputRoot || commandConfig.imageDir || (executable ? path.dirname(executable) : os.tmpdir()),
+          output: commandConfig.outputRoot || (executable ? path.dirname(executable) : os.tmpdir())
+        };
+        const argCheck = validateTypedCommandArgv(baseName, commandConfig.args, allowedRoots);
+        if (!argCheck.success) {
           return {
             success: false,
-            errorCode: 'ERR_ADAPTER_INVALID_ARGUMENTS_FORMAT',
-            message: 'Command arguments must be an array of strings',
+            errorCode: argCheck.errorCode,
+            message: argCheck.message,
             failClosed: true
           };
-        }
-        for (const arg of commandConfig.args) {
-          if (typeof arg !== 'string') {
-            return {
-              success: false,
-              errorCode: 'ERR_ADAPTER_INVALID_ARGUMENT_TYPE',
-              message: 'Each command argument must be a string',
-              failClosed: true
-            };
-          }
-          if (/[;&|`$<>\r\n]/.test(arg)) {
-            return {
-              success: false,
-              errorCode: 'ERR_ADAPTER_DISALLOWED_SHELL_METACHARACTERS',
-              message: `Argument "${arg}" contains forbidden shell metacharacters`,
-              failClosed: true
-            };
-          }
-          if (!policyEntry.permittedArgs.includes(arg)) {
-            return {
-              success: false,
-              errorCode: 'ERR_ADAPTER_DISALLOWED_ARGUMENT',
-              message: `Argument "${arg}" is not on approved permitted arguments list for "${baseName}"`,
-              failClosed: true
-            };
-          }
         }
       }
 
@@ -1238,6 +1497,9 @@ module.exports = {
   APPROVED_RECONSTRUCTION_TARGETS,
   APPROVED_TARGET_MIN_VERSIONS,
   INFRASTRUCTURE_TRUST_POLICY,
+  TYPED_ARGV_SCHEMAS,
+  validateTypedCommandArgv,
+  getScrubbedProcessEnv,
   TYPE_SIZES
 };
 
