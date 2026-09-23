@@ -2503,6 +2503,116 @@ async function main() {
 
     console.log('    - Fail-closed job ledger, non-destructive orphan quarantine & two-process lock falsification test: PASS (R45 P0-1, P0-2, P0-3 verified)');
 
+    // 3e. Two-Process Concurrency Lost-Update Falsification Test (Round 46 P0-1)
+    // Proves that when Process A registers a job and Process B reconciles an orphan concurrently,
+    // both operations are serialized by JOB_LOCK_FILE, both mutations are preserved in the disk ledger,
+    // and neither entry is lost or corrupted.
+    const r46OrphanId = `job_r46_orphan_${runNonce}_${crypto.randomBytes(4).toString('hex')}`;
+    const r46OrphanDir = path.join(SERVER_TRUSTED_WORKSPACE_BASE, testTenantId, r46OrphanId);
+    fs.mkdirSync(path.join(r46OrphanDir, 'input'), { recursive: true });
+    fs.writeFileSync(path.join(r46OrphanDir, 'input', 'captured_sample.dat'), Buffer.from('R46_CONCURRENCY_TEST_DATA'));
+
+    const r46Proof = mintTestSessionProof({
+      tenantId: testTenantId,
+      ownerId: testOwnerId,
+      projectId: testProjectId,
+      sessionTokenHash: 'r46_conc_token_' + runNonce
+    });
+
+    const procRegScript = `
+      const internal = require('./virtual-tradeshow-commercial-v1/server/server_internal_registry');
+      try {
+        const job = internal.registerServerJob(
+          { projectId: '${testProjectId}' },
+          { sessionProof: ${JSON.stringify(r46Proof)} }
+        );
+        process.stdout.write('JOB_ID:' + job.jobId + '\\n');
+        process.exit(0);
+      } catch (err) {
+        process.stderr.write('REG_ERR:' + err.message + '\\n');
+        process.exit(1);
+      }
+    `;
+
+    const procRecScript = `
+      const internal = require('./virtual-tradeshow-commercial-v1/server/server_internal_registry');
+      try {
+        const res = internal.reconcileOrphanWorkspaces();
+        process.stdout.write('RECON_OK:' + res.reconciled + '\\n');
+        process.exit(0);
+      } catch (err) {
+        process.stderr.write('RECON_ERR:' + err.message + '\\n');
+        process.exit(1);
+      }
+    `;
+
+    const orchestratorScript = `
+      const { spawn } = require('child_process');
+      const path = require('path');
+
+      async function run() {
+        const childReg = spawn(process.execPath, ['-e', ${JSON.stringify(procRegScript)}], {
+          cwd: '${REPO_ROOT.replace(/\\/g, '\\\\')}',
+          env: { ...process.env, SERVER_SESSION_SIGNING_SECRET: '${PROD_TEST_SECRET}' },
+          stdio: ['ignore', 'pipe', 'pipe']
+        });
+
+        const childRec = spawn(process.execPath, ['-e', ${JSON.stringify(procRecScript)}], {
+          cwd: '${REPO_ROOT.replace(/\\/g, '\\\\')}',
+          env: { ...process.env, SERVER_SESSION_SIGNING_SECRET: '${PROD_TEST_SECRET}' },
+          stdio: ['ignore', 'pipe', 'pipe']
+        });
+
+        let regOut = '';
+        let recOut = '';
+        childReg.stdout.on('data', d => regOut += d.toString());
+        childRec.stdout.on('data', d => recOut += d.toString());
+
+        let regErr = '';
+        let recErr = '';
+        childReg.stderr.on('data', d => regErr += d.toString());
+        childRec.stderr.on('data', d => recErr += d.toString());
+
+        const exitA = await new Promise(r => childReg.on('close', r));
+        const exitB = await new Promise(r => childRec.on('close', r));
+
+        if (exitA !== 0 || exitB !== 0) {
+          console.error('Exit codes:', exitA, exitB, 'Errors:', regErr, recErr);
+          process.exit(1);
+        }
+        process.stdout.write(regOut + recOut);
+        process.exit(0);
+      }
+      run();
+    `;
+
+    try {
+      const orchRes = spawnSync(process.execPath, ['-e', orchestratorScript], {
+        cwd: REPO_ROOT,
+        env: { ...advChildEnv, SERVER_SESSION_SIGNING_SECRET: PROD_TEST_SECRET },
+        encoding: 'utf8'
+      });
+      assert.strictEqual(orchRes.status, 0, 'Concurrent orchestrator must exit 0: ' + (orchRes.stderr || ''));
+
+      // Verify authoritative disk ledger contains BOTH mutations
+      const diskLedger = loadJobLedgerFromDisk();
+      assert.ok(diskLedger.has(r46OrphanId), 'Orphan job must exist in disk ledger');
+      const orphanEntry = diskLedger.get(r46OrphanId);
+      assert.strictEqual(orphanEntry.status, 'ORPHANED_WORKSPACE', 'Orphan status must be ORPHANED_WORKSPACE');
+      assert.strictEqual(orphanEntry.quarantined, true, 'Orphan must be quarantined');
+
+      const match = orchRes.stdout.match(/JOB_ID:(job_[a-f0-9]+)/);
+      assert.ok(match, 'Must have output registered job ID');
+      const registeredJobId = match[1];
+      assert.ok(diskLedger.has(registeredJobId), 'Registered job must exist in disk ledger');
+      const regEntry = diskLedger.get(registeredJobId);
+      assert.strictEqual(regEntry.status, 'PROVISIONED', 'Registered job status must be PROVISIONED');
+
+      console.log('    - Lock-scoped orphan reconciliation & two-process concurrent registration falsification test: PASS (R46 P0-1 verified)');
+    } finally {
+      try { fs.rmSync(r46OrphanDir, { recursive: true, force: true }); } catch (_) {}
+    }
+
     const publicWorker = require('../virtual-tradeshow-commercial-v1/server/spatial_reconstruction_worker');
 
     // Adversarial caller cannot activate test mode or mock runner by passing arbitrary options
@@ -2896,7 +3006,7 @@ async function main() {
   const engineDiscoveryProbes = probeReconstructionEngines();
 
   const receipt = {
-    receiptSchemaVersion: 'R45_EXECUTION_RECEIPT_V1',
+    receiptSchemaVersion: 'R46_EXECUTION_RECEIPT_V1',
     executionTimestamps: {
       startTime: suiteStartTime,
       endTime: suiteEndTime,
@@ -2942,8 +3052,8 @@ async function main() {
     executionBoundaryAudit: {
       trustedExecutionBoundary: 'CANONICAL_ABSOLUTE_PATH_AND_INFRASTRUCTURE_TRUST_POLICY',
       trustedRootRegistry: 'CLOSURE_PRIVATE_SERVER_REGISTRY',
-      serverJobRegistry: 'FAIL_CLOSED_TRANSACTIONAL_LEDGER_WITH_NON_DESTRUCTIVE_ORPHAN_QUARANTINE',
-      crossProcessLock: 'TWO_PROCESS_FALSIFIED_PID_LIVENESS_AND_REMOTE_HOST_FENCING',
+      serverJobRegistry: 'FAIL_CLOSED_TRANSACTIONAL_LEDGER_WITH_LOCK_SCOPED_ORPHAN_QUARANTINE',
+      crossProcessLock: 'TWO_PROCESS_FALSIFIED_PID_LIVENESS_AND_CONCURRENCY_RACE_TESTED',
       callerRootOverrideDefense: 'STRICTLY_REJECTED',
       siblingPrefixEscapeDefense: 'PATH_SEPARATOR_BOUNDARY_CHECK',
       mandatoryOptionsEnforcement: 'ENFORCED_PER_SUBCOMMAND_SCHEMA',
@@ -2994,8 +3104,8 @@ async function main() {
       WORKSPACE_STATIC_ISOLATION: 'SOURCE_CHECK_ONLY',
       OWNER_DECISION_NOTE: 'READ_ONLY_BOUNDED_ZERO_SPEND_DEFAULT',
       JOB_LEDGER_FAIL_CLOSED: 'FAIL_CLOSED_AND_SENTINEL_VERIFIED',
-      LOCK_STALE_OWNER_MUTEX: 'TWO_PROCESS_FALSIFIED_VERIFIED',
-      ORPHAN_WORKSPACE_RECONCILIATION: 'NON_DESTRUCTIVE_QUARANTINE_VERIFIED',
+      LOCK_STALE_OWNER_MUTEX: 'TWO_PROCESS_CONCURRENCY_FALSIFIED_VERIFIED',
+      ORPHAN_WORKSPACE_RECONCILIATION: 'LOCK_SCOPED_NON_DESTRUCTIVE_QUARANTINE_VERIFIED',
       DURABLE_ACROSS_REDEPLOY_REPLICA: 'NOT_VERIFIED',
       PROJECT_MEMBERSHIP_CLASSIFICATION: 'ISOLATED_CONTRACT_ONLY',
       ACTUAL_ENGINE_EXECUTION: 'NOT_VERIFIED',
@@ -3007,14 +3117,14 @@ async function main() {
 
   const receiptOutPath = path.join(
     REPO_ROOT,
-    'virtual-tradeshow-commercial-v1/production_artifacts/R45_TEST_EXECUTION_RECEIPT.json'
+    'virtual-tradeshow-commercial-v1/production_artifacts/R46_TEST_EXECUTION_RECEIPT.json'
   );
   fs.writeFileSync(receiptOutPath, JSON.stringify(receipt, null, 2), 'utf8');
   const savedReceiptBytes = fs.readFileSync(receiptOutPath);
   const receiptByteSha256 = crypto.createHash('sha256').update(savedReceiptBytes).digest('hex');
 
-  console.log('--- Final Execution Receipt (R45 Machine Verifiable) ---');
-  console.log(`  File:           virtual-tradeshow-commercial-v1/production_artifacts/R45_TEST_EXECUTION_RECEIPT.json`);
+  console.log('--- Final Execution Receipt (R46 Machine Verifiable) ---');
+  console.log(`  File:           virtual-tradeshow-commercial-v1/production_artifacts/R46_TEST_EXECUTION_RECEIPT.json`);
   console.log(`  Byte SHA-256:   ${receiptByteSha256}`);
   console.log(`  Tested Commit:  ${suiteCurrentHead}`);
   console.log(`  Expected Head:  ${expectedHead || '(none - unbound)'}`);

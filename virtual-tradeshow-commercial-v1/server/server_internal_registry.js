@@ -172,14 +172,32 @@ function fsyncDirectorySafe(dirPath) {
   }
 }
 
+const activeLocksInProcess = new Map();
+
 /**
- * Cross-Process Ownership-Aware Advisory Lock Utility (Round 44 P0-2)
+ * Cross-Process Ownership-Aware Advisory Lock Utility (Round 44/46 P0-2)
  * Synchronizes atomic write/read operations across multiple Node processes.
+ * Enforces process-local re-entrancy tracking to prevent intra-process self-deadlock.
  * Enforces ownership-aware liveness checks (isProcessAlive) to prevent lock-stealing
  * from active processes, and safe ownership verification before unlinking.
  */
 function withStoreLock(lockFilePath, actionFn, options = {}) {
-  fs.mkdirSync(path.dirname(lockFilePath), { recursive: true });
+  const resolvedLockPath = path.resolve(lockFilePath);
+  fs.mkdirSync(path.dirname(resolvedLockPath), { recursive: true });
+
+  if (activeLocksInProcess.has(resolvedLockPath)) {
+    const existing = activeLocksInProcess.get(resolvedLockPath);
+    existing.depth++;
+    try {
+      return actionFn(existing.lockToken);
+    } finally {
+      existing.depth--;
+      if (existing.depth === 0) {
+        activeLocksInProcess.delete(resolvedLockPath);
+      }
+    }
+  }
+
   const maxRetries = options.maxRetries || 250;
   const retryDelayMs = options.retryDelayMs || 20;
   const staleTimeoutMs = options.staleTimeoutMs || (process.env.STAGE2_LOCK_STALE_MS ? parseInt(process.env.STAGE2_LOCK_STALE_MS, 10) : 10000);
@@ -188,7 +206,7 @@ function withStoreLock(lockFilePath, actionFn, options = {}) {
 
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
-      lockFd = fs.openSync(lockFilePath, 'wx');
+      lockFd = fs.openSync(resolvedLockPath, 'wx');
       lockToken = `${process.pid}_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
       const meta = JSON.stringify({
         pid: process.pid,
@@ -203,7 +221,7 @@ function withStoreLock(lockFilePath, actionFn, options = {}) {
       if (err.code === 'EEXIST') {
         let isOwnerDead = false;
         try {
-          const content = fs.readFileSync(lockFilePath, 'utf8');
+          const content = fs.readFileSync(resolvedLockPath, 'utf8');
           const meta = JSON.parse(content);
           if (meta && typeof meta.pid === 'number') {
             if (meta.host && meta.host !== os.hostname()) {
@@ -223,7 +241,7 @@ function withStoreLock(lockFilePath, actionFn, options = {}) {
         }
 
         if (isOwnerDead) {
-          try { fs.unlinkSync(lockFilePath); } catch (_) {}
+          try { fs.unlinkSync(resolvedLockPath); } catch (_) {}
         }
 
         const start = Date.now();
@@ -235,20 +253,23 @@ function withStoreLock(lockFilePath, actionFn, options = {}) {
   }
 
   if (lockFd === null) {
-    const err = new Error(`ERR_STORE_LOCK_TIMEOUT: Timed out waiting for store lock: ${lockFilePath}`);
+    const err = new Error(`ERR_STORE_LOCK_TIMEOUT: Timed out waiting for store lock: ${resolvedLockPath}`);
     err.code = 'ERR_STORE_LOCK_TIMEOUT';
     throw err;
   }
 
+  activeLocksInProcess.set(resolvedLockPath, { depth: 1, lockToken, lockFd });
+
   try {
     return actionFn(lockToken);
   } finally {
+    activeLocksInProcess.delete(resolvedLockPath);
     try { fs.closeSync(lockFd); } catch (_) {}
     try {
-      const currentContent = fs.readFileSync(lockFilePath, 'utf8');
+      const currentContent = fs.readFileSync(resolvedLockPath, 'utf8');
       const currentMeta = JSON.parse(currentContent);
       if (currentMeta && currentMeta.fencingToken === lockToken && currentMeta.pid === process.pid) {
-        fs.unlinkSync(lockFilePath);
+        fs.unlinkSync(resolvedLockPath);
       }
     } catch (_) {}
   }
@@ -614,7 +635,7 @@ function syncActiveJobsFromLedger() {
  * Rejects symlinks/junctions with ERR_TRUSTED_ROOT_SYMLINK_FORBIDDEN.
  * Transactionally persists quarantined entries to disk ledger.
  */
-function reconcileOrphanWorkspaces() {
+function reconcileOrphanWorkspacesLocked() {
   if (!fs.existsSync(SERVER_TRUSTED_WORKSPACE_BASE)) {
     return { reconciled: 0, orphansFound: 0 };
   }
@@ -706,19 +727,32 @@ function reconcileOrphanWorkspaces() {
   return { reconciled, orphansFound };
 }
 
+/**
+ * Public Lock-Scoped Orphan Workspace Reconciliation (Round 46 P0-1)
+ * Enters withStoreLock(JOB_LOCK_FILE) to guarantee atomic reconciliation across processes.
+ */
+function reconcileOrphanWorkspaces() {
+  return withStoreLock(JOB_LOCK_FILE, () => {
+    syncActiveJobsFromLedger();
+    return reconcileOrphanWorkspacesLocked();
+  });
+}
+
 // Initial sync on module startup (suppressed at boot so require succeeds; fail-closed on first runtime operation)
 try {
-  syncActiveJobsFromLedger();
+  withStoreLock(JOB_LOCK_FILE, () => {
+    syncActiveJobsFromLedger();
+  });
 } catch (_) {}
 
 /**
- * Active eviction of expired and terminal entries.
+ * Private locked active eviction of expired and terminal entries.
  * Cleans physical workspace directories upon eviction.
  * Retains jobs in CLEANUP_FAILED status to account for orphaned storage until safe reclaim.
  * NON-DESTRUCTIVE: ORPHANED_WORKSPACE entries are strictly quarantined and NEVER auto-evicted!
  * Fails closed if persisting updated ledger to disk fails.
  */
-function evictExpiredJobs() {
+function evictExpiredJobsLocked() {
   const now = Date.now();
   let evicted = 0;
   let ledgerChanged = false;
@@ -750,6 +784,17 @@ function evictExpiredJobs() {
     persistJobLedgerToDisk(activeServerJobs);
   }
   return evicted;
+}
+
+/**
+ * Public Lock-Scoped Eviction (Round 46 P0-1)
+ * Enters withStoreLock(JOB_LOCK_FILE) to guarantee atomic eviction across processes.
+ */
+function evictExpiredJobs() {
+  return withStoreLock(JOB_LOCK_FILE, () => {
+    syncActiveJobsFromLedger();
+    return evictExpiredJobsLocked();
+  });
 }
 
 /**
@@ -789,8 +834,8 @@ function registerServerJob(jobRequest = {}, authContext = {}) {
 
   return withStoreLock(JOB_LOCK_FILE, () => {
     syncActiveJobsFromLedger();
-    reconcileOrphanWorkspaces();
-    evictExpiredJobs();
+    reconcileOrphanWorkspacesLocked();
+    evictExpiredJobsLocked();
 
     if (activeServerJobs.size >= MAX_CONCURRENT_JOBS) {
       const err = new Error('ERR_REGISTRY_QUOTA_EXCEEDED: Server job registry concurrent quota reached');
@@ -868,7 +913,7 @@ function resolveJobRoots(jobId, sessionContext = {}) {
 
   return withStoreLock(JOB_LOCK_FILE, () => {
     syncActiveJobsFromLedger();
-    evictExpiredJobs();
+    evictExpiredJobsLocked();
 
     const job = activeServerJobs.get(jobId);
     if (!job) {
