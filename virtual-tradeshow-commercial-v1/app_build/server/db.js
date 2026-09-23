@@ -6236,22 +6236,28 @@ return event;
 
   isStripeEventProcessed(eventId) {
     const list = this.read().stripeEvents || [];
-    return list.some(e => e.eventId === eventId);
+    return list.some(e => e.eventId === eventId && (e.status === 'PROCESSED' || e.status === undefined));
   }
 
-  async logStripeEvent(eventData) {
+  async logStripeEvent(eventData, status = 'PROCESSED') {
     return this.mutate((db) => {
       const d = db;
       db.stripeEvents = db.stripeEvents || [];
+      const existingIdx = db.stripeEvents.findIndex(e => e.eventId === eventData.id);
       const entry = {
-        id: `str-evt-${uuidv4().substring(0, 8)}`,
+        id: existingIdx >= 0 ? db.stripeEvents[existingIdx].id : `str-evt-${uuidv4().substring(0, 8)}`,
         eventId: eventData.id,
         type: eventData.type,
-        receivedAt: new Date().toISOString(),
-        processedAt: new Date().toISOString(),
+        status,
+        receivedAt: existingIdx >= 0 ? db.stripeEvents[existingIdx].receivedAt : new Date().toISOString(),
+        processedAt: status === 'PROCESSED' ? new Date().toISOString() : (existingIdx >= 0 ? db.stripeEvents[existingIdx].processedAt : null),
         metadata: eventData.metadata || {}
       };
-      db.stripeEvents.push(entry);
+      if (existingIdx >= 0) {
+        db.stripeEvents[existingIdx] = entry;
+      } else {
+        db.stripeEvents.push(entry);
+      }
       if (db.stripeEvents.length > 2000) db.stripeEvents.shift();
       return entry;
     });

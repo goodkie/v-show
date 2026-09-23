@@ -563,16 +563,19 @@ const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || null;
 const STRIPE_PUBLISHABLE_KEY = process.env.STRIPE_PUBLISHABLE_KEY || null;
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || null;
 
-// Hard Mode Validation Guard: Prevent mixing test/live keys
-if (STRIPE_SECRET_KEY) {
-  if (STRIPE_MODE === 'test' && STRIPE_SECRET_KEY.startsWith('sk_live_')) {
-    console.error('FATAL BILLING MISMATCH: Live secret key detected while STRIPE_MODE=test. Refusing live operations in test mode.');
-  } else if (STRIPE_MODE === 'live' && STRIPE_SECRET_KEY.startsWith('sk_test_')) {
-    console.error('FATAL BILLING MISMATCH: Test secret key detected while STRIPE_MODE=live. Refusing test keys in live mode.');
-  }
+// P0 Hard Mode Validation Guard: Prevent mixing test/live keys (Strict Fail-Closed)
+const STRIPE_SECRET_MISMATCH = Boolean(
+  STRIPE_SECRET_KEY && (
+    (STRIPE_MODE === 'test' && STRIPE_SECRET_KEY.startsWith('sk_live_')) ||
+    (STRIPE_MODE === 'live' && STRIPE_SECRET_KEY.startsWith('sk_test_'))
+  )
+);
+if (STRIPE_SECRET_MISMATCH) {
+  console.error('[FATAL_BILLING_MISMATCH] Live secret key detected while STRIPE_MODE=test or vice-versa. Refusing to initialize Stripe client to prevent accidental live money movement.');
 }
 
-const stripe = STRIPE_SECRET_KEY ? require('stripe')(STRIPE_SECRET_KEY) : null;
+// Fail-closed: Never instantiate Stripe client if there is a mode/secret mismatch!
+const stripe = (STRIPE_SECRET_KEY && !STRIPE_SECRET_MISMATCH) ? require('stripe')(STRIPE_SECRET_KEY) : null;
 
 // Middleware: Request ID & Security Headers
 app.use((req, res, next) => {
@@ -674,12 +677,13 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
     return res.status(400).json({ error: 'Invalid event format' });
   }
 
-  // Idempotency check
+  // Idempotency check: Ignore already processed events
   if (db.isStripeEventProcessed(event.id)) {
     return res.json({ received: true, duplicate: true });
   }
 
-  await db.logStripeEvent(event);
+  // Record event in inbox as PROCESSING
+  await db.logStripeEvent(event, 'PROCESSING');
 
   try {
     switch (event.type) {
@@ -844,11 +848,19 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
       default:
         break;
     }
+    // Mark as PROCESSED only after atomic business state mutation completes
+    await db.logStripeEvent(event, 'PROCESSED');
+    return res.json({ received: true });
   } catch (procErr) {
-    console.error('Error processing webhook event:', procErr);
+    console.error('[STRIPE_WEBHOOK_PROCESSING_FAILED]', procErr);
+    // Mark as FAILED so Stripe will retry
+    await db.logStripeEvent(event, 'FAILED');
+    return res.status(500).json({
+      error: 'STRIPE_WEBHOOK_PROCESSING_FAILED',
+      message: procErr.message,
+      retryable: true
+    });
   }
-
-  res.json({ received: true });
 });
 
 // JSON Body Parser for all other routes
@@ -5383,6 +5395,13 @@ app.get('/api/billing/my-subscription', requireAuth, (req, res) => {
 
 app.post('/api/billing/create-checkout-session', requireAuth, async (req, res) => {
   try {
+    if (STRIPE_SECRET_MISMATCH) {
+      return res.status(503).json({
+        error: 'FATAL_BILLING_MISMATCH',
+        message: 'Payment processing is disabled due to a configuration mismatch between STRIPE_MODE and secret keys.'
+      });
+    }
+
     const flags = db.getFeatureFlags();
     if (flags.billingKillSwitch) {
       return res.status(503).json({
@@ -5393,6 +5412,19 @@ app.post('/api/billing/create-checkout-session', requireAuth, async (req, res) =
 
     const org = db.getOrganizationById(req.user.organizationId);
     if (!org) return res.status(404).json({ error: 'Organization not found.' });
+
+    // Multi-tenant isolation check on requested project
+    if (req.body.projectId) {
+      const allProjects = db.read().projects || [];
+      const allFreeProjects = db.read().freePreviewProjects || [];
+      const project = allProjects.find(p => p.id === req.body.projectId) || allFreeProjects.find(p => p.id === req.body.projectId);
+      if (project && project.organizationId && project.organizationId !== org.id) {
+        return res.status(403).json({
+          error: 'PROJECT_TENANT_MISMATCH',
+          message: 'The requested project does not belong to your organization.'
+        });
+      }
+    }
 
     // --- Phase 10.5 Fail-Closed Live Pilot Guardrails ---
     if (STRIPE_MODE === 'live') {
@@ -5511,9 +5543,14 @@ app.post('/api/billing/create-checkout-session', requireAuth, async (req, res) =
         ? (process.env.STRIPE_PRICE_PRO_MONTHLY || 'price_test_pro_monthly')
         : (process.env.STRIPE_PRICE_BUSINESS_MONTHLY || 'price_test_biz_monthly');
 
-      const protocol = req.headers['x-forwarded-proto'] || 'http';
-      const host = req.headers.host || 'localhost:3000';
-      const origin = `${protocol}://${host}`;
+      const allowedOrigins = [process.env.APP_CANONICAL_ORIGIN, process.env.PUBLIC_URL].filter(Boolean);
+      let origin = allowedOrigins[0];
+      if (!origin) {
+        const protocol = req.headers['x-forwarded-proto'] || 'http';
+        const rawHost = req.headers.host || 'localhost:3000';
+        const safeHost = rawHost.replace(/[^a-zA-Z0-9.:_-]/g, '');
+        origin = `${protocol}://${safeHost}`;
+      }
 
       let customerId = org.subscription?.stripeCustomerId;
       if (!customerId) {
@@ -5552,6 +5589,15 @@ app.post('/api/billing/create-checkout-session', requireAuth, async (req, res) =
         mode: 'live_or_stripe_test'
       });
     } else {
+      // Local Test Simulation Mode (Only permitted when explicitly opted in via ALLOW_LOCAL_BILLING_SIMULATION=true or NODE_ENV=test)
+      const isExplicitTestHarness = process.env.ALLOW_LOCAL_BILLING_SIMULATION === 'true' || process.env.NODE_ENV === 'test';
+      if (!isExplicitTestHarness) {
+        return res.status(503).json({
+          error: 'STRIPE_NOT_CONFIGURED',
+          message: 'Stripe payment processing is not configured on this server and simulation fallback is disabled.'
+        });
+      }
+
       // Local Test Simulation Mode (Instant Upgrade for Verification & Automated Testing)
       await db.updateOrganizationSubscription(org.id, {
         plan: requestedPlan,
@@ -5599,9 +5645,15 @@ app.post('/api/billing/create-portal-session', requireAuth, async (req, res) => 
     }
 
     if (stripe) {
-      const protocol = req.headers['x-forwarded-proto'] || 'http';
-      const host = req.headers.host || 'localhost:3000';
-      const returnUrl = `${protocol}://${host}/index.html#billing`;
+      const allowedOrigins = [process.env.APP_CANONICAL_ORIGIN, process.env.PUBLIC_URL].filter(Boolean);
+      let origin = allowedOrigins[0];
+      if (!origin) {
+        const protocol = req.headers['x-forwarded-proto'] || 'http';
+        const rawHost = req.headers.host || 'localhost:3000';
+        const safeHost = rawHost.replace(/[^a-zA-Z0-9.:_-]/g, '');
+        origin = `${protocol}://${safeHost}`;
+      }
+      const returnUrl = `${origin}/index.html#billing`;
 
       const session = await stripe.billingPortal.sessions.create({
         customer: customerId,

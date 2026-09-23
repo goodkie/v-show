@@ -2437,7 +2437,7 @@
           </div>
 
           <button type="submit" class="btn-create-free" id="btn-submit-free">
-            <i class="fa-solid fa-wand-magic-sparkles"></i> CREATE 3D BOOTH
+            <i class="fa-solid fa-wand-magic-sparkles"></i> CREATE 360 PANORAMA
           </button>
         </div>
 
@@ -5419,7 +5419,7 @@
         const data = await res.json();
         if (btnSubmit) {
           btnSubmit.disabled = false;
-          btnSubmit.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> CREATE 3D BOOTH';
+          btnSubmit.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> CREATE 360 PANORAMA';
         }
 
         // Server-Side Developer Bypass Match
@@ -5450,7 +5450,7 @@
       } catch (err) {
         if (btnSubmit) {
           btnSubmit.disabled = false;
-          btnSubmit.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> CREATE 3D BOOTH';
+          btnSubmit.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> CREATE 360 PANORAMA';
         }
         showFormInlineError("We couldn't send your confirmation email. Please check your connection and try again.");
       }
