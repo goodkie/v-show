@@ -1,7 +1,7 @@
 {
   "version": "R20_SPATIAL_ARTIFACT_INSPECTION_RECEIPT_V1",
-  "jobId": "audit-job-1790121981002-d147da20",
-  "timestamp": "2026-09-23T00:06:21.003Z",
+  "jobId": "audit-job-1790123948164-0b2f3cf4",
+  "timestamp": "2026-09-23T00:39:08.165Z",
   "status": "MANIFEST_INSPECTED_PREEXISTING_BENCHMARK",
   "reconstructionExecution": {
     "newModelGenerated": false,
@@ -9,7 +9,7 @@
     "disclosedBenchmarkStatus": "PREEXISTING_AUTHENTIC_GAUSSIAN_ARTIFACT",
     "reconstructionFromInputsStatus": "NOT_VERIFIED"
   },
-  "workerRuntimeSha256": "ebeb6d4b8099a081300aa8e14382f56e9e415c41d20950f03c502e18c78b6bef",
+  "workerRuntimeSha256": "bceb2b1686c59f555454ac56b29178e8ae3574356b8335d1e8211410a3e86742",
   "inputProvenance": {
     "sourceCount": 12,
     "aggregateInputHash": "3498f779ed0fef0e0146b3f25fdbdfe04033994b3d466a94d5673a5c7af779f4",
@@ -89,39 +89,7 @@
     },
     "antiCheatValidation": "PASSED_NON_ZERO_BASELINE"
   },
-  "inspectedOutputs": {
-    "ply": {
-      "filename": "REAL_WILO_GAUSSIAN_FINAL.ply",
-      "sizeBytes": 130682925,
-      "sha256": "b40f8035ddc51817538f99afffa7eeca6836e8fcaa243a93bd214166b877cd4d",
-      "declaredVertexCount": 526941,
-      "schema": {
-        "propertiesCount": 62,
-        "strideBytes": 248,
-        "derivation": "PARSER_DERIVED_FROM_PLY_HEADER"
-      },
-      "boundingBox": {
-        "min": [
-          -4.9014,
-          -4.9606,
-          -4.9823
-        ],
-        "max": [
-          4.9253,
-          4.9676,
-          4.998
-        ],
-        "volumeM3": 973.697
-      }
-    },
-    "spz": {
-      "filename": "REAL_WILO_GAUSSIAN_FINAL.spz",
-      "sizeBytes": 111539801,
-      "sha256": "fc80e5192ce1c79196e51414e0739524c9e191092c1719829ab414d0e73a32ee",
-      "format": "RADIANCE_SPATIAL_GAUSSIAN"
-    }
-  },
-  "emittedOutputs": {
+  "inspectedBenchmarkArtifacts": {
     "ply": {
       "filename": "REAL_WILO_GAUSSIAN_FINAL.ply",
       "sizeBytes": 130682925,
@@ -166,7 +134,7 @@
     "ENGINEERING_HOLD": "ACTIVE"
   },
   "cryptographicBinding": {
-    "lineageDigest": "b2b1ee200090ebc1621c6526c7b18dd238ff05d7734f349ec93a6b84bd90cae5",
+    "lineageDigest": "2208e94048e94646f7f60ad145cabc548231f5b831887207ced4e393fa47170a",
     "algorithm": "sha256(job|inputs|calib|worker|ply|spz)"
   }
 }

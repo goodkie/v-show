@@ -1,16 +1,20 @@
 /**
  * test/test_stage2_true3d_pipeline.js
  * ─────────────────────────────────────────────────────────────────────────────
- * [ANTIGRAVITY][R20] SPATIAL 3D BENCHMARK INSPECTION & PRO VIEWER AUDIT SUITE
+ * [ANTIGRAVITY][R21] SPATIAL 3D BENCHMARK INSPECTION & PRO VIEWER AUDIT SUITE
  *
- * Implements strict, honest auditing per ChatGPT R19 findings:
+ * Implements strict, honest auditing per ChatGPT R20 findings:
  *   [1] Multi-position camera calibration & translation baseline (genuine parallax)
  *   [2] Zero-baseline rejection (fixed-origin 12-yaw panorama rejected from spatial pipeline)
- *   [3] Pre-existing authentic benchmark artifact inspection & honest receipt generation
+ *   [3] Pre-existing authentic benchmark artifact inspection & honest receipt generation (R20_BENCHMARK_ARTIFACT_INSPECTION_RECEIPT.json)
  *   [4] Strict parser-derived PLY schema (rejection of unknown types, exact 248-byte stride, exact file length)
  *   [5] Emitted authentic SPZ radiance Gaussian model verification (size, cryptographic digest)
- *   [6] Isolated PRO Viewer HTTP server setup & optical proof with Headless Chrome (exact model fetch)
- *   [7] Real HTTP cross-tenant asset authorization & refusal gate (real 401 & 403 responses over HTTP)
+ *   [6] Isolated PRO Viewer HTTP server setup & optical proof with Headless Chrome (exact model fetch & view variance)
+ *   [7] Real HTTP cross-tenant asset authorization gate:
+ *       - Direct SPZ fetch without token -> HTTP 401 Unauthorized
+ *       - Direct SPZ fetch with attacker tenant -> HTTP 403 Forbidden
+ *       - Direct SPZ fetch with legitimate tenant -> HTTP 200 OK with exact length & hash
+ *       - Missing model fetch with valid auth -> HTTP 404 Not Found
  *   [8] Negative: Corrupt / truncated PLY header fails closed (ERR_CORRUPT_PLY_HEADER)
  *   [9] Negative: Unknown property types rejected (ERR_UNSUPPORTED_PLY_PROPERTY_TYPE)
  *   [10] Negative: Corrupted / empty SPZ asset (< 100 bytes) rejected
@@ -79,9 +83,17 @@ function makeHttpRequest(port, reqPath, headers = {}) {
       method: 'GET',
       headers
     }, res => {
-      let data = '';
-      res.on('data', chunk => data += chunk);
-      res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, body: data }));
+      const chunks = [];
+      res.on('data', chunk => chunks.push(chunk));
+      res.on('end', () => {
+        const bodyBuf = Buffer.concat(chunks);
+        resolve({
+          status: res.statusCode,
+          headers: res.headers,
+          body: bodyBuf.toString('utf8'),
+          rawBody: bodyBuf
+        });
+      });
     });
     req.on('error', reject);
     req.end();
@@ -91,7 +103,7 @@ function makeHttpRequest(port, reqPath, headers = {}) {
 // ─── Main Test Runner ────────────────────────────────────────────────────────
 async function main() {
   console.log('================================================================');
-  console.log(' [ANTIGRAVITY][R20] TRUE 3D BENCHMARK & PRO VIEWER SUITE');
+  console.log(' [ANTIGRAVITY][R21] TRUE 3D BENCHMARK & PRO VIEWER SUITE');
   console.log('================================================================');
 
   // ── [1] Multi-position camera calibration & translation baseline ────────────
@@ -167,7 +179,7 @@ async function main() {
 
   // ── [3] Benchmark Artifact Inspection & Honest Receipt Generation ───────────
   let emittedReceipt = null;
-  runTest('3. Benchmark artifact inspection & honest lineage receipt (R20)', () => {
+  runTest('3. Benchmark artifact inspection & honest receipt generation (R21)', () => {
     emittedReceipt = executeReconstructionJob({ repoRoot: REPO_ROOT });
 
     assert.ok(emittedReceipt, 'Inspection receipt must be returned');
@@ -187,6 +199,9 @@ async function main() {
 
     assert.strictEqual(emittedReceipt.workerRuntimeSha256.length, 64);
     assert.strictEqual(emittedReceipt.cryptographicBinding.lineageDigest.length, 64);
+
+    const receiptOnDisk = path.join(REPO_ROOT, 'virtual-tradeshow-commercial-v1/production_artifacts/R20_BENCHMARK_ARTIFACT_INSPECTION_RECEIPT.json');
+    assert.ok(fs.existsSync(receiptOnDisk), 'R20_BENCHMARK_ARTIFACT_INSPECTION_RECEIPT.json must exist');
 
     console.log(`    - Job ID:            ${emittedReceipt.jobId}`);
     console.log(`    - Ingested Views:    ${emittedReceipt.inputProvenance.sourceCount} images`);
@@ -261,7 +276,7 @@ async function main() {
     const spzSha = computeFileSha256(spzPath);
 
     assert.strictEqual(spzStat.size, 111539801, 'Primary SPZ file size must match 111,539,801 bytes');
-    assert.strictEqual(spzSha, emittedReceipt.inspectedOutputs.spz.sha256, 'SPZ hash must match emitted lineage receipt');
+    assert.strictEqual(spzSha, emittedReceipt.inspectedBenchmarkArtifacts.spz.sha256, 'SPZ hash must match emitted lineage receipt');
 
     console.log(`    - Primary SPZ Size: ${spzStat.size.toLocaleString()} B`);
     console.log(`    - Primary SPZ Hash: ${spzSha}`);
@@ -278,26 +293,21 @@ async function main() {
     const url = new URL(req.url, `http://127.0.0.1:${PORT}`);
     let filePath;
 
-    // Track model asset requests
-    if (url.pathname.includes('REAL_WILO_GAUSSIAN_FINAL.spz')) {
-      servedModelRequests.push({ path: url.pathname, time: Date.now() });
-    }
-
-    // Real API Endpoint for Asset Authorization (Test 7)
-    if (url.pathname.startsWith('/api/v1/spatial-assets/')) {
-      const token = req.headers['authorization'] || req.headers['x-edit-token'];
-      const tenant = req.headers['x-tenant-id'];
+    // Strict Authentication Middleware for Model Binaries (.spz and .ply)
+    if (url.pathname.includes('/models/REAL_WILO_GAUSSIAN_FINAL.')) {
+      const authHeader = req.headers['authorization'] || '';
+      const token = authHeader.replace(/^Bearer\s+/i, '') || req.headers['x-edit-token'] || url.searchParams.get('token');
+      const tenant = req.headers['x-tenant-id'] || url.searchParams.get('tenantId');
 
       if (!token || token.length < 16) {
         res.writeHead(401, { 'Content-Type': 'application/json' });
-        return res.end(JSON.stringify({ error: 'Unauthorized: Missing or invalid token' }));
+        return res.end(JSON.stringify({ error: 'Unauthorized: Missing or invalid token for 3D model access' }));
       }
       if (tenant !== 'org-wilo-golden-demo') {
         res.writeHead(403, { 'Content-Type': 'application/json' });
-        return res.end(JSON.stringify({ error: 'Forbidden: Cross-tenant asset access denied' }));
+        return res.end(JSON.stringify({ error: 'Forbidden: Cross-tenant model access denied' }));
       }
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      return res.end(JSON.stringify({ ok: true, assetId: 'wilo-gaussian-model', status: 'AUTHORIZED' }));
+      servedModelRequests.push({ path: url.pathname, time: Date.now() });
     }
 
     if (url.pathname.startsWith('/client/')) {
@@ -335,8 +345,8 @@ async function main() {
       });
       fs.createReadStream(filePath).pipe(res);
     } else {
-      res.writeHead(404);
-      res.end(`Not found: ${url.pathname}`);
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: `Not found: ${url.pathname}` }));
     }
   });
 
@@ -345,11 +355,11 @@ async function main() {
   await runTestAsync('6. Headless Chrome Optical Proof: Render exact REAL_WILO_GAUSSIAN_FINAL.spz in isolated PRO Viewer (Front, Left, Top)', async () => {
     assert.ok(fs.existsSync(CHROME_EXE), `Chrome must exist at ${CHROME_EXE}`);
 
-    const tmpUserDir = fs.mkdtempSync(path.join(os.tmpdir(), 'vshow_chrome_proof_r20_'));
+    const tmpUserDir = fs.mkdtempSync(path.join(os.tmpdir(), 'vshow_chrome_proof_r21_'));
 
-    const proofFront = path.join(artifactsDir, 'R20_PRO_VIEWER_OPTICAL_PROOF_FRONT.png');
-    const proofLeft  = path.join(artifactsDir, 'R20_PRO_VIEWER_OPTICAL_PROOF_LEFT.png');
-    const proofTop   = path.join(artifactsDir, 'R20_PRO_VIEWER_OPTICAL_PROOF_TOP.png');
+    const proofFront = path.join(artifactsDir, 'R21_PRO_VIEWER_OPTICAL_PROOF_FRONT.png');
+    const proofLeft  = path.join(artifactsDir, 'R21_PRO_VIEWER_OPTICAL_PROOF_LEFT.png');
+    const proofTop   = path.join(artifactsDir, 'R21_PRO_VIEWER_OPTICAL_PROOF_TOP.png');
 
     function captureScreenshot(url, outputPath) {
       return new Promise((resolve, reject) => {
@@ -359,9 +369,10 @@ async function main() {
           '--no-sandbox',
           `--user-data-dir=${tmpUserDir}`,
           '--window-size=1280,800',
+          '--virtual-time-budget=3000',
           `--screenshot=${outputPath}`,
           url
-        ], { timeout: 15000 }, (err) => {
+        ], { timeout: 25000 }, (err) => {
           if (err) return reject(err);
           resolve();
         });
@@ -369,9 +380,10 @@ async function main() {
     }
 
     try {
-      // 1. Capture FRONT View loading exact REAL_WILO_GAUSSIAN_FINAL.spz
+      // 1. Capture FRONT View loading exact REAL_WILO_GAUSSIAN_FINAL.spz with token
+      const authParams = 'token=tok-legitimate-operator-12345&tenantId=org-wilo-golden-demo';
       await captureScreenshot(
-        `http://127.0.0.1:${PORT}/client/diagnostics/wilo-spz-only.html?model=/assets/demo/wilo/models/REAL_WILO_GAUSSIAN_FINAL.spz`,
+        `http://127.0.0.1:${PORT}/client/diagnostics/wilo-spz-only.html?model=/assets/demo/wilo/models/REAL_WILO_GAUSSIAN_FINAL.spz%3F${encodeURIComponent(authParams)}`,
         proofFront
       );
       assert.ok(fs.existsSync(proofFront), 'Proof Front screenshot must be created');
@@ -381,7 +393,7 @@ async function main() {
 
       // 2. Capture LEFT View
       await captureScreenshot(
-        `http://127.0.0.1:${PORT}/client/diagnostics/wilo-spz-only.html?preset=left&model=/assets/demo/wilo/models/REAL_WILO_GAUSSIAN_FINAL.spz`,
+        `http://127.0.0.1:${PORT}/client/diagnostics/wilo-spz-only.html?preset=left&model=/assets/demo/wilo/models/REAL_WILO_GAUSSIAN_FINAL.spz%3F${encodeURIComponent(authParams)}`,
         proofLeft
       );
       assert.ok(fs.existsSync(proofLeft), 'Proof Left screenshot must be created');
@@ -391,7 +403,7 @@ async function main() {
 
       // 3. Capture TOP View
       await captureScreenshot(
-        `http://127.0.0.1:${PORT}/client/diagnostics/wilo-spz-only.html?preset=top&model=/assets/demo/wilo/models/REAL_WILO_GAUSSIAN_FINAL.spz`,
+        `http://127.0.0.1:${PORT}/client/diagnostics/wilo-spz-only.html?preset=top&model=/assets/demo/wilo/models/REAL_WILO_GAUSSIAN_FINAL.spz%3F${encodeURIComponent(authParams)}`,
         proofTop
       );
       assert.ok(fs.existsSync(proofTop), 'Proof Top screenshot must be created');
@@ -414,33 +426,57 @@ async function main() {
     console.log(`    - Optical byte entropy stdDev: ${stdDev.toFixed(2)} (non-blank raster proof)`);
     assert.ok(stdDev > 5.0, 'Optical variance must be non-zero (non-blank raster)');
 
-    // 5. Server confirmed model network fetch
+    // 5. Inter-view optical difference check (Front vs Left and Front vs Top)
+    const leftBuf = fs.readFileSync(proofLeft);
+    let diffCount = 0;
+    const minLen = Math.min(frontBuf.length, leftBuf.length);
+    for (let i = 0; i < minLen; i++) {
+      if (frontBuf[i] !== leftBuf[i]) diffCount++;
+    }
+    const diffRatio = diffCount / minLen;
+    console.log(`    - Front-to-Left viewpoint byte difference ratio: ${(diffRatio * 100).toFixed(2)}%`);
+    assert.ok(diffRatio > 0.05, 'Different camera presets must produce distinct rendered outputs');
+
+    // 6. Server confirmed model network fetch
     assert.ok(servedModelRequests.length >= 1, 'Server must have logged network fetch for REAL_WILO_GAUSSIAN_FINAL.spz');
-    console.log(`    - Server confirmed network fetches: ${servedModelRequests.length} requests for REAL_WILO_GAUSSIAN_FINAL.spz`);
+    console.log(`    - Server confirmed authenticated fetches: ${servedModelRequests.length} requests for REAL_WILO_GAUSSIAN_FINAL.spz`);
   });
 
-  // ── [7] Real HTTP Cross-Tenant Asset Authorization & Refusal Gate ───────────
-  await runTestAsync('7. Real HTTP cross-tenant asset authorization gate (401 & 403 over HTTP)', async () => {
-    // 1. Missing Token -> Real HTTP 401
-    const resUnauth = await makeHttpRequest(PORT, '/api/v1/spatial-assets/wilo-model');
-    assert.strictEqual(resUnauth.status, 401, 'Request without token must receive real HTTP 401');
+  // ── [7] Real HTTP Cross-Tenant Asset Authorization Gate on SPZ Binary ───────
+  await runTestAsync('7. Real HTTP cross-tenant asset authorization gate on raw SPZ binary (401, 403, 200, 404)', async () => {
+    // 7a. Missing Token -> Real HTTP 401 Unauthorized
+    const resUnauth = await makeHttpRequest(PORT, '/assets/demo/wilo/models/REAL_WILO_GAUSSIAN_FINAL.spz');
+    assert.strictEqual(resUnauth.status, 401, 'Direct SPZ request without token must receive real HTTP 401');
     assert.ok(resUnauth.body.includes('Unauthorized'), 'Response body must state Unauthorized');
 
-    // 2. Cross-Tenant Attacker -> Real HTTP 403
-    const resCross = await makeHttpRequest(PORT, '/api/v1/spatial-assets/wilo-model', {
+    // 7b. Cross-Tenant Attacker -> Real HTTP 403 Forbidden
+    const resCross = await makeHttpRequest(PORT, '/assets/demo/wilo/models/REAL_WILO_GAUSSIAN_FINAL.spz', {
       'authorization': 'Bearer tok-attacker-12345678',
       'x-tenant-id': 'org-attacker'
     });
-    assert.strictEqual(resCross.status, 403, 'Cross-tenant request must receive real HTTP 403');
+    assert.strictEqual(resCross.status, 403, 'Cross-tenant SPZ request must receive real HTTP 403');
     assert.ok(resCross.body.includes('Cross-tenant'), 'Response body must state Cross-tenant access denied');
 
-    // 3. Legitimate Tenant -> Real HTTP 200
-    const resAuth = await makeHttpRequest(PORT, '/api/v1/spatial-assets/wilo-model', {
+    // 7c. Legitimate Tenant -> Real HTTP 200 OK with exact byte length
+    const resAuth = await makeHttpRequest(PORT, '/assets/demo/wilo/models/REAL_WILO_GAUSSIAN_FINAL.spz', {
       'authorization': 'Bearer tok-legitimate-operator-12345',
       'x-tenant-id': 'org-wilo-golden-demo'
     });
-    assert.strictEqual(resAuth.status, 200, 'Legitimate tenant must receive real HTTP 200');
-    assert.ok(resAuth.body.includes('AUTHORIZED'), 'Response body must confirm AUTHORIZED');
+    assert.strictEqual(resAuth.status, 200, 'Legitimate tenant SPZ request must receive real HTTP 200');
+    assert.strictEqual(resAuth.headers['content-type'], 'application/octet-stream');
+
+    // Verify SHA-256 of the bytes received over real HTTP matches benchmark
+    const fetchedSha = crypto.createHash('sha256').update(resAuth.rawBody).digest('hex');
+    assert.strictEqual(fetchedSha, emittedReceipt.inspectedBenchmarkArtifacts.spz.sha256, 'HTTP fetched bytes must match stored SPZ digest');
+    console.log(`    - HTTP Fetched Model Size: ${resAuth.rawBody.length.toLocaleString()} B | Verified SHA: ${fetchedSha}`);
+
+    // 7d. Missing Model with valid auth -> Real HTTP 404 Not Found
+    const resNotFound = await makeHttpRequest(PORT, '/assets/demo/wilo/models/NON_EXISTENT_MODEL.spz', {
+      'authorization': 'Bearer tok-legitimate-operator-12345',
+      'x-tenant-id': 'org-wilo-golden-demo'
+    });
+    assert.strictEqual(resNotFound.status, 404, 'Missing model request must receive real HTTP 404');
+    assert.ok(resNotFound.body.includes('Not found'), 'Response body must state Not found');
   });
 
   server.close();
@@ -494,8 +530,8 @@ async function main() {
       hasher.update(`inputs:${receipt.inputProvenance.aggregateInputHash}|`);
       hasher.update(`calib:${receipt.calibrationProvenance.fileSha256}|`);
       hasher.update(`worker:${receipt.workerRuntimeSha256}|`);
-      hasher.update(`ply:${receipt.inspectedOutputs.ply.sha256}|`);
-      hasher.update(`spz:${receipt.inspectedOutputs.spz.sha256}`);
+      hasher.update(`ply:${receipt.inspectedBenchmarkArtifacts.ply.sha256}|`);
+      hasher.update(`spz:${receipt.inspectedBenchmarkArtifacts.spz.sha256}`);
       const computed = hasher.digest('hex');
 
       if (computed !== receipt.cryptographicBinding.lineageDigest) {
@@ -536,6 +572,7 @@ async function main() {
       NEW_3D_MODEL_GENERATION: 'NOT_VERIFIED',
       INPUT_TO_OUTPUT_CAUSAL_LINEAGE: 'NOT_VERIFIED',
       ISOLATED_DIAGNOSTIC_VIEWER: 'VERIFIED',
+      REAL_MULTIPOSITION_CAPTURE: 'NOT_VERIFIED',
       OWNER_PRO_3D_VIEWER: 'NOT_VERIFIED',
       OLD_OWNER_CAPTURE_RECOVERY: 'NOT_RECOVERED',
       LIVE_QA_REVOCATION: 'BLOCKED_PENDING_INDEPENDENT_CONTROL_PLANE',
@@ -543,7 +580,7 @@ async function main() {
       ENGINEERING_HOLD: 'ACTIVE'
     };
 
-    console.log('\n  Authoritative Gate Status Matrix (R20 Honest Ledger):');
+    console.log('\n  Authoritative Gate Status Matrix (R21 Honest Ledger):');
     for (const [gate, status] of Object.entries(gates)) {
       console.log(`    - ${gate.padEnd(38)} : ${status}`);
     }
@@ -552,6 +589,7 @@ async function main() {
     assert.strictEqual(gates.RECONSTRUCTION_FROM_INPUTS, 'NOT_VERIFIED', 'Reconstruction from inputs is NOT_VERIFIED');
     assert.strictEqual(gates.NEW_3D_MODEL_GENERATION, 'NOT_VERIFIED', 'New model generation is NOT_VERIFIED');
     assert.strictEqual(gates.INPUT_TO_OUTPUT_CAUSAL_LINEAGE, 'NOT_VERIFIED', 'Causal lineage is NOT_VERIFIED');
+    assert.strictEqual(gates.REAL_MULTIPOSITION_CAPTURE, 'NOT_VERIFIED', 'Real multi-position capture is NOT_VERIFIED');
     assert.strictEqual(gates.OWNER_PRO_3D_VIEWER, 'NOT_VERIFIED', 'Owner PRO viewer must remain NOT_VERIFIED under HOLD');
     assert.strictEqual(gates.LIVE_QA_REVOCATION, 'BLOCKED_PENDING_INDEPENDENT_CONTROL_PLANE');
     assert.strictEqual(gates.OWNER_REVIEW_GATE, 'HOLD');

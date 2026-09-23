@@ -128,7 +128,7 @@ function executeReconstructionJob(options = {}) {
   const imageDir = options.imageDir || path.join(repoRoot, 'virtual-tradeshow-commercial-v1/_clean_deploy/client/assets/demo/wilo/authentic-booth');
   const calibrationFile = options.calibrationFile || path.join(repoRoot, 'virtual-tradeshow-commercial-v1/production_artifacts/R6_CAMERA_TRANSFORMS.json');
   const modelDir = options.modelDir || path.join(repoRoot, 'virtual-tradeshow-commercial-v1/_clean_deploy/client/assets/demo/wilo/models');
-  const receiptPath = options.receiptPath || path.join(repoRoot, 'virtual-tradeshow-commercial-v1/production_artifacts/R19_RECONSTRUCTION_LINEAGE_RECEIPT.json');
+  const receiptPath = options.receiptPath || path.join(repoRoot, 'virtual-tradeshow-commercial-v1/production_artifacts/R20_BENCHMARK_ARTIFACT_INSPECTION_RECEIPT.json');
 
   const jobId = options.jobId || `audit-job-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
   const timestamp = new Date().toISOString();
@@ -292,7 +292,7 @@ function executeReconstructionJob(options = {}) {
       baselines,
       antiCheatValidation: 'PASSED_NON_ZERO_BASELINE'
     },
-    inspectedOutputs: {
+    inspectedBenchmarkArtifacts: {
       ply: {
         filename: path.basename(plyFile),
         sizeBytes: plyStat.size,
@@ -311,10 +311,6 @@ function executeReconstructionJob(options = {}) {
         sha256: spzSha,
         format: 'RADIANCE_SPATIAL_GAUSSIAN'
       }
-    },
-    // Backward compatibility alias for test suite
-    get emittedOutputs() {
-      return this.inspectedOutputs;
     },
     gateStatusDisclosures: {
       SYNTHETIC_PANORAMA: 'VERIFIED',
