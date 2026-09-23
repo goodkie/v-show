@@ -95,7 +95,11 @@ const {
   reconcileOrphanWorkspaces,
   withStoreLock,
   isProcessAlive,
-  loadJobLedgerFromDisk
+  loadJobLedgerFromDisk,
+  syncActiveJobsFromLedger,
+  JOB_LEDGER_FILE,
+  JOB_LOCK_FILE,
+  LEDGER_INITIALIZED_SENTINEL
 } = require('./helpers/test_harness_bootstrap');
 
 
@@ -2215,67 +2219,289 @@ async function main() {
       }
     }
 
-    // 2. P0-1: Orphan Workspace Reconciliation Test
-    // Create an untracked physical directory under trusted workspace base
+    // 2. P0-1: Non-Destructive Orphan Workspace Quarantine & Byte Survival Test (R45)
+    // Create an untracked physical directory under trusted workspace base with immutable payload
     const orphanJobId = `job_orphan_test_${runNonce}_${crypto.randomBytes(4).toString('hex')}`;
     const orphanDir = path.join(SERVER_TRUSTED_WORKSPACE_BASE, testTenantId, orphanJobId);
     fs.mkdirSync(path.join(orphanDir, 'scratch'), { recursive: true });
     fs.mkdirSync(path.join(orphanDir, 'input'), { recursive: true });
     fs.mkdirSync(path.join(orphanDir, 'output'), { recursive: true });
 
+    const orphanDataFile = path.join(orphanDir, 'input', 'captured_frame_01.dat');
+    const samplePayload = Buffer.from('IMMUTABLE_ORPHAN_FRAME_DATA_12POINT_R45_EVIDENCE');
+    fs.writeFileSync(orphanDataFile, samplePayload);
+
+    // Simulate aged directory (>5 min) to prove zero delete rights are inferred from directory age
+    const pastTimeSec = (Date.now() - 600000) / 1000;
+    try {
+      fs.utimesSync(orphanDir, pastTimeSec, pastTimeSec);
+    } catch (_) {}
+
     try {
       const reconcileRes = reconcileOrphanWorkspaces();
       assert.ok(reconcileRes.orphansFound >= 1, 'Reconciliation must detect untracked physical workspace on disk');
       assert.ok(reconcileRes.reconciled >= 1, 'Orphan directory must be reconciled into active tracking');
+
+      // Verify that orphan is persisted to disk ledger with permanent quarantine
+      const currentDiskMap = loadJobLedgerFromDisk();
+      assert.ok(currentDiskMap.has(orphanJobId), 'Orphan workspace must be transactionally persisted to disk ledger');
+      const diskOrphanEntry = currentDiskMap.get(orphanJobId);
+      assert.strictEqual(diskOrphanEntry.status, 'ORPHANED_WORKSPACE', 'Status must be ORPHANED_WORKSPACE');
+      assert.strictEqual(diskOrphanEntry.quarantined, true, 'Quarantine flag must be true');
+      assert.strictEqual(diskOrphanEntry.expiresAt, Infinity, 'expiresAt must be Infinity under HOLD');
+
+      // Attempting to resolve or cancel quarantined orphan must fail closed
+      assert.throws(
+        () => resolveJobRoots(orphanJobId, r44TestProof),
+        /ERR_ADAPTER_JOB_QUARANTINED/,
+        'Resolving roots of quarantined orphan workspace must fail closed'
+      );
+      assert.throws(
+        () => cancelServerJob(orphanJobId, r44TestProof),
+        /ERR_ADAPTER_JOB_QUARANTINED/,
+        'Attempting to delete/cancel quarantined orphan must fail closed'
+      );
+
+      // Run evictExpiredJobs and verify orphan directory and its byte payload survive 100% untouched
+      evictExpiredJobs();
+      assert.ok(fs.existsSync(orphanDir), 'Orphan directory MUST survive evictExpiredJobs');
+      assert.ok(fs.existsSync(orphanDataFile), 'Orphan data file MUST survive evictExpiredJobs');
+      const survivingBytes = fs.readFileSync(orphanDataFile);
+      assert.deepStrictEqual(survivingBytes, samplePayload, 'Orphan file bytes must be preserved 100% intact');
+
+      // Simulate fresh process restart: verify orphan remains quarantined in fresh process
+      const restartOrphanCheckScript = `
+        const internal = require('./virtual-tradeshow-commercial-v1/server/server_internal_registry');
+        const diskMap = internal.loadJobLedgerFromDisk();
+        if (!diskMap.has('${orphanJobId}')) process.exit(10);
+        const entry = diskMap.get('${orphanJobId}');
+        if (entry.status !== 'ORPHANED_WORKSPACE' || entry.quarantined !== true || entry.expiresAt !== Infinity) {
+          process.exit(11);
+        }
+        try {
+          internal.resolveJobRoots('${orphanJobId}', ${JSON.stringify(r44TestProof)});
+          process.exit(12); // Must not resolve!
+        } catch (err) {
+          if (err.code === 'ERR_ADAPTER_JOB_QUARANTINED') {
+            process.exit(0);
+          }
+          process.exit(13);
+        }
+      `;
+      const restartRes = spawnSync(process.execPath, ['-e', restartOrphanCheckScript], {
+        cwd: REPO_ROOT,
+        env: { ...advChildEnv, SERVER_SESSION_SIGNING_SECRET: PROD_TEST_SECRET }
+      });
+      assert.strictEqual(restartRes.status, 0, 'Fresh process after restart must preserve quarantined status and reject execution');
     } finally {
       try { fs.rmSync(orphanDir, { recursive: true, force: true }); } catch (_) {}
     }
 
-    // 3. P0-2: Ownership-Aware Lock & Living Process Protection Falsification Test
-    // Proves that Writer B CANNOT steal a lock from living Writer A, even if hold time exceeds staleTimeoutMs
-    const testR44LockPath = path.join(durableAuthDir, `r44_falsify_lock_${runNonce}.lock`);
-    let writerBConcurrentlyEntered = false;
+    // 2b. Symlink & Junction Rejection in Orphan Scanner
+    const symlinkTenantDir = path.join(SERVER_TRUSTED_WORKSPACE_BASE, 'tenant_symlink_test_' + runNonce);
+    const symlinkTargetDir = path.join(os.tmpdir(), 'vshow_symlink_target_' + runNonce);
+    fs.mkdirSync(symlinkTargetDir, { recursive: true });
+    try {
+      const linkType = process.platform === 'win32' ? 'junction' : 'dir';
+      fs.symlinkSync(symlinkTargetDir, symlinkTenantDir, linkType);
+      assert.throws(
+        () => reconcileOrphanWorkspaces(),
+        /ERR_TRUSTED_ROOT_SYMLINK_FORBIDDEN/,
+        'Symlink/junction tenant directory must be rejected with ERR_TRUSTED_ROOT_SYMLINK_FORBIDDEN'
+      );
+    } finally {
+      try { fs.unlinkSync(symlinkTenantDir); } catch (_) {}
+      try { fs.rmSync(symlinkTargetDir, { recursive: true, force: true }); } catch (_) {}
+    }
 
-    withStoreLock(testR44LockPath, (lockTokenA) => {
-      // Writer A holds the lock. Stale threshold configured to 50ms.
-      // Writer A intentionally holds beyond the 50ms stale threshold.
-      const waitStart = Date.now();
-      while (Date.now() - waitStart < 70) {} // 70ms > 50ms stale threshold
+    // 2c. Unexpectedly Missing Ledger Sentinel Fail-Closed Test (R45 P0-3)
+    // When LEDGER_INITIALIZED_SENTINEL exists but JOB_LEDGER_FILE is missing, fail closed!
+    const sentinelFile = path.join(durableAuthDir, '.ledger_initialized');
+    fs.writeFileSync(sentinelFile, JSON.stringify({ initializedAt: Date.now() }), 'utf8');
+    const backupLedgerPath = jobLedgerPath + '.r45_backup';
+    try {
+      if (fs.existsSync(jobLedgerPath)) {
+        fs.renameSync(jobLedgerPath, backupLedgerPath);
+      }
+      assert.throws(
+        () => loadJobLedgerFromDisk(),
+        /ERR_JOB_LEDGER_UNEXPECTEDLY_MISSING/,
+        'loadJobLedgerFromDisk must fail closed when ledger file is missing but sentinel exists'
+      );
 
-      let bTimedOut = false;
+      const missingLedgerScript = `
+        const internal = require('./virtual-tradeshow-commercial-v1/server/server_internal_registry');
+        try {
+          internal.registerServerJob({ projectId: '${testProjectId}' }, { sessionProof: ${JSON.stringify(r44TestProof)} });
+          process.exit(1);
+        } catch (err) {
+          if (err.code === 'ERR_JOB_LEDGER_UNEXPECTEDLY_MISSING') {
+            process.exit(0);
+          }
+          process.exit(2);
+        }
+      `;
+      const missingLedgerRes = spawnSync(process.execPath, ['-e', missingLedgerScript], {
+        cwd: REPO_ROOT,
+        env: { ...advChildEnv, SERVER_SESSION_SIGNING_SECRET: PROD_TEST_SECRET }
+      });
+      assert.strictEqual(missingLedgerRes.status, 0, 'Fresh process registration must fail closed on missing ledger after initialization');
+    } finally {
+      if (fs.existsSync(backupLedgerPath)) {
+        fs.renameSync(backupLedgerPath, jobLedgerPath);
+      }
+    }
+
+    // 3. P0-2: Genuine Two-Process Living Lock-Owner Falsification Test (R45)
+    // Process A holds lock alive beyond stale threshold; Process B attempts acquisition and is strictly excluded
+    const testR45LockPath = path.join(durableAuthDir, `r45_two_proc_lock_${runNonce}.lock`);
+    const readySignalPath = path.join(durableAuthDir, `r45_proc_a_ready_${runNonce}.txt`);
+    const releaseSignalPath = path.join(durableAuthDir, `r45_proc_a_release_${runNonce}.txt`);
+
+    const procAScript = `
+      const fs = require('fs');
+      const internal = require('./virtual-tradeshow-commercial-v1/server/server_internal_registry');
       try {
-        withStoreLock(testR44LockPath, () => {
-          writerBConcurrentlyEntered = true;
-        }, { staleTimeoutMs: 50, maxRetries: 4, retryDelayMs: 15 });
+        internal.withStoreLock('${testR45LockPath.replace(/\\/g, '\\\\')}', (token) => {
+          fs.writeFileSync('${readySignalPath.replace(/\\/g, '\\\\')}', JSON.stringify({ pid: process.pid }), 'utf8');
+          const waitStart = Date.now();
+          // Hold lock for up to 800ms or until release signal is observed
+          while (!fs.existsSync('${releaseSignalPath.replace(/\\/g, '\\\\')}') && Date.now() - waitStart < 800) {
+            const inner = Date.now();
+            while (Date.now() - inner < 20) {}
+          }
+        }, { staleTimeoutMs: 150 });
+        process.exit(0);
+      } catch (err) {
+        process.exit(1);
+      }
+    `;
+
+    const procBScript = `
+      const internal = require('./virtual-tradeshow-commercial-v1/server/server_internal_registry');
+      try {
+        internal.withStoreLock('${testR45LockPath.replace(/\\/g, '\\\\')}', () => {
+          process.exit(99); // Stolen lock! Must never happen!
+        }, { staleTimeoutMs: 150, maxRetries: 4, retryDelayMs: 20 }); // 80ms retry window < 800ms hold
       } catch (err) {
         if (err.code === 'ERR_STORE_LOCK_TIMEOUT') {
-          bTimedOut = true;
-        } else {
-          throw err;
+          process.exit(42); // Correctly excluded while Process A is alive!
         }
+        process.exit(1);
       }
+    `;
 
-      assert.strictEqual(bTimedOut, true, 'Writer B must time out and fail to acquire lock while Writer A is alive');
-      assert.strictEqual(writerBConcurrentlyEntered, false, 'Writer B must NEVER enter concurrently while Writer A is alive');
+    // Spawn Process A asynchronously
+    const childProcA = require('child_process').spawn(process.execPath, ['-e', procAScript], {
+      cwd: REPO_ROOT,
+      env: advChildEnv,
+      stdio: 'ignore'
+    });
+
+    // Wait for Process A to signal it holds the lock
+    const pAStart = Date.now();
+    while (!fs.existsSync(readySignalPath) && Date.now() - pAStart < 3000) {
+      const waitInner = Date.now();
+      while (Date.now() - waitInner < 20) {}
+    }
+    assert.ok(fs.existsSync(readySignalPath), 'Process A must create ready signal file');
+    assert.strictEqual(isProcessAlive(childProcA.pid), true, 'Process A must be confirmed alive');
+
+    // Execute Process B synchronously: must be excluded while Process A holds the lock
+    const resB = spawnSync(process.execPath, ['-e', procBScript], {
+      cwd: REPO_ROOT,
+      env: advChildEnv
+    });
+    assert.strictEqual(resB.status, 42, 'Process B must time out (status 42) and be excluded while Process A is alive');
+
+    // Signal Process A to release and wait for Process A exit
+    fs.writeFileSync(releaseSignalPath, 'RELEASE', 'utf8');
+    const pAExitStart = Date.now();
+    while (isProcessAlive(childProcA.pid) && Date.now() - pAExitStart < 3000) {
+      const waitInner = Date.now();
+      while (Date.now() - waitInner < 20) {}
+    }
+
+    // Now spawn Process B again: must acquire lock cleanly now that Process A has released
+    const procBAcquireScript = `
+      const internal = require('./virtual-tradeshow-commercial-v1/server/server_internal_registry');
+      try {
+        internal.withStoreLock('${testR45LockPath.replace(/\\/g, '\\\\')}', () => {
+          process.exit(0);
+        }, { staleTimeoutMs: 150, maxRetries: 10, retryDelayMs: 20 });
+      } catch (err) {
+        process.exit(1);
+      }
+    `;
+    const resBAcquire = spawnSync(process.execPath, ['-e', procBAcquireScript], {
+      cwd: REPO_ROOT,
+      env: advChildEnv
+    });
+    assert.strictEqual(resBAcquire.status, 0, 'Process B must cleanly acquire lock after Process A release');
+
+    // Clean up signal files
+    try { fs.unlinkSync(readySignalPath); } catch (_) {}
+    try { fs.unlinkSync(releaseSignalPath); } catch (_) {}
+    try { fs.unlinkSync(testR45LockPath); } catch (_) {}
+
+    // 3b. Remote Host Lock Preservation (Multi-Host / Replica Protection)
+    const remoteHostLockPath = path.join(durableAuthDir, `r45_remote_host_${runNonce}.lock`);
+    fs.writeFileSync(remoteHostLockPath, JSON.stringify({
+      pid: process.pid,
+      createdAt: Date.now() - 60000,
+      fencingToken: 'remote_token',
+      host: 'remote-worker-replica-01.ec2.internal' // Remote host!
+    }), 'utf8');
+
+    let remoteLockExcluded = false;
+    try {
+      withStoreLock(remoteHostLockPath, () => {}, { staleTimeoutMs: 50, maxRetries: 3, retryDelayMs: 15 });
+    } catch (err) {
+      if (err.code === 'ERR_STORE_LOCK_TIMEOUT') {
+        remoteLockExcluded = true;
+      }
+    }
+    assert.strictEqual(remoteLockExcluded, true, 'Remote host lock must NEVER be unlinked or stolen; must time out');
+    assert.ok(fs.existsSync(remoteHostLockPath), 'Remote host lock file must remain untouched on disk');
+    try { fs.unlinkSync(remoteHostLockPath); } catch (_) {}
+
+    // 3c. Corrupt Lock Preservation (No Age-Based Deletion)
+    const corruptLockPath = path.join(durableAuthDir, `r45_corrupt_lock_${runNonce}.lock`);
+    fs.writeFileSync(corruptLockPath, '{"partial_unclosed_json_write": ', 'utf8');
+    let corruptLockExcluded = false;
+    try {
+      withStoreLock(corruptLockPath, () => {}, { staleTimeoutMs: 50, maxRetries: 3, retryDelayMs: 15 });
+    } catch (err) {
+      if (err.code === 'ERR_STORE_LOCK_TIMEOUT') {
+        corruptLockExcluded = true;
+      }
+    }
+    assert.strictEqual(corruptLockExcluded, true, 'Corrupt lock metadata must NEVER be unlinked based on age; must fail closed');
+    assert.ok(fs.existsSync(corruptLockPath), 'Corrupt lock file must NOT be unlinked by contender');
+    try { fs.unlinkSync(corruptLockPath); } catch (_) {}
+
+    // 3d. Crashed Process Recovery (Dead PID on Same Host)
+    const crashLockPath = path.join(durableAuthDir, `r45_crash_lock_${runNonce}.lock`);
+    const procCScript = `
+      const fs = require('fs');
+      const os = require('os');
+      const lockFd = fs.openSync('${crashLockPath.replace(/\\/g, '\\\\')}', 'wx');
+      fs.writeFileSync(lockFd, JSON.stringify({ pid: process.pid, createdAt: Date.now(), fencingToken: 'crashed_token', host: os.hostname() }), 'utf8');
+      fs.closeSync(lockFd);
+      process.exit(99); // Crash abruptly without releasing lock
+    `;
+    const resC = spawnSync(process.execPath, ['-e', procCScript], { cwd: REPO_ROOT, env: advChildEnv });
+    assert.strictEqual(resC.status, 99, 'Process C must exit abruptly leaving lock file');
+    assert.ok(fs.existsSync(crashLockPath), 'Process C lock file must exist on disk');
+
+    let procDReclaimed = false;
+    withStoreLock(crashLockPath, () => {
+      procDReclaimed = true;
     }, { staleTimeoutMs: 50 });
+    assert.strictEqual(procDReclaimed, true, 'Dead process lock on same host must be safely reclaimed by next writer');
+    try { fs.unlinkSync(crashLockPath); } catch (_) {}
 
-    // After Writer A releases, Writer B acquires successfully
-    let writerBEnteredAfterRelease = false;
-    withStoreLock(testR44LockPath, () => {
-      writerBEnteredAfterRelease = true;
-    }, { staleTimeoutMs: 50, maxRetries: 10, retryDelayMs: 15 });
-    assert.strictEqual(writerBEnteredAfterRelease, true, 'Writer B must acquire cleanly after Writer A releases');
-
-    // Dead PID recovery: lock left by deceased process with fake PID is safely reclaimed
-    fs.writeFileSync(testR44LockPath, JSON.stringify({ pid: 999999, createdAt: Date.now() - 60000, fencingToken: 'dead_token' }), 'utf8');
-    let deadOwnerReclaimed = false;
-    withStoreLock(testR44LockPath, () => {
-      deadOwnerReclaimed = true;
-    }, { staleTimeoutMs: 50 });
-    assert.strictEqual(deadOwnerReclaimed, true, 'Dead process lock must be safely reclaimed');
-    try { fs.unlinkSync(testR44LockPath); } catch (_) {}
-
-    console.log('    - Fail-closed job ledger, orphan reconciliation & ownership-aware lock falsification test: PASS (R44 P0-1, P0-2 verified)');
+    console.log('    - Fail-closed job ledger, non-destructive orphan quarantine & two-process lock falsification test: PASS (R45 P0-1, P0-2, P0-3 verified)');
 
     const publicWorker = require('../virtual-tradeshow-commercial-v1/server/spatial_reconstruction_worker');
 
@@ -2670,7 +2896,7 @@ async function main() {
   const engineDiscoveryProbes = probeReconstructionEngines();
 
   const receipt = {
-    receiptSchemaVersion: 'R44_EXECUTION_RECEIPT_V1',
+    receiptSchemaVersion: 'R45_EXECUTION_RECEIPT_V1',
     executionTimestamps: {
       startTime: suiteStartTime,
       endTime: suiteEndTime,
@@ -2716,8 +2942,8 @@ async function main() {
     executionBoundaryAudit: {
       trustedExecutionBoundary: 'CANONICAL_ABSOLUTE_PATH_AND_INFRASTRUCTURE_TRUST_POLICY',
       trustedRootRegistry: 'CLOSURE_PRIVATE_SERVER_REGISTRY',
-      serverJobRegistry: 'FAIL_CLOSED_TRANSACTIONAL_LEDGER_WITH_ORPHAN_RECONCILIATION',
-      crossProcessLock: 'OWNERSHIP_AWARE_PID_LIVENESS_AND_FENCING_PROTECTION',
+      serverJobRegistry: 'FAIL_CLOSED_TRANSACTIONAL_LEDGER_WITH_NON_DESTRUCTIVE_ORPHAN_QUARANTINE',
+      crossProcessLock: 'TWO_PROCESS_FALSIFIED_PID_LIVENESS_AND_REMOTE_HOST_FENCING',
       callerRootOverrideDefense: 'STRICTLY_REJECTED',
       siblingPrefixEscapeDefense: 'PATH_SEPARATOR_BOUNDARY_CHECK',
       mandatoryOptionsEnforcement: 'ENFORCED_PER_SUBCOMMAND_SCHEMA',
@@ -2767,9 +2993,9 @@ async function main() {
       MODULE_AUTHORITY_BOUNDARY: 'CLOSURE_PRIVATE_AUTHORITY_VERIFIED',
       WORKSPACE_STATIC_ISOLATION: 'SOURCE_CHECK_ONLY',
       OWNER_DECISION_NOTE: 'READ_ONLY_BOUNDED_ZERO_SPEND_DEFAULT',
-      JOB_LEDGER_FAIL_CLOSED: 'FAIL_CLOSED_VERIFIED',
-      LOCK_STALE_OWNER_MUTEX: 'OWNERSHIP_AWARE_VERIFIED',
-      ORPHAN_WORKSPACE_RECONCILIATION: 'VERIFIED_BY_TEST',
+      JOB_LEDGER_FAIL_CLOSED: 'FAIL_CLOSED_AND_SENTINEL_VERIFIED',
+      LOCK_STALE_OWNER_MUTEX: 'TWO_PROCESS_FALSIFIED_VERIFIED',
+      ORPHAN_WORKSPACE_RECONCILIATION: 'NON_DESTRUCTIVE_QUARANTINE_VERIFIED',
       DURABLE_ACROSS_REDEPLOY_REPLICA: 'NOT_VERIFIED',
       PROJECT_MEMBERSHIP_CLASSIFICATION: 'ISOLATED_CONTRACT_ONLY',
       ACTUAL_ENGINE_EXECUTION: 'NOT_VERIFIED',
@@ -2781,14 +3007,14 @@ async function main() {
 
   const receiptOutPath = path.join(
     REPO_ROOT,
-    'virtual-tradeshow-commercial-v1/production_artifacts/R44_TEST_EXECUTION_RECEIPT.json'
+    'virtual-tradeshow-commercial-v1/production_artifacts/R45_TEST_EXECUTION_RECEIPT.json'
   );
   fs.writeFileSync(receiptOutPath, JSON.stringify(receipt, null, 2), 'utf8');
   const savedReceiptBytes = fs.readFileSync(receiptOutPath);
   const receiptByteSha256 = crypto.createHash('sha256').update(savedReceiptBytes).digest('hex');
 
-  console.log('--- Final Execution Receipt (R44 Machine Verifiable) ---');
-  console.log(`  File:           virtual-tradeshow-commercial-v1/production_artifacts/R44_TEST_EXECUTION_RECEIPT.json`);
+  console.log('--- Final Execution Receipt (R45 Machine Verifiable) ---');
+  console.log(`  File:           virtual-tradeshow-commercial-v1/production_artifacts/R45_TEST_EXECUTION_RECEIPT.json`);
   console.log(`  Byte SHA-256:   ${receiptByteSha256}`);
   console.log(`  Tested Commit:  ${suiteCurrentHead}`);
   console.log(`  Expected Head:  ${expectedHead || '(none - unbound)'}`);

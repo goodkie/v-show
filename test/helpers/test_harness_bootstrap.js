@@ -107,5 +107,9 @@ module.exports = {
   reconcileOrphanWorkspaces: internal.reconcileOrphanWorkspaces,
   withStoreLock: internal.withStoreLock,
   isProcessAlive: internal.isProcessAlive,
-  loadJobLedgerFromDisk: internal.loadJobLedgerFromDisk
+  loadJobLedgerFromDisk: internal.loadJobLedgerFromDisk,
+  syncActiveJobsFromLedger: internal.syncActiveJobsFromLedger,
+  JOB_LEDGER_FILE: internal.JOB_LEDGER_FILE,
+  JOB_LOCK_FILE: internal.JOB_LOCK_FILE,
+  LEDGER_INITIALIZED_SENTINEL: internal.LEDGER_INITIALIZED_SENTINEL
 };

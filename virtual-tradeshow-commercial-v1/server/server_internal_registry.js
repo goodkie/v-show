@@ -202,33 +202,28 @@ function withStoreLock(lockFilePath, actionFn, options = {}) {
     } catch (err) {
       if (err.code === 'EEXIST') {
         let isOwnerDead = false;
-        let isCorrupt = false;
         try {
           const content = fs.readFileSync(lockFilePath, 'utf8');
           const meta = JSON.parse(content);
           if (meta && typeof meta.pid === 'number') {
-            if (!isProcessAlive(meta.pid)) {
+            if (meta.host && meta.host !== os.hostname()) {
+              // Remote host / replica lock: PID liveness is namespace-local; NEVER unlink another host's lock!
+              isOwnerDead = false;
+            } else if (!isProcessAlive(meta.pid)) {
+              // Same host verified dead process -> safe to reclaim crashed lock
               isOwnerDead = true;
             } else {
               // Living owner: NEVER unlink or steal lock, preserve mutual exclusion!
               isOwnerDead = false;
             }
-          } else {
-            isCorrupt = true;
           }
         } catch (_) {
-          isCorrupt = true;
+          // If lock metadata is unreadable or corrupt, DO NOT delete based solely on age!
+          // A live process might be in the middle of atomic write. Fail closed / retry until timeout.
         }
 
         if (isOwnerDead) {
           try { fs.unlinkSync(lockFilePath); } catch (_) {}
-        } else if (isCorrupt) {
-          try {
-            const stat = fs.statSync(lockFilePath);
-            if (Date.now() - stat.mtimeMs > staleTimeoutMs) {
-              try { fs.unlinkSync(lockFilePath); } catch (_) {}
-            }
-          } catch (_) {}
         }
 
         const start = Date.now();
@@ -516,6 +511,7 @@ function getAuthoritativeProject(projectId) {
 // Closure-Private Multi-Process Durable Server Jobs Ledger
 const JOB_LEDGER_FILE = path.join(DURABLE_AUTH_DIR, 'server_jobs_ledger.json');
 const JOB_LOCK_FILE = path.join(DURABLE_AUTH_DIR, 'server_jobs_ledger.lock');
+const LEDGER_INITIALIZED_SENTINEL = path.join(DURABLE_AUTH_DIR, '.ledger_initialized');
 
 const activeServerJobs = new Map();
 const MAX_CONCURRENT_JOBS = 100;
@@ -523,6 +519,11 @@ const MAX_JOB_LIFETIME_MS = 3600000; // 1 hour
 
 function loadJobLedgerFromDisk() {
   if (!fs.existsSync(JOB_LEDGER_FILE)) {
+    if (fs.existsSync(LEDGER_INITIALIZED_SENTINEL)) {
+      const err = new Error('ERR_JOB_LEDGER_UNEXPECTEDLY_MISSING: Previously initialized job ledger is missing from disk');
+      err.code = 'ERR_JOB_LEDGER_UNEXPECTEDLY_MISSING';
+      throw err;
+    }
     return new Map();
   }
   let raw;
@@ -549,6 +550,9 @@ function loadJobLedgerFromDisk() {
   const map = new Map();
   for (const item of list) {
     if (item && item.jobId) {
+      if (item.expiresAt === 'INFINITY' || item.quarantined === true || item.status === 'ORPHANED_WORKSPACE') {
+        item.expiresAt = Infinity;
+      }
       map.set(item.jobId, item);
     }
   }
@@ -558,7 +562,13 @@ function loadJobLedgerFromDisk() {
 function persistJobLedgerToDisk(jobMap) {
   fs.mkdirSync(DURABLE_AUTH_DIR, { recursive: true });
   const tmpFile = path.join(DURABLE_AUTH_DIR, `job_ledger_${process.pid}_${Date.now()}_${crypto.randomBytes(4).toString('hex')}.tmp`);
-  const payload = JSON.stringify(Array.from(jobMap.values()));
+  const serialized = Array.from(jobMap.values()).map(job => {
+    if (job && job.expiresAt === Infinity) {
+      return { ...job, expiresAt: 'INFINITY' };
+    }
+    return job;
+  });
+  const payload = JSON.stringify(serialized);
   let fd = null;
   try {
     fd = fs.openSync(tmpFile, 'w');
@@ -567,6 +577,9 @@ function persistJobLedgerToDisk(jobMap) {
     fs.closeSync(fd);
     fd = null;
     fs.renameSync(tmpFile, JOB_LEDGER_FILE);
+    if (!fs.existsSync(LEDGER_INITIALIZED_SENTINEL)) {
+      fs.writeFileSync(LEDGER_INITIALIZED_SENTINEL, JSON.stringify({ initializedAt: Date.now() }), 'utf8');
+    }
     fsyncDirectorySafe(DURABLE_AUTH_DIR);
   } catch (writeErr) {
     if (fd !== null) {
@@ -581,27 +594,25 @@ function persistJobLedgerToDisk(jobMap) {
 
 function syncActiveJobsFromLedger() {
   const diskMap = loadJobLedgerFromDisk();
+  activeServerJobs.clear();
   for (const [id, job] of diskMap.entries()) {
-    if (!activeServerJobs.has(id)) {
-      activeServerJobs.set(id, job);
-    } else {
-      const local = activeServerJobs.get(id);
-      if (job.status === 'CLEANUP_FAILED' || job.status === 'CONSUMED' || job.status === 'CANCELLED' || job.status === 'ORPHANED_WORKSPACE') {
-        local.status = job.status;
-        if (job.cleanupError) local.cleanupError = job.cleanupError;
-        if (job.consumedAt) local.consumedAt = job.consumedAt;
-      }
-    }
+    activeServerJobs.set(id, job);
   }
   return activeServerJobs;
 }
 
 /**
- * Orphan Workspace Reconciliation (Round 44 P0-1)
+ * Orphan Workspace Reconciliation (Round 44/45 P0-1)
  * Scans physical workspace roots under SERVER_TRUSTED_WORKSPACE_BASE.
  * Reconciles untracked directories left behind by crashed/interrupted processes
  * into activeServerJobs under status ORPHANED_WORKSPACE so that physical directories
  * are strictly accounted in concurrent job quotas and cannot bypass capacity gates.
+ *
+ * NON-DESTRUCTIVE QUARANTINE UNDER HOLD:
+ * Zero delete rights are inferred from directory age. Quarantined indefinitely.
+ * Throws ERR_WORKSPACE_SCAN_FAILED on unreadable roots.
+ * Rejects symlinks/junctions with ERR_TRUSTED_ROOT_SYMLINK_FORBIDDEN.
+ * Transactionally persists quarantined entries to disk ledger.
  */
 function reconcileOrphanWorkspaces() {
   if (!fs.existsSync(SERVER_TRUSTED_WORKSPACE_BASE)) {
@@ -609,44 +620,88 @@ function reconcileOrphanWorkspaces() {
   }
   let orphansFound = 0;
   let reconciled = 0;
+  let ledgerChanged = false;
 
+  let tenants;
   try {
-    const tenants = fs.readdirSync(SERVER_TRUSTED_WORKSPACE_BASE);
-    for (const tenant of tenants) {
-      const tenantDir = path.join(SERVER_TRUSTED_WORKSPACE_BASE, tenant);
-      let stat;
-      try { stat = fs.statSync(tenantDir); } catch (_) { continue; }
-      if (!stat.isDirectory()) continue;
+    tenants = fs.readdirSync(SERVER_TRUSTED_WORKSPACE_BASE);
+  } catch (readDirErr) {
+    const err = new Error(`ERR_WORKSPACE_SCAN_FAILED: Failed to scan trusted workspace base: ${readDirErr.message}`);
+    err.code = 'ERR_WORKSPACE_SCAN_FAILED';
+    throw err;
+  }
 
-      const entries = fs.readdirSync(tenantDir);
-      for (const entry of entries) {
-        if (!entry.startsWith('job_')) continue;
-        const jobDir = path.join(tenantDir, entry);
-        let jStat;
-        try { jStat = fs.statSync(jobDir); } catch (_) { continue; }
-        if (!jStat.isDirectory()) continue;
+  for (const tenant of tenants) {
+    const tenantDir = path.join(SERVER_TRUSTED_WORKSPACE_BASE, tenant);
+    let stat;
+    try {
+      stat = fs.lstatSync(tenantDir);
+    } catch (statErr) {
+      const err = new Error(`ERR_WORKSPACE_SCAN_FAILED: Failed to stat tenant directory: ${statErr.message}`);
+      err.code = 'ERR_WORKSPACE_SCAN_FAILED';
+      throw err;
+    }
+    if (stat.isSymbolicLink()) {
+      const err = new Error(`ERR_TRUSTED_ROOT_SYMLINK_FORBIDDEN: Tenant directory "${tenantDir}" is a symlink or junction`);
+      err.code = 'ERR_TRUSTED_ROOT_SYMLINK_FORBIDDEN';
+      throw err;
+    }
+    if (!stat.isDirectory()) continue;
 
-        if (!activeServerJobs.has(entry)) {
-          orphansFound++;
-          activeServerJobs.set(entry, {
-            jobId: entry,
-            tenantId: tenant,
-            projectId: 'untracked_orphan_reconciled',
-            ownerId: 'untracked_orphan_reconciled',
-            sessionTokenHash: 'untracked_orphan_reconciled',
-            status: 'ORPHANED_WORKSPACE',
-            jobRoot: jobDir,
-            scratch: path.join(jobDir, 'scratch'),
-            input: path.join(jobDir, 'input'),
-            output: path.join(jobDir, 'output'),
-            provisionedAt: jStat.birthtimeMs || jStat.mtimeMs || Date.now(),
-            expiresAt: (jStat.mtimeMs || Date.now()) + 300000 // 5m expiry window
-          });
-          reconciled++;
-        }
+    let entries;
+    try {
+      entries = fs.readdirSync(tenantDir);
+    } catch (readEntErr) {
+      const err = new Error(`ERR_WORKSPACE_SCAN_FAILED: Failed to read tenant directory: ${readEntErr.message}`);
+      err.code = 'ERR_WORKSPACE_SCAN_FAILED';
+      throw err;
+    }
+
+    for (const entry of entries) {
+      if (!entry.startsWith('job_')) continue;
+      const jobDir = path.join(tenantDir, entry);
+      let jStat;
+      try {
+        jStat = fs.lstatSync(jobDir);
+      } catch (jStatErr) {
+        const err = new Error(`ERR_WORKSPACE_SCAN_FAILED: Failed to stat workspace directory: ${jStatErr.message}`);
+        err.code = 'ERR_WORKSPACE_SCAN_FAILED';
+        throw err;
+      }
+      if (jStat.isSymbolicLink()) {
+        const err = new Error(`ERR_TRUSTED_ROOT_SYMLINK_FORBIDDEN: Job directory "${jobDir}" is a symlink or junction`);
+        err.code = 'ERR_TRUSTED_ROOT_SYMLINK_FORBIDDEN';
+        throw err;
+      }
+      if (!jStat.isDirectory()) continue;
+
+      if (!activeServerJobs.has(entry)) {
+        orphansFound++;
+        activeServerJobs.set(entry, {
+          jobId: entry,
+          tenantId: tenant,
+          projectId: 'untracked_orphan_quarantined',
+          ownerId: 'untracked_orphan_quarantined',
+          sessionTokenHash: 'untracked_orphan_quarantined',
+          status: 'ORPHANED_WORKSPACE',
+          quarantined: true,
+          quarantinedAt: Date.now(),
+          jobRoot: jobDir,
+          scratch: path.join(jobDir, 'scratch'),
+          input: path.join(jobDir, 'input'),
+          output: path.join(jobDir, 'output'),
+          provisionedAt: jStat.birthtimeMs || jStat.mtimeMs || Date.now(),
+          expiresAt: Infinity // Permanent quarantine under HOLD: zero auto-deletion rights!
+        });
+        reconciled++;
+        ledgerChanged = true;
       }
     }
-  } catch (_) {}
+  }
+
+  if (ledgerChanged) {
+    persistJobLedgerToDisk(activeServerJobs);
+  }
 
   return { reconciled, orphansFound };
 }
@@ -660,6 +715,7 @@ try {
  * Active eviction of expired and terminal entries.
  * Cleans physical workspace directories upon eviction.
  * Retains jobs in CLEANUP_FAILED status to account for orphaned storage until safe reclaim.
+ * NON-DESTRUCTIVE: ORPHANED_WORKSPACE entries are strictly quarantined and NEVER auto-evicted!
  * Fails closed if persisting updated ledger to disk fails.
  */
 function evictExpiredJobs() {
@@ -668,10 +724,10 @@ function evictExpiredJobs() {
   let ledgerChanged = false;
 
   for (const [id, job] of activeServerJobs.entries()) {
-    if (job.status === 'CLEANUP_FAILED') {
-      continue;
+    if (job.status === 'CLEANUP_FAILED' || job.status === 'ORPHANED_WORKSPACE') {
+      continue; // Strictly preserve quarantined holds under HOLD
     }
-    if (now > job.expiresAt || job.status === 'COMPLETED' || job.status === 'CANCELLED' || (job.status === 'ORPHANED_WORKSPACE' && now > job.expiresAt)) {
+    if (now > job.expiresAt || job.status === 'COMPLETED' || job.status === 'CANCELLED') {
       let cleanupOk = true;
       try {
         if (job.jobRoot && fs.existsSync(job.jobRoot)) {
@@ -827,6 +883,12 @@ function resolveJobRoots(jobId, sessionContext = {}) {
       throw err;
     }
 
+    if (job.status === 'ORPHANED_WORKSPACE') {
+      const err = new Error(`ERR_ADAPTER_JOB_QUARANTINED: Job "${jobId}" is an untracked orphaned workspace quarantined under HOLD`);
+      err.code = 'ERR_ADAPTER_JOB_QUARANTINED';
+      throw err;
+    }
+
     if (job.status === 'CONSUMED' || job.status === 'COMPLETED' || job.status === 'CANCELLED' || job.status === 'CLEANUP_FAILED') {
       const err = new Error(`ERR_ADAPTER_JOB_ALREADY_CONSUMED: Job "${jobId}" has already reached terminal status "${job.status}"`);
       err.code = 'ERR_ADAPTER_JOB_ALREADY_CONSUMED';
@@ -890,6 +952,11 @@ function cancelServerJob(jobId, sessionContext = {}) {
     if (!job) {
       return { cancelled: false, reason: 'ERR_JOB_NOT_FOUND' };
     }
+    if (job.status === 'ORPHANED_WORKSPACE') {
+      const err = new Error(`ERR_ADAPTER_JOB_QUARANTINED: Quarantined orphan workspace "${jobId}" cannot be deleted without administrative reclaim authorization`);
+      err.code = 'ERR_ADAPTER_JOB_QUARANTINED';
+      throw err;
+    }
     const principal = verifySessionProof(sessionContext, job.projectId);
     if (job.tenantId !== principal.tenantId || job.ownerId !== principal.ownerId) {
       const err = new Error('ERR_ADAPTER_JOB_AUTHORIZATION_FAILED: Unauthorized to cancel job');
@@ -929,5 +996,9 @@ module.exports = {
   reconcileOrphanWorkspaces,
   withStoreLock,
   isProcessAlive,
-  loadJobLedgerFromDisk
+  loadJobLedgerFromDisk,
+  syncActiveJobsFromLedger,
+  JOB_LEDGER_FILE,
+  JOB_LOCK_FILE,
+  LEDGER_INITIALIZED_SENTINEL
 };
