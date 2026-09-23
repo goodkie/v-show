@@ -575,6 +575,44 @@ class ReconstructionExecutionAdapter {
         };
       }
 
+      // Enforce permitted argument allowlist against infrastructure trust policy
+      if (commandConfig.args !== undefined) {
+        if (!Array.isArray(commandConfig.args)) {
+          return {
+            success: false,
+            errorCode: 'ERR_ADAPTER_INVALID_ARGUMENTS_FORMAT',
+            message: 'Command arguments must be an array of strings',
+            failClosed: true
+          };
+        }
+        for (const arg of commandConfig.args) {
+          if (typeof arg !== 'string') {
+            return {
+              success: false,
+              errorCode: 'ERR_ADAPTER_INVALID_ARGUMENT_TYPE',
+              message: 'Each command argument must be a string',
+              failClosed: true
+            };
+          }
+          if (/[;&|`$<>\r\n]/.test(arg)) {
+            return {
+              success: false,
+              errorCode: 'ERR_ADAPTER_DISALLOWED_SHELL_METACHARACTERS',
+              message: `Argument "${arg}" contains forbidden shell metacharacters`,
+              failClosed: true
+            };
+          }
+          if (!policyEntry.permittedArgs.includes(arg)) {
+            return {
+              success: false,
+              errorCode: 'ERR_ADAPTER_DISALLOWED_ARGUMENT',
+              message: `Argument "${arg}" is not on approved permitted arguments list for "${baseName}"`,
+              failClosed: true
+            };
+          }
+        }
+      }
+
       // Check parent directory realpath & symlinks
       const parentDir = path.dirname(executable);
       if (fs.existsSync(parentDir)) {

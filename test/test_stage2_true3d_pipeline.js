@@ -1005,7 +1005,7 @@ async function main() {
   //   7. Pre-Reconstruction Exact Hash Binding & Anti-Substitution:
   //      Canonically incorporates probesDigest in preReconstructionDigest.
   //      Anti-substitution invariant enforced (refuses claiming pre-existing benchmark as new model).
-  runTest('18. Trusted execution boundary, mandatory digest binding, numeric semver & isolated mock guards (R34)', () => {
+  runTest('18. Trusted execution boundary, mandatory digest binding, numeric semver & isolated mock guards (R35)', () => {
     // 1. Audit active refined capability probes
     const probes = probeReconstructionEngines();
     assert.ok(probes.LOCAL_GPU_ACCELERATOR, 'LOCAL_GPU_ACCELERATOR probe must exist');
@@ -1288,6 +1288,40 @@ async function main() {
     assert.strictEqual(semverOkRes.errorCode, 'ERR_SFM_PIPELINE_FAILED', 'Semver 3.10 >= 3.8 must pass version guard and proceed to runner');
     assert.strictEqual(semverOkRes.versionValidationClassification, 'CALLER_VERSION_STRING_VALIDATION_ONLY');
 
+    // 6g2. Command argument validation & injection defense (R35)
+    const badArgTypeRes = testHarnessAdapter.execute({
+      executable: path.resolve('colmap.exe'),
+      minVersion: '3.8.0',
+      versionCheckOutput: 'COLMAP 3.8.0',
+      args: 'not-an-array'
+    });
+    assert.strictEqual(badArgTypeRes.errorCode, 'ERR_ADAPTER_INVALID_ARGUMENTS_FORMAT');
+
+    const injectionArgRes = testHarnessAdapter.execute({
+      executable: path.resolve('colmap.exe'),
+      minVersion: '3.8.0',
+      versionCheckOutput: 'COLMAP 3.8.0',
+      args: ['--help; rm -rf /']
+    });
+    assert.strictEqual(injectionArgRes.errorCode, 'ERR_ADAPTER_DISALLOWED_SHELL_METACHARACTERS');
+
+    const disallowedArgRes = testHarnessAdapter.execute({
+      executable: path.resolve('colmap.exe'),
+      minVersion: '3.8.0',
+      versionCheckOutput: 'COLMAP 3.8.0',
+      args: ['--unapproved-malicious-flag']
+    });
+    assert.strictEqual(disallowedArgRes.errorCode, 'ERR_ADAPTER_DISALLOWED_ARGUMENT');
+
+    const permittedArgRes = testHarnessAdapter.execute({
+      executable: path.resolve('colmap.exe'),
+      minVersion: '3.8.0',
+      versionCheckOutput: 'COLMAP 3.8.0',
+      args: ['--help'],
+      mockRunner: () => ({ success: true })
+    });
+    assert.strictEqual(permittedArgRes.errorCode, 'ERR_RECONSTRUCTION_ENGINE_NOT_CONFIGURED', 'Permitted argument --help must pass argument allowlist and fail closed at unprovisioned engine boundary');
+
     // 6h. Mandatory expected SHA-256 missing in non-mock / production mode when unprovisioned in policy
     const dummyExe = path.join(os.tmpdir(), 'colmap.exe');
     fs.writeFileSync(dummyExe, 'dummy binary content for test');
@@ -1457,7 +1491,7 @@ async function main() {
   console.log(`True 3D Pipeline Test Suite Complete: ${passedTests}/${totalTests} passed`);
   console.log('================================================================\n');
 
-  // ── [POST-RUN FINALIZER] Emit Machine-Verifiable R34 Execution Receipt ───────
+  // ── [POST-RUN FINALIZER] Emit Machine-Verifiable R35 Execution Receipt ───────
   const suiteEndTime = new Date().toISOString();
   const durationMs = Date.now() - startTimeEpoch;
   const runnerSource = fs.readFileSync(__filename);
@@ -1467,7 +1501,7 @@ async function main() {
   const engineDiscoveryProbes = probeReconstructionEngines();
 
   const receipt = {
-    receiptSchemaVersion: 'R34_EXECUTION_RECEIPT_V1',
+    receiptSchemaVersion: 'R35_EXECUTION_RECEIPT_V1',
     executionTimestamps: {
       startTime: suiteStartTime,
       endTime: suiteEndTime,
@@ -1516,6 +1550,8 @@ async function main() {
       callerBinaryHashOverride: 'FORBIDDEN',
       callerTrustPolicyOverride: 'FORBIDDEN',
       callerWorkerInjectionDefense: 'FORBIDDEN_IN_PRODUCTION',
+      commandArgvEnforcement: 'STRICT_PERMITTED_ARGS_ALLOWLIST_AND_METACHARACTER_DEFENSE',
+      engineProvenanceStatus: 'NOT_VERIFIED_ZERO_AUTHORIZED_ENGINES_PROVISIONED',
       symlinkResolution: 'REJECTED_VIA_REALPATH',
       semverComparisonModel: 'NUMERIC_COMPONENT_ORDERING_WITH_FIXED_FLOOR',
       versionProbeTruthfulness: 'CALLER_VERSION_STRING_VALIDATION_ONLY',
@@ -1546,14 +1582,14 @@ async function main() {
 
   const receiptOutPath = path.join(
     REPO_ROOT,
-    'virtual-tradeshow-commercial-v1/production_artifacts/R34_TEST_EXECUTION_RECEIPT.json'
+    'virtual-tradeshow-commercial-v1/production_artifacts/R35_TEST_EXECUTION_RECEIPT.json'
   );
   fs.writeFileSync(receiptOutPath, JSON.stringify(receipt, null, 2), 'utf8');
   const savedReceiptBytes = fs.readFileSync(receiptOutPath);
   const receiptByteSha256 = crypto.createHash('sha256').update(savedReceiptBytes).digest('hex');
 
-  console.log('--- Final Execution Receipt (R34 Machine Verifiable) ---');
-  console.log(`  File:           virtual-tradeshow-commercial-v1/production_artifacts/R34_TEST_EXECUTION_RECEIPT.json`);
+  console.log('--- Final Execution Receipt (R35 Machine Verifiable) ---');
+  console.log(`  File:           virtual-tradeshow-commercial-v1/production_artifacts/R35_TEST_EXECUTION_RECEIPT.json`);
   console.log(`  Byte SHA-256:   ${receiptByteSha256}`);
   console.log(`  Tested Commit:  ${suiteCurrentHead}`);
   console.log(`  Expected Head:  ${expectedHead || '(none - unbound)'}`);
