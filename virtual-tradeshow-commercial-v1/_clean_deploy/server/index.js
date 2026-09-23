@@ -5414,11 +5414,18 @@ app.post('/api/billing/create-checkout-session', requireAuth, async (req, res) =
     if (!org) return res.status(404).json({ error: 'Organization not found.' });
 
     // Multi-tenant isolation check on requested project
+    let validatedProject = null;
     if (req.body.projectId) {
       const allProjects = db.read().projects || [];
       const allFreeProjects = db.read().freePreviewProjects || [];
-      const project = allProjects.find(p => p.id === req.body.projectId) || allFreeProjects.find(p => p.id === req.body.projectId);
-      if (project && project.organizationId && project.organizationId !== org.id) {
+      validatedProject = allProjects.find(p => p.id === req.body.projectId) || allFreeProjects.find(p => p.id === req.body.projectId);
+      if (!validatedProject) {
+        return res.status(404).json({
+          error: 'PROJECT_NOT_FOUND',
+          message: 'The requested project could not be found.'
+        });
+      }
+      if (!validatedProject.organizationId || validatedProject.organizationId !== org.id) {
         return res.status(403).json({
           error: 'PROJECT_TENANT_MISMATCH',
           message: 'The requested project does not belong to your organization.'
@@ -5539,18 +5546,24 @@ app.post('/api/billing/create-checkout-session', requireAuth, async (req, res) =
 
     // In Test Mode / Stripe Configured
     if (stripe) {
-      const priceId = requestedPlan === 'pro'
-        ? (process.env.STRIPE_PRICE_PRO_MONTHLY || 'price_test_pro_monthly')
-        : (process.env.STRIPE_PRICE_BUSINESS_MONTHLY || 'price_test_biz_monthly');
-
-      const allowedOrigins = [process.env.APP_CANONICAL_ORIGIN, process.env.PUBLIC_URL].filter(Boolean);
-      let origin = allowedOrigins[0];
-      if (!origin) {
-        const protocol = req.headers['x-forwarded-proto'] || 'http';
-        const rawHost = req.headers.host || 'localhost:3000';
-        const safeHost = rawHost.replace(/[^a-zA-Z0-9.:_-]/g, '');
-        origin = `${protocol}://${safeHost}`;
+      const proPriceId = process.env.STRIPE_PRICE_PRO_MONTHLY;
+      const bizPriceId = process.env.STRIPE_PRICE_BUSINESS_MONTHLY;
+      const priceId = requestedPlan === 'pro' ? proPriceId : bizPriceId;
+      if (!priceId || !priceId.startsWith('price_')) {
+        return res.status(503).json({
+          error: 'STRIPE_PRICE_NOT_CONFIGURED',
+          message: `Configured Stripe Price ID for plan "${requestedPlan}" is missing or invalid in server environment.`
+        });
       }
+
+      const canonicalOrigin = process.env.APP_CANONICAL_ORIGIN || process.env.PUBLIC_URL;
+      if (!canonicalOrigin) {
+        return res.status(503).json({
+          error: 'CANONICAL_ORIGIN_NOT_CONFIGURED',
+          message: 'APP_CANONICAL_ORIGIN is not configured in server environment.'
+        });
+      }
+      const origin = canonicalOrigin.replace(/\/+$/, '');
 
       let customerId = org.subscription?.stripeCustomerId;
       if (!customerId) {
@@ -5578,9 +5591,16 @@ app.post('/api/billing/create-checkout-session', requireAuth, async (req, res) =
         }
       });
 
-      if (req.body.projectId) {
-        await db.updateProjectCommercialState(req.body.projectId, 'CHECKOUT_PENDING');
-      }
+      // Record pending checkout session in DB for correlation
+      await db.recordPendingCheckout({
+        sessionId: session.id,
+        organizationId: org.id,
+        projectId: req.body.projectId || null,
+        requestedPlan,
+        priceId,
+        amountExpected: requestedPlan === 'pro' ? 29900 : 79900,
+        currencyExpected: 'USD'
+      });
 
       return res.json({
         success: true,
@@ -5589,43 +5609,9 @@ app.post('/api/billing/create-checkout-session', requireAuth, async (req, res) =
         mode: 'live_or_stripe_test'
       });
     } else {
-      // Local Test Simulation Mode (Only permitted when explicitly opted in via ALLOW_LOCAL_BILLING_SIMULATION=true or NODE_ENV=test)
-      const isExplicitTestHarness = process.env.ALLOW_LOCAL_BILLING_SIMULATION === 'true' || process.env.NODE_ENV === 'test';
-      if (!isExplicitTestHarness) {
-        return res.status(503).json({
-          error: 'STRIPE_NOT_CONFIGURED',
-          message: 'Stripe payment processing is not configured on this server and simulation fallback is disabled.'
-        });
-      }
-
-      // Local Test Simulation Mode (Instant Upgrade for Verification & Automated Testing)
-      await db.updateOrganizationSubscription(org.id, {
-        plan: requestedPlan,
-        status: 'active',
-        stripeCustomerId: `cus_sim_${crypto.randomBytes(4).toString('hex')}`,
-        stripeSubscriptionId: `sub_sim_${crypto.randomBytes(4).toString('hex')}`,
-        upgradedAt: new Date().toISOString()
-      });
-
-      if (req.body.projectId) {
-        const newState = requestedPlan === 'business' ? 'ACTIVE_BUSINESS' : 'ACTIVE_PRO';
-        await db.updateProjectCommercialState(req.body.projectId, newState, requestedPlan);
-      }
-
-      await db.logBillingEvent({
-        organizationId: org.id,
-        plan: requestedPlan,
-        type: 'checkout_completed',
-        amount: requestedPlan === 'pro' ? 299 : 799,
-        status: 'success'
-      });
-
-      return res.json({
-        success: true,
-        simulation: true,
-        message: `Stripe Test Mode: Simulated checkout successful. Upgraded ${org.name} to ${requestedPlan.toUpperCase()}.`,
-        plan: requestedPlan,
-        entitlements: db.getOrganizationEntitlements(org.id)
+      return res.status(503).json({
+        error: 'STRIPE_NOT_CONFIGURED',
+        message: 'Stripe payment processing is not configured on this server and simulation auto-grant is disabled.'
       });
     }
   } catch (err) {
@@ -5644,31 +5630,29 @@ app.post('/api/billing/create-portal-session', requireAuth, async (req, res) => 
       return res.status(400).json({ error: 'No Stripe Customer associated with this organization. Please upgrade first.' });
     }
 
-    if (stripe) {
-      const allowedOrigins = [process.env.APP_CANONICAL_ORIGIN, process.env.PUBLIC_URL].filter(Boolean);
-      let origin = allowedOrigins[0];
-      if (!origin) {
-        const protocol = req.headers['x-forwarded-proto'] || 'http';
-        const rawHost = req.headers.host || 'localhost:3000';
-        const safeHost = rawHost.replace(/[^a-zA-Z0-9.:_-]/g, '');
-        origin = `${protocol}://${safeHost}`;
-      }
-      const returnUrl = `${origin}/index.html#billing`;
-
-      const session = await stripe.billingPortal.sessions.create({
-        customer: customerId,
-        return_url: returnUrl
-      });
-
-      return res.json({ success: true, url: session.url });
-    } else {
-      return res.json({
-        success: true,
-        simulation: true,
-        message: 'Stripe Portal Simulated: Customer subscription is currently active in Test Mode.',
-        customer: org.subscription
+    if (!stripe) {
+      return res.status(503).json({
+        error: 'STRIPE_NOT_CONFIGURED',
+        message: 'Stripe payment processing is not configured on this server.'
       });
     }
+
+    const canonicalOrigin = process.env.APP_CANONICAL_ORIGIN || process.env.PUBLIC_URL;
+    if (!canonicalOrigin) {
+      return res.status(503).json({
+        error: 'CANONICAL_ORIGIN_NOT_CONFIGURED',
+        message: 'APP_CANONICAL_ORIGIN is not configured in server environment.'
+      });
+    }
+    const origin = canonicalOrigin.replace(/\/+$/, '');
+    const returnUrl = `${origin}/index.html#billing`;
+
+    const session = await stripe.billingPortal.sessions.create({
+      customer: customerId,
+      return_url: returnUrl
+    });
+
+    return res.json({ success: true, url: session.url });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -5816,25 +5800,29 @@ app.post('/api/billing/portal', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'No Stripe Customer associated with this organization. Please upgrade first.' });
     }
 
-    if (stripe) {
-      const protocol = req.headers['x-forwarded-proto'] || 'http';
-      const host = req.headers.host || 'localhost:3000';
-      const returnUrl = `${protocol}://${host}/index.html#billing`;
-
-      const session = await stripe.billingPortal.sessions.create({
-        customer: customerId,
-        return_url: returnUrl
-      });
-
-      return res.json({ success: true, url: session.url });
-    } else {
-      return res.json({
-        success: true,
-        simulation: true,
-        message: 'Stripe Portal Simulated: Customer subscription is currently active in Test Mode.',
-        customer: org.subscription
+    if (!stripe) {
+      return res.status(503).json({
+        error: 'STRIPE_NOT_CONFIGURED',
+        message: 'Stripe payment processing is not configured on this server.'
       });
     }
+
+    const canonicalOrigin = process.env.APP_CANONICAL_ORIGIN || process.env.PUBLIC_URL;
+    if (!canonicalOrigin) {
+      return res.status(503).json({
+        error: 'CANONICAL_ORIGIN_NOT_CONFIGURED',
+        message: 'APP_CANONICAL_ORIGIN is not configured in server environment.'
+      });
+    }
+    const origin = canonicalOrigin.replace(/\/+$/, '');
+    const returnUrl = `${origin}/index.html#billing`;
+
+    const session = await stripe.billingPortal.sessions.create({
+      customer: customerId,
+      return_url: returnUrl
+    });
+
+    return res.json({ success: true, url: session.url });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

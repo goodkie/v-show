@@ -6234,26 +6234,389 @@ return event;
     });
   }
 
-  isStripeEventProcessed(eventId) {
+  getStripeEventStatus(eventId) {
     const list = this.read().stripeEvents || [];
-    return list.some(e => e.eventId === eventId);
+    const entry = list.find(e => e.eventId === eventId);
+    return entry ? (entry.status || 'PROCESSED') : null;
   }
 
-  async logStripeEvent(eventData) {
+  isStripeEventProcessed(eventId) {
+    const status = this.getStripeEventStatus(eventId);
+    return status === 'PROCESSED' || status === 'PROCESSING';
+  }
+
+  async logStripeEvent(eventData, status = 'PROCESSED') {
     return this.mutate((db) => {
       const d = db;
       db.stripeEvents = db.stripeEvents || [];
+      const existingIdx = db.stripeEvents.findIndex(e => e.eventId === eventData.id);
       const entry = {
-        id: `str-evt-${uuidv4().substring(0, 8)}`,
+        id: existingIdx >= 0 ? db.stripeEvents[existingIdx].id : `str-evt-${uuidv4().substring(0, 8)}`,
         eventId: eventData.id,
         type: eventData.type,
-        receivedAt: new Date().toISOString(),
-        processedAt: new Date().toISOString(),
+        status,
+        receivedAt: existingIdx >= 0 ? db.stripeEvents[existingIdx].receivedAt : new Date().toISOString(),
+        processedAt: status === 'PROCESSED' ? new Date().toISOString() : (existingIdx >= 0 ? db.stripeEvents[existingIdx].processedAt : null),
         metadata: eventData.metadata || {}
       };
-      db.stripeEvents.push(entry);
+      if (existingIdx >= 0) {
+        db.stripeEvents[existingIdx] = entry;
+      } else {
+        db.stripeEvents.push(entry);
+      }
       if (db.stripeEvents.length > 2000) db.stripeEvents.shift();
       return entry;
+    });
+  }
+
+  async recordPendingCheckout(data) {
+    return this.mutate((db) => {
+      db.pendingCheckouts = db.pendingCheckouts || [];
+      const existingIdx = db.pendingCheckouts.findIndex(p => p.sessionId === data.sessionId);
+      const entry = {
+        sessionId: data.sessionId,
+        organizationId: data.organizationId,
+        projectId: data.projectId || null,
+        requestedPlan: data.requestedPlan,
+        priceId: data.priceId,
+        amountExpected: data.amountExpected || null,
+        currencyExpected: data.currencyExpected || 'USD',
+        createdAt: data.createdAt || new Date().toISOString()
+      };
+      if (existingIdx >= 0) {
+        db.pendingCheckouts[existingIdx] = entry;
+      } else {
+        db.pendingCheckouts.push(entry);
+      }
+      if (db.pendingCheckouts.length > 2000) db.pendingCheckouts.shift();
+      return entry;
+    });
+  }
+
+  getPendingCheckout(sessionId) {
+    const list = this.read().pendingCheckouts || [];
+    return list.find(p => p.sessionId === sessionId) || null;
+  }
+
+  async applyStripeCheckoutCompletedAtomic({
+    eventId,
+    eventType,
+    sessionId,
+    organizationId,
+    projectId,
+    requestedPlan,
+    plan,
+    customerId,
+    subscriptionId,
+    amountTotal,
+    currency
+  }) {
+    const effectivePlan = requestedPlan || plan || 'pro';
+    return this.mutate((db) => {
+      db.stripeEvents = db.stripeEvents || [];
+      const existing = db.stripeEvents.find(e => e.eventId === eventId);
+      if (existing && existing.status === 'PROCESSED') {
+        return { success: true, duplicate: true };
+      }
+
+      // 1. Update Organization Subscription
+      db.organizations = db.organizations || [];
+      const org = db.organizations.find(o => o.id === organizationId);
+      if (org) {
+        org.subscription = {
+          ...(org.subscription || {}),
+          plan: effectivePlan,
+          status: 'active',
+          stripeCustomerId: customerId,
+          stripeSubscriptionId: subscriptionId,
+          upgradedAt: new Date().toISOString()
+        };
+        org.updatedAt = new Date().toISOString();
+      }
+
+      // 2. Update Linked Project (if projectId provided)
+      if (projectId) {
+        const proj = (db.projects || []).find(p => p.id === projectId);
+        if (proj) {
+          const newState = effectivePlan === 'business' ? 'ACTIVE_BUSINESS' : 'ACTIVE_PRO';
+          proj.commercialState = newState;
+          proj.commercialPlan = effectivePlan;
+          proj.updatedAt = new Date().toISOString();
+        }
+        const freeProj = (db.freePreviewProjects || []).find(p => p.id === projectId);
+        if (freeProj) {
+          const newState = effectivePlan === 'business' ? 'ACTIVE_BUSINESS' : 'ACTIVE_PRO';
+          freeProj.entitlementState = newState;
+          freeProj.plan = effectivePlan.toUpperCase();
+          freeProj.stripeCustomerId = customerId;
+          freeProj.stripeSubscriptionId = subscriptionId;
+          freeProj.stripeSessionId = sessionId;
+          freeProj.activatedAt = new Date().toISOString();
+          freeProj.publishStatus = 'APPROVED';
+        }
+      }
+
+      // 3. Log Billing Event
+      db.billingEvents = db.billingEvents || [];
+      db.billingEvents.push({
+        id: `bil-${uuidv4().substring(0, 8)}`,
+        organizationId,
+        plan: requestedPlan,
+        type: 'checkout_completed',
+        stripeCustomerId: customerId,
+        stripeSubscriptionId: subscriptionId,
+        amount: amountTotal ? amountTotal / 100 : (requestedPlan === 'pro' ? 299 : 799),
+        currency: currency || 'USD',
+        status: 'success',
+        createdAt: new Date().toISOString()
+      });
+
+      // 4. Mark Stripe Event PROCESSED
+      const entry = {
+        id: existing ? existing.id : `str-evt-${uuidv4().substring(0, 8)}`,
+        eventId,
+        type: eventType,
+        status: 'PROCESSED',
+        receivedAt: existing ? existing.receivedAt : new Date().toISOString(),
+        processedAt: new Date().toISOString(),
+        metadata: { organizationId, projectId, requestedPlan, sessionId }
+      };
+      if (existing) {
+        const idx = db.stripeEvents.indexOf(existing);
+        db.stripeEvents[idx] = entry;
+      } else {
+        db.stripeEvents.push(entry);
+      }
+      if (db.stripeEvents.length > 2000) db.stripeEvents.shift();
+
+      return { success: true, duplicate: false, entry };
+    });
+  }
+
+  async applyStripeSubscriptionUpdatedAtomic({
+    eventId,
+    eventType,
+    subscriptionId,
+    customerId,
+    status,
+    plan,
+    organizationId,
+    currentPeriodStart,
+    currentPeriodEnd,
+    cancelAtPeriodEnd
+  }) {
+    return this.mutate((db) => {
+      db.stripeEvents = db.stripeEvents || [];
+      const existing = db.stripeEvents.find(e => e.eventId === eventId);
+      if (existing && existing.status === 'PROCESSED') {
+        return { success: true, duplicate: true };
+      }
+
+      db.organizations = db.organizations || [];
+      let org = db.organizations.find(o => o.id === organizationId);
+      if (!org && customerId) {
+        org = db.organizations.find(o => o.subscription?.stripeCustomerId === customerId);
+      }
+      if (!org && subscriptionId) {
+        org = db.organizations.find(o => o.subscription?.stripeSubscriptionId === subscriptionId);
+      }
+
+      if (org) {
+        org.subscription = {
+          ...(org.subscription || {}),
+          plan: plan || org.subscription?.plan || 'pro',
+          status,
+          stripeCustomerId: customerId || org.subscription?.stripeCustomerId,
+          stripeSubscriptionId: subscriptionId,
+          currentPeriodStart,
+          currentPeriodEnd,
+          cancelAtPeriodEnd: Boolean(cancelAtPeriodEnd),
+          updatedAt: new Date().toISOString()
+        };
+        org.updatedAt = new Date().toISOString();
+
+        // Sync linked projects
+        const orgProjects = (db.projects || []).filter(p => p.organizationId === org.id);
+        for (const prj of orgProjects) {
+          if (status === 'active') {
+            prj.commercialState = (plan || org.subscription.plan) === 'business' ? 'ACTIVE_BUSINESS' : 'ACTIVE_PRO';
+          } else if (status === 'past_due') {
+            prj.commercialState = 'PAST_DUE';
+          } else if (status === 'canceled') {
+            prj.commercialState = 'CANCELLED';
+          }
+          prj.updatedAt = new Date().toISOString();
+        }
+
+        db.billingEvents = db.billingEvents || [];
+        db.billingEvents.push({
+          id: `bil-${uuidv4().substring(0, 8)}`,
+          organizationId: org.id,
+          plan: plan || org.subscription.plan,
+          type: eventType === 'customer.subscription.created' ? 'subscription_created' : 'subscription_updated',
+          stripeCustomerId: customerId,
+          stripeSubscriptionId: subscriptionId,
+          status,
+          createdAt: new Date().toISOString()
+        });
+      }
+
+      const entry = {
+        id: existing ? existing.id : `str-evt-${uuidv4().substring(0, 8)}`,
+        eventId,
+        type: eventType,
+        status: 'PROCESSED',
+        receivedAt: existing ? existing.receivedAt : new Date().toISOString(),
+        processedAt: new Date().toISOString(),
+        metadata: { subscriptionId, customerId, status }
+      };
+      if (existing) {
+        const idx = db.stripeEvents.indexOf(existing);
+        db.stripeEvents[idx] = entry;
+      } else {
+        db.stripeEvents.push(entry);
+      }
+      if (db.stripeEvents.length > 2000) db.stripeEvents.shift();
+
+      return { success: true, duplicate: false, entry };
+    });
+  }
+
+  async applyStripeSubscriptionCancelledAtomic({
+    eventId,
+    eventType,
+    subscriptionId,
+    customerId,
+    organizationId
+  }) {
+    return this.mutate((db) => {
+      db.stripeEvents = db.stripeEvents || [];
+      const existing = db.stripeEvents.find(e => e.eventId === eventId);
+      if (existing && existing.status === 'PROCESSED') {
+        return { success: true, duplicate: true };
+      }
+
+      db.organizations = db.organizations || [];
+      let org = db.organizations.find(o => o.id === organizationId);
+      if (!org && customerId) {
+        org = db.organizations.find(o => o.subscription?.stripeCustomerId === customerId);
+      }
+
+      if (org) {
+        org.subscription = {
+          ...(org.subscription || {}),
+          plan: 'free',
+          status: 'canceled',
+          cancelledAt: new Date().toISOString()
+        };
+        org.updatedAt = new Date().toISOString();
+
+        const orgProjects = (db.projects || []).filter(p => p.organizationId === org.id);
+        for (const prj of orgProjects) {
+          prj.commercialState = 'CANCELLED';
+          prj.updatedAt = new Date().toISOString();
+        }
+
+        db.billingEvents = db.billingEvents || [];
+        db.billingEvents.push({
+          id: `bil-${uuidv4().substring(0, 8)}`,
+          organizationId: org.id,
+          plan: 'free',
+          type: 'cancelled',
+          stripeCustomerId: customerId,
+          stripeSubscriptionId: subscriptionId,
+          status: 'canceled',
+          createdAt: new Date().toISOString()
+        });
+      }
+
+      const entry = {
+        id: existing ? existing.id : `str-evt-${uuidv4().substring(0, 8)}`,
+        eventId,
+        type: eventType,
+        status: 'PROCESSED',
+        receivedAt: existing ? existing.receivedAt : new Date().toISOString(),
+        processedAt: new Date().toISOString(),
+        metadata: { subscriptionId, customerId }
+      };
+      if (existing) {
+        const idx = db.stripeEvents.indexOf(existing);
+        db.stripeEvents[idx] = entry;
+      } else {
+        db.stripeEvents.push(entry);
+      }
+      if (db.stripeEvents.length > 2000) db.stripeEvents.shift();
+
+      return { success: true, duplicate: false, entry };
+    });
+  }
+
+  async applyStripePaymentFailedAtomic({
+    eventId,
+    eventType,
+    invoiceId,
+    customerId,
+    subscriptionId,
+    organizationId
+  }) {
+    return this.mutate((db) => {
+      db.stripeEvents = db.stripeEvents || [];
+      const existing = db.stripeEvents.find(e => e.eventId === eventId);
+      if (existing && existing.status === 'PROCESSED') {
+        return { success: true, duplicate: true };
+      }
+
+      db.organizations = db.organizations || [];
+      let org = db.organizations.find(o => o.id === organizationId);
+      if (!org && customerId) {
+        org = db.organizations.find(o => o.subscription?.stripeCustomerId === customerId);
+      }
+
+      if (org) {
+        org.subscription = {
+          ...(org.subscription || {}),
+          status: 'past_due',
+          pastDueAt: new Date().toISOString()
+        };
+        org.updatedAt = new Date().toISOString();
+
+        const orgProjects = (db.projects || []).filter(p => p.organizationId === org.id);
+        for (const prj of orgProjects) {
+          prj.commercialState = 'PAST_DUE';
+          prj.updatedAt = new Date().toISOString();
+        }
+
+        db.billingEvents = db.billingEvents || [];
+        db.billingEvents.push({
+          id: `bil-${uuidv4().substring(0, 8)}`,
+          organizationId: org.id,
+          plan: org.subscription?.plan || 'pro',
+          type: 'payment_failed',
+          stripeCustomerId: customerId,
+          stripeSubscriptionId: subscriptionId,
+          status: 'past_due',
+          createdAt: new Date().toISOString()
+        });
+      }
+
+      const entry = {
+        id: existing ? existing.id : `str-evt-${uuidv4().substring(0, 8)}`,
+        eventId,
+        type: eventType,
+        status: 'PROCESSED',
+        receivedAt: existing ? existing.receivedAt : new Date().toISOString(),
+        processedAt: new Date().toISOString(),
+        metadata: { invoiceId, customerId }
+      };
+      if (existing) {
+        const idx = db.stripeEvents.indexOf(existing);
+        db.stripeEvents[idx] = entry;
+      } else {
+        db.stripeEvents.push(entry);
+      }
+      if (db.stripeEvents.length > 2000) db.stripeEvents.shift();
+
+      return { success: true, duplicate: false, entry };
     });
   }
 
@@ -9535,7 +9898,9 @@ return event;
     this.ensureProjectToken(project);
     if (!token) return false;
     if (process.env.NODE_ENV === 'test' && process.env.STAGE2_EPHEMERAL_TEST_TOKEN && token === process.env.STAGE2_EPHEMERAL_TEST_TOKEN) {
-      return true;
+      if (process.env.TEST_PROJECT_ID && project && project.id === process.env.TEST_PROJECT_ID) {
+        return true;
+      }
     }
     if (token === project.editToken) return true;
 
