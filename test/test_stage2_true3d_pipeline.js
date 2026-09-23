@@ -2581,9 +2581,9 @@ async function main() {
           console.error('Exit codes:', exitA, exitB, 'Errors:', regErr, recErr);
           process.exit(1);
         }
-        process.stdout.write(regOut + recOut, () => {
-          process.exit(0);
-        });
+        console.log(regOut);
+        console.log(recOut);
+        process.exitCode = 0;
       }
       run();
     `;
@@ -2604,7 +2604,7 @@ async function main() {
       assert.strictEqual(orphanEntry.quarantined, true, 'Orphan must be quarantined');
 
       const match = orchRes.stdout.match(/JOB_ID:(job_[a-f0-9]+)/);
-      assert.ok(match, 'Must have output registered job ID');
+      assert.ok(match, 'Must have output registered job ID. Output was: ' + JSON.stringify(orchRes.stdout));
       const registeredJobId = match[1];
       assert.ok(diskLedger.has(registeredJobId), 'Registered job must exist in disk ledger');
       const regEntry = diskLedger.get(registeredJobId);

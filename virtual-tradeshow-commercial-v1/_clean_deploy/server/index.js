@@ -677,170 +677,80 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
     return res.status(400).json({ error: 'Invalid event format' });
   }
 
-  // Idempotency check: Ignore already processed events
-  if (db.isStripeEventProcessed(event.id)) {
-    return res.json({ received: true, duplicate: true });
-  }
-
-  // Concurrency guard: If event is already in-flight, return retryable status so Stripe retries
-  if (typeof db.isStripeEventProcessing === 'function' && db.isStripeEventProcessing(event.id)) {
-    return res.status(409).json({
-      error: 'STRIPE_EVENT_IN_FLIGHT',
-      message: 'Event is currently being processed by another worker; retry requested.',
-      retryable: true
-    });
-  }
-
-  // Record event in inbox as PROCESSING
-  await db.logStripeEvent(event, 'PROCESSING');
-
   try {
+    let result;
     switch (event.type) {
       case 'checkout.session.completed': {
-        const session = event.data.object;
-        const sessionId = session.id;
-        const customerId = session.customer;
-        const subscriptionId = session.subscription;
-
-        // Correlate with server-side pending checkout record
-        const pending = typeof db.getPendingCheckout === 'function' ? db.getPendingCheckout(sessionId) : null;
-
-        const orgId = pending?.organizationId || session.metadata?.organizationId;
-        const projectId = pending?.projectId || session.metadata?.projectId;
-        const requestedPlan = pending?.requestedPlan || session.metadata?.requestedPlan || session.metadata?.targetPlan || 'pro';
-
-        // Fail-closed verification: organization must exist
-        const org = orgId ? db.getOrganizationById(orgId) : null;
-        if (!org) {
-          throw new Error(`Orphaned or unverified checkout session: organizationId "${orgId}" not found in database.`);
-        }
-
-        // Multi-tenant isolation verification
-        if (projectId) {
-          const allProjects = db.read().projects || [];
-          const allFreeProjects = db.read().freePreviewProjects || [];
-          const project = allProjects.find(p => p.id === projectId) || allFreeProjects.find(p => p.id === projectId);
-          if (project && project.organizationId && project.organizationId !== org.id) {
-            throw new Error(`Project tenant mismatch: project "${projectId}" does not belong to organization "${org.id}".`);
-          }
-        }
-
-        // Atomic transaction: updates org subscription, project commercialState, logs billing event, marks event PROCESSED
-        const result = await db.applyStripeCheckoutCompletedAtomic({
-          eventId: event.id,
-          eventType: event.type,
-          sessionId,
-          organizationId: org.id,
-          projectId,
-          requestedPlan,
-          customerId,
-          subscriptionId,
-          amountTotal: session.amount_total,
-          currency: session.currency
+        result = await db.applyStripeCheckoutCompletedAtomic({
+          event,
+          session: event.data.object
         });
-
-        if (result && result.duplicate) {
-          return res.json({ received: true, duplicate: true });
-        }
         break;
       }
       case 'customer.subscription.created':
       case 'customer.subscription.updated': {
-        const sub = event.data.object;
-        let org = db.getOrganizationByStripeCustomerId(sub.customer);
-        if (!org && sub.metadata?.organizationId) {
-          org = db.getOrganizationById(sub.metadata.organizationId);
-        }
-        if (!org && sub.id) {
-          const allOrgs = db.getOrganizations ? db.getOrganizations() : (db.read().organizations || []);
-          org = allOrgs.find(o => o.subscription?.stripeSubscriptionId === sub.id);
-        }
-        const plan = sub.metadata?.requestedPlan || (sub.items?.data[0]?.price?.unit_amount >= 50000 ? 'business' : 'pro');
-
-        const result = await db.applyStripeSubscriptionUpdatedAtomic({
-          eventId: event.id,
-          eventType: event.type,
-          subscriptionId: sub.id,
-          customerId: sub.customer,
-          status: sub.status,
-          plan,
-          organizationId: org?.id,
-          currentPeriodStart: sub.current_period_start ? new Date(sub.current_period_start * 1000).toISOString() : null,
-          currentPeriodEnd: sub.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : null,
-          cancelAtPeriodEnd: Boolean(sub.cancel_at_period_end)
+        result = await db.applyStripeSubscriptionUpdatedAtomic({
+          event,
+          subscription: event.data.object
         });
-
-        if (result && result.duplicate) {
-          return res.json({ received: true, duplicate: true });
-        }
         break;
       }
       case 'customer.subscription.deleted': {
-        const sub = event.data.object;
-        let org = db.getOrganizationByStripeCustomerId(sub.customer);
-        if (!org && sub.metadata?.organizationId) {
-          org = db.getOrganizationById(sub.metadata.organizationId);
-        }
-        const result = await db.applyStripeSubscriptionCancelledAtomic({
-          eventId: event.id,
-          eventType: event.type,
-          subscriptionId: sub.id,
-          customerId: sub.customer,
-          organizationId: org?.id
+        result = await db.applyStripeSubscriptionCancelledAtomic({
+          event,
+          subscription: event.data.object
         });
-        if (result && result.duplicate) {
-          return res.json({ received: true, duplicate: true });
-        }
-        break;
-      }
-      case 'invoice.paid': {
-        const invoice = event.data.object;
-        const org = db.getOrganizationByStripeCustomerId(invoice.customer);
-        if (org) {
-          await db.logBillingEvent({
-            organizationId: org.id,
-            plan: org.subscription?.plan || 'pro',
-            type: 'invoice_paid',
-            stripeCustomerId: invoice.customer,
-            stripeSubscriptionId: invoice.subscription,
-            amount: invoice.amount_paid ? invoice.amount_paid / 100 : 299,
-            currency: invoice.currency?.toUpperCase() || 'USD',
-            status: 'paid'
-          });
-        }
-        await db.logStripeEvent(event, 'PROCESSED');
         break;
       }
       case 'invoice.payment_failed': {
-        const invoice = event.data.object;
-        let org = db.getOrganizationByStripeCustomerId(invoice.customer);
-        const result = await db.applyStripePaymentFailedAtomic({
-          eventId: event.id,
-          eventType: event.type,
-          invoiceId: invoice.id,
-          customerId: invoice.customer,
-          subscriptionId: invoice.subscription,
-          organizationId: org?.id
+        result = await db.applyStripePaymentFailedAtomic({
+          event,
+          invoice: event.data.object
         });
-        if (result && result.duplicate) {
-          return res.json({ received: true, duplicate: true });
-        }
+        break;
+      }
+      case 'invoice.paid': {
+        result = await db.applyStripeInvoicePaidAtomic({
+          event,
+          invoice: event.data.object
+        });
         break;
       }
       default:
         await db.logStripeEvent(event, 'PROCESSED');
-        break;
+        return res.json({ received: true });
     }
-    // Mark as PROCESSED only after atomic business state mutation completes
-    await db.logStripeEvent(event, 'PROCESSED');
+
+    if (!result) {
+      return res.json({ received: true });
+    }
+
+    if (result.duplicate) {
+      return res.json({ received: true, duplicate: true });
+    }
+
+    if (result.inFlight) {
+      return res.status(409).set('Retry-After', '5').json({
+        error: 'STRIPE_EVENT_IN_FLIGHT',
+        message: 'Event is currently being processed by another worker; retry requested.',
+        retryable: true
+      });
+    }
+
+    if (!result.success) {
+      return res.status(400).json({
+        error: result.code || 'STRIPE_WEBHOOK_VALIDATION_FAILED',
+        message: result.message || 'Validation failed for event.',
+        retryable: false
+      });
+    }
+
     return res.json({ received: true });
   } catch (procErr) {
     console.error('[STRIPE_WEBHOOK_PROCESSING_FAILED]', procErr);
-    // Mark as FAILED so Stripe will retry
-    await db.logStripeEvent(event, 'FAILED');
     return res.status(500).json({
       error: 'STRIPE_WEBHOOK_PROCESSING_FAILED',
-      message: procErr.message,
+      message: 'Internal error processing webhook event',
       retryable: true
     });
   }
