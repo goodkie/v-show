@@ -10510,8 +10510,8 @@ return event;
 
       if (apiTok) {
         const now = Date.now();
-        // 1. Revocation & Active check
-        if (apiTok.status === 'revoked' || apiTok.status === 'inactive' || apiTok.revokedAt) {
+        // 1. Explicit Active Status Check (fail-closed if missing, revoked, inactive, or revokedAt set)
+        if (!apiTok.status || apiTok.status !== 'active' || apiTok.revokedAt) {
           return false;
         }
 
@@ -10525,25 +10525,32 @@ return event;
           return false;
         }
 
-        // 4. Role check: must be an authorized edit role (organizer, admin, editor)
+        // 4. Explicit Authorized Role Check (fail-closed if role is missing, empty, or unapproved)
         const allowedRoles = ['organizer', 'admin', 'editor'];
         const role = (apiTok.role || '').toLowerCase();
-        if (role && !allowedRoles.includes(role)) {
+        if (!role || !allowedRoles.includes(role)) {
           return false;
         }
 
-        // 5. Scope check (least privilege)
-        if (Array.isArray(apiTok.scopes) && apiTok.scopes.length > 0) {
-          const writeScopes = ['projects:write', 'booths:write', 'admin', '*'];
-          const hasWriteScope = apiTok.scopes.some(s => writeScopes.includes(s));
-          if (!hasWriteScope) return false;
+        // 5. Explicit Write Scope Check (fail-closed if scopes missing, empty, or lacks write capability)
+        if (!Array.isArray(apiTok.scopes) || apiTok.scopes.length === 0) {
+          return false;
+        }
+        const writeScopes = ['projects:write', 'booths:write', 'admin', '*'];
+        const hasWriteScope = apiTok.scopes.some(s => writeScopes.includes(s));
+        if (!hasWriteScope) {
+          return false;
         }
 
-        // 6. Project-specific binding (if token is scoped to specific projects)
+        // 6. Explicit Project Scoping Check
         if (apiTok.projectId && apiTok.projectId !== project.id) {
           return false;
         }
         if (Array.isArray(apiTok.projectIds) && !apiTok.projectIds.includes(project.id)) {
+          return false;
+        }
+        const isOrgWideAuthorized = apiTok.isOrgWide === true || apiTok.scopes.includes('*') || apiTok.scopes.includes('admin') || role === 'organizer' || role === 'admin';
+        if (!apiTok.projectId && !apiTok.projectIds && !isOrgWideAuthorized) {
           return false;
         }
 
@@ -11719,25 +11726,46 @@ return event;
       const org = (db.organizations || []).find(o => o.id === project.organizationId);
       const sub = org?.subscription;
       const now = Date.now();
-      const isSubscriptionActive = Boolean(
-        sub &&
-        sub.status === 'active' &&
-        (sub.plan === 'pro' || sub.plan === 'business') &&
-        (!sub.currentPeriodEnd || now <= new Date(sub.currentPeriodEnd).getTime())
-      );
 
-      // Check explicit pilot (strictly authenticated non-billed evaluation)
+      // Check explicit time-bounded pilot grant (strictly authenticated with expiry)
       const isExplicitPilot = Boolean(
-        (project.isPilot === true) || 
-        (account && (account.isPilot === true || account.billingState === 'PILOT_NOT_BILLED'))
+        (project.isPilot === true && project.pilotExpiresAt && now <= new Date(project.pilotExpiresAt).getTime()) ||
+        (account && account.isPilot === true && account.pilotExpiresAt && now <= new Date(account.pilotExpiresAt).getTime())
       );
 
       let effectiveEntitlement = 'FREE_BOOTH';
-      if (isSubscriptionActive) {
-        effectiveEntitlement = sub.plan === 'business' ? 'BUSINESS' : 'PRO';
+
+      if (sub) {
+        // If an organization subscription exists, it is the STRICT authoritative source of truth.
+        // Canceled, past-due, expired, or non-commercial subscriptions NEVER fall back to stale account plan codes.
+        const hasValidPeriod = Boolean(
+          sub.currentPeriodEnd &&
+          !isNaN(new Date(sub.currentPeriodEnd).getTime()) &&
+          now <= new Date(sub.currentPeriodEnd).getTime()
+        );
+        const isSubscriptionActive = Boolean(
+          sub.status === 'active' &&
+          (sub.plan === 'pro' || sub.plan === 'business') &&
+          hasValidPeriod
+        );
+
+        if (isSubscriptionActive) {
+          effectiveEntitlement = sub.plan === 'business' ? 'BUSINESS' : 'PRO';
+        } else if (isExplicitPilot) {
+          effectiveEntitlement = 'BUSINESS';
+        } else {
+          // Strictly fail-closed: subscription exists but is not active/valid -> DENY
+          const err = new Error('Active PRO or BUSINESS subscription required to publish commercial booths.');
+          err.status = 403;
+          err.code = 'ENTITLEMENT_UPGRADE_REQUIRED';
+          err.requiredPlan = 'PRO';
+          err.currentStatus = sub.status || 'expired_or_invalid_period';
+          throw err;
+        }
       } else if (isExplicitPilot) {
-        effectiveEntitlement = account.entitlement || 'BUSINESS';
-      } else if (account.status === 'active' && account.planCode && account.planCode !== 'FREE_BOOTH' && account.planCode !== 'FREE') {
+        effectiveEntitlement = 'BUSINESS';
+      } else if (account && account.status === 'active' && ['PRO', 'BUSINESS'].includes(account.planCode) && (!account.planExpiresAt || now <= new Date(account.planExpiresAt).getTime())) {
+        // Legacy direct account without organization subscription
         effectiveEntitlement = account.planCode;
       }
 
