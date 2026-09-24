@@ -775,17 +775,24 @@ async function main() {
     // ── TEST 15: INVOICE PAYMENT FAILED -> PAST_DUE ─────────────────────────
     console.log('\n[TEST 15] Verifying invoice.payment_failed transitions org to past_due...');
     const failedInvId = `in_failed_${Date.now()}`;
+    const nowSec15 = Math.floor(Date.now() / 1000);
     authoritativeSubscriptionStore.set(subId1, {
       id: subId1,
       customer: customerId1,
-      status: 'past_due'
+      status: 'past_due',
+      latest_invoice: failedInvId,
+      current_period_start: nowSec15 - 3600,
+      current_period_end: nowSec15 + (30 * 86400)
     });
     authoritativeInvoiceStore.set(failedInvId, {
       id: failedInvId,
       customer: customerId1,
       subscription: subId1,
       status: 'open',
-      paid: false
+      paid: false,
+      currency: 'usd',
+      period_start: nowSec15 - 3600,
+      period_end: nowSec15 + (30 * 86400)
     });
     const eventPayFailed = {
       id: `evt_pay_failed_${Date.now()}`,
@@ -813,10 +820,14 @@ async function main() {
     // ── TEST 16: INVOICE PAID -> RESTORES ACTIVE ────────────────────────────
     console.log('\n[TEST 16] Verifying invoice.paid restores org to active...');
     const paidInvId = `in_paid_${Date.now()}`;
+    const nowSec16 = Math.floor(Date.now() / 1000);
     authoritativeSubscriptionStore.set(subId1, {
       id: subId1,
       customer: customerId1,
-      status: 'active'
+      status: 'active',
+      latest_invoice: paidInvId,
+      current_period_start: nowSec16,
+      current_period_end: nowSec16 + (30 * 86400)
     });
     authoritativeInvoiceStore.set(paidInvId, {
       id: paidInvId,
@@ -825,7 +836,9 @@ async function main() {
       status: 'paid',
       paid: true,
       amount_paid: 29900,
-      currency: 'usd'
+      currency: 'usd',
+      period_start: nowSec16,
+      period_end: nowSec16 + (30 * 86400)
     });
     const eventPayPaid = {
       id: `evt_pay_paid_${Date.now()}`,
@@ -1777,18 +1790,25 @@ async function main() {
         }
       });
     });
+    const nowSec35 = Math.floor(Date.now() / 1000);
     authoritativeInvoiceStore.set(invId35, {
       id: invId35,
       customer: cusId35,
       subscription: subId35,
       status: 'paid',
       paid: true,
-      amount_paid: 29900
+      amount_paid: 29900,
+      currency: 'usd',
+      period_start: nowSec35,
+      period_end: nowSec35 + (30 * 86400)
     });
     authoritativeSubscriptionStore.set(subId35, {
       id: subId35,
       customer: cusId35,
-      status: 'active'
+      status: 'active',
+      latest_invoice: invId35,
+      current_period_start: nowSec35,
+      current_period_end: nowSec35 + (30 * 86400)
     });
     const invEvent35 = {
       id: `evt_inv_paid_${Date.now()}`,
@@ -2530,19 +2550,24 @@ async function main() {
 
     // 55A: Payment failed with nested-only subscription_details.subscription
     const nestedFailInvId = `in_nested_fail_${Date.now()}`;
+    const nowSec55 = Math.floor(Date.now() / 1000);
     authoritativeSubscriptionStore.set(nestedSubId, {
       id: nestedSubId,
       customer: nestedCusId,
       status: 'past_due',
-      current_period_start: Math.floor(Date.now() / 1000) - 3600,
-      current_period_end: Math.floor(Date.now() / 1000) + 86400
+      latest_invoice: nestedFailInvId,
+      current_period_start: nowSec55 - 3600,
+      current_period_end: nowSec55 + (30 * 86400)
     });
     authoritativeInvoiceStore.set(nestedFailInvId, {
       id: nestedFailInvId,
       customer: nestedCusId,
       subscription_details: { subscription: nestedSubId }, // NO direct .subscription field!
       status: 'open',
-      paid: false
+      paid: false,
+      currency: 'usd',
+      period_start: nowSec55 - 3600,
+      period_end: nowSec55 + (30 * 86400)
     });
 
     const eventNestedFail = {
@@ -2793,9 +2818,285 @@ async function main() {
     assert.strictEqual(res58C.status, 400, 'Customer mismatch must return HTTP 400');
     assert.strictEqual(res58C.data.error, 'STRIPE_CUSTOMER_MISMATCH');
     assert.strictEqual(db.getOrganizationById(ambigOrgId).subscription.status, 'active', 'Tenant must NOT be demoted on customer mismatch');
-    console.log('  PASS: Ambiguous provider payment failure states defer cleanly with HTTP 502 retryable and ZERO tenant demotion.');
+    // ── TEST 59: MALFORMED JOURNAL & CORRUPTED DB FAIL-CLOSED ──────────────
+    console.log('\n[TEST 59] Verifying Malformed Journal & DB Fail-Closed (Zero Silent Discard)...');
+    const journalFile59 = path.join(disposableDir, 'grant_audit_commit_journal.json');
+    fs.writeFileSync(journalFile59, '{ malformed json: true, targetAnchor:');
+    let journalThrew = false;
+    try {
+      db.reconcileGrantAuditAnchorUnderLock();
+    } catch (err) {
+      journalThrew = true;
+      assert.match(err.message, /GRANT_AUDIT_RECOVERY_FAILED/, 'Must fail closed on malformed journal');
+    }
+    assert.strictEqual(journalThrew, true, 'reconcileGrantAuditAnchorUnderLock must fail closed on malformed journal');
 
-    console.log('\n=== ALL 58 REAL-SERVER SIGNED STRIPE TEST-MODE ROUTE E2E TESTS PASSED ===');
+    // Verify corrupted journal was quarantined, not silently lost
+    const quarantinedFiles = fs.readdirSync(disposableDir).filter(f => f.startsWith('grant_audit_commit_journal.json.corrupt_'));
+    assert.strictEqual(quarantinedFiles.length >= 1, true, 'Malformed journal must be quarantined to .corrupt_ file');
+
+    // Clean up test corrupted files
+    fs.unlinkSync(journalFile59);
+    for (const qf of quarantinedFiles) {
+      fs.unlinkSync(path.join(disposableDir, qf));
+    }
+
+    // Verify DB parse error fail-closed in init()
+    const realDbPath = path.join(disposableDir, 'db.json');
+    const realDbBackup = fs.readFileSync(realDbPath, 'utf8');
+    fs.writeFileSync(realDbPath, '{ invalid db json ');
+    let dbInitThrew = false;
+    try {
+      db.init();
+    } catch (err) {
+      dbInitThrew = true;
+      assert.match(err.message, /DB_CORRUPTED/, 'Corrupted db.json must fail closed');
+    } finally {
+      fs.writeFileSync(realDbPath, realDbBackup, 'utf8');
+      db.init();
+    }
+    assert.strictEqual(dbInitThrew, true, 'init() must refuse to overwrite corrupted db.json with seed fallback');
+    console.log('  PASS: Malformed journal and corrupted db.json fail closed and preserve originals for recovery.');
+
+    // ── TEST 60: AUTHENTICATED OWNER RECEIPT PROVENANCE ─────────────────────
+    console.log('\n[TEST 60] Verifying Authenticated Owner Identity & Receipts in Admin Grants...');
+    // Create pilot grant with authenticated platform owner session
+    const res60 = await new Promise((resolve, reject) => {
+      const req = http.request({
+        hostname: '127.0.0.1', port: serverPort, path: '/api/admin/pilot-grants', method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${ownerToken}` }
+      }, (res) => {
+        let d = ''; res.on('data', c => d += c);
+        res.on('end', () => resolve({ status: res.statusCode, data: JSON.parse(d) }));
+      });
+      req.on('error', reject);
+      req.write(JSON.stringify({
+        organizationId: testOrgId,
+        projectId: testProjectId,
+        pilotExpiresAt: new Date(Date.now() + 30 * 86400000).toISOString(),
+        notes: 'R63 Authenticated Receipt Test'
+      }));
+      req.end();
+    });
+    assert.strictEqual(res60.status, 201, `Admin grant must succeed: ${JSON.stringify(res60.data)}`);
+    assert.strictEqual(typeof res60.data.grant.approvalReceipt, 'object', 'Grant must contain approvalReceipt');
+    assert.strictEqual(typeof res60.data.grant.approvalReceipt.receiptId, 'string');
+    assert.strictEqual(res60.data.grant.approvalReceipt.authenticatedOwner, 'user_owner_root', 'Receipt owner must match authenticated principal email or ID');
+    assert.notStrictEqual(res60.data.grant.approvalReceipt.authenticatedOwner, 'platform_owner', 'Receipt owner must not be synthesized fallback');
+
+    // Revoke and check revocation receipt
+    const res60Rev = await new Promise((resolve, reject) => {
+      const req = http.request({
+        hostname: '127.0.0.1', port: serverPort, path: `/api/admin/pilot-grants/${res60.data.grant.grantId}`, method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${ownerToken}` }
+      }, (res) => {
+        let d = ''; res.on('data', c => d += c);
+        res.on('end', () => resolve({ status: res.statusCode, data: JSON.parse(d) }));
+      });
+      req.on('error', reject);
+      req.end();
+    });
+    assert.strictEqual(res60Rev.status, 200);
+    assert.strictEqual(res60Rev.data.grant.revocationReceipt.authenticatedOwner, 'user_owner_root');
+    console.log('  PASS: Authenticated owner identity and audit receipts strictly enforced.');
+
+    // ── TEST 61: NON-ACTIVE DELINQUENT STATUS INCOMPLETE EVIDENCE FAILS CLOSED
+    console.log('\n[TEST 61] Verifying Non-Active Delinquent Statuses Missing Evidence Defer With 502...');
+    const delinqOrgId = `org_delinq_${Date.now()}`;
+    const delinqPrjId = `prj_delinq_${Date.now()}`;
+    const delinqSubId = `sub_delinq_${Date.now()}`;
+    const delinqCusId = `cus_delinq_${Date.now()}`;
+    const delinqInvId = `in_delinq_${Date.now()}`;
+    const nowSec61 = Math.floor(Date.now() / 1000);
+
+    await db.mutate(d => {
+      d.organizations.push({
+        id: delinqOrgId,
+        name: 'Delinquent Evidence Test Org',
+        subscription: {
+          plan: 'pro',
+          status: 'active',
+          stripeCustomerId: delinqCusId,
+          stripeSubscriptionId: delinqSubId,
+          currentPeriodStart: new Date(Date.now() - 86400000).toISOString(),
+          currentPeriodEnd: new Date(Date.now() + 29 * 86400000).toISOString()
+        }
+      });
+      d.projects.push({
+        id: delinqPrjId,
+        organizationId: delinqOrgId,
+        commercialState: 'ACTIVE_PRO',
+        title: 'Delinquent Evidence Test Project'
+      });
+    });
+
+    // 61A: Sub status 'past_due' but missing current_period_start/end
+    authoritativeSubscriptionStore.set(delinqSubId, {
+      id: delinqSubId,
+      customer: delinqCusId,
+      status: 'past_due',
+      latest_invoice: delinqInvId
+      // missing current_period_start and current_period_end!
+    });
+    authoritativeInvoiceStore.set(delinqInvId, {
+      id: delinqInvId,
+      customer: delinqCusId,
+      subscription: delinqSubId,
+      status: 'open',
+      paid: false,
+      period_start: nowSec61 - 86400,
+      period_end: nowSec61 + 29 * 86400
+    });
+    const res61A = await postWebhook({
+      id: `evt_delinq_61a_${Date.now()}`,
+      object: 'event',
+      type: 'invoice.payment_failed',
+      data: { object: { id: delinqInvId, customer: delinqCusId, subscription: delinqSubId } }
+    });
+    assert.strictEqual(res61A.status, 502, 'Non-active subscription missing period must return HTTP 502 retryable');
+    assert.strictEqual(res61A.data.error, 'STRIPE_SUBSCRIPTION_PERIOD_AMBIGUOUS');
+    assert.strictEqual(db.getOrganizationById(delinqOrgId).subscription.status, 'active', 'Tenant must NOT be demoted');
+
+    // 61B: Sub status 'past_due' with period, but missing latest_invoice
+    authoritativeSubscriptionStore.set(delinqSubId, {
+      id: delinqSubId,
+      customer: delinqCusId,
+      status: 'past_due',
+      current_period_start: nowSec61 - 86400,
+      current_period_end: nowSec61 + 29 * 86400
+      // missing latest_invoice!
+    });
+    const res61B = await postWebhook({
+      id: `evt_delinq_61b_${Date.now()}`,
+      object: 'event',
+      type: 'invoice.payment_failed',
+      data: { object: { id: delinqInvId, customer: delinqCusId, subscription: delinqSubId } }
+    });
+    assert.strictEqual(res61B.status, 502, 'Non-active subscription missing latest_invoice must return HTTP 502 retryable');
+    assert.strictEqual(res61B.data.error, 'STRIPE_SUBSCRIPTION_LATEST_INVOICE_MISSING');
+    assert.strictEqual(db.getOrganizationById(delinqOrgId).subscription.status, 'active', 'Tenant must NOT be demoted');
+
+    // 61C: Sub has latest_invoice & period, but invoice missing period_start/end
+    authoritativeSubscriptionStore.set(delinqSubId, {
+      id: delinqSubId,
+      customer: delinqCusId,
+      status: 'past_due',
+      latest_invoice: delinqInvId,
+      current_period_start: nowSec61 - 86400,
+      current_period_end: nowSec61 + 29 * 86400
+    });
+    authoritativeInvoiceStore.set(delinqInvId, {
+      id: delinqInvId,
+      customer: delinqCusId,
+      subscription: delinqSubId,
+      status: 'open',
+      paid: false
+      // missing period_start and period_end!
+    });
+    const res61C = await postWebhook({
+      id: `evt_delinq_61c_${Date.now()}`,
+      object: 'event',
+      type: 'invoice.payment_failed',
+      data: { object: { id: delinqInvId, customer: delinqCusId, subscription: delinqSubId } }
+    });
+    assert.strictEqual(res61C.status, 502, 'Invoice missing period timestamps must return HTTP 502 retryable');
+    assert.strictEqual(res61C.data.error, 'STRIPE_INVOICE_PERIOD_MISSING');
+    assert.strictEqual(db.getOrganizationById(delinqOrgId).subscription.status, 'active', 'Tenant must NOT be demoted');
+    console.log('  PASS: Delinquent status missing period or latest_invoice defers cleanly with HTTP 502 and ZERO demotion.');
+
+    // ── TEST 62: INVOICE.PAID COMMERCIAL SNAPSHOT REJECTIONS ────────────────
+    console.log('\n[TEST 62] Verifying invoice.paid Rejects Currency, Price, and Refund Discrepancies...');
+    const snapOrgId = `org_snap_${Date.now()}`;
+    const snapSubId = `sub_snap_${Date.now()}`;
+    const snapCusId = `cus_snap_${Date.now()}`;
+    const snapInvId = `in_snap_${Date.now()}`;
+    const nowSec62 = Math.floor(Date.now() / 1000);
+
+    await db.mutate(d => {
+      d.organizations.push({
+        id: snapOrgId,
+        name: 'Snapshot Test Org',
+        subscription: {
+          plan: 'pro',
+          status: 'past_due',
+          stripeCustomerId: snapCusId,
+          stripeSubscriptionId: snapSubId
+        }
+      });
+    });
+
+    authoritativeSubscriptionStore.set(snapSubId, {
+      id: snapSubId,
+      customer: snapCusId,
+      status: 'active',
+      latest_invoice: snapInvId,
+      current_period_start: nowSec62,
+      current_period_end: nowSec62 + 30 * 86400
+    });
+
+    // 62A: Non-USD currency rejection
+    authoritativeInvoiceStore.set(snapInvId, {
+      id: snapInvId,
+      customer: snapCusId,
+      subscription: snapSubId,
+      status: 'paid',
+      paid: true,
+      amount_paid: 29900,
+      currency: 'eur' // NOT USD!
+    });
+    const res62A = await postWebhook({
+      id: `evt_snap_62a_${Date.now()}`,
+      object: 'event',
+      type: 'invoice.paid',
+      data: { object: { id: snapInvId, customer: snapCusId, subscription: snapSubId, amount_paid: 29900, currency: 'eur' } }
+    });
+    assert.strictEqual(res62A.status, 400);
+    assert.strictEqual(res62A.data.error, 'STRIPE_CURRENCY_MISMATCH');
+    assert.strictEqual(db.getOrganizationById(snapOrgId).subscription.status, 'past_due', 'Tenant must NOT be restored to active');
+
+    // 62B: Unapproved catalog amount rejection
+    authoritativeInvoiceStore.set(snapInvId, {
+      id: snapInvId,
+      customer: snapCusId,
+      subscription: snapSubId,
+      status: 'paid',
+      paid: true,
+      amount_paid: 15000, // $150.00 not in approved catalog!
+      currency: 'usd'
+    });
+    const res62B = await postWebhook({
+      id: `evt_snap_62b_${Date.now()}`,
+      object: 'event',
+      type: 'invoice.paid',
+      data: { object: { id: snapInvId, customer: snapCusId, subscription: snapSubId, amount_paid: 15000, currency: 'usd' } }
+    });
+    assert.strictEqual(res62B.status, 400);
+    assert.strictEqual(res62B.data.error, 'STRIPE_UNAPPROVED_CATALOG_AMOUNT');
+    assert.strictEqual(db.getOrganizationById(snapOrgId).subscription.status, 'past_due', 'Tenant must NOT be restored to active');
+
+    // 62C: Fully refunded invoice rejection
+    authoritativeInvoiceStore.set(snapInvId, {
+      id: snapInvId,
+      customer: snapCusId,
+      subscription: snapSubId,
+      status: 'paid',
+      paid: true,
+      amount_paid: 29900,
+      amount_refunded: 29900, // fully refunded!
+      currency: 'usd'
+    });
+    const res62C = await postWebhook({
+      id: `evt_snap_62c_${Date.now()}`,
+      object: 'event',
+      type: 'invoice.paid',
+      data: { object: { id: snapInvId, customer: snapCusId, subscription: snapSubId, amount_paid: 29900, currency: 'usd' } }
+    });
+    assert.strictEqual(res62C.status, 400);
+    assert.strictEqual(res62C.data.error, 'STRIPE_INVOICE_REFUNDED');
+    assert.strictEqual(db.getOrganizationById(snapOrgId).subscription.status, 'past_due', 'Tenant must NOT be restored to active');
+    console.log('  PASS: invoice.paid rejects currency, price, and refund discrepancies with zero entitlement mutation.');
+
+    console.log('\n=== ALL 62 REAL-SERVER SIGNED STRIPE TEST-MODE ROUTE E2E TESTS PASSED ===');
 
 
   } finally {

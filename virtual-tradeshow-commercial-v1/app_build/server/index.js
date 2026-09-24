@@ -1260,27 +1260,48 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
             });
           }
 
-          // Require clear billing period before demotion if subscription is active
-          if (authSub.status === 'active') {
-            if (!authSub.current_period_start || typeof authSub.current_period_start !== 'number' || !authSub.current_period_end || typeof authSub.current_period_end !== 'number') {
-              return res.status(502).json({
-                error: 'STRIPE_SUBSCRIPTION_PERIOD_AMBIGUOUS',
-                message: 'Active subscription lacks clear billing period timestamps; demotion deferred fail-closed.',
-                retryable: true
-              });
-            }
-            const isOlderPeriod = Boolean(authInv.period_end && (authInv.period_end <= authSub.current_period_start));
-            const isSupersededInvoice = Boolean(authSub.latest_invoice && authSub.latest_invoice !== authInv.id);
-            if (isOlderPeriod || isSupersededInvoice) {
-              console.log(`[STRIPE_RECONCILIATION] Stale payment_failed event ignored: subscription ${authSub.id} is currently active in period ${authSub.current_period_start}; invoice period_end is ${authInv.period_end}.`);
-              return res.status(200).json({
-                received: true,
-                status: 'NOOP_STALE_PAYMENT_FAILURE',
-                reason: isOlderPeriod ? 'SUPERSEDED_BY_ACTIVE_PERIOD' : 'SUPERSEDED_BY_LATEST_INVOICE',
-                message: 'Failed invoice is for an older billing cycle superseded by active subscription; zero entitlement mutation.'
-              });
-            }
-          } else if (authSub.latest_invoice && authSub.latest_invoice !== authInv.id) {
+          // Complete Delinquent Cycle Evidence Verification across ALL statuses:
+          // Require non-empty valid current period timestamps before any demotion
+          if (!authSub.current_period_start || typeof authSub.current_period_start !== 'number' || !authSub.current_period_end || typeof authSub.current_period_end !== 'number') {
+            return res.status(502).json({
+              error: 'STRIPE_SUBSCRIPTION_PERIOD_AMBIGUOUS',
+              message: 'Authoritative subscription lacks clear billing period timestamps; demotion deferred fail-closed.',
+              retryable: true
+            });
+          }
+
+          // Require non-empty latest_invoice on provider subscription
+          if (!authSub.latest_invoice || typeof authSub.latest_invoice !== 'string') {
+            return res.status(502).json({
+              error: 'STRIPE_SUBSCRIPTION_LATEST_INVOICE_MISSING',
+              message: 'Authoritative subscription lacks latest_invoice reference; demotion deferred fail-closed.',
+              retryable: true
+            });
+          }
+
+          // Require bounded invoice billing period
+          if (!authInv.period_start || typeof authInv.period_start !== 'number' || !authInv.period_end || typeof authInv.period_end !== 'number') {
+            return res.status(502).json({
+              error: 'STRIPE_INVOICE_PERIOD_MISSING',
+              message: 'Authoritative invoice lacks clear billing period timestamps; demotion deferred fail-closed.',
+              retryable: true
+            });
+          }
+
+          // If failed invoice is for an older billing cycle prior to current period, do NOT demote!
+          const isOlderPeriod = Boolean(authInv.period_end <= authSub.current_period_start);
+          if (isOlderPeriod) {
+            console.log(`[STRIPE_RECONCILIATION] Stale payment_failed event ignored: subscription ${authSub.id} has current_period_start ${authSub.current_period_start}; invoice period_end is ${authInv.period_end}.`);
+            return res.status(200).json({
+              received: true,
+              status: 'NOOP_STALE_PAYMENT_FAILURE',
+              reason: 'SUPERSEDED_BY_ACTIVE_PERIOD',
+              message: 'Failed invoice is for an older billing cycle superseded by current period; zero entitlement mutation.'
+            });
+          }
+
+          // Superseded check: if failed invoice is superseded by a newer latest_invoice on provider, do NOT demote!
+          if (authSub.latest_invoice !== authInv.id) {
             return res.status(200).json({
               received: true,
               status: 'NOOP_STALE_PAYMENT_FAILURE',
@@ -1391,18 +1412,35 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
             });
           }
 
-          // Currency validation
-          if (authInv.currency && authInv.currency.toLowerCase() !== 'usd') {
+          // Currency validation: Mandatory USD
+          if (!authInv.currency || authInv.currency.toLowerCase() !== 'usd') {
             return res.status(400).json({
               error: 'STRIPE_CURRENCY_MISMATCH',
-              message: `Unapproved currency '${authInv.currency}'. Only USD is permitted.`,
+              message: `Unapproved currency '${authInv.currency || 'missing'}'. Only USD is permitted.`,
               retryable: false
             });
           }
-          if (invObj.currency && authInv.currency && invObj.currency.toLowerCase() !== authInv.currency.toLowerCase()) {
+          if (invObj.currency && invObj.currency.toLowerCase() !== authInv.currency.toLowerCase()) {
             return res.status(400).json({
               error: 'STRIPE_CURRENCY_MISMATCH',
               message: 'Event currency differs from authoritative invoice currency.',
+              retryable: false
+            });
+          }
+
+          // Amount validation: Mandatory positive number matching approved catalog
+          if (typeof authInv.amount_paid !== 'number' || authInv.amount_paid <= 0) {
+            return res.status(400).json({
+              error: 'STRIPE_INVALID_AMOUNT',
+              message: 'Authoritative invoice amount_paid must be a positive integer.',
+              retryable: false
+            });
+          }
+          const APPROVED_AMOUNTS = [29900, 79900];
+          if (!APPROVED_AMOUNTS.includes(authInv.amount_paid)) {
+            return res.status(400).json({
+              error: 'STRIPE_UNAPPROVED_CATALOG_AMOUNT',
+              message: `Authoritative invoice amount_paid '${authInv.amount_paid}' does not match an approved catalog tier ($299 or $799).`,
               retryable: false
             });
           }
@@ -1451,14 +1489,6 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
             });
           }
 
-          if (typeof authInv.amount_paid === 'number' && authInv.amount_paid < 0) {
-            return res.status(400).json({
-              error: 'STRIPE_INVALID_AMOUNT',
-              message: 'Authoritative invoice amount_paid cannot be negative.',
-              retryable: false
-            });
-          }
-
           // If subscription is canceled, a delayed older paid invoice MUST NOT reinstate the canceled subscription!
           if (authSub.status === 'canceled') {
             console.log(`[STRIPE_RECONCILIATION] Delayed invoice.paid event ignored: subscription ${authSub.id} is canceled.`);
@@ -1470,14 +1500,30 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
             });
           }
 
-          // If subscription is active on a newer period and this invoice is for an older period, do not mutate period
-          if (authSub.status === 'active' && authInv.period_end && authSub.current_period_start && (authInv.period_end < authSub.current_period_start)) {
-            console.log(`[STRIPE_RECONCILIATION] Delayed invoice.paid for older period ${authInv.period_end} superseded by current period ${authSub.current_period_start}.`);
-            return res.status(200).json({
-              received: true,
-              status: 'NOOP_STALE_PAID_INVOICE',
-              reason: 'SUPERSEDED_BY_CURRENT_PERIOD',
-              message: 'Paid invoice is for an older period superseded by current subscription period.'
+          // Mandatory billing period timestamps on subscription
+          if (!authSub.current_period_start || typeof authSub.current_period_start !== 'number' || !authSub.current_period_end || typeof authSub.current_period_end !== 'number') {
+            return res.status(502).json({
+              error: 'STRIPE_SUBSCRIPTION_PERIOD_AMBIGUOUS',
+              message: 'Authoritative subscription lacks clear billing period timestamps; entitlement application deferred.',
+              retryable: true
+            });
+          }
+
+          // Latest invoice verification
+          if (authSub.latest_invoice && authSub.latest_invoice !== authInv.id) {
+            if (authSub.status === 'active' && authInv.period_end && authSub.current_period_start && (authInv.period_end < authSub.current_period_start)) {
+              console.log(`[STRIPE_RECONCILIATION] Delayed invoice.paid for older period ${authInv.period_end} superseded by current period ${authSub.current_period_start}.`);
+              return res.status(200).json({
+                received: true,
+                status: 'NOOP_STALE_PAID_INVOICE',
+                reason: 'SUPERSEDED_BY_CURRENT_PERIOD',
+                message: 'Paid invoice is for an older period superseded by current subscription period.'
+              });
+            }
+            return res.status(502).json({
+              error: 'STRIPE_INVOICE_NOT_LATEST',
+              message: 'Paid invoice does not match latest provider subscription invoice; entitlement application deferred.',
+              retryable: true
             });
           }
         } catch (invErr) {
@@ -1597,9 +1643,17 @@ app.post('/api/admin/pilot-grants', requireAuth, requirePlatformOwner, async (re
           ? `account:${accountId}`
           : `org:${organizationId}`;
 
+    const authenticatedOwner = req.user.email || req.user.userId || req.user.id || req.user.username;
+    if (!authenticatedOwner) {
+      return res.status(403).json({
+        error: 'UNAUTHENTICATED_OWNER_PRINCIPAL',
+        message: 'Explicit authenticated owner principal email or ID required for grant issuance.'
+      });
+    }
+
     const approvalReceipt = {
       receiptId: `rcpt_appr_${crypto.randomBytes(8).toString('hex')}`,
-      authenticatedOwner: req.user.username || req.user.email || req.user.userId || 'platform_owner',
+      authenticatedOwner,
       authorizedAt: new Date().toISOString(),
       isOrgWideApproved: Boolean(isOrgWide),
       targetScope,
@@ -1611,9 +1665,9 @@ app.post('/api/admin/pilot-grants', requireAuth, requirePlatformOwner, async (re
       projectId,
       accountId,
       pilotExpiresAt,
-      approvedBy: req.user.username || req.user.userId || 'platform_owner',
+      approvedBy: authenticatedOwner,
       notes,
-      createdBy: req.user.userId || req.user.username || 'platform_owner',
+      createdBy: authenticatedOwner,
       isOrgWide: Boolean(isOrgWide),
       approvalReceipt
     });
@@ -1625,13 +1679,21 @@ app.post('/api/admin/pilot-grants', requireAuth, requirePlatformOwner, async (re
 
 app.delete('/api/admin/pilot-grants/:grantId', requireAuth, requirePlatformOwner, async (req, res) => {
   try {
+    const authenticatedOwner = req.user.email || req.user.userId || req.user.id || req.user.username;
+    if (!authenticatedOwner) {
+      return res.status(403).json({
+        error: 'UNAUTHENTICATED_OWNER_PRINCIPAL',
+        message: 'Explicit authenticated owner principal email or ID required for grant revocation.'
+      });
+    }
+
     const revocationReceipt = {
       receiptId: `rcpt_revk_${crypto.randomBytes(8).toString('hex')}`,
-      authenticatedOwner: req.user.username || req.user.email || req.user.userId || 'platform_owner',
+      authenticatedOwner,
       revokedAt: new Date().toISOString(),
       ipAddress: req.ip || req.connection?.remoteAddress || '127.0.0.1'
     };
-    const grant = await db.revokePilotGrant(req.params.grantId, req.user.username || 'platform_owner', revocationReceipt);
+    const grant = await db.revokePilotGrant(req.params.grantId, authenticatedOwner, revocationReceipt);
     return res.json({ success: true, grant });
   } catch (err) {
     if (err.message === 'GRANT_NOT_FOUND') return res.status(404).json({ error: err.message });
@@ -1661,9 +1723,17 @@ app.post('/api/admin/legacy-grants', requireAuth, requirePlatformOwner, async (r
           ? `account:${accountId}`
           : `org:${organizationId}`;
 
+    const authenticatedOwner = req.user.email || req.user.userId || req.user.id || req.user.username;
+    if (!authenticatedOwner) {
+      return res.status(403).json({
+        error: 'UNAUTHENTICATED_OWNER_PRINCIPAL',
+        message: 'Explicit authenticated owner principal email or ID required for grant issuance.'
+      });
+    }
+
     const approvalReceipt = {
       receiptId: `rcpt_appr_${crypto.randomBytes(8).toString('hex')}`,
-      authenticatedOwner: req.user.username || req.user.email || req.user.userId || 'platform_owner',
+      authenticatedOwner,
       authorizedAt: new Date().toISOString(),
       isOrgWideApproved: Boolean(isOrgWide),
       targetScope,
@@ -1674,9 +1744,9 @@ app.post('/api/admin/legacy-grants', requireAuth, requirePlatformOwner, async (r
       organizationId,
       accountId,
       projectId,
-      approvedBy: req.user.username || req.user.userId || 'platform_owner',
+      approvedBy: authenticatedOwner,
       notes,
-      createdBy: req.user.userId || req.user.username || 'platform_owner',
+      createdBy: authenticatedOwner,
       isOrgWide: Boolean(isOrgWide),
       approvalReceipt
     });
@@ -1688,13 +1758,21 @@ app.post('/api/admin/legacy-grants', requireAuth, requirePlatformOwner, async (r
 
 app.delete('/api/admin/legacy-grants/:grantId', requireAuth, requirePlatformOwner, async (req, res) => {
   try {
+    const authenticatedOwner = req.user.email || req.user.userId || req.user.id || req.user.username;
+    if (!authenticatedOwner) {
+      return res.status(403).json({
+        error: 'UNAUTHENTICATED_OWNER_PRINCIPAL',
+        message: 'Explicit authenticated owner principal email or ID required for grant revocation.'
+      });
+    }
+
     const revocationReceipt = {
       receiptId: `rcpt_revk_${crypto.randomBytes(8).toString('hex')}`,
-      authenticatedOwner: req.user.username || req.user.email || req.user.userId || 'platform_owner',
+      authenticatedOwner,
       revokedAt: new Date().toISOString(),
       ipAddress: req.ip || req.connection?.remoteAddress || '127.0.0.1'
     };
-    const grant = await db.revokeLegacyGrant(req.params.grantId, req.user.username || 'platform_owner', revocationReceipt);
+    const grant = await db.revokeLegacyGrant(req.params.grantId, authenticatedOwner, revocationReceipt);
     return res.json({ success: true, grant });
   } catch (err) {
     if (err.message === 'GRANT_NOT_FOUND') return res.status(404).json({ error: err.message });

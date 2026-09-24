@@ -568,18 +568,22 @@ class JSONDatabase {
       fs.writeFileSync(DB_FILE, JSON.stringify(seedData, null, 2), 'utf-8');
       this.memoryData = seedData;
     } else {
+      let raw;
       try {
-        const raw = fs.readFileSync(DB_FILE, 'utf-8');
-        const parsed = JSON.parse(raw);
-        this.memoryData = this.migrateSchema(parsed);
-        this.ensureControlledProjects(this.memoryData);
-      } catch (err) {
-        console.error('Failed to read db.json, generating fallback state:', err);
-        const fallback = initialSeedData();
-        this.ensureControlledProjects(fallback);
-        fs.writeFileSync(DB_FILE, JSON.stringify(fallback, null, 2), 'utf-8');
-        this.memoryData = fallback;
+        raw = fs.readFileSync(DB_FILE, 'utf-8');
+      } catch (readErr) {
+        throw new Error(`DB_READ_FAILED: Cannot read ${DB_FILE}: ${readErr.message}`);
       }
+      let parsed;
+      try {
+        parsed = JSON.parse(raw);
+      } catch (parseErr) {
+        const corruptBackup = `${DB_FILE}.corrupt_${Date.now()}`;
+        try { fs.copyFileSync(DB_FILE, corruptBackup); } catch (_) {}
+        throw new Error(`DB_CORRUPTED: Failed to parse ${DB_FILE}; backed up to ${corruptBackup}. Refusing fallback overwrite.`);
+      }
+      this.memoryData = this.migrateSchema(parsed);
+      this.ensureControlledProjects(this.memoryData);
     }
 
     // Also persist static clean seed template into seed/db.seed.json
@@ -1871,37 +1875,112 @@ class JSONDatabase {
     if (!fs.existsSync(GRANT_AUDIT_JOURNAL_FILE)) {
       return;
     }
-    try {
-      const rawJournal = fs.readFileSync(GRANT_AUDIT_JOURNAL_FILE, 'utf8');
-      const journal = JSON.parse(rawJournal);
-      if (!journal || !journal.targetAnchor) {
-        if (fs.existsSync(GRANT_AUDIT_JOURNAL_FILE)) {
-          fs.unlinkSync(GRANT_AUDIT_JOURNAL_FILE);
-        }
-        return;
-      }
-      let currentDb;
-      try {
-        currentDb = JSON.parse(fs.readFileSync(DB_FILE, 'utf-8'));
-      } catch (e) {
-        return;
-      }
-      const trail = currentDb.grantAuditTrail || [];
-      const tip = trail.length > 0 ? trail[trail.length - 1] : null;
 
-      if (tip && tip.entryHash === journal.targetAnchor.lastEntryHash) {
-        // Phase 2 (DB commit) succeeded before crash/failure, but Phase 3 (anchor write) was incomplete.
-        // Reconcile root anchor:
-        const tmpPath = GRANT_AUDIT_ROOT_FILE + '.tmp';
-        fs.writeFileSync(tmpPath, JSON.stringify(journal.targetAnchor, null, 2), 'utf-8');
-        fs.renameSync(tmpPath, GRANT_AUDIT_ROOT_FILE);
+    let rawJournal;
+    try {
+      rawJournal = fs.readFileSync(GRANT_AUDIT_JOURNAL_FILE, 'utf8');
+    } catch (readErr) {
+      throw new Error(`GRANT_AUDIT_RECOVERY_FAILED: Cannot read grant audit journal: ${readErr.message}`);
+    }
+
+    let journal;
+    try {
+      journal = JSON.parse(rawJournal);
+    } catch (parseErr) {
+      const corruptJournal = `${GRANT_AUDIT_JOURNAL_FILE}.corrupt_${Date.now()}`;
+      try { fs.copyFileSync(GRANT_AUDIT_JOURNAL_FILE, corruptJournal); } catch (_) {}
+      throw new Error(`GRANT_AUDIT_RECOVERY_FAILED: Malformed JSON in grant audit commit journal (quarantined to ${corruptJournal}); failing closed.`);
+    }
+
+    if (!journal || typeof journal !== 'object' || !journal.targetAnchor || typeof journal.targetAnchor !== 'object') {
+      const corruptJournal = `${GRANT_AUDIT_JOURNAL_FILE}.corrupt_${Date.now()}`;
+      try { fs.copyFileSync(GRANT_AUDIT_JOURNAL_FILE, corruptJournal); } catch (_) {}
+      throw new Error(`GRANT_AUDIT_RECOVERY_FAILED: Journal schema missing valid targetAnchor (quarantined to ${corruptJournal}); failing closed.`);
+    }
+
+    let currentDb;
+    try {
+      currentDb = JSON.parse(fs.readFileSync(DB_FILE, 'utf-8'));
+    } catch (dbErr) {
+      throw new Error(`GRANT_AUDIT_RECOVERY_FAILED: Cannot read db.json during journal reconciliation: ${dbErr.message}`);
+    }
+
+    const trail = currentDb.grantAuditTrail || [];
+
+    // Cryptographic validation of entire existing audit trail chain before reconstruction
+    let prevHash = 'GENESIS';
+    for (let i = 0; i < trail.length; i++) {
+      const entry = trail[i];
+      if (entry.sequence !== i || entry.previousHash !== prevHash) {
+        throw new Error(`GRANT_AUDIT_RECOVERY_FAILED: Audit chain corrupted at index ${i}; refusing journal reconstruction.`);
       }
-      // Clean up journal after reconciliation
+      const { entryHash, ...payload } = entry;
+      const computedHash = crypto.createHash('sha256').update(JSON.stringify(payload)).digest('hex');
+      if (entryHash !== computedHash) {
+        throw new Error(`GRANT_AUDIT_RECOVERY_FAILED: Audit entry hash mismatch at index ${i}; refusing journal reconstruction.`);
+      }
+      prevHash = entryHash;
+    }
+
+    const tip = trail.length > 0 ? trail[trail.length - 1] : null;
+
+    if (tip && tip.entryHash === journal.targetAnchor.lastEntryHash) {
+      // Phase 2 (DB commit) completed successfully before crash.
+      // Validate full consistency with targetAnchor:
+      if (journal.targetAnchor.totalEntries !== trail.length || journal.targetAnchor.lastSequence !== tip.sequence) {
+        const corruptJournal = `${GRANT_AUDIT_JOURNAL_FILE}.corrupt_${Date.now()}`;
+        try { fs.copyFileSync(GRANT_AUDIT_JOURNAL_FILE, corruptJournal); } catch (_) {}
+        throw new Error(`GRANT_AUDIT_RECOVERY_FAILED: Journal targetAnchor metadata inconsistent with DB tip (quarantined to ${corruptJournal}); failing closed.`);
+      }
+
+      // Reconcile root anchor atomically:
+      const tmpPath = GRANT_AUDIT_ROOT_FILE + '.tmp';
+      fs.writeFileSync(tmpPath, JSON.stringify(journal.targetAnchor, null, 2), 'utf-8');
+      fs.renameSync(tmpPath, GRANT_AUDIT_ROOT_FILE);
+
+      // Clean up journal file
       if (fs.existsSync(GRANT_AUDIT_JOURNAL_FILE)) {
         fs.unlinkSync(GRANT_AUDIT_JOURNAL_FILE);
       }
-    } catch (err) {
-      console.error('[GRANT_AUDIT_JOURNAL_RECONCILE_ERROR]', err.message);
+      console.log('[GRANT_AUDIT_JOURNAL_RECOVERY] Successfully reconciled root anchor from commit journal.');
+    } else {
+      // DB does not contain the journal's target anchor tip.
+      // This indicates a crash before Phase 2 (DB was never committed).
+      // Check if DB version indicates the write never took place:
+      if (journal.expectedDbVersion && currentDb._version && currentDb._version < journal.expectedDbVersion) {
+        // Transaction aborted before DB commit. Verify existing root anchor is intact:
+        let existingAnchorValid = false;
+        if (fs.existsSync(GRANT_AUDIT_ROOT_FILE)) {
+          try {
+            const rootAnchor = JSON.parse(fs.readFileSync(GRANT_AUDIT_ROOT_FILE, 'utf-8'));
+            if (!tip && rootAnchor.totalEntries === 0) {
+              existingAnchorValid = true;
+            } else if (tip && rootAnchor.lastEntryHash === tip.entryHash && rootAnchor.totalEntries === trail.length) {
+              existingAnchorValid = true;
+            }
+          } catch (_) {}
+        } else if (!tip) {
+          existingAnchorValid = true;
+        }
+
+        if (existingAnchorValid) {
+          // Pre-commit journal is safe to retire (quarantine to .abandoned_ for forensics, then unlink)
+          const abandonedJournal = `${GRANT_AUDIT_JOURNAL_FILE}.abandoned_${Date.now()}`;
+          try { fs.copyFileSync(GRANT_AUDIT_JOURNAL_FILE, abandonedJournal); } catch (_) {}
+          if (fs.existsSync(GRANT_AUDIT_JOURNAL_FILE)) {
+            fs.unlinkSync(GRANT_AUDIT_JOURNAL_FILE);
+          }
+          console.log('[GRANT_AUDIT_JOURNAL_RECOVERY] Cleaned up abandoned pre-commit journal; existing DB and root anchor are consistent.');
+        } else {
+          const corruptJournal = `${GRANT_AUDIT_JOURNAL_FILE}.corrupt_${Date.now()}`;
+          try { fs.copyFileSync(GRANT_AUDIT_JOURNAL_FILE, corruptJournal); } catch (_) {}
+          throw new Error(`GRANT_AUDIT_RECOVERY_FAILED: Inconsistent state: DB lacks journal tip and root anchor does not match DB tip (quarantined to ${corruptJournal}); failing closed.`);
+        }
+      } else {
+        const corruptJournal = `${GRANT_AUDIT_JOURNAL_FILE}.corrupt_${Date.now()}`;
+        try { fs.copyFileSync(GRANT_AUDIT_JOURNAL_FILE, corruptJournal); } catch (_) {}
+        throw new Error(`GRANT_AUDIT_RECOVERY_FAILED: Journal targetAnchor does not match DB tip and DB version is inconsistent (quarantined to ${corruptJournal}); failing closed.`);
+      }
     }
   }
 
@@ -7217,18 +7296,31 @@ return event;
         }
       }
 
-      // Monotonic Provider-Effective State Reconciliation
-      // If authoritative subscription is active on a newer period, or if the failed invoice
-      // is for a prior completed period, do NOT demote the active organization to past_due!
-      if (params.subscription.status === 'active') {
-        const isOlderPeriod = Boolean(invoice.period_end && params.subscription.current_period_start && (invoice.period_end <= params.subscription.current_period_start));
-        const isSuperseded = Boolean(params.subscription.latest_invoice && params.subscription.latest_invoice !== invoice.id);
-        if (isOlderPeriod || isSuperseded) {
-          eventRecord.status = 'PROCESSED';
-          eventRecord.processedAt = new Date().toISOString();
-          eventRecord.metadata = { ignoredReason: 'SUPERSEDED_BY_ACTIVE_PERIOD', invoiceId: invoice.id, subscriptionId };
-          return { success: true, stale: true, message: 'Event ignored: invoice is for an older period superseded by active subscription.' };
-        }
+      // Complete Authoritative Provider State Requirement across all statuses:
+      if (!params.subscription.current_period_start || !params.subscription.current_period_end || typeof params.subscription.current_period_start !== 'number' || typeof params.subscription.current_period_end !== 'number') {
+        eventRecord.status = 'FAILED';
+        eventRecord.failureReason = 'MISSING_PERIOD_TIMESTAMPS';
+        return {
+          success: false,
+          code: 'MISSING_PERIOD_TIMESTAMPS',
+          message: 'Authoritative subscription lacks clear billing period timestamps.'
+        };
+      }
+
+      // If failed invoice is superseded by a newer latest_invoice on provider, do NOT demote!
+      if (params.subscription.latest_invoice && params.subscription.latest_invoice !== invoice.id) {
+        eventRecord.status = 'PROCESSED';
+        eventRecord.processedAt = new Date().toISOString();
+        eventRecord.metadata = { ignoredReason: 'SUPERSEDED_BY_LATEST_INVOICE', invoiceId: invoice.id, subscriptionId };
+        return { success: true, stale: true, message: 'Event ignored: failed invoice is superseded by newer provider subscription invoice.' };
+      }
+
+      // If failed invoice is for an older billing cycle prior to current period, do NOT demote!
+      if (invoice.period_end && params.subscription.current_period_start && (invoice.period_end <= params.subscription.current_period_start)) {
+        eventRecord.status = 'PROCESSED';
+        eventRecord.processedAt = new Date().toISOString();
+        eventRecord.metadata = { ignoredReason: 'SUPERSEDED_BY_ACTIVE_PERIOD', invoiceId: invoice.id, subscriptionId };
+        return { success: true, stale: true, message: 'Event ignored: invoice is for an older period superseded by subscription current period.' };
       }
 
       // Also verify against existing active DB subscription period if present
@@ -7369,31 +7461,92 @@ return event;
         }
       }
 
-      // Authoritative subscription check if provided:
-      // If authoritative subscription is provided and its status is 'canceled',
-      // delayed/past invoice paid must NOT reinstate canceled subscription.
-      if (params.subscription) {
-        if (params.subscription.id !== subscriptionId || (params.subscription.customer && params.subscription.customer !== customerId)) {
-          eventRecord.status = 'FAILED';
-          eventRecord.failureReason = 'SUBSCRIPTION_IDENTITY_MISMATCH';
-          return {
-            success: false,
-            code: 'SUBSCRIPTION_IDENTITY_MISMATCH',
-            message: 'Authoritative subscription identity does not match invoice subscription or customer.'
-          };
-        }
-        if (params.subscription.status === 'canceled') {
+      // Mandatory Authoritative Subscription Snapshot Verification
+      if (!params.subscription || typeof params.subscription !== 'object') {
+        eventRecord.status = 'FAILED';
+        eventRecord.failureReason = 'MISSING_AUTHORITATIVE_SUBSCRIPTION';
+        return {
+          success: false,
+          code: 'MISSING_AUTHORITATIVE_SUBSCRIPTION',
+          message: 'Authoritative subscription snapshot is mandatory for invoice.paid entitlement processing.'
+        };
+      }
+
+      if (params.subscription.id !== subscriptionId || (params.subscription.customer && params.subscription.customer !== customerId)) {
+        eventRecord.status = 'FAILED';
+        eventRecord.failureReason = 'SUBSCRIPTION_IDENTITY_MISMATCH';
+        return {
+          success: false,
+          code: 'SUBSCRIPTION_IDENTITY_MISMATCH',
+          message: 'Authoritative subscription identity does not match invoice subscription or customer.'
+        };
+      }
+
+      // Mandatory Currency USD Check
+      const invoiceCurrency = (invoice.currency || '').toLowerCase();
+      if (invoiceCurrency !== 'usd') {
+        eventRecord.status = 'FAILED';
+        eventRecord.failureReason = 'CURRENCY_MISMATCH';
+        return {
+          success: false,
+          code: 'CURRENCY_MISMATCH',
+          message: `Invoice currency must be USD (received: '${invoiceCurrency || 'MISSING'}').`
+        };
+      }
+
+      // Mandatory Positive Amount Paid Check
+      if (typeof invoice.amount_paid !== 'number' || invoice.amount_paid <= 0) {
+        eventRecord.status = 'FAILED';
+        eventRecord.failureReason = 'INVALID_AMOUNT';
+        return {
+          success: false,
+          code: 'INVALID_AMOUNT',
+          message: 'Invoice amount_paid must be a positive integer.'
+        };
+      }
+
+      // Non-Refunded Check
+      if (invoice.amount_refunded && invoice.amount_paid && invoice.amount_refunded >= invoice.amount_paid) {
+        eventRecord.status = 'FAILED';
+        eventRecord.failureReason = 'INVOICE_REFUNDED';
+        return {
+          success: false,
+          code: 'INVOICE_REFUNDED',
+          message: 'Invoice has been fully refunded; cannot apply paid entitlement.'
+        };
+      }
+
+      // Mandatory Current Period Timestamps Check
+      if (!params.subscription.current_period_start || !params.subscription.current_period_end || typeof params.subscription.current_period_start !== 'number' || typeof params.subscription.current_period_end !== 'number') {
+        eventRecord.status = 'FAILED';
+        eventRecord.failureReason = 'MISSING_PERIOD_TIMESTAMPS';
+        return {
+          success: false,
+          code: 'MISSING_PERIOD_TIMESTAMPS',
+          message: 'Authoritative subscription lacks valid current period timestamps.'
+        };
+      }
+
+      if (params.subscription.status === 'canceled') {
+        eventRecord.status = 'PROCESSED';
+        eventRecord.processedAt = new Date().toISOString();
+        eventRecord.metadata = { ignoredReason: 'SUBSCRIPTION_ALREADY_CANCELED', invoiceId: invoice.id, subscriptionId };
+        return { success: true, stale: true, message: 'Event ignored: invoice is for a canceled subscription; will not reinstate entitlement.' };
+      }
+
+      // Stale / Superseded Check
+      if (params.subscription.latest_invoice && params.subscription.latest_invoice !== invoice.id) {
+        if (params.subscription.status === 'active' && invoice.period_end && params.subscription.current_period_start && (invoice.period_end < params.subscription.current_period_start)) {
           eventRecord.status = 'PROCESSED';
           eventRecord.processedAt = new Date().toISOString();
-          eventRecord.metadata = { ignoredReason: 'SUBSCRIPTION_ALREADY_CANCELED', invoiceId: invoice.id, subscriptionId };
-          return { success: true, stale: true, message: 'Event ignored: invoice is for a canceled subscription; will not reinstate entitlement.' };
-        }
-        // If active, update period
-        if (params.subscription.current_period_start && params.subscription.current_period_end) {
-          org.subscription.currentPeriodStart = new Date(params.subscription.current_period_start * 1000).toISOString();
-          org.subscription.currentPeriodEnd = new Date(params.subscription.current_period_end * 1000).toISOString();
+          eventRecord.metadata = { ignoredReason: 'SUPERSEDED_BY_CURRENT_PERIOD', invoiceId: invoice.id, subscriptionId };
+          return { success: true, stale: true, message: 'Paid invoice is for an older period superseded by current subscription period.' };
         }
       }
+
+      // Update Period from Authoritative Subscription
+      org.subscription.currentPeriodStart = new Date(params.subscription.current_period_start * 1000).toISOString();
+      org.subscription.currentPeriodEnd = new Date(params.subscription.current_period_end * 1000).toISOString();
 
       // If org was past_due, restore to active
       if (org.subscription?.status === 'past_due') {
