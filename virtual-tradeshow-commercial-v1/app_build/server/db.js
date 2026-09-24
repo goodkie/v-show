@@ -10497,11 +10497,56 @@ return event;
     }
     if (token === project.editToken) return true;
 
-    // Check Multi-Tenant Organization API Token
-    if (typeof token === 'string' && this.memoryData.apiTokens) {
+    // Check Multi-Tenant Organization API Token with Least-Privilege Scope & Expiry/Revocation Checks
+    if (typeof token === 'string' && this.memoryData.apiTokens && Array.isArray(this.memoryData.apiTokens)) {
       const cleanTok = token.replace(/^Bearer\s+/i, '').trim();
-      const apiTok = this.memoryData.apiTokens.find(t => t.token === cleanTok);
-      if (apiTok && apiTok.organizationId && project.organizationId && apiTok.organizationId === project.organizationId) {
+      const tokenHash = crypto.createHash('sha256').update(cleanTok).digest();
+
+      const apiTok = this.memoryData.apiTokens.find(t => {
+        if (!t.token || typeof t.token !== 'string') return false;
+        const candidateHash = crypto.createHash('sha256').update(t.token).digest();
+        return crypto.timingSafeEqual(tokenHash, candidateHash);
+      });
+
+      if (apiTok) {
+        const now = Date.now();
+        // 1. Revocation & Active check
+        if (apiTok.status === 'revoked' || apiTok.status === 'inactive' || apiTok.revokedAt) {
+          return false;
+        }
+
+        // 2. Expiry check
+        if (apiTok.expiresAt && now > new Date(apiTok.expiresAt).getTime()) {
+          return false;
+        }
+
+        // 3. Organization tenant isolation
+        if (!apiTok.organizationId || !project.organizationId || apiTok.organizationId !== project.organizationId) {
+          return false;
+        }
+
+        // 4. Role check: must be an authorized edit role (organizer, admin, editor)
+        const allowedRoles = ['organizer', 'admin', 'editor'];
+        const role = (apiTok.role || '').toLowerCase();
+        if (role && !allowedRoles.includes(role)) {
+          return false;
+        }
+
+        // 5. Scope check (least privilege)
+        if (Array.isArray(apiTok.scopes) && apiTok.scopes.length > 0) {
+          const writeScopes = ['projects:write', 'booths:write', 'admin', '*'];
+          const hasWriteScope = apiTok.scopes.some(s => writeScopes.includes(s));
+          if (!hasWriteScope) return false;
+        }
+
+        // 6. Project-specific binding (if token is scoped to specific projects)
+        if (apiTok.projectId && apiTok.projectId !== project.id) {
+          return false;
+        }
+        if (Array.isArray(apiTok.projectIds) && !apiTok.projectIds.includes(project.id)) {
+          return false;
+        }
+
         return true;
       }
     }
@@ -11670,17 +11715,40 @@ return event;
         (project.contactEmail && a.emailNormalized === this.normalizeEmail(project.contactEmail))
       ) || { planCode: 'FREE_BOOTH', entitlement: 'FREE BOOTH' };
 
+      // Multi-Tenant Billing Entitlement Check (Strict Fail-Closed)
       const org = (db.organizations || []).find(o => o.id === project.organizationId);
-      const isOrgSubscribed = Boolean(org && org.subscription && (org.subscription.status === 'active' || org.subscription.plan === 'pro' || org.subscription.plan === 'business'));
-      const isPilot = account.isPilot || account.billingState === 'PILOT_NOT_BILLED' || project.isPilot || isOrgSubscribed;
-      const effectiveEntitlement = isPilot ? (account.entitlement || 'BUSINESS') : (account.planCode || account.entitlement || 'FREE_BOOTH');
-      const isFree = (effectiveEntitlement === 'FREE_BOOTH' || effectiveEntitlement === 'FREE') && !isPilot;
+      const sub = org?.subscription;
+      const now = Date.now();
+      const isSubscriptionActive = Boolean(
+        sub &&
+        sub.status === 'active' &&
+        (sub.plan === 'pro' || sub.plan === 'business') &&
+        (!sub.currentPeriodEnd || now <= new Date(sub.currentPeriodEnd).getTime())
+      );
 
-      if (isFree) {
-        const err = new Error('Upgrade required to publish commercial booths.');
+      // Check explicit pilot (strictly authenticated non-billed evaluation)
+      const isExplicitPilot = Boolean(
+        (project.isPilot === true) || 
+        (account && (account.isPilot === true || account.billingState === 'PILOT_NOT_BILLED'))
+      );
+
+      let effectiveEntitlement = 'FREE_BOOTH';
+      if (isSubscriptionActive) {
+        effectiveEntitlement = sub.plan === 'business' ? 'BUSINESS' : 'PRO';
+      } else if (isExplicitPilot) {
+        effectiveEntitlement = account.entitlement || 'BUSINESS';
+      } else if (account.status === 'active' && account.planCode && account.planCode !== 'FREE_BOOTH' && account.planCode !== 'FREE') {
+        effectiveEntitlement = account.planCode;
+      }
+
+      const isEntitledToPublish = effectiveEntitlement === 'PRO' || effectiveEntitlement === 'BUSINESS' || isExplicitPilot;
+
+      if (!isEntitledToPublish) {
+        const err = new Error('Active PRO or BUSINESS subscription required to publish commercial booths.');
         err.status = 403;
         err.code = 'ENTITLEMENT_UPGRADE_REQUIRED';
         err.requiredPlan = 'PRO';
+        err.currentStatus = sub?.status || 'inactive';
         throw err;
       }
 

@@ -475,7 +475,7 @@
       camera = new THREE.PerspectiveCamera(65, width / height, 0.01, 2000);
       camera.position.set(0, 0, 0.01);
 
-      const isTestEnv = window.location.search.includes('test=') || window.__E2E_TEST__ === true;
+      const isTestEnv = window.__E2E_TEST__ === true;
       renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: isTestEnv });
       renderer.setSize(width, height);
       renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));

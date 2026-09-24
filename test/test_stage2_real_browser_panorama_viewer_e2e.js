@@ -209,8 +209,8 @@ async function main() {
   let serverPort;
 
   const testReceipt = {
-    testMilestone: 'STAGE2-PANORAMA-BROWSER-OPTICAL-PROOF-R52',
-    revisedPer: 'ChatGPT audit 5806602911',
+    testMilestone: 'STAGE2-PANORAMA-BROWSER-OPTICAL-PROOF-R53',
+    revisedPer: 'ChatGPT audit IC_kwDOT53X288AAAABWjKyJw',
     executedAt: new Date().toISOString(),
     nodeVersion: process.version,
     platform: process.platform,
@@ -396,6 +396,178 @@ async function main() {
     console.log(`  PASS: Cross-tenant project access strictly denied (HTTP 403)`);
     testReceipt.publishShareVerification.crossTenantDenied = 'PASS (HTTP 403)';
 
+    // ── STEP 4.5: HARDENED BILLING ENTITLEMENT & API TOKEN NEGATIVE TESTS ────
+    console.log('\n[TEST 2.5] Testing Billing Entitlement Fail-Closed & Scoped API Token Authorization Negatives...');
+    testReceipt.publishShareVerification.negativeEntitlementChecks = {};
+    testReceipt.publishShareVerification.negativeTokenAuthChecks = {};
+
+    // Negative 1: Canceled Subscription Denial
+    const canceledOrgId = `org_canc_${Date.now()}`;
+    const canceledPrjId = `prj_canc_${Date.now()}`;
+    const canceledTok = `tok_canc_${crypto.randomBytes(8).toString('hex')}`;
+    await db.mutate(d => {
+      d.organizations.push({
+        id: canceledOrgId,
+        name: 'Canceled Corp',
+        subscription: { plan: 'pro', status: 'canceled' },
+        createdAt: new Date().toISOString()
+      });
+      d.apiTokens.push({ token: canceledTok, organizationId: canceledOrgId, role: 'organizer', createdAt: new Date().toISOString() });
+      d.projects.push({ id: canceledPrjId, organizationId: canceledOrgId, name: 'Canceled Proj', editToken: canceledTok, publishStatus: 'UNPUBLISHED', createdAt: new Date().toISOString() });
+    });
+    const cancRes = await httpRequest({
+      hostname: '127.0.0.1', port: serverPort, path: `/api/projects/${canceledPrjId}/publish`, method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': '2', 'Authorization': `Bearer ${canceledTok}` }
+    }, '{}');
+    assert.strictEqual(cancRes.status, 403, `Canceled subscription publish must return HTTP 403, got ${cancRes.status}`);
+    assert.strictEqual(cancRes.data.code, 'ENTITLEMENT_UPGRADE_REQUIRED');
+    console.log('  PASS: Canceled subscription publish strictly denied (HTTP 403 ENTITLEMENT_UPGRADE_REQUIRED)');
+    testReceipt.publishShareVerification.negativeEntitlementChecks.canceledDenied = 'PASS (HTTP 403 ENTITLEMENT_UPGRADE_REQUIRED)';
+
+    // Negative 2: Past Due Subscription Denial
+    const pastDueOrgId = `org_past_${Date.now()}`;
+    const pastDuePrjId = `prj_past_${Date.now()}`;
+    const pastDueTok = `tok_past_${crypto.randomBytes(8).toString('hex')}`;
+    await db.mutate(d => {
+      d.organizations.push({
+        id: pastDueOrgId,
+        name: 'Past Due Corp',
+        subscription: { plan: 'pro', status: 'past_due' },
+        createdAt: new Date().toISOString()
+      });
+      d.apiTokens.push({ token: pastDueTok, organizationId: pastDueOrgId, role: 'organizer', createdAt: new Date().toISOString() });
+      d.projects.push({ id: pastDuePrjId, organizationId: pastDueOrgId, name: 'Past Due Proj', editToken: pastDueTok, publishStatus: 'UNPUBLISHED', createdAt: new Date().toISOString() });
+    });
+    const pastRes = await httpRequest({
+      hostname: '127.0.0.1', port: serverPort, path: `/api/projects/${pastDuePrjId}/publish`, method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': '2', 'Authorization': `Bearer ${pastDueTok}` }
+    }, '{}');
+    assert.strictEqual(pastRes.status, 403, `Past due subscription publish must return HTTP 403, got ${pastRes.status}`);
+    assert.strictEqual(pastRes.data.code, 'ENTITLEMENT_UPGRADE_REQUIRED');
+    console.log('  PASS: Past due subscription publish strictly denied (HTTP 403 ENTITLEMENT_UPGRADE_REQUIRED)');
+    testReceipt.publishShareVerification.negativeEntitlementChecks.pastDueDenied = 'PASS (HTTP 403 ENTITLEMENT_UPGRADE_REQUIRED)';
+
+    // Negative 3: Expired Subscription Period Denial
+    const expOrgId = `org_exp_${Date.now()}`;
+    const expPrjId = `prj_exp_${Date.now()}`;
+    const expTok = `tok_exp_${crypto.randomBytes(8).toString('hex')}`;
+    await db.mutate(d => {
+      d.organizations.push({
+        id: expOrgId,
+        name: 'Expired Corp',
+        subscription: {
+          plan: 'pro',
+          status: 'active',
+          currentPeriodEnd: new Date(Date.now() - 86400000).toISOString()
+        },
+        createdAt: new Date().toISOString()
+      });
+      d.apiTokens.push({ token: expTok, organizationId: expOrgId, role: 'organizer', createdAt: new Date().toISOString() });
+      d.projects.push({ id: expPrjId, organizationId: expOrgId, name: 'Expired Proj', editToken: expTok, publishStatus: 'UNPUBLISHED', createdAt: new Date().toISOString() });
+    });
+    const expRes = await httpRequest({
+      hostname: '127.0.0.1', port: serverPort, path: `/api/projects/${expPrjId}/publish`, method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': '2', 'Authorization': `Bearer ${expTok}` }
+    }, '{}');
+    assert.strictEqual(expRes.status, 403, `Expired subscription publish must return HTTP 403, got ${expRes.status}`);
+    assert.strictEqual(expRes.data.code, 'ENTITLEMENT_UPGRADE_REQUIRED');
+    console.log('  PASS: Expired period subscription publish strictly denied (HTTP 403 ENTITLEMENT_UPGRADE_REQUIRED)');
+    testReceipt.publishShareVerification.negativeEntitlementChecks.expiredPeriodDenied = 'PASS (HTTP 403 ENTITLEMENT_UPGRADE_REQUIRED)';
+
+    // Negative 4: Revoked API Token Denial
+    const revokedTok = `tok_revoked_${crypto.randomBytes(8).toString('hex')}`;
+    await db.mutate(d => {
+      d.apiTokens.push({
+        token: revokedTok,
+        organizationId: testOrgId,
+        role: 'organizer',
+        status: 'revoked',
+        revokedAt: new Date().toISOString()
+      });
+    });
+    const revRes = await httpRequest({
+      hostname: '127.0.0.1', port: serverPort, path: `/api/projects/${testProjectId}/publish`, method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': '2', 'Authorization': `Bearer ${revokedTok}` }
+    }, '{}');
+    assert.strictEqual(revRes.status, 403, `Revoked token access must return HTTP 403, got ${revRes.status}`);
+    console.log('  PASS: Revoked API token edit access strictly denied (HTTP 403)');
+    testReceipt.publishShareVerification.negativeTokenAuthChecks.revokedTokenDenied = 'PASS (HTTP 403)';
+
+    // Negative 5: Expired API Token Denial
+    const expApiTok = `tok_expired_${crypto.randomBytes(8).toString('hex')}`;
+    await db.mutate(d => {
+      d.apiTokens.push({
+        token: expApiTok,
+        organizationId: testOrgId,
+        role: 'organizer',
+        expiresAt: new Date(Date.now() - 86400000).toISOString()
+      });
+    });
+    const expApiRes = await httpRequest({
+      hostname: '127.0.0.1', port: serverPort, path: `/api/projects/${testProjectId}/publish`, method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': '2', 'Authorization': `Bearer ${expApiTok}` }
+    }, '{}');
+    assert.strictEqual(expApiRes.status, 403, `Expired token access must return HTTP 403, got ${expApiRes.status}`);
+    console.log('  PASS: Expired API token edit access strictly denied (HTTP 403)');
+    testReceipt.publishShareVerification.negativeTokenAuthChecks.expiredTokenDenied = 'PASS (HTTP 403)';
+
+    // Negative 6: Read-Only (viewer) Role API Token Denial
+    const viewerTok = `tok_viewer_${crypto.randomBytes(8).toString('hex')}`;
+    await db.mutate(d => {
+      d.apiTokens.push({
+        token: viewerTok,
+        organizationId: testOrgId,
+        role: 'viewer',
+        createdAt: new Date().toISOString()
+      });
+    });
+    const viewerRes = await httpRequest({
+      hostname: '127.0.0.1', port: serverPort, path: `/api/projects/${testProjectId}/publish`, method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': '2', 'Authorization': `Bearer ${viewerTok}` }
+    }, '{}');
+    assert.strictEqual(viewerRes.status, 403, `Read-only viewer token access must return HTTP 403, got ${viewerRes.status}`);
+    console.log('  PASS: Read-only (viewer role) API token edit access strictly denied (HTTP 403)');
+    testReceipt.publishShareVerification.negativeTokenAuthChecks.viewerRoleDenied = 'PASS (HTTP 403)';
+
+    // Negative 7: Token with Read-Only Scope Denial (lacks projects:write / booths:write / admin / *)
+    const readScopeTok = `tok_readscope_${crypto.randomBytes(8).toString('hex')}`;
+    await db.mutate(d => {
+      d.apiTokens.push({
+        token: readScopeTok,
+        organizationId: testOrgId,
+        role: 'editor',
+        scopes: ['projects:read', 'booths:read'],
+        createdAt: new Date().toISOString()
+      });
+    });
+    const readScopeRes = await httpRequest({
+      hostname: '127.0.0.1', port: serverPort, path: `/api/projects/${testProjectId}/publish`, method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': '2', 'Authorization': `Bearer ${readScopeTok}` }
+    }, '{}');
+    assert.strictEqual(readScopeRes.status, 403, `Token lacking write scope must return HTTP 403, got ${readScopeRes.status}`);
+    console.log('  PASS: Read-only scoped API token edit access strictly denied (HTTP 403)');
+    testReceipt.publishShareVerification.negativeTokenAuthChecks.readOnlyScopeDenied = 'PASS (HTTP 403)';
+
+    // Negative 8: Project-Restricted Token Mismatch Denial
+    const wrongProjTok = `tok_wrongproj_${crypto.randomBytes(8).toString('hex')}`;
+    await db.mutate(d => {
+      d.apiTokens.push({
+        token: wrongProjTok,
+        organizationId: testOrgId,
+        role: 'editor',
+        scopes: ['projects:write'],
+        projectId: 'prj_different_123',
+        createdAt: new Date().toISOString()
+      });
+    });
+    const wrongProjRes = await httpRequest({
+      hostname: '127.0.0.1', port: serverPort, path: `/api/projects/${testProjectId}/publish`, method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': '2', 'Authorization': `Bearer ${wrongProjTok}` }
+    }, '{}');
+    assert.strictEqual(wrongProjRes.status, 403, `Token scoped to different project must return HTTP 403, got ${wrongProjRes.status}`);
+    console.log('  PASS: Project-scoped API token mismatch strictly denied (HTTP 403)');
+    testReceipt.publishShareVerification.negativeTokenAuthChecks.projectMismatchDenied = 'PASS (HTTP 403)';
+
     // ── STEP 5: LAUNCH REAL HEADLESS CHROME WITH WEBGL ───────────────────────
     console.log('\n[TEST 3] Launching Real Headless Chrome with Hardware-Accelerated/Angle WebGL...');
     const chromePath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
@@ -455,6 +627,9 @@ async function main() {
     await pageCdp.connect();
 
     await pageCdp.send('Page.enable');
+    await pageCdp.send('Page.addScriptToEvaluateOnNewDocument', {
+      source: 'window.__E2E_TEST__ = true;'
+    });
     await pageCdp.send('Runtime.enable');
     // Note: Input.enable is not a valid CDP domain — Input events work without it
 
@@ -497,7 +672,7 @@ async function main() {
         mobile: vp.isMobile
       });
 
-      const boothUrl = `http://127.0.0.1:${serverPort}/booth/${testPublicSlug}?test=1`;
+      const boothUrl = `http://127.0.0.1:${serverPort}/booth/${testPublicSlug}`;
       await pageCdp.send('Page.navigate', { url: boothUrl });
 
       // Wait for WebGL scene + texture fully loaded
@@ -826,15 +1001,15 @@ async function main() {
     // ── STEP 9: GATE CLASSIFICATION (STRICTLY DISCIPLINED) ────────────────────
     testReceipt.gates = {
       REAL_SERVER_ROUTE_VERIFIED: 'PASS',
-      SYNTHETIC_SIGNED_REAL_EXPRESS_WEBHOOK_ROUTE_20TESTS: 'PASS (test_stage2_stripe_signed_route_e2e.js, 20/20 tests passed, synthetic signed events, real Express route, missing/multiple quantity strictly rejected, authoritative line item expansion)',
+      SYNTHETIC_SIGNED_REAL_EXPRESS_WEBHOOK_ROUTE_20TESTS: 'PASS (test_stage2_stripe_signed_route_e2e.js, 20/20 tests passed, synthetic signed events, real Express route, missing/multiple quantity strictly rejected, fail-closed authoritative line item expansion)',
       STRIPE_PROVIDER_TEST_CHECKOUT_PORTAL_E2E: 'NOT_VERIFIED (requires actual Stripe TEST provider dashboard credentials and live webhook replay)',
       FULL_360_DEMO_ASSET_VIEWER_E2E: 'PASS (node0_360_panorama_4k_opt.jpg, 4096x2048, 2:1 full-sphere equirectangular pre-existing demo asset)',
       REAL_PHOTO_12_TO_FULL_360_CREATION_E2E: 'NOT_VERIFIED (LLST42 12-photo capture stitches to 186.3deg x 46.7deg partial band; full 360-degree sphere creation requires 24+ photo ring or panoramic hardware)',
       REAL_PHOTO_PARTIAL_STITCH_LLST42_186DEG: 'AGENT_REPORTED_PASS (186.3deg horizontal band; partial stitch)',
       FULL_360_REAL_PHOTO_STAGING_E2E: 'NOT_VERIFIED',
       MOBILE_PRODUCT_VIEWER_E2E: 'PASS (headless Chrome mobile viewport emulation, RGBA pixel proof + real CDP touch drag; physical Android hardware deferred)',
-      DESKTOP_PRODUCT_VIEWER_E2E: 'PASS (headless Chrome real WebGL rendering, RGBA pixel proof + independent mouse drag)',
-      PUBLISH_SHARE_E2E: 'PASS (Real server authenticated POST /api/projects/:id/publish & /unpublish HTTP 200, cross-tenant denial HTTP 403, GET /api/public/booth/:slug available:true/false, headless Chrome rendered unavailable banner flex)',
+      DESKTOP_PRODUCT_VIEWER_E2E: 'PASS (headless Chrome real WebGL rendering, RGBA pixel proof + independent mouse drag; window.__E2E_TEST__ via CDP without ?test=1 query)',
+      PUBLISH_SHARE_E2E: 'PASS (Real server authenticated POST /api/projects/:id/publish & /unpublish HTTP 200, cross-tenant denial HTTP 403, canceled/past_due/expired denial HTTP 403 ENTITLEMENT_UPGRADE_REQUIRED, revoked/expired/unscoped/project-mismatch token denial HTTP 403, GET /api/public/booth/:slug available:true/false, headless Chrome rendered unavailable banner flex)',
       STRIPE_MODE: 'TEST_UNTIL_EXPLICIT_APPROVAL',
       OWNER_REVIEW_GATE: 'HOLD_PENDING_PANORAMA_STAGING_EVIDENCE',
       TRUE_3D_CUSTOM_PLAN: 'DEFERRED_POST_LAUNCH',
@@ -842,10 +1017,12 @@ async function main() {
       NO_NEW_3D_GPU_SPEND: 'ACTIVE'
     };
 
-    // Save receipt
-    const receiptPath = path.join(__dirname, '../virtual-tradeshow-commercial-v1/production_artifacts/R52_PANORAMA_BROWSER_OPTICAL_PROOF_RECEIPT.json');
+    // Save receipt to isolated scratch directory (do not contaminate production_artifacts)
+    const receiptsDir = path.join(__dirname, '../scratch/test_receipts');
+    fs.mkdirSync(receiptsDir, { recursive: true });
+    const receiptPath = path.join(receiptsDir, 'R53_PANORAMA_BROWSER_OPTICAL_PROOF_RECEIPT.json');
     fs.writeFileSync(receiptPath, JSON.stringify(testReceipt, null, 2));
-    console.log(`\n[RECEIPT] Saved R52 receipt: production_artifacts/R52_PANORAMA_BROWSER_OPTICAL_PROOF_RECEIPT.json`);
+    console.log(`\n[RECEIPT] Saved R53 receipt to isolated scratch: scratch/test_receipts/R53_PANORAMA_BROWSER_OPTICAL_PROOF_RECEIPT.json`);
 
     console.log('\n=== ALL BROWSER WEBGL RGBA OPTICAL PROOF & STAGED UI TESTS PASSED ===');
 
