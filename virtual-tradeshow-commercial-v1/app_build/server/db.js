@@ -6571,14 +6571,14 @@ return event;
         };
       }
 
-      // Enforce monthly recurring interval if price specifies recurring schedule
-      if (firstItem.price?.recurring && firstItem.price.recurring.interval !== 'month') {
+      // Enforce mandatory recurring monthly subscription price
+      if (!firstItem.price?.recurring || firstItem.price.recurring.interval !== 'month') {
         eventRecord.status = 'FAILED';
         eventRecord.failureReason = 'INVALID_RECURRING_INTERVAL';
         return {
           success: false,
           code: 'INVALID_RECURRING_INTERVAL',
-          message: `Expected monthly recurring interval, got ${firstItem.price.recurring.interval}`
+          message: `Commercial Pro/Business plans require a recurring monthly subscription with interval 'month'.`
         };
       }
 
@@ -10495,7 +10495,18 @@ return event;
         return true;
       }
     }
-    if (token === project.editToken) return true;
+    // Legacy Project-Scoped Edit Token (deprecated legacy compatibility with revocation check)
+    if (typeof token === 'string' && project.editToken) {
+      const cleanTok = token.replace(/^Bearer\s+/i, '').trim();
+      const tokenHash = crypto.createHash('sha256').update(cleanTok).digest();
+      const expectedHash = crypto.createHash('sha256').update(project.editToken).digest();
+      if (crypto.timingSafeEqual(tokenHash, expectedHash)) {
+        if (project.editTokenRevokedAt || project.status === 'archived' || project.isRevoked === true) {
+          return false;
+        }
+        return true;
+      }
+    }
 
     // Check Multi-Tenant Organization API Token with Least-Privilege Scope & Expiry/Revocation Checks
     if (typeof token === 'string' && this.memoryData.apiTokens && Array.isArray(this.memoryData.apiTokens)) {
@@ -10515,8 +10526,8 @@ return event;
           return false;
         }
 
-        // 2. Expiry check
-        if (apiTok.expiresAt && now > new Date(apiTok.expiresAt).getTime()) {
+        // 2. Mandatory Expiry check (fail-closed if missing, invalid date, or expired)
+        if (!apiTok.expiresAt || isNaN(new Date(apiTok.expiresAt).getTime()) || now > new Date(apiTok.expiresAt).getTime()) {
           return false;
         }
 
@@ -10549,7 +10560,8 @@ return event;
         if (Array.isArray(apiTok.projectIds) && !apiTok.projectIds.includes(project.id)) {
           return false;
         }
-        const isOrgWideAuthorized = apiTok.isOrgWide === true || apiTok.scopes.includes('*') || apiTok.scopes.includes('admin') || role === 'organizer' || role === 'admin';
+        // Tokens without project binding strictly require explicit org-wide grant with admin privileges
+        const isOrgWideAuthorized = (apiTok.isOrgWide === true && (apiTok.scopes.includes('*') || apiTok.scopes.includes('admin') || role === 'organizer' || role === 'admin'));
         if (!apiTok.projectId && !apiTok.projectIds && !isOrgWideAuthorized) {
           return false;
         }
@@ -11727,17 +11739,26 @@ return event;
       const sub = org?.subscription;
       const now = Date.now();
 
-      // Check explicit time-bounded pilot grant (strictly authenticated with expiry)
-      const isExplicitPilot = Boolean(
-        (project.isPilot === true && project.pilotExpiresAt && now <= new Date(project.pilotExpiresAt).getTime()) ||
-        (account && account.isPilot === true && account.pilotExpiresAt && now <= new Date(account.pilotExpiresAt).getTime())
+      // Check verified server-issued time-bounded pilot grant (requires pilotGrantId, explicit owner approval, and valid future expiry)
+      const registeredGrant = (db.pilotGrants || []).find(g =>
+        (g.projectId === projectId || (account && g.accountId === account.id) || (project.organizationId && g.organizationId === project.organizationId)) &&
+        g.pilotGrantId &&
+        g.pilotApprovedByOwner === true &&
+        g.pilotExpiresAt &&
+        !isNaN(new Date(g.pilotExpiresAt).getTime()) &&
+        now <= new Date(g.pilotExpiresAt).getTime()
       );
+      const directGrant = Boolean(
+        (project.pilotGrantId && project.pilotApprovedByOwner === true && project.pilotExpiresAt && !isNaN(new Date(project.pilotExpiresAt).getTime()) && now <= new Date(project.pilotExpiresAt).getTime()) ||
+        (account && account.pilotGrantId && account.pilotApprovedByOwner === true && account.pilotExpiresAt && !isNaN(new Date(account.pilotExpiresAt).getTime()) && now <= new Date(account.pilotExpiresAt).getTime())
+      );
+      const isExplicitPilot = Boolean(registeredGrant || directGrant);
 
       let effectiveEntitlement = 'FREE_BOOTH';
 
       if (sub) {
         // If an organization subscription exists, it is the STRICT authoritative source of truth.
-        // Canceled, past-due, expired, or non-commercial subscriptions NEVER fall back to stale account plan codes.
+        // Canceled, past-due, expired, or non-commercial subscriptions NEVER fall back to stale account plan codes or pilot bypasses.
         const hasValidPeriod = Boolean(
           sub.currentPeriodEnd &&
           !isNaN(new Date(sub.currentPeriodEnd).getTime()) &&
@@ -11751,10 +11772,8 @@ return event;
 
         if (isSubscriptionActive) {
           effectiveEntitlement = sub.plan === 'business' ? 'BUSINESS' : 'PRO';
-        } else if (isExplicitPilot) {
-          effectiveEntitlement = 'BUSINESS';
         } else {
-          // Strictly fail-closed: subscription exists but is not active/valid -> DENY
+          // Strictly fail-closed: subscription exists but is not active/valid -> DENY immediately (no pilot or legacy bypass)
           const err = new Error('Active PRO or BUSINESS subscription required to publish commercial booths.');
           err.status = 403;
           err.code = 'ENTITLEMENT_UPGRADE_REQUIRED';
@@ -11764,8 +11783,16 @@ return event;
         }
       } else if (isExplicitPilot) {
         effectiveEntitlement = 'BUSINESS';
-      } else if (account && account.status === 'active' && ['PRO', 'BUSINESS'].includes(account.planCode) && (!account.planExpiresAt || now <= new Date(account.planExpiresAt).getTime())) {
-        // Legacy direct account without organization subscription
+      } else if (
+        account &&
+        account.status === 'active' &&
+        ['PRO', 'BUSINESS'].includes(account.planCode) &&
+        account.planExpiresAt &&
+        !isNaN(new Date(account.planExpiresAt).getTime()) &&
+        now <= new Date(account.planExpiresAt).getTime() &&
+        (account.entitlementSource === 'OWNER_MIGRATED' || account.stripeCustomerId || account.legacyAuditVerified === true)
+      ) {
+        // Legacy direct account without organization subscription - strictly requires unexpired planExpiresAt and audit proof
         effectiveEntitlement = account.planCode;
       }
 

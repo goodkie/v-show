@@ -223,7 +223,7 @@ async function main() {
           currency: 'usd',
           line_items: {
             data: [{
-              price: { id: 'price_test_pro_monthly' },
+              price: { id: 'price_test_pro_monthly', recurring: { interval: 'month' } },
               quantity: 1
             }]
           }
@@ -269,7 +269,7 @@ async function main() {
           payment_status: 'paid',
           amount_total: 29900,
           currency: 'usd',
-          line_items: { data: [{ price: { id: 'price_test_pro_monthly' }, quantity: 1 }] }
+          line_items: { data: [{ price: { id: 'price_test_pro_monthly', recurring: { interval: 'month' } }, quantity: 1 }] }
         }
       }
     };
@@ -292,7 +292,7 @@ async function main() {
           payment_status: 'paid',
           amount_total: 29900,
           currency: 'usd',
-          line_items: { data: [{ price: { id: 'price_test_pro_monthly' }, quantity: 1 }] },
+          line_items: { data: [{ price: { id: 'price_test_pro_monthly', recurring: { interval: 'month' } }, quantity: 1 }] },
           metadata: {
             organizationId: otherOrgId,
             projectId: otherProjectId,
@@ -402,7 +402,7 @@ async function main() {
           payment_status: 'paid',
           amount_total: 29900,
           currency: 'usd',
-          line_items: { data: [{ price: { id: 'price_test_pro_monthly' }, quantity: 5 }] }
+          line_items: { data: [{ price: { id: 'price_test_pro_monthly', recurring: { interval: 'month' } }, quantity: 5 }] }
         }
       }
     };
@@ -436,7 +436,7 @@ async function main() {
           payment_status: 'paid',
           amount_total: 100, // $1.00 instead of $299.00
           currency: 'usd',
-          line_items: { data: [{ price: { id: 'price_test_pro_monthly' }, quantity: 1 }] }
+          line_items: { data: [{ price: { id: 'price_test_pro_monthly', recurring: { interval: 'month' } }, quantity: 1 }] }
         }
       }
     };
@@ -470,7 +470,7 @@ async function main() {
           payment_status: 'unpaid', // NOT paid
           amount_total: 29900,
           currency: 'usd',
-          line_items: { data: [{ price: { id: 'price_test_pro_monthly' }, quantity: 1 }] }
+          line_items: { data: [{ price: { id: 'price_test_pro_monthly', recurring: { interval: 'month' } }, quantity: 1 }] }
         }
       }
     };
@@ -504,7 +504,7 @@ async function main() {
           payment_status: 'paid',
           amount_total: 29900,
           currency: 'usd',
-          line_items: { data: [{ price: { id: 'price_test_pro_monthly' }, quantity: 1 }] }
+          line_items: { data: [{ price: { id: 'price_test_pro_monthly', recurring: { interval: 'month' } }, quantity: 1 }] }
         }
       }
     };
@@ -528,7 +528,7 @@ async function main() {
           status: 'active',
           items: {
             data: [{
-              price: { id: 'price_test_biz_monthly' },
+              price: { id: 'price_test_biz_monthly', recurring: { interval: 'month' } },
               quantity: 1
             }]
           }
@@ -583,7 +583,7 @@ async function main() {
           status: 'active',
           items: {
             data: [{
-              price: { id: 'price_test_biz_monthly' },
+              price: { id: 'price_test_biz_monthly', recurring: { interval: 'month' } },
               quantity: 1
             }]
           }
@@ -609,7 +609,7 @@ async function main() {
           id: subId1,
           customer: customerId1,
           status: 'active',
-          items: { data: [{ price: { id: 'price_test_pro_monthly' }, quantity: 1 }] }
+          items: { data: [{ price: { id: 'price_test_pro_monthly', recurring: { interval: 'month' } }, quantity: 1 }] }
         }
       }
     };
@@ -627,7 +627,7 @@ async function main() {
           id: subId1,
           customer: customerId1,
           status: 'active',
-          items: { data: [{ price: { id: 'price_test_biz_monthly' }, quantity: 1 }] }
+          items: { data: [{ price: { id: 'price_test_biz_monthly', recurring: { interval: 'month' } }, quantity: 1 }] }
         }
       }
     };
@@ -649,7 +649,7 @@ async function main() {
           id: subId1,
           customer: customerId1,
           status: 'active',
-          items: { data: [{ price: { id: 'price_test_biz_monthly' }, quantity: 1 }] }
+          items: { data: [{ price: { id: 'price_test_biz_monthly', recurring: { interval: 'month' } }, quantity: 1 }] }
         }
       }
     };
@@ -799,7 +799,7 @@ async function main() {
           amount_total: 29900,
           currency: 'usd',
           line_items: {
-            data: [{ price: { id: 'price_test_pro_monthly' } }]  // quantity field intentionally omitted
+            data: [{ price: { id: 'price_test_pro_monthly', recurring: { interval: 'month' } } }]  // quantity field intentionally omitted
           }
         }
       }
@@ -836,8 +836,8 @@ async function main() {
           currency: 'usd',
           line_items: {
             data: [
-              { price: { id: 'price_test_pro_monthly' }, quantity: 1 },
-              { price: { id: 'price_test_biz_monthly' }, quantity: 1 }  // Smuggled second item
+              { price: { id: 'price_test_pro_monthly', recurring: { interval: 'month' } }, quantity: 1 },
+              { price: { id: 'price_test_biz_monthly', recurring: { interval: 'month' } }, quantity: 1 }  // Smuggled second item
             ]
           }
         }
@@ -848,7 +848,111 @@ async function main() {
     assert.strictEqual(res20.data.error, 'MULTIPLE_LINE_ITEMS', 'Multiple line items must return MULTIPLE_LINE_ITEMS error');
     console.log('  PASS: Checkout event with multiple line items rejected with MULTIPLE_LINE_ITEMS.');
 
-    console.log('\n=== ALL 20 REAL-SERVER SIGNED STRIPE TEST-MODE ROUTE E2E TESTS PASSED ===');
+    // ── TEST 21: NON-MONTHLY RECURRING INTERVAL REJECTION ───────────────────
+    console.log('\n[TEST 21] Verifying Non-Monthly Recurring Interval fail-closed rejection...');
+    const sessionId21 = `cs_non_monthly_${Date.now()}`;
+    await db.recordPendingCheckout({
+      sessionId: sessionId21,
+      organizationId: otherOrgId,
+      projectId: otherProjectId,
+      requestedPlan: 'pro',
+      priceId: 'price_test_pro_monthly',
+      amountExpected: 29900,
+      currencyExpected: 'usd',
+      status: 'PENDING'
+    });
+    const eventYearlyPrice = {
+      id: `evt_yearly_${Date.now()}`,
+      object: 'event',
+      type: 'checkout.session.completed',
+      data: {
+        object: {
+          id: sessionId21,
+          customer: `cus_yearly_${Date.now()}`,
+          subscription: `sub_yearly_${Date.now()}`,
+          payment_status: 'paid',
+          amount_total: 29900,
+          currency: 'usd',
+          line_items: {
+            data: [{
+              price: { id: 'price_test_pro_monthly', recurring: { interval: 'year' } },
+              quantity: 1
+            }]
+          }
+        }
+      }
+    };
+    const res21 = await postWebhook(eventYearlyPrice);
+    assert.strictEqual(res21.status, 400, 'Non-monthly interval must be rejected with HTTP 400');
+    assert.strictEqual(res21.data.error, 'INVALID_RECURRING_INTERVAL');
+    console.log('  PASS: Checkout event with non-monthly recurring interval rejected with INVALID_RECURRING_INTERVAL.');
+
+    // ── TEST 22: TRANSIENT STRIPE PROVIDER OUTAGE RETRYABLE 500 ─────────────
+    console.log('\n[TEST 22] Verifying Transient Stripe Provider Outage returns HTTP 500 retryable...');
+    const sessionId22 = `cs_transient_outage_${Date.now()}`;
+    await db.recordPendingCheckout({
+      sessionId: sessionId22,
+      organizationId: otherOrgId,
+      projectId: otherProjectId,
+      requestedPlan: 'pro',
+      priceId: 'price_test_pro_monthly',
+      amountExpected: 29900,
+      currencyExpected: 'usd',
+      status: 'PENDING'
+    });
+    const eventTransient = {
+      id: `evt_transient_${Date.now()}`,
+      object: 'event',
+      type: 'checkout.session.completed',
+      data: {
+        object: {
+          id: sessionId22,
+          customer: `cus_transient_${Date.now()}`,
+          subscription: `sub_transient_${Date.now()}`,
+          payment_status: 'paid',
+          amount_total: 29900,
+          currency: 'usd'
+        }
+      }
+    };
+    const payloadString22 = JSON.stringify(eventTransient);
+    const timestamp22 = Math.floor(Date.now() / 1000);
+    const signature22 = stripe.webhooks.generateTestHeaderString({
+      payload: payloadString22,
+      secret: process.env.STRIPE_WEBHOOK_SECRET,
+      timestamp: timestamp22
+    });
+    const res22 = await new Promise((resolve, reject) => {
+      const req = http.request({
+        hostname: '127.0.0.1',
+        port: serverPort,
+        path: '/api/billing/stripe-webhook',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(payloadString22),
+          'Stripe-Signature': signature22,
+          'x-test-inject-stripe-transient-error': 'true'
+        }
+      }, (res) => {
+        let data = '';
+        res.on('data', chunk => data += chunk);
+        res.on('end', () => {
+          try { resolve({ status: res.statusCode, data: JSON.parse(data) }); }
+          catch (_) { resolve({ status: res.statusCode, data }); }
+        });
+      });
+      req.on('error', reject);
+      req.write(payloadString22);
+      req.end();
+    });
+
+    assert.strictEqual(res22.status, 500, 'Transient provider outage must return HTTP 500');
+    assert.strictEqual(res22.data.error, 'STRIPE_PROVIDER_TRANSIENT_FAILURE');
+    assert.strictEqual(res22.data.retryable, true, 'Transient provider outage must be marked retryable: true');
+    console.log('  PASS: Transient Stripe provider failure returned HTTP 500 with retryable: true.');
+
+    console.log('\n=== ALL 22 REAL-SERVER SIGNED STRIPE TEST-MODE ROUTE E2E TESTS PASSED ===');
 
 
   } finally {

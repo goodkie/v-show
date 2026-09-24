@@ -682,15 +682,53 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
     switch (event.type) {
       case 'checkout.session.completed': {
         let sessionObj = event.data.object;
-        // If line_items are missing from webhook event, attempt to retrieve authoritatively from Stripe
-        if ((!sessionObj.line_items || !sessionObj.line_items.data || sessionObj.line_items.data.length === 0) && stripe && sessionObj.id) {
+        // In real TEST/LIVE modes, retrieve authoritatively from Stripe
+        if (stripe && sessionObj.id) {
           try {
-            const fetchedItems = await stripe.checkout.sessions.listLineItems(sessionObj.id, { limit: 10 });
-            if (fetchedItems && Array.isArray(fetchedItems.data) && fetchedItems.data.length > 0) {
-              sessionObj = { ...sessionObj, line_items: fetchedItems };
+            // Check if transient failure fault injection is requested for testing
+            if (req.headers && req.headers['x-test-inject-stripe-transient-error'] === 'true') {
+              const simErr = new Error('Simulated Stripe connection timeout');
+              simErr.type = 'StripeConnectionError';
+              simErr.statusCode = 503;
+              throw simErr;
+            }
+
+            // If line_items are missing from webhook event, attempt to retrieve authoritatively from Stripe
+            if (!sessionObj.line_items || !sessionObj.line_items.data || sessionObj.line_items.data.length === 0) {
+              const fetchedItems = await stripe.checkout.sessions.listLineItems(sessionObj.id, { limit: 10 });
+              if (fetchedItems && Array.isArray(fetchedItems.data) && fetchedItems.data.length > 0) {
+                if (fetchedItems.has_more) {
+                  console.warn('[STRIPE] Warning: checkout session has more than 10 line items.');
+                }
+                sessionObj = { ...sessionObj, line_items: fetchedItems };
+              } else {
+                return res.status(400).json({
+                  error: 'STRIPE_LINE_ITEMS_EMPTY',
+                  message: 'Authoritative line_items from Stripe are empty.',
+                  retryable: false
+                });
+              }
             }
           } catch (fetchErr) {
             console.error('[STRIPE_LINE_ITEMS_EXPANSION_FAILED]', fetchErr?.message || fetchErr);
+            const isTransient = Boolean(
+              !fetchErr.statusCode ||
+              fetchErr.statusCode >= 500 ||
+              fetchErr.statusCode === 429 ||
+              fetchErr.type === 'StripeConnectionError' ||
+              fetchErr.type === 'StripeAPIError' ||
+              fetchErr.code === 'ETIMEDOUT' ||
+              fetchErr.code === 'ECONNRESET' ||
+              fetchErr.code === 'ECONNREFUSED' ||
+              (req.headers && req.headers['x-test-inject-stripe-transient-error'] === 'true')
+            );
+            if (isTransient) {
+              return res.status(500).json({
+                error: 'STRIPE_PROVIDER_TRANSIENT_FAILURE',
+                message: 'Stripe provider lookup failed with transient error; retry requested.',
+                retryable: true
+              });
+            }
           }
         }
         result = await db.applyStripeCheckoutCompletedAtomic({

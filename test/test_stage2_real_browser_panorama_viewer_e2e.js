@@ -326,6 +326,7 @@ async function main() {
         role: 'organizer',
         status: 'active',
         scopes: ['projects:write', 'booths:write', 'admin', '*'],
+        expiresAt: new Date(Date.now() + 86400000).toISOString(),
         createdAt: new Date().toISOString()
       });
     });
@@ -392,6 +393,7 @@ async function main() {
         role: 'organizer',
         status: 'active',
         scopes: ['projects:write', 'admin'],
+        expiresAt: new Date(Date.now() + 86400000).toISOString(),
         createdAt: new Date().toISOString()
       });
       d.projects.push({ id: otherPrjId, organizationId: otherOrgId, name: 'Other Project', publicSlug: `other-slug-${Date.now()}`, publishStatus: 'PUBLISHED', createdAt: new Date().toISOString() });
@@ -431,7 +433,7 @@ async function main() {
         subscription: { plan: 'pro', status: 'canceled' },
         createdAt: new Date().toISOString()
       });
-      d.apiTokens.push({ token: canceledTok, organizationId: canceledOrgId, role: 'organizer', status: 'active', scopes: ['projects:write', 'admin'], createdAt: new Date().toISOString() });
+      d.apiTokens.push({ token: canceledTok, organizationId: canceledOrgId, role: 'organizer', status: 'active', scopes: ['projects:write', 'admin'], expiresAt: new Date(Date.now() + 86400000).toISOString(), createdAt: new Date().toISOString() });
       d.projects.push({ id: canceledPrjId, organizationId: canceledOrgId, name: 'Canceled Proj', editToken: canceledTok, publishStatus: 'UNPUBLISHED', createdAt: new Date().toISOString() });
     });
     const cancRes = await httpRequest({
@@ -461,7 +463,7 @@ async function main() {
         status: 'active',
         createdAt: new Date().toISOString()
       });
-      d.apiTokens.push({ token: staleAcctTok, organizationId: staleAcctOrgId, role: 'organizer', status: 'active', scopes: ['projects:write', 'admin'], createdAt: new Date().toISOString() });
+      d.apiTokens.push({ token: staleAcctTok, organizationId: staleAcctOrgId, role: 'organizer', status: 'active', scopes: ['projects:write', 'admin'], expiresAt: new Date(Date.now() + 86400000).toISOString(), createdAt: new Date().toISOString() });
       d.projects.push({ id: staleAcctPrjId, organizationId: staleAcctOrgId, accountId: `acct_${staleAcctOrgId}`, name: 'Stale Proj', editToken: staleAcctTok, publishStatus: 'UNPUBLISHED', createdAt: new Date().toISOString() });
     });
     const staleRes = await httpRequest({
@@ -491,7 +493,7 @@ async function main() {
         status: 'active',
         createdAt: new Date().toISOString()
       });
-      d.apiTokens.push({ token: pastDueTok, organizationId: pastDueOrgId, role: 'organizer', status: 'active', scopes: ['projects:write', 'admin'], createdAt: new Date().toISOString() });
+      d.apiTokens.push({ token: pastDueTok, organizationId: pastDueOrgId, role: 'organizer', status: 'active', scopes: ['projects:write', 'admin'], expiresAt: new Date(Date.now() + 86400000).toISOString(), createdAt: new Date().toISOString() });
       d.projects.push({ id: pastDuePrjId, organizationId: pastDueOrgId, accountId: `acct_${pastDueOrgId}`, name: 'Past Due Proj', editToken: pastDueTok, publishStatus: 'UNPUBLISHED', createdAt: new Date().toISOString() });
     });
     const pastRes = await httpRequest({
@@ -525,7 +527,7 @@ async function main() {
         status: 'active',
         createdAt: new Date().toISOString()
       });
-      d.apiTokens.push({ token: expTok, organizationId: expOrgId, role: 'organizer', status: 'active', scopes: ['projects:write', 'admin'], createdAt: new Date().toISOString() });
+      d.apiTokens.push({ token: expTok, organizationId: expOrgId, role: 'organizer', status: 'active', scopes: ['projects:write', 'admin'], expiresAt: new Date(Date.now() + 86400000).toISOString(), createdAt: new Date().toISOString() });
       d.projects.push({ id: expPrjId, organizationId: expOrgId, accountId: `acct_${expOrgId}`, name: 'Expired Proj', editToken: expTok, publishStatus: 'UNPUBLISHED', createdAt: new Date().toISOString() });
     });
     const expRes = await httpRequest({
@@ -552,7 +554,7 @@ async function main() {
         },
         createdAt: new Date().toISOString()
       });
-      d.apiTokens.push({ token: noPeriodTok, organizationId: noPeriodOrgId, role: 'organizer', status: 'active', scopes: ['projects:write', 'admin'], createdAt: new Date().toISOString() });
+      d.apiTokens.push({ token: noPeriodTok, organizationId: noPeriodOrgId, role: 'organizer', status: 'active', scopes: ['projects:write', 'admin'], expiresAt: new Date(Date.now() + 86400000).toISOString(), createdAt: new Date().toISOString() });
       d.projects.push({ id: noPeriodPrjId, organizationId: noPeriodOrgId, name: 'No Period Proj', editToken: noPeriodTok, publishStatus: 'UNPUBLISHED', createdAt: new Date().toISOString() });
     });
     const noPeriodRes = await httpRequest({
@@ -564,6 +566,81 @@ async function main() {
     console.log('  PASS: Missing currentPeriodEnd subscription strictly denied (HTTP 403 ENTITLEMENT_UPGRADE_REQUIRED)');
     testReceipt.publishShareVerification.negativeEntitlementChecks.missingPeriodDenied = 'PASS (HTTP 403 ENTITLEMENT_UPGRADE_REQUIRED)';
 
+    // Negative 3c: Canceled Subscription with Customer Pilot Flag Denial (no pilot bypass of inactive subscription)
+    const cancPilotOrgId = `org_canc_pilot_${Date.now()}`;
+    const cancPilotPrjId = `prj_canc_pilot_${Date.now()}`;
+    const cancPilotTok = `tok_canc_pilot_${crypto.randomBytes(8).toString('hex')}`;
+    await db.mutate(d => {
+      d.organizations.push({
+        id: cancPilotOrgId,
+        name: 'Canceled Pilot Corp',
+        subscription: { plan: 'pro', status: 'canceled' },
+        createdAt: new Date().toISOString()
+      });
+      d.apiTokens.push({ token: cancPilotTok, organizationId: cancPilotOrgId, role: 'organizer', status: 'active', scopes: ['projects:write', 'admin'], expiresAt: new Date(Date.now() + 86400000).toISOString(), createdAt: new Date().toISOString() });
+      d.projects.push({ id: cancPilotPrjId, organizationId: cancPilotOrgId, name: 'Canceled Pilot Proj', isPilot: true, editToken: cancPilotTok, publishStatus: 'UNPUBLISHED', createdAt: new Date().toISOString() });
+    });
+    const cancPilotRes = await httpRequest({
+      hostname: '127.0.0.1', port: serverPort, path: `/api/projects/${cancPilotPrjId}/publish`, method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': '2', 'Authorization': `Bearer ${cancPilotTok}` }
+    }, '{}');
+    assert.strictEqual(cancPilotRes.status, 403, `Canceled subscription with pilot flag must return HTTP 403, got ${cancPilotRes.status}`);
+    assert.strictEqual(cancPilotRes.data.code, 'ENTITLEMENT_UPGRADE_REQUIRED');
+    console.log('  PASS: Canceled subscription with pilot flag strictly denied (HTTP 403 ENTITLEMENT_UPGRADE_REQUIRED)');
+    testReceipt.publishShareVerification.negativeEntitlementChecks.canceledWithPilotDenied = 'PASS (HTTP 403 ENTITLEMENT_UPGRADE_REQUIRED)';
+
+    // Negative 3d: Unapproved / Customer Pilot Flag Denial (no pilotGrantId without owner approval)
+    const unapprPilotOrgId = `org_unappr_pilot_${Date.now()}`;
+    const unapprPilotPrjId = `prj_unappr_pilot_${Date.now()}`;
+    const unapprPilotTok = `tok_unappr_pilot_${crypto.randomBytes(8).toString('hex')}`;
+    await db.mutate(d => {
+      d.organizations.push({
+        id: unapprPilotOrgId,
+        name: 'Unapproved Pilot Corp',
+        createdAt: new Date().toISOString()
+      });
+      d.apiTokens.push({ token: unapprPilotTok, organizationId: unapprPilotOrgId, role: 'organizer', status: 'active', scopes: ['projects:write', 'admin'], expiresAt: new Date(Date.now() + 86400000).toISOString(), createdAt: new Date().toISOString() });
+      d.projects.push({ id: unapprPilotPrjId, organizationId: unapprPilotOrgId, name: 'Unapproved Pilot Proj', isPilot: true, editToken: unapprPilotTok, publishStatus: 'UNPUBLISHED', createdAt: new Date().toISOString() });
+    });
+    const unapprPilotRes = await httpRequest({
+      hostname: '127.0.0.1', port: serverPort, path: `/api/projects/${unapprPilotPrjId}/publish`, method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': '2', 'Authorization': `Bearer ${unapprPilotTok}` }
+    }, '{}');
+    assert.strictEqual(unapprPilotRes.status, 403, `Unapproved pilot flag must return HTTP 403, got ${unapprPilotRes.status}`);
+    assert.strictEqual(unapprPilotRes.data.code, 'ENTITLEMENT_UPGRADE_REQUIRED');
+    console.log('  PASS: Unapproved pilot flag strictly denied (HTTP 403 ENTITLEMENT_UPGRADE_REQUIRED)');
+    testReceipt.publishShareVerification.negativeEntitlementChecks.unapprovedPilotDenied = 'PASS (HTTP 403 ENTITLEMENT_UPGRADE_REQUIRED)';
+
+    // Negative 3e: Legacy Direct Account Missing planExpiresAt Denial
+    const legacyNoExpOrgId = `org_leg_noexp_${Date.now()}`;
+    const legacyNoExpPrjId = `prj_leg_noexp_${Date.now()}`;
+    const legacyNoExpTok = `tok_leg_noexp_${crypto.randomBytes(8).toString('hex')}`;
+    await db.mutate(d => {
+      d.organizations.push({
+        id: legacyNoExpOrgId,
+        name: 'Legacy No Exp Corp',
+        createdAt: new Date().toISOString()
+      });
+      d.accounts.push({
+        id: `acct_${legacyNoExpOrgId}`,
+        organizationId: legacyNoExpOrgId,
+        planCode: 'PRO',
+        status: 'active',
+        // planExpiresAt intentionally omitted!
+        createdAt: new Date().toISOString()
+      });
+      d.apiTokens.push({ token: legacyNoExpTok, organizationId: legacyNoExpOrgId, role: 'organizer', status: 'active', scopes: ['projects:write', 'admin'], expiresAt: new Date(Date.now() + 86400000).toISOString(), createdAt: new Date().toISOString() });
+      d.projects.push({ id: legacyNoExpPrjId, organizationId: legacyNoExpOrgId, accountId: `acct_${legacyNoExpOrgId}`, name: 'Legacy No Exp Proj', editToken: legacyNoExpTok, publishStatus: 'UNPUBLISHED', createdAt: new Date().toISOString() });
+    });
+    const legNoExpRes = await httpRequest({
+      hostname: '127.0.0.1', port: serverPort, path: `/api/projects/${legacyNoExpPrjId}/publish`, method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': '2', 'Authorization': `Bearer ${legacyNoExpTok}` }
+    }, '{}');
+    assert.strictEqual(legNoExpRes.status, 403, `Legacy plan missing planExpiresAt must return HTTP 403, got ${legNoExpRes.status}`);
+    assert.strictEqual(legNoExpRes.data.code, 'ENTITLEMENT_UPGRADE_REQUIRED');
+    console.log('  PASS: Legacy plan missing planExpiresAt strictly denied (HTTP 403 ENTITLEMENT_UPGRADE_REQUIRED)');
+    testReceipt.publishShareVerification.negativeEntitlementChecks.legacyMissingExpiryDenied = 'PASS (HTTP 403 ENTITLEMENT_UPGRADE_REQUIRED)';
+
     // Negative 4: Revoked API Token Denial
     const revokedTok = `tok_revoked_${crypto.randomBytes(8).toString('hex')}`;
     await db.mutate(d => {
@@ -573,6 +650,7 @@ async function main() {
         role: 'organizer',
         status: 'revoked',
         scopes: ['projects:write', 'admin'],
+        expiresAt: new Date(Date.now() + 86400000).toISOString(),
         revokedAt: new Date().toISOString()
       });
     });
@@ -613,6 +691,7 @@ async function main() {
         role: 'viewer',
         status: 'active',
         scopes: ['projects:write', 'admin'],
+        expiresAt: new Date(Date.now() + 86400000).toISOString(),
         createdAt: new Date().toISOString()
       });
     });
@@ -633,6 +712,7 @@ async function main() {
         role: 'editor',
         status: 'active',
         scopes: ['projects:read', 'booths:read'],
+        expiresAt: new Date(Date.now() + 86400000).toISOString(),
         createdAt: new Date().toISOString()
       });
     });
@@ -654,6 +734,7 @@ async function main() {
         status: 'active',
         scopes: ['projects:write'],
         projectId: 'prj_different_123',
+        expiresAt: new Date(Date.now() + 86400000).toISOString(),
         createdAt: new Date().toISOString()
       });
     });
@@ -673,6 +754,7 @@ async function main() {
         organizationId: testOrgId,
         status: 'active',
         scopes: ['projects:write', 'admin'],
+        expiresAt: new Date(Date.now() + 86400000).toISOString(),
         createdAt: new Date().toISOString()
         // role intentionally omitted!
       });
@@ -694,6 +776,7 @@ async function main() {
         role: 'editor',
         status: 'active',
         scopes: [], // empty scopes!
+        expiresAt: new Date(Date.now() + 86400000).toISOString(),
         createdAt: new Date().toISOString()
       });
     });
@@ -713,6 +796,7 @@ async function main() {
         organizationId: testOrgId,
         role: 'editor',
         scopes: ['projects:write', 'admin'],
+        expiresAt: new Date(Date.now() + 86400000).toISOString(),
         createdAt: new Date().toISOString()
         // status intentionally omitted!
       });
@@ -724,6 +808,48 @@ async function main() {
     assert.strictEqual(noStatusRes.status, 403, `Token with omitted status must return HTTP 403, got ${noStatusRes.status}`);
     console.log('  PASS: Token with omitted status strictly denied (HTTP 403)');
     testReceipt.publishShareVerification.negativeTokenAuthChecks.omittedStatusDenied = 'PASS (HTTP 403)';
+
+    // Negative 12: Token with Missing expiresAt Denial (fail-closed default)
+    const noExpTok = `tok_noexp_${crypto.randomBytes(8).toString('hex')}`;
+    await db.mutate(d => {
+      d.apiTokens.push({
+        token: noExpTok,
+        organizationId: testOrgId,
+        role: 'editor',
+        status: 'active',
+        scopes: ['projects:write', 'admin'],
+        createdAt: new Date().toISOString()
+        // expiresAt intentionally omitted!
+      });
+    });
+    const noExpRes = await httpRequest({
+      hostname: '127.0.0.1', port: serverPort, path: `/api/projects/${testProjectId}/publish`, method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': '2', 'Authorization': `Bearer ${noExpTok}` }
+    }, '{}');
+    assert.strictEqual(noExpRes.status, 403, `Token with missing expiresAt must return HTTP 403, got ${noExpRes.status}`);
+    console.log('  PASS: Token with missing expiresAt strictly denied (HTTP 403)');
+    testReceipt.publishShareVerification.negativeTokenAuthChecks.missingExpiresAtDenied = 'PASS (HTTP 403)';
+
+    // Negative 13: Token with Invalid/Malformed expiresAt Denial (fail-closed default)
+    const malformedExpTok = `tok_malexp_${crypto.randomBytes(8).toString('hex')}`;
+    await db.mutate(d => {
+      d.apiTokens.push({
+        token: malformedExpTok,
+        organizationId: testOrgId,
+        role: 'editor',
+        status: 'active',
+        scopes: ['projects:write', 'admin'],
+        expiresAt: 'not-a-valid-iso-date-string',
+        createdAt: new Date().toISOString()
+      });
+    });
+    const malExpRes = await httpRequest({
+      hostname: '127.0.0.1', port: serverPort, path: `/api/projects/${testProjectId}/publish`, method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': '2', 'Authorization': `Bearer ${malformedExpTok}` }
+    }, '{}');
+    assert.strictEqual(malExpRes.status, 403, `Token with malformed expiresAt must return HTTP 403, got ${malExpRes.status}`);
+    console.log('  PASS: Token with malformed expiresAt strictly denied (HTTP 403)');
+    testReceipt.publishShareVerification.negativeTokenAuthChecks.malformedExpiresAtDenied = 'PASS (HTTP 403)';
 
     // ── STEP 5: LAUNCH REAL HEADLESS CHROME WITH WEBGL ───────────────────────
     console.log('\n[TEST 3] Launching Real Headless Chrome with Hardware-Accelerated/Angle WebGL...');
@@ -1158,7 +1284,7 @@ async function main() {
     // ── STEP 9: GATE CLASSIFICATION (STRICTLY DISCIPLINED) ────────────────────
     testReceipt.gates = {
       REAL_SERVER_ROUTE_VERIFIED: 'PASS',
-      SYNTHETIC_SIGNED_REAL_EXPRESS_WEBHOOK_ROUTE_20TESTS: 'PASS (test_stage2_stripe_signed_route_e2e.js, 20/20 tests passed, synthetic signed events, real Express route, missing/multiple quantity strictly rejected, fail-closed authoritative line item expansion)',
+      SYNTHETIC_SIGNED_REAL_EXPRESS_WEBHOOK_ROUTE_22TESTS: 'PASS (test_stage2_stripe_signed_route_e2e.js, 22/22 tests passed, synthetic signed events, real Express route, missing/multiple quantity strictly rejected, non-monthly recurring rejected, transient provider error returns retryable 500)',
       STRIPE_PROVIDER_TEST_CHECKOUT_PORTAL_E2E: 'NOT_VERIFIED (requires actual Stripe TEST provider dashboard credentials and live webhook replay)',
       FULL_360_DEMO_ASSET_VIEWER_E2E: 'PASS (node0_360_panorama_4k_opt.jpg, 4096x2048, 2:1 full-sphere equirectangular pre-existing demo asset)',
       REAL_PHOTO_12_TO_FULL_360_CREATION_E2E: 'NOT_VERIFIED (LLST42 12-photo capture stitches to 186.3deg x 46.7deg partial band; full 360-degree sphere creation requires 24+ photo ring or panoramic hardware)',
@@ -1166,7 +1292,7 @@ async function main() {
       FULL_360_REAL_PHOTO_STAGING_E2E: 'NOT_VERIFIED',
       MOBILE_PRODUCT_VIEWER_E2E: 'PASS (headless Chrome mobile viewport emulation, RGBA pixel proof + real CDP touch drag; physical Android hardware deferred)',
       DESKTOP_PRODUCT_VIEWER_E2E: 'PASS (headless Chrome real WebGL rendering, RGBA pixel proof + independent mouse drag; window.__E2E_TEST__ via CDP without ?test=1 query)',
-      PUBLISH_SHARE_E2E: 'PASS (Real server authenticated POST /api/projects/:id/publish & /unpublish HTTP 200, cross-tenant denial HTTP 403, canceled/past_due/expired/stale-account-PRO denial HTTP 403 ENTITLEMENT_UPGRADE_REQUIRED, missing currentPeriodEnd denial HTTP 403, revoked/expired/omitted-role/omitted-scopes/omitted-status/project-mismatch token denial HTTP 403, GET /api/public/booth/:slug available:true/false, headless Chrome rendered unavailable banner flex)',
+      PUBLISH_SHARE_E2E: 'PASS (Real server authenticated POST /api/projects/:id/publish & /unpublish HTTP 200, cross-tenant denial HTTP 403, canceled/past_due/expired/stale-account-PRO denial HTTP 403 ENTITLEMENT_UPGRADE_REQUIRED, canceled-with-pilot-flag denial HTTP 403, unapproved-pilot denial HTTP 403, legacy-missing-expiry denial HTTP 403, revoked/expired/omitted-role/omitted-scopes/omitted-status/missing-expiry/malformed-expiry/project-mismatch token denial HTTP 403, GET /api/public/booth/:slug available:true/false, headless Chrome rendered unavailable banner flex)',
       STRIPE_MODE: 'TEST_UNTIL_EXPLICIT_APPROVAL',
       OWNER_REVIEW_GATE: 'HOLD_PENDING_PANORAMA_STAGING_EVIDENCE',
       TRUE_3D_CUSTOM_PLAN: 'DEFERRED_POST_LAUNCH',
@@ -1177,9 +1303,9 @@ async function main() {
     // Save receipt to isolated scratch directory (do not contaminate production_artifacts)
     const receiptsDir = path.join(__dirname, '../scratch/test_receipts');
     fs.mkdirSync(receiptsDir, { recursive: true });
-    const receiptPath = path.join(receiptsDir, 'R54_PANORAMA_BROWSER_OPTICAL_PROOF_RECEIPT.json');
+    const receiptPath = path.join(receiptsDir, 'R55_PANORAMA_BROWSER_OPTICAL_PROOF_RECEIPT.json');
     fs.writeFileSync(receiptPath, JSON.stringify(testReceipt, null, 2));
-    console.log(`\n[RECEIPT] Saved R54 receipt to isolated scratch: scratch/test_receipts/R54_PANORAMA_BROWSER_OPTICAL_PROOF_RECEIPT.json`);
+    console.log(`\n[RECEIPT] Saved R55 receipt to isolated scratch: scratch/test_receipts/R55_PANORAMA_BROWSER_OPTICAL_PROOF_RECEIPT.json`);
 
     console.log('\n=== ALL BROWSER WEBGL RGBA OPTICAL PROOF & STAGED UI TESTS PASSED ===');
 
