@@ -576,6 +576,7 @@ if (STRIPE_SECRET_MISMATCH) {
 
 // Fail-closed: Never instantiate Stripe client if there is a mode/secret mismatch!
 const stripe = (STRIPE_SECRET_KEY && !STRIPE_SECRET_MISMATCH) ? require('stripe')(STRIPE_SECRET_KEY) : null;
+app.locals.stripe = stripe;
 
 // Middleware: Request ID & Security Headers
 app.use((req, res, next) => {
@@ -682,35 +683,73 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
     switch (event.type) {
       case 'checkout.session.completed': {
         let sessionObj = event.data.object;
-        // In real TEST/LIVE modes, retrieve authoritatively from Stripe
-        if (stripe && sessionObj.id) {
+        if (!sessionObj || !sessionObj.id || typeof sessionObj.id !== 'string') {
+          return res.status(400).json({ error: 'MISSING_SESSION_ID', retryable: false });
+        }
+
+        // Authoritative Stripe Provider Lookup on EVERY commercial checkout event:
+        // Do NOT rely on unverified event-embedded line items.
+        if (stripe) {
           try {
-            // Check if transient failure fault injection is requested for testing
-            if (req.headers && req.headers['x-test-inject-stripe-transient-error'] === 'true') {
-              const simErr = new Error('Simulated Stripe connection timeout');
-              simErr.type = 'StripeConnectionError';
-              simErr.statusCode = 503;
-              throw simErr;
+            // 1. Authoritative Session Retrieval
+            const authSession = await stripe.checkout.sessions.retrieve(sessionObj.id);
+            if (!authSession) {
+              return res.status(400).json({
+                error: 'STRIPE_SESSION_NOT_FOUND',
+                message: 'Authoritative checkout session could not be found on provider.',
+                retryable: false
+              });
             }
 
-            // If line_items are missing from webhook event, attempt to retrieve authoritatively from Stripe
-            if (!sessionObj.line_items || !sessionObj.line_items.data || sessionObj.line_items.data.length === 0) {
-              const fetchedItems = await stripe.checkout.sessions.listLineItems(sessionObj.id, { limit: 10 });
-              if (fetchedItems && Array.isArray(fetchedItems.data) && fetchedItems.data.length > 0) {
-                if (fetchedItems.has_more) {
-                  console.warn('[STRIPE] Warning: checkout session has more than 10 line items.');
-                }
-                sessionObj = { ...sessionObj, line_items: fetchedItems };
+            // 2. Paginated Authoritative Line Items Retrieval (handles has_more)
+            let authoritativeLineItems = [];
+            let startingAfter = undefined;
+            let hasMore = true;
+            while (hasMore) {
+              const listParams = { limit: 100 };
+              if (startingAfter) listParams.starting_after = startingAfter;
+              const page = await stripe.checkout.sessions.listLineItems(sessionObj.id, listParams);
+              if (!page || !Array.isArray(page.data)) break;
+              authoritativeLineItems.push(...page.data);
+              hasMore = Boolean(page.has_more);
+              if (hasMore && page.data.length > 0) {
+                startingAfter = page.data[page.data.length - 1].id;
               } else {
+                hasMore = false;
+              }
+            }
+
+            if (authoritativeLineItems.length === 0) {
+              return res.status(400).json({
+                error: 'STRIPE_LINE_ITEMS_EMPTY',
+                message: 'Authoritative line_items from Stripe are empty.',
+                retryable: false
+              });
+            }
+
+            // 3. Reject Forged Event-Embedded Line Items mismatch
+            // If the incoming event payload attempted to supply forged line items that differ from the authoritative provider record, fail closed immediately.
+            if (sessionObj.line_items && Array.isArray(sessionObj.line_items.data) && sessionObj.line_items.data.length > 0) {
+              const eventItemIds = sessionObj.line_items.data.map(i => i.price?.id || i.id).sort().join(',');
+              const authItemIds = authoritativeLineItems.map(i => i.price?.id || i.id).sort().join(',');
+              if (eventItemIds !== authItemIds) {
+                console.warn(`[SECURITY][STRIPE_FORGERY_DETECTED] Event-embedded line items (${eventItemIds}) differ from provider items (${authItemIds}). Rejecting.`);
                 return res.status(400).json({
-                  error: 'STRIPE_LINE_ITEMS_EMPTY',
-                  message: 'Authoritative line_items from Stripe are empty.',
+                  error: 'FORGED_EVENT_LINE_ITEMS_MISMATCH',
+                  message: 'Event-embedded line items differ from authoritative provider record.',
                   retryable: false
                 });
               }
             }
+
+            // Merge authoritative provider session and line items with event metadata
+            sessionObj = {
+              ...authSession,
+              metadata: { ...(authSession.metadata || {}), ...(sessionObj.metadata || {}) },
+              line_items: { object: 'list', data: authoritativeLineItems, has_more: false }
+            };
           } catch (fetchErr) {
-            console.error('[STRIPE_LINE_ITEMS_EXPANSION_FAILED]', fetchErr?.message || fetchErr);
+            console.error('[STRIPE_AUTHORITATIVE_LOOKUP_FAILED]', fetchErr?.message || fetchErr);
             const isTransient = Boolean(
               !fetchErr.statusCode ||
               fetchErr.statusCode >= 500 ||
@@ -719,8 +758,7 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
               fetchErr.type === 'StripeAPIError' ||
               fetchErr.code === 'ETIMEDOUT' ||
               fetchErr.code === 'ECONNRESET' ||
-              fetchErr.code === 'ECONNREFUSED' ||
-              (req.headers && req.headers['x-test-inject-stripe-transient-error'] === 'true')
+              fetchErr.code === 'ECONNREFUSED'
             );
             if (isTransient) {
               return res.status(500).json({
@@ -729,8 +767,14 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
                 retryable: true
               });
             }
+            return res.status(400).json({
+              error: 'STRIPE_PROVIDER_FETCH_FAILED',
+              message: fetchErr?.message || 'Authoritative Stripe lookup failed.',
+              retryable: false
+            });
           }
         }
+
         result = await db.applyStripeCheckoutCompletedAtomic({
           event,
           session: sessionObj
@@ -13476,4 +13520,4 @@ if (fs.existsSync(sslKeyPath) && fs.existsSync(sslCertPath)) {
   }
 }
 
-module.exports = { app, server, httpsServer, activeSessions, generateSessionToken };
+module.exports = { app, server, httpsServer, activeSessions, generateSessionToken, stripeClient: stripe };

@@ -64,10 +64,31 @@ assert.strictEqual(
 const db = require('../virtual-tradeshow-commercial-v1/_clean_deploy/server/db');
 
 // Require the ACTUAL Express application server
-const { server, app, httpsServer } = require('../virtual-tradeshow-commercial-v1/_clean_deploy/server/index');
+const { server, app, httpsServer, stripeClient } = require('../virtual-tradeshow-commercial-v1/_clean_deploy/server/index');
 
 // Initialize isolated Stripe SDK client for signature generation
 const stripe = require('../virtual-tradeshow-commercial-v1/_clean_deploy/node_modules/stripe')(process.env.STRIPE_SECRET_KEY);
+
+// Authoritative mock store for testing server-side authoritative provider retrieval
+const authoritativeSessionStore = new Map();
+const authoritativeLineItemsStore = new Map();
+
+if (stripeClient && stripeClient.checkout && stripeClient.checkout.sessions) {
+  stripeClient.checkout.sessions.retrieve = async (id) => {
+    if (authoritativeSessionStore.has(id)) {
+      return authoritativeSessionStore.get(id);
+    }
+    return { id, status: 'complete', payment_status: 'paid' };
+  };
+
+  stripeClient.checkout.sessions.listLineItems = async (id, params) => {
+    if (authoritativeLineItemsStore.has(id)) {
+      const entry = authoritativeLineItemsStore.get(id);
+      return typeof entry === 'function' ? entry(params) : entry;
+    }
+    return { object: 'list', data: [], has_more: false };
+  };
+}
 
 async function main() {
   let serverPort;
@@ -153,6 +174,25 @@ async function main() {
     // Helper: make signed HTTP POST to the real server webhook endpoint
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
     async function postWebhook(payloadObject, customSignature = null) {
+      if (typeof payloadObject === 'object' && payloadObject.type === 'checkout.session.completed' && payloadObject.data?.object) {
+        const sess = payloadObject.data.object;
+        if (sess.id && !authoritativeSessionStore.has(sess.id)) {
+          authoritativeSessionStore.set(sess.id, {
+            id: sess.id,
+            customer: sess.customer,
+            subscription: sess.subscription,
+            payment_status: sess.payment_status || 'paid',
+            status: sess.status || 'complete',
+            amount_total: sess.amount_total,
+            currency: sess.currency,
+            metadata: sess.metadata || {}
+          });
+        }
+        if (sess.id && sess.line_items && !authoritativeLineItemsStore.has(sess.id)) {
+          authoritativeLineItemsStore.set(sess.id, sess.line_items);
+        }
+      }
+
       const payloadString = typeof payloadObject === 'string' ? payloadObject : JSON.stringify(payloadObject);
       const signature = customSignature !== null
         ? customSignature
@@ -322,6 +362,8 @@ async function main() {
       currencyExpected: 'usd',
       status: 'PENDING'
     });
+    // Configure authoritative provider to return empty line items
+    authoritativeLineItemsStore.set(sessionId5, { object: 'list', data: [], has_more: false });
     const eventNoItems = {
       id: `evt_no_items_${Date.now()}`,
       object: 'event',
@@ -340,8 +382,8 @@ async function main() {
     };
     const res5 = await postWebhook(eventNoItems);
     assert.strictEqual(res5.status, 400, 'Missing line items must be rejected with HTTP 400');
-    assert.strictEqual(res5.data.error, 'MISSING_LINE_ITEMS');
-    console.log('  PASS: Checkout event with missing line items rejected with MISSING_LINE_ITEMS.');
+    assert.ok(res5.data.error === 'MISSING_LINE_ITEMS' || res5.data.error === 'STRIPE_LINE_ITEMS_EMPTY', `Expected MISSING_LINE_ITEMS or STRIPE_LINE_ITEMS_EMPTY, got ${res5.data.error}`);
+    console.log('  PASS: Checkout event with missing line items rejected with HTTP 400.');
 
     // ── TEST 6: UNAPPROVED PRICE ID FAIL-CLOSED ────────────────────────────
     console.log('\n[TEST 6] Verifying Unapproved Price ID fail-closed rejection...');
@@ -887,8 +929,8 @@ async function main() {
     assert.strictEqual(res21.data.error, 'INVALID_RECURRING_INTERVAL');
     console.log('  PASS: Checkout event with non-monthly recurring interval rejected with INVALID_RECURRING_INTERVAL.');
 
-    // ── TEST 22: TRANSIENT STRIPE PROVIDER OUTAGE RETRYABLE 500 ─────────────
-    console.log('\n[TEST 22] Verifying Transient Stripe Provider Outage returns HTTP 500 retryable...');
+    // ── TEST 22: TRANSIENT STRIPE PROVIDER OUTAGE RETRYABLE 500 (SERVER SDK STUB) ──
+    console.log('\n[TEST 22] Verifying Transient Stripe Provider Outage returns HTTP 500 retryable via server SDK stub...');
     const sessionId22 = `cs_transient_outage_${Date.now()}`;
     await db.recordPendingCheckout({
       sessionId: sessionId22,
@@ -911,18 +953,190 @@ async function main() {
           subscription: `sub_transient_${Date.now()}`,
           payment_status: 'paid',
           amount_total: 29900,
+          currency: 'usd',
+          line_items: { data: [{ price: { id: 'price_test_pro_monthly', recurring: { interval: 'month' } }, quantity: 1 }] }
+        }
+      }
+    };
+
+    const origRetrieve = stripeClient.checkout.sessions.retrieve;
+    stripeClient.checkout.sessions.retrieve = async () => {
+      const simErr = new Error('Simulated Stripe connection timeout');
+      simErr.type = 'StripeConnectionError';
+      simErr.statusCode = 503;
+      throw simErr;
+    };
+
+    let res22;
+    try {
+      res22 = await postWebhook(eventTransient);
+    } finally {
+      stripeClient.checkout.sessions.retrieve = origRetrieve;
+    }
+
+    assert.strictEqual(res22.status, 500, 'Transient provider outage must return HTTP 500');
+    assert.strictEqual(res22.data.error, 'STRIPE_PROVIDER_TRANSIENT_FAILURE');
+    assert.strictEqual(res22.data.retryable, true, 'Transient provider outage must be marked retryable: true');
+    console.log('  PASS: Transient Stripe provider failure returned HTTP 500 with retryable: true.');
+
+    // ── TEST 23: FORGED EVENT-EMBEDDED LINE ITEMS MISMATCH (FAIL-CLOSED) ─────
+    console.log('\n[TEST 23] Verifying Forged Event-Embedded Line Items mismatch rejection...');
+    const sessionId23 = `cs_forged_items_${Date.now()}`;
+    await db.recordPendingCheckout({
+      sessionId: sessionId23,
+      organizationId: otherOrgId,
+      projectId: otherProjectId,
+      requestedPlan: 'pro',
+      priceId: 'price_test_pro_monthly',
+      amountExpected: 29900,
+      currencyExpected: 'usd',
+      status: 'PENDING'
+    });
+    authoritativeSessionStore.set(sessionId23, {
+      id: sessionId23,
+      status: 'complete',
+      payment_status: 'paid',
+      amount_total: 29900,
+      currency: 'usd'
+    });
+    // Authoritative provider has 'price_test_pro_monthly'
+    authoritativeLineItemsStore.set(sessionId23, {
+      object: 'list',
+      data: [{ price: { id: 'price_test_pro_monthly', recurring: { interval: 'month' } }, quantity: 1 }],
+      has_more: false
+    });
+    // Forged event attempts to inject Business plan price!
+    const eventForgedLineItems = {
+      id: `evt_forged_items_${Date.now()}`,
+      object: 'event',
+      type: 'checkout.session.completed',
+      data: {
+        object: {
+          id: sessionId23,
+          customer: `cus_forged_items_${Date.now()}`,
+          subscription: `sub_forged_items_${Date.now()}`,
+          payment_status: 'paid',
+          amount_total: 29900,
+          currency: 'usd',
+          line_items: {
+            data: [{ price: { id: 'price_test_biz_monthly', recurring: { interval: 'month' } }, quantity: 1 }]
+          }
+        }
+      }
+    };
+    const res23 = await postWebhook(eventForgedLineItems);
+    assert.strictEqual(res23.status, 400, 'Forged event line items mismatch must be rejected with HTTP 400');
+    assert.strictEqual(res23.data.error, 'FORGED_EVENT_LINE_ITEMS_MISMATCH');
+    console.log('  PASS: Forged event line items differing from provider record strictly rejected (HTTP 400).');
+
+    // ── TEST 24: PAGINATED AUTHORITATIVE LINE ITEMS (has_more: true) ─────────
+    console.log('\n[TEST 24] Verifying Paginated Authoritative Line Items retrieval (has_more: true)...');
+    const sessionId24 = `cs_paginated_${Date.now()}`;
+    await db.recordPendingCheckout({
+      sessionId: sessionId24,
+      organizationId: otherOrgId,
+      projectId: otherProjectId,
+      requestedPlan: 'pro',
+      priceId: 'price_test_pro_monthly',
+      amountExpected: 29900,
+      currencyExpected: 'usd',
+      status: 'PENDING'
+    });
+    const cus24 = `cus_paginated_${Date.now()}`;
+    const sub24 = `sub_paginated_${Date.now()}`;
+    authoritativeSessionStore.set(sessionId24, {
+      id: sessionId24,
+      customer: cus24,
+      subscription: sub24,
+      status: 'complete',
+      payment_status: 'paid',
+      amount_total: 29900,
+      currency: 'usd'
+    });
+    // Page 1 has_more: true, Page 2 has_more: false (total 2 items, which should fail MULTIPLE_LINE_ITEMS)
+    authoritativeLineItemsStore.set(sessionId24, (params) => {
+      if (!params || !params.starting_after) {
+        return {
+          object: 'list',
+          data: [{ id: 'li_item_1', price: { id: 'price_test_pro_monthly', recurring: { interval: 'month' } }, quantity: 1 }],
+          has_more: true
+        };
+      }
+      return {
+        object: 'list',
+        data: [{ id: 'li_item_2', price: { id: 'price_test_addon', recurring: { interval: 'month' } }, quantity: 1 }],
+        has_more: false
+      };
+    });
+    const eventPaginated = {
+      id: `evt_paginated_${Date.now()}`,
+      object: 'event',
+      type: 'checkout.session.completed',
+      data: {
+        object: {
+          id: sessionId24,
+          customer: `cus_paginated_${Date.now()}`,
+          subscription: `sub_paginated_${Date.now()}`,
+          payment_status: 'paid',
+          amount_total: 29900,
           currency: 'usd'
         }
       }
     };
-    const payloadString22 = JSON.stringify(eventTransient);
-    const timestamp22 = Math.floor(Date.now() / 1000);
-    const signature22 = stripe.webhooks.generateTestHeaderString({
-      payload: payloadString22,
-      secret: process.env.STRIPE_WEBHOOK_SECRET,
-      timestamp: timestamp22
+    const res24 = await postWebhook(eventPaginated);
+    assert.strictEqual(res24.status, 400, 'Multiple paginated line items must be rejected with MULTIPLE_LINE_ITEMS');
+    assert.strictEqual(res24.data.error, 'MULTIPLE_LINE_ITEMS');
+    console.log('  PASS: Paginated line items across multiple pages properly retrieved and validated.');
+
+    // ── TEST 25: CLIENT REQUEST-HEADER FAULT INJECTION IS STRICTLY IGNORED ──
+    console.log('\n[TEST 25] Verifying client request header cannot trigger fault injection...');
+    const sessionId25 = `cs_header_test_${Date.now()}`;
+    await db.recordPendingCheckout({
+      sessionId: sessionId25,
+      organizationId: otherOrgId,
+      projectId: otherProjectId,
+      requestedPlan: 'pro',
+      priceId: 'price_test_pro_monthly',
+      amountExpected: 29900,
+      currencyExpected: 'usd',
+      status: 'PENDING'
     });
-    const res22 = await new Promise((resolve, reject) => {
+    const cus25 = `cus_header_test_${Date.now()}`;
+    const sub25 = `sub_header_test_${Date.now()}`;
+    const lineItem25 = { id: 'li_header_test', price: { id: 'price_test_pro_monthly', recurring: { interval: 'month' } }, quantity: 1 };
+    authoritativeSessionStore.set(sessionId25, {
+      id: sessionId25,
+      customer: cus25,
+      subscription: sub25,
+      payment_status: 'paid',
+      status: 'complete',
+      amount_total: 29900,
+      currency: 'usd'
+    });
+    authoritativeLineItemsStore.set(sessionId25, {
+      object: 'list',
+      data: [lineItem25],
+      has_more: false
+    });
+    const eventHeaderTest = {
+      id: `evt_header_test_${Date.now()}`,
+      object: 'event',
+      type: 'checkout.session.completed',
+      data: {
+        object: {
+          id: sessionId25,
+          customer: cus25,
+          subscription: sub25,
+          payment_status: 'paid',
+          amount_total: 29900,
+          currency: 'usd',
+          line_items: { object: 'list', data: [lineItem25] }
+        }
+      }
+    };
+    const payloadStr25 = JSON.stringify(eventHeaderTest);
+    const sig25 = stripe.webhooks.generateTestHeaderString({ payload: payloadStr25, secret: process.env.STRIPE_WEBHOOK_SECRET });
+    const res25 = await new Promise((resolve, reject) => {
       const req = http.request({
         hostname: '127.0.0.1',
         port: serverPort,
@@ -930,29 +1144,28 @@ async function main() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Content-Length': Buffer.byteLength(payloadString22),
-          'Stripe-Signature': signature22,
-          'x-test-inject-stripe-transient-error': 'true'
+          'Content-Length': Buffer.byteLength(payloadStr25),
+          'Stripe-Signature': sig25,
+          'x-test-inject-stripe-transient-error': 'true' // Client attempts to trigger 500!
         }
       }, (res) => {
         let data = '';
-        res.on('data', chunk => data += chunk);
+        res.on('data', c => data += c);
         res.on('end', () => {
           try { resolve({ status: res.statusCode, data: JSON.parse(data) }); }
           catch (_) { resolve({ status: res.statusCode, data }); }
         });
       });
       req.on('error', reject);
-      req.write(payloadString22);
+      req.write(payloadStr25);
       req.end();
     });
+    // It must NOT return 500! The header must be ignored and request returns 200!
+    assert.strictEqual(res25.status, 200, 'Header fault attempt must be completely ignored; normal request returns 200');
+    assert.strictEqual(res25.data.received, true);
+    console.log('  PASS: Client-supplied fault injection header strictly ignored; zero network-controlled outage.');
 
-    assert.strictEqual(res22.status, 500, 'Transient provider outage must return HTTP 500');
-    assert.strictEqual(res22.data.error, 'STRIPE_PROVIDER_TRANSIENT_FAILURE');
-    assert.strictEqual(res22.data.retryable, true, 'Transient provider outage must be marked retryable: true');
-    console.log('  PASS: Transient Stripe provider failure returned HTTP 500 with retryable: true.');
-
-    console.log('\n=== ALL 22 REAL-SERVER SIGNED STRIPE TEST-MODE ROUTE E2E TESTS PASSED ===');
+    console.log('\n=== ALL 25 REAL-SERVER SIGNED STRIPE TEST-MODE ROUTE E2E TESTS PASSED ===');
 
 
   } finally {

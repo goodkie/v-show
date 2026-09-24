@@ -448,6 +448,8 @@ const initialSeedData = () => {
     upgradeRequests: [],
     platformMessages: [],
     ownerNotes: [],
+    pilotGrants: [],
+    legacyGrants: [],
     featureFlags: {
       stripeLiveBillingEnabled: false,
       billingKillSwitch: true,
@@ -10486,6 +10488,49 @@ return event;
     return false;
   }
 
+  verifyPilotGrant(project, account) {
+    if (!project) return false;
+    const now = Date.now();
+    const grants = this.memoryData?.pilotGrants || [];
+    const grant = grants.find(g => {
+      if (!g.grantId && !g.pilotGrantId) return false;
+      if (g.pilotApprovedByOwner !== true) return false;
+      if (!g.approvedBy || typeof g.approvedBy !== 'string') return false;
+      if (g.status && g.status !== 'active') return false;
+      if (g.revokedAt || g.isRevoked === true) return false;
+      if (!g.pilotExpiresAt || isNaN(new Date(g.pilotExpiresAt).getTime()) || now > new Date(g.pilotExpiresAt).getTime()) return false;
+
+      const matchProject = g.projectId && g.projectId === project.id;
+      const matchAccount = account && g.accountId && g.accountId === account.id;
+      const matchOrg = project.organizationId && g.organizationId && g.organizationId === project.organizationId;
+      return matchProject || matchAccount || matchOrg;
+    });
+    return Boolean(grant);
+  }
+
+  verifyLegacyGrant(project, account) {
+    if (!account) return false;
+    const now = Date.now();
+    const grants = this.memoryData?.legacyGrants || [];
+    const grant = grants.find(g => {
+      if (!g.grantId && !g.legacyGrantId) return false;
+      if (g.approvedByOwner !== true) return false;
+      if (!g.approvedBy || typeof g.approvedBy !== 'string') return false;
+      if (g.status && g.status !== 'active') return false;
+      if (g.revokedAt || g.isRevoked === true) return false;
+      const matchAccount = account.id && g.accountId === account.id;
+      const matchProject = project && g.projectId && g.projectId === project.id;
+      const matchOrg = project && project.organizationId && g.organizationId === project.organizationId;
+      return matchAccount || matchProject || matchOrg;
+    });
+    const hasValidExpiry = Boolean(
+      account.planExpiresAt &&
+      !isNaN(new Date(account.planExpiresAt).getTime()) &&
+      now <= new Date(account.planExpiresAt).getTime()
+    );
+    return Boolean(grant && hasValidExpiry);
+  }
+
   verifyEditAccess(project, token) {
     if (!project) return false;
     this.ensureProjectToken(project);
@@ -11739,20 +11784,9 @@ return event;
       const sub = org?.subscription;
       const now = Date.now();
 
-      // Check verified server-issued time-bounded pilot grant (requires pilotGrantId, explicit owner approval, and valid future expiry)
-      const registeredGrant = (db.pilotGrants || []).find(g =>
-        (g.projectId === projectId || (account && g.accountId === account.id) || (project.organizationId && g.organizationId === project.organizationId)) &&
-        g.pilotGrantId &&
-        g.pilotApprovedByOwner === true &&
-        g.pilotExpiresAt &&
-        !isNaN(new Date(g.pilotExpiresAt).getTime()) &&
-        now <= new Date(g.pilotExpiresAt).getTime()
-      );
-      const directGrant = Boolean(
-        (project.pilotGrantId && project.pilotApprovedByOwner === true && project.pilotExpiresAt && !isNaN(new Date(project.pilotExpiresAt).getTime()) && now <= new Date(project.pilotExpiresAt).getTime()) ||
-        (account && account.pilotGrantId && account.pilotApprovedByOwner === true && account.pilotExpiresAt && !isNaN(new Date(account.pilotExpiresAt).getTime()) && now <= new Date(account.pilotExpiresAt).getTime())
-      );
-      const isExplicitPilot = Boolean(registeredGrant || directGrant);
+      // Check verified server-issued time-bounded pilot grant in db.pilotGrants registry
+      // Note: directGrant on mutable project/account fields is strictly ELIMINATED per R56 audit.
+      const isExplicitPilot = this.verifyPilotGrant(project, account);
 
       let effectiveEntitlement = 'FREE_BOOTH';
 
@@ -11787,12 +11821,9 @@ return event;
         account &&
         account.status === 'active' &&
         ['PRO', 'BUSINESS'].includes(account.planCode) &&
-        account.planExpiresAt &&
-        !isNaN(new Date(account.planExpiresAt).getTime()) &&
-        now <= new Date(account.planExpiresAt).getTime() &&
-        (account.entitlementSource === 'OWNER_MIGRATED' || account.stripeCustomerId || account.legacyAuditVerified === true)
+        this.verifyLegacyGrant(project, account)
       ) {
-        // Legacy direct account without organization subscription - strictly requires unexpired planExpiresAt and audit proof
+        // Legacy direct account without organization subscription - strictly requires verified legacy grant and unexpired planExpiresAt
         effectiveEntitlement = account.planCode;
       }
 

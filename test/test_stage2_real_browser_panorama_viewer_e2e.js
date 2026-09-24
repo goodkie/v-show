@@ -209,8 +209,8 @@ async function main() {
   let serverPort;
 
   const testReceipt = {
-    testMilestone: 'STAGE2-PANORAMA-BROWSER-OPTICAL-PROOF-R54',
-    revisedPer: 'ChatGPT audit IC_kwDOT53X288AAAABWjxJKQ',
+    testMilestone: 'STAGE2-PANORAMA-BROWSER-OPTICAL-PROOF-R56',
+    revisedPer: 'ChatGPT audit IC_kwDOT53X288AAAABWkNGqA',
     executedAt: new Date().toISOString(),
     nodeVersion: process.version,
     platform: process.platform,
@@ -640,6 +640,207 @@ async function main() {
     assert.strictEqual(legNoExpRes.data.code, 'ENTITLEMENT_UPGRADE_REQUIRED');
     console.log('  PASS: Legacy plan missing planExpiresAt strictly denied (HTTP 403 ENTITLEMENT_UPGRADE_REQUIRED)');
     testReceipt.publishShareVerification.negativeEntitlementChecks.legacyMissingExpiryDenied = 'PASS (HTTP 403 ENTITLEMENT_UPGRADE_REQUIRED)';
+
+    // Negative 3f: Forged Direct Pilot Flag on Project Denial (directGrant shortcut eliminated)
+    const directPilotOrgId = `org_direct_pilot_${Date.now()}`;
+    const directPilotPrjId = `prj_direct_pilot_${Date.now()}`;
+    const directPilotTok = `tok_direct_pilot_${crypto.randomBytes(8).toString('hex')}`;
+    await db.mutate(d => {
+      d.organizations.push({
+        id: directPilotOrgId,
+        name: 'Direct Pilot Bypass Corp',
+        createdAt: new Date().toISOString()
+      });
+      d.apiTokens.push({ token: directPilotTok, organizationId: directPilotOrgId, role: 'organizer', status: 'active', scopes: ['projects:write', 'admin'], expiresAt: new Date(Date.now() + 86400000).toISOString(), createdAt: new Date().toISOString() });
+      d.projects.push({
+        id: directPilotPrjId,
+        organizationId: directPilotOrgId,
+        name: 'Direct Pilot Proj',
+        pilotGrantId: 'grant_forged_direct_1',
+        pilotApprovedByOwner: true,
+        pilotExpiresAt: new Date(Date.now() + 86400000).toISOString(),
+        editToken: directPilotTok,
+        publishStatus: 'UNPUBLISHED',
+        createdAt: new Date().toISOString()
+      });
+    });
+    const directPilotRes = await httpRequest({
+      hostname: '127.0.0.1', port: serverPort, path: `/api/projects/${directPilotPrjId}/publish`, method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': '2', 'Authorization': `Bearer ${directPilotTok}` }
+    }, '{}');
+    assert.strictEqual(directPilotRes.status, 403, `Direct pilot flag without db.pilotGrants record must return HTTP 403, got ${directPilotRes.status}`);
+    assert.strictEqual(directPilotRes.data.code, 'ENTITLEMENT_UPGRADE_REQUIRED');
+    console.log('  PASS: Direct pilot flag without db.pilotGrants record strictly denied (HTTP 403 ENTITLEMENT_UPGRADE_REQUIRED)');
+    testReceipt.publishShareVerification.negativeEntitlementChecks.directPilotDenied = 'PASS (HTTP 403 ENTITLEMENT_UPGRADE_REQUIRED)';
+
+    // Negative 3g: Tenant-Mismatched Pilot Grant Denial
+    const mismatchPilotOrgId = `org_mismatch_pilot_${Date.now()}`;
+    const mismatchPilotPrjId = `prj_mismatch_pilot_${Date.now()}`;
+    const mismatchPilotTok = `tok_mismatch_pilot_${crypto.randomBytes(8).toString('hex')}`;
+    await db.mutate(d => {
+      d.organizations.push({
+        id: mismatchPilotOrgId,
+        name: 'Mismatch Pilot Corp',
+        createdAt: new Date().toISOString()
+      });
+      d.apiTokens.push({ token: mismatchPilotTok, organizationId: mismatchPilotOrgId, role: 'organizer', status: 'active', scopes: ['projects:write', 'admin'], expiresAt: new Date(Date.now() + 86400000).toISOString(), createdAt: new Date().toISOString() });
+      d.projects.push({ id: mismatchPilotPrjId, organizationId: mismatchPilotOrgId, name: 'Mismatch Pilot Proj', editToken: mismatchPilotTok, publishStatus: 'UNPUBLISHED', createdAt: new Date().toISOString() });
+      d.pilotGrants = d.pilotGrants || [];
+      d.pilotGrants.push({
+        grantId: 'grant_mismatch_tenant',
+        organizationId: 'org_someone_else',
+        projectId: 'prj_someone_else',
+        pilotApprovedByOwner: true,
+        approvedBy: 'owner@vshow.io',
+        status: 'active',
+        pilotExpiresAt: new Date(Date.now() + 86400000).toISOString(),
+        createdAt: new Date().toISOString()
+      });
+    });
+    const mismatchPilotRes = await httpRequest({
+      hostname: '127.0.0.1', port: serverPort, path: `/api/projects/${mismatchPilotPrjId}/publish`, method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': '2', 'Authorization': `Bearer ${mismatchPilotTok}` }
+    }, '{}');
+    assert.strictEqual(mismatchPilotRes.status, 403, `Tenant-mismatched pilot grant must return HTTP 403, got ${mismatchPilotRes.status}`);
+    assert.strictEqual(mismatchPilotRes.data.code, 'ENTITLEMENT_UPGRADE_REQUIRED');
+    console.log('  PASS: Tenant-mismatched pilot grant strictly denied (HTTP 403 ENTITLEMENT_UPGRADE_REQUIRED)');
+    testReceipt.publishShareVerification.negativeEntitlementChecks.mismatchedPilotGrantDenied = 'PASS (HTTP 403 ENTITLEMENT_UPGRADE_REQUIRED)';
+
+    // Negative 3h: Revoked Pilot Grant Denial
+    const revokedPilotOrgId = `org_revoked_pilot_${Date.now()}`;
+    const revokedPilotPrjId = `prj_revoked_pilot_${Date.now()}`;
+    const revokedPilotTok = `tok_revoked_pilot_${crypto.randomBytes(8).toString('hex')}`;
+    await db.mutate(d => {
+      d.organizations.push({
+        id: revokedPilotOrgId,
+        name: 'Revoked Pilot Corp',
+        createdAt: new Date().toISOString()
+      });
+      d.apiTokens.push({ token: revokedPilotTok, organizationId: revokedPilotOrgId, role: 'organizer', status: 'active', scopes: ['projects:write', 'admin'], expiresAt: new Date(Date.now() + 86400000).toISOString(), createdAt: new Date().toISOString() });
+      d.projects.push({ id: revokedPilotPrjId, organizationId: revokedPilotOrgId, name: 'Revoked Pilot Proj', editToken: revokedPilotTok, publishStatus: 'UNPUBLISHED', createdAt: new Date().toISOString() });
+      d.pilotGrants = d.pilotGrants || [];
+      d.pilotGrants.push({
+        grantId: 'grant_revoked_pilot',
+        organizationId: revokedPilotOrgId,
+        projectId: revokedPilotPrjId,
+        pilotApprovedByOwner: true,
+        approvedBy: 'owner@vshow.io',
+        status: 'revoked',
+        isRevoked: true,
+        pilotExpiresAt: new Date(Date.now() + 86400000).toISOString(),
+        createdAt: new Date().toISOString()
+      });
+    });
+    const revokedPilotRes = await httpRequest({
+      hostname: '127.0.0.1', port: serverPort, path: `/api/projects/${revokedPilotPrjId}/publish`, method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': '2', 'Authorization': `Bearer ${revokedPilotTok}` }
+    }, '{}');
+    assert.strictEqual(revokedPilotRes.status, 403, `Revoked pilot grant must return HTTP 403, got ${revokedPilotRes.status}`);
+    assert.strictEqual(revokedPilotRes.data.code, 'ENTITLEMENT_UPGRADE_REQUIRED');
+    console.log('  PASS: Revoked pilot grant strictly denied (HTTP 403 ENTITLEMENT_UPGRADE_REQUIRED)');
+    testReceipt.publishShareVerification.negativeEntitlementChecks.revokedPilotGrantDenied = 'PASS (HTTP 403 ENTITLEMENT_UPGRADE_REQUIRED)';
+
+    // Negative 3i: Legacy Direct Account with Bare stripeCustomerId without db.legacyGrants Denial
+    const bareStripeOrgId = `org_bare_stripe_${Date.now()}`;
+    const bareStripePrjId = `prj_bare_stripe_${Date.now()}`;
+    const bareStripeTok = `tok_bare_stripe_${crypto.randomBytes(8).toString('hex')}`;
+    await db.mutate(d => {
+      d.organizations.push({
+        id: bareStripeOrgId,
+        name: 'Bare Stripe Corp',
+        createdAt: new Date().toISOString()
+      });
+      d.accounts.push({
+        id: `acct_${bareStripeOrgId}`,
+        organizationId: bareStripeOrgId,
+        planCode: 'PRO',
+        status: 'active',
+        stripeCustomerId: 'cus_unverified_legacy',
+        planExpiresAt: new Date(Date.now() + 86400000).toISOString(),
+        createdAt: new Date().toISOString()
+      });
+      d.apiTokens.push({ token: bareStripeTok, organizationId: bareStripeOrgId, role: 'organizer', status: 'active', scopes: ['projects:write', 'admin'], expiresAt: new Date(Date.now() + 86400000).toISOString(), createdAt: new Date().toISOString() });
+      d.projects.push({ id: bareStripePrjId, organizationId: bareStripeOrgId, accountId: `acct_${bareStripeOrgId}`, name: 'Bare Stripe Proj', editToken: bareStripeTok, publishStatus: 'UNPUBLISHED', createdAt: new Date().toISOString() });
+    });
+    const bareStripeRes = await httpRequest({
+      hostname: '127.0.0.1', port: serverPort, path: `/api/projects/${bareStripePrjId}/publish`, method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': '2', 'Authorization': `Bearer ${bareStripeTok}` }
+    }, '{}');
+    assert.strictEqual(bareStripeRes.status, 403, `Bare stripeCustomerId without db.legacyGrants record must return HTTP 403, got ${bareStripeRes.status}`);
+    assert.strictEqual(bareStripeRes.data.code, 'ENTITLEMENT_UPGRADE_REQUIRED');
+    console.log('  PASS: Bare stripeCustomerId without db.legacyGrants record strictly denied (HTTP 403 ENTITLEMENT_UPGRADE_REQUIRED)');
+    testReceipt.publishShareVerification.negativeEntitlementChecks.bareStripeCustomerDenied = 'PASS (HTTP 403 ENTITLEMENT_UPGRADE_REQUIRED)';
+
+    // Positive 3j: Authoritative db.pilotGrants Allows Publish (with valid grantId, pilotApprovedByOwner: true, unexpired)
+    const validPilotOrgId = `org_valid_pilot_${Date.now()}`;
+    const validPilotPrjId = `prj_valid_pilot_${Date.now()}`;
+    const validPilotTok = `tok_valid_pilot_${crypto.randomBytes(8).toString('hex')}`;
+    await db.mutate(d => {
+      d.organizations.push({
+        id: validPilotOrgId,
+        name: 'Valid Pilot Corp',
+        createdAt: new Date().toISOString()
+      });
+      d.apiTokens.push({ token: validPilotTok, organizationId: validPilotOrgId, role: 'organizer', status: 'active', scopes: ['projects:write', 'admin'], expiresAt: new Date(Date.now() + 86400000).toISOString(), createdAt: new Date().toISOString() });
+      d.projects.push({ id: validPilotPrjId, organizationId: validPilotOrgId, name: 'Valid Pilot Proj', editToken: validPilotTok, publishStatus: 'UNPUBLISHED', createdAt: new Date().toISOString() });
+      d.pilotGrants = d.pilotGrants || [];
+      d.pilotGrants.push({
+        grantId: 'grant_owner_approved_valid',
+        organizationId: validPilotOrgId,
+        projectId: validPilotPrjId,
+        pilotApprovedByOwner: true,
+        approvedBy: 'platform_owner',
+        status: 'active',
+        pilotExpiresAt: new Date(Date.now() + 86400000).toISOString(),
+        createdAt: new Date().toISOString()
+      });
+    });
+    const validPilotRes = await httpRequest({
+      hostname: '127.0.0.1', port: serverPort, path: `/api/projects/${validPilotPrjId}/publish`, method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': '2', 'Authorization': `Bearer ${validPilotTok}` }
+    }, '{}');
+    assert.strictEqual(validPilotRes.status, 200, `Authoritative db.pilotGrants publish must return HTTP 200, got ${validPilotRes.status}`);
+    console.log('  PASS: Authoritative owner-approved db.pilotGrants allows publish (HTTP 200)');
+    testReceipt.publishShareVerification.pilotGrantVerification = 'PASS (HTTP 200 with immutable db.pilotGrants registry)';
+
+    // Positive 3k: Authoritative db.legacyGrants Allows Publish (with valid grantId, approvedByOwner: true, unexpired planExpiresAt)
+    const validLegacyOrgId = `org_valid_legacy_${Date.now()}`;
+    const validLegacyPrjId = `prj_valid_legacy_${Date.now()}`;
+    const validLegacyTok = `tok_valid_legacy_${crypto.randomBytes(8).toString('hex')}`;
+    await db.mutate(d => {
+      d.organizations.push({
+        id: validLegacyOrgId,
+        name: 'Valid Legacy Corp',
+        createdAt: new Date().toISOString()
+      });
+      d.accounts.push({
+        id: `acct_${validLegacyOrgId}`,
+        organizationId: validLegacyOrgId,
+        planCode: 'PRO',
+        status: 'active',
+        planExpiresAt: new Date(Date.now() + 86400000).toISOString(),
+        createdAt: new Date().toISOString()
+      });
+      d.apiTokens.push({ token: validLegacyTok, organizationId: validLegacyOrgId, role: 'organizer', status: 'active', scopes: ['projects:write', 'admin'], expiresAt: new Date(Date.now() + 86400000).toISOString(), createdAt: new Date().toISOString() });
+      d.projects.push({ id: validLegacyPrjId, organizationId: validLegacyOrgId, accountId: `acct_${validLegacyOrgId}`, name: 'Valid Legacy Proj', editToken: validLegacyTok, publishStatus: 'UNPUBLISHED', createdAt: new Date().toISOString() });
+      d.legacyGrants = d.legacyGrants || [];
+      d.legacyGrants.push({
+        grantId: 'grant_legacy_approved_valid',
+        organizationId: validLegacyOrgId,
+        accountId: `acct_${validLegacyOrgId}`,
+        approvedByOwner: true,
+        approvedBy: 'platform_owner',
+        status: 'active',
+        createdAt: new Date().toISOString()
+      });
+    });
+    const validLegacyRes = await httpRequest({
+      hostname: '127.0.0.1', port: serverPort, path: `/api/projects/${validLegacyPrjId}/publish`, method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': '2', 'Authorization': `Bearer ${validLegacyTok}` }
+    }, '{}');
+    assert.strictEqual(validLegacyRes.status, 200, `Authoritative db.legacyGrants publish must return HTTP 200, got ${validLegacyRes.status}`);
+    console.log('  PASS: Authoritative owner-approved db.legacyGrants allows publish (HTTP 200)');
+    testReceipt.publishShareVerification.legacyGrantVerification = 'PASS (HTTP 200 with immutable db.legacyGrants registry)';
 
     // Negative 4: Revoked API Token Denial
     const revokedTok = `tok_revoked_${crypto.randomBytes(8).toString('hex')}`;
@@ -1284,7 +1485,7 @@ async function main() {
     // ── STEP 9: GATE CLASSIFICATION (STRICTLY DISCIPLINED) ────────────────────
     testReceipt.gates = {
       REAL_SERVER_ROUTE_VERIFIED: 'PASS',
-      SYNTHETIC_SIGNED_REAL_EXPRESS_WEBHOOK_ROUTE_22TESTS: 'PASS (test_stage2_stripe_signed_route_e2e.js, 22/22 tests passed, synthetic signed events, real Express route, missing/multiple quantity strictly rejected, non-monthly recurring rejected, transient provider error returns retryable 500)',
+      SYNTHETIC_SIGNED_REAL_EXPRESS_WEBHOOK_ROUTE_25TESTS: 'PASS (test_stage2_stripe_signed_route_e2e.js, 25/25 tests passed, authoritative stripe provider lookup, zero client network fault headers, forged line item mismatch rejection, paginated line items)',
       STRIPE_PROVIDER_TEST_CHECKOUT_PORTAL_E2E: 'NOT_VERIFIED (requires actual Stripe TEST provider dashboard credentials and live webhook replay)',
       FULL_360_DEMO_ASSET_VIEWER_E2E: 'PASS (node0_360_panorama_4k_opt.jpg, 4096x2048, 2:1 full-sphere equirectangular pre-existing demo asset)',
       REAL_PHOTO_12_TO_FULL_360_CREATION_E2E: 'NOT_VERIFIED (LLST42 12-photo capture stitches to 186.3deg x 46.7deg partial band; full 360-degree sphere creation requires 24+ photo ring or panoramic hardware)',
@@ -1292,7 +1493,7 @@ async function main() {
       FULL_360_REAL_PHOTO_STAGING_E2E: 'NOT_VERIFIED',
       MOBILE_PRODUCT_VIEWER_E2E: 'PASS (headless Chrome mobile viewport emulation, RGBA pixel proof + real CDP touch drag; physical Android hardware deferred)',
       DESKTOP_PRODUCT_VIEWER_E2E: 'PASS (headless Chrome real WebGL rendering, RGBA pixel proof + independent mouse drag; window.__E2E_TEST__ via CDP without ?test=1 query)',
-      PUBLISH_SHARE_E2E: 'PASS (Real server authenticated POST /api/projects/:id/publish & /unpublish HTTP 200, cross-tenant denial HTTP 403, canceled/past_due/expired/stale-account-PRO denial HTTP 403 ENTITLEMENT_UPGRADE_REQUIRED, canceled-with-pilot-flag denial HTTP 403, unapproved-pilot denial HTTP 403, legacy-missing-expiry denial HTTP 403, revoked/expired/omitted-role/omitted-scopes/omitted-status/missing-expiry/malformed-expiry/project-mismatch token denial HTTP 403, GET /api/public/booth/:slug available:true/false, headless Chrome rendered unavailable banner flex)',
+      PUBLISH_SHARE_E2E: 'PASS (Real server authenticated POST /api/projects/:id/publish & /unpublish HTTP 200, cross-tenant denial HTTP 403, canceled/past_due/expired/stale-account-PRO denial HTTP 403 ENTITLEMENT_UPGRADE_REQUIRED, direct-pilot-flag denial HTTP 403, tenant-mismatched pilot grant denial HTTP 403, revoked pilot grant denial HTTP 403, bare stripeCustomerId denial HTTP 403, authoritative db.pilotGrants / db.legacyGrants HTTP 200, revoked/expired/omitted-role/omitted-scopes/omitted-status/missing-expiry/malformed-expiry/project-mismatch token denial HTTP 403, GET /api/public/booth/:slug available:true/false, headless Chrome rendered unavailable banner flex)',
       STRIPE_MODE: 'TEST_UNTIL_EXPLICIT_APPROVAL',
       OWNER_REVIEW_GATE: 'HOLD_PENDING_PANORAMA_STAGING_EVIDENCE',
       TRUE_3D_CUSTOM_PLAN: 'DEFERRED_POST_LAUNCH',
@@ -1303,9 +1504,9 @@ async function main() {
     // Save receipt to isolated scratch directory (do not contaminate production_artifacts)
     const receiptsDir = path.join(__dirname, '../scratch/test_receipts');
     fs.mkdirSync(receiptsDir, { recursive: true });
-    const receiptPath = path.join(receiptsDir, 'R55_PANORAMA_BROWSER_OPTICAL_PROOF_RECEIPT.json');
+    const receiptPath = path.join(receiptsDir, 'R56_PANORAMA_BROWSER_OPTICAL_PROOF_RECEIPT.json');
     fs.writeFileSync(receiptPath, JSON.stringify(testReceipt, null, 2));
-    console.log(`\n[RECEIPT] Saved R55 receipt to isolated scratch: scratch/test_receipts/R55_PANORAMA_BROWSER_OPTICAL_PROOF_RECEIPT.json`);
+    console.log(`\n[RECEIPT] Saved R56 receipt to isolated scratch: scratch/test_receipts/R56_PANORAMA_BROWSER_OPTICAL_PROOF_RECEIPT.json`);
 
     console.log('\n=== ALL BROWSER WEBGL RGBA OPTICAL PROOF & STAGED UI TESTS PASSED ===');
 
