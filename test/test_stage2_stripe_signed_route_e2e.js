@@ -773,7 +773,83 @@ async function main() {
     assert.strictEqual(res18b.data.error, 'WEBHOOK_SIGNATURE_REQUIRED');
     console.log('  PASS: Forged and missing signatures strictly rejected with HTTP 400.');
 
-    console.log('\n=== ALL 18 REAL-SERVER SIGNED STRIPE TEST-MODE ROUTE E2E TESTS PASSED ===');
+    // ── TEST 19: MISSING QUANTITY (undefined) FAIL-CLOSED (FIX: typeof escape removed) ──
+    console.log('\n[TEST 19] Verifying Missing Quantity (undefined) fail-closed rejection...');
+    const sessionId19 = `cs_missing_qty_${Date.now()}`;
+    await db.recordPendingCheckout({
+      sessionId: sessionId19,
+      organizationId: otherOrgId,
+      projectId: otherProjectId,
+      requestedPlan: 'pro',
+      priceId: 'price_test_pro_monthly',
+      amountExpected: 29900,
+      currencyExpected: 'usd',
+      status: 'PENDING'
+    });
+    const eventMissingQty = {
+      id: `evt_missing_qty_${Date.now()}`,
+      object: 'event',
+      type: 'checkout.session.completed',
+      data: {
+        object: {
+          id: sessionId19,
+          customer: `cus_missing_qty_${Date.now()}`,
+          subscription: `sub_missing_qty_${Date.now()}`,
+          payment_status: 'paid',
+          amount_total: 29900,
+          currency: 'usd',
+          line_items: {
+            data: [{ price: { id: 'price_test_pro_monthly' } }]  // quantity field intentionally omitted
+          }
+        }
+      }
+    };
+    const res19 = await postWebhook(eventMissingQty);
+    assert.strictEqual(res19.status, 400, 'Missing quantity (undefined) must be rejected with HTTP 400');
+    assert.strictEqual(res19.data.error, 'INVALID_QUANTITY', 'Missing quantity must return INVALID_QUANTITY, not pass through');
+    console.log('  PASS: Checkout event with missing (undefined) quantity correctly rejected with INVALID_QUANTITY.');
+
+    // ── TEST 20: MULTIPLE LINE ITEMS FAIL-CLOSED ─────────────────────────────
+    console.log('\n[TEST 20] Verifying Multiple Line Items fail-closed rejection...');
+    const sessionId20 = `cs_multi_items_${Date.now()}`;
+    await db.recordPendingCheckout({
+      sessionId: sessionId20,
+      organizationId: otherOrgId,
+      projectId: otherProjectId,
+      requestedPlan: 'pro',
+      priceId: 'price_test_pro_monthly',
+      amountExpected: 29900,
+      currencyExpected: 'usd',
+      status: 'PENDING'
+    });
+    const eventMultiItems = {
+      id: `evt_multi_items_${Date.now()}`,
+      object: 'event',
+      type: 'checkout.session.completed',
+      data: {
+        object: {
+          id: sessionId20,
+          customer: `cus_multi_items_${Date.now()}`,
+          subscription: `sub_multi_items_${Date.now()}`,
+          payment_status: 'paid',
+          amount_total: 29900,
+          currency: 'usd',
+          line_items: {
+            data: [
+              { price: { id: 'price_test_pro_monthly' }, quantity: 1 },
+              { price: { id: 'price_test_biz_monthly' }, quantity: 1 }  // Smuggled second item
+            ]
+          }
+        }
+      }
+    };
+    const res20 = await postWebhook(eventMultiItems);
+    assert.strictEqual(res20.status, 400, 'Multiple line items must be rejected with HTTP 400');
+    assert.strictEqual(res20.data.error, 'MULTIPLE_LINE_ITEMS', 'Multiple line items must return MULTIPLE_LINE_ITEMS error');
+    console.log('  PASS: Checkout event with multiple line items rejected with MULTIPLE_LINE_ITEMS.');
+
+    console.log('\n=== ALL 20 REAL-SERVER SIGNED STRIPE TEST-MODE ROUTE E2E TESTS PASSED ===');
+
 
   } finally {
     // Teardown HTTP servers

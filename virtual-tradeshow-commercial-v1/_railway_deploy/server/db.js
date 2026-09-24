@@ -6529,6 +6529,16 @@ return event;
           message: 'Checkout session line_items are missing or empty.'
         };
       }
+      // Enforce exactly 1 line item: multiple items could smuggle unapproved products
+      if (lineItems.length !== 1) {
+        eventRecord.status = 'FAILED';
+        eventRecord.failureReason = 'MULTIPLE_LINE_ITEMS';
+        return {
+          success: false,
+          code: 'MULTIPLE_LINE_ITEMS',
+          message: `Expected exactly 1 line item, got ${lineItems.length}. Multiple items are not permitted.`
+        };
+      }
       const firstItem = lineItems[0];
       const itemPriceId = firstItem.price?.id;
       if (!itemPriceId || itemPriceId !== expectedCatalog.priceId) {
@@ -6549,14 +6559,15 @@ return event;
           message: `Price ID mismatch with pending checkout: expected ${pending.priceId}, got ${itemPriceId}`
         };
       }
+      // Quantity must be STRICTLY === 1. Missing (undefined/null) is ALSO rejected.
       const itemQuantity = firstItem.quantity;
-      if (typeof itemQuantity === 'number' && itemQuantity !== 1) {
+      if (itemQuantity !== 1) {
         eventRecord.status = 'FAILED';
         eventRecord.failureReason = 'INVALID_QUANTITY';
         return {
           success: false,
           code: 'INVALID_QUANTITY',
-          message: `Invalid line item quantity: expected 1, got ${itemQuantity}`
+          message: `Invalid line item quantity: expected exactly 1, got ${itemQuantity === undefined ? 'MISSING' : itemQuantity}`
         };
       }
 
