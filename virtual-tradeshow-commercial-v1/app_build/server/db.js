@@ -10560,8 +10560,8 @@ return event;
         if (!proj) {
           throw new Error('REFERENTIAL_INTEGRITY_VIOLATION: Project not found');
         }
-        if (proj.organizationId && proj.organizationId !== organizationId) {
-          throw new Error('REFERENTIAL_INTEGRITY_VIOLATION: Project belongs to a different organization');
+        if (!proj.organizationId || proj.organizationId !== organizationId) {
+          throw new Error('REFERENTIAL_INTEGRITY_VIOLATION: Project does not belong to specified organization');
         }
       }
 
@@ -10571,17 +10571,19 @@ return event;
         if (!acc) {
           throw new Error('REFERENTIAL_INTEGRITY_VIOLATION: Account not found');
         }
-        if (acc.organizationId && acc.organizationId !== organizationId) {
-          throw new Error('REFERENTIAL_INTEGRITY_VIOLATION: Account belongs to a different organization');
+        if (!acc.organizationId || acc.organizationId !== organizationId) {
+          throw new Error('REFERENTIAL_INTEGRITY_VIOLATION: Account does not belong to specified organization');
         }
       }
 
       const grantId = `grant_pilot_${crypto.randomBytes(8).toString('hex')}`;
+      const targetScope = projectId ? `project:${projectId}` : (accountId ? `account:${accountId}` : `org:${organizationId}`);
       const grant = {
         grantId,
         organizationId,
         projectId: projectId || undefined,
         accountId: accountId || undefined,
+        targetScope,
         pilotApprovedByOwner: true,
         approvedBy,
         status: 'active',
@@ -10594,19 +10596,28 @@ return event;
       d.pilotGrants = d.pilotGrants || [];
       d.pilotGrants.push(grant);
 
-      // Immutable grant audit trail
+      // Tamper-Evident Hash-Chained Grant Audit Trail
       d.grantAuditTrail = d.grantAuditTrail || [];
-      d.grantAuditTrail.push({
+      const prevEntry = d.grantAuditTrail.length > 0 ? d.grantAuditTrail[d.grantAuditTrail.length - 1] : null;
+      const previousHash = prevEntry ? (prevEntry.entryHash || 'GENESIS') : 'GENESIS';
+      const auditPayload = {
         auditId: `g_audit_${crypto.randomBytes(8).toString('hex')}`,
+        sequence: d.grantAuditTrail.length,
         action: 'ISSUED',
         grantType: 'pilot',
         grantId,
         organizationId,
         projectId: projectId || null,
         accountId: accountId || null,
+        targetScope,
         actor: createdBy || approvedBy,
-        timestamp: new Date().toISOString()
-      });
+        before: null,
+        after: { status: grant.status, approvedBy: grant.approvedBy, pilotExpiresAt: grant.pilotExpiresAt },
+        timestamp: new Date().toISOString(),
+        previousHash
+      };
+      auditPayload.entryHash = crypto.createHash('sha256').update(JSON.stringify(auditPayload)).digest('hex');
+      d.grantAuditTrail.push(auditPayload);
 
       return grant;
     });
@@ -10618,24 +10629,35 @@ return event;
       d.pilotGrants = d.pilotGrants || [];
       const g = d.pilotGrants.find(item => (item.grantId === grantId || item.pilotGrantId === grantId));
       if (!g) throw new Error('GRANT_NOT_FOUND');
+      const beforeState = { status: g.status, isRevoked: !!g.isRevoked };
       g.status = 'revoked';
       g.isRevoked = true;
       g.revokedAt = new Date().toISOString();
       g.revokedBy = revokedBy || 'platform_owner';
 
-      // Immutable grant audit trail
+      // Tamper-Evident Hash-Chained Grant Audit Trail
       d.grantAuditTrail = d.grantAuditTrail || [];
-      d.grantAuditTrail.push({
+      const prevEntry = d.grantAuditTrail.length > 0 ? d.grantAuditTrail[d.grantAuditTrail.length - 1] : null;
+      const previousHash = prevEntry ? (prevEntry.entryHash || 'GENESIS') : 'GENESIS';
+      const targetScope = g.projectId ? `project:${g.projectId}` : (g.accountId ? `account:${g.accountId}` : `org:${g.organizationId}`);
+      const auditPayload = {
         auditId: `g_audit_${crypto.randomBytes(8).toString('hex')}`,
+        sequence: d.grantAuditTrail.length,
         action: 'REVOKED',
         grantType: 'pilot',
         grantId: g.grantId || g.pilotGrantId,
         organizationId: g.organizationId,
         projectId: g.projectId || null,
         accountId: g.accountId || null,
+        targetScope,
         actor: revokedBy || 'platform_owner',
-        timestamp: new Date().toISOString()
-      });
+        before: beforeState,
+        after: { status: g.status, isRevoked: g.isRevoked, revokedAt: g.revokedAt, revokedBy: g.revokedBy },
+        timestamp: new Date().toISOString(),
+        previousHash
+      };
+      auditPayload.entryHash = crypto.createHash('sha256').update(JSON.stringify(auditPayload)).digest('hex');
+      d.grantAuditTrail.push(auditPayload);
 
       return g;
     });
@@ -10658,8 +10680,8 @@ return event;
         if (!proj) {
           throw new Error('REFERENTIAL_INTEGRITY_VIOLATION: Project not found');
         }
-        if (proj.organizationId && proj.organizationId !== organizationId) {
-          throw new Error('REFERENTIAL_INTEGRITY_VIOLATION: Project belongs to a different organization');
+        if (!proj.organizationId || proj.organizationId !== organizationId) {
+          throw new Error('REFERENTIAL_INTEGRITY_VIOLATION: Project does not belong to specified organization');
         }
       }
 
@@ -10669,17 +10691,19 @@ return event;
         if (!acc) {
           throw new Error('REFERENTIAL_INTEGRITY_VIOLATION: Account not found');
         }
-        if (acc.organizationId && acc.organizationId !== organizationId) {
-          throw new Error('REFERENTIAL_INTEGRITY_VIOLATION: Account belongs to a different organization');
+        if (!acc.organizationId || acc.organizationId !== organizationId) {
+          throw new Error('REFERENTIAL_INTEGRITY_VIOLATION: Account does not belong to specified organization');
         }
       }
 
       const grantId = `grant_leg_${crypto.randomBytes(8).toString('hex')}`;
+      const targetScope = projectId ? `project:${projectId}` : (accountId ? `account:${accountId}` : `org:${organizationId}`);
       const grant = {
         grantId,
         organizationId,
         accountId: accountId || undefined,
         projectId: projectId || undefined,
+        targetScope,
         approvedByOwner: true,
         approvedBy,
         status: 'active',
@@ -10691,19 +10715,28 @@ return event;
       d.legacyGrants = d.legacyGrants || [];
       d.legacyGrants.push(grant);
 
-      // Immutable grant audit trail
+      // Tamper-Evident Hash-Chained Grant Audit Trail
       d.grantAuditTrail = d.grantAuditTrail || [];
-      d.grantAuditTrail.push({
+      const prevEntry = d.grantAuditTrail.length > 0 ? d.grantAuditTrail[d.grantAuditTrail.length - 1] : null;
+      const previousHash = prevEntry ? (prevEntry.entryHash || 'GENESIS') : 'GENESIS';
+      const auditPayload = {
         auditId: `g_audit_${crypto.randomBytes(8).toString('hex')}`,
+        sequence: d.grantAuditTrail.length,
         action: 'ISSUED',
         grantType: 'legacy',
         grantId,
         organizationId,
         projectId: projectId || null,
         accountId: accountId || null,
+        targetScope,
         actor: createdBy || approvedBy,
-        timestamp: new Date().toISOString()
-      });
+        before: null,
+        after: { status: grant.status, approvedBy: grant.approvedBy },
+        timestamp: new Date().toISOString(),
+        previousHash
+      };
+      auditPayload.entryHash = crypto.createHash('sha256').update(JSON.stringify(auditPayload)).digest('hex');
+      d.grantAuditTrail.push(auditPayload);
 
       return grant;
     });
@@ -10715,28 +10748,62 @@ return event;
       d.legacyGrants = d.legacyGrants || [];
       const g = d.legacyGrants.find(item => (item.grantId === grantId || item.legacyGrantId === grantId));
       if (!g) throw new Error('GRANT_NOT_FOUND');
+      const beforeState = { status: g.status, isRevoked: !!g.isRevoked };
       g.status = 'revoked';
       g.isRevoked = true;
       g.revokedAt = new Date().toISOString();
       g.revokedBy = revokedBy || 'platform_owner';
 
-      // Immutable grant audit trail
+      // Tamper-Evident Hash-Chained Grant Audit Trail
       d.grantAuditTrail = d.grantAuditTrail || [];
-      d.grantAuditTrail.push({
+      const prevEntry = d.grantAuditTrail.length > 0 ? d.grantAuditTrail[d.grantAuditTrail.length - 1] : null;
+      const previousHash = prevEntry ? (prevEntry.entryHash || 'GENESIS') : 'GENESIS';
+      const targetScope = g.projectId ? `project:${g.projectId}` : (g.accountId ? `account:${g.accountId}` : `org:${g.organizationId}`);
+      const auditPayload = {
         auditId: `g_audit_${crypto.randomBytes(8).toString('hex')}`,
+        sequence: d.grantAuditTrail.length,
         action: 'REVOKED',
         grantType: 'legacy',
         grantId: g.grantId || g.legacyGrantId,
         organizationId: g.organizationId,
         projectId: g.projectId || null,
         accountId: g.accountId || null,
+        targetScope,
         actor: revokedBy || 'platform_owner',
-        timestamp: new Date().toISOString()
-      });
+        before: beforeState,
+        after: { status: g.status, isRevoked: g.isRevoked, revokedAt: g.revokedAt, revokedBy: g.revokedBy },
+        timestamp: new Date().toISOString(),
+        previousHash
+      };
+      auditPayload.entryHash = crypto.createHash('sha256').update(JSON.stringify(auditPayload)).digest('hex');
+      d.grantAuditTrail.push(auditPayload);
 
       return g;
     });
   }
+
+  verifyGrantAuditTrailIntegrity() {
+    const data = this.read();
+    const trail = data.grantAuditTrail || [];
+    let prevHash = 'GENESIS';
+    for (let i = 0; i < trail.length; i++) {
+      const entry = trail[i];
+      if (entry.sequence !== i) {
+        return { valid: false, error: `SEQUENCE_MISMATCH at index ${i}` };
+      }
+      if (entry.previousHash !== prevHash) {
+        return { valid: false, error: `PREVIOUS_HASH_MISMATCH at index ${i}` };
+      }
+      const { entryHash, ...payload } = entry;
+      const calculatedHash = crypto.createHash('sha256').update(JSON.stringify(payload)).digest('hex');
+      if (calculatedHash !== entryHash) {
+        return { valid: false, error: `HASH_TAMPERED at index ${i}` };
+      }
+      prevHash = entryHash;
+    }
+    return { valid: true, count: trail.length };
+  }
+
 
   verifyEditAccess(project, token) {
     if (!project) return false;

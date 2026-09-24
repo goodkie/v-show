@@ -780,18 +780,39 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
             });
           }
 
-          // 3. Strict Customer and Subscription Matching
-          if (sessionObj.customer && authSession.customer && sessionObj.customer !== authSession.customer) {
+          // 3. Strict Customer, Subscription, and Mode Matching
+          if (!sessionObj.customer || typeof sessionObj.customer !== 'string' || sessionObj.customer.trim().length === 0) {
+            return res.status(400).json({
+              error: 'STRIPE_EVENT_CUSTOMER_REQUIRED',
+              message: 'Event-embedded customer is required.',
+              retryable: false
+            });
+          }
+          if (sessionObj.customer !== authSession.customer) {
             return res.status(400).json({
               error: 'STRIPE_CUSTOMER_MISMATCH',
               message: 'Event-embedded customer differs from authoritative provider customer.',
               retryable: false
             });
           }
-          if (sessionObj.subscription && authSession.subscription && sessionObj.subscription !== authSession.subscription) {
+          if (!sessionObj.subscription || typeof sessionObj.subscription !== 'string' || sessionObj.subscription.trim().length === 0) {
+            return res.status(400).json({
+              error: 'STRIPE_EVENT_SUBSCRIPTION_REQUIRED',
+              message: 'Event-embedded subscription is required.',
+              retryable: false
+            });
+          }
+          if (sessionObj.subscription !== authSession.subscription) {
             return res.status(400).json({
               error: 'STRIPE_SUBSCRIPTION_MISMATCH',
               message: 'Event-embedded subscription differs from authoritative provider subscription.',
+              retryable: false
+            });
+          }
+          if (authSession.mode && authSession.mode !== 'subscription') {
+            return res.status(400).json({
+              error: 'STRIPE_INVALID_CHECKOUT_MODE',
+              message: `Authoritative checkout session mode is '${authSession.mode}', expected 'subscription'.`,
               retryable: false
             });
           }
@@ -941,6 +962,9 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
         if (!subObj || !subObj.id || typeof subObj.id !== 'string') {
           return res.status(400).json({ error: 'MISSING_SUBSCRIPTION_ID', retryable: false });
         }
+        if (!subObj.customer || typeof subObj.customer !== 'string' || subObj.customer.trim().length === 0) {
+          return res.status(400).json({ error: 'STRIPE_EVENT_CUSTOMER_REQUIRED', message: 'Event-embedded customer is required.', retryable: false });
+        }
 
         let authSub;
         try {
@@ -961,7 +985,7 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
             });
           }
 
-          if (subObj.customer && authSub.customer && subObj.customer !== authSub.customer) {
+          if (subObj.customer !== authSub.customer) {
             return res.status(400).json({
               error: 'STRIPE_CUSTOMER_MISMATCH',
               message: 'Event-embedded customer differs from authoritative provider subscription customer.',
@@ -973,6 +997,14 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
             return res.status(400).json({
               error: 'STRIPE_CUSTOMER_REQUIRED',
               message: 'Authoritative provider subscription missing customer identity.',
+              retryable: false
+            });
+          }
+
+          if (authSub.status === 'canceled') {
+            return res.status(400).json({
+              error: 'STRIPE_SUBSCRIPTION_ALREADY_CANCELED',
+              message: 'Authoritative subscription is canceled; cannot update as active/renewed.',
               retryable: false
             });
           }
@@ -1003,6 +1035,9 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
         if (!subObj || !subObj.id || typeof subObj.id !== 'string') {
           return res.status(400).json({ error: 'MISSING_SUBSCRIPTION_ID', retryable: false });
         }
+        if (!subObj.customer || typeof subObj.customer !== 'string' || subObj.customer.trim().length === 0) {
+          return res.status(400).json({ error: 'STRIPE_EVENT_CUSTOMER_REQUIRED', message: 'Event-embedded customer is required.', retryable: false });
+        }
 
         let authSub;
         try {
@@ -1023,10 +1058,20 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
             });
           }
 
-          if (subObj.customer && authSub.customer && subObj.customer !== authSub.customer) {
+          if (subObj.customer !== authSub.customer) {
             return res.status(400).json({
               error: 'STRIPE_CUSTOMER_MISMATCH',
               message: 'Event-embedded customer differs from authoritative provider subscription customer.',
+              retryable: false
+            });
+          }
+
+          // Strict terminal state validation: provider subscription MUST denote terminal cancellation
+          if (authSub.status !== 'canceled') {
+            console.warn(`[SECURITY][STRIPE_SUBSCRIPTION_NOT_CANCELED] Deleted event rejected: authoritative status is '${authSub.status}', expected 'canceled'.`);
+            return res.status(400).json({
+              error: 'STRIPE_SUBSCRIPTION_NOT_CANCELED',
+              message: `Authoritative subscription status is '${authSub.status}', not canceled. Stale or invalid cancellation event rejected.`,
               retryable: false
             });
           }
@@ -1057,6 +1102,9 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
         if (!invObj || !invObj.id || typeof invObj.id !== 'string') {
           return res.status(400).json({ error: 'MISSING_INVOICE_ID', retryable: false });
         }
+        if (!invObj.customer || typeof invObj.customer !== 'string' || invObj.customer.trim().length === 0) {
+          return res.status(400).json({ error: 'STRIPE_EVENT_CUSTOMER_REQUIRED', message: 'Event-embedded customer is required.', retryable: false });
+        }
 
         let authInv;
         try {
@@ -1077,7 +1125,7 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
             });
           }
 
-          if (invObj.customer && authInv.customer && invObj.customer !== authInv.customer) {
+          if (invObj.customer !== authInv.customer) {
             return res.status(400).json({
               error: 'STRIPE_CUSTOMER_MISMATCH',
               message: 'Event-embedded customer differs from authoritative provider invoice customer.',
@@ -1089,6 +1137,16 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
             return res.status(400).json({
               error: 'STRIPE_SUBSCRIPTION_MISMATCH',
               message: 'Event-embedded subscription differs from authoritative provider invoice subscription.',
+              retryable: false
+            });
+          }
+
+          // Authoritative state reconciliation: If authoritative invoice is already paid, reject delayed payment_failed event
+          if (authInv.status === 'paid' || authInv.paid === true) {
+            console.warn(`[SECURITY][STRIPE_INVOICE_ALREADY_PAID] payment_failed event rejected: authoritative invoice ${authInv.id} is already paid.`);
+            return res.status(400).json({
+              error: 'STRIPE_INVOICE_ALREADY_PAID',
+              message: 'Authoritative invoice is already paid; delayed payment_failed event rejected.',
               retryable: false
             });
           }
@@ -1119,6 +1177,9 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
         if (!invObj || !invObj.id || typeof invObj.id !== 'string') {
           return res.status(400).json({ error: 'MISSING_INVOICE_ID', retryable: false });
         }
+        if (!invObj.customer || typeof invObj.customer !== 'string' || invObj.customer.trim().length === 0) {
+          return res.status(400).json({ error: 'STRIPE_EVENT_CUSTOMER_REQUIRED', message: 'Event-embedded customer is required.', retryable: false });
+        }
 
         let authInv;
         try {
@@ -1139,7 +1200,7 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
             });
           }
 
-          if (invObj.customer && authInv.customer && invObj.customer !== authInv.customer) {
+          if (invObj.customer !== authInv.customer) {
             return res.status(400).json({
               error: 'STRIPE_CUSTOMER_MISMATCH',
               message: 'Event-embedded customer differs from authoritative provider invoice customer.',
@@ -1155,10 +1216,12 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
             });
           }
 
-          if (authInv.status !== 'paid' && authInv.paid !== true) {
+          // Strict AND check: provider must report status 'paid' AND paid boolean true
+          if (authInv.status !== 'paid' || authInv.paid !== true) {
+            console.warn(`[SECURITY][STRIPE_INVOICE_NOT_PAID] invoice.paid rejected: authoritative status='${authInv.status}', paid=${authInv.paid}`);
             return res.status(400).json({
               error: 'STRIPE_INVOICE_NOT_PAID',
-              message: `Authoritative invoice status is '${authInv.status}', expected 'paid'.`,
+              message: `Authoritative invoice is not paid (status='${authInv.status}', paid=${authInv.paid}).`,
               retryable: false
             });
           }

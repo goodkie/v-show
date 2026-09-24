@@ -83,7 +83,7 @@ if (stripeClient) {
         if (val instanceof Error) throw val;
         return val;
       }
-      return { id, status: 'complete', payment_status: 'paid', customer: 'cus_default_test', subscription: 'sub_default_test' };
+      return { id, status: 'complete', payment_status: 'paid', customer: 'cus_default_test', subscription: 'sub_default_test', mode: 'subscription' };
     };
 
     stripeClient.checkout.sessions.listLineItems = async (id, params) => {
@@ -222,6 +222,7 @@ async function main() {
             id: sess.id,
             customer: sess.customer,
             subscription: sess.subscription,
+            mode: sess.mode || 'subscription',
             payment_status: sess.payment_status || 'paid',
             status: sess.status || 'complete',
             amount_total: sess.amount_total,
@@ -240,7 +241,7 @@ async function main() {
           authoritativeSubscriptionStore.set(sub.id, {
             id: sub.id,
             customer: sub.customer || 'cus_default_test',
-            status: sub.status || 'active',
+            status: payloadObject.type === 'customer.subscription.deleted' ? 'canceled' : (sub.status || 'active'),
             current_period_end: sub.current_period_end || Math.floor((Date.now() + 86400000) / 1000),
             items: sub.items || { data: [] },
             _autoSeeded: true
@@ -256,7 +257,7 @@ async function main() {
             customer: inv.customer || 'cus_default_test',
             subscription: inv.subscription || 'sub_default_test',
             status: payloadObject.type === 'invoice.payment_failed' ? 'open' : (inv.status || 'paid'),
-            paid: payloadObject.type !== 'invoice.payment_failed' && inv.paid !== false,
+            paid: payloadObject.type === 'invoice.payment_failed' ? false : (inv.paid !== false),
             amount_paid: inv.amount_paid || 29900,
             _autoSeeded: true
           });
@@ -1863,7 +1864,212 @@ async function main() {
     assert.strictEqual(revokeEntry.actor, 'audit_revoker');
     console.log('  PASS: Immutable grant audit trail records verified on issuance and revocation.');
 
-    console.log('\n=== ALL 39 REAL-SERVER SIGNED STRIPE TEST-MODE ROUTE E2E TESTS PASSED ===');
+    // ── TEST 40: DELAYED INVOICE.PAYMENT_FAILED ON ALREADY PAID INVOICE REJECTION ───
+    console.log('\n[TEST 40] Verifying Delayed invoice.payment_failed on Already Paid Invoice Rejection...');
+    const invId40 = `in_delayed_fail_${Date.now()}`;
+    const subId40 = `sub_delayed_fail_${Date.now()}`;
+    const cusId40 = `cus_delayed_fail_${Date.now()}`;
+    authoritativeInvoiceStore.set(invId40, {
+      id: invId40,
+      customer: cusId40,
+      subscription: subId40,
+      status: 'paid',
+      paid: true,
+      amount_paid: 29900
+    });
+    const delayedFailedEvent = {
+      id: `evt_delayed_fail_${Date.now()}`,
+      object: 'event',
+      type: 'invoice.payment_failed',
+      data: {
+        object: {
+          id: invId40,
+          customer: cusId40,
+          subscription: subId40,
+          status: 'open',
+          paid: false
+        }
+      }
+    };
+    const res40 = await postWebhook(delayedFailedEvent);
+    assert.strictEqual(res40.status, 400, 'Delayed invoice.payment_failed on paid invoice must be rejected with HTTP 400');
+    assert.strictEqual(res40.data.error, 'STRIPE_INVOICE_ALREADY_PAID');
+    console.log('  PASS: Delayed invoice.payment_failed rejected on already paid invoice (STRIPE_INVOICE_ALREADY_PAID).');
+
+    // ── TEST 41: STALE CUSTOMER.SUBSCRIPTION.DELETED ON ACTIVE SUBSCRIPTION REJECTION ──
+    console.log('\n[TEST 41] Verifying Stale customer.subscription.deleted on Active Subscription Rejection...');
+    const subId41 = `sub_active_not_del_${Date.now()}`;
+    const cusId41 = `cus_active_not_del_${Date.now()}`;
+    authoritativeSubscriptionStore.set(subId41, {
+      id: subId41,
+      customer: cusId41,
+      status: 'active', // Provider authoritative status is active, NOT canceled
+      current_period_end: Math.floor((Date.now() + 86400000) / 1000)
+    });
+    const staleDeletedEvent = {
+      id: `evt_stale_del_${Date.now()}`,
+      object: 'event',
+      type: 'customer.subscription.deleted',
+      data: {
+        object: {
+          id: subId41,
+          customer: cusId41,
+          status: 'canceled'
+        }
+      }
+    };
+    const res41 = await postWebhook(staleDeletedEvent);
+    assert.strictEqual(res41.status, 400, 'Stale customer.subscription.deleted on active sub must be rejected with HTTP 400');
+    assert.strictEqual(res41.data.error, 'STRIPE_SUBSCRIPTION_NOT_CANCELED');
+    console.log('  PASS: Stale customer.subscription.deleted rejected on active subscription (STRIPE_SUBSCRIPTION_NOT_CANCELED).');
+
+    // ── TEST 42: CHECKOUT.SESSION.COMPLETED EVENT INTEGRITY AND MODE REJECTION ──
+    console.log('\n[TEST 42] Verifying checkout.session.completed Event Integrity & Mode Rejection...');
+    const sessId42A = `cs_mode_test_${Date.now()}`;
+    await db.recordPendingCheckout({
+      sessionId: sessId42A,
+      organizationId: otherOrgId,
+      projectId: otherProjectId,
+      requestedPlan: 'pro',
+      priceId: 'price_test_pro_monthly',
+      amountExpected: 29900,
+      currencyExpected: 'usd',
+      status: 'PENDING'
+    });
+    // Mode is payment (one-time) instead of subscription
+    authoritativeSessionStore.set(sessId42A, {
+      id: sessId42A,
+      customer: 'cus_mode_test',
+      subscription: 'sub_mode_test',
+      mode: 'payment', // Non-subscription mode!
+      status: 'complete',
+      payment_status: 'paid',
+      amount_total: 29900,
+      currency: 'usd'
+    });
+    authoritativeLineItemsStore.set(sessId42A, {
+      object: 'list',
+      data: [{ id: 'li_mode', price: { id: 'price_test_pro_monthly', recurring: { interval: 'month' } }, quantity: 1 }],
+      has_more: false
+    });
+    const eventMode = {
+      id: `evt_mode_${Date.now()}`,
+      object: 'event',
+      type: 'checkout.session.completed',
+      data: {
+        object: {
+          id: sessId42A,
+          customer: 'cus_mode_test',
+          subscription: 'sub_mode_test',
+          payment_status: 'paid',
+          amount_total: 29900,
+          currency: 'usd'
+        }
+      }
+    };
+    const res42A = await postWebhook(eventMode);
+    assert.strictEqual(res42A.status, 400, 'Non-subscription checkout mode must be rejected with HTTP 400');
+    assert.strictEqual(res42A.data.error, 'STRIPE_INVALID_CHECKOUT_MODE');
+
+    // Event missing customer field
+    const sessId42B = `cs_no_cus_${Date.now()}`;
+    await db.recordPendingCheckout({
+      sessionId: sessId42B,
+      organizationId: otherOrgId,
+      projectId: otherProjectId,
+      requestedPlan: 'pro',
+      priceId: 'price_test_pro_monthly',
+      amountExpected: 29900,
+      currencyExpected: 'usd',
+      status: 'PENDING'
+    });
+    authoritativeSessionStore.set(sessId42B, {
+      id: sessId42B,
+      customer: 'cus_has_one',
+      subscription: 'sub_has_one',
+      mode: 'subscription',
+      status: 'complete',
+      payment_status: 'paid',
+      amount_total: 29900,
+      currency: 'usd'
+    });
+    authoritativeLineItemsStore.set(sessId42B, {
+      object: 'list',
+      data: [{ id: 'li_no_cus', price: { id: 'price_test_pro_monthly', recurring: { interval: 'month' } }, quantity: 1 }],
+      has_more: false
+    });
+    const eventNoCus = {
+      id: `evt_no_cus_${Date.now()}`,
+      object: 'event',
+      type: 'checkout.session.completed',
+      data: {
+        object: {
+          id: sessId42B,
+          subscription: 'sub_has_one',
+          payment_status: 'paid',
+          amount_total: 29900,
+          currency: 'usd'
+        }
+      }
+    };
+    const res42B = await postWebhook(eventNoCus);
+    assert.strictEqual(res42B.status, 400, 'Event missing customer must be rejected with HTTP 400');
+    assert.strictEqual(res42B.data.error, 'STRIPE_EVENT_CUSTOMER_REQUIRED');
+    console.log('  PASS: checkout.session.completed mode and mandatory fields strictly enforced.');
+
+    // ── TEST 43: STRICT GRANT REFERENTIAL INTEGRITY (REJECT UNBOUND TARGET SCOPE) ──
+    console.log('\n[TEST 43] Verifying Strict Grant Referential Integrity on Unbound Targets...');
+    // Seed project without organizationId
+    const unparentedProjectId = `proj_unparented_${Date.now()}`;
+    await db.mutate(d => {
+      d.projects.push({
+        id: unparentedProjectId,
+        name: 'Unparented Project',
+        commercialState: 'FREE_TRIAL'
+        // organizationId intentionally omitted/undefined!
+      });
+    });
+    await assert.rejects(
+      async () => {
+        await db.issuePilotGrant({
+          organizationId: testOrgId,
+          projectId: unparentedProjectId,
+          pilotExpiresAt: new Date(Date.now() + 86400000).toISOString(),
+          approvedBy: 'owner_user'
+        });
+      },
+      /REFERENTIAL_INTEGRITY_VIOLATION/,
+      'Grant issuance on unparented project without organizationId must fail referential integrity'
+    );
+
+    // Org-wide grant (no projectId, no accountId) succeeds with correct targetScope
+    const orgWideGrant = await db.issuePilotGrant({
+      organizationId: testOrgId,
+      pilotExpiresAt: new Date(Date.now() + 86400000).toISOString(),
+      approvedBy: 'owner_user'
+    });
+    assert.strictEqual(orgWideGrant.targetScope, `org:${testOrgId}`);
+    console.log('  PASS: Strict grant referential integrity rejects unparented targets and allows org-wide.');
+
+    // ── TEST 44: TAMPER-EVIDENT SHA-256 HASH-CHAINED GRANT AUDIT TRAIL ──────
+    console.log('\n[TEST 44] Verifying Tamper-Evident SHA-256 Hash-Chained Grant Audit Trail...');
+    const integrityBefore = db.verifyGrantAuditTrailIntegrity();
+    assert.strictEqual(integrityBefore.valid, true, 'Audit trail must be valid before tampering');
+    assert.ok(integrityBefore.count > 0, 'Audit trail must contain entries');
+
+    // Simulate tampering with an audit trail entry
+    await db.mutate(d => {
+      if (d.grantAuditTrail && d.grantAuditTrail.length > 0) {
+        d.grantAuditTrail[0].actor = 'mallory_forged_actor';
+      }
+    });
+
+    const integrityAfterTamper = db.verifyGrantAuditTrailIntegrity();
+    assert.strictEqual(integrityAfterTamper.valid, false, 'Audit trail must detect tampering');
+    assert.ok(integrityAfterTamper.error.includes('HASH_TAMPERED'), 'Tamper error must be HASH_TAMPERED');
+    console.log('  PASS: SHA-256 hash-chain integrity verification detects tampered entries.');
+
+    console.log('\n=== ALL 44 REAL-SERVER SIGNED STRIPE TEST-MODE ROUTE E2E TESTS PASSED ===');
 
 
   } finally {
