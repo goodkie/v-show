@@ -645,6 +645,20 @@ function isStripeTransientError(err) {
   );
 }
 
+function extractSubscriptionId(inv) {
+  if (!inv) return null;
+  if (typeof inv.subscription === 'string' && inv.subscription.trim().length > 0) {
+    return inv.subscription.trim();
+  }
+  if (inv.subscription_details && typeof inv.subscription_details.subscription === 'string' && inv.subscription_details.subscription.trim().length > 0) {
+    return inv.subscription_details.subscription.trim();
+  }
+  if (inv.parent && inv.parent.subscription_details && typeof inv.parent.subscription_details.subscription === 'string' && inv.parent.subscription_details.subscription.trim().length > 0) {
+    return inv.parent.subscription_details.subscription.trim();
+  }
+  return null;
+}
+
 // Raw body parser for Stripe webhook MUST come before express.json()
 app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }), async (req, res) => {
 
@@ -1105,7 +1119,8 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
         if (!invObj.customer || typeof invObj.customer !== 'string' || invObj.customer.trim().length === 0) {
           return res.status(400).json({ error: 'STRIPE_EVENT_CUSTOMER_REQUIRED', message: 'Event-embedded customer is required.', retryable: false });
         }
-        if (!invObj.subscription || typeof invObj.subscription !== 'string' || invObj.subscription.trim().length === 0) {
+        const eventSubId = extractSubscriptionId(invObj);
+        if (!eventSubId) {
           return res.status(400).json({ error: 'STRIPE_EVENT_SUBSCRIPTION_REQUIRED', message: 'Event-embedded subscription is required.', retryable: false });
         }
 
@@ -1137,7 +1152,8 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
             });
           }
 
-          if (!authInv.subscription || typeof authInv.subscription !== 'string' || authInv.subscription.trim().length === 0) {
+          const authInvSubId = extractSubscriptionId(authInv);
+          if (!authInvSubId) {
             return res.status(400).json({
               error: 'STRIPE_INVOICE_SUBSCRIPTION_REQUIRED',
               message: 'Authoritative invoice lacks bound subscription.',
@@ -1145,7 +1161,7 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
             });
           }
 
-          if (invObj.subscription !== authInv.subscription) {
+          if (eventSubId !== authInvSubId) {
             return res.status(400).json({
               error: 'STRIPE_SUBSCRIPTION_MISMATCH',
               message: 'Event-embedded subscription differs from authoritative provider invoice subscription.',
@@ -1164,28 +1180,66 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
             });
           }
 
-          // Authoritative subscription lookup for full period reconciliation
+          // Authoritative subscription lookup for full period reconciliation:
+          // FAIL-CLOSED: No demotion without complete authoritative current subscription state!
           try {
-            authSub = await activeStripe.subscriptions.retrieve(authInv.subscription);
+            authSub = await activeStripe.subscriptions.retrieve(authInvSubId);
           } catch (subFetchErr) {
             if (isStripeTransientError(subFetchErr)) throw subFetchErr;
-            authSub = null;
+            // Subscription missing / 404 on provider: abort demotion! Do NOT assume null means genuine delinquency.
+            return res.status(502).json({
+              error: 'STRIPE_SUBSCRIPTION_UNAVAILABLE_FOR_DEMOTION',
+              message: 'Authoritative subscription could not be retrieved from provider; demotion aborted fail-closed.',
+              retryable: true
+            });
           }
 
-          if (authSub) {
-            if (authSub.customer && authSub.customer !== authInv.customer) {
+          if (!authSub || typeof authSub !== 'object') {
+            return res.status(502).json({
+              error: 'STRIPE_SUBSCRIPTION_UNAVAILABLE_FOR_DEMOTION',
+              message: 'Authoritative subscription is missing or null on provider; demotion aborted fail-closed.',
+              retryable: true
+            });
+          }
+
+          if (authSub.id !== authInvSubId) {
+            return res.status(400).json({
+              error: 'STRIPE_SUBSCRIPTION_ID_MISMATCH',
+              message: 'Provider subscription ID does not match invoice subscription ID.',
+              retryable: false
+            });
+          }
+
+          if (authSub.customer && authSub.customer !== authInv.customer) {
+            return res.status(400).json({
+              error: 'STRIPE_CUSTOMER_MISMATCH',
+              message: 'Authoritative subscription customer differs from invoice customer.',
+              retryable: false
+            });
+          }
+
+          // Check subscription status
+          if (authSub.status === 'canceled') {
+            return res.status(200).json({
+              received: true,
+              status: 'NOOP_SUBSCRIPTION_ALREADY_CANCELED',
+              message: 'Subscription is already canceled on provider; zero entitlement mutation.'
+            });
+          }
+
+          // Monotonic provider-effective state rules: If subscription is active and this failed invoice is for an older cycle,
+          // or if a newer invoice is active, do not demote active subscription to past_due!
+          if (authSub.status === 'active') {
+            if (!authSub.current_period_start || typeof authSub.current_period_start !== 'number') {
               return res.status(400).json({
-                error: 'STRIPE_CUSTOMER_MISMATCH',
-                message: 'Authoritative subscription customer differs from invoice customer.',
+                error: 'STRIPE_SUBSCRIPTION_PERIOD_MISSING',
+                message: 'Active subscription lacks valid current_period_start; demotion aborted fail-closed.',
                 retryable: false
               });
             }
-
-            // Monotonic provider-effective state rules: If subscription is active and this failed invoice is for an older cycle,
-            // or if a newer invoice is active, do not demote active subscription to past_due!
-            const isOlderPeriod = Boolean(authInv.period_end && authSub.current_period_start && (authInv.period_end <= authSub.current_period_start));
+            const isOlderPeriod = Boolean(authInv.period_end && (authInv.period_end <= authSub.current_period_start));
             const isSupersededInvoice = Boolean(authSub.latest_invoice && authSub.latest_invoice !== authInv.id);
-            if (authSub.status === 'active' && (isOlderPeriod || isSupersededInvoice)) {
+            if (isOlderPeriod || isSupersededInvoice) {
               console.log(`[STRIPE_RECONCILIATION] Stale payment_failed event ignored: subscription ${authSub.id} is currently active in period ${authSub.current_period_start}; invoice period_end is ${authInv.period_end}.`);
               return res.status(200).json({
                 received: true,
@@ -1194,27 +1248,19 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
                 message: 'Failed invoice is for an older billing cycle superseded by active subscription; zero entitlement mutation.'
               });
             }
-
-            if (authSub.status === 'canceled') {
-              return res.status(200).json({
-                received: true,
-                status: 'NOOP_SUBSCRIPTION_ALREADY_CANCELED',
-                message: 'Subscription is already canceled on provider; zero entitlement mutation.'
-              });
-            }
           }
         } catch (invErr) {
           console.error('[STRIPE_INVOICE_LOOKUP_FAILED]', invErr?.message || invErr);
           if (isStripeTransientError(invErr)) {
             return res.status(500).json({
               error: 'STRIPE_PROVIDER_TRANSIENT_FAILURE',
-              message: 'Stripe invoice lookup failed with transient error; retry requested.',
+              message: 'Stripe lookup failed with transient error; retry requested.',
               retryable: true
             });
           }
           return res.status(400).json({
             error: 'STRIPE_PROVIDER_FETCH_FAILED',
-            message: invErr?.message || 'Authoritative Stripe invoice lookup failed.',
+            message: invErr?.message || 'Authoritative Stripe lookup failed.',
             retryable: false
           });
         }
@@ -1234,11 +1280,13 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
         if (!invObj.customer || typeof invObj.customer !== 'string' || invObj.customer.trim().length === 0) {
           return res.status(400).json({ error: 'STRIPE_EVENT_CUSTOMER_REQUIRED', message: 'Event-embedded customer is required.', retryable: false });
         }
-        if (!invObj.subscription || typeof invObj.subscription !== 'string' || invObj.subscription.trim().length === 0) {
+        const eventSubId = extractSubscriptionId(invObj);
+        if (!eventSubId) {
           return res.status(400).json({ error: 'STRIPE_EVENT_SUBSCRIPTION_REQUIRED', message: 'Event-embedded subscription is required.', retryable: false });
         }
 
         let authInv;
+        let authSub;
         try {
           authInv = await activeStripe.invoices.retrieve(invObj.id);
           if (!authInv) {
@@ -1265,7 +1313,8 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
             });
           }
 
-          if (!authInv.subscription || typeof authInv.subscription !== 'string' || authInv.subscription.trim().length === 0) {
+          const authInvSubId = extractSubscriptionId(authInv);
+          if (!authInvSubId) {
             return res.status(400).json({
               error: 'STRIPE_INVOICE_SUBSCRIPTION_REQUIRED',
               message: 'Authoritative invoice lacks bound subscription.',
@@ -1273,7 +1322,7 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
             });
           }
 
-          if (invObj.subscription !== authInv.subscription) {
+          if (eventSubId !== authInvSubId) {
             return res.status(400).json({
               error: 'STRIPE_SUBSCRIPTION_MISMATCH',
               message: 'Event-embedded subscription differs from authoritative provider invoice subscription.',
@@ -1291,12 +1340,78 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
             });
           }
 
-          // Exact Currency alignment check if provided
+          // Dispute/refund check: reject refunded invoices
+          if (authInv.amount_refunded && authInv.amount_paid && authInv.amount_refunded >= authInv.amount_paid) {
+            return res.status(400).json({
+              error: 'STRIPE_INVOICE_REFUNDED',
+              message: 'Invoice has been fully refunded; cannot apply paid entitlement.',
+              retryable: false
+            });
+          }
+
+          // Currency validation
+          if (authInv.currency && authInv.currency.toLowerCase() !== 'usd') {
+            return res.status(400).json({
+              error: 'STRIPE_CURRENCY_MISMATCH',
+              message: `Unapproved currency '${authInv.currency}'. Only USD is permitted.`,
+              retryable: false
+            });
+          }
           if (invObj.currency && authInv.currency && invObj.currency.toLowerCase() !== authInv.currency.toLowerCase()) {
             return res.status(400).json({
               error: 'STRIPE_CURRENCY_MISMATCH',
               message: 'Event currency differs from authoritative invoice currency.',
               retryable: false
+            });
+          }
+
+          // Retrieve and reconcile authoritative subscription
+          try {
+            authSub = await activeStripe.subscriptions.retrieve(authInvSubId);
+          } catch (subErr) {
+            if (isStripeTransientError(subErr)) throw subErr;
+            return res.status(502).json({
+              error: 'STRIPE_SUBSCRIPTION_UNAVAILABLE',
+              message: 'Authoritative subscription could not be retrieved from provider; entitlement application deferred.',
+              retryable: true
+            });
+          }
+
+          if (!authSub || typeof authSub !== 'object') {
+            return res.status(502).json({
+              error: 'STRIPE_SUBSCRIPTION_UNAVAILABLE',
+              message: 'Authoritative subscription is missing on provider.',
+              retryable: true
+            });
+          }
+
+          if (authSub.customer && authSub.customer !== authInv.customer) {
+            return res.status(400).json({
+              error: 'STRIPE_CUSTOMER_MISMATCH',
+              message: 'Authoritative subscription customer differs from invoice customer.',
+              retryable: false
+            });
+          }
+
+          // If subscription is canceled, a delayed older paid invoice MUST NOT reinstate the canceled subscription!
+          if (authSub.status === 'canceled') {
+            console.log(`[STRIPE_RECONCILIATION] Delayed invoice.paid event ignored: subscription ${authSub.id} is canceled.`);
+            return res.status(200).json({
+              received: true,
+              status: 'NOOP_STALE_PAID_INVOICE',
+              reason: 'SUBSCRIPTION_ALREADY_CANCELED',
+              message: 'Subscription is canceled on provider; delayed paid invoice will not reinstate entitlement.'
+            });
+          }
+
+          // If subscription is active on a newer period and this invoice is for an older period, do not mutate period
+          if (authSub.status === 'active' && authInv.period_end && authSub.current_period_start && (authInv.period_end < authSub.current_period_start)) {
+            console.log(`[STRIPE_RECONCILIATION] Delayed invoice.paid for older period ${authInv.period_end} superseded by current period ${authSub.current_period_start}.`);
+            return res.status(200).json({
+              received: true,
+              status: 'NOOP_STALE_PAID_INVOICE',
+              reason: 'SUPERSEDED_BY_CURRENT_PERIOD',
+              message: 'Paid invoice is for an older period superseded by current subscription period.'
             });
           }
         } catch (invErr) {
@@ -1317,7 +1432,8 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
 
         result = await db.applyStripeInvoicePaidAtomic({
           event,
-          invoice: authInv
+          invoice: authInv,
+          subscription: authSub
         });
         break;
       }
@@ -1397,6 +1513,13 @@ app.post('/api/admin/pilot-grants', requireAuth, requirePlatformOwner, async (re
     if (!pilotExpiresAt) {
       return res.status(400).json({ error: 'MISSING_PILOT_EXPIRATION', message: 'pilotExpiresAt is required.' });
     }
+    // Strict Owner Consent: Require explicit isOrgWide: true when no specific target is provided. Zero auto-inference!
+    if (!projectId && !accountId && isOrgWide !== true) {
+      return res.status(400).json({
+        error: 'EXPLICIT_ORG_WIDE_APPROVAL_REQUIRED',
+        message: 'Neither projectId nor accountId provided. Organization-wide grant requires explicit isOrgWide: true in payload.'
+      });
+    }
     const grant = await db.issuePilotGrant({
       organizationId,
       projectId,
@@ -1405,7 +1528,7 @@ app.post('/api/admin/pilot-grants', requireAuth, requirePlatformOwner, async (re
       approvedBy: req.user.username || req.user.userId || 'platform_owner',
       notes,
       createdBy: req.user.userId || req.user.username || 'platform_owner',
-      isOrgWide: isOrgWide !== undefined ? Boolean(isOrgWide) : (!projectId && !accountId)
+      isOrgWide: Boolean(isOrgWide)
     });
     return res.status(201).json({ success: true, grant });
   } catch (err) {
@@ -1429,6 +1552,13 @@ app.post('/api/admin/legacy-grants', requireAuth, requirePlatformOwner, async (r
     if (!organizationId) {
       return res.status(400).json({ error: 'MISSING_ORGANIZATION_ID', message: 'organizationId is required.' });
     }
+    // Strict Owner Consent: Require explicit isOrgWide: true when no specific target is provided. Zero auto-inference!
+    if (!projectId && !accountId && isOrgWide !== true) {
+      return res.status(400).json({
+        error: 'EXPLICIT_ORG_WIDE_APPROVAL_REQUIRED',
+        message: 'Neither projectId nor accountId provided. Organization-wide grant requires explicit isOrgWide: true in payload.'
+      });
+    }
     const grant = await db.issueLegacyGrant({
       organizationId,
       accountId,
@@ -1436,7 +1566,7 @@ app.post('/api/admin/legacy-grants', requireAuth, requirePlatformOwner, async (r
       approvedBy: req.user.username || req.user.userId || 'platform_owner',
       notes,
       createdBy: req.user.userId || req.user.username || 'platform_owner',
-      isOrgWide: isOrgWide !== undefined ? Boolean(isOrgWide) : (!projectId && !accountId)
+      isOrgWide: Boolean(isOrgWide)
     });
     return res.status(201).json({ success: true, grant });
   } catch (err) {

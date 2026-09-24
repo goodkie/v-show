@@ -24,21 +24,17 @@ if (!fs.existsSync(SEED_DIR)) {
 }
 
 function updateGrantAuditRootAnchor(entry, totalLength) {
-  try {
-    const anchorData = {
-      anchorVersion: 1,
-      lastSequence: entry.sequence,
-      lastEntryHash: entry.entryHash,
-      lastAuditId: entry.auditId,
-      totalEntries: totalLength,
-      updatedAt: entry.timestamp
-    };
-    const tmpPath = GRANT_AUDIT_ROOT_FILE + '.tmp';
-    fs.writeFileSync(tmpPath, JSON.stringify(anchorData, null, 2), 'utf-8');
-    fs.renameSync(tmpPath, GRANT_AUDIT_ROOT_FILE);
-  } catch (err) {
-    console.error('[AUDIT_ROOT_ANCHOR_WRITE_FAILED]', err);
-  }
+  const anchorData = {
+    anchorVersion: 1,
+    lastSequence: entry.sequence,
+    lastEntryHash: entry.entryHash,
+    lastAuditId: entry.auditId,
+    totalEntries: totalLength,
+    updatedAt: entry.timestamp
+  };
+  const tmpPath = GRANT_AUDIT_ROOT_FILE + '.tmp';
+  fs.writeFileSync(tmpPath, JSON.stringify(anchorData, null, 2), 'utf-8');
+  fs.renameSync(tmpPath, GRANT_AUDIT_ROOT_FILE);
 }
 
 // Password Policy & Hashing Helpers
@@ -1835,8 +1831,15 @@ class JSONDatabase {
       const data = this.read();
       data._version = (data._version || 1) + 1;
       const result = await callback(data);
+      const pendingAnchor = data.__pendingAuditAnchor;
+      if (pendingAnchor) {
+        delete data.__pendingAuditAnchor;
+      }
       const written = this._writeUnderLock(data);
       if (!written) throw new Error('DB_WRITE_FAILED: Write returned false under lock');
+      if (pendingAnchor) {
+        updateGrantAuditRootAnchor(pendingAnchor.entry, pendingAnchor.totalLength);
+      }
       return result;
     } finally {
       if (ownerToken) {
@@ -7051,6 +7054,33 @@ return event;
         };
       }
 
+      // Complete Authoritative Provider State Requirement:
+      // Active tenants must NEVER be demoted based on an unverified or missing provider subscription.
+      if (!params.subscription) {
+        eventRecord.status = 'FAILED';
+        eventRecord.failureReason = 'MISSING_AUTHORITATIVE_SUBSCRIPTION_STATE';
+        return {
+          success: false,
+          code: 'MISSING_AUTHORITATIVE_SUBSCRIPTION_STATE',
+          message: 'Authoritative provider subscription state is required for demotion evaluation.'
+        };
+      }
+      if (params.subscription.id !== subscriptionId || (params.subscription.customer && params.subscription.customer !== customerId)) {
+        eventRecord.status = 'FAILED';
+        eventRecord.failureReason = 'SUBSCRIPTION_IDENTITY_MISMATCH';
+        return {
+          success: false,
+          code: 'SUBSCRIPTION_IDENTITY_MISMATCH',
+          message: 'Authoritative subscription identity does not match invoice subscription or customer.'
+        };
+      }
+      if (params.subscription.status === 'canceled') {
+        eventRecord.status = 'PROCESSED';
+        eventRecord.processedAt = new Date().toISOString();
+        eventRecord.metadata = { ignoredReason: 'SUBSCRIPTION_ALREADY_CANCELED', invoiceId: invoice.id, subscriptionId };
+        return { success: true, stale: true, message: 'Event ignored: subscription is already canceled.' };
+      }
+
       const eventTimestamp = event.created ? (event.created * 1000) : now;
       if (org.subscription?.lastEventTimestamp) {
         if (eventTimestamp < org.subscription.lastEventTimestamp) {
@@ -7071,9 +7101,9 @@ return event;
       }
 
       // Monotonic Provider-Effective State Reconciliation
-      // If authoritative subscription is provided and active on a newer period, or if the failed invoice
+      // If authoritative subscription is active on a newer period, or if the failed invoice
       // is for a prior completed period, do NOT demote the active organization to past_due!
-      if (params.subscription && params.subscription.status === 'active') {
+      if (params.subscription.status === 'active') {
         const isOlderPeriod = Boolean(invoice.period_end && params.subscription.current_period_start && (invoice.period_end <= params.subscription.current_period_start));
         const isSuperseded = Boolean(params.subscription.latest_invoice && params.subscription.latest_invoice !== invoice.id);
         if (isOlderPeriod || isSuperseded) {
@@ -7219,6 +7249,32 @@ return event;
             eventRecord.processedAt = new Date().toISOString();
             return { success: true, outOfOrder: true, message: 'Event ignored: same timestamp tie broken deterministically.' };
           }
+        }
+      }
+
+      // Authoritative subscription check if provided:
+      // If authoritative subscription is provided and its status is 'canceled',
+      // delayed/past invoice paid must NOT reinstate canceled subscription.
+      if (params.subscription) {
+        if (params.subscription.id !== subscriptionId || (params.subscription.customer && params.subscription.customer !== customerId)) {
+          eventRecord.status = 'FAILED';
+          eventRecord.failureReason = 'SUBSCRIPTION_IDENTITY_MISMATCH';
+          return {
+            success: false,
+            code: 'SUBSCRIPTION_IDENTITY_MISMATCH',
+            message: 'Authoritative subscription identity does not match invoice subscription or customer.'
+          };
+        }
+        if (params.subscription.status === 'canceled') {
+          eventRecord.status = 'PROCESSED';
+          eventRecord.processedAt = new Date().toISOString();
+          eventRecord.metadata = { ignoredReason: 'SUBSCRIPTION_ALREADY_CANCELED', invoiceId: invoice.id, subscriptionId };
+          return { success: true, stale: true, message: 'Event ignored: invoice is for a canceled subscription; will not reinstate entitlement.' };
+        }
+        // If active, update period
+        if (params.subscription.current_period_start && params.subscription.current_period_end) {
+          org.subscription.currentPeriodStart = new Date(params.subscription.current_period_start * 1000).toISOString();
+          org.subscription.currentPeriodEnd = new Date(params.subscription.current_period_end * 1000).toISOString();
         }
       }
 
@@ -10631,7 +10687,7 @@ return event;
       } else if (accountId) {
         targetScope = `account:${accountId}`;
       } else {
-        if (isOrgWide !== true && (!notes || !notes.includes('ORG_WIDE_APPROVED'))) {
+        if (isOrgWide !== true) {
           throw new Error('REFERENTIAL_INTEGRITY_VIOLATION: Org-wide grant requires explicit isOrgWide approval flag');
         }
         targetScope = `org:${organizationId}`;
@@ -10679,8 +10735,8 @@ return event;
       auditPayload.entryHash = crypto.createHash('sha256').update(JSON.stringify(auditPayload)).digest('hex');
       d.grantAuditTrail.push(auditPayload);
 
-      // Sync detached external root anchor
-      updateGrantAuditRootAnchor(auditPayload, d.grantAuditTrail.length);
+      // Stage pending root anchor update to be written atomically after DB write under lock
+      d.__pendingAuditAnchor = { entry: auditPayload, totalLength: d.grantAuditTrail.length };
 
       return grant;
     });
@@ -10734,8 +10790,8 @@ return event;
       auditPayload.entryHash = crypto.createHash('sha256').update(JSON.stringify(auditPayload)).digest('hex');
       d.grantAuditTrail.push(auditPayload);
 
-      // Sync detached external root anchor
-      updateGrantAuditRootAnchor(auditPayload, d.grantAuditTrail.length);
+      // Stage pending root anchor update to be written atomically after DB write under lock
+      d.__pendingAuditAnchor = { entry: auditPayload, totalLength: d.grantAuditTrail.length };
 
       return g;
     });
@@ -10785,7 +10841,7 @@ return event;
       } else if (accountId) {
         targetScope = `account:${accountId}`;
       } else {
-        if (isOrgWide !== true && (!notes || !notes.includes('ORG_WIDE_APPROVED'))) {
+        if (isOrgWide !== true) {
           throw new Error('REFERENTIAL_INTEGRITY_VIOLATION: Org-wide grant requires explicit isOrgWide approval flag');
         }
         targetScope = `org:${organizationId}`;
@@ -10832,8 +10888,8 @@ return event;
       auditPayload.entryHash = crypto.createHash('sha256').update(JSON.stringify(auditPayload)).digest('hex');
       d.grantAuditTrail.push(auditPayload);
 
-      // Sync detached external root anchor
-      updateGrantAuditRootAnchor(auditPayload, d.grantAuditTrail.length);
+      // Stage pending root anchor update to be written atomically after DB write under lock
+      d.__pendingAuditAnchor = { entry: auditPayload, totalLength: d.grantAuditTrail.length };
 
       return grant;
     });
@@ -10890,8 +10946,8 @@ return event;
       auditPayload.entryHash = crypto.createHash('sha256').update(JSON.stringify(auditPayload)).digest('hex');
       d.grantAuditTrail.push(auditPayload);
 
-      // Sync detached external root anchor
-      updateGrantAuditRootAnchor(auditPayload, d.grantAuditTrail.length);
+      // Stage pending root anchor update to be written atomically after DB write under lock
+      d.__pendingAuditAnchor = { entry: auditPayload, totalLength: d.grantAuditTrail.length };
 
       return g;
     });
@@ -10908,6 +10964,9 @@ return event;
       }
       if (entry.previousHash !== prevHash) {
         return { valid: false, error: `PREVIOUS_HASH_MISMATCH at index ${i}` };
+      }
+      if (!entry.actor || typeof entry.actor !== 'string' || entry.actor.trim().length < 3) {
+        return { valid: false, error: `INVALID_ACTOR at index ${i}` };
       }
       // Target scope consistency verification
       let expectedScope;
@@ -10932,10 +10991,24 @@ return event;
       prevHash = entryHash;
     }
 
-    // Detached external root anchor verification
+    // Detached external root anchor verification:
+    // If trail is non-empty, root anchor file is mandatory (fail-closed).
+    if (trail.length > 0 && !fs.existsSync(GRANT_AUDIT_ROOT_FILE)) {
+      return { valid: false, error: 'AUDIT_ROOT_ANCHOR_MISSING' };
+    }
+
     if (fs.existsSync(GRANT_AUDIT_ROOT_FILE)) {
       try {
-        const anchor = JSON.parse(fs.readFileSync(GRANT_AUDIT_ROOT_FILE, 'utf8'));
+        const rawAnchor = fs.readFileSync(GRANT_AUDIT_ROOT_FILE, 'utf8');
+        let anchor;
+        try {
+          anchor = JSON.parse(rawAnchor);
+        } catch (jsonErr) {
+          return { valid: false, error: 'AUDIT_ROOT_ANCHOR_INVALID: Corrupt JSON' };
+        }
+        if (!anchor || typeof anchor !== 'object') {
+          return { valid: false, error: 'AUDIT_ROOT_ANCHOR_INVALID: Anchor is not an object' };
+        }
         if (trail.length === 0) {
           if (anchor.totalEntries && anchor.totalEntries !== 0) {
             return { valid: false, error: 'AUDIT_ROOT_ANCHOR_MISMATCH: Trail empty but root anchor non-empty' };

@@ -774,6 +774,19 @@ async function main() {
 
     // ── TEST 15: INVOICE PAYMENT FAILED -> PAST_DUE ─────────────────────────
     console.log('\n[TEST 15] Verifying invoice.payment_failed transitions org to past_due...');
+    const failedInvId = `in_failed_${Date.now()}`;
+    authoritativeSubscriptionStore.set(subId1, {
+      id: subId1,
+      customer: customerId1,
+      status: 'past_due'
+    });
+    authoritativeInvoiceStore.set(failedInvId, {
+      id: failedInvId,
+      customer: customerId1,
+      subscription: subId1,
+      status: 'open',
+      paid: false
+    });
     const eventPayFailed = {
       id: `evt_pay_failed_${Date.now()}`,
       object: 'event',
@@ -781,14 +794,14 @@ async function main() {
       type: 'invoice.payment_failed',
       data: {
         object: {
-          id: `in_failed_${Date.now()}`,
+          id: failedInvId,
           customer: customerId1,
           subscription: subId1
         }
       }
     };
     const res15 = await postWebhook(eventPayFailed);
-    assert.strictEqual(res15.status, 200, 'invoice.payment_failed must succeed');
+    assert.strictEqual(res15.status, 200, `invoice.payment_failed must succeed: ${JSON.stringify(res15.data)}`);
 
     const orgAfter15 = db.getOrganizationById(testOrgId);
     assert.strictEqual(orgAfter15.subscription.status, 'past_due', 'Org status must transition to past_due');
@@ -799,6 +812,21 @@ async function main() {
 
     // ── TEST 16: INVOICE PAID -> RESTORES ACTIVE ────────────────────────────
     console.log('\n[TEST 16] Verifying invoice.paid restores org to active...');
+    const paidInvId = `in_paid_${Date.now()}`;
+    authoritativeSubscriptionStore.set(subId1, {
+      id: subId1,
+      customer: customerId1,
+      status: 'active'
+    });
+    authoritativeInvoiceStore.set(paidInvId, {
+      id: paidInvId,
+      customer: customerId1,
+      subscription: subId1,
+      status: 'paid',
+      paid: true,
+      amount_paid: 29900,
+      currency: 'usd'
+    });
     const eventPayPaid = {
       id: `evt_pay_paid_${Date.now()}`,
       object: 'event',
@@ -806,7 +834,7 @@ async function main() {
       type: 'invoice.paid',
       data: {
         object: {
-          id: `in_paid_${Date.now()}`,
+          id: paidInvId,
           customer: customerId1,
           subscription: subId1,
           amount_paid: 29900,
@@ -826,6 +854,11 @@ async function main() {
 
     // ── TEST 17: CUSTOMER SUBSCRIPTION DELETED -> CANCELED / FREE ──────────
     console.log('\n[TEST 17] Verifying customer.subscription.deleted cancels subscription and reverts plan...');
+    authoritativeSubscriptionStore.set(subId1, {
+      id: subId1,
+      customer: customerId1,
+      status: 'canceled'
+    });
     const eventSubDeleted = {
       id: `evt_sub_del_${Date.now()}`,
       object: 'event',
@@ -1601,10 +1634,10 @@ async function main() {
         res.on('end', () => resolve({ status: res.statusCode, json: JSON.parse(d) }));
       });
       req.on('error', reject);
-      req.write(JSON.stringify({ organizationId: testOrgId, pilotExpiresAt: new Date(Date.now() + 86400000).toISOString(), notes: 'Audited owner pilot' }));
+      req.write(JSON.stringify({ organizationId: testOrgId, isOrgWide: true, pilotExpiresAt: new Date(Date.now() + 86400000).toISOString(), notes: 'Audited owner pilot' }));
       req.end();
     });
-    assert.strictEqual(ownerIssueRes.status, 201, 'Owner must successfully issue grant (HTTP 201)');
+    assert.strictEqual(ownerIssueRes.status, 201, `Owner must successfully issue grant (HTTP 201): ${JSON.stringify(ownerIssueRes.json)}`);
     const issuedGrantId = ownerIssueRes.json.grant.grantId;
     assert.ok(issuedGrantId.startsWith('grant_pilot_'));
     assert.strictEqual(ownerIssueRes.json.grant.status, 'active');
@@ -1751,6 +1784,11 @@ async function main() {
       status: 'paid',
       paid: true,
       amount_paid: 29900
+    });
+    authoritativeSubscriptionStore.set(subId35, {
+      id: subId35,
+      customer: cusId35,
+      status: 'active'
     });
     const invEvent35 = {
       id: `evt_inv_paid_${Date.now()}`,
@@ -2261,7 +2299,207 @@ async function main() {
     assert.strictEqual(integrityRestoredRoot.valid, true, 'Audit trail verification must pass after restoring root anchor');
     console.log('  PASS: Detached root anchor successfully detects external rewrite tampering.');
 
-    console.log('\n=== ALL 49 REAL-SERVER SIGNED STRIPE TEST-MODE ROUTE E2E TESTS PASSED ===');
+    // ── TEST 50: PROVIDER NULL/404 SUBSCRIPTION ON INVOICE.PAYMENT_FAILED FAILS CLOSED ───
+    console.log('\n[TEST 50] Verifying Provider Null/404 Subscription on invoice.payment_failed Fails Closed...');
+    const subId50 = `sub_null_test_${Date.now()}`;
+    const cusId50 = `cus_null_test_${Date.now()}`;
+    const invId50 = `in_null_test_${Date.now()}`;
+    const orgId50 = `org_null_test_${Date.now()}`;
+
+    await db.mutate(d => {
+      d.organizations.push({
+        id: orgId50,
+        name: 'Active Org Null Sub Test',
+        subscription: {
+          stripeSubscriptionId: subId50,
+          stripeCustomerId: cusId50,
+          status: 'active',
+          plan: 'pro'
+        }
+      });
+      d.projects.push({
+        id: `prj_${orgId50}`,
+        organizationId: orgId50,
+        commercialState: 'ACTIVE_PRO'
+      });
+    });
+
+    authoritativeInvoiceStore.set(invId50, {
+      id: invId50,
+      customer: cusId50,
+      subscription: subId50,
+      status: 'open',
+      paid: false
+    });
+    // Simulate 404 / missing subscription on Stripe provider
+    const notFoundErr = new Error('No such subscription');
+    notFoundErr.statusCode = 404;
+    authoritativeSubscriptionStore.set(subId50, notFoundErr);
+
+    const failClosedEvent = {
+      id: `evt_fail_closed_sub_${Date.now()}`,
+      object: 'event',
+      type: 'invoice.payment_failed',
+      data: {
+        object: {
+          id: invId50,
+          customer: cusId50,
+          subscription: subId50
+        }
+      }
+    };
+    const res50 = await postWebhook(failClosedEvent);
+    assert.strictEqual(res50.status, 502, 'Provider 404 on subscription during payment failure must fail closed with HTTP 502');
+    assert.strictEqual(res50.data.error, 'STRIPE_SUBSCRIPTION_UNAVAILABLE_FOR_DEMOTION');
+
+    // Tenant must NOT be demoted!
+    const orgAfter50 = db.getOrganizationById(orgId50);
+    assert.strictEqual(orgAfter50.subscription.status, 'active', 'Tenant must NOT be demoted when provider subscription is unavailable');
+    const prjAfter50 = await db.getProjectById(`prj_${orgId50}`);
+    assert.strictEqual(prjAfter50.commercialState, 'ACTIVE_PRO', 'Project commercialState must remain active');
+    console.log('  PASS: Provider 404/null subscription on payment failure failed closed (HTTP 502) with zero tenant demotion.');
+
+    // ── TEST 51: MISSING DETACHED ROOT ANCHOR WITH NON-EMPTY TRAIL FAILS CLOSED ──────────
+    console.log('\n[TEST 51] Verifying Missing Detached Root Anchor with Non-Empty Trail Fails Closed...');
+    const rootAnchorBackupPath = rootAnchorPath + '.bak';
+    fs.renameSync(rootAnchorPath, rootAnchorBackupPath);
+
+    const integrityMissingRoot = db.verifyGrantAuditTrailIntegrity();
+    assert.strictEqual(integrityMissingRoot.valid, false, 'Integrity check must fail when root anchor is missing');
+    assert.strictEqual(integrityMissingRoot.error, 'AUDIT_ROOT_ANCHOR_MISSING', 'Error must be AUDIT_ROOT_ANCHOR_MISSING');
+
+    // Restore root anchor
+    fs.renameSync(rootAnchorBackupPath, rootAnchorPath);
+    const integrityRestoredAgain = db.verifyGrantAuditTrailIntegrity();
+    assert.strictEqual(integrityRestoredAgain.valid, true, 'Integrity check must pass when root anchor is restored');
+    console.log('  PASS: Missing detached root anchor strictly fails closed (AUDIT_ROOT_ANCHOR_MISSING).');
+
+    // ── TEST 52: DELAYED INVOICE.PAID ON CANCELED SUBSCRIPTION DOES NOT REINSTATE ─────────
+    console.log('\n[TEST 52] Verifying Delayed invoice.paid on Canceled Subscription NOOPs and Does Not Reinstate...');
+    const subId52 = `sub_canceled_${Date.now()}`;
+    const cusId52 = `cus_canceled_${Date.now()}`;
+    const invId52 = `in_delayed_paid_${Date.now()}`;
+    const orgId52 = `org_canceled_test_${Date.now()}`;
+
+    await db.mutate(d => {
+      d.organizations.push({
+        id: orgId52,
+        name: 'Canceled Org Test',
+        subscription: {
+          stripeSubscriptionId: subId52,
+          stripeCustomerId: cusId52,
+          status: 'canceled',
+          plan: 'free'
+        }
+      });
+      d.projects.push({
+        id: `prj_${orgId52}`,
+        organizationId: orgId52,
+        commercialState: 'CANCELLED'
+      });
+    });
+
+    authoritativeInvoiceStore.set(invId52, {
+      id: invId52,
+      customer: cusId52,
+      subscription: subId52,
+      status: 'paid',
+      paid: true,
+      amount_paid: 29900,
+      currency: 'usd'
+    });
+    authoritativeSubscriptionStore.set(subId52, {
+      id: subId52,
+      customer: cusId52,
+      status: 'canceled'
+    });
+
+    const delayedPaidEvent = {
+      id: `evt_delayed_paid_canceled_${Date.now()}`,
+      object: 'event',
+      type: 'invoice.paid',
+      data: {
+        object: {
+          id: invId52,
+          customer: cusId52,
+          subscription: subId52,
+          amount_paid: 29900,
+          currency: 'usd'
+        }
+      }
+    };
+    const res52 = await postWebhook(delayedPaidEvent);
+    assert.strictEqual(res52.status, 200, 'Delayed paid invoice on canceled sub must return HTTP 200 NOOP');
+    assert.strictEqual(res52.data.status, 'NOOP_STALE_PAID_INVOICE');
+    assert.strictEqual(res52.data.reason, 'SUBSCRIPTION_ALREADY_CANCELED');
+
+    const orgAfter52 = db.getOrganizationById(orgId52);
+    assert.strictEqual(orgAfter52.subscription.status, 'canceled', 'Canceled org must NOT be reinstated by delayed paid invoice');
+    assert.strictEqual(orgAfter52.subscription.plan, 'free');
+    console.log('  PASS: Delayed invoice.paid on canceled subscription acknowledged as NOOP without entitlement reinstatement.');
+
+    // ── TEST 53: ADMIN GRANT CREATION WITHOUT TARGETS AND WITHOUT ISORGWIDE REJECTED ─────
+    console.log('\n[TEST 53] Verifying Admin Grant Creation Without Targets and Without Explicit isOrgWide is Rejected...');
+    const pilotNoTargetRes = await new Promise((resolve, reject) => {
+      const req = http.request({
+        hostname: '127.0.0.1', port: serverPort, path: '/api/admin/pilot-grants', method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${ownerToken}` }
+      }, (res) => {
+        let d = ''; res.on('data', c => d += c);
+        res.on('end', () => resolve({ status: res.statusCode, json: JSON.parse(d) }));
+      });
+      req.on('error', reject);
+      req.write(JSON.stringify({ organizationId: testOrgId, pilotExpiresAt: new Date(Date.now() + 86400000).toISOString() }));
+      req.end();
+    });
+    assert.strictEqual(pilotNoTargetRes.status, 400, 'Pilot grant without targets and without isOrgWide must return HTTP 400');
+    assert.strictEqual(pilotNoTargetRes.json.error, 'EXPLICIT_ORG_WIDE_APPROVAL_REQUIRED');
+
+    const legacyNoTargetRes = await new Promise((resolve, reject) => {
+      const req = http.request({
+        hostname: '127.0.0.1', port: serverPort, path: '/api/admin/legacy-grants', method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${ownerToken}` }
+      }, (res) => {
+        let d = ''; res.on('data', c => d += c);
+        res.on('end', () => resolve({ status: res.statusCode, json: JSON.parse(d) }));
+      });
+      req.on('error', reject);
+      req.write(JSON.stringify({ organizationId: testOrgId }));
+      req.end();
+    });
+    assert.strictEqual(legacyNoTargetRes.status, 400, 'Legacy grant without targets and without isOrgWide must return HTTP 400');
+    assert.strictEqual(legacyNoTargetRes.json.error, 'EXPLICIT_ORG_WIDE_APPROVAL_REQUIRED');
+    console.log('  PASS: Admin grant routes strictly reject untargeted requests lacking explicit isOrgWide flag (HTTP 400 EXPLICIT_ORG_WIDE_APPROVAL_REQUIRED).');
+
+    // ── TEST 54: MUTATOR REJECTS NOTES SUBSTRING ORG_WIDE_APPROVED WITHOUT ISORGWIDE ──────
+    console.log('\n[TEST 54] Verifying Mutator Rejects notes Substring ORG_WIDE_APPROVED Without isOrgWide...');
+    await assert.rejects(
+      async () => {
+        await db.issuePilotGrant({
+          organizationId: testOrgId,
+          pilotExpiresAt: new Date(Date.now() + 86400000).toISOString(),
+          approvedBy: 'owner_user',
+          notes: 'ORG_WIDE_APPROVED in notes but isOrgWide not passed'
+        });
+      },
+      /REFERENTIAL_INTEGRITY_VIOLATION/,
+      'Pilot grant with notes substring but isOrgWide missing must be rejected'
+    );
+
+    await assert.rejects(
+      async () => {
+        await db.issueLegacyGrant({
+          organizationId: testOrgId,
+          approvedBy: 'owner_user',
+          notes: 'ORG_WIDE_APPROVED in notes but isOrgWide not passed'
+        });
+      },
+      /REFERENTIAL_INTEGRITY_VIOLATION/,
+      'Legacy grant with notes substring but isOrgWide missing must be rejected'
+    );
+    console.log('  PASS: DB mutators strictly reject notes substring checks without explicit isOrgWide boolean flag.');
+
+    console.log('\n=== ALL 54 REAL-SERVER SIGNED STRIPE TEST-MODE ROUTE E2E TESTS PASSED ===');
 
 
   } finally {
