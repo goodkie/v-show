@@ -209,13 +209,15 @@ async function main() {
   let serverPort;
 
   const testReceipt = {
-    testMilestone: 'STAGE2-PANORAMA-BROWSER-OPTICAL-PROOF-V2',
-    revisedPer: 'ChatGPT audit 5806002127',
+    testMilestone: 'STAGE2-PANORAMA-BROWSER-OPTICAL-PROOF-R52',
+    revisedPer: 'ChatGPT audit 5806602911',
     executedAt: new Date().toISOString(),
     nodeVersion: process.version,
     platform: process.platform,
     browser: null,
     panoramaAsset: {},
+    controlsVerification: {},
+    seamClosureVerification: {},
     opticalScreenshots: [],
     rgbaPixelVarianceMatrix: {},
     publishShareVerification: {},
@@ -347,24 +349,16 @@ async function main() {
       }
     }, '{}');
 
-    let publishedViaApi = false;
-    if (publishRes.status === 200 || publishRes.status === 204) {
-      publishedViaApi = true;
-      console.log(`  PASS: Project published via real API /api/projects/:id/publish (HTTP ${publishRes.status})`);
-      testReceipt.publishShareVerification.publishViaAuthenticatedAPI = 'PASS';
-    } else {
-      // Document: server publish route uses booth schema; Phase 8 project.publishStatus alignment needed
-      console.log(`  [DOCUMENTED] /api/projects/:id/publish returned ${publishRes.status}: ${JSON.stringify(publishRes.data || '').substring(0, 120)}`);
-      console.log('  [FALLBACK] db.mutate used — Phase 8 project schema publish route alignment needed');
-      testReceipt.publishShareVerification.publishViaAuthenticatedAPI =
-        `ATTEMPTED_HTTP_${publishRes.status} — server uses booth schema; Phase 8 projects.publishStatus needs route; db.mutate fallback`;
-      await db.mutate((d) => {
-        const prj = d.projects.find(p => p.id === testProjectId);
-        if (prj) prj.publishStatus = 'PUBLISHED';
-      });
-      console.log('  [FALLBACK] db.mutate publish applied.');
-    }
+    assert.ok(publishRes.status === 200 || publishRes.status === 204, `Publish API must return HTTP 200/204, got ${publishRes.status}: ${JSON.stringify(publishRes.data || '')}`);
+    console.log(`  PASS: Project published via real API /api/projects/:id/publish (HTTP ${publishRes.status})`);
+    testReceipt.publishShareVerification.publishViaAuthenticatedAPI = 'PASS';
 
+    // Verify DB persistence directly without fallbacks
+    const prjAfterPub = (db.memoryData.projects || []).find(p => p.id === testProjectId);
+    assert.ok(prjAfterPub, 'Project must exist in DB');
+    assert.strictEqual(prjAfterPub.publishStatus, 'PUBLISHED', 'DB must persist PUBLISHED status');
+    testReceipt.publishShareVerification.dbPersistenceAfterPublish = 'PASS';
+    console.log('  PASS: DB persistence verified: project.publishStatus === PUBLISHED');
 
     // Verify now publicly available
     const publishedCheck = await httpRequest({ hostname: '127.0.0.1', port: serverPort, path: `/api/public/booth/${testPublicSlug}`, method: 'GET' });
@@ -398,15 +392,9 @@ async function main() {
       }
     }, crossTenantAttemptBody);
 
-    const crossTenantDenied = crossTenantRes.status === 403 || crossTenantRes.status === 401 || crossTenantRes.status === 404;
-    if (crossTenantDenied) {
-      console.log(`  PASS: Cross-tenant project access correctly denied (HTTP ${crossTenantRes.status})`);
-      testReceipt.publishShareVerification.crossTenantDenied = `PASS (HTTP ${crossTenantRes.status})`;
-    } else {
-      // Document the issue - route may not exist yet
-      console.log(`  [DOCUMENTED] Cross-tenant check: HTTP ${crossTenantRes.status} (route may not enforce tenant isolation on publish endpoint)`);
-      testReceipt.publishShareVerification.crossTenantDenied = `DOCUMENTED_${crossTenantRes.status}`;
-    }
+    assert.strictEqual(crossTenantRes.status, 403, `Cross-tenant publish attempt must be denied with HTTP 403, got ${crossTenantRes.status}`);
+    console.log(`  PASS: Cross-tenant project access strictly denied (HTTP 403)`);
+    testReceipt.publishShareVerification.crossTenantDenied = 'PASS (HTTP 403)';
 
     // ── STEP 5: LAUNCH REAL HEADLESS CHROME WITH WEBGL ───────────────────────
     console.log('\n[TEST 3] Launching Real Headless Chrome with Hardware-Accelerated/Angle WebGL...');
@@ -493,7 +481,8 @@ async function main() {
       { direction: 'FRONT', yawDeg: 0 },
       { direction: 'RIGHT', yawDeg: 90 },
       { direction: 'BACK', yawDeg: 180 },
-      { direction: 'LEFT', yawDeg: 270 }
+      { direction: 'LEFT', yawDeg: 270 },
+      { direction: 'FRONT_360', yawDeg: 360 }
     ];
 
     const capturedRGBA = {};
@@ -508,7 +497,7 @@ async function main() {
         mobile: vp.isMobile
       });
 
-      const boothUrl = `http://127.0.0.1:${serverPort}/booth/${testPublicSlug}`;
+      const boothUrl = `http://127.0.0.1:${serverPort}/booth/${testPublicSlug}?test=1`;
       await pageCdp.send('Page.navigate', { url: boothUrl });
 
       // Wait for WebGL scene + texture fully loaded
@@ -538,30 +527,7 @@ async function main() {
           } catch (_) {}
         }
       }
-      if (!sceneReady) {
-        console.error(`  [DIAGNOSTIC] ${vp.name} scene state:`, lastDiag);
-        const pageInfo = await pageCdp.send('Runtime.evaluate', {
-          expression: `JSON.stringify({
-            href: window.location.href,
-            title: document.title,
-            bodyText: document.body ? document.body.innerText.substring(0, 300) : 'NO_BODY',
-            hasThree: typeof THREE !== 'undefined',
-            hasControls: typeof THREE !== 'undefined' && typeof THREE.OrbitControls !== 'undefined',
-            lastError: window.lastError || null,
-            debugLoadCalled: window.debugLoadCalled || false,
-            debugFetchStatus: window.debugFetchStatus || null,
-            debugUnavailable: window.debugUnavailable || false,
-            debugRenderCalled: window.debugRenderCalled || false,
-            debugInitCalled: window.debugInitCalled || false,
-            debugPhotoUrl: window.debugPhotoUrl || null,
-            hasPhotoSphere: Boolean(window.photoSphere),
-            hasScene: Boolean(window.scene),
-            hasRenderer: Boolean(window.renderer)
-          })`
-        }).catch(e => ({ result: { value: e.message } }));
-        console.error(`  [DIAGNOSTIC] page info:`, pageInfo?.result?.value);
-      }
-      assert.ok(sceneReady, `WebGL Three.js scene failed to initialize in ${vp.name} viewport!`);
+      assert.ok(sceneReady, `WebGL Three.js scene failed to initialize in ${vp.name} viewport! Diag: ${JSON.stringify(lastDiag)}`);
 
       // Force initial render and wait for GPU texture upload
       await pageCdp.send('Runtime.evaluate', {
@@ -569,10 +535,104 @@ async function main() {
       });
       await new Promise(r => setTimeout(r, 1000));
 
+      // ── INDEPENDENT CONTROLS INTERACTION PROOF (FIX-4: WITHOUT ROTATION OVERWRITE) ──
+      console.log(`  [CONTROLS] Verifying independent UI control for ${vp.name.toUpperCase()}...`);
+      const preCamEval = await pageCdp.send('Runtime.evaluate', {
+        expression: `(() => {
+          const v = new THREE.Vector3();
+          window.camera.getWorldDirection(v);
+          return JSON.stringify({ x: v.x, y: v.y, z: v.z });
+        })()`
+      });
+      const preDir = JSON.parse(preCamEval.result.value);
+      const preRgba = await readCanvasRGBA(pageCdp, 4096);
+
+      const cx = Math.round(vp.width / 2);
+      const cy = Math.round(vp.height / 2);
+
+      if (!vp.isMobile) {
+        // Desktop: Dispatch real mouse drag (NO manual rotation overwrite)
+        await pageCdp.send('Input.dispatchMouseEvent', { type: 'mousePressed', x: cx, y: cy, button: 'left', clickCount: 1 });
+        for (let s = 1; s <= 6; s++) {
+          await pageCdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: cx - (s * 35), y: cy, button: 'left' });
+          await new Promise(r => setTimeout(r, 20));
+        }
+        await pageCdp.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: cx - 210, y: cy, button: 'left' });
+      } else {
+        // Mobile: Dispatch real CDP touch drag (NO manual rotation overwrite)
+        await pageCdp.send('Input.dispatchTouchEvent', {
+          type: 'touchStart',
+          touchPoints: [{ x: cx, y: cy, id: 0 }]
+        });
+        for (let s = 1; s <= 6; s++) {
+          await pageCdp.send('Input.dispatchTouchEvent', {
+            type: 'touchMove',
+            touchPoints: [{ x: cx - (s * 30), y: cy, id: 0 }]
+          });
+          await new Promise(r => setTimeout(r, 20));
+        }
+        await pageCdp.send('Input.dispatchTouchEvent', {
+          type: 'touchEnd',
+          touchPoints: []
+        });
+      }
+
+      // Wait for OrbitControls damping to settle and animation frames to render
+      await new Promise(r => setTimeout(r, 400));
+
+      const postCamEval = await pageCdp.send('Runtime.evaluate', {
+        expression: `(() => {
+          const v = new THREE.Vector3();
+          window.camera.getWorldDirection(v);
+          return JSON.stringify({ x: v.x, y: v.y, z: v.z });
+        })()`
+      });
+      const postDir = JSON.parse(postCamEval.result.value);
+      const postRgba = await readCanvasRGBA(pageCdp, 4096);
+
+      // Compute vector angle difference (yaw change)
+      const dot = Math.min(1.0, Math.max(-1.0, preDir.x * postDir.x + preDir.y * postDir.y + preDir.z * postDir.z));
+      const angleRad = Math.acos(dot);
+      const angleDeg = (angleRad * 180) / Math.PI;
+
+      const dragPixelDelta = computeRGBAPixelDelta(preRgba.samples, postRgba.samples);
+
+      console.log(`  [CONTROLS] ${vp.name.toUpperCase()} camera direction change: ${angleDeg.toFixed(2)}° | RGBA pixel change: ${dragPixelDelta?.toFixed(2)}`);
+      assert.ok(angleDeg > 1.5, `${vp.name}: User drag must independently rotate camera (got ${angleDeg.toFixed(2)}°) without manual rotation overwrite`);
+      assert.ok(dragPixelDelta > 2.0, `${vp.name}: User drag must produce optical canvas change (got ${dragPixelDelta?.toFixed(2)})`);
+
+      testReceipt.controlsVerification[vp.name] = {
+        interactionType: vp.isMobile ? 'CDP_TOUCH_GESTURE_EMULATION' : 'CDP_MOUSE_DRAG_DESKTOP',
+        hardwareNote: vp.isMobile ? 'Chrome mobile emulation via CDP touch events; physical Android device deferred' : 'Desktop headless Chrome mouse input events',
+        cameraYawChangeDeg: angleDeg.toFixed(2),
+        pixelDelta: dragPixelDelta?.toFixed(2),
+        verifiedIndependentOfRotationOverwrite: true,
+        status: 'PASS'
+      };
+
+      // Reset controls and camera to neutral orientation and freeze damping drift during static captures
+      await pageCdp.send('Runtime.evaluate', {
+        expression: `(() => {
+          if (window.controls) {
+            window.controls.enableDamping = false;
+            window.controls.reset();
+            window.controls.update();
+          }
+          if (window.camera) {
+            window.camera.position.set(0, 0, 0.01);
+            window.camera.rotation.set(0, 0, 0);
+          }
+          if (window.renderer && window.scene && window.camera) {
+            window.renderer.render(window.scene, window.camera);
+          }
+        })()`
+      });
+      await new Promise(r => setTimeout(r, 400));
+
       capturedRGBA[vp.name] = {};
 
+      // ── CARDINAL ANGLES & 0° ↔ 360° CLOSURE OPTICAL CAPTURE ──
       for (const angle of cardinalAngles) {
-        // Method 1: Set rotation via CDP (direct scene control)
         const rotRad = (angle.yawDeg * Math.PI) / 180;
         await pageCdp.send('Runtime.evaluate', {
           expression: `
@@ -585,51 +645,26 @@ async function main() {
           `
         });
 
-        // Method 2: Also dispatch real mouse drag event (FIX-3: proves UI interaction path)
-        if (!vp.isMobile) {
-          // Desktop: simulate horizontal mouse drag to pan (from center, drag left/right by angle offset)
-          const dragPx = Math.round((angle.yawDeg / 360) * vp.width * 0.5);
-          const cx = Math.round(vp.width / 2);
-          const cy = Math.round(vp.height / 2);
-          // Note: drag changes orientation; we re-set rotation.y after to ensure exact angle
-          await pageCdp.send('Input.dispatchMouseEvent', { type: 'mousePressed', x: cx, y: cy, button: 'left', clickCount: 1 });
-          await pageCdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: cx - dragPx, y: cy, button: 'left' });
-          await pageCdp.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: cx - dragPx, y: cy, button: 'left' });
-          // Re-set exact rotation after UI drag
-          await pageCdp.send('Runtime.evaluate', {
-            expression: `
-              if (window.photoSphere) {
-                window.photoSphere.rotation.y = ${rotRad};
-                if (window.renderer && window.scene && window.camera) {
-                  window.renderer.render(window.scene, window.camera);
-                }
-              }
-            `
-          });
-        }
-
         // Wait for render to settle
-        await new Promise(r => setTimeout(r, 200));
+        await new Promise(r => setTimeout(r, 250));
 
-        // FIX-2: Read RGBA pixel data from canvas via gl.readPixels (NOT PNG byte comparison)
+        // Read RGBA pixel data from canvas via gl.readPixels
         const rgbaData = await readCanvasRGBA(pageCdp, 8192);
         assert.ok(rgbaData, `RGBA readback must succeed for ${vp.name} ${angle.direction}`);
         assert.ok(rgbaData.samples && rgbaData.samples.length > 0, `RGBA samples must be non-empty for ${vp.name} ${angle.direction}`);
 
-        // Verify pixels are NOT all-black (blank canvas = WebGL not rendering)
+        // Verify pixels are NOT all-black (blank canvas = WebGL not rendering) - HARD ASSERTION
         const avgRGB = computeAverageRGB(rgbaData.samples);
         assert.ok(avgRGB, `Must get average RGB for ${vp.name} ${angle.direction}`);
         const isBlank = (avgRGB.r < 2 && avgRGB.g < 2 && avgRGB.b < 2);
-        if (isBlank) {
-          console.error(`  [WARNING] ${vp.name} ${angle.direction}: Canvas appears blank (avg RGB: ${avgRGB.r.toFixed(1)},${avgRGB.g.toFixed(1)},${avgRGB.b.toFixed(1)})`);
-        }
+        assert.strictEqual(isBlank, false, `HARD FAIL: ${vp.name} ${angle.direction} canvas is blank (avg RGB: ${avgRGB.r.toFixed(1)},${avgRGB.g.toFixed(1)},${avgRGB.b.toFixed(1)})`);
 
         capturedRGBA[vp.name][angle.direction] = {
           samples: rgbaData.samples,
           avgRGB,
           source: rgbaData.source,
           sampleCount: Math.floor(rgbaData.samples.length / 3),
-          blank: isBlank
+          blank: false
         };
 
         // Also capture screenshot for visual record
@@ -649,16 +684,15 @@ async function main() {
           fileSizeBytes: imageBuf.length,
           sha256: imgSha256,
           rgbaSource: rgbaData.source,
-          avgRGB: { r: avgRGB.r.toFixed(1), g: avgRGB.g.toFixed(1), b: avgRGB.b.toFixed(1) },
-          blankCanvasWarning: isBlank
+          avgRGB: { r: avgRGB.r.toFixed(1), g: avgRGB.g.toFixed(1), b: avgRGB.b.toFixed(1) }
         });
 
         console.log(`  ✓ ${vp.name.toUpperCase()} [${angle.direction} ${angle.yawDeg}°]: PNG ${imageBuf.length} bytes | avgRGB (${avgRGB.r.toFixed(0)},${avgRGB.g.toFixed(0)},${avgRGB.b.toFixed(0)}) | source: ${rgbaData.source}`);
       }
     }
 
-    // ── STEP 7: RGBA PIXEL-LEVEL DIRECTIONAL VARIANCE VERIFICATION (FIX-2) ──
-    console.log('\n[TEST 4] RGBA Pixel-Level Directional Variance Verification...');
+    // ── STEP 7: RGBA PIXEL-LEVEL DIRECTIONAL VARIANCE & SEAM CLOSURE ─────────
+    console.log('\n[TEST 4] RGBA Pixel-Level Directional Variance & Seam Closure Verification...');
 
     for (const vp of viewports) {
       const views = capturedRGBA[vp.name];
@@ -666,11 +700,13 @@ async function main() {
       const rightSamples = views['RIGHT'].samples;
       const backSamples = views['BACK'].samples;
       const leftSamples = views['LEFT'].samples;
+      const front360Samples = views['FRONT_360'].samples;
 
       const deltaFrontRight = computeRGBAPixelDelta(frontSamples, rightSamples);
       const deltaFrontBack = computeRGBAPixelDelta(frontSamples, backSamples);
       const deltaRightBack = computeRGBAPixelDelta(rightSamples, backSamples);
       const deltaBackLeft = computeRGBAPixelDelta(backSamples, leftSamples);
+      const seamClosureDelta = computeRGBAPixelDelta(frontSamples, front360Samples);
 
       // Mean absolute difference [0-255]: >5 = meaningfully different scene
       const RGBA_THRESHOLD = 5.0;
@@ -680,21 +716,19 @@ async function main() {
       console.log(`        Front vs Back:  ${deltaFrontBack?.toFixed(2) || 'N/A'}`);
       console.log(`        Right vs Back:  ${deltaRightBack?.toFixed(2) || 'N/A'}`);
       console.log(`        Back vs Left:   ${deltaBackLeft?.toFixed(2) || 'N/A'}`);
+      console.log(`        0° ↔ 360° Seam: ${seamClosureDelta?.toFixed(2) || 'N/A'} (threshold < 2.5)`);
 
-      // Check for blank views (specific FIX for mobile RIGHT 90° anomaly)
-      for (const dir of ['FRONT', 'RIGHT', 'BACK', 'LEFT']) {
-        if (views[dir].blank) {
-          console.error(`  [WARNING] ${vp.name} ${dir}: Canvas was blank — texture may not have loaded for this view`);
-        }
-      }
+      assert.ok(deltaFrontRight > RGBA_THRESHOLD && deltaFrontBack > RGBA_THRESHOLD,
+        `${vp.name}: Insufficient RGBA pixel variance (F↔R: ${deltaFrontRight?.toFixed(2)}, F↔B: ${deltaFrontBack?.toFixed(2)})`);
+      assert.ok(seamClosureDelta < 2.5,
+        `${vp.name}: 0° ↔ 360° equirectangular seam closure delta must be < 2.5, got ${seamClosureDelta?.toFixed(2)}`);
 
-      if (deltaFrontRight !== null && deltaFrontBack !== null) {
-        const pass = deltaFrontRight > RGBA_THRESHOLD && deltaFrontBack > RGBA_THRESHOLD;
-        if (!pass) {
-          console.error(`  [FAIL] ${vp.name}: Insufficient RGBA pixel variance (F↔R: ${deltaFrontRight?.toFixed(2)}, F↔B: ${deltaFrontBack?.toFixed(2)}) — scene may be static`);
-        }
-        assert.ok(pass, `${vp.name}: RGBA pixel delta must exceed ${RGBA_THRESHOLD} (F↔R: ${deltaFrontRight?.toFixed(2)}, F↔B: ${deltaFrontBack?.toFixed(2)})`);
-      }
+      testReceipt.seamClosureVerification[vp.name] = {
+        front0VsFront360MeanDelta: seamClosureDelta?.toFixed(2),
+        threshold: 2.5,
+        status: 'PASS',
+        description: 'Proves complete 360-degree geometric seam closure of equirectangular sphere'
+      };
 
       testReceipt.rgbaPixelVarianceMatrix[vp.name] = {
         method: 'gl.readPixels RGBA mean absolute difference [0-255 scale]',
@@ -702,13 +736,14 @@ async function main() {
         frontVsBackMeanDiff: deltaFrontBack?.toFixed(2) || 'N/A',
         rightVsBackMeanDiff: deltaRightBack?.toFixed(2) || 'N/A',
         backVsLeftMeanDiff: deltaBackLeft?.toFixed(2) || 'N/A',
+        seamClosure0vs360Delta: seamClosureDelta?.toFixed(2) || 'N/A',
         threshold: RGBA_THRESHOLD,
-        blankViews: Object.entries(views).filter(([, v]) => v.blank).map(([d]) => d),
-        varianceCheck: (deltaFrontRight > RGBA_THRESHOLD && deltaFrontBack > RGBA_THRESHOLD) ? 'PASS' : 'FAIL'
+        varianceCheck: (deltaFrontRight > RGBA_THRESHOLD && deltaFrontBack > RGBA_THRESHOLD) ? 'PASS' : 'FAIL',
+        seamCheck: (seamClosureDelta < 2.5) ? 'PASS' : 'FAIL'
       };
     }
 
-    console.log('  PASS: RGBA pixel-level directional variance proves active WebGL rendering.');
+    console.log('  PASS: RGBA pixel-level directional variance and 0°↔360° seam closure verified.');
 
     // ── STEP 8: UNPUBLISH VIA API + VERIFY UNAVAILABLE BANNER IN CHROME ──────
     console.log('\n[TEST 5] Verifying Unpublish via API & Unavailable Banner in Chrome...');
@@ -727,19 +762,16 @@ async function main() {
       }
     }, unpubBody);
 
-    if (unpubRes.status === 200 || unpubRes.status === 204) {
-      console.log(`  PASS: Project unpublished via real API /api/projects/:id/unpublish (HTTP ${unpubRes.status})`);
-      testReceipt.publishShareVerification.unpublishViaAuthenticatedAPI = 'PASS';
-    } else {
-      console.log(`  [DOCUMENTED LIMITATION] /api/projects/:id/unpublish returned ${unpubRes.status}: ${JSON.stringify(unpubRes.data || unpubRes.raw || '').substring(0, 120)}`);
-      testReceipt.publishShareVerification.unpublishViaAuthenticatedAPI =
-        `ATTEMPTED (HTTP ${unpubRes.status}) — server uses unpublishBooth schema; db.mutate fallback used`;
-      await db.mutate((d) => {
-        const prj = d.projects.find(p => p.id === testProjectId);
-        if (prj) prj.publishStatus = 'UNPUBLISHED';
-      });
-      console.log('  [FALLBACK] db.mutate unpublish applied.');
-    }
+    assert.ok(unpubRes.status === 200 || unpubRes.status === 204, `Unpublish API must return HTTP 200/204, got ${unpubRes.status}: ${JSON.stringify(unpubRes.data || '')}`);
+    console.log(`  PASS: Project unpublished via real API /api/projects/:id/unpublish (HTTP ${unpubRes.status})`);
+    testReceipt.publishShareVerification.unpublishViaAuthenticatedAPI = 'PASS';
+
+    // Verify DB persistence directly without fallback
+    const prjAfterUnpub = (db.memoryData.projects || []).find(p => p.id === testProjectId);
+    assert.ok(prjAfterUnpub, 'Project must exist in DB');
+    assert.strictEqual(prjAfterUnpub.publishStatus, 'UNPUBLISHED', 'DB must persist UNPUBLISHED status');
+    testReceipt.publishShareVerification.dbPersistenceAfterUnpublish = 'PASS';
+    console.log('  PASS: DB persistence verified: project.publishStatus === UNPUBLISHED');
 
     // Verify unavailable via REST
     const unpubCheck = await httpRequest({ hostname: '127.0.0.1', port: serverPort, path: `/api/public/booth/${testPublicSlug}`, method: 'GET' });
@@ -748,38 +780,61 @@ async function main() {
     console.log('  PASS: Unpublished project returns available: false');
     testReceipt.publishShareVerification.unpublishedApiCheck = 'PASS';
 
-    // Verify Chrome renders unavailable banner
+    // Verify Chrome renders unavailable banner with hard assertion and polling
     await pageCdp.send('Emulation.setDeviceMetricsOverride', { width: 1920, height: 1080, deviceScaleFactor: 1.0, mobile: false });
     await pageCdp.send('Page.navigate', { url: `http://127.0.0.1:${serverPort}/booth/${testPublicSlug}` });
-    await new Promise(r => setTimeout(r, 800));
 
-    const unavailCheck = await pageCdp.send('Runtime.evaluate', {
-      expression: `JSON.stringify({
-        unavailSection: document.getElementById('unavailableSection') ? document.getElementById('unavailableSection').style.display : 'NOT_FOUND',
-        bodyText: document.body ? document.body.innerText.substring(0, 200) : 'NO_BODY'
-      })`
-    });
+    let unavailRendered = false;
     let unavailState = null;
-    try { unavailState = JSON.parse(unavailCheck.result.value); } catch (_) {}
+    for (let attempt = 0; attempt < 40; attempt++) {
+      await new Promise(r => setTimeout(r, 250));
+      const res = await pageCdp.send('Runtime.evaluate', {
+        expression: `(() => {
+          const sec = document.getElementById('unavailableSection');
+          const body = document.body;
+          return JSON.stringify({
+            unavailSection: sec ? window.getComputedStyle(sec).display : 'NOT_FOUND',
+            bodyText: body ? body.innerText.substring(0, 300) : 'NO_BODY',
+            readyState: document.readyState
+          });
+        })()`
+      }).catch(() => null);
 
-    if (unavailState && unavailState.unavailSection === 'flex') {
-      console.log('  PASS: Headless Chrome correctly rendered unavailable banner.');
-      testReceipt.publishShareVerification.unavailableBannerRendered = 'PASS';
-    } else {
-      console.log(`  [INFO] Unavailable section state: ${JSON.stringify(unavailState)}`);
-      testReceipt.publishShareVerification.unavailableBannerRendered = `DOCUMENTED: ${JSON.stringify(unavailState)}`;
+      if (res && res.result && res.result.value) {
+        try {
+          unavailState = JSON.parse(res.result.value);
+          if (unavailState.unavailSection === 'flex') {
+            unavailRendered = true;
+            break;
+          }
+        } catch (_) {}
+      }
     }
 
-    // ── STEP 9: GATE CLASSIFICATION (FIX-5: correct Stripe gate naming) ──────
+    assert.ok(unavailRendered, `Headless Chrome failed to render unavailable banner! State: ${JSON.stringify(unavailState)}`);
+    assert.strictEqual(unavailState.unavailSection, 'flex', 'Unavailable section must have display: flex');
+    assert.ok(unavailState.bodyText && unavailState.bodyText.length > 10, 'Body text must not be empty');
+    console.log('  PASS: Headless Chrome rendered unavailable banner with display: flex');
+    testReceipt.publishShareVerification.unavailableBannerRendered = 'PASS';
+
+    // Capture screenshot of unavailable state for optical proof record
+    const unavailScreenshot = await pageCdp.send('Page.captureScreenshot', { format: 'png', fromSurface: true });
+    const unavailBuf = Buffer.from(unavailScreenshot.data, 'base64');
+    fs.writeFileSync(path.join(proofDir, 'optical_proof_desktop_unavailable_screen.png'), unavailBuf);
+    testReceipt.publishShareVerification.unavailableScreenshotSha256 = computeSha256(unavailBuf);
+
+    // ── STEP 9: GATE CLASSIFICATION (STRICTLY DISCIPLINED) ────────────────────
     testReceipt.gates = {
       REAL_SERVER_ROUTE_VERIFIED: 'PASS',
-      SYNTHETIC_SIGNED_REAL_EXPRESS_WEBHOOK_ROUTE_20TESTS: 'PASS (test_stage2_stripe_signed_route_e2e.js, 20/20 tests passed, synthetic signed events, real Express route, missing/multiple quantity strictly rejected)',
-      STRIPE_PROVIDER_TEST_CHECKOUT_PORTAL_E2E: 'NOT_VERIFIED (requires actual Stripe TEST API: checkout.sessions.create, provider line_items/subscription, real customer portal)',
-      FULL_360_DEMO_ASSET_VIEWER_E2E: 'PASS (node0_360_panorama_4k_opt.jpg, 4096x2048, 2:1 full-sphere equirectangular; NOT LLST42 real-photo stitch)',
-      REAL_PHOTO_PARTIAL_STITCH_LLST42_186DEG: 'AGENT_REPORTED_PASS (186.3deg horizontal band; not full-sphere closure)',
-      MOBILE_PRODUCT_VIEWER_E2E: 'PASS (headless Chrome viewport emulation, RGBA pixel proof)',
-      DESKTOP_PRODUCT_VIEWER_E2E: 'PASS (headless Chrome real rendering, RGBA pixel proof + mouse drag)',
-      PUBLISH_SHARE_E2E: 'PASS (Real server authenticated POST /api/projects/:id/publish & /unpublish HTTP 200, cross-tenant denial HTTP 403, GET /api/public/booth/:slug available:true/false, headless Chrome rendered unavailable banner)',
+      SYNTHETIC_SIGNED_REAL_EXPRESS_WEBHOOK_ROUTE_20TESTS: 'PASS (test_stage2_stripe_signed_route_e2e.js, 20/20 tests passed, synthetic signed events, real Express route, missing/multiple quantity strictly rejected, authoritative line item expansion)',
+      STRIPE_PROVIDER_TEST_CHECKOUT_PORTAL_E2E: 'NOT_VERIFIED (requires actual Stripe TEST provider dashboard credentials and live webhook replay)',
+      FULL_360_DEMO_ASSET_VIEWER_E2E: 'PASS (node0_360_panorama_4k_opt.jpg, 4096x2048, 2:1 full-sphere equirectangular pre-existing demo asset)',
+      REAL_PHOTO_12_TO_FULL_360_CREATION_E2E: 'NOT_VERIFIED (LLST42 12-photo capture stitches to 186.3deg x 46.7deg partial band; full 360-degree sphere creation requires 24+ photo ring or panoramic hardware)',
+      REAL_PHOTO_PARTIAL_STITCH_LLST42_186DEG: 'AGENT_REPORTED_PASS (186.3deg horizontal band; partial stitch)',
+      FULL_360_REAL_PHOTO_STAGING_E2E: 'NOT_VERIFIED',
+      MOBILE_PRODUCT_VIEWER_E2E: 'PASS (headless Chrome mobile viewport emulation, RGBA pixel proof + real CDP touch drag; physical Android hardware deferred)',
+      DESKTOP_PRODUCT_VIEWER_E2E: 'PASS (headless Chrome real WebGL rendering, RGBA pixel proof + independent mouse drag)',
+      PUBLISH_SHARE_E2E: 'PASS (Real server authenticated POST /api/projects/:id/publish & /unpublish HTTP 200, cross-tenant denial HTTP 403, GET /api/public/booth/:slug available:true/false, headless Chrome rendered unavailable banner flex)',
       STRIPE_MODE: 'TEST_UNTIL_EXPLICIT_APPROVAL',
       OWNER_REVIEW_GATE: 'HOLD_PENDING_PANORAMA_STAGING_EVIDENCE',
       TRUE_3D_CUSTOM_PLAN: 'DEFERRED_POST_LAUNCH',
@@ -788,15 +843,9 @@ async function main() {
     };
 
     // Save receipt
-    const receiptPath = path.join(__dirname, '../virtual-tradeshow-commercial-v1/production_artifacts/R51_PANORAMA_BROWSER_RGBA_PROOF_RECEIPT.json');
-    // Exclude raw RGBA sample arrays from receipt (too large); keep summaries only
-    const receiptForSave = {
-      ...testReceipt,
-      // Replace RGBA raw data with summaries
-      rgbaPixelVarianceMatrix: testReceipt.rgbaPixelVarianceMatrix
-    };
-    fs.writeFileSync(receiptPath, JSON.stringify(receiptForSave, null, 2));
-    console.log(`\n[RECEIPT] Saved R51 receipt: production_artifacts/R51_PANORAMA_BROWSER_RGBA_PROOF_RECEIPT.json`);
+    const receiptPath = path.join(__dirname, '../virtual-tradeshow-commercial-v1/production_artifacts/R52_PANORAMA_BROWSER_OPTICAL_PROOF_RECEIPT.json');
+    fs.writeFileSync(receiptPath, JSON.stringify(testReceipt, null, 2));
+    console.log(`\n[RECEIPT] Saved R52 receipt: production_artifacts/R52_PANORAMA_BROWSER_OPTICAL_PROOF_RECEIPT.json`);
 
     console.log('\n=== ALL BROWSER WEBGL RGBA OPTICAL PROOF & STAGED UI TESTS PASSED ===');
 

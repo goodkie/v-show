@@ -677,187 +677,90 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
     return res.status(400).json({ error: 'Invalid event format' });
   }
 
-  // Idempotency check: Ignore already processed events
-  if (db.isStripeEventProcessed(event.id)) {
-    return res.json({ received: true, duplicate: true });
-  }
-
-  // Record event in inbox as PROCESSING
-  await db.logStripeEvent(event, 'PROCESSING');
-
   try {
+    let result;
     switch (event.type) {
       case 'checkout.session.completed': {
-        const session = event.data.object;
-        const orgId = session.metadata?.organizationId;
-        const projectId = session.metadata?.projectId;
-        const requestedPlan = session.metadata?.requestedPlan || session.metadata?.targetPlan || 'pro';
-        const customerId = session.customer;
-        const subscriptionId = session.subscription;
-
-        // C11 Free Funnel Project Upgrade Handler
-        if (session.metadata && session.metadata.projectId) {
-          const pid = session.metadata.projectId;
-          const reqPlan = (session.metadata.requestedPlan || 'PRO').toUpperCase();
-          let upgradedState = null;
-          await db.mutate(fresh => {
-            const proj = (fresh.freePreviewProjects || []).find(p => p.id === pid);
-            if (proj) {
-              proj.entitlementState = reqPlan === 'BUSINESS' ? 'ACTIVE_BUSINESS' : 'ACTIVE_PRO';
-              proj.plan = reqPlan;
-              proj.stripeCustomerId = customerId;
-              proj.stripeSubscriptionId = subscriptionId;
-              proj.stripeSessionId = session.id;
-              proj.paymentCorrelationId = session.metadata.paymentCorrelationId || 'pay_corr_webhook';
-              proj.activatedAt = new Date().toISOString();
-              proj.publishStatus = 'APPROVED';
-              upgradedState = proj.entitlementState;
-            }
-          });
-          if (upgradedState) {
-            console.log(`✅ C11 Project ${pid} upgraded to ${upgradedState} via Stripe Webhook`);
+        let sessionObj = event.data.object;
+        // If Stripe SDK client is initialized and line_items are missing from event, retrieve authoritatively from Stripe
+        if ((!sessionObj.line_items || !sessionObj.line_items.data) && stripe && sessionObj.id) {
+          try {
+            const fetchedItems = await stripe.checkout.sessions.listLineItems(sessionObj.id, { limit: 10 });
+            sessionObj = { ...sessionObj, line_items: fetchedItems };
+          } catch (fetchErr) {
+            console.error('[STRIPE_LINE_ITEMS_EXPANSION_FAILED]', fetchErr?.message || fetchErr);
           }
         }
-
-        if (orgId) {
-          await db.updateOrganizationSubscription(orgId, {
-            plan: requestedPlan,
-            status: 'active',
-            stripeCustomerId: customerId,
-            stripeSubscriptionId: subscriptionId,
-            upgradedAt: new Date().toISOString()
-          });
-          await db.logBillingEvent({
-            organizationId: orgId,
-            plan: requestedPlan,
-            type: 'checkout_completed',
-            stripeCustomerId: customerId,
-            stripeSubscriptionId: subscriptionId,
-            amount: session.amount_total ? session.amount_total / 100 : (requestedPlan === 'pro' ? 299 : 799)
-          });
-        }
-
-        // C09/C10 Project Commercial State Activation (Zero Data Re-entry)
-        if (projectId) {
-          const newState = requestedPlan === 'business' ? 'ACTIVE_BUSINESS' : 'ACTIVE_PRO';
-          await db.updateProjectCommercialState(projectId, newState, requestedPlan);
-        }
+        result = await db.applyStripeCheckoutCompletedAtomic({
+          event,
+          session: sessionObj
+        });
         break;
       }
       case 'customer.subscription.created':
       case 'customer.subscription.updated': {
-        const sub = event.data.object;
-        let org = db.getOrganizationByStripeCustomerId(sub.customer);
-        if (!org && sub.metadata?.organizationId) {
-          org = db.getOrganizationById(sub.metadata.organizationId);
-        }
-        if (!org && sub.id) {
-          const allOrgs = db.getOrganizations ? db.getOrganizations() : (db.read().organizations || []);
-          org = allOrgs.find(o => o.subscription?.stripeSubscriptionId === sub.id);
-        }
-        if (org) {
-          const plan = sub.metadata?.requestedPlan || (sub.items?.data[0]?.price?.unit_amount >= 50000 ? 'business' : 'pro');
-          await db.updateOrganizationSubscription(org.id, {
-            plan,
-            status: sub.status,
-            stripeSubscriptionId: sub.id,
-            currentPeriodStart: sub.current_period_start ? new Date(sub.current_period_start * 1000).toISOString() : null,
-            currentPeriodEnd: sub.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : null,
-            cancelAtPeriodEnd: Boolean(sub.cancel_at_period_end)
-          });
-          await db.logBillingEvent({
-            organizationId: org.id,
-            plan,
-            type: event.type === 'customer.subscription.created' ? 'subscription_created' : 'subscription_updated',
-            stripeCustomerId: sub.customer,
-            stripeSubscriptionId: sub.id,
-            status: sub.status
-          });
-
-          // Sync linked projects
-          const orgProjects = (db.read().projects || []).filter(p => p.organizationId === org.id);
-          for (const prj of orgProjects) {
-            let prjState = prj.commercialState;
-            if (sub.status === 'active') {
-              prjState = plan === 'business' ? 'ACTIVE_BUSINESS' : 'ACTIVE_PRO';
-            } else if (sub.status === 'past_due') {
-              prjState = 'PAST_DUE';
-            } else if (sub.status === 'canceled') {
-              prjState = 'CANCELLED';
-            }
-            await db.updateProjectCommercialState(prj.id, prjState, plan);
-          }
-        }
+        result = await db.applyStripeSubscriptionUpdatedAtomic({
+          event,
+          subscription: event.data.object
+        });
         break;
       }
       case 'customer.subscription.deleted': {
-        const sub = event.data.object;
-        const org = db.getOrganizationByStripeCustomerId(sub.customer);
-        if (org) {
-          await db.updateOrganizationSubscription(org.id, {
-            plan: 'free',
-            status: 'canceled',
-            cancelledAt: new Date().toISOString()
-          });
-          await db.logBillingEvent({
-            organizationId: org.id,
-            plan: 'free',
-            type: 'cancelled',
-            stripeCustomerId: sub.customer,
-            stripeSubscriptionId: sub.id,
-            status: 'canceled'
-          });
-        }
-        break;
-      }
-      case 'invoice.paid': {
-        const invoice = event.data.object;
-        const org = db.getOrganizationByStripeCustomerId(invoice.customer);
-        if (org) {
-          await db.logBillingEvent({
-            organizationId: org.id,
-            plan: org.subscription?.plan || 'pro',
-            type: 'invoice_paid',
-            stripeCustomerId: invoice.customer,
-            stripeSubscriptionId: invoice.subscription,
-            amount: invoice.amount_paid ? invoice.amount_paid / 100 : 299,
-            currency: invoice.currency?.toUpperCase() || 'USD',
-            status: 'paid'
-          });
-        }
+        result = await db.applyStripeSubscriptionCancelledAtomic({
+          event,
+          subscription: event.data.object
+        });
         break;
       }
       case 'invoice.payment_failed': {
-        const invoice = event.data.object;
-        const org = db.getOrganizationByStripeCustomerId(invoice.customer);
-        if (org) {
-          await db.updateOrganizationSubscription(org.id, {
-            status: 'past_due'
-          });
-          await db.logBillingEvent({
-            organizationId: org.id,
-            plan: org.subscription?.plan || 'pro',
-            type: 'payment_failed',
-            stripeCustomerId: invoice.customer,
-            status: 'past_due'
-          });
-          db.logIncident('BILLING', 'medium', `Payment failed for customer ${org.name} (Invoice ${invoice.id})`, { organizationId: org.id });
-        }
+        result = await db.applyStripePaymentFailedAtomic({
+          event,
+          invoice: event.data.object
+        });
+        break;
+      }
+      case 'invoice.paid': {
+        result = await db.applyStripeInvoicePaidAtomic({
+          event,
+          invoice: event.data.object
+        });
         break;
       }
       default:
-        break;
+        await db.logStripeEvent(event, 'PROCESSED');
+        return res.json({ received: true });
     }
-    // Mark as PROCESSED only after atomic business state mutation completes
-    await db.logStripeEvent(event, 'PROCESSED');
+
+    if (!result) {
+      return res.json({ received: true });
+    }
+
+    if (result.duplicate) {
+      return res.json({ received: true, duplicate: true });
+    }
+
+    if (result.inFlight) {
+      return res.status(409).set('Retry-After', '5').json({
+        error: 'STRIPE_EVENT_IN_FLIGHT',
+        message: 'Event is currently being processed by another worker; retry requested.',
+        retryable: true
+      });
+    }
+
+    if (!result.success) {
+      return res.status(400).json({
+        error: result.code || 'STRIPE_WEBHOOK_VALIDATION_FAILED',
+        message: result.message || 'Validation failed for event.',
+        retryable: false
+      });
+    }
+
     return res.json({ received: true });
   } catch (procErr) {
     console.error('[STRIPE_WEBHOOK_PROCESSING_FAILED]', procErr);
-    // Mark as FAILED so Stripe will retry
-    await db.logStripeEvent(event, 'FAILED');
     return res.status(500).json({
       error: 'STRIPE_WEBHOOK_PROCESSING_FAILED',
-      message: procErr.message,
+      message: 'Internal error processing webhook event',
       retryable: true
     });
   }

@@ -6571,6 +6571,17 @@ return event;
         };
       }
 
+      // Enforce monthly recurring interval if price specifies recurring schedule
+      if (firstItem.price?.recurring && firstItem.price.recurring.interval !== 'month') {
+        eventRecord.status = 'FAILED';
+        eventRecord.failureReason = 'INVALID_RECURRING_INTERVAL';
+        return {
+          success: false,
+          code: 'INVALID_RECURRING_INTERVAL',
+          message: `Expected monthly recurring interval, got ${firstItem.price.recurring.interval}`
+        };
+      }
+
 
       // All validations succeeded! Execute atomic business state transition
       // customerId and subscriptionId are already verified from session above
@@ -10486,6 +10497,15 @@ return event;
     }
     if (token === project.editToken) return true;
 
+    // Check Multi-Tenant Organization API Token
+    if (typeof token === 'string' && this.memoryData.apiTokens) {
+      const cleanTok = token.replace(/^Bearer\s+/i, '').trim();
+      const apiTok = this.memoryData.apiTokens.find(t => t.token === cleanTok);
+      if (apiTok && apiTok.organizationId && project.organizationId && apiTok.organizationId === project.organizationId) {
+        return true;
+      }
+    }
+
     // Check Customer Session Bearer Token
     if (typeof token === 'string' && (token.startsWith('cust-sess-') || token.startsWith('Bearer cust-sess-'))) {
       const cleanToken = token.replace(/^Bearer\s+/i, '').trim();
@@ -11650,7 +11670,9 @@ return event;
         (project.contactEmail && a.emailNormalized === this.normalizeEmail(project.contactEmail))
       ) || { planCode: 'FREE_BOOTH', entitlement: 'FREE BOOTH' };
 
-      const isPilot = account.isPilot || account.billingState === 'PILOT_NOT_BILLED' || project.isPilot;
+      const org = (db.organizations || []).find(o => o.id === project.organizationId);
+      const isOrgSubscribed = Boolean(org && org.subscription && (org.subscription.status === 'active' || org.subscription.plan === 'pro' || org.subscription.plan === 'business'));
+      const isPilot = account.isPilot || account.billingState === 'PILOT_NOT_BILLED' || project.isPilot || isOrgSubscribed;
       const effectiveEntitlement = isPilot ? (account.entitlement || 'BUSINESS') : (account.planCode || account.entitlement || 'FREE_BOOTH');
       const isFree = (effectiveEntitlement === 'FREE_BOOTH' || effectiveEntitlement === 'FREE') && !isPilot;
 

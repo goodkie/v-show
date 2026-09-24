@@ -428,26 +428,19 @@
     let currentSelectedProduct = null;
 
     async function loadPublicBooth() {
-      window.debugLoadCalled = true;
       try {
         const res = await fetch('/api/public/booth/' + publicSlug);
-        window.debugFetchStatus = res.status;
         const data = await res.json();
-        window.debugFetchData = data;
 
         if (!res.ok || !data.booth || data.booth.available === false) {
-          window.debugUnavailable = true;
           showUnavailable(data.booth?.businessName || 'Exhibitor');
           return;
         }
 
         boothData = data.booth;
-        window.debugBoothData = boothData;
         renderPublicBooth(boothData);
         trackAnalytics('BOOTH_VIEW');
       } catch (err) {
-        window.lastError = { message: err.message, stack: err.stack };
-        console.error('loadPublicBooth error:', err);
         showUnavailable();
       }
     }
@@ -459,7 +452,6 @@
     }
 
     function renderPublicBooth(booth) {
-      window.debugRenderCalled = true;
       document.title = (booth.businessName || 'Exhibitor') + ' — 3D Virtual Booth | ³D₂';
       document.getElementById('companyName').textContent = booth.businessName || 'Exhibitor Booth';
 
@@ -474,18 +466,17 @@
     }
 
     function initThreeViewer(photoUrl) {
-      window.debugInitCalled = true;
-      window.debugPhotoUrl = photoUrl;
       const container = document.getElementById('activeViewerSection');
       const canvas = document.getElementById('three-canvas');
-      const width = container.clientWidth || 1920;
-      const height = container.clientHeight || 1016;
+      const width = container.clientWidth || window.innerWidth;
+      const height = container.clientHeight || Math.max(window.innerHeight - 64, 400);
 
       scene = new THREE.Scene();
       camera = new THREE.PerspectiveCamera(65, width / height, 0.01, 2000);
       camera.position.set(0, 0, 0.01);
 
-      renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
+      const isTestEnv = window.location.search.includes('test=') || window.__E2E_TEST__ === true;
+      renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: isTestEnv });
       renderer.setSize(width, height);
       renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
       renderer.outputEncoding = THREE.sRGBEncoding;

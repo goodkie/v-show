@@ -681,9 +681,19 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
     let result;
     switch (event.type) {
       case 'checkout.session.completed': {
+        let sessionObj = event.data.object;
+        // If Stripe SDK client is initialized and line_items are missing from event, retrieve authoritatively from Stripe
+        if ((!sessionObj.line_items || !sessionObj.line_items.data) && stripe && sessionObj.id) {
+          try {
+            const fetchedItems = await stripe.checkout.sessions.listLineItems(sessionObj.id, { limit: 10 });
+            sessionObj = { ...sessionObj, line_items: fetchedItems };
+          } catch (fetchErr) {
+            console.error('[STRIPE_LINE_ITEMS_EXPANSION_FAILED]', fetchErr?.message || fetchErr);
+          }
+        }
         result = await db.applyStripeCheckoutCompletedAtomic({
           event,
-          session: event.data.object
+          session: sessionObj
         });
         break;
       }
