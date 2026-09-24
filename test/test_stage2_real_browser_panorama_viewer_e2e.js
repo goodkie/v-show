@@ -209,8 +209,8 @@ async function main() {
   let serverPort;
 
   const testReceipt = {
-    testMilestone: 'STAGE2-PANORAMA-BROWSER-OPTICAL-PROOF-R61',
-    revisedPer: 'ChatGPT audit IC_kwDOT53X288AAAABWl9FhA',
+    testMilestone: 'STAGE2-PANORAMA-BROWSER-OPTICAL-PROOF-R62',
+    revisedPer: 'ChatGPT audit IC_kwDOT53X288AAAABWmk-Uw',
     executedAt: new Date().toISOString(),
     nodeVersion: process.version,
     platform: process.platform,
@@ -1535,9 +1535,9 @@ async function main() {
     // Save receipt to isolated scratch directory (do not contaminate production_artifacts)
     const receiptsDir = path.join(__dirname, '../scratch/test_receipts');
     fs.mkdirSync(receiptsDir, { recursive: true });
-    const receiptPath = path.join(receiptsDir, 'R61_PANORAMA_BROWSER_OPTICAL_PROOF_RECEIPT.json');
+    const receiptPath = path.join(receiptsDir, 'R62_PANORAMA_BROWSER_OPTICAL_PROOF_RECEIPT.json');
     fs.writeFileSync(receiptPath, JSON.stringify(testReceipt, null, 2));
-    console.log(`\n[RECEIPT] Saved R61 receipt to isolated scratch: scratch/test_receipts/R61_PANORAMA_BROWSER_OPTICAL_PROOF_RECEIPT.json`);
+    console.log(`\n[RECEIPT] Saved R62 receipt to isolated scratch: scratch/test_receipts/R62_PANORAMA_BROWSER_OPTICAL_PROOF_RECEIPT.json`);
 
     console.log('\n=== ALL BROWSER WEBGL RGBA OPTICAL PROOF & STAGED UI TESTS PASSED ===');
 

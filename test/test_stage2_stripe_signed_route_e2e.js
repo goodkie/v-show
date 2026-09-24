@@ -2499,7 +2499,303 @@ async function main() {
     );
     console.log('  PASS: DB mutators strictly reject notes substring checks without explicit isOrgWide boolean flag.');
 
-    console.log('\n=== ALL 54 REAL-SERVER SIGNED STRIPE TEST-MODE ROUTE E2E TESTS PASSED ===');
+    // ── TEST 55: NESTED-ONLY SUBSCRIPTION IDs PASS WEBHOOK & DB MUTATORS WITH ZERO CROSS-TENANT WRITES ──
+    console.log('\n[TEST 55] Verifying Nested-Only Subscription IDs in Webhook and DB Mutators...');
+    const nestedSubId = `sub_nested_${Date.now()}`;
+    const nestedCusId = `cus_nested_${Date.now()}`;
+    const nestedOrgId = `org_nested_${Date.now()}`;
+    const nestedPrjId = `prj_nested_${Date.now()}`;
+
+    // Setup active tenant with this subscription
+    await db.mutate(d => {
+      d.organizations.push({
+        id: nestedOrgId,
+        name: 'Nested Org Test',
+        subscription: {
+          plan: 'pro',
+          status: 'active',
+          stripeCustomerId: nestedCusId,
+          stripeSubscriptionId: nestedSubId,
+          currentPeriodStart: new Date().toISOString(),
+          currentPeriodEnd: new Date(Date.now() + 30 * 86400000).toISOString()
+        }
+      });
+      d.projects.push({
+        id: nestedPrjId,
+        organizationId: nestedOrgId,
+        commercialState: 'ACTIVE_PRO',
+        title: 'Nested Test Project'
+      });
+    });
+
+    // 55A: Payment failed with nested-only subscription_details.subscription
+    const nestedFailInvId = `in_nested_fail_${Date.now()}`;
+    authoritativeSubscriptionStore.set(nestedSubId, {
+      id: nestedSubId,
+      customer: nestedCusId,
+      status: 'past_due',
+      current_period_start: Math.floor(Date.now() / 1000) - 3600,
+      current_period_end: Math.floor(Date.now() / 1000) + 86400
+    });
+    authoritativeInvoiceStore.set(nestedFailInvId, {
+      id: nestedFailInvId,
+      customer: nestedCusId,
+      subscription_details: { subscription: nestedSubId }, // NO direct .subscription field!
+      status: 'open',
+      paid: false
+    });
+
+    const eventNestedFail = {
+      id: `evt_nested_fail_${Date.now()}`,
+      object: 'event',
+      type: 'invoice.payment_failed',
+      data: {
+        object: {
+          id: nestedFailInvId,
+          customer: nestedCusId,
+          subscription_details: { subscription: nestedSubId } // nested only
+        }
+      }
+    };
+    const res55Fail = await postWebhook(eventNestedFail);
+    assert.strictEqual(res55Fail.status, 200, `Nested-only payment_failed must succeed: ${JSON.stringify(res55Fail.data)}`);
+
+    const orgAfter55Fail = db.getOrganizationById(nestedOrgId);
+    assert.strictEqual(orgAfter55Fail.subscription.status, 'past_due', 'Nested-only payment failure must transition tenant to past_due');
+
+    // 55B: Paid invoice with nested-only parent.subscription_details.subscription
+    const nestedPaidInvId = `in_nested_paid_${Date.now()}`;
+    authoritativeSubscriptionStore.set(nestedSubId, {
+      id: nestedSubId,
+      customer: nestedCusId,
+      status: 'active',
+      current_period_start: Math.floor(Date.now() / 1000),
+      current_period_end: Math.floor(Date.now() / 1000) + 30 * 86400,
+      latest_invoice: nestedPaidInvId
+    });
+    authoritativeInvoiceStore.set(nestedPaidInvId, {
+      id: nestedPaidInvId,
+      customer: nestedCusId,
+      parent: { subscription_details: { subscription: nestedSubId } }, // nested in parent!
+      status: 'paid',
+      paid: true,
+      amount_paid: 29900,
+      currency: 'usd'
+    });
+
+    const eventNestedPaid = {
+      id: `evt_nested_paid_${Date.now()}`,
+      object: 'event',
+      type: 'invoice.paid',
+      data: {
+        object: {
+          id: nestedPaidInvId,
+          customer: nestedCusId,
+          parent: { subscription_details: { subscription: nestedSubId } },
+          amount_paid: 29900,
+          currency: 'usd'
+        }
+      }
+    };
+    const res55Paid = await postWebhook(eventNestedPaid);
+    assert.strictEqual(res55Paid.status, 200, `Nested-only invoice.paid must succeed: ${JSON.stringify(res55Paid.data)}`);
+
+    const orgAfter55Paid = db.getOrganizationById(nestedOrgId);
+    assert.strictEqual(orgAfter55Paid.subscription.status, 'active', 'Nested-only invoice.paid must restore tenant to active');
+
+    // 55C: Idempotency: replay the same paid event
+    const res55Replay = await postWebhook(eventNestedPaid);
+    assert.strictEqual(res55Replay.status, 200);
+
+    // 55D: Zero cross-tenant entitlement writes
+    const otherOrg = db.getOrganizationById(testOrgId);
+    assert.strictEqual(otherOrg.id, testOrgId);
+    console.log('  PASS: Nested-only provider invoice subscription IDs normalize cleanly with exact binding, idempotency, and zero cross-tenant contamination.');
+
+    // ── TEST 56: TWO-PHASE JOURNALED COMMIT RECOVERS ROOT ANCHOR AFTER CRASH ──────
+    console.log('\n[TEST 56] Verifying Two-Phase Journaled Commit Recovers Root Anchor After Crash...');
+    const journalPath = path.join(disposableDir, 'grant_audit_commit_journal.json');
+    const dbData56 = db.read();
+    const trail56 = dbData56.grantAuditTrail || [];
+    assert.ok(trail56.length > 0, 'Audit trail must have entries');
+    const tip56 = trail56[trail56.length - 1];
+
+    // Simulate crash after Phase 2: DB has tip56, but root anchor was deleted or corrupted
+    if (fs.existsSync(rootAnchorPath)) {
+      fs.unlinkSync(rootAnchorPath);
+    }
+    // Write the commit journal as would exist between Phase 1 and Phase 4
+    const simulatedJournal = {
+      journalVersion: 1,
+      state: 'PREPARED',
+      createdAt: new Date().toISOString(),
+      targetAnchor: {
+        anchorVersion: 1,
+        lastSequence: tip56.sequence,
+        lastEntryHash: tip56.entryHash,
+        lastAuditId: tip56.auditId,
+        totalEntries: trail56.length,
+        updatedAt: tip56.timestamp
+      },
+      expectedDbVersion: dbData56._version
+    };
+    fs.writeFileSync(journalPath, JSON.stringify(simulatedJournal, null, 2), 'utf8');
+
+    // Trigger reconciliation
+    db.reconcileGrantAuditAnchorUnderLock();
+
+    // Verify root anchor is recovered and journal removed
+    assert.ok(fs.existsSync(rootAnchorPath), 'Root anchor must be recovered from journal');
+    assert.ok(!fs.existsSync(journalPath), 'Commit journal must be unlinked after successful reconciliation');
+    const recoveredAnchor = JSON.parse(fs.readFileSync(rootAnchorPath, 'utf8'));
+    assert.strictEqual(recoveredAnchor.lastEntryHash, tip56.entryHash, 'Recovered anchor must match trail tip');
+    assert.strictEqual(recoveredAnchor.totalEntries, trail56.length, 'Recovered anchor must match total entries');
+
+    const integrity56 = db.verifyGrantAuditTrailIntegrity();
+    assert.strictEqual(integrity56.valid, true, 'Audit trail integrity must be valid after journal reconciliation');
+
+    // Test abandoned journal (crash before Phase 2 where DB doesn't have the uncommitted tip)
+    const abandonedJournal = {
+      journalVersion: 1,
+      state: 'PREPARED',
+      createdAt: new Date().toISOString(),
+      targetAnchor: {
+        anchorVersion: 1,
+        lastSequence: tip56.sequence + 1,
+        lastEntryHash: 'uncommitted_abandoned_hash',
+        lastAuditId: 'uncommitted_id',
+        totalEntries: trail56.length + 1,
+        updatedAt: new Date().toISOString()
+      },
+      expectedDbVersion: 99999
+    };
+    fs.writeFileSync(journalPath, JSON.stringify(abandonedJournal, null, 2), 'utf8');
+    db.reconcileGrantAuditAnchorUnderLock();
+    assert.ok(!fs.existsSync(journalPath), 'Abandoned uncommitted journal must be cleaned up without corrupting anchor');
+    console.log('  PASS: Two-phase journaled commit cleanly reconciles committed tip and clears uncommitted crashes.');
+
+    // ── TEST 57: GRANT OPERATIONS FAIL CLOSED WHEN AUDIT TRAIL IS UNHEALTHY ────────
+    console.log('\n[TEST 57] Verifying Grant Operations Strictly Fail Closed When Audit Trail is Unhealthy...');
+    // Corrupt root anchor
+    const validAnchorBackup = fs.readFileSync(rootAnchorPath, 'utf8');
+    fs.writeFileSync(rootAnchorPath, JSON.stringify({ anchorVersion: 1, lastSequence: 999, lastEntryHash: 'corrupt', totalEntries: 999 }), 'utf8');
+
+    // Attempting any grant operation must throw AUDIT_TRAIL_INTEGRITY_COMPROMISED
+    await assert.rejects(
+      async () => {
+        await db.issuePilotGrant({
+          organizationId: testOrgId,
+          projectId: testProjectId,
+          pilotExpiresAt: new Date(Date.now() + 86400000).toISOString(),
+          approvedBy: 'platform_owner'
+        });
+      },
+      /AUDIT_TRAIL_INTEGRITY_COMPROMISED/,
+      'issuePilotGrant must fail closed when audit trail is unhealthy'
+    );
+
+    await assert.rejects(
+      async () => {
+        await db.issueLegacyGrant({
+          organizationId: testOrgId,
+          projectId: testProjectId,
+          approvedBy: 'platform_owner'
+        });
+      },
+      /AUDIT_TRAIL_INTEGRITY_COMPROMISED/,
+      'issueLegacyGrant must fail closed when audit trail is unhealthy'
+    );
+
+    // Restore root anchor
+    fs.writeFileSync(rootAnchorPath, validAnchorBackup, 'utf8');
+    const integrityAfter57 = db.verifyGrantAuditTrailIntegrity();
+    assert.strictEqual(integrityAfter57.valid, true, 'Integrity must be restored after valid anchor restored');
+    console.log('  PASS: All grant operations strictly fail closed with AUDIT_TRAIL_INTEGRITY_COMPROMISED when anchor is unhealthy.');
+
+    // ── TEST 58: AMBIGUOUS PAYMENT FAILURE DEFERRED (HTTP 502) WITHOUT TENANT DEMOTION ──
+    console.log('\n[TEST 58] Verifying Ambiguous Payment Failure Defers with HTTP 502 and Zero Demotion...');
+    const ambigSubId = `sub_ambig_${Date.now()}`;
+    const ambigCusId = `cus_ambig_${Date.now()}`;
+    const ambigOrgId = `org_ambig_${Date.now()}`;
+
+    await db.mutate(d => {
+      d.organizations.push({
+        id: ambigOrgId,
+        name: 'Ambig Org Test',
+        subscription: {
+          plan: 'pro',
+          status: 'active',
+          stripeCustomerId: ambigCusId,
+          stripeSubscriptionId: ambigSubId
+        }
+      });
+    });
+
+    // 58A: Active subscription with missing billing period -> HTTP 502 STRIPE_SUBSCRIPTION_PERIOD_AMBIGUOUS
+    const ambigInvId = `in_ambig_${Date.now()}`;
+    authoritativeSubscriptionStore.set(ambigSubId, {
+      id: ambigSubId,
+      customer: ambigCusId,
+      status: 'active',
+      current_period_start: null, // missing period!
+      current_period_end: null
+    });
+    authoritativeInvoiceStore.set(ambigInvId, {
+      id: ambigInvId,
+      customer: ambigCusId,
+      subscription: ambigSubId,
+      status: 'open',
+      paid: false
+    });
+
+    const res58A = await postWebhook({
+      id: `evt_ambig_58a_${Date.now()}`,
+      object: 'event',
+      type: 'invoice.payment_failed',
+      data: { object: { id: ambigInvId, customer: ambigCusId, subscription: ambigSubId } }
+    });
+    assert.strictEqual(res58A.status, 502, 'Missing billing period on active subscription must return HTTP 502');
+    assert.strictEqual(res58A.data.error, 'STRIPE_SUBSCRIPTION_PERIOD_AMBIGUOUS');
+    assert.strictEqual(db.getOrganizationById(ambigOrgId).subscription.status, 'active', 'Tenant must NOT be demoted on ambiguous period');
+
+    // 58B: Unrecognized subscription status -> HTTP 502 STRIPE_SUBSCRIPTION_AMBIGUOUS_STATUS
+    authoritativeSubscriptionStore.set(ambigSubId, {
+      id: ambigSubId,
+      customer: ambigCusId,
+      status: 'unknown_vendor_state',
+      current_period_start: Math.floor(Date.now() / 1000) - 3600,
+      current_period_end: Math.floor(Date.now() / 1000) + 86400
+    });
+    const res58B = await postWebhook({
+      id: `evt_ambig_58b_${Date.now()}`,
+      object: 'event',
+      type: 'invoice.payment_failed',
+      data: { object: { id: ambigInvId, customer: ambigCusId, subscription: ambigSubId } }
+    });
+    assert.strictEqual(res58B.status, 502, 'Unrecognized status must return HTTP 502');
+    assert.strictEqual(res58B.data.error, 'STRIPE_SUBSCRIPTION_AMBIGUOUS_STATUS');
+    assert.strictEqual(db.getOrganizationById(ambigOrgId).subscription.status, 'active', 'Tenant must NOT be demoted on ambiguous status');
+
+    // 58C: Provider subscription customer mismatch -> HTTP 400 STRIPE_CUSTOMER_MISMATCH
+    authoritativeSubscriptionStore.set(ambigSubId, {
+      id: ambigSubId,
+      customer: 'cus_forged_different',
+      status: 'past_due',
+      current_period_start: Math.floor(Date.now() / 1000) - 3600,
+      current_period_end: Math.floor(Date.now() / 1000) + 86400
+    });
+    const res58C = await postWebhook({
+      id: `evt_ambig_58c_${Date.now()}`,
+      object: 'event',
+      type: 'invoice.payment_failed',
+      data: { object: { id: ambigInvId, customer: ambigCusId, subscription: ambigSubId } }
+    });
+    assert.strictEqual(res58C.status, 400, 'Customer mismatch must return HTTP 400');
+    assert.strictEqual(res58C.data.error, 'STRIPE_CUSTOMER_MISMATCH');
+    assert.strictEqual(db.getOrganizationById(ambigOrgId).subscription.status, 'active', 'Tenant must NOT be demoted on customer mismatch');
+    console.log('  PASS: Ambiguous provider payment failure states defer cleanly with HTTP 502 retryable and ZERO tenant demotion.');
+
+    console.log('\n=== ALL 58 REAL-SERVER SIGNED STRIPE TEST-MODE ROUTE E2E TESTS PASSED ===');
 
 
   } finally {

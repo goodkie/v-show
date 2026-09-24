@@ -650,11 +650,26 @@ function extractSubscriptionId(inv) {
   if (typeof inv.subscription === 'string' && inv.subscription.trim().length > 0) {
     return inv.subscription.trim();
   }
+  if (inv.subscription && typeof inv.subscription === 'object' && inv.subscription.id) {
+    return String(inv.subscription.id).trim();
+  }
   if (inv.subscription_details && typeof inv.subscription_details.subscription === 'string' && inv.subscription_details.subscription.trim().length > 0) {
     return inv.subscription_details.subscription.trim();
   }
+  if (inv.subscription_details?.subscription?.id) {
+    return String(inv.subscription_details.subscription.id).trim();
+  }
   if (inv.parent && inv.parent.subscription_details && typeof inv.parent.subscription_details.subscription === 'string' && inv.parent.subscription_details.subscription.trim().length > 0) {
     return inv.parent.subscription_details.subscription.trim();
+  }
+  if (inv.parent?.subscription_details?.subscription?.id) {
+    return String(inv.parent.subscription_details.subscription.id).trim();
+  }
+  if (inv.parent && typeof inv.parent.subscription === 'string' && inv.parent.subscription.trim().length > 0) {
+    return inv.parent.subscription.trim();
+  }
+  if (inv.parent?.subscription?.id) {
+    return String(inv.parent.subscription.id).trim();
   }
   return null;
 }
@@ -1126,6 +1141,7 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
 
         let authInv;
         let authSub;
+        let authInvSubId;
         try {
           authInv = await activeStripe.invoices.retrieve(invObj.id);
           if (!authInv) {
@@ -1152,7 +1168,7 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
             });
           }
 
-          const authInvSubId = extractSubscriptionId(authInv);
+          authInvSubId = extractSubscriptionId(authInv);
           if (!authInvSubId) {
             return res.status(400).json({
               error: 'STRIPE_INVOICE_SUBSCRIPTION_REQUIRED',
@@ -1202,6 +1218,14 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
             });
           }
 
+          if (!authSub.id || typeof authSub.id !== 'string' || !authSub.customer || typeof authSub.customer !== 'string') {
+            return res.status(502).json({
+              error: 'STRIPE_SUBSCRIPTION_AMBIGUOUS_STATE',
+              message: 'Authoritative subscription lacks non-empty id or customer; demotion deferred.',
+              retryable: true
+            });
+          }
+
           if (authSub.id !== authInvSubId) {
             return res.status(400).json({
               error: 'STRIPE_SUBSCRIPTION_ID_MISMATCH',
@@ -1210,7 +1234,7 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
             });
           }
 
-          if (authSub.customer && authSub.customer !== authInv.customer) {
+          if (authSub.customer !== authInv.customer) {
             return res.status(400).json({
               error: 'STRIPE_CUSTOMER_MISMATCH',
               message: 'Authoritative subscription customer differs from invoice customer.',
@@ -1218,7 +1242,16 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
             });
           }
 
-          // Check subscription status
+          // Check subscription status against allowlist
+          const VALID_FAILED_SUB_STATUSES = ['active', 'past_due', 'unpaid', 'canceled', 'incomplete', 'incomplete_expired', 'trialing', 'paused'];
+          if (!VALID_FAILED_SUB_STATUSES.includes(authSub.status)) {
+            return res.status(502).json({
+              error: 'STRIPE_SUBSCRIPTION_AMBIGUOUS_STATUS',
+              message: `Authoritative subscription status '${authSub.status}' is unrecognized; demotion deferred fail-closed.`,
+              retryable: true
+            });
+          }
+
           if (authSub.status === 'canceled') {
             return res.status(200).json({
               received: true,
@@ -1227,14 +1260,13 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
             });
           }
 
-          // Monotonic provider-effective state rules: If subscription is active and this failed invoice is for an older cycle,
-          // or if a newer invoice is active, do not demote active subscription to past_due!
+          // Require clear billing period before demotion if subscription is active
           if (authSub.status === 'active') {
-            if (!authSub.current_period_start || typeof authSub.current_period_start !== 'number') {
-              return res.status(400).json({
-                error: 'STRIPE_SUBSCRIPTION_PERIOD_MISSING',
-                message: 'Active subscription lacks valid current_period_start; demotion aborted fail-closed.',
-                retryable: false
+            if (!authSub.current_period_start || typeof authSub.current_period_start !== 'number' || !authSub.current_period_end || typeof authSub.current_period_end !== 'number') {
+              return res.status(502).json({
+                error: 'STRIPE_SUBSCRIPTION_PERIOD_AMBIGUOUS',
+                message: 'Active subscription lacks clear billing period timestamps; demotion deferred fail-closed.',
+                retryable: true
               });
             }
             const isOlderPeriod = Boolean(authInv.period_end && (authInv.period_end <= authSub.current_period_start));
@@ -1248,6 +1280,13 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
                 message: 'Failed invoice is for an older billing cycle superseded by active subscription; zero entitlement mutation.'
               });
             }
+          } else if (authSub.latest_invoice && authSub.latest_invoice !== authInv.id) {
+            return res.status(200).json({
+              received: true,
+              status: 'NOOP_STALE_PAYMENT_FAILURE',
+              reason: 'SUPERSEDED_BY_LATEST_INVOICE',
+              message: 'Failed invoice is superseded by newer provider subscription invoice; zero entitlement mutation.'
+            });
           }
         } catch (invErr) {
           console.error('[STRIPE_INVOICE_LOOKUP_FAILED]', invErr?.message || invErr);
@@ -1268,7 +1307,9 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
         result = await db.applyStripePaymentFailedAtomic({
           event,
           invoice: authInv,
-          subscription: authSub
+          subscription: authSub,
+          subscriptionId: authInvSubId,
+          customerId: authInv.customer
         });
         break;
       }
@@ -1287,6 +1328,7 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
 
         let authInv;
         let authSub;
+        let authInvSubId;
         try {
           authInv = await activeStripe.invoices.retrieve(invObj.id);
           if (!authInv) {
@@ -1313,7 +1355,7 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
             });
           }
 
-          const authInvSubId = extractSubscriptionId(authInv);
+          authInvSubId = extractSubscriptionId(authInv);
           if (!authInvSubId) {
             return res.status(400).json({
               error: 'STRIPE_INVOICE_SUBSCRIPTION_REQUIRED',
@@ -1385,10 +1427,34 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
             });
           }
 
-          if (authSub.customer && authSub.customer !== authInv.customer) {
+          if (!authSub.id || typeof authSub.id !== 'string' || !authSub.customer || typeof authSub.customer !== 'string') {
+            return res.status(502).json({
+              error: 'STRIPE_SUBSCRIPTION_AMBIGUOUS_STATE',
+              message: 'Authoritative subscription lacks non-empty id or customer; entitlement application deferred.',
+              retryable: true
+            });
+          }
+
+          if (authSub.id !== authInvSubId) {
+            return res.status(400).json({
+              error: 'STRIPE_SUBSCRIPTION_MISMATCH',
+              message: 'Authoritative subscription ID does not match invoice subscription ID.',
+              retryable: false
+            });
+          }
+
+          if (authSub.customer !== authInv.customer) {
             return res.status(400).json({
               error: 'STRIPE_CUSTOMER_MISMATCH',
               message: 'Authoritative subscription customer differs from invoice customer.',
+              retryable: false
+            });
+          }
+
+          if (typeof authInv.amount_paid === 'number' && authInv.amount_paid < 0) {
+            return res.status(400).json({
+              error: 'STRIPE_INVALID_AMOUNT',
+              message: 'Authoritative invoice amount_paid cannot be negative.',
               retryable: false
             });
           }
@@ -1433,7 +1499,9 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
         result = await db.applyStripeInvoicePaidAtomic({
           event,
           invoice: authInv,
-          subscription: authSub
+          subscription: authSub,
+          subscriptionId: authInvSubId,
+          customerId: authInv.customer
         });
         break;
       }
@@ -1520,6 +1588,24 @@ app.post('/api/admin/pilot-grants', requireAuth, requirePlatformOwner, async (re
         message: 'Neither projectId nor accountId provided. Organization-wide grant requires explicit isOrgWide: true in payload.'
       });
     }
+
+    const targetScope = (projectId && accountId)
+      ? `project:${projectId}+account:${accountId}`
+      : projectId
+        ? `project:${projectId}`
+        : accountId
+          ? `account:${accountId}`
+          : `org:${organizationId}`;
+
+    const approvalReceipt = {
+      receiptId: `rcpt_appr_${crypto.randomBytes(8).toString('hex')}`,
+      authenticatedOwner: req.user.username || req.user.email || req.user.userId || 'platform_owner',
+      authorizedAt: new Date().toISOString(),
+      isOrgWideApproved: Boolean(isOrgWide),
+      targetScope,
+      ipAddress: req.ip || req.connection?.remoteAddress || '127.0.0.1'
+    };
+
     const grant = await db.issuePilotGrant({
       organizationId,
       projectId,
@@ -1528,7 +1614,8 @@ app.post('/api/admin/pilot-grants', requireAuth, requirePlatformOwner, async (re
       approvedBy: req.user.username || req.user.userId || 'platform_owner',
       notes,
       createdBy: req.user.userId || req.user.username || 'platform_owner',
-      isOrgWide: Boolean(isOrgWide)
+      isOrgWide: Boolean(isOrgWide),
+      approvalReceipt
     });
     return res.status(201).json({ success: true, grant });
   } catch (err) {
@@ -1538,7 +1625,13 @@ app.post('/api/admin/pilot-grants', requireAuth, requirePlatformOwner, async (re
 
 app.delete('/api/admin/pilot-grants/:grantId', requireAuth, requirePlatformOwner, async (req, res) => {
   try {
-    const grant = await db.revokePilotGrant(req.params.grantId, req.user.username || 'platform_owner');
+    const revocationReceipt = {
+      receiptId: `rcpt_revk_${crypto.randomBytes(8).toString('hex')}`,
+      authenticatedOwner: req.user.username || req.user.email || req.user.userId || 'platform_owner',
+      revokedAt: new Date().toISOString(),
+      ipAddress: req.ip || req.connection?.remoteAddress || '127.0.0.1'
+    };
+    const grant = await db.revokePilotGrant(req.params.grantId, req.user.username || 'platform_owner', revocationReceipt);
     return res.json({ success: true, grant });
   } catch (err) {
     if (err.message === 'GRANT_NOT_FOUND') return res.status(404).json({ error: err.message });
@@ -1559,6 +1652,24 @@ app.post('/api/admin/legacy-grants', requireAuth, requirePlatformOwner, async (r
         message: 'Neither projectId nor accountId provided. Organization-wide grant requires explicit isOrgWide: true in payload.'
       });
     }
+
+    const targetScope = (projectId && accountId)
+      ? `project:${projectId}+account:${accountId}`
+      : projectId
+        ? `project:${projectId}`
+        : accountId
+          ? `account:${accountId}`
+          : `org:${organizationId}`;
+
+    const approvalReceipt = {
+      receiptId: `rcpt_appr_${crypto.randomBytes(8).toString('hex')}`,
+      authenticatedOwner: req.user.username || req.user.email || req.user.userId || 'platform_owner',
+      authorizedAt: new Date().toISOString(),
+      isOrgWideApproved: Boolean(isOrgWide),
+      targetScope,
+      ipAddress: req.ip || req.connection?.remoteAddress || '127.0.0.1'
+    };
+
     const grant = await db.issueLegacyGrant({
       organizationId,
       accountId,
@@ -1566,7 +1677,8 @@ app.post('/api/admin/legacy-grants', requireAuth, requirePlatformOwner, async (r
       approvedBy: req.user.username || req.user.userId || 'platform_owner',
       notes,
       createdBy: req.user.userId || req.user.username || 'platform_owner',
-      isOrgWide: Boolean(isOrgWide)
+      isOrgWide: Boolean(isOrgWide),
+      approvalReceipt
     });
     return res.status(201).json({ success: true, grant });
   } catch (err) {
@@ -1576,7 +1688,13 @@ app.post('/api/admin/legacy-grants', requireAuth, requirePlatformOwner, async (r
 
 app.delete('/api/admin/legacy-grants/:grantId', requireAuth, requirePlatformOwner, async (req, res) => {
   try {
-    const grant = await db.revokeLegacyGrant(req.params.grantId, req.user.username || 'platform_owner');
+    const revocationReceipt = {
+      receiptId: `rcpt_revk_${crypto.randomBytes(8).toString('hex')}`,
+      authenticatedOwner: req.user.username || req.user.email || req.user.userId || 'platform_owner',
+      revokedAt: new Date().toISOString(),
+      ipAddress: req.ip || req.connection?.remoteAddress || '127.0.0.1'
+    };
+    const grant = await db.revokeLegacyGrant(req.params.grantId, req.user.username || 'platform_owner', revocationReceipt);
     return res.json({ success: true, grant });
   } catch (err) {
     if (err.message === 'GRANT_NOT_FOUND') return res.status(404).json({ error: err.message });

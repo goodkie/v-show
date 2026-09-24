@@ -11,6 +11,7 @@ const TEMP_DB_FILE = path.join(DATA_DIR, 'db.temp.json');
 const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
 const SEED_DIR = path.join(__dirname, '..', 'seed');
 const GRANT_AUDIT_ROOT_FILE = path.join(DATA_DIR, 'grant_audit_root_anchor.json');
+const GRANT_AUDIT_JOURNAL_FILE = path.join(DATA_DIR, 'grant_audit_commit_journal.json');
 
 // Ensure data, uploads, and seed directories exist
 if (!fs.existsSync(DATA_DIR)) {
@@ -21,6 +22,49 @@ if (!fs.existsSync(UPLOADS_DIR)) {
 }
 if (!fs.existsSync(SEED_DIR)) {
   fs.mkdirSync(SEED_DIR, { recursive: true });
+}
+
+function extractSubscriptionIdFromInvoice(invoice) {
+  if (!invoice) return null;
+  if (typeof invoice.subscription === 'string' && invoice.subscription.trim().length > 0) {
+    return invoice.subscription.trim();
+  }
+  if (invoice.subscription && typeof invoice.subscription === 'object' && invoice.subscription.id) {
+    return String(invoice.subscription.id).trim();
+  }
+  if (invoice.subscription_details && typeof invoice.subscription_details.subscription === 'string' && invoice.subscription_details.subscription.trim().length > 0) {
+    return invoice.subscription_details.subscription.trim();
+  }
+  if (invoice.subscription_details?.subscription?.id) {
+    return String(invoice.subscription_details.subscription.id).trim();
+  }
+  if (invoice.parent && invoice.parent.subscription_details && typeof invoice.parent.subscription_details.subscription === 'string' && invoice.parent.subscription_details.subscription.trim().length > 0) {
+    return invoice.parent.subscription_details.subscription.trim();
+  }
+  if (invoice.parent?.subscription_details?.subscription?.id) {
+    return String(invoice.parent.subscription_details.subscription.id).trim();
+  }
+  if (invoice.parent && typeof invoice.parent.subscription === 'string' && invoice.parent.subscription.trim().length > 0) {
+    return invoice.parent.subscription.trim();
+  }
+  if (invoice.parent?.subscription?.id) {
+    return String(invoice.parent.subscription.id).trim();
+  }
+  return null;
+}
+
+function extractCustomerIdFromInvoice(invoice) {
+  if (!invoice) return null;
+  if (typeof invoice.customer === 'string' && invoice.customer.trim().length > 0) {
+    return invoice.customer.trim();
+  }
+  if (invoice.customer && typeof invoice.customer === 'object' && invoice.customer.id) {
+    return String(invoice.customer.id).trim();
+  }
+  if (invoice.customer_id && typeof invoice.customer_id === 'string' && invoice.customer_id.trim().length > 0) {
+    return invoice.customer_id.trim();
+  }
+  return null;
 }
 
 function updateGrantAuditRootAnchor(entry, totalLength) {
@@ -518,6 +562,7 @@ class JSONDatabase {
   }
 
   init() {
+    this.reconcileGrantAuditAnchorUnderLock();
     if (!fs.existsSync(DB_FILE)) {
       const seedData = initialSeedData();
       fs.writeFileSync(DB_FILE, JSON.stringify(seedData, null, 2), 'utf-8');
@@ -1822,11 +1867,50 @@ class JSONDatabase {
     });
   }
 
+  reconcileGrantAuditAnchorUnderLock() {
+    if (!fs.existsSync(GRANT_AUDIT_JOURNAL_FILE)) {
+      return;
+    }
+    try {
+      const rawJournal = fs.readFileSync(GRANT_AUDIT_JOURNAL_FILE, 'utf8');
+      const journal = JSON.parse(rawJournal);
+      if (!journal || !journal.targetAnchor) {
+        if (fs.existsSync(GRANT_AUDIT_JOURNAL_FILE)) {
+          fs.unlinkSync(GRANT_AUDIT_JOURNAL_FILE);
+        }
+        return;
+      }
+      let currentDb;
+      try {
+        currentDb = JSON.parse(fs.readFileSync(DB_FILE, 'utf-8'));
+      } catch (e) {
+        return;
+      }
+      const trail = currentDb.grantAuditTrail || [];
+      const tip = trail.length > 0 ? trail[trail.length - 1] : null;
+
+      if (tip && tip.entryHash === journal.targetAnchor.lastEntryHash) {
+        // Phase 2 (DB commit) succeeded before crash/failure, but Phase 3 (anchor write) was incomplete.
+        // Reconcile root anchor:
+        const tmpPath = GRANT_AUDIT_ROOT_FILE + '.tmp';
+        fs.writeFileSync(tmpPath, JSON.stringify(journal.targetAnchor, null, 2), 'utf-8');
+        fs.renameSync(tmpPath, GRANT_AUDIT_ROOT_FILE);
+      }
+      // Clean up journal after reconciliation
+      if (fs.existsSync(GRANT_AUDIT_JOURNAL_FILE)) {
+        fs.unlinkSync(GRANT_AUDIT_JOURNAL_FILE);
+      }
+    } catch (err) {
+      console.error('[GRANT_AUDIT_JOURNAL_RECONCILE_ERROR]', err.message);
+    }
+  }
+
   async mutate(callback) {
     const releaseInProc = await this._asyncMutex.acquire();
     let ownerToken;
     try {
       ownerToken = await this.acquireFileLock();
+      this.reconcileGrantAuditAnchorUnderLock();
       this.memoryData = null; // force fresh reload from disk under lock
       const data = this.read();
       data._version = (data._version || 1) + 1;
@@ -1834,11 +1918,44 @@ class JSONDatabase {
       const pendingAnchor = data.__pendingAuditAnchor;
       if (pendingAnchor) {
         delete data.__pendingAuditAnchor;
-      }
-      const written = this._writeUnderLock(data);
-      if (!written) throw new Error('DB_WRITE_FAILED: Write returned false under lock');
-      if (pendingAnchor) {
+        // Phase 1: Write journal file
+        const anchorData = {
+          anchorVersion: 1,
+          lastSequence: pendingAnchor.entry.sequence,
+          lastEntryHash: pendingAnchor.entry.entryHash,
+          lastAuditId: pendingAnchor.entry.auditId,
+          totalEntries: pendingAnchor.totalLength,
+          updatedAt: pendingAnchor.entry.timestamp
+        };
+        const journalPayload = {
+          journalVersion: 1,
+          state: 'PREPARED',
+          createdAt: new Date().toISOString(),
+          targetAnchor: anchorData,
+          expectedDbVersion: data._version
+        };
+        const tmpJournal = GRANT_AUDIT_JOURNAL_FILE + '.tmp';
+        fs.writeFileSync(tmpJournal, JSON.stringify(journalPayload, null, 2), 'utf-8');
+        fs.renameSync(tmpJournal, GRANT_AUDIT_JOURNAL_FILE);
+
+        // Phase 2: Commit DB
+        const written = this._writeUnderLock(data);
+        if (!written) throw new Error('DB_WRITE_FAILED: Write returned false under lock');
+
+        // Phase 3: Commit Root Anchor
         updateGrantAuditRootAnchor(pendingAnchor.entry, pendingAnchor.totalLength);
+
+        // Phase 4: Unlink Journal
+        try {
+          if (fs.existsSync(GRANT_AUDIT_JOURNAL_FILE)) {
+            fs.unlinkSync(GRANT_AUDIT_JOURNAL_FILE);
+          }
+        } catch (unlinkErr) {
+          console.warn('[GRANT_AUDIT_JOURNAL_UNLINK_WARNING]', unlinkErr.message);
+        }
+      } else {
+        const written = this._writeUnderLock(data);
+        if (!written) throw new Error('DB_WRITE_FAILED: Write returned false under lock');
       }
       return result;
     } finally {
@@ -7025,8 +7142,8 @@ return event;
         db.stripeEvents.push(eventRecord);
       }
 
-      const customerId = invoice.customer;
-      const subscriptionId = invoice.subscription;
+      const customerId = params.customerId || extractCustomerIdFromInvoice(invoice);
+      const subscriptionId = params.subscriptionId || extractSubscriptionIdFromInvoice(invoice);
       if (!customerId || !subscriptionId) {
         eventRecord.status = 'FAILED';
         eventRecord.failureReason = 'MISSING_CUSTOMER_OR_SUBSCRIPTION_ID';
@@ -7203,8 +7320,8 @@ return event;
         db.stripeEvents.push(eventRecord);
       }
 
-      const customerId = invoice.customer;
-      const subscriptionId = invoice.subscription;
+      const customerId = params.customerId || extractCustomerIdFromInvoice(invoice);
+      const subscriptionId = params.subscriptionId || extractSubscriptionIdFromInvoice(invoice);
       if (!customerId || !subscriptionId) {
         eventRecord.status = 'FAILED';
         eventRecord.failureReason = 'MISSING_CUSTOMER_OR_SUBSCRIPTION_ID';
@@ -10640,7 +10757,11 @@ return event;
     return Boolean(grant && hasValidExpiry);
   }
 
-  issuePilotGrant({ organizationId, projectId, accountId, pilotExpiresAt, approvedBy, notes, createdBy, isOrgWide }) {
+  issuePilotGrant({ organizationId, projectId, accountId, pilotExpiresAt, approvedBy, notes, createdBy, isOrgWide, approvalReceipt }) {
+    const integrityCheck = this.verifyGrantAuditTrailIntegrity();
+    if (!integrityCheck.valid) {
+      throw new Error(`AUDIT_TRAIL_INTEGRITY_COMPROMISED: ${integrityCheck.error}`);
+    }
     if (!organizationId) throw new Error('MISSING_ORGANIZATION_ID');
     if (!pilotExpiresAt || isNaN(new Date(pilotExpiresAt).getTime()) || Date.now() > new Date(pilotExpiresAt).getTime()) {
       throw new Error('INVALID_PILOT_EXPIRATION');
@@ -10706,7 +10827,8 @@ return event;
         pilotExpiresAt: new Date(pilotExpiresAt).toISOString(),
         notes: notes || undefined,
         createdAt: new Date().toISOString(),
-        createdBy: createdBy || approvedBy
+        createdBy: createdBy || approvedBy,
+        approvalReceipt: approvalReceipt || null
       };
 
       d.pilotGrants = d.pilotGrants || [];
@@ -10730,7 +10852,8 @@ return event;
         before: null,
         after: { status: grant.status, approvedBy: grant.approvedBy, pilotExpiresAt: grant.pilotExpiresAt },
         timestamp: new Date().toISOString(),
-        previousHash
+        previousHash,
+        approvalReceipt: approvalReceipt || null
       };
       auditPayload.entryHash = crypto.createHash('sha256').update(JSON.stringify(auditPayload)).digest('hex');
       d.grantAuditTrail.push(auditPayload);
@@ -10742,7 +10865,11 @@ return event;
     });
   }
 
-  revokePilotGrant(grantId, revokedBy) {
+  revokePilotGrant(grantId, revokedBy, revocationReceipt) {
+    const integrityCheck = this.verifyGrantAuditTrailIntegrity();
+    if (!integrityCheck.valid) {
+      throw new Error(`AUDIT_TRAIL_INTEGRITY_COMPROMISED: ${integrityCheck.error}`);
+    }
     if (!grantId) throw new Error('MISSING_GRANT_ID');
     const cleanRevoker = (revokedBy && typeof revokedBy === 'string' && revokedBy.trim().length >= 3) ? revokedBy : 'platform_owner';
     return this.mutate((d) => {
@@ -10754,6 +10881,7 @@ return event;
       g.isRevoked = true;
       g.revokedAt = new Date().toISOString();
       g.revokedBy = cleanRevoker;
+      g.revocationReceipt = revocationReceipt || null;
 
       // Precise targetScope binding
       let targetScope;
@@ -10785,7 +10913,8 @@ return event;
         before: beforeState,
         after: { status: g.status, isRevoked: g.isRevoked, revokedAt: g.revokedAt, revokedBy: g.revokedBy },
         timestamp: new Date().toISOString(),
-        previousHash
+        previousHash,
+        revocationReceipt: revocationReceipt || null
       };
       auditPayload.entryHash = crypto.createHash('sha256').update(JSON.stringify(auditPayload)).digest('hex');
       d.grantAuditTrail.push(auditPayload);
@@ -10797,7 +10926,11 @@ return event;
     });
   }
 
-  issueLegacyGrant({ organizationId, accountId, projectId, approvedBy, notes, createdBy, isOrgWide }) {
+  issueLegacyGrant({ organizationId, accountId, projectId, approvedBy, notes, createdBy, isOrgWide, approvalReceipt }) {
+    const integrityCheck = this.verifyGrantAuditTrailIntegrity();
+    if (!integrityCheck.valid) {
+      throw new Error(`AUDIT_TRAIL_INTEGRITY_COMPROMISED: ${integrityCheck.error}`);
+    }
     if (!organizationId) throw new Error('MISSING_ORGANIZATION_ID');
     if (!approvedBy || typeof approvedBy !== 'string' || approvedBy.trim().length < 3) {
       throw new Error('MISSING_APPROVER');
@@ -10859,7 +10992,8 @@ return event;
         status: 'active',
         notes: notes || undefined,
         createdAt: new Date().toISOString(),
-        createdBy: createdBy || approvedBy.trim()
+        createdBy: createdBy || approvedBy.trim(),
+        approvalReceipt: approvalReceipt || null
       };
 
       d.legacyGrants = d.legacyGrants || [];
@@ -10883,7 +11017,8 @@ return event;
         before: null,
         after: { status: grant.status, approvedBy: grant.approvedBy },
         timestamp: new Date().toISOString(),
-        previousHash
+        previousHash,
+        approvalReceipt: approvalReceipt || null
       };
       auditPayload.entryHash = crypto.createHash('sha256').update(JSON.stringify(auditPayload)).digest('hex');
       d.grantAuditTrail.push(auditPayload);
@@ -10895,7 +11030,11 @@ return event;
     });
   }
 
-  revokeLegacyGrant(grantId, revokedBy) {
+  revokeLegacyGrant(grantId, revokedBy, revocationReceipt) {
+    const integrityCheck = this.verifyGrantAuditTrailIntegrity();
+    if (!integrityCheck.valid) {
+      throw new Error(`AUDIT_TRAIL_INTEGRITY_COMPROMISED: ${integrityCheck.error}`);
+    }
     if (!grantId) throw new Error('MISSING_GRANT_ID');
     const cleanRevoker = (typeof revokedBy === 'string' && revokedBy.trim().length >= 3)
       ? revokedBy.trim()
@@ -10910,6 +11049,7 @@ return event;
       g.isRevoked = true;
       g.revokedAt = new Date().toISOString();
       g.revokedBy = cleanRevoker;
+      g.revocationReceipt = revocationReceipt || null;
 
       // Precise targetScope binding
       let targetScope;
@@ -10941,7 +11081,8 @@ return event;
         before: beforeState,
         after: { status: g.status, isRevoked: g.isRevoked, revokedAt: g.revokedAt, revokedBy: g.revokedBy },
         timestamp: new Date().toISOString(),
-        previousHash
+        previousHash,
+        revocationReceipt: revocationReceipt || null
       };
       auditPayload.entryHash = crypto.createHash('sha256').update(JSON.stringify(auditPayload)).digest('hex');
       d.grantAuditTrail.push(auditPayload);
@@ -10954,6 +11095,7 @@ return event;
   }
 
   verifyGrantAuditTrailIntegrity() {
+    this.reconcileGrantAuditAnchorUnderLock();
     const data = this.read();
     const trail = data.grantAuditTrail || [];
     let prevHash = 'GENESIS';
