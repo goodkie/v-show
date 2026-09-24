@@ -1,7 +1,7 @@
 {
   "testSuite": "test_stage2_real_photo_panorama_staging",
-  "timestamp": "2026-09-23T22:51:52.300Z",
-  "gitHead": "148249fbaa2be85ccf0027947b2c291015951dc5",
+  "timestamp": "2026-09-24T00:18:42.187Z",
+  "gitHead": "9e14bb1363a2e88f7deff1fdb042027166a8f6e7",
   "remoteUrl": "https://github.com/goodkie/v-show",
   "branch": "feature/3d2r-stage2-12point-capture",
   "rawImages": [
@@ -11,7 +11,7 @@
       "fileName": "C001.jpg",
       "byteSize": 341612,
       "sha256": "752b843254840a2846ccb06d6b34da31f7e98a885e200344bf918338f8033000",
-      "sourcePath": "C:\\Users\\server4\\ai\\v-show-stage2-fast-track\\virtual-tradeshow-commercial-v1\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C001.jpg"
+      "sourcePath": "virtual-tradeshow-commercial-v1\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C001.jpg"
     },
     {
       "index": 1,
@@ -19,7 +19,7 @@
       "fileName": "C002.jpg",
       "byteSize": 335210,
       "sha256": "293709a91178bce0d414a3af1ff8d02a443a2a4583d701737ea23a8ff5788179",
-      "sourcePath": "C:\\Users\\server4\\ai\\v-show-stage2-fast-track\\virtual-tradeshow-commercial-v1\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C002.jpg"
+      "sourcePath": "virtual-tradeshow-commercial-v1\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C002.jpg"
     },
     {
       "index": 2,
@@ -27,7 +27,7 @@
       "fileName": "C003.jpg",
       "byteSize": 355516,
       "sha256": "57d1d32ecb943920821a5822639a99c8f525de85a47420d07f9d71e30dfb194d",
-      "sourcePath": "C:\\Users\\server4\\ai\\v-show-stage2-fast-track\\virtual-tradeshow-commercial-v1\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C003.jpg"
+      "sourcePath": "virtual-tradeshow-commercial-v1\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C003.jpg"
     },
     {
       "index": 3,
@@ -35,7 +35,7 @@
       "fileName": "C004.jpg",
       "byteSize": 295761,
       "sha256": "993de242720bc62cc4093b5377d602549b402ee16642db1acd677d3c38efdfc4",
-      "sourcePath": "C:\\Users\\server4\\ai\\v-show-stage2-fast-track\\virtual-tradeshow-commercial-v1\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C004.jpg"
+      "sourcePath": "virtual-tradeshow-commercial-v1\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C004.jpg"
     },
     {
       "index": 4,
@@ -43,7 +43,7 @@
       "fileName": "C005.jpg",
       "byteSize": 291488,
       "sha256": "c147e8467a27ca25f98c6d2548aa04305c430e5cd4648ee91ebe5581b5ae3947",
-      "sourcePath": "C:\\Users\\server4\\ai\\v-show-stage2-fast-track\\virtual-tradeshow-commercial-v1\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C005.jpg"
+      "sourcePath": "virtual-tradeshow-commercial-v1\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C005.jpg"
     },
     {
       "index": 5,
@@ -51,7 +51,7 @@
       "fileName": "C006.jpg",
       "byteSize": 300608,
       "sha256": "41b62bb79cad0290f402683f9cfe821755a9b1df63342ccc25c64c523e10cb1b",
-      "sourcePath": "C:\\Users\\server4\\ai\\v-show-stage2-fast-track\\virtual-tradeshow-commercial-v1\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C006.jpg"
+      "sourcePath": "virtual-tradeshow-commercial-v1\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C006.jpg"
     },
     {
       "index": 6,
@@ -59,7 +59,7 @@
       "fileName": "C007.jpg",
       "byteSize": 304356,
       "sha256": "c975bf67d8bdc3fe8019676a2333241fa42ea76199645e210f853a959be3e054",
-      "sourcePath": "C:\\Users\\server4\\ai\\v-show-stage2-fast-track\\virtual-tradeshow-commercial-v1\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C007.jpg"
+      "sourcePath": "virtual-tradeshow-commercial-v1\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C007.jpg"
     },
     {
       "index": 7,
@@ -67,7 +67,7 @@
       "fileName": "C008.jpg",
       "byteSize": 313842,
       "sha256": "8da5715ae44acc275abe4bf26c62adc4b5b0829148672472f65447a346fa60ab",
-      "sourcePath": "C:\\Users\\server4\\ai\\v-show-stage2-fast-track\\virtual-tradeshow-commercial-v1\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C008.jpg"
+      "sourcePath": "virtual-tradeshow-commercial-v1\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C008.jpg"
     },
     {
       "index": 8,
@@ -75,7 +75,7 @@
       "fileName": "C009.jpg",
       "byteSize": 323133,
       "sha256": "61aa58132b1d1fb238ac358ca42947012f37a07fb56e9671135fefef97e6ef37",
-      "sourcePath": "C:\\Users\\server4\\ai\\v-show-stage2-fast-track\\virtual-tradeshow-commercial-v1\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C009.jpg"
+      "sourcePath": "virtual-tradeshow-commercial-v1\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C009.jpg"
     },
     {
       "index": 9,
@@ -83,7 +83,7 @@
       "fileName": "C010.jpg",
       "byteSize": 326718,
       "sha256": "97abab9341633a6db123e6f02004cb339e96325074f1c5c2bbf47e90b67c3c47",
-      "sourcePath": "C:\\Users\\server4\\ai\\v-show-stage2-fast-track\\virtual-tradeshow-commercial-v1\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C010.jpg"
+      "sourcePath": "virtual-tradeshow-commercial-v1\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C010.jpg"
     },
     {
       "index": 10,
@@ -91,7 +91,7 @@
       "fileName": "C011.jpg",
       "byteSize": 329874,
       "sha256": "b114a58ab954fd638ff22c901813b6cbd928c79ddeb38b1dd474135ce9a5276c",
-      "sourcePath": "C:\\Users\\server4\\ai\\v-show-stage2-fast-track\\virtual-tradeshow-commercial-v1\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C011.jpg"
+      "sourcePath": "virtual-tradeshow-commercial-v1\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C011.jpg"
     },
     {
       "index": 11,
@@ -99,12 +99,12 @@
       "fileName": "C012.jpg",
       "byteSize": 371293,
       "sha256": "1c4cb2129bd58b824251ccda52d400b36cc4673af07e53e91acfaba3d18ab5b5",
-      "sourcePath": "C:\\Users\\server4\\ai\\v-show-stage2-fast-track\\virtual-tradeshow-commercial-v1\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C012.jpg"
+      "sourcePath": "virtual-tradeshow-commercial-v1\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C012.jpg"
     }
   ],
   "stitchingExecution": {
     "workerExitCode": 0,
-    "durationMs": 22850,
+    "durationMs": 20005,
     "engine": "OPENCV",
     "engineVersion": "5.0.0",
     "featureEngine": "SIFT",
@@ -121,8 +121,8 @@
     "highRetention": true
   },
   "outputArtifacts": {
-    "nativeFile": "cand-stage2-real-12kf-1790203912294_b9f88c316c20_native.jpg",
-    "nativePath": "C:\\Users\\server4\\ai\\v-show-stage2-fast-track\\scratch\\staging_panorama_1790203912294_b9f88c316c20\\cand-stage2-real-12kf-1790203912294_b9f88c316c20_native.jpg",
+    "nativeFile": "cand-stage2-real-12kf-1790209122181_50b00dbd8435_native.jpg",
+    "nativePath": "scratch\\staging_panorama_1790209122181_50b00dbd8435\\cand-stage2-real-12kf-1790209122181_50b00dbd8435_native.jpg",
     "nativeDimensions": "4442x1113",
     "nativeWidth": 4442,
     "nativeHeight": 1113,
@@ -142,7 +142,7 @@
         "dpr": 3
       },
       "viewerType": "equirectangular_spherical_band",
-      "sourceUrl": "/api/projects/sample-prj/panoramas/cand-stage2-real-12kf-1790203912294_b9f88c316c20_native.jpg",
+      "sourceUrl": "/api/projects/sample-prj/panoramas/cand-stage2-real-12kf-1790209122181_50b00dbd8435_native.jpg",
       "assetSha256": "821e110a91f0286b60866fbab5f2f2a75d14699a0cb5a70dc3931ae9caaffa9b",
       "initialFov": 75,
       "minFov": 45,
@@ -170,7 +170,7 @@
         "dpr": 1
       },
       "viewerType": "equirectangular_spherical_band",
-      "sourceUrl": "/api/projects/sample-prj/panoramas/cand-stage2-real-12kf-1790203912294_b9f88c316c20_native.jpg",
+      "sourceUrl": "/api/projects/sample-prj/panoramas/cand-stage2-real-12kf-1790209122181_50b00dbd8435_native.jpg",
       "assetSha256": "821e110a91f0286b60866fbab5f2f2a75d14699a0cb5a70dc3931ae9caaffa9b",
       "initialFov": 75,
       "minFov": 30,
@@ -191,9 +191,9 @@
     }
   },
   "publishShare": {
-    "tenantOrgId": "org_staging_1790203912294_b9f88c316c20",
-    "tenantProjectId": "prj_staging_1790203912294_b9f88c316c20",
-    "shareUrl": "https://vshow.com/preview/b9082d254e9a7054961ac4e54e64c201",
+    "tenantOrgId": "org_staging_1790209122181_50b00dbd8435",
+    "tenantProjectId": "prj_staging_1790209122181_50b00dbd8435",
+    "shareUrl": "https://vshow.com/preview/ea277a030319fac3c7a439c0cbb95c60",
     "activePanoramaSha256": "821e110a91f0286b60866fbab5f2f2a75d14699a0cb5a70dc3931ae9caaffa9b",
     "tenantIsolationVerified": true
   },

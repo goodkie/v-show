@@ -6518,18 +6518,48 @@ return event;
         };
       }
 
-      // Exact Price ID verification (if present in pending or line items)
-      if (pending.priceId && session.line_items?.data?.[0]?.price?.id) {
-        if (session.line_items.data[0].price.id !== pending.priceId) {
-          eventRecord.status = 'FAILED';
-          eventRecord.failureReason = 'PRICE_ID_MISMATCH';
-          return {
-            success: false,
-            code: 'PRICE_ID_MISMATCH',
-            message: `Price ID mismatch: expected ${pending.priceId}, got ${session.line_items.data[0].price.id}`
-          };
-        }
+      // Exact Line Items and Catalog Price ID verification (mandatory, unconditional)
+      const lineItems = session.line_items?.data;
+      if (!Array.isArray(lineItems) || lineItems.length === 0) {
+        eventRecord.status = 'FAILED';
+        eventRecord.failureReason = 'MISSING_LINE_ITEMS';
+        return {
+          success: false,
+          code: 'MISSING_LINE_ITEMS',
+          message: 'Checkout session line_items are missing or empty.'
+        };
       }
+      const firstItem = lineItems[0];
+      const itemPriceId = firstItem.price?.id;
+      if (!itemPriceId || itemPriceId !== expectedCatalog.priceId) {
+        eventRecord.status = 'FAILED';
+        eventRecord.failureReason = 'PRICE_ID_MISMATCH';
+        return {
+          success: false,
+          code: 'PRICE_ID_MISMATCH',
+          message: `Price ID mismatch: expected ${expectedCatalog.priceId}, got ${itemPriceId || 'MISSING'}`
+        };
+      }
+      if (pending.priceId && itemPriceId !== pending.priceId) {
+        eventRecord.status = 'FAILED';
+        eventRecord.failureReason = 'PENDING_PRICE_ID_MISMATCH';
+        return {
+          success: false,
+          code: 'PENDING_PRICE_ID_MISMATCH',
+          message: `Price ID mismatch with pending checkout: expected ${pending.priceId}, got ${itemPriceId}`
+        };
+      }
+      const itemQuantity = firstItem.quantity;
+      if (typeof itemQuantity === 'number' && itemQuantity !== 1) {
+        eventRecord.status = 'FAILED';
+        eventRecord.failureReason = 'INVALID_QUANTITY';
+        return {
+          success: false,
+          code: 'INVALID_QUANTITY',
+          message: `Invalid line item quantity: expected 1, got ${itemQuantity}`
+        };
+      }
+
 
       // All validations succeeded! Execute atomic business state transition
       // customerId and subscriptionId are already verified from session above
@@ -6645,19 +6675,25 @@ return event;
         db.stripeEvents.push(eventRecord);
       }
 
-      // Authoritative Customer/Subscription Binding
+      // Authoritative Customer/Subscription Binding (Both Customer ID and Subscription ID Mandatory)
       const customerId = subscription.customer;
       const subscriptionId = subscription.id;
+      if (!customerId || !subscriptionId) {
+        eventRecord.status = 'FAILED';
+        eventRecord.failureReason = 'MISSING_CUSTOMER_OR_SUBSCRIPTION_ID';
+        return {
+          success: false,
+          code: 'MISSING_CUSTOMER_OR_SUBSCRIPTION_ID',
+          message: 'Both Stripe customer ID and subscription ID are mandatory.'
+        };
+      }
       db.organizations = db.organizations || [];
 
-      // Authoritative match: org must already have customerId or subscriptionId registered
-      let org = null;
-      if (subscriptionId) {
-        org = db.organizations.find(o => o.subscription?.stripeSubscriptionId === subscriptionId);
-      }
-      if (!org && customerId) {
-        org = db.organizations.find(o => o.subscription?.stripeCustomerId === customerId && (!subscriptionId || !o.subscription?.stripeSubscriptionId || o.subscription?.stripeSubscriptionId === subscriptionId));
-      }
+      // Authoritative match: org must already have BOTH customerId AND subscriptionId registered
+      const org = db.organizations.find(o =>
+        o.subscription?.stripeSubscriptionId === subscriptionId &&
+        o.subscription?.stripeCustomerId === customerId
+      );
 
       if (!org) {
         eventRecord.status = 'FAILED';
@@ -6665,41 +6701,82 @@ return event;
         return {
           success: false,
           code: 'UNBOUND_SUBSCRIPTION',
-          message: 'No organization is bound to this Stripe subscription or customer.'
+          message: 'No organization is bound to both this Stripe customer ID and subscription ID.'
         };
       }
 
-      // Chronological Versioning: Never allow older events to overwrite newer state
+      // Chronological Versioning & Same-Timestamp Conflict Resolution
       const eventTimestamp = event.created ? (event.created * 1000) : now;
-      if (org.subscription?.lastEventTimestamp && eventTimestamp < org.subscription.lastEventTimestamp) {
-        eventRecord.status = 'PROCESSED';
-        eventRecord.processedAt = new Date().toISOString();
-        eventRecord.metadata = { ignoredReason: 'OUT_OF_ORDER_OLDER_EVENT' };
-        return { success: true, outOfOrder: true, duplicate: false, message: 'Event ignored: older than current subscription state.' };
+      if (org.subscription?.lastEventTimestamp) {
+        if (eventTimestamp < org.subscription.lastEventTimestamp) {
+          eventRecord.status = 'PROCESSED';
+          eventRecord.processedAt = new Date().toISOString();
+          eventRecord.metadata = { ignoredReason: 'OUT_OF_ORDER_OLDER_EVENT' };
+          return { success: true, outOfOrder: true, duplicate: false, message: 'Event ignored: older than current subscription state.' };
+        }
+        if (eventTimestamp === org.subscription.lastEventTimestamp) {
+          if (org.subscription.lastEventId === event.id) {
+            return { success: true, duplicate: true, code: 'ALREADY_PROCESSED' };
+          }
+          if (org.subscription.lastEventId && event.id <= org.subscription.lastEventId) {
+            eventRecord.status = 'PROCESSED';
+            eventRecord.processedAt = new Date().toISOString();
+            eventRecord.metadata = { ignoredReason: 'SAME_TIMESTAMP_TIE_BROKEN' };
+            return { success: true, outOfOrder: true, duplicate: false, message: 'Event ignored: same timestamp tie broken deterministically.' };
+          }
+        }
       }
 
-      // Exact Catalog Plan resolution (no guessing via arbitrary amounts)
+      // Mandatory Items & Approved Test Price Catalog check (Zero fallback to unverified params or 'pro')
+      const items = subscription.items?.data;
+      if (!Array.isArray(items) || items.length === 0) {
+        eventRecord.status = 'FAILED';
+        eventRecord.failureReason = 'MISSING_LINE_ITEMS';
+        return {
+          success: false,
+          code: 'MISSING_LINE_ITEMS',
+          message: 'Subscription items are missing or empty.'
+        };
+      }
+      const firstItem = items[0];
+      const itemPriceId = firstItem.price?.id;
       const TEST_PRICE_CATALOG = {
-        'price_test_pro_monthly': 'pro',
-        'price_test_biz_monthly': 'business'
+        [process.env.STRIPE_PRICE_PRO_MONTHLY || 'price_test_pro_monthly']: 'pro',
+        [process.env.STRIPE_PRICE_BUSINESS_MONTHLY || 'price_test_biz_monthly']: 'business'
       };
-      const priceId = subscription.items?.data?.[0]?.price?.id;
-      const lookupKey = subscription.items?.data?.[0]?.price?.lookup_key;
-      let resolvedPlan = TEST_PRICE_CATALOG[priceId] || lookupKey;
-      if (!resolvedPlan && params.plan) resolvedPlan = params.plan;
-      const targetPlan = (resolvedPlan || org.subscription?.plan || 'pro').toLowerCase();
+      const resolvedPlan = TEST_PRICE_CATALOG[itemPriceId];
+      if (!resolvedPlan) {
+        eventRecord.status = 'FAILED';
+        eventRecord.failureReason = 'UNAPPROVED_PRICE_ID';
+        return {
+          success: false,
+          code: 'UNAPPROVED_PRICE_ID',
+          message: `Price ID "${itemPriceId || 'MISSING'}" is not in the approved test price catalog.`
+        };
+      }
+      if (typeof firstItem.quantity === 'number' && firstItem.quantity !== 1) {
+        eventRecord.status = 'FAILED';
+        eventRecord.failureReason = 'INVALID_QUANTITY';
+        return {
+          success: false,
+          code: 'INVALID_QUANTITY',
+          message: `Invalid subscription item quantity: expected 1, got ${firstItem.quantity}`
+        };
+      }
+      const targetPlan = resolvedPlan;
 
       // Apply Subscription update
       org.subscription = {
         ...(org.subscription || {}),
         plan: targetPlan,
         status: subscription.status || org.subscription?.status || 'active',
-        stripeCustomerId: customerId || org.subscription?.stripeCustomerId,
-        stripeSubscriptionId: subscriptionId || org.subscription?.stripeSubscriptionId,
+        stripeCustomerId: customerId,
+        stripeSubscriptionId: subscriptionId,
         currentPeriodStart: subscription.current_period_start ? new Date(subscription.current_period_start * 1000).toISOString() : org.subscription?.currentPeriodStart,
         currentPeriodEnd: subscription.current_period_end ? new Date(subscription.current_period_end * 1000).toISOString() : org.subscription?.currentPeriodEnd,
         cancelAtPeriodEnd: Boolean(subscription.cancel_at_period_end),
         lastEventTimestamp: eventTimestamp,
+        lastEventId: event.id,
         updatedAt: new Date().toISOString()
       };
       org.updatedAt = new Date().toISOString();
@@ -6778,18 +6855,22 @@ return event;
 
       const subscriptionId = subscription.id;
       const customerId = subscription.customer;
+      if (!subscriptionId || !customerId) {
+        eventRecord.status = 'FAILED';
+        eventRecord.failureReason = 'MISSING_CUSTOMER_OR_SUBSCRIPTION_ID';
+        return {
+          success: false,
+          code: 'MISSING_CUSTOMER_OR_SUBSCRIPTION_ID',
+          message: 'Both subscription ID and customer ID are mandatory.'
+        };
+      }
       db.organizations = db.organizations || [];
 
-      let org = null;
-      if (subscriptionId) {
-        org = db.organizations.find(o => o.subscription?.stripeSubscriptionId === subscriptionId);
-      }
-      if (!org && customerId) {
-        org = db.organizations.find(o => o.subscription?.stripeCustomerId === customerId);
-      }
-      if (!org && params.organizationId) {
-        org = db.organizations.find(o => o.id === params.organizationId);
-      }
+      // Authoritative match: both subscriptionId AND customerId must match
+      const org = db.organizations.find(o =>
+        o.subscription?.stripeSubscriptionId === subscriptionId &&
+        o.subscription?.stripeCustomerId === customerId
+      );
 
       if (!org) {
         eventRecord.status = 'FAILED';
@@ -6797,15 +6878,27 @@ return event;
         return {
           success: false,
           code: 'UNBOUND_SUBSCRIPTION',
-          message: 'No organization bound to this subscription.'
+          message: 'No organization bound to both this subscription ID and customer ID.'
         };
       }
 
       const eventTimestamp = event.created ? (event.created * 1000) : now;
-      if (org.subscription?.lastEventTimestamp && eventTimestamp < org.subscription.lastEventTimestamp) {
-        eventRecord.status = 'PROCESSED';
-        eventRecord.processedAt = new Date().toISOString();
-        return { success: true, outOfOrder: true, message: 'Event ignored: older than current state.' };
+      if (org.subscription?.lastEventTimestamp) {
+        if (eventTimestamp < org.subscription.lastEventTimestamp) {
+          eventRecord.status = 'PROCESSED';
+          eventRecord.processedAt = new Date().toISOString();
+          return { success: true, outOfOrder: true, message: 'Event ignored: older than current state.' };
+        }
+        if (eventTimestamp === org.subscription.lastEventTimestamp) {
+          if (org.subscription.lastEventId === event.id) {
+            return { success: true, duplicate: true, code: 'ALREADY_PROCESSED' };
+          }
+          if (org.subscription.lastEventId && event.id <= org.subscription.lastEventId) {
+            eventRecord.status = 'PROCESSED';
+            eventRecord.processedAt = new Date().toISOString();
+            return { success: true, outOfOrder: true, message: 'Event ignored: same timestamp tie broken deterministically.' };
+          }
+        }
       }
 
       org.subscription = {
@@ -6814,6 +6907,7 @@ return event;
         status: 'canceled',
         cancelledAt: new Date().toISOString(),
         lastEventTimestamp: eventTimestamp,
+        lastEventId: event.id,
         updatedAt: new Date().toISOString()
       };
       org.updatedAt = new Date().toISOString();
@@ -6886,18 +6980,22 @@ return event;
 
       const customerId = invoice.customer;
       const subscriptionId = invoice.subscription;
+      if (!customerId || !subscriptionId) {
+        eventRecord.status = 'FAILED';
+        eventRecord.failureReason = 'MISSING_CUSTOMER_OR_SUBSCRIPTION_ID';
+        return {
+          success: false,
+          code: 'MISSING_CUSTOMER_OR_SUBSCRIPTION_ID',
+          message: 'Both customer ID and subscription ID are mandatory on invoice.'
+        };
+      }
       db.organizations = db.organizations || [];
 
-      let org = null;
-      if (subscriptionId) {
-        org = db.organizations.find(o => o.subscription?.stripeSubscriptionId === subscriptionId);
-      }
-      if (!org && customerId) {
-        org = db.organizations.find(o => o.subscription?.stripeCustomerId === customerId);
-      }
-      if (!org && params.organizationId) {
-        org = db.organizations.find(o => o.id === params.organizationId);
-      }
+      // Authoritative match: both subscriptionId AND customerId must match
+      const org = db.organizations.find(o =>
+        o.subscription?.stripeSubscriptionId === subscriptionId &&
+        o.subscription?.stripeCustomerId === customerId
+      );
 
       if (!org) {
         eventRecord.status = 'FAILED';
@@ -6905,15 +7003,27 @@ return event;
         return {
           success: false,
           code: 'UNBOUND_CUSTOMER',
-          message: 'No organization bound to this invoice customer.'
+          message: 'No organization bound to both this invoice customer ID and subscription ID.'
         };
       }
 
       const eventTimestamp = event.created ? (event.created * 1000) : now;
-      if (org.subscription?.lastEventTimestamp && eventTimestamp < org.subscription.lastEventTimestamp) {
-        eventRecord.status = 'PROCESSED';
-        eventRecord.processedAt = new Date().toISOString();
-        return { success: true, outOfOrder: true, message: 'Event ignored: older than current state.' };
+      if (org.subscription?.lastEventTimestamp) {
+        if (eventTimestamp < org.subscription.lastEventTimestamp) {
+          eventRecord.status = 'PROCESSED';
+          eventRecord.processedAt = new Date().toISOString();
+          return { success: true, outOfOrder: true, message: 'Event ignored: older than current state.' };
+        }
+        if (eventTimestamp === org.subscription.lastEventTimestamp) {
+          if (org.subscription.lastEventId === event.id) {
+            return { success: true, duplicate: true, code: 'ALREADY_PROCESSED' };
+          }
+          if (org.subscription.lastEventId && event.id <= org.subscription.lastEventId) {
+            eventRecord.status = 'PROCESSED';
+            eventRecord.processedAt = new Date().toISOString();
+            return { success: true, outOfOrder: true, message: 'Event ignored: same timestamp tie broken deterministically.' };
+          }
+        }
       }
 
       org.subscription = {
@@ -6921,6 +7031,7 @@ return event;
         status: 'past_due',
         pastDueAt: new Date().toISOString(),
         lastEventTimestamp: eventTimestamp,
+        lastEventId: event.id,
         updatedAt: new Date().toISOString()
       };
       org.updatedAt = new Date().toISOString();
@@ -6945,7 +7056,7 @@ return event;
 
       eventRecord.status = 'PROCESSED';
       eventRecord.processedAt = new Date().toISOString();
-      eventRecord.metadata = { invoiceId: invoice.id, customerId };
+      eventRecord.metadata = { invoiceId: invoice.id, customerId, subscriptionId };
 
       if (db.stripeEvents.length > 2000) db.stripeEvents.shift();
 
@@ -6995,49 +7106,84 @@ return event;
 
       const customerId = invoice.customer;
       const subscriptionId = invoice.subscription;
+      if (!customerId || !subscriptionId) {
+        eventRecord.status = 'FAILED';
+        eventRecord.failureReason = 'MISSING_CUSTOMER_OR_SUBSCRIPTION_ID';
+        return {
+          success: false,
+          code: 'MISSING_CUSTOMER_OR_SUBSCRIPTION_ID',
+          message: 'Both customer ID and subscription ID are mandatory on invoice.'
+        };
+      }
       db.organizations = db.organizations || [];
 
-      let org = null;
-      if (subscriptionId) {
-        org = db.organizations.find(o => o.subscription?.stripeSubscriptionId === subscriptionId);
-      }
-      if (!org && customerId) {
-        org = db.organizations.find(o => o.subscription?.stripeCustomerId === customerId);
-      }
-      if (!org && params.organizationId) {
-        org = db.organizations.find(o => o.id === params.organizationId);
+      // Authoritative match: both subscriptionId AND customerId must match
+      const org = db.organizations.find(o =>
+        o.subscription?.stripeSubscriptionId === subscriptionId &&
+        o.subscription?.stripeCustomerId === customerId
+      );
+
+      // Fail-closed on unbound customer/subscription
+      if (!org) {
+        eventRecord.status = 'FAILED';
+        eventRecord.failureReason = 'UNBOUND_CUSTOMER';
+        return {
+          success: false,
+          code: 'UNBOUND_CUSTOMER',
+          message: 'No organization bound to both this invoice customer ID and subscription ID.'
+        };
       }
 
-      if (org) {
-        // If org was past_due, restore to active
-        if (org.subscription?.status === 'past_due') {
-          org.subscription.status = 'active';
-          org.subscription.updatedAt = new Date().toISOString();
-          const orgProjects = (db.projects || []).filter(p => p.organizationId === org.id);
-          for (const prj of orgProjects) {
-            prj.commercialState = org.subscription.plan === 'business' ? 'ACTIVE_BUSINESS' : 'ACTIVE_PRO';
-            prj.updatedAt = new Date().toISOString();
+      const eventTimestamp = event.created ? (event.created * 1000) : now;
+      if (org.subscription?.lastEventTimestamp) {
+        if (eventTimestamp < org.subscription.lastEventTimestamp) {
+          eventRecord.status = 'PROCESSED';
+          eventRecord.processedAt = new Date().toISOString();
+          return { success: true, outOfOrder: true, message: 'Event ignored: older than current state.' };
+        }
+        if (eventTimestamp === org.subscription.lastEventTimestamp) {
+          if (org.subscription.lastEventId === event.id) {
+            return { success: true, duplicate: true, code: 'ALREADY_PROCESSED' };
+          }
+          if (org.subscription.lastEventId && event.id <= org.subscription.lastEventId) {
+            eventRecord.status = 'PROCESSED';
+            eventRecord.processedAt = new Date().toISOString();
+            return { success: true, outOfOrder: true, message: 'Event ignored: same timestamp tie broken deterministically.' };
           }
         }
-
-        db.billingEvents = db.billingEvents || [];
-        db.billingEvents.push({
-          id: `bil-${uuidv4().substring(0, 8)}`,
-          organizationId: org.id,
-          plan: org.subscription?.plan || 'pro',
-          type: 'invoice_paid',
-          stripeCustomerId: customerId,
-          stripeSubscriptionId: subscriptionId,
-          amount: invoice.amount_paid ? invoice.amount_paid / 100 : (org.subscription?.plan === 'business' ? 799 : 299),
-          currency: (invoice.currency || 'USD').toUpperCase(),
-          status: 'paid',
-          createdAt: new Date().toISOString()
-        });
       }
+
+      // If org was past_due, restore to active
+      if (org.subscription?.status === 'past_due') {
+        org.subscription.status = 'active';
+        org.subscription.updatedAt = new Date().toISOString();
+        const orgProjects = (db.projects || []).filter(p => p.organizationId === org.id);
+        for (const prj of orgProjects) {
+          prj.commercialState = org.subscription.plan === 'business' ? 'ACTIVE_BUSINESS' : 'ACTIVE_PRO';
+          prj.updatedAt = new Date().toISOString();
+        }
+      }
+
+      org.subscription.lastEventTimestamp = eventTimestamp;
+      org.subscription.lastEventId = event.id;
+
+      db.billingEvents = db.billingEvents || [];
+      db.billingEvents.push({
+        id: `bil-${uuidv4().substring(0, 8)}`,
+        organizationId: org.id,
+        plan: org.subscription?.plan || 'pro',
+        type: 'invoice_paid',
+        stripeCustomerId: customerId,
+        stripeSubscriptionId: subscriptionId,
+        amount: invoice.amount_paid ? invoice.amount_paid / 100 : (org.subscription?.plan === 'business' ? 799 : 299),
+        currency: (invoice.currency || 'USD').toUpperCase(),
+        status: 'paid',
+        createdAt: new Date().toISOString()
+      });
 
       eventRecord.status = 'PROCESSED';
       eventRecord.processedAt = new Date().toISOString();
-      eventRecord.metadata = { invoiceId: invoice.id, customerId };
+      eventRecord.metadata = { invoiceId: invoice.id, customerId, subscriptionId };
 
       if (db.stripeEvents.length > 2000) db.stripeEvents.shift();
 

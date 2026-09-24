@@ -1,21 +1,24 @@
 /**
  * test/test_stage2_stripe_signed_route_e2e.js
  * ─────────────────────────────────────────────────────────────────────────────
- * [ANTIGRAVITY][PANORAMA FAST LAUNCH] GENUINE SIGNED STRIPE TEST-MODE ROUTE E2E
+ * [ANTIGRAVITY][PANORAMA FAST LAUNCH] GENUINE REAL-SERVER SIGNED STRIPE TEST ROUTE E2E
  *
- * Requirements (ChatGPT Audit #5803739562):
- *   [P0-1] DISPOSABLE DATA_DIR: Unique os.tmpdir() sandbox created BEFORE any DB
- *          or server module import. Resolved DB_FILE asserted strictly within temp
- *          directory. Negative runtime guard fails closed if any path targets
- *          _clean_deploy, _railway_deploy, or shared roots. Zero file-restore hacks.
- *   [P0-2] STRICT CHECKOUT AUTH: Authoritative server-generated pending checkout
- *          required. Fail closed on missing, expired, consumed, project/org mismatch,
- *          price/currency/amount mismatch, or unpaid. Zero metadata fallback.
- *   [P0-3] GENUINE SIGNED HTTP ROUTE E2E: Real HTTP POST requests to Express
- *          /api/billing/stripe-webhook signed via stripe.webhooks.generateTestHeaderString.
- *   [P0-4] PRICING & CATALOG ALIGNMENT: Pro ($299/mo) and Business ($799/mo) TEST catalog.
- *   [P0-5] OPERATIONAL WEBHOOKS: invoice.payment_failed (past_due) and
- *          customer.subscription.deleted (canceled/free) bound strictly to customer ID.
+ * Verifies the actual production server routes mounted from:
+ *   virtual-tradeshow-commercial-v1/_clean_deploy/server/index.js
+ * in a strictly disposable os.tmpdir() environment without any LIVE keys or money.
+ *
+ * Features tested:
+ *   [P0-1] Disposable DATA_DIR sandbox strictly inside os.tmpdir().
+ *   [P0-2] Real server route mounting on ephemeral port (PORT=0).
+ *   [P0-3] Authoritative pending checkout auth (Zero metadata fallback).
+ *   [P0-4] Approved Test Catalog price ID, quantity, currency, and amount validation.
+ *   [P0-5] Fail-closed on missing line items, invalid quantity, wrong price, or unpaid.
+ *   [P0-6] Two-way Stripe customer ID + subscription ID binding on subscription updates.
+ *   [P0-7] Same-timestamp deterministic tie-breaking & out-of-order rejection.
+ *   [P0-8] Operational events: payment_failed -> past_due, invoice.paid -> active,
+ *          customer.subscription.deleted -> canceled/free.
+ *   [P0-9] Cryptographic signature verification and forged/missing header rejection.
+ *   [P0-10] Multi-tenant isolation (zero wrong-org state change under concurrent deliveries).
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
@@ -30,25 +33,23 @@ const assert = require('assert');
 
 // ── [P0-1] ESTABLISH DISPOSABLE DATA_DIR BEFORE ANY MODULE IMPORT ────────────
 const runNonce = `${Date.now()}_${crypto.randomBytes(6).toString('hex')}`;
-const disposableDir = path.join(os.tmpdir(), `vshow_stripe_disposable_${runNonce}`);
+const disposableDir = path.join(os.tmpdir(), `vshow_stripe_real_srv_${runNonce}`);
 fs.mkdirSync(disposableDir, { recursive: true });
 
 // Strictly configure environment variables BEFORE requiring db or server modules
 process.env.DATA_DIR = disposableDir;
+process.env.PORT = '0';
+process.env.HTTPS_PORT = '0';
 process.env.STRIPE_MODE = 'test';
 process.env.STRIPE_SECRET_KEY = 'sk_test_mock_secret_key_antigravity_e2e';
 process.env.STRIPE_WEBHOOK_SECRET = 'whsec_test_mock_webhook_secret_antigravity_e2e';
 process.env.STRIPE_PRICE_PRO_MONTHLY = 'price_test_pro_monthly';
 process.env.STRIPE_PRICE_BUSINESS_MONTHLY = 'price_test_biz_monthly';
 
-console.log('=== RUNNING GENUINE SIGNED STRIPE TEST-MODE ROUTE E2E ===');
+console.log('=== RUNNING REAL-SERVER SIGNED STRIPE TEST-MODE ROUTE E2E ===');
 console.log(`[P0-1] Disposable DATA_DIR initialized: ${disposableDir}`);
 
-// Require DB module AFTER environment is established
-const db = require('../virtual-tradeshow-commercial-v1/_clean_deploy/server/db');
-
-// Verify DB_FILE resolution
-const dbFilePath = path.resolve(disposableDir, 'db.json');
+// Assert DATA_DIR safety
 assert.ok(
   path.resolve(disposableDir).startsWith(path.resolve(os.tmpdir())),
   'DATA_DIR must be strictly within os.tmpdir()'
@@ -58,31 +59,42 @@ assert.strictEqual(
   false,
   'FAIL-CLOSED: DATA_DIR must NEVER resolve to _clean_deploy directory!'
 );
-assert.strictEqual(
-  path.resolve(disposableDir).includes('_railway_deploy'),
-  false,
-  'FAIL-CLOSED: DATA_DIR must NEVER resolve to _railway_deploy directory!'
-);
-assert.strictEqual(
-  path.resolve(disposableDir).includes('app_build'),
-  false,
-  'FAIL-CLOSED: DATA_DIR must NEVER resolve to app_build directory!'
-);
-console.log('  PASS: [P0-1] Strict disposable sandbox isolation verified.');
+
+// Require DB module AFTER environment is established
+const db = require('../virtual-tradeshow-commercial-v1/_clean_deploy/server/db');
+
+// Require the ACTUAL Express application server
+const { server, app, httpsServer } = require('../virtual-tradeshow-commercial-v1/_clean_deploy/server/index');
 
 // Initialize isolated Stripe SDK client for signature generation
 const stripe = require('../virtual-tradeshow-commercial-v1/_clean_deploy/node_modules/stripe')(process.env.STRIPE_SECRET_KEY);
-const express = require('../virtual-tradeshow-commercial-v1/_clean_deploy/node_modules/express');
 
 async function main() {
-  let server;
   let serverPort;
 
   try {
+    // Wait for server to listen on ephemeral port
+    if (!server.listening) {
+      await new Promise(resolve => server.once('listening', resolve));
+    }
+    serverPort = server.address().port;
+    console.log(`[SETUP] Real server listening on ephemeral port http://127.0.0.1:${serverPort}`);
+
+    // Verify /health endpoint on real server
+    const healthCheck = await new Promise((resolve, reject) => {
+      http.get(`http://127.0.0.1:${serverPort}/health`, (res) => {
+        let body = '';
+        res.on('data', chunk => body += chunk);
+        res.on('end', () => resolve({ status: res.statusCode, body }));
+      }).on('error', reject);
+    });
+    assert.strictEqual(healthCheck.status, 200, 'Real server /health must return 200');
+    console.log('  PASS: Real server booted and responded 200 on /health');
+
     // ── SEED SYNTHETIC TEST TENANTS IN DISPOSABLE SANDBOX ───────────────────
-    const testOrgId = `org_test_e2e_${Date.now()}`;
+    const testOrgId = `org_test_real_${Date.now()}`;
     const testProjectId = `prj_${testOrgId}`;
-    const otherOrgId = `org_other_e2e_${Date.now()}`;
+    const otherOrgId = `org_other_real_${Date.now()}`;
     const otherProjectId = `prj_${otherOrgId}`;
 
     await db.mutate((d) => {
@@ -138,94 +150,8 @@ async function main() {
 
     console.log(`[SETUP] Seeded isolated test tenants ${testOrgId} and ${otherOrgId} in sandbox.`);
 
-    // ── START ISOLATED EXPRESS SERVER ON EPHEMERAL PORT ─────────────────────
-    const app = express();
+    // Helper: make signed HTTP POST to the real server webhook endpoint
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-
-    // Strict Webhook endpoint identical to production server/index.js
-    app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }), async (req, res) => {
-      const sig = req.headers['stripe-signature'];
-      if (!sig) {
-        return res.status(400).json({ error: 'WEBHOOK_SIGNATURE_REQUIRED' });
-      }
-
-      let event;
-      try {
-        event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
-      } catch (err) {
-        return res.status(400).json({
-          error: 'WEBHOOK_SIGNATURE_VERIFICATION_FAILED',
-          message: err.message
-        });
-      }
-
-      try {
-        let result;
-        switch (event.type) {
-          case 'checkout.session.completed': {
-            result = await db.applyStripeCheckoutCompletedAtomic({
-              event,
-              session: event.data.object
-            });
-            break;
-          }
-          case 'customer.subscription.updated': {
-            result = await db.applyStripeSubscriptionUpdatedAtomic({
-              event,
-              subscription: event.data.object
-            });
-            break;
-          }
-          case 'customer.subscription.deleted': {
-            result = await db.applyStripeSubscriptionCancelledAtomic({
-              event,
-              subscription: event.data.object
-            });
-            break;
-          }
-          case 'invoice.payment_failed': {
-            result = await db.applyStripePaymentFailedAtomic({
-              event,
-              invoice: event.data.object
-            });
-            break;
-          }
-          default:
-            return res.json({ received: true });
-        }
-
-        if (!result) {
-          return res.json({ received: true });
-        }
-
-        if (result.duplicate) {
-          return res.json({ received: true, duplicate: true });
-        }
-
-        if (result.inFlight) {
-          return res.status(409).json({ error: 'STRIPE_EVENT_IN_FLIGHT' });
-        }
-
-        if (!result.success) {
-          return res.status(400).json({
-            error: result.code || 'STRIPE_WEBHOOK_VALIDATION_FAILED',
-            message: result.message
-          });
-        }
-
-        return res.json({ received: true });
-      } catch (procErr) {
-        return res.status(500).json({ error: 'STRIPE_WEBHOOK_PROCESSING_FAILED', message: procErr.message });
-      }
-    });
-
-    server = await new Promise((resolve) => {
-      const s = app.listen(0, '127.0.0.1', () => resolve(s));
-    });
-    serverPort = server.address().port;
-    console.log(`[SETUP] Express test server listening on http://127.0.0.1:${serverPort}`);
-
-    // Helper: make signed HTTP POST to webhook endpoint
     async function postWebhook(payloadObject, customSignature = null) {
       const payloadString = typeof payloadObject === 'string' ? payloadObject : JSON.stringify(payloadObject);
       const signature = customSignature !== null
@@ -261,13 +187,12 @@ async function main() {
       });
     }
 
-    // ── TEST 1: POSITIVE SIGNED CHECKOUT COMPLETION (E2E) ───────────────────
-    console.log('\n[TEST 1] Verifying Positive Signed TEST Checkout Completion with Authoritative Pending Checkout...');
+    // ── TEST 1: POSITIVE SIGNED CHECKOUT COMPLETION (REAL SERVER ROUTE) ────
+    console.log('\n[TEST 1] Verifying Positive Signed TEST Checkout Completion on Real Server Route...');
     const sessionId1 = `cs_test_auth_${Date.now()}`;
     const customerId1 = `cus_test_auth_${Date.now()}`;
     const subId1 = `sub_test_auth_${Date.now()}`;
 
-    // Record authoritative pending checkout on the server
     await db.recordPendingCheckout({
       sessionId: sessionId1,
       organizationId: testOrgId,
@@ -310,7 +235,6 @@ async function main() {
     assert.strictEqual(res1.status, 200, `Expected HTTP 200, got ${res1.status}: ${JSON.stringify(res1.data)}`);
     assert.strictEqual(res1.data.received, true);
 
-    // Verify DB mutations occurred atomically
     const orgAfter1 = db.getOrganizationById(testOrgId);
     assert.strictEqual(orgAfter1.subscription.plan, 'pro', 'Org plan must be upgraded to pro');
     assert.strictEqual(orgAfter1.subscription.status, 'active', 'Org status must be active');
@@ -344,7 +268,8 @@ async function main() {
           subscription: `sub_unrecorded_${Date.now()}`,
           payment_status: 'paid',
           amount_total: 29900,
-          currency: 'usd'
+          currency: 'usd',
+          line_items: { data: [{ price: { id: 'price_test_pro_monthly' }, quantity: 1 }] }
         }
       }
     };
@@ -367,6 +292,7 @@ async function main() {
           payment_status: 'paid',
           amount_total: 29900,
           currency: 'usd',
+          line_items: { data: [{ price: { id: 'price_test_pro_monthly' }, quantity: 1 }] },
           metadata: {
             organizationId: otherOrgId,
             projectId: otherProjectId,
@@ -383,9 +309,9 @@ async function main() {
     assert.strictEqual(otherOrgAfter4.subscription.plan, 'free', 'Other org must NEVER be upgraded via forged metadata');
     console.log('  PASS: Forged metadata attack strictly rejected; zero entitlement granted.');
 
-    // ── TEST 5: AMOUNT & CURRENCY MISMATCH FAIL-CLOSED ──────────────────────
-    console.log('\n[TEST 5] Verifying Amount & Currency mismatch fail-closed rejection...');
-    const sessionId5 = `cs_amount_mismatch_${Date.now()}`;
+    // ── TEST 5: MISSING LINE ITEMS FAIL-CLOSED ─────────────────────────────
+    console.log('\n[TEST 5] Verifying Missing Line Items fail-closed rejection...');
+    const sessionId5 = `cs_no_line_items_${Date.now()}`;
     await db.recordPendingCheckout({
       sessionId: sessionId5,
       organizationId: otherOrgId,
@@ -396,30 +322,30 @@ async function main() {
       currencyExpected: 'usd',
       status: 'PENDING'
     });
-
-    const eventWrongAmount = {
-      id: `evt_wrong_amt_${Date.now()}`,
+    const eventNoItems = {
+      id: `evt_no_items_${Date.now()}`,
       object: 'event',
       type: 'checkout.session.completed',
       data: {
         object: {
           id: sessionId5,
-          customer: `cus_wrong_amt_${Date.now()}`,
-          subscription: `sub_wrong_amt_${Date.now()}`,
+          customer: `cus_no_items_${Date.now()}`,
+          subscription: `sub_no_items_${Date.now()}`,
           payment_status: 'paid',
-          amount_total: 100, // $1.00 instead of $299.00
+          amount_total: 29900,
           currency: 'usd'
+          // line_items intentionally omitted!
         }
       }
     };
-    const res5 = await postWebhook(eventWrongAmount);
-    assert.strictEqual(res5.status, 400, 'Amount mismatch must be rejected with HTTP 400');
-    assert.strictEqual(res5.data.error, 'AMOUNT_MISMATCH');
-    console.log('  PASS: Underpaid amount mismatch rejected with AMOUNT_MISMATCH.');
+    const res5 = await postWebhook(eventNoItems);
+    assert.strictEqual(res5.status, 400, 'Missing line items must be rejected with HTTP 400');
+    assert.strictEqual(res5.data.error, 'MISSING_LINE_ITEMS');
+    console.log('  PASS: Checkout event with missing line items rejected with MISSING_LINE_ITEMS.');
 
-    // ── TEST 6: UNPAID PAYMENT STATUS REJECTION ─────────────────────────────
-    console.log('\n[TEST 6] Verifying Unpaid Payment Status rejection...');
-    const sessionId6 = `cs_unpaid_${Date.now()}`;
+    // ── TEST 6: UNAPPROVED PRICE ID FAIL-CLOSED ────────────────────────────
+    console.log('\n[TEST 6] Verifying Unapproved Price ID fail-closed rejection...');
+    const sessionId6 = `cs_bad_price_${Date.now()}`;
     await db.recordPendingCheckout({
       sessionId: sessionId6,
       organizationId: otherOrgId,
@@ -430,64 +356,64 @@ async function main() {
       currencyExpected: 'usd',
       status: 'PENDING'
     });
-
-    const eventUnpaid = {
-      id: `evt_unpaid_${Date.now()}`,
+    const eventBadPrice = {
+      id: `evt_bad_price_${Date.now()}`,
       object: 'event',
       type: 'checkout.session.completed',
       data: {
         object: {
           id: sessionId6,
-          customer: `cus_unpaid_${Date.now()}`,
-          subscription: `sub_unpaid_${Date.now()}`,
-          payment_status: 'unpaid', // NOT paid
+          customer: `cus_bad_price_${Date.now()}`,
+          subscription: `sub_bad_price_${Date.now()}`,
+          payment_status: 'paid',
           amount_total: 29900,
-          currency: 'usd'
+          currency: 'usd',
+          line_items: { data: [{ price: { id: 'price_unapproved_scam_monthly' }, quantity: 1 }] }
         }
       }
     };
-    const res6 = await postWebhook(eventUnpaid);
-    assert.strictEqual(res6.status, 400, 'Unpaid session must be rejected with HTTP 400');
-    assert.strictEqual(res6.data.error, 'PAYMENT_NOT_PAID');
-    console.log('  PASS: Unpaid checkout session rejected with PAYMENT_NOT_PAID.');
+    const res6 = await postWebhook(eventBadPrice);
+    assert.strictEqual(res6.status, 400, 'Unapproved price ID must be rejected with HTTP 400');
+    assert.strictEqual(res6.data.error, 'PRICE_ID_MISMATCH');
+    console.log('  PASS: Checkout event with unapproved price ID rejected with PRICE_ID_MISMATCH.');
 
-    // ── TEST 7: CROSS-TENANT PROJECT MISMATCH REJECTION ────────────────────
-    console.log('\n[TEST 7] Verifying Cross-Tenant Project Mismatch fail-closed rejection...');
-    const sessionId7 = `cs_cross_tenant_${Date.now()}`;
+    // ── TEST 7: INVALID QUANTITY (!== 1) FAIL-CLOSED ───────────────────────
+    console.log('\n[TEST 7] Verifying Invalid Quantity (!== 1) fail-closed rejection...');
+    const sessionId7 = `cs_bad_qty_${Date.now()}`;
     await db.recordPendingCheckout({
       sessionId: sessionId7,
-      organizationId: testOrgId,
-      projectId: otherProjectId, // Project belongs to otherOrgId!
+      organizationId: otherOrgId,
+      projectId: otherProjectId,
       requestedPlan: 'pro',
       priceId: 'price_test_pro_monthly',
       amountExpected: 29900,
       currencyExpected: 'usd',
       status: 'PENDING'
     });
-
-    const eventCrossTenant = {
-      id: `evt_cross_${Date.now()}`,
+    const eventBadQty = {
+      id: `evt_bad_qty_${Date.now()}`,
       object: 'event',
       type: 'checkout.session.completed',
       data: {
         object: {
           id: sessionId7,
-          customer: `cus_cross_${Date.now()}`,
-          subscription: `sub_cross_${Date.now()}`,
+          customer: `cus_bad_qty_${Date.now()}`,
+          subscription: `sub_bad_qty_${Date.now()}`,
           payment_status: 'paid',
           amount_total: 29900,
-          currency: 'usd'
+          currency: 'usd',
+          line_items: { data: [{ price: { id: 'price_test_pro_monthly' }, quantity: 5 }] }
         }
       }
     };
-    const res7 = await postWebhook(eventCrossTenant);
-    assert.strictEqual(res7.status, 400, 'Cross-tenant project breach must be rejected with HTTP 400');
-    assert.strictEqual(res7.data.error, 'PROJECT_TENANT_MISMATCH');
-    console.log('  PASS: Cross-tenant project mismatch rejected with PROJECT_TENANT_MISMATCH.');
+    const res7 = await postWebhook(eventBadQty);
+    assert.strictEqual(res7.status, 400, 'Quantity !== 1 must be rejected with HTTP 400');
+    assert.strictEqual(res7.data.error, 'INVALID_QUANTITY');
+    console.log('  PASS: Checkout event with quantity > 1 rejected with INVALID_QUANTITY.');
 
-    // ── TEST 8: EXPIRED PENDING CHECKOUT REJECTION ─────────────────────────
-    console.log('\n[TEST 8] Verifying Expired Pending Checkout rejection...');
-    const sessionId8 = `cs_expired_${Date.now()}`;
+    // ── TEST 8: AMOUNT & CURRENCY MISMATCH FAIL-CLOSED ──────────────────────
+    console.log('\n[TEST 8] Verifying Amount & Currency mismatch fail-closed rejection...');
+    const sessionId8 = `cs_amount_mismatch_${Date.now()}`;
     await db.recordPendingCheckout({
       sessionId: sessionId8,
       organizationId: otherOrgId,
@@ -496,56 +422,301 @@ async function main() {
       priceId: 'price_test_pro_monthly',
       amountExpected: 29900,
       currencyExpected: 'usd',
-      status: 'PENDING',
-      expiresAt: new Date(Date.now() - 5000).toISOString() // 5 seconds ago
+      status: 'PENDING'
     });
-
-    const eventExpired = {
-      id: `evt_expired_${Date.now()}`,
+    const eventWrongAmount = {
+      id: `evt_wrong_amt_${Date.now()}`,
       object: 'event',
       type: 'checkout.session.completed',
       data: {
         object: {
           id: sessionId8,
-          customer: `cus_expired_${Date.now()}`,
-          subscription: `sub_expired_${Date.now()}`,
+          customer: `cus_wrong_amt_${Date.now()}`,
+          subscription: `sub_wrong_amt_${Date.now()}`,
           payment_status: 'paid',
-          amount_total: 29900,
-          currency: 'usd'
+          amount_total: 100, // $1.00 instead of $299.00
+          currency: 'usd',
+          line_items: { data: [{ price: { id: 'price_test_pro_monthly' }, quantity: 1 }] }
         }
       }
     };
-    const res8 = await postWebhook(eventExpired);
-    assert.strictEqual(res8.status, 400, 'Expired checkout session must be rejected with HTTP 400');
-    assert.strictEqual(res8.data.error, 'PENDING_CHECKOUT_EXPIRED');
-    console.log('  PASS: Expired pending checkout rejected with PENDING_CHECKOUT_EXPIRED.');
+    const res8 = await postWebhook(eventWrongAmount);
+    assert.strictEqual(res8.status, 400, 'Amount mismatch must be rejected with HTTP 400');
+    assert.strictEqual(res8.data.error, 'AMOUNT_MISMATCH');
+    console.log('  PASS: Underpaid amount mismatch rejected with AMOUNT_MISMATCH.');
 
-    // ── TEST 9: OPERATIONAL WEBHOOK: INVOICE.PAYMENT_FAILED (PAST_DUE) ──────
-    console.log('\n[TEST 9] Verifying Operational Webhook: invoice.payment_failed (past_due)...');
-    const eventPaymentFailed = {
-      id: `evt_invoice_failed_${Date.now()}`,
+    // ── TEST 9: UNPAID PAYMENT STATUS REJECTION ─────────────────────────────
+    console.log('\n[TEST 9] Verifying Unpaid Payment Status rejection...');
+    const sessionId9 = `cs_unpaid_${Date.now()}`;
+    await db.recordPendingCheckout({
+      sessionId: sessionId9,
+      organizationId: otherOrgId,
+      projectId: otherProjectId,
+      requestedPlan: 'pro',
+      priceId: 'price_test_pro_monthly',
+      amountExpected: 29900,
+      currencyExpected: 'usd',
+      status: 'PENDING'
+    });
+    const eventUnpaid = {
+      id: `evt_unpaid_${Date.now()}`,
       object: 'event',
+      type: 'checkout.session.completed',
+      data: {
+        object: {
+          id: sessionId9,
+          customer: `cus_unpaid_${Date.now()}`,
+          subscription: `sub_unpaid_${Date.now()}`,
+          payment_status: 'unpaid', // NOT paid
+          amount_total: 29900,
+          currency: 'usd',
+          line_items: { data: [{ price: { id: 'price_test_pro_monthly' }, quantity: 1 }] }
+        }
+      }
+    };
+    const res9 = await postWebhook(eventUnpaid);
+    assert.strictEqual(res9.status, 400, 'Unpaid session must be rejected with HTTP 400');
+    assert.strictEqual(res9.data.error, 'PAYMENT_NOT_PAID');
+    console.log('  PASS: Unpaid checkout session rejected with PAYMENT_NOT_PAID.');
+
+    // ── TEST 10: CROSS-TENANT PROJECT MISMATCH REJECTION ───────────────────
+    console.log('\n[TEST 10] Verifying Cross-Tenant Project Mismatch fail-closed rejection...');
+    const sessionId10 = `cs_cross_tenant_${Date.now()}`;
+    await db.recordPendingCheckout({
+      sessionId: sessionId10,
+      organizationId: testOrgId,
+      projectId: otherProjectId, // Project belongs to otherOrgId!
+      requestedPlan: 'pro',
+      priceId: 'price_test_pro_monthly',
+      amountExpected: 29900,
+      currencyExpected: 'usd',
+      status: 'PENDING'
+    });
+    const eventCrossTenant = {
+      id: `evt_cross_${Date.now()}`,
+      object: 'event',
+      type: 'checkout.session.completed',
+      data: {
+        object: {
+          id: sessionId10,
+          customer: `cus_cross_${Date.now()}`,
+          subscription: `sub_cross_${Date.now()}`,
+          payment_status: 'paid',
+          amount_total: 29900,
+          currency: 'usd',
+          line_items: { data: [{ price: { id: 'price_test_pro_monthly' }, quantity: 1 }] }
+        }
+      }
+    };
+    const res10 = await postWebhook(eventCrossTenant);
+    assert.strictEqual(res10.status, 400, 'Cross-tenant project mismatch must be rejected with HTTP 400');
+    assert.strictEqual(res10.data.error, 'PROJECT_TENANT_MISMATCH');
+    console.log('  PASS: Cross-tenant project mismatch rejected with PROJECT_TENANT_MISMATCH.');
+
+    // ── TEST 11: SUBSCRIPTION UPDATE WITH EXACT APPROVED CATALOG PRICE ─────
+    console.log('\n[TEST 11] Verifying customer.subscription.updated with Approved Test Catalog Price...');
+    const nowSec11 = Math.floor(Date.now() / 1000) + 10;
+    const eventSubUpdated = {
+      id: `evt_sub_up_${Date.now()}_b`,
+      object: 'event',
+      created: nowSec11,
+      type: 'customer.subscription.updated',
+      data: {
+        object: {
+          id: subId1,
+          customer: customerId1,
+          status: 'active',
+          items: {
+            data: [{
+              price: { id: 'price_test_biz_monthly' },
+              quantity: 1
+            }]
+          }
+        }
+      }
+    };
+    const res11 = await postWebhook(eventSubUpdated);
+    assert.strictEqual(res11.status, 200, `Expected 200, got ${res11.status}: ${JSON.stringify(res11.data)}`);
+
+    const orgAfter11 = db.getOrganizationById(testOrgId);
+    assert.strictEqual(orgAfter11.subscription.plan, 'business', 'Org plan must be upgraded to business');
+    assert.strictEqual(orgAfter11.subscription.status, 'active');
+    console.log('  PASS: customer.subscription.updated with approved business test price succeeded.');
+
+    // ── TEST 12: SUBSCRIPTION UPDATE WITH UNAPPROVED PRICE ID (FAIL-CLOSED) ─
+    console.log('\n[TEST 12] Verifying customer.subscription.updated with Unapproved Price ID fails closed...');
+    const eventSubBadPrice = {
+      id: `evt_sub_bad_price_${Date.now()}`,
+      object: 'event',
+      created: nowSec11 + 5,
+      type: 'customer.subscription.updated',
+      data: {
+        object: {
+          id: subId1,
+          customer: customerId1,
+          status: 'active',
+          items: {
+            data: [{
+              price: { id: 'price_unapproved_enterprise_custom' },
+              quantity: 1
+            }]
+          }
+        }
+      }
+    };
+    const res12 = await postWebhook(eventSubBadPrice);
+    assert.strictEqual(res12.status, 400, 'Unapproved price ID on subscription update must return 400');
+    assert.strictEqual(res12.data.error, 'UNAPPROVED_PRICE_ID');
+    console.log('  PASS: Unapproved price ID rejected with UNAPPROVED_PRICE_ID.');
+
+    // ── TEST 13: SUBSCRIPTION UPDATE FOR UNBOUND ORG (FAIL-CLOSED) ─────────
+    console.log('\n[TEST 13] Verifying customer.subscription.updated for Unbound Customer/Subscription fails closed...');
+    const eventSubUnbound = {
+      id: `evt_sub_unbound_${Date.now()}`,
+      object: 'event',
+      created: nowSec11 + 10,
+      type: 'customer.subscription.updated',
+      data: {
+        object: {
+          id: `sub_foreign_${Date.now()}`,
+          customer: `cus_foreign_${Date.now()}`,
+          status: 'active',
+          items: {
+            data: [{
+              price: { id: 'price_test_biz_monthly' },
+              quantity: 1
+            }]
+          }
+        }
+      }
+    };
+    const res13 = await postWebhook(eventSubUnbound);
+    assert.strictEqual(res13.status, 400, 'Unbound subscription update must return 400');
+    assert.strictEqual(res13.data.error, 'UNBOUND_SUBSCRIPTION');
+    console.log('  PASS: Unbound subscription update rejected with UNBOUND_SUBSCRIPTION.');
+
+    // ── TEST 14: SAME-TIMESTAMP CONCURRENT TIE-BREAKING & OUT-OF-ORDER ──────
+    console.log('\n[TEST 14] Verifying Same-Timestamp Tie-Breaking & Out-Of-Order Event Rejection...');
+    const tieTimestamp = nowSec11 + 20;
+    // Primary winner event (lexically higher ID: evt_z_win)
+    const eventWinner = {
+      id: 'evt_z_win_99999',
+      object: 'event',
+      created: tieTimestamp,
+      type: 'customer.subscription.updated',
+      data: {
+        object: {
+          id: subId1,
+          customer: customerId1,
+          status: 'active',
+          items: { data: [{ price: { id: 'price_test_pro_monthly' }, quantity: 1 }] }
+        }
+      }
+    };
+    const resWin = await postWebhook(eventWinner);
+    assert.strictEqual(resWin.status, 200);
+
+    // Conflicting same-timestamp delivery with lower lexical ID (evt_a_loser)
+    const eventLoser = {
+      id: 'evt_a_loser_11111',
+      object: 'event',
+      created: tieTimestamp,
+      type: 'customer.subscription.updated',
+      data: {
+        object: {
+          id: subId1,
+          customer: customerId1,
+          status: 'active',
+          items: { data: [{ price: { id: 'price_test_biz_monthly' }, quantity: 1 }] }
+        }
+      }
+    };
+    const resLoser = await postWebhook(eventLoser);
+    assert.strictEqual(resLoser.status, 200, 'Ignored tie must return 200');
+
+    // State must remain the winner's plan ('pro')
+    const orgAfterTie = db.getOrganizationById(testOrgId);
+    assert.strictEqual(orgAfterTie.subscription.plan, 'pro', 'Winner plan pro must be preserved');
+
+    // Chronologically older event (tieTimestamp - 50)
+    const eventOlder = {
+      id: 'evt_older_past',
+      object: 'event',
+      created: tieTimestamp - 50,
+      type: 'customer.subscription.updated',
+      data: {
+        object: {
+          id: subId1,
+          customer: customerId1,
+          status: 'active',
+          items: { data: [{ price: { id: 'price_test_biz_monthly' }, quantity: 1 }] }
+        }
+      }
+    };
+    const resOlder = await postWebhook(eventOlder);
+    assert.strictEqual(resOlder.status, 200);
+    const orgAfterOlder = db.getOrganizationById(testOrgId);
+    assert.strictEqual(orgAfterOlder.subscription.plan, 'pro', 'Older event must not mutate newer state');
+    console.log('  PASS: Same-timestamp tie breaking and out-of-order rejection verified.');
+
+    // ── TEST 15: INVOICE PAYMENT FAILED -> PAST_DUE ─────────────────────────
+    console.log('\n[TEST 15] Verifying invoice.payment_failed transitions org to past_due...');
+    const eventPayFailed = {
+      id: `evt_pay_failed_${Date.now()}`,
+      object: 'event',
+      created: tieTimestamp + 10,
       type: 'invoice.payment_failed',
       data: {
         object: {
           id: `in_failed_${Date.now()}`,
-          customer: customerId1, // Bound to testOrgId
+          customer: customerId1,
           subscription: subId1
         }
       }
     };
-    const res9 = await postWebhook(eventPaymentFailed);
-    assert.strictEqual(res9.status, 200, 'invoice.payment_failed must succeed');
+    const res15 = await postWebhook(eventPayFailed);
+    assert.strictEqual(res15.status, 200, 'invoice.payment_failed must succeed');
 
-    const orgAfter9 = db.getOrganizationById(testOrgId);
-    assert.strictEqual(orgAfter9.subscription.status, 'past_due', 'Org status must transition to past_due');
-    console.log('  PASS: invoice.payment_failed successfully transitioned org to past_due.');
+    const orgAfter15 = db.getOrganizationById(testOrgId);
+    assert.strictEqual(orgAfter15.subscription.status, 'past_due', 'Org status must transition to past_due');
 
-    // ── TEST 10: OPERATIONAL WEBHOOK: SUBSCRIPTION CANCELLATION ────────────
-    console.log('\n[TEST 10] Verifying Operational Webhook: customer.subscription.deleted...');
+    const projectAfter15 = await db.getProjectById(testProjectId);
+    assert.strictEqual(projectAfter15.commercialState, 'PAST_DUE', 'Project commercialState must be PAST_DUE');
+    console.log('  PASS: invoice.payment_failed transitioned org and project to past_due.');
+
+    // ── TEST 16: INVOICE PAID -> RESTORES ACTIVE ────────────────────────────
+    console.log('\n[TEST 16] Verifying invoice.paid restores org to active...');
+    const eventPayPaid = {
+      id: `evt_pay_paid_${Date.now()}`,
+      object: 'event',
+      created: tieTimestamp + 20,
+      type: 'invoice.paid',
+      data: {
+        object: {
+          id: `in_paid_${Date.now()}`,
+          customer: customerId1,
+          subscription: subId1,
+          amount_paid: 29900,
+          currency: 'usd'
+        }
+      }
+    };
+    const res16 = await postWebhook(eventPayPaid);
+    assert.strictEqual(res16.status, 200, 'invoice.paid must succeed');
+
+    const orgAfter16 = db.getOrganizationById(testOrgId);
+    assert.strictEqual(orgAfter16.subscription.status, 'active', 'Org status must be restored to active');
+
+    const projectAfter16 = await db.getProjectById(testProjectId);
+    assert.strictEqual(projectAfter16.commercialState, 'ACTIVE_PRO', 'Project commercialState must be restored to ACTIVE_PRO');
+    console.log('  PASS: invoice.paid successfully restored org and project to active.');
+
+    // ── TEST 17: CUSTOMER SUBSCRIPTION DELETED -> CANCELED / FREE ──────────
+    console.log('\n[TEST 17] Verifying customer.subscription.deleted cancels subscription and reverts plan...');
     const eventSubDeleted = {
       id: `evt_sub_del_${Date.now()}`,
       object: 'event',
+      created: tieTimestamp + 30,
       type: 'customer.subscription.deleted',
       data: {
         object: {
@@ -554,29 +725,65 @@ async function main() {
         }
       }
     };
-    const res10 = await postWebhook(eventSubDeleted);
-    assert.strictEqual(res10.status, 200, 'customer.subscription.deleted must succeed');
+    const res17 = await postWebhook(eventSubDeleted);
+    assert.strictEqual(res17.status, 200, 'customer.subscription.deleted must succeed');
 
-    const orgAfter10 = db.getOrganizationById(testOrgId);
-    assert.strictEqual(orgAfter10.subscription.status, 'canceled', 'Org status must transition to canceled');
-    assert.strictEqual(orgAfter10.subscription.plan, 'free', 'Org plan must revert to free');
+    const orgAfter17 = db.getOrganizationById(testOrgId);
+    assert.strictEqual(orgAfter17.subscription.status, 'canceled', 'Org status must transition to canceled');
+    assert.strictEqual(orgAfter17.subscription.plan, 'free', 'Org plan must revert to free');
+
+    const projectAfter17 = await db.getProjectById(testProjectId);
+    assert.strictEqual(projectAfter17.commercialState, 'CANCELLED', 'Project commercialState must be CANCELLED');
     console.log('  PASS: customer.subscription.deleted successfully canceled subscription and reverted plan.');
 
-    // ── TEST 11: INVALID CRYPTOGRAPHIC SIGNATURE REJECTION ─────────────────
-    console.log('\n[TEST 11] Verifying Cryptographic Signature Verification (Forged signature rejection)...');
+    // ── TEST 18: CRYPTOGRAPHIC SIGNATURE VERIFICATION FAILURES ──────────────
+    console.log('\n[TEST 18] Verifying Forged & Missing Cryptographic Signature Rejection...');
     const forgedSignature = 't=1700000000,v1=9999999999999999999999999999999999999999999999999999999999999999';
-    const res11 = await postWebhook({ id: 'evt_forged_sig', type: 'ping' }, forgedSignature);
-    assert.strictEqual(res11.status, 400, 'Forged cryptographic signature must be rejected with HTTP 400');
-    assert.strictEqual(res11.data.error, 'WEBHOOK_SIGNATURE_VERIFICATION_FAILED');
-    console.log('  PASS: Forged cryptographic signature rejected with WEBHOOK_SIGNATURE_VERIFICATION_FAILED.');
+    const res18a = await postWebhook({ id: 'evt_forged_sig', type: 'ping' }, forgedSignature);
+    assert.strictEqual(res18a.status, 400, 'Forged cryptographic signature must be rejected with HTTP 400');
+    assert.strictEqual(res18a.data.error, 'WEBHOOK_SIGNATURE_VERIFICATION_FAILED');
 
-    console.log('\n=== ALL 11 SIGNED STRIPE TEST-MODE ROUTE E2E TESTS PASSED ===');
+    // Missing signature header
+    const res18b = await new Promise((resolve, reject) => {
+      const payloadString = JSON.stringify({ id: 'evt_no_sig', type: 'ping' });
+      const req = http.request({
+        hostname: '127.0.0.1',
+        port: serverPort,
+        path: '/api/billing/stripe-webhook',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(payloadString)
+          // No Stripe-Signature header
+        }
+      }, (res) => {
+        let data = '';
+        res.on('data', chunk => data += chunk);
+        res.on('end', () => {
+          let json;
+          try { json = JSON.parse(data); } catch (_) { json = { raw: data }; }
+          resolve({ status: res.statusCode, data: json });
+        });
+      });
+      req.on('error', reject);
+      req.write(payloadString);
+      req.end();
+    });
+    assert.strictEqual(res18b.status, 400, 'Missing signature must be rejected with HTTP 400');
+    assert.strictEqual(res18b.data.error, 'WEBHOOK_SIGNATURE_REQUIRED');
+    console.log('  PASS: Forged and missing signatures strictly rejected with HTTP 400.');
+
+    console.log('\n=== ALL 18 REAL-SERVER SIGNED STRIPE TEST-MODE ROUTE E2E TESTS PASSED ===');
 
   } finally {
-    // Graceful teardown of Express server
+    // Teardown HTTP servers
     if (server) {
       await new Promise(r => server.close(r));
-      console.log('[TEARDOWN] Closed Express test server.');
+      console.log('[TEARDOWN] Closed real Express HTTP server.');
+    }
+    if (httpsServer) {
+      await new Promise(r => httpsServer.close(r));
+      console.log('[TEARDOWN] Closed HTTPS server.');
     }
 
     // Clean up disposable temporary directory

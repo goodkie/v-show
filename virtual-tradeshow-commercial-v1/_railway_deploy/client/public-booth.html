@@ -493,11 +493,20 @@
       photoSphere.rotation.y = -0.45;
       scene.add(photoSphere);
 
+      window.scene = scene;
+      window.camera = camera;
+      window.renderer = renderer;
+      window.controls = controls;
+      window.photoMaterial = photoMaterial;
+      window.photoSphere = photoSphere;
+      window.isTextureLoaded = false;
+
       if (photoUrl) {
         new THREE.TextureLoader().load(photoUrl, (tex) => {
           tex.encoding = THREE.sRGBEncoding;
           photoMaterial.map = tex;
           photoMaterial.needsUpdate = true;
+          window.isTextureLoaded = true;
           buildPins();
         });
       } else {
