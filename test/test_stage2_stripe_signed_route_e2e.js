@@ -1069,6 +1069,7 @@ async function main() {
       id: sessionId23,
       customer: cus23,
       subscription: sub23,
+      mode: 'subscription',
       status: 'complete',
       payment_status: 'paid',
       amount_total: 29900,
@@ -1123,6 +1124,7 @@ async function main() {
       id: sessionId24,
       customer: cus24,
       subscription: sub24,
+      mode: 'subscription',
       status: 'complete',
       payment_status: 'paid',
       amount_total: 29900,
@@ -1183,6 +1185,7 @@ async function main() {
       id: sessionId25,
       customer: cus25,
       subscription: sub25,
+      mode: 'subscription',
       payment_status: 'paid',
       status: 'complete',
       amount_total: 29900,
@@ -1300,6 +1303,7 @@ async function main() {
       id: sessionId27,
       customer: cus27,
       subscription: sub27,
+      mode: 'subscription',
       status: 'complete',
       payment_status: 'paid',
       amount_total: 29900,
@@ -1361,6 +1365,7 @@ async function main() {
       id: sessionId28,
       customer: cus28,
       subscription: sub28,
+      mode: 'subscription',
       status: 'complete',
       payment_status: 'paid',
       amount_total: 29900,
@@ -1415,6 +1420,7 @@ async function main() {
       id: sessionId29,
       customer: cus29,
       subscription: sub29,
+      mode: 'subscription',
       status: 'open', // Non-complete status!
       payment_status: 'paid',
       amount_total: 29900,
@@ -1464,6 +1470,7 @@ async function main() {
       id: sessionId30,
       customer: 'cus_provider_real_123',
       subscription: 'sub_provider_real_123',
+      mode: 'subscription',
       status: 'complete',
       payment_status: 'paid',
       amount_total: 29900,
@@ -1515,6 +1522,7 @@ async function main() {
       id: sessionId31,
       customer: cus31,
       subscription: sub31,
+      mode: 'subscription',
       status: 'complete',
       payment_status: 'paid',
       amount_total: 29900,
@@ -1849,7 +1857,8 @@ async function main() {
       organizationId: auditOrgId,
       pilotExpiresAt: new Date(Date.now() + 86400000).toISOString(),
       approvedBy: 'audit_test_owner',
-      createdBy: 'audit_test_owner'
+      createdBy: 'audit_test_owner',
+      isOrgWide: true
     });
     await db.revokePilotGrant(testPilotGrant.grantId, 'audit_revoker');
 
@@ -1864,8 +1873,8 @@ async function main() {
     assert.strictEqual(revokeEntry.actor, 'audit_revoker');
     console.log('  PASS: Immutable grant audit trail records verified on issuance and revocation.');
 
-    // ── TEST 40: DELAYED INVOICE.PAYMENT_FAILED ON ALREADY PAID INVOICE REJECTION ───
-    console.log('\n[TEST 40] Verifying Delayed invoice.payment_failed on Already Paid Invoice Rejection...');
+    // ── TEST 40: DELAYED INVOICE.PAYMENT_FAILED ON ALREADY PAID INVOICE RECONCILIATION ───
+    console.log('\n[TEST 40] Verifying Delayed invoice.payment_failed on Already Paid Invoice Acknowledgment...');
     const invId40 = `in_delayed_fail_${Date.now()}`;
     const subId40 = `sub_delayed_fail_${Date.now()}`;
     const cusId40 = `cus_delayed_fail_${Date.now()}`;
@@ -1892,9 +1901,10 @@ async function main() {
       }
     };
     const res40 = await postWebhook(delayedFailedEvent);
-    assert.strictEqual(res40.status, 400, 'Delayed invoice.payment_failed on paid invoice must be rejected with HTTP 400');
-    assert.strictEqual(res40.data.error, 'STRIPE_INVOICE_ALREADY_PAID');
-    console.log('  PASS: Delayed invoice.payment_failed rejected on already paid invoice (STRIPE_INVOICE_ALREADY_PAID).');
+    assert.strictEqual(res40.status, 200, 'Delayed invoice.payment_failed on paid invoice must return HTTP 200 NOOP');
+    assert.strictEqual(res40.data.status, 'NOOP_STALE_PAYMENT_FAILURE');
+    assert.strictEqual(res40.data.reason, 'INVOICE_ALREADY_PAID');
+    console.log('  PASS: Delayed invoice.payment_failed safely acknowledged as NOOP on already paid invoice.');
 
     // ── TEST 41: STALE CUSTOMER.SUBSCRIPTION.DELETED ON ACTIVE SUBSCRIPTION REJECTION ──
     console.log('\n[TEST 41] Verifying Stale customer.subscription.deleted on Active Subscription Rejection...');
@@ -2046,7 +2056,8 @@ async function main() {
     const orgWideGrant = await db.issuePilotGrant({
       organizationId: testOrgId,
       pilotExpiresAt: new Date(Date.now() + 86400000).toISOString(),
-      approvedBy: 'owner_user'
+      approvedBy: 'owner_user',
+      isOrgWide: true
     });
     assert.strictEqual(orgWideGrant.targetScope, `org:${testOrgId}`);
     console.log('  PASS: Strict grant referential integrity rejects unparented targets and allows org-wide.');
@@ -2058,6 +2069,7 @@ async function main() {
     assert.ok(integrityBefore.count > 0, 'Audit trail must contain entries');
 
     // Simulate tampering with an audit trail entry
+    const originalActor44 = (await db.read()).grantAuditTrail[0].actor;
     await db.mutate(d => {
       if (d.grantAuditTrail && d.grantAuditTrail.length > 0) {
         d.grantAuditTrail[0].actor = 'mallory_forged_actor';
@@ -2069,7 +2081,187 @@ async function main() {
     assert.ok(integrityAfterTamper.error.includes('HASH_TAMPERED'), 'Tamper error must be HASH_TAMPERED');
     console.log('  PASS: SHA-256 hash-chain integrity verification detects tampered entries.');
 
-    console.log('\n=== ALL 44 REAL-SERVER SIGNED STRIPE TEST-MODE ROUTE E2E TESTS PASSED ===');
+    // Restore audit trail integrity so subsequent tests run on valid state
+    await db.mutate(d => {
+      if (d.grantAuditTrail && d.grantAuditTrail.length > 0) {
+        d.grantAuditTrail[0].actor = originalActor44;
+      }
+    });
+
+    // ── TEST 45: DELAYED INVOICE.PAYMENT_FAILED ON ACTIVE NEWER SUBSCRIPTION PERIOD ─
+    console.log('\n[TEST 45] Verifying Delayed invoice.payment_failed for Older Period on Active Subscription...');
+    const invId45 = `in_older_cycle_${Date.now()}`;
+    const subId45 = `sub_active_new_cycle_${Date.now()}`;
+    const cusId45 = `cus_active_new_cycle_${Date.now()}`;
+    const nowSec45 = Math.floor(Date.now() / 1000);
+    // Active subscription in current period
+    authoritativeSubscriptionStore.set(subId45, {
+      id: subId45,
+      customer: cusId45,
+      status: 'active',
+      current_period_start: nowSec45 - 86400, // started 1 day ago
+      current_period_end: nowSec45 + (29 * 86400),
+      latest_invoice: `in_latest_active_${Date.now()}`
+    });
+    // Older invoice from previous cycle
+    authoritativeInvoiceStore.set(invId45, {
+      id: invId45,
+      customer: cusId45,
+      subscription: subId45,
+      status: 'open',
+      paid: false,
+      period_start: nowSec45 - (31 * 86400),
+      period_end: nowSec45 - (2 * 86400) // ended 2 days ago, before current_period_start
+    });
+    const delayedOldCycleEvent = {
+      id: `evt_old_cycle_fail_${Date.now()}`,
+      object: 'event',
+      type: 'invoice.payment_failed',
+      data: {
+        object: {
+          id: invId45,
+          customer: cusId45,
+          subscription: subId45,
+          status: 'open',
+          paid: false
+        }
+      }
+    };
+    const res45 = await postWebhook(delayedOldCycleEvent);
+    assert.strictEqual(res45.status, 200, 'Older cycle payment failure on active subscription must return HTTP 200');
+    assert.strictEqual(res45.data.status, 'NOOP_STALE_PAYMENT_FAILURE');
+    assert.strictEqual(res45.data.reason, 'SUPERSEDED_BY_ACTIVE_PERIOD');
+    console.log('  PASS: Delayed payment failure for older cycle on active subscription safely NOOPed without demotion.');
+
+    // ── TEST 46: CHECKOUT SESSION STRICT NON-CONDITIONAL MODE ENFORCEMENT ─────
+    console.log('\n[TEST 46] Verifying Checkout Session Strict Non-Conditional Mode Enforcement...');
+    const sessId46 = `cs_missing_mode_${Date.now()}`;
+    await db.recordPendingCheckout({
+      sessionId: sessId46,
+      organizationId: otherOrgId,
+      projectId: otherProjectId,
+      requestedPlan: 'pro',
+      priceId: 'price_test_pro_monthly',
+      amountExpected: 29900,
+      currencyExpected: 'usd',
+      status: 'PENDING'
+    });
+    authoritativeSessionStore.set(sessId46, {
+      id: sessId46,
+      customer: 'cus_mode_missing',
+      subscription: 'sub_mode_missing',
+      // mode intentionally omitted / undefined
+      status: 'complete',
+      payment_status: 'paid',
+      amount_total: 29900,
+      currency: 'usd'
+    });
+    authoritativeLineItemsStore.set(sessId46, {
+      object: 'list',
+      data: [{ id: 'li_mode_missing', price: { id: 'price_test_pro_monthly', recurring: { interval: 'month' } }, quantity: 1 }],
+      has_more: false
+    });
+    const eventMissingMode = {
+      id: `evt_missing_mode_${Date.now()}`,
+      object: 'event',
+      type: 'checkout.session.completed',
+      data: {
+        object: {
+          id: sessId46,
+          customer: 'cus_mode_missing',
+          subscription: 'sub_mode_missing',
+          payment_status: 'paid',
+          amount_total: 29900,
+          currency: 'usd'
+        }
+      }
+    };
+    const res46 = await postWebhook(eventMissingMode);
+    assert.strictEqual(res46.status, 400, 'Checkout session with missing mode must be rejected with HTTP 400');
+    assert.strictEqual(res46.data.error, 'STRIPE_INVALID_CHECKOUT_MODE');
+    console.log('  PASS: Missing checkout mode strictly rejected (HTTP 400 STRIPE_INVALID_CHECKOUT_MODE).');
+
+    // ── TEST 47: INVOICE EVENTS MANDATORY SUBSCRIPTION FIELD ENFORCEMENT ─────
+    console.log('\n[TEST 47] Verifying Invoice Events Mandatory Subscription Field Enforcement...');
+    const invId47 = `in_no_sub_${Date.now()}`;
+    const cusId47 = `cus_no_sub_${Date.now()}`;
+    authoritativeInvoiceStore.set(invId47, {
+      id: invId47,
+      customer: cusId47,
+      subscription: 'sub_has_sub_47',
+      status: 'paid',
+      paid: true,
+      amount_paid: 29900,
+      currency: 'usd'
+    });
+    const eventNoSub = {
+      id: `evt_no_sub_${Date.now()}`,
+      object: 'event',
+      type: 'invoice.paid',
+      data: {
+        object: {
+          id: invId47,
+          customer: cusId47,
+          // subscription omitted from event!
+          status: 'paid',
+          paid: true,
+          amount_paid: 29900,
+          currency: 'usd'
+        }
+      }
+    };
+    const res47 = await postWebhook(eventNoSub);
+    assert.strictEqual(res47.status, 400, 'Invoice event missing subscription must be rejected with HTTP 400');
+    assert.strictEqual(res47.data.error, 'STRIPE_EVENT_SUBSCRIPTION_REQUIRED');
+    console.log('  PASS: Invoice event missing subscription strictly rejected (HTTP 400 STRIPE_EVENT_SUBSCRIPTION_REQUIRED).');
+
+    // ── TEST 48: DUAL-TARGET GRANT SCOPE AND ROOT ANCHOR VERIFICATION ───────
+    console.log('\n[TEST 48] Verifying Dual-Target Grant Scope and Detached Root Anchor...');
+    const testAccId48 = `acc_dual_${Date.now()}`;
+    await db.mutate(d => {
+      d.accounts = d.accounts || [];
+      d.accounts.push({
+        id: testAccId48,
+        organizationId: testOrgId,
+        email: 'dual_target@example.com',
+        role: 'member'
+      });
+    });
+    const dualGrant = await db.issuePilotGrant({
+      organizationId: testOrgId,
+      projectId: testProjectId,
+      accountId: testAccId48,
+      pilotExpiresAt: new Date(Date.now() + 86400000).toISOString(),
+      approvedBy: 'owner_dual_test'
+    });
+    assert.strictEqual(dualGrant.targetScope, `project:${testProjectId}+account:${testAccId48}`, 'Dual-target grant must record project+account scope');
+
+    const integrityDual = db.verifyGrantAuditTrailIntegrity();
+    assert.strictEqual(integrityDual.valid, true, 'Audit trail with dual-target grant and root anchor must be valid');
+    console.log('  PASS: Dual-target grant correctly recorded project+account scope and root anchor verified.');
+
+    // ── TEST 49: DETACHED ROOT ANCHOR DETECTS EXTERNAL REWRITE TAMPERING ───
+    console.log('\n[TEST 49] Verifying Detached Root Anchor Detects External Rewrite Tampering...');
+    const rootAnchorPath = path.join(disposableDir, 'grant_audit_root_anchor.json');
+    assert.ok(fs.existsSync(rootAnchorPath), 'grant_audit_root_anchor.json must exist');
+    const rootAnchorOriginal = fs.readFileSync(rootAnchorPath, 'utf8');
+    const parsedAnchor = JSON.parse(rootAnchorOriginal);
+
+    // Tamper with root anchor
+    const tamperedAnchor = { ...parsedAnchor, lastEntryHash: '0000000000000000000000000000000000000000000000000000000000000000' };
+    fs.writeFileSync(rootAnchorPath, JSON.stringify(tamperedAnchor, null, 2), 'utf8');
+
+    const integrityTamperedRoot = db.verifyGrantAuditTrailIntegrity();
+    assert.strictEqual(integrityTamperedRoot.valid, false, 'Audit trail must fail verification if root anchor is tampered');
+    assert.ok(integrityTamperedRoot.error.includes('AUDIT_ROOT_ANCHOR_MISMATCH'), 'Error must report AUDIT_ROOT_ANCHOR_MISMATCH');
+
+    // Restore root anchor
+    fs.writeFileSync(rootAnchorPath, rootAnchorOriginal, 'utf8');
+    const integrityRestoredRoot = db.verifyGrantAuditTrailIntegrity();
+    assert.strictEqual(integrityRestoredRoot.valid, true, 'Audit trail verification must pass after restoring root anchor');
+    console.log('  PASS: Detached root anchor successfully detects external rewrite tampering.');
+
+    console.log('\n=== ALL 49 REAL-SERVER SIGNED STRIPE TEST-MODE ROUTE E2E TESTS PASSED ===');
 
 
   } finally {

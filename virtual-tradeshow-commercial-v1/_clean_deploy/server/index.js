@@ -809,10 +809,10 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
               retryable: false
             });
           }
-          if (authSession.mode && authSession.mode !== 'subscription') {
+          if (!authSession.mode || authSession.mode !== 'subscription') {
             return res.status(400).json({
               error: 'STRIPE_INVALID_CHECKOUT_MODE',
-              message: `Authoritative checkout session mode is '${authSession.mode}', expected 'subscription'.`,
+              message: `Authoritative checkout session mode is '${authSession.mode || 'missing'}', expected 'subscription'.`,
               retryable: false
             });
           }
@@ -1105,8 +1105,12 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
         if (!invObj.customer || typeof invObj.customer !== 'string' || invObj.customer.trim().length === 0) {
           return res.status(400).json({ error: 'STRIPE_EVENT_CUSTOMER_REQUIRED', message: 'Event-embedded customer is required.', retryable: false });
         }
+        if (!invObj.subscription || typeof invObj.subscription !== 'string' || invObj.subscription.trim().length === 0) {
+          return res.status(400).json({ error: 'STRIPE_EVENT_SUBSCRIPTION_REQUIRED', message: 'Event-embedded subscription is required.', retryable: false });
+        }
 
         let authInv;
+        let authSub;
         try {
           authInv = await activeStripe.invoices.retrieve(invObj.id);
           if (!authInv) {
@@ -1133,7 +1137,15 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
             });
           }
 
-          if (invObj.subscription && authInv.subscription && invObj.subscription !== authInv.subscription) {
+          if (!authInv.subscription || typeof authInv.subscription !== 'string' || authInv.subscription.trim().length === 0) {
+            return res.status(400).json({
+              error: 'STRIPE_INVOICE_SUBSCRIPTION_REQUIRED',
+              message: 'Authoritative invoice lacks bound subscription.',
+              retryable: false
+            });
+          }
+
+          if (invObj.subscription !== authInv.subscription) {
             return res.status(400).json({
               error: 'STRIPE_SUBSCRIPTION_MISMATCH',
               message: 'Event-embedded subscription differs from authoritative provider invoice subscription.',
@@ -1141,14 +1153,55 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
             });
           }
 
-          // Authoritative state reconciliation: If authoritative invoice is already paid, reject delayed payment_failed event
+          // Authoritative state reconciliation: If authoritative invoice is already paid, acknowledge stale event as NOOP (zero entitlement mutation)
           if (authInv.status === 'paid' || authInv.paid === true) {
-            console.warn(`[SECURITY][STRIPE_INVOICE_ALREADY_PAID] payment_failed event rejected: authoritative invoice ${authInv.id} is already paid.`);
-            return res.status(400).json({
-              error: 'STRIPE_INVOICE_ALREADY_PAID',
-              message: 'Authoritative invoice is already paid; delayed payment_failed event rejected.',
-              retryable: false
+            console.log(`[STRIPE_RECONCILIATION] Stale payment_failed event ignored: authoritative invoice ${authInv.id} is already paid.`);
+            return res.status(200).json({
+              received: true,
+              status: 'NOOP_STALE_PAYMENT_FAILURE',
+              reason: 'INVOICE_ALREADY_PAID',
+              message: 'Authoritative invoice is already paid on provider; zero entitlement mutation.'
             });
+          }
+
+          // Authoritative subscription lookup for full period reconciliation
+          try {
+            authSub = await activeStripe.subscriptions.retrieve(authInv.subscription);
+          } catch (subFetchErr) {
+            if (isStripeTransientError(subFetchErr)) throw subFetchErr;
+            authSub = null;
+          }
+
+          if (authSub) {
+            if (authSub.customer && authSub.customer !== authInv.customer) {
+              return res.status(400).json({
+                error: 'STRIPE_CUSTOMER_MISMATCH',
+                message: 'Authoritative subscription customer differs from invoice customer.',
+                retryable: false
+              });
+            }
+
+            // Monotonic provider-effective state rules: If subscription is active and this failed invoice is for an older cycle,
+            // or if a newer invoice is active, do not demote active subscription to past_due!
+            const isOlderPeriod = Boolean(authInv.period_end && authSub.current_period_start && (authInv.period_end <= authSub.current_period_start));
+            const isSupersededInvoice = Boolean(authSub.latest_invoice && authSub.latest_invoice !== authInv.id);
+            if (authSub.status === 'active' && (isOlderPeriod || isSupersededInvoice)) {
+              console.log(`[STRIPE_RECONCILIATION] Stale payment_failed event ignored: subscription ${authSub.id} is currently active in period ${authSub.current_period_start}; invoice period_end is ${authInv.period_end}.`);
+              return res.status(200).json({
+                received: true,
+                status: 'NOOP_STALE_PAYMENT_FAILURE',
+                reason: isOlderPeriod ? 'SUPERSEDED_BY_ACTIVE_PERIOD' : 'SUPERSEDED_BY_LATEST_INVOICE',
+                message: 'Failed invoice is for an older billing cycle superseded by active subscription; zero entitlement mutation.'
+              });
+            }
+
+            if (authSub.status === 'canceled') {
+              return res.status(200).json({
+                received: true,
+                status: 'NOOP_SUBSCRIPTION_ALREADY_CANCELED',
+                message: 'Subscription is already canceled on provider; zero entitlement mutation.'
+              });
+            }
           }
         } catch (invErr) {
           console.error('[STRIPE_INVOICE_LOOKUP_FAILED]', invErr?.message || invErr);
@@ -1168,7 +1221,8 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
 
         result = await db.applyStripePaymentFailedAtomic({
           event,
-          invoice: authInv
+          invoice: authInv,
+          subscription: authSub
         });
         break;
       }
@@ -1179,6 +1233,9 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
         }
         if (!invObj.customer || typeof invObj.customer !== 'string' || invObj.customer.trim().length === 0) {
           return res.status(400).json({ error: 'STRIPE_EVENT_CUSTOMER_REQUIRED', message: 'Event-embedded customer is required.', retryable: false });
+        }
+        if (!invObj.subscription || typeof invObj.subscription !== 'string' || invObj.subscription.trim().length === 0) {
+          return res.status(400).json({ error: 'STRIPE_EVENT_SUBSCRIPTION_REQUIRED', message: 'Event-embedded subscription is required.', retryable: false });
         }
 
         let authInv;
@@ -1208,7 +1265,15 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
             });
           }
 
-          if (invObj.subscription && authInv.subscription && invObj.subscription !== authInv.subscription) {
+          if (!authInv.subscription || typeof authInv.subscription !== 'string' || authInv.subscription.trim().length === 0) {
+            return res.status(400).json({
+              error: 'STRIPE_INVOICE_SUBSCRIPTION_REQUIRED',
+              message: 'Authoritative invoice lacks bound subscription.',
+              retryable: false
+            });
+          }
+
+          if (invObj.subscription !== authInv.subscription) {
             return res.status(400).json({
               error: 'STRIPE_SUBSCRIPTION_MISMATCH',
               message: 'Event-embedded subscription differs from authoritative provider invoice subscription.',
@@ -1222,6 +1287,15 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
             return res.status(400).json({
               error: 'STRIPE_INVOICE_NOT_PAID',
               message: `Authoritative invoice is not paid (status='${authInv.status}', paid=${authInv.paid}).`,
+              retryable: false
+            });
+          }
+
+          // Exact Currency alignment check if provided
+          if (invObj.currency && authInv.currency && invObj.currency.toLowerCase() !== authInv.currency.toLowerCase()) {
+            return res.status(400).json({
+              error: 'STRIPE_CURRENCY_MISMATCH',
+              message: 'Event currency differs from authoritative invoice currency.',
               retryable: false
             });
           }
@@ -1316,7 +1390,7 @@ app.use((err, req, res, next) => {
 // ─────────────────────────────────────────────────────────────────────────────
 app.post('/api/admin/pilot-grants', requireAuth, requirePlatformOwner, async (req, res) => {
   try {
-    const { organizationId, projectId, accountId, pilotExpiresAt, notes } = req.body || {};
+    const { organizationId, projectId, accountId, pilotExpiresAt, notes, isOrgWide } = req.body || {};
     if (!organizationId) {
       return res.status(400).json({ error: 'MISSING_ORGANIZATION_ID', message: 'organizationId is required.' });
     }
@@ -1330,7 +1404,8 @@ app.post('/api/admin/pilot-grants', requireAuth, requirePlatformOwner, async (re
       pilotExpiresAt,
       approvedBy: req.user.username || req.user.userId || 'platform_owner',
       notes,
-      createdBy: req.user.userId || req.user.username || 'platform_owner'
+      createdBy: req.user.userId || req.user.username || 'platform_owner',
+      isOrgWide: isOrgWide !== undefined ? Boolean(isOrgWide) : (!projectId && !accountId)
     });
     return res.status(201).json({ success: true, grant });
   } catch (err) {
@@ -1350,7 +1425,7 @@ app.delete('/api/admin/pilot-grants/:grantId', requireAuth, requirePlatformOwner
 
 app.post('/api/admin/legacy-grants', requireAuth, requirePlatformOwner, async (req, res) => {
   try {
-    const { organizationId, accountId, projectId, notes } = req.body || {};
+    const { organizationId, accountId, projectId, notes, isOrgWide } = req.body || {};
     if (!organizationId) {
       return res.status(400).json({ error: 'MISSING_ORGANIZATION_ID', message: 'organizationId is required.' });
     }
@@ -1360,7 +1435,8 @@ app.post('/api/admin/legacy-grants', requireAuth, requirePlatformOwner, async (r
       projectId,
       approvedBy: req.user.username || req.user.userId || 'platform_owner',
       notes,
-      createdBy: req.user.userId || req.user.username || 'platform_owner'
+      createdBy: req.user.userId || req.user.username || 'platform_owner',
+      isOrgWide: isOrgWide !== undefined ? Boolean(isOrgWide) : (!projectId && !accountId)
     });
     return res.status(201).json({ success: true, grant });
   } catch (err) {

@@ -10,6 +10,7 @@ const DB_FILE = path.join(DATA_DIR, 'db.json');
 const TEMP_DB_FILE = path.join(DATA_DIR, 'db.temp.json');
 const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
 const SEED_DIR = path.join(__dirname, '..', 'seed');
+const GRANT_AUDIT_ROOT_FILE = path.join(DATA_DIR, 'grant_audit_root_anchor.json');
 
 // Ensure data, uploads, and seed directories exist
 if (!fs.existsSync(DATA_DIR)) {
@@ -20,6 +21,24 @@ if (!fs.existsSync(UPLOADS_DIR)) {
 }
 if (!fs.existsSync(SEED_DIR)) {
   fs.mkdirSync(SEED_DIR, { recursive: true });
+}
+
+function updateGrantAuditRootAnchor(entry, totalLength) {
+  try {
+    const anchorData = {
+      anchorVersion: 1,
+      lastSequence: entry.sequence,
+      lastEntryHash: entry.entryHash,
+      lastAuditId: entry.auditId,
+      totalEntries: totalLength,
+      updatedAt: entry.timestamp
+    };
+    const tmpPath = GRANT_AUDIT_ROOT_FILE + '.tmp';
+    fs.writeFileSync(tmpPath, JSON.stringify(anchorData, null, 2), 'utf-8');
+    fs.renameSync(tmpPath, GRANT_AUDIT_ROOT_FILE);
+  } catch (err) {
+    console.error('[AUDIT_ROOT_ANCHOR_WRITE_FAILED]', err);
+  }
 }
 
 // Password Policy & Hashing Helpers
@@ -7051,6 +7070,31 @@ return event;
         }
       }
 
+      // Monotonic Provider-Effective State Reconciliation
+      // If authoritative subscription is provided and active on a newer period, or if the failed invoice
+      // is for a prior completed period, do NOT demote the active organization to past_due!
+      if (params.subscription && params.subscription.status === 'active') {
+        const isOlderPeriod = Boolean(invoice.period_end && params.subscription.current_period_start && (invoice.period_end <= params.subscription.current_period_start));
+        const isSuperseded = Boolean(params.subscription.latest_invoice && params.subscription.latest_invoice !== invoice.id);
+        if (isOlderPeriod || isSuperseded) {
+          eventRecord.status = 'PROCESSED';
+          eventRecord.processedAt = new Date().toISOString();
+          eventRecord.metadata = { ignoredReason: 'SUPERSEDED_BY_ACTIVE_PERIOD', invoiceId: invoice.id, subscriptionId };
+          return { success: true, stale: true, message: 'Event ignored: invoice is for an older period superseded by active subscription.' };
+        }
+      }
+
+      // Also verify against existing active DB subscription period if present
+      if (org.subscription?.status === 'active' && org.subscription.currentPeriodStart && invoice.period_end) {
+        const activePeriodStartSec = Math.floor(new Date(org.subscription.currentPeriodStart).getTime() / 1000);
+        if (invoice.period_end <= activePeriodStartSec) {
+          eventRecord.status = 'PROCESSED';
+          eventRecord.processedAt = new Date().toISOString();
+          eventRecord.metadata = { ignoredReason: 'SUPERSEDED_BY_DB_ACTIVE_PERIOD', invoiceId: invoice.id, subscriptionId };
+          return { success: true, stale: true, message: 'Event ignored: invoice period is older than currently active subscription period.' };
+        }
+      }
+
       org.subscription = {
         ...(org.subscription || {}),
         status: 'past_due',
@@ -10540,12 +10584,14 @@ return event;
     return Boolean(grant && hasValidExpiry);
   }
 
-  issuePilotGrant({ organizationId, projectId, accountId, pilotExpiresAt, approvedBy, notes, createdBy }) {
+  issuePilotGrant({ organizationId, projectId, accountId, pilotExpiresAt, approvedBy, notes, createdBy, isOrgWide }) {
     if (!organizationId) throw new Error('MISSING_ORGANIZATION_ID');
     if (!pilotExpiresAt || isNaN(new Date(pilotExpiresAt).getTime()) || Date.now() > new Date(pilotExpiresAt).getTime()) {
       throw new Error('INVALID_PILOT_EXPIRATION');
     }
-    if (!approvedBy || typeof approvedBy !== 'string') throw new Error('MISSING_APPROVER');
+    if (!approvedBy || typeof approvedBy !== 'string' || approvedBy.trim().length < 3) {
+      throw new Error('MISSING_APPROVER');
+    }
 
     return this.mutate((d) => {
       // Referential Integrity: validate organization exists
@@ -10572,12 +10618,26 @@ return event;
           throw new Error('REFERENTIAL_INTEGRITY_VIOLATION: Account not found');
         }
         if (!acc.organizationId || acc.organizationId !== organizationId) {
-          throw new Error('REFERENTIAL_INTEGRITY_VIOLATION: Account does not belong to specified organization');
+          throw new Error('REFERENTIAL_INTEGRITY_VIOLATION: Account belongs to a different organization');
         }
       }
 
+      // Precise targetScope binding: distinguish project+account, single targets, and explicitly approved org-wide grants
+      let targetScope;
+      if (projectId && accountId) {
+        targetScope = `project:${projectId}+account:${accountId}`;
+      } else if (projectId) {
+        targetScope = `project:${projectId}`;
+      } else if (accountId) {
+        targetScope = `account:${accountId}`;
+      } else {
+        if (isOrgWide !== true && (!notes || !notes.includes('ORG_WIDE_APPROVED'))) {
+          throw new Error('REFERENTIAL_INTEGRITY_VIOLATION: Org-wide grant requires explicit isOrgWide approval flag');
+        }
+        targetScope = `org:${organizationId}`;
+      }
+
       const grantId = `grant_pilot_${crypto.randomBytes(8).toString('hex')}`;
-      const targetScope = projectId ? `project:${projectId}` : (accountId ? `account:${accountId}` : `org:${organizationId}`);
       const grant = {
         grantId,
         organizationId,
@@ -10619,12 +10679,16 @@ return event;
       auditPayload.entryHash = crypto.createHash('sha256').update(JSON.stringify(auditPayload)).digest('hex');
       d.grantAuditTrail.push(auditPayload);
 
+      // Sync detached external root anchor
+      updateGrantAuditRootAnchor(auditPayload, d.grantAuditTrail.length);
+
       return grant;
     });
   }
 
   revokePilotGrant(grantId, revokedBy) {
     if (!grantId) throw new Error('MISSING_GRANT_ID');
+    const cleanRevoker = (revokedBy && typeof revokedBy === 'string' && revokedBy.trim().length >= 3) ? revokedBy : 'platform_owner';
     return this.mutate((d) => {
       d.pilotGrants = d.pilotGrants || [];
       const g = d.pilotGrants.find(item => (item.grantId === grantId || item.pilotGrantId === grantId));
@@ -10633,13 +10697,24 @@ return event;
       g.status = 'revoked';
       g.isRevoked = true;
       g.revokedAt = new Date().toISOString();
-      g.revokedBy = revokedBy || 'platform_owner';
+      g.revokedBy = cleanRevoker;
+
+      // Precise targetScope binding
+      let targetScope;
+      if (g.projectId && g.accountId) {
+        targetScope = `project:${g.projectId}+account:${g.accountId}`;
+      } else if (g.projectId) {
+        targetScope = `project:${g.projectId}`;
+      } else if (g.accountId) {
+        targetScope = `account:${g.accountId}`;
+      } else {
+        targetScope = `org:${g.organizationId}`;
+      }
 
       // Tamper-Evident Hash-Chained Grant Audit Trail
       d.grantAuditTrail = d.grantAuditTrail || [];
       const prevEntry = d.grantAuditTrail.length > 0 ? d.grantAuditTrail[d.grantAuditTrail.length - 1] : null;
       const previousHash = prevEntry ? (prevEntry.entryHash || 'GENESIS') : 'GENESIS';
-      const targetScope = g.projectId ? `project:${g.projectId}` : (g.accountId ? `account:${g.accountId}` : `org:${g.organizationId}`);
       const auditPayload = {
         auditId: `g_audit_${crypto.randomBytes(8).toString('hex')}`,
         sequence: d.grantAuditTrail.length,
@@ -10650,7 +10725,7 @@ return event;
         projectId: g.projectId || null,
         accountId: g.accountId || null,
         targetScope,
-        actor: revokedBy || 'platform_owner',
+        actor: cleanRevoker,
         before: beforeState,
         after: { status: g.status, isRevoked: g.isRevoked, revokedAt: g.revokedAt, revokedBy: g.revokedBy },
         timestamp: new Date().toISOString(),
@@ -10659,13 +10734,18 @@ return event;
       auditPayload.entryHash = crypto.createHash('sha256').update(JSON.stringify(auditPayload)).digest('hex');
       d.grantAuditTrail.push(auditPayload);
 
+      // Sync detached external root anchor
+      updateGrantAuditRootAnchor(auditPayload, d.grantAuditTrail.length);
+
       return g;
     });
   }
 
-  issueLegacyGrant({ organizationId, accountId, projectId, approvedBy, notes, createdBy }) {
+  issueLegacyGrant({ organizationId, accountId, projectId, approvedBy, notes, createdBy, isOrgWide }) {
     if (!organizationId) throw new Error('MISSING_ORGANIZATION_ID');
-    if (!approvedBy || typeof approvedBy !== 'string') throw new Error('MISSING_APPROVER');
+    if (!approvedBy || typeof approvedBy !== 'string' || approvedBy.trim().length < 3) {
+      throw new Error('MISSING_APPROVER');
+    }
 
     return this.mutate((d) => {
       // Referential Integrity: validate organization exists
@@ -10696,8 +10776,22 @@ return event;
         }
       }
 
+      // Precise targetScope binding: distinguish project+account, single targets, and explicitly approved org-wide grants
+      let targetScope;
+      if (projectId && accountId) {
+        targetScope = `project:${projectId}+account:${accountId}`;
+      } else if (projectId) {
+        targetScope = `project:${projectId}`;
+      } else if (accountId) {
+        targetScope = `account:${accountId}`;
+      } else {
+        if (isOrgWide !== true && (!notes || !notes.includes('ORG_WIDE_APPROVED'))) {
+          throw new Error('REFERENTIAL_INTEGRITY_VIOLATION: Org-wide grant requires explicit isOrgWide approval flag');
+        }
+        targetScope = `org:${organizationId}`;
+      }
+
       const grantId = `grant_leg_${crypto.randomBytes(8).toString('hex')}`;
-      const targetScope = projectId ? `project:${projectId}` : (accountId ? `account:${accountId}` : `org:${organizationId}`);
       const grant = {
         grantId,
         organizationId,
@@ -10705,11 +10799,11 @@ return event;
         projectId: projectId || undefined,
         targetScope,
         approvedByOwner: true,
-        approvedBy,
+        approvedBy: approvedBy.trim(),
         status: 'active',
         notes: notes || undefined,
         createdAt: new Date().toISOString(),
-        createdBy: createdBy || approvedBy
+        createdBy: createdBy || approvedBy.trim()
       };
 
       d.legacyGrants = d.legacyGrants || [];
@@ -10729,7 +10823,7 @@ return event;
         projectId: projectId || null,
         accountId: accountId || null,
         targetScope,
-        actor: createdBy || approvedBy,
+        actor: createdBy || approvedBy.trim(),
         before: null,
         after: { status: grant.status, approvedBy: grant.approvedBy },
         timestamp: new Date().toISOString(),
@@ -10738,12 +10832,19 @@ return event;
       auditPayload.entryHash = crypto.createHash('sha256').update(JSON.stringify(auditPayload)).digest('hex');
       d.grantAuditTrail.push(auditPayload);
 
+      // Sync detached external root anchor
+      updateGrantAuditRootAnchor(auditPayload, d.grantAuditTrail.length);
+
       return grant;
     });
   }
 
   revokeLegacyGrant(grantId, revokedBy) {
     if (!grantId) throw new Error('MISSING_GRANT_ID');
+    const cleanRevoker = (typeof revokedBy === 'string' && revokedBy.trim().length >= 3)
+      ? revokedBy.trim()
+      : 'platform_owner';
+
     return this.mutate((d) => {
       d.legacyGrants = d.legacyGrants || [];
       const g = d.legacyGrants.find(item => (item.grantId === grantId || item.legacyGrantId === grantId));
@@ -10752,13 +10853,24 @@ return event;
       g.status = 'revoked';
       g.isRevoked = true;
       g.revokedAt = new Date().toISOString();
-      g.revokedBy = revokedBy || 'platform_owner';
+      g.revokedBy = cleanRevoker;
+
+      // Precise targetScope binding
+      let targetScope;
+      if (g.projectId && g.accountId) {
+        targetScope = `project:${g.projectId}+account:${g.accountId}`;
+      } else if (g.projectId) {
+        targetScope = `project:${g.projectId}`;
+      } else if (g.accountId) {
+        targetScope = `account:${g.accountId}`;
+      } else {
+        targetScope = `org:${g.organizationId}`;
+      }
 
       // Tamper-Evident Hash-Chained Grant Audit Trail
       d.grantAuditTrail = d.grantAuditTrail || [];
       const prevEntry = d.grantAuditTrail.length > 0 ? d.grantAuditTrail[d.grantAuditTrail.length - 1] : null;
       const previousHash = prevEntry ? (prevEntry.entryHash || 'GENESIS') : 'GENESIS';
-      const targetScope = g.projectId ? `project:${g.projectId}` : (g.accountId ? `account:${g.accountId}` : `org:${g.organizationId}`);
       const auditPayload = {
         auditId: `g_audit_${crypto.randomBytes(8).toString('hex')}`,
         sequence: d.grantAuditTrail.length,
@@ -10769,7 +10881,7 @@ return event;
         projectId: g.projectId || null,
         accountId: g.accountId || null,
         targetScope,
-        actor: revokedBy || 'platform_owner',
+        actor: cleanRevoker,
         before: beforeState,
         after: { status: g.status, isRevoked: g.isRevoked, revokedAt: g.revokedAt, revokedBy: g.revokedBy },
         timestamp: new Date().toISOString(),
@@ -10777,6 +10889,9 @@ return event;
       };
       auditPayload.entryHash = crypto.createHash('sha256').update(JSON.stringify(auditPayload)).digest('hex');
       d.grantAuditTrail.push(auditPayload);
+
+      // Sync detached external root anchor
+      updateGrantAuditRootAnchor(auditPayload, d.grantAuditTrail.length);
 
       return g;
     });
@@ -10794,6 +10909,21 @@ return event;
       if (entry.previousHash !== prevHash) {
         return { valid: false, error: `PREVIOUS_HASH_MISMATCH at index ${i}` };
       }
+      // Target scope consistency verification
+      let expectedScope;
+      if (entry.projectId && entry.accountId) {
+        expectedScope = `project:${entry.projectId}+account:${entry.accountId}`;
+      } else if (entry.projectId) {
+        expectedScope = `project:${entry.projectId}`;
+      } else if (entry.accountId) {
+        expectedScope = `account:${entry.accountId}`;
+      } else {
+        expectedScope = `org:${entry.organizationId}`;
+      }
+      if (entry.targetScope !== expectedScope) {
+        return { valid: false, error: `TARGET_SCOPE_MISMATCH at index ${i}: expected ${expectedScope}, got ${entry.targetScope}` };
+      }
+
       const { entryHash, ...payload } = entry;
       const calculatedHash = crypto.createHash('sha256').update(JSON.stringify(payload)).digest('hex');
       if (calculatedHash !== entryHash) {
@@ -10801,6 +10931,31 @@ return event;
       }
       prevHash = entryHash;
     }
+
+    // Detached external root anchor verification
+    if (fs.existsSync(GRANT_AUDIT_ROOT_FILE)) {
+      try {
+        const anchor = JSON.parse(fs.readFileSync(GRANT_AUDIT_ROOT_FILE, 'utf8'));
+        if (trail.length === 0) {
+          if (anchor.totalEntries && anchor.totalEntries !== 0) {
+            return { valid: false, error: 'AUDIT_ROOT_ANCHOR_MISMATCH: Trail empty but root anchor non-empty' };
+          }
+        } else {
+          const tip = trail[trail.length - 1];
+          const anchorSeq = anchor.lastSequence !== undefined ? anchor.lastSequence : anchor.sequence;
+          const anchorHash = anchor.lastEntryHash !== undefined ? anchor.lastEntryHash : anchor.tipHash;
+          if (anchorSeq !== tip.sequence || anchorHash !== tip.entryHash || anchor.totalEntries !== trail.length) {
+            return {
+              valid: false,
+              error: `AUDIT_ROOT_ANCHOR_MISMATCH: Root anchor tip does not match audit trail (anchor seq: ${anchorSeq}, trail seq: ${tip.sequence}; anchor entries: ${anchor.totalEntries}, trail count: ${trail.length})`
+            };
+          }
+        }
+      } catch (err) {
+        return { valid: false, error: `AUDIT_ROOT_ANCHOR_READ_ERROR: ${err.message}` };
+      }
+    }
+
     return { valid: true, count: trail.length };
   }
 
