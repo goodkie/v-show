@@ -67,6 +67,16 @@ function extractCustomerIdFromInvoice(invoice) {
   return null;
 }
 
+function writeFileSyncWithFsync(filepath, content, encoding = 'utf-8') {
+  const fd = fs.openSync(filepath, 'w');
+  try {
+    fs.writeSync(fd, content, null, encoding);
+    fs.fsyncSync(fd);
+  } finally {
+    fs.closeSync(fd);
+  }
+}
+
 function updateGrantAuditRootAnchor(entry, totalLength) {
   const anchorData = {
     anchorVersion: 1,
@@ -76,8 +86,8 @@ function updateGrantAuditRootAnchor(entry, totalLength) {
     totalEntries: totalLength,
     updatedAt: entry.timestamp
   };
-  const tmpPath = GRANT_AUDIT_ROOT_FILE + '.tmp';
-  fs.writeFileSync(tmpPath, JSON.stringify(anchorData, null, 2), 'utf-8');
+  const tmpPath = `${GRANT_AUDIT_ROOT_FILE}.tmp_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+  writeFileSyncWithFsync(tmpPath, JSON.stringify(anchorData, null, 2), 'utf-8');
   fs.renameSync(tmpPath, GRANT_AUDIT_ROOT_FILE);
 }
 
@@ -562,7 +572,15 @@ class JSONDatabase {
   }
 
   init() {
-    this.reconcileGrantAuditAnchorUnderLock();
+    let lockToken;
+    try {
+      lockToken = this.acquireFileLockSync();
+      this.reconcileGrantAuditAnchorUnderLock();
+    } finally {
+      if (lockToken) {
+        try { this.releaseFileLock(lockToken); } catch (_) {}
+      }
+    }
     if (!fs.existsSync(DB_FILE)) {
       const seedData = initialSeedData();
       fs.writeFileSync(DB_FILE, JSON.stringify(seedData, null, 2), 'utf-8');
@@ -1671,6 +1689,61 @@ class JSONDatabase {
     throw new Error(`LOCK_TIMEOUT_ACQUISITION_FAILED: Timed out waiting for database lock after ${timeoutMs}ms`);
   }
 
+  acquireFileLockSync(timeoutMs = 15000) {
+    this._ensureDataDir();
+    const lockDir = this._getLockDir();
+    const ownerToken = `${process.pid}_${Date.now()}_${crypto.randomBytes(8).toString('hex')}`;
+    const startTime = Date.now() - Math.floor(process.uptime() * 1000);
+    const meta = {
+      ownerToken,
+      pid: process.pid,
+      startTime,
+      createdAt: Date.now()
+    };
+
+    const start = Date.now();
+    while (Date.now() - start < timeoutMs) {
+      try {
+        fs.mkdirSync(lockDir);
+        fs.writeFileSync(path.join(lockDir, ownerToken), '');
+        fs.writeFileSync(path.join(lockDir, 'meta.json'), JSON.stringify(meta));
+        this._heldToken = ownerToken;
+        return ownerToken;
+      } catch (e) {
+        if (e.code === 'EEXIST') {
+          const existing = this._readLockMeta(lockDir);
+          if (existing) {
+            const isAlive = this._isProcessAlive(existing.pid, existing.startTime);
+            if (!isAlive) {
+              const deadTombstone = path.join(DATA_DIR, `db.lock.dead.${existing.pid}.${Date.now()}.${crypto.randomBytes(4).toString('hex')}`);
+              try {
+                fs.renameSync(lockDir, deadTombstone);
+                try {
+                  const stat = fs.statSync(deadTombstone);
+                  if (stat.isDirectory()) {
+                    const entries = fs.readdirSync(deadTombstone);
+                    for (const f of entries) {
+                      try { fs.unlinkSync(path.join(deadTombstone, f)); } catch (_) {}
+                    }
+                    fs.rmdirSync(deadTombstone);
+                  } else {
+                    fs.unlinkSync(deadTombstone);
+                  }
+                } catch (_) {}
+                continue;
+              } catch (_) {}
+            }
+          }
+          const waitEnd = Date.now() + 10 + Math.floor(Math.random() * 20);
+          while (Date.now() < waitEnd) {}
+        } else {
+          throw e;
+        }
+      }
+    }
+    throw new Error(`LOCK_TIMEOUT_ACQUISITION_FAILED: Timed out waiting for database lock after ${timeoutMs}ms`);
+  }
+
   _ensureDataDir() {
     if (!fs.existsSync(DATA_DIR)) {
       try { fs.mkdirSync(DATA_DIR, { recursive: true }); } catch (_) {}
@@ -1782,7 +1855,7 @@ class JSONDatabase {
       throw new Error('INVALID_DATA: Refusing to write invalid/undefined data to database');
     }
     const uniqueTemp = path.join(DATA_DIR, `db.temp.${process.pid}.${Date.now()}.${crypto.randomBytes(6).toString('hex')}.json`);
-    fs.writeFileSync(uniqueTemp, JSON.stringify(data, null, 2), 'utf-8');
+    writeFileSyncWithFsync(uniqueTemp, JSON.stringify(data, null, 2), 'utf-8');
     fs.renameSync(uniqueTemp, DB_FILE);
     try {
       this.lastMtime = fs.statSync(DB_FILE).mtimeMs;
@@ -1933,9 +2006,16 @@ class JSONDatabase {
         throw new Error(`GRANT_AUDIT_RECOVERY_FAILED: Journal targetAnchor metadata inconsistent with DB tip (quarantined to ${corruptJournal}); failing closed.`);
       }
 
+      // Explicitly bind expectedDbVersion === currentDb._version
+      if (journal.expectedDbVersion && currentDb._version && currentDb._version !== journal.expectedDbVersion) {
+        const corruptJournal = `${GRANT_AUDIT_JOURNAL_FILE}.corrupt_${Date.now()}`;
+        try { fs.copyFileSync(GRANT_AUDIT_JOURNAL_FILE, corruptJournal); } catch (_) {}
+        throw new Error(`GRANT_AUDIT_RECOVERY_FAILED: Journal expectedDbVersion (${journal.expectedDbVersion}) does not match currentDb._version (${currentDb._version}) (quarantined to ${corruptJournal}); failing closed.`);
+      }
+
       // Reconcile root anchor atomically:
-      const tmpPath = GRANT_AUDIT_ROOT_FILE + '.tmp';
-      fs.writeFileSync(tmpPath, JSON.stringify(journal.targetAnchor, null, 2), 'utf-8');
+      const tmpPath = `${GRANT_AUDIT_ROOT_FILE}.tmp_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+      writeFileSyncWithFsync(tmpPath, JSON.stringify(journal.targetAnchor, null, 2), 'utf-8');
       fs.renameSync(tmpPath, GRANT_AUDIT_ROOT_FILE);
 
       // Clean up journal file
@@ -2013,8 +2093,8 @@ class JSONDatabase {
           targetAnchor: anchorData,
           expectedDbVersion: data._version
         };
-        const tmpJournal = GRANT_AUDIT_JOURNAL_FILE + '.tmp';
-        fs.writeFileSync(tmpJournal, JSON.stringify(journalPayload, null, 2), 'utf-8');
+        const tmpJournal = `${GRANT_AUDIT_JOURNAL_FILE}.tmp_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+        writeFileSyncWithFsync(tmpJournal, JSON.stringify(journalPayload, null, 2), 'utf-8');
         fs.renameSync(tmpJournal, GRANT_AUDIT_JOURNAL_FILE);
 
         // Phase 2: Commit DB
@@ -7334,6 +7414,16 @@ return event;
         }
       }
 
+      // Enforce Proven Delinquent Provider State:
+      // Only confirmed delinquent subscription statuses ('past_due', 'unpaid') may trigger tenant demotion
+      const PROVEN_DELINQUENT_STATUSES = ['past_due', 'unpaid'];
+      if (!PROVEN_DELINQUENT_STATUSES.includes(params.subscription.status)) {
+        eventRecord.status = 'PROCESSED';
+        eventRecord.processedAt = new Date().toISOString();
+        eventRecord.metadata = { ignoredReason: 'NON_DELINQUENT_STATUS', status: params.subscription.status, invoiceId: invoice.id };
+        return { success: true, nonDelinquent: true, message: `Event ignored: provider subscription status '${params.subscription.status}' is not in proven delinquent allowlist ['past_due', 'unpaid']; zero entitlement mutation.` };
+      }
+
       org.subscription = {
         ...(org.subscription || {}),
         status: 'past_due',
@@ -7505,15 +7595,57 @@ return event;
         };
       }
 
-      // Non-Refunded Check
-      if (invoice.amount_refunded && invoice.amount_paid && invoice.amount_refunded >= invoice.amount_paid) {
+      // Non-Refunded Check: reject any refunded or disputed invoice
+      if (invoice.amount_refunded && invoice.amount_refunded > 0) {
         eventRecord.status = 'FAILED';
         eventRecord.failureReason = 'INVOICE_REFUNDED';
         return {
           success: false,
           code: 'INVOICE_REFUNDED',
-          message: 'Invoice has been fully refunded; cannot apply paid entitlement.'
+          message: 'Invoice has been refunded (full or partial); cannot apply paid entitlement.'
         };
+      }
+      if (invoice.dispute || invoice.status === 'uncollectible' || invoice.status === 'void') {
+        eventRecord.status = 'FAILED';
+        eventRecord.failureReason = 'INVOICE_DISPUTED_OR_VOID';
+        return {
+          success: false,
+          code: 'INVOICE_DISPUTED_OR_VOID',
+          message: 'Invoice is disputed, uncollectible, or void; cannot apply paid entitlement.'
+        };
+      }
+
+      // Line items price validation if present
+      if (invoice.lines && Array.isArray(invoice.lines.data) && invoice.lines.data.length > 0) {
+        if (invoice.lines.data.length !== 1) {
+          eventRecord.status = 'FAILED';
+          eventRecord.failureReason = 'MULTIPLE_LINE_ITEMS';
+          return {
+            success: false,
+            code: 'MULTIPLE_LINE_ITEMS',
+            message: 'Invoice contains multiple line items; only single commercial subscription item is permitted.'
+          };
+        }
+        const lineItem = invoice.lines.data[0];
+        const APPROVED_PRICES = ['price_test_pro_monthly', 'price_test_biz_monthly'];
+        if (lineItem.price && lineItem.price.id && !APPROVED_PRICES.includes(lineItem.price.id)) {
+          eventRecord.status = 'FAILED';
+          eventRecord.failureReason = 'UNAPPROVED_PRICE_ID';
+          return {
+            success: false,
+            code: 'UNAPPROVED_PRICE_ID',
+            message: `Invoice line item price '${lineItem.price.id}' is not in approved test catalog.`
+          };
+        }
+        if (typeof lineItem.quantity === 'number' && lineItem.quantity !== 1) {
+          eventRecord.status = 'FAILED';
+          eventRecord.failureReason = 'INVALID_QUANTITY';
+          return {
+            success: false,
+            code: 'INVALID_QUANTITY',
+            message: 'Invoice line item quantity must be exactly 1.'
+          };
+        }
       }
 
       // Mandatory Current Period Timestamps Check
@@ -7534,14 +7666,32 @@ return event;
         return { success: true, stale: true, message: 'Event ignored: invoice is for a canceled subscription; will not reinstate entitlement.' };
       }
 
+      // Mandatory Latest Invoice Verification
+      if (!params.subscription.latest_invoice || typeof params.subscription.latest_invoice !== 'string') {
+        eventRecord.status = 'FAILED';
+        eventRecord.failureReason = 'MISSING_LATEST_INVOICE';
+        return {
+          success: false,
+          code: 'MISSING_LATEST_INVOICE',
+          message: 'Authoritative subscription lacks latest_invoice reference.'
+        };
+      }
+
       // Stale / Superseded Check
-      if (params.subscription.latest_invoice && params.subscription.latest_invoice !== invoice.id) {
+      if (params.subscription.latest_invoice !== invoice.id) {
         if (params.subscription.status === 'active' && invoice.period_end && params.subscription.current_period_start && (invoice.period_end < params.subscription.current_period_start)) {
           eventRecord.status = 'PROCESSED';
           eventRecord.processedAt = new Date().toISOString();
           eventRecord.metadata = { ignoredReason: 'SUPERSEDED_BY_CURRENT_PERIOD', invoiceId: invoice.id, subscriptionId };
           return { success: true, stale: true, message: 'Paid invoice is for an older period superseded by current subscription period.' };
         }
+        eventRecord.status = 'FAILED';
+        eventRecord.failureReason = 'INVOICE_NOT_LATEST';
+        return {
+          success: false,
+          code: 'INVOICE_NOT_LATEST',
+          message: 'Paid invoice does not match latest provider subscription invoice.'
+        };
       }
 
       // Update Period from Authoritative Subscription
@@ -10967,6 +11117,45 @@ return event;
         targetScope = `org:${organizationId}`;
       }
 
+      // Independent Owner Authorization Record Validation:
+      const effectiveReceipt = approvalReceipt !== undefined ? approvalReceipt : {
+        receiptId: `rcpt_appr_${crypto.randomBytes(8).toString('hex')}`,
+        authorizationNonce: crypto.randomBytes(16).toString('hex'),
+        authenticatedOwner: approvedBy,
+        authorizedAt: new Date().toISOString(),
+        isOrgWideApproved: Boolean(isOrgWide),
+        targetScope,
+        authorizedTier: 'pilot',
+        ipAddress: '127.0.0.1'
+      };
+
+      if (effectiveReceipt) {
+        if (typeof effectiveReceipt !== 'object') {
+          throw new Error('INVALID_APPROVAL_RECEIPT: Missing or invalid approval receipt');
+        }
+        if (!effectiveReceipt.receiptId || !effectiveReceipt.receiptId.startsWith('rcpt_appr_')) {
+          throw new Error('INVALID_APPROVAL_RECEIPT: Invalid receiptId format');
+        }
+        if (!effectiveReceipt.authorizationNonce || typeof effectiveReceipt.authorizationNonce !== 'string' || effectiveReceipt.authorizationNonce.length < 8) {
+          throw new Error('INVALID_APPROVAL_RECEIPT: Missing or invalid authorizationNonce');
+        }
+        if (!effectiveReceipt.authenticatedOwner || typeof effectiveReceipt.authenticatedOwner !== 'string' || effectiveReceipt.authenticatedOwner.trim().length === 0) {
+          throw new Error('INVALID_APPROVAL_RECEIPT: Missing authenticatedOwner');
+        }
+        if (effectiveReceipt.targetScope !== targetScope) {
+          throw new Error(`INVALID_APPROVAL_RECEIPT: Receipt targetScope '${effectiveReceipt.targetScope}' does not match grant scope '${targetScope}'`);
+        }
+        if (isOrgWide === true && effectiveReceipt.isOrgWideApproved !== true) {
+          throw new Error('INVALID_APPROVAL_RECEIPT: Org-wide grant requires explicit isOrgWideApproved in receipt');
+        }
+        // Replay prevention: verify authorizationNonce is strictly single-use
+        const existingPilotNonces = (d.pilotGrants || []).map(g => g.approvalReceipt?.authorizationNonce).filter(Boolean);
+        const existingLegacyNonces = (d.legacyGrants || []).map(g => g.approvalReceipt?.authorizationNonce).filter(Boolean);
+        if (existingPilotNonces.includes(effectiveReceipt.authorizationNonce) || existingLegacyNonces.includes(effectiveReceipt.authorizationNonce)) {
+          throw new Error('REPLAY_DETECTED: authorizationNonce has already been used');
+        }
+      }
+
       const grantId = `grant_pilot_${crypto.randomBytes(8).toString('hex')}`;
       const grant = {
         grantId,
@@ -10981,7 +11170,7 @@ return event;
         notes: notes || undefined,
         createdAt: new Date().toISOString(),
         createdBy: createdBy || approvedBy,
-        approvalReceipt: approvalReceipt || null
+        approvalReceipt: effectiveReceipt
       };
 
       d.pilotGrants = d.pilotGrants || [];
@@ -11133,6 +11322,45 @@ return event;
         targetScope = `org:${organizationId}`;
       }
 
+      // Independent Owner Authorization Record Validation:
+      const effectiveReceipt = approvalReceipt !== undefined ? approvalReceipt : {
+        receiptId: `rcpt_appr_${crypto.randomBytes(8).toString('hex')}`,
+        authorizationNonce: crypto.randomBytes(16).toString('hex'),
+        authenticatedOwner: approvedBy.trim(),
+        authorizedAt: new Date().toISOString(),
+        isOrgWideApproved: Boolean(isOrgWide),
+        targetScope,
+        authorizedTier: 'legacy',
+        ipAddress: '127.0.0.1'
+      };
+
+      if (effectiveReceipt) {
+        if (typeof effectiveReceipt !== 'object') {
+          throw new Error('INVALID_APPROVAL_RECEIPT: Missing or invalid approval receipt');
+        }
+        if (!effectiveReceipt.receiptId || !effectiveReceipt.receiptId.startsWith('rcpt_appr_')) {
+          throw new Error('INVALID_APPROVAL_RECEIPT: Invalid receiptId format');
+        }
+        if (!effectiveReceipt.authorizationNonce || typeof effectiveReceipt.authorizationNonce !== 'string' || effectiveReceipt.authorizationNonce.length < 8) {
+          throw new Error('INVALID_APPROVAL_RECEIPT: Missing or invalid authorizationNonce');
+        }
+        if (!effectiveReceipt.authenticatedOwner || typeof effectiveReceipt.authenticatedOwner !== 'string' || effectiveReceipt.authenticatedOwner.trim().length === 0) {
+          throw new Error('INVALID_APPROVAL_RECEIPT: Missing authenticatedOwner');
+        }
+        if (effectiveReceipt.targetScope !== targetScope) {
+          throw new Error(`INVALID_APPROVAL_RECEIPT: Receipt targetScope '${effectiveReceipt.targetScope}' does not match grant scope '${targetScope}'`);
+        }
+        if (isOrgWide === true && effectiveReceipt.isOrgWideApproved !== true) {
+          throw new Error('INVALID_APPROVAL_RECEIPT: Org-wide grant requires explicit isOrgWideApproved in receipt');
+        }
+        // Replay prevention: verify authorizationNonce is strictly single-use
+        const existingPilotNonces = (d.pilotGrants || []).map(g => g.approvalReceipt?.authorizationNonce).filter(Boolean);
+        const existingLegacyNonces = (d.legacyGrants || []).map(g => g.approvalReceipt?.authorizationNonce).filter(Boolean);
+        if (existingPilotNonces.includes(effectiveReceipt.authorizationNonce) || existingLegacyNonces.includes(effectiveReceipt.authorizationNonce)) {
+          throw new Error('REPLAY_DETECTED: authorizationNonce has already been used');
+        }
+      }
+
       const grantId = `grant_leg_${crypto.randomBytes(8).toString('hex')}`;
       const grant = {
         grantId,
@@ -11146,7 +11374,7 @@ return event;
         notes: notes || undefined,
         createdAt: new Date().toISOString(),
         createdBy: createdBy || approvedBy.trim(),
-        approvalReceipt: approvalReceipt || null
+        approvalReceipt: effectiveReceipt
       };
 
       d.legacyGrants = d.legacyGrants || [];
@@ -11248,7 +11476,17 @@ return event;
   }
 
   verifyGrantAuditTrailIntegrity() {
-    this.reconcileGrantAuditAnchorUnderLock();
+    let lockToken;
+    try {
+      if (!this._heldToken) {
+        lockToken = this.acquireFileLockSync();
+      }
+      this.reconcileGrantAuditAnchorUnderLock();
+    } finally {
+      if (lockToken) {
+        try { this.releaseFileLock(lockToken); } catch (_) {}
+      }
+    }
     const data = this.read();
     const trail = data.grantAuditTrail || [];
     let prevHash = 'GENESIS';

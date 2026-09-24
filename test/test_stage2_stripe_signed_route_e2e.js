@@ -2590,12 +2590,13 @@ async function main() {
 
     // 55B: Paid invoice with nested-only parent.subscription_details.subscription
     const nestedPaidInvId = `in_nested_paid_${Date.now()}`;
+    const nowSec55B = Math.floor(Date.now() / 1000);
     authoritativeSubscriptionStore.set(nestedSubId, {
       id: nestedSubId,
       customer: nestedCusId,
       status: 'active',
-      current_period_start: Math.floor(Date.now() / 1000),
-      current_period_end: Math.floor(Date.now() / 1000) + 30 * 86400,
+      current_period_start: nowSec55B,
+      current_period_end: nowSec55B + 30 * 86400,
       latest_invoice: nestedPaidInvId
     });
     authoritativeInvoiceStore.set(nestedPaidInvId, {
@@ -2605,7 +2606,9 @@ async function main() {
       status: 'paid',
       paid: true,
       amount_paid: 29900,
-      currency: 'usd'
+      currency: 'usd',
+      period_start: nowSec55B,
+      period_end: nowSec55B + 30 * 86400
     });
 
     const eventNestedPaid = {
@@ -3094,9 +3097,406 @@ async function main() {
     assert.strictEqual(res62C.status, 400);
     assert.strictEqual(res62C.data.error, 'STRIPE_INVOICE_REFUNDED');
     assert.strictEqual(db.getOrganizationById(snapOrgId).subscription.status, 'past_due', 'Tenant must NOT be restored to active');
-    console.log('  PASS: invoice.paid rejects currency, price, and refund discrepancies with zero entitlement mutation.');
+    // ── TEST 63: PAYMENT_FAILED ZERO-MUTATION NEGATIVES FOR NON-DELINQUENT STATUSES
+    console.log('\n[TEST 63] Verifying payment_failed Zero-Mutation Negatives for Active, Trialing, Paused...');
+    const orgId63 = `org_test_63_${Date.now()}`;
+    const cusId63 = `cus_test_63_${Date.now()}`;
+    const subId63 = `sub_test_63_${Date.now()}`;
+    const nowSec63 = Math.floor(Date.now() / 1000);
+    await db.mutate(d => {
+      d.organizations.push({
+        id: orgId63,
+        name: 'Test Org 63 Non-Delinquent',
+        subscription: {
+          stripeSubscriptionId: subId63,
+          id: subId63,
+          stripeCustomerId: cusId63,
+          status: 'active',
+          plan: 'pro',
+          currentPeriodStart: new Date(nowSec63 * 1000).toISOString(),
+          currentPeriodEnd: new Date((nowSec63 + 30 * 86400) * 1000).toISOString()
+        }
+      });
+      d.projects.push({
+        id: `prj_${orgId63}`,
+        organizationId: orgId63,
+        commercialState: 'ACTIVE_PRO'
+      });
+    });
 
-    console.log('\n=== ALL 62 REAL-SERVER SIGNED STRIPE TEST-MODE ROUTE E2E TESTS PASSED ===');
+    // 63A: Active provider subscription on payment_failed defers with HTTP 502 with ZERO demotion
+    const invId63A = `in_63a_${Date.now()}`;
+    authoritativeSubscriptionStore.set(subId63, {
+      id: subId63,
+      customer: cusId63,
+      status: 'active', // Active provider status!
+      latest_invoice: invId63A,
+      current_period_start: nowSec63,
+      current_period_end: nowSec63 + 30 * 86400
+    });
+    authoritativeInvoiceStore.set(invId63A, {
+      id: invId63A,
+      customer: cusId63,
+      subscription: subId63,
+      status: 'open',
+      paid: false,
+      currency: 'usd',
+      period_start: nowSec63,
+      period_end: nowSec63 + 30 * 86400
+    });
+    const res63A = await postWebhook({
+      id: `evt_63a_${Date.now()}`,
+      object: 'event',
+      type: 'invoice.payment_failed',
+      data: { object: { id: invId63A, customer: cusId63, subscription: subId63 } }
+    });
+    assert.strictEqual(res63A.status, 502);
+    assert.strictEqual(res63A.data.error, 'STRIPE_SUBSCRIPTION_NOT_PROVEN_DELINQUENT');
+    assert.strictEqual(db.getOrganizationById(orgId63).subscription.status, 'active', 'Active sub must NOT be demoted');
+    assert.strictEqual(db.getProject(`prj_${orgId63}`).commercialState, 'ACTIVE_PRO', 'Project must NOT be demoted');
+
+    // 63B: Trialing provider subscription on payment_failed defers with HTTP 502
+    authoritativeSubscriptionStore.set(subId63, {
+      id: subId63,
+      customer: cusId63,
+      status: 'trialing',
+      latest_invoice: invId63A,
+      current_period_start: nowSec63,
+      current_period_end: nowSec63 + 30 * 86400
+    });
+    const res63B = await postWebhook({
+      id: `evt_63b_${Date.now()}`,
+      object: 'event',
+      type: 'invoice.payment_failed',
+      data: { object: { id: invId63A, customer: cusId63, subscription: subId63 } }
+    });
+    assert.strictEqual(res63B.status, 502);
+    assert.strictEqual(res63B.data.error, 'STRIPE_SUBSCRIPTION_NOT_PROVEN_DELINQUENT');
+    assert.strictEqual(db.getOrganizationById(orgId63).subscription.status, 'active');
+
+    // 63C: Paused provider subscription on payment_failed defers with HTTP 502
+    authoritativeSubscriptionStore.set(subId63, {
+      id: subId63,
+      customer: cusId63,
+      status: 'paused',
+      latest_invoice: invId63A,
+      current_period_start: nowSec63,
+      current_period_end: nowSec63 + 30 * 86400
+    });
+    const res63C = await postWebhook({
+      id: `evt_63c_${Date.now()}`,
+      object: 'event',
+      type: 'invoice.payment_failed',
+      data: { object: { id: invId63A, customer: cusId63, subscription: subId63 } }
+    });
+    assert.strictEqual(res63C.status, 502);
+    assert.strictEqual(res63C.data.error, 'STRIPE_SUBSCRIPTION_NOT_PROVEN_DELINQUENT');
+
+    // 63D: Direct DB mutator returns nonDelinquent: true and does not mutate
+    const directMutResult = await db.applyStripePaymentFailedAtomic({
+      event: { id: `evt_direct_63d_${Date.now()}`, created: Math.floor(Date.now() / 1000) },
+      invoice: { id: invId63A, customer: cusId63, subscription: subId63, period_end: nowSec63 + 1000 },
+      subscription: { id: subId63, customer: cusId63, status: 'active', current_period_start: nowSec63, current_period_end: nowSec63 + 30 * 86400, latest_invoice: invId63A }
+    });
+    assert.strictEqual(directMutResult.nonDelinquent, true);
+    assert.strictEqual(db.getOrganizationById(orgId63).subscription.status, 'active');
+    console.log('  PASS: payment_failed strictly defers non-delinquent statuses with ZERO customer access mutation.');
+
+    // ── TEST 64: INVOICE.PAID COMPLETE COMMERCIAL SNAPSHOT FAIL-CLOSED
+    console.log('\n[TEST 64] Verifying invoice.paid Complete Commercial Snapshot Fail-Closed...');
+    const orgId64 = `org_test_64_${Date.now()}`;
+    const cusId64 = `cus_test_64_${Date.now()}`;
+    const subId64 = `sub_test_64_${Date.now()}`;
+    const nowSec64 = Math.floor(Date.now() / 1000);
+    await db.mutate(d => {
+      d.organizations.push({
+        id: orgId64,
+        name: 'Test Org 64 Snapshot',
+        subscription: {
+          stripeSubscriptionId: subId64,
+          id: subId64,
+          stripeCustomerId: cusId64,
+          status: 'past_due',
+          plan: 'pro'
+        }
+      });
+      d.projects.push({
+        id: `prj_${orgId64}`,
+        organizationId: orgId64,
+        commercialState: 'PAST_DUE'
+      });
+    });
+
+    // 64A: Missing latest_invoice on subscription fails closed with HTTP 502
+    const invId64A = `in_64a_${Date.now()}`;
+    authoritativeSubscriptionStore.set(subId64, {
+      id: subId64,
+      customer: cusId64,
+      status: 'active',
+      // latest_invoice missing!
+      current_period_start: nowSec64,
+      current_period_end: nowSec64 + 30 * 86400
+    });
+    authoritativeInvoiceStore.set(invId64A, {
+      id: invId64A,
+      customer: cusId64,
+      subscription: subId64,
+      status: 'paid',
+      paid: true,
+      amount_paid: 29900,
+      currency: 'usd',
+      period_start: nowSec64,
+      period_end: nowSec64 + 30 * 86400
+    });
+    const res64A = await postWebhook({
+      id: `evt_64a_${Date.now()}`,
+      object: 'event',
+      type: 'invoice.paid',
+      data: { object: { id: invId64A, customer: cusId64, subscription: subId64, amount_paid: 29900, currency: 'usd' } }
+    });
+    assert.strictEqual(res64A.status, 502);
+    assert.strictEqual(res64A.data.error, 'STRIPE_SUBSCRIPTION_LATEST_INVOICE_MISSING');
+    assert.strictEqual(db.getOrganizationById(orgId64).subscription.status, 'past_due');
+
+    // 64B: Unapproved line item price ID fails closed with HTTP 400
+    authoritativeSubscriptionStore.set(subId64, {
+      id: subId64,
+      customer: cusId64,
+      status: 'active',
+      latest_invoice: invId64A,
+      current_period_start: nowSec64,
+      current_period_end: nowSec64 + 30 * 86400
+    });
+    authoritativeInvoiceStore.set(invId64A, {
+      id: invId64A,
+      customer: cusId64,
+      subscription: subId64,
+      status: 'paid',
+      paid: true,
+      amount_paid: 29900,
+      currency: 'usd',
+      period_start: nowSec64,
+      period_end: nowSec64 + 30 * 86400,
+      lines: {
+        data: [{ price: { id: 'price_unapproved_fake_tier' }, quantity: 1 }]
+      }
+    });
+    const res64B = await postWebhook({
+      id: `evt_64b_${Date.now()}`,
+      object: 'event',
+      type: 'invoice.paid',
+      data: { object: { id: invId64A, customer: cusId64, subscription: subId64, amount_paid: 29900, currency: 'usd' } }
+    });
+    assert.strictEqual(res64B.status, 400);
+    assert.strictEqual(res64B.data.error, 'STRIPE_UNAPPROVED_PRICE_ID');
+    assert.strictEqual(db.getOrganizationById(orgId64).subscription.status, 'past_due');
+
+    // 64C: Line item quantity !== 1 fails closed with HTTP 400
+    authoritativeInvoiceStore.set(invId64A, {
+      id: invId64A,
+      customer: cusId64,
+      subscription: subId64,
+      status: 'paid',
+      paid: true,
+      amount_paid: 29900,
+      currency: 'usd',
+      period_start: nowSec64,
+      period_end: nowSec64 + 30 * 86400,
+      lines: {
+        data: [{ price: { id: 'price_test_pro_monthly' }, quantity: 2 }]
+      }
+    });
+    const res64C = await postWebhook({
+      id: `evt_64c_${Date.now()}`,
+      object: 'event',
+      type: 'invoice.paid',
+      data: { object: { id: invId64A, customer: cusId64, subscription: subId64, amount_paid: 29900, currency: 'usd' } }
+    });
+    assert.strictEqual(res64C.status, 400);
+    assert.strictEqual(res64C.data.error, 'STRIPE_INVALID_QUANTITY');
+    assert.strictEqual(db.getOrganizationById(orgId64).subscription.status, 'past_due');
+
+    // 64D: Partial refund (amount_refunded: 5000) fails closed with HTTP 400
+    authoritativeInvoiceStore.set(invId64A, {
+      id: invId64A,
+      customer: cusId64,
+      subscription: subId64,
+      status: 'paid',
+      paid: true,
+      amount_paid: 29900,
+      amount_refunded: 5000, // partial refund!
+      currency: 'usd',
+      period_start: nowSec64,
+      period_end: nowSec64 + 30 * 86400,
+      lines: {
+        data: [{ price: { id: 'price_test_pro_monthly' }, quantity: 1 }]
+      }
+    });
+    const res64D = await postWebhook({
+      id: `evt_64d_${Date.now()}`,
+      object: 'event',
+      type: 'invoice.paid',
+      data: { object: { id: invId64A, customer: cusId64, subscription: subId64, amount_paid: 29900, currency: 'usd' } }
+    });
+    assert.strictEqual(res64D.status, 400);
+    assert.strictEqual(res64D.data.error, 'STRIPE_INVOICE_REFUNDED');
+    assert.strictEqual(db.getOrganizationById(orgId64).subscription.status, 'past_due');
+
+    // 64E: Disputed invoice fails closed with HTTP 400
+    authoritativeInvoiceStore.set(invId64A, {
+      id: invId64A,
+      customer: cusId64,
+      subscription: subId64,
+      status: 'paid',
+      paid: true,
+      amount_paid: 29900,
+      dispute: { id: 'dp_test_123' },
+      currency: 'usd',
+      period_start: nowSec64,
+      period_end: nowSec64 + 30 * 86400,
+      lines: {
+        data: [{ price: { id: 'price_test_pro_monthly' }, quantity: 1 }]
+      }
+    });
+    const res64E = await postWebhook({
+      id: `evt_64e_${Date.now()}`,
+      object: 'event',
+      type: 'invoice.paid',
+      data: { object: { id: invId64A, customer: cusId64, subscription: subId64, amount_paid: 29900, currency: 'usd' } }
+    });
+    assert.strictEqual(res64E.status, 400);
+    assert.strictEqual(res64E.data.error, 'STRIPE_INVOICE_DISPUTED_OR_VOID');
+    assert.strictEqual(db.getOrganizationById(orgId64).subscription.status, 'past_due');
+    console.log('  PASS: invoice.paid requires complete commercial snapshot and rejects partial refunds/disputes/price mismatches.');
+
+    // ── TEST 65: LOCKED STARTUP RECOVERY & EXPECTED DB VERSION BINDING
+    console.log('\n[TEST 65] Verifying Locked Startup Recovery & Expected DB Version Binding...');
+    // 65A: Test acquireFileLockSync directly
+    const syncLockToken = db.acquireFileLockSync();
+    assert.strictEqual(typeof syncLockToken, 'string');
+    assert.strictEqual(db._heldToken, syncLockToken);
+    // Releasing lock
+    const released = db.releaseFileLock(syncLockToken);
+    assert.strictEqual(released, true);
+    assert.strictEqual(db._heldToken, null);
+
+    // 65B: Fabricate journal with expectedDbVersion mismatch and verify fail-closed quarantine
+    const journalPath65 = path.join(disposableDir, 'grant_audit_commit_journal.json');
+    const rootPath65 = path.join(disposableDir, 'grant_audit_root_anchor.json');
+    const curDb = db.read();
+    const trailLen = (curDb.grantAuditTrail || []).length;
+    const lastHash = trailLen > 0 ? curDb.grantAuditTrail[trailLen - 1].entryHash : 'GENESIS';
+    const fakeJournalMismatchedVersion = {
+      journalVersion: 1,
+      state: 'PREPARED',
+      createdAt: new Date().toISOString(),
+      targetAnchor: {
+        anchorVersion: 1,
+        lastSequence: trailLen - 1,
+        lastEntryHash: lastHash,
+        lastAuditId: 'test_audit_id',
+        totalEntries: trailLen,
+        updatedAt: new Date().toISOString()
+      },
+      expectedDbVersion: (curDb._version || 1) + 999 // Mismatched version!
+    };
+    fs.writeFileSync(journalPath65, JSON.stringify(fakeJournalMismatchedVersion, null, 2), 'utf-8');
+    assert.throws(() => {
+      db.reconcileGrantAuditAnchorUnderLock();
+    }, /GRANT_AUDIT_RECOVERY_FAILED.*expectedDbVersion/);
+    // Verify journal was quarantined to .corrupt_
+    const corruptJournals = fs.readdirSync(disposableDir).filter(f => f.startsWith('grant_audit_commit_journal.json.corrupt_'));
+    assert.strictEqual(corruptJournals.length > 0, true, 'Mismatched journal must be quarantined to .corrupt_');
+    for (const c of corruptJournals) {
+      try { fs.unlinkSync(path.join(disposableDir, c)); } catch (_) {}
+    }
+    try { if (fs.existsSync(journalPath65)) fs.unlinkSync(journalPath65); } catch (_) {}
+    console.log('  PASS: Locked startup recovery and expectedDbVersion binding strictly enforced.');
+
+    // ── TEST 66: INDEPENDENT OWNER AUTHORIZATION RECORD NONCE REPLAY & SCOPE CHECKS
+    console.log('\n[TEST 66] Verifying Owner Authorization Record Nonce Replay & Scope Mismatch Rejection...');
+    const orgId66 = `org_test_66_${Date.now()}`;
+    await db.mutate(d => {
+      d.organizations.push({ id: orgId66, name: 'Org 66 Auth' });
+    });
+    const uniqueNonce66 = `nonce_test_66_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+    const validReceipt66 = {
+      receiptId: `rcpt_appr_${crypto.randomBytes(8).toString('hex')}`,
+      authorizationNonce: uniqueNonce66,
+      authenticatedOwner: 'owner@vshow.test',
+      authorizedAt: new Date().toISOString(),
+      isOrgWideApproved: true,
+      targetScope: `org:${orgId66}`,
+      authorizedTier: 'pilot',
+      ipAddress: '127.0.0.1'
+    };
+    // First issuance must succeed
+    const grant66A = await db.issuePilotGrant({
+      organizationId: orgId66,
+      isOrgWide: true,
+      pilotExpiresAt: new Date(Date.now() + 86400000).toISOString(),
+      approvedBy: 'owner@vshow.test',
+      approvalReceipt: validReceipt66
+    });
+    assert.strictEqual(grant66A.approvalReceipt.authorizationNonce, uniqueNonce66);
+
+    // 66A: Replay the identical authorizationNonce on a second grant -> strictly rejected
+    await assert.rejects(async () => {
+      await db.issuePilotGrant({
+        organizationId: orgId66,
+        isOrgWide: true,
+        pilotExpiresAt: new Date(Date.now() + 86400000).toISOString(),
+        approvedBy: 'owner@vshow.test',
+        approvalReceipt: {
+          ...validReceipt66,
+          receiptId: `rcpt_appr_${crypto.randomBytes(8).toString('hex')}`
+          // same authorizationNonce!
+        }
+      });
+    }, /REPLAY_DETECTED: authorizationNonce has already been used/);
+
+    // 66B: Scope mismatch between receipt targetScope and grant targetScope -> strictly rejected
+    await assert.rejects(async () => {
+      await db.issuePilotGrant({
+        organizationId: orgId66,
+        isOrgWide: true,
+        pilotExpiresAt: new Date(Date.now() + 86400000).toISOString(),
+        approvedBy: 'owner@vshow.test',
+        approvalReceipt: {
+          receiptId: `rcpt_appr_${crypto.randomBytes(8).toString('hex')}`,
+          authorizationNonce: `nonce_scope_mismatch_${Date.now()}`,
+          authenticatedOwner: 'owner@vshow.test',
+          authorizedAt: new Date().toISOString(),
+          isOrgWideApproved: true,
+          targetScope: 'org:org_different_forged', // Mismatched scope!
+          authorizedTier: 'pilot',
+          ipAddress: '127.0.0.1'
+        }
+      });
+    }, /INVALID_APPROVAL_RECEIPT.*targetScope/);
+
+    // 66C: Org-wide grant with isOrgWideApproved: false in receipt -> strictly rejected
+    await assert.rejects(async () => {
+      await db.issuePilotGrant({
+        organizationId: orgId66,
+        isOrgWide: true,
+        pilotExpiresAt: new Date(Date.now() + 86400000).toISOString(),
+        approvedBy: 'owner@vshow.test',
+        approvalReceipt: {
+          receiptId: `rcpt_appr_${crypto.randomBytes(8).toString('hex')}`,
+          authorizationNonce: `nonce_not_org_wide_${Date.now()}`,
+          authenticatedOwner: 'owner@vshow.test',
+          authorizedAt: new Date().toISOString(),
+          isOrgWideApproved: false, // NOT approved for org-wide!
+          targetScope: `org:${orgId66}`,
+          authorizedTier: 'pilot',
+          ipAddress: '127.0.0.1'
+        }
+      });
+    }, /INVALID_APPROVAL_RECEIPT.*isOrgWideApproved/);
+    console.log('  PASS: Independent owner authorization nonces, replay protection, and scope binding verified.');
+
+    console.log('\n=== ALL 66 REAL-SERVER SIGNED STRIPE TEST-MODE ROUTE E2E TESTS PASSED ===');
 
 
   } finally {

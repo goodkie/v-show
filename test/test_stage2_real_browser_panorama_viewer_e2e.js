@@ -1514,7 +1514,7 @@ async function main() {
     // ── STEP 9: GATE CLASSIFICATION (STRICTLY DISCIPLINED) ────────────────────
     testReceipt.gates = {
       REAL_SERVER_ROUTE_VERIFIED: 'PASS',
-      SYNTHETIC_SIGNED_REAL_EXPRESS_ROUTE_TEST: 'AGENT_REPORTED_PASS (test_stage2_stripe_signed_route_e2e.js, 54/54 tests passed, authoritative stripe provider lookup, fail-closed demotion on missing/null/404 subscription HTTP 502, provider event compatibility, delayed invoice reconciliation, trusted detached root anchor fail-closed on missing file, explicit owner grant consent, zero client network fault headers, provider-absent 503 fail-closed, incomplete pagination 502 fail-closed, repeated cursor detection, status completeness, metadata forgery rejection, owner grant routes & provenance, full commercial event provider authority, grant referential integrity, tamper-evident hash-chained grant audit trail, subscription period reconciliation, strict non-conditional identity)',
+      SYNTHETIC_SIGNED_REAL_EXPRESS_ROUTE_TEST: 'AGENT_REPORTED_PASS (test_stage2_stripe_signed_route_e2e.js, 66/66 tests passed, authoritative stripe provider lookup, fail-closed demotion on non-proven-delinquent subscription HTTP 502, complete invoice.paid commercial snapshots, durable locked startup recovery, expectedDbVersion fail-closed binding, independent owner authorization nonces, nested provider IDs normalization)',
       STRIPE_PROVIDER_TEST_CHECKOUT_PORTAL_E2E: 'NOT_VERIFIED (requires actual Stripe TEST provider dashboard credentials and live webhook replay)',
       OWNER_UI_PRICING_SIGNOFF: 'NOT_GRANTED',
       GRANT_AUDIT_IMMUTABILITY: 'NOT_VERIFIED (in-memory/file JSON store with SHA-256 hash chaining; external WORM hardware not provisioned)',
@@ -1535,9 +1535,9 @@ async function main() {
     // Save receipt to isolated scratch directory (do not contaminate production_artifacts)
     const receiptsDir = path.join(__dirname, '../scratch/test_receipts');
     fs.mkdirSync(receiptsDir, { recursive: true });
-    const receiptPath = path.join(receiptsDir, 'R63_PANORAMA_BROWSER_OPTICAL_PROOF_RECEIPT.json');
+    const receiptPath = path.join(receiptsDir, 'R64_PANORAMA_BROWSER_OPTICAL_PROOF_RECEIPT.json');
     fs.writeFileSync(receiptPath, JSON.stringify(testReceipt, null, 2));
-    console.log(`\n[RECEIPT] Saved R63 receipt to isolated scratch: scratch/test_receipts/R63_PANORAMA_BROWSER_OPTICAL_PROOF_RECEIPT.json`);
+    console.log(`\n[RECEIPT] Saved R64 receipt to isolated scratch: scratch/test_receipts/R64_PANORAMA_BROWSER_OPTICAL_PROOF_RECEIPT.json`);
 
     console.log('\n=== ALL BROWSER WEBGL RGBA OPTICAL PROOF & STAGED UI TESTS PASSED ===');
 

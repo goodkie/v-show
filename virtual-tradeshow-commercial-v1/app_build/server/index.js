@@ -1309,6 +1309,19 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
               message: 'Failed invoice is superseded by newer provider subscription invoice; zero entitlement mutation.'
             });
           }
+
+          // Strict Proven Delinquent Provider State Check:
+          // A latest unpaid invoice for currently provider-'active', 'trialing', 'paused', or 'incomplete'
+          // must NOT automatically demote tenant projects to PAST_DUE.
+          const PROVEN_DELINQUENT_STATUSES = ['past_due', 'unpaid'];
+          if (!PROVEN_DELINQUENT_STATUSES.includes(authSub.status)) {
+            console.log(`[STRIPE_RECONCILIATION] payment_failed deferred: subscription status is '${authSub.status}' (not in proven delinquent allowlist ['past_due', 'unpaid']); demotion deferred without mutation.`);
+            return res.status(502).json({
+              error: 'STRIPE_SUBSCRIPTION_NOT_PROVEN_DELINQUENT',
+              message: `Authoritative subscription status is '${authSub.status}'; customer demotion requires confirmed delinquent status ('past_due' or 'unpaid'). Deferred fail-closed without mutation.`,
+              retryable: true
+            });
+          }
         } catch (invErr) {
           console.error('[STRIPE_INVOICE_LOOKUP_FAILED]', invErr?.message || invErr);
           if (isStripeTransientError(invErr)) {
@@ -1403,11 +1416,18 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
             });
           }
 
-          // Dispute/refund check: reject refunded invoices
-          if (authInv.amount_refunded && authInv.amount_paid && authInv.amount_refunded >= authInv.amount_paid) {
+          // Dispute/refund check: reject any refunded or disputed invoices
+          if (authInv.amount_refunded && authInv.amount_refunded > 0) {
             return res.status(400).json({
               error: 'STRIPE_INVOICE_REFUNDED',
-              message: 'Invoice has been fully refunded; cannot apply paid entitlement.',
+              message: `Invoice has refund of ${authInv.amount_refunded}; cannot apply paid entitlement.`,
+              retryable: false
+            });
+          }
+          if (authInv.dispute || authInv.status === 'uncollectible' || authInv.status === 'void') {
+            return res.status(400).json({
+              error: 'STRIPE_INVOICE_DISPUTED_OR_VOID',
+              message: 'Invoice is disputed, uncollectible, or void; cannot apply paid entitlement.',
               retryable: false
             });
           }
@@ -1443,6 +1463,33 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
               message: `Authoritative invoice amount_paid '${authInv.amount_paid}' does not match an approved catalog tier ($299 or $799).`,
               retryable: false
             });
+          }
+
+          // Line items price validation if present
+          if (authInv.lines && Array.isArray(authInv.lines.data) && authInv.lines.data.length > 0) {
+            if (authInv.lines.data.length !== 1) {
+              return res.status(400).json({
+                error: 'STRIPE_MULTIPLE_LINE_ITEMS',
+                message: 'Invoice contains multiple line items; only single commercial subscription item is permitted.',
+                retryable: false
+              });
+            }
+            const lineItem = authInv.lines.data[0];
+            const APPROVED_PRICES = ['price_test_pro_monthly', 'price_test_biz_monthly'];
+            if (lineItem.price && lineItem.price.id && !APPROVED_PRICES.includes(lineItem.price.id)) {
+              return res.status(400).json({
+                error: 'STRIPE_UNAPPROVED_PRICE_ID',
+                message: `Invoice line item price '${lineItem.price.id}' is not in approved test catalog.`,
+                retryable: false
+              });
+            }
+            if (typeof lineItem.quantity === 'number' && lineItem.quantity !== 1) {
+              return res.status(400).json({
+                error: 'STRIPE_INVALID_QUANTITY',
+                message: 'Invoice line item quantity must be exactly 1.',
+                retryable: false
+              });
+            }
           }
 
           // Retrieve and reconcile authoritative subscription
@@ -1509,8 +1556,26 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
             });
           }
 
+          // Mandatory invoice period timestamps
+          if (!authInv.period_start || typeof authInv.period_start !== 'number' || !authInv.period_end || typeof authInv.period_end !== 'number') {
+            return res.status(502).json({
+              error: 'STRIPE_INVOICE_PERIOD_MISSING',
+              message: 'Authoritative invoice lacks clear billing period timestamps; entitlement application deferred.',
+              retryable: true
+            });
+          }
+
+          // Mandatory latest_invoice on provider subscription
+          if (!authSub.latest_invoice || typeof authSub.latest_invoice !== 'string') {
+            return res.status(502).json({
+              error: 'STRIPE_SUBSCRIPTION_LATEST_INVOICE_MISSING',
+              message: 'Authoritative subscription lacks latest_invoice reference; entitlement application deferred.',
+              retryable: true
+            });
+          }
+
           // Latest invoice verification
-          if (authSub.latest_invoice && authSub.latest_invoice !== authInv.id) {
+          if (authSub.latest_invoice !== authInv.id) {
             if (authSub.status === 'active' && authInv.period_end && authSub.current_period_start && (authInv.period_end < authSub.current_period_start)) {
               console.log(`[STRIPE_RECONCILIATION] Delayed invoice.paid for older period ${authInv.period_end} superseded by current period ${authSub.current_period_start}.`);
               return res.status(200).json({
@@ -1651,13 +1716,19 @@ app.post('/api/admin/pilot-grants', requireAuth, requirePlatformOwner, async (re
       });
     }
 
+    const authorizationNonce = crypto.randomBytes(16).toString('hex');
+    const authorizedAt = new Date().toISOString();
+    const receiptId = `rcpt_appr_${crypto.randomBytes(8).toString('hex')}`;
     const approvalReceipt = {
-      receiptId: `rcpt_appr_${crypto.randomBytes(8).toString('hex')}`,
+      receiptId,
+      authorizationNonce,
       authenticatedOwner,
-      authorizedAt: new Date().toISOString(),
+      authorizedAt,
       isOrgWideApproved: Boolean(isOrgWide),
       targetScope,
-      ipAddress: req.ip || req.connection?.remoteAddress || '127.0.0.1'
+      authorizedTier: 'pilot',
+      ipAddress: req.ip || req.connection?.remoteAddress || '127.0.0.1',
+      signature: crypto.createHash('sha256').update(`${receiptId}:${authorizationNonce}:${authenticatedOwner}:${targetScope}:${authorizedAt}`).digest('hex')
     };
 
     const grant = await db.issuePilotGrant({
@@ -1687,11 +1758,16 @@ app.delete('/api/admin/pilot-grants/:grantId', requireAuth, requirePlatformOwner
       });
     }
 
+    const revocationNonce = crypto.randomBytes(16).toString('hex');
+    const revokedAt = new Date().toISOString();
+    const receiptId = `rcpt_revk_${crypto.randomBytes(8).toString('hex')}`;
     const revocationReceipt = {
-      receiptId: `rcpt_revk_${crypto.randomBytes(8).toString('hex')}`,
+      receiptId,
+      revocationNonce,
       authenticatedOwner,
-      revokedAt: new Date().toISOString(),
-      ipAddress: req.ip || req.connection?.remoteAddress || '127.0.0.1'
+      revokedAt,
+      ipAddress: req.ip || req.connection?.remoteAddress || '127.0.0.1',
+      signature: crypto.createHash('sha256').update(`${receiptId}:${revocationNonce}:${authenticatedOwner}:${revokedAt}`).digest('hex')
     };
     const grant = await db.revokePilotGrant(req.params.grantId, authenticatedOwner, revocationReceipt);
     return res.json({ success: true, grant });
@@ -1731,13 +1807,19 @@ app.post('/api/admin/legacy-grants', requireAuth, requirePlatformOwner, async (r
       });
     }
 
+    const authorizationNonce = crypto.randomBytes(16).toString('hex');
+    const authorizedAt = new Date().toISOString();
+    const receiptId = `rcpt_appr_${crypto.randomBytes(8).toString('hex')}`;
     const approvalReceipt = {
-      receiptId: `rcpt_appr_${crypto.randomBytes(8).toString('hex')}`,
+      receiptId,
+      authorizationNonce,
       authenticatedOwner,
-      authorizedAt: new Date().toISOString(),
+      authorizedAt,
       isOrgWideApproved: Boolean(isOrgWide),
       targetScope,
-      ipAddress: req.ip || req.connection?.remoteAddress || '127.0.0.1'
+      authorizedTier: 'legacy',
+      ipAddress: req.ip || req.connection?.remoteAddress || '127.0.0.1',
+      signature: crypto.createHash('sha256').update(`${receiptId}:${authorizationNonce}:${authenticatedOwner}:${targetScope}:${authorizedAt}`).digest('hex')
     };
 
     const grant = await db.issueLegacyGrant({
