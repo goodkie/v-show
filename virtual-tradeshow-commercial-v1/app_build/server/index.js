@@ -659,9 +659,11 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
     });
   }
 
+  const activeStripe = (app.locals && app.locals.stripe !== undefined) ? app.locals.stripe : stripe;
+
   try {
-    if (stripe && stripe.webhooks && typeof stripe.webhooks.constructEvent === 'function') {
-      event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+    if (activeStripe && activeStripe.webhooks && typeof activeStripe.webhooks.constructEvent === 'function') {
+      event = activeStripe.webhooks.constructEvent(req.body, sig, webhookSecret);
     } else {
       event = verifyStripeWebhookSignature(req.body, sig, webhookSecret);
     }
@@ -678,6 +680,26 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
     return res.status(400).json({ error: 'Invalid event format' });
   }
 
+  const commercialEntitlementEvents = [
+    'checkout.session.completed',
+    'customer.subscription.created',
+    'customer.subscription.updated',
+    'customer.subscription.deleted',
+    'invoice.payment_failed',
+    'invoice.paid'
+  ];
+
+  if (commercialEntitlementEvents.includes(event.type)) {
+    if (!activeStripe || typeof activeStripe.checkout?.sessions?.retrieve !== 'function') {
+      console.warn(`[SECURITY][STRIPE_PROVIDER_UNAVAILABLE] Commercial event '${event.type}' rejected: authoritative Stripe provider client is unavailable.`);
+      return res.status(503).json({
+        error: 'STRIPE_PROVIDER_UNAVAILABLE',
+        message: 'Authoritative Stripe provider client is not initialized or configured on server.',
+        retryable: true
+      });
+    }
+  }
+
   try {
     let result;
     switch (event.type) {
@@ -687,92 +709,183 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
           return res.status(400).json({ error: 'MISSING_SESSION_ID', retryable: false });
         }
 
-        // Authoritative Stripe Provider Lookup on EVERY commercial checkout event:
-        // Do NOT rely on unverified event-embedded line items.
-        if (stripe) {
-          try {
-            // 1. Authoritative Session Retrieval
-            const authSession = await stripe.checkout.sessions.retrieve(sessionObj.id);
-            if (!authSession) {
-              return res.status(400).json({
-                error: 'STRIPE_SESSION_NOT_FOUND',
-                message: 'Authoritative checkout session could not be found on provider.',
-                retryable: false
+        try {
+          // 1. Authoritative Session Retrieval from Provider
+          const authSession = await activeStripe.checkout.sessions.retrieve(sessionObj.id);
+          if (!authSession) {
+            return res.status(400).json({
+              error: 'STRIPE_SESSION_NOT_FOUND',
+              message: 'Authoritative checkout session could not be found on provider.',
+              retryable: false
+            });
+          }
+
+          // 2. Strict Session Completeness Verification
+          if (authSession.status !== 'complete') {
+            return res.status(400).json({
+              error: 'STRIPE_SESSION_NOT_COMPLETE',
+              message: `Authoritative checkout session status is '${authSession.status}', expected 'complete'.`,
+              retryable: false
+            });
+          }
+
+          // 3. Strict Customer and Subscription Matching
+          if (sessionObj.customer && authSession.customer && sessionObj.customer !== authSession.customer) {
+            return res.status(400).json({
+              error: 'STRIPE_CUSTOMER_MISMATCH',
+              message: 'Event-embedded customer differs from authoritative provider customer.',
+              retryable: false
+            });
+          }
+          if (sessionObj.subscription && authSession.subscription && sessionObj.subscription !== authSession.subscription) {
+            return res.status(400).json({
+              error: 'STRIPE_SUBSCRIPTION_MISMATCH',
+              message: 'Event-embedded subscription differs from authoritative provider subscription.',
+              retryable: false
+            });
+          }
+
+          // 4. Complete Provider Pagination or Fail-Closed (handles has_more)
+          let authoritativeLineItems = [];
+          let startingAfter = undefined;
+          let hasMore = true;
+          let pageCount = 0;
+          const seenCursors = new Set();
+
+          while (hasMore) {
+            pageCount++;
+            if (pageCount > 50) {
+              return res.status(502).json({
+                error: 'STRIPE_PAGINATION_OVERFLOW',
+                message: 'Authoritative line_items pagination exceeded safety limit of 50 pages.',
+                retryable: true
               });
             }
 
-            // 2. Paginated Authoritative Line Items Retrieval (handles has_more)
-            let authoritativeLineItems = [];
-            let startingAfter = undefined;
-            let hasMore = true;
-            while (hasMore) {
-              const listParams = { limit: 100 };
-              if (startingAfter) listParams.starting_after = startingAfter;
-              const page = await stripe.checkout.sessions.listLineItems(sessionObj.id, listParams);
-              if (!page || !Array.isArray(page.data)) break;
-              authoritativeLineItems.push(...page.data);
-              hasMore = Boolean(page.has_more);
-              if (hasMore && page.data.length > 0) {
-                startingAfter = page.data[page.data.length - 1].id;
-              } else {
-                hasMore = false;
+            const listParams = { limit: 100 };
+            if (startingAfter) listParams.starting_after = startingAfter;
+            const page = await activeStripe.checkout.sessions.listLineItems(sessionObj.id, listParams);
+
+            if (!page || !Array.isArray(page.data)) {
+              return res.status(502).json({
+                error: 'STRIPE_PAGINATION_INVALID_PAGE',
+                message: 'Authoritative line_items page is invalid or missing data array.',
+                retryable: true
+              });
+            }
+
+            if (pageCount > 1 && page.data.length === 0) {
+              return res.status(502).json({
+                error: 'STRIPE_PAGINATION_EMPTY_CONTINUATION',
+                message: 'Provider reported has_more: true but returned empty continuation page.',
+                retryable: true
+              });
+            }
+
+            authoritativeLineItems.push(...page.data);
+            hasMore = Boolean(page.has_more);
+
+            if (hasMore) {
+              if (page.data.length === 0) {
+                return res.status(502).json({
+                  error: 'STRIPE_PAGINATION_CORRUPTED',
+                  message: 'Provider reported has_more: true with zero items.',
+                  retryable: true
+                });
               }
+              const lastItem = page.data[page.data.length - 1];
+              if (!lastItem || !lastItem.id || typeof lastItem.id !== 'string') {
+                return res.status(502).json({
+                  error: 'STRIPE_PAGINATION_MISSING_CURSOR_ID',
+                  message: 'Provider line_item missing cursor ID for next page.',
+                  retryable: true
+                });
+              }
+              if (seenCursors.has(lastItem.id)) {
+                return res.status(502).json({
+                  error: 'STRIPE_PAGINATION_REPEATED_CURSOR',
+                  message: 'Provider returned repeated cursor ID; aborting pagination loop.',
+                  retryable: true
+                });
+              }
+              seenCursors.add(lastItem.id);
+              startingAfter = lastItem.id;
             }
+          }
 
-            if (authoritativeLineItems.length === 0) {
+          if (authoritativeLineItems.length === 0) {
+            return res.status(400).json({
+              error: 'STRIPE_LINE_ITEMS_EMPTY',
+              message: 'Authoritative line_items from Stripe are empty.',
+              retryable: false
+            });
+          }
+
+          // 5. Reject Forged Event-Embedded Line Items mismatch
+          if (sessionObj.line_items && Array.isArray(sessionObj.line_items.data) && sessionObj.line_items.data.length > 0) {
+            const eventItemIds = sessionObj.line_items.data.map(i => i.price?.id || i.id).sort().join(',');
+            const authItemIds = authoritativeLineItems.map(i => i.price?.id || i.id).sort().join(',');
+            if (eventItemIds !== authItemIds) {
+              console.warn(`[SECURITY][STRIPE_FORGERY_DETECTED] Event-embedded line items (${eventItemIds}) differ from provider items (${authItemIds}). Rejecting.`);
               return res.status(400).json({
-                error: 'STRIPE_LINE_ITEMS_EMPTY',
-                message: 'Authoritative line_items from Stripe are empty.',
+                error: 'FORGED_EVENT_LINE_ITEMS_MISMATCH',
+                message: 'Event-embedded line items differ from authoritative provider record.',
                 retryable: false
               });
             }
+          }
 
-            // 3. Reject Forged Event-Embedded Line Items mismatch
-            // If the incoming event payload attempted to supply forged line items that differ from the authoritative provider record, fail closed immediately.
-            if (sessionObj.line_items && Array.isArray(sessionObj.line_items.data) && sessionObj.line_items.data.length > 0) {
-              const eventItemIds = sessionObj.line_items.data.map(i => i.price?.id || i.id).sort().join(',');
-              const authItemIds = authoritativeLineItems.map(i => i.price?.id || i.id).sort().join(',');
-              if (eventItemIds !== authItemIds) {
-                console.warn(`[SECURITY][STRIPE_FORGERY_DETECTED] Event-embedded line items (${eventItemIds}) differ from provider items (${authItemIds}). Rejecting.`);
+          // 6. Metadata Trust Boundary: Provider-authoritative metadata ONLY
+          if (sessionObj.metadata && Object.keys(sessionObj.metadata).length > 0) {
+            const authMeta = authSession.metadata || {};
+            for (const [k, v] of Object.entries(sessionObj.metadata)) {
+              if (authMeta[k] !== undefined && String(authMeta[k]) !== String(v)) {
+                console.warn(`[SECURITY][METADATA_FORGERY_DETECTED] Event metadata ${k}=${v} differs from provider ${authMeta[k]}`);
                 return res.status(400).json({
-                  error: 'FORGED_EVENT_LINE_ITEMS_MISMATCH',
-                  message: 'Event-embedded line items differ from authoritative provider record.',
+                  error: 'METADATA_FORGERY_DETECTED',
+                  message: `Event-embedded metadata for key '${k}' differs from authoritative provider record.`,
                   retryable: false
                 });
               }
             }
+          }
 
-            // Merge authoritative provider session and line items with event metadata
-            sessionObj = {
-              ...authSession,
-              metadata: { ...(authSession.metadata || {}), ...(sessionObj.metadata || {}) },
-              line_items: { object: 'list', data: authoritativeLineItems, has_more: false }
-            };
-          } catch (fetchErr) {
-            console.error('[STRIPE_AUTHORITATIVE_LOOKUP_FAILED]', fetchErr?.message || fetchErr);
-            const isTransient = Boolean(
-              !fetchErr.statusCode ||
-              fetchErr.statusCode >= 500 ||
-              fetchErr.statusCode === 429 ||
-              fetchErr.type === 'StripeConnectionError' ||
-              fetchErr.type === 'StripeAPIError' ||
-              fetchErr.code === 'ETIMEDOUT' ||
-              fetchErr.code === 'ECONNRESET' ||
-              fetchErr.code === 'ECONNREFUSED'
-            );
-            if (isTransient) {
-              return res.status(500).json({
-                error: 'STRIPE_PROVIDER_TRANSIENT_FAILURE',
-                message: 'Stripe provider lookup failed with transient error; retry requested.',
-                retryable: true
-              });
-            }
-            return res.status(400).json({
-              error: 'STRIPE_PROVIDER_FETCH_FAILED',
-              message: fetchErr?.message || 'Authoritative Stripe lookup failed.',
-              retryable: false
+          // Construct authoritative session object using provider data ONLY
+          sessionObj = {
+            id: authSession.id,
+            customer: authSession.customer,
+            subscription: authSession.subscription,
+            status: authSession.status,
+            payment_status: authSession.payment_status,
+            amount_total: authSession.amount_total,
+            currency: authSession.currency,
+            metadata: authSession.metadata || {},
+            line_items: { object: 'list', data: authoritativeLineItems, has_more: false }
+          };
+        } catch (fetchErr) {
+          console.error('[STRIPE_AUTHORITATIVE_LOOKUP_FAILED]', fetchErr?.message || fetchErr);
+          const isTransient = Boolean(
+            !fetchErr.statusCode ||
+            fetchErr.statusCode >= 500 ||
+            fetchErr.statusCode === 429 ||
+            fetchErr.type === 'StripeConnectionError' ||
+            fetchErr.type === 'StripeAPIError' ||
+            fetchErr.code === 'ETIMEDOUT' ||
+            fetchErr.code === 'ECONNRESET' ||
+            fetchErr.code === 'ECONNREFUSED'
+          );
+          if (isTransient) {
+            return res.status(500).json({
+              error: 'STRIPE_PROVIDER_TRANSIENT_FAILURE',
+              message: 'Stripe provider lookup failed with transient error; retry requested.',
+              retryable: true
             });
           }
+          return res.status(400).json({
+            error: 'STRIPE_PROVIDER_FETCH_FAILED',
+            message: fetchErr?.message || 'Authoritative Stripe lookup failed.',
+            retryable: false
+          });
         }
 
         result = await db.applyStripeCheckoutCompletedAtomic({
@@ -870,6 +983,75 @@ app.use((err, req, res, next) => {
     });
   }
   next(err);
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// [STAGE 2 AUDIT R57] Platform Owner Admin Routes for Immutable Grant Issuance
+// Strictly restricted to platform_owner role via requireAuth + requirePlatformOwner.
+// Eliminates client/tenant tampering of pilotGrants and legacyGrants.
+// ─────────────────────────────────────────────────────────────────────────────
+app.post('/api/admin/pilot-grants', requireAuth, requirePlatformOwner, async (req, res) => {
+  try {
+    const { organizationId, projectId, accountId, pilotExpiresAt, notes } = req.body || {};
+    if (!organizationId) {
+      return res.status(400).json({ error: 'MISSING_ORGANIZATION_ID', message: 'organizationId is required.' });
+    }
+    if (!pilotExpiresAt) {
+      return res.status(400).json({ error: 'MISSING_PILOT_EXPIRATION', message: 'pilotExpiresAt is required.' });
+    }
+    const grant = await db.issuePilotGrant({
+      organizationId,
+      projectId,
+      accountId,
+      pilotExpiresAt,
+      approvedBy: req.user.username || req.user.userId || 'platform_owner',
+      notes,
+      createdBy: req.user.userId || req.user.username || 'platform_owner'
+    });
+    return res.status(201).json({ success: true, grant });
+  } catch (err) {
+    return res.status(400).json({ error: err.message });
+  }
+});
+
+app.delete('/api/admin/pilot-grants/:grantId', requireAuth, requirePlatformOwner, async (req, res) => {
+  try {
+    const grant = await db.revokePilotGrant(req.params.grantId, req.user.username || 'platform_owner');
+    return res.json({ success: true, grant });
+  } catch (err) {
+    if (err.message === 'GRANT_NOT_FOUND') return res.status(404).json({ error: err.message });
+    return res.status(400).json({ error: err.message });
+  }
+});
+
+app.post('/api/admin/legacy-grants', requireAuth, requirePlatformOwner, async (req, res) => {
+  try {
+    const { organizationId, accountId, projectId, notes } = req.body || {};
+    if (!organizationId) {
+      return res.status(400).json({ error: 'MISSING_ORGANIZATION_ID', message: 'organizationId is required.' });
+    }
+    const grant = await db.issueLegacyGrant({
+      organizationId,
+      accountId,
+      projectId,
+      approvedBy: req.user.username || req.user.userId || 'platform_owner',
+      notes,
+      createdBy: req.user.userId || req.user.username || 'platform_owner'
+    });
+    return res.status(201).json({ success: true, grant });
+  } catch (err) {
+    return res.status(400).json({ error: err.message });
+  }
+});
+
+app.delete('/api/admin/legacy-grants/:grantId', requireAuth, requirePlatformOwner, async (req, res) => {
+  try {
+    const grant = await db.revokeLegacyGrant(req.params.grantId, req.user.username || 'platform_owner');
+    return res.json({ success: true, grant });
+  } catch (err) {
+    if (err.message === 'GRANT_NOT_FOUND') return res.status(404).json({ error: err.message });
+    return res.status(400).json({ error: err.message });
+  }
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

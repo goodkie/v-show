@@ -64,7 +64,7 @@ assert.strictEqual(
 const db = require('../virtual-tradeshow-commercial-v1/_clean_deploy/server/db');
 
 // Require the ACTUAL Express application server
-const { server, app, httpsServer, stripeClient } = require('../virtual-tradeshow-commercial-v1/_clean_deploy/server/index');
+const { server, app, httpsServer, stripeClient, activeSessions } = require('../virtual-tradeshow-commercial-v1/_clean_deploy/server/index');
 
 // Initialize isolated Stripe SDK client for signature generation
 const stripe = require('../virtual-tradeshow-commercial-v1/_clean_deploy/node_modules/stripe')(process.env.STRIPE_SECRET_KEY);
@@ -1165,7 +1165,419 @@ async function main() {
     assert.strictEqual(res25.data.received, true);
     console.log('  PASS: Client-supplied fault injection header strictly ignored; zero network-controlled outage.');
 
-    console.log('\n=== ALL 25 REAL-SERVER SIGNED STRIPE TEST-MODE ROUTE E2E TESTS PASSED ===');
+    // ── TEST 26: PROVIDER-ABSENT FAIL-CLOSED ────────────────────────────────
+    console.log('\n[TEST 26] Verifying Provider-Absent Fail-Closed (Zero Fallback to Event-Embedded Line Items)...');
+    const sessionId26 = `cs_no_provider_${Date.now()}`;
+    await db.recordPendingCheckout({
+      sessionId: sessionId26,
+      organizationId: otherOrgId,
+      projectId: otherProjectId,
+      requestedPlan: 'pro',
+      priceId: 'price_test_pro_monthly',
+      amountExpected: 29900,
+      currencyExpected: 'usd',
+      status: 'PENDING'
+    });
+    // Set provider client to null on app.locals to simulate unconfigured/mismatched Stripe
+    app.locals.stripe = null;
+    const eventNoProvider = {
+      id: `evt_no_provider_${Date.now()}`,
+      object: 'event',
+      type: 'checkout.session.completed',
+      data: {
+        object: {
+          id: sessionId26,
+          customer: `cus_no_provider_${Date.now()}`,
+          subscription: `sub_no_provider_${Date.now()}`,
+          payment_status: 'paid',
+          amount_total: 29900,
+          currency: 'usd',
+          line_items: { object: 'list', data: [{ id: 'li_embedded', price: { id: 'price_test_pro_monthly', recurring: { interval: 'month' } }, quantity: 1 }] }
+        }
+      }
+    };
+    const res26 = await postWebhook(eventNoProvider);
+    assert.strictEqual(res26.status, 503, 'Provider-absent webhook must fail-closed with HTTP 503');
+    assert.strictEqual(res26.data.error, 'STRIPE_PROVIDER_UNAVAILABLE');
+    // Assert ZERO DB state mutation occurred: pending checkout MUST remain PENDING!
+    const pending26 = await db.getPendingCheckout(sessionId26);
+    assert.strictEqual(pending26.status, 'PENDING', 'Pending checkout must remain PENDING when provider is absent');
+    // Restore stripe client on app.locals
+    app.locals.stripe = stripeClient;
+    console.log('  PASS: Provider-absent commercial checkout strictly rejected (HTTP 503) with zero DB entitlement mutation.');
+
+    // ── TEST 27: INCOMPLETE PROVIDER PAGINATION FAIL-CLOSED ─────────────────
+    console.log('\n[TEST 27] Verifying Incomplete Provider Pagination Fail-Closed (Empty Continuation Page)...');
+    const sessionId27 = `cs_incomp_page_${Date.now()}`;
+    await db.recordPendingCheckout({
+      sessionId: sessionId27,
+      organizationId: otherOrgId,
+      projectId: otherProjectId,
+      requestedPlan: 'pro',
+      priceId: 'price_test_pro_monthly',
+      amountExpected: 29900,
+      currencyExpected: 'usd',
+      status: 'PENDING'
+    });
+    const cus27 = `cus_incomp_${Date.now()}`;
+    const sub27 = `sub_incomp_${Date.now()}`;
+    authoritativeSessionStore.set(sessionId27, {
+      id: sessionId27,
+      customer: cus27,
+      subscription: sub27,
+      status: 'complete',
+      payment_status: 'paid',
+      amount_total: 29900,
+      currency: 'usd'
+    });
+    // Page 1 has_more: true, but Page 2 returns empty data: []!
+    authoritativeLineItemsStore.set(sessionId27, (params) => {
+      if (!params || !params.starting_after) {
+        return {
+          object: 'list',
+          data: [{ id: 'li_page1_item', price: { id: 'price_test_pro_monthly', recurring: { interval: 'month' } }, quantity: 1 }],
+          has_more: true
+        };
+      }
+      return {
+        object: 'list',
+        data: [], // Provider claims has_more was true, but sends 0 items!
+        has_more: false
+      };
+    });
+    const eventIncomp = {
+      id: `evt_incomp_${Date.now()}`,
+      object: 'event',
+      type: 'checkout.session.completed',
+      data: {
+        object: {
+          id: sessionId27,
+          customer: cus27,
+          subscription: sub27,
+          payment_status: 'paid',
+          amount_total: 29900,
+          currency: 'usd'
+        }
+      }
+    };
+    const res27 = await postWebhook(eventIncomp);
+    assert.strictEqual(res27.status, 502, 'Incomplete continuation pagination must return HTTP 502 retryable');
+    assert.strictEqual(res27.data.error, 'STRIPE_PAGINATION_EMPTY_CONTINUATION');
+    const pending27 = await db.getPendingCheckout(sessionId27);
+    assert.strictEqual(pending27.status, 'PENDING', 'Pending checkout must remain PENDING on incomplete pagination');
+    console.log('  PASS: Incomplete provider pagination safely rejected (HTTP 502) with zero partial authorization.');
+
+    // ── TEST 28: REPEATED CURSOR LOOP DETECTION FAIL-CLOSED ─────────────────
+    console.log('\n[TEST 28] Verifying Repeated Cursor Pagination Loop Detection Fail-Closed...');
+    const sessionId28 = `cs_loop_page_${Date.now()}`;
+    await db.recordPendingCheckout({
+      sessionId: sessionId28,
+      organizationId: otherOrgId,
+      projectId: otherProjectId,
+      requestedPlan: 'pro',
+      priceId: 'price_test_pro_monthly',
+      amountExpected: 29900,
+      currencyExpected: 'usd',
+      status: 'PENDING'
+    });
+    const cus28 = `cus_loop_${Date.now()}`;
+    const sub28 = `sub_loop_${Date.now()}`;
+    authoritativeSessionStore.set(sessionId28, {
+      id: sessionId28,
+      customer: cus28,
+      subscription: sub28,
+      status: 'complete',
+      payment_status: 'paid',
+      amount_total: 29900,
+      currency: 'usd'
+    });
+    // Provider returns same cursor item repeatedly
+    authoritativeLineItemsStore.set(sessionId28, (params) => {
+      return {
+        object: 'list',
+        data: [{ id: 'li_stuck_cursor_item', price: { id: 'price_test_pro_monthly', recurring: { interval: 'month' } }, quantity: 1 }],
+        has_more: true
+      };
+    });
+    const eventLoop = {
+      id: `evt_loop_${Date.now()}`,
+      object: 'event',
+      type: 'checkout.session.completed',
+      data: {
+        object: {
+          id: sessionId28,
+          customer: cus28,
+          subscription: sub28,
+          payment_status: 'paid',
+          amount_total: 29900,
+          currency: 'usd'
+        }
+      }
+    };
+    const res28 = await postWebhook(eventLoop);
+    assert.strictEqual(res28.status, 502, 'Repeated cursor pagination loop must return HTTP 502 retryable');
+    assert.strictEqual(res28.data.error, 'STRIPE_PAGINATION_REPEATED_CURSOR');
+    const pending28 = await db.getPendingCheckout(sessionId28);
+    assert.strictEqual(pending28.status, 'PENDING', 'Pending checkout must remain PENDING on loop detection');
+    console.log('  PASS: Repeated cursor pagination loop safely detected and aborted (HTTP 502).');
+
+    // ── TEST 29: NON-COMPLETE PROVIDER SESSION STATUS FAIL-CLOSED ───────────
+    console.log('\n[TEST 29] Verifying Non-Complete Provider Session Status Fail-Closed...');
+    const sessionId29 = `cs_incomplete_status_${Date.now()}`;
+    await db.recordPendingCheckout({
+      sessionId: sessionId29,
+      organizationId: otherOrgId,
+      projectId: otherProjectId,
+      requestedPlan: 'pro',
+      priceId: 'price_test_pro_monthly',
+      amountExpected: 29900,
+      currencyExpected: 'usd',
+      status: 'PENDING'
+    });
+    const cus29 = `cus_open_${Date.now()}`;
+    const sub29 = `sub_open_${Date.now()}`;
+    authoritativeSessionStore.set(sessionId29, {
+      id: sessionId29,
+      customer: cus29,
+      subscription: sub29,
+      status: 'open', // Non-complete status!
+      payment_status: 'paid',
+      amount_total: 29900,
+      currency: 'usd'
+    });
+    authoritativeLineItemsStore.set(sessionId29, {
+      object: 'list',
+      data: [{ id: 'li_item_open', price: { id: 'price_test_pro_monthly', recurring: { interval: 'month' } }, quantity: 1 }],
+      has_more: false
+    });
+    const eventOpen = {
+      id: `evt_open_${Date.now()}`,
+      object: 'event',
+      type: 'checkout.session.completed',
+      data: {
+        object: {
+          id: sessionId29,
+          customer: cus29,
+          subscription: sub29,
+          payment_status: 'paid',
+          amount_total: 29900,
+          currency: 'usd'
+        }
+      }
+    };
+    const res29 = await postWebhook(eventOpen);
+    assert.strictEqual(res29.status, 400, 'Non-complete provider session must be rejected with HTTP 400');
+    assert.strictEqual(res29.data.error, 'STRIPE_SESSION_NOT_COMPLETE');
+    const pending29 = await db.getPendingCheckout(sessionId29);
+    assert.strictEqual(pending29.status, 'PENDING');
+    console.log('  PASS: Non-complete provider session strictly rejected (HTTP 400 STRIPE_SESSION_NOT_COMPLETE).');
+
+    // ── TEST 30: CUSTOMER / SUBSCRIPTION MISMATCH FAIL-CLOSED ───────────────
+    console.log('\n[TEST 30] Verifying Customer / Subscription Mismatch Fail-Closed...');
+    const sessionId30 = `cs_mismatch_cus_${Date.now()}`;
+    await db.recordPendingCheckout({
+      sessionId: sessionId30,
+      organizationId: otherOrgId,
+      projectId: otherProjectId,
+      requestedPlan: 'pro',
+      priceId: 'price_test_pro_monthly',
+      amountExpected: 29900,
+      currencyExpected: 'usd',
+      status: 'PENDING'
+    });
+    authoritativeSessionStore.set(sessionId30, {
+      id: sessionId30,
+      customer: 'cus_provider_real_123',
+      subscription: 'sub_provider_real_123',
+      status: 'complete',
+      payment_status: 'paid',
+      amount_total: 29900,
+      currency: 'usd'
+    });
+    authoritativeLineItemsStore.set(sessionId30, {
+      object: 'list',
+      data: [{ id: 'li_item_30', price: { id: 'price_test_pro_monthly', recurring: { interval: 'month' } }, quantity: 1 }],
+      has_more: false
+    });
+    const eventMismatchedCus = {
+      id: `evt_mismatch_cus_${Date.now()}`,
+      object: 'event',
+      type: 'checkout.session.completed',
+      data: {
+        object: {
+          id: sessionId30,
+          customer: 'cus_attacker_forged_999', // Mismatched!
+          subscription: 'sub_provider_real_123',
+          payment_status: 'paid',
+          amount_total: 29900,
+          currency: 'usd'
+        }
+      }
+    };
+    const res30 = await postWebhook(eventMismatchedCus);
+    assert.strictEqual(res30.status, 400, 'Customer mismatch must be rejected with HTTP 400');
+    assert.strictEqual(res30.data.error, 'STRIPE_CUSTOMER_MISMATCH');
+    const pending30 = await db.getPendingCheckout(sessionId30);
+    assert.strictEqual(pending30.status, 'PENDING');
+    console.log('  PASS: Forged event customer mismatch strictly rejected (HTTP 400 STRIPE_CUSTOMER_MISMATCH).');
+
+    // ── TEST 31: METADATA FORGERY OVERRIDE DETECTION FAIL-CLOSED ────────────
+    console.log('\n[TEST 31] Verifying Metadata Forgery Override Detection Fail-Closed...');
+    const sessionId31 = `cs_meta_forgery_${Date.now()}`;
+    await db.recordPendingCheckout({
+      sessionId: sessionId31,
+      organizationId: otherOrgId,
+      projectId: otherProjectId,
+      requestedPlan: 'pro',
+      priceId: 'price_test_pro_monthly',
+      amountExpected: 29900,
+      currencyExpected: 'usd',
+      status: 'PENDING'
+    });
+    const cus31 = `cus_meta_${Date.now()}`;
+    const sub31 = `sub_meta_${Date.now()}`;
+    authoritativeSessionStore.set(sessionId31, {
+      id: sessionId31,
+      customer: cus31,
+      subscription: sub31,
+      status: 'complete',
+      payment_status: 'paid',
+      amount_total: 29900,
+      currency: 'usd',
+      metadata: { organizationId: otherOrgId, authorized: 'true' }
+    });
+    authoritativeLineItemsStore.set(sessionId31, {
+      object: 'list',
+      data: [{ id: 'li_item_31', price: { id: 'price_test_pro_monthly', recurring: { interval: 'month' } }, quantity: 1 }],
+      has_more: false
+    });
+    const eventForgedMeta31 = {
+      id: `evt_forged_meta_${Date.now()}`,
+      object: 'event',
+      type: 'checkout.session.completed',
+      data: {
+        object: {
+          id: sessionId31,
+          customer: cus31,
+          subscription: sub31,
+          payment_status: 'paid',
+          amount_total: 29900,
+          currency: 'usd',
+          metadata: { organizationId: 'org_attacker_takeover_corp', authorized: 'true' } // Attempt to redirect org!
+        }
+      }
+    };
+    const res31 = await postWebhook(eventForgedMeta31);
+    assert.strictEqual(res31.status, 400, 'Metadata forgery attempt must be rejected with HTTP 400');
+    assert.strictEqual(res31.data.error, 'METADATA_FORGERY_DETECTED');
+    const pending31 = await db.getPendingCheckout(sessionId31);
+    assert.strictEqual(pending31.status, 'PENDING');
+    console.log('  PASS: Event metadata discrepancy detected and strictly rejected (HTTP 400 METADATA_FORGERY_DETECTED).');
+
+    // ── TEST 32: PLATFORM OWNER ADMIN GRANT ROUTES & PROVENANCE ──────────────
+    console.log('\n[TEST 32] Verifying Platform Owner Admin Grant Routes & Provenance...');
+    const ownerToken = `tok_owner_${Date.now()}_${crypto.randomBytes(6).toString('hex')}`;
+    const unauthViewerToken = `tok_viewer_${Date.now()}_${crypto.randomBytes(6).toString('hex')}`;
+    activeSessions.set(ownerToken, {
+      userId: 'user_owner_root',
+      username: 'root_platform_owner',
+      role: 'platform_owner',
+      organizationId: testOrgId,
+      createdAt: Date.now()
+    });
+    activeSessions.set(unauthViewerToken, {
+      userId: 'user_viewer_unpriv',
+      username: 'guest_viewer',
+      role: 'viewer',
+      organizationId: testOrgId,
+      createdAt: Date.now()
+    });
+
+    // Subtest 32a: Unauthenticated / Non-Owner Access Denied
+    const unprivRes = await new Promise((resolve, reject) => {
+      const req = http.request({
+        hostname: '127.0.0.1', port: serverPort, path: '/api/admin/pilot-grants', method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${unauthViewerToken}` }
+      }, (res) => {
+        let d = ''; res.on('data', c => d += c);
+        res.on('end', () => resolve({ status: res.statusCode, body: d }));
+      });
+      req.on('error', reject);
+      req.write(JSON.stringify({ organizationId: testOrgId, pilotExpiresAt: new Date(Date.now() + 86400000).toISOString() }));
+      req.end();
+    });
+    assert.strictEqual(unprivRes.status, 403, 'Non-owner must be forbidden from issuing grants (HTTP 403)');
+
+    // Subtest 32b: Platform Owner Successfully Issues Pilot Grant
+    const ownerIssueRes = await new Promise((resolve, reject) => {
+      const req = http.request({
+        hostname: '127.0.0.1', port: serverPort, path: '/api/admin/pilot-grants', method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${ownerToken}` }
+      }, (res) => {
+        let d = ''; res.on('data', c => d += c);
+        res.on('end', () => resolve({ status: res.statusCode, json: JSON.parse(d) }));
+      });
+      req.on('error', reject);
+      req.write(JSON.stringify({ organizationId: testOrgId, pilotExpiresAt: new Date(Date.now() + 86400000).toISOString(), notes: 'Audited owner pilot' }));
+      req.end();
+    });
+    assert.strictEqual(ownerIssueRes.status, 201, 'Owner must successfully issue grant (HTTP 201)');
+    const issuedGrantId = ownerIssueRes.json.grant.grantId;
+    assert.ok(issuedGrantId.startsWith('grant_pilot_'));
+    assert.strictEqual(ownerIssueRes.json.grant.status, 'active');
+
+    // Subtest 32c: Missing Status or Non-Active Status Fails Closed in Predicate
+    const mockProjectForGrant = { id: 'prj_test_grant_check', organizationId: testOrgId };
+    assert.strictEqual(db.verifyPilotGrant(mockProjectForGrant), true, 'Active grant must pass verification');
+    // Mutate grant status to undefined (simulate corrupted/tampered record)
+    await db.mutate(d => {
+      const g = d.pilotGrants.find(i => i.grantId === issuedGrantId);
+      delete g.status;
+    });
+    assert.strictEqual(db.verifyPilotGrant(mockProjectForGrant), false, 'Grant missing status MUST fail closed');
+    // Restore status to active
+    await db.mutate(d => {
+      const g = d.pilotGrants.find(i => i.grantId === issuedGrantId);
+      g.status = 'active';
+    });
+    assert.strictEqual(db.verifyPilotGrant(mockProjectForGrant), true);
+
+    // Subtest 32d: Platform Owner Revokes Pilot Grant via Route
+    const revokeRes = await new Promise((resolve, reject) => {
+      const req = http.request({
+        hostname: '127.0.0.1', port: serverPort, path: `/api/admin/pilot-grants/${issuedGrantId}`, method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${ownerToken}` }
+      }, (res) => {
+        let d = ''; res.on('data', c => d += c);
+        res.on('end', () => resolve({ status: res.statusCode, json: JSON.parse(d) }));
+      });
+      req.on('error', reject);
+      req.end();
+    });
+    assert.strictEqual(revokeRes.status, 200, 'Owner must successfully revoke grant (HTTP 200)');
+    assert.strictEqual(revokeRes.json.grant.status, 'revoked');
+    assert.strictEqual(db.verifyPilotGrant(mockProjectForGrant), false, 'Revoked grant must strictly fail verification');
+
+    // Subtest 32e: Platform Owner Legacy Grant Issuance & Revocation
+    const legacyIssueRes = await new Promise((resolve, reject) => {
+      const req = http.request({
+        hostname: '127.0.0.1', port: serverPort, path: '/api/admin/legacy-grants', method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${ownerToken}` }
+      }, (res) => {
+        let d = ''; res.on('data', c => d += c);
+        res.on('end', () => resolve({ status: res.statusCode, json: JSON.parse(d) }));
+      });
+      req.on('error', reject);
+      req.write(JSON.stringify({ organizationId: testOrgId, accountId: `acct_${testOrgId}`, notes: 'Owner legacy grandfather' }));
+      req.end();
+    });
+    assert.strictEqual(legacyIssueRes.status, 201);
+    const legacyGrantId = legacyIssueRes.json.grant.grantId;
+    assert.ok(legacyGrantId.startsWith('grant_leg_'));
+
+    console.log('  PASS: Platform owner grant routes and provenance verification strictly enforced.');
+
+    console.log('\n=== ALL 32 REAL-SERVER SIGNED STRIPE TEST-MODE ROUTE E2E TESTS PASSED ===');
 
 
   } finally {

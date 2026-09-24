@@ -10493,17 +10493,20 @@ return event;
     const now = Date.now();
     const grants = this.memoryData?.pilotGrants || [];
     const grant = grants.find(g => {
-      if (!g.grantId && !g.pilotGrantId) return false;
+      const gId = g.grantId || g.pilotGrantId;
+      if (!gId || typeof gId !== 'string' || !gId.startsWith('grant_')) return false;
+      if (g.status !== 'active') return false; // Strict: missing status or non-active fails closed
       if (g.pilotApprovedByOwner !== true) return false;
-      if (!g.approvedBy || typeof g.approvedBy !== 'string') return false;
-      if (g.status && g.status !== 'active') return false;
+      if (!g.approvedBy || typeof g.approvedBy !== 'string' || g.approvedBy.trim().length === 0) return false;
       if (g.revokedAt || g.isRevoked === true) return false;
       if (!g.pilotExpiresAt || isNaN(new Date(g.pilotExpiresAt).getTime()) || now > new Date(g.pilotExpiresAt).getTime()) return false;
 
-      const matchProject = g.projectId && g.projectId === project.id;
-      const matchAccount = account && g.accountId && g.accountId === account.id;
-      const matchOrg = project.organizationId && g.organizationId && g.organizationId === project.organizationId;
-      return matchProject || matchAccount || matchOrg;
+      // Strict tenant binding: must belong to the project's organization
+      if (!g.organizationId || g.organizationId !== project.organizationId) return false;
+      if (g.projectId && g.projectId !== project.id) return false;
+      if (g.accountId && account && g.accountId !== account.id) return false;
+
+      return true;
     });
     return Boolean(grant);
   }
@@ -10513,15 +10516,19 @@ return event;
     const now = Date.now();
     const grants = this.memoryData?.legacyGrants || [];
     const grant = grants.find(g => {
-      if (!g.grantId && !g.legacyGrantId) return false;
+      const gId = g.grantId || g.legacyGrantId;
+      if (!gId || typeof gId !== 'string' || !gId.startsWith('grant_')) return false;
+      if (g.status !== 'active') return false; // Strict: missing status or non-active fails closed
       if (g.approvedByOwner !== true) return false;
-      if (!g.approvedBy || typeof g.approvedBy !== 'string') return false;
-      if (g.status && g.status !== 'active') return false;
+      if (!g.approvedBy || typeof g.approvedBy !== 'string' || g.approvedBy.trim().length === 0) return false;
       if (g.revokedAt || g.isRevoked === true) return false;
-      const matchAccount = account.id && g.accountId === account.id;
-      const matchProject = project && g.projectId && g.projectId === project.id;
-      const matchOrg = project && project.organizationId && g.organizationId === project.organizationId;
-      return matchAccount || matchProject || matchOrg;
+
+      // Strict tenant binding: must belong to account's organization
+      if (!g.organizationId || (account.organizationId && g.organizationId !== account.organizationId)) return false;
+      if (g.accountId && g.accountId !== account.id) return false;
+      if (g.projectId && project && g.projectId !== project.id) return false;
+
+      return true;
     });
     const hasValidExpiry = Boolean(
       account.planExpiresAt &&
@@ -10529,6 +10536,88 @@ return event;
       now <= new Date(account.planExpiresAt).getTime()
     );
     return Boolean(grant && hasValidExpiry);
+  }
+
+  issuePilotGrant({ organizationId, projectId, accountId, pilotExpiresAt, approvedBy, notes, createdBy }) {
+    if (!organizationId) throw new Error('MISSING_ORGANIZATION_ID');
+    if (!pilotExpiresAt || isNaN(new Date(pilotExpiresAt).getTime()) || Date.now() > new Date(pilotExpiresAt).getTime()) {
+      throw new Error('INVALID_PILOT_EXPIRATION');
+    }
+    if (!approvedBy || typeof approvedBy !== 'string') throw new Error('MISSING_APPROVER');
+
+    const grantId = `grant_pilot_${crypto.randomBytes(8).toString('hex')}`;
+    const grant = {
+      grantId,
+      organizationId,
+      projectId: projectId || undefined,
+      accountId: accountId || undefined,
+      pilotApprovedByOwner: true,
+      approvedBy,
+      status: 'active',
+      pilotExpiresAt: new Date(pilotExpiresAt).toISOString(),
+      notes: notes || undefined,
+      createdAt: new Date().toISOString(),
+      createdBy: createdBy || approvedBy
+    };
+
+    return this.mutate((d) => {
+      d.pilotGrants = d.pilotGrants || [];
+      d.pilotGrants.push(grant);
+      return grant;
+    });
+  }
+
+  revokePilotGrant(grantId, revokedBy) {
+    if (!grantId) throw new Error('MISSING_GRANT_ID');
+    return this.mutate((d) => {
+      d.pilotGrants = d.pilotGrants || [];
+      const g = d.pilotGrants.find(item => (item.grantId === grantId || item.pilotGrantId === grantId));
+      if (!g) throw new Error('GRANT_NOT_FOUND');
+      g.status = 'revoked';
+      g.isRevoked = true;
+      g.revokedAt = new Date().toISOString();
+      g.revokedBy = revokedBy || 'platform_owner';
+      return g;
+    });
+  }
+
+  issueLegacyGrant({ organizationId, accountId, projectId, approvedBy, notes, createdBy }) {
+    if (!organizationId) throw new Error('MISSING_ORGANIZATION_ID');
+    if (!approvedBy || typeof approvedBy !== 'string') throw new Error('MISSING_APPROVER');
+
+    const grantId = `grant_leg_${crypto.randomBytes(8).toString('hex')}`;
+    const grant = {
+      grantId,
+      organizationId,
+      accountId: accountId || undefined,
+      projectId: projectId || undefined,
+      approvedByOwner: true,
+      approvedBy,
+      status: 'active',
+      notes: notes || undefined,
+      createdAt: new Date().toISOString(),
+      createdBy: createdBy || approvedBy
+    };
+
+    return this.mutate((d) => {
+      d.legacyGrants = d.legacyGrants || [];
+      d.legacyGrants.push(grant);
+      return grant;
+    });
+  }
+
+  revokeLegacyGrant(grantId, revokedBy) {
+    if (!grantId) throw new Error('MISSING_GRANT_ID');
+    return this.mutate((d) => {
+      d.legacyGrants = d.legacyGrants || [];
+      const g = d.legacyGrants.find(item => (item.grantId === grantId || item.legacyGrantId === grantId));
+      if (!g) throw new Error('GRANT_NOT_FOUND');
+      g.status = 'revoked';
+      g.isRevoked = true;
+      g.revokedAt = new Date().toISOString();
+      g.revokedBy = revokedBy || 'platform_owner';
+      return g;
+    });
   }
 
   verifyEditAccess(project, token) {

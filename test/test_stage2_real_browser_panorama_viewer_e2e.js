@@ -209,8 +209,8 @@ async function main() {
   let serverPort;
 
   const testReceipt = {
-    testMilestone: 'STAGE2-PANORAMA-BROWSER-OPTICAL-PROOF-R56',
-    revisedPer: 'ChatGPT audit IC_kwDOT53X288AAAABWkNGqA',
+    testMilestone: 'STAGE2-PANORAMA-BROWSER-OPTICAL-PROOF-R57',
+    revisedPer: 'ChatGPT audit IC_kwDOT53X288AAAABWkgwgg',
     executedAt: new Date().toISOString(),
     nodeVersion: process.version,
     platform: process.platform,
@@ -841,6 +841,35 @@ async function main() {
     assert.strictEqual(validLegacyRes.status, 200, `Authoritative db.legacyGrants publish must return HTTP 200, got ${validLegacyRes.status}`);
     console.log('  PASS: Authoritative owner-approved db.legacyGrants allows publish (HTTP 200)');
     testReceipt.publishShareVerification.legacyGrantVerification = 'PASS (HTTP 200 with immutable db.legacyGrants registry)';
+
+    // Negative 3l: Missing Status Grant Denial (strict status === 'active' required)
+    const missingStatusOrgId = `org_missing_status_${Date.now()}`;
+    const missingStatusPrjId = `prj_missing_status_${Date.now()}`;
+    const missingStatusTok = `tok_missing_status_${crypto.randomBytes(8).toString('hex')}`;
+    await db.mutate(d => {
+      d.organizations.push({ id: missingStatusOrgId, name: 'Missing Status Corp', createdAt: new Date().toISOString() });
+      d.apiTokens.push({ token: missingStatusTok, organizationId: missingStatusOrgId, role: 'organizer', status: 'active', scopes: ['projects:write', 'admin'], expiresAt: new Date(Date.now() + 86400000).toISOString(), createdAt: new Date().toISOString() });
+      d.projects.push({ id: missingStatusPrjId, organizationId: missingStatusOrgId, name: 'Missing Status Proj', editToken: missingStatusTok, publishStatus: 'UNPUBLISHED', createdAt: new Date().toISOString() });
+      d.pilotGrants = d.pilotGrants || [];
+      d.pilotGrants.push({
+        grantId: 'grant_missing_status_record',
+        organizationId: missingStatusOrgId,
+        projectId: missingStatusPrjId,
+        pilotApprovedByOwner: true,
+        approvedBy: 'platform_owner',
+        // status is intentionally omitted!
+        pilotExpiresAt: new Date(Date.now() + 86400000).toISOString(),
+        createdAt: new Date().toISOString()
+      });
+    });
+    const missingStatusRes = await httpRequest({
+      hostname: '127.0.0.1', port: serverPort, path: `/api/projects/${missingStatusPrjId}/publish`, method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': '2', 'Authorization': `Bearer ${missingStatusTok}` }
+    }, '{}');
+    assert.strictEqual(missingStatusRes.status, 403, `Grant with missing status must return HTTP 403, got ${missingStatusRes.status}`);
+    assert.strictEqual(missingStatusRes.data.code, 'ENTITLEMENT_UPGRADE_REQUIRED');
+    console.log('  PASS: Grant with missing status strictly denied (HTTP 403 ENTITLEMENT_UPGRADE_REQUIRED)');
+    testReceipt.publishShareVerification.negativeEntitlementChecks.missingStatusGrantDenied = 'PASS (HTTP 403 ENTITLEMENT_UPGRADE_REQUIRED)';
 
     // Negative 4: Revoked API Token Denial
     const revokedTok = `tok_revoked_${crypto.randomBytes(8).toString('hex')}`;
@@ -1485,7 +1514,7 @@ async function main() {
     // ── STEP 9: GATE CLASSIFICATION (STRICTLY DISCIPLINED) ────────────────────
     testReceipt.gates = {
       REAL_SERVER_ROUTE_VERIFIED: 'PASS',
-      SYNTHETIC_SIGNED_REAL_EXPRESS_WEBHOOK_ROUTE_25TESTS: 'PASS (test_stage2_stripe_signed_route_e2e.js, 25/25 tests passed, authoritative stripe provider lookup, zero client network fault headers, forged line item mismatch rejection, paginated line items)',
+      SYNTHETIC_SIGNED_REAL_EXPRESS_ROUTE_TEST: 'AGENT_REPORTED_PASS (test_stage2_stripe_signed_route_e2e.js, 32/32 tests passed, authoritative stripe provider lookup, zero client network fault headers, provider-absent 503 fail-closed, incomplete pagination 502 fail-closed, repeated cursor detection, status completeness, metadata forgery rejection, owner grant routes & provenance)',
       STRIPE_PROVIDER_TEST_CHECKOUT_PORTAL_E2E: 'NOT_VERIFIED (requires actual Stripe TEST provider dashboard credentials and live webhook replay)',
       FULL_360_DEMO_ASSET_VIEWER_E2E: 'PASS (node0_360_panorama_4k_opt.jpg, 4096x2048, 2:1 full-sphere equirectangular pre-existing demo asset)',
       REAL_PHOTO_12_TO_FULL_360_CREATION_E2E: 'NOT_VERIFIED (LLST42 12-photo capture stitches to 186.3deg x 46.7deg partial band; full 360-degree sphere creation requires 24+ photo ring or panoramic hardware)',
@@ -1493,7 +1522,7 @@ async function main() {
       FULL_360_REAL_PHOTO_STAGING_E2E: 'NOT_VERIFIED',
       MOBILE_PRODUCT_VIEWER_E2E: 'PASS (headless Chrome mobile viewport emulation, RGBA pixel proof + real CDP touch drag; physical Android hardware deferred)',
       DESKTOP_PRODUCT_VIEWER_E2E: 'PASS (headless Chrome real WebGL rendering, RGBA pixel proof + independent mouse drag; window.__E2E_TEST__ via CDP without ?test=1 query)',
-      PUBLISH_SHARE_E2E: 'PASS (Real server authenticated POST /api/projects/:id/publish & /unpublish HTTP 200, cross-tenant denial HTTP 403, canceled/past_due/expired/stale-account-PRO denial HTTP 403 ENTITLEMENT_UPGRADE_REQUIRED, direct-pilot-flag denial HTTP 403, tenant-mismatched pilot grant denial HTTP 403, revoked pilot grant denial HTTP 403, bare stripeCustomerId denial HTTP 403, authoritative db.pilotGrants / db.legacyGrants HTTP 200, revoked/expired/omitted-role/omitted-scopes/omitted-status/missing-expiry/malformed-expiry/project-mismatch token denial HTTP 403, GET /api/public/booth/:slug available:true/false, headless Chrome rendered unavailable banner flex)',
+      PUBLISH_SHARE_E2E: 'PASS (Real server authenticated POST /api/projects/:id/publish & /unpublish HTTP 200, cross-tenant denial HTTP 403, canceled/past_due/expired/stale-account-PRO denial HTTP 403 ENTITLEMENT_UPGRADE_REQUIRED, direct-pilot-flag denial HTTP 403, tenant-mismatched pilot grant denial HTTP 403, revoked pilot grant denial HTTP 403, bare stripeCustomerId denial HTTP 403, missing-status grant denial HTTP 403, authoritative db.pilotGrants / db.legacyGrants HTTP 200, revoked/expired/omitted-role/omitted-scopes/omitted-status/missing-expiry/malformed-expiry/project-mismatch token denial HTTP 403, GET /api/public/booth/:slug available:true/false, headless Chrome rendered unavailable banner flex)',
       STRIPE_MODE: 'TEST_UNTIL_EXPLICIT_APPROVAL',
       OWNER_REVIEW_GATE: 'HOLD_PENDING_PANORAMA_STAGING_EVIDENCE',
       TRUE_3D_CUSTOM_PLAN: 'DEFERRED_POST_LAUNCH',
@@ -1504,9 +1533,9 @@ async function main() {
     // Save receipt to isolated scratch directory (do not contaminate production_artifacts)
     const receiptsDir = path.join(__dirname, '../scratch/test_receipts');
     fs.mkdirSync(receiptsDir, { recursive: true });
-    const receiptPath = path.join(receiptsDir, 'R56_PANORAMA_BROWSER_OPTICAL_PROOF_RECEIPT.json');
+    const receiptPath = path.join(receiptsDir, 'R57_PANORAMA_BROWSER_OPTICAL_PROOF_RECEIPT.json');
     fs.writeFileSync(receiptPath, JSON.stringify(testReceipt, null, 2));
-    console.log(`\n[RECEIPT] Saved R56 receipt to isolated scratch: scratch/test_receipts/R56_PANORAMA_BROWSER_OPTICAL_PROOF_RECEIPT.json`);
+    console.log(`\n[RECEIPT] Saved R57 receipt to isolated scratch: scratch/test_receipts/R57_PANORAMA_BROWSER_OPTICAL_PROOF_RECEIPT.json`);
 
     console.log('\n=== ALL BROWSER WEBGL RGBA OPTICAL PROOF & STAGED UI TESTS PASSED ===');
 
