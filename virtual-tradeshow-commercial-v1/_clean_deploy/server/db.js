@@ -450,6 +450,7 @@ const initialSeedData = () => {
     ownerNotes: [],
     pilotGrants: [],
     legacyGrants: [],
+    grantAuditTrail: [],
     featureFlags: {
       stripeLiveBillingEnabled: false,
       billingKillSwitch: true,
@@ -10504,7 +10505,8 @@ return event;
       // Strict tenant binding: must belong to the project's organization
       if (!g.organizationId || g.organizationId !== project.organizationId) return false;
       if (g.projectId && g.projectId !== project.id) return false;
-      if (g.accountId && account && g.accountId !== account.id) return false;
+      // Strict target binding: if grant is scoped to an account, account must be present and match
+      if (g.accountId && (!account || g.accountId !== account.id)) return false;
 
       return true;
     });
@@ -10524,9 +10526,9 @@ return event;
       if (g.revokedAt || g.isRevoked === true) return false;
 
       // Strict tenant binding: must belong to account's organization
-      if (!g.organizationId || (account.organizationId && g.organizationId !== account.organizationId)) return false;
+      if (!g.organizationId || !account.organizationId || g.organizationId !== account.organizationId) return false;
       if (g.accountId && g.accountId !== account.id) return false;
-      if (g.projectId && project && g.projectId !== project.id) return false;
+      if (g.projectId && (!project || g.projectId !== project.id)) return false;
 
       return true;
     });
@@ -10545,24 +10547,67 @@ return event;
     }
     if (!approvedBy || typeof approvedBy !== 'string') throw new Error('MISSING_APPROVER');
 
-    const grantId = `grant_pilot_${crypto.randomBytes(8).toString('hex')}`;
-    const grant = {
-      grantId,
-      organizationId,
-      projectId: projectId || undefined,
-      accountId: accountId || undefined,
-      pilotApprovedByOwner: true,
-      approvedBy,
-      status: 'active',
-      pilotExpiresAt: new Date(pilotExpiresAt).toISOString(),
-      notes: notes || undefined,
-      createdAt: new Date().toISOString(),
-      createdBy: createdBy || approvedBy
-    };
-
     return this.mutate((d) => {
+      // Referential Integrity: validate organization exists
+      const org = (d.organizations || []).find(o => o.id === organizationId);
+      if (!org) {
+        throw new Error('REFERENTIAL_INTEGRITY_VIOLATION: Organization not found');
+      }
+
+      // Referential Integrity: validate project exists and belongs to the same organization
+      if (projectId) {
+        const proj = (d.projects || []).find(p => p.id === projectId);
+        if (!proj) {
+          throw new Error('REFERENTIAL_INTEGRITY_VIOLATION: Project not found');
+        }
+        if (proj.organizationId && proj.organizationId !== organizationId) {
+          throw new Error('REFERENTIAL_INTEGRITY_VIOLATION: Project belongs to a different organization');
+        }
+      }
+
+      // Referential Integrity: validate account exists and belongs to the same organization
+      if (accountId) {
+        const acc = (d.accounts || []).find(a => a.id === accountId);
+        if (!acc) {
+          throw new Error('REFERENTIAL_INTEGRITY_VIOLATION: Account not found');
+        }
+        if (acc.organizationId && acc.organizationId !== organizationId) {
+          throw new Error('REFERENTIAL_INTEGRITY_VIOLATION: Account belongs to a different organization');
+        }
+      }
+
+      const grantId = `grant_pilot_${crypto.randomBytes(8).toString('hex')}`;
+      const grant = {
+        grantId,
+        organizationId,
+        projectId: projectId || undefined,
+        accountId: accountId || undefined,
+        pilotApprovedByOwner: true,
+        approvedBy,
+        status: 'active',
+        pilotExpiresAt: new Date(pilotExpiresAt).toISOString(),
+        notes: notes || undefined,
+        createdAt: new Date().toISOString(),
+        createdBy: createdBy || approvedBy
+      };
+
       d.pilotGrants = d.pilotGrants || [];
       d.pilotGrants.push(grant);
+
+      // Immutable grant audit trail
+      d.grantAuditTrail = d.grantAuditTrail || [];
+      d.grantAuditTrail.push({
+        auditId: `g_audit_${crypto.randomBytes(8).toString('hex')}`,
+        action: 'ISSUED',
+        grantType: 'pilot',
+        grantId,
+        organizationId,
+        projectId: projectId || null,
+        accountId: accountId || null,
+        actor: createdBy || approvedBy,
+        timestamp: new Date().toISOString()
+      });
+
       return grant;
     });
   }
@@ -10577,6 +10622,21 @@ return event;
       g.isRevoked = true;
       g.revokedAt = new Date().toISOString();
       g.revokedBy = revokedBy || 'platform_owner';
+
+      // Immutable grant audit trail
+      d.grantAuditTrail = d.grantAuditTrail || [];
+      d.grantAuditTrail.push({
+        auditId: `g_audit_${crypto.randomBytes(8).toString('hex')}`,
+        action: 'REVOKED',
+        grantType: 'pilot',
+        grantId: g.grantId || g.pilotGrantId,
+        organizationId: g.organizationId,
+        projectId: g.projectId || null,
+        accountId: g.accountId || null,
+        actor: revokedBy || 'platform_owner',
+        timestamp: new Date().toISOString()
+      });
+
       return g;
     });
   }
@@ -10585,23 +10645,66 @@ return event;
     if (!organizationId) throw new Error('MISSING_ORGANIZATION_ID');
     if (!approvedBy || typeof approvedBy !== 'string') throw new Error('MISSING_APPROVER');
 
-    const grantId = `grant_leg_${crypto.randomBytes(8).toString('hex')}`;
-    const grant = {
-      grantId,
-      organizationId,
-      accountId: accountId || undefined,
-      projectId: projectId || undefined,
-      approvedByOwner: true,
-      approvedBy,
-      status: 'active',
-      notes: notes || undefined,
-      createdAt: new Date().toISOString(),
-      createdBy: createdBy || approvedBy
-    };
-
     return this.mutate((d) => {
+      // Referential Integrity: validate organization exists
+      const org = (d.organizations || []).find(o => o.id === organizationId);
+      if (!org) {
+        throw new Error('REFERENTIAL_INTEGRITY_VIOLATION: Organization not found');
+      }
+
+      // Referential Integrity: validate project exists and belongs to the same organization
+      if (projectId) {
+        const proj = (d.projects || []).find(p => p.id === projectId);
+        if (!proj) {
+          throw new Error('REFERENTIAL_INTEGRITY_VIOLATION: Project not found');
+        }
+        if (proj.organizationId && proj.organizationId !== organizationId) {
+          throw new Error('REFERENTIAL_INTEGRITY_VIOLATION: Project belongs to a different organization');
+        }
+      }
+
+      // Referential Integrity: validate account exists and belongs to the same organization
+      if (accountId) {
+        const acc = (d.accounts || []).find(a => a.id === accountId);
+        if (!acc) {
+          throw new Error('REFERENTIAL_INTEGRITY_VIOLATION: Account not found');
+        }
+        if (acc.organizationId && acc.organizationId !== organizationId) {
+          throw new Error('REFERENTIAL_INTEGRITY_VIOLATION: Account belongs to a different organization');
+        }
+      }
+
+      const grantId = `grant_leg_${crypto.randomBytes(8).toString('hex')}`;
+      const grant = {
+        grantId,
+        organizationId,
+        accountId: accountId || undefined,
+        projectId: projectId || undefined,
+        approvedByOwner: true,
+        approvedBy,
+        status: 'active',
+        notes: notes || undefined,
+        createdAt: new Date().toISOString(),
+        createdBy: createdBy || approvedBy
+      };
+
       d.legacyGrants = d.legacyGrants || [];
       d.legacyGrants.push(grant);
+
+      // Immutable grant audit trail
+      d.grantAuditTrail = d.grantAuditTrail || [];
+      d.grantAuditTrail.push({
+        auditId: `g_audit_${crypto.randomBytes(8).toString('hex')}`,
+        action: 'ISSUED',
+        grantType: 'legacy',
+        grantId,
+        organizationId,
+        projectId: projectId || null,
+        accountId: accountId || null,
+        actor: createdBy || approvedBy,
+        timestamp: new Date().toISOString()
+      });
+
       return grant;
     });
   }
@@ -10616,6 +10719,21 @@ return event;
       g.isRevoked = true;
       g.revokedAt = new Date().toISOString();
       g.revokedBy = revokedBy || 'platform_owner';
+
+      // Immutable grant audit trail
+      d.grantAuditTrail = d.grantAuditTrail || [];
+      d.grantAuditTrail.push({
+        auditId: `g_audit_${crypto.randomBytes(8).toString('hex')}`,
+        action: 'REVOKED',
+        grantType: 'legacy',
+        grantId: g.grantId || g.legacyGrantId,
+        organizationId: g.organizationId,
+        projectId: g.projectId || null,
+        accountId: g.accountId || null,
+        actor: revokedBy || 'platform_owner',
+        timestamp: new Date().toISOString()
+      });
+
       return g;
     });
   }

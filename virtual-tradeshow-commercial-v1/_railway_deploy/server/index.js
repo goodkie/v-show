@@ -631,6 +631,20 @@ function verifyStripeWebhookSignature(rawBody, sigHeader, secret) {
   return JSON.parse(payloadStr);
 }
 
+function isStripeTransientError(err) {
+  if (!err) return false;
+  return Boolean(
+    !err.statusCode ||
+    err.statusCode >= 500 ||
+    err.statusCode === 429 ||
+    err.type === 'StripeConnectionError' ||
+    err.type === 'StripeAPIError' ||
+    err.code === 'ETIMEDOUT' ||
+    err.code === 'ECONNRESET' ||
+    err.code === 'ECONNREFUSED'
+  );
+}
+
 // Raw body parser for Stripe webhook MUST come before express.json()
 app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }), async (req, res) => {
 
@@ -690,7 +704,12 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
   ];
 
   if (commercialEntitlementEvents.includes(event.type)) {
-    if (!activeStripe || typeof activeStripe.checkout?.sessions?.retrieve !== 'function') {
+    const hasRequiredClient = activeStripe && (
+      (event.type === 'checkout.session.completed' && typeof activeStripe.checkout?.sessions?.retrieve === 'function') ||
+      (event.type.startsWith('customer.subscription.') && typeof activeStripe.subscriptions?.retrieve === 'function') ||
+      (event.type.startsWith('invoice.') && typeof activeStripe.invoices?.retrieve === 'function')
+    );
+    if (!hasRequiredClient) {
       console.warn(`[SECURITY][STRIPE_PROVIDER_UNAVAILABLE] Commercial event '${event.type}' rejected: authoritative Stripe provider client is unavailable.`);
       return res.status(503).json({
         error: 'STRIPE_PROVIDER_UNAVAILABLE',
@@ -721,10 +740,42 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
           }
 
           // 2. Strict Session Completeness Verification
+          if (authSession.id !== sessionObj.id) {
+            return res.status(400).json({
+              error: 'STRIPE_SESSION_ID_MISMATCH',
+              message: 'Event-embedded session ID differs from authoritative session ID.',
+              retryable: false
+            });
+          }
+
           if (authSession.status !== 'complete') {
             return res.status(400).json({
               error: 'STRIPE_SESSION_NOT_COMPLETE',
               message: `Authoritative checkout session status is '${authSession.status}', expected 'complete'.`,
+              retryable: false
+            });
+          }
+
+          if (authSession.payment_status !== 'paid') {
+            return res.status(400).json({
+              error: 'PAYMENT_NOT_PAID',
+              message: `Authoritative checkout session payment_status is '${authSession.payment_status}', expected 'paid'.`,
+              retryable: false
+            });
+          }
+
+          if (!authSession.customer || typeof authSession.customer !== 'string' || authSession.customer.trim().length === 0) {
+            return res.status(400).json({
+              error: 'STRIPE_SESSION_CUSTOMER_REQUIRED',
+              message: 'Authoritative checkout session has empty customer identity.',
+              retryable: false
+            });
+          }
+
+          if (!authSession.subscription || typeof authSession.subscription !== 'string' || authSession.subscription.trim().length === 0) {
+            return res.status(400).json({
+              error: 'STRIPE_SESSION_SUBSCRIPTION_REQUIRED',
+              message: 'Authoritative checkout session has empty subscription identity.',
               retryable: false
             });
           }
@@ -836,11 +887,11 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
           }
 
           // 6. Metadata Trust Boundary: Provider-authoritative metadata ONLY
-          if (sessionObj.metadata && Object.keys(sessionObj.metadata).length > 0) {
+          if (sessionObj.metadata && typeof sessionObj.metadata === 'object') {
             const authMeta = authSession.metadata || {};
             for (const [k, v] of Object.entries(sessionObj.metadata)) {
-              if (authMeta[k] !== undefined && String(authMeta[k]) !== String(v)) {
-                console.warn(`[SECURITY][METADATA_FORGERY_DETECTED] Event metadata ${k}=${v} differs from provider ${authMeta[k]}`);
+              if (authMeta[k] === undefined || String(authMeta[k]) !== String(v)) {
+                console.warn(`[SECURITY][METADATA_FORGERY_DETECTED] Event-embedded metadata key '${k}' mismatch with authoritative provider metadata.`);
                 return res.status(400).json({
                   error: 'METADATA_FORGERY_DETECTED',
                   message: `Event-embedded metadata for key '${k}' differs from authoritative provider record.`,
@@ -864,17 +915,7 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
           };
         } catch (fetchErr) {
           console.error('[STRIPE_AUTHORITATIVE_LOOKUP_FAILED]', fetchErr?.message || fetchErr);
-          const isTransient = Boolean(
-            !fetchErr.statusCode ||
-            fetchErr.statusCode >= 500 ||
-            fetchErr.statusCode === 429 ||
-            fetchErr.type === 'StripeConnectionError' ||
-            fetchErr.type === 'StripeAPIError' ||
-            fetchErr.code === 'ETIMEDOUT' ||
-            fetchErr.code === 'ECONNRESET' ||
-            fetchErr.code === 'ECONNREFUSED'
-          );
-          if (isTransient) {
+          if (isStripeTransientError(fetchErr)) {
             return res.status(500).json({
               error: 'STRIPE_PROVIDER_TRANSIENT_FAILURE',
               message: 'Stripe provider lookup failed with transient error; retry requested.',
@@ -896,30 +937,250 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
       }
       case 'customer.subscription.created':
       case 'customer.subscription.updated': {
+        const subObj = event.data.object;
+        if (!subObj || !subObj.id || typeof subObj.id !== 'string') {
+          return res.status(400).json({ error: 'MISSING_SUBSCRIPTION_ID', retryable: false });
+        }
+
+        let authSub;
+        try {
+          authSub = await activeStripe.subscriptions.retrieve(subObj.id);
+          if (!authSub) {
+            return res.status(400).json({
+              error: 'STRIPE_SUBSCRIPTION_NOT_FOUND',
+              message: 'Authoritative subscription could not be found on provider.',
+              retryable: false
+            });
+          }
+
+          if (authSub.id !== subObj.id) {
+            return res.status(400).json({
+              error: 'STRIPE_SUBSCRIPTION_MISMATCH',
+              message: 'Event-embedded subscription ID differs from authoritative subscription ID.',
+              retryable: false
+            });
+          }
+
+          if (subObj.customer && authSub.customer && subObj.customer !== authSub.customer) {
+            return res.status(400).json({
+              error: 'STRIPE_CUSTOMER_MISMATCH',
+              message: 'Event-embedded customer differs from authoritative provider subscription customer.',
+              retryable: false
+            });
+          }
+
+          if (!authSub.customer || typeof authSub.customer !== 'string') {
+            return res.status(400).json({
+              error: 'STRIPE_CUSTOMER_REQUIRED',
+              message: 'Authoritative provider subscription missing customer identity.',
+              retryable: false
+            });
+          }
+        } catch (subErr) {
+          console.error('[STRIPE_SUBSCRIPTION_LOOKUP_FAILED]', subErr?.message || subErr);
+          if (isStripeTransientError(subErr)) {
+            return res.status(500).json({
+              error: 'STRIPE_PROVIDER_TRANSIENT_FAILURE',
+              message: 'Stripe subscription lookup failed with transient error; retry requested.',
+              retryable: true
+            });
+          }
+          return res.status(400).json({
+            error: 'STRIPE_PROVIDER_FETCH_FAILED',
+            message: subErr?.message || 'Authoritative Stripe subscription lookup failed.',
+            retryable: false
+          });
+        }
+
         result = await db.applyStripeSubscriptionUpdatedAtomic({
           event,
-          subscription: event.data.object
+          subscription: authSub
         });
         break;
       }
       case 'customer.subscription.deleted': {
+        const subObj = event.data.object;
+        if (!subObj || !subObj.id || typeof subObj.id !== 'string') {
+          return res.status(400).json({ error: 'MISSING_SUBSCRIPTION_ID', retryable: false });
+        }
+
+        let authSub;
+        try {
+          authSub = await activeStripe.subscriptions.retrieve(subObj.id);
+          if (!authSub) {
+            return res.status(400).json({
+              error: 'STRIPE_SUBSCRIPTION_NOT_FOUND',
+              message: 'Authoritative subscription could not be found on provider.',
+              retryable: false
+            });
+          }
+
+          if (authSub.id !== subObj.id) {
+            return res.status(400).json({
+              error: 'STRIPE_SUBSCRIPTION_MISMATCH',
+              message: 'Event-embedded subscription ID differs from authoritative subscription ID.',
+              retryable: false
+            });
+          }
+
+          if (subObj.customer && authSub.customer && subObj.customer !== authSub.customer) {
+            return res.status(400).json({
+              error: 'STRIPE_CUSTOMER_MISMATCH',
+              message: 'Event-embedded customer differs from authoritative provider subscription customer.',
+              retryable: false
+            });
+          }
+        } catch (subErr) {
+          console.error('[STRIPE_SUBSCRIPTION_LOOKUP_FAILED]', subErr?.message || subErr);
+          if (isStripeTransientError(subErr)) {
+            return res.status(500).json({
+              error: 'STRIPE_PROVIDER_TRANSIENT_FAILURE',
+              message: 'Stripe subscription lookup failed with transient error; retry requested.',
+              retryable: true
+            });
+          }
+          return res.status(400).json({
+            error: 'STRIPE_PROVIDER_FETCH_FAILED',
+            message: subErr?.message || 'Authoritative Stripe subscription lookup failed.',
+            retryable: false
+          });
+        }
+
         result = await db.applyStripeSubscriptionCancelledAtomic({
           event,
-          subscription: event.data.object
+          subscription: authSub
         });
         break;
       }
       case 'invoice.payment_failed': {
+        const invObj = event.data.object;
+        if (!invObj || !invObj.id || typeof invObj.id !== 'string') {
+          return res.status(400).json({ error: 'MISSING_INVOICE_ID', retryable: false });
+        }
+
+        let authInv;
+        try {
+          authInv = await activeStripe.invoices.retrieve(invObj.id);
+          if (!authInv) {
+            return res.status(400).json({
+              error: 'STRIPE_INVOICE_NOT_FOUND',
+              message: 'Authoritative invoice could not be found on provider.',
+              retryable: false
+            });
+          }
+
+          if (authInv.id !== invObj.id) {
+            return res.status(400).json({
+              error: 'STRIPE_INVOICE_MISMATCH',
+              message: 'Event-embedded invoice ID differs from authoritative invoice ID.',
+              retryable: false
+            });
+          }
+
+          if (invObj.customer && authInv.customer && invObj.customer !== authInv.customer) {
+            return res.status(400).json({
+              error: 'STRIPE_CUSTOMER_MISMATCH',
+              message: 'Event-embedded customer differs from authoritative provider invoice customer.',
+              retryable: false
+            });
+          }
+
+          if (invObj.subscription && authInv.subscription && invObj.subscription !== authInv.subscription) {
+            return res.status(400).json({
+              error: 'STRIPE_SUBSCRIPTION_MISMATCH',
+              message: 'Event-embedded subscription differs from authoritative provider invoice subscription.',
+              retryable: false
+            });
+          }
+        } catch (invErr) {
+          console.error('[STRIPE_INVOICE_LOOKUP_FAILED]', invErr?.message || invErr);
+          if (isStripeTransientError(invErr)) {
+            return res.status(500).json({
+              error: 'STRIPE_PROVIDER_TRANSIENT_FAILURE',
+              message: 'Stripe invoice lookup failed with transient error; retry requested.',
+              retryable: true
+            });
+          }
+          return res.status(400).json({
+            error: 'STRIPE_PROVIDER_FETCH_FAILED',
+            message: invErr?.message || 'Authoritative Stripe invoice lookup failed.',
+            retryable: false
+          });
+        }
+
         result = await db.applyStripePaymentFailedAtomic({
           event,
-          invoice: event.data.object
+          invoice: authInv
         });
         break;
       }
       case 'invoice.paid': {
+        const invObj = event.data.object;
+        if (!invObj || !invObj.id || typeof invObj.id !== 'string') {
+          return res.status(400).json({ error: 'MISSING_INVOICE_ID', retryable: false });
+        }
+
+        let authInv;
+        try {
+          authInv = await activeStripe.invoices.retrieve(invObj.id);
+          if (!authInv) {
+            return res.status(400).json({
+              error: 'STRIPE_INVOICE_NOT_FOUND',
+              message: 'Authoritative invoice could not be found on provider.',
+              retryable: false
+            });
+          }
+
+          if (authInv.id !== invObj.id) {
+            return res.status(400).json({
+              error: 'STRIPE_INVOICE_MISMATCH',
+              message: 'Event-embedded invoice ID differs from authoritative invoice ID.',
+              retryable: false
+            });
+          }
+
+          if (invObj.customer && authInv.customer && invObj.customer !== authInv.customer) {
+            return res.status(400).json({
+              error: 'STRIPE_CUSTOMER_MISMATCH',
+              message: 'Event-embedded customer differs from authoritative provider invoice customer.',
+              retryable: false
+            });
+          }
+
+          if (invObj.subscription && authInv.subscription && invObj.subscription !== authInv.subscription) {
+            return res.status(400).json({
+              error: 'STRIPE_SUBSCRIPTION_MISMATCH',
+              message: 'Event-embedded subscription differs from authoritative provider invoice subscription.',
+              retryable: false
+            });
+          }
+
+          if (authInv.status !== 'paid' && authInv.paid !== true) {
+            return res.status(400).json({
+              error: 'STRIPE_INVOICE_NOT_PAID',
+              message: `Authoritative invoice status is '${authInv.status}', expected 'paid'.`,
+              retryable: false
+            });
+          }
+        } catch (invErr) {
+          console.error('[STRIPE_INVOICE_LOOKUP_FAILED]', invErr?.message || invErr);
+          if (isStripeTransientError(invErr)) {
+            return res.status(500).json({
+              error: 'STRIPE_PROVIDER_TRANSIENT_FAILURE',
+              message: 'Stripe invoice lookup failed with transient error; retry requested.',
+              retryable: true
+            });
+          }
+          return res.status(400).json({
+            error: 'STRIPE_PROVIDER_FETCH_FAILED',
+            message: invErr?.message || 'Authoritative Stripe invoice lookup failed.',
+            retryable: false
+          });
+        }
+
         result = await db.applyStripeInvoicePaidAtomic({
           event,
-          invoice: event.data.object
+          invoice: authInv
         });
         break;
       }

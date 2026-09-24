@@ -72,21 +72,47 @@ const stripe = require('../virtual-tradeshow-commercial-v1/_clean_deploy/node_mo
 // Authoritative mock store for testing server-side authoritative provider retrieval
 const authoritativeSessionStore = new Map();
 const authoritativeLineItemsStore = new Map();
+const authoritativeSubscriptionStore = new Map();
+const authoritativeInvoiceStore = new Map();
 
-if (stripeClient && stripeClient.checkout && stripeClient.checkout.sessions) {
-  stripeClient.checkout.sessions.retrieve = async (id) => {
-    if (authoritativeSessionStore.has(id)) {
-      return authoritativeSessionStore.get(id);
+if (stripeClient) {
+  if (stripeClient.checkout && stripeClient.checkout.sessions) {
+    stripeClient.checkout.sessions.retrieve = async (id) => {
+      if (authoritativeSessionStore.has(id)) {
+        const val = authoritativeSessionStore.get(id);
+        if (val instanceof Error) throw val;
+        return val;
+      }
+      return { id, status: 'complete', payment_status: 'paid', customer: 'cus_default_test', subscription: 'sub_default_test' };
+    };
+
+    stripeClient.checkout.sessions.listLineItems = async (id, params) => {
+      if (authoritativeLineItemsStore.has(id)) {
+        const entry = authoritativeLineItemsStore.get(id);
+        return typeof entry === 'function' ? entry(params) : entry;
+      }
+      return { object: 'list', data: [], has_more: false };
+    };
+  }
+
+  if (!stripeClient.subscriptions) stripeClient.subscriptions = {};
+  stripeClient.subscriptions.retrieve = async (id) => {
+    if (authoritativeSubscriptionStore.has(id)) {
+      const val = authoritativeSubscriptionStore.get(id);
+      if (val instanceof Error) throw val;
+      return val;
     }
-    return { id, status: 'complete', payment_status: 'paid' };
+    return { id, customer: 'cus_default_test', status: 'active', current_period_end: Math.floor((Date.now() + 86400000) / 1000) };
   };
 
-  stripeClient.checkout.sessions.listLineItems = async (id, params) => {
-    if (authoritativeLineItemsStore.has(id)) {
-      const entry = authoritativeLineItemsStore.get(id);
-      return typeof entry === 'function' ? entry(params) : entry;
+  if (!stripeClient.invoices) stripeClient.invoices = {};
+  stripeClient.invoices.retrieve = async (id) => {
+    if (authoritativeInvoiceStore.has(id)) {
+      const val = authoritativeInvoiceStore.get(id);
+      if (val instanceof Error) throw val;
+      return val;
     }
-    return { object: 'list', data: [], has_more: false };
+    return { id, customer: 'cus_default_test', subscription: 'sub_default_test', status: 'paid', paid: true };
   };
 }
 
@@ -167,6 +193,21 @@ async function main() {
         commercialState: 'FREE_TRIAL',
         createdAt: new Date().toISOString()
       });
+
+      // Seed accounts for referential integrity testing
+      d.accounts = d.accounts || [];
+      d.accounts.push({
+        id: `acct_${testOrgId}`,
+        organizationId: testOrgId,
+        email: 'test@example.com',
+        planCode: 'FREE_BOOTH'
+      });
+      d.accounts.push({
+        id: `acct_${otherOrgId}`,
+        organizationId: otherOrgId,
+        email: 'other@example.com',
+        planCode: 'FREE_BOOTH'
+      });
     });
 
     console.log(`[SETUP] Seeded isolated test tenants ${testOrgId} and ${otherOrgId} in sandbox.`);
@@ -190,6 +231,35 @@ async function main() {
         }
         if (sess.id && sess.line_items && !authoritativeLineItemsStore.has(sess.id)) {
           authoritativeLineItemsStore.set(sess.id, sess.line_items);
+        }
+      }
+
+      if (typeof payloadObject === 'object' && payloadObject.type && payloadObject.type.startsWith('customer.subscription.') && payloadObject.data?.object) {
+        const sub = payloadObject.data.object;
+        if (sub.id && (!authoritativeSubscriptionStore.has(sub.id) || authoritativeSubscriptionStore.get(sub.id)?._autoSeeded)) {
+          authoritativeSubscriptionStore.set(sub.id, {
+            id: sub.id,
+            customer: sub.customer || 'cus_default_test',
+            status: sub.status || 'active',
+            current_period_end: sub.current_period_end || Math.floor((Date.now() + 86400000) / 1000),
+            items: sub.items || { data: [] },
+            _autoSeeded: true
+          });
+        }
+      }
+
+      if (typeof payloadObject === 'object' && payloadObject.type && payloadObject.type.startsWith('invoice.') && payloadObject.data?.object) {
+        const inv = payloadObject.data.object;
+        if (inv.id && (!authoritativeInvoiceStore.has(inv.id) || authoritativeInvoiceStore.get(inv.id)?._autoSeeded)) {
+          authoritativeInvoiceStore.set(inv.id, {
+            id: inv.id,
+            customer: inv.customer || 'cus_default_test',
+            subscription: inv.subscription || 'sub_default_test',
+            status: payloadObject.type === 'invoice.payment_failed' ? 'open' : (inv.status || 'paid'),
+            paid: payloadObject.type !== 'invoice.payment_failed' && inv.paid !== false,
+            amount_paid: inv.amount_paid || 29900,
+            _autoSeeded: true
+          });
         }
       }
 
@@ -992,8 +1062,12 @@ async function main() {
       currencyExpected: 'usd',
       status: 'PENDING'
     });
+    const cus23 = `cus_forged_items_${Date.now()}`;
+    const sub23 = `sub_forged_items_${Date.now()}`;
     authoritativeSessionStore.set(sessionId23, {
       id: sessionId23,
+      customer: cus23,
+      subscription: sub23,
       status: 'complete',
       payment_status: 'paid',
       amount_total: 29900,
@@ -1013,8 +1087,8 @@ async function main() {
       data: {
         object: {
           id: sessionId23,
-          customer: `cus_forged_items_${Date.now()}`,
-          subscription: `sub_forged_items_${Date.now()}`,
+          customer: cus23,
+          subscription: sub23,
           payment_status: 'paid',
           amount_total: 29900,
           currency: 'usd',
@@ -1075,8 +1149,8 @@ async function main() {
       data: {
         object: {
           id: sessionId24,
-          customer: `cus_paginated_${Date.now()}`,
-          subscription: `sub_paginated_${Date.now()}`,
+          customer: cus24,
+          subscription: sub24,
           payment_status: 'paid',
           amount_total: 29900,
           currency: 'usd'
@@ -1577,7 +1651,219 @@ async function main() {
 
     console.log('  PASS: Platform owner grant routes and provenance verification strictly enforced.');
 
-    console.log('\n=== ALL 32 REAL-SERVER SIGNED STRIPE TEST-MODE ROUTE E2E TESTS PASSED ===');
+    // ── TEST 33: AUTHORITATIVE PROVIDER RETRIEVAL FOR SUBSCRIPTION UPDATES ────
+    console.log('\n[TEST 33] Verifying Authoritative Provider Retrieval on Subscription Updates...');
+    const subId33 = `sub_auth_retrieve_${Date.now()}`;
+    const cusId33 = `cus_auth_retrieve_${Date.now()}`;
+    authoritativeSubscriptionStore.set(subId33, {
+      id: subId33,
+      customer: cusId33,
+      status: 'active',
+      current_period_end: Math.floor((Date.now() + 86400000) / 1000),
+      items: { data: [{ price: { id: 'price_test_pro_monthly' } }] }
+    });
+    await db.mutate(d => {
+      d.organizations.push({
+        id: `org_sub_test_${Date.now()}`,
+        name: 'Sub Test Org',
+        status: 'active',
+        subscription: {
+          stripeSubscriptionId: subId33,
+          stripeCustomerId: cusId33,
+          status: 'incomplete',
+          plan: 'pro'
+        }
+      });
+    });
+    const subEvent33 = {
+      id: `evt_sub_auth_${Date.now()}`,
+      object: 'event',
+      type: 'customer.subscription.updated',
+      data: {
+        object: {
+          id: subId33,
+          customer: cusId33,
+          status: 'incomplete'
+        }
+      }
+    };
+    const res33 = await postWebhook(subEvent33);
+    assert.strictEqual(res33.status, 200, 'Subscription update with authoritative retrieval must succeed');
+    console.log('  PASS: Authoritative provider subscription retrieval verified.');
+
+    // ── TEST 34: FORGED SUBSCRIPTION CUSTOMER MISMATCH REJECTION ────────────
+    console.log('\n[TEST 34] Verifying Forged Subscription Customer Mismatch Rejection...');
+    const subId34 = `sub_forged_cus_${Date.now()}`;
+    const realCus34 = `cus_real_${Date.now()}`;
+    authoritativeSubscriptionStore.set(subId34, {
+      id: subId34,
+      customer: realCus34,
+      status: 'active'
+    });
+    const forgedSubEvent = {
+      id: `evt_sub_forged_${Date.now()}`,
+      object: 'event',
+      type: 'customer.subscription.updated',
+      data: {
+        object: {
+          id: subId34,
+          customer: 'cus_attacker_injected',
+          status: 'active'
+        }
+      }
+    };
+    const res34 = await postWebhook(forgedSubEvent);
+    assert.strictEqual(res34.status, 400, 'Forged subscription customer mismatch must be rejected with HTTP 400');
+    assert.strictEqual(res34.data.error, 'STRIPE_CUSTOMER_MISMATCH');
+    console.log('  PASS: Forged subscription customer mismatch rejected (HTTP 400 STRIPE_CUSTOMER_MISMATCH).');
+
+    // ── TEST 35: AUTHORITATIVE PROVIDER RETRIEVAL FOR INVOICE EVENTS ─────────
+    console.log('\n[TEST 35] Verifying Authoritative Provider Retrieval for Invoice Events...');
+    const invId35 = `in_auth_test_${Date.now()}`;
+    const subId35 = `sub_inv_test_${Date.now()}`;
+    const cusId35 = `cus_inv_test_${Date.now()}`;
+    await db.mutate(d => {
+      d.organizations.push({
+        id: `org_inv_test_${Date.now()}`,
+        name: 'Inv Test Org',
+        status: 'past_due',
+        subscription: {
+          stripeSubscriptionId: subId35,
+          stripeCustomerId: cusId35,
+          status: 'past_due',
+          plan: 'pro'
+        }
+      });
+    });
+    authoritativeInvoiceStore.set(invId35, {
+      id: invId35,
+      customer: cusId35,
+      subscription: subId35,
+      status: 'paid',
+      paid: true,
+      amount_paid: 29900
+    });
+    const invEvent35 = {
+      id: `evt_inv_paid_${Date.now()}`,
+      object: 'event',
+      type: 'invoice.paid',
+      data: {
+        object: {
+          id: invId35,
+          customer: cusId35,
+          subscription: subId35,
+          status: 'paid'
+        }
+      }
+    };
+    const res35 = await postWebhook(invEvent35);
+    assert.strictEqual(res35.status, 200, 'Invoice paid with authoritative provider retrieval must succeed');
+    console.log('  PASS: Authoritative provider invoice retrieval verified.');
+
+    // ── TEST 36: FORGED INVOICE NOT PAID & IDENTITY MISMATCH REJECTION ──────
+    console.log('\n[TEST 36] Verifying Forged Invoice Mismatch & Unpaid Status Rejection...');
+    const invId36 = `in_unpaid_test_${Date.now()}`;
+    authoritativeInvoiceStore.set(invId36, {
+      id: invId36,
+      customer: 'cus_provider_36',
+      subscription: 'sub_provider_36',
+      status: 'open',
+      paid: false
+    });
+    const forgedPaidEvent = {
+      id: `evt_forged_inv_${Date.now()}`,
+      object: 'event',
+      type: 'invoice.paid',
+      data: {
+        object: {
+          id: invId36,
+          customer: 'cus_provider_36',
+          subscription: 'sub_provider_36',
+          status: 'paid'
+        }
+      }
+    };
+    const res36 = await postWebhook(forgedPaidEvent);
+    assert.strictEqual(res36.status, 400, 'Unpaid invoice claimed as paid must be rejected with HTTP 400');
+    assert.strictEqual(res36.data.error, 'STRIPE_INVOICE_NOT_PAID');
+    console.log('  PASS: Forged un-paid invoice event rejected (HTTP 400 STRIPE_INVOICE_NOT_PAID).');
+
+    // ── TEST 37: TRANSIENT PROVIDER FAILURE RETURNS HTTP 500 RETRYABLE ───────
+    console.log('\n[TEST 37] Verifying Transient Provider Failure Returns Retryable HTTP 500...');
+    const subId37 = `sub_transient_${Date.now()}`;
+    const transientErr = new Error('Connection refused to Stripe API');
+    transientErr.type = 'StripeConnectionError';
+    authoritativeSubscriptionStore.set(subId37, transientErr);
+    const transientEvent = {
+      id: `evt_transient_${Date.now()}`,
+      object: 'event',
+      type: 'customer.subscription.updated',
+      data: {
+        object: {
+          id: subId37,
+          customer: 'cus_transient',
+          status: 'active'
+        }
+      }
+    };
+    const res37 = await postWebhook(transientEvent);
+    assert.strictEqual(res37.status, 500, 'Transient provider error must return HTTP 500');
+    assert.strictEqual(res37.data.retryable, true, 'Transient provider error response must be retryable');
+    console.log('  PASS: Transient provider failure properly returned HTTP 500 retryable.');
+
+    // ── TEST 38: GRANT REFERENTIAL INTEGRITY ENFORCEMENT ────────────────────
+    console.log('\n[TEST 38] Verifying Grant Referential Integrity Enforcement...');
+    // Attempt 1: Non-existent organization
+    await assert.rejects(
+      async () => {
+        await db.issuePilotGrant({
+          organizationId: 'org_non_existent_fake_id',
+          pilotExpiresAt: new Date(Date.now() + 86400000).toISOString(),
+          approvedBy: 'owner_user'
+        });
+      },
+      /REFERENTIAL_INTEGRITY_VIOLATION/,
+      'Grant issuance with non-existent org must fail referential integrity'
+    );
+
+    // Attempt 2: Project belonging to a different organization
+    await assert.rejects(
+      async () => {
+        await db.issuePilotGrant({
+          organizationId: testOrgId,
+          projectId: otherProjectId,
+          pilotExpiresAt: new Date(Date.now() + 86400000).toISOString(),
+          approvedBy: 'owner_user'
+        });
+      },
+      /REFERENTIAL_INTEGRITY_VIOLATION/,
+      'Grant issuance with cross-org project must fail referential integrity'
+    );
+    console.log('  PASS: Grant referential integrity strictly enforced.');
+
+    // ── TEST 39: IMMUTABLE GRANT AUDIT TRAIL VERIFICATION ───────────────────
+    console.log('\n[TEST 39] Verifying Immutable Grant Audit Trail Recording...');
+    const auditOrgId = testOrgId;
+    const testPilotGrant = await db.issuePilotGrant({
+      organizationId: auditOrgId,
+      pilotExpiresAt: new Date(Date.now() + 86400000).toISOString(),
+      approvedBy: 'audit_test_owner',
+      createdBy: 'audit_test_owner'
+    });
+    await db.revokePilotGrant(testPilotGrant.grantId, 'audit_revoker');
+
+    const dbSnapshot = await db.read();
+    assert.ok(Array.isArray(dbSnapshot.grantAuditTrail), 'grantAuditTrail must be an array');
+    const issueEntry = dbSnapshot.grantAuditTrail.find(e => e.grantId === testPilotGrant.grantId && e.action === 'ISSUED');
+    const revokeEntry = dbSnapshot.grantAuditTrail.find(e => e.grantId === testPilotGrant.grantId && e.action === 'REVOKED');
+    assert.ok(issueEntry, 'Audit trail must contain ISSUED entry');
+    assert.strictEqual(issueEntry.organizationId, auditOrgId);
+    assert.strictEqual(issueEntry.actor, 'audit_test_owner');
+    assert.ok(revokeEntry, 'Audit trail must contain REVOKED entry');
+    assert.strictEqual(revokeEntry.actor, 'audit_revoker');
+    console.log('  PASS: Immutable grant audit trail records verified on issuance and revocation.');
+
+    console.log('\n=== ALL 39 REAL-SERVER SIGNED STRIPE TEST-MODE ROUTE E2E TESTS PASSED ===');
 
 
   } finally {
