@@ -321,9 +321,15 @@ class SyncEngine {
       const sumDb = path.join(agyRoot, 'conversation_summaries.db');
       if (fs.existsSync(sumDb)) {
         try {
-          const fastTrackUri = `file:///${currentNormTarget.replace(':', '%3A')}/v-show-stage2-fast-track`;
-          const vshowUri = `file:///${currentNormTarget.replace(':', '%3A')}/v-show`;
-          const baseUri = `file:///${currentNormTarget.replace(':', '%3A')}`;
+          const driveLetter = currentNormTarget.charAt(0);
+          const restPath = currentNormTarget.slice(2);
+          const uriVariants = [];
+          for (const sub of ['/v-show-stage2-fast-track', '/v-show', '']) {
+            uriVariants.push(`file:///${driveLetter.toUpperCase()}%3A${restPath}${sub}`);
+            uriVariants.push(`file:///${driveLetter.toUpperCase()}:${restPath}${sub}`);
+            uriVariants.push(`file:///${driveLetter.toLowerCase()}%3A${restPath}${sub}`);
+            uriVariants.push(`file:///${driveLetter.toLowerCase()}:${restPath}${sub}`);
+          }
 
           const pyScript = `
 import sqlite3, json
@@ -332,11 +338,12 @@ cursor = conn.cursor()
 cursor.execute("SELECT conversation_id, workspace_uris FROM conversation_summaries")
 rows = cursor.fetchall()
 updated = 0
+targets = ${JSON.stringify(uriVariants)}
 for cid, uris_str in rows:
     try:
         uris = json.loads(uris_str) if uris_str else []
         new_uris = list(uris)
-        for u in ['${fastTrackUri}', '${vshowUri}', '${baseUri}']:
+        for u in targets:
             if u not in new_uris:
                 new_uris.append(u)
         if new_uris != uris:
