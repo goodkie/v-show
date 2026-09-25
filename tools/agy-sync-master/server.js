@@ -43,14 +43,14 @@ class AutoSyncManager {
     this.broadcast = broadcastFn;
     this.sendProgress = progressFn;
     this.logger = loggerObj;
-    this.enabled = false;
-    this.intervalSeconds = 30;
+    this.enabled = true; // Auto-sync active by default!
+    this.intervalSeconds = 10; // Check every 10 seconds for real-time responsiveness
     this.timer = null;
     this.isBusy = false;
     this.lastKnownRemotePush = this.getRemotePushTimestamp();
     this.lastLocalConversationMtime = this.getLocalConversationMtime();
     this.lastLocalGitCommit = this.getLocalGitCommit();
-    this.lastSyncResult = '대기 중';
+    this.lastSyncResult = '실시간 양방향 감시 중';
     this.lastSyncTime = null;
   }
 
@@ -66,14 +66,55 @@ class AutoSyncManager {
   }
 
   getLocalConversationMtime() {
+    let maxMtime = 0;
     try {
       const agyRoots = this.engine.getAgyRoots();
       for (const root of agyRoots) {
+        // 1. conversation_summaries.db
         const dbPath = path.join(root, 'conversation_summaries.db');
-        if (fs.existsSync(dbPath)) return fs.statSync(dbPath).mtimeMs;
+        if (fs.existsSync(dbPath)) {
+          try {
+            const m = fs.statSync(dbPath).mtimeMs;
+            if (m > maxMtime) maxMtime = m;
+          } catch (e) {}
+        }
+        // 2. conversations/*.db (actual turns and messages)
+        const convDir = path.join(root, 'conversations');
+        if (fs.existsSync(convDir)) {
+          try {
+            const files = fs.readdirSync(convDir);
+            for (const file of files) {
+              if (file.endsWith('.db')) {
+                try {
+                  const m = fs.statSync(path.join(convDir, file)).mtimeMs;
+                  if (m > maxMtime) maxMtime = m;
+                } catch (e) {}
+              }
+            }
+          } catch (e) {}
+        }
+        // 3. antigravity_state.pbtxt
+        const pbtxt = path.join(root, 'antigravity_state.pbtxt');
+        if (fs.existsSync(pbtxt)) {
+          try {
+            const m = fs.statSync(pbtxt).mtimeMs;
+            if (m > maxMtime) maxMtime = m;
+          } catch (e) {}
+        }
+      }
+      // 4. settings.json (VS Code / Antigravity IDE)
+      const configDirs = this.engine.getConfigDirs();
+      for (const cDir of configDirs) {
+        const setFile = path.join(cDir, 'User', 'settings.json');
+        if (fs.existsSync(setFile)) {
+          try {
+            const m = fs.statSync(setFile).mtimeMs;
+            if (m > maxMtime) maxMtime = m;
+          } catch (e) {}
+        }
       }
     } catch (e) {}
-    return 0;
+    return maxMtime;
   }
 
   getLocalGitCommit() {
@@ -96,14 +137,14 @@ class AutoSyncManager {
     };
   }
 
-  start(intervalSeconds = 30) {
+  start(intervalSeconds = 10) {
     this.enabled = true;
-    this.intervalSeconds = Math.max(10, parseInt(intervalSeconds, 10) || 30);
+    this.intervalSeconds = Math.max(5, parseInt(intervalSeconds, 10) || 10);
     if (this.timer) clearInterval(this.timer);
     this.logger.info(`[AUTO-SYNC] 실시간 자동 동기화 데몬 활성화 (감지 주기: ${this.intervalSeconds}초)`);
     this.broadcast('auto-sync-status', this.getStatus());
     this.timer = setInterval(() => this.tick(), this.intervalSeconds * 1000);
-    setTimeout(() => this.tick(), 1000);
+    setTimeout(() => this.tick(), 2000);
   }
 
   stop() {
@@ -116,8 +157,6 @@ class AutoSyncManager {
 
   async tick() {
     if (!this.enabled || this.isBusy) return;
-    this.isBusy = true;
-    this.broadcast('auto-sync-status', this.getStatus());
 
     try {
       // 1. Google Drive의 원격 매니페스트 확인 (다른 PC의 신규 Push 감지 -> 자동 PULL)
@@ -131,12 +170,20 @@ class AutoSyncManager {
               this.lastKnownRemotePush = manifest.pushedAt;
             } else if (manifest.pushedAt !== this.lastKnownRemotePush) {
               if (manifest.sourceMachine !== os.hostname()) {
+                this.isBusy = true;
+                this.broadcast('auto-sync-status', this.getStatus());
                 this.logger.info(`[AUTO-SYNC] 타 PC(${manifest.sourceMachine}) 신규 커밋/세션 감지 (${manifest.pushedAt}) -> 자동 Pull 실행`);
                 this.sendProgress(20, `[자동 동기화] ${manifest.sourceMachine}의 최신 세션 수신 중...`);
                 await this.engine.pullSync(this.sendProgress, this.logger);
                 this.lastSyncResult = `타 PC(${manifest.sourceMachine}) 작업 자동 수신 완료`;
                 this.lastSyncTime = new Date().toISOString();
+                this.lastKnownRemotePush = manifest.pushedAt;
+                this.lastLocalConversationMtime = this.getLocalConversationMtime();
+                this.lastLocalGitCommit = this.getLocalGitCommit();
                 this.sendProgress(100, `[자동 동기화] 최신 동기화 완료 (${new Date().toLocaleTimeString()})`);
+                this.isBusy = false;
+                this.broadcast('auto-sync-status', this.getStatus());
+                return;
               }
               this.lastKnownRemotePush = manifest.pushedAt;
             }
@@ -144,15 +191,18 @@ class AutoSyncManager {
         } catch (e) {}
       }
 
-      // 2. 로컬 대화/세션 변경 또는 로컬 Git 커밋 감지 -> 자동 PUSH
+      // 2. 로컬 대화/세션/설정 변경 또는 로컬 Git 커밋 감지 -> 자동 PUSH
       const currentConvMtime = this.getLocalConversationMtime();
       const currentGitCommit = this.getLocalGitCommit();
 
-      const convChanged = currentConvMtime > (this.lastLocalConversationMtime + 8000);
+      // 변경 감지: 3초 이상 새로운 파일 타임스탬프 또는 Git 커밋 변경
+      const convChanged = currentConvMtime > (this.lastLocalConversationMtime + 3000);
       const gitChanged = currentGitCommit && (currentGitCommit !== this.lastLocalGitCommit);
 
       if (convChanged || gitChanged) {
-        this.logger.info(`[AUTO-SYNC] 로컬 대화 세션/커밋 변경 감지 -> GitHub 및 Google Drive 자동 백업(Push) 실행`);
+        this.isBusy = true;
+        this.broadcast('auto-sync-status', this.getStatus());
+        this.logger.info(`[AUTO-SYNC] 로컬 대화 세션/설정/커밋 변경 감지 -> GitHub 및 Google Drive 자동 백업(Push) 실행`);
         this.sendProgress(20, '[자동 동기화] 로컬 최신 세션 및 코드 백업 중...');
         await this.engine.pushSync(this.sendProgress, this.logger);
         this.lastLocalConversationMtime = currentConvMtime;
@@ -161,11 +211,12 @@ class AutoSyncManager {
         this.lastSyncResult = '로컬 변경사항 자동 백업(Push) 완료';
         this.lastSyncTime = new Date().toISOString();
         this.sendProgress(100, `[자동 동기화] 클라우드 백업 완료 (${new Date().toLocaleTimeString()})`);
+        this.isBusy = false;
+        this.broadcast('auto-sync-status', this.getStatus());
       }
     } catch (err) {
-      this.logger.warn(`[AUTO-SYNC] 주기적 점검 중 예외: ${err.message}`);
+      this.logger.warn(`[AUTO-SYNC] 점검 중 예외: ${err.message}`);
       this.lastSyncResult = `오류: ${err.message}`;
-    } finally {
       this.isBusy = false;
       this.broadcast('auto-sync-status', this.getStatus());
     }
@@ -477,6 +528,8 @@ function startServer(portToTry) {
     console.log(`  Network URL: http://${getLocalIp()}:${portToTry}`);
     console.log(`================================================================`);
     openAppWindow(portToTry);
+    // Start real-time background sync daemon automatically
+    autoSync.start(10);
   });
 }
 

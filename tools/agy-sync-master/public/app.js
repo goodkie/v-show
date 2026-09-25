@@ -114,11 +114,12 @@ function updateAutoSyncUI(status) {
   }
 
   if (status.enabled) {
-    elements.autoSyncBadge.textContent = '실시간 가동 중';
+    elements.autoSyncBadge.textContent = '실시간 양방향 가동 중';
     elements.autoSyncBadge.className = 'auto-sync-badge badge-on';
     const busyText = status.isBusy ? ' (동기화 작업 수행 중...)' : '';
     const lastTime = status.lastSyncTime ? ` | 최근: ${new Date(status.lastSyncTime).toLocaleTimeString()}` : '';
-    elements.autoSyncDesc.textContent = `30초마다 타 PC 변경사항을 자동 감지(Pull)하고 로컬 대화/코드를 백업(Push)합니다.${busyText}${lastTime}`;
+    const resText = status.lastSyncResult ? ` (${status.lastSyncResult})` : '';
+    elements.autoSyncDesc.textContent = `${status.intervalSeconds || 10}초마다 양방향 자동 감지 중: 타 PC 변경 시 즉시 Pull, 로컬 대화/설정 변경 시 자동 Push.${busyText}${lastTime}${resText}`;
   } else {
     elements.autoSyncBadge.textContent = '비활성화';
     elements.autoSyncBadge.className = 'auto-sync-badge badge-off';
