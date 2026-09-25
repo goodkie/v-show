@@ -116,6 +116,41 @@ class SyncEngine {
     });
   }
 
+  copyDirectoryRecursiveSync(srcDir, dstDir, excludePatterns = ['.db-wal', '.db-shm']) {
+    if (!fs.existsSync(srcDir)) return;
+    if (!fs.existsSync(dstDir)) fs.mkdirSync(dstDir, { recursive: true });
+
+    const entries = fs.readdirSync(srcDir, { withFileTypes: true });
+    for (const entry of entries) {
+      const srcPath = path.join(srcDir, entry.name);
+      const dstPath = path.join(dstDir, entry.name);
+
+      if (excludePatterns.some(p => entry.name.endsWith(p))) continue;
+
+      if (entry.isDirectory()) {
+        this.copyDirectoryRecursiveSync(srcPath, dstPath, excludePatterns);
+      } else if (entry.isFile()) {
+        try {
+          fs.copyFileSync(srcPath, dstPath);
+        } catch (e) {
+          try {
+            fs.copyFileSync(srcPath, dstPath);
+          } catch (e2) {}
+        }
+      }
+    }
+  }
+
+  killAgyProcesses(logger) {
+    try {
+      if (process.platform === 'win32') {
+        execSync('taskkill /F /IM "Antigravity IDE.exe" /T 2>nul || exit 0', { shell: true, stdio: 'ignore' });
+        execSync('taskkill /F /IM "language_server_windows_x64.exe" /T 2>nul || exit 0', { shell: true, stdio: 'ignore' });
+      }
+      if (logger) logger.info('  ✓ Antigravity 및 언어 서버 백그라운드 프로세스 정리 완료');
+    } catch (e) {}
+  }
+
   // ─────────────────────────────────────────────────────────────────────────────
   // 1. DIAGNOSE
   // ─────────────────────────────────────────────────────────────────────────────
@@ -283,13 +318,36 @@ class SyncEngine {
   // 2. DYNAMIC PATH REMAP ENGINE
   // ─────────────────────────────────────────────────────────────────────────────
   async remapPaths(logger) {
-    logger.info(`[REMAP] 현재 PC 환경에 맞게 경로 동적 치환 시작... (Target: ${this.targetDir}, User: ${this.username})`);
+    logger.info(`[REMAP] 현재 PC 환경에 맞게 경로 동적 치환 및 대화창 잠금(🚫) 해제 시작... (Target: ${this.targetDir}, User: ${this.username})`);
     let modifiedFiles = 0;
+
+    // 0. Antigravity IDE 및 언어 서버 종료하여 SQLite 잠금 해제
+    this.killAgyProcesses(logger);
+
+    // 1. 작업영역 신뢰 (Workspace Trust) 자동 비활성화 (Restricted Mode 방지)
+    for (const cd of this.getConfigDirs()) {
+      const settingsFile = path.join(cd, 'User', 'settings.json');
+      try {
+        fs.mkdirSync(path.join(cd, 'User'), { recursive: true });
+        let settings = {};
+        if (fs.existsSync(settingsFile)) {
+          try { settings = JSON.parse(fs.readFileSync(settingsFile, 'utf8')); } catch (e) {}
+        }
+        settings['security.workspace.trust.enabled'] = false;
+        settings['security.workspace.trust.startupPrompt'] = 'never';
+        settings['security.workspace.trust.emptyWindow'] = true;
+        fs.writeFileSync(settingsFile, JSON.stringify(settings, null, 4), 'utf8');
+        logger.info(`  ✓ 작업영역 신뢰(Workspace Trust) 자동 해제 설정 완료 (${path.basename(cd)})`);
+        modifiedFiles++;
+      } catch (e) {
+        logger.warn(`  ! settings.json 설정 주의: ${e.message}`);
+      }
+    }
 
     const currentNormTarget = this.targetDir.replace(/\\/g, '/');
     const currentWinTarget = this.targetDir.replace(/\//g, '\\');
 
-    // 1. app_storage.json 경로 치환
+    // 2. app_storage.json 경로 치환
     for (const cd of this.getConfigDirs()) {
       const storageFile = path.join(cd, 'app_storage.json');
       if (fs.existsSync(storageFile)) {
@@ -316,52 +374,18 @@ class SyncEngine {
       }
     }
 
-    // 2. SQLite conversation_summaries.db 내 workspace_uris 업데이트
-    for (const agyRoot of this.getAgyRoots()) {
-      const sumDb = path.join(agyRoot, 'conversation_summaries.db');
-      if (fs.existsSync(sumDb)) {
-        try {
-          const driveLetter = currentNormTarget.charAt(0);
-          const restPath = currentNormTarget.slice(2);
-          const uriVariants = [];
-          for (const sub of ['/v-show-stage2-fast-track', '/v-show', '']) {
-            uriVariants.push(`file:///${driveLetter.toUpperCase()}%3A${restPath}${sub}`);
-            uriVariants.push(`file:///${driveLetter.toUpperCase()}:${restPath}${sub}`);
-            uriVariants.push(`file:///${driveLetter.toLowerCase()}%3A${restPath}${sub}`);
-            uriVariants.push(`file:///${driveLetter.toLowerCase()}:${restPath}${sub}`);
-          }
-
-          const pyScript = `
-import sqlite3, json
-conn = sqlite3.connect(r'${sumDb}')
-cursor = conn.cursor()
-cursor.execute("SELECT conversation_id, workspace_uris FROM conversation_summaries")
-rows = cursor.fetchall()
-updated = 0
-targets = ${JSON.stringify(uriVariants)}
-for cid, uris_str in rows:
-    try:
-        uris = json.loads(uris_str) if uris_str else []
-        new_uris = list(uris)
-        for u in targets:
-            if u not in new_uris:
-                new_uris.append(u)
-        if new_uris != uris:
-            cursor.execute("UPDATE conversation_summaries SET workspace_uris = ? WHERE conversation_id = ?", (json.dumps(new_uris), cid))
-            updated += 1
-    except Exception as e:
-        pass
-conn.commit()
-conn.close()
-print(f'UPDATED:{updated}')
-`;
-          const out = execSync('python', { input: pyScript, stdio: ['pipe', 'pipe', 'pipe'] }).toString().trim();
-          logger.info(`  ✓ SQLite 대화 워크스페이스 URI 매핑 완료 (${agyRoot}): ${out}`);
-          modifiedFiles++;
-        } catch (e) {
-          logger.warn(`  ! SQLite URI 매핑 실패 (${agyRoot}): ${e.message}`);
+    // 3. SQLite 세션 동기화, 워크스페이스 매핑 및 대화창(🚫) 잠금 해제 (remap_worker.py)
+    try {
+      const workerScript = path.join(__dirname, 'remap_worker.py');
+      if (fs.existsSync(workerScript)) {
+        const out = execSync(`python "${workerScript}" "${this.targetDir}"`, { stdio: ['pipe', 'pipe', 'pipe'] }).toString().trim();
+        for (const line of out.split('\n')) {
+          if (line.trim()) logger.info(`  ${line.trim()}`);
         }
+        modifiedFiles++;
       }
+    } catch (e) {
+      logger.warn(`  ! SQLite 정밀 매핑 실패: ${e.message}`);
     }
 
     // 3. Git Worktree 포인터 갱신 (Worktree인 경우에만 갱신, 독립 저장소 디렉터리면 안전 패스)
@@ -458,13 +482,13 @@ print(f'UPDATED:{updated}')
         fs.mkdirSync(dstBrain, { recursive: true });
 
         if (fs.existsSync(srcConvos)) {
-          await this.runCommand('robocopy', [srcConvos, dstConvos, '/E', '/R:1', '/W:1', '/NFL', '/NDL', '/NP'], null, null);
+          this.copyDirectoryRecursiveSync(srcConvos, dstConvos);
         }
         if (fs.existsSync(srcBrain)) {
-          await this.runCommand('robocopy', [srcBrain, dstBrain, '/E', '/R:1', '/W:1', '/NFL', '/NDL', '/NP', '/XO'], null, null);
+          this.copyDirectoryRecursiveSync(srcBrain, dstBrain);
         }
         if (fs.existsSync(srcState)) {
-          await this.runCommand('robocopy', [srcState, agyRoot, '/R:1', '/W:1', '/NFL', '/NDL', '/NP'], null, null);
+          this.copyDirectoryRecursiveSync(srcState, agyRoot);
         }
       }
 
@@ -602,10 +626,10 @@ print(f'UPDATED:{updated}')
       const srcConvos = path.join(agyRoot, 'conversations');
       const srcBrain = path.join(agyRoot, 'brain');
       if (fs.existsSync(srcConvos)) {
-        await this.runCommand('robocopy', [srcConvos, dstConvos, '/E', '/R:1', '/W:1', '/NFL', '/NDL', '/NP'], null, null);
+        this.copyDirectoryRecursiveSync(srcConvos, dstConvos);
       }
       if (fs.existsSync(srcBrain)) {
-        await this.runCommand('robocopy', [srcBrain, dstBrain, '/E', '/R:1', '/W:1', '/NFL', '/NDL', '/NP', '/XO'], null, null);
+        this.copyDirectoryRecursiveSync(srcBrain, dstBrain);
       }
       for (const f of ['conversation_summaries.db', 'installation_id']) {
         const sf = path.join(agyRoot, f);
@@ -653,13 +677,13 @@ print(f'UPDATED:{updated}')
         const dstConvos = path.join(agyRoot, 'conversations');
         const dstBrain = path.join(agyRoot, 'brain');
         if (fs.existsSync(srcConvos)) {
-          await this.runCommand('robocopy', [srcConvos, dstConvos, '/E', '/R:1', '/W:1', '/NFL', '/NDL', '/NP'], null, null);
+          this.copyDirectoryRecursiveSync(srcConvos, dstConvos);
         }
         if (fs.existsSync(srcBrain)) {
-          await this.runCommand('robocopy', [srcBrain, dstBrain, '/E', '/R:1', '/W:1', '/NFL', '/NDL', '/NP', '/XO'], null, null);
+          this.copyDirectoryRecursiveSync(srcBrain, dstBrain);
         }
         if (fs.existsSync(srcState)) {
-          await this.runCommand('robocopy', [srcState, agyRoot, '/R:1', '/W:1', '/NFL', '/NDL', '/NP'], null, null);
+          this.copyDirectoryRecursiveSync(srcState, agyRoot);
         }
       }
 

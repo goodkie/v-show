@@ -9,6 +9,7 @@ const elements = {
   metaGdrive: document.getElementById('metaGdrive'),
   metaBranch: document.getElementById('metaBranch'),
   btnRefreshStatus: document.getElementById('btnRefreshStatus'),
+  btnShortcut: document.getElementById('btnShortcut'),
 
   toggleAutoSync: document.getElementById('toggleAutoSync'),
   autoSyncInterval: document.getElementById('autoSyncInterval'),
@@ -225,6 +226,24 @@ elements.btnRefreshStatus.addEventListener('click', () => {
   loadStatus();
   runDiagnose();
 });
+
+if (elements.btnShortcut) {
+  elements.btnShortcut.addEventListener('click', async () => {
+    try {
+      appendLog('INFO', 'Windows 바탕화면에 [AGY-Sync Master] 바로가기 생성 요청 중...');
+      const res = await fetch('/api/shortcut', { method: 'POST' });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        appendLog('INFO', '✓ Windows 바탕화면에 [AGY-Sync Master] 바로가기가 성공적으로 생성되었습니다!');
+        alert('바탕화면에 [AGY-Sync Master] 바로가기가 생성되었습니다.');
+      } else {
+        appendLog('ERROR', `바로가기 생성 실패: ${data.error || '알 수 없는 오류'}`);
+      }
+    } catch (e) {
+      appendLog('ERROR', `네트워크 오류: ${e.message}`);
+    }
+  });
+}
 
 elements.toggleAutoSync.addEventListener('change', (e) => {
   setAutoSync(e.target.checked, elements.autoSyncInterval.value);

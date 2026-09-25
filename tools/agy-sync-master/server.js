@@ -347,6 +347,35 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  // 10. Create Desktop Shortcut API
+  if (pathname === '/api/shortcut' && req.method === 'POST') {
+    try {
+      const launcherPath = path.join(__dirname, 'AGY-Sync-Master.cmd');
+      const vbsPath = path.join(__dirname, 'Launch_AGY_Sync_Master.vbs');
+      const targetExec = fs.existsSync(vbsPath) ? vbsPath : launcherPath;
+      const psScript = `
+$WshShell = New-Object -ComObject WScript.Shell
+$Desktop = [System.Environment]::GetFolderPath('Desktop')
+$Shortcut = $WshShell.CreateShortcut("$Desktop\\AGY-Sync Master.lnk")
+$Shortcut.TargetPath = "${targetExec.replace(/\\/g, '\\\\')}"
+$Shortcut.WorkingDirectory = "${__dirname.replace(/\\/g, '\\\\')}"
+$Shortcut.Description = "AGY-Sync Master Universal Dashboard"
+$Shortcut.Save()
+`;
+      const { execSync } = require('child_process');
+      execSync(`powershell -NoProfile -Command "${psScript.replace(/\n/g, '; ')}"`, { stdio: 'ignore' });
+      logger.info('  ✓ Windows 바탕화면에 [AGY-Sync Master] 바로가기 생성 완료');
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: true }));
+    } catch (e) {
+      logger.error(`바로가기 생성 실패: ${e.message}`);
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: e.message }));
+    }
+    return;
+  }
+
+
   // Static File Serving
   let filePath = path.join(__dirname, 'public', pathname === '/' ? 'index.html' : pathname);
   const ext = path.extname(filePath);
@@ -360,13 +389,62 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`================================================================`);
-  console.log(`  [AGY-Sync Master] Universal Multi-PC Dashboard Active!`);
-  console.log(`  Local URL:   http://localhost:${PORT}`);
-  console.log(`  Network URL: http://${getLocalIp()}:${PORT}`);
-  console.log(`================================================================`);
-});
+function openAppWindow(port) {
+  if (process.argv.includes('--no-open')) return;
+  const url = `http://localhost:${port}`;
+  const edgePaths = [
+    'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
+    'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe'
+  ];
+  const chromePaths = [
+    'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+    'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+    path.join(os.homedir(), 'AppData\\Local\\Google\\Chrome\\Application\\chrome.exe')
+  ];
+
+  let browserExe = null;
+  for (const p of edgePaths) {
+    if (fs.existsSync(p)) { browserExe = p; break; }
+  }
+  if (!browserExe) {
+    for (const p of chromePaths) {
+      if (fs.existsSync(p)) { browserExe = p; break; }
+    }
+  }
+
+  try {
+    if (browserExe) {
+      const { spawn } = require('child_process');
+      spawn(browserExe, [`--app=${url}`, '--window-size=1260,880'], { detached: true, stdio: 'ignore' }).unref();
+    } else {
+      const { exec } = require('child_process');
+      exec(`start "" "${url}"`);
+    }
+  } catch (e) {}
+}
+
+function startServer(portToTry) {
+  server.once('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.log(`[INFO] 포트 ${portToTry} 사용 중 (기존 실행 인스턴스 감지됨). 앱 윈도우를 호출합니다.`);
+      openAppWindow(portToTry);
+      process.exit(0);
+    } else {
+      console.error(`서버 시작 오류: ${err.message}`);
+    }
+  });
+
+  server.listen(portToTry, '0.0.0.0', () => {
+    console.log(`================================================================`);
+    console.log(`  [AGY-Sync Master] Universal Multi-PC Dashboard Active!`);
+    console.log(`  Local URL:   http://localhost:${portToTry}`);
+    console.log(`  Network URL: http://${getLocalIp()}:${portToTry}`);
+    console.log(`================================================================`);
+    openAppWindow(portToTry);
+  });
+}
+
+startServer(PORT);
 
 function getLocalIp() {
   const ifaces = os.networkInterfaces();
@@ -381,3 +459,4 @@ function getLocalIp() {
 }
 
 module.exports = { server, autoSync };
+

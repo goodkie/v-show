@@ -182,7 +182,12 @@ body {
   font-size: 12px;
 }
 
-.btn-refresh {
+.meta-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-refresh, .btn-shortcut {
   background: transparent;
   border: 1px solid var(--border-color);
   color: var(--text-muted);
@@ -191,10 +196,24 @@ body {
   font-size: 12px;
   cursor: pointer;
   transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
+
 .btn-refresh:hover {
   background: rgba(255, 255, 255, 0.05);
   color: var(--text-main);
+}
+
+.btn-shortcut {
+  border-color: rgba(56, 189, 248, 0.4);
+  color: var(--accent-cyan);
+}
+.btn-shortcut:hover {
+  background: rgba(56, 189, 248, 0.15);
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
 }
 
 /* AUTO-SYNC STRIP */
