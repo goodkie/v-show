@@ -78,7 +78,7 @@ class SyncEngine {
     ];
   }
 
-  runCommand(cmd, args, cwd, logger, onProgress = null) {
+  runCommand(cmd, args, cwd, logger, onProgress = null, timeoutMs = 180000) {
     return new Promise((resolve) => {
       const fullCmd = `${cmd} ${args.join(' ')}`;
       if (logger) logger.info(`[EXEC] ${fullCmd} (in ${cwd || process.cwd()})`);
@@ -86,11 +86,30 @@ class SyncEngine {
       const proc = spawn(cmd, args, {
         cwd: cwd || process.cwd(),
         shell: true,
-        env: { ...process.env, LANG: 'en_US.UTF-8' }
+        env: {
+          ...process.env,
+          LANG: 'en_US.UTF-8',
+          GIT_TERMINAL_PROMPT: '0',
+          GCM_INTERACTIVE: 'never',
+          GIT_ASKPASS: 'echo'
+        }
       });
 
       let stdout = '';
       let stderr = '';
+      let isDone = false;
+
+      let timer = null;
+      if (timeoutMs > 0) {
+        timer = setTimeout(() => {
+          if (!isDone) {
+            isDone = true;
+            if (logger) logger.warn(`[TIMEOUT] 명령 실행이 ${timeoutMs / 1000}초 동안 응답이 없어 강제 종료되었습니다: ${fullCmd}`);
+            try { proc.kill('SIGKILL'); } catch (e) {}
+            resolve({ code: -999, stdout, stderr, error: 'Command timed out' });
+          }
+        }, timeoutMs);
+      }
 
       proc.stdout.on('data', (d) => {
         const text = d.toString();
@@ -106,12 +125,20 @@ class SyncEngine {
       });
 
       proc.on('close', (code) => {
-        resolve({ code, stdout, stderr });
+        if (!isDone) {
+          isDone = true;
+          if (timer) clearTimeout(timer);
+          resolve({ code, stdout, stderr });
+        }
       });
 
       proc.on('error', (err) => {
-        if (logger) logger.error(`Execution error: ${err.message}`);
-        resolve({ code: -1, stdout, stderr, error: err.message });
+        if (!isDone) {
+          isDone = true;
+          if (timer) clearTimeout(timer);
+          if (logger) logger.error(`Execution error: ${err.message}`);
+          resolve({ code: -1, stdout, stderr, error: err.message });
+        }
       });
     });
   }
@@ -442,17 +469,49 @@ class SyncEngine {
     const localVshow = path.join(this.targetDir, 'v-show');
     const localFastTrack = path.join(this.targetDir, 'v-show-stage2-fast-track');
 
-    // 2. GitHub로부터 코드 클론 (구글드라이브 팩파일 전송 배제)
-    progressCallback(15, 'GitHub 원격지로부터 메인 저장소(v-show) 클론 중...');
+    // 2. GitHub로부터 초고속 단일 브랜치 클론 (인증 토큰 감지 & 멈춤 방지)
+    progressCallback(15, '저장소 초고속 클론 및 최신 코드 준비 중 (멈춤 방지 모드)...');
+    let cloneUrl = this.githubRepoUrl;
+    try {
+      const ghToken = execSync('gh auth token 2>nul || exit 0', { shell: true }).toString().trim();
+      if (ghToken) {
+        cloneUrl = `https://${ghToken}@github.com/goodkie/v-show.git`;
+        logger.info('  ✓ GitHub CLI 인증 토큰 자동 감지 및 적용 완료');
+      }
+    } catch (e) {}
+
     if (!fs.existsSync(path.join(localVshow, '.git'))) {
-      logger.info(`GitHub에서 직접 클론 실행: ${this.githubRepoUrl}`);
-      const cloneRes = await this.runCommand('git', ['clone', this.githubRepoUrl, localVshow], this.targetDir, logger);
+      logger.info(`저장소 초고속 얕은 복제(Shallow Clone, depth=30) 시작: ${this.defaultBranch}`);
+      const cloneArgs = [
+        'clone',
+        '--single-branch',
+        '--branch', this.defaultBranch,
+        '--depth', '30',
+        cloneUrl,
+        localVshow
+      ];
+      let cloneRes = await this.runCommand('git', cloneArgs, this.targetDir, logger, null, 120000);
+      
+      // 만약 인증/네트워크 실패 시 공개 URL 또는 구글 드라이브 소스 폴백
       if (cloneRes.code !== 0) {
-        throw new Error(`GitHub 클론 실패: ${cloneRes.stderr}`);
+        logger.warn(`GitHub 직접 클론 실패 (${cloneRes.stderr || cloneRes.error}). 기본 URL로 재시도...`);
+        const retryArgs = ['clone', '--single-branch', '--branch', this.defaultBranch, '--depth', '10', this.githubRepoUrl, localVshow];
+        cloneRes = await this.runCommand('git', retryArgs, this.targetDir, logger, null, 120000);
+      }
+
+      if (cloneRes.code !== 0) {
+        // 구글 드라이브 내 프로젝트 복사본 탐색 (오프라인 폴백)
+        const gdriveProject = path.join(this.gdriveRoot, this.syncPackageName, 'project-code');
+        if (fs.existsSync(gdriveProject)) {
+          logger.info('  -> Google Drive 내 백업 프로젝트 소스에서 즉시 복원 진행...');
+          this.copyDirectoryRecursiveSync(gdriveProject, localVshow);
+        } else {
+          throw new Error(`저장소 클론 실패 (GitHub 인증 또는 네트워크를 확인하세요): ${cloneRes.stderr || cloneRes.error}`);
+        }
       }
     } else {
       logger.info('기존 v-show 저장소 확인됨. 최신 커밋 fetch 중...');
-      await this.runCommand('git', ['fetch', 'origin'], localVshow, logger);
+      await this.runCommand('git', ['fetch', 'origin', this.defaultBranch, '--depth', '20'], localVshow, logger, null, 60000);
     }
 
     // 3. Fast-Track Worktree 구성
