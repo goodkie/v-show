@@ -335,10 +335,28 @@ const server = http.createServer(async (req, res) => {
 
   // 9. Pull API
   if (pathname === '/api/pull' && req.method === 'POST') {
+    // Snapshot engine.js mtime before pull to detect if it changed
+    const enginePath = path.join(__dirname, 'engine.js');
+    let engineMtimeBefore = 0;
+    try { engineMtimeBefore = fs.statSync(enginePath).mtimeMs; } catch (e) {}
+
     try {
       const out = await engine.pullSync(sendProgress, logger);
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(out));
+
+      // If engine.js was updated by git pull → auto-restart server after 3s
+      let engineMtimeAfter = 0;
+      try { engineMtimeAfter = fs.statSync(enginePath).mtimeMs; } catch (e) {}
+      if (engineMtimeAfter > engineMtimeBefore) {
+        logger.info('');
+        logger.info('🔄 engine.js가 업데이트되었습니다. 3초 후 서버를 자동 재시작합니다...');
+        broadcast('log', { level: 'WARN', message: '🔄 새 버전의 엔진이 감지되었습니다. 3초 후 자동 재시작됩니다. 브라우저 창은 그대로 두세요.', time: new Date().toLocaleTimeString() });
+        setTimeout(() => {
+          logger.info('🔄 서버 재시작 중...');
+          process.exit(0); // launcher CMD will restart automatically if wrapped in a loop
+        }, 3000);
+      }
     } catch (e) {
       logger.error(`Pull 중 오류 발생: ${e.message}`);
       res.writeHead(500, { 'Content-Type': 'application/json' });
