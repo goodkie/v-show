@@ -663,7 +663,34 @@ class SyncEngine {
     const fastTrackDir = path.join(this.targetDir, 'v-show-stage2-fast-track');
 
     progressCallback(15, 'GitHub 원격지 최신 커밋 pull 중...');
-    await this.runCommand('git', ['pull', 'origin', this.defaultBranch], fastTrackDir, logger);
+    let pullRes = await this.runCommand('git', ['pull', 'origin', this.defaultBranch], fastTrackDir, logger);
+    if (pullRes.code !== 0) {
+      const errOut = (pullRes.stderr || '') + (pullRes.stdout || '');
+      if (errOut.includes('untracked working tree files would be overwritten')) {
+        logger.warn('  ! 로컬 미추적 파일(untracked files) 충돌 감지됨. 자동 정리 및 재시도 중...');
+        // 충돌을 일으킨 일반적인 파일(package-lock.json 등) 안전 백업/제거 후 재시도
+        const candidateFiles = ['package-lock.json', 'package.json.bak'];
+        for (const cf of candidateFiles) {
+          const targetF = path.join(fastTrackDir, cf);
+          if (fs.existsSync(targetF)) {
+            try {
+              fs.renameSync(targetF, `${targetF}.conflict_bak_${Date.now()}`);
+              logger.info(`  ✓ 충돌 파일 백업 완료: ${cf}`);
+            } catch (e) {
+              try { fs.unlinkSync(targetF); } catch (e2) {}
+            }
+          }
+        }
+        logger.info('  -> 최신 커밋 다시 pull 시도 중...');
+        pullRes = await this.runCommand('git', ['pull', 'origin', this.defaultBranch], fastTrackDir, logger);
+      }
+
+      if (pullRes.code !== 0) {
+        logger.warn(`  ! 표준 pull 실패 (${pullRes.stderr || pullRes.stdout}). 변경사항 stash 후 원격 최신 동기화 시도...`);
+        await this.runCommand('git', ['stash'], fastTrackDir, logger);
+        pullRes = await this.runCommand('git', ['pull', 'origin', this.defaultBranch], fastTrackDir, logger);
+      }
+    }
 
     progressCallback(45, 'Google Drive 최신 세션 DB 및 브레인 다운로드 중...');
     const syncPkg = this.getSyncPackagePath();
