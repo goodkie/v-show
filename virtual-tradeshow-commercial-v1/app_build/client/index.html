@@ -2947,7 +2947,7 @@ html, body {
           </div>
 
           <button type="submit" class="btn-create-free" id="btn-submit-free">
-            <i class="fa-solid fa-wand-magic-sparkles"></i> CREATE 3D BOOTH
+            <i class="fa-solid fa-wand-magic-sparkles"></i> CREATE 360 PANORAMA
           </button>
         </div>
 
@@ -5930,7 +5930,7 @@ html, body {
         const data = await res.json();
         if (btnSubmit) {
           btnSubmit.disabled = false;
-          btnSubmit.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> CREATE 3D BOOTH';
+          btnSubmit.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> CREATE 360 PANORAMA';
         }
 
         // Server-Side Developer Bypass Match
@@ -5961,7 +5961,7 @@ html, body {
       } catch (err) {
         if (btnSubmit) {
           btnSubmit.disabled = false;
-          btnSubmit.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> CREATE 3D BOOTH';
+          btnSubmit.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> CREATE 360 PANORAMA';
         }
         showFormInlineError("We couldn't send your confirmation email. Please check your connection and try again.");
       }
@@ -23148,7 +23148,7 @@ class SetupWizardController {
           </button>
 
           <button type="button" id="btnCreate3dBooth" onclick="setupWizard.handleCreate3dBoothClick()" ${count < 8 ? 'disabled' : ''} style="width: 100%; height: 44px; background: ${count >= 8 ? 'linear-gradient(135deg, #f59e0b, #d97706)' : 'rgba(30, 41, 59, 0.5)'}; border: 1px solid ${count >= 8 ? '#fbbf24' : 'rgba(255, 255, 255, 0.1)'}; border-radius: 8px; color: ${count >= 8 ? '#000' : 'rgba(255, 255, 255, 0.3)'}; font-size: 13.5px; font-weight: 800; cursor: ${count >= 8 ? 'pointer' : 'not-allowed'}; display: inline-flex; align-items: center; justify-content: center; gap: 8px; box-shadow: ${count >= 8 ? '0 4px 16px rgba(245, 158, 11, 0.35)' : 'none'}; text-transform: uppercase;">
-            <i class="fa-solid fa-cube"></i> CREATE 3D BOOTH
+            <i class="fa-solid fa-cube"></i> CREATE 360 PANORAMA
           </button>
 
           <div style="display: flex; gap: 8px;">

@@ -1,0 +1,119 @@
+{
+  "receiptSchemaVersion": "R31_EXECUTION_RECEIPT_V1",
+  "executionTimestamps": {
+    "startTime": "2026-09-23T07:06:12.345Z",
+    "endTime": "2026-09-23T07:06:44.310Z",
+    "durationMs": 31963
+  },
+  "runnerMetadata": {
+    "sourceFile": "test/test_stage2_true3d_pipeline.js",
+    "sourceSha256": "fb689468a1b2ced91cce878589496851cc80cd938015ca5101115d5445269bed",
+    "nodeVersion": "v24.21.0",
+    "platform": "win32"
+  },
+  "gitEvidence": {
+    "observedHeadSha": "7e5dcd4f11887141c6556e0c3b9ec68b8ebcfd45",
+    "expectedHeadSha": "7e5dcd4f11887141c6556e0c3b9ec68b8ebcfd45",
+    "headBindingMatched": true,
+    "worktreeClean": true,
+    "rawGitStatusPorcelain": "(clean)"
+  },
+  "suiteResults": {
+    "totalTests": 18,
+    "passedTests": 18,
+    "failedTests": 0,
+    "passedStatus": "18/18 PASS",
+    "exitCode": 0
+  },
+  "deployRootsAudit": {
+    "scannedRoots": [
+      "virtual-tradeshow-commercial-v1/_clean_deploy/client/assets",
+      "virtual-tradeshow-commercial-v1/_railway_deploy/client/assets",
+      "virtual-tradeshow-commercial-v1/app_build/client/assets",
+      "virtual-tradeshow-commercial-v1/client/assets"
+    ],
+    "allRootsRequiredAndPresent": true,
+    "prohibitedModelExtensions": [
+      "spz",
+      "ply",
+      "splat",
+      "ksplat",
+      "glb",
+      "gltf",
+      "bin"
+    ],
+    "lfsPointersFound": 0,
+    "prohibitedModelsFound": 0
+  },
+  "positiveFailControls": {
+    "syntheticExtensionsTested": 7,
+    "syntheticExtensionsCaught": 7,
+    "lfsPointerDetectionVerified": true
+  },
+  "engineDiscoveryProbes": {
+    "LOCAL_GPU_ACCELERATOR": {
+      "configured": false,
+      "discovered": false,
+      "cliProbeRunnable": false,
+      "runnable": false,
+      "reconstructionCapable": false,
+      "authorized": false,
+      "probeMethod": "where nvidia-smi",
+      "probeExitCode": 1,
+      "classification": "NOT_CONFIGURED_OR_NOT_DISCOVERED_BY_CURRENT_PROBE"
+    },
+    "LOCAL_COLMAP": {
+      "configured": false,
+      "discovered": false,
+      "cliProbeRunnable": false,
+      "runnable": false,
+      "reconstructionCapable": false,
+      "authorized": false,
+      "probeMethod": "where colmap",
+      "probeExitCode": 1,
+      "executableDigest": null,
+      "classification": "NOT_CONFIGURED_OR_NOT_DISCOVERED_BY_CURRENT_PROBE"
+    },
+    "LOCAL_3DGS": {
+      "configured": false,
+      "discovered": false,
+      "cliProbeRunnable": false,
+      "runnable": false,
+      "reconstructionCapable": false,
+      "authorized": false,
+      "probeMethod": "where ns-train",
+      "probeExitCode": 1,
+      "executableDigest": null,
+      "classification": "NOT_CONFIGURED_OR_NOT_DISCOVERED_BY_CURRENT_PROBE"
+    },
+    "REMOTE_WORKER": {
+      "configured": false,
+      "discovered": false,
+      "cliProbeRunnable": false,
+      "runnable": false,
+      "reconstructionCapable": false,
+      "authorized": false,
+      "probeMethod": "environment_authorization_guard",
+      "classification": "NOT_CONFIGURED_OR_NOT_DISCOVERED_BY_CURRENT_PROBE"
+    }
+  },
+  "operatingGates": {
+    "LOCAL_STATIC_ASSET_ISOLATION": "VERIFIED_BY_TEST",
+    "CURRENT_RUNTIME_STATIC_ISOLATION": "NOT_VERIFIED",
+    "REAL_DEVICE_12": "NOT_VERIFIED",
+    "REAL_MULTIPOSITION_CAPTURE": "NOT_VERIFIED",
+    "RECONSTRUCTION_FROM_INPUTS": "NOT_VERIFIED",
+    "NEW_3D_MODEL_GENERATION": "NOT_VERIFIED",
+    "INPUT_TO_OUTPUT_CAUSAL_LINEAGE": "NOT_VERIFIED",
+    "SPZ_DECODED_IN_VIEWER": "NOT_VERIFIED",
+    "AUTHENTIC_SPZ_RENDER": "NOT_VERIFIED",
+    "OWNER_PRO_3D_VIEWER": "NOT_VERIFIED",
+    "HISTORICAL_PUBLIC_ARTIFACT_EXPOSURE": "REQUIRES_ASSESSMENT",
+    "COMMERCIAL_REDISTRIBUTION_RIGHTS": "REQUIRES_OWNER_ATTESTATION",
+    "LIVE_QA_REVOCATION": "BLOCKED_PENDING_INDEPENDENT_CONTROL_PLANE",
+    "CAUSAL_LINEAGE_GATE_T18": "NEGATIVE_CONTRACT_CHECK_ONLY",
+    "OWNER_REVIEW_GATE": "HOLD",
+    "ENGINEERING_HOLD": "ACTIVE",
+    "DESTRUCTIVE_GIT_REWRITE": "FORBIDDEN"
+  }
+}

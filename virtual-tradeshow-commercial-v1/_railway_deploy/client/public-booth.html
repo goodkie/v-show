@@ -468,14 +468,15 @@
     function initThreeViewer(photoUrl) {
       const container = document.getElementById('activeViewerSection');
       const canvas = document.getElementById('three-canvas');
-      const width = container.clientWidth;
-      const height = container.clientHeight;
+      const width = container.clientWidth || window.innerWidth;
+      const height = container.clientHeight || Math.max(window.innerHeight - 64, 400);
 
       scene = new THREE.Scene();
       camera = new THREE.PerspectiveCamera(65, width / height, 0.01, 2000);
       camera.position.set(0, 0, 0.01);
 
-      renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+      const isTestEnv = window.__E2E_TEST__ === true;
+      renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: isTestEnv });
       renderer.setSize(width, height);
       renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
       renderer.outputEncoding = THREE.sRGBEncoding;
@@ -493,11 +494,20 @@
       photoSphere.rotation.y = -0.45;
       scene.add(photoSphere);
 
+      window.scene = scene;
+      window.camera = camera;
+      window.renderer = renderer;
+      window.controls = controls;
+      window.photoMaterial = photoMaterial;
+      window.photoSphere = photoSphere;
+      window.isTextureLoaded = false;
+
       if (photoUrl) {
         new THREE.TextureLoader().load(photoUrl, (tex) => {
           tex.encoding = THREE.sRGBEncoding;
           photoMaterial.map = tex;
           photoMaterial.needsUpdate = true;
+          window.isTextureLoaded = true;
           buildPins();
         });
       } else {

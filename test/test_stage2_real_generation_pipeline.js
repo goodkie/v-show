@@ -71,16 +71,28 @@ try {
 
 const SERVER_PORT = parseInt(process.env.TEST_PORT || '3898', 10);
 const BASE_URL = `http://127.0.0.1:${SERVER_PORT}`;
-const TEST_PROJECT_ID = process.env.TEST_PROJECT_ID || 'prj-free-b0c6f3ea';
+if (!process.env.TEST_PROJECT_ID) {
+  throw new Error('FAIL_CLOSED: process.env.TEST_PROJECT_ID is strictly required. Static fallback forbidden.');
+}
+const TEST_PROJECT_ID = process.env.TEST_PROJECT_ID;
 
 const DISPOSABLE_INSTANCE_ID = process.env.DISPOSABLE_INSTANCE_ID || ('sandbox_' + crypto.randomBytes(12).toString('hex'));
 const EPHEMERAL_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || ('whsec_test_' + crypto.randomBytes(24).toString('hex'));
+const QA_HARNESS_SECRET = process.env.QA_HARNESS_SECRET || ('harn_' + crypto.randomBytes(24).toString('hex'));
 
 // Sentinel revoked token for verification of immediate rejection
 const REVOKED_SENTINEL_TOKEN = 'tok-revoked-ephemeral-sentinel-never-valid';
 
 // Authoritative ephemeral test token loaded strictly from environment (no static fallback)
-const AUTHORIZED_PROJECT_TOKEN = process.env.STAGE2_EPHEMERAL_TEST_TOKEN || process.env.TEST_PROJECT_TOKEN || 'tok-stage2-ephemeral-test-runner-2026';
+const AUTHORIZED_PROJECT_TOKEN = process.env.STAGE2_EPHEMERAL_TEST_TOKEN || process.env.TEST_PROJECT_TOKEN;
+if (!AUTHORIZED_PROJECT_TOKEN) {
+  throw new Error('FAIL_CLOSED: STAGE2_EPHEMERAL_TEST_TOKEN or TEST_PROJECT_TOKEN environment variable is strictly required. Static fallback forbidden.');
+}
+
+const OWNER_QA_SECRET = process.env.OWNER_QA_SECRET;
+if (!OWNER_QA_SECRET) {
+  throw new Error('FAIL_CLOSED: OWNER_QA_SECRET environment variable is strictly required. Static fallback forbidden.');
+}
 
 // Unauthorized cross-tenant token
 const CROSS_TENANT_TOKEN = 'tok-other-tenant-random-secret';
@@ -95,9 +107,16 @@ async function ensureTestServer() {
   try {
     const health = await makeHttpRequest('GET', '/health', {}, null, SERVER_PORT);
     if (health.status === 200 && health.json?.isTestSandbox) {
-      return;
+      if (health.json.disposableInstanceId === DISPOSABLE_INSTANCE_ID) {
+        return;
+      }
+      throw new Error(`PORT_OCCUPIED_MISMATCH: Port ${SERVER_PORT} is occupied by mismatched instance (${health.json?.disposableInstanceId} vs expected ${DISPOSABLE_INSTANCE_ID}). Refusing reuse.`);
     }
-  } catch (_) {}
+  } catch (err) {
+    if (err.message && err.message.includes('PORT_OCCUPIED_MISMATCH')) {
+      throw err;
+    }
+  }
 
   const serverScript = path.resolve(__dirname, '../virtual-tradeshow-commercial-v1/_clean_deploy/server/index.js');
   testServerProcess = spawn(process.execPath, [serverScript], {
@@ -111,22 +130,31 @@ async function ensureTestServer() {
       STRIPE_WEBHOOK_SECRET: EPHEMERAL_WEBHOOK_SECRET,
       DISPOSABLE_INSTANCE_ID: DISPOSABLE_INSTANCE_ID,
       STAGE2_EPHEMERAL_TEST_TOKEN: AUTHORIZED_PROJECT_TOKEN,
-      OWNER_QA_SECRET: 'vshow-stage2-secure-owner-auth-2026',
-      ALLOW_STAGE2_TEST_FAULT_INJECTION: 'true'
+      OWNER_QA_SECRET: OWNER_QA_SECRET,
+      ALLOW_STAGE2_TEST_FAULT_INJECTION: 'true',
+      QA_HARNESS_SECRET: QA_HARNESS_SECRET,
+      TEST_PROJECT_ID: TEST_PROJECT_ID
     }
+  });
+
+  let serverOutput = '';
+  testServerProcess.stdout.on('data', d => { serverOutput += d.toString(); });
+  testServerProcess.stderr.on('data', d => { serverOutput += d.toString(); });
+  testServerProcess.on('exit', (code, sig) => {
+    serverOutput += `\n[SERVER_EXIT] Process exited with code ${code}, signal ${sig}`;
   });
 
   const start = Date.now();
   while (Date.now() - start < 15000) {
     try {
       const check = await makeHttpRequest('GET', '/health', {}, null, SERVER_PORT);
-      if (check.status === 200 && check.json?.isTestSandbox) {
+      if (check.status === 200 && check.json?.isTestSandbox && check.json?.disposableInstanceId === DISPOSABLE_INSTANCE_ID) {
         return;
       }
     } catch (_) {}
     await new Promise(r => setTimeout(r, 200));
   }
-  throw new Error(`Failed to start isolated test server on port ${SERVER_PORT} within 15s`);
+  throw new Error(`Failed to start isolated test server on port ${SERVER_PORT} within 15s. Server output:\n${serverOutput}`);
 }
 
 function stopTestServer() {
@@ -827,7 +855,26 @@ async function runRealGenerationPipelineTests() {
     assert.ok(createdCandidateId);
     const testNegativeCandIds = [];
     const privateArtifactsRoot = path.join(ACTIVE_DATA_DIR, 'panorama_artifacts');
-    const foreignProjectId = 'prj-free-aeb87eb4';
+    // Dynamically resolve disposable foreign-tenant project ID from sandbox meta endpoint
+    // Gated by loopback and ephemeral X-QA-Harness-Auth header
+    // Negative Auth test: Unauthenticated request must return 403
+    const unauthMetaRes = await makeHttpRequest('GET', '/api/test/qa-sandbox-meta');
+    assert.strictEqual(unauthMetaRes.status, 403, 'qa-sandbox-meta must reject unauthenticated requests with 403');
+
+    // Negative Auth test: Invalid token must return 403
+    const badAuthMetaRes = await makeHttpRequest('GET', '/api/test/qa-sandbox-meta', {
+      'X-QA-Harness-Auth': 'bad-invalid-token'
+    });
+    assert.strictEqual(badAuthMetaRes.status, 403, 'qa-sandbox-meta must reject invalid tokens with 403');
+
+    // Authorized request with ephemeral harness secret
+    const sandboxMetaRes = await makeHttpRequest('GET', '/api/test/qa-sandbox-meta', {
+      'X-QA-Harness-Auth': QA_HARNESS_SECRET
+    });
+    assert.strictEqual(sandboxMetaRes.status, 200, 'qa-sandbox-meta with valid harness auth must return 200');
+    const foreignProjectId = sandboxMetaRes.json && sandboxMetaRes.json.foreignProjectId;
+    assert.ok(foreignProjectId && foreignProjectId.startsWith('prj-foreign-'), `[20] qa-sandbox-meta must return a valid disposable foreignProjectId, got: ${foreignProjectId}`);
+
 
     try {
       // Negative Auth: Unauthorized candidate retrieval without token rejected (403)

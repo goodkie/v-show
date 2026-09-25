@@ -563,16 +563,20 @@ const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || null;
 const STRIPE_PUBLISHABLE_KEY = process.env.STRIPE_PUBLISHABLE_KEY || null;
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || null;
 
-// Hard Mode Validation Guard: Prevent mixing test/live keys
-if (STRIPE_SECRET_KEY) {
-  if (STRIPE_MODE === 'test' && STRIPE_SECRET_KEY.startsWith('sk_live_')) {
-    console.error('FATAL BILLING MISMATCH: Live secret key detected while STRIPE_MODE=test. Refusing live operations in test mode.');
-  } else if (STRIPE_MODE === 'live' && STRIPE_SECRET_KEY.startsWith('sk_test_')) {
-    console.error('FATAL BILLING MISMATCH: Test secret key detected while STRIPE_MODE=live. Refusing test keys in live mode.');
-  }
+// P0 Hard Mode Validation Guard: Prevent mixing test/live keys (Strict Fail-Closed)
+const STRIPE_SECRET_MISMATCH = Boolean(
+  STRIPE_SECRET_KEY && (
+    (STRIPE_MODE === 'test' && STRIPE_SECRET_KEY.startsWith('sk_live_')) ||
+    (STRIPE_MODE === 'live' && STRIPE_SECRET_KEY.startsWith('sk_test_'))
+  )
+);
+if (STRIPE_SECRET_MISMATCH) {
+  console.error('[FATAL_BILLING_MISMATCH] Live secret key detected while STRIPE_MODE=test or vice-versa. Refusing to initialize Stripe client to prevent accidental live money movement.');
 }
 
-const stripe = STRIPE_SECRET_KEY ? require('stripe')(STRIPE_SECRET_KEY) : null;
+// Fail-closed: Never instantiate Stripe client if there is a mode/secret mismatch!
+const stripe = (STRIPE_SECRET_KEY && !STRIPE_SECRET_MISMATCH) ? require('stripe')(STRIPE_SECRET_KEY) : null;
+app.locals.stripe = stripe;
 
 // Middleware: Request ID & Security Headers
 app.use((req, res, next) => {
@@ -627,6 +631,49 @@ function verifyStripeWebhookSignature(rawBody, sigHeader, secret) {
   return JSON.parse(payloadStr);
 }
 
+function isStripeTransientError(err) {
+  if (!err) return false;
+  return Boolean(
+    !err.statusCode ||
+    err.statusCode >= 500 ||
+    err.statusCode === 429 ||
+    err.type === 'StripeConnectionError' ||
+    err.type === 'StripeAPIError' ||
+    err.code === 'ETIMEDOUT' ||
+    err.code === 'ECONNRESET' ||
+    err.code === 'ECONNREFUSED'
+  );
+}
+
+function extractSubscriptionId(inv) {
+  if (!inv) return null;
+  if (typeof inv.subscription === 'string' && inv.subscription.trim().length > 0) {
+    return inv.subscription.trim();
+  }
+  if (inv.subscription && typeof inv.subscription === 'object' && inv.subscription.id) {
+    return String(inv.subscription.id).trim();
+  }
+  if (inv.subscription_details && typeof inv.subscription_details.subscription === 'string' && inv.subscription_details.subscription.trim().length > 0) {
+    return inv.subscription_details.subscription.trim();
+  }
+  if (inv.subscription_details?.subscription?.id) {
+    return String(inv.subscription_details.subscription.id).trim();
+  }
+  if (inv.parent && inv.parent.subscription_details && typeof inv.parent.subscription_details.subscription === 'string' && inv.parent.subscription_details.subscription.trim().length > 0) {
+    return inv.parent.subscription_details.subscription.trim();
+  }
+  if (inv.parent?.subscription_details?.subscription?.id) {
+    return String(inv.parent.subscription_details.subscription.id).trim();
+  }
+  if (inv.parent && typeof inv.parent.subscription === 'string' && inv.parent.subscription.trim().length > 0) {
+    return inv.parent.subscription.trim();
+  }
+  if (inv.parent?.subscription?.id) {
+    return String(inv.parent.subscription.id).trim();
+  }
+  return null;
+}
+
 // Raw body parser for Stripe webhook MUST come before express.json()
 app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }), async (req, res) => {
 
@@ -655,9 +702,11 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
     });
   }
 
+  const activeStripe = (app.locals && app.locals.stripe !== undefined) ? app.locals.stripe : stripe;
+
   try {
-    if (stripe && stripe.webhooks && typeof stripe.webhooks.constructEvent === 'function') {
-      event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+    if (activeStripe && activeStripe.webhooks && typeof activeStripe.webhooks.constructEvent === 'function') {
+      event = activeStripe.webhooks.constructEvent(req.body, sig, webhookSecret);
     } else {
       event = verifyStripeWebhookSignature(req.body, sig, webhookSecret);
     }
@@ -674,181 +723,969 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
     return res.status(400).json({ error: 'Invalid event format' });
   }
 
-  // Idempotency check
-  if (db.isStripeEventProcessed(event.id)) {
-    return res.json({ received: true, duplicate: true });
+  const commercialEntitlementEvents = [
+    'checkout.session.completed',
+    'customer.subscription.created',
+    'customer.subscription.updated',
+    'customer.subscription.deleted',
+    'invoice.payment_failed',
+    'invoice.paid'
+  ];
+
+  if (commercialEntitlementEvents.includes(event.type)) {
+    const hasRequiredClient = activeStripe && (
+      (event.type === 'checkout.session.completed' && typeof activeStripe.checkout?.sessions?.retrieve === 'function') ||
+      (event.type.startsWith('customer.subscription.') && typeof activeStripe.subscriptions?.retrieve === 'function') ||
+      (event.type.startsWith('invoice.') && typeof activeStripe.invoices?.retrieve === 'function')
+    );
+    if (!hasRequiredClient) {
+      console.warn(`[SECURITY][STRIPE_PROVIDER_UNAVAILABLE] Commercial event '${event.type}' rejected: authoritative Stripe provider client is unavailable.`);
+      return res.status(503).json({
+        error: 'STRIPE_PROVIDER_UNAVAILABLE',
+        message: 'Authoritative Stripe provider client is not initialized or configured on server.',
+        retryable: true
+      });
+    }
   }
 
-  await db.logStripeEvent(event);
-
   try {
+    let result;
     switch (event.type) {
       case 'checkout.session.completed': {
-        const session = event.data.object;
-        const orgId = session.metadata?.organizationId;
-        const projectId = session.metadata?.projectId;
-        const requestedPlan = session.metadata?.requestedPlan || session.metadata?.targetPlan || 'pro';
-        const customerId = session.customer;
-        const subscriptionId = session.subscription;
+        let sessionObj = event.data.object;
+        if (!sessionObj || !sessionObj.id || typeof sessionObj.id !== 'string') {
+          return res.status(400).json({ error: 'MISSING_SESSION_ID', retryable: false });
+        }
 
-        // C11 Free Funnel Project Upgrade Handler
-        if (session.metadata && session.metadata.projectId) {
-          const pid = session.metadata.projectId;
-          const reqPlan = (session.metadata.requestedPlan || 'PRO').toUpperCase();
-          let upgradedState = null;
-          await db.mutate(fresh => {
-            const proj = (fresh.freePreviewProjects || []).find(p => p.id === pid);
-            if (proj) {
-              proj.entitlementState = reqPlan === 'BUSINESS' ? 'ACTIVE_BUSINESS' : 'ACTIVE_PRO';
-              proj.plan = reqPlan;
-              proj.stripeCustomerId = customerId;
-              proj.stripeSubscriptionId = subscriptionId;
-              proj.stripeSessionId = session.id;
-              proj.paymentCorrelationId = session.metadata.paymentCorrelationId || 'pay_corr_webhook';
-              proj.activatedAt = new Date().toISOString();
-              proj.publishStatus = 'APPROVED';
-              upgradedState = proj.entitlementState;
-            }
-          });
-          if (upgradedState) {
-            console.log(`✅ C11 Project ${pid} upgraded to ${upgradedState} via Stripe Webhook`);
+        try {
+          // 1. Authoritative Session Retrieval from Provider
+          const authSession = await activeStripe.checkout.sessions.retrieve(sessionObj.id);
+          if (!authSession) {
+            return res.status(400).json({
+              error: 'STRIPE_SESSION_NOT_FOUND',
+              message: 'Authoritative checkout session could not be found on provider.',
+              retryable: false
+            });
           }
+
+          // 2. Strict Session Completeness Verification
+          if (authSession.id !== sessionObj.id) {
+            return res.status(400).json({
+              error: 'STRIPE_SESSION_ID_MISMATCH',
+              message: 'Event-embedded session ID differs from authoritative session ID.',
+              retryable: false
+            });
+          }
+
+          if (authSession.status !== 'complete') {
+            return res.status(400).json({
+              error: 'STRIPE_SESSION_NOT_COMPLETE',
+              message: `Authoritative checkout session status is '${authSession.status}', expected 'complete'.`,
+              retryable: false
+            });
+          }
+
+          if (authSession.payment_status !== 'paid') {
+            return res.status(400).json({
+              error: 'PAYMENT_NOT_PAID',
+              message: `Authoritative checkout session payment_status is '${authSession.payment_status}', expected 'paid'.`,
+              retryable: false
+            });
+          }
+
+          if (!authSession.customer || typeof authSession.customer !== 'string' || authSession.customer.trim().length === 0) {
+            return res.status(400).json({
+              error: 'STRIPE_SESSION_CUSTOMER_REQUIRED',
+              message: 'Authoritative checkout session has empty customer identity.',
+              retryable: false
+            });
+          }
+
+          if (!authSession.subscription || typeof authSession.subscription !== 'string' || authSession.subscription.trim().length === 0) {
+            return res.status(400).json({
+              error: 'STRIPE_SESSION_SUBSCRIPTION_REQUIRED',
+              message: 'Authoritative checkout session has empty subscription identity.',
+              retryable: false
+            });
+          }
+
+          // 3. Strict Customer, Subscription, and Mode Matching
+          if (!sessionObj.customer || typeof sessionObj.customer !== 'string' || sessionObj.customer.trim().length === 0) {
+            return res.status(400).json({
+              error: 'STRIPE_EVENT_CUSTOMER_REQUIRED',
+              message: 'Event-embedded customer is required.',
+              retryable: false
+            });
+          }
+          if (sessionObj.customer !== authSession.customer) {
+            return res.status(400).json({
+              error: 'STRIPE_CUSTOMER_MISMATCH',
+              message: 'Event-embedded customer differs from authoritative provider customer.',
+              retryable: false
+            });
+          }
+          if (!sessionObj.subscription || typeof sessionObj.subscription !== 'string' || sessionObj.subscription.trim().length === 0) {
+            return res.status(400).json({
+              error: 'STRIPE_EVENT_SUBSCRIPTION_REQUIRED',
+              message: 'Event-embedded subscription is required.',
+              retryable: false
+            });
+          }
+          if (sessionObj.subscription !== authSession.subscription) {
+            return res.status(400).json({
+              error: 'STRIPE_SUBSCRIPTION_MISMATCH',
+              message: 'Event-embedded subscription differs from authoritative provider subscription.',
+              retryable: false
+            });
+          }
+          if (!authSession.mode || authSession.mode !== 'subscription') {
+            return res.status(400).json({
+              error: 'STRIPE_INVALID_CHECKOUT_MODE',
+              message: `Authoritative checkout session mode is '${authSession.mode || 'missing'}', expected 'subscription'.`,
+              retryable: false
+            });
+          }
+
+          // 4. Complete Provider Pagination or Fail-Closed (handles has_more)
+          let authoritativeLineItems = [];
+          let startingAfter = undefined;
+          let hasMore = true;
+          let pageCount = 0;
+          const seenCursors = new Set();
+
+          while (hasMore) {
+            pageCount++;
+            if (pageCount > 50) {
+              return res.status(502).json({
+                error: 'STRIPE_PAGINATION_OVERFLOW',
+                message: 'Authoritative line_items pagination exceeded safety limit of 50 pages.',
+                retryable: true
+              });
+            }
+
+            const listParams = { limit: 100 };
+            if (startingAfter) listParams.starting_after = startingAfter;
+            const page = await activeStripe.checkout.sessions.listLineItems(sessionObj.id, listParams);
+
+            if (!page || !Array.isArray(page.data)) {
+              return res.status(502).json({
+                error: 'STRIPE_PAGINATION_INVALID_PAGE',
+                message: 'Authoritative line_items page is invalid or missing data array.',
+                retryable: true
+              });
+            }
+
+            if (pageCount > 1 && page.data.length === 0) {
+              return res.status(502).json({
+                error: 'STRIPE_PAGINATION_EMPTY_CONTINUATION',
+                message: 'Provider reported has_more: true but returned empty continuation page.',
+                retryable: true
+              });
+            }
+
+            authoritativeLineItems.push(...page.data);
+            hasMore = Boolean(page.has_more);
+
+            if (hasMore) {
+              if (page.data.length === 0) {
+                return res.status(502).json({
+                  error: 'STRIPE_PAGINATION_CORRUPTED',
+                  message: 'Provider reported has_more: true with zero items.',
+                  retryable: true
+                });
+              }
+              const lastItem = page.data[page.data.length - 1];
+              if (!lastItem || !lastItem.id || typeof lastItem.id !== 'string') {
+                return res.status(502).json({
+                  error: 'STRIPE_PAGINATION_MISSING_CURSOR_ID',
+                  message: 'Provider line_item missing cursor ID for next page.',
+                  retryable: true
+                });
+              }
+              if (seenCursors.has(lastItem.id)) {
+                return res.status(502).json({
+                  error: 'STRIPE_PAGINATION_REPEATED_CURSOR',
+                  message: 'Provider returned repeated cursor ID; aborting pagination loop.',
+                  retryable: true
+                });
+              }
+              seenCursors.add(lastItem.id);
+              startingAfter = lastItem.id;
+            }
+          }
+
+          if (authoritativeLineItems.length === 0) {
+            return res.status(400).json({
+              error: 'STRIPE_LINE_ITEMS_EMPTY',
+              message: 'Authoritative line_items from Stripe are empty.',
+              retryable: false
+            });
+          }
+
+          // 5. Reject Forged Event-Embedded Line Items mismatch
+          if (sessionObj.line_items && Array.isArray(sessionObj.line_items.data) && sessionObj.line_items.data.length > 0) {
+            const eventItemIds = sessionObj.line_items.data.map(i => i.price?.id || i.id).sort().join(',');
+            const authItemIds = authoritativeLineItems.map(i => i.price?.id || i.id).sort().join(',');
+            if (eventItemIds !== authItemIds) {
+              console.warn(`[SECURITY][STRIPE_FORGERY_DETECTED] Event-embedded line items (${eventItemIds}) differ from provider items (${authItemIds}). Rejecting.`);
+              return res.status(400).json({
+                error: 'FORGED_EVENT_LINE_ITEMS_MISMATCH',
+                message: 'Event-embedded line items differ from authoritative provider record.',
+                retryable: false
+              });
+            }
+          }
+
+          // 6. Metadata Trust Boundary: Provider-authoritative metadata ONLY
+          if (sessionObj.metadata && typeof sessionObj.metadata === 'object') {
+            const authMeta = authSession.metadata || {};
+            for (const [k, v] of Object.entries(sessionObj.metadata)) {
+              if (authMeta[k] === undefined || String(authMeta[k]) !== String(v)) {
+                console.warn(`[SECURITY][METADATA_FORGERY_DETECTED] Event-embedded metadata key '${k}' mismatch with authoritative provider metadata.`);
+                return res.status(400).json({
+                  error: 'METADATA_FORGERY_DETECTED',
+                  message: `Event-embedded metadata for key '${k}' differs from authoritative provider record.`,
+                  retryable: false
+                });
+              }
+            }
+          }
+
+          // Construct authoritative session object using provider data ONLY
+          sessionObj = {
+            id: authSession.id,
+            customer: authSession.customer,
+            subscription: authSession.subscription,
+            status: authSession.status,
+            payment_status: authSession.payment_status,
+            amount_total: authSession.amount_total,
+            currency: authSession.currency,
+            metadata: authSession.metadata || {},
+            line_items: { object: 'list', data: authoritativeLineItems, has_more: false }
+          };
+        } catch (fetchErr) {
+          console.error('[STRIPE_AUTHORITATIVE_LOOKUP_FAILED]', fetchErr?.message || fetchErr);
+          if (isStripeTransientError(fetchErr)) {
+            return res.status(500).json({
+              error: 'STRIPE_PROVIDER_TRANSIENT_FAILURE',
+              message: 'Stripe provider lookup failed with transient error; retry requested.',
+              retryable: true
+            });
+          }
+          return res.status(400).json({
+            error: 'STRIPE_PROVIDER_FETCH_FAILED',
+            message: fetchErr?.message || 'Authoritative Stripe lookup failed.',
+            retryable: false
+          });
         }
 
-        if (orgId) {
-          await db.updateOrganizationSubscription(orgId, {
-            plan: requestedPlan,
-            status: 'active',
-            stripeCustomerId: customerId,
-            stripeSubscriptionId: subscriptionId,
-            upgradedAt: new Date().toISOString()
-          });
-          await db.logBillingEvent({
-            organizationId: orgId,
-            plan: requestedPlan,
-            type: 'checkout_completed',
-            stripeCustomerId: customerId,
-            stripeSubscriptionId: subscriptionId,
-            amount: session.amount_total ? session.amount_total / 100 : (requestedPlan === 'pro' ? 299 : 799)
-          });
-        }
-
-        // C09/C10 Project Commercial State Activation (Zero Data Re-entry)
-        if (projectId) {
-          const newState = requestedPlan === 'business' ? 'ACTIVE_BUSINESS' : 'ACTIVE_PRO';
-          await db.updateProjectCommercialState(projectId, newState, requestedPlan);
-        }
+        result = await db.applyStripeCheckoutCompletedAtomic({
+          event,
+          session: sessionObj
+        });
         break;
       }
       case 'customer.subscription.created':
       case 'customer.subscription.updated': {
-        const sub = event.data.object;
-        let org = db.getOrganizationByStripeCustomerId(sub.customer);
-        if (!org && sub.metadata?.organizationId) {
-          org = db.getOrganizationById(sub.metadata.organizationId);
+        const subObj = event.data.object;
+        if (!subObj || !subObj.id || typeof subObj.id !== 'string') {
+          return res.status(400).json({ error: 'MISSING_SUBSCRIPTION_ID', retryable: false });
         }
-        if (!org && sub.id) {
-          const allOrgs = db.getOrganizations ? db.getOrganizations() : (db.read().organizations || []);
-          org = allOrgs.find(o => o.subscription?.stripeSubscriptionId === sub.id);
+        if (!subObj.customer || typeof subObj.customer !== 'string' || subObj.customer.trim().length === 0) {
+          return res.status(400).json({ error: 'STRIPE_EVENT_CUSTOMER_REQUIRED', message: 'Event-embedded customer is required.', retryable: false });
         }
-        if (org) {
-          const plan = sub.metadata?.requestedPlan || (sub.items?.data[0]?.price?.unit_amount >= 50000 ? 'business' : 'pro');
-          await db.updateOrganizationSubscription(org.id, {
-            plan,
-            status: sub.status,
-            stripeSubscriptionId: sub.id,
-            currentPeriodStart: sub.current_period_start ? new Date(sub.current_period_start * 1000).toISOString() : null,
-            currentPeriodEnd: sub.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : null,
-            cancelAtPeriodEnd: Boolean(sub.cancel_at_period_end)
-          });
-          await db.logBillingEvent({
-            organizationId: org.id,
-            plan,
-            type: event.type === 'customer.subscription.created' ? 'subscription_created' : 'subscription_updated',
-            stripeCustomerId: sub.customer,
-            stripeSubscriptionId: sub.id,
-            status: sub.status
-          });
 
-          // Sync linked projects
-          const orgProjects = (db.read().projects || []).filter(p => p.organizationId === org.id);
-          for (const prj of orgProjects) {
-            let prjState = prj.commercialState;
-            if (sub.status === 'active') {
-              prjState = plan === 'business' ? 'ACTIVE_BUSINESS' : 'ACTIVE_PRO';
-            } else if (sub.status === 'past_due') {
-              prjState = 'PAST_DUE';
-            } else if (sub.status === 'canceled') {
-              prjState = 'CANCELLED';
-            }
-            await db.updateProjectCommercialState(prj.id, prjState, plan);
+        let authSub;
+        try {
+          authSub = await activeStripe.subscriptions.retrieve(subObj.id);
+          if (!authSub) {
+            return res.status(400).json({
+              error: 'STRIPE_SUBSCRIPTION_NOT_FOUND',
+              message: 'Authoritative subscription could not be found on provider.',
+              retryable: false
+            });
           }
+
+          if (authSub.id !== subObj.id) {
+            return res.status(400).json({
+              error: 'STRIPE_SUBSCRIPTION_MISMATCH',
+              message: 'Event-embedded subscription ID differs from authoritative subscription ID.',
+              retryable: false
+            });
+          }
+
+          if (subObj.customer !== authSub.customer) {
+            return res.status(400).json({
+              error: 'STRIPE_CUSTOMER_MISMATCH',
+              message: 'Event-embedded customer differs from authoritative provider subscription customer.',
+              retryable: false
+            });
+          }
+
+          if (!authSub.customer || typeof authSub.customer !== 'string') {
+            return res.status(400).json({
+              error: 'STRIPE_CUSTOMER_REQUIRED',
+              message: 'Authoritative provider subscription missing customer identity.',
+              retryable: false
+            });
+          }
+
+          if (authSub.status === 'canceled') {
+            return res.status(400).json({
+              error: 'STRIPE_SUBSCRIPTION_ALREADY_CANCELED',
+              message: 'Authoritative subscription is canceled; cannot update as active/renewed.',
+              retryable: false
+            });
+          }
+        } catch (subErr) {
+          console.error('[STRIPE_SUBSCRIPTION_LOOKUP_FAILED]', subErr?.message || subErr);
+          if (isStripeTransientError(subErr)) {
+            return res.status(500).json({
+              error: 'STRIPE_PROVIDER_TRANSIENT_FAILURE',
+              message: 'Stripe subscription lookup failed with transient error; retry requested.',
+              retryable: true
+            });
+          }
+          return res.status(400).json({
+            error: 'STRIPE_PROVIDER_FETCH_FAILED',
+            message: subErr?.message || 'Authoritative Stripe subscription lookup failed.',
+            retryable: false
+          });
         }
+
+        result = await db.applyStripeSubscriptionUpdatedAtomic({
+          event,
+          subscription: authSub
+        });
         break;
       }
       case 'customer.subscription.deleted': {
-        const sub = event.data.object;
-        const org = db.getOrganizationByStripeCustomerId(sub.customer);
-        if (org) {
-          await db.updateOrganizationSubscription(org.id, {
-            plan: 'free',
-            status: 'canceled',
-            cancelledAt: new Date().toISOString()
-          });
-          await db.logBillingEvent({
-            organizationId: org.id,
-            plan: 'free',
-            type: 'cancelled',
-            stripeCustomerId: sub.customer,
-            stripeSubscriptionId: sub.id,
-            status: 'canceled'
+        const subObj = event.data.object;
+        if (!subObj || !subObj.id || typeof subObj.id !== 'string') {
+          return res.status(400).json({ error: 'MISSING_SUBSCRIPTION_ID', retryable: false });
+        }
+        if (!subObj.customer || typeof subObj.customer !== 'string' || subObj.customer.trim().length === 0) {
+          return res.status(400).json({ error: 'STRIPE_EVENT_CUSTOMER_REQUIRED', message: 'Event-embedded customer is required.', retryable: false });
+        }
+
+        let authSub;
+        try {
+          authSub = await activeStripe.subscriptions.retrieve(subObj.id);
+          if (!authSub) {
+            return res.status(400).json({
+              error: 'STRIPE_SUBSCRIPTION_NOT_FOUND',
+              message: 'Authoritative subscription could not be found on provider.',
+              retryable: false
+            });
+          }
+
+          if (authSub.id !== subObj.id) {
+            return res.status(400).json({
+              error: 'STRIPE_SUBSCRIPTION_MISMATCH',
+              message: 'Event-embedded subscription ID differs from authoritative subscription ID.',
+              retryable: false
+            });
+          }
+
+          if (subObj.customer !== authSub.customer) {
+            return res.status(400).json({
+              error: 'STRIPE_CUSTOMER_MISMATCH',
+              message: 'Event-embedded customer differs from authoritative provider subscription customer.',
+              retryable: false
+            });
+          }
+
+          // Strict terminal state validation: provider subscription MUST denote terminal cancellation
+          if (authSub.status !== 'canceled') {
+            console.warn(`[SECURITY][STRIPE_SUBSCRIPTION_NOT_CANCELED] Deleted event rejected: authoritative status is '${authSub.status}', expected 'canceled'.`);
+            return res.status(400).json({
+              error: 'STRIPE_SUBSCRIPTION_NOT_CANCELED',
+              message: `Authoritative subscription status is '${authSub.status}', not canceled. Stale or invalid cancellation event rejected.`,
+              retryable: false
+            });
+          }
+        } catch (subErr) {
+          console.error('[STRIPE_SUBSCRIPTION_LOOKUP_FAILED]', subErr?.message || subErr);
+          if (isStripeTransientError(subErr)) {
+            return res.status(500).json({
+              error: 'STRIPE_PROVIDER_TRANSIENT_FAILURE',
+              message: 'Stripe subscription lookup failed with transient error; retry requested.',
+              retryable: true
+            });
+          }
+          return res.status(400).json({
+            error: 'STRIPE_PROVIDER_FETCH_FAILED',
+            message: subErr?.message || 'Authoritative Stripe subscription lookup failed.',
+            retryable: false
           });
         }
-        break;
-      }
-      case 'invoice.paid': {
-        const invoice = event.data.object;
-        const org = db.getOrganizationByStripeCustomerId(invoice.customer);
-        if (org) {
-          await db.logBillingEvent({
-            organizationId: org.id,
-            plan: org.subscription?.plan || 'pro',
-            type: 'invoice_paid',
-            stripeCustomerId: invoice.customer,
-            stripeSubscriptionId: invoice.subscription,
-            amount: invoice.amount_paid ? invoice.amount_paid / 100 : 299,
-            currency: invoice.currency?.toUpperCase() || 'USD',
-            status: 'paid'
-          });
-        }
+
+        result = await db.applyStripeSubscriptionCancelledAtomic({
+          event,
+          subscription: authSub
+        });
         break;
       }
       case 'invoice.payment_failed': {
-        const invoice = event.data.object;
-        const org = db.getOrganizationByStripeCustomerId(invoice.customer);
-        if (org) {
-          await db.updateOrganizationSubscription(org.id, {
-            status: 'past_due'
-          });
-          await db.logBillingEvent({
-            organizationId: org.id,
-            plan: org.subscription?.plan || 'pro',
-            type: 'payment_failed',
-            stripeCustomerId: invoice.customer,
-            status: 'past_due'
-          });
-          db.logIncident('BILLING', 'medium', `Payment failed for customer ${org.name} (Invoice ${invoice.id})`, { organizationId: org.id });
+        const invObj = event.data.object;
+        if (!invObj || !invObj.id || typeof invObj.id !== 'string') {
+          return res.status(400).json({ error: 'MISSING_INVOICE_ID', retryable: false });
         }
+        if (!invObj.customer || typeof invObj.customer !== 'string' || invObj.customer.trim().length === 0) {
+          return res.status(400).json({ error: 'STRIPE_EVENT_CUSTOMER_REQUIRED', message: 'Event-embedded customer is required.', retryable: false });
+        }
+        const eventSubId = extractSubscriptionId(invObj);
+        if (!eventSubId) {
+          return res.status(400).json({ error: 'STRIPE_EVENT_SUBSCRIPTION_REQUIRED', message: 'Event-embedded subscription is required.', retryable: false });
+        }
+
+        let authInv;
+        let authSub;
+        let authInvSubId;
+        try {
+          authInv = await activeStripe.invoices.retrieve(invObj.id);
+          if (!authInv) {
+            return res.status(400).json({
+              error: 'STRIPE_INVOICE_NOT_FOUND',
+              message: 'Authoritative invoice could not be found on provider.',
+              retryable: false
+            });
+          }
+
+          if (authInv.id !== invObj.id) {
+            return res.status(400).json({
+              error: 'STRIPE_INVOICE_MISMATCH',
+              message: 'Event-embedded invoice ID differs from authoritative invoice ID.',
+              retryable: false
+            });
+          }
+
+          if (invObj.customer !== authInv.customer) {
+            return res.status(400).json({
+              error: 'STRIPE_CUSTOMER_MISMATCH',
+              message: 'Event-embedded customer differs from authoritative provider invoice customer.',
+              retryable: false
+            });
+          }
+
+          authInvSubId = extractSubscriptionId(authInv);
+          if (!authInvSubId) {
+            return res.status(400).json({
+              error: 'STRIPE_INVOICE_SUBSCRIPTION_REQUIRED',
+              message: 'Authoritative invoice lacks bound subscription.',
+              retryable: false
+            });
+          }
+
+          if (eventSubId !== authInvSubId) {
+            return res.status(400).json({
+              error: 'STRIPE_SUBSCRIPTION_MISMATCH',
+              message: 'Event-embedded subscription differs from authoritative provider invoice subscription.',
+              retryable: false
+            });
+          }
+
+          // Authoritative state reconciliation: If authoritative invoice is already paid, acknowledge stale event as NOOP (zero entitlement mutation)
+          if (authInv.status === 'paid' || authInv.paid === true) {
+            console.log(`[STRIPE_RECONCILIATION] Stale payment_failed event ignored: authoritative invoice ${authInv.id} is already paid.`);
+            return res.status(200).json({
+              received: true,
+              status: 'NOOP_STALE_PAYMENT_FAILURE',
+              reason: 'INVOICE_ALREADY_PAID',
+              message: 'Authoritative invoice is already paid on provider; zero entitlement mutation.'
+            });
+          }
+
+          // Authoritative subscription lookup for full period reconciliation:
+          // FAIL-CLOSED: No demotion without complete authoritative current subscription state!
+          try {
+            authSub = await activeStripe.subscriptions.retrieve(authInvSubId);
+          } catch (subFetchErr) {
+            if (isStripeTransientError(subFetchErr)) throw subFetchErr;
+            // Subscription missing / 404 on provider: abort demotion! Do NOT assume null means genuine delinquency.
+            return res.status(502).json({
+              error: 'STRIPE_SUBSCRIPTION_UNAVAILABLE_FOR_DEMOTION',
+              message: 'Authoritative subscription could not be retrieved from provider; demotion aborted fail-closed.',
+              retryable: true
+            });
+          }
+
+          if (!authSub || typeof authSub !== 'object') {
+            return res.status(502).json({
+              error: 'STRIPE_SUBSCRIPTION_UNAVAILABLE_FOR_DEMOTION',
+              message: 'Authoritative subscription is missing or null on provider; demotion aborted fail-closed.',
+              retryable: true
+            });
+          }
+
+          if (!authSub.id || typeof authSub.id !== 'string' || !authSub.customer || typeof authSub.customer !== 'string') {
+            return res.status(502).json({
+              error: 'STRIPE_SUBSCRIPTION_AMBIGUOUS_STATE',
+              message: 'Authoritative subscription lacks non-empty id or customer; demotion deferred.',
+              retryable: true
+            });
+          }
+
+          if (authSub.id !== authInvSubId) {
+            return res.status(400).json({
+              error: 'STRIPE_SUBSCRIPTION_ID_MISMATCH',
+              message: 'Provider subscription ID does not match invoice subscription ID.',
+              retryable: false
+            });
+          }
+
+          if (authSub.customer !== authInv.customer) {
+            return res.status(400).json({
+              error: 'STRIPE_CUSTOMER_MISMATCH',
+              message: 'Authoritative subscription customer differs from invoice customer.',
+              retryable: false
+            });
+          }
+
+          // Check subscription status against allowlist
+          const VALID_FAILED_SUB_STATUSES = ['active', 'past_due', 'unpaid', 'canceled', 'incomplete', 'incomplete_expired', 'trialing', 'paused'];
+          if (!VALID_FAILED_SUB_STATUSES.includes(authSub.status)) {
+            return res.status(502).json({
+              error: 'STRIPE_SUBSCRIPTION_AMBIGUOUS_STATUS',
+              message: `Authoritative subscription status '${authSub.status}' is unrecognized; demotion deferred fail-closed.`,
+              retryable: true
+            });
+          }
+
+          if (authSub.status === 'canceled') {
+            return res.status(200).json({
+              received: true,
+              status: 'NOOP_SUBSCRIPTION_ALREADY_CANCELED',
+              message: 'Subscription is already canceled on provider; zero entitlement mutation.'
+            });
+          }
+
+          // Complete Delinquent Cycle Evidence Verification across ALL statuses:
+          // Require non-empty valid current period timestamps before any demotion
+          if (!authSub.current_period_start || typeof authSub.current_period_start !== 'number' || !authSub.current_period_end || typeof authSub.current_period_end !== 'number') {
+            return res.status(502).json({
+              error: 'STRIPE_SUBSCRIPTION_PERIOD_AMBIGUOUS',
+              message: 'Authoritative subscription lacks clear billing period timestamps; demotion deferred fail-closed.',
+              retryable: true
+            });
+          }
+
+          // Require non-empty latest_invoice on provider subscription
+          if (!authSub.latest_invoice || typeof authSub.latest_invoice !== 'string') {
+            return res.status(502).json({
+              error: 'STRIPE_SUBSCRIPTION_LATEST_INVOICE_MISSING',
+              message: 'Authoritative subscription lacks latest_invoice reference; demotion deferred fail-closed.',
+              retryable: true
+            });
+          }
+
+          // Require bounded invoice billing period
+          if (!authInv.period_start || typeof authInv.period_start !== 'number' || !authInv.period_end || typeof authInv.period_end !== 'number') {
+            return res.status(502).json({
+              error: 'STRIPE_INVOICE_PERIOD_MISSING',
+              message: 'Authoritative invoice lacks clear billing period timestamps; demotion deferred fail-closed.',
+              retryable: true
+            });
+          }
+
+          // If failed invoice is for an older billing cycle prior to current period, do NOT demote!
+          const isOlderPeriod = Boolean(authInv.period_end <= authSub.current_period_start);
+          if (isOlderPeriod) {
+            console.log(`[STRIPE_RECONCILIATION] Stale payment_failed event ignored: subscription ${authSub.id} has current_period_start ${authSub.current_period_start}; invoice period_end is ${authInv.period_end}.`);
+            return res.status(200).json({
+              received: true,
+              status: 'NOOP_STALE_PAYMENT_FAILURE',
+              reason: 'SUPERSEDED_BY_ACTIVE_PERIOD',
+              message: 'Failed invoice is for an older billing cycle superseded by current period; zero entitlement mutation.'
+            });
+          }
+
+          // Superseded check: if failed invoice is superseded by a newer latest_invoice on provider, do NOT demote!
+          if (authSub.latest_invoice !== authInv.id) {
+            return res.status(200).json({
+              received: true,
+              status: 'NOOP_STALE_PAYMENT_FAILURE',
+              reason: 'SUPERSEDED_BY_LATEST_INVOICE',
+              message: 'Failed invoice is superseded by newer provider subscription invoice; zero entitlement mutation.'
+            });
+          }
+
+          // Strict Proven Delinquent Provider State Check:
+          // A latest unpaid invoice for currently provider-'active', 'trialing', 'paused', or 'incomplete'
+          // must NOT automatically demote tenant projects to PAST_DUE.
+          const PROVEN_DELINQUENT_STATUSES = ['past_due', 'unpaid'];
+          if (!PROVEN_DELINQUENT_STATUSES.includes(authSub.status)) {
+            console.log(`[STRIPE_RECONCILIATION] payment_failed deferred: subscription status is '${authSub.status}' (not in proven delinquent allowlist ['past_due', 'unpaid']); demotion deferred without mutation.`);
+            return res.status(502).json({
+              error: 'STRIPE_SUBSCRIPTION_NOT_PROVEN_DELINQUENT',
+              message: `Authoritative subscription status is '${authSub.status}'; customer demotion requires confirmed delinquent status ('past_due' or 'unpaid'). Deferred fail-closed without mutation.`,
+              retryable: true
+            });
+          }
+        } catch (invErr) {
+          console.error('[STRIPE_INVOICE_LOOKUP_FAILED]', invErr?.message || invErr);
+          if (isStripeTransientError(invErr)) {
+            return res.status(500).json({
+              error: 'STRIPE_PROVIDER_TRANSIENT_FAILURE',
+              message: 'Stripe lookup failed with transient error; retry requested.',
+              retryable: true
+            });
+          }
+          return res.status(400).json({
+            error: 'STRIPE_PROVIDER_FETCH_FAILED',
+            message: invErr?.message || 'Authoritative Stripe lookup failed.',
+            retryable: false
+          });
+        }
+
+        result = await db.applyStripePaymentFailedAtomic({
+          event,
+          invoice: authInv,
+          subscription: authSub,
+          subscriptionId: authInvSubId,
+          customerId: authInv.customer
+        });
+        break;
+      }
+      case 'invoice.paid': {
+        const invObj = event.data.object;
+        if (!invObj || !invObj.id || typeof invObj.id !== 'string') {
+          return res.status(400).json({ error: 'MISSING_INVOICE_ID', retryable: false });
+        }
+        if (!invObj.customer || typeof invObj.customer !== 'string' || invObj.customer.trim().length === 0) {
+          return res.status(400).json({ error: 'STRIPE_EVENT_CUSTOMER_REQUIRED', message: 'Event-embedded customer is required.', retryable: false });
+        }
+        const eventSubId = extractSubscriptionId(invObj);
+        if (!eventSubId) {
+          return res.status(400).json({ error: 'STRIPE_EVENT_SUBSCRIPTION_REQUIRED', message: 'Event-embedded subscription is required.', retryable: false });
+        }
+
+        let authInv;
+        let authSub;
+        let authInvSubId;
+        try {
+          authInv = await activeStripe.invoices.retrieve(invObj.id);
+          if (!authInv) {
+            return res.status(400).json({
+              error: 'STRIPE_INVOICE_NOT_FOUND',
+              message: 'Authoritative invoice could not be found on provider.',
+              retryable: false
+            });
+          }
+
+          if (authInv.id !== invObj.id) {
+            return res.status(400).json({
+              error: 'STRIPE_INVOICE_MISMATCH',
+              message: 'Event-embedded invoice ID differs from authoritative invoice ID.',
+              retryable: false
+            });
+          }
+
+          if (invObj.customer !== authInv.customer) {
+            return res.status(400).json({
+              error: 'STRIPE_CUSTOMER_MISMATCH',
+              message: 'Event-embedded customer differs from authoritative provider invoice customer.',
+              retryable: false
+            });
+          }
+
+          authInvSubId = extractSubscriptionId(authInv);
+          if (!authInvSubId) {
+            return res.status(400).json({
+              error: 'STRIPE_INVOICE_SUBSCRIPTION_REQUIRED',
+              message: 'Authoritative invoice lacks bound subscription.',
+              retryable: false
+            });
+          }
+
+          if (eventSubId !== authInvSubId) {
+            return res.status(400).json({
+              error: 'STRIPE_SUBSCRIPTION_MISMATCH',
+              message: 'Event-embedded subscription differs from authoritative provider invoice subscription.',
+              retryable: false
+            });
+          }
+
+          // Strict AND check: provider must report status 'paid' AND paid boolean true
+          if (authInv.status !== 'paid' || authInv.paid !== true) {
+            console.warn(`[SECURITY][STRIPE_INVOICE_NOT_PAID] invoice.paid rejected: authoritative status='${authInv.status}', paid=${authInv.paid}`);
+            return res.status(400).json({
+              error: 'STRIPE_INVOICE_NOT_PAID',
+              message: `Authoritative invoice is not paid (status='${authInv.status}', paid=${authInv.paid}).`,
+              retryable: false
+            });
+          }
+
+          // Dispute/refund check: reject any refunded or disputed invoices
+          if (authInv.amount_refunded && authInv.amount_refunded > 0) {
+            return res.status(400).json({
+              error: 'STRIPE_INVOICE_REFUNDED',
+              message: `Invoice has refund of ${authInv.amount_refunded}; cannot apply paid entitlement.`,
+              retryable: false
+            });
+          }
+          if (authInv.dispute || authInv.status === 'uncollectible' || authInv.status === 'void') {
+            return res.status(400).json({
+              error: 'STRIPE_INVOICE_DISPUTED_OR_VOID',
+              message: 'Invoice is disputed, uncollectible, or void; cannot apply paid entitlement.',
+              retryable: false
+            });
+          }
+
+          // Currency validation: Mandatory USD
+          if (!authInv.currency || authInv.currency.toLowerCase() !== 'usd') {
+            return res.status(400).json({
+              error: 'STRIPE_CURRENCY_MISMATCH',
+              message: `Unapproved currency '${authInv.currency || 'missing'}'. Only USD is permitted.`,
+              retryable: false
+            });
+          }
+          if (invObj.currency && invObj.currency.toLowerCase() !== authInv.currency.toLowerCase()) {
+            return res.status(400).json({
+              error: 'STRIPE_CURRENCY_MISMATCH',
+              message: 'Event currency differs from authoritative invoice currency.',
+              retryable: false
+            });
+          }
+
+          // Amount validation: Mandatory positive number matching approved catalog
+          if (typeof authInv.amount_paid !== 'number' || authInv.amount_paid <= 0) {
+            return res.status(400).json({
+              error: 'STRIPE_INVALID_AMOUNT',
+              message: 'Authoritative invoice amount_paid must be a positive integer.',
+              retryable: false
+            });
+          }
+          const APPROVED_AMOUNTS = [29900, 79900];
+          if (!APPROVED_AMOUNTS.includes(authInv.amount_paid)) {
+            return res.status(400).json({
+              error: 'STRIPE_UNAPPROVED_CATALOG_AMOUNT',
+              message: `Authoritative invoice amount_paid '${authInv.amount_paid}' does not match an approved catalog tier ($299 or $799).`,
+              retryable: false
+            });
+          }
+
+          // Strict Mandatory Commercial Line Item Snapshot Verification
+          if (!authInv.lines || !Array.isArray(authInv.lines.data) || authInv.lines.data.length !== 1) {
+            return res.status(400).json({
+              error: 'STRIPE_MANDATORY_LINE_ITEM_REQUIRED',
+              message: 'Authoritative invoice must contain exactly one subscription line item.',
+              retryable: false
+            });
+          }
+          const lineItem = authInv.lines.data[0];
+          const APPROVED_PRICES = {
+            'price_test_pro_monthly': 29900,
+            'price_test_biz_monthly': 79900
+          };
+          const priceId = lineItem.price && lineItem.price.id;
+          if (!priceId || !APPROVED_PRICES[priceId]) {
+            return res.status(400).json({
+              error: 'STRIPE_UNAPPROVED_PRICE_ID',
+              message: `Invoice line item price '${priceId || 'missing'}' is not in approved test catalog.`,
+              retryable: false
+            });
+          }
+          if (authInv.amount_paid !== APPROVED_PRICES[priceId]) {
+            return res.status(400).json({
+              error: 'STRIPE_PRICE_AMOUNT_MISMATCH',
+              message: `Invoice amount_paid (${authInv.amount_paid}) does not match catalog price for '${priceId}' (${APPROVED_PRICES[priceId]}).`,
+              retryable: false
+            });
+          }
+          if (typeof lineItem.quantity !== 'number' || lineItem.quantity !== 1) {
+            return res.status(400).json({
+              error: 'STRIPE_INVALID_QUANTITY',
+              message: 'Invoice line item quantity must be exactly 1.',
+              retryable: false
+            });
+          }
+          if (lineItem.proration === true) {
+            return res.status(400).json({
+              error: 'STRIPE_PRORATION_FORBIDDEN',
+              message: 'Prorated line items are strictly forbidden on invoice.paid.',
+              retryable: false
+            });
+          }
+
+          // Retrieve and reconcile authoritative subscription
+          try {
+            authSub = await activeStripe.subscriptions.retrieve(authInvSubId);
+          } catch (subErr) {
+            if (isStripeTransientError(subErr)) throw subErr;
+            return res.status(502).json({
+              error: 'STRIPE_SUBSCRIPTION_UNAVAILABLE',
+              message: 'Authoritative subscription could not be retrieved from provider; entitlement application deferred.',
+              retryable: true
+            });
+          }
+
+          if (!authSub || typeof authSub !== 'object') {
+            return res.status(502).json({
+              error: 'STRIPE_SUBSCRIPTION_UNAVAILABLE',
+              message: 'Authoritative subscription is missing on provider.',
+              retryable: true
+            });
+          }
+
+          if (!authSub.id || typeof authSub.id !== 'string' || !authSub.customer || typeof authSub.customer !== 'string') {
+            return res.status(502).json({
+              error: 'STRIPE_SUBSCRIPTION_AMBIGUOUS_STATE',
+              message: 'Authoritative subscription lacks non-empty id or customer; entitlement application deferred.',
+              retryable: true
+            });
+          }
+
+          if (authSub.id !== authInvSubId) {
+            return res.status(400).json({
+              error: 'STRIPE_SUBSCRIPTION_MISMATCH',
+              message: 'Authoritative subscription ID does not match invoice subscription ID.',
+              retryable: false
+            });
+          }
+
+          if (authSub.customer !== authInv.customer) {
+            return res.status(400).json({
+              error: 'STRIPE_CUSTOMER_MISMATCH',
+              message: 'Authoritative subscription customer differs from invoice customer.',
+              retryable: false
+            });
+          }
+
+          // If subscription is canceled, a delayed older paid invoice MUST NOT reinstate the canceled subscription!
+          if (authSub.status === 'canceled') {
+            console.log(`[STRIPE_RECONCILIATION] Delayed invoice.paid event ignored: subscription ${authSub.id} is canceled.`);
+            return res.status(200).json({
+              received: true,
+              status: 'NOOP_STALE_PAID_INVOICE',
+              reason: 'SUBSCRIPTION_ALREADY_CANCELED',
+              message: 'Subscription is canceled on provider; delayed paid invoice will not reinstate entitlement.'
+            });
+          }
+
+          // Mandatory billing period timestamps on subscription
+          if (!authSub.current_period_start || typeof authSub.current_period_start !== 'number' || !authSub.current_period_end || typeof authSub.current_period_end !== 'number') {
+            return res.status(502).json({
+              error: 'STRIPE_SUBSCRIPTION_PERIOD_AMBIGUOUS',
+              message: 'Authoritative subscription lacks clear billing period timestamps; entitlement application deferred.',
+              retryable: true
+            });
+          }
+
+          // Mandatory invoice period timestamps and exact period match
+          if (!authInv.period_start || typeof authInv.period_start !== 'number' || !authInv.period_end || typeof authInv.period_end !== 'number') {
+            return res.status(502).json({
+              error: 'STRIPE_INVOICE_PERIOD_MISSING',
+              message: 'Authoritative invoice lacks clear billing period timestamps; entitlement application deferred.',
+              retryable: true
+            });
+          }
+          if (authInv.period_start !== authSub.current_period_start || authInv.period_end !== authSub.current_period_end) {
+            if (authSub.status === 'active' && authInv.period_end && authSub.current_period_start && (authInv.period_end < authSub.current_period_start)) {
+              console.log(`[STRIPE_RECONCILIATION] Delayed invoice.paid for older period ${authInv.period_end} superseded by current period ${authSub.current_period_start}.`);
+              return res.status(200).json({
+                received: true,
+                status: 'NOOP_STALE_PAID_INVOICE',
+                reason: 'SUPERSEDED_BY_CURRENT_PERIOD',
+                message: 'Paid invoice is for an older period superseded by current subscription period.'
+              });
+            }
+            return res.status(400).json({
+              error: 'STRIPE_PERIOD_TIMESTAMPS_MISMATCH',
+              message: `Invoice billing period [${authInv.period_start}, ${authInv.period_end}] does not match subscription period [${authSub.current_period_start}, ${authSub.current_period_end}].`,
+              retryable: false
+            });
+          }
+
+          // Mandatory latest_invoice on provider subscription
+          if (!authSub.latest_invoice || typeof authSub.latest_invoice !== 'string') {
+            return res.status(502).json({
+              error: 'STRIPE_SUBSCRIPTION_LATEST_INVOICE_MISSING',
+              message: 'Authoritative subscription lacks latest_invoice reference; entitlement application deferred.',
+              retryable: true
+            });
+          }
+
+          // Latest invoice verification
+          if (authSub.latest_invoice !== authInv.id) {
+            if (authSub.status === 'active' && authInv.period_end && authSub.current_period_start && (authInv.period_end < authSub.current_period_start)) {
+              console.log(`[STRIPE_RECONCILIATION] Delayed invoice.paid for older period ${authInv.period_end} superseded by current period ${authSub.current_period_start}.`);
+              return res.status(200).json({
+                received: true,
+                status: 'NOOP_STALE_PAID_INVOICE',
+                reason: 'SUPERSEDED_BY_CURRENT_PERIOD',
+                message: 'Paid invoice is for an older period superseded by current subscription period.'
+              });
+            }
+            return res.status(502).json({
+              error: 'STRIPE_INVOICE_NOT_LATEST',
+              message: 'Paid invoice does not match latest provider subscription invoice; entitlement application deferred.',
+              retryable: true
+            });
+          }
+        } catch (invErr) {
+          console.error('[STRIPE_INVOICE_LOOKUP_FAILED]', invErr?.message || invErr);
+          if (isStripeTransientError(invErr)) {
+            return res.status(500).json({
+              error: 'STRIPE_PROVIDER_TRANSIENT_FAILURE',
+              message: 'Stripe invoice lookup failed with transient error; retry requested.',
+              retryable: true
+            });
+          }
+          return res.status(400).json({
+            error: 'STRIPE_PROVIDER_FETCH_FAILED',
+            message: invErr?.message || 'Authoritative Stripe invoice lookup failed.',
+            retryable: false
+          });
+        }
+
+        result = await db.applyStripeInvoicePaidAtomic({
+          event,
+          invoice: authInv,
+          subscription: authSub,
+          subscriptionId: authInvSubId,
+          customerId: authInv.customer
+        });
         break;
       }
       default:
-        break;
+        await db.logStripeEvent(event, 'PROCESSED');
+        return res.json({ received: true });
     }
-  } catch (procErr) {
-    console.error('Error processing webhook event:', procErr);
-  }
 
-  res.json({ received: true });
+    if (!result) {
+      return res.json({ received: true });
+    }
+
+    if (result.duplicate) {
+      return res.json({ received: true, duplicate: true });
+    }
+
+    if (result.inFlight) {
+      return res.status(409).set('Retry-After', '5').json({
+        error: 'STRIPE_EVENT_IN_FLIGHT',
+        message: 'Event is currently being processed by another worker; retry requested.',
+        retryable: true
+      });
+    }
+
+    if (!result.success) {
+      return res.status(400).json({
+        error: result.code || 'STRIPE_WEBHOOK_VALIDATION_FAILED',
+        message: result.message || 'Validation failed for event.',
+        retryable: false
+      });
+    }
+
+    return res.json({ received: true });
+  } catch (procErr) {
+    console.error('[STRIPE_WEBHOOK_PROCESSING_FAILED]', procErr);
+    return res.status(500).json({
+      error: 'STRIPE_WEBHOOK_PROCESSING_FAILED',
+      message: 'Internal error processing webhook event',
+      retryable: true
+    });
+  }
 });
 
 // JSON Body Parser for all other routes
@@ -873,6 +1710,306 @@ app.use((err, req, res, next) => {
   next(err);
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// [STAGE 2 AUDIT R57] Platform Owner Admin Routes for Immutable Grant Issuance
+// Strictly restricted to platform_owner role via requireAuth + requirePlatformOwner.
+// Eliminates client/tenant tampering of pilotGrants and legacyGrants.
+// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// [STAGE 2 AUDIT R57 & R65] Platform Owner Admin Routes for Immutable Grant Issuance
+// Strictly restricted to platform_owner role via requireAuth + requirePlatformOwner.
+// Eliminates client/tenant tampering of pilotGrants and legacyGrants.
+// ─────────────────────────────────────────────────────────────────────────────
+app.post('/api/admin/owner-approvals', requireAuth, requirePlatformOwner, (req, res) => {
+  try {
+    const { organizationId, projectId, accountId, grantType, isOrgWide, expiresAt } = req.body || {};
+    if (!organizationId) {
+      return res.status(400).json({ error: 'MISSING_ORGANIZATION_ID', message: 'organizationId is required.' });
+    }
+    if (!['pilot', 'legacy'].includes(grantType)) {
+      return res.status(400).json({ error: 'INVALID_GRANT_TYPE', message: 'grantType must be pilot or legacy.' });
+    }
+    if (!projectId && !accountId && isOrgWide !== true) {
+      return res.status(400).json({
+        error: 'EXPLICIT_ORG_WIDE_APPROVAL_REQUIRED',
+        message: 'Neither projectId nor accountId provided. Organization-wide grant requires explicit isOrgWide: true in payload.'
+      });
+    }
+    const targetScope = (projectId && accountId)
+      ? `project:${projectId}+account:${accountId}`
+      : projectId
+        ? `project:${projectId}`
+        : accountId
+          ? `account:${accountId}`
+          : `org:${organizationId}`;
+
+    const authenticatedOwner = req.user.email || req.user.userId || req.user.id || req.user.username;
+    if (!authenticatedOwner) {
+      return res.status(403).json({
+        error: 'UNAUTHENTICATED_OWNER_PRINCIPAL',
+        message: 'Explicit authenticated owner principal email or ID required.'
+      });
+    }
+
+    const approvalReceipt = db.createOwnerApprovalReceipt({
+      authenticatedOwner,
+      targetScope,
+      grantType,
+      isOrgWideApproved: Boolean(isOrgWide),
+      expiresAt
+    });
+
+    return res.status(201).json({ success: true, approvalReceipt });
+  } catch (err) {
+    return res.status(400).json({ error: err.message });
+  }
+});
+
+app.post('/api/admin/pilot-grants', requireAuth, requirePlatformOwner, async (req, res) => {
+  try {
+    const { organizationId, projectId, accountId, pilotExpiresAt, notes, isOrgWide, approvalReceipt: providedReceipt } = req.body || {};
+    if (!organizationId) {
+      return res.status(400).json({ error: 'MISSING_ORGANIZATION_ID', message: 'organizationId is required.' });
+    }
+    if (!pilotExpiresAt) {
+      return res.status(400).json({ error: 'MISSING_PILOT_EXPIRATION', message: 'pilotExpiresAt is required.' });
+    }
+    // Strict Owner Consent: Require explicit isOrgWide: true when no specific target is provided. Zero auto-inference!
+    if (!projectId && !accountId && isOrgWide !== true) {
+      return res.status(400).json({
+        error: 'EXPLICIT_ORG_WIDE_APPROVAL_REQUIRED',
+        message: 'Neither projectId nor accountId provided. Organization-wide grant requires explicit isOrgWide: true in payload.'
+      });
+    }
+
+    const targetScope = (projectId && accountId)
+      ? `project:${projectId}+account:${accountId}`
+      : projectId
+        ? `project:${projectId}`
+        : accountId
+          ? `account:${accountId}`
+          : `org:${organizationId}`;
+
+    const authenticatedOwner = req.user.email || req.user.userId || req.user.id || req.user.username;
+    if (!authenticatedOwner) {
+      return res.status(403).json({
+        error: 'UNAUTHENTICATED_OWNER_PRINCIPAL',
+        message: 'Explicit authenticated owner principal email or ID required for grant issuance.'
+      });
+    }
+
+    const approvalReceipt = providedReceipt || db.createOwnerApprovalReceipt({
+      authenticatedOwner,
+      targetScope,
+      grantType: 'pilot',
+      isOrgWideApproved: Boolean(isOrgWide)
+    });
+
+    const grant = await db.issuePilotGrant({
+      organizationId,
+      projectId,
+      accountId,
+      pilotExpiresAt,
+      approvedBy: authenticatedOwner,
+      notes,
+      createdBy: authenticatedOwner,
+      isOrgWide: Boolean(isOrgWide),
+      approvalReceipt
+    });
+    return res.status(201).json({ success: true, grant });
+  } catch (err) {
+    return res.status(400).json({ error: err.message });
+  }
+});
+
+app.delete('/api/admin/pilot-grants/:grantId', requireAuth, requirePlatformOwner, async (req, res) => {
+  try {
+    const authenticatedOwner = req.user.email || req.user.userId || req.user.id || req.user.username;
+    if (!authenticatedOwner) {
+      return res.status(403).json({
+        error: 'UNAUTHENTICATED_OWNER_PRINCIPAL',
+        message: 'Explicit authenticated owner principal email or ID required for grant revocation.'
+      });
+    }
+
+    const revocationReceipt = req.body?.revocationReceipt || db.createOwnerRevocationReceipt({
+      authenticatedOwner,
+      grantId: req.params.grantId
+    });
+
+    const grant = await db.revokePilotGrant(req.params.grantId, authenticatedOwner, revocationReceipt);
+    return res.json({ success: true, grant });
+  } catch (err) {
+    if (err.message === 'GRANT_NOT_FOUND') return res.status(404).json({ error: err.message });
+    return res.status(400).json({ error: err.message });
+  }
+});
+
+app.post('/api/admin/legacy-grants', requireAuth, requirePlatformOwner, async (req, res) => {
+  try {
+    const { organizationId, accountId, projectId, notes, isOrgWide, approvalReceipt: providedReceipt } = req.body || {};
+    if (!organizationId) {
+      return res.status(400).json({ error: 'MISSING_ORGANIZATION_ID', message: 'organizationId is required.' });
+    }
+    // Strict Owner Consent: Require explicit isOrgWide: true when no specific target is provided. Zero auto-inference!
+    if (!projectId && !accountId && isOrgWide !== true) {
+      return res.status(400).json({
+        error: 'EXPLICIT_ORG_WIDE_APPROVAL_REQUIRED',
+        message: 'Neither projectId nor accountId provided. Organization-wide grant requires explicit isOrgWide: true in payload.'
+      });
+    }
+
+    const targetScope = (projectId && accountId)
+      ? `project:${projectId}+account:${accountId}`
+      : projectId
+        ? `project:${projectId}`
+        : accountId
+          ? `account:${accountId}`
+          : `org:${organizationId}`;
+
+    const authenticatedOwner = req.user.email || req.user.userId || req.user.id || req.user.username;
+    if (!authenticatedOwner) {
+      return res.status(403).json({
+        error: 'UNAUTHENTICATED_OWNER_PRINCIPAL',
+        message: 'Explicit authenticated owner principal email or ID required for grant issuance.'
+      });
+    }
+
+    const approvalReceipt = providedReceipt || db.createOwnerApprovalReceipt({
+      authenticatedOwner,
+      targetScope,
+      grantType: 'legacy',
+      isOrgWideApproved: Boolean(isOrgWide)
+    });
+
+    const grant = await db.issueLegacyGrant({
+      organizationId,
+      accountId,
+      projectId,
+      approvedBy: authenticatedOwner,
+      notes,
+      createdBy: authenticatedOwner,
+      isOrgWide: Boolean(isOrgWide),
+      approvalReceipt
+    });
+    return res.status(201).json({ success: true, grant });
+  } catch (err) {
+    return res.status(400).json({ error: err.message });
+  }
+});
+
+app.delete('/api/admin/legacy-grants/:grantId', requireAuth, requirePlatformOwner, async (req, res) => {
+  try {
+    const authenticatedOwner = req.user.email || req.user.userId || req.user.id || req.user.username;
+    if (!authenticatedOwner) {
+      return res.status(403).json({
+        error: 'UNAUTHENTICATED_OWNER_PRINCIPAL',
+        message: 'Explicit authenticated owner principal email or ID required for grant revocation.'
+      });
+    }
+
+    const revocationReceipt = req.body?.revocationReceipt || db.createOwnerRevocationReceipt({
+      authenticatedOwner,
+      grantId: req.params.grantId
+    });
+
+    const grant = await db.revokeLegacyGrant(req.params.grantId, authenticatedOwner, revocationReceipt);
+    return res.json({ success: true, grant });
+  } catch (err) {
+    if (err.message === 'GRANT_NOT_FOUND') return res.status(404).json({ error: err.message });
+    return res.status(400).json({ error: err.message });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// [STAGE 2 QA] Authentic 3D Model Private Asset Access Route
+// Mounted BEFORE ANY static middleware (lines 876, 906, 1041, 1268) to eliminate
+// static route bypass hazard (ChatGPT R21 Audit Finding #4).
+// Enforces strict server-side Bearer session authentication and tenant ownership.
+// Serves binary bytes strictly from private storage outside public static roots.
+// ─────────────────────────────────────────────────────────────────────────────
+app.get([
+  '/assets/demo/wilo/models/:filename',
+  '/assets/wilo/models/:filename',
+  '/api/models/:filename'
+], (req, res) => {
+  const filename = req.params.filename;
+
+  // 1. Strict Server-Side Session Authentication via Authorization: Bearer <token>
+  const authHeader = req.headers['authorization'] || req.headers['Authorization'];
+  let bearerToken = null;
+  if (authHeader && typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
+    bearerToken = authHeader.substring(7).trim();
+  } else if (req.headers['x-session-token']) {
+    bearerToken = req.headers['x-session-token'];
+  }
+
+  if (!bearerToken) {
+    return res.status(401).json({
+      ok: false,
+      error: 'UNAUTHORIZED',
+      message: 'Unauthorized: Missing or invalid authorization token. Bearer token required in Authorization header.'
+    });
+  }
+
+  const session = activeSessions.get(bearerToken);
+  if (!session || (Date.now() - session.createdAt > SESSION_TTL_MS)) {
+    if (session) activeSessions.delete(bearerToken);
+    return res.status(401).json({
+      ok: false,
+      error: 'UNAUTHORIZED',
+      message: 'Unauthorized: Session expired or invalid.'
+    });
+  }
+
+  // 2. Strict Tenant / Project Ownership Verification
+  // Proprietary Wilo 3D models belong strictly to 'org-wilo-golden-demo'
+  const isAuthorizedTenant = session.organizationId === 'org-wilo-golden-demo';
+  const isPlatformPrivileged = session.role === 'platform_owner' || session.role === 'owner';
+
+  if (!isAuthorizedTenant && !isPlatformPrivileged) {
+    return res.status(403).json({
+      ok: false,
+      error: 'FORBIDDEN',
+      message: 'Forbidden: Cross-tenant model access denied.'
+    });
+  }
+
+  // 3. Locate model binary strictly in private storage outside public static roots
+  const privateDirs = [
+    path.join(__dirname, '..', 'data', 'private_models', 'org-wilo-golden-demo', 'models'),
+    path.join(__dirname, '..', 'data', 'uploads', 'organizations', 'org-wilo-golden-demo', 'booths', 'booth-wilo-golden-demo', 'models', 'WILO-GEOMETRY-60-01'),
+    path.join(__dirname, '..', 'production_artifacts', 'r6', 'rejected_synthetic_model'),
+    path.join(process.cwd(), 'virtual-tradeshow-commercial-v1', 'production_artifacts', 'r6', 'rejected_synthetic_model'),
+    path.join(process.cwd(), 'virtual-tradeshow-commercial-v1', '_clean_deploy', 'data', 'private_models', 'org-wilo-golden-demo', 'models')
+  ];
+
+  let targetPath = null;
+  for (const dir of privateDirs) {
+    const candidate = path.join(dir, path.basename(filename));
+    if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
+      targetPath = candidate;
+      break;
+    }
+  }
+
+  if (!targetPath) {
+    return res.status(404).json({
+      ok: false,
+      error: 'MODEL_NOT_FOUND',
+      message: `Not found: 3D model asset '${filename}' not found.`
+    });
+  }
+
+  // 4. Send binary bytes with strict private no-cache headers
+  res.setHeader('Content-Type', 'application/octet-stream');
+  res.setHeader('Cache-Control', 'private, no-cache, no-store, must-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  res.setHeader('x-tenant-id', session.organizationId);
+  return res.sendFile(targetPath);
+});
+
 // Static File Routes — Global Private Storage & Candidate Protection Interceptor
 app.use((req, res, next) => {
   let reqUrl = '';
@@ -893,6 +2030,10 @@ app.use((req, res, next) => {
     reqUrl.startsWith('/data') ||
     reqPath.startsWith('/private_artifacts') ||
     reqUrl.startsWith('/private_artifacts') ||
+    reqUrl.includes('models/REAL_WILO_') ||
+    reqPath.includes('models/REAL_WILO_') ||
+    reqUrl.includes('REAL_WILO_GAUSSIAN_FINAL') ||
+    reqPath.includes('REAL_WILO_GAUSSIAN_FINAL') ||
     ((reqPath.startsWith('/uploads') || reqUrl.startsWith('/uploads')) && (reqPath.includes('cand-') || reqPath.includes('candidate') || reqUrl.includes('cand-') || reqUrl.includes('candidate')))
   ) {
     return res.status(403).json({
@@ -1268,6 +2409,7 @@ app.use((req, res, next) => {
 app.use('/assets', express.static(path.join(__dirname, '..', 'client', 'assets')));
 app.use('/assets', express.static(path.join(__dirname, '..', 'assets')));
 app.use(express.static(path.join(__dirname, '..', 'client')));
+app.use('/client', express.static(path.join(__dirname, '..', 'client')));
 
 // --- 1. Healthcheck (Canonical: /health, Alias: /api/health, /api/version) & Public Plan Endpoints ---
 const CURRENT_BUILD_SHA = (() => {
@@ -1462,49 +2604,119 @@ function getReqCookie(req, name) {
   return match ? decodeURIComponent(match[1]) : null;
 }
 
-// C12.9-P2R6: Auto-provision and Seed Authoritative Owner QA Project
-function ensureAuthoritativeQaProject(targetProjectId = 'prj-free-b0c6f3ea') {
-  try {
-    let p = db.getProject(targetProjectId);
-    if (!p) {
-      const newProj = {
-        id: targetProjectId,
-        name: 'Apex Robotics Inc. Virtual Booth (Owner QA)',
-        company: 'Apex Robotics Inc.',
-        contactEmail: 'owner@vshow.com',
-        customerEmail: 'owner@vshow.com',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        status: 'ACTIVE',
-        commercialState: 'ACTIVE',
-        editToken: 'tok-cac33e74b3aaa8e552df9915e092ac22',
-        activeTourId: 'tour-1788794765310-wtfv5',
-        defaultViewpointId: 'vp-1788794765375-5c6ia',
-        viewpoints: [
-          { id: 'vp-1788794765375-5c6ia', name: 'Entrance', x: 50, y: 85, photos: [], panoramaUrl: '', status: 'PENDING' }
-        ],
-        tours: [
-          { id: 'tour-1788794765310-wtfv5', name: 'Main Tour', viewpoints: ['vp-1788794765375-5c6ia'] }
-        ],
-        panoramaVersions: [],
-        products: []
-      };
-      db.mutate(data => {
-        data.projects = data.projects || [];
-        if (!data.projects.some(x => x.id === targetProjectId)) {
-          data.projects.push(newProj);
-        }
-      });
-      p = newProj;
-      console.log(`[QA_PROJECT_HYDRATION] Successfully provisioned authoritative project ${targetProjectId} in db.projects.`);
+// C12.9-P2R6: Auto-provision Disposable QA Projects for Test Sandbox ONLY
+// SECURITY: Static editToken seeds removed. Tokens are generated as cryptographically
+// random disposables at runtime, scoped strictly to the current DISPOSABLE_INSTANCE_ID.
+// This function MUST NOT be called in production/non-test contexts.
+
+// Tracks the dynamically generated foreign-tenant sandbox project ID for test introspection only
+let _sandboxForeignProjectId = null;
+
+function ensureAuthoritativeQaProject() {
+  const isTestSandbox = process.env.NODE_ENV === 'test' && !!process.env.DISPOSABLE_INSTANCE_ID;
+  if (!isTestSandbox) {
+    // Fail-closed: never auto-provision QA credentials outside an explicit test sandbox
+    if (process.env.NODE_ENV === 'test') {
+      console.error('[QA_PROJECT_HYDRATION] SKIP: NODE_ENV=test but DISPOSABLE_INSTANCE_ID absent. Refusing to auto-provision.');
     }
-    return p;
+    return;
+  }
+  const crypto = require('crypto');
+  try {
+    // Generate a per-run disposable foreign tenant ID
+    const foreignTenantId = 'prj-foreign-' + crypto.randomBytes(8).toString('hex');
+    _sandboxForeignProjectId = foreignTenantId;
+
+    const projectsToProvision = [
+      {
+        // FAIL-CLOSED: TEST_PROJECT_ID must be explicitly provided — no static fallback
+        id: process.env.TEST_PROJECT_ID || (() => { throw new Error('FAIL_CLOSED: TEST_PROJECT_ID must be set explicitly for QA sandbox provisioning.'); })()
+,        name: 'Stage2 QA Sandbox Project',
+        company: 'QA Sandbox',
+        contactEmail: 'qa-sandbox@internal.test',
+        customerEmail: 'qa-sandbox@internal.test',
+        // Disposable token — generated per sandbox instance, never static
+        editToken: crypto.randomBytes(24).toString('hex')
+      },
+      {
+        // Disposable foreign-tenant ID generated per sandbox run — never a fixed QA project ID
+        id: foreignTenantId,
+        name: 'Stage2 QA Foreign Tenant Sandbox',
+        company: 'QA Foreign Tenant',
+        contactEmail: 'foreign-qa@internal.test',
+        customerEmail: 'foreign-qa@internal.test',
+        // Separate disposable token for foreign-tenant cross-boundary tests
+        editToken: crypto.randomBytes(24).toString('hex')
+      }
+    ];
+
+    for (const projSpec of projectsToProvision) {
+      let p = db.getProject(projSpec.id);
+      if (!p) {
+        const newProj = {
+          id: projSpec.id,
+          name: projSpec.name,
+          company: projSpec.company,
+          contactEmail: projSpec.contactEmail,
+          customerEmail: projSpec.customerEmail,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          status: 'ACTIVE',
+          commercialState: 'ACTIVE',
+          editToken: projSpec.editToken,
+          activeTourId: 'tour-' + crypto.randomBytes(8).toString('hex'),
+          defaultViewpointId: 'vp-' + crypto.randomBytes(8).toString('hex'),
+          viewpoints: [],
+          tours: [],
+          panoramaVersions: [],
+          products: []
+        };
+        db.mutate(data => {
+          data.projects = data.projects || [];
+          if (!data.projects.some(x => x.id === projSpec.id)) {
+            data.projects.push(newProj);
+          }
+        });
+        // Log only to stderr; token is disposable but should not appear in stdout/API responses
+        process.stderr.write(`[QA_PROJECT_HYDRATION] Provisioned disposable sandbox project ${projSpec.id} (instance: ${process.env.DISPOSABLE_INSTANCE_ID})\n`);
+      }
+    }
   } catch (err) {
-    console.warn('[QA_PROJECT_HYDRATION_ERROR]', err.message);
-    return null;
+    console.error('[QA_PROJECT_HYDRATION_ERROR]', err.message);
+    if (err.message && err.message.includes('FAIL_CLOSED')) {
+      process.exit(1);
+    }
   }
 }
-ensureAuthoritativeQaProject('prj-free-b0c6f3ea');
+// Gate: only invoke in explicit test sandbox context
+if (process.env.NODE_ENV === 'test' && process.env.DISPOSABLE_INSTANCE_ID) {
+  ensureAuthoritativeQaProject();
+}
+
+// Test-sandbox-only introspection endpoint: exposes disposable sandbox project IDs for test harness use
+// Strictly gated: only reachable when NODE_ENV=test AND DISPOSABLE_INSTANCE_ID present
+// Hardened: loopback-only and requires valid ephemeral X-QA-Harness-Auth header
+app.get('/api/test/qa-sandbox-meta', (req, res) => {
+  if (process.env.NODE_ENV !== 'test' || !process.env.DISPOSABLE_INSTANCE_ID) {
+    return res.status(404).json({ error: 'Not found' });
+  }
+  const clientIp = req.ip || (req.connection && req.connection.remoteAddress) || (req.socket && req.socket.remoteAddress) || '';
+  const isLoopback = ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes((clientIp || '').trim());
+  if (!isLoopback) {
+    return res.status(403).json({ error: 'Forbidden: Loopback only' });
+  }
+  const expectedAuth = process.env.QA_HARNESS_SECRET;
+  const providedAuth = req.headers['x-qa-harness-auth'];
+  if (!expectedAuth || !providedAuth || providedAuth !== expectedAuth) {
+    return res.status(403).json({ error: 'Forbidden: Valid X-QA-Harness-Auth header required' });
+  }
+  res.json({
+    instanceId: process.env.DISPOSABLE_INSTANCE_ID,
+    primaryProjectId: process.env.TEST_PROJECT_ID || null,
+    foreignProjectId: _sandboxForeignProjectId || null
+  });
+});
+
 
 
 function verifyQaAccess(req) {
@@ -5219,6 +6431,13 @@ app.get('/api/billing/my-subscription', requireAuth, (req, res) => {
 
 app.post('/api/billing/create-checkout-session', requireAuth, async (req, res) => {
   try {
+    if (STRIPE_SECRET_MISMATCH) {
+      return res.status(503).json({
+        error: 'FATAL_BILLING_MISMATCH',
+        message: 'Payment processing is disabled due to a configuration mismatch between STRIPE_MODE and secret keys.'
+      });
+    }
+
     const flags = db.getFeatureFlags();
     if (flags.billingKillSwitch) {
       return res.status(503).json({
@@ -5229,6 +6448,26 @@ app.post('/api/billing/create-checkout-session', requireAuth, async (req, res) =
 
     const org = db.getOrganizationById(req.user.organizationId);
     if (!org) return res.status(404).json({ error: 'Organization not found.' });
+
+    // Multi-tenant isolation check on requested project
+    let validatedProject = null;
+    if (req.body.projectId) {
+      const allProjects = db.read().projects || [];
+      const allFreeProjects = db.read().freePreviewProjects || [];
+      validatedProject = allProjects.find(p => p.id === req.body.projectId) || allFreeProjects.find(p => p.id === req.body.projectId);
+      if (!validatedProject) {
+        return res.status(404).json({
+          error: 'PROJECT_NOT_FOUND',
+          message: 'The requested project could not be found.'
+        });
+      }
+      if (!validatedProject.organizationId || validatedProject.organizationId !== org.id) {
+        return res.status(403).json({
+          error: 'PROJECT_TENANT_MISMATCH',
+          message: 'The requested project does not belong to your organization.'
+        });
+      }
+    }
 
     // --- Phase 10.5 Fail-Closed Live Pilot Guardrails ---
     if (STRIPE_MODE === 'live') {
@@ -5343,13 +6582,24 @@ app.post('/api/billing/create-checkout-session', requireAuth, async (req, res) =
 
     // In Test Mode / Stripe Configured
     if (stripe) {
-      const priceId = requestedPlan === 'pro'
-        ? (process.env.STRIPE_PRICE_PRO_MONTHLY || 'price_test_pro_monthly')
-        : (process.env.STRIPE_PRICE_BUSINESS_MONTHLY || 'price_test_biz_monthly');
+      const proPriceId = process.env.STRIPE_PRICE_PRO_MONTHLY;
+      const bizPriceId = process.env.STRIPE_PRICE_BUSINESS_MONTHLY;
+      const priceId = requestedPlan === 'pro' ? proPriceId : bizPriceId;
+      if (!priceId || !priceId.startsWith('price_')) {
+        return res.status(503).json({
+          error: 'STRIPE_PRICE_NOT_CONFIGURED',
+          message: `Configured Stripe Price ID for plan "${requestedPlan}" is missing or invalid in server environment.`
+        });
+      }
 
-      const protocol = req.headers['x-forwarded-proto'] || 'http';
-      const host = req.headers.host || 'localhost:3000';
-      const origin = `${protocol}://${host}`;
+      const canonicalOrigin = process.env.APP_CANONICAL_ORIGIN || process.env.PUBLIC_URL;
+      if (!canonicalOrigin) {
+        return res.status(503).json({
+          error: 'CANONICAL_ORIGIN_NOT_CONFIGURED',
+          message: 'APP_CANONICAL_ORIGIN is not configured in server environment.'
+        });
+      }
+      const origin = canonicalOrigin.replace(/\/+$/, '');
 
       let customerId = org.subscription?.stripeCustomerId;
       if (!customerId) {
@@ -5377,9 +6627,16 @@ app.post('/api/billing/create-checkout-session', requireAuth, async (req, res) =
         }
       });
 
-      if (req.body.projectId) {
-        await db.updateProjectCommercialState(req.body.projectId, 'CHECKOUT_PENDING');
-      }
+      // Record pending checkout session in DB for correlation
+      await db.recordPendingCheckout({
+        sessionId: session.id,
+        organizationId: org.id,
+        projectId: req.body.projectId || null,
+        requestedPlan,
+        priceId,
+        amountExpected: requestedPlan === 'pro' ? 29900 : 79900,
+        currencyExpected: 'USD'
+      });
 
       return res.json({
         success: true,
@@ -5388,34 +6645,9 @@ app.post('/api/billing/create-checkout-session', requireAuth, async (req, res) =
         mode: 'live_or_stripe_test'
       });
     } else {
-      // Local Test Simulation Mode (Instant Upgrade for Verification & Automated Testing)
-      await db.updateOrganizationSubscription(org.id, {
-        plan: requestedPlan,
-        status: 'active',
-        stripeCustomerId: `cus_sim_${crypto.randomBytes(4).toString('hex')}`,
-        stripeSubscriptionId: `sub_sim_${crypto.randomBytes(4).toString('hex')}`,
-        upgradedAt: new Date().toISOString()
-      });
-
-      if (req.body.projectId) {
-        const newState = requestedPlan === 'business' ? 'ACTIVE_BUSINESS' : 'ACTIVE_PRO';
-        await db.updateProjectCommercialState(req.body.projectId, newState, requestedPlan);
-      }
-
-      await db.logBillingEvent({
-        organizationId: org.id,
-        plan: requestedPlan,
-        type: 'checkout_completed',
-        amount: requestedPlan === 'pro' ? 299 : 799,
-        status: 'success'
-      });
-
-      return res.json({
-        success: true,
-        simulation: true,
-        message: `Stripe Test Mode: Simulated checkout successful. Upgraded ${org.name} to ${requestedPlan.toUpperCase()}.`,
-        plan: requestedPlan,
-        entitlements: db.getOrganizationEntitlements(org.id)
+      return res.status(503).json({
+        error: 'STRIPE_NOT_CONFIGURED',
+        message: 'Stripe payment processing is not configured on this server and simulation auto-grant is disabled.'
       });
     }
   } catch (err) {
@@ -5434,25 +6666,29 @@ app.post('/api/billing/create-portal-session', requireAuth, async (req, res) => 
       return res.status(400).json({ error: 'No Stripe Customer associated with this organization. Please upgrade first.' });
     }
 
-    if (stripe) {
-      const protocol = req.headers['x-forwarded-proto'] || 'http';
-      const host = req.headers.host || 'localhost:3000';
-      const returnUrl = `${protocol}://${host}/index.html#billing`;
-
-      const session = await stripe.billingPortal.sessions.create({
-        customer: customerId,
-        return_url: returnUrl
-      });
-
-      return res.json({ success: true, url: session.url });
-    } else {
-      return res.json({
-        success: true,
-        simulation: true,
-        message: 'Stripe Portal Simulated: Customer subscription is currently active in Test Mode.',
-        customer: org.subscription
+    if (!stripe) {
+      return res.status(503).json({
+        error: 'STRIPE_NOT_CONFIGURED',
+        message: 'Stripe payment processing is not configured on this server.'
       });
     }
+
+    const canonicalOrigin = process.env.APP_CANONICAL_ORIGIN || process.env.PUBLIC_URL;
+    if (!canonicalOrigin) {
+      return res.status(503).json({
+        error: 'CANONICAL_ORIGIN_NOT_CONFIGURED',
+        message: 'APP_CANONICAL_ORIGIN is not configured in server environment.'
+      });
+    }
+    const origin = canonicalOrigin.replace(/\/+$/, '');
+    const returnUrl = `${origin}/index.html#billing`;
+
+    const session = await stripe.billingPortal.sessions.create({
+      customer: customerId,
+      return_url: returnUrl
+    });
+
+    return res.json({ success: true, url: session.url });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -5600,25 +6836,29 @@ app.post('/api/billing/portal', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'No Stripe Customer associated with this organization. Please upgrade first.' });
     }
 
-    if (stripe) {
-      const protocol = req.headers['x-forwarded-proto'] || 'http';
-      const host = req.headers.host || 'localhost:3000';
-      const returnUrl = `${protocol}://${host}/index.html#billing`;
-
-      const session = await stripe.billingPortal.sessions.create({
-        customer: customerId,
-        return_url: returnUrl
-      });
-
-      return res.json({ success: true, url: session.url });
-    } else {
-      return res.json({
-        success: true,
-        simulation: true,
-        message: 'Stripe Portal Simulated: Customer subscription is currently active in Test Mode.',
-        customer: org.subscription
+    if (!stripe) {
+      return res.status(503).json({
+        error: 'STRIPE_NOT_CONFIGURED',
+        message: 'Stripe payment processing is not configured on this server.'
       });
     }
+
+    const canonicalOrigin = process.env.APP_CANONICAL_ORIGIN || process.env.PUBLIC_URL;
+    if (!canonicalOrigin) {
+      return res.status(503).json({
+        error: 'CANONICAL_ORIGIN_NOT_CONFIGURED',
+        message: 'APP_CANONICAL_ORIGIN is not configured in server environment.'
+      });
+    }
+    const origin = canonicalOrigin.replace(/\/+$/, '');
+    const returnUrl = `${origin}/index.html#billing`;
+
+    const session = await stripe.billingPortal.sessions.create({
+      customer: customerId,
+      return_url: returnUrl
+    });
+
+    return res.json({ success: true, url: session.url });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -6410,21 +7650,8 @@ app.get('/assets/demo/wilo/experimental/:filename', (req, res) => {
   }
   res.status(404).json({ error: 'Experimental model asset not found.' });
 });
-
-app.get('/assets/demo/wilo/models/:filename', (req, res) => {
-  const file = req.params.filename;
-
-  // R8B Truth Correction: Synthetic 3D models permanently rejected and blocked
-  if (file === 'REAL_WILO_GAUSSIAN_FINAL.spz' || file.startsWith('REAL_WILO_')) {
-    return res.status(404).json({
-      error: 'AUTHENTIC_3D_RECONSTRUCTION_UNAVAILABLE',
-      message: 'Authentic 3D reconstruction is not available. Real booth camera capture data is required.',
-      visualState: 'CAPTURE_REQUIRED'
-    });
-  }
-
-  res.status(404).json({ error: '3D model asset not found.' });
-});
+// Note: /assets/demo/wilo/models/:filename route is mounted before static middleware
+// (see line 876) with genuine session token and tenant ownership verification.
 
 app.get('/api/public/wilo-demo/manifest', (req, res) => {
   const clientManifest = path.join(WILO_CLIENT_ROOT, 'manifests', 'wilo_booth_manifest.json');
@@ -8810,7 +10037,31 @@ app.post('/api/projects/:id/booth-3d/regenerate', async (req, res) => {
         const publicMasterUrl = canonical?.publicUrl || `/uploads/${baseName}.jpg`;
         const removedCount = masteringResult.jobRecord?.stages?.find(s => s.stage === 'SAFE_HUMAN_REMOVAL')?.removed || 1;
 
-        // 3. Create isolated, unique 3D GLB & Splat files per job (no static demo collision)
+        // 3. [STAGE2_QA_ISOLATION] Authentic 3D reconstruction requires a real GPU worker.
+        // ISOLATED ENGINEERING NOTE: Copying pre-existing benchmark or demo splat bytes into a
+        // job output directory and labeling them 'GAUSSIAN_SPLAT_8K' or 'READY_FOR_REVIEW' is
+        // deliberately DISABLED here. A copied benchmark artifact is NOT a newly generated model.
+        // The job MUST fail honestly unless a real reconstruction pipeline produces a fresh output.
+        // (Per ChatGPT R21 Audit Finding #5 — ENGINEERING_HOLD=ACTIVE, OWNER_REVIEW_GATE=HOLD)
+
+        // Verify no GPU reconstruction was provided (GPU branch requires SPARK_3DGS_WORKER_URL)
+        // In the current isolated Stage 2 QA environment, isDev=true reaches this code path.
+        // We fail the job honestly instead of shipping a template copy as a generated model.
+        const STAGE2_COPY_FALLBACK_DISABLED = true;
+        if (STAGE2_COPY_FALLBACK_DISABLED) {
+          await db.updateBooth3dRegenerationJob(job.id, {
+            status: 'FAILED',
+            errorCode: 'RECONSTRUCTION_UNAVAILABLE',
+            progress: 0,
+            currentStage: 'STAGE2_QA_ISOLATION',
+            stageMessage: 'Stage 2 QA Isolation: Real GPU reconstruction pipeline not configured. Copying pre-existing benchmark bytes as a generated model output is prohibited. Job fails honestly.',
+            outputType: 'RECONSTRUCTION_UNAVAILABLE'
+          });
+          return;
+        }
+
+        // BELOW: dead code preserved for production use when real GPU worker is wired up.
+        // Real output SHA must differ from any pre-existing template SHA.
         const booth3dDir = path.join(UPLOADS_DIR, 'booth3d', projectId, job.id);
         if (!fs.existsSync(booth3dDir)) {
           fs.mkdirSync(booth3dDir, { recursive: true });
@@ -8820,30 +10071,12 @@ app.post('/api/projects/:id/booth-3d/regenerate', async (req, res) => {
         const uniqueSplatFilename = `booth-splat-${job.id}.spz`;
         const uniqueSplatPath = path.join(booth3dDir, uniqueSplatFilename);
 
-        const baseGlbTemplate = path.join(__dirname, '..', 'client', 'assets', 'demo', 'booth-model.glb');
-        const altGlbTemplate = path.join(UPLOADS_DIR, 'product3d', projectId, '143', 'p3dj-4b4b4a73.glb');
-        if (fs.existsSync(baseGlbTemplate)) {
-          fs.copyFileSync(baseGlbTemplate, uniqueGlbPath);
-        } else if (fs.existsSync(altGlbTemplate)) {
-          fs.copyFileSync(altGlbTemplate, uniqueGlbPath);
-        }
-
-        const splatCandidates = [
-          path.join(__dirname, '..', 'client', 'assets', 'demo', 'wilo', 'models', 'REAL_WILO_GAUSSIAN_FINAL.spz'),
-          path.join(UPLOADS_DIR, 'models', 'REAL_WILO_GAUSSIAN_FINAL.spz'),
-          path.join(__dirname, '..', 'client', 'assets', 'demo', 'booth-splat.spz')
-        ];
-        const baseSplatTemplate = splatCandidates.find(p => fs.existsSync(p));
-        if (baseSplatTemplate) {
-          fs.copyFileSync(baseSplatTemplate, uniqueSplatPath);
-        }
-
         const resultGlbUrl = fs.existsSync(uniqueGlbPath) 
           ? `/uploads/booth3d/${projectId}/${job.id}/${uniqueGlbFilename}` 
-          : '/assets/demo/booth-model.glb';
+          : null;
         const resultSplatUrl = fs.existsSync(uniqueSplatPath) 
           ? `/uploads/booth3d/${projectId}/${job.id}/${uniqueSplatFilename}` 
-          : '/assets/demo/booth-splat.spz';
+          : null;
 
         await db.updateBooth3dRegenerationJob(job.id, {
           status: 'READY_FOR_REVIEW',
@@ -8855,7 +10088,7 @@ app.post('/api/projects/:id/booth-3d/regenerate', async (req, res) => {
           resultHighResUrl: publicMasterUrl,
           resultSplatUrl,
           resultGlbUrl,
-          outputType: 'GAUSSIAN_SPLAT_8K',
+          outputType: 'GPU_RECONSTRUCTED_3DGS',
           resolution: '7680x4320 (8K UHD)',
           peopleRemovedCount: removedCount,
           clarityScore: 98.6,
@@ -13336,4 +14569,4 @@ if (fs.existsSync(sslKeyPath) && fs.existsSync(sslCertPath)) {
   }
 }
 
-module.exports = { app, server, httpsServer };
+module.exports = { app, server, httpsServer, activeSessions, generateSessionToken, stripeClient: stripe };

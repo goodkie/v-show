@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Wilo SPZ Model-Only Isolated Diagnostic Viewer</title>
+  <title>Wilo SPZ Model-Only Isolated Diagnostic Viewer [PROCEDURAL_PLACEHOLDER_ONLY]</title>
   <style>
     body, html {
       margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
@@ -12,49 +12,77 @@
     #viewport { width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
     #diag-hud {
       position: absolute; top: 16px; left: 16px; z-index: 100;
-      background: rgba(15, 23, 42, 0.85); border: 1px solid #334155;
+      background: rgba(15, 23, 42, 0.92); border: 1px solid #334155;
       padding: 12px 18px; border-radius: 8px; color: #f8fafc; font-size: 13px;
-      backdrop-filter: blur(8px);
+      backdrop-filter: blur(8px); max-width: 420px;
     }
     #diag-hud h1 { margin: 0 0 6px 0; font-size: 14px; color: #38bdf8; text-transform: uppercase; }
+    .warn-badge {
+      display: inline-block;
+      background: #7c3aed; color: #fff; font-size: 11px; padding: 2px 7px;
+      border-radius: 4px; margin-bottom: 6px; font-weight: 700; letter-spacing: 0.05em;
+    }
+    .err-state { color: #f87171 !important; }
+    .ok-state { color: #34d399 !important; }
+    .warn-state { color: #fbbf24 !important; }
   </style>
-  <script src="/vendor/three/build/three.min.js"></script>
-  <script src="/vendor/three/examples/js/controls/OrbitControls.js"></script>
-  <script src="/precision-viewer.js"></script>
+  <script src="/vendor/three.min.js"></script>
+  <script src="/vendor/OrbitControls.js"></script>
 </head>
 <body>
   <div id="diag-hud">
     <h1>Model-Only Forensic Diagnostic</h1>
-    <div>Model: <span id="diag-model">Loading...</span></div>
-    <div>Splat Count: <span id="diag-count">...</span></div>
+    <div class="warn-badge">PROCEDURAL_PLACEHOLDER_ONLY</div>
+    <div>Model Fetch: <span id="diag-model">Pending...</span></div>
+    <div>Fetch Status: <span id="diag-fetch-status">...</span></div>
+    <div>SPZ Bytes: <span id="diag-bytes">...</span></div>
+    <div>Scene: <span id="diag-scene" class="warn-state">Procedural Benchmark Volume (Not SPZ-Decoded)</span></div>
+    <div>Camera: <span id="diag-camera">...</span></div>
     <div>Status: <span id="diag-status">Initializing WebGL2...</span></div>
+    <div style="margin-top:6px; font-size:11px; color:#64748b; border-top:1px solid #1e293b; padding-top:5px;">
+      NOTE: This viewer performs real HTTP-authenticated SPZ binary fetch and verifies byte
+      length. The 3D scene is a procedural Three.js placeholder geometry derived from benchmark
+      metadata. No SPZ Gaussian decoder is active. Do NOT claim splat-count authenticity or
+      decoded render fidelity from these screenshots.
+    </div>
   </div>
   <div id="viewport"></div>
 
   <script>
+    // Authoritative state flags — honest about what is and is not verified
+    window.__VSHOW_STATE__ = {
+      tenant: "org-wilo-golden-demo",
+      modelUrl: null,
+      networkLoaded: false,
+      // SPZ decoding is NOT performed in this diagnostic viewer — only byte fetch occurs
+      decoded: false,
+      spzDecoded: false,
+      authenticSplatRender: false,
+      viewerClassification: 'PROCEDURAL_PLACEHOLDER_ONLY',
+      rendererInitialized: false,
+      modelInstanceCreated: false,   // No real SplatMesh instance — procedural geometry only
+      modelAttachedToScene: false,
+      renderFrames: 0,
+      decoderReportedGaussianCount: 0,  // 0 because no decoder ran
+      fetchedSPZBytes: 0,
+      cameraPreset: null,
+      cameraTransform: {},
+      error: null
+    };
+
+    const params = new URLSearchParams(window.location.search);
+    const preset = params.get('preset') || 'front';
+    window.__VSHOW_STATE__.cameraPreset = preset;
+
     const container = document.getElementById('viewport');
-    const width = window.innerWidth;
-    const height = window.innerHeight;
+    const width = window.innerWidth || 1280;
+    const height = window.innerHeight || 800;
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x020617);
 
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
-    camera.position.set(0, 1.6, 6.0);
-
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    container.appendChild(renderer.domElement);
-
-    const controls = new THREE.OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.05;
-    controls.target.set(0, 0.8, 0);
-
-    // Parse camera preset
-    const params = new URLSearchParams(window.location.search);
-    const preset = params.get('preset');
+    // Apply camera preset
     if (preset === 'left') {
       camera.position.set(-4.2, 1.6, 4.2);
     } else if (preset === 'right') {
@@ -63,68 +91,163 @@
       camera.position.set(0, 5.0, 5.0);
     } else if (preset === 'close') {
       camera.position.set(0, 0.9, 2.2);
+    } else {
+      camera.position.set(0, 1.6, 6.0);
     }
-    controls.update();
+    camera.lookAt(0, 0.8, 0);
 
-    window.__VSHOW_STATE__ = {
-      tenant: "org-wilo-golden-demo",
-      modelUrl: "/assets/demo/wilo/models/REAL_WILO_GAUSSIAN_FINAL.spz",
-      networkLoaded: false,
-      decoded: false,
-      rendererInitialized: false,
-      modelInstanceCreated: false,
-      modelAttachedToScene: false,
-      renderFrames: 0,
-      decoderReportedGaussianCount: 0,
-      cameraTransform: {
-        position: camera.position.toArray(),
-        quaternion: camera.quaternion.toArray()
-      },
-      error: null
-    };
+    const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+    renderer.setSize(width, height);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    container.appendChild(renderer.domElement);
+    window.__VSHOW_STATE__.rendererInitialized = true;
 
-    const viewer = new PrecisionSplatViewer({
-      container: container,
-      scene: scene,
-      camera: camera,
-      renderer: renderer,
-      onProgress: (p, msg) => {
-        document.getElementById('diag-status').textContent = `Loading (${p}%)...`;
-      },
-      onError: (err) => {
-        document.getElementById('diag-status').textContent = `Error: ${err.message}`;
-        window.__VSHOW_STATE__.error = err.message;
+    let controls = null;
+    if (typeof THREE.OrbitControls === 'function') {
+      controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.target.set(0, 0.8, 0);
+      controls.update();
+    }
+
+    document.getElementById('diag-camera').textContent = preset.toUpperCase();
+
+    // Build procedural placeholder 3D scene (benchmark geometry only — NOT SPZ decoded)
+    function buildProceduralPlaceholder() {
+      const group = new THREE.Group();
+      group.name = 'WiloProceduralbenchmarkVolume';
+
+      // Coordinate Reference Grid
+      const grid = new THREE.GridHelper(12, 24, 0x38bdf8, 0x1e293b);
+      group.add(grid);
+
+      // Benchmark Volume Bounding Envelope (from receipt: 973.70 m³)
+      const bboxGeo = new THREE.BoxGeometry(4.5, 3.2, 4.5);
+      const bboxMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, wireframe: true });
+      group.add(new THREE.Mesh(bboxGeo, bboxMat)).position.set(0, 1.6, 0);
+
+      // Display Pedestal (Wilo corporate)
+      const pedGeo = new THREE.CylinderGeometry(1.8, 2.0, 0.35, 32);
+      const pedMat = new THREE.MeshBasicMaterial({ color: 0x0f172a });
+      const pedWire = new THREE.MeshBasicMaterial({ color: 0x334155, wireframe: true });
+      const ped = new THREE.Mesh(pedGeo, pedMat);
+      ped.position.y = 0.175;
+      const pedW = new THREE.Mesh(pedGeo, pedWire);
+      pedW.position.y = 0.175;
+      group.add(ped);
+      group.add(pedW);
+
+      // Pump body (Wilo green #009944)
+      const pumpGroup = new THREE.Group();
+      pumpGroup.position.set(0, 0.8, 0);
+
+      const voluteGeo = new THREE.TorusGeometry(0.65, 0.25, 16, 32);
+      const wiloMat = new THREE.MeshBasicMaterial({ color: 0x009944 });
+      const volute = new THREE.Mesh(voluteGeo, wiloMat);
+      volute.rotation.y = Math.PI / 2;
+      pumpGroup.add(volute);
+
+      const motorGeo = new THREE.CylinderGeometry(0.35, 0.35, 0.9, 24);
+      const motorMat = new THREE.MeshBasicMaterial({ color: 0x334155, wireframe: true });
+      pumpGroup.add(new THREE.Mesh(motorGeo, motorMat)).position.y = 0.45;
+
+      const flangeGeo = new THREE.CylinderGeometry(0.22, 0.22, 0.7, 16);
+      const flangeMat = new THREE.MeshBasicMaterial({ color: 0x0284c7 });
+      const flange = new THREE.Mesh(flangeGeo, flangeMat);
+      flange.rotation.z = Math.PI / 2;
+      pumpGroup.add(flange);
+
+      group.add(pumpGroup);
+
+      // Decorative point distribution — NOT Gaussian splat data from SPZ
+      const pointCount = 2000;
+      const positions = new Float32Array(pointCount * 3);
+      for (let i = 0; i < pointCount; i++) {
+        positions[i * 3]     = (Math.random() - 0.5) * 4.0;
+        positions[i * 3 + 1] = Math.random() * 2.8 + 0.2;
+        positions[i * 3 + 2] = (Math.random() - 0.5) * 4.0;
       }
-    });
+      const pGeo = new THREE.BufferGeometry();
+      pGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      const pMat = new THREE.PointsMaterial({ color: 0x38bdf8, size: 0.04 });
+      group.add(new THREE.Points(pGeo, pMat));
+
+      return group;
+    }
 
     async function init() {
+      // Build procedural placeholder scene immediately (independent of network)
+      const placeholder = buildProceduralPlaceholder();
+      scene.add(placeholder);
+      // modelInstanceCreated=false: the scene exists but it's a procedural placeholder, not a decoded SPZ instance
+      window.__VSHOW_STATE__.modelAttachedToScene = true; // procedural scene attached
+
+      // Authenticated model binary fetch (Authorization header only — URL query tokens prohibited)
       const modelParam = params.get('model');
-      const modelUrl = modelParam ? modelParam : '/assets/demo/wilo/diagnostics/WILO_AUTHENTIC_PARTIAL_EXPERIMENT_01.spz';
+      const modelUrl = modelParam ? modelParam.split('?')[0] : '/assets/demo/wilo/models/REAL_WILO_GAUSSIAN_FINAL.spz';
       const modelName = modelUrl.split('/').pop();
       document.getElementById('diag-model').textContent = modelName;
       window.__VSHOW_STATE__.modelUrl = modelUrl;
-      
-      const ok = await viewer.load({
-        assetUrl: modelUrl,
-        format: 'spz'
-      });
 
-      if (ok) {
-        window.__VSHOW_STATE__.networkLoaded = true;
-        window.__VSHOW_STATE__.decoded = true;
-        window.__VSHOW_STATE__.rendererInitialized = true;
-        window.__VSHOW_STATE__.modelInstanceCreated = true;
-        window.__VSHOW_STATE__.modelAttachedToScene = true;
-        window.__VSHOW_STATE__.decoderReportedGaussianCount = viewer.splatCount || 120000;
+      // Check for session token strictly via memory or sessionStorage — never URL query parameters
+      let token = window.__AUTH_TOKEN__ || '';
+      try {
+        if (!token) token = sessionStorage.getItem('vshow_auth_token') || '';
+      } catch (_) {}
 
-        document.getElementById('diag-count').textContent = `${(viewer.splatCount || 120000).toLocaleString()} Splats`;
-        document.getElementById('diag-status').textContent = 'Active GPU Splat Rendering';
+      if (!token) {
+        document.getElementById('diag-fetch-status').textContent = 'AUTH_REQUIRED (URL token prohibited; Procedural rendering only)';
+        document.getElementById('diag-fetch-status').className = 'warn-state';
+        document.getElementById('diag-bytes').textContent = 'N/A (Procedural View)';
+        document.getElementById('diag-status').textContent = 'Procedural Placeholder Active (SPZ Fetch Requires Authorization Header)';
+        document.getElementById('diag-status').className = 'warn-state';
+        renderer.render(scene, camera);
+        return;
       }
+
+      const headers = { 'Authorization': `Bearer ${token}` };
+
+      try {
+        document.getElementById('diag-fetch-status').textContent = 'Fetching authenticated SPZ binary...';
+        const response = await fetch(modelUrl, { headers });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status} ${response.statusText}`);
+        }
+
+        const arrayBuffer = await response.arrayBuffer();
+        const bytes = arrayBuffer.byteLength;
+
+        if (bytes < 100) {
+          throw new Error(`Returned only ${bytes} bytes — corrupted or truncated SPZ`);
+        }
+
+        window.__VSHOW_STATE__.networkLoaded = true;
+        window.__VSHOW_STATE__.fetchedSPZBytes = bytes;
+        // decoded remains false — we do NOT decode SPZ bytes in this viewer
+        // decoderReportedGaussianCount remains 0 — no decoder ran
+
+        document.getElementById('diag-fetch-status').textContent = `200 OK (Authenticated Byte Delivery Verified)`;
+        document.getElementById('diag-fetch-status').className = 'ok-state';
+        document.getElementById('diag-bytes').textContent = `${bytes.toLocaleString()} B`;
+        document.getElementById('diag-status').textContent = `Procedural Placeholder Active (SPZ Fetch 200 OK, NOT Decoded)`;
+        document.getElementById('diag-status').className = 'warn-state';
+
+      } catch (err) {
+        console.error('[DiagnosticViewer] Fetch failed:', err);
+        window.__VSHOW_STATE__.error = err.message;
+        document.getElementById('diag-fetch-status').textContent = `FAILED: ${err.message}`;
+        document.getElementById('diag-fetch-status').className = 'err-state';
+        document.getElementById('diag-status').textContent = `SPZ Fetch Error`;
+        document.getElementById('diag-status').className = 'err-state';
+      }
+
+      // Initial synchronous render for headless screenshot capture
+      renderer.render(scene, camera);
     }
 
     function animate() {
       requestAnimationFrame(animate);
-      controls.update();
+      if (controls) controls.update();
       renderer.render(scene, camera);
       window.__VSHOW_STATE__.renderFrames++;
       window.__VSHOW_STATE__.cameraTransform = {

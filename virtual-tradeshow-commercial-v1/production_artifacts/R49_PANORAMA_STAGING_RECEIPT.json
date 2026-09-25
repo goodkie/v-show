@@ -1,0 +1,207 @@
+{
+  "testSuite": "test_stage2_real_photo_panorama_staging",
+  "timestamp": "2026-09-24T00:18:42.187Z",
+  "gitHead": "9e14bb1363a2e88f7deff1fdb042027166a8f6e7",
+  "remoteUrl": "https://github.com/goodkie/v-show",
+  "branch": "feature/3d2r-stage2-12point-capture",
+  "rawImages": [
+    {
+      "index": 0,
+      "slot": "SHOT_01",
+      "fileName": "C001.jpg",
+      "byteSize": 341612,
+      "sha256": "752b843254840a2846ccb06d6b34da31f7e98a885e200344bf918338f8033000",
+      "sourcePath": "virtual-tradeshow-commercial-v1\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C001.jpg"
+    },
+    {
+      "index": 1,
+      "slot": "SHOT_02",
+      "fileName": "C002.jpg",
+      "byteSize": 335210,
+      "sha256": "293709a91178bce0d414a3af1ff8d02a443a2a4583d701737ea23a8ff5788179",
+      "sourcePath": "virtual-tradeshow-commercial-v1\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C002.jpg"
+    },
+    {
+      "index": 2,
+      "slot": "SHOT_03",
+      "fileName": "C003.jpg",
+      "byteSize": 355516,
+      "sha256": "57d1d32ecb943920821a5822639a99c8f525de85a47420d07f9d71e30dfb194d",
+      "sourcePath": "virtual-tradeshow-commercial-v1\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C003.jpg"
+    },
+    {
+      "index": 3,
+      "slot": "SHOT_04",
+      "fileName": "C004.jpg",
+      "byteSize": 295761,
+      "sha256": "993de242720bc62cc4093b5377d602549b402ee16642db1acd677d3c38efdfc4",
+      "sourcePath": "virtual-tradeshow-commercial-v1\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C004.jpg"
+    },
+    {
+      "index": 4,
+      "slot": "SHOT_05",
+      "fileName": "C005.jpg",
+      "byteSize": 291488,
+      "sha256": "c147e8467a27ca25f98c6d2548aa04305c430e5cd4648ee91ebe5581b5ae3947",
+      "sourcePath": "virtual-tradeshow-commercial-v1\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C005.jpg"
+    },
+    {
+      "index": 5,
+      "slot": "SHOT_06",
+      "fileName": "C006.jpg",
+      "byteSize": 300608,
+      "sha256": "41b62bb79cad0290f402683f9cfe821755a9b1df63342ccc25c64c523e10cb1b",
+      "sourcePath": "virtual-tradeshow-commercial-v1\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C006.jpg"
+    },
+    {
+      "index": 6,
+      "slot": "SHOT_07",
+      "fileName": "C007.jpg",
+      "byteSize": 304356,
+      "sha256": "c975bf67d8bdc3fe8019676a2333241fa42ea76199645e210f853a959be3e054",
+      "sourcePath": "virtual-tradeshow-commercial-v1\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C007.jpg"
+    },
+    {
+      "index": 7,
+      "slot": "SHOT_08",
+      "fileName": "C008.jpg",
+      "byteSize": 313842,
+      "sha256": "8da5715ae44acc275abe4bf26c62adc4b5b0829148672472f65447a346fa60ab",
+      "sourcePath": "virtual-tradeshow-commercial-v1\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C008.jpg"
+    },
+    {
+      "index": 8,
+      "slot": "SHOT_09",
+      "fileName": "C009.jpg",
+      "byteSize": 323133,
+      "sha256": "61aa58132b1d1fb238ac358ca42947012f37a07fb56e9671135fefef97e6ef37",
+      "sourcePath": "virtual-tradeshow-commercial-v1\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C009.jpg"
+    },
+    {
+      "index": 9,
+      "slot": "SHOT_10",
+      "fileName": "C010.jpg",
+      "byteSize": 326718,
+      "sha256": "97abab9341633a6db123e6f02004cb339e96325074f1c5c2bbf47e90b67c3c47",
+      "sourcePath": "virtual-tradeshow-commercial-v1\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C010.jpg"
+    },
+    {
+      "index": 10,
+      "slot": "SHOT_11",
+      "fileName": "C011.jpg",
+      "byteSize": 329874,
+      "sha256": "b114a58ab954fd638ff22c901813b6cbd928c79ddeb38b1dd474135ce9a5276c",
+      "sourcePath": "virtual-tradeshow-commercial-v1\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C011.jpg"
+    },
+    {
+      "index": 11,
+      "slot": "SHOT_12",
+      "fileName": "C012.jpg",
+      "byteSize": 371293,
+      "sha256": "1c4cb2129bd58b824251ccda52d400b36cc4673af07e53e91acfaba3d18ab5b5",
+      "sourcePath": "virtual-tradeshow-commercial-v1\\production_artifacts\\mobile_runtime_inspector\\LLST42\\candidates\\C012.jpg"
+    }
+  ],
+  "stitchingExecution": {
+    "workerExitCode": 0,
+    "durationMs": 20005,
+    "engine": "OPENCV",
+    "engineVersion": "5.0.0",
+    "featureEngine": "SIFT",
+    "cameraEstimationStatus": "CONVERGED",
+    "bundleAdjustmentStatus": "CONVERGED",
+    "warpStatus": "SUCCESS",
+    "exposureCompensationStatus": "SUCCESS",
+    "seamStatus": "SUCCESS",
+    "blendStatus": "SUCCESS",
+    "inputCameraCount": 12,
+    "connectedCount": 12,
+    "registrationRetention": 1,
+    "allInputImagesUsed": true,
+    "highRetention": true
+  },
+  "outputArtifacts": {
+    "nativeFile": "cand-stage2-real-12kf-1790209122181_50b00dbd8435_native.jpg",
+    "nativePath": "scratch\\staging_panorama_1790209122181_50b00dbd8435\\cand-stage2-real-12kf-1790209122181_50b00dbd8435_native.jpg",
+    "nativeDimensions": "4442x1113",
+    "nativeWidth": 4442,
+    "nativeHeight": 1113,
+    "fileSize": 869942,
+    "masterSha256": "821e110a91f0286b60866fbab5f2f2a75d14699a0cb5a70dc3931ae9caaffa9b",
+    "horizontalCoverageDeg": 186.3,
+    "verticalCoverageDeg": 46.7,
+    "projection": "SPHERICAL_BAND",
+    "panoramaType": "PARTIAL"
+  },
+  "viewerReadback": {
+    "mobile": {
+      "platform": "mobile_chrome_android",
+      "viewport": {
+        "width": 390,
+        "height": 844,
+        "dpr": 3
+      },
+      "viewerType": "equirectangular_spherical_band",
+      "sourceUrl": "/api/projects/sample-prj/panoramas/cand-stage2-real-12kf-1790209122181_50b00dbd8435_native.jpg",
+      "assetSha256": "821e110a91f0286b60866fbab5f2f2a75d14699a0cb5a70dc3931ae9caaffa9b",
+      "initialFov": 75,
+      "minFov": 45,
+      "maxFov": 90,
+      "pitchBounds": [
+        -23.3,
+        23.3
+      ],
+      "yawBounds": [
+        -93.1,
+        93.1
+      ],
+      "touchControls": {
+        "pan": true,
+        "pinchZoom": true,
+        "gyro": true
+      },
+      "readbackStatus": "VERIFIED_RENDERABLE"
+    },
+    "desktop": {
+      "platform": "desktop_chrome_win_mac",
+      "viewport": {
+        "width": 1920,
+        "height": 1080,
+        "dpr": 1
+      },
+      "viewerType": "equirectangular_spherical_band",
+      "sourceUrl": "/api/projects/sample-prj/panoramas/cand-stage2-real-12kf-1790209122181_50b00dbd8435_native.jpg",
+      "assetSha256": "821e110a91f0286b60866fbab5f2f2a75d14699a0cb5a70dc3931ae9caaffa9b",
+      "initialFov": 75,
+      "minFov": 30,
+      "maxFov": 100,
+      "pitchBounds": [
+        -23.3,
+        23.3
+      ],
+      "yawBounds": [
+        -93.1,
+        93.1
+      ],
+      "mouseControls": {
+        "dragPan": true,
+        "scrollZoom": true
+      },
+      "readbackStatus": "VERIFIED_RENDERABLE"
+    }
+  },
+  "publishShare": {
+    "tenantOrgId": "org_staging_1790209122181_50b00dbd8435",
+    "tenantProjectId": "prj_staging_1790209122181_50b00dbd8435",
+    "shareUrl": "https://vshow.com/preview/ea277a030319fac3c7a439c0cbb95c60",
+    "activePanoramaSha256": "821e110a91f0286b60866fbab5f2f2a75d14699a0cb5a70dc3931ae9caaffa9b",
+    "tenantIsolationVerified": true
+  },
+  "classification": {
+    "REAL_PHOTO_PANORAMA_STAGING_E2E": "PASS",
+    "SIGNED_STRIPE_TEST_WEBHOOK_E2E": "PASS",
+    "TRUE_3D_MODEL": "DEFERRED_POST_LAUNCH",
+    "OWNER_REVIEW_GATE": "HOLD_PENDING_PANORAMA_STAGING_EVIDENCE",
+    "STRIPE_MODE": "TEST_UNTIL_EXPLICIT_APPROVAL"
+  }
+}
