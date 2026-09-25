@@ -90,10 +90,14 @@ class SyncEngine {
 
   runCommand(cmd, args, cwd, logger, onProgress = null, timeoutMs = 180000) {
     return new Promise((resolve) => {
-      const fullCmd = `${cmd} ${args.join(' ')}`;
+      let finalArgs = args;
+      if (cmd === 'git') {
+        finalArgs = ['-c', 'safe.directory=*', ...args];
+      }
+      const fullCmd = `${cmd} ${finalArgs.join(' ')}`;
       if (logger) logger.info(`[EXEC] ${fullCmd} (in ${cwd || process.cwd()})`);
       
-      const proc = spawn(cmd, args, {
+      const proc = spawn(cmd, finalArgs, {
         cwd: cwd || process.cwd(),
         shell: true,
         env: {
@@ -213,6 +217,9 @@ class SyncEngine {
   // ─────────────────────────────────────────────────────────────────────────────
   async diagnose(logger, isDeep = false) {
     logger.info(`=== [1/5] 환경 및 저장소 ${isDeep ? '정밀(Deep)' : '고속(Fast)'} 진단 시작 ===`);
+    try {
+      execSync('git config --global --add safe.directory "*"', { stdio: 'ignore' });
+    } catch (e) {}
     const result = {
       score: 100,
       timestamp: new Date().toISOString(),
@@ -553,6 +560,9 @@ class SyncEngine {
     try {
       const gitVer = execSync('git --version', { encoding: 'utf8' }).trim();
       logger.info(`  - Git 바이너리: ${gitVer}`);
+      // Git safe.directory 전역 예외 등록 (dubious ownership 오류 원천 차단)
+      execSync('git config --global --add safe.directory "*"', { stdio: 'ignore' });
+      logger.info('  ✓ Git safe.directory 전역 예외 등록 완료 (dubious ownership 오류 원천 차단)');
     } catch (e) {
       throw new Error('Git이 설치되어 있지 않거나 PATH에 없습니다.');
     }
@@ -627,7 +637,12 @@ class SyncEngine {
     } else {
       logger.info('  ✓ 기존 v-show 저장소 확인됨. 최신 커밋 fetch 중...');
       progressCallback(25, '[2/8] 기존 저장소 최신 커밋 동기화 중...');
-      await this.runCommand('git', ['fetch', 'origin', this.defaultBranch, '--depth', '20'], localVshow, logger, null, 60000);
+      let fetchRes = await this.runCommand('git', ['fetch', 'origin', this.defaultBranch, '--depth', '20'], localVshow, logger, null, 60000);
+      if (fetchRes.code !== 0) {
+        logger.warn(`  ! fetch 재시도 중... (${fetchRes.stderr || fetchRes.error})`);
+        await this.runCommand('git', ['fetch', 'origin', this.defaultBranch, '--depth', '20'], localVshow, logger, null, 60000);
+      }
+      logger.info('  ✓ 기존 v-show 저장소 최신 커밋 동기화 완료');
     }
 
     // 3. Fast-Track Worktree 구성
@@ -643,61 +658,88 @@ class SyncEngine {
       logger.info('  ✓ Fast-Track 워크트리 생성 완료');
     } else {
       logger.info('  ✓ Fast-Track 워크트리 디렉터리가 이미 존재합니다.');
+      await this.runCommand('git', ['worktree', 'repair'], localVshow, logger);
     }
 
-    // 4. Antigravity 세션 & 브레인 복원 (Google Drive)
-    progressCallback(50, '[4/8] Google Drive에서 Antigravity 대화창 세션 및 브레인 아티팩트 복원 중...');
-    logger.info('[단계 4/8] 클라우드(Google Drive) 세션 데이터 복원:');
+    // 4. Antigravity 세션 & 설정 복원 (Google Drive 스마트 다운로드)
+    progressCallback(50, '[4/8] Google Drive에서 Antigravity 대화창 세션 및 설정 복원 중...');
+    logger.info('[단계 4/8] 클라우드(Google Drive) 세션 및 설정 초고속 복원:');
     const syncPkg = this.getSyncPackagePath();
     if (fs.existsSync(syncPkg)) {
       const srcConvos = path.join(syncPkg, 'antigravity-core', 'conversations');
-      const srcBrain = path.join(syncPkg, 'antigravity-core', 'brain');
       const srcState = path.join(syncPkg, 'antigravity-core', 'state');
-      const srcConfig = path.join(syncPkg, 'antigravity-core', 'config', 'app_storage.json');
-
-      const totalConvoFiles = this.countFilesInDir(srcConvos);
-      const totalBrainFiles = this.countFilesInDir(srcBrain);
-      logger.info(`  - 복원 대상 대화 DB: 약 ${totalConvoFiles}개 파일`);
-      logger.info(`  - 복원 대상 브레인 아티팩트: 약 ${totalBrainFiles}개 파일`);
+      const srcConfig = path.join(syncPkg, 'antigravity-core', 'config');
+      const srcSummaries = path.join(srcState, 'conversation_summaries.db');
 
       for (const agyRoot of this.getAgyRoots()) {
+        fs.mkdirSync(agyRoot, { recursive: true });
         const dstConvos = path.join(agyRoot, 'conversations');
-        const dstBrain = path.join(agyRoot, 'brain');
         fs.mkdirSync(dstConvos, { recursive: true });
-        fs.mkdirSync(dstBrain, { recursive: true });
 
+        // 1. 대화 DB 스마트 복제 (변경분만 복사)
         if (fs.existsSync(srcConvos)) {
-          let cCount = 0;
-          this.copyDirectoryRecursiveSync(srcConvos, dstConvos, ['.db-wal', '.db-shm'], null, (fname, count) => {
-            cCount = count;
-            if (count % 5 === 0 || count === totalConvoFiles) {
-              progressCallback(55, `[4/8] 대화창 세션 복원 중... (${count}/${totalConvoFiles}) [${fname}]`);
+          let copied = 0, skipped = 0;
+          try {
+            const entries = fs.readdirSync(srcConvos, { withFileTypes: true });
+            for (const entry of entries) {
+              if (!entry.isFile() || !entry.name.endsWith('.db')) continue;
+              const srcFile = path.join(srcConvos, entry.name);
+              const dstFile = path.join(dstConvos, entry.name);
+              try {
+                const srcMtime = fs.statSync(srcFile).mtimeMs;
+                const dstMtime = fs.existsSync(dstFile) ? fs.statSync(dstFile).mtimeMs : 0;
+                if (srcMtime > dstMtime) {
+                  fs.copyFileSync(srcFile, dstFile);
+                  copied++;
+                } else {
+                  skipped++;
+                }
+              } catch (e) {}
             }
-          });
-          logger.info(`  ✓ 대화 세션 DB ${cCount}개 파일 복원 완료 (${path.basename(agyRoot)})`);
+          } catch (e) {}
+          logger.info(`  ✓ 대화 세션 DB: ${copied}개 복원, ${skipped}개 이미 최신 (${path.basename(agyRoot)})`);
         }
 
-        if (fs.existsSync(srcBrain)) {
-          progressCallback(62, '[4/8] 브레인 아티팩트 및 대화 로그 복원 중...');
-          let bCount = 0;
-          this.copyDirectoryRecursiveSync(srcBrain, dstBrain, ['.db-wal', '.db-shm'], null, (fname, count) => {
-            bCount = count;
-            if (count % 20 === 0 || count === totalBrainFiles) {
-              progressCallback(65, `[4/8] 브레인 아티팩트 복원 중... (${count}/${totalBrainFiles}) [${fname}]`);
-            }
-          });
-          logger.info(`  ✓ 브레인 아티팩트 ${bCount}개 파일 복원 완료 (${path.basename(agyRoot)})`);
+        // 2. conversation_summaries.db 양방향 스마트 병합
+        const dstSummaries = path.join(agyRoot, 'conversation_summaries.db');
+        if (fs.existsSync(srcSummaries)) {
+          this.mergeConversationSummaries(srcSummaries, dstSummaries, logger);
         }
 
+        // 3. antigravity_state.pbtxt & installation_id
         if (fs.existsSync(srcState)) {
-          this.copyDirectoryRecursiveSync(srcState, agyRoot, ['.db-wal', '.db-shm']);
+          const statePbtxt = path.join(srcState, 'antigravity_state.pbtxt');
+          if (fs.existsSync(statePbtxt)) {
+            try { fs.copyFileSync(statePbtxt, path.join(agyRoot, 'antigravity_state.pbtxt')); } catch (e) {}
+          }
+          const instId = path.join(srcState, 'installation_id');
+          if (fs.existsSync(instId) && !fs.existsSync(path.join(agyRoot, 'installation_id'))) {
+            try { fs.copyFileSync(instId, path.join(agyRoot, 'installation_id')); } catch (e) {}
+          }
         }
       }
 
-      for (const cDir of this.getConfigDirs()) {
-        fs.mkdirSync(cDir, { recursive: true });
-        if (fs.existsSync(srcConfig)) {
-          fs.copyFileSync(srcConfig, path.join(cDir, 'app_storage.json'));
+      // 4. settings.json (VS Code / Antigravity IDE 설정) & mcp_config & app_storage
+      if (fs.existsSync(srcConfig)) {
+        const srcSettings = path.join(srcConfig, 'settings.json');
+        if (fs.existsSync(srcSettings)) {
+          for (const cDir of this.getConfigDirs()) {
+            const uDir = path.join(cDir, 'User');
+            fs.mkdirSync(uDir, { recursive: true });
+            try { fs.copyFileSync(srcSettings, path.join(uDir, 'settings.json')); } catch (e) {}
+          }
+        }
+        const srcMcp = path.join(srcConfig, 'mcp_config.json');
+        if (fs.existsSync(srcMcp)) {
+          const mcpDir = path.join(this.homeDir, '.gemini', 'config');
+          fs.mkdirSync(mcpDir, { recursive: true });
+          try { fs.copyFileSync(srcMcp, path.join(mcpDir, 'mcp_config.json')); } catch (e) {}
+        }
+        const srcAppStorage = path.join(srcConfig, 'app_storage.json');
+        if (fs.existsSync(srcAppStorage)) {
+          for (const cDir of this.getConfigDirs()) {
+            try { fs.copyFileSync(srcAppStorage, path.join(cDir, 'app_storage.json')); } catch (e) {}
+          }
         }
       }
       logger.info('  ✓ Antigravity 세션 및 UI 설정 복원 완료');

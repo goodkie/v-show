@@ -21,6 +21,12 @@ if %ERRORLEVEL% neq 0 (
     )
 )
 
+:: Git safe.directory 사전 등록 (소유권 불일치 방지)
+where git >nul 2>nul
+if %ERRORLEVEL% equ 0 (
+    git config --global --add safe.directory "*" >nul 2>nul
+)
+
 echo ================================================================
 echo   [AGY-Sync Master] 범용 멀티 PC 통합 동기화 대시보드 시작
 echo ================================================================
