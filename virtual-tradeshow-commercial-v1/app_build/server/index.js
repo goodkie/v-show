@@ -1465,31 +1465,47 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
             });
           }
 
-          // Line items price validation if present
-          if (authInv.lines && Array.isArray(authInv.lines.data) && authInv.lines.data.length > 0) {
-            if (authInv.lines.data.length !== 1) {
-              return res.status(400).json({
-                error: 'STRIPE_MULTIPLE_LINE_ITEMS',
-                message: 'Invoice contains multiple line items; only single commercial subscription item is permitted.',
-                retryable: false
-              });
-            }
-            const lineItem = authInv.lines.data[0];
-            const APPROVED_PRICES = ['price_test_pro_monthly', 'price_test_biz_monthly'];
-            if (lineItem.price && lineItem.price.id && !APPROVED_PRICES.includes(lineItem.price.id)) {
-              return res.status(400).json({
-                error: 'STRIPE_UNAPPROVED_PRICE_ID',
-                message: `Invoice line item price '${lineItem.price.id}' is not in approved test catalog.`,
-                retryable: false
-              });
-            }
-            if (typeof lineItem.quantity === 'number' && lineItem.quantity !== 1) {
-              return res.status(400).json({
-                error: 'STRIPE_INVALID_QUANTITY',
-                message: 'Invoice line item quantity must be exactly 1.',
-                retryable: false
-              });
-            }
+          // Strict Mandatory Commercial Line Item Snapshot Verification
+          if (!authInv.lines || !Array.isArray(authInv.lines.data) || authInv.lines.data.length !== 1) {
+            return res.status(400).json({
+              error: 'STRIPE_MANDATORY_LINE_ITEM_REQUIRED',
+              message: 'Authoritative invoice must contain exactly one subscription line item.',
+              retryable: false
+            });
+          }
+          const lineItem = authInv.lines.data[0];
+          const APPROVED_PRICES = {
+            'price_test_pro_monthly': 29900,
+            'price_test_biz_monthly': 79900
+          };
+          const priceId = lineItem.price && lineItem.price.id;
+          if (!priceId || !APPROVED_PRICES[priceId]) {
+            return res.status(400).json({
+              error: 'STRIPE_UNAPPROVED_PRICE_ID',
+              message: `Invoice line item price '${priceId || 'missing'}' is not in approved test catalog.`,
+              retryable: false
+            });
+          }
+          if (authInv.amount_paid !== APPROVED_PRICES[priceId]) {
+            return res.status(400).json({
+              error: 'STRIPE_PRICE_AMOUNT_MISMATCH',
+              message: `Invoice amount_paid (${authInv.amount_paid}) does not match catalog price for '${priceId}' (${APPROVED_PRICES[priceId]}).`,
+              retryable: false
+            });
+          }
+          if (typeof lineItem.quantity !== 'number' || lineItem.quantity !== 1) {
+            return res.status(400).json({
+              error: 'STRIPE_INVALID_QUANTITY',
+              message: 'Invoice line item quantity must be exactly 1.',
+              retryable: false
+            });
+          }
+          if (lineItem.proration === true) {
+            return res.status(400).json({
+              error: 'STRIPE_PRORATION_FORBIDDEN',
+              message: 'Prorated line items are strictly forbidden on invoice.paid.',
+              retryable: false
+            });
           }
 
           // Retrieve and reconcile authoritative subscription
@@ -1556,12 +1572,28 @@ app.post('/api/billing/stripe-webhook', express.raw({ type: 'application/json' }
             });
           }
 
-          // Mandatory invoice period timestamps
+          // Mandatory invoice period timestamps and exact period match
           if (!authInv.period_start || typeof authInv.period_start !== 'number' || !authInv.period_end || typeof authInv.period_end !== 'number') {
             return res.status(502).json({
               error: 'STRIPE_INVOICE_PERIOD_MISSING',
               message: 'Authoritative invoice lacks clear billing period timestamps; entitlement application deferred.',
               retryable: true
+            });
+          }
+          if (authInv.period_start !== authSub.current_period_start || authInv.period_end !== authSub.current_period_end) {
+            if (authSub.status === 'active' && authInv.period_end && authSub.current_period_start && (authInv.period_end < authSub.current_period_start)) {
+              console.log(`[STRIPE_RECONCILIATION] Delayed invoice.paid for older period ${authInv.period_end} superseded by current period ${authSub.current_period_start}.`);
+              return res.status(200).json({
+                received: true,
+                status: 'NOOP_STALE_PAID_INVOICE',
+                reason: 'SUPERSEDED_BY_CURRENT_PERIOD',
+                message: 'Paid invoice is for an older period superseded by current subscription period.'
+              });
+            }
+            return res.status(400).json({
+              error: 'STRIPE_PERIOD_TIMESTAMPS_MISMATCH',
+              message: `Invoice billing period [${authInv.period_start}, ${authInv.period_end}] does not match subscription period [${authSub.current_period_start}, ${authSub.current_period_end}].`,
+              retryable: false
             });
           }
 
@@ -1683,9 +1715,59 @@ app.use((err, req, res, next) => {
 // Strictly restricted to platform_owner role via requireAuth + requirePlatformOwner.
 // Eliminates client/tenant tampering of pilotGrants and legacyGrants.
 // ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// [STAGE 2 AUDIT R57 & R65] Platform Owner Admin Routes for Immutable Grant Issuance
+// Strictly restricted to platform_owner role via requireAuth + requirePlatformOwner.
+// Eliminates client/tenant tampering of pilotGrants and legacyGrants.
+// ─────────────────────────────────────────────────────────────────────────────
+app.post('/api/admin/owner-approvals', requireAuth, requirePlatformOwner, (req, res) => {
+  try {
+    const { organizationId, projectId, accountId, grantType, isOrgWide, expiresAt } = req.body || {};
+    if (!organizationId) {
+      return res.status(400).json({ error: 'MISSING_ORGANIZATION_ID', message: 'organizationId is required.' });
+    }
+    if (!['pilot', 'legacy'].includes(grantType)) {
+      return res.status(400).json({ error: 'INVALID_GRANT_TYPE', message: 'grantType must be pilot or legacy.' });
+    }
+    if (!projectId && !accountId && isOrgWide !== true) {
+      return res.status(400).json({
+        error: 'EXPLICIT_ORG_WIDE_APPROVAL_REQUIRED',
+        message: 'Neither projectId nor accountId provided. Organization-wide grant requires explicit isOrgWide: true in payload.'
+      });
+    }
+    const targetScope = (projectId && accountId)
+      ? `project:${projectId}+account:${accountId}`
+      : projectId
+        ? `project:${projectId}`
+        : accountId
+          ? `account:${accountId}`
+          : `org:${organizationId}`;
+
+    const authenticatedOwner = req.user.email || req.user.userId || req.user.id || req.user.username;
+    if (!authenticatedOwner) {
+      return res.status(403).json({
+        error: 'UNAUTHENTICATED_OWNER_PRINCIPAL',
+        message: 'Explicit authenticated owner principal email or ID required.'
+      });
+    }
+
+    const approvalReceipt = db.createOwnerApprovalReceipt({
+      authenticatedOwner,
+      targetScope,
+      grantType,
+      isOrgWideApproved: Boolean(isOrgWide),
+      expiresAt
+    });
+
+    return res.status(201).json({ success: true, approvalReceipt });
+  } catch (err) {
+    return res.status(400).json({ error: err.message });
+  }
+});
+
 app.post('/api/admin/pilot-grants', requireAuth, requirePlatformOwner, async (req, res) => {
   try {
-    const { organizationId, projectId, accountId, pilotExpiresAt, notes, isOrgWide } = req.body || {};
+    const { organizationId, projectId, accountId, pilotExpiresAt, notes, isOrgWide, approvalReceipt: providedReceipt } = req.body || {};
     if (!organizationId) {
       return res.status(400).json({ error: 'MISSING_ORGANIZATION_ID', message: 'organizationId is required.' });
     }
@@ -1716,20 +1798,12 @@ app.post('/api/admin/pilot-grants', requireAuth, requirePlatformOwner, async (re
       });
     }
 
-    const authorizationNonce = crypto.randomBytes(16).toString('hex');
-    const authorizedAt = new Date().toISOString();
-    const receiptId = `rcpt_appr_${crypto.randomBytes(8).toString('hex')}`;
-    const approvalReceipt = {
-      receiptId,
-      authorizationNonce,
+    const approvalReceipt = providedReceipt || db.createOwnerApprovalReceipt({
       authenticatedOwner,
-      authorizedAt,
-      isOrgWideApproved: Boolean(isOrgWide),
       targetScope,
-      authorizedTier: 'pilot',
-      ipAddress: req.ip || req.connection?.remoteAddress || '127.0.0.1',
-      signature: crypto.createHash('sha256').update(`${receiptId}:${authorizationNonce}:${authenticatedOwner}:${targetScope}:${authorizedAt}`).digest('hex')
-    };
+      grantType: 'pilot',
+      isOrgWideApproved: Boolean(isOrgWide)
+    });
 
     const grant = await db.issuePilotGrant({
       organizationId,
@@ -1758,17 +1832,11 @@ app.delete('/api/admin/pilot-grants/:grantId', requireAuth, requirePlatformOwner
       });
     }
 
-    const revocationNonce = crypto.randomBytes(16).toString('hex');
-    const revokedAt = new Date().toISOString();
-    const receiptId = `rcpt_revk_${crypto.randomBytes(8).toString('hex')}`;
-    const revocationReceipt = {
-      receiptId,
-      revocationNonce,
+    const revocationReceipt = req.body?.revocationReceipt || db.createOwnerRevocationReceipt({
       authenticatedOwner,
-      revokedAt,
-      ipAddress: req.ip || req.connection?.remoteAddress || '127.0.0.1',
-      signature: crypto.createHash('sha256').update(`${receiptId}:${revocationNonce}:${authenticatedOwner}:${revokedAt}`).digest('hex')
-    };
+      grantId: req.params.grantId
+    });
+
     const grant = await db.revokePilotGrant(req.params.grantId, authenticatedOwner, revocationReceipt);
     return res.json({ success: true, grant });
   } catch (err) {
@@ -1779,7 +1847,7 @@ app.delete('/api/admin/pilot-grants/:grantId', requireAuth, requirePlatformOwner
 
 app.post('/api/admin/legacy-grants', requireAuth, requirePlatformOwner, async (req, res) => {
   try {
-    const { organizationId, accountId, projectId, notes, isOrgWide } = req.body || {};
+    const { organizationId, accountId, projectId, notes, isOrgWide, approvalReceipt: providedReceipt } = req.body || {};
     if (!organizationId) {
       return res.status(400).json({ error: 'MISSING_ORGANIZATION_ID', message: 'organizationId is required.' });
     }
@@ -1807,20 +1875,12 @@ app.post('/api/admin/legacy-grants', requireAuth, requirePlatformOwner, async (r
       });
     }
 
-    const authorizationNonce = crypto.randomBytes(16).toString('hex');
-    const authorizedAt = new Date().toISOString();
-    const receiptId = `rcpt_appr_${crypto.randomBytes(8).toString('hex')}`;
-    const approvalReceipt = {
-      receiptId,
-      authorizationNonce,
+    const approvalReceipt = providedReceipt || db.createOwnerApprovalReceipt({
       authenticatedOwner,
-      authorizedAt,
-      isOrgWideApproved: Boolean(isOrgWide),
       targetScope,
-      authorizedTier: 'legacy',
-      ipAddress: req.ip || req.connection?.remoteAddress || '127.0.0.1',
-      signature: crypto.createHash('sha256').update(`${receiptId}:${authorizationNonce}:${authenticatedOwner}:${targetScope}:${authorizedAt}`).digest('hex')
-    };
+      grantType: 'legacy',
+      isOrgWideApproved: Boolean(isOrgWide)
+    });
 
     const grant = await db.issueLegacyGrant({
       organizationId,
@@ -1848,12 +1908,11 @@ app.delete('/api/admin/legacy-grants/:grantId', requireAuth, requirePlatformOwne
       });
     }
 
-    const revocationReceipt = {
-      receiptId: `rcpt_revk_${crypto.randomBytes(8).toString('hex')}`,
+    const revocationReceipt = req.body?.revocationReceipt || db.createOwnerRevocationReceipt({
       authenticatedOwner,
-      revokedAt: new Date().toISOString(),
-      ipAddress: req.ip || req.connection?.remoteAddress || '127.0.0.1'
-    };
+      grantId: req.params.grantId
+    });
+
     const grant = await db.revokeLegacyGrant(req.params.grantId, authenticatedOwner, revocationReceipt);
     return res.json({ success: true, grant });
   } catch (err) {

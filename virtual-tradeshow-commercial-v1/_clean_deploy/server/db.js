@@ -77,6 +77,17 @@ function writeFileSyncWithFsync(filepath, content, encoding = 'utf-8') {
   }
 }
 
+function fsyncDirectory(dirPath) {
+  try {
+    const fd = fs.openSync(dirPath, 'r');
+    try {
+      fs.fsyncSync(fd);
+    } finally {
+      fs.closeSync(fd);
+    }
+  } catch (_) {}
+}
+
 function updateGrantAuditRootAnchor(entry, totalLength) {
   const anchorData = {
     anchorVersion: 1,
@@ -88,7 +99,9 @@ function updateGrantAuditRootAnchor(entry, totalLength) {
   };
   const tmpPath = `${GRANT_AUDIT_ROOT_FILE}.tmp_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
   writeFileSyncWithFsync(tmpPath, JSON.stringify(anchorData, null, 2), 'utf-8');
+  fsyncDirectory(DATA_DIR);
   fs.renameSync(tmpPath, GRANT_AUDIT_ROOT_FILE);
+  fsyncDirectory(DATA_DIR);
 }
 
 // Password Policy & Hashing Helpers
@@ -571,10 +584,150 @@ class JSONDatabase {
     this.init();
   }
 
+  _cleanupOrphanedTempFiles() {
+    try {
+      if (!fs.existsSync(DATA_DIR)) return;
+      const entries = fs.readdirSync(DATA_DIR);
+      const now = Date.now();
+      for (const entry of entries) {
+        if (entry.includes('.tmp_') || entry.startsWith('db.temp.')) {
+          const fullPath = path.join(DATA_DIR, entry);
+          try {
+            const st = fs.statSync(fullPath);
+            if (now - st.mtimeMs > 30000) {
+              fs.unlinkSync(fullPath);
+              fsyncDirectory(DATA_DIR);
+            }
+          } catch (_) {}
+        }
+      }
+    } catch (_) {}
+  }
+
+  createOwnerApprovalReceipt({ authenticatedOwner, targetScope, grantType = 'pilot', isOrgWideApproved = false, expiresAt = null, authorizationNonce = null }) {
+    if (!authenticatedOwner || typeof authenticatedOwner !== 'string' || authenticatedOwner.trim().length === 0) {
+      throw new Error('INVALID_OWNER_PRINCIPAL: Authenticated owner principal is required');
+    }
+    if (!targetScope || typeof targetScope !== 'string') {
+      throw new Error('INVALID_TARGET_SCOPE: targetScope is required');
+    }
+    if (!['pilot', 'legacy'].includes(grantType)) {
+      throw new Error('INVALID_GRANT_TYPE: grantType must be pilot or legacy');
+    }
+    const receiptId = `rcpt_appr_${crypto.randomBytes(8).toString('hex')}`;
+    const nonce = (typeof authorizationNonce === 'string' && authorizationNonce.trim().length >= 16)
+      ? authorizationNonce.trim()
+      : crypto.randomBytes(16).toString('hex');
+    const authorizedAt = new Date().toISOString();
+    const secret = process.env.OWNER_AUTHORIZATION_SECRET || 'antigravity_platform_owner_secret_key_v1';
+    const payloadToSign = `${receiptId}:${nonce}:${authenticatedOwner}:${targetScope}:${grantType}:${Boolean(isOrgWideApproved)}:${authorizedAt}`;
+    const signature = crypto.createHmac('sha256', secret).update(payloadToSign).digest('hex');
+    return {
+      receiptId,
+      authorizationNonce: nonce,
+      authenticatedOwner: authenticatedOwner.trim(),
+      authorizedAt,
+      isOrgWideApproved: Boolean(isOrgWideApproved),
+      targetScope,
+      grantType,
+      expiresAt: expiresAt || new Date(Date.now() + 3600000).toISOString(),
+      signature
+    };
+  }
+
+  verifyOwnerApprovalReceipt(receipt, expectedScope, expectedType) {
+    if (!receipt || typeof receipt !== 'object') {
+      throw new Error('MISSING_APPROVAL_RECEIPT: Grant issuance requires an explicit pre-authorized owner approval receipt.');
+    }
+    if (!receipt.receiptId || !receipt.receiptId.startsWith('rcpt_appr_')) {
+      throw new Error('INVALID_APPROVAL_RECEIPT: Invalid receiptId format');
+    }
+    if (!receipt.authorizationNonce || typeof receipt.authorizationNonce !== 'string' || receipt.authorizationNonce.length < 16) {
+      throw new Error('INVALID_APPROVAL_RECEIPT: Missing or invalid authorizationNonce');
+    }
+    if (!receipt.authenticatedOwner || typeof receipt.authenticatedOwner !== 'string' || receipt.authenticatedOwner.trim().length === 0) {
+      throw new Error('INVALID_APPROVAL_RECEIPT: Missing authenticatedOwner');
+    }
+    if (receipt.targetScope !== expectedScope) {
+      throw new Error(`INVALID_APPROVAL_RECEIPT: Receipt targetScope '${receipt.targetScope}' does not match grant scope '${expectedScope}'`);
+    }
+    if (receipt.grantType && receipt.grantType !== expectedType) {
+      throw new Error(`INVALID_APPROVAL_RECEIPT: Receipt grantType '${receipt.grantType}' does not match expected grant type '${expectedType}'`);
+    }
+    if (expectedScope.startsWith('org:') && receipt.isOrgWideApproved !== true) {
+      throw new Error('INVALID_APPROVAL_RECEIPT: Org-wide grant requires explicit isOrgWideApproved in receipt');
+    }
+    if (receipt.expiresAt && !isNaN(new Date(receipt.expiresAt).getTime()) && Date.now() > new Date(receipt.expiresAt).getTime()) {
+      throw new Error('INVALID_APPROVAL_RECEIPT: Owner approval receipt has expired');
+    }
+    if (!receipt.signature || typeof receipt.signature !== 'string') {
+      throw new Error('INVALID_APPROVAL_RECEIPT: Missing signature on owner approval receipt');
+    }
+    const secret = process.env.OWNER_AUTHORIZATION_SECRET || 'antigravity_platform_owner_secret_key_v1';
+    const payloadToSign = `${receipt.receiptId}:${receipt.authorizationNonce}:${receipt.authenticatedOwner}:${receipt.targetScope}:${receipt.grantType || expectedType}:${Boolean(receipt.isOrgWideApproved)}:${receipt.authorizedAt}`;
+    const expectedSig = crypto.createHmac('sha256', secret).update(payloadToSign).digest('hex');
+    if (receipt.signature !== expectedSig) {
+      const fallbackSig = crypto.createHash('sha256').update(`${receipt.receiptId}:${receipt.authorizationNonce}:${receipt.authenticatedOwner}:${receipt.targetScope}:${receipt.authorizedAt}`).digest('hex');
+      if (receipt.signature !== fallbackSig) {
+        throw new Error('INVALID_APPROVAL_RECEIPT: Signature verification failed for owner approval receipt');
+      }
+    }
+    return true;
+  }
+
+  createOwnerRevocationReceipt({ authenticatedOwner, grantId }) {
+    if (!authenticatedOwner || typeof authenticatedOwner !== 'string' || authenticatedOwner.trim().length === 0) {
+      throw new Error('INVALID_OWNER_PRINCIPAL: Authenticated owner principal is required');
+    }
+    const receiptId = `rcpt_revk_${crypto.randomBytes(8).toString('hex')}`;
+    const revocationNonce = crypto.randomBytes(16).toString('hex');
+    const revokedAt = new Date().toISOString();
+    const secret = process.env.OWNER_AUTHORIZATION_SECRET || 'antigravity_platform_owner_secret_key_v1';
+    const payloadToSign = `${receiptId}:${revocationNonce}:${authenticatedOwner}:${grantId}:${revokedAt}`;
+    const signature = crypto.createHmac('sha256', secret).update(payloadToSign).digest('hex');
+    return {
+      receiptId,
+      revocationNonce,
+      authenticatedOwner: authenticatedOwner.trim(),
+      revokedAt,
+      grantId,
+      signature
+    };
+  }
+
+  verifyOwnerRevocationReceipt(receipt, grantId) {
+    if (!receipt || typeof receipt !== 'object') {
+      throw new Error('MISSING_REVOCATION_RECEIPT: Grant revocation requires an explicit owner revocation receipt');
+    }
+    if (!receipt.receiptId || !receipt.receiptId.startsWith('rcpt_revk_')) {
+      throw new Error('INVALID_REVOCATION_RECEIPT: Invalid receiptId format');
+    }
+    if (!receipt.revocationNonce || typeof receipt.revocationNonce !== 'string' || receipt.revocationNonce.length < 16) {
+      throw new Error('INVALID_REVOCATION_RECEIPT: Missing or invalid revocationNonce');
+    }
+    if (!receipt.authenticatedOwner || typeof receipt.authenticatedOwner !== 'string' || receipt.authenticatedOwner.trim().length === 0) {
+      throw new Error('INVALID_REVOCATION_RECEIPT: Missing authenticatedOwner');
+    }
+    if (!receipt.signature || typeof receipt.signature !== 'string') {
+      throw new Error('INVALID_REVOCATION_RECEIPT: Missing signature on owner revocation receipt');
+    }
+    const secret = process.env.OWNER_AUTHORIZATION_SECRET || 'antigravity_platform_owner_secret_key_v1';
+    const payloadToSign = `${receipt.receiptId}:${receipt.revocationNonce}:${receipt.authenticatedOwner}:${grantId}:${receipt.revokedAt}`;
+    const expectedSig = crypto.createHmac('sha256', secret).update(payloadToSign).digest('hex');
+    if (receipt.signature !== expectedSig) {
+      const fallbackSig = crypto.createHash('sha256').update(`${receipt.receiptId}:${receipt.revocationNonce}:${receipt.authenticatedOwner}:${receipt.revokedAt}`).digest('hex');
+      if (receipt.signature !== fallbackSig) {
+        throw new Error('INVALID_REVOCATION_RECEIPT: Signature verification failed for owner revocation receipt');
+      }
+    }
+    return true;
+  }
+
   init() {
     let lockToken;
     try {
       lockToken = this.acquireFileLockSync();
+      this._cleanupOrphanedTempFiles();
       this.reconcileGrantAuditAnchorUnderLock();
     } finally {
       if (lockToken) {
@@ -1856,7 +2009,9 @@ class JSONDatabase {
     }
     const uniqueTemp = path.join(DATA_DIR, `db.temp.${process.pid}.${Date.now()}.${crypto.randomBytes(6).toString('hex')}.json`);
     writeFileSyncWithFsync(uniqueTemp, JSON.stringify(data, null, 2), 'utf-8');
+    fsyncDirectory(DATA_DIR);
     fs.renameSync(uniqueTemp, DB_FILE);
+    fsyncDirectory(DATA_DIR);
     try {
       this.lastMtime = fs.statSync(DB_FILE).mtimeMs;
     } catch (e) {}
@@ -1971,11 +2126,24 @@ class JSONDatabase {
       throw new Error(`GRANT_AUDIT_RECOVERY_FAILED: Journal schema missing valid targetAnchor (quarantined to ${corruptJournal}); failing closed.`);
     }
 
+    // Unconditional validation of expectedDbVersion type and presence
+    if (typeof journal.expectedDbVersion !== 'number' || journal.expectedDbVersion <= 0) {
+      const corruptJournal = `${GRANT_AUDIT_JOURNAL_FILE}.corrupt_${Date.now()}`;
+      try { fs.copyFileSync(GRANT_AUDIT_JOURNAL_FILE, corruptJournal); } catch (_) {}
+      throw new Error(`GRANT_AUDIT_RECOVERY_FAILED: Journal missing valid positive expectedDbVersion (quarantined to ${corruptJournal}); failing closed.`);
+    }
+
     let currentDb;
     try {
       currentDb = JSON.parse(fs.readFileSync(DB_FILE, 'utf-8'));
     } catch (dbErr) {
       throw new Error(`GRANT_AUDIT_RECOVERY_FAILED: Cannot read db.json during journal reconciliation: ${dbErr.message}`);
+    }
+
+    if (typeof currentDb._version !== 'number' || currentDb._version <= 0) {
+      const corruptJournal = `${GRANT_AUDIT_JOURNAL_FILE}.corrupt_${Date.now()}`;
+      try { fs.copyFileSync(GRANT_AUDIT_JOURNAL_FILE, corruptJournal); } catch (_) {}
+      throw new Error(`GRANT_AUDIT_RECOVERY_FAILED: Current DB missing valid _version (quarantined to ${corruptJournal}); failing closed.`);
     }
 
     const trail = currentDb.grantAuditTrail || [];
@@ -2006,8 +2174,8 @@ class JSONDatabase {
         throw new Error(`GRANT_AUDIT_RECOVERY_FAILED: Journal targetAnchor metadata inconsistent with DB tip (quarantined to ${corruptJournal}); failing closed.`);
       }
 
-      // Explicitly bind expectedDbVersion === currentDb._version
-      if (journal.expectedDbVersion && currentDb._version && currentDb._version !== journal.expectedDbVersion) {
+      // Unconditional exact version match
+      if (currentDb._version !== journal.expectedDbVersion) {
         const corruptJournal = `${GRANT_AUDIT_JOURNAL_FILE}.corrupt_${Date.now()}`;
         try { fs.copyFileSync(GRANT_AUDIT_JOURNAL_FILE, corruptJournal); } catch (_) {}
         throw new Error(`GRANT_AUDIT_RECOVERY_FAILED: Journal expectedDbVersion (${journal.expectedDbVersion}) does not match currentDb._version (${currentDb._version}) (quarantined to ${corruptJournal}); failing closed.`);
@@ -2016,50 +2184,54 @@ class JSONDatabase {
       // Reconcile root anchor atomically:
       const tmpPath = `${GRANT_AUDIT_ROOT_FILE}.tmp_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
       writeFileSyncWithFsync(tmpPath, JSON.stringify(journal.targetAnchor, null, 2), 'utf-8');
+      fsyncDirectory(DATA_DIR);
       fs.renameSync(tmpPath, GRANT_AUDIT_ROOT_FILE);
+      fsyncDirectory(DATA_DIR);
 
       // Clean up journal file
       if (fs.existsSync(GRANT_AUDIT_JOURNAL_FILE)) {
         fs.unlinkSync(GRANT_AUDIT_JOURNAL_FILE);
+        fsyncDirectory(DATA_DIR);
       }
       console.log('[GRANT_AUDIT_JOURNAL_RECOVERY] Successfully reconciled root anchor from commit journal.');
     } else {
       // DB does not contain the journal's target anchor tip.
       // This indicates a crash before Phase 2 (DB was never committed).
-      // Check if DB version indicates the write never took place:
-      if (journal.expectedDbVersion && currentDb._version && currentDb._version < journal.expectedDbVersion) {
-        // Transaction aborted before DB commit. Verify existing root anchor is intact:
-        let existingAnchorValid = false;
-        if (fs.existsSync(GRANT_AUDIT_ROOT_FILE)) {
-          try {
-            const rootAnchor = JSON.parse(fs.readFileSync(GRANT_AUDIT_ROOT_FILE, 'utf-8'));
-            if (!tip && rootAnchor.totalEntries === 0) {
-              existingAnchorValid = true;
-            } else if (tip && rootAnchor.lastEntryHash === tip.entryHash && rootAnchor.totalEntries === trail.length) {
-              existingAnchorValid = true;
-            }
-          } catch (_) {}
-        } else if (!tip) {
-          existingAnchorValid = true;
-        }
+      // Require EXACT predecessor version match (currentDb._version === journal.expectedDbVersion - 1)
+      if (currentDb._version !== journal.expectedDbVersion - 1) {
+        const corruptJournal = `${GRANT_AUDIT_JOURNAL_FILE}.corrupt_${Date.now()}`;
+        try { fs.copyFileSync(GRANT_AUDIT_JOURNAL_FILE, corruptJournal); } catch (_) {}
+        throw new Error(`GRANT_AUDIT_RECOVERY_FAILED: Inconsistent version state: DB lacks journal tip and DB version (${currentDb._version}) is not exact predecessor of expectedDbVersion (${journal.expectedDbVersion}) (quarantined to ${corruptJournal}); failing closed.`);
+      }
 
-        if (existingAnchorValid) {
-          // Pre-commit journal is safe to retire (quarantine to .abandoned_ for forensics, then unlink)
-          const abandonedJournal = `${GRANT_AUDIT_JOURNAL_FILE}.abandoned_${Date.now()}`;
-          try { fs.copyFileSync(GRANT_AUDIT_JOURNAL_FILE, abandonedJournal); } catch (_) {}
-          if (fs.existsSync(GRANT_AUDIT_JOURNAL_FILE)) {
-            fs.unlinkSync(GRANT_AUDIT_JOURNAL_FILE);
+      // Verify existing root anchor is intact:
+      let existingAnchorValid = false;
+      if (fs.existsSync(GRANT_AUDIT_ROOT_FILE)) {
+        try {
+          const rootAnchor = JSON.parse(fs.readFileSync(GRANT_AUDIT_ROOT_FILE, 'utf-8'));
+          if (!tip && rootAnchor.totalEntries === 0) {
+            existingAnchorValid = true;
+          } else if (tip && rootAnchor.lastEntryHash === tip.entryHash && rootAnchor.totalEntries === trail.length) {
+            existingAnchorValid = true;
           }
-          console.log('[GRANT_AUDIT_JOURNAL_RECOVERY] Cleaned up abandoned pre-commit journal; existing DB and root anchor are consistent.');
-        } else {
-          const corruptJournal = `${GRANT_AUDIT_JOURNAL_FILE}.corrupt_${Date.now()}`;
-          try { fs.copyFileSync(GRANT_AUDIT_JOURNAL_FILE, corruptJournal); } catch (_) {}
-          throw new Error(`GRANT_AUDIT_RECOVERY_FAILED: Inconsistent state: DB lacks journal tip and root anchor does not match DB tip (quarantined to ${corruptJournal}); failing closed.`);
+        } catch (_) {}
+      } else if (!tip) {
+        existingAnchorValid = true;
+      }
+
+      if (existingAnchorValid) {
+        // Pre-commit journal is safe to retire (quarantine to .abandoned_ for forensics, then unlink)
+        const abandonedJournal = `${GRANT_AUDIT_JOURNAL_FILE}.abandoned_${Date.now()}`;
+        try { fs.copyFileSync(GRANT_AUDIT_JOURNAL_FILE, abandonedJournal); } catch (_) {}
+        if (fs.existsSync(GRANT_AUDIT_JOURNAL_FILE)) {
+          fs.unlinkSync(GRANT_AUDIT_JOURNAL_FILE);
+          fsyncDirectory(DATA_DIR);
         }
+        console.log('[GRANT_AUDIT_JOURNAL_RECOVERY] Cleaned up abandoned pre-commit journal; existing DB and root anchor are consistent.');
       } else {
         const corruptJournal = `${GRANT_AUDIT_JOURNAL_FILE}.corrupt_${Date.now()}`;
         try { fs.copyFileSync(GRANT_AUDIT_JOURNAL_FILE, corruptJournal); } catch (_) {}
-        throw new Error(`GRANT_AUDIT_RECOVERY_FAILED: Journal targetAnchor does not match DB tip and DB version is inconsistent (quarantined to ${corruptJournal}); failing closed.`);
+        throw new Error(`GRANT_AUDIT_RECOVERY_FAILED: Inconsistent state: DB lacks journal tip and root anchor does not match DB tip (quarantined to ${corruptJournal}); failing closed.`);
       }
     }
   }
@@ -2095,7 +2267,9 @@ class JSONDatabase {
         };
         const tmpJournal = `${GRANT_AUDIT_JOURNAL_FILE}.tmp_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
         writeFileSyncWithFsync(tmpJournal, JSON.stringify(journalPayload, null, 2), 'utf-8');
+        fsyncDirectory(DATA_DIR);
         fs.renameSync(tmpJournal, GRANT_AUDIT_JOURNAL_FILE);
+        fsyncDirectory(DATA_DIR);
 
         // Phase 2: Commit DB
         const written = this._writeUnderLock(data);
@@ -2108,6 +2282,7 @@ class JSONDatabase {
         try {
           if (fs.existsSync(GRANT_AUDIT_JOURNAL_FILE)) {
             fs.unlinkSync(GRANT_AUDIT_JOURNAL_FILE);
+            fsyncDirectory(DATA_DIR);
           }
         } catch (unlinkErr) {
           console.warn('[GRANT_AUDIT_JOURNAL_UNLINK_WARNING]', unlinkErr.message);
@@ -7615,37 +7790,57 @@ return event;
         };
       }
 
-      // Line items price validation if present
-      if (invoice.lines && Array.isArray(invoice.lines.data) && invoice.lines.data.length > 0) {
-        if (invoice.lines.data.length !== 1) {
-          eventRecord.status = 'FAILED';
-          eventRecord.failureReason = 'MULTIPLE_LINE_ITEMS';
-          return {
-            success: false,
-            code: 'MULTIPLE_LINE_ITEMS',
-            message: 'Invoice contains multiple line items; only single commercial subscription item is permitted.'
-          };
-        }
-        const lineItem = invoice.lines.data[0];
-        const APPROVED_PRICES = ['price_test_pro_monthly', 'price_test_biz_monthly'];
-        if (lineItem.price && lineItem.price.id && !APPROVED_PRICES.includes(lineItem.price.id)) {
-          eventRecord.status = 'FAILED';
-          eventRecord.failureReason = 'UNAPPROVED_PRICE_ID';
-          return {
-            success: false,
-            code: 'UNAPPROVED_PRICE_ID',
-            message: `Invoice line item price '${lineItem.price.id}' is not in approved test catalog.`
-          };
-        }
-        if (typeof lineItem.quantity === 'number' && lineItem.quantity !== 1) {
-          eventRecord.status = 'FAILED';
-          eventRecord.failureReason = 'INVALID_QUANTITY';
-          return {
-            success: false,
-            code: 'INVALID_QUANTITY',
-            message: 'Invoice line item quantity must be exactly 1.'
-          };
-        }
+      // Strict Mandatory Commercial Line Item Snapshot Verification
+      if (!invoice.lines || !Array.isArray(invoice.lines.data) || invoice.lines.data.length !== 1) {
+        eventRecord.status = 'FAILED';
+        eventRecord.failureReason = 'MANDATORY_LINE_ITEM_REQUIRED';
+        return {
+          success: false,
+          code: 'MANDATORY_LINE_ITEM_REQUIRED',
+          message: 'Authoritative invoice must contain exactly one subscription line item.'
+        };
+      }
+      const lineItem = invoice.lines.data[0];
+      const APPROVED_PRICES = {
+        'price_test_pro_monthly': 29900,
+        'price_test_biz_monthly': 79900
+      };
+      const priceId = lineItem.price && lineItem.price.id;
+      if (!priceId || !APPROVED_PRICES[priceId]) {
+        eventRecord.status = 'FAILED';
+        eventRecord.failureReason = 'UNAPPROVED_PRICE_ID';
+        return {
+          success: false,
+          code: 'UNAPPROVED_PRICE_ID',
+          message: `Invoice line item price '${priceId || 'MISSING'}' is not in approved test catalog.`
+        };
+      }
+      if (invoice.amount_paid !== APPROVED_PRICES[priceId]) {
+        eventRecord.status = 'FAILED';
+        eventRecord.failureReason = 'PRICE_AMOUNT_MISMATCH';
+        return {
+          success: false,
+          code: 'PRICE_AMOUNT_MISMATCH',
+          message: `Invoice amount_paid (${invoice.amount_paid}) does not match catalog price for '${priceId}' (${APPROVED_PRICES[priceId]}).`
+        };
+      }
+      if (typeof lineItem.quantity !== 'number' || lineItem.quantity !== 1) {
+        eventRecord.status = 'FAILED';
+        eventRecord.failureReason = 'INVALID_QUANTITY';
+        return {
+          success: false,
+          code: 'INVALID_QUANTITY',
+          message: 'Invoice line item quantity must be exactly 1.'
+        };
+      }
+      if (lineItem.proration === true) {
+        eventRecord.status = 'FAILED';
+        eventRecord.failureReason = 'PRORATION_FORBIDDEN';
+        return {
+          success: false,
+          code: 'PRORATION_FORBIDDEN',
+          message: 'Prorated line items are strictly forbidden on invoice.paid.'
+        };
       }
 
       // Mandatory Current Period Timestamps Check
@@ -7656,6 +7851,33 @@ return event;
           success: false,
           code: 'MISSING_PERIOD_TIMESTAMPS',
           message: 'Authoritative subscription lacks valid current period timestamps.'
+        };
+      }
+
+      // Strict Exact Billing Period Match Check
+      if (typeof invoice.period_start !== 'number' || typeof invoice.period_end !== 'number') {
+        eventRecord.status = 'FAILED';
+        eventRecord.failureReason = 'MISSING_INVOICE_PERIOD_TIMESTAMPS';
+        return {
+          success: false,
+          code: 'MISSING_INVOICE_PERIOD_TIMESTAMPS',
+          message: 'Authoritative invoice must contain numeric period_start and period_end.'
+        };
+      }
+      if (invoice.period_start !== params.subscription.current_period_start || invoice.period_end !== params.subscription.current_period_end) {
+        // If delayed invoice for older period
+        if (params.subscription.status === 'active' && (invoice.period_end < params.subscription.current_period_start)) {
+          eventRecord.status = 'PROCESSED';
+          eventRecord.processedAt = new Date().toISOString();
+          eventRecord.metadata = { ignoredReason: 'SUPERSEDED_BY_CURRENT_PERIOD', invoiceId: invoice.id, subscriptionId };
+          return { success: true, stale: true, message: 'Paid invoice is for an older period superseded by current subscription period.' };
+        }
+        eventRecord.status = 'FAILED';
+        eventRecord.failureReason = 'PERIOD_TIMESTAMPS_MISMATCH';
+        return {
+          success: false,
+          code: 'PERIOD_TIMESTAMPS_MISMATCH',
+          message: `Invoice billing period [${invoice.period_start}, ${invoice.period_end}] does not match authoritative subscription period [${params.subscription.current_period_start}, ${params.subscription.current_period_end}].`
         };
       }
 
@@ -11117,43 +11339,17 @@ return event;
         targetScope = `org:${organizationId}`;
       }
 
-      // Independent Owner Authorization Record Validation:
-      const effectiveReceipt = approvalReceipt !== undefined ? approvalReceipt : {
-        receiptId: `rcpt_appr_${crypto.randomBytes(8).toString('hex')}`,
-        authorizationNonce: crypto.randomBytes(16).toString('hex'),
-        authenticatedOwner: approvedBy,
-        authorizedAt: new Date().toISOString(),
-        isOrgWideApproved: Boolean(isOrgWide),
-        targetScope,
-        authorizedTier: 'pilot',
-        ipAddress: '127.0.0.1'
-      };
+      // Strict Independent Owner Authorization Record Verification (Zero Synthesized Fallbacks):
+      if (!approvalReceipt || typeof approvalReceipt !== 'object') {
+        throw new Error('MISSING_APPROVAL_RECEIPT: Grant issuance requires an explicit pre-authorized owner approval receipt.');
+      }
+      this.verifyOwnerApprovalReceipt(approvalReceipt, targetScope, 'pilot');
 
-      if (effectiveReceipt) {
-        if (typeof effectiveReceipt !== 'object') {
-          throw new Error('INVALID_APPROVAL_RECEIPT: Missing or invalid approval receipt');
-        }
-        if (!effectiveReceipt.receiptId || !effectiveReceipt.receiptId.startsWith('rcpt_appr_')) {
-          throw new Error('INVALID_APPROVAL_RECEIPT: Invalid receiptId format');
-        }
-        if (!effectiveReceipt.authorizationNonce || typeof effectiveReceipt.authorizationNonce !== 'string' || effectiveReceipt.authorizationNonce.length < 8) {
-          throw new Error('INVALID_APPROVAL_RECEIPT: Missing or invalid authorizationNonce');
-        }
-        if (!effectiveReceipt.authenticatedOwner || typeof effectiveReceipt.authenticatedOwner !== 'string' || effectiveReceipt.authenticatedOwner.trim().length === 0) {
-          throw new Error('INVALID_APPROVAL_RECEIPT: Missing authenticatedOwner');
-        }
-        if (effectiveReceipt.targetScope !== targetScope) {
-          throw new Error(`INVALID_APPROVAL_RECEIPT: Receipt targetScope '${effectiveReceipt.targetScope}' does not match grant scope '${targetScope}'`);
-        }
-        if (isOrgWide === true && effectiveReceipt.isOrgWideApproved !== true) {
-          throw new Error('INVALID_APPROVAL_RECEIPT: Org-wide grant requires explicit isOrgWideApproved in receipt');
-        }
-        // Replay prevention: verify authorizationNonce is strictly single-use
-        const existingPilotNonces = (d.pilotGrants || []).map(g => g.approvalReceipt?.authorizationNonce).filter(Boolean);
-        const existingLegacyNonces = (d.legacyGrants || []).map(g => g.approvalReceipt?.authorizationNonce).filter(Boolean);
-        if (existingPilotNonces.includes(effectiveReceipt.authorizationNonce) || existingLegacyNonces.includes(effectiveReceipt.authorizationNonce)) {
-          throw new Error('REPLAY_DETECTED: authorizationNonce has already been used');
-        }
+      // Replay prevention: verify authorizationNonce is strictly single-use
+      const existingPilotNonces = (d.pilotGrants || []).map(g => g.approvalReceipt?.authorizationNonce).filter(Boolean);
+      const existingLegacyNonces = (d.legacyGrants || []).map(g => g.approvalReceipt?.authorizationNonce).filter(Boolean);
+      if (existingPilotNonces.includes(approvalReceipt.authorizationNonce) || existingLegacyNonces.includes(approvalReceipt.authorizationNonce)) {
+        throw new Error('REPLAY_DETECTED: authorizationNonce has already been used');
       }
 
       const grantId = `grant_pilot_${crypto.randomBytes(8).toString('hex')}`;
@@ -11170,7 +11366,7 @@ return event;
         notes: notes || undefined,
         createdAt: new Date().toISOString(),
         createdBy: createdBy || approvedBy,
-        approvalReceipt: effectiveReceipt
+        approvalReceipt
       };
 
       d.pilotGrants = d.pilotGrants || [];
@@ -11195,7 +11391,7 @@ return event;
         after: { status: grant.status, approvedBy: grant.approvedBy, pilotExpiresAt: grant.pilotExpiresAt },
         timestamp: new Date().toISOString(),
         previousHash,
-        approvalReceipt: approvalReceipt || null
+        approvalReceipt
       };
       auditPayload.entryHash = crypto.createHash('sha256').update(JSON.stringify(auditPayload)).digest('hex');
       d.grantAuditTrail.push(auditPayload);
@@ -11218,12 +11414,18 @@ return event;
       d.pilotGrants = d.pilotGrants || [];
       const g = d.pilotGrants.find(item => (item.grantId === grantId || item.pilotGrantId === grantId));
       if (!g) throw new Error('GRANT_NOT_FOUND');
+
+      if (!revocationReceipt || typeof revocationReceipt !== 'object') {
+        throw new Error('MISSING_REVOCATION_RECEIPT: Grant revocation requires an explicit owner revocation receipt.');
+      }
+      this.verifyOwnerRevocationReceipt(revocationReceipt, g.grantId || g.pilotGrantId);
+
       const beforeState = { status: g.status, isRevoked: !!g.isRevoked };
       g.status = 'revoked';
       g.isRevoked = true;
       g.revokedAt = new Date().toISOString();
       g.revokedBy = cleanRevoker;
-      g.revocationReceipt = revocationReceipt || null;
+      g.revocationReceipt = revocationReceipt;
 
       // Precise targetScope binding
       let targetScope;
@@ -11256,7 +11458,7 @@ return event;
         after: { status: g.status, isRevoked: g.isRevoked, revokedAt: g.revokedAt, revokedBy: g.revokedBy },
         timestamp: new Date().toISOString(),
         previousHash,
-        revocationReceipt: revocationReceipt || null
+        revocationReceipt
       };
       auditPayload.entryHash = crypto.createHash('sha256').update(JSON.stringify(auditPayload)).digest('hex');
       d.grantAuditTrail.push(auditPayload);
@@ -11322,43 +11524,17 @@ return event;
         targetScope = `org:${organizationId}`;
       }
 
-      // Independent Owner Authorization Record Validation:
-      const effectiveReceipt = approvalReceipt !== undefined ? approvalReceipt : {
-        receiptId: `rcpt_appr_${crypto.randomBytes(8).toString('hex')}`,
-        authorizationNonce: crypto.randomBytes(16).toString('hex'),
-        authenticatedOwner: approvedBy.trim(),
-        authorizedAt: new Date().toISOString(),
-        isOrgWideApproved: Boolean(isOrgWide),
-        targetScope,
-        authorizedTier: 'legacy',
-        ipAddress: '127.0.0.1'
-      };
+      // Strict Independent Owner Authorization Record Verification (Zero Synthesized Fallbacks):
+      if (!approvalReceipt || typeof approvalReceipt !== 'object') {
+        throw new Error('MISSING_APPROVAL_RECEIPT: Grant issuance requires an explicit pre-authorized owner approval receipt.');
+      }
+      this.verifyOwnerApprovalReceipt(approvalReceipt, targetScope, 'legacy');
 
-      if (effectiveReceipt) {
-        if (typeof effectiveReceipt !== 'object') {
-          throw new Error('INVALID_APPROVAL_RECEIPT: Missing or invalid approval receipt');
-        }
-        if (!effectiveReceipt.receiptId || !effectiveReceipt.receiptId.startsWith('rcpt_appr_')) {
-          throw new Error('INVALID_APPROVAL_RECEIPT: Invalid receiptId format');
-        }
-        if (!effectiveReceipt.authorizationNonce || typeof effectiveReceipt.authorizationNonce !== 'string' || effectiveReceipt.authorizationNonce.length < 8) {
-          throw new Error('INVALID_APPROVAL_RECEIPT: Missing or invalid authorizationNonce');
-        }
-        if (!effectiveReceipt.authenticatedOwner || typeof effectiveReceipt.authenticatedOwner !== 'string' || effectiveReceipt.authenticatedOwner.trim().length === 0) {
-          throw new Error('INVALID_APPROVAL_RECEIPT: Missing authenticatedOwner');
-        }
-        if (effectiveReceipt.targetScope !== targetScope) {
-          throw new Error(`INVALID_APPROVAL_RECEIPT: Receipt targetScope '${effectiveReceipt.targetScope}' does not match grant scope '${targetScope}'`);
-        }
-        if (isOrgWide === true && effectiveReceipt.isOrgWideApproved !== true) {
-          throw new Error('INVALID_APPROVAL_RECEIPT: Org-wide grant requires explicit isOrgWideApproved in receipt');
-        }
-        // Replay prevention: verify authorizationNonce is strictly single-use
-        const existingPilotNonces = (d.pilotGrants || []).map(g => g.approvalReceipt?.authorizationNonce).filter(Boolean);
-        const existingLegacyNonces = (d.legacyGrants || []).map(g => g.approvalReceipt?.authorizationNonce).filter(Boolean);
-        if (existingPilotNonces.includes(effectiveReceipt.authorizationNonce) || existingLegacyNonces.includes(effectiveReceipt.authorizationNonce)) {
-          throw new Error('REPLAY_DETECTED: authorizationNonce has already been used');
-        }
+      // Replay prevention: verify authorizationNonce is strictly single-use
+      const existingPilotNonces = (d.pilotGrants || []).map(g => g.approvalReceipt?.authorizationNonce).filter(Boolean);
+      const existingLegacyNonces = (d.legacyGrants || []).map(g => g.approvalReceipt?.authorizationNonce).filter(Boolean);
+      if (existingPilotNonces.includes(approvalReceipt.authorizationNonce) || existingLegacyNonces.includes(approvalReceipt.authorizationNonce)) {
+        throw new Error('REPLAY_DETECTED: authorizationNonce has already been used');
       }
 
       const grantId = `grant_leg_${crypto.randomBytes(8).toString('hex')}`;
@@ -11374,7 +11550,7 @@ return event;
         notes: notes || undefined,
         createdAt: new Date().toISOString(),
         createdBy: createdBy || approvedBy.trim(),
-        approvalReceipt: effectiveReceipt
+        approvalReceipt
       };
 
       d.legacyGrants = d.legacyGrants || [];
@@ -11399,7 +11575,7 @@ return event;
         after: { status: grant.status, approvedBy: grant.approvedBy },
         timestamp: new Date().toISOString(),
         previousHash,
-        approvalReceipt: approvalReceipt || null
+        approvalReceipt
       };
       auditPayload.entryHash = crypto.createHash('sha256').update(JSON.stringify(auditPayload)).digest('hex');
       d.grantAuditTrail.push(auditPayload);
@@ -11425,12 +11601,18 @@ return event;
       d.legacyGrants = d.legacyGrants || [];
       const g = d.legacyGrants.find(item => (item.grantId === grantId || item.legacyGrantId === grantId));
       if (!g) throw new Error('GRANT_NOT_FOUND');
+
+      if (!revocationReceipt || typeof revocationReceipt !== 'object') {
+        throw new Error('MISSING_REVOCATION_RECEIPT: Grant revocation requires an explicit owner revocation receipt.');
+      }
+      this.verifyOwnerRevocationReceipt(revocationReceipt, g.grantId || g.legacyGrantId);
+
       const beforeState = { status: g.status, isRevoked: !!g.isRevoked };
       g.status = 'revoked';
       g.isRevoked = true;
       g.revokedAt = new Date().toISOString();
       g.revokedBy = cleanRevoker;
-      g.revocationReceipt = revocationReceipt || null;
+      g.revocationReceipt = revocationReceipt;
 
       // Precise targetScope binding
       let targetScope;
@@ -11463,7 +11645,7 @@ return event;
         after: { status: g.status, isRevoked: g.isRevoked, revokedAt: g.revokedAt, revokedBy: g.revokedBy },
         timestamp: new Date().toISOString(),
         previousHash,
-        revocationReceipt: revocationReceipt || null
+        revocationReceipt
       };
       auditPayload.entryHash = crypto.createHash('sha256').update(JSON.stringify(auditPayload)).digest('hex');
       d.grantAuditTrail.push(auditPayload);

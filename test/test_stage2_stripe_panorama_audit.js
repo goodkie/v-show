@@ -194,7 +194,7 @@ const db = require(dbPath);
           amount_total: 29900,
           currency: 'usd',
           line_items: {
-            data: [{ price: { id: 'price_test_pro_monthly' } }]
+            data: [{ price: { id: 'price_test_pro_monthly', recurring: { interval: 'month' } }, quantity: 1 }]
           }
         }
       }
@@ -230,21 +230,32 @@ const db = require(dbPath);
     // ── TEST 6: Operational Webhooks Life-Cycle Events ─────────────────────────
     console.log('\n[TEST 6] Verifying Operational Webhooks: invoice.payment_failed & subscription.deleted...');
     const failEventId = `evt_test_fail_${Date.now()}`;
+    const failInvoiceId = `in_fail_${Date.now()}`;
+    const nowSecFail = Math.floor(Date.now() / 1000);
     const failEvent = {
       id: failEventId,
       object: 'event',
       type: 'invoice.payment_failed',
       data: {
         object: {
-          id: `in_fail_${Date.now()}`,
+          id: failInvoiceId,
           customer: testCustomerId,
-          subscription: testSubId
+          subscription: testSubId,
+          period_end: nowSecFail + 30 * 86400
         }
       }
     };
     await db.applyStripePaymentFailedAtomic({
       event: failEvent,
-      invoice: failEvent.data.object
+      invoice: failEvent.data.object,
+      subscription: {
+        id: testSubId,
+        customer: testCustomerId,
+        status: 'past_due',
+        latest_invoice: failInvoiceId,
+        current_period_start: nowSecFail,
+        current_period_end: nowSecFail + 30 * 86400
+      }
     });
 
     const orgAfterFail = db.getOrganizationById(testOrgId);

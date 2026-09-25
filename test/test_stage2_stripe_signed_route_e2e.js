@@ -252,6 +252,7 @@ async function main() {
       if (typeof payloadObject === 'object' && payloadObject.type && payloadObject.type.startsWith('invoice.') && payloadObject.data?.object) {
         const inv = payloadObject.data.object;
         if (inv.id && (!authoritativeInvoiceStore.has(inv.id) || authoritativeInvoiceStore.get(inv.id)?._autoSeeded)) {
+          const nowSec = Math.floor(Date.now() / 1000);
           authoritativeInvoiceStore.set(inv.id, {
             id: inv.id,
             customer: inv.customer || 'cus_default_test',
@@ -259,6 +260,18 @@ async function main() {
             status: payloadObject.type === 'invoice.payment_failed' ? 'open' : (inv.status || 'paid'),
             paid: payloadObject.type === 'invoice.payment_failed' ? false : (inv.paid !== false),
             amount_paid: inv.amount_paid || 29900,
+            currency: inv.currency || 'usd',
+            period_start: inv.period_start || nowSec,
+            period_end: inv.period_end || (nowSec + 30 * 86400),
+            lines: inv.lines || {
+              data: [
+                {
+                  price: { id: (inv.amount_paid === 79900 ? 'price_test_biz_monthly' : 'price_test_pro_monthly') },
+                  quantity: 1,
+                  proration: false
+                }
+              ]
+            },
             _autoSeeded: true
           });
         }
@@ -838,7 +851,10 @@ async function main() {
       amount_paid: 29900,
       currency: 'usd',
       period_start: nowSec16,
-      period_end: nowSec16 + (30 * 86400)
+      period_end: nowSec16 + (30 * 86400),
+      lines: {
+        data: [{ price: { id: 'price_test_pro_monthly' }, quantity: 1, proration: false }]
+      }
     });
     const eventPayPaid = {
       id: `evt_pay_paid_${Date.now()}`,
@@ -1800,7 +1816,10 @@ async function main() {
       amount_paid: 29900,
       currency: 'usd',
       period_start: nowSec35,
-      period_end: nowSec35 + (30 * 86400)
+      period_end: nowSec35 + (30 * 86400),
+      lines: {
+        data: [{ price: { id: 'price_test_pro_monthly' }, quantity: 1, proration: false }]
+      }
     });
     authoritativeSubscriptionStore.set(subId35, {
       id: subId35,
@@ -1881,12 +1900,20 @@ async function main() {
     // ── TEST 38: GRANT REFERENTIAL INTEGRITY ENFORCEMENT ────────────────────
     console.log('\n[TEST 38] Verifying Grant Referential Integrity Enforcement...');
     // Attempt 1: Non-existent organization
+    const fakeRcpt1 = db.createOwnerApprovalReceipt({
+      authenticatedOwner: 'owner_user',
+      targetScope: 'org:org_non_existent_fake_id',
+      grantType: 'pilot',
+      isOrgWideApproved: true
+    });
     await assert.rejects(
       async () => {
         await db.issuePilotGrant({
           organizationId: 'org_non_existent_fake_id',
           pilotExpiresAt: new Date(Date.now() + 86400000).toISOString(),
-          approvedBy: 'owner_user'
+          approvedBy: 'owner_user',
+          isOrgWide: true,
+          approvalReceipt: fakeRcpt1
         });
       },
       /REFERENTIAL_INTEGRITY_VIOLATION/,
@@ -1894,13 +1921,19 @@ async function main() {
     );
 
     // Attempt 2: Project belonging to a different organization
+    const fakeRcpt2 = db.createOwnerApprovalReceipt({
+      authenticatedOwner: 'owner_user',
+      targetScope: `project:${otherProjectId}`,
+      grantType: 'pilot'
+    });
     await assert.rejects(
       async () => {
         await db.issuePilotGrant({
           organizationId: testOrgId,
           projectId: otherProjectId,
           pilotExpiresAt: new Date(Date.now() + 86400000).toISOString(),
-          approvedBy: 'owner_user'
+          approvedBy: 'owner_user',
+          approvalReceipt: fakeRcpt2
         });
       },
       /REFERENTIAL_INTEGRITY_VIOLATION/,
@@ -1911,14 +1944,25 @@ async function main() {
     // ── TEST 39: IMMUTABLE GRANT AUDIT TRAIL VERIFICATION ───────────────────
     console.log('\n[TEST 39] Verifying Immutable Grant Audit Trail Recording...');
     const auditOrgId = testOrgId;
+    const testPilotApprReceipt = db.createOwnerApprovalReceipt({
+      authenticatedOwner: 'audit_test_owner',
+      targetScope: `org:${auditOrgId}`,
+      grantType: 'pilot',
+      isOrgWideApproved: true
+    });
     const testPilotGrant = await db.issuePilotGrant({
       organizationId: auditOrgId,
       pilotExpiresAt: new Date(Date.now() + 86400000).toISOString(),
       approvedBy: 'audit_test_owner',
       createdBy: 'audit_test_owner',
-      isOrgWide: true
+      isOrgWide: true,
+      approvalReceipt: testPilotApprReceipt
     });
-    await db.revokePilotGrant(testPilotGrant.grantId, 'audit_revoker');
+    const testPilotRevkReceipt = db.createOwnerRevocationReceipt({
+      authenticatedOwner: 'audit_revoker',
+      grantId: testPilotGrant.grantId
+    });
+    await db.revokePilotGrant(testPilotGrant.grantId, 'audit_revoker', testPilotRevkReceipt);
 
     const dbSnapshot = await db.read();
     assert.ok(Array.isArray(dbSnapshot.grantAuditTrail), 'grantAuditTrail must be an array');
@@ -2097,13 +2141,19 @@ async function main() {
         // organizationId intentionally omitted/undefined!
       });
     });
+    const fakeRcptUnparented = db.createOwnerApprovalReceipt({
+      authenticatedOwner: 'owner_user',
+      targetScope: `project:${unparentedProjectId}`,
+      grantType: 'pilot'
+    });
     await assert.rejects(
       async () => {
         await db.issuePilotGrant({
           organizationId: testOrgId,
           projectId: unparentedProjectId,
           pilotExpiresAt: new Date(Date.now() + 86400000).toISOString(),
-          approvedBy: 'owner_user'
+          approvedBy: 'owner_user',
+          approvalReceipt: fakeRcptUnparented
         });
       },
       /REFERENTIAL_INTEGRITY_VIOLATION/,
@@ -2111,11 +2161,18 @@ async function main() {
     );
 
     // Org-wide grant (no projectId, no accountId) succeeds with correct targetScope
+    const apprRcptOrgWide43 = db.createOwnerApprovalReceipt({
+      authenticatedOwner: 'owner_user',
+      targetScope: `org:${testOrgId}`,
+      grantType: 'pilot',
+      isOrgWideApproved: true
+    });
     const orgWideGrant = await db.issuePilotGrant({
       organizationId: testOrgId,
       pilotExpiresAt: new Date(Date.now() + 86400000).toISOString(),
       approvedBy: 'owner_user',
-      isOrgWide: true
+      isOrgWide: true,
+      approvalReceipt: apprRcptOrgWide43
     });
     assert.strictEqual(orgWideGrant.targetScope, `org:${testOrgId}`);
     console.log('  PASS: Strict grant referential integrity rejects unparented targets and allows org-wide.');
@@ -2285,12 +2342,18 @@ async function main() {
         role: 'member'
       });
     });
+    const apprRcptDual = db.createOwnerApprovalReceipt({
+      authenticatedOwner: 'owner_dual_test',
+      targetScope: `project:${testProjectId}+account:${testAccId48}`,
+      grantType: 'pilot'
+    });
     const dualGrant = await db.issuePilotGrant({
       organizationId: testOrgId,
       projectId: testProjectId,
       accountId: testAccId48,
       pilotExpiresAt: new Date(Date.now() + 86400000).toISOString(),
-      approvedBy: 'owner_dual_test'
+      approvedBy: 'owner_dual_test',
+      approvalReceipt: apprRcptDual
     });
     assert.strictEqual(dualGrant.targetScope, `project:${testProjectId}+account:${testAccId48}`, 'Dual-target grant must record project+account scope');
 
@@ -2426,7 +2489,10 @@ async function main() {
       status: 'paid',
       paid: true,
       amount_paid: 29900,
-      currency: 'usd'
+      currency: 'usd',
+      lines: {
+        data: [{ price: { id: 'price_test_pro_monthly' }, quantity: 1, proration: false }]
+      }
     });
     authoritativeSubscriptionStore.set(subId52, {
       id: subId52,
@@ -2608,7 +2674,10 @@ async function main() {
       amount_paid: 29900,
       currency: 'usd',
       period_start: nowSec55B,
-      period_end: nowSec55B + 30 * 86400
+      period_end: nowSec55B + 30 * 86400,
+      lines: {
+        data: [{ price: { id: 'price_test_pro_monthly' }, quantity: 1, proration: false }]
+      }
     });
 
     const eventNestedPaid = {
@@ -2695,11 +2764,11 @@ async function main() {
         totalEntries: trail56.length + 1,
         updatedAt: new Date().toISOString()
       },
-      expectedDbVersion: 99999
+      expectedDbVersion: (await db.read())._version + 1
     };
     fs.writeFileSync(journalPath, JSON.stringify(abandonedJournal, null, 2), 'utf8');
     db.reconcileGrantAuditAnchorUnderLock();
-    assert.ok(!fs.existsSync(journalPath), 'Abandoned uncommitted journal must be cleaned up without corrupting anchor');
+    assert.ok(!fs.existsSync(journalPath), 'Abandoned uncommitted journal with exact predecessor must be cleaned up without corrupting anchor');
     console.log('  PASS: Two-phase journaled commit cleanly reconciles committed tip and clears uncommitted crashes.');
 
     // ── TEST 57: GRANT OPERATIONS FAIL CLOSED WHEN AUDIT TRAIL IS UNHEALTHY ────────
@@ -3246,7 +3315,10 @@ async function main() {
       amount_paid: 29900,
       currency: 'usd',
       period_start: nowSec64,
-      period_end: nowSec64 + 30 * 86400
+      period_end: nowSec64 + 30 * 86400,
+      lines: {
+        data: [{ price: { id: 'price_test_pro_monthly' }, quantity: 1, proration: false }]
+      }
     });
     const res64A = await postWebhook({
       id: `evt_64a_${Date.now()}`,
@@ -3419,17 +3491,14 @@ async function main() {
     await db.mutate(d => {
       d.organizations.push({ id: orgId66, name: 'Org 66 Auth' });
     });
-    const uniqueNonce66 = `nonce_test_66_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
-    const validReceipt66 = {
-      receiptId: `rcpt_appr_${crypto.randomBytes(8).toString('hex')}`,
-      authorizationNonce: uniqueNonce66,
+    const uniqueNonce66 = `nonce_test_66_${Date.now()}_${crypto.randomBytes(8).toString('hex')}`;
+    const validReceipt66 = db.createOwnerApprovalReceipt({
       authenticatedOwner: 'owner@vshow.test',
-      authorizedAt: new Date().toISOString(),
-      isOrgWideApproved: true,
       targetScope: `org:${orgId66}`,
-      authorizedTier: 'pilot',
-      ipAddress: '127.0.0.1'
-    };
+      grantType: 'pilot',
+      isOrgWideApproved: true,
+      authorizationNonce: uniqueNonce66
+    });
     // First issuance must succeed
     const grant66A = await db.issuePilotGrant({
       organizationId: orgId66,
@@ -3441,57 +3510,54 @@ async function main() {
     assert.strictEqual(grant66A.approvalReceipt.authorizationNonce, uniqueNonce66);
 
     // 66A: Replay the identical authorizationNonce on a second grant -> strictly rejected
+    const replayReceipt66 = db.createOwnerApprovalReceipt({
+      authenticatedOwner: 'owner@vshow.test',
+      targetScope: `org:${orgId66}`,
+      grantType: 'pilot',
+      isOrgWideApproved: true,
+      authorizationNonce: uniqueNonce66 // same nonce!
+    });
     await assert.rejects(async () => {
       await db.issuePilotGrant({
         organizationId: orgId66,
         isOrgWide: true,
         pilotExpiresAt: new Date(Date.now() + 86400000).toISOString(),
         approvedBy: 'owner@vshow.test',
-        approvalReceipt: {
-          ...validReceipt66,
-          receiptId: `rcpt_appr_${crypto.randomBytes(8).toString('hex')}`
-          // same authorizationNonce!
-        }
+        approvalReceipt: replayReceipt66
       });
     }, /REPLAY_DETECTED: authorizationNonce has already been used/);
 
     // 66B: Scope mismatch between receipt targetScope and grant targetScope -> strictly rejected
+    const mismatchedScopeReceipt = db.createOwnerApprovalReceipt({
+      authenticatedOwner: 'owner@vshow.test',
+      targetScope: 'org:org_different_forged', // Mismatched scope!
+      grantType: 'pilot',
+      isOrgWideApproved: true
+    });
     await assert.rejects(async () => {
       await db.issuePilotGrant({
         organizationId: orgId66,
         isOrgWide: true,
         pilotExpiresAt: new Date(Date.now() + 86400000).toISOString(),
         approvedBy: 'owner@vshow.test',
-        approvalReceipt: {
-          receiptId: `rcpt_appr_${crypto.randomBytes(8).toString('hex')}`,
-          authorizationNonce: `nonce_scope_mismatch_${Date.now()}`,
-          authenticatedOwner: 'owner@vshow.test',
-          authorizedAt: new Date().toISOString(),
-          isOrgWideApproved: true,
-          targetScope: 'org:org_different_forged', // Mismatched scope!
-          authorizedTier: 'pilot',
-          ipAddress: '127.0.0.1'
-        }
+        approvalReceipt: mismatchedScopeReceipt
       });
     }, /INVALID_APPROVAL_RECEIPT.*targetScope/);
 
     // 66C: Org-wide grant with isOrgWideApproved: false in receipt -> strictly rejected
+    const notOrgWideReceipt = db.createOwnerApprovalReceipt({
+      authenticatedOwner: 'owner@vshow.test',
+      targetScope: `org:${orgId66}`,
+      grantType: 'pilot',
+      isOrgWideApproved: false // NOT approved for org-wide!
+    });
     await assert.rejects(async () => {
       await db.issuePilotGrant({
         organizationId: orgId66,
         isOrgWide: true,
         pilotExpiresAt: new Date(Date.now() + 86400000).toISOString(),
         approvedBy: 'owner@vshow.test',
-        approvalReceipt: {
-          receiptId: `rcpt_appr_${crypto.randomBytes(8).toString('hex')}`,
-          authorizationNonce: `nonce_not_org_wide_${Date.now()}`,
-          authenticatedOwner: 'owner@vshow.test',
-          authorizedAt: new Date().toISOString(),
-          isOrgWideApproved: false, // NOT approved for org-wide!
-          targetScope: `org:${orgId66}`,
-          authorizedTier: 'pilot',
-          ipAddress: '127.0.0.1'
-        }
+        approvalReceipt: notOrgWideReceipt
       });
     }, /INVALID_APPROVAL_RECEIPT.*isOrgWideApproved/);
     console.log('  PASS: Independent owner authorization nonces, replay protection, and scope binding verified.');
