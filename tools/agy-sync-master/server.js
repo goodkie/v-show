@@ -1,12 +1,12 @@
 /**
  * Antigravity Multi-PC Universal Sync Dashboard Server
  * Native Node.js HTTP server (ZERO external npm dependencies)
+ * Features: SSE live progress/logs, REST actions, and Real-Time Auto-Sync Daemon
  */
 
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
-const url = require('url');
 const os = require('os');
 const SyncEngine = require('./engine');
 
@@ -34,6 +34,146 @@ function sendProgress(percent, statusText) {
   broadcast('progress', { percent, statusText });
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// REAL-TIME AUTO-SYNC MANAGER (DAEMON)
+// ─────────────────────────────────────────────────────────────────────────────
+class AutoSyncManager {
+  constructor(engine, broadcastFn, progressFn, loggerObj) {
+    this.engine = engine;
+    this.broadcast = broadcastFn;
+    this.sendProgress = progressFn;
+    this.logger = loggerObj;
+    this.enabled = false;
+    this.intervalSeconds = 30;
+    this.timer = null;
+    this.isBusy = false;
+    this.lastKnownRemotePush = this.getRemotePushTimestamp();
+    this.lastLocalConversationMtime = this.getLocalConversationMtime();
+    this.lastLocalGitCommit = this.getLocalGitCommit();
+    this.lastSyncResult = '대기 중';
+    this.lastSyncTime = null;
+  }
+
+  getRemotePushTimestamp() {
+    try {
+      const manifestPath = path.join(this.engine.getSyncPackagePath(), 'sync_manifest.json');
+      if (fs.existsSync(manifestPath)) {
+        const raw = fs.readFileSync(manifestPath, 'utf8');
+        return JSON.parse(raw).pushedAt || null;
+      }
+    } catch (e) {}
+    return null;
+  }
+
+  getLocalConversationMtime() {
+    try {
+      const agyRoots = this.engine.getAgyRoots();
+      for (const root of agyRoots) {
+        const dbPath = path.join(root, 'conversation_summaries.db');
+        if (fs.existsSync(dbPath)) return fs.statSync(dbPath).mtimeMs;
+      }
+    } catch (e) {}
+    return 0;
+  }
+
+  getLocalGitCommit() {
+    try {
+      const fastTrackDir = path.join(this.engine.targetDir, 'v-show-stage2-fast-track');
+      const headFile = path.join(fastTrackDir, '.git', 'refs', 'heads', this.engine.defaultBranch);
+      if (fs.existsSync(headFile)) return fs.readFileSync(headFile, 'utf8').trim();
+    } catch (e) {}
+    return '';
+  }
+
+  getStatus() {
+    return {
+      enabled: this.enabled,
+      intervalSeconds: this.intervalSeconds,
+      isBusy: this.isBusy,
+      lastSyncTime: this.lastSyncTime,
+      lastSyncResult: this.lastSyncResult,
+      lastKnownRemotePush: this.lastKnownRemotePush
+    };
+  }
+
+  start(intervalSeconds = 30) {
+    this.enabled = true;
+    this.intervalSeconds = Math.max(10, parseInt(intervalSeconds, 10) || 30);
+    if (this.timer) clearInterval(this.timer);
+    this.logger.info(`[AUTO-SYNC] 실시간 자동 동기화 데몬 활성화 (감지 주기: ${this.intervalSeconds}초)`);
+    this.broadcast('auto-sync-status', this.getStatus());
+    this.timer = setInterval(() => this.tick(), this.intervalSeconds * 1000);
+    setTimeout(() => this.tick(), 1000);
+  }
+
+  stop() {
+    this.enabled = false;
+    if (this.timer) clearInterval(this.timer);
+    this.timer = null;
+    this.logger.info('[AUTO-SYNC] 실시간 자동 동기화 데몬 비활성화됨');
+    this.broadcast('auto-sync-status', this.getStatus());
+  }
+
+  async tick() {
+    if (!this.enabled || this.isBusy) return;
+    this.isBusy = true;
+    this.broadcast('auto-sync-status', this.getStatus());
+
+    try {
+      // 1. Google Drive의 원격 매니페스트 확인 (다른 PC의 신규 Push 감지 -> 자동 PULL)
+      const manifestPath = path.join(this.engine.getSyncPackagePath(), 'sync_manifest.json');
+      if (fs.existsSync(manifestPath)) {
+        try {
+          const raw = fs.readFileSync(manifestPath, 'utf8');
+          const manifest = JSON.parse(raw);
+          if (manifest.pushedAt) {
+            if (!this.lastKnownRemotePush) {
+              this.lastKnownRemotePush = manifest.pushedAt;
+            } else if (manifest.pushedAt !== this.lastKnownRemotePush) {
+              if (manifest.sourceMachine !== os.hostname()) {
+                this.logger.info(`[AUTO-SYNC] 타 PC(${manifest.sourceMachine}) 신규 커밋/세션 감지 (${manifest.pushedAt}) -> 자동 Pull 실행`);
+                this.sendProgress(20, `[자동 동기화] ${manifest.sourceMachine}의 최신 세션 수신 중...`);
+                await this.engine.pullSync(this.sendProgress, this.logger);
+                this.lastSyncResult = `타 PC(${manifest.sourceMachine}) 작업 자동 수신 완료`;
+                this.lastSyncTime = new Date().toISOString();
+                this.sendProgress(100, `[자동 동기화] 최신 동기화 완료 (${new Date().toLocaleTimeString()})`);
+              }
+              this.lastKnownRemotePush = manifest.pushedAt;
+            }
+          }
+        } catch (e) {}
+      }
+
+      // 2. 로컬 대화/세션 변경 또는 로컬 Git 커밋 감지 -> 자동 PUSH
+      const currentConvMtime = this.getLocalConversationMtime();
+      const currentGitCommit = this.getLocalGitCommit();
+
+      const convChanged = currentConvMtime > (this.lastLocalConversationMtime + 8000);
+      const gitChanged = currentGitCommit && (currentGitCommit !== this.lastLocalGitCommit);
+
+      if (convChanged || gitChanged) {
+        this.logger.info(`[AUTO-SYNC] 로컬 대화 세션/커밋 변경 감지 -> GitHub 및 Google Drive 자동 백업(Push) 실행`);
+        this.sendProgress(20, '[자동 동기화] 로컬 최신 세션 및 코드 백업 중...');
+        await this.engine.pushSync(this.sendProgress, this.logger);
+        this.lastLocalConversationMtime = currentConvMtime;
+        this.lastLocalGitCommit = currentGitCommit;
+        this.lastKnownRemotePush = this.getRemotePushTimestamp();
+        this.lastSyncResult = '로컬 변경사항 자동 백업(Push) 완료';
+        this.lastSyncTime = new Date().toISOString();
+        this.sendProgress(100, `[자동 동기화] 클라우드 백업 완료 (${new Date().toLocaleTimeString()})`);
+      }
+    } catch (err) {
+      this.logger.warn(`[AUTO-SYNC] 주기적 점검 중 예외: ${err.message}`);
+      this.lastSyncResult = `오류: ${err.message}`;
+    } finally {
+      this.isBusy = false;
+      this.broadcast('auto-sync-status', this.getStatus());
+    }
+  }
+}
+
+const autoSync = new AutoSyncManager(engine, broadcast, sendProgress, logger);
+
 // MIME types
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -45,7 +185,7 @@ const MIME_TYPES = {
 };
 
 const server = http.createServer(async (req, res) => {
-  const parsedUrl = url.parse(req.url, true);
+  const parsedUrl = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
   const pathname = parsedUrl.pathname;
 
   // CORS headers
@@ -68,6 +208,8 @@ const server = http.createServer(async (req, res) => {
     });
     res.write(': ping\n\n');
     sseClients.push(res);
+    // Send initial auto-sync status
+    res.write(`event: auto-sync-status\ndata: ${JSON.stringify(autoSync.getStatus())}\n\n`);
     req.on('close', () => {
       sseClients = sseClients.filter(c => c !== res);
     });
@@ -84,15 +226,44 @@ const server = http.createServer(async (req, res) => {
       gdriveRoot: engine.gdriveRoot,
       syncPackage: engine.syncPackageName,
       branch: engine.defaultBranch,
+      autoSync: autoSync.getStatus(),
       timestamp: new Date().toISOString()
     }));
     return;
   }
 
-  // 3. Diagnose API
+  // 3. Auto-Sync Control API (GET/POST)
+  if (pathname === '/api/auto-sync') {
+    if (req.method === 'POST') {
+      let body = '';
+      req.on('data', chunk => body += chunk);
+      req.on('end', () => {
+        try {
+          const data = body ? JSON.parse(body) : {};
+          if (data.action === 'start') {
+            autoSync.start(data.intervalSeconds || 30);
+          } else if (data.action === 'stop') {
+            autoSync.stop();
+          }
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify(autoSync.getStatus()));
+        } catch (e) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: e.message }));
+        }
+      });
+      return;
+    } else {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(autoSync.getStatus()));
+      return;
+    }
+  }
+
+  // 4. Diagnose API
   if (pathname === '/api/diagnose') {
     try {
-      const isDeep = parsedUrl.query.deep === '1';
+      const isDeep = parsedUrl.searchParams.get('deep') === '1';
       const report = await engine.diagnose(logger, isDeep);
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(report));
@@ -103,7 +274,7 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // 4. Remap Paths API
+  // 5. Remap Paths API
   if (pathname === '/api/remap' && req.method === 'POST') {
     try {
       sendProgress(20, '경로 동적 리매핑 시작...');
@@ -118,7 +289,7 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // 5. Setup New PC API
+  // 6. Setup New PC API
   if (pathname === '/api/setup' && req.method === 'POST') {
     try {
       const out = await engine.setupNewPc(sendProgress, logger);
@@ -132,7 +303,7 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // 6. Auto Recover API
+  // 7. Auto Recover API
   if (pathname === '/api/recover' && req.method === 'POST') {
     try {
       sendProgress(30, '손상 팩파일 격리 및 Git Refetch 중...');
@@ -148,7 +319,7 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // 7. Push API
+  // 8. Push API
   if (pathname === '/api/push' && req.method === 'POST') {
     try {
       const out = await engine.pushSync(sendProgress, logger);
@@ -162,7 +333,7 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // 8. Pull API
+  // 9. Pull API
   if (pathname === '/api/pull' && req.method === 'POST') {
     try {
       const out = await engine.pullSync(sendProgress, logger);
@@ -208,3 +379,5 @@ function getLocalIp() {
   }
   return '127.0.0.1';
 }
+
+module.exports = { server, autoSync };

@@ -10,6 +10,11 @@ const elements = {
   metaBranch: document.getElementById('metaBranch'),
   btnRefreshStatus: document.getElementById('btnRefreshStatus'),
 
+  toggleAutoSync: document.getElementById('toggleAutoSync'),
+  autoSyncInterval: document.getElementById('autoSyncInterval'),
+  autoSyncBadge: document.getElementById('autoSyncBadge'),
+  autoSyncDesc: document.getElementById('autoSyncDesc'),
+
   progressSection: document.getElementById('progressSection'),
   progressStatus: document.getElementById('progressStatus'),
   progressPercent: document.getElementById('progressPercent'),
@@ -43,6 +48,13 @@ function setupEventSource() {
     try {
       const data = JSON.parse(e.data);
       updateProgress(data.percent, data.statusText);
+    } catch (err) {}
+  });
+
+  evtSource.addEventListener('auto-sync-status', (e) => {
+    try {
+      const data = JSON.parse(e.data);
+      updateAutoSyncUI(data);
     } catch (err) {}
   });
 
@@ -83,12 +95,53 @@ async function loadStatus() {
     elements.metaTargetDir.textContent = data.targetDir;
     elements.metaGdrive.textContent = `${data.gdriveRoot}\\${data.syncPackage}`;
     elements.metaBranch.textContent = data.branch;
+
+    if (data.autoSync) {
+      updateAutoSyncUI(data.autoSync);
+    }
   } catch (e) {
     appendLog('WARN', `상태 로드 실패: ${e.message}`);
   }
 }
 
-// 3. Run Diagnosis
+// 3. Auto-Sync UI & Control
+function updateAutoSyncUI(status) {
+  elements.toggleAutoSync.checked = !!status.enabled;
+  if (status.intervalSeconds) {
+    elements.autoSyncInterval.value = status.intervalSeconds;
+  }
+
+  if (status.enabled) {
+    elements.autoSyncBadge.textContent = '실시간 가동 중';
+    elements.autoSyncBadge.className = 'auto-sync-badge badge-on';
+    const busyText = status.isBusy ? ' (동기화 작업 수행 중...)' : '';
+    const lastTime = status.lastSyncTime ? ` | 최근: ${new Date(status.lastSyncTime).toLocaleTimeString()}` : '';
+    elements.autoSyncDesc.textContent = `30초마다 타 PC 변경사항을 자동 감지(Pull)하고 로컬 대화/코드를 백업(Push)합니다.${busyText}${lastTime}`;
+  } else {
+    elements.autoSyncBadge.textContent = '비활성화';
+    elements.autoSyncBadge.className = 'auto-sync-badge badge-off';
+    elements.autoSyncDesc.textContent = '다른 PC의 작업 업로드를 실시간 감지하여 자동 Pull하고, 내 PC의 대화/코드를 자동 Push합니다.';
+  }
+}
+
+async function setAutoSync(enable, interval) {
+  try {
+    const res = await fetch('/api/auto-sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: enable ? 'start' : 'stop',
+        intervalSeconds: parseInt(interval, 10) || 30
+      })
+    });
+    const data = await res.json();
+    updateAutoSyncUI(data);
+  } catch (e) {
+    appendLog('ERROR', `자동 동기화 설정 실패: ${e.message}`);
+  }
+}
+
+// 4. Run Diagnosis
 async function runDiagnose() {
   setButtonsDisabled(true);
   updateProgress(20, '시스템 및 Git 저장소 정밀 진단 중...');
@@ -143,7 +196,7 @@ function renderChecks(checks) {
   });
 }
 
-// 4. Action API Handlers
+// 5. Action API Handlers
 async function executeAction(endpoint, startMsg, confirmMsg = null) {
   if (confirmMsg && !confirm(confirmMsg)) return;
 
@@ -171,6 +224,16 @@ async function executeAction(endpoint, startMsg, confirmMsg = null) {
 elements.btnRefreshStatus.addEventListener('click', () => {
   loadStatus();
   runDiagnose();
+});
+
+elements.toggleAutoSync.addEventListener('change', (e) => {
+  setAutoSync(e.target.checked, elements.autoSyncInterval.value);
+});
+
+elements.autoSyncInterval.addEventListener('change', (e) => {
+  if (elements.toggleAutoSync.checked) {
+    setAutoSync(true, e.target.value);
+  }
 });
 
 elements.btnDiagnose.addEventListener('click', runDiagnose);

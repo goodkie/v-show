@@ -57,6 +57,37 @@
       </div>
     </div>
 
+    <!-- REAL-TIME AUTO-SYNC DAEMON STRIP -->
+    <div class="auto-sync-strip">
+      <div class="auto-sync-info">
+        <div class="auto-sync-icon-box">⚡</div>
+        <div>
+          <div class="auto-sync-title">
+            <span>실시간 자동 동기화 데몬</span>
+            <span class="auto-sync-badge badge-off" id="autoSyncBadge">비활성화</span>
+          </div>
+          <div class="auto-sync-desc" id="autoSyncDesc">
+            다른 PC의 작업 업로드를 실시간 감지하여 자동 Pull하고, 내 PC의 대화/코드를 자동 Push합니다.
+          </div>
+        </div>
+      </div>
+      <div class="auto-sync-controls">
+        <div class="interval-selector">
+          <label for="autoSyncInterval">감지 주기:</label>
+          <select id="autoSyncInterval">
+            <option value="15">15초 (초고속)</option>
+            <option value="30" selected>30초 (표준 권장)</option>
+            <option value="60">1분</option>
+            <option value="300">5분</option>
+          </select>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="toggleAutoSync">
+          <span class="slider round"></span>
+        </label>
+      </div>
+    </div>
+
     <!-- REAL-TIME PROGRESS BAR -->
     <div class="progress-section" id="progressSection">
       <div class="progress-header">
