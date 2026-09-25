@@ -974,31 +974,100 @@ class SyncEngine {
       }
     }
 
-    progressCallback(45, 'Google Drive 최신 세션 DB 및 브레인 다운로드 중...');
+    progressCallback(45, 'Google Drive 최신 대화 DB 스마트 다운로드 중 (변경분만)...');
     const syncPkg = this.getSyncPackagePath();
     if (fs.existsSync(syncPkg)) {
       const srcConvos = path.join(syncPkg, 'antigravity-core', 'conversations');
-      const srcBrain = path.join(syncPkg, 'antigravity-core', 'brain');
       const srcState = path.join(syncPkg, 'antigravity-core', 'state');
       const srcConfig = path.join(syncPkg, 'antigravity-core', 'config', 'app_storage.json');
+      const srcSummaries = path.join(srcState, 'conversation_summaries.db');
 
       for (const agyRoot of this.getAgyRoots()) {
+        fs.mkdirSync(agyRoot, { recursive: true });
         const dstConvos = path.join(agyRoot, 'conversations');
-        const dstBrain = path.join(agyRoot, 'brain');
+        fs.mkdirSync(dstConvos, { recursive: true });
+
+        // Smart copy: only copy conversation DBs from GDrive that are NEWER than local
         if (fs.existsSync(srcConvos)) {
-          this.copyDirectoryRecursiveSync(srcConvos, dstConvos);
+          let copied = 0, skipped = 0;
+          try {
+            const entries = fs.readdirSync(srcConvos, { withFileTypes: true });
+            for (const entry of entries) {
+              if (!entry.isFile() || !entry.name.endsWith('.db')) continue;
+              const srcFile = path.join(srcConvos, entry.name);
+              const dstFile = path.join(dstConvos, entry.name);
+              try {
+                const srcMtime = fs.statSync(srcFile).mtimeMs;
+                const dstMtime = fs.existsSync(dstFile) ? fs.statSync(dstFile).mtimeMs : 0;
+                if (srcMtime > dstMtime) {
+                  fs.copyFileSync(srcFile, dstFile);
+                  copied++;
+                  logger.info(`  + Pulled: ${entry.name}`);
+                } else {
+                  skipped++;
+                }
+              } catch (e) {
+                logger.warn(`  ! Error pulling ${entry.name}: ${e.message}`);
+              }
+            }
+          } catch (e) {
+            logger.warn(`  ! Error reading GDrive conversations: ${e.message}`);
+          }
+          logger.info(`  ✓ 대화 DB: ${copied}개 다운로드, ${skipped}개 이미 최신`);
         }
-        if (fs.existsSync(srcBrain)) {
-          this.copyDirectoryRecursiveSync(srcBrain, dstBrain);
-        }
-        if (fs.existsSync(srcState)) {
-          this.copyDirectoryRecursiveSync(srcState, agyRoot);
+
+        // Additive merge of conversation_summaries.db from GDrive → local
+        progressCallback(65, 'conversation_summaries.db 병합 중...');
+        const dstSummaries = path.join(agyRoot, 'conversation_summaries.db');
+        if (fs.existsSync(srcSummaries)) {
+          try {
+            const { execSync } = require('child_process');
+            // src = GDrive (newer/remote), dst = local
+            const mergeCode = [
+              'import sqlite3,shutil,os',
+              `src=r"${srcSummaries.replace(/\\/g, '\\\\')}"`,
+              `dst=r"${dstSummaries.replace(/\\/g, '\\\\')}"`,
+              'os.makedirs(os.path.dirname(dst),exist_ok=True)',
+              'if not os.path.exists(dst): shutil.copy2(src,dst); print("Copied fresh"); exit()',
+              'sc=sqlite3.connect(src,timeout=30)',
+              'dc=sqlite3.connect(dst,timeout=30)',
+              'sc.execute("PRAGMA busy_timeout=30000")',
+              'dc.execute("PRAGMA busy_timeout=30000")',
+              'dt=[r[0] for r in dc.execute("SELECT name FROM sqlite_master WHERE type=\'table\'").fetchall()]',
+              'if "conversation_summaries" not in dt:',
+              '  sk=sc.execute("SELECT sql FROM sqlite_master WHERE name=\'conversation_summaries\'").fetchone()',
+              '  if sk: dc.execute(sk[0])',
+              'rows=sc.execute("SELECT * FROM conversation_summaries").fetchall()',
+              'cols=[d[0] for d in sc.execute("SELECT * FROM conversation_summaries LIMIT 0").description]',
+              'ecids=set(r[0] for r in dc.execute("SELECT conversation_id FROM conversation_summaries").fetchall())',
+              'a=u=0',
+              'for row in rows:',
+              '  cid=row[0]',
+              '  if cid not in ecids:',
+              '    dc.execute(f"INSERT INTO conversation_summaries VALUES ({chr(44).join([chr(63)]*len(cols))})",row);a+=1',
+              '  else:',
+              '    ui=cols.index("workspace_uris")',
+              '    dc.execute("UPDATE conversation_summaries SET workspace_uris=?,status=\'CASCADE_RUN_STATUS_IDLE\',not_fully_idle=0,killed=0 WHERE conversation_id=?",(row[ui],cid));u+=1',
+              'dc.commit();sc.close();dc.close()',
+              'print(f"OK:{a}+{u}")'
+            ].join('\n');
+            const out = execSync(`python -c "${mergeCode.replace(/\n/g, '; ')}"`, {
+              stdio: ['pipe', 'pipe', 'pipe'],
+              timeout: 30000,
+              env: { ...process.env, PYTHONIOENCODING: 'utf-8' }
+            }).toString().trim();
+            logger.info(`  ✓ conversation_summaries.db 병합 완료 (${out})`);
+          } catch (pyErr) {
+            try { fs.copyFileSync(srcSummaries, dstSummaries); } catch (e2) {}
+            logger.warn('  ! Python 병합 실패, 직접 복사로 대체');
+          }
         }
       }
 
+      // app_storage.json
       for (const cDir of this.getConfigDirs()) {
         if (fs.existsSync(srcConfig)) {
-          fs.copyFileSync(srcConfig, path.join(cDir, 'app_storage.json'));
+          try { fs.copyFileSync(srcConfig, path.join(cDir, 'app_storage.json')); } catch (e) {}
         }
       }
     }
