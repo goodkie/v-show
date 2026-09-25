@@ -348,7 +348,7 @@ conn.commit()
 conn.close()
 print(f'UPDATED:{updated}')
 `;
-          const out = execSync(`python -c "${pyScript.replace(/\n/g, ' ')}"`, { stdio: 'pipe' }).toString().trim();
+          const out = execSync('python', { input: pyScript, stdio: ['pipe', 'pipe', 'pipe'] }).toString().trim();
           logger.info(`  ✓ SQLite 대화 워크스페이스 URI 매핑 완료 (${agyRoot}): ${out}`);
           modifiedFiles++;
         } catch (e) {

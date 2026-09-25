@@ -1,15 +1,20 @@
 @echo off
 chcp 65001 >nul
-setlocal
+setlocal enabledelayedexpansion
 title [AGY-Sync] 실시간 자동 동기화 데몬 (Auto-Sync Daemon)
 
-set "SCRIPT_DIR=%~dp0"
-if exist "%SCRIPT_DIR%cli.js" (
-    set "ENGINE_DIR=%SCRIPT_DIR%"
-) else if exist "%SCRIPT_DIR%tools\agy-sync-master\cli.js" (
-    set "ENGINE_DIR=%SCRIPT_DIR%tools\agy-sync-master\"
-) else (
-    echo [ERROR] agy-sync-master 엔진(cli.js)을 찾을 수 없습니다.
+set "BASE_DIR=%~dp0"
+if "%BASE_DIR:~-1%"=="\" set "BASE_DIR=%BASE_DIR:~0,-1%"
+
+set "WORK_DIR="
+if exist "%BASE_DIR%\cli.js" (
+    set "WORK_DIR=%BASE_DIR%"
+) else if exist "%BASE_DIR%\tools\agy-sync-master\cli.js" (
+    set "WORK_DIR=%BASE_DIR%\tools\agy-sync-master"
+)
+
+if not defined WORK_DIR (
+    echo [ERROR] agy-sync-master cli.js 를 찾을 수 없습니다.
     pause
     exit /b 1
 )
@@ -21,14 +26,14 @@ if %ERRORLEVEL% neq 0 (
     exit /b 1
 )
 
-cd /d "%ENGINE_DIR%"
+pushd "%WORK_DIR%"
 
 echo ================================================================
 echo   [AGY-Sync Master] 실시간 자동 동기화 데몬 (Auto-Sync Daemon)
 echo ================================================================
 echo.
-echo  * 기능 1: 다른 PC의 새 커밋/세션 푸시 감지 시 -> 자동 Pull
-echo  * 기능 2: 현재 PC의 Antigravity 대화/커밋 변경 시 -> 자동 Push
+echo  * 기능 1: 다른 PC의 새 커밋/세션 푸시 감지 시 -^> 자동 Pull
+echo  * 기능 2: 현재 PC의 Antigravity 대화/커밋 변경 시 -^> 자동 Push
 echo  * 감지 주기: 30초 (백그라운드 실시간 모니터링)
 echo.
 echo 데몬을 중지하려면 창을 닫거나 Ctrl+C를 누르세요.
@@ -37,5 +42,6 @@ echo.
 
 node cli.js auto-sync --interval 30
 
+popd
 pause
-exit
+exit /b 0

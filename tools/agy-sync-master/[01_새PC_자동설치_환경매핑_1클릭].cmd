@@ -1,15 +1,20 @@
 @echo off
 chcp 65001 >nul
-setlocal
+setlocal enabledelayedexpansion
 title [AGY-Sync] 새 PC 무결점 원클릭 설치 및 환경 매핑
 
-set "SCRIPT_DIR=%~dp0"
-if exist "%SCRIPT_DIR%cli.js" (
-    set "ENGINE_DIR=%SCRIPT_DIR%"
-) else if exist "%SCRIPT_DIR%tools\agy-sync-master\cli.js" (
-    set "ENGINE_DIR=%SCRIPT_DIR%tools\agy-sync-master\"
-) else (
-    echo [ERROR] agy-sync-master 엔진(cli.js)을 찾을 수 없습니다.
+set "BASE_DIR=%~dp0"
+if "%BASE_DIR:~-1%"=="\" set "BASE_DIR=%BASE_DIR:~0,-1%"
+
+set "WORK_DIR="
+if exist "%BASE_DIR%\cli.js" (
+    set "WORK_DIR=%BASE_DIR%"
+) else if exist "%BASE_DIR%\tools\agy-sync-master\cli.js" (
+    set "WORK_DIR=%BASE_DIR%\tools\agy-sync-master"
+)
+
+if not defined WORK_DIR (
+    echo [ERROR] agy-sync-master cli.js 를 찾을 수 없습니다.
     pause
     exit /b 1
 )
@@ -22,7 +27,7 @@ if %ERRORLEVEL% neq 0 (
     exit /b 1
 )
 
-cd /d "%ENGINE_DIR%"
+pushd "%WORK_DIR%"
 
 echo ================================================================
 echo   [AGY-Sync Master] 새 PC 원클릭 설치 및 환경 자동 매핑
@@ -33,10 +38,13 @@ echo [2] Fast-Track 워크트리 자동 생성
 echo [3] Google Drive에서 대화 히스토리 및 세션 DB 안전 복원
 echo [4] 현재 PC 사용자명 및 경로에 맞춰 설정 동적 리매핑
 echo.
+
 node cli.js setup
+
+popd
 
 echo.
 echo ================================================================
-echo 작업이 완료되었습니다. 창을 닫으려면 아무 키나 누르세요 (10초 후 자동 종료)...
-timeout /t 10 >nul 2>&1 || pause >nul
-exit
+echo 작업이 완료되었습니다. 창을 닫으려면 아무 키나 누르세요...
+pause >nul
+exit /b 0
