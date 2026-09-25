@@ -3,6 +3,7 @@ import sys
 import glob
 import json
 import sqlite3
+import time
 
 try:
     sys.stdout.reconfigure(encoding='utf-8')
@@ -80,17 +81,10 @@ def replace_in_proto(data, replacements):
 
 def remap_agy_root(agy_root, target_dir):
     print(f"[*] Processing AGY root: {agy_root}")
-    # 1. Clean WAL / SHM
-    for f in glob.glob(os.path.join(agy_root, "*.db-wal")) + glob.glob(os.path.join(agy_root, "*.db-shm")):
-        try: os.remove(f)
-        except Exception: pass
-    
+    # WAL / SHM 파일은 SQLite 동시성 제어용이므로 실행 중 삭제하지 않음 (SQLite WAL 안전 모드)
     conv_dir = os.path.join(agy_root, "conversations")
-    for f in glob.glob(os.path.join(conv_dir, "*.db-wal")) + glob.glob(os.path.join(conv_dir, "*.db-shm")):
-        try: os.remove(f)
-        except Exception: pass
 
-    # 2. Build Universal URI list
+    # 1. Build Universal URI list
     norm_target = target_dir.replace("\\", "/")
     drive = norm_target[0]
     rest = norm_target[2:]
@@ -144,54 +138,65 @@ def remap_agy_root(agy_root, target_dir):
     # 3. Synchronize conversation_summaries.db
     sum_db = os.path.join(agy_root, "conversation_summaries.db")
     if os.path.exists(sum_db):
-        conn = sqlite3.connect(sum_db)
-        c = conn.cursor()
-        
-        # Discover all conversations from disk
-        existing_cids = set(r[0] for r in c.execute("SELECT conversation_id FROM conversation_summaries").fetchall())
-        disk_dbs = glob.glob(os.path.join(conv_dir, "*.db"))
-        added_count = 0
-        for ddb in disk_dbs:
-            cid = os.path.splitext(os.path.basename(ddb))[0]
-            if cid not in existing_cids:
-                title = f"Conversation {cid[:8]}"
-                # Try reading title from transcript
-                t_log = os.path.join(agy_root, "brain", cid, ".system_generated", "logs", "transcript.jsonl")
-                if os.path.exists(t_log):
-                    try:
-                        with open(t_log, "r", encoding="utf-8", errors="ignore") as tf:
-                            for line in tf:
-                                obj = json.loads(line)
-                                if obj.get("type") == "USER_INPUT":
-                                    txt = obj.get("content", "").strip().replace("\n", " ")
-                                    if txt:
-                                        title = txt[:40]
-                                        break
-                    except Exception: pass
-                c.execute("""
-                    INSERT INTO conversation_summaries (conversation_id, title, workspace_uris, is_starred, last_updated_time_ms, raw_summary)
-                    VALUES (?, ?, ?, 0, 1727220000000, NULL)
-                """, (cid, title, json.dumps(universal_uris)))
-                added_count += 1
-                print(f"  + Added missing conversation {cid} ({title})")
-        
-        # Update workspace_uris on all rows
-        rows = c.execute("SELECT conversation_id, workspace_uris FROM conversation_summaries").fetchall()
-        updated_sum = 0
-        for cid, uris_str in rows:
-            try:
-                uris = json.loads(uris_str) if uris_str else []
-                new_uris = list(uris)
-                for u in universal_uris:
-                    if u not in new_uris:
-                        new_uris.append(u)
-                if new_uris != uris:
-                    c.execute("UPDATE conversation_summaries SET workspace_uris = ? WHERE conversation_id = ?", (json.dumps(new_uris), cid))
-                    updated_sum += 1
-            except Exception: pass
-        conn.commit()
-        conn.close()
-        print(f"  ✓ conversation_summaries.db updated: {updated_sum} rows updated, {added_count} discovered")
+        try:
+            conn = sqlite3.connect(sum_db, timeout=30.0)
+            c = conn.cursor()
+            c.execute("PRAGMA busy_timeout = 30000;")
+            
+            # Discover all conversations from disk
+            existing_cids = set(r[0] for r in c.execute("SELECT conversation_id FROM conversation_summaries").fetchall())
+            disk_dbs = glob.glob(os.path.join(conv_dir, "*.db"))
+            added_count = 0
+            for ddb in disk_dbs:
+                cid = os.path.splitext(os.path.basename(ddb))[0]
+                if cid not in existing_cids:
+                    title = f"Conversation {cid[:8]}"
+                    # Try reading title from transcript
+                    t_log = os.path.join(agy_root, "brain", cid, ".system_generated", "logs", "transcript.jsonl")
+                    if os.path.exists(t_log):
+                        try:
+                            with open(t_log, "r", encoding="utf-8", errors="ignore") as tf:
+                                for line in tf:
+                                    obj = json.loads(line)
+                                    if obj.get("type") == "USER_INPUT":
+                                        txt = obj.get("content", "").strip().replace("\n", " ")
+                                        if txt:
+                                            title = txt[:40]
+                                            break
+                        except Exception: pass
+                    c.execute("""
+                        INSERT OR REPLACE INTO conversation_summaries (
+                            conversation_id, title, preview, step_count, last_modified_time,
+                            workspace_uris, status, source, app_data_dir, not_fully_idle, killed,
+                            last_user_input_time, last_user_input_step_index
+                        ) VALUES (
+                            ?, ?, ?, 10, datetime('now'),
+                            ?, 'CASCADE_RUN_STATUS_IDLE', 'USER', '', 0, 0,
+                            datetime('now'), 0
+                        )
+                    """, (cid, title, title, json.dumps(universal_uris)))
+                    added_count += 1
+                    print(f"  + Added missing conversation {cid} ({title})")
+            
+            # Update workspace_uris on all rows
+            rows = c.execute("SELECT conversation_id, workspace_uris FROM conversation_summaries").fetchall()
+            updated_sum = 0
+            for cid, uris_str in rows:
+                try:
+                    uris = json.loads(uris_str) if uris_str else []
+                    new_uris = list(uris)
+                    for u in universal_uris:
+                        if u not in new_uris:
+                            new_uris.append(u)
+                    if new_uris != uris:
+                        c.execute("UPDATE conversation_summaries SET workspace_uris = ?, killed = 0, not_fully_idle = 0 WHERE conversation_id = ?", (json.dumps(new_uris), cid))
+                        updated_sum += 1
+                except Exception: pass
+            conn.commit()
+            conn.close()
+            print(f"  ✓ conversation_summaries.db updated: {updated_sum} rows updated, {added_count} discovered")
+        except Exception as e:
+            print(f"  ! Warning updating conversation_summaries.db: {e}")
 
     # 4. Unlock steps and remap trajectory_metadata_blob in each conversation DB
     local_target_sub = f"{norm_target}/v-show-stage2-fast-track"
@@ -206,11 +211,20 @@ def remap_agy_root(agy_root, target_dir):
 
     total_unlocked = 0
     total_blobs_remapped = 0
+    now_ts = time.time()
     if os.path.exists(conv_dir):
         for ddb in glob.glob(os.path.join(conv_dir, "*.db")):
             try:
-                conn = sqlite3.connect(ddb)
+                # 활성 상태인 최근 대화 세션은 충돌 방지를 위해 건너뜁니다
+                try:
+                    mtime = os.path.getmtime(ddb)
+                    if now_ts - mtime < 60:
+                        continue
+                except Exception: pass
+
+                conn = sqlite3.connect(ddb, timeout=10.0)
                 c = conn.cursor()
+                c.execute("PRAGMA busy_timeout = 10000;")
                 tables = [t[0] for t in c.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()]
                 
                 # Unlock pending steps (removes forbidden 🚫 symbol)

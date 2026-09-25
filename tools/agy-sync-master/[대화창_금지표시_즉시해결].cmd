@@ -15,36 +15,22 @@ taskkill /F /IM "Antigravity.exe" /T 2>nul
 timeout /t 2 /nobreak >nul
 echo   ✓ Antigravity 프로세스 정리 완료
 
-:: 2. Python 리매핑 스크립트 실행
-echo [2/4] 대화 세션 DB 워크스페이스 매핑 및 금지(🚫) 상태 일괄 언락 중...
+:: 2. 프로젝트 디렉터리 자동 감지
+set "TARGET_DIR=%USERPROFILE%\ai"
+if exist "E:\vivpr\ai" set "TARGET_DIR=E:\vivpr\ai"
+if exist "C:\Users\server4\ai" set "TARGET_DIR=C:\Users\server4\ai"
+if exist "C:\vivpr\ai" set "TARGET_DIR=C:\vivpr\ai"
+
+echo [2/4] 대화 세션 DB 워크스페이스 매핑 및 금지(🚫) 상태 일괄 언락 중... (대상: %TARGET_DIR%)
 set "SCRIPT_DIR=%~dp0"
 set "WORKER_PY=%SCRIPT_DIR%tools\agy-sync-master\remap_worker.py"
 if not exist "%WORKER_PY%" (
     set "WORKER_PY=%SCRIPT_DIR%remap_worker.py"
 )
 
-python "%WORKER_PY%" "%USERPROFILE%\ai" 2>nul
+python "%WORKER_PY%" "%TARGET_DIR%"
 if %ERRORLEVEL% neq 0 (
-    echo   ! Python 직접 실행 실패 - Node.js 엔진으로 재시도 중...
-    node -e "
-    const fs = require('fs');
-    const path = require('path');
-    const home = require('os').homedir();
-    const gdrive = 'G:\\내 드라이브\\v-show-antigravity-sync';
-    const srcDb = path.join(gdrive, 'antigravity-core', 'state', 'conversation_summaries.db');
-    for (const sub of ['.gemini/antigravity-ide', '.gemini/antigravity']) {
-        const dstDir = path.join(home, sub);
-        if (fs.existsSync(dstDir)) {
-            const dstDb = path.join(dstDir, 'conversation_summaries.db');
-            try { fs.unlinkSync(dstDb + '-wal'); } catch(e){}
-            try { fs.unlinkSync(dstDb + '-shm'); } catch(e){}
-            if (fs.existsSync(srcDb)) {
-                fs.copyFileSync(srcDb, dstDb);
-                console.log('  ✓ 복원 완료: ' + dstDb);
-            }
-        }
-    }
-    "
+    py -3 "%WORKER_PY%" "%TARGET_DIR%" 2>nul
 )
 
 :: 3. Workspace Trust 강제 신뢰 설정 (Restricted Mode 방지)

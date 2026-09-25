@@ -378,8 +378,7 @@ $Shortcut.Save()
   // 11. Unblock History (🚫) API
   if (pathname === '/api/unblock' && req.method === 'POST') {
     try {
-      sendProgress(20, 'Antigravity IDE 프로세스 종료 및 DB 락 해제 중...');
-      engine.killAgyProcesses(logger);
+      sendProgress(20, 'SQLite 세션 동기화 및 워크스페이스 매핑 준비 중...');
       sendProgress(50, 'SQLite 세션 워크스페이스 매핑 및 🚫 잠금 해제 중...');
       const remapRes = await engine.remapPaths(logger);
       sendProgress(100, '대화창 🚫 금지표시 해제 및 워크스페이스 신뢰 설정 완료');
