@@ -25,9 +25,21 @@ echo ================================================================
 echo   [AGY-Sync Master] 범용 멀티 PC 통합 동기화 대시보드 시작
 echo ================================================================
 echo.
+
+:RESTART_LOOP
+echo [%TIME%] AGY-Sync Master 서버 시작 중...
 "%NODE_CMD%" server.js
-if %ERRORLEVEL% neq 0 (
+set EXIT_CODE=%ERRORLEVEL%
+
+if %EXIT_CODE% equ 0 (
+    :: exit(0) = 자동 재시작 신호 (engine.js 업데이트 등)
     echo.
-    echo [ERROR] 프로그램이 예기치 않게 종료되었습니다.
+    echo [%TIME%] 새 버전 감지 - 자동 재시작 중... (Ctrl+C로 중단 가능)
+    echo.
+    timeout /t 1 /nobreak >nul
+    goto RESTART_LOOP
+) else (
+    echo.
+    echo [ERROR] 프로그램이 예기치 않게 종료되었습니다. (코드: %EXIT_CODE%)
     pause
 )
