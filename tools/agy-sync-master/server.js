@@ -375,6 +375,25 @@ $Shortcut.Save()
     return;
   }
 
+  // 11. Unblock History (🚫) API
+  if (pathname === '/api/unblock' && req.method === 'POST') {
+    try {
+      sendProgress(20, 'Antigravity IDE 프로세스 종료 및 DB 락 해제 중...');
+      engine.killAgyProcesses(logger);
+      sendProgress(50, 'SQLite 세션 워크스페이스 매핑 및 🚫 잠금 해제 중...');
+      const remapRes = await engine.remapPaths(logger);
+      sendProgress(100, '대화창 🚫 금지표시 해제 및 워크스페이스 신뢰 설정 완료');
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: true, remapRes }));
+    } catch (e) {
+      logger.error(`대화창 언락 실패: ${e.message}`);
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: e.message }));
+    }
+    return;
+  }
+
+
 
   // Static File Serving
   let filePath = path.join(__dirname, 'public', pathname === '/' ? 'index.html' : pathname);

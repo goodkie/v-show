@@ -143,29 +143,53 @@ class SyncEngine {
     });
   }
 
-  copyDirectoryRecursiveSync(srcDir, dstDir, excludePatterns = ['.db-wal', '.db-shm']) {
-    if (!fs.existsSync(srcDir)) return;
-    if (!fs.existsSync(dstDir)) fs.mkdirSync(dstDir, { recursive: true });
-
-    const entries = fs.readdirSync(srcDir, { withFileTypes: true });
-    for (const entry of entries) {
-      const srcPath = path.join(srcDir, entry.name);
-      const dstPath = path.join(dstDir, entry.name);
-
-      if (excludePatterns.some(p => entry.name.endsWith(p))) continue;
-
-      if (entry.isDirectory()) {
-        this.copyDirectoryRecursiveSync(srcPath, dstPath, excludePatterns);
-      } else if (entry.isFile()) {
-        try {
-          fs.copyFileSync(srcPath, dstPath);
-        } catch (e) {
-          try {
-            fs.copyFileSync(srcPath, dstPath);
-          } catch (e2) {}
+  countFilesInDir(srcDir, excludePatterns = ['.db-wal', '.db-shm']) {
+    let count = 0;
+    if (!fs.existsSync(srcDir)) return 0;
+    try {
+      const entries = fs.readdirSync(srcDir, { withFileTypes: true });
+      for (const entry of entries) {
+        if (excludePatterns.some(p => entry.name.endsWith(p))) continue;
+        if (entry.isDirectory()) {
+          count += this.countFilesInDir(path.join(srcDir, entry.name), excludePatterns);
+        } else if (entry.isFile()) {
+          count++;
         }
       }
-    }
+    } catch (e) {}
+    return count;
+  }
+
+  copyDirectoryRecursiveSync(srcDir, dstDir, excludePatterns = ['.db-wal', '.db-shm'], logger = null, onFileCopied = null) {
+    if (!fs.existsSync(srcDir)) return 0;
+    if (!fs.existsSync(dstDir)) fs.mkdirSync(dstDir, { recursive: true });
+
+    let copied = 0;
+    try {
+      const entries = fs.readdirSync(srcDir, { withFileTypes: true });
+      for (const entry of entries) {
+        const srcPath = path.join(srcDir, entry.name);
+        const dstPath = path.join(dstDir, entry.name);
+
+        if (excludePatterns.some(p => entry.name.endsWith(p))) continue;
+
+        if (entry.isDirectory()) {
+          copied += this.copyDirectoryRecursiveSync(srcPath, dstPath, excludePatterns, logger, onFileCopied);
+        } else if (entry.isFile()) {
+          try {
+            fs.copyFileSync(srcPath, dstPath);
+            copied++;
+            if (onFileCopied) onFileCopied(entry.name, copied);
+          } catch (e) {
+            try {
+              fs.copyFileSync(srcPath, dstPath);
+              copied++;
+            } catch (e2) {}
+          }
+        }
+      }
+    } catch (e) {}
+    return copied;
   }
 
   killAgyProcesses(logger) {
@@ -456,32 +480,56 @@ class SyncEngine {
   // 3. SETUP / INSTALL (NEW PC 1-CLICK)
   // ─────────────────────────────────────────────────────────────────────────────
   async setupNewPc(progressCallback, logger) {
+    const startTime = Date.now();
     logger.info('================================================================');
     logger.info('  [신규 PC 무결점 원클릭 설치 및 환경 자동 매핑 시작]');
+    logger.info(`  대상 경로: ${this.targetDir}`);
+    logger.info(`  구글 드라이브 패키지: ${this.getSyncPackagePath()}`);
+    logger.info(`  동기화 브랜치: ${this.defaultBranch}`);
     logger.info('================================================================');
-    progressCallback(5, '사전 요구조건 확인 중...');
 
-    // 1. 디렉터리 준비
+    // 1. 사전 환경 및 디렉터리 준비
+    progressCallback(5, '[1/8] 사전 환경 점검 및 디렉터리 준비 중...');
+    logger.info('[단계 1/8] 시스템 사전 요구조건 점검:');
+    logger.info(`  - 사용자 계정: ${this.username}`);
+    logger.info(`  - Node.js 런타임: ${process.version}`);
+    
+    try {
+      const gitVer = execSync('git --version', { encoding: 'utf8' }).trim();
+      logger.info(`  - Git 바이너리: ${gitVer}`);
+    } catch (e) {
+      throw new Error('Git이 설치되어 있지 않거나 PATH에 없습니다.');
+    }
+
     if (!fs.existsSync(this.targetDir)) {
       fs.mkdirSync(this.targetDir, { recursive: true });
+      logger.info(`  ✓ 작업 디렉터리 생성 완료: ${this.targetDir}`);
+    } else {
+      logger.info(`  ✓ 기존 작업 디렉터리 확인됨: ${this.targetDir}`);
     }
 
     const localVshow = path.join(this.targetDir, 'v-show');
     const localFastTrack = path.join(this.targetDir, 'v-show-stage2-fast-track');
 
-    // 2. GitHub로부터 초고속 단일 브랜치 클론 (인증 토큰 감지 & 멈춤 방지)
-    progressCallback(15, '저장소 초고속 클론 및 최신 코드 준비 중 (멈춤 방지 모드)...');
+    // 2. 저장소 초고속 클론
+    progressCallback(15, '[2/8] GitHub 저장소 연결 및 초고속 얕은 복제(Shallow Clone) 준비...');
+    logger.info('[단계 2/8] GitHub 저장소 다운로드 (멈춤 방지 얕은 복제):');
+    
     let cloneUrl = this.githubRepoUrl;
     try {
       const ghToken = execSync('gh auth token 2>nul || exit 0', { shell: true }).toString().trim();
       if (ghToken) {
         cloneUrl = `https://${ghToken}@github.com/goodkie/v-show.git`;
-        logger.info('  ✓ GitHub CLI 인증 토큰 자동 감지 및 적용 완료');
+        logger.info('  ✓ GitHub CLI 인증 토큰 자동 주입 완료 (무인증 무한 대기 방지)');
+      } else {
+        logger.info('  - GitHub CLI 토큰 없음 (공개 HTTPS 엔드포인트 사용)');
       }
     } catch (e) {}
 
     if (!fs.existsSync(path.join(localVshow, '.git'))) {
-      logger.info(`저장소 초고속 얕은 복제(Shallow Clone, depth=30) 시작: ${this.defaultBranch}`);
+      progressCallback(20, '[2/8] 저장소 코드 다운로드 중 (수 GB 대신 필요한 최신 30개 커밋만 초고속 수신)...');
+      logger.info(`  -> 초고속 얕은 복제(depth=30, branch=${this.defaultBranch}) 실행 중...`);
+      
       const cloneArgs = [
         'clone',
         '--single-branch',
@@ -490,49 +538,71 @@ class SyncEngine {
         cloneUrl,
         localVshow
       ];
-      let cloneRes = await this.runCommand('git', cloneArgs, this.targetDir, logger, null, 120000);
+
+      let cloneRes = await this.runCommand('git', cloneArgs, this.targetDir, logger, (text) => {
+        if (text.includes('Receiving objects:') || text.includes('Resolving deltas:')) {
+          const match = text.match(/([0-9]+%)/);
+          if (match) {
+            progressCallback(25, `[2/8] 저장소 오브젝트 수신 중... ${match[1]}`);
+          }
+        }
+      }, 120000);
       
-      // 만약 인증/네트워크 실패 시 공개 URL 또는 구글 드라이브 소스 폴백
       if (cloneRes.code !== 0) {
-        logger.warn(`GitHub 직접 클론 실패 (${cloneRes.stderr || cloneRes.error}). 기본 URL로 재시도...`);
+        logger.warn(`  ! GitHub 인증/네트워크 에러 (${cloneRes.stderr || cloneRes.error}). 기본 URL로 재시도...`);
         const retryArgs = ['clone', '--single-branch', '--branch', this.defaultBranch, '--depth', '10', this.githubRepoUrl, localVshow];
         cloneRes = await this.runCommand('git', retryArgs, this.targetDir, logger, null, 120000);
       }
 
       if (cloneRes.code !== 0) {
-        // 구글 드라이브 내 프로젝트 복사본 탐색 (오프라인 폴백)
+        // 구글 드라이브 내 백업 프로젝트 소스 폴백
         const gdriveProject = path.join(this.gdriveRoot, this.syncPackageName, 'project-code');
         if (fs.existsSync(gdriveProject)) {
-          logger.info('  -> Google Drive 내 백업 프로젝트 소스에서 즉시 복원 진행...');
-          this.copyDirectoryRecursiveSync(gdriveProject, localVshow);
+          logger.info('  -> Google Drive 내 오프라인 프로젝트 백업본에서 초고속 복원 진행...');
+          progressCallback(28, '[2/8] Google Drive 로컬 백업 소스에서 저장소 복제 중...');
+          const copied = this.copyDirectoryRecursiveSync(gdriveProject, localVshow, ['.db-wal'], logger);
+          logger.info(`  ✓ Google Drive에서 총 ${copied}개 파일 복원 완료`);
         } else {
-          throw new Error(`저장소 클론 실패 (GitHub 인증 또는 네트워크를 확인하세요): ${cloneRes.stderr || cloneRes.error}`);
+          throw new Error(`저장소 클론 실패 (GitHub 인증을 확인하세요): ${cloneRes.stderr || cloneRes.error}`);
         }
+      } else {
+        logger.info('  ✓ GitHub 저장소 초고속 클론 성공');
       }
     } else {
-      logger.info('기존 v-show 저장소 확인됨. 최신 커밋 fetch 중...');
+      logger.info('  ✓ 기존 v-show 저장소 확인됨. 최신 커밋 fetch 중...');
+      progressCallback(25, '[2/8] 기존 저장소 최신 커밋 동기화 중...');
       await this.runCommand('git', ['fetch', 'origin', this.defaultBranch, '--depth', '20'], localVshow, logger, null, 60000);
     }
 
     // 3. Fast-Track Worktree 구성
-    progressCallback(35, 'Fast-Track 워크트리 구성 중...');
+    progressCallback(35, '[3/8] Fast-Track 워크트리 구성 및 브랜치 바인딩 중...');
+    logger.info('[단계 3/8] v-show-stage2-fast-track 워크트리 연결:');
     if (!fs.existsSync(localFastTrack)) {
-      logger.info(`워크트리 추가: ${this.defaultBranch}`);
+      logger.info(`  -> 워크트리 생성: git worktree add ${localFastTrack} ${this.defaultBranch}`);
       const wtRes = await this.runCommand('git', ['worktree', 'add', localFastTrack, this.defaultBranch], localVshow, logger);
       if (wtRes.code !== 0) {
-        logger.warn(`워크트리 생성 주의 (${wtRes.stderr}); 기존 브랜치 강제 바인딩 시도`);
+        logger.warn(`  ! 워크트리 생성 주의 (${wtRes.stderr}); 브랜치 강제 바인딩 시도`);
         await this.runCommand('git', ['worktree', 'add', '-B', this.defaultBranch, localFastTrack, `origin/${this.defaultBranch}`], localVshow, logger);
       }
+      logger.info('  ✓ Fast-Track 워크트리 생성 완료');
+    } else {
+      logger.info('  ✓ Fast-Track 워크트리 디렉터리가 이미 존재합니다.');
     }
 
     // 4. Antigravity 세션 & 브레인 복원 (Google Drive)
-    progressCallback(55, 'Google Drive에서 Antigravity 대화창 세션 및 브레인 복원 중...');
+    progressCallback(50, '[4/8] Google Drive에서 Antigravity 대화창 세션 및 브레인 아티팩트 복원 중...');
+    logger.info('[단계 4/8] 클라우드(Google Drive) 세션 데이터 복원:');
     const syncPkg = this.getSyncPackagePath();
     if (fs.existsSync(syncPkg)) {
       const srcConvos = path.join(syncPkg, 'antigravity-core', 'conversations');
       const srcBrain = path.join(syncPkg, 'antigravity-core', 'brain');
       const srcState = path.join(syncPkg, 'antigravity-core', 'state');
       const srcConfig = path.join(syncPkg, 'antigravity-core', 'config', 'app_storage.json');
+
+      const totalConvoFiles = this.countFilesInDir(srcConvos);
+      const totalBrainFiles = this.countFilesInDir(srcBrain);
+      logger.info(`  - 복원 대상 대화 DB: 약 ${totalConvoFiles}개 파일`);
+      logger.info(`  - 복원 대상 브레인 아티팩트: 약 ${totalBrainFiles}개 파일`);
 
       for (const agyRoot of this.getAgyRoots()) {
         const dstConvos = path.join(agyRoot, 'conversations');
@@ -541,13 +611,30 @@ class SyncEngine {
         fs.mkdirSync(dstBrain, { recursive: true });
 
         if (fs.existsSync(srcConvos)) {
-          this.copyDirectoryRecursiveSync(srcConvos, dstConvos);
+          let cCount = 0;
+          this.copyDirectoryRecursiveSync(srcConvos, dstConvos, ['.db-wal', '.db-shm'], null, (fname, count) => {
+            cCount = count;
+            if (count % 5 === 0 || count === totalConvoFiles) {
+              progressCallback(55, `[4/8] 대화창 세션 복원 중... (${count}/${totalConvoFiles}) [${fname}]`);
+            }
+          });
+          logger.info(`  ✓ 대화 세션 DB ${cCount}개 파일 복원 완료 (${path.basename(agyRoot)})`);
         }
+
         if (fs.existsSync(srcBrain)) {
-          this.copyDirectoryRecursiveSync(srcBrain, dstBrain);
+          progressCallback(62, '[4/8] 브레인 아티팩트 및 대화 로그 복원 중...');
+          let bCount = 0;
+          this.copyDirectoryRecursiveSync(srcBrain, dstBrain, ['.db-wal', '.db-shm'], null, (fname, count) => {
+            bCount = count;
+            if (count % 20 === 0 || count === totalBrainFiles) {
+              progressCallback(65, `[4/8] 브레인 아티팩트 복원 중... (${count}/${totalBrainFiles}) [${fname}]`);
+            }
+          });
+          logger.info(`  ✓ 브레인 아티팩트 ${bCount}개 파일 복원 완료 (${path.basename(agyRoot)})`);
         }
+
         if (fs.existsSync(srcState)) {
-          this.copyDirectoryRecursiveSync(srcState, agyRoot);
+          this.copyDirectoryRecursiveSync(srcState, agyRoot, ['.db-wal', '.db-shm']);
         }
       }
 
@@ -557,36 +644,49 @@ class SyncEngine {
           fs.copyFileSync(srcConfig, path.join(cDir, 'app_storage.json'));
         }
       }
-      logger.info('  ✓ Antigravity 세션 및 브레인 아티팩트 복원 완료');
+      logger.info('  ✓ Antigravity 세션 및 UI 설정 복원 완료');
     } else {
-      logger.warn(`Google Drive 패키지를 찾을 수 없어 기본 세션으로 진행합니다 (${syncPkg})`);
+      logger.warn(`  ! Google Drive 패키지를 찾을 수 없어 로컬 세션으로 진행합니다 (${syncPkg})`);
     }
 
-    // 5. 환경 동적 리매핑
-    progressCallback(75, '현재 PC 환경으로 경로 및 세션 동적 리매핑 중...');
-    await this.remapPaths(logger);
+    // 5. 환경 동적 리매핑 & 대화창 금지표시(🚫) 해제
+    progressCallback(75, '[5/8] 현재 PC 환경으로 경로 리매핑 및 대화창 금지표시(🚫) 자동 해제 중...');
+    logger.info('[단계 5/8] 현재 PC 환경 경로 동적 매핑 및 대화창 언락:');
+    const remapRes = await this.remapPaths(logger);
+    logger.info(`  ✓ 총 ${remapRes.modifiedFiles || 0}개 파일/세션 환경 리매핑 및 🚫 잠금 해제 완료`);
 
     // 6. 의존성 확인 & npm install
-    progressCallback(85, '프로젝트 Node.js 의존성 검사 중...');
+    progressCallback(88, '[6/8] 프로젝트 Node.js 패키지 의존성 점검 중...');
+    logger.info('[단계 6/8] Node.js 의존성 검사:');
     const nodeModules = path.join(localFastTrack, 'node_modules');
     if (!fs.existsSync(nodeModules) && fs.existsSync(path.join(localFastTrack, 'package.json'))) {
-      logger.info('npm install 실행 중 (백그라운드)...');
-      await this.runCommand('npm.cmd', ['install', '--silent'], localFastTrack, logger);
+      logger.info('  -> node_modules가 없습니다. 필수 패키지 설치 중 (npm install)...');
+      progressCallback(90, '[6/8] Node.js 패키지 설치 중 (npm install)...');
+      await this.runCommand('npm.cmd', ['install', '--silent'], localFastTrack, logger, null, 180000);
+      logger.info('  ✓ npm 패키지 설치 완료');
+    } else {
+      logger.info('  ✓ node_modules 패키지가 이미 정상 구비되어 있습니다.');
     }
 
     // 7. 무결성 최종 검증
-    progressCallback(95, 'Git 무결성 최종 검증 (git fsck)...');
-    const fsckRes = await this.runCommand('git', ['fsck', '--no-dangling'], localFastTrack, logger);
-    if (fsckRes.code !== 0 && fsckRes.stderr.includes('fatal:')) {
-      logger.warn('일부 Git 델타 결손 감지 -> 자동 refetch 복구 발동');
+    progressCallback(95, '[7/8] Git 저장소 무결성 최종 검증 (git fsck)...');
+    logger.info('[단계 7/8] Git 저장소 무결성 검증:');
+    const fsckRes = await this.runCommand('git', ['fsck', '--no-dangling'], localFastTrack, logger, null, 60000);
+    if (fsckRes.code !== 0 && fsckRes.stderr && fsckRes.stderr.includes('fatal:')) {
+      logger.warn('  ! Git 델타 결손 감지 -> 자동 refetch 복구 진행');
       await this.autoRecover(logger);
+    } else {
+      logger.info('  ✓ Git 저장소 무결성 검증 통과 (정상)');
     }
 
-    progressCallback(100, '새 PC 설치 및 환경 매핑 완료! Antigravity IDE를 시작하십시오.');
+    // 8. 최종 완료
+    const elapsedSec = ((Date.now() - startTime) / 1000).toFixed(1);
+    progressCallback(100, `[완료] 신규 PC 설치 및 대화창 복원 완료! (소요 시간: ${elapsedSec}초)`);
     logger.info('================================================================');
-    logger.info('  [성공] 새 PC 설치 및 환경 리매핑이 완벽하게 완료되었습니다!');
+    logger.info(`  [성공] 새 PC 설치 및 환경 리매핑 완료! (총 소요 시간: ${elapsedSec}초)`);
+    logger.info('  이제 Antigravity IDE를 실행하시면 금지표시(🚫) 없이 모든 대화가 열립니다.');
     logger.info('================================================================');
-    return { success: true };
+    return { success: true, elapsedSec };
   }
 
   // ─────────────────────────────────────────────────────────────────────────────

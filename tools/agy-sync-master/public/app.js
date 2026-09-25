@@ -27,6 +27,7 @@ const elements = {
   btnPush: document.getElementById('btnPush'),
   btnPull: document.getElementById('btnPull'),
   btnRemap: document.getElementById('btnRemap'),
+  btnUnblock: document.getElementById('btnUnblock'),
 
   checksGrid: document.getElementById('checksGrid'),
   lastCheckedTime: document.getElementById('lastCheckedTime'),
@@ -276,6 +277,12 @@ elements.btnPull.addEventListener('click', () => {
 elements.btnRemap.addEventListener('click', () => {
   executeAction('/api/remap', '현재 PC 경로로 환경 동적 리매핑 중...');
 });
+
+if (elements.btnUnblock) {
+  elements.btnUnblock.addEventListener('click', () => {
+    executeAction('/api/unblock', 'Antigravity IDE 락 해제 및 대화창 🚫 금지표시 일괄 언락 중...', '실행 중인 Antigravity 프로세스를 종료하고 대화 세션에 현재 PC 경로를 매핑하여 🚫 잠금을 해제하시겠습니까?');
+  });
+}
 
 elements.btnClearLogs.addEventListener('click', () => {
   elements.terminalBody.innerHTML = '';
