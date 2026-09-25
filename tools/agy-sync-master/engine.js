@@ -823,42 +823,109 @@ class SyncEngine {
     progressCallback(10, 'Git 커밋 및 GitHub 푸시 중...');
     await this.runCommand('git', ['push', 'origin', this.defaultBranch], fastTrackDir, logger);
 
-    progressCallback(40, 'Google Drive 대상 패키지 준비 중...');
+    progressCallback(35, 'Google Drive 대상 패키지 준비 중...');
     const syncPkg = this.getSyncPackagePath();
     const dstConvos = path.join(syncPkg, 'antigravity-core', 'conversations');
-    const dstBrain = path.join(syncPkg, 'antigravity-core', 'brain');
     const dstState = path.join(syncPkg, 'antigravity-core', 'state');
     const dstConfig = path.join(syncPkg, 'antigravity-core', 'config');
 
     fs.mkdirSync(dstConvos, { recursive: true });
-    fs.mkdirSync(dstBrain, { recursive: true });
     fs.mkdirSync(dstState, { recursive: true });
     fs.mkdirSync(dstConfig, { recursive: true });
 
-    progressCallback(60, 'Antigravity 대화 DB 및 아티팩트 동기화 중...');
-    const agyRoot = this.getAgyRoots()[0]; // primary: antigravity-ide
+    // Smart copy: only copy conversation DBs newer than destination (skips brain - too large)
+    progressCallback(55, 'Antigravity 대화 DB 스마트 동기화 중 (변경분만)...');
+    const agyRoot = this.getAgyRoots()[0];
     if (fs.existsSync(agyRoot)) {
       const srcConvos = path.join(agyRoot, 'conversations');
-      const srcBrain = path.join(agyRoot, 'brain');
       if (fs.existsSync(srcConvos)) {
-        this.copyDirectoryRecursiveSync(srcConvos, dstConvos);
+        let copied = 0, skipped = 0;
+        try {
+          const entries = fs.readdirSync(srcConvos, { withFileTypes: true });
+          for (const entry of entries) {
+            if (!entry.isFile() || !entry.name.endsWith('.db')) continue;
+            const srcFile = path.join(srcConvos, entry.name);
+            const dstFile = path.join(dstConvos, entry.name);
+            try {
+              const srcMtime = fs.statSync(srcFile).mtimeMs;
+              const dstMtime = fs.existsSync(dstFile) ? fs.statSync(dstFile).mtimeMs : 0;
+              if (srcMtime > dstMtime) {
+                fs.copyFileSync(srcFile, dstFile);
+                copied++;
+                logger.info(`  + Synced: ${entry.name}`);
+              } else {
+                skipped++;
+              }
+            } catch (e) {
+              logger.warn(`  ! Error copying ${entry.name}: ${e.message}`);
+            }
+          }
+        } catch (e) {
+          logger.warn(`  ! Error reading conversations dir: ${e.message}`);
+        }
+        logger.info(`  ✓ 대화 DB: ${copied}개 복사, ${skipped}개 최신 상태`);
       }
-      if (fs.existsSync(srcBrain)) {
-        this.copyDirectoryRecursiveSync(srcBrain, dstBrain);
+
+      // Merge conversation_summaries.db additively (never loses entries from other PCs)
+      progressCallback(75, 'conversation_summaries.db 병합 중...');
+      const srcSummaries = path.join(agyRoot, 'conversation_summaries.db');
+      const dstSummaries = path.join(dstState, 'conversation_summaries.db');
+      if (fs.existsSync(srcSummaries)) {
+        try {
+          const { execSync } = require('child_process');
+          const workerPath = path.join(__dirname, 'remap_worker.py');
+          // Inline Python merge logic
+          const mergeCode = [
+            'import sqlite3,shutil,os',
+            `src=r"${srcSummaries.replace(/\\/g, '\\\\')}"`,
+            `dst=r"${dstSummaries.replace(/\\/g, '\\\\')}"`,
+            'os.makedirs(os.path.dirname(dst),exist_ok=True)',
+            'sc=sqlite3.connect(src,timeout=30)',
+            'dc=sqlite3.connect(dst,timeout=30)',
+            'sc.execute("PRAGMA busy_timeout=30000")',
+            'dc.execute("PRAGMA busy_timeout=30000")',
+            'dt=[r[0] for r in dc.execute("SELECT name FROM sqlite_master WHERE type=\'table\'").fetchall()]',
+            'if "conversation_summaries" not in dt:',
+            '  sk=sc.execute("SELECT sql FROM sqlite_master WHERE name=\'conversation_summaries\'").fetchone()',
+            '  if sk: dc.execute(sk[0])',
+            'rows=sc.execute("SELECT * FROM conversation_summaries").fetchall()',
+            'cols=[d[0] for d in sc.execute("SELECT * FROM conversation_summaries LIMIT 0").description]',
+            'ecids=set(r[0] for r in dc.execute("SELECT conversation_id FROM conversation_summaries").fetchall())',
+            'a=u=0',
+            'for row in rows:',
+            '  cid=row[0]',
+            '  if cid not in ecids:',
+            '    dc.execute(f"INSERT INTO conversation_summaries VALUES ({chr(44).join([chr(63)]*len(cols))})",row);a+=1',
+            '  else:',
+            '    ui=cols.index("workspace_uris")',
+            '    dc.execute("UPDATE conversation_summaries SET workspace_uris=?,status=\'CASCADE_RUN_STATUS_IDLE\',not_fully_idle=0,killed=0 WHERE conversation_id=?",(row[ui],cid));u+=1',
+            'dc.commit();sc.close();dc.close()',
+            'print(f"OK:{a}+{u}")'
+          ].join('\n');
+          const out = execSync(`python -c "${mergeCode.replace(/\n/g, '; ')}"`, {
+            stdio: ['pipe', 'pipe', 'pipe'],
+            timeout: 30000,
+            env: { ...process.env, PYTHONIOENCODING: 'utf-8' }
+          }).toString().trim();
+          logger.info(`  ✓ conversation_summaries.db 병합 완료 (${out})`);
+        } catch (pyErr) {
+          // Final fallback: direct copy
+          try { fs.copyFileSync(srcSummaries, dstSummaries); } catch (e2) {}
+          logger.warn('  ! Python 병합 실패, 직접 복사로 대체');
+        }
       }
-      for (const f of ['conversation_summaries.db', 'installation_id']) {
-        const sf = path.join(agyRoot, f);
-        if (fs.existsSync(sf)) fs.copyFileSync(sf, path.join(dstState, f));
-      }
+
+      const instId = path.join(agyRoot, 'installation_id');
+      if (fs.existsSync(instId)) fs.copyFileSync(instId, path.join(dstState, 'installation_id'));
     }
 
+    progressCallback(90, '앱 설정 및 동기화 매니페스트 기록 중...');
     const appStorage = path.join(this.getConfigDirs()[0], 'app_storage.json');
     if (fs.existsSync(appStorage)) {
       fs.copyFileSync(appStorage, path.join(dstConfig, 'app_storage.json'));
     }
 
     // 동기화 매니페스트 기록
-    progressCallback(90, '동기화 메타데이터 기록 중...');
     const manifest = {
       pushedAt: new Date().toISOString(),
       sourceMachine: os.hostname(),
