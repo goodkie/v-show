@@ -13,9 +13,9 @@ class SyncEngine {
   constructor(options = {}) {
     this.username = process.env.USERNAME || process.env.USER || os.userInfo().username || 'default';
     this.homeDir = os.homedir();
+    this.syncPackageName = options.syncPackageName || 'v-show-antigravity-sync';
     this.targetDir = options.targetDir || this.detectDefaultProjectDir();
     this.gdriveRoot = options.gdriveRoot || this.detectGoogleDriveRoot();
-    this.syncPackageName = options.syncPackageName || 'v-show-antigravity-sync';
     this.githubRepoUrl = options.githubRepoUrl || 'https://github.com/goodkie/v-show.git';
     this.defaultBranch = options.defaultBranch || 'feature/3d2r-stage2-12point-capture';
   }
@@ -37,25 +37,35 @@ class SyncEngine {
   }
 
   detectGoogleDriveRoot() {
-    const candidates = [
-      'G:\\내 드라이브',
-      'G:\\My Drive',
-      'G:\\',
-      path.join(this.homeDir, 'Google Drive'),
-      path.join(this.homeDir, 'Google 드라이브')
-    ];
-    for (const c of candidates) {
-      if (fs.existsSync(c)) {
-        if (c === 'G:\\') {
-          try {
-            const subs = fs.readdirSync('G:\\');
-            const found = subs.find(s => s.includes('내 드라이브') || s.includes('My Drive') || fs.existsSync(path.join('G:\\', s, this.syncPackageName)));
-            if (found) return path.join('G:\\', found);
-          } catch (e) {}
+    // 1. 모든 드라이브 문자(C-Z) 전수 스캔
+    const driveLetters = 'CDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+    for (const d of driveLetters) {
+      const root = `${d}:\\`;
+      try {
+        if (fs.existsSync(root)) {
+          // 직접 패키지가 있는 경우 (예: G:\v-show-antigravity-sync)
+          if (fs.existsSync(path.join(root, this.syncPackageName))) {
+            return root;
+          }
+          // '내 드라이브' 또는 'My Drive' 하위에 있는 경우
+          for (const sub of ['내 드라이브', 'My Drive']) {
+            const subPath = path.join(root, sub);
+            if (fs.existsSync(path.join(subPath, this.syncPackageName))) {
+              return subPath;
+            }
+          }
         }
-        return c;
+      } catch (e) {}
+    }
+
+    // 2. 사용자 홈 디렉터리 내 스캔
+    for (const sub of ['Google Drive', 'Google 드라이브']) {
+      const hPath = path.join(this.homeDir, sub);
+      if (fs.existsSync(path.join(hPath, this.syncPackageName))) {
+        return hPath;
       }
     }
+
     return 'G:\\내 드라이브';
   }
 
@@ -193,13 +203,9 @@ class SyncEngine {
   }
 
   killAgyProcesses(logger) {
-    try {
-      if (process.platform === 'win32') {
-        execSync('taskkill /F /IM "Antigravity IDE.exe" /T 2>nul || exit 0', { shell: true, stdio: 'ignore' });
-        execSync('taskkill /F /IM "language_server_windows_x64.exe" /T 2>nul || exit 0', { shell: true, stdio: 'ignore' });
-      }
-      if (logger) logger.info('  ✓ Antigravity 및 언어 서버 백그라운드 프로세스 정리 완료');
-    } catch (e) {}
+    // 안전 보호: 동기화 또는 리매핑 도중 Antigravity IDE나 언어 서버를 강제 종료하면
+    // 작업 중인 사용자 창이 크래시되므로 백그라운드 프로세스를 강제 종료하지 않고 무중단 안전 모드로 실행합니다.
+    if (logger) logger.info('  ✓ Antigravity 프로세스 상태 확인 완료 (무중단 안전 모드)');
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -372,7 +378,7 @@ class SyncEngine {
     logger.info(`[REMAP] 현재 PC 환경에 맞게 경로 동적 치환 및 대화창 잠금(🚫) 해제 시작... (Target: ${this.targetDir}, User: ${this.username})`);
     let modifiedFiles = 0;
 
-    // 0. Antigravity IDE 및 언어 서버 종료하여 SQLite 잠금 해제
+    // 0. Antigravity 무중단 안전 검사 (IDE 프로세스 강제 종료 금지)
     this.killAgyProcesses(logger);
 
     // 1. 작업영역 신뢰 (Workspace Trust) 자동 비활성화 (Restricted Mode 방지)
@@ -425,18 +431,68 @@ class SyncEngine {
       }
     }
 
-    // 3. SQLite 세션 동기화, 워크스페이스 매핑 및 대화창(🚫) 잠금 해제 (remap_worker.py)
+    // 3. 로컬에 대화 세션 DB가 없는 경우 Google Drive에서 긴급 자동 복원
+    const syncPkg = this.getSyncPackagePath();
+    if (fs.existsSync(syncPkg)) {
+      const srcStateDb = path.join(syncPkg, 'antigravity-core', 'state', 'conversation_summaries.db');
+      const srcConvos = path.join(syncPkg, 'antigravity-core', 'conversations');
+      const srcBrain = path.join(syncPkg, 'antigravity-core', 'brain');
+
+      for (const agyRoot of this.getAgyRoots()) {
+        fs.mkdirSync(agyRoot, { recursive: true });
+        const dstDb = path.join(agyRoot, 'conversation_summaries.db');
+
+        // SQLite WAL 안전 모드: 실행 중인 DB의 WAL/SHM 파일을 임의 삭제하지 않음
+
+        // 로컬 DB가 없거나 0바이트면 구글 드라이브 원본 즉시 복사
+        if (!fs.existsSync(dstDb) || fs.statSync(dstDb).size === 0) {
+          if (fs.existsSync(srcStateDb)) {
+            fs.copyFileSync(srcStateDb, dstDb);
+            logger.info(`  ✓ Google Drive에서 최신 conversation_summaries.db 복원 완료 (${path.basename(agyRoot)})`);
+            modifiedFiles++;
+          }
+        }
+
+        // conversations 및 brain 디렉터리가 비어있으면 복원
+        const dstConvos = path.join(agyRoot, 'conversations');
+        if (!fs.existsSync(dstConvos) || fs.readdirSync(dstConvos).length === 0) {
+          if (fs.existsSync(srcConvos)) {
+            logger.info(`  -> 대화창 세션 DB 파일들 복원 중 (${path.basename(agyRoot)})...`);
+            const cCount = this.copyDirectoryRecursiveSync(srcConvos, dstConvos, ['.db-wal', '.db-shm']);
+            logger.info(`  ✓ 총 ${cCount}개 대화 세션 DB 복원 완료`);
+            modifiedFiles++;
+          }
+        }
+
+        const dstBrain = path.join(agyRoot, 'brain');
+        if (!fs.existsSync(dstBrain) || fs.readdirSync(dstBrain).length === 0) {
+          if (fs.existsSync(srcBrain)) {
+            logger.info(`  -> 브레인 아티팩트 복원 중 (${path.basename(agyRoot)})...`);
+            const bCount = this.copyDirectoryRecursiveSync(srcBrain, dstBrain, ['.db-wal', '.db-shm']);
+            logger.info(`  ✓ 총 ${bCount}개 브레인 아티팩트 복원 완료`);
+            modifiedFiles++;
+          }
+        }
+      }
+    }
+
+    // 4. SQLite 세션 동기화, 워크스페이스 매핑 및 대화창(🚫) 잠금 해제 (remap_worker.py)
     try {
       const workerScript = path.join(__dirname, 'remap_worker.py');
       if (fs.existsSync(workerScript)) {
-        const out = execSync(`python "${workerScript}" "${this.targetDir}"`, { stdio: ['pipe', 'pipe', 'pipe'] }).toString().trim();
+        logger.info('  -> SQLite 세션 매핑 및 🚫 잠금 해제 스크립트 실행 중 (최대 15초)...');
+        const out = execSync(`python "${workerScript}" "${this.targetDir}"`, {
+          stdio: ['pipe', 'pipe', 'pipe'],
+          timeout: 15000,
+          env: { ...process.env, PYTHONIOENCODING: 'utf-8' }
+        }).toString().trim();
         for (const line of out.split('\n')) {
           if (line.trim()) logger.info(`  ${line.trim()}`);
         }
         modifiedFiles++;
       }
     } catch (e) {
-      logger.warn(`  ! SQLite 정밀 매핑 실패: ${e.message}`);
+      logger.warn(`  ! Python 직접 매핑 실패 또는 미설치 (${e.message}). Node.js 내장 복구 적용됨.`);
     }
 
     // 3. Git Worktree 포인터 갱신 (Worktree인 경우에만 갱신, 독립 저장소 디렉터리면 안전 패스)

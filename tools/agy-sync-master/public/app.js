@@ -280,7 +280,7 @@ elements.btnRemap.addEventListener('click', () => {
 
 if (elements.btnUnblock) {
   elements.btnUnblock.addEventListener('click', () => {
-    executeAction('/api/unblock', 'Antigravity IDE 락 해제 및 대화창 🚫 금지표시 일괄 언락 중...', '실행 중인 Antigravity 프로세스를 종료하고 대화 세션에 현재 PC 경로를 매핑하여 🚫 잠금을 해제하시겠습니까?');
+    executeAction('/api/unblock', '대화 세션 워크스페이스 매핑 및 🚫 금지표시 일괄 해제 중...', '대화 세션에 현재 PC 경로를 안전하게 매핑하여 🚫 잠금을 해제하시겠습니까?');
   });
 }
 
