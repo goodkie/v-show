@@ -21,15 +21,13 @@ if %ERRORLEVEL% neq 0 (
     )
 )
 
-:: Python 가용성 확인 (선택 사항)
-where python >nul 2>nul
-if %ERRORLEVEL% neq 0 (
-    echo [INFO] Python 환경 확인 중 (경로 재매핑 정밀 작업 시 자동 사용)...
-)
-
-:: 대시보드 서버 및 앱 윈도우 구동
 echo ================================================================
 echo   [AGY-Sync Master] 범용 멀티 PC 통합 동기화 대시보드 시작
 echo ================================================================
 echo.
 "%NODE_CMD%" server.js
+if %ERRORLEVEL% neq 0 (
+    echo.
+    echo [ERROR] 프로그램이 예기치 않게 종료되었습니다.
+    pause
+)
