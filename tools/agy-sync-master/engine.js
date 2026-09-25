@@ -364,27 +364,37 @@ print(f'UPDATED:{updated}')
       }
     }
 
-    // 3. Git Worktree 포인터 갱신
-    const localVshow = path.join(this.targetDir, 'v-show');
-    const localFastTrack = path.join(this.targetDir, 'v-show-stage2-fast-track');
+    // 3. Git Worktree 포인터 갱신 (Worktree인 경우에만 갱신, 독립 저장소 디렉터리면 안전 패스)
+    try {
+      const localVshow = path.join(this.targetDir, 'v-show');
+      const localFastTrack = path.join(this.targetDir, 'v-show-stage2-fast-track');
 
-    if (fs.existsSync(localVshow) && fs.existsSync(localFastTrack)) {
-      const normVshow = localVshow.replace(/\\/g, '/');
-      const normFastTrack = localFastTrack.replace(/\\/g, '/');
+      if (fs.existsSync(localVshow) && fs.existsSync(localFastTrack)) {
+        const normVshow = localVshow.replace(/\\/g, '/');
+        const normFastTrack = localFastTrack.replace(/\\/g, '/');
 
-      // fast-track/.git
-      const wtGitFile = path.join(localFastTrack, '.git');
-      fs.writeFileSync(wtGitFile, `gitdir: ${normVshow}/.git/worktrees/v-show-stage2-fast-track\n`, 'utf8');
+        const wtGit = path.join(localFastTrack, '.git');
+        if (fs.existsSync(wtGit)) {
+          const isDir = fs.statSync(wtGit).isDirectory();
+          if (!isDir) {
+            // 워크트리 파일 포인터인 경우에만 파일 쓰기
+            fs.writeFileSync(wtGit, `gitdir: ${normVshow}/.git/worktrees/v-show-stage2-fast-track\n`, 'utf8');
 
-      // v-show/.git/worktrees/v-show-stage2-fast-track/gitdir
-      const mainWtDir = path.join(localVshow, '.git', 'worktrees', 'v-show-stage2-fast-track');
-      if (fs.existsSync(mainWtDir)) {
-        fs.writeFileSync(path.join(mainWtDir, 'gitdir'), `${normFastTrack}/.git\n`, 'utf8');
+            const mainWtDir = path.join(localVshow, '.git', 'worktrees', 'v-show-stage2-fast-track');
+            if (fs.existsSync(mainWtDir)) {
+              fs.writeFileSync(path.join(mainWtDir, 'gitdir'), `${normFastTrack}/.git\n`, 'utf8');
+            }
+
+            await this.runCommand('git', ['worktree', 'repair'], localVshow, logger);
+            logger.info('  ✓ Git Worktree 포인터 양방향 재연결 완료');
+            modifiedFiles++;
+          } else {
+            logger.info('  ✓ 독립 Git 저장소 디렉터리 확인됨 (포인터 갱신 불필요, 정상)');
+          }
+        }
       }
-
-      await this.runCommand('git', ['worktree', 'repair'], localVshow, logger);
-      logger.info('  ✓ Git Worktree 포인터 양방향 재연결 완료');
-      modifiedFiles++;
+    } catch (e) {
+      logger.warn(`  ! Git 포인터 연결 점검: ${e.message}`);
     }
 
     logger.info(`[REMAP] 총 ${modifiedFiles}개 구성요소 환경 리매핑 완료.`);
