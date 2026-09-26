@@ -8,10 +8,21 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
-const SyncEngine = require('./engine');
+let SyncEngine = require('./engine');
 
 const PORT = process.env.PORT || 3900;
-const engine = new SyncEngine();
+let engine = new SyncEngine();
+
+function getEngine() {
+  try {
+    delete require.cache[require.resolve('./engine')];
+    SyncEngine = require('./engine');
+    engine = new SyncEngine();
+    return engine;
+  } catch (e) {
+    return engine;
+  }
+}
 
 // SSE Clients for real-time progress and logs
 let sseClients = [];
@@ -315,7 +326,7 @@ const server = http.createServer(async (req, res) => {
   if (pathname === '/api/diagnose') {
     try {
       const isDeep = parsedUrl.searchParams.get('deep') === '1';
-      const report = await engine.diagnose(logger, isDeep);
+      const report = await getEngine().diagnose(logger, isDeep);
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(report));
     } catch (e) {
@@ -330,7 +341,7 @@ const server = http.createServer(async (req, res) => {
     autoSync.isBusy = true;
     try {
       sendProgress(20, '경로 동적 리매핑 시작...');
-      const out = await engine.remapPaths(logger);
+      const out = await getEngine().remapPaths(logger);
       sendProgress(100, '경로 동적 리매핑 완료');
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(out));
@@ -348,7 +359,7 @@ const server = http.createServer(async (req, res) => {
   if (pathname === '/api/setup' && req.method === 'POST') {
     autoSync.isBusy = true;
     try {
-      const out = await engine.setupNewPc(sendProgress, logger);
+      const out = await getEngine().setupNewPc(sendProgress, logger);
       // 신규 PC 설치 완료 후 현재 파일 상태를 기준점으로 동기화하여 직후 불필요한 push 방지
       autoSync.lastLocalConversationMtime = autoSync.getLocalConversationMtime();
       autoSync.lastLocalGitCommit = autoSync.getLocalGitCommit();
@@ -371,7 +382,7 @@ const server = http.createServer(async (req, res) => {
     autoSync.isBusy = true;
     try {
       sendProgress(30, '손상 팩파일 격리 및 Git Refetch 중...');
-      const out = await engine.autoRecover(logger);
+      const out = await getEngine().autoRecover(logger);
       sendProgress(100, 'Git 데이터베이스 복구 완료');
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(out));
@@ -390,7 +401,7 @@ const server = http.createServer(async (req, res) => {
   if (pathname === '/api/push' && req.method === 'POST') {
     autoSync.isBusy = true;
     try {
-      const out = await engine.pushSync(sendProgress, logger);
+      const out = await getEngine().pushSync(sendProgress, logger);
       autoSync.lastLocalConversationMtime = autoSync.getLocalConversationMtime();
       autoSync.lastLocalGitCommit = autoSync.getLocalGitCommit();
       autoSync.lastKnownRemotePush = autoSync.getRemotePushTimestamp();
@@ -416,7 +427,7 @@ const server = http.createServer(async (req, res) => {
     try { engineMtimeBefore = fs.statSync(enginePath).mtimeMs; } catch (e) {}
 
     try {
-      const out = await engine.pullSync(sendProgress, logger);
+      const out = await getEngine().pullSync(sendProgress, logger);
       autoSync.lastLocalConversationMtime = autoSync.getLocalConversationMtime();
       autoSync.lastLocalGitCommit = autoSync.getLocalGitCommit();
       autoSync.lastKnownRemotePush = autoSync.getRemotePushTimestamp();
@@ -495,7 +506,7 @@ $Shortcut.Save()
   if (pathname === '/api/install-opencv' && req.method === 'POST') {
     autoSync.isBusy = true;
     try {
-      const out = await engine.installOpenCv(sendProgress, logger);
+      const out = await getEngine().installOpenCv(sendProgress, logger);
       res.writeHead(out.success ? 200 : 500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(out));
     } catch (e) {
