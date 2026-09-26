@@ -578,6 +578,44 @@ class SyncEngine {
       return { success: true, version: pyInfo.cv2Ver, path: pyInfo.cmd };
     }
 
+    // 2b. pip 가용성 검사 및 자동 부트스트랩 (ensurepip / get-pip.py)
+    let hasPip = false;
+    try {
+      const pipCheckCmd = pyInfo.cmd.includes(' ') ? `"${pyInfo.cmd}" -m pip --version` : `${pyInfo.cmd} -m pip --version`;
+      execSync(pipCheckCmd, { stdio: 'pipe', timeout: 5000 });
+      hasPip = true;
+    } catch (e) {}
+
+    if (!hasPip) {
+      logger.info('  -> Python 내장 패키지 관리자(pip) 부트스트랩 중 (python -m ensurepip --default-pip)...');
+      progressCallback(65, 'Python pip 패키지 관리자 활성화 중...');
+      try {
+        await this.runCommand(pyInfo.cmd, ['-m', 'ensurepip', '--default-pip'], null, logger, null, 60000);
+      } catch (e) {}
+
+      // 재확인
+      try {
+        const pipCheckCmd = pyInfo.cmd.includes(' ') ? `"${pyInfo.cmd}" -m pip --version` : `${pyInfo.cmd} -m pip --version`;
+        execSync(pipCheckCmd, { stdio: 'pipe', timeout: 5000 });
+        hasPip = true;
+        logger.info('  ✓ pip 패키지 관리자 활성화 성공');
+      } catch (e) {}
+
+      // ensurepip로도 안 되면 get-pip.py 다운로드 후 실행
+      if (!hasPip) {
+        logger.info('  -> ensurepip 부재: bootstrap.pypa.io에서 get-pip.py 다운로드 및 설치 중...');
+        progressCallback(70, 'get-pip.py 다운로드 및 pip 설치 중...');
+        const getPipPath = path.join(os.tmpdir(), 'get-pip.py');
+        try {
+          await this.downloadFile('https://bootstrap.pypa.io/get-pip.py', getPipPath);
+          await this.runCommand(pyInfo.cmd, [getPipPath, '--no-warn-script-location'], null, logger, null, 120000);
+          logger.info('  ✓ get-pip.py를 통한 pip 부트스트랩 완료');
+        } catch (gpErr) {
+          logger.warn(`  ! get-pip.py 실행 경고: ${gpErr.message}`);
+        }
+      }
+    }
+
     // 3. pip를 통해 opencv-python-headless 설치
     progressCallback(75, 'pip를 통해 opencv-python-headless 모듈 고속 설치 중 (약 30초)...');
     logger.info(`  -> ${pyInfo.cmd} 환경에 opencv-python-headless 패키지 설치 중...`);
