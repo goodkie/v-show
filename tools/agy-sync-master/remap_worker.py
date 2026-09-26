@@ -5,6 +5,7 @@ import json
 import sqlite3
 import time
 import re
+import base64
 
 try:
     sys.stdout.reconfigure(encoding='utf-8')
@@ -415,6 +416,48 @@ def remap_ide_ui_state(target_dir):
                             new_b64 = base64.b64encode(new_raw).decode('utf-8')
                             cur.execute("UPDATE ItemTable SET value = ? WHERE key = ?", (new_b64, key))
                     except Exception: pass
+
+                # 1b. Inject all conversations from conversation_summaries.db into trajectorySummaries
+                try:
+                    all_raw_summaries = {}
+                    for r_root in [os.path.join(home, ".gemini", "antigravity-ide"), os.path.join(home, ".gemini", "antigravity")]:
+                        s_db = os.path.join(r_root, "conversation_summaries.db")
+                        if os.path.exists(s_db):
+                            try:
+                                s_conn = sqlite3.connect(s_db, timeout=10.0)
+                                s_cur = s_conn.cursor()
+                                for cid, r_sum in s_cur.execute("SELECT conversation_id, raw_summary FROM conversation_summaries WHERE raw_summary IS NOT NULL"):
+                                    if r_sum and cid not in all_raw_summaries:
+                                        all_raw_summaries[cid] = r_sum
+                                s_conn.close()
+                            except Exception: pass
+
+                    if all_raw_summaries:
+                        def enc_varint(v):
+                            res = bytearray()
+                            while True:
+                                b = v & 0x7f; v >>= 7
+                                if v: res.append(b | 0x80)
+                                else: res.append(b); break
+                            return bytes(res)
+
+                        ts_out = bytearray()
+                        for c_id, raw_bytes in all_raw_summaries.items():
+                            b64_raw = base64.b64encode(raw_bytes)
+                            f1 = bytes([10]) + enc_varint(len(b64_raw)) + b64_raw
+                            f2 = bytes([18]) + enc_varint(len(f1)) + f1
+                            cid_bytes = c_id.encode('utf-8')
+                            f_cid = bytes([10]) + enc_varint(len(cid_bytes)) + cid_bytes
+                            entry = f_cid + f2
+                            ts_out.extend(bytes([10]) + enc_varint(len(entry)) + entry)
+
+                        ts_b64 = base64.b64encode(bytes(ts_out)).decode('utf-8')
+                        cur.execute("INSERT OR REPLACE INTO ItemTable (key, value) VALUES (?, ?)",
+                                    ('antigravityUnifiedStateSync.trajectorySummaries', ts_b64))
+                        print(f"  ✓ Injected {len(all_raw_summaries)} past conversations into trajectorySummaries ({os.path.basename(c_root)})")
+                except Exception as e_ts:
+                    print(f"  ! trajectorySummaries injection note: {e_ts}")
+
                 conn.commit()
                 conn.close()
                 print(f"  ✓ Remapped UI state.vscdb in {os.path.basename(c_root)}")
