@@ -27,6 +27,10 @@ class MobileRuntimeInspector {
 
   start() {
     if (this.isStarted) return;
+    if (typeof window !== 'undefined' && (!window.__IS_INTERNAL_QA__ || !window.__MOBILE_RI_AUTHORIZED__)) {
+      console.warn('[MobileRI] MobileRuntimeInspector.start() blocked: unauthorized session.');
+      return;
+    }
     this.isStarted = true;
 
     this.adapter.attachSensors();
@@ -192,22 +196,73 @@ class MobileRuntimeInspector {
 if (typeof window !== 'undefined') {
   window.MobileRuntimeInspector = MobileRuntimeInspector;
 
+  function clearAuthorizationState() {
+    window.__IS_INTERNAL_QA__ = false;
+    window.__MOBILE_RI_AUTHORIZED__ = false;
+    window.MOBILE_RI_AUTHORIZED = false;
+    if (window.__MOBILE_RI_INSTANCE__) {
+      try {
+        if (window.__MOBILE_RI_INSTANCE__.ui && typeof window.__MOBILE_RI_INSTANCE__.ui.unmount === 'function') {
+          window.__MOBILE_RI_INSTANCE__.ui.unmount();
+        }
+      } catch (e) {}
+      window.__MOBILE_RI_INSTANCE__ = null;
+    }
+    const roots = document.querySelectorAll('#mobileRiContainer, #btnMobileRiReport, #mobileRiSheet, #mobileRiBottomSheet');
+    roots.forEach(el => el.remove());
+
+    try {
+      if (typeof window !== 'undefined' && window.sessionStorage) {
+        window.sessionStorage.removeItem('mobile_ri_qa_token');
+        window.sessionStorage.removeItem('mobile_ri_project_id');
+      }
+    } catch (e) {}
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.removeItem('mobile_ri_qa_token');
+        window.localStorage.removeItem('mobile_ri_project_id');
+      }
+    } catch (e) {}
+  }
+
   async function checkServerQaAuthorization() {
     try {
       const params = new URLSearchParams(window.location.search);
       const rawQrToken = params.get('token');
       const projectId = params.get('projectId') || 'prj-free-b0c6f3ea';
 
-      let qaSessionToken = window.sessionStorage ? window.sessionStorage.getItem('mobile_ri_qa_token') : null;
+      // 1. Immediately remove the token query parameter from address bar on all paths (success, invalid, replay, error)
+      if (rawQrToken !== null) {
+        try {
+          const cleanUrl = new URL(window.location.href);
+          cleanUrl.searchParams.delete('token');
+          window.history.replaceState({}, '', cleanUrl.toString());
+        } catch (e) {}
+      }
 
-      // 1. Single-use QR token redemption exchange
-      if (rawQrToken && rawQrToken.startsWith('tok-cap-')) {
+      let qaSessionToken = (typeof window !== 'undefined' && window.sessionStorage) ? window.sessionStorage.getItem('mobile_ri_qa_token') : null;
+
+      // 2. Single-use QR token redemption exchange (if token was present)
+      if (rawQrToken !== null) {
+        if (!rawQrToken || !rawQrToken.startsWith('tok-cap-')) {
+          console.warn('[MobileRI] Malformed or invalid QA token format rejected.');
+          clearAuthorizationState();
+          return;
+        }
+
         try {
           const redeemRes = await fetch('/api/internal-qa/auth/redeem-session', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ token: rawQrToken, projectId })
           });
+
+          if (!redeemRes.ok) {
+            console.warn('[MobileRI] Server rejected QA token redemption (HTTP ' + redeemRes.status + ')');
+            clearAuthorizationState();
+            return;
+          }
+
           const redeemData = await redeemRes.json();
           if (redeemData.ok && redeemData.authorized && redeemData.qaSessionToken) {
             qaSessionToken = redeemData.qaSessionToken;
@@ -215,50 +270,102 @@ if (typeof window !== 'undefined') {
               window.sessionStorage.setItem('mobile_ri_qa_token', qaSessionToken);
               window.sessionStorage.setItem('mobile_ri_project_id', projectId);
             }
-            // Strip single-use token from address bar to prevent reuse/leakage
-            const cleanUrl = new URL(window.location.href);
-            cleanUrl.searchParams.delete('token');
-            window.history.replaceState({}, '', cleanUrl.toString());
             console.log('[MobileRI] Single-use QR token redeemed successfully. QA browser session established.');
           } else {
-            console.warn('[MobileRI] Server rejected QA token redemption:', redeemData.reason || redeemData.error);
-            if (window.sessionStorage) window.sessionStorage.removeItem('mobile_ri_qa_token');
+            console.warn('[MobileRI] Server rejected QA token redemption payload:', redeemData.reason || redeemData.error);
+            clearAuthorizationState();
             return;
           }
         } catch (err) {
           console.warn('[MobileRI] Token redemption network error:', err);
+          clearAuthorizationState();
           return;
         }
       }
 
-      // 2. Server-Authoritative capabilities check
+      // 3. Server-Authoritative capabilities check (sessionStorage only)
       if (qaSessionToken) {
         try {
           const capRes = await fetch('/api/internal-qa/capabilities', {
             headers: { 'x-qa-session': qaSessionToken }
           });
+
+          if (!capRes.ok) {
+            console.warn('[MobileRI] Capabilities verification endpoint HTTP error ' + capRes.status);
+            clearAuthorizationState();
+            return;
+          }
+
           const capData = await capRes.json();
-          if (capData.ok && capData.authorized && capData.mobileRuntimeInspector) {
+          const targetProjectId = (window.sessionStorage && window.sessionStorage.getItem('mobile_ri_project_id')) || projectId;
+          const projectMatches = Boolean(!capData.projectId || capData.projectId === targetProjectId);
+
+          if (
+            capData.ok === true &&
+            capData.authorized === true &&
+            capData.mobileRuntimeInspector === true &&
+            capData.role === 'OWNER_QA' &&
+            projectMatches
+          ) {
+            window.__IS_INTERNAL_QA__ = true;
+            window.__MOBILE_RI_AUTHORIZED__ = true;
+            window.MOBILE_RI_AUTHORIZED = true;
+
             if (!window.__MOBILE_RI_INSTANCE__) {
               console.log('[MobileRI] Server-side QA authorization confirmed. Mounting Mobile Runtime Inspector...');
-              window.__IS_INTERNAL_QA__ = true;
               window.__MOBILE_RI_INSTANCE__ = new MobileRuntimeInspector({ qaSessionToken });
               window.__MOBILE_RI_INSTANCE__.start();
+            } else {
+              window.__MOBILE_RI_INSTANCE__.ui.mount();
+            }
+
+            // Expose canonical Section 22 / Addendum L telemetry accessors on window
+            window.MOBILE_RI_ROOT_COUNT = () => document.querySelectorAll('#mobileRiContainer').length;
+            window.MOBILE_RI_VISIBLE = () => Boolean(document.getElementById('mobileRiContainer') && document.getElementById('btnMobileRiReport'));
+            window.MOBILE_RI_SESSION_ID = () => (window.__MOBILE_RI_INSTANCE__ && window.__MOBILE_RI_INSTANCE__.adapter && window.__MOBILE_RI_INSTANCE__.adapter.sessionId) || null;
+
+            // Auto-launch wizard if intended
+            const searchParams = new URLSearchParams(window.location.search);
+            const hasWizardIntent = searchParams.get('mode') === 'booth-tour-wizard' || searchParams.get('step') !== null || searchParams.get('openWizard') === '1' || window.__IS_INTERNAL_QA__;
+            if (hasWizardIntent) {
+              const stepVal = parseInt(searchParams.get('step') || '1', 10);
+              const targetStep = (!isNaN(stepVal) && stepVal > 0) ? stepVal : 1;
+              const launchWizard = () => {
+                if (typeof window.openMultiPointTourWizard === 'function' && window.setupWizard) {
+                  window.openMultiPointTourWizard(targetStep);
+                  if (window.setupWizard) {
+                    window.setupWizard.currentStep = targetStep;
+                    window.setupWizard.renderStep();
+                  }
+                  return true;
+                }
+                return false;
+              };
+              if (!launchWizard()) {
+                const retryTimer = setInterval(() => {
+                  if (launchWizard()) clearInterval(retryTimer);
+                }, 100);
+                setTimeout(() => clearInterval(retryTimer), 4000);
+              }
             }
             return;
           } else {
             console.warn('[MobileRI] Server rejected QA session capability check.');
-            if (window.sessionStorage) window.sessionStorage.removeItem('mobile_ri_qa_token');
+            clearAuthorizationState();
+            return;
           }
         } catch (err) {
           console.warn('[MobileRI] Capabilities verification error:', err);
+          clearAuthorizationState();
+          return;
         }
       }
 
-      // 3. Normal / unauthenticated session (including bare ?qa=1 without valid credentials)
-      // Strictly do NOT activate or mount Mobile RI. PUBLIC_QA_QUERY_FLAG_GRANTS_ACCESS = false.
+      // 4. Default unauthorized path (including bare ?qa=1, ?debug=1, ?admin=1, ?mode=booth-tour-wizard)
+      clearAuthorizationState();
     } catch (err) {
-      console.warn('[MobileRI] QA authorization check note:', err);
+      console.warn('[MobileRI] QA authorization check exception:', err);
+      clearAuthorizationState();
     }
   }
 

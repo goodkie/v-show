@@ -1,0 +1,57 @@
+{
+  "schemaVersion": "2.0.0",
+  "document": "WILO_BENCHMARK_PROVENANCE_CLASSIFICATION",
+  "evaluatedAt": "2026-09-23T04:15:00Z",
+  "chronologyNote": "Evaluated during Round 24 audit. Corrects previous forward-dated manual timestamp error.",
+  "classification": {
+    "category": "REPOSITORY_INTERNAL_DEMO_FIXTURE",
+    "technicalNature": "SYNTHETIC_THREEJS_STUDIO_GAUSSIAN_RECONSTRUCTION",
+    "targetTenant": "org-wilo-golden-demo",
+    "containsCustomerPii": false,
+    "containsProductionSecrets": false,
+    "containsCustomerDatabaseRecords": false,
+    "containsCustomerProprietaryData": false
+  },
+  "benchmarkArtifacts": {
+    "ply": {
+      "filename": "REAL_WILO_GAUSSIAN_FINAL.ply",
+      "sha256": "b40f8035ddc51817538f99afffa7eeca6836e8fcaa243a93bd214166b877cd4d",
+      "sizeBytes": 130682925,
+      "vertexCount": 526941,
+      "format": "BINARY_LITTLE_ENDIAN_PLY_248_BYTE_STRIDE"
+    },
+    "spz": {
+      "filename": "REAL_WILO_GAUSSIAN_FINAL.spz",
+      "sha256": "fc80e5192ce1c79196e51414e0739524c9e191092c1719829ab414d0e73a32ee",
+      "sizeBytes": 111539801,
+      "format": "COMPRESSED_GAUSSIAN_RADIANCE_FIELD"
+    }
+  },
+  "nonCircularForensicLineage": {
+    "primaryAuditDocument": "virtual-tradeshow-commercial-v1/production_artifacts/r6/02_MODEL_PROVENANCE.md",
+    "secondaryAuditDocument": "virtual-tradeshow-commercial-v1/production_artifacts/PHASE_10_7N_G_REAL_WILO_RECONSTRUCTION.md",
+    "rejectedSyntheticModelArchive": "virtual-tradeshow-commercial-v1/production_artifacts/r6/rejected_synthetic_model/",
+    "forensicOriginTrace": {
+      "step1_virtualSceneSource": "phase9_5-synthetic-pilot/booth/scene/studio.js (Three.js procedural geometry: smart factory/automation booth)",
+      "step2_brandOverlayInjection": "wilo-real-recon-02/scene/build_studio.py (injected 'WILO ISH FRANKFURT 2026', 'Pioneering for You' text textures onto 3D mesh)",
+      "step3_syntheticRenders": "Rendered 60 synthetic camera trajectory images (wilo_60_001.jpg ~ wilo_60_060.jpg)",
+      "step4_colmapSfM": "COLMAP SfM executed on 60 synthetic images -> 60/60 registered (54,800 sparse points)",
+      "step5_splatfactoTraining": "Splatfacto trained 526,941 Gaussians -> exported PLY (130,682,925 B) -> compressed SPZ (111,539,801 B)",
+      "step6_forensicRejection": "Phase 10.7N-R6 forensic audit rejected artifact as authentic physical capture photogrammetry (MODEL_PROVENANCE=IDENTIFIED_SYNTHETIC_STUDIO_SOURCE), archived under rejected_synthetic_model, and retained exclusively as a rendering/camera coordinate benchmark"
+    }
+  },
+  "securityAndGovernanceEvaluation": {
+    "LOCAL_STATIC_ASSET_ISOLATION": "VERIFIED_BY_TEST",
+    "CURRENT_RUNTIME_STATIC_ISOLATION": "NOT_VERIFIED",
+    "runtimeDetails": "Local filesystem and Git-tracked tree test confirms zero 3D models or LFS pointers across all 4 client/assets and deploy roots (LOCAL_STATIC_ASSET_ISOLATION=VERIFIED_BY_TEST). Remote served Railway runtime static isolation is classified NOT_VERIFIED pending sanitized served-runtime mapping receipt.",
+    "HISTORICAL_PUBLIC_ARTIFACT_EXPOSURE": "REQUIRES_ASSESSMENT",
+    "historicalDetails": "Historical commit bdd23c9... on PR #5 contains Git-LFS pointer under client/assets/demo/wilo/models/ with same SHA (fc80e5...). Git/LFS history retains historical object pointers. Destructive Git history rewriting is strictly prohibited without explicit repository owner authorization.",
+    "COMMERCIAL_REDISTRIBUTION_RIGHTS": "REQUIRES_OWNER_ATTESTATION",
+    "rightsDetails": "While 3D geometry is procedurally synthetic (studio.js), text/branding overlays reference demonstration booth materials ('WILO ISH FRANKFURT 2026'). Commercial publication and redistribution rights cannot be self-asserted and strictly require independent repository owner attestation."
+  },
+  "operatingGates": {
+    "OWNER_REVIEW_GATE": "HOLD",
+    "ENGINEERING_HOLD": "ACTIVE",
+    "LIVE_QA_REVOCATION": "BLOCKED_PENDING_INDEPENDENT_CONTROL_PLANE"
+  }
+}

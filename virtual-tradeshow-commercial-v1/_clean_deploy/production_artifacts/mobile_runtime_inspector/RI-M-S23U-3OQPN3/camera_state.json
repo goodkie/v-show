@@ -1,0 +1,19 @@
+{
+  "hasMediaDevices": true,
+  "hasGetUserMedia": true,
+  "isSecureContext": true,
+  "cameraPermissionState": "granted",
+  "getUserMediaCalled": true,
+  "getUserMediaResolved": true,
+  "cameraStreamActive": true,
+  "videoTrackState": "LIVE",
+  "videoWidth": 1080,
+  "videoHeight": 1920,
+  "videoReadyState": 4,
+  "facingMode": "environment",
+  "cameraModule": "Samsung Galaxy S23 Ultra Camera",
+  "videoCurrentTimeAdvances": false,
+  "videoFramePresentationAdvances": true,
+  "lastErrorCode": null,
+  "lastErrorMessage": null
+}

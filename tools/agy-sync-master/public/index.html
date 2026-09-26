@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AGY-Sync Master | 범용 멀티 PC 동기화 & 복구 대시보드</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-container">
+    <!-- TOP NAVIGATION & HEADER -->
+    <header class="header">
+      <div class="logo-area">
+        <div class="logo-icon">⚡</div>
+        <div>
+          <h1 class="logo-title">AGY-Sync Master</h1>
+          <p class="logo-subtitle">Universal Multi-PC Synchronization & Auto-Recovery Engine</p>
+        </div>
+      </div>
+      <div class="header-badges">
+        <div class="badge" id="hostBadge">
+          <span class="dot online"></span>
+          <span id="hostName">DESKTOP-...</span>
+        </div>
+        <div class="badge" id="userBadge">
+          <span class="icon">👤</span>
+          <span id="userName">User</span>
+        </div>
+        <div class="health-score-container">
+          <div class="score-circle" id="scoreCircle">
+            <span id="scoreVal">--</span>
+          </div>
+          <span class="score-label">무결성 지수</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- SYSTEM META BAR -->
+    <div class="meta-strip">
+      <div class="meta-item">
+        <span class="meta-lbl">프로젝트 기준 경로:</span>
+        <span class="meta-val" id="metaTargetDir">C:\Users\...\ai</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-lbl">활성 작업 폴더:</span>
+        <span class="meta-val" id="metaFastTrackDir" style="color:var(--accent-emerald);">.../v-show-stage2-fast-track</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-lbl">클라우드 패키지:</span>
+        <span class="meta-val" id="metaGdrive">G:\내 드라이브\v-show-antigravity-sync</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-lbl">동기화 브랜치:</span>
+        <span class="meta-val" id="metaBranch">feature/3d2r-stage2-12point-capture</span>
+      </div>
+      <div class="meta-item meta-buttons">
+        <button class="btn-path-config" id="btnOpenPathModal" title="원하는 폴더 지정 및 다른 프로젝트 전환">⚙️ 경로/프로젝트 변경</button>
+        <button class="btn-refresh" id="btnRefreshStatus" title="상태 새로고침">🔄 새로고침</button>
+        <button class="btn-shortcut" id="btnShortcut" title="Windows 바탕화면에 통합 앱 바로가기 생성">📌 바탕화면 바로가기</button>
+      </div>
+    </div>
+
+    <!-- REAL-TIME AUTO-SYNC DAEMON STRIP -->
+    <div class="auto-sync-strip">
+      <div class="auto-sync-info">
+        <div class="auto-sync-icon-box">⚡</div>
+        <div>
+          <div class="auto-sync-title">
+            <span>실시간 자동 동기화 데몬</span>
+            <span class="auto-sync-badge badge-off" id="autoSyncBadge">비활성화</span>
+          </div>
+          <div class="auto-sync-desc" id="autoSyncDesc">
+            다른 PC의 작업 업로드를 실시간 감지하여 자동 Pull하고, 내 PC의 대화/코드를 자동 Push합니다.
+          </div>
+        </div>
+      </div>
+      <div class="auto-sync-controls">
+        <div class="interval-selector">
+          <label for="autoSyncInterval">감지 주기:</label>
+          <select id="autoSyncInterval">
+            <option value="15">15초 (초고속)</option>
+            <option value="30" selected>30초 (표준 권장)</option>
+            <option value="60">1분</option>
+            <option value="300">5분</option>
+          </select>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="toggleAutoSync">
+          <span class="slider round"></span>
+        </label>
+      </div>
+    </div>
+
+    <!-- REAL-TIME PROGRESS BAR -->
+    <div class="progress-section" id="progressSection">
+      <div class="progress-header">
+        <span class="progress-status" id="progressStatus">대기 중...</span>
+        <span class="progress-percent" id="progressPercent">0%</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="progressFill" style="width: 0%;"></div>
+      </div>
+    </div>
+
+    <!-- PRIMARY ACTION BUTTONS -->
+    <section class="actions-grid">
+      <div class="action-card card-setup" id="cardSetup">
+        <div class="card-icon">🚀</div>
+        <div class="card-content">
+          <h3>신규 PC 원클릭 자동 설치</h3>
+          <p>GitHub 무결점 클론 + Google Drive 세션 복원 + 현재 PC 경로 100% 자동 리매핑</p>
+        </div>
+        <button class="btn-action btn-setup" id="btnSetup">설치 시작</button>
+      </div>
+
+      <div class="action-card card-diagnose" id="cardDiagnose">
+        <div class="card-icon">🩺</div>
+        <div class="card-content">
+          <h3>시스템 정밀 진단</h3>
+          <p>Git 팩파일 0바이트 손상, 타 PC 경로 오염, Python OpenCV 및 의존성 전수 검사</p>
+        </div>
+        <button class="btn-action btn-diagnose" id="btnDiagnose">진단 실행</button>
+      </div>
+
+      <div class="action-card card-recover" id="cardRecover">
+        <div class="card-icon">🛠️</div>
+        <div class="card-content">
+          <h3>저장소 자동 복구 (Refetch)</h3>
+          <p>손상된 팩파일 자동 격리 + GitHub 무결 팩 강제 재수신 + Git Worktree 복원</p>
+        </div>
+        <button class="btn-action btn-recover" id="btnRecover">원클릭 복구</button>
+      </div>
+
+      <div class="action-card card-push" id="cardPush">
+        <div class="card-icon">☁️⬆️</div>
+        <div class="card-content">
+          <h3>작업 완료 동기화 (PUSH)</h3>
+          <p>현재 작업 커밋을 GitHub로 푸시하고 최신 Antigravity 세션을 클라우드로 안전 백업</p>
+        </div>
+        <button class="btn-action btn-push" id="btnPush">클라우드 Push</button>
+      </div>
+
+      <div class="action-card card-pull" id="cardPull">
+        <div class="card-icon">☁️⬇️</div>
+        <div class="card-content">
+          <h3>최신 작업 가져오기 (PULL)</h3>
+          <p>다른 PC의 최신 코드 및 Antigravity 대화창 세션을 내려받고 현재 PC 경로로 즉시 리매핑</p>
+        </div>
+        <button class="btn-action btn-pull" id="btnPull">최신 Pull</button>
+      </div>
+
+      <div class="action-card card-remap" id="cardRemap">
+        <div class="card-icon">🔄</div>
+        <div class="card-content">
+          <h3>경로 동적 리매핑 단독 실행</h3>
+          <p>타 PC의 옛날 사용자명(oPus, server1)과 드라이브(E:)를 현재 PC로 일괄 치환</p>
+        </div>
+        <button class="btn-action btn-remap" id="btnRemap">경로 치환</button>
+      </div>
+
+      <div class="action-card card-unblock" id="cardUnblock" style="border-color: rgba(244, 63, 94, 0.4);">
+        <div class="card-icon" style="background: linear-gradient(135deg, #f43f5e, #f59e0b);">🔓</div>
+        <div class="card-content">
+          <h3>대화 히스토리 복원 & 🚫 금지표시 해결</h3>
+          <p>Google Drive 대화 세션(24개) 복원 + SQLite 락 해제 + 현재 PC 워크스페이스 전수 매핑</p>
+        </div>
+        <button class="btn-action btn-unblock" id="btnUnblock" style="background: linear-gradient(135deg, #f43f5e, #e11d48); color: white;">대화 복원/해제</button>
+      </div>
+
+      <div class="action-card card-opencv" id="cardOpenCv" style="border-color: rgba(59, 130, 246, 0.4);">
+        <div class="card-icon" style="background: linear-gradient(135deg, #3b82f6, #06b6d4);">🐍</div>
+        <div class="card-content">
+          <h3>Python & OpenCV(cv2) 자동 설치</h3>
+          <p>파노라마 스티칭용 Python 환경 탐지 및 opencv-python 모듈 1클릭 자동 구축</p>
+        </div>
+        <button class="btn-action btn-opencv" id="btnOpenCv" style="background: linear-gradient(135deg, #2563eb, #0891b2); color: white;">OpenCV 설치</button>
+      </div>
+
+      <div class="action-card card-uninstall" id="cardUninstall" style="border-color: rgba(239, 68, 68, 0.4);">
+        <div class="card-icon" style="background: linear-gradient(135deg, #ef4444, #991b1b);">🗑️</div>
+        <div class="card-content">
+          <h3>설치 제거 및 클린 초기화 (Uninstall)</h3>
+          <p>로컬 워크트리 및 캐시를 안전하게 삭제하고 새 경로에서 완전히 깨끗하게 다시 세팅</p>
+        </div>
+        <button class="btn-action btn-uninstall" id="btnUninstall" style="background: linear-gradient(135deg, #ef4444, #b91c1c); color: white;">설치 제거</button>
+      </div>
+    </section>
+
+    <!-- DIAGNOSTIC RESULTS CARDS -->
+    <section class="diagnostic-section">
+      <div class="section-title-bar">
+        <h2>📊 진단 항목 체크리스트</h2>
+        <span class="last-checked" id="lastCheckedTime">최근 진단: 기록 없음</span>
+      </div>
+      <div class="checks-grid" id="checksGrid">
+        <div class="check-item-empty">진단 실행 버튼을 누르면 실시간 검증 결과가 표시됩니다.</div>
+      </div>
+    </section>
+
+    <!-- LIVE TERMINAL CONSOLE -->
+    <section class="terminal-section">
+      <div class="terminal-header">
+        <div class="term-dots">
+          <span class="term-dot red"></span>
+          <span class="term-dot yellow"></span>
+          <span class="term-dot green"></span>
+        </div>
+        <span class="term-title">실시간 동기화 및 실행 로그 (Live SSE Stream)</span>
+        <button class="btn-term-clear" id="btnClearLogs">지우기</button>
+      </div>
+      <div class="terminal-body" id="terminalBody">
+        <div class="log-line info">[SYSTEM] AGY-Sync Master 대시보드 준비 완료.</div>
+      </div>
+    </section>
+  </div>
+
+  <!-- PATH CONFIGURATION / MULTI-PROJECT MODAL -->
+  <div class="modal-overlay" id="pathModal" style="display:none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="font-size:20px;">⚙️</span>
+          <h2 style="font-size:18px; margin:0; font-weight:700;">작업 경로 지정 및 멀티 프로젝트 전환</h2>
+        </div>
+        <button class="modal-close" id="btnClosePathModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="color:var(--text-dim); font-size:13px; margin-bottom:16px;">
+          원하는 드라이브 및 작업 폴더를 직접 지정할 수 있습니다. 
+          <br><strong>E:\vivpr\ai\v-show-stage2-fast-track</strong> 또는 <strong>E:\vivpr\ai</strong> 어느 형식으로 입력하셔도 시스템이 자동으로 최적의 작업 경로와 메인 저장소를 매핑합니다.
+        </p>
+
+        <div class="form-group" style="margin-bottom:14px;">
+          <label style="display:block; font-size:12px; font-weight:600; color:var(--text-main); margin-bottom:6px;">
+            📁 프로젝트 경로 (폴더 전체 경로):
+          </label>
+          <input type="text" id="inputCustomPath" class="input-text" placeholder="예: E:\vivpr\ai\v-show-stage2-fast-track" style="width:100%; box-sizing:border-box;">
+        </div>
+
+        <div class="form-group" style="margin-bottom:14px;">
+          <label style="display:block; font-size:12px; font-weight:600; color:var(--text-main); margin-bottom:6px;">
+            📌 빠른 추천 경로 선택:
+          </label>
+          <div style="display:flex; flex-wrap:wrap; gap:8px;">
+            <button type="button" class="btn-quick-path" data-path="E:\vivpr\ai\v-show-stage2-fast-track">E:\vivpr\ai (Secondary PC)</button>
+            <button type="button" class="btn-quick-path" data-path="C:\Users\server4\ai\v-show-stage2-fast-track">C:\Users\server4\ai (Primary PC)</button>
+            <button type="button" class="btn-quick-path" data-path="C:\vivpr\ai\v-show-stage2-fast-track">C:\vivpr\ai</button>
+            <button type="button" class="btn-quick-path" data-path="D:\ai\v-show-stage2-fast-track">D:\ai</button>
+          </div>
+        </div>
+
+        <div class="path-preview-box" id="pathPreviewBox" style="background:rgba(0,0,0,0.3); border:1px solid var(--border-color); border-radius:8px; padding:10px; font-size:12px; font-family:var(--font-mono);">
+          <div>부모 디렉터리: <span id="previewParent" style="color:var(--text-main);">-</span></div>
+          <div>작업 워크트리: <span id="previewFastTrack" style="color:var(--accent-emerald);">-</span></div>
+          <div>메인 저장소: <span id="previewMainRepo" style="color:var(--accent-cyan);">-</span></div>
+        </div>
+      </div>
+      <div class="modal-footer" style="display:flex; justify-content:flex-end; gap:10px; margin-top:16px;">
+        <button class="btn-secondary" id="btnCancelPathModal">취소</button>
+        <button class="btn-primary" id="btnSavePathConfig">경로 적용 & 자동 리매핑</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- UNINSTALL CONFIRMATION MODAL -->
+  <div class="modal-overlay" id="uninstallModal" style="display:none;">
+    <div class="modal-card" style="border-color:rgba(239, 68, 68, 0.5);">
+      <div class="modal-header">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="font-size:20px;">⚠️</span>
+          <h2 style="font-size:18px; margin:0; font-weight:700; color:var(--accent-rose);">로컬 설치 제거 및 초기화</h2>
+        </div>
+        <button class="modal-close" id="btnCloseUninstallModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="color:var(--text-dim); font-size:13px; margin-bottom:14px;">
+          로컬에 설치된 작업 폴더를 안전하게 삭제하여 처음 상태로 되돌립니다.
+          <br>Google Drive에 백업된 대화 세션 및 GitHub 원격 브랜치는 <strong>절대 삭제되지 않고 안전하게 보존</strong>됩니다.
+        </p>
+
+        <div style="background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); border-radius:8px; padding:12px; font-size:12px; margin-bottom:14px;">
+          <label style="display:flex; align-items:center; gap:8px; margin-bottom:6px; cursor:pointer;">
+            <input type="checkbox" id="chkRemoveWorktree" checked>
+            <span><strong>Fast-Track 작업 워크트리 삭제</strong> (<span id="uninstallTargetFastTrack">...</span>)</span>
+          </label>
+          <label style="display:flex; align-items:center; gap:8px; margin-bottom:6px; cursor:pointer;">
+            <input type="checkbox" id="chkRemoveMainRepo">
+            <span><strong>메인 저장소(v-show)까지 전체 삭제</strong> (초기 상태로 완전 리셋)</span>
+          </label>
+          <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+            <input type="checkbox" id="chkResetConfig" checked>
+            <span><strong>저장된 경로 설정(sync_config.json) 초기화</strong></span>
+          </label>
+        </div>
+      </div>
+      <div class="modal-footer" style="display:flex; justify-content:flex-end; gap:10px;">
+        <button class="btn-secondary" id="btnCancelUninstallModal">취소</button>
+        <button class="btn-danger" id="btnConfirmUninstall">안전하게 제거 실행</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,25 @@
+{
+  "protocol": "3D2R_REMOTE_RESTORE_REF_AUDIT",
+  "date": "2026-09-15",
+  "remoteUrl": "https://github.com/goodkie/v-show.git",
+  "status": "PASS",
+  "RESTORE_TAG_REMOTE_VERIFIED": true,
+  "RESTORE_BRANCH_REMOTE_VERIFIED": true,
+  "PERFECTION_BRANCH_REMOTE_VERIFIED": true,
+  "REMOTE_REF_CONFLICT": false,
+  "refs": {
+    "refs/tags/3d2-official-release-restore-2026-09-15": {
+      "tagSha": "22b7e91eff79a1c99c561b163cd0a7d20f91323e",
+      "targetCommit": "5218235b8dbe1cd3b401bbbdef0b1c8ba3483d6e",
+      "verifiedOnRemote": true
+    },
+    "refs/heads/restore/3d2-official-release-2026-09-15": {
+      "commitSha": "5218235b8dbe1cd3b401bbbdef0b1c8ba3483d6e",
+      "verifiedOnRemote": true
+    },
+    "refs/heads/experiment/c13-perfection-track": {
+      "commitSha": "ed398c8511e0355665a383ff3d2d360f9894f1dc",
+      "verifiedOnRemote": true
+    }
+  }
+}

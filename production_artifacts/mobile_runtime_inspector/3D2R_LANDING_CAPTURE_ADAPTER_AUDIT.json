@@ -1,0 +1,16 @@
+{
+  "protocol": "3D2R_LANDING_CAPTURE_ADAPTER_AUDIT",
+  "date": "2026-09-15",
+  "status": "PASS",
+  "LANDING_START_TO_REAL_CAPTURE": true,
+  "SECOND_CAPTURE_ENGINE_CREATED": false,
+  "AUTH_BYPASS_CREATED": false,
+  "TENANT_BOUNDARY_CHANGED": false,
+  "LANDING_LISTENER_CLEANUP": "PASS",
+  "adapterDetails": {
+    "vertical": "TRADE_SHOW",
+    "source": "landing",
+    "intent": "create_virtual_booth",
+    "entryRoute": "/?mode=booth-tour-wizard&step=1&source=landing&vertical=TRADE_SHOW&intent=create_virtual_booth"
+  }
+}

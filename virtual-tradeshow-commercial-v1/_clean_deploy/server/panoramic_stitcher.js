@@ -82,11 +82,16 @@ class PanoramicStitcher {
     this.dataUploadsDir = dataUploads;
 
     const findPython = () => {
+      // Priority 1: Dedicated isolated test venv (env-injected, validated IS_VENV=True)
+      if (process.env.STAGE2_VENV_PYTHON) return process.env.STAGE2_VENV_PYTHON;
+      // Priority 2: Explicit path overrides
       if (process.env.PYTHON_PATH) return process.env.PYTHON_PATH;
       if (process.env.PYTHON_BIN) return process.env.PYTHON_BIN;
+      // Priority 3: Legacy dev machine path (non-production)
       if (fs.existsSync('e:/vivpr/ai/v-show-reconstruction-work/python_env/python.exe')) {
         return 'e:/vivpr/ai/v-show-reconstruction-work/python_env/python.exe';
       }
+      // Priority 4: Common system fallbacks
       for (const candidate of ['/opt/venv/bin/python3', '/opt/venv/bin/python', 'python3', 'python', '/usr/bin/python3', '/usr/local/bin/python3', '/usr/bin/python']) {
         try {
           execFileSync(candidate, ['--version'], { stdio: 'ignore' });
@@ -172,7 +177,9 @@ class PanoramicStitcher {
       canonicalFrameIds: options.canonicalFrameIds,
       panoramaStitchFrameIds: options.panoramaStitchFrameIds,
       supplementalBridgeFrameIds: options.supplementalBridgeFrameIds,
-      visualGraphConnected: options.visualGraphConnected
+      visualGraphConnected: options.visualGraphConnected,
+      isTestAccount: Boolean(options.isTestAccount),
+      isTest: Boolean(options.isTest)
     };
     fs.writeFileSync(inputJson, JSON.stringify(payload, null, 2));
 
@@ -293,8 +300,23 @@ class PanoramicStitcher {
       }
     }
 
-    const nativeUrl = '/uploads/' + workerResult.nativeFile;
-    const previewUrl = '/uploads/' + workerResult.previewFile;
+    const nativeFilePath = path.join(this.uploadsDir, workerResult.nativeFile);
+    const previewFilePath = path.join(this.uploadsDir, workerResult.previewFile);
+    let assetSha256 = null;
+    let assetByteSize = 0;
+    try {
+      const targetFile = fs.existsSync(nativeFilePath) ? nativeFilePath : previewFilePath;
+      if (fs.existsSync(targetFile)) {
+        const fileBuf = fs.readFileSync(targetFile);
+        assetSha256 = crypto.createHash('sha256').update(fileBuf).digest('hex');
+        assetByteSize = fileBuf.length;
+      }
+    } catch (e) {}
+
+    const nativeUrl = options.projectId ? 
+      `/api/projects/${options.projectId}/panorama/candidate/${candidateId}/asset` : 
+      ('/uploads/' + workerResult.nativeFile);
+    const previewUrl = nativeUrl;
 
     return {
       status: 'READY',
@@ -323,6 +345,10 @@ class PanoramicStitcher {
       stitchedPanoramaUrl: nativeUrl,
       activeBackgroundUrl: nativeUrl,
       provenanceUrl: nativeUrl,
+      assetSha256,
+      assetByteSize,
+      nativeFile: workerResult.nativeFile,
+      previewFile: workerResult.previewFile,
       angularAnchors: workerResult.anchors.map(a => a.degree),
       anchors: workerResult.anchors,
       engine: 'OPENCV',

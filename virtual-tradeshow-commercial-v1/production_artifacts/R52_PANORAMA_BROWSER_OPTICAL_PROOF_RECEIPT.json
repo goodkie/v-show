@@ -1,0 +1,259 @@
+{
+  "testMilestone": "STAGE2-PANORAMA-BROWSER-OPTICAL-PROOF-R52",
+  "revisedPer": "ChatGPT audit 5806602911",
+  "executedAt": "2026-09-24T03:26:42.774Z",
+  "nodeVersion": "v24.21.0",
+  "platform": "win32",
+  "browser": {
+    "product": "Chrome/154.0.8037.57",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+    "protocolVersion": "1.3",
+    "cdpPort": 9470
+  },
+  "panoramaAsset": {
+    "relPath": "/assets/demo/dna-showcase/pano360/node0_360_panorama_4k_opt.jpg",
+    "sha256": "bbb37511be4fcc0875127d7b65d53dc14ab0c2a4ed02f47a21a403ebb050f12a",
+    "sizeBytes": 793797,
+    "dimensions": "4096x2048",
+    "aspectRatio": "2:1",
+    "coverageType": "FULL_SPHERE_EQUIRECTANGULAR",
+    "coverageNote": "Pre-existing demo asset; NOT the LLST42 real-photo OpenCV stitch (186.3deg)"
+  },
+  "controlsVerification": {
+    "desktop": {
+      "interactionType": "CDP_MOUSE_DRAG_DESKTOP",
+      "hardwareNote": "Desktop headless Chrome mouse input events",
+      "cameraYawChangeDeg": "14.55",
+      "pixelDelta": "46.61",
+      "verifiedIndependentOfRotationOverwrite": true,
+      "status": "PASS"
+    },
+    "mobile": {
+      "interactionType": "CDP_TOUCH_GESTURE_EMULATION",
+      "hardwareNote": "Chrome mobile emulation via CDP touch events; physical Android device deferred",
+      "cameraYawChangeDeg": "26.52",
+      "pixelDelta": "49.87",
+      "verifiedIndependentOfRotationOverwrite": true,
+      "status": "PASS"
+    }
+  },
+  "seamClosureVerification": {
+    "desktop": {
+      "front0VsFront360MeanDelta": "0.00",
+      "threshold": 2.5,
+      "status": "PASS",
+      "description": "Proves complete 360-degree geometric seam closure of equirectangular sphere"
+    },
+    "mobile": {
+      "front0VsFront360MeanDelta": "0.00",
+      "threshold": 2.5,
+      "status": "PASS",
+      "description": "Proves complete 360-degree geometric seam closure of equirectangular sphere"
+    }
+  },
+  "opticalScreenshots": [
+    {
+      "viewport": "desktop",
+      "dimensions": "1920x1080",
+      "direction": "FRONT",
+      "yawDegrees": 0,
+      "fileName": "optical_proof_desktop_front_0deg.png",
+      "fileSizeBytes": 1766487,
+      "sha256": "d3a3a0a62276d82c9974f98671cad70661734a97cff309259ce306d1dd4f23ff",
+      "rgbaSource": "webgl_readPixels",
+      "avgRGB": {
+        "r": "46.1",
+        "g": "143.6",
+        "b": "164.0"
+      }
+    },
+    {
+      "viewport": "desktop",
+      "dimensions": "1920x1080",
+      "direction": "RIGHT",
+      "yawDegrees": 90,
+      "fileName": "optical_proof_desktop_right_90deg.png",
+      "fileSizeBytes": 544681,
+      "sha256": "e876a156f481ebf094a20813cc67865057368a31990e20b71db749cfc2469eaf",
+      "rgbaSource": "webgl_readPixels",
+      "avgRGB": {
+        "r": "42.5",
+        "g": "66.6",
+        "b": "82.3"
+      }
+    },
+    {
+      "viewport": "desktop",
+      "dimensions": "1920x1080",
+      "direction": "BACK",
+      "yawDegrees": 180,
+      "fileName": "optical_proof_desktop_back_180deg.png",
+      "fileSizeBytes": 993181,
+      "sha256": "ba497c402717bb633befec411ba5d109f67a5c2134f82e8031bc42a9b7c374cb",
+      "rgbaSource": "webgl_readPixels",
+      "avgRGB": {
+        "r": "126.2",
+        "g": "151.6",
+        "b": "160.9"
+      }
+    },
+    {
+      "viewport": "desktop",
+      "dimensions": "1920x1080",
+      "direction": "LEFT",
+      "yawDegrees": 270,
+      "fileName": "optical_proof_desktop_left_270deg.png",
+      "fileSizeBytes": 1489795,
+      "sha256": "ca7a9dcad040cdf4669f4fbd2be885fe069dff90edaf36d35192f62323bf544c",
+      "rgbaSource": "webgl_readPixels",
+      "avgRGB": {
+        "r": "102.6",
+        "g": "148.5",
+        "b": "161.5"
+      }
+    },
+    {
+      "viewport": "desktop",
+      "dimensions": "1920x1080",
+      "direction": "FRONT_360",
+      "yawDegrees": 360,
+      "fileName": "optical_proof_desktop_front_360_360deg.png",
+      "fileSizeBytes": 1766697,
+      "sha256": "a7413604edf1edfe5813899369ece15ec23cacb0abca038d6b15d0eb337e77d0",
+      "rgbaSource": "webgl_readPixels",
+      "avgRGB": {
+        "r": "46.1",
+        "g": "143.6",
+        "b": "164.0"
+      }
+    },
+    {
+      "viewport": "mobile",
+      "dimensions": "390x844",
+      "direction": "FRONT",
+      "yawDegrees": 0,
+      "fileName": "optical_proof_mobile_front_0deg.png",
+      "fileSizeBytes": 1687331,
+      "sha256": "aa5b2b69c92adc2c3f1dc904e2307e3878e824d6e9e95d1fb2c1c2cb8e9cb79a",
+      "rgbaSource": "webgl_readPixels",
+      "avgRGB": {
+        "r": "54.7",
+        "g": "154.5",
+        "b": "175.9"
+      }
+    },
+    {
+      "viewport": "mobile",
+      "dimensions": "390x844",
+      "direction": "RIGHT",
+      "yawDegrees": 90,
+      "fileName": "optical_proof_mobile_right_90deg.png",
+      "fileSizeBytes": 69846,
+      "sha256": "2bdc4528466f1041a8338fe6a5038b613d23bafef104709979a6dbadb77e76dd",
+      "rgbaSource": "webgl_readPixels",
+      "avgRGB": {
+        "r": "10.3",
+        "g": "19.3",
+        "b": "35.7"
+      }
+    },
+    {
+      "viewport": "mobile",
+      "dimensions": "390x844",
+      "direction": "BACK",
+      "yawDegrees": 180,
+      "fileName": "optical_proof_mobile_back_180deg.png",
+      "fileSizeBytes": 932338,
+      "sha256": "f6b94ed555df1b707b42b896632183cbc3a4e3993d54ddfbbc926ffa3406c824",
+      "rgbaSource": "webgl_readPixels",
+      "avgRGB": {
+        "r": "125.5",
+        "g": "152.5",
+        "b": "161.2"
+      }
+    },
+    {
+      "viewport": "mobile",
+      "dimensions": "390x844",
+      "direction": "LEFT",
+      "yawDegrees": 270,
+      "fileName": "optical_proof_mobile_left_270deg.png",
+      "fileSizeBytes": 1324134,
+      "sha256": "37e77fcdf5dda2e4b1b05aa9328addee0a63d54f6a04be73fbfc68b82d096baa",
+      "rgbaSource": "webgl_readPixels",
+      "avgRGB": {
+        "r": "126.4",
+        "g": "150.4",
+        "b": "160.7"
+      }
+    },
+    {
+      "viewport": "mobile",
+      "dimensions": "390x844",
+      "direction": "FRONT_360",
+      "yawDegrees": 360,
+      "fileName": "optical_proof_mobile_front_360_360deg.png",
+      "fileSizeBytes": 1687331,
+      "sha256": "aa5b2b69c92adc2c3f1dc904e2307e3878e824d6e9e95d1fb2c1c2cb8e9cb79a",
+      "rgbaSource": "webgl_readPixels",
+      "avgRGB": {
+        "r": "54.7",
+        "g": "154.5",
+        "b": "175.9"
+      }
+    }
+  ],
+  "rgbaPixelVarianceMatrix": {
+    "desktop": {
+      "method": "gl.readPixels RGBA mean absolute difference [0-255 scale]",
+      "frontVsRightMeanDiff": "98.30",
+      "frontVsBackMeanDiff": "68.50",
+      "rightVsBackMeanDiff": "98.89",
+      "backVsLeftMeanDiff": "49.90",
+      "seamClosure0vs360Delta": "0.00",
+      "threshold": 5,
+      "varianceCheck": "PASS",
+      "seamCheck": "PASS"
+    },
+    "mobile": {
+      "method": "gl.readPixels RGBA mean absolute difference [0-255 scale]",
+      "frontVsRightMeanDiff": "108.94",
+      "frontVsBackMeanDiff": "55.93",
+      "rightVsBackMeanDiff": "124.62",
+      "backVsLeftMeanDiff": "52.05",
+      "seamClosure0vs360Delta": "0.00",
+      "threshold": 5,
+      "varianceCheck": "PASS",
+      "seamCheck": "PASS"
+    }
+  },
+  "publishShareVerification": {
+    "initialUnpublishedStatus": "PASS",
+    "publishViaAuthenticatedAPI": "PASS",
+    "dbPersistenceAfterPublish": "PASS",
+    "publishedApiVerification": "PASS",
+    "crossTenantDenied": "PASS (HTTP 403)",
+    "unpublishViaAuthenticatedAPI": "PASS",
+    "dbPersistenceAfterUnpublish": "PASS",
+    "unpublishedApiCheck": "PASS",
+    "unavailableBannerRendered": "PASS",
+    "unavailableScreenshotSha256": "e0033882191e42d95f16d1d61e4a3ac3ad8bef73f07273b984e5c7ff2f968bb5"
+  },
+  "gates": {
+    "REAL_SERVER_ROUTE_VERIFIED": "PASS",
+    "SYNTHETIC_SIGNED_REAL_EXPRESS_WEBHOOK_ROUTE_20TESTS": "PASS (test_stage2_stripe_signed_route_e2e.js, 20/20 tests passed, synthetic signed events, real Express route, missing/multiple quantity strictly rejected, authoritative line item expansion)",
+    "STRIPE_PROVIDER_TEST_CHECKOUT_PORTAL_E2E": "NOT_VERIFIED (requires actual Stripe TEST provider dashboard credentials and live webhook replay)",
+    "FULL_360_DEMO_ASSET_VIEWER_E2E": "PASS (node0_360_panorama_4k_opt.jpg, 4096x2048, 2:1 full-sphere equirectangular pre-existing demo asset)",
+    "REAL_PHOTO_12_TO_FULL_360_CREATION_E2E": "NOT_VERIFIED (LLST42 12-photo capture stitches to 186.3deg x 46.7deg partial band; full 360-degree sphere creation requires 24+ photo ring or panoramic hardware)",
+    "REAL_PHOTO_PARTIAL_STITCH_LLST42_186DEG": "AGENT_REPORTED_PASS (186.3deg horizontal band; partial stitch)",
+    "FULL_360_REAL_PHOTO_STAGING_E2E": "NOT_VERIFIED",
+    "MOBILE_PRODUCT_VIEWER_E2E": "PASS (headless Chrome mobile viewport emulation, RGBA pixel proof + real CDP touch drag; physical Android hardware deferred)",
+    "DESKTOP_PRODUCT_VIEWER_E2E": "PASS (headless Chrome real WebGL rendering, RGBA pixel proof + independent mouse drag)",
+    "PUBLISH_SHARE_E2E": "PASS (Real server authenticated POST /api/projects/:id/publish & /unpublish HTTP 200, cross-tenant denial HTTP 403, GET /api/public/booth/:slug available:true/false, headless Chrome rendered unavailable banner flex)",
+    "STRIPE_MODE": "TEST_UNTIL_EXPLICIT_APPROVAL",
+    "OWNER_REVIEW_GATE": "HOLD_PENDING_PANORAMA_STAGING_EVIDENCE",
+    "TRUE_3D_CUSTOM_PLAN": "DEFERRED_POST_LAUNCH",
+    "TRUE_3D_MODEL": "NOT_VERIFIED",
+    "NO_NEW_3D_GPU_SPEND": "ACTIVE"
+  }
+}

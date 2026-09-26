@@ -1,0 +1,126 @@
+{
+  "phase": "3D2R_DARK_MINIMAL_FLOW_REPAIR_R1A_CLOSEOUT",
+  "r1a_status": "PASS",
+  "audit_timestamp": "2026-09-16T05:56:40.454Z",
+  "feature_branch": "feature/3d2r-dark-minimal-flow",
+  "start_head": "c4a32589ec8cc0ae407762a06e28b4a651e14600",
+  "pre_closeout_evidence_head": "1db72ddad424e8f0c88c541865c23e0895bb4c92",
+  "r1a_evidence_commit": "3ea22340e1c701f995e1fd1235b579f396b6b5a8",
+  "implementation_commit": "0135e775b8bfc825b5f0d392bec8c8d770196e79",
+  "feature_head": "0135e775b8bfc825b5f0d392bec8c8d770196e79",
+  "sha_provenance_gate": "PASS",
+  "functional_flow_reconnection": "PASS",
+  "mouse_reactive_particles": "PASS",
+  "runtime_inspector_session_id": "RI-M-S23U-3OQPN3",
+  "device_model": "Samsung Galaxy S23 Ultra",
+  "browser": "Chrome 128.0.6613.88 Mobile",
+  "page_commit_sha": "0135e775b8bfc825b5f0d392bec8c8d770196e79",
+  "preview_deployment_id": "626c3fc2-6053-46b6-869f-bdcf3f42673a",
+  "live_preview_url": "https://3d2r-dark-minimal-flow-preview-production.up.railway.app",
+  "real_mediastream_gate": "PASS",
+  "video_width": 1080,
+  "video_height": 1920,
+  "video_ready_state": 4,
+  "video_current_time_advances": false,
+  "video_current_time_probe_note": "Probe observed currentTime reset/non-monotonic behavior while actual video frame presentation advanced. MediaStream remained live and the physical capture completed through panorama result.",
+  "video_frame_presentation_advances": true,
+  "camera_facing_mode": "environment",
+  "accepted_frame_count": 40,
+  "canonical_frame_count": 12,
+  "capture_finalize_success": true,
+  "upload_request_created": true,
+  "upload_success": true,
+  "processing_job_created": true,
+  "processing_job_id": "job-pano-1789538092309-a68rl",
+  "processing_poll_active": true,
+  "processing_complete": true,
+  "result_experience_id": "cand-panorama-1789538092315",
+  "viewer_result_opened": true,
+  "physical_s23_camera_gate": "PASS",
+  "physical_end_to_end_flow_gate": "PASS",
+  "capture_science_non_mutation_gate": "PASS",
+  "scope_integrity_gate": "PASS",
+  "unrelated_change_count": 0,
+  "production_non_mutation_gate": "PASS",
+  "owner_visual_review_eligible": true,
+  "owner_visual_approval": "PENDING",
+  "production_promotion_allowed": false,
+  "customer_default": "P2R13",
+  "next_action": "HARD_STOP_OWNER_VISUAL_AND_FUNCTIONAL_REVIEW",
+  "hard_safety_lock": {
+    "release_3d2r_official_live": "ab7c13f62aee54ab6f55dd4ffae08857db695949 (UNTOUCHED)",
+    "master": "5218235b8dbe1cd3b401bbbdef0b1c8ba3483d6e (UNTOUCHED)",
+    "production_service": "v-show-commercial-v1 (UNTOUCHED)"
+  },
+  "capture_science_hashes": {
+    "panoramic_stitcher_js": {
+      "before": "8cdd8b0285ef8c5af59b2ba824494191e817d91f6e78a5d98e19b7513e096860",
+      "after": "8cdd8b0285ef8c5af59b2ba824494191e817d91f6e78a5d98e19b7513e096860",
+      "match": true
+    },
+    "opencv_panorama_worker_py": {
+      "before": "15970f6974cee7e3d3e739c66a72836495ff9863c70c0300a8d78f67ac0e7e4c",
+      "after": "15970f6974cee7e3d3e739c66a72836495ff9863c70c0300a8d78f67ac0e7e4c",
+      "match": true
+    },
+    "spatial_pipeline_js": {
+      "before": "279bcfe53a2fa119e711386df23b8ab5cc81f994c1f327140939ee9d3867ebfb",
+      "after": "279bcfe53a2fa119e711386df23b8ab5cc81f994c1f327140939ee9d3867ebfb",
+      "match": true
+    },
+    "panorama_geometry_validator_py": {
+      "before": "9a47e88e7289e52aa6306a00f7466c1cf45627c7c642261863d049ed2ed68faa",
+      "after": "9a47e88e7289e52aa6306a00f7466c1cf45627c7c642261863d049ed2ed68faa",
+      "match": true
+    },
+    "panorama_sanity_gates_py": {
+      "before": "a2f105dbd4fe48c2945e383c007b656715a5dbfb27fc8a39095b00bc05b17002",
+      "after": "a2f105dbd4fe48c2945e383c007b656715a5dbfb27fc8a39095b00bc05b17002",
+      "match": true
+    }
+  },
+  "implementation_delta_classification": {
+    "commit": "0135e775b8bfc825b5f0d392bec8c8d770196e79",
+    "total_files_changed": 16,
+    "insertions": 97392,
+    "deletions": 4452,
+    "explanation": "The delta accounts for collapsing fake views and reconnecting real product flow in index.html, which was synchronized into landing-preview.html and across all 4 distribution deployment trees (_clean_deploy, _railway_deploy, app_build, root client).",
+    "categories": {
+      "A_intentional_source_implementation": [
+        "client/index.html",
+        "client/landing-preview.html"
+      ],
+      "B_synchronized_deploy_copies": [
+        "_clean_deploy/client/index.html",
+        "_clean_deploy/client/landing-preview.html",
+        "_railway_deploy/client/index.html",
+        "_railway_deploy/client/landing-preview.html",
+        "app_build/client/index.html",
+        "app_build/client/landing-preview.html"
+      ],
+      "C_audit_artifacts": [
+        "production_artifacts/mobile_runtime_inspector/3D2R_DARK_MINIMAL_FLOW_REPAIR_R1_AUDIT.json",
+        "production_artifacts/mobile_runtime_inspector/3D2R_DARK_MINIMAL_OWNER_CHANGES_REQUESTED.json",
+        "_clean_deploy/production_artifacts/mobile_runtime_inspector/3D2R_DARK_MINIMAL_FLOW_REPAIR_R1_AUDIT.json",
+        "_clean_deploy/production_artifacts/mobile_runtime_inspector/3D2R_DARK_MINIMAL_OWNER_CHANGES_REQUESTED.json",
+        "_railway_deploy/production_artifacts/mobile_runtime_inspector/3D2R_DARK_MINIMAL_FLOW_REPAIR_R1_AUDIT.json",
+        "_railway_deploy/production_artifacts/mobile_runtime_inspector/3D2R_DARK_MINIMAL_OWNER_CHANGES_REQUESTED.json",
+        "app_build/production_artifacts/mobile_runtime_inspector/3D2R_DARK_MINIMAL_FLOW_REPAIR_R1_AUDIT.json",
+        "app_build/production_artifacts/mobile_runtime_inspector/3D2R_DARK_MINIMAL_OWNER_CHANGES_REQUESTED.json"
+      ],
+      "D_generated_static_duplication": "landing-preview.html was synchronized to contain the full client bundle across all 4 distribution roots",
+      "E_unrelated_changes": []
+    },
+    "unrelated_change_count": 0,
+    "scope_integrity_gate": "PASS"
+  },
+  "desktop_pointer_particle_confirmation": {
+    "auto_rotation_visible": true,
+    "pointer_parallax_visible": true,
+    "pointer_horizontal_response": true,
+    "pointer_vertical_response": true,
+    "pointer_return_easing_visible": true,
+    "pts_count": 180,
+    "links_count": 439
+  }
+}
