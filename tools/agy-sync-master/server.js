@@ -488,10 +488,11 @@ $Shortcut.Save()
   // 11. Unblock History (🚫) API
   if (pathname === '/api/unblock' && req.method === 'POST') {
     try {
-      sendProgress(20, 'SQLite 세션 동기화 및 워크스페이스 매핑 준비 중...');
+      sendProgress(20, '대화 히스토리 및 워크스페이스 동기화 준비 중...');
+      const eng = getEngine();
       sendProgress(50, 'SQLite 세션 워크스페이스 매핑 및 🚫 잠금 해제 중...');
-      const remapRes = await engine.remapPaths(logger);
-      sendProgress(100, '대화창 🚫 금지표시 해제 및 워크스페이스 신뢰 설정 완료');
+      const remapRes = await eng.remapPaths(logger);
+      sendProgress(100, '대화창 🚫 금지표시 해제 및 대화 히스토리 전체 동기화 완료!');
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ success: true, remapRes }));
     } catch (e) {

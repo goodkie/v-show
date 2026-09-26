@@ -28,7 +28,23 @@ if not exist "%WORKER_PY%" (
     set "WORKER_PY=%SCRIPT_DIR%remap_worker.py"
 )
 
-python "%WORKER_PY%" "%TARGET_DIR%"
+set "PY_CMD=python"
+where python >nul 2>&1
+if %ERRORLEVEL% neq 0 (
+    if exist "%LOCALAPPDATA%\Programs\Python\Python311\python.exe" (
+        set "PY_CMD=%LOCALAPPDATA%\Programs\Python\Python311\python.exe"
+    ) else if exist "%LOCALAPPDATA%\Programs\Python\Python312\python.exe" (
+        set "PY_CMD=%LOCALAPPDATA%\Programs\Python\Python312\python.exe"
+    ) else if exist "C:\Python311\python.exe" (
+        set "PY_CMD=C:\Python311\python.exe"
+    ) else if exist "C:\Python312\python.exe" (
+        set "PY_CMD=C:\Python312\python.exe"
+    ) else (
+        set "PY_CMD=py -3"
+    )
+)
+
+"%PY_CMD%" "%WORKER_PY%" "%TARGET_DIR%"
 if %ERRORLEVEL% neq 0 (
     py -3 "%WORKER_PY%" "%TARGET_DIR%" 2>nul
 )

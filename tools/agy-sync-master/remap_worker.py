@@ -85,9 +85,16 @@ def remap_agy_root(agy_root, target_dir):
     conv_dir = os.path.join(agy_root, "conversations")
 
     # 1. Build Universal URI list
-    norm_target = target_dir.replace("\\", "/")
-    drive = norm_target[0]
-    rest = norm_target[2:]
+    norm_target = target_dir.replace("\\", "/").rstrip("/")
+    if norm_target.lower().endswith("/v-show-stage2-fast-track"):
+        base_parent = norm_target[:-len("/v-show-stage2-fast-track")]
+    elif norm_target.lower().endswith("/v-show"):
+        base_parent = norm_target[:-len("/v-show")]
+    else:
+        base_parent = norm_target
+
+    drive = base_parent[0]
+    rest = base_parent[2:]
     universal_uris = [
         f"file:///{drive.upper()}%3A{rest}/v-show-stage2-fast-track",
         f"file:///{drive.upper()}:{rest}/v-show-stage2-fast-track",
@@ -137,69 +144,108 @@ def remap_agy_root(agy_root, target_dir):
 
     # 3. Synchronize conversation_summaries.db
     sum_db = os.path.join(agy_root, "conversation_summaries.db")
-    if os.path.exists(sum_db):
-        try:
-            conn = sqlite3.connect(sum_db, timeout=30.0)
-            c = conn.cursor()
-            c.execute("PRAGMA busy_timeout = 30000;")
-            
-            # Discover all conversations from disk
-            existing_cids = set(r[0] for r in c.execute("SELECT conversation_id FROM conversation_summaries").fetchall())
-            disk_dbs = glob.glob(os.path.join(conv_dir, "*.db"))
-            added_count = 0
-            for ddb in disk_dbs:
-                cid = os.path.splitext(os.path.basename(ddb))[0]
-                if cid not in existing_cids:
-                    title = f"Conversation {cid[:8]}"
-                    # Try reading title from transcript
-                    t_log = os.path.join(agy_root, "brain", cid, ".system_generated", "logs", "transcript.jsonl")
-                    if os.path.exists(t_log):
+    try:
+        conn = sqlite3.connect(sum_db, timeout=30.0)
+        c = conn.cursor()
+        c.execute("PRAGMA busy_timeout = 30000;")
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS conversation_summaries (
+                conversation_id TEXT PRIMARY KEY,
+                title TEXT,
+                preview TEXT,
+                step_count INTEGER,
+                last_modified_time TEXT,
+                workspace_uris TEXT,
+                status TEXT,
+                source TEXT,
+                app_data_dir TEXT,
+                not_fully_idle INTEGER,
+                killed INTEGER,
+                last_user_input_time TEXT,
+                last_user_input_step_index INTEGER,
+                raw_summary BLOB
+            )
+        """)
+        existing_cids = set(r[0] for r in c.execute("SELECT conversation_id FROM conversation_summaries").fetchall())
+        
+        # If DB is empty, bootstrap directly from Google Drive package
+        if len(existing_cids) == 0:
+            for dl in "CDEFGHIJKLMNOPQRSTUVWXYZ":
+                for sub in ["내 드라이브", "My Drive", ""]:
+                    g_sum = os.path.join(f"{dl}:\\", sub, "v-show-antigravity-sync", "antigravity-core", "state", "conversation_summaries.db")
+                    if os.path.exists(g_sum):
                         try:
-                            with open(t_log, "r", encoding="utf-8", errors="ignore") as tf:
-                                for line in tf:
-                                    obj = json.loads(line)
-                                    if obj.get("type") == "USER_INPUT":
-                                        txt = obj.get("content", "").strip().replace("\n", " ")
-                                        if txt:
-                                            title = txt[:40]
-                                            break
-                        except Exception: pass
-                    c.execute("""
-                        INSERT OR REPLACE INTO conversation_summaries (
-                            conversation_id, title, preview, step_count, last_modified_time,
-                            workspace_uris, status, source, app_data_dir, not_fully_idle, killed,
-                            last_user_input_time, last_user_input_step_index
-                        ) VALUES (
-                            ?, ?, ?, 10, datetime('now'),
-                            ?, 'CASCADE_RUN_STATUS_IDLE', 'USER', '', 0, 0,
-                            datetime('now'), 0
-                        )
-                    """, (cid, title, title, json.dumps(universal_uris)))
-                    added_count += 1
-                    print(f"  + Added missing conversation {cid} ({title})")
-            
-            # Update workspace_uris on all rows
-            rows = c.execute("SELECT conversation_id, workspace_uris FROM conversation_summaries").fetchall()
-            updated_sum = 0
-            for cid, uris_str in rows:
-                try:
-                    uris = json.loads(uris_str) if uris_str else []
-                    new_uris = list(uris)
-                    for u in universal_uris:
-                        if u not in new_uris:
-                            new_uris.append(u)
-                    if new_uris != uris:
-                        c.execute("UPDATE conversation_summaries SET workspace_uris = ?, killed = 0, not_fully_idle = 0 WHERE conversation_id = ?", (json.dumps(new_uris), cid))
-                        updated_sum += 1
-                except Exception: pass
-            conn.commit()
-            conn.close()
-            print(f"  ✓ conversation_summaries.db updated: {updated_sum} rows updated, {added_count} discovered")
-        except Exception as e:
-            print(f"  ! Warning updating conversation_summaries.db: {e}")
+                            g_conn = sqlite3.connect(g_sum)
+                            g_rows = g_conn.cursor().execute("SELECT * FROM conversation_summaries").fetchall()
+                            cols = [d[0] for d in g_conn.cursor().execute("SELECT * FROM conversation_summaries LIMIT 0").description]
+                            placeholders = ",".join(["?"] * len(cols))
+                            c.executemany(f"INSERT OR REPLACE INTO conversation_summaries VALUES ({placeholders})", g_rows)
+                            conn.commit()
+                            g_conn.close()
+                            existing_cids = set(r[0] for r in c.execute("SELECT conversation_id FROM conversation_summaries").fetchall())
+                            print(f"  ✓ Initialized {len(existing_cids)} conversations from Google Drive: {g_sum}")
+                            break
+                        except Exception as e:
+                            print(f"  ! Google Drive bootstrap note: {e}")
+                if len(existing_cids) > 0:
+                    break
+
+        # Discover all conversations from disk
+        disk_dbs = glob.glob(os.path.join(conv_dir, "*.db"))
+        added_count = 0
+        for ddb in disk_dbs:
+            cid = os.path.splitext(os.path.basename(ddb))[0]
+            if cid not in existing_cids:
+                title = f"Conversation {cid[:8]}"
+                # Try reading title from transcript
+                t_log = os.path.join(agy_root, "brain", cid, ".system_generated", "logs", "transcript.jsonl")
+                if os.path.exists(t_log):
+                    try:
+                        with open(t_log, "r", encoding="utf-8", errors="ignore") as tf:
+                            for line in tf:
+                                obj = json.loads(line)
+                                if obj.get("type") == "USER_INPUT":
+                                    txt = obj.get("content", "").strip().replace("\n", " ")
+                                    if txt:
+                                        title = txt[:40]
+                                        break
+                    except Exception: pass
+                c.execute("""
+                    INSERT OR REPLACE INTO conversation_summaries (
+                        conversation_id, title, preview, step_count, last_modified_time,
+                        workspace_uris, status, source, app_data_dir, not_fully_idle, killed,
+                        last_user_input_time, last_user_input_step_index
+                    ) VALUES (
+                        ?, ?, ?, 10, datetime('now'),
+                        ?, 'CASCADE_RUN_STATUS_IDLE', 'USER', '', 0, 0,
+                        datetime('now'), 0
+                    )
+                """, (cid, title, title, json.dumps(universal_uris)))
+                added_count += 1
+                print(f"  + Added missing conversation {cid} ({title})")
+        
+        # Update workspace_uris on all rows
+        rows = c.execute("SELECT conversation_id, workspace_uris FROM conversation_summaries").fetchall()
+        updated_sum = 0
+        for cid, uris_str in rows:
+            try:
+                uris = json.loads(uris_str) if uris_str else []
+                new_uris = list(uris)
+                for u in universal_uris:
+                    if u not in new_uris:
+                        new_uris.append(u)
+                if new_uris != uris:
+                    c.execute("UPDATE conversation_summaries SET workspace_uris = ?, status = 'CASCADE_RUN_STATUS_IDLE', killed = 0, not_fully_idle = 0 WHERE conversation_id = ?", (json.dumps(new_uris), cid))
+                    updated_sum += 1
+            except Exception: pass
+        conn.commit()
+        conn.close()
+        print(f"  ✓ conversation_summaries.db updated: {updated_sum} rows updated, {added_count} discovered (Total: {len(rows) + added_count})")
+    except Exception as e:
+        print(f"  ! Warning updating conversation_summaries.db: {e}")
 
     # 4. Unlock steps and remap trajectory_metadata_blob in each conversation DB
-    local_target_sub = f"{norm_target}/v-show-stage2-fast-track"
+    local_target_sub = f"{base_parent}/v-show-stage2-fast-track"
     reps = [
         (b"c:/Users/server4/ai/v-show-stage2-fast-track", local_target_sub.encode("utf-8")),
         (b"C:/Users/server4/ai/v-show-stage2-fast-track", local_target_sub.encode("utf-8")),
