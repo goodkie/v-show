@@ -8,6 +8,8 @@ const path = require('path');
 const { spawn, execSync } = require('child_process');
 const os = require('os');
 const crypto = require('crypto');
+const https = require('https');
+const http = require('http');
 
 class SyncEngine {
   constructor(options = {}) {
@@ -436,40 +438,124 @@ class SyncEngine {
     return null;
   }
 
+  downloadFile(url, destPath, onProgress) {
+    return new Promise((resolve, reject) => {
+      const proto = url.startsWith('https') ? https : http;
+      const file = fs.createWriteStream(destPath);
+      
+      const req = proto.get(url, (res) => {
+        if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+          file.close();
+          try { fs.unlinkSync(destPath); } catch (e) {}
+          return this.downloadFile(res.headers.location, destPath, onProgress).then(resolve).catch(reject);
+        }
+        if (res.statusCode !== 200) {
+          file.close();
+          try { fs.unlinkSync(destPath); } catch (e) {}
+          return reject(new Error(`HTTP ${res.statusCode}`));
+        }
+
+        const totalBytes = parseInt(res.headers['content-length'] || '0', 10);
+        let downloadedBytes = 0;
+
+        res.pipe(file);
+
+        res.on('data', (chunk) => {
+          downloadedBytes += chunk.length;
+          if (onProgress && totalBytes > 0) {
+            const pct = Math.round((downloadedBytes / totalBytes) * 100);
+            onProgress(pct, downloadedBytes, totalBytes);
+          }
+        });
+
+        file.on('finish', () => {
+          file.close(() => resolve(destPath));
+        });
+      });
+
+      req.on('error', (err) => {
+        file.close();
+        try { fs.unlinkSync(destPath); } catch (e) {}
+        reject(err);
+      });
+    });
+  }
+
   async installOpenCv(progressCallback, logger) {
     logger.info('================================================================');
-    logger.info('  [Python & OpenCV (cv2) 1클릭 자동 설치 시작]');
+    logger.info('  [Python & OpenCV (cv2) 1클릭 무인 자동 설치 시작]');
     logger.info('================================================================');
 
     progressCallback(10, '현재 시스템 내 Python 환경 탐지 중...');
     let pyInfo = this.findPython();
 
-    // 1. Python이 아예 없는 경우 winget으로 Python 3.11 자동 설치 시도
+    // 1. Python이 아예 없는 경우: UAC 없는 사용자 권한 무인 설치 실행
     if (!pyInfo) {
-      logger.info('  -> 시스템에 유효한 Python 3이 발견되지 않았습니다. winget 패키지 관리자로 Python 3.11 설치 시도 중...');
-      progressCallback(20, 'Windows winget으로 Python 3.11 자동 설치 중 (약 1분 소요)...');
-      
-      let wingetAvailable = false;
-      try {
-        execSync('winget --version', { stdio: 'ignore' });
-        wingetAvailable = true;
-      } catch (e) {}
+      logger.info('  -> 시스템에 유효한 Python 3이 발견되지 않았습니다. Python 3.11 무인 설치 준비 중...');
 
-      if (wingetAvailable) {
-        const wingetRes = await this.runCommand('winget', [
-          'install', 'Python.Python.3.11',
-          '--silent',
-          '--accept-package-agreements',
-          '--accept-source-agreements'
-        ], null, logger, null, 180000);
+      // A. 먼저 winget 캐시 또는 임시 폴더에 이미 다운로드된 인스톨러가 있는지 탐색
+      const possibleInstallers = [
+        path.join(os.tmpdir(), 'python-3.11.9-amd64.exe'),
+        path.join(this.homeDir, 'AppData', 'Local', 'Temp', 'WinGet', 'Python.Python.3.11_9', 'python-3.11.9-amd64.exe')
+      ];
 
-        if (wingetRes.code === 0) {
-          logger.info('  ✓ Python 3.11 패키지 설치 완료. 환경 재감지 중...');
-        } else {
-          logger.warn(`  ! winget 설치 경고 (코드 ${wingetRes.code}). 로컬 경로 재탐색 진행`);
+      let localInstaller = null;
+      for (const p of possibleInstallers) {
+        if (fs.existsSync(p)) {
+          try {
+            if (fs.statSync(p).size > 20 * 1024 * 1024) {
+              localInstaller = p;
+              logger.info(`  ✓ 기존 다운로드된 설치 파일 발견: ${p}`);
+              break;
+            }
+          } catch (e) {}
         }
+      }
+
+      // B. 캐시에 없으면 python.org에서 직접 다운로드 (25MB, 약 5~10초)
+      if (!localInstaller) {
+        const destPath = path.join(os.tmpdir(), 'python-3.11.9-amd64.exe');
+        logger.info('  -> python.org에서 공식 python-3.11.9-amd64.exe 초고속 다운로드 중 (25MB)...');
+        progressCallback(25, 'Python 3.11 설치 파일 다운로드 중...');
+        try {
+          await this.downloadFile('https://www.python.org/ftp/python/3.11.9/python-3.11.9-amd64.exe', destPath, (pct) => {
+            progressCallback(25 + Math.round(pct * 0.25), `Python 다운로드 중: ${pct}%`);
+          });
+          if (fs.existsSync(destPath) && fs.statSync(destPath).size > 20 * 1024 * 1024) {
+            localInstaller = destPath;
+            logger.info('  ✓ Python 공식 설치 파일 다운로드 완료 (25MB)');
+          }
+        } catch (dlErr) {
+          logger.warn(`  ! 직접 다운로드 실패: ${dlErr.message}`);
+        }
+      }
+
+      // C. 다운로드된 인스톨러를 UAC/관리자 권한 없이 사용자 영역으로 무인 설치 (InstallAllUsers=0)
+      if (localInstaller) {
+        logger.info('  -> UAC 관리자 권한 없는 사용자 영역으로 안전 무인 설치 실행 (/quiet InstallAllUsers=0)...');
+        progressCallback(55, 'Python 3.11 무인 설치 실행 중 (약 15초)...');
+        const instRes = await this.runCommand(localInstaller, [
+          '/quiet',
+          'InstallAllUsers=0',
+          'PrependPath=1',
+          'Include_pip=1',
+          'Include_test=0',
+          'Include_doc=0'
+        ], null, logger, null, 90000);
+        logger.info(`  ✓ Python 설치 프로세스 완료 (종료 코드: ${instRes.code})`);
       } else {
-        logger.warn('  ! winget 패키지 관리자를 찾을 수 없습니다.');
+        // 인스톨러 다운로드가 실패했을 경우 winget 사용자 전용(--scope user) 무인 설치 시도
+        try {
+          logger.info('  -> winget 사용자 전용(--scope user) 무인 설치 시도 중...');
+          progressCallback(40, 'winget 사용자 전용 무인 설치 중...');
+          await this.runCommand('winget', [
+            'install', 'Python.Python.3.11',
+            '--scope', 'user',
+            '--silent',
+            '--accept-package-agreements',
+            '--accept-source-agreements'
+          ], null, logger, null, 120000);
+        } catch (wErr) {}
       }
 
       // 재탐색
@@ -477,7 +563,7 @@ class SyncEngine {
     }
 
     if (!pyInfo) {
-      const errMsg = 'Python 3 런타임을 찾을 수 없습니다. python.org에서 Python 설치 후 "Add python.exe to PATH"를 체크해 주세요.';
+      const errMsg = 'Python 3 런타임을 자동으로 구성할 수 없습니다. 잠시 후 다시 시도해 주세요.';
       logger.error(`  ✗ ${errMsg}`);
       progressCallback(100, '설치 실패: Python 3 미설치');
       return { success: false, error: errMsg };
@@ -493,7 +579,7 @@ class SyncEngine {
     }
 
     // 3. pip를 통해 opencv-python-headless 설치
-    progressCallback(50, 'pip를 통해 opencv-python-headless 모듈 고속 설치 중 (약 1~2분)...');
+    progressCallback(75, 'pip를 통해 opencv-python-headless 모듈 고속 설치 중 (약 30초)...');
     logger.info(`  -> ${pyInfo.cmd} 환경에 opencv-python-headless 패키지 설치 중...`);
 
     let installRes;
@@ -504,7 +590,7 @@ class SyncEngine {
     }
 
     // 4. 최종 검증
-    progressCallback(90, '설치된 cv2 모듈 정상 작동 검증 중...');
+    progressCallback(95, '설치된 cv2 모듈 정상 작동 검증 중...');
     let verifyVer = '';
     try {
       const vCmd = pyInfo.cmd.includes(' ') ? `${pyInfo.cmd} -c "import cv2; print(cv2.__version__)"` : `"${pyInfo.cmd}" -c "import cv2; print(cv2.__version__)"`;
