@@ -486,7 +486,13 @@ class SyncEngine {
     // 4. SQLite 세션 동기화, 워크스페이스 매핑 및 대화창(🚫) 잠금 해제 (remap_worker.py)
     try {
       const workerScript = path.join(__dirname, 'remap_worker.py');
-      if (fs.existsSync(workerScript)) {
+      let hasPython = false;
+      try {
+        const pVer = execSync('python --version', { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }).trim();
+        if (pVer.toLowerCase().startsWith('python 3')) hasPython = true;
+      } catch (e) {}
+
+      if (hasPython && fs.existsSync(workerScript)) {
         logger.info('  -> SQLite 세션 매핑 및 🚫 잠금 해제 스크립트 실행 중 (최대 15초)...');
         const out = execSync(`python "${workerScript}" "${this.targetDir}"`, {
           stdio: ['pipe', 'pipe', 'pipe'],
@@ -497,9 +503,11 @@ class SyncEngine {
           if (line.trim()) logger.info(`  ${line.trim()}`);
         }
         modifiedFiles++;
+      } else {
+        logger.info('  - Python 미설치 환경: Node.js 내장 복구 모드로 경로 매핑 진행');
       }
     } catch (e) {
-      logger.warn(`  ! Python 직접 매핑 실패 또는 미설치 (${e.message}). Node.js 내장 복구 적용됨.`);
+      logger.warn(`  ! Python 매핑 건너뜀 (${e.message}). Node.js 내장 복구 적용됨.`);
     }
 
     // 3. Git Worktree 포인터 갱신 (Worktree인 경우에만 갱신, 독립 저장소 디렉터리면 안전 패스)
@@ -515,12 +523,29 @@ class SyncEngine {
         if (fs.existsSync(wtGit)) {
           const isDir = fs.statSync(wtGit).isDirectory();
           if (!isDir) {
-            // 워크트리 파일 포인터인 경우에만 파일 쓰기
-            fs.writeFileSync(wtGit, `gitdir: ${normVshow}/.git/worktrees/v-show-stage2-fast-track\n`, 'utf8');
+            // 워크트리 파일 포인터 쓰기 (EPERM 방지를 위한 쓰기 권한 확보)
+            try {
+              try { fs.chmodSync(wtGit, 0o666); } catch (e) {}
+              fs.writeFileSync(wtGit, `gitdir: ${normVshow}/.git/worktrees/v-show-stage2-fast-track\n`, 'utf8');
+            } catch (errWrite) {
+              try {
+                execSync(`attrib -r -h "${wtGit}"`, { stdio: 'ignore' });
+                fs.writeFileSync(wtGit, `gitdir: ${normVshow}/.git/worktrees/v-show-stage2-fast-track\n`, 'utf8');
+              } catch (e2) {}
+            }
 
             const mainWtDir = path.join(localVshow, '.git', 'worktrees', 'v-show-stage2-fast-track');
             if (fs.existsSync(mainWtDir)) {
-              fs.writeFileSync(path.join(mainWtDir, 'gitdir'), `${normFastTrack}/.git\n`, 'utf8');
+              const gitdirFile = path.join(mainWtDir, 'gitdir');
+              try {
+                try { fs.chmodSync(gitdirFile, 0o666); } catch (e) {}
+                fs.writeFileSync(gitdirFile, `${normFastTrack}/.git\n`, 'utf8');
+              } catch (errWrite2) {
+                try {
+                  execSync(`attrib -r -h "${gitdirFile}"`, { stdio: 'ignore' });
+                  fs.writeFileSync(gitdirFile, `${normFastTrack}/.git\n`, 'utf8');
+                } catch (e3) {}
+              }
             }
 
             await this.runCommand('git', ['worktree', 'repair'], localVshow, logger);
@@ -863,24 +888,35 @@ class SyncEngine {
   // ─────────────────────────────────────────────────────────────────────────────
   mergeConversationSummaries(srcSummaries, dstSummaries, logger) {
     if (!fs.existsSync(srcSummaries)) return false;
+    let hasPython = false;
     try {
-      const { execSync } = require('child_process');
-      const scriptPath = path.join(__dirname, 'merge_summaries.py');
-      const out = execSync(`python "${scriptPath}" "${srcSummaries}" "${dstSummaries}"`, {
-        stdio: ['pipe', 'pipe', 'pipe'],
-        timeout: 30000,
-        env: { ...process.env, PYTHONIOENCODING: 'utf-8' }
-      }).toString().trim();
-      if (logger) logger.info(`  ✓ conversation_summaries.db 양방향 스마트 병합 완료 (${out})`);
-      return true;
-    } catch (pyErr) {
-      if (logger) logger.warn(`  ! Python 병합 실패 (${pyErr.message}), 직접 복사로 대체`);
+      const pVer = execSync('python --version', { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }).trim();
+      if (pVer.toLowerCase().startsWith('python 3')) hasPython = true;
+    } catch (e) {}
+
+    if (hasPython) {
       try {
-        fs.copyFileSync(srcSummaries, dstSummaries);
+        const { execSync } = require('child_process');
+        const scriptPath = path.join(__dirname, 'merge_summaries.py');
+        const out = execSync(`python "${scriptPath}" "${srcSummaries}" "${dstSummaries}"`, {
+          stdio: ['pipe', 'pipe', 'pipe'],
+          timeout: 30000,
+          env: { ...process.env, PYTHONIOENCODING: 'utf-8' }
+        }).toString().trim();
+        if (logger) logger.info(`  ✓ conversation_summaries.db 양방향 스마트 병합 완료 (${out})`);
         return true;
-      } catch (e2) {
-        return false;
+      } catch (pyErr) {
+        if (logger) logger.warn(`  ! Python 병합 건너뜀, 직접 복사로 대체`);
       }
+    } else {
+      if (logger) logger.info('  - Python 미설치 환경: 대화 목록 DB 직접 동기화 적용');
+    }
+
+    try {
+      fs.copyFileSync(srcSummaries, dstSummaries);
+      return true;
+    } catch (e2) {
+      return false;
     }
   }
 
