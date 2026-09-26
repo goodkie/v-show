@@ -28,6 +28,7 @@ const elements = {
   btnPull: document.getElementById('btnPull'),
   btnRemap: document.getElementById('btnRemap'),
   btnUnblock: document.getElementById('btnUnblock'),
+  btnOpenCv: document.getElementById('btnOpenCv'),
 
   checksGrid: document.getElementById('checksGrid'),
   lastCheckedTime: document.getElementById('lastCheckedTime'),
@@ -193,11 +194,27 @@ function renderChecks(checks) {
         <span class="pill ${pillClass}">${c.status}</span>
       </div>
       <div class="check-desc">${c.message}</div>
-      ${c.action ? `<div style="font-size:11px; color:var(--accent-amber); font-weight:600;">추천 조치: ${c.action}</div>` : ''}
+      ${c.action ? `
+        <div style="margin-top:6px; display:flex; align-items:center; justify-content:space-between; gap:8px;">
+          <span style="font-size:11px; color:var(--accent-amber); font-weight:600;">추천 조치: ${c.action}</span>
+          <button class="btn-mini-action" onclick="handleMiniAction('${c.action}')">즉시 해결</button>
+        </div>` : ''}
     `;
     elements.checksGrid.appendChild(card);
   });
 }
+
+window.handleMiniAction = function(action) {
+  if (action.includes('OpenCV')) {
+    executeAction('/api/install-opencv', 'Python & OpenCV(cv2) 자동 설치 중 (약 1~2분 소요)...');
+  } else if (action.includes('리매핑')) {
+    executeAction('/api/remap', '현재 PC 경로로 환경 동적 리매핑 중...');
+  } else if (action.includes('복구')) {
+    executeAction('/api/recover', 'Git 팩파일 손상 격리 및 원격 refetch 복구 중...');
+  } else {
+    executeAction('/api/setup', '신규 PC 원클릭 자동 설치 및 환경 매핑 중...');
+  }
+};
 
 // 5. Action API Handlers
 async function executeAction(endpoint, startMsg, confirmMsg = null) {
@@ -282,6 +299,12 @@ elements.btnRemap.addEventListener('click', () => {
 if (elements.btnUnblock) {
   elements.btnUnblock.addEventListener('click', () => {
     executeAction('/api/unblock', '대화 세션 워크스페이스 매핑 및 🚫 금지표시 일괄 해제 중...', '대화 세션에 현재 PC 경로를 안전하게 매핑하여 🚫 잠금을 해제하시겠습니까?');
+  });
+}
+
+if (elements.btnOpenCv) {
+  elements.btnOpenCv.addEventListener('click', () => {
+    executeAction('/api/install-opencv', 'Python & OpenCV(cv2) 자동 설치 중 (약 1~2분 소요)...', '시스템 내 Python 환경 탐지 및 파노라마 스티칭용 OpenCV 모듈을 자동 설치하시겠습니까?');
   });
 }
 

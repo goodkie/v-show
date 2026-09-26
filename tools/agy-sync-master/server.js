@@ -491,7 +491,23 @@ $Shortcut.Save()
     return;
   }
 
-
+  // 12. Install Python & OpenCV (cv2) API
+  if (pathname === '/api/install-opencv' && req.method === 'POST') {
+    autoSync.isBusy = true;
+    try {
+      const out = await engine.installOpenCv(sendProgress, logger);
+      res.writeHead(out.success ? 200 : 500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(out));
+    } catch (e) {
+      logger.error(`OpenCV 설치 중 오류: ${e.message}`);
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: e.message }));
+    } finally {
+      autoSync.isBusy = false;
+      autoSync.broadcast('auto-sync-status', autoSync.getStatus());
+    }
+    return;
+  }
 
   // Static File Serving
   let filePath = path.join(__dirname, 'public', pathname === '/' ? 'index.html' : pathname);

@@ -355,20 +355,27 @@ class SyncEngine {
     if (pathIssues.length > 0) result.score -= 15;
 
     // 5. Python & OpenCV 검사
-    let pyCv2Ok = false;
-    try {
-      const pyRes = execSync('python -c "import cv2; print(cv2.__version__)"', { stdio: 'pipe' }).toString().trim();
-      pyCv2Ok = pyRes.length > 0;
+    const pyInfo = this.findPython();
+    if (pyInfo && pyInfo.hasCv2) {
       result.checks.push({
         name: 'Python OpenCV (cv2)',
         status: 'PASS',
-        message: `OpenCV 정상 설치됨 (v${pyRes})`
+        message: `OpenCV 정상 설치됨 (v${pyInfo.cv2Ver}) - ${path.basename(pyInfo.cmd)}`
       });
-    } catch (e) {
+    } else if (pyInfo && !pyInfo.hasCv2) {
       result.checks.push({
         name: 'Python OpenCV (cv2)',
         status: 'WARN',
-        message: 'Python cv2 모듈 미설치 (파노라마 스티칭 실패 위험)'
+        message: `Python(${pyInfo.version})은 감지되었으나 cv2 모듈 미설치 (파노라마 스티칭 실패 위험)`,
+        action: 'OpenCV 자동 설치'
+      });
+      result.score -= 15;
+    } else {
+      result.checks.push({
+        name: 'Python OpenCV (cv2)',
+        status: 'WARN',
+        message: 'Python 3 및 cv2 미설치 (파노라마 스티칭 기능 제한)',
+        action: 'Python 및 OpenCV 자동 설치'
       });
       result.score -= 15;
     }
@@ -376,6 +383,147 @@ class SyncEngine {
     result.score = Math.max(0, result.score);
     logger.info(`=== 진단 완료: 건강 점수 ${result.score}/100점 ===`);
     return result;
+  }
+
+  findPython() {
+    const candidates = [];
+    const fastTrackDir = path.join(this.targetDir, 'v-show-stage2-fast-track');
+
+    // 1. Local virtual environments
+    candidates.push(path.join(fastTrackDir, '.venv_stage2', 'Scripts', 'python.exe'));
+    candidates.push(path.join(fastTrackDir, 'venv', 'Scripts', 'python.exe'));
+    candidates.push(path.join(this.targetDir, 'v-show', '.venv_stage2', 'Scripts', 'python.exe'));
+    candidates.push(path.join(this.targetDir, 'v-show', 'venv', 'Scripts', 'python.exe'));
+
+    // 2. Windows LocalAppData Programs Python (Default user install location)
+    const localApp = path.join(this.homeDir, 'AppData', 'Local', 'Programs', 'Python');
+    if (fs.existsSync(localApp)) {
+      try {
+        const dirs = fs.readdirSync(localApp);
+        for (const d of dirs) {
+          candidates.push(path.join(localApp, d, 'python.exe'));
+        }
+      } catch (e) {}
+    }
+
+    // 3. System-wide Python installs (C:\Python*)
+    for (const ver of ['Python314', 'Python313', 'Python312', 'Python311', 'Python310', 'Python39']) {
+      candidates.push(`C:\\${ver}\\python.exe`);
+    }
+
+    // 4. Windows py launcher and standard PATH
+    candidates.push('py -3');
+    candidates.push('python');
+    candidates.push('python3');
+
+    for (const c of candidates) {
+      try {
+        if (c.includes('\\') && !fs.existsSync(c)) continue;
+        const testCmd = c.includes(' ') ? `${c} --version` : `"${c}" --version`;
+        const out = execSync(testCmd, { stdio: 'pipe', encoding: 'utf8', timeout: 4000 }).trim();
+        if (out.toLowerCase().startsWith('python 3')) {
+          let hasCv2 = false;
+          let cv2Ver = '';
+          try {
+            const cv2Cmd = c.includes(' ') ? `${c} -c "import cv2; print(cv2.__version__)"` : `"${c}" -c "import cv2; print(cv2.__version__)"`;
+            cv2Ver = execSync(cv2Cmd, { stdio: 'pipe', encoding: 'utf8', timeout: 6000 }).trim();
+            if (cv2Ver.length > 0) hasCv2 = true;
+          } catch (e) {}
+          return { cmd: c, version: out, hasCv2, cv2Ver };
+        }
+      } catch (e) {}
+    }
+    return null;
+  }
+
+  async installOpenCv(progressCallback, logger) {
+    logger.info('================================================================');
+    logger.info('  [Python & OpenCV (cv2) 1클릭 자동 설치 시작]');
+    logger.info('================================================================');
+
+    progressCallback(10, '현재 시스템 내 Python 환경 탐지 중...');
+    let pyInfo = this.findPython();
+
+    // 1. Python이 아예 없는 경우 winget으로 Python 3.11 자동 설치 시도
+    if (!pyInfo) {
+      logger.info('  -> 시스템에 유효한 Python 3이 발견되지 않았습니다. winget 패키지 관리자로 Python 3.11 설치 시도 중...');
+      progressCallback(20, 'Windows winget으로 Python 3.11 자동 설치 중 (약 1분 소요)...');
+      
+      let wingetAvailable = false;
+      try {
+        execSync('winget --version', { stdio: 'ignore' });
+        wingetAvailable = true;
+      } catch (e) {}
+
+      if (wingetAvailable) {
+        const wingetRes = await this.runCommand('winget', [
+          'install', 'Python.Python.3.11',
+          '--silent',
+          '--accept-package-agreements',
+          '--accept-source-agreements'
+        ], null, logger, null, 180000);
+
+        if (wingetRes.code === 0) {
+          logger.info('  ✓ Python 3.11 패키지 설치 완료. 환경 재감지 중...');
+        } else {
+          logger.warn(`  ! winget 설치 경고 (코드 ${wingetRes.code}). 로컬 경로 재탐색 진행`);
+        }
+      } else {
+        logger.warn('  ! winget 패키지 관리자를 찾을 수 없습니다.');
+      }
+
+      // 재탐색
+      pyInfo = this.findPython();
+    }
+
+    if (!pyInfo) {
+      const errMsg = 'Python 3 런타임을 찾을 수 없습니다. python.org에서 Python 설치 후 "Add python.exe to PATH"를 체크해 주세요.';
+      logger.error(`  ✗ ${errMsg}`);
+      progressCallback(100, '설치 실패: Python 3 미설치');
+      return { success: false, error: errMsg };
+    }
+
+    logger.info(`  ✓ 사용 가능한 Python 환경 확인됨: ${pyInfo.cmd} (${pyInfo.version})`);
+
+    // 2. 이미 cv2가 설치되어 있는지 확인
+    if (pyInfo.hasCv2) {
+      logger.info(`  ✓ OpenCV (cv2 v${pyInfo.cv2Ver})가 이미 정상 설치되어 있습니다.`);
+      progressCallback(100, `OpenCV v${pyInfo.cv2Ver} 정상 구비 확인 완료`);
+      return { success: true, version: pyInfo.cv2Ver, path: pyInfo.cmd };
+    }
+
+    // 3. pip를 통해 opencv-python-headless 설치
+    progressCallback(50, 'pip를 통해 opencv-python-headless 모듈 고속 설치 중 (약 1~2분)...');
+    logger.info(`  -> ${pyInfo.cmd} 환경에 opencv-python-headless 패키지 설치 중...`);
+
+    let installRes;
+    if (pyInfo.cmd === 'py -3') {
+      installRes = await this.runCommand('py', ['-3', '-m', 'pip', 'install', '--no-cache-dir', 'opencv-python-headless'], null, logger, null, 180000);
+    } else {
+      installRes = await this.runCommand(pyInfo.cmd, ['-m', 'pip', 'install', '--no-cache-dir', 'opencv-python-headless'], null, logger, null, 180000);
+    }
+
+    // 4. 최종 검증
+    progressCallback(90, '설치된 cv2 모듈 정상 작동 검증 중...');
+    let verifyVer = '';
+    try {
+      const vCmd = pyInfo.cmd.includes(' ') ? `${pyInfo.cmd} -c "import cv2; print(cv2.__version__)"` : `"${pyInfo.cmd}" -c "import cv2; print(cv2.__version__)"`;
+      verifyVer = execSync(vCmd, { stdio: 'pipe', encoding: 'utf8', timeout: 10000 }).trim();
+    } catch (e) {}
+
+    if (verifyVer.length > 0) {
+      logger.info('================================================================');
+      logger.info(`  [성공] Python OpenCV (cv2 v${verifyVer}) 설치 및 무결성 검증 100% 완료!`);
+      logger.info('  이제 3D2R 파노라마 스티칭 기능이 정상 작동하며 건강 점수 100/100점이 됩니다.');
+      logger.info('================================================================');
+      progressCallback(100, `OpenCV (cv2 v${verifyVer}) 설치 완료!`);
+      return { success: true, version: verifyVer, path: pyInfo.cmd };
+    } else {
+      const failMsg = `OpenCV 설치 후 모듈 import 검증 실패: ${installRes ? installRes.stderr : ''}`;
+      logger.error(`  ✗ ${failMsg}`);
+      progressCallback(100, '설치 실패: cv2 import 불가');
+      return { success: false, error: failMsg };
+    }
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -792,6 +940,16 @@ class SyncEngine {
       logger.info('  ✓ npm 패키지 설치 완료');
     } else {
       logger.info('  ✓ node_modules 패키지가 이미 정상 구비되어 있습니다.');
+    }
+
+    // 6b. Python OpenCV (cv2) 점검 및 보강
+    const pyFound = this.findPython();
+    if (pyFound && !pyFound.hasCv2) {
+      logger.info(`  -> ${pyFound.cmd} 환경에 OpenCV(cv2) 백그라운드 설치 중...`);
+      try {
+        await this.runCommand(pyFound.cmd, ['-m', 'pip', 'install', '--no-cache-dir', 'opencv-python-headless'], null, logger, null, 120000);
+        logger.info('  ✓ OpenCV(cv2) 모듈 자동 구비 완료');
+      } catch (e) {}
     }
 
     // 7. 무결성 최종 검증 (고속 연결성 검증)
