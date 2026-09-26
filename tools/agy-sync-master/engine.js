@@ -1202,6 +1202,29 @@ class SyncEngine {
           }
         }
       }
+
+      // 5. VS Code / Antigravity IDE UI 상태 복원 (state.vscdb, storage.json, workspaceStorage)
+      const srcUiState = path.join(syncPkg, 'antigravity-core', 'ui-state');
+      if (fs.existsSync(srcUiState)) {
+        for (const cDir of this.getConfigDirs()) {
+          const uGlobal = path.join(cDir, 'User', 'globalStorage');
+          fs.mkdirSync(uGlobal, { recursive: true });
+          const srcVscdb = path.join(srcUiState, 'state.vscdb');
+          if (fs.existsSync(srcVscdb)) {
+            try { fs.copyFileSync(srcVscdb, path.join(uGlobal, 'state.vscdb')); } catch (e) {}
+          }
+          const srcStorageJson = path.join(srcUiState, 'storage.json');
+          if (fs.existsSync(srcStorageJson)) {
+            try { fs.copyFileSync(srcStorageJson, path.join(uGlobal, 'storage.json')); } catch (e) {}
+          }
+          const srcWs = path.join(srcUiState, 'workspaceStorage');
+          if (fs.existsSync(srcWs)) {
+            const dstWs = path.join(cDir, 'User', 'workspaceStorage');
+            this.copyDirectoryRecursiveSync(srcWs, dstWs, ['.db-wal', '.db-shm']);
+          }
+        }
+        logger.info('  ✓ Antigravity UI 세션 상태(state.vscdb & storage.json) 복원 완료');
+      }
       logger.info('  ✓ Antigravity 세션 및 UI 설정 복원 완료');
     } else {
       logger.warn(`  ! Google Drive 패키지를 찾을 수 없어 로컬 세션으로 진행합니다 (${syncPkg})`);
@@ -1476,6 +1499,34 @@ class SyncEngine {
       fs.copyFileSync(appStorage, path.join(dstConfig, 'app_storage.json'));
     }
 
+    // 7b. VS Code / Antigravity IDE UI 상태 백업 (state.vscdb, storage.json, workspaceStorage)
+    const dstUiState = path.join(syncPkg, 'antigravity-core', 'ui-state');
+    fs.mkdirSync(dstUiState, { recursive: true });
+    for (const cDir of this.getConfigDirs()) {
+      const globalStorage = path.join(cDir, 'User', 'globalStorage');
+      const vscdb = path.join(globalStorage, 'state.vscdb');
+      if (fs.existsSync(vscdb)) {
+        try {
+          fs.copyFileSync(vscdb, path.join(dstUiState, 'state.vscdb'));
+          logger.info('  ✓ Antigravity UI state.vscdb 백업 완료');
+        } catch (e) {}
+      }
+      const storageJson = path.join(globalStorage, 'storage.json');
+      if (fs.existsSync(storageJson)) {
+        try {
+          fs.copyFileSync(storageJson, path.join(dstUiState, 'storage.json'));
+          logger.info('  ✓ Antigravity UI storage.json 백업 완료');
+        } catch (e) {}
+      }
+      const wsStorage = path.join(cDir, 'User', 'workspaceStorage');
+      if (fs.existsSync(wsStorage)) {
+        try {
+          this.copyDirectoryRecursiveSync(wsStorage, path.join(dstUiState, 'workspaceStorage'), ['.db-wal', '.db-shm']);
+        } catch (e) {}
+      }
+      break;
+    }
+
     // 8. 동기화 매니페스트 기록
     progressCallback(95, '동기화 매니페스트 기록 중...');
     const manifest = {
@@ -1630,12 +1681,28 @@ class SyncEngine {
         } catch (e) {}
       }
 
-      // 6. app_storage.json
-      const srcAppStorage = path.join(srcConfig, 'app_storage.json');
-      if (fs.existsSync(srcAppStorage)) {
+      // 7. VS Code / Antigravity IDE UI 상태 동기화 (state.vscdb, storage.json, workspaceStorage)
+      progressCallback(80, 'Antigravity IDE UI 세션 및 창 상태 동기화 중...');
+      const srcUiState = path.join(syncPkg, 'antigravity-core', 'ui-state');
+      if (fs.existsSync(srcUiState)) {
         for (const cDir of this.getConfigDirs()) {
-          try { fs.copyFileSync(srcAppStorage, path.join(cDir, 'app_storage.json')); } catch (e) {}
+          const uGlobal = path.join(cDir, 'User', 'globalStorage');
+          fs.mkdirSync(uGlobal, { recursive: true });
+          const srcVscdb = path.join(srcUiState, 'state.vscdb');
+          if (fs.existsSync(srcVscdb)) {
+            try { fs.copyFileSync(srcVscdb, path.join(uGlobal, 'state.vscdb')); } catch (e) {}
+          }
+          const srcStorageJson = path.join(srcUiState, 'storage.json');
+          if (fs.existsSync(srcStorageJson)) {
+            try { fs.copyFileSync(srcStorageJson, path.join(uGlobal, 'storage.json')); } catch (e) {}
+          }
+          const srcWs = path.join(srcUiState, 'workspaceStorage');
+          if (fs.existsSync(srcWs)) {
+            const dstWs = path.join(cDir, 'User', 'workspaceStorage');
+            this.copyDirectoryRecursiveSync(srcWs, dstWs, ['.db-wal', '.db-shm']);
+          }
         }
+        logger.info('  ✓ Antigravity UI 세션 상태(state.vscdb & storage.json) 최신 동기화 완료');
       }
     }
 

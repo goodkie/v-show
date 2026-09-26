@@ -168,6 +168,7 @@ class AutoSyncManager {
 
   async tick() {
     if (!this.enabled || this.isBusy) return;
+    this.engine = getEngine();
 
     try {
       // 1. Google Drive의 원격 매니페스트 확인 (다른 PC의 신규 Push 감지 -> 자동 PULL)

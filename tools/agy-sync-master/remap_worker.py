@@ -4,6 +4,7 @@ import glob
 import json
 import sqlite3
 import time
+import re
 
 try:
     sys.stdout.reconfigure(encoding='utf-8')
@@ -224,10 +225,38 @@ def remap_agy_root(agy_root, target_dir):
                 added_count += 1
                 print(f"  + Added missing conversation {cid} ({title})")
         
-        # Update workspace_uris on all rows
-        rows = c.execute("SELECT conversation_id, workspace_uris FROM conversation_summaries").fetchall()
+        # Update workspace_uris and raw_summary on all rows
+        rows = c.execute("SELECT conversation_id, title, workspace_uris, raw_summary FROM conversation_summaries").fetchall()
         updated_sum = 0
-        for cid, uris_str in rows:
+        synthesized_count = 0
+
+        # Fetch proto template for raw_summary synthesis
+        t_row = c.execute("SELECT raw_summary FROM conversation_summaries WHERE raw_summary IS NOT NULL AND length(raw_summary) > 100 LIMIT 1").fetchone()
+        proto_template = t_row[0] if t_row else None
+
+        primary_ws_uri = f"file:///{drive.upper()}%3A{rest}/v-show-stage2-fast-track"
+        norm_ws_uri = f"file:///{drive.lower()}:{rest}/v-show-stage2-fast-track"
+
+        proto_reps = [
+            (b"file:///c%3A/Users/server4/ai/v-show-stage2-fast-track", primary_ws_uri.encode("utf-8")),
+            (b"file:///C%3A/Users/server4/ai/v-show-stage2-fast-track", primary_ws_uri.encode("utf-8")),
+            (b"file:///c:/Users/server4/ai/v-show-stage2-fast-track", norm_ws_uri.encode("utf-8")),
+            (b"file:///C:/Users/server4/ai/v-show-stage2-fast-track", norm_ws_uri.encode("utf-8")),
+            (b"file:///e:/vivpr/ai/v-show", norm_ws_uri.encode("utf-8")),
+            (b"file:///e%3A/vivpr/ai/v-show", primary_ws_uri.encode("utf-8")),
+            (b"c:/Users/server4/ai/v-show-stage2-fast-track", f"{drive.lower()}:{rest}/v-show-stage2-fast-track".encode("utf-8")),
+            (b"C:/Users/server4/ai/v-show-stage2-fast-track", f"{drive.upper()}:{rest}/v-show-stage2-fast-track".encode("utf-8")),
+            (b"c%3A/Users/server4/ai/v-show-stage2-fast-track", f"{drive.lower()}%3A{rest}/v-show-stage2-fast-track".encode("utf-8")),
+            (b"C%3A/Users/server4/ai/v-show-stage2-fast-track", f"{drive.upper()}%3A{rest}/v-show-stage2-fast-track".encode("utf-8")),
+            (b"c:/Users/server1/ai", norm_target.encode("utf-8")),
+            (b"c%3A/Users/server1/ai", f"{drive.lower()}%3A{rest}".encode("utf-8"))
+        ]
+
+        for cid, title, uris_str, raw_summary in rows:
+            row_changed = False
+            new_uris_str = uris_str
+            new_raw_summary = raw_summary
+
             try:
                 uris = json.loads(uris_str) if uris_str else []
                 new_uris = list(uris)
@@ -235,12 +264,42 @@ def remap_agy_root(agy_root, target_dir):
                     if u not in new_uris:
                         new_uris.append(u)
                 if new_uris != uris:
-                    c.execute("UPDATE conversation_summaries SET workspace_uris = ?, status = 'CASCADE_RUN_STATUS_IDLE', killed = 0, not_fully_idle = 0 WHERE conversation_id = ?", (json.dumps(new_uris), cid))
-                    updated_sum += 1
+                    new_uris_str = json.dumps(new_uris)
+                    row_changed = True
             except Exception: pass
+
+            if new_raw_summary is None and proto_template is not None:
+                try:
+                    title_b = (title or f"Conversation {cid[:8]}").encode("utf-8", errors="ignore")
+                    cid_b = cid.encode("utf-8")
+                    synth_reps = [
+                        (b"Product 3D State Synchronization", title_b),
+                        (b"9be325ed-943b-4fbd-abb3-c393fe5bab35", cid_b),
+                        (b"file:///e:/vivpr/ai/v-show", norm_ws_uri.encode("utf-8"))
+                    ]
+                    new_raw_summary = replace_in_proto(proto_template, synth_reps)
+                    synthesized_count += 1
+                    row_changed = True
+                except Exception: pass
+            elif new_raw_summary is not None:
+                try:
+                    updated_proto = replace_in_proto(new_raw_summary, proto_reps)
+                    if updated_proto != new_raw_summary:
+                        new_raw_summary = updated_proto
+                        row_changed = True
+                except Exception: pass
+
+            if row_changed:
+                c.execute("""
+                    UPDATE conversation_summaries 
+                    SET workspace_uris = ?, raw_summary = ?, status = 'CASCADE_RUN_STATUS_IDLE', killed = 0, not_fully_idle = 0 
+                    WHERE conversation_id = ?
+                """, (new_uris_str, new_raw_summary, cid))
+                updated_sum += 1
+
         conn.commit()
         conn.close()
-        print(f"  ✓ conversation_summaries.db updated: {updated_sum} rows updated, {added_count} discovered (Total: {len(rows) + added_count})")
+        print(f"  ✓ conversation_summaries.db updated: {updated_sum} rows updated ({synthesized_count} proto synthesized), {added_count} discovered (Total: {len(rows) + added_count})")
     except Exception as e:
         print(f"  ! Warning updating conversation_summaries.db: {e}")
 
@@ -295,9 +354,119 @@ def remap_agy_root(agy_root, target_dir):
 
     print(f"  ✓ Conversations checked: {total_unlocked} steps unlocked (forbidden 🚫 removed), {total_blobs_remapped} blobs remapped")
 
+def remap_ide_ui_state(target_dir):
+    appdata = os.environ.get('APPDATA', '')
+    home = os.path.expanduser('~')
+    norm_target = target_dir.replace("\\", "/").rstrip("/")
+    if norm_target.lower().endswith("/v-show-stage2-fast-track"):
+        base_parent = norm_target[:-len("/v-show-stage2-fast-track")]
+    elif norm_target.lower().endswith("/v-show"):
+        base_parent = norm_target[:-len("/v-show")]
+    else:
+        base_parent = norm_target
+
+    drive = base_parent[0]
+    rest = base_parent[2:]
+
+    primary_ws_uri = f"file:///{drive.upper()}%3A{rest}/v-show-stage2-fast-track"
+    norm_ws_uri = f"file:///{drive.lower()}:{rest}/v-show-stage2-fast-track"
+
+    reps = [
+        (b"file:///c%3A/Users/server4/ai/v-show-stage2-fast-track", primary_ws_uri.encode("utf-8")),
+        (b"file:///C%3A/Users/server4/ai/v-show-stage2-fast-track", primary_ws_uri.encode("utf-8")),
+        (b"file:///c:/Users/server4/ai/v-show-stage2-fast-track", norm_ws_uri.encode("utf-8")),
+        (b"file:///C:/Users/server4/ai/v-show-stage2-fast-track", norm_ws_uri.encode("utf-8")),
+        (b"c:/Users/server4/ai/v-show-stage2-fast-track", f"{drive.lower()}:{rest}/v-show-stage2-fast-track".encode("utf-8")),
+        (b"C:/Users/server4/ai/v-show-stage2-fast-track", f"{drive.upper()}:{rest}/v-show-stage2-fast-track".encode("utf-8")),
+        (b"c%3A/Users/server4/ai/v-show-stage2-fast-track", f"{drive.lower()}%3A{rest}/v-show-stage2-fast-track".encode("utf-8")),
+        (b"C%3A/Users/server4/ai/v-show-stage2-fast-track", f"{drive.upper()}%3A{rest}/v-show-stage2-fast-track".encode("utf-8")),
+        (b"c:/Users/server1/ai", norm_target.encode("utf-8")),
+        (b"c%3A/Users/server1/ai", f"{drive.lower()}%3A{rest}".encode("utf-8")),
+        (b"Users/server4", f"Users/{os.path.basename(home)}".encode("utf-8"))
+    ]
+
+    config_roots = [
+        os.path.join(appdata, 'Antigravity IDE'),
+        os.path.join(appdata, 'Antigravity')
+    ]
+
+    for c_root in config_roots:
+        if not os.path.exists(c_root):
+            continue
+        user_dir = os.path.join(c_root, 'User')
+        global_storage = os.path.join(user_dir, 'globalStorage')
+        os.makedirs(global_storage, exist_ok=True)
+
+        # 1. state.vscdb
+        vscdb = os.path.join(global_storage, 'state.vscdb')
+        if os.path.exists(vscdb):
+            try:
+                conn = sqlite3.connect(vscdb, timeout=10.0)
+                cur = conn.cursor()
+                cur.execute("PRAGMA busy_timeout = 10000;")
+                cur.execute("SELECT key, value FROM ItemTable WHERE key IN (?, ?)",
+                            ('antigravityUnifiedStateSync.sidebarWorkspaces', 'antigravityUnifiedStateSync.trajectorySummaries'))
+                rows = cur.fetchall()
+                for key, val in rows:
+                    try:
+                        raw = base64.b64decode(val)
+                        new_raw = replace_in_proto(raw, reps)
+                        if new_raw != raw:
+                            new_b64 = base64.b64encode(new_raw).decode('utf-8')
+                            cur.execute("UPDATE ItemTable SET value = ? WHERE key = ?", (new_b64, key))
+                    except Exception: pass
+                conn.commit()
+                conn.close()
+                print(f"  ✓ Remapped UI state.vscdb in {os.path.basename(c_root)}")
+            except Exception as e:
+                print(f"  ! state.vscdb note: {e}")
+
+        # 2. storage.json
+        storage_file = os.path.join(global_storage, 'storage.json')
+        if os.path.exists(storage_file):
+            try:
+                raw_txt = open(storage_file, 'r', encoding='utf-8').read()
+                raw_txt = re.sub(r'\\Users\\([^\\\s"]+)\\\\', r'\\\\Users\\\\\1\\\\', raw_txt)
+                try:
+                    data = json.loads(raw_txt)
+                except Exception:
+                    data = json.loads(re.sub(r'\\(?![/"\\bfnrtu])', r'\\\\', raw_txt))
+
+                if 'backupWorkspaces' not in data: data['backupWorkspaces'] = {}
+                data['backupWorkspaces']['folders'] = [{'folderUri': primary_ws_uri}]
+                if 'windowsState' not in data: data['windowsState'] = {}
+                if 'lastActiveWindow' not in data['windowsState']: data['windowsState']['lastActiveWindow'] = {}
+                data['windowsState']['lastActiveWindow']['folder'] = primary_ws_uri
+
+                if 'profileAssociations' not in data: data['profileAssociations'] = {}
+                if 'workspaces' not in data['profileAssociations']: data['profileAssociations']['workspaces'] = {}
+                data['profileAssociations']['workspaces'][primary_ws_uri] = "__default__profile__"
+
+                with open(storage_file, 'w', encoding='utf-8') as f:
+                    json.dump(data, f, indent=4)
+                print(f"  ✓ Configured storage.json in {os.path.basename(c_root)} -> {primary_ws_uri}")
+            except Exception as e:
+                print(f"  ! storage.json note: {e}")
+
+        # 3. workspaceStorage
+        ws_storage = os.path.join(user_dir, 'workspaceStorage')
+        if os.path.exists(ws_storage):
+            for ws_dir in os.listdir(ws_storage):
+                ws_json = os.path.join(ws_storage, ws_dir, 'workspace.json')
+                if os.path.exists(ws_json):
+                    try:
+                        with open(ws_json, 'r', encoding='utf-8') as f:
+                            ws_data = json.load(f)
+                        if 'folder' in ws_data:
+                            ws_data['folder'] = primary_ws_uri
+                            with open(ws_json, 'w', encoding='utf-8') as f:
+                                json.dump(ws_data, f, indent=2)
+                    except Exception: pass
+
 if __name__ == "__main__":
     target = sys.argv[1] if len(sys.argv) > 1 else r"C:\Users\server4\ai"
     home = os.path.expanduser("~")
     for r in [os.path.join(home, ".gemini", "antigravity-ide"), os.path.join(home, ".gemini", "antigravity")]:
         if os.path.exists(r):
             remap_agy_root(r, target)
+    remap_ide_ui_state(target)
