@@ -521,6 +521,23 @@ $Shortcut.Save()
     return;
   }
 
+  // 13. Setup GitHub Auth API
+  if (pathname === '/api/setup-git-auth' && req.method === 'POST') {
+    try {
+      sendProgress(30, 'Google Drive에서 GitHub 원격 인증 토큰 탐색 중...');
+      const eng = getEngine();
+      const ok = eng.setupGitAuth(logger);
+      sendProgress(100, ok ? 'GitHub 인증 연동 완료! Git Push가 즉시 활성화되었습니다.' : 'GitHub 토큰을 찾을 수 없습니다.');
+      res.writeHead(ok ? 200 : 400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: ok }));
+    } catch (e) {
+      logger.error(`GitHub 인증 연동 실패: ${e.message}`);
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: e.message }));
+    }
+    return;
+  }
+
   // Static File Serving
   let filePath = path.join(__dirname, 'public', pathname === '/' ? 'index.html' : pathname);
   const ext = path.extname(filePath);

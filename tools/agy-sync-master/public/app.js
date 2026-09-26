@@ -205,7 +205,9 @@ function renderChecks(checks) {
 }
 
 window.handleMiniAction = function(action) {
-  if (action.includes('OpenCV')) {
+  if (action.includes('GitHub')) {
+    executeAction('/api/setup-git-auth', 'GitHub 원격 인증(Git Push) 토큰 자동 연동 중...');
+  } else if (action.includes('OpenCV')) {
     executeAction('/api/install-opencv', 'Python & OpenCV(cv2) 자동 설치 중 (약 1~2분 소요)...');
   } else if (action.includes('리매핑')) {
     executeAction('/api/remap', '현재 PC 경로로 환경 동적 리매핑 중...');

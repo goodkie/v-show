@@ -90,14 +90,154 @@ class SyncEngine {
     ];
   }
 
+  getGitHubAuth() {
+    if (this._githubAuth && this._githubAuth.token) {
+      return this._githubAuth;
+    }
+
+    let token = '';
+    let username = 'goodkie';
+    let email = 'antigravity@internal.ai';
+
+    // 1. Google Drive 패키지에서 github_auth.json 탐색
+    try {
+      const syncPkg = this.getSyncPackagePath();
+      const authFile = path.join(syncPkg, 'antigravity-core', 'config', 'github_auth.json');
+      if (fs.existsSync(authFile)) {
+        const data = JSON.parse(fs.readFileSync(authFile, 'utf8'));
+        if (data.token) {
+          token = data.token;
+          if (data.username) username = data.username;
+          if (data.email) email = data.email;
+        }
+      }
+    } catch (e) {}
+
+    // 2. 로컬 gh CLI 로그인 확인 (토큰 발견 시 Google Drive 파일도 자동 최신화)
+    try {
+      const ghToken = execSync('gh auth token', { stdio: 'pipe', encoding: 'utf8', timeout: 3000 }).trim();
+      if (ghToken.startsWith('gho_') || ghToken.startsWith('ghp_')) {
+        token = ghToken;
+        const syncPkg = this.getSyncPackagePath();
+        const authFile = path.join(syncPkg, 'antigravity-core', 'config', 'github_auth.json');
+        if (fs.existsSync(path.dirname(authFile))) {
+          try {
+            fs.writeFileSync(authFile, JSON.stringify({ token, username, email, updatedAt: new Date().toISOString() }, null, 2), 'utf8');
+          } catch (e) {}
+        }
+      }
+    } catch (e) {}
+
+    // 3. 로컬 ~/.git-credentials 확인
+    if (!token) {
+      try {
+        const credFile = path.join(this.homeDir, '.git-credentials');
+        if (fs.existsSync(credFile)) {
+          const content = fs.readFileSync(credFile, 'utf8');
+          const m = content.match(/https:\/\/(?:[^:]+):([^@]+)@github\.com/);
+          if (m && m[1]) token = m[1];
+        }
+      } catch (e) {}
+    }
+
+    if (token) {
+      this._githubAuth = { token, username, email };
+      return this._githubAuth;
+    }
+    return null;
+  }
+
+  setupGitAuth(logger) {
+    const auth = this.getGitHubAuth();
+    if (!auth || !auth.token) {
+      if (logger) logger.warn('  ! GitHub 원격 인증 토큰을 찾을 수 없습니다.');
+      return false;
+    }
+
+    try {
+      // 1. Git 글로벌 사용자 정보 설정 (미설정 시)
+      try {
+        const curName = execSync('git config --global user.name', { stdio: 'pipe', encoding: 'utf8' }).trim();
+        if (!curName) execSync(`git config --global user.name "${auth.username}"`, { stdio: 'ignore' });
+        const curEmail = execSync('git config --global user.email', { stdio: 'pipe', encoding: 'utf8' }).trim();
+        if (!curEmail) execSync(`git config --global user.email "${auth.email}"`, { stdio: 'ignore' });
+      } catch (e) {}
+
+      // 2. Git credential helper store 설정 및 .git-credentials 파일 등록
+      const gitCredFile = path.join(this.homeDir, '.git-credentials');
+      const credLines = [
+        `https://x-access-token:${auth.token}@github.com`,
+        `https://${auth.username}:${auth.token}@github.com`
+      ];
+
+      let existingCreds = '';
+      if (fs.existsSync(gitCredFile)) {
+        try { existingCreds = fs.readFileSync(gitCredFile, 'utf8'); } catch (e) {}
+      }
+
+      let credUpdated = false;
+      for (const line of credLines) {
+        if (!existingCreds.includes(line)) {
+          existingCreds = (existingCreds.trim() ? existingCreds.trim() + '\n' : '') + line + '\n';
+          credUpdated = true;
+        }
+      }
+
+      if (credUpdated || !fs.existsSync(gitCredFile)) {
+        fs.writeFileSync(gitCredFile, existingCreds, 'utf8');
+      }
+
+      try {
+        execSync('git config --global credential.helper store', { stdio: 'ignore' });
+      } catch (e) {}
+
+      // 3. Windows 자격 증명 관리자에 cmdkey로 git:https://github.com 등록
+      try {
+        execSync(`cmdkey /generic:git:https://github.com /user:${auth.username} /pass:${auth.token}`, { stdio: 'ignore' });
+      } catch (e) {}
+
+      // 4. 로컬 저장소들에 credential.helper=store 명시
+      const repos = [
+        path.join(this.targetDir, 'v-show'),
+        path.join(this.targetDir, 'v-show-stage2-fast-track')
+      ];
+      for (const repo of repos) {
+        if (fs.existsSync(path.join(repo, '.git'))) {
+          try {
+            execSync('git config credential.helper store', { cwd: repo, stdio: 'ignore' });
+          } catch (e) {}
+        }
+      }
+
+      // 5. 로컬에 gh CLI가 존재한다면 자동 로그인
+      try {
+        execSync(`echo ${auth.token} | gh auth login --with-token`, { stdio: 'ignore', timeout: 5000 });
+      } catch (e) {}
+
+      if (logger) logger.info(`  ✓ GitHub 원격 인증 토큰 자동 연동 완료 (${auth.username}) -> Git Push 100% 활성화`);
+      return true;
+    } catch (e) {
+      if (logger) logger.warn(`  ! GitHub 인증 자동 연동 알림: ${e.message}`);
+      return false;
+    }
+  }
+
   runCommand(cmd, args, cwd, logger, onProgress = null, timeoutMs = 180000) {
     return new Promise((resolve) => {
       let finalArgs = args;
       if (cmd === 'git') {
-        finalArgs = ['-c', 'safe.directory=*', ...args];
+        const gitConfigs = ['-c', 'safe.directory=*'];
+        const auth = this.getGitHubAuth();
+        if (auth && auth.token && args.some(a => ['push', 'fetch', 'pull', 'clone', 'ls-remote'].includes(a))) {
+          const b64 = Buffer.from(`${auth.username || 'goodkie'}:${auth.token}`).toString('base64');
+          gitConfigs.push('-c', `http.extraheader="Authorization: Basic ${b64}"`);
+          gitConfigs.push('-c', 'credential.helper=store');
+        }
+        finalArgs = [...gitConfigs, ...args];
       }
-      const fullCmd = `${cmd} ${finalArgs.join(' ')}`;
-      if (logger) logger.info(`[EXEC] ${fullCmd} (in ${cwd || process.cwd()})`);
+      const rawCmd = `${cmd} ${finalArgs.join(' ')}`;
+      const logCmd = rawCmd.replace(/Basic [A-Za-z0-9+/=]+/g, 'Basic [REDACTED]');
+      if (logger) logger.info(`[EXEC] ${logCmd} (in ${cwd || process.cwd()})`);
       
       const proc = spawn(cmd, finalArgs, {
         cwd: cwd || process.cwd(),
@@ -386,6 +526,24 @@ class SyncEngine {
       result.score -= 15;
     }
 
+    // 6. GitHub 원격 인증 (Git Push) 검사
+    const ghAuth = this.getGitHubAuth();
+    if (ghAuth && ghAuth.token) {
+      result.checks.push({
+        name: 'GitHub 원격 인증 (Git Push)',
+        status: 'PASS',
+        message: `계정 연동됨 (${ghAuth.username}) - Git Push 즉시 가능`
+      });
+    } else {
+      result.checks.push({
+        name: 'GitHub 원격 인증 (Git Push)',
+        status: 'WARN',
+        message: 'GitHub 인증 토큰 미연동 (Google Drive 연동 필요)',
+        action: 'GitHub 인증 자동 연동'
+      });
+      result.score -= 10;
+    }
+
     result.score = Math.max(0, result.score);
     logger.info(`=== 진단 완료: 건강 점수 ${result.score}/100점 ===`);
     return result;
@@ -672,6 +830,9 @@ class SyncEngine {
     // 0. Antigravity 무중단 안전 검사 (IDE 프로세스 강제 종료 금지)
     this.killAgyProcesses(logger);
 
+    // 0-1. GitHub 원격 인증 (Git Push) 토큰 자동 연동
+    this.setupGitAuth(logger);
+
     // 1. 작업영역 신뢰 (Workspace Trust) 자동 비활성화 (Restricted Mode 방지)
     for (const cd of this.getConfigDirs()) {
       const settingsFile = path.join(cd, 'User', 'settings.json');
@@ -875,20 +1036,21 @@ class SyncEngine {
     const localVshow = path.join(this.targetDir, 'v-show');
     const localFastTrack = path.join(this.targetDir, 'v-show-stage2-fast-track');
 
+    // 1-1. GitHub 원격 인증 토큰 자동 연동
+    this.setupGitAuth(logger);
+
     // 2. 저장소 초고속 클론
     progressCallback(15, '[2/8] GitHub 저장소 연결 및 초고속 얕은 복제(Shallow Clone) 준비...');
     logger.info('[단계 2/8] GitHub 저장소 다운로드 (멈춤 방지 얕은 복제):');
     
     let cloneUrl = this.githubRepoUrl;
-    try {
-      const ghToken = execSync('gh auth token 2>nul || exit 0', { shell: true }).toString().trim();
-      if (ghToken) {
-        cloneUrl = `https://${ghToken}@github.com/goodkie/v-show.git`;
-        logger.info('  ✓ GitHub CLI 인증 토큰 자동 주입 완료 (무인증 무한 대기 방지)');
-      } else {
-        logger.info('  - GitHub CLI 토큰 없음 (공개 HTTPS 엔드포인트 사용)');
-      }
-    } catch (e) {}
+    const auth = this.getGitHubAuth();
+    if (auth && auth.token) {
+      cloneUrl = `https://${auth.token}@github.com/goodkie/v-show.git`;
+      logger.info(`  ✓ GitHub 인증 토큰 자동 주입 완료 (${auth.username})`);
+    } else {
+      logger.info('  - GitHub 토큰 없음 (기본 HTTPS 엔드포인트 사용)');
+    }
 
     if (!fs.existsSync(path.join(localVshow, '.git'))) {
       progressCallback(20, '[2/8] 저장소 코드 다운로드 중 (수 GB 대신 필요한 최신 30개 커밋만 초고속 수신)...');
@@ -1202,17 +1364,29 @@ class SyncEngine {
     logger.info('=== 작업 완료: GitHub 푸시 & Google Drive 세션/설정 안전 백업 시작 ===');
     const fastTrackDir = path.join(this.targetDir, 'v-show-stage2-fast-track');
 
+    // 0. GitHub 원격 푸시 자격 증명 자동 연동
+    this.setupGitAuth(logger);
+
     progressCallback(10, 'Git 커밋 및 GitHub 푸시 중...');
-    const pushRes = await this.runCommand('git', ['push', 'origin', this.defaultBranch], fastTrackDir, logger);
+    let pushRes = await this.runCommand('git', ['push', 'origin', this.defaultBranch], fastTrackDir, logger);
     let gitPushSkipped = false;
     if (pushRes.code !== 0) {
       const errOut = (pushRes.stderr || '') + (pushRes.stdout || '');
-      if (errOut.includes('Authentication failed') || errOut.includes('Invalid username or token') || errOut.includes('interactivity has been disabled') || errOut.includes('Permission to') || errOut.includes('denied')) {
-        gitPushSkipped = true;
-        logger.info('  ℹ GitHub 푸시 권한/인증 없음(세컨더리 PC): Git 원격 푸시는 건너뛰고 Google Drive 실시간 동기화로 진행합니다.');
-      } else {
-        logger.warn(`  ! Git push 알림: ${errOut.trim().slice(0, 150)}`);
+      if (errOut.includes('Authentication failed') || errOut.includes('Invalid username') || errOut.includes('interactivity') || errOut.includes('403')) {
+        logger.info('  -> GitHub 인증 갱신 후 Push 재시도 중...');
+        this._githubAuth = null;
+        this.setupGitAuth(logger);
+        pushRes = await this.runCommand('git', ['push', 'origin', this.defaultBranch], fastTrackDir, logger);
       }
+      if (pushRes.code === 0) {
+        logger.info('  ✓ GitHub 원격 브랜치 푸시 성공 (origin/' + this.defaultBranch + ')');
+      } else {
+        const finalErr = (pushRes.stderr || '') + (pushRes.stdout || '');
+        logger.warn(`  ! Git push 알림: ${finalErr.trim().slice(0, 150)}`);
+        gitPushSkipped = true;
+      }
+    } else {
+      logger.info('  ✓ GitHub 원격 브랜치 푸시 성공 (origin/' + this.defaultBranch + ')');
     }
 
     progressCallback(30, 'Google Drive 대상 패키지 준비 중...');
@@ -1326,6 +1500,9 @@ class SyncEngine {
   async pullSync(progressCallback, logger) {
     logger.info('=== 작업 시작: GitHub 풀 & Google Drive 최신 세션/설정 가져오기 시작 ===');
     const fastTrackDir = path.join(this.targetDir, 'v-show-stage2-fast-track');
+
+    // 0. GitHub 원격 인증 토큰 자동 연동
+    this.setupGitAuth(logger);
 
     progressCallback(15, 'GitHub 원격지 최신 커밋 pull 중...');
     let pullRes = await this.runCommand('git', ['pull', 'origin', this.defaultBranch], fastTrackDir, logger);
