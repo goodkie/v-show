@@ -786,9 +786,9 @@ class SyncEngine {
     logger.info('[단계 6/8] Node.js 의존성 검사:');
     const nodeModules = path.join(localFastTrack, 'node_modules');
     if (!fs.existsSync(nodeModules) && fs.existsSync(path.join(localFastTrack, 'package.json'))) {
-      logger.info('  -> node_modules가 없습니다. 필수 패키지 설치 중 (npm install)...');
-      progressCallback(90, '[6/8] Node.js 패키지 설치 중 (npm install)...');
-      await this.runCommand('npm.cmd', ['install', '--silent'], localFastTrack, logger, null, 180000);
+      logger.info('  -> node_modules가 없습니다. 필수 패키지 설치 중 (npm install, 약 1~2분 소요)...');
+      progressCallback(90, '[6/8] Node.js 패키지 설치 중 (npm install, 약 1~2분 소요)...');
+      await this.runCommand('npm.cmd', ['install', '--no-audit', '--no-fund'], localFastTrack, logger, null, 180000);
       logger.info('  ✓ npm 패키지 설치 완료');
     } else {
       logger.info('  ✓ node_modules 패키지가 이미 정상 구비되어 있습니다.');
@@ -925,7 +925,17 @@ class SyncEngine {
     const fastTrackDir = path.join(this.targetDir, 'v-show-stage2-fast-track');
 
     progressCallback(10, 'Git 커밋 및 GitHub 푸시 중...');
-    await this.runCommand('git', ['push', 'origin', this.defaultBranch], fastTrackDir, logger);
+    const pushRes = await this.runCommand('git', ['push', 'origin', this.defaultBranch], fastTrackDir, logger);
+    let gitPushSkipped = false;
+    if (pushRes.code !== 0) {
+      const errOut = (pushRes.stderr || '') + (pushRes.stdout || '');
+      if (errOut.includes('Authentication failed') || errOut.includes('Invalid username or token') || errOut.includes('interactivity has been disabled') || errOut.includes('Permission to') || errOut.includes('denied')) {
+        gitPushSkipped = true;
+        logger.info('  ℹ GitHub 푸시 권한/인증 없음(세컨더리 PC): Git 원격 푸시는 건너뛰고 Google Drive 실시간 동기화로 진행합니다.');
+      } else {
+        logger.warn(`  ! Git push 알림: ${errOut.trim().slice(0, 150)}`);
+      }
+    }
 
     progressCallback(30, 'Google Drive 대상 패키지 준비 중...');
     const syncPkg = this.getSyncPackagePath();
@@ -1027,8 +1037,12 @@ class SyncEngine {
     fs.writeFileSync(path.join(syncPkg, 'sync_manifest.json'), JSON.stringify(manifest, null, 2), 'utf8');
 
     progressCallback(100, '작업 완료 동기화 (Push) 완료!');
-    logger.info('✓ GitHub 푸시 및 Google Drive 최신 세션/설정 백업 완료');
-    return { success: true, manifest };
+    if (gitPushSkipped) {
+      logger.info('✓ Google Drive 최신 세션/설정 백업 완료 (Git 원격 푸시 제외)');
+    } else {
+      logger.info('✓ GitHub 푸시 및 Google Drive 최신 세션/설정 백업 완료');
+    }
+    return { success: true, manifest, gitPushSkipped };
   }
 
   async pullSync(progressCallback, logger) {

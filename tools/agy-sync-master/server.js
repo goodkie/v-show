@@ -327,6 +327,7 @@ const server = http.createServer(async (req, res) => {
 
   // 5. Remap Paths API
   if (pathname === '/api/remap' && req.method === 'POST') {
+    autoSync.isBusy = true;
     try {
       sendProgress(20, '경로 동적 리매핑 시작...');
       const out = await engine.remapPaths(logger);
@@ -336,26 +337,38 @@ const server = http.createServer(async (req, res) => {
     } catch (e) {
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: e.message }));
+    } finally {
+      autoSync.isBusy = false;
+      autoSync.broadcast('auto-sync-status', autoSync.getStatus());
     }
     return;
   }
 
   // 6. Setup New PC API
   if (pathname === '/api/setup' && req.method === 'POST') {
+    autoSync.isBusy = true;
     try {
       const out = await engine.setupNewPc(sendProgress, logger);
+      // 신규 PC 설치 완료 후 현재 파일 상태를 기준점으로 동기화하여 직후 불필요한 push 방지
+      autoSync.lastLocalConversationMtime = autoSync.getLocalConversationMtime();
+      autoSync.lastLocalGitCommit = autoSync.getLocalGitCommit();
+      autoSync.lastKnownRemotePush = autoSync.getRemotePushTimestamp();
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(out));
     } catch (e) {
       logger.error(`설치 중 오류 발생: ${e.message}`);
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: e.message }));
+    } finally {
+      autoSync.isBusy = false;
+      autoSync.broadcast('auto-sync-status', autoSync.getStatus());
     }
     return;
   }
 
   // 7. Auto Recover API
   if (pathname === '/api/recover' && req.method === 'POST') {
+    autoSync.isBusy = true;
     try {
       sendProgress(30, '손상 팩파일 격리 및 Git Refetch 중...');
       const out = await engine.autoRecover(logger);
@@ -366,26 +379,37 @@ const server = http.createServer(async (req, res) => {
       logger.error(`복구 중 오류 발생: ${e.message}`);
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: e.message }));
+    } finally {
+      autoSync.isBusy = false;
+      autoSync.broadcast('auto-sync-status', autoSync.getStatus());
     }
     return;
   }
 
   // 8. Push API
   if (pathname === '/api/push' && req.method === 'POST') {
+    autoSync.isBusy = true;
     try {
       const out = await engine.pushSync(sendProgress, logger);
+      autoSync.lastLocalConversationMtime = autoSync.getLocalConversationMtime();
+      autoSync.lastLocalGitCommit = autoSync.getLocalGitCommit();
+      autoSync.lastKnownRemotePush = autoSync.getRemotePushTimestamp();
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(out));
     } catch (e) {
       logger.error(`Push 중 오류 발생: ${e.message}`);
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: e.message }));
+    } finally {
+      autoSync.isBusy = false;
+      autoSync.broadcast('auto-sync-status', autoSync.getStatus());
     }
     return;
   }
 
   // 9. Pull API
   if (pathname === '/api/pull' && req.method === 'POST') {
+    autoSync.isBusy = true;
     // Snapshot engine.js mtime before pull to detect if it changed
     const enginePath = path.join(__dirname, 'engine.js');
     let engineMtimeBefore = 0;
@@ -393,6 +417,9 @@ const server = http.createServer(async (req, res) => {
 
     try {
       const out = await engine.pullSync(sendProgress, logger);
+      autoSync.lastLocalConversationMtime = autoSync.getLocalConversationMtime();
+      autoSync.lastLocalGitCommit = autoSync.getLocalGitCommit();
+      autoSync.lastKnownRemotePush = autoSync.getRemotePushTimestamp();
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(out));
 
@@ -412,6 +439,9 @@ const server = http.createServer(async (req, res) => {
       logger.error(`Pull 중 오류 발생: ${e.message}`);
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: e.message }));
+    } finally {
+      autoSync.isBusy = false;
+      autoSync.broadcast('auto-sync-status', autoSync.getStatus());
     }
     return;
   }
