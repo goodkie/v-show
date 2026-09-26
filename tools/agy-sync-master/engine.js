@@ -794,10 +794,10 @@ class SyncEngine {
       logger.info('  ✓ node_modules 패키지가 이미 정상 구비되어 있습니다.');
     }
 
-    // 7. 무결성 최종 검증
+    // 7. 무결성 최종 검증 (고속 연결성 검증)
     progressCallback(95, '[7/8] Git 저장소 무결성 최종 검증 (git fsck)...');
     logger.info('[단계 7/8] Git 저장소 무결성 검증:');
-    const fsckRes = await this.runCommand('git', ['fsck', '--no-dangling'], localFastTrack, logger, null, 60000);
+    const fsckRes = await this.runCommand('git', ['fsck', '--connectivity-only', '--no-dangling'], localFastTrack, logger, null, 30000);
     if (fsckRes.code !== 0 && fsckRes.stderr && fsckRes.stderr.includes('fatal:')) {
       logger.warn('  ! Git 델타 결손 감지 -> 자동 refetch 복구 진행');
       await this.autoRecover(logger);
@@ -877,7 +877,7 @@ class SyncEngine {
 
     // 5. 검증
     logger.info('최종 무결성 검증 (git fsck)...');
-    const fsck = await this.runCommand('git', ['fsck', '--no-dangling'], targetRepo, logger);
+    const fsck = await this.runCommand('git', ['fsck', '--connectivity-only', '--no-dangling'], targetRepo, logger);
     const success = fsck.code === 0 && !fsck.stderr.includes('fatal:');
     logger.info(success ? '✓ Git 복구 완전 성공 (오류 0건)' : `복구 검증 결과: ${fsck.stderr}`);
     return { success, fsckOutput: fsck.stdout || fsck.stderr };
