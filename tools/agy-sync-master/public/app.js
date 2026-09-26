@@ -6,10 +6,32 @@ const elements = {
   scoreVal: document.getElementById('scoreVal'),
   scoreCircle: document.getElementById('scoreCircle'),
   metaTargetDir: document.getElementById('metaTargetDir'),
+  metaFastTrackDir: document.getElementById('metaFastTrackDir'),
   metaGdrive: document.getElementById('metaGdrive'),
   metaBranch: document.getElementById('metaBranch'),
   btnRefreshStatus: document.getElementById('btnRefreshStatus'),
   btnShortcut: document.getElementById('btnShortcut'),
+  btnOpenPathModal: document.getElementById('btnOpenPathModal'),
+
+  // Modals & Controls
+  pathModal: document.getElementById('pathModal'),
+  btnClosePathModal: document.getElementById('btnClosePathModal'),
+  btnCancelPathModal: document.getElementById('btnCancelPathModal'),
+  inputCustomPath: document.getElementById('inputCustomPath'),
+  previewParent: document.getElementById('previewParent'),
+  previewFastTrack: document.getElementById('previewFastTrack'),
+  previewMainRepo: document.getElementById('previewMainRepo'),
+  btnSavePathConfig: document.getElementById('btnSavePathConfig'),
+
+  uninstallModal: document.getElementById('uninstallModal'),
+  btnUninstall: document.getElementById('btnUninstall'),
+  btnCloseUninstallModal: document.getElementById('btnCloseUninstallModal'),
+  btnCancelUninstallModal: document.getElementById('btnCancelUninstallModal'),
+  btnConfirmUninstall: document.getElementById('btnConfirmUninstall'),
+  chkRemoveWorktree: document.getElementById('chkRemoveWorktree'),
+  chkRemoveMainRepo: document.getElementById('chkRemoveMainRepo'),
+  chkResetConfig: document.getElementById('chkResetConfig'),
+  uninstallTargetFastTrack: document.getElementById('uninstallTargetFastTrack'),
 
   toggleAutoSync: document.getElementById('toggleAutoSync'),
   autoSyncInterval: document.getElementById('autoSyncInterval'),
@@ -89,6 +111,8 @@ function setButtonsDisabled(disabled) {
 }
 
 // 2. Fetch System Status
+let currentSystemPaths = null;
+
 async function loadStatus() {
   try {
     const res = await fetch('/api/status');
@@ -96,6 +120,15 @@ async function loadStatus() {
     elements.hostName.textContent = data.hostname;
     elements.userName.textContent = data.username;
     elements.metaTargetDir.textContent = data.targetDir;
+    if (data.paths) {
+      currentSystemPaths = data.paths;
+      if (elements.metaFastTrackDir) {
+        elements.metaFastTrackDir.textContent = data.paths.fastTrackDir;
+      }
+      if (elements.uninstallTargetFastTrack) {
+        elements.uninstallTargetFastTrack.textContent = data.paths.fastTrackDir;
+      }
+    }
     elements.metaGdrive.textContent = `${data.gdriveRoot}\\${data.syncPackage}`;
     elements.metaBranch.textContent = data.branch;
 
@@ -105,6 +138,40 @@ async function loadStatus() {
   } catch (e) {
     appendLog('WARN', `상태 로드 실패: ${e.message}`);
   }
+}
+
+function updatePathPreview(raw) {
+  if (!raw) {
+    elements.previewParent.textContent = '-';
+    elements.previewFastTrack.textContent = '-';
+    elements.previewMainRepo.textContent = '-';
+    return;
+  }
+  const clean = raw.trim().replace(/[\/\\]+$/, '');
+  const norm = clean.replace(/\\/g, '/').toLowerCase();
+  let parent = clean;
+  let fastTrack = '';
+  let mainRepo = '';
+
+  if (norm.endsWith('/v-show-stage2-fast-track')) {
+    const idx = clean.lastIndexOf('\\') !== -1 ? clean.lastIndexOf('\\') : clean.lastIndexOf('/');
+    parent = clean.substring(0, idx);
+    fastTrack = clean;
+    mainRepo = `${parent}\\v-show`;
+  } else if (norm.endsWith('/v-show')) {
+    const idx = clean.lastIndexOf('\\') !== -1 ? clean.lastIndexOf('\\') : clean.lastIndexOf('/');
+    parent = clean.substring(0, idx);
+    mainRepo = clean;
+    fastTrack = `${parent}\\v-show-stage2-fast-track`;
+  } else {
+    parent = clean;
+    mainRepo = `${clean}\\v-show`;
+    fastTrack = `${clean}\\v-show-stage2-fast-track`;
+  }
+
+  elements.previewParent.textContent = parent;
+  elements.previewFastTrack.textContent = fastTrack;
+  elements.previewMainRepo.textContent = mainRepo;
 }
 
 // 3. Auto-Sync UI & Control
@@ -313,6 +380,144 @@ if (elements.btnOpenCv) {
 elements.btnClearLogs.addEventListener('click', () => {
   elements.terminalBody.innerHTML = '';
 });
+
+// 6. Path / Project Modal Handlers
+if (elements.btnOpenPathModal) {
+  elements.btnOpenPathModal.addEventListener('click', () => {
+    if (currentSystemPaths) {
+      elements.inputCustomPath.value = currentSystemPaths.fastTrackDir || currentSystemPaths.rawTarget;
+      updatePathPreview(elements.inputCustomPath.value);
+    }
+    elements.pathModal.style.display = 'flex';
+  });
+}
+
+if (elements.btnClosePathModal) {
+  elements.btnClosePathModal.addEventListener('click', () => {
+    elements.pathModal.style.display = 'none';
+  });
+}
+
+if (elements.btnCancelPathModal) {
+  elements.btnCancelPathModal.addEventListener('click', () => {
+    elements.pathModal.style.display = 'none';
+  });
+}
+
+if (elements.inputCustomPath) {
+  elements.inputCustomPath.addEventListener('input', (e) => {
+    updatePathPreview(e.target.value);
+  });
+}
+
+document.querySelectorAll('.btn-quick-path').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const p = btn.getAttribute('data-path');
+    if (p && elements.inputCustomPath) {
+      elements.inputCustomPath.value = p;
+      updatePathPreview(p);
+    }
+  });
+});
+
+if (elements.btnSavePathConfig) {
+  elements.btnSavePathConfig.addEventListener('click', async () => {
+    const newPath = (elements.inputCustomPath.value || '').trim();
+    if (!newPath) {
+      alert('경로를 입력해 주세요.');
+      return;
+    }
+    elements.pathModal.style.display = 'none';
+    setButtonsDisabled(true);
+    updateProgress(20, `새 작업 경로 설정 및 환경 리매핑 중: ${newPath}`);
+    appendLog('INFO', `[경로 변경] 새 작업 경로 설정 시작: ${newPath}`);
+
+    try {
+      const res = await fetch('/api/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ targetDir: newPath })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        appendLog('INFO', `✓ 새 경로 적용 및 환경 매핑 완료! (Fast-Track: ${data.paths.fastTrackDir})`);
+        loadStatus();
+        runDiagnose();
+      } else {
+        appendLog('ERROR', `경로 설정 실패: ${data.error || '알 수 없는 오류'}`);
+      }
+    } catch (e) {
+      appendLog('ERROR', `네트워크 오류: ${e.message}`);
+    } finally {
+      setButtonsDisabled(false);
+    }
+  });
+}
+
+// 7. Uninstall Modal Handlers
+if (elements.btnUninstall) {
+  elements.btnUninstall.addEventListener('click', () => {
+    if (currentSystemPaths && elements.uninstallTargetFastTrack) {
+      elements.uninstallTargetFastTrack.textContent = currentSystemPaths.fastTrackDir;
+    }
+    elements.uninstallModal.style.display = 'flex';
+  });
+}
+
+if (elements.btnCloseUninstallModal) {
+  elements.btnCloseUninstallModal.addEventListener('click', () => {
+    elements.uninstallModal.style.display = 'none';
+  });
+}
+
+if (elements.btnCancelUninstallModal) {
+  elements.btnCancelUninstallModal.addEventListener('click', () => {
+    elements.uninstallModal.style.display = 'none';
+  });
+}
+
+if (elements.btnConfirmUninstall) {
+  elements.btnConfirmUninstall.addEventListener('click', async () => {
+    const removeWorktree = elements.chkRemoveWorktree.checked;
+    const removeMainRepo = elements.chkRemoveMainRepo.checked;
+    const resetConfig = elements.chkResetConfig.checked;
+
+    if (!removeWorktree && !removeMainRepo && !resetConfig) {
+      alert('최소 하나 이상의 제거 옵션을 선택해 주세요.');
+      return;
+    }
+
+    elements.uninstallModal.style.display = 'none';
+    setButtonsDisabled(true);
+    updateProgress(10, '로컬 설치 제거 및 초기화 진행 중...');
+    appendLog('WARN', '[설치 제거] 로컬 프로젝트 및 환경 초기화 실행...');
+
+    try {
+      const res = await fetch('/api/uninstall', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          removeWorktree,
+          removeMainRepo,
+          resetConfig
+        })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        appendLog('INFO', `✓ 설치 제거 완료! (${data.removedItems.length}개 항목 제거됨)`);
+        appendLog('INFO', `새로운 경로나 폴더를 지정한 후 [설치 시작]을 클릭하시면 깨끗하게 재구축됩니다.`);
+        loadStatus();
+        runDiagnose();
+      } else {
+        appendLog('ERROR', `설치 제거 중 오류: ${(data.errors || []).join(', ') || data.error}`);
+      }
+    } catch (e) {
+      appendLog('ERROR', `네트워크 오류: ${e.message}`);
+    } finally {
+      setButtonsDisabled(false);
+    }
+  });
+}
 
 // Init on Page Load
 window.addEventListener('DOMContentLoaded', () => {

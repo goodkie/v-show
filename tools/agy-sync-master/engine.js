@@ -16,23 +16,116 @@ class SyncEngine {
     this.username = process.env.USERNAME || process.env.USER || os.userInfo().username || 'default';
     this.homeDir = os.homedir();
     this.syncPackageName = options.syncPackageName || 'v-show-antigravity-sync';
-    this.targetDir = options.targetDir || this.detectDefaultProjectDir();
-    this.gdriveRoot = options.gdriveRoot || this.detectGoogleDriveRoot();
-    this.githubRepoUrl = options.githubRepoUrl || 'https://github.com/goodkie/v-show.git';
-    this.defaultBranch = options.defaultBranch || 'feature/3d2r-stage2-12point-capture';
+    
+    // 1. 사용자 저장 설정(sync_config.json) 로드
+    const savedConfig = this.loadUserConfig();
+    this.targetDir = options.targetDir || savedConfig.targetDir || this.detectDefaultProjectDir();
+    this.activeProject = options.activeProject || savedConfig.activeProject || 'v-show-stage2-fast-track';
+    this.gdriveRoot = options.gdriveRoot || savedConfig.gdriveRoot || this.detectGoogleDriveRoot();
+    this.githubRepoUrl = options.githubRepoUrl || savedConfig.githubRepoUrl || 'https://github.com/goodkie/v-show.git';
+    this.defaultBranch = options.defaultBranch || savedConfig.defaultBranch || 'feature/3d2r-stage2-12point-capture';
+  }
+
+  getConfigFilePath() {
+    return path.join(__dirname, 'sync_config.json');
+  }
+
+  loadUserConfig() {
+    try {
+      const cfgPath = this.getConfigFilePath();
+      if (fs.existsSync(cfgPath)) {
+        return JSON.parse(fs.readFileSync(cfgPath, 'utf8'));
+      }
+    } catch (e) {}
+    return {};
+  }
+
+  saveUserConfig(config) {
+    try {
+      const current = this.loadUserConfig();
+      const merged = { ...current, ...config, updatedAt: new Date().toISOString() };
+      fs.writeFileSync(this.getConfigFilePath(), JSON.stringify(merged, null, 2), 'utf8');
+      return merged;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  getPaths(customTarget = null) {
+    const raw = (customTarget || this.targetDir || '').trim().replace(/[\/\\]+$/, '');
+    let parentDir = raw;
+    let fastTrackDir = '';
+    let mainRepoDir = '';
+
+    const norm = raw.replace(/\\/g, '/');
+    const lower = norm.toLowerCase();
+    if (lower.endsWith('/v-show-stage2-fast-track')) {
+      parentDir = path.dirname(raw);
+      fastTrackDir = raw;
+      mainRepoDir = path.join(parentDir, 'v-show');
+    } else if (lower.endsWith('/v-show')) {
+      parentDir = path.dirname(raw);
+      mainRepoDir = raw;
+      fastTrackDir = path.join(parentDir, 'v-show-stage2-fast-track');
+    } else {
+      parentDir = raw;
+      mainRepoDir = path.join(parentDir, 'v-show');
+      fastTrackDir = path.join(parentDir, 'v-show-stage2-fast-track');
+    }
+
+    return {
+      rawTarget: raw,
+      parentDir,
+      mainRepoDir,
+      fastTrackDir,
+      activeWorkDir: fastTrackDir
+    };
+  }
+
+  async setCustomTargetDir(newTargetDir, options = {}, logger = null) {
+    if (!newTargetDir || typeof newTargetDir !== 'string') {
+      throw new Error('유효한 경로를 입력해 주세요.');
+    }
+    const cleanDir = newTargetDir.trim().replace(/[\/\\]+$/, '');
+    this.targetDir = cleanDir;
+    this.activeProject = options.activeProject || 'v-show-stage2-fast-track';
+
+    this.saveUserConfig({
+      targetDir: cleanDir,
+      activeProject: this.activeProject
+    });
+
+    const paths = this.getPaths();
+    if (logger) {
+      logger.info(`  ✓ 대상 프로젝트 경로 저장 완료: ${cleanDir}`);
+      logger.info(`    - 부모 디렉터리: ${paths.parentDir}`);
+      logger.info(`    - Fast-Track 작업 폴더: ${paths.fastTrackDir}`);
+      logger.info(`    - 메인 저장소: ${paths.mainRepoDir}`);
+    }
+
+    // 변경된 경로로 즉시 리매핑 수행
+    await this.remapPaths(logger);
+    return {
+      success: true,
+      paths: this.getPaths(),
+      config: this.loadUserConfig()
+    };
   }
 
   detectDefaultProjectDir() {
     const candidates = [
       path.join(this.homeDir, 'ai'),
       path.resolve(__dirname, '..', '..', '..'),
-      'C:\\vivpr\\ai',
+      'E:\\vivpr\\ai\\v-show-stage2-fast-track',
       'E:\\vivpr\\ai',
+      'C:\\vivpr\\ai',
       'D:\\ai'
     ];
     for (const c of candidates) {
-      if (fs.existsSync(c) && (fs.existsSync(path.join(c, 'v-show')) || fs.existsSync(path.join(c, 'v-show-stage2-fast-track')))) {
-        return c;
+      if (fs.existsSync(c)) {
+        if (c.toLowerCase().endsWith('v-show-stage2-fast-track') || fs.existsSync(path.join(c, 'v-show-stage2-fast-track')) || fs.existsSync(path.join(c, 'v-show'))) {
+          return c;
+        }
       }
     }
     return path.join(this.homeDir, 'ai');
@@ -197,9 +290,10 @@ class SyncEngine {
       } catch (e) {}
 
       // 4. 로컬 저장소들에 credential.helper=store 명시
+      const paths = this.getPaths();
       const repos = [
-        path.join(this.targetDir, 'v-show'),
-        path.join(this.targetDir, 'v-show-stage2-fast-track')
+        paths.mainRepoDir,
+        paths.fastTrackDir
       ];
       for (const repo of repos) {
         if (fs.existsSync(path.join(repo, '.git'))) {
@@ -391,8 +485,9 @@ class SyncEngine {
     if (!gdriveOk) result.score -= 20;
 
     // 2. 프로젝트 폴더 및 Git 검사
-    const vshowDir = path.join(this.targetDir, 'v-show');
-    const fastTrackDir = path.join(this.targetDir, 'v-show-stage2-fast-track');
+    const paths = this.getPaths();
+    const vshowDir = paths.mainRepoDir;
+    const fastTrackDir = paths.fastTrackDir;
     const vshowGit = path.join(vshowDir, '.git');
     const fastTrackGit = path.join(fastTrackDir, '.git');
 
@@ -551,13 +646,15 @@ class SyncEngine {
 
   findPython() {
     const candidates = [];
-    const fastTrackDir = path.join(this.targetDir, 'v-show-stage2-fast-track');
+    const paths = this.getPaths();
+    const fastTrackDir = paths.fastTrackDir;
+    const vshowDir = paths.mainRepoDir;
 
     // 1. Local virtual environments
     candidates.push(path.join(fastTrackDir, '.venv_stage2', 'Scripts', 'python.exe'));
     candidates.push(path.join(fastTrackDir, 'venv', 'Scripts', 'python.exe'));
-    candidates.push(path.join(this.targetDir, 'v-show', '.venv_stage2', 'Scripts', 'python.exe'));
-    candidates.push(path.join(this.targetDir, 'v-show', 'venv', 'Scripts', 'python.exe'));
+    candidates.push(path.join(vshowDir, '.venv_stage2', 'Scripts', 'python.exe'));
+    candidates.push(path.join(vshowDir, 'venv', 'Scripts', 'python.exe'));
 
     // 2. Windows LocalAppData Programs Python (Default user install location)
     const localApp = path.join(this.homeDir, 'AppData', 'Local', 'Programs', 'Python');
@@ -943,8 +1040,9 @@ class SyncEngine {
 
     // 3. Git Worktree 포인터 갱신 (Worktree인 경우에만 갱신, 독립 저장소 디렉터리면 안전 패스)
     try {
-      const localVshow = path.join(this.targetDir, 'v-show');
-      const localFastTrack = path.join(this.targetDir, 'v-show-stage2-fast-track');
+      const paths = this.getPaths();
+      const localVshow = paths.mainRepoDir;
+      const localFastTrack = paths.fastTrackDir;
 
       if (fs.existsSync(localVshow) && fs.existsSync(localFastTrack)) {
         const normVshow = localVshow.replace(/\\/g, '/');
@@ -1026,15 +1124,16 @@ class SyncEngine {
       logger.info('  ✓ Git safe.directory 전역 예외 등록 완료');
     } catch (e) {}
 
-    if (!fs.existsSync(this.targetDir)) {
-      fs.mkdirSync(this.targetDir, { recursive: true });
-      logger.info(`  ✓ 작업 디렉터리 생성 완료: ${this.targetDir}`);
+    const paths = this.getPaths();
+    if (!fs.existsSync(paths.parentDir)) {
+      fs.mkdirSync(paths.parentDir, { recursive: true });
+      logger.info(`  ✓ 부모 작업 디렉터리 생성 완료: ${paths.parentDir}`);
     } else {
-      logger.info(`  ✓ 기존 작업 디렉터리 확인됨: ${this.targetDir}`);
+      logger.info(`  ✓ 부모 작업 디렉터리 확인됨: ${paths.parentDir}`);
     }
 
-    const localVshow = path.join(this.targetDir, 'v-show');
-    const localFastTrack = path.join(this.targetDir, 'v-show-stage2-fast-track');
+    const localVshow = paths.mainRepoDir;
+    const localFastTrack = paths.fastTrackDir;
 
     // 1-1. GitHub 원격 인증 토큰 자동 연동
     this.setupGitAuth(logger);
@@ -1065,7 +1164,7 @@ class SyncEngine {
         localVshow
       ];
 
-      let cloneRes = await this.runCommand('git', cloneArgs, this.targetDir, logger, (text) => {
+      let cloneRes = await this.runCommand('git', cloneArgs, paths.parentDir, logger, (text) => {
         if (text.includes('Receiving objects:') || text.includes('Resolving deltas:')) {
           const match = text.match(/([0-9]+%)/);
           if (match) {
@@ -1077,7 +1176,7 @@ class SyncEngine {
       if (cloneRes.code !== 0) {
         logger.warn(`  ! GitHub 인증/네트워크 에러 (${cloneRes.stderr || cloneRes.error}). 기본 URL로 재시도...`);
         const retryArgs = ['clone', '--single-branch', '--branch', this.defaultBranch, '--depth', '10', this.githubRepoUrl, localVshow];
-        cloneRes = await this.runCommand('git', retryArgs, this.targetDir, logger, null, 120000);
+        cloneRes = await this.runCommand('git', retryArgs, paths.parentDir, logger, null, 120000);
       }
 
       if (cloneRes.code !== 0) {
@@ -1288,14 +1387,15 @@ class SyncEngine {
     logger.info('  [Git 저장소 정밀 복구 및 결손 오브젝트 재수신 시작]');
     logger.info('================================================================');
 
-    const vshowDir = path.join(this.targetDir, 'v-show');
-    const fastTrackDir = path.join(this.targetDir, 'v-show-stage2-fast-track');
+    const paths = this.getPaths();
+    const vshowDir = paths.mainRepoDir;
+    const fastTrackDir = paths.fastTrackDir;
     const targetRepo = fs.existsSync(fastTrackDir) ? fastTrackDir : vshowDir;
     const packDir = path.join(vshowDir, '.git', 'objects', 'pack');
 
     // 1. 손상된 팩파일 탐지 및 격리
     if (fs.existsSync(packDir)) {
-      const quarantineDir = path.join(this.targetDir, 'git_corrupt_quarantine_' + Date.now());
+      const quarantineDir = path.join(paths.parentDir, 'git_corrupt_quarantine_' + Date.now());
       let quarantined = 0;
       const files = fs.readdirSync(packDir);
       for (const f of files) {
@@ -1385,7 +1485,8 @@ class SyncEngine {
 
   async pushSync(progressCallback, logger) {
     logger.info('=== 작업 완료: GitHub 푸시 & Google Drive 세션/설정 안전 백업 시작 ===');
-    const fastTrackDir = path.join(this.targetDir, 'v-show-stage2-fast-track');
+    const paths = this.getPaths();
+    const fastTrackDir = paths.fastTrackDir;
 
     // 0. GitHub 원격 푸시 자격 증명 자동 연동
     this.setupGitAuth(logger);
@@ -1550,7 +1651,8 @@ class SyncEngine {
 
   async pullSync(progressCallback, logger) {
     logger.info('=== 작업 시작: GitHub 풀 & Google Drive 최신 세션/설정 가져오기 시작 ===');
-    const fastTrackDir = path.join(this.targetDir, 'v-show-stage2-fast-track');
+    const paths = this.getPaths();
+    const fastTrackDir = paths.fastTrackDir;
 
     // 0. GitHub 원격 인증 토큰 자동 연동
     this.setupGitAuth(logger);
@@ -1712,6 +1814,100 @@ class SyncEngine {
     progressCallback(100, '최신 작업 내용 동기화 (Pull) 완료!');
     logger.info('✓ 최신 코드, 대화 세션 및 Antigravity 설정 동기화 완료');
     return { success: true };
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 6. UNINSTALL / RESET INSTALLATION (CLEAN SLATE FOR NEW PATH / MULTI-PROJECT)
+  // ─────────────────────────────────────────────────────────────────────────────
+  async cleanUninstall(options = {}, logger = console) {
+    logger.info('================================================================');
+    logger.info('  [AGY-Sync Master: 로컬 설치 제거 및 클린 초기화 시작]');
+    logger.info('================================================================');
+
+    const paths = this.getPaths();
+    const removeWorktree = options.removeWorktree !== false;
+    const removeMainRepo = options.removeMainRepo === true;
+    const resetConfig = options.resetConfig === true;
+
+    const removedItems = [];
+    const errors = [];
+
+    // 1. Fast-Track 워크트리 정리 및 제거
+    if (removeWorktree && fs.existsSync(paths.fastTrackDir)) {
+      logger.info(`  -> Fast-Track 워크트리 디렉터리 제거 준비: ${paths.fastTrackDir}`);
+      // Git worktree 등록 해제 시도
+      if (fs.existsSync(paths.mainRepoDir)) {
+        try {
+          execSync('git worktree prune', { cwd: paths.mainRepoDir, stdio: 'ignore' });
+        } catch (e) {}
+      }
+
+      try {
+        // Windows 읽기 전용 속성 해제 후 삭제
+        try {
+          execSync(`attrib -r -h "${paths.fastTrackDir}\\*.*" /s /d`, { stdio: 'ignore' });
+        } catch (e) {}
+        fs.rmSync(paths.fastTrackDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 500 });
+        logger.info(`  ✓ Fast-Track 디렉터리 삭제 완료: ${paths.fastTrackDir}`);
+        removedItems.push(paths.fastTrackDir);
+      } catch (err) {
+        logger.warn(`  ! Fast-Track 디렉터리 삭제 실패 (${err.message}). 강제 삭제(PowerShell) 시도...`);
+        try {
+          execSync(`powershell -NoProfile -Command "Remove-Item -Recurse -Force -LiteralPath '${paths.fastTrackDir}'"`, { stdio: 'ignore' });
+          logger.info(`  ✓ PowerShell을 통한 Fast-Track 삭제 완료: ${paths.fastTrackDir}`);
+          removedItems.push(paths.fastTrackDir);
+        } catch (err2) {
+          errors.push(`Fast-Track 삭제 불가: ${err2.message}`);
+        }
+      }
+    }
+
+    // 2. 메인 저장소(v-show) 옵션 삭제
+    if (removeMainRepo && fs.existsSync(paths.mainRepoDir)) {
+      logger.info(`  -> 메인 Git 저장소 디렉터리 제거 준비: ${paths.mainRepoDir}`);
+      try {
+        try {
+          execSync(`attrib -r -h "${paths.mainRepoDir}\\*.*" /s /d`, { stdio: 'ignore' });
+        } catch (e) {}
+        fs.rmSync(paths.mainRepoDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 500 });
+        logger.info(`  ✓ 메인 저장소 디렉터리 삭제 완료: ${paths.mainRepoDir}`);
+        removedItems.push(paths.mainRepoDir);
+      } catch (err) {
+        logger.warn(`  ! 메인 저장소 삭제 실패 (${err.message}). 강제 삭제(PowerShell) 시도...`);
+        try {
+          execSync(`powershell -NoProfile -Command "Remove-Item -Recurse -Force -LiteralPath '${paths.mainRepoDir}'"`, { stdio: 'ignore' });
+          logger.info(`  ✓ PowerShell을 통한 메인 저장소 삭제 완료: ${paths.mainRepoDir}`);
+          removedItems.push(paths.mainRepoDir);
+        } catch (err2) {
+          errors.push(`메인 저장소 삭제 불가: ${err2.message}`);
+        }
+      }
+    }
+
+    // 3. 사용자 동기화 설정(sync_config.json) 초기화 옵션
+    if (resetConfig) {
+      const cfgPath = this.getConfigFilePath();
+      if (fs.existsSync(cfgPath)) {
+        try {
+          fs.unlinkSync(cfgPath);
+          logger.info(`  ✓ sync_config.json 초기화 완료`);
+          removedItems.push(cfgPath);
+        } catch (e) {}
+      }
+      this.targetDir = this.detectDefaultProjectDir();
+    }
+
+    logger.info('================================================================');
+    logger.info(`  [제거 완료] 총 ${removedItems.length}개 항목 제거됨 (오류: ${errors.length}건)`);
+    logger.info('  새로운 프로젝트 경로나 폴더를 지정하여 신규 설치를 진행할 수 있습니다.');
+    logger.info('================================================================');
+
+    return {
+      success: errors.length === 0,
+      removedItems,
+      errors,
+      paths: this.getPaths()
+    };
   }
 }
 

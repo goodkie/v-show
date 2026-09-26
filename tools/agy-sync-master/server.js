@@ -130,8 +130,8 @@ class AutoSyncManager {
 
   getLocalGitCommit() {
     try {
-      const fastTrackDir = path.join(this.engine.targetDir, 'v-show-stage2-fast-track');
-      const headFile = path.join(fastTrackDir, '.git', 'refs', 'heads', this.engine.defaultBranch);
+      const paths = this.engine.getPaths();
+      const headFile = path.join(paths.fastTrackDir, '.git', 'refs', 'heads', this.engine.defaultBranch);
       if (fs.existsSync(headFile)) return fs.readFileSync(headFile, 'utf8').trim();
     } catch (e) {}
     return '';
@@ -286,6 +286,7 @@ const server = http.createServer(async (req, res) => {
       hostname: os.hostname(),
       username: engine.username,
       targetDir: engine.targetDir,
+      paths: engine.getPaths(),
       gdriveRoot: engine.gdriveRoot,
       syncPackage: engine.syncPackageName,
       branch: engine.defaultBranch,
@@ -536,6 +537,78 @@ $Shortcut.Save()
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: e.message }));
     }
+    return;
+  }
+
+  // 14. Project Path & Configuration API (GET/POST)
+  if (pathname === '/api/config') {
+    if (req.method === 'GET') {
+      const eng = getEngine();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        targetDir: eng.targetDir,
+        paths: eng.getPaths(),
+        activeProject: eng.activeProject,
+        userConfig: eng.loadUserConfig()
+      }));
+      return;
+    }
+    if (req.method === 'POST') {
+      autoSync.isBusy = true;
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', async () => {
+        try {
+          const payload = JSON.parse(body || '{}');
+          if (!payload.targetDir) {
+            throw new Error('targetDir 경로가 지정되지 않았습니다.');
+          }
+          sendProgress(20, '지정된 새 프로젝트 경로 구성 및 검증 중...');
+          const eng = getEngine();
+          const out = await eng.setCustomTargetDir(payload.targetDir, { activeProject: payload.activeProject }, logger);
+          sendProgress(100, `프로젝트 경로 변경 및 환경 리매핑 완료 (${out.paths.fastTrackDir})`);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify(out));
+        } catch (e) {
+          logger.error(`경로 설정 변경 실패: ${e.message}`);
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: e.message }));
+        } finally {
+          autoSync.isBusy = false;
+          autoSync.broadcast('auto-sync-status', autoSync.getStatus());
+        }
+      });
+      return;
+    }
+  }
+
+  // 15. Clean Uninstall & Reset API (POST)
+  if (pathname === '/api/uninstall' && req.method === 'POST') {
+    autoSync.isBusy = true;
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', async () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        sendProgress(20, '로컬 설치 및 워크트리 안전 제거 진행 중...');
+        const eng = getEngine();
+        const out = await eng.cleanUninstall({
+          removeWorktree: payload.removeWorktree !== false,
+          removeMainRepo: payload.removeMainRepo === true,
+          resetConfig: payload.resetConfig === true
+        }, logger);
+        sendProgress(100, '로컬 설치 제거 및 초기화 완료');
+        res.writeHead(out.success ? 200 : 500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(out));
+      } catch (e) {
+        logger.error(`설치 제거 중 오류: ${e.message}`);
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: e.message }));
+      } finally {
+        autoSync.isBusy = false;
+        autoSync.broadcast('auto-sync-status', autoSync.getStatus());
+      }
+    });
     return;
   }
 
