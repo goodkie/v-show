@@ -218,7 +218,7 @@ class SyncEngine {
   async diagnose(logger, isDeep = false) {
     logger.info(`=== [1/5] 환경 및 저장소 ${isDeep ? '정밀(Deep)' : '고속(Fast)'} 진단 시작 ===`);
     try {
-      execSync('git config --global --add safe.directory "*"', { stdio: 'ignore' });
+      execSync('git config --global --add safe.directory *', { stdio: 'ignore' });
     } catch (e) {}
     const result = {
       score: 100,
@@ -557,15 +557,18 @@ class SyncEngine {
     logger.info(`  - 사용자 계정: ${this.username}`);
     logger.info(`  - Node.js 런타임: ${process.version}`);
     
+    let gitVer = '';
     try {
-      const gitVer = execSync('git --version', { encoding: 'utf8' }).trim();
+      gitVer = execSync('git --version', { encoding: 'utf8' }).trim();
       logger.info(`  - Git 바이너리: ${gitVer}`);
-      // Git safe.directory 전역 예외 등록 (dubious ownership 오류 원천 차단)
-      execSync('git config --global --add safe.directory "*"', { stdio: 'ignore' });
-      logger.info('  ✓ Git safe.directory 전역 예외 등록 완료 (dubious ownership 오류 원천 차단)');
     } catch (e) {
       throw new Error('Git이 설치되어 있지 않거나 PATH에 없습니다.');
     }
+
+    try {
+      execSync('git config --global --add safe.directory *', { stdio: 'ignore' });
+      logger.info('  ✓ Git safe.directory 전역 예외 등록 완료');
+    } catch (e) {}
 
     if (!fs.existsSync(this.targetDir)) {
       fs.mkdirSync(this.targetDir, { recursive: true });
