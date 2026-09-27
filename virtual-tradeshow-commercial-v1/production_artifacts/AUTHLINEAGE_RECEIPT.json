@@ -1,0 +1,94 @@
+{
+  "jobId": "recon-job-1790542278241-d2ad01c6",
+  "engine": "OPENCV_SIFT_SFM_TRIANGULATION",
+  "engineVersion": "5.0.0",
+  "pythonVersion": "3.14.7",
+  "inputsDigest": "3498f779ed0fef0e0146b3f25fdbdfe04033994b3d466a94d5673a5c7af779f4",
+  "inputViewsCount": 12,
+  "inputProvenance": [
+    {
+      "filename": "view_01.jpg",
+      "sizeBytes": 721779,
+      "sha256": "53f1edcd0428363e16645bdabf648061c0613278c9c0c3f052e561be1799d5d6"
+    },
+    {
+      "filename": "view_02.jpg",
+      "sizeBytes": 721476,
+      "sha256": "f54407bba51d9510f39becde61a492b5e72b2cba5df8c1d160856fe425c34364"
+    },
+    {
+      "filename": "view_03.jpg",
+      "sizeBytes": 684875,
+      "sha256": "1f5fca1871e92254939e644ae920e87d163b65e382606e19e0731fcab0f40965"
+    },
+    {
+      "filename": "view_04.jpg",
+      "sizeBytes": 802436,
+      "sha256": "a578ab5473406362701daf84738e4f2c583f6c685fe1b63843ab6622d0fbc4e5"
+    },
+    {
+      "filename": "view_05.jpg",
+      "sizeBytes": 740169,
+      "sha256": "f0eaabcd34fe0a882a235713a03c88df0fe762650a64efed4cc03e8388cec58e"
+    },
+    {
+      "filename": "view_06.jpg",
+      "sizeBytes": 661556,
+      "sha256": "321a226de548414966eb871a26aee8f5f4b0a96d1892a708882007545e05766e"
+    },
+    {
+      "filename": "view_07.jpg",
+      "sizeBytes": 704057,
+      "sha256": "da83a3c04bc78f3b307b0d0d479cbcc4feac51d38c5c226f4f26d3df235122fb"
+    },
+    {
+      "filename": "view_08.jpg",
+      "sizeBytes": 718283,
+      "sha256": "5bc7dee73db8d363ece9effa1d74c0220e4ca87d8e2df20242f0e6990140ada5"
+    },
+    {
+      "filename": "view_09.jpg",
+      "sizeBytes": 723902,
+      "sha256": "58b537511ee54f742e1fba5d7a240ffdd27f67923a85694cda3428f4d1d2cd43"
+    },
+    {
+      "filename": "view_10.jpg",
+      "sizeBytes": 721207,
+      "sha256": "c2a27a8fec5a618ebda6bd37f7bc02680965bf9a84c0b9446b304b343bd506e9"
+    },
+    {
+      "filename": "view_11.jpg",
+      "sizeBytes": 678264,
+      "sha256": "5b0bea7bd1af5ddffa5e0babfe03f19679cc1ca49ee118e4a743fbda17631649"
+    },
+    {
+      "filename": "view_12.jpg",
+      "sizeBytes": 784312,
+      "sha256": "1b17c8023671f62a6784f8b195eb876c1a5af9e74eae4a26eaf66e6639450cdc"
+    }
+  ],
+  "outputArtifact": {
+    "filename": "AUTHLINEAGE_RECONSTRUCTED_SPATIAL_MODEL.ply",
+    "relativePath": "AUTHLINEAGE_RECONSTRUCTED_SPATIAL_MODEL.ply",
+    "sizeBytes": 4797,
+    "sha256": "e6434da7c3b77a7123d7a498c4e1e150291156eeb509c5feefbf82b7ca25127f",
+    "vertexCount": 308,
+    "boundingBox": {
+      "min": [
+        -9.838398933410645,
+        -2.3598928451538086,
+        0.11510256677865982
+      ],
+      "max": [
+        1.4053009748458862,
+        7.167567253112793,
+        31.009998321533203
+      ],
+      "volumeM3": 3309.5818
+    }
+  },
+  "causalProof": {
+    "formula": "sha256(inputsDigest | engine | vertexCount | outSha)",
+    "signature": "de814cab271390d84c26d9ef1afe00969940fa5924b40520b46ceb3aa471e6b5"
+  }
+}
