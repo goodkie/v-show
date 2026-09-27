@@ -95,9 +95,25 @@ class AutoSyncManager {
           try {
             const files = fs.readdirSync(convDir);
             for (const file of files) {
-              if (file.endsWith('.db')) {
+              if (file.endsWith('.db') || file.endsWith('.db-wal') || file.endsWith('.db-shm')) {
                 try {
                   const m = fs.statSync(path.join(convDir, file)).mtimeMs;
+                  if (m > maxMtime) maxMtime = m;
+                } catch (e) {}
+              }
+            }
+          } catch (e) {}
+        }
+        // 2b. brain transcripts and logs
+        const brainDir = path.join(root, 'brain');
+        if (fs.existsSync(brainDir)) {
+          try {
+            const bDirs = fs.readdirSync(brainDir);
+            for (const bd of bDirs) {
+              const tLog = path.join(brainDir, bd, '.system_generated', 'logs', 'transcript.jsonl');
+              if (fs.existsSync(tLog)) {
+                try {
+                  const m = fs.statSync(tLog).mtimeMs;
                   if (m > maxMtime) maxMtime = m;
                 } catch (e) {}
               }

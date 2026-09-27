@@ -1525,16 +1525,28 @@ class SyncEngine {
 
     // 1. Antigravity 대화 DB 스마트 동기화 (신규/변경분만)
     progressCallback(50, 'Antigravity 대화 DB 스마트 동기화 중 (변경분만)...');
-    const agyRoot = this.getAgyRoots()[0];
     let syncedConvCount = 0;
-    if (fs.existsSync(agyRoot)) {
+    const py = this.findPython();
+
+    for (const agyRoot of this.getAgyRoots()) {
+      if (!fs.existsSync(agyRoot)) continue;
       const srcConvos = path.join(agyRoot, 'conversations');
       if (fs.existsSync(srcConvos)) {
+        // SQLite WAL PASSIVE checkpoint to commit latest active memory/WAL frames into .db
+        if (py.exists) {
+          try {
+            const pyScript = `import sqlite3, os, glob\nfor f in glob.glob(r"${srcConvos.replace(/\\/g, '\\\\')}/*.db"):\n    try:\n        c = sqlite3.connect(f, timeout=1.0)\n        c.execute("PRAGMA wal_checkpoint(PASSIVE);")\n        c.close()\n    except:\n        pass\n`;
+            execSync(`"${py.cmd}" -c ${JSON.stringify(pyScript)}`, { stdio: 'ignore', timeout: 5000 });
+          } catch (e) {}
+        }
+
         let copied = 0, skipped = 0;
         try {
           const entries = fs.readdirSync(srcConvos, { withFileTypes: true });
           for (const entry of entries) {
-            if (!entry.isFile() || !entry.name.endsWith('.db')) continue;
+            if (!entry.isFile()) continue;
+            const isDbRelated = entry.name.endsWith('.db') || entry.name.endsWith('.db-wal') || entry.name.endsWith('.db-shm');
+            if (!isDbRelated) continue;
             const srcFile = path.join(srcConvos, entry.name);
             const dstFile = path.join(dstConvos, entry.name);
             try {
@@ -1551,28 +1563,49 @@ class SyncEngine {
               logger.warn(`  ! Error copying ${entry.name}: ${e.message}`);
             }
           }
-          syncedConvCount = copied + skipped;
+          syncedConvCount += (copied + skipped);
         } catch (e) {
           logger.warn(`  ! Error reading conversations dir: ${e.message}`);
         }
-        logger.info(`  ✓ 대화 DB: ${copied}개 복사, ${skipped}개 최신 상태`);
+        logger.info(`  ✓ 대화 DB (${path.basename(agyRoot)}): ${copied}개 복사, ${skipped}개 최신 상태`);
       }
 
+      // 1b. Antigravity Brain 아티팩트 및 대화 로그 증분 동기화
+      const srcBrain = path.join(agyRoot, 'brain');
+      const dstBrain = path.join(syncPkg, 'antigravity-core', 'brain');
+      if (fs.existsSync(srcBrain)) {
+        fs.mkdirSync(dstBrain, { recursive: true });
+        try {
+          if (process.platform === 'win32') {
+            execSync(`cmd.exe /c "robocopy \\"${srcBrain}\\" \\"${dstBrain}\\" /E /MT:16 /R:1 /W:1 /NFL /NDL /NP /XO /XD .system_generated\\\\tasks & if %ERRORLEVEL% LSS 8 exit /b 0"`, { stdio: 'ignore' });
+            logger.info(`  ✓ Antigravity Brain (${path.basename(agyRoot)}): 초고속 증분 백업 완료`);
+          } else {
+            const bCount = this.copyDirectoryRecursiveSync(srcBrain, dstBrain, ['.system_generated/tasks'], logger);
+            if (bCount > 0) logger.info(`  ✓ Antigravity Brain (${path.basename(agyRoot)}): ${bCount}개 파일 백업 완료`);
+          }
+        } catch (e) {
+          logger.warn(`  ! Brain 동기화 경고: ${e.message}`);
+        }
+      }
+    }
+
+    const defaultAgyRoot = this.getAgyRoots()[0];
+    if (fs.existsSync(defaultAgyRoot)) {
       // 2. conversation_summaries.db 양방향 스마트 병합
       progressCallback(70, 'conversation_summaries.db 스마트 병합 중...');
-      const srcSummaries = path.join(agyRoot, 'conversation_summaries.db');
+      const srcSummaries = path.join(defaultAgyRoot, 'conversation_summaries.db');
       const dstSummaries = path.join(dstState, 'conversation_summaries.db');
       this.mergeConversationSummaries(srcSummaries, dstSummaries, logger);
 
       // 3. antigravity_state.pbtxt (모델 선택, 상태, 마이그레이션)
-      const statePbtxt = path.join(agyRoot, 'antigravity_state.pbtxt');
+      const statePbtxt = path.join(defaultAgyRoot, 'antigravity_state.pbtxt');
       if (fs.existsSync(statePbtxt)) {
         fs.copyFileSync(statePbtxt, path.join(dstState, 'antigravity_state.pbtxt'));
         logger.info('  ✓ antigravity_state.pbtxt 상태 백업 완료');
       }
 
       // 4. installation_id
-      const instId = path.join(agyRoot, 'installation_id');
+      const instId = path.join(defaultAgyRoot, 'installation_id');
       if (fs.existsSync(instId)) fs.copyFileSync(instId, path.join(dstState, 'installation_id'));
     }
 
@@ -1699,13 +1732,15 @@ class SyncEngine {
         const dstConvos = path.join(agyRoot, 'conversations');
         fs.mkdirSync(dstConvos, { recursive: true });
 
-        // 1. Smart copy: only copy conversation DBs from GDrive that are NEWER than local
+        // 1. Smart copy: only copy conversation DBs and WAL/SHM from GDrive that are NEWER than local
         if (fs.existsSync(srcConvos)) {
           let copied = 0, skipped = 0;
           try {
             const entries = fs.readdirSync(srcConvos, { withFileTypes: true });
             for (const entry of entries) {
-              if (!entry.isFile() || !entry.name.endsWith('.db')) continue;
+              if (!entry.isFile()) continue;
+              const isDbRelated = entry.name.endsWith('.db') || entry.name.endsWith('.db-wal') || entry.name.endsWith('.db-shm');
+              if (!isDbRelated) continue;
               const srcFile = path.join(srcConvos, entry.name);
               const dstFile = path.join(dstConvos, entry.name);
               try {
@@ -1726,6 +1761,24 @@ class SyncEngine {
             logger.warn(`  ! Error reading GDrive conversations: ${e.message}`);
           }
           logger.info(`  ✓ 대화 DB: ${copied}개 다운로드, ${skipped}개 이미 최신`);
+        }
+
+        // 1b. Pull brain transcripts and artifacts from GDrive
+        const srcBrain = path.join(syncPkg, 'antigravity-core', 'brain');
+        if (fs.existsSync(srcBrain)) {
+          const dstBrain = path.join(agyRoot, 'brain');
+          fs.mkdirSync(dstBrain, { recursive: true });
+          try {
+            if (process.platform === 'win32') {
+              execSync(`cmd.exe /c "robocopy \\"${srcBrain}\\" \\"${dstBrain}\\" /E /MT:16 /R:1 /W:1 /NFL /NDL /NP /XO /XD .system_generated\\\\tasks & if %ERRORLEVEL% LSS 8 exit /b 0"`, { stdio: 'ignore' });
+              logger.info(`  ✓ Antigravity Brain 다운로드 완료 (초고속 증분 동기화)`);
+            } else {
+              const bPulled = this.copyDirectoryRecursiveSync(srcBrain, dstBrain, ['.system_generated/tasks'], logger);
+              if (bPulled > 0) logger.info(`  ✓ Antigravity Brain 다운로드 완료: ${bPulled}개 파일 동기화됨`);
+            }
+          } catch (e) {
+            logger.warn(`  ! Brain 동기화 오류: ${e.message}`);
+          }
         }
 
         // 2. Additive merge of conversation_summaries.db from GDrive → local
