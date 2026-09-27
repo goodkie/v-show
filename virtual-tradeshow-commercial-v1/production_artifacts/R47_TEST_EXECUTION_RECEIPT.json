@@ -1,9 +1,9 @@
 {
   "receiptSchemaVersion": "R47_EXECUTION_RECEIPT_V1",
   "executionTimestamps": {
-    "startTime": "2026-09-27T20:51:16.087Z",
-    "endTime": "2026-09-27T20:52:54.981Z",
-    "durationMs": 98892
+    "startTime": "2026-09-27T20:54:05.970Z",
+    "endTime": "2026-09-27T20:55:31.214Z",
+    "durationMs": 85240
   },
   "runnerMetadata": {
     "sourceFile": "test/test_stage2_true3d_pipeline.js",
@@ -12,18 +12,18 @@
     "platform": "win32"
   },
   "gitEvidence": {
-    "observedHeadSha": "eaeded5c52d6b6a3d72a98a4a29b333df4485774",
-    "expectedHeadSha": null,
-    "headBindingMatched": false,
+    "observedHeadSha": "b9db2c579de754263fb647f51a0d4fb1d589e02a",
+    "expectedHeadSha": "b9db2c579de754263fb647f51a0d4fb1d589e02a",
+    "headBindingMatched": true,
     "worktreeClean": false,
-    "rawGitStatusPorcelain": "M test/test_stage2_true3d_pipeline.js\n M virtual-tradeshow-commercial-v1/_clean_deploy/client/diagnostics/wilo-spz-only.html\n M virtual-tradeshow-commercial-v1/_railway_deploy/client/diagnostics/wilo-spz-only.html\n M virtual-tradeshow-commercial-v1/app_build/client/diagnostics/wilo-spz-only.html\n M virtual-tradeshow-commercial-v1/production_artifacts/R47_TEST_EXECUTION_RECEIPT.json\n M virtual-tradeshow-commercial-v1/server/spatial_reconstruction_worker.js\n?? virtual-tradeshow-commercial-v1/production_artifacts/AUTHLINEAGE_RECEIPT.json\n?? virtual-tradeshow-commercial-v1/server/spatial_reconstruction_engine.py"
+    "rawGitStatusPorcelain": "M virtual-tradeshow-commercial-v1/production_artifacts/AUTHLINEAGE_RECEIPT.json"
   },
   "suiteResults": {
     "totalTests": 19,
-    "passedTests": 19,
-    "failedTests": 0,
-    "passedStatus": "19/19 PASS",
-    "exitCode": 0
+    "passedTests": 18,
+    "failedTests": 1,
+    "passedStatus": "18/19 FAIL",
+    "exitCode": 1
   },
   "deployRootsAudit": {
     "scannedRoots": [

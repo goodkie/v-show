@@ -1604,7 +1604,7 @@ function executeAuthenticReconstructionWorker(options = {}) {
     const pythonScript = path.join(__dirname, 'spatial_reconstruction_engine.py');
     if (fs.existsSync(pythonScript)) {
       const { spawnSync } = require('child_process');
-      const targetOutputDir = outputDir || path.join(repoRoot, 'virtual-tradeshow-commercial-v1/production_artifacts');
+      const targetOutputDir = outputDir || fs.mkdtempSync(path.join(os.tmpdir(), 'vshow_recon_out_'));
       const pyRes = spawnSync('python', [
         pythonScript,
         '--image-dir', imageDir,
