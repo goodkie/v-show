@@ -1,4 +1,4 @@
-﻿<#
+﻿﻿<#
 .SYNOPSIS
     PC 1 -> Google Drive Desktop 완벽 패키징 & 백업 스크립트
 .DESCRIPTION

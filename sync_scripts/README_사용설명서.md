@@ -165,5 +165,36 @@ powershell -ExecutionPolicy Bypass -File "E:\vivpr\ai\v-show-stage2-fast-track\s
 - 10~20초 후 다시 실행하시거나, 작업 중인 터미널/IDE를 종료하고 실행하시면 정상 처리됩니다.
 
 ---
-**제작 및 보증**: Antigravity AI Assistant & Google DeepMind Pair Programming System
+
+## 7. 부팅 시 자동 동기화 & 원클릭 동기화 매니저 (신규 추가)
+
+PC를 켤 때 자동으로 Google Drive의 최신 내용을 다운로드하고, 언제든 바탕화면에서 원클릭으로 동기화할 수 있는 전용 도구가 탑재되었습니다.
+
+### 7.1 시작 프로그램 자동 실행 (Boot-up Auto Sync)
+- **등록 위치**: `C:\Users\oPus\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup\v-show Google Drive Auto Sync (Pull).lnk`
+- **동작 방식**: 
+  - 윈도우 로그인 시 백그라운드에서 검은색 콘솔창 깜빡임 없이 무소음(`VShowSync_Startup.vbs`)으로 자동 실행됩니다.
+  - 최신 3개 대화창 DB 및 코드 변경사항을 Google Drive에서 로컬로 자동 Pull 합니다.
+  - Antigravity가 이미 켜져 있는 상태라면 활성 세션을 강제 종료하지 않고 안전하게 코드 및 브레인 파일만 증분 동기화합니다.
+  - 실행 이력은 `sync_scripts\vshow_sync_startup.log`에 실시간 기록됩니다.
+
+### 7.2 바탕화면 원클릭 바로가기 3종
+바탕화면에 생성된 바로가기로 언제든 즉시 실행할 수 있습니다:
+1. **`v-show 동기화 제어판`**: GUI 제어판 창을 띄워 원하는 동기화 버튼을 클릭하여 실행하고 실시간 로그 확인.
+2. **`v-show 최신받기 (Pull)`**: 더블 클릭 한 번으로 Google Drive의 최신 작업을 즉시 당겨오기.
+3. **`v-show 작업올리기 (Push)`**: 퇴근 또는 작업 종료 전 로컬 작업 내용을 클라우드로 원클릭 백업.
+
+### 7.3 통합 동기화 제어판 (GUI) & 시작프로그램 관리
+- **실행 방법**: 바탕화면의 `v-show 동기화 제어판` 클릭 또는 `VShowSync.cmd` 실행
+- **주요 기능**:
+  - 📥 **[Pull]**: Google Drive -> 로컬 즉시 동기화
+  - 📤 **[Push]**: 로컬 -> Google Drive 즉시 업로드
+  - 🔍 **[Verify]**: 6대 무결성 정밀 진단
+  - 🔄 **[Auto Daemon]**: 30분 간격 백그라운드 자동 동기화 데몬 실행
+  - 🚀 **[시작 프로그램 등록/해제]**: 클릭 한 번으로 부팅 시 자동실행 켜기/끄기
+  - 🖥️ **[바탕화면 바로가기 생성]**: 삭제되었을 때 다시 생성
+
+---
+**제작 및 보증**: Antigravity AI Assistant & Google DeepMind Pair Programming System  
 **대상 프로젝트**: v-show & Stage 2 Fast-Track (Issue #4 Passed)
+

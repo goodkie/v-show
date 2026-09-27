@@ -288,9 +288,15 @@ def export_conversation_markdown(conv_id, fast_track_dir, skip_if_exists=False):
                     meta["title"] = first_line[:50]
                 break
 
-    now_str = datetime.now().strftime("%Y-%m-%d")
+    # Extract actual conversation date from meta['mtime'] (fallback to current date if missing/invalid)
+    date_str = datetime.now().strftime("%Y-%m-%d")
+    if meta.get("mtime"):
+        m = re.search(r'(\d{4}-\d{2}-\d{2})', str(meta["mtime"]))
+        if m:
+            date_str = m.group(1)
+
     clean_slug = sanitize_filename(meta["title"])
-    filename = f"SESSION_{now_str}_{clean_slug}.md"
+    filename = f"SESSION_{date_str}_{clean_slug}.md"
     out_path = os.path.join(docs_dir, filename)
 
     md_lines = []

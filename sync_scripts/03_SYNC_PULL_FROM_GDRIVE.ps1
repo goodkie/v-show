@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
     작업 시작 전 Google Drive -> 로컬 동기화 스크립트 (Pull)
 .DESCRIPTION
@@ -68,45 +68,80 @@ if (-not (Test-Path $SyncRoot)) {
     exit 1
 }
 
-# 2. Antigravity DB & State 복원/업데이트
+# 2. Antigravity DB & State 복원/업데이트 (Antigravity 2.0 & IDE 듀얼 지원)
 Write-Host "[1/3] Antigravity 대화 DB & 상태 업데이트 중..." -ForegroundColor Yellow
-$convoIds = @(
-    "6cb2d68e-c042-42a8-aee2-b8a40fa9f737",
-    "a60a4785-daac-4045-b047-9b489e649678",
-    "d83397bc-3323-46b8-a23f-951c5d5d9f30"
+
+$localAgyRoots = @(
+    "$env:USERPROFILE\.gemini\antigravity-ide",
+    "$env:USERPROFILE\.gemini\antigravity"
+)
+$targetConfigDirs = @(
+    "$env:APPDATA\Antigravity IDE",
+    "$env:APPDATA\Antigravity"
 )
 
-$localConvoDir = "$env:USERPROFILE\.gemini\antigravity\conversations"
 $srcConvoDir = "$SyncRoot\antigravity-core\conversations"
-foreach ($id in $convoIds) {
-    $files = Get-ChildItem -Path $srcConvoDir -Filter "$id.*" -ErrorAction SilentlyContinue
-    foreach ($f in $files) {
-        Copy-Item -Path $f.FullName -Destination $localConvoDir -Force
-    }
-}
-
-$localAgyDir = "$env:USERPROFILE\.gemini\antigravity"
 $srcStateDir = "$SyncRoot\antigravity-core\state"
-if (Test-Path $srcStateDir) {
-    Copy-Item -Path "$srcStateDir\*" -Destination $localAgyDir -Force
-}
-
 $srcAppStorage = "$SyncRoot\antigravity-core\config\app_storage.json"
-if (Test-Path $srcAppStorage) {
-    Copy-Item -Path $srcAppStorage -Destination "$env:APPDATA\Antigravity\app_storage.json" -Force
-}
-
-# 3. Brain 증분 동기화
-Write-Host "[2/3] Antigravity Brain 증분 동기화 중..." -ForegroundColor Yellow
-$localBrainDir = "$env:USERPROFILE\.gemini\antigravity\brain"
 $srcBrainDir = "$SyncRoot\antigravity-core\brain"
-foreach ($id in $convoIds) {
-    $bSrc = Join-Path $srcBrainDir $id
-    $bDst = Join-Path $localBrainDir $id
-    if (Test-Path $bSrc) {
-        robocopy "$bSrc" "$bDst" /E /MT:16 /R:1 /W:1 /NFL /NDL /NP /XO
+
+# 구글 드라이브 상의 모든 대화 세션 탐색
+$convoFiles = Get-ChildItem -Path $srcConvoDir -Filter "*.db" -ErrorAction SilentlyContinue
+$convoIds = $convoFiles | ForEach-Object { $_.BaseName }
+
+foreach ($root in $localAgyRoots) {
+    $cDir = Join-Path $root "conversations"
+    $bDir = Join-Path $root "brain"
+    New-Item -ItemType Directory -Path $cDir -Force | Out-Null
+    New-Item -ItemType Directory -Path $bDir -Force | Out-Null
+
+    # DB 증분 복사 (로컬이 더 최신이면 보존)
+    if (Test-Path $srcConvoDir) {
+        $srcFiles = Get-ChildItem -Path "$srcConvoDir\*.db" -ErrorAction SilentlyContinue
+        foreach ($sf in $srcFiles) {
+            $dfPath = Join-Path $cDir $sf.Name
+            if (-not (Test-Path $dfPath) -or ($sf.LastWriteTimeUtc -gt (Get-Item $dfPath).LastWriteTimeUtc)) {
+                Copy-Item -Path $sf.FullName -Destination $dfPath -Force
+            }
+        }
+    }
+
+    # State 복사 (로컬 파일 보호: 최신 유지 및 백업)
+    if (Test-Path $srcStateDir) {
+        $stateFiles = Get-ChildItem -Path "$srcStateDir\*" -ErrorAction SilentlyContinue
+        foreach ($sf in $stateFiles) {
+            $dfPath = Join-Path $root $sf.Name
+            if (-not (Test-Path $dfPath) -or ($sf.LastWriteTimeUtc -gt (Get-Item $dfPath).LastWriteTimeUtc)) {
+                if (Test-Path $dfPath) {
+                    Copy-Item -Path $dfPath -Destination "$dfPath.bak_$(Get-Date -Format 'yyyyMMdd_HHmmss')" -Force
+                }
+                Copy-Item -Path $sf.FullName -Destination $dfPath -Force
+            }
+        }
+        if ($root -match "-ide$") {
+            $sumDb = Join-Path $root "conversation_summaries.db"
+            if (Test-Path $sumDb) {
+                try {
+                    python -c "import sqlite3; conn = sqlite3.connect(r'$sumDb'); conn.execute(\"UPDATE conversation_summaries SET app_data_dir = 'antigravity-ide'\"); conn.commit()" 2>$null
+                } catch {}
+            }
+        }
+    }
+
+    # Brain 증분 동기화
+    if (Test-Path $srcBrainDir) {
+        robocopy "$srcBrainDir" "$bDir" /E /MT:16 /R:1 /W:1 /NFL /NDL /NP /XO
     }
 }
+
+# Config 복사
+foreach ($cfgDir in $targetConfigDirs) {
+    New-Item -ItemType Directory -Path $cfgDir -Force | Out-Null
+    if (Test-Path $srcAppStorage) {
+        Copy-Item -Path $srcAppStorage -Destination "$cfgDir\app_storage.json" -Force
+    }
+}
+Write-Host "  ✓ 대화 세션 DB ($($convoIds.Count)개) 및 브레인/설정 동기화 완료" -ForegroundColor Green
 
 # 4. 소스 코드 동기화
 Write-Host "[3/3] 로컬 소스 코드 동기화 중..." -ForegroundColor Yellow

@@ -98,7 +98,9 @@ Write-Host "  ✓ 동기화 원본 패키지 확인 완료: $SyncPackage" -Foreg
 # 2. 로컬 대상 디렉터리 결정
 Write-Host "[단계 2/6] 로컬 프로젝트 설치 경로 결정..." -ForegroundColor Yellow
 if (-not $TargetDir) {
-    if (Test-Path "E:\") {
+    if (Test-Path "$HOME\ai") {
+        $TargetDir = "$HOME\ai"
+    } elseif (Test-Path "E:\") {
         $TargetDir = "E:\vivpr\ai"
     } elseif (Test-Path "D:\") {
         $TargetDir = "D:\vivpr\ai"
@@ -117,46 +119,65 @@ if (-not (Test-Path $TargetDir)) {
 }
 Write-Host "  ✓ 로컬 프로젝트 대상 경로: $TargetDir" -ForegroundColor Green
 
-# 3. Antigravity 3대 대화창 및 브레인/설정 복원
-Write-Host "[단계 3/6] Antigravity 3개 핵심 세션 (대화창, 브레인, 아티팩트, 탭 레이아웃) 복원 중..." -ForegroundColor Yellow
+# 3. Antigravity 핵심 세션 및 브레인/설정 복원 (Antigravity 2.0 & IDE 듀얼 완벽 지원)
+Write-Host "[단계 3/6] Antigravity 핵심 세션 (대화창, 브레인, 아티팩트, 탭 레이아웃) 복원 중..." -ForegroundColor Yellow
 
-$localConvoDir = "$env:USERPROFILE\.gemini\antigravity\conversations"
-$localBrainDir = "$env:USERPROFILE\.gemini\antigravity\brain"
-$localStateDir = "$env:USERPROFILE\.gemini\antigravity"
-$localConfigDir = "$env:APPDATA\Antigravity"
+# 복원 대상 디렉터리 목록 (Antigravity 2.0 및 Antigravity IDE 동시 복원)
+$targetAgyRoots = @(
+    "$env:USERPROFILE\.gemini\antigravity-ide",
+    "$env:USERPROFILE\.gemini\antigravity"
+)
+$targetConfigDirs = @(
+    "$env:APPDATA\Antigravity IDE",
+    "$env:APPDATA\Antigravity"
+)
 
-New-Item -ItemType Directory -Path $localConvoDir -Force | Out-Null
-New-Item -ItemType Directory -Path $localBrainDir -Force | Out-Null
-New-Item -ItemType Directory -Path $localConfigDir -Force | Out-Null
-
-# DB 복원
 $srcConvos = Join-Path $SyncPackage "antigravity-core\conversations"
-if (Test-Path $srcConvos) {
-    Copy-Item -Path "$srcConvos\*" -Destination $localConvoDir -Force -Recurse
-    Write-Host "  ✓ 대화 세션 DB (6cb2d68e, a60a4785, d83397bc) 복원 완료" -ForegroundColor Green
-}
-
-# State 메타 복원
 $srcState = Join-Path $SyncPackage "antigravity-core\state"
-if (Test-Path $srcState) {
-    Copy-Item -Path "$srcState\*" -Destination $localStateDir -Force
-    Write-Host "  ✓ 대화 요약 메타 및 설치 상태 복원 완료" -ForegroundColor Green
+$srcConfig = Join-Path $SyncPackage "antigravity-core\config\app_storage.json"
+$srcBrain = Join-Path $SyncPackage "antigravity-core\brain"
+
+foreach ($agyRoot in $targetAgyRoots) {
+    $cDir = Join-Path $agyRoot "conversations"
+    $bDir = Join-Path $agyRoot "brain"
+    New-Item -ItemType Directory -Path $cDir -Force | Out-Null
+    New-Item -ItemType Directory -Path $bDir -Force | Out-Null
+
+    # DB 복원
+    if (Test-Path $srcConvos) {
+        Copy-Item -Path "$srcConvos\*" -Destination $cDir -Force -Recurse
+    }
+
+    # State 메타 복원
+    if (Test-Path $srcState) {
+        Copy-Item -Path "$srcState\*" -Destination $agyRoot -Force
+        # antigravity-ide 호환성을 위해 app_data_dir 컬럼 동기화
+        if ($agyRoot -match "-ide$") {
+            $sumDb = Join-Path $agyRoot "conversation_summaries.db"
+            if (Test-Path $sumDb) {
+                try {
+                    python -c "import sqlite3; conn = sqlite3.connect(r'$sumDb'); conn.execute(\"UPDATE conversation_summaries SET app_data_dir = 'antigravity-ide'\"); conn.commit()" 2>$null
+                } catch {}
+            }
+        }
+    }
+
+    # Brain 증분 복원
+    if (Test-Path $srcBrain) {
+        Write-Host "  - Brain 동기화 중 -> $agyRoot..." -ForegroundColor Cyan
+        robocopy "$srcBrain" "$bDir" /E /MT:16 /R:1 /W:1 /NFL /NDL /NP /XO
+    }
 }
+Write-Host "  ✓ 대화 세션 DB 및 브레인 아티팩트 복원 완료" -ForegroundColor Green
 
 # Config (app_storage.json) 복원
-$srcConfig = Join-Path $SyncPackage "antigravity-core\config\app_storage.json"
-if (Test-Path $srcConfig) {
-    Copy-Item -Path $srcConfig -Destination "$localConfigDir\app_storage.json" -Force
-    Write-Host "  ✓ Antigravity IDE 레이아웃 (3개 대화창 열린 탭 상태) 복원 완료" -ForegroundColor Green
+foreach ($cDir in $targetConfigDirs) {
+    New-Item -ItemType Directory -Path $cDir -Force | Out-Null
+    if (Test-Path $srcConfig) {
+        Copy-Item -Path $srcConfig -Destination "$cDir\app_storage.json" -Force
+    }
 }
-
-# Brain 복원 (멀티스레드 robocopy)
-$srcBrain = Join-Path $SyncPackage "antigravity-core\brain"
-if (Test-Path $srcBrain) {
-    Write-Host "  - 대화 브레인/아티팩트 동기화 중 (약 3GB, 잠시 기다려주세요)..." -ForegroundColor Cyan
-    robocopy "$srcBrain" "$localBrainDir" /E /MT:16 /R:1 /W:1 /NFL /NDL /NP /XO
-    Write-Host "  ✓ 브레인 및 아티팩트 복원 완료" -ForegroundColor Green
-}
+Write-Host "  ✓ Antigravity 탭 레이아웃 및 환경 설정 복원 완료" -ForegroundColor Green
 
 # 4. 프로젝트 소스 코드 복원
 Write-Host "[단계 4/6] 프로젝트 소스 코드 로컬 복원 중..." -ForegroundColor Yellow

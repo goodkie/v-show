@@ -1783,28 +1783,62 @@ class SyncEngine {
         } catch (e) {}
       }
 
-      // 7. VS Code / Antigravity IDE UI 상태 동기화 (state.vscdb, storage.json, workspaceStorage)
-      progressCallback(80, 'Antigravity IDE UI 세션 및 창 상태 동기화 중...');
+      // 7. VS Code / Antigravity IDE UI 상태 동기화 (안전 검사: 로컬이 더 최신이면 보존, 복사 전 .bak 백업)
+      progressCallback(80, 'Antigravity IDE UI 세션 및 창 상태 동기화 점검 중...');
       const srcUiState = path.join(syncPkg, 'antigravity-core', 'ui-state');
       if (fs.existsSync(srcUiState)) {
         for (const cDir of this.getConfigDirs()) {
           const uGlobal = path.join(cDir, 'User', 'globalStorage');
           fs.mkdirSync(uGlobal, { recursive: true });
+
+          // state.vscdb 안전 복사 (로컬이 더 최신이면 스킵)
           const srcVscdb = path.join(srcUiState, 'state.vscdb');
+          const dstVscdb = path.join(uGlobal, 'state.vscdb');
           if (fs.existsSync(srcVscdb)) {
-            try { fs.copyFileSync(srcVscdb, path.join(uGlobal, 'state.vscdb')); } catch (e) {}
+            try {
+              const srcMtime = fs.statSync(srcVscdb).mtimeMs;
+              const dstMtime = fs.existsSync(dstVscdb) ? fs.statSync(dstVscdb).mtimeMs : 0;
+              if (srcMtime > dstMtime) {
+                if (fs.existsSync(dstVscdb)) {
+                  fs.copyFileSync(dstVscdb, `${dstVscdb}.bak_${Date.now()}`);
+                }
+                fs.copyFileSync(srcVscdb, dstVscdb);
+                logger.info('  ✓ Antigravity UI state.vscdb 최신 업데이트 완료 (기존 백업 생성)');
+              } else {
+                logger.info('  - Antigravity UI state.vscdb 로컬 상태가 이미 최신이므로 보존됨');
+              }
+            } catch (e) {
+              logger.warn(`  ! state.vscdb 동기화 알림: ${e.message}`);
+            }
           }
+
+          // storage.json 안전 복사 (로컬이 더 최신이면 스킵)
           const srcStorageJson = path.join(srcUiState, 'storage.json');
+          const dstStorageJson = path.join(uGlobal, 'storage.json');
           if (fs.existsSync(srcStorageJson)) {
-            try { fs.copyFileSync(srcStorageJson, path.join(uGlobal, 'storage.json')); } catch (e) {}
+            try {
+              const srcMtime = fs.statSync(srcStorageJson).mtimeMs;
+              const dstMtime = fs.existsSync(dstStorageJson) ? fs.statSync(dstStorageJson).mtimeMs : 0;
+              if (srcMtime > dstMtime) {
+                if (fs.existsSync(dstStorageJson)) {
+                  fs.copyFileSync(dstStorageJson, `${dstStorageJson}.bak_${Date.now()}`);
+                }
+                fs.copyFileSync(srcStorageJson, dstStorageJson);
+                logger.info('  ✓ Antigravity UI storage.json 최신 업데이트 완료');
+              } else {
+                logger.info('  - Antigravity UI storage.json 로컬 상태가 이미 최신이므로 보존됨');
+              }
+            } catch (e) {
+              logger.warn(`  ! storage.json 동기화 알림: ${e.message}`);
+            }
           }
+
           const srcWs = path.join(srcUiState, 'workspaceStorage');
           if (fs.existsSync(srcWs)) {
             const dstWs = path.join(cDir, 'User', 'workspaceStorage');
             this.copyDirectoryRecursiveSync(srcWs, dstWs, ['.db-wal', '.db-shm']);
           }
         }
-        logger.info('  ✓ Antigravity UI 세션 상태(state.vscdb & storage.json) 최신 동기화 완료');
       }
     }
 
