@@ -1,9 +1,9 @@
 {
   "receiptSchemaVersion": "R47_EXECUTION_RECEIPT_V1",
   "executionTimestamps": {
-    "startTime": "2026-09-27T20:54:05.970Z",
-    "endTime": "2026-09-27T20:55:31.214Z",
-    "durationMs": 85240
+    "startTime": "2026-09-27T20:56:29.313Z",
+    "endTime": "2026-09-27T20:57:50.618Z",
+    "durationMs": 81301
   },
   "runnerMetadata": {
     "sourceFile": "test/test_stage2_true3d_pipeline.js",
@@ -12,18 +12,18 @@
     "platform": "win32"
   },
   "gitEvidence": {
-    "observedHeadSha": "b9db2c579de754263fb647f51a0d4fb1d589e02a",
-    "expectedHeadSha": "b9db2c579de754263fb647f51a0d4fb1d589e02a",
+    "observedHeadSha": "c48d51d617cfdb40919dccaf61457ffb0a4908b9",
+    "expectedHeadSha": "c48d51d617cfdb40919dccaf61457ffb0a4908b9",
     "headBindingMatched": true,
-    "worktreeClean": false,
-    "rawGitStatusPorcelain": "M virtual-tradeshow-commercial-v1/production_artifacts/AUTHLINEAGE_RECEIPT.json"
+    "worktreeClean": true,
+    "rawGitStatusPorcelain": "(clean)"
   },
   "suiteResults": {
     "totalTests": 19,
-    "passedTests": 18,
-    "failedTests": 1,
-    "passedStatus": "18/19 FAIL",
-    "exitCode": 1
+    "passedTests": 19,
+    "failedTests": 0,
+    "passedStatus": "19/19 PASS",
+    "exitCode": 0
   },
   "deployRootsAudit": {
     "scannedRoots": [
