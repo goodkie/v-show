@@ -393,6 +393,7 @@ async function main() {
   // ── [6 & 7] Real Application Express Server & Headless Browser Optical Proof ──
   const PORT = process.env.TEST_PORT || 3982;
   process.env.PORT = String(PORT);
+  process.env.HTTPS_PORT = process.env.TEST_HTTPS_PORT || '3983';
   process.env.NODE_ENV = 'test';
   process.env.DISABLE_RATE_LIMITER = 'true';
 
