@@ -182,16 +182,17 @@ function updateAutoSyncUI(status) {
   }
 
   if (status.enabled) {
-    elements.autoSyncBadge.textContent = '실시간 양방향 가동 중';
+    elements.autoSyncBadge.textContent = '핸드프리 전자동 가동 중 (30초)';
     elements.autoSyncBadge.className = 'auto-sync-badge badge-on';
-    const busyText = status.isBusy ? ' (동기화 작업 수행 중...)' : '';
-    const lastTime = status.lastSyncTime ? ` | 최근: ${new Date(status.lastSyncTime).toLocaleTimeString()}` : '';
+    const busyText = status.isBusy ? ' (⚡ 실시간 동기화 작업 진행 중...)' : '';
+    const nextCheck = (!status.isBusy && status.nextCheckInSeconds !== undefined) ? ` [다음 점검: ${status.nextCheckInSeconds}초 후]` : '';
+    const lastTime = status.lastSyncTime ? ` | 최근 동기화: ${new Date(status.lastSyncTime).toLocaleTimeString()}` : '';
     const resText = status.lastSyncResult ? ` (${status.lastSyncResult})` : '';
-    elements.autoSyncDesc.textContent = `${status.intervalSeconds || 10}초마다 양방향 자동 감지 중: 타 PC 변경 시 즉시 Pull, 로컬 대화/설정 변경 시 자동 Push.${busyText}${lastTime}${resText}`;
+    elements.autoSyncDesc.textContent = `${status.intervalSeconds || 30}초마다 개발 코드(Git)와 AI 대화(Brain/DB)를 실시간 전자동 감지 및 Pull/Push 중입니다.${nextCheck}${busyText}${lastTime}${resText}`;
   } else {
-    elements.autoSyncBadge.textContent = '비활성화';
+    elements.autoSyncBadge.textContent = '일시 정지됨';
     elements.autoSyncBadge.className = 'auto-sync-badge badge-off';
-    elements.autoSyncDesc.textContent = '다른 PC의 작업 업로드를 실시간 감지하여 자동 Pull하고, 내 PC의 대화/코드를 자동 Push합니다.';
+    elements.autoSyncDesc.textContent = '30초 주기 전자동 동기화가 일시 정지되었습니다. 스위치를 켜면 핸드프리 동기화가 다시 시작됩니다.';
   }
 }
 

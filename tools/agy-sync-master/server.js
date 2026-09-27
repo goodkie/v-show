@@ -48,6 +48,8 @@ function sendProgress(percent, statusText) {
 // ─────────────────────────────────────────────────────────────────────────────
 // REAL-TIME AUTO-SYNC MANAGER (DAEMON)
 // ─────────────────────────────────────────────────────────────────────────────
+// REAL-TIME HANDS-FREE AUTO-SYNC MANAGER (DAEMON)
+// ─────────────────────────────────────────────────────────────────────────────
 class AutoSyncManager {
   constructor(engine, broadcastFn, progressFn, loggerObj) {
     this.engine = engine;
@@ -55,15 +57,42 @@ class AutoSyncManager {
     this.sendProgress = progressFn;
     this.logger = loggerObj;
     this.enabled = true; // Auto-sync active by default!
-    this.intervalSeconds = 10; // Check every 10 seconds for real-time responsiveness
+    this.intervalSeconds = 30; // Default: 30 seconds hands-free auto-sync
     this.timer = null;
+    this.countdownTimer = null;
+    this.nextCheckTime = null;
     this.isBusy = false;
-    this.lastKnownRemotePush = this.getRemotePushTimestamp();
-    this.lastLocalConversationMtime = this.getLocalConversationMtime();
-    this.lastLocalGitCommit = this.getLocalGitCommit();
-    this.lastSyncResult = '실시간 양방향 감시 중';
+    this.stateFile = path.join(__dirname, 'sync_state.json');
+    this.state = this.loadState();
+    this.lastSyncResult = '핸드프리 전자동 동기화 대기 중 (30초 주기)';
     this.lastSyncTime = null;
   }
+
+  loadState() {
+    try {
+      if (fs.existsSync(this.stateFile)) {
+        return JSON.parse(fs.readFileSync(this.stateFile, 'utf8'));
+      }
+    } catch (e) {}
+    return {
+      lastPulledManifestTime: null,
+      lastLocalConversationMtime: this.getLocalConversationMtime(),
+      lastLocalGitCommit: this.getLocalGitCommit()
+    };
+  }
+
+  saveState() {
+    try {
+      fs.writeFileSync(this.stateFile, JSON.stringify(this.state, null, 2), 'utf8');
+    } catch (e) {}
+  }
+
+  get lastLocalConversationMtime() { return this.state.lastLocalConversationMtime || 0; }
+  set lastLocalConversationMtime(v) { this.state.lastLocalConversationMtime = v; this.saveState(); }
+  get lastLocalGitCommit() { return this.state.lastLocalGitCommit || ''; }
+  set lastLocalGitCommit(v) { this.state.lastLocalGitCommit = v; this.saveState(); }
+  get lastKnownRemotePush() { return this.state.lastPulledManifestTime || null; }
+  set lastKnownRemotePush(v) { this.state.lastPulledManifestTime = v; this.saveState(); }
 
   getRemotePushTimestamp() {
     try {
@@ -154,97 +183,166 @@ class AutoSyncManager {
   }
 
   getStatus() {
+    const now = Date.now();
+    const remaining = this.nextCheckTime ? Math.max(0, Math.round((this.nextCheckTime - now) / 1000)) : 0;
     return {
       enabled: this.enabled,
       intervalSeconds: this.intervalSeconds,
       isBusy: this.isBusy,
       lastSyncTime: this.lastSyncTime,
       lastSyncResult: this.lastSyncResult,
-      lastKnownRemotePush: this.lastKnownRemotePush
+      nextCheckInSeconds: remaining,
+      lastKnownRemotePush: this.getRemotePushTimestamp()
     };
   }
 
-  start(intervalSeconds = 10) {
+  start(intervalSeconds = 30) {
     this.enabled = true;
-    this.intervalSeconds = Math.max(5, parseInt(intervalSeconds, 10) || 10);
+    this.intervalSeconds = Math.max(10, parseInt(intervalSeconds, 10) || 30);
     if (this.timer) clearInterval(this.timer);
-    this.logger.info(`[AUTO-SYNC] 실시간 자동 동기화 데몬 활성화 (감지 주기: ${this.intervalSeconds}초)`);
+    if (this.countdownTimer) clearInterval(this.countdownTimer);
+
+    this.logger.info(`[AUTO-SYNC] 핸드프리 전자동 동기화 데몬 활성화됨 (기본 주기: ${this.intervalSeconds}초)`);
+    this.nextCheckTime = Date.now() + 2000;
     this.broadcast('auto-sync-status', this.getStatus());
-    this.timer = setInterval(() => this.tick(), this.intervalSeconds * 1000);
-    setTimeout(() => this.tick(), 2000);
+
+    // Main sync loop
+    this.timer = setInterval(() => {
+      this.nextCheckTime = Date.now() + (this.intervalSeconds * 1000);
+      this.tick();
+    }, this.intervalSeconds * 1000);
+
+    // Fast status broadcast for UI countdown (every 3 seconds)
+    this.countdownTimer = setInterval(() => {
+      if (this.enabled && !this.isBusy) {
+        this.broadcast('auto-sync-status', this.getStatus());
+      }
+    }, 3000);
+
+    // Initial immediate catch-up tick after 2s
+    setTimeout(() => {
+      this.nextCheckTime = Date.now() + (this.intervalSeconds * 1000);
+      this.tick();
+    }, 2000);
   }
 
   stop() {
     this.enabled = false;
     if (this.timer) clearInterval(this.timer);
+    if (this.countdownTimer) clearInterval(this.countdownTimer);
     this.timer = null;
-    this.logger.info('[AUTO-SYNC] 실시간 자동 동기화 데몬 비활성화됨');
+    this.countdownTimer = null;
+    this.nextCheckTime = null;
+    this.logger.info('[AUTO-SYNC] 핸드프리 전자동 동기화 일시정지됨');
     this.broadcast('auto-sync-status', this.getStatus());
   }
 
   async tick() {
     if (!this.enabled || this.isBusy) return;
+    this.isBusy = true;
     this.engine = getEngine();
+    this.broadcast('auto-sync-status', this.getStatus());
 
     try {
-      // 1. Google Drive의 원격 매니페스트 확인 (다른 PC의 신규 Push 감지 -> 자동 PULL)
+      const paths = this.engine.getPaths();
+      const fastTrackDir = paths.fastTrackDir;
+      let pulledSomething = false;
+
+      // 1. [개발 코드] GitHub 원격지 변경사항 자동 감지 & 핸드프리 Pull
+      if (fs.existsSync(path.join(fastTrackDir, '.git'))) {
+        try {
+          this.engine.setupGitAuth(this.logger);
+          // Fetch quietly without modifying working copy
+          const fetchRes = await this.engine.runCommand('git', ['fetch', 'origin', this.engine.defaultBranch, '--quiet'], fastTrackDir, this.logger);
+          if (fetchRes.code === 0) {
+            // Check if remote is ahead of local HEAD
+            const revRes = await this.engine.runCommand('git', ['rev-list', '--count', `HEAD..origin/${this.engine.defaultBranch}`], fastTrackDir, this.logger);
+            const aheadCount = parseInt((revRes.stdout || '').trim(), 10) || 0;
+            if (aheadCount > 0) {
+              this.logger.info(`[AUTO-SYNC] GitHub 원격 신규 커밋(${aheadCount}개) 감지됨 -> 핸드프리 자동 Pull 실행`);
+              this.sendProgress(15, `[전자동 동기화] GitHub 신규 커밋(${aheadCount}개) 자동 수신 중...`);
+              await this.engine.pullSync(this.sendProgress, this.logger);
+              pulledSomething = true;
+              this.lastSyncResult = `GitHub 신규 커밋(${aheadCount}개) 자동 수신 완료`;
+              this.lastSyncTime = new Date().toISOString();
+              this.state.lastLocalGitCommit = this.getLocalGitCommit();
+              this.state.lastLocalConversationMtime = this.getLocalConversationMtime();
+              this.saveState();
+              this.sendProgress(100, `[전자동 동기화] 최신 코드 반영 완료 (${new Date().toLocaleTimeString()})`);
+            }
+          }
+        } catch (gitErr) {
+          this.logger.warn(`[AUTO-SYNC] Git 원격 감지 확인 중 알림: ${gitErr.message}`);
+        }
+      }
+
+      // 2. [대화/브레인] Google Drive 원격지 신규 업로드 감지 & 핸드프리 Pull
       const manifestPath = path.join(this.engine.getSyncPackagePath(), 'sync_manifest.json');
       if (fs.existsSync(manifestPath)) {
         try {
           const raw = fs.readFileSync(manifestPath, 'utf8');
           const manifest = JSON.parse(raw);
           if (manifest.pushedAt) {
-            if (!this.lastKnownRemotePush) {
-              this.lastKnownRemotePush = manifest.pushedAt;
-            } else if (manifest.pushedAt !== this.lastKnownRemotePush) {
-              if (manifest.sourceMachine !== os.hostname()) {
-                this.isBusy = true;
-                this.broadcast('auto-sync-status', this.getStatus());
-                this.logger.info(`[AUTO-SYNC] 타 PC(${manifest.sourceMachine}) 신규 커밋/세션 감지 (${manifest.pushedAt}) -> 자동 Pull 실행`);
-                this.sendProgress(20, `[자동 동기화] ${manifest.sourceMachine}의 최신 세션 수신 중...`);
-                await this.engine.pullSync(this.sendProgress, this.logger);
-                this.lastSyncResult = `타 PC(${manifest.sourceMachine}) 작업 자동 수신 완료`;
-                this.lastSyncTime = new Date().toISOString();
-                this.lastKnownRemotePush = manifest.pushedAt;
-                this.lastLocalConversationMtime = this.getLocalConversationMtime();
-                this.lastLocalGitCommit = this.getLocalGitCommit();
-                this.sendProgress(100, `[자동 동기화] 최신 동기화 완료 (${new Date().toLocaleTimeString()})`);
-                this.isBusy = false;
-                this.broadcast('auto-sync-status', this.getStatus());
-                return;
-              }
-              this.lastKnownRemotePush = manifest.pushedAt;
+            const isFromOtherMachine = manifest.sourceMachine && manifest.sourceMachine !== os.hostname();
+            const isNewerThanLastPulled = manifest.pushedAt !== this.state.lastPulledManifestTime;
+
+            if (isFromOtherMachine && isNewerThanLastPulled && !pulledSomething) {
+              this.logger.info(`[AUTO-SYNC] 타 PC(${manifest.sourceMachine}) 신규 대화/브레인 감지 (${manifest.pushedAt}) -> 핸드프리 자동 Pull 실행`);
+              this.sendProgress(20, `[전자동 동기화] ${manifest.sourceMachine}의 최신 대화/브레인 자동 수신 중...`);
+              await this.engine.pullSync(this.sendProgress, this.logger);
+              this.state.lastPulledManifestTime = manifest.pushedAt;
+              this.lastSyncResult = `타 PC(${manifest.sourceMachine}) 대화/브레인 자동 수신 완료`;
+              this.lastSyncTime = new Date().toISOString();
+              this.state.lastLocalConversationMtime = this.getLocalConversationMtime();
+              this.saveState();
+              this.sendProgress(100, `[전자동 동기화] 최신 세션 수신 완료 (${new Date().toLocaleTimeString()})`);
+              pulledSomething = true;
+            } else if (!isFromOtherMachine) {
+              this.state.lastPulledManifestTime = manifest.pushedAt;
+              this.saveState();
             }
           }
-        } catch (e) {}
+        } catch (mErr) {
+          this.logger.warn(`[AUTO-SYNC] 매니페스트 확인 알림: ${mErr.message}`);
+        }
       }
 
-      // 2. 로컬 대화/세션/설정 변경 또는 로컬 Git 커밋 감지 -> 자동 PUSH
-      const currentConvMtime = this.getLocalConversationMtime();
-      const currentGitCommit = this.getLocalGitCommit();
+      // 3. [로컬 변경사항] 로컬 대화/세션/설정 변경 또는 로컬 미푸시 커밋 감지 -> 핸드프리 전자동 Push
+      if (!pulledSomething) {
+        const currentConvMtime = this.getLocalConversationMtime();
+        const currentGitCommit = this.getLocalGitCommit();
 
-      // 변경 감지: 3초 이상 새로운 파일 타임스탬프 또는 Git 커밋 변경
-      const convChanged = currentConvMtime > (this.lastLocalConversationMtime + 3000);
-      const gitChanged = currentGitCommit && (currentGitCommit !== this.lastLocalGitCommit);
+        // Check unpushed commits
+        let unpushedCount = 0;
+        try {
+          const unpushedRes = await this.engine.runCommand('git', ['rev-list', '--count', `origin/${this.engine.defaultBranch}..HEAD`], fastTrackDir, this.logger);
+          unpushedCount = parseInt((unpushedRes.stdout || '').trim(), 10) || 0;
+        } catch (e) {}
 
-      if (convChanged || gitChanged) {
-        this.isBusy = true;
-        this.broadcast('auto-sync-status', this.getStatus());
-        this.logger.info(`[AUTO-SYNC] 로컬 대화 세션/설정/커밋 변경 감지 -> GitHub 및 Google Drive 자동 백업(Push) 실행`);
-        this.sendProgress(20, '[자동 동기화] 로컬 최신 세션 및 코드 백업 중...');
-        await this.engine.pushSync(this.sendProgress, this.logger);
-        this.lastLocalConversationMtime = currentConvMtime;
-        this.lastLocalGitCommit = currentGitCommit;
-        this.lastKnownRemotePush = this.getRemotePushTimestamp();
-        this.lastSyncResult = '로컬 변경사항 자동 백업(Push) 완료';
-        this.lastSyncTime = new Date().toISOString();
-        this.sendProgress(100, `[자동 동기화] 클라우드 백업 완료 (${new Date().toLocaleTimeString()})`);
-        this.isBusy = false;
-        this.broadcast('auto-sync-status', this.getStatus());
+        const convChanged = currentConvMtime > ((this.state.lastLocalConversationMtime || 0) + 3000);
+        const gitChanged = unpushedCount > 0 || (currentGitCommit && currentGitCommit !== this.state.lastLocalGitCommit);
+
+        if (convChanged || gitChanged) {
+          const changeReasons = [];
+          if (convChanged) changeReasons.push('대화/세션 변경');
+          if (gitChanged) changeReasons.push(`신규 커밋(${unpushedCount}개)`);
+
+          this.logger.info(`[AUTO-SYNC] 로컬 작업 변경 감지 [${changeReasons.join(', ')}] -> GitHub 및 Google Drive 전자동 Push 실행`);
+          this.sendProgress(20, `[전자동 동기화] 로컬 변경사항(${changeReasons.join(', ')}) 클라우드 백업 중...`);
+          await this.engine.pushSync(this.sendProgress, this.logger);
+          this.state.lastLocalConversationMtime = currentConvMtime;
+          this.state.lastLocalGitCommit = currentGitCommit;
+          this.state.lastPulledManifestTime = this.getRemotePushTimestamp();
+          this.lastSyncResult = `로컬 변경사항 [${changeReasons.join(', ')}] 클라우드 자동 Push 완료`;
+          this.lastSyncTime = new Date().toISOString();
+          this.saveState();
+          this.sendProgress(100, `[전자동 동기화] 클라우드 백업 완료 (${new Date().toLocaleTimeString()})`);
+        }
       }
     } catch (err) {
       this.logger.warn(`[AUTO-SYNC] 점검 중 예외: ${err.message}`);
       this.lastSyncResult = `오류: ${err.message}`;
+    } finally {
       this.isBusy = false;
       this.broadcast('auto-sync-status', this.getStatus());
     }
@@ -887,10 +985,12 @@ function startServer(portToTry) {
     console.log(`  [AGY-Sync Master] Universal Multi-PC Dashboard Active!`);
     console.log(`  Local URL:   http://localhost:${portToTry}`);
     console.log(`  Network URL: http://${getLocalIp()}:${portToTry}`);
+    console.log(`  Auto-Sync:   [ACTIVE] 30초 주기 핸드프리 전자동 동기화 가동 중`);
+    console.log(`               개발 코드(Git) 및 AI 대화(Brain/DB) 실시간 전자동 연동`);
     console.log(`================================================================`);
     openAppWindow(portToTry);
-    // Start real-time background sync daemon automatically
-    autoSync.start(10);
+    // Start real-time background sync daemon automatically with 30s default interval
+    autoSync.start(30);
   });
 }
 
