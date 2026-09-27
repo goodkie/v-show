@@ -5,7 +5,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { spawn, execSync } = require('child_process');
+const { spawn, spawnSync, execSync } = require('child_process');
 const os = require('os');
 const crypto = require('crypto');
 const https = require('https');
@@ -1577,8 +1577,12 @@ class SyncEngine {
         fs.mkdirSync(dstBrain, { recursive: true });
         try {
           if (process.platform === 'win32') {
-            execSync(`cmd.exe /c "robocopy \\"${srcBrain}\\" \\"${dstBrain}\\" /E /MT:16 /R:1 /W:1 /NFL /NDL /NP /XO /XD .system_generated\\\\tasks & if %ERRORLEVEL% LSS 8 exit /b 0"`, { stdio: 'ignore' });
-            logger.info(`  ✓ Antigravity Brain (${path.basename(agyRoot)}): 초고속 증분 백업 완료`);
+            const r = spawnSync('robocopy', [srcBrain, dstBrain, '/E', '/MT:16', '/R:1', '/W:1', '/NFL', '/NDL', '/NP', '/XO', '/XD', '.system_generated\\tasks'], { stdio: 'ignore' });
+            if (r.status !== null && r.status < 8) {
+              logger.info(`  ✓ Antigravity Brain (${path.basename(agyRoot)}): 초고속 증분 백업 완료`);
+            } else {
+              throw new Error(`robocopy 실패 (종료 코드: ${r.status})`);
+            }
           } else {
             const bCount = this.copyDirectoryRecursiveSync(srcBrain, dstBrain, ['.system_generated/tasks'], logger);
             if (bCount > 0) logger.info(`  ✓ Antigravity Brain (${path.basename(agyRoot)}): ${bCount}개 파일 백업 완료`);
@@ -1770,8 +1774,12 @@ class SyncEngine {
           fs.mkdirSync(dstBrain, { recursive: true });
           try {
             if (process.platform === 'win32') {
-              execSync(`cmd.exe /c "robocopy \\"${srcBrain}\\" \\"${dstBrain}\\" /E /MT:16 /R:1 /W:1 /NFL /NDL /NP /XO /XD .system_generated\\\\tasks & if %ERRORLEVEL% LSS 8 exit /b 0"`, { stdio: 'ignore' });
-              logger.info(`  ✓ Antigravity Brain 다운로드 완료 (초고속 증분 동기화)`);
+              const r = spawnSync('robocopy', [srcBrain, dstBrain, '/E', '/MT:16', '/R:1', '/W:1', '/NFL', '/NDL', '/NP', '/XO', '/XD', '.system_generated\\tasks'], { stdio: 'ignore' });
+              if (r.status !== null && r.status < 8) {
+                logger.info(`  ✓ Antigravity Brain 다운로드 완료 (초고속 증분 동기화)`);
+              } else {
+                throw new Error(`robocopy 실패 (종료 코드: ${r.status})`);
+              }
             } else {
               const bPulled = this.copyDirectoryRecursiveSync(srcBrain, dstBrain, ['.system_generated/tasks'], logger);
               if (bPulled > 0) logger.info(`  ✓ Antigravity Brain 다운로드 완료: ${bPulled}개 파일 동기화됨`);
