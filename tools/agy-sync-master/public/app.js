@@ -519,9 +519,347 @@ if (elements.btnConfirmUninstall) {
   });
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// CONVERSATION SESSION ARCHIVE & AGENT HANDOVER CONTROLLER
+// ─────────────────────────────────────────────────────────────────────────────
+function setupSessionArchiveControls() {
+  const sessionModal = document.getElementById('sessionModal');
+  const btnOpenSessionModal = document.getElementById('btnOpenSessionModal');
+  const btnOpenSessionModalFromCard = document.getElementById('btnOpenSessionModalFromCard');
+  const btnQuickHandoverPackage = document.getElementById('btnQuickHandoverPackage');
+  const btnCreateHandoverPackageFromCard = document.getElementById('btnCreateHandoverPackageFromCard');
+  const btnCloseSessionModal = document.getElementById('btnCloseSessionModal');
+  const btnCloseSessionModalBottom = document.getElementById('btnCloseSessionModalBottom');
+
+  if (!sessionModal) return;
+
+  const tabButtons = sessionModal.querySelectorAll('.modal-tab');
+  const tabPanes = sessionModal.querySelectorAll('.tab-pane');
+
+  function switchTab(tabId) {
+    tabButtons.forEach(b => b.classList.toggle('active', b.dataset.tab === tabId));
+    tabPanes.forEach(p => p.classList.toggle('active', p.id === tabId));
+    if (tabId === 'tab-active-convs') loadActiveConversations();
+    if (tabId === 'tab-saved-docs') loadSavedDocs();
+    if (tabId === 'tab-handover-pkgs') loadPackages();
+  }
+
+  tabButtons.forEach(btn => {
+    btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+  });
+
+  function openModal(defaultTab = 'tab-active-convs') {
+    sessionModal.style.display = 'flex';
+    switchTab(defaultTab);
+  }
+
+  function closeModal() {
+    sessionModal.style.display = 'none';
+  }
+
+  if (btnOpenSessionModal) btnOpenSessionModal.addEventListener('click', () => openModal('tab-active-convs'));
+  if (btnOpenSessionModalFromCard) btnOpenSessionModalFromCard.addEventListener('click', () => openModal('tab-active-convs'));
+  if (btnQuickHandoverPackage) btnQuickHandoverPackage.addEventListener('click', () => openModal('tab-handover-pkgs'));
+  if (btnCreateHandoverPackageFromCard) btnCreateHandoverPackageFromCard.addEventListener('click', () => openModal('tab-handover-pkgs'));
+  if (btnCloseSessionModal) btnCloseSessionModal.addEventListener('click', closeModal);
+  if (btnCloseSessionModalBottom) btnCloseSessionModalBottom.addEventListener('click', closeModal);
+
+  // Tab 1: Active Conversations
+  const activeTbody = document.getElementById('activeConvsTbody');
+  const btnRefreshConvs = document.getElementById('btnRefreshConvs');
+  const btnArchiveAllConvs = document.getElementById('btnArchiveAllConvs');
+
+  async function loadActiveConversations() {
+    if (!activeTbody) return;
+    activeTbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--text-muted);">대화 목록을 불러오는 중...</td></tr>';
+    try {
+      const res = await fetch('/api/conversations');
+      const convs = await res.json();
+      if (!Array.isArray(convs) || convs.length === 0) {
+        activeTbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--text-muted);">발견된 대화 세션이 없습니다.</td></tr>';
+        return;
+      }
+      activeTbody.innerHTML = '';
+      convs.forEach(c => {
+        const tr = document.createElement('tr');
+        const shortDate = (c.last_modified || '').replace('T', ' ').substring(0, 19);
+        const isArchived = Boolean(c.archived_file);
+
+        tr.innerHTML = `
+          <td>
+            <div style="font-weight:600; color:var(--text-main); margin-bottom:2px;">${escapeHtml(c.title || '세션')}</div>
+            <div style="font-size:11px; color:var(--text-dim); font-family:var(--font-mono);">${c.id}</div>
+          </td>
+          <td><span style="font-family:var(--font-mono); font-size:11.5px;">${c.steps}</span></td>
+          <td style="font-size:11px; color:var(--text-muted); font-family:var(--font-mono);">${shortDate}</td>
+          <td style="text-align:right; white-space:nowrap;">
+            <button class="btn-mini ${isArchived ? 'btn-mini-emerald' : 'btn-mini-primary'} btn-doc-export" data-id="${c.id}">
+              ${isArchived ? '✓ 저장됨 (갱신)' : '📝 문서화 저장'}
+            </button>
+            <button class="btn-mini btn-open-viewer" data-id="${c.id}" data-file="${c.archived_file || ''}" title="새 창 뷰어로 열람">
+              🌐 새창보기
+            </button>
+          </td>
+        `;
+        activeTbody.appendChild(tr);
+      });
+
+      // Hook row buttons
+      activeTbody.querySelectorAll('.btn-doc-export').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const cid = btn.dataset.id;
+          btn.disabled = true;
+          btn.textContent = '저장 중...';
+          try {
+            const expRes = await fetch('/api/conversations/export', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ convId: cid })
+            });
+            const d = await expRes.json();
+            if (d.success) {
+              btn.className = 'btn-mini btn-mini-emerald btn-doc-export';
+              btn.textContent = '✓ 저장완료';
+              appendLog('INFO', `✓ 세션 문서화 완료: ${d.relPath}`);
+            } else {
+              alert('문서화 실패: ' + (d.error || '오류'));
+              btn.textContent = '문서화 실패';
+            }
+          } catch (e) {
+            alert('오류: ' + e.message);
+            btn.textContent = '오류';
+          } finally {
+            btn.disabled = false;
+          }
+        });
+      });
+
+      activeTbody.querySelectorAll('.btn-open-viewer').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const cid = btn.dataset.id;
+          const file = btn.dataset.file;
+          let url = file ? `/viewer.html?file=${encodeURIComponent(file)}` : `/viewer.html?id=${encodeURIComponent(cid)}`;
+          window.open(url, '_blank', 'width=1100,height=850,menubar=no,toolbar=no');
+        });
+      });
+
+    } catch (e) {
+      activeTbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--accent-rose);">대화 목록 로드 실패: ${e.message}</td></tr>`;
+    }
+  }
+
+  if (btnRefreshConvs) btnRefreshConvs.addEventListener('click', loadActiveConversations);
+
+  if (btnArchiveAllConvs) {
+    btnArchiveAllConvs.addEventListener('click', async () => {
+      btnArchiveAllConvs.disabled = true;
+      btnArchiveAllConvs.textContent = '일괄 문서화 진행 중...';
+      try {
+        const res = await fetch('/api/conversations');
+        const convs = await res.json();
+        let count = 0;
+        for (const c of convs) {
+          try {
+            await fetch('/api/conversations/export', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ convId: c.id })
+            });
+            count++;
+          } catch (err) {}
+        }
+        appendLog('INFO', `✓ 전체 ${count}개 대화 세션 프로젝트 문서화 저장 완료 (docs/conversations/)`);
+        loadActiveConversations();
+      } catch (e) {
+        appendLog('ERROR', `일괄 문서화 오류: ${e.message}`);
+      } finally {
+        btnArchiveAllConvs.disabled = false;
+        btnArchiveAllConvs.textContent = '📑 전체 일괄 문서화';
+      }
+    });
+  }
+
+  // Tab 2: Saved Markdown Docs
+  const savedTbody = document.getElementById('savedDocsTbody');
+  const btnRefreshSavedDocs = document.getElementById('btnRefreshSavedDocs');
+  const btnOpenDocsFolder = document.getElementById('btnOpenDocsFolder');
+
+  async function loadSavedDocs() {
+    if (!savedTbody) return;
+    savedTbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--text-muted);">저장된 문서를 불러오는 중...</td></tr>';
+    try {
+      const res = await fetch('/api/conversations/archived');
+      const docs = await res.json();
+      if (!Array.isArray(docs) || docs.length === 0) {
+        savedTbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--text-muted);">아직 저장된 세션 마크다운 문서가 없습니다. Tab 1에서 [문서화 저장]을 실행하세요.</td></tr>';
+        return;
+      }
+      savedTbody.innerHTML = '';
+      docs.forEach(d => {
+        const tr = document.createElement('tr');
+        const sizeKb = (d.sizeBytes / 1024).toFixed(1) + ' KB';
+        tr.innerHTML = `
+          <td>
+            <div style="font-weight:600; color:var(--accent-cyan); margin-bottom:2px;">${escapeHtml(d.title || d.filename)}</div>
+            <div style="font-size:11px; color:var(--text-dim); font-family:var(--font-mono);">${d.relPath}</div>
+          </td>
+          <td style="font-family:var(--font-mono); font-size:11.5px;">${sizeKb}</td>
+          <td style="font-size:11px; color:var(--text-muted); font-family:var(--font-mono);">${d.mtime}</td>
+          <td style="text-align:right; white-space:nowrap;">
+            <button class="btn-mini btn-mini-primary btn-open-doc-viewer" data-file="${d.relPath}">🌐 새창열기</button>
+            <button class="btn-mini btn-open-doc-editor" data-file="${d.relPath}">💻 에디터</button>
+          </td>
+        `;
+        savedTbody.appendChild(tr);
+      });
+
+      savedTbody.querySelectorAll('.btn-open-doc-viewer').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const file = btn.dataset.file;
+          window.open(`/viewer.html?file=${encodeURIComponent(file)}`, '_blank', 'width=1100,height=850,menubar=no,toolbar=no');
+        });
+      });
+
+      savedTbody.querySelectorAll('.btn-open-doc-editor').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const file = btn.dataset.file;
+          try {
+            await fetch('/api/open-in-editor', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ file })
+            });
+          } catch (e) {
+            alert('에디터 실행 오류: ' + e.message);
+          }
+        });
+      });
+
+    } catch (e) {
+      savedTbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--accent-rose);">문서 로드 실패: ${e.message}</td></tr>`;
+    }
+  }
+
+  if (btnRefreshSavedDocs) btnRefreshSavedDocs.addEventListener('click', loadSavedDocs);
+  if (btnOpenDocsFolder) {
+    btnOpenDocsFolder.addEventListener('click', async () => {
+      try {
+        await fetch('/api/open-folder', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ folder: 'docs/conversations' })
+        });
+      } catch (e) {
+        alert('폴더 열기 오류: ' + e.message);
+      }
+    });
+  }
+
+  // Tab 3: Handover Packages
+  const pkgsListContainer = document.getElementById('pkgsListContainer');
+  const btnCreateHandoverPackageInModal = document.getElementById('btnCreateHandoverPackageInModal');
+  const btnRefreshPkgs = document.getElementById('btnRefreshPkgs');
+  const btnOpenPkgsFolder = document.getElementById('btnOpenPkgsFolder');
+
+  async function loadPackages() {
+    if (!pkgsListContainer) return;
+    pkgsListContainer.innerHTML = '<div style="text-align:center; padding:30px; color:var(--text-muted);">패키지 목록을 불러오는 중...</div>';
+    try {
+      const res = await fetch('/api/conversations/packages');
+      const pkgs = await res.json();
+      if (!Array.isArray(pkgs) || pkgs.length === 0) {
+        pkgsListContainer.innerHTML = '<div style="text-align:center; padding:30px; color:var(--text-muted);">생성된 패키지가 없습니다. 상단 [패키지 지금 생성] 버튼을 누르세요.</div>';
+        return;
+      }
+      pkgsListContainer.innerHTML = '';
+      pkgs.forEach(p => {
+        const item = document.createElement('div');
+        item.className = 'pkg-card-item';
+        const sizeMb = (p.sizeBytes / (1024 * 1024)).toFixed(2) + ' MB';
+        item.innerHTML = `
+          <div>
+            <div style="font-weight:700; color:var(--accent-cyan); font-size:13px; margin-bottom:2px;">📦 ${escapeHtml(p.filename)}</div>
+            <div style="font-size:11px; color:var(--text-dim); font-family:var(--font-mono);">크기: ${sizeMb} | 생성: ${p.mtime}</div>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <a href="/api/download-package?name=${encodeURIComponent(p.filename)}" class="btn-mini btn-mini-primary" download>⬇️ ZIP 다운로드</a>
+            <button class="btn-mini btn-pkg-folder" title="탐색기에서 패키지 위치 열기">📁 위치 열기</button>
+          </div>
+        `;
+        pkgsListContainer.appendChild(item);
+      });
+
+      pkgsListContainer.querySelectorAll('.btn-pkg-folder').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          try {
+            await fetch('/api/open-folder', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ folder: 'handover_packages' })
+            });
+          } catch (e) {
+            alert('폴더 열기 실패: ' + e.message);
+          }
+        });
+      });
+
+    } catch (e) {
+      pkgsListContainer.innerHTML = `<div style="text-align:center; padding:20px; color:var(--accent-rose);">패키지 목록 로드 실패: ${e.message}</div>`;
+    }
+  }
+
+  async function triggerPackageCreation() {
+    if (btnCreateHandoverPackageInModal) {
+      btnCreateHandoverPackageInModal.disabled = true;
+      btnCreateHandoverPackageInModal.textContent = '⏳ 패키지 생성 및 압축 중...';
+    }
+    setButtonsDisabled(true);
+    appendLog('INFO', '📦 에이전트 인수인계 통합 백업 패키지 생성을 시작합니다...');
+    try {
+      const res = await fetch('/api/conversations/package', { method: 'POST' });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        appendLog('INFO', `✓ 인수인계 패키지 완성: ${data.zipName} (${(data.sizeBytes / (1024*1024)).toFixed(2)} MB, ${data.exportedConversationsCount}개 대화 수록)`);
+        loadPackages();
+      } else {
+        appendLog('ERROR', `패키지 생성 실패: ${data.error || '알 수 없는 오류'}`);
+      }
+    } catch (e) {
+      appendLog('ERROR', `패키지 생성 통신 오류: ${e.message}`);
+    } finally {
+      if (btnCreateHandoverPackageInModal) {
+        btnCreateHandoverPackageInModal.disabled = false;
+        btnCreateHandoverPackageInModal.textContent = '📦 패키지 지금 생성';
+      }
+      setButtonsDisabled(false);
+    }
+  }
+
+  if (btnCreateHandoverPackageInModal) btnCreateHandoverPackageInModal.addEventListener('click', triggerPackageCreation);
+  if (btnRefreshPkgs) btnRefreshPkgs.addEventListener('click', loadPackages);
+  if (btnOpenPkgsFolder) {
+    btnOpenPkgsFolder.addEventListener('click', async () => {
+      try {
+        await fetch('/api/open-folder', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ folder: 'handover_packages' })
+        });
+      } catch (e) {}
+    });
+  }
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 // Init on Page Load
 window.addEventListener('DOMContentLoaded', () => {
   setupEventSource();
   loadStatus();
   runDiagnose();
+  setupSessionArchiveControls();
 });
+

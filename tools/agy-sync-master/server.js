@@ -244,7 +244,12 @@ const MIME_TYPES = {
   '.js': 'application/javascript; charset=utf-8',
   '.json': 'application/json; charset=utf-8',
   '.png': 'image/png',
-  '.ico': 'image/x-icon'
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.svg': 'image/svg+xml',
+  '.ico': 'image/x-icon',
+  '.md': 'text/markdown; charset=utf-8',
+  '.zip': 'application/zip'
 };
 
 const server = http.createServer(async (req, res) => {
@@ -607,6 +612,197 @@ $Shortcut.Save()
       } finally {
         autoSync.isBusy = false;
         autoSync.broadcast('auto-sync-status', autoSync.getStatus());
+      }
+    });
+    return;
+  }
+
+  // 16. List All Conversations API (GET)
+  if (pathname === '/api/conversations' && req.method === 'GET') {
+    try {
+      const eng = getEngine();
+      const convs = eng.listConversations();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(convs));
+    } catch (e) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: e.message }));
+    }
+    return;
+  }
+
+  // 17. Export Conversation to Markdown API (POST)
+  if (pathname === '/api/conversations/export' && req.method === 'POST') {
+    let body = '';
+    req.on('data', chunk => body += chunk);
+    req.on('end', () => {
+      try {
+        const data = JSON.parse(body || '{}');
+        if (!data.convId) throw new Error('대화 세션 ID (convId)가 지정되지 않았습니다.');
+        const eng = getEngine();
+        const resData = eng.exportConversation(data.convId);
+        logger.info(`  ✓ 대화 세션 프로젝트 문서화 저장 완료: ${resData.relPath}`);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(resData));
+      } catch (e) {
+        logger.error(`대화 문서화 실패: ${e.message}`);
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: e.message }));
+      }
+    });
+    return;
+  }
+
+  // 18. List Archived Sessions in Project API (GET)
+  if (pathname === '/api/conversations/archived' && req.method === 'GET') {
+    try {
+      const eng = getEngine();
+      const sessions = eng.listArchivedSessions();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(sessions));
+    } catch (e) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: e.message }));
+    }
+    return;
+  }
+
+  // 19. Get Conversation/Archived Session Content API (GET)
+  if (pathname === '/api/conversations/content' && req.method === 'GET') {
+    try {
+      const eng = getEngine();
+      const paths = eng.getPaths();
+      const fileParam = parsedUrl.searchParams.get('file');
+      const idParam = parsedUrl.searchParams.get('id');
+
+      let targetPath = null;
+      if (fileParam) {
+        targetPath = path.isAbsolute(fileParam) ? fileParam : path.join(paths.fastTrackDir, fileParam);
+      } else if (idParam) {
+        const expRes = eng.exportConversation(idParam);
+        targetPath = expRes.filePath;
+      }
+
+      if (!targetPath || !fs.existsSync(targetPath)) {
+        throw new Error('요청한 대화 세션 마크다운 문서를 찾을 수 없습니다.');
+      }
+
+      const content = fs.readFileSync(targetPath, 'utf8');
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        success: true,
+        filename: path.basename(targetPath),
+        filePath: targetPath,
+        relPath: path.relative(paths.fastTrackDir, targetPath).replace(/\\/g, '/'),
+        content
+      }));
+    } catch (e) {
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: e.message }));
+    }
+    return;
+  }
+
+  // 20. Create Agent Handover Package API (POST)
+  if (pathname === '/api/conversations/package' && req.method === 'POST') {
+    autoSync.isBusy = true;
+    try {
+      sendProgress(20, '대화 및 프로젝트 Git 상태 수집 중...');
+      const eng = getEngine();
+      logger.info('📦 에이전트 인수인계 통합 백업 패키지 생성 시작...');
+      sendProgress(50, 'Master Resume Prompt 및 세션 데이터 압축 중...');
+      const pkgInfo = eng.createHandoverPackage();
+      sendProgress(100, `인수인계 백업 패키지 생성 완료 (${pkgInfo.zipName})`);
+      logger.info(`  ✓ 인수인계 패키지 생성 완료: ${pkgInfo.zipName} (${(pkgInfo.sizeBytes / (1024 * 1024)).toFixed(2)} MB)`);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(pkgInfo));
+    } catch (e) {
+      logger.error(`인수인계 패키지 생성 실패: ${e.message}`);
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: e.message }));
+    } finally {
+      autoSync.isBusy = false;
+      autoSync.broadcast('auto-sync-status', autoSync.getStatus());
+    }
+    return;
+  }
+
+  // 21. List Packages API (GET)
+  if (pathname === '/api/conversations/packages' && req.method === 'GET') {
+    try {
+      const eng = getEngine();
+      const pkgs = eng.listPackages();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(pkgs));
+    } catch (e) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: e.message }));
+    }
+    return;
+  }
+
+  // 22. Download Handover Package API (GET)
+  if (pathname === '/api/download-package' && req.method === 'GET') {
+    try {
+      const pkgName = parsedUrl.searchParams.get('name');
+      if (!pkgName || !pkgName.endsWith('.zip')) throw new Error('잘못된 패키지 파일명입니다.');
+      const eng = getEngine();
+      const paths = eng.getPaths();
+      const zipPath = path.join(paths.fastTrackDir, 'handover_packages', path.basename(pkgName));
+      if (!fs.existsSync(zipPath)) throw new Error('패키지 파일을 찾을 수 없습니다.');
+
+      res.writeHead(200, {
+        'Content-Type': 'application/zip',
+        'Content-Disposition': `attachment; filename="${path.basename(zipPath)}"`,
+        'Content-Length': fs.statSync(zipPath).size
+      });
+      fs.createReadStream(zipPath).pipe(res);
+      return;
+    } catch (e) {
+      res.writeHead(404, { 'Content-Type': 'text/plain' });
+      res.end('Package not found: ' + e.message);
+      return;
+    }
+  }
+
+  // 23. Open In Editor API (POST)
+  if (pathname === '/api/open-in-editor' && req.method === 'POST') {
+    let body = '';
+    req.on('data', chunk => body += chunk);
+    req.on('end', () => {
+      try {
+        const data = JSON.parse(body || '{}');
+        if (!data.file) throw new Error('열 파일 경로가 지정되지 않았습니다.');
+        const eng = getEngine();
+        const resOut = eng.openInEditor(data.file);
+        logger.info(`  ✓ 에디터에서 파일 열기 완료: ${path.basename(data.file)}`);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(resOut));
+      } catch (e) {
+        logger.error(`에디터 열기 실패: ${e.message}`);
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: e.message }));
+      }
+    });
+    return;
+  }
+
+  // 24. Open Folder in Explorer API (POST)
+  if (pathname === '/api/open-folder' && req.method === 'POST') {
+    let body = '';
+    req.on('data', chunk => body += chunk);
+    req.on('end', () => {
+      try {
+        const data = JSON.parse(body || '{}');
+        const eng = getEngine();
+        const resOut = eng.openFolder(data.folder);
+        logger.info(`  ✓ 탐색기에서 폴더 열기 완료: ${resOut.path}`);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(resOut));
+      } catch (e) {
+        logger.error(`탐색기 열기 실패: ${e.message}`);
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: e.message }));
       }
     });
     return;

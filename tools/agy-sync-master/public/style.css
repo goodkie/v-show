@@ -841,3 +841,118 @@ input:checked + .slider:before {
   transform: translateY(-1px);
 }
 
+/* SESSION ARCHIVE & HANDOVER STYLES */
+.modal-tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 18px;
+}
+.modal-tab {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-dim);
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.modal-tab:hover {
+  color: var(--text-main);
+}
+.modal-tab.active {
+  color: var(--accent-cyan);
+  border-bottom-color: var(--accent-cyan);
+}
+.tab-pane {
+  display: none;
+}
+.tab-pane.active {
+  display: block;
+}
+
+.session-table-container {
+  max-height: 420px;
+  overflow-y: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.6);
+}
+.session-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+.session-table th {
+  background: rgba(30, 41, 59, 0.8);
+  padding: 10px 12px;
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-color);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.session-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  color: var(--text-main);
+  vertical-align: middle;
+}
+.session-table tr:hover td {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.btn-mini {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s;
+  text-decoration: none;
+}
+.btn-mini:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: var(--accent-cyan);
+}
+.btn-mini-primary {
+  background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+  color: white;
+  border: none;
+}
+.btn-mini-primary:hover {
+  opacity: 0.9;
+}
+.btn-mini-emerald {
+  background: linear-gradient(135deg, #059669, #10b981);
+  color: white;
+  border: none;
+}
+
+.pkg-card-item {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.pkg-card-item:hover {
+  border-color: var(--accent-cyan);
+  background: rgba(30, 41, 59, 0.5);
+}
+
+

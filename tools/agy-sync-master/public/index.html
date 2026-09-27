@@ -57,6 +57,8 @@
         <span class="meta-val" id="metaBranch">feature/3d2r-stage2-12point-capture</span>
       </div>
       <div class="meta-item meta-buttons">
+        <button class="btn-path-config" id="btnOpenSessionModal" title="대화 세션을 프로젝트 내에 마크다운으로 문서화하고 새창으로 열기" style="border-color:var(--accent-cyan); color:var(--accent-cyan);">📝 대화 세션 문서화 & 뷰어</button>
+        <button class="btn-path-config" id="btnQuickHandoverPackage" title="모든 작업과 대화를 패키지로 압축 백업" style="border-color:var(--accent-violet); color:var(--accent-violet);">📦 인수인계 패키지 백업</button>
         <button class="btn-path-config" id="btnOpenPathModal" title="원하는 폴더 지정 및 다른 프로젝트 전환">⚙️ 경로/프로젝트 변경</button>
         <button class="btn-refresh" id="btnRefreshStatus" title="상태 새로고침">🔄 새로고침</button>
         <button class="btn-shortcut" id="btnShortcut" title="Windows 바탕화면에 통합 앱 바로가기 생성">📌 바탕화면 바로가기</button>
@@ -179,6 +181,24 @@
         <button class="btn-action btn-opencv" id="btnOpenCv" style="background: linear-gradient(135deg, #2563eb, #0891b2); color: white;">OpenCV 설치</button>
       </div>
 
+      <div class="action-card card-session-archive" id="cardSessionArchive" style="border-color: rgba(56, 189, 248, 0.4);">
+        <div class="card-icon" style="background: linear-gradient(135deg, #0284c7, #38bdf8);">📝</div>
+        <div class="card-content">
+          <h3>대화 세션 프로젝트 문서화 & 뷰어 (새창)</h3>
+          <p>현재 대화 또는 과거 세션을 프로젝트 내 Markdown(docs/conversations/)으로 영구 저장 및 새 창 뷰어로 열람</p>
+        </div>
+        <button class="btn-action" id="btnOpenSessionModalFromCard" style="background: linear-gradient(135deg, #0284c7, #0ea5e9); color: white;">세션 문서화 / 새창</button>
+      </div>
+
+      <div class="action-card card-handover-pkg" id="cardHandoverPkg" style="border-color: rgba(168, 85, 247, 0.4);">
+        <div class="card-icon" style="background: linear-gradient(135deg, #7c3aed, #a855f7);">📦</div>
+        <div class="card-content">
+          <h3>에이전트 인수인계 패키지 원클릭 백업</h3>
+          <p>모든 대화 마크다운 + Git 스냅샷 + DB 사본 + 부트스트랩 복원 스크립트를 독립형 ZIP으로 번들링</p>
+        </div>
+        <button class="btn-action" id="btnCreateHandoverPackageFromCard" style="background: linear-gradient(135deg, #7c3aed, #9333ea); color: white;">인수인계 패키지 백업</button>
+      </div>
+
       <div class="action-card card-uninstall" id="cardUninstall" style="border-color: rgba(239, 68, 68, 0.4);">
         <div class="card-icon" style="background: linear-gradient(135deg, #ef4444, #991b1b);">🗑️</div>
         <div class="card-content">
@@ -299,6 +319,118 @@
       <div class="modal-footer" style="display:flex; justify-content:flex-end; gap:10px;">
         <button class="btn-secondary" id="btnCancelUninstallModal">취소</button>
         <button class="btn-danger" id="btnConfirmUninstall">안전하게 제거 실행</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONVERSATION SESSION & HANDOVER MODAL -->
+  <div class="modal-overlay" id="sessionModal" style="display:none;">
+    <div class="modal-card" style="max-width:960px; width:95%; max-height:90vh; display:flex; flex-direction:column;">
+      <div class="modal-header">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span style="font-size:22px;">📝</span>
+          <div>
+            <h2 style="font-size:18px; margin:0; font-weight:700;">대화 세션 영구 보존 & 에이전트 인수인계 패키지</h2>
+            <p style="font-size:12px; color:var(--text-muted); margin:0;">대화 내용을 프로젝트 내 마크다운으로 문서화하고, 언제든 새 에이전트에서 재개할 수 있도록 패키징합니다.</p>
+          </div>
+        </div>
+        <button class="modal-close" id="btnCloseSessionModal">&times;</button>
+      </div>
+
+      <!-- TABS -->
+      <div class="modal-tabs" style="margin-top:12px;">
+        <button class="modal-tab active" data-tab="tab-active-convs">💬 대화 세션 목록 (Antigravity)</button>
+        <button class="modal-tab" data-tab="tab-saved-docs">📄 프로젝트 내 저장된 세션 문서</button>
+        <button class="modal-tab" data-tab="tab-handover-pkgs">📦 에이전트 인수인계 패키지 (ZIP)</button>
+      </div>
+
+      <div class="modal-body" style="flex:1; overflow-y:auto; padding:10px 0;">
+        <!-- TAB 1: ACTIVE CONVERSATIONS -->
+        <div class="tab-pane active" id="tab-active-convs">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <span style="font-size:12.5px; color:var(--text-muted);">
+              Antigravity 로컬 및 클라우드에서 탐지된 대화 목록입니다. <strong>1클릭 문서화</strong>로 프로젝트 내 영구 저장할 수 있습니다.
+            </span>
+            <div style="display:flex; gap:8px;">
+              <button class="btn-mini" id="btnRefreshConvs">🔄 새로고침</button>
+              <button class="btn-mini btn-mini-primary" id="btnArchiveAllConvs">📑 전체 일괄 문서화</button>
+            </div>
+          </div>
+          <div class="session-table-container">
+            <table class="session-table">
+              <thead>
+                <tr>
+                  <th style="width:45%;">세션 제목 / 프리뷰</th>
+                  <th style="width:10%;">단계</th>
+                  <th style="width:20%;">수정 시각</th>
+                  <th style="width:25%; text-align:right;">작업</th>
+                </tr>
+              </thead>
+              <tbody id="activeConvsTbody">
+                <tr><td colspan="4" style="text-align:center; padding:20px; color:var(--text-muted);">대화 목록을 불러오는 중...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- TAB 2: SAVED MARKDOWN DOCS -->
+        <div class="tab-pane" id="tab-saved-docs">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <span style="font-size:12.5px; color:var(--text-muted);">
+              프로젝트 내 <code>docs/conversations/</code> 에 저장된 영구 마크다운 세션 문서들입니다.
+            </span>
+            <div style="display:flex; gap:8px;">
+              <button class="btn-mini" id="btnRefreshSavedDocs">🔄 새로고침</button>
+              <button class="btn-mini" id="btnOpenDocsFolder">📁 저장 폴더 열기 (Explorer)</button>
+            </div>
+          </div>
+          <div class="session-table-container">
+            <table class="session-table">
+              <thead>
+                <tr>
+                  <th style="width:50%;">문서명 / 타이틀</th>
+                  <th style="width:15%;">파일 크기</th>
+                  <th style="width:15%;">저장 일시</th>
+                  <th style="width:20%; text-align:right;">열기</th>
+                </tr>
+              </thead>
+              <tbody id="savedDocsTbody">
+                <tr><td colspan="4" style="text-align:center; padding:20px; color:var(--text-muted);">문서 목록을 불러오는 중...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- TAB 3: HANDOVER PACKAGES -->
+        <div class="tab-pane" id="tab-handover-pkgs">
+          <div style="background:rgba(124,58,237,0.12); border:1px solid rgba(168,85,247,0.3); border-radius:10px; padding:14px 16px; margin-bottom:16px; display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <div style="font-weight:700; color:white; font-size:14px; margin-bottom:4px;">📦 원클릭 에이전트 인수인계 백업 패키지 생성</div>
+              <div style="font-size:12px; color:var(--text-muted);">
+                모든 대화 마크다운 + Git 스냅샷 + SQLite DB + 부트스트랩 스크립트를 독립형 ZIP으로 번들링하여 새 에이전트/폴더에서 즉시 재시작할 수 있게 합니다.
+              </div>
+            </div>
+            <button class="btn-primary" id="btnCreateHandoverPackageInModal" style="background:linear-gradient(135deg, #7c3aed, #9333ea); white-space:nowrap;">
+              📦 패키지 지금 생성
+            </button>
+          </div>
+
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <span style="font-weight:600; font-size:13px; color:var(--text-main);">생성된 인수인계 패키지 목록 (handover_packages/)</span>
+            <div style="display:flex; gap:8px;">
+              <button class="btn-mini" id="btnRefreshPkgs">🔄 새로고침</button>
+              <button class="btn-mini" id="btnOpenPkgsFolder">📁 패키지 폴더 열기 (Explorer)</button>
+            </div>
+          </div>
+
+          <div id="pkgsListContainer">
+            <div style="text-align:center; padding:30px; color:var(--text-muted);">패키지 목록을 불러오는 중...</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer" style="display:flex; justify-content:flex-end; margin-top:12px;">
+        <button class="btn-secondary" id="btnCloseSessionModalBottom">닫기</button>
       </div>
     </div>
   </div>

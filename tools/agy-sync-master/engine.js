@@ -1909,6 +1909,82 @@ class SyncEngine {
       paths: this.getPaths()
     };
   }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 7. CONVERSATION ARCHIVING, VIEWER & AGENT HANDOVER PACKAGING
+  // ─────────────────────────────────────────────────────────────────────────────
+  getPackagerScript() {
+    return path.join(__dirname, 'conversation_packager.py');
+  }
+
+  runPackager(action, extraArgs = []) {
+    const py = this.findPython();
+    const script = this.getPackagerScript();
+    const paths = this.getPaths();
+    const fastTrack = paths.fastTrackDir;
+    const pyCmd = (py && py.cmd) ? py.cmd : 'python';
+
+    const args = [action, fastTrack, ...extraArgs];
+    const quotedArgs = args.map(a => `"${a}"`).join(' ');
+    const fullCmd = `"${pyCmd}" "${script}" ${quotedArgs}`;
+
+    const stdout = execSync(fullCmd, {
+      stdio: ['pipe', 'pipe', 'pipe'],
+      timeout: 60000,
+      env: { ...process.env, PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1' }
+    }).toString('utf-8').trim();
+
+    return JSON.parse(stdout);
+  }
+
+  listConversations() {
+    return this.runPackager('list');
+  }
+
+  exportConversation(convId) {
+    return this.runPackager('export', [convId]);
+  }
+
+  listArchivedSessions() {
+    return this.runPackager('list_archived');
+  }
+
+  createHandoverPackage() {
+    return this.runPackager('package');
+  }
+
+  listPackages() {
+    return this.runPackager('list_packages');
+  }
+
+  openInEditor(fileRelOrAbs) {
+    const paths = this.getPaths();
+    let absPath = path.isAbsolute(fileRelOrAbs) ? fileRelOrAbs : path.join(paths.fastTrackDir, fileRelOrAbs);
+    if (!fs.existsSync(absPath)) {
+      throw new Error(`파일을 찾을 수 없습니다: ${absPath}`);
+    }
+    try {
+      execSync(`code -g "${absPath}"`, { stdio: 'ignore' });
+      return { success: true, method: 'code', path: absPath };
+    } catch (e) {
+      try {
+        execSync(`start "" "${absPath}"`, { stdio: 'ignore' });
+        return { success: true, method: 'start', path: absPath };
+      } catch (err2) {
+        throw new Error(`에디터 실행 실패: ${err2.message}`);
+      }
+    }
+  }
+
+  openFolder(folderRelOrAbs) {
+    const paths = this.getPaths();
+    let absPath = folderRelOrAbs ? (path.isAbsolute(folderRelOrAbs) ? folderRelOrAbs : path.join(paths.fastTrackDir, folderRelOrAbs)) : paths.fastTrackDir;
+    if (!fs.existsSync(absPath)) {
+      absPath = paths.fastTrackDir;
+    }
+    execSync(`explorer.exe "${absPath}"`, { stdio: 'ignore' });
+    return { success: true, path: absPath };
+  }
 }
 
 module.exports = SyncEngine;
