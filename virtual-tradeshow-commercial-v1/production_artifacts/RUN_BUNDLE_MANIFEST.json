@@ -1,48 +1,94 @@
 {
-  "manifestSchemaVersion": "RUN_BUNDLE_MANIFEST_V1",
-  "cutCommitSha": "708c03cb7073544cb7e4337e3b17d723ed9efac0",
-  "bundleDigest": "933c6e83103989e5ea64a877edf02b78cf542a74db5379e2a3ae3bc96414f280",
-  "createdAt": "2026-09-28T21:09:38.371Z",
+  "manifestSchemaVersion": "RUN_BUNDLE_MANIFEST_V2_NON_CYCLIC",
+  "cutCommitSha": "90584f06bcd8cc8e8e60f4fc41d995a778997ad9",
+  "bundleDigest": "eb70ac0b2b46d107e4f3982f70a5e4deb4a2e9de83b73e4a05d8f7c0ed1e4b3a",
+  "createdAt": "2026-09-28T22:51:52.155Z",
+  "manifestEntriesCount": 17,
   "manifestEntries": [
     {
+      "path": "docs/ROUND_100_REPORT.md",
+      "sizeBytes": 18777,
+      "sha256": "2ec8acc141ba871a9f014a8ac4a76f221edfe74e8c310d8616b6bf02d9e156cb"
+    },
+    {
+      "path": "scripts/build_geometry_cache.js",
+      "sizeBytes": 9930,
+      "sha256": "9bba28499179d8b5abb04144c9f4697be3ed9f3fce4fefbc957cf295d6c43d95"
+    },
+    {
+      "path": "scripts/generate_round100_report.js",
+      "sizeBytes": 19379,
+      "sha256": "918491d9c485fe5993570384922e9314c1fe44b377abe6044cfd19a965f1c993"
+    },
+    {
+      "path": "test/test_stage2_true3d_pipeline.js",
+      "sizeBytes": 217963,
+      "sha256": "bf8a9cc4689a6da05792b68e6851ed3d1409ea51c44cda7c9dd00bc2a4047208"
+    },
+    {
       "path": "virtual-tradeshow-commercial-v1/production_artifacts/AUTHLINEAGE_RECEIPT_V11_STANDARDIZED_DIGEST_AND_SUPPORT_POLICY.json",
-      "sizeBytes": 55656,
-      "sha256": "ff310968684ed2fa6cde42f0333706b566b7e6f2f24c89fb4c862b7ed35032b3"
+      "sizeBytes": 54781,
+      "sha256": "16cf2ac9c1918da408a47ec56473aa68658d7ac591b34e785ff2a0fb21516f09"
     },
     {
       "path": "virtual-tradeshow-commercial-v1/production_artifacts/AUTHLINEAGE_RECEIPT.json",
-      "sizeBytes": 55656,
-      "sha256": "dd85c93b1fd36da91fd4ad0a58b448f71d4bf6c402b6a81326e036509efe14e5"
+      "sizeBytes": 54781,
+      "sha256": "82f46de1d52a400b7b6049701fc1f6f299cd7bcc6e270444fbbbcb8064f6c951"
+    },
+    {
+      "path": "virtual-tradeshow-commercial-v1/production_artifacts/AUTHLINEAGE_RECONSTRUCTED_SPATIAL_MODEL.ply",
+      "sizeBytes": 18178,
+      "sha256": "ed73f042b99ca64842f2787faaec8564e86db19224dc5375d52da99165b3c337"
+    },
+    {
+      "path": "virtual-tradeshow-commercial-v1/production_artifacts/AUTHLINEAGE_SPARSE_SFM_SEED.ply",
+      "sizeBytes": 2127,
+      "sha256": "94825bfef72ff1efeb014ffa0376c55960bfdea4d14c869269e734d69775e329"
     },
     {
       "path": "virtual-tradeshow-commercial-v1/production_artifacts/DATASET_GEOMETRY_CACHE.json",
-      "sizeBytes": 67378,
-      "sha256": "a53120368d25c835a080c5870647a41212b2791b801f9a22a06ece316f98c49c"
+      "sizeBytes": 82753,
+      "sha256": "70aa70375edd98c3c7ba4618d1c8ee5f1d846e9c9a9e1916c40de177c114b236"
     },
     {
       "path": "virtual-tradeshow-commercial-v1/production_artifacts/DATASET_INVENTORY_AUDIT_V4_EMPIRICAL_GEOMETRY_EVALUATION.json",
-      "sizeBytes": 761066,
-      "sha256": "c9f6b29b4e89ed679a4504c1f208901d56a8c4d1fcf9bbeccea5c686754459df"
+      "sizeBytes": 761653,
+      "sha256": "30ee1c83fdf1674c4ff8f8fb866cf1160fa9f1793a1a784519be7bca01ce8f13"
     },
     {
       "path": "virtual-tradeshow-commercial-v1/production_artifacts/DATASET_INVENTORY_AUDIT.json",
-      "sizeBytes": 761066,
-      "sha256": "c9f6b29b4e89ed679a4504c1f208901d56a8c4d1fcf9bbeccea5c686754459df"
+      "sizeBytes": 761653,
+      "sha256": "30ee1c83fdf1674c4ff8f8fb866cf1160fa9f1793a1a784519be7bca01ce8f13"
+    },
+    {
+      "path": "virtual-tradeshow-commercial-v1/production_artifacts/R47_TEST_EXECUTION_RECEIPT.json",
+      "sizeBytes": 9116,
+      "sha256": "43124b5e03377d2eb5641f41983312079df0e11a785466bc08b75b18b5e752b7"
     },
     {
       "path": "virtual-tradeshow-commercial-v1/server/dataset_inventory.js",
-      "sizeBytes": 23837,
-      "sha256": "539272a885f1ea6f826e8c53442340e91036fc84f70b9bb4fb8235315e0c44d6"
+      "sizeBytes": 24329,
+      "sha256": "b2c499fe62c2aceae0fe7762c28eb169b066ae85dd02d3ac40bd17f4e4388098"
     },
     {
       "path": "virtual-tradeshow-commercial-v1/server/evaluate_dataset_geometry.py",
-      "sizeBytes": 17701,
-      "sha256": "50682e26248acd2e56419ff438cecca32e2799a49e49f11eb5edde734236c7c8"
+      "sizeBytes": 20803,
+      "sha256": "5ad51a84dd9ce7c59bb601aa67cc63d0ba2cec6b80667f26e70244c68399459e"
+    },
+    {
+      "path": "virtual-tradeshow-commercial-v1/server/evaluator_config.json",
+      "sizeBytes": 448,
+      "sha256": "1117e4488c00c9be3b111297ab206f8e9de9c91d74f56518a6066a5de4420b12"
     },
     {
       "path": "virtual-tradeshow-commercial-v1/server/spatial_reconstruction_engine.py",
       "sizeBytes": 75831,
       "sha256": "3db35d4bdc6abd15ff2f870dee2520b0ec218b0b78aefefec347e81ad01cfe8a"
+    },
+    {
+      "path": "virtual-tradeshow-commercial-v1/server/spatial_reconstruction_worker.js",
+      "sizeBytes": 91629,
+      "sha256": "c3c7698b6fb3ae7cf676b9bacf4d3e630db22f4a34a554bb8d651a12036aa415"
     }
   ]
 }

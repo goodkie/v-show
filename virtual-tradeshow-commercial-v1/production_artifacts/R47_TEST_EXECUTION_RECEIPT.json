@@ -1,20 +1,22 @@
 {
   "receiptSchemaVersion": "R47_EXECUTION_RECEIPT_V1",
   "executionTimestamps": {
-    "startTime": "2026-09-28T21:05:43.091Z",
-    "endTime": "2026-09-28T21:09:37.170Z",
-    "durationMs": 234075
+    "startTime": "2026-09-28T22:47:28.138Z",
+    "endTime": "2026-09-28T22:51:34.805Z",
+    "durationMs": 246664
   },
   "runnerMetadata": {
     "sourceFile": "test/test_stage2_true3d_pipeline.js",
-    "sourceSha256": "7b4d4c92cc84704ebde96826ae85dc3d62f8f72ff5de0c3bc7964f30d5538bba",
+    "sourceSha256": "bf8a9cc4689a6da05792b68e6851ed3d1409ea51c44cda7c9dd00bc2a4047208",
     "nodeVersion": "v24.21.0",
     "platform": "win32"
   },
   "gitEvidence": {
-    "observedHeadSha": "708c03cb7073544cb7e4337e3b17d723ed9efac0",
-    "expectedHeadSha": "708c03cb7073544cb7e4337e3b17d723ed9efac0",
+    "observedHeadSha": "90584f06bcd8cc8e8e60f4fc41d995a778997ad9",
+    "expectedHeadSha": "90584f06bcd8cc8e8e60f4fc41d995a778997ad9",
     "headBindingMatched": true,
+    "preRunGitStatusPorcelain": "(clean)",
+    "postRunGitStatusPorcelain": "(clean)",
     "worktreeClean": true,
     "rawGitStatusPorcelain": "(clean)"
   },
@@ -165,63 +167,37 @@
     "DATASET_ADEQUACY_GATE": "BLOCKED_BY_MEASURED_POSITIVE_FIXTURE_AVAILABILITY",
     "POSITIVE_FIXTURE_GATE": "BLOCKED_BY_MEASURED_POSITIVE_FIXTURE_AVAILABILITY"
   },
+  "evaluatorThresholdGovernance": {
+    "configPath": "virtual-tradeshow-commercial-v1/server/evaluator_config.json",
+    "evaluatorConfigDigest": "1117e4488c00c9be3b111297ab206f8e9de9c91d74f56518a6066a5de4420b12",
+    "evaluatorConfig": {
+      "configVersion": "1.0.0",
+      "minMedianParallaxDegrees": 1.2,
+      "minPositiveDepthRatio": 0.55,
+      "maxHomographyInlierRatio": 0.9,
+      "minInlierCount": 15,
+      "maxConnectedViewsCeiling": 64,
+      "maxScaleConsistentTranslationResidual": 0.15,
+      "maxLoopClosureRotationDriftDegrees": 15,
+      "maxLoopClosureRotationDriftFrobenius": 0.5,
+      "minConnectedViewsPositiveRingThreshold": 12,
+      "calibrationAssumption": "ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED"
+    }
+  },
   "runBundle": {
-    "runBundleId": "RUN_BUNDLE_R99_708c03cb7073544cb7e4337e3b17d723ed9efac0_2026-09-28T21-09-38-371Z",
-    "cutCommitSha": "708c03cb7073544cb7e4337e3b17d723ed9efac0",
-    "bundleDigest": "933c6e83103989e5ea64a877edf02b78cf542a74db5379e2a3ae3bc96414f280",
-    "manifestEntriesCount": 8,
-    "canonicalManifest": [
-      {
-        "path": "virtual-tradeshow-commercial-v1/production_artifacts/AUTHLINEAGE_RECEIPT_V11_STANDARDIZED_DIGEST_AND_SUPPORT_POLICY.json",
-        "sizeBytes": 55656,
-        "sha256": "ff310968684ed2fa6cde42f0333706b566b7e6f2f24c89fb4c862b7ed35032b3"
-      },
-      {
-        "path": "virtual-tradeshow-commercial-v1/production_artifacts/AUTHLINEAGE_RECEIPT.json",
-        "sizeBytes": 55656,
-        "sha256": "dd85c93b1fd36da91fd4ad0a58b448f71d4bf6c402b6a81326e036509efe14e5"
-      },
-      {
-        "path": "virtual-tradeshow-commercial-v1/production_artifacts/DATASET_GEOMETRY_CACHE.json",
-        "sizeBytes": 67378,
-        "sha256": "a53120368d25c835a080c5870647a41212b2791b801f9a22a06ece316f98c49c"
-      },
-      {
-        "path": "virtual-tradeshow-commercial-v1/production_artifacts/DATASET_INVENTORY_AUDIT_V4_EMPIRICAL_GEOMETRY_EVALUATION.json",
-        "sizeBytes": 761066,
-        "sha256": "c9f6b29b4e89ed679a4504c1f208901d56a8c4d1fcf9bbeccea5c686754459df"
-      },
-      {
-        "path": "virtual-tradeshow-commercial-v1/production_artifacts/DATASET_INVENTORY_AUDIT.json",
-        "sizeBytes": 761066,
-        "sha256": "c9f6b29b4e89ed679a4504c1f208901d56a8c4d1fcf9bbeccea5c686754459df"
-      },
-      {
-        "path": "virtual-tradeshow-commercial-v1/server/dataset_inventory.js",
-        "sizeBytes": 23837,
-        "sha256": "539272a885f1ea6f826e8c53442340e91036fc84f70b9bb4fb8235315e0c44d6"
-      },
-      {
-        "path": "virtual-tradeshow-commercial-v1/server/evaluate_dataset_geometry.py",
-        "sizeBytes": 17701,
-        "sha256": "50682e26248acd2e56419ff438cecca32e2799a49e49f11eb5edde734236c7c8"
-      },
-      {
-        "path": "virtual-tradeshow-commercial-v1/server/spatial_reconstruction_engine.py",
-        "sizeBytes": 75831,
-        "sha256": "3db35d4bdc6abd15ff2f870dee2520b0ec218b0b78aefefec347e81ad01cfe8a"
-      }
-    ],
+    "manifestFile": "virtual-tradeshow-commercial-v1/production_artifacts/RUN_BUNDLE_MANIFEST.json",
+    "architecture": "TWO_LAYER_NON_CYCLIC_EVIDENCE_BUNDLE",
+    "cutCommitSha": "90584f06bcd8cc8e8e60f4fc41d995a778997ad9",
     "linkedReceipts": [
       "virtual-tradeshow-commercial-v1/production_artifacts/AUTHLINEAGE_RECEIPT_V11_STANDARDIZED_DIGEST_AND_SUPPORT_POLICY.json",
+      "virtual-tradeshow-commercial-v1/production_artifacts/AUTHLINEAGE_RECEIPT.json",
       "virtual-tradeshow-commercial-v1/production_artifacts/DATASET_INVENTORY_AUDIT_V4_EMPIRICAL_GEOMETRY_EVALUATION.json",
       "virtual-tradeshow-commercial-v1/production_artifacts/DATASET_INVENTORY_AUDIT.json",
-      "virtual-tradeshow-commercial-v1/production_artifacts/DATASET_GEOMETRY_CACHE.json",
-      "virtual-tradeshow-commercial-v1/production_artifacts/R47_TEST_EXECUTION_RECEIPT.json"
+      "virtual-tradeshow-commercial-v1/production_artifacts/DATASET_GEOMETRY_CACHE.json"
     ],
     "linkedArtifacts": [
-      "virtual-tradeshow-commercial-v1/production_artifacts/stage2_true3d_pointcloud_verified.ply",
-      "virtual-tradeshow-commercial-v1/production_artifacts/stage2_true3d_pointcloud_sparse_seed.ply"
+      "virtual-tradeshow-commercial-v1/production_artifacts/AUTHLINEAGE_RECONSTRUCTED_SPATIAL_MODEL.ply",
+      "virtual-tradeshow-commercial-v1/production_artifacts/AUTHLINEAGE_SPARSE_SFM_SEED.ply"
     ]
   }
 }
