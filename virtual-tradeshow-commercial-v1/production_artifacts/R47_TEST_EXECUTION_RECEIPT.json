@@ -1,19 +1,19 @@
 {
   "receiptSchemaVersion": "R47_EXECUTION_RECEIPT_V1",
   "executionTimestamps": {
-    "startTime": "2026-09-28T19:33:16.047Z",
-    "endTime": "2026-09-28T19:36:45.297Z",
-    "durationMs": 209247
+    "startTime": "2026-09-28T21:05:43.091Z",
+    "endTime": "2026-09-28T21:09:37.170Z",
+    "durationMs": 234075
   },
   "runnerMetadata": {
     "sourceFile": "test/test_stage2_true3d_pipeline.js",
-    "sourceSha256": "f52a919b820b93d0f3261d3dbfe5f9ce5c276d3a7ff11fdd784afa4132260a31",
+    "sourceSha256": "7b4d4c92cc84704ebde96826ae85dc3d62f8f72ff5de0c3bc7964f30d5538bba",
     "nodeVersion": "v24.21.0",
     "platform": "win32"
   },
   "gitEvidence": {
-    "observedHeadSha": "e373dcbd095ef4827822331a5281cf9da37069c2",
-    "expectedHeadSha": "e373dcbd095ef4827822331a5281cf9da37069c2",
+    "observedHeadSha": "708c03cb7073544cb7e4337e3b17d723ed9efac0",
+    "expectedHeadSha": "708c03cb7073544cb7e4337e3b17d723ed9efac0",
     "headBindingMatched": true,
     "worktreeClean": true,
     "rawGitStatusPorcelain": "(clean)"
@@ -166,8 +166,52 @@
     "POSITIVE_FIXTURE_GATE": "BLOCKED_BY_MEASURED_POSITIVE_FIXTURE_AVAILABILITY"
   },
   "runBundle": {
-    "runBundleId": "RUN_BUNDLE_R98_e373dcbd095ef4827822331a5281cf9da37069c2_2026-09-28T19-36-46-703Z",
-    "cutCommitSha": "e373dcbd095ef4827822331a5281cf9da37069c2",
+    "runBundleId": "RUN_BUNDLE_R99_708c03cb7073544cb7e4337e3b17d723ed9efac0_2026-09-28T21-09-38-371Z",
+    "cutCommitSha": "708c03cb7073544cb7e4337e3b17d723ed9efac0",
+    "bundleDigest": "933c6e83103989e5ea64a877edf02b78cf542a74db5379e2a3ae3bc96414f280",
+    "manifestEntriesCount": 8,
+    "canonicalManifest": [
+      {
+        "path": "virtual-tradeshow-commercial-v1/production_artifacts/AUTHLINEAGE_RECEIPT_V11_STANDARDIZED_DIGEST_AND_SUPPORT_POLICY.json",
+        "sizeBytes": 55656,
+        "sha256": "ff310968684ed2fa6cde42f0333706b566b7e6f2f24c89fb4c862b7ed35032b3"
+      },
+      {
+        "path": "virtual-tradeshow-commercial-v1/production_artifacts/AUTHLINEAGE_RECEIPT.json",
+        "sizeBytes": 55656,
+        "sha256": "dd85c93b1fd36da91fd4ad0a58b448f71d4bf6c402b6a81326e036509efe14e5"
+      },
+      {
+        "path": "virtual-tradeshow-commercial-v1/production_artifacts/DATASET_GEOMETRY_CACHE.json",
+        "sizeBytes": 67378,
+        "sha256": "a53120368d25c835a080c5870647a41212b2791b801f9a22a06ece316f98c49c"
+      },
+      {
+        "path": "virtual-tradeshow-commercial-v1/production_artifacts/DATASET_INVENTORY_AUDIT_V4_EMPIRICAL_GEOMETRY_EVALUATION.json",
+        "sizeBytes": 761066,
+        "sha256": "c9f6b29b4e89ed679a4504c1f208901d56a8c4d1fcf9bbeccea5c686754459df"
+      },
+      {
+        "path": "virtual-tradeshow-commercial-v1/production_artifacts/DATASET_INVENTORY_AUDIT.json",
+        "sizeBytes": 761066,
+        "sha256": "c9f6b29b4e89ed679a4504c1f208901d56a8c4d1fcf9bbeccea5c686754459df"
+      },
+      {
+        "path": "virtual-tradeshow-commercial-v1/server/dataset_inventory.js",
+        "sizeBytes": 23837,
+        "sha256": "539272a885f1ea6f826e8c53442340e91036fc84f70b9bb4fb8235315e0c44d6"
+      },
+      {
+        "path": "virtual-tradeshow-commercial-v1/server/evaluate_dataset_geometry.py",
+        "sizeBytes": 17701,
+        "sha256": "50682e26248acd2e56419ff438cecca32e2799a49e49f11eb5edde734236c7c8"
+      },
+      {
+        "path": "virtual-tradeshow-commercial-v1/server/spatial_reconstruction_engine.py",
+        "sizeBytes": 75831,
+        "sha256": "3db35d4bdc6abd15ff2f870dee2520b0ec218b0b78aefefec347e81ad01cfe8a"
+      }
+    ],
     "linkedReceipts": [
       "virtual-tradeshow-commercial-v1/production_artifacts/AUTHLINEAGE_RECEIPT_V11_STANDARDIZED_DIGEST_AND_SUPPORT_POLICY.json",
       "virtual-tradeshow-commercial-v1/production_artifacts/DATASET_INVENTORY_AUDIT_V4_EMPIRICAL_GEOMETRY_EVALUATION.json",
