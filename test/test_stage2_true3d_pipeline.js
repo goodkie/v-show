@@ -393,10 +393,12 @@ async function main() {
     assert.strictEqual(camProof.cameraAccounting.pnpOptimizedCameraCount, 10, 'Views 1-10 must be counted under pnpOptimizedCameraCount');
     assert.strictEqual(camProof.cameraAccounting.unoptimizedCameraCount, 1, 'View 11 must be counted under unoptimizedCameraCount');
     assert.strictEqual(camProof.optimizedCameraCount, 10, 'optimizedCameraCount must be 10 (excluding gauge anchor)');
+    assert.strictEqual(camProof.cameraAccounting.solverIterationsObserved >= 3, true, 'Global solver iterations observed must be >= 3');
     assert.strictEqual(camProof.perCameraStatistics.length, 12, 'Statistics for all 12 views must be reported');
     assert.strictEqual(camProof.perCameraStatistics[0].isGaugeAnchor, true, 'View 0 must be gauge anchor');
     assert.strictEqual(camProof.perCameraStatistics[0].optimized, false, 'View 0 gauge anchor must have optimized=false');
     assert.strictEqual(camProof.perCameraStatistics[0].optimizationStatus, 'GAUGE_ANCHOR_FIXED');
+    assert.strictEqual(camProof.perCameraStatistics[0].successfulOptimizationIterations, 0, 'Camera 0 gauge anchor must have 0 successful optimization iterations');
     assert.strictEqual(camProof.perCameraStatistics[11].optimized, false, 'View 12 must be unoptimized');
     assert.strictEqual(camProof.perCameraStatistics[11].optimizationStatus, 'UNOPTIMIZED_INSUFFICIENT_OBSERVATIONS');
     assert.strictEqual(camProof.graphConnectivity.isConnected, false, 'Camera graph must be disconnected (View 12 separated)');
@@ -423,7 +425,7 @@ async function main() {
     // Cryptographic receipt assertions
     assert.ok(fs.existsSync(authReconResult.reconstructionExecution.receiptPath), 'Lineage receipt must exist on disk');
     const receiptContent = JSON.parse(fs.readFileSync(authReconResult.reconstructionExecution.receiptPath, 'utf8'));
-    assert.strictEqual(receiptContent.receiptSchemaVersion, 'AUTHLINEAGE_RECEIPT_V7_HONEST_CAMERA_ACCOUNTING_AND_DENSE_CONSISTENCY');
+    assert.strictEqual(receiptContent.receiptSchemaVersion, 'AUTHLINEAGE_RECEIPT_V8_INVENTORY_BOUND_GEOMETRIC_DEPTH_CONSISTENCY');
     assert.strictEqual(receiptContent.calibrationProvenance.calibrationStatus, 'ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED');
     assert.strictEqual(receiptContent.calibrationProvenance.selfCalibrated, false);
     assert.strictEqual(receiptContent.outputArtifact.classification, 'STEREO_DERIVED_FUSED_MVS_INTERNAL_PROOF');
@@ -449,11 +451,13 @@ async function main() {
     assert.strictEqual(authReconResult.truthLedger.COORDINATE_SYSTEM, 'SCALE_FREE_UNIFIED_GLOBAL_SFM_FRAME');
     assert.strictEqual(authReconResult.truthLedger.GLOBAL_COVERAGE_GATE, 'NOT_MET_PARTIAL_11_OF_12');
     assert.strictEqual(authReconResult.truthLedger.LOOP_CLOSURE_GATE, 'LOOP_CLOSURE_FAILED_EXCEEDS_TOLERANCE');
-    assert.strictEqual(authReconResult.truthLedger.DATASET_ADEQUACY_GATE, 'NEGATIVE_PARTIAL_FIXTURE_VERIFIED_NO_ADEQUATE_NON_OWNER_POSITIVE_FIXTURE_AVAILABLE');
-    assert.strictEqual(receiptContent.gateStatusDisclosures.DATASET_ADEQUACY_GATE, 'NEGATIVE_PARTIAL_FIXTURE_VERIFIED_NO_ADEQUATE_NON_OWNER_POSITIVE_FIXTURE_AVAILABLE');
+    assert.strictEqual(authReconResult.truthLedger.DATASET_ADEQUACY_GATE, 'NO_ELIGIBLE_NON_OWNER_POSITIVE_FIXTURE_FOUND_BY_INVENTORY');
+    assert.strictEqual(authReconResult.truthLedger.POSITIVE_FIXTURE_GATE, 'BLOCKED_BY_POSITIVE_FIXTURE_AVAILABILITY');
+    assert.strictEqual(receiptContent.gateStatusDisclosures.DATASET_ADEQUACY_GATE, 'NO_ELIGIBLE_NON_OWNER_POSITIVE_FIXTURE_FOUND_BY_INVENTORY');
+    assert.strictEqual(receiptContent.gateStatusDisclosures.POSITIVE_FIXTURE_GATE, 'BLOCKED_BY_POSITIVE_FIXTURE_AVAILABILITY');
     assert.strictEqual(authReconResult.truthLedger.OWNER_REVIEW_GATE, 'HOLD');
 
-    // Dense MVS diagnostics & cheirality rejection counters (Round 94)
+    // Dense MVS diagnostics & geometric depth consistency validation (Round 95)
     const mvsDiag = authReconResult.reconstructionExecution.denseMvsDiagnostics || receiptContent.denseMvsDiagnostics;
     assert.ok(mvsDiag, 'Dense MVS diagnostics must be present');
     assert.ok(mvsDiag.pairDiagnostics.length > 0, 'Pair diagnostics must be reported');
@@ -462,9 +466,14 @@ async function main() {
       assert.ok('negativeDepthRejected' in p, 'negativeDepthRejected must be tracked');
       assert.ok('rangeRejected' in p, 'rangeRejected must be tracked');
       assert.ok('spatialRejected' in p, 'spatialRejected must be tracked');
-      assert.ok('multiViewInconsistentRejected' in p, 'multiViewInconsistentRejected must be tracked');
+      assert.ok('thirdViewDepthGeometricTested' in p, 'thirdViewDepthGeometricTested must be tracked');
+      assert.ok('thirdViewDepthGeometricConsistent' in p, 'thirdViewDepthGeometricConsistent must be tracked');
+      assert.ok('thirdViewDepthGeometricRejected' in p, 'thirdViewDepthGeometricRejected must be tracked');
+      assert.ok('thirdViewPhotometricHeuristicAccepted' in p, 'thirdViewPhotometricHeuristicAccepted must be tracked');
+      assert.ok('multiViewHeuristicRejected' in p, 'multiViewHeuristicRejected must be tracked');
       assert.ok('acceptedMultiViewConsistent3dCount' in p, 'acceptedMultiViewConsistent3dCount must be tracked');
       assert.ok('fusedContribution' in p, 'fusedContribution must be tracked');
+      assert.strictEqual(p.consistencyMethod, 'THIRD_VIEW_INDEPENDENT_STEREO_DEPTH_CONSISTENCY_AND_PHOTOMETRIC_HEURISTIC');
     }
 
     console.log(`    - Reconstruction Status: ${authReconResult.status} (TERMINAL SUCCESS)`);
@@ -483,7 +492,8 @@ async function main() {
     console.log(`    - Camera Graph:          ${camProof.optimizedCameraCount}/12 cameras PnP optimized, ${camProof.graphConnectivity.totalViewsInComponent}/12 reachable (${camProof.graphConnectivity.globalCoverageGate})`);
     console.log(`    - Loop Closure Residual: Frobenius drift = ${camProof.loopClosureResidual.measured.rotationDriftFrobenius} (${camProof.loopClosureResidual.status})`);
 
-    // Repeat-run reproducibility proof (Round 94 Blocker 8)
+    // Repeat-run reproducibility proof & canonical diagnostics digest check (Round 94/95)
+    assert.ok(authReconResult.reconstructionExecution.diagnosticsDigest, 'diagnosticsDigest must be present');
     const repeatOutputDir = fs.mkdtempSync(path.join(os.tmpdir(), 'vshow_repeat_sfm_'));
     const repeatRunResult = executeAuthenticReconstructionWorker({
       enableLocalOpencvSfm: true,
@@ -491,11 +501,13 @@ async function main() {
       cutSha: targetCutSha
     });
     assert.strictEqual(repeatRunResult.success, true, 'Repeat run must succeed');
+    assert.strictEqual(repeatRunResult.reconstructionExecution.diagnosticsDigest, authReconResult.reconstructionExecution.diagnosticsDigest, 'Canonical diagnostics digest must be byte-for-byte identical across isolated runs');
     assert.strictEqual(repeatRunResult.reconstructionExecution.outputPlySha, authReconResult.reconstructionExecution.outputPlySha, 'Output PLY SHA must be byte-for-byte identical across runs');
     assert.strictEqual(repeatRunResult.reconstructionExecution.outputVertexCount, authReconResult.reconstructionExecution.outputVertexCount, 'Output vertex count must be identical across runs');
     assert.strictEqual(repeatRunResult.reconstructionExecution.denseMvsDiagnostics.voxelDeduplication.fusedUniquePoints, authReconResult.reconstructionExecution.denseMvsDiagnostics.voxelDeduplication.fusedUniquePoints, 'Fused unique points must match');
     assert.strictEqual(repeatRunResult.reconstructionExecution.refinementMetrics.finalInlierMetrics.reprojectionRmsePixels, authReconResult.reconstructionExecution.refinementMetrics.finalInlierMetrics.reprojectionRmsePixels, 'Reprojection RMSE must match exactly');
     console.log(`    - Repeat Run Determinism: Byte-for-byte identical PLY SHA (${repeatRunResult.reconstructionExecution.outputPlySha.substring(0, 16)}...)`);
+    console.log(`    - Diagnostics Digest:    ${repeatRunResult.reconstructionExecution.diagnosticsDigest}`);
   });
 
   // ── [4] Dynamic Parser-Derived PLY Schema & Record Stride ───────────────────

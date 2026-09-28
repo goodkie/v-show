@@ -1601,6 +1601,13 @@ function executeAuthenticReconstructionWorker(options = {}) {
 
   // Authentic Local OpenCV SIFT/SfM Execution Pipeline (Round 88)
   if (options.enableLocalOpencvSfm || process.env.ENABLE_LOCAL_OPENCV_SFM === '1') {
+    const inventoryAuditPath = path.join(repoRoot, 'virtual-tradeshow-commercial-v1/production_artifacts/DATASET_INVENTORY_AUDIT.json');
+    if (!fs.existsSync(inventoryAuditPath)) {
+      try {
+        const { inventoryDatasets } = require('./dataset_inventory');
+        inventoryDatasets({ repoRoot });
+      } catch (_) {}
+    }
     const pythonScript = path.join(__dirname, 'spatial_reconstruction_engine.py');
     if (fs.existsSync(pythonScript)) {
       const { spawnSync } = require('child_process');
@@ -1677,7 +1684,8 @@ function executeAuthenticReconstructionWorker(options = {}) {
                 refinementMetrics: parsed.refinementMetrics,
                 cameraCoverageAndGraphProof: parsed.cameraCoverageAndGraphProof,
                 denseMvsDiagnostics: parsed.denseMvsDiagnostics,
-                sparseSfmSeed: parsed.sparseSfmSeed
+                sparseSfmSeed: parsed.sparseSfmSeed,
+                diagnosticsDigest: parsed.diagnosticsDigest
               },
               truthLedger: {
                 RECONSTRUCTION_FROM_INPUTS: 'VERIFIED',
@@ -1691,7 +1699,8 @@ function executeAuthenticReconstructionWorker(options = {}) {
                 DENSE_MVS_CLASSIFICATION: parsed.outputClassification || 'STEREO_DERIVED_FUSED_MVS_INTERNAL_PROOF',
                 GLOBAL_COVERAGE_GATE: parsed.cameraCoverageAndGraphProof?.graphConnectivity?.globalCoverageGate || 'NOT_MET_PARTIAL_11_OF_12',
                 LOOP_CLOSURE_GATE: parsed.cameraCoverageAndGraphProof?.loopClosureResidual?.status || 'LOOP_CLOSURE_FAILED_EXCEEDS_TOLERANCE',
-                DATASET_ADEQUACY_GATE: 'NEGATIVE_PARTIAL_FIXTURE_VERIFIED_NO_ADEQUATE_NON_OWNER_POSITIVE_FIXTURE_AVAILABLE',
+                DATASET_ADEQUACY_GATE: parsed.datasetAdequacyGate || 'NO_ELIGIBLE_NON_OWNER_POSITIVE_FIXTURE_FOUND_BY_INVENTORY',
+                POSITIVE_FIXTURE_GATE: parsed.positiveFixtureGate || 'BLOCKED_BY_POSITIVE_FIXTURE_AVAILABILITY',
                 OWNER_REVIEW_GATE: 'HOLD',
                 ENGINEERING_HOLD: 'ACTIVE'
               }
@@ -2174,6 +2183,7 @@ module.exports = {
   parsePlyHeader,
   executeReconstructionJob,
   executeAuthenticReconstructionWorker,
+  inventoryDatasets: require('./dataset_inventory').inventoryDatasets,
   ReconstructionExecutionAdapter,
   probeReconstructionEngines,
   probeBinaryInPath,

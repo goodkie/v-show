@@ -1,0 +1,105 @@
+{
+  "auditSchemaVersion": "DATASET_INVENTORY_AUDIT_V1",
+  "auditTimestamp": "2026-09-28T14:05:13.259Z",
+  "scanner": "ANTIGRAVITY_WORKSPACE_DATASET_INVENTORY",
+  "discoverySummary": {
+    "candidateDatasetsScanned": 5,
+    "eligibleNegativeFixtures": 1,
+    "eligiblePositiveFixtures": 0,
+    "ineligibleDatasets": 4
+  },
+  "gateEvaluation": {
+    "DATASET_ADEQUACY_GATE": "NO_ELIGIBLE_NON_OWNER_POSITIVE_FIXTURE_FOUND_BY_INVENTORY",
+    "POSITIVE_FIXTURE_GATE": "BLOCKED_BY_POSITIVE_FIXTURE_AVAILABILITY",
+    "OWNER_REVIEW_GATE": "HOLD",
+    "ENGINEERING_HOLD": "ACTIVE",
+    "evidenceRationale": "Automated workspace inventory confirmed no positive complete-ring non-owner dataset exists; current 12-view fixture verified as truthful negative/partial benchmark."
+  },
+  "inventory": [
+    {
+      "datasetId": "AUTHENTIC_BOOTH_12_VIEW_BENCHMARK",
+      "path": "virtual-tradeshow-commercial-v1/_clean_deploy/client/assets/demo/wilo/authentic-booth",
+      "provenance": "NON_OWNER_ISOLATED_STAGE2_FIXTURE",
+      "authorizationStatus": "AUTHORIZED_FOR_ISOLATED_ENGINEERING_BENCHMARK",
+      "imageCount": 12,
+      "sampleDimensions": "1024x1024 (JPEG)",
+      "aggregateInputSha256": "3498f779ed0fef0e0146b3f25fdbdfe04033994b3d466a94d5673a5c7af779f4",
+      "eligibility": "ELIGIBLE_NON_OWNER_BENCHMARK",
+      "eligibilityReason": "Authorized non-owner capture with genuine translation parallax; exhibits known 11/12 partial coverage & loop gap.",
+      "fixtureClassification": "NEGATIVE_PARTIAL_FIXTURE_VERIFIED",
+      "sampleImages": [
+        "view_01.jpg",
+        "view_02.jpg",
+        "view_03.jpg"
+      ]
+    },
+    {
+      "datasetId": "WILO_BOOTH_24_VIEW_PANORAMA",
+      "path": "virtual-tradeshow-commercial-v1/_clean_deploy/client/assets/demo/wilo/booth",
+      "provenance": "ZERO_BASELINE_SINGLE_ORIGIN_PANORAMA",
+      "authorizationStatus": "AUTHORIZED_DEMO_ASSET",
+      "imageCount": 24,
+      "sampleDimensions": "1024x1024 (JPEG)",
+      "aggregateInputSha256": "983ec1e080abd7ae6006527caaafb4b85842995e9543a9c988563fc8138310ed",
+      "eligibility": "INELIGIBLE_ZERO_BASELINE",
+      "eligibilityReason": "Zero-baseline single-origin panorama fails translation baseline requirements.",
+      "fixtureClassification": "UNKNOWN",
+      "sampleImages": [
+        "01_front_hero.jpg",
+        "02_front_center.jpg",
+        "03_left_angle.jpg"
+      ]
+    },
+    {
+      "datasetId": "DNA_SHOWCASE_ANGLES_RENDER",
+      "path": "virtual-tradeshow-commercial-v1/_railway_deploy/client/assets/demo/dna-showcase/angles",
+      "provenance": "SYNTHETIC_MULTI_ANGLE_RENDER",
+      "authorizationStatus": "AUTHORIZED_SHOWCASE_ASSET",
+      "imageCount": 31,
+      "sampleDimensions": "1024x682 (JPEG)",
+      "aggregateInputSha256": "c9591255de30cb4d11301f3a2b0289d86ecb41c2a28c0e669104badef7719dde",
+      "eligibility": "INELIGIBLE_NON_RING_OR_LOW_RES",
+      "eligibilityReason": "Non-ring geometry or synthetic low-resolution test keyframes unsuitable for spatial booth reconstruction.",
+      "fixtureClassification": "UNKNOWN",
+      "sampleImages": [
+        "angle_6ft_01.jpg",
+        "angle_6ft_02.jpg",
+        "angle_6ft_03.jpg"
+      ]
+    },
+    {
+      "datasetId": "WILO_GOLDEN_TENANT_ORGANIZATION_CAPTURE",
+      "path": "virtual-tradeshow-commercial-v1/_clean_deploy/data/uploads/organizations/org-wilo-golden-demo/booths/booth-wilo-golden-demo/captures/WILO-GOLDEN-RECON-01/images",
+      "provenance": "RESTRICTED_TENANT_ORGANIZATION_DATA",
+      "authorizationStatus": "RESTRICTED_TENANT_DATA_CROSS_TENANT_ACCESS_FORBIDDEN",
+      "imageCount": 20,
+      "sampleDimensions": "373x237 (JPEG)",
+      "aggregateInputSha256": "a8a6fd6ecc198093a39b0f7fdf57d1636c0a21409f0ee6b683163fa53e192e83",
+      "eligibility": "INELIGIBLE_TENANT_RESTRICTED",
+      "eligibilityReason": "Protected by tenant isolation boundary; forbidden for cross-tenant benchmark without written authorization.",
+      "fixtureClassification": "UNKNOWN",
+      "sampleImages": [
+        "wilo_view_001.jpg",
+        "wilo_view_002.jpg",
+        "wilo_view_003.jpg"
+      ]
+    },
+    {
+      "datasetId": "GUIDED_CAPTURE_MOBILE_SESSION_KEYFRAMES",
+      "path": "virtual-tradeshow-commercial-v1/_clean_deploy/data/guided_capture/sess-s2-1789883490308/canonical",
+      "provenance": "EPHEMERAL_MOBILE_GUIDED_CAPTURE_SESSION",
+      "authorizationStatus": "SYNTHETIC_TEST_FIXTURE",
+      "imageCount": 12,
+      "sampleDimensions": "256x256 (JPEG)",
+      "aggregateInputSha256": "e134b2fd27704376d37e78566abc56ea47a2bc2634f4b1facb8786d6e3859a15",
+      "eligibility": "INELIGIBLE_NON_RING_OR_LOW_RES",
+      "eligibilityReason": "Non-ring geometry or synthetic low-resolution test keyframes unsuitable for spatial booth reconstruction.",
+      "fixtureClassification": "UNKNOWN",
+      "sampleImages": [
+        "KF01.jpg",
+        "KF02.jpg",
+        "KF03.jpg"
+      ]
+    }
+  ]
+}

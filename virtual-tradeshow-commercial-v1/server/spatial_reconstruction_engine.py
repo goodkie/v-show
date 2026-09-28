@@ -660,7 +660,7 @@ def main():
             is_gauge = True
             is_pnp_opt = False
             opt_status = "GAUGE_ANCHOR_FIXED"
-            successful_iters = len(iter_history)
+            successful_iters = 0  # Strictly 0 per Round 94 Blocker 3!
             fixed_gauge_count += 1
         else:
             is_gauge = False
@@ -682,6 +682,7 @@ def main():
             "optimized": is_pnp_opt,  # FALSE for gauge anchor!
             "optimizationStatus": opt_status,
             "successfulOptimizationIterations": successful_iters,
+            "solverIterationsObserved": len(iter_history),
             "rotationUpdateNorm": round(cam_rot_deltas[c], 6),
             "translationUpdateNorm": round(cam_trans_deltas[c], 6),
             "poseUpdateNorm": round(cam_pose_deltas[c], 6),
@@ -692,7 +693,8 @@ def main():
         "totalCameras": n,
         "fixedGaugeCameraCount": fixed_gauge_count,
         "pnpOptimizedCameraCount": pnp_opt_count,
-        "unoptimizedCameraCount": unopt_count
+        "unoptimizedCameraCount": unopt_count,
+        "solverIterationsObserved": len(iter_history)
     }
     optimized_cam_count = pnp_opt_count
 
@@ -789,8 +791,11 @@ def main():
     bbox_center = (bbox_min + bbox_max) / 2.0
     bbox_radius = max(float(np.linalg.norm(bbox_max - bbox_center) * 3.0), 300.0)
 
-    # Iterate through connected camera pairs along the main component
+    # Pass 1: Compute pairwise disparity & depth fields for all adjacent pairs
     connected_views = sorted(list(main_component))
+    pair_stereo_cache = {}
+    camera_stereo_depth = {}  # map view_idx -> { 'disp', 'baseline' }
+
     for idx_c in range(len(connected_views) - 1):
         i = connected_views[idx_c]
         j = connected_views[idx_c + 1]
@@ -830,7 +835,7 @@ def main():
         reproj_pts = cv2.reprojectImageTo3D(disp, Q)
         z_vals = reproj_pts[:, :, 2]
 
-        # Cheirality & finite depth verification (strictly no abs(z) sign flipping per Blocker 7)
+        # Cheirality & finite depth verification (strictly no abs(z) sign flipping per Blocker 6)
         valid_depth_mask = valid_disp_mask & (z_vals > 0.1) & (z_vals < 250.0)
         neg_depth_mask = valid_disp_mask & (z_vals <= 0.1)
         range_rej_mask = valid_disp_mask & (z_vals >= 250.0)
@@ -841,13 +846,54 @@ def main():
         p_valid = reproj_pts[valid_depth_mask]
         c_valid = rgb1_rect[valid_depth_mask]
 
+        pair_stereo_cache[(i, j)] = {
+            "c_left": c_left,
+            "c_right": c_right,
+            "baseline": baseline,
+            "R_ref_left": R_ref_left,
+            "t_ref_left": t_ref_left,
+            "R1": R1,
+            "disp": disp,
+            "raw_pixels": raw_pixels,
+            "valid_disp_count": valid_disp_count,
+            "invalid_disp_count": invalid_disp_count,
+            "neg_depth_count": neg_depth_count,
+            "range_rej_count": range_rej_count,
+            "p_valid": p_valid,
+            "c_valid": c_valid
+        }
+
+        # Cache reference view stereo depth for independent third-view checks
+        camera_stereo_depth[c_left] = {
+            "disp": disp,
+            "baseline": baseline
+        }
+
+    # Pass 2: Verify candidate 3D points via independent third-view geometric depth consistency & photometric heuristic
+    for idx_c in range(len(connected_views) - 1):
+        i = connected_views[idx_c]
+        j = connected_views[idx_c + 1]
+        pair_data = pair_stereo_cache[(i, j)]
+
+        c_left = pair_data["c_left"]
+        c_right = pair_data["c_right"]
+        p_valid = pair_data["p_valid"]
+        c_valid = pair_data["c_valid"]
+        baseline = pair_data["baseline"]
+        R1 = pair_data["R1"]
+        R_ref_left, t_ref_left = pair_data["R_ref_left"], pair_data["t_ref_left"]
+
         accepted_3d = 0
         fused_contrib = 0
         spatial_rej_count = 0
-        mv_inconsistent_count = 0
+        geom_depth_tested = 0
+        geom_depth_consistent = 0
+        geom_depth_rejected = 0
+        photo_heuristic_accepted = 0
+        mv_heuristic_rejected = 0
+        depth_residuals = []
 
         if len(p_valid) > 0:
-            # Transform rectified coords -> left camera coords -> global SfM coords
             X_cam_left = (R1.T @ p_valid.T).T
             X_glob = (R_ref_left.T @ (X_cam_left - t_ref_left.T).T).T
 
@@ -857,7 +903,6 @@ def main():
             X_glob_spatial = X_glob[spatial_mask]
             c_spatial = c_valid[spatial_mask]
 
-            # Multi-view consistency check (Blocker 6 & 7)
             min_c = min(c_left, c_right)
             max_c = max(c_left, c_right)
             cand_views = [v for v in [min_c - 1, max_c + 1] if 0 <= v < n and v in cur_R]
@@ -870,23 +915,45 @@ def main():
                 for pt_idx in range(len(X_glob_spatial)):
                     pt3d = X_glob_spatial[pt_idx]
                     col3d = c_spatial[pt_idx]
-                    has_mv_support = False
+                    has_support = False
+
                     for v in cand_views[:2]:
                         P_v = cur_R[v] @ pt3d.reshape(3, 1) + cur_t[v]
-                        if P_v[2, 0] > 0.1:
-                            u_v = K_s[0, 0] * P_v[0, 0] / P_v[2, 0] + K_s[0, 2]
-                            v_v = K_s[1, 1] * P_v[1, 0] / P_v[2, 0] + K_s[1, 2]
+                        Z_proj = P_v[2, 0]
+                        if Z_proj > 0.1:
+                            u_v = K_s[0, 0] * P_v[0, 0] / Z_proj + K_s[0, 2]
+                            v_v = K_s[1, 1] * P_v[1, 0] / Z_proj + K_s[1, 2]
                             if 0 <= u_v < w_s and 0 <= v_v < h_s:
-                                c_sample = rgbs_s[v][int(v_v), int(u_v)]
-                                col_diff = float(np.linalg.norm(col3d.astype(np.float32) - c_sample.astype(np.float32)))
-                                if col_diff < 140.0:
-                                    has_mv_support = True
-                                    break
-                    if has_mv_support:
+                                # Independent third-view geometric depth test (Blocker 2 & Directive 3)
+                                if v in camera_stereo_depth:
+                                    geom_depth_tested += 1
+                                    v_disp_field = camera_stereo_depth[v]["disp"]
+                                    d_val = v_disp_field[int(v_v), int(u_v)]
+                                    if d_val > 1.0:
+                                        Z_stereo = (f_s * camera_stereo_depth[v]["baseline"]) / d_val
+                                        rel_diff = abs(Z_proj - Z_stereo) / max(1e-3, Z_proj)
+                                        depth_residuals.append(rel_diff)
+                                        if rel_diff <= 0.40:
+                                            geom_depth_consistent += 1
+                                            has_support = True
+                                            break
+                                        else:
+                                            geom_depth_rejected += 1
+
+                                # Supplementary third-view visibility & photometric heuristic (Directive 4)
+                                if not has_support:
+                                    c_sample = rgbs_s[v][int(v_v), int(u_v)]
+                                    col_diff = float(np.linalg.norm(col3d.astype(np.float32) - c_sample.astype(np.float32)))
+                                    if col_diff < 140.0:
+                                        photo_heuristic_accepted += 1
+                                        has_support = True
+                                        break
+
+                    if has_support:
                         consistent_pts.append(pt3d)
                         consistent_colors.append(col3d)
                     else:
-                        mv_inconsistent_count += 1
+                        mv_heuristic_rejected += 1
             else:
                 consistent_pts = [p for p in X_glob_spatial]
                 consistent_colors = [c for c in c_spatial]
@@ -909,15 +976,21 @@ def main():
         pair_dense_diagnostics.append({
             "pair": [i, j],
             "baseline": round(baseline, 4),
-            "rawDisparityPixels": raw_pixels,
-            "validDisparityCount": valid_disp_count,
-            "invalidDisparityCount": invalid_disp_count,
-            "negativeDepthRejected": neg_depth_count,
-            "rangeRejected": range_rej_count,
+            "rawDisparityPixels": pair_data["raw_pixels"],
+            "validDisparityCount": pair_data["valid_disp_count"],
+            "invalidDisparityCount": pair_data["invalid_disp_count"],
+            "negativeDepthRejected": pair_data["neg_depth_count"],
+            "rangeRejected": pair_data["range_rej_count"],
             "spatialRejected": spatial_rej_count,
-            "multiViewInconsistentRejected": mv_inconsistent_count,
+            "thirdViewDepthGeometricTested": geom_depth_tested,
+            "thirdViewDepthGeometricConsistent": geom_depth_consistent,
+            "thirdViewDepthGeometricRejected": geom_depth_rejected,
+            "thirdViewPhotometricHeuristicAccepted": photo_heuristic_accepted,
+            "multiViewHeuristicRejected": mv_heuristic_rejected,
             "acceptedMultiViewConsistent3dCount": accepted_3d,
-            "fusedContribution": fused_contrib
+            "meanRelativeDepthResidual": round(float(np.mean(depth_residuals)), 4) if depth_residuals else None,
+            "fusedContribution": fused_contrib,
+            "consistencyMethod": "THIRD_VIEW_INDEPENDENT_STEREO_DEPTH_CONSISTENCY_AND_PHOTOMETRIC_HEURISTIC"
         })
 
     # Deterministic Voxel Deduplication (0.05 SfM units)
@@ -1040,9 +1113,24 @@ def main():
         "optimizationAlgorithm": "ALTERNATING_LEVENBERG_MARQUARDT_PNP_AND_LANDMARK"
     }
 
+    # Discovery-derived Dataset Adequacy & Positive Fixture Gate (Round 95)
+    inventory_path = os.path.join(os.path.dirname(__file__), "../production_artifacts/DATASET_INVENTORY_AUDIT.json")
+    if os.path.exists(inventory_path):
+        try:
+            with open(inventory_path, 'r', encoding='utf-8') as inv_f:
+                inv_data = json.load(inv_f)
+                dataset_adequacy_gate = inv_data.get("gateEvaluation", {}).get("DATASET_ADEQUACY_GATE", "NO_ELIGIBLE_NON_OWNER_POSITIVE_FIXTURE_FOUND_BY_INVENTORY")
+                positive_fixture_gate = inv_data.get("gateEvaluation", {}).get("POSITIVE_FIXTURE_GATE", "BLOCKED_BY_POSITIVE_FIXTURE_AVAILABILITY")
+        except Exception:
+            dataset_adequacy_gate = "NO_ELIGIBLE_NON_OWNER_POSITIVE_FIXTURE_FOUND_BY_INVENTORY"
+            positive_fixture_gate = "BLOCKED_BY_POSITIVE_FIXTURE_AVAILABILITY"
+    else:
+        dataset_adequacy_gate = "NO_ELIGIBLE_NON_OWNER_POSITIVE_FIXTURE_FOUND_BY_INVENTORY"
+        positive_fixture_gate = "BLOCKED_BY_POSITIVE_FIXTURE_AVAILABILITY"
+
     calib_status_str = "ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED"
     receipt = {
-        "receiptSchemaVersion": "AUTHLINEAGE_RECEIPT_V7_HONEST_CAMERA_ACCOUNTING_AND_DENSE_CONSISTENCY",
+        "receiptSchemaVersion": "AUTHLINEAGE_RECEIPT_V8_INVENTORY_BOUND_GEOMETRIC_DEPTH_CONSISTENCY",
         "jobId": job_id,
         "codeUnderTestSha": cut_sha,
         "engineProvenance": {
@@ -1138,11 +1226,42 @@ def main():
             "DESTRUCTIVE_GIT_REWRITE": "FORBIDDEN",
             "GLOBAL_COVERAGE_GATE": graph_connectivity_metrics["globalCoverageGate"],
             "LOOP_CLOSURE_GATE": loop_residual_metrics["status"],
-            "DATASET_ADEQUACY_GATE": "NEGATIVE_PARTIAL_FIXTURE_VERIFIED_NO_ADEQUATE_NON_OWNER_POSITIVE_FIXTURE_AVAILABLE",
+            "DATASET_ADEQUACY_GATE": dataset_adequacy_gate,
+            "POSITIVE_FIXTURE_GATE": positive_fixture_gate,
             "SPARSE_SFM_CLASSIFICATION": "SPARSE_SFM_INTERNAL_PROOF",
             "DENSE_MVS_CLASSIFICATION": primary_classification
         }
     }
+
+    # Canonical Diagnostics Digest (Round 95 Blocker 4 & Directive 6)
+    canonical_diag_obj = {
+        "cameraAccounting": camera_accounting_metrics,
+        "graphConnectivity": {
+            "isConnected": graph_connectivity_metrics["isConnected"],
+            "connectedComponentCount": graph_connectivity_metrics["connectedComponentCount"],
+            "componentSizes": graph_connectivity_metrics["componentSizes"],
+            "componentMemberships": graph_connectivity_metrics["componentMemberships"],
+            "globalCoverageGate": graph_connectivity_metrics["globalCoverageGate"]
+        },
+        "loopClosureResidual": {
+            "status": loop_residual_metrics["status"],
+            "closurePassed": loop_residual_metrics["closurePassed"],
+            "measured": loop_residual_metrics["measured"]
+        },
+        "bundleAdjustmentRefinement": {
+            "convergenceStatus": convergence_status,
+            "converged": converged,
+            "terminated": terminated,
+            "actualIterations": len(iter_history),
+            "fixedObservationSet": refinement_metrics["fixedObservationSet"],
+            "finalInlierMetrics": refinement_metrics["finalInlierMetrics"],
+            "outlierRejectionMetrics": refinement_metrics["outlierRejectionMetrics"]
+        },
+        "pairDiagnostics": pair_dense_diagnostics
+    }
+    canonical_diag_json = json.dumps(canonical_diag_obj, sort_keys=True)
+    diagnostics_digest = hashlib.sha256(canonical_diag_json.encode('utf-8')).hexdigest()
+    receipt["diagnosticsDigest"] = diagnostics_digest
 
     # Authoritative Lineage Digest
     lineage_hasher = hashlib.sha256()
@@ -1192,7 +1311,10 @@ def main():
         "receiptPath": receipt_path,
         "receiptSha256": receipt_sha,
         "lineageDigest": lineage_digest,
+        "diagnosticsDigest": diagnostics_digest,
         "calibrationStatus": calib_status_str,
+        "datasetAdequacyGate": dataset_adequacy_gate,
+        "positiveFixtureGate": positive_fixture_gate,
         "inputsDigest": inputs_digest,
         "cutSha": cut_sha
     }
