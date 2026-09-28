@@ -3521,9 +3521,12 @@ async function main() {
       try { fs.rmSync(scratchDir, { recursive: true, force: true }); } catch (_) {}
     }
 
-    // Automated Report Parity Assertion (Round 99/100 Blocker 1, 5, 7)
+    // Automated Report Parity Assertion (Round 99/100/101 Blocker 1, 5, 7)
+    const report101Path = path.join(REPO_ROOT, 'docs/ROUND_101_REPORT.md');
     const report100Path = path.join(REPO_ROOT, 'docs/ROUND_100_REPORT.md');
-    const reportPath = fs.existsSync(report100Path) ? report100Path : path.join(REPO_ROOT, 'docs/ROUND_99_REPORT.md');
+    const reportPath = fs.existsSync(report101Path)
+      ? report101Path
+      : (fs.existsSync(report100Path) ? report100Path : path.join(REPO_ROOT, 'docs/ROUND_99_REPORT.md'));
     const v11ReceiptPath = path.join(REPO_ROOT, 'virtual-tradeshow-commercial-v1/production_artifacts/AUTHLINEAGE_RECEIPT_V11_STANDARDIZED_DIGEST_AND_SUPPORT_POLICY.json');
     if (fs.existsSync(reportPath) && fs.existsSync(v11ReceiptPath)) {
       const reportContent = fs.readFileSync(reportPath, 'utf8');
@@ -3540,21 +3543,22 @@ async function main() {
       assert.ok(reportContent.includes(`Eligible Negative Partial Fixtures**: ${inventoryResult.discoverySummary.uniqueEligibleNegativeFixtures}`), 'Report must contain exact negative fixture count');
       assert.ok(reportContent.includes(`Insufficient Features / Metadata to Evaluate**: ${inventoryResult.discoverySummary.uniqueInsufficientMetadataDatasets}`), 'Report must contain exact insufficient metadata count');
 
-      // If Round 100 report exists, assert exact fail-closed byte-for-byte regeneration into scratch
-      if (fs.existsSync(report100Path)) {
-        const { generateRound100Report } = require(path.join(REPO_ROOT, 'scripts/generate_round100_report'));
+      // If Round 101/100 report exists, assert exact fail-closed byte-for-byte regeneration into scratch
+      const targetPublishedReport = fs.existsSync(report101Path) ? report101Path : (fs.existsSync(report100Path) ? report100Path : null);
+      if (targetPublishedReport) {
+        const { generateRound101Report } = require(path.join(REPO_ROOT, 'scripts/generate_round101_report'));
         const scratchReportDir = fs.mkdtempSync(path.join(os.tmpdir(), 'stage2-report-scratch-'));
-        const scratchReportFile = path.join(scratchReportDir, 'ROUND_100_REPORT_FRESH.md');
+        const scratchReportFile = path.join(scratchReportDir, 'ROUND_REPORT_FRESH.md');
         try {
-          generateRound100Report({ repoRoot: REPO_ROOT, outputPath: scratchReportFile });
+          generateRound101Report({ repoRoot: REPO_ROOT, outputPath: scratchReportFile });
           const freshReportContent = fs.readFileSync(scratchReportFile, 'utf8');
-          const publishedReportContent = fs.readFileSync(report100Path, 'utf8');
+          const publishedReportContent = fs.readFileSync(targetPublishedReport, 'utf8');
           assert.strictEqual(
             freshReportContent,
             publishedReportContent,
-            'Fail-closed report generator in scratch must match published docs/ROUND_100_REPORT.md byte-for-byte'
+            `Fail-closed report generator in scratch must match published ${path.basename(targetPublishedReport)} byte-for-byte`
           );
-          console.log('    - Fail-Closed Report Parity: PASS (byte-for-byte identical with published report)');
+          console.log(`    - Fail-Closed Report Parity: PASS (byte-for-byte identical with published ${path.basename(targetPublishedReport)})`);
         } finally {
           try { fs.rmSync(scratchReportDir, { recursive: true, force: true }); } catch (_) {}
         }

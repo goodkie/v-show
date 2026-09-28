@@ -31,8 +31,8 @@ const CLAIMED_EVIDENCE_RELPATHS = [
   'virtual-tradeshow-commercial-v1/production_artifacts/AUTHLINEAGE_SPARSE_SFM_SEED.ply',
   'test/test_stage2_true3d_pipeline.js',
   'scripts/build_geometry_cache.js',
-  'scripts/generate_round100_report.js',
-  'docs/ROUND_100_REPORT.md'
+  'scripts/generate_round101_report.js',
+  'docs/ROUND_101_REPORT.md'
 ];
 
 function buildRunBundleManifest(options = {}) {

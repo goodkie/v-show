@@ -2,8 +2,8 @@ node_modules/
 .DS_Store
 __pycache__/
 *.log
-npm-debug.log
 *.ply
+!production_artifacts/AUTHLINEAGE_*.ply
 *.spz
 *.splat
 *.ksplat
