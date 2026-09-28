@@ -1676,6 +1676,7 @@ function executeAuthenticReconstructionWorker(options = {}) {
                 receiptPath: parsed.receiptPath,
                 refinementMetrics: parsed.refinementMetrics,
                 cameraCoverageAndGraphProof: parsed.cameraCoverageAndGraphProof,
+                denseMvsDiagnostics: parsed.denseMvsDiagnostics,
                 sparseSfmSeed: parsed.sparseSfmSeed
               },
               truthLedger: {

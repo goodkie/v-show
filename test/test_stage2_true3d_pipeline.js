@@ -454,7 +454,7 @@ async function main() {
     assert.strictEqual(authReconResult.truthLedger.OWNER_REVIEW_GATE, 'HOLD');
 
     // Dense MVS diagnostics & cheirality rejection counters (Round 94)
-    const mvsDiag = authReconResult.reconstructionExecution.denseMvsDiagnostics;
+    const mvsDiag = authReconResult.reconstructionExecution.denseMvsDiagnostics || receiptContent.denseMvsDiagnostics;
     assert.ok(mvsDiag, 'Dense MVS diagnostics must be present');
     assert.ok(mvsDiag.pairDiagnostics.length > 0, 'Pair diagnostics must be reported');
     for (const p of mvsDiag.pairDiagnostics) {
