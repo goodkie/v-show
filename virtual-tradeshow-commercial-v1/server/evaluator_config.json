@@ -1,0 +1,13 @@
+{
+  "configVersion": "1.0.0",
+  "minMedianParallaxDegrees": 1.2,
+  "minPositiveDepthRatio": 0.55,
+  "maxHomographyInlierRatio": 0.9,
+  "minInlierCount": 15,
+  "maxConnectedViewsCeiling": 64,
+  "maxScaleConsistentTranslationResidual": 0.15,
+  "maxLoopClosureRotationDriftDegrees": 15.0,
+  "maxLoopClosureRotationDriftFrobenius": 0.5,
+  "minConnectedViewsPositiveRingThreshold": 12,
+  "calibrationAssumption": "ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED"
+}

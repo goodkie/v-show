@@ -1,6 +1,6 @@
 {
   "auditSchemaVersion": "DATASET_INVENTORY_AUDIT_V4_EMPIRICAL_GEOMETRY_EVALUATION",
-  "auditTimestamp": "2026-09-28T21:08:47.808Z",
+  "auditTimestamp": "2026-09-28T22:29:06.075Z",
   "scanner": "ANTIGRAVITY_WORKSPACE_DATASET_INVENTORY",
   "traversalProof": {
     "rootsScanned": [
@@ -27,6 +27,20 @@
       }
     ]
   },
+  "evaluatorConfig": {
+    "configVersion": "1.0.0",
+    "minMedianParallaxDegrees": 1.2,
+    "minPositiveDepthRatio": 0.55,
+    "maxHomographyInlierRatio": 0.9,
+    "minInlierCount": 15,
+    "maxConnectedViewsCeiling": 64,
+    "maxScaleConsistentTranslationResidual": 0.15,
+    "maxLoopClosureRotationDriftDegrees": 15,
+    "maxLoopClosureRotationDriftFrobenius": 0.5,
+    "minConnectedViewsPositiveRingThreshold": 12,
+    "calibrationAssumption": "ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED"
+  },
+  "evaluatorConfigDigest": "1117e4488c00c9be3b111297ab206f8e9de9c91d74f56518a6066a5de4420b12",
   "traversalMetrics": {
     "rootsScanned": 5,
     "directoriesTraversed": 1227,

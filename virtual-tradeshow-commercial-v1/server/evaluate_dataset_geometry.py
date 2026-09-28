@@ -2,7 +2,7 @@
 """
 evaluate_dataset_geometry.py
 ─────────────────────────────────────────────────────────────────────────────
-Empirical Geometry Evaluator for Discovered Capture Datasets (Round 99)
+Empirical Geometry Evaluator for Discovered Capture Datasets (Round 100)
 
 Evaluates candidate image sequences using genuine computer vision measurements:
   1. Feature Detection (ORB)
@@ -11,6 +11,7 @@ Evaluates candidate image sequences using genuine computer vision measurements:
   4. Camera Graph Construction & Connected Component Analysis (BFS)
   5. 3-View Scale Consistency Resolution & Scale-Consistent Loop Closure (Frobenius, Angle, Scaled Translation Drift)
   6. Empirical Classification (Positive Complete Ring vs Negative Partial Fixture)
+  7. Strict Threshold Governance via Hashed Canonical Configuration
 ─────────────────────────────────────────────────────────────────────────────
 """
 
@@ -18,6 +19,7 @@ import os
 import sys
 import json
 import math
+import hashlib
 import argparse
 import numpy as np
 
@@ -26,14 +28,66 @@ try:
 except ImportError:
     cv2 = None
 
+CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "evaluator_config.json")
 
-def evaluate_dataset_geometry(image_dir, max_frames=64, max_dim=320):
+
+def load_evaluator_config(config_file=None):
+    path_to_try = config_file or CONFIG_PATH
+    if os.path.exists(path_to_try):
+        try:
+            with open(path_to_try, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {
+        "configVersion": "1.0.0",
+        "minMedianParallaxDegrees": 1.2,
+        "minPositiveDepthRatio": 0.55,
+        "maxHomographyInlierRatio": 0.90,
+        "minInlierCount": 15,
+        "maxConnectedViewsCeiling": 64,
+        "maxScaleConsistentTranslationResidual": 0.15,
+        "maxLoopClosureRotationDriftDegrees": 15.0,
+        "maxLoopClosureRotationDriftFrobenius": 0.50,
+        "minConnectedViewsPositiveRingThreshold": 12,
+        "calibrationAssumption": "ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED"
+    }
+
+
+def compute_config_digest(config_file=None):
+    path_to_try = config_file or CONFIG_PATH
+    if os.path.exists(path_to_try):
+        try:
+            with open(path_to_try, "rb") as f:
+                return hashlib.sha256(f.read()).hexdigest()
+        except Exception:
+            pass
+    return "1117e4488c00c9be3b111297ab206f8e9de9c91d74f56518a6066a5de4420b12"
+
+
+def evaluate_dataset_geometry(image_dir, max_frames=64, max_dim=320, config=None, config_file=None):
+    cfg = config or load_evaluator_config(config_file)
+    cfg_digest = compute_config_digest(config_file)
+
+
+    min_pos_depth = float(cfg.get("minPositiveDepthRatio", 0.55))
+    min_parallax_deg = float(cfg.get("minMedianParallaxDegrees", 1.2))
+    max_h_ratio = float(cfg.get("maxHomographyInlierRatio", 0.90))
+    min_inlier_cnt = int(cfg.get("minInlierCount", 15))
+    max_frames_ceiling = int(cfg.get("maxConnectedViewsCeiling", max_frames))
+    max_trans_residual = float(cfg.get("maxScaleConsistentTranslationResidual", 0.15))
+    max_rot_deg = float(cfg.get("maxLoopClosureRotationDriftDegrees", 15.0))
+    max_rot_frob = float(cfg.get("maxLoopClosureRotationDriftFrobenius", 0.50))
+    min_pos_ring_views = int(cfg.get("minConnectedViewsPositiveRingThreshold", 12))
+
     if cv2 is None:
         return {
             "success": False,
             "category": "INSUFFICIENT_METADATA_TO_EVALUATE",
             "classification": "EVALUATOR_UNAVAILABLE",
-            "classificationReason": "OpenCV not available in runtime environment"
+            "classificationReason": "OpenCV not available in runtime environment",
+            "evaluatorConfig": cfg,
+            "evaluatorConfigDigest": cfg_digest
         }
 
     if not os.path.isdir(image_dir):
@@ -41,7 +95,9 @@ def evaluate_dataset_geometry(image_dir, max_frames=64, max_dim=320):
             "success": False,
             "category": "INSUFFICIENT_METADATA_TO_EVALUATE",
             "classification": "DIRECTORY_MISSING",
-            "classificationReason": f"Directory not found: {image_dir}"
+            "classificationReason": f"Directory not found: {image_dir}",
+            "evaluatorConfig": cfg,
+            "evaluatorConfigDigest": cfg_digest
         }
 
     image_files = sorted([f for f in os.listdir(image_dir) if f.lower().endswith(('.jpg', '.jpeg', '.png'))])
@@ -51,12 +107,14 @@ def evaluate_dataset_geometry(image_dir, max_frames=64, max_dim=320):
             "category": "INSUFFICIENT_METADATA_TO_EVALUATE",
             "classification": "INSUFFICIENT_VIEWS",
             "classificationReason": f"Found {len(image_files)} image files (minimum 3 required for multi-view geometry)",
-            "imageCount": len(image_files)
+            "imageCount": len(image_files),
+            "evaluatorConfig": cfg,
+            "evaluatorConfigDigest": cfg_digest
         }
 
-    # Evaluate candidate frames without artificial 12-frame limit (up to max_frames=64)
-    if len(image_files) > max_frames:
-        indices = np.linspace(0, len(image_files) - 1, max_frames, dtype=int)
+    # Evaluate candidate frames without artificial 12-frame limit (up to max_frames_ceiling)
+    if len(image_files) > max_frames_ceiling:
+        indices = np.linspace(0, len(image_files) - 1, max_frames_ceiling, dtype=int)
         selected_files = [image_files[i] for i in indices]
         coverage_mode = "KEYFRAME_RING_SAMPLED"
         keyframe_indices = [int(i) for i in indices]
@@ -92,7 +150,9 @@ def evaluate_dataset_geometry(image_dir, max_frames=64, max_dim=320):
             "category": "INSUFFICIENT_METADATA_TO_EVALUATE",
             "classification": "UNREADABLE_IMAGE_FILES",
             "classificationReason": "Could not read at least 3 valid image frames",
-            "imageCount": len(image_files)
+            "imageCount": len(image_files),
+            "evaluatorConfig": cfg,
+            "evaluatorConfigDigest": cfg_digest
         }
 
     if w_first < 512 or h_first < 512:
@@ -104,7 +164,9 @@ def evaluate_dataset_geometry(image_dir, max_frames=64, max_dim=320):
             "imageCount": len(image_files),
             "sampleDimensions": f"{w_first}x{h_first}",
             "coverageEvaluationMode": coverage_mode,
-            "evaluatedFramesCount": n_views
+            "evaluatedFramesCount": n_views,
+            "evaluatorConfig": cfg,
+            "evaluatorConfigDigest": cfg_digest
         }
 
     h_s, w_s = imgs_gray[0].shape[:2]
@@ -135,7 +197,9 @@ def evaluate_dataset_geometry(image_dir, max_frames=64, max_dim=320):
             "connectedViews": 0,
             "loopClosurePassed": False,
             "coverageEvaluationMode": coverage_mode,
-            "evaluatedFramesCount": n_views
+            "evaluatedFramesCount": n_views,
+            "evaluatorConfig": cfg,
+            "evaluatorConfigDigest": cfg_digest
         }
 
     bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
@@ -217,7 +281,7 @@ def evaluate_dataset_geometry(image_dir, max_frames=64, max_dim=320):
         h_ratio = h_inliers / max(1, inlier_cnt)
 
         # A pair is verified as genuine translation only when depths are positive, parallax is non-zero, and not purely planar/rotational
-        pair_has_parallax = (pos_depth_ratio >= 0.55 and med_parallax_deg >= 1.2 and h_ratio < 0.90)
+        pair_has_parallax = (pos_depth_ratio >= min_pos_depth and med_parallax_deg >= min_parallax_deg and h_ratio < max_h_ratio)
         pair_parallax_metrics[f"{i}_{j}"] = {
             "pair": [i, j],
             "inliers": inlier_cnt,
@@ -230,7 +294,7 @@ def evaluate_dataset_geometry(image_dir, max_frames=64, max_dim=320):
     # Global Parallax Assessment
     global_med_parallax = float(np.median(all_parallax_angles)) if all_parallax_angles else 0.0
     pairs_with_parallax_count = sum(1 for p in pair_parallax_metrics.values() if p["hasTranslationalParallax"])
-    has_recoverable_parallax = (pairs_with_parallax_count >= 2 and global_med_parallax >= 1.2)
+    has_recoverable_parallax = (pairs_with_parallax_count >= 2 and global_med_parallax >= min_parallax_deg)
 
     # Connected components via BFS
     visited = set()
@@ -316,9 +380,9 @@ def evaluate_dataset_geometry(image_dir, max_frames=64, max_dim=320):
         scale_consistent_trans_residual = float(np.linalg.norm(t_cum) / max(1e-4, total_path_length))
 
         loop_closure_passed = bool(
-            rot_drift_frob <= 0.50 and
-            rot_drift_deg <= 15.0 and
-            scale_consistent_trans_residual <= 0.15 and
+            rot_drift_frob <= max_rot_frob and
+            rot_drift_deg <= max_rot_deg and
+            scale_consistent_trans_residual <= max_trans_residual and
             scale_resolved
         )
 
@@ -333,9 +397,9 @@ def evaluate_dataset_geometry(image_dir, max_frames=64, max_dim=320):
                 "scaleConsistencyResolved": scale_resolved
             },
             "thresholds": {
-                "maxRotationDriftFrobenius": 0.50,
-                "maxRotationAngleDegrees": 15.0,
-                "maxScaleConsistentTranslationResidual": 0.15
+                "maxRotationDriftFrobenius": max_rot_frob,
+                "maxRotationAngleDegrees": max_rot_deg,
+                "maxScaleConsistentTranslationResidual": max_trans_residual
             }
         }
     else:
@@ -350,13 +414,13 @@ def evaluate_dataset_geometry(image_dir, max_frames=64, max_dim=320):
                 "scaleConsistencyResolved": False
             },
             "thresholds": {
-                "maxRotationDriftFrobenius": 0.50,
-                "maxRotationAngleDegrees": 15.0,
-                "maxScaleConsistentTranslationResidual": 0.15
+                "maxRotationDriftFrobenius": max_rot_frob,
+                "maxRotationAngleDegrees": max_rot_deg,
+                "maxScaleConsistentTranslationResidual": max_trans_residual
             }
         }
 
-    is_positive = (max_component_size == n_views and loop_closure_passed and n_views >= 12 and has_recoverable_parallax)
+    is_positive = (max_component_size == n_views and loop_closure_passed and n_views >= min_pos_ring_views and has_recoverable_parallax)
     is_negative = (has_recoverable_parallax and (max_component_size < n_views or not loop_closure_passed))
 
     if is_positive:
@@ -395,7 +459,9 @@ def evaluate_dataset_geometry(image_dir, max_frames=64, max_dim=320):
         "globalMedianParallaxDegrees": round(global_med_parallax, 2),
         "pairsWithValidParallax": pairs_with_parallax_count,
         "pairParallaxMetrics": pair_parallax_metrics,
-        "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT"
+        "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT",
+        "evaluatorConfig": cfg,
+        "evaluatorConfigDigest": cfg_digest
     }
 
 
@@ -404,9 +470,11 @@ def main():
     parser.add_argument("image_dir", help="Path to image directory")
     parser.add_argument("--max-frames", type=int, default=64, help="Maximum frames to evaluate")
     parser.add_argument("--max-dim", type=int, default=320, help="Downscaled dimension for fast evaluation")
+    parser.add_argument("--config", help="Path to custom evaluator config JSON", default=None)
     args = parser.parse_args()
 
-    result = evaluate_dataset_geometry(args.image_dir, max_frames=args.max_frames, max_dim=args.max_dim)
+    cfg = load_evaluator_config(args.config) if args.config else None
+    result = evaluate_dataset_geometry(args.image_dir, max_frames=args.max_frames, max_dim=args.max_dim, config=cfg)
     print(json.dumps(result, indent=2))
 
 

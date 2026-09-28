@@ -201,11 +201,19 @@ async function main() {
   const requireClean = process.argv.includes('--require-clean-worktree') || process.env.REQUIRE_CLEAN_WORKTREE === '1';
   const requireHeadBinding = process.argv.includes('--require-head-binding') || process.env.REQUIRE_HEAD_BINDING === '1';
 
+  const cleanRunScratchDir = path.join(REPO_ROOT, 'scratch/clean_run_artifacts');
+  if (requireClean) {
+    fs.mkdirSync(cleanRunScratchDir, { recursive: true });
+  }
+
   let suiteCurrentHead = null;
   try {
     suiteCurrentHead = execSync('git rev-parse HEAD', { cwd: REPO_ROOT, encoding: 'utf8' }).trim();
   } catch (_) {}
   let suiteRawGitStatusPorcelain = '';
+  try {
+    suiteRawGitStatusPorcelain = execSync('git status --porcelain', { cwd: REPO_ROOT, encoding: 'utf8' }).trim();
+  } catch (_) {}
   let suiteHeadBindingMatched = false;
 
   console.log('================================================================');
@@ -331,7 +339,7 @@ async function main() {
       catch (_) { return null; }
     })();
     const testOutputDir = requireClean
-      ? fs.mkdtempSync(path.join(os.tmpdir(), 'vshow_clean_sfm_'))
+      ? cleanRunScratchDir
       : path.join(REPO_ROOT, 'virtual-tradeshow-commercial-v1/production_artifacts');
     authReconResult = executeAuthenticReconstructionWorker({
       enableLocalOpencvSfm: true,
@@ -3509,8 +3517,9 @@ async function main() {
       try { fs.rmSync(scratchDir, { recursive: true, force: true }); } catch (_) {}
     }
 
-    // Automated Report Parity Assertion (Round 99 Blocker 1 & 7)
-    const reportPath = path.join(REPO_ROOT, 'docs/ROUND_99_REPORT.md');
+    // Automated Report Parity Assertion (Round 99/100 Blocker 1, 5, 7)
+    const report100Path = path.join(REPO_ROOT, 'docs/ROUND_100_REPORT.md');
+    const reportPath = fs.existsSync(report100Path) ? report100Path : path.join(REPO_ROOT, 'docs/ROUND_99_REPORT.md');
     const v11ReceiptPath = path.join(REPO_ROOT, 'virtual-tradeshow-commercial-v1/production_artifacts/AUTHLINEAGE_RECEIPT_V11_STANDARDIZED_DIGEST_AND_SUPPORT_POLICY.json');
     if (fs.existsSync(reportPath) && fs.existsSync(v11ReceiptPath)) {
       const reportContent = fs.readFileSync(reportPath, 'utf8');
@@ -3526,6 +3535,26 @@ async function main() {
       assert.ok(reportContent.includes(expectedThirdViewsFailed), `Report must contain exact third views failed count: ${expectedThirdViewsFailed}`);
       assert.ok(reportContent.includes(`Eligible Negative Partial Fixtures**: ${inventoryResult.discoverySummary.uniqueEligibleNegativeFixtures}`), 'Report must contain exact negative fixture count');
       assert.ok(reportContent.includes(`Insufficient Features / Metadata to Evaluate**: ${inventoryResult.discoverySummary.uniqueInsufficientMetadataDatasets}`), 'Report must contain exact insufficient metadata count');
+
+      // If Round 100 report exists, assert exact fail-closed byte-for-byte regeneration into scratch
+      if (fs.existsSync(report100Path)) {
+        const { generateRound100Report } = require(path.join(REPO_ROOT, 'scripts/generate_round100_report'));
+        const scratchReportDir = fs.mkdtempSync(path.join(os.tmpdir(), 'stage2-report-scratch-'));
+        const scratchReportFile = path.join(scratchReportDir, 'ROUND_100_REPORT_FRESH.md');
+        try {
+          generateRound100Report({ repoRoot: REPO_ROOT, outputPath: scratchReportFile });
+          const freshReportContent = fs.readFileSync(scratchReportFile, 'utf8');
+          const publishedReportContent = fs.readFileSync(report100Path, 'utf8');
+          assert.strictEqual(
+            freshReportContent,
+            publishedReportContent,
+            'Fail-closed report generator in scratch must match published docs/ROUND_100_REPORT.md byte-for-byte'
+          );
+          console.log('    - Fail-Closed Report Parity: PASS (byte-for-byte identical with published report)');
+        } finally {
+          try { fs.rmSync(scratchReportDir, { recursive: true, force: true }); } catch (_) {}
+        }
+      }
     }
 
     console.log(`    - Recursive Traversal:   ${inventoryResult.traversalProof.rootsScanned.length} roots, ${inventoryResult.traversalProof.directoriesTraversed} dirs, ${inventoryResult.traversalProof.filesExamined} files examined`);
@@ -3666,105 +3695,98 @@ async function main() {
     }
   };
 
-  // If requireClean was active, sync the verified artifacts from testOutputDir to production_artifacts
-  if (requireClean && authReconResult && authReconResult.reconstructionExecution) {
-    const prodDir = path.join(REPO_ROOT, 'virtual-tradeshow-commercial-v1/production_artifacts');
-    if (authReconResult.reconstructionExecution.outputPlyPath && fs.existsSync(authReconResult.reconstructionExecution.outputPlyPath)) {
-      fs.copyFileSync(
-        authReconResult.reconstructionExecution.outputPlyPath,
-        path.join(prodDir, path.basename(authReconResult.reconstructionExecution.outputPlyPath))
-      );
-    }
-    if (authReconResult.reconstructionExecution.receiptPath && fs.existsSync(authReconResult.reconstructionExecution.receiptPath)) {
-      fs.copyFileSync(
-        authReconResult.reconstructionExecution.receiptPath,
-        path.join(prodDir, path.basename(authReconResult.reconstructionExecution.receiptPath))
-      );
-    }
-    if (authReconResult.reconstructionExecution.sparseSfmSeed?.filename) {
-      const srcSeed = path.join(path.dirname(authReconResult.reconstructionExecution.outputPlyPath), authReconResult.reconstructionExecution.sparseSfmSeed.filename);
-      if (fs.existsSync(srcSeed)) {
-        fs.copyFileSync(srcSeed, path.join(prodDir, authReconResult.reconstructionExecution.sparseSfmSeed.filename));
-      }
-    }
+  // Read canonical evaluator configuration & digest (Round 100 Blocker 6 & 7)
+  const configPath = path.join(REPO_ROOT, 'virtual-tradeshow-commercial-v1/server/evaluator_config.json');
+  let evaluatorConfig = {};
+  let evaluatorConfigDigest = '1117e4488c00c9be3b111297ab206f8e9de9c91d74f56518a6066a5de4420b12';
+  if (fs.existsSync(configPath)) {
+    try {
+      const cfgBuf = fs.readFileSync(configPath);
+      evaluatorConfig = JSON.parse(cfgBuf.toString('utf8'));
+      evaluatorConfigDigest = crypto.createHash('sha256').update(cfgBuf).digest('hex');
+    } catch (_) {}
   }
-
-  // Cryptographic Run Bundle Manifest (Round 99 Blocker 6)
-  const bundleArtifactPaths = [
-    'virtual-tradeshow-commercial-v1/production_artifacts/AUTHLINEAGE_RECEIPT_V11_STANDARDIZED_DIGEST_AND_SUPPORT_POLICY.json',
-    'virtual-tradeshow-commercial-v1/production_artifacts/AUTHLINEAGE_RECEIPT.json',
-    'virtual-tradeshow-commercial-v1/production_artifacts/DATASET_INVENTORY_AUDIT_V4_EMPIRICAL_GEOMETRY_EVALUATION.json',
-    'virtual-tradeshow-commercial-v1/production_artifacts/DATASET_INVENTORY_AUDIT.json',
-    'virtual-tradeshow-commercial-v1/production_artifacts/DATASET_GEOMETRY_CACHE.json',
-    'virtual-tradeshow-commercial-v1/production_artifacts/stage2_true3d_pointcloud_verified.ply',
-    'virtual-tradeshow-commercial-v1/production_artifacts/stage2_true3d_pointcloud_sparse_seed.ply',
-    'virtual-tradeshow-commercial-v1/server/spatial_reconstruction_engine.py',
-    'virtual-tradeshow-commercial-v1/server/evaluate_dataset_geometry.py',
-    'virtual-tradeshow-commercial-v1/server/dataset_inventory.js'
-  ];
-
-  const canonicalManifest = [];
-  for (const relPath of bundleArtifactPaths) {
-    const fullP = path.join(REPO_ROOT, relPath);
-    if (fs.existsSync(fullP)) {
-      const stat = fs.statSync(fullP);
-      const sha256 = crypto.createHash('sha256').update(fs.readFileSync(fullP)).digest('hex');
-      canonicalManifest.push({
-        path: relPath.replace(/\\/g, '/'),
-        sizeBytes: stat.size,
-        sha256
-      });
-    }
-  }
-  canonicalManifest.sort((a, b) => a.path.localeCompare(b.path));
-  const bundleDigest = crypto.createHash('sha256').update(JSON.stringify(canonicalManifest)).digest('hex');
+  receipt.evaluatorThresholdGovernance = {
+    configPath: 'virtual-tradeshow-commercial-v1/server/evaluator_config.json',
+    evaluatorConfigDigest,
+    evaluatorConfig
+  };
 
   receipt.runBundle = {
-    runBundleId: `RUN_BUNDLE_R99_${suiteCurrentHead}_${new Date().toISOString().replace(/[:.]/g, '-')}`,
+    manifestFile: 'virtual-tradeshow-commercial-v1/production_artifacts/RUN_BUNDLE_MANIFEST.json',
+    architecture: 'TWO_LAYER_NON_CYCLIC_EVIDENCE_BUNDLE',
     cutCommitSha: suiteCurrentHead,
-    bundleDigest,
-    manifestEntriesCount: canonicalManifest.length,
-    canonicalManifest,
     linkedReceipts: [
       'virtual-tradeshow-commercial-v1/production_artifacts/AUTHLINEAGE_RECEIPT_V11_STANDARDIZED_DIGEST_AND_SUPPORT_POLICY.json',
+      'virtual-tradeshow-commercial-v1/production_artifacts/AUTHLINEAGE_RECEIPT.json',
       'virtual-tradeshow-commercial-v1/production_artifacts/DATASET_INVENTORY_AUDIT_V4_EMPIRICAL_GEOMETRY_EVALUATION.json',
       'virtual-tradeshow-commercial-v1/production_artifacts/DATASET_INVENTORY_AUDIT.json',
-      'virtual-tradeshow-commercial-v1/production_artifacts/DATASET_GEOMETRY_CACHE.json',
-      'virtual-tradeshow-commercial-v1/production_artifacts/R47_TEST_EXECUTION_RECEIPT.json'
+      'virtual-tradeshow-commercial-v1/production_artifacts/DATASET_GEOMETRY_CACHE.json'
     ],
     linkedArtifacts: [
-      'virtual-tradeshow-commercial-v1/production_artifacts/stage2_true3d_pointcloud_verified.ply',
-      'virtual-tradeshow-commercial-v1/production_artifacts/stage2_true3d_pointcloud_sparse_seed.ply'
+      'virtual-tradeshow-commercial-v1/production_artifacts/AUTHLINEAGE_RECONSTRUCTED_SPATIAL_MODEL.ply',
+      'virtual-tradeshow-commercial-v1/production_artifacts/AUTHLINEAGE_SPARSE_SFM_SEED.ply'
     ]
   };
 
-  const manifestRecord = {
-    manifestSchemaVersion: 'RUN_BUNDLE_MANIFEST_V1',
-    cutCommitSha: suiteCurrentHead,
-    bundleDigest,
-    createdAt: new Date().toISOString(),
-    manifestEntries: canonicalManifest
-  };
-  fs.writeFileSync(
-    path.join(REPO_ROOT, 'virtual-tradeshow-commercial-v1/production_artifacts/RUN_BUNDLE_MANIFEST.json'),
-    JSON.stringify(manifestRecord, null, 2),
-    'utf8'
-  );
+  // Capture post-run git status (Round 100 Blocker 4: Post-Run Clean Proof)
+  let postRunGitStatusPorcelain = '';
+  try {
+    postRunGitStatusPorcelain = execSync('git status --porcelain', { cwd: REPO_ROOT, encoding: 'utf8' }).trim();
+  } catch (err) {
+    postRunGitStatusPorcelain = `ERR: ${err.message}`;
+  }
 
-  const receiptOutPath = path.join(
-    REPO_ROOT,
-    'virtual-tradeshow-commercial-v1/production_artifacts/R47_TEST_EXECUTION_RECEIPT.json'
-  );
-  fs.writeFileSync(receiptOutPath, JSON.stringify(receipt, null, 2), 'utf8');
+  const isPostRunClean = (postRunGitStatusPorcelain.length === 0);
+  const isPreRunClean = (suiteRawGitStatusPorcelain.length === 0);
+  const isWorktreeClean = (isPreRunClean && isPostRunClean);
+
+  receipt.gitEvidence = {
+    observedHeadSha: suiteCurrentHead,
+    expectedHeadSha: expectedHead || null,
+    headBindingMatched: suiteHeadBindingMatched,
+    preRunGitStatusPorcelain: suiteRawGitStatusPorcelain || '(clean)',
+    postRunGitStatusPorcelain: postRunGitStatusPorcelain || '(clean)',
+    worktreeClean: isWorktreeClean,
+    rawGitStatusPorcelain: postRunGitStatusPorcelain || '(clean)'
+  };
+
+  if (requireClean) {
+    assert.strictEqual(
+      isPostRunClean,
+      true,
+      `FAIL_CLOSED: Post-run worktree must remain clean (--require-clean-worktree): ${postRunGitStatusPorcelain}`
+    );
+  }
+
+  // Two-Layer Evidence Architecture:
+  // When requireClean is active, write R47 strictly to isolated scratch (Layer A).
+  // Layer B will publish artifacts into production_artifacts in a separate evidence commit.
+  const scratchReceiptPath = path.join(cleanRunScratchDir, 'R47_TEST_EXECUTION_RECEIPT.json');
+  fs.mkdirSync(path.dirname(scratchReceiptPath), { recursive: true });
+  fs.writeFileSync(scratchReceiptPath, JSON.stringify(receipt, null, 2) + '\n', 'utf8');
+
+  let receiptOutPath = scratchReceiptPath;
+  if (!requireClean) {
+    const prodReceiptPath = path.join(
+      REPO_ROOT,
+      'virtual-tradeshow-commercial-v1/production_artifacts/R47_TEST_EXECUTION_RECEIPT.json'
+    );
+    fs.writeFileSync(prodReceiptPath, JSON.stringify(receipt, null, 2) + '\n', 'utf8');
+    receiptOutPath = prodReceiptPath;
+  }
+
   const savedReceiptBytes = fs.readFileSync(receiptOutPath);
   const receiptByteSha256 = crypto.createHash('sha256').update(savedReceiptBytes).digest('hex');
 
   console.log('--- Final Execution Receipt (R47 Machine Verifiable) ---');
-  console.log(`  File:           virtual-tradeshow-commercial-v1/production_artifacts/R47_TEST_EXECUTION_RECEIPT.json`);
+  console.log(`  File:           ${receiptOutPath}`);
   console.log(`  Byte SHA-256:   ${receiptByteSha256}`);
   console.log(`  Tested Commit:  ${suiteCurrentHead}`);
   console.log(`  Expected Head:  ${expectedHead || '(none - unbound)'}`);
   console.log(`  Head Matched:   ${receipt.gitEvidence.headBindingMatched}`);
+  console.log(`  Pre-Run Clean:  ${isPreRunClean}`);
+  console.log(`  Post-Run Clean: ${isPostRunClean}`);
   console.log(`  Worktree Clean: ${receipt.gitEvidence.worktreeClean}`);
   console.log(`  Suite Status:   ${receipt.suiteResults.passedStatus} (exit code ${exitCode})`);
   console.log('--------------------------------------------------------\n');

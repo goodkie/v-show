@@ -7,7 +7,21 @@
     "imageCount": 12,
     "sampleDimensions": "256x256",
     "coverageEvaluationMode": "ALL_CANDIDATE_FRAMES_EVALUATED",
-    "evaluatedFramesCount": 12
+    "evaluatedFramesCount": 12,
+    "evaluatorConfig": {
+      "configVersion": "1.0.0",
+      "minMedianParallaxDegrees": 1.2,
+      "minPositiveDepthRatio": 0.55,
+      "maxHomographyInlierRatio": 0.9,
+      "minInlierCount": 15,
+      "maxConnectedViewsCeiling": 64,
+      "maxScaleConsistentTranslationResidual": 0.15,
+      "maxLoopClosureRotationDriftDegrees": 15,
+      "maxLoopClosureRotationDriftFrobenius": 0.5,
+      "minConnectedViewsPositiveRingThreshold": 12,
+      "calibrationAssumption": "ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED"
+    },
+    "evaluatorConfigDigest": "1117e4488c00c9be3b111297ab206f8e9de9c91d74f56518a6066a5de4420b12"
   },
   "06ff7e2972da6ba594ff9fab08cef46985d194cc083bbf1d2f8eb538373f7be9": {
     "success": true,
@@ -146,14 +160,42 @@
         "hasTranslationalParallax": true
       }
     },
-    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT"
+    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT",
+    "evaluatorConfig": {
+      "configVersion": "1.0.0",
+      "minMedianParallaxDegrees": 1.2,
+      "minPositiveDepthRatio": 0.55,
+      "maxHomographyInlierRatio": 0.9,
+      "minInlierCount": 15,
+      "maxConnectedViewsCeiling": 64,
+      "maxScaleConsistentTranslationResidual": 0.15,
+      "maxLoopClosureRotationDriftDegrees": 15,
+      "maxLoopClosureRotationDriftFrobenius": 0.5,
+      "minConnectedViewsPositiveRingThreshold": 12,
+      "calibrationAssumption": "ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED"
+    },
+    "evaluatorConfigDigest": "1117e4488c00c9be3b111297ab206f8e9de9c91d74f56518a6066a5de4420b12"
   },
   "27b225b3af37a86be132d4778de3efe76991f569d1123401d46ef4946b0a303c": {
     "success": false,
     "category": "INSUFFICIENT_METADATA_TO_EVALUATE",
     "classification": "UNREADABLE_IMAGE_FILES",
     "classificationReason": "Could not read at least 3 valid image frames",
-    "imageCount": 12
+    "imageCount": 12,
+    "evaluatorConfig": {
+      "configVersion": "1.0.0",
+      "minMedianParallaxDegrees": 1.2,
+      "minPositiveDepthRatio": 0.55,
+      "maxHomographyInlierRatio": 0.9,
+      "minInlierCount": 15,
+      "maxConnectedViewsCeiling": 64,
+      "maxScaleConsistentTranslationResidual": 0.15,
+      "maxLoopClosureRotationDriftDegrees": 15,
+      "maxLoopClosureRotationDriftFrobenius": 0.5,
+      "minConnectedViewsPositiveRingThreshold": 12,
+      "calibrationAssumption": "ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED"
+    },
+    "evaluatorConfigDigest": "1117e4488c00c9be3b111297ab206f8e9de9c91d74f56518a6066a5de4420b12"
   },
   "3498f779ed0fef0e0146b3f25fdbdfe04033994b3d466a94d5673a5c7af779f4": {
     "success": true,
@@ -354,7 +396,21 @@
         "hasTranslationalParallax": false
       }
     },
-    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT"
+    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT",
+    "evaluatorConfig": {
+      "configVersion": "1.0.0",
+      "minMedianParallaxDegrees": 1.2,
+      "minPositiveDepthRatio": 0.55,
+      "maxHomographyInlierRatio": 0.9,
+      "minInlierCount": 15,
+      "maxConnectedViewsCeiling": 64,
+      "maxScaleConsistentTranslationResidual": 0.15,
+      "maxLoopClosureRotationDriftDegrees": 15,
+      "maxLoopClosureRotationDriftFrobenius": 0.5,
+      "minConnectedViewsPositiveRingThreshold": 12,
+      "calibrationAssumption": "ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED"
+    },
+    "evaluatorConfigDigest": "1117e4488c00c9be3b111297ab206f8e9de9c91d74f56518a6066a5de4420b12"
   },
   "553f05b9d78b00fb88e2d79263f79375830019f2a947a17ea9babf23080b88e2": {
     "success": true,
@@ -423,7 +479,21 @@
         "hasTranslationalParallax": false
       }
     },
-    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT"
+    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT",
+    "evaluatorConfig": {
+      "configVersion": "1.0.0",
+      "minMedianParallaxDegrees": 1.2,
+      "minPositiveDepthRatio": 0.55,
+      "maxHomographyInlierRatio": 0.9,
+      "minInlierCount": 15,
+      "maxConnectedViewsCeiling": 64,
+      "maxScaleConsistentTranslationResidual": 0.15,
+      "maxLoopClosureRotationDriftDegrees": 15,
+      "maxLoopClosureRotationDriftFrobenius": 0.5,
+      "minConnectedViewsPositiveRingThreshold": 12,
+      "calibrationAssumption": "ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED"
+    },
+    "evaluatorConfigDigest": "1117e4488c00c9be3b111297ab206f8e9de9c91d74f56518a6066a5de4420b12"
   },
   "5561cdc35da854f70e03a8d202b870ef5cef5be9d697f3d5313e6db47a323559": {
     "success": true,
@@ -525,7 +595,21 @@
         "hasTranslationalParallax": false
       }
     },
-    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT"
+    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT",
+    "evaluatorConfig": {
+      "configVersion": "1.0.0",
+      "minMedianParallaxDegrees": 1.2,
+      "minPositiveDepthRatio": 0.55,
+      "maxHomographyInlierRatio": 0.9,
+      "minInlierCount": 15,
+      "maxConnectedViewsCeiling": 64,
+      "maxScaleConsistentTranslationResidual": 0.15,
+      "maxLoopClosureRotationDriftDegrees": 15,
+      "maxLoopClosureRotationDriftFrobenius": 0.5,
+      "minConnectedViewsPositiveRingThreshold": 12,
+      "calibrationAssumption": "ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED"
+    },
+    "evaluatorConfigDigest": "1117e4488c00c9be3b111297ab206f8e9de9c91d74f56518a6066a5de4420b12"
   },
   "596245aa7364333980ca0959605482306e975894c4568abe1cc600b3f76321f4": {
     "success": true,
@@ -580,7 +664,21 @@
     "globalMedianParallaxDegrees": 0,
     "pairsWithValidParallax": 0,
     "pairParallaxMetrics": {},
-    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT"
+    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT",
+    "evaluatorConfig": {
+      "configVersion": "1.0.0",
+      "minMedianParallaxDegrees": 1.2,
+      "minPositiveDepthRatio": 0.55,
+      "maxHomographyInlierRatio": 0.9,
+      "minInlierCount": 15,
+      "maxConnectedViewsCeiling": 64,
+      "maxScaleConsistentTranslationResidual": 0.15,
+      "maxLoopClosureRotationDriftDegrees": 15,
+      "maxLoopClosureRotationDriftFrobenius": 0.5,
+      "minConnectedViewsPositiveRingThreshold": 12,
+      "calibrationAssumption": "ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED"
+    },
+    "evaluatorConfigDigest": "1117e4488c00c9be3b111297ab206f8e9de9c91d74f56518a6066a5de4420b12"
   },
   "60ea1acaa47e1110c7eb9bc1929008c0e9cb0a5f84e1fbd306bebd174e745d8c": {
     "success": true,
@@ -710,7 +808,21 @@
         "hasTranslationalParallax": true
       }
     },
-    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT"
+    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT",
+    "evaluatorConfig": {
+      "configVersion": "1.0.0",
+      "minMedianParallaxDegrees": 1.2,
+      "minPositiveDepthRatio": 0.55,
+      "maxHomographyInlierRatio": 0.9,
+      "minInlierCount": 15,
+      "maxConnectedViewsCeiling": 64,
+      "maxScaleConsistentTranslationResidual": 0.15,
+      "maxLoopClosureRotationDriftDegrees": 15,
+      "maxLoopClosureRotationDriftFrobenius": 0.5,
+      "minConnectedViewsPositiveRingThreshold": 12,
+      "calibrationAssumption": "ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED"
+    },
+    "evaluatorConfigDigest": "1117e4488c00c9be3b111297ab206f8e9de9c91d74f56518a6066a5de4420b12"
   },
   "6bb152bdff9716ff6ee77ee8e3b872327db1faa847882ef22ca8f54779c05c22": {
     "success": true,
@@ -809,14 +921,42 @@
         "hasTranslationalParallax": true
       }
     },
-    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT"
+    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT",
+    "evaluatorConfig": {
+      "configVersion": "1.0.0",
+      "minMedianParallaxDegrees": 1.2,
+      "minPositiveDepthRatio": 0.55,
+      "maxHomographyInlierRatio": 0.9,
+      "minInlierCount": 15,
+      "maxConnectedViewsCeiling": 64,
+      "maxScaleConsistentTranslationResidual": 0.15,
+      "maxLoopClosureRotationDriftDegrees": 15,
+      "maxLoopClosureRotationDriftFrobenius": 0.5,
+      "minConnectedViewsPositiveRingThreshold": 12,
+      "calibrationAssumption": "ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED"
+    },
+    "evaluatorConfigDigest": "1117e4488c00c9be3b111297ab206f8e9de9c91d74f56518a6066a5de4420b12"
   },
   "7300baf164507b05649c92770d71309480092158ee092689cb1515375fff06a1": {
     "success": false,
     "category": "INSUFFICIENT_METADATA_TO_EVALUATE",
     "classification": "UNREADABLE_IMAGE_FILES",
     "classificationReason": "Could not read at least 3 valid image frames",
-    "imageCount": 12
+    "imageCount": 12,
+    "evaluatorConfig": {
+      "configVersion": "1.0.0",
+      "minMedianParallaxDegrees": 1.2,
+      "minPositiveDepthRatio": 0.55,
+      "maxHomographyInlierRatio": 0.9,
+      "minInlierCount": 15,
+      "maxConnectedViewsCeiling": 64,
+      "maxScaleConsistentTranslationResidual": 0.15,
+      "maxLoopClosureRotationDriftDegrees": 15,
+      "maxLoopClosureRotationDriftFrobenius": 0.5,
+      "minConnectedViewsPositiveRingThreshold": 12,
+      "calibrationAssumption": "ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED"
+    },
+    "evaluatorConfigDigest": "1117e4488c00c9be3b111297ab206f8e9de9c91d74f56518a6066a5de4420b12"
   },
   "730b7894b8282f4e1d49b12412229b9da01b21d265df3c93856874deead32d2c": {
     "success": true,
@@ -946,7 +1086,21 @@
         "hasTranslationalParallax": false
       }
     },
-    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT"
+    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT",
+    "evaluatorConfig": {
+      "configVersion": "1.0.0",
+      "minMedianParallaxDegrees": 1.2,
+      "minPositiveDepthRatio": 0.55,
+      "maxHomographyInlierRatio": 0.9,
+      "minInlierCount": 15,
+      "maxConnectedViewsCeiling": 64,
+      "maxScaleConsistentTranslationResidual": 0.15,
+      "maxLoopClosureRotationDriftDegrees": 15,
+      "maxLoopClosureRotationDriftFrobenius": 0.5,
+      "minConnectedViewsPositiveRingThreshold": 12,
+      "calibrationAssumption": "ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED"
+    },
+    "evaluatorConfigDigest": "1117e4488c00c9be3b111297ab206f8e9de9c91d74f56518a6066a5de4420b12"
   },
   "8a3fa13c4a52329cb3253d6612cb0fd432398f771577e668a9dccde9942170ff": {
     "success": true,
@@ -1095,7 +1249,21 @@
         "hasTranslationalParallax": true
       }
     },
-    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT"
+    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT",
+    "evaluatorConfig": {
+      "configVersion": "1.0.0",
+      "minMedianParallaxDegrees": 1.2,
+      "minPositiveDepthRatio": 0.55,
+      "maxHomographyInlierRatio": 0.9,
+      "minInlierCount": 15,
+      "maxConnectedViewsCeiling": 64,
+      "maxScaleConsistentTranslationResidual": 0.15,
+      "maxLoopClosureRotationDriftDegrees": 15,
+      "maxLoopClosureRotationDriftFrobenius": 0.5,
+      "minConnectedViewsPositiveRingThreshold": 12,
+      "calibrationAssumption": "ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED"
+    },
+    "evaluatorConfigDigest": "1117e4488c00c9be3b111297ab206f8e9de9c91d74f56518a6066a5de4420b12"
   },
   "974605c5709110d8cbfe6eacb5b10677abc01cef801ba39cb35df9d5f86910e3": {
     "success": true,
@@ -1261,7 +1429,21 @@
         "hasTranslationalParallax": false
       }
     },
-    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT"
+    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT",
+    "evaluatorConfig": {
+      "configVersion": "1.0.0",
+      "minMedianParallaxDegrees": 1.2,
+      "minPositiveDepthRatio": 0.55,
+      "maxHomographyInlierRatio": 0.9,
+      "minInlierCount": 15,
+      "maxConnectedViewsCeiling": 64,
+      "maxScaleConsistentTranslationResidual": 0.15,
+      "maxLoopClosureRotationDriftDegrees": 15,
+      "maxLoopClosureRotationDriftFrobenius": 0.5,
+      "minConnectedViewsPositiveRingThreshold": 12,
+      "calibrationAssumption": "ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED"
+    },
+    "evaluatorConfigDigest": "1117e4488c00c9be3b111297ab206f8e9de9c91d74f56518a6066a5de4420b12"
   },
   "983ec1e080abd7ae6006527caaafb4b85842995e9543a9c988563fc8138310ed": {
     "success": true,
@@ -1618,7 +1800,21 @@
         "hasTranslationalParallax": true
       }
     },
-    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT"
+    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT",
+    "evaluatorConfig": {
+      "configVersion": "1.0.0",
+      "minMedianParallaxDegrees": 1.2,
+      "minPositiveDepthRatio": 0.55,
+      "maxHomographyInlierRatio": 0.9,
+      "minInlierCount": 15,
+      "maxConnectedViewsCeiling": 64,
+      "maxScaleConsistentTranslationResidual": 0.15,
+      "maxLoopClosureRotationDriftDegrees": 15,
+      "maxLoopClosureRotationDriftFrobenius": 0.5,
+      "minConnectedViewsPositiveRingThreshold": 12,
+      "calibrationAssumption": "ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED"
+    },
+    "evaluatorConfigDigest": "1117e4488c00c9be3b111297ab206f8e9de9c91d74f56518a6066a5de4420b12"
   },
   "a40db2fac83a898a7264a60ee3038c55f7ac341e565cf78f4683fe2eaf6814e2": {
     "success": true,
@@ -1628,7 +1824,21 @@
     "imageCount": 141,
     "sampleDimensions": "3072x256",
     "coverageEvaluationMode": "KEYFRAME_RING_SAMPLED",
-    "evaluatedFramesCount": 63
+    "evaluatedFramesCount": 63,
+    "evaluatorConfig": {
+      "configVersion": "1.0.0",
+      "minMedianParallaxDegrees": 1.2,
+      "minPositiveDepthRatio": 0.55,
+      "maxHomographyInlierRatio": 0.9,
+      "minInlierCount": 15,
+      "maxConnectedViewsCeiling": 64,
+      "maxScaleConsistentTranslationResidual": 0.15,
+      "maxLoopClosureRotationDriftDegrees": 15,
+      "maxLoopClosureRotationDriftFrobenius": 0.5,
+      "minConnectedViewsPositiveRingThreshold": 12,
+      "calibrationAssumption": "ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED"
+    },
+    "evaluatorConfigDigest": "1117e4488c00c9be3b111297ab206f8e9de9c91d74f56518a6066a5de4420b12"
   },
   "a60a851383afeb8f74f2f0d85d15cdde2cc518b93fa1a7e225865a1a0ff87767": {
     "success": true,
@@ -1710,14 +1920,42 @@
         "hasTranslationalParallax": true
       }
     },
-    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT"
+    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT",
+    "evaluatorConfig": {
+      "configVersion": "1.0.0",
+      "minMedianParallaxDegrees": 1.2,
+      "minPositiveDepthRatio": 0.55,
+      "maxHomographyInlierRatio": 0.9,
+      "minInlierCount": 15,
+      "maxConnectedViewsCeiling": 64,
+      "maxScaleConsistentTranslationResidual": 0.15,
+      "maxLoopClosureRotationDriftDegrees": 15,
+      "maxLoopClosureRotationDriftFrobenius": 0.5,
+      "minConnectedViewsPositiveRingThreshold": 12,
+      "calibrationAssumption": "ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED"
+    },
+    "evaluatorConfigDigest": "1117e4488c00c9be3b111297ab206f8e9de9c91d74f56518a6066a5de4420b12"
   },
   "b48a2c8c0db9f373b719bb467a6068e43c7c05f431a1f3fb8aae4549c6310847": {
     "success": false,
     "category": "INSUFFICIENT_METADATA_TO_EVALUATE",
     "classification": "UNREADABLE_IMAGE_FILES",
     "classificationReason": "Could not read at least 3 valid image frames",
-    "imageCount": 12
+    "imageCount": 12,
+    "evaluatorConfig": {
+      "configVersion": "1.0.0",
+      "minMedianParallaxDegrees": 1.2,
+      "minPositiveDepthRatio": 0.55,
+      "maxHomographyInlierRatio": 0.9,
+      "minInlierCount": 15,
+      "maxConnectedViewsCeiling": 64,
+      "maxScaleConsistentTranslationResidual": 0.15,
+      "maxLoopClosureRotationDriftDegrees": 15,
+      "maxLoopClosureRotationDriftFrobenius": 0.5,
+      "minConnectedViewsPositiveRingThreshold": 12,
+      "calibrationAssumption": "ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED"
+    },
+    "evaluatorConfigDigest": "1117e4488c00c9be3b111297ab206f8e9de9c91d74f56518a6066a5de4420b12"
   },
   "b543df737b163f3b4bc2c700921901093ba3f37be917cd1262a2d58b9142ac63": {
     "success": true,
@@ -1790,14 +2028,42 @@
         "hasTranslationalParallax": false
       }
     },
-    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT"
+    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT",
+    "evaluatorConfig": {
+      "configVersion": "1.0.0",
+      "minMedianParallaxDegrees": 1.2,
+      "minPositiveDepthRatio": 0.55,
+      "maxHomographyInlierRatio": 0.9,
+      "minInlierCount": 15,
+      "maxConnectedViewsCeiling": 64,
+      "maxScaleConsistentTranslationResidual": 0.15,
+      "maxLoopClosureRotationDriftDegrees": 15,
+      "maxLoopClosureRotationDriftFrobenius": 0.5,
+      "minConnectedViewsPositiveRingThreshold": 12,
+      "calibrationAssumption": "ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED"
+    },
+    "evaluatorConfigDigest": "1117e4488c00c9be3b111297ab206f8e9de9c91d74f56518a6066a5de4420b12"
   },
   "bd044770275c83d719ccc6e08c6b45f7fcf7b3a4e5a97f821420c3163bcf6900": {
     "success": false,
     "category": "INSUFFICIENT_METADATA_TO_EVALUATE",
     "classification": "UNREADABLE_IMAGE_FILES",
     "classificationReason": "Could not read at least 3 valid image frames",
-    "imageCount": 12
+    "imageCount": 12,
+    "evaluatorConfig": {
+      "configVersion": "1.0.0",
+      "minMedianParallaxDegrees": 1.2,
+      "minPositiveDepthRatio": 0.55,
+      "maxHomographyInlierRatio": 0.9,
+      "minInlierCount": 15,
+      "maxConnectedViewsCeiling": 64,
+      "maxScaleConsistentTranslationResidual": 0.15,
+      "maxLoopClosureRotationDriftDegrees": 15,
+      "maxLoopClosureRotationDriftFrobenius": 0.5,
+      "minConnectedViewsPositiveRingThreshold": 12,
+      "calibrationAssumption": "ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED"
+    },
+    "evaluatorConfigDigest": "1117e4488c00c9be3b111297ab206f8e9de9c91d74f56518a6066a5de4420b12"
   },
   "c9591255de30cb4d11301f3a2b0289d86ecb41c2a28c0e669104badef7719dde": {
     "success": true,
@@ -2245,7 +2511,21 @@
         "hasTranslationalParallax": false
       }
     },
-    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT"
+    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT",
+    "evaluatorConfig": {
+      "configVersion": "1.0.0",
+      "minMedianParallaxDegrees": 1.2,
+      "minPositiveDepthRatio": 0.55,
+      "maxHomographyInlierRatio": 0.9,
+      "minInlierCount": 15,
+      "maxConnectedViewsCeiling": 64,
+      "maxScaleConsistentTranslationResidual": 0.15,
+      "maxLoopClosureRotationDriftDegrees": 15,
+      "maxLoopClosureRotationDriftFrobenius": 0.5,
+      "minConnectedViewsPositiveRingThreshold": 12,
+      "calibrationAssumption": "ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED"
+    },
+    "evaluatorConfigDigest": "1117e4488c00c9be3b111297ab206f8e9de9c91d74f56518a6066a5de4420b12"
   },
   "d7864baec5b7a7ccff3f6ca50a0a588962b498440737dbe4032dbd5dd7231a3d": {
     "success": true,
@@ -2344,7 +2624,21 @@
         "hasTranslationalParallax": false
       }
     },
-    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT"
+    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT",
+    "evaluatorConfig": {
+      "configVersion": "1.0.0",
+      "minMedianParallaxDegrees": 1.2,
+      "minPositiveDepthRatio": 0.55,
+      "maxHomographyInlierRatio": 0.9,
+      "minInlierCount": 15,
+      "maxConnectedViewsCeiling": 64,
+      "maxScaleConsistentTranslationResidual": 0.15,
+      "maxLoopClosureRotationDriftDegrees": 15,
+      "maxLoopClosureRotationDriftFrobenius": 0.5,
+      "minConnectedViewsPositiveRingThreshold": 12,
+      "calibrationAssumption": "ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED"
+    },
+    "evaluatorConfigDigest": "1117e4488c00c9be3b111297ab206f8e9de9c91d74f56518a6066a5de4420b12"
   },
   "dad9a0d8b36128f3ea8c6ac78316fa0e8a8edb066aea0ed24bf3f6b03ddf0cbe": {
     "success": true,
@@ -2413,7 +2707,21 @@
         "hasTranslationalParallax": true
       }
     },
-    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT"
+    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT",
+    "evaluatorConfig": {
+      "configVersion": "1.0.0",
+      "minMedianParallaxDegrees": 1.2,
+      "minPositiveDepthRatio": 0.55,
+      "maxHomographyInlierRatio": 0.9,
+      "minInlierCount": 15,
+      "maxConnectedViewsCeiling": 64,
+      "maxScaleConsistentTranslationResidual": 0.15,
+      "maxLoopClosureRotationDriftDegrees": 15,
+      "maxLoopClosureRotationDriftFrobenius": 0.5,
+      "minConnectedViewsPositiveRingThreshold": 12,
+      "calibrationAssumption": "ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED"
+    },
+    "evaluatorConfigDigest": "1117e4488c00c9be3b111297ab206f8e9de9c91d74f56518a6066a5de4420b12"
   },
   "e134b2fd27704376d37e78566abc56ea47a2bc2634f4b1facb8786d6e3859a15": {
     "success": true,
@@ -2423,7 +2731,21 @@
     "imageCount": 12,
     "sampleDimensions": "256x256",
     "coverageEvaluationMode": "ALL_CANDIDATE_FRAMES_EVALUATED",
-    "evaluatedFramesCount": 12
+    "evaluatedFramesCount": 12,
+    "evaluatorConfig": {
+      "configVersion": "1.0.0",
+      "minMedianParallaxDegrees": 1.2,
+      "minPositiveDepthRatio": 0.55,
+      "maxHomographyInlierRatio": 0.9,
+      "minInlierCount": 15,
+      "maxConnectedViewsCeiling": 64,
+      "maxScaleConsistentTranslationResidual": 0.15,
+      "maxLoopClosureRotationDriftDegrees": 15,
+      "maxLoopClosureRotationDriftFrobenius": 0.5,
+      "minConnectedViewsPositiveRingThreshold": 12,
+      "calibrationAssumption": "ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED"
+    },
+    "evaluatorConfigDigest": "1117e4488c00c9be3b111297ab206f8e9de9c91d74f56518a6066a5de4420b12"
   },
   "e314323c95b1f0d461e0b21d30e2820a6add7fef746ad284357fad1bab11fc45": {
     "success": true,
@@ -2579,13 +2901,41 @@
         "hasTranslationalParallax": false
       }
     },
-    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT"
+    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT",
+    "evaluatorConfig": {
+      "configVersion": "1.0.0",
+      "minMedianParallaxDegrees": 1.2,
+      "minPositiveDepthRatio": 0.55,
+      "maxHomographyInlierRatio": 0.9,
+      "minInlierCount": 15,
+      "maxConnectedViewsCeiling": 64,
+      "maxScaleConsistentTranslationResidual": 0.15,
+      "maxLoopClosureRotationDriftDegrees": 15,
+      "maxLoopClosureRotationDriftFrobenius": 0.5,
+      "minConnectedViewsPositiveRingThreshold": 12,
+      "calibrationAssumption": "ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED"
+    },
+    "evaluatorConfigDigest": "1117e4488c00c9be3b111297ab206f8e9de9c91d74f56518a6066a5de4420b12"
   },
   "e6aeea5d97f20e34afd0e002408e0cc1ff14b34e1361abce688e36549ecbf212": {
     "success": false,
     "category": "INSUFFICIENT_METADATA_TO_EVALUATE",
     "classification": "UNREADABLE_IMAGE_FILES",
     "classificationReason": "Could not read at least 3 valid image frames",
-    "imageCount": 12
+    "imageCount": 12,
+    "evaluatorConfig": {
+      "configVersion": "1.0.0",
+      "minMedianParallaxDegrees": 1.2,
+      "minPositiveDepthRatio": 0.55,
+      "maxHomographyInlierRatio": 0.9,
+      "minInlierCount": 15,
+      "maxConnectedViewsCeiling": 64,
+      "maxScaleConsistentTranslationResidual": 0.15,
+      "maxLoopClosureRotationDriftDegrees": 15,
+      "maxLoopClosureRotationDriftFrobenius": 0.5,
+      "minConnectedViewsPositiveRingThreshold": 12,
+      "calibrationAssumption": "ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED"
+    },
+    "evaluatorConfigDigest": "1117e4488c00c9be3b111297ab206f8e9de9c91d74f56518a6066a5de4420b12"
   }
 }

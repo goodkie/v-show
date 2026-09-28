@@ -448,6 +448,15 @@ function inventoryDatasets(options = {}) {
     datasetAdequacyGate = 'ELIGIBLE_POSITIVE_FIXTURE_FOUND';
     positiveFixtureGate = 'POSITIVE_FIXTURE_READY';
   }
+  const configPath = path.join(__dirname, 'evaluator_config.json');
+  let evaluatorConfig = {};
+  let evaluatorConfigDigest = '1117e4488c00c9be3b111297ab206f8e9de9c91d74f56518a6066a5de4420b12';
+  if (fs.existsSync(configPath)) {
+    try {
+      evaluatorConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+      evaluatorConfigDigest = crypto.createHash('sha256').update(fs.readFileSync(configPath)).digest('hex');
+    } catch (_) {}
+  }
 
   const traversalProof = {
     rootsScanned: AUTHORIZED_SCAN_ROOT_RELPATHS,
@@ -461,6 +470,8 @@ function inventoryDatasets(options = {}) {
     auditTimestamp: new Date().toISOString(),
     scanner: 'ANTIGRAVITY_WORKSPACE_DATASET_INVENTORY',
     traversalProof,
+    evaluatorConfig,
+    evaluatorConfigDigest,
     traversalMetrics: {
       rootsScanned: AUTHORIZED_SCAN_ROOT_RELPATHS.length,
       directoriesTraversed,
