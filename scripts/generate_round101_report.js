@@ -193,21 +193,18 @@ function generateRound101Report(options = {}) {
   lines.push('| Category | Canonical Digest (16-char) | Instances | Evaluated Frames | Calibration | Max Baseline | Connected Views | Median Parallax | Loop Closure | Primary Directory | Geometry Evaluation / Reason |');
   lines.push('| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :--- | :--- |');
 
-  for (const ds of audit.uniqueDatasets) {
-    const digestPrefix = ds.aggregateInputSha256 ? `${ds.aggregateInputSha256.substring(0, 16)}...` : 'N/A';
-    const instancesCount = ds.directoryInstances ? ds.directoryInstances.length : (ds.instances ? ds.instances.length : 1);
-    const primaryDir = ds.directoryInstances ? ds.directoryInstances[0] : (ds.instances ? ds.instances[0] : 'N/A');
-    const dirDisplay = instancesCount > 1 ? `\`${primaryDir}\` (${instancesCount} instances)` : `\`${primaryDir}\``;
-    const geom = (cache.datasets && cache.datasets[primaryDir]) || {};
-    const evalFrames = ds.imageCount !== null && ds.imageCount !== undefined ? ds.imageCount : 'N/A';
-    const calib = ds.hasKnownCalibration ? 'R6_KNOWN' : 'NONE (Scale-Free)';
-    const maxB = ds.maxBaselineMeters !== null && ds.maxBaselineMeters !== undefined ? `${ds.maxBaselineMeters.toFixed(2)}m` : 'N/A';
-    const connViews = geom.connectedViews !== undefined && geom.connectedViews !== null ? `${geom.connectedViews}/${evalFrames}` : 'N/A';
-    const parallax = geom.medianParallaxDegrees !== undefined && geom.medianParallaxDegrees !== null ? `${geom.medianParallaxDegrees.toFixed(2)}°` : 'N/A';
-    const loopStatus = geom.loopClosureMet ? 'PASSED' : (geom.connectedViews ? 'FAILED' : 'N/A');
-    const reason = ds.classificationReason || ds.eligibilityReason || 'N/A';
-
-    lines.push(`| \`${ds.classificationCategory || ds.category}\` | \`${digestPrefix}\` | ${instancesCount} | ${evalFrames} | ${calib} | ${maxB} | ${connViews} | ${parallax} | ${loopStatus} | ${dirDisplay} | ${reason} |`);
+  for (const ds of (audit.uniqueDatasets || [])) {
+    const digShort = ds.aggregateInputSha256 ? `${ds.aggregateInputSha256.substring(0, 16)}...` : 'EXCLUDED_RESTRIC...';
+    const instCount = ds.directoryInstances ? ds.directoryInstances.length : 1;
+    const primDir = ds.directoryInstances && ds.directoryInstances[0] ? ds.directoryInstances[0] : (ds.instances && ds.instances[0] ? ds.instances[0] : 'N/A');
+    const frames = ds.metrics && ds.metrics.evaluatedFramesCount ? ds.metrics.evaluatedFramesCount : (ds.imageCount || 'N/A');
+    const calib = ds.hasKnownCalibration ? 'R6 Ground Truth' : 'NONE (Scale-Free)';
+    const base = ds.maxBaselineMeters ? `${ds.maxBaselineMeters.toFixed(2)} m` : 'N/A';
+    const conn = (typeof ds.connectedViews === 'number') ? `${ds.connectedViews}/${frames}` : 'N/A';
+    const par = (ds.metrics && typeof ds.metrics.globalMedianParallaxDegrees === 'number') ? `${ds.metrics.globalMedianParallaxDegrees.toFixed(2)}°` : 'N/A';
+    const loop = ds.loopClosurePassed === true ? 'PASSED' : (ds.loopClosurePassed === false ? 'FAILED' : 'N/A');
+    const reas = ds.classificationReason || ds.eligibilityReason || 'N/A';
+    lines.push(`| \`${ds.category || ds.classificationCategory}\` | \`${digShort}\` | ${instCount} | ${frames} | ${calib} | ${base} | ${conn} | ${par} | ${loop} | \`${primDir}\`${instCount > 1 ? ` (${instCount} instances)` : ''} | ${reas} |`);
   }
   lines.push('\n---\n');
 
