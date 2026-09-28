@@ -1,9 +1,9 @@
 {
   "receiptSchemaVersion": "R47_EXECUTION_RECEIPT_V1",
   "executionTimestamps": {
-    "startTime": "2026-09-28T04:57:28.674Z",
-    "endTime": "2026-09-28T04:58:56.128Z",
-    "durationMs": 87450
+    "startTime": "2026-09-28T05:00:01.286Z",
+    "endTime": "2026-09-28T05:01:28.440Z",
+    "durationMs": 87150
   },
   "runnerMetadata": {
     "sourceFile": "test/test_stage2_true3d_pipeline.js",
@@ -12,11 +12,11 @@
     "platform": "win32"
   },
   "gitEvidence": {
-    "observedHeadSha": "a5542905a9e8f63fa4a21d224ad8052e0e8e661f",
-    "expectedHeadSha": null,
-    "headBindingMatched": false,
-    "worktreeClean": false,
-    "rawGitStatusPorcelain": "M test/test_stage2_true3d_pipeline.js\n M virtual-tradeshow-commercial-v1/.gitattributes\n M virtual-tradeshow-commercial-v1/_clean_deploy/client/diagnostics/wilo-spz-only.html\n M virtual-tradeshow-commercial-v1/_clean_deploy/server/index.js\n M virtual-tradeshow-commercial-v1/_railway_deploy/client/diagnostics/wilo-spz-only.html\n M virtual-tradeshow-commercial-v1/_railway_deploy/server/index.js\n M virtual-tradeshow-commercial-v1/app_build/client/diagnostics/wilo-spz-only.html\n M virtual-tradeshow-commercial-v1/app_build/server/index.js\n M virtual-tradeshow-commercial-v1/production_artifacts/AUTHLINEAGE_RECEIPT.json\n M virtual-tradeshow-commercial-v1/production_artifacts/AUTHLINEAGE_RECONSTRUCTED_SPATIAL_MODEL.ply\n M virtual-tradeshow-commercial-v1/production_artifacts/R47_TEST_EXECUTION_RECEIPT.json\n M virtual-tradeshow-commercial-v1/server/index.js\n M virtual-tradeshow-commercial-v1/server/spatial_reconstruction_engine.py\n M virtual-tradeshow-commercial-v1/server/spatial_reconstruction_worker.js\n?? virtual-tradeshow-commercial-v1/production_artifacts/R89_AUTHENTIC_PRO_VIEWER_OPTICAL_PROOF_FRONT.png\n?? virtual-tradeshow-commercial-v1/production_artifacts/R89_AUTHENTIC_PRO_VIEWER_OPTICAL_PROOF_LEFT.png"
+    "observedHeadSha": "8256766c72247b17b48ffa807074e51080859b0a",
+    "expectedHeadSha": "8256766c72247b17b48ffa807074e51080859b0a",
+    "headBindingMatched": true,
+    "worktreeClean": true,
+    "rawGitStatusPorcelain": "(clean)"
   },
   "suiteResults": {
     "totalTests": 19,
