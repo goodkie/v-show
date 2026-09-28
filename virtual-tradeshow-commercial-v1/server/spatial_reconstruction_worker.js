@@ -1687,7 +1687,9 @@ function executeAuthenticReconstructionWorker(options = {}) {
                 SCALE_DISCLOSURE: parsed.scaleDisclosure || 'SCALE_FREE_RECONSTRUCTION_ARBITRARY_WORLD_SCALE',
                 COORDINATE_SYSTEM: parsed.coordinateSystem || 'SCALE_FREE_UNIFIED_GLOBAL_SFM_FRAME',
                 SPARSE_SFM_CLASSIFICATION: 'SPARSE_SFM_INTERNAL_PROOF',
-                DENSE_MVS_CLASSIFICATION: 'DENSE_MVS_BOOTH_RECONSTRUCTION',
+                DENSE_MVS_CLASSIFICATION: parsed.outputClassification || 'STEREO_DERIVED_FUSED_MVS_INTERNAL_PROOF',
+                GLOBAL_COVERAGE_GATE: parsed.cameraCoverageAndGraphProof?.graphConnectivity?.globalCoverageGate || 'NOT_MET_PARTIAL_11_OF_12',
+                LOOP_CLOSURE_GATE: parsed.cameraCoverageAndGraphProof?.loopClosureResidual?.status || 'LOOP_CLOSURE_FAILED_EXCEEDS_TOLERANCE',
                 OWNER_REVIEW_GATE: 'HOLD',
                 ENGINEERING_HOLD: 'ACTIVE'
               }
