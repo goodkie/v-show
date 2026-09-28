@@ -1639,7 +1639,7 @@ function executeAuthenticReconstructionWorker(options = {}) {
               success: true,
               jobId,
               status: 'COMPLETED',
-              engine: parsed.engine || 'OPENCV_SIFT_CALIBRATED_GLOBAL_SFM',
+              engine: parsed.engine || 'OPENCV_SIFT_INCREMENTAL_GLOBAL_SFM',
               engineProbes,
               antiSubstitutionEnforced: true,
               newModelGenerated: true,
@@ -1664,12 +1664,15 @@ function executeAuthenticReconstructionWorker(options = {}) {
               reconstructionExecution: {
                 newModelGenerated: true,
                 causalLineageProven: true,
-                coordinateSystem: parsed.coordinateSystem || 'UNIFIED_GLOBAL_WORLD_COORDINATE_FRAME',
+                coordinateSystem: parsed.coordinateSystem || 'SCALE_FREE_UNIFIED_GLOBAL_SFM_FRAME',
+                scaleDisclosure: parsed.scaleDisclosure || 'SCALE_FREE_RECONSTRUCTION_ARBITRARY_WORLD_SCALE',
                 outputPlyPath: parsed.outputPlyPath,
                 outputPlySha: parsed.outputPlySha,
                 outputVertexCount: parsed.outputVertexCount,
                 outputSize: parsed.outputSize,
-                boundingBox: parsed.boundingBox,
+                boundingBoxSfmUnits: parsed.boundingBoxSfmUnits || parsed.boundingBox,
+                boundingBox: parsed.boundingBoxSfmUnits || parsed.boundingBox,
+                calibrationProvenance: parsed.calibrationProvenance,
                 receiptPath: parsed.receiptPath,
                 refinementMetrics: parsed.refinementMetrics
               },
@@ -1678,7 +1681,9 @@ function executeAuthenticReconstructionWorker(options = {}) {
                 NEW_3D_MODEL_GENERATION: 'VERIFIED',
                 INPUT_TO_OUTPUT_CAUSAL_LINEAGE: 'VERIFIED',
                 ACTUAL_ENGINE_EXECUTION: 'VERIFIED',
-                COORDINATE_SYSTEM: 'UNIFIED_GLOBAL_WORLD_COORDINATE_FRAME',
+                CALIBRATION_STATUS: parsed.calibrationProvenance?.calibrationStatus || 'ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED',
+                SCALE_DISCLOSURE: parsed.scaleDisclosure || 'SCALE_FREE_RECONSTRUCTION_ARBITRARY_WORLD_SCALE',
+                COORDINATE_SYSTEM: parsed.coordinateSystem || 'SCALE_FREE_UNIFIED_GLOBAL_SFM_FRAME',
                 OWNER_REVIEW_GATE: 'HOLD',
                 ENGINEERING_HOLD: 'ACTIVE'
               }

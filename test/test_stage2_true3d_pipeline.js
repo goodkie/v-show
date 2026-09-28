@@ -321,22 +321,26 @@ async function main() {
   });
 
   // ── [3b] Authentic Local OpenCV SfM 3D Reconstruction & Causal Lineage Execution ──
-  runTest('3b. Authentic Local OpenCV Calibrated Global SfM 3D Reconstruction & Causal Lineage Execution (Round 90)', () => {
+  runTest('3b. Authentic Local OpenCV Incremental Global SfM 3D Reconstruction & Causal Lineage Execution (Round 91)', () => {
     const targetCutSha = expectedHead || (() => {
       try { return execSync('git rev-parse HEAD', { cwd: REPO_ROOT, encoding: 'utf8' }).trim(); }
       catch (_) { return null; }
     })();
+    const testOutputDir = requireClean
+      ? fs.mkdtempSync(path.join(os.tmpdir(), 'vshow_clean_sfm_'))
+      : path.join(REPO_ROOT, 'virtual-tradeshow-commercial-v1/production_artifacts');
     authReconResult = executeAuthenticReconstructionWorker({
       enableLocalOpencvSfm: true,
-      outputDir: path.join(REPO_ROOT, 'virtual-tradeshow-commercial-v1/production_artifacts'),
+      outputDir: testOutputDir,
       cutSha: targetCutSha
     });
     assert.strictEqual(authReconResult.success, true, 'Reconstruction worker must execute with terminal success');
     assert.strictEqual(authReconResult.status, 'COMPLETED', 'Status must be COMPLETED');
-    assert.strictEqual(authReconResult.engine, 'OPENCV_SIFT_CALIBRATED_GLOBAL_SFM');
+    assert.strictEqual(authReconResult.engine, 'OPENCV_SIFT_INCREMENTAL_GLOBAL_SFM');
     assert.strictEqual(authReconResult.newModelGenerated, true, 'New model generation must be proven');
     assert.strictEqual(authReconResult.causalLineageProven, true, 'Input-to-output causal lineage must be proven');
-    assert.strictEqual(authReconResult.reconstructionExecution.coordinateSystem, 'UNIFIED_GLOBAL_WORLD_COORDINATE_FRAME');
+    assert.strictEqual(authReconResult.reconstructionExecution.coordinateSystem, 'SCALE_FREE_UNIFIED_GLOBAL_SFM_FRAME');
+    assert.strictEqual(authReconResult.reconstructionExecution.scaleDisclosure, 'SCALE_FREE_RECONSTRUCTION_ARBITRARY_WORLD_SCALE');
     assert.ok(authReconResult.reconstructionExecution.outputVertexCount > 0, 'Vertex count must be positive');
     assert.ok(fs.existsSync(authReconResult.reconstructionExecution.outputPlyPath), 'Output PLY artifact must exist on disk');
 
@@ -352,13 +356,23 @@ async function main() {
     assert.ok(metrics.totalTracksCount > 0, 'Total multi-view tracks must be positive');
     assert.ok(metrics.reprojectionRmsePixels > 0 && metrics.reprojectionRmsePixels < 5.0, 'Reprojection RMSE must be sub-5-pixel');
     assert.ok(metrics.trackLengthDistribution, 'Track length distribution must be present');
+    
+    // Assert presence of persistent tracks observed in >= 3 distinct views (Round 91 mandate)
+    const ge3Tracks = Object.entries(metrics.trackLengthDistribution)
+      .filter(([len]) => parseInt(len, 10) >= 3)
+      .reduce((sum, [, count]) => sum + count, 0);
+    assert.ok(ge3Tracks > 0, `Inlier set must contain persistent tracks observed in >= 3 distinct views (found ${ge3Tracks})`);
+    
+    assert.ok(metrics.initialReprojectionRmsePixels > 0, 'Initial reprojection RMSE must be reported');
+    assert.strictEqual(metrics.optimizationAlgorithm, 'ALTERNATING_LEVENBERG_MARQUARDT_PNP_AND_LANDMARK');
     assert.strictEqual(metrics.convergenceStatus, 'CONVERGED', 'Optimization must converge');
 
     // Cryptographic receipt assertions
     assert.ok(fs.existsSync(authReconResult.reconstructionExecution.receiptPath), 'Lineage receipt must exist on disk');
     const receiptContent = JSON.parse(fs.readFileSync(authReconResult.reconstructionExecution.receiptPath, 'utf8'));
-    assert.strictEqual(receiptContent.receiptSchemaVersion, 'AUTHLINEAGE_RECEIPT_V3_CALIBRATED_GLOBAL_SFM');
-    assert.strictEqual(receiptContent.calibrationProvenance.calibrationStatus, 'GLOBALLY_CONSISTENT_SELF_CALIBRATED_SFM');
+    assert.strictEqual(receiptContent.receiptSchemaVersion, 'AUTHLINEAGE_RECEIPT_V4_TRUE_SFM_JOINT_BA');
+    assert.strictEqual(receiptContent.calibrationProvenance.calibrationStatus, 'ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED');
+    assert.strictEqual(receiptContent.calibrationProvenance.selfCalibrated, false);
     assert.strictEqual(receiptContent.outputArtifact.sha256, authReconResult.reconstructionExecution.outputPlySha);
     assert.strictEqual(receiptContent.outputArtifact.sizeBytes, stat.size);
     assert.strictEqual(receiptContent.reconstructionGeometry.vertexCount, authReconResult.reconstructionExecution.outputVertexCount);
@@ -376,18 +390,22 @@ async function main() {
     assert.strictEqual(authReconResult.truthLedger.NEW_3D_MODEL_GENERATION, 'VERIFIED');
     assert.strictEqual(authReconResult.truthLedger.INPUT_TO_OUTPUT_CAUSAL_LINEAGE, 'VERIFIED');
     assert.strictEqual(authReconResult.truthLedger.ACTUAL_ENGINE_EXECUTION, 'VERIFIED');
-    assert.strictEqual(authReconResult.truthLedger.COORDINATE_SYSTEM, 'UNIFIED_GLOBAL_WORLD_COORDINATE_FRAME');
+    assert.strictEqual(authReconResult.truthLedger.CALIBRATION_STATUS, 'ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED');
+    assert.strictEqual(authReconResult.truthLedger.SCALE_DISCLOSURE, 'SCALE_FREE_RECONSTRUCTION_ARBITRARY_WORLD_SCALE');
+    assert.strictEqual(authReconResult.truthLedger.COORDINATE_SYSTEM, 'SCALE_FREE_UNIFIED_GLOBAL_SFM_FRAME');
     assert.strictEqual(authReconResult.truthLedger.OWNER_REVIEW_GATE, 'HOLD');
 
     console.log(`    - Reconstruction Status: ${authReconResult.status} (TERMINAL SUCCESS)`);
     console.log(`    - Engine:                ${authReconResult.engine}`);
     console.log(`    - Coordinate Frame:      ${authReconResult.reconstructionExecution.coordinateSystem}`);
+    console.log(`    - Scale Disclosure:      ${authReconResult.reconstructionExecution.scaleDisclosure}`);
+    console.log(`    - Calibration Status:    ${receiptContent.calibrationProvenance.calibrationStatus} (selfCalibrated=${receiptContent.calibrationProvenance.selfCalibrated})`);
     console.log(`    - Output Model:          ${path.basename(authReconResult.reconstructionExecution.outputPlyPath)} (${stat.size} bytes)`);
     console.log(`    - Vertex Count:          ${authReconResult.reconstructionExecution.outputVertexCount} 3D spatial points`);
     console.log(`    - Model SHA-256:         ${authReconResult.reconstructionExecution.outputPlySha}`);
-    console.log(`    - Reprojection RMSE:     ${metrics.reprojectionRmsePixels} px (Sub-pixel BA precision)`);
+    console.log(`    - Pre / Post RMSE:       ${metrics.initialReprojectionRmsePixels} px -> ${metrics.reprojectionRmsePixels} px (Joint BA)`);
     console.log(`    - Mean / Median Error:   ${metrics.meanReprojectionErrorPixels} / ${metrics.medianReprojectionErrorPixels} px`);
-    console.log(`    - Multi-View Tracks:     ${metrics.totalTracksCount} tracks across ${metrics.registeredViewCount} views`);
+    console.log(`    - Multi-View Tracks:     ${metrics.totalTracksCount} tracks (>=3 views: ${ge3Tracks}) across ${metrics.registeredViewCount} views`);
   });
 
   // ── [4] Dynamic Parser-Derived PLY Schema & Record Stride ───────────────────
