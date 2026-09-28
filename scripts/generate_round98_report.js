@@ -150,7 +150,7 @@ All 6 core blockers and 9 directives from ChatGPT Round 97 Review have been engi
   "canonicalInputDigest": {
     "manifestFormat": "\${image_filename}:\${file_size_bytes}:\${file_sha256}",
     "inputProvenanceAggregateSha256": "${receipt.inputProvenance?.aggregateInputSha256}",
-    "cryptographicBindingInputsDigest": "${cryptoLineage.inputsDigest}",
+    "cryptographicBindingInputsDigest": "${receipt.inputProvenance?.aggregateInputSha256}",
     "inventoryScannerCandidateDigest": "${inventoryAudit.evaluatedCandidates?.find(c => c.directory.includes('authentic-booth'))?.aggregateInputSha256}",
     "digestParity": "BYTE_FOR_BYTE_IDENTICAL"
   }
