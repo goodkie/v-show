@@ -1674,7 +1674,9 @@ function executeAuthenticReconstructionWorker(options = {}) {
                 boundingBox: parsed.boundingBoxSfmUnits || parsed.boundingBox,
                 calibrationProvenance: parsed.calibrationProvenance,
                 receiptPath: parsed.receiptPath,
-                refinementMetrics: parsed.refinementMetrics
+                refinementMetrics: parsed.refinementMetrics,
+                cameraCoverageAndGraphProof: parsed.cameraCoverageAndGraphProof,
+                sparseSfmSeed: parsed.sparseSfmSeed
               },
               truthLedger: {
                 RECONSTRUCTION_FROM_INPUTS: 'VERIFIED',
@@ -1684,6 +1686,8 @@ function executeAuthenticReconstructionWorker(options = {}) {
                 CALIBRATION_STATUS: parsed.calibrationProvenance?.calibrationStatus || 'ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED',
                 SCALE_DISCLOSURE: parsed.scaleDisclosure || 'SCALE_FREE_RECONSTRUCTION_ARBITRARY_WORLD_SCALE',
                 COORDINATE_SYSTEM: parsed.coordinateSystem || 'SCALE_FREE_UNIFIED_GLOBAL_SFM_FRAME',
+                SPARSE_SFM_CLASSIFICATION: 'SPARSE_SFM_INTERNAL_PROOF',
+                DENSE_MVS_CLASSIFICATION: 'DENSE_MVS_BOOTH_RECONSTRUCTION',
                 OWNER_REVIEW_GATE: 'HOLD',
                 ENGINEERING_HOLD: 'ACTIVE'
               }

@@ -321,7 +321,8 @@ async function main() {
   });
 
   // ── [3b] Authentic Local OpenCV SfM 3D Reconstruction & Causal Lineage Execution ──
-  runTest('3b. Authentic Local OpenCV Incremental Global SfM 3D Reconstruction & Causal Lineage Execution (Round 91)', () => {
+  // ── [3b] Authentic Local OpenCV SfM 3D Reconstruction & Dense MVS Execution ──
+  runTest('3b. Authentic Local OpenCV Incremental Global SfM & Dense MVS Booth Reconstruction (Round 92)', () => {
     const targetCutSha = expectedHead || (() => {
       try { return execSync('git rev-parse HEAD', { cwd: REPO_ROOT, encoding: 'utf8' }).trim(); }
       catch (_) { return null; }
@@ -341,7 +342,7 @@ async function main() {
     assert.strictEqual(authReconResult.causalLineageProven, true, 'Input-to-output causal lineage must be proven');
     assert.strictEqual(authReconResult.reconstructionExecution.coordinateSystem, 'SCALE_FREE_UNIFIED_GLOBAL_SFM_FRAME');
     assert.strictEqual(authReconResult.reconstructionExecution.scaleDisclosure, 'SCALE_FREE_RECONSTRUCTION_ARBITRARY_WORLD_SCALE');
-    assert.ok(authReconResult.reconstructionExecution.outputVertexCount > 0, 'Vertex count must be positive');
+    assert.ok(authReconResult.reconstructionExecution.outputVertexCount >= 1000, 'Dense MVS vertex count must be >= 1000 points');
     assert.ok(fs.existsSync(authReconResult.reconstructionExecution.outputPlyPath), 'Output PLY artifact must exist on disk');
 
     const stat = fs.statSync(authReconResult.reconstructionExecution.outputPlyPath);
@@ -354,25 +355,54 @@ async function main() {
     assert.ok(metrics, 'Refinement metrics must be reported');
     assert.strictEqual(metrics.registeredViewCount, 12, 'All 12 views must be registered');
     assert.ok(metrics.totalTracksCount > 0, 'Total multi-view tracks must be positive');
-    assert.ok(metrics.reprojectionRmsePixels > 0 && metrics.reprojectionRmsePixels < 5.0, 'Reprojection RMSE must be sub-5-pixel');
+    assert.ok(metrics.finalInlierMetrics.reprojectionRmsePixels > 0 && metrics.finalInlierMetrics.reprojectionRmsePixels < 1.0, 'Inlier reprojection RMSE must be sub-pixel');
     assert.ok(metrics.trackLengthDistribution, 'Track length distribution must be present');
     
-    // Assert presence of persistent tracks observed in >= 3 distinct views (Round 91 mandate)
+    // Assert presence of persistent tracks observed in >= 3 distinct views (Round 91/92 mandate)
     const ge3Tracks = Object.entries(metrics.trackLengthDistribution)
       .filter(([len]) => parseInt(len, 10) >= 3)
       .reduce((sum, [, count]) => sum + count, 0);
     assert.ok(ge3Tracks > 0, `Inlier set must contain persistent tracks observed in >= 3 distinct views (found ${ge3Tracks})`);
+    assert.strictEqual(metrics.ge3TracksCount, ge3Tracks, 'ge3TracksCount metric must match sum');
     
-    assert.ok(metrics.initialReprojectionRmsePixels > 0, 'Initial reprojection RMSE must be reported');
-    assert.strictEqual(metrics.optimizationAlgorithm, 'ALTERNATING_LEVENBERG_MARQUARDT_PNP_AND_LANDMARK');
+    // Explicit convergence criteria & iteration history assertions (Round 92)
+    assert.ok(metrics.convergenceCriteria, 'Explicit convergence criteria must be present');
+    assert.strictEqual(metrics.convergenceCriteria.relativeRmseTolerance, 0.001, 'Relative RMSE tolerance must be 1e-3');
     assert.strictEqual(metrics.convergenceStatus, 'CONVERGED', 'Optimization must converge');
+    assert.strictEqual(metrics.converged, true, 'Convergence flag must be true');
+    assert.ok(metrics.iterationHistory && metrics.iterationHistory.length >= 3, 'Iteration history must track >= 3 iterations');
+
+    // Apples-to-apples fixed observation set validation (Round 92)
+    assert.ok(metrics.fixedObservationSet, 'Fixed observation set metrics must be reported');
+    assert.ok(metrics.fixedObservationSet.initialRmsePixels > 0, 'Initial fixed-set RMSE must be positive');
+    assert.ok(metrics.fixedObservationSet.postOptimizationRmsePixels > 0, 'Post-optimization fixed-set RMSE must be positive');
+    assert.ok(metrics.fixedObservationSet.rmseReductionPercent > 0, 'RMSE reduction on fixed set must be positive');
+    assert.ok(metrics.outlierRejectionMetrics, 'Outlier rejection metrics must be reported');
+
+    // Camera coverage and graph connectivity proof (Round 92)
+    const camProof = authReconResult.reconstructionExecution.cameraCoverageAndGraphProof;
+    assert.ok(camProof, 'Camera coverage and graph proof must be present');
+    assert.strictEqual(camProof.optimizedCameraCount, 12, 'All 12 cameras must be optimized');
+    assert.strictEqual(camProof.perCameraStatistics.length, 12, 'Statistics for all 12 views must be reported');
+    assert.strictEqual(camProof.graphConnectivity.isConnected, true, 'Camera graph must be fully connected');
+    assert.strictEqual(camProof.graphConnectivity.connectedComponentCount, 1, 'Camera graph must form a single connected component');
+    assert.strictEqual(camProof.graphConnectivity.totalViewsInComponent, 12, 'All 12 views must be reachable in single component');
+    assert.strictEqual(camProof.loopClosureResidual.status, 'VERIFIED_CLOSED_RING', 'Loop closure must be verified closed ring');
+
+    // Dual artifact & honest classification assertions (Round 92)
+    const sparseSeed = authReconResult.reconstructionExecution.sparseSfmSeed;
+    assert.ok(sparseSeed, 'Sparse SfM seed must be reported');
+    assert.strictEqual(sparseSeed.classification, 'SPARSE_SFM_INTERNAL_PROOF', 'Sparse SfM must be honestly classified as SPARSE_SFM_INTERNAL_PROOF');
+    assert.strictEqual(authReconResult.truthLedger.SPARSE_SFM_CLASSIFICATION, 'SPARSE_SFM_INTERNAL_PROOF');
+    assert.strictEqual(authReconResult.truthLedger.DENSE_MVS_CLASSIFICATION, 'DENSE_MVS_BOOTH_RECONSTRUCTION');
 
     // Cryptographic receipt assertions
     assert.ok(fs.existsSync(authReconResult.reconstructionExecution.receiptPath), 'Lineage receipt must exist on disk');
     const receiptContent = JSON.parse(fs.readFileSync(authReconResult.reconstructionExecution.receiptPath, 'utf8'));
-    assert.strictEqual(receiptContent.receiptSchemaVersion, 'AUTHLINEAGE_RECEIPT_V4_TRUE_SFM_JOINT_BA');
+    assert.strictEqual(receiptContent.receiptSchemaVersion, 'AUTHLINEAGE_RECEIPT_V5_TRUE_SFM_DENSE_MVS');
     assert.strictEqual(receiptContent.calibrationProvenance.calibrationStatus, 'ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED');
     assert.strictEqual(receiptContent.calibrationProvenance.selfCalibrated, false);
+    assert.strictEqual(receiptContent.outputArtifact.classification, 'DENSE_MVS_BOOTH_RECONSTRUCTION');
     assert.strictEqual(receiptContent.outputArtifact.sha256, authReconResult.reconstructionExecution.outputPlySha);
     assert.strictEqual(receiptContent.outputArtifact.sizeBytes, stat.size);
     assert.strictEqual(receiptContent.reconstructionGeometry.vertexCount, authReconResult.reconstructionExecution.outputVertexCount);
@@ -400,12 +430,16 @@ async function main() {
     console.log(`    - Coordinate Frame:      ${authReconResult.reconstructionExecution.coordinateSystem}`);
     console.log(`    - Scale Disclosure:      ${authReconResult.reconstructionExecution.scaleDisclosure}`);
     console.log(`    - Calibration Status:    ${receiptContent.calibrationProvenance.calibrationStatus} (selfCalibrated=${receiptContent.calibrationProvenance.selfCalibrated})`);
-    console.log(`    - Output Model:          ${path.basename(authReconResult.reconstructionExecution.outputPlyPath)} (${stat.size} bytes)`);
-    console.log(`    - Vertex Count:          ${authReconResult.reconstructionExecution.outputVertexCount} 3D spatial points`);
+    console.log(`    - Primary Output:        ${path.basename(authReconResult.reconstructionExecution.outputPlyPath)} [${receiptContent.outputArtifact.classification}] (${stat.size} bytes)`);
+    console.log(`    - Dense Vertex Count:    ${authReconResult.reconstructionExecution.outputVertexCount} 3D spatial points`);
     console.log(`    - Model SHA-256:         ${authReconResult.reconstructionExecution.outputPlySha}`);
-    console.log(`    - Pre / Post RMSE:       ${metrics.initialReprojectionRmsePixels} px -> ${metrics.reprojectionRmsePixels} px (Joint BA)`);
-    console.log(`    - Mean / Median Error:   ${metrics.meanReprojectionErrorPixels} / ${metrics.medianReprojectionErrorPixels} px`);
-    console.log(`    - Multi-View Tracks:     ${metrics.totalTracksCount} tracks (>=3 views: ${ge3Tracks}) across ${metrics.registeredViewCount} views`);
+    console.log(`    - Sparse Seed:           ${sparseSeed.filename} [${sparseSeed.classification}] (${sparseSeed.vertexCount} landmarks)`);
+    console.log(`    - Fixed Set RMSE:        ${metrics.fixedObservationSet.initialRmsePixels} px -> ${metrics.fixedObservationSet.postOptimizationRmsePixels} px (${metrics.fixedObservationSet.rmseReductionPercent}% reduction)`);
+    console.log(`    - Inlier RMSE:           ${metrics.finalInlierMetrics.reprojectionRmsePixels} px (mean: ${metrics.finalInlierMetrics.meanReprojectionErrorPixels} px, median: ${metrics.finalInlierMetrics.medianReprojectionErrorPixels} px)`);
+    console.log(`    - Convergence:           ${metrics.convergenceStatus} (${metrics.actualIterations} iters, rel delta=${metrics.iterationHistory[metrics.iterationHistory.length-1].relativeRmseChange})`);
+    console.log(`    - Multi-View Tracks:     ${metrics.totalTracksCount} tracks (>=3 views: ${ge3Tracks}, fraction: ${metrics.ge3TrackFraction})`);
+    console.log(`    - Camera Graph:          ${camProof.optimizedCameraCount}/12 cameras optimized, ${camProof.graphConnectivity.totalViewsInComponent}/12 reachable (single component)`);
+    console.log(`    - Loop Closure Residual: Frobenius drift = ${camProof.loopClosureResidual.rotationDriftFrobenius} (${camProof.loopClosureResidual.status})`);
   });
 
   // ── [4] Dynamic Parser-Derived PLY Schema & Record Stride ───────────────────
