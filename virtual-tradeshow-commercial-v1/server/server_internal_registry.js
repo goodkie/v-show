@@ -837,7 +837,13 @@ function registerServerJob(jobRequest = {}, authContext = {}) {
     reconcileOrphanWorkspacesLocked();
     evictExpiredJobsLocked();
 
-    if (activeServerJobs.size >= MAX_CONCURRENT_JOBS) {
+    let concurrentActiveCount = 0;
+    for (const j of activeServerJobs.values()) {
+      if (j.status === 'PROVISIONED' || j.status === 'CONSUMED' || j.status === 'RUNNING') {
+        concurrentActiveCount++;
+      }
+    }
+    if (concurrentActiveCount >= MAX_CONCURRENT_JOBS) {
       const err = new Error('ERR_REGISTRY_QUOTA_EXCEEDED: Server job registry concurrent quota reached');
       err.code = 'ERR_REGISTRY_QUOTA_EXCEEDED';
       throw err;
