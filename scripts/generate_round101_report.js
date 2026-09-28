@@ -239,8 +239,9 @@ function generateRound101Report(options = {}) {
   lines.push('---\n');
 
   lines.push('### 8. Verifiable Artifact Inventory\n');
-  lines.push(`All ${manifestEntriesCount} production artifacts authenticated in \`RUN_BUNDLE_MANIFEST.json\`:\n`);
-  manifestEntries.forEach((entry, idx) => {
+  const inventoryEntries = manifestEntries.filter(e => !e.path.endsWith('.md'));
+  lines.push(`All ${inventoryEntries.length} production evidence artifacts authenticated in \`RUN_BUNDLE_MANIFEST.json\`:\n`);
+  inventoryEntries.forEach((entry, idx) => {
     lines.push(`${idx + 1}. \`${entry.path}\` (${entry.sizeBytes.toLocaleString()} B, SHA: \`${entry.sha256}\`)`);
   });
   lines.push('');
