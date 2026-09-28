@@ -1,22 +1,22 @@
 {
   "receiptSchemaVersion": "R47_EXECUTION_RECEIPT_V1",
   "executionTimestamps": {
-    "startTime": "2026-09-28T06:31:26.379Z",
-    "endTime": "2026-09-28T06:32:40.287Z",
-    "durationMs": 73905
+    "startTime": "2026-09-28T07:26:56.891Z",
+    "endTime": "2026-09-28T07:28:08.187Z",
+    "durationMs": 71292
   },
   "runnerMetadata": {
     "sourceFile": "test/test_stage2_true3d_pipeline.js",
-    "sourceSha256": "64ab904c1cd504dfb576d76b439ad263b6ce4a5fb9bc68b3b089280a2b9d4718",
+    "sourceSha256": "b0968166a1b05947427e0ad3394a31ccc17f0dd6640d2f421af85899a0c59697",
     "nodeVersion": "v24.21.0",
     "platform": "win32"
   },
   "gitEvidence": {
-    "observedHeadSha": "210e030431ecac7d8fa439cbb83698db72796d6f",
-    "expectedHeadSha": "210e030431ecac7d8fa439cbb83698db72796d6f",
+    "observedHeadSha": "45dfb558657a3ab5a6c2468fdff1c9e9f471c52c",
+    "expectedHeadSha": "45dfb558657a3ab5a6c2468fdff1c9e9f471c52c",
     "headBindingMatched": true,
-    "worktreeClean": false,
-    "rawGitStatusPorcelain": "M virtual-tradeshow-commercial-v1/production_artifacts/AUTHLINEAGE_RECEIPT.json\n M virtual-tradeshow-commercial-v1/production_artifacts/R47_TEST_EXECUTION_RECEIPT.json"
+    "worktreeClean": true,
+    "rawGitStatusPorcelain": "(clean)"
   },
   "suiteResults": {
     "totalTests": 19,

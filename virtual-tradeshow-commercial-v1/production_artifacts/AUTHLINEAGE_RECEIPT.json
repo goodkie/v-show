@@ -1,23 +1,25 @@
 {
-  "receiptSchemaVersion": "AUTHLINEAGE_RECEIPT_V3_CALIBRATED_GLOBAL_SFM",
-  "jobId": "recon-job-1790577088244-c7ee00f2",
-  "codeUnderTestSha": "210e030431ecac7d8fa439cbb83698db72796d6f",
+  "receiptSchemaVersion": "AUTHLINEAGE_RECEIPT_V4_TRUE_SFM_JOINT_BA",
+  "jobId": "recon-job-auth-b923708d1b72",
+  "codeUnderTestSha": "45dfb558657a3ab5a6c2468fdff1c9e9f471c52c",
   "engineProvenance": {
-    "engineName": "OPENCV_SIFT_CALIBRATED_GLOBAL_SFM",
-    "engineSourceSha256": "82a374a17a444830ff0af879f6fc97b821949c5edbb96b2bb6c400f18554e6ce",
+    "engineName": "OPENCV_SIFT_INCREMENTAL_GLOBAL_SFM",
+    "engineSourceSha256": "a1db41df397729ff7fd2c3ae88a125d15b8ab79d139de89c49163cfda1eebe5c",
     "engineVersion": "5.0.0",
     "pythonVersion": "3.14.7"
   },
   "workerProvenance": {
-    "workerRuntimeSha256": "a5a13f438a191df32d92e6d87f739b347fe2ea244d705e34ee0e54c4b01f0636"
+    "workerRuntimeSha256": "bb5bb0cb2644308fb0e574c01fe82837c98a89adc3ea18af9a7af38e3da9b1fc"
   },
   "calibrationProvenance": {
-    "calibrationStatus": "GLOBALLY_CONSISTENT_SELF_CALIBRATED_SFM",
-    "calibrationMethod": "CIRCULAR_SURROUND_GEOMETRY_WITH_FOCAL_ESTIMATION",
-    "focalLengthSource": "SENSOR_FOV_SELF_ESTIMATION",
+    "calibrationStatus": "ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED",
+    "calibrationMethod": "CIRCULAR_SURROUND_GEOMETRY_WITH_ASSUMED_FOV",
+    "focalLengthSource": "ASSUMED_60DEG_FIELD_OF_VIEW_PRIOR",
+    "selfCalibrated": false,
     "focalLengthPixels": 886.81,
-    "scaleDisclosure": "SURROUND_PERIMETER_STEP_BASELINE",
-    "stepBaselineMeters": 1.65,
+    "scaleDisclosure": "SCALE_FREE_RECONSTRUCTION_ARBITRARY_WORLD_SCALE",
+    "units": "SCALE_FREE_NORMALIZED_SFM_UNITS",
+    "stepBaselineMeters": null,
     "viewerPresetReference": {
       "file": "R6_CAMERA_TRANSFORMS.json",
       "sha256": "7d9194147d83a99a2795c393fb8f6e437dc8f6a6d77c47a5930c5f54f96465fd",
@@ -91,64 +93,70 @@
     ]
   },
   "configurationProvenance": {
-    "configDigest": "f72c067a487a0b5aa261afdf974af9025b441cf02519ca19b0a457df06979879",
+    "configDigest": "de84f01fd059deedd65f310f95c6cdd343f1a656d0724c8f12ce2b44343de875",
     "parameters": {
-      "engine": "OPENCV_SIFT_CALIBRATED_GLOBAL_SFM",
+      "engine": "OPENCV_SIFT_INCREMENTAL_GLOBAL_SFM",
       "siftFeatures": 4000,
       "ransacThreshold": 1.5,
-      "calibrationMethod": "CIRCULAR_SURROUND_GEOMETRY_WITH_FOCAL_ESTIMATION",
-      "stepBaselineMeters": 1.65,
-      "bundleAdjustment": "LEVENBERG_MARQUARDT_POINT_AND_POSE_REFINEMENT",
-      "coordinateSystem": "UNIFIED_GLOBAL_WORLD_COORDINATE_FRAME"
+      "calibrationMethod": "CIRCULAR_SURROUND_GEOMETRY_WITH_ASSUMED_FOV",
+      "scaleDisclosure": "SCALE_FREE_RECONSTRUCTION_ARBITRARY_WORLD_SCALE",
+      "units": "SCALE_FREE_NORMALIZED_SFM_UNITS",
+      "bundleAdjustment": "ALTERNATING_LEVENBERG_MARQUARDT_PNP_AND_LANDMARK",
+      "coordinateSystem": "SCALE_FREE_UNIFIED_GLOBAL_SFM_FRAME"
     }
   },
   "bundleAdjustmentRefinement": {
-    "reprojectionRmsePixels": 0.9379,
-    "meanReprojectionErrorPixels": 0.6312,
-    "medianReprojectionErrorPixels": 0.3999,
+    "initialReprojectionRmsePixels": 42.9272,
+    "reprojectionRmsePixels": 0.415,
+    "meanReprojectionErrorPixels": 0.3087,
+    "medianReprojectionErrorPixels": 0.2456,
     "registeredViewCount": 12,
-    "totalTracksCount": 423,
-    "refinedInlierTracksCount": 63,
-    "totalPointObservations": 126,
+    "totalTracksCount": 160,
+    "refinedInlierTracksCount": 149,
+    "totalPointObservations": 307,
     "trackLengthDistribution": {
-      "2": 63
+      "2": 140,
+      "3": 9
     },
-    "optimizationAlgorithm": "LEVENBERG_MARQUARDT_PNP_AND_GAUSS_NEWTON_LANDMARK",
+    "optimizationAlgorithm": "ALTERNATING_LEVENBERG_MARQUARDT_PNP_AND_LANDMARK",
+    "bundleAdjustmentIterations": 5,
     "convergenceStatus": "CONVERGED"
   },
   "reconstructionGeometry": {
-    "coordinateSystem": "UNIFIED_GLOBAL_WORLD_COORDINATE_FRAME",
+    "coordinateSystem": "SCALE_FREE_UNIFIED_GLOBAL_SFM_FRAME",
+    "units": "SCALE_FREE_NORMALIZED_SFM_UNITS",
+    "scaleDisclosure": "SCALE_FREE_RECONSTRUCTION_ARBITRARY_WORLD_SCALE",
     "globalCameraPosesRegistered": 12,
-    "vertexCount": 63,
-    "boundingBoxMeters": {
+    "vertexCount": 149,
+    "boundingBoxSfmUnits": {
       "min": [
-        -2.2063,
-        -1.0311,
-        1.4263
+        -45.4181,
+        -10.9386,
+        -38.6679
       ],
       "max": [
-        3.0676,
-        5.218,
-        13.1626
+        59.296,
+        14.318,
+        50.4849
       ],
-      "volumeM3": 386.7927
+      "volumeSfmUnits": 235784.9293
     }
   },
   "outputArtifact": {
     "filename": "AUTHLINEAGE_RECONSTRUCTED_SPATIAL_MODEL.ply",
     "format": "BINARY_LITTLE_ENDIAN_PLY",
-    "sizeBytes": 1121,
-    "sha256": "808ae7bd23dcd04ffed78f6268de8e599df154ba4e92dffd56b34c13652fa699",
+    "sizeBytes": 2412,
+    "sha256": "6317458ceafbcdc4fd186fbd5db53e6e07c18fe22581b45f424f341ef274ecfa",
     "isGitLfsPointer": false,
     "nonLfsVerifiablePayload": {
       "format": "BASE64_ENCODED_BINARY_PLY",
-      "declaredSizeBytes": 1121,
-      "declaredSha256": "808ae7bd23dcd04ffed78f6268de8e599df154ba4e92dffd56b34c13652fa699",
-      "base64Payload": "cGx5CmZvcm1hdCBiaW5hcnlfbGl0dGxlX2VuZGlhbiAxLjAKZWxlbWVudCB2ZXJ0ZXggNjMKcHJvcGVydHkgZmxvYXQgeApwcm9wZXJ0eSBmbG9hdCB5CnByb3BlcnR5IGZsb2F0IHoKcHJvcGVydHkgdWNoYXIgcmVkCnByb3BlcnR5IHVjaGFyIGdyZWVuCnByb3BlcnR5IHVjaGFyIGJsdWUKZW5kX2hlYWRlcgpfMw3AoMaaQPeZUkERJyTLEwPA5hSWQDHcUUHIzspTCui/s+mUQJJYUEHHzclTCui/s+mUQJJYUEHHzclyb9a/JzGjQPvhS0GTs7BN7NS/RHSVQOBBUEHP0dAPBre/vHGcQODvT0EcPzsPBre/vHGcQODvT0EcPzvGfbK/RzCbQOrzT0EQUU27d6y/JpSdQFr/TkEdSkVIlYe/PfqmQOPNT0FlhH8AU0RAKHQTQLtq4UDe8PBsJ6g/z89gP8hqVUC1tbembwQ/DYZ3P2bGOUC6vr01YA4/XRl5P9aVOUC81NSeFhM/x0+AP9CNOUAIS0RK6Bo/WPRvP8xNOUDBwcGrdFs/3KrYPDmPXUCyub+8N4E/cKxRPWtqWUDP0NWW1nY/EtzVvJY+WkADVFhpdXo/gRZQPWT8WUDFycqpcKI/3D8vP4ktgEDR8fAOOJY/PWswPzi2fkDo//+2caE/V5QsP+ILgEDY6upf7Z8/JUovP+5Xf0AZR0XtX58/fTItP/g5f0DU5+VKD40/b8wsP5FrgEABSUaaWp0/pScvP6pVfkDP6eY3P4o/VR8yP3KlgEAhRUU2PrU/6DomPzbLhEDR7+9pFZs/bzIkP0xafkDc8PFjt54/D8AsP68RfUDJ4t8/O6E/a1coP6+YfEABS0puxqY/o04sP5Zpe0AVOzwQxa0/fUQnP972gkABSUgpxKM/RtseP+LTfEADT02DU/C/mXl8v/1wAkBqmtg8ofS/Argzvyta+z+50vDNiNu/Td5wvyMO9T8ERp2cA/S/6bokvyuI9z8LKkko3oC/riQ5vyddK0ATYbOOxpq/YBt5vkuauT8tjeN1Sre/K6o9vaUdvT9jqOG0e8a/+Ux8PaaPtj92z/FgQgHA0/qDv8qrGUBGc7RYuAHAU09Lv7R9BkCTss5HtKk/GxppP3RSMEBCQkBIzSm/gf3nvhnrPUAWFw8fawm/PgDcvjoFO0AHHgqlU+++NSW6viunOkAALz1ut9a+tMnIvl2COUC90N7iKuy+KsGrvdEJPkAbWDf6Bee+k22DvboIPkBwvT3hjYm+blrSvvU9NkCitdXYoZq7P42PvsLnNECivN1snZY7OHByvqhENUCet83krMA/cuLfPhzKZEAQIyHkrMA/cuLfPhzKZEAQIyGDHMM/+cXiPuSnZkAZNjQhHL4/NyLgPqQZZUAbPzudzbw/hnLfPiDHZECmurmyG7o/sEfePhR7ZEAYMi//er0/q2PiPj6WZkCds7E="
+      "declaredSizeBytes": 2412,
+      "declaredSha256": "6317458ceafbcdc4fd186fbd5db53e6e07c18fe22581b45f424f341ef274ecfa",
+      "base64Payload": "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"
     }
   },
   "cryptographicBinding": {
     "formula": "sha256(cutSha | inputsDigest | calibStatus | engineSha | workerSha | configDigest | rmse | outSha)",
-    "lineageDigest": "bb3845eaf7632528b1c30f231645a292c21dca4859be84bd7400c22d97aa2cd3"
+    "lineageDigest": "c9bf0b6d57e4e183d07a616dee6e0cb2dc212cc875bcc41130b432834d156003"
   }
 }
