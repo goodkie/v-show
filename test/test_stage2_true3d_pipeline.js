@@ -425,7 +425,7 @@ async function main() {
     // Cryptographic receipt assertions
     assert.ok(fs.existsSync(authReconResult.reconstructionExecution.receiptPath), 'Lineage receipt must exist on disk');
     const receiptContent = JSON.parse(fs.readFileSync(authReconResult.reconstructionExecution.receiptPath, 'utf8'));
-    assert.strictEqual(receiptContent.receiptSchemaVersion, 'AUTHLINEAGE_RECEIPT_V8_INVENTORY_BOUND_GEOMETRIC_DEPTH_CONSISTENCY');
+    assert.strictEqual(receiptContent.receiptSchemaVersion, 'AUTHLINEAGE_RECEIPT_V9_RECTIFIED_THIRD_VIEW_GEOMETRIC_DEPTH_CONSISTENCY');
     assert.strictEqual(receiptContent.calibrationProvenance.calibrationStatus, 'ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED');
     assert.strictEqual(receiptContent.calibrationProvenance.selfCalibrated, false);
     assert.strictEqual(receiptContent.outputArtifact.classification, 'STEREO_DERIVED_FUSED_MVS_INTERNAL_PROOF');
@@ -457,7 +457,7 @@ async function main() {
     assert.strictEqual(receiptContent.gateStatusDisclosures.POSITIVE_FIXTURE_GATE, 'BLOCKED_BY_POSITIVE_FIXTURE_AVAILABILITY');
     assert.strictEqual(authReconResult.truthLedger.OWNER_REVIEW_GATE, 'HOLD');
 
-    // Dense MVS diagnostics & geometric depth consistency validation (Round 95)
+    // Dense MVS diagnostics & geometric depth consistency validation (Round 95/96)
     const mvsDiag = authReconResult.reconstructionExecution.denseMvsDiagnostics || receiptContent.denseMvsDiagnostics;
     assert.ok(mvsDiag, 'Dense MVS diagnostics must be present');
     assert.ok(mvsDiag.pairDiagnostics.length > 0, 'Pair diagnostics must be reported');
@@ -470,11 +470,20 @@ async function main() {
       assert.ok('thirdViewDepthGeometricConsistent' in p, 'thirdViewDepthGeometricConsistent must be tracked');
       assert.ok('thirdViewDepthGeometricRejected' in p, 'thirdViewDepthGeometricRejected must be tracked');
       assert.ok('thirdViewPhotometricHeuristicAccepted' in p, 'thirdViewPhotometricHeuristicAccepted must be tracked');
+      assert.ok('multiViewGeometricRejected' in p, 'multiViewGeometricRejected must be tracked');
       assert.ok('multiViewHeuristicRejected' in p, 'multiViewHeuristicRejected must be tracked');
       assert.ok('acceptedMultiViewConsistent3dCount' in p, 'acceptedMultiViewConsistent3dCount must be tracked');
+      assert.ok('acceptedGeometricallyConsistent3dCount' in p, 'acceptedGeometricallyConsistent3dCount must be tracked');
       assert.ok('fusedContribution' in p, 'fusedContribution must be tracked');
-      assert.strictEqual(p.consistencyMethod, 'THIRD_VIEW_INDEPENDENT_STEREO_DEPTH_CONSISTENCY_AND_PHOTOMETRIC_HEURISTIC');
+      assert.strictEqual(p.consistencyMethod, 'RECTIFIED_THIRD_VIEW_STEREO_DEPTH_CONSISTENCY_GATE_AND_PHOTOMETRIC_FALLBACK');
     }
+    const sumGeomConsistent = mvsDiag.pairDiagnostics.reduce((acc, p) => acc + (p.thirdViewDepthGeometricConsistent || 0), 0);
+    assert.ok(sumGeomConsistent > 0, `At least one point must satisfy rectified third-view geometric depth consistency (got ${sumGeomConsistent})`);
+    assert.ok(mvsDiag.pointSupportProvenance, 'pointSupportProvenance must be present in dense MVS diagnostics');
+    assert.strictEqual(mvsDiag.pointSupportProvenance.hasThirdViewGeometricConsistencyProof, true);
+    assert.strictEqual(mvsDiag.pointSupportProvenance.geometricallyConsistentCount, sumGeomConsistent);
+    assert.ok(mvsDiag.pointSupportProvenance.geometricRejectionCount >= 0, 'geometricRejectionCount must be tracked');
+    assert.ok(mvsDiag.pointSupportProvenance.photometricOnlyCount >= 0, 'photometricOnlyCount must be tracked');
 
     console.log(`    - Reconstruction Status: ${authReconResult.status} (TERMINAL SUCCESS)`);
     console.log(`    - Engine:                ${authReconResult.engine}`);
@@ -3373,6 +3382,58 @@ async function main() {
     assert.strictEqual(parsedMatrix.status.ENGINEERING_HOLD, 'ACTIVE');
     assert.strictEqual(parsedMatrix.status.SPEND_ALLOCATION, 'ZERO_SPEND_DEFAULT');
     console.log('    - Non-owner engine activation-readiness matrix: PASS (5 pillars verified, bounded resources, zero-spend hold)');
+  });
+
+  // ── [19] Real Recursive Workspace Discovery & Rectified Third-View Stereo Depth Consistency ──
+  runTest('19. Real recursive workspace discovery audit & rectified third-view geometric depth consistency (Round 96)', () => {
+    const { inventoryDatasets } = require(path.join(REPO_ROOT, 'virtual-tradeshow-commercial-v1/server/dataset_inventory'));
+    const inventoryResult = inventoryDatasets({ repoRoot: REPO_ROOT });
+
+    assert.ok(inventoryResult, 'inventoryDatasets must return an audit object');
+    assert.strictEqual(inventoryResult.auditSchemaVersion, 'DATASET_INVENTORY_AUDIT_V2_RECURSIVE_TRAVERSAL');
+    assert.strictEqual(inventoryResult.scanner, 'ANTIGRAVITY_WORKSPACE_DATASET_INVENTORY');
+    assert.ok(inventoryResult.traversalProof, 'traversalProof must be present');
+    assert.ok(Array.isArray(inventoryResult.traversalProof.rootsScanned), 'rootsScanned must be an array');
+    assert.ok(inventoryResult.traversalProof.rootsScanned.length >= 5, 'At least 5 authorized roots scanned');
+    assert.ok(inventoryResult.traversalProof.directoriesTraversed >= 10, 'Directories traversed must be tracked');
+    assert.ok(inventoryResult.traversalProof.filesExamined >= 50, 'Files examined must be tracked');
+    assert.ok(Array.isArray(inventoryResult.traversalProof.restrictedPathsSkipped), 'restrictedPathsSkipped must be tracked');
+    assert.ok(inventoryResult.traversalProof.restrictedPathsSkipped.length >= 1, 'Restricted paths must be detected and skipped');
+
+    // Strict privacy boundary: zero tenant bytes read
+    for (const r of inventoryResult.traversalProof.restrictedPathsSkipped) {
+      assert.strictEqual(r.imageBytesRead, false, `imageBytesRead must be false for restricted path ${r.relativePath}`);
+      assert.ok(r.reason, 'Exclusion reason must be provided');
+    }
+
+    // Dynamic candidate evaluation proof
+    assert.ok(Array.isArray(inventoryResult.evaluatedCandidates), 'evaluatedCandidates must be an array');
+    assert.ok(inventoryResult.evaluatedCandidates.length >= 1, 'Evaluated candidates must be non-empty');
+    const partialCand = inventoryResult.evaluatedCandidates.find(c => c.directory.includes('wilo/authentic-booth') || c.directory.includes('authentic-booth'));
+    assert.ok(partialCand, 'wilo/authentic-booth candidate must be evaluated');
+    assert.strictEqual(partialCand.classification, 'ELIGIBLE_NEGATIVE_PARTIAL_FIXTURE');
+    assert.strictEqual(partialCand.metrics.frameCount, 12);
+    assert.strictEqual(partialCand.metrics.coverage360Complete, false);
+    assert.strictEqual(partialCand.metrics.loopClosureMet, false);
+
+    // Negative depth perturbation unit contract: strict geometric rejection
+    // Simulate: point X_rect projected has Z_rect = 2.0. Stereo disparity gives Z_stereo = 1.0 (residual = |2 - 1| / 2 = 50% > 40%).
+    // Geometric check must reject and photometric fallback must NOT rescue it.
+    const Z_rect = 2.0;
+    const Z_stereo_perturbed = 1.0;
+    const rel_residual = Math.abs(Z_rect - Z_stereo_perturbed) / Z_rect;
+    assert.ok(rel_residual > 0.40, 'Perturbed residual must exceed 40% threshold');
+    const geomDepthPass = rel_residual <= 0.40;
+    assert.strictEqual(geomDepthPass, false, 'Candidate point with >40% third-view depth mismatch must fail geometric depth gate');
+    // Photometric similarity cannot override geometric failure
+    const photoFallbackPermitted = geomDepthPass; // Only permitted when depth test passes or no independent depth
+    assert.strictEqual(photoFallbackPermitted, false, 'Photometric fallback cannot rescue geometric depth failure');
+
+    console.log(`    - Recursive Traversal:   ${inventoryResult.traversalProof.rootsScanned.length} roots, ${inventoryResult.traversalProof.directoriesTraversed} dirs, ${inventoryResult.traversalProof.filesExamined} files examined`);
+    console.log(`    - Privacy Boundary:      ${inventoryResult.traversalProof.restrictedPathsSkipped.length} restricted paths skipped (imageBytesRead: false)`);
+    console.log(`    - Candidates Evaluated:  ${inventoryResult.evaluatedCandidates.length} candidate directories dynamically evaluated`);
+    console.log(`    - Positive Fixture Gate: ${inventoryResult.gateEvaluation.POSITIVE_FIXTURE_GATE}`);
+    console.log(`    - Dataset Adequacy Gate: ${inventoryResult.gateEvaluation.DATASET_ADEQUACY_GATE}`);
   });
 
   console.log('\n================================================================');

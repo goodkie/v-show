@@ -863,13 +863,21 @@ def main():
             "c_valid": c_valid
         }
 
-        # Cache reference view stereo depth for independent third-view checks
-        camera_stereo_depth[c_left] = {
-            "disp": disp,
-            "baseline": baseline
-        }
+        # Cache reference view stereo depth and full rectification geometry for independent third-view checks
+        if c_left not in camera_stereo_depth or valid_disp_count > camera_stereo_depth[c_left]["valid_disp_count"]:
+            camera_stereo_depth[c_left] = {
+                "pair": [i, j],
+                "R_ref": R_ref_left,
+                "t_ref": t_ref_left,
+                "R_rect": R1,
+                "P_rect": P1,
+                "disp": disp,
+                "baseline": baseline,
+                "valid_disp_count": valid_disp_count
+            }
 
     # Pass 2: Verify candidate 3D points via independent third-view geometric depth consistency & photometric heuristic
+    all_point_provenances = []
     for idx_c in range(len(connected_views) - 1):
         i = connected_views[idx_c]
         j = connected_views[idx_c + 1]
@@ -890,6 +898,7 @@ def main():
         geom_depth_consistent = 0
         geom_depth_rejected = 0
         photo_heuristic_accepted = 0
+        multi_view_geom_rejected = 0
         mv_heuristic_rejected = 0
         depth_residuals = []
 
@@ -905,58 +914,113 @@ def main():
 
             min_c = min(c_left, c_right)
             max_c = max(c_left, c_right)
-            cand_views = [v for v in [min_c - 1, max_c + 1] if 0 <= v < n and v in cur_R]
-            if not cand_views:
-                cand_views = [v for v in main_component if v != c_left and v != c_right]
+            adj_views = [v for v in [min_c - 1, max_c + 1] if 0 <= v < n and v in cur_R and v in camera_stereo_depth]
+            other_views = [v for v in main_component if v != c_left and v != c_right and v in camera_stereo_depth and v not in adj_views]
+            cand_views = adj_views + other_views
 
             consistent_pts = []
             consistent_colors = []
+            pair_provenances = []
+
             if len(X_glob_spatial) > 0 and cand_views:
                 for pt_idx in range(len(X_glob_spatial)):
                     pt3d = X_glob_spatial[pt_idx]
                     col3d = c_spatial[pt_idx]
-                    has_support = False
 
+                    geom_pass_count = 0
+                    geom_fail_count = 0
+                    has_independent_depth = False
+
+                    # 1. Independent Third-View Rectified Geometric Depth Verification
                     for v in cand_views[:2]:
-                        P_v = cur_R[v] @ pt3d.reshape(3, 1) + cur_t[v]
-                        Z_proj = P_v[2, 0]
-                        if Z_proj > 0.1:
-                            u_v = K_s[0, 0] * P_v[0, 0] / Z_proj + K_s[0, 2]
-                            v_v = K_s[1, 1] * P_v[1, 0] / Z_proj + K_s[1, 2]
-                            if 0 <= u_v < w_s and 0 <= v_v < h_s:
-                                # Independent third-view geometric depth test (Blocker 2 & Directive 3)
-                                if v in camera_stereo_depth:
+                        rect_v = camera_stereo_depth[v]
+                        R_v = rect_v["R_ref"]
+                        t_v = rect_v["t_ref"]
+                        R_rect_v = rect_v["R_rect"]
+                        P_rect_v = rect_v["P_rect"]
+                        disp_v = rect_v["disp"]
+                        B_v = rect_v["baseline"]
+                        f_rect_v = P_rect_v[0, 0]
+
+                        # Transform 3D global point to camera v frame, then to view v's rectified frame
+                        X_cam_v = R_v @ pt3d.reshape(3, 1) + t_v
+                        X_rect_v = R_rect_v @ X_cam_v
+                        Z_rect = X_rect_v[2, 0]
+
+                        if Z_rect > 0.1:
+                            u_rect = f_rect_v * X_rect_v[0, 0] / Z_rect + P_rect_v[0, 2]
+                            v_rect = P_rect_v[1, 1] * X_rect_v[1, 0] / Z_rect + P_rect_v[1, 2]
+
+                            if 0 <= u_rect < w_s and 0 <= v_rect < h_s:
+                                u_int = int(round(u_rect))
+                                v_int = int(round(v_rect))
+                                u_int = max(0, min(w_s - 1, u_int))
+                                v_int = max(0, min(h_s - 1, v_int))
+
+                                # 3x3 local patch in disparity map
+                                v_lo = max(0, v_int - 1)
+                                v_hi = min(h_s - 1, v_int + 1)
+                                u_lo = max(0, u_int - 1)
+                                u_hi = min(w_s - 1, u_int + 1)
+                                patch = disp_v[v_lo:v_hi+1, u_lo:u_hi+1]
+                                valid_patch = patch[patch > 1.0]
+
+                                if len(valid_patch) > 0:
+                                    has_independent_depth = True
                                     geom_depth_tested += 1
-                                    v_disp_field = camera_stereo_depth[v]["disp"]
-                                    d_val = v_disp_field[int(v_v), int(u_v)]
-                                    if d_val > 1.0:
-                                        Z_stereo = (f_s * camera_stereo_depth[v]["baseline"]) / d_val
-                                        rel_diff = abs(Z_proj - Z_stereo) / max(1e-3, Z_proj)
-                                        depth_residuals.append(rel_diff)
-                                        if rel_diff <= 0.40:
-                                            geom_depth_consistent += 1
-                                            has_support = True
-                                            break
-                                        else:
-                                            geom_depth_rejected += 1
+                                    d_expected = (f_rect_v * B_v) / Z_rect
+                                    best_d = valid_patch[np.argmin(np.abs(valid_patch - d_expected))]
+                                    Z_stereo = (f_rect_v * B_v) / best_d
+                                    rel_diff = abs(Z_rect - Z_stereo) / max(1e-3, Z_rect)
+                                    depth_residuals.append(rel_diff)
 
-                                # Supplementary third-view visibility & photometric heuristic (Directive 4)
-                                if not has_support:
-                                    c_sample = rgbs_s[v][int(v_v), int(u_v)]
-                                    col_diff = float(np.linalg.norm(col3d.astype(np.float32) - c_sample.astype(np.float32)))
-                                    if col_diff < 140.0:
-                                        photo_heuristic_accepted += 1
-                                        has_support = True
-                                        break
+                                    if rel_diff <= 0.40:
+                                        geom_pass_count += 1
+                                    else:
+                                        geom_fail_count += 1
 
-                    if has_support:
+                    # 2. Strict Gating Logic (Directive 5 & Blocker 5)
+                    if geom_fail_count > 0 and geom_pass_count == 0:
+                        # Geometric failure: MUST REJECT. Photometric similarity CANNOT override failure!
+                        geom_depth_rejected += 1
+                        multi_view_geom_rejected += 1
+                    elif geom_pass_count > 0:
+                        # Geometric pass: point is verified geometrically consistent!
+                        geom_depth_consistent += 1
                         consistent_pts.append(pt3d)
                         consistent_colors.append(col3d)
+                        pair_provenances.append("GEOMETRICALLY_CONSISTENT_THIRD_VIEW_VERIFIED")
+                    elif not has_independent_depth:
+                        # No third-view depth available (occluded/textureless in third views)
+                        # Check supplementary photometric heuristic
+                        photo_pass = False
+                        for v in cand_views[:2]:
+                            P_v = cur_R[v] @ pt3d.reshape(3, 1) + cur_t[v]
+                            Z_proj = P_v[2, 0]
+                            if Z_proj > 0.1:
+                                u_v = K_s[0, 0] * P_v[0, 0] / Z_proj + K_s[0, 2]
+                                v_v = K_s[1, 1] * P_v[1, 0] / Z_proj + K_s[1, 2]
+                                iu_v = int(round(u_v))
+                                iv_v = int(round(v_v))
+                                if 0 <= iu_v < w_s and 0 <= iv_v < h_s:
+                                    c_sample = rgbs_s[v][iv_v, iu_v]
+                                    col_diff = float(np.linalg.norm(col3d.astype(np.float32) - c_sample.astype(np.float32)))
+                                    if col_diff < 140.0:
+                                        photo_pass = True
+                                        break
+                        if photo_pass:
+                            photo_heuristic_accepted += 1
+                            consistent_pts.append(pt3d)
+                            consistent_colors.append(col3d)
+                            pair_provenances.append("PHOTOMETRIC_ONLY_UNVERIFIED")
+                        else:
+                            mv_heuristic_rejected += 1
                     else:
                         mv_heuristic_rejected += 1
             else:
                 consistent_pts = [p for p in X_glob_spatial]
                 consistent_colors = [c for c in c_spatial]
+                pair_provenances = ["PHOTOMETRIC_ONLY_UNVERIFIED"] * len(consistent_pts)
 
             accepted_3d = len(consistent_pts)
 
@@ -965,13 +1029,16 @@ def main():
                 step = max(1, accepted_3d // 400)
                 sel_pts = consistent_pts[::step][:400]
                 sel_colors = consistent_colors[::step][:400]
+                sel_prov = pair_provenances[::step][:400]
             else:
                 sel_pts = consistent_pts
                 sel_colors = consistent_colors
+                sel_prov = pair_provenances
 
             fused_contrib = len(sel_pts)
             all_dense_pts.extend([p.tolist() if isinstance(p, np.ndarray) else p for p in sel_pts])
             all_dense_colors.extend([c.tolist() if isinstance(c, np.ndarray) else c for c in sel_colors])
+            all_point_provenances.extend(sel_prov)
 
         pair_dense_diagnostics.append({
             "pair": [i, j],
@@ -986,11 +1053,13 @@ def main():
             "thirdViewDepthGeometricConsistent": geom_depth_consistent,
             "thirdViewDepthGeometricRejected": geom_depth_rejected,
             "thirdViewPhotometricHeuristicAccepted": photo_heuristic_accepted,
+            "multiViewGeometricRejected": multi_view_geom_rejected,
             "multiViewHeuristicRejected": mv_heuristic_rejected,
             "acceptedMultiViewConsistent3dCount": accepted_3d,
+            "acceptedGeometricallyConsistent3dCount": geom_depth_consistent,
             "meanRelativeDepthResidual": round(float(np.mean(depth_residuals)), 4) if depth_residuals else None,
             "fusedContribution": fused_contrib,
-            "consistencyMethod": "THIRD_VIEW_INDEPENDENT_STEREO_DEPTH_CONSISTENCY_AND_PHOTOMETRIC_HEURISTIC"
+            "consistencyMethod": "RECTIFIED_THIRD_VIEW_STEREO_DEPTH_CONSISTENCY_GATE_AND_PHOTOMETRIC_FALLBACK"
         })
 
     # Deterministic Voxel Deduplication (0.05 SfM units)
@@ -1128,9 +1197,26 @@ def main():
         dataset_adequacy_gate = "NO_ELIGIBLE_NON_OWNER_POSITIVE_FIXTURE_FOUND_BY_INVENTORY"
         positive_fixture_gate = "BLOCKED_BY_POSITIVE_FIXTURE_AVAILABILITY"
 
+    total_geom_consistent = sum(p.get("thirdViewDepthGeometricConsistent", 0) for p in pair_dense_diagnostics)
+    total_photo_only = sum(p.get("thirdViewPhotometricHeuristicAccepted", 0) for p in pair_dense_diagnostics)
+    total_geom_rejected = sum(p.get("multiViewGeometricRejected", 0) for p in pair_dense_diagnostics)
+    total_heuristic_rejected = sum(p.get("multiViewHeuristicRejected", 0) for p in pair_dense_diagnostics)
+    total_sampled_candidates = sum(p.get("sampledCandidatePoints", 0) for p in pair_dense_diagnostics)
+    total_accepted_candidates = sum(p.get("acceptedMultiViewConsistent3dCount", 0) for p in pair_dense_diagnostics)
+
+    point_support_provenance = {
+        "geometricallyConsistentCount": total_geom_consistent,
+        "photometricOnlyCount": total_photo_only,
+        "geometricRejectionCount": total_geom_rejected,
+        "heuristicRejectionCount": total_heuristic_rejected,
+        "totalCandidatePointsTested": total_sampled_candidates,
+        "totalConsistentPointsAccepted": total_accepted_candidates,
+        "hasThirdViewGeometricConsistencyProof": bool(total_geom_consistent > 0)
+    }
+
     calib_status_str = "ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED"
     receipt = {
-        "receiptSchemaVersion": "AUTHLINEAGE_RECEIPT_V8_INVENTORY_BOUND_GEOMETRIC_DEPTH_CONSISTENCY",
+        "receiptSchemaVersion": "AUTHLINEAGE_RECEIPT_V9_RECTIFIED_THIRD_VIEW_GEOMETRIC_DEPTH_CONSISTENCY",
         "jobId": job_id,
         "codeUnderTestSha": cut_sha,
         "engineProvenance": {
@@ -1178,6 +1264,7 @@ def main():
             "loopClosureResidual": loop_residual_metrics
         },
         "denseMvsDiagnostics": {
+            "pointSupportProvenance": point_support_provenance,
             "pairDiagnostics": pair_dense_diagnostics,
             "voxelDeduplication": {
                 "voxelSize": voxel_size,
