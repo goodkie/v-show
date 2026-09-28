@@ -1703,8 +1703,8 @@ function executeAuthenticReconstructionWorker(options = {}) {
                 DENSE_MVS_CLASSIFICATION: parsed.outputClassification || 'STEREO_DERIVED_FUSED_MVS_INTERNAL_PROOF',
                 GLOBAL_COVERAGE_GATE: parsed.cameraCoverageAndGraphProof?.graphConnectivity?.globalCoverageGate || 'NOT_MET_PARTIAL_11_OF_12',
                 LOOP_CLOSURE_GATE: parsed.cameraCoverageAndGraphProof?.loopClosureResidual?.status || 'LOOP_CLOSURE_FAILED_EXCEEDS_TOLERANCE',
-                DATASET_ADEQUACY_GATE: parsed.datasetAdequacyGate || 'NO_ELIGIBLE_NON_OWNER_POSITIVE_FIXTURE_FOUND_BY_INVENTORY',
-                POSITIVE_FIXTURE_GATE: parsed.positiveFixtureGate || 'BLOCKED_BY_POSITIVE_FIXTURE_AVAILABILITY',
+                DATASET_ADEQUACY_GATE: parsed.datasetAdequacyGate || 'BLOCKED_BY_MEASURED_POSITIVE_FIXTURE_AVAILABILITY',
+                POSITIVE_FIXTURE_GATE: parsed.positiveFixtureGate || 'BLOCKED_BY_MEASURED_POSITIVE_FIXTURE_AVAILABILITY',
                 OWNER_REVIEW_GATE: 'HOLD',
                 ENGINEERING_HOLD: 'ACTIVE'
               }

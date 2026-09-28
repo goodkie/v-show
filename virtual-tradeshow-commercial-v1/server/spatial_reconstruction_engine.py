@@ -1413,18 +1413,18 @@ def main():
 
     # Discovery-derived Dataset Adequacy & Positive Fixture Gate (Round 98 Empirical Geometry Gate)
     inventory_path = os.path.join(os.path.dirname(__file__), "../production_artifacts/DATASET_INVENTORY_AUDIT.json")
+    dataset_adequacy_gate = "BLOCKED_BY_MEASURED_POSITIVE_FIXTURE_AVAILABILITY"
+    positive_fixture_gate = "BLOCKED_BY_MEASURED_POSITIVE_FIXTURE_AVAILABILITY"
     if os.path.exists(inventory_path):
         try:
             with open(inventory_path, 'r', encoding='utf-8') as inv_f:
                 inv_data = json.load(inv_f)
-                dataset_adequacy_gate = inv_data.get("gateEvaluation", {}).get("DATASET_ADEQUACY_GATE", "BLOCKED_BY_MEASURED_POSITIVE_FIXTURE_AVAILABILITY")
-                positive_fixture_gate = inv_data.get("gateEvaluation", {}).get("POSITIVE_FIXTURE_GATE", "BLOCKED_BY_MEASURED_POSITIVE_FIXTURE_AVAILABILITY")
+                gate_eval = inv_data.get("gateEvaluation", {})
+                if gate_eval.get("DATASET_ADEQUACY_GATE") == "ELIGIBLE_POSITIVE_FIXTURE_FOUND":
+                    dataset_adequacy_gate = "ELIGIBLE_POSITIVE_FIXTURE_FOUND"
+                    positive_fixture_gate = "POSITIVE_FIXTURE_READY"
         except Exception:
-            dataset_adequacy_gate = "BLOCKED_BY_MEASURED_POSITIVE_FIXTURE_AVAILABILITY"
-            positive_fixture_gate = "BLOCKED_BY_MEASURED_POSITIVE_FIXTURE_AVAILABILITY"
-    else:
-        dataset_adequacy_gate = "BLOCKED_BY_MEASURED_POSITIVE_FIXTURE_AVAILABILITY"
-        positive_fixture_gate = "BLOCKED_BY_MEASURED_POSITIVE_FIXTURE_AVAILABILITY"
+            pass
 
     total_geom_consistent = sum(p.get("thirdViewDepthGeometricConsistent", 0) for p in pair_dense_diagnostics)
     total_photo_only = sum(p.get("thirdViewPhotometricHeuristicAccepted", 0) for p in pair_dense_diagnostics)
