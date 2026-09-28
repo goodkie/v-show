@@ -2,14 +2,15 @@
 """
 evaluate_dataset_geometry.py
 ─────────────────────────────────────────────────────────────────────────────
-Empirical Geometry Evaluator for Discovered Capture Datasets (Round 98)
+Empirical Geometry Evaluator for Discovered Capture Datasets (Round 99)
 
 Evaluates candidate image sequences using genuine computer vision measurements:
-  1. Feature Detection (ORB / SIFT)
+  1. Feature Detection (ORB)
   2. Pairwise Feature Matching & Epipolar Verification (cv2.findEssentialMat, recoverPose)
-  3. Camera Graph Construction & Connected Component Analysis (BFS)
-  4. 360-degree Ring & Loop-Closure Residual Measurement (Frobenius / Angle / Translation Drift)
-  5. Empirical Classification (Positive Complete Ring vs Negative Partial Fixture)
+  3. Triangulation Parallax & Homography Degeneracy Measurement (median angle, positive depth, H/E ratio)
+  4. Camera Graph Construction & Connected Component Analysis (BFS)
+  5. 3-View Scale Consistency Resolution & Scale-Consistent Loop Closure (Frobenius, Angle, Scaled Translation Drift)
+  6. Empirical Classification (Positive Complete Ring vs Negative Partial Fixture)
 ─────────────────────────────────────────────────────────────────────────────
 """
 
@@ -26,7 +27,7 @@ except ImportError:
     cv2 = None
 
 
-def evaluate_dataset_geometry(image_dir, max_frames=12, max_dim=320):
+def evaluate_dataset_geometry(image_dir, max_frames=64, max_dim=320):
     if cv2 is None:
         return {
             "success": False,
@@ -53,12 +54,16 @@ def evaluate_dataset_geometry(image_dir, max_frames=12, max_dim=320):
             "imageCount": len(image_files)
         }
 
-    # Evenly sample up to max_frames
+    # Evaluate candidate frames without artificial 12-frame limit (up to max_frames=64)
     if len(image_files) > max_frames:
         indices = np.linspace(0, len(image_files) - 1, max_frames, dtype=int)
         selected_files = [image_files[i] for i in indices]
+        coverage_mode = "KEYFRAME_RING_SAMPLED"
+        keyframe_indices = [int(i) for i in indices]
     else:
         selected_files = image_files
+        coverage_mode = "ALL_CANDIDATE_FRAMES_EVALUATED"
+        keyframe_indices = list(range(len(image_files)))
 
     imgs_gray = []
     w_first, h_first = 0, 0
@@ -97,7 +102,9 @@ def evaluate_dataset_geometry(image_dir, max_frames=12, max_dim=320):
             "classification": "INSUFFICIENT_RESOLUTION_OR_KEYFRAME",
             "classificationReason": f"Low resolution ({w_first}x{h_first} < 512x512) or ephemeral keyframes",
             "imageCount": len(image_files),
-            "sampleDimensions": f"{w_first}x{h_first}"
+            "sampleDimensions": f"{w_first}x{h_first}",
+            "coverageEvaluationMode": coverage_mode,
+            "evaluatedFramesCount": n_views
         }
 
     h_s, w_s = imgs_gray[0].shape[:2]
@@ -126,14 +133,21 @@ def evaluate_dataset_geometry(image_dir, max_frames=12, max_dim=320):
             "featuresDetected": int(avg_kp),
             "crossPairMatches": 0,
             "connectedViews": 0,
-            "loopClosurePassed": False
+            "loopClosurePassed": False,
+            "coverageEvaluationMode": coverage_mode,
+            "evaluatedFramesCount": n_views
         }
 
     bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
     adj_inliers = {}
     rel_poses = {}
+    adj_matches = {}
+    pair_parallax_metrics = {}
     adj_graph = {i: [] for i in range(n_views)}
     total_inliers = 0
+
+    P0 = K @ np.hstack([np.eye(3), np.zeros((3, 1))])
+    all_parallax_angles = []
 
     for i in range(n_views):
         j = (i + 1) % n_views
@@ -144,19 +158,79 @@ def evaluate_dataset_geometry(image_dir, max_frames=12, max_dim=320):
         matches = bf.match(des1, des2)
         matches = sorted(matches, key=lambda x: x.distance)
         good = [m for m in matches if m.distance < 64]
-        if len(good) >= 8:
-            pts_i = np.float32([kp_des[i][0][m.queryIdx].pt for m in good])
-            pts_j = np.float32([kp_des[j][0][m.trainIdx].pt for m in good])
-            E, mask = cv2.findEssentialMat(pts_i, pts_j, K, method=cv2.RANSAC, prob=0.99, threshold=2.0)
-            if mask is not None:
-                _, R_rel, t_rel, mask_p = cv2.recoverPose(E, pts_i, pts_j, K, mask=mask)
-                inlier_cnt = int(np.sum(mask_p > 0))
-                if inlier_cnt >= 6:
-                    adj_inliers[(i, j)] = inlier_cnt
-                    rel_poses[(i, j)] = (R_rel, t_rel)
-                    adj_graph[i].append(j)
-                    adj_graph[j].append(i)
-                    total_inliers += inlier_cnt
+        if len(good) < 8:
+            continue
+
+        pts_i = np.float32([kp_des[i][0][m.queryIdx].pt for m in good])
+        pts_j = np.float32([kp_des[j][0][m.trainIdx].pt for m in good])
+        E, mask = cv2.findEssentialMat(pts_i, pts_j, K, method=cv2.RANSAC, prob=0.99, threshold=2.0)
+        if mask is None:
+            continue
+
+        _, R_rel, t_rel, mask_p = cv2.recoverPose(E, pts_i, pts_j, K, mask=mask)
+        inliers = (mask_p.ravel() > 0)
+        inlier_cnt = int(np.sum(inliers))
+        if inlier_cnt < 6:
+            continue
+
+        # Save adjacency and pose
+        adj_inliers[(i, j)] = inlier_cnt
+        rel_poses[(i, j)] = (R_rel, t_rel)
+        adj_graph[i].append(j)
+        adj_graph[j].append(i)
+        total_inliers += inlier_cnt
+
+        adj_matches[(i, j)] = {
+            'pts_i': pts_i[inliers],
+            'pts_j': pts_j[inliers],
+            'matches': [good[idx] for idx in range(len(good)) if inliers[idx]]
+        }
+
+        # Measure True Translational Parallax via Triangulation
+        P1 = K @ np.hstack([R_rel, t_rel])
+        pts4d = cv2.triangulatePoints(P0, P1, pts_i[inliers].T, pts_j[inliers].T)
+        pts3d_1 = (pts4d[:3] / np.maximum(1e-7, pts4d[3])).T
+        pts3d_2 = (R_rel @ pts3d_1.T + t_rel).T
+
+        pos_depth_1 = pts3d_1[:, 2] > 0
+        pos_depth_2 = pts3d_2[:, 2] > 0
+        valid_depth = pos_depth_1 & pos_depth_2
+        pos_depth_ratio = float(np.mean(valid_depth))
+
+        ray1 = pts3d_1[valid_depth]
+        ray2 = pts3d_2[valid_depth]
+        norm1 = np.linalg.norm(ray1, axis=1, keepdims=True)
+        norm2 = np.linalg.norm(ray2, axis=1, keepdims=True)
+        valid_norm = (norm1[:, 0] > 1e-4) & (norm2[:, 0] > 1e-4)
+        if np.sum(valid_norm) > 0:
+            cos_ang = np.sum(ray1[valid_norm] * ray2[valid_norm], axis=1) / (norm1[valid_norm, 0] * norm2[valid_norm, 0])
+            cos_ang = np.clip(cos_ang, -1.0, 1.0)
+            angles_deg = np.degrees(np.arccos(cos_ang))
+            med_parallax_deg = float(np.median(angles_deg))
+            all_parallax_angles.extend(angles_deg.tolist())
+        else:
+            med_parallax_deg = 0.0
+
+        # Homography vs Essential Degeneracy Test
+        H, mask_h = cv2.findHomography(pts_i, pts_j, method=cv2.RANSAC, ransacReprojThreshold=3.0)
+        h_inliers = int(np.sum(mask_h)) if mask_h is not None else 0
+        h_ratio = h_inliers / max(1, inlier_cnt)
+
+        # A pair is verified as genuine translation only when depths are positive, parallax is non-zero, and not purely planar/rotational
+        pair_has_parallax = (pos_depth_ratio >= 0.55 and med_parallax_deg >= 1.2 and h_ratio < 0.90)
+        pair_parallax_metrics[f"{i}_{j}"] = {
+            "pair": [i, j],
+            "inliers": inlier_cnt,
+            "positiveDepthRatio": round(pos_depth_ratio, 3),
+            "medianParallaxDegrees": round(med_parallax_deg, 2),
+            "homographyInlierRatio": round(h_ratio, 3),
+            "hasTranslationalParallax": pair_has_parallax
+        }
+
+    # Global Parallax Assessment
+    global_med_parallax = float(np.median(all_parallax_angles)) if all_parallax_angles else 0.0
+    pairs_with_parallax_count = sum(1 for p in pair_parallax_metrics.values() if p["hasTranslationalParallax"])
+    has_recoverable_parallax = (pairs_with_parallax_count >= 2 and global_med_parallax >= 1.2)
 
     # Connected components via BFS
     visited = set()
@@ -179,38 +253,89 @@ def evaluate_dataset_geometry(image_dir, max_frames=12, max_dim=320):
     component_sizes = [len(c) for c in components]
     max_component_size = component_sizes[0] if component_sizes else 0
 
-    # 360-degree ring closure test
+    # 360-degree ring closure test & 3-view scale consistency resolution
     ring_closed = all((i, (i + 1) % n_views) in rel_poses for i in range(n_views))
     loop_residual = None
     loop_closure_passed = False
 
     if ring_closed:
+        # Scale resolution via 3-view shared point track triangulation
+        scales = {0: 1.0}
+        scale_resolved = True
+        for i in range(n_views - 1):
+            j = (i + 1) % n_views
+            k = (i + 2) % n_views
+            if (i, j) not in adj_matches or (j, k) not in adj_matches:
+                scale_resolved = False
+                break
+            m1 = adj_matches[(i, j)]['matches']
+            m2 = adj_matches[(j, k)]['matches']
+            j_to_i = {m.trainIdx: m.queryIdx for m in m1}
+            shared = [m for m in m2 if m.queryIdx in j_to_i]
+            if len(shared) >= 4:
+                p_i = np.float32([kp_des[i][0][j_to_i[m.queryIdx]].pt for m in shared])
+                p_j = np.float32([kp_des[j][0][m.queryIdx].pt for m in shared])
+                p_k = np.float32([kp_des[k][0][m.trainIdx].pt for m in shared])
+
+                R_ij, t_ij = rel_poses[(i, j)]
+                R_jk, t_jk = rel_poses[(j, k)]
+                P_ij = K @ np.hstack([R_ij, t_ij])
+                P_jk = K @ np.hstack([R_jk, t_jk])
+
+                pts4d_1 = cv2.triangulatePoints(P0, P_ij, p_i.T, p_j.T)
+                z1 = (R_ij @ (pts4d_1[:3] / np.maximum(1e-7, pts4d_1[3])) + t_ij)[2]
+
+                pts4d_2 = cv2.triangulatePoints(P0, P_jk, p_j.T, p_k.T)
+                z2 = (pts4d_2[2] / np.maximum(1e-7, pts4d_2[3]))
+
+                valid = (z1 > 0) & (z2 > 0)
+                if np.sum(valid) >= 3:
+                    ratio = np.median(z1[valid] / z2[valid])
+                    scales[j] = scales[i] * max(0.1, min(10.0, float(ratio)))
+                else:
+                    scales[j] = scales[i]
+            else:
+                scales[j] = scales[i]
+
         R_cum = np.eye(3)
         t_cum = np.zeros((3, 1))
+        total_path_length = 0.0
+
         for i in range(n_views):
             j = (i + 1) % n_views
             R_rel, t_rel = rel_poses[(i, j)]
-            t_cum = t_cum + R_cum @ t_rel
+            s_rel = scales.get(i, 1.0)
+            t_scaled = s_rel * t_rel
+            t_cum = t_cum + R_cum @ t_scaled
             R_cum = R_rel @ R_cum
+            total_path_length += float(s_rel * np.linalg.norm(t_rel))
 
         rot_drift_frob = float(np.linalg.norm(R_cum - np.eye(3), 'fro'))
         cos_ang = max(-1.0, min(1.0, (np.trace(R_cum) - 1.0) / 2.0))
         rot_drift_deg = float(math.degrees(math.acos(cos_ang)))
-        trans_drift_rel = float(np.linalg.norm(t_cum) / float(n_views))
+        scale_consistent_trans_residual = float(np.linalg.norm(t_cum) / max(1e-4, total_path_length))
 
-        loop_closure_passed = (rot_drift_frob <= 0.50 and rot_drift_deg <= 15.0 and trans_drift_rel <= 0.20)
+        loop_closure_passed = bool(
+            rot_drift_frob <= 0.50 and
+            rot_drift_deg <= 15.0 and
+            scale_consistent_trans_residual <= 0.15 and
+            scale_resolved
+        )
+
         loop_residual = {
             "status": "LOOP_CLOSURE_VERIFIED" if loop_closure_passed else "LOOP_CLOSURE_FAILED_EXCEEDS_TOLERANCE",
             "closurePassed": loop_closure_passed,
             "measured": {
                 "rotationDriftFrobenius": round(rot_drift_frob, 4),
                 "rotationDriftDegrees": round(rot_drift_deg, 2),
-                "translationDriftRelative": round(trans_drift_rel, 4)
+                "scaleConsistentTranslationResidual": round(scale_consistent_trans_residual, 4),
+                "totalTrajectoryPathLength": round(total_path_length, 4),
+                "scaleConsistencyResolved": scale_resolved
             },
             "thresholds": {
                 "maxRotationDriftFrobenius": 0.50,
                 "maxRotationAngleDegrees": 15.0,
-                "maxTranslationDriftRelative": 0.20
+                "maxScaleConsistentTranslationResidual": 0.15
             }
         }
     else:
@@ -220,31 +345,32 @@ def evaluate_dataset_geometry(image_dir, max_frames=12, max_dim=320):
             "measured": {
                 "rotationDriftFrobenius": None,
                 "rotationDriftDegrees": None,
-                "translationDriftRelative": None
+                "scaleConsistentTranslationResidual": None,
+                "totalTrajectoryPathLength": None,
+                "scaleConsistencyResolved": False
             },
             "thresholds": {
                 "maxRotationDriftFrobenius": 0.50,
                 "maxRotationAngleDegrees": 15.0,
-                "maxTranslationDriftRelative": 0.20
+                "maxScaleConsistentTranslationResidual": 0.15
             }
         }
 
-    has_parallax = (total_inliers >= 15 and len(adj_inliers) >= 2)
-    is_positive = (max_component_size == n_views and loop_closure_passed and n_views >= 12 and has_parallax)
-    is_negative = (has_parallax and (max_component_size < n_views or not loop_closure_passed))
+    is_positive = (max_component_size == n_views and loop_closure_passed and n_views >= 12 and has_recoverable_parallax)
+    is_negative = (has_recoverable_parallax and (max_component_size < n_views or not loop_closure_passed))
 
     if is_positive:
         classification = "POSITIVE_COMPLETE_RING_FIXTURE_VERIFIED"
-        reason = f"Full {n_views}/{n_views} ring coverage, verified translation parallax ({total_inliers} inliers), and closed loop residual."
+        reason = f"Full {n_views}/{n_views} ring coverage, verified translational parallax (median {global_med_parallax:.1f} deg), and verified scale-consistent loop closure."
     elif is_negative:
         classification = "NEGATIVE_PARTIAL_FIXTURE_VERIFIED"
         if not ring_closed:
             reason = f"Partial graph connectivity ({max_component_size}/{n_views} views connected in main component); ring incomplete."
         else:
-            reason = f"Connected views ({max_component_size}/{n_views}) but loop closure exceeded tolerance ({loop_residual['measured']['rotationDriftDegrees']} deg drift)."
+            reason = f"Connected views ({max_component_size}/{n_views}) but loop closure exceeded tolerance ({loop_residual['measured']['rotationDriftDegrees']} deg rotation drift, {loop_residual['measured']['scaleConsistentTranslationResidual']} trans drift)."
     else:
         classification = "INELIGIBLE_INSUFFICIENT_PARALLAX_OR_DISCONNECTED"
-        reason = f"Insufficient matchable parallax or disconnected camera stations (inliers: {total_inliers}, connected: {max_component_size}/{n_views})."
+        reason = f"Insufficient matchable parallax or degenerate planar geometry (median parallax: {global_med_parallax:.1f} deg, connected: {max_component_size}/{n_views})."
 
     return {
         "success": True,
@@ -253,6 +379,10 @@ def evaluate_dataset_geometry(image_dir, max_frames=12, max_dim=320):
         "classificationReason": reason,
         "imageCount": len(image_files),
         "evaluatedViews": n_views,
+        "evaluatedFramesCount": n_views,
+        "coverageEvaluationMode": coverage_mode,
+        "evaluatedFileNames": selected_files,
+        "evaluatedKeyframeIndices": keyframe_indices,
         "sampleDimensions": f"{w_first}x{h_first}",
         "featuresDetected": int(avg_kp),
         "crossPairMatches": total_inliers,
@@ -261,7 +391,10 @@ def evaluate_dataset_geometry(image_dir, max_frames=12, max_dim=320):
         "componentSizes": component_sizes,
         "loopClosurePassed": loop_closure_passed,
         "loopClosureResidual": loop_residual,
-        "hasRecoverableParallax": has_parallax,
+        "hasRecoverableParallax": has_recoverable_parallax,
+        "globalMedianParallaxDegrees": round(global_med_parallax, 2),
+        "pairsWithValidParallax": pairs_with_parallax_count,
+        "pairParallaxMetrics": pair_parallax_metrics,
         "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT"
     }
 
@@ -269,7 +402,7 @@ def evaluate_dataset_geometry(image_dir, max_frames=12, max_dim=320):
 def main():
     parser = argparse.ArgumentParser(description="Empirical Geometry Evaluator for Discovered Capture Datasets")
     parser.add_argument("image_dir", help="Path to image directory")
-    parser.add_argument("--max-frames", type=int, default=12, help="Maximum frames to evaluate")
+    parser.add_argument("--max-frames", type=int, default=64, help="Maximum frames to evaluate")
     parser.add_argument("--max-dim", type=int, default=320, help="Downscaled dimension for fast evaluation")
     args = parser.parse_args()
 

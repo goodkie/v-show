@@ -189,9 +189,9 @@ function inventoryDatasets(options = {}) {
     try { authReceipt = JSON.parse(fs.readFileSync(receiptPath, 'utf8')); } catch (_) {}
   }
 
-  const geomCachePath = path.join(artifactDir, 'DATASET_GEOMETRY_CACHE.json');
-  let geomCache = {};
-  if (fs.existsSync(geomCachePath)) {
+  const geomCachePath = options.geomCachePath || path.join(artifactDir, 'DATASET_GEOMETRY_CACHE.json');
+  let geomCache = options.geomCache || {};
+  if (!options.geomCache && fs.existsSync(geomCachePath)) {
     try { geomCache = JSON.parse(fs.readFileSync(geomCachePath, 'utf8')); } catch (_) {}
   }
 
@@ -316,6 +316,8 @@ function inventoryDatasets(options = {}) {
     let eligibility = 'UNKNOWN';
     let fixtureClassification = 'UNKNOWN';
     let eligibilityReason = '';
+    let evalTotal = cand.imageFiles.length;
+    let hasGenuineParallax = false;
 
     if (isLowRes) {
       category = 'INSUFFICIENT_RESOLUTION_OR_KEYFRAME';
@@ -337,18 +339,21 @@ function inventoryDatasets(options = {}) {
         crossPairMatches = authReceipt.bundleAdjustmentRefinement?.totalTracksCount || crossPairMatches;
       }
 
-      const hasGenuineParallax = Boolean(measuredGeom.hasRecoverableParallax);
-      const isCompleteCoverage = (connectedViews === cand.imageFiles.length && cand.imageFiles.length >= 12);
+      hasGenuineParallax = Boolean(measuredGeom.hasRecoverableParallax);
+      evalTotal = measuredGeom.evaluatedFramesCount || cand.imageFiles.length;
+      const isCompleteCoverage = (connectedViews === evalTotal && evalTotal >= 12);
       const isLoopClosed = (loopClosurePassed === true);
 
       if (hasGenuineParallax && isCompleteCoverage && isLoopClosed) {
         eligibility = 'ELIGIBLE_POSITIVE_FIXTURE';
         fixtureClassification = 'POSITIVE_COMPLETE_RING_FIXTURE_VERIFIED';
-        eligibilityReason = `Empirical multi-view geometry verified: complete ${connectedViews}/${cand.imageFiles.length} ring coverage, verified parallax (${crossPairMatches} inliers), and verified loop closure.`;
+        eligibilityReason = `Empirical multi-view geometry verified: complete ${connectedViews}/${evalTotal} ring coverage, verified parallax (${crossPairMatches} inliers, ${measuredGeom.globalMedianParallaxDegrees || 'N/A'} deg median), and verified scale-consistent loop closure.`;
       } else if (hasGenuineParallax) {
         eligibility = 'ELIGIBLE_NON_OWNER_BENCHMARK';
         fixtureClassification = 'NEGATIVE_PARTIAL_FIXTURE_VERIFIED';
-        eligibilityReason = `Empirical multi-view geometry evaluated: ${connectedViews}/${cand.imageFiles.length} views connected, loop closure gap (${measuredGeom.loopClosureResidual?.measured?.rotationDriftDegrees ?? 'exceeds'} deg drift).`;
+        const rotDrift = measuredGeom.loopClosureResidual?.measured?.rotationDriftDegrees ?? 'exceeds';
+        const transRes = measuredGeom.loopClosureResidual?.measured?.scaleConsistentTranslationResidual ?? 'N/A';
+        eligibilityReason = `Empirical multi-view geometry evaluated: ${connectedViews}/${evalTotal} views connected, loop closure gap (${rotDrift} deg drift, scale-consistent translation residual ${transRes}).`;
       } else {
         category = 'INSUFFICIENT_METADATA_TO_EVALUATE';
         eligibility = 'INSUFFICIENT_METADATA_TO_EVALUATE';
@@ -376,12 +381,16 @@ function inventoryDatasets(options = {}) {
       loopClosurePassed,
       metrics: {
         frameCount: cand.imageFiles.length,
+        evaluatedFramesCount: evalTotal,
+        coverageEvaluationMode: measuredGeom ? (measuredGeom.coverageEvaluationMode || 'ALL_CANDIDATE_FRAMES_EVALUATED') : 'NOT_EVALUATED',
         dimensions: `${firstDim.width}x${firstDim.height} (${firstDim.format})`,
         siftFeaturesDetected,
         crossPairMatches,
         maxBaselineMeters,
-        coverage360Complete: Boolean(connectedViews === cand.imageFiles.length && cand.imageFiles.length >= 12),
-        loopClosureMet: Boolean(loopClosurePassed === true)
+        coverage360Complete: Boolean(connectedViews === evalTotal && evalTotal >= 12),
+        loopClosureMet: Boolean(loopClosurePassed === true),
+        hasRecoverableParallax: hasGenuineParallax,
+        globalMedianParallaxDegrees: measuredGeom ? (measuredGeom.globalMedianParallaxDegrees || null) : null
       },
       imageBytesRead: true
     };
@@ -405,12 +414,16 @@ function inventoryDatasets(options = {}) {
         directoryInstances: [normRel],
         metrics: {
           frameCount: cand.imageFiles.length,
+          evaluatedFramesCount: evalTotal,
+          coverageEvaluationMode: measuredGeom ? (measuredGeom.coverageEvaluationMode || 'ALL_CANDIDATE_FRAMES_EVALUATED') : 'NOT_EVALUATED',
           dimensions: `${firstDim.width}x${firstDim.height}`,
           siftFeaturesDetected,
           crossPairMatches,
           maxBaselineMeters,
           coverage360Complete: candidateRecord.metrics.coverage360Complete,
-          loopClosureMet: candidateRecord.metrics.loopClosureMet
+          loopClosureMet: candidateRecord.metrics.loopClosureMet,
+          hasRecoverableParallax: hasGenuineParallax,
+          globalMedianParallaxDegrees: measuredGeom ? (measuredGeom.globalMedianParallaxDegrees || null) : null
         }
       });
     } else {

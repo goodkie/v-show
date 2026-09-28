@@ -3410,7 +3410,7 @@ async function main() {
   });
 
   // ── [19] Real Recursive Workspace Discovery & Unbiased Third-View Stereo Depth Consistency ──
-  runTest('19. Real recursive workspace discovery audit & unbiased third-view geometric depth consistency (Round 97)', () => {
+  await runTestAsync('19. Real recursive workspace discovery audit & unbiased third-view geometric depth consistency (Round 99)', async () => {
     const { inventoryDatasets } = require(path.join(REPO_ROOT, 'virtual-tradeshow-commercial-v1/server/dataset_inventory'));
     const inventoryResult = inventoryDatasets({ repoRoot: REPO_ROOT });
 
@@ -3461,6 +3461,10 @@ async function main() {
     assert.ok(partialCand, 'wilo/authentic-booth candidate must be evaluated');
     assert.strictEqual(partialCand.classification, 'ELIGIBLE_NEGATIVE_PARTIAL_FIXTURE');
     assert.strictEqual(partialCand.metrics.frameCount, 12);
+    assert.strictEqual(partialCand.metrics.evaluatedFramesCount, 12);
+    assert.strictEqual(partialCand.metrics.coverageEvaluationMode, 'ALL_CANDIDATE_FRAMES_EVALUATED');
+    assert.strictEqual(partialCand.metrics.hasRecoverableParallax, true);
+    assert.ok(typeof partialCand.metrics.globalMedianParallaxDegrees === 'number' && partialCand.metrics.globalMedianParallaxDegrees >= 1.2, 'Parallax angle must be >= 1.2 deg');
     assert.strictEqual(partialCand.metrics.coverage360Complete, false);
     assert.strictEqual(partialCand.metrics.loopClosureMet, false);
     assert.strictEqual(partialCand.hasKnownCalibration, false, 'Candidate must not inherit R6 calibration (Round 98 Blocker 3)');
@@ -3481,11 +3485,55 @@ async function main() {
     assert.strictEqual(perturbResult.perturbed.viewsFailedCount, 1, 'Perturbed must fail 1 third-view test');
     assert.strictEqual(perturbResult.perturbed.photometricFallbackAttempted, false, 'Photometric fallback cannot rescue geometric failure');
 
+    // Fresh Clean-Run Geometry Evaluation & Cache Integrity Proof (Round 99 Blocker 5)
+    const { buildGeometryCacheAsync } = require(path.join(REPO_ROOT, 'scripts/build_geometry_cache'));
+    const scratchDir = fs.mkdtempSync(path.join(os.tmpdir(), 'stage2-geom-scratch-'));
+    const scratchCachePath = path.join(scratchDir, 'FRESH_DATASET_GEOMETRY_CACHE.json');
+    let freshBuildResult;
+    try {
+      freshBuildResult = await buildGeometryCacheAsync({
+        repoRoot: REPO_ROOT,
+        outputPath: scratchCachePath,
+        forceFresh: true,
+        concurrency: 8
+      });
+      assert.strictEqual(freshBuildResult.success, true, 'Fresh geometry cache generation must succeed');
+      assert.ok(freshBuildResult.datasetCount >= 25, 'Must evaluate all candidate datasets freshly');
+      assert.ok(fs.existsSync(scratchCachePath), 'Fresh scratch cache file must exist');
+
+      const publishedCachePath = path.join(REPO_ROOT, 'virtual-tradeshow-commercial-v1/production_artifacts/DATASET_GEOMETRY_CACHE.json');
+      assert.ok(fs.existsSync(publishedCachePath), 'Published DATASET_GEOMETRY_CACHE.json must exist');
+      const publishedCacheSha = crypto.createHash('sha256').update(fs.readFileSync(publishedCachePath)).digest('hex');
+      assert.strictEqual(freshBuildResult.cacheSha256, publishedCacheSha, 'Fresh clean-run geometry cache SHA256 must match published DATASET_GEOMETRY_CACHE.json byte-for-byte');
+    } finally {
+      try { fs.rmSync(scratchDir, { recursive: true, force: true }); } catch (_) {}
+    }
+
+    // Automated Report Parity Assertion (Round 99 Blocker 1 & 7)
+    const reportPath = path.join(REPO_ROOT, 'docs/ROUND_99_REPORT.md');
+    const v11ReceiptPath = path.join(REPO_ROOT, 'virtual-tradeshow-commercial-v1/production_artifacts/AUTHLINEAGE_RECEIPT_V11_STANDARDIZED_DIGEST_AND_SUPPORT_POLICY.json');
+    if (fs.existsSync(reportPath) && fs.existsSync(v11ReceiptPath)) {
+      const reportContent = fs.readFileSync(reportPath, 'utf8');
+      const v11Receipt = JSON.parse(fs.readFileSync(v11ReceiptPath, 'utf8'));
+      const prov = v11Receipt.denseMvsDiagnostics?.pointSupportProvenance || {};
+      const expectedPointSupportCount = (prov.totalCandidatePointsTested || 0).toLocaleString();
+      const expectedThirdViewsTested = (prov.totalThirdViewsTested || 0).toLocaleString();
+      const expectedThirdViewsPassed = (prov.totalThirdViewsPassed || 0).toLocaleString();
+      const expectedThirdViewsFailed = (prov.totalThirdViewsFailed || 0).toLocaleString();
+      assert.ok(reportContent.includes(expectedPointSupportCount), `Report must contain exact candidate points tested count: ${expectedPointSupportCount}`);
+      assert.ok(reportContent.includes(expectedThirdViewsTested), `Report must contain exact third views tested count: ${expectedThirdViewsTested}`);
+      assert.ok(reportContent.includes(expectedThirdViewsPassed), `Report must contain exact third views passed count: ${expectedThirdViewsPassed}`);
+      assert.ok(reportContent.includes(expectedThirdViewsFailed), `Report must contain exact third views failed count: ${expectedThirdViewsFailed}`);
+      assert.ok(reportContent.includes(`Eligible Negative Partial Fixtures**: ${inventoryResult.discoverySummary.uniqueEligibleNegativeFixtures}`), 'Report must contain exact negative fixture count');
+      assert.ok(reportContent.includes(`Insufficient Features / Metadata to Evaluate**: ${inventoryResult.discoverySummary.uniqueInsufficientMetadataDatasets}`), 'Report must contain exact insufficient metadata count');
+    }
+
     console.log(`    - Recursive Traversal:   ${inventoryResult.traversalProof.rootsScanned.length} roots, ${inventoryResult.traversalProof.directoriesTraversed} dirs, ${inventoryResult.traversalProof.filesExamined} files examined`);
     console.log(`    - Canonical Datasets:    ${inventoryResult.discoverySummary.discoveredDirectoryCount} directory instances -> ${inventoryResult.discoverySummary.uniqueDatasetCount} unique datasets`);
     console.log(`    - Privacy Boundary:      ${inventoryResult.traversalProof.restrictedPathsSkipped.length} restricted paths skipped (imageBytesRead: false)`);
     console.log(`    - Candidates Evaluated:  ${inventoryResult.evaluatedCandidates.length} candidate directories dynamically evaluated`);
     console.log(`    - Gate Perturbation:     PASS (Nominal accepted, Perturbed rejected, Fallback attempted: false)`);
+    console.log(`    - Fresh Cache SHA256:    ${freshBuildResult.cacheSha256} (Matched byte-for-byte with published cache)`);
     console.log(`    - Positive Fixture Gate: ${inventoryResult.gateEvaluation.POSITIVE_FIXTURE_GATE}`);
     console.log(`    - Dataset Adequacy Gate: ${inventoryResult.gateEvaluation.DATASET_ADEQUACY_GATE}`);
   });
@@ -3615,21 +3663,6 @@ async function main() {
       DESTRUCTIVE_GIT_REWRITE: 'FORBIDDEN',
       DATASET_ADEQUACY_GATE: 'BLOCKED_BY_MEASURED_POSITIVE_FIXTURE_AVAILABILITY',
       POSITIVE_FIXTURE_GATE: 'BLOCKED_BY_MEASURED_POSITIVE_FIXTURE_AVAILABILITY'
-    },
-    runBundle: {
-      runBundleId: `RUN_BUNDLE_R98_${suiteCurrentHead}_${new Date().toISOString().replace(/[:.]/g, '-')}`,
-      cutCommitSha: suiteCurrentHead,
-      linkedReceipts: [
-        'virtual-tradeshow-commercial-v1/production_artifacts/AUTHLINEAGE_RECEIPT_V11_STANDARDIZED_DIGEST_AND_SUPPORT_POLICY.json',
-        'virtual-tradeshow-commercial-v1/production_artifacts/DATASET_INVENTORY_AUDIT_V4_EMPIRICAL_GEOMETRY_EVALUATION.json',
-        'virtual-tradeshow-commercial-v1/production_artifacts/DATASET_INVENTORY_AUDIT.json',
-        'virtual-tradeshow-commercial-v1/production_artifacts/DATASET_GEOMETRY_CACHE.json',
-        'virtual-tradeshow-commercial-v1/production_artifacts/R47_TEST_EXECUTION_RECEIPT.json'
-      ],
-      linkedArtifacts: [
-        'virtual-tradeshow-commercial-v1/production_artifacts/stage2_true3d_pointcloud_verified.ply',
-        'virtual-tradeshow-commercial-v1/production_artifacts/stage2_true3d_pointcloud_sparse_seed.ply'
-      ]
     }
   };
 
@@ -3655,6 +3688,68 @@ async function main() {
       }
     }
   }
+
+  // Cryptographic Run Bundle Manifest (Round 99 Blocker 6)
+  const bundleArtifactPaths = [
+    'virtual-tradeshow-commercial-v1/production_artifacts/AUTHLINEAGE_RECEIPT_V11_STANDARDIZED_DIGEST_AND_SUPPORT_POLICY.json',
+    'virtual-tradeshow-commercial-v1/production_artifacts/AUTHLINEAGE_RECEIPT.json',
+    'virtual-tradeshow-commercial-v1/production_artifacts/DATASET_INVENTORY_AUDIT_V4_EMPIRICAL_GEOMETRY_EVALUATION.json',
+    'virtual-tradeshow-commercial-v1/production_artifacts/DATASET_INVENTORY_AUDIT.json',
+    'virtual-tradeshow-commercial-v1/production_artifacts/DATASET_GEOMETRY_CACHE.json',
+    'virtual-tradeshow-commercial-v1/production_artifacts/stage2_true3d_pointcloud_verified.ply',
+    'virtual-tradeshow-commercial-v1/production_artifacts/stage2_true3d_pointcloud_sparse_seed.ply',
+    'virtual-tradeshow-commercial-v1/server/spatial_reconstruction_engine.py',
+    'virtual-tradeshow-commercial-v1/server/evaluate_dataset_geometry.py',
+    'virtual-tradeshow-commercial-v1/server/dataset_inventory.js'
+  ];
+
+  const canonicalManifest = [];
+  for (const relPath of bundleArtifactPaths) {
+    const fullP = path.join(REPO_ROOT, relPath);
+    if (fs.existsSync(fullP)) {
+      const stat = fs.statSync(fullP);
+      const sha256 = crypto.createHash('sha256').update(fs.readFileSync(fullP)).digest('hex');
+      canonicalManifest.push({
+        path: relPath.replace(/\\/g, '/'),
+        sizeBytes: stat.size,
+        sha256
+      });
+    }
+  }
+  canonicalManifest.sort((a, b) => a.path.localeCompare(b.path));
+  const bundleDigest = crypto.createHash('sha256').update(JSON.stringify(canonicalManifest)).digest('hex');
+
+  receipt.runBundle = {
+    runBundleId: `RUN_BUNDLE_R99_${suiteCurrentHead}_${new Date().toISOString().replace(/[:.]/g, '-')}`,
+    cutCommitSha: suiteCurrentHead,
+    bundleDigest,
+    manifestEntriesCount: canonicalManifest.length,
+    canonicalManifest,
+    linkedReceipts: [
+      'virtual-tradeshow-commercial-v1/production_artifacts/AUTHLINEAGE_RECEIPT_V11_STANDARDIZED_DIGEST_AND_SUPPORT_POLICY.json',
+      'virtual-tradeshow-commercial-v1/production_artifacts/DATASET_INVENTORY_AUDIT_V4_EMPIRICAL_GEOMETRY_EVALUATION.json',
+      'virtual-tradeshow-commercial-v1/production_artifacts/DATASET_INVENTORY_AUDIT.json',
+      'virtual-tradeshow-commercial-v1/production_artifacts/DATASET_GEOMETRY_CACHE.json',
+      'virtual-tradeshow-commercial-v1/production_artifacts/R47_TEST_EXECUTION_RECEIPT.json'
+    ],
+    linkedArtifacts: [
+      'virtual-tradeshow-commercial-v1/production_artifacts/stage2_true3d_pointcloud_verified.ply',
+      'virtual-tradeshow-commercial-v1/production_artifacts/stage2_true3d_pointcloud_sparse_seed.ply'
+    ]
+  };
+
+  const manifestRecord = {
+    manifestSchemaVersion: 'RUN_BUNDLE_MANIFEST_V1',
+    cutCommitSha: suiteCurrentHead,
+    bundleDigest,
+    createdAt: new Date().toISOString(),
+    manifestEntries: canonicalManifest
+  };
+  fs.writeFileSync(
+    path.join(REPO_ROOT, 'virtual-tradeshow-commercial-v1/production_artifacts/RUN_BUNDLE_MANIFEST.json'),
+    JSON.stringify(manifestRecord, null, 2),
+    'utf8'
+  );
 
   const receiptOutPath = path.join(
     REPO_ROOT,
