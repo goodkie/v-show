@@ -3420,7 +3420,11 @@ async function main() {
   // ── [19] Real Recursive Workspace Discovery & Unbiased Third-View Stereo Depth Consistency ──
   await runTestAsync('19. Real recursive workspace discovery audit & unbiased third-view geometric depth consistency (Round 99)', async () => {
     const { inventoryDatasets } = require(path.join(REPO_ROOT, 'virtual-tradeshow-commercial-v1/server/dataset_inventory'));
-    const inventoryResult = inventoryDatasets({ repoRoot: REPO_ROOT });
+    const inventoryResult = inventoryDatasets({
+      repoRoot: REPO_ROOT,
+      artifactDir: requireClean ? cleanRunScratchDir : path.join(REPO_ROOT, 'virtual-tradeshow-commercial-v1/production_artifacts'),
+      geomCachePath: path.join(REPO_ROOT, 'virtual-tradeshow-commercial-v1/production_artifacts/DATASET_GEOMETRY_CACHE.json')
+    });
 
     assert.ok(inventoryResult, 'inventoryDatasets must return an audit object');
     assert.strictEqual(inventoryResult.auditSchemaVersion, 'DATASET_INVENTORY_AUDIT_V4_EMPIRICAL_GEOMETRY_EVALUATION');
