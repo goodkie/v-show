@@ -1,7 +1,7 @@
 {
   "receiptSchemaVersion": "AUTHLINEAGE_RECEIPT_V3_CALIBRATED_GLOBAL_SFM",
-  "jobId": "recon-job-1790576831108-91c14dac",
-  "codeUnderTestSha": "6d715c407318768a0af238051e5f97da2ac62e5f",
+  "jobId": "recon-job-1790577088244-c7ee00f2",
+  "codeUnderTestSha": "210e030431ecac7d8fa439cbb83698db72796d6f",
   "engineProvenance": {
     "engineName": "OPENCV_SIFT_CALIBRATED_GLOBAL_SFM",
     "engineSourceSha256": "82a374a17a444830ff0af879f6fc97b821949c5edbb96b2bb6c400f18554e6ce",
@@ -149,6 +149,6 @@
   },
   "cryptographicBinding": {
     "formula": "sha256(cutSha | inputsDigest | calibStatus | engineSha | workerSha | configDigest | rmse | outSha)",
-    "lineageDigest": "1c34afe7c1a4834bd94598f34daf4a496ca7450ff6b586798bdba1ff87f6482a"
+    "lineageDigest": "bb3845eaf7632528b1c30f231645a292c21dca4859be84bd7400c22d97aa2cd3"
   }
 }

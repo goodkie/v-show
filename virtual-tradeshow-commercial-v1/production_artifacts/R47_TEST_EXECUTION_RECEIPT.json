@@ -1,9 +1,9 @@
 {
   "receiptSchemaVersion": "R47_EXECUTION_RECEIPT_V1",
   "executionTimestamps": {
-    "startTime": "2026-09-28T06:27:09.644Z",
-    "endTime": "2026-09-28T06:28:38.164Z",
-    "durationMs": 88508
+    "startTime": "2026-09-28T06:31:26.379Z",
+    "endTime": "2026-09-28T06:32:40.287Z",
+    "durationMs": 73905
   },
   "runnerMetadata": {
     "sourceFile": "test/test_stage2_true3d_pipeline.js",
@@ -12,11 +12,11 @@
     "platform": "win32"
   },
   "gitEvidence": {
-    "observedHeadSha": "6d715c407318768a0af238051e5f97da2ac62e5f",
-    "expectedHeadSha": "6d715c407318768a0af238051e5f97da2ac62e5f",
+    "observedHeadSha": "210e030431ecac7d8fa439cbb83698db72796d6f",
+    "expectedHeadSha": "210e030431ecac7d8fa439cbb83698db72796d6f",
     "headBindingMatched": true,
     "worktreeClean": false,
-    "rawGitStatusPorcelain": "M virtual-tradeshow-commercial-v1/production_artifacts/AUTHLINEAGE_RECEIPT.json\n M virtual-tradeshow-commercial-v1/production_artifacts/AUTHLINEAGE_RECONSTRUCTED_SPATIAL_MODEL.ply\n M virtual-tradeshow-commercial-v1/production_artifacts/R47_TEST_EXECUTION_RECEIPT.json\n?? docs/ROUND_90_REPORT.md"
+    "rawGitStatusPorcelain": "M virtual-tradeshow-commercial-v1/production_artifacts/AUTHLINEAGE_RECEIPT.json\n M virtual-tradeshow-commercial-v1/production_artifacts/R47_TEST_EXECUTION_RECEIPT.json"
   },
   "suiteResults": {
     "totalTests": 19,

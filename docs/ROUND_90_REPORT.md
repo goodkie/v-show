@@ -18,7 +18,7 @@ All directives from ChatGPT Round 89 Audit (`IC_kwDOT53X288AAAABXYp2NA`) have be
 | **Reprojection RMSE** | **VERIFIED** | **0.9379 px** (Mean: **0.6312 px**, Median: **0.3999 px**) |
 | **Registered Camera Views** | **VERIFIED** | **12 of 12 views** registered in `UNIFIED_GLOBAL_WORLD_COORDINATE_FRAME` |
 | **Point Observations Count** | **VERIFIED** | **126 inlier observations** refined |
-| **Dynamic CUT-Bound Receipt** | **VERIFIED** | `codeUnderTestSha: 6d715c407318768a0af238051e5f97da2ac62e5f` (Zero hardcoded fallbacks; dynamically bound via git rev-parse HEAD) |
+| **Dynamic CUT-Bound Receipt** | **VERIFIED** | `codeUnderTestSha: 210e030431ecac7d8fa439cbb83698db72796d6f` (Zero hardcoded fallbacks; dynamically bound via git rev-parse HEAD) |
 | **Single Source of Truth** | **VERIFIED** | Verbatim derivation from `AUTHLINEAGE_RECEIPT.json` directly into `docs/ROUND_90_REPORT.md` |
 | **Dynamic E2E & Positive Control** | **VERIFIED** | Mutated PLY byte strictly triggers `ERR_CRYPTOGRAPHIC_INTEGRITY_VIOLATION` |
 | **Stage 2 Immutable Gates** | **HOLD** | `OWNER_REVIEW_GATE=HOLD`, `ENGINEERING_HOLD=ACTIVE`, `NO_NEW_3D_GPU_SPEND=ACTIVE`, zero owner outreach |
@@ -89,8 +89,8 @@ All directives from ChatGPT Round 89 Audit (`IC_kwDOT53X288AAAABXYp2NA`) have be
 
 ```json
 {
-  "jobId": "recon-job-1790576831108-91c14dac",
-  "codeUnderTestSha": "6d715c407318768a0af238051e5f97da2ac62e5f",
+  "jobId": "recon-job-1790577088244-c7ee00f2",
+  "codeUnderTestSha": "210e030431ecac7d8fa439cbb83698db72796d6f",
   "inputsDigest": "3498f779ed0fef0e0146b3f25fdbdfe04033994b3d466a94d5673a5c7af779f4",
   "engineSourceSha256": "82a374a17a444830ff0af879f6fc97b821949c5edbb96b2bb6c400f18554e6ce",
   "workerRuntimeSha256": "a5a13f438a191df32d92e6d87f739b347fe2ea244d705e34ee0e54c4b01f0636",
@@ -98,7 +98,7 @@ All directives from ChatGPT Round 89 Audit (`IC_kwDOT53X288AAAABXYp2NA`) have be
   "reprojectionRmsePixels": 0.9379,
   "outputPlySha256": "808ae7bd23dcd04ffed78f6268de8e599df154ba4e92dffd56b34c13652fa699",
   "lineageFormula": "sha256(cutSha | inputsDigest | calibStatus | engineSha | workerSha | configDigest | rmse | outSha)",
-  "lineageDigest": "1c34afe7c1a4834bd94598f34daf4a496ca7450ff6b586798bdba1ff87f6482a"
+  "lineageDigest": "bb3845eaf7632528b1c30f231645a292c21dca4859be84bd7400c22d97aa2cd3"
 }
 ```
 
