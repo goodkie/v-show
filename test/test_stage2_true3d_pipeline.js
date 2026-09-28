@@ -425,7 +425,7 @@ async function main() {
     // Cryptographic receipt assertions
     assert.ok(fs.existsSync(authReconResult.reconstructionExecution.receiptPath), 'Lineage receipt must exist on disk');
     const receiptContent = JSON.parse(fs.readFileSync(authReconResult.reconstructionExecution.receiptPath, 'utf8'));
-    assert.strictEqual(receiptContent.receiptSchemaVersion, 'AUTHLINEAGE_RECEIPT_V9_RECTIFIED_THIRD_VIEW_GEOMETRIC_DEPTH_CONSISTENCY');
+    assert.strictEqual(receiptContent.receiptSchemaVersion, 'AUTHLINEAGE_RECEIPT_V10_UNBIASED_DEPTH_SUPPORT_AND_ARTIFACT_PROVENANCE');
     assert.strictEqual(receiptContent.calibrationProvenance.calibrationStatus, 'ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED');
     assert.strictEqual(receiptContent.calibrationProvenance.selfCalibrated, false);
     assert.strictEqual(receiptContent.outputArtifact.classification, 'STEREO_DERIVED_FUSED_MVS_INTERNAL_PROOF');
@@ -433,6 +433,14 @@ async function main() {
     assert.strictEqual(receiptContent.outputArtifact.sizeBytes, stat.size);
     assert.strictEqual(receiptContent.reconstructionGeometry.vertexCount, authReconResult.reconstructionExecution.outputVertexCount);
     assert.strictEqual(receiptContent.codeUnderTestSha, authReconResult.cryptographicBinding.cutSha);
+
+    // Support provenance assertions (Round 97 Mandate)
+    assert.ok(receiptContent.outputArtifact.artifactSupportProvenance, 'artifactSupportProvenance must be present in outputArtifact');
+    const artProv = receiptContent.outputArtifact.artifactSupportProvenance;
+    assert.strictEqual(artProv.totalVertexCount, receiptContent.reconstructionGeometry.vertexCount, 'artifactSupportProvenance totalVertexCount must match reconstructed vertex count');
+    assert.strictEqual(artProv.conservativeMergePolicy, 'ALL_CONTRIBUTING_VOXEL_POINTS_MUST_BE_GEOMETRIC');
+    assert.ok(artProv.geometricallyVerifiedVertices > 0, 'Artifact must contain verified geometric vertices');
+    assert.strictEqual(artProv.totalVertexCount, artProv.geometricallyVerifiedVertices + artProv.photometricOnlyVertices, 'Conservative vertex support accounting invariant must balance');
 
     // Verify embedded non-LFS base64 payload
     assert.ok(receiptContent.outputArtifact.nonLfsVerifiablePayload, 'Receipt must embed non-LFS payload');
@@ -457,11 +465,12 @@ async function main() {
     assert.strictEqual(receiptContent.gateStatusDisclosures.POSITIVE_FIXTURE_GATE, 'BLOCKED_BY_POSITIVE_FIXTURE_AVAILABILITY');
     assert.strictEqual(authReconResult.truthLedger.OWNER_REVIEW_GATE, 'HOLD');
 
-    // Dense MVS diagnostics & geometric depth consistency validation (Round 95/96)
+    // Dense MVS diagnostics & geometric depth consistency validation (Round 95/96/97)
     const mvsDiag = authReconResult.reconstructionExecution.denseMvsDiagnostics || receiptContent.denseMvsDiagnostics;
     assert.ok(mvsDiag, 'Dense MVS diagnostics must be present');
     assert.ok(mvsDiag.pairDiagnostics.length > 0, 'Pair diagnostics must be reported');
     for (const p of mvsDiag.pairDiagnostics) {
+      assert.ok('sampledCandidatePoints' in p, 'sampledCandidatePoints must be tracked');
       assert.ok('invalidDisparityCount' in p, 'invalidDisparityCount must be tracked');
       assert.ok('negativeDepthRejected' in p, 'negativeDepthRejected must be tracked');
       assert.ok('rangeRejected' in p, 'rangeRejected must be tracked');
@@ -475,7 +484,11 @@ async function main() {
       assert.ok('acceptedMultiViewConsistent3dCount' in p, 'acceptedMultiViewConsistent3dCount must be tracked');
       assert.ok('acceptedGeometricallyConsistent3dCount' in p, 'acceptedGeometricallyConsistent3dCount must be tracked');
       assert.ok('fusedContribution' in p, 'fusedContribution must be tracked');
-      assert.strictEqual(p.consistencyMethod, 'RECTIFIED_THIRD_VIEW_STEREO_DEPTH_CONSISTENCY_GATE_AND_PHOTOMETRIC_FALLBACK');
+      assert.strictEqual(p.consistencyMethod, 'UNBIASED_RECTIFIED_THIRD_VIEW_STEREO_DEPTH_GATE_AND_PHOTOMETRIC_FALLBACK');
+
+      // Pair-level arithmetic invariants (Round 97)
+      assert.strictEqual(p.acceptedMultiViewConsistent3dCount, p.thirdViewDepthGeometricConsistent + p.thirdViewPhotometricHeuristicAccepted, 'Pair accepted must equal geom + photo');
+      assert.strictEqual(p.sampledCandidatePoints, p.acceptedMultiViewConsistent3dCount + p.multiViewGeometricRejected + p.multiViewHeuristicRejected, 'Pair sampled must equal accepted + rejected');
     }
     const sumGeomConsistent = mvsDiag.pairDiagnostics.reduce((acc, p) => acc + (p.thirdViewDepthGeometricConsistent || 0), 0);
     assert.ok(sumGeomConsistent > 0, `At least one point must satisfy rectified third-view geometric depth consistency (got ${sumGeomConsistent})`);
@@ -484,6 +497,9 @@ async function main() {
     assert.strictEqual(mvsDiag.pointSupportProvenance.geometricallyConsistentCount, sumGeomConsistent);
     assert.ok(mvsDiag.pointSupportProvenance.geometricRejectionCount >= 0, 'geometricRejectionCount must be tracked');
     assert.ok(mvsDiag.pointSupportProvenance.photometricOnlyCount >= 0, 'photometricOnlyCount must be tracked');
+    assert.strictEqual(mvsDiag.pointSupportProvenance.arithmeticInvariantsVerified, true, 'pointSupportProvenance arithmetic invariants must be verified');
+    assert.strictEqual(mvsDiag.pointSupportProvenance.totalConsistentPointsAccepted, mvsDiag.pointSupportProvenance.geometricallyConsistentCount + mvsDiag.pointSupportProvenance.photometricOnlyCount);
+    assert.strictEqual(mvsDiag.pointSupportProvenance.totalCandidatePointsTested, mvsDiag.pointSupportProvenance.totalConsistentPointsAccepted + mvsDiag.pointSupportProvenance.geometricRejectionCount + mvsDiag.pointSupportProvenance.heuristicRejectionCount);
 
     console.log(`    - Reconstruction Status: ${authReconResult.status} (TERMINAL SUCCESS)`);
     console.log(`    - Engine:                ${authReconResult.engine}`);
@@ -3384,13 +3400,13 @@ async function main() {
     console.log('    - Non-owner engine activation-readiness matrix: PASS (5 pillars verified, bounded resources, zero-spend hold)');
   });
 
-  // ── [19] Real Recursive Workspace Discovery & Rectified Third-View Stereo Depth Consistency ──
-  runTest('19. Real recursive workspace discovery audit & rectified third-view geometric depth consistency (Round 96)', () => {
+  // ── [19] Real Recursive Workspace Discovery & Unbiased Third-View Stereo Depth Consistency ──
+  runTest('19. Real recursive workspace discovery audit & unbiased third-view geometric depth consistency (Round 97)', () => {
     const { inventoryDatasets } = require(path.join(REPO_ROOT, 'virtual-tradeshow-commercial-v1/server/dataset_inventory'));
     const inventoryResult = inventoryDatasets({ repoRoot: REPO_ROOT });
 
     assert.ok(inventoryResult, 'inventoryDatasets must return an audit object');
-    assert.strictEqual(inventoryResult.auditSchemaVersion, 'DATASET_INVENTORY_AUDIT_V2_RECURSIVE_TRAVERSAL');
+    assert.strictEqual(inventoryResult.auditSchemaVersion, 'DATASET_INVENTORY_AUDIT_V3_MEASURED_CLASSIFIER_AND_DEDUPLICATION');
     assert.strictEqual(inventoryResult.scanner, 'ANTIGRAVITY_WORKSPACE_DATASET_INVENTORY');
     assert.ok(inventoryResult.traversalProof, 'traversalProof must be present');
     assert.ok(Array.isArray(inventoryResult.traversalProof.rootsScanned), 'rootsScanned must be an array');
@@ -3406,6 +3422,19 @@ async function main() {
       assert.ok(r.reason, 'Exclusion reason must be provided');
     }
 
+    // Canonical Dataset Deduplication & Classification (Round 97 Mandate)
+    assert.ok(inventoryResult.discoverySummary, 'discoverySummary must be present');
+    assert.ok(inventoryResult.discoverySummary.uniqueDatasetCount > 0, 'uniqueDatasetCount must be > 0');
+    assert.ok(inventoryResult.discoverySummary.discoveredDirectoryCount >= inventoryResult.discoverySummary.uniqueDatasetCount);
+    assert.ok(Array.isArray(inventoryResult.uniqueDatasets), 'uniqueDatasets must be an array');
+    assert.ok(inventoryResult.uniqueDatasets.length > 0, 'uniqueDatasets must not be empty');
+    for (const ds of inventoryResult.uniqueDatasets) {
+      assert.ok(ds.aggregateInputSha256, 'aggregateInputSha256 must be present');
+      assert.ok(ds.classificationCategory, 'classificationCategory must be present');
+      assert.ok(Array.isArray(ds.directoryInstances), 'directoryInstances must be an array');
+      assert.ok(ds.directoryInstances.length > 0, 'directoryInstances must not be empty');
+    }
+
     // Dynamic candidate evaluation proof
     assert.ok(Array.isArray(inventoryResult.evaluatedCandidates), 'evaluatedCandidates must be an array');
     assert.ok(inventoryResult.evaluatedCandidates.length >= 1, 'Evaluated candidates must be non-empty');
@@ -3416,22 +3445,22 @@ async function main() {
     assert.strictEqual(partialCand.metrics.coverage360Complete, false);
     assert.strictEqual(partialCand.metrics.loopClosureMet, false);
 
-    // Negative depth perturbation unit contract: strict geometric rejection
-    // Simulate: point X_rect projected has Z_rect = 2.0. Stereo disparity gives Z_stereo = 1.0 (residual = |2 - 1| / 2 = 50% > 40%).
-    // Geometric check must reject and photometric fallback must NOT rescue it.
-    const Z_rect = 2.0;
-    const Z_stereo_perturbed = 1.0;
-    const rel_residual = Math.abs(Z_rect - Z_stereo_perturbed) / Z_rect;
-    assert.ok(rel_residual > 0.40, 'Perturbed residual must exceed 40% threshold');
-    const geomDepthPass = rel_residual <= 0.40;
-    assert.strictEqual(geomDepthPass, false, 'Candidate point with >40% third-view depth mismatch must fail geometric depth gate');
-    // Photometric similarity cannot override geometric failure
-    const photoFallbackPermitted = geomDepthPass; // Only permitted when depth test passes or no independent depth
-    assert.strictEqual(photoFallbackPermitted, false, 'Photometric fallback cannot rescue geometric depth failure');
+    // Real end-to-end negative perturbation test via python CLI --test-gate-perturbation (Round 97 Blocker 6)
+    const pythonExe = process.platform === 'win32' ? 'python' : 'python3';
+    const enginePy = path.join(REPO_ROOT, 'virtual-tradeshow-commercial-v1/server/spatial_reconstruction_engine.py');
+    const perturbOut = execFileSync(pythonExe, [enginePy, '--test-gate-perturbation'], { encoding: 'utf8' });
+    const perturbResult = JSON.parse(perturbOut);
+    assert.strictEqual(perturbResult.gateContractProven, true, 'evaluate_third_view_geometric_support gate contract must be proven');
+    assert.strictEqual(perturbResult.nominal.accepted, true, 'Nominal candidate must pass geometric check');
+    assert.strictEqual(perturbResult.perturbed.accepted, false, 'Perturbed candidate must be rejected');
+    assert.strictEqual(perturbResult.perturbed.rejectionReason, 'GEOMETRIC_DEPTH_MISMATCH');
+    assert.strictEqual(perturbResult.perturbed.photometricFallbackAttempted, false, 'Photometric fallback cannot rescue geometric failure');
 
     console.log(`    - Recursive Traversal:   ${inventoryResult.traversalProof.rootsScanned.length} roots, ${inventoryResult.traversalProof.directoriesTraversed} dirs, ${inventoryResult.traversalProof.filesExamined} files examined`);
+    console.log(`    - Canonical Datasets:    ${inventoryResult.discoverySummary.discoveredDirectoryCount} directory instances -> ${inventoryResult.discoverySummary.uniqueDatasetCount} unique datasets`);
     console.log(`    - Privacy Boundary:      ${inventoryResult.traversalProof.restrictedPathsSkipped.length} restricted paths skipped (imageBytesRead: false)`);
     console.log(`    - Candidates Evaluated:  ${inventoryResult.evaluatedCandidates.length} candidate directories dynamically evaluated`);
+    console.log(`    - Gate Perturbation:     PASS (Nominal accepted, Perturbed rejected, Fallback attempted: false)`);
     console.log(`    - Positive Fixture Gate: ${inventoryResult.gateEvaluation.POSITIVE_FIXTURE_GATE}`);
     console.log(`    - Dataset Adequacy Gate: ${inventoryResult.gateEvaluation.DATASET_ADEQUACY_GATE}`);
   });
