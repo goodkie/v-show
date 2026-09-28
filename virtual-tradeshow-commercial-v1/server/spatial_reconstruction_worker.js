@@ -1614,8 +1614,12 @@ function executeAuthenticReconstructionWorker(options = {}) {
       if (calibrationFile) {
         pyArgs.push('--calibration-file', calibrationFile);
       }
-      if (options.cutSha) {
-        pyArgs.push('--cut-sha', options.cutSha);
+      const cutShaToUse = options.cutSha || (() => {
+        try { return execSync('git rev-parse HEAD', { encoding: 'utf8' }).trim(); }
+        catch (_) { return null; }
+      })();
+      if (cutShaToUse) {
+        pyArgs.push('--cut-sha', cutShaToUse);
       }
       const pyRes = spawnSync('python', pyArgs, { encoding: 'utf8', timeout: 90000 });
 
@@ -1635,7 +1639,7 @@ function executeAuthenticReconstructionWorker(options = {}) {
               success: true,
               jobId,
               status: 'COMPLETED',
-              engine: parsed.engine || 'OPENCV_SIFT_INCREMENTAL_GLOBAL_SFM',
+              engine: parsed.engine || 'OPENCV_SIFT_CALIBRATED_GLOBAL_SFM',
               engineProbes,
               antiSubstitutionEnforced: true,
               newModelGenerated: true,
@@ -1666,7 +1670,8 @@ function executeAuthenticReconstructionWorker(options = {}) {
                 outputVertexCount: parsed.outputVertexCount,
                 outputSize: parsed.outputSize,
                 boundingBox: parsed.boundingBox,
-                receiptPath: parsed.receiptPath
+                receiptPath: parsed.receiptPath,
+                refinementMetrics: parsed.refinementMetrics
               },
               truthLedger: {
                 RECONSTRUCTION_FROM_INPUTS: 'VERIFIED',
