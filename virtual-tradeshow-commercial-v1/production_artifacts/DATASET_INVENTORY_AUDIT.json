@@ -1,6 +1,6 @@
 {
   "auditSchemaVersion": "DATASET_INVENTORY_AUDIT_V3_MEASURED_CLASSIFIER_AND_DEDUPLICATION",
-  "auditTimestamp": "2026-09-28T17:31:29.404Z",
+  "auditTimestamp": "2026-09-28T17:39:22.016Z",
   "scanner": "ANTIGRAVITY_WORKSPACE_DATASET_INVENTORY",
   "traversalProof": {
     "rootsScanned": [

@@ -1,19 +1,19 @@
 {
   "receiptSchemaVersion": "R47_EXECUTION_RECEIPT_V1",
   "executionTimestamps": {
-    "startTime": "2026-09-28T15:51:33.529Z",
-    "endTime": "2026-09-28T15:54:35.010Z",
-    "durationMs": 181478
+    "startTime": "2026-09-28T17:36:23.160Z",
+    "endTime": "2026-09-28T17:39:23.147Z",
+    "durationMs": 179985
   },
   "runnerMetadata": {
     "sourceFile": "test/test_stage2_true3d_pipeline.js",
-    "sourceSha256": "a64bf7dd085a5b78e8392d61969f9a70d819e0de059027a1c3ebcd80aaabd8fb",
+    "sourceSha256": "31c028946720d1b57b5cf80fab59c31209198a821965544ad7f45a02ae561041",
     "nodeVersion": "v24.21.0",
     "platform": "win32"
   },
   "gitEvidence": {
-    "observedHeadSha": "ee4f0585382fa75a2393e2a8575d7e4e975ab024",
-    "expectedHeadSha": "ee4f0585382fa75a2393e2a8575d7e4e975ab024",
+    "observedHeadSha": "2a3e4ffbcdcebbaedb165dbf7d905ddc47b7aca6",
+    "expectedHeadSha": "2a3e4ffbcdcebbaedb165dbf7d905ddc47b7aca6",
     "headBindingMatched": true,
     "worktreeClean": true,
     "rawGitStatusPorcelain": "(clean)"

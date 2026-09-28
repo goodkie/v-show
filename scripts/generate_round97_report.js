@@ -166,7 +166,7 @@ Support classifications are tracked through dense extraction, deterministic stri
 
 ### 4. Unbiased Third-View Stereo Depth & Support Accounting Invariants
 
-Third-view stereo disparity is observed independently (center disparity if valid, else patch median) *without* candidate depth bias. Points failing $\delta_Z = |Z_{rect} - Z_{stereo}| / Z_{rect} \le 0.40$ are strictly rejected:
+Third-view stereo disparity is observed independently (center disparity if valid, else patch median) *without* candidate depth bias. Points failing $\\delta_Z = |Z_{rect} - Z_{stereo}| / Z_{rect} \\le 0.40$ are strictly rejected:
 
 #### Pair Disparity, Unbiased Geometric Depth Residuals & Arithmetic Accounting Invariants:
 | Pair | Baseline | Sampled | Valid Disp | Neg Z Rej | Range Rej | Spatial Rej | Geom Tested | Geom Pass | Geom Rej | Photo Pass | Heuristic Rej | Accepted 3D | Mean $\\delta_Z$ | Fused Contrib |
@@ -199,8 +199,8 @@ ${perturbationProofJson}
 \`\`\`
 
 - **Contract Proven**: \`gateContractProven = true\`
-- **Nominal Candidate**: Projecting $Z_{rect} = 2.0$ against nominal disparity yields residual $\le 40\%$ $\to$ **\`accepted: true\`** (\`GEOMETRICALLY_CONSISTENT_THIRD_VIEW_VERIFIED\`)
-- **Perturbed Candidate**: Projecting $Z_{rect} = 2.0$ against corrupted disparity ($Z_{stereo} = 1.0$, residual $50\% > 40\%$) $\to$ **\`accepted: false\`** (\`GEOMETRIC_DEPTH_MISMATCH\`)
+- **Nominal Candidate**: Projecting $Z_{rect} = 2.0$ against nominal disparity yields residual $\\le 40\\%$ $\\to$ **\`accepted: true\`** (\`GEOMETRICALLY_CONSISTENT_THIRD_VIEW_VERIFIED\`)
+- **Perturbed Candidate**: Projecting $Z_{rect} = 2.0$ against corrupted disparity ($Z_{stereo} = 1.0$, residual $50\\% > 40\\%$) $\\to$ **\`accepted: false\`** (\`GEOMETRIC_DEPTH_MISMATCH\`)
 - **Fallback Rescue Forbidden**: \`photometricFallbackAttempted: false\`
 
 ---
