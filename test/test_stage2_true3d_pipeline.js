@@ -202,6 +202,9 @@ async function main() {
   const requireHeadBinding = process.argv.includes('--require-head-binding') || process.env.REQUIRE_HEAD_BINDING === '1';
 
   let suiteCurrentHead = null;
+  try {
+    suiteCurrentHead = execSync('git rev-parse HEAD', { cwd: REPO_ROOT, encoding: 'utf8' }).trim();
+  } catch (_) {}
   let suiteRawGitStatusPorcelain = '';
   let suiteHeadBindingMatched = false;
 
@@ -425,7 +428,7 @@ async function main() {
     // Cryptographic receipt assertions
     assert.ok(fs.existsSync(authReconResult.reconstructionExecution.receiptPath), 'Lineage receipt must exist on disk');
     const receiptContent = JSON.parse(fs.readFileSync(authReconResult.reconstructionExecution.receiptPath, 'utf8'));
-    assert.strictEqual(receiptContent.receiptSchemaVersion, 'AUTHLINEAGE_RECEIPT_V10_UNBIASED_DEPTH_SUPPORT_AND_ARTIFACT_PROVENANCE');
+    assert.strictEqual(receiptContent.receiptSchemaVersion, 'AUTHLINEAGE_RECEIPT_V11_STANDARDIZED_DIGEST_AND_SUPPORT_POLICY');
     assert.strictEqual(receiptContent.calibrationProvenance.calibrationStatus, 'ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED');
     assert.strictEqual(receiptContent.calibrationProvenance.selfCalibrated, false);
     assert.strictEqual(receiptContent.outputArtifact.classification, 'STEREO_DERIVED_FUSED_MVS_INTERNAL_PROOF');
@@ -433,12 +436,16 @@ async function main() {
     assert.strictEqual(receiptContent.outputArtifact.sizeBytes, stat.size);
     assert.strictEqual(receiptContent.reconstructionGeometry.vertexCount, authReconResult.reconstructionExecution.outputVertexCount);
     assert.strictEqual(receiptContent.codeUnderTestSha, authReconResult.cryptographicBinding.cutSha);
+    assert.strictEqual(receiptContent.codeUnderTestSha.length, 40, 'codeUnderTestSha must be full 40-character SHA (Round 98 Blocker 4)');
+    assert.strictEqual(receiptContent.codeUnderTestSha, suiteCurrentHead, 'codeUnderTestSha must equal tested HEAD commit SHA');
 
-    // Support provenance assertions (Round 97 Mandate)
+    // Support provenance assertions (Round 98 Mandate)
     assert.ok(receiptContent.outputArtifact.artifactSupportProvenance, 'artifactSupportProvenance must be present in outputArtifact');
     const artProv = receiptContent.outputArtifact.artifactSupportProvenance;
     assert.strictEqual(artProv.totalVertexCount, receiptContent.reconstructionGeometry.vertexCount, 'artifactSupportProvenance totalVertexCount must match reconstructed vertex count');
     assert.strictEqual(artProv.conservativeMergePolicy, 'ALL_CONTRIBUTING_VOXEL_POINTS_MUST_BE_GEOMETRIC');
+    assert.strictEqual(artProv.supportPolicy, 'AT_LEAST_ONE_THIRD_VIEW_PASS', 'supportPolicy must be explicitly declared');
+    assert.strictEqual(artProv.artifactQualityGate, 'QUARANTINED_INTERNAL_PROOF_ONLY_SPARSE_GEOMETRIC_SUPPORT');
     assert.ok(artProv.geometricallyVerifiedVertices > 0, 'Artifact must contain verified geometric vertices');
     assert.strictEqual(artProv.totalVertexCount, artProv.geometricallyVerifiedVertices + artProv.photometricOnlyVertices, 'Conservative vertex support accounting invariant must balance');
 
@@ -459,10 +466,10 @@ async function main() {
     assert.strictEqual(authReconResult.truthLedger.COORDINATE_SYSTEM, 'SCALE_FREE_UNIFIED_GLOBAL_SFM_FRAME');
     assert.strictEqual(authReconResult.truthLedger.GLOBAL_COVERAGE_GATE, 'NOT_MET_PARTIAL_11_OF_12');
     assert.strictEqual(authReconResult.truthLedger.LOOP_CLOSURE_GATE, 'LOOP_CLOSURE_FAILED_EXCEEDS_TOLERANCE');
-    assert.strictEqual(authReconResult.truthLedger.DATASET_ADEQUACY_GATE, 'NO_ELIGIBLE_NON_OWNER_POSITIVE_FIXTURE_FOUND_BY_INVENTORY');
-    assert.strictEqual(authReconResult.truthLedger.POSITIVE_FIXTURE_GATE, 'BLOCKED_BY_POSITIVE_FIXTURE_AVAILABILITY');
-    assert.strictEqual(receiptContent.gateStatusDisclosures.DATASET_ADEQUACY_GATE, 'NO_ELIGIBLE_NON_OWNER_POSITIVE_FIXTURE_FOUND_BY_INVENTORY');
-    assert.strictEqual(receiptContent.gateStatusDisclosures.POSITIVE_FIXTURE_GATE, 'BLOCKED_BY_POSITIVE_FIXTURE_AVAILABILITY');
+    assert.strictEqual(authReconResult.truthLedger.DATASET_ADEQUACY_GATE, 'BLOCKED_BY_MEASURED_POSITIVE_FIXTURE_AVAILABILITY');
+    assert.strictEqual(authReconResult.truthLedger.POSITIVE_FIXTURE_GATE, 'BLOCKED_BY_MEASURED_POSITIVE_FIXTURE_AVAILABILITY');
+    assert.strictEqual(receiptContent.gateStatusDisclosures.DATASET_ADEQUACY_GATE, 'BLOCKED_BY_MEASURED_POSITIVE_FIXTURE_AVAILABILITY');
+    assert.strictEqual(receiptContent.gateStatusDisclosures.POSITIVE_FIXTURE_GATE, 'BLOCKED_BY_MEASURED_POSITIVE_FIXTURE_AVAILABILITY');
     assert.strictEqual(authReconResult.truthLedger.OWNER_REVIEW_GATE, 'HOLD');
 
     // Dense MVS diagnostics & geometric depth consistency validation (Round 95/96/97)
@@ -497,6 +504,8 @@ async function main() {
     assert.strictEqual(mvsDiag.pointSupportProvenance.geometricallyConsistentCount, sumGeomConsistent);
     assert.ok(mvsDiag.pointSupportProvenance.geometricRejectionCount >= 0, 'geometricRejectionCount must be tracked');
     assert.ok(mvsDiag.pointSupportProvenance.photometricOnlyCount >= 0, 'photometricOnlyCount must be tracked');
+    assert.strictEqual(mvsDiag.pointSupportProvenance.supportPolicy, 'AT_LEAST_ONE_THIRD_VIEW_PASS');
+    assert.ok(mvsDiag.pointSupportProvenance.totalThirdViewsTested > 0, 'totalThirdViewsTested must be > 0');
     assert.strictEqual(mvsDiag.pointSupportProvenance.arithmeticInvariantsVerified, true, 'pointSupportProvenance arithmetic invariants must be verified');
     assert.strictEqual(mvsDiag.pointSupportProvenance.totalConsistentPointsAccepted, mvsDiag.pointSupportProvenance.geometricallyConsistentCount + mvsDiag.pointSupportProvenance.photometricOnlyCount);
     assert.strictEqual(mvsDiag.pointSupportProvenance.totalCandidatePointsTested, mvsDiag.pointSupportProvenance.totalConsistentPointsAccepted + mvsDiag.pointSupportProvenance.geometricRejectionCount + mvsDiag.pointSupportProvenance.heuristicRejectionCount);
@@ -3406,7 +3415,7 @@ async function main() {
     const inventoryResult = inventoryDatasets({ repoRoot: REPO_ROOT });
 
     assert.ok(inventoryResult, 'inventoryDatasets must return an audit object');
-    assert.strictEqual(inventoryResult.auditSchemaVersion, 'DATASET_INVENTORY_AUDIT_V3_MEASURED_CLASSIFIER_AND_DEDUPLICATION');
+    assert.strictEqual(inventoryResult.auditSchemaVersion, 'DATASET_INVENTORY_AUDIT_V4_EMPIRICAL_GEOMETRY_EVALUATION');
     assert.strictEqual(inventoryResult.scanner, 'ANTIGRAVITY_WORKSPACE_DATASET_INVENTORY');
     assert.ok(inventoryResult.traversalProof, 'traversalProof must be present');
     assert.ok(Array.isArray(inventoryResult.traversalProof.rootsScanned), 'rootsScanned must be an array');
@@ -3422,12 +3431,22 @@ async function main() {
       assert.ok(r.reason, 'Exclusion reason must be provided');
     }
 
-    // Canonical Dataset Deduplication & Classification (Round 97 Mandate)
+    // Canonical Dataset Deduplication & Empirical Geometry Classification (Round 98 Mandate)
+    assert.strictEqual(inventoryResult.auditSchemaVersion, 'DATASET_INVENTORY_AUDIT_V4_EMPIRICAL_GEOMETRY_EVALUATION', 'Inventory audit schema must be V4');
+    assert.strictEqual(inventoryResult.gateEvaluation.POSITIVE_FIXTURE_GATE, 'BLOCKED_BY_MEASURED_POSITIVE_FIXTURE_AVAILABILITY');
+    assert.strictEqual(inventoryResult.gateEvaluation.DATASET_ADEQUACY_GATE, 'BLOCKED_BY_MEASURED_POSITIVE_FIXTURE_AVAILABILITY');
     assert.ok(inventoryResult.discoverySummary, 'discoverySummary must be present');
     assert.ok(inventoryResult.discoverySummary.uniqueDatasetCount > 0, 'uniqueDatasetCount must be > 0');
     assert.ok(inventoryResult.discoverySummary.discoveredDirectoryCount >= inventoryResult.discoverySummary.uniqueDatasetCount);
     assert.ok(Array.isArray(inventoryResult.uniqueDatasets), 'uniqueDatasets must be an array');
     assert.ok(inventoryResult.uniqueDatasets.length > 0, 'uniqueDatasets must not be empty');
+
+    // Discrete Category Counts Parity (Round 98 Blocker 6)
+    const lowResDatasets = inventoryResult.uniqueDatasets.filter(d => d.category === 'INSUFFICIENT_RESOLUTION_OR_KEYFRAME');
+    const restrictedDatasets = inventoryResult.uniqueDatasets.filter(d => d.category === 'RESTRICTED_TENANT_ORGANIZATION_DATA');
+    assert.strictEqual(lowResDatasets.length, 3, 'Must report exactly 3 low-resolution unique datasets');
+    assert.strictEqual(restrictedDatasets.length, 2, 'Must report exactly 2 restricted tenant unique datasets');
+
     for (const ds of inventoryResult.uniqueDatasets) {
       assert.ok(ds.aggregateInputSha256, 'aggregateInputSha256 must be present');
       assert.ok(ds.classificationCategory, 'classificationCategory must be present');
@@ -3435,7 +3454,7 @@ async function main() {
       assert.ok(ds.directoryInstances.length > 0, 'directoryInstances must not be empty');
     }
 
-    // Dynamic candidate evaluation proof
+    // Dynamic candidate evaluation proof & Canonical Digest Parity (Round 98 Blocker 1 & 2)
     assert.ok(Array.isArray(inventoryResult.evaluatedCandidates), 'evaluatedCandidates must be an array');
     assert.ok(inventoryResult.evaluatedCandidates.length >= 1, 'Evaluated candidates must be non-empty');
     const partialCand = inventoryResult.evaluatedCandidates.find(c => c.directory.includes('wilo/authentic-booth') || c.directory.includes('authentic-booth'));
@@ -3444,6 +3463,9 @@ async function main() {
     assert.strictEqual(partialCand.metrics.frameCount, 12);
     assert.strictEqual(partialCand.metrics.coverage360Complete, false);
     assert.strictEqual(partialCand.metrics.loopClosureMet, false);
+    assert.strictEqual(partialCand.hasKnownCalibration, false, 'Candidate must not inherit R6 calibration (Round 98 Blocker 3)');
+    assert.strictEqual(partialCand.maxBaselineMeters, null, 'Candidate must not inherit R6 baseline (Round 98 Blocker 3)');
+    assert.strictEqual(partialCand.aggregateInputSha256, authReconResult.cryptographicBinding.inputsDigest, 'Inventory candidate digest must match reconstruction input digest byte-for-byte (Round 98 Blocker 1 & 2)');
 
     // Real end-to-end negative perturbation test via python CLI --test-gate-perturbation (Round 97 Blocker 6)
     const pythonExe = process.platform === 'win32' ? 'python' : 'python3';
@@ -3452,8 +3474,11 @@ async function main() {
     const perturbResult = JSON.parse(perturbOut);
     assert.strictEqual(perturbResult.gateContractProven, true, 'evaluate_third_view_geometric_support gate contract must be proven');
     assert.strictEqual(perturbResult.nominal.accepted, true, 'Nominal candidate must pass geometric check');
+    assert.strictEqual(perturbResult.nominal.supportPolicy, 'AT_LEAST_ONE_THIRD_VIEW_PASS', 'Nominal must declare supportPolicy');
+    assert.strictEqual(perturbResult.nominal.viewsPassedCount, 1, 'Nominal must pass 1 third-view test');
     assert.strictEqual(perturbResult.perturbed.accepted, false, 'Perturbed candidate must be rejected');
     assert.strictEqual(perturbResult.perturbed.rejectionReason, 'GEOMETRIC_DEPTH_MISMATCH');
+    assert.strictEqual(perturbResult.perturbed.viewsFailedCount, 1, 'Perturbed must fail 1 third-view test');
     assert.strictEqual(perturbResult.perturbed.photometricFallbackAttempted, false, 'Photometric fallback cannot rescue geometric failure');
 
     console.log(`    - Recursive Traversal:   ${inventoryResult.traversalProof.rootsScanned.length} roots, ${inventoryResult.traversalProof.directoriesTraversed} dirs, ${inventoryResult.traversalProof.filesExamined} files examined`);
@@ -3587,7 +3612,24 @@ async function main() {
       ACTIVATION_READINESS_MATRIX: 'VERIFIED_NON_SECRET_SPEC',
       OWNER_REVIEW_GATE: 'HOLD',
       ENGINEERING_HOLD: 'ACTIVE',
-      DESTRUCTIVE_GIT_REWRITE: 'FORBIDDEN'
+      DESTRUCTIVE_GIT_REWRITE: 'FORBIDDEN',
+      DATASET_ADEQUACY_GATE: 'BLOCKED_BY_MEASURED_POSITIVE_FIXTURE_AVAILABILITY',
+      POSITIVE_FIXTURE_GATE: 'BLOCKED_BY_MEASURED_POSITIVE_FIXTURE_AVAILABILITY'
+    },
+    runBundle: {
+      runBundleId: `RUN_BUNDLE_R98_${suiteCurrentHead}_${new Date().toISOString().replace(/[:.]/g, '-')}`,
+      cutCommitSha: suiteCurrentHead,
+      linkedReceipts: [
+        'virtual-tradeshow-commercial-v1/production_artifacts/AUTHLINEAGE_RECEIPT_V11_STANDARDIZED_DIGEST_AND_SUPPORT_POLICY.json',
+        'virtual-tradeshow-commercial-v1/production_artifacts/DATASET_INVENTORY_AUDIT_V4_EMPIRICAL_GEOMETRY_EVALUATION.json',
+        'virtual-tradeshow-commercial-v1/production_artifacts/DATASET_INVENTORY_AUDIT.json',
+        'virtual-tradeshow-commercial-v1/production_artifacts/DATASET_GEOMETRY_CACHE.json',
+        'virtual-tradeshow-commercial-v1/production_artifacts/R47_TEST_EXECUTION_RECEIPT.json'
+      ],
+      linkedArtifacts: [
+        'virtual-tradeshow-commercial-v1/production_artifacts/stage2_true3d_pointcloud_verified.ply',
+        'virtual-tradeshow-commercial-v1/production_artifacts/stage2_true3d_pointcloud_sparse_seed.ply'
+      ]
     }
   };
 

@@ -1621,10 +1621,14 @@ function executeAuthenticReconstructionWorker(options = {}) {
       if (calibrationFile) {
         pyArgs.push('--calibration-file', calibrationFile);
       }
-      const cutShaToUse = options.cutSha || (() => {
-        try { return execSync('git rev-parse HEAD', { encoding: 'utf8' }).trim(); }
-        catch (_) { return null; }
-      })();
+      let cutShaToUse = options.cutSha;
+      if (!cutShaToUse || cutShaToUse.length < 40) {
+        try {
+          cutShaToUse = execSync(`git rev-parse ${cutShaToUse || 'HEAD'}`, { encoding: 'utf8' }).trim();
+        } catch (_) {
+          cutShaToUse = cutShaToUse || null;
+        }
+      }
       if (cutShaToUse) {
         pyArgs.push('--cut-sha', cutShaToUse);
       }

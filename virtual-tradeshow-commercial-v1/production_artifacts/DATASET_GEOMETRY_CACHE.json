@@ -1,0 +1,703 @@
+{
+  "dad9a0d8b36128f3ea8c6ac78316fa0e8a8edb066aea0ed24bf3f6b03ddf0cbe": {
+    "success": true,
+    "category": "GEOMETRY_EVALUATED_DATASET",
+    "classification": "INELIGIBLE_INSUFFICIENT_PARALLAX_OR_DISCONNECTED",
+    "classificationReason": "Insufficient matchable parallax or disconnected camera stations (inliers: 14, connected: 2/5).",
+    "imageCount": 5,
+    "evaluatedViews": 5,
+    "sampleDimensions": "941x1430",
+    "featuresDetected": 502,
+    "crossPairMatches": 14,
+    "connectedViews": 2,
+    "connectedComponentCount": 4,
+    "componentSizes": [
+      2,
+      1,
+      1,
+      1
+    ],
+    "loopClosurePassed": false,
+    "loopClosureResidual": {
+      "status": "RING_INCOMPLETE_LOOP_NOT_FORMED",
+      "closurePassed": false,
+      "measured": {
+        "rotationDriftFrobenius": null,
+        "rotationDriftDegrees": null,
+        "translationDriftRelative": null
+      },
+      "thresholds": {
+        "maxRotationDriftFrobenius": 0.5,
+        "maxRotationAngleDegrees": 15,
+        "maxTranslationDriftRelative": 0.2
+      }
+    },
+    "hasRecoverableParallax": false,
+    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT"
+  },
+  "a60a851383afeb8f74f2f0d85d15cdde2cc518b93fa1a7e225865a1a0ff87767": {
+    "success": true,
+    "category": "GEOMETRY_EVALUATED_DATASET",
+    "classification": "NEGATIVE_PARTIAL_FIXTURE_VERIFIED",
+    "classificationReason": "Partial graph connectivity (3/6 views connected in main component); ring incomplete.",
+    "imageCount": 6,
+    "evaluatedViews": 6,
+    "sampleDimensions": "941x1430",
+    "featuresDetected": 342,
+    "crossPairMatches": 23,
+    "connectedViews": 3,
+    "connectedComponentCount": 4,
+    "componentSizes": [
+      3,
+      1,
+      1,
+      1
+    ],
+    "loopClosurePassed": false,
+    "loopClosureResidual": {
+      "status": "RING_INCOMPLETE_LOOP_NOT_FORMED",
+      "closurePassed": false,
+      "measured": {
+        "rotationDriftFrobenius": null,
+        "rotationDriftDegrees": null,
+        "translationDriftRelative": null
+      },
+      "thresholds": {
+        "maxRotationDriftFrobenius": 0.5,
+        "maxRotationAngleDegrees": 15,
+        "maxTranslationDriftRelative": 0.2
+      }
+    },
+    "hasRecoverableParallax": true,
+    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT"
+  },
+  "596245aa7364333980ca0959605482306e975894c4568abe1cc600b3f76321f4": {
+    "success": true,
+    "category": "GEOMETRY_EVALUATED_DATASET",
+    "classification": "INELIGIBLE_INSUFFICIENT_PARALLAX_OR_DISCONNECTED",
+    "classificationReason": "Insufficient matchable parallax or disconnected camera stations (inliers: 0, connected: 1/4).",
+    "imageCount": 4,
+    "evaluatedViews": 4,
+    "sampleDimensions": "1024x1024",
+    "featuresDetected": 297,
+    "crossPairMatches": 0,
+    "connectedViews": 1,
+    "connectedComponentCount": 4,
+    "componentSizes": [
+      1,
+      1,
+      1,
+      1
+    ],
+    "loopClosurePassed": false,
+    "loopClosureResidual": {
+      "status": "RING_INCOMPLETE_LOOP_NOT_FORMED",
+      "closurePassed": false,
+      "measured": {
+        "rotationDriftFrobenius": null,
+        "rotationDriftDegrees": null,
+        "translationDriftRelative": null
+      },
+      "thresholds": {
+        "maxRotationDriftFrobenius": 0.5,
+        "maxRotationAngleDegrees": 15,
+        "maxTranslationDriftRelative": 0.2
+      }
+    },
+    "hasRecoverableParallax": false,
+    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT"
+  },
+  "c9591255de30cb4d11301f3a2b0289d86ecb41c2a28c0e669104badef7719dde": {
+    "success": true,
+    "category": "GEOMETRY_EVALUATED_DATASET",
+    "classification": "NEGATIVE_PARTIAL_FIXTURE_VERIFIED",
+    "classificationReason": "Connected views (12/12) but loop closure exceeded tolerance (173.21 deg drift).",
+    "imageCount": 31,
+    "evaluatedViews": 12,
+    "sampleDimensions": "1024x682",
+    "featuresDetected": 770,
+    "crossPairMatches": 399,
+    "connectedViews": 12,
+    "connectedComponentCount": 1,
+    "componentSizes": [
+      12
+    ],
+    "loopClosurePassed": false,
+    "loopClosureResidual": {
+      "status": "LOOP_CLOSURE_FAILED_EXCEEDS_TOLERANCE",
+      "closurePassed": false,
+      "measured": {
+        "rotationDriftFrobenius": 2.8235,
+        "rotationDriftDegrees": 173.21,
+        "translationDriftRelative": 0.5786
+      },
+      "thresholds": {
+        "maxRotationDriftFrobenius": 0.5,
+        "maxRotationAngleDegrees": 15,
+        "maxTranslationDriftRelative": 0.2
+      }
+    },
+    "hasRecoverableParallax": true,
+    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT"
+  },
+  "5561cdc35da854f70e03a8d202b870ef5cef5be9d697f3d5313e6db47a323559": {
+    "success": true,
+    "category": "GEOMETRY_EVALUATED_DATASET",
+    "classification": "NEGATIVE_PARTIAL_FIXTURE_VERIFIED",
+    "classificationReason": "Partial graph connectivity (4/6 views connected in main component); ring incomplete.",
+    "imageCount": 6,
+    "evaluatedViews": 6,
+    "sampleDimensions": "1024x682",
+    "featuresDetected": 870,
+    "crossPairMatches": 42,
+    "connectedViews": 4,
+    "connectedComponentCount": 2,
+    "componentSizes": [
+      4,
+      2
+    ],
+    "loopClosurePassed": false,
+    "loopClosureResidual": {
+      "status": "RING_INCOMPLETE_LOOP_NOT_FORMED",
+      "closurePassed": false,
+      "measured": {
+        "rotationDriftFrobenius": null,
+        "rotationDriftDegrees": null,
+        "translationDriftRelative": null
+      },
+      "thresholds": {
+        "maxRotationDriftFrobenius": 0.5,
+        "maxRotationAngleDegrees": 15,
+        "maxTranslationDriftRelative": 0.2
+      }
+    },
+    "hasRecoverableParallax": true,
+    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT"
+  },
+  "06ff7e2972da6ba594ff9fab08cef46985d194cc083bbf1d2f8eb538373f7be9": {
+    "success": true,
+    "category": "GEOMETRY_EVALUATED_DATASET",
+    "classification": "NEGATIVE_PARTIAL_FIXTURE_VERIFIED",
+    "classificationReason": "Partial graph connectivity (2/12 views connected in main component); ring incomplete.",
+    "imageCount": 15,
+    "evaluatedViews": 12,
+    "sampleDimensions": "8192x4096",
+    "featuresDetected": 740,
+    "crossPairMatches": 84,
+    "connectedViews": 2,
+    "connectedComponentCount": 7,
+    "componentSizes": [
+      2,
+      2,
+      2,
+      2,
+      2,
+      1,
+      1
+    ],
+    "loopClosurePassed": false,
+    "loopClosureResidual": {
+      "status": "RING_INCOMPLETE_LOOP_NOT_FORMED",
+      "closurePassed": false,
+      "measured": {
+        "rotationDriftFrobenius": null,
+        "rotationDriftDegrees": null,
+        "translationDriftRelative": null
+      },
+      "thresholds": {
+        "maxRotationDriftFrobenius": 0.5,
+        "maxRotationAngleDegrees": 15,
+        "maxTranslationDriftRelative": 0.2
+      }
+    },
+    "hasRecoverableParallax": true,
+    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT"
+  },
+  "60ea1acaa47e1110c7eb9bc1929008c0e9cb0a5f84e1fbd306bebd174e745d8c": {
+    "success": true,
+    "category": "GEOMETRY_EVALUATED_DATASET",
+    "classification": "NEGATIVE_PARTIAL_FIXTURE_VERIFIED",
+    "classificationReason": "Partial graph connectivity (2/12 views connected in main component); ring incomplete.",
+    "imageCount": 12,
+    "evaluatedViews": 12,
+    "sampleDimensions": "1376x768",
+    "featuresDetected": 763,
+    "crossPairMatches": 59,
+    "connectedViews": 2,
+    "connectedComponentCount": 7,
+    "componentSizes": [
+      2,
+      2,
+      2,
+      2,
+      2,
+      1,
+      1
+    ],
+    "loopClosurePassed": false,
+    "loopClosureResidual": {
+      "status": "RING_INCOMPLETE_LOOP_NOT_FORMED",
+      "closurePassed": false,
+      "measured": {
+        "rotationDriftFrobenius": null,
+        "rotationDriftDegrees": null,
+        "translationDriftRelative": null
+      },
+      "thresholds": {
+        "maxRotationDriftFrobenius": 0.5,
+        "maxRotationAngleDegrees": 15,
+        "maxTranslationDriftRelative": 0.2
+      }
+    },
+    "hasRecoverableParallax": true,
+    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT"
+  },
+  "b543df737b163f3b4bc2c700921901093ba3f37be917cd1262a2d58b9142ac63": {
+    "success": true,
+    "category": "GEOMETRY_EVALUATED_DATASET",
+    "classification": "NEGATIVE_PARTIAL_FIXTURE_VERIFIED",
+    "classificationReason": "Partial graph connectivity (3/3 views connected in main component); ring incomplete.",
+    "imageCount": 3,
+    "evaluatedViews": 3,
+    "sampleDimensions": "1376x768",
+    "featuresDetected": 801,
+    "crossPairMatches": 136,
+    "connectedViews": 3,
+    "connectedComponentCount": 1,
+    "componentSizes": [
+      3
+    ],
+    "loopClosurePassed": false,
+    "loopClosureResidual": {
+      "status": "RING_INCOMPLETE_LOOP_NOT_FORMED",
+      "closurePassed": false,
+      "measured": {
+        "rotationDriftFrobenius": null,
+        "rotationDriftDegrees": null,
+        "translationDriftRelative": null
+      },
+      "thresholds": {
+        "maxRotationDriftFrobenius": 0.5,
+        "maxRotationAngleDegrees": 15,
+        "maxTranslationDriftRelative": 0.2
+      }
+    },
+    "hasRecoverableParallax": true,
+    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT"
+  },
+  "6bb152bdff9716ff6ee77ee8e3b872327db1faa847882ef22ca8f54779c05c22": {
+    "success": true,
+    "category": "GEOMETRY_EVALUATED_DATASET",
+    "classification": "NEGATIVE_PARTIAL_FIXTURE_VERIFIED",
+    "classificationReason": "Partial graph connectivity (5/5 views connected in main component); ring incomplete.",
+    "imageCount": 5,
+    "evaluatedViews": 5,
+    "sampleDimensions": "8192x4096",
+    "featuresDetected": 659,
+    "crossPairMatches": 68,
+    "connectedViews": 5,
+    "connectedComponentCount": 1,
+    "componentSizes": [
+      5
+    ],
+    "loopClosurePassed": false,
+    "loopClosureResidual": {
+      "status": "RING_INCOMPLETE_LOOP_NOT_FORMED",
+      "closurePassed": false,
+      "measured": {
+        "rotationDriftFrobenius": null,
+        "rotationDriftDegrees": null,
+        "translationDriftRelative": null
+      },
+      "thresholds": {
+        "maxRotationDriftFrobenius": 0.5,
+        "maxRotationAngleDegrees": 15,
+        "maxTranslationDriftRelative": 0.2
+      }
+    },
+    "hasRecoverableParallax": true,
+    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT"
+  },
+  "730b7894b8282f4e1d49b12412229b9da01b21d265df3c93856874deead32d2c": {
+    "success": true,
+    "category": "GEOMETRY_EVALUATED_DATASET",
+    "classification": "NEGATIVE_PARTIAL_FIXTURE_VERIFIED",
+    "classificationReason": "Partial graph connectivity (5/12 views connected in main component); ring incomplete.",
+    "imageCount": 12,
+    "evaluatedViews": 12,
+    "sampleDimensions": "1024x819",
+    "featuresDetected": 397,
+    "crossPairMatches": 120,
+    "connectedViews": 5,
+    "connectedComponentCount": 7,
+    "componentSizes": [
+      5,
+      2,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "loopClosurePassed": false,
+    "loopClosureResidual": {
+      "status": "RING_INCOMPLETE_LOOP_NOT_FORMED",
+      "closurePassed": false,
+      "measured": {
+        "rotationDriftFrobenius": null,
+        "rotationDriftDegrees": null,
+        "translationDriftRelative": null
+      },
+      "thresholds": {
+        "maxRotationDriftFrobenius": 0.5,
+        "maxRotationAngleDegrees": 15,
+        "maxTranslationDriftRelative": 0.2
+      }
+    },
+    "hasRecoverableParallax": true,
+    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT"
+  },
+  "d7864baec5b7a7ccff3f6ca50a0a588962b498440737dbe4032dbd5dd7231a3d": {
+    "success": true,
+    "category": "GEOMETRY_EVALUATED_DATASET",
+    "classification": "NEGATIVE_PARTIAL_FIXTURE_VERIFIED",
+    "classificationReason": "Partial graph connectivity (5/5 views connected in main component); ring incomplete.",
+    "imageCount": 5,
+    "evaluatedViews": 5,
+    "sampleDimensions": "8192x4096",
+    "featuresDetected": 711,
+    "crossPairMatches": 327,
+    "connectedViews": 5,
+    "connectedComponentCount": 1,
+    "componentSizes": [
+      5
+    ],
+    "loopClosurePassed": false,
+    "loopClosureResidual": {
+      "status": "RING_INCOMPLETE_LOOP_NOT_FORMED",
+      "closurePassed": false,
+      "measured": {
+        "rotationDriftFrobenius": null,
+        "rotationDriftDegrees": null,
+        "translationDriftRelative": null
+      },
+      "thresholds": {
+        "maxRotationDriftFrobenius": 0.5,
+        "maxRotationAngleDegrees": 15,
+        "maxTranslationDriftRelative": 0.2
+      }
+    },
+    "hasRecoverableParallax": true,
+    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT"
+  },
+  "974605c5709110d8cbfe6eacb5b10677abc01cef801ba39cb35df9d5f86910e3": {
+    "success": true,
+    "category": "GEOMETRY_EVALUATED_DATASET",
+    "classification": "NEGATIVE_PARTIAL_FIXTURE_VERIFIED",
+    "classificationReason": "Partial graph connectivity (5/12 views connected in main component); ring incomplete.",
+    "imageCount": 14,
+    "evaluatedViews": 12,
+    "sampleDimensions": "819x1024",
+    "featuresDetected": 636,
+    "crossPairMatches": 691,
+    "connectedViews": 5,
+    "connectedComponentCount": 4,
+    "componentSizes": [
+      5,
+      3,
+      2,
+      2
+    ],
+    "loopClosurePassed": false,
+    "loopClosureResidual": {
+      "status": "RING_INCOMPLETE_LOOP_NOT_FORMED",
+      "closurePassed": false,
+      "measured": {
+        "rotationDriftFrobenius": null,
+        "rotationDriftDegrees": null,
+        "translationDriftRelative": null
+      },
+      "thresholds": {
+        "maxRotationDriftFrobenius": 0.5,
+        "maxRotationAngleDegrees": 15,
+        "maxTranslationDriftRelative": 0.2
+      }
+    },
+    "hasRecoverableParallax": true,
+    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT"
+  },
+  "553f05b9d78b00fb88e2d79263f79375830019f2a947a17ea9babf23080b88e2": {
+    "success": true,
+    "category": "GEOMETRY_EVALUATED_DATASET",
+    "classification": "INELIGIBLE_INSUFFICIENT_PARALLAX_OR_DISCONNECTED",
+    "classificationReason": "Insufficient matchable parallax or disconnected camera stations (inliers: 31, connected: 2/5).",
+    "imageCount": 5,
+    "evaluatedViews": 5,
+    "sampleDimensions": "8192x4096",
+    "featuresDetected": 715,
+    "crossPairMatches": 31,
+    "connectedViews": 2,
+    "connectedComponentCount": 4,
+    "componentSizes": [
+      2,
+      1,
+      1,
+      1
+    ],
+    "loopClosurePassed": false,
+    "loopClosureResidual": {
+      "status": "RING_INCOMPLETE_LOOP_NOT_FORMED",
+      "closurePassed": false,
+      "measured": {
+        "rotationDriftFrobenius": null,
+        "rotationDriftDegrees": null,
+        "translationDriftRelative": null
+      },
+      "thresholds": {
+        "maxRotationDriftFrobenius": 0.5,
+        "maxRotationAngleDegrees": 15,
+        "maxTranslationDriftRelative": 0.2
+      }
+    },
+    "hasRecoverableParallax": false,
+    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT"
+  },
+  "e314323c95b1f0d461e0b21d30e2820a6add7fef746ad284357fad1bab11fc45": {
+    "success": true,
+    "category": "GEOMETRY_EVALUATED_DATASET",
+    "classification": "NEGATIVE_PARTIAL_FIXTURE_VERIFIED",
+    "classificationReason": "Partial graph connectivity (3/12 views connected in main component); ring incomplete.",
+    "imageCount": 14,
+    "evaluatedViews": 12,
+    "sampleDimensions": "819x1024",
+    "featuresDetected": 464,
+    "crossPairMatches": 108,
+    "connectedViews": 3,
+    "connectedComponentCount": 7,
+    "componentSizes": [
+      3,
+      2,
+      2,
+      2,
+      1,
+      1,
+      1
+    ],
+    "loopClosurePassed": false,
+    "loopClosureResidual": {
+      "status": "RING_INCOMPLETE_LOOP_NOT_FORMED",
+      "closurePassed": false,
+      "measured": {
+        "rotationDriftFrobenius": null,
+        "rotationDriftDegrees": null,
+        "translationDriftRelative": null
+      },
+      "thresholds": {
+        "maxRotationDriftFrobenius": 0.5,
+        "maxRotationAngleDegrees": 15,
+        "maxTranslationDriftRelative": 0.2
+      }
+    },
+    "hasRecoverableParallax": true,
+    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT"
+  },
+  "3498f779ed0fef0e0146b3f25fdbdfe04033994b3d466a94d5673a5c7af779f4": {
+    "success": true,
+    "category": "GEOMETRY_EVALUATED_DATASET",
+    "classification": "NEGATIVE_PARTIAL_FIXTURE_VERIFIED",
+    "classificationReason": "Connected views (12/12) but loop closure exceeded tolerance (138.02 deg drift).",
+    "imageCount": 12,
+    "evaluatedViews": 12,
+    "sampleDimensions": "1024x1024",
+    "featuresDetected": 949,
+    "crossPairMatches": 278,
+    "connectedViews": 12,
+    "connectedComponentCount": 1,
+    "componentSizes": [
+      12
+    ],
+    "loopClosurePassed": false,
+    "loopClosureResidual": {
+      "status": "LOOP_CLOSURE_FAILED_EXCEEDS_TOLERANCE",
+      "closurePassed": false,
+      "measured": {
+        "rotationDriftFrobenius": 2.6407,
+        "rotationDriftDegrees": 138.02,
+        "translationDriftRelative": 0.2434
+      },
+      "thresholds": {
+        "maxRotationDriftFrobenius": 0.5,
+        "maxRotationAngleDegrees": 15,
+        "maxTranslationDriftRelative": 0.2
+      }
+    },
+    "hasRecoverableParallax": true,
+    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT"
+  },
+  "983ec1e080abd7ae6006527caaafb4b85842995e9543a9c988563fc8138310ed": {
+    "success": true,
+    "category": "GEOMETRY_EVALUATED_DATASET",
+    "classification": "NEGATIVE_PARTIAL_FIXTURE_VERIFIED",
+    "classificationReason": "Connected views (12/12) but loop closure exceeded tolerance (108.33 deg drift).",
+    "imageCount": 24,
+    "evaluatedViews": 12,
+    "sampleDimensions": "1024x1024",
+    "featuresDetected": 941,
+    "crossPairMatches": 379,
+    "connectedViews": 12,
+    "connectedComponentCount": 1,
+    "componentSizes": [
+      12
+    ],
+    "loopClosurePassed": false,
+    "loopClosureResidual": {
+      "status": "LOOP_CLOSURE_FAILED_EXCEEDS_TOLERANCE",
+      "closurePassed": false,
+      "measured": {
+        "rotationDriftFrobenius": 2.293,
+        "rotationDriftDegrees": 108.33,
+        "translationDriftRelative": 0.3019
+      },
+      "thresholds": {
+        "maxRotationDriftFrobenius": 0.5,
+        "maxRotationAngleDegrees": 15,
+        "maxTranslationDriftRelative": 0.2
+      }
+    },
+    "hasRecoverableParallax": true,
+    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT"
+  },
+  "8a3fa13c4a52329cb3253d6612cb0fd432398f771577e668a9dccde9942170ff": {
+    "success": true,
+    "category": "GEOMETRY_EVALUATED_DATASET",
+    "classification": "NEGATIVE_PARTIAL_FIXTURE_VERIFIED",
+    "classificationReason": "Connected views (8/8) but loop closure exceeded tolerance (152.88 deg drift).",
+    "imageCount": 8,
+    "evaluatedViews": 8,
+    "sampleDimensions": "800x800",
+    "featuresDetected": 820,
+    "crossPairMatches": 107,
+    "connectedViews": 8,
+    "connectedComponentCount": 1,
+    "componentSizes": [
+      8
+    ],
+    "loopClosurePassed": false,
+    "loopClosureResidual": {
+      "status": "LOOP_CLOSURE_FAILED_EXCEEDS_TOLERANCE",
+      "closurePassed": false,
+      "measured": {
+        "rotationDriftFrobenius": 2.7496,
+        "rotationDriftDegrees": 152.88,
+        "translationDriftRelative": 0.1887
+      },
+      "thresholds": {
+        "maxRotationDriftFrobenius": 0.5,
+        "maxRotationAngleDegrees": 15,
+        "maxTranslationDriftRelative": 0.2
+      }
+    },
+    "hasRecoverableParallax": true,
+    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT"
+  },
+  "e134b2fd27704376d37e78566abc56ea47a2bc2634f4b1facb8786d6e3859a15": {
+    "success": true,
+    "category": "INSUFFICIENT_RESOLUTION_OR_KEYFRAME",
+    "classification": "INSUFFICIENT_RESOLUTION_OR_KEYFRAME",
+    "classificationReason": "Low resolution (256x256 < 512x512) or ephemeral keyframes",
+    "imageCount": 12,
+    "sampleDimensions": "256x256"
+  },
+  "b48a2c8c0db9f373b719bb467a6068e43c7c05f431a1f3fb8aae4549c6310847": {
+    "success": false,
+    "category": "INSUFFICIENT_METADATA_TO_EVALUATE",
+    "classification": "UNREADABLE_IMAGE_FILES",
+    "classificationReason": "Could not read at least 3 valid image frames",
+    "imageCount": 12
+  },
+  "e6aeea5d97f20e34afd0e002408e0cc1ff14b34e1361abce688e36549ecbf212": {
+    "success": false,
+    "category": "INSUFFICIENT_METADATA_TO_EVALUATE",
+    "classification": "UNREADABLE_IMAGE_FILES",
+    "classificationReason": "Could not read at least 3 valid image frames",
+    "imageCount": 12
+  },
+  "27b225b3af37a86be132d4778de3efe76991f569d1123401d46ef4946b0a303c": {
+    "success": false,
+    "category": "INSUFFICIENT_METADATA_TO_EVALUATE",
+    "classification": "UNREADABLE_IMAGE_FILES",
+    "classificationReason": "Could not read at least 3 valid image frames",
+    "imageCount": 12
+  },
+  "7300baf164507b05649c92770d71309480092158ee092689cb1515375fff06a1": {
+    "success": false,
+    "category": "INSUFFICIENT_METADATA_TO_EVALUATE",
+    "classification": "UNREADABLE_IMAGE_FILES",
+    "classificationReason": "Could not read at least 3 valid image frames",
+    "imageCount": 12
+  },
+  "bd044770275c83d719ccc6e08c6b45f7fcf7b3a4e5a97f821420c3163bcf6900": {
+    "success": false,
+    "category": "INSUFFICIENT_METADATA_TO_EVALUATE",
+    "classification": "UNREADABLE_IMAGE_FILES",
+    "classificationReason": "Could not read at least 3 valid image frames",
+    "imageCount": 12
+  },
+  "022fe378da87dc1811517c2bcb88ff96a2855f792c8bfb591e7e6936246ab497": {
+    "success": true,
+    "category": "INSUFFICIENT_RESOLUTION_OR_KEYFRAME",
+    "classification": "INSUFFICIENT_RESOLUTION_OR_KEYFRAME",
+    "classificationReason": "Low resolution (256x256 < 512x512) or ephemeral keyframes",
+    "imageCount": 12,
+    "sampleDimensions": "256x256"
+  },
+  "a40db2fac83a898a7264a60ee3038c55f7ac341e565cf78f4683fe2eaf6814e2": {
+    "success": true,
+    "category": "INSUFFICIENT_RESOLUTION_OR_KEYFRAME",
+    "classification": "INSUFFICIENT_RESOLUTION_OR_KEYFRAME",
+    "classificationReason": "Low resolution (3072x256 < 512x512) or ephemeral keyframes",
+    "imageCount": 141,
+    "sampleDimensions": "3072x256"
+  },
+  "a8a6fd6ecc198093a39b0f7fdf57d1636c0a21409f0ee6b683163fa53e192e83": {
+    "success": true,
+    "category": "INSUFFICIENT_RESOLUTION_OR_KEYFRAME",
+    "classification": "INSUFFICIENT_RESOLUTION_OR_KEYFRAME",
+    "classificationReason": "Low resolution (373x237 < 512x512) or ephemeral keyframes",
+    "imageCount": 20,
+    "sampleDimensions": "373x237"
+  },
+  "41fe6eec192f188f770a6875c59bf5b525ce802593a5ac7136f8e9f08d34c4b3": {
+    "success": true,
+    "category": "GEOMETRY_EVALUATED_DATASET",
+    "classification": "NEGATIVE_PARTIAL_FIXTURE_VERIFIED",
+    "classificationReason": "Connected views (8/8) but loop closure exceeded tolerance (132.98 deg drift).",
+    "imageCount": 71,
+    "evaluatedViews": 8,
+    "sampleDimensions": "1024x1024",
+    "featuresDetected": 948,
+    "crossPairMatches": 109,
+    "connectedViews": 8,
+    "connectedComponentCount": 1,
+    "componentSizes": [
+      8
+    ],
+    "loopClosurePassed": false,
+    "loopClosureResidual": {
+      "status": "LOOP_CLOSURE_FAILED_EXCEEDS_TOLERANCE",
+      "closurePassed": false,
+      "measured": {
+        "rotationDriftFrobenius": 2.5937,
+        "rotationDriftDegrees": 132.98,
+        "translationDriftRelative": 0.3283
+      },
+      "thresholds": {
+        "maxRotationDriftFrobenius": 0.5,
+        "maxRotationAngleDegrees": 15,
+        "maxTranslationDriftRelative": 0.2
+      }
+    },
+    "hasRecoverableParallax": true,
+    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT"
+  }
+}

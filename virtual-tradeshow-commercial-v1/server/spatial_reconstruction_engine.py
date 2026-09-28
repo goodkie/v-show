@@ -188,13 +188,21 @@ def evaluate_third_view_geometric_support(
                     else:
                         geom_fail_count += 1
 
-    # 2. Strict Gating Logic (Directive 5 & Blocker 5)
-    # If independent third-view depth exists and fails, strictly reject. Photometric fallback CANNOT rescue it.
+    # 2. Explicit Third-View Support Gating (Round 98 Directive 5: AT_LEAST_ONE_THIRD_VIEW_PASS)
+    # A candidate point is accepted as geometrically consistent if at least one independent third view
+    # observes consistent rectified disparity within tolerance (>=1 pass).
+    # If independent views are tested and none pass (geom_fail_count > 0 and geom_pass_count == 0),
+    # the candidate is strictly rejected. Photometric fallback CANNOT rescue it.
+    tested_views_count = geom_pass_count + geom_fail_count
     if geom_fail_count > 0 and geom_pass_count == 0:
         return {
             "accepted": False,
             "supportProvenance": "REJECTED",
             "rejectionReason": "GEOMETRIC_DEPTH_MISMATCH",
+            "supportPolicy": "AT_LEAST_ONE_THIRD_VIEW_PASS",
+            "viewsTestedCount": tested_views_count,
+            "viewsPassedCount": geom_pass_count,
+            "viewsFailedCount": geom_fail_count,
             "geometricTested": True,
             "geometricConsistent": False,
             "geometricRejected": True,
@@ -208,6 +216,10 @@ def evaluate_third_view_geometric_support(
             "accepted": True,
             "supportProvenance": "GEOMETRICALLY_CONSISTENT_THIRD_VIEW_VERIFIED",
             "rejectionReason": None,
+            "supportPolicy": "AT_LEAST_ONE_THIRD_VIEW_PASS",
+            "viewsTestedCount": tested_views_count,
+            "viewsPassedCount": geom_pass_count,
+            "viewsFailedCount": geom_fail_count,
             "geometricTested": True,
             "geometricConsistent": True,
             "geometricRejected": False,
@@ -240,6 +252,10 @@ def evaluate_third_view_geometric_support(
                 "accepted": True,
                 "supportProvenance": "PHOTOMETRIC_ONLY_UNVERIFIED",
                 "rejectionReason": None,
+                "supportPolicy": "AT_LEAST_ONE_THIRD_VIEW_PASS",
+                "viewsTestedCount": 0,
+                "viewsPassedCount": 0,
+                "viewsFailedCount": 0,
                 "geometricTested": False,
                 "geometricConsistent": False,
                 "geometricRejected": False,
@@ -253,6 +269,10 @@ def evaluate_third_view_geometric_support(
                 "accepted": False,
                 "supportProvenance": "REJECTED",
                 "rejectionReason": "PHOTOMETRIC_FALLBACK_FAILED",
+                "supportPolicy": "AT_LEAST_ONE_THIRD_VIEW_PASS",
+                "viewsTestedCount": 0,
+                "viewsPassedCount": 0,
+                "viewsFailedCount": 0,
                 "geometricTested": False,
                 "geometricConsistent": False,
                 "geometricRejected": False,
@@ -266,6 +286,10 @@ def evaluate_third_view_geometric_support(
             "accepted": False,
             "supportProvenance": "REJECTED",
             "rejectionReason": "MULTI_VIEW_REJECTED",
+            "supportPolicy": "AT_LEAST_ONE_THIRD_VIEW_PASS",
+            "viewsTestedCount": tested_views_count,
+            "viewsPassedCount": geom_pass_count,
+            "viewsFailedCount": geom_fail_count,
             "geometricTested": True,
             "geometricConsistent": False,
             "geometricRejected": False,
@@ -348,11 +372,12 @@ def main():
 
     job_id = args.job_id or f"recon-job-auth-{os.urandom(6).hex()}"
     cut_sha = args.cut_sha or os.environ.get("EXPECTED_HEAD_SHA") or os.environ.get("GIT_COMMIT")
-    if not cut_sha:
+    if not cut_sha or len(cut_sha) < 40:
         try:
-            cut_sha = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
+            cut_sha = subprocess.check_output(["git", "rev-parse", cut_sha or "HEAD"], text=True).strip()
         except Exception:
-            cut_sha = "UNBOUND_DEVELOPMENT_HEAD"
+            if not cut_sha:
+                cut_sha = "UNBOUND_DEVELOPMENT_HEAD"
 
     if not os.path.isdir(image_dir):
         print(json.dumps({"success": False, "error": f"ERR_SOURCE_DIR_MISSING: {image_dir}"}))
@@ -1123,6 +1148,9 @@ def main():
         photo_heuristic_accepted = 0
         multi_view_geom_rejected = 0
         mv_heuristic_rejected = 0
+        third_views_tested = 0
+        third_views_passed = 0
+        third_views_failed = 0
         depth_residuals = []
         X_glob_spatial = []
         c_spatial = []
@@ -1160,6 +1188,10 @@ def main():
                         cur_R, cur_t, K_s, rgbs_s, w_s, h_s,
                         depth_tolerance_ratio=0.40
                     )
+
+                    third_views_tested += eval_res.get("viewsTestedCount", 0)
+                    third_views_passed += eval_res.get("viewsPassedCount", 0)
+                    third_views_failed += eval_res.get("viewsFailedCount", 0)
 
                     if eval_res["geometricTested"]:
                         geom_depth_tested += 1
@@ -1218,6 +1250,10 @@ def main():
             "thirdViewPhotometricHeuristicAccepted": photo_heuristic_accepted,
             "multiViewGeometricRejected": multi_view_geom_rejected,
             "multiViewHeuristicRejected": mv_heuristic_rejected,
+            "supportPolicy": "AT_LEAST_ONE_THIRD_VIEW_PASS",
+            "thirdViewsTestedCount": third_views_tested,
+            "thirdViewsPassedCount": third_views_passed,
+            "thirdViewsFailedCount": third_views_failed,
             "acceptedMultiViewConsistent3dCount": accepted_3d,
             "acceptedGeometricallyConsistent3dCount": geom_depth_consistent,
             "meanRelativeDepthResidual": round(float(np.mean(depth_residuals)), 4) if depth_residuals else None,
@@ -1263,7 +1299,10 @@ def main():
         "geometricallyVerifiedVertices": fused_geom_count,
         "photometricOnlyVertices": fused_photo_count,
         "geometricallyVerifiedRatio": fused_geom_ratio,
-        "conservativeMergePolicy": "ALL_CONTRIBUTING_VOXEL_POINTS_MUST_BE_GEOMETRIC"
+        "supportPolicy": "AT_LEAST_ONE_THIRD_VIEW_PASS",
+        "policyDefinition": "A voxel-fused vertex is geometrically verified if ALL contributing voxel points met the AT_LEAST_ONE_THIRD_VIEW_PASS geometric support criterion; otherwise photometric-only.",
+        "conservativeMergePolicy": "ALL_CONTRIBUTING_VOXEL_POINTS_MUST_BE_GEOMETRIC",
+        "artifactQualityGate": "QUARANTINED_INTERNAL_PROOF_ONLY_SPARSE_GEOMETRIC_SUPPORT"
     }
 
     # Honest Classification Gating
@@ -1372,20 +1411,20 @@ def main():
         "optimizationAlgorithm": "ALTERNATING_LEVENBERG_MARQUARDT_PNP_AND_LANDMARK"
     }
 
-    # Discovery-derived Dataset Adequacy & Positive Fixture Gate (Round 95)
+    # Discovery-derived Dataset Adequacy & Positive Fixture Gate (Round 98 Empirical Geometry Gate)
     inventory_path = os.path.join(os.path.dirname(__file__), "../production_artifacts/DATASET_INVENTORY_AUDIT.json")
     if os.path.exists(inventory_path):
         try:
             with open(inventory_path, 'r', encoding='utf-8') as inv_f:
                 inv_data = json.load(inv_f)
-                dataset_adequacy_gate = inv_data.get("gateEvaluation", {}).get("DATASET_ADEQUACY_GATE", "NO_ELIGIBLE_NON_OWNER_POSITIVE_FIXTURE_FOUND_BY_INVENTORY")
-                positive_fixture_gate = inv_data.get("gateEvaluation", {}).get("POSITIVE_FIXTURE_GATE", "BLOCKED_BY_POSITIVE_FIXTURE_AVAILABILITY")
+                dataset_adequacy_gate = inv_data.get("gateEvaluation", {}).get("DATASET_ADEQUACY_GATE", "BLOCKED_BY_MEASURED_POSITIVE_FIXTURE_AVAILABILITY")
+                positive_fixture_gate = inv_data.get("gateEvaluation", {}).get("POSITIVE_FIXTURE_GATE", "BLOCKED_BY_MEASURED_POSITIVE_FIXTURE_AVAILABILITY")
         except Exception:
-            dataset_adequacy_gate = "NO_ELIGIBLE_NON_OWNER_POSITIVE_FIXTURE_FOUND_BY_INVENTORY"
-            positive_fixture_gate = "BLOCKED_BY_POSITIVE_FIXTURE_AVAILABILITY"
+            dataset_adequacy_gate = "BLOCKED_BY_MEASURED_POSITIVE_FIXTURE_AVAILABILITY"
+            positive_fixture_gate = "BLOCKED_BY_MEASURED_POSITIVE_FIXTURE_AVAILABILITY"
     else:
-        dataset_adequacy_gate = "NO_ELIGIBLE_NON_OWNER_POSITIVE_FIXTURE_FOUND_BY_INVENTORY"
-        positive_fixture_gate = "BLOCKED_BY_POSITIVE_FIXTURE_AVAILABILITY"
+        dataset_adequacy_gate = "BLOCKED_BY_MEASURED_POSITIVE_FIXTURE_AVAILABILITY"
+        positive_fixture_gate = "BLOCKED_BY_MEASURED_POSITIVE_FIXTURE_AVAILABILITY"
 
     total_geom_consistent = sum(p.get("thirdViewDepthGeometricConsistent", 0) for p in pair_dense_diagnostics)
     total_photo_only = sum(p.get("thirdViewPhotometricHeuristicAccepted", 0) for p in pair_dense_diagnostics)
@@ -1393,6 +1432,10 @@ def main():
     total_heuristic_rejected = sum(p.get("multiViewHeuristicRejected", 0) for p in pair_dense_diagnostics)
     total_sampled_candidates = sum(p.get("sampledCandidatePoints", 0) for p in pair_dense_diagnostics)
     total_accepted_candidates = sum(p.get("acceptedMultiViewConsistent3dCount", 0) for p in pair_dense_diagnostics)
+
+    total_third_views_tested = sum(p.get("thirdViewsTestedCount", 0) for p in pair_dense_diagnostics)
+    total_third_views_passed = sum(p.get("thirdViewsPassedCount", 0) for p in pair_dense_diagnostics)
+    total_third_views_failed = sum(p.get("thirdViewsFailedCount", 0) for p in pair_dense_diagnostics)
 
     # Strict Fail-Closed Arithmetic Invariants (Round 97 Mandate)
     assert total_accepted_candidates == total_geom_consistent + total_photo_only, \
@@ -1403,19 +1446,24 @@ def main():
     assert total_geom_consistent > 0, "Arithmetic invariant failed: geometricallyConsistentCount must be > 0"
 
     point_support_provenance = {
+        "supportPolicy": "AT_LEAST_ONE_THIRD_VIEW_PASS",
+        "policyDefinition": "A candidate point is accepted as geometrically consistent if at least one independent third view observes consistent rectified disparity within tolerance (>=1 pass); candidate rejected if independent views tested and zero pass.",
         "geometricallyConsistentCount": total_geom_consistent,
         "photometricOnlyCount": total_photo_only,
         "geometricRejectionCount": total_geom_rejected,
         "heuristicRejectionCount": total_heuristic_rejected,
         "totalCandidatePointsTested": total_sampled_candidates,
         "totalConsistentPointsAccepted": total_accepted_candidates,
+        "totalThirdViewsTested": total_third_views_tested,
+        "totalThirdViewsPassed": total_third_views_passed,
+        "totalThirdViewsFailed": total_third_views_failed,
         "hasThirdViewGeometricConsistencyProof": bool(total_geom_consistent > 0),
         "arithmeticInvariantsVerified": True
     }
 
     calib_status_str = "ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED"
     receipt = {
-        "receiptSchemaVersion": "AUTHLINEAGE_RECEIPT_V10_UNBIASED_DEPTH_SUPPORT_AND_ARTIFACT_PROVENANCE",
+        "receiptSchemaVersion": "AUTHLINEAGE_RECEIPT_V11_STANDARDIZED_DIGEST_AND_SUPPORT_POLICY",
         "jobId": job_id,
         "codeUnderTestSha": cut_sha,
         "engineProvenance": {
