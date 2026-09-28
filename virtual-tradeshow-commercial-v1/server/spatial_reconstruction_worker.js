@@ -1690,6 +1690,7 @@ function executeAuthenticReconstructionWorker(options = {}) {
                 DENSE_MVS_CLASSIFICATION: parsed.outputClassification || 'STEREO_DERIVED_FUSED_MVS_INTERNAL_PROOF',
                 GLOBAL_COVERAGE_GATE: parsed.cameraCoverageAndGraphProof?.graphConnectivity?.globalCoverageGate || 'NOT_MET_PARTIAL_11_OF_12',
                 LOOP_CLOSURE_GATE: parsed.cameraCoverageAndGraphProof?.loopClosureResidual?.status || 'LOOP_CLOSURE_FAILED_EXCEEDS_TOLERANCE',
+                DATASET_ADEQUACY_GATE: 'NEGATIVE_PARTIAL_FIXTURE_VERIFIED_NO_ADEQUATE_NON_OWNER_POSITIVE_FIXTURE_AVAILABLE',
                 OWNER_REVIEW_GATE: 'HOLD',
                 ENGINEERING_HOLD: 'ACTIVE'
               }

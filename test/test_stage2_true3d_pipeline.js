@@ -365,11 +365,17 @@ async function main() {
     assert.ok(ge3Tracks > 0, `Inlier set must contain persistent tracks observed in >= 3 distinct views (found ${ge3Tracks})`);
     assert.strictEqual(metrics.ge3TracksCount, ge3Tracks, 'ge3TracksCount metric must match sum');
     
-    // Explicit convergence criteria & iteration history assertions (Round 92/93)
+    // Explicit convergence criteria & iteration history assertions (Round 92/93/94)
     assert.ok(metrics.convergenceCriteria, 'Explicit convergence criteria must be present');
     assert.strictEqual(metrics.convergenceCriteria.relativeRmseTolerance, 0.001, 'Relative RMSE tolerance must be 1e-3');
     assert.ok(metrics.convergenceStatus === 'CONVERGED' || metrics.convergenceStatus === 'STATIONARY', 'Optimization status must be CONVERGED or STATIONARY');
-    assert.strictEqual(metrics.converged, true, 'Convergence flag must be true');
+    if (metrics.convergenceStatus === 'STATIONARY') {
+      assert.strictEqual(metrics.converged, false, 'STATIONARY must report converged=false per truthful termination semantics');
+      assert.strictEqual(metrics.terminated, true, 'STATIONARY must report terminated=true');
+    } else {
+      assert.strictEqual(metrics.converged, true, 'CONVERGED must report converged=true');
+      assert.strictEqual(metrics.terminated, true, 'CONVERGED must report terminated=true');
+    }
     assert.ok(metrics.iterationHistory && metrics.iterationHistory.length >= 3, 'Iteration history must track >= 3 iterations');
 
     // Apples-to-apples fixed observation set validation
@@ -379,25 +385,35 @@ async function main() {
     assert.ok(metrics.fixedObservationSet.rmseReductionPercent > 0, 'RMSE reduction on fixed set must be positive');
     assert.ok(metrics.outlierRejectionMetrics, 'Outlier rejection metrics must be reported');
 
-    // Truthful camera coverage and graph connectivity proof (Round 93)
+    // Truthful camera coverage and graph connectivity proof (Round 94)
     const camProof = authReconResult.reconstructionExecution.cameraCoverageAndGraphProof;
     assert.ok(camProof, 'Camera coverage and graph proof must be present');
-    assert.strictEqual(camProof.optimizedCameraCount, 11, 'Exactly 11 cameras must be optimized (View 12 unoptimized due to 0 observations)');
+    assert.ok(camProof.cameraAccounting, 'cameraAccounting breakdown must be reported');
+    assert.strictEqual(camProof.cameraAccounting.fixedGaugeCameraCount, 1, 'View 0 must be counted under fixedGaugeCameraCount');
+    assert.strictEqual(camProof.cameraAccounting.pnpOptimizedCameraCount, 10, 'Views 1-10 must be counted under pnpOptimizedCameraCount');
+    assert.strictEqual(camProof.cameraAccounting.unoptimizedCameraCount, 1, 'View 11 must be counted under unoptimizedCameraCount');
+    assert.strictEqual(camProof.optimizedCameraCount, 10, 'optimizedCameraCount must be 10 (excluding gauge anchor)');
     assert.strictEqual(camProof.perCameraStatistics.length, 12, 'Statistics for all 12 views must be reported');
+    assert.strictEqual(camProof.perCameraStatistics[0].isGaugeAnchor, true, 'View 0 must be gauge anchor');
+    assert.strictEqual(camProof.perCameraStatistics[0].optimized, false, 'View 0 gauge anchor must have optimized=false');
+    assert.strictEqual(camProof.perCameraStatistics[0].optimizationStatus, 'GAUGE_ANCHOR_FIXED');
     assert.strictEqual(camProof.perCameraStatistics[11].optimized, false, 'View 12 must be unoptimized');
     assert.strictEqual(camProof.perCameraStatistics[11].optimizationStatus, 'UNOPTIMIZED_INSUFFICIENT_OBSERVATIONS');
     assert.strictEqual(camProof.graphConnectivity.isConnected, false, 'Camera graph must be disconnected (View 12 separated)');
     assert.strictEqual(camProof.graphConnectivity.connectedComponentCount, 2, 'Camera graph must form 2 connected components');
     assert.strictEqual(camProof.graphConnectivity.totalViewsInComponent, 11, '11 views reachable in main component');
+    assert.deepStrictEqual(camProof.graphConnectivity.componentSizes, [11, 1]);
     assert.strictEqual(camProof.graphConnectivity.globalCoverageGate, 'NOT_MET_PARTIAL_11_OF_12');
 
-    // Pre-gated truthful loop closure residual (Round 93)
+    // Pre-gated truthful loop closure residual (Round 94)
     assert.strictEqual(camProof.loopClosureResidual.status, 'LOOP_CLOSURE_FAILED_EXCEEDS_TOLERANCE', 'Loop closure must fail tolerance truthfully');
     assert.strictEqual(camProof.loopClosureResidual.closurePassed, false);
     assert.strictEqual(camProof.loopClosureResidual.thresholds.maxRotationDriftFrobenius, 0.5);
     assert.strictEqual(camProof.loopClosureResidual.thresholds.maxRotationAngleDegrees, 15.0);
+    assert.strictEqual(camProof.loopClosureResidual.thresholds.maxTranslationDriftRelative, 0.2);
+    assert.ok(typeof camProof.loopClosureResidual.measured.translationDriftRelative === 'number', 'translationDriftRelative must be numeric');
 
-    // Dual artifact & honest classification assertions (Round 93)
+    // Dual artifact & honest classification assertions (Round 93/94)
     const sparseSeed = authReconResult.reconstructionExecution.sparseSfmSeed;
     assert.ok(sparseSeed, 'Sparse SfM seed must be reported');
     assert.strictEqual(sparseSeed.classification, 'SPARSE_SFM_INTERNAL_PROOF', 'Sparse SfM must be honestly classified as SPARSE_SFM_INTERNAL_PROOF');
@@ -407,7 +423,7 @@ async function main() {
     // Cryptographic receipt assertions
     assert.ok(fs.existsSync(authReconResult.reconstructionExecution.receiptPath), 'Lineage receipt must exist on disk');
     const receiptContent = JSON.parse(fs.readFileSync(authReconResult.reconstructionExecution.receiptPath, 'utf8'));
-    assert.strictEqual(receiptContent.receiptSchemaVersion, 'AUTHLINEAGE_RECEIPT_V6_TRUTHFUL_GRAPH_FUSED_MVS');
+    assert.strictEqual(receiptContent.receiptSchemaVersion, 'AUTHLINEAGE_RECEIPT_V7_HONEST_CAMERA_ACCOUNTING_AND_DENSE_CONSISTENCY');
     assert.strictEqual(receiptContent.calibrationProvenance.calibrationStatus, 'ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED');
     assert.strictEqual(receiptContent.calibrationProvenance.selfCalibrated, false);
     assert.strictEqual(receiptContent.outputArtifact.classification, 'STEREO_DERIVED_FUSED_MVS_INTERNAL_PROOF');
@@ -433,7 +449,23 @@ async function main() {
     assert.strictEqual(authReconResult.truthLedger.COORDINATE_SYSTEM, 'SCALE_FREE_UNIFIED_GLOBAL_SFM_FRAME');
     assert.strictEqual(authReconResult.truthLedger.GLOBAL_COVERAGE_GATE, 'NOT_MET_PARTIAL_11_OF_12');
     assert.strictEqual(authReconResult.truthLedger.LOOP_CLOSURE_GATE, 'LOOP_CLOSURE_FAILED_EXCEEDS_TOLERANCE');
+    assert.strictEqual(authReconResult.truthLedger.DATASET_ADEQUACY_GATE, 'NEGATIVE_PARTIAL_FIXTURE_VERIFIED_NO_ADEQUATE_NON_OWNER_POSITIVE_FIXTURE_AVAILABLE');
+    assert.strictEqual(receiptContent.gateStatusDisclosures.DATASET_ADEQUACY_GATE, 'NEGATIVE_PARTIAL_FIXTURE_VERIFIED_NO_ADEQUATE_NON_OWNER_POSITIVE_FIXTURE_AVAILABLE');
     assert.strictEqual(authReconResult.truthLedger.OWNER_REVIEW_GATE, 'HOLD');
+
+    // Dense MVS diagnostics & cheirality rejection counters (Round 94)
+    const mvsDiag = authReconResult.reconstructionExecution.denseMvsDiagnostics;
+    assert.ok(mvsDiag, 'Dense MVS diagnostics must be present');
+    assert.ok(mvsDiag.pairDiagnostics.length > 0, 'Pair diagnostics must be reported');
+    for (const p of mvsDiag.pairDiagnostics) {
+      assert.ok('invalidDisparityCount' in p, 'invalidDisparityCount must be tracked');
+      assert.ok('negativeDepthRejected' in p, 'negativeDepthRejected must be tracked');
+      assert.ok('rangeRejected' in p, 'rangeRejected must be tracked');
+      assert.ok('spatialRejected' in p, 'spatialRejected must be tracked');
+      assert.ok('multiViewInconsistentRejected' in p, 'multiViewInconsistentRejected must be tracked');
+      assert.ok('acceptedMultiViewConsistent3dCount' in p, 'acceptedMultiViewConsistent3dCount must be tracked');
+      assert.ok('fusedContribution' in p, 'fusedContribution must be tracked');
+    }
 
     console.log(`    - Reconstruction Status: ${authReconResult.status} (TERMINAL SUCCESS)`);
     console.log(`    - Engine:                ${authReconResult.engine}`);
@@ -448,8 +480,22 @@ async function main() {
     console.log(`    - Inlier RMSE:           ${metrics.finalInlierMetrics.reprojectionRmsePixels} px (mean: ${metrics.finalInlierMetrics.meanReprojectionErrorPixels} px, median: ${metrics.finalInlierMetrics.medianReprojectionErrorPixels} px)`);
     console.log(`    - Convergence:           ${metrics.convergenceStatus} (${metrics.actualIterations} iters, rel delta=${metrics.iterationHistory[metrics.iterationHistory.length-1].relativeRmseChange})`);
     console.log(`    - Multi-View Tracks:     ${metrics.totalTracksCount} tracks (>=3 views: ${ge3Tracks}, fraction: ${metrics.ge3TrackFraction})`);
-    console.log(`    - Camera Graph:          ${camProof.optimizedCameraCount}/12 cameras optimized, ${camProof.graphConnectivity.totalViewsInComponent}/12 reachable (${camProof.graphConnectivity.globalCoverageGate})`);
+    console.log(`    - Camera Graph:          ${camProof.optimizedCameraCount}/12 cameras PnP optimized, ${camProof.graphConnectivity.totalViewsInComponent}/12 reachable (${camProof.graphConnectivity.globalCoverageGate})`);
     console.log(`    - Loop Closure Residual: Frobenius drift = ${camProof.loopClosureResidual.measured.rotationDriftFrobenius} (${camProof.loopClosureResidual.status})`);
+
+    // Repeat-run reproducibility proof (Round 94 Blocker 8)
+    const repeatOutputDir = fs.mkdtempSync(path.join(os.tmpdir(), 'vshow_repeat_sfm_'));
+    const repeatRunResult = executeAuthenticReconstructionWorker({
+      enableLocalOpencvSfm: true,
+      outputDir: repeatOutputDir,
+      cutSha: targetCutSha
+    });
+    assert.strictEqual(repeatRunResult.success, true, 'Repeat run must succeed');
+    assert.strictEqual(repeatRunResult.reconstructionExecution.outputPlySha, authReconResult.reconstructionExecution.outputPlySha, 'Output PLY SHA must be byte-for-byte identical across runs');
+    assert.strictEqual(repeatRunResult.reconstructionExecution.outputVertexCount, authReconResult.reconstructionExecution.outputVertexCount, 'Output vertex count must be identical across runs');
+    assert.strictEqual(repeatRunResult.reconstructionExecution.denseMvsDiagnostics.voxelDeduplication.fusedUniquePoints, authReconResult.reconstructionExecution.denseMvsDiagnostics.voxelDeduplication.fusedUniquePoints, 'Fused unique points must match');
+    assert.strictEqual(repeatRunResult.reconstructionExecution.refinementMetrics.finalInlierMetrics.reprojectionRmsePixels, authReconResult.reconstructionExecution.refinementMetrics.finalInlierMetrics.reprojectionRmsePixels, 'Reprojection RMSE must match exactly');
+    console.log(`    - Repeat Run Determinism: Byte-for-byte identical PLY SHA (${repeatRunResult.reconstructionExecution.outputPlySha.substring(0, 16)}...)`);
   });
 
   // ── [4] Dynamic Parser-Derived PLY Schema & Record Stride ───────────────────
