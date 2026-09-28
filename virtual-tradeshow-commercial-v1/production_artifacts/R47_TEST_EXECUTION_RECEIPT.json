@@ -1,28 +1,28 @@
 {
   "receiptSchemaVersion": "R47_EXECUTION_RECEIPT_V1",
   "executionTimestamps": {
-    "startTime": "2026-09-28T14:14:51.631Z",
-    "endTime": "2026-09-28T14:17:28.825Z",
-    "durationMs": 157192
+    "startTime": "2026-09-28T15:51:33.529Z",
+    "endTime": "2026-09-28T15:54:35.010Z",
+    "durationMs": 181478
   },
   "runnerMetadata": {
     "sourceFile": "test/test_stage2_true3d_pipeline.js",
-    "sourceSha256": "5bb1d39d04080a32f661c6c4dae18922a3a57c5d45111f8ed11621dadecd7926",
+    "sourceSha256": "a64bf7dd085a5b78e8392d61969f9a70d819e0de059027a1c3ebcd80aaabd8fb",
     "nodeVersion": "v24.21.0",
     "platform": "win32"
   },
   "gitEvidence": {
-    "observedHeadSha": "76dbac117c360ba2ec95cd8c52f583e1a358b8b0",
-    "expectedHeadSha": "76dbac117c360ba2ec95cd8c52f583e1a358b8b0",
+    "observedHeadSha": "ee4f0585382fa75a2393e2a8575d7e4e975ab024",
+    "expectedHeadSha": "ee4f0585382fa75a2393e2a8575d7e4e975ab024",
     "headBindingMatched": true,
     "worktreeClean": true,
     "rawGitStatusPorcelain": "(clean)"
   },
   "suiteResults": {
-    "totalTests": 19,
-    "passedTests": 19,
+    "totalTests": 20,
+    "passedTests": 20,
     "failedTests": 0,
-    "passedStatus": "19/19 PASS",
+    "passedStatus": "20/20 PASS",
     "exitCode": 0
   },
   "deployRootsAudit": {

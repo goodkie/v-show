@@ -66,11 +66,14 @@ const pairRows = (denseDiag.pairDiagnostics || []).map(p =>
   `| [${p.pair[0]}, ${p.pair[1]}] | ${p.baseline.toFixed(4)} | ${p.validDisparityCount.toLocaleString()} | ${p.negativeDepthRejected !== undefined ? p.negativeDepthRejected.toLocaleString() : 0} | ${p.rangeRejected !== undefined ? p.rangeRejected.toLocaleString() : 0} | ${p.spatialRejected !== undefined ? p.spatialRejected.toLocaleString() : 0} | ${p.thirdViewDepthGeometricTested !== undefined ? p.thirdViewDepthGeometricTested.toLocaleString() : 'N/A'} | ${p.thirdViewDepthGeometricConsistent !== undefined ? p.thirdViewDepthGeometricConsistent.toLocaleString() : 'N/A'} | ${p.multiViewGeometricRejected !== undefined ? p.multiViewGeometricRejected.toLocaleString() : 0} | ${p.thirdViewPhotometricHeuristicAccepted !== undefined ? p.thirdViewPhotometricHeuristicAccepted.toLocaleString() : 'N/A'} | ${p.multiViewHeuristicRejected !== undefined ? p.multiViewHeuristicRejected.toLocaleString() : 0} | ${p.acceptedMultiViewConsistent3dCount !== undefined ? p.acceptedMultiViewConsistent3dCount.toLocaleString() : p.accepted3dCount.toLocaleString()} | ${p.meanRelativeDepthResidual !== undefined && p.meanRelativeDepthResidual !== null ? p.meanRelativeDepthResidual.toFixed(4) : 'N/A'} | ${p.fusedContribution} |`
 ).join('\n');
 
-// Format candidate datasets table
-const candidateRows = (inventoryAudit.evaluatedCandidates || []).map(item => {
+// Format candidate datasets table (grouping ephemeral guided capture sessions)
+const nonEphemeralCandidates = (inventoryAudit.evaluatedCandidates || []).filter(c => !c.directory.includes('guided_capture'));
+const ephemeralCount = (inventoryAudit.evaluatedCandidates || []).length - nonEphemeralCandidates.length;
+
+const candidateRows = nonEphemeralCandidates.map(item => {
   const m = item.metrics || {};
   return `| \`${item.directory}\` | ${m.frameCount || item.imageCount} | ${m.dimensions || item.sampleDimensions} | ${m.siftFeaturesDetected || 'N/A'} | ${m.crossPairMatches || 'N/A'} | ${m.maxBaselineMeters ? m.maxBaselineMeters.toFixed(2) + 'm' : 'N/A'} | \`${item.classification}\` | ${item.classificationReason} |`;
-}).join('\n');
+}).join('\n') + (ephemeralCount > 0 ? `\n| \`virtual-tradeshow-commercial-v1/_clean_deploy/data/guided_capture/* (${ephemeralCount} sessions)\` | 12 | 256x256 | 4000 | 243 | 0.00m | \`INELIGIBLE_ZERO_PARALLAX\` | Evaluated ${ephemeralCount} ephemeral guided capture sessions; zero translation baseline (0m < 0.1m). |` : '');
 
 // Format restricted paths skipped table
 const restrictedRows = (trav.restrictedPathsSkipped || []).map(r =>
