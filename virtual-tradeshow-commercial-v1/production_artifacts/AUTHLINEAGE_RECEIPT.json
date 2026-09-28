@@ -1,15 +1,15 @@
 {
-  "receiptSchemaVersion": "AUTHLINEAGE_RECEIPT_V7_HONEST_CAMERA_ACCOUNTING_AND_DENSE_CONSISTENCY",
-  "jobId": "recon-job-1790599390817-afedbd33",
-  "codeUnderTestSha": "0bcd16568d4b90f7eaefc3a73eaf31ea8ddf1c14",
+  "receiptSchemaVersion": "AUTHLINEAGE_RECEIPT_V8_INVENTORY_BOUND_GEOMETRIC_DEPTH_CONSISTENCY",
+  "jobId": "recon-job-1790604893386-ea24e9d5",
+  "codeUnderTestSha": "76dbac117c360ba2ec95cd8c52f583e1a358b8b0",
   "engineProvenance": {
     "engineName": "OPENCV_SIFT_INCREMENTAL_GLOBAL_SFM",
-    "engineSourceSha256": "47708d2cb1297db4cd2e9a97f47db912882e3380cd5d962dc98c100a364a39cb",
+    "engineSourceSha256": "aa96ec139f8168334c50006ee1afec969aefb52ab52a777df7d1d6ec5ce4974c",
     "engineVersion": "5.0.0",
     "pythonVersion": "3.14.7"
   },
   "workerProvenance": {
-    "workerRuntimeSha256": "a7661b17b422dab007a141664aebc4ca7f8eda354a1c5e60885751cd6046ae3e"
+    "workerRuntimeSha256": "0e3f3ac435084503d5faf5c3f4216d19c74a734c69d172cae5cc998ae54f92f5"
   },
   "calibrationProvenance": {
     "calibrationStatus": "ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED",
@@ -157,7 +157,8 @@
       "totalCameras": 12,
       "fixedGaugeCameraCount": 1,
       "pnpOptimizedCameraCount": 10,
-      "unoptimizedCameraCount": 1
+      "unoptimizedCameraCount": 1,
+      "solverIterationsObserved": 3
     },
     "fixedObservationSet": {
       "initialRmsePixels": 265.7984,
@@ -223,7 +224,8 @@
       "totalCameras": 12,
       "fixedGaugeCameraCount": 1,
       "pnpOptimizedCameraCount": 10,
-      "unoptimizedCameraCount": 1
+      "unoptimizedCameraCount": 1,
+      "solverIterationsObserved": 3
     },
     "perCameraStatistics": [
       {
@@ -235,7 +237,8 @@
         "isPnpOptimized": false,
         "optimized": false,
         "optimizationStatus": "GAUGE_ANCHOR_FIXED",
-        "successfulOptimizationIterations": 3,
+        "successfulOptimizationIterations": 0,
+        "solverIterationsObserved": 3,
         "rotationUpdateNorm": 0.0,
         "translationUpdateNorm": 0.0,
         "poseUpdateNorm": 0.0,
@@ -251,6 +254,7 @@
         "optimized": true,
         "optimizationStatus": "OPTIMIZED_PNP_REFINED",
         "successfulOptimizationIterations": 3,
+        "solverIterationsObserved": 3,
         "rotationUpdateNorm": 0.0003,
         "translationUpdateNorm": 0.002146,
         "poseUpdateNorm": 0.002446,
@@ -266,6 +270,7 @@
         "optimized": true,
         "optimizationStatus": "OPTIMIZED_PNP_REFINED",
         "successfulOptimizationIterations": 3,
+        "solverIterationsObserved": 3,
         "rotationUpdateNorm": 0.000277,
         "translationUpdateNorm": 0.004319,
         "poseUpdateNorm": 0.004596,
@@ -281,6 +286,7 @@
         "optimized": true,
         "optimizationStatus": "OPTIMIZED_PNP_REFINED",
         "successfulOptimizationIterations": 3,
+        "solverIterationsObserved": 3,
         "rotationUpdateNorm": 3.4e-05,
         "translationUpdateNorm": 0.000287,
         "poseUpdateNorm": 0.000321,
@@ -296,6 +302,7 @@
         "optimized": true,
         "optimizationStatus": "OPTIMIZED_PNP_REFINED",
         "successfulOptimizationIterations": 3,
+        "solverIterationsObserved": 3,
         "rotationUpdateNorm": 5.6e-05,
         "translationUpdateNorm": 0.001034,
         "poseUpdateNorm": 0.00109,
@@ -311,6 +318,7 @@
         "optimized": true,
         "optimizationStatus": "OPTIMIZED_PNP_REFINED",
         "successfulOptimizationIterations": 3,
+        "solverIterationsObserved": 3,
         "rotationUpdateNorm": 0.000772,
         "translationUpdateNorm": 0.001074,
         "poseUpdateNorm": 0.001846,
@@ -326,6 +334,7 @@
         "optimized": true,
         "optimizationStatus": "OPTIMIZED_PNP_REFINED",
         "successfulOptimizationIterations": 3,
+        "solverIterationsObserved": 3,
         "rotationUpdateNorm": 0.000117,
         "translationUpdateNorm": 0.001575,
         "poseUpdateNorm": 0.001692,
@@ -341,6 +350,7 @@
         "optimized": true,
         "optimizationStatus": "OPTIMIZED_PNP_REFINED",
         "successfulOptimizationIterations": 3,
+        "solverIterationsObserved": 3,
         "rotationUpdateNorm": 0.000133,
         "translationUpdateNorm": 0.00438,
         "poseUpdateNorm": 0.004513,
@@ -356,6 +366,7 @@
         "optimized": true,
         "optimizationStatus": "OPTIMIZED_PNP_REFINED",
         "successfulOptimizationIterations": 3,
+        "solverIterationsObserved": 3,
         "rotationUpdateNorm": 0.000248,
         "translationUpdateNorm": 0.004052,
         "poseUpdateNorm": 0.004299,
@@ -371,6 +382,7 @@
         "optimized": true,
         "optimizationStatus": "OPTIMIZED_PNP_REFINED",
         "successfulOptimizationIterations": 3,
+        "solverIterationsObserved": 3,
         "rotationUpdateNorm": 0.000142,
         "translationUpdateNorm": 0.001054,
         "poseUpdateNorm": 0.001197,
@@ -386,6 +398,7 @@
         "optimized": true,
         "optimizationStatus": "OPTIMIZED_PNP_REFINED",
         "successfulOptimizationIterations": 3,
+        "solverIterationsObserved": 3,
         "rotationUpdateNorm": 0.002065,
         "translationUpdateNorm": 0.024767,
         "poseUpdateNorm": 0.026832,
@@ -401,6 +414,7 @@
         "optimized": false,
         "optimizationStatus": "UNOPTIMIZED_INSUFFICIENT_OBSERVATIONS",
         "successfulOptimizationIterations": 0,
+        "solverIterationsObserved": 3,
         "rotationUpdateNorm": 0.0,
         "translationUpdateNorm": 0.0,
         "poseUpdateNorm": 0.0,
@@ -480,9 +494,15 @@
         "negativeDepthRejected": 0,
         "rangeRejected": 0,
         "spatialRejected": 0,
-        "multiViewInconsistentRejected": 2000,
+        "thirdViewDepthGeometricTested": 2000,
+        "thirdViewDepthGeometricConsistent": 0,
+        "thirdViewDepthGeometricRejected": 760,
+        "thirdViewPhotometricHeuristicAccepted": 0,
+        "multiViewHeuristicRejected": 2000,
         "acceptedMultiViewConsistent3dCount": 0,
-        "fusedContribution": 0
+        "meanRelativeDepthResidual": 0.752,
+        "fusedContribution": 0,
+        "consistencyMethod": "THIRD_VIEW_INDEPENDENT_STEREO_DEPTH_CONSISTENCY_AND_PHOTOMETRIC_HEURISTIC"
       },
       {
         "pair": [
@@ -496,9 +516,15 @@
         "negativeDepthRejected": 0,
         "rangeRejected": 8306,
         "spatialRejected": 0,
-        "multiViewInconsistentRejected": 43847,
+        "thirdViewDepthGeometricTested": 71015,
+        "thirdViewDepthGeometricConsistent": 0,
+        "thirdViewDepthGeometricRejected": 0,
+        "thirdViewPhotometricHeuristicAccepted": 33787,
+        "multiViewHeuristicRejected": 43847,
         "acceptedMultiViewConsistent3dCount": 33787,
-        "fusedContribution": 400
+        "meanRelativeDepthResidual": null,
+        "fusedContribution": 400,
+        "consistencyMethod": "THIRD_VIEW_INDEPENDENT_STEREO_DEPTH_CONSISTENCY_AND_PHOTOMETRIC_HEURISTIC"
       },
       {
         "pair": [
@@ -512,9 +538,15 @@
         "negativeDepthRejected": 0,
         "rangeRejected": 0,
         "spatialRejected": 0,
-        "multiViewInconsistentRejected": 40239,
+        "thirdViewDepthGeometricTested": 0,
+        "thirdViewDepthGeometricConsistent": 0,
+        "thirdViewDepthGeometricRejected": 0,
+        "thirdViewPhotometricHeuristicAccepted": 0,
+        "multiViewHeuristicRejected": 40239,
         "acceptedMultiViewConsistent3dCount": 0,
-        "fusedContribution": 0
+        "meanRelativeDepthResidual": null,
+        "fusedContribution": 0,
+        "consistencyMethod": "THIRD_VIEW_INDEPENDENT_STEREO_DEPTH_CONSISTENCY_AND_PHOTOMETRIC_HEURISTIC"
       },
       {
         "pair": [
@@ -528,9 +560,15 @@
         "negativeDepthRejected": 0,
         "rangeRejected": 14,
         "spatialRejected": 0,
-        "multiViewInconsistentRejected": 21286,
+        "thirdViewDepthGeometricTested": 356,
+        "thirdViewDepthGeometricConsistent": 0,
+        "thirdViewDepthGeometricRejected": 0,
+        "thirdViewPhotometricHeuristicAccepted": 8,
+        "multiViewHeuristicRejected": 21286,
         "acceptedMultiViewConsistent3dCount": 8,
-        "fusedContribution": 8
+        "meanRelativeDepthResidual": null,
+        "fusedContribution": 8,
+        "consistencyMethod": "THIRD_VIEW_INDEPENDENT_STEREO_DEPTH_CONSISTENCY_AND_PHOTOMETRIC_HEURISTIC"
       },
       {
         "pair": [
@@ -544,9 +582,15 @@
         "negativeDepthRejected": 0,
         "rangeRejected": 87,
         "spatialRejected": 39,
-        "multiViewInconsistentRejected": 27014,
+        "thirdViewDepthGeometricTested": 4251,
+        "thirdViewDepthGeometricConsistent": 0,
+        "thirdViewDepthGeometricRejected": 0,
+        "thirdViewPhotometricHeuristicAccepted": 4251,
+        "multiViewHeuristicRejected": 27014,
         "acceptedMultiViewConsistent3dCount": 4251,
-        "fusedContribution": 400
+        "meanRelativeDepthResidual": null,
+        "fusedContribution": 400,
+        "consistencyMethod": "THIRD_VIEW_INDEPENDENT_STEREO_DEPTH_CONSISTENCY_AND_PHOTOMETRIC_HEURISTIC"
       },
       {
         "pair": [
@@ -560,9 +604,15 @@
         "negativeDepthRejected": 0,
         "rangeRejected": 0,
         "spatialRejected": 0,
-        "multiViewInconsistentRejected": 0,
+        "thirdViewDepthGeometricTested": 0,
+        "thirdViewDepthGeometricConsistent": 0,
+        "thirdViewDepthGeometricRejected": 0,
+        "thirdViewPhotometricHeuristicAccepted": 0,
+        "multiViewHeuristicRejected": 0,
         "acceptedMultiViewConsistent3dCount": 0,
-        "fusedContribution": 0
+        "meanRelativeDepthResidual": null,
+        "fusedContribution": 0,
+        "consistencyMethod": "THIRD_VIEW_INDEPENDENT_STEREO_DEPTH_CONSISTENCY_AND_PHOTOMETRIC_HEURISTIC"
       },
       {
         "pair": [
@@ -576,9 +626,15 @@
         "negativeDepthRejected": 1953,
         "rangeRejected": 0,
         "spatialRejected": 0,
-        "multiViewInconsistentRejected": 0,
+        "thirdViewDepthGeometricTested": 0,
+        "thirdViewDepthGeometricConsistent": 0,
+        "thirdViewDepthGeometricRejected": 0,
+        "thirdViewPhotometricHeuristicAccepted": 0,
+        "multiViewHeuristicRejected": 0,
         "acceptedMultiViewConsistent3dCount": 0,
-        "fusedContribution": 0
+        "meanRelativeDepthResidual": null,
+        "fusedContribution": 0,
+        "consistencyMethod": "THIRD_VIEW_INDEPENDENT_STEREO_DEPTH_CONSISTENCY_AND_PHOTOMETRIC_HEURISTIC"
       },
       {
         "pair": [
@@ -592,9 +648,15 @@
         "negativeDepthRejected": 0,
         "rangeRejected": 18,
         "spatialRejected": 73152,
-        "multiViewInconsistentRejected": 0,
+        "thirdViewDepthGeometricTested": 0,
+        "thirdViewDepthGeometricConsistent": 0,
+        "thirdViewDepthGeometricRejected": 0,
+        "thirdViewPhotometricHeuristicAccepted": 0,
+        "multiViewHeuristicRejected": 0,
         "acceptedMultiViewConsistent3dCount": 0,
-        "fusedContribution": 0
+        "meanRelativeDepthResidual": null,
+        "fusedContribution": 0,
+        "consistencyMethod": "THIRD_VIEW_INDEPENDENT_STEREO_DEPTH_CONSISTENCY_AND_PHOTOMETRIC_HEURISTIC"
       },
       {
         "pair": [
@@ -608,9 +670,15 @@
         "negativeDepthRejected": 0,
         "rangeRejected": 1726,
         "spatialRejected": 486,
-        "multiViewInconsistentRejected": 34257,
+        "thirdViewDepthGeometricTested": 0,
+        "thirdViewDepthGeometricConsistent": 0,
+        "thirdViewDepthGeometricRejected": 0,
+        "thirdViewPhotometricHeuristicAccepted": 33476,
+        "multiViewHeuristicRejected": 34257,
         "acceptedMultiViewConsistent3dCount": 33476,
-        "fusedContribution": 400
+        "meanRelativeDepthResidual": null,
+        "fusedContribution": 400,
+        "consistencyMethod": "THIRD_VIEW_INDEPENDENT_STEREO_DEPTH_CONSISTENCY_AND_PHOTOMETRIC_HEURISTIC"
       },
       {
         "pair": [
@@ -624,9 +692,15 @@
         "negativeDepthRejected": 0,
         "rangeRejected": 0,
         "spatialRejected": 0,
-        "multiViewInconsistentRejected": 0,
+        "thirdViewDepthGeometricTested": 0,
+        "thirdViewDepthGeometricConsistent": 0,
+        "thirdViewDepthGeometricRejected": 0,
+        "thirdViewPhotometricHeuristicAccepted": 0,
+        "multiViewHeuristicRejected": 0,
         "acceptedMultiViewConsistent3dCount": 0,
-        "fusedContribution": 0
+        "meanRelativeDepthResidual": null,
+        "fusedContribution": 0,
+        "consistencyMethod": "THIRD_VIEW_INDEPENDENT_STEREO_DEPTH_CONSISTENCY_AND_PHOTOMETRIC_HEURISTIC"
       }
     ],
     "voxelDeduplication": {
@@ -684,12 +758,14 @@
     "DESTRUCTIVE_GIT_REWRITE": "FORBIDDEN",
     "GLOBAL_COVERAGE_GATE": "NOT_MET_PARTIAL_11_OF_12",
     "LOOP_CLOSURE_GATE": "LOOP_CLOSURE_FAILED_EXCEEDS_TOLERANCE",
-    "DATASET_ADEQUACY_GATE": "NEGATIVE_PARTIAL_FIXTURE_VERIFIED_NO_ADEQUATE_NON_OWNER_POSITIVE_FIXTURE_AVAILABLE",
+    "DATASET_ADEQUACY_GATE": "NO_ELIGIBLE_NON_OWNER_POSITIVE_FIXTURE_FOUND_BY_INVENTORY",
+    "POSITIVE_FIXTURE_GATE": "BLOCKED_BY_POSITIVE_FIXTURE_AVAILABILITY",
     "SPARSE_SFM_CLASSIFICATION": "SPARSE_SFM_INTERNAL_PROOF",
     "DENSE_MVS_CLASSIFICATION": "STEREO_DERIVED_FUSED_MVS_INTERNAL_PROOF"
   },
+  "diagnosticsDigest": "9751ddd6d415727aeb59950f168de6abaa12b9e44fe07167fbc2d208fa9b3b3e",
   "cryptographicBinding": {
     "formula": "sha256(cutSha | inputsDigest | calibStatus | engineSha | workerSha | configDigest | rmse | outSha)",
-    "lineageDigest": "c5547fae4203767011cf073f5ed0eb92466448b38120cca0aac1f2fdee802839"
+    "lineageDigest": "de4a30c86085d6d588d7d4de5e494a0d0f28761909043a803a7e8b2b3e260a8c"
   }
 }
