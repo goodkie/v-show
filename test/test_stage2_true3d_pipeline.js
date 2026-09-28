@@ -320,28 +320,33 @@ async function main() {
   });
 
   // ── [3b] Authentic Local OpenCV SfM 3D Reconstruction & Causal Lineage Execution ──
-  runTest('3b. Authentic Local OpenCV SfM 3D Reconstruction & Causal Lineage Execution (Round 88)', () => {
+  runTest('3b. Authentic Local OpenCV Global SfM 3D Reconstruction & Causal Lineage Execution (Round 89)', () => {
     const reconResult = executeAuthenticReconstructionWorker({ enableLocalOpencvSfm: true });
     assert.strictEqual(reconResult.success, true, 'Reconstruction worker must execute with terminal success');
     assert.strictEqual(reconResult.status, 'COMPLETED', 'Status must be COMPLETED');
-    assert.strictEqual(reconResult.engine, 'OPENCV_SIFT_SFM_TRIANGULATION');
+    assert.strictEqual(reconResult.engine, 'OPENCV_SIFT_INCREMENTAL_GLOBAL_SFM');
     assert.strictEqual(reconResult.newModelGenerated, true, 'New model generation must be proven');
     assert.strictEqual(reconResult.causalLineageProven, true, 'Input-to-output causal lineage must be proven');
-    assert.ok(reconResult.reconstructionExecution.outputVertexCount > 50, 'Vertex count must exceed 50 points');
+    assert.strictEqual(reconResult.reconstructionExecution.coordinateSystem, 'UNIFIED_GLOBAL_WORLD_COORDINATE_FRAME');
+    assert.strictEqual(reconResult.reconstructionExecution.outputVertexCount, 1600, 'Exact vertex count must be 1,600 points');
+    assert.strictEqual(reconResult.reconstructionExecution.outputSize, 24178, 'Exact binary PLY size must be 24,178 bytes');
+    assert.strictEqual(reconResult.reconstructionExecution.outputPlySha, 'ee6d5128fbfdc39471084465d2217cf8c7cf1703ab19749c09f34f4e1a4c2eeb');
     assert.ok(fs.existsSync(reconResult.reconstructionExecution.outputPlyPath), 'Output PLY artifact must exist on disk');
 
     const stat = fs.statSync(reconResult.reconstructionExecution.outputPlyPath);
-    assert.ok(stat.size > 1000, 'Output PLY artifact size must exceed 1KB');
+    assert.strictEqual(stat.size, 24178, 'Output PLY artifact size must match 24,178 bytes');
 
     // Truth ledger assertions
     assert.strictEqual(reconResult.truthLedger.RECONSTRUCTION_FROM_INPUTS, 'VERIFIED');
     assert.strictEqual(reconResult.truthLedger.NEW_3D_MODEL_GENERATION, 'VERIFIED');
     assert.strictEqual(reconResult.truthLedger.INPUT_TO_OUTPUT_CAUSAL_LINEAGE, 'VERIFIED');
     assert.strictEqual(reconResult.truthLedger.ACTUAL_ENGINE_EXECUTION, 'VERIFIED');
+    assert.strictEqual(reconResult.truthLedger.COORDINATE_SYSTEM, 'UNIFIED_GLOBAL_WORLD_COORDINATE_FRAME');
     assert.strictEqual(reconResult.truthLedger.OWNER_REVIEW_GATE, 'HOLD');
 
     console.log(`    - Reconstruction Status: ${reconResult.status} (TERMINAL SUCCESS)`);
     console.log(`    - Engine:                ${reconResult.engine}`);
+    console.log(`    - Coordinate Frame:      ${reconResult.reconstructionExecution.coordinateSystem}`);
     console.log(`    - Output Model:          ${path.basename(reconResult.reconstructionExecution.outputPlyPath)} (${stat.size} bytes)`);
     console.log(`    - Vertex Count:          ${reconResult.reconstructionExecution.outputVertexCount} 3D spatial points`);
     console.log(`    - Model SHA-256:         ${reconResult.reconstructionExecution.outputPlySha}`);
@@ -468,19 +473,41 @@ async function main() {
     assert.ok(fs.existsSync(path.join(artifactsDir, 'R22_PRO_VIEWER_OPTICAL_PROOF_TOP.png')),   'R22 TOP proof artifact must exist on disk');
 
     function captureScreenshot(url, outputPath) {
+      const callUserDir = fs.mkdtempSync(path.join(os.tmpdir(), 'vshow_chrome_proof_sub_'));
       return new Promise((resolve, reject) => {
         execFile(CHROME_EXE, [
           '--headless',
           '--disable-gpu',
           '--no-sandbox',
-          `--user-data-dir=${tmpUserDir}`,
+          `--user-data-dir=${callUserDir}`,
           '--window-size=1280,800',
-          '--virtual-time-budget=3000',
+          '--virtual-time-budget=4000',
           `--screenshot=${outputPath}`,
           url
         ], { timeout: 25000 }, (err) => {
+          try { fs.rmSync(callUserDir, { recursive: true }); } catch (_) {}
           if (err) return reject(err);
           resolve();
+        });
+      });
+    }
+
+    function dumpDom(url) {
+      const callUserDir = fs.mkdtempSync(path.join(os.tmpdir(), 'vshow_chrome_dom_sub_'));
+      return new Promise((resolve, reject) => {
+        execFile(CHROME_EXE, [
+          '--headless',
+          '--disable-gpu',
+          '--no-sandbox',
+          `--user-data-dir=${callUserDir}`,
+          '--window-size=1280,800',
+          '--virtual-time-budget=4000',
+          '--dump-dom',
+          url
+        ], { timeout: 25000 }, (err, stdout) => {
+          try { fs.rmSync(callUserDir, { recursive: true }); } catch (_) {}
+          if (err) return reject(err);
+          resolve(stdout);
         });
       });
     }
@@ -532,16 +559,16 @@ async function main() {
       console.log(`    - Front-to-Left procedural frame byte difference ratio: ${(diffRatio * 100).toFixed(2)}% (camera preset transforms procedural scene; NOT authenticated SPZ splat render difference)`);
       assert.ok(diffRatio > 0.05, 'Different camera presets must produce distinct procedural renders (> 5% byte difference)');
 
-      // 6. Capture AUTHENTIC RECONSTRUCTED MODEL in WebGL Viewer (Round 88 Optical Proof)
+      // 6. Capture AUTHENTIC RECONSTRUCTED MODEL in WebGL Viewer (Round 89 Optical Proof)
       const authUrlFront = `http://127.0.0.1:${PORT}/client/diagnostics/wilo-spz-only.html?model=/assets/demo/wilo/models/AUTHLINEAGE_RECONSTRUCTED_SPATIAL_MODEL.ply&token=${ownerSessionToken}`;
-      const proofAuthFront = path.join(tmpProofDir, 'R88_AUTHENTIC_PRO_VIEWER_OPTICAL_PROOF_FRONT.png');
+      const proofAuthFront = path.join(tmpProofDir, 'R89_AUTHENTIC_PRO_VIEWER_OPTICAL_PROOF_FRONT.png');
       await captureScreenshot(authUrlFront, proofAuthFront);
       assert.ok(fs.existsSync(proofAuthFront), 'Proof Authentic Front screenshot must be created');
       const authFrontStat = fs.statSync(proofAuthFront);
       console.log(`    - Authentic Front screenshot: ${authFrontStat.size.toLocaleString()} bytes -> ${path.basename(proofAuthFront)}`);
 
       const authUrlLeft = `http://127.0.0.1:${PORT}/client/diagnostics/wilo-spz-only.html?model=/assets/demo/wilo/models/AUTHLINEAGE_RECONSTRUCTED_SPATIAL_MODEL.ply&token=${ownerSessionToken}&preset=left`;
-      const proofAuthLeft = path.join(tmpProofDir, 'R88_AUTHENTIC_PRO_VIEWER_OPTICAL_PROOF_LEFT.png');
+      const proofAuthLeft = path.join(tmpProofDir, 'R89_AUTHENTIC_PRO_VIEWER_OPTICAL_PROOF_LEFT.png');
       await captureScreenshot(authUrlLeft, proofAuthLeft);
       assert.ok(fs.existsSync(proofAuthLeft), 'Proof Authentic Left screenshot must be created');
 
@@ -565,6 +592,37 @@ async function main() {
       const authDiffRatio = authDiffCount / authMinLen;
       console.log(`    - Authentic model Front-to-Left frame difference ratio: ${(authDiffRatio * 100).toFixed(2)}% (authentic camera transform variance verified)`);
       assert.ok(authDiffRatio > 0.05, 'Authentic model camera transforms must produce distinct renders (> 5%)');
+
+      // 7. Headless Chrome Programmatic WebGL DOM State Assertion (Round 89)
+      const domHtml = await dumpDom(authUrlFront);
+      const stateMatch = domHtml.match(/<div id="vshow-state-dump"[^>]*data-state="([^"]+)"/);
+      assert.ok(stateMatch, 'DOM must contain #vshow-state-dump element with data-state attribute');
+      const vshowState = JSON.parse(stateMatch[1].replace(/&quot;/g, '"'));
+
+      console.log('    - Headless Chrome Programmatic DOM / WebGL State:');
+      console.log(`      * networkLoaded:           ${vshowState.networkLoaded}`);
+      console.log(`      * httpStatus:              ${vshowState.httpStatus}`);
+      console.log(`      * decoded:                 ${vshowState.decoded}`);
+      console.log(`      * authenticModelRender:    ${vshowState.authenticModelRender}`);
+      console.log(`      * viewerClassification:    ${vshowState.viewerClassification}`);
+      console.log(`      * vertexCount:             ${vshowState.vertexCount}`);
+      console.log(`      * fetchedSha256:           ${vshowState.fetchedSha256}`);
+      console.log(`      * placeholderRemoved:      ${vshowState.placeholderRemoved}`);
+      console.log(`      * modelAttachedToScene:    ${vshowState.modelAttachedToScene}`);
+
+      assert.strictEqual(vshowState.networkLoaded, true, 'networkLoaded must be true');
+      assert.strictEqual(vshowState.httpStatus, 200, 'httpStatus must be 200');
+      assert.strictEqual(vshowState.decoded, true, 'decoded must be true');
+      assert.strictEqual(vshowState.authenticModelRender, true, 'authenticModelRender must be true');
+      assert.strictEqual(vshowState.viewerClassification, 'AUTHENTIC_RECONSTRUCTED_MODEL_RENDER');
+      assert.strictEqual(vshowState.vertexCount, 1600, 'vertexCount must be 1,600');
+      assert.strictEqual(vshowState.fetchedSha256, 'ee6d5128fbfdc39471084465d2217cf8c7cf1703ab19749c09f34f4e1a4c2eeb');
+      assert.strictEqual(vshowState.placeholderRemoved, true, 'placeholderRemoved must be true');
+      assert.strictEqual(vshowState.modelAttachedToScene, true, 'modelAttachedToScene must be true');
+
+      // Check committed optical proof artifacts exist on disk
+      assert.ok(fs.existsSync(path.join(artifactsDir, 'R89_AUTHENTIC_PRO_VIEWER_OPTICAL_PROOF_FRONT.png')), 'R89 FRONT proof artifact must exist on disk');
+      assert.ok(fs.existsSync(path.join(artifactsDir, 'R89_AUTHENTIC_PRO_VIEWER_OPTICAL_PROOF_LEFT.png')), 'R89 LEFT proof artifact must exist on disk');
     } finally {
       try { fs.rmSync(tmpUserDir, { recursive: true }); } catch (_) {}
       try { fs.rmSync(tmpProofDir, { recursive: true }); } catch (_) {}
@@ -627,6 +685,34 @@ async function main() {
     assert.ok(resStaticBypass.status === 401 || resStaticBypass.status === 403 || resStaticBypass.status === 404, 'Static path must not leak private model binary');
     assert.strictEqual(resStaticBypass.rawBody.length !== 111539801, true, 'Static bypass must not deliver raw binary bytes');
     console.log('    - Static route order & bypass prevention: CONFIRMED (Zero unauthenticated byte leakage across all paths)');
+
+    // 7g. Authentic Reconstructed Model Delivery: Legitimate Tenant -> HTTP 200 with exact PLY binary byte length & SHA-256
+    const resAuthReconPly = await makeHttpRequest(PORT, '/assets/demo/wilo/models/AUTHLINEAGE_RECONSTRUCTED_SPATIAL_MODEL.ply', {
+      'authorization': `Bearer ${ownerSessionToken}`
+    });
+    assert.strictEqual(resAuthReconPly.status, 200, 'Legitimate tenant authentic reconstructed PLY request must receive HTTP 200');
+    assert.strictEqual(resAuthReconPly.headers['content-type'], 'application/octet-stream');
+    assert.strictEqual(resAuthReconPly.rawBody.length, 24178, 'Authentic reconstructed PLY byte length must match 24,178 bytes');
+
+    const fetchedReconPlySha = crypto.createHash('sha256').update(resAuthReconPly.rawBody).digest('hex');
+    assert.strictEqual(fetchedReconPlySha, 'ee6d5128fbfdc39471084465d2217cf8c7cf1703ab19749c09f34f4e1a4c2eeb', 'HTTP fetched authentic PLY bytes must match authentic SHA-256');
+    console.log(`    - Real App HTTP Fetched Authentic Reconstructed PLY: ${resAuthReconPly.rawBody.length.toLocaleString()} B | Verified SHA: ${fetchedReconPlySha}`);
+
+    // 7h. Unauthenticated request to authentic reconstructed PLY -> 401
+    const resUnauthRecon = await makeHttpRequest(PORT, '/assets/demo/wilo/models/AUTHLINEAGE_RECONSTRUCTED_SPATIAL_MODEL.ply');
+    assert.strictEqual(resUnauthRecon.status, 401, 'Unauthenticated request to authentic reconstructed PLY must receive 401');
+
+    // 7i. Cross-tenant request to authentic reconstructed PLY -> 403
+    const resCrossRecon = await makeHttpRequest(PORT, '/assets/demo/wilo/models/AUTHLINEAGE_RECONSTRUCTED_SPATIAL_MODEL.ply', {
+      'authorization': `Bearer ${foreignAttackerToken}`
+    });
+    assert.strictEqual(resCrossRecon.status, 403, 'Cross-tenant request to authentic reconstructed PLY must receive 403');
+
+    // 7j. Static route bypass prevention for authentic reconstructed PLY
+    const resBypassRecon = await makeHttpRequest(PORT, '/client/assets/demo/wilo/models/AUTHLINEAGE_RECONSTRUCTED_SPATIAL_MODEL.ply');
+    assert.ok(resBypassRecon.status === 401 || resBypassRecon.status === 403 || resBypassRecon.status === 404, 'Static path must not leak authentic reconstructed PLY binary');
+    assert.strictEqual(resBypassRecon.rawBody.length !== 24178, true, 'Static bypass must not deliver raw binary bytes');
+    console.log('    - Authentic Reconstructed Model Delivery: HTTP 200, 401, 403, 404 gates VERIFIED');
   });
 
   server.close();

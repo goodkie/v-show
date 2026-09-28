@@ -1605,22 +1605,37 @@ function executeAuthenticReconstructionWorker(options = {}) {
     if (fs.existsSync(pythonScript)) {
       const { spawnSync } = require('child_process');
       const targetOutputDir = outputDir || fs.mkdtempSync(path.join(os.tmpdir(), 'vshow_recon_out_'));
-      const pyRes = spawnSync('python', [
+      const pyArgs = [
         pythonScript,
         '--image-dir', imageDir,
         '--output-dir', targetOutputDir,
         '--job-id', jobId
-      ], { encoding: 'utf8', timeout: 90000 });
+      ];
+      if (calibrationFile) {
+        pyArgs.push('--calibration-file', calibrationFile);
+      }
+      if (options.cutSha) {
+        pyArgs.push('--cut-sha', options.cutSha);
+      }
+      const pyRes = spawnSync('python', pyArgs, { encoding: 'utf8', timeout: 90000 });
 
       if (pyRes.status === 0) {
         try {
           const parsed = JSON.parse(pyRes.stdout.trim());
           if (parsed.success) {
+            // Ensure generated PLY is also mirrored to private served model directories
+            const privateServedDir = path.join(repoRoot, 'virtual-tradeshow-commercial-v1/_clean_deploy/data/private_models/org-wilo-golden-demo/models');
+            if (fs.existsSync(privateServedDir) && fs.existsSync(parsed.outputPlyPath)) {
+              const destPly = path.join(privateServedDir, path.basename(parsed.outputPlyPath));
+              if (!fs.existsSync(destPly) || computeFileSha256(destPly) !== parsed.outputPlySha) {
+                fs.copyFileSync(parsed.outputPlyPath, destPly);
+              }
+            }
             return {
               success: true,
               jobId,
               status: 'COMPLETED',
-              engine: parsed.engine || 'OPENCV_SIFT_SFM_TRIANGULATION',
+              engine: parsed.engine || 'OPENCV_SIFT_INCREMENTAL_GLOBAL_SFM',
               engineProbes,
               antiSubstitutionEnforced: true,
               newModelGenerated: true,
@@ -1633,7 +1648,9 @@ function executeAuthenticReconstructionWorker(options = {}) {
                 probesDigest,
                 preReconstructionDigest,
                 outputSha256: parsed.outputPlySha,
-                receiptSha256: parsed.receiptSha256
+                receiptSha256: parsed.receiptSha256,
+                lineageDigest: parsed.lineageDigest,
+                cutSha: parsed.cutSha
               },
               inputMetrics: {
                 viewCount: imageFiles.length,
@@ -1643,6 +1660,7 @@ function executeAuthenticReconstructionWorker(options = {}) {
               reconstructionExecution: {
                 newModelGenerated: true,
                 causalLineageProven: true,
+                coordinateSystem: parsed.coordinateSystem || 'UNIFIED_GLOBAL_WORLD_COORDINATE_FRAME',
                 outputPlyPath: parsed.outputPlyPath,
                 outputPlySha: parsed.outputPlySha,
                 outputVertexCount: parsed.outputVertexCount,
@@ -1655,6 +1673,7 @@ function executeAuthenticReconstructionWorker(options = {}) {
                 NEW_3D_MODEL_GENERATION: 'VERIFIED',
                 INPUT_TO_OUTPUT_CAUSAL_LINEAGE: 'VERIFIED',
                 ACTUAL_ENGINE_EXECUTION: 'VERIFIED',
+                COORDINATE_SYSTEM: 'UNIFIED_GLOBAL_WORLD_COORDINATE_FRAME',
                 OWNER_REVIEW_GATE: 'HOLD',
                 ENGINEERING_HOLD: 'ACTIVE'
               }

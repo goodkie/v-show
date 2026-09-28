@@ -1,22 +1,22 @@
 {
   "receiptSchemaVersion": "R47_EXECUTION_RECEIPT_V1",
   "executionTimestamps": {
-    "startTime": "2026-09-27T20:56:29.313Z",
-    "endTime": "2026-09-27T20:57:50.618Z",
-    "durationMs": 81301
+    "startTime": "2026-09-28T04:57:28.674Z",
+    "endTime": "2026-09-28T04:58:56.128Z",
+    "durationMs": 87450
   },
   "runnerMetadata": {
     "sourceFile": "test/test_stage2_true3d_pipeline.js",
-    "sourceSha256": "6330020a51511352a9d53cfe3ba873e2db690ae64c2ec0e91499a1ac7120d98b",
+    "sourceSha256": "f4a78cfb097b6623983393df158fbf1cb0514d709986327e963e9f7823e4bbce",
     "nodeVersion": "v24.21.0",
     "platform": "win32"
   },
   "gitEvidence": {
-    "observedHeadSha": "c48d51d617cfdb40919dccaf61457ffb0a4908b9",
-    "expectedHeadSha": "c48d51d617cfdb40919dccaf61457ffb0a4908b9",
-    "headBindingMatched": true,
-    "worktreeClean": true,
-    "rawGitStatusPorcelain": "(clean)"
+    "observedHeadSha": "a5542905a9e8f63fa4a21d224ad8052e0e8e661f",
+    "expectedHeadSha": null,
+    "headBindingMatched": false,
+    "worktreeClean": false,
+    "rawGitStatusPorcelain": "M test/test_stage2_true3d_pipeline.js\n M virtual-tradeshow-commercial-v1/.gitattributes\n M virtual-tradeshow-commercial-v1/_clean_deploy/client/diagnostics/wilo-spz-only.html\n M virtual-tradeshow-commercial-v1/_clean_deploy/server/index.js\n M virtual-tradeshow-commercial-v1/_railway_deploy/client/diagnostics/wilo-spz-only.html\n M virtual-tradeshow-commercial-v1/_railway_deploy/server/index.js\n M virtual-tradeshow-commercial-v1/app_build/client/diagnostics/wilo-spz-only.html\n M virtual-tradeshow-commercial-v1/app_build/server/index.js\n M virtual-tradeshow-commercial-v1/production_artifacts/AUTHLINEAGE_RECEIPT.json\n M virtual-tradeshow-commercial-v1/production_artifacts/AUTHLINEAGE_RECONSTRUCTED_SPATIAL_MODEL.ply\n M virtual-tradeshow-commercial-v1/production_artifacts/R47_TEST_EXECUTION_RECEIPT.json\n M virtual-tradeshow-commercial-v1/server/index.js\n M virtual-tradeshow-commercial-v1/server/spatial_reconstruction_engine.py\n M virtual-tradeshow-commercial-v1/server/spatial_reconstruction_worker.js\n?? virtual-tradeshow-commercial-v1/production_artifacts/R89_AUTHENTIC_PRO_VIEWER_OPTICAL_PROOF_FRONT.png\n?? virtual-tradeshow-commercial-v1/production_artifacts/R89_AUTHENTIC_PRO_VIEWER_OPTICAL_PROOF_LEFT.png"
   },
   "suiteResults": {
     "totalTests": 19,

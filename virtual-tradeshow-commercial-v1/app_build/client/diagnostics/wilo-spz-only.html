@@ -195,12 +195,24 @@
         if (!token) token = params.get('token') || '';
       } catch (_) {}
 
+      function syncStateToDom() {
+        let dumpElem = document.getElementById('vshow-state-dump');
+        if (!dumpElem) {
+          dumpElem = document.createElement('div');
+          dumpElem.id = 'vshow-state-dump';
+          dumpElem.style.display = 'none';
+          document.body.appendChild(dumpElem);
+        }
+        dumpElem.setAttribute('data-state', JSON.stringify(window.__VSHOW_STATE__));
+      }
+
       if (!token) {
         document.getElementById('diag-fetch-status').textContent = 'AUTH_REQUIRED (Procedural rendering only; session token required)';
         document.getElementById('diag-fetch-status').className = 'warn-state';
         document.getElementById('diag-bytes').textContent = 'N/A (Procedural View)';
         document.getElementById('diag-status').textContent = 'Procedural Placeholder Active (Model Fetch Requires Authorization Header)';
         document.getElementById('diag-status').className = 'warn-state';
+        syncStateToDom();
         renderer.render(scene, camera);
         return;
       }
@@ -280,11 +292,22 @@
           pointGeo.boundingBox.getCenter(center);
           camera.lookAt(center);
 
+          // Compute SHA-256 of authentic binary bytes in browser
+          let fetchedSha256 = '';
+          try {
+            const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer);
+            fetchedSha256 = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+          } catch (_) {}
+
           window.__VSHOW_STATE__.decoded = true;
           window.__VSHOW_STATE__.modelDecoded = true;
           window.__VSHOW_STATE__.authenticModelRender = true;
           window.__VSHOW_STATE__.modelInstanceCreated = true;
           window.__VSHOW_STATE__.modelAttachedToScene = true;
+          window.__VSHOW_STATE__.placeholderRemoved = true;
+          window.__VSHOW_STATE__.httpStatus = response.status;
+          window.__VSHOW_STATE__.fetchedSha256 = fetchedSha256;
+          window.__VSHOW_STATE__.vertexCount = vertexCount;
           window.__VSHOW_STATE__.decoderReportedVertexCount = vertexCount;
           window.__VSHOW_STATE__.viewerClassification = 'AUTHENTIC_RECONSTRUCTED_MODEL_RENDER';
 
@@ -312,11 +335,24 @@
       } catch (err) {
         console.error('[DiagnosticViewer] Fetch/Decode failed:', err);
         window.__VSHOW_STATE__.error = err.message;
+        window.__VSHOW_STATE__.authenticModelRender = false;
+        window.__VSHOW_STATE__.decoded = false;
+        window.__VSHOW_STATE__.viewerClassification = 'FETCH_FAILED_PROCEDURAL_PLACEHOLDER';
         document.getElementById('diag-fetch-status').textContent = `FAILED: ${err.message}`;
         document.getElementById('diag-fetch-status').className = 'err-state';
         document.getElementById('diag-status').textContent = `Model Load Error`;
         document.getElementById('diag-status').className = 'err-state';
       }
+
+      // Synchronize full machine-verifiable state into DOM for headless inspection
+      let dumpElem = document.getElementById('vshow-state-dump');
+      if (!dumpElem) {
+        dumpElem = document.createElement('div');
+        dumpElem.id = 'vshow-state-dump';
+        dumpElem.style.display = 'none';
+        document.body.appendChild(dumpElem);
+      }
+      dumpElem.setAttribute('data-state', JSON.stringify(window.__VSHOW_STATE__));
 
       // Initial synchronous render for headless screenshot capture
       renderer.render(scene, camera);

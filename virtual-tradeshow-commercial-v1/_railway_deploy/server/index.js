@@ -2034,6 +2034,7 @@ app.use((req, res, next) => {
     reqPath.includes('models/REAL_WILO_') ||
     reqUrl.includes('REAL_WILO_GAUSSIAN_FINAL') ||
     reqPath.includes('REAL_WILO_GAUSSIAN_FINAL') ||
+    reqPath.includes('AUTHLINEAGE_') ||
     ((reqPath.startsWith('/uploads') || reqUrl.startsWith('/uploads')) && (reqPath.includes('cand-') || reqPath.includes('candidate') || reqUrl.includes('cand-') || reqUrl.includes('candidate')))
   ) {
     return res.status(403).json({
