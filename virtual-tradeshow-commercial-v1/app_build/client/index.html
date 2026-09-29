@@ -16436,49 +16436,95 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
         canvas.tabIndex = 0; // allow keyboard focus
         canvas.style.cursor = 'grab';
 
-        canvas.onpointerdown = (e) => {
+        const activePointers = new Map();
+        let initialPinchDistance = null;
+        let initialPinchFov = null;
+
+        canvas.addEventListener('pointerdown', (e) => {
           this.cancelMotion();
-          this.continuousPointerDown = true;
-          this.lastPointerX = e.clientX;
-          this.lastPointerY = e.clientY;
-          try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
-          canvas.style.cursor = 'grabbing';
-          this.setArrowsOpacity(0.25);
-        };
-
-        canvas.onpointermove = (e) => {
-          if (!this.continuousPointerDown) return;
-          const dx = e.clientX - this.lastPointerX;
-          const dy = e.clientY - this.lastPointerY;
-          this.lastPointerX = e.clientX;
-          this.lastPointerY = e.clientY;
-
-          const yawSensitivity = 0.0035;
-          const pitchSensitivity = 0.0025;
-
-          const covDeg = this.candidate.horizontalCoverageDeg || 360;
-          if (covDeg < 360) {
-            const maxHalfArc = (covDeg / 2) * (Math.PI / 180);
-            this.yaw = Math.max(-maxHalfArc, Math.min(maxHalfArc, this.yaw - dx * yawSensitivity));
-          } else {
-            this.yaw = (this.yaw - dx * yawSensitivity) % (2 * Math.PI);
+          activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+          if (activePointers.size === 1) {
+            this.continuousPointerDown = true;
+            this.lastPointerX = e.clientX;
+            this.lastPointerY = e.clientY;
+            try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
+            canvas.style.cursor = 'grabbing';
+            this.setArrowsOpacity(0.25);
+          } else if (activePointers.size === 2) {
+            this.continuousPointerDown = false;
+            const pts = Array.from(activePointers.values());
+            initialPinchDistance = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+            initialPinchFov = this.currentFov;
           }
-          this.pitch = Math.max(-18 * Math.PI / 180, Math.min(22 * Math.PI / 180, this.pitch + dy * pitchSensitivity));
+        });
 
-          this.updateCamera();
-          this.render();
+        canvas.addEventListener('pointermove', (e) => {
+          if (!activePointers.has(e.pointerId)) return;
+          activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
-          if (typeof emitSpatialTextureLifecycle === 'function') {
-            emitSpatialTextureLifecycle('PANORAMA_YAW_CHANGE', { yaw: this.yaw });
-            emitSpatialTextureLifecycle('PANORAMA_PITCH_CHANGE', { pitch: this.pitch });
+          // Multi-touch pinch zoom
+          if (activePointers.size === 2 && initialPinchDistance) {
+            const pts = Array.from(activePointers.values());
+            const currDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+            if (currDist > 10) {
+              const scale = initialPinchDistance / currDist;
+              this.targetFov = Math.max(this.MIN_FOV, Math.min(this.MAX_FOV, initialPinchFov * scale));
+              this.animateFov();
+            }
+            return;
+          }
+
+          // Single pointer drag
+          if (activePointers.size === 1 && this.continuousPointerDown) {
+            const dx = e.clientX - this.lastPointerX;
+            const dy = e.clientY - this.lastPointerY;
+            this.lastPointerX = e.clientX;
+            this.lastPointerY = e.clientY;
+
+            const yawSensitivity = 0.0035;
+            const pitchSensitivity = 0.0025;
+
+            const covDeg = this.candidate.horizontalCoverageDeg || 360;
+            if (covDeg < 360) {
+              const maxHalfArc = (covDeg / 2) * (Math.PI / 180);
+              this.yaw = Math.max(-maxHalfArc, Math.min(maxHalfArc, this.yaw - dx * yawSensitivity));
+            } else {
+              this.yaw = (this.yaw - dx * yawSensitivity) % (2 * Math.PI);
+            }
+
+            // Pitch clamp follows actual verticalCoverageDeg
+            const vertCovDeg = this.candidate.verticalCoverageDeg || 47.3;
+            const maxPitchRad = Math.min(45.0, vertCovDeg / 2.0) * (Math.PI / 180);
+            this.pitch = Math.max(-maxPitchRad, Math.min(maxPitchRad, this.pitch + dy * pitchSensitivity));
+
+            this.updateCamera();
+            this.render();
+
+            if (typeof emitSpatialTextureLifecycle === 'function') {
+              emitSpatialTextureLifecycle('PANORAMA_YAW_CHANGE', { yaw: this.yaw });
+              emitSpatialTextureLifecycle('PANORAMA_PITCH_CHANGE', { pitch: this.pitch });
+            }
+          }
+        });
+
+        const onPointerEnd = (e) => {
+          activePointers.delete(e.pointerId);
+          if (activePointers.size === 0) {
+            this.continuousPointerDown = false;
+            canvas.style.cursor = 'grab';
+            this.setArrowsOpacity(0.45);
+            initialPinchDistance = null;
+          } else if (activePointers.size === 1) {
+            const remaining = activePointers.values().next().value;
+            this.lastPointerX = remaining.x;
+            this.lastPointerY = remaining.y;
+            this.continuousPointerDown = true;
+            initialPinchDistance = null;
           }
         };
 
-        canvas.onpointerup = canvas.onpointercancel = (e) => {
-          this.continuousPointerDown = false;
-          canvas.style.cursor = 'grab';
-          this.setArrowsOpacity(0.45);
-        };
+        canvas.addEventListener('pointerup', onPointerEnd);
+        canvas.addEventListener('pointercancel', onPointerEnd);
 
         // Keyboard left/right arrow navigation
         canvas.onkeydown = (e) => {
@@ -21163,6 +21209,10 @@ class GuidedCaptureController {
     if (rejectReason) {
       this.rejectedCandidateCount = (this.rejectedCandidateCount || 0) + 1;
       this.telemetry.rejectedCandidateCount = this.rejectedCandidateCount;
+      const dropSec = Math.floor((((currentAngle % 360) + 360) % 360) / 30);
+      if (!this.droppedYawSectors) this.droppedYawSectors = new Set();
+      this.droppedYawSectors.add(dropSec);
+      this.telemetry.droppedYawSectors = Array.from(this.droppedYawSectors);
       if (!this.candidateRejectionReasons) this.candidateRejectionReasons = [];
       this.candidateRejectionReasons.push({
         angle: Math.round(currentAngle * 10) / 10,
@@ -21264,6 +21314,23 @@ class GuidedCaptureController {
             this.notifyProgress();
 
             if (evalRes.closureConfirmed) {
+              // Sector gap awareness: ensure all 12 angular sectors (each 30 deg) have at least 1 candidate
+              const coveredSectors = new Set();
+              for (const c of this.candidateFrames) {
+                const s = Math.floor((((c.angle % 360) + 360) % 360) / 30);
+                coveredSectors.add(s);
+              }
+              const missingSectors = [];
+              for (let s = 0; s < 12; s++) {
+                if (!coveredSectors.has(s)) missingSectors.push(s);
+              }
+              this.telemetry.missingYawSectors = missingSectors;
+              if (missingSectors.length > 0) {
+                this.guidanceMessage = 'Rotate to complete coverage in missing sectors (' + missingSectors.map(s => s * 30 + '°').join(', ') + ')';
+                this.notifyProgress();
+                return cand;
+              }
+
               this.closureConfirmed = true;
               this.telemetry.closureConfirmed = true;
               this.telemetry.captureCompletionReason = 'VISUAL_LOOP_CONFIRMED';
@@ -22760,14 +22827,18 @@ class SetupWizardController {
       return;
     }
 
-    // When READY or no job, render Viewpoint Ready view
+    // When READY or no job, render Viewpoint Ready view with interactive PanoramicBoothViewer
     this.btnPrimary.disabled = false;
     this.btnPrimary.innerHTML = '<span>Looks Good - Next Viewpoint</span> <i class="fa-solid fa-arrow-right"></i>';
     this.btnPrimary.onclick = () => this.nextStep();
 
-    const panoImgUrl = (this.state.currentPanoramaJob && (this.state.currentPanoramaJob.candidate?.stitchedPanoramaUrl || this.state.currentPanoramaJob.candidate?.masterUrl)) ||
+    const candidate = (this.state.currentPanoramaJob && this.state.currentPanoramaJob.candidate) || null;
+    const panoImgUrl = (candidate && (candidate.stitchedPanoramaUrl || candidate.masterUrl)) ||
                        vp.panoramaUrl ||
                        '/assets/demo/dna-showcase/pano360/node0_360_panorama_8k.jpg';
+
+    vp.panoramaUrl = panoImgUrl;
+    if (candidate) vp.candidate = candidate;
 
     this.content.innerHTML = `
       <div style="max-width: 560px; margin: 0 auto; text-align: center;">
@@ -22775,16 +22846,43 @@ class SetupWizardController {
           <i class="fa-solid fa-check"></i> VIEWPOINT 1 READY
         </div>
         <h3 style="font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 6px;">${vp.name} Stitched Successfully</h3>
-        <p style="font-size: 13px; color: #94a3b8; margin-bottom: 18px;">Stitched equirectangular 360° panorama created from continuous capture.</p>
+        <p style="font-size: 13px; color: #94a3b8; margin-bottom: 18px;">Interactive 360° panorama created from continuous capture.</p>
 
-        <div style="width: 100%; height: 220px; background: #000; border-radius: 10px; border: 1px solid rgba(56,189,248,0.3); overflow: hidden; position: relative; margin-bottom: 16px;">
-          <img src="${panoImgUrl}" style="width: 100%; height: 100%; object-fit: cover;">
-          <div style="position: absolute; bottom: 10px; left: 10px; background: rgba(9,16,29,0.85); backdrop-filter: blur(6px); border: 1px solid #38bdf8; border-radius: 4px; padding: 3px 8px; font-size: 10px; font-weight: 800; color: #38bdf8;">
-            EQUIRECTANGULAR 360°
+        <div id="step7ViewerContainer" style="width: 100%; height: 260px; background: #020617; border-radius: 10px; border: 1.5px solid #38bdf8; overflow: hidden; position: relative; margin-bottom: 16px;">
+          <canvas id="step7ViewerCanvas" style="width: 100%; height: 100%; display: block;"></canvas>
+          <div style="position: absolute; bottom: 10px; left: 10px; background: rgba(9,16,29,0.85); backdrop-filter: blur(6px); border: 1px solid #38bdf8; border-radius: 4px; padding: 3px 8px; font-size: 10px; font-weight: 800; color: #38bdf8; pointer-events: none;">
+            <i class="fa-solid fa-arrows-spin"></i> INTERACTIVE 360° PANORAMA
+          </div>
+          <div style="position: absolute; top: 10px; right: 10px; background: rgba(9,16,29,0.75); border: 1px solid rgba(255,255,255,0.2); border-radius: 20px; padding: 2px 8px; font-size: 10px; color: #cbd5e1; pointer-events: none;">
+            <i class="fa-solid fa-hand"></i> Drag to look around · Pinch to zoom
           </div>
         </div>
       </div>
     `;
+
+    // Mount interactive PanoramicBoothViewer
+    if (this.step7Viewer) {
+      try { this.step7Viewer.destroy(); } catch (e) {}
+      this.step7Viewer = null;
+    }
+    const container = document.getElementById('step7ViewerContainer');
+    const canvas = document.getElementById('step7ViewerCanvas');
+    if (container && canvas && window.PanoramicBoothViewer) {
+      const candObj = candidate || {
+        candidateId: 'cand-step7-preview',
+        stitchedPanoramaUrl: panoImgUrl,
+        textureUrl: panoImgUrl,
+        projection: 'SPHERICAL_BAND',
+        horizontalCoverageDeg: 360,
+        verticalCoverageDeg: 47.3
+      };
+      this.step7Viewer = new window.PanoramicBoothViewer({
+        container,
+        canvas,
+        candidate: candObj,
+        hostMode: 'PREVIEW'
+      });
+    }
   }
 
   renderStep8MultiViewpoint() {
@@ -22898,15 +22996,12 @@ class SetupWizardController {
           <span style="font-size: 11px; font-weight: 700; color: #38bdf8;">Walking arrows & map navigation ready</span>
         </div>
 
-        <div style="width: 100%; height: 260px; background: #000; border-radius: 12px; border: 1.5px solid #38bdf8; overflow: hidden; position: relative; margin-bottom: 14px;">
-          <img src="/assets/demo/dna-showcase/pano360/node0_360_panorama_8k.jpg" style="width: 100%; height: 100%; object-fit: cover;">
+        <div id="step11ViewerContainer" style="width: 100%; height: 260px; background: #020617; border-radius: 12px; border: 1.5px solid #38bdf8; overflow: hidden; position: relative; margin-bottom: 14px;">
+          <canvas id="step11ViewerCanvas" style="width: 100%; height: 100%; display: block;"></canvas>
           
-          <div style="position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; cursor: pointer;">
-            <div style="background: rgba(7,14,26,0.9); border: 1px solid #38bdf8; border-radius: 20px; padding: 4px 12px; font-size: 11px; font-weight: 700; color: #f8fafc; margin-bottom: 6px; box-shadow: 0 4px 14px rgba(0,0,0,0.6);">
+          <div style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; pointer-events: none;">
+            <div style="background: rgba(7,14,26,0.9); border: 1px solid #38bdf8; border-radius: 20px; padding: 4px 12px; font-size: 11px; font-weight: 700; color: #f8fafc; box-shadow: 0 4px 14px rgba(0,0,0,0.6);">
               <i class="fa-solid fa-arrow-up" style="color: #38bdf8; margin-right: 4px;"></i> Center
-            </div>
-            <div style="width: 56px; height: 32px; border-radius: 50%; background: radial-gradient(ellipse at center, rgba(56,189,248,0.4) 0%, rgba(15,23,42,0.9) 100%); border: 2px solid #38bdf8; display: flex; align-items: center; justify-content: center; transform: perspective(180px) rotateX(45deg); box-shadow: 0 0 16px rgba(56,189,248,0.5);">
-              <i class="fa-solid fa-chevron-up" style="color: #38bdf8; font-size: 14px;"></i>
             </div>
           </div>
         </div>
@@ -22914,6 +23009,29 @@ class SetupWizardController {
         <p style="font-size: 12.5px; color: #94a3b8;">Click below to apply this multi-point walking tour to your live exhibition booth.</p>
       </div>
     `;
+
+    if (this.step11Viewer) {
+      try { this.step11Viewer.destroy(); } catch (e) {}
+      this.step11Viewer = null;
+    }
+    const s11Container = document.getElementById('step11ViewerContainer');
+    const s11Canvas = document.getElementById('step11ViewerCanvas');
+    if (s11Container && s11Canvas && window.PanoramicBoothViewer) {
+      const candObj = (this.state.currentPanoramaJob && this.state.currentPanoramaJob.candidate) || (this.state.viewpoints[0] && this.state.viewpoints[0].candidate) || {
+        candidateId: 'cand-step11-tour',
+        stitchedPanoramaUrl: (this.state.viewpoints[0] && this.state.viewpoints[0].panoramaUrl) || '/assets/demo/dna-showcase/pano360/node0_360_panorama_8k.jpg',
+        textureUrl: (this.state.viewpoints[0] && this.state.viewpoints[0].panoramaUrl) || '/assets/demo/dna-showcase/pano360/node0_360_panorama_8k.jpg',
+        projection: 'SPHERICAL_BAND',
+        horizontalCoverageDeg: 360,
+        verticalCoverageDeg: 47.3
+      };
+      this.step11Viewer = new window.PanoramicBoothViewer({
+        container: s11Container,
+        canvas: s11Canvas,
+        candidate: candObj,
+        hostMode: 'PREVIEW'
+      });
+    }
   }
 
   async applyTour() {

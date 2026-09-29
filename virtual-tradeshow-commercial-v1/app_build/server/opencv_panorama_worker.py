@@ -264,14 +264,85 @@ def validate_capture_ring(sources, max_dim=1024):
         }
         pair_results.append(res)
 
-    all_pass = (len(failed_pairs) == 0)
-    ring_status = "CONNECTED" if all_pass else "BROKEN"
+    # Build adjacency graph from valid adjacent edges
+    adj = {i: set() for i in range(N)}
+    for res in pair_results:
+        if res["homographyValid"]:
+            u_str, v_str = res["pairKey"].split("->")
+            u, v = int(u_str) - 1, int(v_str) - 1
+            adj[u].add(v)
+            adj[v].add(u)
+
+    # For any failed adjacent edges, attempt 2-hop bridge validation to preserve 360 ring
+    bridged_pairs = []
+    unbridged_failed_pairs = []
+
+    for pair_key in failed_pairs:
+        u_str, v_str = pair_key.split("->")
+        u, v = int(u_str) - 1, int(v_str) - 1
+
+        bridge_candidates = [
+            (u, (v + 1) % N),
+            ((u - 1 + N) % N, v),
+            ((u - 1 + N) % N, (v + 1) % N)
+        ]
+
+        bridged = False
+        for bu, bv in bridge_candidates:
+            if bv in adj[bu]:
+                bridged = True
+                break
+            val_b = validate_edge_features(
+                kps[bu], descs[bu], kps[bv], descs[bv],
+                img_shape=img_shapes[bu]
+            )
+            if val_b["valid"]:
+                adj[bu].add(bv)
+                adj[bv].add(bu)
+                bridged = True
+                pair_results.append({
+                    "fromSlot": slots[bu],
+                    "toSlot": slots[bv],
+                    "pairKey": f"{bu+1}->{bv+1}",
+                    "goodMatchCount": val_b["nMatches"],
+                    "inlierCount": val_b["nInliers"],
+                    "inlierRatio": val_b["inlierRatio"],
+                    "medianReprojectionError": val_b["reprojErrorPx"],
+                    "rotationDeg": val_b["rotationDeg"],
+                    "homographyValid": True,
+                    "status": "BRIDGE",
+                    "overlapClassification": "BRIDGE_OVERLAP"
+                })
+                break
+
+        if bridged:
+            bridged_pairs.append(pair_key)
+        else:
+            unbridged_failed_pairs.append(pair_key)
+
+    # BFS Connectivity and 360 closure check
+    visited = set()
+    queue = [0]
+    visited.add(0)
+    while queue:
+        curr = queue.pop(0)
+        for neighbor in adj[curr]:
+            if neighbor not in visited:
+                visited.add(neighbor)
+                queue.append(neighbor)
+
+    # Graph is connected if all nodes are in one component and no unbridged gaps exist
+    graph_connected = (len(visited) == N) and (len(unbridged_failed_pairs) == 0)
+    ring_status = "CONNECTED" if graph_connected else "BROKEN"
+    all_pass = graph_connected
 
     return {
         "ok": all_pass,
         "allPass": all_pass,
         "ringStatus": ring_status,
-        "failedPairs": failed_pairs,
+        "graphConnectivityPass": graph_connected,
+        "failedPairs": unbridged_failed_pairs,
+        "bridgedPairs": bridged_pairs,
         "weakPairs": weak_pairs,
         "pairResults": pair_results
     }
