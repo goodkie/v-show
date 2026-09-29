@@ -49,24 +49,24 @@
     {
       "step": 4,
       "name": "Run current production-equivalent panorama E2E",
-      "status": "PROCESSING_AND_ARTIFACT_PASS_PHYSICAL_HOLD",
-      "gate": "HOLD",
-      "processing_pipeline_gate": "PASS_INTERNAL_CURRENT_INPUT",
-      "artifact_gate": "PASS_INTERNAL_CURRENT_INPUT",
+      "status": "PHYSICAL_QA_FAIL_BLOCKED_PENDING_ROOT_CAUSE_FIX",
+      "gate": "FAIL",
+      "processing_pipeline_gate": "FAIL_PAIRWISE_PREFLIGHT_AND_MAIN_THREAD_FREEZE",
+      "artifact_gate": "FAIL_NON_EQUIRECTANGULAR_BAND_AND_STATIC_IMAGE_RENDER",
       "apply_share_auth_gate": "PASS_AGENT_OBSERVED",
-      "physical_camera_capture_gate": "HOLD",
-      "physical_mobile_interaction_gate": "HOLD"
+      "physical_camera_capture_gate": "PASS_ENTRY_ONLY_RELIABILITY_FAIL",
+      "physical_mobile_interaction_gate": "FAIL_BLOCKED_BY_NON_PANORAMA_STATIC_IMG_RESULT"
     },
     {
       "step": 5,
       "name": "Preview/canary revalidation",
-      "status": "HOLD_PENDING_STEP4_PHYSICAL_E2E",
+      "status": "HOLD_PENDING_ROOT_CAUSE_FIX",
       "gate": "HOLD"
     },
     {
       "step": 6,
       "name": "Release/current public state confirmation",
-      "status": "HOLD_PENDING_STEP4_PHYSICAL_E2E",
+      "status": "HOLD_PENDING_ROOT_CAUSE_FIX",
       "gate": "HOLD"
     }
   ],
@@ -158,16 +158,22 @@
     "server_5xx_count": 0
   },
   "final_release_confirmation": {
-    "panorama_release_status": "CURRENT_RUNTIME_HEALTHY_BUT_FAST_TRACK_FINAL_PHYSICAL_GATE_OPEN",
+    "panorama_release_status": "BLOCKED_ON_CURRENT_PHYSICAL_RUNTIME_FAILURE",
     "current_public_runtime_confirmed": true,
-    "public_release_action": "NO_CODE_CHANGE_REQUIRED",
+    "public_release_action": "CODE_CHANGE_REQUIRED_FOR_STEP7_VIEWER_AND_ASYNC_STITCH",
     "official_release_sha": "ab7c13f62aee54ab6f55dd4ffae08857db695949",
     "customer_default": "P2R13",
-    "owner_action": "NONE",
+    "owner_action": "STANDBY_DO_NOT_RETAKE_YET",
     "all_steps_completed": false,
-    "physical_gate_pending": true,
-    "p0_blockers": 0,
-    "p1_blockers": 0,
-    "last_audited_at_utc": "2026-09-29T07:15:00Z"
+    "physical_gate_pending": false,
+    "physical_gate_status": "FAIL",
+    "p0_blockers": 1,
+    "p1_blockers": 1,
+    "latest_correlated_physical_attempts": [
+      "0I8W1U",
+      "CAP-X0P5CC",
+      "S8G82B"
+    ],
+    "last_audited_at_utc": "2026-09-29T10:35:00Z"
   }
 }
