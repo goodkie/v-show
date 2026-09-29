@@ -1,0 +1,140 @@
+{
+  "version": "R20_SPATIAL_ARTIFACT_INSPECTION_RECEIPT_V1",
+  "jobId": "audit-job-1790129468169-4f2ced13",
+  "timestamp": "2026-09-23T02:11:08.170Z",
+  "status": "MANIFEST_INSPECTED_PREEXISTING_BENCHMARK",
+  "reconstructionExecution": {
+    "newModelGenerated": false,
+    "causalReconstructionProven": false,
+    "disclosedBenchmarkStatus": "PREEXISTING_AUTHENTIC_GAUSSIAN_ARTIFACT",
+    "reconstructionFromInputsStatus": "NOT_VERIFIED"
+  },
+  "workerRuntimeSha256": "9bf93f4c3ba92d8408ea69d6a2e83b4bb44305e6da2a1c4cbf0b5a0d50effe5c",
+  "inputProvenance": {
+    "sourceCount": 12,
+    "aggregateInputHash": "3498f779ed0fef0e0146b3f25fdbdfe04033994b3d466a94d5673a5c7af779f4",
+    "inputs": [
+      {
+        "filename": "view_01.jpg",
+        "sizeBytes": 721779,
+        "sha256": "53f1edcd0428363e16645bdabf648061c0613278c9c0c3f052e561be1799d5d6"
+      },
+      {
+        "filename": "view_02.jpg",
+        "sizeBytes": 721476,
+        "sha256": "f54407bba51d9510f39becde61a492b5e72b2cba5df8c1d160856fe425c34364"
+      },
+      {
+        "filename": "view_03.jpg",
+        "sizeBytes": 684875,
+        "sha256": "1f5fca1871e92254939e644ae920e87d163b65e382606e19e0731fcab0f40965"
+      },
+      {
+        "filename": "view_04.jpg",
+        "sizeBytes": 802436,
+        "sha256": "a578ab5473406362701daf84738e4f2c583f6c685fe1b63843ab6622d0fbc4e5"
+      },
+      {
+        "filename": "view_05.jpg",
+        "sizeBytes": 740169,
+        "sha256": "f0eaabcd34fe0a882a235713a03c88df0fe762650a64efed4cc03e8388cec58e"
+      },
+      {
+        "filename": "view_06.jpg",
+        "sizeBytes": 661556,
+        "sha256": "321a226de548414966eb871a26aee8f5f4b0a96d1892a708882007545e05766e"
+      },
+      {
+        "filename": "view_07.jpg",
+        "sizeBytes": 704057,
+        "sha256": "da83a3c04bc78f3b307b0d0d479cbcc4feac51d38c5c226f4f26d3df235122fb"
+      },
+      {
+        "filename": "view_08.jpg",
+        "sizeBytes": 718283,
+        "sha256": "5bc7dee73db8d363ece9effa1d74c0220e4ca87d8e2df20242f0e6990140ada5"
+      },
+      {
+        "filename": "view_09.jpg",
+        "sizeBytes": 723902,
+        "sha256": "58b537511ee54f742e1fba5d7a240ffdd27f67923a85694cda3428f4d1d2cd43"
+      },
+      {
+        "filename": "view_10.jpg",
+        "sizeBytes": 721207,
+        "sha256": "c2a27a8fec5a618ebda6bd37f7bc02680965bf9a84c0b9446b304b343bd506e9"
+      },
+      {
+        "filename": "view_11.jpg",
+        "sizeBytes": 678264,
+        "sha256": "5b0bea7bd1af5ddffa5e0babfe03f19679cc1ca49ee118e4a743fbda17631649"
+      },
+      {
+        "filename": "view_12.jpg",
+        "sizeBytes": 784312,
+        "sha256": "1b17c8023671f62a6784f8b195eb876c1a5af9e74eae4a26eaf66e6639450cdc"
+      }
+    ]
+  },
+  "calibrationProvenance": {
+    "sourceFile": "R6_CAMERA_TRANSFORMS.json",
+    "fileSha256": "7d9194147d83a99a2795c393fb8f6e437dc8f6a6d77c47a5930c5f54f96465fd",
+    "viewCount": 5,
+    "maxBaselineMeters": 4.5695,
+    "baselines": {
+      "R6_01_FRONT.png_to_R6_02_LEFT_45.png": 4.5695,
+      "R6_01_FRONT.png_to_R6_03_RIGHT_45.png": 4.5695,
+      "R6_01_FRONT.png_to_R6_04_TOP_30.png": 3.544,
+      "R6_01_FRONT.png_to_R6_05_CLOSE.png": 3.8639
+    },
+    "antiCheatValidation": "PASSED_NON_ZERO_BASELINE"
+  },
+  "inspectedBenchmarkArtifacts": {
+    "ply": {
+      "filename": "REAL_WILO_GAUSSIAN_FINAL.ply",
+      "sizeBytes": 130682925,
+      "sha256": "b40f8035ddc51817538f99afffa7eeca6836e8fcaa243a93bd214166b877cd4d",
+      "declaredVertexCount": 526941,
+      "schema": {
+        "propertiesCount": 62,
+        "strideBytes": 248,
+        "derivation": "PARSER_DERIVED_FROM_PLY_HEADER"
+      },
+      "boundingBox": {
+        "min": [
+          -4.9014,
+          -4.9606,
+          -4.9823
+        ],
+        "max": [
+          4.9253,
+          4.9676,
+          4.998
+        ],
+        "volumeM3": 973.697
+      }
+    },
+    "spz": {
+      "filename": "REAL_WILO_GAUSSIAN_FINAL.spz",
+      "sizeBytes": 111539801,
+      "sha256": "fc80e5192ce1c79196e51414e0739524c9e191092c1719829ab414d0e73a32ee",
+      "format": "RADIANCE_SPATIAL_GAUSSIAN"
+    }
+  },
+  "gateStatusDisclosures": {
+    "SYNTHETIC_PANORAMA": "VERIFIED",
+    "REAL_DEVICE_12": "NOT_VERIFIED",
+    "EXISTING_AUTHENTIC_GAUSSIAN_ARTIFACT": "VERIFIED",
+    "RECONSTRUCTION_FROM_INPUTS": "NOT_VERIFIED",
+    "NEW_3D_MODEL_GENERATION": "NOT_VERIFIED",
+    "INPUT_TO_OUTPUT_CAUSAL_LINEAGE": "NOT_VERIFIED",
+    "OWNER_PRO_3D_VIEWER": "NOT_VERIFIED",
+    "LIVE_QA_REVOCATION": "BLOCKED_PENDING_INDEPENDENT_CONTROL_PLANE",
+    "OWNER_REVIEW_GATE": "HOLD",
+    "ENGINEERING_HOLD": "ACTIVE"
+  },
+  "cryptographicBinding": {
+    "lineageDigest": "c5727c64a2aea67fa0404d30ac9c9783ebc5c78c6043d5843bf439265f720f4d",
+    "algorithm": "sha256(job|inputs|calib|worker|ply|spz)"
+  }
+}

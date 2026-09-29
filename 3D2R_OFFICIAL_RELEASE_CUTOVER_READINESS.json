@@ -1,0 +1,31 @@
+{
+  "protocol": "3D2R_OFFICIAL_RELEASE_CUTOVER_READINESS",
+  "date": "2026-09-15",
+  "status": "PASS",
+  "publicReleaseName": "3D2R OFFICIAL RELEASE",
+  "internalReleaseChannel": "PRODUCTION_BETA",
+  "landingIntegrationStatus": "READY_AWAITING_OWNER_CUTOVER",
+  "ownerLaunchApproval": "PENDING_FORMAL_OWNER_SIGN_OFF",
+  "publicCutoverExecuted": false,
+  "finalGoNoGo": "GO_PENDING_OWNER_AUTHORIZATION",
+  "nextAction": "OWNER_SIGN_OFF_THEN_STAGE_0_INTERNAL_CUTOVER",
+  "preLandingRestoreTarget": {
+    "commit": "5218235b8dbe1cd3b401bbbdef0b1c8ba3483d6e",
+    "deploymentId": "5e9b6f43-52ce-4bd7-848b-8f6582aa4f0b",
+    "tag": "3d2-official-release-restore-2026-09-15",
+    "branch": "restore/3d2-official-release-2026-09-15",
+    "bundleSha256": "17da0c8ad1eda705cca95baf53b6fd4e8b612ba8dbffd7a188e1e885154bfe7b",
+    "zipSha256": "9f5bbdc6af42cd3c5dc7071e73bd9cb8de0564dfa6bb1a27b79eab76ac7b808a"
+  },
+  "landingRollbackReady": true,
+  "stagedReleasePlan": {
+    "stage0": "Internal team validation on /landing-preview",
+    "stage1": "Trusted users with feature flag / route parameter",
+    "stage2": "Invited customer cohort verification",
+    "stage3": "Official customer traffic cutover to public root /"
+  },
+  "blockerCheck": {
+    "OPEN_P0_BLOCKERS": 0,
+    "OPEN_P1_BLOCKERS": 0
+  }
+}

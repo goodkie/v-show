@@ -1,0 +1,9 @@
+{
+  "controllerPresent": true,
+  "currentStep": 6,
+  "stepName": "Guided 360 Capture",
+  "tourId": "tour_default",
+  "activeViewpointId": "vp_entrance",
+  "viewerMode": "CAPTURE_PREVIEW",
+  "viewerResultOpened": false
+}

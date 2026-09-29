@@ -1,0 +1,63 @@
+{
+  "sessionId": "RI-M-S23U-3OQPN3",
+  "device": {
+    "model": "Samsung Galaxy S23 Ultra",
+    "userAgent": "Mozilla/5.0 (Linux; Android 14; SM-S918U Build/UP1A.231005.007) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.88 Mobile Safari/537.36",
+    "viewport": {
+      "width": 412,
+      "height": 915,
+      "dsf": 2.8125
+    }
+  },
+  "camera": {
+    "hasMediaDevices": true,
+    "hasGetUserMedia": true,
+    "isSecureContext": true,
+    "cameraPermissionState": "granted",
+    "getUserMediaCalled": true,
+    "getUserMediaResolved": true,
+    "cameraStreamActive": true,
+    "videoTrackState": "LIVE",
+    "videoWidth": 1080,
+    "videoHeight": 1920,
+    "videoReadyState": 4,
+    "facingMode": "environment",
+    "cameraModule": "Samsung Galaxy S23 Ultra Camera",
+    "videoCurrentTimeAdvances": false,
+    "videoFramePresentationAdvances": true,
+    "lastErrorCode": null,
+    "lastErrorMessage": null
+  },
+  "wizard": {
+    "wizardPresent": true,
+    "controllerInstanceCount": 1,
+    "wizardRootCount": 1,
+    "currentWizardStep": 7,
+    "wizardStepName": "Viewpoint 1 Ready",
+    "projectId": "prj-free-b0c6f3ea",
+    "tourId": "tour_default",
+    "viewpointCount": 3,
+    "currentViewpointId": "vp_entrance",
+    "isModalOpen": true
+  },
+  "viewer": {
+    "controllerPresent": true,
+    "currentStep": 7,
+    "stepName": "Viewpoint 1 Ready",
+    "tourId": "tour_default",
+    "activeViewpointId": "vp_entrance",
+    "viewerMode": "STANDARD",
+    "viewerResultOpened": true
+  },
+  "capture": {
+    "captureSessionId": "RI-M-S23U-3OQPN3",
+    "acceptedFrames": 40,
+    "canonicalFrames": 12,
+    "closureConfirmed": true,
+    "closureInliers": 70,
+    "closureInlierRatio": 0.88,
+    "processingJobId": "job-pano-1789538092309-a68rl",
+    "resultExperienceId": "cand-panorama-1789538092315",
+    "stitchedPanoramaUrl": "/uploads/cand-val-1789538096672_native.jpg"
+  }
+}

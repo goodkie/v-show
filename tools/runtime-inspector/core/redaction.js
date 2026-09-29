@@ -19,6 +19,7 @@ var RedactionEngine = class RedactionEngine {
     // Hardcoded secret keywords that must NEVER leak in ANY privacy mode
     this.secretKeyPatterns = [
       /authorization/i,
+      /\bauth/i,
       /bearer/i,
       /cookie/i,
       /set-cookie/i,
@@ -28,12 +29,13 @@ var RedactionEngine = class RedactionEngine {
       /passcode/i,
       /otp/i,
       /passwd/i,
+      /api[_-]?key/i,
       /apikey/i,
-      /api_key/i,
-      /private_key/i,
+      /private[_-]?key/i,
+      /privatekey/i,
       /credential/i,
-      /session_token/i,
-      /session_secret/i,
+      /session[_-]?token/i,
+      /session[_-]?secret/i,
       /sessiontoken/i,
       /jwt/i,
       /stripe/i,
@@ -50,6 +52,7 @@ var RedactionEngine = class RedactionEngine {
     this.uuidRegex = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
     this.captureTokenRegex = /tok-cap-[a-zA-Z0-9_\-]+/gi;
     this.inlineSecretRegex = /(token|secret|password|passwd|auth|api[_-]?key|credential)=([a-zA-Z0-9_\-]+)/gi;
+    this.pemRegex = /(?:%2D%2D%2D%2D%2D|-----)BEGIN(?:\s|%20|\\n)+([A-Z0-9_\-]+(?:\s|%20|\\n)+)?PRIVATE(?:\s|%20|\\n)+KEY(?:%2D%2D%2D%2D%2D|-----)(?:[\s\S]|\\n|%0A|%0D)*?(?:%2D%2D%2D%2D%2D|-----)END(?:\s|%20|\\n)+([A-Z0-9_\-]+(?:\s|%20|\\n)+)?PRIVATE(?:\s|%20|\\n)+KEY(?:%2D%2D%2D%2D%2D|-----)/gi;
   }
 
   setPrivacyMode(mode) {
@@ -67,9 +70,43 @@ var RedactionEngine = class RedactionEngine {
     return this.secretKeyPatterns.some(pattern => pattern.test(key));
   }
 
+  hasPrivateKeyBlock(text) {
+    if (typeof text !== 'string') return false;
+    this.pemRegex.lastIndex = 0;
+    if (this.pemRegex.test(text)) return true;
+    const rawPattern = /-----BEGIN\s+(?:[A-Z0-9_-]+\s+)?PRIVATE\s+KEY-----[\s\S]*?-----END\s+(?:[A-Z0-9_-]+\s+)?PRIVATE\s+KEY-----/i;
+    return rawPattern.test(text);
+  }
+
+  safeCheckPrivateKey(val) {
+    if (typeof val !== 'string') return false;
+    if (this.hasPrivateKeyBlock(val)) return true;
+    try {
+      const decoded = decodeURIComponent(val);
+      if (decoded !== val && this.hasPrivateKeyBlock(decoded)) {
+        return true;
+      }
+    } catch (e) {
+      // Safe: malformed URI sequences do not throw
+    }
+    return false;
+  }
+
   sanitizeString(str) {
     if (typeof str !== 'string') return str;
     let sanitized = str;
+
+    // Check if entire string or decoded form contains a private key block
+    if (this.safeCheckPrivateKey(sanitized)) {
+      sanitized = sanitized.replace(this.pemRegex, () => {
+        this.redactionCount++;
+        return '[REDACTED_PRIVATE_KEY]';
+      });
+      if (this.safeCheckPrivateKey(sanitized)) {
+        this.redactionCount++;
+        return '[REDACTED_PRIVATE_KEY]';
+      }
+    }
 
     // Check if string is a JSON payload
     const trimmed = str.trim();
@@ -100,6 +137,18 @@ var RedactionEngine = class RedactionEngine {
       return `${p1}=[REDACTED_SECRET]`;
     });
 
+    // Always redact API keys and secrets (sk_live_, rk_live_, api_key_, etc.)
+    sanitized = sanitized.replace(/(?:api[_-]?key(?:[_-]?secret)?|sk_live|rk_live)[_-][a-zA-Z0-9_\-]+/gi, () => {
+      this.redactionCount++;
+      return '[REDACTED_API_KEY]';
+    });
+
+    // Redact raw cookies in strings or headers
+    sanitized = sanitized.replace(/(?:cookie|session_id_cookie)=[a-zA-Z0-9_\-]+/gi, () => {
+      this.redactionCount++;
+      return 'cookie=[REDACTED_COOKIE]';
+    });
+
     // Always redact Bearer tokens
     sanitized = sanitized.replace(this.bearerRegex, () => {
       this.redactionCount++;
@@ -128,22 +177,33 @@ var RedactionEngine = class RedactionEngine {
   sanitizeUrl(rawUrl) {
     if (!rawUrl || typeof rawUrl !== 'string') return rawUrl;
     try {
-      // Parse relative or absolute
       const dummyBase = 'https://runtime-inspector.internal';
       const parsed = new URL(rawUrl, dummyBase);
 
-      const sensitiveParams = ['token', 'key', 'auth', 'signature', 'sig', 'secret', 'password', 'code', 'session'];
+      const sensitiveParams = [
+        'token', 'key', 'auth', 'signature', 'sig', 'secret', 'password',
+        'code', 'session', 'cookie', 'sess', 'credential', 'private'
+      ];
+
       parsed.searchParams.forEach((val, key) => {
         if (sensitiveParams.some(p => key.toLowerCase().includes(p)) || this.privacyMode === 'STRICT') {
           parsed.searchParams.set(key, '[REDACTED]');
           this.redactionCount++;
+        } else if (this.safeCheckPrivateKey(val)) {
+          parsed.searchParams.set(key, '[REDACTED_PRIVATE_KEY]');
+          this.redactionCount++;
+        } else {
+          const sanitizedVal = this.sanitizeString(val);
+          if (sanitizedVal !== val) {
+            parsed.searchParams.set(key, sanitizedVal);
+          }
         }
       });
 
-      if (rawUrl.startsWith('http://') || rawUrl.startsWith('https://')) {
-        return parsed.toString();
-      }
-      return parsed.pathname + parsed.search + parsed.hash;
+      const formatted = (rawUrl.startsWith('http://') || rawUrl.startsWith('https://'))
+        ? parsed.toString()
+        : (parsed.pathname + parsed.search + parsed.hash);
+      return this.sanitizeString(formatted);
     } catch (e) {
       return this.sanitizeString(rawUrl);
     }
@@ -186,6 +246,9 @@ var RedactionEngine = class RedactionEngine {
           result[key] = this.sanitizeHeaders(value);
         } else if (typeof value === 'string' && (key.toLowerCase().includes('url') || key.toLowerCase() === 'href' || value.startsWith('http://') || value.startsWith('https://'))) {
           result[key] = this.sanitizeUrl(value);
+        } else if (typeof value === 'string' && this.safeCheckPrivateKey(value)) {
+          result[key] = '[REDACTED_PRIVATE_KEY]';
+          this.redactionCount++;
         } else {
           result[key] = this.sanitizeObject(value, depth + 1);
         }

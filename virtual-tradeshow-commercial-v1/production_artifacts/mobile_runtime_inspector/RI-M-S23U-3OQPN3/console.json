@@ -1,0 +1,22 @@
+[
+  {
+    "type": "warn",
+    "text": "An iframe which has both allow-scripts and allow-same-origin for its sandbox attribute can escape its sandboxing.",
+    "time": "2026-09-16T05:54:00.078Z"
+  },
+  {
+    "type": "warn",
+    "text": "An iframe which has both allow-scripts and allow-same-origin for its sandbox attribute can escape its sandboxing.",
+    "time": "2026-09-16T05:54:00.315Z"
+  },
+  {
+    "type": "warn",
+    "text": "An iframe which has both allow-scripts and allow-same-origin for its sandbox attribute can escape its sandboxing.",
+    "time": "2026-09-16T05:54:00.317Z"
+  },
+  {
+    "type": "warn",
+    "text": "An iframe which has both allow-scripts and allow-same-origin for its sandbox attribute can escape its sandboxing.",
+    "time": "2026-09-16T05:54:00.603Z"
+  }
+]

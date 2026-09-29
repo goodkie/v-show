@@ -202,6 +202,7 @@ class SpatialBoothPipeline {
         depthAsset: null,
         yawOffset: SLOT_YAW_OFFSETS[assignedSlot] || 0,
         xOffset: SLOT_X_OFFSETS[assignedSlot] || 0,
+        // P2R13: Carry candidateId through pipeline so Python worker subset filter can identify frames
         candidateId: src.candidateId || null
       });
     }
@@ -215,7 +216,10 @@ class SpatialBoothPipeline {
     const isPanoramicMode = (options.mode === 'PANORAMIC_IMMERSIVE') || (sourceList.length >= 2 && options.mode !== 'MULTI_VIEW_SPATIAL') || (compatibleViews.length >= 2 && options.mode !== 'MULTI_VIEW_SPATIAL');
     if (isPanoramicMode) {
       notifyStage('MATCHING', 40, 'Validating capture ring geometry & adjacent pair overlap');
-      const ringValidation = defaultPanoramicStitcher.validateRingClosure(compatibleViews, options);
+      const ringValidation = defaultPanoramicStitcher.validateRingClosure(compatibleViews, {
+        candidateId,
+        ...options
+      });
 
       notifyStage('ALIGNING', 55, 'Optimizing continuous equirectangular seam geometry & exposure compensation');
       notifyStage('STITCHING', 70, 'Stitching panoramic master using geometric rotational warping and seam blending');
@@ -305,6 +309,10 @@ class SpatialBoothPipeline {
         activeBackgroundUrl: stitchResult.url,
         textureUrl: stitchResult.url,
         masterUrl: stitchResult.masterUrl,
+        nativeFile: stitchResult.nativeFile,
+        previewFile: stitchResult.previewFile,
+        assetSha256: stitchResult.assetSha256,
+        assetByteSize: stitchResult.assetByteSize,
         entryViewId: 'START',
         viewpointCount: 1,
         sourceViewCount: compatibleViews.length,

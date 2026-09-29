@@ -1,0 +1,38 @@
+{
+  "protocol": "3D2R_LANDING_INTEGRATION_AUDIT",
+  "date": "2026-09-15",
+  "status": "PASS",
+  "publicReleaseName": "3D2R OFFICIAL RELEASE",
+  "internalReleaseChannel": "PRODUCTION_BETA",
+  "landingBranch": "release/3d2r-landing-integration",
+  "landingBaseCommit": "5218235b8dbe1cd3b401bbbdef0b1c8ba3483d6e",
+  "publicLandingRoute": "/",
+  "previewRoute": "/landing-preview",
+  "realTradeShowCaptureEntryRoute": "/?mode=booth-tour-wizard&step=1",
+  "captureAdapterImplementation": "LandingCaptureAdapter (window.__3D2R_LANDING_ADAPTER__)",
+  "secondCaptureEngineCreated": false,
+  "authBypassCreated": false,
+  "tenantBoundaryChanged": false,
+  "visualReferenceMatch": "PASS",
+  "responsiveMatrix": {
+    "390x844": "PASS",
+    "844x390": "PASS",
+    "768x1024": "PASS",
+    "1024x768": "PASS",
+    "1366x768": "PASS",
+    "1440x900": "PASS",
+    "1920x1080": "PASS"
+  },
+  "landingListenerCleanup": "PASS",
+  "openBlockers": {
+    "OPEN_P0_BLOCKERS": 0,
+    "OPEN_P1_BLOCKERS": 0
+  },
+  "integrationComponents": {
+    "LandingPage": "Single-page responsive container with canvas, logo, start portal, and microcopy footer",
+    "ParticleField3D": "13x8x5 rigid 3D lattice in perspective canvas with smooth mouse/touch orbit and fallback animation",
+    "BrandLogo": "Supplied 3D2R logo image only (no text subtitle) at 21px desktop / 18px mobile height",
+    "StartPortal": "Expanding white-fill circle with inverted text and 18x scale radial transition wipe",
+    "LandingCaptureAdapter": "Decoupled navigation and telemetry bridge routing into real Trade Show capture flow"
+  }
+}

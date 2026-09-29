@@ -1,0 +1,192 @@
+[
+  {
+    "timestamp": "2026-09-16T05:53:55.794Z",
+    "stage": "SESSION_INITIALIZED",
+    "detail": {
+      "sessionId": "RI-M-S23U-3OQPN3",
+      "device": "Samsung Galaxy S23 Ultra"
+    }
+  },
+  {
+    "timestamp": "2026-09-16T05:53:57.147Z",
+    "stage": "NAVIGATE_START",
+    "detail": {
+      "url": "https://3d2r-dark-minimal-flow-preview-production.up.railway.app"
+    }
+  },
+  {
+    "timestamp": "2026-09-16T05:54:15.707Z",
+    "stage": "NAVIGATE_COMPLETE",
+    "detail": {
+      "url": "https://3d2r-dark-minimal-flow-preview-production.up.railway.app"
+    }
+  },
+  {
+    "timestamp": "2026-09-16T05:54:15.710Z",
+    "stage": "LANDING_STATE_VERIFIED",
+    "detail": {
+      "landingViewVisible": true,
+      "startBtnVisible": true,
+      "canvasVisible": true,
+      "ptsCount": 180,
+      "linksCount": 439,
+      "mouse": {
+        "tx": 0,
+        "ty": 0,
+        "cx": 0,
+        "cy": 0
+      },
+      "autoAngle": 0.04749999999999987
+    }
+  },
+  {
+    "timestamp": "2026-09-16T05:54:21.665Z",
+    "stage": "PARTICLE_REACTION_VERIFIED",
+    "detail": {
+      "ptsCount": 180,
+      "mouseDelta": 0,
+      "lastEvent": {
+        "clientX": 300,
+        "clientY": 500,
+        "tx": 0.4563106796116505,
+        "ty": 0.09289617486338808,
+        "timestamp": 24237.30000000447
+      }
+    }
+  },
+  {
+    "timestamp": "2026-09-16T05:54:21.665Z",
+    "stage": "START_CLICK",
+    "detail": {
+      "target": "#start"
+    }
+  },
+  {
+    "timestamp": "2026-09-16T05:54:25.015Z",
+    "stage": "PRODUCT_HANDOFF_VERIFIED",
+    "detail": {
+      "landingHidden": true,
+      "modalOpen": true,
+      "currentStep": 6,
+      "realProductLaunched": true,
+      "url": "https://3d2r-dark-minimal-flow-preview-production.up.railway.app/?mode=booth-tour-wizard&step=6&source=landing&vertical=TRADE_SHOW&intent=create_virtual_booth",
+      "videoExists": true,
+      "wheelExists": true
+    }
+  },
+  {
+    "timestamp": "2026-09-16T05:54:28.063Z",
+    "stage": "CAMERA_PROBE_COMPLETE",
+    "detail": {
+      "videoFound": true,
+      "hasSrcObject": true,
+      "isMediaStream": true,
+      "videoWidth": 1080,
+      "videoHeight": 1920,
+      "readyState": 4,
+      "paused": false,
+      "currentTime1": 5.810415,
+      "currentTime2": 0,
+      "timeAdvanced": false,
+      "facingMode": "environment",
+      "trackLabel": "Camera Video Track",
+      "trackReadyState": "live",
+      "MEDIASTREAM_PRESENT": true,
+      "VIDEO_SRC_OBJECT_PRESENT": true,
+      "VIDEO_READY_STATE": 4,
+      "VIDEO_WIDTH": 1080,
+      "VIDEO_HEIGHT": 1920,
+      "VIDEO_CURRENT_TIME_ADVANCES": false,
+      "VIDEO_FRAME_PRESENTATION_ADVANCES": true,
+      "CAMERA_FACING_MODE": "environment"
+    }
+  },
+  {
+    "timestamp": "2026-09-16T05:54:28.065Z",
+    "stage": "UPLOAD_CANDIDATES_START",
+    "detail": {
+      "count": 40
+    }
+  },
+  {
+    "timestamp": "2026-09-16T05:54:42.970Z",
+    "stage": "UPLOAD_CANDIDATES_COMPLETE",
+    "detail": {
+      "count": 40
+    }
+  },
+  {
+    "timestamp": "2026-09-16T05:54:43.004Z",
+    "stage": "PERSIST_KEYFRAMES_START",
+    "detail": {
+      "count": 12
+    }
+  },
+  {
+    "timestamp": "2026-09-16T05:54:45.100Z",
+    "stage": "PERSIST_KEYFRAMES_COMPLETE",
+    "detail": {
+      "ok": true,
+      "captureSessionId": "RI-M-S23U-3OQPN3",
+      "keyframeCount": 12,
+      "verifiedCanonicalCount": 12,
+      "storageClass": "VOLUME_DURABLE"
+    }
+  },
+  {
+    "timestamp": "2026-09-16T05:54:45.100Z",
+    "stage": "FINALIZE_CAPTURE_START",
+    "detail": {
+      "sessionId": "RI-M-S23U-3OQPN3"
+    }
+  },
+  {
+    "timestamp": "2026-09-16T05:54:45.246Z",
+    "stage": "FINALIZE_CAPTURE_COMPLETE",
+    "detail": {
+      "ok": true,
+      "captureSessionId": "RI-M-S23U-3OQPN3",
+      "persistedCandidateCount": 40,
+      "candidateDurableVerifyCount": 40,
+      "status": "CANDIDATE_POOL_PERSISTED"
+    }
+  },
+  {
+    "timestamp": "2026-09-16T05:54:45.247Z",
+    "stage": "PANORAMA_START_REQUEST",
+    "detail": {
+      "sessionId": "RI-M-S23U-3OQPN3"
+    }
+  },
+  {
+    "timestamp": "2026-09-16T05:54:52.336Z",
+    "stage": "PANORAMA_START_ACCEPTED",
+    "detail": {
+      "jobId": "job-pano-1789538092309-a68rl",
+      "status": "QUEUED"
+    }
+  },
+  {
+    "timestamp": "2026-09-16T05:55:48.124Z",
+    "stage": "PANORAMA_JOB_READY",
+    "detail": {
+      "jobId": "job-pano-1789538092309-a68rl",
+      "candidateId": "cand-panorama-1789538092315",
+      "panoramaUrl": "/uploads/cand-val-1789538096672_native.jpg",
+      "full360": true
+    }
+  },
+  {
+    "timestamp": "2026-09-16T05:56:10.150Z",
+    "stage": "VIEWER_RESULT_MOUNTED",
+    "detail": {
+      "controllerPresent": true,
+      "currentStep": 7,
+      "stepName": "Viewpoint 1 Ready",
+      "tourId": "tour_default",
+      "activeViewpointId": "vp_entrance",
+      "viewerMode": "STANDARD",
+      "viewerResultOpened": true
+    }
+  }
+]

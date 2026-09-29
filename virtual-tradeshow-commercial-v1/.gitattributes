@@ -1,2 +1,4 @@
 *.spz filter=lfs diff=lfs merge=lfs -text
 *.ply filter=lfs diff=lfs merge=lfs -text
+production_artifacts/AUTHLINEAGE_RECONSTRUCTED_SPATIAL_MODEL.ply -filter -diff -merge binary
+production_artifacts/AUTHLINEAGE_SPARSE_SFM_SEED.ply -filter -diff -merge binary

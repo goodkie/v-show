@@ -1,0 +1,92 @@
+{
+  "verificationTimestamp": "2026-09-16T03:46:59Z",
+  "previewHost": "3d2r-dark-minimal-flow-preview-production.up.railway.app",
+  "previewUrl": "https://3d2r-dark-minimal-flow-preview-production.up.railway.app",
+  "endpoints": {
+    "/": {
+      "httpStatus": 200,
+      "contentLength": 5043594,
+      "elapsedMs": 1874.4,
+      "hasLandingView": true,
+      "hasStartPortal": true,
+      "hasExpandCircle": true,
+      "hasCameraView": true,
+      "hasBgAsset": true,
+      "passed": true
+    },
+    "/overview": {
+      "httpStatus": 200,
+      "contentLength": 5002040,
+      "sha256": "3572bf8b0bcd828e61b2e83f2bf73fd933cc94608f5e283044744fdaa137bc72",
+      "byteExactMatch": true,
+      "passed": true
+    },
+    "/landing-preview": {
+      "httpStatus": 200,
+      "contentLength": 2518072,
+      "sha256": "22bd2e2458952c34fa5d8e52a02141b6551db09d7591b1794fde87c21f243a0d",
+      "byteExactMatch": true,
+      "passed": true
+    },
+    "/assets/3d2r-landing-bg-45.jpg": {
+      "httpStatus": 200,
+      "contentLength": 866268,
+      "sha256": "909eff9770f3aef6d7f1ac17ce7bd2ca3e0aab410d4f9a824cc42b2e6f84a25a",
+      "passed": true
+    },
+    "/assets/3d2r-logo-package45.png": {
+      "httpStatus": 200,
+      "contentLength": 144159,
+      "sha256": "ff9367ec592785333b49ea36f7a5449b8ae4174bfb68098babb8e16e99356970",
+      "passed": true
+    },
+    "/assets/3d2r-logo.png": {
+      "httpStatus": 200,
+      "contentLength": 144159,
+      "sha256": "ff9367ec592785333b49ea36f7a5449b8ae4174bfb68098babb8e16e99356970",
+      "passed": true
+    },
+    "/health": {
+      "httpStatus": 200,
+      "ok": true,
+      "schemaVersion": 5,
+      "passed": true
+    }
+  },
+  "captureContract": {},
+  "serverCapturePathAudit": {
+    "captureScienceFilesAudit": {
+      "server/panoramic_stitcher.js": {
+        "diffLength": 0,
+        "isIdentical": true
+      },
+      "server/opencv_panorama_worker.py": {
+        "diffLength": 0,
+        "isIdentical": true
+      },
+      "server/spatial_pipeline.js": {
+        "diffLength": 0,
+        "isIdentical": true
+      },
+      "server/panorama_geometry_validator.py": {
+        "diffLength": 0,
+        "isIdentical": true
+      },
+      "server/panorama_sanity_gates.py": {
+        "diffLength": 0,
+        "isIdentical": true
+      }
+    },
+    "captureRouteSignaturesAudit": {
+      "app.post('/api/projects/:id/panorama/start'": true,
+      "app.get('/api/panorama-jobs/:jobId'": true,
+      "app.post('/api/projects/:id/guided-capture/candidate-frame'": true,
+      "app.post('/api/projects/:id/guided-capture/finalize-capture'": true,
+      "app.post('/api/projects/:id/guided-capture/keyframes'": true,
+      "app.post('/api/projects/:id/guided-capture/telemetry'": true,
+      "app.post('/api/projects/:id/capture-session/create'": true
+    },
+    "serverCapturePathUnchanged": true
+  },
+  "overallVerdict": "PASS"
+}

@@ -1,0 +1,73 @@
+[
+  {
+    "timestamp": "2026-09-16T18:26:34.932Z",
+    "stage": "SESSION_INITIALIZED",
+    "detail": {
+      "sessionId": "RI-M-S23U-R2ATAP",
+      "path": "PATH_B_EARLY_TAP",
+      "device": "Samsung Galaxy S23 Ultra"
+    }
+  },
+  {
+    "timestamp": "2026-09-16T18:26:36.200Z",
+    "stage": "NAVIGATE_START",
+    "detail": {
+      "url": "https://3d2r-dark-minimal-flow-preview-production.up.railway.app"
+    }
+  },
+  {
+    "timestamp": "2026-09-16T18:26:49.180Z",
+    "stage": "NAVIGATE_COMPLETE",
+    "detail": {
+      "url": "https://3d2r-dark-minimal-flow-preview-production.up.railway.app"
+    }
+  },
+  {
+    "timestamp": "2026-09-16T18:26:49.788Z",
+    "stage": "START_CLICK",
+    "detail": {
+      "target": "#start"
+    }
+  },
+  {
+    "timestamp": "2026-09-16T18:26:50.600Z",
+    "stage": "GUIDE_MOUNTED",
+    "detail": {
+      "duration": 10000
+    }
+  },
+  {
+    "timestamp": "2026-09-16T18:26:52.157Z",
+    "stage": "EARLY_TAP_TRIGGERED",
+    "detail": {
+      "time": "2026-09-16T18:26:52.157Z"
+    }
+  },
+  {
+    "timestamp": "2026-09-16T18:26:55.566Z",
+    "stage": "EARLY_TAP_HANDOFF_VERIFIED",
+    "detail": {
+      "earlyTapReceived": true,
+      "earlyTapLatencyMs": 0.30000000074505806,
+      "launchCount": 1,
+      "cameraRequested": true,
+      "step": 6
+    }
+  },
+  {
+    "timestamp": "2026-09-16T18:26:56.180Z",
+    "stage": "CAMERA_PROBE_COMPLETE",
+    "detail": {
+      "MEDIASTREAM_PRESENT": true,
+      "VIDEO_SRC_OBJECT_PRESENT": true,
+      "VIDEO_READY_STATE": 4,
+      "VIDEO_WIDTH": 1080,
+      "VIDEO_HEIGHT": 1920,
+      "VIDEO_CURRENT_TIME_ADVANCES": true,
+      "VIDEO_FRAME_PRESENTATION_ADVANCES": true,
+      "CAMERA_FACING_MODE": "environment",
+      "trackLabel": "fake_device_0",
+      "trackReadyState": "live"
+    }
+  }
+]

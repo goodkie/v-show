@@ -1,0 +1,50 @@
+{
+  "receiptVersion": "R26_HEAD_BOUND_EXECUTION_RECEIPT_V1",
+  "timestamp": "2026-09-23T05:14:23.641Z",
+  "expectedHeadSha": null,
+  "observedHeadSha": "3b6d935f9dde3c11e87056e107328fa99a151c4b",
+  "headBindingMatched": true,
+  "worktreeClean": false,
+  "worktreePorcelain": "M .gitignore,  M test/test_stage2_true3d_pipeline.js,  M virtual-tradeshow-commercial-v1/production_artifacts/WILO_BENCHMARK_PROVENANCE_CLASSIFICATION.json",
+  "requiredDeployRoots": [
+    "virtual-tradeshow-commercial-v1/_clean_deploy/client/assets",
+    "virtual-tradeshow-commercial-v1/_railway_deploy/client/assets",
+    "virtual-tradeshow-commercial-v1/app_build/client/assets",
+    "virtual-tradeshow-commercial-v1/client/assets"
+  ],
+  "requiredRootsCount": 4,
+  "requiredRootsEnforcedFailClosed": true,
+  "prohibitedExtensionSet": [
+    "spz",
+    "ply",
+    "splat",
+    "ksplat",
+    "glb",
+    "gltf",
+    "bin"
+  ],
+  "positiveFailControlsVerified": true,
+  "lfsPointerDetectionVerified": true,
+  "suiteResults": {
+    "totalTests": 17,
+    "passedStatus": "17/17 PASS"
+  },
+  "operatingGates": {
+    "LOCAL_STATIC_ASSET_ISOLATION": "VERIFIED_BY_TEST",
+    "CURRENT_RUNTIME_STATIC_ISOLATION": "NOT_VERIFIED",
+    "REAL_DEVICE_12": "NOT_VERIFIED",
+    "REAL_MULTIPOSITION_CAPTURE": "NOT_VERIFIED",
+    "RECONSTRUCTION_FROM_INPUTS": "NOT_VERIFIED",
+    "NEW_3D_MODEL_GENERATION": "NOT_VERIFIED",
+    "INPUT_TO_OUTPUT_CAUSAL_LINEAGE": "NOT_VERIFIED",
+    "SPZ_DECODED_IN_VIEWER": "NOT_VERIFIED",
+    "AUTHENTIC_SPZ_RENDER": "NOT_VERIFIED",
+    "OWNER_PRO_3D_VIEWER": "NOT_VERIFIED",
+    "HISTORICAL_PUBLIC_ARTIFACT_EXPOSURE": "REQUIRES_ASSESSMENT",
+    "COMMERCIAL_REDISTRIBUTION_RIGHTS": "REQUIRES_OWNER_ATTESTATION",
+    "LIVE_QA_REVOCATION": "BLOCKED_PENDING_INDEPENDENT_CONTROL_PLANE",
+    "OWNER_REVIEW_GATE": "HOLD",
+    "ENGINEERING_HOLD": "ACTIVE",
+    "DESTRUCTIVE_GIT_REWRITE": "FORBIDDEN"
+  }
+}

@@ -1,0 +1,2941 @@
+{
+  "022fe378da87dc1811517c2bcb88ff96a2855f792c8bfb591e7e6936246ab497": {
+    "success": true,
+    "category": "INSUFFICIENT_RESOLUTION_OR_KEYFRAME",
+    "classification": "INSUFFICIENT_RESOLUTION_OR_KEYFRAME",
+    "classificationReason": "Low resolution (256x256 < 512x512) or ephemeral keyframes",
+    "imageCount": 12,
+    "sampleDimensions": "256x256",
+    "coverageEvaluationMode": "ALL_CANDIDATE_FRAMES_EVALUATED",
+    "evaluatedFramesCount": 12,
+    "evaluatorConfig": {
+      "configVersion": "1.0.0",
+      "minMedianParallaxDegrees": 1.2,
+      "minPositiveDepthRatio": 0.55,
+      "maxHomographyInlierRatio": 0.9,
+      "minInlierCount": 15,
+      "maxConnectedViewsCeiling": 64,
+      "maxScaleConsistentTranslationResidual": 0.15,
+      "maxLoopClosureRotationDriftDegrees": 15,
+      "maxLoopClosureRotationDriftFrobenius": 0.5,
+      "minConnectedViewsPositiveRingThreshold": 12,
+      "calibrationAssumption": "ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED"
+    },
+    "evaluatorConfigDigest": "1117e4488c00c9be3b111297ab206f8e9de9c91d74f56518a6066a5de4420b12"
+  },
+  "06ff7e2972da6ba594ff9fab08cef46985d194cc083bbf1d2f8eb538373f7be9": {
+    "success": true,
+    "category": "GEOMETRY_EVALUATED_DATASET",
+    "classification": "NEGATIVE_PARTIAL_FIXTURE_VERIFIED",
+    "classificationReason": "Partial graph connectivity (2/15 views connected in main component); ring incomplete.",
+    "imageCount": 15,
+    "evaluatedViews": 15,
+    "evaluatedFramesCount": 15,
+    "coverageEvaluationMode": "ALL_CANDIDATE_FRAMES_EVALUATED",
+    "evaluatedFileNames": [
+      "node0_360_panorama_16k.jpg",
+      "node0_360_panorama_4k_opt.jpg",
+      "node0_360_panorama_8k.jpg",
+      "node0_360_panorama_ultra8k.jpg",
+      "node0_preview.jpg",
+      "node1_360_cobots_16k.jpg",
+      "node1_360_cobots_8k.jpg",
+      "node1_360_panorama_16k.jpg",
+      "node1_360_panorama_8k.jpg",
+      "node1_preview.jpg",
+      "node2_360_amr_16k.jpg",
+      "node2_360_amr_8k.jpg",
+      "node2_360_panorama_16k.jpg",
+      "node2_360_panorama_8k.jpg",
+      "node2_preview.jpg"
+    ],
+    "evaluatedKeyframeIndices": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14
+    ],
+    "sampleDimensions": "8192x4096",
+    "featuresDetected": 739,
+    "crossPairMatches": 82,
+    "connectedViews": 2,
+    "connectedComponentCount": 10,
+    "componentSizes": [
+      2,
+      2,
+      2,
+      2,
+      2,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "loopClosurePassed": false,
+    "loopClosureResidual": {
+      "status": "RING_INCOMPLETE_LOOP_NOT_FORMED",
+      "closurePassed": false,
+      "measured": {
+        "rotationDriftFrobenius": null,
+        "rotationDriftDegrees": null,
+        "scaleConsistentTranslationResidual": null,
+        "totalTrajectoryPathLength": null,
+        "scaleConsistencyResolved": false
+      },
+      "thresholds": {
+        "maxRotationDriftFrobenius": 0.5,
+        "maxRotationAngleDegrees": 15,
+        "maxScaleConsistentTranslationResidual": 0.15
+      }
+    },
+    "hasRecoverableParallax": true,
+    "globalMedianParallaxDegrees": 14.22,
+    "pairsWithValidParallax": 5,
+    "pairParallaxMetrics": {
+      "4_5": {
+        "pair": [
+          4,
+          5
+        ],
+        "inliers": 18,
+        "positiveDepthRatio": 1,
+        "medianParallaxDegrees": 22.11,
+        "homographyInlierRatio": 0.278,
+        "hasTranslationalParallax": true
+      },
+      "6_7": {
+        "pair": [
+          6,
+          7
+        ],
+        "inliers": 10,
+        "positiveDepthRatio": 1,
+        "medianParallaxDegrees": 8.93,
+        "homographyInlierRatio": 0.8,
+        "hasTranslationalParallax": true
+      },
+      "9_10": {
+        "pair": [
+          9,
+          10
+        ],
+        "inliers": 17,
+        "positiveDepthRatio": 0.647,
+        "medianParallaxDegrees": 25.27,
+        "homographyInlierRatio": 0.412,
+        "hasTranslationalParallax": true
+      },
+      "11_12": {
+        "pair": [
+          11,
+          12
+        ],
+        "inliers": 20,
+        "positiveDepthRatio": 1,
+        "medianParallaxDegrees": 8.46,
+        "homographyInlierRatio": 0.45,
+        "hasTranslationalParallax": true
+      },
+      "14_0": {
+        "pair": [
+          14,
+          0
+        ],
+        "inliers": 17,
+        "positiveDepthRatio": 1,
+        "medianParallaxDegrees": 18.17,
+        "homographyInlierRatio": 0.353,
+        "hasTranslationalParallax": true
+      }
+    },
+    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT",
+    "evaluatorConfig": {
+      "configVersion": "1.0.0",
+      "minMedianParallaxDegrees": 1.2,
+      "minPositiveDepthRatio": 0.55,
+      "maxHomographyInlierRatio": 0.9,
+      "minInlierCount": 15,
+      "maxConnectedViewsCeiling": 64,
+      "maxScaleConsistentTranslationResidual": 0.15,
+      "maxLoopClosureRotationDriftDegrees": 15,
+      "maxLoopClosureRotationDriftFrobenius": 0.5,
+      "minConnectedViewsPositiveRingThreshold": 12,
+      "calibrationAssumption": "ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED"
+    },
+    "evaluatorConfigDigest": "1117e4488c00c9be3b111297ab206f8e9de9c91d74f56518a6066a5de4420b12"
+  },
+  "27b225b3af37a86be132d4778de3efe76991f569d1123401d46ef4946b0a303c": {
+    "success": false,
+    "category": "INSUFFICIENT_METADATA_TO_EVALUATE",
+    "classification": "UNREADABLE_IMAGE_FILES",
+    "classificationReason": "Could not read at least 3 valid image frames",
+    "imageCount": 12,
+    "evaluatorConfig": {
+      "configVersion": "1.0.0",
+      "minMedianParallaxDegrees": 1.2,
+      "minPositiveDepthRatio": 0.55,
+      "maxHomographyInlierRatio": 0.9,
+      "minInlierCount": 15,
+      "maxConnectedViewsCeiling": 64,
+      "maxScaleConsistentTranslationResidual": 0.15,
+      "maxLoopClosureRotationDriftDegrees": 15,
+      "maxLoopClosureRotationDriftFrobenius": 0.5,
+      "minConnectedViewsPositiveRingThreshold": 12,
+      "calibrationAssumption": "ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED"
+    },
+    "evaluatorConfigDigest": "1117e4488c00c9be3b111297ab206f8e9de9c91d74f56518a6066a5de4420b12"
+  },
+  "3498f779ed0fef0e0146b3f25fdbdfe04033994b3d466a94d5673a5c7af779f4": {
+    "success": true,
+    "category": "GEOMETRY_EVALUATED_DATASET",
+    "classification": "NEGATIVE_PARTIAL_FIXTURE_VERIFIED",
+    "classificationReason": "Connected views (12/12) but loop closure exceeded tolerance (138.02 deg rotation drift, 0.2434 trans drift).",
+    "imageCount": 12,
+    "evaluatedViews": 12,
+    "evaluatedFramesCount": 12,
+    "coverageEvaluationMode": "ALL_CANDIDATE_FRAMES_EVALUATED",
+    "evaluatedFileNames": [
+      "view_01.jpg",
+      "view_02.jpg",
+      "view_03.jpg",
+      "view_04.jpg",
+      "view_05.jpg",
+      "view_06.jpg",
+      "view_07.jpg",
+      "view_08.jpg",
+      "view_09.jpg",
+      "view_10.jpg",
+      "view_11.jpg",
+      "view_12.jpg"
+    ],
+    "evaluatedKeyframeIndices": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11
+    ],
+    "sampleDimensions": "1024x1024",
+    "featuresDetected": 949,
+    "crossPairMatches": 278,
+    "connectedViews": 12,
+    "connectedComponentCount": 1,
+    "componentSizes": [
+      12
+    ],
+    "loopClosurePassed": false,
+    "loopClosureResidual": {
+      "status": "LOOP_CLOSURE_FAILED_EXCEEDS_TOLERANCE",
+      "closurePassed": false,
+      "measured": {
+        "rotationDriftFrobenius": 2.6407,
+        "rotationDriftDegrees": 138.02,
+        "scaleConsistentTranslationResidual": 0.2434,
+        "totalTrajectoryPathLength": 12,
+        "scaleConsistencyResolved": true
+      },
+      "thresholds": {
+        "maxRotationDriftFrobenius": 0.5,
+        "maxRotationAngleDegrees": 15,
+        "maxScaleConsistentTranslationResidual": 0.15
+      }
+    },
+    "hasRecoverableParallax": true,
+    "globalMedianParallaxDegrees": 12.86,
+    "pairsWithValidParallax": 4,
+    "pairParallaxMetrics": {
+      "0_1": {
+        "pair": [
+          0,
+          1
+        ],
+        "inliers": 77,
+        "positiveDepthRatio": 0.013,
+        "medianParallaxDegrees": 30.11,
+        "homographyInlierRatio": 1.273,
+        "hasTranslationalParallax": false
+      },
+      "1_2": {
+        "pair": [
+          1,
+          2
+        ],
+        "inliers": 34,
+        "positiveDepthRatio": 0,
+        "medianParallaxDegrees": 0,
+        "homographyInlierRatio": 0.5,
+        "hasTranslationalParallax": false
+      },
+      "2_3": {
+        "pair": [
+          2,
+          3
+        ],
+        "inliers": 16,
+        "positiveDepthRatio": 0.375,
+        "medianParallaxDegrees": 18.65,
+        "homographyInlierRatio": 0.625,
+        "hasTranslationalParallax": false
+      },
+      "3_4": {
+        "pair": [
+          3,
+          4
+        ],
+        "inliers": 35,
+        "positiveDepthRatio": 0.771,
+        "medianParallaxDegrees": 4.7,
+        "homographyInlierRatio": 0.314,
+        "hasTranslationalParallax": true
+      },
+      "4_5": {
+        "pair": [
+          4,
+          5
+        ],
+        "inliers": 12,
+        "positiveDepthRatio": 0,
+        "medianParallaxDegrees": 0,
+        "homographyInlierRatio": 0.583,
+        "hasTranslationalParallax": false
+      },
+      "5_6": {
+        "pair": [
+          5,
+          6
+        ],
+        "inliers": 13,
+        "positiveDepthRatio": 0,
+        "medianParallaxDegrees": 0,
+        "homographyInlierRatio": 0.846,
+        "hasTranslationalParallax": false
+      },
+      "6_7": {
+        "pair": [
+          6,
+          7
+        ],
+        "inliers": 12,
+        "positiveDepthRatio": 0.167,
+        "medianParallaxDegrees": 26.79,
+        "homographyInlierRatio": 0.583,
+        "hasTranslationalParallax": false
+      },
+      "7_8": {
+        "pair": [
+          7,
+          8
+        ],
+        "inliers": 32,
+        "positiveDepthRatio": 1,
+        "medianParallaxDegrees": 4.16,
+        "homographyInlierRatio": 0.344,
+        "hasTranslationalParallax": true
+      },
+      "8_9": {
+        "pair": [
+          8,
+          9
+        ],
+        "inliers": 14,
+        "positiveDepthRatio": 0,
+        "medianParallaxDegrees": 0,
+        "homographyInlierRatio": 0.786,
+        "hasTranslationalParallax": false
+      },
+      "9_10": {
+        "pair": [
+          9,
+          10
+        ],
+        "inliers": 9,
+        "positiveDepthRatio": 0.778,
+        "medianParallaxDegrees": 17.08,
+        "homographyInlierRatio": 0.889,
+        "hasTranslationalParallax": true
+      },
+      "10_11": {
+        "pair": [
+          10,
+          11
+        ],
+        "inliers": 15,
+        "positiveDepthRatio": 1,
+        "medianParallaxDegrees": 17.94,
+        "homographyInlierRatio": 0.533,
+        "hasTranslationalParallax": true
+      },
+      "11_0": {
+        "pair": [
+          11,
+          0
+        ],
+        "inliers": 9,
+        "positiveDepthRatio": 0.889,
+        "medianParallaxDegrees": 31.86,
+        "homographyInlierRatio": 1,
+        "hasTranslationalParallax": false
+      }
+    },
+    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT",
+    "evaluatorConfig": {
+      "configVersion": "1.0.0",
+      "minMedianParallaxDegrees": 1.2,
+      "minPositiveDepthRatio": 0.55,
+      "maxHomographyInlierRatio": 0.9,
+      "minInlierCount": 15,
+      "maxConnectedViewsCeiling": 64,
+      "maxScaleConsistentTranslationResidual": 0.15,
+      "maxLoopClosureRotationDriftDegrees": 15,
+      "maxLoopClosureRotationDriftFrobenius": 0.5,
+      "minConnectedViewsPositiveRingThreshold": 12,
+      "calibrationAssumption": "ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED"
+    },
+    "evaluatorConfigDigest": "1117e4488c00c9be3b111297ab206f8e9de9c91d74f56518a6066a5de4420b12"
+  },
+  "553f05b9d78b00fb88e2d79263f79375830019f2a947a17ea9babf23080b88e2": {
+    "success": true,
+    "category": "GEOMETRY_EVALUATED_DATASET",
+    "classification": "INELIGIBLE_INSUFFICIENT_PARALLAX_OR_DISCONNECTED",
+    "classificationReason": "Insufficient matchable parallax or degenerate planar geometry (median parallax: 0.0 deg, connected: 2/5).",
+    "imageCount": 5,
+    "evaluatedViews": 5,
+    "evaluatedFramesCount": 5,
+    "coverageEvaluationMode": "ALL_CANDIDATE_FRAMES_EVALUATED",
+    "evaluatedFileNames": [
+      "node0_360_panorama_16k.jpg",
+      "node0_360_panorama_4k_opt.jpg",
+      "node0_360_panorama_8k.jpg",
+      "node0_360_panorama_ultra8k.jpg",
+      "node0_preview.jpg"
+    ],
+    "evaluatedKeyframeIndices": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ],
+    "sampleDimensions": "8192x4096",
+    "featuresDetected": 715,
+    "crossPairMatches": 31,
+    "connectedViews": 2,
+    "connectedComponentCount": 4,
+    "componentSizes": [
+      2,
+      1,
+      1,
+      1
+    ],
+    "loopClosurePassed": false,
+    "loopClosureResidual": {
+      "status": "RING_INCOMPLETE_LOOP_NOT_FORMED",
+      "closurePassed": false,
+      "measured": {
+        "rotationDriftFrobenius": null,
+        "rotationDriftDegrees": null,
+        "scaleConsistentTranslationResidual": null,
+        "totalTrajectoryPathLength": null,
+        "scaleConsistencyResolved": false
+      },
+      "thresholds": {
+        "maxRotationDriftFrobenius": 0.5,
+        "maxRotationAngleDegrees": 15,
+        "maxScaleConsistentTranslationResidual": 0.15
+      }
+    },
+    "hasRecoverableParallax": false,
+    "globalMedianParallaxDegrees": 0,
+    "pairsWithValidParallax": 0,
+    "pairParallaxMetrics": {
+      "4_0": {
+        "pair": [
+          4,
+          0
+        ],
+        "inliers": 31,
+        "positiveDepthRatio": 0,
+        "medianParallaxDegrees": 0,
+        "homographyInlierRatio": 19.387,
+        "hasTranslationalParallax": false
+      }
+    },
+    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT",
+    "evaluatorConfig": {
+      "configVersion": "1.0.0",
+      "minMedianParallaxDegrees": 1.2,
+      "minPositiveDepthRatio": 0.55,
+      "maxHomographyInlierRatio": 0.9,
+      "minInlierCount": 15,
+      "maxConnectedViewsCeiling": 64,
+      "maxScaleConsistentTranslationResidual": 0.15,
+      "maxLoopClosureRotationDriftDegrees": 15,
+      "maxLoopClosureRotationDriftFrobenius": 0.5,
+      "minConnectedViewsPositiveRingThreshold": 12,
+      "calibrationAssumption": "ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED"
+    },
+    "evaluatorConfigDigest": "1117e4488c00c9be3b111297ab206f8e9de9c91d74f56518a6066a5de4420b12"
+  },
+  "5561cdc35da854f70e03a8d202b870ef5cef5be9d697f3d5313e6db47a323559": {
+    "success": true,
+    "category": "GEOMETRY_EVALUATED_DATASET",
+    "classification": "NEGATIVE_PARTIAL_FIXTURE_VERIFIED",
+    "classificationReason": "Partial graph connectivity (4/6 views connected in main component); ring incomplete.",
+    "imageCount": 6,
+    "evaluatedViews": 6,
+    "evaluatedFramesCount": 6,
+    "coverageEvaluationMode": "ALL_CANDIDATE_FRAMES_EVALUATED",
+    "evaluatedFileNames": [
+      "approved_dna_booth_reference.jpg",
+      "dna_robotic_hero_master.jpg",
+      "dna_robotic_master_ultrahd.jpg",
+      "dna_showcase_photoreal_clean.jpg",
+      "dna_showcase_photoreal_hero.jpg",
+      "dna_showcase_photoreal_hero.png"
+    ],
+    "evaluatedKeyframeIndices": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "sampleDimensions": "1024x682",
+    "featuresDetected": 870,
+    "crossPairMatches": 42,
+    "connectedViews": 4,
+    "connectedComponentCount": 2,
+    "componentSizes": [
+      4,
+      2
+    ],
+    "loopClosurePassed": false,
+    "loopClosureResidual": {
+      "status": "RING_INCOMPLETE_LOOP_NOT_FORMED",
+      "closurePassed": false,
+      "measured": {
+        "rotationDriftFrobenius": null,
+        "rotationDriftDegrees": null,
+        "scaleConsistentTranslationResidual": null,
+        "totalTrajectoryPathLength": null,
+        "scaleConsistencyResolved": false
+      },
+      "thresholds": {
+        "maxRotationDriftFrobenius": 0.5,
+        "maxRotationAngleDegrees": 15,
+        "maxScaleConsistentTranslationResidual": 0.15
+      }
+    },
+    "hasRecoverableParallax": true,
+    "globalMedianParallaxDegrees": 16.4,
+    "pairsWithValidParallax": 2,
+    "pairParallaxMetrics": {
+      "0_1": {
+        "pair": [
+          0,
+          1
+        ],
+        "inliers": 11,
+        "positiveDepthRatio": 0.818,
+        "medianParallaxDegrees": 11.8,
+        "homographyInlierRatio": 0.727,
+        "hasTranslationalParallax": true
+      },
+      "2_3": {
+        "pair": [
+          2,
+          3
+        ],
+        "inliers": 14,
+        "positiveDepthRatio": 1,
+        "medianParallaxDegrees": 17.47,
+        "homographyInlierRatio": 0.571,
+        "hasTranslationalParallax": true
+      },
+      "3_4": {
+        "pair": [
+          3,
+          4
+        ],
+        "inliers": 8,
+        "positiveDepthRatio": 0.25,
+        "medianParallaxDegrees": 7.13,
+        "homographyInlierRatio": 1.125,
+        "hasTranslationalParallax": false
+      },
+      "4_5": {
+        "pair": [
+          4,
+          5
+        ],
+        "inliers": 9,
+        "positiveDepthRatio": 0.444,
+        "medianParallaxDegrees": 21.27,
+        "homographyInlierRatio": 1,
+        "hasTranslationalParallax": false
+      }
+    },
+    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT",
+    "evaluatorConfig": {
+      "configVersion": "1.0.0",
+      "minMedianParallaxDegrees": 1.2,
+      "minPositiveDepthRatio": 0.55,
+      "maxHomographyInlierRatio": 0.9,
+      "minInlierCount": 15,
+      "maxConnectedViewsCeiling": 64,
+      "maxScaleConsistentTranslationResidual": 0.15,
+      "maxLoopClosureRotationDriftDegrees": 15,
+      "maxLoopClosureRotationDriftFrobenius": 0.5,
+      "minConnectedViewsPositiveRingThreshold": 12,
+      "calibrationAssumption": "ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED"
+    },
+    "evaluatorConfigDigest": "1117e4488c00c9be3b111297ab206f8e9de9c91d74f56518a6066a5de4420b12"
+  },
+  "596245aa7364333980ca0959605482306e975894c4568abe1cc600b3f76321f4": {
+    "success": true,
+    "category": "GEOMETRY_EVALUATED_DATASET",
+    "classification": "INELIGIBLE_INSUFFICIENT_PARALLAX_OR_DISCONNECTED",
+    "classificationReason": "Insufficient matchable parallax or degenerate planar geometry (median parallax: 0.0 deg, connected: 1/4).",
+    "imageCount": 4,
+    "evaluatedViews": 4,
+    "evaluatedFramesCount": 4,
+    "coverageEvaluationMode": "ALL_CANDIDATE_FRAMES_EVALUATED",
+    "evaluatedFileNames": [
+      "3dz_logo.png",
+      "dna_logo.png",
+      "dna_logo_white.png",
+      "smart_card_exhibit.jpg"
+    ],
+    "evaluatedKeyframeIndices": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "sampleDimensions": "1024x1024",
+    "featuresDetected": 297,
+    "crossPairMatches": 0,
+    "connectedViews": 1,
+    "connectedComponentCount": 4,
+    "componentSizes": [
+      1,
+      1,
+      1,
+      1
+    ],
+    "loopClosurePassed": false,
+    "loopClosureResidual": {
+      "status": "RING_INCOMPLETE_LOOP_NOT_FORMED",
+      "closurePassed": false,
+      "measured": {
+        "rotationDriftFrobenius": null,
+        "rotationDriftDegrees": null,
+        "scaleConsistentTranslationResidual": null,
+        "totalTrajectoryPathLength": null,
+        "scaleConsistencyResolved": false
+      },
+      "thresholds": {
+        "maxRotationDriftFrobenius": 0.5,
+        "maxRotationAngleDegrees": 15,
+        "maxScaleConsistentTranslationResidual": 0.15
+      }
+    },
+    "hasRecoverableParallax": false,
+    "globalMedianParallaxDegrees": 0,
+    "pairsWithValidParallax": 0,
+    "pairParallaxMetrics": {},
+    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT",
+    "evaluatorConfig": {
+      "configVersion": "1.0.0",
+      "minMedianParallaxDegrees": 1.2,
+      "minPositiveDepthRatio": 0.55,
+      "maxHomographyInlierRatio": 0.9,
+      "minInlierCount": 15,
+      "maxConnectedViewsCeiling": 64,
+      "maxScaleConsistentTranslationResidual": 0.15,
+      "maxLoopClosureRotationDriftDegrees": 15,
+      "maxLoopClosureRotationDriftFrobenius": 0.5,
+      "minConnectedViewsPositiveRingThreshold": 12,
+      "calibrationAssumption": "ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED"
+    },
+    "evaluatorConfigDigest": "1117e4488c00c9be3b111297ab206f8e9de9c91d74f56518a6066a5de4420b12"
+  },
+  "60ea1acaa47e1110c7eb9bc1929008c0e9cb0a5f84e1fbd306bebd174e745d8c": {
+    "success": true,
+    "category": "GEOMETRY_EVALUATED_DATASET",
+    "classification": "NEGATIVE_PARTIAL_FIXTURE_VERIFIED",
+    "classificationReason": "Partial graph connectivity (2/12 views connected in main component); ring incomplete.",
+    "imageCount": 12,
+    "evaluatedViews": 12,
+    "evaluatedFramesCount": 12,
+    "coverageEvaluationMode": "ALL_CANDIDATE_FRAMES_EVALUATED",
+    "evaluatedFileNames": [
+      "apex_cobot_x16.jpg",
+      "apex_cobot_x16_opt.jpg",
+      "delta_d12.jpg",
+      "delta_d12_opt.jpg",
+      "scara_s8.jpg",
+      "scara_s8_opt.jpg",
+      "vector_amr_600.jpg",
+      "vector_amr_600_opt.jpg",
+      "vip_glass_lounge.jpg",
+      "vip_glass_lounge_opt.jpg",
+      "vision_led_wall.jpg",
+      "vision_led_wall_opt.jpg"
+    ],
+    "evaluatedKeyframeIndices": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11
+    ],
+    "sampleDimensions": "1376x768",
+    "featuresDetected": 763,
+    "crossPairMatches": 59,
+    "connectedViews": 2,
+    "connectedComponentCount": 7,
+    "componentSizes": [
+      2,
+      2,
+      2,
+      2,
+      2,
+      1,
+      1
+    ],
+    "loopClosurePassed": false,
+    "loopClosureResidual": {
+      "status": "RING_INCOMPLETE_LOOP_NOT_FORMED",
+      "closurePassed": false,
+      "measured": {
+        "rotationDriftFrobenius": null,
+        "rotationDriftDegrees": null,
+        "scaleConsistentTranslationResidual": null,
+        "totalTrajectoryPathLength": null,
+        "scaleConsistencyResolved": false
+      },
+      "thresholds": {
+        "maxRotationDriftFrobenius": 0.5,
+        "maxRotationAngleDegrees": 15,
+        "maxScaleConsistentTranslationResidual": 0.15
+      }
+    },
+    "hasRecoverableParallax": true,
+    "globalMedianParallaxDegrees": 12.69,
+    "pairsWithValidParallax": 3,
+    "pairParallaxMetrics": {
+      "1_2": {
+        "pair": [
+          1,
+          2
+        ],
+        "inliers": 7,
+        "positiveDepthRatio": 0.714,
+        "medianParallaxDegrees": 13.61,
+        "homographyInlierRatio": 1.143,
+        "hasTranslationalParallax": false
+      },
+      "5_6": {
+        "pair": [
+          5,
+          6
+        ],
+        "inliers": 9,
+        "positiveDepthRatio": 0,
+        "medianParallaxDegrees": 0,
+        "homographyInlierRatio": 1,
+        "hasTranslationalParallax": false
+      },
+      "7_8": {
+        "pair": [
+          7,
+          8
+        ],
+        "inliers": 16,
+        "positiveDepthRatio": 1,
+        "medianParallaxDegrees": 14.65,
+        "homographyInlierRatio": 0.625,
+        "hasTranslationalParallax": true
+      },
+      "9_10": {
+        "pair": [
+          9,
+          10
+        ],
+        "inliers": 10,
+        "positiveDepthRatio": 1,
+        "medianParallaxDegrees": 11.43,
+        "homographyInlierRatio": 0.7,
+        "hasTranslationalParallax": true
+      },
+      "11_0": {
+        "pair": [
+          11,
+          0
+        ],
+        "inliers": 17,
+        "positiveDepthRatio": 1,
+        "medianParallaxDegrees": 9.92,
+        "homographyInlierRatio": 0.588,
+        "hasTranslationalParallax": true
+      }
+    },
+    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT",
+    "evaluatorConfig": {
+      "configVersion": "1.0.0",
+      "minMedianParallaxDegrees": 1.2,
+      "minPositiveDepthRatio": 0.55,
+      "maxHomographyInlierRatio": 0.9,
+      "minInlierCount": 15,
+      "maxConnectedViewsCeiling": 64,
+      "maxScaleConsistentTranslationResidual": 0.15,
+      "maxLoopClosureRotationDriftDegrees": 15,
+      "maxLoopClosureRotationDriftFrobenius": 0.5,
+      "minConnectedViewsPositiveRingThreshold": 12,
+      "calibrationAssumption": "ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED"
+    },
+    "evaluatorConfigDigest": "1117e4488c00c9be3b111297ab206f8e9de9c91d74f56518a6066a5de4420b12"
+  },
+  "6bb152bdff9716ff6ee77ee8e3b872327db1faa847882ef22ca8f54779c05c22": {
+    "success": true,
+    "category": "GEOMETRY_EVALUATED_DATASET",
+    "classification": "NEGATIVE_PARTIAL_FIXTURE_VERIFIED",
+    "classificationReason": "Partial graph connectivity (5/5 views connected in main component); ring incomplete.",
+    "imageCount": 5,
+    "evaluatedViews": 5,
+    "evaluatedFramesCount": 5,
+    "coverageEvaluationMode": "ALL_CANDIDATE_FRAMES_EVALUATED",
+    "evaluatedFileNames": [
+      "node0_360_panorama_16k.jpg",
+      "node0_360_panorama_4k_opt.jpg",
+      "node0_360_panorama_8k.jpg",
+      "node0_360_panorama_ultra8k.jpg",
+      "node0_preview.jpg"
+    ],
+    "evaluatedKeyframeIndices": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ],
+    "sampleDimensions": "8192x4096",
+    "featuresDetected": 659,
+    "crossPairMatches": 68,
+    "connectedViews": 5,
+    "connectedComponentCount": 1,
+    "componentSizes": [
+      5
+    ],
+    "loopClosurePassed": false,
+    "loopClosureResidual": {
+      "status": "RING_INCOMPLETE_LOOP_NOT_FORMED",
+      "closurePassed": false,
+      "measured": {
+        "rotationDriftFrobenius": null,
+        "rotationDriftDegrees": null,
+        "scaleConsistentTranslationResidual": null,
+        "totalTrajectoryPathLength": null,
+        "scaleConsistencyResolved": false
+      },
+      "thresholds": {
+        "maxRotationDriftFrobenius": 0.5,
+        "maxRotationAngleDegrees": 15,
+        "maxScaleConsistentTranslationResidual": 0.15
+      }
+    },
+    "hasRecoverableParallax": true,
+    "globalMedianParallaxDegrees": 15.9,
+    "pairsWithValidParallax": 3,
+    "pairParallaxMetrics": {
+      "0_1": {
+        "pair": [
+          0,
+          1
+        ],
+        "inliers": 22,
+        "positiveDepthRatio": 0.136,
+        "medianParallaxDegrees": 22.4,
+        "homographyInlierRatio": 0.409,
+        "hasTranslationalParallax": false
+      },
+      "2_3": {
+        "pair": [
+          2,
+          3
+        ],
+        "inliers": 13,
+        "positiveDepthRatio": 1,
+        "medianParallaxDegrees": 2.6,
+        "homographyInlierRatio": 0.769,
+        "hasTranslationalParallax": true
+      },
+      "3_4": {
+        "pair": [
+          3,
+          4
+        ],
+        "inliers": 17,
+        "positiveDepthRatio": 0.647,
+        "medianParallaxDegrees": 16.81,
+        "homographyInlierRatio": 0.588,
+        "hasTranslationalParallax": true
+      },
+      "4_0": {
+        "pair": [
+          4,
+          0
+        ],
+        "inliers": 16,
+        "positiveDepthRatio": 1,
+        "medianParallaxDegrees": 16.11,
+        "homographyInlierRatio": 0.5,
+        "hasTranslationalParallax": true
+      }
+    },
+    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT",
+    "evaluatorConfig": {
+      "configVersion": "1.0.0",
+      "minMedianParallaxDegrees": 1.2,
+      "minPositiveDepthRatio": 0.55,
+      "maxHomographyInlierRatio": 0.9,
+      "minInlierCount": 15,
+      "maxConnectedViewsCeiling": 64,
+      "maxScaleConsistentTranslationResidual": 0.15,
+      "maxLoopClosureRotationDriftDegrees": 15,
+      "maxLoopClosureRotationDriftFrobenius": 0.5,
+      "minConnectedViewsPositiveRingThreshold": 12,
+      "calibrationAssumption": "ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED"
+    },
+    "evaluatorConfigDigest": "1117e4488c00c9be3b111297ab206f8e9de9c91d74f56518a6066a5de4420b12"
+  },
+  "7300baf164507b05649c92770d71309480092158ee092689cb1515375fff06a1": {
+    "success": false,
+    "category": "INSUFFICIENT_METADATA_TO_EVALUATE",
+    "classification": "UNREADABLE_IMAGE_FILES",
+    "classificationReason": "Could not read at least 3 valid image frames",
+    "imageCount": 12,
+    "evaluatorConfig": {
+      "configVersion": "1.0.0",
+      "minMedianParallaxDegrees": 1.2,
+      "minPositiveDepthRatio": 0.55,
+      "maxHomographyInlierRatio": 0.9,
+      "minInlierCount": 15,
+      "maxConnectedViewsCeiling": 64,
+      "maxScaleConsistentTranslationResidual": 0.15,
+      "maxLoopClosureRotationDriftDegrees": 15,
+      "maxLoopClosureRotationDriftFrobenius": 0.5,
+      "minConnectedViewsPositiveRingThreshold": 12,
+      "calibrationAssumption": "ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED"
+    },
+    "evaluatorConfigDigest": "1117e4488c00c9be3b111297ab206f8e9de9c91d74f56518a6066a5de4420b12"
+  },
+  "730b7894b8282f4e1d49b12412229b9da01b21d265df3c93856874deead32d2c": {
+    "success": true,
+    "category": "GEOMETRY_EVALUATED_DATASET",
+    "classification": "INELIGIBLE_INSUFFICIENT_PARALLAX_OR_DISCONNECTED",
+    "classificationReason": "Insufficient matchable parallax or degenerate planar geometry (median parallax: 29.1 deg, connected: 5/12).",
+    "imageCount": 12,
+    "evaluatedViews": 12,
+    "evaluatedFramesCount": 12,
+    "coverageEvaluationMode": "ALL_CANDIDATE_FRAMES_EVALUATED",
+    "evaluatedFileNames": [
+      "dining_table.jpg",
+      "dining_table_opt.jpg",
+      "leather_sofa.jpg",
+      "leather_sofa_opt.jpg",
+      "linen_sofa.jpg",
+      "linen_sofa_opt.jpg",
+      "lounge_chair.jpg",
+      "lounge_chair_opt.jpg",
+      "nordic_sofa.jpg",
+      "nordic_sofa_opt.jpg",
+      "walnut_chair.jpg",
+      "walnut_chair_opt.jpg"
+    ],
+    "evaluatedKeyframeIndices": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11
+    ],
+    "sampleDimensions": "1024x819",
+    "featuresDetected": 397,
+    "crossPairMatches": 120,
+    "connectedViews": 5,
+    "connectedComponentCount": 7,
+    "componentSizes": [
+      5,
+      2,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "loopClosurePassed": false,
+    "loopClosureResidual": {
+      "status": "RING_INCOMPLETE_LOOP_NOT_FORMED",
+      "closurePassed": false,
+      "measured": {
+        "rotationDriftFrobenius": null,
+        "rotationDriftDegrees": null,
+        "scaleConsistentTranslationResidual": null,
+        "totalTrajectoryPathLength": null,
+        "scaleConsistencyResolved": false
+      },
+      "thresholds": {
+        "maxRotationDriftFrobenius": 0.5,
+        "maxRotationAngleDegrees": 15,
+        "maxScaleConsistentTranslationResidual": 0.15
+      }
+    },
+    "hasRecoverableParallax": false,
+    "globalMedianParallaxDegrees": 29.05,
+    "pairsWithValidParallax": 1,
+    "pairParallaxMetrics": {
+      "0_1": {
+        "pair": [
+          0,
+          1
+        ],
+        "inliers": 67,
+        "positiveDepthRatio": 0,
+        "medianParallaxDegrees": 0,
+        "homographyInlierRatio": 10.582,
+        "hasTranslationalParallax": false
+      },
+      "1_2": {
+        "pair": [
+          1,
+          2
+        ],
+        "inliers": 6,
+        "positiveDepthRatio": 1,
+        "medianParallaxDegrees": 10.87,
+        "homographyInlierRatio": 1.333,
+        "hasTranslationalParallax": false
+      },
+      "2_3": {
+        "pair": [
+          2,
+          3
+        ],
+        "inliers": 32,
+        "positiveDepthRatio": 0,
+        "medianParallaxDegrees": 0,
+        "homographyInlierRatio": 4.344,
+        "hasTranslationalParallax": false
+      },
+      "7_8": {
+        "pair": [
+          7,
+          8
+        ],
+        "inliers": 9,
+        "positiveDepthRatio": 1,
+        "medianParallaxDegrees": 35.98,
+        "homographyInlierRatio": 0.667,
+        "hasTranslationalParallax": true
+      },
+      "11_0": {
+        "pair": [
+          11,
+          0
+        ],
+        "inliers": 6,
+        "positiveDepthRatio": 0.833,
+        "medianParallaxDegrees": 39.24,
+        "homographyInlierRatio": 1.167,
+        "hasTranslationalParallax": false
+      }
+    },
+    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT",
+    "evaluatorConfig": {
+      "configVersion": "1.0.0",
+      "minMedianParallaxDegrees": 1.2,
+      "minPositiveDepthRatio": 0.55,
+      "maxHomographyInlierRatio": 0.9,
+      "minInlierCount": 15,
+      "maxConnectedViewsCeiling": 64,
+      "maxScaleConsistentTranslationResidual": 0.15,
+      "maxLoopClosureRotationDriftDegrees": 15,
+      "maxLoopClosureRotationDriftFrobenius": 0.5,
+      "minConnectedViewsPositiveRingThreshold": 12,
+      "calibrationAssumption": "ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED"
+    },
+    "evaluatorConfigDigest": "1117e4488c00c9be3b111297ab206f8e9de9c91d74f56518a6066a5de4420b12"
+  },
+  "8a3fa13c4a52329cb3253d6612cb0fd432398f771577e668a9dccde9942170ff": {
+    "success": true,
+    "category": "GEOMETRY_EVALUATED_DATASET",
+    "classification": "NEGATIVE_PARTIAL_FIXTURE_VERIFIED",
+    "classificationReason": "Connected views (8/8) but loop closure exceeded tolerance (152.88 deg rotation drift, 0.1887 trans drift).",
+    "imageCount": 8,
+    "evaluatedViews": 8,
+    "evaluatedFramesCount": 8,
+    "coverageEvaluationMode": "ALL_CANDIDATE_FRAMES_EVALUATED",
+    "evaluatedFileNames": [
+      "product_01.jpg",
+      "product_02.jpg",
+      "product_03.jpg",
+      "product_04.jpg",
+      "product_05.jpg",
+      "product_06.jpg",
+      "product_07.jpg",
+      "product_08.jpg"
+    ],
+    "evaluatedKeyframeIndices": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "sampleDimensions": "800x800",
+    "featuresDetected": 820,
+    "crossPairMatches": 107,
+    "connectedViews": 8,
+    "connectedComponentCount": 1,
+    "componentSizes": [
+      8
+    ],
+    "loopClosurePassed": false,
+    "loopClosureResidual": {
+      "status": "LOOP_CLOSURE_FAILED_EXCEEDS_TOLERANCE",
+      "closurePassed": false,
+      "measured": {
+        "rotationDriftFrobenius": 2.7496,
+        "rotationDriftDegrees": 152.88,
+        "scaleConsistentTranslationResidual": 0.1887,
+        "totalTrajectoryPathLength": 8,
+        "scaleConsistencyResolved": true
+      },
+      "thresholds": {
+        "maxRotationDriftFrobenius": 0.5,
+        "maxRotationAngleDegrees": 15,
+        "maxScaleConsistentTranslationResidual": 0.15
+      }
+    },
+    "hasRecoverableParallax": true,
+    "globalMedianParallaxDegrees": 13.61,
+    "pairsWithValidParallax": 7,
+    "pairParallaxMetrics": {
+      "0_1": {
+        "pair": [
+          0,
+          1
+        ],
+        "inliers": 8,
+        "positiveDepthRatio": 1,
+        "medianParallaxDegrees": 6.36,
+        "homographyInlierRatio": 0.875,
+        "hasTranslationalParallax": true
+      },
+      "1_2": {
+        "pair": [
+          1,
+          2
+        ],
+        "inliers": 10,
+        "positiveDepthRatio": 1,
+        "medianParallaxDegrees": 14,
+        "homographyInlierRatio": 0.6,
+        "hasTranslationalParallax": true
+      },
+      "2_3": {
+        "pair": [
+          2,
+          3
+        ],
+        "inliers": 9,
+        "positiveDepthRatio": 1,
+        "medianParallaxDegrees": 7.16,
+        "homographyInlierRatio": 0.667,
+        "hasTranslationalParallax": true
+      },
+      "3_4": {
+        "pair": [
+          3,
+          4
+        ],
+        "inliers": 15,
+        "positiveDepthRatio": 1,
+        "medianParallaxDegrees": 16.03,
+        "homographyInlierRatio": 0.533,
+        "hasTranslationalParallax": true
+      },
+      "4_5": {
+        "pair": [
+          4,
+          5
+        ],
+        "inliers": 16,
+        "positiveDepthRatio": 1,
+        "medianParallaxDegrees": 8.02,
+        "homographyInlierRatio": 0.5,
+        "hasTranslationalParallax": true
+      },
+      "5_6": {
+        "pair": [
+          5,
+          6
+        ],
+        "inliers": 21,
+        "positiveDepthRatio": 1,
+        "medianParallaxDegrees": 26.12,
+        "homographyInlierRatio": 0.333,
+        "hasTranslationalParallax": true
+      },
+      "6_7": {
+        "pair": [
+          6,
+          7
+        ],
+        "inliers": 21,
+        "positiveDepthRatio": 0.286,
+        "medianParallaxDegrees": 18.49,
+        "homographyInlierRatio": 0.381,
+        "hasTranslationalParallax": false
+      },
+      "7_0": {
+        "pair": [
+          7,
+          0
+        ],
+        "inliers": 7,
+        "positiveDepthRatio": 0.571,
+        "medianParallaxDegrees": 20.02,
+        "homographyInlierRatio": 0.571,
+        "hasTranslationalParallax": true
+      }
+    },
+    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT",
+    "evaluatorConfig": {
+      "configVersion": "1.0.0",
+      "minMedianParallaxDegrees": 1.2,
+      "minPositiveDepthRatio": 0.55,
+      "maxHomographyInlierRatio": 0.9,
+      "minInlierCount": 15,
+      "maxConnectedViewsCeiling": 64,
+      "maxScaleConsistentTranslationResidual": 0.15,
+      "maxLoopClosureRotationDriftDegrees": 15,
+      "maxLoopClosureRotationDriftFrobenius": 0.5,
+      "minConnectedViewsPositiveRingThreshold": 12,
+      "calibrationAssumption": "ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED"
+    },
+    "evaluatorConfigDigest": "1117e4488c00c9be3b111297ab206f8e9de9c91d74f56518a6066a5de4420b12"
+  },
+  "974605c5709110d8cbfe6eacb5b10677abc01cef801ba39cb35df9d5f86910e3": {
+    "success": true,
+    "category": "GEOMETRY_EVALUATED_DATASET",
+    "classification": "NEGATIVE_PARTIAL_FIXTURE_VERIFIED",
+    "classificationReason": "Partial graph connectivity (4/14 views connected in main component); ring incomplete.",
+    "imageCount": 14,
+    "evaluatedViews": 14,
+    "evaluatedFramesCount": 14,
+    "coverageEvaluationMode": "ALL_CANDIDATE_FRAMES_EVALUATED",
+    "evaluatedFileNames": [
+      "botanical_cleanser.jpg",
+      "botanical_cleanser_opt.jpg",
+      "cream_lip_stain.jpg",
+      "cream_lip_stain_opt.jpg",
+      "essence_tower.jpg",
+      "essence_tower_opt.jpg",
+      "eyeshadow_palette.jpg",
+      "eyeshadow_palette_opt.jpg",
+      "peptide_cream.jpg",
+      "peptide_cream_opt.jpg",
+      "radiance_serum.jpg",
+      "radiance_serum_opt.jpg",
+      "velvet_lipstick.jpg",
+      "velvet_lipstick_opt.jpg"
+    ],
+    "evaluatedKeyframeIndices": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13
+    ],
+    "sampleDimensions": "819x1024",
+    "featuresDetected": 604,
+    "crossPairMatches": 691,
+    "connectedViews": 4,
+    "connectedComponentCount": 6,
+    "componentSizes": [
+      4,
+      2,
+      2,
+      2,
+      2,
+      2
+    ],
+    "loopClosurePassed": false,
+    "loopClosureResidual": {
+      "status": "RING_INCOMPLETE_LOOP_NOT_FORMED",
+      "closurePassed": false,
+      "measured": {
+        "rotationDriftFrobenius": null,
+        "rotationDriftDegrees": null,
+        "scaleConsistentTranslationResidual": null,
+        "totalTrajectoryPathLength": null,
+        "scaleConsistencyResolved": false
+      },
+      "thresholds": {
+        "maxRotationDriftFrobenius": 0.5,
+        "maxRotationAngleDegrees": 15,
+        "maxScaleConsistentTranslationResidual": 0.15
+      }
+    },
+    "hasRecoverableParallax": true,
+    "globalMedianParallaxDegrees": 18.23,
+    "pairsWithValidParallax": 3,
+    "pairParallaxMetrics": {
+      "1_2": {
+        "pair": [
+          1,
+          2
+        ],
+        "inliers": 11,
+        "positiveDepthRatio": 1,
+        "medianParallaxDegrees": 20.42,
+        "homographyInlierRatio": 0.818,
+        "hasTranslationalParallax": true
+      },
+      "3_4": {
+        "pair": [
+          3,
+          4
+        ],
+        "inliers": 11,
+        "positiveDepthRatio": 0.545,
+        "medianParallaxDegrees": 13.97,
+        "homographyInlierRatio": 0.727,
+        "hasTranslationalParallax": false
+      },
+      "4_5": {
+        "pair": [
+          4,
+          5
+        ],
+        "inliers": 607,
+        "positiveDepthRatio": 0,
+        "medianParallaxDegrees": 0,
+        "homographyInlierRatio": 1.005,
+        "hasTranslationalParallax": false
+      },
+      "5_6": {
+        "pair": [
+          5,
+          6
+        ],
+        "inliers": 12,
+        "positiveDepthRatio": 1,
+        "medianParallaxDegrees": 20.59,
+        "homographyInlierRatio": 0.25,
+        "hasTranslationalParallax": true
+      },
+      "7_8": {
+        "pair": [
+          7,
+          8
+        ],
+        "inliers": 13,
+        "positiveDepthRatio": 1,
+        "medianParallaxDegrees": 27.19,
+        "homographyInlierRatio": 0.538,
+        "hasTranslationalParallax": true
+      },
+      "9_10": {
+        "pair": [
+          9,
+          10
+        ],
+        "inliers": 15,
+        "positiveDepthRatio": 0.467,
+        "medianParallaxDegrees": 11.56,
+        "homographyInlierRatio": 1.133,
+        "hasTranslationalParallax": false
+      },
+      "11_12": {
+        "pair": [
+          11,
+          12
+        ],
+        "inliers": 11,
+        "positiveDepthRatio": 1,
+        "medianParallaxDegrees": 22.02,
+        "homographyInlierRatio": 0.909,
+        "hasTranslationalParallax": false
+      },
+      "13_0": {
+        "pair": [
+          13,
+          0
+        ],
+        "inliers": 11,
+        "positiveDepthRatio": 1,
+        "medianParallaxDegrees": 8.61,
+        "homographyInlierRatio": 1,
+        "hasTranslationalParallax": false
+      }
+    },
+    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT",
+    "evaluatorConfig": {
+      "configVersion": "1.0.0",
+      "minMedianParallaxDegrees": 1.2,
+      "minPositiveDepthRatio": 0.55,
+      "maxHomographyInlierRatio": 0.9,
+      "minInlierCount": 15,
+      "maxConnectedViewsCeiling": 64,
+      "maxScaleConsistentTranslationResidual": 0.15,
+      "maxLoopClosureRotationDriftDegrees": 15,
+      "maxLoopClosureRotationDriftFrobenius": 0.5,
+      "minConnectedViewsPositiveRingThreshold": 12,
+      "calibrationAssumption": "ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED"
+    },
+    "evaluatorConfigDigest": "1117e4488c00c9be3b111297ab206f8e9de9c91d74f56518a6066a5de4420b12"
+  },
+  "983ec1e080abd7ae6006527caaafb4b85842995e9543a9c988563fc8138310ed": {
+    "success": true,
+    "category": "GEOMETRY_EVALUATED_DATASET",
+    "classification": "NEGATIVE_PARTIAL_FIXTURE_VERIFIED",
+    "classificationReason": "Connected views (24/24) but loop closure exceeded tolerance (95.18 deg rotation drift, 0.1623 trans drift).",
+    "imageCount": 24,
+    "evaluatedViews": 24,
+    "evaluatedFramesCount": 24,
+    "coverageEvaluationMode": "ALL_CANDIDATE_FRAMES_EVALUATED",
+    "evaluatedFileNames": [
+      "01_front_hero.jpg",
+      "02_front_center.jpg",
+      "03_left_angle.jpg",
+      "04_right_angle.jpg",
+      "05_left_side.jpg",
+      "06_right_side.jpg",
+      "07_interior_view.jpg",
+      "08_product_island.jpg",
+      "09_meeting_area.jpg",
+      "10_display_screen.jpg",
+      "11_overhead_sign.jpg",
+      "12_wide_overview.jpg",
+      "view_01.jpg",
+      "view_02.jpg",
+      "view_03.jpg",
+      "view_04.jpg",
+      "view_05.jpg",
+      "view_06.jpg",
+      "view_07.jpg",
+      "view_08.jpg",
+      "view_09.jpg",
+      "view_10.jpg",
+      "view_11.jpg",
+      "view_12.jpg"
+    ],
+    "evaluatedKeyframeIndices": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23
+    ],
+    "sampleDimensions": "1024x1024",
+    "featuresDetected": 935,
+    "crossPairMatches": 512,
+    "connectedViews": 24,
+    "connectedComponentCount": 1,
+    "componentSizes": [
+      24
+    ],
+    "loopClosurePassed": false,
+    "loopClosureResidual": {
+      "status": "LOOP_CLOSURE_FAILED_EXCEEDS_TOLERANCE",
+      "closurePassed": false,
+      "measured": {
+        "rotationDriftFrobenius": 2.0883,
+        "rotationDriftDegrees": 95.18,
+        "scaleConsistentTranslationResidual": 0.1623,
+        "totalTrajectoryPathLength": 24,
+        "scaleConsistencyResolved": true
+      },
+      "thresholds": {
+        "maxRotationDriftFrobenius": 0.5,
+        "maxRotationAngleDegrees": 15,
+        "maxScaleConsistentTranslationResidual": 0.15
+      }
+    },
+    "hasRecoverableParallax": true,
+    "globalMedianParallaxDegrees": 13.65,
+    "pairsWithValidParallax": 8,
+    "pairParallaxMetrics": {
+      "0_1": {
+        "pair": [
+          0,
+          1
+        ],
+        "inliers": 77,
+        "positiveDepthRatio": 0.013,
+        "medianParallaxDegrees": 30.11,
+        "homographyInlierRatio": 1.273,
+        "hasTranslationalParallax": false
+      },
+      "1_2": {
+        "pair": [
+          1,
+          2
+        ],
+        "inliers": 34,
+        "positiveDepthRatio": 0,
+        "medianParallaxDegrees": 0,
+        "homographyInlierRatio": 0.5,
+        "hasTranslationalParallax": false
+      },
+      "2_3": {
+        "pair": [
+          2,
+          3
+        ],
+        "inliers": 16,
+        "positiveDepthRatio": 0.375,
+        "medianParallaxDegrees": 18.65,
+        "homographyInlierRatio": 0.625,
+        "hasTranslationalParallax": false
+      },
+      "3_4": {
+        "pair": [
+          3,
+          4
+        ],
+        "inliers": 35,
+        "positiveDepthRatio": 0.771,
+        "medianParallaxDegrees": 4.7,
+        "homographyInlierRatio": 0.314,
+        "hasTranslationalParallax": true
+      },
+      "4_5": {
+        "pair": [
+          4,
+          5
+        ],
+        "inliers": 12,
+        "positiveDepthRatio": 0,
+        "medianParallaxDegrees": 0,
+        "homographyInlierRatio": 0.583,
+        "hasTranslationalParallax": false
+      },
+      "5_6": {
+        "pair": [
+          5,
+          6
+        ],
+        "inliers": 13,
+        "positiveDepthRatio": 0,
+        "medianParallaxDegrees": 0,
+        "homographyInlierRatio": 0.846,
+        "hasTranslationalParallax": false
+      },
+      "6_7": {
+        "pair": [
+          6,
+          7
+        ],
+        "inliers": 15,
+        "positiveDepthRatio": 1,
+        "medianParallaxDegrees": 16.13,
+        "homographyInlierRatio": 0.6,
+        "hasTranslationalParallax": true
+      },
+      "7_8": {
+        "pair": [
+          7,
+          8
+        ],
+        "inliers": 10,
+        "positiveDepthRatio": 0.1,
+        "medianParallaxDegrees": 11.14,
+        "homographyInlierRatio": 1.1,
+        "hasTranslationalParallax": false
+      },
+      "8_9": {
+        "pair": [
+          8,
+          9
+        ],
+        "inliers": 8,
+        "positiveDepthRatio": 0.125,
+        "medianParallaxDegrees": 17.56,
+        "homographyInlierRatio": 1,
+        "hasTranslationalParallax": false
+      },
+      "9_10": {
+        "pair": [
+          9,
+          10
+        ],
+        "inliers": 14,
+        "positiveDepthRatio": 0.143,
+        "medianParallaxDegrees": 8.4,
+        "homographyInlierRatio": 0.357,
+        "hasTranslationalParallax": false
+      },
+      "10_11": {
+        "pair": [
+          10,
+          11
+        ],
+        "inliers": 14,
+        "positiveDepthRatio": 1,
+        "medianParallaxDegrees": 15.54,
+        "homographyInlierRatio": 0.571,
+        "hasTranslationalParallax": true
+      },
+      "11_12": {
+        "pair": [
+          11,
+          12
+        ],
+        "inliers": 8,
+        "positiveDepthRatio": 0.75,
+        "medianParallaxDegrees": 8.85,
+        "homographyInlierRatio": 0.875,
+        "hasTranslationalParallax": true
+      },
+      "12_13": {
+        "pair": [
+          12,
+          13
+        ],
+        "inliers": 77,
+        "positiveDepthRatio": 0.013,
+        "medianParallaxDegrees": 30.11,
+        "homographyInlierRatio": 1.273,
+        "hasTranslationalParallax": false
+      },
+      "13_14": {
+        "pair": [
+          13,
+          14
+        ],
+        "inliers": 34,
+        "positiveDepthRatio": 0,
+        "medianParallaxDegrees": 0,
+        "homographyInlierRatio": 0.5,
+        "hasTranslationalParallax": false
+      },
+      "14_15": {
+        "pair": [
+          14,
+          15
+        ],
+        "inliers": 16,
+        "positiveDepthRatio": 0.375,
+        "medianParallaxDegrees": 18.65,
+        "homographyInlierRatio": 0.625,
+        "hasTranslationalParallax": false
+      },
+      "15_16": {
+        "pair": [
+          15,
+          16
+        ],
+        "inliers": 35,
+        "positiveDepthRatio": 0.771,
+        "medianParallaxDegrees": 4.7,
+        "homographyInlierRatio": 0.314,
+        "hasTranslationalParallax": true
+      },
+      "16_17": {
+        "pair": [
+          16,
+          17
+        ],
+        "inliers": 12,
+        "positiveDepthRatio": 0,
+        "medianParallaxDegrees": 0,
+        "homographyInlierRatio": 0.583,
+        "hasTranslationalParallax": false
+      },
+      "17_18": {
+        "pair": [
+          17,
+          18
+        ],
+        "inliers": 13,
+        "positiveDepthRatio": 0,
+        "medianParallaxDegrees": 0,
+        "homographyInlierRatio": 0.846,
+        "hasTranslationalParallax": false
+      },
+      "18_19": {
+        "pair": [
+          18,
+          19
+        ],
+        "inliers": 15,
+        "positiveDepthRatio": 1,
+        "medianParallaxDegrees": 16.13,
+        "homographyInlierRatio": 0.6,
+        "hasTranslationalParallax": true
+      },
+      "19_20": {
+        "pair": [
+          19,
+          20
+        ],
+        "inliers": 10,
+        "positiveDepthRatio": 0.1,
+        "medianParallaxDegrees": 11.14,
+        "homographyInlierRatio": 1.1,
+        "hasTranslationalParallax": false
+      },
+      "20_21": {
+        "pair": [
+          20,
+          21
+        ],
+        "inliers": 8,
+        "positiveDepthRatio": 0.125,
+        "medianParallaxDegrees": 17.56,
+        "homographyInlierRatio": 1,
+        "hasTranslationalParallax": false
+      },
+      "21_22": {
+        "pair": [
+          21,
+          22
+        ],
+        "inliers": 14,
+        "positiveDepthRatio": 0.143,
+        "medianParallaxDegrees": 8.4,
+        "homographyInlierRatio": 0.357,
+        "hasTranslationalParallax": false
+      },
+      "22_23": {
+        "pair": [
+          22,
+          23
+        ],
+        "inliers": 14,
+        "positiveDepthRatio": 1,
+        "medianParallaxDegrees": 15.54,
+        "homographyInlierRatio": 0.571,
+        "hasTranslationalParallax": true
+      },
+      "23_0": {
+        "pair": [
+          23,
+          0
+        ],
+        "inliers": 8,
+        "positiveDepthRatio": 0.75,
+        "medianParallaxDegrees": 8.85,
+        "homographyInlierRatio": 0.875,
+        "hasTranslationalParallax": true
+      }
+    },
+    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT",
+    "evaluatorConfig": {
+      "configVersion": "1.0.0",
+      "minMedianParallaxDegrees": 1.2,
+      "minPositiveDepthRatio": 0.55,
+      "maxHomographyInlierRatio": 0.9,
+      "minInlierCount": 15,
+      "maxConnectedViewsCeiling": 64,
+      "maxScaleConsistentTranslationResidual": 0.15,
+      "maxLoopClosureRotationDriftDegrees": 15,
+      "maxLoopClosureRotationDriftFrobenius": 0.5,
+      "minConnectedViewsPositiveRingThreshold": 12,
+      "calibrationAssumption": "ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED"
+    },
+    "evaluatorConfigDigest": "1117e4488c00c9be3b111297ab206f8e9de9c91d74f56518a6066a5de4420b12"
+  },
+  "a40db2fac83a898a7264a60ee3038c55f7ac341e565cf78f4683fe2eaf6814e2": {
+    "success": true,
+    "category": "INSUFFICIENT_RESOLUTION_OR_KEYFRAME",
+    "classification": "INSUFFICIENT_RESOLUTION_OR_KEYFRAME",
+    "classificationReason": "Low resolution (3072x256 < 512x512) or ephemeral keyframes",
+    "imageCount": 141,
+    "sampleDimensions": "3072x256",
+    "coverageEvaluationMode": "KEYFRAME_RING_SAMPLED",
+    "evaluatedFramesCount": 63,
+    "evaluatorConfig": {
+      "configVersion": "1.0.0",
+      "minMedianParallaxDegrees": 1.2,
+      "minPositiveDepthRatio": 0.55,
+      "maxHomographyInlierRatio": 0.9,
+      "minInlierCount": 15,
+      "maxConnectedViewsCeiling": 64,
+      "maxScaleConsistentTranslationResidual": 0.15,
+      "maxLoopClosureRotationDriftDegrees": 15,
+      "maxLoopClosureRotationDriftFrobenius": 0.5,
+      "minConnectedViewsPositiveRingThreshold": 12,
+      "calibrationAssumption": "ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED"
+    },
+    "evaluatorConfigDigest": "1117e4488c00c9be3b111297ab206f8e9de9c91d74f56518a6066a5de4420b12"
+  },
+  "a60a851383afeb8f74f2f0d85d15cdde2cc518b93fa1a7e225865a1a0ff87767": {
+    "success": true,
+    "category": "GEOMETRY_EVALUATED_DATASET",
+    "classification": "NEGATIVE_PARTIAL_FIXTURE_VERIFIED",
+    "classificationReason": "Partial graph connectivity (3/6 views connected in main component); ring incomplete.",
+    "imageCount": 6,
+    "evaluatedViews": 6,
+    "evaluatedFramesCount": 6,
+    "coverageEvaluationMode": "ALL_CANDIDATE_FRAMES_EVALUATED",
+    "evaluatedFileNames": [
+      "3d2r-capture-guide.png",
+      "3d2r-landing-bg-45.jpg",
+      "3d2r-logo-package45.png",
+      "3d2r-logo.png",
+      "3dna-logo.png",
+      "product-placeholder.jpg"
+    ],
+    "evaluatedKeyframeIndices": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "sampleDimensions": "941x1430",
+    "featuresDetected": 342,
+    "crossPairMatches": 23,
+    "connectedViews": 3,
+    "connectedComponentCount": 4,
+    "componentSizes": [
+      3,
+      1,
+      1,
+      1
+    ],
+    "loopClosurePassed": false,
+    "loopClosureResidual": {
+      "status": "RING_INCOMPLETE_LOOP_NOT_FORMED",
+      "closurePassed": false,
+      "measured": {
+        "rotationDriftFrobenius": null,
+        "rotationDriftDegrees": null,
+        "scaleConsistentTranslationResidual": null,
+        "totalTrajectoryPathLength": null,
+        "scaleConsistencyResolved": false
+      },
+      "thresholds": {
+        "maxRotationDriftFrobenius": 0.5,
+        "maxRotationAngleDegrees": 15,
+        "maxScaleConsistentTranslationResidual": 0.15
+      }
+    },
+    "hasRecoverableParallax": true,
+    "globalMedianParallaxDegrees": 37.59,
+    "pairsWithValidParallax": 2,
+    "pairParallaxMetrics": {
+      "0_1": {
+        "pair": [
+          0,
+          1
+        ],
+        "inliers": 14,
+        "positiveDepthRatio": 0.571,
+        "medianParallaxDegrees": 39.35,
+        "homographyInlierRatio": 0.643,
+        "hasTranslationalParallax": true
+      },
+      "5_0": {
+        "pair": [
+          5,
+          0
+        ],
+        "inliers": 9,
+        "positiveDepthRatio": 0.556,
+        "medianParallaxDegrees": 37.59,
+        "homographyInlierRatio": 0.667,
+        "hasTranslationalParallax": true
+      }
+    },
+    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT",
+    "evaluatorConfig": {
+      "configVersion": "1.0.0",
+      "minMedianParallaxDegrees": 1.2,
+      "minPositiveDepthRatio": 0.55,
+      "maxHomographyInlierRatio": 0.9,
+      "minInlierCount": 15,
+      "maxConnectedViewsCeiling": 64,
+      "maxScaleConsistentTranslationResidual": 0.15,
+      "maxLoopClosureRotationDriftDegrees": 15,
+      "maxLoopClosureRotationDriftFrobenius": 0.5,
+      "minConnectedViewsPositiveRingThreshold": 12,
+      "calibrationAssumption": "ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED"
+    },
+    "evaluatorConfigDigest": "1117e4488c00c9be3b111297ab206f8e9de9c91d74f56518a6066a5de4420b12"
+  },
+  "b48a2c8c0db9f373b719bb467a6068e43c7c05f431a1f3fb8aae4549c6310847": {
+    "success": false,
+    "category": "INSUFFICIENT_METADATA_TO_EVALUATE",
+    "classification": "UNREADABLE_IMAGE_FILES",
+    "classificationReason": "Could not read at least 3 valid image frames",
+    "imageCount": 12,
+    "evaluatorConfig": {
+      "configVersion": "1.0.0",
+      "minMedianParallaxDegrees": 1.2,
+      "minPositiveDepthRatio": 0.55,
+      "maxHomographyInlierRatio": 0.9,
+      "minInlierCount": 15,
+      "maxConnectedViewsCeiling": 64,
+      "maxScaleConsistentTranslationResidual": 0.15,
+      "maxLoopClosureRotationDriftDegrees": 15,
+      "maxLoopClosureRotationDriftFrobenius": 0.5,
+      "minConnectedViewsPositiveRingThreshold": 12,
+      "calibrationAssumption": "ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED"
+    },
+    "evaluatorConfigDigest": "1117e4488c00c9be3b111297ab206f8e9de9c91d74f56518a6066a5de4420b12"
+  },
+  "b543df737b163f3b4bc2c700921901093ba3f37be917cd1262a2d58b9142ac63": {
+    "success": true,
+    "category": "GEOMETRY_EVALUATED_DATASET",
+    "classification": "INELIGIBLE_INSUFFICIENT_PARALLAX_OR_DISCONNECTED",
+    "classificationReason": "Insufficient matchable parallax or degenerate planar geometry (median parallax: 0.0 deg, connected: 3/3).",
+    "imageCount": 3,
+    "evaluatedViews": 3,
+    "evaluatedFramesCount": 3,
+    "coverageEvaluationMode": "ALL_CANDIDATE_FRAMES_EVALUATED",
+    "evaluatedFileNames": [
+      "node0_entrance_8k.jpg",
+      "node1_cobots_8k.jpg",
+      "node2_amr_8k.jpg"
+    ],
+    "evaluatedKeyframeIndices": [
+      0,
+      1,
+      2
+    ],
+    "sampleDimensions": "1376x768",
+    "featuresDetected": 801,
+    "crossPairMatches": 136,
+    "connectedViews": 3,
+    "connectedComponentCount": 1,
+    "componentSizes": [
+      3
+    ],
+    "loopClosurePassed": false,
+    "loopClosureResidual": {
+      "status": "RING_INCOMPLETE_LOOP_NOT_FORMED",
+      "closurePassed": false,
+      "measured": {
+        "rotationDriftFrobenius": null,
+        "rotationDriftDegrees": null,
+        "scaleConsistentTranslationResidual": null,
+        "totalTrajectoryPathLength": null,
+        "scaleConsistencyResolved": false
+      },
+      "thresholds": {
+        "maxRotationDriftFrobenius": 0.5,
+        "maxRotationAngleDegrees": 15,
+        "maxScaleConsistentTranslationResidual": 0.15
+      }
+    },
+    "hasRecoverableParallax": false,
+    "globalMedianParallaxDegrees": 0,
+    "pairsWithValidParallax": 0,
+    "pairParallaxMetrics": {
+      "1_2": {
+        "pair": [
+          1,
+          2
+        ],
+        "inliers": 59,
+        "positiveDepthRatio": 0,
+        "medianParallaxDegrees": 0,
+        "homographyInlierRatio": 2.831,
+        "hasTranslationalParallax": false
+      },
+      "2_0": {
+        "pair": [
+          2,
+          0
+        ],
+        "inliers": 77,
+        "positiveDepthRatio": 0,
+        "medianParallaxDegrees": 0,
+        "homographyInlierRatio": 5.169,
+        "hasTranslationalParallax": false
+      }
+    },
+    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT",
+    "evaluatorConfig": {
+      "configVersion": "1.0.0",
+      "minMedianParallaxDegrees": 1.2,
+      "minPositiveDepthRatio": 0.55,
+      "maxHomographyInlierRatio": 0.9,
+      "minInlierCount": 15,
+      "maxConnectedViewsCeiling": 64,
+      "maxScaleConsistentTranslationResidual": 0.15,
+      "maxLoopClosureRotationDriftDegrees": 15,
+      "maxLoopClosureRotationDriftFrobenius": 0.5,
+      "minConnectedViewsPositiveRingThreshold": 12,
+      "calibrationAssumption": "ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED"
+    },
+    "evaluatorConfigDigest": "1117e4488c00c9be3b111297ab206f8e9de9c91d74f56518a6066a5de4420b12"
+  },
+  "bd044770275c83d719ccc6e08c6b45f7fcf7b3a4e5a97f821420c3163bcf6900": {
+    "success": false,
+    "category": "INSUFFICIENT_METADATA_TO_EVALUATE",
+    "classification": "UNREADABLE_IMAGE_FILES",
+    "classificationReason": "Could not read at least 3 valid image frames",
+    "imageCount": 12,
+    "evaluatorConfig": {
+      "configVersion": "1.0.0",
+      "minMedianParallaxDegrees": 1.2,
+      "minPositiveDepthRatio": 0.55,
+      "maxHomographyInlierRatio": 0.9,
+      "minInlierCount": 15,
+      "maxConnectedViewsCeiling": 64,
+      "maxScaleConsistentTranslationResidual": 0.15,
+      "maxLoopClosureRotationDriftDegrees": 15,
+      "maxLoopClosureRotationDriftFrobenius": 0.5,
+      "minConnectedViewsPositiveRingThreshold": 12,
+      "calibrationAssumption": "ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED"
+    },
+    "evaluatorConfigDigest": "1117e4488c00c9be3b111297ab206f8e9de9c91d74f56518a6066a5de4420b12"
+  },
+  "c9591255de30cb4d11301f3a2b0289d86ecb41c2a28c0e669104badef7719dde": {
+    "success": true,
+    "category": "GEOMETRY_EVALUATED_DATASET",
+    "classification": "NEGATIVE_PARTIAL_FIXTURE_VERIFIED",
+    "classificationReason": "Connected views (31/31) but loop closure exceeded tolerance (166.2 deg rotation drift, 0.1263 trans drift).",
+    "imageCount": 31,
+    "evaluatedViews": 31,
+    "evaluatedFramesCount": 31,
+    "coverageEvaluationMode": "ALL_CANDIDATE_FRAMES_EVALUATED",
+    "evaluatedFileNames": [
+      "angle_6ft_01.jpg",
+      "angle_6ft_02.jpg",
+      "angle_6ft_03.jpg",
+      "angle_6ft_04.jpg",
+      "angle_6ft_05.jpg",
+      "angle_6ft_06.jpg",
+      "angle_6ft_07.jpg",
+      "angle_6ft_08.jpg",
+      "angle_6ft_09.jpg",
+      "angle_6ft_10.jpg",
+      "angle_eye_01.jpg",
+      "angle_eye_02.jpg",
+      "angle_eye_03.jpg",
+      "angle_eye_04.jpg",
+      "angle_eye_05.jpg",
+      "angle_eye_06.jpg",
+      "angle_eye_07.jpg",
+      "angle_eye_08.jpg",
+      "angle_eye_09.jpg",
+      "angle_eye_10.jpg",
+      "angle_floor_01.jpg",
+      "angle_floor_02.jpg",
+      "angle_floor_03.jpg",
+      "angle_floor_04.jpg",
+      "angle_floor_05.jpg",
+      "angle_floor_06.jpg",
+      "angle_floor_07.jpg",
+      "angle_floor_08.jpg",
+      "angle_floor_09.jpg",
+      "angle_floor_10.jpg",
+      "grid_contact_sheet.jpg"
+    ],
+    "evaluatedKeyframeIndices": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30
+    ],
+    "sampleDimensions": "1024x682",
+    "featuresDetected": 752,
+    "crossPairMatches": 1438,
+    "connectedViews": 31,
+    "connectedComponentCount": 1,
+    "componentSizes": [
+      31
+    ],
+    "loopClosurePassed": false,
+    "loopClosureResidual": {
+      "status": "LOOP_CLOSURE_FAILED_EXCEEDS_TOLERANCE",
+      "closurePassed": false,
+      "measured": {
+        "rotationDriftFrobenius": 2.8079,
+        "rotationDriftDegrees": 166.2,
+        "scaleConsistentTranslationResidual": 0.1263,
+        "totalTrajectoryPathLength": 27.5672,
+        "scaleConsistencyResolved": true
+      },
+      "thresholds": {
+        "maxRotationDriftFrobenius": 0.5,
+        "maxRotationAngleDegrees": 15,
+        "maxScaleConsistentTranslationResidual": 0.15
+      }
+    },
+    "hasRecoverableParallax": true,
+    "globalMedianParallaxDegrees": 6.52,
+    "pairsWithValidParallax": 13,
+    "pairParallaxMetrics": {
+      "0_1": {
+        "pair": [
+          0,
+          1
+        ],
+        "inliers": 24,
+        "positiveDepthRatio": 1,
+        "medianParallaxDegrees": 15.43,
+        "homographyInlierRatio": 0.333,
+        "hasTranslationalParallax": true
+      },
+      "1_2": {
+        "pair": [
+          1,
+          2
+        ],
+        "inliers": 77,
+        "positiveDepthRatio": 0.468,
+        "medianParallaxDegrees": 7.18,
+        "homographyInlierRatio": 0.13,
+        "hasTranslationalParallax": false
+      },
+      "2_3": {
+        "pair": [
+          2,
+          3
+        ],
+        "inliers": 58,
+        "positiveDepthRatio": 0,
+        "medianParallaxDegrees": 0,
+        "homographyInlierRatio": 0.707,
+        "hasTranslationalParallax": false
+      },
+      "3_4": {
+        "pair": [
+          3,
+          4
+        ],
+        "inliers": 36,
+        "positiveDepthRatio": 0.889,
+        "medianParallaxDegrees": 3.29,
+        "homographyInlierRatio": 0.444,
+        "hasTranslationalParallax": true
+      },
+      "4_5": {
+        "pair": [
+          4,
+          5
+        ],
+        "inliers": 58,
+        "positiveDepthRatio": 0,
+        "medianParallaxDegrees": 0,
+        "homographyInlierRatio": 0.466,
+        "hasTranslationalParallax": false
+      },
+      "5_6": {
+        "pair": [
+          5,
+          6
+        ],
+        "inliers": 56,
+        "positiveDepthRatio": 0,
+        "medianParallaxDegrees": 0,
+        "homographyInlierRatio": 0.661,
+        "hasTranslationalParallax": false
+      },
+      "6_7": {
+        "pair": [
+          6,
+          7
+        ],
+        "inliers": 45,
+        "positiveDepthRatio": 0.933,
+        "medianParallaxDegrees": 5.81,
+        "homographyInlierRatio": 0.6,
+        "hasTranslationalParallax": true
+      },
+      "7_8": {
+        "pair": [
+          7,
+          8
+        ],
+        "inliers": 48,
+        "positiveDepthRatio": 0.042,
+        "medianParallaxDegrees": 33.43,
+        "homographyInlierRatio": 0.896,
+        "hasTranslationalParallax": false
+      },
+      "8_9": {
+        "pair": [
+          8,
+          9
+        ],
+        "inliers": 30,
+        "positiveDepthRatio": 1,
+        "medianParallaxDegrees": 18.69,
+        "homographyInlierRatio": 0.333,
+        "hasTranslationalParallax": true
+      },
+      "9_10": {
+        "pair": [
+          9,
+          10
+        ],
+        "inliers": 14,
+        "positiveDepthRatio": 1,
+        "medianParallaxDegrees": 22.8,
+        "homographyInlierRatio": 0.5,
+        "hasTranslationalParallax": true
+      },
+      "10_11": {
+        "pair": [
+          10,
+          11
+        ],
+        "inliers": 17,
+        "positiveDepthRatio": 0.059,
+        "medianParallaxDegrees": 41.69,
+        "homographyInlierRatio": 0.588,
+        "hasTranslationalParallax": false
+      },
+      "11_12": {
+        "pair": [
+          11,
+          12
+        ],
+        "inliers": 99,
+        "positiveDepthRatio": 0.717,
+        "medianParallaxDegrees": 5.44,
+        "homographyInlierRatio": 0.222,
+        "hasTranslationalParallax": true
+      },
+      "12_13": {
+        "pair": [
+          12,
+          13
+        ],
+        "inliers": 73,
+        "positiveDepthRatio": 0.753,
+        "medianParallaxDegrees": 5.92,
+        "homographyInlierRatio": 0.603,
+        "hasTranslationalParallax": true
+      },
+      "13_14": {
+        "pair": [
+          13,
+          14
+        ],
+        "inliers": 39,
+        "positiveDepthRatio": 0,
+        "medianParallaxDegrees": 0,
+        "homographyInlierRatio": 0.641,
+        "hasTranslationalParallax": false
+      },
+      "14_15": {
+        "pair": [
+          14,
+          15
+        ],
+        "inliers": 61,
+        "positiveDepthRatio": 0.984,
+        "medianParallaxDegrees": 10.14,
+        "homographyInlierRatio": 0.557,
+        "hasTranslationalParallax": true
+      },
+      "15_16": {
+        "pair": [
+          15,
+          16
+        ],
+        "inliers": 53,
+        "positiveDepthRatio": 0,
+        "medianParallaxDegrees": 0,
+        "homographyInlierRatio": 0.698,
+        "hasTranslationalParallax": false
+      },
+      "16_17": {
+        "pair": [
+          16,
+          17
+        ],
+        "inliers": 49,
+        "positiveDepthRatio": 1,
+        "medianParallaxDegrees": 6.65,
+        "homographyInlierRatio": 0.449,
+        "hasTranslationalParallax": true
+      },
+      "17_18": {
+        "pair": [
+          17,
+          18
+        ],
+        "inliers": 82,
+        "positiveDepthRatio": 0.024,
+        "medianParallaxDegrees": 24.16,
+        "homographyInlierRatio": 0.72,
+        "hasTranslationalParallax": false
+      },
+      "18_19": {
+        "pair": [
+          18,
+          19
+        ],
+        "inliers": 26,
+        "positiveDepthRatio": 1,
+        "medianParallaxDegrees": 11.15,
+        "homographyInlierRatio": 0.346,
+        "hasTranslationalParallax": true
+      },
+      "19_20": {
+        "pair": [
+          19,
+          20
+        ],
+        "inliers": 17,
+        "positiveDepthRatio": 0.471,
+        "medianParallaxDegrees": 30.45,
+        "homographyInlierRatio": 0.529,
+        "hasTranslationalParallax": false
+      },
+      "20_21": {
+        "pair": [
+          20,
+          21
+        ],
+        "inliers": 18,
+        "positiveDepthRatio": 0.333,
+        "medianParallaxDegrees": 26.52,
+        "homographyInlierRatio": 0.444,
+        "hasTranslationalParallax": false
+      },
+      "21_22": {
+        "pair": [
+          21,
+          22
+        ],
+        "inliers": 80,
+        "positiveDepthRatio": 0.887,
+        "medianParallaxDegrees": 5.01,
+        "homographyInlierRatio": 0.338,
+        "hasTranslationalParallax": true
+      },
+      "22_23": {
+        "pair": [
+          22,
+          23
+        ],
+        "inliers": 84,
+        "positiveDepthRatio": 0.119,
+        "medianParallaxDegrees": 26.35,
+        "homographyInlierRatio": 0.667,
+        "hasTranslationalParallax": false
+      },
+      "23_24": {
+        "pair": [
+          23,
+          24
+        ],
+        "inliers": 62,
+        "positiveDepthRatio": 0.935,
+        "medianParallaxDegrees": 1.7,
+        "homographyInlierRatio": 0.581,
+        "hasTranslationalParallax": true
+      },
+      "24_25": {
+        "pair": [
+          24,
+          25
+        ],
+        "inliers": 67,
+        "positiveDepthRatio": 0,
+        "medianParallaxDegrees": 0,
+        "homographyInlierRatio": 0.672,
+        "hasTranslationalParallax": false
+      },
+      "25_26": {
+        "pair": [
+          25,
+          26
+        ],
+        "inliers": 68,
+        "positiveDepthRatio": 0.059,
+        "medianParallaxDegrees": 28.96,
+        "homographyInlierRatio": 0.647,
+        "hasTranslationalParallax": false
+      },
+      "26_27": {
+        "pair": [
+          26,
+          27
+        ],
+        "inliers": 20,
+        "positiveDepthRatio": 0.1,
+        "medianParallaxDegrees": 14.92,
+        "homographyInlierRatio": 1,
+        "hasTranslationalParallax": false
+      },
+      "27_28": {
+        "pair": [
+          27,
+          28
+        ],
+        "inliers": 45,
+        "positiveDepthRatio": 0,
+        "medianParallaxDegrees": 0,
+        "homographyInlierRatio": 1.511,
+        "hasTranslationalParallax": false
+      },
+      "28_29": {
+        "pair": [
+          28,
+          29
+        ],
+        "inliers": 16,
+        "positiveDepthRatio": 0.562,
+        "medianParallaxDegrees": 7.56,
+        "homographyInlierRatio": 0.625,
+        "hasTranslationalParallax": true
+      },
+      "29_30": {
+        "pair": [
+          29,
+          30
+        ],
+        "inliers": 8,
+        "positiveDepthRatio": 0.25,
+        "medianParallaxDegrees": 22.67,
+        "homographyInlierRatio": 1,
+        "hasTranslationalParallax": false
+      },
+      "30_0": {
+        "pair": [
+          30,
+          0
+        ],
+        "inliers": 8,
+        "positiveDepthRatio": 0,
+        "medianParallaxDegrees": 0,
+        "homographyInlierRatio": 0.875,
+        "hasTranslationalParallax": false
+      }
+    },
+    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT",
+    "evaluatorConfig": {
+      "configVersion": "1.0.0",
+      "minMedianParallaxDegrees": 1.2,
+      "minPositiveDepthRatio": 0.55,
+      "maxHomographyInlierRatio": 0.9,
+      "minInlierCount": 15,
+      "maxConnectedViewsCeiling": 64,
+      "maxScaleConsistentTranslationResidual": 0.15,
+      "maxLoopClosureRotationDriftDegrees": 15,
+      "maxLoopClosureRotationDriftFrobenius": 0.5,
+      "minConnectedViewsPositiveRingThreshold": 12,
+      "calibrationAssumption": "ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED"
+    },
+    "evaluatorConfigDigest": "1117e4488c00c9be3b111297ab206f8e9de9c91d74f56518a6066a5de4420b12"
+  },
+  "d7864baec5b7a7ccff3f6ca50a0a588962b498440737dbe4032dbd5dd7231a3d": {
+    "success": true,
+    "category": "GEOMETRY_EVALUATED_DATASET",
+    "classification": "INELIGIBLE_INSUFFICIENT_PARALLAX_OR_DISCONNECTED",
+    "classificationReason": "Insufficient matchable parallax or degenerate planar geometry (median parallax: 4.9 deg, connected: 5/5).",
+    "imageCount": 5,
+    "evaluatedViews": 5,
+    "evaluatedFramesCount": 5,
+    "coverageEvaluationMode": "ALL_CANDIDATE_FRAMES_EVALUATED",
+    "evaluatedFileNames": [
+      "node0_360_panorama_16k.jpg",
+      "node0_360_panorama_4k_opt.jpg",
+      "node0_360_panorama_8k.jpg",
+      "node0_360_panorama_ultra8k.jpg",
+      "node0_preview.jpg"
+    ],
+    "evaluatedKeyframeIndices": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ],
+    "sampleDimensions": "8192x4096",
+    "featuresDetected": 711,
+    "crossPairMatches": 327,
+    "connectedViews": 5,
+    "connectedComponentCount": 1,
+    "componentSizes": [
+      5
+    ],
+    "loopClosurePassed": false,
+    "loopClosureResidual": {
+      "status": "RING_INCOMPLETE_LOOP_NOT_FORMED",
+      "closurePassed": false,
+      "measured": {
+        "rotationDriftFrobenius": null,
+        "rotationDriftDegrees": null,
+        "scaleConsistentTranslationResidual": null,
+        "totalTrajectoryPathLength": null,
+        "scaleConsistencyResolved": false
+      },
+      "thresholds": {
+        "maxRotationDriftFrobenius": 0.5,
+        "maxRotationAngleDegrees": 15,
+        "maxScaleConsistentTranslationResidual": 0.15
+      }
+    },
+    "hasRecoverableParallax": false,
+    "globalMedianParallaxDegrees": 4.88,
+    "pairsWithValidParallax": 0,
+    "pairParallaxMetrics": {
+      "0_1": {
+        "pair": [
+          0,
+          1
+        ],
+        "inliers": 93,
+        "positiveDepthRatio": 0,
+        "medianParallaxDegrees": 0,
+        "homographyInlierRatio": 0.871,
+        "hasTranslationalParallax": false
+      },
+      "2_3": {
+        "pair": [
+          2,
+          3
+        ],
+        "inliers": 96,
+        "positiveDepthRatio": 0,
+        "medianParallaxDegrees": 0,
+        "homographyInlierRatio": 0.896,
+        "hasTranslationalParallax": false
+      },
+      "3_4": {
+        "pair": [
+          3,
+          4
+        ],
+        "inliers": 94,
+        "positiveDepthRatio": 0,
+        "medianParallaxDegrees": 0,
+        "homographyInlierRatio": 0.851,
+        "hasTranslationalParallax": false
+      },
+      "4_0": {
+        "pair": [
+          4,
+          0
+        ],
+        "inliers": 44,
+        "positiveDepthRatio": 0.023,
+        "medianParallaxDegrees": 4.88,
+        "homographyInlierRatio": 1.864,
+        "hasTranslationalParallax": false
+      }
+    },
+    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT",
+    "evaluatorConfig": {
+      "configVersion": "1.0.0",
+      "minMedianParallaxDegrees": 1.2,
+      "minPositiveDepthRatio": 0.55,
+      "maxHomographyInlierRatio": 0.9,
+      "minInlierCount": 15,
+      "maxConnectedViewsCeiling": 64,
+      "maxScaleConsistentTranslationResidual": 0.15,
+      "maxLoopClosureRotationDriftDegrees": 15,
+      "maxLoopClosureRotationDriftFrobenius": 0.5,
+      "minConnectedViewsPositiveRingThreshold": 12,
+      "calibrationAssumption": "ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED"
+    },
+    "evaluatorConfigDigest": "1117e4488c00c9be3b111297ab206f8e9de9c91d74f56518a6066a5de4420b12"
+  },
+  "dad9a0d8b36128f3ea8c6ac78316fa0e8a8edb066aea0ed24bf3f6b03ddf0cbe": {
+    "success": true,
+    "category": "GEOMETRY_EVALUATED_DATASET",
+    "classification": "INELIGIBLE_INSUFFICIENT_PARALLAX_OR_DISCONNECTED",
+    "classificationReason": "Insufficient matchable parallax or degenerate planar geometry (median parallax: 39.3 deg, connected: 2/5).",
+    "imageCount": 5,
+    "evaluatedViews": 5,
+    "evaluatedFramesCount": 5,
+    "coverageEvaluationMode": "ALL_CANDIDATE_FRAMES_EVALUATED",
+    "evaluatedFileNames": [
+      "3d2r-capture-guide.png",
+      "3d2r-landing-bg-45.jpg",
+      "3d2r-logo-package45.png",
+      "3d2r-logo-source.png",
+      "3d2r-logo.png"
+    ],
+    "evaluatedKeyframeIndices": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ],
+    "sampleDimensions": "941x1430",
+    "featuresDetected": 502,
+    "crossPairMatches": 14,
+    "connectedViews": 2,
+    "connectedComponentCount": 4,
+    "componentSizes": [
+      2,
+      1,
+      1,
+      1
+    ],
+    "loopClosurePassed": false,
+    "loopClosureResidual": {
+      "status": "RING_INCOMPLETE_LOOP_NOT_FORMED",
+      "closurePassed": false,
+      "measured": {
+        "rotationDriftFrobenius": null,
+        "rotationDriftDegrees": null,
+        "scaleConsistentTranslationResidual": null,
+        "totalTrajectoryPathLength": null,
+        "scaleConsistencyResolved": false
+      },
+      "thresholds": {
+        "maxRotationDriftFrobenius": 0.5,
+        "maxRotationAngleDegrees": 15,
+        "maxScaleConsistentTranslationResidual": 0.15
+      }
+    },
+    "hasRecoverableParallax": false,
+    "globalMedianParallaxDegrees": 39.35,
+    "pairsWithValidParallax": 1,
+    "pairParallaxMetrics": {
+      "0_1": {
+        "pair": [
+          0,
+          1
+        ],
+        "inliers": 14,
+        "positiveDepthRatio": 0.571,
+        "medianParallaxDegrees": 39.35,
+        "homographyInlierRatio": 0.643,
+        "hasTranslationalParallax": true
+      }
+    },
+    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT",
+    "evaluatorConfig": {
+      "configVersion": "1.0.0",
+      "minMedianParallaxDegrees": 1.2,
+      "minPositiveDepthRatio": 0.55,
+      "maxHomographyInlierRatio": 0.9,
+      "minInlierCount": 15,
+      "maxConnectedViewsCeiling": 64,
+      "maxScaleConsistentTranslationResidual": 0.15,
+      "maxLoopClosureRotationDriftDegrees": 15,
+      "maxLoopClosureRotationDriftFrobenius": 0.5,
+      "minConnectedViewsPositiveRingThreshold": 12,
+      "calibrationAssumption": "ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED"
+    },
+    "evaluatorConfigDigest": "1117e4488c00c9be3b111297ab206f8e9de9c91d74f56518a6066a5de4420b12"
+  },
+  "e134b2fd27704376d37e78566abc56ea47a2bc2634f4b1facb8786d6e3859a15": {
+    "success": true,
+    "category": "INSUFFICIENT_RESOLUTION_OR_KEYFRAME",
+    "classification": "INSUFFICIENT_RESOLUTION_OR_KEYFRAME",
+    "classificationReason": "Low resolution (256x256 < 512x512) or ephemeral keyframes",
+    "imageCount": 12,
+    "sampleDimensions": "256x256",
+    "coverageEvaluationMode": "ALL_CANDIDATE_FRAMES_EVALUATED",
+    "evaluatedFramesCount": 12,
+    "evaluatorConfig": {
+      "configVersion": "1.0.0",
+      "minMedianParallaxDegrees": 1.2,
+      "minPositiveDepthRatio": 0.55,
+      "maxHomographyInlierRatio": 0.9,
+      "minInlierCount": 15,
+      "maxConnectedViewsCeiling": 64,
+      "maxScaleConsistentTranslationResidual": 0.15,
+      "maxLoopClosureRotationDriftDegrees": 15,
+      "maxLoopClosureRotationDriftFrobenius": 0.5,
+      "minConnectedViewsPositiveRingThreshold": 12,
+      "calibrationAssumption": "ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED"
+    },
+    "evaluatorConfigDigest": "1117e4488c00c9be3b111297ab206f8e9de9c91d74f56518a6066a5de4420b12"
+  },
+  "e314323c95b1f0d461e0b21d30e2820a6add7fef746ad284357fad1bab11fc45": {
+    "success": true,
+    "category": "GEOMETRY_EVALUATED_DATASET",
+    "classification": "NEGATIVE_PARTIAL_FIXTURE_VERIFIED",
+    "classificationReason": "Partial graph connectivity (4/14 views connected in main component); ring incomplete.",
+    "imageCount": 14,
+    "evaluatedViews": 14,
+    "evaluatedFramesCount": 14,
+    "coverageEvaluationMode": "ALL_CANDIDATE_FRAMES_EVALUATED",
+    "evaluatedFileNames": [
+      "ivory_silk_suit.jpg",
+      "ivory_silk_suit_opt.jpg",
+      "ivory_suit.jpg",
+      "ivory_suit_opt.jpg",
+      "midnight_leather.jpg",
+      "midnight_leather_opt.jpg",
+      "midnight_noir_leather.jpg",
+      "midnight_noir_leather_opt.jpg",
+      "paris_bag.jpg",
+      "paris_bag_opt.jpg",
+      "scarlet_wrap_set.jpg",
+      "scarlet_wrap_set_opt.jpg",
+      "vantelle_satchel.jpg",
+      "vantelle_satchel_opt.jpg"
+    ],
+    "evaluatedKeyframeIndices": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13
+    ],
+    "sampleDimensions": "819x1024",
+    "featuresDetected": 488,
+    "crossPairMatches": 224,
+    "connectedViews": 4,
+    "connectedComponentCount": 7,
+    "componentSizes": [
+      4,
+      3,
+      2,
+      2,
+      1,
+      1,
+      1
+    ],
+    "loopClosurePassed": false,
+    "loopClosureResidual": {
+      "status": "RING_INCOMPLETE_LOOP_NOT_FORMED",
+      "closurePassed": false,
+      "measured": {
+        "rotationDriftFrobenius": null,
+        "rotationDriftDegrees": null,
+        "scaleConsistentTranslationResidual": null,
+        "totalTrajectoryPathLength": null,
+        "scaleConsistencyResolved": false
+      },
+      "thresholds": {
+        "maxRotationDriftFrobenius": 0.5,
+        "maxRotationAngleDegrees": 15,
+        "maxScaleConsistentTranslationResidual": 0.15
+      }
+    },
+    "hasRecoverableParallax": true,
+    "globalMedianParallaxDegrees": 32.77,
+    "pairsWithValidParallax": 3,
+    "pairParallaxMetrics": {
+      "0_1": {
+        "pair": [
+          0,
+          1
+        ],
+        "inliers": 23,
+        "positiveDepthRatio": 0.043,
+        "medianParallaxDegrees": 0.56,
+        "homographyInlierRatio": 2.957,
+        "hasTranslationalParallax": false
+      },
+      "3_4": {
+        "pair": [
+          3,
+          4
+        ],
+        "inliers": 54,
+        "positiveDepthRatio": 0,
+        "medianParallaxDegrees": 0,
+        "homographyInlierRatio": 0.426,
+        "hasTranslationalParallax": false
+      },
+      "5_6": {
+        "pair": [
+          5,
+          6
+        ],
+        "inliers": 11,
+        "positiveDepthRatio": 1,
+        "medianParallaxDegrees": 30.03,
+        "homographyInlierRatio": 0.818,
+        "hasTranslationalParallax": true
+      },
+      "6_7": {
+        "pair": [
+          6,
+          7
+        ],
+        "inliers": 77,
+        "positiveDepthRatio": 0,
+        "medianParallaxDegrees": 0,
+        "homographyInlierRatio": 5.377,
+        "hasTranslationalParallax": false
+      },
+      "7_8": {
+        "pair": [
+          7,
+          8
+        ],
+        "inliers": 13,
+        "positiveDepthRatio": 1,
+        "medianParallaxDegrees": 29.53,
+        "homographyInlierRatio": 0.154,
+        "hasTranslationalParallax": true
+      },
+      "11_12": {
+        "pair": [
+          11,
+          12
+        ],
+        "inliers": 13,
+        "positiveDepthRatio": 1,
+        "medianParallaxDegrees": 45.83,
+        "homographyInlierRatio": 0.692,
+        "hasTranslationalParallax": true
+      },
+      "12_13": {
+        "pair": [
+          12,
+          13
+        ],
+        "inliers": 33,
+        "positiveDepthRatio": 0,
+        "medianParallaxDegrees": 0,
+        "homographyInlierRatio": 16.242,
+        "hasTranslationalParallax": false
+      }
+    },
+    "scaleDisclosure": "SCALE_FREE_EMPIRICAL_MEASUREMENT",
+    "evaluatorConfig": {
+      "configVersion": "1.0.0",
+      "minMedianParallaxDegrees": 1.2,
+      "minPositiveDepthRatio": 0.55,
+      "maxHomographyInlierRatio": 0.9,
+      "minInlierCount": 15,
+      "maxConnectedViewsCeiling": 64,
+      "maxScaleConsistentTranslationResidual": 0.15,
+      "maxLoopClosureRotationDriftDegrees": 15,
+      "maxLoopClosureRotationDriftFrobenius": 0.5,
+      "minConnectedViewsPositiveRingThreshold": 12,
+      "calibrationAssumption": "ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED"
+    },
+    "evaluatorConfigDigest": "1117e4488c00c9be3b111297ab206f8e9de9c91d74f56518a6066a5de4420b12"
+  },
+  "e6aeea5d97f20e34afd0e002408e0cc1ff14b34e1361abce688e36549ecbf212": {
+    "success": false,
+    "category": "INSUFFICIENT_METADATA_TO_EVALUATE",
+    "classification": "UNREADABLE_IMAGE_FILES",
+    "classificationReason": "Could not read at least 3 valid image frames",
+    "imageCount": 12,
+    "evaluatorConfig": {
+      "configVersion": "1.0.0",
+      "minMedianParallaxDegrees": 1.2,
+      "minPositiveDepthRatio": 0.55,
+      "maxHomographyInlierRatio": 0.9,
+      "minInlierCount": 15,
+      "maxConnectedViewsCeiling": 64,
+      "maxScaleConsistentTranslationResidual": 0.15,
+      "maxLoopClosureRotationDriftDegrees": 15,
+      "maxLoopClosureRotationDriftFrobenius": 0.5,
+      "minConnectedViewsPositiveRingThreshold": 12,
+      "calibrationAssumption": "ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED"
+    },
+    "evaluatorConfigDigest": "1117e4488c00c9be3b111297ab206f8e9de9c91d74f56518a6066a5de4420b12"
+  }
+}

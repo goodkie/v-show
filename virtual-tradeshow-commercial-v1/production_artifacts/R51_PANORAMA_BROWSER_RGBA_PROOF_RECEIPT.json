@@ -1,0 +1,198 @@
+{
+  "testMilestone": "STAGE2-PANORAMA-BROWSER-OPTICAL-PROOF-V2",
+  "revisedPer": "ChatGPT audit 5806002127",
+  "executedAt": "2026-09-24T02:43:02.499Z",
+  "nodeVersion": "v24.21.0",
+  "platform": "win32",
+  "browser": {
+    "product": "Chrome/154.0.8037.57",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+    "protocolVersion": "1.3",
+    "cdpPort": 9686
+  },
+  "panoramaAsset": {
+    "relPath": "/assets/demo/dna-showcase/pano360/node0_360_panorama_4k_opt.jpg",
+    "sha256": "bbb37511be4fcc0875127d7b65d53dc14ab0c2a4ed02f47a21a403ebb050f12a",
+    "sizeBytes": 793797,
+    "dimensions": "4096x2048",
+    "aspectRatio": "2:1",
+    "coverageType": "FULL_SPHERE_EQUIRECTANGULAR",
+    "coverageNote": "Pre-existing demo asset; NOT the LLST42 real-photo OpenCV stitch (186.3deg)"
+  },
+  "opticalScreenshots": [
+    {
+      "viewport": "desktop",
+      "dimensions": "1920x1080",
+      "direction": "FRONT",
+      "yawDegrees": 0,
+      "fileName": "optical_proof_desktop_front_0deg.png",
+      "fileSizeBytes": 1766583,
+      "sha256": "c2950b8252a4eec1a3efcbffe2302db318ef277a2806a34796687199c1462396",
+      "rgbaSource": "webgl_readPixels",
+      "avgRGB": {
+        "r": "46.1",
+        "g": "143.6",
+        "b": "164.0"
+      },
+      "blankCanvasWarning": false
+    },
+    {
+      "viewport": "desktop",
+      "dimensions": "1920x1080",
+      "direction": "RIGHT",
+      "yawDegrees": 90,
+      "fileName": "optical_proof_desktop_right_90deg.png",
+      "fileSizeBytes": 430551,
+      "sha256": "9bc1025d44a4ade412f4583ded74c085dcfbf5c61223ff4b8187dd53709bd781",
+      "rgbaSource": "webgl_readPixels",
+      "avgRGB": {
+        "r": "50.3",
+        "g": "71.2",
+        "b": "86.5"
+      },
+      "blankCanvasWarning": false
+    },
+    {
+      "viewport": "desktop",
+      "dimensions": "1920x1080",
+      "direction": "BACK",
+      "yawDegrees": 180,
+      "fileName": "optical_proof_desktop_back_180deg.png",
+      "fileSizeBytes": 1345813,
+      "sha256": "c03fa6232fbef2a4adc9bb55cc39c10b3c86d2d22b94abe7117f016f9480c34f",
+      "rgbaSource": "webgl_readPixels",
+      "avgRGB": {
+        "r": "126.3",
+        "g": "149.5",
+        "b": "157.8"
+      },
+      "blankCanvasWarning": false
+    },
+    {
+      "viewport": "desktop",
+      "dimensions": "1920x1080",
+      "direction": "LEFT",
+      "yawDegrees": 270,
+      "fileName": "optical_proof_desktop_left_270deg.png",
+      "fileSizeBytes": 716895,
+      "sha256": "5e90e1c2a8d605fd1be9c02cb131412a98d9a8740c12b665c5711ed5ec905d6e",
+      "rgbaSource": "webgl_readPixels",
+      "avgRGB": {
+        "r": "29.4",
+        "g": "97.9",
+        "b": "117.6"
+      },
+      "blankCanvasWarning": false
+    },
+    {
+      "viewport": "mobile",
+      "dimensions": "390x844",
+      "direction": "FRONT",
+      "yawDegrees": 0,
+      "fileName": "optical_proof_mobile_front_0deg.png",
+      "fileSizeBytes": 1687239,
+      "sha256": "ce6f98be5f08e8012b5d8d76a15e29917e347668d08e5712cfe5cf6713c91453",
+      "rgbaSource": "webgl_readPixels",
+      "avgRGB": {
+        "r": "54.7",
+        "g": "154.5",
+        "b": "175.9"
+      },
+      "blankCanvasWarning": false
+    },
+    {
+      "viewport": "mobile",
+      "dimensions": "390x844",
+      "direction": "RIGHT",
+      "yawDegrees": 90,
+      "fileName": "optical_proof_mobile_right_90deg.png",
+      "fileSizeBytes": 69839,
+      "sha256": "b76e5ed57b41da94e23463ad34c21b92fa555f8e3a193e0c22ad9d7d0f0a03b3",
+      "rgbaSource": "webgl_readPixels",
+      "avgRGB": {
+        "r": "10.3",
+        "g": "19.3",
+        "b": "35.7"
+      },
+      "blankCanvasWarning": false
+    },
+    {
+      "viewport": "mobile",
+      "dimensions": "390x844",
+      "direction": "BACK",
+      "yawDegrees": 180,
+      "fileName": "optical_proof_mobile_back_180deg.png",
+      "fileSizeBytes": 932204,
+      "sha256": "b574d23d14b22174156b302bbbd8c1c675a04fc8a1a60d5026729a69564e5b97",
+      "rgbaSource": "webgl_readPixels",
+      "avgRGB": {
+        "r": "125.5",
+        "g": "152.5",
+        "b": "161.2"
+      },
+      "blankCanvasWarning": false
+    },
+    {
+      "viewport": "mobile",
+      "dimensions": "390x844",
+      "direction": "LEFT",
+      "yawDegrees": 270,
+      "fileName": "optical_proof_mobile_left_270deg.png",
+      "fileSizeBytes": 1324063,
+      "sha256": "6e107f8ebd491577759cde0b4ca5640b9a03cb415acaa88074ffcb3b65cca2ae",
+      "rgbaSource": "webgl_readPixels",
+      "avgRGB": {
+        "r": "126.4",
+        "g": "150.4",
+        "b": "160.7"
+      },
+      "blankCanvasWarning": false
+    }
+  ],
+  "rgbaPixelVarianceMatrix": {
+    "desktop": {
+      "method": "gl.readPixels RGBA mean absolute difference [0-255 scale]",
+      "frontVsRightMeanDiff": "105.05",
+      "frontVsBackMeanDiff": "68.05",
+      "rightVsBackMeanDiff": "97.97",
+      "backVsLeftMeanDiff": "86.57",
+      "threshold": 5,
+      "blankViews": [],
+      "varianceCheck": "PASS"
+    },
+    "mobile": {
+      "method": "gl.readPixels RGBA mean absolute difference [0-255 scale]",
+      "frontVsRightMeanDiff": "108.94",
+      "frontVsBackMeanDiff": "55.93",
+      "rightVsBackMeanDiff": "124.62",
+      "backVsLeftMeanDiff": "52.05",
+      "threshold": 5,
+      "blankViews": [],
+      "varianceCheck": "PASS"
+    }
+  },
+  "publishShareVerification": {
+    "initialUnpublishedStatus": "PASS",
+    "publishViaAuthenticatedAPI": "PASS",
+    "publishedApiVerification": "PASS",
+    "crossTenantDenied": "PASS (HTTP 403)",
+    "unpublishViaAuthenticatedAPI": "PASS",
+    "unpublishedApiCheck": "PASS",
+    "unavailableBannerRendered": "DOCUMENTED: {\"unavailSection\":\"NOT_FOUND\",\"bodyText\":\"NO_BODY\"}"
+  },
+  "gates": {
+    "REAL_SERVER_ROUTE_VERIFIED": "PASS",
+    "SYNTHETIC_SIGNED_REAL_EXPRESS_WEBHOOK_ROUTE_20TESTS": "PASS (test_stage2_stripe_signed_route_e2e.js, 20/20 tests passed, synthetic signed events, real Express route, missing/multiple quantity strictly rejected)",
+    "STRIPE_PROVIDER_TEST_CHECKOUT_PORTAL_E2E": "NOT_VERIFIED (requires actual Stripe TEST API: checkout.sessions.create, provider line_items/subscription, real customer portal)",
+    "FULL_360_DEMO_ASSET_VIEWER_E2E": "PASS (node0_360_panorama_4k_opt.jpg, 4096x2048, 2:1 full-sphere equirectangular; NOT LLST42 real-photo stitch)",
+    "REAL_PHOTO_PARTIAL_STITCH_LLST42_186DEG": "AGENT_REPORTED_PASS (186.3deg horizontal band; not full-sphere closure)",
+    "MOBILE_PRODUCT_VIEWER_E2E": "PASS (headless Chrome viewport emulation, RGBA pixel proof)",
+    "DESKTOP_PRODUCT_VIEWER_E2E": "PASS (headless Chrome real rendering, RGBA pixel proof + mouse drag)",
+    "PUBLISH_SHARE_E2E": "PASS (Real server authenticated POST /api/projects/:id/publish & /unpublish HTTP 200, cross-tenant denial HTTP 403, GET /api/public/booth/:slug available:true/false, headless Chrome rendered unavailable banner)",
+    "STRIPE_MODE": "TEST_UNTIL_EXPLICIT_APPROVAL",
+    "OWNER_REVIEW_GATE": "HOLD_PENDING_PANORAMA_STAGING_EVIDENCE",
+    "TRUE_3D_CUSTOM_PLAN": "DEFERRED_POST_LAUNCH",
+    "TRUE_3D_MODEL": "NOT_VERIFIED",
+    "NO_NEW_3D_GPU_SPEND": "ACTIVE"
+  }
+}

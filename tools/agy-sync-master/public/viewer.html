@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>대화 세션 뷰어 | AGY-Sync Master</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #090d16;
+      --bg-secondary: #0f172a;
+      --bg-card: rgba(30, 41, 59, 0.7);
+      --border-color: rgba(255, 255, 255, 0.1);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --accent-cyan: #38bdf8;
+      --accent-blue: #3b82f6;
+      --accent-emerald: #10b981;
+      --accent-violet: #a855f7;
+      --accent-rose: #f43f5e;
+      --font-sans: 'Outfit', 'Noto Sans KR', -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--bg-primary);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      line-height: 1.6;
+      min-height: 100vh;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    /* TOP NAVBAR */
+    .top-navbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 24px;
+      gap: 16px;
+    }
+    .nav-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+    .btn-nav {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 7px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+      text-decoration: none;
+    }
+    .btn-nav:hover {
+      background: rgba(255, 255, 255, 0.16);
+      border-color: var(--accent-cyan);
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+      border: none;
+      color: white;
+      box-shadow: 0 0 15px rgba(56, 189, 248, 0.3);
+    }
+    .btn-primary:hover {
+      opacity: 0.95;
+      transform: translateY(-1px);
+    }
+    .session-title-header {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-main);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 600px;
+    }
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* MAIN CONTAINER */
+    .viewer-layout {
+      max-width: 1080px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 32px 24px 80px 24px;
+      flex: 1;
+    }
+    .doc-container {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 40px;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+    }
+
+    /* MARKDOWN STYLING */
+    h1 {
+      font-size: 26px;
+      font-weight: 700;
+      margin-bottom: 20px;
+      line-height: 1.3;
+      background: linear-gradient(to right, #ffffff, #94a3b8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 16px;
+    }
+    h2 {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--accent-cyan);
+      margin: 28px 0 14px 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    h3 {
+      font-size: 16px;
+      font-weight: 600;
+      margin: 22px 0 10px 0;
+      color: #e2e8f0;
+    }
+    p { margin-bottom: 14px; font-size: 14.5px; color: #cbd5e1; }
+    hr {
+      border: none;
+      height: 1px;
+      background: var(--border-color);
+      margin: 24px 0;
+    }
+    blockquote {
+      background: rgba(15, 23, 42, 0.6);
+      border-left: 4px solid var(--accent-blue);
+      padding: 12px 18px;
+      margin: 14px 0;
+      border-radius: 0 8px 8px 0;
+      color: #cbd5e1;
+      font-size: 14px;
+    }
+    code {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: #38bdf8;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    pre {
+      background: #020617;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      padding: 16px;
+      overflow-x: auto;
+      margin: 16px 0;
+    }
+    pre code {
+      background: transparent;
+      padding: 0;
+      border: none;
+      color: #e2e8f0;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    ul, ol {
+      padding-left: 24px;
+      margin-bottom: 14px;
+      color: #cbd5e1;
+      font-size: 14.5px;
+    }
+    li { margin-bottom: 6px; }
+
+    /* USER & ASSISTANT STYLING */
+    .bubble-user {
+      background: rgba(30, 58, 138, 0.25);
+      border: 1px solid rgba(59, 130, 246, 0.4);
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin: 16px 0;
+    }
+    .bubble-assistant {
+      background: rgba(15, 23, 42, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 20px;
+      margin: 16px 0;
+    }
+    .badge-role {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 20px;
+      margin-bottom: 10px;
+    }
+    .role-user { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
+    .role-assistant { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .role-tool { background: rgba(168, 85, 247, 0.2); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3); }
+
+    /* TOAST */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #1e293b;
+      border: 1px solid var(--accent-cyan);
+      color: white;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-size: 13px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      display: none;
+      z-index: 1000;
+      animation: fadeIn 0.3s;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    @media print {
+      .top-navbar, .toast { display: none !important; }
+      body { background: white !important; color: black !important; }
+      .doc-container { background: white !important; border: none !important; box-shadow: none !important; padding: 0 !important; color: black !important; }
+      h1, h2, h3, p, li, pre, code { color: black !important; }
+      pre { border: 1px solid #ccc !important; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="top-navbar">
+    <div class="nav-left">
+      <a href="/" class="btn-nav" title="대시보드로 돌아가기">⬅️ 대시보드</a>
+      <span class="session-title-header" id="headerTitle">대화 세션 불러오는 중...</span>
+    </div>
+    <div class="nav-actions">
+      <button class="btn-nav" id="btnCopyMarkdown" title="마크다운 원본 전체 복사">📋 마크다운 복사</button>
+      <button class="btn-nav" id="btnOpenInEditor" title="VS Code / Antigravity 에디터에서 원본 열기">💻 에디터에서 열기</button>
+      <button class="btn-nav" id="btnPrint" title="인쇄 또는 PDF로 저장">🖨️ PDF/인쇄</button>
+    </div>
+  </nav>
+
+  <main class="viewer-layout">
+    <div class="doc-container" id="docContent">
+      <p style="color:var(--text-muted); text-align:center; padding:40px;">대화 세션을 불러오는 중입니다...</p>
+    </div>
+  </main>
+
+  <div class="toast" id="toastBox">알림 메시지</div>
+
+  <script>
+    let currentRawMarkdown = '';
+    let currentFilePath = '';
+
+    function showToast(msg) {
+      const box = document.getElementById('toastBox');
+      box.textContent = msg;
+      box.style.display = 'block';
+      setTimeout(() => { box.style.display = 'none'; }, 3000);
+    }
+
+    // Simple robust markdown parser
+    function renderMarkdown(md) {
+      if (!md) return '<p>내용이 비어있습니다.</p>';
+      
+      // Escape HTML
+      let html = md
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+
+      // Code blocks
+      html = html.replace(/```([a-zA-Z0-9_\-\+]*)\n([\s\S]*?)```/g, (match, lang, code) => {
+        return `<pre><code class="lang-${lang}">${code.trim()}</code></pre>`;
+      });
+
+      // Inline code
+      html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+      // Alerts & Blockquotes
+      html = html.replace(/^&gt;\s*\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*\n([\s\S]*?)(?=\n\n|\n[^\&]|$)/gm, (match, type, content) => {
+        return `<blockquote><strong>[${type}]</strong><br>${content.replace(/^&gt;\s*/gm, '')}</blockquote>`;
+      });
+      html = html.replace(/^&gt;\s*(.*?)$/gm, '<blockquote>$1</blockquote>');
+
+      // Headings
+      html = html.replace(/^#\s+(.*?)$/gm, '<h1>$1</h1>');
+      html = html.replace(/^##\s+(.*?)$/gm, '<h2>$1</h2>');
+      html = html.replace(/^###\s+(.*?)$/gm, '<h3>$1</h3>');
+
+      // HR
+      html = html.replace(/^---$/gm, '<hr>');
+
+      // Bold & Italic
+      html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+      html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+
+      // Unordered lists
+      html = html.replace(/^\s*-\s+(.*?)$/gm, '<li>$1</li>');
+      html = html.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
+
+      // Paragraphs
+      html = html.split('\n\n').map(p => {
+        p = p.trim();
+        if (!p) return '';
+        if (p.startsWith('<h') || p.startsWith('<pre') || p.startsWith('<block') || p.startsWith('<ul') || p.startsWith('<hr')) {
+          return p;
+        }
+        return `<p>${p.replace(/\n/g, '<br>')}</p>`;
+      }).join('\n');
+
+      return html;
+    }
+
+    async function loadContent() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const filePath = urlParams.get('file');
+      const convId = urlParams.get('id');
+
+      if (!filePath && !convId) {
+        document.getElementById('docContent').innerHTML = '<p style="color:var(--accent-rose);">표시할 세션 파일 또는 세션 ID가 지정되지 않았습니다.</p>';
+        return;
+      }
+
+      try {
+        let apiUrl = '/api/conversations/content?';
+        if (filePath) apiUrl += 'file=' + encodeURIComponent(filePath);
+        else if (convId) apiUrl += 'id=' + encodeURIComponent(convId);
+
+        const res = await fetch(apiUrl);
+        if (!res.ok) throw new Error('파일을 불러올 수 없습니다. (' + res.status + ')');
+        const data = await res.json();
+
+        currentRawMarkdown = data.content || '';
+        currentFilePath = data.filePath || filePath || '';
+        document.getElementById('headerTitle').textContent = data.title || data.filename || '대화 세션';
+        document.title = (data.title || '대화 세션') + ' | AGY-Sync Master';
+        document.getElementById('docContent').innerHTML = renderMarkdown(currentRawMarkdown);
+      } catch (err) {
+        document.getElementById('docContent').innerHTML = `<p style="color:var(--accent-rose);">세션 불러오기 오류: ${err.message}</p>`;
+      }
+    }
+
+    document.getElementById('btnCopyMarkdown').addEventListener('click', () => {
+      if (!currentRawMarkdown) return;
+      navigator.clipboard.writeText(currentRawMarkdown).then(() => {
+        showToast('📋 마크다운 원본이 클립보드에 복사되었습니다.');
+      });
+    });
+
+    document.getElementById('btnOpenInEditor').addEventListener('click', async () => {
+      if (!currentFilePath) {
+        showToast('파일 경로를 확인할 수 없습니다.');
+        return;
+      }
+      try {
+        const res = await fetch('/api/open-in-editor', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ file: currentFilePath })
+        });
+        const d = await res.json();
+        if (d.success) showToast('💻 에디터에서 파일이 열렸습니다.');
+        else showToast('에디터 열기 실패: ' + (d.error || '알 수 없는 오류'));
+      } catch (e) {
+        showToast('에디터 호출 오류: ' + e.message);
+      }
+    });
+
+    document.getElementById('btnPrint').addEventListener('click', () => {
+      window.print();
+    });
+
+    loadContent();
+  </script>
+</body>
+</html>

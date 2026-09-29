@@ -1,0 +1,14 @@
+{
+  "protocol": "3D2R_LANDING_DELTA_METADATA",
+  "date": "2026-09-15",
+  "publicReleaseName": "3D2R OFFICIAL RELEASE",
+  "internalReleaseChannel": "PRODUCTION_BETA",
+  "parentRestorePoint": "5218235b8dbe1cd3b401bbbdef0b1c8ba3483d6e",
+  "landingCommitSha": "2a003a1696368899cbb184528afffa797d1eb0b0",
+  "landingBranch": "release/3d2r-landing-integration",
+  "customerDefault": "P2R13",
+  "archiveType": "INCREMENTAL_DELTA",
+  "baseArchiveRef": "3D2_OFFICIAL_RELEASE_RESTORE_POINT_2026-09-15.zip",
+  "baseArchiveSha256": "9f5bbdc6af42cd3c5dc7071e73bd9cb8de0564dfa6bb1a27b79eab76ac7b808a",
+  "gitBundleSha256": "17da0c8ad1eda705cca95baf53b6fd4e8b612ba8dbffd7a188e1e885154bfe7b"
+}

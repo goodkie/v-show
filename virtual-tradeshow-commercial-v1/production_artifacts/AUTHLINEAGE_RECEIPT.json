@@ -1,0 +1,876 @@
+{
+  "receiptSchemaVersion": "AUTHLINEAGE_RECEIPT_V11_STANDARDIZED_DIGEST_AND_SUPPORT_POLICY",
+  "jobId": "recon-job-1790639900296-acc61667",
+  "codeUnderTestSha": "7260d3d0af5fe6cbbc3d6a990edc3fa5abf00500",
+  "engineProvenance": {
+    "engineName": "OPENCV_SIFT_INCREMENTAL_GLOBAL_SFM",
+    "engineSourceSha256": "3db35d4bdc6abd15ff2f870dee2520b0ec218b0b78aefefec347e81ad01cfe8a",
+    "engineVersion": "5.0.0",
+    "pythonVersion": "3.14.7"
+  },
+  "workerProvenance": {
+    "workerRuntimeSha256": "c3c7698b6fb3ae7cf676b9bacf4d3e630db22f4a34a554bb8d651a12036aa415"
+  },
+  "calibrationProvenance": {
+    "calibrationStatus": "ASSUMED_60DEG_FOV_PRIOR_UNOPTIMIZED",
+    "calibrationMethod": "CIRCULAR_SURROUND_GEOMETRY_WITH_ASSUMED_FOV",
+    "focalLengthSource": "ASSUMED_60DEG_FIELD_OF_VIEW_PRIOR",
+    "selfCalibrated": false,
+    "focalLengthPixels": 886.81,
+    "scaleDisclosure": "SCALE_FREE_RECONSTRUCTION_ARBITRARY_WORLD_SCALE",
+    "units": "SCALE_FREE_NORMALIZED_SFM_UNITS",
+    "stepBaselineMeters": null,
+    "viewerPresetReference": {
+      "file": "R6_CAMERA_TRANSFORMS.json",
+      "sha256": "f93817abc4fcf98bf816201a164e6e1cc9e5f76c82890fb1a34d8dc74481be57",
+      "role": "VIEWER_FRAMING_REFERENCE_ONLY"
+    }
+  },
+  "inputProvenance": {
+    "viewCount": 12,
+    "aggregateInputSha256": "3498f779ed0fef0e0146b3f25fdbdfe04033994b3d466a94d5673a5c7af779f4",
+    "views": [
+      {
+        "filename": "view_01.jpg",
+        "sizeBytes": 721779,
+        "sha256": "53f1edcd0428363e16645bdabf648061c0613278c9c0c3f052e561be1799d5d6"
+      },
+      {
+        "filename": "view_02.jpg",
+        "sizeBytes": 721476,
+        "sha256": "f54407bba51d9510f39becde61a492b5e72b2cba5df8c1d160856fe425c34364"
+      },
+      {
+        "filename": "view_03.jpg",
+        "sizeBytes": 684875,
+        "sha256": "1f5fca1871e92254939e644ae920e87d163b65e382606e19e0731fcab0f40965"
+      },
+      {
+        "filename": "view_04.jpg",
+        "sizeBytes": 802436,
+        "sha256": "a578ab5473406362701daf84738e4f2c583f6c685fe1b63843ab6622d0fbc4e5"
+      },
+      {
+        "filename": "view_05.jpg",
+        "sizeBytes": 740169,
+        "sha256": "f0eaabcd34fe0a882a235713a03c88df0fe762650a64efed4cc03e8388cec58e"
+      },
+      {
+        "filename": "view_06.jpg",
+        "sizeBytes": 661556,
+        "sha256": "321a226de548414966eb871a26aee8f5f4b0a96d1892a708882007545e05766e"
+      },
+      {
+        "filename": "view_07.jpg",
+        "sizeBytes": 704057,
+        "sha256": "da83a3c04bc78f3b307b0d0d479cbcc4feac51d38c5c226f4f26d3df235122fb"
+      },
+      {
+        "filename": "view_08.jpg",
+        "sizeBytes": 718283,
+        "sha256": "5bc7dee73db8d363ece9effa1d74c0220e4ca87d8e2df20242f0e6990140ada5"
+      },
+      {
+        "filename": "view_09.jpg",
+        "sizeBytes": 723902,
+        "sha256": "58b537511ee54f742e1fba5d7a240ffdd27f67923a85694cda3428f4d1d2cd43"
+      },
+      {
+        "filename": "view_10.jpg",
+        "sizeBytes": 721207,
+        "sha256": "c2a27a8fec5a618ebda6bd37f7bc02680965bf9a84c0b9446b304b343bd506e9"
+      },
+      {
+        "filename": "view_11.jpg",
+        "sizeBytes": 678264,
+        "sha256": "5b0bea7bd1af5ddffa5e0babfe03f19679cc1ca49ee118e4a743fbda17631649"
+      },
+      {
+        "filename": "view_12.jpg",
+        "sizeBytes": 784312,
+        "sha256": "1b17c8023671f62a6784f8b195eb876c1a5af9e74eae4a26eaf66e6639450cdc"
+      }
+    ]
+  },
+  "configurationProvenance": {
+    "configDigest": "21c4033b757e9797f5e162841b53dd4fb566cf57a6c7402630c1292c02c23ca1",
+    "parameters": {
+      "engine": "OPENCV_SIFT_INCREMENTAL_GLOBAL_SFM",
+      "siftFeatures": 4000,
+      "ransacThreshold": 1.5,
+      "calibrationMethod": "CIRCULAR_SURROUND_GEOMETRY_WITH_ASSUMED_FOV",
+      "scaleDisclosure": "SCALE_FREE_RECONSTRUCTION_ARBITRARY_WORLD_SCALE",
+      "units": "SCALE_FREE_NORMALIZED_SFM_UNITS",
+      "bundleAdjustment": "ALTERNATING_LEVENBERG_MARQUARDT_PNP_AND_LANDMARK",
+      "coordinateSystem": "SCALE_FREE_UNIFIED_GLOBAL_SFM_FRAME",
+      "denseMvsMethod": "GLOBAL_SCALE_STEREO_RECTIFY_SGBM_VOXEL_FUSION"
+    }
+  },
+  "bundleAdjustmentRefinement": {
+    "convergenceCriteria": {
+      "relativeRmseTolerance": 0.001,
+      "minIterations": 3,
+      "maxIterations": 10,
+      "poseUpdateTolerance": 0.0001,
+      "landmarkUpdateTolerance": 0.005
+    },
+    "iterationHistory": [
+      {
+        "iteration": 1,
+        "preStepRmsePixels": 265.7984,
+        "postStepRmsePixels": 669.0264,
+        "relativeRmseChange": 1.517044,
+        "landmarkUpdateNorm": 0.556207,
+        "rotationUpdateNorm": 0.000853,
+        "translationUpdateNorm": 0.008757,
+        "poseUpdateNorm": 0.009611,
+        "successfulCameraUpdates": 10
+      },
+      {
+        "iteration": 2,
+        "preStepRmsePixels": 669.0264,
+        "postStepRmsePixels": 91.4644,
+        "relativeRmseChange": 0.863287,
+        "landmarkUpdateNorm": 0.206027,
+        "rotationUpdateNorm": 0.000524,
+        "translationUpdateNorm": 0.005626,
+        "poseUpdateNorm": 0.00615,
+        "successfulCameraUpdates": 10
+      },
+      {
+        "iteration": 3,
+        "preStepRmsePixels": 91.4644,
+        "postStepRmsePixels": 91.4229,
+        "relativeRmseChange": 0.000454,
+        "landmarkUpdateNorm": 0.00787,
+        "rotationUpdateNorm": 0.000377,
+        "translationUpdateNorm": 0.004062,
+        "poseUpdateNorm": 0.004439,
+        "successfulCameraUpdates": 10
+      }
+    ],
+    "actualIterations": 3,
+    "convergenceStatus": "STATIONARY",
+    "converged": false,
+    "terminated": true,
+    "cameraAccounting": {
+      "totalCameras": 12,
+      "fixedGaugeCameraCount": 1,
+      "pnpOptimizedCameraCount": 10,
+      "unoptimizedCameraCount": 1,
+      "solverIterationsObserved": 3
+    },
+    "fixedObservationSet": {
+      "initialRmsePixels": 265.7984,
+      "postOptimizationRmsePixels": 91.4229,
+      "rmseReductionPixels": 174.3755,
+      "rmseReductionPercent": 65.6,
+      "totalFixedObservations": 498
+    },
+    "outlierRejectionMetrics": {
+      "initialObservationsCount": 498,
+      "rejectedObservationsCount": 226,
+      "rejectionRatio": 0.4538
+    },
+    "finalInlierMetrics": {
+      "inlierPointCount": 130,
+      "finalInlierObservationCount": 272,
+      "reprojectionRmsePixels": 0.7062,
+      "meanReprojectionErrorPixels": 0.4702,
+      "medianReprojectionErrorPixels": 0.3319
+    },
+    "registeredViewCount": 12,
+    "fixedGaugeCameraCount": 1,
+    "pnpOptimizedCameraCount": 10,
+    "unoptimizedCameraCount": 1,
+    "optimizedCameraCount": 10,
+    "totalTracksCount": 243,
+    "trackLengthDistribution": {
+      "2": 118,
+      "3": 12
+    },
+    "ge3TracksCount": 12,
+    "ge3TrackFraction": 0.0923,
+    "pairwiseInlierCounts": {
+      "0->1": 35,
+      "1->2": 30,
+      "2->3": 8,
+      "3->4": 21,
+      "4->5": 20,
+      "5->6": 13,
+      "6->7": 7,
+      "7->8": 18,
+      "8->9": 21,
+      "9->10": 19,
+      "10->11": 6,
+      "11->0": 11,
+      "0->2": 37,
+      "1->3": 6,
+      "2->4": 29,
+      "3->5": 50,
+      "4->6": 24,
+      "5->7": 9,
+      "6->8": 13,
+      "7->9": 10,
+      "8->10": 9,
+      "9->11": 10,
+      "10->0": 21,
+      "11->1": 6
+    },
+    "optimizationAlgorithm": "ALTERNATING_LEVENBERG_MARQUARDT_PNP_AND_LANDMARK"
+  },
+  "cameraCoverageAndGraphProof": {
+    "cameraAccounting": {
+      "totalCameras": 12,
+      "fixedGaugeCameraCount": 1,
+      "pnpOptimizedCameraCount": 10,
+      "unoptimizedCameraCount": 1,
+      "solverIterationsObserved": 3
+    },
+    "perCameraStatistics": [
+      {
+        "viewIndex": 0,
+        "filename": "view_01.jpg",
+        "observationCount": 32,
+        "multiViewTrackCount": 10,
+        "isGaugeAnchor": true,
+        "isPnpOptimized": false,
+        "optimized": false,
+        "optimizationStatus": "GAUGE_ANCHOR_FIXED",
+        "successfulOptimizationIterations": 0,
+        "solverIterationsObserved": 3,
+        "rotationUpdateNorm": 0.0,
+        "translationUpdateNorm": 0.0,
+        "poseUpdateNorm": 0.0,
+        "reprojectionRmsePixels": 1.0103
+      },
+      {
+        "viewIndex": 1,
+        "filename": "view_02.jpg",
+        "observationCount": 42,
+        "multiViewTrackCount": 10,
+        "isGaugeAnchor": false,
+        "isPnpOptimized": true,
+        "optimized": true,
+        "optimizationStatus": "OPTIMIZED_PNP_REFINED",
+        "successfulOptimizationIterations": 3,
+        "solverIterationsObserved": 3,
+        "rotationUpdateNorm": 0.0003,
+        "translationUpdateNorm": 0.002146,
+        "poseUpdateNorm": 0.002446,
+        "reprojectionRmsePixels": 0.559
+      },
+      {
+        "viewIndex": 2,
+        "filename": "view_03.jpg",
+        "observationCount": 30,
+        "multiViewTrackCount": 10,
+        "isGaugeAnchor": false,
+        "isPnpOptimized": true,
+        "optimized": true,
+        "optimizationStatus": "OPTIMIZED_PNP_REFINED",
+        "successfulOptimizationIterations": 3,
+        "solverIterationsObserved": 3,
+        "rotationUpdateNorm": 0.000277,
+        "translationUpdateNorm": 0.004319,
+        "poseUpdateNorm": 0.004596,
+        "reprojectionRmsePixels": 0.9456
+      },
+      {
+        "viewIndex": 3,
+        "filename": "view_04.jpg",
+        "observationCount": 22,
+        "multiViewTrackCount": 0,
+        "isGaugeAnchor": false,
+        "isPnpOptimized": true,
+        "optimized": true,
+        "optimizationStatus": "OPTIMIZED_PNP_REFINED",
+        "successfulOptimizationIterations": 3,
+        "solverIterationsObserved": 3,
+        "rotationUpdateNorm": 3.4e-05,
+        "translationUpdateNorm": 0.000287,
+        "poseUpdateNorm": 0.000321,
+        "reprojectionRmsePixels": 1.0703
+      },
+      {
+        "viewIndex": 4,
+        "filename": "view_05.jpg",
+        "observationCount": 17,
+        "multiViewTrackCount": 0,
+        "isGaugeAnchor": false,
+        "isPnpOptimized": true,
+        "optimized": true,
+        "optimizationStatus": "OPTIMIZED_PNP_REFINED",
+        "successfulOptimizationIterations": 3,
+        "solverIterationsObserved": 3,
+        "rotationUpdateNorm": 5.6e-05,
+        "translationUpdateNorm": 0.001034,
+        "poseUpdateNorm": 0.00109,
+        "reprojectionRmsePixels": 0.3121
+      },
+      {
+        "viewIndex": 5,
+        "filename": "view_06.jpg",
+        "observationCount": 14,
+        "multiViewTrackCount": 0,
+        "isGaugeAnchor": false,
+        "isPnpOptimized": true,
+        "optimized": true,
+        "optimizationStatus": "OPTIMIZED_PNP_REFINED",
+        "successfulOptimizationIterations": 3,
+        "solverIterationsObserved": 3,
+        "rotationUpdateNorm": 0.000772,
+        "translationUpdateNorm": 0.001074,
+        "poseUpdateNorm": 0.001846,
+        "reprojectionRmsePixels": 0.7603
+      },
+      {
+        "viewIndex": 6,
+        "filename": "view_07.jpg",
+        "observationCount": 10,
+        "multiViewTrackCount": 0,
+        "isGaugeAnchor": false,
+        "isPnpOptimized": true,
+        "optimized": true,
+        "optimizationStatus": "OPTIMIZED_PNP_REFINED",
+        "successfulOptimizationIterations": 3,
+        "solverIterationsObserved": 3,
+        "rotationUpdateNorm": 0.000117,
+        "translationUpdateNorm": 0.001575,
+        "poseUpdateNorm": 0.001692,
+        "reprojectionRmsePixels": 0.1797
+      },
+      {
+        "viewIndex": 7,
+        "filename": "view_08.jpg",
+        "observationCount": 24,
+        "multiViewTrackCount": 2,
+        "isGaugeAnchor": false,
+        "isPnpOptimized": true,
+        "optimized": true,
+        "optimizationStatus": "OPTIMIZED_PNP_REFINED",
+        "successfulOptimizationIterations": 3,
+        "solverIterationsObserved": 3,
+        "rotationUpdateNorm": 0.000133,
+        "translationUpdateNorm": 0.00438,
+        "poseUpdateNorm": 0.004513,
+        "reprojectionRmsePixels": 0.6514
+      },
+      {
+        "viewIndex": 8,
+        "filename": "view_09.jpg",
+        "observationCount": 30,
+        "multiViewTrackCount": 2,
+        "isGaugeAnchor": false,
+        "isPnpOptimized": true,
+        "optimized": true,
+        "optimizationStatus": "OPTIMIZED_PNP_REFINED",
+        "successfulOptimizationIterations": 3,
+        "solverIterationsObserved": 3,
+        "rotationUpdateNorm": 0.000248,
+        "translationUpdateNorm": 0.004052,
+        "poseUpdateNorm": 0.004299,
+        "reprojectionRmsePixels": 0.5734
+      },
+      {
+        "viewIndex": 9,
+        "filename": "view_10.jpg",
+        "observationCount": 33,
+        "multiViewTrackCount": 2,
+        "isGaugeAnchor": false,
+        "isPnpOptimized": true,
+        "optimized": true,
+        "optimizationStatus": "OPTIMIZED_PNP_REFINED",
+        "successfulOptimizationIterations": 3,
+        "solverIterationsObserved": 3,
+        "rotationUpdateNorm": 0.000142,
+        "translationUpdateNorm": 0.001054,
+        "poseUpdateNorm": 0.001197,
+        "reprojectionRmsePixels": 0.445
+      },
+      {
+        "viewIndex": 10,
+        "filename": "view_11.jpg",
+        "observationCount": 18,
+        "multiViewTrackCount": 0,
+        "isGaugeAnchor": false,
+        "isPnpOptimized": true,
+        "optimized": true,
+        "optimizationStatus": "OPTIMIZED_PNP_REFINED",
+        "successfulOptimizationIterations": 3,
+        "solverIterationsObserved": 3,
+        "rotationUpdateNorm": 0.002065,
+        "translationUpdateNorm": 0.024767,
+        "poseUpdateNorm": 0.026832,
+        "reprojectionRmsePixels": 0.2548
+      },
+      {
+        "viewIndex": 11,
+        "filename": "view_12.jpg",
+        "observationCount": 0,
+        "multiViewTrackCount": 0,
+        "isGaugeAnchor": false,
+        "isPnpOptimized": false,
+        "optimized": false,
+        "optimizationStatus": "UNOPTIMIZED_INSUFFICIENT_OBSERVATIONS",
+        "successfulOptimizationIterations": 0,
+        "solverIterationsObserved": 3,
+        "rotationUpdateNorm": 0.0,
+        "translationUpdateNorm": 0.0,
+        "poseUpdateNorm": 0.0,
+        "reprojectionRmsePixels": 0.0
+      }
+    ],
+    "fixedGaugeCameraCount": 1,
+    "pnpOptimizedCameraCount": 10,
+    "unoptimizedCameraCount": 1,
+    "optimizedCameraCount": 10,
+    "graphConnectivity": {
+      "minEdgeSupportThreshold": 3,
+      "isConnected": false,
+      "connectedComponentCount": 2,
+      "totalViewsInComponent": 11,
+      "componentMemberships": [
+        [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10
+        ],
+        [
+          11
+        ]
+      ],
+      "componentSizes": [
+        11,
+        1
+      ],
+      "globalCoverageGate": "NOT_MET_PARTIAL_11_OF_12"
+    },
+    "loopClosureResidual": {
+      "closurePair": [
+        11,
+        0
+      ],
+      "closurePairFiles": [
+        "view_12.jpg",
+        "view_01.jpg"
+      ],
+      "thresholds": {
+        "maxRotationDriftFrobenius": 0.5,
+        "maxRotationAngleDegrees": 15.0,
+        "maxTranslationDriftRelative": 0.2,
+        "minLoopInliers": 6
+      },
+      "measured": {
+        "rotationDriftFrobenius": 2.8102,
+        "rotationDriftDegrees": 166.99,
+        "translationDriftRelative": 1.6726,
+        "translationDriftDirectionNorm": 1.3081,
+        "loopPairInlierCount": 11
+      },
+      "status": "LOOP_CLOSURE_FAILED_EXCEEDS_TOLERANCE",
+      "closurePassed": false
+    }
+  },
+  "denseMvsDiagnostics": {
+    "artifactSupportProvenance": {
+      "totalVertexCount": 1200,
+      "geometricallyVerifiedVertices": 207,
+      "photometricOnlyVertices": 993,
+      "geometricallyVerifiedRatio": 0.1725,
+      "supportPolicy": "AT_LEAST_ONE_THIRD_VIEW_PASS",
+      "policyDefinition": "A voxel-fused vertex is geometrically verified if ALL contributing voxel points met the AT_LEAST_ONE_THIRD_VIEW_PASS geometric support criterion; otherwise photometric-only.",
+      "conservativeMergePolicy": "ALL_CONTRIBUTING_VOXEL_POINTS_MUST_BE_GEOMETRIC",
+      "artifactQualityGate": "QUARANTINED_INTERNAL_PROOF_ONLY_SPARSE_GEOMETRIC_SUPPORT"
+    },
+    "pointSupportProvenance": {
+      "supportPolicy": "AT_LEAST_ONE_THIRD_VIEW_PASS",
+      "policyDefinition": "A candidate point is accepted as geometrically consistent if at least one independent third view observes consistent rectified disparity within tolerance (>=1 pass); candidate rejected if independent views tested and zero pass.",
+      "geometricallyConsistentCount": 6519,
+      "photometricOnlyCount": 44270,
+      "geometricRejectionCount": 2235,
+      "heuristicRejectionCount": 187141,
+      "totalCandidatePointsTested": 240165,
+      "totalConsistentPointsAccepted": 50789,
+      "totalThirdViewsTested": 8754,
+      "totalThirdViewsPassed": 6519,
+      "totalThirdViewsFailed": 2235,
+      "hasThirdViewGeometricConsistencyProof": true,
+      "arithmeticInvariantsVerified": true
+    },
+    "pairDiagnostics": [
+      {
+        "pair": [
+          0,
+          1
+        ],
+        "baseline": 0.9991,
+        "sampledCandidatePoints": 2000,
+        "rawDisparityPixels": 262144,
+        "validDisparityCount": 2000,
+        "invalidDisparityCount": 260144,
+        "negativeDepthRejected": 0,
+        "rangeRejected": 0,
+        "spatialRejected": 0,
+        "thirdViewDepthGeometricTested": 2000,
+        "thirdViewDepthGeometricConsistent": 0,
+        "thirdViewDepthGeometricRejected": 2000,
+        "thirdViewPhotometricHeuristicAccepted": 0,
+        "multiViewGeometricRejected": 2000,
+        "multiViewHeuristicRejected": 0,
+        "supportPolicy": "AT_LEAST_ONE_THIRD_VIEW_PASS",
+        "thirdViewsTestedCount": 2000,
+        "thirdViewsPassedCount": 0,
+        "thirdViewsFailedCount": 2000,
+        "acceptedMultiViewConsistent3dCount": 0,
+        "acceptedGeometricallyConsistent3dCount": 0,
+        "meanRelativeDepthResidual": 0.7496,
+        "fusedContribution": 0,
+        "consistencyMethod": "UNBIASED_RECTIFIED_THIRD_VIEW_STEREO_DEPTH_GATE_AND_PHOTOMETRIC_FALLBACK"
+      },
+      {
+        "pair": [
+          1,
+          2
+        ],
+        "baseline": 7.5779,
+        "sampledCandidatePoints": 77634,
+        "rawDisparityPixels": 262144,
+        "validDisparityCount": 85940,
+        "invalidDisparityCount": 176204,
+        "negativeDepthRejected": 0,
+        "rangeRejected": 8306,
+        "spatialRejected": 0,
+        "thirdViewDepthGeometricTested": 0,
+        "thirdViewDepthGeometricConsistent": 0,
+        "thirdViewDepthGeometricRejected": 0,
+        "thirdViewPhotometricHeuristicAccepted": 33632,
+        "multiViewGeometricRejected": 0,
+        "multiViewHeuristicRejected": 44002,
+        "supportPolicy": "AT_LEAST_ONE_THIRD_VIEW_PASS",
+        "thirdViewsTestedCount": 0,
+        "thirdViewsPassedCount": 0,
+        "thirdViewsFailedCount": 0,
+        "acceptedMultiViewConsistent3dCount": 33632,
+        "acceptedGeometricallyConsistent3dCount": 0,
+        "meanRelativeDepthResidual": null,
+        "fusedContribution": 400,
+        "consistencyMethod": "UNBIASED_RECTIFIED_THIRD_VIEW_STEREO_DEPTH_GATE_AND_PHOTOMETRIC_FALLBACK"
+      },
+      {
+        "pair": [
+          2,
+          3
+        ],
+        "baseline": 7.5864,
+        "sampledCandidatePoints": 40239,
+        "rawDisparityPixels": 262144,
+        "validDisparityCount": 40239,
+        "invalidDisparityCount": 221905,
+        "negativeDepthRejected": 0,
+        "rangeRejected": 0,
+        "spatialRejected": 0,
+        "thirdViewDepthGeometricTested": 0,
+        "thirdViewDepthGeometricConsistent": 0,
+        "thirdViewDepthGeometricRejected": 0,
+        "thirdViewPhotometricHeuristicAccepted": 0,
+        "multiViewGeometricRejected": 0,
+        "multiViewHeuristicRejected": 40239,
+        "supportPolicy": "AT_LEAST_ONE_THIRD_VIEW_PASS",
+        "thirdViewsTestedCount": 0,
+        "thirdViewsPassedCount": 0,
+        "thirdViewsFailedCount": 0,
+        "acceptedMultiViewConsistent3dCount": 0,
+        "acceptedGeometricallyConsistent3dCount": 0,
+        "meanRelativeDepthResidual": null,
+        "fusedContribution": 0,
+        "consistencyMethod": "UNBIASED_RECTIFIED_THIRD_VIEW_STEREO_DEPTH_GATE_AND_PHOTOMETRIC_FALLBACK"
+      },
+      {
+        "pair": [
+          3,
+          4
+        ],
+        "baseline": 7.5764,
+        "sampledCandidatePoints": 21294,
+        "rawDisparityPixels": 262144,
+        "validDisparityCount": 21308,
+        "invalidDisparityCount": 240836,
+        "negativeDepthRejected": 0,
+        "rangeRejected": 14,
+        "spatialRejected": 0,
+        "thirdViewDepthGeometricTested": 6754,
+        "thirdViewDepthGeometricConsistent": 6519,
+        "thirdViewDepthGeometricRejected": 235,
+        "thirdViewPhotometricHeuristicAccepted": 6241,
+        "multiViewGeometricRejected": 235,
+        "multiViewHeuristicRejected": 8299,
+        "supportPolicy": "AT_LEAST_ONE_THIRD_VIEW_PASS",
+        "thirdViewsTestedCount": 6754,
+        "thirdViewsPassedCount": 6519,
+        "thirdViewsFailedCount": 235,
+        "acceptedMultiViewConsistent3dCount": 12760,
+        "acceptedGeometricallyConsistent3dCount": 6519,
+        "meanRelativeDepthResidual": 0.1744,
+        "fusedContribution": 400,
+        "consistencyMethod": "UNBIASED_RECTIFIED_THIRD_VIEW_STEREO_DEPTH_GATE_AND_PHOTOMETRIC_FALLBACK"
+      },
+      {
+        "pair": [
+          4,
+          5
+        ],
+        "baseline": 7.5777,
+        "sampledCandidatePoints": 31265,
+        "rawDisparityPixels": 262144,
+        "validDisparityCount": 31391,
+        "invalidDisparityCount": 230753,
+        "negativeDepthRejected": 0,
+        "rangeRejected": 87,
+        "spatialRejected": 39,
+        "thirdViewDepthGeometricTested": 0,
+        "thirdViewDepthGeometricConsistent": 0,
+        "thirdViewDepthGeometricRejected": 0,
+        "thirdViewPhotometricHeuristicAccepted": 4397,
+        "multiViewGeometricRejected": 0,
+        "multiViewHeuristicRejected": 26868,
+        "supportPolicy": "AT_LEAST_ONE_THIRD_VIEW_PASS",
+        "thirdViewsTestedCount": 0,
+        "thirdViewsPassedCount": 0,
+        "thirdViewsFailedCount": 0,
+        "acceptedMultiViewConsistent3dCount": 4397,
+        "acceptedGeometricallyConsistent3dCount": 0,
+        "meanRelativeDepthResidual": null,
+        "fusedContribution": 400,
+        "consistencyMethod": "UNBIASED_RECTIFIED_THIRD_VIEW_STEREO_DEPTH_GATE_AND_PHOTOMETRIC_FALLBACK"
+      },
+      {
+        "pair": [
+          5,
+          6
+        ],
+        "baseline": 7.5756,
+        "sampledCandidatePoints": 0,
+        "rawDisparityPixels": 262144,
+        "validDisparityCount": 0,
+        "invalidDisparityCount": 262144,
+        "negativeDepthRejected": 0,
+        "rangeRejected": 0,
+        "spatialRejected": 0,
+        "thirdViewDepthGeometricTested": 0,
+        "thirdViewDepthGeometricConsistent": 0,
+        "thirdViewDepthGeometricRejected": 0,
+        "thirdViewPhotometricHeuristicAccepted": 0,
+        "multiViewGeometricRejected": 0,
+        "multiViewHeuristicRejected": 0,
+        "supportPolicy": "AT_LEAST_ONE_THIRD_VIEW_PASS",
+        "thirdViewsTestedCount": 0,
+        "thirdViewsPassedCount": 0,
+        "thirdViewsFailedCount": 0,
+        "acceptedMultiViewConsistent3dCount": 0,
+        "acceptedGeometricallyConsistent3dCount": 0,
+        "meanRelativeDepthResidual": null,
+        "fusedContribution": 0,
+        "consistencyMethod": "UNBIASED_RECTIFIED_THIRD_VIEW_STEREO_DEPTH_GATE_AND_PHOTOMETRIC_FALLBACK"
+      },
+      {
+        "pair": [
+          6,
+          7
+        ],
+        "baseline": 7.5552,
+        "sampledCandidatePoints": 0,
+        "rawDisparityPixels": 262144,
+        "validDisparityCount": 1953,
+        "invalidDisparityCount": 260191,
+        "negativeDepthRejected": 1953,
+        "rangeRejected": 0,
+        "spatialRejected": 0,
+        "thirdViewDepthGeometricTested": 0,
+        "thirdViewDepthGeometricConsistent": 0,
+        "thirdViewDepthGeometricRejected": 0,
+        "thirdViewPhotometricHeuristicAccepted": 0,
+        "multiViewGeometricRejected": 0,
+        "multiViewHeuristicRejected": 0,
+        "supportPolicy": "AT_LEAST_ONE_THIRD_VIEW_PASS",
+        "thirdViewsTestedCount": 0,
+        "thirdViewsPassedCount": 0,
+        "thirdViewsFailedCount": 0,
+        "acceptedMultiViewConsistent3dCount": 0,
+        "acceptedGeometricallyConsistent3dCount": 0,
+        "meanRelativeDepthResidual": null,
+        "fusedContribution": 0,
+        "consistencyMethod": "UNBIASED_RECTIFIED_THIRD_VIEW_STEREO_DEPTH_GATE_AND_PHOTOMETRIC_FALLBACK"
+      },
+      {
+        "pair": [
+          7,
+          8
+        ],
+        "baseline": 7.5619,
+        "sampledCandidatePoints": 0,
+        "rawDisparityPixels": 262144,
+        "validDisparityCount": 73170,
+        "invalidDisparityCount": 188974,
+        "negativeDepthRejected": 0,
+        "rangeRejected": 18,
+        "spatialRejected": 73152,
+        "thirdViewDepthGeometricTested": 0,
+        "thirdViewDepthGeometricConsistent": 0,
+        "thirdViewDepthGeometricRejected": 0,
+        "thirdViewPhotometricHeuristicAccepted": 0,
+        "multiViewGeometricRejected": 0,
+        "multiViewHeuristicRejected": 0,
+        "supportPolicy": "AT_LEAST_ONE_THIRD_VIEW_PASS",
+        "thirdViewsTestedCount": 0,
+        "thirdViewsPassedCount": 0,
+        "thirdViewsFailedCount": 0,
+        "acceptedMultiViewConsistent3dCount": 0,
+        "acceptedGeometricallyConsistent3dCount": 0,
+        "meanRelativeDepthResidual": null,
+        "fusedContribution": 0,
+        "consistencyMethod": "UNBIASED_RECTIFIED_THIRD_VIEW_STEREO_DEPTH_GATE_AND_PHOTOMETRIC_FALLBACK"
+      },
+      {
+        "pair": [
+          8,
+          9
+        ],
+        "baseline": 11.2194,
+        "sampledCandidatePoints": 67733,
+        "rawDisparityPixels": 262144,
+        "validDisparityCount": 69945,
+        "invalidDisparityCount": 192199,
+        "negativeDepthRejected": 0,
+        "rangeRejected": 1726,
+        "spatialRejected": 486,
+        "thirdViewDepthGeometricTested": 0,
+        "thirdViewDepthGeometricConsistent": 0,
+        "thirdViewDepthGeometricRejected": 0,
+        "thirdViewPhotometricHeuristicAccepted": 0,
+        "multiViewGeometricRejected": 0,
+        "multiViewHeuristicRejected": 67733,
+        "supportPolicy": "AT_LEAST_ONE_THIRD_VIEW_PASS",
+        "thirdViewsTestedCount": 0,
+        "thirdViewsPassedCount": 0,
+        "thirdViewsFailedCount": 0,
+        "acceptedMultiViewConsistent3dCount": 0,
+        "acceptedGeometricallyConsistent3dCount": 0,
+        "meanRelativeDepthResidual": null,
+        "fusedContribution": 0,
+        "consistencyMethod": "UNBIASED_RECTIFIED_THIRD_VIEW_STEREO_DEPTH_GATE_AND_PHOTOMETRIC_FALLBACK"
+      },
+      {
+        "pair": [
+          9,
+          10
+        ],
+        "baseline": 11.3099,
+        "sampledCandidatePoints": 0,
+        "rawDisparityPixels": 262144,
+        "validDisparityCount": 0,
+        "invalidDisparityCount": 262144,
+        "negativeDepthRejected": 0,
+        "rangeRejected": 0,
+        "spatialRejected": 0,
+        "thirdViewDepthGeometricTested": 0,
+        "thirdViewDepthGeometricConsistent": 0,
+        "thirdViewDepthGeometricRejected": 0,
+        "thirdViewPhotometricHeuristicAccepted": 0,
+        "multiViewGeometricRejected": 0,
+        "multiViewHeuristicRejected": 0,
+        "supportPolicy": "AT_LEAST_ONE_THIRD_VIEW_PASS",
+        "thirdViewsTestedCount": 0,
+        "thirdViewsPassedCount": 0,
+        "thirdViewsFailedCount": 0,
+        "acceptedMultiViewConsistent3dCount": 0,
+        "acceptedGeometricallyConsistent3dCount": 0,
+        "meanRelativeDepthResidual": null,
+        "fusedContribution": 0,
+        "consistencyMethod": "UNBIASED_RECTIFIED_THIRD_VIEW_STEREO_DEPTH_GATE_AND_PHOTOMETRIC_FALLBACK"
+      }
+    ],
+    "voxelDeduplication": {
+      "voxelSize": 0.05,
+      "rawDensePoints": 1200,
+      "fusedUniquePoints": 1200
+    }
+  },
+  "sparseSfmSeed": {
+    "classification": "SPARSE_SFM_INTERNAL_PROOF",
+    "filename": "AUTHLINEAGE_SPARSE_SFM_SEED.ply",
+    "format": "BINARY_LITTLE_ENDIAN_PLY",
+    "vertexCount": 130,
+    "sizeBytes": 2127,
+    "sha256": "94825bfef72ff1efeb014ffa0376c55960bfdea4d14c869269e734d69775e329"
+  },
+  "outputArtifact": {
+    "classification": "STEREO_DERIVED_FUSED_MVS_INTERNAL_PROOF",
+    "filename": "AUTHLINEAGE_RECONSTRUCTED_SPATIAL_MODEL.ply",
+    "format": "BINARY_LITTLE_ENDIAN_PLY",
+    "sizeBytes": 18178,
+    "sha256": "ed73f042b99ca64842f2787faaec8564e86db19224dc5375d52da99165b3c337",
+    "hasColor": true,
+    "artifactSupportProvenance": {
+      "totalVertexCount": 1200,
+      "geometricallyVerifiedVertices": 207,
+      "photometricOnlyVertices": 993,
+      "geometricallyVerifiedRatio": 0.1725,
+      "supportPolicy": "AT_LEAST_ONE_THIRD_VIEW_PASS",
+      "policyDefinition": "A voxel-fused vertex is geometrically verified if ALL contributing voxel points met the AT_LEAST_ONE_THIRD_VIEW_PASS geometric support criterion; otherwise photometric-only.",
+      "conservativeMergePolicy": "ALL_CONTRIBUTING_VOXEL_POINTS_MUST_BE_GEOMETRIC",
+      "artifactQualityGate": "QUARANTINED_INTERNAL_PROOF_ONLY_SPARSE_GEOMETRIC_SUPPORT"
+    },
+    "nonLfsVerifiablePayload": {
+      "declaredSizeBytes": 18178,
+      "sha256": "ed73f042b99ca64842f2787faaec8564e86db19224dc5375d52da99165b3c337",
+      "base64Payload": "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"
+    }
+  },
+  "reconstructionGeometry": {
+    "coordinateSystem": "SCALE_FREE_UNIFIED_GLOBAL_SFM_FRAME",
+    "units": "SCALE_FREE_NORMALIZED_SFM_UNITS",
+    "scaleDisclosure": "SCALE_FREE_RECONSTRUCTION_ARBITRARY_WORLD_SCALE",
+    "globalCameraPosesRegistered": 12,
+    "vertexCount": 1200,
+    "boundingBoxSfmUnits": {
+      "min": [
+        -64.8379,
+        -97.6116,
+        -125.7381
+      ],
+      "max": [
+        96.0656,
+        35.9783,
+        235.9415
+      ],
+      "volumeSfmUnits": 7774329.5432
+    }
+  },
+  "gateStatusDisclosures": {
+    "OWNER_REVIEW_GATE": "HOLD",
+    "ENGINEERING_HOLD": "ACTIVE",
+    "NO_NEW_3D_GPU_SPEND": "ACTIVE",
+    "LIVE_QA_REVOCATION": "BLOCKED_PENDING_INDEPENDENT_CONTROL_PLANE",
+    "DESTRUCTIVE_GIT_REWRITE": "FORBIDDEN",
+    "GLOBAL_COVERAGE_GATE": "NOT_MET_PARTIAL_11_OF_12",
+    "LOOP_CLOSURE_GATE": "LOOP_CLOSURE_FAILED_EXCEEDS_TOLERANCE",
+    "DATASET_ADEQUACY_GATE": "BLOCKED_BY_MEASURED_POSITIVE_FIXTURE_AVAILABILITY",
+    "POSITIVE_FIXTURE_GATE": "BLOCKED_BY_MEASURED_POSITIVE_FIXTURE_AVAILABILITY",
+    "SPARSE_SFM_CLASSIFICATION": "SPARSE_SFM_INTERNAL_PROOF",
+    "DENSE_MVS_CLASSIFICATION": "STEREO_DERIVED_FUSED_MVS_INTERNAL_PROOF"
+  },
+  "diagnosticsDigest": "0930c47d643ae58ce2a21c02dd08915775dd616f54d67f0b1da7ffaa84f54ac2",
+  "cryptographicBinding": {
+    "formula": "sha256(cutSha | inputsDigest | calibStatus | engineSha | workerSha | configDigest | rmse | outSha)",
+    "lineageDigest": "425d20d5c39fe82aee3055d18ab38d9e223d9978ea2e5feb37658970330735b4"
+  }
+}

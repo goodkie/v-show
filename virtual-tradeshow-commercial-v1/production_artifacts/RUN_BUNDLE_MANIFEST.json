@@ -1,0 +1,94 @@
+{
+  "manifestSchemaVersion": "RUN_BUNDLE_MANIFEST_V2_NON_CYCLIC",
+  "cutCommitSha": "7260d3d0af5fe6cbbc3d6a990edc3fa5abf00500",
+  "bundleDigest": "69c959956ba19c6eb8cbd73c333d75822990e22fedcd5be917ae560537423715",
+  "createdAt": "2026-09-29T00:02:51.330Z",
+  "manifestEntriesCount": 17,
+  "manifestEntries": [
+    {
+      "path": "docs/ROUND_101_REPORT.md",
+      "sizeBytes": 21122,
+      "sha256": "c2b47d0382fa504765bafa617dd77ee169493ac257bb25b509b4ec3ca9562e0f"
+    },
+    {
+      "path": "scripts/build_geometry_cache.js",
+      "sizeBytes": 9930,
+      "sha256": "9bba28499179d8b5abb04144c9f4697be3ed9f3fce4fefbc957cf295d6c43d95"
+    },
+    {
+      "path": "scripts/generate_round101_report.js",
+      "sizeBytes": 20419,
+      "sha256": "925c058a4ab06178e77d6271a674122075d9fd78b6282c1713486b8794225862"
+    },
+    {
+      "path": "test/test_stage2_true3d_pipeline.js",
+      "sizeBytes": 218122,
+      "sha256": "cbf2679c71afb14d5ac232bf7692ac8b6175eac08d2c1cde7f6abbf18b6992bf"
+    },
+    {
+      "path": "virtual-tradeshow-commercial-v1/production_artifacts/AUTHLINEAGE_RECEIPT_V11_STANDARDIZED_DIGEST_AND_SUPPORT_POLICY.json",
+      "sizeBytes": 54781,
+      "sha256": "16cf2ac9c1918da408a47ec56473aa68658d7ac591b34e785ff2a0fb21516f09"
+    },
+    {
+      "path": "virtual-tradeshow-commercial-v1/production_artifacts/AUTHLINEAGE_RECEIPT.json",
+      "sizeBytes": 54781,
+      "sha256": "c4b062d091c87a1ff8e6167cd54d6bb5c7add0cff8350f42aafe95943b4d62a4"
+    },
+    {
+      "path": "virtual-tradeshow-commercial-v1/production_artifacts/AUTHLINEAGE_RECONSTRUCTED_SPATIAL_MODEL.ply",
+      "sizeBytes": 18178,
+      "sha256": "ed73f042b99ca64842f2787faaec8564e86db19224dc5375d52da99165b3c337"
+    },
+    {
+      "path": "virtual-tradeshow-commercial-v1/production_artifacts/AUTHLINEAGE_SPARSE_SFM_SEED.ply",
+      "sizeBytes": 2127,
+      "sha256": "94825bfef72ff1efeb014ffa0376c55960bfdea4d14c869269e734d69775e329"
+    },
+    {
+      "path": "virtual-tradeshow-commercial-v1/production_artifacts/DATASET_GEOMETRY_CACHE.json",
+      "sizeBytes": 82753,
+      "sha256": "70aa70375edd98c3c7ba4618d1c8ee5f1d846e9c9a9e1916c40de177c114b236"
+    },
+    {
+      "path": "virtual-tradeshow-commercial-v1/production_artifacts/DATASET_INVENTORY_AUDIT_V4_EMPIRICAL_GEOMETRY_EVALUATION.json",
+      "sizeBytes": 761653,
+      "sha256": "5fef6b399dc5f04b3cdcfa2266d90984c41bd2bf7e543ef849f687d571501818"
+    },
+    {
+      "path": "virtual-tradeshow-commercial-v1/production_artifacts/DATASET_INVENTORY_AUDIT.json",
+      "sizeBytes": 761653,
+      "sha256": "5fef6b399dc5f04b3cdcfa2266d90984c41bd2bf7e543ef849f687d571501818"
+    },
+    {
+      "path": "virtual-tradeshow-commercial-v1/production_artifacts/R47_TEST_EXECUTION_RECEIPT.json",
+      "sizeBytes": 9116,
+      "sha256": "e040c321682f8b4649fbcda1845edb702a218e1e40c59854c57db469320ed594"
+    },
+    {
+      "path": "virtual-tradeshow-commercial-v1/server/dataset_inventory.js",
+      "sizeBytes": 24329,
+      "sha256": "b2c499fe62c2aceae0fe7762c28eb169b066ae85dd02d3ac40bd17f4e4388098"
+    },
+    {
+      "path": "virtual-tradeshow-commercial-v1/server/evaluate_dataset_geometry.py",
+      "sizeBytes": 20803,
+      "sha256": "5ad51a84dd9ce7c59bb601aa67cc63d0ba2cec6b80667f26e70244c68399459e"
+    },
+    {
+      "path": "virtual-tradeshow-commercial-v1/server/evaluator_config.json",
+      "sizeBytes": 448,
+      "sha256": "1117e4488c00c9be3b111297ab206f8e9de9c91d74f56518a6066a5de4420b12"
+    },
+    {
+      "path": "virtual-tradeshow-commercial-v1/server/spatial_reconstruction_engine.py",
+      "sizeBytes": 75831,
+      "sha256": "3db35d4bdc6abd15ff2f870dee2520b0ec218b0b78aefefec347e81ad01cfe8a"
+    },
+    {
+      "path": "virtual-tradeshow-commercial-v1/server/spatial_reconstruction_worker.js",
+      "sizeBytes": 91629,
+      "sha256": "c3c7698b6fb3ae7cf676b9bacf4d3e630db22f4a34a554bb8d651a12036aa415"
+    }
+  ]
+}

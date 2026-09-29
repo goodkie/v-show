@@ -1,0 +1,71 @@
+{
+  "receiptSchemaVersion": "R28_EXECUTION_RECEIPT_V1",
+  "executionTimestamps": {
+    "startTime": "2026-09-23T05:37:25.349Z",
+    "endTime": "2026-09-23T05:37:54.388Z",
+    "durationMs": 29035
+  },
+  "runnerMetadata": {
+    "sourceFile": "test/test_stage2_true3d_pipeline.js",
+    "sourceSha256": "13d19334b4d5da8c89ce67f4767ba0e09fe3d1530c0f692f46fe2cd7a05bab2a",
+    "nodeVersion": "v24.21.0",
+    "platform": "win32"
+  },
+  "gitEvidence": {
+    "observedHeadSha": "c385e993d558a0625864274ab1363352928de59a",
+    "expectedHeadSha": "c385e993d558a0625864274ab1363352928de59a",
+    "headBindingMatched": true,
+    "worktreeClean": true,
+    "rawGitStatusPorcelain": "(clean)"
+  },
+  "suiteResults": {
+    "totalTests": 18,
+    "passedTests": 18,
+    "failedTests": 0,
+    "passedStatus": "18/18 PASS",
+    "exitCode": 0
+  },
+  "deployRootsAudit": {
+    "scannedRoots": [
+      "virtual-tradeshow-commercial-v1/_clean_deploy/client/assets",
+      "virtual-tradeshow-commercial-v1/_railway_deploy/client/assets",
+      "virtual-tradeshow-commercial-v1/app_build/client/assets",
+      "virtual-tradeshow-commercial-v1/client/assets"
+    ],
+    "allRootsRequiredAndPresent": true,
+    "prohibitedModelExtensions": [
+      "spz",
+      "ply",
+      "splat",
+      "ksplat",
+      "glb",
+      "gltf",
+      "bin"
+    ],
+    "lfsPointersFound": 0,
+    "prohibitedModelsFound": 0
+  },
+  "positiveFailControls": {
+    "syntheticExtensionsTested": 7,
+    "syntheticExtensionsCaught": 7,
+    "lfsPointerDetectionVerified": true
+  },
+  "operatingGates": {
+    "LOCAL_STATIC_ASSET_ISOLATION": "VERIFIED_BY_TEST",
+    "CURRENT_RUNTIME_STATIC_ISOLATION": "NOT_VERIFIED",
+    "REAL_DEVICE_12": "NOT_VERIFIED",
+    "REAL_MULTIPOSITION_CAPTURE": "NOT_VERIFIED",
+    "RECONSTRUCTION_FROM_INPUTS": "NOT_VERIFIED",
+    "NEW_3D_MODEL_GENERATION": "NOT_VERIFIED",
+    "INPUT_TO_OUTPUT_CAUSAL_LINEAGE": "NOT_VERIFIED",
+    "SPZ_DECODED_IN_VIEWER": "NOT_VERIFIED",
+    "AUTHENTIC_SPZ_RENDER": "NOT_VERIFIED",
+    "OWNER_PRO_3D_VIEWER": "NOT_VERIFIED",
+    "HISTORICAL_PUBLIC_ARTIFACT_EXPOSURE": "REQUIRES_ASSESSMENT",
+    "COMMERCIAL_REDISTRIBUTION_RIGHTS": "REQUIRES_OWNER_ATTESTATION",
+    "LIVE_QA_REVOCATION": "BLOCKED_PENDING_INDEPENDENT_CONTROL_PLANE",
+    "OWNER_REVIEW_GATE": "HOLD",
+    "ENGINEERING_HOLD": "ACTIVE",
+    "DESTRUCTIVE_GIT_REWRITE": "FORBIDDEN"
+  }
+}

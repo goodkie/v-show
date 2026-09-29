@@ -14,11 +14,51 @@ class MobileInspectorUI {
 
   mount() {
     if (typeof document === 'undefined') return;
-    if (document.getElementById('mobileRiContainer')) return;
+    if (typeof window !== 'undefined' && (!window.__IS_INTERNAL_QA__ || !window.__MOBILE_RI_AUTHORIZED__)) {
+      return;
+    }
+    const existingRoots = document.querySelectorAll('#mobileRiContainer');
+    if (existingRoots.length > 0) {
+      for (let i = 1; i < existingRoots.length; i++) existingRoots[i].remove();
+      this.container = existingRoots[0];
+      return;
+    }
 
     this.container = document.createElement('div');
     this.container.id = 'mobileRiContainer';
-    this.container.style.cssText = 'position: fixed; z-index: 999999; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; pointer-events: none;';
+    this.container.style.cssText = 'position: fixed; z-index: 2147483647; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; pointer-events: none;';
+
+    // Persistent MutationObserver Remount Engine (server-verified in-memory flag only)
+    if (typeof MutationObserver !== 'undefined' && !this._observerInstalled) {
+      this._observerInstalled = true;
+      this._remountCount = 0;
+      this._observer = new MutationObserver(() => {
+        try {
+          const isQaAuthorized = Boolean(
+            typeof window !== 'undefined' &&
+            window.__IS_INTERNAL_QA__ === true &&
+            window.__MOBILE_RI_AUTHORIZED__ === true
+          );
+          if (isQaAuthorized) {
+            const roots = document.querySelectorAll('#mobileRiContainer');
+            if (roots.length === 0) {
+              this._remountCount = (this._remountCount || 0) + 1;
+              console.log('[MobileRI] Detach detected! Auto-remounting Mobile Runtime Inspector (remountCount=' + this._remountCount + ')...');
+              this.mount();
+            } else if (roots.length > 1) {
+              for (let i = 1; i < roots.length; i++) roots[i].remove();
+            }
+          } else {
+            const badRoots = document.querySelectorAll('#mobileRiContainer, #btnMobileRiReport, #mobileRiSheet');
+            badRoots.forEach(el => el.remove());
+          }
+        } catch(e) {}
+      });
+      const targetNode = document.body || document.documentElement;
+      if (targetNode) {
+        this._observer.observe(targetNode, { childList: true, subtree: true });
+      }
+    }
 
     // Floating REPORT ISSUE Button (Bottom Right)
     const floatBtn = document.createElement('button');
@@ -172,6 +212,23 @@ class MobileInspectorUI {
   closeBottomSheet() {
     if (!this.sheet) return;
     this.sheet.style.display = 'none';
+  }
+
+  unmount() {
+    if (this._observer) {
+      try { this._observer.disconnect(); } catch (e) {}
+      this._observerInstalled = false;
+    }
+    if (this.container && this.container.parentNode) {
+      this.container.parentNode.removeChild(this.container);
+    }
+    if (this.sheet && this.sheet.parentNode) {
+      this.sheet.parentNode.removeChild(this.sheet);
+    }
+    const roots = document.querySelectorAll('#mobileRiContainer, #btnMobileRiReport, #mobileRiSheet, #mobileRiBottomSheet');
+    roots.forEach(el => el.remove());
+    this.container = null;
+    this.sheet = null;
   }
 
   updateMetrics() {

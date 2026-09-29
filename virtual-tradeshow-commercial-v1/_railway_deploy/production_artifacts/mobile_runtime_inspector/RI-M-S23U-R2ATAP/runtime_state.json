@@ -1,0 +1,41 @@
+{
+  "sessionId": "RI-M-S23U-R2ATAP",
+  "device": {
+    "model": "Samsung Galaxy S23 Ultra",
+    "userAgent": "Mozilla/5.0 (Linux; Android 14; SM-S918U Build/UP1A.231005.007) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.88 Mobile Safari/537.36",
+    "viewport": {
+      "width": 412,
+      "height": 915,
+      "dsf": 2.8125
+    }
+  },
+  "camera": {
+    "hasMediaDevices": true,
+    "hasGetUserMedia": true,
+    "isSecureContext": true,
+    "cameraPermissionState": "granted",
+    "getUserMediaCalled": true,
+    "getUserMediaResolved": true,
+    "cameraStreamActive": true,
+    "videoTrackState": "LIVE",
+    "videoWidth": 1080,
+    "videoHeight": 1920,
+    "videoReadyState": 4,
+    "facingMode": "environment",
+    "cameraModule": "Samsung Galaxy S23 Ultra Camera",
+    "videoCurrentTimeAdvances": true,
+    "videoFramePresentationAdvances": true
+  },
+  "wizard": {
+    "wizardPresent": true,
+    "controllerInstanceCount": 1,
+    "wizardRootCount": 1,
+    "currentWizardStep": 6,
+    "wizardStepName": "Guided 360 Capture",
+    "projectId": "prj-free-b0c6f3ea",
+    "tourId": "tour_default",
+    "viewpointCount": 3,
+    "currentViewpointId": "vp_entrance",
+    "isModalOpen": true
+  }
+}

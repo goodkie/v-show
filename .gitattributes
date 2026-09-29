@@ -1,0 +1,26 @@
+# Enforce Windows line endings for Windows batch & PowerShell scripts
+*.cmd text eol=crlf
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+
+# Enforce exact LF line endings across platforms for receipts, code, and documentation
+*.json text eol=lf
+*.js text eol=lf
+*.py text eol=lf
+*.md text eol=lf
+*.html text eol=lf
+*.css text eol=lf
+*.txt text eol=lf
+
+# Binary artifacts
+*.ply binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.spz binary
+*.splat binary
+*.ksplat binary
+*.glb binary
+*.gltf binary
+*.bin binary
+
