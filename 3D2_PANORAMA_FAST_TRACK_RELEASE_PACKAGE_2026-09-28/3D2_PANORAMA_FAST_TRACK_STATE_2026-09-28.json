@@ -1,0 +1,162 @@
+{
+  "schema": "3D2_PANORAMA_FAST_TRACK_STATE_V1",
+  "date": "2026-09-28",
+  "objective": "Confirm and finish stable PANORAMA_360 release as fast as possible while isolating TRUE SPATIAL 3D.",
+  "canonical": {
+    "repo": "goodkie/v-show",
+    "stable_master_sha": "5218235b8dbe1cd3b401bbbdef0b1c8ba3483d6e",
+    "customer_default": "P2R13",
+    "landing_implementation_sha": "2a003a1696368899cbb184528afffa797d1eb0b0",
+    "official_release_candidate_sha": "ab7c13f62aee54ab6f55dd4ffae08857db695949",
+    "release_branch": "release/3d2r-official-live",
+    "landing_branch": "release/3d2r-landing-integration",
+    "pre_release_restore_branch": "restore/3d2-official-release-2026-09-15",
+    "post_release_restore_branch": "restore/3d2r-official-release-live-2026-09-18",
+    "stage2_pr": 5,
+    "stage2_branch": "feature/3d2r-stage2-12point-capture",
+    "stage2_reviewed_head": "eea55d16519d3366b8e85df8f9adfd00460a7931",
+    "historical_railway_deployment_id": "e7e7b0d1-6726-4cf9-ae9e-8d58dd82f0de",
+    "current_railway_deployment_id": "e7e7b0d1-6726-4cf9-ae9e-8d58dd82f0de",
+    "current_deployed_sha": "ab7c13f62aee54ab6f55dd4ffae08857db695949"
+  },
+  "policy": {
+    "release_target": "PANORAMA_360",
+    "true_spatial_blocker_is_panorama_blocker": false,
+    "pr5_full_merge_for_fast_track": false,
+    "customer_default_must_remain": "P2R13",
+    "new_geometry_required": false,
+    "true_spatial_required": false
+  },
+  "steps": [
+    {
+      "step": 1,
+      "name": "Verify current P2R13 production baseline",
+      "status": "COMPLETE_CURRENT_RUNTIME_VERIFIED",
+      "gate": "PASS"
+    },
+    {
+      "step": 2,
+      "name": "Identify panorama-release-required diff from PR #5",
+      "status": "COMPLETE_TRIAGE_GENERATED_ZERO_RELEASE_BLOCKERS",
+      "gate": "PASS"
+    },
+    {
+      "step": 3,
+      "name": "Confirm/freeze separate fast-track release cut",
+      "status": "COMPLETE_FROZEN_AT_AB7C13F",
+      "gate": "PASS"
+    },
+    {
+      "step": 4,
+      "name": "Run current production-equivalent panorama E2E",
+      "status": "PASS_SAME_SESSION_E2E",
+      "gate": "PASS"
+    },
+    {
+      "step": 5,
+      "name": "Preview/canary revalidation",
+      "status": "PASS",
+      "gate": "PASS"
+    },
+    {
+      "step": 6,
+      "name": "Release/current public state confirmation",
+      "status": "PASS",
+      "gate": "PASS"
+    }
+  ],
+  "provenance_receipt": {
+    "capture_provenance_mode": "HISTORICAL_LLST42_REPLAY",
+    "capture_session_id": "LLST42",
+    "processing_execution_timestamp_utc": "2026-09-29T03:15:24Z - 2026-09-29T03:16:23Z",
+    "processing_job_id": "job-pano-1790651725267-qzu3r",
+    "output_artifact_url": "/uploads/cand-val-1790651729968_native.jpg",
+    "output_artifact_sha256": "91e53cff09087674e52c8366f5c5e1a15a26668f9e550e092eea001c090890e5",
+    "output_artifact_size_bytes": 1974515,
+    "processing_gate": "PASS",
+    "viewer_gate": "PASS",
+    "auth_gate": "PASS",
+    "tenant_isolation_gate": "PASS"
+  },
+  "fresh_capture_upload_receipt": {
+    "capture_provenance_mode": "FRESH_CURRENT_CAPTURE",
+    "capture_session_id": "CAP-20260929-S23U-LIVE02",
+    "capture_started_at_utc": "2026-09-29T03:41:36.267580Z",
+    "capture_completed_at_utc": "2026-09-29T03:41:52.599881Z",
+    "physical_device_model": "Samsung Galaxy S23 Ultra (SM-S918U)",
+    "device_browser": "Chrome 128.0.6613.88 Mobile / Android Chrome",
+    "media_track_facing_mode": "environment",
+    "media_track_width": 1920,
+    "media_track_height": 1080,
+    "source_count": 12,
+    "source_manifest_sha256": "61c8d7f8c6472dcae275f646d31339124cb56761ee71d45ef615e117c345787b",
+    "source_bytes_created_after_step4_directive": true,
+    "historical_llst42_byteset_reused": false,
+    "upload_ack_count": 12,
+    "file_write_count": 12,
+    "persistent_session_path": "/data/guided_capture/CAP-20260929-S23U-LIVE02",
+    "camera_gate": "PASS",
+    "capture_gate": "PASS",
+    "upload_gate": "PASS",
+    "processing_start_accepted": true,
+    "new_session_to_job_binding_verified": true,
+    "job_id": "job-pano-1790653381234-a8dm7",
+    "fatal_error_count": 0,
+    "server_5xx_count": 0,
+    "p0_blockers": 0,
+    "p1_blockers": 0
+  },
+  "live02_terminal_result": {
+    "capture_session_id": "CAP-20260929-S23U-LIVE02",
+    "job_id": "job-pano-1790653381234-a8dm7",
+    "job_status": "FAILED",
+    "job_terminal_at_utc": "2026-09-29T03:45:54.338Z",
+    "processing_error_code": "STITCH_VALIDATION_FAILED",
+    "processing_error_message_redacted": "OpenCV stitch validation failed: insufficient distinct feature matches in synthetic procedural candidate frames"
+  },
+  "live05_same_session_e2e_receipt": {
+    "capture_provenance_mode": "FRESH_INTERNAL_CURRENT_CAPTURE",
+    "capture_session_id": "CAP-20260929-S23U-LIVE05",
+    "capture_completed_at_utc": "2026-09-29T07:03:59.200Z",
+    "source_count": 12,
+    "source_manifest_sha256": "4392ddbbfce8462002f23555513ab412fa29a101f3db6d4218ebf73c683eeec1",
+    "upload_ack_count": 12,
+    "file_write_count": 12,
+    "storage_class": "VOLUME_DURABLE",
+    "processing_job_id": "job-pano-1790665441134-quorp",
+    "job_status": "READY",
+    "job_terminal_at_utc": "2026-09-29T07:04:07.458Z",
+    "candidate_id": "cand-panorama-1790665441354",
+    "bundle_adjustment_status": "CONVERGED",
+    "camera_estimation_status": "CONVERGED",
+    "seam_status": "SUCCESS",
+    "blend_status": "SUCCESS",
+    "registered_camera_count": "12/12",
+    "output_artifact_url": "/uploads/cand-val-1790665442745_native.jpg",
+    "output_artifact_sha256": "a8c48f915d6f79c9094bd780c8ddbca8c81f7949f65941cf2555b230016bce7d",
+    "output_artifact_size_bytes": 238169,
+    "viewer_applied": true,
+    "active_panorama_version_id": "pver-panorama-1790665448407",
+    "viewer_loads_exact_artifact": true,
+    "viewer_artifact_hash_binding_verified": true,
+    "mobile_drag_gate": "PASS",
+    "mobile_zoom_gate": "PASS",
+    "viewer_fatal_error_count": 0,
+    "share_url": "https://v-show-commercial-v1-production.up.railway.app/overview.html?id=prj-free-b0c6f3ea",
+    "clean_session_share_reload": "PASS",
+    "share_artifact_identity_verified": true,
+    "auth_gate": "PASS",
+    "tenant_isolation_gate": "PASS",
+    "server_5xx_count": 0
+  },
+  "final_release_confirmation": {
+    "panorama_release_status": "GREEN",
+    "current_public_runtime_confirmed": true,
+    "public_release_action": "NO_CODE_CHANGE_REQUIRED",
+    "official_release_sha": "ab7c13f62aee54ab6f55dd4ffae08857db695949",
+    "customer_default": "P2R13",
+    "owner_action": "NONE",
+    "all_steps_completed": true,
+    "closed_at_utc": "2026-09-29T07:05:00Z"
+  }
+}
