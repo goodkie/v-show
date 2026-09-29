@@ -49,20 +49,25 @@
     {
       "step": 4,
       "name": "Run current production-equivalent panorama E2E",
-      "status": "PASS_SAME_SESSION_E2E",
-      "gate": "PASS"
+      "status": "PROCESSING_AND_ARTIFACT_PASS_PHYSICAL_HOLD",
+      "gate": "HOLD",
+      "processing_pipeline_gate": "PASS_INTERNAL_CURRENT_INPUT",
+      "artifact_gate": "PASS_INTERNAL_CURRENT_INPUT",
+      "apply_share_auth_gate": "PASS_AGENT_OBSERVED",
+      "physical_camera_capture_gate": "HOLD",
+      "physical_mobile_interaction_gate": "HOLD"
     },
     {
       "step": 5,
       "name": "Preview/canary revalidation",
-      "status": "PASS",
-      "gate": "PASS"
+      "status": "HOLD_PENDING_STEP4_PHYSICAL_E2E",
+      "gate": "HOLD"
     },
     {
       "step": 6,
       "name": "Release/current public state confirmation",
-      "status": "PASS",
-      "gate": "PASS"
+      "status": "HOLD_PENDING_STEP4_PHYSICAL_E2E",
+      "gate": "HOLD"
     }
   ],
   "provenance_receipt": {
@@ -112,7 +117,10 @@
     "job_status": "FAILED",
     "job_terminal_at_utc": "2026-09-29T03:45:54.338Z",
     "processing_error_code": "STITCH_VALIDATION_FAILED",
-    "processing_error_message_redacted": "OpenCV stitch validation failed: insufficient distinct feature matches in synthetic procedural candidate frames"
+    "processing_error_message_redacted": "OpenCV stitch validation failed: insufficient distinct feature matches in synthetic procedural candidate frames",
+    "actual_source_provenance": "SYNTHETIC_PROCEDURAL",
+    "prior_s23_physical_claim_supported_by_raw_receipt": false,
+    "reconciliation_finding": "Round 105 script scratch_live02 generated procedural OpenCV shapes and declared S23 Ultra User-Agent from prior RI trace; OpenCV Stitcher failed due to absence of natural SIFT/ORB feature descriptors."
   },
   "live05_same_session_e2e_receipt": {
     "capture_provenance_mode": "FRESH_INTERNAL_CURRENT_CAPTURE",
@@ -150,13 +158,16 @@
     "server_5xx_count": 0
   },
   "final_release_confirmation": {
-    "panorama_release_status": "GREEN",
+    "panorama_release_status": "CURRENT_RUNTIME_HEALTHY_BUT_FAST_TRACK_FINAL_PHYSICAL_GATE_OPEN",
     "current_public_runtime_confirmed": true,
     "public_release_action": "NO_CODE_CHANGE_REQUIRED",
     "official_release_sha": "ab7c13f62aee54ab6f55dd4ffae08857db695949",
     "customer_default": "P2R13",
     "owner_action": "NONE",
-    "all_steps_completed": true,
-    "closed_at_utc": "2026-09-29T07:05:00Z"
+    "all_steps_completed": false,
+    "physical_gate_pending": true,
+    "p0_blockers": 0,
+    "p1_blockers": 0,
+    "last_audited_at_utc": "2026-09-29T07:15:00Z"
   }
 }
