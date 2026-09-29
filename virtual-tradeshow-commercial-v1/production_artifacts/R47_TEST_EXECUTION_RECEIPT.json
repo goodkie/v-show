@@ -1,19 +1,19 @@
 {
   "receiptSchemaVersion": "R47_EXECUTION_RECEIPT_V1",
   "executionTimestamps": {
-    "startTime": "2026-09-28T22:47:28.138Z",
-    "endTime": "2026-09-28T22:51:34.805Z",
-    "durationMs": 246664
+    "startTime": "2026-09-28T23:58:18.026Z",
+    "endTime": "2026-09-29T00:02:28.172Z",
+    "durationMs": 250143
   },
   "runnerMetadata": {
     "sourceFile": "test/test_stage2_true3d_pipeline.js",
-    "sourceSha256": "bf8a9cc4689a6da05792b68e6851ed3d1409ea51c44cda7c9dd00bc2a4047208",
+    "sourceSha256": "cbf2679c71afb14d5ac232bf7692ac8b6175eac08d2c1cde7f6abbf18b6992bf",
     "nodeVersion": "v24.21.0",
     "platform": "win32"
   },
   "gitEvidence": {
-    "observedHeadSha": "90584f06bcd8cc8e8e60f4fc41d995a778997ad9",
-    "expectedHeadSha": "90584f06bcd8cc8e8e60f4fc41d995a778997ad9",
+    "observedHeadSha": "7260d3d0af5fe6cbbc3d6a990edc3fa5abf00500",
+    "expectedHeadSha": "7260d3d0af5fe6cbbc3d6a990edc3fa5abf00500",
     "headBindingMatched": true,
     "preRunGitStatusPorcelain": "(clean)",
     "postRunGitStatusPorcelain": "(clean)",
@@ -187,7 +187,7 @@
   "runBundle": {
     "manifestFile": "virtual-tradeshow-commercial-v1/production_artifacts/RUN_BUNDLE_MANIFEST.json",
     "architecture": "TWO_LAYER_NON_CYCLIC_EVIDENCE_BUNDLE",
-    "cutCommitSha": "90584f06bcd8cc8e8e60f4fc41d995a778997ad9",
+    "cutCommitSha": "7260d3d0af5fe6cbbc3d6a990edc3fa5abf00500",
     "linkedReceipts": [
       "virtual-tradeshow-commercial-v1/production_artifacts/AUTHLINEAGE_RECEIPT_V11_STANDARDIZED_DIGEST_AND_SUPPORT_POLICY.json",
       "virtual-tradeshow-commercial-v1/production_artifacts/AUTHLINEAGE_RECEIPT.json",

@@ -1,14 +1,14 @@
 {
   "manifestSchemaVersion": "RUN_BUNDLE_MANIFEST_V2_NON_CYCLIC",
-  "cutCommitSha": "90584f06bcd8cc8e8e60f4fc41d995a778997ad9",
-  "bundleDigest": "eb70ac0b2b46d107e4f3982f70a5e4deb4a2e9de83b73e4a05d8f7c0ed1e4b3a",
-  "createdAt": "2026-09-28T22:51:52.155Z",
+  "cutCommitSha": "7260d3d0af5fe6cbbc3d6a990edc3fa5abf00500",
+  "bundleDigest": "69c959956ba19c6eb8cbd73c333d75822990e22fedcd5be917ae560537423715",
+  "createdAt": "2026-09-29T00:02:51.330Z",
   "manifestEntriesCount": 17,
   "manifestEntries": [
     {
-      "path": "docs/ROUND_100_REPORT.md",
-      "sizeBytes": 18777,
-      "sha256": "2ec8acc141ba871a9f014a8ac4a76f221edfe74e8c310d8616b6bf02d9e156cb"
+      "path": "docs/ROUND_101_REPORT.md",
+      "sizeBytes": 21122,
+      "sha256": "c2b47d0382fa504765bafa617dd77ee169493ac257bb25b509b4ec3ca9562e0f"
     },
     {
       "path": "scripts/build_geometry_cache.js",
@@ -16,14 +16,14 @@
       "sha256": "9bba28499179d8b5abb04144c9f4697be3ed9f3fce4fefbc957cf295d6c43d95"
     },
     {
-      "path": "scripts/generate_round100_report.js",
-      "sizeBytes": 19379,
-      "sha256": "918491d9c485fe5993570384922e9314c1fe44b377abe6044cfd19a965f1c993"
+      "path": "scripts/generate_round101_report.js",
+      "sizeBytes": 20419,
+      "sha256": "925c058a4ab06178e77d6271a674122075d9fd78b6282c1713486b8794225862"
     },
     {
       "path": "test/test_stage2_true3d_pipeline.js",
-      "sizeBytes": 217963,
-      "sha256": "bf8a9cc4689a6da05792b68e6851ed3d1409ea51c44cda7c9dd00bc2a4047208"
+      "sizeBytes": 218122,
+      "sha256": "cbf2679c71afb14d5ac232bf7692ac8b6175eac08d2c1cde7f6abbf18b6992bf"
     },
     {
       "path": "virtual-tradeshow-commercial-v1/production_artifacts/AUTHLINEAGE_RECEIPT_V11_STANDARDIZED_DIGEST_AND_SUPPORT_POLICY.json",
@@ -33,7 +33,7 @@
     {
       "path": "virtual-tradeshow-commercial-v1/production_artifacts/AUTHLINEAGE_RECEIPT.json",
       "sizeBytes": 54781,
-      "sha256": "82f46de1d52a400b7b6049701fc1f6f299cd7bcc6e270444fbbbcb8064f6c951"
+      "sha256": "c4b062d091c87a1ff8e6167cd54d6bb5c7add0cff8350f42aafe95943b4d62a4"
     },
     {
       "path": "virtual-tradeshow-commercial-v1/production_artifacts/AUTHLINEAGE_RECONSTRUCTED_SPATIAL_MODEL.ply",
@@ -53,17 +53,17 @@
     {
       "path": "virtual-tradeshow-commercial-v1/production_artifacts/DATASET_INVENTORY_AUDIT_V4_EMPIRICAL_GEOMETRY_EVALUATION.json",
       "sizeBytes": 761653,
-      "sha256": "30ee1c83fdf1674c4ff8f8fb866cf1160fa9f1793a1a784519be7bca01ce8f13"
+      "sha256": "5fef6b399dc5f04b3cdcfa2266d90984c41bd2bf7e543ef849f687d571501818"
     },
     {
       "path": "virtual-tradeshow-commercial-v1/production_artifacts/DATASET_INVENTORY_AUDIT.json",
       "sizeBytes": 761653,
-      "sha256": "30ee1c83fdf1674c4ff8f8fb866cf1160fa9f1793a1a784519be7bca01ce8f13"
+      "sha256": "5fef6b399dc5f04b3cdcfa2266d90984c41bd2bf7e543ef849f687d571501818"
     },
     {
       "path": "virtual-tradeshow-commercial-v1/production_artifacts/R47_TEST_EXECUTION_RECEIPT.json",
       "sizeBytes": 9116,
-      "sha256": "43124b5e03377d2eb5641f41983312079df0e11a785466bc08b75b18b5e752b7"
+      "sha256": "e040c321682f8b4649fbcda1845edb702a218e1e40c59854c57db469320ed594"
     },
     {
       "path": "virtual-tradeshow-commercial-v1/server/dataset_inventory.js",
