@@ -216,7 +216,7 @@ class SpatialBoothPipeline {
     const isPanoramicMode = (options.mode === 'PANORAMIC_IMMERSIVE') || (sourceList.length >= 2 && options.mode !== 'MULTI_VIEW_SPATIAL') || (compatibleViews.length >= 2 && options.mode !== 'MULTI_VIEW_SPATIAL');
     if (isPanoramicMode) {
       notifyStage('MATCHING', 40, 'Validating capture ring geometry & adjacent pair overlap');
-      const ringValidation = defaultPanoramicStitcher.validateRingClosure(compatibleViews, options);
+      const ringValidation = await defaultPanoramicStitcher.validateRingClosure(compatibleViews, options);
 
       notifyStage('ALIGNING', 55, 'Optimizing continuous equirectangular seam geometry & exposure compensation');
       notifyStage('STITCHING', 70, 'Stitching panoramic master using geometric rotational warping and seam blending');

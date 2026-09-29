@@ -131,35 +131,109 @@ class PanoramicStitcher {
     }
   }
 
-  validateCaptureRing(sources) {
+  validateCaptureRingAsync(sources) {
     const tmpInput = path.join(this.uploadsDir, `ring_val_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.json`);
     try {
       fs.writeFileSync(tmpInput, JSON.stringify({ sources }, null, 2));
-      const stdout = execFileSync(this.pythonExe, [
+    } catch (writeErr) {
+      return Promise.resolve({
+        ok: false,
+        allPass: false,
+        ringStatus: 'BROKEN',
+        graphConnectivityPass: false,
+        ringPreflightPass: false,
+        error: 'RING_INPUT_WRITE_ERROR',
+        message: writeErr.message,
+        failedPairs: [],
+        weakPairs: [],
+        pairResults: []
+      });
+    }
+
+    return new Promise((resolve) => {
+      const child = spawn(this.pythonExe, [
         this.workerScript,
         '--action', 'validate-ring',
         '--input-json', tmpInput
       ], {
-        encoding: 'utf-8',
-        maxBuffer: 20 * 1024 * 1024,
-        timeout: 60000
+        windowsHide: true
       });
-      if (fs.existsSync(tmpInput)) fs.unlinkSync(tmpInput);
-      return JSON.parse(stdout.trim());
-    } catch (err) {
-      if (fs.existsSync(tmpInput)) fs.unlinkSync(tmpInput);
-      console.error('[validateCaptureRing Error]', err.message);
-      return {
-        ok: false,
-        allPass: false,
-        ringStatus: 'BROKEN',
-        error: 'RING_VALIDATION_ERROR',
-        message: err.message,
-        failedPairs: [],
-        weakPairs: [],
-        pairResults: []
+      let stdout = '';
+      let stderr = '';
+      let timer = null;
+
+      const cleanup = () => {
+        if (timer) clearTimeout(timer);
+        if (fs.existsSync(tmpInput)) {
+          try { fs.unlinkSync(tmpInput); } catch (e) {}
+        }
       };
-    }
+
+      timer = setTimeout(() => {
+        try { child.kill('SIGKILL'); } catch (e) {}
+        cleanup();
+        resolve({
+          ok: false,
+          allPass: false,
+          ringStatus: 'BROKEN',
+          graphConnectivityPass: false,
+          ringPreflightPass: false,
+          error: 'RING_VALIDATION_TIMEOUT',
+          message: 'Ring preflight validation timed out.',
+          failedPairs: [],
+          weakPairs: [],
+          pairResults: []
+        });
+      }, 60000);
+
+      child.stdout.on('data', (d) => { stdout += d.toString(); });
+      child.stderr.on('data', (d) => { stderr += d.toString(); });
+
+      child.on('close', (code) => {
+        cleanup();
+        if (code === 0) {
+          try {
+            const res = JSON.parse(stdout.trim());
+            return resolve(res);
+          } catch (jsonErr) {
+            console.error('[validateCaptureRingAsync] JSON parse error:', jsonErr.message);
+          }
+        }
+        resolve({
+          ok: false,
+          allPass: false,
+          ringStatus: 'BROKEN',
+          graphConnectivityPass: false,
+          ringPreflightPass: false,
+          error: 'RING_VALIDATION_ERROR',
+          message: `Ring validation exited with code ${code}: ${stderr.slice(-300)}`,
+          failedPairs: [],
+          weakPairs: [],
+          pairResults: []
+        });
+      });
+
+      child.on('error', (err) => {
+        cleanup();
+        console.error('[validateCaptureRingAsync Error]', err.message);
+        resolve({
+          ok: false,
+          allPass: false,
+          ringStatus: 'BROKEN',
+          graphConnectivityPass: false,
+          ringPreflightPass: false,
+          error: 'RING_VALIDATION_SPAWN_ERROR',
+          message: err.message,
+          failedPairs: [],
+          weakPairs: [],
+          pairResults: []
+        });
+      });
+    });
+  }
+
+  validateCaptureRing(sources) {
+    return this.validateCaptureRingAsync(sources);
   }
 
   runOpenCvWorkerAsync(sources, outputDir, candidateId, options = {}) {
@@ -294,7 +368,7 @@ class PanoramicStitcher {
     }
   }
 
-  validateRingClosure(views, options = {}) {
+  async validateRingClosure(views, options = {}) {
     const N = views.length;
     if (N < 2) {
       return {
@@ -302,7 +376,11 @@ class PanoramicStitcher {
         isRingValid: false,
         isFull360: false,
         full360Qualified: false,
-        horizontalCoverageDeg: 0,
+        ringPreflightPass: false,
+        graphConnectivityPass: false,
+        horizontalCoverageDeg: null,
+        verticalCoverageDeg: null,
+        coverageStatus: 'UNKNOWN_UNTIL_SOLVER',
         message: 'At least 2 photos required for panorama stitching.'
       };
     }
@@ -317,18 +395,25 @@ class PanoramicStitcher {
       estimatedYawDeg: (v.estimatedYawDeg !== undefined && v.estimatedYawDeg !== null) ? Number(v.estimatedYawDeg) : (v.angle || 0)
     }));
 
-    // Micro-probe ring validation: evaluate graph connectivity and pairwise overlap quickly (~1-2s)
-    const ringVal = this.validateCaptureRing(workerSources);
-    const isGeometryValid = Boolean(ringVal.ok || ringVal.graphConnectivityPass);
-    const full360Qualified = Boolean(ringVal.ok || ringVal.graphConnectivityPass);
+    // Micro-probe ring validation: evaluate graph connectivity asynchronously without blocking event loop
+    const ringVal = await this.validateCaptureRing(workerSources);
+    const graphConnectivityPass = Boolean(ringVal && ringVal.graphConnectivityPass);
+    const ringPreflightPass = Boolean(ringVal && (ringVal.ok || ringVal.graphConnectivityPass));
+    const isGeometryValid = ringPreflightPass;
 
+    // CRITICAL TRUTH INVARIANT & SEMANTIC LOCK:
+    // Preflight must NOT assert final full360Qualified or hardcode 360/47.3 degrees before global solver.
+    // Final full360 qualification depends on solved geometry/coverage/retention/closure from stitchEquirectangular.
     return {
       isGeometryValid,
-      isRingValid: full360Qualified,
-      isFull360: full360Qualified,
-      full360Qualified,
-      horizontalCoverageDeg: 360,
-      verticalCoverageDeg: 47.3,
+      isRingValid: ringPreflightPass,
+      isFull360: false,
+      ringPreflightPass,
+      graphConnectivityPass,
+      full360Qualified: false,
+      horizontalCoverageDeg: null,
+      verticalCoverageDeg: null,
+      coverageStatus: 'UNKNOWN_UNTIL_SOLVER',
       openCvResult: null, // Full stitch deferred to stitchEquirectangular (async)
       ringValidation: ringVal,
       connectedCount: ringVal.ok ? N : Math.max(1, N - (ringVal.failedPairs || []).length),
@@ -336,11 +421,11 @@ class PanoramicStitcher {
         fromSlot: p.fromSlot,
         toSlot: p.toSlot,
         homographyValid: Boolean(p.homographyValid),
-        inlierCount: p.inlierCount || 50,
-        inlierRatio: p.inlierRatio || 0.75,
-        reprojectionError: p.medianReprojectionError || 1.0,
-        relativeYawDeg: p.rotationDeg || 0,
-        status: p.status || 'CONNECTED'
+        inlierCount: (typeof p.inlierCount === 'number') ? p.inlierCount : null,
+        inlierRatio: (typeof p.inlierRatio === 'number') ? p.inlierRatio : null,
+        reprojectionError: (typeof p.medianReprojectionError === 'number') ? p.medianReprojectionError : (typeof p.reprojectionError === 'number' ? p.reprojectionError : null),
+        relativeYawDeg: (typeof p.rotationDeg === 'number') ? p.rotationDeg : (typeof p.relativeYawDeg === 'number' ? p.relativeYawDeg : null),
+        status: p.status || 'UNKNOWN'
       })),
       message: ringVal.message
     };

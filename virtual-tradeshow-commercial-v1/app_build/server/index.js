@@ -10217,7 +10217,7 @@ app.post('/api/projects/:id/panorama/validate-ring', upload.array('photos', 48),
     if (sourceList.length < 2) {
       return res.status(400).json({ ok: false, error: 'At least 2 photos required for ring validation.' });
     }
-    const ringResult = defaultPanoramicStitcher.validateCaptureRing(sourceList);
+    const ringResult = await defaultPanoramicStitcher.validateCaptureRing(sourceList);
     return res.json({ ok: true, success: true, ...ringResult });
   } catch (err) {
     console.error('[validate-ring error]', err);
@@ -10529,7 +10529,7 @@ app.post('/api/projects/:id/panorama/start', express.json({ limit: '15mb' }), up
     // but MUST NOT bypass panorama-level ring/graph validation or mark full 360 valid.
     const CAPTURE_CLOSURE_BYPASSES_RING_PREFLIGHT = false;
     console.log(`[CAPTURE_QUALITY_GATE] Validating capture ring for ${sourceList.length} photos (bypass=${CAPTURE_CLOSURE_BYPASSES_RING_PREFLIGHT})...`);
-    const rawRingValidation = defaultPanoramicStitcher.validateCaptureRing(sourceList);
+    const rawRingValidation = await defaultPanoramicStitcher.validateCaptureRing(sourceList);
     const ringValidation = rawRingValidation || {
       ok: false,
       allPass: false,
