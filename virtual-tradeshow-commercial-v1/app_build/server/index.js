@@ -758,19 +758,28 @@ app.use((err, req, res, next) => {
 app.use('/uploads', express.static(UPLOADS_DIR));
 app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 
-// ── C11.16-P3.15-R4: Runtime Build Info Endpoint ────────────────
-const P315_BUILD_INFO = {
-  gitCommit: process.env.RAILWAY_GIT_COMMIT_SHA || process.env.GIT_COMMIT || 'C11.16-P3.15-R4',
-  buildTimestamp: new Date().toISOString(),
-  releaseId: 'C11.16-P3.22-R1'
-};
+// Helper to obtain exact deployment commit SHA
+function getGitCommitSha() {
+  if (process.env.RAILWAY_GIT_COMMIT_SHA) return process.env.RAILWAY_GIT_COMMIT_SHA;
+  if (process.env.GIT_COMMIT_SHA) return process.env.GIT_COMMIT_SHA;
+  try {
+    const { execSync } = require('child_process');
+    return execSync('git rev-parse HEAD', { timeout: 2000 }).toString().trim();
+  } catch (e) {
+    return 'UNKNOWN';
+  }
+}
 
+// ── Runtime Build Info Endpoint ────────────────
 app.get('/api/build-info', (req, res) => {
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.json({
-    gitCommit: process.env.RAILWAY_GIT_COMMIT_SHA || process.env.GIT_COMMIT || P315_BUILD_INFO.gitCommit,
-    buildTimestamp: P315_BUILD_INFO.buildTimestamp,
-    releaseId: P315_BUILD_INFO.releaseId
+    ok: true,
+    service: 'virtual-tradeshow-commercial-v1',
+    gitCommit: getGitCommitSha(),
+    schemaVersion: 5,
+    uiVersion: '3D2-C12.9-P2R15',
+    timestamp: new Date().toISOString()
   });
 });
 
@@ -1079,6 +1088,7 @@ const healthHandler = (req, res) => {
   res.status(200).json({
     ok: true,
     service: 'virtual-tradeshow-commercial-v1',
+    gitCommit: getGitCommitSha(),
     schemaVersion: 5,
     stripeMode: STRIPE_MODE === 'live' ? 'live' : 'test',
     storageDriver: process.env.STORAGE_DRIVER || 'volume',
@@ -10795,6 +10805,32 @@ app.post('/api/projects/:id/panorama/candidate', express.json({ limit: '10mb' })
 
     candidate.projectId = projectId;
 
+    // Immutability: check if candidate already exists in database and is finalized/applied
+    const existingCandidate = await db.getSpatialBoothCandidate(candidate.candidateId);
+    if (existingCandidate) {
+      if (existingCandidate.projectId && existingCandidate.projectId !== projectId) {
+        return res.status(403).json({
+          ok: false,
+          error: 'PROJECT_MISMATCH',
+          code: 'PROJECT_MISMATCH',
+          message: `Cannot overwrite candidate ${candidate.candidateId}: candidate belongs to project ${existingCandidate.projectId}, not ${projectId}`
+        });
+      }
+      const FINALIZED_STATUSES = new Set(['READY', 'APPLIED', 'FINALIZED']);
+      const isReferencedByVersion = Boolean(
+        (project.panoramaVersions && project.panoramaVersions.some(v => v.candidateId === candidate.candidateId)) ||
+        (project.spatialBoothVersions && project.spatialBoothVersions.some(v => v.candidateId === candidate.candidateId))
+      );
+      if (FINALIZED_STATUSES.has(existingCandidate.status) || existingCandidate.isFinalized || isReferencedByVersion) {
+        return res.status(409).json({
+          ok: false,
+          error: 'CANDIDATE_ALREADY_FINALIZED',
+          code: 'CANDIDATE_ALREADY_FINALIZED',
+          message: `Cannot overwrite candidate ${candidate.candidateId}: candidate is already finalized (status=${existingCandidate.status}) or applied in project lineage and is immutable`
+        });
+      }
+    }
+
     // For non-worker callers (e.g. exhibitor upload): strictly prevent self-declared qualification
     if (!isWorker) {
       if (candidate.status === 'READY' || candidate.geometryValid === true || candidate.applyEnabled === true) {
@@ -10860,6 +10896,7 @@ app.post('/api/projects/:id/panorama/candidate', express.json({ limit: '10mb' })
           });
         }
         candidate.masterSha256 = authoritativeSha256;
+        candidate.isFinalized = true;
       }
     }
 
@@ -10898,11 +10935,11 @@ app.post('/api/projects/:id/panorama/apply', async (req, res) => {
     if (!cand.projectId || cand.projectId !== projectId) {
       return res.status(403).json({ ok: false, error: `Candidate ${candidateId} belongs to project ${cand.projectId || 'UNKNOWN'}, not ${projectId}` });
     }
-    if (cand.status !== 'READY' || cand.geometryValid !== true || cand.applyEnabled !== true || cand.provenance === 'CLIENT_UNQUALIFIED') {
+    if (cand.status !== 'READY' || cand.geometryValid !== true || cand.applyEnabled !== true || cand.provenance !== 'SOLVER_WORKER_AUTHORITATIVE') {
       return res.status(400).json({
         ok: false,
         error: 'CANDIDATE_NOT_ELIGIBLE',
-        message: "Cannot apply candidate: stitch validation failed, candidate not eligible, or provenance is unqualified."
+        message: "Cannot apply candidate: stitch validation failed, candidate not eligible, or provenance is not authoritative."
       });
     }
 
@@ -11918,4 +11955,4 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log(`=======================================================`);
 });
 
-module.exports = { app, server };
+module.exports = { app, server, db };

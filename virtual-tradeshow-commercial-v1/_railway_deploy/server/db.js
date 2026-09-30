@@ -13607,9 +13607,17 @@ return event;
           throw err;
         }
 
-        // Immutability: once a candidate is finalized as READY, reject same-project replacement
-        if (existing.status === 'READY' && existing.applyEnabled === true) {
-          const err = new Error(`Cannot overwrite candidate ${candidate.candidateId}: candidate is already finalized in READY status and is immutable`);
+        // Immutability: once a candidate is finalized (READY, APPLIED, FINALIZED) or referenced by an active version, reject replacement
+        const FINALIZED_STATUSES = new Set(['READY', 'APPLIED', 'FINALIZED']);
+        const project = (db.projects || []).find(p => p.id === projectId);
+        const isReferencedByVersion = Boolean(
+          project && project.panoramaVersions && project.panoramaVersions.some(v => v.candidateId === candidate.candidateId)
+        ) || Boolean(
+          project && project.spatialBoothVersions && project.spatialBoothVersions.some(v => v.candidateId === candidate.candidateId)
+        );
+
+        if (FINALIZED_STATUSES.has(existing.status) || existing.isFinalized || isReferencedByVersion) {
+          const err = new Error(`Cannot overwrite candidate ${candidate.candidateId}: candidate is already finalized (status=${existing.status}) or applied in project lineage and is immutable`);
           err.statusCode = 409;
           err.code = 'CANDIDATE_ALREADY_FINALIZED';
           throw err;
@@ -13703,8 +13711,9 @@ return event;
         throw err;
       }
 
-      if (candidate.provenance === 'CLIENT_UNQUALIFIED') {
-        const err = new Error(`Cannot apply candidate: candidate ${candidateId} was not qualified by authoritative solver worker`);
+      // Positive fail-closed provenance verification: must be SOLVER_WORKER_AUTHORITATIVE
+      if (candidate.provenance !== 'SOLVER_WORKER_AUTHORITATIVE') {
+        const err = new Error(`Cannot apply candidate: candidate ${candidateId} does not have authoritative solver provenance (current: '${candidate.provenance || 'MISSING'}')`);
         err.statusCode = 400;
         err.code = 'UNQUALIFIED_PROVENANCE';
         throw err;
@@ -13785,6 +13794,8 @@ return event;
       project.updatedAt = new Date().toISOString();
 
       candidate.status = 'APPLIED';
+      candidate.isFinalized = true;
+      candidate.appliedVersionId = versionId;
 
       // Read-After-Write Verification (Section 23 / 51)
       if (isPano) {
