@@ -10764,27 +10764,105 @@ app.get(['/api/projects/:id/panorama/candidate/:candidateId', '/api/projects/:id
   }
 });
 
-// Candidate ingestion / registration endpoint for panorama (RESTRICTED TO INTERNAL WORKER/DEV ONLY)
+// Candidate ingestion / registration endpoint for panorama (STRICTLY RESTRICTED TO CONFIGURED WORKER CREDENTIALS)
 app.post('/api/projects/:id/panorama/candidate', express.json({ limit: '10mb' }), async (req, res) => {
   try {
     const projectId = req.params.id;
-    const token = extractAuthToken(req);
-    const workerKey = req.headers['x-worker-key'];
-    const isWorker = workerKey && (workerKey === process.env.INTERNAL_WORKER_KEY || workerKey === 'internal_worker_secret');
-    const isDev = token === 'internal_dev_pass' || (typeof token === 'string' && token.startsWith('dev_bypass_token'));
+    const project = await db.getProject(projectId);
+    if (!project) {
+      return res.status(404).json({ ok: false, error: `Project ${projectId} not found` });
+    }
 
-    if (!isWorker && !isDev) {
+    const workerKey = req.headers['x-worker-key'];
+    const configuredWorkerKey = process.env.INTERNAL_WORKER_KEY || process.env.PANORAMA_WORKER_KEY;
+    // Strict fail-closed: worker key MUST match non-empty configured environment secret
+    const isWorker = Boolean(configuredWorkerKey && workerKey && workerKey === configuredWorkerKey);
+
+    const token = extractAuthToken(req);
+    const hasProjectEditAuth = Boolean(token && db.verifyEditAccess(project, token));
+
+    if (!isWorker && !hasProjectEditAuth) {
       if (!token && !workerKey) {
-        return res.status(401).json({ ok: false, error: 'Unauthorized: internal worker or dev authentication required' });
+        return res.status(401).json({ ok: false, error: 'Unauthorized: worker key or project authentication required' });
       }
-      return res.status(403).json({ ok: false, error: 'Forbidden: caller is not an authorized worker or internal dev' });
+      return res.status(403).json({ ok: false, error: 'Forbidden: invalid worker key or unauthorized project access token' });
     }
 
     const candidate = req.body;
     if (!candidate || !candidate.candidateId) {
       return res.status(400).json({ ok: false, error: 'candidate and candidateId required' });
     }
+
     candidate.projectId = projectId;
+
+    // For non-worker callers (e.g. exhibitor upload): strictly prevent self-declared qualification
+    if (!isWorker) {
+      if (candidate.status === 'READY' || candidate.geometryValid === true || candidate.applyEnabled === true) {
+        return res.status(403).json({
+          ok: false,
+          error: 'FORBIDDEN_QUALIFICATION_PROMOTION',
+          message: 'Client credentials cannot self-certify READY, geometryValid, or applyEnabled. Processing must occur through authoritative solver worker.'
+        });
+      }
+      candidate.status = candidate.status || 'PENDING_PROCESSING';
+      candidate.geometryValid = false;
+      candidate.applyEnabled = false;
+      candidate.full360Qualified = false;
+      candidate.provenance = 'CLIENT_UNQUALIFIED';
+    } else {
+      // Authoritative Worker Registration
+      candidate.provenance = 'SOLVER_WORKER_AUTHORITATIVE';
+
+      // If claiming READY status: authoritatively verify physical artifact and hash
+      if (candidate.status === 'READY') {
+        if (!candidate.stitchedPanoramaUrl) {
+          return res.status(400).json({ ok: false, error: 'stitchedPanoramaUrl required for READY candidate' });
+        }
+
+        // Resolve artifact path against server file root
+        function resolveArtifactPath(urlPath) {
+          if (!urlPath || typeof urlPath !== 'string') return null;
+          const cleanPath = urlPath.replace(/^[/\\]+/, '');
+          const candidates = [
+            path.join(__dirname, '..', cleanPath),
+            path.join(__dirname, '..', 'client', cleanPath),
+            path.join(__dirname, '..', 'uploads', cleanPath.replace(/^uploads[/\\]+/, '')),
+            path.join(UPLOADS_DIR, cleanPath.replace(/^uploads[/\\]+/, ''))
+          ];
+          for (const c of candidates) {
+            if (fs.existsSync(c)) {
+              try {
+                if (fs.statSync(c).isFile()) return c;
+              } catch (e) {}
+            }
+          }
+          return null;
+        }
+
+        const resolvedArtifact = resolveArtifactPath(candidate.stitchedPanoramaUrl);
+        if (!resolvedArtifact) {
+          return res.status(400).json({
+            ok: false,
+            error: 'ARTIFACT_NOT_FOUND',
+            message: `Stitched panorama artifact file not found on server: ${candidate.stitchedPanoramaUrl}`
+          });
+        }
+
+        // Authoritative server-side hash calculation
+        const artifactBytes = fs.readFileSync(resolvedArtifact);
+        const authoritativeSha256 = crypto.createHash('sha256').update(artifactBytes).digest('hex');
+
+        if (candidate.masterSha256 && candidate.masterSha256 !== authoritativeSha256) {
+          return res.status(400).json({
+            ok: false,
+            error: 'ARTIFACT_HASH_MISMATCH',
+            message: `Claimed masterSha256 (${candidate.masterSha256}) does not match authoritative file hash (${authoritativeSha256})`
+          });
+        }
+        candidate.masterSha256 = authoritativeSha256;
+      }
+    }
+
     const saved = await db.saveSpatialBoothCandidate(projectId, candidate);
     res.json({ ok: true, success: true, candidate: saved });
   } catch (err) {
@@ -10820,11 +10898,11 @@ app.post('/api/projects/:id/panorama/apply', async (req, res) => {
     if (!cand.projectId || cand.projectId !== projectId) {
       return res.status(403).json({ ok: false, error: `Candidate ${candidateId} belongs to project ${cand.projectId || 'UNKNOWN'}, not ${projectId}` });
     }
-    if (cand.status !== 'READY' || cand.geometryValid !== true || cand.applyEnabled !== true) {
+    if (cand.status !== 'READY' || cand.geometryValid !== true || cand.applyEnabled !== true || cand.provenance === 'CLIENT_UNQUALIFIED') {
       return res.status(400).json({
         ok: false,
         error: 'CANDIDATE_NOT_ELIGIBLE',
-        message: "Cannot apply candidate: stitch validation failed or candidate not eligible."
+        message: "Cannot apply candidate: stitch validation failed, candidate not eligible, or provenance is unqualified."
       });
     }
 

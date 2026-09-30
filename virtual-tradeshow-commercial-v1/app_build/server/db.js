@@ -9250,7 +9250,7 @@ return event;
   }
 
   isInternalDev(token, account) {
-    if (token === 'internal_dev_pass' || (typeof token === 'string' && token.startsWith('dev_bypass_token'))) return true;
+    if (process.env.INTERNAL_DEV_TOKEN && token === process.env.INTERNAL_DEV_TOKEN) return true;
     if (typeof token === 'string' && (token.startsWith('cust-sess-') || token.startsWith('Bearer cust-sess-'))) {
       const cleanToken = token.replace(/^Bearer\s+/i, '').trim();
       const sessData = this.verifyCustomerSession(cleanToken);
@@ -9272,7 +9272,7 @@ return event;
     if (!project) return false;
     this.ensureProjectToken(project);
     if (!token) return false;
-    if (token === 'internal_dev_pass' || token.startsWith('dev_bypass_token')) return true;
+    if (process.env.INTERNAL_DEV_TOKEN && token === process.env.INTERNAL_DEV_TOKEN) return true;
     if (token === project.editToken) return true;
 
     // Check Customer Session Bearer Token
@@ -13606,11 +13606,37 @@ return event;
           err.code = 'PROJECT_MISMATCH';
           throw err;
         }
-        db.spatialCandidates[existingIdx] = candidate;
+
+        // Immutability: once a candidate is finalized as READY, reject same-project replacement
+        if (existing.status === 'READY' && existing.applyEnabled === true) {
+          const err = new Error(`Cannot overwrite candidate ${candidate.candidateId}: candidate is already finalized in READY status and is immutable`);
+          err.statusCode = 409;
+          err.code = 'CANDIDATE_ALREADY_FINALIZED';
+          throw err;
+        }
+
+        // Whitelist allowed updates for non-finalized candidates (e.g. state transition from PENDING -> READY/FAILED)
+        const allowedUpdates = [
+          'status', 'geometryValid', 'applyEnabled', 'stitchedPanoramaUrl',
+          'activeBackgroundUrl', 'horizontalCoverageDeg', 'full360Qualified',
+          'masterSha256', 'updatedAt', 'provenance', 'error', 'warning'
+        ];
+
+        for (const key of allowedUpdates) {
+          if (candidate[key] !== undefined) {
+            existing[key] = candidate[key];
+          }
+        }
+        existing.updatedAt = Date.now();
+        db.spatialCandidates[existingIdx] = existing;
+        return existing;
       } else {
+        candidate.projectId = projectId;
+        candidate.createdAt = candidate.createdAt || Date.now();
+        candidate.updatedAt = Date.now();
         db.spatialCandidates.push(candidate);
+        return candidate;
       }
-      return candidate;
     });
   }
 
@@ -13674,6 +13700,13 @@ return event;
         const err = new Error(`Cannot apply candidate: candidate ${candidateId} applyEnabled is not true`);
         err.statusCode = 400;
         err.code = 'CANDIDATE_NOT_ELIGIBLE';
+        throw err;
+      }
+
+      if (candidate.provenance === 'CLIENT_UNQUALIFIED') {
+        const err = new Error(`Cannot apply candidate: candidate ${candidateId} was not qualified by authoritative solver worker`);
+        err.statusCode = 400;
+        err.code = 'UNQUALIFIED_PROVENANCE';
         throw err;
       }
 
