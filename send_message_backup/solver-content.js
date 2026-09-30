@@ -213,18 +213,12 @@
                 }
                 this.lastAttemptTime = now;
 
-                // [Auto STT API Key Fallback] 공용 무료 우회 키 자동 적용
+                // [F13-Sanitized] No hardcoded credentials. Key must be supplied by user via Settings UI.
                 const keys = await chrome.storage.local.get(['xpider_stt_api_key', 'audioSttKey', 'witKey']);
                 let activeKey = keys.xpider_stt_api_key || keys.audioSttKey || keys.witKey;
                 if (!activeKey || activeKey.trim() === '') {
-                    activeKey = '3T7NUX6UUPXHXGMDQLB7P23JSHYI2C7O';
-                    await chrome.storage.local.set({ 
-                        xpider_stt_api_key: activeKey, 
-                        audioSttKey: activeKey, 
-                        witKey: activeKey,
-                        captchaSolveEnabled: true 
-                    });
-                    this.log("🔑 [Auto STT] 공용 무료 우회 API 키 적용됨", "PROXY");
+                    this.log("⚠️ [STT] No Wit.ai key configured. Please set it in Settings.", "WARN");
+                    return null;
                 }
 
                 // 1. Check for checkbox (reCAPTCHA, hCaptcha, Turnstile)

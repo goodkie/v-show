@@ -192,9 +192,28 @@
         }
 
         /**
-         * P2A-2: Record an actual execution attempt
+         * P2A-2: Record an actual execution attempt.
+         * @param {string|object} targetOrDesc - Raw URL string OR descriptor object {targetIdentity, ...}
+         * @param {object} [opts] - Optional override: { outcome, reason }
          */
-        async recordAttempt({ targetIdentity, sessionId, templateId, templateVersion, status, reasonCode, timing = {}, evidence = {} }) {
+        async recordAttempt(targetOrDesc, opts = {}) {
+            // Accept either a raw URL string or a full descriptor object
+            let descriptor;
+            if (typeof targetOrDesc === 'string') {
+                const identity = this.normalizeTargetIdentity(targetOrDesc);
+                descriptor = {
+                    targetIdentity: identity || targetOrDesc,
+                    sessionId: opts.sessionId || null,
+                    templateId: opts.templateId || null,
+                    templateVersion: opts.templateVersion || 1,
+                    status: opts.outcome ? (opts.outcome === 'SUCCESS' ? 'CONFIRMED_SUCCESS' : 'FAILURE') : 'PENDING_INTENT',
+                    reasonCode: opts.reason || 'PENDING'
+                };
+            } else {
+                descriptor = targetOrDesc;
+            }
+
+            const { targetIdentity, sessionId, templateId, templateVersion, status, reasonCode, timing = {}, evidence = {} } = descriptor;
             const attemptId = `att_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
             const attempt = {
                 attemptId,
@@ -203,11 +222,11 @@
                 templateId,
                 templateVersion: templateVersion || 1,
                 generationId: this.currentGeneration,
-                status: status || "DELIVERY_UNKNOWN",
-                reasonCode: reasonCode || "UNKNOWN",
+                status: status || 'DELIVERY_UNKNOWN',
+                reasonCode: reasonCode || 'UNKNOWN',
                 timing: {
                     intentTime: timing.intentTime || Date.now(),
-                    finalizedTime: timing.finalizedTime || Date.now(),
+                    finalizedTime: timing.finalizedTime || null,
                     durationMs: timing.durationMs || 0
                 },
                 evidence: evidence || {},
@@ -216,13 +235,26 @@
 
             this.attempts.push(attempt);
 
+            // Ensure target record exists
+            if (!this.targets.has(targetIdentity)) {
+                this.targets.set(targetIdentity, {
+                    targetIdentity,
+                    rawSampleUrl: typeof targetOrDesc === 'string' ? targetOrDesc : targetIdentity,
+                    isSuppressed: false,
+                    suppressionReason: null,
+                    effectiveGeneration: 1,
+                    lastAttemptId: null,
+                    updatedTs: Date.now()
+                });
+            }
+
             // Update Target durable suppression state
             const target = this.targets.get(targetIdentity);
             if (target) {
                 target.lastAttemptId = attemptId;
                 target.updatedTs = Date.now();
                 // Both CONFIRMED_SUCCESS and DELIVERY_UNKNOWN trigger suppression
-                if (status === "CONFIRMED_SUCCESS" || status === "DELIVERY_UNKNOWN") {
+                if (status === 'CONFIRMED_SUCCESS' || status === 'DELIVERY_UNKNOWN') {
                     target.isSuppressed = true;
                     target.suppressionReason = status;
                     target.effectiveGeneration = this.currentGeneration;
@@ -237,8 +269,50 @@
                 }
             }
 
-            await this.persist();
-            return attempt;
+            // Do NOT persist here when status is PENDING_INTENT — caller will persist after
+            if (status !== 'PENDING_INTENT') {
+                await this.persist();
+            }
+            return { attemptId, attempt };
+        }
+
+        /**
+         * F8: Settle a previously recorded PENDING_INTENT attempt with the final outcome.
+         * @param {string} attemptId - ID returned from recordAttempt
+         * @param {boolean} isSuccess - Whether the submission succeeded
+         * @param {string} reason - Reason code string
+         */
+        async settleAttempt(attemptId, isSuccess, reason) {
+            const attempt = this.attempts.find(a => a.attemptId === attemptId);
+            if (!attempt) return { settled: false, reason: 'ATTEMPT_NOT_FOUND' };
+
+            const now = Date.now();
+            attempt.status = isSuccess ? 'CONFIRMED_SUCCESS' : 'FAILURE';
+            attempt.reasonCode = reason || (isSuccess ? 'SUCCESS_CONFIRMED' : 'UNKNOWN');
+            attempt.timing.finalizedTime = now;
+            attempt.timing.durationMs = now - attempt.timing.intentTime;
+
+            // Update suppression state on the linked target
+            const target = this.targets.get(attempt.targetIdentity);
+            if (target) {
+                target.lastAttemptId = attemptId;
+                target.updatedTs = now;
+                if (isSuccess || attempt.status === 'DELIVERY_UNKNOWN') {
+                    target.isSuppressed = true;
+                    target.suppressionReason = attempt.status;
+                    target.effectiveGeneration = this.currentGeneration;
+                }
+            }
+
+            // Update linked import rows
+            for (const row of this.importRows) {
+                if (row.attemptId === attemptId) {
+                    row.status = attempt.status;
+                }
+            }
+
+            // Caller is responsible for calling persist() after
+            return { settled: true, attemptId, status: attempt.status };
         }
 
         /**

@@ -487,7 +487,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     
                     const method = request.method || storage.xpider_captcha_method || storage.captchaMethod;
                     const apiKey = storage.xpider_captcha_api_key || storage.captchaApiKey;
-                    const witKey = storage.xpider_stt_api_key || '3T7NUX6UUPXHXGMDQLB7P23JSHYI2C7O';
+                    // [F13-Sanitized] No hardcoded credentials. User must supply Wit.ai key via Settings UI.
+                    const witKey = storage.xpider_stt_api_key || null;
                     
                     solver.config.witAiKey = witKey;
                     if (method === 'nopecha') solver.config.nopeChaKey = apiKey;
@@ -533,21 +534,47 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             return true;
 
         case 'EXECUTE_MIGRATION':
-            // [P2A-1 & R3 Single Writer Serialized Migration]
+            // [P2A-1 & F11 Single Writer Serialized Migration with Restart-Safe Staged Protocol]
             bgOperationQueue.enqueue(async () => {
                 try {
                     const data = await chrome.storage.local.get(null);
+
+                    // [F11] Resume: If STAGE_COMMIT was interrupted before COMPLETED, finalize now
+                    if (data.xpider_migration_phase === 'STAGE_COMMIT' && data.xpider_schema_version !== 2) {
+                        // Prior commit written, just promote schema version to finalize
+                        await chrome.storage.local.set({ xpider_migration_phase: 'COMPLETED', xpider_schema_version: 2 });
+                        logBg(null, '📦 [Migration] Resumed interrupted migration — schema version promoted.', 'info');
+                        sendResponse({ success: true, migrated: false, reason: 'RESUMED_FINALIZED' });
+                        return;
+                    }
+
                     const tStore = new self.TemplateStore(chrome.storage.local);
                     const migrationResult = await tStore.migrateLegacyData(data);
+
                     if (migrationResult.migrated && migrationResult.commit) {
+                        // [F11] Step 1: Verify backup can be written before touching live data
+                        const backupOnly = {};
+                        for (const [k, v] of Object.entries(migrationResult.commit)) {
+                            if (k.startsWith('xpider_backup_')) backupOnly[k] = v;
+                        }
+                        await chrome.storage.local.set(backupOnly);
+
+                        // [F11] Step 2: Mark STAGE_COMMIT (v2 data written, schema NOT yet promoted)
                         await chrome.storage.local.set({ xpider_migration_phase: 'STAGE_COMMIT' });
-                        await chrome.storage.local.set(migrationResult.commit);
-                        await chrome.storage.local.set({ xpider_migration_phase: 'COMPLETED' });
-                        logBg(null, `📦 [Migration] Successfully migrated templates and lists to v2 (Backup: ${migrationResult.backupKey})`, "info");
+
+                        // [F11] Step 3: Write v2 data WITHOUT schema_version yet
+                        const dataWithoutVersion = { ...migrationResult.commit };
+                        delete dataWithoutVersion.xpider_schema_version;
+                        await chrome.storage.local.set(dataWithoutVersion);
+
+                        // [F11] Step 4: Only now promote schema version — idempotent gate
+                        await chrome.storage.local.set({ xpider_schema_version: 2, xpider_migration_phase: 'COMPLETED' });
+
+                        logBg(null, `📦 [Migration] Safely migrated to v2 (Backup: ${migrationResult.backupKey})`, 'info');
                     }
                     sendResponse({ success: true, ...migrationResult });
                 } catch (err) {
-                    console.error("[Migration Error]", err);
+                    console.error('[Migration Error]', err);
                     sendResponse({ success: false, error: err.message });
                 }
             });
@@ -982,6 +1009,26 @@ async function orchestrateSending(urlInput, template) {
     let targetUrl = urlInput.trim();
     if (!targetUrl.startsWith('http')) targetUrl = 'https://' + targetUrl;
 
+    // [F8] Lazy HistoryStore singleton shared across all orchestration calls
+    const _getHistoryStore = async () => {
+        if (!self.__xpiderHistoryStore) {
+            self.__xpiderHistoryStore = new self.HistoryStore(chrome.storage.local);
+            await self.__xpiderHistoryStore.load();
+        }
+        return self.__xpiderHistoryStore;
+    };
+
+    // [F8] Persist intent BEFORE any side effects (tab open, navigation)
+    let _attemptId = null;
+    try {
+        const hs = await _getHistoryStore();
+        const attemptResult = await hs.recordAttempt(targetUrl);
+        _attemptId = attemptResult && attemptResult.attemptId ? attemptResult.attemptId : null;
+        await hs.persist();
+    } catch (hsErr) {
+        logBg(null, `⚠️ [F8-HistoryStore] recordAttempt failed: ${hsErr.message}`, 'warning');
+    }
+
     const tab = await safeTabs.create({ url: 'about:blank', active: false });
     const tabId = tab.id;
     campaignState.currentTabId = tabId;
@@ -1093,6 +1140,20 @@ async function orchestrateSending(urlInput, template) {
 
         const isSuccess = !!(res && res.success);
         let finalReason = isSuccess ? REASON_CODES.SUCCESS_CONFIRMED : (res?.reasonCode || (res?.error ? String(res.error) : REASON_CODES.DELIVERY_UNKNOWN));
+        
+        // [F8] Settle the durable attempt recorded before side effects
+        try {
+            const hs = await _getHistoryStore();
+            if (_attemptId) {
+                await hs.settleAttempt(_attemptId, isSuccess, finalReason);
+            } else {
+                // Fallback: settle by URL if no attempt id (e.g. recordAttempt failed earlier)
+                await hs.recordAttempt(targetUrl, { outcome: isSuccess ? 'SUCCESS' : 'FAILURE', reason: finalReason });
+            }
+            await hs.persist();
+        } catch (hsErr) {
+            logBg(tabId, `⚠️ [F8-HistoryStore] settleAttempt failed: ${hsErr.message}`, 'warning');
+        }
         
         try {
             await resolveSubmissionIntent(targetUrl, finalReason, isSuccess);

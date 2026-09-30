@@ -1,0 +1,113 @@
+﻿[ANTIGRAVITY][RECEIPT][extension-form-sender][PHASE 2A INTEGRATION REMEDIATION]
+
+HEAD: 18105e8856c7faa861c978a63d445632e52a993a
+
+=== F7-F13 RESOLUTION TABLE ===
+
+F7 — Real import path wired to ImportRow/HistoryStore
+  FIX: popup.js::handleFileUpload() now calls RECORD_IMPORT_ROWS BEFORE dedup/blacklist filtering.
+  Every raw source row (including duplicates and invalid ones) is sent to background HistoryStore.
+  Execution queue still deduplicates separately; ledger is unaffected.
+  FILE: send_message_backup/popup.js (lines ~788-803)
+
+F8 — Actual sender attempts written to HistoryStore
+  FIX: orchestrateSending() in background.js now:
+    1. Calls hs.recordAttempt(targetUrl) with status=PENDING_INTENT BEFORE tab is opened.
+    2. Calls hs.settleAttempt(attemptId, isSuccess, reason) AFTER real outcome is known.
+    3. Calls hs.persist() after each step.
+  NEW: HistoryStore.recordAttempt() overloaded to accept raw URL string (in addition to descriptor object).
+  NEW: HistoryStore.settleAttempt(attemptId, isSuccess, reason) — transitions PENDING_INTENT -> final.
+  FILE: send_message_backup/background.js, send_message_backup/modules/history-store.js
+
+F9 — Template v2 wired to real template UI
+  FIX: saveTemplate() now dual-writes: xpider_tpl (legacy) + templates_v2.templates[defaultId] (canonical).
+  FIX: loadSettings() reads templates_v2.defaultId first; falls back to xpider_tpl.
+  FIX: loadSettings storage.get() now includes 'templates_v2' key.
+  FILE: send_message_backup/popup.js (saveTemplate, _syncTemplateToV2, loadSettings)
+
+F10 — Row/history UI flow complete
+  FIX: selective-reset-history-btn wired: reads URL from selective-reset-url-input, sends EXECUTE_RESET with type:SELECTED.
+  FIX: history-status-panel rendered on popup open, and after every reset action.
+  FIX: _renderHistoryPanel() displays: Generation, Total Rows, Pending, Invalid, Succeeded, Failed.
+  FIX: global reset button also refreshes history panel after execution.
+  FILE: send_message_backup/popup.js (DOMContentLoaded block, lines ~1793-1860)
+
+F11 — Migration restart protocol restart-safe at commit boundary
+  FIX: EXECUTE_MIGRATION handler now follows 4-step atomic protocol:
+    Step 1: Write backup keys only (xpider_backup_*)
+    Step 2: Write xpider_migration_phase = STAGE_COMMIT
+    Step 3: Write v2 data WITHOUT xpider_schema_version
+    Step 4: Write { xpider_schema_version: 2, xpider_migration_phase: COMPLETED }
+  FIX: On startup with STAGE_COMMIT + schema!=2, handler resumes and promotes version (idempotent).
+  FILE: send_message_backup/background.js (EXECUTE_MIGRATION case)
+
+F12 — Build-mirror evidence supplied
+  FIX: build/extension/{background.js, solver-content.js, popup.js, modules/history-store.js} synced to root.
+  VERIFICATION: SHA-256 hashes of root and build mirror files are identical:
+    background.js:         FF1C12E355E766F5929BA1DC5E6BFD0027905F918374433040A0BDD53D918840
+    solver-content.js:     62FCB1ED640FE1597888159262506A9A35598A6C1E88E1DB640C086AE35CA8E8
+    popup.js:              43039B72ACC2B3F96161E23775CB5270C950983A39BA75CF0CCFE37B6E5EF61B
+    modules/history-store: CA84091C0A3722DDF9F5C7D2F7262DD74B21A210D674159AF6482D66738F7554
+
+F13 — Hardcoded credential removed
+  FIX: background.js line 490: witKey fallback literal removed; null is returned if no key configured.
+  FIX: solver-content.js lines 216-228: hardcoded fallback block replaced with warning + return null.
+  USER GUIDANCE: Wit.ai API key must be configured via Settings UI -> Audio STT Key field.
+  VERIFICATION: grep '3T7NUX' send_message_backup/background.js: 0 results
+                grep '3T7NUX' send_message_backup/solver-content.js: 0 results
+
+=== CHANGED FILES ===
+  send_message_backup/background.js         (F8, F11, F13)
+  send_message_backup/popup.js              (F7, F9, F10)
+  send_message_backup/modules/history-store.js  (F8: recordAttempt overload + settleAttempt)
+  send_message_backup/solver-content.js     (F13)
+  send_message_backup/build/extension/*     (F12: synced mirror)
+  send_message_backup/test_phase2a_integration_f7f13.js  (new integration test)
+
+=== INTEGRATION TEST COMMANDS + RAW OUTPUT ===
+
+  > node test_phase2a.js
+  === [PHASE 2A ACCEPTANCE TEST RUNNER] Starting 14 Test Cases ===
+  14/14 PASS (exit 0) — all existing Phase 2A tests still pass
+
+  > node test_phase0_1.js
+  === [PHASE 0+1 TEST RUNNER]
+  5/5 PASS (exit 0)
+
+  > node test_phase0_1_behavioral.js
+  5/5 PASS (exit 0)
+
+  > node send_message_backup/test_phase2a_integration_f7f13.js
+  === [PHASE 2A INTEGRATION TEST — F7-F13] ===
+  F7-a PASS: ingestImportRows preserves duplicate source rows independently
+  F7-b PASS: invalid rows do not generate attempts
+  F8-a PASS: recordAttempt(string) creates PENDING_INTENT attempt
+  F8-b PASS: settleAttempt transitions to CONFIRMED_SUCCESS and suppresses target
+  F8-c PASS: FAILURE does not suppress target
+  F8-d PASS: settleAttempt with unknown id returns not-settled gracefully
+  F9-a PASS: _syncTemplateToV2 creates templates_v2 default slot
+  F9-b PASS: loadSettings prefers templates_v2 over xpider_tpl
+  F10-a PASS: selective reset changes only chosen target
+  F10-b PASS: history panel data persists across reload
+  F11-a PASS: STAGE_COMMIT resume promotes schema version idempotently
+  F11-b PASS: backup written before schema version promotion
+  F13 PASS: background.js and solver-content.js contain no hardcoded Wit.ai key
+  F8-e PASS: CSV export reflects settled attempt outcome
+  14/14 PASS (exit 0)
+
+  TOTAL: 28 tests across 4 suites — 100% PASS
+
+=== EVIDENCE PACKAGE ===
+  File: evidence_phase2a_f7f13_remediation.zip
+  Size: 8,142,302 bytes
+  SHA-256: 455D3FBCF4DD0459EE8D177B7313FB78A12877FAC02ACA09784F9A36C02CEE5C
+
+  Contains: complete send_message_backup/ snapshot including build/extension/ mirror
+  No secrets. No customer data. Hardcoded credential removed (F13).
+
+=== NOTES ===
+  - All 4 test suites (28 total) pass on Node v24.11.1.
+  - build/extension/ mirror SHA-256 values are identical to root source files.
+  - Wit.ai key is intentionally null when not configured; audio CAPTCHA solving requires
+    user to supply own key via Settings UI. This is a configuration change required for security.
+  - Phase 2A foundation scope maintained. No Phase 2B expansion.

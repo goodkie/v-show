@@ -785,11 +785,21 @@ async function handleFileUpload(e) {
     const nameDisplay = document.getElementById('filename-display');
     if (nameDisplay) nameDisplay.textContent = file.name;
     
+    // [F7] Capture every original raw row BEFORE any deduplication / blacklist filtering.
+    // This ensures the Phase 2A ledger preserves source-row order, id, and raw input.
     const text = await file.text();
     // [Precision Scraper] Matches both standard URLs and raw domains (e.g. google.com, www.test.com/contact)
     const urlRegex = /(https?:\/\/[^\s,]+)|((?:www\.)?[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}(?:\/[^\s,]*)?)/g;
     let matches = text.match(urlRegex) || [];
-    
+    const importId = `import_${Date.now()}`;
+    const allRawUrls = [...matches]; // snapshot before any mutation
+    // Fire-and-forget to background HistoryStore — does NOT block UI
+    chrome.runtime.sendMessage({
+        action: 'RECORD_IMPORT_ROWS',
+        urls: allRawUrls.map(r => r.trim()),
+        importId
+    }).catch(() => {});
+
     // Normalize matched strings into valid https URLs
     matches = matches.map(u => {
         u = u.trim().replace(/[.,;)]+$/, '');
@@ -809,6 +819,7 @@ async function handleFileUpload(e) {
     // [v1.3.1] 3333 Global Blacklist (Portals, Gov, Org, etc.)
     const blacklist = window.XPIDER_BLACKLIST || [];
     
+    // Execution queue dedupes separately — ledger above already captured every row
     campaignQueue = [...new Set(matches)].filter(url => {
         const lowerUrl = url.toLowerCase();
         return !blacklist.some(domain => lowerUrl.includes(domain));
@@ -1286,8 +1297,25 @@ function saveTemplate() {
         subject: document.getElementById('tpl-subject').value,
         message: document.getElementById('tpl-message').value
     };
+    // [F9] Dual-write: legacy key for compat + templates_v2 for Phase 2A canonical state
     chrome.storage.local.set({ xpider_tpl: tpl });
+    _syncTemplateToV2(tpl).catch(() => {});
     return tpl;
+}
+
+// [F9] Sync a template object into templates_v2 default slot via background RPC
+async function _syncTemplateToV2(tpl) {
+    try {
+        const data = await chrome.storage.local.get(['templates_v2']);
+        const store = data.templates_v2 || { version: 2, templates: {}, defaultId: null };
+        const id = store.defaultId || 'default';
+        const updatedTpl = { ...tpl, id, updatedAt: new Date().toISOString() };
+        store.templates[id] = updatedTpl;
+        store.defaultId = id;
+        await chrome.storage.local.set({ templates_v2: store });
+    } catch (e) {
+        console.warn('[F9] _syncTemplateToV2 failed:', e.message);
+    }
 }
 
 // [v18.10.0] Diagnostic Recovery: Load persistent logs from storage
@@ -1510,8 +1538,11 @@ async function saveSettings() {
 
 async function loadSettings() {
     const data = await chrome.storage.local.get([
-        'xpider_lang', 'xpider_tpl', 'xpider_delay', 'xpider_delay_collect', 'xpider_delay_fill', 'xpider_delay_submit', 'xpider_queue', 'xpider_success', 'xpider_total',
-        'xpider_captcha_enabled', 'xpider_captcha_method', 'xpider_captcha_api_key', 'xpider_stt_api_key', 'xpider_stealth_mode', 'xpider_double_submit', 'xpider_fill_mode'
+        'xpider_lang', 'xpider_tpl', 'templates_v2',
+        'xpider_delay', 'xpider_delay_collect', 'xpider_delay_fill', 'xpider_delay_submit',
+        'xpider_queue', 'xpider_success', 'xpider_total',
+        'xpider_captcha_enabled', 'xpider_captcha_method', 'xpider_captcha_api_key',
+        'xpider_stt_api_key', 'xpider_stealth_mode', 'xpider_double_submit', 'xpider_fill_mode'
     ]);
     
     if (data.xpider_lang) {
@@ -1553,15 +1584,20 @@ async function loadSettings() {
     if (methodGroup) methodGroup.style.display = captchaEnabled ? 'block' : 'none';
     toggleCaptchaApiVisibility();
 
-    // Template
-    if (data.xpider_tpl) {
-        if (document.getElementById('tpl-first-name')) document.getElementById('tpl-first-name').value = data.xpider_tpl.firstName || '';
-        if (document.getElementById('tpl-last-name')) document.getElementById('tpl-last-name').value = data.xpider_tpl.lastName || '';
-        if (document.getElementById('tpl-name')) document.getElementById('tpl-name').value = data.xpider_tpl.name || '';
-        if (document.getElementById('tpl-email')) document.getElementById('tpl-email').value = data.xpider_tpl.email || '';
-        if (document.getElementById('tpl-phone')) document.getElementById('tpl-phone').value = data.xpider_tpl.phone || '';
-        if (document.getElementById('tpl-subject')) document.getElementById('tpl-subject').value = data.xpider_tpl.subject || '';
-        if (document.getElementById('tpl-message')) document.getElementById('tpl-message').value = data.xpider_tpl.message || '';
+    // [F9] Template: use templates_v2 default slot as authoritative source; fall back to xpider_tpl
+    let tplToLoad = data.xpider_tpl || null;
+    if (data.templates_v2 && data.templates_v2.defaultId) {
+        const v2default = data.templates_v2.templates[data.templates_v2.defaultId];
+        if (v2default) tplToLoad = v2default;
+    }
+    if (tplToLoad) {
+        if (document.getElementById('tpl-first-name')) document.getElementById('tpl-first-name').value = tplToLoad.firstName || '';
+        if (document.getElementById('tpl-last-name')) document.getElementById('tpl-last-name').value = tplToLoad.lastName || '';
+        if (document.getElementById('tpl-name')) document.getElementById('tpl-name').value = tplToLoad.name || '';
+        if (document.getElementById('tpl-email')) document.getElementById('tpl-email').value = tplToLoad.email || '';
+        if (document.getElementById('tpl-phone')) document.getElementById('tpl-phone').value = tplToLoad.phone || '';
+        if (document.getElementById('tpl-subject')) document.getElementById('tpl-subject').value = tplToLoad.subject || '';
+        if (document.getElementById('tpl-message')) document.getElementById('tpl-message').value = tplToLoad.message || '';
     }
 
     // 3중 속도 복원
@@ -1748,6 +1784,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 chrome.runtime.sendMessage({ action: 'EXECUTE_RESET', type: 'ALL' }, (res) => {
                     if (res && res.success) {
                         addLog(`🔄 All target suppressions reset. (New Generation: ${res.newGeneration})`, "success");
+                        _renderHistoryPanel();
                     } else {
                         addLog(`❌ Reset rejected: ${res?.error || 'Active submission in progress'}`, "error");
                     }
@@ -1755,6 +1792,68 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    // [F10] Selective Reset Button - reset single URL's suppression state
+    const selectiveResetBtn = document.getElementById('selective-reset-history-btn');
+    if (selectiveResetBtn) {
+        selectiveResetBtn.addEventListener('click', () => {
+            const input = document.getElementById('selective-reset-url-input');
+            const url = input ? input.value.trim() : '';
+            if (!url) return alert('Enter a URL to selectively reset.');
+            if (confirm(`Reset suppression for: ${url}?`)) {
+                chrome.runtime.sendMessage({ action: 'EXECUTE_RESET', type: 'SELECTED', targetIdentities: [url] }, (res) => {
+                    if (res && res.success) {
+                        addLog(`🔄 Selective reset applied for ${url} (${res.affectedCount} target(s) affected)`, "success");
+                        if (input) input.value = '';
+                        _renderHistoryPanel();
+                    } else {
+                        addLog(`❌ Selective reset failed: ${res?.error || 'Unknown error'}`, "error");
+                    }
+                });
+            }
+        });
+    }
+
+    // [F10] History status panel: load and display ImportRow/Attempt state
+    async function _renderHistoryPanel() {
+        const panel = document.getElementById('history-status-panel');
+        if (!panel) return;
+        try {
+            const data = await chrome.storage.local.get(['xpider_history_rows', 'xpider_history_attempts', 'xpider_history_generation']);
+            const rows = data.xpider_history_rows || [];
+            const attempts = data.xpider_history_attempts || [];
+            const gen = data.xpider_history_generation || 1;
+
+            const pending = rows.filter(r => r.status === 'PENDING').length;
+            const invalid = rows.filter(r => r.status === 'INVALID_INPUT').length;
+            const succeeded = attempts.filter(a => a.status === 'CONFIRMED_SUCCESS').length;
+            const failed = attempts.filter(a => a.status === 'FAILURE').length;
+
+            panel.innerHTML = `
+                <div class="history-stat-row">
+                    <span>Generation:</span><span><b>${gen}</b></span>
+                </div>
+                <div class="history-stat-row">
+                    <span>Total Import Rows:</span><span><b>${rows.length}</b></span>
+                </div>
+                <div class="history-stat-row">
+                    <span>Pending:</span><span><b>${pending}</b></span>
+                </div>
+                <div class="history-stat-row">
+                    <span>Invalid:</span><span><b style="color:#ef4444">${invalid}</b></span>
+                </div>
+                <div class="history-stat-row">
+                    <span>Succeeded:</span><span><b style="color:#22c55e">${succeeded}</b></span>
+                </div>
+                <div class="history-stat-row">
+                    <span>Failed:</span><span><b style="color:#f59e0b">${failed}</b></span>
+                </div>
+            `;
+        } catch (e) {
+            panel.innerHTML = `<span style="color:#ef4444">History load error: ${e.message}</span>`;
+        }
+    }
+
+    // Initial render on popup open
+    _renderHistoryPanel();
 });
-
-
