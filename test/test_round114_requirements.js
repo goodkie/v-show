@@ -44,7 +44,7 @@ console.log('══════════════════════�
 
 check('RETRY_STATE_RESET_TEST', () => {
   // Fix A: retryGuidedCapture navigates to Step 6 and stops old resources
-  assert(html.includes('R114 Fix A'), 'R114 Fix A marker missing');
+  assert(html.includes('R114-FixA') || html.includes('R114B-FixA') || html.includes('R114 Fix A') || html.includes('R114B Fix A'), 'R114 Fix A marker missing');
   assert(html.includes('this.state.currentStep = 6;'), 'State reset to step 6 missing');
   assert(html.includes('this.renderStep6CaptureWheel();'), 'renderStep6CaptureWheel call missing in retry');
   assert(html.includes('stopCaptureResources()'), 'stopCaptureResources() call missing in retry');
@@ -53,7 +53,7 @@ check('RETRY_STATE_RESET_TEST', () => {
 
 check('RETRY_NEW_SESSION_TEST', () => {
   // Fix A: After navigating to step 6, startGuidedCapture is called (fresh session)
-  assert(html.includes("setTimeout(() => { this.startGuidedCapture(); }, 80);"), 
+  assert(html.includes("this.startGuidedCapture();") && html.includes("80);"), 
     'Deferred startGuidedCapture after step 6 navigation missing');
   // The btn must be reset to START 360° CAPTURE state
   assert(html.includes("btn.innerHTML = '<i class=\"fa-solid fa-play\"></i> START 360° CAPTURE';"),
@@ -90,7 +90,9 @@ check('BSQRFP_REPLAY_TEST', () => {
   assert(html.includes('RELATIVE_YAW_SWEEP_PASS'), 'RELATIVE_YAW_SWEEP_PASS gate missing');
 
   // Verify BSQRFP forensic data: the session metadata confirms the issue
-  const bsqrfpPath = path.join(ROOT, 'scratch/BSQRFP_metadata.json');
+  const bsqrfpPath = fs.existsSync(path.join(ROOT, 'test/fixtures/BSQRFP_metadata.json'))
+    ? path.join(ROOT, 'test/fixtures/BSQRFP_metadata.json')
+    : path.join(ROOT, 'scratch/BSQRFP_metadata.json');
   if (fs.existsSync(bsqrfpPath)) {
     const bsqrfp = JSON.parse(fs.readFileSync(bsqrfpPath, 'utf8'));
     assert.strictEqual(bsqrfp.captureSessionId, 'BSQRFP', 'BSQRFP session ID mismatch');

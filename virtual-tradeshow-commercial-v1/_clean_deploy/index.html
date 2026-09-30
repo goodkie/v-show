@@ -980,9 +980,11 @@
         overflow-x: hidden !important;
       }
       #viewer-container {
-        height: 380px !important;
-        min-height: 300px !important;
         width: 100% !important;
+        aspect-ratio: 16 / 9 !important;
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: 80vh !important;
       }
       .studio-banner {
         padding: 12px 14px !important;
@@ -21263,7 +21265,13 @@ class GuidedCaptureController {
             this.guidanceMessage = 'Hold steady...';
             this.notifyProgress();
 
+            // R114B Fix B: Latch visual closure detection so if seen at 334°, it is remembered
+            // when rotation continues to >= 345° to prevent deadlock
             if (evalRes.closureConfirmed) {
+              this._visualLoopClosureLatched = true;
+            }
+
+            if (evalRes.closureConfirmed || (this._visualLoopClosureLatched && this.accumulatedRotation >= 345.0)) {
               this.closureConfirmed = true;
               this.telemetry.closureConfirmed = true;
               this.telemetry.captureCompletionReason = 'VISUAL_LOOP_CONFIRMED';
@@ -22485,6 +22493,10 @@ class SetupWizardController {
     const rText = document.getElementById('guidedRotText');
     const pCircle = document.getElementById('guidedProgressCircle');
 
+    // R114B Fix A: Bind current session epoch to ignore stale callbacks from prior sessions
+    this._captureSessionEpoch = (this._captureSessionEpoch || 0) + 1;
+    const sessionEpoch = this._captureSessionEpoch;
+
     if (!window.guidedCaptureController) {
       window.guidedCaptureController = new GuidedCaptureController();
     }
@@ -22501,6 +22513,7 @@ class SetupWizardController {
     }
 
     controller.onProgress = (info) => {
+      if (this._captureSessionEpoch !== sessionEpoch) return;
       const pct = Math.min(100, Math.round(info.progressPercent || 0));
       if (pText) pText.textContent = pct + '%';
       const rotVal = Math.round(info.normalizedSensorRotationDeg !== undefined ? info.normalizedSensorRotationDeg : (info.accumulatedRotation || info.integratedYawDeg || 0));
@@ -22515,6 +22528,10 @@ class SetupWizardController {
     };
 
     controller.onComplete = async (result) => {
+      if (this._captureSessionEpoch !== sessionEpoch) {
+        console.warn('[SetupWizard] Ignoring onComplete from stale session epoch:', sessionEpoch, 'current:', this._captureSessionEpoch);
+        return;
+      }
       if (result && result.canonicalKeyframeCount >= 8 && result.closureConfirmed) {
         if (pill) pill.textContent = 'Circle Complete! ' + result.canonicalKeyframeCount + ' keyframes ready. Processing panorama...';
         try {
@@ -22543,6 +22560,7 @@ class SetupWizardController {
     };
 
     controller.onAttention = (attn) => {
+      if (this._captureSessionEpoch !== sessionEpoch) return;
       if (btn) {
         btn.disabled = false;
         btn.innerHTML = '<i class="fa-solid fa-rotate-right"></i> TRY AGAIN';

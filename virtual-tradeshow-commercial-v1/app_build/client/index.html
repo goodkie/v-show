@@ -980,9 +980,11 @@
         overflow-x: hidden !important;
       }
       #viewer-container {
-        height: 380px !important;
-        min-height: 300px !important;
         width: 100% !important;
+        aspect-ratio: 16 / 9 !important;
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: 80vh !important;
       }
       .studio-banner {
         padding: 12px 14px !important;
@@ -1021,7 +1023,7 @@
 
     /* 3D WebGL Player Viewport - R114 Fix C: 16:9 responsive */
     #viewer-container {
-      position: relative; width: 100%; aspect-ratio: 16 / 9; height: auto; max-height: 80vh; min-height: 300px;
+      position: relative; width: 100%; aspect-ratio: 16 / 9; height: auto; max-height: 80vh; min-height: 0;
       border-radius: 16px; overflow: hidden;
       border: 1px solid rgba(0, 194, 255, 0.4);
       box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9), 0 0 30px rgba(0, 194, 255, 0.2);
@@ -21339,7 +21341,13 @@ class GuidedCaptureController {
             this.guidanceMessage = 'Hold steady...';
             this.notifyProgress();
 
+            // R114B Fix B: Latch visual closure detection so if seen at 334°, it is remembered
+            // when rotation continues to >= 345° to prevent deadlock
             if (evalRes.closureConfirmed) {
+              this._visualLoopClosureLatched = true;
+            }
+
+            if (evalRes.closureConfirmed || (this._visualLoopClosureLatched && this.accumulatedRotation >= 345.0)) {
               // ── R114 Fix B2: Simultaneous AND gate ──────────────────────────────────────
               // SECTOR_COVERAGE_PASS: all 12 angular sectors (each 30°) covered
               const coveredSectors = new Set();
@@ -22605,6 +22613,10 @@ class SetupWizardController {
     const rText = document.getElementById('guidedRotText');
     const pCircle = document.getElementById('guidedProgressCircle');
 
+    // R114B Fix A: Bind current session epoch to ignore stale callbacks from prior sessions
+    this._captureSessionEpoch = (this._captureSessionEpoch || 0) + 1;
+    const sessionEpoch = this._captureSessionEpoch;
+
     if (!window.guidedCaptureController) {
       window.guidedCaptureController = new GuidedCaptureController();
     }
@@ -22621,6 +22633,7 @@ class SetupWizardController {
     }
 
     controller.onProgress = (info) => {
+      if (this._captureSessionEpoch !== sessionEpoch) return;
       const pct = Math.min(100, Math.round(info.progressPercent || 0));
       if (pText) pText.textContent = pct + '%';
       const rotVal = Math.round(info.normalizedSensorRotationDeg !== undefined ? info.normalizedSensorRotationDeg : (info.accumulatedRotation || info.integratedYawDeg || 0));
@@ -22635,6 +22648,10 @@ class SetupWizardController {
     };
 
     controller.onComplete = async (result) => {
+      if (this._captureSessionEpoch !== sessionEpoch) {
+        console.warn('[SetupWizard] Ignoring onComplete from stale session epoch:', sessionEpoch, 'current:', this._captureSessionEpoch);
+        return;
+      }
       if (result && result.canonicalKeyframeCount >= 8 && result.closureConfirmed) {
         if (pill) pill.textContent = 'Circle Complete! ' + result.canonicalKeyframeCount + ' keyframes ready. Processing panorama...';
         try {
@@ -22663,6 +22680,7 @@ class SetupWizardController {
     };
 
     controller.onAttention = (attn) => {
+      if (this._captureSessionEpoch !== sessionEpoch) return;
       if (btn) {
         btn.disabled = false;
         btn.innerHTML = '<i class="fa-solid fa-rotate-right"></i> TRY AGAIN';
@@ -22698,12 +22716,25 @@ class SetupWizardController {
   }
 
   retryGuidedCapture() {
-    console.log('[SetupWizard][R114-FixA] Idempotent retry: stopping old resources, navigating to Step 6...');
+    // R114B Fix A: Debounce guard against rapid double-clicks
+    if (this._isRetrying) {
+      console.warn('[SetupWizard] Rapid retry suppressed by debounce guard.');
+      return;
+    }
+    this._isRetrying = true;
 
-    // R114 Fix A: Stop old MediaStream tracks and cancel animation frames before any DOM operation
+    // R114B Fix A: Invalidate any pending callbacks from previous capture sessions via epoch token
+    this._captureSessionEpoch = (this._captureSessionEpoch || 0) + 1;
+
+    console.log('[SetupWizard][R114B-FixA] Idempotent retry epoch ' + this._captureSessionEpoch + ': stopping old resources, navigating to Step 6...');
+
+    // Stop old MediaStream tracks and cancel animation frames before any DOM operation
     if (window.guidedCaptureController) {
       try {
         window.guidedCaptureController.stopCaptureResources();
+        if (typeof window.guidedCaptureController.destroy === 'function') {
+          window.guidedCaptureController.destroy();
+        }
       } catch (e) {}
       window.guidedCaptureController = null;
     }
@@ -22717,6 +22748,7 @@ class SetupWizardController {
     if (btn) {
       btn.disabled = false;
       btn.innerHTML = '<i class="fa-solid fa-play"></i> START 360° CAPTURE';
+      btn.onclick = () => this.startGuidedCapture();
     }
     const pill = document.getElementById('guidedStatusPill');
     if (pill) pill.textContent = 'Ready to capture';
@@ -22728,7 +22760,10 @@ class SetupWizardController {
     if (pCircle) pCircle.setAttribute('stroke-dashoffset', '565.48');
 
     // Brief delay so renderStep6CaptureWheel DOM has settled, then fresh capture
-    setTimeout(() => { this.startGuidedCapture(); }, 80);
+    setTimeout(() => {
+      this._isRetrying = false;
+      this.startGuidedCapture();
+    }, 80);
   }
 
   reviewSavedViews() {

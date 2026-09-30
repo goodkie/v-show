@@ -13154,8 +13154,9 @@ return event;
           candidateId: pv.candidateId || null,
           viewerMode: 'PANORAMIC_IMMERSIVE',
           stitchedPanoramaUrl: pv.stitchedPanoramaUrl || pv.activeBackgroundUrl || pv.url,
-          horizontalCoverageDeg: pv.horizontalCoverageDeg || 360,
-          full360Qualified: pv.full360Qualified !== false,
+          // R114B Fix D: Truth invariant
+          horizontalCoverageDeg: typeof pv.horizontalCoverageDeg === 'number' ? pv.horizontalCoverageDeg : null,
+          full360Qualified: pv.full360Qualified === true,
           angularAnchors: pv.angularAnchors || [],
           engineVersion: pv.viewerEngineVersion || pv.engineVersion || 'PANORAMIC_IMMERSIVE_V1',
           viewerEngineVersion: pv.viewerEngineVersion || pv.engineVersion || 'PANORAMIC_IMMERSIVE_V1',
@@ -13192,8 +13193,9 @@ return event;
           candidateId: sv.candidateId || null,
           viewerMode: mode,
           stitchedPanoramaUrl: sv.stitchedPanoramaUrl || sv.activeBackgroundUrl || sv.url,
-          horizontalCoverageDeg: sv.horizontalCoverageDeg || 360,
-          full360Qualified: sv.full360Qualified !== false,
+          // R114B Fix D: Truth invariant
+          horizontalCoverageDeg: typeof sv.horizontalCoverageDeg === 'number' ? sv.horizontalCoverageDeg : null,
+          full360Qualified: sv.full360Qualified === true,
           angularAnchors: sv.angularAnchors || [],
           engineVersion: sv.viewerEngineVersion || sv.engineVersion || (mode === 'PANORAMIC_IMMERSIVE' ? 'PANORAMIC_IMMERSIVE_V1' : 'CONNECTED_VIEWPOINT_V3_1'),
           viewerEngineVersion: sv.viewerEngineVersion || sv.engineVersion || (mode === 'PANORAMIC_IMMERSIVE' ? 'PANORAMIC_IMMERSIVE_V1' : 'CONNECTED_VIEWPOINT_V3_1'),
@@ -13618,6 +13620,11 @@ return event;
       const candidate = (db.spatialCandidates || []).find(c => c.candidateId === candidateId);
       if (!candidate) throw new Error(`Spatial booth candidate ${candidateId} not found`);
 
+      // R114B Fix D: Ensure candidate belongs to expected project
+      if (candidate.projectId && candidate.projectId !== projectId) {
+        throw new Error(`Cannot apply candidate: candidate ${candidateId} belongs to project ${candidate.projectId}, not ${projectId}`);
+      }
+
       if (candidate.geometryValid === false || candidate.status === 'STITCH_VALIDATION_FAILED' || candidate.applyEnabled === false) {
         throw new Error('Cannot apply candidate: stitch validation failed. Retake required.');
       }
@@ -13645,8 +13652,9 @@ return event;
         activeBackgroundUrl: activeUrl,
         url: activeUrl,
         stitchedPanoramaUrl: candidate.stitchedPanoramaUrl || activeUrl,
-        horizontalCoverageDeg: candidate.horizontalCoverageDeg || 360,
-        full360Qualified: candidate.full360Qualified !== false,
+        // R114B Fix D: Truth invariant - no fabricated 360° or true
+        horizontalCoverageDeg: typeof candidate.horizontalCoverageDeg === 'number' ? candidate.horizontalCoverageDeg : null,
+        full360Qualified: candidate.full360Qualified === true,
         captureRingValid: candidate.captureRingValid,
         angularAnchors: candidate.angularAnchors || [],
         sourceType: chosenViewerMode,
@@ -13958,9 +13966,10 @@ return event;
           candidatePanoramaVersionId: vpData.panorama?.candidatePanoramaVersionId || null,
           activePanoramaVersionId: vpData.panorama?.activePanoramaVersionId || null,
           projectionType: vpData.panorama?.projectionType || 'SPHERICAL',
-          horizontalCoverageDeg: vpData.panorama?.horizontalCoverageDeg || 360,
-          verticalCoverageDeg: vpData.panorama?.verticalCoverageDeg || 180,
-          full360Qualified: vpData.panorama?.full360Qualified !== undefined ? Boolean(vpData.panorama.full360Qualified) : true,
+          // R114B Fix D: Truth invariant - no fabricated 360/180/true
+          horizontalCoverageDeg: typeof vpData.panorama?.horizontalCoverageDeg === 'number' ? vpData.panorama.horizontalCoverageDeg : null,
+          verticalCoverageDeg: typeof vpData.panorama?.verticalCoverageDeg === 'number' ? vpData.panorama.verticalCoverageDeg : null,
+          full360Qualified: vpData.panorama?.full360Qualified === true,
           url: vpData.panorama?.url || vpData.panoramaUrl || null,
           previewUrl: vpData.panorama?.previewUrl || vpData.panoramaUrl || null
         },
