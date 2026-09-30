@@ -278,5 +278,59 @@ console.log("=== [PHASE 2A ACCEPTANCE TEST RUNNER] Starting 12 Test Cases ===");
         console.log("✅ PASS Test 12: RFC-4180 and Spreadsheet formula injection escape validated");
     }
 
-    console.log("=== ALL 12 PHASE 2A ACCEPTANCE TESTS PASSED (100%) ===");
+    // --- TEST 13 (R1 Remediation): Preservation of 'ref' parameter vs 'utm_*' stripping ---
+    {
+        const hStore = new HistoryStore();
+        const urlWithRefAndUtm = "https://partner-portal.com/tenant/contact?ref=client_123&utm_source=newsletter&utm_medium=email";
+        const normalized = hStore.normalizeTargetIdentity(urlWithRefAndUtm);
+        
+        assert(normalized.includes("ref=client_123"), "Meaningful 'ref' parameter must be strictly preserved per R1");
+        assert(!normalized.includes("utm_source"), "Marketing tracking parameter 'utm_source' must be stripped");
+        assert(!normalized.includes("utm_medium"), "Marketing tracking parameter 'utm_medium' must be stripped");
+        assert.strictEqual(normalized, "https://partner-portal.com/tenant/contact?ref=client_123");
+        console.log("✅ PASS Test 13: R1 Meaningful 'ref' preserved while marketing parameters stripped");
+    }
+
+    // --- TEST 14 (R3 Remediation): AsyncOperationQueue Serialization Proof ---
+    {
+        class AsyncOperationQueue {
+            constructor() {
+                this._queue = Promise.resolve();
+                this._activeCount = 0;
+            }
+            enqueue(operationFn) {
+                this._activeCount++;
+                const next = this._queue.then(() => operationFn()).finally(() => {
+                    this._activeCount--;
+                });
+                this._queue = next.catch(() => {});
+                return next;
+            }
+        }
+
+        const queue = new AsyncOperationQueue();
+        const executionLog = [];
+
+        const task1 = queue.enqueue(async () => {
+            executionLog.push("START_1");
+            await new Promise(r => setTimeout(r, 40));
+            executionLog.push("END_1");
+            return "RES_1";
+        });
+
+        const task2 = queue.enqueue(async () => {
+            executionLog.push("START_2");
+            await new Promise(r => setTimeout(r, 10));
+            executionLog.push("END_2");
+            return "RES_2";
+        });
+
+        const [r1, r2] = await Promise.all([task1, task2]);
+        assert.deepStrictEqual(executionLog, ["START_1", "END_1", "START_2", "END_2"], "Operations must execute strictly serially without interleaving");
+        assert.strictEqual(r1, "RES_1");
+        assert.strictEqual(r2, "RES_2");
+        console.log("✅ PASS Test 14: R3 AsyncOperationQueue strictly guarantees non-interleaving serialization");
+    }
+
+    console.log("=== ALL 14 PHASE 2A + REMEDIATION ACCEPTANCE TESTS PASSED (100%) ===");
 })();

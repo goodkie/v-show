@@ -526,15 +526,39 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             })();
             return true;
 
+// [R3 Architecture] Serialized Background Execution Mutex
+class AsyncOperationQueue {
+    constructor() {
+        this._queue = Promise.resolve();
+        this._activeCount = 0;
+    }
+
+    enqueue(operationFn) {
+        this._activeCount++;
+        const next = this._queue.then(() => operationFn()).finally(() => {
+            this._activeCount--;
+        });
+        this._queue = next.catch(() => {});
+        return next;
+    }
+
+    get activeCount() {
+        return this._activeCount;
+    }
+}
+const bgOperationQueue = new AsyncOperationQueue();
+
         case 'EXECUTE_MIGRATION':
-            // [P2A-1 Single Writer Migration]
-            (async () => {
+            // [P2A-1 & R3 Single Writer Serialized Migration]
+            bgOperationQueue.enqueue(async () => {
                 try {
                     const data = await chrome.storage.local.get(null);
                     const tStore = new self.TemplateStore();
                     const migrationResult = await tStore.migrateLegacyData(data);
                     if (migrationResult.migrated && migrationResult.commit) {
+                        await chrome.storage.local.set({ xpider_migration_phase: 'STAGE_COMMIT' });
                         await chrome.storage.local.set(migrationResult.commit);
+                        await chrome.storage.local.set({ xpider_migration_phase: 'COMPLETED' });
                         logBg(null, `📦 [Migration] Successfully migrated templates and lists to v2 (Backup: ${migrationResult.backupKey})`, "info");
                     }
                     sendResponse({ success: true, ...migrationResult });
@@ -542,12 +566,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     console.error("[Migration Error]", err);
                     sendResponse({ success: false, error: err.message });
                 }
-            })();
+            });
             return true;
 
         case 'RECORD_IMPORT_ROWS':
             // [P2A-2 Separate Original Rows from Attempts]
-            (async () => {
+            bgOperationQueue.enqueue(async () => {
                 try {
                     if (!self.__xpiderHistoryStore) self.__xpiderHistoryStore = new self.HistoryStore();
                     const res = self.__xpiderHistoryStore.ingestImportRows(request.urls, request.importId);
@@ -555,7 +579,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 } catch (err) {
                     sendResponse({ success: false, error: err.message });
                 }
-            })();
+            });
             return true;
 
         case 'CHECK_SUPPRESSION':
@@ -572,8 +596,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             return true;
 
         case 'EXECUTE_RESET':
-            // [P2A-3 Reset with Submit Lock Guard]
-            (async () => {
+            // [P2A-3 & R3 Reset with Strict In-Flight Submit Lock Check]
+            bgOperationQueue.enqueue(async () => {
                 try {
                     if (!self.__xpiderHistoryStore) self.__xpiderHistoryStore = new self.HistoryStore();
                     const hasActiveLock = !!(campaignState.currentAttempt && campaignState.currentAttempt.status === 'SUBMIT_PENDING');
@@ -591,7 +615,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 } catch (err) {
                     sendResponse({ success: false, error: err.message });
                 }
-            })();
+            });
             return true;
 
         case 'EXPORT_HISTORY_CSV':

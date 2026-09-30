@@ -1708,4 +1708,53 @@ chrome.storage.onChanged.addListener((changes) => {
     }
 });
 
+// [P2A Foundation UI Wiring]
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Trigger background single-writer migration
+    try {
+        chrome.runtime.sendMessage({ action: 'EXECUTE_MIGRATION' }, (res) => {
+            if (res && res.success) {
+                console.log('[Popup] Storage migration verified / initialized to v2.');
+            }
+        });
+    } catch(e) {}
+
+    // 2. Export CSV Report Button
+    const exportBtn = document.getElementById('export-csv-btn');
+    if (exportBtn) {
+        exportBtn.addEventListener('click', () => {
+            chrome.runtime.sendMessage({ action: 'EXPORT_HISTORY_CSV' }, (res) => {
+                if (res && res.success && res.csv) {
+                    const blob = new Blob([res.csv], { type: 'text/csv;charset=utf-8;' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `xpider_campaign_report_${Date.now()}.csv`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                    addLog("📊 CSV Report downloaded successfully.", "success");
+                } else {
+                    addLog("⚠️ Failed to generate CSV report.", "warning");
+                }
+            });
+        });
+    }
+
+    // 3. Reset All Suppression Button
+    const resetBtn = document.getElementById('reset-all-history-btn');
+    if (resetBtn) {
+        resetBtn.addEventListener('click', () => {
+            if (confirm("Reset suppression for all targets? This will allow intentional resending while preserving historical audit rows.")) {
+                chrome.runtime.sendMessage({ action: 'EXECUTE_RESET', type: 'ALL' }, (res) => {
+                    if (res && res.success) {
+                        addLog(`🔄 All target suppressions reset. (New Generation: ${res.newGeneration})`, "success");
+                    } else {
+                        addLog(`❌ Reset rejected: ${res?.error || 'Active submission in progress'}`, "error");
+                    }
+                });
+            }
+        });
+    }
+});
+
 

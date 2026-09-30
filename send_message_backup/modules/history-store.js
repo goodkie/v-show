@@ -44,9 +44,9 @@
                 let pathname = parsed.pathname.replace(/\/+$/, '');
                 if (pathname === '') pathname = '/';
 
-                // Strip marketing tracking parameters, preserve meaningful app queries
+                // Strip strictly marketing tracking parameters; preserve meaningful ref, app, and tenant queries per R1
                 const searchParams = new URLSearchParams(parsed.search);
-                const trackingKeys = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'ref', 'fbclid', 'gclid'];
+                const trackingKeys = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'fbclid', 'gclid', '_ga', 'mc_cid', 'mc_eid'];
                 for (const k of trackingKeys) {
                     searchParams.delete(k);
                 }
