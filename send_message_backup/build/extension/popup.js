@@ -1,6 +1,53 @@
 /**
- * X PIDER Sender Pro - Logic v1.1.0 (Side Panel & Full Settings)
+ * X PIDER Sender Pro - Logic v1.2.0 (Side Panel & Full Settings)
+ * [v4.17.0] XPIDER DevLog Bridge + 개발자 스텔스 트리거 적용됨
  */
+
+// ── XPIDER DEV LOG BRIDGE (Popup) ────────────────────────────────────────
+(function() {
+  const _EXT_NAME = 'Ext[AutoFormSender/Popup]';
+  const _xDL = (lvl, msg) => {
+    try {
+      chrome.runtime.sendMessage({
+        _xpider_devlog: true, level: lvl, source: _EXT_NAME,
+        msg: String(msg).substring(0, 2048)
+      }).catch(() => {});
+    } catch(_) {}
+  };
+  ['log','warn','error','debug','info'].forEach(m => {
+    const _o = console[m].bind(console);
+    console[m] = (...a) => {
+      _o(...a);
+      const lvlMap = { log:'INFO', warn:'WARN', error:'ERROR', debug:'DEBUG', info:'INFO' };
+      _xDL(lvlMap[m] || 'INFO', a.map(x => typeof x === 'object' ? JSON.stringify(x) : String(x)).join(' '));
+    };
+  });
+})();
+
+// ── 🕵️ 개발자 전용 시크릿 키 트리거 ──────────────────────────────────────
+// Ctrl+Shift+D 를 2초 이내 2회 입력 시 DevConsole 오픈 (UI에 표시되지 않음)
+(function() {
+  let _devKeyCount = 0;
+  let _devKeyTimer = null;
+  document.addEventListener('keydown', (e) => {
+    if (e.ctrlKey && e.shiftKey && e.key === 'D') {
+      e.preventDefault();
+      _devKeyCount++;
+      if (_devKeyTimer) clearTimeout(_devKeyTimer);
+      if (_devKeyCount >= 2) {
+        _devKeyCount = 0;
+        // DevConsole 오픈 요청
+        try {
+          window.postMessage({ type: 'XPIDER_INVOKE', channel: 'xpider-devlog-open-console', args: {}, id: 'devcon-' + Date.now() }, '*');
+          console.log('[DEV] DevConsole 오픈 트리거 발동');
+        } catch(_) {}
+      } else {
+        _devKeyTimer = setTimeout(() => { _devKeyCount = 0; }, 2000);
+      }
+    }
+  }, true);
+})();
+// ── END DEV LOG BRIDGE ───────────────────────────────────────────────────
 
 let currentTpl = {};
 let campaignQueue = [];
@@ -115,6 +162,13 @@ async function initializeAsyncComponents() {
         ['delay-input-collect', 'delay-input-fill', 'delay-input-submit'].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.addEventListener('input', updateSpeedLabels);
+        });
+
+        // [v4.15.0] 폼 자동 입력 방식 변경 리스너 등록 및 실시간 세이브
+        document.querySelectorAll('input[name="fill-mode"]').forEach(el => {
+            el.addEventListener('change', (e) => {
+                chrome.storage.local.set({ xpider_fill_mode: e.target.value });
+            });
         });
     } catch(e) {}
 
@@ -1048,6 +1102,11 @@ async function startCampaign() {
     const fillDelayMs = levelToFillMs[levelFill] || 300;
     const submitDelayMs = levelToSubmitMs[levelSubmit] || 1500;
 
+    // [v4.15.0] 폼 자동 입력 방식 획득 및 동기화 저장
+    const fillModeEl = document.querySelector('input[name="fill-mode"]:checked');
+    const fillMode = fillModeEl ? fillModeEl.value : 'instant';
+    chrome.storage.local.set({ xpider_fill_mode: fillMode });
+
     // [v19.0] Use XPIDER_INVOKE bridge directly to main process (bypasses background.js)
     addLog("[System] Sending to Native Engine...", "debug");
     xpiderInvoke('xpider-campaign-start', {
@@ -1055,7 +1114,8 @@ async function startCampaign() {
         template: currentTpl,
         delayMs,
         fillDelayMs,
-        submitDelayMs
+        submitDelayMs,
+        fillMode
     }).then(response => {
         if (response && response.success) {
             addLog("✅ [Native Engine] Campaign started!", "success");
@@ -1406,6 +1466,8 @@ async function saveSettings() {
 
     const lang = langSelect ? langSelect.value : 'en';
     const sttKeyVal = sttKeyInput ? sttKeyInput.value.trim() : '';
+    const fillModeEl = document.querySelector('input[name="fill-mode"]:checked');
+    const fillMode = fillModeEl ? fillModeEl.value : 'instant';
     const settings = {
         xpider_lang: lang,
         xpider_captcha_enabled: captchaToggle ? captchaToggle.checked : false,
@@ -1421,7 +1483,8 @@ async function saveSettings() {
         xpider_delay_collect: delayCollectInput ? delayCollectInput.value : 6,
         xpider_delay_fill: delayFillInput ? delayFillInput.value : 6,
         xpider_delay_submit: delaySubmitInput ? delaySubmitInput.value : 6,
-        xpider_random_delay: randomToggle ? randomToggle.checked : false
+        xpider_random_delay: randomToggle ? randomToggle.checked : false,
+        xpider_fill_mode: fillMode
     };
     await chrome.storage.local.set(settings);
     
@@ -1448,7 +1511,7 @@ async function saveSettings() {
 async function loadSettings() {
     const data = await chrome.storage.local.get([
         'xpider_lang', 'xpider_tpl', 'xpider_delay', 'xpider_delay_collect', 'xpider_delay_fill', 'xpider_delay_submit', 'xpider_queue', 'xpider_success', 'xpider_total',
-        'xpider_captcha_enabled', 'xpider_captcha_method', 'xpider_captcha_api_key', 'xpider_stt_api_key', 'xpider_stealth_mode', 'xpider_double_submit'
+        'xpider_captcha_enabled', 'xpider_captcha_method', 'xpider_captcha_api_key', 'xpider_stt_api_key', 'xpider_stealth_mode', 'xpider_double_submit', 'xpider_fill_mode'
     ]);
     
     if (data.xpider_lang) {
@@ -1522,6 +1585,11 @@ async function loadSettings() {
     if (document.getElementById('random-delay-toggle')) {
         document.getElementById('random-delay-toggle').checked = !!data.xpider_random_delay;
     }
+
+    // [v4.15.0] 폼 자동 입력 방식 복원 (디폴트: instant)
+    const fillMode = data.xpider_fill_mode || 'instant';
+    const fillModeEl = document.getElementById(`fill-mode-${fillMode}`);
+    if (fillModeEl) fillModeEl.checked = true;
 
     // Resuming Campaign
     if (data.xpider_queue && data.xpider_queue.length > 0) {

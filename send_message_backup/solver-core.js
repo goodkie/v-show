@@ -1,9 +1,10 @@
 /**
- * X PIDER CAPTCHA Solver Core v1.0.0
- * Backend / Orchestration Module
+ * X PIDER CAPTCHA Solver Core v1.2.0
+ * Backend / Orchestration Module (Universal UMD & Service Worker Compatible)
+ * [Owner Authorized Enhancement: Extended Autonomous Solver Engine by Antigravity]
  */
 
-export class XpiderSolverCore {
+class XpiderSolverCore {
     constructor(config = {}) {
         this.config = {
             witAiKey: config.witAiKey || null,
@@ -129,6 +130,44 @@ export class XpiderSolverCore {
         while (n--) u8arr[n] = bstr.charCodeAt(n);
         return new Blob([u8arr], { type: mime });
     }
+
+    /**
+     * [Owner Authorized Enhancement: Extended Solver Registry]
+     */
+    async solveChallengeGeneric(type, params) {
+        switch (type) {
+            case 'recaptcha':
+            case 'recaptcha_v2':
+                return this.config.twoCaptchaKey ? this.solve2Captcha(params.siteKey, params.pageUrl, 'recaptcha')
+                    : (this.config.nopeChaKey ? this.solveNopeCha(params.siteKey, params.pageUrl, 'recaptcha') : null);
+            case 'hcaptcha':
+                return this.config.twoCaptchaKey ? this.solve2Captcha(params.siteKey, params.pageUrl, 'hcaptcha')
+                    : (this.config.nopeChaKey ? this.solveNopeCha(params.siteKey, params.pageUrl, 'hcaptcha') : null);
+            case 'turnstile':
+                return this.config.nopeChaKey ? this.solveNopeCha(params.siteKey, params.pageUrl, 'turnstile') : null;
+            case 'audio_wit':
+                return this.transcribeAudio(params.audioData, params.audioUrl);
+            default:
+                throw new Error(`Unsupported solver type: ${type}`);
+        }
+    }
 }
+
+// Universal Global Scope Binding (Service Worker / Content / Window)
+if (typeof self !== 'undefined') {
+    self.XpiderSolverCore = XpiderSolverCore;
+}
+if (typeof window !== 'undefined') {
+    window.XpiderSolverCore = XpiderSolverCore;
+}
+if (typeof globalThis !== 'undefined') {
+    globalThis.XpiderSolverCore = XpiderSolverCore;
+}
+
+try {
+    if (typeof module !== 'undefined' && module.exports) {
+        module.exports = { XpiderSolverCore };
+    }
+} catch (e) {}
 
 

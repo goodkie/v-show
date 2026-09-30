@@ -32,6 +32,15 @@
 })();
 // ── END DEV LOG BRIDGE ───────────────────────────────────────────────────
 
+// [v1.2.0-Fix-F4] Connect external solver-core module into Service Worker
+try {
+    if (typeof importScripts === 'function') {
+        importScripts('solver-core.js');
+    }
+} catch (e) {
+    console.warn('[SW Boot] importScripts(solver-core.js) fallback or handled inline:', e);
+}
+
 // [v18.25.0] Boot Diagnostic Telemetry: Track SW startup steps in real-time
 function markBoot(step) {
     console.log(`[BootStep] ${step}`);
@@ -47,6 +56,20 @@ self.onerror = function(message, source, lineno, colno, error) {
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
         chrome.storage.local.set({ xpider_boot_error: errInfo, xpider_boot_ts: Date.now() });
     }
+};
+
+// [v1.2.0] Standard Canonical Delivery Reason Codes
+const REASON_CODES = {
+    SUCCESS_CONFIRMED: "SUCCESS_CONFIRMED",
+    DELIVERY_UNKNOWN: "DELIVERY_UNKNOWN",
+    TIMEOUT_LOCAL_SESSION: "TIMEOUT_LOCAL_SESSION",
+    NO_FORM_DETECTED: "NO_FORM_DETECTED",
+    VALIDATION_FAILED: "VALIDATION_FAILED",
+    CAPTCHA_CHALLENGE_BLOCKED: "CAPTCHA_CHALLENGE_BLOCKED",
+    BOT_DETECTED_BLOCKED: "BOT_DETECTED_BLOCKED",
+    PAGE_LOAD_ERROR: "PAGE_LOAD_ERROR",
+    ALREADY_VISITED: "ALREADY_VISITED",
+    SW_RESTART_ABORTED: "SW_RESTART_ABORTED"
 };
 
 // [v1.2.0] Global Campaign State Registry (Ensures availability across all scopes)
@@ -67,7 +90,8 @@ let campaignState = {
     lastActionTime: Date.now(),
     isInitialized: false,
     targetResolve: null,
-    targetReady: null
+    targetReady: null,
+    currentAttempt: null // [v1.2.0 Intent Ledger] { url, attemptId, status: 'SUBMIT_PENDING'|'RESOLVED', reasonCode, ts }
 };
 
 // [v18.35.0] Mission-Critical API Wrapper: Native bridge for missing APIs
@@ -168,10 +192,11 @@ function logBg(tabId, msg, type = 'info') {
     }
 }
 
-class XpiderSolverCore {
-    constructor(config = {}) {
-        this.config = {
-            witAiKey: config.witAiKey || null,
+if (typeof self.XpiderSolverCore === 'undefined') {
+    self.XpiderSolverCore = class XpiderSolverCore {
+        constructor(config = {}) {
+            this.config = {
+                witAiKey: config.witAiKey || null,
             twoCaptchaKey: config.twoCaptchaKey || null,
             nopeChaKey: config.nopeChaKey || null,
             ...config
@@ -304,10 +329,11 @@ class XpiderSolverCore {
         while (n--) u8arr[n] = bstr.charCodeAt(n);
         return new Blob([u8arr], { type: mime });
     }
+    };
 }
 
 markBoot("solver_instantiation");
-const solver = new XpiderSolverCore();
+const solver = new self.XpiderSolverCore();
 console.log("[X PIDER] Background script initializing (Unified Mode)...");
 
 markBoot("side_panel_config");
@@ -397,6 +423,47 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 resolve(request.result);
                 sendResponse({ success: true });
             }
+            return true;
+
+        case 'QUEUE_BRANCHES':
+            // [v1.2.0-Fix-F2] Bounded candidate enqueuing for branch/sub-page discovery
+            (async () => {
+                try {
+                    const rawLinks = Array.isArray(request.links) ? request.links : [];
+                    const MAX_BRANCHES_PER_BATCH = 3;
+                    const MAX_TOTAL_QUEUE = 1000;
+                    let added = 0;
+                    
+                    for (const link of rawLinks) {
+                        if (added >= MAX_BRANCHES_PER_BATCH) break;
+                        if (campaignState.queue.length >= MAX_TOTAL_QUEUE) {
+                            logBg(null, `⚠️ [Queue] Upper bound limit reached (${MAX_TOTAL_QUEUE}). Skipping: ${link}`, "warning");
+                            break;
+                        }
+                        if (typeof link !== 'string' || !link.startsWith('http')) continue;
+                        
+                        const norm = normalizeUrl(link);
+                        const isVisited = campaignState.visitedUrls.includes(norm);
+                        const isSuccessful = campaignState.successfulUrls.includes(norm);
+                        const isAlreadyQueued = campaignState.queue.some(q => normalizeUrl(q) === norm);
+                        
+                        if (!isVisited && !isSuccessful && !isAlreadyQueued) {
+                            campaignState.queue.push(link);
+                            added++;
+                        }
+                    }
+                    
+                    if (added > 0) {
+                        campaignState.totalTargets += added;
+                        saveCampaignState().catch(() => {});
+                        broadcastStats();
+                        logBg(null, `🌿 [Discovery] +${added} bounded branch candidate(s) queued. Total queue: ${campaignState.queue.length}`, "info");
+                    }
+                    sendResponse({ success: true, added });
+                } catch (e) {
+                    sendResponse({ success: false, error: e.message });
+                }
+            })();
             return true;
 
         case 'GET_STATE':
@@ -643,11 +710,9 @@ async function processNextCampaignTarget(loopSessionId) {
                 safeTabs.remove(orphanId).catch(() => {});
             }
         });
-        
-        if (result && result.success) {
-            campaignState.successCount++;
-        }
-        
+        // [v1.2.0-Fix-F1] Single success-accounting owner:
+        // successCount is strictly and exclusively incremented inside finishOnce() on line 886.
+        // Duplicate increment removed here to prevent false accounting inflation.
     } catch (e) {
         logBg(null, `❌ Critical target error: ${e.message}. Skipping...`, "error");
     } finally {
@@ -897,6 +962,10 @@ async function orchestrateSending(urlInput, template) {
         if (pollerTimer) clearInterval(pollerTimer);
         safeTabs.onUpdated.removeListener(navWatcher);
 
+        const isSuccess = !!(res && res.success);
+        let finalReason = isSuccess ? REASON_CODES.SUCCESS_CONFIRMED : (res?.reasonCode || (res?.error ? String(res.error) : REASON_CODES.DELIVERY_UNKNOWN));
+        resolveSubmissionIntent(targetUrl, finalReason, isSuccess).catch(() => {});
+
         if (res && res.success) {
             logBg(tabId, "✨ [Engine] Submission confirmed. Tab will close shortly...", "success");
             await new Promise(r => setTimeout(r, 2000));
@@ -905,7 +974,7 @@ async function orchestrateSending(urlInput, template) {
         }
 
         safeTabs.remove(tabId).catch(() => {});
-        resolveRef(res);
+        resolveRef({ ...res, reasonCode: finalReason });
     };
 
     const secureFocus = (currentUrl, force = false) => {
@@ -914,6 +983,9 @@ async function orchestrateSending(urlInput, template) {
         
         isFocusSecured = true;
         lastFocusedUrl = normalized;
+        
+        // [v1.2.0 Intent Ledger] Record submit intent before field mapping & submit execution
+        recordSubmissionIntent(targetUrl, 'SUBMIT_PENDING').catch(() => {});
         
         if (injectionTimer) clearTimeout(injectionTimer);
         logBg(tabId, "Extraction focus secured. Mapping template fields...", "info");
@@ -1049,6 +1121,33 @@ async function orchestrateSending(urlInput, template) {
     return resultPromise;
 }
 
+async function recordSubmissionIntent(targetUrl, status = 'SUBMIT_PENDING') {
+    const attemptId = `att_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    campaignState.currentAttempt = {
+        url: targetUrl,
+        attemptId: attemptId,
+        status: status,
+        reasonCode: null,
+        timestamp: Date.now()
+    };
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+        await chrome.storage.local.set({ xpider_currentAttempt: campaignState.currentAttempt });
+    }
+    return attemptId;
+}
+
+async function resolveSubmissionIntent(targetUrl, reasonCode, success = false) {
+    if (campaignState.currentAttempt && campaignState.currentAttempt.url === targetUrl) {
+        campaignState.currentAttempt.status = 'RESOLVED';
+        campaignState.currentAttempt.reasonCode = reasonCode;
+        campaignState.currentAttempt.success = success;
+        campaignState.currentAttempt.resolvedAt = Date.now();
+        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+            await chrome.storage.local.set({ xpider_currentAttempt: campaignState.currentAttempt });
+        }
+    }
+}
+
 async function saveCampaignState() {
     return new Promise((resolve) => {
         try {
@@ -1065,7 +1164,8 @@ async function saveCampaignState() {
                 xpider_success: campaignState.successCount,
                 xpider_total: campaignState.totalTargets,
                 xpider_visited: campaignState.visitedUrls,
-                xpider_successful: campaignState.successfulUrls
+                xpider_successful: campaignState.successfulUrls,
+                xpider_currentAttempt: campaignState.currentAttempt
             }, () => {
                 if (chrome.runtime.lastError) console.error("Save error:", chrome.runtime.lastError);
                 resolve();
@@ -1093,9 +1193,35 @@ async function restoreCampaignState() {
 
             chrome.storage.local.get([
                 'xpider_isActive', 'xpider_queue', 'xpider_tpl', 'xpider_delayMs', 'xpider_fillDelayMs', 'xpider_submitDelayMs',
-                'xpider_sessionId', 'xpider_success', 'xpider_total', 'xpider_visited', 'xpider_successful'
+                'xpider_sessionId', 'xpider_success', 'xpider_total', 'xpider_visited', 'xpider_successful', 'xpider_currentAttempt'
             ], (data) => {
                 try {
+                    // [v1.2.0 Delivery Protection on SW Restart]
+                    // If an attempt was pending submission when SW crashed/restarted, DO NOT blinds-resend!
+                    let visited = Array.isArray(data.xpider_visited) ? [...data.xpider_visited] : [];
+                    if (data.xpider_currentAttempt && data.xpider_currentAttempt.status === 'SUBMIT_PENDING') {
+                        const interruptedUrl = data.xpider_currentAttempt.url;
+                        const normInterrupted = normalizeUrl(interruptedUrl || '');
+                        console.warn(`[Protection] Service worker restarted with pending submission for: ${interruptedUrl}. Flagging as DELIVERY_UNKNOWN.`);
+                        
+                        if (normInterrupted && !visited.includes(normInterrupted)) {
+                            visited.push(normInterrupted);
+                        }
+                        
+                        const settledAttempt = {
+                            ...data.xpider_currentAttempt,
+                            status: 'RESOLVED',
+                            reasonCode: REASON_CODES.DELIVERY_UNKNOWN,
+                            interruptedAt: Date.now()
+                        };
+                        chrome.storage.local.set({ 
+                            xpider_currentAttempt: settledAttempt,
+                            xpider_visited: visited 
+                        });
+                        
+                        logBg(null, `⚠️ [Protection] Unresolved submission for ${interruptedUrl} recovered as DELIVERY_UNKNOWN to avoid duplicate send.`, "warning");
+                    }
+
                     if (data.xpider_isActive && data.xpider_queue && data.xpider_queue.length > 0) {
                         campaignState.isActive = true;
                         campaignState.queue = data.xpider_queue;
@@ -1106,8 +1232,9 @@ async function restoreCampaignState() {
                         campaignState.sessionId = data.xpider_sessionId || 0;
                         campaignState.successCount = data.xpider_success || 0;
                         campaignState.totalTargets = data.xpider_total || 0;
-                        campaignState.visitedUrls = data.xpider_visited || [];
+                        campaignState.visitedUrls = visited;
                         campaignState.successfulUrls = data.xpider_successful || [];
+                        campaignState.currentAttempt = null;
                         
                         logBg(null, `Restored previous active campaign: ${campaignState.queue.length} targets remaining.`, "info");
                         

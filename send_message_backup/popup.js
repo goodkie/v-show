@@ -1,5 +1,5 @@
 /**
- * X PIDER Sender Pro - Logic v1.1.0 (Side Panel & Full Settings)
+ * X PIDER Sender Pro - Logic v1.2.0 (Side Panel & Full Settings)
  * [v4.17.0] XPIDER DevLog Bridge + 개발자 스텔스 트리거 적용됨
  */
 
