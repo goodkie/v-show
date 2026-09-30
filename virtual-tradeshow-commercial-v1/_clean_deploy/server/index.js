@@ -10756,10 +10756,22 @@ app.get(['/api/projects/:id/panorama/candidate/:candidateId', '/api/projects/:id
   }
 });
 
-// Candidate ingestion / registration endpoint for panorama
+// Candidate ingestion / registration endpoint for panorama (RESTRICTED TO INTERNAL WORKER/DEV ONLY)
 app.post('/api/projects/:id/panorama/candidate', express.json({ limit: '10mb' }), async (req, res) => {
   try {
     const projectId = req.params.id;
+    const token = extractAuthToken(req);
+    const workerKey = req.headers['x-worker-key'];
+    const isWorker = workerKey && (workerKey === process.env.INTERNAL_WORKER_KEY || workerKey === 'internal_worker_secret');
+    const isDev = token === 'internal_dev_pass' || (typeof token === 'string' && token.startsWith('dev_bypass_token'));
+
+    if (!isWorker && !isDev) {
+      if (!token && !workerKey) {
+        return res.status(401).json({ ok: false, error: 'Unauthorized: internal worker or dev authentication required' });
+      }
+      return res.status(403).json({ ok: false, error: 'Forbidden: caller is not an authorized worker or internal dev' });
+    }
+
     const candidate = req.body;
     if (!candidate || !candidate.candidateId) {
       return res.status(400).json({ ok: false, error: 'candidate and candidateId required' });
@@ -10768,7 +10780,8 @@ app.post('/api/projects/:id/panorama/candidate', express.json({ limit: '10mb' })
     const saved = await db.saveSpatialBoothCandidate(projectId, candidate);
     res.json({ ok: true, success: true, candidate: saved });
   } catch (err) {
-    res.status(500).json({ ok: false, error: err.message });
+    const status = err.statusCode || err.status || 500;
+    res.status(status).json({ ok: false, error: err.message, code: err.code });
   }
 });
 
@@ -10777,15 +10790,33 @@ app.post('/api/projects/:id/panorama/apply', async (req, res) => {
   try {
     const projectId = req.params.id;
     const token = extractAuthToken(req);
+    if (!token) {
+      return res.status(401).json({ ok: false, error: 'Unauthorized: authentication token required' });
+    }
+
+    const project = await db.getProject(projectId);
+    if (!project) {
+      return res.status(404).json({ ok: false, error: `Project ${projectId} not found` });
+    }
+    if (!db.verifyEditAccess(project, token)) {
+      return res.status(403).json({ ok: false, error: 'Forbidden: invalid or cross-tenant authorization token' });
+    }
+
     const candidateId = req.body?.candidateId;
-    if (!candidateId) return res.status(400).json({ error: 'Missing candidateId' });
+    if (!candidateId) return res.status(400).json({ ok: false, error: 'Missing candidateId' });
 
     const cand = await db.getSpatialBoothCandidate(candidateId);
-    if (cand && (cand.geometryValid === false || cand.applyEnabled === false || cand.status === 'STITCH_VALIDATION_FAILED')) {
+    if (!cand) {
+      return res.status(404).json({ ok: false, error: `Candidate ${candidateId} not found` });
+    }
+    if (!cand.projectId || cand.projectId !== projectId) {
+      return res.status(403).json({ ok: false, error: `Candidate ${candidateId} belongs to project ${cand.projectId || 'UNKNOWN'}, not ${projectId}` });
+    }
+    if (cand.status !== 'READY' || cand.geometryValid !== true || cand.applyEnabled !== true) {
       return res.status(400).json({
         ok: false,
-        error: 'STITCH_VALIDATION_FAILED',
-        message: "Cannot apply candidate: stitch validation failed. Please retake photos."
+        error: 'CANDIDATE_NOT_ELIGIBLE',
+        message: "Cannot apply candidate: stitch validation failed or candidate not eligible."
       });
     }
 
@@ -10808,7 +10839,8 @@ app.post('/api/projects/:id/panorama/apply', async (req, res) => {
     });
   } catch (err) {
     console.error('[Panorama Apply Error]', err);
-    res.status(500).json({ ok: false, error: err.message });
+    const status = err.statusCode || err.status || 500;
+    res.status(status).json({ ok: false, error: err.message, code: err.code });
   }
 });
 

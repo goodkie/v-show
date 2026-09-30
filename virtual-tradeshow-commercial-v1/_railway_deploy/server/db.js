@@ -13599,6 +13599,13 @@ return event;
       db.spatialCandidates = db.spatialCandidates || [];
       const existingIdx = db.spatialCandidates.findIndex(c => c.candidateId === candidate.candidateId);
       if (existingIdx >= 0) {
+        const existing = db.spatialCandidates[existingIdx];
+        if (existing.projectId && existing.projectId !== projectId) {
+          const err = new Error(`Cannot overwrite candidate ${candidate.candidateId}: candidate belongs to project ${existing.projectId}, not ${projectId}`);
+          err.statusCode = 403;
+          err.code = 'PROJECT_MISMATCH';
+          throw err;
+        }
         db.spatialCandidates[existingIdx] = candidate;
       } else {
         db.spatialCandidates.push(candidate);
@@ -13615,28 +13622,59 @@ return event;
   async applySpatialBoothCandidate(projectId, candidateId, token) {
     return this.mutate(async (db) => {
       const project = (db.projects || []).find(p => p.id === projectId);
-      if (!project) throw new Error(`Project ${projectId} not found`);
+      if (!project) {
+        const err = new Error(`Project ${projectId} not found`);
+        err.statusCode = 404;
+        throw err;
+      }
+
+      // Authoritative tenant/project verification
+      if (!this.verifyEditAccess(project, token)) {
+        const err = new Error('Forbidden: cross-tenant access or invalid token');
+        err.statusCode = 403;
+        err.code = 'CROSS_TENANT_ACCESS_FORBIDDEN';
+        throw err;
+      }
 
       const candidate = (db.spatialCandidates || []).find(c => c.candidateId === candidateId);
-      if (!candidate) throw new Error(`Spatial booth candidate ${candidateId} not found`);
+      if (!candidate) {
+        const err = new Error(`Spatial booth candidate ${candidateId} not found`);
+        err.statusCode = 404;
+        throw err;
+      }
 
       // R114C Fix D: Mandatory project boundary check (fail-closed if missing or mismatch)
       if (!candidate.projectId) {
-        throw new Error(`Cannot apply candidate: candidate ${candidateId} project mismatch (candidate.projectId is missing)`);
+        const err = new Error(`Cannot apply candidate: candidate ${candidateId} project mismatch (candidate.projectId is missing)`);
+        err.statusCode = 403;
+        err.code = 'PROJECT_MISMATCH';
+        throw err;
       }
       if (candidate.projectId !== projectId) {
-        throw new Error(`Cannot apply candidate: candidate ${candidateId} project mismatch (candidate belongs to project ${candidate.projectId}, not ${projectId})`);
+        const err = new Error(`Cannot apply candidate: candidate ${candidateId} project mismatch (candidate belongs to project ${candidate.projectId}, not ${projectId})`);
+        err.statusCode = 403;
+        err.code = 'PROJECT_MISMATCH';
+        throw err;
       }
 
       // R114C Fix D: Explicitly validated READY/geometry/apply eligibility (fail-closed)
       if (candidate.status !== 'READY') {
-        throw new Error(`Cannot apply candidate: candidate ${candidateId} status is '${candidate.status}', expected 'READY'`);
+        const err = new Error(`Cannot apply candidate: candidate ${candidateId} status is '${candidate.status}', expected 'READY'`);
+        err.statusCode = 400;
+        err.code = 'CANDIDATE_NOT_ELIGIBLE';
+        throw err;
       }
       if (candidate.geometryValid !== true) {
-        throw new Error(`Cannot apply candidate: candidate ${candidateId} geometryValid is not true`);
+        const err = new Error(`Cannot apply candidate: candidate ${candidateId} geometryValid is not true`);
+        err.statusCode = 400;
+        err.code = 'CANDIDATE_NOT_ELIGIBLE';
+        throw err;
       }
       if (candidate.applyEnabled !== true) {
-        throw new Error(`Cannot apply candidate: candidate ${candidateId} applyEnabled is not true`);
+        const err = new Error(`Cannot apply candidate: candidate ${candidateId} applyEnabled is not true`);
+        err.statusCode = 400;
+        err.code = 'CANDIDATE_NOT_ELIGIBLE';
+        throw err;
       }
 
       // R114 Fix D: Recognize OPENCV+SPHERICAL_BAND candidates as panoramic
