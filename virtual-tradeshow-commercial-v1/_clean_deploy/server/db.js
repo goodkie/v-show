@@ -13622,9 +13622,12 @@ return event;
         throw new Error('Cannot apply candidate: stitch validation failed. Retake required.');
       }
 
+      // R114 Fix D: Recognize OPENCV+SPHERICAL_BAND candidates as panoramic
       const isPano = candidate.viewerMode === 'PANORAMIC_IMMERSIVE' || 
                      Boolean(candidate.stitchedPanoramaUrl) || 
                      candidate.projectionType === 'EQUIRECTANGULAR' || 
+                     candidate.projectionType === 'SPHERICAL_BAND' ||
+                     (candidate.engine === 'OPENCV' && (candidate.projectionType === 'SPHERICAL_BAND' || candidate.projectionType === 'EQUIRECTANGULAR')) ||
                      (candidate.engine && candidate.engine.startsWith('PANORAMIC_'));
 
       // C11.28: Dedicated namespace and no dual-write
@@ -13667,7 +13670,12 @@ return event;
         master16kStatus: candidate.master16kStatus || 'NATIVE_BELOW_16K',
         pixelsPerHorizontalDegree: candidate.pixelsPerHorizontalDegree || null,
         status: 'APPLIED',
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        // R114 Fix D: Preserve exact artifact identity
+        masterSha256: candidate.masterSha256 || candidate.sha256 || null,
+        projectionType: candidate.projectionType || null,
+        engine: candidate.engine || null,
+        nativeFilename: candidate.nativeFilename || null
       };
 
       if (isPano) {
@@ -13950,12 +13958,13 @@ return event;
           candidatePanoramaVersionId: vpData.panorama?.candidatePanoramaVersionId || null,
           activePanoramaVersionId: vpData.panorama?.activePanoramaVersionId || null,
           projectionType: vpData.panorama?.projectionType || 'SPHERICAL',
-          horizontalCoverageDeg: vpData.panorama?.horizontalCoverageDeg || null,
-          verticalCoverageDeg: vpData.panorama?.verticalCoverageDeg || null,
-          full360Qualified: Boolean(vpData.panorama?.full360Qualified),
-          url: vpData.panorama?.url || null,
-          previewUrl: vpData.panorama?.previewUrl || null
+          horizontalCoverageDeg: vpData.panorama?.horizontalCoverageDeg || 360,
+          verticalCoverageDeg: vpData.panorama?.verticalCoverageDeg || 180,
+          full360Qualified: vpData.panorama?.full360Qualified !== undefined ? Boolean(vpData.panorama.full360Qualified) : true,
+          url: vpData.panorama?.url || vpData.panoramaUrl || null,
+          previewUrl: vpData.panorama?.previewUrl || vpData.panoramaUrl || null
         },
+        panoramaUrl: vpData.panoramaUrl || vpData.panorama?.url || null,
         status: vpData.status || 'DRAFT',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
@@ -13990,6 +13999,7 @@ return event;
         ...updates,
         capture: { ...existing.capture, ...(updates.capture || {}) },
         panorama: { ...existing.panorama, ...(updates.panorama || {}) },
+        panoramaUrl: updates.panoramaUrl || updates.panorama?.url || existing.panoramaUrl || existing.panorama?.url || null,
         updatedAt: new Date().toISOString()
       };
       return db.viewpoints[idx];

@@ -1019,9 +1019,9 @@
       gap: 12px; min-height: 0; position: relative;
     }
 
-    /* 3D WebGL Player Viewport */
+    /* 3D WebGL Player Viewport - R114 Fix C: 16:9 responsive */
     #viewer-container {
-      position: relative; width: 100%; height: 500px; min-height: 500px;
+      position: relative; width: 100%; aspect-ratio: 16 / 9; height: auto; max-height: 80vh; min-height: 300px;
       border-radius: 16px; overflow: hidden;
       border: 1px solid rgba(0, 194, 255, 0.4);
       box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9), 0 0 30px rgba(0, 194, 255, 0.2);
@@ -16433,6 +16433,10 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
         const canvas = this.canvas;
         if (!canvas) return;
 
+        // R114 Fix C2: Guard against duplicate listener registration
+        if (canvas._r114GesturesAttached) return;
+        canvas._r114GesturesAttached = true;
+
         canvas.tabIndex = 0; // allow keyboard focus
         canvas.style.cursor = 'grab';
 
@@ -16440,7 +16444,8 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
         let initialPinchDistance = null;
         let initialPinchFov = null;
 
-        canvas.addEventListener('pointerdown', (e) => {
+        // Store handlers as instance vars so destroy() can remove them
+        this._r114PointerDownHandler = (e) => {
           this.cancelMotion();
           activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
           if (activePointers.size === 1) {
@@ -16458,7 +16463,7 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
           }
         });
 
-        canvas.addEventListener('pointermove', (e) => {
+        this._r114PointerMoveHandler = (e) => {
           if (!activePointers.has(e.pointerId)) return;
           activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
@@ -16523,8 +16528,11 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
           }
         };
 
-        canvas.addEventListener('pointerup', onPointerEnd);
-        canvas.addEventListener('pointercancel', onPointerEnd);
+        this._r114PointerEndHandler = onPointerEnd;
+        canvas.addEventListener('pointerdown', this._r114PointerDownHandler);
+        canvas.addEventListener('pointermove', this._r114PointerMoveHandler);
+        canvas.addEventListener('pointerup', this._r114PointerEndHandler);
+        canvas.addEventListener('pointercancel', this._r114PointerEndHandler);
 
         // Keyboard left/right arrow navigation
         canvas.onkeydown = (e) => {
@@ -16832,6 +16840,21 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
       destroy() {
         this.isDestroyed = true;
         this.cancelMotion();
+
+        // R114 Fix C2: Remove stored pointer/gesture event listeners to prevent leaks on reopen
+        if (this.canvas) {
+          if (this._r114PointerDownHandler) {
+            this.canvas.removeEventListener('pointerdown', this._r114PointerDownHandler);
+          }
+          if (this._r114PointerMoveHandler) {
+            this.canvas.removeEventListener('pointermove', this._r114PointerMoveHandler);
+          }
+          if (this._r114PointerEndHandler) {
+            this.canvas.removeEventListener('pointerup', this._r114PointerEndHandler);
+            this.canvas.removeEventListener('pointercancel', this._r114PointerEndHandler);
+          }
+          this.canvas._r114GesturesAttached = false;
+        }
 
         if (this.container && this.wheelHandler) {
           this.container.removeEventListener('wheel', this.wheelHandler);
@@ -19802,13 +19825,16 @@ class VisualLoopDetector {
     // ── STAGE 2: Perspective-Tolerant Fallback - Affine 2D RANSAC (6 DOF) ──
     if (goodMatches.length >= 18) {
       const affResult = this.fitAffineRANSAC(goodMatches, refKp, currKp, 100, 6.5, currFeatures.width, currFeatures.height);
+      // R114 Fix B1: Tightened AFFINE_FALLBACK thresholds — derived from BSQRFP evidence
+      // BSQRFP had: inlierCount=4, inlierRatio=0.125, reprojErr=0.5, inlierCellCount=3, bboxArea=0.15
+      // New bar requires at minimum 8 inliers AND ratio >= 0.25 to prevent false positives at partial sweeps
       const affPass = (
         affResult.plausible &&
-        affResult.inlierCount >= 4 &&
-        affResult.inlierRatio >= 0.12 &&
+        affResult.inlierCount >= 8 &&
+        affResult.inlierRatio >= 0.25 &&
         affResult.reprojectionError <= 2.5 &&
-        affResult.inlierCellCount >= 2 &&
-        affResult.bboxAreaRatio >= 0.05
+        affResult.inlierCellCount >= 3 &&
+        affResult.bboxAreaRatio >= 0.10
       );
 
       if (affPass) {
@@ -21314,7 +21340,8 @@ class GuidedCaptureController {
             this.notifyProgress();
 
             if (evalRes.closureConfirmed) {
-              // Sector gap awareness: ensure all 12 angular sectors (each 30 deg) have at least 1 candidate
+              // ── R114 Fix B2: Simultaneous AND gate ──────────────────────────────────────
+              // SECTOR_COVERAGE_PASS: all 12 angular sectors (each 30°) covered
               const coveredSectors = new Set();
               for (const c of this.candidateFrames) {
                 const s = Math.floor((((c.angle % 360) + 360) % 360) / 30);
@@ -21325,21 +21352,47 @@ class GuidedCaptureController {
                 if (!coveredSectors.has(s)) missingSectors.push(s);
               }
               this.telemetry.missingYawSectors = missingSectors;
-              if (missingSectors.length > 0) {
+
+              const SECTOR_COVERAGE_PASS = missingSectors.length === 0;
+              // RELATIVE_YAW_SWEEP_PASS: continuous accumulated rotation >= 345°
+              // Derived from BSQRFP evidence: 334° is insufficient; require >= 345° to ensure ring integrity
+              const RELATIVE_YAW_SWEEP_PASS = this.accumulatedRotation >= 345.0;
+              // VISUAL_LOOP_CLOSURE_PASS: already confirmed by VisualLoopDetector (evalRes.closureConfirmed)
+              const VISUAL_LOOP_CLOSURE_PASS = true;
+              // FINALIZE_ONCE_GUARD: checked inside finalizeCapture(), not here
+
+              this.telemetry.sectorCoveragePass = SECTOR_COVERAGE_PASS;
+              this.telemetry.relativeYawSweepPass = RELATIVE_YAW_SWEEP_PASS;
+              this.telemetry.relativeYawAtClosure = Math.round(this.accumulatedRotation * 10) / 10;
+
+              if (!SECTOR_COVERAGE_PASS) {
                 this.guidanceMessage = 'Rotate to complete coverage in missing sectors (' + missingSectors.map(s => s * 30 + '°').join(', ') + ')';
                 this.notifyProgress();
                 return cand;
               }
 
+              if (!RELATIVE_YAW_SWEEP_PASS) {
+                // BSQRFP failure case: visual loop passed but sweep is < 345° — keep session alive
+                const remaining = Math.ceil(345.0 - this.accumulatedRotation);
+                this.guidanceMessage = 'Continue rotating slowly to complete the 360° circle (' + remaining + '° remaining)...';
+                this.telemetry.captureCompletionReason = 'YAW_SWEEP_INSUFFICIENT_' + Math.round(this.accumulatedRotation) + 'DEG';
+                this.notifyProgress();
+                return cand;
+              }
+
+              if (!SECTOR_COVERAGE_PASS || !RELATIVE_YAW_SWEEP_PASS || !VISUAL_LOOP_CLOSURE_PASS) {
+                return cand;
+              }
+
               this.closureConfirmed = true;
               this.telemetry.closureConfirmed = true;
-              this.telemetry.captureCompletionReason = 'VISUAL_LOOP_CONFIRMED';
+              this.telemetry.captureCompletionReason = 'VISUAL_LOOP_CONFIRMED_AND_GATE_PASS';
               this.state = 'CLOSURE_CONFIRMED';
               this.guidanceMessage = '360° capture complete';
               this.notifyProgress();
               this.sendTelemetry();
 
-              // Trigger finalization
+              // Trigger finalization (FINALIZE_ONCE_GUARD is in finalizeCapture())
               setTimeout(() => {
                 this.finalizeCapture();
               }, 200);
@@ -22645,15 +22698,37 @@ class SetupWizardController {
   }
 
   retryGuidedCapture() {
-    console.log('[SetupWizard] Initiating clean idempotent guided capture retry...');
+    console.log('[SetupWizard][R114-FixA] Idempotent retry: stopping old resources, navigating to Step 6...');
+
+    // R114 Fix A: Stop old MediaStream tracks and cancel animation frames before any DOM operation
     if (window.guidedCaptureController) {
-      window.guidedCaptureController.resetCaptureForRetry('USER_EXPLICIT_RETRY');
+      try {
+        window.guidedCaptureController.stopCaptureResources();
+      } catch (e) {}
+      window.guidedCaptureController = null;
     }
-    // C12.9-P2R2 fix: Do NOT pre-reset DOM to 0%/0° here.
-    // The previous failure screen correctly shows the snapshot values.
-    // startGuidedCapture() re-attaches onProgress; the first tick will update to 0% naturally
-    // without a visible stale-to-zero flash on retry tap.
-    this.startGuidedCapture();
+
+    // Navigate back to Step 6 so DOM elements (#guidedCaptureVideo, #btnStartGuidedCapture) exist
+    this.state.currentStep = 6;
+    this.renderStep6CaptureWheel();
+
+    // Reset Step 6 UI to fresh start state
+    const btn = document.getElementById('btnStartGuidedCapture');
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-play"></i> START 360° CAPTURE';
+    }
+    const pill = document.getElementById('guidedStatusPill');
+    if (pill) pill.textContent = 'Ready to capture';
+    const pText = document.getElementById('guidedPercentText');
+    if (pText) pText.textContent = '0%';
+    const rText = document.getElementById('guidedRotText');
+    if (rText) rText.textContent = '0° ROTATION';
+    const pCircle = document.getElementById('guidedProgressCircle');
+    if (pCircle) pCircle.setAttribute('stroke-dashoffset', '565.48');
+
+    // Brief delay so renderStep6CaptureWheel DOM has settled, then fresh capture
+    setTimeout(() => { this.startGuidedCapture(); }, 80);
   }
 
   reviewSavedViews() {
@@ -22848,7 +22923,7 @@ class SetupWizardController {
         <h3 style="font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 6px;">${vp.name} Stitched Successfully</h3>
         <p style="font-size: 13px; color: #94a3b8; margin-bottom: 18px;">Interactive 360° panorama created from continuous capture.</p>
 
-        <div id="step7ViewerContainer" style="width: 100%; height: 260px; background: #020617; border-radius: 10px; border: 1.5px solid #38bdf8; overflow: hidden; position: relative; margin-bottom: 16px;">
+        <div id="step7ViewerContainer" style="width: 100%; aspect-ratio: 16 / 9; max-height: 80vh; height: auto; background: #020617; border-radius: 10px; border: 1.5px solid #38bdf8; overflow: hidden; position: relative; margin-bottom: 16px;">
           <canvas id="step7ViewerCanvas" style="width: 100%; height: 100%; display: block;"></canvas>
           <div style="position: absolute; bottom: 10px; left: 10px; background: rgba(9,16,29,0.85); backdrop-filter: blur(6px); border: 1px solid #38bdf8; border-radius: 4px; padding: 3px 8px; font-size: 10px; font-weight: 800; color: #38bdf8; pointer-events: none;">
             <i class="fa-solid fa-arrows-spin"></i> INTERACTIVE 360° PANORAMA

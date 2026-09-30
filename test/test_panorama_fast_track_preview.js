@@ -271,7 +271,10 @@ async function runAllGates() {
     const html = fs.readFileSync(INDEX_HTML_PATH, 'utf-8');
     assert(html.includes('this.telemetry.droppedYawSectors = Array.from(this.droppedYawSectors)'), 'droppedYawSectors telemetry missing');
     assert(html.includes('this.telemetry.missingYawSectors = missingSectors'), 'missingYawSectors telemetry missing');
-    assert(html.includes('if (missingSectors.length > 0) {'), 'missingSectors check missing');
+    // R114: AND gate replaces old `if (missingSectors.length > 0)` with SECTOR_COVERAGE_PASS pattern
+    assert(html.includes('SECTOR_COVERAGE_PASS = missingSectors.length === 0'), 'R114 SECTOR_COVERAGE_PASS AND gate missing');
+    assert(html.includes('RELATIVE_YAW_SWEEP_PASS'), 'R114 RELATIVE_YAW_SWEEP_PASS missing');
+    assert(html.includes('accumulatedRotation >= 345.0'), 'R114 YAW_SWEEP 345° threshold missing');
     assert(html.includes('return cand;'), 'Early return preventing closureConfirmation missing');
 
     results['TEST_10_EXPOSURE_DROP_SECTOR_GAP_AWARENESS'] = 'PASS';
