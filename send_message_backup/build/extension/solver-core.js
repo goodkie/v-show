@@ -151,6 +151,55 @@ class XpiderSolverCore {
                 throw new Error(`Unsupported solver type: ${type}`);
         }
     }
+
+    /**
+     * [Owner Authorized Enhancement: Autonomous Multi-Tier Fallback Chain]
+     */
+    async solveSmartFallbackChain(challengeType, params = {}) {
+        const errors = [];
+
+        // 1. Audio Bypass (if audioData is present)
+        if (params.audioData && this.config.witAiKey) {
+            try {
+                const text = await this.transcribeAudio(params.audioData, params.audioUrl);
+                if (text && text.trim()) {
+                    return { success: true, method: 'wit_ai_audio', solution: text.trim() };
+                }
+            } catch (err) {
+                errors.push(`Wit.ai: ${err.message}`);
+            }
+        }
+
+        // 2. NopeCHA Fast Token
+        if (this.config.nopeChaKey && params.siteKey && params.pageUrl) {
+            try {
+                const token = await this.solveNopeCha(params.siteKey, params.pageUrl, challengeType);
+                if (token) {
+                    return { success: true, method: 'nopecha', token };
+                }
+            } catch (err) {
+                errors.push(`NopeCHA: ${err.message}`);
+            }
+        }
+
+        // 3. 2Captcha Reliable Solver
+        if (this.config.twoCaptchaKey && params.siteKey && params.pageUrl) {
+            try {
+                const token = await this.solve2Captcha(params.siteKey, params.pageUrl, challengeType);
+                if (token) {
+                    return { success: true, method: '2captcha', token };
+                }
+            } catch (err) {
+                errors.push(`2Captcha: ${err.message}`);
+            }
+        }
+
+        return { 
+            success: false, 
+            error: "ALL_SOLVER_TIERS_EXHAUSTED", 
+            details: errors.join(" | ") 
+        };
+    }
 }
 
 // Universal Global Scope Binding (Service Worker / Content / Window)

@@ -119,32 +119,75 @@
             try { chrome.runtime.sendMessage({ action: 'XPIDER_LOG', message: msg }); } catch(e) {}
         }
 
+        deepFindElement(selector, root = document) {
+            try {
+                const el = root.querySelector(selector);
+                if (el) return el;
+                const all = root.querySelectorAll('*');
+                for (const node of all) {
+                    if (node.shadowRoot) {
+                        const found = this.deepFindElement(selector, node.shadowRoot);
+                        if (found) return found;
+                    }
+                }
+            } catch(e) {}
+            return null;
+        }
+
         triggerHumanLikeClick(el) {
             try {
                 const rect = el.getBoundingClientRect();
-                const x = rect.left + rect.width / 2 + (Math.random() * 10 - 5);
-                const y = rect.top + rect.height / 2 + (Math.random() * 10 - 5);
+                const scrollX = window.scrollX || window.pageXOffset || 0;
+                const scrollY = window.scrollY || window.pageYOffset || 0;
+                const jitterX = (Math.random() * 8 - 4);
+                const jitterY = (Math.random() * 8 - 4);
+                const x = rect.left + rect.width / 2 + jitterX;
+                const y = rect.top + rect.height / 2 + jitterY;
+                const screenX = window.screenX + x;
+                const screenY = window.screenY + y;
 
-                const mousedown = new MouseEvent('mousedown', {
-                    bubbles: true, cancelable: true, view: window,
-                    clientX: x, clientY: y, button: 0, buttons: 1
-                });
-                const mouseup = new MouseEvent('mouseup', {
-                    bubbles: true, cancelable: true, view: window,
-                    clientX: x, clientY: y, button: 0, buttons: 1
-                });
-                const click = new MouseEvent('click', {
-                    bubbles: true, cancelable: true, view: window,
-                    clientX: x, clientY: y, button: 0
-                });
+                const baseProps = {
+                    bubbles: true,
+                    cancelable: true,
+                    composed: true,
+                    view: window,
+                    clientX: x,
+                    clientY: y,
+                    screenX: screenX,
+                    screenY: screenY,
+                    pageX: x + scrollX,
+                    pageY: y + scrollY,
+                    button: 0,
+                    buttons: 1,
+                    pointerId: 1,
+                    pointerType: 'mouse',
+                    isPrimary: true,
+                    pressure: 0.5
+                };
 
-                el.dispatchEvent(mousedown);
+                // 1. Move into element
+                el.dispatchEvent(new PointerEvent('pointermove', { ...baseProps, buttons: 0, pressure: 0 }));
+                el.dispatchEvent(new MouseEvent('mousemove', { ...baseProps, buttons: 0 }));
+
+                // 2. Down sequence
+                const downDelay = Math.floor(Math.random() * 40) + 20;
                 setTimeout(() => {
-                    el.dispatchEvent(mouseup);
+                    el.dispatchEvent(new PointerEvent('pointerdown', baseProps));
+                    el.dispatchEvent(new MouseEvent('mousedown', baseProps));
+                    try { if (typeof el.focus === 'function') el.focus(); } catch(e) {}
+
+                    // 3. Up and Click sequence
+                    const upDelay = Math.floor(Math.random() * 60) + 40;
                     setTimeout(() => {
-                        el.dispatchEvent(click);
-                    }, Math.floor(Math.random() * 50) + 30);
-                }, Math.floor(Math.random() * 80) + 50);
+                        const upProps = { ...baseProps, buttons: 0, pressure: 0 };
+                        el.dispatchEvent(new PointerEvent('pointerup', upProps));
+                        el.dispatchEvent(new MouseEvent('mouseup', upProps));
+                        
+                        setTimeout(() => {
+                            el.dispatchEvent(new MouseEvent('click', { ...upProps }));
+                        }, Math.floor(Math.random() * 30) + 10);
+                    }, upDelay);
+                }, downDelay);
             } catch(e) {
                 try { el.click(); } catch(e2) {}
             }
@@ -345,8 +388,19 @@
         }
     }
 
-    // Auto-init if in reCAPTCHA frame
-    if (window.location.href.includes('google.com/recaptcha')) {
+    // [v1.2.0 Autonomous Solver Engine] Universal Frame Detection & Auto-init
+    const currentHref = window.location.href.toLowerCase();
+    const isChallengeEnvironment = 
+        currentHref.includes('google.com/recaptcha') ||
+        currentHref.includes('google.co.kr/recaptcha') ||
+        currentHref.includes('recaptcha.net') ||
+        currentHref.includes('hcaptcha.com') ||
+        currentHref.includes('cloudflare.com/turnstile') ||
+        currentHref.includes('challenges.cloudflare.com') ||
+        currentHref.includes('/sorry/') ||
+        document.querySelector('iframe[src*="recaptcha"], iframe[src*="turnstile"], iframe[src*="hcaptcha"]') !== null;
+
+    if (isChallengeEnvironment) {
         window.xpiderSolver = new XpiderSolverContent();
     }
 })();

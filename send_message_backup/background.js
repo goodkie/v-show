@@ -492,24 +492,39 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         case 'SOLVE_CAPTCHA':
             (async () => {
                 try {
-                    const storage = await new Promise(resolve => chrome.storage.local.get(['captchaMethod', 'captchaApiKey'], resolve));
-                    const method = storage.captchaMethod;
-                    const apiKey = storage.captchaApiKey;
-                    if (!method || !apiKey) {
-                        sendResponse({ success: false, error: "CAPTCHA solver API Key is missing in settings." });
-                        return;
+                    const storage = await new Promise(resolve => chrome.storage.local.get([
+                        'captchaMethod', 'captchaApiKey', 'xpider_captcha_method', 'xpider_captcha_api_key', 'xpider_stt_api_key'
+                    ], resolve));
+                    
+                    const method = request.method || storage.xpider_captcha_method || storage.captchaMethod;
+                    const apiKey = storage.xpider_captcha_api_key || storage.captchaApiKey;
+                    const witKey = storage.xpider_stt_api_key || '3T7NUX6UUPXHXGMDQLB7P23JSHYI2C7O';
+                    
+                    solver.config.witAiKey = witKey;
+                    if (method === 'nopecha') solver.config.nopeChaKey = apiKey;
+                    if (method === 'api' || method === '2captcha') solver.config.twoCaptchaKey = apiKey;
+                    
+                    // [Owner Authorized Enhancement] Use Autonomous Multi-Tier Fallback Chain if available
+                    if (typeof solver.solveSmartFallbackChain === 'function') {
+                        const result = await solver.solveSmartFallbackChain(request.type || 'recaptcha', {
+                            siteKey: request.sitekey,
+                            pageUrl: request.url,
+                            audioData: request.audioData
+                        });
+                        if (result.success) {
+                            sendResponse(result);
+                            return;
+                        }
                     }
                     
-                    solver.config.nopeChaKey = (method === 'nopecha') ? apiKey : null;
-                    solver.config.twoCaptchaKey = (method === 'api') ? apiKey : null;
-                    
+                    // Direct method fallback
                     let token;
-                    if (method === 'nopecha') {
+                    if (method === 'nopecha' && solver.config.nopeChaKey) {
                         token = await solver.solveNopeCha(request.sitekey, request.url, request.type);
-                    } else if (method === 'api') {
+                    } else if ((method === 'api' || method === '2captcha') && solver.config.twoCaptchaKey) {
                         token = await solver.solve2Captcha(request.sitekey, request.url, request.type);
                     } else {
-                        throw new Error(`Unsupported solver method: ${method}`);
+                        throw new Error(`Solver API Key or method not configured (method: ${method}).`);
                     }
                     sendResponse({ success: true, token });
                 } catch (e) {
