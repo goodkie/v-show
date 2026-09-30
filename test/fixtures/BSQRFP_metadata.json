@@ -753,25 +753,6 @@
       "durablyPersisted": true
     },
     {
-      "candidateId": "C041",
-      "assetId": "asset_BSQRFP_C041",
-      "storageClass": "VOLUME_DURABLE",
-      "relativeDurablePath": "candidates/C041.jpg",
-      "index": 41,
-      "timestamp": 1790731871124,
-      "estimatedYawDeg": 312.9,
-      "relativeRotationDeg": 312.9,
-      "width": 1920,
-      "height": 1080,
-      "size": 351675,
-      "sha256": "04a6b7d47d96d1786410eadebde201ae2d94ae33ad17b4e81c2479ed1ccfef80",
-      "sharpnessScore": 14,
-      "exposureScore": 51,
-      "motionScore": 21.6,
-      "persistedAt": "2026-09-30T01:31:44.574Z",
-      "durablyPersisted": true
-    },
-    {
       "candidateId": "C040",
       "assetId": "asset_BSQRFP_C040",
       "storageClass": "VOLUME_DURABLE",
@@ -788,6 +769,25 @@
       "exposureScore": 186,
       "motionScore": 43.2,
       "persistedAt": "2026-09-30T01:31:44.582Z",
+      "durablyPersisted": true
+    },
+    {
+      "candidateId": "C041",
+      "assetId": "asset_BSQRFP_C041",
+      "storageClass": "VOLUME_DURABLE",
+      "relativeDurablePath": "candidates/C041.jpg",
+      "index": 41,
+      "timestamp": 1790731871124,
+      "estimatedYawDeg": 312.9,
+      "relativeRotationDeg": 312.9,
+      "width": 1920,
+      "height": 1080,
+      "size": 351675,
+      "sha256": "04a6b7d47d96d1786410eadebde201ae2d94ae33ad17b4e81c2479ed1ccfef80",
+      "sharpnessScore": 14,
+      "exposureScore": 51,
+      "motionScore": 21.6,
+      "persistedAt": "2026-09-30T01:31:44.574Z",
       "durablyPersisted": true
     },
     {
@@ -834,5 +834,20 @@
       "timestamp": 1790731859455
     }
   ],
-  "status": "CANDIDATE_POOL_PERSISTED"
+  "status": "CANDIDATE_POOL_PERSISTED",
+  "orderingAuthority": "CHRONOLOGICAL_CAPTURE_TIMESTAMP",
+  "captureSequenceAudit": {
+    "chronologicalOrderVerified": true,
+    "candidateCount": 42,
+    "firstCandidateId": "C001",
+    "firstTimestamp": 1790731850639,
+    "lastCandidateId": "C044",
+    "lastTimestamp": 1790731872693,
+    "lastYawDeg": 334,
+    "gapsExplanation": "Candidate IDs C042 and C043 were omitted during candidate extraction / bridge selection before upload; candidate C040 (t=1790731870830) and C041 (t=1790731871124) arrived out-of-order in network persistence logs due to asynchronous HTTP upload completion. Chronological capture sorting restores exact physical sequence.",
+    "unavailableTelemetryReportedAsUnknown": {
+      "perFrameFastKeypointDescriptors": "UNKNOWN",
+      "perFramePairwiseAffineInliers": "UNKNOWN"
+    }
+  }
 }

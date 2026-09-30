@@ -10756,6 +10756,22 @@ app.get(['/api/projects/:id/panorama/candidate/:candidateId', '/api/projects/:id
   }
 });
 
+// Candidate ingestion / registration endpoint for panorama
+app.post('/api/projects/:id/panorama/candidate', express.json({ limit: '10mb' }), async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    const candidate = req.body;
+    if (!candidate || !candidate.candidateId) {
+      return res.status(400).json({ ok: false, error: 'candidate and candidateId required' });
+    }
+    candidate.projectId = projectId;
+    const saved = await db.saveSpatialBoothCandidate(projectId, candidate);
+    res.json({ ok: true, success: true, candidate: saved });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
 // Dedicated Apply endpoint for panorama
 app.post('/api/projects/:id/panorama/apply', async (req, res) => {
   try {

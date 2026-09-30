@@ -13620,13 +13620,23 @@ return event;
       const candidate = (db.spatialCandidates || []).find(c => c.candidateId === candidateId);
       if (!candidate) throw new Error(`Spatial booth candidate ${candidateId} not found`);
 
-      // R114B Fix D: Ensure candidate belongs to expected project
-      if (candidate.projectId && candidate.projectId !== projectId) {
-        throw new Error(`Cannot apply candidate: candidate ${candidateId} belongs to project ${candidate.projectId}, not ${projectId}`);
+      // R114C Fix D: Mandatory project boundary check (fail-closed if missing or mismatch)
+      if (!candidate.projectId) {
+        throw new Error(`Cannot apply candidate: candidate ${candidateId} project mismatch (candidate.projectId is missing)`);
+      }
+      if (candidate.projectId !== projectId) {
+        throw new Error(`Cannot apply candidate: candidate ${candidateId} project mismatch (candidate belongs to project ${candidate.projectId}, not ${projectId})`);
       }
 
-      if (candidate.geometryValid === false || candidate.status === 'STITCH_VALIDATION_FAILED' || candidate.applyEnabled === false) {
-        throw new Error('Cannot apply candidate: stitch validation failed. Retake required.');
+      // R114C Fix D: Explicitly validated READY/geometry/apply eligibility (fail-closed)
+      if (candidate.status !== 'READY') {
+        throw new Error(`Cannot apply candidate: candidate ${candidateId} status is '${candidate.status}', expected 'READY'`);
+      }
+      if (candidate.geometryValid !== true) {
+        throw new Error(`Cannot apply candidate: candidate ${candidateId} geometryValid is not true`);
+      }
+      if (candidate.applyEnabled !== true) {
+        throw new Error(`Cannot apply candidate: candidate ${candidateId} applyEnabled is not true`);
       }
 
       // R114 Fix D: Recognize OPENCV+SPHERICAL_BAND candidates as panoramic

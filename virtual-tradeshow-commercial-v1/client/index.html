@@ -16463,7 +16463,7 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
             initialPinchDistance = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
             initialPinchFov = this.currentFov;
           }
-        });
+        };
 
         this._r114PointerMoveHandler = (e) => {
           if (!activePointers.has(e.pointerId)) return;
@@ -16512,7 +16512,7 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
               emitSpatialTextureLifecycle('PANORAMA_PITCH_CHANGE', { pitch: this.pitch });
             }
           }
-        });
+        };
 
         const onPointerEnd = (e) => {
           activePointers.delete(e.pointerId);
@@ -21918,6 +21918,10 @@ class GuidedCaptureController {
       console.log('[GuidedCapture] Finalize already in progress, skipping duplicate call.');
       return;
     }
+    if (this._destroyed || this.state === 'DESTROYED') {
+      console.log('[GuidedCapture] Finalize aborted: controller is destroyed.');
+      return;
+    }
     this._isFinalizing = true;
 
     this.state = 'FINALIZING_CANDIDATES';
@@ -22149,10 +22153,20 @@ class GuidedCaptureController {
     this.state = 'IDLE';
     this.stopCaptureResources();
   }
+
+  destroy() {
+    this.state = 'DESTROYED';
+    this._destroyed = true;
+    this.stopCaptureResources();
+    this.onProgress = null;
+    this.onComplete = null;
+    this.onAttention = null;
+  }
 }
 
 
 
+window.GuidedCaptureController = GuidedCaptureController;
 window.guidedCaptureController = new GuidedCaptureController();
 
 
@@ -22606,6 +22620,19 @@ class SetupWizardController {
   }
 
   async startGuidedCapture() {
+    if (this._isStartingCapture) {
+      console.warn('[SetupWizard] Capture start already in progress, suppressing duplicate call.');
+      return;
+    }
+    this._isStartingCapture = true;
+    try {
+      await this._doStartGuidedCapture();
+    } finally {
+      this._isStartingCapture = false;
+    }
+  }
+
+  async _doStartGuidedCapture() {
     const video = document.getElementById('guidedCaptureVideo');
     const btn = document.getElementById('btnStartGuidedCapture');
     const pill = document.getElementById('guidedStatusPill');
@@ -22618,7 +22645,8 @@ class SetupWizardController {
     const sessionEpoch = this._captureSessionEpoch;
 
     if (!window.guidedCaptureController) {
-      window.guidedCaptureController = new GuidedCaptureController();
+      const ControllerClass = window.GuidedCaptureController || GuidedCaptureController;
+      window.guidedCaptureController = new ControllerClass();
     }
     const controller = window.guidedCaptureController;
 
@@ -22715,55 +22743,61 @@ class SetupWizardController {
     }
   }
 
-  retryGuidedCapture() {
+  async retryGuidedCapture() {
     // R114B Fix A: Debounce guard against rapid double-clicks
     if (this._isRetrying) {
       console.warn('[SetupWizard] Rapid retry suppressed by debounce guard.');
       return;
     }
+    if (this._isStartingCapture) {
+      console.warn('[SetupWizard] Rapid retry suppressed: capture acquisition in progress.');
+      return;
+    }
     this._isRetrying = true;
 
-    // R114B Fix A: Invalidate any pending callbacks from previous capture sessions via epoch token
-    this._captureSessionEpoch = (this._captureSessionEpoch || 0) + 1;
+    try {
+      // Invalidate any pending callbacks from previous capture sessions via epoch token
+      this._captureSessionEpoch = (this._captureSessionEpoch || 0) + 1;
 
-    console.log('[SetupWizard][R114B-FixA] Idempotent retry epoch ' + this._captureSessionEpoch + ': stopping old resources, navigating to Step 6...');
+      console.log('[SetupWizard][R114C-FixA] Idempotent retry epoch ' + this._captureSessionEpoch + ': stopping old resources, navigating to Step 6...');
 
-    // Stop old MediaStream tracks and cancel animation frames before any DOM operation
-    if (window.guidedCaptureController) {
-      try {
-        window.guidedCaptureController.stopCaptureResources();
-        if (typeof window.guidedCaptureController.destroy === 'function') {
-          window.guidedCaptureController.destroy();
-        }
-      } catch (e) {}
-      window.guidedCaptureController = null;
-    }
+      // Stop old MediaStream tracks and cleanly destroy before any DOM operation
+      if (window.guidedCaptureController) {
+        try {
+          window.guidedCaptureController.stopCaptureResources();
+          if (typeof window.guidedCaptureController.destroy === 'function') {
+            window.guidedCaptureController.destroy();
+          }
+        } catch (e) {}
+        window.guidedCaptureController = null;
+      }
 
-    // Navigate back to Step 6 so DOM elements (#guidedCaptureVideo, #btnStartGuidedCapture) exist
-    this.state.currentStep = 6;
-    this.renderStep6CaptureWheel();
+      // Navigate back to Step 6 so DOM elements (#guidedCaptureVideo, #btnStartGuidedCapture) exist
+      this.state.currentStep = 6;
+      this.renderStep6CaptureWheel();
 
-    // Reset Step 6 UI to fresh start state
-    const btn = document.getElementById('btnStartGuidedCapture');
-    if (btn) {
-      btn.disabled = false;
-      btn.innerHTML = '<i class="fa-solid fa-play"></i> START 360° CAPTURE';
-      btn.onclick = () => this.startGuidedCapture();
-    }
-    const pill = document.getElementById('guidedStatusPill');
-    if (pill) pill.textContent = 'Ready to capture';
-    const pText = document.getElementById('guidedPercentText');
-    if (pText) pText.textContent = '0%';
-    const rText = document.getElementById('guidedRotText');
-    if (rText) rText.textContent = '0° ROTATION';
-    const pCircle = document.getElementById('guidedProgressCircle');
-    if (pCircle) pCircle.setAttribute('stroke-dashoffset', '565.48');
+      // Reset Step 6 UI to fresh start state
+      const btn = document.getElementById('btnStartGuidedCapture');
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-play"></i> START 360° CAPTURE';
+        btn.onclick = () => this.startGuidedCapture();
+      }
+      const pill = document.getElementById('guidedStatusPill');
+      if (pill) pill.textContent = 'Ready to capture';
+      const pText = document.getElementById('guidedPercentText');
+      if (pText) pText.textContent = '0%';
+      const rText = document.getElementById('guidedRotText');
+      if (rText) rText.textContent = '0° ROTATION';
+      const pCircle = document.getElementById('guidedProgressCircle');
+      if (pCircle) pCircle.setAttribute('stroke-dashoffset', '565.48');
 
-    // Brief delay so renderStep6CaptureWheel DOM has settled, then fresh capture
-    setTimeout(() => {
+      // Allow DOM settle, then start fresh capture and await full camera acquisition
+      await new Promise(r => setTimeout(r, 60));
+      await this.startGuidedCapture();
+    } finally {
       this._isRetrying = false;
-      this.startGuidedCapture();
-    }, 80);
+    }
   }
 
   reviewSavedViews() {
