@@ -426,40 +426,21 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             return true;
 
         case 'QUEUE_BRANCHES':
-            // [v1.2.0-Fix-F2] Bounded candidate enqueuing for branch/sub-page discovery
+            // [v1.2.0 Audit-Compliant] Parent-Owned Candidate Discovery
+            // Candidates belong strictly to the active parent target's traversal context.
+            // Main user input queue is preserved without contamination or silent truncation.
             (async () => {
                 try {
-                    const rawLinks = Array.isArray(request.links) ? request.links : [];
-                    const MAX_BRANCHES_PER_BATCH = 3;
-                    const MAX_TOTAL_QUEUE = 1000;
-                    let added = 0;
-                    
-                    for (const link of rawLinks) {
-                        if (added >= MAX_BRANCHES_PER_BATCH) break;
-                        if (campaignState.queue.length >= MAX_TOTAL_QUEUE) {
-                            logBg(null, `⚠️ [Queue] Upper bound limit reached (${MAX_TOTAL_QUEUE}). Skipping: ${link}`, "warning");
-                            break;
+                    const manager = campaignState.activeCandidateManager;
+                    if (manager && typeof manager.addCandidates === 'function') {
+                        const added = manager.addCandidates(request.links);
+                        if (added > 0) {
+                            logBg(null, `🌿 [Discovery] +${added} candidate(s) attached to parent target [${manager.parentTargetUrl}] (Target ID: ${manager.parentTargetId})`, "info");
                         }
-                        if (typeof link !== 'string' || !link.startsWith('http')) continue;
-                        
-                        const norm = normalizeUrl(link);
-                        const isVisited = campaignState.visitedUrls.includes(norm);
-                        const isSuccessful = campaignState.successfulUrls.includes(norm);
-                        const isAlreadyQueued = campaignState.queue.some(q => normalizeUrl(q) === norm);
-                        
-                        if (!isVisited && !isSuccessful && !isAlreadyQueued) {
-                            campaignState.queue.push(link);
-                            added++;
-                        }
+                        sendResponse({ success: true, parentTargetId: manager.parentTargetId, added });
+                    } else {
+                        sendResponse({ success: true, added: 0, reason: "NO_ACTIVE_PARENT_TARGET" });
                     }
-                    
-                    if (added > 0) {
-                        campaignState.totalTargets += added;
-                        saveCampaignState().catch(() => {});
-                        broadcastStats();
-                        logBg(null, `🌿 [Discovery] +${added} bounded branch candidate(s) queued. Total queue: ${campaignState.queue.length}`, "info");
-                    }
-                    sendResponse({ success: true, added });
                 } catch (e) {
                     sendResponse({ success: false, error: e.message });
                 }
@@ -927,6 +908,33 @@ async function orchestrateSending(urlInput, template) {
     let visitedRedirects = []; 
     let lastInjectedUrl = '';  
 
+    // [v1.2.0 Parent Target Ownership] Scoped candidate manager
+    const parentTargetId = `tgt_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const MAX_CANDIDATES_PER_PARENT = 3;
+    let parentCandidateCount = 0;
+
+    campaignState.activeCandidateManager = {
+        parentTargetId,
+        parentTargetUrl: targetUrl,
+        addCandidates: (links) => {
+            if (isFinished) return 0;
+            let added = 0;
+            for (const link of (Array.isArray(links) ? links : [])) {
+                if (parentCandidateCount >= MAX_CANDIDATES_PER_PARENT) break;
+                if (typeof link !== 'string' || !link.startsWith('http')) continue;
+                const norm = normalizeUrl(link);
+                const isVisited = campaignState.visitedUrls.includes(norm);
+                const isAlreadyInPaths = validPaths.some(p => normalizeUrl(p.startsWith('http') ? p : baseUrl + p) === norm);
+                if (!isVisited && !isAlreadyInPaths) {
+                    validPaths.push(link);
+                    added++;
+                    parentCandidateCount++;
+                }
+            }
+            return added;
+        }
+    };
+
     const broadcastStats = () => {
         chrome.runtime.sendMessage({
             action: 'UPDATE_STATS',
@@ -961,6 +969,9 @@ async function orchestrateSending(urlInput, template) {
         }
         campaignState.targetResolve = null;
         campaignState.targetReady = null;
+        if (campaignState.activeCandidateManager && campaignState.activeCandidateManager.parentTargetId === parentTargetId) {
+            campaignState.activeCandidateManager = null;
+        }
 
         if (res && res.success) {
             campaignState.successCount++; 
