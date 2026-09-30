@@ -22773,7 +22773,9 @@ class SetupWizardController {
       }
 
       // Navigate back to Step 6 so DOM elements (#guidedCaptureVideo, #btnStartGuidedCapture) exist
+      this.currentStep = 6;
       this.state.currentStep = 6;
+      this.state.step = 6;
       this.renderStep6CaptureWheel();
 
       // Reset Step 6 UI to fresh start state
