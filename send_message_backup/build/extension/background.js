@@ -32,13 +32,15 @@
 })();
 // ── END DEV LOG BRIDGE ───────────────────────────────────────────────────
 
-// [v1.2.0-Fix-F4] Connect external solver-core module into Service Worker
+// [v1.2.0 Phase 2A] Connect external Foundation Modules
 try {
     if (typeof importScripts === 'function') {
         importScripts('solver-core.js');
+        importScripts('modules/template-store.js');
+        importScripts('modules/history-store.js');
     }
 } catch (e) {
-    console.warn('[SW Boot] importScripts(solver-core.js) fallback or handled inline:', e);
+    console.warn('[SW Boot] importScripts modules fallback or handled inline:', e);
 }
 
 // [v18.25.0] Boot Diagnostic Telemetry: Track SW startup steps in real-time
@@ -521,6 +523,87 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 await chrome.storage.local.set({ xpider_stt_api_key: key });
                 solver.config.witAiKey = key; // Solver 인스턴스 설정도 갱신
                 sendResponse({ success: true });
+            })();
+            return true;
+
+        case 'EXECUTE_MIGRATION':
+            // [P2A-1 Single Writer Migration]
+            (async () => {
+                try {
+                    const data = await chrome.storage.local.get(null);
+                    const tStore = new self.TemplateStore();
+                    const migrationResult = await tStore.migrateLegacyData(data);
+                    if (migrationResult.migrated && migrationResult.commit) {
+                        await chrome.storage.local.set(migrationResult.commit);
+                        logBg(null, `📦 [Migration] Successfully migrated templates and lists to v2 (Backup: ${migrationResult.backupKey})`, "info");
+                    }
+                    sendResponse({ success: true, ...migrationResult });
+                } catch (err) {
+                    console.error("[Migration Error]", err);
+                    sendResponse({ success: false, error: err.message });
+                }
+            })();
+            return true;
+
+        case 'RECORD_IMPORT_ROWS':
+            // [P2A-2 Separate Original Rows from Attempts]
+            (async () => {
+                try {
+                    if (!self.__xpiderHistoryStore) self.__xpiderHistoryStore = new self.HistoryStore();
+                    const res = self.__xpiderHistoryStore.ingestImportRows(request.urls, request.importId);
+                    sendResponse({ success: true, ...res });
+                } catch (err) {
+                    sendResponse({ success: false, error: err.message });
+                }
+            })();
+            return true;
+
+        case 'CHECK_SUPPRESSION':
+            // [P2A-3 Suppression Check]
+            (async () => {
+                try {
+                    if (!self.__xpiderHistoryStore) self.__xpiderHistoryStore = new self.HistoryStore();
+                    const isSup = self.__xpiderHistoryStore.isSuppressed(request.targetUrl);
+                    sendResponse({ success: true, isSuppressed: isSup });
+                } catch (err) {
+                    sendResponse({ success: false, error: err.message });
+                }
+            })();
+            return true;
+
+        case 'EXECUTE_RESET':
+            // [P2A-3 Reset with Submit Lock Guard]
+            (async () => {
+                try {
+                    if (!self.__xpiderHistoryStore) self.__xpiderHistoryStore = new self.HistoryStore();
+                    const hasActiveLock = !!(campaignState.currentAttempt && campaignState.currentAttempt.status === 'SUBMIT_PENDING');
+                    if (hasActiveLock) {
+                        throw new Error("CANNOT_RESET_WITH_ACTIVE_SUBMIT_LOCK: Active submission in flight. Stop or pause campaign first.");
+                    }
+
+                    if (request.type === 'SELECTED') {
+                        const res = self.__xpiderHistoryStore.applySelectiveReset(request.targetIdentities);
+                        sendResponse(res);
+                    } else {
+                        const res = self.__xpiderHistoryStore.applyGlobalReset(0);
+                        sendResponse(res);
+                    }
+                } catch (err) {
+                    sendResponse({ success: false, error: err.message });
+                }
+            })();
+            return true;
+
+        case 'EXPORT_HISTORY_CSV':
+            // [P2A-5 Safe CSV Export]
+            (async () => {
+                try {
+                    if (!self.__xpiderHistoryStore) self.__xpiderHistoryStore = new self.HistoryStore();
+                    const csvContent = self.__xpiderHistoryStore.exportToCsv(request.options || {});
+                    sendResponse({ success: true, csv: csvContent });
+                } catch (err) {
+                    sendResponse({ success: false, error: err.message });
+                }
             })();
             return true;
 
