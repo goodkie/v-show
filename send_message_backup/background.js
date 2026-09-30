@@ -36,6 +36,7 @@
 try {
     if (typeof importScripts === 'function') {
         importScripts('solver-core.js');
+        importScripts('modules/operation-queue.js');
         importScripts('modules/template-store.js');
         importScripts('modules/history-store.js');
     }
@@ -349,6 +350,11 @@ chrome.runtime.onInstalled.addListener(() => {
 
 markBoot("campaign_state_init");
 
+// [R3 Architecture] Serialized Background Execution Mutex
+const bgOperationQueue = (typeof self.AsyncOperationQueue !== 'undefined')
+    ? new self.AsyncOperationQueue()
+    : { enqueue: (fn) => fn(), activeCount: 0 };
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     switch (request.action) {
         case 'SEND_MESSAGE':
@@ -526,34 +532,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             })();
             return true;
 
-// [R3 Architecture] Serialized Background Execution Mutex
-class AsyncOperationQueue {
-    constructor() {
-        this._queue = Promise.resolve();
-        this._activeCount = 0;
-    }
-
-    enqueue(operationFn) {
-        this._activeCount++;
-        const next = this._queue.then(() => operationFn()).finally(() => {
-            this._activeCount--;
-        });
-        this._queue = next.catch(() => {});
-        return next;
-    }
-
-    get activeCount() {
-        return this._activeCount;
-    }
-}
-const bgOperationQueue = new AsyncOperationQueue();
-
         case 'EXECUTE_MIGRATION':
             // [P2A-1 & R3 Single Writer Serialized Migration]
             bgOperationQueue.enqueue(async () => {
                 try {
                     const data = await chrome.storage.local.get(null);
-                    const tStore = new self.TemplateStore();
+                    const tStore = new self.TemplateStore(chrome.storage.local);
                     const migrationResult = await tStore.migrateLegacyData(data);
                     if (migrationResult.migrated && migrationResult.commit) {
                         await chrome.storage.local.set({ xpider_migration_phase: 'STAGE_COMMIT' });
@@ -573,8 +557,11 @@ const bgOperationQueue = new AsyncOperationQueue();
             // [P2A-2 Separate Original Rows from Attempts]
             bgOperationQueue.enqueue(async () => {
                 try {
-                    if (!self.__xpiderHistoryStore) self.__xpiderHistoryStore = new self.HistoryStore();
-                    const res = self.__xpiderHistoryStore.ingestImportRows(request.urls, request.importId);
+                    if (!self.__xpiderHistoryStore) {
+                        self.__xpiderHistoryStore = new self.HistoryStore(chrome.storage.local);
+                        await self.__xpiderHistoryStore.load();
+                    }
+                    const res = await self.__xpiderHistoryStore.ingestImportRows(request.urls, request.importId);
                     sendResponse({ success: true, ...res });
                 } catch (err) {
                     sendResponse({ success: false, error: err.message });
@@ -586,7 +573,10 @@ const bgOperationQueue = new AsyncOperationQueue();
             // [P2A-3 Suppression Check]
             (async () => {
                 try {
-                    if (!self.__xpiderHistoryStore) self.__xpiderHistoryStore = new self.HistoryStore();
+                    if (!self.__xpiderHistoryStore) {
+                        self.__xpiderHistoryStore = new self.HistoryStore(chrome.storage.local);
+                        await self.__xpiderHistoryStore.load();
+                    }
                     const isSup = self.__xpiderHistoryStore.isSuppressed(request.targetUrl);
                     sendResponse({ success: true, isSuppressed: isSup });
                 } catch (err) {
@@ -599,17 +589,20 @@ const bgOperationQueue = new AsyncOperationQueue();
             // [P2A-3 & R3 Reset with Strict In-Flight Submit Lock Check]
             bgOperationQueue.enqueue(async () => {
                 try {
-                    if (!self.__xpiderHistoryStore) self.__xpiderHistoryStore = new self.HistoryStore();
+                    if (!self.__xpiderHistoryStore) {
+                        self.__xpiderHistoryStore = new self.HistoryStore(chrome.storage.local);
+                        await self.__xpiderHistoryStore.load();
+                    }
                     const hasActiveLock = !!(campaignState.currentAttempt && campaignState.currentAttempt.status === 'SUBMIT_PENDING');
                     if (hasActiveLock) {
                         throw new Error("CANNOT_RESET_WITH_ACTIVE_SUBMIT_LOCK: Active submission in flight. Stop or pause campaign first.");
                     }
 
                     if (request.type === 'SELECTED') {
-                        const res = self.__xpiderHistoryStore.applySelectiveReset(request.targetIdentities);
+                        const res = await self.__xpiderHistoryStore.applySelectiveReset(request.targetIdentities);
                         sendResponse(res);
                     } else {
-                        const res = self.__xpiderHistoryStore.applyGlobalReset(0);
+                        const res = await self.__xpiderHistoryStore.applyGlobalReset(0);
                         sendResponse(res);
                     }
                 } catch (err) {
@@ -620,15 +613,18 @@ const bgOperationQueue = new AsyncOperationQueue();
 
         case 'EXPORT_HISTORY_CSV':
             // [P2A-5 Safe CSV Export]
-            (async () => {
+            bgOperationQueue.enqueue(async () => {
                 try {
-                    if (!self.__xpiderHistoryStore) self.__xpiderHistoryStore = new self.HistoryStore();
+                    if (!self.__xpiderHistoryStore) {
+                        self.__xpiderHistoryStore = new self.HistoryStore(chrome.storage.local);
+                        await self.__xpiderHistoryStore.load();
+                    }
                     const csvContent = self.__xpiderHistoryStore.exportToCsv(request.options || {});
                     sendResponse({ success: true, csv: csvContent });
                 } catch (err) {
                     sendResponse({ success: false, error: err.message });
                 }
-            })();
+            });
             return true;
 
         default:
@@ -1097,7 +1093,12 @@ async function orchestrateSending(urlInput, template) {
 
         const isSuccess = !!(res && res.success);
         let finalReason = isSuccess ? REASON_CODES.SUCCESS_CONFIRMED : (res?.reasonCode || (res?.error ? String(res.error) : REASON_CODES.DELIVERY_UNKNOWN));
-        resolveSubmissionIntent(targetUrl, finalReason, isSuccess).catch(() => {});
+        
+        try {
+            await resolveSubmissionIntent(targetUrl, finalReason, isSuccess);
+        } catch (intentErr) {
+            logBg(tabId, `⚠️ [IntentGuard] Failed to settle submission intent: ${intentErr.message}`, "warning");
+        }
 
         if (res && res.success) {
             logBg(tabId, "✨ [Engine] Submission confirmed. Tab will close shortly...", "success");
@@ -1110,15 +1111,21 @@ async function orchestrateSending(urlInput, template) {
         resolveRef({ ...res, reasonCode: finalReason });
     };
 
-    const secureFocus = (currentUrl, force = false) => {
+    const secureFocus = async (currentUrl, force = false) => {
         const normalized = normalizeUrl(currentUrl || '');
         if (!force && ((isFocusSecured && lastFocusedUrl === normalized) || isFinished)) return;
         
         isFocusSecured = true;
         lastFocusedUrl = normalized;
         
-        // [v1.2.0 Intent Ledger] Record submit intent before field mapping & submit execution
-        recordSubmissionIntent(targetUrl, 'SUBMIT_PENDING').catch(() => {});
+        // [v1.2.0 & F2] Await durable intent persistence BEFORE triggering submission side-effects
+        try {
+            await recordSubmissionIntent(targetUrl, 'SUBMIT_PENDING');
+        } catch (intentErr) {
+            logBg(tabId, `❌ [IntentGuard] Failed to persist submission intent: ${intentErr.message}. Aborting submission.`, "error");
+            finish({ success: false, error: "INTENT_PERSISTENCE_FAILED", reasonCode: REASON_CODES.DELIVERY_UNKNOWN });
+            return;
+        }
         
         if (injectionTimer) clearTimeout(injectionTimer);
         logBg(tabId, "Extraction focus secured. Mapping template fields...", "info");
@@ -1264,7 +1271,14 @@ async function recordSubmissionIntent(targetUrl, status = 'SUBMIT_PENDING') {
         timestamp: Date.now()
     };
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-        await chrome.storage.local.set({ xpider_currentAttempt: campaignState.currentAttempt });
+        await new Promise((resolve, reject) => {
+            chrome.storage.local.set({ xpider_currentAttempt: campaignState.currentAttempt }, () => {
+                if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.lastError) {
+                    return reject(chrome.runtime.lastError);
+                }
+                resolve();
+            });
+        });
     }
     return attemptId;
 }
@@ -1276,7 +1290,14 @@ async function resolveSubmissionIntent(targetUrl, reasonCode, success = false) {
         campaignState.currentAttempt.success = success;
         campaignState.currentAttempt.resolvedAt = Date.now();
         if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-            await chrome.storage.local.set({ xpider_currentAttempt: campaignState.currentAttempt });
+            await new Promise((resolve, reject) => {
+                chrome.storage.local.set({ xpider_currentAttempt: campaignState.currentAttempt }, () => {
+                    if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.lastError) {
+                        return reject(chrome.runtime.lastError);
+                    }
+                    resolve();
+                });
+            });
         }
     }
 }

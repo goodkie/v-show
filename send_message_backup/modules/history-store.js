@@ -6,13 +6,15 @@
  * 2. P2A-3: Suppression, Intentional Resend, Selective & Global Reset with Lock Guards
  * 3. P2A-4: Tenant-Preserving Target Normalization and Raw URL Retention
  * 4. P2A-5: RFC-4180 & Spreadsheet-Safe CSV Export Engine
+ * 5. F1 & F4: Durable Backing Store Persistence and Strict Case-Sensitive Identity Isolation
  */
 
 (function(root) {
     'use strict';
 
     class HistoryStore {
-        constructor() {
+        constructor(storageAdapter = null) {
+            this.storage = storageAdapter || (typeof chrome !== 'undefined' && chrome.storage ? chrome.storage.local : null);
             this.importRows = [];    // ImportRow[]
             this.targets = new Map(); // targetIdentity -> Target
             this.attempts = [];       // Attempt[]
@@ -21,7 +23,81 @@
         }
 
         /**
-         * P2A-4: Tenant-preserving canonical identity normalization
+         * F1 & R3: Persist all history structures to backing storage
+         */
+        async persist() {
+            if (!this.storage || typeof this.storage.set !== 'function') return;
+            const data = {
+                xpider_history_rows: this.importRows,
+                xpider_history_targets: Array.from(this.targets.entries()),
+                xpider_history_attempts: this.attempts,
+                xpider_history_resets: this.resetEvents,
+                xpider_history_generation: this.currentGeneration,
+                xpider_history_saved_at: Date.now()
+            };
+            await new Promise((resolve, reject) => {
+                try {
+                    let called = false;
+                    const res = this.storage.set(data, () => {
+                        if (called) return;
+                        called = true;
+                        if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.lastError) {
+                            return reject(chrome.runtime.lastError);
+                        }
+                        resolve();
+                    });
+                    if (res && typeof res.then === 'function') {
+                        res.then(() => {
+                            if (!called) { called = true; resolve(); }
+                        }).catch(reject);
+                    }
+                } catch (e) {
+                    reject(e);
+                }
+            });
+        }
+
+        /**
+         * F1: Rehydrate history structures from backing storage
+         */
+        async load() {
+            if (!this.storage || typeof this.storage.get !== 'function') return;
+            const data = await new Promise((resolve) => {
+                try {
+                    let called = false;
+                    const res = this.storage.get([
+                        'xpider_history_rows',
+                        'xpider_history_targets',
+                        'xpider_history_attempts',
+                        'xpider_history_resets',
+                        'xpider_history_generation'
+                    ], (out) => {
+                        if (called) return;
+                        called = true;
+                        resolve(out);
+                    });
+                    if (res && typeof res.then === 'function') {
+                        res.then((out) => {
+                            if (!called) { called = true; resolve(out); }
+                        }).catch(() => resolve({}));
+                    }
+                } catch (e) {
+                    resolve({});
+                }
+            });
+
+            if (data) {
+                if (Array.isArray(data.xpider_history_rows)) this.importRows = data.xpider_history_rows;
+                if (Array.isArray(data.xpider_history_targets)) this.targets = new Map(data.xpider_history_targets);
+                if (Array.isArray(data.xpider_history_attempts)) this.attempts = data.xpider_history_attempts;
+                if (Array.isArray(data.xpider_history_resets)) this.resetEvents = data.xpider_history_resets;
+                if (typeof data.xpider_history_generation === 'number') this.currentGeneration = data.xpider_history_generation;
+            }
+        }
+
+        /**
+         * P2A-4 & F4: Tenant-preserving canonical identity normalization
+         * Scheme and hostname are lowercase; path and query parameters preserve case sensitivity!
          */
         normalizeTargetIdentity(rawUrl) {
             if (!rawUrl || typeof rawUrl !== 'string') return '';
@@ -39,12 +115,13 @@
                     return '';
                 }
                 if (hostname.startsWith('www.')) hostname = hostname.substring(4);
+                const protocol = 'https:';
 
-                // Preserve meaningful path segments (e.g. hosted tenant blogs: platform.com/store/contact)
+                // Preserve exact case-sensitive path segments
                 let pathname = parsed.pathname.replace(/\/+$/, '');
                 if (pathname === '') pathname = '/';
 
-                // Strip strictly marketing tracking parameters; preserve meaningful ref, app, and tenant queries per R1
+                // Strip strictly marketing tracking parameters; preserve ref, tokens, and app queries with case intact
                 const searchParams = new URLSearchParams(parsed.search);
                 const trackingKeys = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'fbclid', 'gclid', '_ga', 'mc_cid', 'mc_eid'];
                 for (const k of trackingKeys) {
@@ -52,16 +129,17 @@
                 }
                 const queryString = searchParams.toString() ? '?' + searchParams.toString() : '';
 
-                return `${parsed.protocol}//${hostname}${pathname}${queryString}`.toLowerCase();
+                // Scheme and Hostname lowercase; pathname and query preserve original case!
+                return `${protocol}//${hostname}${pathname}${queryString}`;
             } catch (e) {
-                return rawUrl.trim().toLowerCase();
+                return rawUrl.trim();
             }
         }
 
         /**
          * P2A-2: Ingest user imported rows without inventing fake submit attempts
          */
-        ingestImportRows(rawUrls = [], importId = null) {
+        async ingestImportRows(rawUrls = [], importId = null) {
             const batchImportId = importId || `imp_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
             const createdRows = [];
 
@@ -98,6 +176,7 @@
                 }
             }
 
+            await this.persist();
             return { importId: batchImportId, rows: createdRows };
         }
 
@@ -115,7 +194,7 @@
         /**
          * P2A-2: Record an actual execution attempt
          */
-        recordAttempt({ targetIdentity, sessionId, templateId, templateVersion, status, reasonCode, timing = {}, evidence = {} }) {
+        async recordAttempt({ targetIdentity, sessionId, templateId, templateVersion, status, reasonCode, timing = {}, evidence = {} }) {
             const attemptId = `att_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
             const attempt = {
                 attemptId,
@@ -158,13 +237,14 @@
                 }
             }
 
+            await this.persist();
             return attempt;
         }
 
         /**
          * P2A-3: Reset selected target identities
          */
-        applySelectiveReset(targetIdentities = []) {
+        async applySelectiveReset(targetIdentities = []) {
             const targetList = Array.isArray(targetIdentities) ? targetIdentities : [targetIdentities];
             const affected = [];
 
@@ -187,13 +267,14 @@
             };
             this.resetEvents.push(resetEvent);
 
+            await this.persist();
             return { success: true, affectedCount: affected.length, resetEvent };
         }
 
         /**
          * P2A-3: Reset all targets (Advances global generation, preserves historic audit rows)
          */
-        applyGlobalReset(activeSubmitLocksCount = 0) {
+        async applyGlobalReset(activeSubmitLocksCount = 0) {
             if (activeSubmitLocksCount > 0) {
                 throw new Error("CANNOT_RESET_WITH_ACTIVE_SUBMIT_LOCK: Active submission in flight.");
             }
@@ -211,6 +292,7 @@
             };
             this.resetEvents.push(resetEvent);
 
+            await this.persist();
             return { success: true, newGeneration: this.currentGeneration, resetEvent };
         }
 
@@ -270,6 +352,10 @@
             }
 
             return lines.join("\r\n");
+        }
+
+        exportCsv(options = {}) {
+            return this.exportToCsv(options);
         }
     }
 

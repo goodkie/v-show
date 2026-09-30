@@ -15,7 +15,7 @@
         /**
          * Create a new FormTemplateV2 record
          */
-        createTemplateData({ name, sender = {}, content = {}, aiInstructions = '', isDefault = false }) {
+        createTemplateData({ name, sender = {}, content = {}, customFields = {}, aiInstructions = '', isDefault = false }) {
             const now = Date.now();
             return {
                 id: `tpl_${now}_${Math.random().toString(36).substring(2, 7)}`,
@@ -23,6 +23,8 @@
                 version: 1,
                 sender: {
                     fullName: sender.fullName || '',
+                    firstName: sender.firstName || '',
+                    lastName: sender.lastName || '',
                     company: sender.company || '',
                     email: sender.email || '',
                     phone: sender.phone || '',
@@ -32,6 +34,7 @@
                     subject: content.subject || '',
                     message: content.message || ''
                 },
+                customFields: customFields || {},
                 aiInstructions: aiInstructions || '',
                 isDefault: !!isDefault,
                 createdAt: now,
@@ -69,14 +72,18 @@
          * Authoritative Legacy Migration: Converts legacy tplLibrary and savedUrlLists
          * Must be executed by Single Writer (Background Service Worker).
          */
-        async migrateLegacyData(storageData) {
+        async migrateLegacyData(storageData, autoCommit = false) {
+            if (!storageData || typeof storageData !== 'object') {
+                throw new Error("Invalid storage data provided for migration");
+            }
+
             const currentVersion = storageData.xpider_schema_version || 0;
             if (currentVersion >= 2) {
                 return {
                     migrated: false,
                     reason: 'ALREADY_V2',
                     templates: storageData.templates_v2 || [],
-                    savedUrlLists: storageData.savedUrlLists_v2 || storageData.savedUrlLists || []
+                    savedUrlLists: storageData.savedUrlLists_v2 || storageData.savedUrlLists || storageData.xpider_saved_lists || []
                 };
             }
 
@@ -85,7 +92,7 @@
             const backupPayload = {
                 [backupKey]: {
                     tplLibrary: storageData.tplLibrary || null,
-                    savedUrlLists: storageData.savedUrlLists || null,
+                    savedUrlLists: storageData.savedUrlLists || storageData.xpider_saved_lists || null,
                     xpider_tpl: storageData.xpider_tpl || null,
                     timestamp: Date.now()
                 }
@@ -115,10 +122,19 @@
                 templatesV2[0].isDefault = true;
             }
 
-            // 3. Preserve savedUrlLists
-            const savedUrlListsV2 = Array.isArray(storageData.savedUrlLists) 
-                ? [...storageData.savedUrlLists] 
-                : [];
+            // 3. Preserve savedUrlLists (F5: support both array and object-shaped lists without loss)
+            const rawUrlLists = storageData.savedUrlLists !== undefined 
+                ? storageData.savedUrlLists 
+                : storageData.xpider_saved_lists;
+
+            let savedUrlListsV2;
+            if (Array.isArray(rawUrlLists)) {
+                savedUrlListsV2 = [...rawUrlLists];
+            } else if (rawUrlLists && typeof rawUrlLists === 'object') {
+                savedUrlListsV2 = JSON.parse(JSON.stringify(rawUrlLists));
+            } else {
+                savedUrlListsV2 = [];
+            }
 
             // 4. Verify converted templates
             for (const t of templatesV2) {
@@ -131,9 +147,39 @@
                 ...backupPayload,
                 templates_v2: templatesV2,
                 savedUrlLists_v2: savedUrlListsV2,
+                savedUrlLists: savedUrlListsV2,
                 xpider_schema_version: 2,
                 xpider_migration_ts: Date.now()
             };
+
+            if (autoCommit && this.storage && typeof this.storage.set === 'function') {
+                await new Promise((resolve, reject) => {
+                    try {
+                        let settled = false;
+                        const onDone = (err) => {
+                            if (settled) return;
+                            settled = true;
+                            if (err) reject(err);
+                            else resolve();
+                        };
+                        const res1 = this.storage.set({ xpider_migration_phase: 'STAGE_COMMIT' }, (err) => {
+                            if (err) return onDone(err);
+                            const res2 = this.storage.set(migrationCommit, (err2) => {
+                                if (err2) return onDone(err2);
+                                const res3 = this.storage.set({ xpider_migration_phase: 'COMPLETED' }, (err3) => {
+                                    if (err3) return onDone(err3);
+                                    onDone();
+                                });
+                                if (res3 && typeof res3.catch === 'function') res3.catch(onDone);
+                            });
+                            if (res2 && typeof res2.catch === 'function') res2.catch(onDone);
+                        });
+                        if (res1 && typeof res1.catch === 'function') res1.catch(onDone);
+                    } catch (e) {
+                        reject(e);
+                    }
+                });
+            }
 
             return {
                 migrated: true,
@@ -145,14 +191,56 @@
         }
 
         _convertLegacyItem(item, fallbackName = 'Imported Template') {
-            const name = item.name || fallbackName;
-            const sender = item.sender || {};
-            const content = item.content || {};
+            if (!item || typeof item !== 'object') {
+                item = {};
+            }
+            const name = item.name || item.title || fallbackName;
+            const sender = (item.sender && typeof item.sender === 'object') ? item.sender : {};
+            const content = (item.content && typeof item.content === 'object') ? item.content : {};
+
+            // Split name and full name handling
+            let firstName = sender.firstName || item.firstName || item.first_name || '';
+            let lastName = sender.lastName || item.lastName || item.last_name || '';
+            let fullName = sender.fullName || item.fullName || item.name_val || '';
+
+            if (!fullName && (firstName || lastName)) {
+                fullName = `${firstName} ${lastName}`.trim();
+            } else if (fullName && (!firstName && !lastName)) {
+                const parts = fullName.trim().split(/\s+/);
+                firstName = parts[0] || '';
+                lastName = parts.slice(1).join(' ') || '';
+            } else if (!fullName) {
+                // Fallback only if no person name fields exist
+                fullName = item.name_val || '';
+            }
+
+            // Custom fields and extra properties preservation
+            const customFields = {
+                ...(item.customFields || {}),
+                ...(sender.customFields || {}),
+                ...(item.extraFields || {})
+            };
+
+            const knownCoreKeys = [
+                'name', 'title', 'sender', 'content', 'id', 'version', 'createdAt', 'updatedAt',
+                'isDefault', 'default', 'aiInstructions', 'firstName', 'lastName', 'first_name',
+                'last_name', 'fullName', 'name_val', 'company', 'company_val', 'email', 'email_val',
+                'phone', 'phone_val', 'website', 'website_val', 'subject', 'subject_val', 'message',
+                'message_val', 'customFields', 'extraFields'
+            ];
+
+            for (const [k, v] of Object.entries(item)) {
+                if (!knownCoreKeys.includes(k) && customFields[k] === undefined) {
+                    customFields[k] = v;
+                }
+            }
 
             return this.createTemplateData({
                 name,
                 sender: {
-                    fullName: sender.fullName || item.name_val || item.fullName || '',
+                    fullName,
+                    firstName,
+                    lastName,
                     company: sender.company || item.company_val || item.company || '',
                     email: sender.email || item.email_val || item.email || '',
                     phone: sender.phone || item.phone_val || item.phone || '',
@@ -162,6 +250,7 @@
                     subject: content.subject || item.subject_val || item.subject || '',
                     message: content.message || item.message_val || item.message || ''
                 },
+                customFields,
                 aiInstructions: item.aiInstructions || '',
                 isDefault: !!(item.isDefault || item.default)
             });
