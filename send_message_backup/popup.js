@@ -609,10 +609,19 @@ async function initializeAsyncComponents() {
         if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
             chrome.storage.local.get(['xpider_stt_api_key', 'audioSttKey', 'witKey'], (res) => {
                 const latestKey = (res && (res.xpider_stt_api_key || res.audioSttKey || res.witKey)) || '';
+                const witStatusText = document.getElementById('wit-status-text');
                 if (latestKey.trim() === '') {
+                    if (witStatusText) {
+                        witStatusText.textContent = "Key Required";
+                        witStatusText.style.color = "#ffaa00";
+                    }
                     const setupModal = document.getElementById('stt-setup-modal-overlay');
                     if (setupModal) setupModal.classList.remove('hidden');
                 } else {
+                    if (witStatusText) {
+                        witStatusText.textContent = `Configured (${latestKey.substring(0, 6)}...)`;
+                        witStatusText.style.color = "#00ffcc";
+                    }
                     const sttKeyInput = document.getElementById('audio-stt-key');
                     if (sttKeyInput) sttKeyInput.value = latestKey;
                     const setupInput = document.getElementById('setup-stt-key-input');
@@ -830,8 +839,8 @@ function bindEvents() {
             const target = document.getElementById(`${btn.dataset.tab}-tab`);
             if (target) target.classList.add('active');
             
-            // [v2.3.0] Hide status/log areas when in Template or History Tab
-            if (btn.dataset.tab === 'template' || btn.dataset.tab === 'history') {
+            // [v2.3.0] Hide status/log areas when in Template, History, or Email Collector Tab
+            if (btn.dataset.tab === 'template' || btn.dataset.tab === 'history' || btn.dataset.tab === 'email-collector') {
                 document.body.classList.add('template-active');
             } else {
                 document.body.classList.remove('template-active');
@@ -839,6 +848,8 @@ function bindEvents() {
 
             if (btn.dataset.tab === 'history') {
                 renderLedgerUI();
+            } else if (btn.dataset.tab === 'email-collector') {
+                renderEmailCollectorUI();
             }
         });
     });
@@ -938,6 +949,14 @@ function bindEvents() {
             const lang = langSelect ? langSelect.value : 'en';
             const dict = i18nData ? (i18nData[lang] || i18nData['en'] || {}) : {};
             alert(dict.msg_saved || "Saved!");
+        });
+    }
+
+    const quickWitBtn = document.getElementById('quick-wit-setup-btn');
+    if (quickWitBtn) {
+        quickWitBtn.addEventListener('click', () => {
+            const setupModal = document.getElementById('stt-setup-modal-overlay');
+            if (setupModal) setupModal.classList.remove('hidden');
         });
     }
 
@@ -1182,6 +1201,7 @@ function bindEvents() {
         });
     }
 
+    try { bindEmailCollectorEvents(); } catch (_) {}
 }
 
 function toggleCaptchaApiVisibility() {
@@ -1193,7 +1213,7 @@ function toggleCaptchaApiVisibility() {
     const method = methodSelect.value;
     
     const isApi = (method === 'api' || method === 'nopecha');
-    const isAudio = (method === 'audio');
+    const isAudio = (method === 'audio' || method === 'native');
     
     const apiGroup = document.getElementById('captcha-api-group');
     if (apiGroup) apiGroup.style.display = (enabled && isApi) ? 'block' : 'none';
@@ -3036,14 +3056,30 @@ chrome.storage.onChanged.addListener((changes) => {
         const setupInput = document.getElementById('setup-stt-key-input');
         if (setupInput) setupInput.value = newKey;
         
-        // 3) 최초 STT 설정 모달 가시성 제어
+        // 3) 최초 STT 설정 모달 가시성 제어 및 상태 바 갱신
         const setupModal = document.getElementById('stt-setup-modal-overlay');
+        const witStatusText = document.getElementById('wit-status-text');
         if (setupModal) {
             if (newKey) {
                 setupModal.classList.add('hidden'); // 키가 존재하면 숨김
             } else {
                 setupModal.classList.remove('hidden'); // 키가 없으면 노출
             }
+        }
+        if (witStatusText) {
+            if (newKey) {
+                witStatusText.textContent = `Configured (${newKey.substring(0, 6)}...)`;
+                witStatusText.style.color = "#00ffcc";
+            } else {
+                witStatusText.textContent = "Key Required";
+                witStatusText.style.color = "#ffaa00";
+            }
+        }
+    }
+
+    if (changes.xpider_email_collector_v1 || changes.xpider_email_current_site_v1) {
+        if (typeof renderEmailCollectorUI === 'function') {
+            renderEmailCollectorUI();
         }
     }
 });
@@ -3161,7 +3197,216 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initial render on popup open
     _renderHistoryPanel();
     checkResumableCheckpoint();
+    try { renderEmailCollectorUI(); } catch (_) {}
 });
+
+// ── [ISSUE #6 EMAIL COLLECTOR CONTROLLER] ─────────────────────────────────
+let emailActiveView = 'current'; // 'current' | 'all'
+let emailCollectorStore = null;
+
+function getEmailCollectorStore() {
+    if (!emailCollectorStore) {
+        const StoreClass = (typeof EmailCollectorStore !== 'undefined') ? EmailCollectorStore : (typeof window !== 'undefined' ? window.EmailCollectorStore : null);
+        if (StoreClass) {
+            emailCollectorStore = new StoreClass(chrome.storage.local);
+        }
+    }
+    return emailCollectorStore;
+}
+
+async function renderEmailCollectorUI() {
+    try {
+        const store = getEmailCollectorStore();
+        if (!store) return;
+
+        const currentSiteData = await store.loadCurrentSiteStore();
+        const globalData = await store.loadGlobalStore();
+
+        const currentCount = currentSiteData && currentSiteData.emails ? currentSiteData.emails.length : 0;
+        const globalCount = globalData ? (globalData.totalUnique || Object.keys(globalData.emails || {}).length || 0) : 0;
+
+        const curStat = document.getElementById('stat-email-current-count');
+        const globStat = document.getElementById('stat-email-global-count');
+        const curChip = document.getElementById('email-chip-current-num');
+        const globChip = document.getElementById('email-chip-all-num');
+
+        if (curStat) curStat.textContent = currentCount;
+        if (globStat) globStat.textContent = globalCount;
+        if (curChip) curChip.textContent = currentCount;
+        if (globChip) globChip.textContent = globalCount;
+
+        const textarea = document.getElementById('email-collector-textarea');
+        if (textarea) {
+            if (emailActiveView === 'current') {
+                const list = (currentSiteData && currentSiteData.emails) ? currentSiteData.emails : [];
+                textarea.value = list.length > 0
+                    ? list.join('\n')
+                    : ((currentSiteData && currentSiteData.hostname) ? `// Scanned ${currentSiteData.hostname} — No emails found on this page` : '// No active site scanned yet');
+            } else {
+                const emails = Object.keys((globalData && globalData.emails) || {}).sort();
+                textarea.value = emails.length > 0 ? emails.join('\n') : '// No emails accumulated yet';
+            }
+        }
+    } catch (err) {
+        console.warn('[EmailCollectorUI] Render failed:', err);
+    }
+}
+
+function bindEmailCollectorEvents() {
+    const curBtn = document.getElementById('email-view-current-btn');
+    const allBtn = document.getElementById('email-view-all-btn');
+
+    if (curBtn) {
+        curBtn.addEventListener('click', () => {
+            emailActiveView = 'current';
+            curBtn.classList.add('active');
+            if (allBtn) allBtn.classList.remove('active');
+            renderEmailCollectorUI();
+        });
+    }
+
+    if (allBtn) {
+        allBtn.addEventListener('click', () => {
+            emailActiveView = 'all';
+            allBtn.classList.add('active');
+            if (curBtn) curBtn.classList.remove('active');
+            renderEmailCollectorUI();
+        });
+    }
+
+    const copyBtn = document.getElementById('email-copy-btn');
+    if (copyBtn) {
+        copyBtn.addEventListener('click', async () => {
+            const textarea = document.getElementById('email-collector-textarea');
+            if (textarea && textarea.value && !textarea.value.startsWith('//')) {
+                try {
+                    await navigator.clipboard.writeText(textarea.value);
+                    addLog(`📋 Copied ${textarea.value.split('\n').filter(Boolean).length} emails to clipboard.`, 'success');
+                } catch (_) {
+                    textarea.select();
+                    document.execCommand('copy');
+                    addLog("📋 Copied emails to clipboard.", 'success');
+                }
+            } else {
+                addLog("ℹ️ No emails to copy.", 'info');
+            }
+        });
+    }
+
+    const exportCsvBtn = document.getElementById('email-export-csv-btn');
+    if (exportCsvBtn) {
+        exportCsvBtn.addEventListener('click', async () => {
+            try {
+                const store = getEmailCollectorStore();
+                if (!store) return;
+                const csv = await store.exportToCsv(emailActiveView);
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const dateStr = new Date().toISOString().slice(0, 10);
+                const filename = emailActiveView === 'current'
+                    ? `xpider_current_site_emails_${dateStr}.csv`
+                    : `xpider_collected_emails_${dateStr}.csv`;
+
+                if (typeof chrome !== 'undefined' && chrome.downloads && chrome.downloads.download) {
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        chrome.downloads.download({
+                            url: reader.result,
+                            filename: filename,
+                            saveAs: true
+                        }, (downloadId) => {
+                            if (chrome.runtime && chrome.runtime.lastError) {
+                                _triggerBrowserDownload(blob, filename);
+                            } else {
+                                addLog(`📊 Exported ${filename}`, 'success');
+                            }
+                        });
+                    };
+                    reader.readAsDataURL(blob);
+                } else {
+                    _triggerBrowserDownload(blob, filename);
+                    addLog(`📊 Exported ${filename}`, 'success');
+                }
+            } catch (err) {
+                addLog(`❌ Export CSV failed: ${err.message}`, 'error');
+            }
+        });
+    }
+
+    const exportTxtBtn = document.getElementById('email-export-txt-btn');
+    if (exportTxtBtn) {
+        exportTxtBtn.addEventListener('click', async () => {
+            try {
+                const store = getEmailCollectorStore();
+                if (!store) return;
+                const txt = await store.exportToTxt(emailActiveView);
+                const blob = new Blob([txt], { type: 'text/plain;charset=utf-8;' });
+                const dateStr = new Date().toISOString().slice(0, 10);
+                const filename = emailActiveView === 'current'
+                    ? `xpider_current_site_emails_${dateStr}.txt`
+                    : `xpider_collected_emails_${dateStr}.txt`;
+
+                if (typeof chrome !== 'undefined' && chrome.downloads && chrome.downloads.download) {
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        chrome.downloads.download({
+                            url: reader.result,
+                            filename: filename,
+                            saveAs: true
+                        }, (downloadId) => {
+                            if (chrome.runtime && chrome.runtime.lastError) {
+                                _triggerBrowserDownload(blob, filename);
+                            } else {
+                                addLog(`📄 Exported ${filename}`, 'success');
+                            }
+                        });
+                    };
+                    reader.readAsDataURL(blob);
+                } else {
+                    _triggerBrowserDownload(blob, filename);
+                    addLog(`📄 Exported ${filename}`, 'success');
+                }
+            } catch (err) {
+                addLog(`❌ Export TXT failed: ${err.message}`, 'error');
+            }
+        });
+    }
+
+    const clearBtn = document.getElementById('email-clear-btn');
+    if (clearBtn) {
+        clearBtn.addEventListener('click', async () => {
+            const store = getEmailCollectorStore();
+            if (!store) return;
+            if (emailActiveView === 'current') {
+                await store.clearCurrent();
+                addLog("🧹 Cleared current site emails.", 'info');
+                renderEmailCollectorUI();
+            } else {
+                const confirmed = (typeof confirm === 'function')
+                    ? confirm("Are you sure you want to delete ALL accumulated emails?")
+                    : true;
+                if (confirmed) {
+                    await store.clearAll();
+                    addLog("🗑️ Cleared all accumulated emails.", 'info');
+                    renderEmailCollectorUI();
+                }
+            }
+        });
+    }
+}
+
+function _triggerBrowserDownload(blob, filename) {
+    if (typeof document === 'undefined') return;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }, 1000);
+}
 
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
@@ -3198,6 +3443,10 @@ if (typeof module !== 'undefined' && module.exports) {
         checkActiveSubmitLock,
         getPopupTemplateStore,
         getPopupHistoryStore,
+        // Issue #6 Email Collector Subsystem Exports
+        getEmailCollectorStore,
+        renderEmailCollectorUI,
+        bindEmailCollectorEvents,
         // IPC Diagnostic Subsystem Exports
         xpiderInvoke,
         addDiagnosticLog,

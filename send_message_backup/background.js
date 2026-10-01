@@ -41,6 +41,7 @@ try {
         importScripts('modules/operation-queue.js');
         importScripts('modules/template-store.js');
         importScripts('modules/history-store.js');
+        importScripts('modules/email-collector.js');
     }
 } catch (e) {
     console.warn('[SW Boot] importScripts modules fallback or handled inline:', e);
@@ -441,7 +442,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             // [v18.24.0] Direct Route: Resolve current target process from main listener
             if (sender.tab && sender.tab.id === campaignState.currentTabId && campaignState.targetResolve) {
                 const resolve = campaignState.targetResolve;
-                campaignState.targetResolve = null; // Clear to prevent double-calls
                 resolve(request.result);
                 sendResponse({ success: true });
             }
@@ -510,13 +510,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             (async () => {
                 try {
                     const storage = await new Promise(resolve => chrome.storage.local.get([
-                        'captchaMethod', 'captchaApiKey', 'xpider_captcha_method', 'xpider_captcha_api_key', 'xpider_stt_api_key'
+                        'captchaMethod', 'captchaApiKey', 'xpider_captcha_method', 'xpider_captcha_api_key', 'xpider_stt_api_key', 'audioSttKey', 'witKey'
                     ], resolve));
                     
-                    const method = request.method || storage.xpider_captcha_method || storage.captchaMethod;
+                    const method = request.method || storage.xpider_captcha_method || storage.captchaMethod || 'audio';
                     const apiKey = storage.xpider_captcha_api_key || storage.captchaApiKey;
                     // [F13-Sanitized] No hardcoded credentials. User must supply Wit.ai key via Settings UI.
-                    const witKey = storage.xpider_stt_api_key || null;
+                    const witKey = storage.xpider_stt_api_key || storage.audioSttKey || storage.witKey || null;
                     
                     solver.config.witAiKey = witKey;
                     if (method === 'nopecha') solver.config.nopeChaKey = apiKey;
@@ -539,12 +539,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     let token;
                     if (method === 'nopecha' && solver.config.nopeChaKey) {
                         token = await solver.solveNopeCha(request.sitekey, request.url, request.type);
+                        sendResponse({ success: true, token });
                     } else if ((method === 'api' || method === '2captcha') && solver.config.twoCaptchaKey) {
                         token = await solver.solve2Captcha(request.sitekey, request.url, request.type);
+                        sendResponse({ success: true, token });
+                    } else if (method === 'audio' || method === 'native' || witKey) {
+                        // Autonomous iframe solver (solver-content.js) is actively transcribing/solving
+                        sendResponse({ success: true, method: 'audio_frame_solver', message: 'Autonomous audio solver active in iframe' });
                     } else {
                         throw new Error(`Solver API Key or method not configured (method: ${method}).`);
                     }
-                    sendResponse({ success: true, token });
                 } catch (e) {
                     sendResponse({ success: false, error: e.message });
                 }
@@ -716,6 +720,93 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     sendResponse({ success: false, error: err.message });
                 }
             });
+        case 'EMAIL_COLLECT_FOUND':
+            // [Issue #6 Email Collector Integration] Non-blocking email accumulation
+            (async () => {
+                try {
+                    const { emails, hostname, url } = request;
+                    if (Array.isArray(emails) && emails.length > 0) {
+                        const StoreClass = self.EmailCollectorStore || (typeof EmailCollectorStore !== 'undefined' ? EmailCollectorStore : null);
+                        if (StoreClass) {
+                            if (!self.__xpiderEmailStore) {
+                                self.__xpiderEmailStore = new StoreClass(chrome.storage.local);
+                            }
+                            const stats = await self.__xpiderEmailStore.recordEmails(hostname, emails, url);
+                            logBg(sender.tab?.id, `[TARGET][${hostname}] emailsFoundCurrentPage=${stats.currentPageCount} emailsNewGlobal=${stats.newGlobalCount} totalEmailsGlobal=${stats.totalGlobalCount}`, 'info');
+                            sendResponse({ success: true, ...stats });
+                            return;
+                        }
+                    }
+                    sendResponse({ success: true, count: 0 });
+                } catch (err) {
+                    // Failures in email persistence must NEVER break form sending
+                    console.warn('[EmailCollector] Auxiliary persistence error:', err);
+                    sendResponse({ success: false, error: err.message });
+                }
+            })();
+            return true;
+
+        case 'GET_COLLECTED_EMAILS':
+            (async () => {
+                try {
+                    const StoreClass = self.EmailCollectorStore || (typeof EmailCollectorStore !== 'undefined' ? EmailCollectorStore : null);
+                    const store = self.__xpiderEmailStore || (StoreClass ? new StoreClass(chrome.storage.local) : null);
+                    if (store) {
+                        const current = await store.loadCurrentSiteStore();
+                        const globalStore = await store.loadGlobalStore();
+                        sendResponse({ success: true, current, all: globalStore });
+                    } else {
+                        sendResponse({ success: false, error: "Store unavailable" });
+                    }
+                } catch (e) {
+                    sendResponse({ success: false, error: e.message });
+                }
+            })();
+            return true;
+
+        case 'CLEAR_COLLECTED_EMAILS':
+            (async () => {
+                try {
+                    const StoreClass = self.EmailCollectorStore || (typeof EmailCollectorStore !== 'undefined' ? EmailCollectorStore : null);
+                    const store = self.__xpiderEmailStore || (StoreClass ? new StoreClass(chrome.storage.local) : null);
+                    if (store) {
+                        if (request.mode === 'current') {
+                            await store.clearCurrent();
+                        } else {
+                            await store.clearAll();
+                        }
+                        sendResponse({ success: true });
+                    } else {
+                        sendResponse({ success: false, error: "Store unavailable" });
+                    }
+                } catch (e) {
+                    sendResponse({ success: false, error: e.message });
+                }
+            })();
+            return true;
+
+        case 'EXPORT_COLLECTED_EMAILS':
+            (async () => {
+                try {
+                    const StoreClass = self.EmailCollectorStore || (typeof EmailCollectorStore !== 'undefined' ? EmailCollectorStore : null);
+                    const store = self.__xpiderEmailStore || (StoreClass ? new StoreClass(chrome.storage.local) : null);
+                    if (store) {
+                        const mode = request.mode || 'all';
+                        const format = request.format || 'csv';
+                        let content = '';
+                        if (format === 'txt') {
+                            content = await store.exportToTxt(mode);
+                        } else {
+                            content = await store.exportToCsv(mode);
+                        }
+                        sendResponse({ success: true, content, format, mode });
+                    } else {
+                        sendResponse({ success: false, error: "Store unavailable" });
+                    }
+                } catch (e) {
+                    sendResponse({ success: false, error: e.message });
+                }
+            })();
             return true;
 
         default:
@@ -1410,6 +1501,7 @@ async function orchestrateSending(urlInput, template) {
     const finish = async (res) => {
         if (res && !res.success && res.error === "NO_FORM_ON_PAGE") {
             logBg(tabId, `⚠️ [Engine] No form on current path. Advancing to next candidate...`, "warning");
+            campaignState.targetResolve = finish;
             tryNext();
             return;
         }
@@ -1633,7 +1725,10 @@ async function orchestrateSending(urlInput, template) {
             return;
         }
 
-        const fullUrl = baseUrl + validPaths[pathIdx++];
+        const nextP = validPaths[pathIdx++];
+        const fullUrl = (typeof nextP === 'string' && nextP.startsWith('http'))
+            ? nextP
+            : (baseUrl + (nextP.startsWith('/') ? '' : '/') + nextP);
         const norm = normalizeUrl(fullUrl);
         if (campaignState.successfulUrls.includes(norm)) {
             logBg(tabId, `⏭️ [Engine] Path [${fullUrl}] already handled successfully. Skipping.`, "info");

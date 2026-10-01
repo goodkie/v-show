@@ -115,8 +115,19 @@
             if (this.hud) {
                 this.hud.innerHTML = `<span>🤖 ${this.options.hudTitle}</span><span style="color: ${status === 'FAIL' ? '#ff3333' : '#ffcc00'}">${status || msg}</span>`;
             }
+            // Send log to top-level window for operator-visible cyberpunk HUD badge
+            try {
+                if (typeof window !== 'undefined' && window.top) {
+                    window.top.postMessage({
+                        type: 'XPIDER_SOLVER_HUD_UPDATE',
+                        text: msg,
+                        status: status || msg,
+                        title: this.options.hudTitle
+                    }, '*');
+                }
+            } catch (_) {}
             // Send log to background
-            try { chrome.runtime.sendMessage({ action: 'XPIDER_LOG', message: msg }); } catch(e) {}
+            try { chrome.runtime.sendMessage({ action: 'XPIDER_LOG', message: msg, status }); } catch(e) {}
         }
 
         deepFindElement(selector, root = document) {
@@ -246,12 +257,20 @@
 
                 // 2. Check for challenge
                 const audioInput = document.querySelector('#audio-response') || document.querySelector('input[id*="audio"]');
-                const audioBtn = this.findButtonByPattern(['audio', '음성', '헤드셋'], ['#recaptcha-audio-button', '.rc-button-audio']);
+                const audioBtn = this.findButtonByPattern(
+                    ['audio', '음성', '헤드셋', '오디오', '音声', '语音', 'sonido', 'vocale', 'son', 'zvuk'],
+                    ['#recaptcha-audio-button', '.rc-button-audio', 'button[title*="audio" i]', 'button[aria-label*="audio" i]']
+                );
 
                 if (audioBtn && !audioInput) {
-                    this.log("Switching to audio...");
-                    audioBtn.click();
-                    this.waitCycles = 0;
+                    if (!this.lastAudioSwitchTime || now - this.lastAudioSwitchTime > 2000) {
+                        this.lastAudioSwitchTime = now;
+                        this.log("Switching to audio challenge...", "AUDIO");
+                        setTimeout(() => {
+                            this.triggerHumanLikeClick(audioBtn);
+                        }, 400 + Math.random() * 300);
+                        this.waitCycles = 0;
+                    }
                     return;
                 }
 

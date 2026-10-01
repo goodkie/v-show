@@ -31,6 +31,92 @@
 (function() {
     console.log("🚀 [XpiderSender] Advanced Engine Loaded: " + window.location.href);
 
+    // ============================================================
+    // [HyperEngine v4.0] Top-level React/Vue/Angular Native Value & Checked Setters
+    // ============================================================
+    function setNativeValue(el, val) {
+        if (!el) return;
+        try {
+            const proto = el.tagName === 'TEXTAREA' ? HTMLTextAreaElement.prototype
+                        : el.tagName === 'SELECT' ? HTMLSelectElement.prototype
+                        : HTMLInputElement.prototype;
+            const nativeSetter = Object.getOwnPropertyDescriptor(proto, 'value');
+            if (nativeSetter && nativeSetter.set) {
+                nativeSetter.set.call(el, val);
+            } else {
+                el.value = val;
+            }
+        } catch (e) {
+            el.value = val;
+        }
+    }
+
+    function setNativeChecked(el, checked) {
+        if (!el) return;
+        try {
+            const proto = HTMLInputElement.prototype;
+            const nativeSetter = Object.getOwnPropertyDescriptor(proto, 'checked');
+            if (nativeSetter && nativeSetter.set) {
+                nativeSetter.set.call(el, checked);
+            } else {
+                el.checked = checked;
+            }
+        } catch (e) {
+            el.checked = checked;
+        }
+    }
+
+    // [v4.18.0] Operator-Visible Top-Level CAPTCHA Solver HUD
+    function updateTopSolverHUD(message, status = 'ACTIVE') {
+        try {
+            if (typeof document === 'undefined' || !document.body) return;
+            let hud = document.getElementById('xpider-top-solver-hud');
+            if (!hud) {
+                hud = document.createElement('div');
+                hud.id = 'xpider-top-solver-hud';
+                Object.assign(hud.style, {
+                    position: 'fixed',
+                    top: '12px',
+                    right: '12px',
+                    zIndex: '2147483647',
+                    background: 'rgba(10, 15, 25, 0.95)',
+                    border: '1px solid #00ffcc',
+                    boxShadow: '0 0 15px rgba(0, 255, 204, 0.3)',
+                    borderRadius: '8px',
+                    padding: '8px 14px',
+                    color: '#e0e0e0',
+                    fontFamily: 'Inter, system-ui, sans-serif',
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    pointerEvents: 'none',
+                    backdropFilter: 'blur(6px)',
+                    transition: 'opacity 0.3s ease'
+                });
+                document.body.appendChild(hud);
+            }
+            const isSuccess = status === 'DONE' || status === 'PASS' || status === 'SUCCESS';
+            const isFail = status === 'FAIL' || status === 'ERROR';
+            const statusColor = isSuccess ? '#00ffcc' : (isFail ? '#ff3333' : '#ffaa00');
+            hud.innerHTML = `<span style="font-size: 14px;">🤖</span><span>[XPIDER AI Solver] <span style="color:${statusColor}">${message}</span></span>`;
+            if (isSuccess) {
+                setTimeout(() => { if (hud) hud.style.opacity = '0'; }, 3500);
+            } else {
+                hud.style.opacity = '1';
+            }
+        } catch (_) {}
+    }
+
+    if (typeof window !== 'undefined' && window.addEventListener) {
+        window.addEventListener('message', (ev) => {
+            if (ev.data && ev.data.type === 'XPIDER_SOLVER_HUD_UPDATE') {
+                updateTopSolverHUD(ev.data.text || ev.data.status, ev.data.status);
+            }
+        });
+    }
+
     // [v2.8.6] Concurrency Lock: Prevent multiple parallel processing cycles in the same tab
     const alreadyInitialized = window.__xpider_initialized;
     window.__xpider_initialized = true;
@@ -424,6 +510,11 @@
             
             // 1. [v1.3.7] Ultra Polling Form Discovery
             await cleanPageEnvironment();
+
+            // [Email Collector Integration] Auxiliary non-blocking email scan
+            try {
+                extractAndSendPageEmails();
+            } catch (_) {}
             
             let currentForm = null;
             for (let i = 1; i <= 3; i++) {
@@ -531,6 +622,53 @@
             .sort((a, b) => b.score - a.score)
             .map(l => l.href)
             .slice(0, 3);
+    }
+
+    // [v1.0.0] Email Extractor Integration
+    function extractAndSendPageEmails() {
+        try {
+            const IGNORE_PREFIXES = ['test', 'email', 'account', 'username', 'firstname.lastname', 'your.name', 'example', 'user', 'sample', 'name', 'domain', 'company'];
+            const INVALID_EXTENSIONS = ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'css', 'js', 'ico', 'bmp', 'tiff', 'woff', 'woff2', 'ttf', 'eot', 'mp3', 'mp4', 'wav'];
+            const EXTRACT_REGEX = /([a-zA-Z0-9._+-]+@[a-zA-Z0-9._-]+\.[a-zA-Z]{2,})/gi;
+            const emails = new Set();
+
+            const text = (document.documentElement ? document.documentElement.innerHTML : '') + ' ' + (document.body ? document.body.innerText : '');
+            const matches = text.match(EXTRACT_REGEX);
+            if (matches) {
+                for (const m of matches) {
+                    let e = m.toLowerCase().trim().replace(/['";,<>(){}\[\]]+$/g, '').replace(/^[<('"]+/, '').replace(/\.$/, '');
+                    const parts = e.split('.');
+                    if (INVALID_EXTENSIONS.includes(parts[parts.length - 1])) continue;
+                    const atParts = e.split('@');
+                    if (atParts.length !== 2) continue;
+                    if (IGNORE_PREFIXES.includes(atParts[0])) continue;
+                    if (atParts[0].length < 2 || atParts[0].length > 64) continue;
+                    if (atParts[1].length < 4 || !atParts[1].includes('.')) continue;
+                    emails.add(e);
+                }
+            }
+
+            document.querySelectorAll('a[href^="mailto:"]').forEach(link => {
+                try {
+                    const href = link.getAttribute('href') || '';
+                    let raw = href.replace(/^mailto:/i, '').split('?')[0].toLowerCase().trim().replace(/['";,]+$/g, '');
+                    if (raw && raw.includes('@')) {
+                        const p = raw.split('@')[0];
+                        if (!IGNORE_PREFIXES.includes(p) && p.length >= 2) emails.add(raw);
+                    }
+                } catch (_) {}
+            });
+
+            const emailArray = Array.from(emails).sort();
+            if (emailArray.length > 0) {
+                chrome.runtime.sendMessage({
+                    action: 'EMAIL_COLLECT_FOUND',
+                    emails: emailArray,
+                    hostname: window.location.hostname,
+                    url: window.location.href
+                }).catch(() => {});
+            }
+        } catch (_) {}
     }
 
     async function fillAndSubmit(form, template, speed) {
@@ -1395,9 +1533,12 @@
                     cancelable: true
                 }));
                 
-                // 3g. 글자 간 불규칙한 인간 타이핑 딜레이 모사 (문장 부호는 느리게)
+                // 3g. 글자 간 불규칙한 인간 타이핑 딜레이 모사 (문장 부호는 느리게, 장문은 스마트 가속)
                 const isPunctuation = /[.,!?;:]/.test(char);
-                const randomDelay = isPunctuation ? (180 + Math.random() * 220) : (45 + Math.random() * 50);
+                const isLongText = val.length > 40;
+                const randomDelay = isLongText
+                    ? (isPunctuation ? 25 : (8 + Math.random() * 10))
+                    : (isPunctuation ? (140 + Math.random() * 160) : (35 + Math.random() * 45));
                 await new Promise(r => setTimeout(r, randomDelay));
             }
             
@@ -1915,22 +2056,28 @@
     }
 
     function getLabelFor(el) {
+        if (!el) return '';
         // [v2.1.0] Supreme Proximity Search
         if (el.id && el.id !== 'null-field') {
-            const label = document.querySelector(`label[for="${el.id}"]`);
-            if (label) return label.textContent;
+            try {
+                const safeId = (typeof CSS !== 'undefined' && CSS.escape) ? CSS.escape(el.id) : el.id.replace(/["\\]/g, '\\$&');
+                const label = document.querySelector(`label[for="${safeId}"]`);
+                if (label) return label.textContent || '';
+            } catch (_) {}
         }
 
         // Check Squarespace/Build style labels (title class or preceding span)
         const parent = el.parentElement;
         if (parent) {
-            const labelChild = parent.querySelector('label, .title, .caption, .label');
-            if (labelChild && labelChild !== el) return labelChild.textContent;
+            try {
+                const labelChild = parent.querySelector('label, .title, .caption, .label');
+                if (labelChild && labelChild !== el) return labelChild.textContent || '';
+            } catch (_) {}
             
             // Look at parent's preceding sibling (Squarespace Pattern)
             const prevSibling = parent.previousElementSibling;
-            if (prevSibling && (prevSibling.tagName === 'LABEL' || prevSibling.classList.contains('title'))) {
-                return prevSibling.textContent;
+            if (prevSibling && (prevSibling.tagName === 'LABEL' || (prevSibling.classList && prevSibling.classList.contains('title')))) {
+                return prevSibling.textContent || '';
             }
         }
         
@@ -1939,8 +2086,10 @@
         for (let i = 0; i < 3; i++) {
             runner = runner.parentElement;
             if (!runner) break;
-            const labelSub = runner.querySelector('label');
-            if (labelSub) return labelSub.textContent;
+            try {
+                const labelSub = runner.querySelector('label');
+                if (labelSub) return labelSub.textContent || '';
+            } catch (_) {}
         }
 
         return el.getAttribute('aria-label') || el.title || '';
@@ -2032,6 +2181,7 @@
         if (!captchaData) return false;
 
         return new Promise((resolve) => {
+            updateTopSolverHUD(`Detected ${captchaData.type}. Engaging AI Solver...`, 'SOLVING');
             logDev(`🤖 [Security] Attempting auto-solve for ${captchaData.type}...`, 'info');
             chrome.runtime.sendMessage({
                 action: 'SOLVE_CAPTCHA',
@@ -2040,10 +2190,13 @@
                 type: captchaData.type
             }, (response) => {
                 if (chrome.runtime.lastError || !response || !response.success) {
-                    logDev(`❌ Auto-solve failed: ${(response && response.error) ? response.error : 'Unknown'}`, 'error');
+                    const err = (response && response.error) ? response.error : (chrome.runtime.lastError?.message || 'Unknown');
+                    logDev(`⚠️ Auto-solve notice: ${err}. Awaiting autonomous frame solver...`, 'debug');
+                    updateTopSolverHUD("Awaiting autonomous challenge solve...", "SOLVING");
                     resolve(false);
-                } else {
+                } else if (response.token) {
                     logDev(`✅ Challenge solved! Injecting token...`, 'success');
+                    updateTopSolverHUD("Challenge solved! Token applied.", "SUCCESS");
                     if (captchaData.type === 'turnstile') {
                         const input = document.querySelector('[name="cf-turnstile-response"]');
                         if (input) input.value = response.token;
@@ -2058,6 +2211,12 @@
                     const injectedInput = document.querySelector(`[name*="-response"]`);
                     if(injectedInput) injectedInput.dispatchEvent(new Event('change', { bubbles: true }));
 
+                    resolve(true);
+                } else if (response.method === 'audio_frame_solver') {
+                    logDev(`🤖 [Security] Autonomous audio STT solver active in challenge frame. Monitoring for resolution...`, 'info');
+                    updateTopSolverHUD("Audio STT solver active in frame...", "SOLVING");
+                    resolve(true);
+                } else {
                     resolve(true);
                 }
             });
@@ -2638,15 +2797,26 @@
                 for (const inp of Array.from(invalidInputs)) {
                     try {
                         if (inp.type === 'checkbox') {
+                            setNativeChecked(inp, true);
                             inp.checked = true;
+                            inp.dispatchEvent(new Event('input', { bubbles: true }));
                             inp.dispatchEvent(new Event('change', { bubbles: true }));
+                            inp.dispatchEvent(new MouseEvent('click', { bubbles: true }));
                         } else if (inp.tagName === 'SELECT' && inp.options && inp.options.length > 1) {
                             inp.selectedIndex = 1;
+                            setNativeValue(inp, inp.options[1].value);
                             inp.dispatchEvent(new Event('change', { bubbles: true }));
                         } else if (!inp.value || inp.value.trim() === '') {
-                            const healVal = (inp.tagName === 'TEXTAREA' || inp.getAttribute('role') === 'textbox')
+                            const tp = (inp.type || '').toLowerCase();
+                            const nm = (inp.name || '').toLowerCase();
+                            const healVal = (tp === 'email' || nm.includes('email') || nm.includes('mail'))
+                                ? (tpl.email || 'contact@example.com')
+                                : (tp === 'tel' || nm.includes('phone') || nm.includes('tel'))
+                                ? (tpl.phone || '(555) 234-5678')
+                                : (inp.tagName === 'TEXTAREA' || inp.getAttribute('role') === 'textbox')
                                 ? (tpl.message || 'General Inquiry')
                                 : (tpl.subject || tpl.name || 'Inquiry');
+                            setNativeValue(inp, healVal);
                             inp.value = healVal;
                             inp.dispatchEvent(new Event('input', { bubbles: true }));
                             inp.dispatchEvent(new Event('change', { bubbles: true }));
@@ -2840,7 +3010,7 @@
         return executeSubmitStateMachine(form);
     }
 
-    async function detectSubmissionResult(originalForm, tpl = {}, preSnapshot = { elements: [], bodyText: "" }) {
+    async function detectSubmissionResult(originalForm, tpl = {}, preSnapshot = { elements: [], bodyText: "" }, submitOutcome = null) {
         logDev("🕵️ [Result] Verifying submission status (Multi-Polling)...", "info");
         
         const confirmSuccess = async (reason) => {

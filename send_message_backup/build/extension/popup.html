@@ -59,9 +59,16 @@
                 <button class="tab-btn active" data-tab="campaign" data-i18n="tab_campaign">Campaign</button>
                 <button class="tab-btn" data-tab="template" data-i18n="tab_template">Message Template</button>
                 <button class="tab-btn" data-tab="history" data-i18n="tab_history">History & Ledger</button>
+                <button class="tab-btn" data-tab="email-collector" data-i18n="tab_email_collector">Email Collector</button>
             </div>
 
             <div class="tab-content active" id="campaign-tab">
+                <!-- Wit.ai Audio Solver Quick Status Bar -->
+                <div id="wit-status-bar" style="display: flex; justify-content: space-between; align-items: center; background: rgba(0, 255, 204, 0.06); border: 1px solid rgba(0, 255, 204, 0.25); border-radius: 6px; padding: 6px 12px; margin-bottom: 10px; font-size: 11px;">
+                    <span>🎧 AI Audio Solver (Wit.ai): <span id="wit-status-text" style="color: #00ffcc; font-weight: bold;">Configured</span></span>
+                    <button id="quick-wit-setup-btn" type="button" style="background: rgba(0, 255, 204, 0.15); border: 1px solid #00ffcc; color: #00ffcc; border-radius: 4px; padding: 3px 8px; font-size: 10px; font-weight: bold; cursor: pointer;">🔑 STT Key</button>
+                </div>
+
                 <!-- Single URL Input Section -->
                 <div class="manual-input-section">
                     <label data-i18n="label_manual_url">Single URL Entry</label>
@@ -283,6 +290,38 @@
                 </div>
             </div>
 
+            <!-- [Issue #6] Email Collector Tab -->
+            <div class="tab-content" id="email-collector-tab">
+                <div class="ledger-stats-banner">
+                    <div class="ledger-stat-item">
+                        <span class="ledger-stat-num neon-green-text" id="stat-email-current-count">0</span>
+                        <span class="ledger-stat-lbl">CURRENT SITE</span>
+                    </div>
+                    <div class="ledger-stat-item">
+                        <span class="ledger-stat-num neon-blue-text" id="stat-email-global-count">0</span>
+                        <span class="ledger-stat-lbl">ALL EMAILS</span>
+                    </div>
+                </div>
+
+                <div class="ledger-filter-chips" style="margin: 8px 0;">
+                    <button class="ledger-chip active" id="email-view-current-btn" data-view="current">Current Site (<span id="email-chip-current-num">0</span>)</button>
+                    <button class="ledger-chip" id="email-view-all-btn" data-view="all">All Emails (<span id="email-chip-all-num">0</span>)</button>
+                </div>
+
+                <div class="textarea-wrapper" style="margin: 6px 0;">
+                    <textarea id="email-collector-textarea" class="premium-textarea" readonly placeholder="No emails discovered yet..." style="height: 180px; font-family: monospace; font-size: 11px; white-space: pre; resize: vertical;"></textarea>
+                </div>
+
+                <div class="ledger-toolbar" style="margin-top: 8px;">
+                    <div class="ledger-action-buttons" style="width: 100%; display: flex; gap: 6px;">
+                        <button id="email-copy-btn" class="toolbar-btn glow-teal" style="flex: 1;" title="Copy displayed emails to clipboard">📋 Copy</button>
+                        <button id="email-export-csv-btn" class="toolbar-btn glow-purple" style="flex: 1;" title="Export displayed emails as CSV">📊 Export CSV</button>
+                        <button id="email-export-txt-btn" class="toolbar-btn glow-orange" style="flex: 1;" title="Export displayed emails as TXT">📄 Export TXT</button>
+                        <button id="email-clear-btn" class="toolbar-btn glow-red" style="flex: 1;" title="Clear current or all emails">🧹 Clear</button>
+                    </div>
+                </div>
+            </div>
+
             <!-- [Phase 2B Component C] Reset All Confirmation Modal -->
             <div id="reset-all-modal-overlay" class="modal-overlay hidden">
                 <div class="captcha-friendly-modal" style="max-width: 320px; text-align: center;">
@@ -331,10 +370,10 @@
                         </div>
 
                         <!-- Captcha Method (Dynamic) -->
-                        <div class="settings-group" id="captcha-method-group" style="display: none;">
+                        <div class="settings-group" id="captcha-method-group" style="display: block;">
                             <label data-i18n="label_captcha_method">Solving Method</label>
                             <select id="captcha-method-select" class="premium-select">
-                                <option value="audio" data-i18n="method_audio">AI Audio Bypass (High Stability)</option>
+                                <option value="audio" data-i18n="method_audio" selected>AI Audio Bypass (High Stability)</option>
                                 <option value="api" data-i18n="method_api">2Captcha API (Paid)</option>
                                 <option value="nopecha" data-i18n="method_nopecha">NopeCHA API (Fast AI)</option>
                                 <option value="native" data-i18n="method_native">Browser Native (Free/Zero-Key)</option>
@@ -349,9 +388,12 @@
                         </div>
 
                         <!-- Wit.ai Key Input (Dynamic) -->
-                        <div class="settings-group" id="audio-stt-group" style="display: none;">
+                        <div class="settings-group" id="audio-stt-group" style="display: block;">
                             <label data-i18n="label_stt_api_key">Audio STT Key (Wit.ai)</label>
-                            <input type="text" id="audio-stt-key" class="premium-input" placeholder="Enter Wit.ai Key">
+                            <input type="text" id="audio-stt-key" class="premium-input" placeholder="Enter Wit.ai Server Access Token">
+                            <div style="margin-top: 4px;">
+                                <a href="https://wit.ai" target="_blank" id="wit-settings-link" style="color: #00ffcc; font-size: 11px; text-decoration: underline; font-weight: 500;">Get your free Wit.ai Server Access Token here ↗</a>
+                            </div>
                             <p class="settings-subtip" data-i18n="stt_service_tip"></p>
                         </div>
 
@@ -461,6 +503,7 @@
     </div>
     <script src="modules/template-store.js"></script>
     <script src="modules/history-store.js"></script>
+    <script src="modules/email-collector.js"></script>
     <script src="translations.js"></script>
     <script src="blacklist_data.js"></script>
     <script src="popup.js"></script>
