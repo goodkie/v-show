@@ -1401,47 +1401,44 @@ async function saveTemplate() {
         },
         updatedAt: Date.now()
     };
-    // [F9] templates_v2 is the primary authoritative store — await its completion
+    // [F9] templates_v2 is the primary authoritative store — await its completion; propagate errors
     await _syncTemplateToV2(canonicalTpl);
-    chrome.storage.local.set({ xpider_tpl: tpl });
+    // Legacy compatibility update ONLY after authoritative v2 write succeeds
+    await chrome.storage.local.set({ xpider_tpl: tpl });
     return canonicalTpl;
 }
 
-// [F9] Sync a template object into templates_v2 default slot
+// [F9] Sync a template object into templates_v2 default slot (propagates persistence errors)
 async function _syncTemplateToV2(tpl) {
-    try {
-        const data = await chrome.storage.local.get(['templates_v2']);
-        const store = data.templates_v2 || { version: 2, templates: {}, defaultId: null, recentIds: [] };
-        const id = store.defaultId || 'default';
-        const fullName = tpl.name || tpl.fullName || `${tpl.firstName || ''} ${tpl.lastName || ''}`.trim();
-        const updatedTpl = {
-            ...tpl,
-            id,
+    const data = await chrome.storage.local.get(['templates_v2']);
+    const store = data.templates_v2 || { version: 2, templates: {}, defaultId: null, recentIds: [] };
+    const id = store.defaultId || 'default';
+    const fullName = tpl.name || tpl.fullName || `${tpl.firstName || ''} ${tpl.lastName || ''}`.trim();
+    const updatedTpl = {
+        ...tpl,
+        id,
+        fullName,
+        sender: tpl.sender || {
             fullName,
-            sender: tpl.sender || {
-                fullName,
-                firstName: tpl.firstName || '',
-                lastName: tpl.lastName || '',
-                company: tpl.company || '',
-                email: tpl.email || '',
-                phone: tpl.phone || '',
-                website: tpl.website || ''
-            },
-            content: tpl.content || {
-                subject: tpl.subject || '',
-                message: tpl.message || ''
-            },
-            updatedAt: Date.now()
-        };
-        store.templates[id] = updatedTpl;
-        store.defaultId = id;
-        if (!store.recentIds) store.recentIds = [];
-        if (!store.recentIds.includes(id)) store.recentIds.unshift(id);
-        await chrome.storage.local.set({ templates_v2: store });
-        return updatedTpl;
-    } catch (e) {
-        console.warn('[F9] _syncTemplateToV2 failed:', e.message);
-    }
+            firstName: tpl.firstName || '',
+            lastName: tpl.lastName || '',
+            company: tpl.company || '',
+            email: tpl.email || '',
+            phone: tpl.phone || '',
+            website: tpl.website || ''
+        },
+        content: tpl.content || {
+            subject: tpl.subject || '',
+            message: tpl.message || ''
+        },
+        updatedAt: Date.now()
+    };
+    store.templates[id] = updatedTpl;
+    store.defaultId = id;
+    if (!store.recentIds) store.recentIds = [];
+    if (!store.recentIds.includes(id)) store.recentIds.unshift(id);
+    await chrome.storage.local.set({ templates_v2: store });
+    return updatedTpl;
 }
 
 // [v18.10.0] Diagnostic Recovery: Load persistent logs from storage
@@ -1560,89 +1557,107 @@ function loadTemplateFromLibrary() {
     });
 }
 
+function parseTemplateText(content) {
+    if (!content || typeof content !== 'string') {
+        return { name: '', firstName: '', lastName: '', email: '', phone: '', subject: '', message: '' };
+    }
+    const isStructured = content.includes('[XPIDER MESSAGE TEMPLATE]');
+    const fields = {
+        name: '', firstName: '', lastName: '', email: '', phone: '', subject: '', message: ''
+    };
+    if (isStructured) {
+        const lines = content.split('\n');
+        let bodyStarted = false;
+        let bodyLines = [];
+        lines.forEach(line => {
+            const trimmedLine = line.trim();
+            if (trimmedLine.includes('[MESSAGE BODY]')) {
+                bodyStarted = true;
+                return;
+            }
+            if (bodyStarted) {
+                if (trimmedLine.startsWith('---') && bodyLines.length === 0) return;
+                bodyLines.push(line);
+                return;
+            }
+            const matchName = line.match(/Full Name:\s*(.*)/i);
+            const matchFirst = line.match(/First Name:\s*(.*)/i);
+            const matchLast = line.match(/Last Name:\s*(.*)/i);
+            const matchEmail = line.match(/Email:\s*(.*)/i);
+            const matchPhone = line.match(/Phone:\s*(.*)/i);
+            const matchSubject = line.match(/Subject:\s*(.*)/i);
+
+            if (matchName) fields.name = matchName[1].trim();
+            if (matchFirst) fields.firstName = matchFirst[1].trim();
+            if (matchLast) fields.lastName = matchLast[1].trim();
+            if (matchEmail) fields.email = matchEmail[1].trim();
+            if (matchPhone) fields.phone = matchPhone[1].trim();
+            if (matchSubject) fields.subject = matchSubject[1].trim();
+        });
+        let bodyText = bodyLines.join('\n').trim();
+        bodyText = bodyText.replace(/---+\s*Generated by XPIDER AutoForm Sender Pro.*/s, '').trim();
+        bodyText = bodyText.replace(/---+\s*$/, '').trim();
+        fields.message = bodyText;
+    } else {
+        fields.message = content.trim();
+    }
+    return fields;
+}
+
+// [F9 Unified Schema & Authoritative Persistence]
+async function persistImportedTemplate(fields) {
+    const fullName = fields.name || `${fields.firstName || ''} ${fields.lastName || ''}`.trim();
+    const canonicalTpl = {
+        ...fields,
+        fullName,
+        sender: {
+            fullName,
+            firstName: fields.firstName || '',
+            lastName: fields.lastName || '',
+            company: fields.company || '',
+            email: fields.email || '',
+            phone: fields.phone || '',
+            website: fields.website || ''
+        },
+        content: {
+            subject: fields.subject || '',
+            message: fields.message || ''
+        },
+        updatedAt: Date.now()
+    };
+    // [F9] Authoritative templates_v2 write must be awaited first; propagates error on failure
+    await _syncTemplateToV2(canonicalTpl);
+    // Legacy compatibility update ONLY after authoritative v2 write succeeds
+    await chrome.storage.local.set({ xpider_tpl: fields });
+    return canonicalTpl;
+}
+
 function importMessageFromFile(event) {
     const file = event.target.files[0];
     if (!file) return;
-    
+
     const reader = new FileReader();
-    reader.onload = (e) => {
-        const content = e.target.result;
-        
-        // Intelligent Parsing Logic [v18.40.0]
-        const isStructured = content.includes('[XPIDER MESSAGE TEMPLATE]');
-        
-        if (isStructured) {
-            const lines = content.split('\n');
-            let bodyStarted = false;
-            let bodyLines = [];
-            
-            lines.forEach(line => {
-                const trimmedLine = line.trim();
-                
-                if (trimmedLine.includes('[MESSAGE BODY]')) {
-                    bodyStarted = true;
-                    return;
-                }
-                
-                if (bodyStarted) {
-                    // Skip separators at the very start of body
-                    if (trimmedLine.startsWith('---') && bodyLines.length === 0) return;
-                    bodyLines.push(line); // Keep original indent in message
-                    return;
-                }
+    reader.onload = async (e) => {
+        try {
+            const content = e.target.result;
+            const fields = parseTemplateText(content);
 
-                // Precise Field extraction using Regex
-                const matchName = line.match(/Full Name:\s*(.*)/i);
-                const matchFirst = line.match(/First Name:\s*(.*)/i);
-                const matchLast = line.match(/Last Name:\s*(.*)/i);
-                const matchEmail = line.match(/Email:\s*(.*)/i);
-                const matchPhone = line.match(/Phone:\s*(.*)/i);
-                const matchSubject = line.match(/Subject:\s*(.*)/i);
+            if (fields.name) { const el = document.getElementById('tpl-name'); if (el) el.value = fields.name; }
+            if (fields.firstName) { const el = document.getElementById('tpl-first-name'); if (el) el.value = fields.firstName; }
+            if (fields.lastName) { const el = document.getElementById('tpl-last-name'); if (el) el.value = fields.lastName; }
+            if (fields.email) { const el = document.getElementById('tpl-email'); if (el) el.value = fields.email; }
+            if (fields.phone) { const el = document.getElementById('tpl-phone'); if (el) el.value = fields.phone; }
+            if (fields.subject) { const el = document.getElementById('tpl-subject'); if (el) el.value = fields.subject; }
+            if (fields.message) { const el = document.getElementById('tpl-message'); if (el) el.value = fields.message; }
 
-                if (matchName) document.getElementById('tpl-name').value = matchName[1].trim();
-                if (matchFirst) document.getElementById('tpl-first-name').value = matchFirst[1].trim();
-                if (matchLast) document.getElementById('tpl-last-name').value = matchLast[1].trim();
-                if (matchEmail) document.getElementById('tpl-email').value = matchEmail[1].trim();
-                if (matchPhone) document.getElementById('tpl-phone').value = matchPhone[1].trim();
-                if (matchSubject) document.getElementById('tpl-subject').value = matchSubject[1].trim();
-            });
-
-            // Clean up message body text
-            let bodyText = bodyLines.join('\n').trim();
-            // Remove the trailing separator and footer often found in exported files
-            bodyText = bodyText.replace(/---+\s*Generated by XPIDER AutoForm Sender Pro.*/s, '').trim();
-            bodyText = bodyText.replace(/---+\s*$/, '').trim();
-            
-            document.getElementById('tpl-message').value = bodyText;
-            addLog("Intelligent template mapped successfully.", "success");
-        } else {
-            // Fallback for plain text: load everything into message body
-            const msgArea = document.getElementById('tpl-message');
-            if (msgArea) {
-                msgArea.value = content.trim();
-                addLog("Plain text imported to message body.", "info");
-            }
+            await persistImportedTemplate(fields);
+            addLog("Intelligent template mapped and saved to authoritative store.", "success");
+        } catch (err) {
+            console.error('[F9] Failed to persist imported template:', err);
+            addLog("Failed to save imported template to store: " + err.message, "error");
+        } finally {
+            if (event.target) event.target.value = ''; // Reset file input
         }
-        
-        // [F9] Sync current form data to both legacy and v2 store
-        const tpl = {
-            firstName: document.getElementById('tpl-first-name').value,
-            lastName: document.getElementById('tpl-last-name').value,
-            name: document.getElementById('tpl-name').value,
-            email: document.getElementById('tpl-email').value,
-            phone: document.getElementById('tpl-phone').value,
-            subject: document.getElementById('tpl-subject').value,
-            message: document.getElementById('tpl-message').value
-        };
-        chrome.storage.local.get(['templates_v2'], (v2Data) => {
-            const v2Store = v2Data.templates_v2 || { version: 2, templates: {}, defaultId: null, recentIds: [] };
-            const id = v2Store.defaultId || 'default';
-            v2Store.templates[id] = { ...tpl, id, updatedAt: new Date().toISOString() };
-            if (!v2Store.defaultId) v2Store.defaultId = id;
-            chrome.storage.local.set({ xpider_tpl: tpl, templates_v2: v2Store });
-        });
-        
-        event.target.value = ''; // Reset file input
     };
     reader.readAsText(file);
 }
@@ -2031,3 +2046,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initial render on popup open
     _renderHistoryPanel();
 });
+
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+        _parseRfc4180Records,
+        _syncTemplateToV2,
+        saveTemplate,
+        persistImportedTemplate,
+        parseTemplateText
+    };
+}

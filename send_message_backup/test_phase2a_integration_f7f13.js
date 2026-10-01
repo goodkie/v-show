@@ -1,6 +1,6 @@
 'use strict';
 /**
- * [ANTIGRAVITY][TEST][extension-form-sender][PHASE 2A INTEGRATION — F7-F13 V5]
+ * [ANTIGRAVITY][TEST][extension-form-sender][PHASE 2A INTEGRATION — F7-F13 V6]
  * Fully CWD-independent, exercises actual production functions for F7, F8, F9, F11, F13.
  */
 
@@ -31,6 +31,14 @@ function makeMockStorage(initial = {}) {
 
 let activeMockStorage = makeMockStorage();
 
+global.window = { postMessage: () => {}, addEventListener: () => {} };
+global.document = {
+    addEventListener: () => {},
+    getElementById: (id) => ({ value: 'val-' + id }),
+    querySelector: () => null,
+    querySelectorAll: () => []
+};
+
 global.chrome = {
     runtime: {
         sendMessage: () => Promise.resolve(),
@@ -43,7 +51,8 @@ global.chrome = {
         local: {
             get: (keys, cb) => activeMockStorage.get(keys, cb),
             set: (obj, cb) => activeMockStorage.set(obj, cb)
-        }
+        },
+        onChanged: { addListener: () => {} }
     },
     tabs: {
         query: () => Promise.resolve([]),
@@ -59,14 +68,10 @@ global.chrome = {
     }
 };
 
-// Import production background.js
+// Import production background.js & popup.js
 const bg = require(path.resolve(__dirname, 'background.js'));
-
-// Extract production _parseRfc4180Records from popup.js
-const popupSrc = fs.readFileSync(path.resolve(__dirname, 'popup.js'), 'utf8');
-const parserMatch = popupSrc.match(/function _parseRfc4180Records\([\s\S]*?\n\}/);
-if (!parserMatch) throw new Error('Could not find _parseRfc4180Records in popup.js');
-const _parseRfc4180Records = new Function(`${parserMatch[0]}; return _parseRfc4180Records;`)();
+const popup = require(path.resolve(__dirname, 'popup.js'));
+const _parseRfc4180Records = popup._parseRfc4180Records;
 
 let passed = 0, failed = 0;
 async function test(name, fn) {
@@ -76,7 +81,7 @@ async function test(name, fn) {
 function assert(cond, msg) { if (!cond) throw new Error(msg || 'Assertion failed'); }
 
 async function main() {
-    console.log('=== [PHASE 2A INTEGRATION TEST — F7-F13 V5] ===\n');
+    console.log('=== [PHASE 2A INTEGRATION TEST — F7-F13 V6] ===\n');
 
     // =========================================================================
     // F7: Source Row Preservation & Logical CSV Parsing
@@ -562,6 +567,169 @@ async function main() {
         assert(tpl.content.subject === 'Protect the Future', 'Nested subject matches');
         assert(tpl.fullName === 'Sarah Connor', 'FullName auto-computed');
         assert(tpl.sender.fullName === 'Sarah Connor', 'Nested fullName auto-computed');
+    });
+
+    await test('F9-e: _syncTemplateToV2 propagates persistence failure (does not swallow)', async () => {
+        let failureTriggered = false;
+        const failingStorage = {
+            get: () => Promise.resolve({}),
+            set: (obj) => {
+                if (obj.templates_v2) {
+                    failureTriggered = true;
+                    return Promise.reject(new Error('STORAGE_IO_ERROR_V2'));
+                }
+                return Promise.resolve();
+            }
+        };
+        activeMockStorage = failingStorage;
+
+        let errorCaught = null;
+        try {
+            await popup._syncTemplateToV2({
+                name: 'Fail Test',
+                subject: 'Fail Subject',
+                message: 'Fail Message'
+            });
+        } catch (e) {
+            errorCaught = e;
+        }
+
+        assert(failureTriggered === true, 'templates_v2 write must have been attempted');
+        assert(errorCaught !== null, '_syncTemplateToV2 must propagate the persistence error to caller');
+        assert(errorCaught.message === 'STORAGE_IO_ERROR_V2', `Expected STORAGE_IO_ERROR_V2, got ${errorCaught.message}`);
+    });
+
+    await test('F9-f: saveTemplate failure path prevents legacy xpider_tpl advancement', async () => {
+        let storeState = {
+            xpider_tpl: { subject: 'Original Legacy State', message: 'Legacy' }
+        };
+        let v2WriteFailed = false;
+
+        activeMockStorage = {
+            get: (keys) => {
+                let res = {};
+                if (keys === null) res = { ...storeState };
+                else { const arr = Array.isArray(keys) ? keys : [keys]; for (const k of arr) res[k] = storeState[k]; }
+                return Promise.resolve(res);
+            },
+            set: (obj) => {
+                if (obj.templates_v2) {
+                    v2WriteFailed = true;
+                    return Promise.reject(new Error('PERSISTENCE_FAILED_V2'));
+                }
+                Object.assign(storeState, obj);
+                return Promise.resolve();
+            }
+        };
+
+        // Setup DOM inputs for saveTemplate
+        global.document.getElementById = (id) => {
+            if (id === 'tpl-name') return { value: 'New Candidate' };
+            if (id === 'tpl-first-name') return { value: 'New' };
+            if (id === 'tpl-last-name') return { value: 'Candidate' };
+            if (id === 'tpl-email') return { value: 'new@candidate.com' };
+            if (id === 'tpl-phone') return { value: '555-1234' };
+            if (id === 'tpl-subject') return { value: 'New Unsaved Subject' };
+            if (id === 'tpl-message') return { value: 'New Unsaved Message' };
+            return { value: '' };
+        };
+
+        let saveThrew = false;
+        try {
+            await popup.saveTemplate();
+        } catch (e) {
+            saveThrew = true;
+        }
+
+        assert(v2WriteFailed === true, 'Authoritative templates_v2 write must have been attempted');
+        assert(saveThrew === true, 'saveTemplate must reject when templates_v2 persistence fails');
+        assert(storeState.xpider_tpl.subject === 'Original Legacy State', 'Legacy xpider_tpl MUST NOT advance when v2 fails');
+    });
+
+    await test('F9-g: persistImportedTemplate creates canonical dual-accessor FormTemplateV2 record', async () => {
+        let storeState = { templates_v2: null, xpider_tpl: null };
+        activeMockStorage = {
+            get: (keys) => {
+                let res = {};
+                if (keys === null) res = { ...storeState };
+                else { const arr = Array.isArray(keys) ? keys : [keys]; for (const k of arr) res[k] = storeState[k]; }
+                return Promise.resolve(res);
+            },
+            set: (obj) => {
+                Object.assign(storeState, obj);
+                return Promise.resolve();
+            }
+        };
+
+        const importedFields = {
+            name: 'Robert McCall',
+            firstName: 'Robert',
+            lastName: 'McCall',
+            email: 'equalizer@defense.org',
+            phone: '555-0199',
+            subject: 'Justice Outreach',
+            message: 'Got a problem? Need help?'
+        };
+
+        const canonical = await popup.persistImportedTemplate(importedFields);
+
+        // Verify dual-accessor schema on returned record
+        assert(canonical.fullName === 'Robert McCall', 'fullName flat');
+        assert(canonical.sender.fullName === 'Robert McCall', 'fullName nested sender');
+        assert(canonical.sender.firstName === 'Robert', 'firstName nested sender');
+        assert(canonical.sender.email === 'equalizer@defense.org', 'email nested sender');
+        assert(canonical.subject === 'Justice Outreach', 'subject flat');
+        assert(canonical.content.subject === 'Justice Outreach', 'subject nested content');
+        assert(canonical.content.message === 'Got a problem? Need help?', 'message nested content');
+
+        // Verify store persistence
+        assert(storeState.templates_v2 && storeState.templates_v2.templates.default, 'templates_v2 must store default template');
+        const defaultTpl = storeState.templates_v2.templates.default;
+        assert(defaultTpl.sender.fullName === 'Robert McCall', 'templates_v2 stores canonical nested sender');
+        assert(defaultTpl.content.subject === 'Justice Outreach', 'templates_v2 stores canonical nested content');
+        assert(storeState.xpider_tpl.subject === 'Justice Outreach', 'xpider_tpl updated after successful v2 save');
+    });
+
+    await test('F9-h: persistImportedTemplate failure path prevents legacy xpider_tpl advancement', async () => {
+        let storeState = {
+            xpider_tpl: { subject: 'Untouched Legacy Before Import' }
+        };
+        let v2WriteFailed = false;
+
+        activeMockStorage = {
+            get: (keys) => {
+                let res = {};
+                if (keys === null) res = { ...storeState };
+                else { const arr = Array.isArray(keys) ? keys : [keys]; for (const k of arr) res[k] = storeState[k]; }
+                return Promise.resolve(res);
+            },
+            set: (obj) => {
+                if (obj.templates_v2) {
+                    v2WriteFailed = true;
+                    return Promise.reject(new Error('V2_PERSISTENCE_FAULT'));
+                }
+                Object.assign(storeState, obj);
+                return Promise.resolve();
+            }
+        };
+
+        let importThrew = false;
+        try {
+            await popup.persistImportedTemplate({
+                name: 'Bad Import',
+                firstName: 'Bad',
+                lastName: 'Import',
+                email: 'bad@fault.com',
+                subject: 'Fault Subject',
+                message: 'Fault Message'
+            });
+        } catch (e) {
+            importThrew = true;
+        }
+
+        assert(v2WriteFailed === true, 'v2 write must have been attempted');
+        assert(importThrew === true, 'persistImportedTemplate must reject when v2 fails');
+        assert(storeState.xpider_tpl.subject === 'Untouched Legacy Before Import', 'Legacy xpider_tpl MUST NOT be corrupted on v2 failure');
     });
 
     await test('F11-a: STAGE_COMMIT with complete valid staged payload promotes schema version', async () => {
