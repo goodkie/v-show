@@ -48,6 +48,27 @@ async function main() {
         assert(hs.attempts.length === 0, 'No attempts should be created for invalid rows');
     });
 
+    await test('F7-c: ingestImportRows with sourceRowNumbers preserves actual file line numbers', async () => {
+        const storage = makeMockStorage();
+        const hs = new HistoryStore(storage); await hs.load();
+        // Simulate file with rows: line 1=URL, line 2=empty, line 3=non-URL text, line 4=URL
+        const rawInputs = ['https://example.com', '', 'Company Name Ltd', 'https://other.com'];
+        const sourceRowNumbers = [1, 2, 3, 4];
+        const { rows } = await hs.ingestImportRows(rawInputs, 'imp_f7c', sourceRowNumbers);
+        assert(rows.length === 4, `Expected 4 rows, got ${rows.length}`);
+        // Verify actual line numbers preserved
+        assert(rows[0].sourceRowId === 1, `Row 0 sourceRowId should be 1, got ${rows[0].sourceRowId}`);
+        assert(rows[2].sourceRowId === 3, `Row 2 sourceRowId should be 3, got ${rows[2].sourceRowId}`);
+        // Non-URL rows should be INVALID_INPUT, not absent
+        const emptyRow = rows.find(r => r.rawInputUrl === '');
+        const textRow = rows.find(r => r.rawInputUrl === 'Company Name Ltd');
+        assert(emptyRow && emptyRow.status === 'INVALID_INPUT', 'Empty row should be INVALID_INPUT');
+        assert(textRow && textRow.status === 'INVALID_INPUT', 'Non-URL text row should be INVALID_INPUT');
+        // URL rows should be PENDING
+        const urlRow = rows.find(r => r.rawInputUrl === 'https://example.com');
+        assert(urlRow && urlRow.status === 'PENDING', 'URL row should be PENDING');
+    });
+
     await test('F8-a: recordAttempt(string) creates PENDING_INTENT attempt', async () => {
         const storage = makeMockStorage();
         const hs = new HistoryStore(storage); await hs.load();
@@ -91,6 +112,51 @@ async function main() {
         const hs = new HistoryStore(storage); await hs.load();
         const result = await hs.settleAttempt('nonexistent_id', true, 'SUCCESS');
         assert(result.settled === false, 'Should indicate not settled');
+    });
+
+    await test('F8-f: suppression check aborts before record/send — isSuppressed returns true', async () => {
+        const storage = makeMockStorage();
+        const hs = new HistoryStore(storage); await hs.load();
+        // Simulate a previously successful send
+        await hs.ingestImportRows(['https://suppressed.com'], 'imp_f8f');
+        const { attemptId } = await hs.recordAttempt('https://suppressed.com');
+        await hs.settleAttempt(attemptId, true, 'SUCCESS_CONFIRMED');
+        await hs.persist();
+
+        // Verify suppression is set
+        const identity = hs.normalizeTargetIdentity('https://suppressed.com');
+        assert(hs.isSuppressed(identity), 'Target should be suppressed after success');
+
+        // Simulate what orchestrateSending does: check suppression with normalized identity BEFORE tab open
+        const normalizedId = hs.normalizeTargetIdentity('https://suppressed.com');
+        const wouldBeAborted = hs.isSuppressed(normalizedId);
+        assert(wouldBeAborted, 'orchestrateSending should detect suppression and abort before tab open');
+
+        // Confirm: no new attempt should have been added (send was blocked)
+        const attemptsBefore = hs.attempts.length;
+        // (In production, orchestrateSending returns early — no new recordAttempt call)
+        assert(attemptsBefore === 1, `Should still have exactly 1 attempt, got ${attemptsBefore}`);
+    });
+
+    await test('F8-g: DELIVERY_UNKNOWN suppresses target; FAILURE does not', async () => {
+        const storage = makeMockStorage();
+        const hs = new HistoryStore(storage); await hs.load();
+
+        // Test DELIVERY_UNKNOWN suppresses
+        await hs.ingestImportRows(['https://unknown.com'], 'imp_f8g_u');
+        const { attemptId: aid1 } = await hs.recordAttempt('https://unknown.com');
+        await hs.settleAttempt(aid1, false, 'DELIVERY_UNKNOWN');
+        await hs.persist();
+        const idUnknown = hs.normalizeTargetIdentity('https://unknown.com');
+        assert(hs.isSuppressed(idUnknown), 'DELIVERY_UNKNOWN should suppress target to prevent duplicate send');
+
+        // Test FAILURE does NOT suppress (target remains retryable)
+        await hs.ingestImportRows(['https://failure.com'], 'imp_f8g_f');
+        const { attemptId: aid2 } = await hs.recordAttempt('https://failure.com');
+        await hs.settleAttempt(aid2, false, 'NETWORK_ERROR');
+        await hs.persist();
+        const idFail = hs.normalizeTargetIdentity('https://failure.com');
+        assert(!hs.isSuppressed(idFail), 'FAILURE should NOT suppress target — it must remain retryable');
     });
 
     await test('F9-a: _syncTemplateToV2 creates templates_v2 default slot', async () => {

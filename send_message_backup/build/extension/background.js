@@ -596,14 +596,23 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             return true;
 
         case 'RECORD_IMPORT_ROWS':
-            // [P2A-2 Separate Original Rows from Attempts]
+            // [F7/P2A-2] Accept structured rows [{sourceRowNumber, rawInput}] from popup's line-split pass
             bgOperationQueue.enqueue(async () => {
                 try {
                     if (!self.__xpiderHistoryStore) {
                         self.__xpiderHistoryStore = new self.HistoryStore(chrome.storage.local);
                         await self.__xpiderHistoryStore.load();
                     }
-                    const res = await self.__xpiderHistoryStore.ingestImportRows(request.urls, request.importId);
+                    // Support new structured rows format AND legacy url-array format
+                    let res;
+                    if (Array.isArray(request.rows) && request.rows.length > 0 && request.rows[0].rawInput !== undefined) {
+                        // [F7] Structured path: pass raw line content (including non-URLs) with real line numbers
+                        const rawInputs = request.rows.map(r => r.rawInput);
+                        res = await self.__xpiderHistoryStore.ingestImportRows(rawInputs, request.importId, request.rows.map(r => r.sourceRowNumber));
+                    } else {
+                        // Legacy: plain URL array (backwards compat)
+                        res = await self.__xpiderHistoryStore.ingestImportRows(request.urls || [], request.importId);
+                    }
                     sendResponse({ success: true, ...res });
                 } catch (err) {
                     sendResponse({ success: false, error: err.message });
@@ -612,15 +621,17 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             return true;
 
         case 'CHECK_SUPPRESSION':
-            // [P2A-3 Suppression Check]
+            // [F8/P2A-3] Suppression check — normalize identity before lookup
             (async () => {
                 try {
                     if (!self.__xpiderHistoryStore) {
                         self.__xpiderHistoryStore = new self.HistoryStore(chrome.storage.local);
                         await self.__xpiderHistoryStore.load();
                     }
-                    const isSup = self.__xpiderHistoryStore.isSuppressed(request.targetUrl);
-                    sendResponse({ success: true, isSuppressed: isSup });
+                    // [F8] Normalize the raw URL to canonical identity before suppression lookup
+                    const normalizedId = self.__xpiderHistoryStore.normalizeTargetIdentity(request.targetUrl);
+                    const isSup = self.__xpiderHistoryStore.isSuppressed(normalizedId || request.targetUrl);
+                    sendResponse({ success: true, isSuppressed: isSup, normalizedId });
                 } catch (err) {
                     sendResponse({ success: false, error: err.message });
                 }
@@ -1033,15 +1044,39 @@ async function orchestrateSending(urlInput, template) {
         return self.__xpiderHistoryStore;
     };
 
-    // [F8] Persist intent BEFORE any side effects (tab open, navigation)
+    // [F8] Step 1: Normalize identity and perform suppression check BEFORE any side effect
+    let _canonicalId;
+    try {
+        const hs = await _getHistoryStore();
+        _canonicalId = hs.normalizeTargetIdentity(targetUrl);
+        if (hs.isSuppressed(_canonicalId || targetUrl)) {
+            logBg(null, `🚫 [F8-Suppression] ${targetUrl} is suppressed — aborting before tab open.`, 'warning');
+            return { success: false, reasonCode: 'SUPPRESSED', error: 'Target is suppressed' };
+        }
+    } catch (hsErr) {
+        logBg(null, `⚠️ [F8-Suppression] check failed: ${hsErr.message}`, 'warning');
+        // Continue on suppression-check failure; don't block campaign
+    }
+
+    // [F8] Step 2: Persist durable PENDING_INTENT record BEFORE opening tab.
+    // If persistence fails, ABORT — do not open tab (prevents untracked side effects).
     let _attemptId = null;
     try {
         const hs = await _getHistoryStore();
         const attemptResult = await hs.recordAttempt(targetUrl);
         _attemptId = attemptResult && attemptResult.attemptId ? attemptResult.attemptId : null;
+        if (!_attemptId) throw new Error('recordAttempt returned no attemptId');
         await hs.persist();
+        // [F8] Unify with legacy currentAttempt ledger — carry same attemptId for recovery
+        campaignState.currentAttempt = {
+            url: targetUrl,
+            attemptId: _attemptId,     // [F8] canonical HistoryStore id
+            status: 'SUBMIT_PENDING',
+            ts: Date.now()
+        };
     } catch (hsErr) {
-        logBg(null, `⚠️ [F8-HistoryStore] recordAttempt failed: ${hsErr.message}`, 'warning');
+        logBg(null, `❌ [F8-Intent] recordAttempt failed: ${hsErr.message} — aborting to prevent untracked send.`, 'error');
+        return { success: false, reasonCode: REASON_CODES.DELIVERY_UNKNOWN, error: 'INTENT_PERSISTENCE_FAILED' };
     }
 
     const tab = await safeTabs.create({ url: 'about:blank', active: false });
@@ -1154,16 +1189,25 @@ async function orchestrateSending(urlInput, template) {
         safeTabs.onUpdated.removeListener(navWatcher);
 
         const isSuccess = !!(res && res.success);
-        let finalReason = isSuccess ? REASON_CODES.SUCCESS_CONFIRMED : (res?.reasonCode || (res?.error ? String(res.error) : REASON_CODES.DELIVERY_UNKNOWN));
+        // [F8] Preserve DELIVERY_UNKNOWN distinctly — not all non-success is FAILURE
+        const isDeliveryUnknown = !isSuccess && (!res || (!res.error && !res.reasonCode) || res.reasonCode === REASON_CODES.DELIVERY_UNKNOWN);
+        let finalReason;
+        if (isSuccess) {
+            finalReason = REASON_CODES.SUCCESS_CONFIRMED;
+        } else if (isDeliveryUnknown) {
+            finalReason = REASON_CODES.DELIVERY_UNKNOWN;
+        } else {
+            finalReason = res?.reasonCode || (res?.error ? String(res.error) : REASON_CODES.DELIVERY_UNKNOWN);
+        }
         
-        // [F8] Settle the durable attempt recorded before side effects
+        // [F8] Settle the single canonical durable attempt (same HistoryStore record opened before tab)
         try {
             const hs = await _getHistoryStore();
             if (_attemptId) {
-                await hs.settleAttempt(_attemptId, isSuccess, finalReason);
-            } else {
-                // Fallback: settle by URL if no attempt id (e.g. recordAttempt failed earlier)
-                await hs.recordAttempt(targetUrl, { outcome: isSuccess ? 'SUCCESS' : 'FAILURE', reason: finalReason });
+                // Settle with proper DELIVERY_UNKNOWN vs FAILURE distinction
+                const settleSuccess = isSuccess;
+                const settleReason = isDeliveryUnknown ? REASON_CODES.DELIVERY_UNKNOWN : finalReason;
+                await hs.settleAttempt(_attemptId, settleSuccess, settleReason);
             }
             await hs.persist();
         } catch (hsErr) {

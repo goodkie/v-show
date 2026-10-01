@@ -137,25 +137,32 @@
         }
 
         /**
-         * P2A-2: Ingest user imported rows without inventing fake submit attempts
+         * [F7/P2A-2] Ingest source rows from file import.
+         * @param {string[]} rawInputs - Exact raw strings for each source row (including non-URLs)
+         * @param {string|null} importId - Optional import batch identifier
+         * @param {number[]|null} sourceRowNumbers - Optional explicit 1-based row numbers from parser (actual file line numbers)
          */
-        async ingestImportRows(rawUrls = [], importId = null) {
+        async ingestImportRows(rawInputs = [], importId = null, sourceRowNumbers = null) {
             const batchImportId = importId || `imp_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
             const createdRows = [];
 
-            for (let i = 0; i < rawUrls.length; i++) {
-                const raw = rawUrls[i];
-                const rowId = `row_${batchImportId}_${i + 1}`;
+            for (let i = 0; i < rawInputs.length; i++) {
+                const raw = rawInputs[i];
+                // [F7] Use provided file line number, or fall back to 1-based ordinal
+                const actualRowNumber = (Array.isArray(sourceRowNumbers) && sourceRowNumbers[i] != null)
+                    ? sourceRowNumbers[i]
+                    : i + 1;
+                const rowId = `row_${batchImportId}_${actualRowNumber}`;
                 const identity = this.normalizeTargetIdentity(raw);
                 const isValid = !!identity && identity.startsWith('http');
 
                 const row = {
                     rowId,
-                    sourceRowId: i + 1,
+                    sourceRowId: actualRowNumber,   // [F7] actual file line number
                     importId: batchImportId,
                     rawInputUrl: raw,
                     targetIdentity: identity,
-                    status: isValid ? "PENDING" : "INVALID_INPUT",
+                    status: isValid ? 'PENDING' : 'INVALID_INPUT',
                     attemptId: null,
                     createdAt: Date.now()
                 };
@@ -297,11 +304,13 @@
             if (target) {
                 target.lastAttemptId = attemptId;
                 target.updatedTs = now;
-                if (isSuccess || attempt.status === 'DELIVERY_UNKNOWN') {
+                // [F8] CONFIRMED_SUCCESS and DELIVERY_UNKNOWN both suppress; FAILURE does NOT
+                if (isSuccess || attempt.reasonCode === 'DELIVERY_UNKNOWN') {
                     target.isSuppressed = true;
                     target.suppressionReason = attempt.status;
                     target.effectiveGeneration = this.currentGeneration;
                 }
+                // FAILURE: isSuppressed remains false — target stays retryable
             }
 
             // Update linked import rows

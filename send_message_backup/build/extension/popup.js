@@ -785,20 +785,33 @@ async function handleFileUpload(e) {
     const nameDisplay = document.getElementById('filename-display');
     if (nameDisplay) nameDisplay.textContent = file.name;
     
-    // [F7] Capture every original raw row BEFORE any deduplication / blacklist filtering.
-    // This ensures the Phase 2A ledger preserves source-row order, id, and raw input.
     const text = await file.text();
-    // [Precision Scraper] Matches both standard URLs and raw domains (e.g. google.com, www.test.com/contact)
-    const urlRegex = /(https?:\/\/[^\s,]+)|((?:www\.)?[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}(?:\/[^\s,]*)?)/g;
-    let matches = text.match(urlRegex) || [];
     const importId = `import_${Date.now()}`;
-    const allRawUrls = [...matches]; // snapshot before any mutation
-    // Fire-and-forget to background HistoryStore — does NOT block UI
+
+    // [F7] Step 1: Split the source file into original rows FIRST — before any URL extraction.
+    // Every line (including empty, non-URL, and partially-valid lines) gets its actual row identity.
+    const rawSourceRows = text.split(/\r?\n/);
+    
+    // [F7] Step 2: Build per-row records preserving exact source structure
+    const rowsForLedger = rawSourceRows.map((rawLine, idx) => ({
+        sourceRowNumber: idx + 1,   // 1-indexed, matches actual file line number
+        rawInput: rawLine           // exact original content including non-URLs
+    }));
+
+    // [F7] Step 3: Persist ALL source rows to HistoryStore BEFORE any extraction/normalization.
+    // Fire-and-forget intentionally — but we log failures; does NOT block UI render.
     chrome.runtime.sendMessage({
         action: 'RECORD_IMPORT_ROWS',
-        urls: allRawUrls.map(r => r.trim()),
+        rows: rowsForLedger,        // full structured rows, not just URLs
         importId
-    }).catch(() => {});
+    }).catch((err) => {
+        console.warn('[F7] RECORD_IMPORT_ROWS failed — ledger may be incomplete:', err);
+    });
+
+    // [F7] Step 4: ONLY NOW extract URLs for the execution queue.
+    // The ledger above already captured every source row regardless of URL validity.
+    const urlRegex = /(https?:\/\/[^\s,]+)|((?:www\.)?[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}(?:\/[^\s,]*)?)/g;
+    let matches = text.match(urlRegex) || [];
 
     // Normalize matched strings into valid https URLs
     matches = matches.map(u => {
@@ -808,18 +821,13 @@ async function handleFileUpload(e) {
         }
         return u;
     }).filter(u => {
-        try {
-            new URL(u);
-            return true;
-        } catch(err) {
-            return false;
-        }
+        try { new URL(u); return true; } catch(err) { return false; }
     });
     
     // [v1.3.1] 3333 Global Blacklist (Portals, Gov, Org, etc.)
     const blacklist = window.XPIDER_BLACKLIST || [];
     
-    // Execution queue dedupes separately — ledger above already captured every row
+    // Execution queue dedupes separately — ledger above captured every original source row
     campaignQueue = [...new Set(matches)].filter(url => {
         const lowerUrl = url.toLowerCase();
         return !blacklist.some(domain => lowerUrl.includes(domain));
@@ -843,7 +851,7 @@ async function handleFileUpload(e) {
         xpider_total: totalTargets,
         xpider_success: 0
     });
-    addLog(`Loaded ${totalTargets} business URLs.`, 'info');
+    addLog(`Loaded ${totalTargets} business URLs from ${rawSourceRows.length} source rows.`, 'info');
 }
 
 async function saveListToStorage(name, urls) {
