@@ -2,7 +2,7 @@
   "manifest_version": "1.0",
   "package": "evidence_form_execution_reliability_r1",
   "audit_phase": "Phase 2B + Issue #6 Form Execution Reliability & Resumability R1",
-  "commit_sha": "HEAD",
+  "commit_sha": "e25780278d6bd5dc520be72d427358df71b9e19f",
   "rollback_anchor_sha": "812c930e758835b7c2336602d27997cd54dcee08",
   "rollback_artifact_sha256": "4D9F9EB83E82243A7C12DFEC4731E7D3CE8F01777243ECBBD722B34B8FA2DBB2",
   "branch": "upgrade/phase-0-1",
