@@ -36,11 +36,8 @@
       if (_devKeyTimer) clearTimeout(_devKeyTimer);
       if (_devKeyCount >= 2) {
         _devKeyCount = 0;
-        // DevConsole 오픈 요청
-        try {
-          window.postMessage({ type: 'XPIDER_INVOKE', channel: 'xpider-devlog-open-console', args: {}, id: 'devcon-' + Date.now() }, '*');
-          console.log('[DEV] DevConsole 오픈 트리거 발동');
-        } catch(_) {}
+        // In Chrome extension runtime, direct operator to Chrome DevTools without dead IPC
+        console.log('[DEV] DevConsole: To view extension console and network logs, open Chrome DevTools (right-click popup -> Inspect, or chrome://extensions -> Inspect service worker).');
       } else {
         _devKeyTimer = setTimeout(() => { _devKeyCount = 0; }, 2000);
       }
@@ -48,6 +45,9 @@
   }, true);
 })();
 // ── END DEV LOG BRIDGE ───────────────────────────────────────────────────
+
+// [v20.0] Explicit Transport Policy: chrome-extension (Service Worker Background Engine)
+const RUNTIME_MODE = 'chrome-extension';
 
 let currentTpl = {};
 let campaignQueue = [];
@@ -523,88 +523,55 @@ async function initializeAsyncComponents() {
 
     console.log("✅ X PIDER Sender Pro initialized.");
 
-    // ── Step 9: State Handshake (Directly with Native Campaign Engine) ──
+    // ── Step 9: State Handshake (Directly with Chrome Background Service Worker) ──
     try {
-        xpiderInvoke('xpider-campaign-get-state', {}).then(response => {
-            if (response && response.success && response.isActive) {
-                campaignActive = true;
-                totalTargets = response.totalTargets;
-                successCount = response.successCount;
-                remainingTargets = response.remainingCount;
-                campaignPaused = !!response.isPaused;
-                
-                const completedCount = response.completedCount || 0;
-                
-                document.getElementById('status-box').classList.remove('hidden');
-                document.getElementById('multi-actions').classList.remove('hidden');
-                document.getElementById('start-btn').classList.add('hidden');
-                
-                updateRealTimeStatus({
-                    successCount: successCount,
-                    completedCount: completedCount,
-                    remainingCount: remainingTargets,
-                    totalTargets: totalTargets
-                });
-                
-                const btn = document.getElementById('pause-btn');
-                const langSelect = document.getElementById('language-select');
-                const lang = langSelect ? langSelect.value : 'en';
-                const dict = i18nData ? (i18nData[lang] || i18nData['en'] || {}) : {};
-                if (btn) {
-                    if (campaignPaused) {
-                        btn.textContent = dict.btn_resume || "▶️ Resume";
-                        btn.style.backgroundColor = "#22c55e";
-                    } else {
-                        btn.textContent = dict.btn_pause || "⏸️ Pause";
-                        btn.style.backgroundColor = "#f59e0b";
-                    }
-                }
-            } else {
-                campaignActive = false;
-                document.getElementById('start-btn').classList.remove('hidden');
-                document.getElementById('multi-actions').classList.add('hidden');
+        chrome.runtime.sendMessage({ action: 'GET_STATE' }, (response) => {
+            if (chrome.runtime.lastError) {
+                console.warn('[Popup] Initial GET_STATE error:', chrome.runtime.lastError.message);
+                return;
             }
-        }).catch(e => {
-            console.error('[Popup] Direct engine state check failed, falling back:', e);
-            // Fallback to legacy GET_STATE
-            chrome.runtime.sendMessage({ action: 'GET_STATE' }, (response) => {
-                if (response && response.success) {
-                    if (response.isActive) {
-                        campaignActive = true;
-                        totalTargets = response.totalTargets;
-                        successCount = response.successCount;
-                        remainingTargets = response.remainingCount;
-                        campaignPaused = !!response.isPaused;
-                        
-                        document.getElementById('status-box').classList.remove('hidden');
-                        document.getElementById('multi-actions').classList.remove('hidden');
-                        document.getElementById('start-btn').classList.add('hidden');
-                        
-                        updateRealTimeStatus({
-                            successCount: successCount,
-                            remainingCount: remainingTargets
-                        });
-                        
-                        const btn = document.getElementById('pause-btn');
-                        const langSelect = document.getElementById('language-select');
-                        const lang = langSelect ? langSelect.value : 'en';
-                        const dict = i18nData ? (i18nData[lang] || i18nData['en'] || {}) : {};
-                        if (btn) {
-                            if (campaignPaused) {
-                                btn.textContent = dict.btn_resume || "▶️ Resume";
-                                btn.style.backgroundColor = "#22c55e";
-                            } else {
-                                btn.textContent = dict.btn_pause || "⏸️ Pause";
-                                btn.style.backgroundColor = "#f59e0b";
-                            }
+            if (response && response.success) {
+                if (response.isActive) {
+                    campaignActive = true;
+                    totalTargets = response.totalTargets || 0;
+                    successCount = response.successCount || 0;
+                    remainingTargets = response.remainingCount || 0;
+                    campaignPaused = !!response.isPaused;
+                    
+                    const completedCount = response.completedCount || 0;
+                    
+                    document.getElementById('status-box').classList.remove('hidden');
+                    document.getElementById('multi-actions').classList.remove('hidden');
+                    document.getElementById('start-btn').classList.add('hidden');
+                    
+                    updateRealTimeStatus({
+                        successCount: successCount,
+                        completedCount: completedCount,
+                        remainingCount: remainingTargets,
+                        totalTargets: totalTargets
+                    });
+                    
+                    const btn = document.getElementById('pause-btn');
+                    const langSelect = document.getElementById('language-select');
+                    const lang = langSelect ? langSelect.value : 'en';
+                    const dict = i18nData ? (i18nData[lang] || i18nData['en'] || {}) : {};
+                    if (btn) {
+                        if (campaignPaused) {
+                            btn.textContent = dict.btn_resume || "▶️ Resume";
+                            btn.style.backgroundColor = "#22c55e";
+                        } else {
+                            btn.textContent = dict.btn_pause || "⏸️ Pause";
+                            btn.style.backgroundColor = "#f59e0b";
                         }
-                    } else {
-                        campaignActive = false;
-                        document.getElementById('start-btn').classList.remove('hidden');
-                        document.getElementById('multi-actions').classList.add('hidden');
                     }
+                    addDiagnosticLog(`[Engine] Initial handshake synced: active=true, remaining=${remainingTargets}`);
+                } else {
+                    campaignActive = false;
+                    document.getElementById('start-btn').classList.remove('hidden');
+                    document.getElementById('multi-actions').classList.add('hidden');
+                    addDiagnosticLog(`[Engine] Initial handshake synced: active=false`);
                 }
-            });
+            }
         });
     } catch(e) { console.error('[Popup] Direct state handshake failed:', e); }
 
@@ -635,42 +602,26 @@ async function initializeAsyncComponents() {
     // ── Step 12: Pulse check ──
     try { startPulseCheck(); } catch(e) {}
 
-    // [WitKey-Sync v3] Audio STT API Key (Wit.ai) 최초 설정 여부 체크
-    // 먼저 메인 프로세스 공유 스토리지에서 직접 읽기 (chrome.storage 격리 우회)
-    xpiderInvoke('xpider-ext-get-wit-key').then(res => {
-        const mainKey = (res && res.key) ? res.key : '';
-        console.log(`[WitKey-Sync v3] Sender init: MainProcess key = ${mainKey ? mainKey.substring(0, 8) + '...' : 'NONE'}`);
-        if (mainKey && mainKey.trim() !== '') {
-            const sttKeyInput = document.getElementById('audio-stt-key');
-            if (sttKeyInput) sttKeyInput.value = mainKey;
-            const setupInput = document.getElementById('setup-stt-key-input');
-            if (setupInput) setupInput.value = mainKey;
-            const setupModal = document.getElementById('stt-setup-modal-overlay');
-            if (setupModal) setupModal.classList.add('hidden');
-            // chrome.storage에도 동기화 (다른 로직 호환)
-            chrome.storage.local.set({ xpider_stt_api_key: mainKey, audioSttKey: mainKey, witKey: mainKey });
-        } else {
-            // IPC에서 키가 없으면 chrome.storage 폴백
-            _senderFallbackLoadKey();
-        }
-    }).catch(() => {
-        // IPC 실패 시 chrome.storage 폴백
-        _senderFallbackLoadKey();
-    });
+    // [WitKey] Audio STT API Key (Wit.ai) load directly from chrome.storage.local
+    _loadInitialWitKey();
 
-    function _senderFallbackLoadKey() {
-        chrome.storage.local.get(['xpider_stt_api_key', 'audioSttKey', 'witKey'], (res) => {
-            const latestKey = res.xpider_stt_api_key || res.audioSttKey || res.witKey || '';
-            if (latestKey.trim() === '') {
-                const setupModal = document.getElementById('stt-setup-modal-overlay');
-                if (setupModal) setupModal.classList.remove('hidden');
-            } else {
-                const sttKeyInput = document.getElementById('audio-stt-key');
-                if (sttKeyInput) sttKeyInput.value = latestKey;
-                const setupInput = document.getElementById('setup-stt-key-input');
-                if (setupInput) setupInput.value = latestKey;
-            }
-        });
+    function _loadInitialWitKey() {
+        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+            chrome.storage.local.get(['xpider_stt_api_key', 'audioSttKey', 'witKey'], (res) => {
+                const latestKey = (res && (res.xpider_stt_api_key || res.audioSttKey || res.witKey)) || '';
+                if (latestKey.trim() === '') {
+                    const setupModal = document.getElementById('stt-setup-modal-overlay');
+                    if (setupModal) setupModal.classList.remove('hidden');
+                } else {
+                    const sttKeyInput = document.getElementById('audio-stt-key');
+                    if (sttKeyInput) sttKeyInput.value = latestKey;
+                    const setupInput = document.getElementById('setup-stt-key-input');
+                    if (setupInput) setupInput.value = latestKey;
+                    const setupModal = document.getElementById('stt-setup-modal-overlay');
+                    if (setupModal) setupModal.classList.add('hidden');
+                }
+            });
+        }
     }
 }
 
@@ -963,12 +914,9 @@ function bindEvents() {
             const settingsInput = document.getElementById('audio-stt-key');
             if (settingsInput) settingsInput.value = key;
             
-            // [WitKey-Sync] 전역 IPC 키 동기화 호출
-            try {
-                await xpiderInvoke('xpider-ext-sync-wit-key', { key });
-                console.log("[WitKey-Sync] Sender setup modal: Key successfully synced to global bridge");
-            } catch (err) {
-                console.error("[WitKey-Sync] Sender setup modal sync failed:", err);
+            // [WitKey] Sync to background service worker via UPDATE_WIT_KEY
+            if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
+                chrome.runtime.sendMessage({ action: 'UPDATE_WIT_KEY', key }).catch(() => {});
             }
             
             const setupModal = document.getElementById('stt-setup-modal-overlay');
@@ -981,26 +929,17 @@ function bindEvents() {
         });
     }
 
-    // [v19.1.0] Wit.ai Link - Electron 환경에서 시스템 기본 브라우저로 외부 링크 열기
-    // chrome.tabs.create는 내부 webview에서 URL을 열어 작동하지 않음
-    // shell.openExternal IPC 경로를 사용하여 시스템 브라우저에서 안정적으로 열기
+    // [v19.1.0] Wit.ai Link - Open via Chrome Tabs API or window.open
     const witAiLink = document.getElementById('wit-ai-link');
     if (witAiLink) {
         witAiLink.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
             const url = witAiLink.href || 'https://wit.ai';
-            // 1순위: Electron IPC 직접 호출 (open-wit-external-link → main.js shell.openExternal)
-            try {
-                window.postMessage({ type: 'XPIDER_SEND', channel: 'open-wit-external-link', data: url }, '*');
-            } catch (err1) {
-                console.warn('[Wit.ai Link] XPIDER_SEND failed, trying fallbacks:', err1);
-            }
-            // 2순위: window.open (setWindowOpenHandler가 wit.ai를 shell.openExternal로 처리)
-            try {
+            if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.create) {
+                chrome.tabs.create({ url });
+            } else {
                 window.open(url, '_blank');
-            } catch (err2) {
-                console.warn('[Wit.ai Link] window.open failed:', err2);
             }
         });
     }
@@ -1493,12 +1432,36 @@ async function saveTemplateChanges() {
     const defaultName = `${safeName}_template.txt`;
     const content = buildTemplateFileContent(tpl);
 
-    addLog('📁 Opening Save As dialog...', 'info');
-    const result = await xpiderInvoke('xpider-show-save-dialog', { defaultName, content });
-
-    if (!result || !result.success) {
-        if (result && result.reason !== 'cancelled') addLog(`❌ Save failed: ${result.reason}`, 'error');
-        return;
+    addLog('📁 Saving template file...', 'info');
+    let result = { success: true, fileName: defaultName, filePath: defaultName };
+    if (typeof chrome !== 'undefined' && chrome.downloads && chrome.downloads.download) {
+        try {
+            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const dlResult = await new Promise((resolve, reject) => {
+                chrome.downloads.download({
+                    url: url,
+                    filename: defaultName,
+                    saveAs: true
+                }, (downloadId) => {
+                    try { URL.revokeObjectURL(url); } catch (_) {}
+                    if (chrome.runtime.lastError) {
+                        const errMsg = chrome.runtime.lastError.message || '';
+                        if (errMsg.toLowerCase().includes('cancel') || errMsg.toLowerCase().includes('user')) {
+                            return resolve({ cancelled: true });
+                        }
+                        return reject(new Error(errMsg));
+                    }
+                    resolve({ success: true, downloadId });
+                });
+            });
+            if (dlResult && dlResult.cancelled) {
+                addLog('Template save cancelled by user.', 'info');
+                return;
+            }
+        } catch (dlErr) {
+            console.warn('[Template Save] chrome.downloads error, proceeding with store save:', dlErr.message);
+        }
     }
 
     // [F9] Save to templates_v2 as authoritative store
@@ -1667,23 +1630,14 @@ async function startCampaign() {
     currentTpl.id = currentTpl.templateId;
     currentTpl.version = currentTpl.templateVersion;
 
-    campaignActive = true;
+    // UI state: STARTING (Do NOT set campaignActive=true yet!)
     campaignPaused = false;
     successCount = 0;
-    updateRealTimeStatus({ successCount: 0, remainingCount: campaignQueue.length });
-    updateProgress(0);
-
-    setTimeout(() => {
-        const statusBox = document.getElementById('status-box');
-        if (statusBox) statusBox.classList.remove('hidden');
-        const multiActions = document.getElementById('multi-actions');
-        if (multiActions) multiActions.classList.remove('hidden');
-        const startBtn = document.getElementById('start-btn');
-        if (startBtn) startBtn.classList.add('hidden');
-    }, 100);
-
-    const statusBox = document.getElementById('status-box');
-    if (statusBox && typeof statusBox.scrollIntoView === 'function') statusBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const startBtn = document.getElementById('start-btn');
+    if (startBtn) {
+        startBtn.disabled = true;
+        startBtn.textContent = "⏳ Starting...";
+    }
 
     const delayCollectInput = document.getElementById('delay-input-collect');
     const delayFillInput = document.getElementById('delay-input-fill');
@@ -1720,18 +1674,91 @@ async function startCampaign() {
     };
     bindCampaignTemplateMetadata(startPayload, currentTpl);
 
-    // [v19.0] Use XPIDER_INVOKE bridge directly to main process (bypasses background.js)
-    addLog("[System] Sending to Native Engine...", "debug");
-    return xpiderInvoke('xpider-campaign-start', startPayload).then(response => {
-        if (response && response.success) {
-            addLog("✅ [Native Engine] Campaign started!", "success");
-        } else {
-            addLog(`❌ [Native Engine] Start failed`, "error");
+    // [v20.0 Chrome Runtime Transport] Dispatch START_CAMPAIGN directly to background service worker
+    addLog("[Engine] START_CAMPAIGN request sent", "info");
+    const sendTime = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+    addDiagnosticLog(`[Engine][TX] action=START_CAMPAIGN queue=${startPayload.queue.length} templateId=${startPayload.templateId} v=${startPayload.templateVersion}`);
+
+    function _restoreStartButton() {
+        campaignActive = false;
+        if (startBtn) {
+            startBtn.classList.remove('hidden');
+            startBtn.disabled = false;
+            startBtn.textContent = "🚀 START SENDING";
         }
-        return response;
-    }).catch(e => {
-        addLog(`❌ [Fatal Error] ${e.message}`, "error");
-        throw e;
+        const multiActions = document.getElementById('multi-actions');
+        if (multiActions) multiActions.classList.add('hidden');
+    }
+
+    return new Promise((resolve, reject) => {
+        if (typeof chrome === 'undefined' || !chrome.runtime || !chrome.runtime.sendMessage) {
+            const err = new Error("Chrome runtime messaging is not available");
+            _restoreStartButton();
+            addLog(`❌ [Fatal Error] ${err.message}`, "error");
+            return reject(err);
+        }
+
+        chrome.runtime.sendMessage({
+            action: 'START_CAMPAIGN',
+            queue: startPayload.queue,
+            template: startPayload.template,
+            delayMs: startPayload.delayMs,
+            fillDelayMs: startPayload.fillDelayMs,
+            submitDelayMs: startPayload.submitDelayMs,
+            fillMode: startPayload.fillMode,
+            templateId: startPayload.templateId,
+            templateVersion: startPayload.templateVersion
+        }, (response) => {
+            const ackTime = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+            const elapsedAckMs = Math.round(ackTime - sendTime);
+
+            if (chrome.runtime.lastError) {
+                const err = new Error(chrome.runtime.lastError.message || "Failed to contact background engine");
+                _restoreStartButton();
+                addDiagnosticLog(`[Engine][RX_FAIL][+${elapsedAckMs}ms] error=${err.message}`, "ERROR");
+                addLog(`❌ [Background Engine] Start failed: ${err.message}`, "error");
+                return reject(err);
+            }
+
+            if (!response || response.success === false) {
+                const errMsg = (response && response.error) || "Start rejected by background engine";
+                const err = new Error(errMsg);
+                _restoreStartButton();
+                addDiagnosticLog(`[Engine][RX_REJECT][+${elapsedAckMs}ms] error=${errMsg}`, "ERROR");
+                addLog(`❌ [Background Engine] Start failed: ${errMsg}`, "error");
+                return reject(err);
+            }
+
+            // SUCCESS ACK: Now transition UI state to active
+            campaignActive = true;
+            addDiagnosticLog(`[Engine][ACK][+${elapsedAckMs}ms] status=${response.status || 'acknowledged'}`);
+            addLog(`[Engine] ACK received in ${elapsedAckMs} ms`, "success");
+            addLog("✅ [Background Engine] Campaign started!", "success");
+
+            // Show active controls
+            const statusBox = document.getElementById('status-box');
+            if (statusBox) statusBox.classList.remove('hidden');
+            const multiActions = document.getElementById('multi-actions');
+            if (multiActions) multiActions.classList.remove('hidden');
+            if (startBtn) {
+                startBtn.classList.add('hidden');
+                startBtn.disabled = false;
+                startBtn.textContent = "🚀 START SENDING";
+            }
+            updateRealTimeStatus({ successCount: 0, remainingCount: campaignQueue.length });
+            updateProgress(0);
+
+            // Post-ACK GET_STATE verification
+            chrome.runtime.sendMessage({ action: 'GET_STATE' }, (stateResp) => {
+                if (stateResp && stateResp.success) {
+                    const qCount = stateResp.remainingCount !== undefined ? stateResp.remainingCount : campaignQueue.length;
+                    addLog(`[Engine] Background state: active=${stateResp.isActive}, queue=${qCount}`, "info");
+                    addDiagnosticLog(`[Engine][VERIFY] active=${stateResp.isActive} queue=${qCount}`);
+                }
+            });
+
+            resolve(response);
+        });
     });
 }
 
@@ -1739,14 +1766,13 @@ function togglePause() {
     campaignPaused = !campaignPaused;
     const btn = document.getElementById('pause-btn');
     const lang = document.getElementById('language-select')?.value || 'en';
-    const dict = i18nData[lang] || i18nData['en'] || {};
+    const dict = i18nData ? (i18nData[lang] || i18nData['en'] || {}) : {};
 
-    const action = campaignPaused ? 'xpider-campaign-pause' : 'xpider-campaign-resume';
-    xpiderInvoke(action, {}).catch(e => console.error('[Pause Error]', e));
-
-    // [v4.12.23] chrome.runtime.sendMessage를 통해 익스텐션 백그라운드 상태도 동기화
     const extAction = campaignPaused ? 'PAUSE_CAMPAIGN' : 'RESUME_CAMPAIGN';
-    chrome.runtime.sendMessage({ action: extAction }).catch(e => console.error('[Pause Ext Error]', e));
+    addDiagnosticLog(`[Engine][TX] action=${extAction}`);
+    if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
+        chrome.runtime.sendMessage({ action: extAction }).catch(e => console.error('[Pause Ext Error]', e));
+    }
 
     if (btn) {
         btn.textContent = campaignPaused ? (dict.btn_resume || "▶️ Resume") : (dict.btn_pause || "⏸️ Pause");
@@ -1759,7 +1785,10 @@ function stopCampaign() {
     campaignActive = false;
     document.getElementById('start-btn').classList.remove('hidden');
     document.getElementById('multi-actions').classList.add('hidden');
-    xpiderInvoke('xpider-campaign-stop', {}).catch(e => console.error('[Stop Error]', e));
+    addDiagnosticLog(`[Engine][TX] action=STOP_CAMPAIGN`);
+    if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
+        chrome.runtime.sendMessage({ action: 'STOP_CAMPAIGN' }).catch(e => console.error('[Stop Error]', e));
+    }
     addLog("Campaign stopped by user.", "stop");
 }
 
@@ -2701,12 +2730,9 @@ async function saveSettings() {
     };
     await chrome.storage.local.set(settings);
     
-    // [WitKey-Sync] 전역 IPC 키 동기화 호출
-    try {
-        await xpiderInvoke('xpider-ext-sync-wit-key', { key: settings.xpider_stt_api_key });
-        console.log("[WitKey-Sync] Sender save settings: Key successfully synced to global bridge");
-    } catch (err) {
-        console.error("[WitKey-Sync] Sender save settings sync failed:", err);
+    // [WitKey] Sync to background engine via UPDATE_WIT_KEY without dead native IPC
+    if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
+        chrome.runtime.sendMessage({ action: 'UPDATE_WIT_KEY', key: settings.xpider_stt_api_key }).catch(() => {});
     }
     
     const saveBtn = document.getElementById('save-settings-btn');
@@ -2751,13 +2777,6 @@ async function loadSettings() {
     if (document.getElementById('audio-stt-key')) {
         document.getElementById('audio-stt-key').value = data.xpider_stt_api_key || '';
     }
-    // [WitKey-Sync v3] 메인 프로세스에서 직접 키 읽기로 보정 (chrome.storage 격리 우회)
-    xpiderInvoke('xpider-ext-get-wit-key').then(res => {
-        const mainKey = (res && res.key) ? res.key : '';
-        if (mainKey && document.getElementById('audio-stt-key')) {
-            document.getElementById('audio-stt-key').value = mainKey;
-        }
-    }).catch(() => {});
     if (document.getElementById('stealth-mode-toggle')) {
         document.getElementById('stealth-mode-toggle').checked = (data.xpider_stealth_mode !== undefined) ? !!data.xpider_stealth_mode : true;
     }
@@ -3065,6 +3084,7 @@ if (typeof module !== 'undefined' && module.exports) {
         handleDuplicateTemplate,
         handleDeleteTemplate,
         handleSetDefaultTemplate,
+        saveTemplateChanges,
         populateFormFromTemplate,
         updateTemplateDropdown,
         loadTemplateFromLibrary,
@@ -3076,6 +3096,8 @@ if (typeof module !== 'undefined' && module.exports) {
         triggerCsvExport,
         bindCampaignTemplateMetadata,
         startCampaign,
+        togglePause,
+        stopCampaign,
         checkActiveSubmitLock,
         getPopupTemplateStore,
         getPopupHistoryStore,

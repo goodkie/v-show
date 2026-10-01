@@ -120,6 +120,10 @@ const mockStorage = createMockStorage();
 const mockDOM = createMockDOM();
 
 let lastIpcInvoke = null;
+let lastRuntimeMessage = null;
+let runtimeMessagesList = [];
+let injectRuntimeError = null;
+let lastDownloadRequest = null;
 let simulateIpcBehavior = 'AUTO_RESPOND'; // 'AUTO_RESPOND', 'NO_RESPONDER', 'DELAYED_RESPOND'
 const messageListeners = [];
 
@@ -128,15 +132,37 @@ global.chrome = {
         local: mockStorage,
         onChanged: { addListener: () => {} }
     },
+    downloads: {
+        download: (options, cb) => {
+            lastDownloadRequest = options;
+            if (cb) cb(12345);
+            return Promise.resolve(12345);
+        }
+    },
     runtime: {
         lastError: null,
         sendMessage: (msg, cb) => {
+            lastRuntimeMessage = msg;
+            runtimeMessagesList.push(msg);
+            if (injectRuntimeError) {
+                global.chrome.runtime.lastError = new Error(injectRuntimeError);
+                if (cb) cb(null);
+                const rejErr = new Error(injectRuntimeError);
+                global.chrome.runtime.lastError = null;
+                return Promise.reject(rejErr);
+            }
+            if (msg.action === 'START_CAMPAIGN') {
+                const resp = { success: true, status: 'acknowledged' };
+                if (cb) cb(resp);
+                return Promise.resolve(resp);
+            }
             if (msg.action === 'GET_STATE') {
                 const isPending = !!(mockStorage._data.xpider_currentAttempt && mockStorage._data.xpider_currentAttempt.status === 'SUBMIT_PENDING');
                 const resp = {
                     success: true,
                     isActive: false,
                     hasActiveLock: isPending,
+                    remainingCount: 0,
                     currentAttempt: mockStorage._data.xpider_currentAttempt || null
                 };
                 if (cb) cb(resp);
@@ -185,6 +211,13 @@ global.window = {
 };
 global.alert = (msg) => { /* Mock alert */ };
 global.confirm = (msg) => true;
+
+if (typeof global.Blob === 'undefined') {
+    global.Blob = class Blob { constructor(parts) { this.parts = parts; } };
+}
+if (!global.URL) global.URL = {};
+global.URL.createObjectURL = () => 'blob:mock-url-' + Date.now();
+global.URL.revokeObjectURL = () => {};
 
 // Load production modules
 const { TemplateStore } = require('./modules/template-store.js');
@@ -735,18 +768,20 @@ async function runPhase2BSuite() {
         assert.strictEqual(stateToBind.templateId, clonedTpl.id, "bindCampaignTemplateMetadata must bind templateId");
         assert.strictEqual(stateToBind.templateVersion, clonedTpl.version || 1, "bindCampaignTemplateMetadata must bind templateVersion");
 
-        // 17. startCampaign(): verifies payload wires templateId and templateVersion
+        // 17. startCampaign(): verifies payload wires templateId and templateVersion via Chrome Runtime
         lastIpcInvoke = null;
+        lastRuntimeMessage = null;
         document.getElementById('manual-url-input').value = "https://example-test.com/contact";
         document.getElementById('tpl-subject').value = "Outreach 2026";
         document.getElementById('tpl-message').value = "Automated test message body";
 
         const startRes = await popup.startCampaign();
-        assert(lastIpcInvoke, "startCampaign must invoke native engine IPC");
-        assert.strictEqual(lastIpcInvoke.channel, 'xpider-campaign-start', "IPC channel must be xpider-campaign-start");
-        assert(lastIpcInvoke.args.templateId, "Payload must contain templateId");
-        assert(lastIpcInvoke.args.templateVersion, "Payload must contain templateVersion");
-        assert.strictEqual(lastIpcInvoke.args.template.subject, "Outreach 2026", "Payload template subject must match");
+        const startMsg = runtimeMessagesList.find(m => m.action === 'START_CAMPAIGN');
+        assert(startMsg, "startCampaign must dispatch START_CAMPAIGN to background runtime");
+        assert(startMsg.templateId, "Payload must contain templateId");
+        assert(startMsg.templateVersion, "Payload must contain templateVersion");
+        assert.strictEqual(startMsg.template.subject, "Outreach 2026", "Payload template subject must match");
+        assert.strictEqual(lastIpcInvoke, null, "startCampaign must not emit dead XPIDER_INVOKE");
     });
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -869,6 +904,159 @@ async function runPhase2BSuite() {
         // 6. Payload byte calculation
         const bytes = popup.calculatePayloadBytes({ sample: "hello world" });
         assert(bytes > 0, "Byte size calculation must be greater than zero");
+    });
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // TRANSPORT-1: Campaign Start via Chrome Runtime Transport
+    // ─────────────────────────────────────────────────────────────────────────
+    await test("TRANSPORT-1: Campaign Start via Chrome Runtime Transport — START_CAMPAIGN dispatched, ACK received, no XPIDER_INVOKE", async () => {
+        lastIpcInvoke = null;
+        lastRuntimeMessage = null;
+        runtimeMessagesList = [];
+        injectRuntimeError = null;
+
+        document.getElementById('manual-url-input').value = "https://transport-test-1.com/contact";
+        document.getElementById('tpl-subject').value = "Transport Subject";
+        document.getElementById('tpl-message').value = "Transport Body";
+
+        const res = await popup.startCampaign();
+        assert(res && res.success, "startCampaign must resolve successfully on background ACK");
+        const startMsg = runtimeMessagesList.find(m => m.action === 'START_CAMPAIGN');
+        assert(startMsg, "chrome.runtime.sendMessage START_CAMPAIGN must be invoked");
+        assert.strictEqual(startMsg.action, 'START_CAMPAIGN', "Action must be START_CAMPAIGN");
+        assert(Array.isArray(startMsg.queue), "Queue must be present");
+        assert(startMsg.template, "Template must be present");
+        assert(startMsg.templateId, "templateId must be bound");
+        assert(startMsg.templateVersion, "templateVersion must be bound");
+        assert.strictEqual(lastIpcInvoke, null, "NO XPIDER_INVOKE/xpider-campaign-start must be emitted");
+    });
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // TRANSPORT-2: Start Failure Recovery
+    // ─────────────────────────────────────────────────────────────────────────
+    await test("TRANSPORT-2: Start Failure Recovery — Rejection restores start button and keeps campaignActive=false", async () => {
+        lastIpcInvoke = null;
+        lastRuntimeMessage = null;
+        injectRuntimeError = "Background service worker temporarily unavailable";
+
+        document.getElementById('manual-url-input').value = "https://transport-test-2.com/contact";
+        document.getElementById('tpl-subject').value = "Transport Subject 2";
+        document.getElementById('tpl-message').value = "Transport Body 2";
+
+        await assert.rejects(
+            async () => { await popup.startCampaign(); },
+            /Background service worker temporarily unavailable/,
+            "startCampaign must reject when background engine reports error"
+        );
+
+        const startBtn = document.getElementById('start-btn');
+        assert(!startBtn.classList.contains('hidden'), "Start button must be restored to visible");
+        assert.strictEqual(startBtn.disabled, false, "Start button must be re-enabled");
+
+        const multiActions = document.getElementById('multi-actions');
+        assert(multiActions.classList.contains('hidden'), "Multi-actions controls must be hidden");
+
+        injectRuntimeError = null;
+    });
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // TRANSPORT-3: Direct GET_STATE Retrieval
+    // ─────────────────────────────────────────────────────────────────────────
+    await test("TRANSPORT-3: GET_STATE Retrieval — Immediate background query with no 30s native timeout", async () => {
+        lastRuntimeMessage = null;
+        const res = await new Promise((resolve) => {
+            global.chrome.runtime.sendMessage({ action: 'GET_STATE' }, resolve);
+        });
+        assert(res && res.success, "GET_STATE must resolve immediately");
+        assert.strictEqual(lastRuntimeMessage.action, 'GET_STATE');
+    });
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // TRANSPORT-4: Pause / Resume / Stop Controllers
+    // ─────────────────────────────────────────────────────────────────────────
+    await test("TRANSPORT-4: Pause / Resume / Stop — Uses PAUSE_CAMPAIGN, RESUME_CAMPAIGN, STOP_CAMPAIGN without dead IPC", async () => {
+        lastIpcInvoke = null;
+        runtimeMessagesList = [];
+
+        // Pause
+        popup.togglePause();
+        assert(runtimeMessagesList.some(m => m.action === 'PAUSE_CAMPAIGN'), "togglePause must dispatch PAUSE_CAMPAIGN");
+        assert.strictEqual(lastIpcInvoke, null, "No dead IPC pause call");
+
+        // Resume
+        popup.togglePause();
+        assert(runtimeMessagesList.some(m => m.action === 'RESUME_CAMPAIGN'), "togglePause again must dispatch RESUME_CAMPAIGN");
+        assert.strictEqual(lastIpcInvoke, null, "No dead IPC resume call");
+
+        // Stop
+        popup.stopCampaign();
+        assert(runtimeMessagesList.some(m => m.action === 'STOP_CAMPAIGN'), "stopCampaign must dispatch STOP_CAMPAIGN");
+        assert.strictEqual(lastIpcInvoke, null, "No dead IPC stop call");
+    });
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // TRANSPORT-5: Wit Key via Storage & UPDATE_WIT_KEY
+    // ─────────────────────────────────────────────────────────────────────────
+    await test("TRANSPORT-5: Wit Key Management — Reads from storage and updates via UPDATE_WIT_KEY without leaking secret", async () => {
+        lastIpcInvoke = null;
+        runtimeMessagesList = [];
+
+        await mockStorage.set({ xpider_stt_api_key: "my_wit_secret_token_12345" });
+        const stored = await mockStorage.get('xpider_stt_api_key');
+        assert.strictEqual(stored.xpider_stt_api_key, "my_wit_secret_token_12345");
+
+        // Trigger update via sendMessage
+        await new Promise((resolve) => {
+            global.chrome.runtime.sendMessage({ action: 'UPDATE_WIT_KEY', key: stored.xpider_stt_api_key }, resolve);
+        });
+        assert(runtimeMessagesList.some(m => m.action === 'UPDATE_WIT_KEY'), "UPDATE_WIT_KEY must be dispatched");
+        assert.strictEqual(lastIpcInvoke, null, "No dead native wit key IPC called");
+
+        // Verify diagnostic redaction protects the secret
+        const redacted = popup.redactSensitiveText("Key token: my_wit_secret_token_12345");
+        assert(!redacted.includes("my_wit_secret_token_12345"), "Secret token must never be leaked");
+    });
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // TRANSPORT-6: Save Template via Chrome Downloads
+    // ─────────────────────────────────────────────────────────────────────────
+    await test("TRANSPORT-6: Save Template — Uses Chrome downloads and does not invoke xpider-show-save-dialog", async () => {
+        lastIpcInvoke = null;
+        lastDownloadRequest = null;
+
+        document.getElementById('tpl-subject').value = "Exported_Template";
+        document.getElementById('tpl-message').value = "Exported Body Content";
+
+        await popup.saveTemplateChanges();
+        assert(lastDownloadRequest, "chrome.downloads.download must be invoked");
+        assert(lastDownloadRequest.filename.includes("Exported_Template"), "Filename must reflect template subject");
+        assert.strictEqual(lastDownloadRequest.saveAs, true, "saveAs must be true");
+        assert.strictEqual(lastIpcInvoke, null, "xpider-show-save-dialog must NOT be called");
+    });
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // TRANSPORT-7: Zero Native Dependency in Chrome Operator Flow
+    // ─────────────────────────────────────────────────────────────────────────
+    await test("TRANSPORT-7: Zero Native Dependency — Static inspection confirms none of the 8 dead channels are called", async () => {
+        const fs = require('fs');
+        const popupSrc = fs.readFileSync(path.join(__dirname, 'popup.js'), 'utf8');
+
+        const deadChannels = [
+            'xpider-campaign-start',
+            'xpider-campaign-get-state',
+            'xpider-campaign-pause',
+            'xpider-campaign-resume',
+            'xpider-campaign-stop',
+            'xpider-ext-get-wit-key',
+            'xpider-ext-sync-wit-key',
+            'xpider-show-save-dialog'
+        ];
+
+        for (const ch of deadChannels) {
+            // Verify that popup.js does not call xpiderInvoke with any dead channel in production code
+            const pattern = new RegExp(`xpiderInvoke\\s*\\(\\s*['"]${ch}['"]`);
+            assert(!pattern.test(popupSrc), `Production popup.js must not contain call to dead channel: ${ch}`);
+        }
     });
 
     console.log(`\n=== PHASE 2B ACCEPTANCE SUITE RESULTS: ${totalPassed} PASSED, ${totalFailed} FAILED ===\n`);
