@@ -1203,8 +1203,14 @@ function bindEvents() {
         });
     }
 
+    const ledgerExportAllGSheetsBtn = document.getElementById('ledger-export-all-gsheets-btn');
+    if (ledgerExportAllGSheetsBtn) ledgerExportAllGSheetsBtn.addEventListener('click', () => triggerGoogleSheetsCsvExport({ exportCurrentFilter: false }));
+
+    const ledgerExportFilterGSheetsBtn = document.getElementById('ledger-export-filter-gsheets-btn');
+    if (ledgerExportFilterGSheetsBtn) ledgerExportFilterGSheetsBtn.addEventListener('click', () => triggerGoogleSheetsCsvExport({ exportCurrentFilter: true }));
+
     const ledgerExportBtn = document.getElementById('ledger-export-csv-btn');
-    if (ledgerExportBtn) ledgerExportBtn.addEventListener('click', () => triggerCsvExport());
+    if (ledgerExportBtn) ledgerExportBtn.addEventListener('click', () => triggerGoogleSheetsCsvExport({ exportCurrentFilter: false }));
 
     const ledgerResetSelBtn = document.getElementById('ledger-reset-selected-btn');
     if (ledgerResetSelBtn) {
@@ -2519,19 +2525,31 @@ async function renderLedgerUI() {
             
             let badgeClass = 'status-ready';
             let badgeLabel = rec.status;
-            if (rec.status === 'CONFIRMED_SUCCESS') {
+            if (rec.status === 'CONFIRMED_SUCCESS' || rec.status === 'SUCCESS') {
                 badgeClass = 'status-success';
                 badgeLabel = 'SUCCESS';
             } else if (rec.isSuppressed) {
                 badgeClass = 'status-suppressed';
                 badgeLabel = 'SUPPRESSED';
-            } else if (rec.status === 'DELIVERY_UNKNOWN') {
+            } else if (rec.status === 'DELIVERY_UNKNOWN' || rec.status === 'UNKNOWN') {
                 badgeClass = 'status-unknown';
                 badgeLabel = 'UNKNOWN';
-            } else if (rec.status === 'FAILURE') {
+            } else if (rec.status === 'FAILURE' || rec.status === 'FAILED') {
                 badgeClass = 'status-failed';
                 badgeLabel = 'FAILED';
-            } else if (rec.status === 'INVALID_INPUT') {
+            } else if (rec.status === 'PREPARING') {
+                badgeClass = 'status-ready';
+                badgeLabel = 'PREPARING';
+            } else if (rec.status === 'SUBMIT_PENDING') {
+                badgeClass = 'status-ready';
+                badgeLabel = 'PENDING';
+            } else if (rec.status === 'SKIPPED') {
+                badgeClass = 'status-suppressed';
+                badgeLabel = 'SKIPPED';
+            } else if (rec.status === 'INTERRUPTED') {
+                badgeClass = 'status-unknown';
+                badgeLabel = 'INTERRUPTED';
+            } else if (rec.status === 'INVALID_INPUT' || rec.status === 'INVALID') {
                 badgeClass = 'status-invalid';
                 badgeLabel = 'INVALID';
             }
@@ -2539,13 +2557,38 @@ async function renderLedgerUI() {
             const timeStr = rec.timestamp ? new Date(rec.timestamp).toLocaleTimeString() : '';
             const checked = ledgerState.selectedTargets.has(rec.targetIdentity) ? 'checked' : '';
 
+            // Section J: Format shortened display for Source and Contact URLs
+            const sourceUrl = rec.sourceUrl || rec.rawUrl || rec.targetIdentity || '';
+            const contactUrl = rec.contactPageUrl || '';
+
+            const formatShortUrl = (urlStr) => {
+                if (!urlStr) return '-';
+                try {
+                    const u = new URL(urlStr);
+                    let display = u.hostname + (u.pathname !== '/' ? u.pathname : '');
+                    if (display.length > 34) display = display.substring(0, 31) + '...';
+                    return display;
+                } catch (_) {
+                    return urlStr.length > 34 ? urlStr.substring(0, 31) + '...' : urlStr;
+                }
+            };
+
+            const sourceDisplay = formatShortUrl(sourceUrl);
+            const contactDisplay = contactUrl ? formatShortUrl(contactUrl) : '(direct/pending)';
+            const contactHref = contactUrl || sourceUrl;
+
             card.innerHTML = `
                 <div class="ledger-item-top">
                     <div class="ledger-item-left">
                         <input type="checkbox" class="ledger-item-cb" data-target="${rec.targetIdentity || ''}" ${checked}>
-                        <span class="ledger-item-domain" title="${rec.rawUrl || rec.targetIdentity}">${rec.targetIdentity || rec.rawUrl}</span>
+                        <a href="${sourceUrl}" target="_blank" rel="noopener noreferrer" class="ledger-item-domain ledger-link" style="color: #60a5fa; text-decoration: underline;" title="${sourceUrl}">🌐 ${sourceDisplay}</a>
                     </div>
                     <span class="status-badge ${badgeClass}">${badgeLabel}</span>
+                </div>
+                <div class="ledger-item-sublinks" style="display: flex; gap: 8px; font-size: 11px; margin: 3px 0 3px 22px;">
+                    <span style="color: #94a3b8;">Contact:</span>
+                    <a href="${contactHref}" target="_blank" rel="noopener noreferrer" class="ledger-contact-link" style="color: #38bdf8; text-decoration: underline;" title="${contactUrl || sourceUrl}">📍 ${contactDisplay}</a>
+                    ${rec.emailsFound ? `<span style="color: #4ade80;">📧 ${rec.emailsFound} emails</span>` : ''}
                 </div>
                 <div class="ledger-item-meta">
                     <span class="ledger-item-row-idx">Row #${rec.sourceRowId} · Gen ${rec.generationId || 1}</span>
@@ -2725,6 +2768,54 @@ async function dispatchGlobalReset(activeSubmitCount = 0) {
     await renderLedgerUI();
     addLog(`🔄 Global campaign reset applied. Generation: ${result.newGeneration}`, 'success');
     return result;
+}
+
+/**
+ * [Section K] Trigger Google Sheets RFC-4180 CSV export download
+ */
+async function triggerGoogleSheetsCsvExport({ exportCurrentFilter = false } = {}) {
+    const hs = getPopupHistoryStore();
+    let csv = '';
+    let exportRecords = null;
+
+    if (exportCurrentFilter && hs) {
+        await hs.load();
+        const fullFiltered = hs.getFilteredRecords({
+            status: ledgerState.filter,
+            search: ledgerState.search,
+            limit: 100000,
+            offset: 0
+        });
+        exportRecords = fullFiltered.records;
+    }
+
+    if (hs && typeof hs.exportGoogleSheetsCsv === 'function') {
+        await hs.load();
+        csv = hs.exportGoogleSheetsCsv({ records: exportRecords });
+    } else {
+        csv = await new Promise((resolve, reject) => {
+            chrome.runtime.sendMessage({ action: 'EXPORT_GSHEETS_CSV', options: { records: exportRecords } }, (res) => {
+                if (res && res.success && res.csv) resolve(res.csv);
+                else reject(new Error(res?.error || 'Failed to generate Google Sheets CSV'));
+            });
+        });
+    }
+
+    if (typeof Blob !== 'undefined' && typeof URL !== 'undefined' && typeof document !== 'undefined') {
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const mode = exportCurrentFilter ? `filter_${ledgerState.filter.toLowerCase()}` : 'all';
+        a.download = `xpider_google_sheets_${mode}_${Date.now()}.csv`;
+        if (typeof a.click === 'function') {
+            a.click();
+        }
+        URL.revokeObjectURL(url);
+        addLog(`📊 Google Sheets CSV (${exportCurrentFilter ? 'Filtered' : 'All'}) exported successfully.`, "success");
+    }
+
+    return csv;
 }
 
 /**

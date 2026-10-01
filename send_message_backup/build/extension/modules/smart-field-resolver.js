@@ -65,6 +65,7 @@
         constructor() {
             this.cache = new Map();
             this.attemptCounts = new Map();
+            this.groupChoices = new Map();
         }
 
         getCacheKey(fieldContext, pageContext = {}) {
@@ -100,6 +101,21 @@
                 (fieldContext.ariaLabel || '') + ' ' + 
                 (fieldContext.legend || '')
             ).toLowerCase();
+
+            // ============================================================
+            // Section E: Honeypot Protection (Never touch hidden/trap fields)
+            // ============================================================
+            const isHoneypot = fieldContext.isHoneypot ||
+                fieldContext.tabIndex === -1 ||
+                (fieldContext.style && (fieldContext.style.display === 'none' || fieldContext.style.visibility === 'hidden' || fieldContext.style.opacity === '0')) ||
+                /\bhoneypot\b|\btrap\b|\bwebsite_url\b|\bbottom_field\b|leave.*blank|do not fill|leave unchanged/i.test(ctxText);
+
+            if (isHoneypot) {
+                const honeypotRes = { action: 'skip', reason: 'HONEYPOT_UNTOUCHED', confidence: 1.0, source: 'safety', fieldCategory: 'honeypot' };
+                this.cache.set(cacheKey, honeypotRes);
+                this.logDecision(fieldContext, honeypotRes);
+                return honeypotRes;
+            }
 
             // ============================================================
             // Tier 1: Exact Template-Backed Mapping
@@ -314,14 +330,20 @@
             });
 
             if (nonNegativeOptions.length > 0) {
-                // Select first safe option
-                const firstSafe = nonNegativeOptions[0];
+                // Section E: Safe random choice for ordinary dropdowns, stable per form session
+                const optKey = fieldContext.signature || fieldContext.id || fieldContext.name || 'dropdown';
+                let chosen = this.groupChoices.get(optKey);
+                if (!chosen || !nonNegativeOptions.some(o => (o.value !== undefined ? o.value : o.text) === (chosen.value !== undefined ? chosen.value : chosen.text))) {
+                    const randIdx = Math.floor(Math.random() * nonNegativeOptions.length);
+                    chosen = nonNegativeOptions[randIdx];
+                    this.groupChoices.set(optKey, chosen);
+                }
                 return {
                     action: 'select',
-                    value: firstSafe.value !== undefined ? firstSafe.value : firstSafe.text,
-                    label: firstSafe.text || firstSafe.label,
+                    value: chosen.value !== undefined ? chosen.value : chosen.text,
+                    label: chosen.text || chosen.label,
                     confidence: 0.85,
-                    source: 'semantic',
+                    source: 'random_safe_choice',
                     fieldCategory: 'general_dropdown',
                     optionCategory: 'safe_fallback'
                 };
@@ -336,7 +358,7 @@
         resolveCheckbox(fieldContext, ctxText) {
             const isRequired = !!fieldContext.required;
 
-            // 1. Check for Marketing / SMS / Promotions
+            // 1. Check for Marketing / SMS / Promotions (Never auto-consent)
             const isMarketing = MARKETING_CHECKBOX_KEYWORDS.some(k => ctxText.includes(k));
             if (isMarketing) {
                 if (isRequired) {
@@ -360,7 +382,7 @@
                 };
             }
 
-            // 2. Privacy Policy / Terms / Accuracy acknowledgment
+            // 2. Privacy Policy / Terms / Accuracy acknowledgment (Auto-check visible required)
             const isPrivacyOrTerms = PRIVACY_CHECKBOX_KEYWORDS.some(k => ctxText.includes(k));
             const isContactConsent = CONTACT_CONSENT_KEYWORDS.some(k => ctxText.includes(k));
 
@@ -372,6 +394,30 @@
                     confidence: 0.96,
                     source: 'semantic',
                     fieldCategory: isPrivacyOrTerms ? 'privacy_ack' : 'contact_consent'
+                };
+            }
+
+            // 3. Section E: Checkbox inquiry-choice groups (e.g. "I'm interested in...", program/service of interest)
+            const isInquiryChoiceGroup = fieldContext.isChoiceGroup ||
+                /interested in|interest|program|service|course|class|topic|category|관심|프로그램|서비스|분야/i.test(ctxText);
+
+            if (isInquiryChoiceGroup && !isMarketing) {
+                const groupKey = fieldContext.groupName || fieldContext.name || 'inquiry_choice_group';
+                let selectedChoice = this.groupChoices.get(groupKey);
+                const optIdentifier = fieldContext.value || fieldContext.id || fieldContext.label || 'opt_1';
+
+                if (!selectedChoice) {
+                    selectedChoice = optIdentifier;
+                    this.groupChoices.set(groupKey, selectedChoice);
+                }
+
+                const isSelected = (selectedChoice === optIdentifier);
+                return {
+                    action: isSelected ? 'check' : 'skip',
+                    checked: isSelected,
+                    confidence: 0.90,
+                    source: 'random_safe_choice',
+                    fieldCategory: 'inquiry_choice_group'
                 };
             }
 

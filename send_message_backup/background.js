@@ -759,6 +759,23 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     sendResponse({ success: false, error: err.message });
                 }
             });
+            return true;
+
+        case 'EXPORT_GSHEETS_CSV':
+            // [Section K Google Sheets RFC-4180 CSV Export]
+            bgOperationQueue.enqueue(async () => {
+                try {
+                    if (!self.__xpiderHistoryStore) {
+                        self.__xpiderHistoryStore = new self.HistoryStore(chrome.storage.local);
+                        await self.__xpiderHistoryStore.load();
+                    }
+                    const csvContent = self.__xpiderHistoryStore.exportGoogleSheetsCsv(request.options || {});
+                    sendResponse({ success: true, csv: csvContent });
+                } catch (err) {
+                    sendResponse({ success: false, error: err.message });
+                }
+            });
+            return true;
         case 'EMAIL_COLLECT_FOUND':
             // [Issue #6 Email Collector Integration] Non-blocking email accumulation
             (async () => {
@@ -1664,7 +1681,11 @@ async function orchestrateSending(urlInput, template) {
                 // Settle with proper DELIVERY_UNKNOWN vs FAILURE distinction
                 const settleSuccess = isSuccess;
                 const settleReason = isDeliveryUnknown ? REASON_CODES.DELIVERY_UNKNOWN : finalReason;
-                await hs.settleAttempt(_attemptId, settleSuccess, settleReason);
+                await hs.settleAttempt(_attemptId, settleSuccess, settleReason, {
+                    contactPageUrl: currentAttemptUrl || targetUrl,
+                    formPageUrl: currentAttemptUrl || targetUrl,
+                    emailsFound: (res && res.emailsFound !== undefined) ? res.emailsFound : 0
+                });
             }
             await hs.persist();
         } catch (hsErr) {
@@ -1846,7 +1867,17 @@ async function orchestrateSending(urlInput, template) {
 
         lastActivity = Date.now();
         isFocusSecured = false;
-        currentAttemptUrl = fullUrl; 
+        currentAttemptUrl = fullUrl;
+
+        // [Section J] Update attempt contact page as soon as selected even while PREPARING
+        if (_attemptId && self.__xpiderHistoryStore && typeof self.__xpiderHistoryStore.updateAttemptContact === 'function') {
+            self.__xpiderHistoryStore.updateAttemptContact(_attemptId, {
+                contactPageUrl: fullUrl,
+                formPageUrl: fullUrl,
+                contactDiscoverySource: (candidateSourceMap && candidateSourceMap[nextP]) ? candidateSourceMap[nextP] : 'Ensemble'
+            });
+            self.__xpiderHistoryStore.persist().catch(() => {});
+        } 
         logBg(tabId, `Connecting to [${fullUrl}]...`, "visit");
         safeTabs.update(tabId, { url: fullUrl });
     };

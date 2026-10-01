@@ -247,13 +247,17 @@
                     </div>
                 </div>
 
-                <!-- Ledger Filter Chips -->
+                <!-- Ledger Filter Chips (Section K) -->
                 <div class="ledger-filter-chips">
                     <button class="ledger-chip active" data-filter="ALL">ALL</button>
+                    <button class="ledger-chip" data-filter="PREPARING">PREPARING</button>
+                    <button class="ledger-chip" data-filter="SUBMIT_PENDING">PENDING</button>
                     <button class="ledger-chip" data-filter="SUCCESS">SUCCESS</button>
-                    <button class="ledger-chip" data-filter="SUPPRESSED">SUPPRESSED</button>
-                    <button class="ledger-chip" data-filter="DELIVERY_UNKNOWN">UNKNOWN</button>
                     <button class="ledger-chip" data-filter="FAILED">FAILED</button>
+                    <button class="ledger-chip" data-filter="DELIVERY_UNKNOWN">UNKNOWN</button>
+                    <button class="ledger-chip" data-filter="SKIPPED">SKIPPED</button>
+                    <button class="ledger-chip" data-filter="INTERRUPTED">INTERRUPTED</button>
+                    <button class="ledger-chip" data-filter="SUPPRESSED">SUPPRESSED</button>
                     <button class="ledger-chip" data-filter="INVALID">INVALID</button>
                 </div>
 
@@ -261,7 +265,9 @@
                 <div class="ledger-toolbar">
                     <input type="text" id="ledger-search-input" class="premium-input-small" placeholder="Search domain, URL, or reason...">
                     <div class="ledger-action-buttons">
-                        <button id="ledger-export-csv-btn" class="toolbar-btn glow-teal" title="Download RFC-4180 audit log">📊 Export CSV</button>
+                        <button id="ledger-export-all-gsheets-btn" class="toolbar-btn glow-teal" title="Export All Targets as Google Sheets RFC-4180 CSV">📊 Export All (Sheets CSV)</button>
+                        <button id="ledger-export-filter-gsheets-btn" class="toolbar-btn glow-teal" title="Export Current Filtered Targets as Google Sheets RFC-4180 CSV">📑 Export Filter (Sheets CSV)</button>
+                        <button id="ledger-export-csv-btn" class="toolbar-btn glow-teal" style="display: none;" title="Download CSV">Export CSV</button>
                         <button id="ledger-reset-selected-btn" class="toolbar-btn glow-purple" title="Release suppression for checked targets">🎯 Reset Selected</button>
                         <button id="ledger-retry-failed-btn" class="toolbar-btn glow-orange" title="Add failed targets back to execution queue">⚡ Retry Failed</button>
                         <button id="ledger-reset-all-btn" class="toolbar-btn glow-red" title="Advance generation and reset all suppression">🔄 Reset All</button>

@@ -723,8 +723,9 @@
             logDev(`⏳ [Engine] Holding for visual confirmation (${speed.hold}ms)...`, "info");
             await new Promise(r => setTimeout(r, speed.hold));
             
-            // [Reliability R1] MANDATORY: Stop stabilizer BEFORE validation and submit!
+            // [Section B] FREEZE_VALUES: Stop sweeper, snapshot field values
             stopActiveEmptyFieldSweeper();
+            const frozenSnapshot = freezeFieldValues(form, template);
 
             logDev("📤 [Action] Triggering submission sequence...");
             logDev("[SUBMIT] triggered=true", "info");
@@ -739,7 +740,7 @@
             sessionStorage.setItem('xpider_initial_form_present', 'true');
             sessionStorage.setItem('xpider_pending_verify', 'true'); // [v17.6.0]
 
-            const submitOutcome = await executeSubmitStateMachine(form, template);
+            const submitOutcome = await executeSubmitStateMachine(form, template, { expectedSnapshot: frozenSnapshot });
             if (!submitOutcome.success) {
                 logDev(`❌ [Submit] Submission blocked: ${submitOutcome.reasonCode}`, "error");
                 finishCampaign(false, submitOutcome.reasonCode, submitOutcome.reasonCode);
@@ -2795,7 +2796,115 @@
     }
 
     // ============================================================
-    // [Reliability R1] Deterministic SubmitStateMachine
+    // [Section B] Field Integrity Before Submit (Freeze & Verify)
+    // ============================================================
+    function freezeFieldValues(form, tpl = {}) {
+        stopActiveEmptyFieldSweeper();
+        const snapshot = new Map();
+        if (!form) return snapshot;
+
+        const fields = queryAllInputs(form);
+        for (const el of fields) {
+            const val = el.contentEditable === 'true' ? (el.textContent || '') : (el.value || '');
+            const checked = !!el.checked;
+            const isReq = !!(el.required || el.getAttribute('aria-required') === 'true');
+            const sig = el.id || el.name || el.getAttribute('data-testid') || (el.tagName + '_' + (el.type || 'text'));
+            snapshot.set(el, {
+                sig,
+                value: val,
+                checked,
+                isRequired: isReq,
+                tagName: el.tagName,
+                type: (el.type || '').toLowerCase(),
+                name: el.name || '',
+                id: el.id || ''
+            });
+        }
+        return snapshot;
+    }
+
+    function getAuthoritativeValue(el, expected, tpl = {}) {
+        const tp = (expected.type || el.type || '').toLowerCase();
+        const nm = (expected.name || el.name || '').toLowerCase();
+        const isMsg = (el.tagName === 'TEXTAREA' || el.contentEditable === 'true' || (el.getAttribute && el.getAttribute('role') === 'textbox') || nm.includes('message') || nm.includes('comment') || nm.includes('content'));
+        const isEmail = (tp === 'email' || nm.includes('email') || nm.includes('mail'));
+        const isPhone = (tp === 'tel' || nm.includes('phone') || nm.includes('tel') || nm.includes('mobile'));
+        const isSubj = (nm.includes('subject') || nm.includes('topic') || nm.includes('title'));
+        const isName = (nm.includes('name') || nm.includes('author'));
+
+        if (isMsg && tpl.message) return tpl.message;
+        if (isEmail && tpl.email) return tpl.email;
+        if (isPhone && tpl.phone) return tpl.phone;
+        if (isSubj && tpl.subject) return tpl.subject;
+        if (isName && tpl.name) return tpl.name;
+        if (expected.name && tpl[expected.name]) return tpl[expected.name];
+        if (expected.id && tpl[expected.id]) return tpl[expected.id];
+        return null;
+    }
+
+    function verifyFieldIntegrity(form, snapshot, tpl = {}) {
+        if (!snapshot || snapshot.size === 0) return { intact: true };
+        let repairedCount = 0;
+
+        for (const [origEl, expected] of snapshot.entries()) {
+            let currentEl = origEl;
+
+            // 1. Check if node was unmounted / replaced in DOM (FIELD_NODE_REPLACED)
+            if (currentEl.isConnected === false) {
+                const selector = expected.id ? `#${expected.id}` : (expected.name ? `[name="${expected.name}"]` : null);
+                const replacement = selector && form.querySelector ? form.querySelector(selector) : null;
+                if (replacement) {
+                    logDev(`🛡️ [Integrity] FIELD_NODE_REPLACED: Updated reference for <${expected.tagName} name="${expected.name}">`, "info");
+                    currentEl = replacement;
+                } else {
+                    return { intact: false, reasonCode: 'FIELD_NODE_REPLACED', element: origEl };
+                }
+            }
+
+            const currentVal = currentEl.contentEditable === 'true' ? (currentEl.textContent || '') : (currentEl.value || '');
+
+            // 2. Check if a previously filled field was cleared or lost
+            if (expected.value && expected.value.trim() !== '' && (!currentVal || currentVal.trim() === '')) {
+                const lossReason = expected.isRequired ? 'REQUIRED_FIELD_LOST_BEFORE_SUBMIT' : 'FIELD_CLEARED_BEFORE_SUBMIT';
+                logDev(`🛡️ [Integrity] ${lossReason} detected on <${currentEl.tagName} name="${expected.name}">. Applying targeted same-value repair...`, "warning");
+
+                const authorVal = getAuthoritativeValue(currentEl, expected, tpl);
+                if (authorVal) {
+                    if (currentEl.contentEditable === 'true') {
+                        currentEl.textContent = authorVal;
+                    } else {
+                        setNativeValue(currentEl, authorVal);
+                        currentEl.value = authorVal;
+                    }
+                    currentEl.dispatchEvent(new Event('input', { bubbles: true }));
+                    currentEl.dispatchEvent(new Event('change', { bubbles: true }));
+                    repairedCount++;
+
+                    const verifyVal = currentEl.contentEditable === 'true' ? (currentEl.textContent || '') : (currentEl.value || '');
+                    if (!verifyVal || verifyVal.trim() === '') {
+                        return { intact: false, reasonCode: 'FIELD_REPAIR_FAILED', element: currentEl };
+                    }
+                } else {
+                    return { intact: false, reasonCode: lossReason, element: currentEl };
+                }
+            }
+
+            // 3. Check checkbox state revert
+            if (currentEl.type === 'checkbox' && expected.checked && !currentEl.checked) {
+                logDev(`🛡️ [Integrity] FIELD_STATE_REVERTED: Checkbox reverted before submit: ${expected.name}`, "warning");
+                setNativeChecked(currentEl, true);
+                currentEl.checked = true;
+                currentEl.dispatchEvent(new Event('input', { bubbles: true }));
+                currentEl.dispatchEvent(new Event('change', { bubbles: true }));
+                repairedCount++;
+            }
+        }
+
+        return { intact: true, repairedCount };
+    }
+
+    // ============================================================
+    // [Section C] Submit Reliability R2: Deterministic SubmitStateMachine
     // ============================================================
     async function executeSubmitStateMachine(form, tpl = {}, options = {}) {
         // 1. Mandatory: Stop any active field stabilizer
@@ -2811,13 +2920,30 @@
             stopActiveEmptyFieldSweeper();
         }
 
-        // 2. Wait 250-500ms for framework state to settle
+        // 2. Commit and blur active input
+        if (typeof document !== 'undefined' && document.activeElement && typeof document.activeElement.blur === 'function') {
+            try { document.activeElement.blur(); } catch(_) {}
+        }
+
+        // 3. Wait 300-500ms for framework state to settle
         const settleDelay = (options && options.settleDelayMs !== undefined) ? options.settleDelayMs : ((tpl && tpl.settleDelayMs !== undefined) ? tpl.settleDelayMs : 350);
         if (settleDelay > 0) {
             await new Promise(r => setTimeout(r, settleDelay));
         }
 
-        // 3. Pre-submit validity check (when form is HTMLFormElement)
+        // 4. Pre-submit field integrity verification if snapshot was provided
+        if (options && options.expectedSnapshot) {
+            const integrity = verifyFieldIntegrity(form, options.expectedSnapshot, tpl);
+            if (!integrity.intact) {
+                logDev(`❌ [SubmitStateMachine] Field integrity failed before submit: ${integrity.reasonCode}`, "error");
+                return {
+                    success: false,
+                    reasonCode: integrity.reasonCode
+                };
+            }
+        }
+
+        // 5. Pre-submit validity check (when form is HTMLFormElement)
         if (form && typeof form.checkValidity === 'function') {
             let isValid = false;
             try {
@@ -2827,36 +2953,34 @@
             }
 
             if (!isValid) {
-                logDev("⚠️ [SubmitStateMachine] form.checkValidity() reported invalid fields. Running single bounded self-heal pass...", "warning");
+                logDev("⚠️ [SubmitStateMachine] form.checkValidity() reported invalid fields. Running single targeted repair...", "warning");
                 
-                // One bounded self-heal pass
                 const invalidInputs = form.querySelectorAll ? form.querySelectorAll(':invalid') : [];
                 for (const inp of Array.from(invalidInputs)) {
                     try {
                         if (inp.type === 'checkbox') {
-                            setNativeChecked(inp, true);
-                            inp.checked = true;
-                            inp.dispatchEvent(new Event('input', { bubbles: true }));
-                            inp.dispatchEvent(new Event('change', { bubbles: true }));
-                            inp.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+                            const ctx = ((inp.name || '') + ' ' + (inp.id || '') + ' ' + (inp.getAttribute('aria-label') || '')).toLowerCase();
+                            // Only auto-check terms/privacy, never marketing
+                            if (!/newsletter|marketing|sms|promo|subscribe/i.test(ctx)) {
+                                setNativeChecked(inp, true);
+                                inp.checked = true;
+                                inp.dispatchEvent(new Event('input', { bubbles: true }));
+                                inp.dispatchEvent(new Event('change', { bubbles: true }));
+                            }
                         } else if (inp.tagName === 'SELECT' && inp.options && inp.options.length > 1) {
-                            inp.selectedIndex = 1;
-                            setNativeValue(inp, inp.options[1].value);
-                            inp.dispatchEvent(new Event('change', { bubbles: true }));
+                            if (inp.selectedIndex <= 0) {
+                                inp.selectedIndex = 1;
+                                setNativeValue(inp, inp.options[1].value);
+                                inp.dispatchEvent(new Event('change', { bubbles: true }));
+                            }
                         } else if (!inp.value || inp.value.trim() === '') {
-                            const tp = (inp.type || '').toLowerCase();
-                            const nm = (inp.name || '').toLowerCase();
-                            const healVal = (tp === 'email' || nm.includes('email') || nm.includes('mail'))
-                                ? (tpl.email || 'contact@example.com')
-                                : (tp === 'tel' || nm.includes('phone') || nm.includes('tel'))
-                                ? (tpl.phone || '(555) 234-5678')
-                                : (inp.tagName === 'TEXTAREA' || inp.getAttribute('role') === 'textbox')
-                                ? (tpl.message || 'General Inquiry')
-                                : (tpl.subject || tpl.name || 'Inquiry');
-                            setNativeValue(inp, healVal);
-                            inp.value = healVal;
-                            inp.dispatchEvent(new Event('input', { bubbles: true }));
-                            inp.dispatchEvent(new Event('change', { bubbles: true }));
+                            const authorVal = getAuthoritativeValue(inp, { type: inp.type, name: inp.name }, tpl);
+                            if (authorVal) {
+                                setNativeValue(inp, authorVal);
+                                inp.value = authorVal;
+                                inp.dispatchEvent(new Event('input', { bubbles: true }));
+                                inp.dispatchEvent(new Event('change', { bubbles: true }));
+                            }
                         }
                     } catch (_) {}
                 }
@@ -2869,13 +2993,12 @@
                 }
 
                 if (!isValid) {
-                    // Collect privacy-safe descriptors (tag, type, required - NO values)
                     const invalidDesc = Array.from(form.querySelectorAll ? form.querySelectorAll(':invalid') : []).map(el => ({
                         tag: el.tagName,
                         type: el.type || 'text',
                         required: !!el.required
                     }));
-                    logDev(`❌ [SubmitStateMachine] Validation blocked after self-heal (${invalidDesc.length} invalid fields)`, "error");
+                    logDev(`❌ [SubmitStateMachine] Validation blocked after targeted repair (${invalidDesc.length} invalid fields)`, "error");
                     return {
                         success: false,
                         reasonCode: 'VALIDATION_FAILED',
@@ -2885,9 +3008,9 @@
             }
         }
 
-        // 4. Discover ranked submit candidates
-        const submitKeywords = ['send', 'submit', 'contact', 'register', 'inquire', '전송', '보내기', '등록', '접수', '送信', '确定', '提交', '입력'];
-        const rejectKeywords = ['next', 'prev', 'back', 'cancel', 'reset', 'clear', '이전', '취소', '초기화', '지우기'];
+        // 6. Rediscover fresh ranked submit candidates after rerender
+        const submitKeywords = ['send', 'submit', 'send message', 'contact us', 'request info', 'inquiry', 'contact', 'register', 'inquire', '보내기', '제출', '전송', '문의하기', '등록', '접수', '送信', '确定', '提交', '입력'];
+        const rejectKeywords = ['next', 'prev', 'back', 'cancel', 'reset', 'clear', 'subscribe', 'newsletter', 'search', 'login', 'sign in', '이전', '취소', '초기화', '지우기'];
 
         const isVisibleAndAttached = (el) => {
             if (!el) return false;
@@ -2906,38 +3029,37 @@
         };
 
         let submitCandidate = null;
-        let submitReason = null;
 
-        // Rank 1: button[type="submit"]
-        const typeSubmitBtns = querySelectorAllIncludingShadowDOM(form, 'button[type="submit"]');
-        for (const btn of typeSubmitBtns) {
-            if (isVisibleAndAttached(btn)) {
-                if (isDisabled(btn)) {
-                    submitReason = 'SUBMIT_BUTTON_DISABLED';
-                } else {
-                    submitCandidate = btn;
-                    break;
+        const findCandidate = (requireEnabled) => {
+            // Rank 1: button[type="submit"]
+            const typeSubmitBtns = querySelectorAllIncludingShadowDOM(form, 'button[type="submit"]');
+            for (const btn of typeSubmitBtns) {
+                if (isVisibleAndAttached(btn)) {
+                    if (!requireEnabled || !isDisabled(btn)) return btn;
                 }
             }
-        }
 
-        // Rank 2: input[type="submit"]
-        if (!submitCandidate) {
-            const typeSubmitInputs = querySelectorAllIncludingShadowDOM(form, 'input[type="submit"]');
+            // Rank 2: input[type="submit"] or input[type="image"]
+            const typeSubmitInputs = querySelectorAllIncludingShadowDOM(form, 'input[type="submit"], input[type="image"]');
             for (const inp of typeSubmitInputs) {
                 if (isVisibleAndAttached(inp)) {
-                    if (isDisabled(inp)) {
-                        submitReason = 'SUBMIT_BUTTON_DISABLED';
-                    } else {
-                        submitCandidate = inp;
-                        break;
-                    }
+                    if (!requireEnabled || !isDisabled(inp)) return inp;
                 }
             }
-        }
 
-        // Rank 3 & 4: Text-matching button or role="button"
-        if (!submitCandidate) {
+            // Rank 3: Associated external form submitter: button[form="form_id"], input[form="form_id"]
+            if (form && form.id) {
+                try {
+                    const extSubmitters = document.querySelectorAll(`button[form="${form.id}"], input[form="${form.id}"][type="submit"], input[form="${form.id}"][type="image"]`);
+                    for (const ext of extSubmitters) {
+                        if (isVisibleAndAttached(ext)) {
+                            if (!requireEnabled || !isDisabled(ext)) return ext;
+                        }
+                    }
+                } catch (_) {}
+            }
+
+            // Rank 4 & 5: Text-matching button or role="button"
             const allClickables = querySelectorAllIncludingShadowDOM(form, 'button, a, input[type="button"], div[role="button"], span[role="button"]');
             for (const b of allClickables) {
                 if (!isVisibleAndAttached(b)) continue;
@@ -2945,26 +3067,111 @@
                 const isSubmitMatch = submitKeywords.some(k => txt.includes(k));
                 const isRejectMatch = rejectKeywords.some(k => txt.includes(k));
                 if (isSubmitMatch && !isRejectMatch) {
-                    if (isDisabled(b)) {
-                        submitReason = 'SUBMIT_BUTTON_DISABLED';
-                    } else {
-                        submitCandidate = b;
-                        break;
-                    }
+                    if (!requireEnabled || !isDisabled(b)) return b;
                 }
+            }
+            return null;
+        };
+
+        // First attempt to find an enabled candidate
+        submitCandidate = findCandidate(true);
+        // If all candidates are currently disabled, fallback to the first disabled candidate to observe for async enablement
+        if (!submitCandidate) {
+            submitCandidate = findCandidate(false);
+        }
+
+        // Check if candidate found but disabled: Observe 2-3s for async validation enablement (Section C)
+        if (submitCandidate && isDisabled(submitCandidate)) {
+            logDev("⏳ [SubmitStateMachine] Submit candidate currently disabled. Observing for enablement...", "info");
+            const observeStart = Date.now();
+            const maxObserveMs = (options && options.observeDisabledMs !== undefined) ? options.observeDisabledMs : 2500;
+            while (Date.now() - observeStart < maxObserveMs) {
+                await new Promise(r => setTimeout(r, 250));
+                if (!isDisabled(submitCandidate)) {
+                    logDev(`✅ [SubmitStateMachine] Submit candidate enabled after ${Date.now() - observeStart}ms!`, "success");
+                    break;
+                }
+            }
+            if (isDisabled(submitCandidate)) {
+                logDev("❌ [SubmitStateMachine] Submit button never became enabled", "error");
+                return {
+                    success: false,
+                    reasonCode: 'SUBMIT_BUTTON_NEVER_ENABLED'
+                };
             }
         }
 
-        // Check if candidate found but disabled
-        if (!submitCandidate && submitReason === 'SUBMIT_BUTTON_DISABLED') {
-            logDev("❌ [SubmitStateMachine] Primary submit button candidate is disabled", "error");
-            return {
-                success: false,
-                reasonCode: 'SUBMIT_BUTTON_DISABLED'
-            };
+        // Check if no candidate found
+        if (!submitCandidate) {
+            // No button found: If real FORM, try form.requestSubmit() safely
+            if (form && form.tagName === 'FORM' && typeof form.requestSubmit === 'function') {
+                try {
+                    logDev("🚀 [SubmitStateMachine] No submit button found; triggering form.requestSubmit() directly", "info");
+                    form.requestSubmit();
+                    return {
+                        success: true,
+                        reasonCode: 'SUBMIT_TRIGGERED',
+                        strategy: 'requestSubmit_no_button',
+                        submitEventFired: true
+                    };
+                } catch (formErr) {
+                    logDev(`❌ [SubmitStateMachine] form.requestSubmit() failed: ${formErr.message}`, "error");
+                    return {
+                        success: false,
+                        reasonCode: 'SUBMIT_CANDIDATE_NOT_FOUND'
+                    };
+                }
+            } else {
+                logDev("❌ [SubmitStateMachine] No valid submit candidate found", "error");
+                return {
+                    success: false,
+                    reasonCode: 'SUBMIT_CANDIDATE_NOT_FOUND'
+                };
+            }
         }
 
-        // 5. Submit Execution Strategy
+        // 7. Pre-click Overlay Clickability Test (Section C)
+        try {
+            if (typeof submitCandidate.scrollIntoView === 'function') {
+                submitCandidate.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                await new Promise(r => setTimeout(r, 100));
+            }
+        } catch (_) {}
+
+        if (typeof document !== 'undefined' && typeof document.elementFromPoint === 'function') {
+            try {
+                const rect = submitCandidate.getBoundingClientRect();
+                const cx = rect.left + rect.width / 2;
+                const cy = rect.top + rect.height / 2;
+                if (cx >= 0 && cy >= 0 && cx <= window.innerWidth && cy <= window.innerHeight) {
+                    const topEl = document.elementFromPoint(cx, cy);
+                    const candidateContainsTop = (submitCandidate && typeof submitCandidate.contains === 'function') ? submitCandidate.contains(topEl) : (topEl === submitCandidate);
+                    const topContainsCandidate = (topEl && typeof topEl.contains === 'function') ? topEl.contains(submitCandidate) : (topEl === submitCandidate);
+                    if (topEl && !candidateContainsTop && !topContainsCandidate) {
+                        const isOverlay = topEl.classList && (topEl.classList.contains('overlay') || topEl.classList.contains('backdrop') || topEl.classList.contains('modal'));
+                        if (isOverlay) {
+                            try {
+                                const closeBtn = topEl.querySelector ? topEl.querySelector('.close, [aria-label="close"], [aria-label="Close"], button') : null;
+                                if (closeBtn && typeof closeBtn.click === 'function') closeBtn.click();
+                            } catch (_) {}
+                            await new Promise(r => setTimeout(r, 150));
+                        }
+                        const recheckTop = document.elementFromPoint(cx, cy);
+                        const recheckCandidateContains = (submitCandidate && typeof submitCandidate.contains === 'function') ? submitCandidate.contains(recheckTop) : (recheckTop === submitCandidate);
+                        const recheckTopContains = (recheckTop && typeof recheckTop.contains === 'function') ? recheckTop.contains(submitCandidate) : (recheckTop === submitCandidate);
+                        if (recheckTop && !recheckCandidateContains && !recheckTopContains) {
+                            logDev("❌ [SubmitStateMachine] Submit click blocked by overlay", "error");
+                            return {
+                                success: false,
+                                reasonCode: 'SUBMIT_CLICK_BLOCKED_BY_OVERLAY'
+                            };
+                        }
+                    }
+                }
+            } catch (_) {}
+        }
+
+        // 8. Submit Execution Strategy (Single-pass, no duplicate clicks, no Prototype submit)
         let submitStrategy = 'none';
         let submitEventFired = false;
 
@@ -2973,49 +3180,21 @@
             form.addEventListener('submit', submitListener, { once: true });
         }
 
-        if (submitCandidate) {
-            logDev(`🚀 [SubmitStateMachine] Discovered submit button: <${submitCandidate.tagName} type="${submitCandidate.type || ''}"> | Text: ${(submitCandidate.textContent || submitCandidate.value || '').substring(0, 20)}`);
-            try {
-                if (typeof submitCandidate.scrollIntoView === 'function') {
-                    submitCandidate.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
-            } catch (_) {}
+        logDev(`🚀 [SubmitStateMachine] Discovered submit button: <${submitCandidate.tagName} type="${submitCandidate.type || ''}"> | Text: ${(submitCandidate.textContent || submitCandidate.value || '').substring(0, 20)}`);
 
-            // Prefer form.requestSubmit(button) for real forms with valid buttons
-            if (form && form.tagName === 'FORM' && typeof form.requestSubmit === 'function' && (submitCandidate.type === 'submit' || submitCandidate.tagName === 'BUTTON')) {
-                try {
-                    submitStrategy = 'requestSubmit';
-                    form.requestSubmit(submitCandidate);
-                } catch (reqErr) {
-                    logDev(`⚠️ [SubmitStateMachine] form.requestSubmit failed: ${reqErr.message}; falling back to single trusted click sequence`, "warning");
-                    submitStrategy = 'trusted_click_sequence';
-                    _dispatchSingleClickSequence(submitCandidate);
-                }
-            } else {
+        // Prefer form.requestSubmit(button) for real forms with valid buttons
+        if (form && form.tagName === 'FORM' && typeof form.requestSubmit === 'function' && (submitCandidate.type === 'submit' || submitCandidate.tagName === 'BUTTON')) {
+            try {
+                submitStrategy = 'requestSubmit';
+                form.requestSubmit(submitCandidate);
+            } catch (reqErr) {
+                logDev(`⚠️ [SubmitStateMachine] form.requestSubmit failed: ${reqErr.message}; falling back to single trusted click sequence`, "warning");
                 submitStrategy = 'trusted_click_sequence';
                 _dispatchSingleClickSequence(submitCandidate);
             }
         } else {
-            // No button found: If real FORM, try form.requestSubmit() safely
-            if (form && form.tagName === 'FORM' && typeof form.requestSubmit === 'function') {
-                try {
-                    logDev("🚀 [SubmitStateMachine] No submit button found; triggering form.requestSubmit() directly", "info");
-                    submitStrategy = 'requestSubmit_no_button';
-                    form.requestSubmit();
-                } catch (formErr) {
-                    logDev(`❌ [SubmitStateMachine] form.requestSubmit() failed: ${formErr.message}`, "error");
-                    return {
-                        success: false,
-                        reasonCode: 'SUBMIT_BUTTON_NOT_FOUND'
-                    };
-                }
-            } else {
-                logDev("❌ [SubmitStateMachine] No valid submit button candidate found", "error");
-                return {
-                    success: false,
-                    reasonCode: 'SUBMIT_BUTTON_NOT_FOUND'
-                };
-            }
+            submitStrategy = 'trusted_click_sequence';
+            _dispatchSingleClickSequence(submitCandidate);
         }
 
         return {
@@ -3214,6 +3393,8 @@
         window.__xpiderSubmitStateMachine = executeSubmitStateMachine;
         window.__xpiderStartActiveEmptyFieldSweeper = startActiveEmptyFieldSweeper;
         window.__xpiderStopActiveEmptyFieldSweeper = stopActiveEmptyFieldSweeper;
+        window.__xpiderFreezeFieldValues = freezeFieldValues;
+        window.__xpiderVerifyFieldIntegrity = verifyFieldIntegrity;
         window.__xpiderContactDiscoveryEngine = _ContactDiscoveryEngine;
     }
 
@@ -3223,6 +3404,8 @@
             executeSubmitStateMachine,
             startActiveEmptyFieldSweeper,
             stopActiveEmptyFieldSweeper,
+            freezeFieldValues,
+            verifyFieldIntegrity,
             submitForm,
             fillAndSubmit,
             ContactGate: _ContactGate,

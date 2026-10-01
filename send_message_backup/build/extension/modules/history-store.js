@@ -245,6 +245,17 @@
 
             const { targetIdentity, sessionId, templateId, templateVersion, status, reasonCode, timing = {}, evidence = {} } = descriptor;
             const attemptId = `att_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+
+            const sourceUrl = descriptor.sourceUrl || (typeof targetOrDesc === 'string' ? targetOrDesc : targetIdentity);
+            let sourceHostname = '';
+            try { sourceHostname = new URL(sourceUrl).hostname; } catch (_) { sourceHostname = targetIdentity; }
+
+            const contactPageUrl = descriptor.contactPageUrl || null;
+            let contactPageHostname = '';
+            if (contactPageUrl) {
+                try { contactPageHostname = new URL(contactPageUrl).hostname; } catch (_) { contactPageHostname = ''; }
+            }
+
             const attempt = {
                 attemptId,
                 targetIdentity,
@@ -254,6 +265,14 @@
                 generationId: this.currentGeneration,
                 status: status || 'DELIVERY_UNKNOWN',
                 reasonCode: reasonCode || 'UNKNOWN',
+                sourceUrl,
+                sourceHostname,
+                contactPageUrl,
+                contactPageHostname,
+                contactDiscoverySource: descriptor.contactDiscoverySource || null,
+                contactDiscoveryConfidence: descriptor.contactDiscoveryConfidence !== undefined ? descriptor.contactDiscoveryConfidence : 1.0,
+                formPageUrl: descriptor.formPageUrl || null,
+                emailsFound: descriptor.emailsFound || 0,
                 timing: {
                     intentTime: timing.intentTime || Date.now(),
                     finalizedTime: timing.finalizedTime || null,
@@ -307,12 +326,34 @@
         }
 
         /**
+         * [Section J] Update attempt contact page info as soon as contact page is selected
+         */
+        updateAttemptContact(attemptId, contactInfo = {}) {
+            const attempt = this.attempts.find(a => a.attemptId === attemptId);
+            if (!attempt) return false;
+            if (contactInfo.contactPageUrl) {
+                attempt.contactPageUrl = contactInfo.contactPageUrl;
+                try {
+                    attempt.contactPageHostname = new URL(contactInfo.contactPageUrl).hostname;
+                } catch (_) {
+                    attempt.contactPageHostname = '';
+                }
+            }
+            if (contactInfo.formPageUrl) attempt.formPageUrl = contactInfo.formPageUrl;
+            if (contactInfo.contactDiscoverySource) attempt.contactDiscoverySource = contactInfo.contactDiscoverySource;
+            if (contactInfo.contactDiscoveryConfidence !== undefined) attempt.contactDiscoveryConfidence = contactInfo.contactDiscoveryConfidence;
+            if (contactInfo.emailsFound !== undefined) attempt.emailsFound = contactInfo.emailsFound;
+            return true;
+        }
+
+        /**
          * F8: Settle a previously recorded PENDING_INTENT attempt with the final outcome.
          * @param {string} attemptId - ID returned from recordAttempt
          * @param {boolean} isSuccess - Whether the submission succeeded
          * @param {string} reason - Reason code string
+         * @param {object} [extra={}] - Optional metadata (contactPageUrl, formPageUrl, emailsFound)
          */
-        async settleAttempt(attemptId, isSuccess, reason) {
+        async settleAttempt(attemptId, isSuccess, reason, extra = {}) {
             const attempt = this.attempts.find(a => a.attemptId === attemptId);
             if (!attempt) return { settled: false, reason: 'ATTEMPT_NOT_FOUND' };
 
@@ -332,6 +373,16 @@
             }
             attempt.timing.finalizedTime = now;
             attempt.timing.durationMs = now - attempt.timing.intentTime;
+
+            if (extra) {
+                if (extra.contactPageUrl) {
+                    attempt.contactPageUrl = extra.contactPageUrl;
+                    try { attempt.contactPageHostname = new URL(extra.contactPageUrl).hostname; } catch (_) {}
+                }
+                if (extra.formPageUrl) attempt.formPageUrl = extra.formPageUrl;
+                if (extra.contactDiscoverySource) attempt.contactDiscoverySource = extra.contactDiscoverySource;
+                if (extra.emailsFound !== undefined) attempt.emailsFound = extra.emailsFound;
+            }
 
             // Update suppression state on the linked target
             const target = this.targets.get(attempt.targetIdentity);
@@ -476,14 +527,82 @@
             return lines.join("\r\n");
         }
 
+        /**
+         * [Section K] Google Sheets RFC-4180 CSV Export Engine (16 Standard Columns)
+         */
+        exportGoogleSheetsCsv(options = {}) {
+            const records = options.records || this.getFilteredRecords({ status: 'ALL', search: '', limit: 100000 }).records;
+            const headers = [
+                "Status",
+                "Reason",
+                "SourceURL",
+                "ContactPageURL",
+                "FormPageURL",
+                "SourceHostname",
+                "ContactPageHostname",
+                "ContactDiscoverySource",
+                "StartedAt",
+                "CompletedAt",
+                "DurationMs",
+                "TemplateId",
+                "TemplateVersion",
+                "EmailsFound",
+                "AttemptId",
+                "SessionId"
+            ];
+
+            const escapeCell = (val) => {
+                if (val === null || val === undefined) return '""';
+                let str = String(val);
+
+                // Formula injection protection for spreadsheets
+                if (/^[=+\-@\t\r]/.test(str)) {
+                    str = "'" + str;
+                }
+
+                if (str.includes('"') || str.includes(',') || str.includes('\n') || str.includes('\r')) {
+                    str = '"' + str.replace(/"/g, '""') + '"';
+                } else {
+                    str = '"' + str + '"';
+                }
+                return str;
+            };
+
+            const lines = [headers.map(escapeCell).join(",")];
+
+            for (const r of records) {
+                const rowLine = [
+                    r.status || "",
+                    r.reasonCode || "",
+                    r.sourceUrl || r.rawUrl || r.targetIdentity || "",
+                    r.contactPageUrl || "",
+                    r.formPageUrl || "",
+                    r.sourceHostname || "",
+                    r.contactPageHostname || "",
+                    r.contactDiscoverySource || "",
+                    r.startedAt || (r.timestamp ? new Date(r.timestamp).toISOString() : ""),
+                    r.completedAt || "",
+                    r.durationMs !== undefined ? r.durationMs : 0,
+                    r.templateId || "",
+                    r.templateVersion || "",
+                    r.emailsFound !== undefined ? r.emailsFound : 0,
+                    r.attemptId || "",
+                    r.sessionId || ""
+                ];
+                lines.push(rowLine.map(escapeCell).join(","));
+            }
+
+            return lines.join("\r\n");
+        }
+
         exportCsv(options = {}) {
             return this.exportToCsv(options);
         }
 
         /**
-         * Phase 2B (Component B): Query ledger records with filtering, searching, and pagination.
+         * Phase 2B & Section J/K: Query ledger records with filtering, searching, and pagination.
          * @param {object} options
-         * @param {string} [options.status='ALL'] - Filter by status (ALL, SUCCESS, SUPPRESSED, DELIVERY_UNKNOWN, FAILED, INVALID)
+         * @param {string} [options.status='ALL'] - Filter by status
          * @param {string} [options.search=''] - Substring filter for domain/URL/reason
          * @param {number} [options.limit=50] - Number of records to return
          * @param {number} [options.offset=0] - Offset for pagination
@@ -499,20 +618,36 @@
                     const attempt = row.attemptId ? this.attempts.find(a => a.attemptId === row.attemptId) : null;
                     const isSuppressed = row.targetIdentity ? this.isSuppressed(row.targetIdentity) : false;
 
+                    const sourceUrl = (attempt && attempt.sourceUrl) ? attempt.sourceUrl : (row.rawInputUrl || row.targetIdentity);
+                    let sourceHostname = (attempt && attempt.sourceHostname) ? attempt.sourceHostname : '';
+                    if (!sourceHostname && sourceUrl) {
+                        try { sourceHostname = new URL(sourceUrl).hostname; } catch (_) { sourceHostname = row.targetIdentity; }
+                    }
+
                     records.push({
                         id: row.rowId,
                         sourceRowId: row.sourceRowId,
                         rawUrl: row.rawInputUrl,
+                        sourceUrl,
+                        sourceHostname,
+                        contactPageUrl: attempt ? (attempt.contactPageUrl || '') : '',
+                        contactPageHostname: attempt ? (attempt.contactPageHostname || '') : '',
+                        contactDiscoverySource: attempt ? (attempt.contactDiscoverySource || '') : '',
+                        formPageUrl: attempt ? (attempt.formPageUrl || '') : '',
+                        emailsFound: attempt ? (attempt.emailsFound !== undefined ? attempt.emailsFound : 0) : 0,
                         targetIdentity: row.targetIdentity,
-                        status: row.status,
+                        status: attempt ? attempt.status : row.status,
                         reasonCode: attempt ? attempt.reasonCode : (row.status === 'INVALID_INPUT' ? 'INVALID_INPUT' : 'PENDING'),
                         attemptId: row.attemptId,
+                        sessionId: attempt ? (attempt.sessionId || '') : '',
                         isSuppressed,
                         suppressionReason: target ? target.suppressionReason : null,
                         generationId: attempt ? attempt.generationId : this.currentGeneration,
                         templateId: attempt ? (attempt.templateId || null) : null,
                         templateVersion: attempt ? (attempt.templateVersion || null) : null,
                         durationMs: attempt ? attempt.timing.durationMs : 0,
+                        startedAt: attempt ? new Date(attempt.timing.intentTime || attempt.createdAt).toISOString() : new Date(row.createdAt).toISOString(),
+                        completedAt: (attempt && attempt.timing && attempt.timing.finalizedTime) ? new Date(attempt.timing.finalizedTime).toISOString() : '',
                         timestamp: attempt ? attempt.createdAt : row.createdAt
                     });
                 }
@@ -521,20 +656,36 @@
                 for (const [identity, target] of this.targets.entries()) {
                     const attempt = target.lastAttemptId ? this.attempts.find(a => a.attemptId === target.lastAttemptId) : null;
                     const isSuppressed = this.isSuppressed(identity);
+                    const sourceUrl = (attempt && attempt.sourceUrl) ? attempt.sourceUrl : (target.rawSampleUrl || identity);
+                    let sourceHostname = (attempt && attempt.sourceHostname) ? attempt.sourceHostname : '';
+                    if (!sourceHostname && sourceUrl) {
+                        try { sourceHostname = new URL(sourceUrl).hostname; } catch (_) { sourceHostname = identity; }
+                    }
+
                     records.push({
                         id: `tgt_${rowIdx}`,
                         sourceRowId: rowIdx++,
                         rawUrl: target.rawSampleUrl || identity,
+                        sourceUrl,
+                        sourceHostname,
+                        contactPageUrl: attempt ? (attempt.contactPageUrl || '') : '',
+                        contactPageHostname: attempt ? (attempt.contactPageHostname || '') : '',
+                        contactDiscoverySource: attempt ? (attempt.contactDiscoverySource || '') : '',
+                        formPageUrl: attempt ? (attempt.formPageUrl || '') : '',
+                        emailsFound: attempt ? (attempt.emailsFound !== undefined ? attempt.emailsFound : 0) : 0,
                         targetIdentity: identity,
                         status: attempt ? attempt.status : (isSuppressed ? 'SUPPRESSED' : 'READY'),
                         reasonCode: attempt ? attempt.reasonCode : 'NONE',
                         attemptId: target.lastAttemptId,
+                        sessionId: attempt ? (attempt.sessionId || '') : '',
                         isSuppressed,
                         suppressionReason: target.suppressionReason,
                         generationId: attempt ? attempt.generationId : target.effectiveGeneration,
                         templateId: attempt ? (attempt.templateId || null) : null,
                         templateVersion: attempt ? (attempt.templateVersion || null) : null,
                         durationMs: attempt ? attempt.timing.durationMs : 0,
+                        startedAt: attempt ? new Date(attempt.timing.intentTime || attempt.createdAt).toISOString() : new Date(target.updatedTs || Date.now()).toISOString(),
+                        completedAt: (attempt && attempt.timing && attempt.timing.finalizedTime) ? new Date(attempt.timing.finalizedTime).toISOString() : '',
                         timestamp: target.updatedTs || Date.now()
                     });
                 }
@@ -553,6 +704,14 @@
                     filtered = filtered.filter(r => r.status === 'FAILURE');
                 } else if (s === 'INVALID' || s === 'INVALID_INPUT') {
                     filtered = filtered.filter(r => r.status === 'INVALID_INPUT');
+                } else if (s === 'PREPARING') {
+                    filtered = filtered.filter(r => r.status === 'PREPARING' || r.reasonCode === 'PREPARING');
+                } else if (s === 'SUBMIT_PENDING') {
+                    filtered = filtered.filter(r => r.status === 'SUBMIT_PENDING' || r.status === 'PENDING_INTENT');
+                } else if (s === 'SKIPPED' || s === 'HISTORY_SKIPPED') {
+                    filtered = filtered.filter(r => r.status === 'SKIPPED' || r.reasonCode === 'HISTORY_SKIPPED' || r.reasonCode === 'ALREADY_ATTEMPTED');
+                } else if (s === 'INTERRUPTED' || s === 'STALE_PREPARING') {
+                    filtered = filtered.filter(r => r.status === 'INTERRUPTED' || r.reasonCode === 'INTERRUPTED_PAUSE' || r.reasonCode === 'STALE_PREPARING');
                 } else {
                     filtered = filtered.filter(r => r.status === s);
                 }
@@ -562,6 +721,8 @@
                 const q = search.trim().toLowerCase();
                 filtered = filtered.filter(r => {
                     return (r.rawUrl && r.rawUrl.toLowerCase().includes(q)) ||
+                           (r.sourceUrl && r.sourceUrl.toLowerCase().includes(q)) ||
+                           (r.contactPageUrl && r.contactPageUrl.toLowerCase().includes(q)) ||
                            (r.targetIdentity && r.targetIdentity.toLowerCase().includes(q)) ||
                            (r.reasonCode && r.reasonCode.toLowerCase().includes(q));
                 });
