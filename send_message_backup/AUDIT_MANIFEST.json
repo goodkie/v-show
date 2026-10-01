@@ -1,69 +1,82 @@
 {
   "manifest_version": "1.0",
-  "package": "evidence_phase2a_integration_v6",
-  "audit_phase": "Phase 2A Final Remediation V6",
-  "commit_sha": "0853c5006855afdf17c5136dfa5031ea654f6529",
+  "package": "evidence_phase2b_implementation",
+  "audit_phase": "Phase 2B Implementation",
+  "commit_sha": "8b4d2864d4232f2ef3cc74e02fe2d730b16cd6ee",
+  "rollback_anchor_sha": "0853c5006855afdf17c5136dfa5031ea654f6529",
+  "rollback_artifact_sha256": "A2A1387DB3FE6031F0BD2F4E5DDCFBC4DB77D4D5F42F227AEE541ECBB4A9FECB",
   "branch": "upgrade/phase-0-1",
   "repository": "local:extension-form-sender",
   "collaboration_hub": "goodkie/v-show (Issue #6)",
-  "timestamp": "2026-10-01T06:10:00Z",
-  "remediation_summary": {
-    "RFC4180_RAW_PRESERVATION": {
-      "status": "RESOLVED",
-      "description": "Logical record text slice preserved with exact raw bytes; no unescaping of \"\" to \" in audit raw slice."
+  "timestamp": "2026-10-01T06:55:00Z",
+  "implementation_components": {
+    "COMPONENT_A_TEMPLATE_MANAGER": {
+      "status": "IMPLEMENTED",
+      "controls": [
+        "#tpl-library-select (dropdown selector)",
+        "#new-tpl-btn (create new template)",
+        "#save-tpl-changes-btn (authoritative save)",
+        "#dup-tpl-btn (clone active template)",
+        "#default-tpl-btn (set default and sync legacy)",
+        "#del-tpl-btn (delete non-default template)",
+        "#load-tpl-file-btn (import template text file)"
+      ],
+      "storage_sync": "Dual-accessor FormTemplateV2 canonical schema in templates_v2; synchronized to xpider_tpl on default change."
     },
-    "ROW_TARGET_LINKAGE_1_TO_1": {
-      "status": "RESOLVED",
-      "description": "Enforce 1:1 row-to-target linkage; every target executed in campaign queue is linked to a source row in HistoryStore."
+    "COMPONENT_B_AUDIT_LEDGER": {
+      "status": "IMPLEMENTED",
+      "controls": [
+        "#ledger-stats-banner (TOTAL, SUCCESS, SUPPRESSED, UNKNOWN, FAILED)",
+        "#ledger-filter-chips (ALL, SUCCESS, SUPPRESSED, DELIVERY_UNKNOWN, FAILED, INVALID)",
+        "#ledger-search-input (domain, URL, and reason code text search)",
+        "#ledger-export-csv-btn (RFC-4180 audit export trigger)",
+        "#ledger-list-container (compact responsive cards, status badges, timestamp)",
+        "#ledger-pagination-bar (50 per page pagination with Prev/Next)"
+      ]
     },
-    "PRE_SUBMIT_STATE_DISTINCTION": {
-      "status": "RESOLVED",
-      "description": "Attempt stays in PREPARING during navigation/scanning; transitions to SUBMIT_PENDING immediately before START_SENDING."
+    "COMPONENT_C_RESET_AND_RETRY": {
+      "status": "IMPLEMENTED",
+      "controls": [
+        "#ledger-reset-selected-btn (selective suppression release for checked targets)",
+        "#ledger-retry-failed-btn (auditor correction 1: queues failed targets for retry without mutating suppression or generation)",
+        "#ledger-reset-all-btn (2-step modal confirmation, active submission lock guard, global generation advance)"
+      ]
     },
-    "PRE_SUBMIT_FAILURE_RETRYABLE": {
-      "status": "RESOLVED",
-      "description": "Pre-submit failure settles as FAILURE with reason PRE_SUBMIT_PERSISTENCE_FAILED; SW restart during PREPARING settles as FAILURE INTERRUPTED_PREPARING; target is not suppressed and remains retryable."
-    },
-    "UNIFIED_FORM_TEMPLATE_V2_SCHEMA": {
-      "status": "RESOLVED",
-      "description": "Unified record schema with both flat accessors (firstName, lastName, email, phone, company, website, subject, message, fullName) and nested objects (sender, content)."
-    },
-    "AUTHORITATIVE_TEMPLATES_V2": {
-      "status": "RESOLVED",
-      "description": "templates_v2 authoritative across all save/edit/import paths; _syncTemplateToV2 propagates errors; saveTemplate and persistImportedTemplate await v2 write and prevent legacy xpider_tpl advancement upon v2 failure."
-    },
-    "IMPORT_TEMPLATE_CANONICAL_SCHEMA": {
-      "status": "RESOLVED",
-      "description": "importMessageFromFile constructs canonical FormTemplateV2 record with sender, content, fullName and awaits v2 persistence."
-    },
-    "DIRECT_FAILURE_PATH_TESTS": {
-      "status": "RESOLVED",
-      "description": "Integration tests F9-e, F9-f, F9-g, F9-h exercise saveTemplate and persistImportedTemplate failure paths."
-    },
-    "LEGACY_FIXTURE_POPUP_MAPPING": {
-      "status": "RESOLVED",
-      "description": "Migrated legacy templates verified through direct popup input field extraction."
-    },
-    "PRODUCTION_FUNCTION_TESTING": {
-      "status": "RESOLVED",
-      "description": "Integration test directly invokes production restoreCampaignState, HistoryStore methods, and popup save/import functions."
-    },
-    "PACKAGE_INVENTORY_SHA256": {
-      "status": "RESOLVED",
-      "description": "Deterministic SHA-256 manifest covering all files in the package."
-    },
-    "LOCAL_GIT_PROVENANCE": {
-      "status": "RESOLVED",
-      "description": "Full local Git provenance artifacts including rev-parse HEAD, cat-file HEAD, ls-tree HEAD, and package-path to blob SHA mapping."
+    "COMPONENT_D_EXECUTION_BINDING": {
+      "status": "IMPLEMENTED",
+      "metadata": [
+        "templateId and templateVersion attached to campaignState on campaign start",
+        "passed to recordAttempt and stamped on attempt records additively",
+        "exported to CSV audit log as additive columns (backward-compatible, missing fields tolerated)"
+      ]
     }
   },
-  "test_suites": [
-    { "file": "test_phase2a.js", "tests": 14, "passed": 14, "status": "PASS" },
-    { "file": "test_phase0_1.js", "tests": 5, "passed": 5, "status": "PASS" },
-    { "file": "test_phase0_1_behavioral.js", "tests": 5, "passed": 5, "status": "PASS" },
-    { "file": "send_message_backup/test_phase2a_integration_f7f13.js", "tests": 32, "passed": 32, "status": "PASS" }
-  ],
-  "total_tests": 56,
-  "total_passed": 56,
-  "pass_rate": "100%"
+  "auditor_corrections": {
+    "CORRECTION_1_RETRY_FAILED_SEMANTICS": {
+      "status": "SATISFIED",
+      "description": "Implemented dispatchRetryFailed() / getRetryableFailedIdentities() without mutating suppression state or generation. Normal failures are retryable and not suppressed."
+    },
+    "CORRECTION_2_ADDITIVE_TEMPLATE_METADATA": {
+      "status": "SATISFIED",
+      "description": "templateId and templateVersion are strictly additive. No schema version bump. Tolerates missing fields. Not part of suppression identity."
+    },
+    "CORRECTION_3_PRODUCTION_CONTROLLER_TESTING": {
+      "status": "SATISFIED",
+      "description": "Phase 2B acceptance tests directly invoke actual exported controller functions from popup.js (handleCreateNewTemplate, handleSaveTemplate, handleDuplicateTemplate, handleDeleteTemplate, handleSetDefaultTemplate, populateFormFromTemplate, filterHistoryRecords, dispatchSelectiveReset, dispatchRetryFailed, dispatchGlobalReset, triggerCsvExport, bindCampaignTemplateMetadata)."
+    },
+    "CORRECTION_4_NO_BACKGROUND_REWRITE": {
+      "status": "SATISFIED",
+      "description": "Background engine orchestration, crawler, suppression state machine, and migration protocol remain intact. Only additive templateId/templateVersion metadata was passed to recordAttempt."
+    }
+  },
+  "test_results": {
+    "test_phase2a": "14/14 PASS (100%)",
+    "test_phase0_1": "5/5 PASS (100%)",
+    "test_phase0_1_behavioral": "5/5 PASS (100%)",
+    "test_phase2a_integration_f7f13": "32/32 PASS (100%)",
+    "test_phase2b_acceptance": "8/8 PASS (100%)",
+    "total_suite_count": 64,
+    "total_passed": 64,
+    "total_failed": 0
+  }
 }
