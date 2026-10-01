@@ -1,0 +1,115 @@
+﻿[ANTIGRAVITY][RECEIPT][extension-form-sender][PHASE 2A INTEGRATION REMEDIATION V3]
+
+HEAD: 22e1d1070af30c24e30b3ac2ae03f8f14152f6ec
+branch: upgrade/phase-0-1
+git status: clean
+
+=== F7 — SOURCE ROW PRESERVATION (PRODUCTION PATH FIXED) ===
+
+PRIOR FINDING: allRawUrls was produced by regex extraction AFTER URL parsing. Non-URL
+rows never entered the ledger. sourceRowId reflected URL-match ordinal, not actual file line number.
+
+PRODUCTION FIX (popup.js handleFileUpload):
+  Step 1: text.split(/\r?\n/) — split file into raw lines BEFORE any regex extraction.
+  Step 2: Build rowsForLedger = rawSourceRows.map((rawLine, idx) => ({
+              sourceRowNumber: idx + 1,  // actual 1-indexed file line number
+              rawInput: rawLine          // exact original content including non-URLs
+          }));
+  Step 3: chrome.runtime.sendMessage({ action: 'RECORD_IMPORT_ROWS', rows: rowsForLedger, importId })
+          — sent with full structured rows (not URL-only array) BEFORE any extraction.
+  Step 4: ONLY THEN: text.match(urlRegex) for execution queue.
+
+BACKGROUND HANDLER FIX (background.js RECORD_IMPORT_ROWS):
+  Accepts rows:[{sourceRowNumber, rawInput}] from popup.
+  Passes rawInputs[] + sourceRowNumbers[] to ingestImportRows().
+
+HISTORY-STORE FIX (modules/history-store.js ingestImportRows):
+  New signature: ingestImportRows(rawInputs, importId, sourceRowNumbers=null)
+  If sourceRowNumbers provided: uses actual file line number as sourceRowId.
+  Every row (empty, non-URL text, partial URL) gets its actual row identity.
+
+=== F8 — CANONICAL SENDER ATTEMPT LIFECYCLE (PRODUCTION PATH FIXED) ===
+
+PRIOR FINDING: (1) No suppression check before tab open; (2) recordAttempt failure did not
+block send; (3) dual ledgers (HistoryStore + xpider_currentAttempt) diverged; (4) DELIVERY_UNKNOWN
+collapsed into FAILURE; (5) CHECK_SUPPRESSION used raw URL, HistoryStore used normalized identity.
+
+PRODUCTION FIX (background.js orchestrateSending):
+  Step 1 — Suppression check BEFORE tab open:
+    normalizedId = hs.normalizeTargetIdentity(targetUrl)
+    if (hs.isSuppressed(normalizedId)) return { success:false, reasonCode:'SUPPRESSED' }
+  Step 2 — Abort on intent persistence failure:
+    if recordAttempt() throws or returns no attemptId:
+      return { success:false, reasonCode:DELIVERY_UNKNOWN, error:'INTENT_PERSISTENCE_FAILED' }
+    (tab is NEVER opened if intent cannot be persisted)
+  Step 3 — Unify legacy currentAttempt with HistoryStore:
+    campaignState.currentAttempt = { url, attemptId: _attemptId, status:'SUBMIT_PENDING', ts }
+    — same attemptId carried for recovery; no separate parallel ledger
+  Step 4 — DELIVERY_UNKNOWN preserved distinctly:
+    isDeliveryUnknown = !isSuccess && (!res.error && !res.reasonCode || res.reasonCode === DELIVERY_UNKNOWN)
+    if isDeliveryUnknown: finalReason = DELIVERY_UNKNOWN (not FAILURE)
+  Step 5 — settleAttempt with DELIVERY_UNKNOWN vs FAILURE:
+    DELIVERY_UNKNOWN → suppresses target (prevents blind resend on restart recovery)
+    FAILURE → does NOT suppress target (remains retryable)
+  Step 6 — CHECK_SUPPRESSION RPC normalizes identity:
+    normalizedId = hs.normalizeTargetIdentity(request.targetUrl)
+    isSup = hs.isSuppressed(normalizedId || request.targetUrl)
+
+HISTORY-STORE FIX (settleAttempt):
+  if (isSuccess || attempt.reasonCode === 'DELIVERY_UNKNOWN') → suppress
+  FAILURE: isSuppressed remains false — target stays retryable
+
+=== CHANGED FILES (v3) ===
+  send_message_backup/popup.js              (F7: row-first split, structured RECORD_IMPORT_ROWS)
+  send_message_backup/background.js         (F7: structured rows handler; F8: 6 production fixes)
+  send_message_backup/modules/history-store.js  (F7: sourceRowNumbers param; F8: DELIVERY_UNKNOWN suppress)
+  send_message_backup/test_phase2a_integration_f7f13.js  (F7-c, F8-f, F8-g added)
+  send_message_backup/FILE_HASHES.txt       (regenerated)
+  send_message_backup/build/extension/*     (synced to root)
+
+=== INTEGRATION TEST COMMANDS + RAW OUTPUT ===
+
+  > node send_message_backup/test_phase2a_integration_f7f13.js
+  === [PHASE 2A INTEGRATION TEST — F7-F13] ===
+  F7-a  PASS: ingestImportRows preserves duplicate source rows independently
+  F7-b  PASS: invalid rows do not generate attempts
+  F7-c  PASS: ingestImportRows with sourceRowNumbers preserves actual file line numbers
+  F8-a  PASS: recordAttempt(string) creates PENDING_INTENT attempt
+  F8-b  PASS: settleAttempt transitions to CONFIRMED_SUCCESS and suppresses target
+  F8-c  PASS: FAILURE does not suppress target
+  F8-d  PASS: settleAttempt with unknown id returns not-settled gracefully
+  F8-f  PASS: suppression check aborts before record/send — isSuppressed returns true
+  F8-g  PASS: DELIVERY_UNKNOWN suppresses target; FAILURE does not
+  F9-a  PASS: _syncTemplateToV2 creates templates_v2 default slot
+  F9-b  PASS: loadSettings prefers templates_v2 over xpider_tpl
+  F10-a PASS: selective reset changes only chosen target
+  F10-b PASS: history panel data persists across reload
+  F11-a PASS: STAGE_COMMIT with valid v2 payload promotes schema version
+  F11-c PASS: STAGE_COMMIT without v2 payload does NOT promote schema (re-runs)
+  F11-b PASS: backup written before schema version promotion
+  F13   PASS: background.js and solver-content.js contain no hardcoded Wit.ai key
+  F8-e  PASS: CSV export reflects settled attempt outcome
+  18/18 PASS (exit 0)
+
+  > node test_phase2a.js             -> 14/14 PASS (exit 0)
+  > node test_phase0_1.js            -> 5/5 PASS (exit 0)
+  > node test_phase0_1_behavioral.js -> 5/5 PASS (exit 0)
+
+  TOTAL: 32 tests across 4 suites — 100% PASS on Node v24.11.1
+
+=== FILE HASHES (root == build verified) ===
+  FE5BEE95...  background.js              MATCH
+  C62D697C...  popup.js                   MATCH
+  E70122CA...  popup.html                 MATCH
+  89AEEF79...  content-script.js          MATCH
+  62FCB1ED...  solver-content.js          MATCH
+  C6653E29...  modules/history-store.js   MATCH
+  E4CB04E9...  modules/template-store.js  MATCH
+  E1F5F540...  modules/operation-queue.js MATCH
+  Full inventory: send_message_backup/FILE_HASHES.txt
+
+=== EVIDENCE PACKAGE ===
+  File: evidence_phase2a_integration_v3.zip
+  Size: 8,148,952 bytes
+  SHA-256: A1A9F6B9A5B19E5D3ACAAA12BFC70CC47B3F1A327CEEB3A4DFAF1557B99E950A
+  No secrets. No customer data. No credential literals.
