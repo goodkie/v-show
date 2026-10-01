@@ -1,14 +1,29 @@
 {
   "manifest_version": "1.0",
-  "package": "evidence_phase2b_implementation",
-  "audit_phase": "Phase 2B Remediation R1 Final",
-  "commit_sha": "e32026a9e0c223c69129e6dde1520464a98cb7c1",
+  "package": "evidence_phase2b_ipc_diagnostic",
+  "audit_phase": "Phase 2B IPC Diagnostic Patch Build",
+  "commit_sha": "aee5834b8bd9fddf98082b0cecd66b4210359265",
   "rollback_anchor_sha": "0853c5006855afdf17c5136dfa5031ea654f6529",
   "rollback_artifact_sha256": "A2A1387DB3FE6031F0BD2F4E5DDCFBC4DB77D4D5F42F227AEE541ECBB4A9FECB",
   "branch": "upgrade/phase-0-1",
   "repository": "local:extension-form-sender",
   "collaboration_hub": "goodkie/v-show (Issue #6)",
-  "timestamp": "2026-10-01T07:45:00Z",
+  "timestamp": "2026-10-01T11:05:00Z",
+  "ipc_diagnostic_patch": {
+    "status": "IMPLEMENTED",
+    "diagnostic_controls": [
+      "#copy-diagnostic-btn (Copy Diagnostic Report)",
+      "#download-diagnostic-btn (Download Diagnostic TXT)",
+      "#clear-diagnostic-btn (Clear Diagnostic Log)"
+    ],
+    "verification_tests": [
+      "DIAG-IPC-1: No Responder Path — Rejection, Checkpoints, and Structured Diagnostic Dump",
+      "DIAG-IPC-2: Responder Present Path — ID Match, Latency Capture, and Clean Resolution",
+      "TC-2B-11: Privacy-Safe Redaction Engine & User Diagnostic Controls"
+    ],
+    "privacy_redaction": "Automatic redaction of emails, phone numbers, auth tokens/secrets, full URL lists",
+    "qa_status": "SIMULATED XPIDER_RESPONSE bridge test = PASS; real Chrome native bridge = NOT_VERIFIED"
+  },
   "remediation_r1_mandates": {
     "R1_MANDATE_1_PAYLOAD_BINDING": {
       "status": "SATISFIED",

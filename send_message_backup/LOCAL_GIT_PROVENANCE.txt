@@ -1,18 +1,18 @@
 === LOCAL GIT PROVENANCE MANIFEST ===
-Phase: Phase 2B Remediation R1 Final
+Phase: Phase 2B IPC Diagnostic Patch Build
 Branch: upgrade/phase-0-1
-Local HEAD SHA: e32026a9e0c223c69129e6dde1520464a98cb7c1
+Local HEAD SHA: aee5834b8bd9fddf98082b0cecd66b4210359265
 Rollback Anchor: 0853c5006855afdf17c5136dfa5031ea654f6529
 Rollback Artifact: evidence_phase2a_integration_v6.zip (A2A1387DB3FE6031F0BD2F4E5DDCFBC4DB77D4D5F42F227AEE541ECBB4A9FECB)
-Timestamp: 2026-10-01T07:45:00Z
+Timestamp: 2026-10-01T11:05:00Z
 
 --- git cat-file -p HEAD ---
-tree 4312bbf64792f3f89c0ecb5a62decb394a590408
-parent 5d3d0999c57a04d5b62517e78439976fd8a7f5f0
-author Antigravity <antigravity@local> 1790840487 -0400
-committer Antigravity <antigravity@local> 1790840503 -0400
+tree 54970dc88282e3b796feeaa1ec1ffcca49cc49e7
+parent 439187c29d6f23cda0021cb64f56d295f2dd4f97
+author Antigravity <antigravity@local> 1790852464 -0400
+committer Antigravity <antigravity@local> 1790852464 -0400
 
-chore(provenance): update Phase 2B R1 audit manifest, package inventory, and local git provenance
+fix(ipc): add privacy-safe diagnostic logging patch for native bridge timeout investigation
 
 --- git ls-tree -r HEAD ---
 100644 blob 745ea8605fd8e6f8e33e8fe16e05a932fcc662ef	AUDIT_MANIFEST.json
