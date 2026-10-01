@@ -1,0 +1,288 @@
+﻿=== 1. test_contact_discovery_ensemble.js ===
+=== STARTING ADVANCED CONTACT DISCOVERY ENSEMBLE SUITE (DISC-1 to DISC-20) ===
+??[PASS] DISC-1: Root has direct /contact-us anchor is discovered and ranked high
+??[PASS] DISC-2: No anchor; common path finder discovers /contact
+??[PASS] DISC-3: Robots points to sitemap containing /company/reach-us
+??[PASS] DISC-4: JSON-LD ContactPage URL discovered and prioritized
+??[PASS] DISC-5: Footer-only 'Get in Touch' link receives footer context boost
+??[PASS] DISC-6: SPA menu hides contact link until menu opened (single expansion)
+??[PASS] DISC-7: Open ShadowDOM contains contact button/link
+[Discovery] Checking /newsletter (anchor, score 80)
+[Discovery] Rejected: newsletter-only form on /newsletter
+[Discovery] Checking /contact-inquiry (anchor, score 65)
+[Discovery] Eligible inquiry form found on /contact-inquiry (textarea)
+[DISCOVERY][testsite.com]
+sources: commonPath=0 anchors=0 sitemap=0 jsonld=0 spa=0
+graphVisited=0 candidatesUnique=0 verified=2 rejectedNewsletter=1 rejectedNoMessageField=0 eligibleFound=1 selected=/contact-inquiry
+??[PASS] DISC-8: Newsletter page rejected, real inquiry page selected
+[Discovery] Checking /contact1 (common_path, score 50)
+[Discovery] Rejected: newsletter-only form on /contact1
+[Discovery] Checking /contact2 (sitemap, score 40)
+[Discovery] Eligible inquiry form found on /contact2 (textarea)
+[DISCOVERY][testsite.com]
+sources: commonPath=0 anchors=0 sitemap=0 jsonld=0 spa=0
+graphVisited=0 candidatesUnique=0 verified=2 rejectedNewsletter=1 rejectedNoMessageField=0 eligibleFound=1 selected=/contact2
+??[PASS] DISC-9: Email-only subscription form on contact page continues discovery
+[FORM_CLASSIFY] intent=CONTACT_INQUIRY eligible=true hasInquiryBody=true bodyFieldType=textarea fields=3 submitText="" positiveSignals=2 negativeSignals=0 decision=ACCEPT reason=ELIGIBLE_CONTACT_INQUIRY
+[DISCOVERY][testsite.com]
+sources: commonPath=34 anchors=0 sitemap=0 jsonld=0 spa=0
+graphVisited=0 candidatesUnique=25 verified=0 rejectedNewsletter=0 rejectedNoMessageField=0 eligibleFound=1 selected=/
+??[PASS] DISC-10: Contact page has eligible textarea inquiry form selected directly
+??[PASS] DISC-11: Absolute candidate URL is resolved safely without double domain concatenation
+[Discovery] Checking /formless (common_path, score 50)
+[Discovery] Checking /valid-contact (anchor, score 45)
+[Discovery] Eligible inquiry form found on /valid-contact (textarea)
+[DISCOVERY][testsite.com]
+sources: commonPath=0 anchors=0 sitemap=0 jsonld=0 spa=0
+graphVisited=0 candidatesUnique=0 verified=2 rejectedNewsletter=0 rejectedNoMessageField=0 eligibleFound=1 selected=/valid-contact
+??[PASS] DISC-12: Candidate 1 formless; candidate 2 valid; target resolver processes candidate 2
+??[PASS] DISC-13: Sitemap fetch or parse failure is non-fatal and other finders continue
+??[PASS] DISC-14: One finder throwing error does not terminate discovery ensemble
+??[PASS] DISC-15: Duplicate URL discovered from multiple finders merges into 1 high-scored candidate
+??[PASS] DISC-16: Cross-origin iframe form hint marked diagnostic (no unsafe DOM access)
+[Discovery] Checking /page1 (common_path, score 30)
+[Discovery] Checking /page2 (common_path, score 30)
+[Discovery] Exhausted 0 unique candidates / 2 verified pages
+[Discovery] No eligible inquiry form found
+[DISCOVERY][testsite.com]
+sources: commonPath=0 anchors=0 sitemap=0 jsonld=0 spa=0
+graphVisited=0 candidatesUnique=0 verified=2 rejectedNewsletter=0 rejectedNoMessageField=0 eligibleFound=0 selected=none
+??[PASS] DISC-17: No eligible inquiry page after all sources settles as CONTACT_DISCOVERY_EXHAUSTED
+??[PASS] DISC-18: Cached known-good contact path prioritized early on repeat visit
+[Discovery] Checking /contact-high-score (anchor+sitemap, score 95)
+[Discovery] Rejected: no inquiry message field on /contact-high-score
+[Discovery] Exhausted 0 unique candidates / 1 verified pages
+[Discovery] No eligible inquiry form found
+[DISCOVERY][testsite.com]
+sources: commonPath=0 anchors=0 sitemap=0 jsonld=0 spa=0
+graphVisited=0 candidatesUnique=0 verified=1 rejectedNewsletter=0 rejectedNoMessageField=1 eligibleFound=0 selected=none
+??[PASS] DISC-19: Form without inquiry message field is rejected regardless discovery score
+??[PASS] DISC-20: Multilingual localized contact path /臾몄쓽 discovered
+
+=================================================================
+TOTAL TESTS: 20 | PASSED: 20 | FAILED: 0
+=================================================================
+
+=== 2. test_smart_gate_and_counters.js ===
+=== STARTING STRICT CONTACT GATE, REALTIME COUNTER & SMART RESOLVER SUITE ===
+[FORM_CLASSIFY] intent=NEWSLETTER eligible=false hasInquiryBody=false bodyFieldType=none fields=1 submitText="subscribe to newslet" positiveSignals=0 negativeSignals=3 decision=REJECT reason=NEWSLETTER_REJECTED
+??[PASS] FORM-GATE-1: Email-only newsletter form is rejected with intent NEWSLETTER
+[FORM_CLASSIFY] intent=NEWSLETTER eligible=false hasInquiryBody=false bodyFieldType=none fields=3 submitText="subscribe" positiveSignals=0 negativeSignals=2 decision=REJECT reason=NEWSLETTER_REJECTED
+??[PASS] FORM-GATE-2: Name + email + newsletter checkbox is rejected
+[FORM_CLASSIFY] intent=CONTACT_INQUIRY eligible=true hasInquiryBody=true bodyFieldType=textarea fields=3 submitText="send message" positiveSignals=3 negativeSignals=0 decision=ACCEPT reason=ELIGIBLE_CONTACT_INQUIRY
+??[PASS] FORM-GATE-3: Contact form with name/email/textarea/send is accepted
+[FORM_CLASSIFY] intent=CONTACT_INQUIRY eligible=true hasInquiryBody=true bodyFieldType=contenteditable fields=2 submitText="submit inquiry" positiveSignals=3 negativeSignals=0 decision=ACCEPT reason=ELIGIBLE_CONTACT_INQUIRY
+??[PASS] FORM-GATE-4: Custom contenteditable message field is accepted
+[FORM_CLASSIFY] intent=CONTACT_INQUIRY eligible=true hasInquiryBody=true bodyFieldType=role-textbox fields=0 submitText="contact us" positiveSignals=3 negativeSignals=0 decision=ACCEPT reason=ELIGIBLE_CONTACT_INQUIRY
+??[PASS] FORM-GATE-5: Semantic multiline role=textbox 'How can we help?' is accepted
+[FORM_CLASSIFY] intent=NEWSLETTER eligible=false hasInquiryBody=false bodyFieldType=none fields=5 submitText="join" positiveSignals=1 negativeSignals=0 decision=REJECT reason=NEWSLETTER_REJECTED
+??[PASS] FORM-GATE-6: High numeric score but no inquiry body field is rejected
+??[PASS] SUCCESS-SEMANTICS-1: Fields filled but submit button missing -> FAILURE, SUCCESS not incremented
+??[PASS] SUCCESS-SEMANTICS-2: Submit clicked but no success evidence -> DELIVERY_UNKNOWN, SUCCESS not incremented
+??[PASS] SUCCESS-SEMANTICS-3: Newsletter submitted successfully is rejected from AutoForm SUCCESS
+??[PASS] SUCCESS-SEMANTICS-4: Eligible contact form + message filled + confirmed thank-you -> CONFIRMED_SUCCESS = 1
+??[PASS] COUNTER-1: Start total 10: 2 success, 3 failure, 1 unknown, 1 in progress, 3 remaining
+??[PASS] COUNTER-2: Settle in-progress target as failure immediately updates FAILED and COMPLETED
+??[PASS] COUNTER-3: Close/reopen panel preserves exact counts from storage
+??[PASS] COUNTER-4: Pause/resume preserves exact counter snapshot
+??[PASS] COUNTER-5: History-skipped targets do not inflate FAILED or SUCCESS
+[SMART_FIELD] type=select category=inquiry_type source=semantic confidence=0.94 action=select stable=true
+??[PASS] AI-FIELD-1: Unknown required select with General Inquiry / Careers / Newsletter selects General Inquiry
+[SMART_FIELD] type=checkbox category=privacy_ack source=semantic confidence=0.96 action=check stable=true
+??[PASS] AI-FIELD-2: Required privacy acknowledgment checkbox is checked
+[SMART_FIELD] type=checkbox category=marketing source=semantic confidence=0.95 action=skip stable=true
+??[PASS] AI-FIELD-3: Optional newsletter checkbox remains unchecked
+[SMART_FIELD] type=checkbox category=marketing source=semantic confidence=0.95 action=unresolved reason=UNRESOLVED_MANDATORY_MARKETING stable=true
+??[PASS] AI-FIELD-4: Required SMS marketing checkbox is not auto-consented and marked unresolved
+[SMART_FIELD] type=number category=generic_quantity source=safe_default confidence=0.88 action=number stable=true
+??[PASS] AI-FIELD-5: Required generic numeric quantity with min=1 max=10 produces safe value
+[SMART_FIELD] type=number category=unknown_business_fact source=semantic confidence=0.98 action=unresolved reason=UNRESOLVED_REQUIRED_FACT stable=true
+??[PASS] AI-FIELD-6: Required annual revenue numeric field absent from template produces UNRESOLVED_REQUIRED_FACT
+[SMART_FIELD] type=select category=inquiry_type source=semantic confidence=0.94 action=select stable=true
+[SMART_FIELD] type=select category=inquiry_type source=semantic confidence=0.94 action=select stable=true
+??[PASS] AI-FIELD-7: Custom ARIA dropdown resets after selection triggers at most one corrective retry
+[SMART_FIELD] type=textarea category=message source=template confidence=1.00 action=fill stable=true
+??[PASS] AI-FIELD-8: Unknown 'How can we help?' textarea classifies as inquiry-body and uses saved message
+[SMART_FIELD] type=text category=subject source=template confidence=1.00 action=fill stable=true
+??[PASS] AI-FIELD-9: Custom unknown inquiry short-answer field produces concise consistent answer
+[FORM_CLASSIFY] intent=OTHER eligible=false hasInquiryBody=false bodyFieldType=none fields=3 submitText="" positiveSignals=0 negativeSignals=0 decision=REJECT reason=NO_INQUIRY_MESSAGE_FIELD
+??[PASS] AI-FIELD-10: Form with resolvable fields but NO message body is hard rejected with NO_INQUIRY_MESSAGE_FIELD
+[FORM_CLASSIFY] intent=NEWSLETTER eligible=false hasInquiryBody=true bodyFieldType=textarea fields=2 submitText="subscribe now" positiveSignals=1 negativeSignals=2 decision=REJECT reason=NEWSLETTER_REJECTED
+??[PASS] AI-FIELD-11: Newsletter form with textarea only for subscription comments is rejected
+[SMART_FILL_SUMMARY] eligibleContact=true messageField=true messageFilled=false fieldsSeen=4 templateMapped=1 semanticResolved=0 aiResolved=0 safeDefaults=0 unresolvedOptional=0 unresolvedRequired=0 dropdownsStable=true checkboxesStable=true radiosStable=true numericStable=true readyToSubmit=false
+??[PASS] AI-FIELD-12: Message field present but empty produces readyToSubmit=false
+[SMART_FIELD] type=text category=unknown_fact source=semantic confidence=0.95 action=unresolved reason=UNRESOLVED_REQUIRED_FACT stable=true
+??[PASS] AI-FIELD-13: Low confidence AI answer for required factual field remains unresolved
+[SMART_FIELD] type=text category=attribution source=safe_default confidence=0.88 action=fill stable=true
+[SMART_FIELD] type=text category=attribution source=safe_default confidence=0.88 action=fill stable=true
+??[PASS] AI-FIELD-14: Resolver cache prevents duplicate AI calls on same field signature
+[SMART_FILL_SUMMARY] eligibleContact=true messageField=true messageFilled=true fieldsSeen=5 templateMapped=1 semanticResolved=1 aiResolved=0 safeDefaults=0 unresolvedOptional=0 unresolvedRequired=0 dropdownsStable=true checkboxesStable=true radiosStable=true numericStable=true readyToSubmit=true
+[SMART_FILL_SUMMARY] eligibleContact=true messageField=true messageFilled=true fieldsSeen=5 templateMapped=0 semanticResolved=0 aiResolved=0 safeDefaults=0 unresolvedOptional=0 unresolvedRequired=1 dropdownsStable=true checkboxesStable=true radiosStable=true numericStable=true readyToSubmit=false
+??[PASS] AI-FIELD-15: Submit allowed ONLY when unresolvedRequired=0 and messageFilled=true
+
+=================================================================
+TOTAL TESTS: 30 | PASSED: 30 | FAILED: 0
+=================================================================
+=== 3. test_email_collector_integration.js ===
+=== [EMAIL COLLECTOR & SOLVER RELIABILITY SUITE ??ISSUE #6] ===
+  ??PASS: EMAIL-1: Static text with multiple valid emails -> exact normalized unique set
+  ??PASS: EMAIL-2: mailto query strings and casing properly normalized
+  ??PASS: EMAIL-3: Duplicate address in HTML and mailto collapses to 1 record with seenCount tracking
+  ??PASS: EMAIL-4: Invalid extensions and dummy prefixes are excluded
+  ??PASS: EMAIL-5: Dynamic text scanner extracts new emails
+  ??PASS: EMAIL-6: Recreating EmailCollectorStore preserves global accumulated data
+  ??PASS: EMAIL-7: Cross-site accumulation preserves all leads while Current Site updates
+  ??PASS: EMAIL-8: Clear Current preserves global; Clear All resets both
+  ??PASS: EMAIL-9: Export produces formula-safe RFC-4180 CSV and TXT
+  ??PASS: EMAIL-10: Candidate emails persist even when form submit returns FAILURE or FORM_NOT_FOUND
+  ??PASS: EMAIL-11: Email collector failures never block or throw out of form engine
+  ??PASS: EMAIL-12: Static inspection confirms zero dead native IPC channels in collector
+  ??PASS: SOLVER-1: setNativeValue and setNativeChecked declared in content-script.js top scope
+  ??PASS: SOLVER-2: detectSubmissionResult includes submitOutcome parameter
+  ??PASS: SOLVER-3: background.js SOLVE_CAPTCHA handles audio method and autonomous frame solver
+  ??PASS: SOLVER-4: tryNext in background.js verifies if candidate path is already http absolute
+
+=== SUITE COMPLETE: 16 PASSED, 0 FAILED ===
+
+=== 4. test_reliability_r1.js ===
+=== [FORM EXECUTION RELIABILITY & RESUME SUITE ??ISSUE #6 R1] ===
+?? [XpiderSender] Advanced Engine Loaded: https://example.com
+  ??PASS: HISTORY-SKIP-1: hasPriorAttempt returns true for durable execution statuses
+  ??PASS: HISTORY-SKIP-2: hasPriorAttempt returns false for import-only or invalid rows
+[XpiderLog] ?썳截?[FormStabilizer] Starting bounded stabilization (max 5s, max 2 retries/element)...
+[XpiderLog] ?썳截?[FormStabilizer] Stopped (MAX_LIFETIME_EXCEEDED): seen=2 stable=false unresolved=0 (selects=0, cbs=0, radios=0)
+  ??PASS: STABILIZER-1: FormStabilizer terminates boundedly and detects stability without infinite loop
+[XpiderLog] ?썳截?[FormStabilizer] Starting bounded stabilization (max 5s, max 2 retries/element)...
+[XpiderLog] ?썳截?[FormStabilizer] Stopped (MAX_LIFETIME_EXCEEDED): seen=1 stable=false unresolved=0 (selects=0, cbs=0, radios=0)
+  ??PASS: STABILIZER-2: FormStabilizer bounds element attempts (max 2) and assigns deterministic values
+[XpiderLog] ?좑툘 [SubmitStateMachine] form.checkValidity() reported invalid fields. Running single targeted repair...
+[XpiderLog] ??[SubmitStateMachine] Validation blocked after targeted repair (1 invalid fields)
+  ??PASS: SUBMIT-1: executeSubmitStateMachine verifies form.checkValidity() and stops stabilizer
+[XpiderLog] ?? [SubmitStateMachine] Discovered submit button: <BUTTON type="submit"> | Text: 
+  ??PASS: SUBMIT-2: Submit candidate discovery skips disabled and aria-disabled elements
+[XpiderLog] ?? [SubmitStateMachine] Discovered submit button: <BUTTON type="submit"> | Text: 
+  ??PASS: SUBMIT-3: Prefer form.requestSubmit() and use single event sequence on fallback click
+[XpiderLog] ?? [SubmitStateMachine] Discovered submit button: <BUTTON type="submit"> | Text: 
+  ??PASS: SUBMIT-4: HTMLFormElement.prototype.submit is never invoked
+[BootStep] solver_instantiation
+[X PIDER] Background script initializing (Unified Mode)...
+[BootStep] side_panel_config
+[BootStep] campaign_state_init
+[BootStep] global_functions_defined
+[BootStep] worker_online
+  ??PASS: RESUME-1: pauseCampaignOrchestrator saves durable snapshot in storage
+  ??PASS: RESUME-2: resumeCampaignOrchestrator restores exact remainingQueue without full reload
+  ??PASS: RESUME-3: endCampaignOrchestrator clears queue and removes checkpoint snapshot
+  ??PASS: HISTORY-SKIP-3: startCampaignOrchestrator filters attempted targets when skipPreviouslyAttempted=true
+  ??PASS: SUBMIT-5: Per-target outcome histogram records final reason codes
+
+=== RELIABILITY SUITE RESULTS: 13 PASSED, 0 FAILED ===
+
+=== 5. test_phase2b_acceptance.js ===
+=== [PHASE 2B ACCEPTANCE TEST RUNNER ??AUDITOR GATED R1] ===
+  ??PASS: TC-2B-1: Multi-Template CRUD & Dropdown Selector Synchronization
+  ??PASS: TC-2B-2: Authoritative Dual-Accessor CRUD & Atomic Error Propagation
+  ??PASS: TC-2B-3: History Ledger Querying, Filtering, and Domain Search
+  ??PASS: TC-2B-4: Selective Reset via UI Controller
+  ??PASS: TC-2B-5: Retry Failed semantics - No mutation of suppression or generation
+  ??PASS: TC-2B-6: Active Submission Reset Guard Rejection (Storage Lock Query)
+  ??PASS: TC-2B-7: CSV Audit Export Trigger & Additive Template Metadata
+[XPIDER_DIAG] [Engine][TX] action=START_CAMPAIGN queue=1 templateId=tpl_[REDACTED_PHONE]_ugern v=1 skipAttempted=false
+[XPIDER_DIAG] [Engine][ACK][+1ms] status=acknowledged
+[XPIDER_DIAG] [Engine][VERIFY] active=false queue=0
+  ??PASS: TC-2B-8: Production Controller Functions in popup.js Directly Invoked & startCampaign Payload Wired
+[XPIDER_DIAG] Diagnostic buffer cleared by operator.
+[XPIDER_DIAG] [IPC][REQ 02bh2u] channel=xpider-campaign-start queue=1 templateId=tpl_diag_test v=3 payloadBytes=176 docVis=unknown origin=unknown rtId=N/A mfVer=1.2.0
+[XPIDER_DIAG] [IPC][BRIDGE] No native XPIDER response bridge detected before request
+[XPIDER_DIAG] [IPC][REQ 02bh2u] listener=registered
+[XPIDER_DIAG] [IPC][REQ 02bh2u] postMessage dispatched
+[XPIDER_DIAG] [IPC][WAIT 02bh2u][+0.0s] responseSeen=false windowMessages=0 matching=0 bgAlive=checking campaignActive=true
+[XPIDER_DIAG] [IPC][WAIT 02bh2u][+0.1s] responseSeen=false windowMessages=0 matching=0 bgAlive=checking campaignActive=true
+[XPIDER_DIAG] [IPC][WAIT 02bh2u][+0.1s] responseSeen=false windowMessages=0 matching=0 bgAlive=checking campaignActive=true
+    [QA NOTE] SIMULATED XPIDER_RESPONSE bridge test = PASS (Verified no-responder timeout & diagnostic dump)
+    [QA NOTE] real Chrome native bridge = NOT_VERIFIED (Simulated test runner only; pending Owner live Chrome trace)
+  ??PASS: DIAG-IPC-1: No Responder Path ??Rejection, Checkpoints, and Structured Diagnostic Dump
+[XPIDER_DIAG] Diagnostic buffer cleared by operator.
+[XPIDER_DIAG] [IPC][REQ 0a5i6k] channel=xpider-campaign-start queue=1 templateId=tpl_diag_resp v=1 payloadBytes=105 docVis=unknown origin=unknown rtId=N/A mfVer=1.2.0
+[XPIDER_DIAG] [IPC][BRIDGE] No native XPIDER response bridge detected before request
+[XPIDER_DIAG] [IPC][REQ 0a5i6k] listener=registered
+[XPIDER_DIAG] [IPC][REQ 0a5i6k] postMessage dispatched
+[XPIDER_DIAG] [IPC][RX 0a5i6k][+29ms] type=XPIDER_RESPONSE idMatch=true origin=external
+[XPIDER_DIAG] [IPC][SUCCESS 0a5i6k][+29ms] Matching XPIDER_RESPONSE accepted
+    [QA NOTE] SIMULATED XPIDER_RESPONSE bridge test = PASS (Responder present resolution verified)
+    [QA NOTE] real Chrome native bridge = NOT_VERIFIED (Simulated mock only; does not prove unpacked Chrome bridge presence)
+  ??PASS: DIAG-IPC-2: Responder Present Path ??ID Match, Latency Capture, and Clean Resolution
+[XPIDER_DIAG] Diagnostic buffer cleared by operator.
+  ??PASS: TC-2B-11: Privacy-Safe Redaction Engine & Diagnostic Buffer Management
+[XPIDER_DIAG] [Engine][TX] action=START_CAMPAIGN queue=1 templateId=tpl_[REDACTED_PHONE]_ugern v=1 skipAttempted=false
+[XPIDER_DIAG] [Engine][ACK][+0ms] status=acknowledged
+[XPIDER_DIAG] [Engine][VERIFY] active=false queue=0
+  ??PASS: TRANSPORT-1: Campaign Start via Chrome Runtime Transport ??START_CAMPAIGN dispatched, ACK received, no XPIDER_INVOKE
+[XPIDER_DIAG] [Engine][TX] action=START_CAMPAIGN queue=1 templateId=tpl_[REDACTED_PHONE]_ugern v=1 skipAttempted=false
+  ??PASS: TRANSPORT-2: Start Failure Recovery ??Rejection restores start button and keeps campaignActive=false
+  ??PASS: TRANSPORT-3: GET_STATE Retrieval ??Immediate background query with no 30s native timeout
+[XPIDER_DIAG] [Engine][TX] action=PAUSE_CAMPAIGN
+[XPIDER_DIAG] [Engine][TX] action=RESUME_CAMPAIGN
+[XPIDER_DIAG] [Engine][TX] action=STOP_CAMPAIGN
+  ??PASS: TRANSPORT-4: Pause / Resume / Stop ??Uses PAUSE_CAMPAIGN, RESUME_CAMPAIGN, STOP_CAMPAIGN without dead IPC
+  ??PASS: TRANSPORT-5: Wit Key Management ??Reads from storage and updates via UPDATE_WIT_KEY without leaking secret
+  ??PASS: TRANSPORT-6: Save Template ??Uses Chrome downloads and does not invoke xpider-show-save-dialog
+  ??PASS: TRANSPORT-7: Zero Native Dependency ??Static inspection confirms none of the 8 dead channels are called
+
+=== PHASE 2B ACCEPTANCE SUITE RESULTS: 18 PASSED, 0 FAILED ===
+
+=== 6. test_master_pending_work_r1.js ===
+?? [XpiderSender] Advanced Engine Loaded: https://bostonbjjwoburn.com/contact-us/
+
+=== [MASTER PENDING WORK ORDER R1 ACCEPTANCE SUITE ??ISSUE #6] ===
+
+--- 1. FIELD INTEGRITY BEFORE SUBMIT ---
+  ??PASS: FIELD-INT-1: freezeFieldValues snapshots all filled fields and attributes
+  ??PASS: FIELD-INT-2: Unrelated red styling or .required class does not clear fields
+[XpiderLog] ?썳截?[Integrity] REQUIRED_FIELD_LOST_BEFORE_SUBMIT detected on <INPUT name="email">. Applying targeted same-value repair...
+  ??PASS: FIELD-INT-3: Reverted or blanked field triggers targeted same-value repair with authoritative value
+[XpiderLog] ?썳截?[Integrity] FIELD_NODE_REPLACED: Updated reference for <INPUT name="message">
+  ??PASS: FIELD-INT-4: FIELD_NODE_REPLACED detected and handled when framework unmounts DOM node
+[XpiderLog] ?썳截?[Integrity] FIELD_CLEARED_BEFORE_SUBMIT detected on <INPUT name="mystery_field">. Applying targeted same-value repair...
+  ??PASS: FIELD-INT-5: FIELD_REPAIR_FAILED returned if native field cannot retain repaired value
+
+--- 2. SUBMIT RELIABILITY R2 ---
+[XpiderLog] ??[SubmitStateMachine] Submit candidate currently disabled. Observing for enablement...
+[XpiderLog] ??[SubmitStateMachine] Submit button never became enabled
+  ??PASS: SUBMIT-R2-1: Disabled submit button observed up to 2.5s; returns SUBMIT_BUTTON_NEVER_ENABLED if never enabled
+[XpiderLog] ??[SubmitStateMachine] Submit candidate currently disabled. Observing for enablement...
+[XpiderLog] ??[SubmitStateMachine] Submit candidate enabled after 264ms!
+[XpiderLog] ?? [SubmitStateMachine] Discovered submit button: <BUTTON type="submit"> | Text: Submit
+  ??PASS: SUBMIT-R2-2: Submit button initially disabled then enabled by framework succeeds
+[XpiderLog] ??[SubmitStateMachine] Submit click blocked by overlay
+  ??PASS: SUBMIT-R2-3: Overlay clickability test blocks submit with SUBMIT_CLICK_BLOCKED_BY_OVERLAY
+[XpiderLog] ?? [SubmitStateMachine] Discovered submit button: <BUTTON type="submit"> | Text: Send
+  ??PASS: SUBMIT-R2-4: Native FORM prefers form.requestSubmit(btn); custom SPA falls back to single trusted click
+
+--- 3. SMART UNKNOWN-FIELD COMPLETION & RANDOM SAFE CHOICES ---
+[SMART_FIELD] type=checkbox category=inquiry_choice_group source=random_safe_choice confidence=0.90 action=check stable=true
+[SMART_FIELD] type=checkbox category=inquiry_choice_group source=random_safe_choice confidence=0.90 action=skip stable=true
+[SMART_FIELD] type=checkbox category=inquiry_choice_group source=random_safe_choice confidence=0.90 action=check stable=true
+  ??PASS: SMART-RND-1: Boston BJJ "I'm interested in..." checkbox group selects one valid option stably and caches choice
+[SMART_FIELD] type=select category=general_dropdown source=random_safe_choice confidence=0.85 action=select stable=true
+[SMART_FIELD] type=select category=general_dropdown source=random_safe_choice confidence=0.85 action=select stable=true
+  ??PASS: SMART-RND-2: Safe dropdown random choice selects one non-placeholder option stably and caches choice
+[SMART_FIELD] type=text category=honeypot source=safety confidence=1.00 action=skip reason=HONEYPOT_UNTOUCHED stable=true
+  ??PASS: SMART-RND-3: Honeypots are strictly untouched (HONEYPOT_UNTOUCHED)
+[SMART_FIELD] type=number category=unknown_business_fact source=semantic confidence=0.98 action=unresolved reason=UNRESOLVED_REQUIRED_FACT stable=true
+  ??PASS: SMART-RND-4: Factual sensitive questions without template facts return UNRESOLVED_REQUIRED_FACT without hallucination
+[SMART_FIELD] type=checkbox category=privacy_ack source=semantic confidence=0.96 action=check stable=true
+[SMART_FIELD] type=checkbox category=marketing source=semantic confidence=0.95 action=skip stable=true
+  ??PASS: SMART-RND-5: Required Terms / Privacy auto-checked; Marketing / Newsletter stays unchecked
+
+--- 4. HISTORY CONTACT LINKS & GOOGLE SHEETS CSV EXPORT ---
+  ??PASS: HIST-LINK-1: updateAttemptContact records contact page URL, hostname, and discovery source in PREPARING status
+  ??PASS: HIST-LINK-2: Settle attempt preserves contactPageUrl, duration, and status
+  ??PASS: GSHEETS-CSV-1: exportGoogleSheetsCsv exports exact 16 RFC-4180 columns with formula injection protection
+  ??PASS: GSHEETS-CSV-2: exportGoogleSheetsCsv supports filtering by active filtered records
+
+--- 5. REALTIME CAMPAIGN METRICS ---
+  ??PASS: METRICS-1: Settle target updates authoritative counters and breakdown histogram
+
+=== SUITE COMPLETE: 19 PASSED, 0 FAILED ===
+
