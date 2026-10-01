@@ -97,8 +97,43 @@ let campaignState = {
     isInitialized: false,
     targetResolve: null,
     targetReady: null,
-    currentAttempt: null // [v1.2.0 Intent Ledger] { url, attemptId, status: 'SUBMIT_PENDING'|'RESOLVED', reasonCode, ts }
+    currentAttempt: null, // [v1.2.0 Intent Ledger] { url, attemptId, status: 'SUBMIT_PENDING'|'RESOLVED', reasonCode, ts }
+    // [Authoritative Real-Time Campaign Counters]
+    counters: {
+        success: 0,
+        failed: 0,
+        completed: 0,
+        remaining: 0,
+        deliveryUnknown: 0,
+        skippedHistory: 0,
+        inProgress: 0,
+        total: 0,
+        failureBreakdown: {}
+    }
 };
+
+function broadcastCounters() {
+    chrome.runtime.sendMessage({
+        action: 'UPDATE_STATS',
+        data: {
+            successCount: campaignState.counters.success,
+            failedCount: campaignState.counters.failed,
+            completedCount: campaignState.counters.completed,
+            remainingCount: campaignState.counters.remaining,
+            totalTargets: campaignState.counters.total,
+            failureBreakdown: campaignState.counters.failureBreakdown,
+            counters: campaignState.counters
+        }
+    }).catch(() => {});
+}
+
+async function persistCounters() {
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+        try {
+            await chrome.storage.local.set({ xpider_campaign_counters_v1: campaignState.counters });
+        } catch (_) {}
+    }
+}
 
 // [v18.35.0] Mission-Critical API Wrapper: Native bridge for missing APIs
 const safeTabs = {
@@ -399,6 +434,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
         case 'PING':
             sendResponse({ success: true, timestamp: Date.now() });
+            return true;
+
+        case 'GET_CAMPAIGN_COUNTERS':
+            sendResponse({ success: true, counters: campaignState.counters });
             return true;
 
         case 'STOP_CAMPAIGN':
@@ -926,6 +965,20 @@ async function startCampaignOrchestrator(queue, template, delayMs, fillDelayMs =
         saveCampaignState().catch(() => {}); 
         logBg(null, "[Boot] Storage sync initiated.", "debug");
 
+        campaignState.counters = {
+            success: 0,
+            failed: 0,
+            completed: 0,
+            remaining: executableQueue.length,
+            deliveryUnknown: 0,
+            skippedHistory: historySkippedCount,
+            inProgress: 0,
+            total: executableQueue.length,
+            failureBreakdown: {}
+        };
+        await persistCounters();
+        broadcastCounters();
+
         processNextCampaignTarget(campaignState.sessionId);
         logBg(null, "[Boot] Target loop triggered.", "debug");
         
@@ -1009,7 +1062,8 @@ async function pauseCampaignOrchestrator(saveCheckpoint = true) {
             submitDelayMs: campaignState.submitDelayMs,
             sessionId: campaignState.sessionId,
             pausedAt: Date.now(),
-            outcomeHistogram: { ...(campaignState.outcomeHistogram || {}) }
+            outcomeHistogram: { ...(campaignState.outcomeHistogram || {}) },
+            counters: { ...(campaignState.counters || {}) }
         };
         campaignState.pausedCheckpoint = checkpoint;
         await chrome.storage.local.set({
@@ -1051,6 +1105,11 @@ async function resumeCampaignOrchestrator() {
     campaignState.fillDelayMs = checkpoint.fillDelayMs || 300;
     campaignState.submitDelayMs = checkpoint.submitDelayMs || 1500;
     campaignState.outcomeHistogram = { ...(checkpoint.outcomeHistogram || {}) };
+    if (checkpoint.counters) {
+        campaignState.counters = { ...checkpoint.counters };
+        await persistCounters();
+        broadcastCounters();
+    }
     
     campaignState.sessionId = (checkpoint.sessionId || 0) + 1;
     campaignState.isActive = true;
@@ -1409,6 +1468,13 @@ async function orchestrateSending(urlInput, template) {
             reasonCode: 'PREPARING',
             timestamp: Date.now()
         };
+
+        // Mark target as in progress
+        campaignState.counters.inProgress = 1;
+        campaignState.counters.remaining = Math.max(0, campaignState.counters.total - campaignState.counters.completed - campaignState.counters.inProgress - campaignState.counters.skippedHistory);
+        persistCounters().catch(() => {});
+        broadcastCounters();
+
         // Persist to chrome.storage.local immediately
         if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
             await new Promise((resolve, reject) => {
@@ -1590,6 +1656,22 @@ async function orchestrateSending(urlInput, template) {
             logBg(tabId, `⚠️ [IntentGuard] Failed to settle submission intent: ${intentErr.message}`, "warning");
         }
 
+        // [Authoritative Real-Time Counter Settlement]
+        campaignState.counters.inProgress = 0;
+        if (isSuccess) {
+            campaignState.counters.success++;
+        } else if (isDeliveryUnknown) {
+            campaignState.counters.deliveryUnknown++;
+        } else {
+            campaignState.counters.failed++;
+            const reasonKey = finalReason || 'UNKNOWN_FAILURE';
+            campaignState.counters.failureBreakdown[reasonKey] = (campaignState.counters.failureBreakdown[reasonKey] || 0) + 1;
+        }
+        campaignState.counters.completed = campaignState.counters.success + campaignState.counters.failed + campaignState.counters.deliveryUnknown;
+        campaignState.counters.remaining = Math.max(0, campaignState.counters.total - campaignState.counters.completed - campaignState.counters.skippedHistory);
+        await persistCounters();
+        broadcastCounters();
+
         if (res && res.success) {
             logBg(tabId, "✨ [Engine] Submission confirmed. Tab will close shortly...", "success");
             await new Promise(r => setTimeout(r, 2000));
@@ -1691,7 +1773,7 @@ async function orchestrateSending(urlInput, template) {
                     return; 
                 }
                 
-                await safeScripting.executeScript({ target: { tabId }, files: ['content-script.js'] });
+                await safeScripting.executeScript({ target: { tabId }, files: ['modules/contact-gate.js', 'modules/smart-field-resolver.js', 'content-script.js'] });
                 safeScripting.executeScript({ target: { tabId }, files: ['solver-content.js'] }).catch(() => {});
                 startPolling();
             } catch (e) {

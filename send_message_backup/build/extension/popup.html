@@ -460,10 +460,14 @@
                 </div>
                 <!-- Stats Area: Modern Premium Neon Grid -->
                 <div class="stats-premium-box stats-yellow-neon">
-                    <div class="stats-grid-premium">
+                    <div class="stats-grid-premium" style="grid-template-columns: repeat(4, 1fr);">
                         <div class="stats-card-premium">
                             <div class="stats-card-label neon-green-text">SUCCESS</div>
                             <div class="stats-card-value" id="success-count-display">0</div>
+                        </div>
+                        <div class="stats-card-premium" id="failed-card-btn" style="cursor: pointer;" title="Click to view failure breakdown">
+                            <div class="stats-card-label neon-red-text">FAILED</div>
+                            <div class="stats-card-value" id="failed-count-display">0</div>
                         </div>
                         <div class="stats-card-premium">
                             <div class="stats-card-label neon-blue-text">COMPLETED</div>
@@ -472,6 +476,16 @@
                         <div class="stats-card-premium">
                             <div class="stats-card-label neon-yellow-text">REMAINING</div>
                             <div class="stats-card-value" id="remaining-count-display">0</div>
+                        </div>
+                    </div>
+                    <!-- Failure Reason Breakdown (Compact & Interactive) -->
+                    <div id="failure-breakdown-container" class="hidden" style="margin-top: 8px; padding: 6px 10px; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 6px; font-size: 11px;">
+                        <div style="display: flex; justify-content: space-between; font-weight: bold; color: #ef4444; margin-bottom: 4px;">
+                            <span>FAILED REASON BREAKDOWN</span>
+                            <span id="failure-breakdown-toggle" style="cursor: pointer; text-decoration: underline; color: #ff9999;">Close</span>
+                        </div>
+                        <div id="failure-breakdown-list" style="display: flex; flex-direction: column; gap: 2px; color: #cbd5e1; font-family: monospace;">
+                            <div class="empty-breakdown" style="color: #64748b;">No failures recorded.</div>
                         </div>
                     </div>
                 </div>

@@ -602,6 +602,39 @@ async function initializeAsyncComponents() {
     // ── Step 12: Pulse check ──
     try { startPulseCheck(); } catch(e) {}
 
+    // ── Step 13: Authoritative Counters Restore & Storage Listener ──
+    try {
+        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+            chrome.storage.local.get(['xpider_campaign_counters_v1'], (res) => {
+                if (res && res.xpider_campaign_counters_v1) {
+                    const c = res.xpider_campaign_counters_v1;
+                    updateRealTimeStatus({
+                        totalTargets: c.total,
+                        successCount: c.success,
+                        failedCount: c.failed,
+                        completedCount: c.completed,
+                        remainingCount: c.remaining,
+                        failureBreakdown: c.failureBreakdown
+                    });
+                }
+            });
+
+            chrome.storage.onChanged.addListener((changes, area) => {
+                if (area === 'local' && changes.xpider_campaign_counters_v1 && changes.xpider_campaign_counters_v1.newValue) {
+                    const c = changes.xpider_campaign_counters_v1.newValue;
+                    updateRealTimeStatus({
+                        totalTargets: c.total,
+                        successCount: c.success,
+                        failedCount: c.failed,
+                        completedCount: c.completed,
+                        remainingCount: c.remaining,
+                        failureBreakdown: c.failureBreakdown
+                    });
+                }
+            });
+        }
+    } catch (_) {}
+
     // [WitKey] Audio STT API Key (Wit.ai) load directly from chrome.storage.local
     _loadInitialWitKey();
 
@@ -737,6 +770,15 @@ function updateRealTimeStatus(data) {
             }
         }
     }
+
+    if (data.failedCount !== undefined) {
+        const failedDisplay = document.getElementById('failed-count-display');
+        if (failedDisplay) failedDisplay.textContent = data.failedCount;
+    }
+
+    if (data.failureBreakdown && typeof data.failureBreakdown === 'object') {
+        renderFailureBreakdown(data.failureBreakdown);
+    }
     
     if (data.remainingCount !== undefined) {
         remainingTargets = data.remainingCount;
@@ -758,6 +800,24 @@ function updateRealTimeStatus(data) {
             countDisplay.textContent = `${remainingTargets} (${remainingLabel}) / ${totalTargets} URLs`;
         }
     }
+}
+
+function renderFailureBreakdown(breakdown) {
+    const listEl = document.getElementById('failure-breakdown-list');
+    if (!listEl) return;
+    const entries = Object.entries(breakdown || {}).filter(([_, count]) => count > 0);
+    if (entries.length === 0) {
+        listEl.innerHTML = '<div class="empty-breakdown" style="color: #64748b;">No failures recorded.</div>';
+        return;
+    }
+    listEl.innerHTML = entries
+        .sort((a, b) => b[1] - a[1])
+        .map(([reason, count]) => `
+            <div style="display: flex; justify-content: space-between; padding: 2px 0; border-bottom: 1px dashed rgba(255,255,255,0.06);">
+                <span style="color: #fda4af;">- ${reason}</span>
+                <span style="font-weight: bold; color: #ef4444;">${count}</span>
+            </div>
+        `).join('');
 }
 
 /**
@@ -889,6 +949,21 @@ function bindEvents() {
 
     const clearDiagBtn = document.getElementById('clear-diagnostic-btn');
     if (clearDiagBtn) clearDiagBtn.addEventListener('click', clearDiagnosticLog);
+
+    // FAILED Breakdown Card Toggle
+    const failedCardBtn = document.getElementById('failed-card-btn');
+    const breakdownContainer = document.getElementById('failure-breakdown-container');
+    const breakdownToggle = document.getElementById('failure-breakdown-toggle');
+    if (failedCardBtn && breakdownContainer) {
+        failedCardBtn.addEventListener('click', () => {
+            breakdownContainer.classList.toggle('hidden');
+        });
+    }
+    if (breakdownToggle && breakdownContainer) {
+        breakdownToggle.addEventListener('click', () => {
+            breakdownContainer.classList.add('hidden');
+        });
+    }
 
     // Settings
     const settingsToggle = document.getElementById('settings-toggle');

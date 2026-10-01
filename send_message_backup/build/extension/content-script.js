@@ -31,6 +31,14 @@
 (function() {
     console.log("🚀 [XpiderSender] Advanced Engine Loaded: " + window.location.href);
 
+    const _ContactGate = (typeof ContactGate !== 'undefined' && ContactGate) || 
+        (typeof window !== 'undefined' && window.ContactGate) || 
+        (typeof require !== 'undefined' ? require('./modules/contact-gate.js') : null);
+
+    const _SmartFieldResolver = (typeof SmartFieldResolver !== 'undefined' && SmartFieldResolver) || 
+        (typeof window !== 'undefined' && window.SmartFieldResolver) || 
+        (typeof require !== 'undefined' ? require('./modules/smart-field-resolver.js') : null);
+
     // ============================================================
     // [HyperEngine v4.0] Top-level React/Vue/Angular Native Value & Checked Setters
     // ============================================================
@@ -673,12 +681,27 @@
 
     async function fillAndSubmit(form, template, speed) {
         try {
+            // [HARD ELIGIBILITY GATE] Verify form eligibility before any autofill or submit
+            if (_ContactGate && typeof _ContactGate.classifyFormIntent === 'function') {
+                const classification = _ContactGate.classifyFormIntent(form);
+                if (!classification.eligible) {
+                    logDev(`❌ [ContactGate] Form rejected: ${classification.reason}`, "error");
+                    finishCampaign(false, classification.reason, classification.reason);
+                    return false;
+                }
+                logDev(`[CONTACT_GATE] PASS bodyField=${classification.bodyFieldType}`, "success");
+            }
+
             logDev("🛠️ Step 3: Registering message template to form fields...", "info");
             // [v4.1] 300ms 실시간 공란 자동 메꾸기 감시 크롤러 작동 개시
             startActiveEmptyFieldSweeper(form, template);
 
             const result = await fillFormIntelligent(form, template, speed);
-            if (!result.filledAny) throw new Error("Zero-mapping: No usable fields found.");
+            if (!result || !result.filledAny) {
+                const failReason = (result && result.reasonCode) || "Zero-mapping: No usable fields found.";
+                throw new Error(failReason);
+            }
+            logDev("[FILL] messageBodyFilled=true", "success");
             
             // [v1.5.7] Math Captcha Handling (Divi & Others)
             await solveMathCaptcha(form);
@@ -700,6 +723,7 @@
             stopActiveEmptyFieldSweeper();
 
             logDev("📤 [Action] Triggering submission sequence...");
+            logDev("[SUBMIT] triggered=true", "info");
             
             // [v18.6.0] Take Snapshot of existing success indicators to avoid false positives
             const currentSuccessSnapshot = takeSuccessSnapshot();
@@ -841,6 +865,15 @@
 
             elements.forEach((el) => {
                 if (!el || !el.tagName) return; // [v17.3.0] Element Safety: Skip document/shadowRoot headers
+
+                // [HARD ELIGIBILITY GATE] Body-field gate comes BEFORE numeric form scoring
+                if (_ContactGate && typeof _ContactGate.classifyFormIntent === 'function') {
+                    const classification = _ContactGate.classifyFormIntent(el);
+                    if (!classification.eligible) {
+                        return; // Reject non-inquiry or newsletter form even if numeric score would be high
+                    }
+                }
+
                 let score = 0;
                 const textareas = el.querySelectorAll('textarea');
                 const emails = el.querySelectorAll('input[type="email"], input[name*="email"], input[id*="email"]');
@@ -3043,8 +3076,10 @@
 
             // [v18.7.0] Success Visibility Buffer: Wait 3.5s so user can see the confirmation UI
             logDev("✨ [Engine] Submission confirmed. Holding tab for visual check...", "info");
+            logDev("[VERIFY] confirmedSuccess=true", "info");
+            logDev("[FINAL] status=CONFIRMED_SUCCESS", "success");
             await new Promise(r => setTimeout(r, 3500));
-            finishCampaign(true);
+            finishCampaign(true, null, 'SUCCESS_CONFIRMED');
             return true;
         };
 
@@ -3147,10 +3182,12 @@
         window._xpider_healed = false;
 
         logDev("❌ [Result] Submission verification timed out after 10s.", "error");
+        logDev("[VERIFY] confirmedSuccess=false", "warning");
         sessionStorage.removeItem('xpider_submit_count'); // 실패 시 이중 제출 세션도 정리
         const timeoutReason = (submitOutcome && submitOutcome.strategy === 'trusted_click_sequence' && !submitOutcome.submitEventFired)
             ? 'SUBMIT_CLICK_NO_EFFECT'
             : 'DELIVERY_UNKNOWN';
+        logDev(`[FINAL] status=${timeoutReason}`, "warning");
         finishCampaign(false, "Submission verification failed (Timeout - No success indicator found).", timeoutReason);
         return false;
     }
@@ -3182,7 +3219,9 @@
             startActiveEmptyFieldSweeper,
             stopActiveEmptyFieldSweeper,
             submitForm,
-            fillAndSubmit
+            fillAndSubmit,
+            ContactGate: _ContactGate,
+            SmartFieldResolver: _SmartFieldResolver
         };
     }
 })();

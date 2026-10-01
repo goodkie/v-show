@@ -1250,9 +1250,19 @@ body.template-active .action-buttons {
     text-shadow: 0 0 8px rgba(250, 204, 21, 0.6) !important;
 }
 
+.neon-red-text {
+    color: #ef4444 !important;
+    text-shadow: 0 0 8px rgba(239, 68, 68, 0.6) !important;
+}
+
 #success-count-display {
     color: #22c55e !important;
     text-shadow: 0 0 10px rgba(34, 197, 94, 0.8) !important;
+}
+
+#failed-count-display {
+    color: #ef4444 !important;
+    text-shadow: 0 0 10px rgba(239, 68, 68, 0.8) !important;
 }
 
 #completed-count-display {
