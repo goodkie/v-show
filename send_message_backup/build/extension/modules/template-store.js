@@ -20,7 +20,7 @@
             if (typeof nameOrOpts === 'string') {
                 opts = { name: nameOrOpts, ...maybeOpts };
             } else {
-                opts = nameOrOpts || {};
+                opts = { ...maybeOpts, ...(nameOrOpts || {}) };
             }
             const now = Date.now();
             const sender = opts.sender || {};
@@ -91,6 +91,12 @@
             const copy = JSON.parse(JSON.stringify(tpl));
             copy.id = `tpl_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
             copy.name = `${copy.name} (Copy)`;
+            if (copy.subject) {
+                copy.subject = `${copy.subject} (Copy)`;
+            }
+            if (copy.content && copy.content.subject) {
+                copy.content.subject = `${copy.content.subject} (Copy)`;
+            }
             copy.version = 1;
             copy.isDefault = false;
             copy.createdAt = Date.now();
@@ -309,6 +315,177 @@
                 aiInstructions: item.aiInstructions || '',
                 isDefault: !!(item.isDefault || item.default)
             });
+        }
+
+        // =====================================================================
+        // Phase 2B: Full Multi-Template CRUD Store Operations
+        // =====================================================================
+
+        async getStore() {
+            if (!this.storage || typeof this.storage.get !== 'function') {
+                return { version: 2, templates: {}, defaultId: null, recentIds: [] };
+            }
+            return new Promise((resolve) => {
+                let resolved = false;
+                const onData = (data) => {
+                    if (resolved) return;
+                    resolved = true;
+                    const store = (data && data.templates_v2 && typeof data.templates_v2 === 'object')
+                        ? data.templates_v2
+                        : { version: 2, templates: {}, defaultId: null, recentIds: [] };
+                    resolve(store);
+                };
+                const res = this.storage.get(['templates_v2'], onData);
+                if (res && typeof res.then === 'function') {
+                    res.then(onData).catch(() => {
+                        if (!resolved) { resolved = true; resolve({ version: 2, templates: {}, defaultId: null, recentIds: [] }); }
+                    });
+                }
+            });
+        }
+
+        async setStore(store) {
+            if (!this.storage || typeof this.storage.set !== 'function') return;
+            return new Promise((resolve, reject) => {
+                let settled = false;
+                const onDone = (err) => {
+                    if (settled) return;
+                    settled = true;
+                    if (err) reject(err);
+                    else resolve();
+                };
+                const res = this.storage.set({ templates_v2: store }, onDone);
+                if (res && typeof res.then === 'function') {
+                    res.then(() => onDone()).catch(onDone);
+                }
+            });
+        }
+
+        async getAllTemplates() {
+            const store = await this.getStore();
+            return {
+                templates: Object.values(store.templates || {}),
+                templatesMap: store.templates || {},
+                defaultId: store.defaultId,
+                recentIds: store.recentIds || []
+            };
+        }
+
+        async getTemplate(id) {
+            const store = await this.getStore();
+            if (store.templates && store.templates[id]) {
+                return store.templates[id];
+            }
+            if (store.defaultId && store.templates && store.templates[store.defaultId]) {
+                return store.templates[store.defaultId];
+            }
+            return null;
+        }
+
+        async saveTemplateRecord(tpl) {
+            const store = await this.getStore();
+            const canonical = this.createTemplateData(tpl, tpl.id ? { id: tpl.id } : {});
+            const id = canonical.id;
+
+            if (!store.templates) store.templates = {};
+            store.templates[id] = canonical;
+            if (!store.defaultId) store.defaultId = id;
+            if (!store.recentIds) store.recentIds = [];
+            if (!store.recentIds.includes(id)) store.recentIds.unshift(id);
+
+            await this.setStore(store);
+
+            if (store.defaultId === id && this.storage && typeof this.storage.set === 'function') {
+                const legacy = {
+                    firstName: canonical.firstName,
+                    lastName: canonical.lastName,
+                    name: canonical.fullName,
+                    email: canonical.email,
+                    phone: canonical.phone,
+                    company: canonical.company,
+                    website: canonical.website,
+                    subject: canonical.subject,
+                    message: canonical.message
+                };
+                await new Promise((resolve) => {
+                    const res = this.storage.set({ xpider_tpl: legacy }, () => resolve());
+                    if (res && typeof res.then === 'function') res.then(resolve).catch(resolve);
+                });
+            }
+
+            return canonical;
+        }
+
+        async setDefaultTemplate(id) {
+            const store = await this.getStore();
+            if (!store.templates || !store.templates[id]) {
+                throw new Error(`Template not found: ${id}`);
+            }
+            store.defaultId = id;
+            const tpl = store.templates[id];
+            tpl.isDefault = true;
+
+            for (const otherId of Object.keys(store.templates)) {
+                if (otherId !== id) {
+                    store.templates[otherId].isDefault = false;
+                }
+            }
+
+            await this.setStore(store);
+
+            if (this.storage && typeof this.storage.set === 'function') {
+                const legacy = {
+                    firstName: tpl.firstName,
+                    lastName: tpl.lastName,
+                    name: tpl.fullName,
+                    email: tpl.email,
+                    phone: tpl.phone,
+                    company: tpl.company,
+                    website: tpl.website,
+                    subject: tpl.subject,
+                    message: tpl.message
+                };
+                await new Promise((resolve) => {
+                    const res = this.storage.set({ xpider_tpl: legacy }, () => resolve());
+                    if (res && typeof res.then === 'function') res.then(resolve).catch(resolve);
+                });
+            }
+
+            return tpl;
+        }
+
+        async deleteTemplate(id) {
+            const store = await this.getStore();
+            if (!store.templates || !store.templates[id]) {
+                throw new Error(`Template not found: ${id}`);
+            }
+            if (store.defaultId === id) {
+                const remainingIds = Object.keys(store.templates).filter(k => k !== id);
+                if (remainingIds.length === 0) {
+                    throw new Error("Cannot delete the only remaining template");
+                }
+                store.defaultId = remainingIds[0];
+                store.templates[remainingIds[0]].isDefault = true;
+            }
+
+            delete store.templates[id];
+            if (store.recentIds) {
+                store.recentIds = store.recentIds.filter(k => k !== id);
+            }
+
+            await this.setStore(store);
+            return { deleted: true, id, defaultId: store.defaultId };
+        }
+
+        async duplicateAndSaveTemplate(id) {
+            const store = await this.getStore();
+            const original = store.templates ? store.templates[id] : null;
+            if (!original) {
+                throw new Error(`Original template not found: ${id}`);
+            }
+
+            const copy = this.duplicateTemplate(original);
+            return await this.saveTemplateRecord(copy);
         }
     }
 

@@ -739,6 +739,8 @@ async function startCampaignOrchestrator(queue, template, delayMs, fillDelayMs =
         // [v18.15.5] Restore Campaign Variables
         campaignState.queue = queue;
         campaignState.template = template;
+        campaignState.templateId = (template && (template.id || template.templateId)) || 'default';
+        campaignState.templateVersion = (template && (template.version || template.templateVersion)) || 1;
         campaignState.delayMs = delayMs || 6000;
         campaignState.fillDelayMs = fillDelayMs || 300;
         campaignState.submitDelayMs = submitDelayMs || 1500;
@@ -1076,7 +1078,12 @@ async function orchestrateSending(urlInput, template) {
     let _attemptId = null;
     try {
         const hs = await _getHistoryStore();
-        const attemptResult = await hs.recordAttempt(targetUrl, { status: 'PREPARING', reason: 'PREPARING' });
+        const attemptResult = await hs.recordAttempt(targetUrl, {
+            status: 'PREPARING',
+            reason: 'PREPARING',
+            templateId: campaignState.templateId || null,
+            templateVersion: campaignState.templateVersion || 1
+        });
         _attemptId = attemptResult && attemptResult.attemptId ? attemptResult.attemptId : null;
         if (!_attemptId) throw new Error('recordAttempt returned no attemptId');
         await hs.persist();

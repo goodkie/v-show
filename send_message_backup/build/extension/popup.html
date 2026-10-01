@@ -58,6 +58,7 @@
             <div class="tabs" id="main-tabs">
                 <button class="tab-btn active" data-tab="campaign" data-i18n="tab_campaign">Campaign</button>
                 <button class="tab-btn" data-tab="template" data-i18n="tab_template">Message Template</button>
+                <button class="tab-btn" data-tab="history" data-i18n="tab_history">History & Ledger</button>
             </div>
 
             <div class="tab-content active" id="campaign-tab">
@@ -151,7 +152,7 @@
             </div>
 
             <div class="tab-content" id="template-tab">
-                <!-- [v1.7.0] Template Library Management -->
+                <!-- [Phase 2B] Advanced Template Library Management -->
                 <div class="template-management-area">
                     <div class="management-row">
                         <label data-i18n="label_select_template">Saved templates</label>
@@ -159,9 +160,13 @@
                             <option value="default" selected>Default Template</option>
                         </select>
                     </div>
-                    <div class="management-buttons">
-                        <button id="save-tpl-btn" class="secondary-btn-small" data-i18n="btn_save_template">저장</button>
-                        <button id="load-tpl-file-btn" class="secondary-btn-small" data-i18n="btn_load_file">불러오기</button>
+                    <div class="management-buttons-toolbar">
+                        <button id="new-tpl-btn" class="tb-btn" title="Create a new template">➕ New</button>
+                        <button id="save-tpl-changes-btn" class="tb-btn glow-teal" title="Save changes to active template">💾 Save</button>
+                        <button id="dup-tpl-btn" class="tb-btn" title="Duplicate active template">📋 Clone</button>
+                        <button id="default-tpl-btn" class="tb-btn" title="Set active template as default">⭐ Default</button>
+                        <button id="del-tpl-btn" class="tb-btn glow-red" title="Delete active template">🗑️ Delete</button>
+                        <button id="load-tpl-file-btn" class="tb-btn" title="Import template from text file">📁 Import</button>
                         <input type="file" id="tpl-file-input" accept=".txt" hidden>
                     </div>
                 </div>
@@ -195,9 +200,90 @@
                         <label data-i18n="label_message">Message Body</label>
                         <textarea id="tpl-message" class="premium-textarea" placeholder="Enter your message here..."></textarea>
                     </div>
-                    <!-- [v18.55.0] Cleaned up Redundant Save Buttons -->
                     <div class="template-absolute-bottom">
                         <button id="save-tpl-bottom-btn" class="primary-btn pulse" data-i18n="btn_save_template" style="margin-top: 20px;">Save as Template</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- [Phase 2B Component B] History & Audit Ledger Tab -->
+            <div class="tab-content" id="history-tab">
+                <!-- Ledger Header & Summary Stats -->
+                <div class="ledger-stats-banner">
+                    <div class="ledger-stat-item">
+                        <span class="ledger-stat-num neon-blue-text" id="stat-ledger-total">0</span>
+                        <span class="ledger-stat-lbl">TOTAL</span>
+                    </div>
+                    <div class="ledger-stat-item">
+                        <span class="ledger-stat-num neon-green-text" id="stat-ledger-success">0</span>
+                        <span class="ledger-stat-lbl">SUCCESS</span>
+                    </div>
+                    <div class="ledger-stat-item">
+                        <span class="ledger-stat-num" style="color: #c084fc;" id="stat-ledger-suppressed">0</span>
+                        <span class="ledger-stat-lbl">SUPPRESSED</span>
+                    </div>
+                    <div class="ledger-stat-item">
+                        <span class="ledger-stat-num neon-yellow-text" id="stat-ledger-unknown">0</span>
+                        <span class="ledger-stat-lbl">UNKNOWN</span>
+                    </div>
+                    <div class="ledger-stat-item">
+                        <span class="ledger-stat-num" style="color: #ef4444;" id="stat-ledger-failed">0</span>
+                        <span class="ledger-stat-lbl">FAILED</span>
+                    </div>
+                </div>
+
+                <!-- Ledger Filter Chips -->
+                <div class="ledger-filter-chips">
+                    <button class="ledger-chip active" data-filter="ALL">ALL</button>
+                    <button class="ledger-chip" data-filter="SUCCESS">SUCCESS</button>
+                    <button class="ledger-chip" data-filter="SUPPRESSED">SUPPRESSED</button>
+                    <button class="ledger-chip" data-filter="DELIVERY_UNKNOWN">UNKNOWN</button>
+                    <button class="ledger-chip" data-filter="FAILED">FAILED</button>
+                    <button class="ledger-chip" data-filter="INVALID">INVALID</button>
+                </div>
+
+                <!-- Search & Action Toolbar -->
+                <div class="ledger-toolbar">
+                    <input type="text" id="ledger-search-input" class="premium-input-small" placeholder="Search domain, URL, or reason...">
+                    <div class="ledger-action-buttons">
+                        <button id="ledger-export-csv-btn" class="toolbar-btn glow-teal" title="Download RFC-4180 audit log">📊 Export CSV</button>
+                        <button id="ledger-reset-selected-btn" class="toolbar-btn glow-purple" title="Release suppression for checked targets">🎯 Reset Selected</button>
+                        <button id="ledger-retry-failed-btn" class="toolbar-btn glow-orange" title="Add failed targets back to execution queue">⚡ Retry Failed</button>
+                        <button id="ledger-reset-all-btn" class="toolbar-btn glow-red" title="Advance generation and reset all suppression">🔄 Reset All</button>
+                    </div>
+                </div>
+
+                <!-- Selection and View Header -->
+                <div class="ledger-subbar">
+                    <label class="ledger-select-all-label">
+                        <input type="checkbox" id="ledger-select-all-cb">
+                        <span>Select All in View</span>
+                    </label>
+                    <span id="ledger-selection-count">0 selected</span>
+                </div>
+
+                <!-- Dynamic Ledger List Container -->
+                <div id="ledger-list-container" class="ledger-list-container">
+                    <div class="ledger-empty-note">No ledger entries found.</div>
+                </div>
+
+                <!-- Pagination Footer -->
+                <div class="ledger-pagination-bar">
+                    <button id="ledger-prev-btn" class="pager-btn" disabled>◀ Prev</button>
+                    <span id="ledger-page-info">Page 1 / 1 (0 items)</span>
+                    <button id="ledger-next-btn" class="pager-btn" disabled>Next ▶</button>
+                </div>
+            </div>
+
+            <!-- [Phase 2B Component C] Reset All Confirmation Modal -->
+            <div id="reset-all-modal-overlay" class="modal-overlay hidden">
+                <div class="captcha-friendly-modal" style="max-width: 320px; text-align: center;">
+                    <h2 style="color: #ff3333; margin-bottom: 8px;">⚠️ Reset All Suppression</h2>
+                    <p style="font-size: 12px; color: #ccc; margin-bottom: 12px;">This will increment campaign generation and allow resending to all previously succeeded/suppressed targets. Audit history will be preserved.</p>
+                    <p style="font-size: 11px; color: #ffa500; margin-bottom: 16px;">Are you absolutely sure you want to proceed?</p>
+                    <div style="display: flex; gap: 8px; justify-content: center;">
+                        <button id="cancel-reset-all-btn" class="secondary-btn" style="flex: 1;">Cancel</button>
+                        <button id="confirm-reset-all-btn" class="danger-btn" style="flex: 1;">Confirm Reset</button>
                     </div>
                 </div>
             </div>
@@ -347,6 +433,8 @@
             </div>
         </main>
     </div>
+    <script src="modules/template-store.js"></script>
+    <script src="modules/history-store.js"></script>
     <script src="translations.js"></script>
     <script src="blacklist_data.js"></script>
     <script src="popup.js"></script>

@@ -396,7 +396,8 @@
         }
 
         /**
-         * P2A-5: RFC-4180 and Spreadsheet-Safe CSV Generator
+         * P2A-5 & Phase 2B (Correction 2): RFC-4180 and Spreadsheet-Safe CSV Generator
+         * Includes additive TemplateId and TemplateVersion metadata columns.
          */
         exportToCsv(options = {}) {
             const safeFormula = options.safeFormula !== false; // Default true
@@ -410,7 +411,9 @@
                 "AttemptId",
                 "Generation",
                 "DurationMs",
-                "Timestamp"
+                "Timestamp",
+                "TemplateId",
+                "TemplateVersion"
             ];
 
             const escapeCell = (val) => {
@@ -445,7 +448,9 @@
                     row.attemptId || "",
                     attempt ? attempt.generationId : this.currentGeneration,
                     attempt ? attempt.timing.durationMs : 0,
-                    attempt ? new Date(attempt.createdAt).toISOString() : new Date(row.createdAt).toISOString()
+                    attempt ? new Date(attempt.createdAt).toISOString() : new Date(row.createdAt).toISOString(),
+                    attempt ? (attempt.templateId || "") : "",
+                    attempt ? (attempt.templateVersion || "") : ""
                 ];
                 lines.push(rowLine.map(escapeCell).join(","));
             }
@@ -455,6 +460,128 @@
 
         exportCsv(options = {}) {
             return this.exportToCsv(options);
+        }
+
+        /**
+         * Phase 2B (Component B): Query ledger records with filtering, searching, and pagination.
+         * @param {object} options
+         * @param {string} [options.status='ALL'] - Filter by status (ALL, SUCCESS, SUPPRESSED, DELIVERY_UNKNOWN, FAILED, INVALID)
+         * @param {string} [options.search=''] - Substring filter for domain/URL/reason
+         * @param {number} [options.limit=50] - Number of records to return
+         * @param {number} [options.offset=0] - Offset for pagination
+         */
+        getFilteredRecords(options = {}) {
+            const { status = 'ALL', search = '', limit = 50, offset = 0 } = options;
+
+            const records = [];
+
+            if (this.importRows && this.importRows.length > 0) {
+                for (const row of this.importRows) {
+                    const target = row.targetIdentity ? this.targets.get(row.targetIdentity) : null;
+                    const attempt = row.attemptId ? this.attempts.find(a => a.attemptId === row.attemptId) : null;
+                    const isSuppressed = row.targetIdentity ? this.isSuppressed(row.targetIdentity) : false;
+
+                    records.push({
+                        id: row.rowId,
+                        sourceRowId: row.sourceRowId,
+                        rawUrl: row.rawInputUrl,
+                        targetIdentity: row.targetIdentity,
+                        status: row.status,
+                        reasonCode: attempt ? attempt.reasonCode : (row.status === 'INVALID_INPUT' ? 'INVALID_INPUT' : 'PENDING'),
+                        attemptId: row.attemptId,
+                        isSuppressed,
+                        suppressionReason: target ? target.suppressionReason : null,
+                        generationId: attempt ? attempt.generationId : this.currentGeneration,
+                        templateId: attempt ? (attempt.templateId || null) : null,
+                        templateVersion: attempt ? (attempt.templateVersion || null) : null,
+                        durationMs: attempt ? attempt.timing.durationMs : 0,
+                        timestamp: attempt ? attempt.createdAt : row.createdAt
+                    });
+                }
+            } else {
+                let rowIdx = 1;
+                for (const [identity, target] of this.targets.entries()) {
+                    const attempt = target.lastAttemptId ? this.attempts.find(a => a.attemptId === target.lastAttemptId) : null;
+                    const isSuppressed = this.isSuppressed(identity);
+                    records.push({
+                        id: `tgt_${rowIdx}`,
+                        sourceRowId: rowIdx++,
+                        rawUrl: target.rawSampleUrl || identity,
+                        targetIdentity: identity,
+                        status: attempt ? attempt.status : (isSuppressed ? 'SUPPRESSED' : 'READY'),
+                        reasonCode: attempt ? attempt.reasonCode : 'NONE',
+                        attemptId: target.lastAttemptId,
+                        isSuppressed,
+                        suppressionReason: target.suppressionReason,
+                        generationId: attempt ? attempt.generationId : target.effectiveGeneration,
+                        templateId: attempt ? (attempt.templateId || null) : null,
+                        templateVersion: attempt ? (attempt.templateVersion || null) : null,
+                        durationMs: attempt ? attempt.timing.durationMs : 0,
+                        timestamp: target.updatedTs || Date.now()
+                    });
+                }
+            }
+
+            let filtered = records;
+            if (status && status !== 'ALL') {
+                const s = status.toUpperCase();
+                if (s === 'SUPPRESSED') {
+                    filtered = filtered.filter(r => r.isSuppressed);
+                } else if (s === 'SUCCESS' || s === 'CONFIRMED_SUCCESS') {
+                    filtered = filtered.filter(r => r.status === 'CONFIRMED_SUCCESS');
+                } else if (s === 'DELIVERY_UNKNOWN' || s === 'UNKNOWN') {
+                    filtered = filtered.filter(r => r.status === 'DELIVERY_UNKNOWN');
+                } else if (s === 'FAILED' || s === 'FAILURE') {
+                    filtered = filtered.filter(r => r.status === 'FAILURE');
+                } else if (s === 'INVALID' || s === 'INVALID_INPUT') {
+                    filtered = filtered.filter(r => r.status === 'INVALID_INPUT');
+                } else {
+                    filtered = filtered.filter(r => r.status === s);
+                }
+            }
+
+            if (search && search.trim()) {
+                const q = search.trim().toLowerCase();
+                filtered = filtered.filter(r => {
+                    return (r.rawUrl && r.rawUrl.toLowerCase().includes(q)) ||
+                           (r.targetIdentity && r.targetIdentity.toLowerCase().includes(q)) ||
+                           (r.reasonCode && r.reasonCode.toLowerCase().includes(q));
+                });
+            }
+
+            const totalCount = filtered.length;
+            const paginated = filtered.slice(offset, offset + limit);
+
+            return {
+                totalCount,
+                offset,
+                limit,
+                records: paginated
+            };
+        }
+
+        /**
+         * Phase 2B (Correction 1): Query retryable failed target identities without mutating suppression or generation.
+         * Returns distinct target identities whose last attempt was FAILURE and are not suppressed.
+         */
+        getRetryableFailedIdentities() {
+            const failedSet = new Set();
+            const lastAttemptMap = new Map();
+            for (const attempt of this.attempts) {
+                lastAttemptMap.set(attempt.targetIdentity, attempt);
+            }
+            for (const [identity, attempt] of lastAttemptMap.entries()) {
+                if (attempt.status === 'FAILURE') {
+                    if (!this.isSuppressed(identity)) {
+                        failedSet.add(identity);
+                    }
+                }
+            }
+            return Array.from(failedSet);
+        }
+
+        getFailedTargetIdentities() {
+            return this.getRetryableFailedIdentities();
         }
     }
 

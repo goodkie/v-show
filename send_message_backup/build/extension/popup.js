@@ -530,11 +530,15 @@ function bindEvents() {
             const target = document.getElementById(`${btn.dataset.tab}-tab`);
             if (target) target.classList.add('active');
             
-            // [v2.3.0] Hide status/log areas when in Template Tab
-            if (btn.dataset.tab === 'template') {
+            // [v2.3.0] Hide status/log areas when in Template or History Tab
+            if (btn.dataset.tab === 'template' || btn.dataset.tab === 'history') {
                 document.body.classList.add('template-active');
             } else {
                 document.body.classList.remove('template-active');
+            }
+
+            if (btn.dataset.tab === 'history') {
+                renderLedgerUI();
             }
         });
     });
@@ -733,7 +737,140 @@ function bindEvents() {
     if (clearListBtn) {
         clearListBtn.addEventListener('click', clearCampaignQueue);
     }
-    
+
+    // [Phase 2B] Template CRUD Action Toolbar
+    const newTplBtn = document.getElementById('new-tpl-btn');
+    if (newTplBtn) newTplBtn.addEventListener('click', () => handleCreateNewTemplate());
+
+    const dupTplBtn = document.getElementById('dup-tpl-btn');
+    if (dupTplBtn) dupTplBtn.addEventListener('click', () => handleDuplicateTemplate());
+
+    const defTplBtn = document.getElementById('default-tpl-btn');
+    if (defTplBtn) defTplBtn.addEventListener('click', () => handleSetDefaultTemplate());
+
+    const delTplBtn = document.getElementById('del-tpl-btn');
+    if (delTplBtn) {
+        delTplBtn.addEventListener('click', () => {
+            if (confirm("Are you sure you want to delete this template?")) {
+                handleDeleteTemplate().catch(e => alert(e.message));
+            }
+        });
+    }
+
+    const tplSelect = document.getElementById('tpl-library-select');
+    if (tplSelect) tplSelect.addEventListener('change', loadTemplateFromLibrary);
+
+    // [Phase 2B] History Ledger Action Toolbar & Filtering
+    document.querySelectorAll('.ledger-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+            document.querySelectorAll('.ledger-chip').forEach(c => c.classList.remove('active'));
+            chip.classList.add('active');
+            ledgerState.filter = chip.dataset.filter || 'ALL';
+            ledgerState.page = 1;
+            renderLedgerUI();
+        });
+    });
+
+    const ledgerSearchInput = document.getElementById('ledger-search-input');
+    if (ledgerSearchInput) {
+        let searchTimer = null;
+        ledgerSearchInput.addEventListener('input', () => {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(() => {
+                ledgerState.search = ledgerSearchInput.value.trim();
+                ledgerState.page = 1;
+                renderLedgerUI();
+            }, 300);
+        });
+    }
+
+    const ledgerSelectAllCb = document.getElementById('ledger-select-all-cb');
+    if (ledgerSelectAllCb) {
+        ledgerSelectAllCb.addEventListener('change', () => {
+            const cbs = document.querySelectorAll('.ledger-item-cb');
+            cbs.forEach(cb => {
+                cb.checked = ledgerSelectAllCb.checked;
+                const tgt = cb.dataset.target;
+                if (ledgerSelectAllCb.checked) ledgerState.selectedTargets.add(tgt);
+                else ledgerState.selectedTargets.delete(tgt);
+                cb.closest('.ledger-item-card')?.classList.toggle('is-selected', ledgerSelectAllCb.checked);
+            });
+            updateSelectionCountUI();
+        });
+    }
+
+    const ledgerExportBtn = document.getElementById('ledger-export-csv-btn');
+    if (ledgerExportBtn) ledgerExportBtn.addEventListener('click', () => triggerCsvExport());
+
+    const ledgerResetSelBtn = document.getElementById('ledger-reset-selected-btn');
+    if (ledgerResetSelBtn) {
+        ledgerResetSelBtn.addEventListener('click', async () => {
+            try {
+                await dispatchSelectiveReset();
+            } catch (err) {
+                alert(err.message);
+            }
+        });
+    }
+
+    const ledgerRetryFailedBtn = document.getElementById('ledger-retry-failed-btn');
+    if (ledgerRetryFailedBtn) {
+        ledgerRetryFailedBtn.addEventListener('click', async () => {
+            try {
+                await dispatchRetryFailed();
+            } catch (err) {
+                alert(err.message);
+            }
+        });
+    }
+
+    const ledgerResetAllBtn = document.getElementById('ledger-reset-all-btn');
+    const resetAllModal = document.getElementById('reset-all-modal-overlay');
+    const cancelResetAllBtn = document.getElementById('cancel-reset-all-btn');
+    const confirmResetAllBtn = document.getElementById('confirm-reset-all-btn');
+
+    if (ledgerResetAllBtn && resetAllModal) {
+        ledgerResetAllBtn.addEventListener('click', () => {
+            if (campaignActive) {
+                alert("Cannot reset suppression while campaign is actively running!");
+                return;
+            }
+            resetAllModal.classList.remove('hidden');
+        });
+    }
+    if (cancelResetAllBtn && resetAllModal) {
+        cancelResetAllBtn.addEventListener('click', () => {
+            resetAllModal.classList.add('hidden');
+        });
+    }
+    if (confirmResetAllBtn && resetAllModal) {
+        confirmResetAllBtn.addEventListener('click', async () => {
+            resetAllModal.classList.add('hidden');
+            try {
+                await dispatchGlobalReset();
+            } catch (err) {
+                alert(err.message);
+            }
+        });
+    }
+
+    const ledgerPrevBtn = document.getElementById('ledger-prev-btn');
+    if (ledgerPrevBtn) {
+        ledgerPrevBtn.addEventListener('click', () => {
+            if (ledgerState.page > 1) {
+                ledgerState.page--;
+                renderLedgerUI();
+            }
+        });
+    }
+
+    const ledgerNextBtn = document.getElementById('ledger-next-btn');
+    if (ledgerNextBtn) {
+        ledgerNextBtn.addEventListener('click', () => {
+            ledgerState.page++;
+            renderLedgerUI();
+        });
+    }
 
 }
 
@@ -1464,97 +1601,543 @@ async function saveTemplateToLibrary() {
     await saveTemplateChanges();
 }
 
+// =========================================================================
+// Phase 2B: Module Store Adapters & Controller Methods
+// =========================================================================
+
+let _templateStoreInstance = null;
+let _historyStoreInstance = null;
+
+function getPopupTemplateStore() {
+    if (!_templateStoreInstance) {
+        const TS = (typeof TemplateStore !== 'undefined') ? TemplateStore : (typeof require !== 'undefined' ? require('./modules/template-store.js').TemplateStore : null);
+        if (TS) {
+            _templateStoreInstance = new TS(typeof chrome !== 'undefined' && chrome.storage ? chrome.storage.local : null);
+        }
+    }
+    return _templateStoreInstance;
+}
+
+function getPopupHistoryStore() {
+    if (!_historyStoreInstance) {
+        const HS = (typeof HistoryStore !== 'undefined') ? HistoryStore : (typeof require !== 'undefined' ? require('./modules/history-store.js').HistoryStore : null);
+        if (HS) {
+            _historyStoreInstance = new HS(typeof chrome !== 'undefined' && chrome.storage ? chrome.storage.local : null);
+        }
+    }
+    return _historyStoreInstance;
+}
+
+// Ledger State
+let ledgerState = {
+    filter: 'ALL',
+    search: '',
+    page: 1,
+    limit: 50,
+    selectedTargets: new Set()
+};
+
 /**
- * [F9] Update dropdown from templates_v2 (authoritative), falls back to xpider_recent_templates
+ * Phase 2B (Component A): Create a new blank template and persist to TemplateStore
  */
-async function updateTemplateDropdown() {
+async function handleCreateNewTemplate(initialName = 'New Template') {
+    const tStore = getPopupTemplateStore();
+    const newTplData = {
+        name: initialName,
+        firstName: '',
+        lastName: '',
+        email: '',
+        phone: '',
+        subject: initialName,
+        message: ''
+    };
+    let saved;
+    if (tStore) {
+        saved = await tStore.saveTemplateRecord(newTplData);
+    } else {
+        saved = await saveTemplate();
+    }
+    populateFormFromTemplate(saved);
+    await updateTemplateDropdown(saved.id);
+    addLog(`➕ Created new template: ${saved.subject || saved.name}`, 'success');
+    return saved;
+}
+
+/**
+ * Phase 2B (Component A): Authoritatively save current form fields into the active template
+ */
+async function handleSaveTemplate(tplData = null) {
+    const select = document.getElementById('tpl-library-select');
+    const activeId = (select && select.value && select.value !== 'default') ? select.value : null;
+
+    const data = tplData || {
+        id: activeId || undefined,
+        firstName: document.getElementById('tpl-first-name')?.value || '',
+        lastName: document.getElementById('tpl-last-name')?.value || '',
+        name: document.getElementById('tpl-name')?.value || '',
+        email: document.getElementById('tpl-email')?.value || '',
+        phone: document.getElementById('tpl-phone')?.value || '',
+        subject: document.getElementById('tpl-subject')?.value || '',
+        message: document.getElementById('tpl-message')?.value || ''
+    };
+
+    const tStore = getPopupTemplateStore();
+    let saved;
+    if (tStore) {
+        saved = await tStore.saveTemplateRecord(data);
+    } else {
+        saved = await saveTemplate();
+    }
+
+    await updateTemplateDropdown(saved.id);
+    ['save-tpl-btn', 'save-tpl-changes-btn', 'save-tpl-bottom-btn'].forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) {
+            const originalText = btn.textContent;
+            btn.textContent = '✅ Saved!';
+            setTimeout(() => { btn.textContent = originalText; }, 1800);
+        }
+    });
+    addLog(`💾 Template saved: ${saved.subject || saved.name}`, 'success');
+    return saved;
+}
+
+/**
+ * Phase 2B (Component A): Duplicate the selected template with [Copy] suffix
+ */
+async function handleDuplicateTemplate(templateId = null) {
+    const select = document.getElementById('tpl-library-select');
+    const idToClone = templateId || (select && select.value) || null;
+    if (!idToClone) throw new Error("No template selected to duplicate");
+
+    const tStore = getPopupTemplateStore();
+    if (!tStore) throw new Error("TemplateStore unavailable");
+
+    const duplicated = await tStore.duplicateAndSaveTemplate(idToClone);
+    populateFormFromTemplate(duplicated);
+    await updateTemplateDropdown(duplicated.id);
+    addLog(`📋 Duplicated template: ${duplicated.subject || duplicated.name}`, 'success');
+    return duplicated;
+}
+
+/**
+ * Phase 2B (Component A): Delete the selected non-default template
+ */
+async function handleDeleteTemplate(templateId = null) {
+    const select = document.getElementById('tpl-library-select');
+    const idToDelete = templateId || (select && select.value) || null;
+    if (!idToDelete) throw new Error("No template selected to delete");
+
+    const tStore = getPopupTemplateStore();
+    if (!tStore) throw new Error("TemplateStore unavailable");
+
+    const result = await tStore.deleteTemplate(idToDelete);
+    await updateTemplateDropdown(result.defaultId);
+    if (result.defaultId) {
+        const nextDefault = await tStore.getTemplate(result.defaultId);
+        if (nextDefault) populateFormFromTemplate(nextDefault);
+    }
+    addLog(`🗑️ Deleted template: ${idToDelete}`, 'info');
+    return result;
+}
+
+/**
+ * Phase 2B (Component A): Set active template as defaultId and sync legacy xpider_tpl
+ */
+async function handleSetDefaultTemplate(templateId = null) {
+    const select = document.getElementById('tpl-library-select');
+    const idToDefault = templateId || (select && select.value) || null;
+    if (!idToDefault) throw new Error("No template selected to set as default");
+
+    const tStore = getPopupTemplateStore();
+    if (!tStore) throw new Error("TemplateStore unavailable");
+
+    const updated = await tStore.setDefaultTemplate(idToDefault);
+    await updateTemplateDropdown(idToDefault);
+    addLog(`⭐ Set default template: ${updated.subject || updated.name}`, 'success');
+    return updated;
+}
+
+/**
+ * Dual accessors: populate DOM form inputs from template object
+ */
+function populateFormFromTemplate(tpl) {
+    if (!tpl) return null;
+    const firstName = tpl.firstName || (tpl.sender && tpl.sender.firstName) || '';
+    const lastName  = tpl.lastName  || (tpl.sender && tpl.sender.lastName)  || '';
+    const name      = tpl.name      || tpl.fullName || (tpl.sender && (tpl.sender.fullName || tpl.sender.name)) || '';
+    const email     = tpl.email     || (tpl.sender && tpl.sender.email)     || '';
+    const phone     = tpl.phone     || (tpl.sender && tpl.sender.phone)     || '';
+    const subject   = tpl.subject   || (tpl.content && tpl.content.subject) || '';
+    const message   = tpl.message   || (tpl.content && tpl.content.message) || '';
+
+    const elFn = document.getElementById('tpl-first-name'); if (elFn) elFn.value = firstName;
+    const elLn = document.getElementById('tpl-last-name');  if (elLn) elLn.value = lastName;
+    const elNm = document.getElementById('tpl-name');       if (elNm) elNm.value = name;
+    const elEm = document.getElementById('tpl-email');      if (elEm) elEm.value = email;
+    const elPh = document.getElementById('tpl-phone');      if (elPh) elPh.value = phone;
+    const elSb = document.getElementById('tpl-subject');    if (elSb) elSb.value = subject;
+    const elMs = document.getElementById('tpl-message');    if (elMs) elMs.value = message;
+
+    return { firstName, lastName, name, email, phone, subject, message };
+}
+
+/**
+ * [F9 & Phase 2B] Update template selector dropdown with full list of templates
+ */
+async function updateTemplateDropdown(selectId = null) {
     const select = document.getElementById('tpl-library-select');
     if (!select) return;
 
-    const lang = document.getElementById('language-select')?.value || 'en';
-    const dict = (i18nData && i18nData[lang]) ? i18nData[lang] : (i18nData ? i18nData['en'] : {});
+    const tStore = getPopupTemplateStore();
+    let templates = [];
+    let defaultId = null;
 
-    select.innerHTML = `<option value="" disabled selected>${dict.label_select_template || '📂 Select Template'}</option>`;
-
-    // [F9] Read from templates_v2 as primary source
-    const data = await chrome.storage.local.get(['templates_v2', 'xpider_recent_templates']);
-    const v2Store = data.templates_v2;
-    let items = [];
-    if (v2Store && v2Store.recentIds && v2Store.templates) {
-        items = v2Store.recentIds
-            .map(id => v2Store.templates[id])
-            .filter(Boolean)
-            .slice(0, 6);
+    if (tStore) {
+        const all = await tStore.getAllTemplates();
+        templates = all.templates;
+        defaultId = all.defaultId;
     } else {
-        // Legacy fallback
-        items = (data.xpider_recent_templates || []).slice(0, 6);
+        const data = await chrome.storage.local.get(['templates_v2', 'xpider_recent_templates']);
+        const v2Store = data.templates_v2;
+        if (v2Store && v2Store.templates) {
+            templates = Object.values(v2Store.templates);
+            defaultId = v2Store.defaultId;
+        } else {
+            templates = (data.xpider_recent_templates || []).slice(0, 6);
+        }
     }
 
-    if (items.length === 0) {
+    select.innerHTML = '';
+    if (templates.length === 0) {
         const opt = document.createElement('option');
-        opt.disabled = true;
-        opt.textContent = '— No recent templates —';
+        opt.value = 'default';
+        opt.textContent = 'Default Template';
         select.appendChild(opt);
         return;
     }
 
-    items.forEach((tpl, idx) => {
+    const targetSelectId = selectId || defaultId || templates[0].id;
+
+    templates.forEach((tpl, idx) => {
         const opt = document.createElement('option');
-        // [F9] Store the template id or index for reliable lookup
-        opt.value = tpl.id || String(idx);
-        opt.dataset.tplId = tpl.id || '';
-        const date = tpl.updatedAt || tpl.timestamp ? new Date(tpl.updatedAt || tpl.timestamp).toLocaleDateString() : '';
-        const label = tpl.fileName || tpl.subject || `Template ${idx + 1}`;
-        opt.textContent = `${label}${date ? '  · ' + date : ''}`;
+        const id = tpl.id || String(idx);
+        opt.value = id;
+        opt.dataset.tplId = id;
+        opt.dataset.tplVersion = String(tpl.version || 1);
+        const isDef = (id === defaultId);
+        const label = tpl.subject || tpl.name || `Template ${idx + 1}`;
+        opt.textContent = `${isDef ? '⭐ ' : ''}${label}${isDef ? ' (Default)' : ''}`;
+        if (id === targetSelectId) {
+            opt.selected = true;
+        }
         select.appendChild(opt);
     });
 }
 
 /**
- * [F9] Load selected template from dropdown into the form.
- * Reads from templates_v2 (authoritative); falls back to xpider_recent_templates.
+ * [F9 & Phase 2B] Load selected template from dropdown into the form
  */
-function loadTemplateFromLibrary() {
+async function loadTemplateFromLibrary() {
     const select = document.getElementById('tpl-library-select');
     const selectedOpt = select?.options[select.selectedIndex];
     if (!selectedOpt || selectedOpt.disabled) return;
 
-    const tplId = selectedOpt.dataset.tplId;
-    const idxFallback = parseInt(selectedOpt.value);
+    const tplId = selectedOpt.dataset.tplId || selectedOpt.value;
+    const tStore = getPopupTemplateStore();
+    let tpl = null;
 
-    chrome.storage.local.get(['templates_v2', 'xpider_recent_templates'], (data) => {
-        let tpl = null;
-        // [F9] Try templates_v2 first
-        if (tplId && data.templates_v2 && data.templates_v2.templates && data.templates_v2.templates[tplId]) {
+    if (tStore) {
+        tpl = await tStore.getTemplate(tplId);
+    } else {
+        const data = await chrome.storage.local.get(['templates_v2', 'xpider_recent_templates']);
+        if (tplId && data.templates_v2?.templates?.[tplId]) {
             tpl = data.templates_v2.templates[tplId];
-        } else if (!isNaN(idxFallback) && data.xpider_recent_templates) {
-            tpl = (data.xpider_recent_templates || [])[idxFallback] || null;
+        } else {
+            const idx = parseInt(selectedOpt.value);
+            tpl = (data.xpider_recent_templates || [])[idx] || null;
         }
-        if (!tpl) return;
+    }
 
-        // Dual accessors: support flat and nested FormTemplateV2 structures
-        const firstName = tpl.firstName || (tpl.sender && tpl.sender.firstName) || '';
-        const lastName  = tpl.lastName  || (tpl.sender && tpl.sender.lastName)  || '';
-        const name      = tpl.name      || tpl.fullName || (tpl.sender && (tpl.sender.fullName || tpl.sender.name)) || '';
-        const email     = tpl.email     || (tpl.sender && tpl.sender.email)     || '';
-        const phone     = tpl.phone     || (tpl.sender && tpl.sender.phone)     || '';
-        const subject   = tpl.subject   || (tpl.content && tpl.content.subject) || '';
-        const message   = tpl.message   || (tpl.content && tpl.content.message) || '';
+    if (tpl) {
+        populateFormFromTemplate(tpl);
+        addLog(`📂 Loaded template: ${tpl.subject || tpl.name || 'Template'}`, 'info');
+    }
+}
 
-        document.getElementById('tpl-first-name').value = firstName;
-        document.getElementById('tpl-last-name').value  = lastName;
-        document.getElementById('tpl-name').value        = name;
-        document.getElementById('tpl-email').value       = email;
-        document.getElementById('tpl-phone').value       = phone;
-        document.getElementById('tpl-subject').value     = subject;
-        document.getElementById('tpl-message').value     = message;
+// =========================================================================
+// Phase 2B (Component B & C): History Ledger, Filtering & Reset Controls
+// =========================================================================
 
-        // [F9] Write both legacy and v2 default to keep stores in sync
-        const v2Store = data.templates_v2 || { version: 2, templates: {}, defaultId: null, recentIds: [] };
-        if (tplId) v2Store.defaultId = tplId;
-        chrome.storage.local.set({ xpider_tpl: tpl, templates_v2: v2Store });
-        addLog(`✅ Loaded template: ${tpl.fileName || tpl.subject || 'Template'}`, 'success');
-    });
+/**
+ * Query ledger records with filtering, searching, and pagination
+ */
+async function filterHistoryRecords(options = {}) {
+    const hs = getPopupHistoryStore();
+    if (!hs) return { totalCount: 0, offset: 0, limit: 50, records: [] };
+    await hs.load();
+    const filter = options.status !== undefined ? options.status : ledgerState.filter;
+    const search = options.search !== undefined ? options.search : ledgerState.search;
+    const limit = options.limit !== undefined ? options.limit : ledgerState.limit;
+    const offset = options.offset !== undefined ? options.offset : ((ledgerState.page - 1) * limit);
+
+    return hs.getFilteredRecords({ status: filter, search, limit, offset });
+}
+
+/**
+ * Render the History & Audit Ledger Dashboard in Popup
+ */
+async function renderLedgerUI() {
+    const hs = getPopupHistoryStore();
+    if (!hs) return;
+    await hs.load();
+
+    // Summary stats
+    const allRecordsResult = hs.getFilteredRecords({ status: 'ALL', search: '', limit: 10000 });
+    const allRecords = allRecordsResult.records;
+
+    const totalCount = allRecords.length;
+    const successCount = allRecords.filter(r => r.status === 'CONFIRMED_SUCCESS').length;
+    const suppressedCount = allRecords.filter(r => r.isSuppressed).length;
+    const unknownCount = allRecords.filter(r => r.status === 'DELIVERY_UNKNOWN').length;
+    const failedCount = allRecords.filter(r => r.status === 'FAILURE').length;
+
+    const elTot = document.getElementById('stat-ledger-total'); if (elTot) elTot.textContent = totalCount;
+    const elSuc = document.getElementById('stat-ledger-success'); if (elSuc) elSuc.textContent = successCount;
+    const elSup = document.getElementById('stat-ledger-suppressed'); if (elSup) elSup.textContent = suppressedCount;
+    const elUnk = document.getElementById('stat-ledger-unknown'); if (elUnk) elUnk.textContent = unknownCount;
+    const elFld = document.getElementById('stat-ledger-failed'); if (elFld) elFld.textContent = failedCount;
+
+    // Filtered page
+    const pageData = await filterHistoryRecords();
+    const container = document.getElementById('ledger-list-container');
+    if (!container) return;
+
+    container.innerHTML = '';
+    if (pageData.records.length === 0) {
+        container.innerHTML = '<div class="ledger-empty-note">No ledger entries match the current filter.</div>';
+    } else {
+        pageData.records.forEach(rec => {
+            const card = document.createElement('div');
+            card.className = `ledger-item-card ${ledgerState.selectedTargets.has(rec.targetIdentity) ? 'is-selected' : ''}`;
+            
+            let badgeClass = 'status-ready';
+            let badgeLabel = rec.status;
+            if (rec.status === 'CONFIRMED_SUCCESS') {
+                badgeClass = 'status-success';
+                badgeLabel = 'SUCCESS';
+            } else if (rec.isSuppressed) {
+                badgeClass = 'status-suppressed';
+                badgeLabel = 'SUPPRESSED';
+            } else if (rec.status === 'DELIVERY_UNKNOWN') {
+                badgeClass = 'status-unknown';
+                badgeLabel = 'UNKNOWN';
+            } else if (rec.status === 'FAILURE') {
+                badgeClass = 'status-failed';
+                badgeLabel = 'FAILED';
+            } else if (rec.status === 'INVALID_INPUT') {
+                badgeClass = 'status-invalid';
+                badgeLabel = 'INVALID';
+            }
+
+            const timeStr = rec.timestamp ? new Date(rec.timestamp).toLocaleTimeString() : '';
+            const checked = ledgerState.selectedTargets.has(rec.targetIdentity) ? 'checked' : '';
+
+            card.innerHTML = `
+                <div class="ledger-item-top">
+                    <div class="ledger-item-left">
+                        <input type="checkbox" class="ledger-item-cb" data-target="${rec.targetIdentity || ''}" ${checked}>
+                        <span class="ledger-item-domain" title="${rec.rawUrl || rec.targetIdentity}">${rec.targetIdentity || rec.rawUrl}</span>
+                    </div>
+                    <span class="status-badge ${badgeClass}">${badgeLabel}</span>
+                </div>
+                <div class="ledger-item-meta">
+                    <span class="ledger-item-row-idx">Row #${rec.sourceRowId} · Gen ${rec.generationId || 1}</span>
+                    <span class="ledger-item-reason" title="${rec.reasonCode}">${rec.reasonCode}</span>
+                    <span>${timeStr}</span>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+
+        // Bind checkbox clicks
+        container.querySelectorAll('.ledger-item-cb').forEach(cb => {
+            cb.addEventListener('change', (e) => {
+                const tgt = e.target.dataset.target;
+                if (e.target.checked) {
+                    ledgerState.selectedTargets.add(tgt);
+                } else {
+                    ledgerState.selectedTargets.delete(tgt);
+                }
+                updateSelectionCountUI();
+                e.target.closest('.ledger-item-card')?.classList.toggle('is-selected', e.target.checked);
+            });
+        });
+    }
+
+    // Pagination info
+    const totalPages = Math.ceil(pageData.totalCount / ledgerState.limit) || 1;
+    const pageInfo = document.getElementById('ledger-page-info');
+    if (pageInfo) pageInfo.textContent = `Page ${ledgerState.page} / ${totalPages} (${pageData.totalCount} items)`;
+
+    const prevBtn = document.getElementById('ledger-prev-btn');
+    if (prevBtn) prevBtn.disabled = (ledgerState.page <= 1);
+
+    const nextBtn = document.getElementById('ledger-next-btn');
+    if (nextBtn) nextBtn.disabled = (ledgerState.page >= totalPages);
+
+    updateSelectionCountUI();
+}
+
+function updateSelectionCountUI() {
+    const el = document.getElementById('ledger-selection-count');
+    if (el) el.textContent = `${ledgerState.selectedTargets.size} selected`;
+}
+
+/**
+ * Phase 2B (Component C): Selective Reset of checked target suppressions
+ */
+async function dispatchSelectiveReset(targetIdentities = [], activeSubmitCount = 0) {
+    if (activeSubmitCount > 0 || (typeof campaignActive !== 'undefined' && campaignActive)) {
+        throw new Error("RESET_LOCKED_ACTIVE_SUBMISSION: Active submission in flight.");
+    }
+    const list = (Array.isArray(targetIdentities) && targetIdentities.length > 0)
+        ? targetIdentities
+        : Array.from(ledgerState.selectedTargets);
+    if (list.length === 0) {
+        throw new Error("NO_TARGETS_SELECTED: Please select at least one target to reset.");
+    }
+
+    const hs = getPopupHistoryStore();
+    let result;
+    if (hs) {
+        await hs.load();
+        result = await hs.applySelectiveReset(list);
+    } else {
+        result = await new Promise((resolve, reject) => {
+            chrome.runtime.sendMessage({ action: 'EXECUTE_RESET', type: 'SELECTED', targetIdentities: list }, (res) => {
+                if (res && res.success) resolve(res);
+                else reject(new Error(res?.error || 'Selective reset failed'));
+            });
+        });
+    }
+
+    ledgerState.selectedTargets.clear();
+    await renderLedgerUI();
+    addLog(`🎯 Selective reset applied for ${result.affectedCount} target(s)`, 'success');
+    return result;
+}
+
+/**
+ * Phase 2B (Correction 1): Query retryable failed targets and place into execution queue
+ * Does NOT mutate suppression state or generation.
+ */
+async function dispatchRetryFailed() {
+    const hs = getPopupHistoryStore();
+    if (!hs) throw new Error("HistoryStore unavailable");
+    await hs.load();
+
+    const retryableIdentities = hs.getRetryableFailedIdentities();
+    let newlyQueued = 0;
+    for (const id of retryableIdentities) {
+        if (!campaignQueue.includes(id)) {
+            campaignQueue.push(id);
+            newlyQueued++;
+        }
+    }
+    totalTargets = campaignQueue.length;
+    remainingTargets = campaignQueue.length;
+
+    // Update count display
+    const countDisplay = document.getElementById('url-count-display');
+    if (countDisplay) {
+        countDisplay.textContent = `${campaignQueue.length} URLs queued`;
+    }
+    updateRealTimeStatus({ remainingCount: campaignQueue.length, totalTargets: campaignQueue.length });
+
+    addLog(`⚡ Queued ${newlyQueued} failed target(s) for retry without mutating suppression`, 'success');
+    return {
+        retryableCount: retryableIdentities.length,
+        newlyQueued,
+        queueTotal: campaignQueue.length,
+        identities: retryableIdentities
+    };
+}
+
+/**
+ * Phase 2B (Component C): Global Campaign Reset (advances generation, releases all suppression)
+ */
+async function dispatchGlobalReset(activeSubmitCount = 0) {
+    if (activeSubmitCount > 0 || (typeof campaignActive !== 'undefined' && campaignActive)) {
+        throw new Error("RESET_LOCKED_ACTIVE_SUBMISSION: Active submission in flight.");
+    }
+
+    const hs = getPopupHistoryStore();
+    let result;
+    if (hs) {
+        await hs.load();
+        result = await hs.applyGlobalReset(activeSubmitCount);
+    } else {
+        result = await new Promise((resolve, reject) => {
+            chrome.runtime.sendMessage({ action: 'EXECUTE_RESET', type: 'ALL' }, (res) => {
+                if (res && res.success) resolve(res);
+                else reject(new Error(res?.error || 'Global reset failed'));
+            });
+        });
+    }
+
+    ledgerState.selectedTargets.clear();
+    await renderLedgerUI();
+    addLog(`🔄 Global campaign reset applied. Generation: ${result.newGeneration}`, 'success');
+    return result;
+}
+
+/**
+ * Phase 2B (Component B): Trigger RFC-4180 compliant CSV audit export download
+ */
+async function triggerCsvExport(options = {}) {
+    const hs = getPopupHistoryStore();
+    let csv = '';
+    if (hs) {
+        await hs.load();
+        csv = hs.exportToCsv(options);
+    } else {
+        csv = await new Promise((resolve, reject) => {
+            chrome.runtime.sendMessage({ action: 'EXPORT_HISTORY_CSV', options }, (res) => {
+                if (res && res.success && res.csv) resolve(res.csv);
+                else reject(new Error(res?.error || 'Failed to generate CSV'));
+            });
+        });
+    }
+
+    if (typeof Blob !== 'undefined' && typeof URL !== 'undefined' && typeof document !== 'undefined') {
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `xpider_audit_ledger_${Date.now()}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+        addLog("📊 CSV Audit Ledger downloaded successfully.", "success");
+    }
+
+    return csv;
+}
+
+/**
+ * Phase 2B (Component D & Correction 2): Bind additive template metadata to execution state
+ */
+function bindCampaignTemplateMetadata(targetState = {}, selectedTemplate = null) {
+    const tpl = selectedTemplate || currentTpl || {};
+    const select = document.getElementById('tpl-library-select');
+    const selectedOpt = select?.options[select.selectedIndex];
+
+    const templateId = tpl.id || selectedOpt?.dataset?.tplId || selectedOpt?.value || 'default';
+    const templateVersion = tpl.version || (selectedOpt?.dataset?.tplVersion ? parseInt(selectedOpt.dataset.tplVersion) : 1);
+
+    targetState.templateId = templateId;
+    targetState.templateVersion = templateVersion;
+    return targetState;
 }
 
 function parseTemplateText(content) {
@@ -2053,6 +2636,24 @@ if (typeof module !== 'undefined' && module.exports) {
         _syncTemplateToV2,
         saveTemplate,
         persistImportedTemplate,
-        parseTemplateText
+        parseTemplateText,
+        // Phase 2B Controller Functions (Auditor Correction 3)
+        handleCreateNewTemplate,
+        handleSaveTemplate,
+        handleDuplicateTemplate,
+        handleDeleteTemplate,
+        handleSetDefaultTemplate,
+        populateFormFromTemplate,
+        updateTemplateDropdown,
+        loadTemplateFromLibrary,
+        filterHistoryRecords,
+        renderLedgerUI,
+        dispatchSelectiveReset,
+        dispatchRetryFailed,
+        dispatchGlobalReset,
+        triggerCsvExport,
+        bindCampaignTemplateMetadata,
+        getPopupTemplateStore,
+        getPopupHistoryStore
     };
 }
