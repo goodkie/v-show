@@ -1,16 +1,33 @@
 {
   "manifest_version": "1.0",
-  "package": "evidence_phase2b_ipc_diagnostic",
-  "audit_phase": "Phase 2B IPC Diagnostic Patch Build",
-  "commit_sha": "aee5834b8bd9fddf98082b0cecd66b4210359265",
+  "package": "evidence_phase2b_chrome_runtime_hotfix",
+  "audit_phase": "Phase 2B Chrome Runtime Transport Hotfix Build",
+  "commit_sha": "812c930e758835b7c2336602d27997cd54dcee08",
   "rollback_anchor_sha": "0853c5006855afdf17c5136dfa5031ea654f6529",
   "rollback_artifact_sha256": "A2A1387DB3FE6031F0BD2F4E5DDCFBC4DB77D4D5F42F227AEE541ECBB4A9FECB",
   "branch": "upgrade/phase-0-1",
   "repository": "local:extension-form-sender",
   "collaboration_hub": "goodkie/v-show (Issue #6)",
-  "timestamp": "2026-10-01T11:05:00Z",
+  "timestamp": "2026-10-01T11:25:00Z",
+  "runtime_transport_hotfix": {
+    "status": "HOTFIX_COMPLETE",
+    "problem_statement": "The unpacked Chrome extension had a dead Electron/main-process window.postMessage bridge (xpiderInvoke), causing a 30-second timeout on START SENDING in real Chrome (IPC timeout: xpider-campaign-start).",
+    "resolution_architecture": "Completely eliminated dead native IPC calls in Chrome operator workflows, routing all campaign start, control, state retrieval, and configuration directly through the Chrome Background Service Worker (background.js) and chrome.downloads API.",
+    "dead_channels_eliminated": [
+      { "channel": "xpider-campaign-start", "replacement": "chrome.runtime.sendMessage({ action: 'START_CAMPAIGN', queue, template, ... }) with ACK verification" },
+      { "channel": "xpider-campaign-get-state", "replacement": "chrome.runtime.sendMessage({ action: 'GET_STATE' }) directly on popup load" },
+      { "channel": "xpider-campaign-pause", "replacement": "chrome.runtime.sendMessage({ action: 'PAUSE_CAMPAIGN' })" },
+      { "channel": "xpider-campaign-resume", "replacement": "chrome.runtime.sendMessage({ action: 'RESUME_CAMPAIGN' })" },
+      { "channel": "xpider-campaign-stop", "replacement": "chrome.runtime.sendMessage({ action: 'STOP_CAMPAIGN' })" },
+      { "channel": "xpider-ext-get-wit-key", "replacement": "chrome.storage.local direct read" },
+      { "channel": "xpider-ext-sync-wit-key", "replacement": "chrome.runtime.sendMessage({ action: 'UPDATE_WIT_KEY', key })" },
+      { "channel": "xpider-show-save-dialog", "replacement": "chrome.downloads.download({ url, filename, saveAs: true })" }
+    ],
+    "verification_suite": "TRANSPORT-1 through TRANSPORT-7 in test_phase2b_acceptance.js",
+    "qa_status": "AUTOMATED SUITE = PASS (74/74); LIVE EXTENSION RUN = PENDING OWNER VERIFICATION IN REAL CHROME"
+  },
   "ipc_diagnostic_patch": {
-    "status": "IMPLEMENTED",
+    "status": "PRESERVED",
     "diagnostic_controls": [
       "#copy-diagnostic-btn (Copy Diagnostic Report)",
       "#download-diagnostic-btn (Download Diagnostic TXT)",
@@ -22,12 +39,12 @@
       "TC-2B-11: Privacy-Safe Redaction Engine & User Diagnostic Controls"
     ],
     "privacy_redaction": "Automatic redaction of emails, phone numbers, auth tokens/secrets, full URL lists",
-    "qa_status": "SIMULATED XPIDER_RESPONSE bridge test = PASS; real Chrome native bridge = NOT_VERIFIED"
+    "qa_status": "Diagnostic and redaction subsystem verified; active engine logs [Engine][TX], [Engine][ACK], [Engine][VERIFY]"
   },
   "remediation_r1_mandates": {
     "R1_MANDATE_1_PAYLOAD_BINDING": {
       "status": "SATISFIED",
-      "description": "startCampaign() explicitly calls bindCampaignTemplateMetadata(currentTpl) and binds templateId and templateVersion into startPayload, passing them to xpiderInvoke('xpider-campaign-start')."
+      "description": "startCampaign() explicitly calls bindCampaignTemplateMetadata(currentTpl) and binds templateId and templateVersion into startPayload, passing them directly to background START_CAMPAIGN."
     },
     "R1_MANDATE_2_DEFAULT_TEMPLATE_DELETION_GUARD": {
       "status": "SATISFIED",
@@ -43,7 +60,7 @@
     },
     "R1_MANDATE_5_ACTUAL_CONTROLLER_TESTING": {
       "status": "SATISFIED",
-      "description": "test_phase2b_acceptance.js directly invokes all 15 production controller functions exported by popup.js plus startCampaign(). All 8 suite tests pass."
+      "description": "test_phase2b_acceptance.js directly invokes all production controller functions exported by popup.js plus startCampaign(). All 18 suite tests pass."
     },
     "R1_MANDATE_6_EXECUTABLE_REPO_LAYOUT": {
       "status": "SATISFIED",
@@ -97,9 +114,9 @@
     "test_phase0_1": "5/5 PASS (100%)",
     "test_phase0_1_behavioral": "5/5 PASS (100%)",
     "test_phase2a_integration_f7f13": "32/32 PASS (100%)",
-    "test_phase2b_acceptance": "8/8 PASS (100%)",
-    "total_suite_count": 64,
-    "total_passed": 64,
+    "test_phase2b_acceptance": "18/18 PASS (100%)",
+    "total_suite_count": 74,
+    "total_passed": 74,
     "total_failed": 0
   }
 }

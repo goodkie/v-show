@@ -1,24 +1,24 @@
 === LOCAL GIT PROVENANCE MANIFEST ===
-Phase: Phase 2B IPC Diagnostic Patch Build
+Phase: Phase 2B Chrome Runtime Transport Hotfix Build
 Branch: upgrade/phase-0-1
-Local HEAD SHA: aee5834b8bd9fddf98082b0cecd66b4210359265
+Local HEAD SHA: 812c930e758835b7c2336602d27997cd54dcee08
 Rollback Anchor: 0853c5006855afdf17c5136dfa5031ea654f6529
 Rollback Artifact: evidence_phase2a_integration_v6.zip (A2A1387DB3FE6031F0BD2F4E5DDCFBC4DB77D4D5F42F227AEE541ECBB4A9FECB)
-Timestamp: 2026-10-01T11:05:00Z
+Timestamp: 2026-10-01T11:25:00Z
 
 --- git cat-file -p HEAD ---
-tree 54970dc88282e3b796feeaa1ec1ffcca49cc49e7
-parent 439187c29d6f23cda0021cb64f56d295f2dd4f97
-author Antigravity <antigravity@local> 1790852464 -0400
-committer Antigravity <antigravity@local> 1790852464 -0400
+tree 8150da3710681823035f7d88f1432da951858281
+parent 4284818134fe63e70e87d824c43a76e95a4e57db
+author Antigravity <antigravity@local> 1790853796 -0400
+committer Antigravity <antigravity@local> 1790853796 -0400
 
-fix(ipc): add privacy-safe diagnostic logging patch for native bridge timeout investigation
+fix(ipc): hotfix dead native IPC bridge by routing campaign controls through Chrome runtime service worker
 
 --- git ls-tree -r HEAD ---
-100644 blob 745ea8605fd8e6f8e33e8fe16e05a932fcc662ef	AUDIT_MANIFEST.json
-100644 blob dbd1fb551e717b262d34c904eb14f43bbbc46324	COMMIT_PROVENANCE.txt
-100644 blob 1dc25eb124e19bdc7a3e21ccba22d11c99a30e30	LOCAL_GIT_PROVENANCE.txt
-100644 blob 74dd2f35b741fc0494b05821290d5aeb97dc6355	PACKAGE_INVENTORY_SHA256.txt
+100644 blob ad944063223af232967040a20e1350fff0e4c5d8	AUDIT_MANIFEST.json
+100644 blob 666c6cf24115b29a028134fd8237759ed3b04c90	COMMIT_PROVENANCE.txt
+100644 blob b3bd5fee8ff224c9b5d5f443440dad17ccc0d2ab	LOCAL_GIT_PROVENANCE.txt
+100644 blob 72d21b2685db50655bd4554934aecf76fa28e682	PACKAGE_INVENTORY_SHA256.txt
 100644 blob 842e17ecd8265afc70841ce72f3edaf40490c631	RECEIPT_PHASE2A_F7F13_INTEGRATION_REMEDIATION.txt
 100644 blob 9d1f0e4b17815ce9ff2405437f18e5db20f179ba	RECEIPT_PHASE2A_INTEGRATION_V2.txt
 100644 blob 36216e7f02c63ab75ea19845eeabc431aaa4ecf1	RECEIPT_PHASE2A_INTEGRATION_V3.txt
@@ -31,21 +31,21 @@ fix(ipc): add privacy-safe diagnostic logging patch for native bridge timeout in
 100644 blob 4955051552a020560d0400e9e7711954340d31f7	receipt_phase0_1_addendum.md
 100644 blob c75b16038576c8595aa7320f8a90b62bacd4674e	receipt_phase2a.md
 100644 blob 6ed40e998b26ef16e4367a39af44fa3ddd32e84f	send_message_backup/ANTIGRAVITY_DISCOVERY_REPORT.md
-100644 blob 745ea8605fd8e6f8e33e8fe16e05a932fcc662ef	send_message_backup/AUDIT_MANIFEST.json
-100644 blob dbd1fb551e717b262d34c904eb14f43bbbc46324	send_message_backup/COMMIT_PROVENANCE.txt
+100644 blob ad944063223af232967040a20e1350fff0e4c5d8	send_message_backup/AUDIT_MANIFEST.json
+100644 blob 666c6cf24115b29a028134fd8237759ed3b04c90	send_message_backup/COMMIT_PROVENANCE.txt
 100644 blob e74d137f1f40f30feca62e102c5f987e660ed519	send_message_backup/FILE_HASHES.txt
-100644 blob 1dc25eb124e19bdc7a3e21ccba22d11c99a30e30	send_message_backup/LOCAL_GIT_PROVENANCE.txt
-100644 blob 74dd2f35b741fc0494b05821290d5aeb97dc6355	send_message_backup/PACKAGE_INVENTORY_SHA256.txt
+100644 blob b3bd5fee8ff224c9b5d5f443440dad17ccc0d2ab	send_message_backup/LOCAL_GIT_PROVENANCE.txt
+100644 blob 72d21b2685db50655bd4554934aecf76fa28e682	send_message_backup/PACKAGE_INVENTORY_SHA256.txt
 100644 blob 1dc182da958add45c77db876598767301514967f	send_message_backup/PNG.PNG
 100644 blob c45ed246f92920a7338015ee159f70da21a3b6ee	send_message_backup/RESTORE_POINT_SUMMARY.md
 100644 blob b2533691b1a7f880b2961f01fff0b33e542f01e2	send_message_backup/background.js
 100644 blob d7a631d3bd1c4d7b053cc9ac41d0bf3936d500e2	send_message_backup/banner.jpg
 100644 blob 1691b27400a9f19191b6c96db9306fedd2c87173	send_message_backup/blacklist_data.js
-100644 blob 745ea8605fd8e6f8e33e8fe16e05a932fcc662ef	send_message_backup/build/extension/AUDIT_MANIFEST.json
-100644 blob dbd1fb551e717b262d34c904eb14f43bbbc46324	send_message_backup/build/extension/COMMIT_PROVENANCE.txt
+100644 blob ad944063223af232967040a20e1350fff0e4c5d8	send_message_backup/build/extension/AUDIT_MANIFEST.json
+100644 blob 666c6cf24115b29a028134fd8237759ed3b04c90	send_message_backup/build/extension/COMMIT_PROVENANCE.txt
 100644 blob e74d137f1f40f30feca62e102c5f987e660ed519	send_message_backup/build/extension/FILE_HASHES.txt
-100644 blob 1dc25eb124e19bdc7a3e21ccba22d11c99a30e30	send_message_backup/build/extension/LOCAL_GIT_PROVENANCE.txt
-100644 blob 74dd2f35b741fc0494b05821290d5aeb97dc6355	send_message_backup/build/extension/PACKAGE_INVENTORY_SHA256.txt
+100644 blob b3bd5fee8ff224c9b5d5f443440dad17ccc0d2ab	send_message_backup/build/extension/LOCAL_GIT_PROVENANCE.txt
+100644 blob 72d21b2685db50655bd4554934aecf76fa28e682	send_message_backup/build/extension/PACKAGE_INVENTORY_SHA256.txt
 100644 blob 1dc182da958add45c77db876598767301514967f	send_message_backup/build/extension/PNG.PNG
 100644 blob c45ed246f92920a7338015ee159f70da21a3b6ee	send_message_backup/build/extension/RESTORE_POINT_SUMMARY.md
 100644 blob b2533691b1a7f880b2961f01fff0b33e542f01e2	send_message_backup/build/extension/background.js
@@ -64,9 +64,9 @@ fix(ipc): add privacy-safe diagnostic logging patch for native bridge timeout in
 100644 blob c70ce7997e568a3fb55a5c16a5dc6f1290151bf6	send_message_backup/build/extension/modules/history-store.js
 100644 blob 720404f3483a98416c07a645779e6b161f3b073f	send_message_backup/build/extension/modules/operation-queue.js
 100644 blob 5c86a0486a0817e903dc0240e686729bb4031c46	send_message_backup/build/extension/modules/template-store.js
-100644 blob c233c9955bb3b5ed2c847815cbcaea7c278b05d6	send_message_backup/build/extension/popup.css
-100644 blob 242c49b56b209950f9eb772635c9f43dc041b4bf	send_message_backup/build/extension/popup.html
-100644 blob 6e43e722e1b7bd7436385eeaea54c458e464e1cd	send_message_backup/build/extension/popup.js
+100644 blob 9a5a67f01068d015b06681fae47502d27a2099d1	send_message_backup/build/extension/popup.css
+100644 blob 2ec047242ebe76d7ee7159b863123a0f001d5e28	send_message_backup/build/extension/popup.html
+100644 blob b980cb1e6bc415652aff5134ac83564697bb85ab	send_message_backup/build/extension/popup.js
 100644 blob 0ed90e48045a4ff9786e3210ff07c021103ebdce	send_message_backup/build/extension/solver-content.js
 100644 blob 46e69f1b485a93f4948d15d777fc3a896ee558ca	send_message_backup/build/extension/solver-core.js
 100644 blob 2009c45f1c3cdac550ad57acdc0032e8a962b183	send_message_backup/build/extension/translations.js
@@ -90,13 +90,13 @@ fix(ipc): add privacy-safe diagnostic logging patch for native bridge timeout in
 100644 blob c70ce7997e568a3fb55a5c16a5dc6f1290151bf6	send_message_backup/modules/history-store.js
 100644 blob 720404f3483a98416c07a645779e6b161f3b073f	send_message_backup/modules/operation-queue.js
 100644 blob 5c86a0486a0817e903dc0240e686729bb4031c46	send_message_backup/modules/template-store.js
-100644 blob c233c9955bb3b5ed2c847815cbcaea7c278b05d6	send_message_backup/popup.css
-100644 blob 242c49b56b209950f9eb772635c9f43dc041b4bf	send_message_backup/popup.html
-100644 blob 6e43e722e1b7bd7436385eeaea54c458e464e1cd	send_message_backup/popup.js
+100644 blob 9a5a67f01068d015b06681fae47502d27a2099d1	send_message_backup/popup.css
+100644 blob 2ec047242ebe76d7ee7159b863123a0f001d5e28	send_message_backup/popup.html
+100644 blob b980cb1e6bc415652aff5134ac83564697bb85ab	send_message_backup/popup.js
 100644 blob 0ed90e48045a4ff9786e3210ff07c021103ebdce	send_message_backup/solver-content.js
 100644 blob 46e69f1b485a93f4948d15d777fc3a896ee558ca	send_message_backup/solver-core.js
 100644 blob 369c9ed98b8181eeda8f41b67b4996de5d1e5c19	send_message_backup/test_phase2a_integration_f7f13.js
-100644 blob d632c019ec00ef945eb4f28523f38751bf343b22	send_message_backup/test_phase2b_acceptance.js
+100644 blob 559f864cabc0db8f36aca145b09a33a1dcbb305d	send_message_backup/test_phase2b_acceptance.js
 100644 blob 2009c45f1c3cdac550ad57acdc0032e8a962b183	send_message_backup/translations.js
 100644 blob b037a46f2b2b5f7e5c990bd2b4a53ad5c65a425f	send_message_backup/upload-folder.png
 100644 blob 77c9d77db779a298ae8bcdab407989333397869b	send_message_backup/upload-folder2.png

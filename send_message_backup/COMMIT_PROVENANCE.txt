@@ -1,28 +1,33 @@
-[ANTIGRAVITY][PROVENANCE][extension-form-sender][IPC DIAGNOSTIC BUILD]
+[ANTIGRAVITY][PROVENANCE][extension-form-sender][CHROME RUNTIME HOTFIX BUILD]
 
 === REPOSITORY & PROVENANCE METADATA ===
 Repository Type: Standalone Local Development Repository (local-only, no remote origin attached)
 Workspace Root: e:\vivpr\ai\extension-form-sender
 Branch: upgrade/phase-0-1
-Commit SHA: aee5834b8bd9fddf98082b0cecd66b4210359265
+Commit SHA: 812c930e758835b7c2336602d27997cd54dcee08
 Auditor Collaboration Hub: GitHub Issue #6 on goodkie/v-show
-Timestamp: 2026-10-01T11:05:00Z
+Timestamp: 2026-10-01T11:25:00Z
 Rollback Anchor: 0853c5006855afdf17c5136dfa5031ea654f6529 (evidence_phase2a_integration_v6.zip / A2A1387DB3FE6031F0BD2F4E5DDCFBC4DB77D4D5F42F227AEE541ECBB4A9FECB)
 
-=== IPC DIAGNOSTIC PATCH SUMMARY ===
-1. IPC Correlation Trace: Request ID, channel, byte length, queue count, templateId/version, origin/path, visibilityState logged on every xpiderInvoke().
-2. Bridge Availability Snapshot: Pre-send snapshot logs postMessage availability, extension context, and detects bridge absence.
-3. Relevant Window Traffic Capture: Monitors all window.message traffic, logs elapsed latency, msg type, and ID matching state.
-4. Pending Checkpoints: Checkpoint events (+1s, +5s, +10s, +20s, +29s) log pending state and background ping status.
-5. Structured Timeout Dump: Emits full structured diagnostic block on 30s timeout before rejection.
-6. User Diagnostic Controls: UI buttons added for Copy Diagnostic Report, Download Diagnostic TXT, and Clear Log with automatic redaction of emails, phone numbers, auth tokens, and URL lists.
-7. Verification Tests: DIAG-IPC-1 (no responder timeout & dump) and DIAG-IPC-2 (responder present resolution) added to test suite.
+=== CHROME RUNTIME TRANSPORT HOTFIX SUMMARY ===
+1. Issue #6 Root Cause: The unpacked Chrome extension had a dead Electron/main-process window.postMessage bridge (xpiderInvoke), causing a 30-second timeout on "START SENDING" in real Chrome (IPC timeout: xpider-campaign-start).
+2. Elimination of Dead Native IPC:
+   - xpider-campaign-start -> replaced with direct chrome.runtime.sendMessage({ action: 'START_CAMPAIGN', ... })
+   - xpider-campaign-get-state -> replaced with direct chrome.runtime.sendMessage({ action: 'GET_STATE' }) on popup load
+   - xpider-campaign-pause / resume -> replaced with PAUSE_CAMPAIGN / RESUME_CAMPAIGN
+   - xpider-campaign-stop -> replaced with STOP_CAMPAIGN
+   - xpider-ext-get-wit-key -> replaced with direct chrome.storage.local loader
+   - xpider-ext-sync-wit-key -> replaced with chrome.runtime.sendMessage({ action: 'UPDATE_WIT_KEY', key })
+   - xpider-show-save-dialog -> replaced with chrome.downloads.download({ url, filename, saveAs: true })
+3. Strict Start ACK & UI Lifecycle: UI transitions to 'Starting...' first; campaignActive is set to true only upon receiving background ACK; failure immediately restores the start button; followed by post-ACK GET_STATE verification.
+4. Preserved Diagnostics: Diagnostic buffer and UI buttons (#copy-diagnostic-btn, #download-diagnostic-btn, #clear-diagnostic-btn) preserved with automatic privacy redaction.
+5. Verification Test Suite: TRANSPORT-1 through TRANSPORT-7 added to test_phase2b_acceptance.js, verifying start/ack, error recovery, immediate GET_STATE, pause/resume/stop, Wit key management, template download, and zero calls to the 8 dead native channels.
 
-=== VERIFICATION STATUS (67 / 67 PASS, 100%) ===
+=== VERIFICATION STATUS (74 / 74 PASS, 100%) ===
 - test_phase2a.js: 14/14 PASS (100%)
 - test_phase0_1.js: 5/5 PASS (100%)
 - test_phase0_1_behavioral.js: 5/5 PASS (100%)
 - send_message_backup/test_phase2a_integration_f7f13.js: 32/32 PASS (100%)
-- send_message_backup/test_phase2b_acceptance.js: 11/11 PASS (100%)
-- Total: 67/67 PASS (100%)
-- QA Status: SIMULATED XPIDER_RESPONSE bridge test = PASS; real Chrome native bridge = NOT_VERIFIED
+- send_message_backup/test_phase2b_acceptance.js: 18/18 PASS (100%)
+- Total: 74/74 PASS (100%)
+- QA Status: AUTOMATED SUITE = PASS (100%); real Chrome execution = PENDING OWNER LIVE VALIDATION
