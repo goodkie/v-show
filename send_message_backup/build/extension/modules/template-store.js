@@ -79,10 +79,14 @@
 
             const currentVersion = storageData.xpider_schema_version || 0;
             if (currentVersion >= 2) {
+                const existingTemplates = Array.isArray(storageData.templates_v2)
+                    ? storageData.templates_v2
+                    : (storageData.templates_v2 && storageData.templates_v2.templates ? Object.values(storageData.templates_v2.templates) : []);
                 return {
                     migrated: false,
                     reason: 'ALREADY_V2',
-                    templates: storageData.templates_v2 || [],
+                    templates: existingTemplates,
+                    templates_v2: storageData.templates_v2 || null,
                     savedUrlLists: storageData.savedUrlLists_v2 || storageData.savedUrlLists || storageData.xpider_saved_lists || []
                 };
             }
@@ -117,12 +121,32 @@
                 templatesV2.push(this._convertLegacyItem(storageData.xpider_tpl, 'Default Template'));
             }
 
-            // Ensure at least one default if templates exist
-            if (templatesV2.length > 0 && !templatesV2.some(t => t.isDefault)) {
-                templatesV2[0].isDefault = true;
+            // 3. Build canonical templates_v2 object schema { version: 2, templates: { [id]: tpl }, defaultId, recentIds }
+            // to match popup CRUD, default selection, and background staged migration verification.
+            let defaultId = null;
+            const templatesDict = {};
+            const recentIds = [];
+
+            for (const t of templatesV2) {
+                templatesDict[t.id] = t;
+                recentIds.push(t.id);
+                if (t.isDefault && !defaultId) {
+                    defaultId = t.id;
+                }
+            }
+            if (!defaultId && templatesV2.length > 0) {
+                defaultId = templatesV2[0].id;
+                templatesDict[defaultId].isDefault = true;
             }
 
-            // 3. Preserve savedUrlLists (F5: support both array and object-shaped lists without loss)
+            const canonicalTemplatesV2 = {
+                version: 2,
+                templates: templatesDict,
+                defaultId: defaultId,
+                recentIds: recentIds
+            };
+
+            // 4. Preserve savedUrlLists (F5: support both array and object-shaped lists without loss)
             const rawUrlLists = storageData.savedUrlLists !== undefined 
                 ? storageData.savedUrlLists 
                 : storageData.xpider_saved_lists;
@@ -136,7 +160,7 @@
                 savedUrlListsV2 = [];
             }
 
-            // 4. Verify converted templates
+            // 5. Verify converted templates
             for (const t of templatesV2) {
                 if (!this.validateTemplate(t)) {
                     throw new Error(`Migration validation failed for template: ${JSON.stringify(t)}`);
@@ -145,7 +169,7 @@
 
             const migrationCommit = {
                 ...backupPayload,
-                templates_v2: templatesV2,
+                templates_v2: canonicalTemplatesV2,
                 savedUrlLists_v2: savedUrlListsV2,
                 savedUrlLists: savedUrlListsV2,
                 xpider_schema_version: 2,
@@ -186,6 +210,7 @@
                 commit: migrationCommit,
                 backupKey,
                 templates: templatesV2,
+                templates_v2: canonicalTemplatesV2,
                 savedUrlLists: savedUrlListsV2
             };
         }

@@ -142,7 +142,7 @@
          * @param {string|null} importId - Optional import batch identifier
          * @param {number[]|null} sourceRowNumbers - Optional explicit 1-based row numbers from parser (actual file line numbers)
          */
-        async ingestImportRows(rawInputs = [], importId = null, sourceRowNumbers = null) {
+        async ingestImportRows(rawInputs = [], importId = null, sourceRowNumbers = null, targetIdentities = null) {
             const batchImportId = importId || `imp_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
             const createdRows = [];
 
@@ -153,15 +153,20 @@
                     ? sourceRowNumbers[i]
                     : i + 1;
                 const rowId = `row_${batchImportId}_${actualRowNumber}`;
-                const identity = this.normalizeTargetIdentity(raw);
+
+                // [F7] Use explicit target identity if provided by parser pass, else normalize raw input
+                const providedIdentity = (Array.isArray(targetIdentities) && targetIdentities[i] !== undefined)
+                    ? targetIdentities[i]
+                    : null;
+                const identity = providedIdentity ? this.normalizeTargetIdentity(providedIdentity) : this.normalizeTargetIdentity(raw);
                 const isValid = !!identity && identity.startsWith('http');
 
                 const row = {
                     rowId,
-                    sourceRowId: actualRowNumber,   // [F7] actual file line number
+                    sourceRowId: actualRowNumber,   // [F7] actual file line number / logical record number
                     importId: batchImportId,
                     rawInputUrl: raw,
-                    targetIdentity: identity,
+                    targetIdentity: isValid ? identity : null, // [F7] link preserved source row to extracted target identity
                     status: isValid ? 'PENDING' : 'INVALID_INPUT',
                     attemptId: null,
                     createdAt: Date.now()
@@ -294,8 +299,19 @@
             if (!attempt) return { settled: false, reason: 'ATTEMPT_NOT_FOUND' };
 
             const now = Date.now();
-            attempt.status = isSuccess ? 'CONFIRMED_SUCCESS' : 'FAILURE';
-            attempt.reasonCode = reason || (isSuccess ? 'SUCCESS_CONFIRMED' : 'UNKNOWN');
+            const reasonCode = reason || (isSuccess ? 'SUCCESS_CONFIRMED' : 'UNKNOWN');
+
+            // [F8] DELIVERY_UNKNOWN is a distinct final attempt status (not collapsed to FAILURE)
+            if (reason === 'DELIVERY_UNKNOWN' || reasonCode === 'DELIVERY_UNKNOWN') {
+                attempt.status = 'DELIVERY_UNKNOWN';
+                attempt.reasonCode = 'DELIVERY_UNKNOWN';
+            } else if (isSuccess) {
+                attempt.status = 'CONFIRMED_SUCCESS';
+                attempt.reasonCode = reasonCode;
+            } else {
+                attempt.status = 'FAILURE';
+                attempt.reasonCode = reasonCode;
+            }
             attempt.timing.finalizedTime = now;
             attempt.timing.durationMs = now - attempt.timing.intentTime;
 
@@ -305,7 +321,7 @@
                 target.lastAttemptId = attemptId;
                 target.updatedTs = now;
                 // [F8] CONFIRMED_SUCCESS and DELIVERY_UNKNOWN both suppress; FAILURE does NOT
-                if (isSuccess || attempt.reasonCode === 'DELIVERY_UNKNOWN') {
+                if (attempt.status === 'CONFIRMED_SUCCESS' || attempt.status === 'DELIVERY_UNKNOWN') {
                     target.isSuppressed = true;
                     target.suppressionReason = attempt.status;
                     target.effectiveGeneration = this.currentGeneration;

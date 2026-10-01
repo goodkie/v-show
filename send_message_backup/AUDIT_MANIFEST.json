@@ -1,0 +1,41 @@
+{
+  "manifest_version": "1.0",
+  "package": "evidence_phase2a_integration_v4",
+  "audit_phase": "Phase 2A Remediation V4",
+  "timestamp": "2026-10-01T04:00:00Z",
+  "remediation_summary": {
+    "F7": {
+      "status": "RESOLVED",
+      "description": "RFC-4180 CSV logical parser for quoted multiline fields; awaited RECORD_IMPORT_ROWS with visible error rejection; source rows linked to extracted target identities."
+    },
+    "F8": {
+      "status": "RESOLVED",
+      "description": "Single canonical attemptId shared across HistoryStore and background state (no second ID generation); restart recovery settles same attemptId as DELIVERY_UNKNOWN; distinct DELIVERY_UNKNOWN status; fail-closed suppression check."
+    },
+    "F9_F11": {
+      "status": "RESOLVED",
+      "description": "Unified canonical templates_v2 schema ({ version: 2, templates: { [id]: tpl }, defaultId, recentIds }); staged migration validates complete payload (templates_v2 and savedUrlLists_v2) before schema promotion."
+    },
+    "F10": {
+      "status": "RESOLVED",
+      "description": "Selective reset UI, global reset, and history panel state verified."
+    },
+    "F12": {
+      "status": "RESOLVED",
+      "description": "Byte-for-byte root/build mirror parity verified across all files including binaries (캡처.JPG); complete SHA-256 inventory in PACKAGE_INVENTORY_SHA256.txt."
+    },
+    "F13": {
+      "status": "RESOLVED",
+      "description": "Hardcoded keys removed; tests use CWD-independent path.resolve."
+    }
+  },
+  "test_suites": [
+    { "file": "test_phase2a.js", "tests": 14, "passed": 14, "status": "PASS" },
+    { "file": "test_phase0_1.js", "tests": 5, "passed": 5, "status": "PASS" },
+    { "file": "test_phase0_1_behavioral.js", "tests": 5, "passed": 5, "status": "PASS" },
+    { "file": "send_message_backup/test_phase2a_integration_f7f13.js", "tests": 22, "passed": 22, "status": "PASS" }
+  ],
+  "total_tests": 46,
+  "total_passed": 46,
+  "pass_rate": "100%"
+}

@@ -25,8 +25,10 @@
     };
   });
   // 글로벌 에러 캡처
-  self.addEventListener('error', (e) => _xDL('ERROR', `[Uncaught] ${e.message} at ${e.filename}:${e.lineno}`));
-  self.addEventListener('unhandledrejection', (e) => _xDL('ERROR', `[UnhandledRejection] ${e.reason}`));
+  if (typeof self.addEventListener === 'function') {
+    self.addEventListener('error', (e) => _xDL('ERROR', `[Uncaught] ${e.message} at ${e.filename}:${e.lineno}`));
+    self.addEventListener('unhandledrejection', (e) => _xDL('ERROR', `[UnhandledRejection] ${e.reason}`));
+  }
   // 전역 devlog 단축 함수 노출
   self.__xDL = _xDL;
 })();
@@ -539,20 +541,22 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 try {
                     const data = await chrome.storage.local.get(null);
 
-                    // [F11] Resume: STAGE_COMMIT detected — validate v2 payload BEFORE promoting schema
+                    // [F11] Resume: STAGE_COMMIT detected — validate complete staged payload BEFORE promoting schema
                     if (data.xpider_migration_phase === 'STAGE_COMMIT' && data.xpider_schema_version !== 2) {
-                        // CRITICAL: only finalize if templates_v2 is actually present and valid
                         const v2DataPresent = data.templates_v2
                             && typeof data.templates_v2 === 'object'
-                            && data.templates_v2.version === 2;
-                        if (v2DataPresent) {
+                            && !Array.isArray(data.templates_v2)
+                            && data.templates_v2.version === 2
+                            && typeof data.templates_v2.templates === 'object';
+                        const urlListsPresent = (data.savedUrlLists_v2 !== undefined || data.savedUrlLists !== undefined);
+
+                        if (v2DataPresent && urlListsPresent) {
                             await chrome.storage.local.set({ xpider_migration_phase: 'COMPLETED', xpider_schema_version: 2 });
-                            logBg(null, '📦 [Migration] Resumed: v2 payload verified — schema version promoted.', 'info');
+                            logBg(null, '📦 [Migration] Resumed: complete v2 payload verified — schema version promoted.', 'info');
                             sendResponse({ success: true, migrated: false, reason: 'RESUMED_FINALIZED' });
                             return;
                         } else {
-                            // v2 data missing (crash between STAGE_COMMIT and data write) — re-run
-                            logBg(null, '⚠️ [Migration] STAGE_COMMIT but v2 payload missing — re-running migration.', 'warning');
+                            logBg(null, '⚠️ [Migration] STAGE_COMMIT but staged payload missing/invalid — re-running migration.', 'warning');
                             await chrome.storage.local.set({ xpider_migration_phase: 'PENDING' });
                             // Fall through to full migration below
                         }
@@ -577,11 +581,17 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                         delete dataWithoutVersion.xpider_schema_version;
                         await chrome.storage.local.set(dataWithoutVersion);
 
-                        // [F11] Step 4: Verify payload was written, then promote schema version
-                        const verification = await chrome.storage.local.get(['templates_v2']);
-                        const v2Ok = verification.templates_v2 && verification.templates_v2.version === 2;
-                        if (!v2Ok) {
-                            throw new Error('MIGRATION_VERIFY_FAILED: templates_v2 not found after write');
+                        // [F11] Step 4: Verify complete staged payload was written, then promote schema version
+                        const verification = await chrome.storage.local.get(['templates_v2', 'savedUrlLists_v2', 'savedUrlLists']);
+                        const v2Ok = verification.templates_v2
+                            && typeof verification.templates_v2 === 'object'
+                            && !Array.isArray(verification.templates_v2)
+                            && verification.templates_v2.version === 2
+                            && typeof verification.templates_v2.templates === 'object';
+                        const urlListsOk = (verification.savedUrlLists_v2 !== undefined || verification.savedUrlLists !== undefined);
+
+                        if (!v2Ok || !urlListsOk) {
+                            throw new Error('MIGRATION_VERIFY_FAILED: complete staged v2 payload not verified after write');
                         }
                         await chrome.storage.local.set({ xpider_schema_version: 2, xpider_migration_phase: 'COMPLETED' });
 
@@ -596,19 +606,21 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             return true;
 
         case 'RECORD_IMPORT_ROWS':
-            // [F7/P2A-2] Accept structured rows [{sourceRowNumber, rawInput}] from popup's line-split pass
+            // [F7/P2A-2] Accept structured rows [{sourceRowNumber, rawInput, targetIdentity}] from popup's pass
             bgOperationQueue.enqueue(async () => {
                 try {
                     if (!self.__xpiderHistoryStore) {
                         self.__xpiderHistoryStore = new self.HistoryStore(chrome.storage.local);
                         await self.__xpiderHistoryStore.load();
                     }
-                    // Support new structured rows format AND legacy url-array format
+                    // Support structured rows format AND legacy url-array format
                     let res;
                     if (Array.isArray(request.rows) && request.rows.length > 0 && request.rows[0].rawInput !== undefined) {
-                        // [F7] Structured path: pass raw line content (including non-URLs) with real line numbers
+                        // [F7] Structured path: pass raw record content, real record numbers, and extracted target identities
                         const rawInputs = request.rows.map(r => r.rawInput);
-                        res = await self.__xpiderHistoryStore.ingestImportRows(rawInputs, request.importId, request.rows.map(r => r.sourceRowNumber));
+                        const sourceRowNumbers = request.rows.map(r => r.sourceRowNumber);
+                        const targetIdentities = request.rows.map(r => r.targetIdentity !== undefined ? r.targetIdentity : null);
+                        res = await self.__xpiderHistoryStore.ingestImportRows(rawInputs, request.importId, sourceRowNumbers, targetIdentities);
                     } else {
                         // Legacy: plain URL array (backwards compat)
                         res = await self.__xpiderHistoryStore.ingestImportRows(request.urls || [], request.importId);
@@ -1045,6 +1057,7 @@ async function orchestrateSending(urlInput, template) {
     };
 
     // [F8] Step 1: Normalize identity and perform suppression check BEFORE any side effect
+    // Fail-closed on error: if check throws, abort before tab open!
     let _canonicalId;
     try {
         const hs = await _getHistoryStore();
@@ -1054,8 +1067,8 @@ async function orchestrateSending(urlInput, template) {
             return { success: false, reasonCode: 'SUPPRESSED', error: 'Target is suppressed' };
         }
     } catch (hsErr) {
-        logBg(null, `⚠️ [F8-Suppression] check failed: ${hsErr.message}`, 'warning');
-        // Continue on suppression-check failure; don't block campaign
+        logBg(null, `❌ [F8-Suppression] check failed: ${hsErr.message} — aborting to fail closed.`, 'error');
+        return { success: false, reasonCode: 'SUPPRESSION_CHECK_FAILED', error: hsErr.message };
     }
 
     // [F8] Step 2: Persist durable PENDING_INTENT record BEFORE opening tab.
@@ -1067,13 +1080,23 @@ async function orchestrateSending(urlInput, template) {
         _attemptId = attemptResult && attemptResult.attemptId ? attemptResult.attemptId : null;
         if (!_attemptId) throw new Error('recordAttempt returned no attemptId');
         await hs.persist();
-        // [F8] Unify with legacy currentAttempt ledger — carry same attemptId for recovery
+        // [F8] Canonical attemptId — unified across HistoryStore and campaignState.currentAttempt
         campaignState.currentAttempt = {
             url: targetUrl,
             attemptId: _attemptId,     // [F8] canonical HistoryStore id
             status: 'SUBMIT_PENDING',
-            ts: Date.now()
+            reasonCode: null,
+            timestamp: Date.now()
         };
+        // Persist to chrome.storage.local immediately so SW crash recovery has the exact canonical attemptId
+        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+            await new Promise((resolve, reject) => {
+                chrome.storage.local.set({ xpider_currentAttempt: campaignState.currentAttempt }, () => {
+                    if (chrome.runtime && chrome.runtime.lastError) return reject(chrome.runtime.lastError);
+                    resolve();
+                });
+            });
+        }
     } catch (hsErr) {
         logBg(null, `❌ [F8-Intent] recordAttempt failed: ${hsErr.message} — aborting to prevent untracked send.`, 'error');
         return { success: false, reasonCode: REASON_CODES.DELIVERY_UNKNOWN, error: 'INTENT_PERSISTENCE_FAILED' };
@@ -1238,9 +1261,10 @@ async function orchestrateSending(urlInput, template) {
         isFocusSecured = true;
         lastFocusedUrl = normalized;
         
-        // [v1.2.0 & F2] Await durable intent persistence BEFORE triggering submission side-effects
+        // [v1.2.0 & F2 & F8] Await durable intent persistence BEFORE triggering submission side-effects
+        // Reuses the single canonical _attemptId from HistoryStore (never generates a second ID)
         try {
-            await recordSubmissionIntent(targetUrl, 'SUBMIT_PENDING');
+            await recordSubmissionIntent(targetUrl, 'SUBMIT_PENDING', _attemptId);
         } catch (intentErr) {
             logBg(tabId, `❌ [IntentGuard] Failed to persist submission intent: ${intentErr.message}. Aborting submission.`, "error");
             finish({ success: false, error: "INTENT_PERSISTENCE_FAILED", reasonCode: REASON_CODES.DELIVERY_UNKNOWN });
@@ -1381,8 +1405,11 @@ async function orchestrateSending(urlInput, template) {
     return resultPromise;
 }
 
-async function recordSubmissionIntent(targetUrl, status = 'SUBMIT_PENDING') {
-    const attemptId = `att_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+async function recordSubmissionIntent(targetUrl, status = 'SUBMIT_PENDING', existingAttemptId = null) {
+    // [F8] Reuse existing canonical attemptId — NEVER overwrite with a newly generated ID
+    const attemptId = existingAttemptId 
+        || (campaignState.currentAttempt && campaignState.currentAttempt.url === targetUrl && campaignState.currentAttempt.attemptId)
+        || `att_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     campaignState.currentAttempt = {
         url: targetUrl,
         attemptId: attemptId,
@@ -1475,8 +1502,9 @@ async function restoreCampaignState() {
                     let visited = Array.isArray(data.xpider_visited) ? [...data.xpider_visited] : [];
                     if (data.xpider_currentAttempt && data.xpider_currentAttempt.status === 'SUBMIT_PENDING') {
                         const interruptedUrl = data.xpider_currentAttempt.url;
+                        const interruptedAttemptId = data.xpider_currentAttempt.attemptId;
                         const normInterrupted = normalizeUrl(interruptedUrl || '');
-                        console.warn(`[Protection] Service worker restarted with pending submission for: ${interruptedUrl}. Flagging as DELIVERY_UNKNOWN.`);
+                        console.warn(`[Protection] Service worker restarted with pending submission for: ${interruptedUrl} (Attempt: ${interruptedAttemptId}). Flagging as DELIVERY_UNKNOWN.`);
                         
                         if (normInterrupted && !visited.includes(normInterrupted)) {
                             visited.push(normInterrupted);
@@ -1492,6 +1520,30 @@ async function restoreCampaignState() {
                             xpider_currentAttempt: settledAttempt,
                             xpider_visited: visited 
                         });
+
+                        // [F8 CRITICAL] Settle the SAME HistoryStore canonical attempt and persist suppression!
+                        (async () => {
+                            try {
+                                if (!self.__xpiderHistoryStore) {
+                                    self.__xpiderHistoryStore = new self.HistoryStore(chrome.storage.local);
+                                    await self.__xpiderHistoryStore.load();
+                                }
+                                const hs = self.__xpiderHistoryStore;
+                                if (interruptedAttemptId) {
+                                    await hs.settleAttempt(interruptedAttemptId, false, REASON_CODES.DELIVERY_UNKNOWN);
+                                } else if (interruptedUrl) {
+                                    const normId = hs.normalizeTargetIdentity(interruptedUrl);
+                                    const pending = hs.attempts.find(a => a.targetIdentity === normId && a.status === 'PENDING_INTENT');
+                                    if (pending) {
+                                        await hs.settleAttempt(pending.attemptId, false, REASON_CODES.DELIVERY_UNKNOWN);
+                                    }
+                                }
+                                await hs.persist();
+                                logBg(null, `🛡️ [F8-Recovery] Settled HistoryStore attempt ${interruptedAttemptId} as DELIVERY_UNKNOWN (suppression active).`, "warning");
+                            } catch (hsRecErr) {
+                                console.error('[F8-Recovery] Failed to settle HistoryStore on SW restart:', hsRecErr);
+                            }
+                        })();
                         
                         logBg(null, `⚠️ [Protection] Unresolved submission for ${interruptedUrl} recovered as DELIVERY_UNKNOWN to avoid duplicate send.`, "warning");
                     }
@@ -1558,4 +1610,15 @@ async function handleTranscription(audioData, audioUrl, sendResponse) {
     } catch (err) {
         sendResponse({ error: err.message });
     }
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+        orchestrateSending,
+        recordSubmissionIntent,
+        resolveSubmissionIntent,
+        restoreCampaignState,
+        campaignState,
+        REASON_CODES
+    };
 }

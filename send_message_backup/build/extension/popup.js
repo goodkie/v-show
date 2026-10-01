@@ -787,48 +787,63 @@ async function handleFileUpload(e) {
     
     const text = await file.text();
     const importId = `import_${Date.now()}`;
+    const isCsv = file.name.toLowerCase().endsWith('.csv');
 
-    // [F7] Step 1: Split the source file into original rows FIRST — before any URL extraction.
-    // Every line (including empty, non-URL, and partially-valid lines) gets its actual row identity.
-    const rawSourceRows = text.split(/\r?\n/);
-    
-    // [F7] Step 2: Build per-row records preserving exact source structure
-    const rowsForLedger = rawSourceRows.map((rawLine, idx) => ({
-        sourceRowNumber: idx + 1,   // 1-indexed, matches actual file line number
-        rawInput: rawLine           // exact original content including non-URLs
-    }));
+    // [F7] Step 1: Parse source file into LOGICAL records BEFORE URL extraction.
+    // CSV: use RFC-4180-aware parser to handle quoted fields with embedded commas/newlines.
+    // TXT: use physical newline splitting (one record per line).
+    let rawSourceRows;
+    if (isCsv) {
+        rawSourceRows = _parseRfc4180Records(text);
+    } else {
+        rawSourceRows = text.split(/\r?\n/);
+    }
 
-    // [F7] Step 3: Persist ALL source rows to HistoryStore BEFORE any extraction/normalization.
-    // Fire-and-forget intentionally — but we log failures; does NOT block UI render.
-    chrome.runtime.sendMessage({
-        action: 'RECORD_IMPORT_ROWS',
-        rows: rowsForLedger,        // full structured rows, not just URLs
-        importId
-    }).catch((err) => {
-        console.warn('[F7] RECORD_IMPORT_ROWS failed — ledger may be incomplete:', err);
+    // [F7] Step 2: Build per-row records preserving exact source structure AND linking to extracted targets
+    const urlRegex = /(https?:\/\/[^\s,"]+)|((?:www\.)?[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}(?:\/[^\s,"]*)?)/g;
+    const rowsForLedger = rawSourceRows.map((rawRecord, idx) => {
+        let matches = rawRecord.match(urlRegex) || [];
+        matches = matches.map(u => {
+            u = u.trim().replace(/[.,;)]+$/, '');
+            if (u && !u.startsWith('http')) u = 'https://' + u;
+            return u;
+        }).filter(u => { try { new URL(u); return true; } catch(err) { return false; } });
+
+        const targetIdentity = matches.length > 0 ? matches[0] : null;
+        return {
+            sourceRowNumber: idx + 1,   // 1-indexed logical record number
+            rawInput: rawRecord,        // exact original record content (including non-URL rows)
+            targetIdentity: targetIdentity, // [F7] link preserved source row to extracted target
+            extractedUrls: matches
+        };
     });
 
-    // [F7] Step 4: ONLY NOW extract URLs for the execution queue.
-    // The ledger above already captured every source row regardless of URL validity.
-    const urlRegex = /(https?:\/\/[^\s,]+)|((?:www\.)?[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}(?:\/[^\s,]*)?)/g;
-    let matches = text.match(urlRegex) || [];
-
-    // Normalize matched strings into valid https URLs
-    matches = matches.map(u => {
-        u = u.trim().replace(/[.,;)]+$/, '');
-        if (u && !u.startsWith('http')) {
-            u = 'https://' + u;
+    // [F7] Step 3: Persist ALL source rows (AWAITED — fail-closed: reject import if ledger write fails)
+    try {
+        const importRes = await chrome.runtime.sendMessage({
+            action: 'RECORD_IMPORT_ROWS',
+            rows: rowsForLedger,
+            importId
+        });
+        if (!importRes || !importRes.success) {
+            throw new Error((importRes && importRes.error) || 'Ledger write rejected by background service worker');
         }
-        return u;
-    }).filter(u => {
-        try { new URL(u); return true; } catch(err) { return false; }
-    });
-    
-    // [v1.3.1] 3333 Global Blacklist (Portals, Gov, Org, etc.)
+    } catch (err) {
+        addLog(`❌ [F7] Import rejected: durable ledger write failed (${err.message}). Import aborted; no targets queued.`, 'error');
+        if (nameDisplay) nameDisplay.textContent = 'Import failed (ledger error)';
+        return;
+    }
+
+    // [F7] Step 4: ONLY AFTER durable ledger write succeeds, derive campaign queue from preserved rows
+    const allExtractedUrls = [];
+    for (const r of rowsForLedger) {
+        if (Array.isArray(r.extractedUrls)) {
+            allExtractedUrls.push(...r.extractedUrls);
+        }
+    }
+
     const blacklist = window.XPIDER_BLACKLIST || [];
-    
-    // Execution queue dedupes separately — ledger above captured every original source row
-    campaignQueue = [...new Set(matches)].filter(url => {
+    campaignQueue = [...new Set(allExtractedUrls)].filter(url => {
         const lowerUrl = url.toLowerCase();
         return !blacklist.some(domain => lowerUrl.includes(domain));
     });
@@ -840,18 +855,54 @@ async function handleFileUpload(e) {
     const fileInfo = document.getElementById('file-info');
     if (fileInfo) fileInfo.classList.remove('hidden');
     
-    // [v1.2.0] Save to Permanent Lists
     await saveListToStorage(file.name, campaignQueue);
-
-    // Show URLs Preview in UI
     renderUrlsPreview(campaignQueue);
+    chrome.storage.local.set({ xpider_queue: campaignQueue, xpider_total: totalTargets, xpider_success: 0 });
+    addLog(`Loaded ${totalTargets} business URLs from ${rawSourceRows.length} source record(s) (${isCsv ? 'CSV logical records' : 'TXT lines'}).`, 'info');
+}
 
-    chrome.storage.local.set({ 
-        xpider_queue: campaignQueue,
-        xpider_total: totalTargets,
-        xpider_success: 0
-    });
-    addLog(`Loaded ${totalTargets} business URLs from ${rawSourceRows.length} source rows.`, 'info');
+/**
+ * [F7] Minimal RFC-4180 CSV logical-record parser.
+ * Handles: quoted fields, embedded commas, embedded CRLF/LF within quoted fields.
+ * Returns one string per logical CSV record (entire row joined as-is for the ledger).
+ */
+function _parseRfc4180Records(text) {
+    const records = [];
+    let current = '';
+    let inQuotes = false;
+    let i = 0;
+    while (i < text.length) {
+        const ch = text[i];
+        if (ch === '"') {
+            if (inQuotes && text[i + 1] === '"') {
+                // Escaped quote
+                current += '"';
+                i += 2;
+                continue;
+            }
+            inQuotes = !inQuotes;
+            current += ch;
+            i++;
+        } else if ((ch === '\r' || ch === '\n') && !inQuotes) {
+            // Record boundary: consume CRLF as one
+            if (ch === '\r' && text[i + 1] === '\n') i++;
+            records.push(current);
+            current = '';
+            i++;
+        } else {
+            current += ch;
+            i++;
+        }
+    }
+    if (current.length > 0 || records.length === 0) records.push(current);
+    return records;
+}
+
+if (typeof window !== 'undefined') {
+    window._parseRfc4180Records = _parseRfc4180Records;
+}
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports._parseRfc4180Records = _parseRfc4180Records;
 }
 
 async function saveListToStorage(name, urls) {
