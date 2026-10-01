@@ -1,0 +1,27 @@
+[ANTIGRAVITY][PROVENANCE][extension-form-sender][PHASE 2A INTEGRATION REMEDIATION V5]
+
+Repository: goodkie/v-show
+Branch: upgrade/phase-0-1
+Commit SHA: 9d6afff048c0fd1b31a2ff433ea37561079a1f3f
+Commit Summary: fix(phase2a): complete V5 remediation for auditor constraints
+Package Name: evidence_phase2a_integration_v5.zip
+Timestamp: 2026-10-01T05:35:00Z
+
+Remediation Summary:
+1. Exact original RFC-4180 logical-record text preservation in _parseRfc4180Records (no unescaping of "" to " in audit raw slice).
+2. 1:1 row-to-target linkage strictly guaranteed; no orphaned targets from multi-URL rows.
+3. Pre-submit state distinction: attempt kept in PREPARING during tab navigation/scan; transitioned to SUBMIT_PENDING immediately before START_SENDING.
+4. Pre-submit persistence failure remains retryable (status FAILURE, reason PRE_SUBMIT_PERSISTENCE_FAILED). SW restart during PREPARING settles as FAILURE INTERRUPTED_PREPARING (isSuppressed = false).
+5. FormTemplateV2 record schema unified with dual flat and nested accessors (firstName, lastName, email, phone, company, website, subject, message, fullName, sender, content).
+6. Authoritative templates_v2 synchronization on all save/edit paths (saveTemplate awaits _syncTemplateToV2).
+7. Migrated legacy fixtures verified through popup field mapping.
+8. Integration test directly invokes exported production functions (restoreCampaignState, orchestrateSending, etc.).
+9. Complete deterministic package hash inventory covering all package files.
+10. Provenance artifacts tying package bytes to the Git commit SHA.
+
+Verification Status:
+- test_phase2a.js: 14/14 PASS (100%)
+- test_phase0_1.js: 5/5 PASS (100%)
+- test_phase0_1_behavioral.js: 5/5 PASS (100%)
+- test_phase2a_integration_f7f13.js: 28/28 PASS (100%)
+- Total: 52/52 PASS (100%)

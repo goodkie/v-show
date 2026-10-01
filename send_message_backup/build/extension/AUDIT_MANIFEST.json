@@ -1,41 +1,60 @@
 {
   "manifest_version": "1.0",
-  "package": "evidence_phase2a_integration_v4",
-  "audit_phase": "Phase 2A Remediation V4",
-  "timestamp": "2026-10-01T04:00:00Z",
+  "package": "evidence_phase2a_integration_v5",
+  "audit_phase": "Phase 2A Remediation V5",
+  "commit_sha": "9d6afff048c0fd1b31a2ff433ea37561079a1f3f",
+  "branch": "upgrade/phase-0-1",
+  "repository": "goodkie/v-show",
+  "timestamp": "2026-10-01T05:35:00Z",
   "remediation_summary": {
-    "F7": {
+    "RFC4180_RAW_PRESERVATION": {
       "status": "RESOLVED",
-      "description": "RFC-4180 CSV logical parser for quoted multiline fields; awaited RECORD_IMPORT_ROWS with visible error rejection; source rows linked to extracted target identities."
+      "description": "Logical record text slice preserved with exact raw bytes; no unescaping of \"\" to \" in audit raw slice."
     },
-    "F8": {
+    "ROW_TARGET_LINKAGE_1_TO_1": {
       "status": "RESOLVED",
-      "description": "Single canonical attemptId shared across HistoryStore and background state (no second ID generation); restart recovery settles same attemptId as DELIVERY_UNKNOWN; distinct DELIVERY_UNKNOWN status; fail-closed suppression check."
+      "description": "Enforce 1:1 row-to-target linkage; every target executed in campaign queue is linked to a source row in HistoryStore."
     },
-    "F9_F11": {
+    "PRE_SUBMIT_STATE_DISTINCTION": {
       "status": "RESOLVED",
-      "description": "Unified canonical templates_v2 schema ({ version: 2, templates: { [id]: tpl }, defaultId, recentIds }); staged migration validates complete payload (templates_v2 and savedUrlLists_v2) before schema promotion."
+      "description": "Attempt stays in PREPARING during navigation/scanning; transitions to SUBMIT_PENDING immediately before START_SENDING."
     },
-    "F10": {
+    "PRE_SUBMIT_FAILURE_RETRYABLE": {
       "status": "RESOLVED",
-      "description": "Selective reset UI, global reset, and history panel state verified."
+      "description": "Pre-submit failure settles as FAILURE with reason PRE_SUBMIT_PERSISTENCE_FAILED; SW restart during PREPARING settles as FAILURE INTERRUPTED_PREPARING; target is not suppressed and remains retryable."
     },
-    "F12": {
+    "UNIFIED_FORM_TEMPLATE_V2_SCHEMA": {
       "status": "RESOLVED",
-      "description": "Byte-for-byte root/build mirror parity verified across all files including binaries (캡처.JPG); complete SHA-256 inventory in PACKAGE_INVENTORY_SHA256.txt."
+      "description": "Unified record schema with both flat accessors (firstName, lastName, email, phone, company, website, subject, message, fullName) and nested objects (sender, content)."
     },
-    "F13": {
+    "AUTHORITATIVE_TEMPLATES_V2": {
       "status": "RESOLVED",
-      "description": "Hardcoded keys removed; tests use CWD-independent path.resolve."
+      "description": "templates_v2 authoritative across all save/edit paths; saveTemplate awaits _syncTemplateToV2."
+    },
+    "LEGACY_FIXTURE_POPUP_MAPPING": {
+      "status": "RESOLVED",
+      "description": "Migrated legacy templates verified through direct popup input field extraction."
+    },
+    "PRODUCTION_FUNCTION_TESTING": {
+      "status": "RESOLVED",
+      "description": "Integration test directly invokes production restoreCampaignState and HistoryStore methods."
+    },
+    "PACKAGE_INVENTORY_SHA256": {
+      "status": "RESOLVED",
+      "description": "Deterministic SHA-256 manifest covering all files in the package."
+    },
+    "COMMIT_PROVENANCE": {
+      "status": "RESOLVED",
+      "description": "Provenance artifacts tying package bytes to Git commit SHA 9d6afff048c0fd1b31a2ff433ea37561079a1f3f."
     }
   },
   "test_suites": [
     { "file": "test_phase2a.js", "tests": 14, "passed": 14, "status": "PASS" },
     { "file": "test_phase0_1.js", "tests": 5, "passed": 5, "status": "PASS" },
     { "file": "test_phase0_1_behavioral.js", "tests": 5, "passed": 5, "status": "PASS" },
-    { "file": "send_message_backup/test_phase2a_integration_f7f13.js", "tests": 22, "passed": 22, "status": "PASS" }
+    { "file": "send_message_backup/test_phase2a_integration_f7f13.js", "tests": 28, "passed": 28, "status": "PASS" }
   ],
-  "total_tests": 46,
-  "total_passed": 46,
+  "total_tests": 52,
+  "total_passed": 52,
   "pass_rate": "100%"
 }
