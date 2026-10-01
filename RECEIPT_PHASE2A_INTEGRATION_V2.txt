@@ -1,0 +1,126 @@
+﻿[ANTIGRAVITY][RECEIPT][extension-form-sender][PHASE 2A INTEGRATION REMEDIATION V2]
+
+HEAD: e65c002 (branch: upgrade/phase-0-1)
+git status: clean (0 modified, 0 untracked in tracked scope)
+
+=== F7-F13 V2 RESOLUTION TABLE ===
+
+F7 — popup.js RECORD_IMPORT_ROWS fires before dedup/blacklist (MAINTAINED)
+  No change from v1. Confirmed working: handleFileUpload() calls RECORD_IMPORT_ROWS
+  with allRawUrls snapshot taken BEFORE any normalization, deduplication, or blacklist filtering.
+  FILE: send_message_backup/popup.js (~line 788)
+
+F8 — Actual sender attempts written to HistoryStore (MAINTAINED)
+  No change from v1. orchestrateSending() records PENDING_INTENT before tab open;
+  settleAttempt() called with final outcome after finish(); persist() called after each step.
+  FILE: send_message_backup/background.js, send_message_backup/modules/history-store.js
+
+F9 — Template v2 single authoritative store (FULLY REWORKED)
+  PRIOR ISSUE: saveTemplateChanges/updateTemplateDropdown/loadTemplateFromLibrary still
+  used xpider_recent_templates as primary; v2 was fire-and-forget side effect.
+
+  FIX: All template CRUD operations now use templates_v2 as the single canonical store:
+  - saveTemplateChanges(): creates tpl_{timestamp} id, stores in templates_v2.templates,
+    updates recentIds[], sets defaultId on first save. Also dual-writes to xpider_recent_templates
+    and xpider_tpl for legacy compat. Awaited fully.
+  - updateTemplateDropdown(): reads from templates_v2.recentIds (primary); falls back to
+    xpider_recent_templates only if templates_v2 is absent.
+  - loadTemplateFromLibrary(): reads by tplId from templates_v2.templates (primary); falls
+    back to xpider_recent_templates by index. Writes xpider_tpl + updates templates_v2.defaultId.
+  - importMessageFromFile inline sync: writes both xpider_tpl and templates_v2 default slot.
+  - loadSettings(): reads templates_v2.defaultId slot first; falls back to xpider_tpl.
+  FILE: send_message_backup/popup.js
+
+F10 — Selective reset / history panel DOM elements added (FIXED)
+  PRIOR ISSUE: popup.js wired to selective-reset-history-btn, selective-reset-url-input,
+  history-status-panel — but none of those IDs existed in popup.html.
+
+  FIX: popup.html now contains:
+  - id="selective-reset-url-input": URL input for targeted suppression reset
+  - id="selective-reset-history-btn": triggers EXECUTE_RESET with type:SELECTED
+  - id="history-status-panel": displays Generation, Rows, Pending, Invalid, Succeeded, Failed
+  All three verified present in send_message_backup/popup.html (lines 335-345).
+  FILE: send_message_backup/popup.html
+
+F11 — Migration restart-safe at commit boundary (REWORKED)
+  PRIOR ISSUE: STAGE_COMMIT resume immediately promoted schema version without verifying
+  that templates_v2 data had actually been written (crash-after-STAGE_COMMIT blind promotion).
+
+  FIX: EXECUTE_MIGRATION handler now:
+  - On STAGE_COMMIT resume: checks templates_v2.version === 2 BEFORE promoting.
+    - If present: promotes schema (safe).
+    - If absent (crash between step 2 and step 3): resets phase to PENDING and re-runs.
+  - Step 4 now verifies templates_v2 was written before promoting xpider_schema_version.
+    Throws MIGRATION_VERIFY_FAILED if payload not confirmed.
+  FILE: send_message_backup/background.js (EXECUTE_MIGRATION case)
+
+F12 — Full build mirror parity (FIXED)
+  PRIOR ISSUE: content-script.js differed between root and build/extension.
+  Other claimed-parity files (background.js, popup.js) were stale in build.
+
+  FIX: All 13 tracked files synced root -> build/extension. SHA-256 verified identical:
+    background.js:              8BE5C629... (MATCH)
+    popup.js:                   EFFFB744... (MATCH)
+    popup.html:                 E70122CA... (MATCH)
+    content-script.js:          89AEEF79... (MATCH)
+    solver-content.js:          62FCB1ED... (MATCH)
+    modules/history-store.js:   CA84091C... (MATCH)
+    modules/template-store.js:  E4CB04E9... (MATCH)
+    modules/operation-queue.js: E1F5F540... (MATCH)
+  Full hash inventory: send_message_backup/FILE_HASHES.txt (included in ZIP)
+
+F13 — Package sanitized: no credential literal (FIXED)
+  PRIOR ISSUE: test_phase2a_integration_f7f13.js embedded the exact credential literal
+  as the value to search for.
+
+  FIX: F13 test now uses regex pattern assertions only:
+    - bgBadPattern: /xpider_stt_api_key \|\| '[A-Z0-9]{20,}'/ — matches structural form
+    - solverBadPattern: /activeKey\s*=\s*'[A-Z0-9]{20,}'/ — matches assignment form
+  No credential literal appears anywhere in the transferred package.
+  Verified: Select-String -Pattern "3T7N" -Recurse -> 0 matches in send_message_backup/
+
+=== CHANGED FILES (v2) ===
+  send_message_backup/popup.js              (F9: template CRUD unified to v2)
+  send_message_backup/popup.html            (F10: added selective-reset + history-panel DOM)
+  send_message_backup/background.js         (F11: STAGE_COMMIT payload validation)
+  send_message_backup/FILE_HASHES.txt       (F12: full SHA-256 inventory, new)
+  send_message_backup/build/extension/background.js  (F12: synced)
+  send_message_backup/build/extension/popup.js        (F12: synced)
+  send_message_backup/build/extension/popup.html      (F12: synced)
+  send_message_backup/build/extension/content-script.js  (F12: synced, was diverged)
+  send_message_backup/test_phase2a_integration_f7f13.js  (F13: credential literal removed)
+
+=== INTEGRATION TEST COMMANDS + RAW OUTPUT ===
+
+  > node send_message_backup/test_phase2a_integration_f7f13.js
+  === [PHASE 2A INTEGRATION TEST — F7-F13] ===
+  F7-a  PASS: ingestImportRows preserves duplicate source rows independently
+  F7-b  PASS: invalid rows do not generate attempts
+  F8-a  PASS: recordAttempt(string) creates PENDING_INTENT attempt
+  F8-b  PASS: settleAttempt transitions to CONFIRMED_SUCCESS and suppresses target
+  F8-c  PASS: FAILURE does not suppress target
+  F8-d  PASS: settleAttempt with unknown id returns not-settled gracefully
+  F9-a  PASS: _syncTemplateToV2 creates templates_v2 default slot
+  F9-b  PASS: loadSettings prefers templates_v2 over xpider_tpl
+  F10-a PASS: selective reset changes only chosen target
+  F10-b PASS: history panel data persists across reload
+  F11-a PASS: STAGE_COMMIT with valid v2 payload promotes schema version
+  F11-c PASS: STAGE_COMMIT without v2 payload does NOT promote schema (re-runs)
+  F11-b PASS: backup written before schema version promotion
+  F13   PASS: background.js and solver-content.js contain no hardcoded Wit.ai key
+  F8-e  PASS: CSV export reflects settled attempt outcome
+  15/15 PASS (exit 0)
+
+  > node test_phase2a.js       -> 14/14 PASS (exit 0)
+  > node test_phase0_1.js      -> 5/5 PASS (exit 0)
+  > node test_phase0_1_behavioral.js -> 5/5 PASS (exit 0)
+
+  TOTAL: 29 tests across 4 suites — 100% PASS on Node v24.11.1
+
+=== EVIDENCE PACKAGE ===
+  File: evidence_phase2a_integration_v2.zip
+  Size: 8,145,754 bytes
+  SHA-256: E7E6E647C92F8C666C437E7DAF1949AAC7ED9A36DC89C2440C35A8205AAFAE4E
+
+  Contains: full send_message_backup/ snapshot including build/extension/ mirror,
+  FILE_HASHES.txt, all test files. No secrets. No customer data.
