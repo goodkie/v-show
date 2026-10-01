@@ -2574,8 +2574,10 @@ async function renderLedgerUI() {
             };
 
             const sourceDisplay = formatShortUrl(sourceUrl);
-            const contactDisplay = contactUrl ? formatShortUrl(contactUrl) : '(direct/pending)';
-            const contactHref = contactUrl || sourceUrl;
+            const contactDisplay = contactUrl ? formatShortUrl(contactUrl) : 'Not verified';
+            const contactElement = contactUrl 
+                ? `<a href="${contactUrl}" target="_blank" rel="noopener noreferrer" class="ledger-contact-link" style="color: #38bdf8; text-decoration: underline;" title="${contactUrl}">📍 ${contactDisplay}</a>`
+                : `<span style="color: #64748b;">Not verified</span>`;
 
             card.innerHTML = `
                 <div class="ledger-item-top">
@@ -2587,7 +2589,7 @@ async function renderLedgerUI() {
                 </div>
                 <div class="ledger-item-sublinks" style="display: flex; gap: 8px; font-size: 11px; margin: 3px 0 3px 22px;">
                     <span style="color: #94a3b8;">Contact:</span>
-                    <a href="${contactHref}" target="_blank" rel="noopener noreferrer" class="ledger-contact-link" style="color: #38bdf8; text-decoration: underline;" title="${contactUrl || sourceUrl}">📍 ${contactDisplay}</a>
+                    ${contactElement}
                     ${rec.emailsFound ? `<span style="color: #4ade80;">📧 ${rec.emailsFound} emails</span>` : ''}
                 </div>
                 <div class="ledger-item-meta">

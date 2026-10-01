@@ -233,11 +233,21 @@
                 const identity = this.normalizeTargetIdentity(targetOrDesc);
                 descriptor = {
                     targetIdentity: identity || targetOrDesc,
+                    sourceUrl: targetOrDesc,
                     sessionId: opts.sessionId || null,
                     templateId: opts.templateId || null,
                     templateVersion: opts.templateVersion || 1,
+                    targetToken: opts.targetToken || null,
                     status: opts.status || (opts.outcome ? (opts.outcome === 'SUCCESS' ? 'CONFIRMED_SUCCESS' : 'FAILURE') : 'PREPARING'),
-                    reasonCode: opts.reason || opts.reasonCode || 'PREPARING'
+                    reasonCode: opts.reason || opts.reasonCode || 'PREPARING',
+                    contactPageUrl: opts.contactPageUrl || null,
+                    formPageUrl: opts.formPageUrl || null,
+                    selectedCandidateUrl: opts.selectedCandidateUrl || null,
+                    submittedFromUrl: opts.submittedFromUrl || null,
+                    resultUrl: opts.resultUrl || null,
+                    contactDiscoverySource: opts.contactDiscoverySource || null,
+                    contactDiscoveryConfidence: opts.contactDiscoveryConfidence,
+                    emailsFound: opts.emailsFound
                 };
             } else {
                 descriptor = targetOrDesc;
@@ -262,16 +272,21 @@
                 sessionId,
                 templateId,
                 templateVersion: templateVersion || 1,
+                targetToken: descriptor.targetToken || null,
                 generationId: this.currentGeneration,
                 status: status || 'DELIVERY_UNKNOWN',
                 reasonCode: reasonCode || 'UNKNOWN',
                 sourceUrl,
                 sourceHostname,
+                selectedCandidateUrl: descriptor.selectedCandidateUrl || null,
                 contactPageUrl,
                 contactPageHostname,
                 contactDiscoverySource: descriptor.contactDiscoverySource || null,
                 contactDiscoveryConfidence: descriptor.contactDiscoveryConfidence !== undefined ? descriptor.contactDiscoveryConfidence : 1.0,
                 formPageUrl: descriptor.formPageUrl || null,
+                submittedFromUrl: descriptor.submittedFromUrl || null,
+                resultUrl: descriptor.resultUrl || null,
+                isPreSubmitLocked: false,
                 emailsFound: descriptor.emailsFound || 0,
                 timing: {
                     intentTime: timing.intentTime || Date.now(),
@@ -326,20 +341,62 @@
         }
 
         /**
-         * [Section J] Update attempt contact page info as soon as contact page is selected
+         * [Section J & Hotfix R2] Update attempt contact page info with targetToken validation
          */
-        updateAttemptContact(attemptId, contactInfo = {}) {
+        updateAttemptContact(attemptId, contactInfo = {}, targetToken = null) {
             const attempt = this.attempts.find(a => a.attemptId === attemptId);
             if (!attempt) return false;
-            if (contactInfo.contactPageUrl) {
-                attempt.contactPageUrl = contactInfo.contactPageUrl;
-                try {
-                    attempt.contactPageHostname = new URL(contactInfo.contactPageUrl).hostname;
-                } catch (_) {
-                    attempt.contactPageHostname = '';
+
+            // Attempt-scoped history write guard
+            const incomingToken = targetToken || contactInfo.targetToken;
+            if (attempt.targetToken && incomingToken && attempt.targetToken !== incomingToken) {
+                console.warn(`[HistoryStore] HISTORY_STALE_DISCOVERY_WRITE_BLOCKED attemptId=${attemptId}`);
+                return false;
+            }
+
+            if (incomingToken && !attempt.targetToken) {
+                attempt.targetToken = incomingToken;
+            }
+
+            if (contactInfo.selectedCandidateUrl) {
+                attempt.selectedCandidateUrl = contactInfo.selectedCandidateUrl;
+            }
+
+            // Only update contactPageUrl/formPageUrl if not locked before submit
+            if (!attempt.isPreSubmitLocked) {
+                if (contactInfo.contactPageUrl) {
+                    try {
+                        const parsed = new URL(contactInfo.contactPageUrl);
+                        if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+                            attempt.contactPageUrl = contactInfo.contactPageUrl;
+                            attempt.contactPageHostname = parsed.hostname || '';
+                        }
+                    } catch (_) {}
+                }
+                if (contactInfo.formPageUrl) {
+                    try {
+                        const parsed = new URL(contactInfo.formPageUrl);
+                        if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+                            attempt.formPageUrl = contactInfo.formPageUrl;
+                        }
+                    } catch (_) {}
                 }
             }
-            if (contactInfo.formPageUrl) attempt.formPageUrl = contactInfo.formPageUrl;
+
+            // Lock pre-submit URLs if requested (applied after assigning URLs)
+            if (contactInfo.lockPreSubmitUrls) {
+                attempt.isPreSubmitLocked = true;
+                if (contactInfo.submittedFromUrl) {
+                    attempt.submittedFromUrl = contactInfo.submittedFromUrl;
+                }
+            }
+
+            if (contactInfo.submittedFromUrl && !attempt.submittedFromUrl) {
+                attempt.submittedFromUrl = contactInfo.submittedFromUrl;
+            }
+            if (contactInfo.resultUrl) {
+                attempt.resultUrl = contactInfo.resultUrl;
+            }
             if (contactInfo.contactDiscoverySource) attempt.contactDiscoverySource = contactInfo.contactDiscoverySource;
             if (contactInfo.contactDiscoveryConfidence !== undefined) attempt.contactDiscoveryConfidence = contactInfo.contactDiscoveryConfidence;
             if (contactInfo.emailsFound !== undefined) attempt.emailsFound = contactInfo.emailsFound;
@@ -351,11 +408,17 @@
          * @param {string} attemptId - ID returned from recordAttempt
          * @param {boolean} isSuccess - Whether the submission succeeded
          * @param {string} reason - Reason code string
-         * @param {object} [extra={}] - Optional metadata (contactPageUrl, formPageUrl, emailsFound)
+         * @param {object} [extra={}] - Optional metadata (contactPageUrl, formPageUrl, emailsFound, resultUrl, targetToken)
          */
         async settleAttempt(attemptId, isSuccess, reason, extra = {}) {
             const attempt = this.attempts.find(a => a.attemptId === attemptId);
             if (!attempt) return { settled: false, reason: 'ATTEMPT_NOT_FOUND' };
+
+            // Attempt-scoped token check
+            if (extra.targetToken && attempt.targetToken && attempt.targetToken !== extra.targetToken) {
+                console.warn(`[HistoryStore] HISTORY_STALE_DISCOVERY_WRITE_BLOCKED settleAttempt attemptId=${attemptId}`);
+                return { settled: false, reason: 'HISTORY_STALE_DISCOVERY_WRITE_BLOCKED' };
+            }
 
             const now = Date.now();
             const reasonCode = reason || (isSuccess ? 'SUCCESS_CONFIRMED' : 'UNKNOWN');
@@ -375,12 +438,38 @@
             attempt.timing.durationMs = now - attempt.timing.intentTime;
 
             if (extra) {
-                if (extra.contactPageUrl) {
-                    attempt.contactPageUrl = extra.contactPageUrl;
-                    try { attempt.contactPageHostname = new URL(extra.contactPageUrl).hostname; } catch (_) {}
+                if (extra.resultUrl) {
+                    attempt.resultUrl = extra.resultUrl;
                 }
-                if (extra.formPageUrl) attempt.formPageUrl = extra.formPageUrl;
-                if (extra.contactDiscoverySource) attempt.contactDiscoverySource = extra.contactDiscoverySource;
+                if (extra.selectedCandidateUrl && !attempt.selectedCandidateUrl) {
+                    attempt.selectedCandidateUrl = extra.selectedCandidateUrl;
+                }
+                if (extra.submittedFromUrl && !attempt.submittedFromUrl) {
+                    attempt.submittedFromUrl = extra.submittedFromUrl;
+                }
+                // Never overwrite pre-submit locked contactPageUrl with post-submit/thank-you URL
+                if (!attempt.isPreSubmitLocked) {
+                    if (extra.contactPageUrl && !attempt.contactPageUrl) {
+                        try {
+                            const parsed = new URL(extra.contactPageUrl);
+                            if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+                                attempt.contactPageUrl = extra.contactPageUrl;
+                                attempt.contactPageHostname = parsed.hostname || '';
+                            }
+                        } catch (_) {}
+                    }
+                    if (extra.formPageUrl && !attempt.formPageUrl) {
+                        try {
+                            const parsed = new URL(extra.formPageUrl);
+                            if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+                                attempt.formPageUrl = extra.formPageUrl;
+                            }
+                        } catch (_) {}
+                    }
+                }
+                if (extra.contactDiscoverySource && !attempt.contactDiscoverySource) {
+                    attempt.contactDiscoverySource = extra.contactDiscoverySource;
+                }
                 if (extra.emailsFound !== undefined) attempt.emailsFound = extra.emailsFound;
             }
 
@@ -632,6 +721,9 @@
                         sourceHostname,
                         contactPageUrl: attempt ? (attempt.contactPageUrl || '') : '',
                         contactPageHostname: attempt ? (attempt.contactPageHostname || '') : '',
+                        selectedCandidateUrl: attempt ? (attempt.selectedCandidateUrl || '') : '',
+                        submittedFromUrl: attempt ? (attempt.submittedFromUrl || '') : '',
+                        resultUrl: attempt ? (attempt.resultUrl || '') : '',
                         contactDiscoverySource: attempt ? (attempt.contactDiscoverySource || '') : '',
                         formPageUrl: attempt ? (attempt.formPageUrl || '') : '',
                         emailsFound: attempt ? (attempt.emailsFound !== undefined ? attempt.emailsFound : 0) : 0,
@@ -670,6 +762,9 @@
                         sourceHostname,
                         contactPageUrl: attempt ? (attempt.contactPageUrl || '') : '',
                         contactPageHostname: attempt ? (attempt.contactPageHostname || '') : '',
+                        selectedCandidateUrl: attempt ? (attempt.selectedCandidateUrl || '') : '',
+                        submittedFromUrl: attempt ? (attempt.submittedFromUrl || '') : '',
+                        resultUrl: attempt ? (attempt.resultUrl || '') : '',
                         contactDiscoverySource: attempt ? (attempt.contactDiscoverySource || '') : '',
                         formPageUrl: attempt ? (attempt.formPageUrl || '') : '',
                         emailsFound: attempt ? (attempt.emailsFound !== undefined ? attempt.emailsFound : 0) : 0,

@@ -730,24 +730,27 @@
             logDev("📤 [Action] Triggering submission sequence...");
             logDev("[SUBMIT] triggered=true", "info");
             
-            // [v18.6.0] Take Snapshot of existing success indicators to avoid false positives
-            const currentSuccessSnapshot = takeSuccessSnapshot();
-            
+            // [Hotfix R2] Prepare SubmissionOutcomeVerifier BEFORE submit action
+            const verifier = new SubmissionOutcomeVerifier(form, template);
+            verifier.prepare();
+
             // [v1.6.5] Record submission attempt to prevent loops AND store initial state for persistence
             sessionStorage.setItem('xpider_last_submit_path', window.location.pathname);
             sessionStorage.setItem('xpider_last_submit_time', Date.now().toString());
             sessionStorage.setItem('xpider_initial_url', window.location.href);
+            sessionStorage.setItem('xpider_submitted_from_url', window.location.href);
             sessionStorage.setItem('xpider_initial_form_present', 'true');
             sessionStorage.setItem('xpider_pending_verify', 'true'); // [v17.6.0]
 
             const submitOutcome = await executeSubmitStateMachine(form, template, { expectedSnapshot: frozenSnapshot });
             if (!submitOutcome.success) {
+                verifier.cleanup();
                 logDev(`❌ [Submit] Submission blocked: ${submitOutcome.reasonCode}`, "error");
                 finishCampaign(false, submitOutcome.reasonCode, submitOutcome.reasonCode);
                 return false;
             }
 
-            return await detectSubmissionResult(form, template, currentSuccessSnapshot, submitOutcome);
+            return await verifier.verify(submitOutcome);
         } catch (e) {
             logDev(`❌ [Action] Sequence aborted: ${e.message}`, "error");
             return false;
@@ -2136,15 +2139,17 @@
     function elementIsVisible(el) {
         if (!el) return false;
         try {
-            const style = window.getComputedStyle(el);
-            if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') return false;
-            
-            // Handle cases where a parent is hidden
-            if (el.offsetParent === null && style.position !== 'fixed') return false;
-
-            const rect = el.getBoundingClientRect();
-            return rect.width > 2 && rect.height > 2; // [v18.6.0] Threshold for visibility
-        } catch(e) { return false; }
+            if (typeof window !== 'undefined' && typeof window.getComputedStyle === 'function') {
+                const style = window.getComputedStyle(el);
+                if (style && (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0')) return false;
+                if (el.offsetParent === null && style && style.position !== 'fixed') return false;
+            }
+            if (typeof el.getBoundingClientRect === 'function') {
+                const rect = el.getBoundingClientRect();
+                return rect.width > 2 && rect.height > 2; // [v18.6.0] Threshold for visibility
+            }
+            return true;
+        } catch(e) { return true; }
     }
 
     function isHoneypot(el) {
@@ -3226,153 +3231,335 @@
         return executeSubmitStateMachine(form);
     }
 
-    async function detectSubmissionResult(originalForm, tpl = {}, preSnapshot = { elements: [], bodyText: "" }, submitOutcome = null) {
-        logDev("🕵️ [Result] Verifying submission status (Multi-Polling)...", "info");
-        
-        const confirmSuccess = async (reason) => {
-            logDev(`🎉 [Result] ${reason}`, "success");
-            // [v4.1] 성공 시 실시간 공란 감시 스위퍼 정지
-            stopActiveEmptyFieldSweeper();
+    // ============================================================
+    // [Section C & Hotfix R2] Submission Outcome Verifier (Target-Scoped)
+    // ============================================================
+    class SubmissionOutcomeVerifier {
+        constructor(form, template = {}, options = {}) {
+            this.form = form;
+            this.template = template;
+            this.options = options;
+            this.submitEventSeen = false;
+            this.preSnapshot = null;
+            this.startTime = 0;
+            this.observer = null;
+            this.decisiveOutcome = null;
+            this._onSubmit = () => { this.submitEventSeen = true; };
+        }
 
-            // [Double Submit] 이중 전송 모드 체크
-            const config = await chrome.storage.local.get(['xpider_double_submit']);
-            if (config && config.xpider_double_submit === true) {
-                const submitCount = parseInt(sessionStorage.getItem('xpider_submit_count') || '0');
-                if (submitCount === 0) {
-                    logDev("✨ [Engine] Double Submit Active: 1st submission confirmed. Preparing 2nd submission...", "info");
-                    sessionStorage.setItem('xpider_submit_count', '1');
-                    
-                    // Loop Guard 무력화를 위해 제출 기록 일시 삭제
-                    sessionStorage.removeItem('xpider_last_submit_path');
-                    sessionStorage.removeItem('xpider_last_submit_time');
-                    sessionStorage.setItem('xpider_initial_form_present', 'false');
-                    sessionStorage.setItem('xpider_pending_verify', 'false');
+        prepare() {
+            this.startTime = Date.now();
+            this.submitEventSeen = false;
+            this.preSnapshot = this.capturePreSubmitSnapshot();
 
-                    await new Promise(r => setTimeout(r, 2500));
-                    window.location.reload();
-                    return true;
-                } else {
-                    logDev("✨ [Engine] Double Submit Complete: 2nd submission confirmed.", "success");
-                    sessionStorage.removeItem('xpider_submit_count');
+            if (this.form && typeof this.form.addEventListener === 'function') {
+                this.form.addEventListener('submit', this._onSubmit, { once: true, capture: true });
+            }
+            if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
+                document.addEventListener('submit', this._onSubmit, { once: true, capture: true });
+            }
+
+            if (typeof MutationObserver !== 'undefined' && typeof document !== 'undefined' && document.body) {
+                try {
+                    this.observer = new MutationObserver(() => {
+                        if (!this.decisiveOutcome) {
+                            const quick = this.evaluateSignals();
+                            if (quick && (quick.isDecisiveSuccess || quick.isDecisiveFailure)) {
+                                this.decisiveOutcome = quick;
+                            }
+                        }
+                    });
+                    this.observer.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true });
+                } catch (_) {}
+            }
+        }
+
+        cleanup() {
+            if (this.observer) {
+                try { this.observer.disconnect(); } catch (_) {}
+                this.observer = null;
+            }
+            if (this.form && typeof this.form.removeEventListener === 'function') {
+                this.form.removeEventListener('submit', this._onSubmit, { capture: true });
+            }
+            if (typeof document !== 'undefined' && typeof document.removeEventListener === 'function') {
+                document.removeEventListener('submit', this._onSubmit, { capture: true });
+            }
+        }
+
+        capturePreSubmitSnapshot() {
+            const url = (typeof window !== 'undefined') ? window.location.href : '';
+            const formSignature = this.form ? (this.form.id || this.form.className || this.form.name || 'form') : 'no_form';
+
+            let visibleErrorsCount = 0;
+            if (this.form && this.form.querySelectorAll) {
+                try {
+                    const errEls = this.form.querySelectorAll('.error, .invalid, [aria-invalid="true"], :invalid');
+                    for (const el of errEls) {
+                        if (typeof elementIsVisible === 'function' ? elementIsVisible(el) : true) visibleErrorsCount++;
+                    }
+                } catch (_) {}
+            }
+
+            const successContainers = (typeof document !== 'undefined' && document.querySelectorAll) ?
+                document.querySelectorAll('[data-testid*="success"], [class*="success"], [id*="success"], [role="alert"], [role="status"], .wixui-rich-text, .status-msg, .message-success') : [];
+            const existingSuccessTexts = new Set();
+            for (const el of successContainers) {
+                if (typeof elementIsVisible === 'function' ? elementIsVisible(el) : true) {
+                    existingSuccessTexts.add((el.textContent || '').trim().toLowerCase());
                 }
             }
 
-            // [v18.7.0] Success Visibility Buffer: Wait 3.5s so user can see the confirmation UI
-            logDev("✨ [Engine] Submission confirmed. Holding tab for visual check...", "info");
-            logDev("[VERIFY] confirmedSuccess=true", "info");
-            logDev("[FINAL] status=CONFIRMED_SUCCESS", "success");
-            await new Promise(r => setTimeout(r, 3500));
-            finishCampaign(true, null, 'SUCCESS_CONFIRMED');
-            return true;
-        };
+            return {
+                url,
+                formSignature,
+                visibleErrorsCount,
+                bodyText: (typeof document !== 'undefined' && document.body) ? (document.body.textContent || '').toLowerCase() : '',
+                existingSuccessTexts: Array.from(existingSuccessTexts)
+            };
+        }
 
-        const initialUrl = sessionStorage.getItem('xpider_initial_url') || window.location.href;
-        const initialFormPresent = sessionStorage.getItem('xpider_initial_form_present') === 'true';
+        evaluateSignals() {
+            const currentUrl = (typeof window !== 'undefined') ? window.location.href : '';
+            const initialUrl = this.preSnapshot ? this.preSnapshot.url : '';
+            const urlChanged = (currentUrl !== initialUrl);
 
-        // [v18.6.7] Keyword Tiers: Distinguish between ultra-strict (anywhere) and scoped (only in success containers)
-        const commonSuccessKeywords = [
-            'thank you', 'thanks', '완료되었습니다', '성공적으로', '전송되었습니다', '접수되었습니다',
-            'ありがとうございます', '送信完了', '受け付けました', '提交成功', 'Success! Message received.',
-            'vielen dank', 'gesendet', 'erfolgreich', 'merci', 'envoyé'
-        ];
-        
-        const strictSuccessKeywords = ['success', 'sent', 'received', '성공', '確認', '확인', 'done'];
+            // 1. URL / Navigation Strong Signal
+            const successUrlKeywords = ['thank', 'thanks', 'success', 'confirm', 'submitted', 'message-sent', 'complete'];
+            const isSuccessUrl = urlChanged && successUrlKeywords.some(k => currentUrl.toLowerCase().includes(k));
 
-        // [v18.5.0] Multi-Polling loop: up to 10 seconds
-        for (let attempt = 1; attempt <= 10; attempt++) {
-            const currentUrl = window.location.href;
-            const pageText = document.body.textContent.toLowerCase();
-            const formStillThere = originalForm && document.body.contains(originalForm);
-
-            logDev(`🔎 [Result] [Attempt ${attempt}/10] Status -> URL_Changed: ${currentUrl !== initialUrl}, Form_Gone: ${!formStillThere}`, "debug");
-
-            // [v4.1] 폼 에러 자가 복구기 (Self-Healing Engine) 작동 확인
-            if (formStillThere) {
-                // 한 번의 제출 당 자가 복구는 최대 1회만 시도하여 무한루프 방지
-                window._xpider_healed = window._xpider_healed || false;
-                if (!window._xpider_healed) {
-                    const healed = await selfHealErrorFields(originalForm, tpl);
-                    if (healed > 0) {
-                        logDev(`🔄 [Healer] 에러 필드 ${healed}개 자가 복구 기입 완료! 폼 재제출을 가동합니다.`, 'success');
-                        window._xpider_healed = true;
-                        // Execute submit state machine cleanly without restarting infinite sweeper
-                        await executeSubmitStateMachine(originalForm, tpl);
-                        // 시도 횟수를 리셋하여 결과를 대기
-                        attempt = 1;
-                        await new Promise(r => setTimeout(r, 1000));
-                        continue;
+            // 2. Negative / Error Signals (Strict Override)
+            let newErrorsFound = false;
+            let validationErrorsCount = 0;
+            if (typeof document !== 'undefined' && document.querySelectorAll) {
+                const errEls = document.querySelectorAll('[role="alert"], .error, .invalid, [aria-invalid="true"], .wpcf7-not-valid-tip, .gfield_error');
+                for (const el of errEls) {
+                    if (typeof elementIsVisible === 'function' ? elementIsVisible(el) : true) {
+                        const txt = (el.textContent || '').trim().toLowerCase();
+                        if (/error|failed|please correct|try again|required|invalid|문제|오류|실패/i.test(txt) || el.getAttribute('aria-invalid') === 'true') {
+                            validationErrorsCount++;
+                            newErrorsFound = true;
+                        }
                     }
                 }
             }
 
-            // 1. Wix / Platform Specific success containers (High Accuracy)
-            const successContainers = document.querySelectorAll('[data-testid*="success"], [class*="success"], [id*="success"], .font_8 span, .wixui-rich-text, .status-msg, .message-success');
-            for (const container of successContainers) {
-                if (!elementIsVisible(container)) continue;
-                const text = container.textContent.trim().toLowerCase();
-                
-                // [v18.6.0] Snapshot Comparison: Skip if this exact text was already visible before submission
-                if (preSnapshot.elements && preSnapshot.elements.includes(text)) continue;
+            // 3. Strong DOM Success Signals
+            const commonSuccessKeywords = [
+                'thank you', 'thanks', '완료되었습니다', '성공적으로', '전송되었습니다', '제출되었습니다',
+                '접수되었습니다', '감사합니다', '문의가 접수', 'message sent', 'your message has been sent',
+                'successfully submitted', 'submission received', 'we received your message', 'we\'ll be in touch',
+                'ありがとうございます', '送信完了', '受け付けました', '提交成功', 'vielen dank', 'gesendet', 'erfolgreich', 'merci'
+            ];
 
-                if ([...commonSuccessKeywords, ...strictSuccessKeywords].some(k => text.includes(k))) {
-                    return await confirmSuccess("Positive confirmation found in UI element!");
+            let newSuccessNodes = 0;
+            const frameworkSuccessSelectors = [
+                '.gform_confirmation_message',
+                '.wpcf7-mail-sent-ok',
+                '.wpcf7-response-output.wpcf7-mail-sent-ok',
+                '.wpforms-confirmation-container',
+                '.submitted-message',
+                '.nf-response-msg',
+                '[role="alert"]',
+                '[role="status"]',
+                '[aria-live="polite"]',
+                '[aria-live="assertive"]',
+                '[data-testid*="success"]',
+                '[class*="success"]',
+                '[id*="success"]',
+                '.message-success'
+            ];
+
+            if (typeof document !== 'undefined' && document.querySelectorAll) {
+                const nodes = document.querySelectorAll(frameworkSuccessSelectors.join(', '));
+                for (const node of nodes) {
+                    if (typeof elementIsVisible === 'function' && !elementIsVisible(node)) continue;
+                    const txt = (node.textContent || '').trim().toLowerCase();
+                    if (!txt) continue;
+                    if (this.preSnapshot && this.preSnapshot.existingSuccessTexts.includes(txt)) continue;
+
+                    if (commonSuccessKeywords.some(k => txt.includes(k)) || 
+                        node.classList.contains('gform_confirmation_message') ||
+                        node.classList.contains('wpcf7-mail-sent-ok') ||
+                        node.classList.contains('wpforms-confirmation-container') ||
+                        node.classList.contains('submitted-message') ||
+                        node.classList.contains('nf-response-msg')) {
+                        newSuccessNodes++;
+                    }
                 }
             }
 
-            // 2. Check for URL change (Redirection to success page)
-            if (currentUrl !== initialUrl && (currentUrl.includes('thank') || currentUrl.includes('success') || currentUrl.includes('confirm') || currentUrl.includes('sent'))) {
-                return await confirmSuccess("Redirected to success page!");
-            }
-
-            // 3. [v18.6.7] Text Delta Detection: Check for NEW keywords in page content
-            const allKeywords = [...commonSuccessKeywords, ...strictSuccessKeywords];
-            const foundKeywords = allKeywords.filter(k => pageText.includes(k));
-            
-            if (foundKeywords.length > 0) {
-                const newKeywords = foundKeywords.filter(k => !preSnapshot.bodyText.includes(k));
-                
-                if (newKeywords.length > 0) {
-                    return await confirmSuccess(`New success indicator appeared: "${newKeywords[0]}"`);
-                }
-                
-                // If no NEW keywords, but the form is GONE and we see common keywords on Attempt 2+
-                if (attempt > 1 && !formStillThere && foundKeywords.some(k => commonSuccessKeywords.includes(k))) {
-                    return await confirmSuccess("Form disappeared and success keywords verified (Logic Match)!");
+            // Body text delta
+            const currentBodyText = (typeof document !== 'undefined' && document.body) ? (document.body.textContent || '').toLowerCase() : '';
+            if (newSuccessNodes === 0 && this.preSnapshot) {
+                for (const kw of commonSuccessKeywords) {
+                    if (currentBodyText.includes(kw) && !this.preSnapshot.bodyText.includes(kw)) {
+                        newSuccessNodes++;
+                        break;
+                    }
                 }
             }
 
-            // 4. Check if Form is gone (AJAX Success flow) - Only trust if no generic errors
-            if (initialFormPresent && originalForm && !document.body.contains(originalForm)) {
-                if (!pageText.includes('error') && !pageText.includes('failed') && attempt > 2) {
-                    return await confirmSuccess("Form disappeared (AJAX Success confirmed by latency)!");
+            // Medium Signals
+            const formStillThere = this.form && typeof document !== 'undefined' && document.body && document.body.contains(this.form);
+            const formHidden = this.form ? (typeof elementIsVisible === 'function' ? !elementIsVisible(this.form) : false) : false;
+
+            let formReset = false;
+            if (this.form && this.form.querySelector) {
+                const ta = this.form.querySelector('textarea');
+                const inputs = Array.from(this.form.querySelectorAll('input[type="text"], input[type="email"]'));
+                if (ta && ta.value === '' && inputs.length > 0 && inputs.every(i => !i.value || i.value.trim() === '')) {
+                    formReset = true;
                 }
             }
 
-            // 5. Check for Field Reset (Clear form)
-            if (originalForm) {
-                const textarea = originalForm.querySelector('textarea');
-                if (textarea && textarea.value === '' && attempt > 2) { // latency guard
-                    return await confirmSuccess("Form fields cleared (AJAX Reset detected)!");
+            let submitBtnDisabled = false;
+            if (this.form && this.form.querySelector) {
+                const btn = this.form.querySelector('button[type="submit"], input[type="submit"], button');
+                if (btn && (btn.disabled || (btn.classList && (btn.classList.contains('disabled') || btn.classList.contains('loading') || btn.classList.contains('busy'))))) {
+                    submitBtnDisabled = true;
                 }
             }
 
-            // Wait 1 second before next poll
-            await new Promise(r => setTimeout(r, 1000));
+            return {
+                urlChanged,
+                isSuccessUrl,
+                newErrorsFound,
+                validationErrorsCount,
+                newSuccessNodes,
+                formStillThere,
+                formHidden,
+                formReset,
+                submitBtnDisabled,
+                isDecisiveSuccess: (isSuccessUrl || newSuccessNodes > 0) && !newErrorsFound,
+                isDecisiveFailure: newErrorsFound && newSuccessNodes === 0
+            };
         }
 
-        // [v4.1] 실패/타임아웃 시 스위퍼 안전 정지 및 복구 플래그 초기화
-        stopActiveEmptyFieldSweeper();
-        window._xpider_healed = false;
+        async verify(submitOutcome = {}) {
+            logDev("🕵️ [SubmissionOutcomeVerifier] Verifying submission status (Multi-Polling)...", "info");
+            if (submitOutcome && submitOutcome.submitEventFired) {
+                this.submitEventSeen = true;
+            }
 
-        logDev("❌ [Result] Submission verification timed out after 10s.", "error");
-        logDev("[VERIFY] confirmedSuccess=false", "warning");
-        sessionStorage.removeItem('xpider_submit_count'); // 실패 시 이중 제출 세션도 정리
-        const timeoutReason = (submitOutcome && submitOutcome.strategy === 'trusted_click_sequence' && !submitOutcome.submitEventFired)
-            ? 'SUBMIT_CLICK_NO_EFFECT'
-            : 'DELIVERY_UNKNOWN';
-        logDev(`[FINAL] status=${timeoutReason}`, "warning");
-        finishCampaign(false, "Submission verification failed (Timeout - No success indicator found).", timeoutReason);
-        return false;
+            const maxWaitMs = 8000;
+            const intervalMs = 250;
+            const start = Date.now();
+            let finalDecision = null;
+            let finalSignals = null;
+
+            while (Date.now() - start < maxWaitMs) {
+                const latency = Date.now() - start;
+                const signals = this.evaluateSignals();
+                finalSignals = signals;
+
+                // 1. Strong Success: URL Redirect
+                if (signals.isSuccessUrl && !signals.newErrorsFound) {
+                    finalDecision = 'CONFIRMED_SUCCESS';
+                    break;
+                }
+
+                // 2. Strong Success: New explicit success DOM element
+                if (signals.newSuccessNodes > 0 && !signals.newErrorsFound) {
+                    finalDecision = 'CONFIRMED_SUCCESS';
+                    break;
+                }
+
+                // 3. Strong Success: Form disappeared / replaced by confirmation
+                if (!signals.formStillThere && signals.newSuccessNodes > 0) {
+                    finalDecision = 'CONFIRMED_SUCCESS';
+                    break;
+                }
+
+                // 4. Decisive Failure: Validation error or server error blocked submit
+                if (signals.newErrorsFound && signals.validationErrorsCount > 0) {
+                    finalDecision = 'SUBMIT_VALIDATION_BLOCKED';
+                    break;
+                }
+
+                // 5. Composite Success (Requires submitTriggered AND >= 2 medium signals AND zero errors)
+                if (submitOutcome && submitOutcome.success && !signals.newErrorsFound) {
+                    let mediumSignals = 0;
+                    if (this.submitEventSeen) mediumSignals++;
+                    if (signals.submitBtnDisabled) mediumSignals++;
+                    if (signals.formReset) mediumSignals++;
+                    if (signals.formHidden || !signals.formStillThere) mediumSignals++;
+
+                    // Conservative composite: at least 2 independent signals, zero errors, latency guard
+                    if (mediumSignals >= 2 && (this.submitEventSeen || signals.submitBtnDisabled) && latency >= 750) {
+                        finalDecision = 'CONFIRMED_SUCCESS_COMPOSITE';
+                        break;
+                    }
+                }
+
+                // Phase C (>3500ms): only keep polling if submit was seen or button was busy/loading
+                if (latency > 3500 && !this.submitEventSeen && !signals.submitBtnDisabled && !signals.formReset) {
+                    break;
+                }
+
+                await new Promise(r => setTimeout(r, intervalMs));
+            }
+
+            this.cleanup();
+
+            const totalLatency = Date.now() - start;
+            if (!finalDecision) {
+                if (finalSignals && finalSignals.newErrorsFound) {
+                    finalDecision = 'SUBMIT_VALIDATION_BLOCKED';
+                } else if (submitOutcome && submitOutcome.strategy === 'trusted_click_sequence' && !this.submitEventSeen) {
+                    finalDecision = 'SUBMIT_CLICK_NO_EFFECT';
+                } else {
+                    finalDecision = 'DELIVERY_UNKNOWN';
+                }
+            }
+
+            // Specification Required Diagnostic Output
+            logDev(`[SUBMIT_VERIFY] submitEvent=${this.submitEventSeen}`, "info");
+            logDev(`[SUBMIT_VERIFY] urlChanged=${finalSignals ? finalSignals.urlChanged : false}`, "info");
+            logDev(`[SUBMIT_VERIFY] newSuccessNodes=${finalSignals ? finalSignals.newSuccessNodes : 0}`, "info");
+            logDev(`[SUBMIT_VERIFY] validationErrors=${finalSignals ? finalSignals.validationErrorsCount : 0}`, "info");
+            logDev(`[SUBMIT_VERIFY] formReset=${finalSignals ? finalSignals.formReset : false}`, "info");
+            logDev(`[SUBMIT_VERIFY] decision=${finalDecision}`, (finalDecision.includes('SUCCESS') ? "success" : "warning"));
+            logDev(`[SUBMIT_VERIFY] latencyMs=${totalLatency}`, "info");
+
+            const isSuccess = (finalDecision === 'CONFIRMED_SUCCESS' || finalDecision === 'CONFIRMED_SUCCESS_COMPOSITE');
+            stopActiveEmptyFieldSweeper();
+
+            if (isSuccess) {
+                logDev(`[FINAL] status=${finalDecision}`, "success");
+                finishCampaign(true, null, finalDecision, {
+                    resultUrl: (typeof window !== 'undefined') ? window.location.href : '',
+                    decision: finalDecision,
+                    latencyMs: totalLatency
+                });
+                return true;
+            } else {
+                logDev(`[FINAL] status=${finalDecision}`, "warning");
+                sessionStorage.removeItem('xpider_submit_count');
+                finishCampaign(false, `Submission outcome: ${finalDecision}`, finalDecision, {
+                    resultUrl: (typeof window !== 'undefined') ? window.location.href : '',
+                    decision: finalDecision,
+                    latencyMs: totalLatency
+                });
+                return false;
+            }
+        }
+    }
+
+    async function detectSubmissionResult(originalForm, tpl = {}, preSnapshot = { elements: [], bodyText: "" }, submitOutcome = null) {
+        const verifier = new SubmissionOutcomeVerifier(originalForm, tpl);
+        if (preSnapshot && preSnapshot.elements) {
+            verifier.preSnapshot = {
+                url: (typeof window !== 'undefined') ? window.location.href : '',
+                formSignature: originalForm ? (originalForm.id || originalForm.name || 'form') : 'no_form',
+                visibleErrorsCount: 0,
+                bodyText: preSnapshot.bodyText || '',
+                existingSuccessTexts: preSnapshot.elements || []
+            };
+        } else {
+            verifier.prepare();
+        }
+        return await verifier.verify(submitOutcome);
     }
 
     function finishCampaign(success, error = null, reasonCode = null, metadata = {}) {
@@ -3396,6 +3583,7 @@
         window.__xpiderFreezeFieldValues = freezeFieldValues;
         window.__xpiderVerifyFieldIntegrity = verifyFieldIntegrity;
         window.__xpiderContactDiscoveryEngine = _ContactDiscoveryEngine;
+        window.__xpiderSubmissionOutcomeVerifier = SubmissionOutcomeVerifier;
     }
 
     if (typeof module !== 'undefined' && module.exports) {
@@ -3408,6 +3596,7 @@
             verifyFieldIntegrity,
             submitForm,
             fillAndSubmit,
+            SubmissionOutcomeVerifier,
             ContactGate: _ContactGate,
             SmartFieldResolver: _SmartFieldResolver,
             ContactDiscoveryEngine: _ContactDiscoveryEngine

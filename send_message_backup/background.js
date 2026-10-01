@@ -98,6 +98,7 @@ let campaignState = {
     targetResolve: null,
     targetReady: null,
     currentAttempt: null, // [v1.2.0 Intent Ledger] { url, attemptId, status: 'SUBMIT_PENDING'|'RESOLVED', reasonCode, ts }
+    focusActiveTargetTab: true, // [Hotfix R2] Auto-focus campaign target tab
     // [Authoritative Real-Time Campaign Counters]
     counters: {
         success: 0,
@@ -234,6 +235,45 @@ function logBg(tabId, msg, type = 'info') {
         if (logSaveTimer) clearTimeout(logSaveTimer);
         logSaveTimer = setTimeout(saveBatch, 1500);
     }
+}
+
+// [Hotfix R2] Windows Bridge & Target Tab Auto-Focus
+const safeWindows = {
+    update: (id, props) => {
+        if (typeof chrome !== 'undefined' && chrome.windows?.update) {
+            return chrome.windows.update(id, props);
+        }
+        return Promise.resolve();
+    }
+};
+
+async function focusTargetTab(tabId) {
+    if (!campaignState.focusActiveTargetTab || !tabId) return;
+    try {
+        const tab = await safeTabs.update(tabId, { active: true });
+        let winId = tab?.windowId;
+        if (!winId) {
+            try {
+                const t = await safeTabs.get(tabId);
+                winId = t?.windowId;
+            } catch (_) {}
+        }
+        if (winId != null) {
+            try {
+                await safeWindows.update(winId, { focused: true });
+            } catch (wErr) {
+                logBg(tabId, `[TAB_FOCUS] windows.update non-fatal warning: ${wErr.message}`, "warning");
+            }
+        }
+        logBg(tabId, `[TAB_FOCUS] tabId=${tabId} windowId=${winId ?? 'unknown'} active=true focused=true`, "info");
+    } catch (e) {
+        logBg(tabId, `[TAB_FOCUS] Non-fatal focus error: ${e.message}`, "warning");
+    }
+}
+
+if (typeof self !== 'undefined') {
+    self.__xpiderFocusTargetTab = focusTargetTab;
+    self.__xpiderSafeWindows = safeWindows;
 }
 
 if (typeof self.XpiderSolverCore === 'undefined') {
@@ -1471,7 +1511,22 @@ async function navigateToValidatedCandidate(tabId, rawCandidate, baseUrl, contex
     const sourceHost = context.sourceHost || (baseUrl ? new URL(baseUrl).hostname : check.hostname);
     logBg(tabId, `[TARGET_NAV] sourceHost=${sourceHost} candidate=${check.url} relation=${rel.relation}`, 'info');
     try {
-        await safeTabs.update(tabId, { url: check.url });
+        const updateProps = { url: check.url };
+        if (campaignState.focusActiveTargetTab) {
+            updateProps.active = true;
+        }
+        const updatedTab = await safeTabs.update(tabId, updateProps);
+        if (campaignState.focusActiveTargetTab) {
+            let winId = updatedTab?.windowId;
+            if (winId != null && typeof chrome !== 'undefined' && chrome.windows?.update) {
+                try {
+                    await safeWindows.update(winId, { focused: true });
+                    logBg(tabId, `[TAB_FOCUS] tabId=${tabId} windowId=${winId} active=true focused=true`, "info");
+                } catch (wErr) {
+                    logBg(tabId, `[TAB_FOCUS] windows.update non-fatal warning: ${wErr.message}`, "warning");
+                }
+            }
+        }
         return { success: true, url: check.url };
     } catch (navErr) {
         logBg(tabId, `❌ [NavigationGuard] Failed to update tab ${tabId} to ${check.url}: ${navErr.message}`, 'error');
@@ -1621,13 +1676,15 @@ async function orchestrateSending(urlInput, template) {
     // [F8] Step 2: Persist durable PREPARING record BEFORE opening tab.
     // If persistence fails, ABORT — do not open tab (prevents untracked side effects).
     let _attemptId = null;
+    const targetToken = 'tok_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8);
     try {
         const hs = await _getHistoryStore();
         const attemptResult = await hs.recordAttempt(targetUrl, {
             status: 'PREPARING',
             reason: 'PREPARING',
             templateId: campaignState.templateId || null,
-            templateVersion: campaignState.templateVersion || 1
+            templateVersion: campaignState.templateVersion || 1,
+            targetToken: targetToken
         });
         _attemptId = attemptResult && attemptResult.attemptId ? attemptResult.attemptId : null;
         if (!_attemptId) throw new Error('recordAttempt returned no attemptId');
@@ -1638,6 +1695,7 @@ async function orchestrateSending(urlInput, template) {
             attemptId: _attemptId,     // [F8] canonical HistoryStore id
             status: 'PREPARING',
             reasonCode: 'PREPARING',
+            targetToken: targetToken,
             timestamp: Date.now()
         };
 
@@ -1677,7 +1735,7 @@ async function orchestrateSending(urlInput, template) {
 
     const discoveryCtx = createDiscoveryContext(targetUrl);
 
-    // [Comment 51 Section 9 & 10] Single Tab Policy & Never open about:blank
+    // [Comment 51 Section 9 & 10 & Hotfix R2] Single Tab Policy & Tab Focus
     let tabId = campaignState.targetTabId;
     let isReusedTab = false;
     if (tabId) {
@@ -1692,13 +1750,14 @@ async function orchestrateSending(urlInput, template) {
     }
 
     if (!isReusedTab) {
-        const tab = await safeTabs.create({ url: targetUrl, active: false });
+        const tab = await safeTabs.create({ url: targetUrl, active: !!campaignState.focusActiveTargetTab });
         tabId = tab.id;
         campaignState.targetTabId = tabId;
     } else {
-        await safeTabs.update(tabId, { url: targetUrl });
+        await safeTabs.update(tabId, { url: targetUrl, active: !!campaignState.focusActiveTargetTab });
     }
     campaignState.currentTabId = tabId;
+    await focusTargetTab(tabId);
 
     let resolveRef;
     const resultPromise = new Promise(resolve => resolveRef = resolve);
@@ -1835,7 +1894,17 @@ async function orchestrateSending(urlInput, template) {
         }
         logBg(tabId, `[TARGET][${hostName}] FINAL status=${isSuccess ? 'CONFIRMED_SUCCESS' : (isDeliveryUnknown ? 'DELIVERY_UNKNOWN' : 'FAILURE')} reason=${finalReason}`, isSuccess ? "success" : "warning");
         
-        // [F8] Settle the single canonical durable attempt (same HistoryStore record opened before tab)
+        let actualResultUrl = null;
+        try {
+            const finalTab = await safeTabs.get(tabId);
+            actualResultUrl = finalTab?.url || null;
+        } catch (_) {}
+        if (!actualResultUrl && res?.metadata?.resultUrl) {
+            actualResultUrl = res.metadata.resultUrl;
+        }
+        logBg(tabId, `[RESULT] resultUrl=${actualResultUrl || 'none'}`, "info");
+
+        // [F8 & Hotfix R2] Settle the single canonical durable attempt (same HistoryStore record opened before tab)
         try {
             const hs = await _getHistoryStore();
             if (_attemptId) {
@@ -1843,10 +1912,13 @@ async function orchestrateSending(urlInput, template) {
                 const settleSuccess = isSuccess;
                 const settleReason = isDeliveryUnknown ? REASON_CODES.DELIVERY_UNKNOWN : finalReason;
                 await hs.settleAttempt(_attemptId, settleSuccess, settleReason, {
-                    contactPageUrl: currentAttemptUrl || targetUrl,
-                    formPageUrl: currentAttemptUrl || targetUrl,
+                    resultUrl: actualResultUrl,
+                    targetToken: targetToken,
+                    submittedFromUrl: res?.metadata?.submittedFromUrl || null,
                     emailsFound: (res && res.emailsFound !== undefined) ? res.emailsFound : 0
                 });
+                const rec = hs.attempts.find(a => a.attemptId === _attemptId);
+                logBg(tabId, `[HISTORY_FINAL] sourceUrl=${rec?.sourceUrl || targetUrl} contactPageUrl=${rec?.contactPageUrl || ''} formPageUrl=${rec?.formPageUrl || ''} resultUrl=${rec?.resultUrl || ''}`, "info");
             }
             await hs.persist();
         } catch (hsErr) {
@@ -1898,6 +1970,32 @@ async function orchestrateSending(urlInput, template) {
         
         isFocusSecured = true;
         lastFocusedUrl = normalized;
+
+        // Auto-focus on entering final form page
+        await focusTargetTab(tabId);
+
+        let actualLoadedUrl = currentUrl || targetUrl;
+        try {
+            const tabObj = await safeTabs.get(tabId);
+            if (tabObj && tabObj.url && tabObj.url.startsWith('http')) {
+                actualLoadedUrl = tabObj.url;
+            }
+        } catch (_) {}
+
+        logBg(tabId, `[CONTACT_COMMIT] contactPageUrl=${actualLoadedUrl}`, "info");
+        logBg(tabId, `[FORM_COMMIT] formPageUrl=${actualLoadedUrl}`, "info");
+        logBg(tabId, `[SUBMIT_LOCK] submittedFromUrl=${actualLoadedUrl}`, "info");
+
+        if (_attemptId && self.__xpiderHistoryStore && typeof self.__xpiderHistoryStore.updateAttemptContact === 'function') {
+            self.__xpiderHistoryStore.updateAttemptContact(_attemptId, {
+                contactPageUrl: actualLoadedUrl,
+                formPageUrl: actualLoadedUrl,
+                submittedFromUrl: actualLoadedUrl,
+                lockPreSubmitUrls: true,
+                targetToken: targetToken
+            }, targetToken);
+            self.__xpiderHistoryStore.persist().catch(() => {});
+        }
         
         // [v1.2.0 & F2 & F8] Transition to SUBMIT_PENDING immediately BEFORE triggering submission side-effects
         // Reuses the single canonical _attemptId from HistoryStore (never generates a second ID)
@@ -2053,13 +2151,15 @@ async function orchestrateSending(urlInput, template) {
         const discoverySource = (discoveryCtx.candidateSourceMap && (discoveryCtx.candidateSourceMap.get(fullUrl) || discoveryCtx.candidateSourceMap.get(nextP) || discoveryCtx.candidateSourceMap.get(norm)))
             || 'Ensemble';
 
-        // Update attempt contact page as soon as selected even while PREPARING
+        logBg(tabId, `[DISCOVERY] selectedCandidate=${fullUrl}`, "info");
+
+        // [Hotfix R2] Record selected candidate without prematurely committing contactPageUrl
         if (_attemptId && self.__xpiderHistoryStore && typeof self.__xpiderHistoryStore.updateAttemptContact === 'function') {
             self.__xpiderHistoryStore.updateAttemptContact(_attemptId, {
-                contactPageUrl: fullUrl,
-                formPageUrl: fullUrl,
-                contactDiscoverySource: discoverySource
-            });
+                selectedCandidateUrl: fullUrl,
+                contactDiscoverySource: discoverySource,
+                targetToken: targetToken
+            }, targetToken);
             self.__xpiderHistoryStore.persist().catch(() => {});
         } 
 
