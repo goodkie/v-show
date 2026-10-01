@@ -63,9 +63,11 @@ let remainingTargets = 0;
 function xpiderInvoke(channel, args) {
     return new Promise((resolve, reject) => {
         const id = Date.now().toString() + Math.random().toString(36).slice(2);
+        let timeoutId;
         const handler = (e) => {
             if (e.data && e.data.type === 'XPIDER_RESPONSE' && e.data.id === id) {
                 window.removeEventListener('message', handler);
+                if (timeoutId) clearTimeout(timeoutId);
                 if (e.data.error) reject(new Error(e.data.error));
                 else resolve(e.data.result);
             }
@@ -73,7 +75,7 @@ function xpiderInvoke(channel, args) {
         window.addEventListener('message', handler);
         window.postMessage({ type: 'XPIDER_INVOKE', channel, args, id }, '*');
         // Safety timeout
-        setTimeout(() => {
+        timeoutId = setTimeout(() => {
             window.removeEventListener('message', handler);
             reject(new Error(`IPC timeout: ${channel}`));
         }, 30000);
@@ -1292,16 +1294,21 @@ async function startCampaign() {
     if (campaignQueue.length === 0) return alert("Please upload a file or enter a URL first.");
 
     currentTpl = {
-        firstName: document.getElementById('tpl-first-name').value,
-        lastName: document.getElementById('tpl-last-name').value,
-        name: document.getElementById('tpl-name').value,
-        email: document.getElementById('tpl-email').value,
-        phone: document.getElementById('tpl-phone').value,
-        subject: document.getElementById('tpl-subject').value,
-        message: document.getElementById('tpl-message').value
+        firstName: document.getElementById('tpl-first-name')?.value || '',
+        lastName: document.getElementById('tpl-last-name')?.value || '',
+        name: document.getElementById('tpl-name')?.value || '',
+        email: document.getElementById('tpl-email')?.value || '',
+        phone: document.getElementById('tpl-phone')?.value || '',
+        subject: document.getElementById('tpl-subject')?.value || '',
+        message: document.getElementById('tpl-message')?.value || ''
     };
 
     if (!currentTpl.message) return alert("Please enter a message body.");
+
+    // [Phase 2B Component D / R1] Authoritatively bind template metadata to execution state & payload
+    bindCampaignTemplateMetadata(currentTpl);
+    currentTpl.id = currentTpl.templateId;
+    currentTpl.version = currentTpl.templateVersion;
 
     campaignActive = true;
     campaignPaused = false;
@@ -1310,13 +1317,16 @@ async function startCampaign() {
     updateProgress(0);
 
     setTimeout(() => {
-        document.getElementById('status-box').classList.remove('hidden');
-        document.getElementById('multi-actions').classList.remove('hidden');
-        document.getElementById('start-btn').classList.add('hidden');
+        const statusBox = document.getElementById('status-box');
+        if (statusBox) statusBox.classList.remove('hidden');
+        const multiActions = document.getElementById('multi-actions');
+        if (multiActions) multiActions.classList.remove('hidden');
+        const startBtn = document.getElementById('start-btn');
+        if (startBtn) startBtn.classList.add('hidden');
     }, 100);
 
     const statusBox = document.getElementById('status-box');
-    if (statusBox) statusBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (statusBox && typeof statusBox.scrollIntoView === 'function') statusBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
     const delayCollectInput = document.getElementById('delay-input-collect');
     const delayFillInput = document.getElementById('delay-input-fill');
@@ -1337,25 +1347,34 @@ async function startCampaign() {
     // [v4.15.0] 폼 자동 입력 방식 획득 및 동기화 저장
     const fillModeEl = document.querySelector('input[name="fill-mode"]:checked');
     const fillMode = fillModeEl ? fillModeEl.value : 'instant';
-    chrome.storage.local.set({ xpider_fill_mode: fillMode });
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+        chrome.storage.local.set({ xpider_fill_mode: fillMode });
+    }
 
-    // [v19.0] Use XPIDER_INVOKE bridge directly to main process (bypasses background.js)
-    addLog("[System] Sending to Native Engine...", "debug");
-    xpiderInvoke('xpider-campaign-start', {
+    const startPayload = {
         queue: campaignQueue,
         template: currentTpl,
         delayMs,
         fillDelayMs,
         submitDelayMs,
-        fillMode
-    }).then(response => {
+        fillMode,
+        templateId: currentTpl.templateId || 'default',
+        templateVersion: currentTpl.templateVersion || 1
+    };
+    bindCampaignTemplateMetadata(startPayload, currentTpl);
+
+    // [v19.0] Use XPIDER_INVOKE bridge directly to main process (bypasses background.js)
+    addLog("[System] Sending to Native Engine...", "debug");
+    return xpiderInvoke('xpider-campaign-start', startPayload).then(response => {
         if (response && response.success) {
             addLog("✅ [Native Engine] Campaign started!", "success");
         } else {
             addLog(`❌ [Native Engine] Start failed`, "error");
         }
+        return response;
     }).catch(e => {
         addLog(`❌ [Fatal Error] ${e.message}`, "error");
+        throw e;
     });
 }
 
@@ -1731,6 +1750,11 @@ async function handleDeleteTemplate(templateId = null) {
     const tStore = getPopupTemplateStore();
     if (!tStore) throw new Error("TemplateStore unavailable");
 
+    const store = await tStore.getStore();
+    if (store && store.defaultId === idToDelete) {
+        throw new Error("Cannot delete the default template. Set another template as default first.");
+    }
+
     const result = await tStore.deleteTemplate(idToDelete);
     await updateTemplateDropdown(result.defaultId);
     if (result.defaultId) {
@@ -1995,10 +2019,48 @@ function updateSelectionCountUI() {
 }
 
 /**
+ * Phase 2B (Component C / R1): Authoritatively query active submit lock from in-memory flag,
+ * chrome.storage.local (xpider_currentAttempt), and background campaignState (GET_STATE).
+ */
+async function checkActiveSubmitLock() {
+    if (typeof campaignActive !== 'undefined' && campaignActive) {
+        return true;
+    }
+    try {
+        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+            const data = await new Promise((resolve) => {
+                chrome.storage.local.get(['xpider_currentAttempt'], (items) => {
+                    resolve(items || {});
+                });
+            });
+            if (data && data.xpider_currentAttempt && data.xpider_currentAttempt.status === 'SUBMIT_PENDING') {
+                return true;
+            }
+        }
+    } catch (_) {}
+
+    try {
+        if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
+            const state = await new Promise((resolve) => {
+                chrome.runtime.sendMessage({ action: 'GET_STATE' }, (res) => {
+                    resolve(res);
+                });
+            });
+            if (state && (state.hasActiveLock || (state.currentAttempt && state.currentAttempt.status === 'SUBMIT_PENDING') || state.isActive)) {
+                return true;
+            }
+        }
+    } catch (_) {}
+
+    return false;
+}
+
+/**
  * Phase 2B (Component C): Selective Reset of checked target suppressions
  */
 async function dispatchSelectiveReset(targetIdentities = [], activeSubmitCount = 0) {
-    if (activeSubmitCount > 0 || (typeof campaignActive !== 'undefined' && campaignActive)) {
+    const isLocked = (activeSubmitCount > 0) || await checkActiveSubmitLock();
+    if (isLocked) {
         throw new Error("RESET_LOCKED_ACTIVE_SUBMISSION: Active submission in flight.");
     }
     const list = (Array.isArray(targetIdentities) && targetIdentities.length > 0)
@@ -2068,7 +2130,8 @@ async function dispatchRetryFailed() {
  * Phase 2B (Component C): Global Campaign Reset (advances generation, releases all suppression)
  */
 async function dispatchGlobalReset(activeSubmitCount = 0) {
-    if (activeSubmitCount > 0 || (typeof campaignActive !== 'undefined' && campaignActive)) {
+    const isLocked = (activeSubmitCount > 0) || await checkActiveSubmitLock();
+    if (isLocked) {
         throw new Error("RESET_LOCKED_ACTIVE_SUBMISSION: Active submission in flight.");
     }
 
@@ -2116,7 +2179,9 @@ async function triggerCsvExport(options = {}) {
         const a = document.createElement('a');
         a.href = url;
         a.download = `xpider_audit_ledger_${Date.now()}.csv`;
-        a.click();
+        if (typeof a.click === 'function') {
+            a.click();
+        }
         URL.revokeObjectURL(url);
         addLog("📊 CSV Audit Ledger downloaded successfully.", "success");
     }
@@ -2653,6 +2718,8 @@ if (typeof module !== 'undefined' && module.exports) {
         dispatchGlobalReset,
         triggerCsvExport,
         bindCampaignTemplateMetadata,
+        startCampaign,
+        checkActiveSubmitLock,
         getPopupTemplateStore,
         getPopupHistoryStore
     };

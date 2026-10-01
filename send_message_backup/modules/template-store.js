@@ -351,12 +351,24 @@
                 const onDone = (err) => {
                     if (settled) return;
                     settled = true;
-                    if (err) reject(err);
-                    else resolve();
+                    const lastErr = (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.lastError)
+                        ? chrome.runtime.lastError
+                        : (this.storage && this.storage.lastError);
+                    if (lastErr) {
+                        return reject(lastErr instanceof Error ? lastErr : new Error(lastErr.message || String(lastErr)));
+                    }
+                    if (err) {
+                        return reject(err instanceof Error ? err : new Error(String(err)));
+                    }
+                    resolve();
                 };
-                const res = this.storage.set({ templates_v2: store }, onDone);
-                if (res && typeof res.then === 'function') {
-                    res.then(() => onDone()).catch(onDone);
+                try {
+                    const res = this.storage.set({ templates_v2: store }, onDone);
+                    if (res && typeof res.then === 'function') {
+                        res.then(() => onDone()).catch(onDone);
+                    }
+                } catch (e) {
+                    onDone(e);
                 }
             });
         }
@@ -407,9 +419,24 @@
                     subject: canonical.subject,
                     message: canonical.message
                 };
-                await new Promise((resolve) => {
-                    const res = this.storage.set({ xpider_tpl: legacy }, () => resolve());
-                    if (res && typeof res.then === 'function') res.then(resolve).catch(resolve);
+                await new Promise((resolve, reject) => {
+                    let settled = false;
+                    const onDone = (err) => {
+                        if (settled) return;
+                        settled = true;
+                        const lastErr = (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.lastError)
+                            ? chrome.runtime.lastError
+                            : (this.storage && this.storage.lastError);
+                        if (lastErr) return reject(lastErr instanceof Error ? lastErr : new Error(lastErr.message || String(lastErr)));
+                        if (err) return reject(err instanceof Error ? err : new Error(String(err)));
+                        resolve();
+                    };
+                    try {
+                        const res = this.storage.set({ xpider_tpl: legacy }, onDone);
+                        if (res && typeof res.then === 'function') res.then(() => onDone()).catch(onDone);
+                    } catch (e) {
+                        onDone(e);
+                    }
                 });
             }
 
@@ -445,9 +472,24 @@
                     subject: tpl.subject,
                     message: tpl.message
                 };
-                await new Promise((resolve) => {
-                    const res = this.storage.set({ xpider_tpl: legacy }, () => resolve());
-                    if (res && typeof res.then === 'function') res.then(resolve).catch(resolve);
+                await new Promise((resolve, reject) => {
+                    let settled = false;
+                    const onDone = (err) => {
+                        if (settled) return;
+                        settled = true;
+                        const lastErr = (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.lastError)
+                            ? chrome.runtime.lastError
+                            : (this.storage && this.storage.lastError);
+                        if (lastErr) return reject(lastErr instanceof Error ? lastErr : new Error(lastErr.message || String(lastErr)));
+                        if (err) return reject(err instanceof Error ? err : new Error(String(err)));
+                        resolve();
+                    };
+                    try {
+                        const res = this.storage.set({ xpider_tpl: legacy }, onDone);
+                        if (res && typeof res.then === 'function') res.then(() => onDone()).catch(onDone);
+                    } catch (e) {
+                        onDone(e);
+                    }
                 });
             }
 
@@ -460,12 +502,7 @@
                 throw new Error(`Template not found: ${id}`);
             }
             if (store.defaultId === id) {
-                const remainingIds = Object.keys(store.templates).filter(k => k !== id);
-                if (remainingIds.length === 0) {
-                    throw new Error("Cannot delete the only remaining template");
-                }
-                store.defaultId = remainingIds[0];
-                store.templates[remainingIds[0]].isDefault = true;
+                throw new Error("Cannot delete the default template. Set another template as default first.");
             }
 
             delete store.templates[id];

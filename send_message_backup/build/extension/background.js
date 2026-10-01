@@ -464,7 +464,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 successCount: campaignState.successCount,
                 totalTargets: campaignState.totalTargets,
                 remainingCount: campaignState.queue.length,
-                isPaused: campaignState.isPaused
+                isPaused: campaignState.isPaused,
+                hasActiveLock: !!(campaignState.currentAttempt && campaignState.currentAttempt.status === 'SUBMIT_PENDING'),
+                currentAttempt: campaignState.currentAttempt
             });
             return true;
             
