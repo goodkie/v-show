@@ -201,11 +201,14 @@ function logBg(tabId, msg, type = 'info') {
     const logEntry = { timestamp, message: msg, type, tabId };
     
     // 1. Broadcast to open UI (Immediate)
-    chrome.runtime.sendMessage({
-        action: 'SENDER_LOG',
-        message: `[System] ${msg}`,
-        logType: type
-    }).catch(() => {});
+    try {
+        const p = chrome.runtime.sendMessage({
+            action: 'SENDER_LOG',
+            message: `[System] ${msg}`,
+            logType: type
+        });
+        if (p && typeof p.catch === 'function') p.catch(() => {});
+    } catch (_) {}
 
     // 2. Queue for persistent storage (Batched)
     logQueue.push(logEntry);
@@ -1399,7 +1402,121 @@ const PROACTIVE_PATHS = (() => {
 })();
 
 
-async function scanContactPaths(baseUrl, tabId) {
+// ========================================================================
+// [Issue #6 Comment #51 Hotfix] Target-Scoped Candidate Registry & Hard Navigation Guard
+// ========================================================================
+
+function validateCandidateUrl(rawCandidate, baseUrl = null, options = {}) {
+    if (!rawCandidate || typeof rawCandidate !== 'string') {
+        return { valid: false, reasonCode: 'INVALID_CANDIDATE_URL', reason: 'EMPTY_OR_NON_STRING' };
+    }
+    const trimmed = rawCandidate.trim();
+    if (!trimmed) {
+        return { valid: false, reasonCode: 'INVALID_CANDIDATE_URL', reason: 'EMPTY_STRING' };
+    }
+    if (/^(about:|chrome:|chrome-extension:|javascript:|data:|blob:)/i.test(trimmed)) {
+        return { valid: false, reasonCode: 'INVALID_CANDIDATE_URL', reason: 'DISALLOWED_PROTOCOL' };
+    }
+    let resolvedUrl;
+    try {
+        resolvedUrl = new URL(trimmed, baseUrl || undefined);
+    } catch (e) {
+        return { valid: false, reasonCode: 'INVALID_CANDIDATE_URL', reason: 'URL_PARSE_ERROR' };
+    }
+    if (resolvedUrl.protocol !== 'http:' && resolvedUrl.protocol !== 'https:') {
+        return { valid: false, reasonCode: 'INVALID_CANDIDATE_URL', reason: 'NON_HTTP_PROTOCOL' };
+    }
+    if (!resolvedUrl.hostname || resolvedUrl.hostname.trim() === '') {
+        return { valid: false, reasonCode: 'INVALID_CANDIDATE_URL', reason: 'EMPTY_HOSTNAME' };
+    }
+    if (options.requireSameOrigin && baseUrl) {
+        try {
+            const baseObj = new URL(baseUrl);
+            if (resolvedUrl.hostname.toLowerCase() !== baseObj.hostname.toLowerCase()) {
+                return { valid: false, reasonCode: 'INVALID_CANDIDATE_URL', reason: 'CROSS_ORIGIN_NOT_ALLOWED' };
+            }
+        } catch (_) {}
+    }
+    return { valid: true, url: resolvedUrl.href, hostname: resolvedUrl.hostname };
+}
+
+function checkSourceRelation(candidateUrl, sourceUrl) {
+    try {
+        const candHost = new URL(candidateUrl).hostname.toLowerCase().replace(/^www\./, '');
+        const srcHost = new URL(sourceUrl).hostname.toLowerCase().replace(/^www\./, '');
+        if (candHost === srcHost || candHost.endsWith('.' + srcHost) || srcHost.endsWith('.' + candHost)) {
+            return { allowed: true, relation: 'same-origin' };
+        }
+        const allowedFormHosts = ['forms.gle', 'docs.google.com', 'typeform.com', 'hubspot.com', 'wufoo.com'];
+        if (allowedFormHosts.some(h => candHost.includes(h))) {
+            return { allowed: true, relation: 'allowed-form-service' };
+        }
+        return { allowed: false, relation: 'unrelated-domain' };
+    } catch (_) {
+        return { allowed: false, relation: 'invalid-url' };
+    }
+}
+
+async function navigateToValidatedCandidate(tabId, rawCandidate, baseUrl, context = {}) {
+    const check = validateCandidateUrl(rawCandidate, baseUrl, context);
+    if (!check.valid) {
+        logBg(tabId, `🚫 [NavigationGuard] Rejecting invalid candidate [${rawCandidate}]: ${check.reason}`, 'warning');
+        return { success: false, reasonCode: 'INVALID_CANDIDATE_URL', detail: check.reason };
+    }
+    const rel = checkSourceRelation(check.url, baseUrl || check.url);
+    if (!rel.allowed && context.enforceSourceRelation !== false) {
+        logBg(tabId, `🚫 [NavigationGuard] Candidate ${check.url} has no relationship to source ${baseUrl} (${rel.relation}). Skipping.`, 'warning');
+        return { success: false, reasonCode: 'UNRELATED_DOMAIN_CANDIDATE', detail: rel.relation };
+    }
+    const sourceHost = context.sourceHost || (baseUrl ? new URL(baseUrl).hostname : check.hostname);
+    logBg(tabId, `[TARGET_NAV] sourceHost=${sourceHost} candidate=${check.url} relation=${rel.relation}`, 'info');
+    try {
+        await safeTabs.update(tabId, { url: check.url });
+        return { success: true, url: check.url };
+    } catch (navErr) {
+        logBg(tabId, `❌ [NavigationGuard] Failed to update tab ${tabId} to ${check.url}: ${navErr.message}`, 'error');
+        return { success: false, reasonCode: 'TAB_UPDATE_FAILED', error: navErr.message };
+    }
+}
+
+function createDiscoveryContext(targetUrl) {
+    let host = 'unknown';
+    try { host = new URL(targetUrl).hostname; } catch (_) {}
+    return {
+        candidateSourceMap: new Map(),
+        candidates: new Map(),
+        visited: new Set(),
+        verified: new Set(),
+        errors: [],
+        selectedContactUrl: null,
+        sourceHost: host,
+        sourceUrl: targetUrl,
+        blankTabObservations: 0,
+        startTime: Date.now()
+    };
+}
+
+function addCandidate(ctx, rawUrl, source = 'ensemble', evidence = {}) {
+    if (!ctx || !rawUrl) return null;
+    const valid = validateCandidateUrl(rawUrl, ctx.sourceUrl);
+    if (!valid.valid) return null;
+    const norm = normalizeUrl(valid.url);
+    ctx.candidateSourceMap.set(valid.url, source);
+    ctx.candidateSourceMap.set(norm, source);
+    ctx.candidateSourceMap.set(rawUrl, source);
+    if (!ctx.candidates.has(norm)) {
+        ctx.candidates.set(norm, {
+            url: valid.url,
+            normalized: norm,
+            source: source,
+            evidence: evidence,
+            addedAt: Date.now()
+        });
+    }
+    return valid.url;
+}
+
+async function scanContactPaths(baseUrl, tabId, discoveryCtx = null) {
     logBg(tabId, "Step 1: Sniper Mode active. Searching for contact page...", "info");
     const validPaths = [];
 
@@ -1416,7 +1533,11 @@ async function scanContactPaths(baseUrl, tabId) {
         });
         if (cacheData[host] && cacheData[host].path) {
             logBg(tabId, `🎯 [DiscoveryCache] Prioritizing known-good contact path: ${cacheData[host].path}`, 'info');
-            validPaths.push(cacheData[host].path);
+            const cachedP = cacheData[host].path;
+            validPaths.push(cachedP);
+            if (discoveryCtx) {
+                addCandidate(discoveryCtx, cachedP, 'hostname_cache');
+            }
         }
     } catch (_) {}
 
@@ -1447,13 +1568,26 @@ async function scanContactPaths(baseUrl, tabId) {
         }));
         
         for (const p of results) {
-            if (p !== null && !validPaths.includes(p)) validPaths.push(p);
+            if (p !== null && !validPaths.includes(p)) {
+                validPaths.push(p);
+                if (discoveryCtx) {
+                    addCandidate(discoveryCtx, p, 'sniper_prescan');
+                }
+            }
         }
         if (validPaths.length >= 5) break; // Found enough candidates, move to execution
     }
 
+    if (validPaths.length === 0) {
+        validPaths.push('/contact', '/contact-us');
+        if (discoveryCtx) {
+            addCandidate(discoveryCtx, '/contact', 'common_path_fallback');
+            addCandidate(discoveryCtx, '/contact-us', 'common_path_fallback');
+        }
+    }
+
     logBg(tabId, `Pre-scan complete. Identified ${validPaths.length} valid paths.`, "success");
-    return validPaths.length > 0 ? validPaths : ['/contact', '/contact-us']; // Fallback
+    return validPaths;
 }
 
 async function orchestrateSending(urlInput, template) {
@@ -1527,8 +1661,43 @@ async function orchestrateSending(urlInput, template) {
         return { success: false, reasonCode: 'INTENT_PERSISTENCE_FAILED', error: 'INTENT_PERSISTENCE_FAILED' };
     }
 
-    const tab = await safeTabs.create({ url: 'about:blank', active: false });
-    const tabId = tab.id;
+    const validatedTarget = validateCandidateUrl(targetUrl);
+    if (!validatedTarget.valid) {
+        logBg(null, `🚫 [NavigationGuard] Target URL invalid [${targetUrl}]: ${validatedTarget.reason}`, 'error');
+        return { success: false, reasonCode: 'INVALID_CANDIDATE_URL', error: 'Invalid target URL' };
+    }
+    targetUrl = validatedTarget.url;
+    const targetHost = validatedTarget.hostname;
+    let baseUrl;
+    try {
+        baseUrl = new URL(targetUrl).origin;
+    } catch (_) {
+        baseUrl = targetUrl;
+    }
+
+    const discoveryCtx = createDiscoveryContext(targetUrl);
+
+    // [Comment 51 Section 9 & 10] Single Tab Policy & Never open about:blank
+    let tabId = campaignState.targetTabId;
+    let isReusedTab = false;
+    if (tabId) {
+        try {
+            const existingTab = await safeTabs.get(tabId);
+            if (existingTab && existingTab.id && !existingTab.url?.startsWith('chrome://')) {
+                isReusedTab = true;
+            }
+        } catch (_) {
+            tabId = null;
+        }
+    }
+
+    if (!isReusedTab) {
+        const tab = await safeTabs.create({ url: targetUrl, active: false });
+        tabId = tab.id;
+        campaignState.targetTabId = tabId;
+    } else {
+        await safeTabs.update(tabId, { url: targetUrl });
+    }
     campaignState.currentTabId = tabId;
 
     let resolveRef;
@@ -1551,7 +1720,6 @@ async function orchestrateSending(urlInput, template) {
     let lastActivity = Date.now();
     let validPaths = [];
     let pathIdx = 0;
-    let baseUrl;
     let currentAttemptUrl = targetUrl; // [v2.9.7] Track intended path for redirect detection
     let visitedRedirects = []; 
     let lastInjectedUrl = '';  
@@ -1575,6 +1743,7 @@ async function orchestrateSending(urlInput, template) {
                 const isAlreadyInPaths = validPaths.some(p => normalizeUrl(p.startsWith('http') ? p : baseUrl + p) === norm);
                 if (!isVisited && !isAlreadyInPaths) {
                     validPaths.push(link);
+                    addCandidate(discoveryCtx, link, 'parent_page_links');
                     added++;
                     parentCandidateCount++;
                 }
@@ -1593,14 +1762,6 @@ async function orchestrateSending(urlInput, template) {
             }
         }).catch(() => {});
     };
-
-    try {
-        const u = new URL(targetUrl);
-        baseUrl = u.origin;
-    } catch (e) {
-        safeTabs.remove(tabId).catch(() => {});
-        return { success: false, error: "Invalid URL" };
-    }
 
     const finish = async (res) => {
         if (res && !res.success && res.error === "NO_FORM_ON_PAGE") {
@@ -1721,6 +1882,12 @@ async function orchestrateSending(urlInput, template) {
             await new Promise(r => setTimeout(r, 1000));
         }
 
+        if (discoveryCtx) {
+            discoveryCtx.candidateSourceMap.clear();
+            discoveryCtx.candidates.clear();
+            discoveryCtx.visited.clear();
+        }
+
         safeTabs.remove(tabId).catch(() => {});
         resolveRef({ ...res, reasonCode: finalReason });
     };
@@ -1806,8 +1973,18 @@ async function orchestrateSending(urlInput, template) {
                 if (!visitedRedirects.includes(normalizedCurrent)) visitedRedirects.push(normalizedCurrent);
                 lastInjectedUrl = normalizedCurrent; 
 
-                if (!targetTab.url || targetTab.url.startsWith('about:')) {
-                    logBg(tabId, "Handshaking... (Waiting for site response)", "debug");
+                if (!targetTab.url || targetTab.url.startsWith('about:') || targetTab.url === 'about:blank') {
+                    discoveryCtx.blankTabObservations = (discoveryCtx.blankTabObservations || 0) + 1;
+                    logBg(tabId, `[BlankTabGuard] Observed blank/about tab (count=${discoveryCtx.blankTabObservations})`, "warning");
+                    if (discoveryCtx.blankTabObservations > 1) {
+                        logBg(tabId, `🚨 [NAVIGATION_CIRCUIT_BREAKER] Repeated blank tab on ${targetHost}. Tripping circuit breaker.`, "error");
+                        finish({
+                            success: false,
+                            reasonCode: 'NAVIGATION_CIRCUIT_BREAKER',
+                            error: 'Repeated blank tab navigation detected'
+                        });
+                        return;
+                    }
                     if (Date.now() - lastActivity > 12000) {
                         logBg(tabId, "⚠️ [Engine] Site not responding. Skipping to next candidate.", "warning");
                         tryNext();
@@ -1840,56 +2017,76 @@ async function orchestrateSending(urlInput, template) {
         }, 1500);
     };
 
-    const tryNext = () => {
+    const tryNext = async () => {
         if (isFinished) return;
         if (baseUrl.includes('teamusatkd.com')) baseUrl = "https://teamusatkd.com";
 
         if (pathIdx >= validPaths.length) {
-            finish({ success: false, error: "Paths exhausted" });
+            finish({ success: false, error: "Paths exhausted", reasonCode: 'CONTACT_DISCOVERY_EXHAUSTED' });
             return;
         }
 
         const nextP = validPaths[pathIdx++];
-        let fullUrl;
-        try {
-            fullUrl = new URL(nextP, baseUrl).href;
-        } catch (_) {
-            fullUrl = (typeof nextP === 'string' && nextP.startsWith('http'))
-                ? nextP
-                : (baseUrl + (nextP.startsWith('/') ? '' : '/') + nextP);
-        }
-        const norm = normalizeUrl(fullUrl);
-        if (campaignState.successfulUrls.includes(norm)) {
-            logBg(tabId, `⏭️ [Engine] Path [${fullUrl}] already handled successfully. Skipping.`, "info");
-            setTimeout(tryNext, 500);
+        const isHttpAbsolute = (typeof nextP === 'string' && nextP.startsWith('http'));
+        const check = validateCandidateUrl(nextP, baseUrl);
+        if (!check.valid) {
+            logBg(tabId, `🚫 [Discovery] Invalid path [${nextP}]: ${check.reason}. Skipping.`, "warning");
+            setTimeout(tryNext, 100);
             return;
         }
+        const fullUrl = check.url;
+        const norm = normalizeUrl(fullUrl);
+
+        if (campaignState.successfulUrls.includes(norm) || discoveryCtx.visited.has(norm)) {
+            logBg(tabId, `⏭️ [Engine] Path [${fullUrl}] already handled successfully. Skipping.`, "info");
+            setTimeout(tryNext, 100);
+            return;
+        }
+        discoveryCtx.visited.add(norm);
 
         lastActivity = Date.now();
         isFocusSecured = false;
         currentAttemptUrl = fullUrl;
+        discoveryCtx.selectedContactUrl = fullUrl;
 
-        // [Section J] Update attempt contact page as soon as selected even while PREPARING
+        // [Section J & Comment 51] Source resolution from target-scoped discoveryCtx (never implicit global)
+        const discoverySource = (discoveryCtx.candidateSourceMap && (discoveryCtx.candidateSourceMap.get(fullUrl) || discoveryCtx.candidateSourceMap.get(nextP) || discoveryCtx.candidateSourceMap.get(norm)))
+            || 'Ensemble';
+
+        // Update attempt contact page as soon as selected even while PREPARING
         if (_attemptId && self.__xpiderHistoryStore && typeof self.__xpiderHistoryStore.updateAttemptContact === 'function') {
             self.__xpiderHistoryStore.updateAttemptContact(_attemptId, {
                 contactPageUrl: fullUrl,
                 formPageUrl: fullUrl,
-                contactDiscoverySource: (candidateSourceMap && candidateSourceMap[nextP]) ? candidateSourceMap[nextP] : 'Ensemble'
+                contactDiscoverySource: discoverySource
             });
             self.__xpiderHistoryStore.persist().catch(() => {});
         } 
+
         logBg(tabId, `Connecting to [${fullUrl}]...`, "visit");
-        safeTabs.update(tabId, { url: fullUrl });
+        const navRes = await navigateToValidatedCandidate(tabId, fullUrl, baseUrl, {
+            sourceHost: targetHost,
+            relation: 'same-origin'
+        });
+        if (!navRes.success) {
+            setTimeout(tryNext, 100);
+            return;
+        }
     };
 
-    scanContactPaths(baseUrl, tabId).then(paths => {
+    scanContactPaths(baseUrl, tabId, discoveryCtx).then(paths => {
         if (isFinished) return;
         validPaths.push(...paths);
         tryNext();
     }).catch(err => {
         if (isFinished) return;
-        logBg(tabId, `⚠️ [ScanError] ${err.message}`, "error");
-        tryNext();
+        logBg(tabId, `❌ [CONTACT_DISCOVERY_RUNTIME_ERROR][${targetHost}] ${err.name}: ${err.message}`, "error");
+        discoveryCtx.errors.push({ phase: 'scanContactPaths', error: err.message, stack: err.stack });
+        finish({ 
+            success: false, 
+            error: err.message, 
+            reasonCode: 'CONTACT_DISCOVERY_RUNTIME_ERROR' 
+        });
     });
 
     return resultPromise;
@@ -2151,6 +2348,12 @@ if (typeof module !== 'undefined' && module.exports) {
         stopCampaignOrchestrator,
         printCampaignOutcomeSummary,
         campaignState,
-        REASON_CODES
+        REASON_CODES,
+        validateCandidateUrl,
+        checkSourceRelation,
+        navigateToValidatedCandidate,
+        createDiscoveryContext,
+        addCandidate,
+        scanContactPaths
     };
 }
