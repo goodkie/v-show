@@ -1,7 +1,31 @@
 /**
  * X PIDER Sender Pro - Content Script (V2.0 Advanced Engine)
  * Borrowing high-performance patterns from XSpider Pro core.
+ * [v4.17.0] XPIDER DevLog Bridge 패치 적용됨
  */
+
+// ── XPIDER DEV LOG BRIDGE (Content Script) ───────────────────────────────
+(function() {
+  const _EXT_NAME = 'Ext[AutoFormSender/Content]';
+  const _xDL = (lvl, msg) => {
+    try {
+      chrome.runtime.sendMessage({
+        _xpider_devlog: true, level: lvl, source: _EXT_NAME,
+        msg: String(msg).substring(0, 2048)
+      }).catch(() => {});
+    } catch(_) {}
+  };
+  ['log','warn','error','debug','info'].forEach(m => {
+    const _o = console[m].bind(console);
+    console[m] = (...a) => {
+      _o(...a);
+      const lvlMap = { log:'INFO', warn:'WARN', error:'ERROR', debug:'DEBUG', info:'INFO' };
+      _xDL(lvlMap[m] || 'INFO', a.map(x => typeof x === 'object' ? JSON.stringify(x) : String(x)).join(' '));
+    };
+  });
+  window.addEventListener('error', (e) => _xDL('ERROR', `[Uncaught] ${e.message} at ${e.filename}:${e.lineno}`));
+})();
+// ── END DEV LOG BRIDGE ───────────────────────────────────────────────────
 
 (function() {
     console.log("🚀 [XpiderSender] Advanced Engine Loaded: " + window.location.href);
@@ -406,30 +430,6 @@
                 currentForm = await findOptimalForm();
                 
                 if (currentForm) break;
-
-                // [v1.2.0] Fast-Track Formless Detection
-                if (i === 1) {
-                    const allInputs = queryAllInputs();
-                    const validTextFields = allInputs.filter(inp => {
-                        const type = (inp.getAttribute('type') || 'text').toLowerCase();
-                        const id = (inp.id || '').toLowerCase();
-                        const name = (inp.name || '').toLowerCase();
-                        const placeholder = (inp.placeholder || '').toLowerCase();
-                        const cls = (inp.className || '').toString().toLowerCase();
-                        
-                        if (['hidden', 'submit', 'button', 'checkbox', 'radio', 'file', 'image'].includes(type)) return false;
-                        
-                        const isSearch = [id, name, placeholder, cls].some(k => k.includes('search') || k.includes('q') || k.includes('query'));
-                        if (isSearch) return false;
-                        
-                        return true;
-                    });
-                    
-                    if (validTextFields.length === 0) {
-                        logDev("⚡ [Discovery] Clean Formless Page Detected. Fast-tracking to termination...", "warning");
-                        break;
-                    }
-                }
                 
                 // [Ultra-Mode] Try scrolling to reveal lazy-loaded forms
                 if (i === 1) {
@@ -2361,32 +2361,99 @@
         }
     }
 
+    function querySelectorIncludingShadowDOM(root, selector) {
+        if (!root) return null;
+        try {
+            if (root.querySelector) {
+                const el = root.querySelector(selector);
+                if (el) return el;
+            }
+        } catch(e) {}
+        try {
+            if (root.querySelectorAll) {
+                const all = root.querySelectorAll('*');
+                for (const node of all) {
+                    if (node.shadowRoot) {
+                        const found = querySelectorIncludingShadowDOM(node.shadowRoot, selector);
+                        if (found) return found;
+                    }
+                }
+            }
+        } catch(e) {}
+        let child = root.firstChild;
+        while (child) {
+            const found = querySelectorIncludingShadowDOM(child, selector);
+            if (found) return found;
+            child = child.nextSibling;
+        }
+        return null;
+    }
+
+    function querySelectorAllIncludingShadowDOM(root, selector, results = []) {
+        if (!root) return results;
+        try {
+            if (root.querySelectorAll) {
+                root.querySelectorAll(selector).forEach(el => {
+                    if (!results.includes(el)) results.push(el);
+                });
+            }
+        } catch(e) {}
+        try {
+            if (root.querySelectorAll) {
+                const all = root.querySelectorAll('*');
+                for (const node of all) {
+                    if (node.shadowRoot) {
+                        querySelectorAllIncludingShadowDOM(node.shadowRoot, selector, results);
+                    }
+                }
+            }
+        } catch(e) {}
+        let child = root.firstChild;
+        while (child) {
+            querySelectorAllIncludingShadowDOM(child, selector, results);
+            child = child.nextSibling;
+        }
+        return results;
+    }
+
     function submitForm(form) {
-        // [v18.6.5] Ultra-Robust Button Discovery
-        const submitBtn = form.querySelector('button[type="submit"]') || 
-                          form.querySelector('input[type="submit"]') ||
-                          form.querySelector('[class*="submit"], [id*="submit"]') ||
-                          Array.from(form.querySelectorAll('button, a, input[type="button"], div[role="button"]')).find(b => {
-                             const text = (b.textContent || b.value || '').toLowerCase();
-                             return ['send', 'submit', '전송', '보내기', '送信', '등록', '确定', '提交', '입력', '접수'].some(k => text.includes(k));
-                          });
+        // [v18.6.5] Ultra-Robust Button Discovery (Shadow DOM 지원)
+        let submitBtn = querySelectorIncludingShadowDOM(form, 'button[type="submit"]') || 
+                          querySelectorIncludingShadowDOM(form, 'input[type="submit"]') ||
+                          querySelectorIncludingShadowDOM(form, '[class*="submit"], [id*="submit"]');
+                          
+        if (!submitBtn) {
+            const btns = querySelectorAllIncludingShadowDOM(form, 'button, a, input[type="button"], div[role="button"]');
+            submitBtn = btns.find(b => {
+                const text = (b.textContent || b.value || '').toLowerCase();
+                return ['send', 'submit', '전송', '보내기', '送信', '등록', '确定', '提交', '입력', '접수'].some(k => text.includes(k));
+            });
+        }
         
         if (submitBtn) {
-            logDev(`📤 [Action] Clicking discovered button: ${submitBtn.tagName} | Text: ${(submitBtn.textContent || submitBtn.value || '').substring(0, 10)}`);
-            submitBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            submitBtn.click();
+            logDev(`📤 [Action] Clicking discovered button (Shadow DOM): ${submitBtn.tagName} | Text: ${(submitBtn.textContent || submitBtn.value || '').substring(0, 10)}`);
+            try {
+                submitBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } catch(e) {}
+            try {
+                submitBtn.click();
+            } catch(e) {}
             
             // Fallback for custom JS components that need manual trigger
             ['mousedown', 'mouseup', 'click'].forEach(evt => {
-                submitBtn.dispatchEvent(new MouseEvent(evt, { bubbles: true, cancelable: true }));
+                try {
+                    submitBtn.dispatchEvent(new MouseEvent(evt, { bubbles: true, cancelable: true }));
+                } catch(e) {}
             });
         } else {
             // [v18.6.5] Bruteforce: If no clear "Submit" button, click the LAST primary-looking button in the container
-            const allBtns = Array.from(form.querySelectorAll('button, .btn, [class*="button"]')).filter(b => elementIsVisible(b));
+            const allBtns = querySelectorAllIncludingShadowDOM(form, 'button, .btn, [class*="button"]').filter(b => elementIsVisible(b));
             if (allBtns.length > 0) {
                 const lastBtn = allBtns[allBtns.length - 1];
                 logDev("🛠️ [Action] No specific submit button. Triggering last visible button as fallback.");
-                lastBtn.click();
+                try {
+                    lastBtn.click();
+                } catch(e) {}
             } else if (form.tagName === 'FORM') {
                 try {
                     HTMLFormElement.prototype.submit.call(form);

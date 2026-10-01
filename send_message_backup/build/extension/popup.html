@@ -332,6 +332,16 @@
                     <button id="export-csv-btn" class="secondary-btn-small" style="flex: 1; padding: 6px 10px; font-size: 11px; background: rgba(0,255,204,0.15); border: 1px solid #00ffcc; color: #00ffcc; border-radius: 4px; cursor: pointer;">📊 Export CSV Report</button>
                     <button id="reset-all-history-btn" class="danger-btn-small" style="flex: 1; padding: 6px 10px; font-size: 11px; background: rgba(255,51,51,0.15); border: 1px solid #ff3333; color: #ff3333; border-radius: 4px; cursor: pointer;">🔄 Reset Suppression</button>
                 </div>
+                <!-- [F10] Selective Reset Bar -->
+                <div style="display: flex; gap: 6px; margin: 6px 0; align-items: center;">
+                    <input type="url" id="selective-reset-url-input" placeholder="https://example.com (selective reset)" style="flex: 1; padding: 5px 8px; font-size: 11px; background: rgba(255,255,255,0.05); border: 1px solid #555; color: #ccc; border-radius: 4px; outline: none;">
+                    <button id="selective-reset-history-btn" style="padding: 5px 10px; font-size: 11px; background: rgba(255,165,0,0.15); border: 1px solid #ffa500; color: #ffa500; border-radius: 4px; cursor: pointer; white-space: nowrap;">🎯 Reset URL</button>
+                </div>
+                <!-- [F10] History Status Panel -->
+                <div id="history-status-panel" style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 8px 12px; margin: 6px 0; font-size: 11px; color: #aaa;">
+                    <style>.history-stat-row { display: flex; justify-content: space-between; padding: 2px 0; }</style>
+                    <div class="history-stat-row"><span>History:</span><span>Loading...</span></div>
+                </div>
                 <div id="log-container"></div>
 
             </div>

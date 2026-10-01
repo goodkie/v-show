@@ -1,4 +1,4 @@
-﻿'use strict';
+'use strict';
 /**
  * [ANTIGRAVITY][TEST][extension-form-sender][PHASE 2A INTEGRATION — F7-F13]
  */
@@ -153,15 +153,46 @@ async function main() {
         assert(hs2.attempts.find(a => a.status === 'CONFIRMED_SUCCESS'), 'Should have succeeded attempt');
     });
 
-    await test('F11-a: STAGE_COMMIT resume promotes schema version idempotently', async () => {
-        const storage = makeMockStorage({ xpider_migration_phase: 'STAGE_COMMIT', xpider_schema_version: 1, templates_v2: {} });
+    await test('F11-a: STAGE_COMMIT with valid v2 payload promotes schema version', async () => {
+        // v2 data present + valid -> safe to promote
+        const storage = makeMockStorage({
+            xpider_migration_phase: 'STAGE_COMMIT',
+            xpider_schema_version: 1,
+            templates_v2: { version: 2, templates: {}, defaultId: null }  // valid v2
+        });
         const data = await storage.get(null);
         if (data.xpider_migration_phase === 'STAGE_COMMIT' && data.xpider_schema_version !== 2) {
-            await storage.set({ xpider_migration_phase: 'COMPLETED', xpider_schema_version: 2 });
+            const v2DataPresent = data.templates_v2 && typeof data.templates_v2 === 'object' && data.templates_v2.version === 2;
+            if (v2DataPresent) {
+                await storage.set({ xpider_migration_phase: 'COMPLETED', xpider_schema_version: 2 });
+            } else {
+                await storage.set({ xpider_migration_phase: 'PENDING' });
+            }
         }
         const finalData = await storage.get(['xpider_migration_phase', 'xpider_schema_version']);
-        assert(finalData.xpider_schema_version === 2, 'Schema version should be promoted to 2');
+        assert(finalData.xpider_schema_version === 2, 'Schema version should be promoted when v2 data present');
         assert(finalData.xpider_migration_phase === 'COMPLETED', 'Phase should be COMPLETED');
+    });
+
+    await test('F11-c: STAGE_COMMIT without v2 payload does NOT promote schema (re-runs migration)', async () => {
+        // Crash after STAGE_COMMIT but before v2 data was written
+        const storage = makeMockStorage({
+            xpider_migration_phase: 'STAGE_COMMIT',
+            xpider_schema_version: 1
+            // templates_v2 intentionally absent
+        });
+        const data = await storage.get(null);
+        if (data.xpider_migration_phase === 'STAGE_COMMIT' && data.xpider_schema_version !== 2) {
+            const v2DataPresent = data.templates_v2 && typeof data.templates_v2 === 'object' && data.templates_v2.version === 2;
+            if (v2DataPresent) {
+                await storage.set({ xpider_migration_phase: 'COMPLETED', xpider_schema_version: 2 });
+            } else {
+                await storage.set({ xpider_migration_phase: 'PENDING' }); // reset for re-run
+            }
+        }
+        const finalData = await storage.get(['xpider_migration_phase', 'xpider_schema_version']);
+        assert(finalData.xpider_schema_version !== 2, 'Schema version must NOT be promoted without v2 data');
+        assert(finalData.xpider_migration_phase === 'PENDING', 'Phase should reset to PENDING for re-run');
     });
 
     await test('F11-b: backup written before schema version promotion', async () => {
@@ -180,9 +211,13 @@ async function main() {
         const fs = require('fs');
         const bgSrc = fs.readFileSync('./background.js', 'utf8');
         const solverSrc = fs.readFileSync('./solver-content.js', 'utf8');
-        const key = '3T7NUX6UUPXHXGMDQLB7P23JSHYI2C7O';
-        assert(!bgSrc.includes(key), 'background.js must not contain hardcoded Wit.ai key');
-        assert(!solverSrc.includes(key), 'solver-content.js must not contain hardcoded Wit.ai key');
+        // [F13] Pattern-based check — no credential literal embedded in test source.
+        // Checks that the stt_api_key fallback pattern with a hardcoded literal is absent.
+        const bgBadPattern = /xpider_stt_api_key \|\| '[A-Z0-9]{20,}'/.test(bgSrc);
+        assert(!bgBadPattern, 'background.js must not contain hardcoded Wit.ai key as fallback');
+        // Checks that the activeKey assignment literal pattern is absent.
+        const solverBadPattern = /activeKey\s*=\s*'[A-Z0-9]{20,}'/.test(solverSrc);
+        assert(!solverBadPattern, 'solver-content.js must not contain hardcoded Wit.ai key assignment');
     });
 
     await test('F8-e: CSV export reflects settled attempt outcome', async () => {
@@ -203,4 +238,5 @@ async function main() {
 }
 
 main().catch(e => { console.error('Fatal:', e); process.exit(1); });
+
 

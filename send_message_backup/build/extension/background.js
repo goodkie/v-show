@@ -539,13 +539,23 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 try {
                     const data = await chrome.storage.local.get(null);
 
-                    // [F11] Resume: If STAGE_COMMIT was interrupted before COMPLETED, finalize now
+                    // [F11] Resume: STAGE_COMMIT detected — validate v2 payload BEFORE promoting schema
                     if (data.xpider_migration_phase === 'STAGE_COMMIT' && data.xpider_schema_version !== 2) {
-                        // Prior commit written, just promote schema version to finalize
-                        await chrome.storage.local.set({ xpider_migration_phase: 'COMPLETED', xpider_schema_version: 2 });
-                        logBg(null, '📦 [Migration] Resumed interrupted migration — schema version promoted.', 'info');
-                        sendResponse({ success: true, migrated: false, reason: 'RESUMED_FINALIZED' });
-                        return;
+                        // CRITICAL: only finalize if templates_v2 is actually present and valid
+                        const v2DataPresent = data.templates_v2
+                            && typeof data.templates_v2 === 'object'
+                            && data.templates_v2.version === 2;
+                        if (v2DataPresent) {
+                            await chrome.storage.local.set({ xpider_migration_phase: 'COMPLETED', xpider_schema_version: 2 });
+                            logBg(null, '📦 [Migration] Resumed: v2 payload verified — schema version promoted.', 'info');
+                            sendResponse({ success: true, migrated: false, reason: 'RESUMED_FINALIZED' });
+                            return;
+                        } else {
+                            // v2 data missing (crash between STAGE_COMMIT and data write) — re-run
+                            logBg(null, '⚠️ [Migration] STAGE_COMMIT but v2 payload missing — re-running migration.', 'warning');
+                            await chrome.storage.local.set({ xpider_migration_phase: 'PENDING' });
+                            // Fall through to full migration below
+                        }
                     }
 
                     const tStore = new self.TemplateStore(chrome.storage.local);
@@ -567,7 +577,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                         delete dataWithoutVersion.xpider_schema_version;
                         await chrome.storage.local.set(dataWithoutVersion);
 
-                        // [F11] Step 4: Only now promote schema version — idempotent gate
+                        // [F11] Step 4: Verify payload was written, then promote schema version
+                        const verification = await chrome.storage.local.get(['templates_v2']);
+                        const v2Ok = verification.templates_v2 && verification.templates_v2.version === 2;
+                        if (!v2Ok) {
+                            throw new Error('MIGRATION_VERIFY_FAILED: templates_v2 not found after write');
+                        }
                         await chrome.storage.local.set({ xpider_schema_version: 2, xpider_migration_phase: 'COMPLETED' });
 
                         logBg(null, `📦 [Migration] Safely migrated to v2 (Backup: ${migrationResult.backupKey})`, 'info');

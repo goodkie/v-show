@@ -948,15 +948,21 @@ async function saveTemplateChanges() {
         return;
     }
 
-    // Save to recent history
-    const historyItem = { ...tpl, fileName: result.fileName, filePath: result.filePath, timestamp: new Date().toISOString() };
-    const data = await chrome.storage.local.get(['xpider_recent_templates']);
-    let recent = data.xpider_recent_templates || [];
-    // Remove duplicate by filePath
-    recent = recent.filter(t => t.filePath !== result.filePath);
-    recent.unshift(historyItem);
+    // [F9] Save to templates_v2 as authoritative store
+    const tplId = `tpl_${Date.now()}`;
+    const v2Item = { ...tpl, id: tplId, fileName: result.fileName, filePath: result.filePath, updatedAt: new Date().toISOString() };
+    const v2Data = await chrome.storage.local.get(['templates_v2']);
+    const v2Store = v2Data.templates_v2 || { version: 2, templates: {}, defaultId: null, recentIds: [] };
+    v2Store.templates[tplId] = v2Item;
+    if (!v2Store.defaultId) v2Store.defaultId = tplId;
+    v2Store.recentIds = [tplId, ...(v2Store.recentIds || []).filter(id => id !== tplId)].slice(0, 6);
+    // Dual-write: legacy xpider_recent_templates for compatibility
+    const legacyItem = { ...tpl, fileName: result.fileName, filePath: result.filePath, timestamp: new Date().toISOString() };
+    const legacyData = await chrome.storage.local.get(['xpider_recent_templates']);
+    let recent = (legacyData.xpider_recent_templates || []).filter(t => t.filePath !== result.filePath);
+    recent.unshift(legacyItem);
     if (recent.length > 6) recent = recent.slice(0, 6);
-    await chrome.storage.local.set({ xpider_recent_templates: recent });
+    await chrome.storage.local.set({ templates_v2: v2Store, xpider_recent_templates: recent, xpider_tpl: tpl });
 
     await updateTemplateDropdown();
 
@@ -1342,7 +1348,7 @@ async function saveTemplateToLibrary() {
 }
 
 /**
- * [v19.0] Update dropdown with last 6 recently saved templates
+ * [F9] Update dropdown from templates_v2 (authoritative), falls back to xpider_recent_templates
  */
 async function updateTemplateDropdown() {
     const select = document.getElementById('tpl-library-select');
@@ -1353,10 +1359,21 @@ async function updateTemplateDropdown() {
 
     select.innerHTML = `<option value="" disabled selected>${dict.label_select_template || '📂 Select Template'}</option>`;
 
-    const data = await chrome.storage.local.get(['xpider_recent_templates']);
-    const recent = (data.xpider_recent_templates || []).slice(0, 6);
+    // [F9] Read from templates_v2 as primary source
+    const data = await chrome.storage.local.get(['templates_v2', 'xpider_recent_templates']);
+    const v2Store = data.templates_v2;
+    let items = [];
+    if (v2Store && v2Store.recentIds && v2Store.templates) {
+        items = v2Store.recentIds
+            .map(id => v2Store.templates[id])
+            .filter(Boolean)
+            .slice(0, 6);
+    } else {
+        // Legacy fallback
+        items = (data.xpider_recent_templates || []).slice(0, 6);
+    }
 
-    if (recent.length === 0) {
+    if (items.length === 0) {
         const opt = document.createElement('option');
         opt.disabled = true;
         opt.textContent = '— No recent templates —';
@@ -1364,10 +1381,12 @@ async function updateTemplateDropdown() {
         return;
     }
 
-    recent.forEach((tpl, idx) => {
+    items.forEach((tpl, idx) => {
         const opt = document.createElement('option');
-        opt.value = idx;
-        const date = tpl.timestamp ? new Date(tpl.timestamp).toLocaleDateString() : '';
+        // [F9] Store the template id or index for reliable lookup
+        opt.value = tpl.id || String(idx);
+        opt.dataset.tplId = tpl.id || '';
+        const date = tpl.updatedAt || tpl.timestamp ? new Date(tpl.updatedAt || tpl.timestamp).toLocaleDateString() : '';
         const label = tpl.fileName || tpl.subject || `Template ${idx + 1}`;
         opt.textContent = `${label}${date ? '  · ' + date : ''}`;
         select.appendChild(opt);
@@ -1375,16 +1394,25 @@ async function updateTemplateDropdown() {
 }
 
 /**
- * [v19.0] Load selected template from dropdown into the form
+ * [F9] Load selected template from dropdown into the form.
+ * Reads from templates_v2 (authoritative); falls back to xpider_recent_templates.
  */
 function loadTemplateFromLibrary() {
     const select = document.getElementById('tpl-library-select');
-    const idx = select?.value;
-    if (idx === '' || idx === null || idx === undefined) return;
+    const selectedOpt = select?.options[select.selectedIndex];
+    if (!selectedOpt || selectedOpt.disabled) return;
 
-    chrome.storage.local.get(['xpider_recent_templates'], (data) => {
-        const recent = data.xpider_recent_templates || [];
-        const tpl = recent[parseInt(idx)];
+    const tplId = selectedOpt.dataset.tplId;
+    const idxFallback = parseInt(selectedOpt.value);
+
+    chrome.storage.local.get(['templates_v2', 'xpider_recent_templates'], (data) => {
+        let tpl = null;
+        // [F9] Try templates_v2 first
+        if (tplId && data.templates_v2 && data.templates_v2.templates[tplId]) {
+            tpl = data.templates_v2.templates[tplId];
+        } else if (!isNaN(idxFallback) && data.xpider_recent_templates) {
+            tpl = (data.xpider_recent_templates || [])[idxFallback] || null;
+        }
         if (!tpl) return;
 
         document.getElementById('tpl-first-name').value = tpl.firstName || '';
@@ -1395,7 +1423,10 @@ function loadTemplateFromLibrary() {
         document.getElementById('tpl-subject').value     = tpl.subject   || '';
         document.getElementById('tpl-message').value     = tpl.message   || '';
 
-        chrome.storage.local.set({ xpider_tpl: tpl });
+        // [F9] Write both legacy and v2 default to keep stores in sync
+        const v2Store = data.templates_v2 || { version: 2, templates: {}, defaultId: null, recentIds: [] };
+        if (tplId) v2Store.defaultId = tplId;
+        chrome.storage.local.set({ xpider_tpl: tpl, templates_v2: v2Store });
         addLog(`✅ Loaded template: ${tpl.fileName || tpl.subject || 'Template'}`, 'success');
     });
 }
@@ -1464,8 +1495,7 @@ function importMessageFromFile(event) {
             }
         }
         
-        // [v18.50.0] FIX: Do not call saveTemplateChanges here as it triggers 'Save As' again.
-        // Instead, just sync the current data for the campaign.
+        // [F9] Sync current form data to both legacy and v2 store
         const tpl = {
             firstName: document.getElementById('tpl-first-name').value,
             lastName: document.getElementById('tpl-last-name').value,
@@ -1475,7 +1505,13 @@ function importMessageFromFile(event) {
             subject: document.getElementById('tpl-subject').value,
             message: document.getElementById('tpl-message').value
         };
-        chrome.storage.local.set({ xpider_tpl: tpl });
+        chrome.storage.local.get(['templates_v2'], (v2Data) => {
+            const v2Store = v2Data.templates_v2 || { version: 2, templates: {}, defaultId: null, recentIds: [] };
+            const id = v2Store.defaultId || 'default';
+            v2Store.templates[id] = { ...tpl, id, updatedAt: new Date().toISOString() };
+            if (!v2Store.defaultId) v2Store.defaultId = id;
+            chrome.storage.local.set({ xpider_tpl: tpl, templates_v2: v2Store });
+        });
         
         event.target.value = ''; // Reset file input
     };
