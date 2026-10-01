@@ -1385,6 +1385,24 @@ const PROACTIVE_PATHS = (() => {
 async function scanContactPaths(baseUrl, tabId) {
     logBg(tabId, "Step 1: Sniper Mode active. Searching for contact page...", "info");
     const validPaths = [];
+
+    // [xpider_contact_discovery_cache_v1] Check learned successful path for this hostname first (Comment 49 Section 19)
+    try {
+        const u = new URL(baseUrl);
+        const host = u.hostname;
+        const cacheData = await new Promise(r => {
+            if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+                chrome.storage.local.get(['xpider_contact_discovery_cache_v1'], res => r(res && res.xpider_contact_discovery_cache_v1 ? res.xpider_contact_discovery_cache_v1 : {}));
+            } else {
+                r({});
+            }
+        });
+        if (cacheData[host] && cacheData[host].path) {
+            logBg(tabId, `🎯 [DiscoveryCache] Prioritizing known-good contact path: ${cacheData[host].path}`, 'info');
+            validPaths.push(cacheData[host].path);
+        }
+    } catch (_) {}
+
     const pool = PROACTIVE_PATHS.slice(0, 50); // Limit to top 50 for speed
 
     // Concurrent scanning in small batches to prevent blocking
@@ -1396,7 +1414,8 @@ async function scanContactPaths(baseUrl, tabId) {
             const controller = new AbortController();
             const timeout = setTimeout(() => controller.abort(), 2500); // 2.5s per probe
             try {
-                const url = baseUrl + path;
+                // [Regression Guard Section 21] Must use new URL
+                const url = new URL(path, baseUrl).href;
                 const response = await fetch(url, { 
                     method: 'GET',
                     signal: controller.signal,
@@ -1410,8 +1429,10 @@ async function scanContactPaths(baseUrl, tabId) {
             }
         }));
         
-        validPaths.push(...results.filter(p => p !== null));
-        if (validPaths.length >= 3) break; // Found enough candidates, move to execution
+        for (const p of results) {
+            if (p !== null && !validPaths.includes(p)) validPaths.push(p);
+        }
+        if (validPaths.length >= 5) break; // Found enough candidates, move to execution
     }
 
     logBg(tabId, `Pre-scan complete. Identified ${validPaths.length} valid paths.`, "success");
@@ -1773,7 +1794,7 @@ async function orchestrateSending(urlInput, template) {
                     return; 
                 }
                 
-                await safeScripting.executeScript({ target: { tabId }, files: ['modules/contact-gate.js', 'modules/smart-field-resolver.js', 'content-script.js'] });
+                await safeScripting.executeScript({ target: { tabId }, files: ['modules/contact-gate.js', 'modules/smart-field-resolver.js', 'modules/contact-discovery-engine.js', 'content-script.js'] });
                 safeScripting.executeScript({ target: { tabId }, files: ['solver-content.js'] }).catch(() => {});
                 startPolling();
             } catch (e) {
@@ -1808,9 +1829,14 @@ async function orchestrateSending(urlInput, template) {
         }
 
         const nextP = validPaths[pathIdx++];
-        const fullUrl = (typeof nextP === 'string' && nextP.startsWith('http'))
-            ? nextP
-            : (baseUrl + (nextP.startsWith('/') ? '' : '/') + nextP);
+        let fullUrl;
+        try {
+            fullUrl = new URL(nextP, baseUrl).href;
+        } catch (_) {
+            fullUrl = (typeof nextP === 'string' && nextP.startsWith('http'))
+                ? nextP
+                : (baseUrl + (nextP.startsWith('/') ? '' : '/') + nextP);
+        }
         const norm = normalizeUrl(fullUrl);
         if (campaignState.successfulUrls.includes(norm)) {
             logBg(tabId, `⏭️ [Engine] Path [${fullUrl}] already handled successfully. Skipping.`, "info");

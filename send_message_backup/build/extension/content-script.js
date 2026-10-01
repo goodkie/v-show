@@ -39,6 +39,10 @@
         (typeof window !== 'undefined' && window.SmartFieldResolver) || 
         (typeof require !== 'undefined' ? require('./modules/smart-field-resolver.js') : null);
 
+    const _ContactDiscoveryEngine = (typeof ContactDiscoveryEngine !== 'undefined' && ContactDiscoveryEngine) || 
+        (typeof window !== 'undefined' && window.ContactDiscoveryEngine) || 
+        (typeof require !== 'undefined' ? require('./modules/contact-discovery-engine.js') : null);
+
     // ============================================================
     // [HyperEngine v4.0] Top-level React/Vue/Angular Native Value & Checked Setters
     // ============================================================
@@ -3210,6 +3214,7 @@
         window.__xpiderSubmitStateMachine = executeSubmitStateMachine;
         window.__xpiderStartActiveEmptyFieldSweeper = startActiveEmptyFieldSweeper;
         window.__xpiderStopActiveEmptyFieldSweeper = stopActiveEmptyFieldSweeper;
+        window.__xpiderContactDiscoveryEngine = _ContactDiscoveryEngine;
     }
 
     if (typeof module !== 'undefined' && module.exports) {
@@ -3221,7 +3226,8 @@
             submitForm,
             fillAndSubmit,
             ContactGate: _ContactGate,
-            SmartFieldResolver: _SmartFieldResolver
+            SmartFieldResolver: _SmartFieldResolver,
+            ContactDiscoveryEngine: _ContactDiscoveryEngine
         };
     }
 })();
