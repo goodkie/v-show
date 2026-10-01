@@ -20238,23 +20238,13 @@ class GuidedCaptureController {
     this.offscreenCanvas = null;
     this.offscreenCtx = null;
 
-    this.sensorSource = null;
-    this.sensorSourceLocked = false;
-    this.sessionEpoch = 1;
-    this.lastAngle = null;
-    this.lastAlpha = null;
-    this.initialAlpha = null;
-    this.lastTimestamp = null;
-
-    this.sensorHandlerAbsolute = (e) => this.handleOrientation(e, 'deviceorientationabsolute');
-    this.sensorHandlerStandard = (e) => this.handleOrientation(e, 'deviceorientation');
-    this.sensorHandler = this.sensorHandlerStandard;
+    this.sensorHandler = this.handleOrientation.bind(this);
     this.motionHandler = this.handleMotion.bind(this);
   }
 
   async checkCapabilities() {
     this.capabilities.CAMERA_AVAILABLE = Boolean(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
-    this.capabilities.DEVICE_ORIENTATION_AVAILABLE = typeof window !== 'undefined' && (typeof window.DeviceOrientationEvent !== 'undefined' || 'ondeviceorientationabsolute' in window);
+    this.capabilities.DEVICE_ORIENTATION_AVAILABLE = typeof window !== 'undefined' && typeof window.DeviceOrientationEvent !== 'undefined';
     this.capabilities.GYROSCOPE_AVAILABLE = this.capabilities.DEVICE_ORIENTATION_AVAILABLE;
 
     if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
@@ -20333,8 +20323,6 @@ class GuidedCaptureController {
     // 3. Remove sensor listeners
     try {
       if (typeof window !== 'undefined') {
-        window.removeEventListener('deviceorientationabsolute', this.sensorHandlerAbsolute, true);
-        window.removeEventListener('deviceorientation', this.sensorHandlerStandard, true);
         window.removeEventListener('deviceorientation', this.sensorHandler, true);
         window.removeEventListener('devicemotion', this.motionHandler, true);
       }
@@ -20709,10 +20697,9 @@ class GuidedCaptureController {
     // 7. Attach sensors & start frame loop -> CAPTURING
     try {
       if (typeof window !== 'undefined') {
-        if ('ondeviceorientationabsolute' in window) {
-          window.addEventListener('deviceorientationabsolute', this.sensorHandlerAbsolute, true);
+        if (typeof DeviceOrientationEvent !== 'undefined') {
+          window.addEventListener('deviceorientation', this.sensorHandler, true);
         }
-        window.addEventListener('deviceorientation', this.sensorHandlerStandard, true);
         if (typeof DeviceMotionEvent !== 'undefined') {
           window.addEventListener('devicemotion', this.motionHandler, true);
         }
@@ -21690,55 +21677,18 @@ class GuidedCaptureController {
     }
   }
 
-  handleOrientation(e, sourceName = 'deviceorientation') {
+  handleOrientation(e) {
     const activeStates = ['CAPTURING', 'APPROACHING_CLOSURE', 'SEARCHING_FOR_START_OVERLAP', 'CLOSURE_CANDIDATE'];
     if (!activeStates.includes(this.state)) return;
-
-    // Validate sample values: must not be null/undefined/NaN/infinite
-    const rawAlpha = e.alpha;
-    const rawBeta = e.beta;
-    const rawGamma = e.gamma;
-    const webkitHeading = e.webkitCompassHeading;
-
-    const hasWebkitHeading = webkitHeading !== undefined && webkitHeading !== null && Number.isFinite(webkitHeading);
-    const hasAlpha = rawAlpha !== undefined && rawAlpha !== null && Number.isFinite(rawAlpha);
-
-    if (!hasAlpha && !hasWebkitHeading) {
-      // Ignore null / NaN / incomplete orientation samples
-      return;
-    }
-
-    // ── Sensor Source Locking & Dual-Event Conflict Resolution ──
-    if (!this.sensorSourceLocked) {
-      if (sourceName === 'deviceorientationabsolute') {
-        // Preferred absolute orientation event on Android Chrome
-        this.sensorSource = 'deviceorientationabsolute';
-        this.sensorSourceLocked = true;
-      } else if (sourceName === 'deviceorientation') {
-        // Fallback: only lock to standard deviceorientation if absolute is not firing or not available
-        if (!('ondeviceorientationabsolute' in window) || (Date.now() - (this.telemetry.startTime || 0) > 300)) {
-          this.sensorSource = 'deviceorientation';
-          this.sensorSourceLocked = true;
-        } else {
-          // Temporarily skip this standard event while waiting for absolute event
-          return;
-        }
-      }
-    } else {
-      // Once locked, strictly discard events from the other source to prevent coordinate frame mixing
-      if (sourceName !== this.sensorSource) {
-        return;
-      }
-    }
-
-    this.telemetry.sensorSource = this.sensorSource;
     this.telemetry.deviceOrientationEventCount++;
 
-    const beta = (rawBeta !== undefined && rawBeta !== null && Number.isFinite(rawBeta)) ? rawBeta : 0;
-    const gamma = (rawGamma !== undefined && rawGamma !== null && Number.isFinite(rawGamma)) ? rawGamma : 0;
+    const alpha = (e.alpha !== null && e.alpha !== undefined && Number.isFinite(e.alpha))
+      ? e.alpha
+      : ((e.webkitCompassHeading !== null && e.webkitCompassHeading !== undefined && Number.isFinite(e.webkitCompassHeading)) ? e.webkitCompassHeading : 0);
+    const beta = (e.beta !== null && e.beta !== undefined && Number.isFinite(e.beta)) ? e.beta : 0;
+    const gamma = (e.gamma !== null && e.gamma !== undefined && Number.isFinite(e.gamma)) ? e.gamma : 0;
     const now = Date.now();
 
-    // Check tilt envelope (phone should remain upright in portrait)
     const pitchDeviation = Math.abs(Math.abs(beta) - 90);
     const rollDeviation = Math.abs(gamma);
     if (pitchDeviation > 28 || rollDeviation > 25) {
@@ -21748,77 +21698,28 @@ class GuidedCaptureController {
       this.levelStatus = 'LEVEL';
     }
 
-    // Compute robust physical ground-plane yaw (quaternion/rotation-matrix horizontal projection)
-    // to completely avoid Euler angle gimbal-lock near beta = +/-90 degrees
-    let computedYaw;
-    if (hasWebkitHeading) {
-      // iOS webkitCompassHeading is clockwise [0, 360). Convert to counterclockwise angle matching alpha
-      computedYaw = (360 - webkitHeading) % 360;
-      if (computedYaw < 0) computedYaw += 360;
-    } else {
-      computedYaw = this.computeUprightGroundYaw(rawAlpha, beta, gamma);
-    }
-
-    if (!Number.isFinite(computedYaw)) return;
-
     if (this.lastAngle === null) {
-      this.lastAngle = computedYaw;
-      this.lastAlpha = rawAlpha;
-      this.initialAlpha = computedYaw;
+      this.lastAngle = alpha;
       this.lastTimestamp = now;
+      this.telemetry.rawAlpha = alpha;
+      this.telemetry.rawBeta = beta;
+      this.telemetry.rawGamma = gamma;
       this.notifyProgress();
       return;
     }
 
-    let delta = computedYaw - this.lastAngle;
+    let delta = alpha - this.lastAngle;
     if (delta > 180) delta -= 360;
     if (delta < -180) delta += 360;
 
-    // Deadband filter: ignore tiny sensor jitter (< 0.12 deg)
-    const absDelta = Math.abs(delta);
-    if (absDelta < 0.12) {
-      return;
-    }
-
-    // Reject sensor glitch spikes (> 45 deg in a single frame is physically impossible)
-    if (absDelta > 45.0) {
-      return;
-    }
-
-    // Telemetry instrumentation
-    this.telemetry.rawAlpha = rawAlpha;
+    // Telemetry instrumentation without altering or dropping samples
+    this.telemetry.rawAlpha = alpha;
     this.telemetry.rawBeta = beta;
     this.telemetry.rawGamma = gamma;
-    this.telemetry.computedYaw = Math.round(computedYaw * 10) / 10;
     this.telemetry.lastYawDelta = Math.round(delta * 100) / 100;
 
     this.applyMotionDelta(delta, now);
-    this.lastAngle = computedYaw;
-    this.lastAlpha = rawAlpha;
-  }
-
-  computeUprightGroundYaw(alphaDeg, betaDeg, gammaDeg) {
-    const degToRad = Math.PI / 180;
-    const a = alphaDeg * degToRad;
-    const b = betaDeg * degToRad;
-    const g = gammaDeg * degToRad;
-
-    const cA = Math.cos(a), sA = Math.sin(a);
-    const cB = Math.cos(b), sB = Math.sin(b);
-    const cG = Math.cos(g), sG = Math.sin(g);
-
-    // In W3C rotation matrix:
-    // Device Z axis in Earth frame (column 3 of R = Rz(alpha)*Rx(beta)*Ry(gamma)):
-    // Z_x = cA*sB*cG + sA*sG
-    // Z_y = sA*sB*cG - cA*sG
-    //
-    // Projected ground azimuth (heading):
-    const zX = cA * sB * cG + sA * sG;
-    const zY = sA * sB * cG - cA * sG;
-
-    let yawDeg = Math.atan2(zY, zX) * (180 / Math.PI);
-    if (yawDeg < 0) yawDeg += 360;
-    return yawDeg;
+    this.lastAngle = alpha;
   }
 
   handleMotion(e) {
@@ -22149,8 +22050,6 @@ class GuidedCaptureController {
     }
     if (typeof window !== 'undefined') {
       try {
-        window.removeEventListener('deviceorientationabsolute', this.sensorHandlerAbsolute, true);
-        window.removeEventListener('deviceorientation', this.sensorHandlerStandard, true);
         window.removeEventListener('deviceorientation', this.sensorHandler, true);
         window.removeEventListener('devicemotion', this.motionHandler, true);
       } catch (e) {}
