@@ -15,28 +15,58 @@
         /**
          * Create a new FormTemplateV2 record
          */
-        createTemplateData({ name, sender = {}, content = {}, customFields = {}, aiInstructions = '', isDefault = false }) {
+        createTemplateData(nameOrOpts = {}, maybeOpts = {}) {
+            let opts;
+            if (typeof nameOrOpts === 'string') {
+                opts = { name: nameOrOpts, ...maybeOpts };
+            } else {
+                opts = nameOrOpts || {};
+            }
             const now = Date.now();
+            const sender = opts.sender || {};
+            const content = opts.content || {};
+
+            const firstName = opts.firstName || sender.firstName || '';
+            const lastName = opts.lastName || sender.lastName || '';
+            const fullName = opts.fullName || sender.fullName || (firstName && lastName ? `${firstName} ${lastName}`.trim() : (firstName || lastName || ''));
+            const email = opts.email || sender.email || '';
+            const phone = opts.phone || sender.phone || '';
+            const company = opts.company || sender.company || '';
+            const website = opts.website || sender.website || '';
+            const subject = opts.subject || content.subject || '';
+            const message = opts.message || content.message || '';
+
             return {
-                id: `tpl_${now}_${Math.random().toString(36).substring(2, 7)}`,
-                name: (name || 'Untitled Template').trim(),
+                id: opts.id || `tpl_${now}_${Math.random().toString(36).substring(2, 7)}`,
+                name: (opts.name || 'Untitled Template').trim(),
                 version: 1,
+                // [F9 Unified Schema] Canonical flat accessors (for direct popup UI binding)
+                firstName,
+                lastName,
+                fullName,
+                email,
+                phone,
+                company,
+                website,
+                subject,
+                message,
+                // [F9 Unified Schema] Canonical nested objects (for FormTemplateV2 model compliance)
                 sender: {
-                    fullName: sender.fullName || '',
-                    firstName: sender.firstName || '',
-                    lastName: sender.lastName || '',
-                    company: sender.company || '',
-                    email: sender.email || '',
-                    phone: sender.phone || '',
-                    website: sender.website || ''
+                    fullName,
+                    firstName,
+                    lastName,
+                    company,
+                    email,
+                    phone,
+                    website
                 },
                 content: {
-                    subject: content.subject || '',
-                    message: content.message || ''
+                    subject,
+                    message
                 },
-                customFields: customFields || {},
-                aiInstructions: aiInstructions || '',
-                isDefault: !!isDefault,
+                customFields: opts.customFields || {},
+                aiInstructions: opts.aiInstructions || '',
+                isDefault: !!opts.isDefault,
                 createdAt: now,
                 updatedAt: now
             };

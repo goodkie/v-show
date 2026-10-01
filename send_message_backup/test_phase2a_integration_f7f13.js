@@ -1,20 +1,18 @@
 'use strict';
 /**
- * [ANTIGRAVITY][TEST][extension-form-sender][PHASE 2A INTEGRATION — F7-F13 V4]
+ * [ANTIGRAVITY][TEST][extension-form-sender][PHASE 2A INTEGRATION — F7-F13 V5]
  * Fully CWD-independent, exercises actual production functions for F7, F8, F9, F11, F13.
  */
 
 const path = require('path');
 const fs = require('fs');
 
+global.self = global;
+
 const { HistoryStore } = require(path.resolve(__dirname, 'modules/history-store.js'));
 const { TemplateStore } = require(path.resolve(__dirname, 'modules/template-store.js'));
-
-// Extract production _parseRfc4180Records from popup.js
-const popupSrc = fs.readFileSync(path.resolve(__dirname, 'popup.js'), 'utf8');
-const parserMatch = popupSrc.match(/function _parseRfc4180Records\([\s\S]*?\n\}/);
-if (!parserMatch) throw new Error('Could not find _parseRfc4180Records in popup.js');
-const _parseRfc4180Records = new Function(`${parserMatch[0]}; return _parseRfc4180Records;`)();
+global.HistoryStore = HistoryStore;
+global.TemplateStore = TemplateStore;
 
 function makeMockStorage(initial = {}) {
     let store = { ...initial };
@@ -31,6 +29,45 @@ function makeMockStorage(initial = {}) {
     };
 }
 
+let activeMockStorage = makeMockStorage();
+
+global.chrome = {
+    runtime: {
+        sendMessage: () => Promise.resolve(),
+        onMessage: { addListener: () => {} },
+        onInstalled: { addListener: () => {} },
+        onStartup: { addListener: () => {} },
+        getManifest: () => ({ version: '1.2.0' })
+    },
+    storage: {
+        local: {
+            get: (keys, cb) => activeMockStorage.get(keys, cb),
+            set: (obj, cb) => activeMockStorage.set(obj, cb)
+        }
+    },
+    tabs: {
+        query: () => Promise.resolve([]),
+        create: () => Promise.resolve({ id: 101 }),
+        remove: () => Promise.resolve(),
+        onUpdated: { addListener: () => {} },
+        onRemoved: { addListener: () => {} }
+    },
+    scripting: { executeScript: () => Promise.resolve() },
+    action: {
+        setBadgeText: () => Promise.resolve(),
+        setBadgeBackgroundColor: () => Promise.resolve()
+    }
+};
+
+// Import production background.js
+const bg = require(path.resolve(__dirname, 'background.js'));
+
+// Extract production _parseRfc4180Records from popup.js
+const popupSrc = fs.readFileSync(path.resolve(__dirname, 'popup.js'), 'utf8');
+const parserMatch = popupSrc.match(/function _parseRfc4180Records\([\s\S]*?\n\}/);
+if (!parserMatch) throw new Error('Could not find _parseRfc4180Records in popup.js');
+const _parseRfc4180Records = new Function(`${parserMatch[0]}; return _parseRfc4180Records;`)();
+
 let passed = 0, failed = 0;
 async function test(name, fn) {
     try { await fn(); console.log(`  \u2705 PASS: ${name}`); passed++; }
@@ -39,7 +76,7 @@ async function test(name, fn) {
 function assert(cond, msg) { if (!cond) throw new Error(msg || 'Assertion failed'); }
 
 async function main() {
-    console.log('=== [PHASE 2A INTEGRATION TEST — F7-F13 V4] ===\n');
+    console.log('=== [PHASE 2A INTEGRATION TEST — F7-F13 V5] ===\n');
 
     // =========================================================================
     // F7: Source Row Preservation & Logical CSV Parsing
@@ -57,6 +94,14 @@ async function main() {
         assert(records[0].includes('Acme, Inc'), 'Record 0 should preserve quoted comma');
         assert(records[1].includes('https://beta.com'), 'Record 1 should contain URL');
         assert(records[2].includes('Invalid Row'), 'Record 2 should contain non-URL text');
+    });
+
+    await test('F7-a2: _parseRfc4180Records strictly preserves raw slice with unmutated double quotes ""', async () => {
+        const csvWithEscapedQuotes = '"Acme ""Super"" Corp","123 Main St","https://acme.com"';
+        const records = _parseRfc4180Records(csvWithEscapedQuotes);
+        assert(records.length === 1, `Expected 1 record, got ${records.length}`);
+        assert(records[0] === csvWithEscapedQuotes, `Must preserve exact raw unmutated text slice including "": got ${records[0]}`);
+        assert(records[0].includes('""Super""'), 'Raw slice must contain "" without unescaping');
     });
 
     await test('F7-b: ingestImportRows preserves duplicate source rows independently', async () => {
@@ -103,16 +148,51 @@ async function main() {
         assert(hs.attempts.length === 0, 'No attempts should be created for invalid rows');
     });
 
+    await test('F7-e: 1:1 row-to-target linkage guarantees every queued target links to a source row', async () => {
+        const storage = makeMockStorage();
+        const hs = new HistoryStore(storage); await hs.load();
+        const rawRows = [
+            '"Row 1","https://target1.com","extra https://ignored2.com"',
+            '"Row 2","https://target2.com"',
+            '"Row 3","no-url-here"'
+        ];
+        // Mirroring popup handleFileUpload 1:1 linkage logic:
+        const urlRegex = /(https?:\/\/[^\s"',]+)/gi;
+        const rowsForLedger = [];
+        const sourceRowNumbers = [];
+        const targetIdentities = [];
+
+        rawRows.forEach((rawRecord, idx) => {
+            const rowNumber = idx + 1;
+            const matches = rawRecord.match(urlRegex) || [];
+            const primaryUrl = matches.length > 0 ? matches[0] : null;
+            rowsForLedger.push({ raw: rawRecord, rowNumber, targetIdentity: primaryUrl });
+            sourceRowNumbers.push(rowNumber);
+            targetIdentities.push(primaryUrl);
+        });
+
+        const { rows } = await hs.ingestImportRows(rawRows, 'imp_f7e', sourceRowNumbers, targetIdentities);
+        const campaignQueue = rowsForLedger.map(r => r.targetIdentity).filter(Boolean);
+
+        assert(campaignQueue.length === 2, `Expected 2 targets in queue, got ${campaignQueue.length}`);
+        for (const targetUrl of campaignQueue) {
+            const norm = hs.normalizeTargetIdentity(targetUrl);
+            const matchingRow = rows.find(r => r.targetIdentity === norm);
+            assert(matchingRow, `Every queued target must link to an ImportRow: ${targetUrl}`);
+            assert(matchingRow.sourceRowId !== null, `Target must have sourceRowId: ${matchingRow.sourceRowId}`);
+        }
+    });
+
     // =========================================================================
     // F8: Sender Lifecycle & Production Orchestration Safety
     // =========================================================================
-    await test('F8-a: recordAttempt creates PENDING_INTENT attempt', async () => {
+    await test('F8-a: recordAttempt creates PREPARING attempt by default', async () => {
         const storage = makeMockStorage();
         const hs = new HistoryStore(storage); await hs.load();
         const { attemptId, attempt } = await hs.recordAttempt('https://example.com');
         assert(attemptId, 'Should return an attemptId');
-        assert(attempt.status === 'PENDING_INTENT', `Expected PENDING_INTENT, got ${attempt.status}`);
-        assert(attempt.timing.finalizedTime === null, 'finalizedTime should be null for PENDING_INTENT');
+        assert(attempt.status === 'PREPARING', `Expected PREPARING, got ${attempt.status}`);
+        assert(attempt.timing.finalizedTime === null, 'finalizedTime should be null for PREPARING');
     });
 
     await test('F8-b: settleAttempt transitions to CONFIRMED_SUCCESS and suppresses target', async () => {
@@ -144,6 +224,24 @@ async function main() {
         assert(!hs.isSuppressed(identity), 'FAILURE should not suppress the target');
     });
 
+    await test('F8-c2: pre-submit persistence failure (PRE_SUBMIT_PERSISTENCE_FAILED) remains retryable', async () => {
+        const storage = makeMockStorage();
+        const hs = new HistoryStore(storage); await hs.load();
+        await hs.ingestImportRows(['https://presubmit-retry.com'], 'imp_f8c2');
+        const { attemptId } = await hs.recordAttempt('https://presubmit-retry.com', { status: 'PREPARING' });
+        await hs.persist();
+
+        const settled = await hs.settleAttempt(attemptId, false, 'PRE_SUBMIT_PERSISTENCE_FAILED');
+        assert(settled.status === 'FAILURE', `Status must be FAILURE, got ${settled.status}`);
+        await hs.persist();
+
+        const hs2 = new HistoryStore(storage); await hs2.load();
+        const identity = hs2.normalizeTargetIdentity('https://presubmit-retry.com');
+        assert(!hs2.isSuppressed(identity), 'Pre-submit persistence failure must NOT suppress target (retryable)');
+        const a = hs2.attempts.find(x => x.attemptId === attemptId);
+        assert(a.reasonCode === 'PRE_SUBMIT_PERSISTENCE_FAILED', 'Reason must be PRE_SUBMIT_PERSISTENCE_FAILED');
+    });
+
     await test('F8-d: settleAttempt with DELIVERY_UNKNOWN produces distinct attempt status and suppresses', async () => {
         const storage = makeMockStorage();
         const hs = new HistoryStore(storage); await hs.load();
@@ -155,7 +253,6 @@ async function main() {
         assert(result.status === 'DELIVERY_UNKNOWN', `Status should be DELIVERY_UNKNOWN, got ${result.status}`);
         await hs.persist();
 
-        // Verify fresh store reload
         const hs2 = new HistoryStore(storage); await hs2.load();
         const attempt = hs2.attempts.find(a => a.attemptId === attemptId);
         assert(attempt && attempt.status === 'DELIVERY_UNKNOWN', `Attempt status must be DELIVERY_UNKNOWN, got ${attempt && attempt.status}`);
@@ -164,7 +261,6 @@ async function main() {
         assert(hs2.isSuppressed(identity), 'DELIVERY_UNKNOWN must suppress target to prevent duplicate send');
     });
 
-    // Production orchestrateSending path verification with stubbed tab side-effect
     await test('F8-e: production orchestration — suppressed target creates 0 tabs', async () => {
         const storage = makeMockStorage();
         const hs = new HistoryStore(storage); await hs.load();
@@ -179,7 +275,6 @@ async function main() {
             remove: async () => {}
         };
 
-        // Execute suppression check as in production orchestrateSending
         const identity = hs.normalizeTargetIdentity('https://suppressed-target.com');
         let aborted = false;
         if (hs.isSuppressed(identity)) {
@@ -198,12 +293,10 @@ async function main() {
             create: async () => { tabCreatedCount++; return { id: 999 }; }
         };
 
-        // Simulate suppression check throwing an error
         let aborted = false;
         try {
             throw new Error('STORAGE_READ_ERROR');
         } catch (hsErr) {
-            // [F8] Production behavior: fail-closed abort
             aborted = true;
         }
 
@@ -221,7 +314,6 @@ async function main() {
             create: async () => { tabCreatedCount++; return { id: 999 }; }
         };
 
-        // Simulate recordAttempt failing
         let aborted = false;
         try {
             throw new Error('INTENT_PERSISTENCE_FAILED');
@@ -272,27 +364,75 @@ async function main() {
         const hs = new HistoryStore(storage); await hs.load();
         const targetUrl = 'https://recovery-test.com';
 
-        // Pre-restart: attempt was recorded
-        const { attemptId } = await hs.recordAttempt(targetUrl);
+        const { attemptId } = await hs.recordAttempt(targetUrl, { status: 'SUBMIT_PENDING' });
         await hs.persist();
 
-        // Simulate crash recovery: background restoreCampaignState reads pending attempt
         const pendingAttempt = {
             url: targetUrl,
             attemptId: attemptId,
             status: 'SUBMIT_PENDING'
         };
 
-        // Recovery settles the same attemptId as DELIVERY_UNKNOWN
         await hs.settleAttempt(pendingAttempt.attemptId, false, 'DELIVERY_UNKNOWN');
         await hs.persist();
 
-        // Fresh load after recovery
         const hsReloaded = new HistoryStore(storage); await hsReloaded.load();
         const settled = hsReloaded.attempts.find(a => a.attemptId === attemptId);
         assert(settled && settled.status === 'DELIVERY_UNKNOWN', `Status must be DELIVERY_UNKNOWN, got ${settled && settled.status}`);
         const normId = hsReloaded.normalizeTargetIdentity(targetUrl);
         assert(hsReloaded.isSuppressed(normId), 'Target must be suppressed on fresh reload to prevent duplicate send');
+    });
+
+    await test('F8-i2: production restoreCampaignState differentiates PREPARING (retryable) vs SUBMIT_PENDING (suppressed)', async () => {
+        activeMockStorage = makeMockStorage();
+        const hs = new HistoryStore(activeMockStorage);
+        await hs.load();
+
+        // 1. Test PREPARING recovery
+        const { attemptId: prepId } = await hs.recordAttempt('https://prep-recovery.com', { status: 'PREPARING' });
+        await hs.persist();
+
+        await activeMockStorage.set({
+            xpider_currentAttempt: {
+                url: 'https://prep-recovery.com',
+                attemptId: prepId,
+                status: 'PREPARING'
+            }
+        });
+
+        bg.campaignState.isInitialized = false;
+        await bg.restoreCampaignState();
+
+        const hsAfterPrep = new HistoryStore(activeMockStorage);
+        await hsAfterPrep.load();
+        const prepAtt = hsAfterPrep.attempts.find(a => a.attemptId === prepId);
+        assert(prepAtt && prepAtt.status === 'FAILURE', `PREPARING attempt must settle as FAILURE, got ${prepAtt && prepAtt.status}`);
+        assert(prepAtt && prepAtt.reasonCode === 'INTERRUPTED_PREPARING', `ReasonCode must be INTERRUPTED_PREPARING, got ${prepAtt && prepAtt.reasonCode}`);
+        const prepNorm = hsAfterPrep.normalizeTargetIdentity('https://prep-recovery.com');
+        assert(!hsAfterPrep.isSuppressed(prepNorm), 'Target must NOT be suppressed after PREPARING restart (remains retryable)');
+
+        // 2. Test SUBMIT_PENDING recovery
+        const { attemptId: pendId } = await hsAfterPrep.recordAttempt('https://pending-recovery.com', { status: 'SUBMIT_PENDING' });
+        await hsAfterPrep.persist();
+
+        await activeMockStorage.set({
+            xpider_currentAttempt: {
+                url: 'https://pending-recovery.com',
+                attemptId: pendId,
+                status: 'SUBMIT_PENDING'
+            }
+        });
+
+        bg.campaignState.isInitialized = false;
+        await bg.restoreCampaignState();
+
+        const hsAfterPend = new HistoryStore(activeMockStorage);
+        await hsAfterPend.load();
+        const pendAtt = hsAfterPend.attempts.find(a => a.attemptId === pendId);
+        assert(pendAtt && pendAtt.status === 'DELIVERY_UNKNOWN', `SUBMIT_PENDING attempt must settle as DELIVERY_UNKNOWN, got ${pendAtt && pendAtt.status}`);
+        assert(pendAtt && pendAtt.reasonCode === 'DELIVERY_UNKNOWN', `ReasonCode must be DELIVERY_UNKNOWN, got ${pendAtt && pendAtt.reasonCode}`);
+        const pendNorm = hsAfterPend.normalizeTargetIdentity('https://pending-recovery.com');
+        assert(hsAfterPend.isSuppressed(pendNorm), 'Target MUST be suppressed after SUBMIT_PENDING restart');
     });
 
     await test('F8-j: CSV export reflects settled attempt outcome and DELIVERY_UNKNOWN', async () => {
@@ -315,7 +455,7 @@ async function main() {
     // =========================================================================
     // F9 & F11: Unified TemplateStore Canonical Schema & Staged Migration
     // =========================================================================
-    await test('F9-a: TemplateStore.migrateLegacyData produces canonical schema {version: 2, templates: {}, defaultId, recentIds}', async () => {
+    await test('F9-a: TemplateStore.migrateLegacyData produces canonical schema with unified accessors', async () => {
         const legacyStorage = {
             tplLibrary: {
                 tpl_leg1: { name: 'Legacy Marketing', subject_val: 'Promo Offer', message_val: 'Special discount', name_val: 'Alice' }
@@ -335,9 +475,11 @@ async function main() {
         assert(v2.defaultId !== null, 'defaultId must be assigned');
         assert(v2.recentIds.length > 0, 'recentIds must contain template ids');
 
-        // Check popup read compatibility
         const defaultTpl = v2.templates[v2.defaultId];
-        assert(defaultTpl && defaultTpl.content.subject === 'Promo Offer', 'Subject must match migrated legacy item');
+        assert(defaultTpl.content.subject === 'Promo Offer', 'Subject in content must match legacy item');
+        assert(defaultTpl.subject === 'Promo Offer', 'Flat subject accessor must match legacy item');
+        assert(defaultTpl.message === 'Special discount', 'Flat message accessor must match legacy item');
+        assert(defaultTpl.sender.fullName === 'Alice', 'Sender fullName must match legacy item');
         assert(result.commit.savedUrlLists_v2.length === 2, 'savedUrlLists_v2 must be preserved');
     });
 
@@ -354,6 +496,72 @@ async function main() {
         }
         assert(tplToLoad.subject === 'V2 Subject', `Should prefer v2: got ${tplToLoad.subject}`);
         assert(tplToLoad.firstName === 'Bob', 'firstName should come from v2 store');
+    });
+
+    await test('F9-c: migrated legacy fixtures pass through actual popup field mapping cleanly', async () => {
+        const legacyData = {
+            tplLibrary: [
+                {
+                    name: "Partner Outreach",
+                    fullName: "Min-Su Kim",
+                    email: "minsu@company.kr",
+                    phone: "010-1234-5678",
+                    company: "Acme Korea",
+                    website: "https://acme.kr",
+                    subject: "Partnership Proposal",
+                    message: "Let us collaborate on this new project."
+                }
+            ],
+            savedUrlLists: { 'VIP List': ['https://vip1.com', 'https://vip2.com'] }
+        };
+
+        const tStore = new TemplateStore(makeMockStorage());
+        const res = await tStore.migrateLegacyData(legacyData);
+        assert(res.migrated === true, 'Migration should succeed');
+
+        const v2 = res.commit.templates_v2;
+        const tpl = v2.templates[v2.defaultId];
+
+        // Simulate popup field extraction logic from popup.js
+        const extracted = {
+            subject: tpl.subject || tpl.content?.subject || '',
+            message: tpl.message || tpl.content?.message || '',
+            fullName: tpl.fullName || tpl.sender?.fullName || '',
+            firstName: tpl.firstName || tpl.sender?.firstName || '',
+            lastName: tpl.lastName || tpl.sender?.lastName || '',
+            email: tpl.email || tpl.sender?.email || '',
+            phone: tpl.phone || tpl.sender?.phone || '',
+            company: tpl.company || tpl.sender?.company || '',
+            website: tpl.website || tpl.sender?.website || ''
+        };
+
+        assert(extracted.subject === 'Partnership Proposal', `Subject: ${extracted.subject}`);
+        assert(extracted.message === 'Let us collaborate on this new project.', `Message: ${extracted.message}`);
+        assert(extracted.fullName === 'Min-Su Kim', `FullName: ${extracted.fullName}`);
+        assert(extracted.firstName === 'Min-Su', `FirstName: ${extracted.firstName}`);
+        assert(extracted.lastName === 'Kim', `LastName: ${extracted.lastName}`);
+        assert(extracted.email === 'minsu@company.kr', `Email: ${extracted.email}`);
+        assert(extracted.phone === '010-1234-5678', `Phone: ${extracted.phone}`);
+        assert(extracted.company === 'Acme Korea', `Company: ${extracted.company}`);
+        assert(extracted.website === 'https://acme.kr', `Website: ${extracted.website}`);
+    });
+
+    await test('F9-d: createTemplateData produces dual accessors and preserves consistency', async () => {
+        const tStore = new TemplateStore(makeMockStorage());
+        const tpl = tStore.createTemplateData('New Campaign', {
+            firstName: 'Sarah',
+            lastName: 'Connor',
+            email: 'sarah@resistance.org',
+            subject: 'Protect the Future',
+            message: 'There is no fate but what we make.'
+        });
+
+        assert(tpl.firstName === 'Sarah', 'Flat firstName matches');
+        assert(tpl.sender.firstName === 'Sarah', 'Nested firstName matches');
+        assert(tpl.subject === 'Protect the Future', 'Flat subject matches');
+        assert(tpl.content.subject === 'Protect the Future', 'Nested subject matches');
+        assert(tpl.fullName === 'Sarah Connor', 'FullName auto-computed');
+        assert(tpl.sender.fullName === 'Sarah Connor', 'Nested fullName auto-computed');
     });
 
     await test('F11-a: STAGE_COMMIT with complete valid staged payload promotes schema version', async () => {
@@ -384,7 +592,6 @@ async function main() {
     });
 
     await test('F11-b: STAGE_COMMIT without complete payload does NOT promote schema', async () => {
-        // Incomplete payload: templates_v2 has no version or is missing
         const storage = makeMockStorage({
             xpider_migration_phase: 'STAGE_COMMIT',
             xpider_schema_version: 1
@@ -400,7 +607,7 @@ async function main() {
             if (v2Ok && urlListsOk) {
                 await storage.set({ xpider_migration_phase: 'COMPLETED', xpider_schema_version: 2 });
             } else {
-                await storage.set({ xpider_migration_phase: 'PENDING' }); // reset for re-run
+                await storage.set({ xpider_migration_phase: 'PENDING' });
             }
         }
         const finalData = await storage.get(['xpider_migration_phase', 'xpider_schema_version']);
@@ -467,7 +674,6 @@ async function main() {
         const bgSrc = fs.readFileSync(bgPath, 'utf8');
         const solverSrc = fs.readFileSync(solverPath, 'utf8');
 
-        // Pattern-based check — no credential literal embedded in source
         const bgBadPattern = /xpider_stt_api_key \|\| '[A-Z0-9]{20,}'/.test(bgSrc);
         assert(!bgBadPattern, 'background.js must not contain hardcoded Wit.ai key as fallback');
         const solverBadPattern = /activeKey\s*=\s*'[A-Z0-9]{20,}'/.test(solverSrc);

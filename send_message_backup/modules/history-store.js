@@ -218,8 +218,8 @@
                     sessionId: opts.sessionId || null,
                     templateId: opts.templateId || null,
                     templateVersion: opts.templateVersion || 1,
-                    status: opts.outcome ? (opts.outcome === 'SUCCESS' ? 'CONFIRMED_SUCCESS' : 'FAILURE') : 'PENDING_INTENT',
-                    reasonCode: opts.reason || 'PENDING'
+                    status: opts.status || (opts.outcome ? (opts.outcome === 'SUCCESS' ? 'CONFIRMED_SUCCESS' : 'FAILURE') : 'PREPARING'),
+                    reasonCode: opts.reason || opts.reasonCode || 'PREPARING'
                 };
             } else {
                 descriptor = targetOrDesc;

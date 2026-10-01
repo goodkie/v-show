@@ -1071,24 +1071,24 @@ async function orchestrateSending(urlInput, template) {
         return { success: false, reasonCode: 'SUPPRESSION_CHECK_FAILED', error: hsErr.message };
     }
 
-    // [F8] Step 2: Persist durable PENDING_INTENT record BEFORE opening tab.
+    // [F8] Step 2: Persist durable PREPARING record BEFORE opening tab.
     // If persistence fails, ABORT — do not open tab (prevents untracked side effects).
     let _attemptId = null;
     try {
         const hs = await _getHistoryStore();
-        const attemptResult = await hs.recordAttempt(targetUrl);
+        const attemptResult = await hs.recordAttempt(targetUrl, { status: 'PREPARING', reason: 'PREPARING' });
         _attemptId = attemptResult && attemptResult.attemptId ? attemptResult.attemptId : null;
         if (!_attemptId) throw new Error('recordAttempt returned no attemptId');
         await hs.persist();
-        // [F8] Canonical attemptId — unified across HistoryStore and campaignState.currentAttempt
+        // [F8-A] Canonical attemptId — begins in PREPARING (not SUBMIT_PENDING until submit is imminent)
         campaignState.currentAttempt = {
             url: targetUrl,
             attemptId: _attemptId,     // [F8] canonical HistoryStore id
-            status: 'SUBMIT_PENDING',
-            reasonCode: null,
+            status: 'PREPARING',
+            reasonCode: 'PREPARING',
             timestamp: Date.now()
         };
-        // Persist to chrome.storage.local immediately so SW crash recovery has the exact canonical attemptId
+        // Persist to chrome.storage.local immediately
         if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
             await new Promise((resolve, reject) => {
                 chrome.storage.local.set({ xpider_currentAttempt: campaignState.currentAttempt }, () => {
@@ -1099,7 +1099,7 @@ async function orchestrateSending(urlInput, template) {
         }
     } catch (hsErr) {
         logBg(null, `❌ [F8-Intent] recordAttempt failed: ${hsErr.message} — aborting to prevent untracked send.`, 'error');
-        return { success: false, reasonCode: REASON_CODES.DELIVERY_UNKNOWN, error: 'INTENT_PERSISTENCE_FAILED' };
+        return { success: false, reasonCode: 'INTENT_PERSISTENCE_FAILED', error: 'INTENT_PERSISTENCE_FAILED' };
     }
 
     const tab = await safeTabs.create({ url: 'about:blank', active: false });
@@ -1212,11 +1212,24 @@ async function orchestrateSending(urlInput, template) {
         safeTabs.onUpdated.removeListener(navWatcher);
 
         const isSuccess = !!(res && res.success);
-        // [F8] Preserve DELIVERY_UNKNOWN distinctly — not all non-success is FAILURE
-        const isDeliveryUnknown = !isSuccess && (!res || (!res.error && !res.reasonCode) || res.reasonCode === REASON_CODES.DELIVERY_UNKNOWN);
+        // [F8] Pre-submit persistence failures must remain retryable (not DELIVERY_UNKNOWN)
+        const isPreSubmitFailure = !isSuccess && (
+            res?.reasonCode === 'PRE_SUBMIT_PERSISTENCE_FAILED' ||
+            res?.reasonCode === 'INTENT_PERSISTENCE_FAILED' ||
+            res?.error === 'PRE_SUBMIT_PERSISTENCE_FAILED' ||
+            res?.error === 'INTENT_PERSISTENCE_FAILED'
+        );
+        // [F8] DELIVERY_UNKNOWN is strictly reserved for true in-flight submission ambiguities
+        const isDeliveryUnknown = !isSuccess && !isPreSubmitFailure && (
+            (!res || (!res.error && !res.reasonCode)) ||
+            res.reasonCode === REASON_CODES.DELIVERY_UNKNOWN
+        );
+
         let finalReason;
         if (isSuccess) {
             finalReason = REASON_CODES.SUCCESS_CONFIRMED;
+        } else if (isPreSubmitFailure) {
+            finalReason = 'PRE_SUBMIT_PERSISTENCE_FAILED';
         } else if (isDeliveryUnknown) {
             finalReason = REASON_CODES.DELIVERY_UNKNOWN;
         } else {
@@ -1261,13 +1274,14 @@ async function orchestrateSending(urlInput, template) {
         isFocusSecured = true;
         lastFocusedUrl = normalized;
         
-        // [v1.2.0 & F2 & F8] Await durable intent persistence BEFORE triggering submission side-effects
+        // [v1.2.0 & F2 & F8] Transition to SUBMIT_PENDING immediately BEFORE triggering submission side-effects
         // Reuses the single canonical _attemptId from HistoryStore (never generates a second ID)
         try {
             await recordSubmissionIntent(targetUrl, 'SUBMIT_PENDING', _attemptId);
         } catch (intentErr) {
             logBg(tabId, `❌ [IntentGuard] Failed to persist submission intent: ${intentErr.message}. Aborting submission.`, "error");
-            finish({ success: false, error: "INTENT_PERSISTENCE_FAILED", reasonCode: REASON_CODES.DELIVERY_UNKNOWN });
+            // [F8-B] Pre-submit persistence failure MUST remain retryable, NOT DELIVERY_UNKNOWN!
+            finish({ success: false, error: "PRE_SUBMIT_PERSISTENCE_FAILED", reasonCode: "PRE_SUBMIT_PERSISTENCE_FAILED" });
             return;
         }
         
@@ -1495,57 +1509,82 @@ async function restoreCampaignState() {
             chrome.storage.local.get([
                 'xpider_isActive', 'xpider_queue', 'xpider_tpl', 'xpider_delayMs', 'xpider_fillDelayMs', 'xpider_submitDelayMs',
                 'xpider_sessionId', 'xpider_success', 'xpider_total', 'xpider_visited', 'xpider_successful', 'xpider_currentAttempt'
-            ], (data) => {
+            ], async (data) => {
                 try {
                     // [v1.2.0 Delivery Protection on SW Restart]
-                    // If an attempt was pending submission when SW crashed/restarted, DO NOT blinds-resend!
                     let visited = Array.isArray(data.xpider_visited) ? [...data.xpider_visited] : [];
-                    if (data.xpider_currentAttempt && data.xpider_currentAttempt.status === 'SUBMIT_PENDING') {
+                    if (data.xpider_currentAttempt) {
                         const interruptedUrl = data.xpider_currentAttempt.url;
                         const interruptedAttemptId = data.xpider_currentAttempt.attemptId;
-                        const normInterrupted = normalizeUrl(interruptedUrl || '');
-                        console.warn(`[Protection] Service worker restarted with pending submission for: ${interruptedUrl} (Attempt: ${interruptedAttemptId}). Flagging as DELIVERY_UNKNOWN.`);
-                        
-                        if (normInterrupted && !visited.includes(normInterrupted)) {
-                            visited.push(normInterrupted);
-                        }
-                        
-                        const settledAttempt = {
-                            ...data.xpider_currentAttempt,
-                            status: 'RESOLVED',
-                            reasonCode: REASON_CODES.DELIVERY_UNKNOWN,
-                            interruptedAt: Date.now()
-                        };
-                        chrome.storage.local.set({ 
-                            xpider_currentAttempt: settledAttempt,
-                            xpider_visited: visited 
-                        });
 
-                        // [F8 CRITICAL] Settle the SAME HistoryStore canonical attempt and persist suppression!
-                        (async () => {
+                        if (data.xpider_currentAttempt.status === 'SUBMIT_PENDING') {
+                            // [F8] True submit-pending interruption: form submission may have crossed boundary -> DELIVERY_UNKNOWN (suppress)
+                            const normInterrupted = normalizeUrl(interruptedUrl || '');
+                            console.warn(`[Protection] Service worker restarted with pending submission for: ${interruptedUrl} (Attempt: ${interruptedAttemptId}). Flagging as DELIVERY_UNKNOWN.`);
+                            
+                            if (normInterrupted && !visited.includes(normInterrupted)) {
+                                visited.push(normInterrupted);
+                            }
+                            
+                            const settledAttempt = {
+                                ...data.xpider_currentAttempt,
+                                status: 'RESOLVED',
+                                reasonCode: REASON_CODES.DELIVERY_UNKNOWN,
+                                interruptedAt: Date.now()
+                            };
+                            chrome.storage.local.set({ 
+                                xpider_currentAttempt: settledAttempt,
+                                xpider_visited: visited 
+                            });
+
                             try {
                                 if (!self.__xpiderHistoryStore) {
                                     self.__xpiderHistoryStore = new self.HistoryStore(chrome.storage.local);
-                                    await self.__xpiderHistoryStore.load();
                                 }
+                                await self.__xpiderHistoryStore.load();
                                 const hs = self.__xpiderHistoryStore;
                                 if (interruptedAttemptId) {
                                     await hs.settleAttempt(interruptedAttemptId, false, REASON_CODES.DELIVERY_UNKNOWN);
-                                } else if (interruptedUrl) {
-                                    const normId = hs.normalizeTargetIdentity(interruptedUrl);
-                                    const pending = hs.attempts.find(a => a.targetIdentity === normId && a.status === 'PENDING_INTENT');
-                                    if (pending) {
-                                        await hs.settleAttempt(pending.attemptId, false, REASON_CODES.DELIVERY_UNKNOWN);
-                                    }
                                 }
                                 await hs.persist();
                                 logBg(null, `🛡️ [F8-Recovery] Settled HistoryStore attempt ${interruptedAttemptId} as DELIVERY_UNKNOWN (suppression active).`, "warning");
                             } catch (hsRecErr) {
                                 console.error('[F8-Recovery] Failed to settle HistoryStore on SW restart:', hsRecErr);
                             }
-                        })();
-                        
-                        logBg(null, `⚠️ [Protection] Unresolved submission for ${interruptedUrl} recovered as DELIVERY_UNKNOWN to avoid duplicate send.`, "warning");
+
+                            logBg(null, `⚠️ [Protection] Unresolved submission for ${interruptedUrl} recovered as DELIVERY_UNKNOWN to avoid duplicate send.`, "warning");
+
+                        } else if (data.xpider_currentAttempt.status === 'PREPARING') {
+                            // [F8-A] Restart occurred during preparation / navigation BEFORE any submit attempt!
+                            // Target was NEVER submitted -> DO NOT suppress! Target remains retryable!
+                            console.warn(`[Protection] Service worker restarted during PREPARING for: ${interruptedUrl} (Attempt: ${interruptedAttemptId}). Settling as FAILURE; target remains retryable.`);
+                            const settledAttempt = {
+                                ...data.xpider_currentAttempt,
+                                status: 'RESOLVED',
+                                reasonCode: 'INTERRUPTED_PREPARING',
+                                interruptedAt: Date.now()
+                            };
+                            chrome.storage.local.set({ 
+                                xpider_currentAttempt: settledAttempt
+                                // Visited is NOT updated — target remains retryable!
+                            });
+
+                            try {
+                                if (!self.__xpiderHistoryStore) {
+                                    self.__xpiderHistoryStore = new self.HistoryStore(chrome.storage.local);
+                                }
+                                await self.__xpiderHistoryStore.load();
+                                const hs = self.__xpiderHistoryStore;
+                                if (interruptedAttemptId) {
+                                    // FAILURE does NOT suppress target!
+                                    await hs.settleAttempt(interruptedAttemptId, false, 'INTERRUPTED_PREPARING');
+                                }
+                                await hs.persist();
+                                logBg(null, `🔄 [F8-Recovery] Settled PREPARING attempt ${interruptedAttemptId} as FAILURE (target remains retryable).`, "info");
+                            } catch (hsRecErr) {
+                                console.error('[F8-Recovery] Failed to settle PREPARING attempt on SW restart:', hsRecErr);
+                            }
+                        }
                     }
 
                     if (data.xpider_isActive && data.xpider_queue && data.xpider_queue.length > 0) {

@@ -799,7 +799,8 @@ async function handleFileUpload(e) {
         rawSourceRows = text.split(/\r?\n/);
     }
 
-    // [F7] Step 2: Build per-row records preserving exact source structure AND linking to extracted targets
+    // [F7] Step 2: Build per-row records preserving exact source structure
+    // Guarantee 1:1 row-to-target linkage: exactly one primary target URL per source row
     const urlRegex = /(https?:\/\/[^\s,"]+)|((?:www\.)?[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}(?:\/[^\s,"]*)?)/g;
     const rowsForLedger = rawSourceRows.map((rawRecord, idx) => {
         let matches = rawRecord.match(urlRegex) || [];
@@ -809,12 +810,13 @@ async function handleFileUpload(e) {
             return u;
         }).filter(u => { try { new URL(u); return true; } catch(err) { return false; } });
 
-        const targetIdentity = matches.length > 0 ? matches[0] : null;
+        // Exactly one primary execution target per source row (guarantees 1:1 row-to-target traceability)
+        const primaryTarget = matches.length > 0 ? matches[0] : null;
+
         return {
             sourceRowNumber: idx + 1,   // 1-indexed logical record number
-            rawInput: rawRecord,        // exact original record content (including non-URL rows)
-            targetIdentity: targetIdentity, // [F7] link preserved source row to extracted target
-            extractedUrls: matches
+            rawInput: rawRecord,        // exact original record content unchanged
+            targetIdentity: primaryTarget // [F7] explicit 1:1 link to executed target
         };
     });
 
@@ -834,19 +836,17 @@ async function handleFileUpload(e) {
         return;
     }
 
-    // [F7] Step 4: ONLY AFTER durable ledger write succeeds, derive campaign queue from preserved rows
-    const allExtractedUrls = [];
-    for (const r of rowsForLedger) {
-        if (Array.isArray(r.extractedUrls)) {
-            allExtractedUrls.push(...r.extractedUrls);
-        }
-    }
-
+    // [F7] Step 4: Queue ONLY the linked targets from preserved rows (strictly 1:1 linked)
     const blacklist = window.XPIDER_BLACKLIST || [];
-    campaignQueue = [...new Set(allExtractedUrls)].filter(url => {
-        const lowerUrl = url.toLowerCase();
-        return !blacklist.some(domain => lowerUrl.includes(domain));
-    });
+    const executionTargets = rowsForLedger
+        .map(r => r.targetIdentity)
+        .filter(Boolean)
+        .filter(url => {
+            const lowerUrl = url.toLowerCase();
+            return !blacklist.some(domain => lowerUrl.includes(domain));
+        });
+
+    campaignQueue = [...new Set(executionTargets)];
 
     totalTargets = campaignQueue.length;
     const countDisplay = document.getElementById('url-count-display');
@@ -862,39 +862,37 @@ async function handleFileUpload(e) {
 }
 
 /**
- * [F7] Minimal RFC-4180 CSV logical-record parser.
+ * [F7] RFC-4180 CSV logical-record parser.
  * Handles: quoted fields, embedded commas, embedded CRLF/LF within quoted fields.
- * Returns one string per logical CSV record (entire row joined as-is for the ledger).
+ * Preserves the EXACT original source substring for audit integrity (no unescaping).
  */
 function _parseRfc4180Records(text) {
     const records = [];
-    let current = '';
+    let recordStart = 0;
     let inQuotes = false;
     let i = 0;
     while (i < text.length) {
         const ch = text[i];
         if (ch === '"') {
             if (inQuotes && text[i + 1] === '"') {
-                // Escaped quote
-                current += '"';
-                i += 2;
+                i += 2; // skip escaped quote pair without modifying raw slice
                 continue;
             }
             inQuotes = !inQuotes;
-            current += ch;
             i++;
         } else if ((ch === '\r' || ch === '\n') && !inQuotes) {
-            // Record boundary: consume CRLF as one
+            const end = i;
             if (ch === '\r' && text[i + 1] === '\n') i++;
-            records.push(current);
-            current = '';
+            records.push(text.slice(recordStart, end));
             i++;
+            recordStart = i;
         } else {
-            current += ch;
             i++;
         }
     }
-    if (current.length > 0 || records.length === 0) records.push(current);
+    if (recordStart < text.length || records.length === 0) {
+        records.push(text.slice(recordStart));
+    }
     return records;
 }
 
@@ -1009,7 +1007,28 @@ async function saveTemplateChanges() {
 
     // [F9] Save to templates_v2 as authoritative store
     const tplId = `tpl_${Date.now()}`;
-    const v2Item = { ...tpl, id: tplId, fileName: result.fileName, filePath: result.filePath, updatedAt: new Date().toISOString() };
+    const fullName = tpl.name || `${tpl.firstName} ${tpl.lastName}`.trim();
+    const v2Item = {
+        ...tpl,
+        id: tplId,
+        fullName: fullName,
+        fileName: result.fileName,
+        filePath: result.filePath,
+        sender: {
+            fullName: fullName,
+            firstName: tpl.firstName,
+            lastName: tpl.lastName,
+            company: '',
+            email: tpl.email,
+            phone: tpl.phone,
+            website: ''
+        },
+        content: {
+            subject: tpl.subject,
+            message: tpl.message
+        },
+        updatedAt: Date.now()
+    };
     const v2Data = await chrome.storage.local.get(['templates_v2']);
     const v2Store = v2Data.templates_v2 || { version: 2, templates: {}, defaultId: null, recentIds: [] };
     v2Store.templates[tplId] = v2Item;
@@ -1352,32 +1371,74 @@ function addLog(msg, type = 'info', forcedTime = null) {
     }
 }
 
-function saveTemplate() {
+async function saveTemplate() {
     const tpl = {
-        firstName: document.getElementById('tpl-first-name').value,
-        lastName: document.getElementById('tpl-last-name').value,
-        name: document.getElementById('tpl-name').value,
-        email: document.getElementById('tpl-email').value,
-        phone: document.getElementById('tpl-phone').value,
-        subject: document.getElementById('tpl-subject').value,
-        message: document.getElementById('tpl-message').value
+        firstName: document.getElementById('tpl-first-name')?.value || '',
+        lastName:  document.getElementById('tpl-last-name')?.value || '',
+        name:      document.getElementById('tpl-name')?.value || '',
+        email:     document.getElementById('tpl-email')?.value || '',
+        phone:     document.getElementById('tpl-phone')?.value || '',
+        subject:   document.getElementById('tpl-subject')?.value || '',
+        message:   document.getElementById('tpl-message')?.value || ''
     };
-    // [F9] Dual-write: legacy key for compat + templates_v2 for Phase 2A canonical state
+    // [F9 Unified Schema] Canonical FormTemplateV2 record with both flat and nested properties
+    const fullName = tpl.name || `${tpl.firstName} ${tpl.lastName}`.trim();
+    const canonicalTpl = {
+        ...tpl,
+        fullName: fullName,
+        sender: {
+            fullName: fullName,
+            firstName: tpl.firstName,
+            lastName: tpl.lastName,
+            company: '',
+            email: tpl.email,
+            phone: tpl.phone,
+            website: ''
+        },
+        content: {
+            subject: tpl.subject,
+            message: tpl.message
+        },
+        updatedAt: Date.now()
+    };
+    // [F9] templates_v2 is the primary authoritative store — await its completion
+    await _syncTemplateToV2(canonicalTpl);
     chrome.storage.local.set({ xpider_tpl: tpl });
-    _syncTemplateToV2(tpl).catch(() => {});
-    return tpl;
+    return canonicalTpl;
 }
 
-// [F9] Sync a template object into templates_v2 default slot via background RPC
+// [F9] Sync a template object into templates_v2 default slot
 async function _syncTemplateToV2(tpl) {
     try {
         const data = await chrome.storage.local.get(['templates_v2']);
-        const store = data.templates_v2 || { version: 2, templates: {}, defaultId: null };
+        const store = data.templates_v2 || { version: 2, templates: {}, defaultId: null, recentIds: [] };
         const id = store.defaultId || 'default';
-        const updatedTpl = { ...tpl, id, updatedAt: new Date().toISOString() };
+        const fullName = tpl.name || tpl.fullName || `${tpl.firstName || ''} ${tpl.lastName || ''}`.trim();
+        const updatedTpl = {
+            ...tpl,
+            id,
+            fullName,
+            sender: tpl.sender || {
+                fullName,
+                firstName: tpl.firstName || '',
+                lastName: tpl.lastName || '',
+                company: tpl.company || '',
+                email: tpl.email || '',
+                phone: tpl.phone || '',
+                website: tpl.website || ''
+            },
+            content: tpl.content || {
+                subject: tpl.subject || '',
+                message: tpl.message || ''
+            },
+            updatedAt: Date.now()
+        };
         store.templates[id] = updatedTpl;
         store.defaultId = id;
+        if (!store.recentIds) store.recentIds = [];
+        if (!store.recentIds.includes(id)) store.recentIds.unshift(id);
         await chrome.storage.local.set({ templates_v2: store });
+        return updatedTpl;
     } catch (e) {
         console.warn('[F9] _syncTemplateToV2 failed:', e.message);
     }
@@ -1467,20 +1528,29 @@ function loadTemplateFromLibrary() {
     chrome.storage.local.get(['templates_v2', 'xpider_recent_templates'], (data) => {
         let tpl = null;
         // [F9] Try templates_v2 first
-        if (tplId && data.templates_v2 && data.templates_v2.templates[tplId]) {
+        if (tplId && data.templates_v2 && data.templates_v2.templates && data.templates_v2.templates[tplId]) {
             tpl = data.templates_v2.templates[tplId];
         } else if (!isNaN(idxFallback) && data.xpider_recent_templates) {
             tpl = (data.xpider_recent_templates || [])[idxFallback] || null;
         }
         if (!tpl) return;
 
-        document.getElementById('tpl-first-name').value = tpl.firstName || '';
-        document.getElementById('tpl-last-name').value  = tpl.lastName  || '';
-        document.getElementById('tpl-name').value        = tpl.name      || '';
-        document.getElementById('tpl-email').value       = tpl.email     || '';
-        document.getElementById('tpl-phone').value       = tpl.phone     || '';
-        document.getElementById('tpl-subject').value     = tpl.subject   || '';
-        document.getElementById('tpl-message').value     = tpl.message   || '';
+        // Dual accessors: support flat and nested FormTemplateV2 structures
+        const firstName = tpl.firstName || (tpl.sender && tpl.sender.firstName) || '';
+        const lastName  = tpl.lastName  || (tpl.sender && tpl.sender.lastName)  || '';
+        const name      = tpl.name      || tpl.fullName || (tpl.sender && (tpl.sender.fullName || tpl.sender.name)) || '';
+        const email     = tpl.email     || (tpl.sender && tpl.sender.email)     || '';
+        const phone     = tpl.phone     || (tpl.sender && tpl.sender.phone)     || '';
+        const subject   = tpl.subject   || (tpl.content && tpl.content.subject) || '';
+        const message   = tpl.message   || (tpl.content && tpl.content.message) || '';
+
+        document.getElementById('tpl-first-name').value = firstName;
+        document.getElementById('tpl-last-name').value  = lastName;
+        document.getElementById('tpl-name').value        = name;
+        document.getElementById('tpl-email').value       = email;
+        document.getElementById('tpl-phone').value       = phone;
+        document.getElementById('tpl-subject').value     = subject;
+        document.getElementById('tpl-message').value     = message;
 
         // [F9] Write both legacy and v2 default to keep stores in sync
         const v2Store = data.templates_v2 || { version: 2, templates: {}, defaultId: null, recentIds: [] };
@@ -1681,18 +1751,27 @@ async function loadSettings() {
 
     // [F9] Template: use templates_v2 default slot as authoritative source; fall back to xpider_tpl
     let tplToLoad = data.xpider_tpl || null;
-    if (data.templates_v2 && data.templates_v2.defaultId) {
+    if (data.templates_v2 && data.templates_v2.defaultId && data.templates_v2.templates) {
         const v2default = data.templates_v2.templates[data.templates_v2.defaultId];
         if (v2default) tplToLoad = v2default;
     }
     if (tplToLoad) {
-        if (document.getElementById('tpl-first-name')) document.getElementById('tpl-first-name').value = tplToLoad.firstName || '';
-        if (document.getElementById('tpl-last-name')) document.getElementById('tpl-last-name').value = tplToLoad.lastName || '';
-        if (document.getElementById('tpl-name')) document.getElementById('tpl-name').value = tplToLoad.name || '';
-        if (document.getElementById('tpl-email')) document.getElementById('tpl-email').value = tplToLoad.email || '';
-        if (document.getElementById('tpl-phone')) document.getElementById('tpl-phone').value = tplToLoad.phone || '';
-        if (document.getElementById('tpl-subject')) document.getElementById('tpl-subject').value = tplToLoad.subject || '';
-        if (document.getElementById('tpl-message')) document.getElementById('tpl-message').value = tplToLoad.message || '';
+        // Dual accessors: support flat and nested FormTemplateV2 structures
+        const firstName = tplToLoad.firstName || (tplToLoad.sender && tplToLoad.sender.firstName) || '';
+        const lastName  = tplToLoad.lastName  || (tplToLoad.sender && tplToLoad.sender.lastName)  || '';
+        const name      = tplToLoad.name      || tplToLoad.fullName || (tplToLoad.sender && (tplToLoad.sender.fullName || tplToLoad.sender.name)) || '';
+        const email     = tplToLoad.email     || (tplToLoad.sender && tplToLoad.sender.email)     || '';
+        const phone     = tplToLoad.phone     || (tplToLoad.sender && tplToLoad.sender.phone)     || '';
+        const subject   = tplToLoad.subject   || (tplToLoad.content && tplToLoad.content.subject) || '';
+        const message   = tplToLoad.message   || (tplToLoad.content && tplToLoad.content.message) || '';
+
+        if (document.getElementById('tpl-first-name')) document.getElementById('tpl-first-name').value = firstName;
+        if (document.getElementById('tpl-last-name'))  document.getElementById('tpl-last-name').value  = lastName;
+        if (document.getElementById('tpl-name'))       document.getElementById('tpl-name').value       = name;
+        if (document.getElementById('tpl-email'))      document.getElementById('tpl-email').value      = email;
+        if (document.getElementById('tpl-phone'))      document.getElementById('tpl-phone').value      = phone;
+        if (document.getElementById('tpl-subject'))    document.getElementById('tpl-subject').value    = subject;
+        if (document.getElementById('tpl-message'))    document.getElementById('tpl-message').value    = message;
     }
 
     // 3중 속도 복원
