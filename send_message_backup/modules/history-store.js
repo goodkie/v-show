@@ -204,6 +204,24 @@
         }
 
         /**
+         * [Phase 2B+ / Reliability R1] Check if a target has a durable prior execution attempt.
+         * Counts: PREPARING, SUBMIT_PENDING, CONFIRMED_SUCCESS, FAILURE, DELIVERY_UNKNOWN.
+         * Does NOT count: import-only rows, INVALID_INPUT with zero actual attempt.
+         */
+        hasPriorAttempt(targetIdentity, options = {}) {
+            if (!targetIdentity) return false;
+            const normId = this.normalizeTargetIdentity(targetIdentity) || targetIdentity;
+            const allowedStatuses = options.statuses || [
+                'PREPARING', 'SUBMIT_PENDING', 'CONFIRMED_SUCCESS', 'FAILURE', 'DELIVERY_UNKNOWN'
+            ];
+            return this.attempts.some(att => {
+                if (att.targetIdentity !== normId && att.targetIdentity !== targetIdentity) return false;
+                if (att.status === 'INVALID_INPUT' || att.reasonCode === 'INVALID_INPUT') return false;
+                return allowedStatuses.includes(att.status);
+            });
+        }
+
+        /**
          * P2A-2: Record an actual execution attempt.
          * @param {string|object} targetOrDesc - Raw URL string OR descriptor object {targetIdentity, ...}
          * @param {object} [opts] - Optional override: { outcome, reason }

@@ -23,11 +23,20 @@ Rollback Anchor: 0853c5006855afdf17c5136dfa5031ea654f6529 (evidence_phase2a_inte
 4. Preserved Diagnostics: Diagnostic buffer and UI buttons (#copy-diagnostic-btn, #download-diagnostic-btn, #clear-diagnostic-btn) preserved with automatic privacy redaction.
 5. Verification Test Suite: TRANSPORT-1 through TRANSPORT-7 added to test_phase2b_acceptance.js, verifying start/ack, error recovery, immediate GET_STATE, pause/resume/stop, Wit key management, template download, and zero calls to the 8 dead native channels.
 
-=== VERIFICATION STATUS (74 / 74 PASS, 100%) ===
+=== FORM EXECUTION RELIABILITY & RESUMABILITY R1 SUMMARY ===
+1. Issue #6 Directives (2026-10-01T11:55:57Z):
+   - FormStabilizer: Bounded stabilization (max 5s, max 2 attempts/element, 500ms cooldown, 2 stable cycles, deterministic values). Eliminates infinite empty field sweeper loop fighting React/Wix forms.
+   - executeSubmitStateMachine: Stops stabilizer, 350ms settle delay, pre-submit validity check (VALIDATION_FAILED abort after single bounded self-heal), discover ranked submit candidates skipping disabled and aria-disabled elements, prefer form.requestSubmit(btn), single trusted click sequence fallback, strictly forbids HTMLFormElement.prototype.submit.
+   - Resumable Campaign: PAUSE NOW / STOP & SAVE, RESUME, END CAMPAIGN store/restore remainingQueue in xpider_paused_checkpoint without reloading full 492 targets.
+   - History Skip: Skip Previously Attempted (default ON) filters targets before starting orchestrator using HistoryStore.hasPriorAttempt() checking durable execution statuses (PREPARING, SUBMIT_PENDING, CONFIRMED_SUCCESS, FAILURE, DELIVERY_UNKNOWN).
+   - Forensic Logging: [TARGET idx/total][host] START and [TARGET][host] FINAL status=... reason=... with outcomeHistogram aggregation in campaignState.
+
+=== VERIFICATION STATUS (87 / 87 PASS, 100%) ===
+- send_message_backup/test_reliability_r1.js: 13/13 PASS (100%)
 - test_phase2a.js: 14/14 PASS (100%)
 - test_phase0_1.js: 5/5 PASS (100%)
 - test_phase0_1_behavioral.js: 5/5 PASS (100%)
 - send_message_backup/test_phase2a_integration_f7f13.js: 32/32 PASS (100%)
 - send_message_backup/test_phase2b_acceptance.js: 18/18 PASS (100%)
-- Total: 74/74 PASS (100%)
-- QA Status: AUTOMATED SUITE = PASS (100%); real Chrome execution = PENDING OWNER LIVE VALIDATION
+- Total: 87/87 PASS (100%)
+- QA Status: AUTOMATED SUITES = PASS (100%); real Chrome execution = PENDING OWNER LIVE VALIDATION

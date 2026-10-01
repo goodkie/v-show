@@ -385,7 +385,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                             new Promise(res => setTimeout(res, 1000))
                         ]).catch(() => {});
                     }
-                    await startCampaignOrchestrator(request.queue, request.template, request.delayMs, request.fillDelayMs, request.submitDelayMs);
+                    await startCampaignOrchestrator(request.queue, request.template, request.delayMs, request.fillDelayMs, request.submitDelayMs, {
+                        skipPreviouslyAttempted: request.skipPreviouslyAttempted,
+                        overrideSkipAttempted: request.overrideSkipAttempted
+                    });
                 } catch (e) {
                     console.error("[StartError]", e);
                     logBg(null, `❌ Engine failed to start: ${e.message}`, "error");
@@ -398,8 +401,17 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             return true;
 
         case 'STOP_CAMPAIGN':
+        case 'STOP_AND_SAVE_CAMPAIGN':
             (async () => {
-                await stopCampaignOrchestrator();
+                const res = await pauseCampaignOrchestrator(true);
+                sendResponse({ success: true, ...res });
+            })();
+            return true;
+
+        case 'END_CAMPAIGN':
+        case 'CLEAR_CAMPAIGN':
+            (async () => {
+                await endCampaignOrchestrator();
                 sendResponse({ success: true });
             })();
             return true;
@@ -458,28 +470,40 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             return true;
 
         case 'GET_STATE':
-            sendResponse({
-                success: true,
-                isActive: campaignState.isActive,
-                successCount: campaignState.successCount,
-                totalTargets: campaignState.totalTargets,
-                remainingCount: campaignState.queue.length,
-                isPaused: campaignState.isPaused,
-                hasActiveLock: !!(campaignState.currentAttempt && campaignState.currentAttempt.status === 'SUBMIT_PENDING'),
-                currentAttempt: campaignState.currentAttempt
+            chrome.storage.local.get(['xpider_paused_checkpoint'], (stored) => {
+                const checkpoint = campaignState.pausedCheckpoint || stored.xpider_paused_checkpoint || null;
+                sendResponse({
+                    success: true,
+                    isActive: campaignState.isActive,
+                    successCount: campaignState.successCount,
+                    totalTargets: campaignState.totalTargets,
+                    remainingCount: campaignState.queue.length,
+                    isPaused: campaignState.isPaused,
+                    hasPausedCheckpoint: !!(checkpoint && checkpoint.remainingQueue && checkpoint.remainingQueue.length > 0),
+                    pausedRemainingCount: (checkpoint && checkpoint.remainingQueue) ? checkpoint.remainingQueue.length : 0,
+                    hasActiveLock: !!(campaignState.currentAttempt && campaignState.currentAttempt.status === 'SUBMIT_PENDING'),
+                    currentAttempt: campaignState.currentAttempt,
+                    outcomeHistogram: campaignState.outcomeHistogram || {}
+                });
             });
             return true;
             
         case 'PAUSE_CAMPAIGN':
-            campaignState.isPaused = true;
-            logBg(null, "⏸️ Campaign PAUSED by user.", "info");
-            sendResponse({ success: true });
+            (async () => {
+                const res = await pauseCampaignOrchestrator(true);
+                sendResponse({ success: true, ...res });
+            })();
             return true;
             
         case 'RESUME_CAMPAIGN':
-            campaignState.isPaused = false;
-            logBg(null, "▶️ Campaign RESUMED by user.", "info");
-            sendResponse({ success: true });
+            (async () => {
+                try {
+                    const res = await resumeCampaignOrchestrator();
+                    sendResponse({ success: true, ...res });
+                } catch (err) {
+                    sendResponse({ success: false, error: err.message });
+                }
+            })();
             return true;
 
         case 'SOLVE_CAPTCHA':
@@ -711,7 +735,7 @@ function normalizeUrl(url) {
     }
 }
 
-async function startCampaignOrchestrator(queue, template, delayMs, fillDelayMs = 300, submitDelayMs = 1500) {
+async function startCampaignOrchestrator(queue, template, delayMs, fillDelayMs = 300, submitDelayMs = 1500, options = {}) {
     // [v18.17.0] Emergency Diagnostic Sequence
     logBg(null, "[Boot] Orchestrator entered.", "debug");
     
@@ -738,8 +762,52 @@ async function startCampaignOrchestrator(queue, template, delayMs, fillDelayMs =
 
         logBg(null, "[Boot] Previous state cleared.", "debug");
 
+        // [Reliability R1] Queue Normalization & Skip Previously Attempted Filter
+        let executableQueue = [];
+        let dupCount = 0;
+        let suppressedCount = 0;
+        let historySkippedCount = 0;
+        const originalInputCount = Array.isArray(queue) ? queue.length : 0;
+        const seenInBatch = new Set();
+        
+        let hs = null;
+        try {
+            if (!self.__xpiderHistoryStore) {
+                self.__xpiderHistoryStore = new self.HistoryStore(chrome.storage.local);
+                await self.__xpiderHistoryStore.load();
+            }
+            hs = self.__xpiderHistoryStore;
+        } catch (_) {}
+
+        const shouldSkipAttempted = (options.skipPreviouslyAttempted !== false) && (!options.overrideSkipAttempted);
+
+        for (const rawUrl of (Array.isArray(queue) ? queue : [])) {
+            if (!rawUrl || typeof rawUrl !== 'string') continue;
+            const norm = (hs && typeof hs.normalizeTargetIdentity === 'function') ? (hs.normalizeTargetIdentity(rawUrl) || rawUrl) : rawUrl;
+            if (seenInBatch.has(norm)) {
+                dupCount++;
+                continue;
+            }
+            seenInBatch.add(norm);
+
+            if (hs && typeof hs.isSuppressed === 'function' && hs.isSuppressed(norm)) {
+                suppressedCount++;
+                continue;
+            }
+
+            if (shouldSkipAttempted && hs && typeof hs.hasPriorAttempt === 'function' && hs.hasPriorAttempt(norm)) {
+                historySkippedCount++;
+                logBg(null, `⏭️ [HistorySkip] Skipping previously attempted target: ${norm}`, "info");
+                continue;
+            }
+
+            executableQueue.push(rawUrl);
+        }
+
+        logBg(null, `📊 [Queue Filter] Input: ${originalInputCount} | Duplicates: ${dupCount} | Suppressed: ${suppressedCount} | History-Attempted: ${historySkippedCount} | Executable: ${executableQueue.length}`, "info");
+
         // [v18.15.5] Restore Campaign Variables
-        campaignState.queue = queue;
+        campaignState.queue = executableQueue;
         campaignState.template = template;
         campaignState.templateId = (template && (template.id || template.templateId)) || 'default';
         campaignState.templateVersion = (template && (template.version || template.templateVersion)) || 1;
@@ -750,16 +818,20 @@ async function startCampaignOrchestrator(queue, template, delayMs, fillDelayMs =
         campaignState.isPaused = false; // [v18.7] Reset pause on new start
         campaignState.sessionId++; 
         campaignState.successCount = 0;
-        campaignState.totalTargets = queue.length;
+        campaignState.totalTargets = executableQueue.length;
         campaignState.visitedUrls = []; 
         campaignState.successfulUrls = []; 
         campaignState.captchaCounts = {}; // [v4.12.23] 캡차 시도 횟수 초기화
         campaignState.activeTimeoutId = null;
         campaignState.currentTabId = null;
+        campaignState.outcomeHistogram = {};
+        campaignState.pausedCheckpoint = null;
         
         logBg(null, "[Boot] Variables initialized.", "debug");
         logBg(null, "🚀 Engine booting...", "start");
         
+        // Clear old paused checkpoint on fresh campaign start
+        chrome.storage.local.remove(['xpider_paused_checkpoint']).catch(() => {});
         saveCampaignState().catch(() => {}); 
         logBg(null, "[Boot] Storage sync initiated.", "debug");
 
@@ -773,30 +845,172 @@ async function startCampaignOrchestrator(queue, template, delayMs, fillDelayMs =
     }
 }
 
-function stopCampaignOrchestrator() {
-    campaignState.isActive = false;
-    
-    // [URL 세션 중단] 여분의 브라우저 새 탭 일괄 닫기 트리거
-    chrome.runtime.sendMessage({ action: 'CLOSE_ALL_EXTRA_TABS' }).catch(() => {});
-    
-    // [v18.8.0] Persistence: Clear stored active state
-    chrome.storage.local.set({ xpider_isActive: false });
-    if (chrome.alarms) chrome.alarms.clear("xpider_next_target");
+async function pauseCampaignOrchestrator(saveCheckpoint = true) {
+    campaignState.isPaused = true;
+    logBg(null, "⏸️ [Engine] Campaign PAUSED / STOP & SAVE requested.", "info");
 
-    // [v2.6.0] Powerful Instant Termination
+    // Cancel pending next-target timer
     if (campaignState.activeTimeoutId) {
         clearTimeout(campaignState.activeTimeoutId);
         campaignState.activeTimeoutId = null;
     }
-    
+    if (chrome.alarms) {
+        chrome.alarms.clear("xpider_next_target");
+        chrome.alarms.clear("xpider_next_target_failsafe");
+    }
+
+    // Close current target tab if safe
     if (campaignState.currentTabId) {
         chrome.tabs.remove(campaignState.currentTabId).catch(() => {});
         campaignState.currentTabId = null;
     }
+
+    // Current target handling
+    const currentAtt = campaignState.currentAttempt;
+    if (currentAtt && currentAtt.url) {
+        if (currentAtt.status === 'PREPARING') {
+            // No submit boundary crossed: settle INTERRUPTED_PAUSE and requeue to front
+            try {
+                if (!self.__xpiderHistoryStore) {
+                    self.__xpiderHistoryStore = new self.HistoryStore(chrome.storage.local);
+                    await self.__xpiderHistoryStore.load();
+                }
+                if (currentAtt.attemptId) {
+                    await self.__xpiderHistoryStore.settleAttempt(currentAtt.attemptId, false, 'INTERRUPTED_PAUSE');
+                    await self.__xpiderHistoryStore.persist();
+                }
+            } catch (_) {}
+            if (!campaignState.queue.includes(currentAtt.url)) {
+                campaignState.queue.unshift(currentAtt.url);
+            }
+            logBg(null, `🔄 [Pause] Current target re-queued to front: ${currentAtt.url}`, "info");
+        } else if (currentAtt.status === 'SUBMIT_PENDING') {
+            // In-flight submit: settle DELIVERY_UNKNOWN and do NOT blindly resend
+            try {
+                if (!self.__xpiderHistoryStore) {
+                    self.__xpiderHistoryStore = new self.HistoryStore(chrome.storage.local);
+                    await self.__xpiderHistoryStore.load();
+                }
+                if (currentAtt.attemptId) {
+                    await self.__xpiderHistoryStore.settleAttempt(currentAtt.attemptId, false, REASON_CODES.DELIVERY_UNKNOWN);
+                    await self.__xpiderHistoryStore.persist();
+                }
+            } catch (_) {}
+            logBg(null, `⚠️ [Pause] In-flight target settled as DELIVERY_UNKNOWN (not requeued): ${currentAtt.url}`, "warning");
+        }
+        campaignState.currentAttempt = null;
+        chrome.storage.local.remove('xpider_currentAttempt').catch(() => {});
+    }
+
+    // Save checkpoint snapshot
+    if (saveCheckpoint) {
+        const checkpoint = {
+            remainingQueue: [...campaignState.queue],
+            visitedUrls: [...campaignState.visitedUrls],
+            successfulUrls: [...campaignState.successfulUrls],
+            successCount: campaignState.successCount,
+            totalTargets: campaignState.totalTargets,
+            template: campaignState.template,
+            templateId: campaignState.templateId,
+            templateVersion: campaignState.templateVersion,
+            delayMs: campaignState.delayMs,
+            fillDelayMs: campaignState.fillDelayMs,
+            submitDelayMs: campaignState.submitDelayMs,
+            sessionId: campaignState.sessionId,
+            pausedAt: Date.now(),
+            outcomeHistogram: { ...(campaignState.outcomeHistogram || {}) }
+        };
+        campaignState.pausedCheckpoint = checkpoint;
+        await chrome.storage.local.set({
+            xpider_paused_checkpoint: checkpoint,
+            xpider_isPaused: true,
+            xpider_isActive: false
+        });
+        logBg(null, `💾 [Checkpoint] Campaign snapshot saved: ${checkpoint.remainingQueue.length} targets remaining.`, "success");
+    }
+
+    campaignState.isActive = false;
+    printCampaignOutcomeSummary();
+    return { success: true, remainingCount: campaignState.queue.length };
+}
+
+async function resumeCampaignOrchestrator() {
+    logBg(null, "▶️ [Engine] RESUME_CAMPAIGN requested.", "info");
+
+    let checkpoint = campaignState.pausedCheckpoint;
+    if (!checkpoint) {
+        const stored = await chrome.storage.local.get(['xpider_paused_checkpoint']);
+        checkpoint = stored.xpider_paused_checkpoint || null;
+    }
+
+    if (!checkpoint || !Array.isArray(checkpoint.remainingQueue) || checkpoint.remainingQueue.length === 0) {
+        throw new Error("NO_RESUMABLE_CHECKPOINT: No paused campaign snapshot found.");
+    }
+
+    // Restore exact snapshot without full queue reload!
+    campaignState.queue = [...checkpoint.remainingQueue];
+    campaignState.visitedUrls = [...(checkpoint.visitedUrls || [])];
+    campaignState.successfulUrls = [...(checkpoint.successfulUrls || [])];
+    campaignState.successCount = checkpoint.successCount || 0;
+    campaignState.totalTargets = checkpoint.totalTargets || campaignState.queue.length;
+    campaignState.template = checkpoint.template || campaignState.template;
+    campaignState.templateId = checkpoint.templateId || 'default';
+    campaignState.templateVersion = checkpoint.templateVersion || 1;
+    campaignState.delayMs = checkpoint.delayMs || 6000;
+    campaignState.fillDelayMs = checkpoint.fillDelayMs || 300;
+    campaignState.submitDelayMs = checkpoint.submitDelayMs || 1500;
+    campaignState.outcomeHistogram = { ...(checkpoint.outcomeHistogram || {}) };
     
-    campaignState.queue = []; // Clear queue to ensure no more processing
-    
-    logBg(null, "Campaign FORCE STOPPED. All processes terminated.", "stop");
+    campaignState.sessionId = (checkpoint.sessionId || 0) + 1;
+    campaignState.isActive = true;
+    campaignState.isPaused = false;
+    campaignState.isLoopRunning = false;
+    campaignState.lastActionTime = Date.now();
+    campaignState.pausedCheckpoint = null;
+
+    await chrome.storage.local.set({ xpider_isActive: true, xpider_isPaused: false });
+    logBg(null, `🚀 [Resume] Resuming campaign from target ${campaignState.totalTargets - campaignState.queue.length + 1} (${campaignState.queue.length} targets remaining)...`, "start");
+
+    const restoredCount = checkpoint.remainingQueue.length;
+    processNextCampaignTarget(campaignState.sessionId);
+    return { success: true, restoredCount, remainingCount: campaignState.queue.length };
+}
+
+async function endCampaignOrchestrator() {
+    logBg(null, "🛑 [Engine] END_CAMPAIGN requested. Clearing queue and snapshot.", "stop");
+    campaignState.isActive = false;
+    campaignState.isPaused = false;
+    campaignState.queue = [];
+    campaignState.pausedCheckpoint = null;
+    if (campaignState.activeTimeoutId) {
+        clearTimeout(campaignState.activeTimeoutId);
+        campaignState.activeTimeoutId = null;
+    }
+    if (campaignState.currentTabId) {
+        chrome.tabs.remove(campaignState.currentTabId).catch(() => {});
+        campaignState.currentTabId = null;
+    }
+    await chrome.storage.local.remove(['xpider_paused_checkpoint', 'xpider_currentAttempt', 'xpider_isActive', 'xpider_isPaused']);
+    printCampaignOutcomeSummary();
+    return { success: true };
+}
+
+function stopCampaignOrchestrator() {
+    return pauseCampaignOrchestrator(true);
+}
+
+function printCampaignOutcomeSummary() {
+    logBg(null, "=== CAMPAIGN OUTCOME SUMMARY ===", "info");
+    const hist = campaignState.outcomeHistogram || {};
+    const keys = Object.keys(hist);
+    if (keys.length === 0) {
+        logBg(null, "No target outcomes recorded.", "info");
+    } else {
+        for (const k of keys) {
+            logBg(null, `${(k + ':').padEnd(28)} ${hist[k]}`, "info");
+        }
+    }
+    logBg(null, "================================", "info");
 }
 
 /**
@@ -855,8 +1069,15 @@ async function processNextCampaignTarget(loopSessionId) {
             return processNextCampaignTarget(currentSession);
         }
         campaignState.visitedUrls.push(normalized);
-
         const targetUrl = currentUrl.startsWith('http') ? currentUrl : 'https://' + currentUrl;
+        let targetHost = 'unknown';
+        try {
+            targetHost = new URL(targetUrl).hostname;
+        } catch (_) {
+            targetHost = normalized || currentUrl;
+        }
+        const targetIdx = campaignState.totalTargets - campaignState.queue.length;
+        logBg(null, `[TARGET ${targetIdx}/${campaignState.totalTargets}][${targetHost}] START`, "info");
         if (chrome.alarms) chrome.alarms.create(`xpider_timeout_${currentSession}`, { delayInMinutes: 3 });
 
         const result = await Promise.race([
@@ -1244,6 +1465,18 @@ async function orchestrateSending(urlInput, template) {
         } else {
             finalReason = res?.reasonCode || (res?.error ? String(res.error) : REASON_CODES.DELIVERY_UNKNOWN);
         }
+
+        // Record outcome in campaign outcome histogram
+        if (!campaignState.outcomeHistogram) campaignState.outcomeHistogram = {};
+        campaignState.outcomeHistogram[finalReason] = (campaignState.outcomeHistogram[finalReason] || 0) + 1;
+
+        let hostName = 'unknown';
+        try {
+            hostName = new URL(targetUrl).hostname;
+        } catch (_) {
+            hostName = targetUrl;
+        }
+        logBg(tabId, `[TARGET][${hostName}] FINAL status=${isSuccess ? 'CONFIRMED_SUCCESS' : (isDeliveryUnknown ? 'DELIVERY_UNKNOWN' : 'FAILURE')} reason=${finalReason}`, isSuccess ? "success" : "warning");
         
         // [F8] Settle the single canonical durable attempt (same HistoryStore record opened before tab)
         try {
@@ -1517,7 +1750,8 @@ async function restoreCampaignState() {
 
             chrome.storage.local.get([
                 'xpider_isActive', 'xpider_queue', 'xpider_tpl', 'xpider_delayMs', 'xpider_fillDelayMs', 'xpider_submitDelayMs',
-                'xpider_sessionId', 'xpider_success', 'xpider_total', 'xpider_visited', 'xpider_successful', 'xpider_currentAttempt'
+                'xpider_sessionId', 'xpider_success', 'xpider_total', 'xpider_visited', 'xpider_successful', 'xpider_currentAttempt',
+                'xpider_paused_checkpoint', 'xpider_isPaused'
             ], async (data) => {
                 try {
                     // [v1.2.0 Delivery Protection on SW Restart]
@@ -1596,7 +1830,17 @@ async function restoreCampaignState() {
                         }
                     }
 
-                    if (data.xpider_isActive && data.xpider_queue && data.xpider_queue.length > 0) {
+                    if (data.xpider_paused_checkpoint && Array.isArray(data.xpider_paused_checkpoint.remainingQueue) && data.xpider_paused_checkpoint.remainingQueue.length > 0) {
+                        campaignState.pausedCheckpoint = data.xpider_paused_checkpoint;
+                        campaignState.isPaused = true;
+                        campaignState.isActive = false;
+                        campaignState.queue = [...data.xpider_paused_checkpoint.remainingQueue];
+                        campaignState.totalTargets = data.xpider_paused_checkpoint.totalTargets || campaignState.queue.length;
+                        campaignState.successCount = data.xpider_paused_checkpoint.successCount || 0;
+                        campaignState.template = data.xpider_paused_checkpoint.template || null;
+                        campaignState.outcomeHistogram = { ...(data.xpider_paused_checkpoint.outcomeHistogram || {}) };
+                        logBg(null, `Restored paused campaign checkpoint: ${campaignState.queue.length} targets remaining (ready to resume).`, "info");
+                    } else if (data.xpider_isActive && data.xpider_queue && data.xpider_queue.length > 0) {
                         campaignState.isActive = true;
                         campaignState.queue = data.xpider_queue;
                         campaignState.template = data.xpider_tpl;
@@ -1666,6 +1910,12 @@ if (typeof module !== 'undefined' && module.exports) {
         recordSubmissionIntent,
         resolveSubmissionIntent,
         restoreCampaignState,
+        startCampaignOrchestrator,
+        pauseCampaignOrchestrator,
+        resumeCampaignOrchestrator,
+        endCampaignOrchestrator,
+        stopCampaignOrchestrator,
+        printCampaignOutcomeSummary,
         campaignState,
         REASON_CODES
     };

@@ -20,10 +20,11 @@
     console[m] = (...a) => {
       _o(...a);
       const lvlMap = { log:'INFO', warn:'WARN', error:'ERROR', debug:'DEBUG', info:'INFO' };
-      _xDL(lvlMap[m] || 'INFO', a.map(x => typeof x === 'object' ? JSON.stringify(x) : String(x)).join(' '));
     };
   });
-  window.addEventListener('error', (e) => _xDL('ERROR', `[Uncaught] ${e.message} at ${e.filename}:${e.lineno}`));
+  if (typeof window !== 'undefined' && window.addEventListener) {
+    window.addEventListener('error', (e) => _xDL('ERROR', `[Uncaught] ${e.message} at ${e.filename}:${e.lineno}`));
+  }
 })();
 // ── END DEV LOG BRIDGE ───────────────────────────────────────────────────
 
@@ -557,6 +558,9 @@
             logDev(`⏳ [Engine] Holding for visual confirmation (${speed.hold}ms)...`, "info");
             await new Promise(r => setTimeout(r, speed.hold));
             
+            // [Reliability R1] MANDATORY: Stop stabilizer BEFORE validation and submit!
+            stopActiveEmptyFieldSweeper();
+
             logDev("📤 [Action] Triggering submission sequence...");
             
             // [v18.6.0] Take Snapshot of existing success indicators to avoid false positives
@@ -569,8 +573,14 @@
             sessionStorage.setItem('xpider_initial_form_present', 'true');
             sessionStorage.setItem('xpider_pending_verify', 'true'); // [v17.6.0]
 
-            submitForm(form);
-            return await detectSubmissionResult(form, template, currentSuccessSnapshot);
+            const submitOutcome = await executeSubmitStateMachine(form, template);
+            if (!submitOutcome.success) {
+                logDev(`❌ [Submit] Submission blocked: ${submitOutcome.reasonCode}`, "error");
+                finishCampaign(false, submitOutcome.reasonCode, submitOutcome.reasonCode);
+                return false;
+            }
+
+            return await detectSubmissionResult(form, template, currentSuccessSnapshot, submitOutcome);
         } catch (e) {
             logDev(`❌ [Action] Sequence aborted: ${e.message}`, "error");
             return false;
@@ -2257,107 +2267,279 @@
     }
 
     // ============================================================
-    // [v4.2] 150ms 융단폭격형 실시간 공란 자동 메꾸기 크롤러 (Active Empty Field Sweeper)
+    // [Reliability R1] Bounded FormStabilizer (Replaces 150ms infinite sweeper)
     // ============================================================
-    let _activeSweeperTimer = null;
-    function startActiveEmptyFieldSweeper(form, tpl) {
-        if (_activeSweeperTimer) clearInterval(_activeSweeperTimer);
-        
-        const templateVals = [
-            tpl.firstName, tpl.lastName, tpl.name, tpl.email,
-            tpl.phone, tpl.subject, tpl.message
-        ].filter(v => typeof v === 'string' && v.trim() !== '');
+    class FormStabilizer {
+        constructor(formOrOptions = {}, tpl = {}, options = {}) {
+            if (formOrOptions && formOrOptions.querySelectorAll) {
+                this.form = formOrOptions;
+                this.tpl = tpl || {};
+                this.options = options || {};
+            } else {
+                this.form = null;
+                this.tpl = {};
+                this.options = formOrOptions || {};
+            }
+            const opts = this.options;
+            this.maxLifetimeMs = opts.maxDurationMs || opts.maxLifetimeMs || 5000;
+            this.checkIntervalMs = opts.pollIntervalMs || opts.checkIntervalMs || 400;
+            this.maxAttemptsPerElement = opts.maxElementAttempts || opts.maxAttemptsPerElement || 2;
+            this.cooldownMs = opts.cooldownMs || 500;
+            this.requiredStableCycles = opts.requiredStableCycles || 2;
+            
+            this.tracker = new WeakMap();
+            this.startTime = Date.now();
+            this.timer = null;
+            this.safetyTimer = null;
+            this.isStopped = false;
+            this.customFillFn = null;
+            this._onStop = null;
+            
+            this.stats = {
+                fieldsSeen: 0,
+                mapped: 0,
+                stable: 0,
+                unresolved: 0,
+                selectAttempts: 0,
+                checkboxAttempts: 0,
+                radioAttempts: 0,
+                timedOutElements: 0,
+                durationMs: 0
+            };
+        }
 
-        const getRandomTemplateVal = () => {
-            if (templateVals.length > 0) return templateVals[Math.floor(Math.random() * templateVals.length)];
-            return "Inquiry";
-        };
+        _getTrack(el) {
+            let t = this.tracker.get(el);
+            if (!t) {
+                t = { attempts: 0, lastAttemptTs: 0, lastAppliedValue: null, stableCycles: 0, state: 'NEW' };
+                this.tracker.set(el, t);
+            }
+            return t;
+        }
 
-        // 150ms 초고속 주기로 단축하여 동적 렌더링에 실시간 대응
-        _activeSweeperTimer = setInterval(async () => {
-            try {
-                if (!form || !document.body.contains(form)) {
-                    clearInterval(_activeSweeperTimer);
-                    return;
-                }
+        start(form, tpl, fillFn) {
+            if (form) this.form = form;
+            if (tpl) this.tpl = tpl;
+            if (fillFn) this.customFillFn = fillFn;
+            if (this.isStopped) return Promise.resolve(this.stats);
+            logDev("🛡️ [FormStabilizer] Starting bounded stabilization (max 5s, max 2 retries/element)...", "info");
 
-                // 폼 내의 모든 타깃 요소 수집
-                const candidates = Array.from(queryAllInputs(form));
+            return new Promise((resolve) => {
+                this._onStop = resolve;
+                this.timer = setInterval(() => {
+                    this.stabilizePass().catch(() => {});
+                }, this.checkIntervalMs);
+
+                this.safetyTimer = setTimeout(() => {
+                    this.stop("MAX_LIFETIME_EXCEEDED");
+                }, this.maxLifetimeMs);
+
+                this.stabilizePass().catch(() => {});
+            });
+        }
+
+        async stabilizePass() {
+            if (this.isStopped) return;
+            if (!this.form || (typeof document !== 'undefined' && document.body && document.body.contains && !document.body.contains(this.form))) {
+                this.stop("FORM_DETACHED");
+                return;
+            }
+
+            const candidates = Array.from(queryAllInputs(this.form));
+            this.stats.fieldsSeen = candidates.length;
+
+            const radioGroups = {};
+            let allStableOrMaxed = true;
+
+            for (const el of candidates) {
+                if (el.type === 'hidden' || el.type === 'submit' || el.type === 'button' || el.type === 'image' || el.type === 'file' || el.type === 'reset') continue;
                 
-                // 라디오 버튼 그룹들을 묶어서 체크 상태 조사
-                const radioGroups = {};
+                const t = this._getTrack(el);
 
-                for (const el of candidates) {
-                    if (el.type === 'hidden' || el.type === 'submit' || el.type === 'button' || el.type === 'image' || el.type === 'file' || el.type === 'reset') continue;
+                // A. Radios
+                if (el.type === 'radio') {
+                    const grpKey = el.name || `_unnamed_${el.id || Math.random()}`;
+                    if (!radioGroups[grpKey]) radioGroups[grpKey] = [];
+                    radioGroups[grpKey].push(el);
+                    continue;
+                }
+
+                // B. Checkboxes
+                if (el.type === 'checkbox') {
+                    const isRequired = el.required || el.getAttribute('aria-required') === 'true';
+                    const containerText = (el.closest('div, label, span, li')?.textContent || '').toLowerCase();
+                    const hasAsterisk = containerText.includes('*') || containerText.includes('필수') || containerText.includes('agree');
                     
-                    // A. 라디오 버튼 실시간 공란 탐지 (동일 name 그룹 내에 아무도 체크되지 않은 경우 검출)
-                    if (el.type === 'radio') {
-                        const grpKey = el.name || `_unnamed_${el.id || Math.random()}`;
-                        if (!radioGroups[grpKey]) radioGroups[grpKey] = [];
-                        radioGroups[grpKey].push(el);
-                        continue; // 라디오 처리는 루프 아래에서 일괄 수행
-                    }
-
-                    // B. 필수 체크박스 미체크 상태 실시간 검출
-                    if (el.type === 'checkbox') {
-                        if (el.checked) continue;
-                        
-                        const isRequired = el.required || el.getAttribute('aria-required') === 'true';
-                        const containerText = (el.closest('div, label, span, li')?.textContent || '').toLowerCase();
-                        const hasAsterisk = containerText.includes('*') || containerText.includes('필수') || containerText.includes('agree');
-                        
-                        if (isRequired || hasAsterisk) {
-                            logDev(`⚡ [Sweeper] 필수 체크박스 미체크 감지 및 실시간 체크: <input type="checkbox" id="${el.id}">`);
-                            await applyCheckbox(el);
+                    if (isRequired || hasAsterisk) {
+                        if (el.checked) {
+                            t.stableCycles++;
+                            if (t.stableCycles >= this.requiredStableCycles) t.state = 'STABLE';
+                        } else {
+                            t.stableCycles = 0;
+                            if (t.attempts < this.maxAttemptsPerElement && (Date.now() - t.lastAttemptTs) >= this.cooldownMs) {
+                                t.attempts++;
+                                t.lastAttemptTs = Date.now();
+                                this.stats.checkboxAttempts++;
+                                logDev(`🛡️ [Stabilizer] Required checkbox attempt ${t.attempts}/${this.maxAttemptsPerElement}: <input id="${el.id}">`);
+                                await applyCheckbox(el);
+                            }
+                            if (t.attempts >= this.maxAttemptsPerElement) {
+                                t.state = 'UNRESOLVED';
+                            } else {
+                                allStableOrMaxed = false;
+                            }
                         }
-                        continue;
-                    }
-                    
-                    // C. 셀렉트 박스 미선택 상태 실시간 검출
-                    if (el.tagName === 'SELECT') {
-                        if (el.selectedIndex > 0) continue;
-                        logDev(`⚡ [Sweeper] 미선택 드롭다운 감지 및 실시간 선택: <select id="${el.id}">`);
-                        await applySelect(el);
-                        continue;
-                    }
-
-                    // D. 텍스트 / contentEditable / role=textbox 실시간 검출
-                    const currentVal = el.contentEditable === 'true' ? (el.textContent || '') : (el.value || '');
-                    if (currentVal.trim() !== '') continue;
-
-                    // 공란 발견 시 즉시 극사실주의적 인간 타이핑 주입!
-                    logDev(`⚡ [Sweeper] 공란 자동 감지 및 충전 개시: <${el.tagName} id="${el.id}" name="${el.name}">`);
-                    
-                    if (el.tagName === 'TEXTAREA' || el.contentEditable === 'true' || el.getAttribute('role') === 'textbox') {
-                        await applyVal(el, tpl.message || getRandomTemplateVal(), 'Sweeper-Message');
                     } else {
-                        await applyVal(el, getRandomTemplateVal(), 'Sweeper-Text');
+                        t.state = 'STABLE';
                     }
+                    continue;
                 }
 
-                // 미선택 라디오 그룹 처리
-                for (const grpName in radioGroups) {
-                    const group = radioGroups[grpName];
-                    const isAnyChecked = group.some(r => r.checked);
-                    if (!isAnyChecked && group.length > 0) {
-                        const validRadios = group.filter(r => !r.disabled);
-                        if (validRadios.length > 0) {
-                            const targetRadio = validRadios[0];
-                            logDev(`⚡ [Sweeper] 미선택 라디오 그룹 [${grpName}] 감지 및 실시간 체크: <input type="radio" id="${targetRadio.id}">`);
-                            await applyRadio(targetRadio);
+                // C. Selects
+                if (el.tagName === 'SELECT') {
+                    if (el.selectedIndex > 0) {
+                        t.stableCycles++;
+                        if (t.stableCycles >= this.requiredStableCycles) t.state = 'STABLE';
+                    } else {
+                        t.stableCycles = 0;
+                        if (t.attempts < this.maxAttemptsPerElement && (Date.now() - t.lastAttemptTs) >= this.cooldownMs) {
+                            t.attempts++;
+                            t.lastAttemptTs = Date.now();
+                            this.stats.selectAttempts++;
+                            logDev(`🛡️ [Stabilizer] Unselected dropdown attempt ${t.attempts}/${this.maxAttemptsPerElement}: <select id="${el.id}">`);
+                            await applySelect(el);
+                        }
+                        if (t.attempts >= this.maxAttemptsPerElement) {
+                            t.state = 'UNRESOLVED';
+                        } else {
+                            allStableOrMaxed = false;
+                        }
+                    }
+                    continue;
+                }
+
+                // D. Text / Textarea / Contenteditable
+                const currentVal = el.contentEditable === 'true' ? (el.textContent || '') : (el.value || '');
+                const isRequired = el.required || el.getAttribute('aria-required') === 'true';
+
+                if (currentVal.trim() !== '') {
+                    t.stableCycles++;
+                    if (t.stableCycles >= this.requiredStableCycles) t.state = 'STABLE';
+                } else if (isRequired) {
+                    t.stableCycles = 0;
+                    if (t.attempts < this.maxAttemptsPerElement && (Date.now() - t.lastAttemptTs) >= this.cooldownMs) {
+                        t.attempts++;
+                        t.lastAttemptTs = Date.now();
+                        // Deterministic value — never random!
+                        const fillVal = (el.tagName === 'TEXTAREA' || el.contentEditable === 'true' || el.getAttribute('role') === 'textbox')
+                            ? (this.tpl.message || 'Inquiry regarding services')
+                            : (this.tpl.subject || this.tpl.name || 'Inquiry');
+                        logDev(`🛡️ [Stabilizer] Empty required field attempt ${t.attempts}/${this.maxAttemptsPerElement}: <${el.tagName} id="${el.id}">`);
+                        if (this.customFillFn) {
+                            await this.customFillFn(el, fillVal);
+                        } else {
+                            await applyVal(el, fillVal, 'Stabilizer-Field');
+                        }
+                    }
+                    if (t.attempts >= this.maxAttemptsPerElement) {
+                        t.state = 'UNRESOLVED';
+                    } else {
+                        allStableOrMaxed = false;
+                    }
+                } else {
+                    t.state = 'STABLE';
+                }
+            }
+
+            // Radio Groups pass
+            for (const grpName in radioGroups) {
+                const group = radioGroups[grpName];
+                const isAnyChecked = group.some(r => r.checked);
+                if (isAnyChecked) {
+                    group.forEach(r => {
+                        const t = this._getTrack(r);
+                        t.stableCycles++;
+                        if (t.stableCycles >= this.requiredStableCycles) t.state = 'STABLE';
+                    });
+                } else {
+                    const firstValid = group.find(r => !r.disabled);
+                    if (firstValid) {
+                        const t = this._getTrack(firstValid);
+                        if (t.attempts < this.maxAttemptsPerElement && (Date.now() - t.lastAttemptTs) >= this.cooldownMs) {
+                            t.attempts++;
+                            t.lastAttemptTs = Date.now();
+                            this.stats.radioAttempts++;
+                            logDev(`🛡️ [Stabilizer] Unselected radio group attempt ${t.attempts}/${this.maxAttemptsPerElement}: <input id="${firstValid.id}">`);
+                            await applyRadio(firstValid);
+                        }
+                        if (t.attempts >= this.maxAttemptsPerElement) {
+                            t.state = 'UNRESOLVED';
+                        } else {
+                            allStableOrMaxed = false;
                         }
                     }
                 }
+            }
 
-            } catch(e) {}
-        }, 150);
+            // Early auto-stop if all fields reached STABLE or UNRESOLVED state
+            if (allStableOrMaxed) {
+                this.stop("ALL_FIELDS_STABLE_OR_RESOLVED");
+            }
+        }
+
+        stop(reason = "MANUAL_STOP") {
+            if (this.isStopped) return this.stats;
+            this.isStopped = true;
+            if (this.timer) {
+                clearInterval(this.timer);
+                this.timer = null;
+            }
+            if (this.safetyTimer) {
+                clearTimeout(this.safetyTimer);
+                this.safetyTimer = null;
+            }
+
+            // Tally stats
+            if (this.form) {
+                const candidates = Array.from(queryAllInputs(this.form));
+                let stableCount = 0;
+                let unresCount = 0;
+                candidates.forEach(el => {
+                    const t = this.tracker.get(el);
+                    if (t) {
+                        if (t.state === 'STABLE') stableCount++;
+                        else if (t.state === 'UNRESOLVED' || t.attempts >= this.maxAttemptsPerElement) unresCount++;
+                    }
+                });
+                this.stats.stable = stableCount;
+                this.stats.unresolved = unresCount;
+            }
+
+            this.stats.durationMs = Date.now() - this.startTime;
+            this.stats.stopReason = reason;
+            this.stats.stable = (reason === "ALL_FIELDS_STABLE_OR_RESOLVED");
+            if (this._onStop) {
+                this._onStop(this.stats);
+                this._onStop = null;
+            }
+
+            logDev(`🛡️ [FormStabilizer] Stopped (${reason}): seen=${this.stats.fieldsSeen} stable=${this.stats.stable} unresolved=${this.stats.unresolved} (selects=${this.stats.selectAttempts}, cbs=${this.stats.checkboxAttempts}, radios=${this.stats.radioAttempts})`, "info");
+            return this.stats;
+        }
+    }
+
+    let _activeStabilizerInstance = null;
+    function startActiveEmptyFieldSweeper(form, tpl) {
+        if (_activeStabilizerInstance) _activeStabilizerInstance.stop("NEW_STABILIZER_STARTED");
+        _activeStabilizerInstance = new FormStabilizer(form, tpl);
+        _activeStabilizerInstance.start();
+        return _activeStabilizerInstance;
     }
 
     function stopActiveEmptyFieldSweeper() {
-        if (_activeSweeperTimer) {
-            clearInterval(_activeSweeperTimer);
-            _activeSweeperTimer = null;
-            logDev("⚡ [Sweeper] 공란 감시 크롤링 엔진 안전 정지 완료.", "info");
+        if (_activeStabilizerInstance) {
+            _activeStabilizerInstance.stop("STOP_REQUESTED");
+            _activeStabilizerInstance = null;
         }
     }
 
@@ -2416,54 +2598,246 @@
         return results;
     }
 
-    function submitForm(form) {
-        // [v18.6.5] Ultra-Robust Button Discovery (Shadow DOM 지원)
-        let submitBtn = querySelectorIncludingShadowDOM(form, 'button[type="submit"]') || 
-                          querySelectorIncludingShadowDOM(form, 'input[type="submit"]') ||
-                          querySelectorIncludingShadowDOM(form, '[class*="submit"], [id*="submit"]');
-                          
-        if (!submitBtn) {
-            const btns = querySelectorAllIncludingShadowDOM(form, 'button, a, input[type="button"], div[role="button"]');
-            submitBtn = btns.find(b => {
-                const text = (b.textContent || b.value || '').toLowerCase();
-                return ['send', 'submit', '전송', '보내기', '送信', '등록', '确定', '提交', '입력', '접수'].some(k => text.includes(k));
-            });
-        }
-        
-        if (submitBtn) {
-            logDev(`📤 [Action] Clicking discovered button (Shadow DOM): ${submitBtn.tagName} | Text: ${(submitBtn.textContent || submitBtn.value || '').substring(0, 10)}`);
-            try {
-                submitBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            } catch(e) {}
-            try {
-                submitBtn.click();
-            } catch(e) {}
-            
-            // Fallback for custom JS components that need manual trigger
-            ['mousedown', 'mouseup', 'click'].forEach(evt => {
-                try {
-                    submitBtn.dispatchEvent(new MouseEvent(evt, { bubbles: true, cancelable: true }));
-                } catch(e) {}
-            });
+    // ============================================================
+    // [Reliability R1] Deterministic SubmitStateMachine
+    // ============================================================
+    async function executeSubmitStateMachine(form, tpl = {}, options = {}) {
+        // 1. Mandatory: Stop any active field stabilizer
+        if (tpl && typeof tpl.stop === 'function') {
+            try { tpl.stop(); } catch(_) {}
+        } else if (options && typeof options.stop === 'function') {
+            try { options.stop(); } catch(_) {}
+        } else if (tpl && tpl.stabilizer && typeof tpl.stabilizer.stop === 'function') {
+            try { tpl.stabilizer.stop(); } catch(_) {}
+        } else if (options && options.stabilizer && typeof options.stabilizer.stop === 'function') {
+            try { options.stabilizer.stop(); } catch(_) {}
         } else {
-            // [v18.6.5] Bruteforce: If no clear "Submit" button, click the LAST primary-looking button in the container
-            const allBtns = querySelectorAllIncludingShadowDOM(form, 'button, .btn, [class*="button"]').filter(b => elementIsVisible(b));
-            if (allBtns.length > 0) {
-                const lastBtn = allBtns[allBtns.length - 1];
-                logDev("🛠️ [Action] No specific submit button. Triggering last visible button as fallback.");
-                try {
-                    lastBtn.click();
-                } catch(e) {}
-            } else if (form.tagName === 'FORM') {
-                try {
-                    HTMLFormElement.prototype.submit.call(form);
-                } catch(e) {
-                    form.submit();
+            stopActiveEmptyFieldSweeper();
+        }
+
+        // 2. Wait 250-500ms for framework state to settle
+        const settleDelay = (options && options.settleDelayMs !== undefined) ? options.settleDelayMs : ((tpl && tpl.settleDelayMs !== undefined) ? tpl.settleDelayMs : 350);
+        if (settleDelay > 0) {
+            await new Promise(r => setTimeout(r, settleDelay));
+        }
+
+        // 3. Pre-submit validity check (when form is HTMLFormElement)
+        if (form && typeof form.checkValidity === 'function') {
+            let isValid = false;
+            try {
+                isValid = form.checkValidity();
+            } catch (_) {
+                isValid = true;
+            }
+
+            if (!isValid) {
+                logDev("⚠️ [SubmitStateMachine] form.checkValidity() reported invalid fields. Running single bounded self-heal pass...", "warning");
+                
+                // One bounded self-heal pass
+                const invalidInputs = form.querySelectorAll ? form.querySelectorAll(':invalid') : [];
+                for (const inp of Array.from(invalidInputs)) {
+                    try {
+                        if (inp.type === 'checkbox') {
+                            inp.checked = true;
+                            inp.dispatchEvent(new Event('change', { bubbles: true }));
+                        } else if (inp.tagName === 'SELECT' && inp.options && inp.options.length > 1) {
+                            inp.selectedIndex = 1;
+                            inp.dispatchEvent(new Event('change', { bubbles: true }));
+                        } else if (!inp.value || inp.value.trim() === '') {
+                            const healVal = (inp.tagName === 'TEXTAREA' || inp.getAttribute('role') === 'textbox')
+                                ? (tpl.message || 'General Inquiry')
+                                : (tpl.subject || tpl.name || 'Inquiry');
+                            inp.value = healVal;
+                            inp.dispatchEvent(new Event('input', { bubbles: true }));
+                            inp.dispatchEvent(new Event('change', { bubbles: true }));
+                        }
+                    } catch (_) {}
                 }
-            } else {
-                throw new Error("No valid interaction point found for non-FORM container.");
+
+                // Re-check validity
+                try {
+                    isValid = form.checkValidity();
+                } catch (_) {
+                    isValid = true;
+                }
+
+                if (!isValid) {
+                    // Collect privacy-safe descriptors (tag, type, required - NO values)
+                    const invalidDesc = Array.from(form.querySelectorAll ? form.querySelectorAll(':invalid') : []).map(el => ({
+                        tag: el.tagName,
+                        type: el.type || 'text',
+                        required: !!el.required
+                    }));
+                    logDev(`❌ [SubmitStateMachine] Validation blocked after self-heal (${invalidDesc.length} invalid fields)`, "error");
+                    return {
+                        success: false,
+                        reasonCode: 'VALIDATION_FAILED',
+                        invalidFields: invalidDesc
+                    };
+                }
             }
         }
+
+        // 4. Discover ranked submit candidates
+        const submitKeywords = ['send', 'submit', 'contact', 'register', 'inquire', '전송', '보내기', '등록', '접수', '送信', '确定', '提交', '입력'];
+        const rejectKeywords = ['next', 'prev', 'back', 'cancel', 'reset', 'clear', '이전', '취소', '초기화', '지우기'];
+
+        const isVisibleAndAttached = (el) => {
+            if (!el) return false;
+            if (typeof window !== 'undefined' && typeof window.getComputedStyle === 'function' && typeof elementIsVisible === 'function') {
+                try {
+                    return elementIsVisible(el);
+                } catch(_) {}
+            }
+            if (el.offsetWidth !== undefined && el.offsetWidth === 0 && el.offsetHeight === 0) return false;
+            return true;
+        };
+
+        const isDisabled = (el) => {
+            if (!el) return true;
+            return !!(el.disabled || el.getAttribute('aria-disabled') === 'true' || (el.classList && el.classList.contains('disabled')));
+        };
+
+        let submitCandidate = null;
+        let submitReason = null;
+
+        // Rank 1: button[type="submit"]
+        const typeSubmitBtns = querySelectorAllIncludingShadowDOM(form, 'button[type="submit"]');
+        for (const btn of typeSubmitBtns) {
+            if (isVisibleAndAttached(btn)) {
+                if (isDisabled(btn)) {
+                    submitReason = 'SUBMIT_BUTTON_DISABLED';
+                } else {
+                    submitCandidate = btn;
+                    break;
+                }
+            }
+        }
+
+        // Rank 2: input[type="submit"]
+        if (!submitCandidate) {
+            const typeSubmitInputs = querySelectorAllIncludingShadowDOM(form, 'input[type="submit"]');
+            for (const inp of typeSubmitInputs) {
+                if (isVisibleAndAttached(inp)) {
+                    if (isDisabled(inp)) {
+                        submitReason = 'SUBMIT_BUTTON_DISABLED';
+                    } else {
+                        submitCandidate = inp;
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Rank 3 & 4: Text-matching button or role="button"
+        if (!submitCandidate) {
+            const allClickables = querySelectorAllIncludingShadowDOM(form, 'button, a, input[type="button"], div[role="button"], span[role="button"]');
+            for (const b of allClickables) {
+                if (!isVisibleAndAttached(b)) continue;
+                const txt = (b.textContent || b.value || '').trim().toLowerCase();
+                const isSubmitMatch = submitKeywords.some(k => txt.includes(k));
+                const isRejectMatch = rejectKeywords.some(k => txt.includes(k));
+                if (isSubmitMatch && !isRejectMatch) {
+                    if (isDisabled(b)) {
+                        submitReason = 'SUBMIT_BUTTON_DISABLED';
+                    } else {
+                        submitCandidate = b;
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Check if candidate found but disabled
+        if (!submitCandidate && submitReason === 'SUBMIT_BUTTON_DISABLED') {
+            logDev("❌ [SubmitStateMachine] Primary submit button candidate is disabled", "error");
+            return {
+                success: false,
+                reasonCode: 'SUBMIT_BUTTON_DISABLED'
+            };
+        }
+
+        // 5. Submit Execution Strategy
+        let submitStrategy = 'none';
+        let submitEventFired = false;
+
+        const submitListener = () => { submitEventFired = true; };
+        if (form && typeof form.addEventListener === 'function') {
+            form.addEventListener('submit', submitListener, { once: true });
+        }
+
+        if (submitCandidate) {
+            logDev(`🚀 [SubmitStateMachine] Discovered submit button: <${submitCandidate.tagName} type="${submitCandidate.type || ''}"> | Text: ${(submitCandidate.textContent || submitCandidate.value || '').substring(0, 20)}`);
+            try {
+                if (typeof submitCandidate.scrollIntoView === 'function') {
+                    submitCandidate.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            } catch (_) {}
+
+            // Prefer form.requestSubmit(button) for real forms with valid buttons
+            if (form && form.tagName === 'FORM' && typeof form.requestSubmit === 'function' && (submitCandidate.type === 'submit' || submitCandidate.tagName === 'BUTTON')) {
+                try {
+                    submitStrategy = 'requestSubmit';
+                    form.requestSubmit(submitCandidate);
+                } catch (reqErr) {
+                    logDev(`⚠️ [SubmitStateMachine] form.requestSubmit failed: ${reqErr.message}; falling back to single trusted click sequence`, "warning");
+                    submitStrategy = 'trusted_click_sequence';
+                    _dispatchSingleClickSequence(submitCandidate);
+                }
+            } else {
+                submitStrategy = 'trusted_click_sequence';
+                _dispatchSingleClickSequence(submitCandidate);
+            }
+        } else {
+            // No button found: If real FORM, try form.requestSubmit() safely
+            if (form && form.tagName === 'FORM' && typeof form.requestSubmit === 'function') {
+                try {
+                    logDev("🚀 [SubmitStateMachine] No submit button found; triggering form.requestSubmit() directly", "info");
+                    submitStrategy = 'requestSubmit_no_button';
+                    form.requestSubmit();
+                } catch (formErr) {
+                    logDev(`❌ [SubmitStateMachine] form.requestSubmit() failed: ${formErr.message}`, "error");
+                    return {
+                        success: false,
+                        reasonCode: 'SUBMIT_BUTTON_NOT_FOUND'
+                    };
+                }
+            } else {
+                logDev("❌ [SubmitStateMachine] No valid submit button candidate found", "error");
+                return {
+                    success: false,
+                    reasonCode: 'SUBMIT_BUTTON_NOT_FOUND'
+                };
+            }
+        }
+
+        return {
+            success: true,
+            reasonCode: 'SUBMIT_TRIGGERED',
+            strategy: submitStrategy,
+            submitEventFired
+        };
+    }
+
+    function _dispatchSingleClickSequence(el) {
+        if (!el) return;
+        try {
+            if (typeof PointerEvent !== 'undefined') {
+                el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }));
+            }
+            el.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
+            if (typeof PointerEvent !== 'undefined') {
+                el.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, cancelable: true }));
+            }
+            el.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true }));
+            el.click();
+        } catch (_) {
+            try { el.click(); } catch (_) {}
+        }
+    }
+
+    function submitForm(form) {
+        return executeSubmitStateMachine(form);
     }
 
     async function detectSubmissionResult(originalForm, tpl = {}, preSnapshot = { elements: [], bodyText: "" }) {
@@ -2533,10 +2907,8 @@
                     if (healed > 0) {
                         logDev(`🔄 [Healer] 에러 필드 ${healed}개 자가 복구 기입 완료! 폼 재제출을 가동합니다.`, 'success');
                         window._xpider_healed = true;
-                        // 실시간 공란 스위퍼 재가동
-                        startActiveEmptyFieldSweeper(originalForm, tpl);
-                        // 다시 폼 재제출 트리거
-                        submitForm(originalForm);
+                        // Execute submit state machine cleanly without restarting infinite sweeper
+                        await executeSubmitStateMachine(originalForm, tpl);
                         // 시도 횟수를 리셋하여 결과를 대기
                         attempt = 1;
                         await new Promise(r => setTimeout(r, 1000));
@@ -2606,15 +2978,41 @@
 
         logDev("❌ [Result] Submission verification timed out after 10s.", "error");
         sessionStorage.removeItem('xpider_submit_count'); // 실패 시 이중 제출 세션도 정리
-        finishCampaign(false, "Submission verification failed (Timeout - No success indicator found).");
+        const timeoutReason = (submitOutcome && submitOutcome.strategy === 'trusted_click_sequence' && !submitOutcome.submitEventFired)
+            ? 'SUBMIT_CLICK_NO_EFFECT'
+            : 'DELIVERY_UNKNOWN';
+        finishCampaign(false, "Submission verification failed (Timeout - No success indicator found).", timeoutReason);
         return false;
     }
 
-    function finishCampaign(success, error = null) {
+    function finishCampaign(success, error = null, reasonCode = null, metadata = {}) {
         sessionStorage.removeItem('xpider_pending_verify'); // [v17.6.0] Clear recovery flag
         chrome.runtime.sendMessage({
             action: 'SENDER_FINISHED',
-            result: { success: success, error: error }
+            result: {
+                success: success,
+                error: error,
+                reasonCode: reasonCode || (success ? 'SUBMIT_OK_SIGNAL' : 'UNKNOWN'),
+                metadata: metadata
+            }
         });
+    }
+
+    if (typeof window !== 'undefined') {
+        window.__xpiderFormStabilizer = FormStabilizer;
+        window.__xpiderSubmitStateMachine = executeSubmitStateMachine;
+        window.__xpiderStartActiveEmptyFieldSweeper = startActiveEmptyFieldSweeper;
+        window.__xpiderStopActiveEmptyFieldSweeper = stopActiveEmptyFieldSweeper;
+    }
+
+    if (typeof module !== 'undefined' && module.exports) {
+        module.exports = {
+            FormStabilizer,
+            executeSubmitStateMachine,
+            startActiveEmptyFieldSweeper,
+            stopActiveEmptyFieldSweeper,
+            submitForm,
+            fillAndSubmit
+        };
     }
 })();

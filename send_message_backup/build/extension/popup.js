@@ -857,6 +857,18 @@ function bindEvents() {
     const stopBtn = document.getElementById('stop-btn');
     if (stopBtn) stopBtn.addEventListener('click', stopCampaign);
 
+    const stopSaveBtn = document.getElementById('stop-save-btn');
+    if (stopSaveBtn) stopSaveBtn.addEventListener('click', stopAndSaveCampaign);
+
+    const endCampaignBtn = document.getElementById('end-campaign-btn');
+    if (endCampaignBtn) endCampaignBtn.addEventListener('click', endCampaign);
+
+    const resumeBtn = document.getElementById('resume-campaign-btn');
+    if (resumeBtn) resumeBtn.addEventListener('click', resumeCampaign);
+
+    const discardBtn = document.getElementById('discard-checkpoint-btn');
+    if (discardBtn) discardBtn.addEventListener('click', discardCheckpoint);
+
     // Diagnostic Action Buttons
     const copyDiagBtn = document.getElementById('copy-diagnostic-btn');
     if (copyDiagBtn) copyDiagBtn.addEventListener('click', copyDiagnosticReport);
@@ -1662,6 +1674,9 @@ async function startCampaign() {
         chrome.storage.local.set({ xpider_fill_mode: fillMode });
     }
 
+    const skipAttemptedEl = document.getElementById('skip-attempted-toggle');
+    const skipPreviouslyAttempted = skipAttemptedEl ? skipAttemptedEl.checked : true;
+
     const startPayload = {
         queue: campaignQueue,
         template: currentTpl,
@@ -1670,14 +1685,19 @@ async function startCampaign() {
         submitDelayMs,
         fillMode,
         templateId: currentTpl.templateId || 'default',
-        templateVersion: currentTpl.templateVersion || 1
+        templateVersion: currentTpl.templateVersion || 1,
+        skipPreviouslyAttempted
     };
     bindCampaignTemplateMetadata(startPayload, currentTpl);
+
+    // Hide resumable banner if starting a fresh campaign
+    const banner = document.getElementById('resumable-campaign-banner');
+    if (banner) banner.style.display = 'none';
 
     // [v20.0 Chrome Runtime Transport] Dispatch START_CAMPAIGN directly to background service worker
     addLog("[Engine] START_CAMPAIGN request sent", "info");
     const sendTime = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
-    addDiagnosticLog(`[Engine][TX] action=START_CAMPAIGN queue=${startPayload.queue.length} templateId=${startPayload.templateId} v=${startPayload.templateVersion}`);
+    addDiagnosticLog(`[Engine][TX] action=START_CAMPAIGN queue=${startPayload.queue.length} templateId=${startPayload.templateId} v=${startPayload.templateVersion} skipAttempted=${skipPreviouslyAttempted}`);
 
     function _restoreStartButton() {
         campaignActive = false;
@@ -1707,7 +1727,8 @@ async function startCampaign() {
             submitDelayMs: startPayload.submitDelayMs,
             fillMode: startPayload.fillMode,
             templateId: startPayload.templateId,
-            templateVersion: startPayload.templateVersion
+            templateVersion: startPayload.templateVersion,
+            skipPreviouslyAttempted: startPayload.skipPreviouslyAttempted
         }, (response) => {
             const ackTime = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
             const elapsedAckMs = Math.round(ackTime - sendTime);
@@ -1783,13 +1804,82 @@ function togglePause() {
 
 function stopCampaign() {
     campaignActive = false;
-    document.getElementById('start-btn').classList.remove('hidden');
-    document.getElementById('multi-actions').classList.add('hidden');
+    campaignPaused = false;
+    const startBtn = document.getElementById('start-btn');
+    if (startBtn) startBtn.classList.remove('hidden');
+    const multiActions = document.getElementById('multi-actions');
+    if (multiActions) multiActions.classList.add('hidden');
     addDiagnosticLog(`[Engine][TX] action=STOP_CAMPAIGN`);
     if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
-        chrome.runtime.sendMessage({ action: 'STOP_CAMPAIGN' }).catch(e => console.error('[Stop Error]', e));
+        chrome.runtime.sendMessage({ action: 'STOP_CAMPAIGN' }, () => {
+            checkResumableCheckpoint();
+        });
     }
     addLog("Campaign stopped by user.", "stop");
+}
+
+function stopAndSaveCampaign() {
+    return stopCampaign();
+}
+
+function endCampaign() {
+    campaignActive = false;
+    campaignPaused = false;
+    const startBtn = document.getElementById('start-btn');
+    if (startBtn) startBtn.classList.remove('hidden');
+    const multiActions = document.getElementById('multi-actions');
+    if (multiActions) multiActions.classList.add('hidden');
+    const banner = document.getElementById('resumable-campaign-banner');
+    if (banner) banner.style.display = 'none';
+    addDiagnosticLog(`[Engine][TX] action=END_CAMPAIGN`);
+    if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
+        chrome.runtime.sendMessage({ action: 'END_CAMPAIGN' }, () => {
+            checkResumableCheckpoint();
+        });
+    }
+    addLog("🛑 Campaign ended. Remaining queue discarded.", "stop");
+}
+
+function resumeCampaign() {
+    addDiagnosticLog(`[Engine][TX] action=RESUME_CAMPAIGN`);
+    if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
+        chrome.runtime.sendMessage({ action: 'RESUME_CAMPAIGN' }, (res) => {
+            if (res && res.success) {
+                campaignActive = true;
+                campaignPaused = false;
+                const banner = document.getElementById('resumable-campaign-banner');
+                if (banner) banner.style.display = 'none';
+                const startBtn = document.getElementById('start-btn');
+                if (startBtn) startBtn.classList.add('hidden');
+                const multiActions = document.getElementById('multi-actions');
+                if (multiActions) multiActions.classList.remove('hidden');
+                const statusBox = document.getElementById('status-box');
+                if (statusBox) statusBox.classList.remove('hidden');
+                addLog(`▶️ Campaign resumed (${res.remainingCount} remaining).`, "start");
+            } else {
+                addLog(`❌ Resume failed: ${res?.error || 'Unknown error'}`, "error");
+            }
+        });
+    }
+}
+
+function discardCheckpoint() {
+    endCampaign();
+}
+
+function checkResumableCheckpoint() {
+    if (typeof chrome === 'undefined' || !chrome.runtime || !chrome.runtime.sendMessage) return;
+    chrome.runtime.sendMessage({ action: 'GET_STATE' }, (stateResp) => {
+        const banner = document.getElementById('resumable-campaign-banner');
+        const countEl = document.getElementById('resumable-remaining-count');
+        if (!banner) return;
+        if (stateResp && stateResp.hasPausedCheckpoint && !stateResp.isActive) {
+            banner.style.display = 'block';
+            if (countEl) countEl.textContent = stateResp.pausedRemainingCount || 0;
+        } else {
+            banner.style.display = 'none';
+        }
+    });
 }
 
 // processNext in popup is now obsolete as background handles routing
@@ -1813,6 +1903,7 @@ function startPulseCheck() {
                 indicator.style.color = "#22c55e";
             }
         });
+        checkResumableCheckpoint();
     }, 2000);
 }
 
@@ -3069,6 +3160,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initial render on popup open
     _renderHistoryPanel();
+    checkResumableCheckpoint();
 });
 
 if (typeof module !== 'undefined' && module.exports) {
@@ -3098,6 +3190,11 @@ if (typeof module !== 'undefined' && module.exports) {
         startCampaign,
         togglePause,
         stopCampaign,
+        stopAndSaveCampaign,
+        endCampaign,
+        resumeCampaign,
+        discardCheckpoint,
+        checkResumableCheckpoint,
         checkActiveSubmitLock,
         getPopupTemplateStore,
         getPopupHistoryStore,

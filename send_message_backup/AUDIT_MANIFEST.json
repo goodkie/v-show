@@ -1,14 +1,41 @@
 {
   "manifest_version": "1.0",
-  "package": "evidence_phase2b_chrome_runtime_hotfix",
-  "audit_phase": "Phase 2B Chrome Runtime Transport Hotfix Build",
-  "commit_sha": "812c930e758835b7c2336602d27997cd54dcee08",
-  "rollback_anchor_sha": "0853c5006855afdf17c5136dfa5031ea654f6529",
-  "rollback_artifact_sha256": "A2A1387DB3FE6031F0BD2F4E5DDCFBC4DB77D4D5F42F227AEE541ECBB4A9FECB",
+  "package": "evidence_form_execution_reliability_r1",
+  "audit_phase": "Phase 2B + Issue #6 Form Execution Reliability & Resumability R1",
+  "commit_sha": "HEAD",
+  "rollback_anchor_sha": "812c930e758835b7c2336602d27997cd54dcee08",
+  "rollback_artifact_sha256": "4D9F9EB83E82243A7C12DFEC4731E7D3CE8F01777243ECBBD722B34B8FA2DBB2",
   "branch": "upgrade/phase-0-1",
   "repository": "local:extension-form-sender",
   "collaboration_hub": "goodkie/v-show (Issue #6)",
-  "timestamp": "2026-10-01T11:25:00Z",
+  "timestamp": "2026-10-01T12:25:00Z",
+  "form_execution_reliability": {
+    "status": "IMPLEMENTED_AND_VERIFIED",
+    "core_deliverables": {
+      "form_stabilizer": {
+        "status": "ACTIVE",
+        "description": "FormStabilizer replaces unbounded empty-field sweeper with bounded lifetime (max 5s, max 2 element attempts, 500ms cooldown, 2 stable cycles, deterministic values). Eliminates infinite reactive fighting on React/Wix forms."
+      },
+      "submit_state_machine": {
+        "status": "ACTIVE",
+        "description": "executeSubmitStateMachine provides deterministic submission: stops stabilizer, waits 350ms settle delay, pre-submit validity check (aborts with VALIDATION_FAILED if invalid after single bounded self-heal), discovers ranked submit candidates skipping disabled and aria-disabled elements, prefers form.requestSubmit(btn), falls back to single trusted click sequence, strictly forbids HTMLFormElement.prototype.submit."
+      },
+      "resumable_campaign": {
+        "status": "ACTIVE",
+        "description": "pauseCampaignOrchestrator, resumeCampaignOrchestrator, and endCampaignOrchestrator store/restore remainingQueue in xpider_paused_checkpoint without reloading full 492 targets. Supported in UI via PAUSE NOW, STOP & SAVE, RESUME, and END CAMPAIGN."
+      },
+      "history_skip": {
+        "status": "ACTIVE",
+        "description": "Skip Previously Attempted (default ON) filters targets before starting orchestrator using HistoryStore.hasPriorAttempt() checking durable execution statuses (PREPARING, SUBMIT_PENDING, CONFIRMED_SUCCESS, FAILURE, DELIVERY_UNKNOWN)."
+      },
+      "forensic_logging_and_histogram": {
+        "status": "ACTIVE",
+        "description": "Lifecycle logs [TARGET idx/total][host] START and [TARGET][host] FINAL status=... reason=... with outcomeHistogram aggregation in campaignState."
+      }
+    },
+    "verification_suite": "13/13 tests in test_reliability_r1.js",
+    "qa_status": "AUTOMATED SUITES = PASS (87/87); LIVE EXTENSION RUN = PENDING OWNER VALIDATION IN UNPACKED CHROME"
+  },
   "runtime_transport_hotfix": {
     "status": "HOTFIX_COMPLETE",
     "problem_statement": "The unpacked Chrome extension had a dead Electron/main-process window.postMessage bridge (xpiderInvoke), causing a 30-second timeout on START SENDING in real Chrome (IPC timeout: xpider-campaign-start).",
@@ -110,13 +137,14 @@
     }
   },
   "test_results": {
+    "test_reliability_r1": "13/13 PASS (100%)",
     "test_phase2a": "14/14 PASS (100%)",
     "test_phase0_1": "5/5 PASS (100%)",
     "test_phase0_1_behavioral": "5/5 PASS (100%)",
     "test_phase2a_integration_f7f13": "32/32 PASS (100%)",
     "test_phase2b_acceptance": "18/18 PASS (100%)",
-    "total_suite_count": 74,
-    "total_passed": 74,
+    "total_suite_count": 87,
+    "total_passed": 87,
     "total_failed": 0
   }
 }
