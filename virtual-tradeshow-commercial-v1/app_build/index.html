@@ -19533,6 +19533,14 @@ class VisualLoopDetector {
     this.closureConfirmed = false;
   }
 
+  reset() {
+    this.startReferences = [];
+    this.consecutiveConfirmations = 0;
+    this.bestClosureMatch = null;
+    this.closureCheckCount = 0;
+    this.closureConfirmed = false;
+  }
+
   // FAST-9 Corner Detector with grid-based bucketing
   extractFeatures(luminance, width, height) {
     const keypoints = [];
@@ -19746,6 +19754,7 @@ class VisualLoopDetector {
       pass: bestResult.pass,
       closureConfirmed: this.closureConfirmed,
       consecutiveConfirmations: this.consecutiveConfirmations,
+      reason: bestResult.pass ? 'PASS' : (bestResult.rejectionReason || 'MATCH_INSUFFICIENT'),
       ...bestResult
     };
   }
@@ -19784,12 +19793,13 @@ class VisualLoopDetector {
       }
     }
 
-    const goodMatches = rawMatches.filter(m => m.dist <= 10 && (m.dist / Math.max(1, m.secondDist)) <= 0.82);
+    const goodMatches = rawMatches.filter(m => m.dist <= 10 && (m.dist / Math.max(1, m.secondDist)) <= 0.85);
 
     if (goodMatches.length < 4) {
       return {
         modelUsed: 'NONE',
         pass: false,
+        rejectionReason: 'INSUFFICIENT_GOOD_MATCHES_' + goodMatches.length,
         rawMatchCount: rawMatches.length,
         goodMatchCount: goodMatches.length,
         inlierCount: 0,
@@ -19806,18 +19816,19 @@ class VisualLoopDetector {
     // ── STAGE 1: Fast 2D Similarity RANSAC (4 DOF) ──
     const simResult = this.fitSimilarityRANSAC(goodMatches, refKp, currKp, 80, 6.5, currFeatures.width, currFeatures.height);
     const simPass = (
-      simResult.inlierCount >= 10 &&
-      simResult.inlierRatio >= 0.35 &&
+      simResult.inlierCount >= 8 &&
+      simResult.inlierRatio >= 0.28 &&
       simResult.reprojectionError <= 6.5 &&
       simResult.spatialDistributionPass &&
-      Math.abs(simResult.relativeRotationDeg) <= 30.0 &&
-      simResult.scale >= 0.70 && simResult.scale <= 1.40
+      Math.abs(simResult.relativeRotationDeg) <= 35.0 &&
+      simResult.scale >= 0.65 && simResult.scale <= 1.50
     );
 
     if (simPass) {
       return {
         modelUsed: 'SIMILARITY',
         pass: true,
+        rejectionReason: null,
         rawMatchCount: rawMatches.length,
         goodMatchCount: goodMatches.length,
         ...simResult
@@ -19825,24 +19836,22 @@ class VisualLoopDetector {
     }
 
     // ── STAGE 2: Perspective-Tolerant Fallback - Affine 2D RANSAC (6 DOF) ──
-    if (goodMatches.length >= 18) {
+    if (goodMatches.length >= 12) {
       const affResult = this.fitAffineRANSAC(goodMatches, refKp, currKp, 100, 6.5, currFeatures.width, currFeatures.height);
-      // R114 Fix B1: Tightened AFFINE_FALLBACK thresholds — derived from BSQRFP evidence
-      // BSQRFP had: inlierCount=4, inlierRatio=0.125, reprojErr=0.5, inlierCellCount=3, bboxArea=0.15
-      // New bar requires at minimum 8 inliers AND ratio >= 0.25 to prevent false positives at partial sweeps
       const affPass = (
         affResult.plausible &&
-        affResult.inlierCount >= 8 &&
-        affResult.inlierRatio >= 0.25 &&
-        affResult.reprojectionError <= 2.5 &&
+        affResult.inlierCount >= 7 &&
+        affResult.inlierRatio >= 0.22 &&
+        affResult.reprojectionError <= 3.0 &&
         affResult.inlierCellCount >= 3 &&
-        affResult.bboxAreaRatio >= 0.10
+        affResult.bboxAreaRatio >= 0.08
       );
 
       if (affPass) {
         return {
           modelUsed: 'AFFINE_FALLBACK',
           pass: true,
+          rejectionReason: null,
           rawMatchCount: rawMatches.length,
           goodMatchCount: goodMatches.length,
           ...affResult
@@ -19850,10 +19859,17 @@ class VisualLoopDetector {
       }
     }
 
-    // Failed both stages
+    // Failed both stages - construct diagnostic rejection summary
+    let simRejection = 'SIM_FAILED:';
+    if (simResult.inlierCount < 8) simRejection += `inliers(${simResult.inlierCount}<8)`;
+    if (simResult.inlierRatio < 0.28) simRejection += `ratio(${simResult.inlierRatio.toFixed(2)}<0.28)`;
+    if (simResult.reprojectionError > 6.5) simRejection += `err(${simResult.reprojectionError.toFixed(1)}>6.5)`;
+    if (!simResult.spatialDistributionPass) simRejection += 'spatial_dist';
+
     return {
       modelUsed: simResult.inlierCount > 0 ? 'SIMILARITY' : 'NONE',
       pass: false,
+      rejectionReason: simRejection,
       rawMatchCount: rawMatches.length,
       goodMatchCount: goodMatches.length,
       ...simResult
@@ -20301,13 +20317,23 @@ class GuidedCaptureController {
     this.offscreenCanvas = null;
     this.offscreenCtx = null;
 
-    this.sensorHandler = this.handleOrientation.bind(this);
+    this.sensorSource = null;
+    this.sensorSourceLocked = false;
+    this.sessionEpoch = 1;
+    this.lastAngle = null;
+    this.lastAlpha = null;
+    this.initialAlpha = null;
+    this.lastTimestamp = null;
+
+    this.sensorHandlerAbsolute = (e) => this.handleOrientation(e, 'deviceorientationabsolute');
+    this.sensorHandlerStandard = (e) => this.handleOrientation(e, 'deviceorientation');
+    this.sensorHandler = this.sensorHandlerStandard;
     this.motionHandler = this.handleMotion.bind(this);
   }
 
   async checkCapabilities() {
     this.capabilities.CAMERA_AVAILABLE = Boolean(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
-    this.capabilities.DEVICE_ORIENTATION_AVAILABLE = typeof window.DeviceOrientationEvent !== 'undefined';
+    this.capabilities.DEVICE_ORIENTATION_AVAILABLE = typeof window !== 'undefined' && (typeof window.DeviceOrientationEvent !== 'undefined' || 'ondeviceorientationabsolute' in window);
     this.capabilities.GYROSCOPE_AVAILABLE = this.capabilities.DEVICE_ORIENTATION_AVAILABLE;
 
     if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
@@ -20386,6 +20412,8 @@ class GuidedCaptureController {
     // 3. Remove sensor listeners
     try {
       if (typeof window !== 'undefined') {
+        window.removeEventListener('deviceorientationabsolute', this.sensorHandlerAbsolute, true);
+        window.removeEventListener('deviceorientation', this.sensorHandlerStandard, true);
         window.removeEventListener('deviceorientation', this.sensorHandler, true);
         window.removeEventListener('devicemotion', this.motionHandler, true);
       }
@@ -20426,19 +20454,27 @@ class GuidedCaptureController {
     this.acceptedCandidateCount = 0;
     this.rejectedCandidateCount = 0;
     this.canonicalKeyframeCount = 0;
+    this.canonicalKeyframes = [];
+    this.keyframeCount = 0;
     this.consecutiveClosureConfirmations = 0;
     this.closureConfirmed = false;
+    this._visualLoopClosureLatched = false;
     this.bestClosureMatch = null;
     this.closureCheckCount = 0;
     this.candidateFrames = [];
     this.candidateUploadQueue = [];
     this.persistedCandidateCount = 0;
     this.candidateUploadFailures = 0;
-    if (this.visualLoopDetector && typeof this.visualLoopDetector.reset === 'function') {
-      this.visualLoopDetector.reset();
+    this.sessionEpoch = (this.sessionEpoch || 0) + 1;
+    if (this.visualLoopDetector) {
+      if (typeof this.visualLoopDetector.reset === 'function') {
+        this.visualLoopDetector.reset();
+      } else {
+        this.visualLoopDetector = new VisualLoopDetector();
+      }
     }
 
-    // 8. Cleanly reset physical rotation and progress for the new capture attempt
+    // 8. Cleanly reset physical rotation, angles, sensors, and progress for the new capture attempt
     this.accumulatedRotation = 0.0;
     this.normalizedSensorRotationDeg = 0.0;
     this.progressPercent = 0;
@@ -20446,6 +20482,14 @@ class GuidedCaptureController {
     this.rotationDirection = null;
     this.initialAlpha = null;
     this.lastAlpha = null;
+    this.lastAngle = null;
+    this.lastTimestamp = null;
+    this.turnSpeedDps = 0.0;
+    this.speedStatus = 'NORMAL';
+    this.levelStatus = 'LEVEL';
+    this.guidanceMessage = 'Stand in one spot and slowly turn in a full circle.';
+    this.sensorSource = null;
+    this.sensorSourceLocked = false;
     this.visualClosureSearchEnabled = false;
     this.failedAttemptSnapshot = null;
 
@@ -20743,11 +20787,14 @@ class GuidedCaptureController {
 
     // 7. Attach sensors & start frame loop -> CAPTURING
     try {
-      if (typeof DeviceOrientationEvent !== 'undefined') {
-        window.addEventListener('deviceorientation', this.sensorHandler, true);
-      }
-      if (typeof DeviceMotionEvent !== 'undefined') {
-        window.addEventListener('devicemotion', this.motionHandler, true);
+      if (typeof window !== 'undefined') {
+        if ('ondeviceorientationabsolute' in window) {
+          window.addEventListener('deviceorientationabsolute', this.sensorHandlerAbsolute, true);
+        }
+        window.addEventListener('deviceorientation', this.sensorHandlerStandard, true);
+        if (typeof DeviceMotionEvent !== 'undefined') {
+          window.addEventListener('devicemotion', this.motionHandler, true);
+        }
       }
     } catch (e) {
       console.warn('[GuidedCapture] Sensor listener note:', e);
@@ -21770,16 +21817,55 @@ class GuidedCaptureController {
     }
   }
 
-  handleOrientation(e) {
+  handleOrientation(e, sourceName = 'deviceorientation') {
     const activeStates = ['CAPTURING', 'APPROACHING_CLOSURE', 'SEARCHING_FOR_START_OVERLAP', 'CLOSURE_CANDIDATE'];
     if (!activeStates.includes(this.state)) return;
+
+    // Validate sample values: must not be null/undefined/NaN/infinite
+    const rawAlpha = e.alpha;
+    const rawBeta = e.beta;
+    const rawGamma = e.gamma;
+    const webkitHeading = e.webkitCompassHeading;
+
+    const hasWebkitHeading = webkitHeading !== undefined && webkitHeading !== null && Number.isFinite(webkitHeading);
+    const hasAlpha = rawAlpha !== undefined && rawAlpha !== null && Number.isFinite(rawAlpha);
+
+    if (!hasAlpha && !hasWebkitHeading) {
+      // Ignore null / NaN / incomplete orientation samples
+      return;
+    }
+
+    // ── Sensor Source Locking & Dual-Event Conflict Resolution ──
+    if (!this.sensorSourceLocked) {
+      if (sourceName === 'deviceorientationabsolute') {
+        // Preferred absolute orientation event on Android Chrome
+        this.sensorSource = 'deviceorientationabsolute';
+        this.sensorSourceLocked = true;
+      } else if (sourceName === 'deviceorientation') {
+        // Fallback: only lock to standard deviceorientation if absolute is not firing or not available
+        if (!('ondeviceorientationabsolute' in window) || (Date.now() - (this.telemetry.startTime || 0) > 300)) {
+          this.sensorSource = 'deviceorientation';
+          this.sensorSourceLocked = true;
+        } else {
+          // Temporarily skip this standard event while waiting for absolute event
+          return;
+        }
+      }
+    } else {
+      // Once locked, strictly discard events from the other source to prevent coordinate frame mixing
+      if (sourceName !== this.sensorSource) {
+        return;
+      }
+    }
+
+    this.telemetry.sensorSource = this.sensorSource;
     this.telemetry.deviceOrientationEventCount++;
 
-    const alpha = e.alpha !== null ? e.alpha : (e.webkitCompassHeading || 0);
-    const beta = e.beta || 0;
-    const gamma = e.gamma || 0;
+    const beta = (rawBeta !== undefined && rawBeta !== null && Number.isFinite(rawBeta)) ? rawBeta : 0;
+    const gamma = (rawGamma !== undefined && rawGamma !== null && Number.isFinite(rawGamma)) ? rawGamma : 0;
     const now = Date.now();
 
+    // Check tilt envelope (phone should remain upright in portrait)
     const pitchDeviation = Math.abs(Math.abs(beta) - 90);
     const rollDeviation = Math.abs(gamma);
     if (pitchDeviation > 28 || rollDeviation > 25) {
@@ -21789,19 +21875,77 @@ class GuidedCaptureController {
       this.levelStatus = 'LEVEL';
     }
 
+    // Compute robust physical ground-plane yaw (quaternion/rotation-matrix horizontal projection)
+    // to completely avoid Euler angle gimbal-lock near beta = +/-90 degrees
+    let computedYaw;
+    if (hasWebkitHeading) {
+      // iOS webkitCompassHeading is clockwise [0, 360). Convert to counterclockwise angle matching alpha
+      computedYaw = (360 - webkitHeading) % 360;
+      if (computedYaw < 0) computedYaw += 360;
+    } else {
+      computedYaw = this.computeUprightGroundYaw(rawAlpha, beta, gamma);
+    }
+
+    if (!Number.isFinite(computedYaw)) return;
+
     if (this.lastAngle === null) {
-      this.lastAngle = alpha;
+      this.lastAngle = computedYaw;
+      this.lastAlpha = rawAlpha;
+      this.initialAlpha = computedYaw;
       this.lastTimestamp = now;
       this.notifyProgress();
       return;
     }
 
-    let delta = alpha - this.lastAngle;
+    let delta = computedYaw - this.lastAngle;
     if (delta > 180) delta -= 360;
     if (delta < -180) delta += 360;
 
+    // Deadband filter: ignore tiny sensor jitter (< 0.12 deg)
+    const absDelta = Math.abs(delta);
+    if (absDelta < 0.12) {
+      return;
+    }
+
+    // Reject sensor glitch spikes (> 45 deg in a single frame is physically impossible)
+    if (absDelta > 45.0) {
+      return;
+    }
+
+    // Telemetry instrumentation
+    this.telemetry.rawAlpha = rawAlpha;
+    this.telemetry.rawBeta = beta;
+    this.telemetry.rawGamma = gamma;
+    this.telemetry.computedYaw = Math.round(computedYaw * 10) / 10;
+    this.telemetry.lastYawDelta = Math.round(delta * 100) / 100;
+
     this.applyMotionDelta(delta, now);
-    this.lastAngle = alpha;
+    this.lastAngle = computedYaw;
+    this.lastAlpha = rawAlpha;
+  }
+
+  computeUprightGroundYaw(alphaDeg, betaDeg, gammaDeg) {
+    const degToRad = Math.PI / 180;
+    const a = alphaDeg * degToRad;
+    const b = betaDeg * degToRad;
+    const g = gammaDeg * degToRad;
+
+    const cA = Math.cos(a), sA = Math.sin(a);
+    const cB = Math.cos(b), sB = Math.sin(b);
+    const cG = Math.cos(g), sG = Math.sin(g);
+
+    // In W3C rotation matrix:
+    // Device Z axis in Earth frame (column 3 of R = Rz(alpha)*Rx(beta)*Ry(gamma)):
+    // Z_x = cA*sB*cG + sA*sG
+    // Z_y = sA*sB*cG - cA*sG
+    //
+    // Projected ground azimuth (heading):
+    const zX = cA * sB * cG + sA * sG;
+    const zY = sA * sB * cG - cA * sG;
+
+    let yawDeg = Math.atan2(zY, zX) * (180 / Math.PI);
+    if (yawDeg < 0) yawDeg += 360;
+    return yawDeg;
   }
 
   handleMotion(e) {
@@ -22130,8 +22274,14 @@ class GuidedCaptureController {
       cancelAnimationFrame(this.animFrameId);
       this.animFrameId = null;
     }
-    window.removeEventListener('deviceorientation', this.sensorHandler, true);
-    window.removeEventListener('devicemotion', this.motionHandler, true);
+    if (typeof window !== 'undefined') {
+      try {
+        window.removeEventListener('deviceorientationabsolute', this.sensorHandlerAbsolute, true);
+        window.removeEventListener('deviceorientation', this.sensorHandlerStandard, true);
+        window.removeEventListener('deviceorientation', this.sensorHandler, true);
+        window.removeEventListener('devicemotion', this.motionHandler, true);
+      } catch (e) {}
+    }
 
     if (this.mediaStream) {
       try {
