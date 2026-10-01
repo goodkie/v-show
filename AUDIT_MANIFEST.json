@@ -2,7 +2,7 @@
   "manifest_version": "1.0",
   "package": "evidence_phase2b_implementation",
   "audit_phase": "Phase 2B Remediation R1 Final",
-  "commit_sha": "1d61418633e22dfe31ea361dc816b65028780331",
+  "commit_sha": "e32026a9e0c223c69129e6dde1520464a98cb7c1",
   "rollback_anchor_sha": "0853c5006855afdf17c5136dfa5031ea654f6529",
   "rollback_artifact_sha256": "A2A1387DB3FE6031F0BD2F4E5DDCFBC4DB77D4D5F42F227AEE541ECBB4A9FECB",
   "branch": "upgrade/phase-0-1",

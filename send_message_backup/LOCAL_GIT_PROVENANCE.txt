@@ -1,24 +1,24 @@
 === LOCAL GIT PROVENANCE MANIFEST ===
 Phase: Phase 2B Remediation R1 Final
 Branch: upgrade/phase-0-1
-Local HEAD SHA: 1d61418633e22dfe31ea361dc816b65028780331
+Local HEAD SHA: e32026a9e0c223c69129e6dde1520464a98cb7c1
 Rollback Anchor: 0853c5006855afdf17c5136dfa5031ea654f6529
 Rollback Artifact: evidence_phase2a_integration_v6.zip (A2A1387DB3FE6031F0BD2F4E5DDCFBC4DB77D4D5F42F227AEE541ECBB4A9FECB)
 Timestamp: 2026-10-01T07:45:00Z
 
 --- git cat-file -p HEAD ---
-tree 3348b4145713e4202a91cb03d3ecf8cf04cbfd67
+tree 4312bbf64792f3f89c0ecb5a62decb394a590408
 parent 5d3d0999c57a04d5b62517e78439976fd8a7f5f0
 author Antigravity <antigravity@local> 1790840487 -0400
-committer Antigravity <antigravity@local> 1790840487 -0400
+committer Antigravity <antigravity@local> 1790840503 -0400
 
 chore(provenance): update Phase 2B R1 audit manifest, package inventory, and local git provenance
 
 --- git ls-tree -r HEAD ---
-100644 blob 3f8948a5506404523d1e6cde714c93f6e79c644e	AUDIT_MANIFEST.json
-100644 blob d86fc65edee6a3b4af58eaed98451fbff3000812	COMMIT_PROVENANCE.txt
-100644 blob d541a03d7e726435187a64bbfd1dba0292608b5f	LOCAL_GIT_PROVENANCE.txt
-100644 blob 2fa6e6388cd777e394b1ae609a9b59d4c8510de4	PACKAGE_INVENTORY_SHA256.txt
+100644 blob 745ea8605fd8e6f8e33e8fe16e05a932fcc662ef	AUDIT_MANIFEST.json
+100644 blob dbd1fb551e717b262d34c904eb14f43bbbc46324	COMMIT_PROVENANCE.txt
+100644 blob 1dc25eb124e19bdc7a3e21ccba22d11c99a30e30	LOCAL_GIT_PROVENANCE.txt
+100644 blob 74dd2f35b741fc0494b05821290d5aeb97dc6355	PACKAGE_INVENTORY_SHA256.txt
 100644 blob 842e17ecd8265afc70841ce72f3edaf40490c631	RECEIPT_PHASE2A_F7F13_INTEGRATION_REMEDIATION.txt
 100644 blob 9d1f0e4b17815ce9ff2405437f18e5db20f179ba	RECEIPT_PHASE2A_INTEGRATION_V2.txt
 100644 blob 36216e7f02c63ab75ea19845eeabc431aaa4ecf1	RECEIPT_PHASE2A_INTEGRATION_V3.txt
@@ -31,21 +31,21 @@ chore(provenance): update Phase 2B R1 audit manifest, package inventory, and loc
 100644 blob 4955051552a020560d0400e9e7711954340d31f7	receipt_phase0_1_addendum.md
 100644 blob c75b16038576c8595aa7320f8a90b62bacd4674e	receipt_phase2a.md
 100644 blob 6ed40e998b26ef16e4367a39af44fa3ddd32e84f	send_message_backup/ANTIGRAVITY_DISCOVERY_REPORT.md
-100644 blob 3f8948a5506404523d1e6cde714c93f6e79c644e	send_message_backup/AUDIT_MANIFEST.json
-100644 blob d86fc65edee6a3b4af58eaed98451fbff3000812	send_message_backup/COMMIT_PROVENANCE.txt
+100644 blob 745ea8605fd8e6f8e33e8fe16e05a932fcc662ef	send_message_backup/AUDIT_MANIFEST.json
+100644 blob dbd1fb551e717b262d34c904eb14f43bbbc46324	send_message_backup/COMMIT_PROVENANCE.txt
 100644 blob e74d137f1f40f30feca62e102c5f987e660ed519	send_message_backup/FILE_HASHES.txt
-100644 blob d541a03d7e726435187a64bbfd1dba0292608b5f	send_message_backup/LOCAL_GIT_PROVENANCE.txt
-100644 blob 2fa6e6388cd777e394b1ae609a9b59d4c8510de4	send_message_backup/PACKAGE_INVENTORY_SHA256.txt
+100644 blob 1dc25eb124e19bdc7a3e21ccba22d11c99a30e30	send_message_backup/LOCAL_GIT_PROVENANCE.txt
+100644 blob 74dd2f35b741fc0494b05821290d5aeb97dc6355	send_message_backup/PACKAGE_INVENTORY_SHA256.txt
 100644 blob 1dc182da958add45c77db876598767301514967f	send_message_backup/PNG.PNG
 100644 blob c45ed246f92920a7338015ee159f70da21a3b6ee	send_message_backup/RESTORE_POINT_SUMMARY.md
 100644 blob b2533691b1a7f880b2961f01fff0b33e542f01e2	send_message_backup/background.js
 100644 blob d7a631d3bd1c4d7b053cc9ac41d0bf3936d500e2	send_message_backup/banner.jpg
 100644 blob 1691b27400a9f19191b6c96db9306fedd2c87173	send_message_backup/blacklist_data.js
-100644 blob 3f8948a5506404523d1e6cde714c93f6e79c644e	send_message_backup/build/extension/AUDIT_MANIFEST.json
-100644 blob d86fc65edee6a3b4af58eaed98451fbff3000812	send_message_backup/build/extension/COMMIT_PROVENANCE.txt
+100644 blob 745ea8605fd8e6f8e33e8fe16e05a932fcc662ef	send_message_backup/build/extension/AUDIT_MANIFEST.json
+100644 blob dbd1fb551e717b262d34c904eb14f43bbbc46324	send_message_backup/build/extension/COMMIT_PROVENANCE.txt
 100644 blob e74d137f1f40f30feca62e102c5f987e660ed519	send_message_backup/build/extension/FILE_HASHES.txt
-100644 blob d541a03d7e726435187a64bbfd1dba0292608b5f	send_message_backup/build/extension/LOCAL_GIT_PROVENANCE.txt
-100644 blob 2fa6e6388cd777e394b1ae609a9b59d4c8510de4	send_message_backup/build/extension/PACKAGE_INVENTORY_SHA256.txt
+100644 blob 1dc25eb124e19bdc7a3e21ccba22d11c99a30e30	send_message_backup/build/extension/LOCAL_GIT_PROVENANCE.txt
+100644 blob 74dd2f35b741fc0494b05821290d5aeb97dc6355	send_message_backup/build/extension/PACKAGE_INVENTORY_SHA256.txt
 100644 blob 1dc182da958add45c77db876598767301514967f	send_message_backup/build/extension/PNG.PNG
 100644 blob c45ed246f92920a7338015ee159f70da21a3b6ee	send_message_backup/build/extension/RESTORE_POINT_SUMMARY.md
 100644 blob b2533691b1a7f880b2961f01fff0b33e542f01e2	send_message_backup/build/extension/background.js
