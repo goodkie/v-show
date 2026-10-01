@@ -1,0 +1,204 @@
+[ANTIGRAVITY][LOCAL_GIT_PROVENANCE][extension-form-sender][PHASE 2A FINAL REMEDIATION V6]
+
+=== REPOSITORY ENVIRONMENT NOTE ===
+Repository Type: Standalone Local Development Repository
+Local Root Path: e:\vivpr\ai\extension-form-sender
+Remote Origin: None (Local-only git repository; not pushed to GitHub remote)
+Auditor Collaboration Hub: GitHub Issue #6 on goodkie/v-show
+Target Evidence Package: evidence_phase2a_integration_v6.zip
+Timestamp: 2026-10-01T06:05:00Z
+
+=== 1. GIT REV-PARSE HEAD ===
+0853c5006855afdf17c5136dfa5031ea654f6529
+
+=== 2. GIT STATUS --PORCELAIN (Clean Tree at Remediation Commit) ===
+?? evidence_phase2a_integration_v4.zip
+?? evidence_phase2a_integration_v5.zip
+?? v5_receipt_comment.md
+
+=== 3. GIT CAT-FILE -P HEAD ===
+tree 4b84c90d31f0e8a39e839616edb0dbabd9bee595
+parent 1bbe8099248da5427b264236cbf9436c9dc8721d
+author Antigravity <antigravity@local> 1790834517 -0400
+committer Antigravity <antigravity@local> 1790834517 -0400
+
+fix(phase2a): complete V6 remediation for F9 authoritative templates_v2
+
+- _syncTemplateToV2 propagates persistence errors instead of swallowing
+- saveTemplate awaits authoritative v2 write and prevents legacy xpider_tpl corruption on failure
+- importMessageFromFile creates canonical dual-accessor FormTemplateV2 record and awaits v2 persistence
+- Add direct failure-path tests F9-e, F9-f, F9-g, F9-h exercising save/import failure and canonical schemas
+
+=== 4. GIT LS-TREE -R --FULL-TREE HEAD ===
+100644 blob 842e17ecd8265afc70841ce72f3edaf40490c631	RECEIPT_PHASE2A_F7F13_INTEGRATION_REMEDIATION.txt
+100644 blob 9d1f0e4b17815ce9ff2405437f18e5db20f179ba	RECEIPT_PHASE2A_INTEGRATION_V2.txt
+100644 blob 36216e7f02c63ab75ea19845eeabc431aaa4ecf1	RECEIPT_PHASE2A_INTEGRATION_V3.txt
+100644 blob dfaeb8400d0de45c7d4b58aad388aca3a4db7484	consult_phase2.md
+100644 blob 259781733c4495d0b18172b8f74c5cee383684f5	consult_phase2_revised.md
+100644 blob 7261d207717f1626ad0517c4d0d0680d776edd28	evidence_phase2a_f7f13_remediation.zip
+100644 blob 8e330b470d2456d12a8384b937bad909c68ec132	evidence_phase2a_integration_v2.zip
+100644 blob 4357103319ec394c1ec40c1ade3403046238631b	evidence_phase2a_integration_v3.zip
+100644 blob 13a92d33f36b395220985b96a8d9d1cb80242b1b	receipt_phase0_1.md
+100644 blob 4955051552a020560d0400e9e7711954340d31f7	receipt_phase0_1_addendum.md
+100644 blob c75b16038576c8595aa7320f8a90b62bacd4674e	receipt_phase2a.md
+100644 blob 6ed40e998b26ef16e4367a39af44fa3ddd32e84f	send_message_backup/ANTIGRAVITY_DISCOVERY_REPORT.md
+100644 blob 874b34459870dbbe20f569b64af38cfc5653c8de	send_message_backup/AUDIT_MANIFEST.json
+100644 blob 06b075aa86a500783cf44d9fa2389f9f66256d86	send_message_backup/COMMIT_PROVENANCE.txt
+100644 blob 3c9ca2feb751d132facc6c1df47eb335e6605a09	send_message_backup/FILE_HASHES.txt
+100644 blob bcba52782ac426ddba4894db10b857331eddc883	send_message_backup/PACKAGE_INVENTORY_SHA256.txt
+100644 blob 1dc182da958add45c77db876598767301514967f	send_message_backup/PNG.PNG
+100644 blob c45ed246f92920a7338015ee159f70da21a3b6ee	send_message_backup/RESTORE_POINT_SUMMARY.md
+100644 blob 15f090c7b379547bbfa96d9d09df1872fb249648	send_message_backup/background.js
+100644 blob d7a631d3bd1c4d7b053cc9ac41d0bf3936d500e2	send_message_backup/banner.jpg
+100644 blob 1691b27400a9f19191b6c96db9306fedd2c87173	send_message_backup/blacklist_data.js
+100644 blob 874b34459870dbbe20f569b64af38cfc5653c8de	send_message_backup/build/extension/AUDIT_MANIFEST.json
+100644 blob 06b075aa86a500783cf44d9fa2389f9f66256d86	send_message_backup/build/extension/COMMIT_PROVENANCE.txt
+100644 blob 3c9ca2feb751d132facc6c1df47eb335e6605a09	send_message_backup/build/extension/FILE_HASHES.txt
+100644 blob bcba52782ac426ddba4894db10b857331eddc883	send_message_backup/build/extension/PACKAGE_INVENTORY_SHA256.txt
+100644 blob 1dc182da958add45c77db876598767301514967f	send_message_backup/build/extension/PNG.PNG
+100644 blob c45ed246f92920a7338015ee159f70da21a3b6ee	send_message_backup/build/extension/RESTORE_POINT_SUMMARY.md
+100644 blob 15f090c7b379547bbfa96d9d09df1872fb249648	send_message_backup/build/extension/background.js
+100644 blob d7a631d3bd1c4d7b053cc9ac41d0bf3936d500e2	send_message_backup/build/extension/banner.jpg
+100644 blob 1691b27400a9f19191b6c96db9306fedd2c87173	send_message_backup/build/extension/blacklist_data.js
+100644 blob 9c0fbab6f4c281b228345b68f4dc38f4348a349d	send_message_backup/build/extension/content-script.js
+100644 blob b0516a770e20717afc2fea1db6053e3c8f80d639	send_message_backup/build/extension/icons/app-logo.png
+100644 blob 8fd5b9c926e0c31b5fce98ff867049f1081f04dc	send_message_backup/build/extension/icons/banner.png
+100644 blob 77c9d77db779a298ae8bcdab407989333397869b	send_message_backup/build/extension/icons/folder.png
+100644 blob bba5e18797107842108cead48412a80181346ea9	send_message_backup/build/extension/icons/gear.png
+100644 blob 572618d3f144c1a090afacb3dbca16ab279d98e1	send_message_backup/build/extension/icons/icon128.png
+100644 blob 572618d3f144c1a090afacb3dbca16ab279d98e1	send_message_backup/build/extension/icons/icon16.png
+100644 blob 572618d3f144c1a090afacb3dbca16ab279d98e1	send_message_backup/build/extension/icons/icon48.png
+100644 blob f0d93ea73615599ff0a89accbe8e49069fd64567	send_message_backup/build/extension/imgi_1_spider-man-logo-png_seeklogo-385417.png
+100644 blob 27831c1714dd52264de9176eed0e2c5586fedd98	send_message_backup/build/extension/manifest.json
+100644 blob 3a0876abc6d3fbbe9944683faa8d4ab32a7e4dd8	send_message_backup/build/extension/modules/history-store.js
+100644 blob 720404f3483a98416c07a645779e6b161f3b073f	send_message_backup/build/extension/modules/operation-queue.js
+100644 blob 95676407549e6a5eeb627960e4904e7fbff4806b	send_message_backup/build/extension/modules/template-store.js
+100644 blob f3ed75e4a22a2d17cef0c911889ca5816a925901	send_message_backup/build/extension/popup.css
+100644 blob 40891df4812bf2f9d76ed44644685b3c3c124d5d	send_message_backup/build/extension/popup.html
+100644 blob 0f9c42df03f9d501c8d3d40caf7289bed30a8971	send_message_backup/build/extension/popup.js
+100644 blob 0ed90e48045a4ff9786e3210ff07c021103ebdce	send_message_backup/build/extension/solver-content.js
+100644 blob 46e69f1b485a93f4948d15d777fc3a896ee558ca	send_message_backup/build/extension/solver-core.js
+100644 blob 2009c45f1c3cdac550ad57acdc0032e8a962b183	send_message_backup/build/extension/translations.js
+100644 blob b037a46f2b2b5f7e5c990bd2b4a53ad5c65a425f	send_message_backup/build/extension/upload-folder.png
+100644 blob 77c9d77db779a298ae8bcdab407989333397869b	send_message_backup/build/extension/upload-folder2.png
+100644 blob 0a2007691631601ce9892357d382c551a877641c	send_message_backup/build/extension/x-sender pro.png
+100644 blob e0e555c6972b9c17db49ee81ac8c839b85606877	send_message_backup/build/extension/x-sender.png
+100644 blob 5a1cd33d3d64e8ce99866fcecd7f26321b7aa57f	send_message_backup/build/extension/xpider logo-banner2.png
+100644 blob 6ac9574c4f72ef92bb1f34e7011ccb1a8b528b46	"send_message_backup/build/extension/\354\272\241\354\262\230.JPG"
+100644 blob fb7578c4d51e2e2878771afaef2e2eb9d89bb848	"send_message_backup/build/extension/\354\272\241\354\262\2302.JPG"
+100644 blob 9c0fbab6f4c281b228345b68f4dc38f4348a349d	send_message_backup/content-script.js
+100644 blob b0516a770e20717afc2fea1db6053e3c8f80d639	send_message_backup/icons/app-logo.png
+100644 blob 8fd5b9c926e0c31b5fce98ff867049f1081f04dc	send_message_backup/icons/banner.png
+100644 blob 77c9d77db779a298ae8bcdab407989333397869b	send_message_backup/icons/folder.png
+100644 blob bba5e18797107842108cead48412a80181346ea9	send_message_backup/icons/gear.png
+100644 blob 572618d3f144c1a090afacb3dbca16ab279d98e1	send_message_backup/icons/icon128.png
+100644 blob 572618d3f144c1a090afacb3dbca16ab279d98e1	send_message_backup/icons/icon16.png
+100644 blob 572618d3f144c1a090afacb3dbca16ab279d98e1	send_message_backup/icons/icon48.png
+100644 blob f0d93ea73615599ff0a89accbe8e49069fd64567	send_message_backup/imgi_1_spider-man-logo-png_seeklogo-385417.png
+100644 blob 27831c1714dd52264de9176eed0e2c5586fedd98	send_message_backup/manifest.json
+100644 blob 3a0876abc6d3fbbe9944683faa8d4ab32a7e4dd8	send_message_backup/modules/history-store.js
+100644 blob 720404f3483a98416c07a645779e6b161f3b073f	send_message_backup/modules/operation-queue.js
+100644 blob 95676407549e6a5eeb627960e4904e7fbff4806b	send_message_backup/modules/template-store.js
+100644 blob f3ed75e4a22a2d17cef0c911889ca5816a925901	send_message_backup/popup.css
+100644 blob 40891df4812bf2f9d76ed44644685b3c3c124d5d	send_message_backup/popup.html
+100644 blob 0f9c42df03f9d501c8d3d40caf7289bed30a8971	send_message_backup/popup.js
+100644 blob 0ed90e48045a4ff9786e3210ff07c021103ebdce	send_message_backup/solver-content.js
+100644 blob 46e69f1b485a93f4948d15d777fc3a896ee558ca	send_message_backup/solver-core.js
+100644 blob 369c9ed98b8181eeda8f41b67b4996de5d1e5c19	send_message_backup/test_phase2a_integration_f7f13.js
+100644 blob 2009c45f1c3cdac550ad57acdc0032e8a962b183	send_message_backup/translations.js
+100644 blob b037a46f2b2b5f7e5c990bd2b4a53ad5c65a425f	send_message_backup/upload-folder.png
+100644 blob 77c9d77db779a298ae8bcdab407989333397869b	send_message_backup/upload-folder2.png
+100644 blob 0a2007691631601ce9892357d382c551a877641c	send_message_backup/x-sender pro.png
+100644 blob e0e555c6972b9c17db49ee81ac8c839b85606877	send_message_backup/x-sender.png
+100644 blob 5a1cd33d3d64e8ce99866fcecd7f26321b7aa57f	send_message_backup/xpider logo-banner2.png
+100644 blob 6ac9574c4f72ef92bb1f34e7011ccb1a8b528b46	"send_message_backup/\354\272\241\354\262\230.JPG"
+100644 blob fb7578c4d51e2e2878771afaef2e2eb9d89bb848	"send_message_backup/\354\272\241\354\262\2302.JPG"
+100644 blob 31c816438606b24b59d572d6ab45cfef77d932f2	test_phase0_1.js
+100644 blob bc0595a6d48a4dbf441f7f1bab6a5e488e38f2ab	test_phase0_1_behavioral.js
+100644 blob cafb197d82869a99f08eff79d67843c3bbc11f10	test_phase2a.js
+100644 blob d43af2184fbf164dab63459e71fe84aedb9e214e	test_solver_autonomous.js
+
+=== 5. PACKAGE PATH -> GIT HASH-OBJECT / HEAD BLOB SHA MAPPING ===
+842e17ecd8265afc70841ce72f3edaf40490c631  RECEIPT_PHASE2A_F7F13_INTEGRATION_REMEDIATION.txt  (tree_match=True)
+9d1f0e4b17815ce9ff2405437f18e5db20f179ba  RECEIPT_PHASE2A_INTEGRATION_V2.txt  (tree_match=True)
+36216e7f02c63ab75ea19845eeabc431aaa4ecf1  RECEIPT_PHASE2A_INTEGRATION_V3.txt  (tree_match=True)
+dfaeb8400d0de45c7d4b58aad388aca3a4db7484  consult_phase2.md  (tree_match=True)
+259781733c4495d0b18172b8f74c5cee383684f5  consult_phase2_revised.md  (tree_match=True)
+7261d207717f1626ad0517c4d0d0680d776edd28  evidence_phase2a_f7f13_remediation.zip  (tree_match=True)
+8e330b470d2456d12a8384b937bad909c68ec132  evidence_phase2a_integration_v2.zip  (tree_match=True)
+4357103319ec394c1ec40c1ade3403046238631b  evidence_phase2a_integration_v3.zip  (tree_match=True)
+13a92d33f36b395220985b96a8d9d1cb80242b1b  receipt_phase0_1.md  (tree_match=True)
+4955051552a020560d0400e9e7711954340d31f7  receipt_phase0_1_addendum.md  (tree_match=True)
+c75b16038576c8595aa7320f8a90b62bacd4674e  receipt_phase2a.md  (tree_match=True)
+6ed40e998b26ef16e4367a39af44fa3ddd32e84f  send_message_backup/ANTIGRAVITY_DISCOVERY_REPORT.md  (tree_match=True)
+874b34459870dbbe20f569b64af38cfc5653c8de  send_message_backup/AUDIT_MANIFEST.json  (tree_match=True)
+06b075aa86a500783cf44d9fa2389f9f66256d86  send_message_backup/COMMIT_PROVENANCE.txt  (tree_match=True)
+3c9ca2feb751d132facc6c1df47eb335e6605a09  send_message_backup/FILE_HASHES.txt  (tree_match=True)
+bcba52782ac426ddba4894db10b857331eddc883  send_message_backup/PACKAGE_INVENTORY_SHA256.txt  (tree_match=True)
+1dc182da958add45c77db876598767301514967f  send_message_backup/PNG.PNG  (tree_match=True)
+c45ed246f92920a7338015ee159f70da21a3b6ee  send_message_backup/RESTORE_POINT_SUMMARY.md  (tree_match=True)
+15f090c7b379547bbfa96d9d09df1872fb249648  send_message_backup/background.js  (tree_match=True)
+d7a631d3bd1c4d7b053cc9ac41d0bf3936d500e2  send_message_backup/banner.jpg  (tree_match=True)
+1691b27400a9f19191b6c96db9306fedd2c87173  send_message_backup/blacklist_data.js  (tree_match=True)
+874b34459870dbbe20f569b64af38cfc5653c8de  send_message_backup/build/extension/AUDIT_MANIFEST.json  (tree_match=True)
+06b075aa86a500783cf44d9fa2389f9f66256d86  send_message_backup/build/extension/COMMIT_PROVENANCE.txt  (tree_match=True)
+3c9ca2feb751d132facc6c1df47eb335e6605a09  send_message_backup/build/extension/FILE_HASHES.txt  (tree_match=True)
+bcba52782ac426ddba4894db10b857331eddc883  send_message_backup/build/extension/PACKAGE_INVENTORY_SHA256.txt  (tree_match=True)
+1dc182da958add45c77db876598767301514967f  send_message_backup/build/extension/PNG.PNG  (tree_match=True)
+c45ed246f92920a7338015ee159f70da21a3b6ee  send_message_backup/build/extension/RESTORE_POINT_SUMMARY.md  (tree_match=True)
+15f090c7b379547bbfa96d9d09df1872fb249648  send_message_backup/build/extension/background.js  (tree_match=True)
+d7a631d3bd1c4d7b053cc9ac41d0bf3936d500e2  send_message_backup/build/extension/banner.jpg  (tree_match=True)
+1691b27400a9f19191b6c96db9306fedd2c87173  send_message_backup/build/extension/blacklist_data.js  (tree_match=True)
+9c0fbab6f4c281b228345b68f4dc38f4348a349d  send_message_backup/build/extension/content-script.js  (tree_match=True)
+b0516a770e20717afc2fea1db6053e3c8f80d639  send_message_backup/build/extension/icons/app-logo.png  (tree_match=True)
+8fd5b9c926e0c31b5fce98ff867049f1081f04dc  send_message_backup/build/extension/icons/banner.png  (tree_match=True)
+77c9d77db779a298ae8bcdab407989333397869b  send_message_backup/build/extension/icons/folder.png  (tree_match=True)
+bba5e18797107842108cead48412a80181346ea9  send_message_backup/build/extension/icons/gear.png  (tree_match=True)
+572618d3f144c1a090afacb3dbca16ab279d98e1  send_message_backup/build/extension/icons/icon128.png  (tree_match=True)
+572618d3f144c1a090afacb3dbca16ab279d98e1  send_message_backup/build/extension/icons/icon16.png  (tree_match=True)
+572618d3f144c1a090afacb3dbca16ab279d98e1  send_message_backup/build/extension/icons/icon48.png  (tree_match=True)
+f0d93ea73615599ff0a89accbe8e49069fd64567  send_message_backup/build/extension/imgi_1_spider-man-logo-png_seeklogo-385417.png  (tree_match=True)
+27831c1714dd52264de9176eed0e2c5586fedd98  send_message_backup/build/extension/manifest.json  (tree_match=True)
+3a0876abc6d3fbbe9944683faa8d4ab32a7e4dd8  send_message_backup/build/extension/modules/history-store.js  (tree_match=True)
+720404f3483a98416c07a645779e6b161f3b073f  send_message_backup/build/extension/modules/operation-queue.js  (tree_match=True)
+95676407549e6a5eeb627960e4904e7fbff4806b  send_message_backup/build/extension/modules/template-store.js  (tree_match=True)
+f3ed75e4a22a2d17cef0c911889ca5816a925901  send_message_backup/build/extension/popup.css  (tree_match=True)
+40891df4812bf2f9d76ed44644685b3c3c124d5d  send_message_backup/build/extension/popup.html  (tree_match=True)
+0f9c42df03f9d501c8d3d40caf7289bed30a8971  send_message_backup/build/extension/popup.js  (tree_match=True)
+0ed90e48045a4ff9786e3210ff07c021103ebdce  send_message_backup/build/extension/solver-content.js  (tree_match=True)
+46e69f1b485a93f4948d15d777fc3a896ee558ca  send_message_backup/build/extension/solver-core.js  (tree_match=True)
+2009c45f1c3cdac550ad57acdc0032e8a962b183  send_message_backup/build/extension/translations.js  (tree_match=True)
+b037a46f2b2b5f7e5c990bd2b4a53ad5c65a425f  send_message_backup/build/extension/upload-folder.png  (tree_match=True)
+77c9d77db779a298ae8bcdab407989333397869b  send_message_backup/build/extension/upload-folder2.png  (tree_match=True)
+0a2007691631601ce9892357d382c551a877641c  send_message_backup/build/extension/x-sender pro.png  (tree_match=True)
+e0e555c6972b9c17db49ee81ac8c839b85606877  send_message_backup/build/extension/x-sender.png  (tree_match=True)
+5a1cd33d3d64e8ce99866fcecd7f26321b7aa57f  send_message_backup/build/extension/xpider logo-banner2.png  (tree_match=True)
+9c0fbab6f4c281b228345b68f4dc38f4348a349d  send_message_backup/content-script.js  (tree_match=True)
+b0516a770e20717afc2fea1db6053e3c8f80d639  send_message_backup/icons/app-logo.png  (tree_match=True)
+8fd5b9c926e0c31b5fce98ff867049f1081f04dc  send_message_backup/icons/banner.png  (tree_match=True)
+77c9d77db779a298ae8bcdab407989333397869b  send_message_backup/icons/folder.png  (tree_match=True)
+bba5e18797107842108cead48412a80181346ea9  send_message_backup/icons/gear.png  (tree_match=True)
+572618d3f144c1a090afacb3dbca16ab279d98e1  send_message_backup/icons/icon128.png  (tree_match=True)
+572618d3f144c1a090afacb3dbca16ab279d98e1  send_message_backup/icons/icon16.png  (tree_match=True)
+572618d3f144c1a090afacb3dbca16ab279d98e1  send_message_backup/icons/icon48.png  (tree_match=True)
+f0d93ea73615599ff0a89accbe8e49069fd64567  send_message_backup/imgi_1_spider-man-logo-png_seeklogo-385417.png  (tree_match=True)
+27831c1714dd52264de9176eed0e2c5586fedd98  send_message_backup/manifest.json  (tree_match=True)
+3a0876abc6d3fbbe9944683faa8d4ab32a7e4dd8  send_message_backup/modules/history-store.js  (tree_match=True)
+720404f3483a98416c07a645779e6b161f3b073f  send_message_backup/modules/operation-queue.js  (tree_match=True)
+95676407549e6a5eeb627960e4904e7fbff4806b  send_message_backup/modules/template-store.js  (tree_match=True)
+f3ed75e4a22a2d17cef0c911889ca5816a925901  send_message_backup/popup.css  (tree_match=True)
+40891df4812bf2f9d76ed44644685b3c3c124d5d  send_message_backup/popup.html  (tree_match=True)
+0f9c42df03f9d501c8d3d40caf7289bed30a8971  send_message_backup/popup.js  (tree_match=True)
+0ed90e48045a4ff9786e3210ff07c021103ebdce  send_message_backup/solver-content.js  (tree_match=True)
+46e69f1b485a93f4948d15d777fc3a896ee558ca  send_message_backup/solver-core.js  (tree_match=True)
+369c9ed98b8181eeda8f41b67b4996de5d1e5c19  send_message_backup/test_phase2a_integration_f7f13.js  (tree_match=True)
+2009c45f1c3cdac550ad57acdc0032e8a962b183  send_message_backup/translations.js  (tree_match=True)
+b037a46f2b2b5f7e5c990bd2b4a53ad5c65a425f  send_message_backup/upload-folder.png  (tree_match=True)
+77c9d77db779a298ae8bcdab407989333397869b  send_message_backup/upload-folder2.png  (tree_match=True)
+0a2007691631601ce9892357d382c551a877641c  send_message_backup/x-sender pro.png  (tree_match=True)
+e0e555c6972b9c17db49ee81ac8c839b85606877  send_message_backup/x-sender.png  (tree_match=True)
+5a1cd33d3d64e8ce99866fcecd7f26321b7aa57f  send_message_backup/xpider logo-banner2.png  (tree_match=True)
+31c816438606b24b59d572d6ab45cfef77d932f2  test_phase0_1.js  (tree_match=True)
+bc0595a6d48a4dbf441f7f1bab6a5e488e38f2ab  test_phase0_1_behavioral.js  (tree_match=True)
+cafb197d82869a99f08eff79d67843c3bbc11f10  test_phase2a.js  (tree_match=True)
+d43af2184fbf164dab63459e71fe84aedb9e214e  test_solver_autonomous.js  (tree_match=True)

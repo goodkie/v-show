@@ -1,11 +1,12 @@
 {
   "manifest_version": "1.0",
-  "package": "evidence_phase2a_integration_v5",
-  "audit_phase": "Phase 2A Remediation V5",
-  "commit_sha": "9d6afff048c0fd1b31a2ff433ea37561079a1f3f",
+  "package": "evidence_phase2a_integration_v6",
+  "audit_phase": "Phase 2A Final Remediation V6",
+  "commit_sha": "0853c5006855afdf17c5136dfa5031ea654f6529",
   "branch": "upgrade/phase-0-1",
-  "repository": "goodkie/v-show",
-  "timestamp": "2026-10-01T05:35:00Z",
+  "repository": "local:extension-form-sender",
+  "collaboration_hub": "goodkie/v-show (Issue #6)",
+  "timestamp": "2026-10-01T06:10:00Z",
   "remediation_summary": {
     "RFC4180_RAW_PRESERVATION": {
       "status": "RESOLVED",
@@ -29,7 +30,15 @@
     },
     "AUTHORITATIVE_TEMPLATES_V2": {
       "status": "RESOLVED",
-      "description": "templates_v2 authoritative across all save/edit paths; saveTemplate awaits _syncTemplateToV2."
+      "description": "templates_v2 authoritative across all save/edit/import paths; _syncTemplateToV2 propagates errors; saveTemplate and persistImportedTemplate await v2 write and prevent legacy xpider_tpl advancement upon v2 failure."
+    },
+    "IMPORT_TEMPLATE_CANONICAL_SCHEMA": {
+      "status": "RESOLVED",
+      "description": "importMessageFromFile constructs canonical FormTemplateV2 record with sender, content, fullName and awaits v2 persistence."
+    },
+    "DIRECT_FAILURE_PATH_TESTS": {
+      "status": "RESOLVED",
+      "description": "Integration tests F9-e, F9-f, F9-g, F9-h exercise saveTemplate and persistImportedTemplate failure paths."
     },
     "LEGACY_FIXTURE_POPUP_MAPPING": {
       "status": "RESOLVED",
@@ -37,24 +46,24 @@
     },
     "PRODUCTION_FUNCTION_TESTING": {
       "status": "RESOLVED",
-      "description": "Integration test directly invokes production restoreCampaignState and HistoryStore methods."
+      "description": "Integration test directly invokes production restoreCampaignState, HistoryStore methods, and popup save/import functions."
     },
     "PACKAGE_INVENTORY_SHA256": {
       "status": "RESOLVED",
       "description": "Deterministic SHA-256 manifest covering all files in the package."
     },
-    "COMMIT_PROVENANCE": {
+    "LOCAL_GIT_PROVENANCE": {
       "status": "RESOLVED",
-      "description": "Provenance artifacts tying package bytes to Git commit SHA 9d6afff048c0fd1b31a2ff433ea37561079a1f3f."
+      "description": "Full local Git provenance artifacts including rev-parse HEAD, cat-file HEAD, ls-tree HEAD, and package-path to blob SHA mapping."
     }
   },
   "test_suites": [
     { "file": "test_phase2a.js", "tests": 14, "passed": 14, "status": "PASS" },
     { "file": "test_phase0_1.js", "tests": 5, "passed": 5, "status": "PASS" },
     { "file": "test_phase0_1_behavioral.js", "tests": 5, "passed": 5, "status": "PASS" },
-    { "file": "send_message_backup/test_phase2a_integration_f7f13.js", "tests": 28, "passed": 28, "status": "PASS" }
+    { "file": "send_message_backup/test_phase2a_integration_f7f13.js", "tests": 32, "passed": 32, "status": "PASS" }
   ],
-  "total_tests": 52,
-  "total_passed": 52,
+  "total_tests": 56,
+  "total_passed": 56,
   "pass_rate": "100%"
 }
