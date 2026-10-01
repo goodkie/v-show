@@ -1055,6 +1055,7 @@ input:checked + .slider-small:before { transform: translateX(14px); }
 /* Logic-based Visibility: Hide status areas in Template Tab */
 body.template-active #status-box,
 body.template-active #log-container,
+body.template-active .diagnostic-actions-bar,
 body.template-active .action-buttons {
     display: none !important;
 }

@@ -120,6 +120,7 @@ const mockStorage = createMockStorage();
 const mockDOM = createMockDOM();
 
 let lastIpcInvoke = null;
+let simulateIpcBehavior = 'AUTO_RESPOND'; // 'AUTO_RESPOND', 'NO_RESPONDER', 'DELAYED_RESPOND'
 const messageListeners = [];
 
 global.chrome = {
@@ -163,6 +164,18 @@ global.window = {
     postMessage: (msg) => {
         if (msg && msg.type === 'XPIDER_INVOKE') {
             lastIpcInvoke = msg;
+            if (simulateIpcBehavior === 'NO_RESPONDER') {
+                // Simulates real Chrome where no responder/bridge handles XPIDER_INVOKE
+                return;
+            }
+            if (simulateIpcBehavior === 'DELAYED_RESPOND') {
+                setTimeout(() => {
+                    messageListeners.forEach(fn => fn({
+                        data: { type: 'XPIDER_RESPONSE', id: msg.id, result: { success: true } }
+                    }));
+                }, 25);
+                return;
+            }
             messageListeners.forEach(fn => fn({
                 data: { type: 'XPIDER_RESPONSE', id: msg.id, result: { success: true } }
             }));
@@ -734,6 +747,128 @@ async function runPhase2BSuite() {
         assert(lastIpcInvoke.args.templateId, "Payload must contain templateId");
         assert(lastIpcInvoke.args.templateVersion, "Payload must contain templateVersion");
         assert.strictEqual(lastIpcInvoke.args.template.subject, "Outreach 2026", "Payload template subject must match");
+    });
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // DIAG-IPC-1: No Responder IPC Timeout & Structured Diagnostic Dump
+    // ─────────────────────────────────────────────────────────────────────────
+    await test("DIAG-IPC-1: No Responder Path — Rejection, Checkpoints, and Structured Diagnostic Dump", async () => {
+        simulateIpcBehavior = 'NO_RESPONDER';
+        popup.clearDiagnosticLog();
+
+        const diagPayload = {
+            queue: [{ url: "https://audit-target.com/contact" }],
+            templateId: "tpl_diag_test",
+            templateVersion: 3,
+            template: { subject: "Test Diag", message: "Sensitive message content" }
+        };
+
+        // Execute xpiderInvoke with short timeout (150ms) and checkpoints
+        await assert.rejects(
+            async () => {
+                await popup.xpiderInvoke('xpider-campaign-start', diagPayload, {
+                    timeoutMs: 150,
+                    checkpoints: [40, 80, 120]
+                });
+            },
+            /IPC timeout: xpider-campaign-start/,
+            "xpiderInvoke must reject with IPC timeout when no responder answers"
+        );
+
+        const buffer = popup.getDiagnosticBuffer();
+        assert(buffer.length > 0, "Diagnostic buffer must record traces");
+
+        // Verify A: IPC Request ID and postMessage dispatched
+        const hasReqLog = buffer.some(l => l.includes('[IPC][REQ ') && l.includes('channel=xpider-campaign-start'));
+        const hasDispatched = buffer.some(l => l.includes('postMessage dispatched'));
+        assert(hasReqLog, "Diagnostic trace must include request ID and channel metadata");
+        assert(hasDispatched, "Diagnostic trace must record postMessage dispatched");
+
+        // Verify B: Bridge absence logged before request
+        const hasBridgeLog = buffer.some(l => l.includes('[IPC][BRIDGE] No native XPIDER response bridge detected'));
+        assert(hasBridgeLog, "Diagnostic trace must record bridge availability snapshot");
+
+        // Verify C & D: Pending checkpoints recorded with matching=0
+        const hasCheckpoint = buffer.some(l => l.includes('[IPC][WAIT ') && l.includes('matching=0'));
+        assert(hasCheckpoint, "Diagnostic checkpoints must record zero matching responses");
+
+        // Verify E: Structured timeout diagnostic block
+        const hasTimeoutDump = buffer.some(l => l.includes('===== XPIDER IPC TIMEOUT DIAGNOSTIC ====='));
+        const hasMatchingZero = buffer.some(l => l.includes('matchingResponses:      0'));
+        assert(hasTimeoutDump, "Diagnostic buffer must contain structured timeout block");
+        assert(hasMatchingZero, "Timeout block must confirm 0 matching responses");
+
+        // Verify Diagnostic Report generation
+        const report = popup.getDiagnosticReport();
+        assert(report.includes("XPIDER EXTENSION RUNTIME IPC DIAGNOSTIC REPORT"), "Report must include standard header");
+        assert(report.includes("Session ID:"), "Report must include session ID");
+        assert(report.includes("Privacy Status:"), "Report must state privacy redaction status");
+
+        console.log('    [QA NOTE] SIMULATED XPIDER_RESPONSE bridge test = PASS (Verified no-responder timeout & diagnostic dump)');
+        console.log('    [QA NOTE] real Chrome native bridge = NOT_VERIFIED (Simulated test runner only; pending Owner live Chrome trace)');
+    });
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // DIAG-IPC-2: Responder Present Resolution & Latency Capture
+    // ─────────────────────────────────────────────────────────────────────────
+    await test("DIAG-IPC-2: Responder Present Path — ID Match, Latency Capture, and Clean Resolution", async () => {
+        simulateIpcBehavior = 'DELAYED_RESPOND';
+        popup.clearDiagnosticLog();
+
+        const diagPayload = {
+            queue: [{ url: "https://audit-target-2.com/contact" }],
+            templateId: "tpl_diag_resp",
+            templateVersion: 1
+        };
+
+        const res = await popup.xpiderInvoke('xpider-campaign-start', diagPayload, { timeoutMs: 500 });
+        assert.strictEqual(res.success, true, "xpiderInvoke must resolve when matching XPIDER_RESPONSE arrives");
+
+        const buffer = popup.getDiagnosticBuffer();
+        const hasIdMatch = buffer.some(l => l.includes('idMatch=true'));
+        const hasSuccess = buffer.some(l => l.includes('[IPC][SUCCESS') && l.includes('Matching XPIDER_RESPONSE accepted'));
+        assert(hasIdMatch, "Diagnostic trace must capture matching response ID");
+        assert(hasSuccess, "Diagnostic trace must capture success transition with latency");
+
+        console.log('    [QA NOTE] SIMULATED XPIDER_RESPONSE bridge test = PASS (Responder present resolution verified)');
+        console.log('    [QA NOTE] real Chrome native bridge = NOT_VERIFIED (Simulated mock only; does not prove unpacked Chrome bridge presence)');
+    });
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // TC-2B-11: Privacy-Safe Redaction Engine & User Diagnostic Controls
+    // ─────────────────────────────────────────────────────────────────────────
+    await test("TC-2B-11: Privacy-Safe Redaction Engine & Diagnostic Buffer Management", async () => {
+        // 1. Redaction of emails
+        const emailRedacted = popup.redactSensitiveText("Contact lead at user.name+tag@example-domain.co.kr for inquiries");
+        assert(!emailRedacted.includes("user.name+tag@example-domain.co.kr"), "Email address must be redacted");
+        assert(emailRedacted.includes("[REDACTED_EMAIL]"), "Placeholder must be inserted");
+
+        // 2. Redaction of phone numbers
+        const phoneRedacted = popup.redactSensitiveText("Call customer service at 010-9876-5432 or +1-800-555-0199 now");
+        assert(!phoneRedacted.includes("010-9876-5432"), "Korean phone number must be redacted");
+        assert(!phoneRedacted.includes("800-555-0199"), "US phone number must be redacted");
+        assert(phoneRedacted.includes("[REDACTED_PHONE]"), "Phone placeholder must be inserted");
+
+        // 3. Redaction of API keys and auth tokens
+        const tokenRedacted = popup.redactSensitiveText("Authorization: Bearer abcd1234efgh5678ijkl9012 and api_key: secret_token_xyz9999");
+        assert(!tokenRedacted.includes("abcd1234efgh5678ijkl9012"), "Bearer token must be redacted");
+        assert(!tokenRedacted.includes("secret_token_xyz9999"), "API key must be redacted");
+        assert(tokenRedacted.includes("[REDACTED_SECRET]"), "Secret placeholder must be inserted");
+
+        // 4. Redaction of URLs with sensitive path/queries
+        const urlRedacted = popup.redactSensitiveText("Form target https://confidential-crm.com/leads/create?session=secret1234");
+        assert(!urlRedacted.includes("session=secret1234"), "Query string must be redacted");
+        assert(urlRedacted.includes("https://confidential-crm.com/[PATH]"), "Only protocol and hostname must be preserved");
+
+        // 5. Buffer clearing
+        popup.clearDiagnosticLog();
+        const freshBuffer = popup.getDiagnosticBuffer();
+        assert.strictEqual(freshBuffer.length, 1, "Cleared buffer must contain only clear acknowledgment");
+        assert(freshBuffer[0].includes("Diagnostic buffer cleared"), "Acknowledgment text must match");
+
+        // 6. Payload byte calculation
+        const bytes = popup.calculatePayloadBytes({ sample: "hello world" });
+        assert(bytes > 0, "Byte size calculation must be greater than zero");
     });
 
     console.log(`\n=== PHASE 2B ACCEPTANCE SUITE RESULTS: ${totalPassed} PASSED, ${totalFailed} FAILED ===\n`);

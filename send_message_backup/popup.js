@@ -59,43 +59,390 @@ let i18nData = null;
 let lastLogMessage = "Ready...";
 let remainingTargets = 0;
 
-// [v19.0] XPIDER_INVOKE: Direct IPC bridge to main process (bypasses background.js)
-function xpiderInvoke(channel, args) {
+// ── [IPC DIAGNOSTIC TRACE & BUFFER SUBSYSTEM] ──────────────────────────────
+const DIAG_LOG_CAPACITY = 500;
+const diagnosticLogBuffer = [];
+const diagnosticSessionId = 'diag_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 8);
+
+/**
+ * Privacy-safe Redaction Engine
+ * Automatically redacts:
+ * - Email addresses
+ * - Phone numbers
+ * - Template message body, secrets, auth tokens, passwords, cookies
+ * - Full target URL lists (hostnames or counts only)
+ */
+function redactSensitiveText(str) {
+    if (str === null || str === undefined) return '';
+    if (typeof str !== 'string') {
+        try {
+            str = JSON.stringify(str);
+        } catch (_) {
+            str = String(str);
+        }
+    }
+    return str
+        // Email addresses
+        .replace(/[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+/g, '[REDACTED_EMAIL]')
+        // Phone numbers (international, Korean, standard dash/space formats)
+        .replace(/(?:\+?\d{1,3}[-.\s]?)?\(?\d{2,4}\)?[-.\s]?\d{3,4}[-.\s]?\d{4}/g, '[REDACTED_PHONE]')
+        // API Keys, Bearer tokens, secrets, passwords
+        .replace(/(?:key|token|secret|authorization|bearer|auth|password)[\s:="']+[a-zA-Z0-9_\-\.]{8,}/gi, (match) => {
+            const prefix = match.split(/[\s:="']+/)[0];
+            return `${prefix}: [REDACTED_SECRET]`;
+        })
+        // Cookie headers
+        .replace(/Cookie:\s*[^;\r\n]+(?:;\s*[^;\r\n]+)*/gi, 'Cookie: [REDACTED_COOKIE]')
+        // URLs with query params/paths that may leak customer data -> retain protocol + hostname only
+        .replace(/https?:\/\/[^\s"'`<>]+(?:\/[^\s"'`<>]*)?/gi, (url) => {
+            try {
+                const u = new URL(url);
+                return `${u.protocol}//${u.hostname}${u.pathname.length > 1 ? '/[PATH]' : ''}`;
+            } catch (_) {
+                return '[REDACTED_URL]';
+            }
+        });
+}
+
+function addDiagnosticLog(message, level = 'INFO') {
+    const timestamp = new Date().toISOString();
+    const redacted = redactSensitiveText(message);
+    const entry = `[${timestamp}][${level}] ${redacted}`;
+    diagnosticLogBuffer.push(entry);
+    if (diagnosticLogBuffer.length > DIAG_LOG_CAPACITY) {
+        diagnosticLogBuffer.shift();
+    }
+    if (level === 'ERROR') {
+        console.error(`[XPIDER_DIAG] ${redacted}`);
+    } else if (level === 'WARN') {
+        console.warn(`[XPIDER_DIAG] ${redacted}`);
+    } else {
+        console.log(`[XPIDER_DIAG] ${redacted}`);
+    }
+}
+
+function clearDiagnosticLog() {
+    diagnosticLogBuffer.length = 0;
+    addDiagnosticLog("Diagnostic buffer cleared by operator.", "INFO");
+    if (typeof addLog === 'function') {
+        addLog("🧹 Diagnostic log cleared.", "info");
+    }
+}
+
+function getDiagnosticBuffer() {
+    return [...diagnosticLogBuffer];
+}
+
+function getDiagnosticReport() {
+    const extVer = (typeof chrome !== 'undefined' && chrome.runtime?.getManifest) 
+        ? chrome.runtime.getManifest()?.version 
+        : '1.2.0';
+    const runtimeId = (typeof chrome !== 'undefined' && chrome.runtime?.id) ? chrome.runtime.id : 'N/A';
+    const docVis = (typeof document !== 'undefined' && document.visibilityState) ? document.visibilityState : 'unknown';
+    const originPath = (typeof window !== 'undefined' && window.location) 
+        ? `${window.location.origin}${window.location.pathname}` 
+        : 'unknown';
+
+    const header = [
+        "=================================================================",
+        "        XPIDER EXTENSION RUNTIME IPC DIAGNOSTIC REPORT          ",
+        "=================================================================",
+        `Session ID:         ${diagnosticSessionId}`,
+        `Report Timestamp:   ${new Date().toISOString()}`,
+        `Extension Version:  ${extVer}`,
+        `Chrome Runtime ID:  ${runtimeId}`,
+        `Document Origin:    ${originPath}`,
+        `Visibility State:   ${docVis}`,
+        `Campaign Active:    ${typeof campaignActive !== 'undefined' ? campaignActive : false}`,
+        `Campaign Paused:    ${typeof campaignPaused !== 'undefined' ? campaignPaused : false}`,
+        `Queue Count:        ${typeof campaignQueue !== 'undefined' && Array.isArray(campaignQueue) ? campaignQueue.length : 0}`,
+        `Template ID:        ${currentTpl?.templateId || currentTpl?.id || 'none'}`,
+        `Template Version:   ${currentTpl?.templateVersion || currentTpl?.version || 1}`,
+        "Privacy Status:     AUTOMATICALLY REDACTED (Zero customer PII / Hostnames only)",
+        "=================================================================",
+        "DIAGNOSTIC TRACE LOG (Last 300-500 lines):",
+        "-----------------------------------------------------------------"
+    ];
+
+    const lines = diagnosticLogBuffer.slice(-500);
+    const body = lines.length > 0 ? lines.join('\n') : "  (No diagnostic entries recorded)";
+    const footer = [
+        "-----------------------------------------------------------------",
+        "END OF XPIDER IPC DIAGNOSTIC REPORT",
+        "================================================================="
+    ];
+
+    return `${header.join('\n')}\n${body}\n${footer.join('\n')}`;
+}
+
+async function copyDiagnosticReport() {
+    const report = getDiagnosticReport();
+    if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+        try {
+            await navigator.clipboard.writeText(report);
+            if (typeof addLog === 'function') addLog("📋 Diagnostic report copied to clipboard!", "success");
+            return true;
+        } catch (e) {
+            console.warn('[Diag] Clipboard API failed, falling back to execCommand:', e);
+        }
+    }
+    if (typeof document !== 'undefined' && document.body) {
+        try {
+            const ta = document.createElement('textarea');
+            ta.value = report;
+            ta.style.position = 'fixed';
+            ta.style.left = '-9999px';
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            if (typeof addLog === 'function') addLog("📋 Diagnostic report copied to clipboard!", "success");
+            return true;
+        } catch (err) {
+            if (typeof addLog === 'function') addLog("❌ Failed to copy diagnostic report.", "error");
+            return false;
+        }
+    }
+    return false;
+}
+
+function downloadDiagnosticTxt() {
+    const report = getDiagnosticReport();
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const filename = `xpider_diagnostic_${timestamp}.txt`;
+    if (typeof Blob !== 'undefined' && typeof document !== 'undefined') {
+        try {
+            const blob = new Blob([report], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            if (typeof addLog === 'function') addLog(`💾 Saved ${filename}`, "success");
+            return true;
+        } catch (e) {
+            console.error('[Diag] Download failed:', e);
+            if (typeof addLog === 'function') addLog(`❌ Failed to download report: ${e.message}`, "error");
+            return false;
+        }
+    }
+    return false;
+}
+
+function calculatePayloadBytes(args) {
+    if (!args) return 0;
+    try {
+        const serialized = JSON.stringify(args);
+        if (typeof TextEncoder !== 'undefined') {
+            return new TextEncoder().encode(serialized).length;
+        }
+        return serialized.length;
+    } catch (_) {
+        return 0;
+    }
+}
+
+// [v19.0] XPIDER_INVOKE: Direct IPC bridge to main process with High-Detail Privacy-Safe Diagnostics
+function xpiderInvoke(channel, args, options = {}) {
     return new Promise((resolve, reject) => {
-        const id = Date.now().toString() + Math.random().toString(36).slice(2);
-        let timeoutId;
-        const handler = (e) => {
-            if (e.data && e.data.type === 'XPIDER_RESPONSE' && e.data.id === id) {
+        const requestId = 'req_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 8);
+        const shortId = requestId.slice(-6);
+        const startPerf = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+        const wallClockISO = new Date().toISOString();
+        const callerStack = (new Error().stack) ? new Error().stack.split('\n')[2]?.trim() || 'N/A' : 'N/A';
+        const docVis = (typeof document !== 'undefined' && document.visibilityState) ? document.visibilityState : 'unknown';
+        const locHref = (typeof window !== 'undefined' && window.location) ? `${window.location.origin}${window.location.pathname}` : 'unknown';
+        const rtId = (typeof chrome !== 'undefined' && chrome.runtime?.id) ? chrome.runtime.id : 'N/A';
+        const mfVer = (typeof chrome !== 'undefined' && chrome.runtime?.getManifest) ? chrome.runtime.getManifest()?.version : '1.2.0';
+        const queueCount = Array.isArray(args?.queue) ? args.queue.length : (typeof campaignQueue !== 'undefined' && Array.isArray(campaignQueue) ? campaignQueue.length : 0);
+        const tplId = args?.templateId || currentTpl?.templateId || currentTpl?.id || 'N/A';
+        const tplVer = args?.templateVersion || currentTpl?.templateVersion || currentTpl?.version || 1;
+        const payloadBytes = calculatePayloadBytes(args);
+
+        // A. IPC correlation trace log
+        addDiagnosticLog(`[IPC][REQ ${shortId}] channel=${channel} queue=${queueCount} templateId=${tplId} v=${tplVer} payloadBytes=${payloadBytes} docVis=${docVis} origin=${locHref} rtId=${rtId} mfVer=${mfVer}`);
+
+        // B. Bridge availability snapshot BEFORE send
+        const postMessageAvail = (typeof window !== 'undefined' && typeof window.postMessage === 'function');
+        const isTop = (typeof window !== 'undefined' && window === window.top);
+        const hasEventListener = (typeof window !== 'undefined' && typeof window.addEventListener === 'function');
+        const knownBridges = [];
+        if (typeof window !== 'undefined') {
+            if (window.xpiderBridge) knownBridges.push('window.xpiderBridge');
+            if (window.electronAPI) knownBridges.push('window.electronAPI');
+            if (window.nativeBridge) knownBridges.push('window.nativeBridge');
+        }
+        const extAvail = (typeof chrome !== 'undefined' && !!chrome.runtime?.id);
+
+        if (knownBridges.length === 0) {
+            addDiagnosticLog(`[IPC][BRIDGE] No native XPIDER response bridge detected before request`);
+        } else {
+            addDiagnosticLog(`[IPC][BRIDGE] Known bridge detected: ${knownBridges.join(', ')}`);
+        }
+
+        let bgPingAlive = null;
+        let bgStateSummary = 'not_queried';
+        if (extAvail && chrome.runtime?.sendMessage) {
+            try {
+                chrome.runtime.sendMessage({ action: 'PING' }, (resp) => {
+                    bgPingAlive = !chrome.runtime.lastError && !!resp && (resp.success !== false);
+                });
+                chrome.runtime.sendMessage({ action: 'GET_STATE' }, (resp) => {
+                    if (resp && resp.success) {
+                        bgStateSummary = `isActive=${resp.isActive},hasActiveLock=${resp.hasActiveLock}`;
+                    }
+                });
+            } catch (_) {
+                bgPingAlive = false;
+            }
+        }
+
+        // C. Capture window message traffic
+        let windowMessagesObserved = 0;
+        let matchingResponses = 0;
+        let lastRelevantMessage = 'none';
+        let responseSeen = false;
+        let timeoutId = null;
+        let checkpointTimers = [];
+
+        const cleanup = () => {
+            if (typeof window !== 'undefined' && window.removeEventListener) {
                 window.removeEventListener('message', handler);
-                if (timeoutId) clearTimeout(timeoutId);
-                if (e.data.error) reject(new Error(e.data.error));
-                else resolve(e.data.result);
+            }
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+                timeoutId = null;
+            }
+            checkpointTimers.forEach(t => clearTimeout(t));
+            checkpointTimers = [];
+        };
+
+        const handler = (e) => {
+            windowMessagesObserved++;
+            const now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+            const elapsedMs = Math.round(now - startPerf);
+            const origin = e.origin || ((typeof window !== 'undefined' && e.source === window) ? 'window' : 'external');
+            const d = e.data || {};
+            const msgType = d.type || 'unknown';
+            const msgChannel = d.channel || 'none';
+            const msgId = d.id || 'none';
+            const idMatch = (msgId === requestId);
+
+            lastRelevantMessage = `type=${msgType} idMatch=${idMatch} elapsedMs=${elapsedMs}`;
+            addDiagnosticLog(`[IPC][RX ${shortId}][+${elapsedMs}ms] type=${msgType} idMatch=${idMatch} origin=${origin}`);
+
+            if (idMatch && msgType === 'XPIDER_RESPONSE') {
+                responseSeen = true;
+                matchingResponses++;
+                addDiagnosticLog(`[IPC][SUCCESS ${shortId}][+${elapsedMs}ms] Matching XPIDER_RESPONSE accepted`);
+                cleanup();
+                if (d.error) {
+                    reject(new Error(d.error));
+                } else {
+                    resolve(d.result);
+                }
             }
         };
-        window.addEventListener('message', handler);
-        window.postMessage({ type: 'XPIDER_INVOKE', channel, args, id }, '*');
-        // Safety timeout
+
+        if (typeof window !== 'undefined' && window.addEventListener) {
+            window.addEventListener('message', handler);
+            addDiagnosticLog(`[IPC][REQ ${shortId}] listener=registered`);
+        }
+
+        if (typeof window !== 'undefined' && window.postMessage) {
+            window.postMessage({ type: 'XPIDER_INVOKE', channel, args, id: requestId }, '*');
+            addDiagnosticLog(`[IPC][REQ ${shortId}] postMessage dispatched`);
+        } else {
+            addDiagnosticLog(`[IPC][REQ ${shortId}] window.postMessage unavailable`, "ERROR");
+        }
+
+        // Operator concise log
+        if (typeof addLog === 'function') {
+            addLog(`[IPC] Request ${shortId} sent: ${channel}`, "info");
+            addLog(`[IPC] Waiting for native response...`, "info");
+        }
+
+        // D. Pending checkpoints
+        const timeoutMs = typeof options.timeoutMs === 'number' ? options.timeoutMs : 30000;
+        const defaultCheckpoints = [1000, 5000, 10000, 20000, 29000];
+        const checkpointDelays = Array.isArray(options.checkpoints) ? options.checkpoints : defaultCheckpoints;
+
+        checkpointTimers = checkpointDelays.filter(d => d < timeoutMs).map(delayMs => {
+            return setTimeout(() => {
+                if (responseSeen) return;
+                const now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+                const elapsed = Math.round(now - startPerf);
+                const bgAliveStr = bgPingAlive === null ? 'checking' : (bgPingAlive ? 'alive' : 'dead');
+                addDiagnosticLog(`[IPC][WAIT ${shortId}][+${(elapsed / 1000).toFixed(1)}s] responseSeen=false windowMessages=${windowMessagesObserved} matching=${matchingResponses} bgAlive=${bgAliveStr} campaignActive=${typeof campaignActive !== 'undefined' ? campaignActive : false}`);
+                if (delayMs >= 5000 && typeof addLog === 'function') {
+                    addLog(`[IPC] +${Math.round(elapsed / 1000)}s no response yet (background alive: ${bgAliveStr})`, "debug");
+                }
+            }, delayMs);
+        });
+
+        // E. Timeout diagnostic dump
         timeoutId = setTimeout(() => {
-            window.removeEventListener('message', handler);
+            cleanup();
+            const now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+            const elapsedMs = Math.round(now - startPerf);
+            const bgAliveStr = bgPingAlive === null ? 'unknown' : (bgPingAlive ? 'alive' : 'dead');
+            const curAttemptStatus = (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) ? 'queried' : 'none';
+
+            const timeoutDump = [
+                "===== XPIDER IPC TIMEOUT DIAGNOSTIC =====",
+                `requestId:              ${requestId}`,
+                `channel:                ${channel}`,
+                `elapsedMs:              ${elapsedMs}`,
+                `extensionVersion:       ${mfVer}`,
+                `queueCount:             ${queueCount}`,
+                `templateId:             ${tplId}`,
+                `templateVersion:        ${tplVer}`,
+                `payloadBytes:           ${payloadBytes}`,
+                `backgroundPing:         ${bgAliveStr}`,
+                `backgroundState:        ${bgStateSummary}`,
+                `windowMessagesObserved: ${windowMessagesObserved}`,
+                `matchingResponses:      ${matchingResponses}`,
+                `lastRelevantMessage:    ${lastRelevantMessage}`,
+                `documentVisibility:     ${docVis}`,
+                `campaignActive:         ${typeof campaignActive !== 'undefined' ? campaignActive : false}`,
+                `currentAttemptStatus:   ${curAttemptStatus}`,
+                `stack:                  ${callerStack}`,
+                "========================================="
+            ].join('\n');
+
+            addDiagnosticLog(timeoutDump, "ERROR");
+            if (typeof addLog === 'function') {
+                addLog(`[IPC] TIMEOUT after ${elapsedMs} ms — use "Copy Diagnostic Report"`, "error");
+            }
             reject(new Error(`IPC timeout: ${channel}`));
-        }, 30000);
+        }, timeoutMs);
     });
 }
 
-
-// [v1.1.1] Global error handler for debugging
-window.onerror = function(msg, url, line) {
+// [v1.1.1] Global error handler for debugging & diagnostic collection
+window.onerror = function(msg, url, line, col, error) {
+    const sanitizedMsg = redactSensitiveText(msg);
+    addDiagnosticLog(`[GLOBAL_ERROR] ${sanitizedMsg} at ${url}:${line}:${col || 0} stack=${error?.stack ? redactSensitiveText(error.stack) : 'N/A'}`, "ERROR");
     console.error(`[Popup Error] ${msg} at ${url}:${line}`);
-    // Optional: add to log container if it exists
     const logContainer = document.getElementById('log-container');
     if (logContainer) {
         const div = document.createElement('div');
         div.className = 'log-entry error';
-        div.textContent = `[System Error] ${msg}`;
+        div.textContent = `[System Error] ${sanitizedMsg}`;
         logContainer.appendChild(div);
     }
     return false;
 };
+
+if (typeof window !== 'undefined' && window.addEventListener) {
+    window.addEventListener('unhandledrejection', function(event) {
+        const reason = event.reason ? (event.reason.message || event.reason.stack || String(event.reason)) : 'unknown';
+        addDiagnosticLog(`[UNHANDLED_REJECTION] ${redactSensitiveText(reason)}`, "ERROR");
+    });
+}
 
 document.addEventListener('DOMContentLoaded', () => {
     // ── [VITAL] Step 0: Register messaging listener IMMEDIATELY and SYNCHRONOUSLY
@@ -558,6 +905,16 @@ function bindEvents() {
     
     const stopBtn = document.getElementById('stop-btn');
     if (stopBtn) stopBtn.addEventListener('click', stopCampaign);
+
+    // Diagnostic Action Buttons
+    const copyDiagBtn = document.getElementById('copy-diagnostic-btn');
+    if (copyDiagBtn) copyDiagBtn.addEventListener('click', copyDiagnosticReport);
+
+    const dlDiagBtn = document.getElementById('download-diagnostic-btn');
+    if (dlDiagBtn) dlDiagBtn.addEventListener('click', downloadDiagnosticTxt);
+
+    const clearDiagBtn = document.getElementById('clear-diagnostic-btn');
+    if (clearDiagBtn) clearDiagBtn.addEventListener('click', clearDiagnosticLog);
 
     // Settings
     const settingsToggle = document.getElementById('settings-toggle');
@@ -2721,6 +3078,16 @@ if (typeof module !== 'undefined' && module.exports) {
         startCampaign,
         checkActiveSubmitLock,
         getPopupTemplateStore,
-        getPopupHistoryStore
+        getPopupHistoryStore,
+        // IPC Diagnostic Subsystem Exports
+        xpiderInvoke,
+        addDiagnosticLog,
+        getDiagnosticReport,
+        getDiagnosticBuffer,
+        clearDiagnosticLog,
+        copyDiagnosticReport,
+        downloadDiagnosticTxt,
+        redactSensitiveText,
+        calculatePayloadBytes
     };
 }
