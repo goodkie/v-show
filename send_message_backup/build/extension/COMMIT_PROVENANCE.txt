@@ -1,30 +1,27 @@
-[ANTIGRAVITY][PROVENANCE][extension-form-sender][PHASE 2A FINAL REMEDIATION V6]
+[ANTIGRAVITY][PROVENANCE][extension-form-sender][PHASE 2B R1 FINAL]
 
 === REPOSITORY & PROVENANCE METADATA ===
 Repository Type: Standalone Local Development Repository (local-only, no remote origin attached)
 Workspace Root: e:\vivpr\ai\extension-form-sender
 Branch: upgrade/phase-0-1
-Commit SHA: 0853c5006855afdf17c5136dfa5031ea654f6529
-Commit Summary: fix(phase2a): complete V6 remediation for F9 authoritative templates_v2
-Package Name: evidence_phase2a_integration_v6.zip
+Commit SHA: 1d61418633e22dfe31ea361dc816b65028780331\nCommit Summary: fix(phase-2b): address R1 audit feedback for payload binding, default deletion guard, storage errors, and active submit query
+Package Name: evidence_phase2b_implementation.zip
 Auditor Collaboration Hub: GitHub Issue #6 on goodkie/v-show
-Timestamp: 2026-10-01T06:10:00Z
+Timestamp: 2026-10-01T07:45:00Z
+Rollback Anchor: 0853c5006855afdf17c5136dfa5031ea654f6529 (evidence_phase2a_integration_v6.zip / A2A1387DB3FE6031F0BD2F4E5DDCFBC4DB77D4D5F42F227AEE541ECBB4A9FECB)
 
-=== REMEDIATION SUMMARY (V6) ===
-1. _syncTemplateToV2 propagates persistence errors instead of swallowing them with console.warn.
-2. saveTemplate awaits authoritative templates_v2 persistence; if v2 write fails, legacy xpider_tpl is NOT modified.
-3. importMessageFromFile constructs canonical FormTemplateV2 record with dual accessors (sender, content, fullName, flat fields) and awaits v2 persistence before updating legacy state.
-4. Direct failure-path integration tests added (F9-e, F9-f, F9-g, F9-h) exercising save/import failure paths and schema validation.
-5. Exact RFC-4180 logical record text preservation in _parseRfc4180Records (text.slice, no unescaping).
-6. 1:1 row-to-target linkage strictly guaranteed; no orphaned targets from multi-URL rows.
-7. Pre-submit state distinction: attempt kept in PREPARING during navigation/scan; transitioned to SUBMIT_PENDING immediately before START_SENDING.
-8. Pre-submit persistence failure remains retryable (status FAILURE, reason PRE_SUBMIT_PERSISTENCE_FAILED). SW restart during PREPARING settles as FAILURE INTERRUPTED_PREPARING (isSuppressed = false).
-9. FormTemplateV2 record schema unified with dual flat and nested accessors across all stores.
-10. Full local Git provenance artifacts included (LOCAL_GIT_PROVENANCE.txt) containing git rev-parse HEAD, cat-file -p HEAD, ls-tree -r --full-tree HEAD, and package path -> blob SHA mapping.
+=== REMEDIATION SUMMARY (R1 FINAL) ===
+1. Component D Payload Binding: startCampaign() authoritatively calls bindCampaignTemplateMetadata(currentTpl) and binds templateId and templateVersion into startPayload before sending via xpiderInvoke('xpider-campaign-start').
+2. Non-default-only Template Deletion: TemplateStore.deleteTemplate() and popup handleDeleteTemplate() enforce that default templates cannot be deleted; users must set another template as default first (eliminates templates_v2 / xpider_tpl split-brain).
+3. TemplateStore Storage Rejection: setStore(), saveTemplateRecord(), and setDefaultTemplate() inspect chrome.runtime.lastError and callback errors, properly rejecting on storage write failure.
+4. Active-Submit Reset Guard: Popup controllers (dispatchSelectiveReset, dispatchGlobalReset) query checkActiveSubmitLock() authoritatively against background campaignState (GET_STATE) and storage (xpider_currentAttempt for SUBMIT_PENDING) without requiring artificial arguments.
+5. Production Controller Testing: test_phase2b_acceptance.js directly invokes all 15 production controller functions exported by popup.js plus startCampaign().
+6. Executable Repo Layout: Evidence archive strictly preserves repository structure (send_message_backup/... and root regression test files) so all test commands run directly upon extraction.
 
-=== VERIFICATION STATUS (56 / 56 PASS, 100%) ===
+=== VERIFICATION STATUS (64 / 64 PASS, 100%) ===
 - test_phase2a.js: 14/14 PASS (100%)
 - test_phase0_1.js: 5/5 PASS (100%)
 - test_phase0_1_behavioral.js: 5/5 PASS (100%)
-- test_phase2a_integration_f7f13.js: 32/32 PASS (100%)
-- Total: 56/56 PASS (100%)
+- send_message_backup/test_phase2a_integration_f7f13.js: 32/32 PASS (100%)
+- send_message_backup/test_phase2b_acceptance.js: 8/8 PASS (100%)
+- Total: 64/64 PASS (100%)

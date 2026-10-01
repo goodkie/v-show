@@ -1,14 +1,40 @@
 {
   "manifest_version": "1.0",
   "package": "evidence_phase2b_implementation",
-  "audit_phase": "Phase 2B Implementation",
-  "commit_sha": "8b4d2864d4232f2ef3cc74e02fe2d730b16cd6ee",
+  "audit_phase": "Phase 2B Remediation R1 Final",
+  "commit_sha": "1d61418633e22dfe31ea361dc816b65028780331",
   "rollback_anchor_sha": "0853c5006855afdf17c5136dfa5031ea654f6529",
   "rollback_artifact_sha256": "A2A1387DB3FE6031F0BD2F4E5DDCFBC4DB77D4D5F42F227AEE541ECBB4A9FECB",
   "branch": "upgrade/phase-0-1",
   "repository": "local:extension-form-sender",
   "collaboration_hub": "goodkie/v-show (Issue #6)",
-  "timestamp": "2026-10-01T06:55:00Z",
+  "timestamp": "2026-10-01T07:45:00Z",
+  "remediation_r1_mandates": {
+    "R1_MANDATE_1_PAYLOAD_BINDING": {
+      "status": "SATISFIED",
+      "description": "startCampaign() explicitly calls bindCampaignTemplateMetadata(currentTpl) and binds templateId and templateVersion into startPayload, passing them to xpiderInvoke('xpider-campaign-start')."
+    },
+    "R1_MANDATE_2_DEFAULT_TEMPLATE_DELETION_GUARD": {
+      "status": "SATISFIED",
+      "description": "TemplateStore.deleteTemplate() and popup handleDeleteTemplate() enforce that default templates cannot be deleted; users must set another template as default first (eliminates templates_v2 / xpider_tpl split-brain)."
+    },
+    "R1_MANDATE_3_STORAGE_REJECTION_COMPLIANCE": {
+      "status": "SATISFIED",
+      "description": "TemplateStore setStore(), saveTemplateRecord(), and setDefaultTemplate() inspect chrome.runtime.lastError and callback errors, properly rejecting on storage failure."
+    },
+    "R1_MANDATE_4_ACTIVE_SUBMIT_LOCK_QUERY": {
+      "status": "SATISFIED",
+      "description": "Popup controllers (dispatchSelectiveReset, dispatchGlobalReset) invoke checkActiveSubmitLock() to authoritatively query background campaignState (GET_STATE) and chrome.storage.local (xpider_currentAttempt for SUBMIT_PENDING)."
+    },
+    "R1_MANDATE_5_ACTUAL_CONTROLLER_TESTING": {
+      "status": "SATISFIED",
+      "description": "test_phase2b_acceptance.js directly invokes all 15 production controller functions exported by popup.js plus startCampaign(). All 8 suite tests pass."
+    },
+    "R1_MANDATE_6_EXECUTABLE_REPO_LAYOUT": {
+      "status": "SATISFIED",
+      "description": "Repackaged evidence strictly preserves repository layout (send_message_backup/... and root regression test files) so all test commands run directly upon extraction."
+    }
+  },
   "implementation_components": {
     "COMPONENT_A_TEMPLATE_MANAGER": {
       "status": "IMPLEMENTED",
@@ -49,24 +75,6 @@
         "passed to recordAttempt and stamped on attempt records additively",
         "exported to CSV audit log as additive columns (backward-compatible, missing fields tolerated)"
       ]
-    }
-  },
-  "auditor_corrections": {
-    "CORRECTION_1_RETRY_FAILED_SEMANTICS": {
-      "status": "SATISFIED",
-      "description": "Implemented dispatchRetryFailed() / getRetryableFailedIdentities() without mutating suppression state or generation. Normal failures are retryable and not suppressed."
-    },
-    "CORRECTION_2_ADDITIVE_TEMPLATE_METADATA": {
-      "status": "SATISFIED",
-      "description": "templateId and templateVersion are strictly additive. No schema version bump. Tolerates missing fields. Not part of suppression identity."
-    },
-    "CORRECTION_3_PRODUCTION_CONTROLLER_TESTING": {
-      "status": "SATISFIED",
-      "description": "Phase 2B acceptance tests directly invoke actual exported controller functions from popup.js (handleCreateNewTemplate, handleSaveTemplate, handleDuplicateTemplate, handleDeleteTemplate, handleSetDefaultTemplate, populateFormFromTemplate, filterHistoryRecords, dispatchSelectiveReset, dispatchRetryFailed, dispatchGlobalReset, triggerCsvExport, bindCampaignTemplateMetadata)."
-    },
-    "CORRECTION_4_NO_BACKGROUND_REWRITE": {
-      "status": "SATISFIED",
-      "description": "Background engine orchestration, crawler, suppression state machine, and migration protocol remain intact. Only additive templateId/templateVersion metadata was passed to recordAttempt."
     }
   },
   "test_results": {
