@@ -20010,18 +20010,11 @@ class VisualLoopDetector {
       const kp = keypoints[i];
       let desc = 0;
 
-      // Intensity centroid angle
-      let m10 = 0, m01 = 0;
-      for (let dy = -4; dy <= 4; dy++) {
-        for (let dx = -4; dx <= 4; dx++) {
-          const val = luminance[(kp.y + dy) * width + (kp.x + dx)] || 0;
-          m10 += dx * val;
-          m01 += dy * val;
-        }
-      }
-      const angle = Math.atan2(m01, m10);
-      const cosA = Math.cos(angle);
-      const sinA = Math.sin(angle);
+      // Upright BRIEF: Mobile phone 360 panorama capture is constrained to upright portrait pose.
+      // Unsteered Upright BRIEF (cosA=1, sinA=0) eliminates orientation centroid noise from small 9x9 patches,
+      // dramatically increasing descriptor stability and inlier yield on real physical handheld returns.
+      const cosA = 1.0;
+      const sinA = 0.0;
 
       for (let p = 0; p < BRIEF_PAIRS.length; p++) {
         const pair = BRIEF_PAIRS[p];
@@ -20612,9 +20605,12 @@ class RILiveDiagnosticHelper {
       <div id="ri-hud-sensor" style="margin-bottom: 2px; color: #e6f0ff;">α: -- β: -- γ: --</div>
       <div id="ri-hud-delta" style="margin-bottom: 2px; color: #e6f0ff;">Δ: -- (norm: --)</div>
       <div id="ri-hud-closure" style="margin-bottom: 6px; color: #ffcc00;">State: IDLE | Conf: NO</div>
-      <div style="display:flex; gap: 6px; pointer-events: auto;">
-        <button id="ri-copy-btn" type="button" style="flex:1; background: #132430; border: 1px solid #00ffcc; color: #00ffcc; padding: 4px 6px; border-radius: 4px; font-size: 10px; cursor: pointer; font-weight: bold;">COPY RI LOG</button>
-        <button id="ri-dl-btn" type="button" style="flex:1; background: #132430; border: 1px solid #00ffcc; color: #00ffcc; padding: 4px 6px; border-radius: 4px; font-size: 10px; cursor: pointer; font-weight: bold;">DOWNLOAD RI JSON</button>
+      <div style="display:flex; flex-direction:column; gap:4px; pointer-events: auto;">
+        <div style="display:flex; gap: 4px;">
+          <button id="ri-copy-btn" type="button" style="flex:1; background: #132430; border: 1px solid #00ffcc; color: #00ffcc; padding: 4px 6px; border-radius: 4px; font-size: 10px; cursor: pointer; font-weight: bold;">COPY LOG</button>
+          <button id="ri-dl-btn" type="button" style="flex:1; background: #132430; border: 1px solid #00ffcc; color: #00ffcc; padding: 4px 6px; border-radius: 4px; font-size: 10px; cursor: pointer; font-weight: bold;">DL JSON</button>
+        </div>
+        <button id="ri-frames-btn" type="button" style="width:100%; background: #1a2a1a; border: 1px solid #00ff88; color: #00ff88; padding: 4px 6px; border-radius: 4px; font-size: 10px; cursor: pointer; font-weight: bold;">📷 DOWNLOAD FRAME PAIR</button>
       </div>
     `;
 
@@ -20647,6 +20643,14 @@ class RILiveDiagnosticHelper {
       dlBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         this.downloadJson();
+      });
+    }
+
+    const framesBtn = hud.querySelector('#ri-frames-btn');
+    if (framesBtn) {
+      framesBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.downloadFramePair();
       });
     }
   }
@@ -20824,7 +20828,17 @@ class RILiveDiagnosticHelper {
       events: this.allEvents,
       closures: this.allClosures,
       stateTransitions: (this.allStateTransitions && this.allStateTransitions.length > 0) ? this.allStateTransitions : this.stateTransitions,
-      errors: (this.allErrors && this.allErrors.length > 0) ? this.allErrors : this.errors
+      errors: (this.allErrors && this.allErrors.length > 0) ? this.allErrors : this.errors,
+      framePair: {
+        hasStartRef: Boolean(typeof window !== 'undefined' && window.__RI_START_REF_DATAURL__),
+        hasClosureCand: Boolean(typeof window !== 'undefined' && window.__RI_LATEST_CLOSURE_CAND_DATAURL__),
+        startRefCandId: (typeof window !== 'undefined') ? window.__RI_START_REF_CAND_ID__ : null,
+        closureCandId: (typeof window !== 'undefined') ? window.__RI_LATEST_CLOSURE_CAND_ID__ : null,
+        startRefAngle: (typeof window !== 'undefined') ? window.__RI_START_REF_ANGLE__ : null,
+        closureCandAngle: (typeof window !== 'undefined') ? window.__RI_LATEST_CLOSURE_ANGLE__ : null,
+        startRefDataUrlLength: (typeof window !== 'undefined' && window.__RI_START_REF_DATAURL__) ? window.__RI_START_REF_DATAURL__.length : 0,
+        closureCandDataUrlLength: (typeof window !== 'undefined' && window.__RI_LATEST_CLOSURE_CAND_DATAURL__) ? window.__RI_LATEST_CLOSURE_CAND_DATAURL__.length : 0
+      }
     };
   }
 
@@ -20845,6 +20859,61 @@ class RILiveDiagnosticHelper {
     } else if (typeof prompt === 'function') {
       prompt('Copy JSON below:', data);
     }
+  }
+
+  downloadFramePair() {
+    const startDataUrl = (typeof window !== 'undefined') ? window.__RI_START_REF_DATAURL__ : null;
+    const closureDataUrl = (typeof window !== 'undefined') ? window.__RI_LATEST_CLOSURE_CAND_DATAURL__ : null;
+    const startId = (typeof window !== 'undefined') ? window.__RI_START_REF_CAND_ID__ || 'C001' : 'C001';
+    const closureId = (typeof window !== 'undefined') ? window.__RI_LATEST_CLOSURE_CAND_ID__ || 'CLOSURE_CAND' : 'CLOSURE_CAND';
+    const evalRes = (typeof window !== 'undefined') ? window.__RI_LATEST_CLOSURE_EVAL_RES__ : null;
+
+    if (!startDataUrl && !closureDataUrl) {
+      alert('No capture frames recorded yet. Start capture and rotate first.');
+      return;
+    }
+
+    const htmlContent = `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>RI Diagnostic Frame Pair Export</title>
+<style>
+body { font-family: monospace; background: #0b1118; color: #e6f0ff; padding: 20px; }
+h2 { color: #00ffcc; }
+.pair { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 15px; }
+.card { background: #132430; border: 1px solid #00ffcc; border-radius: 8px; padding: 12px; max-width: 480px; }
+img { max-width: 100%; border-radius: 4px; border: 1px solid #335566; display: block; margin-top: 8px; }
+pre { background: #070c12; padding: 10px; border-radius: 4px; overflow: auto; font-size: 11px; }
+</style>
+</head>
+<body>
+<h2>RI DIAGNOSTIC FRAME PAIR EXPORT</h2>
+<div>Session: ${this.sessionId || 'UNKNOWN'} | Commit: ${(typeof window !== 'undefined' && window.__3DZ_BUILD_INFO__?.gitCommit) || 'UNKNOWN'}</div>
+<div>Generated: ${new Date().toISOString()}</div>
+<div class="pair">
+  <div class="card">
+    <h3>Start Reference (#1 - ${startId})</h3>
+    <div>Angle: ${(typeof window !== 'undefined' && window.__RI_START_REF_ANGLE__) || 0}°</div>
+    ${startDataUrl ? `<img src="${startDataUrl}" alt="Start Reference">` : '<div>(No start frame recorded)</div>'}
+  </div>
+  <div class="card">
+    <h3>Latest Closure Candidate (${closureId})</h3>
+    <div>Angle: ${(typeof window !== 'undefined' && window.__RI_LATEST_CLOSURE_ANGLE__) || '--'}°</div>
+    ${closureDataUrl ? `<img src="${closureDataUrl}" alt="Closure Candidate">` : '<div>(No closure candidate recorded)</div>'}
+  </div>
+</div>
+<h3>Visual Matcher Evaluation Result</h3>
+<pre>${JSON.stringify(evalRes || { note: 'No closure evaluation result recorded yet' }, null, 2)}</pre>
+</body>
+</html>`;
+
+    const blob = new Blob([htmlContent], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ri_frame_pair_${this.sessionId || Date.now()}.html`;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 500);
   }
 
   downloadJson() {
@@ -22151,6 +22220,11 @@ class GuidedCaptureController {
         const angleDiff = lastRef ? Math.abs(currentAngle - lastRef.angle) : 999;
         if (this.visualLoopDetector.startReferences.length === 0 || angleDiff >= 4.0) {
           this.visualLoopDetector.addStartReference(candId, currentAngle, features, this.currentHeading);
+          if (typeof window !== 'undefined' && !window.__RI_START_REF_DATAURL__) {
+            window.__RI_START_REF_DATAURL__ = cand.dataUrl;
+            window.__RI_START_REF_CAND_ID__ = candId;
+            window.__RI_START_REF_ANGLE__ = currentAngle;
+          }
         }
       }
 
@@ -22159,6 +22233,12 @@ class GuidedCaptureController {
         if (this.visualLoopDetector) this.visualLoopDetector._currentHeading = this.currentHeading;
         const evalT0 = Date.now();
         const evalRes = this.visualLoopDetector.evaluateClosure(candId, this.accumulatedRotation, features);
+        if (typeof window !== 'undefined') {
+          window.__RI_LATEST_CLOSURE_CAND_DATAURL__ = cand.dataUrl;
+          window.__RI_LATEST_CLOSURE_CAND_ID__ = candId;
+          window.__RI_LATEST_CLOSURE_ANGLE__ = this.accumulatedRotation;
+          window.__RI_LATEST_CLOSURE_EVAL_RES__ = evalRes;
+        }
         const evalDurationMs = Date.now() - evalT0;
         this.closureCheckCount = this.visualLoopDetector.closureCheckCount;
         this.telemetry.closureCheckCount = this.closureCheckCount;
