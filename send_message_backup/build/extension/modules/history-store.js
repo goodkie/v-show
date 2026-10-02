@@ -253,7 +253,8 @@
                 descriptor = targetOrDesc;
             }
 
-            const { targetIdentity, sessionId, templateId, templateVersion, status, reasonCode, timing = {}, evidence = {} } = descriptor;
+            const targetIdentity = descriptor.targetIdentity || (descriptor.targetUrl ? this.normalizeTargetIdentity(descriptor.targetUrl) : '') || descriptor.targetUrl || '';
+            const { sessionId, templateId, templateVersion, status, reasonCode, timing = {}, evidence = {} } = descriptor;
             const attemptId = `att_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 
             const sourceUrl = descriptor.sourceUrl || (typeof targetOrDesc === 'string' ? targetOrDesc : targetIdentity);
@@ -463,6 +464,16 @@
                             const parsed = new URL(extra.formPageUrl);
                             if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
                                 attempt.formPageUrl = extra.formPageUrl;
+                                attempt.formPageHostname = parsed.hostname || '';
+                            }
+                        } catch (_) {}
+                    }
+                    if (!attempt.contactPageUrl && isSuccess && attempt.selectedCandidateUrl) {
+                        try {
+                            const parsed = new URL(attempt.selectedCandidateUrl);
+                            if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+                                attempt.contactPageUrl = attempt.selectedCandidateUrl;
+                                attempt.contactPageHostname = parsed.hostname || '';
                             }
                         } catch (_) {}
                     }
@@ -551,6 +562,43 @@
 
             await this.persist();
             return { success: true, newGeneration: this.currentGeneration, resetEvent };
+        }
+
+        /**
+         * [Issue #6 R4 True Full Reset] Completely wipe all rows, targets, attempts, and resets
+         */
+        async clearAll() {
+            this.importRows = [];
+            this.targets = new Map();
+            this.attempts = [];
+            this.resetEvents = [];
+            this.currentGeneration = 0;
+            if (this.storage && typeof this.storage.remove === 'function') {
+                await new Promise((resolve) => {
+                    try {
+                        let called = false;
+                        const res = this.storage.remove([
+                            'xpider_history_rows',
+                            'xpider_history_targets',
+                            'xpider_history_attempts',
+                            'xpider_history_resets',
+                            'xpider_history_generation'
+                        ], () => {
+                            if (called) return;
+                            called = true;
+                            resolve();
+                        });
+                        if (res && typeof res.then === 'function') {
+                            res.then(() => {
+                                if (!called) { called = true; resolve(); }
+                            }).catch(() => resolve());
+                        }
+                    } catch (_) {
+                        resolve();
+                    }
+                });
+            }
+            return { success: true, count: 0 };
         }
 
         /**
@@ -664,7 +712,7 @@
                     r.status || "",
                     r.reasonCode || "",
                     r.sourceUrl || r.rawUrl || r.targetIdentity || "",
-                    r.contactPageUrl || "",
+                    r.contactPageUrl || r.selectedCandidateUrl || "",
                     r.formPageUrl || "",
                     r.sourceHostname || "",
                     r.contactPageHostname || "",
@@ -704,7 +752,8 @@
             if (this.importRows && this.importRows.length > 0) {
                 for (const row of this.importRows) {
                     const target = row.targetIdentity ? this.targets.get(row.targetIdentity) : null;
-                    const attempt = row.attemptId ? this.attempts.find(a => a.attemptId === row.attemptId) : null;
+                    const effectiveAttemptId = row.attemptId || (target ? target.lastAttemptId : null);
+                    const attempt = effectiveAttemptId ? this.attempts.find(a => a.attemptId === effectiveAttemptId) : null;
                     const isSuppressed = row.targetIdentity ? this.isSuppressed(row.targetIdentity) : false;
 
                     const sourceUrl = (attempt && attempt.sourceUrl) ? attempt.sourceUrl : (row.rawInputUrl || row.targetIdentity);
@@ -856,6 +905,30 @@
 
         getFailedTargetIdentities() {
             return this.getRetryableFailedIdentities();
+        }
+
+        /**
+         * [Issue #6 R4.1] Authoritative Clear: physically empty all rows, targets, attempts, resets, and storage keys
+         */
+        async clearAll() {
+            this.importRows = [];
+            this.targets.clear();
+            this.attempts = [];
+            this.resetEvents = [];
+            this.currentGeneration = 0;
+            if (this.storage && typeof this.storage.remove === 'function') {
+                await new Promise((resolve) => {
+                    this.storage.remove([
+                        'xpider_history_rows',
+                        'xpider_history_targets',
+                        'xpider_history_attempts',
+                        'xpider_history_resets',
+                        'xpider_history_generation',
+                        'xpider_history_saved_at',
+                        'xpider_suppressions'
+                    ], () => resolve());
+                });
+            }
         }
     }
 

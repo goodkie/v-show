@@ -95,7 +95,7 @@
         }
 
         ensureHUD() {
-            if (this.hud || !document.body) return;
+            if (this.hud || !document.body || typeof document.body.appendChild !== 'function') return;
             this.hud = document.createElement('div');
             this.hud.id = 'xpider-solver-hud';
             Object.assign(this.hud.style, {
@@ -224,13 +224,14 @@
                 }
                 this.lastAttemptTime = now;
 
-                // [F13-Sanitized] No hardcoded credentials. Key must be supplied by user via Settings UI.
-                const keys = await chrome.storage.local.get(['xpider_stt_api_key', 'audioSttKey', 'witKey']);
-                let activeKey = keys.xpider_stt_api_key || keys.audioSttKey || keys.witKey;
-                if (!activeKey || activeKey.trim() === '') {
-                    this.log("⚠️ [STT] No Wit.ai key configured. Please set it in Settings.", "WARN");
-                    return null;
-                }
+                // [F13-Sanitized] Dynamically read configured keys from chrome.storage.local
+                const keys = await chrome.storage.local.get([
+                    'xpider_stt_api_key', 'audioSttKey', 'witKey',
+                    'xpider_whisper_api_key', 'whisperKey', 'openaiApiKey',
+                    'captchaMethod', 'xpider_captcha_method'
+                ]);
+                const activeKey = keys.xpider_stt_api_key || keys.audioSttKey || keys.witKey || keys.xpider_whisper_api_key || keys.whisperKey || keys.openaiApiKey;
+                const method = keys.xpider_captcha_method || keys.captchaMethod || 'audio';
 
                 // 1. Check for checkbox (reCAPTCHA, hCaptcha, Turnstile)
                 const cb = document.querySelector('#recaptcha-anchor') || 
@@ -300,15 +301,144 @@
             return null;
         }
 
+        /**
+         * Normalize speech transcription to clean numeric digits
+         * Converts both English and Korean spoken number words into digits
+         */
+        normalizeAudioDigits(text) {
+            if (!text || typeof text !== 'string') return '';
+
+            const wordMap = {
+                // English digits and numbers
+                'zero': '0', 'oh': '0', 'one': '1', 'two': '2', 'three': '3', 
+                'four': '4', 'five': '5', 'six': '6', 'seven': '7', 'eight': '8', 'nine': '9',
+                'ten': '10', 'eleven': '11', 'twelve': '12', 'thirteen': '13', 'fourteen': '14',
+                'fifteen': '15', 'sixteen': '16', 'seventeen': '17', 'eighteen': '18', 'nineteen': '19',
+                'twenty': '20', 'thirty': '30', 'forty': '40', 'fifty': '50',
+                // Korean digits and numbers
+                '영': '0', '공': '0', '일': '1', '하나': '1', '이': '2', '둘': '2', 
+                '삼': '3', '셋': '3', '사': '4', '넷': '4', '오': '5', '다섯': '5', 
+                '육': '6', '여섯': '6', '칠': '7', '일곱': '7', '팔': '8', '여덟': '8', 
+                '구': '9', '아홉': '9'
+            };
+
+            const cleaned = text.toLowerCase()
+                .replace(/[\[\]\(\)\{\}\.,!?;:\"\'\-]/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+
+            const tokens = cleaned.split(' ');
+            const output = [];
+
+            for (const token of tokens) {
+                if (wordMap[token] !== undefined) {
+                    output.push(wordMap[token]);
+                } else if (/^\d+$/.test(token)) {
+                    output.push(token);
+                } else {
+                    const nums = token.match(/\d+/g);
+                    if (nums) output.push(nums.join(''));
+                }
+            }
+
+            const candidate = output.join('');
+            if (candidate) return candidate;
+
+            const digitsOnly = text.replace(/\D/g, '');
+            return digitsOnly || cleaned;
+        }
+
+        /**
+         * Comprehensive Audio Element & Download URL Discovery
+         */
+        getAudioUrl() {
+            // Priority 1: Direct payload download link (v2 accessibility download link)
+            const payloadAnchor = document.querySelector('a[href*="/payload"]') || 
+                                  document.querySelector('a[href*="payload"]') ||
+                                  document.querySelector('a[href*="audio.mp3"]') ||
+                                  document.querySelector('.rc-audiochallenge-download-link') ||
+                                  document.querySelector('.rc-audiochallenge-tdownload-link') ||
+                                  document.querySelector('.rc-audiochallenge-download-button');
+            if (payloadAnchor) {
+                const raw = payloadAnchor.href || payloadAnchor.getAttribute('href');
+                if (raw && !raw.startsWith('javascript:')) {
+                    try { return new URL(raw, window.location.href).href; } catch (_) { return raw; }
+                }
+            }
+
+            // Priority 2: Standard audio source element
+            const audioSource = document.querySelector('#audio-source') || 
+                                document.querySelector('audio source') ||
+                                document.querySelector('source[type*="audio"]');
+            if (audioSource) {
+                const raw = audioSource.src || audioSource.getAttribute('src');
+                if (raw && !raw.startsWith('blob:') && !raw.startsWith('javascript:')) {
+                    try { return new URL(raw, window.location.href).href; } catch (_) { return raw; }
+                }
+            }
+
+            // Priority 3: <audio> tag with src or currentSrc property
+            const audioEl = document.querySelector('audio#audio-source') || document.querySelector('audio');
+            if (audioEl) {
+                const raw = audioEl.currentSrc || audioEl.src || audioEl.getAttribute('src');
+                if (raw && !raw.startsWith('blob:') && !raw.startsWith('javascript:')) {
+                    try { return new URL(raw, window.location.href).href; } catch (_) { return raw; }
+                }
+            }
+
+            // Priority 4: Search all anchors inside challenge container
+            const allAnchors = document.querySelectorAll('.rc-audiochallenge-play-button a, .rc-audiochallenge-instructions a, a[target="_blank"]');
+            for (const a of allAnchors) {
+                const href = a.href || a.getAttribute('href') || '';
+                if (href.includes('recaptcha') && (href.includes('payload') || href.includes('audio'))) {
+                    try { return new URL(href, window.location.href).href; } catch (_) { return href; }
+                }
+            }
+
+            return null;
+        }
+
         async solveChallenge(input) {
-            const audioUrl = this.getAudioUrl();
-            if (!audioUrl) return;
+            let audioUrl = this.getAudioUrl();
+
+            // [v2.0 Enhancement] If audio URL is not yet populated, click "재생" (Play) button to trigger buffering
+            if (!audioUrl) {
+                const playBtn = this.findButtonByPattern(
+                    ['재생', 'play', '듣기', 'listen'],
+                    ['.rc-audiochallenge-play-button', 'button.rc-button-audio-play', '#recaptcha-audio-play-button', 'button[title*="재생" i]', 'button[aria-label*="재생" i]']
+                );
+                if (playBtn && (!this.lastPlayClickTime || Date.now() - this.lastPlayClickTime > 3000)) {
+                    this.lastPlayClickTime = Date.now();
+                    this.log("Buffering audio challenge...", "PLAY");
+                    this.triggerHumanLikeClick(playBtn);
+                    await new Promise(r => setTimeout(r, 800));
+                    audioUrl = this.getAudioUrl();
+                }
+            }
+
+            if (!audioUrl) {
+                this.waitCycles++;
+                if (this.waitCycles > 15) {
+                    this.log("Audio source unavailable, reloading challenge...", "RETRY");
+                    this.reload();
+                    this.waitCycles = 0;
+                }
+                return;
+            }
 
             this.solving = true;
             this.log("Requesting transcription...", "SOLVING");
 
             try {
-                const b64 = await this.fetchAsBase64(audioUrl);
+                // Try fetching in content-script first (with session cookies)
+                let b64 = null;
+                try {
+                    b64 = await this.fetchAsBase64(audioUrl);
+                } catch (fetchErr) {
+                    console.warn("[XpiderSolver] Content script audio fetch blocked (CORS), delegating to background worker:", fetchErr.message);
+                }
+
+                // If content-script fetch blocked, pass url directly; background service worker has <all_urls> host permissions
                 chrome.runtime.sendMessage({ 
                     action: 'PERFORM_TRANSCRIPTION', 
                     audioData: b64, 
@@ -316,22 +446,16 @@
                 }, async (resp) => {
                     this.solving = false;
                     if (resp && resp.text) {
-                        // [v2.0] Clean transcription: remove brackets, extra punctuation, trim
-                        const cleanText = resp.text
-                            .replace(/[\[\]]/g, '')
-                            .replace(/[.,!?;:]+$/g, '')
-                            .replace(/\s+/g, ' ')
-                            .trim()
-                            .toLowerCase();
+                        const cleanDigits = this.normalizeAudioDigits(resp.text);
                             
-                        if (!cleanText) {
+                        if (!cleanDigits) {
                             this.log("Empty result. Retrying...", "RETRY");
                             this.reload();
                             return;
                         }
 
-                        this.log(`Success: [${cleanText}]`, "DONE");
-                        this.submit(input, cleanText);
+                        this.log(`Success: [${cleanDigits}]`, "DONE");
+                        this.submit(input, cleanDigits);
                     } else {
                         const errorMsg = resp?.error || "Unknown";
                         const res = await chrome.storage.local.get(['captchaAttempts']);
@@ -350,35 +474,53 @@
             }
         }
 
-        getAudioUrl() {
-            const el = document.querySelector('a[href*="payload"]') || document.querySelector('.rc-audiochallenge-tdownload-link') || document.querySelector('audio source') || document.querySelector('audio[src]');
-            return el?.href || el?.src;
-        }
-
         async fetchAsBase64(url) {
-            const response = await fetch(url);
+            const response = await fetch(url, { credentials: 'include' });
+            if (!response.ok) throw new Error(`HTTP error ${response.status}`);
             const blob = await response.blob();
-            return new Promise((resolve) => {
+            return new Promise((resolve, reject) => {
                 const reader = new FileReader();
                 reader.onloadend = () => resolve(reader.result);
+                reader.onerror = () => reject(new Error("FileReader failed"));
                 reader.readAsDataURL(blob);
             });
         }
 
         submit(input, text) {
-            input.value = text;
-            input.dispatchEvent(new Event('input', { bubbles: true }));
+            const cleanDigits = this.normalizeAudioDigits(text);
+
+            // Native value setter ensures Closure / Angular / React synthetic state detects input
+            try {
+                const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
+                if (nativeSetter) {
+                    nativeSetter.call(input, cleanDigits);
+                } else {
+                    input.value = cleanDigits;
+                }
+            } catch (_) {
+                input.value = cleanDigits;
+            }
+
+            input.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
+            input.dispatchEvent(new Event('change', { bubbles: true, composed: true }));
+            const KeyEvt = (typeof KeyboardEvent !== 'undefined') ? KeyboardEvent : (typeof window !== 'undefined' && window.KeyboardEvent ? window.KeyboardEvent : Event);
+            try { input.dispatchEvent(new KeyEvt('keydown', { bubbles: true, key: 'Enter' })); } catch (_) {}
+            try { input.dispatchEvent(new KeyEvt('keyup', { bubbles: true, key: 'Enter' })); } catch (_) {}
+
             setTimeout(() => {
-                const verifyBtn = this.findButtonByPattern(['verify', '확인', 'v'], ['#recaptcha-verify-button', '.rc-button-verify']);
+                const verifyBtn = this.findButtonByPattern(
+                    ['verify', '확인', 'v'], 
+                    ['#recaptcha-verify-button', '.rc-button-verify', 'button#recaptcha-verify-button']
+                );
                 if (verifyBtn) {
-                    this.log("Finalizing...", "VERIFY");
-                    verifyBtn.click();
+                    this.log("Finalizing verification...", "VERIFY");
+                    this.triggerHumanLikeClick(verifyBtn);
                     
                     // Post-verification check
                     setTimeout(async () => {
-                        const audioInput = document.querySelector('#audio-response');
-                        const errorMsg = document.querySelector('.rc-audiochallenge-error-message');
-                        const isWrong = audioInput && (audioInput.value === '' || errorMsg);
+                        const audioInput = document.querySelector('#audio-response') || document.querySelector('input[id*="audio"]');
+                        const errorMsg = document.querySelector('.rc-audiochallenge-error-message') || document.querySelector('.rc-audiochallenge-error');
+                        const isWrong = (audioInput && audioInput.value === '') || !!errorMsg;
                         
                         if (isWrong) {
                             const res = await chrome.storage.local.get(['captchaAttempts']);
@@ -387,7 +529,7 @@
                             this.log(`Incorrect (${newCount}/${this.options.maxAttempts || 10})`, "FAIL");
                             if (newCount < (this.options.maxAttempts || 10)) this.reload();
                         } else {
-                            this.log("Solved successfully!", "SUCCESS");
+                            this.log("Challenge Solved!", "SUCCESS");
                             await chrome.storage.local.set({ captchaAttempts: 0, captchaBlocked: false });
                         }
                     }, 3000);
@@ -401,8 +543,17 @@
         }
     }
 
+    // Export for test runner and window global
+    if (typeof window !== 'undefined') {
+        window.XpiderSolverContent = XpiderSolverContent;
+    }
+    if (typeof module !== 'undefined' && module.exports) {
+        module.exports = { XpiderSolverContent };
+    }
+
     // [v1.2.0 Autonomous Solver Engine] Universal Frame Detection & Auto-init
-    const currentHref = window.location.href.toLowerCase();
+    const currentHref = (typeof window !== 'undefined' && window.location && window.location.href ? window.location.href : '').toLowerCase();
+    const hasIframeChallenge = typeof document !== 'undefined' && document.querySelector ? document.querySelector('iframe[src*="recaptcha"], iframe[src*="turnstile"], iframe[src*="hcaptcha"]') !== null : false;
     const isChallengeEnvironment = 
         currentHref.includes('google.com/recaptcha') ||
         currentHref.includes('google.co.kr/recaptcha') ||
@@ -411,9 +562,9 @@
         currentHref.includes('cloudflare.com/turnstile') ||
         currentHref.includes('challenges.cloudflare.com') ||
         currentHref.includes('/sorry/') ||
-        document.querySelector('iframe[src*="recaptcha"], iframe[src*="turnstile"], iframe[src*="hcaptcha"]') !== null;
+        hasIframeChallenge;
 
-    if (isChallengeEnvironment) {
+    if (isChallengeEnvironment && typeof window !== 'undefined') {
         window.xpiderSolver = new XpiderSolverContent();
     }
 })();

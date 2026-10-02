@@ -43,6 +43,10 @@
         (typeof window !== 'undefined' && window.ContactDiscoveryEngine) || 
         (typeof require !== 'undefined' ? require('./modules/contact-discovery-engine.js') : null);
 
+    // [Issue #6 R4 Top-Level Scope Guarantee] Downloadable extensions filter
+    const NON_HTML_DOWNLOADABLE_EXTENSIONS = /\.(vcf|ics|ical|ifb|msg|eml|pdf|doc|docx|rtf|odt|xls|xlsx|csv|tsv|ppt|pptx|zip|rar|7z|tar|gz|bz2|exe|msi|bat|cmd|sh|apk|dmg|pkg|bin|mp3|wav|ogg|mp4|avi|mov|mkv|webm|jpg|jpeg|png|gif|svg|webp|ico|bmp|tiff|xml|json)(\?.*)?$/i;
+    console.log("[RUNTIME_ASSERT] NON_HTML_DOWNLOADABLE_EXTENSIONS ready=true");
+
     // ============================================================
     // [HyperEngine v4.0] Top-level React/Vue/Angular Native Value & Checked Setters
     // ============================================================
@@ -372,6 +376,15 @@
         const possibleTriggers = queryAllDeep('button, a, div[role="button"], span.btn, .contact-btn, #contact-trigger, [class*="chat"], [id*="chat"], .support-trigger, .lightbox-handle, .sqs-block-button, .sqs-editable-button');
         
         for (const btn of possibleTriggers) {
+            // [Safety Guard] Skip elements that trigger downloads or external application protocols (e.g. Outlook/vCard/PDF)
+            if (btn.hasAttribute && btn.hasAttribute('download')) continue;
+            if (btn.tagName === 'A' || (btn.hasAttribute && btn.hasAttribute('href'))) {
+                const href = (btn.getAttribute('href') || '').toLowerCase().trim();
+                if (/^(mailto:|tel:|callto:|sms:|javascript:)/i.test(href)) continue;
+                if (NON_HTML_DOWNLOADABLE_EXTENSIONS.test(href)) continue;
+                // In-page contact modal triggers must not perform full-page anchor navigation
+                if (href.startsWith('http') || href.startsWith('/') || href.startsWith('.')) continue;
+            }
             const text = (btn.textContent || btn.ariaLabel || '').toLowerCase().trim();
             const cls = (btn.className || '').toString().toLowerCase();
             const isIconTrigger = /chat|message|contact|support|mail/i.test(cls) || /chat|message|support/i.test(btn.id) || cls.includes('lightbox-handle');
@@ -422,6 +435,11 @@
         ];
         
         for (const btn of buttons) {
+            if (btn.hasAttribute && btn.hasAttribute('download')) continue;
+            if (btn.tagName === 'A' && btn.hasAttribute && btn.hasAttribute('href')) {
+                const href = (btn.getAttribute('href') || '').toLowerCase().trim();
+                if (/^(mailto:|tel:|callto:|sms:)/i.test(href) || NON_HTML_DOWNLOADABLE_EXTENSIONS.test(href)) continue;
+            }
             const isMatch = closeSelectors.some(s => {
                 try { return btn.matches(s); } catch(e) { return false; }
             });
@@ -609,7 +627,9 @@
             finishCampaign(false, "NO_FORM_ON_PAGE");
         } catch (e) {
             logDev(`🚨 [Engine] Fatal runtime error: ${e.message}`, "error");
-            finishCampaign(false, e.message);
+            const isRef = (e instanceof ReferenceError) || /is not defined/i.test(e.message);
+            const rCode = isRef ? `CORE_RUNTIME_ERROR: ${e.message}` : (e.message || "UNKNOWN");
+            finishCampaign(false, e.message, rCode);
         }
     }
 
@@ -694,6 +714,14 @@
                     return false;
                 }
                 logDev(`[CONTACT_GATE] PASS bodyField=${classification.bodyFieldType}`, "success");
+                try {
+                    chrome.runtime.sendMessage({
+                        action: 'FORM_GATE_PASSED',
+                        contactPageUrl: window.location.href,
+                        formPageUrl: window.location.href,
+                        bodyFieldType: classification.bodyFieldType
+                    }).catch(() => {});
+                } catch (_) {}
             }
 
             logDev("🛠️ Step 3: Registering message template to form fields...", "info");

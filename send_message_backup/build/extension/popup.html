@@ -18,6 +18,7 @@
                     </div>
                 </div>
                 <div class="header-actions">
+                    <button id="reset-all-lists-btn" class="danger-btn-small" style="background: rgba(255, 51, 51, 0.18); border: 1px solid #ff3333; color: #ff6666; font-size: 11px; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-weight: bold; margin-right: 6px;" title="Reset all accumulated list data across all tabs">⚠️ Reset All Lists</button>
                     <button id="settings-toggle" class="gear-btn icon-only" title="Settings">⚙️</button>
                 </div>
             </div>
@@ -270,6 +271,7 @@
                         <button id="ledger-export-csv-btn" class="toolbar-btn glow-teal" style="display: none;" title="Download CSV">Export CSV</button>
                         <button id="ledger-reset-selected-btn" class="toolbar-btn glow-purple" title="Release suppression for checked targets">🎯 Reset Selected</button>
                         <button id="ledger-retry-failed-btn" class="toolbar-btn glow-orange" title="Add failed targets back to execution queue">⚡ Retry Failed</button>
+                        <button id="ledger-clear-btn" class="toolbar-btn glow-red" title="Clear all history and audit ledger rows to 0">🗑️ Clear Ledger</button>
                         <button id="ledger-reset-all-btn" class="toolbar-btn glow-red" title="Advance generation and reset all suppression">🔄 Reset All</button>
                     </div>
                 </div>
@@ -331,12 +333,25 @@
             <!-- [Phase 2B Component C] Reset All Confirmation Modal -->
             <div id="reset-all-modal-overlay" class="modal-overlay hidden">
                 <div class="captcha-friendly-modal" style="max-width: 320px; text-align: center;">
-                    <h2 style="color: #ff3333; margin-bottom: 8px;">⚠️ Reset All Suppression</h2>
-                    <p style="font-size: 12px; color: #ccc; margin-bottom: 12px;">This will increment campaign generation and allow resending to all previously succeeded/suppressed targets. Audit history will be preserved.</p>
+                    <h2 style="color: #ff3333; margin-bottom: 8px;">⚠️ Clear History Ledger</h2>
+                    <p style="font-size: 12px; color: #ccc; margin-bottom: 12px;">This will permanently clear all audit ledger and attempt records to 0 rows from persistent storage.</p>
                     <p style="font-size: 11px; color: #ffa500; margin-bottom: 16px;">Are you absolutely sure you want to proceed?</p>
                     <div style="display: flex; gap: 8px; justify-content: center;">
                         <button id="cancel-reset-all-btn" class="secondary-btn" style="flex: 1;">Cancel</button>
-                        <button id="confirm-reset-all-btn" class="danger-btn" style="flex: 1;">Confirm Reset</button>
+                        <button id="confirm-reset-all-btn" class="danger-btn" style="flex: 1;">Confirm Clear</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- [Issue #6 R4.1] Reset All Lists Confirmation Modal -->
+            <div id="reset-all-lists-modal-overlay" class="modal-overlay hidden">
+                <div class="captcha-friendly-modal" style="max-width: 340px; text-align: center;">
+                    <h2 style="color: #ff3333; margin-bottom: 8px;">⚠️ RESET ALL LIST DATA</h2>
+                    <p style="font-size: 12px; color: #ccc; margin-bottom: 12px;">Clear all accumulated URL, History/Ledger, Email Collector, and diagnostic lists? Saved templates and API/settings will be kept.</p>
+                    <p style="font-size: 11px; color: #ffa500; margin-bottom: 16px;">This action cannot be undone.</p>
+                    <div style="display: flex; gap: 8px; justify-content: center;">
+                        <button id="cancel-reset-all-lists-btn" class="secondary-btn" style="flex: 1;">Cancel</button>
+                        <button id="confirm-reset-all-lists-btn" class="danger-btn" style="flex: 1;">Confirm Reset</button>
                     </div>
                 </div>
             </div>
@@ -427,6 +442,7 @@
                         <div class="settings-group emergency-group">
                             <label data-i18n="label_emergency_tools">Emergency Recovery</label>
                             <button id="hard-reset-engine-btn" class="danger-btn-small" data-i18n="btn_hard_reset">Force Engine Restart</button>
+                            <button id="settings-reset-all-lists-btn" class="danger-btn-small" style="margin-top: 8px; width: 100%; background: rgba(255, 51, 51, 0.2); border: 1px solid #ff3333; color: #ff9999;">⚠️ RESET ALL LIST DATA</button>
                             <p class="settings-subtip" data-i18n="reset_tip">Click if the engine stalls for more than 6 seconds.</p>
                         </div>
 

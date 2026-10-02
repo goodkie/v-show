@@ -119,11 +119,29 @@
     // 2. Safe URL Normalizer & Resolver (Section 21 Regression Guard)
     // ========================================================================
 
+    const NON_HTML_DOWNLOADABLE_EXTENSIONS = /\.(vcf|ics|ical|ifb|msg|eml|pdf|doc|docx|rtf|odt|xls|xlsx|csv|tsv|ppt|pptx|zip|rar|7z|tar|gz|bz2|exe|msi|bat|cmd|sh|apk|dmg|pkg|bin|mp3|wav|ogg|mp4|avi|mov|mkv|webm|jpg|jpeg|png|gif|svg|webp|ico|bmp|tiff|xml|json)(\?.*)?$/i;
+
+    function isMeaningfulContactPath(pathOrUrl) {
+        if (!pathOrUrl || typeof pathOrUrl !== 'string') return false;
+        let pathname = pathOrUrl.trim();
+        try {
+            if (pathname.startsWith('http://') || pathname.startsWith('https://')) {
+                pathname = new URL(pathname).pathname;
+            }
+        } catch (_) {}
+        const clean = pathname.split('?')[0].split('#')[0].trim();
+        // [Issue #6 R4.1] Root "/" and "" are VALID source/homepage paths
+        if (!clean || clean === '/' || clean === '') return true;
+        // Reject empty slug extension-only paths like /.html, /.php, /.asp, /.aspx, or /dir/.html
+        if (/(^|\/)\.(html?|php|asp|aspx)$/i.test(clean)) return false;
+        return true;
+    }
+
     function resolveCandidateUrl(candidate, baseUrl) {
         if (!candidate || typeof candidate !== 'string') return null;
         const trimmed = candidate.trim();
         if (!trimmed) return null;
-        if (/^(javascript|mailto|tel|data|blob):/i.test(trimmed)) return null;
+        if (/^(javascript|mailto|tel|data|blob|callto|sms):/i.test(trimmed)) return null;
 
         try {
             // MUST use new URL(candidate, baseUrl) - NEVER string concatenate base + candidate
@@ -137,6 +155,12 @@
             parsed.searchParams.delete('gclid');
 
             let pathname = parsed.pathname;
+            if (NON_HTML_DOWNLOADABLE_EXTENSIONS.test(pathname)) {
+                return null;
+            }
+            if (!isMeaningfulContactPath(pathname)) {
+                return null;
+            }
             if (pathname.length > 1 && pathname.endsWith('/')) {
                 pathname = pathname.slice(0, -1);
             }
@@ -216,7 +240,10 @@
             const candidates = [];
 
             for (const a of anchors) {
+                if (a.hasAttribute && a.hasAttribute('download')) continue;
                 const rawHref = a.getAttribute('href') || a.getAttribute('data-href') || '';
+                if (/^(javascript|mailto|tel|data|blob|callto|sms):/i.test(rawHref.trim())) continue;
+                if (NON_HTML_DOWNLOADABLE_EXTENSIONS.test(rawHref.trim())) continue;
                 const fullUrl = resolveCandidateUrl(rawHref, baseUrl);
                 if (!fullUrl) continue;
 
@@ -1101,6 +1128,8 @@
         FormOnCurrentPageFinder,
         SemanticPageClassifier,
         resolveCandidateUrl,
+        isMeaningfulContactPath,
+        NON_HTML_DOWNLOADABLE_EXTENSIONS,
         FAILURE_REASONS,
         COMMON_CONTACT_PATHS,
         POSITIVE_ANCHOR_TOKENS

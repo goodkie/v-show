@@ -78,6 +78,49 @@ const REASON_CODES = {
     SW_RESTART_ABORTED: "SW_RESTART_ABORTED"
 };
 
+// [Issue #6 R4.1] Authoritative Persistent Storage Registry per Data Tab
+const LIST_DATA_KEYS = {
+    autoform: [
+        'xpider_queue',
+        'xpider_campaign_queue',
+        'xpider_paused_checkpoint',
+        'xpider_campaign_state',
+        'xpider_visited_urls',
+        'xpider_visited',
+        'xpider_currentAttempt',
+        'xpider_isActive',
+        'xpider_isPaused',
+        'xpider_total',
+        'xpider_success',
+        'xpider_successful',
+        'xpider_counters',
+        'xpider_campaign_counters_v1',
+        'xpider_saved_lists',
+        'xpider_metrics',
+        'xpider_runtimeFailureReason'
+    ],
+    history: [
+        'xpider_history_rows',
+        'xpider_history_targets',
+        'xpider_history_attempts',
+        'xpider_history_resets',
+        'xpider_history_generation',
+        'xpider_history_saved_at',
+        'xpider_suppressions'
+    ],
+    diagnostics: [
+        'xpider_diagnostic_logs',
+        'xpider_boot_log'
+    ],
+    emailCollector: [
+        'xpider_email_collector_v1',
+        'xpider_email_current_site_v1',
+        'xpider_email_records',
+        'xpider_email_collector_stats',
+        'xpider_collected_emails'
+    ]
+};
+
 // [v1.2.0] Global Campaign State Registry (Ensures availability across all scopes)
 let campaignState = {
     isActive: false,
@@ -97,6 +140,7 @@ let campaignState = {
     isInitialized: false,
     targetResolve: null,
     targetReady: null,
+    currentDiscoveryCtx: null,
     currentAttempt: null, // [v1.2.0 Intent Ledger] { url, attemptId, status: 'SUBMIT_PENDING'|'RESOLVED', reasonCode, ts }
     focusActiveTargetTab: true, // [Hotfix R2] Auto-focus campaign target tab
     // [Authoritative Real-Time Campaign Counters]
@@ -112,6 +156,8 @@ let campaignState = {
         failureBreakdown: {}
     }
 };
+
+let coreRuntimeRefErrors = {};
 
 function broadcastCounters() {
     chrome.runtime.sendMessage({
@@ -281,27 +327,182 @@ if (typeof self.XpiderSolverCore === 'undefined') {
         constructor(config = {}) {
             this.config = {
                 witAiKey: config.witAiKey || null,
-            twoCaptchaKey: config.twoCaptchaKey || null,
-            nopeChaKey: config.nopeChaKey || null,
-            ...config
-        };
-    }
-
-    async transcribeAudio(audioData, audioUrl = null) {
-        // [BugFix v4.12.18] 세 가지 키 모두 읽어서 어떤 확장이 저장하든 인식
-        const storage = await new Promise(resolve => {
-            if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-                chrome.storage.local.get(['xpider_stt_api_key', 'audioSttKey', 'witKey'], resolve);
-            } else {
-                resolve({});
+                whisperApiKey: config.whisperApiKey || null,
+                twoCaptchaKey: config.twoCaptchaKey || null,
+                nopeChaKey: config.nopeChaKey || null,
+                ...config
+            };
+        }
+    
+        /**
+         * Digits and spoken numbers normalizer (English & Korean)
+         */
+        _normalizeDigits(text) {
+            if (!text || typeof text !== 'string') return '';
+            
+            const wordMap = {
+                // English digits and numbers
+                'zero': '0', 'oh': '0', 'one': '1', 'two': '2', 'three': '3', 
+                'four': '4', 'five': '5', 'six': '6', 'seven': '7', 'eight': '8', 'nine': '9',
+                'ten': '10', 'eleven': '11', 'twelve': '12', 'thirteen': '13', 'fourteen': '14',
+                'fifteen': '15', 'sixteen': '16', 'seventeen': '17', 'eighteen': '18', 'nineteen': '19',
+                'twenty': '20', 'thirty': '30', 'forty': '40', 'fifty': '50',
+                // Korean digits and numbers
+                '영': '0', '공': '0', '일': '1', '하나': '1', '이': '2', '둘': '2', 
+                '삼': '3', '셋': '3', '사': '4', '넷': '4', '오': '5', '다섯': '5', 
+                '육': '6', '여섯': '6', '칠': '7', '일곱': '7', '팔': '8', '여덟': '8', 
+                '구': '9', '아홉': '9'
+            };
+    
+            const cleaned = text.toLowerCase()
+                .replace(/[\[\]\(\)\{\}\.,!?;:\"\'\-]/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+    
+            const tokens = cleaned.split(' ');
+            const output = [];
+    
+            for (const token of tokens) {
+                if (wordMap[token] !== undefined) {
+                    output.push(wordMap[token]);
+                } else if (/^\d+$/.test(token)) {
+                    output.push(token);
+                } else {
+                    const nums = token.match(/\d+/g);
+                    if (nums) output.push(nums.join(''));
+                }
             }
-        });
-        const activeKey = storage.xpider_stt_api_key || storage.audioSttKey || storage.witKey || this.config.witAiKey;
-        
-        if (!activeKey) throw new Error("Wit.ai API Key missing in configuration.");
-        try {
-            const audioBlob = this._dataURLtoBlob(audioData);
-            // [v37.0] 오디오 MIME 타입 자동 감지
+    
+            const candidate = output.join('');
+            if (candidate) return candidate;
+    
+            // Fallback: extract any digits, or return trimmed text
+            const digitsOnly = text.replace(/\D/g, '');
+            return digitsOnly || cleaned;
+        }
+    
+        /**
+         * Transcribe reCAPTCHA audio challenge using multi-tier engine
+         * (OpenAI Whisper -> Wit.ai -> Free/Zero-Key Fallback)
+         */
+        async transcribeAudio(audioData, audioUrl = null) {
+            // [F13-Sanitized] Dynamically read configured keys from chrome.storage.local
+            const storage = await new Promise(resolve => {
+                if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+                    chrome.storage.local.get([
+                        'xpider_stt_api_key', 'audioSttKey', 'witKey',
+                        'xpider_whisper_api_key', 'whisperKey', 'openaiApiKey',
+                        'captchaMethod', 'xpider_captcha_method'
+                    ], resolve);
+                } else {
+                    resolve({});
+                }
+            });
+    
+            const activeWitKey = storage.xpider_stt_api_key || storage.audioSttKey || storage.witKey || this.config.witAiKey;
+            const activeWhisperKey = storage.xpider_whisper_api_key || storage.whisperKey || storage.openaiApiKey || this.config.whisperApiKey;
+    
+            // Obtain Audio Blob: from audioData (Base64) or direct background fetch via audioUrl
+            let audioBlob = null;
+            if (audioData && typeof audioData === 'string' && audioData.includes(',')) {
+                audioBlob = this._dataURLtoBlob(audioData);
+            } else if (audioUrl) {
+                try {
+                    const fetchRes = await fetch(audioUrl);
+                    if (fetchRes.ok) {
+                        audioBlob = await fetchRes.blob();
+                    } else {
+                        console.warn(`[XpiderSolverCore] Direct background audio fetch failed (${fetchRes.status})`);
+                    }
+                } catch (fetchErr) {
+                    console.warn("[XpiderSolverCore] Direct background audio fetch error:", fetchErr.message);
+                }
+            }
+    
+            if (!audioBlob) {
+                if (!activeWitKey && !activeWhisperKey) {
+                    throw new Error("No Wit.ai or Whisper API key configured, and audio payload could not be loaded.");
+                }
+                throw new Error("AUDIO_PAYLOAD_UNAVAILABLE: Unable to extract audio blob from dataURL or direct URL.");
+            }
+    
+            const errors = [];
+    
+            // Engine 1: OpenAI Whisper (if key present)
+            if (activeWhisperKey) {
+                try {
+                    const rawWhisper = await this._transcribeWhisper(audioBlob, activeWhisperKey);
+                    if (rawWhisper && rawWhisper.trim()) {
+                        return this._normalizeDigits(rawWhisper);
+                    }
+                } catch (wErr) {
+                    errors.push(`Whisper: ${wErr.message}`);
+                    console.warn("[XpiderSolverCore] Whisper transcription failed, trying Wit.ai fallback:", wErr.message);
+                }
+            }
+    
+            // Engine 2: Wit.ai (if key present)
+            if (activeWitKey) {
+                try {
+                    const rawWit = await this._transcribeWitAi(audioBlob, activeWitKey, audioUrl);
+                    if (rawWit && rawWit.trim()) {
+                        return this._normalizeDigits(rawWit);
+                    }
+                } catch (witErr) {
+                    errors.push(`Wit.ai: ${witErr.message}`);
+                    console.warn("[XpiderSolverCore] Wit.ai transcription failed:", witErr.message);
+                }
+            }
+    
+            // Engine 3: Free / Zero-Key Public Audio STT Fallback
+            try {
+                const rawFree = await this._transcribeFreeFallback(audioBlob, audioUrl);
+                if (rawFree && rawFree.trim()) {
+                    return this._normalizeDigits(rawFree);
+                }
+            } catch (freeErr) {
+                errors.push(`FreeFallback: ${freeErr.message}`);
+            }
+    
+            // If all engines failed, provide clear actionable message
+            if (!activeWitKey && !activeWhisperKey) {
+                throw new Error("Wit.ai or Whisper API Key required. Please set it in Settings -> Audio STT Key.");
+            }
+            throw new Error(`STT_TRANSCRIPTION_FAILED: ${errors.join(' | ')}`);
+        }
+    
+        /**
+         * Transcribe via OpenAI Whisper API
+         */
+        async _transcribeWhisper(audioBlob, apiKey) {
+            const formData = new FormData();
+            const filename = (audioBlob.type && audioBlob.type.includes('wav')) ? 'audio.wav' : 'audio.mp3';
+            formData.append('file', audioBlob, filename);
+            formData.append('model', 'whisper-1');
+            formData.append('response_format', 'text');
+            formData.append('temperature', '0');
+    
+            const res = await fetch("https://api.openai.com/v1/audio/transcriptions", {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${apiKey}`
+                },
+                body: formData
+            });
+    
+            if (!res.ok) {
+                const errText = await res.text().catch(() => '');
+                throw new Error(`OpenAI Whisper Error (${res.status}): ${errText}`);
+            }
+    
+            return await res.text();
+        }
+    
+        /**
+         * Transcribe via Wit.ai API
+         */
+        async _transcribeWitAi(audioBlob, apiKey, audioUrl) {
+            // Audio MIME type auto-detection
             const blobMime = audioBlob.type || '';
             let contentType;
             if (blobMime.includes('wav') || blobMime.includes('wave')) {
@@ -318,37 +519,42 @@ if (typeof self.XpiderSolverCore === 'undefined') {
                 else if (urlLower.includes('.ogg')) contentType = 'audio/ogg;codecs=opus';
                 else contentType = 'audio/mpeg3';
             }
-
+    
             let apiRes = await fetch("https://api.wit.ai/speech", {
                 method: "POST",
                 headers: {
-                    "Authorization": `Bearer ${activeKey}`,
+                    "Authorization": `Bearer ${apiKey}`,
                     "Content-Type": contentType
                 },
                 body: audioBlob
             });
-
-            // [v37.0] 첫 시도 실패 시, audio/mpeg3으로 폴백 재시도
+    
+            // Fallback retry with audio/mpeg3
             if (!apiRes.ok && contentType !== 'audio/mpeg3') {
                 apiRes = await fetch("https://api.wit.ai/speech", {
                     method: "POST",
                     headers: {
-                        "Authorization": `Bearer ${activeKey}`,
+                        "Authorization": `Bearer ${apiKey}`,
                         "Content-Type": "audio/mpeg3"
                     },
                     body: audioBlob
                 });
             }
-
+    
             if (!apiRes.ok) throw new Error(`Wit.ai Error (${apiRes.status})`);
+    
             const rawText = await apiRes.text();
             let result = null;
+    
+            // Strategy 1: Find "text" field via regex (streaming NDJSON)
             const textMatch = rawText.match(/"text"\s*:\s*"([^"]+)"/g);
             if (textMatch && textMatch.length > 0) {
                 const lastMatch = textMatch[textMatch.length - 1];
                 const valueMatch = lastMatch.match(/"text"\s*:\s*"([^"]+)"/);
                 if (valueMatch && valueMatch[1]) result = valueMatch[1];
             }
+    
+            // Strategy 2: Line-by-line JSON parsing
             if (!result) {
                 const lines = rawText.trim().split(/[\r\n]+/).filter(l => l.trim());
                 for (let i = lines.length - 1; i >= 0; i--) {
@@ -359,61 +565,159 @@ if (typeof self.XpiderSolverCore === 'undefined') {
                     } catch (e) { continue; }
                 }
             }
+    
+            // Strategy 3: Full response JSON
+            if (!result) {
+                try {
+                    const parsed = JSON.parse(rawText);
+                    result = parsed.text || parsed._text;
+                } catch (e) {}
+            }
+    
             if (result) return result;
             throw new Error("Failed to parse Wit.ai response.");
-        } catch (e) {
-            console.error("[XpiderSolverCore] Transcription failed:", e.message);
-            throw e;
+        }
+    
+        /**
+         * Free / Zero-Key Public STT Fallback
+         */
+        async _transcribeFreeFallback(audioBlob, audioUrl) {
+            // If Puter AI or public STT gateway is available in browser context
+            if (typeof puter !== 'undefined' && puter.ai && typeof puter.ai.speech2txt === 'function') {
+                const res = await puter.ai.speech2txt({ audio: audioBlob });
+                if (res && res.text) return res.text;
+            }
+    
+            // Return null to let caller handle gracefully
+            return null;
+        }
+    
+        /**
+         * Solve via NopeCHA Token API
+         */
+        async solveNopeCha(siteKey, pageUrl, type = 'recaptcha') {
+            if (!this.config.nopeChaKey) throw new Error("NopeCHA API Key missing.");
+            const nopechaType = type === 'turnstile' ? 'turnstile' : (type === 'hcaptcha' ? 'hcaptcha' : 'recaptcha');
+            const res = await fetch(`https://api.nopecha.com/token?key=${this.config.nopeChaKey}&type=${nopechaType}&sitekey=${siteKey}&url=${pageUrl}`);
+            const data = await res.json();
+            if (!data || data.error) throw new Error(`NopeCHA Error: ${data?.message || 'Unknown'}`);
+            return data.data;
+        }
+    
+        /**
+         * Solve via 2Captcha API
+         */
+        async solve2Captcha(siteKey, pageUrl, type = 'recaptcha') {
+            if (!this.config.twoCaptchaKey) throw new Error("2Captcha API Key missing.");
+            let method = 'userrecaptcha';
+            let extraParams = '';
+            if (type === 'hcaptcha') {
+                method = 'hcaptcha';
+                extraParams = `&sitekey=${siteKey}`;
+            } else if (type === 'turnstile') {
+                method = 'turnstile';
+                extraParams = `&sitekey=${siteKey}`;
+            } else {
+                extraParams = `&googlekey=${siteKey}`;
+            }
+            const res = await fetch(`https://2captcha.com/in.php?key=${this.config.twoCaptchaKey}&method=${method}${extraParams}&pageurl=${pageUrl}&json=1`);
+            const data = await res.json();
+            if (data.status !== 1) throw new Error(`2Captcha Error: ${data.request}`);
+            
+            const taskId = data.request;
+            for (let i = 0; i < 40; i++) {
+                await new Promise(r => setTimeout(r, 5000));
+                const checkRes = await fetch(`https://2captcha.com/res.php?key=${this.config.twoCaptchaKey}&action=get&id=${taskId}&json=1`);
+                const checkData = await checkRes.json();
+                if (checkData.status === 1) return checkData.request;
+                if (checkData.request !== "CAPCHA_NOT_READY") throw new Error(`2Captcha Error: ${checkData.request}`);
+            }
+            throw new Error("2Captcha Timeout");
+        }
+    
+        _dataURLtoBlob(dataurl) {
+            const arr = dataurl.split(',');
+            const mime = arr[0].match(/:(.*?);/)[1];
+            const bstr = atob(arr[1]);
+            let n = bstr.length;
+            const u8arr = new Uint8Array(n);
+            while (n--) u8arr[n] = bstr.charCodeAt(n);
+            return new Blob([u8arr], { type: mime });
+        }
+    
+        /**
+         * [Owner Authorized Enhancement: Extended Solver Registry]
+         */
+        async solveChallengeGeneric(type, params) {
+            switch (type) {
+                case 'recaptcha':
+                case 'recaptcha_v2':
+                    return this.config.twoCaptchaKey ? this.solve2Captcha(params.siteKey, params.pageUrl, 'recaptcha')
+                        : (this.config.nopeChaKey ? this.solveNopeCha(params.siteKey, params.pageUrl, 'recaptcha') : null);
+                case 'hcaptcha':
+                    return this.config.twoCaptchaKey ? this.solve2Captcha(params.siteKey, params.pageUrl, 'hcaptcha')
+                        : (this.config.nopeChaKey ? this.solveNopeCha(params.siteKey, params.pageUrl, 'hcaptcha') : null);
+                case 'turnstile':
+                    return this.config.nopeChaKey ? this.solveNopeCha(params.siteKey, params.pageUrl, 'turnstile') : null;
+                case 'audio_wit':
+                case 'audio':
+                    return this.transcribeAudio(params.audioData, params.audioUrl);
+                default:
+                    throw new Error(`Unsupported solver type: ${type}`);
+            }
+        }
+    
+        /**
+         * [Owner Authorized Enhancement: Autonomous Multi-Tier Fallback Chain]
+         */
+        async solveSmartFallbackChain(challengeType, params = {}) {
+            const errors = [];
+    
+            // 1. Audio Bypass (if audioData or audioUrl is present)
+            if (params.audioData || params.audioUrl) {
+                try {
+                    const text = await this.transcribeAudio(params.audioData, params.audioUrl);
+                    if (text && text.trim()) {
+                        return { success: true, method: 'audio_stt', solution: text.trim() };
+                    }
+                } catch (err) {
+                    errors.push(`AudioSTT: ${err.message}`);
+                }
+            }
+    
+            // 2. NopeCHA Fast Token
+            if (this.config.nopeChaKey && params.siteKey && params.pageUrl) {
+                try {
+                    const token = await this.solveNopeCha(params.siteKey, params.pageUrl, challengeType);
+                    if (token) {
+                        return { success: true, method: 'nopecha', token };
+                    }
+                } catch (err) {
+                    errors.push(`NopeCHA: ${err.message}`);
+                }
+            }
+    
+            // 3. 2Captcha Reliable Solver
+            if (this.config.twoCaptchaKey && params.siteKey && params.pageUrl) {
+                try {
+                    const token = await this.solve2Captcha(params.siteKey, params.pageUrl, challengeType);
+                    if (token) {
+                        return { success: true, method: '2captcha', token };
+                    }
+                } catch (err) {
+                    errors.push(`2Captcha: ${err.message}`);
+                }
+            }
+    
+            return { 
+                success: false, 
+                error: "ALL_SOLVER_TIERS_EXHAUSTED", 
+                details: errors.join(" | ") 
+            };
         }
     }
-
-    async solveNopeCha(siteKey, pageUrl, type = 'recaptcha') {
-        if (!this.config.nopeChaKey) throw new Error("NopeCHA API Key missing.");
-        const nopechaType = type === 'turnstile' ? 'turnstile' : (type === 'hcaptcha' ? 'hcaptcha' : 'recaptcha');
-        const res = await fetch(`https://api.nopecha.com/token?key=${this.config.nopeChaKey}&type=${nopechaType}&sitekey=${siteKey}&url=${pageUrl}`);
-        const data = await res.json();
-        if (!data || data.error) throw new Error(`NopeCHA Error: ${data?.message || 'Unknown'}`);
-        return data.data;
-    }
-
-    async solve2Captcha(siteKey, pageUrl, type = 'recaptcha') {
-        if (!this.config.twoCaptchaKey) throw new Error("2Captcha API Key missing.");
-        let method = 'userrecaptcha';
-        let extraParams = '';
-        if (type === 'hcaptcha') {
-            method = 'hcaptcha';
-            extraParams = `&sitekey=${siteKey}`;
-        } else if (type === 'turnstile') {
-            method = 'turnstile';
-            extraParams = `&sitekey=${siteKey}`;
-        } else {
-            extraParams = `&googlekey=${siteKey}`;
-        }
-        
-        const res = await fetch(`https://2captcha.com/in.php?key=${this.config.twoCaptchaKey}&method=${method}${extraParams}&pageurl=${pageUrl}&json=1`);
-        const data = await res.json();
-        if (data.status !== 1) throw new Error(`2Captcha Error: ${data.request}`);
-        const taskId = data.request;
-        for (let i = 0; i < 40; i++) {
-            await new Promise(r => setTimeout(r, 5000));
-            const checkRes = await fetch(`https://2captcha.com/res.php?key=${this.config.twoCaptchaKey}&action=get&id=${taskId}&json=1`);
-            const checkData = await checkRes.json();
-            if (checkData.status === 1) return checkData.request;
-            if (checkData.request !== "CAPCHA_NOT_READY") throw new Error(`2Captcha Error: ${checkData.request}`);
-        }
-        throw new Error("2Captcha Timeout");
-    }
-
-    _dataURLtoBlob(dataurl) {
-        const arr = dataurl.split(',');
-        const mime = arr[0].match(/:(.*?);/)[1];
-        const bstr = atob(arr[1]);
-        let n = bstr.length;
-        const u8arr = new Uint8Array(n);
-        while (n--) u8arr[n] = bstr.charCodeAt(n);
-        return new Blob([u8arr], { type: mime });
-    }
-    };
+    
+    // Universal Global Scope Binding (Service Worker / Content / Window);
 }
 
 markBoot("solver_instantiation");
@@ -435,6 +739,140 @@ markBoot("campaign_state_init");
 const bgOperationQueue = (typeof self.AsyncOperationQueue !== 'undefined')
     ? new self.AsyncOperationQueue()
     : { enqueue: (fn) => fn(), activeCount: 0 };
+
+// [Issue #6 R4.1] Centralized Authoritative List Clear Handlers
+async function clearAutoFormData() {
+    campaignState.isActive = false;
+    campaignState.isPaused = false;
+    campaignState.isLoopRunning = false;
+    if (campaignState.activeTimeoutId) {
+        clearTimeout(campaignState.activeTimeoutId);
+        campaignState.activeTimeoutId = null;
+    }
+    if (campaignState.currentDiscoveryCtx) {
+        campaignState.currentDiscoveryCtx.aborted = true;
+        campaignState.currentDiscoveryCtx = null;
+    }
+    if (chrome.alarms) {
+        chrome.alarms.clear("xpider_next_target");
+        chrome.alarms.clear("xpider_next_target_failsafe");
+    }
+    if (campaignState.currentTabId) {
+        chrome.tabs.remove(campaignState.currentTabId).catch(() => {});
+        campaignState.currentTabId = null;
+    }
+    if (campaignState.targetTabId) {
+        chrome.tabs.remove(campaignState.targetTabId).catch(() => {});
+        campaignState.targetTabId = null;
+    }
+
+    campaignState.queue = [];
+    campaignState.visitedUrls = [];
+    campaignState.successfulUrls = [];
+    campaignState.currentAttempt = null;
+    campaignState.pausedCheckpoint = null;
+    campaignState.outcomeHistogram = {};
+    for (const k of Object.keys(coreRuntimeRefErrors)) delete coreRuntimeRefErrors[k];
+
+    campaignState.counters = {
+        total: 0,
+        completed: 0,
+        success: 0,
+        failed: 0,
+        deliveryUnknown: 0,
+        skippedHistory: 0,
+        inProgress: 0,
+        failureBreakdown: {}
+    };
+    campaignState.successCount = 0;
+    campaignState.totalTargets = 0;
+
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+        await chrome.storage.local.remove(LIST_DATA_KEYS.autoform);
+        if (chrome.storage.session) {
+            await chrome.storage.session.remove(LIST_DATA_KEYS.autoform).catch(() => {});
+        }
+    }
+
+    broadcastCounters();
+    chrome.runtime.sendMessage({
+        action: 'UPDATE_STATS',
+        data: {
+            successCount: 0,
+            remainingCount: 0,
+            totalTargets: 0
+        }
+    }).catch(() => {});
+    return { success: true, message: "Business URLs and campaign queue cleared." };
+}
+
+async function clearHistoryData() {
+    const hs = await getHistoryStoreInstance();
+    if (hs && typeof hs.clearAll === 'function') {
+        await hs.clearAll();
+    }
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+        await chrome.storage.local.remove(LIST_DATA_KEYS.history);
+        if (chrome.storage.session) {
+            await chrome.storage.session.remove(LIST_DATA_KEYS.history).catch(() => {});
+        }
+    }
+    return { success: true, message: "History and audit ledger cleared to 0 rows." };
+}
+
+async function clearDiagnosticsData() {
+    logBuffer = [];
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+        await chrome.storage.local.remove(LIST_DATA_KEYS.diagnostics);
+        if (chrome.storage.session) {
+            await chrome.storage.session.remove(LIST_DATA_KEYS.diagnostics).catch(() => {});
+        }
+    }
+    logBg(null, "Diagnostic log cleared.", "info");
+    return { success: true, message: "Diagnostic log cleared." };
+}
+
+async function clearEmailCollectorData() {
+    try {
+        if (self.EmailCollectorStore) {
+            const emailStore = new self.EmailCollectorStore(chrome.storage.local);
+            await emailStore.clearAll();
+        }
+    } catch (_) {}
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+        await chrome.storage.local.remove(LIST_DATA_KEYS.emailCollector);
+        if (chrome.storage.session) {
+            await chrome.storage.session.remove(LIST_DATA_KEYS.emailCollector).catch(() => {});
+        }
+    }
+    return { success: true, message: "Email collector lists cleared." };
+}
+
+async function resetAllListData() {
+    // 1. Pause/stop engine and clear autoform data
+    await clearAutoFormData();
+    // 2. Clear history data
+    await clearHistoryData();
+    // 3. Clear email collector data
+    await clearEmailCollectorData();
+    // 4. Clear diagnostics data
+    await clearDiagnosticsData();
+    // 5. Ensure all keys in storage registry are removed
+    const allKeysToRemove = [
+        ...LIST_DATA_KEYS.autoform,
+        ...LIST_DATA_KEYS.history,
+        ...LIST_DATA_KEYS.diagnostics,
+        ...LIST_DATA_KEYS.emailCollector
+    ];
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+        await chrome.storage.local.remove(allKeysToRemove);
+        if (chrome.storage.session) {
+            await chrome.storage.session.remove(allKeysToRemove).catch(() => {});
+        }
+        await chrome.storage.local.set({ xpider_reset_generation: Date.now() });
+    }
+    return { success: true, message: "All list data authoritatively reset to 0." };
+}
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     switch (request.action) {
@@ -525,6 +963,20 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             if (sender.tab && sender.tab.id === campaignState.currentTabId && campaignState.targetResolve) {
                 const resolve = campaignState.targetResolve;
                 resolve(request.result);
+                sendResponse({ success: true });
+            }
+            return true;
+
+        case 'FORM_GATE_PASSED':
+            if (sender.tab && sender.tab.id === campaignState.currentTabId) {
+                const cUrl = request.contactPageUrl || sender.tab.url;
+                const fUrl = request.formPageUrl || sender.tab.url;
+                if (campaignState.currentDiscoveryCtx) {
+                    campaignState.currentDiscoveryCtx.selectedContactUrl = cUrl;
+                    campaignState.currentDiscoveryCtx.selectedFormUrl = fUrl;
+                }
+                logBg(sender.tab.id, `[CONTACT_COMMIT] contactPageUrl=${cUrl}`, "info");
+                logBg(sender.tab.id, `[FORM_COMMIT] formPageUrl=${fUrl}`, "info");
                 sendResponse({ success: true });
             }
             return true;
@@ -788,6 +1240,64 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             });
             return true;
 
+        case 'CLEAR_BUSINESS_URLS':
+            bgOperationQueue.enqueue(async () => {
+                try {
+                    const res = await clearAutoFormData();
+                    sendResponse(res);
+                } catch (err) {
+                    sendResponse({ success: false, error: err.message });
+                }
+            });
+            return true;
+
+        case 'CLEAR_HISTORY_LEDGER':
+            bgOperationQueue.enqueue(async () => {
+                try {
+                    const res = await clearHistoryData();
+                    sendResponse(res);
+                } catch (err) {
+                    sendResponse({ success: false, error: err.message });
+                }
+            });
+            return true;
+
+        case 'CLEAR_DIAGNOSTIC_LOGS':
+            bgOperationQueue.enqueue(async () => {
+                try {
+                    const res = await clearDiagnosticsData();
+                    sendResponse(res);
+                } catch (err) {
+                    sendResponse({ success: false, error: err.message });
+                }
+            });
+            return true;
+
+        case 'CLEAR_EMAIL_COLLECTOR':
+            bgOperationQueue.enqueue(async () => {
+                try {
+                    const res = await clearEmailCollectorData();
+                    sendResponse(res);
+                } catch (err) {
+                    sendResponse({ success: false, error: err.message });
+                }
+            });
+            return true;
+
+        case 'RESET_ALL_LIST_DATA':
+        case 'FULL_RESET_CAMPAIGN_DATA':
+            bgOperationQueue.enqueue(async () => {
+                try {
+                    const res = await resetAllListData();
+                    logBg(null, "🧹 [FullReset] FULL_RESET_CAMPAIGN_DATA executed. Clean slate restored (templates & API keys preserved).", "success");
+                    sendResponse(res);
+                } catch (err) {
+                    console.error("FULL_RESET_CAMPAIGN_DATA error:", err);
+                    sendResponse({ success: false, error: err.message });
+                }
+            });
+            return true;
+
         case 'EXPORT_HISTORY_CSV':
             // [P2A-5 Safe CSV Export]
             bgOperationQueue.enqueue(async () => {
@@ -1016,6 +1526,7 @@ async function startCampaignOrchestrator(queue, template, delayMs, fillDelayMs =
         campaignState.currentTabId = null;
         campaignState.outcomeHistogram = {};
         campaignState.pausedCheckpoint = null;
+        for (const k of Object.keys(coreRuntimeRefErrors)) delete coreRuntimeRefErrors[k];
         
         logBg(null, "[Boot] Variables initialized.", "debug");
         logBg(null, "🚀 Engine booting...", "start");
@@ -1053,6 +1564,12 @@ async function pauseCampaignOrchestrator(saveCheckpoint = true) {
     campaignState.isPaused = true;
     logBg(null, "⏸️ [Engine] Campaign PAUSED / STOP & SAVE requested.", "info");
 
+    // Cancel discovery if in flight
+    if (campaignState.currentDiscoveryCtx) {
+        campaignState.currentDiscoveryCtx.aborted = true;
+        campaignState.currentDiscoveryCtx = null;
+    }
+
     // Cancel pending next-target timer
     if (campaignState.activeTimeoutId) {
         clearTimeout(campaignState.activeTimeoutId);
@@ -1067,6 +1584,10 @@ async function pauseCampaignOrchestrator(saveCheckpoint = true) {
     if (campaignState.currentTabId) {
         chrome.tabs.remove(campaignState.currentTabId).catch(() => {});
         campaignState.currentTabId = null;
+    }
+    if (campaignState.targetTabId) {
+        chrome.tabs.remove(campaignState.targetTabId).catch(() => {});
+        campaignState.targetTabId = null;
     }
 
     // Current target handling
@@ -1084,6 +1605,8 @@ async function pauseCampaignOrchestrator(saveCheckpoint = true) {
                     await self.__xpiderHistoryStore.persist();
                 }
             } catch (_) {}
+            const normUrl = normalizeUrl(currentAtt.url);
+            campaignState.visitedUrls = campaignState.visitedUrls.filter(u => u !== normUrl && u !== currentAtt.url);
             if (!campaignState.queue.includes(currentAtt.url)) {
                 campaignState.queue.unshift(currentAtt.url);
             }
@@ -1123,8 +1646,10 @@ async function pauseCampaignOrchestrator(saveCheckpoint = true) {
             sessionId: campaignState.sessionId,
             pausedAt: Date.now(),
             outcomeHistogram: { ...(campaignState.outcomeHistogram || {}) },
-            counters: { ...(campaignState.counters || {}) }
+            counters: { ...(campaignState.counters || {}) },
+            restorationLogged: false
         };
+        campaignState.checkpointHydratedForGeneration = false;
         campaignState.pausedCheckpoint = checkpoint;
         await chrome.storage.local.set({
             xpider_paused_checkpoint: checkpoint,
@@ -1286,6 +1811,38 @@ async function processNextCampaignTarget(loopSessionId) {
         } catch (_) {
             targetHost = normalized || currentUrl;
         }
+
+        // [Filter Guard] Skip government/military/academic and major portal/platform/shopping mall targets
+        const nonBizCheck = isNonBusinessOrMajorPlatform(targetUrl);
+        if (nonBizCheck.skip) {
+            logBg(null, `⏭️ [Filter] Skipping non-business/gov/platform target: ${targetUrl} (${nonBizCheck.reason})`, "info");
+            try {
+                const hs = await getHistoryStoreInstance();
+                if (hs && typeof hs.recordAttempt === 'function') {
+                    const record = await hs.recordAttempt({
+                        targetUrl,
+                        status: 'SKIPPED',
+                        reasonCode: 'NON_BUSINESS_OR_GOV_SKIPPED'
+                    });
+                    if (record && record.attempt && typeof hs.settleAttempt === 'function') {
+                        await hs.settleAttempt(record.attempt.attemptId, false, 'NON_BUSINESS_OR_GOV_SKIPPED', {
+                            resultUrl: targetUrl,
+                            skipReason: nonBizCheck.reason
+                        });
+                    }
+                    await hs.persist();
+                }
+            } catch (_) {}
+
+            campaignState.counters.skippedHistory = (campaignState.counters.skippedHistory || 0) + 1;
+            campaignState.counters.completed = campaignState.counters.success + campaignState.counters.failed + campaignState.counters.deliveryUnknown;
+            campaignState.counters.remaining = Math.max(0, campaignState.counters.total - campaignState.counters.completed - campaignState.counters.skippedHistory);
+            await persistCounters();
+            broadcastCounters();
+
+            return processNextCampaignTarget(currentSession);
+        }
+
         const targetIdx = campaignState.totalTargets - campaignState.queue.length;
         logBg(null, `[TARGET ${targetIdx}/${campaignState.totalTargets}][${targetHost}] START`, "info");
         if (chrome.alarms) chrome.alarms.create(`xpider_timeout_${currentSession}`, { delayInMinutes: 3 });
@@ -1412,6 +1969,21 @@ const LIBRARY_TIERS = {
     ]
 };
 
+function isMeaningfulContactPath(pathOrUrl) {
+    if (!pathOrUrl || typeof pathOrUrl !== 'string') return false;
+    let pathname = pathOrUrl.trim();
+    try {
+        if (pathname.startsWith('http://') || pathname.startsWith('https://')) {
+            pathname = new URL(pathname).pathname;
+        }
+    } catch (_) {}
+    const clean = pathname.split('?')[0].split('#')[0].trim();
+    // [Issue #6 R4.1] Root "/" and "" are VALID source/homepage paths
+    if (!clean || clean === '/' || clean === '') return true;
+    if (/(^|\/)\.(html?|php|asp|aspx)$/i.test(clean)) return false;
+    return true;
+}
+
 // Generate full path list with suffixes
 const PROACTIVE_PATHS = (() => {
     const baseSet = [
@@ -1433,8 +2005,11 @@ const PROACTIVE_PATHS = (() => {
 
     baseSet.forEach(p => {
         suffixes.forEach(s => {
+            if (!p && (s === '.html' || s === '.php' || s === '.asp')) return;
             const combined = p + s;
-            if (!result.includes(combined)) result.push(combined);
+            if (combined && isMeaningfulContactPath(combined) && !result.includes(combined)) {
+                result.push(combined);
+            }
         });
     });
     
@@ -1446,6 +2021,96 @@ const PROACTIVE_PATHS = (() => {
 // [Issue #6 Comment #51 Hotfix] Target-Scoped Candidate Registry & Hard Navigation Guard
 // ========================================================================
 
+const NON_HTML_DOWNLOADABLE_EXTENSIONS = /\.(vcf|ics|ical|ifb|msg|eml|pdf|doc|docx|rtf|odt|xls|xlsx|csv|tsv|ppt|pptx|zip|rar|7z|tar|gz|bz2|exe|msi|bat|cmd|sh|apk|dmg|pkg|bin|mp3|wav|ogg|mp4|avi|mov|mkv|webm|jpg|jpeg|png|gif|svg|webp|ico|bmp|tiff|xml|json)(\?.*)?$/i;
+
+const GOV_AND_ACADEMIC_DOMAIN_REGEX = /(^|\.)(gov|go\.[a-z]{2}|gov\.[a-z]{2}|mil|mil\.[a-z]{2}|edu|edu\.[a-z]{2}|ac\.[a-z]{2}|re\.kr)$/i;
+
+const MAJOR_PLATFORMS_AND_PORTALS = new Set([
+    'google.com', 'google.co.kr', 'youtube.com', 'youtu.be', 'blogger.com',
+    'naver.com', 'daum.net', 'kakao.com', 'nate.com',
+    'yahoo.com', 'yahoo.co.jp', 'bing.com', 'msn.com', 'live.com', 'office.com', 'outlook.com',
+    'microsoft.com', 'apple.com', 'icloud.com', 'github.com', 'gitlab.com',
+    'facebook.com', 'fb.com', 'instagram.com', 'threads.net', 'whatsapp.com',
+    'twitter.com', 'x.com', 't.co', 'tiktok.com', 'pinterest.com', 'reddit.com',
+    'tumblr.com', 'twitch.tv', 'discord.com', 'telegram.org', 't.me', 'linkedin.com',
+    'wikipedia.org', 'wikimedia.org', 'w3.org', 'w3schools.com', 'mozilla.org',
+    'wordpress.org', 'medium.com', 'substack.com', 'baidu.com', 'yandex.com', 'yandex.ru'
+]);
+
+const MAJOR_SHOPPING_MALLS = new Set([
+    'coupang.com', 'gmarket.co.kr', '11st.co.kr', 'auction.co.kr',
+    'wemakeprice.com', 'tmon.co.kr', 'interpark.com', 'ssg.com',
+    'lotteon.com', 'musinsa.com', 'zigzag.kr', 'a-bly.com', 'ably.co.kr',
+    'kurly.com', 'oliveyoung.co.kr', 'danawa.com', 'enuri.com',
+    'kakaostyle.com', 'wadiz.kr', 'tumblbug.com',
+    'walmart.com', 'target.com', 'costco.com', 'bestbuy.com',
+    'homedepot.com', 'temu.com', 'shein.com', 'etsy.com'
+]);
+
+function isNonBusinessOrMajorPlatform(urlStr) {
+    if (!urlStr || typeof urlStr !== 'string') return { skip: false };
+    let hostname = '';
+    try {
+        const u = new URL(urlStr.startsWith('http') ? urlStr : 'https://' + urlStr);
+        hostname = (u.hostname || '').toLowerCase().replace(/^www\./, '');
+    } catch (_) {
+        hostname = urlStr.toLowerCase().replace(/^(https?:\/\/)?(www\.)?/, '').split('/')[0];
+    }
+    if (!hostname) return { skip: false };
+
+    // 1. Government, military, and academic institutions
+    if (GOV_AND_ACADEMIC_DOMAIN_REGEX.test(hostname)) {
+        return { skip: true, category: 'GOVERNMENT_OR_PUBLIC', reason: `Government / Public / Academic institution domain (${hostname}) skipped` };
+    }
+
+    // 2. Global engines with country TLDs (e.g. google.co.uk, amazon.de)
+    if (/(^|\.)google\./i.test(hostname)) {
+        return { skip: true, category: 'MAJOR_PLATFORM', reason: `Google portal/search service (${hostname}) skipped` };
+    }
+    if (/(^|\.)amazon\./i.test(hostname)) {
+        return { skip: true, category: 'MAJOR_SHOPPING_MALL', reason: `Amazon shopping marketplace (${hostname}) skipped` };
+    }
+    if (/(^|\.)ebay\./i.test(hostname)) {
+        return { skip: true, category: 'MAJOR_SHOPPING_MALL', reason: `eBay shopping marketplace (${hostname}) skipped` };
+    }
+    if (/(^|\.)aliexpress\./i.test(hostname) || /(^|\.)alibaba\./i.test(hostname)) {
+        return { skip: true, category: 'MAJOR_SHOPPING_MALL', reason: `Alibaba/AliExpress marketplace (${hostname}) skipped` };
+    }
+
+    // 3. Major platform and portal set
+    for (const p of MAJOR_PLATFORMS_AND_PORTALS) {
+        if (hostname === p || hostname.endsWith('.' + p)) {
+            return { skip: true, category: 'MAJOR_PLATFORM', reason: `Major portal/social platform (${hostname}) skipped` };
+        }
+    }
+
+    // 4. Major shopping mall set
+    for (const m of MAJOR_SHOPPING_MALLS) {
+        if (hostname === m || hostname.endsWith('.' + m)) {
+            return { skip: true, category: 'MAJOR_SHOPPING_MALL', reason: `Major e-commerce shopping platform (${hostname}) skipped` };
+        }
+    }
+
+    return { skip: false };
+}
+
+async function getHistoryStoreInstance() {
+    if (!self.__xpiderHistoryStore) {
+        if (typeof self.HistoryStore === 'function') {
+            self.__xpiderHistoryStore = new self.HistoryStore(chrome.storage.local);
+        } else if (typeof require === 'function') {
+            try {
+                const HS = require('./modules/history-store.js');
+                self.__xpiderHistoryStore = new HS(chrome.storage.local);
+            } catch (_) {}
+        }
+        if (self.__xpiderHistoryStore && typeof self.__xpiderHistoryStore.load === 'function') {
+            await self.__xpiderHistoryStore.load();
+        }
+    }
+    return self.__xpiderHistoryStore;
+}
+
 function validateCandidateUrl(rawCandidate, baseUrl = null, options = {}) {
     if (!rawCandidate || typeof rawCandidate !== 'string') {
         return { valid: false, reasonCode: 'INVALID_CANDIDATE_URL', reason: 'EMPTY_OR_NON_STRING' };
@@ -1454,7 +2119,7 @@ function validateCandidateUrl(rawCandidate, baseUrl = null, options = {}) {
     if (!trimmed) {
         return { valid: false, reasonCode: 'INVALID_CANDIDATE_URL', reason: 'EMPTY_STRING' };
     }
-    if (/^(about:|chrome:|chrome-extension:|javascript:|data:|blob:)/i.test(trimmed)) {
+    if (/^(about:|chrome:|chrome-extension:|javascript:|data:|blob:|mailto:|tel:|callto:|sms:)/i.test(trimmed)) {
         return { valid: false, reasonCode: 'INVALID_CANDIDATE_URL', reason: 'DISALLOWED_PROTOCOL' };
     }
     let resolvedUrl;
@@ -1468,6 +2133,13 @@ function validateCandidateUrl(rawCandidate, baseUrl = null, options = {}) {
     }
     if (!resolvedUrl.hostname || resolvedUrl.hostname.trim() === '') {
         return { valid: false, reasonCode: 'INVALID_CANDIDATE_URL', reason: 'EMPTY_HOSTNAME' };
+    }
+    const pathname = (resolvedUrl.pathname || '').toLowerCase();
+    if (NON_HTML_DOWNLOADABLE_EXTENSIONS.test(pathname)) {
+        return { valid: false, reasonCode: 'DOWNLOADABLE_FILE_REJECTED', reason: `DOWNLOADABLE_EXTENSION: ${pathname}` };
+    }
+    if (!isMeaningfulContactPath(pathname)) {
+        return { valid: false, reasonCode: 'SYNTHETIC_EMPTY_PATH_REJECTED', reason: `EMPTY_SLUG_PATH: ${pathname}` };
     }
     if (options.requireSameOrigin && baseUrl) {
         try {
@@ -1538,12 +2210,16 @@ function createDiscoveryContext(targetUrl) {
     let host = 'unknown';
     try { host = new URL(targetUrl).hostname; } catch (_) {}
     return {
+        targetExecutionId: `exec_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+        campaignSessionId: campaignState.sessionId,
+        aborted: false,
         candidateSourceMap: new Map(),
         candidates: new Map(),
         visited: new Set(),
         verified: new Set(),
         errors: [],
         selectedContactUrl: null,
+        selectedFormUrl: null,
         sourceHost: host,
         sourceUrl: targetUrl,
         blankTabObservations: 0,
@@ -1601,6 +2277,10 @@ async function scanContactPaths(baseUrl, tabId, discoveryCtx = null) {
     // Concurrent scanning in small batches to prevent blocking
     const batchSize = 10;
     for (let i = 0; i < pool.length; i += batchSize) {
+        if (discoveryCtx?.aborted || campaignState.isPaused) {
+            logBg(tabId, "⏸️ [Scan] In-flight scan aborted due to pause/cancel.", "info");
+            break;
+        }
         logBg(tabId, `🔦 Scanning paths ${i + 1}-${Math.min(i + batchSize, pool.length)}...`, "info");
         const batch = pool.slice(i, i + batchSize);
         const results = await Promise.all(batch.map(async (path) => {
@@ -1649,14 +2329,14 @@ async function orchestrateSending(urlInput, template) {
     let targetUrl = urlInput.trim();
     if (!targetUrl.startsWith('http')) targetUrl = 'https://' + targetUrl;
 
-    // [F8] Lazy HistoryStore singleton shared across all orchestration calls
-    const _getHistoryStore = async () => {
-        if (!self.__xpiderHistoryStore) {
-            self.__xpiderHistoryStore = new self.HistoryStore(chrome.storage.local);
-            await self.__xpiderHistoryStore.load();
-        }
-        return self.__xpiderHistoryStore;
-    };
+    // [Filter Guard] Skip non-business/gov/platform
+    const nonBizCheck = isNonBusinessOrMajorPlatform(targetUrl);
+    if (nonBizCheck.skip) {
+        logBg(null, `⏭️ [Filter] Skipping ${nonBizCheck.category} target: ${targetUrl} (${nonBizCheck.reason})`, 'warning');
+        return { success: false, reasonCode: 'NON_BUSINESS_OR_GOV_SKIPPED', error: nonBizCheck.reason };
+    }
+
+    const _getHistoryStore = getHistoryStoreInstance;
 
     // [F8] Step 1: Normalize identity and perform suppression check BEFORE any side effect
     // Fail-closed on error: if check throws, abort before tab open!
@@ -1722,7 +2402,20 @@ async function orchestrateSending(urlInput, template) {
     const validatedTarget = validateCandidateUrl(targetUrl);
     if (!validatedTarget.valid) {
         logBg(null, `🚫 [NavigationGuard] Target URL invalid [${targetUrl}]: ${validatedTarget.reason}`, 'error');
-        return { success: false, reasonCode: 'INVALID_CANDIDATE_URL', error: 'Invalid target URL' };
+        // [Issue #6 R4.1] Source URL rejected by internal validator trips CORE_NAVIGATION_VALIDATOR_BROKEN and pauses campaign immediately
+        campaignState.status = 'paused';
+        campaignState.isPaused = true;
+        campaignState.isActive = false;
+        campaignState.runtimeFailureReason = 'CORE_NAVIGATION_VALIDATOR_BROKEN';
+        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+            chrome.storage.local.set({
+                xpider_isPaused: true,
+                xpider_isActive: false,
+                xpider_campaign_state: 'paused',
+                xpider_runtimeFailureReason: 'CORE_NAVIGATION_VALIDATOR_BROKEN'
+            }).catch(() => {});
+        }
+        return { success: false, reasonCode: 'CORE_NAVIGATION_VALIDATOR_BROKEN', error: `Target URL rejected by navigation validator: ${validatedTarget.reason}` };
     }
     targetUrl = validatedTarget.url;
     const targetHost = validatedTarget.hostname;
@@ -1734,6 +2427,7 @@ async function orchestrateSending(urlInput, template) {
     }
 
     const discoveryCtx = createDiscoveryContext(targetUrl);
+    campaignState.currentDiscoveryCtx = discoveryCtx;
 
     // [Comment 51 Section 9 & 10 & Hotfix R2] Single Tab Policy & Tab Focus
     let tabId = campaignState.targetTabId;
@@ -1882,6 +2576,24 @@ async function orchestrateSending(urlInput, template) {
             finalReason = res?.reasonCode || (res?.error ? String(res.error) : REASON_CODES.DELIVERY_UNKNOWN);
         }
 
+        // [Circuit Breaker] Core runtime ReferenceError tracking
+        const errStr = String(res?.error || res?.reasonCode || '');
+        if (/ReferenceError|is not defined|CORE_RUNTIME_ERROR/i.test(errStr)) {
+            const m = errStr.match(/([a-zA-Z0-9_$]+)\s+is not defined/i);
+            const symbol = m ? m[1] : (errStr.split(':')[1] || errStr).trim();
+            coreRuntimeRefErrors[symbol] = (coreRuntimeRefErrors[symbol] || 0) + 1;
+            if (coreRuntimeRefErrors[symbol] >= 2) {
+                logBg(tabId, `🚨 [CIRCUIT_BREAKER] Identical ReferenceError repeated (${coreRuntimeRefErrors[symbol]}x): ${symbol}. Tripping CORE_RUNTIME_BROKEN: ${symbol} and auto-pausing campaign.`, 'error');
+                finalReason = `CORE_RUNTIME_BROKEN: ${symbol}`;
+                pauseCampaignOrchestrator(true).catch(() => {});
+                chrome.runtime.sendMessage({
+                    action: 'CORE_RUNTIME_BROKEN_ALERT',
+                    symbol,
+                    error: errStr
+                }).catch(() => {});
+            }
+        }
+
         // Record outcome in campaign outcome histogram
         if (!campaignState.outcomeHistogram) campaignState.outcomeHistogram = {};
         campaignState.outcomeHistogram[finalReason] = (campaignState.outcomeHistogram[finalReason] || 0) + 1;
@@ -1911,10 +2623,19 @@ async function orchestrateSending(urlInput, template) {
                 // Settle with proper DELIVERY_UNKNOWN vs FAILURE distinction
                 const settleSuccess = isSuccess;
                 const settleReason = isDeliveryUnknown ? REASON_CODES.DELIVERY_UNKNOWN : finalReason;
+                const finalContactUrl = res?.metadata?.contactPageUrl 
+                    || (isSuccess ? (actualResultUrl || currentAttemptUrl) : discoveryCtx.selectedContactUrl)
+                    || null;
+                const finalCandidateUrl = discoveryCtx.selectedContactUrl || currentAttemptUrl || null;
+                const finalFormUrl = res?.metadata?.formPageUrl || null;
+
                 await hs.settleAttempt(_attemptId, settleSuccess, settleReason, {
                     resultUrl: actualResultUrl,
                     targetToken: targetToken,
                     submittedFromUrl: res?.metadata?.submittedFromUrl || null,
+                    contactPageUrl: finalContactUrl,
+                    selectedCandidateUrl: finalCandidateUrl,
+                    formPageUrl: finalFormUrl,
                     emailsFound: (res && res.emailsFound !== undefined) ? res.emailsFound : 0
                 });
                 const rec = hs.attempts.find(a => a.attemptId === _attemptId);
@@ -1982,19 +2703,23 @@ async function orchestrateSending(urlInput, template) {
             }
         } catch (_) {}
 
-        logBg(tabId, `[CONTACT_COMMIT] contactPageUrl=${actualLoadedUrl}`, "info");
-        logBg(tabId, `[FORM_COMMIT] formPageUrl=${actualLoadedUrl}`, "info");
+        // Note: [CONTACT_COMMIT] and [FORM_COMMIT] are deferred until FORM_GATE_PASSED passes strict inquiry-form gate!
         logBg(tabId, `[SUBMIT_LOCK] submittedFromUrl=${actualLoadedUrl}`, "info");
 
-        if (_attemptId && self.__xpiderHistoryStore && typeof self.__xpiderHistoryStore.updateAttemptContact === 'function') {
-            self.__xpiderHistoryStore.updateAttemptContact(_attemptId, {
-                contactPageUrl: actualLoadedUrl,
-                formPageUrl: actualLoadedUrl,
-                submittedFromUrl: actualLoadedUrl,
-                lockPreSubmitUrls: true,
-                targetToken: targetToken
-            }, targetToken);
-            self.__xpiderHistoryStore.persist().catch(() => {});
+        if (_attemptId) {
+            try {
+                const hs = await getHistoryStoreInstance();
+                if (hs && typeof hs.updateAttemptContact === 'function') {
+                    hs.updateAttemptContact(_attemptId, {
+                        contactPageUrl: actualLoadedUrl,
+                        formPageUrl: actualLoadedUrl,
+                        submittedFromUrl: actualLoadedUrl,
+                        lockPreSubmitUrls: true,
+                        targetToken: targetToken
+                    }, targetToken);
+                    await hs.persist();
+                }
+            } catch (_) {}
         }
         
         // [v1.2.0 & F2 & F8] Transition to SUBMIT_PENDING immediately BEFORE triggering submission side-effects
@@ -2021,6 +2746,7 @@ async function orchestrateSending(urlInput, template) {
     };
 
     const navWatcher = (updatedTabId, statusInfo) => {
+        if (updatedTabId !== tabId || discoveryCtx.aborted || campaignState.isPaused || isFinished) return;
         if (updatedTabId === tabId) {
             lastActivity = Date.now();
             if (chrome.alarms) chrome.alarms.create(`xpider_watchdog_${tabId}_${currentSession}`, { delayInMinutes: 1 });
@@ -2055,10 +2781,10 @@ async function orchestrateSending(urlInput, template) {
     safeTabs.onUpdated.addListener(navWatcher);
 
     const startInjection = (delay) => {
-        if (isFinished || isFocusSecured) return;
+        if (isFinished || isFocusSecured || discoveryCtx.aborted || campaignState.isPaused) return;
         if (injectionTimer) clearTimeout(injectionTimer);
         injectionTimer = setTimeout(async () => {
-            if (isFinished || isFocusSecured) return;
+            if (isFinished || isFocusSecured || discoveryCtx.aborted || campaignState.isPaused) return;
             try {
                 const targetTab = await safeTabs.get(tabId);
                 
@@ -2101,9 +2827,9 @@ async function orchestrateSending(urlInput, template) {
     };
 
     const startPolling = () => {
-        if (isFinished || isFocusSecured || pollerTimer) return;
+        if (isFinished || isFocusSecured || pollerTimer || discoveryCtx.aborted || campaignState.isPaused) return;
         pollerTimer = setInterval(async () => {
-            if (isFinished || isFocusSecured) {
+            if (isFinished || isFocusSecured || discoveryCtx.aborted || campaignState.isPaused) {
                 clearInterval(pollerTimer);
                 pollerTimer = null;
                 return;
@@ -2154,13 +2880,18 @@ async function orchestrateSending(urlInput, template) {
         logBg(tabId, `[DISCOVERY] selectedCandidate=${fullUrl}`, "info");
 
         // [Hotfix R2] Record selected candidate without prematurely committing contactPageUrl
-        if (_attemptId && self.__xpiderHistoryStore && typeof self.__xpiderHistoryStore.updateAttemptContact === 'function') {
-            self.__xpiderHistoryStore.updateAttemptContact(_attemptId, {
-                selectedCandidateUrl: fullUrl,
-                contactDiscoverySource: discoverySource,
-                targetToken: targetToken
-            }, targetToken);
-            self.__xpiderHistoryStore.persist().catch(() => {});
+        if (_attemptId) {
+            try {
+                const hs = await getHistoryStoreInstance();
+                if (hs && typeof hs.updateAttemptContact === 'function') {
+                    hs.updateAttemptContact(_attemptId, {
+                        selectedCandidateUrl: fullUrl,
+                        contactDiscoverySource: discoverySource,
+                        targetToken: targetToken
+                    }, targetToken);
+                    await hs.persist();
+                }
+            } catch (_) {}
         } 
 
         logBg(tabId, `Connecting to [${fullUrl}]...`, "visit");
@@ -2370,7 +3101,15 @@ async function restoreCampaignState() {
                         campaignState.successCount = data.xpider_paused_checkpoint.successCount || 0;
                         campaignState.template = data.xpider_paused_checkpoint.template || null;
                         campaignState.outcomeHistogram = { ...(data.xpider_paused_checkpoint.outcomeHistogram || {}) };
-                        logBg(null, `Restored paused campaign checkpoint: ${campaignState.queue.length} targets remaining (ready to resume).`, "info");
+                        // [Issue #6 R4.1] Checkpoint Restore Spam Fix: Log at most ONCE per checkpoint hydration
+                        if (!data.xpider_paused_checkpoint.restorationLogged && !campaignState.checkpointHydratedForGeneration) {
+                            data.xpider_paused_checkpoint.restorationLogged = true;
+                            campaignState.checkpointHydratedForGeneration = true;
+                            if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+                                chrome.storage.local.set({ xpider_paused_checkpoint: data.xpider_paused_checkpoint });
+                            }
+                            logBg(null, `Restored paused campaign checkpoint: ${campaignState.queue.length} targets remaining (ready to resume).`, "info");
+                        }
                     } else if (data.xpider_isActive && data.xpider_queue && data.xpider_queue.length > 0) {
                         campaignState.isActive = true;
                         campaignState.queue = data.xpider_queue;
@@ -2454,6 +3193,18 @@ if (typeof module !== 'undefined' && module.exports) {
         navigateToValidatedCandidate,
         createDiscoveryContext,
         addCandidate,
-        scanContactPaths
+        scanContactPaths,
+        NON_HTML_DOWNLOADABLE_EXTENSIONS,
+        isMeaningfulContactPath,
+        PROACTIVE_PATHS,
+        coreRuntimeRefErrors,
+        isNonBusinessOrMajorPlatform,
+        getHistoryStoreInstance,
+        LIST_DATA_KEYS,
+        clearAutoFormData,
+        clearHistoryData,
+        clearDiagnosticsData,
+        clearEmailCollectorData,
+        resetAllListData
     };
 }

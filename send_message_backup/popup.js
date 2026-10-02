@@ -49,6 +49,49 @@
 // [v20.0] Explicit Transport Policy: chrome-extension (Service Worker Background Engine)
 const RUNTIME_MODE = 'chrome-extension';
 
+// [Issue #6 R4.1] Authoritative Persistent Storage Registry per Data Tab
+const LIST_DATA_KEYS = {
+    autoform: [
+        'xpider_queue',
+        'xpider_campaign_queue',
+        'xpider_paused_checkpoint',
+        'xpider_campaign_state',
+        'xpider_visited_urls',
+        'xpider_visited',
+        'xpider_currentAttempt',
+        'xpider_isActive',
+        'xpider_isPaused',
+        'xpider_total',
+        'xpider_success',
+        'xpider_successful',
+        'xpider_counters',
+        'xpider_campaign_counters_v1',
+        'xpider_saved_lists',
+        'xpider_metrics',
+        'xpider_runtimeFailureReason'
+    ],
+    history: [
+        'xpider_history_rows',
+        'xpider_history_targets',
+        'xpider_history_attempts',
+        'xpider_history_resets',
+        'xpider_history_generation',
+        'xpider_history_saved_at',
+        'xpider_suppressions'
+    ],
+    diagnostics: [
+        'xpider_diagnostic_logs',
+        'xpider_boot_log'
+    ],
+    emailCollector: [
+        'xpider_email_collector_v1',
+        'xpider_email_current_site_v1',
+        'xpider_email_records',
+        'xpider_email_collector_stats',
+        'xpider_collected_emails'
+    ]
+};
+
 let currentTpl = {};
 let campaignQueue = [];
 let campaignActive = false;
@@ -121,11 +164,19 @@ function addDiagnosticLog(message, level = 'INFO') {
     }
 }
 
-function clearDiagnosticLog() {
+async function clearDiagnosticLog() {
     diagnosticLogBuffer.length = 0;
-    addDiagnosticLog("Diagnostic buffer cleared by operator.", "INFO");
+    const logContainer = document.getElementById('log-container');
+    if (logContainer) logContainer.innerHTML = '';
+
+    if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
+        chrome.runtime.sendMessage({ action: 'CLEAR_DIAGNOSTIC_LOGS' }, () => {});
+    }
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+        await chrome.storage.local.remove(LIST_DATA_KEYS.diagnostics);
+    }
     if (typeof addLog === 'function') {
-        addLog("🧹 Diagnostic log cleared.", "info");
+        addLog("Diagnostic log cleared.", "info");
     }
 }
 
@@ -456,6 +507,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 addLog(request.message, request.logType);
             } else if (request.action === 'UPDATE_STATS') {
                 updateRealTimeStatus(request.data);
+            } else if (request.action === 'CORE_RUNTIME_BROKEN_ALERT') {
+                addLog(`🚨 [CIRCUIT BREAKER] Core runtime broken: ${request.symbol} is not defined. Campaign paused.`, 'error');
             }
         });
         console.log("✅ [Popup] Real-time messaging listener registered via chrome.runtime.");
@@ -1234,15 +1287,25 @@ function bindEvents() {
         });
     }
 
+    const ledgerClearBtn = document.getElementById('ledger-clear-btn');
     const ledgerResetAllBtn = document.getElementById('ledger-reset-all-btn');
     const resetAllModal = document.getElementById('reset-all-modal-overlay');
     const cancelResetAllBtn = document.getElementById('cancel-reset-all-btn');
     const confirmResetAllBtn = document.getElementById('confirm-reset-all-btn');
 
+    if (ledgerClearBtn && resetAllModal) {
+        ledgerClearBtn.addEventListener('click', () => {
+            if (campaignActive) {
+                alert("Cannot clear history while campaign is actively running!");
+                return;
+            }
+            resetAllModal.classList.remove('hidden');
+        });
+    }
     if (ledgerResetAllBtn && resetAllModal) {
         ledgerResetAllBtn.addEventListener('click', () => {
             if (campaignActive) {
-                alert("Cannot reset suppression while campaign is actively running!");
+                alert("Cannot clear history while campaign is actively running!");
                 return;
             }
             resetAllModal.classList.remove('hidden');
@@ -1257,7 +1320,40 @@ function bindEvents() {
         confirmResetAllBtn.addEventListener('click', async () => {
             resetAllModal.classList.add('hidden');
             try {
-                await dispatchGlobalReset();
+                await dispatchClearHistoryLedger();
+            } catch (err) {
+                alert(err.message);
+            }
+        });
+    }
+
+    // [Issue #6 R4.1] RESET ALL LIST DATA Modal & Event Listeners
+    const resetAllListsBtn = document.getElementById('reset-all-lists-btn');
+    const settingsResetAllListsBtn = document.getElementById('settings-reset-all-lists-btn');
+    const resetAllListsModal = document.getElementById('reset-all-lists-modal-overlay');
+    const cancelResetAllListsBtn = document.getElementById('cancel-reset-all-lists-btn');
+    const confirmResetAllListsBtn = document.getElementById('confirm-reset-all-lists-btn');
+
+    const openResetAllListsModal = () => {
+        if (campaignActive) {
+            alert("Cannot reset list data while campaign is actively running!");
+            return;
+        }
+        if (resetAllListsModal) resetAllListsModal.classList.remove('hidden');
+    };
+
+    if (resetAllListsBtn) resetAllListsBtn.addEventListener('click', openResetAllListsModal);
+    if (settingsResetAllListsBtn) settingsResetAllListsBtn.addEventListener('click', openResetAllListsModal);
+    if (cancelResetAllListsBtn && resetAllListsModal) {
+        cancelResetAllListsBtn.addEventListener('click', () => {
+            resetAllListsModal.classList.add('hidden');
+        });
+    }
+    if (confirmResetAllListsBtn && resetAllListsModal) {
+        confirmResetAllListsBtn.addEventListener('click', async () => {
+            resetAllListsModal.classList.add('hidden');
+            try {
+                await dispatchResetAllListData();
             } catch (err) {
                 alert(err.message);
             }
@@ -2559,7 +2655,7 @@ async function renderLedgerUI() {
 
             // Section J: Format shortened display for Source and Contact URLs
             const sourceUrl = rec.sourceUrl || rec.rawUrl || rec.targetIdentity || '';
-            const contactUrl = rec.contactPageUrl || '';
+            const contactUrl = rec.contactPageUrl || rec.selectedCandidateUrl || '';
 
             const formatShortUrl = (urlStr) => {
                 if (!urlStr) return '-';
@@ -2770,6 +2866,112 @@ async function dispatchGlobalReset(activeSubmitCount = 0) {
     await renderLedgerUI();
     addLog(`🔄 Global campaign reset applied. Generation: ${result.newGeneration}`, 'success');
     return result;
+}
+
+/**
+ * [Issue #6 R4.1] Authoritatively clear History & Ledger to 0 rows
+ */
+async function dispatchClearHistoryLedger() {
+    const isLocked = await checkActiveSubmitLock();
+    if (isLocked) {
+        throw new Error("RESET_LOCKED_ACTIVE_SUBMISSION: Active submission in flight.");
+    }
+    const hs = getPopupHistoryStore();
+    if (hs && typeof hs.clearAll === 'function') {
+        await hs.clearAll();
+    }
+    if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
+        await new Promise(r => chrome.runtime.sendMessage({ action: 'CLEAR_HISTORY_LEDGER' }, r));
+    }
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+        await chrome.storage.local.remove(LIST_DATA_KEYS.history);
+    }
+    ledgerState.selectedTargets.clear();
+    ledgerState.page = 1;
+    await renderLedgerUI();
+    ['stat-ledger-total', 'stat-ledger-success', 'stat-ledger-suppressed', 'stat-ledger-unknown', 'stat-ledger-failed'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = '0';
+    });
+    addLog("History and audit ledger cleared to 0 rows.", "stop");
+    return { success: true };
+}
+
+/**
+ * [Issue #6 R4.1] Authoritative Atomic Reset of All 4 Accumulated List Stores
+ */
+async function dispatchResetAllListData() {
+    if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
+        await new Promise(r => chrome.runtime.sendMessage({ action: 'RESET_ALL_LIST_DATA' }, r));
+    }
+
+    campaignQueue = [];
+    totalTargets = 0;
+    successCount = 0;
+    remainingTargets = 0;
+    const fileInfo = document.getElementById('file-info');
+    if (fileInfo) fileInfo.classList.add('hidden');
+    const previewList = document.getElementById('file-urls-preview');
+    if (previewList) previewList.classList.add('hidden');
+    const previewContainer = document.getElementById('preview-list');
+    if (previewContainer) previewContainer.innerHTML = '';
+    const fileInput = document.getElementById('file-input');
+    if (fileInput) fileInput.value = '';
+    const nameDisplay = document.getElementById('filename-display');
+    if (nameDisplay) nameDisplay.textContent = 'No file selected';
+    const countDisplay = document.getElementById('url-count-display');
+    if (countDisplay) countDisplay.textContent = '0 URLs found';
+    const resumableBanner = document.getElementById('resumable-campaign-banner');
+    if (resumableBanner) resumableBanner.style.display = 'none';
+
+    const hs = getPopupHistoryStore();
+    if (hs && typeof hs.clearAll === 'function') {
+        await hs.clearAll();
+    }
+    ledgerState.selectedTargets.clear();
+    ledgerState.page = 1;
+    await renderLedgerUI();
+    ['stat-ledger-total', 'stat-ledger-success', 'stat-ledger-suppressed', 'stat-ledger-unknown', 'stat-ledger-failed'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = '0';
+    });
+
+    const emailStore = getEmailCollectorStore();
+    if (emailStore && typeof emailStore.clearAll === 'function') {
+        await emailStore.clearAll();
+    }
+    renderEmailCollectorUI();
+
+    diagnosticLogBuffer.length = 0;
+    const logContainer = document.getElementById('log-container');
+    if (logContainer) logContainer.innerHTML = '';
+
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+        const allKeys = [
+            ...LIST_DATA_KEYS.autoform,
+            ...LIST_DATA_KEYS.history,
+            ...LIST_DATA_KEYS.diagnostics,
+            ...LIST_DATA_KEYS.emailCollector
+        ];
+        await chrome.storage.local.remove(allKeys);
+    }
+
+    updateRealTimeStatus({ successCount: 0, remainingCount: 0, totalTargets: 0 });
+    updateProgress(0);
+    ['stat-success-count', 'stat-failed-count', 'stat-completed-count', 'stat-remaining-count', 'success-count-display', 'failed-count-display', 'completed-count-display', 'remaining-count-display'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = '0';
+    });
+
+    addLog("Diagnostic log cleared.", "info");
+    return { success: true };
+}
+
+/**
+ * [Issue #6 R4 True Full Reset] Atomically wipe all campaign targets, checkpoints, queues, and history to 0
+ */
+async function dispatchFullCampaignReset() {
+    return dispatchResetAllListData();
 }
 
 /**
@@ -3161,13 +3363,18 @@ window.addEventListener('message', (event) => {
 });
 
 async function clearCampaignQueue() {
-    // 1. Reset campaign queue and counts
+    // 1. Authoritatively clear background
+    if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
+        await new Promise(r => chrome.runtime.sendMessage({ action: 'CLEAR_BUSINESS_URLS' }, r));
+    }
+
+    // 2. Reset campaign queue and counts
     campaignQueue = [];
     totalTargets = 0;
     successCount = 0;
     remainingTargets = 0;
     
-    // 2. Hide file info and preview lists
+    // 3. Hide file info and preview lists
     const fileInfo = document.getElementById('file-info');
     if (fileInfo) fileInfo.classList.add('hidden');
     
@@ -3177,7 +3384,7 @@ async function clearCampaignQueue() {
     const previewContainer = document.getElementById('preview-list');
     if (previewContainer) previewContainer.innerHTML = '';
     
-    // 3. Clear file input
+    // 4. Clear file input
     const fileInput = document.getElementById('file-input');
     if (fileInput) fileInput.value = '';
     
@@ -3186,19 +3393,20 @@ async function clearCampaignQueue() {
 
     const countDisplay = document.getElementById('url-count-display');
     if (countDisplay) countDisplay.textContent = '0 URLs found';
+
+    const resumableBanner = document.getElementById('resumable-campaign-banner');
+    if (resumableBanner) resumableBanner.style.display = 'none';
     
-    // 4. Update UI counts and progress
-    updateRealTimeStatus({ successCount: 0, remainingCount: 0 });
+    // 5. Update UI counts and progress
+    updateRealTimeStatus({ successCount: 0, remainingCount: 0, totalTargets: 0 });
     updateProgress(0);
     
-    // 5. Clear Storage
-    await chrome.storage.local.set({
-        xpider_queue: [],
-        xpider_total: 0,
-        xpider_success: 0
-    });
+    // 6. Authoritatively remove all autoform keys from storage
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+        await chrome.storage.local.remove(LIST_DATA_KEYS.autoform);
+    }
     
-    // 6. Log success
+    // 7. Log success
     addLog("Business URLs list cleared.", "stop");
 }
 
@@ -3598,6 +3806,11 @@ if (typeof module !== 'undefined' && module.exports) {
         dispatchSelectiveReset,
         dispatchRetryFailed,
         dispatchGlobalReset,
+        dispatchClearHistoryLedger,
+        dispatchResetAllListData,
+        dispatchFullCampaignReset,
+        clearCampaignQueue,
+        LIST_DATA_KEYS,
         triggerCsvExport,
         bindCampaignTemplateMetadata,
         startCampaign,
