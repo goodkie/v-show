@@ -55,6 +55,10 @@
         (typeof window !== 'undefined' && window.FinalFormCompletionEngine) || 
         (typeof require !== 'undefined' ? require('./modules/final-form-completion-engine.js') : null);
 
+    const _FormDiscoveryEngineR2 = (typeof window !== 'undefined' && window.FormDiscoveryEngineR2) || 
+        (typeof global !== 'undefined' && global.FormDiscoveryEngineR2) || 
+        (typeof require !== 'undefined' ? require('./modules/form-discovery-engine-r2.js') : null);
+
     // [Issue #6 R4 Top-Level Scope Guarantee] Downloadable extensions filter
     const NON_HTML_DOWNLOADABLE_EXTENSIONS = /\.(vcf|ics|ical|ifb|msg|eml|pdf|doc|docx|rtf|odt|xls|xlsx|csv|tsv|ppt|pptx|zip|rar|7z|tar|gz|bz2|exe|msi|bat|cmd|sh|apk|dmg|pkg|bin|mp3|wav|ogg|mp4|avi|mov|mkv|webm|jpg|jpeg|png|gif|svg|webp|ico|bmp|tiff|xml|json)(\?.*)?$/i;
     console.log("[RUNTIME_ASSERT] NON_HTML_DOWNLOADABLE_EXTENSIONS ready=true");
@@ -145,7 +149,18 @@
         });
     }
 
-    // [v2.8.6] Concurrency Lock: Prevent multiple parallel processing cycles in the same tab
+    // [Issue #6 R6.2 Requirement 8] Reset Duplicate/SPA Suppression Per Real Navigation
+    const currentSetupUrl = (typeof window !== 'undefined' && window.location ? window.location.href : '');
+    const isNewSetupUrl = !window.__xpider_last_setup_url || window.__xpider_last_setup_url !== currentSetupUrl;
+    window.__xpider_last_setup_url = currentSetupUrl;
+
+    if (isNewSetupUrl) {
+        // Clear stale setup and running latch from previous DOM generation
+        window.__xpider_initialized = false;
+        window.__xpider_running = false;
+        window.__xpider_running_url = null;
+    }
+
     const alreadyInitialized = window.__xpider_initialized;
     window.__xpider_initialized = true;
 
@@ -157,7 +172,7 @@
         }, i * 500);
     }
 
-    if (alreadyInitialized) {
+    if (alreadyInitialized && !isNewSetupUrl) {
         logDev("⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).", "debug");
         return;
     }
@@ -210,11 +225,13 @@
 
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         if (request.action === 'START_SENDING') {
-            if (window.__xpider_running) {
+            const currentRunUrl = (typeof window !== 'undefined' && window.location ? window.location.href : '');
+            if (window.__xpider_running && window.__xpider_running_url === currentRunUrl) {
                 logDev("⚠️ [Engine] Already processing. Ignoring duplicate START_SENDING.", "warning");
                 return;
             }
             window.__xpider_running = true;
+            window.__xpider_running_url = currentRunUrl;
             
             // [v17.6.0] Redirect Recovery
             const isVerificationMode = sessionStorage.getItem('xpider_pending_verify') === 'true';
@@ -597,6 +614,14 @@
                     logDev(`🌐 [Supreme-X 5.0] ${branches.length} additional branch targets queued for traversal.`, "success");
                 }
 
+                // [Issue #6 R6.2 Autofill Bridge] Canonical startAutofillForEligibleForm
+                const attemptId = Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 7);
+                const bridgeFn = (_FormDiscoveryEngineR2 && _FormDiscoveryEngineR2.startAutofillForEligibleForm) || 
+                                 (typeof window !== 'undefined' && window.__xpiderStartAutofillForEligibleForm);
+                if (typeof bridgeFn === 'function') {
+                    bridgeFn(attemptId, { form: currentForm, template, speed });
+                }
+
                 const fillResult = await fillAndSubmit(currentForm, template, speed);
                 if (fillResult) {
                     logDev("✅ [Engine] Campaign step successfully executed.", "success");
@@ -964,15 +989,24 @@
     }
 
     // ========================================================================
-    // FormDiscoveryEngine — Advanced Multi-Root Form Detection (Issue #6 R5)
+    // FormDiscoveryEngine — Advanced Multi-Root Form Detection (Issue #6 R5 / R6.2)
     // ========================================================================
     class FormDiscoveryEngine {
         constructor(options = {}) {
             this.options = options;
+            const EngineR2Class = (_FormDiscoveryEngineR2 && _FormDiscoveryEngineR2.FormDiscoveryEngineR2) ||
+                                  (typeof window !== 'undefined' && window.FormDiscoveryEngineR2);
+            if (EngineR2Class && EngineR2Class !== FormDiscoveryEngine) {
+                this._engineR2 = new EngineR2Class(options);
+            }
         }
 
         // D1. Identify inquiry-body controls
         findInquiryBodyControls(root = document) {
+            if (this._engineR2) {
+                const rootsHelper = _FormDiscoveryEngineR2.collectAccessibleRoots ? _FormDiscoveryEngineR2.collectAccessibleRoots(root) : { roots: [root] };
+                return _FormDiscoveryEngineR2.findInquiryBodyControls(rootsHelper.roots);
+            }
             const controls = [];
             if (!root || !root.querySelectorAll) return controls;
 
@@ -1105,6 +1139,9 @@
 
         // Main form discovery ladder across document, ShadowDOM, iframes, and dynamic reveals
         async discoverForm(root = document) {
+            if (this._engineR2) {
+                return await this._engineR2.discoverForm(root);
+            }
             // 1. Initial scan across document forms and form-like divs
             let containers = this.groupAndScoreContainers(root);
             if (containers.length > 0) {
@@ -4104,6 +4141,8 @@
         window.__xpiderCheckboxResolverR2 = _CheckboxResolverR2;
         window.__xpiderSelectResolverR2 = _SelectResolverR2;
         window.__xpiderFinalFormCompletionEngine = _FinalFormCompletionEngine;
+        window.__xpiderCollectAccessibleRoots = _FormDiscoveryEngineR2 ? _FormDiscoveryEngineR2.collectAccessibleRoots : null;
+        window.__xpiderStartAutofillForEligibleForm = _FormDiscoveryEngineR2 ? _FormDiscoveryEngineR2.startAutofillForEligibleForm : null;
     }
 
     if (typeof module !== 'undefined' && module.exports) {
@@ -4127,7 +4166,9 @@
             ContactDiscoveryEngine: _ContactDiscoveryEngine,
             CheckboxResolverR2: _CheckboxResolverR2,
             SelectResolverR2: _SelectResolverR2,
-            FinalFormCompletionEngine: _FinalFormCompletionEngine
+            FinalFormCompletionEngine: _FinalFormCompletionEngine,
+            collectAccessibleRoots: _FormDiscoveryEngineR2 ? _FormDiscoveryEngineR2.collectAccessibleRoots : null,
+            startAutofillForEligibleForm: _FormDiscoveryEngineR2 ? _FormDiscoveryEngineR2.startAutofillForEligibleForm : null
         };
     }
 })();

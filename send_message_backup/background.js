@@ -2941,7 +2941,16 @@ async function orchestrateSending(urlInput, template) {
                     return; 
                 }
                 
-                await safeScripting.executeScript({ target: { tabId }, files: ['modules/contact-gate.js', 'modules/smart-field-resolver.js', 'modules/contact-discovery-engine.js', 'modules/checkbox-resolver-r2.js', 'modules/select-resolver-r2.js', 'content-script.js'] });
+                await safeScripting.executeScript({ target: { tabId }, files: [
+                    'modules/contact-gate.js',
+                    'modules/smart-field-resolver.js',
+                    'modules/contact-discovery-engine.js',
+                    'modules/checkbox-resolver-r2.js',
+                    'modules/select-resolver-r2.js',
+                    'modules/final-form-completion-engine.js',
+                    'modules/form-discovery-engine-r2.js',
+                    'content-script.js'
+                ] });
                 safeScripting.executeScript({ target: { tabId }, files: ['solver-content.js'] }).catch(() => {});
                 startPolling();
             } catch (e) {
