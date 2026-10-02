@@ -935,8 +935,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             return true;
 
         case 'START_CAMPAIGN':
+            // [R6.4 3] Log START_BG received
+            const queueLen = (request && Array.isArray(request.queue)) ? request.queue.length : 0;
+            logBg(null, `[START_BG] received queue=${queueLen}`, "info");
+            console.log(`[START_BG] received queue=${queueLen}`);
             // [v18.25.0] Total Decoupling: Respond first, boot async
-            sendResponse({ success: true, status: 'acknowledged' });
+            sendResponse({ success: true, status: 'acknowledged', queueCount: queueLen });
             (async () => {
                 try {
                     if (bootPromise) {
@@ -1630,6 +1634,9 @@ async function startCampaignOrchestrator(queue, template, delayMs, fillDelayMs =
         }
 
         logBg(null, `📊 [Queue Filter] Input: ${originalInputCount} | Duplicates: ${dupCount} | Suppressed: ${suppressedCount} | History-Attempted: ${historySkippedCount} | Executable: ${executableQueue.length}`, "info");
+        if (executableQueue.length === 0 && originalInputCount > 0) {
+            logBg(null, `⚠️ [Queue Filter] All ${originalInputCount} targets were skipped (historySkipped=${historySkippedCount}, suppressed=${suppressedCount}). If re-testing, disable 'Skip Previously Attempted' or reset history suppression.`, "warning");
+        }
 
         // [v18.15.5] Restore Campaign Variables
         campaignState.queue = executableQueue;
@@ -2036,10 +2043,9 @@ if (chrome.alarms) {
                 return;
             }
             logBg(null, `⚠️ [Protection] Global Session Timeout triggered. Advancing...`, "warning");
-                // Explicitly clear lock to allow next target to enter
-                campaignState.isLoopRunning = false;
-                processNextCampaignTarget();
-            }
+            // Explicitly clear lock to allow next target to enter
+            campaignState.isLoopRunning = false;
+            processNextCampaignTarget();
         }
     }
     });

@@ -504,98 +504,200 @@ if (typeof window !== 'undefined' && window.addEventListener) {
     });
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    // ── [VITAL] Step 0: Register messaging listener IMMEDIATELY and SYNCHRONOUSLY
-    // Ensures that we never miss SENDER_LOG or UPDATE_STATS events, even if translations or settings load slowly.
-    
-    // 1. Direct Chrome Runtime message listener (Custom bridge fallback)
+// [R6.4] Control Plane Boot & Error Boundaries
+window.__xpider_boot = {
+    started: false,
+    settingsHydrated: false,
+    startHandlerBound: false,
+    saveHandlerBound: false,
+    getStateAck: false,
+    ready: false
+};
+
+function displayControlPlaneError(code, detail) {
+    console.error(`[CONTROL_PLANE_ERROR] code=${code} detail=${detail}`);
     try {
-        chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-            if (!request) return;
-            if (request.action === 'SENDER_LOG') {
-                addLog(request.message, request.logType);
-            } else if (request.action === 'UPDATE_STATS') {
-                updateRealTimeStatus(request.data);
-            } else if (request.action === 'CORE_RUNTIME_BROKEN_ALERT') {
-                addLog(`🚨 [CIRCUIT BREAKER] Core runtime broken: ${request.symbol} is not defined. Campaign paused.`, 'error');
-            } else if (request.action === 'EMAIL_COLLECTOR_CLEARED') {
-                if (typeof renderEmailCollectorUI === 'function') {
-                    renderEmailCollectorUI();
-                }
-            }
-        });
-        console.log("✅ [Popup] Real-time messaging listener registered via chrome.runtime.");
-    } catch(e) { console.error('[Popup] Fatal: onMessage listener failed:', e); }
+        let errBanner = document.getElementById('xpider-control-plane-error');
+        if (!errBanner && typeof document !== 'undefined' && document.body) {
+            errBanner = document.createElement('div');
+            errBanner.id = 'xpider-control-plane-error';
+            errBanner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#dc2626;color:#fff;padding:8px 12px;font-size:12px;font-weight:700;z-index:999999;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.3);';
+            document.body.prepend(errBanner);
+        }
+        if (errBanner) {
+            errBanner.textContent = `🚨 CONTROL_PLANE_ERROR: ${code} (${detail})`;
+        }
+    } catch (_) {}
+}
 
-    // 2. [VITAL 2차 방어벽] Direct window postMessage listener
-    // Electron renderer_ui가 executeJavaScript로 window.postMessage릴레이를 보낼 때 직접 가로채어 수신
-    try {
-        window.addEventListener('message', (event) => {
-            if (event.data && event.data.type === 'XPIDER_EVENT' && event.data.name === 'runtime-on-message') {
-                const request = event.data.data;
-                if (!request) return;
-                console.log("📥 [Popup postMessage Relay] Received action:", request.action);
-                if (request.action === 'SENDER_LOG') {
-                    addLog(request.message, request.logType);
-                } else if (request.action === 'UPDATE_STATS') {
-                    updateRealTimeStatus(request.data);
-                }
-            }
-        });
-        console.log("✅ [Popup] Dual-path postMessage real-time listener active.");
-    } catch(e) { console.error('[Popup] Fatal: postMessage listener failed:', e); }
+function bindCriticalControls() {
+    let startBound = false;
+    let saveBound = false;
 
-    // ── Step 1: Bind ALL events FIRST (no async, cannot fail) ──
-    try { bindEvents(); } catch(e) { console.error('[Popup] bindEvents failed:', e); }
-    
-    // ── Step 2: Connect to runtime (non-critical, ignore errors) ──
-    try { chrome.runtime.connect({ name: 'xpider_popup' }); } catch(e) {}
-
-    // Execute all asynchronous/slower initializations in background to prevent hanging
-    initializeAsyncComponents();
-});
-
-async function initializeAsyncComponents() {
-    // ── Step 3: Load localizer ──
-    try { await initLocalizer(); } catch(e) { console.error('[Popup] initLocalizer failed:', e); }
-
-    // ── Step 4: Load settings ──
-    try { await loadSettings(); } catch(e) { console.error('[Popup] loadSettings failed:', e); }
-
-    // ── Step 5: Restore persistent logs ──
-    try { await loadBlackBoxLogs(); } catch(e) {}
-
-    // ── Step 6: Passive Keep-Alive heartbeat ──
-    try {
-        setInterval(() => {
-            chrome.runtime.sendMessage({ action: 'UI_HEARTBEAT' }).catch(() => {});
-        }, 30000);
-    } catch(e) {}
-
-    // ── Step 8: Speed slider ──
-    try {
-        ['delay-input-collect', 'delay-input-fill', 'delay-input-submit'].forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.addEventListener('input', updateSpeedLabels);
-        });
-
-        // [v4.15.0] 폼 자동 입력 방식 변경 리스너 등록 및 실시간 세이브
-        document.querySelectorAll('input[name="fill-mode"]').forEach(el => {
-            el.addEventListener('change', (e) => {
-                chrome.storage.local.set({ xpider_fill_mode: e.target.value });
+    // 1. Start Button
+    const startBtn = document.getElementById('start-btn');
+    if (startBtn) {
+        if (!startBtn.dataset.bound) {
+            startBtn.dataset.bound = 'true';
+            startBtn.addEventListener('click', () => {
+                startCampaign().catch(err => {
+                    console.error('[START_EXCEPTION]', err);
+                });
             });
-        });
-    } catch(e) {}
+        }
+        startBound = true;
+    } else {
+        displayControlPlaneError('START_HANDLER_NOT_BOUND', 'element #start-btn not found in DOM');
+    }
 
-    console.log("✅ X PIDER Sender Pro initialized.");
+    // 2. Save Settings Button
+    const saveSettingsBtn = document.getElementById('save-settings-btn');
+    if (saveSettingsBtn) {
+        if (!saveSettingsBtn.dataset.bound) {
+            saveSettingsBtn.dataset.bound = 'true';
+            saveSettingsBtn.addEventListener('click', () => {
+                saveSettings().catch(err => {
+                    console.error('[SETTINGS_SAVE_EXCEPTION]', err);
+                });
+            });
+        }
+        saveBound = true;
+    } else {
+        displayControlPlaneError('SETTINGS_HANDLER_NOT_BOUND', 'element #save-settings-btn not found in DOM');
+    }
 
-    // ── Step 9: State Handshake (Directly with Chrome Background Service Worker) ──
-    try {
-        chrome.runtime.sendMessage({ action: 'GET_STATE' }, (response) => {
+    // 3. Runtime & Storage checks
+    if (typeof chrome === 'undefined' || !chrome.runtime) {
+        displayControlPlaneError('RUNTIME_UNAVAILABLE', 'chrome.runtime is not available');
+    }
+    if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.local) {
+        displayControlPlaneError('STORAGE_UNAVAILABLE', 'chrome.storage.local is not available');
+    }
+
+    window.__xpider_boot.startHandlerBound = startBound;
+    window.__xpider_boot.saveHandlerBound = saveBound;
+    console.log(`[POPUP_BOOT] startHandlerBound=${startBound}`);
+    console.log(`[POPUP_BOOT] saveHandlerBound=${saveBound}`);
+
+    return { startBound, saveBound };
+}
+
+async function hydrateSettings() {
+    if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.local) {
+        console.warn('[hydrateSettings] chrome.storage.local not available');
+        return false;
+    }
+    const data = await chrome.storage.local.get([
+        'xpider_lang', 'xpider_tpl', 'templates_v2',
+        'xpider_delay', 'xpider_delay_collect', 'xpider_delay_fill', 'xpider_delay_submit',
+        'xpider_captcha_enabled', 'xpider_captcha_method', 'xpider_captcha_api_key',
+        'xpider_stt_api_key', 'xpider_stealth_mode', 'xpider_double_submit', 'xpider_fill_mode',
+        'xpider_random_delay'
+    ]);
+
+    if (data.xpider_lang) {
+        const langSelect = document.getElementById('language-select');
+        if (langSelect) langSelect.value = data.xpider_lang;
+    }
+
+    const captchaEnabled = (data.xpider_captcha_enabled !== undefined) ? !!data.xpider_captcha_enabled : true;
+    const captchaMethod = data.xpider_captcha_method || 'api';
+    const captchaApiKey = data.xpider_captcha_api_key || '';
+
+    const captchaToggle = document.getElementById('captcha-solve-toggle');
+    if (captchaToggle) captchaToggle.checked = captchaEnabled;
+
+    const methodSelect = document.getElementById('captcha-method-select');
+    if (methodSelect) methodSelect.value = captchaMethod;
+
+    const apiKeyInput = document.getElementById('captcha-api-key');
+    if (apiKeyInput) apiKeyInput.value = captchaApiKey;
+
+    const sttKeyInput = document.getElementById('audio-stt-key');
+    if (sttKeyInput) sttKeyInput.value = data.xpider_stt_api_key || '';
+
+    const stealthToggle = document.getElementById('stealth-mode-toggle');
+    if (stealthToggle) stealthToggle.checked = (data.xpider_stealth_mode !== undefined) ? !!data.xpider_stealth_mode : true;
+
+    const doubleSubmitToggle = document.getElementById('double-submit-toggle');
+    if (doubleSubmitToggle) doubleSubmitToggle.checked = !!data.xpider_double_submit;
+
+    const methodGroup = document.getElementById('captcha-method-group');
+    if (methodGroup) methodGroup.style.display = captchaEnabled ? 'block' : 'none';
+    if (typeof toggleCaptchaApiVisibility === 'function') toggleCaptchaApiVisibility();
+
+    // Template
+    let tplToLoad = data.xpider_tpl || null;
+    if (data.templates_v2 && data.templates_v2.defaultId && data.templates_v2.templates) {
+        const v2default = data.templates_v2.templates[data.templates_v2.defaultId];
+        if (v2default) tplToLoad = v2default;
+    }
+    if (tplToLoad) {
+        const firstName = tplToLoad.firstName || (tplToLoad.sender && tplToLoad.sender.firstName) || '';
+        const lastName  = tplToLoad.lastName  || (tplToLoad.sender && tplToLoad.sender.lastName)  || '';
+        const name      = tplToLoad.name      || tplToLoad.fullName || (tplToLoad.sender && (tplToLoad.sender.fullName || tplToLoad.sender.name)) || '';
+        const email     = tplToLoad.email     || (tplToLoad.sender && tplToLoad.sender.email)     || '';
+        const phone     = tplToLoad.phone     || (tplToLoad.sender && tplToLoad.sender.phone)     || '';
+        const subject   = tplToLoad.subject   || (tplToLoad.content && tplToLoad.content.subject) || '';
+        const message   = tplToLoad.message   || (tplToLoad.content && tplToLoad.content.message) || '';
+
+        if (document.getElementById('tpl-first-name')) document.getElementById('tpl-first-name').value = firstName;
+        if (document.getElementById('tpl-last-name'))  document.getElementById('tpl-last-name').value  = lastName;
+        if (document.getElementById('tpl-name'))       document.getElementById('tpl-name').value       = name;
+        if (document.getElementById('tpl-email'))      document.getElementById('tpl-email').value      = email;
+        if (document.getElementById('tpl-phone'))      document.getElementById('tpl-phone').value      = phone;
+        if (document.getElementById('tpl-subject'))    document.getElementById('tpl-subject').value    = subject;
+        if (document.getElementById('tpl-message'))    document.getElementById('tpl-message').value    = message;
+    }
+
+    if (document.getElementById('delay-input-collect')) {
+        document.getElementById('delay-input-collect').value = data.xpider_delay_collect || data.xpider_delay || 6;
+    }
+    if (document.getElementById('delay-input-fill')) {
+        document.getElementById('delay-input-fill').value = data.xpider_delay_fill || 6;
+    }
+    if (document.getElementById('delay-input-submit')) {
+        document.getElementById('delay-input-submit').value = data.xpider_delay_submit || 6;
+    }
+    if (document.getElementById('delay-input')) {
+        document.getElementById('delay-input').value = data.xpider_delay_collect || data.xpider_delay || 6;
+    }
+    if (typeof updateSpeedLabels === 'function') updateSpeedLabels();
+
+    if (document.getElementById('random-delay-toggle')) {
+        document.getElementById('random-delay-toggle').checked = !!data.xpider_random_delay;
+    }
+
+    const fillMode = data.xpider_fill_mode || 'instant';
+    const fillModeEl = document.getElementById(`fill-mode-${fillMode}`);
+    if (fillModeEl) fillModeEl.checked = true;
+
+    return true;
+}
+
+async function hydrateCampaignState() {
+    return new Promise((resolve) => {
+        if (typeof chrome === 'undefined' || !chrome.runtime || !chrome.runtime.sendMessage) {
+            console.warn('[hydrateCampaignState] chrome.runtime.sendMessage not available');
+            return resolve(false);
+        }
+
+        chrome.runtime.sendMessage({ action: 'GET_STATE' }, async (response) => {
             if (chrome.runtime.lastError) {
                 console.warn('[Popup] Initial GET_STATE error:', chrome.runtime.lastError.message);
-                return;
+                try {
+                    const st = await chrome.storage.local.get(['xpider_queue', 'xpider_total', 'xpider_success']);
+                    if (st.xpider_queue && st.xpider_queue.length > 0) {
+                        campaignQueue = st.xpider_queue;
+                        totalTargets = st.xpider_total || campaignQueue.length;
+                        successCount = st.xpider_success || 0;
+                        const countDisplay = document.getElementById('url-count-display');
+                        if (countDisplay) countDisplay.textContent = `${campaignQueue.length} (remaining) / ${totalTargets} URLs`;
+                    }
+                } catch (_) {}
+                return resolve(false);
             }
+
             if (response && response.success) {
                 if (response.isActive) {
                     campaignActive = true;
@@ -606,21 +708,26 @@ async function initializeAsyncComponents() {
                     
                     const completedCount = response.completedCount || 0;
                     
-                    document.getElementById('status-box').classList.remove('hidden');
-                    document.getElementById('multi-actions').classList.remove('hidden');
-                    document.getElementById('start-btn').classList.add('hidden');
+                    const statusBox = document.getElementById('status-box');
+                    if (statusBox) statusBox.classList.remove('hidden');
+                    const multiActions = document.getElementById('multi-actions');
+                    if (multiActions) multiActions.classList.remove('hidden');
+                    const startBtn = document.getElementById('start-btn');
+                    if (startBtn) startBtn.classList.add('hidden');
                     
-                    updateRealTimeStatus({
-                        successCount: successCount,
-                        completedCount: completedCount,
-                        remainingCount: remainingTargets,
-                        totalTargets: totalTargets
-                    });
+                    if (typeof updateRealTimeStatus === 'function') {
+                        updateRealTimeStatus({
+                            successCount: successCount,
+                            completedCount: completedCount,
+                            remainingCount: remainingTargets,
+                            totalTargets: totalTargets
+                        });
+                    }
                     
                     const btn = document.getElementById('pause-btn');
                     const langSelect = document.getElementById('language-select');
                     const lang = langSelect ? langSelect.value : 'en';
-                    const dict = i18nData ? (i18nData[lang] || i18nData['en'] || {}) : {};
+                    const dict = (typeof i18nData !== 'undefined' && i18nData) ? (i18nData[lang] || i18nData['en'] || {}) : {};
                     if (btn) {
                         if (campaignPaused) {
                             btn.textContent = dict.btn_resume || "▶️ Resume";
@@ -633,15 +740,40 @@ async function initializeAsyncComponents() {
                     addDiagnosticLog(`[Engine] Initial handshake synced: active=true, remaining=${remainingTargets}`);
                 } else {
                     campaignActive = false;
-                    document.getElementById('start-btn').classList.remove('hidden');
-                    document.getElementById('multi-actions').classList.add('hidden');
+                    const startBtn = document.getElementById('start-btn');
+                    if (startBtn) startBtn.classList.remove('hidden');
+                    const multiActions = document.getElementById('multi-actions');
+                    if (multiActions) multiActions.classList.add('hidden');
                     addDiagnosticLog(`[Engine] Initial handshake synced: active=false`);
                 }
+                return resolve(true);
             }
+            return resolve(false);
         });
-    } catch(e) { console.error('[Popup] Direct state handshake failed:', e); }
+    });
+}
 
-    // ── Step 10: Hard Reset Button ──
+async function renderAuxiliaryUI() {
+    try { await initLocalizer(); } catch(e) { console.warn('[Popup] initLocalizer non-fatal:', e); }
+    try { await loadBlackBoxLogs(); } catch(e) {}
+    try { await updateSavedListsUI(); } catch(e) {}
+    try { await updateTemplateDropdown(); } catch(e) {}
+
+    // Speed slider listeners
+    try {
+        ['delay-input-collect', 'delay-input-fill', 'delay-input-submit'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('input', updateSpeedLabels);
+        });
+
+        document.querySelectorAll('input[name="fill-mode"]').forEach(el => {
+            el.addEventListener('change', (e) => {
+                chrome.storage.local.set({ xpider_fill_mode: e.target.value }).catch(() => {});
+            });
+        });
+    } catch(e) {}
+
+    // Hard reset button
     try {
         const hardResetBtn = document.getElementById('hard-reset-engine-btn');
         if (hardResetBtn) {
@@ -653,7 +785,7 @@ async function initializeAsyncComponents() {
         }
     } catch(e) {}
 
-    // ── Step 11: Engine status indicator ──
+    // Engine status indicator
     try {
         const footer = document.querySelector('.popup-footer');
         if (footer && !document.getElementById('engine-status-indicator')) {
@@ -665,10 +797,16 @@ async function initializeAsyncComponents() {
         }
     } catch(e) {}
 
-    // ── Step 12: Pulse check ──
+    // Pulse check
     try { startPulseCheck(); } catch(e) {}
 
-    // ── Step 13: Authoritative Counters Restore & Storage Listener ──
+    // Passive keep-alive
+    try {
+        setInterval(() => {
+            chrome.runtime.sendMessage({ action: 'UI_HEARTBEAT' }).catch(() => {});
+        }, 30000);
+    } catch(e) {}
+    // Counters restore & live sync
     try {
         if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
             chrome.storage.local.get(['xpider_campaign_counters_v1'], (res) => {
@@ -702,9 +840,7 @@ async function initializeAsyncComponents() {
     } catch (_) {}
 
     // [WitKey] Audio STT API Key (Wit.ai) load directly from chrome.storage.local
-    _loadInitialWitKey();
-
-    function _loadInitialWitKey() {
+    try {
         if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
             chrome.storage.local.get(['xpider_stt_api_key', 'audioSttKey', 'witKey'], (res) => {
                 const latestKey = (res && (res.xpider_stt_api_key || res.audioSttKey || res.witKey)) || '';
@@ -730,8 +866,99 @@ async function initializeAsyncComponents() {
                 }
             });
         }
-    }
+    } catch (_) {}
 }
+
+document.addEventListener('DOMContentLoaded', async () => {
+    console.log('[POPUP_BOOT] started');
+    window.__xpider_boot.started = true;
+
+    try {
+        // 0. Synchronous messaging listeners
+        try {
+            chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+                if (!request) return;
+                if (request.action === 'SENDER_LOG') {
+                    addLog(request.message, request.logType);
+                } else if (request.action === 'UPDATE_STATS') {
+                    updateRealTimeStatus(request.data);
+                } else if (request.action === 'CORE_RUNTIME_BROKEN_ALERT') {
+                    addLog(`🚨 [CIRCUIT BREAKER] Core runtime broken: ${request.symbol} is not defined. Campaign paused.`, 'error');
+                } else if (request.action === 'EMAIL_COLLECTOR_CLEARED') {
+                    if (typeof renderEmailCollectorUI === 'function') {
+                        renderEmailCollectorUI();
+                    }
+                }
+            });
+        } catch(e) { console.error('[POPUP_BOOT] onMessage registration failed:', e); }
+
+        try {
+            window.addEventListener('message', (event) => {
+                if (event.data && event.data.type === 'XPIDER_EVENT' && event.data.name === 'runtime-on-message') {
+                    const request = event.data.data;
+                    if (!request) return;
+                    if (request.action === 'SENDER_LOG') {
+                        addLog(request.message, request.logType);
+                    } else if (request.action === 'UPDATE_STATS') {
+                        updateRealTimeStatus(request.data);
+                    }
+                }
+            });
+        } catch(e) { console.error('[POPUP_BOOT] postMessage listener failed:', e); }
+
+        // 1. Critical Controls Binding (Isolated synchronous error boundary)
+        try {
+            bindCriticalControls();
+        } catch (e) {
+            console.error('[POPUP_BOOT] bindCriticalControls error:', e);
+            displayControlPlaneError('BIND_CRITICAL_CONTROLS_FAILED', e.message);
+        }
+
+        // 2. Full Secondary Events Binding (Tabs, secondary buttons, modals)
+        try {
+            bindEvents();
+        } catch (e) {
+            console.error('[POPUP_BOOT] bindEvents non-critical error:', e);
+        }
+
+        // 3. Runtime connection
+        try { chrome.runtime.connect({ name: 'xpider_popup' }); } catch(e) {}
+
+        // 4. Settings Hydration (Isolated boundary - failure does NOT block Start button)
+        try {
+            const hydOk = await hydrateSettings();
+            window.__xpider_boot.settingsHydrated = !!hydOk;
+            console.log(`[POPUP_BOOT] settingsHydrated=${!!hydOk}`);
+        } catch (e) {
+            window.__xpider_boot.settingsHydrated = false;
+            console.error('[POPUP_BOOT] settingsHydrated=false error:', e);
+        }
+
+        // 5. Campaign State Handshake (Isolated boundary - failure does NOT block Save button)
+        try {
+            const stateAck = await hydrateCampaignState();
+            window.__xpider_boot.getStateAck = !!stateAck;
+            console.log(`[POPUP_BOOT] getStateAck=${!!stateAck}`);
+        } catch (e) {
+            window.__xpider_boot.getStateAck = false;
+            console.error('[POPUP_BOOT] getStateAck=false error:', e);
+        }
+
+        // 6. Auxiliary UI (Localizer, logs, lists, templates)
+        try {
+            await renderAuxiliaryUI();
+        } catch (e) {
+            console.warn('[POPUP_BOOT] renderAuxiliaryUI non-fatal error:', e);
+        }
+
+        window.__xpider_boot.ready = true;
+        console.log('[POPUP_BOOT] ready=true');
+    } catch (fatalBootErr) {
+        window.__xpider_boot.ready = false;
+        console.error(`[POPUP_BOOT_FATAL] error=${fatalBootErr.message} stack=${fatalBootErr.stack || 'none'}`);
+        displayControlPlaneError('POPUP_BOOT_FATAL', fatalBootErr.message);
+    }
+});
 
 async function initLocalizer() {
     // Wait a bit to ensure translations.js is parsed if needed
@@ -986,7 +1213,10 @@ function bindEvents() {
 
     // Campaign Buttons
     const startBtn = document.getElementById('start-btn');
-    if (startBtn) startBtn.addEventListener('click', startCampaign);
+    if (startBtn && !startBtn.dataset.bound) {
+        startBtn.dataset.bound = 'true';
+        startBtn.addEventListener('click', startCampaign);
+    }
     
     const pauseBtn = document.getElementById('pause-btn');
     if (pauseBtn) pauseBtn.addEventListener('click', togglePause);
@@ -1043,7 +1273,10 @@ function bindEvents() {
     });
     
     const saveSettingsBtn = document.getElementById('save-settings-btn');
-    if (saveSettingsBtn) saveSettingsBtn.addEventListener('click', saveSettings);
+    if (saveSettingsBtn && !saveSettingsBtn.dataset.bound) {
+        saveSettingsBtn.dataset.bound = 'true';
+        saveSettingsBtn.addEventListener('click', saveSettings);
+    }
 
     // [WitKey-Sync v2] #audio-stt-key 실시간 입력 → debounce 후 즉시 스토리지 동기화
     // Crawler의 onChanged 리스너가 감지하여 Crawler UI도 자동 업데이트됨
@@ -1828,6 +2061,7 @@ async function addSingleUrl() {
 }
 
 async function startCampaign() {
+    console.log('[START_UI] click');
     const manualInput = document.getElementById('manual-url-input');
     if (manualInput && manualInput.value.trim() && campaignQueue.length === 0) {
         await addSingleUrl();
@@ -1848,9 +2082,11 @@ async function startCampaign() {
     if (!currentTpl.message) return alert("Please enter a message body.");
 
     // [Phase 2B Component D / R1] Authoritatively bind template metadata to execution state & payload
-    bindCampaignTemplateMetadata(currentTpl);
-    currentTpl.id = currentTpl.templateId;
-    currentTpl.version = currentTpl.templateVersion;
+    try {
+        bindCampaignTemplateMetadata(currentTpl);
+        currentTpl.id = currentTpl.templateId;
+        currentTpl.version = currentTpl.templateVersion;
+    } catch (_) {}
 
     // UI state: STARTING (Do NOT set campaignActive=true yet!)
     campaignPaused = false;
@@ -1881,7 +2117,7 @@ async function startCampaign() {
     const fillModeEl = document.querySelector('input[name="fill-mode"]:checked');
     const fillMode = fillModeEl ? fillModeEl.value : 'instant';
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-        chrome.storage.local.set({ xpider_fill_mode: fillMode });
+        chrome.storage.local.set({ xpider_fill_mode: fillMode }).catch(() => {});
     }
 
     const skipAttemptedEl = document.getElementById('skip-attempted-toggle');
@@ -1898,13 +2134,16 @@ async function startCampaign() {
         templateVersion: currentTpl.templateVersion || 1,
         skipPreviouslyAttempted
     };
-    bindCampaignTemplateMetadata(startPayload, currentTpl);
+    try {
+        bindCampaignTemplateMetadata(startPayload, currentTpl);
+    } catch (_) {}
 
     // Hide resumable banner if starting a fresh campaign
     const banner = document.getElementById('resumable-campaign-banner');
     if (banner) banner.style.display = 'none';
 
     // [v20.0 Chrome Runtime Transport] Dispatch START_CAMPAIGN directly to background service worker
+    console.log(`[START_IPC] sent queue=${startPayload.queue.length}`);
     addLog("[Engine] START_CAMPAIGN request sent", "info");
     const sendTime = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
     addDiagnosticLog(`[Engine][TX] action=START_CAMPAIGN queue=${startPayload.queue.length} templateId=${startPayload.templateId} v=${startPayload.templateVersion} skipAttempted=${skipPreviouslyAttempted}`);
@@ -1923,6 +2162,7 @@ async function startCampaign() {
     return new Promise((resolve, reject) => {
         if (typeof chrome === 'undefined' || !chrome.runtime || !chrome.runtime.sendMessage) {
             const err = new Error("Chrome runtime messaging is not available");
+            console.error('[START_IPC_SEND_FAILED]', err);
             _restoreStartButton();
             addLog(`❌ [Fatal Error] ${err.message}`, "error");
             return reject(err);
@@ -1945,6 +2185,7 @@ async function startCampaign() {
 
             if (chrome.runtime.lastError) {
                 const err = new Error(chrome.runtime.lastError.message || "Failed to contact background engine");
+                console.error('[START_BG_HANDLER_NOT_REACHED]', err);
                 _restoreStartButton();
                 addDiagnosticLog(`[Engine][RX_FAIL][+${elapsedAckMs}ms] error=${err.message}`, "ERROR");
                 addLog(`❌ [Background Engine] Start failed: ${err.message}`, "error");
@@ -1954,6 +2195,7 @@ async function startCampaign() {
             if (!response || response.success === false) {
                 const errMsg = (response && response.error) || "Start rejected by background engine";
                 const err = new Error(errMsg);
+                console.error('[START_BG_HANDLER_NOT_REACHED]', err);
                 _restoreStartButton();
                 addDiagnosticLog(`[Engine][RX_REJECT][+${elapsedAckMs}ms] error=${errMsg}`, "ERROR");
                 addLog(`❌ [Background Engine] Start failed: ${errMsg}`, "error");
@@ -1961,6 +2203,8 @@ async function startCampaign() {
             }
 
             // SUCCESS ACK: Now transition UI state to active
+            console.log(`[START_ACK] ok=true latencyMs=${elapsedAckMs}`);
+            console.log(`[START_STATE] active=true queue=${campaignQueue.length}`);
             campaignActive = true;
             addDiagnosticLog(`[Engine][ACK][+${elapsedAckMs}ms] status=${response.status || 'acknowledged'}`);
             addLog(`[Engine] ACK received in ${elapsedAckMs} ms`, "success");
@@ -1985,6 +2229,9 @@ async function startCampaign() {
                     const qCount = stateResp.remainingCount !== undefined ? stateResp.remainingCount : campaignQueue.length;
                     addLog(`[Engine] Background state: active=${stateResp.isActive}, queue=${qCount}`, "info");
                     addDiagnosticLog(`[Engine][VERIFY] active=${stateResp.isActive} queue=${qCount}`);
+                    if (!stateResp.isActive) {
+                        console.warn('[START_STATE_NOT_ACTIVE] stateResp.isActive is false post-ACK');
+                    }
                 }
             });
 
@@ -3191,64 +3438,91 @@ function importMessageFromFile(event) {
 }
 
 async function saveSettings() {
+    console.log('[SETTINGS_UI] click');
+
     const langSelect = document.getElementById('language-select');
     const captchaToggle = document.getElementById('captcha-solve-toggle');
     const methodSelect = document.getElementById('captcha-method-select');
     const apiKeyInput = document.getElementById('captcha-api-key');
+    const sttKeyInput = document.getElementById('audio-stt-key');
+    const stealthToggle = document.getElementById('stealth-mode-toggle');
+    const doubleSubmitToggle = document.getElementById('double-submit-toggle');
     const delayCollectInput = document.getElementById('delay-input-collect');
     const delayFillInput = document.getElementById('delay-input-fill');
     const delaySubmitInput = document.getElementById('delay-input-submit');
     const randomToggle = document.getElementById('random-delay-toggle');
 
-    const lang = langSelect ? langSelect.value : 'en';
-    const sttKeyVal = sttKeyInput ? sttKeyInput.value.trim() : '';
-    const fillModeEl = document.querySelector('input[name="fill-mode"]:checked');
-    const fillMode = fillModeEl ? fillModeEl.value : 'instant';
-    const settings = {
-        xpider_lang: lang,
-        xpider_captcha_enabled: captchaToggle ? captchaToggle.checked : false,
-        xpider_captcha_method: methodSelect ? methodSelect.value : 'audio',
-        xpider_captcha_api_key: apiKeyInput ? apiKeyInput.value : '',
-        xpider_stt_api_key: sttKeyVal,
-        // [WitKey-Sync v2] 공유 키 필드: Crawler와 실시간 동기화를 위해 모두 저장
-        audioSttKey: sttKeyVal,
-        witKey: sttKeyVal,
-        xpider_stealth_mode: stealthToggle ? stealthToggle.checked : false,
-        xpider_double_submit: doubleSubmitToggle ? doubleSubmitToggle.checked : false,
-        xpider_delay: delayCollectInput ? delayCollectInput.value : 6, // 레거시 호환
-        xpider_delay_collect: delayCollectInput ? delayCollectInput.value : 6,
-        xpider_delay_fill: delayFillInput ? delayFillInput.value : 6,
-        xpider_delay_submit: delaySubmitInput ? delaySubmitInput.value : 6,
-        xpider_random_delay: randomToggle ? randomToggle.checked : false,
-        xpider_fill_mode: fillMode
-    };
-
-    // [R6.3 D2] Authoritative save with read-back verification
-    const requestedKeys = Object.keys(settings);
+    let settings;
     try {
-        console.log('[SETTINGS_SAVE] requestedKeys=', requestedKeys);
+        const lang = langSelect ? langSelect.value : 'en';
+        const sttKeyVal = sttKeyInput ? sttKeyInput.value.trim() : '';
+        const fillModeEl = document.querySelector('input[name="fill-mode"]:checked');
+        const fillMode = fillModeEl ? fillModeEl.value : 'instant';
+        settings = {
+            xpider_lang: lang,
+            xpider_captcha_enabled: captchaToggle ? captchaToggle.checked : false,
+            xpider_captcha_method: methodSelect ? methodSelect.value : 'audio',
+            xpider_captcha_api_key: apiKeyInput ? apiKeyInput.value : '',
+            xpider_stt_api_key: sttKeyVal,
+            // [WitKey-Sync v2] 공유 키 필드: Crawler와 실시간 동기화를 위해 모두 저장
+            audioSttKey: sttKeyVal,
+            witKey: sttKeyVal,
+            xpider_stealth_mode: stealthToggle ? stealthToggle.checked : false,
+            xpider_double_submit: doubleSubmitToggle ? doubleSubmitToggle.checked : false,
+            xpider_delay: delayCollectInput ? delayCollectInput.value : 6, // 레거시 호환
+            xpider_delay_collect: delayCollectInput ? delayCollectInput.value : 6,
+            xpider_delay_fill: delayFillInput ? delayFillInput.value : 6,
+            xpider_delay_submit: delaySubmitInput ? delaySubmitInput.value : 6,
+            xpider_random_delay: randomToggle ? randomToggle.checked : false,
+            xpider_fill_mode: fillMode
+        };
+        console.log(`[SETTINGS_COLLECT] keys=${Object.keys(settings).length}`);
+    } catch (collectErr) {
+        console.error('[SETTINGS_COLLECT_EXCEPTION]', collectErr);
+        addLog(`❌ Settings collect failed: ${collectErr.message}`, 'error');
+        return false;
+    }
+
+    // [R6.4] Authoritative save with read-back verification
+    const requestedKeys = Object.keys(settings);
+    let writeOk = false;
+    try {
         await chrome.storage.local.set(settings);
-        // Read back immediately
+        writeOk = true;
+        console.log('[SETTINGS_WRITE] ok=true');
+    } catch (saveErr) {
+        console.error('[SETTINGS_WRITE_FAILED]', saveErr);
+        console.log('[SETTINGS_WRITE] ok=false');
+        addLog(`❌ Settings write failed: ${saveErr.message}`, 'error');
+        return false;
+    }
+
+    let readbackOk = false;
+    let verified = false;
+    try {
         const readback = await chrome.storage.local.get(requestedKeys);
-        const persistedKeys = Object.keys(readback);
-        let verified = true;
+        readbackOk = true;
+        console.log('[SETTINGS_READBACK] ok=true');
+
         const mismatches = [];
         for (const key of requestedKeys) {
             const written = typeof settings[key] === 'boolean' ? settings[key] : String(settings[key]);
             const stored = readback[key] !== undefined ? (typeof readback[key] === 'boolean' ? readback[key] : String(readback[key])) : undefined;
             if (stored === undefined || written !== stored) {
-                verified = false;
                 mismatches.push(`${key}: wrote=${written}, stored=${stored}`);
             }
         }
-        console.log('[SETTINGS_SAVE] persistedKeys=', persistedKeys);
-        if (verified) {
-            console.log('[SETTINGS_SAVE] verified=true — SETTINGS_SAVE_OK');
+        if (mismatches.length === 0) {
+            verified = true;
+            console.log('[SETTINGS_SAVE] verified=true');
         } else {
-            console.warn('[SETTINGS_SAVE] SETTINGS_SAVE_VERIFY_FAILED mismatches:', mismatches);
+            console.error('[SETTINGS_VERIFY_MISMATCH]', mismatches);
+            console.log('[SETTINGS_SAVE] verified=false');
         }
-    } catch (saveErr) {
-        console.error('[SETTINGS_SAVE] write failed:', saveErr);
+    } catch (readErr) {
+        console.error('[SETTINGS_READBACK_FAILED]', readErr);
+        console.log('[SETTINGS_READBACK] ok=false');
+        console.log('[SETTINGS_SAVE] verified=false');
     }
     
     // [WitKey] Sync to background engine via UPDATE_WIT_KEY without dead native IPC
@@ -3265,136 +3539,20 @@ async function saveSettings() {
     const saveBtn = document.getElementById('save-settings-btn');
     if (saveBtn) {
         const originalText = saveBtn.textContent;
-        saveBtn.textContent = "✅ Applied!";
+        saveBtn.textContent = verified ? "✅ Saved & Verified!" : "⚠️ Saved (Unverified)";
         setTimeout(() => saveBtn.textContent = originalText, 2000);
     }
     
-    applyTranslations(lang);
+    if (typeof applyTranslations === 'function' && settings.xpider_lang) {
+        applyTranslations(settings.xpider_lang);
+    }
     const settingsOverlay = document.getElementById('settings-overlay');
     if (settingsOverlay) settingsOverlay.classList.add('hidden');
+    return verified;
 }
 
-async function loadSettings() {
-    const data = await chrome.storage.local.get([
-        'xpider_lang', 'xpider_tpl', 'templates_v2',
-        'xpider_delay', 'xpider_delay_collect', 'xpider_delay_fill', 'xpider_delay_submit',
-        'xpider_queue', 'xpider_success', 'xpider_total',
-        'xpider_captcha_enabled', 'xpider_captcha_method', 'xpider_captcha_api_key',
-        'xpider_stt_api_key', 'xpider_stealth_mode', 'xpider_double_submit', 'xpider_fill_mode'
-    ]);
-    
-    if (data.xpider_lang) {
-        const langSelect = document.getElementById('language-select');
-        if (langSelect) langSelect.value = data.xpider_lang;
-    }
-    
-    // Captcha Settings (v2.0: Default to 2Captcha API if not previously set)
-    const captchaEnabled = (data.xpider_captcha_enabled !== undefined) ? !!data.xpider_captcha_enabled : true;
-    const captchaMethod = data.xpider_captcha_method || 'api';
-    // [Auto CAPTCHA Solver] If no API key stored yet, apply the configured default
-    const captchaApiKey = data.xpider_captcha_api_key || '';
-
-    if (document.getElementById('captcha-solve-toggle')) {
-        document.getElementById('captcha-solve-toggle').checked = captchaEnabled;
-    }
-    if (document.getElementById('captcha-method-select')) {
-        document.getElementById('captcha-method-select').value = captchaMethod;
-    }
-    if (document.getElementById('captcha-api-key')) {
-        document.getElementById('captcha-api-key').value = captchaApiKey;
-    }
-    if (document.getElementById('audio-stt-key')) {
-        document.getElementById('audio-stt-key').value = data.xpider_stt_api_key || '';
-    }
-    if (document.getElementById('stealth-mode-toggle')) {
-        document.getElementById('stealth-mode-toggle').checked = (data.xpider_stealth_mode !== undefined) ? !!data.xpider_stealth_mode : true;
-    }
-    if (document.getElementById('double-submit-toggle')) {
-        document.getElementById('double-submit-toggle').checked = !!data.xpider_double_submit;
-    }
-    
-    const methodGroup = document.getElementById('captcha-method-group');
-    if (methodGroup) methodGroup.style.display = captchaEnabled ? 'block' : 'none';
-    toggleCaptchaApiVisibility();
-
-    // [F9] Template: use templates_v2 default slot as authoritative source; fall back to xpider_tpl
-    let tplToLoad = data.xpider_tpl || null;
-    if (data.templates_v2 && data.templates_v2.defaultId && data.templates_v2.templates) {
-        const v2default = data.templates_v2.templates[data.templates_v2.defaultId];
-        if (v2default) tplToLoad = v2default;
-    }
-    if (tplToLoad) {
-        // Dual accessors: support flat and nested FormTemplateV2 structures
-        const firstName = tplToLoad.firstName || (tplToLoad.sender && tplToLoad.sender.firstName) || '';
-        const lastName  = tplToLoad.lastName  || (tplToLoad.sender && tplToLoad.sender.lastName)  || '';
-        const name      = tplToLoad.name      || tplToLoad.fullName || (tplToLoad.sender && (tplToLoad.sender.fullName || tplToLoad.sender.name)) || '';
-        const email     = tplToLoad.email     || (tplToLoad.sender && tplToLoad.sender.email)     || '';
-        const phone     = tplToLoad.phone     || (tplToLoad.sender && tplToLoad.sender.phone)     || '';
-        const subject   = tplToLoad.subject   || (tplToLoad.content && tplToLoad.content.subject) || '';
-        const message   = tplToLoad.message   || (tplToLoad.content && tplToLoad.content.message) || '';
-
-        if (document.getElementById('tpl-first-name')) document.getElementById('tpl-first-name').value = firstName;
-        if (document.getElementById('tpl-last-name'))  document.getElementById('tpl-last-name').value  = lastName;
-        if (document.getElementById('tpl-name'))       document.getElementById('tpl-name').value       = name;
-        if (document.getElementById('tpl-email'))      document.getElementById('tpl-email').value      = email;
-        if (document.getElementById('tpl-phone'))      document.getElementById('tpl-phone').value      = phone;
-        if (document.getElementById('tpl-subject'))    document.getElementById('tpl-subject').value    = subject;
-        if (document.getElementById('tpl-message'))    document.getElementById('tpl-message').value    = message;
-    }
-
-    // 3중 속도 복원
-    if (document.getElementById('delay-input-collect')) {
-        document.getElementById('delay-input-collect').value = data.xpider_delay_collect || data.xpider_delay || 6;
-    }
-    if (document.getElementById('delay-input-fill')) {
-        document.getElementById('delay-input-fill').value = data.xpider_delay_fill || 6;
-    }
-    if (document.getElementById('delay-input-submit')) {
-        document.getElementById('delay-input-submit').value = data.xpider_delay_submit || 6;
-    }
-    
-    // 레거시 호환용 동기화
-    if (document.getElementById('delay-input')) {
-        document.getElementById('delay-input').value = data.xpider_delay_collect || data.xpider_delay || 6;
-    }
-    
-    updateSpeedLabels();
-    
-    if (document.getElementById('random-delay-toggle')) {
-        document.getElementById('random-delay-toggle').checked = !!data.xpider_random_delay;
-    }
-
-    // [v4.15.0] 폼 자동 입력 방식 복원 (디폴트: instant)
-    const fillMode = data.xpider_fill_mode || 'instant';
-    const fillModeEl = document.getElementById(`fill-mode-${fillMode}`);
-    if (fillModeEl) fillModeEl.checked = true;
-
-    // Resuming Campaign
-    if (data.xpider_queue && data.xpider_queue.length > 0) {
-        campaignQueue = data.xpider_queue;
-        totalTargets = data.xpider_total || campaignQueue.length;
-        successCount = data.xpider_success || 0;
-        campaignActive = true; // Mark as active to show Pause/Stop buttons
-
-        updateRealTimeStatus({ successCount });
-        const countDisplay = document.getElementById('url-count-display');
-        if (countDisplay) countDisplay.textContent = `${campaignQueue.length} (remaining) / ${totalTargets} URLs`;
-        
-        if (document.getElementById('file-info')) document.getElementById('file-info').classList.remove('hidden');
-        if (document.getElementById('status-box')) document.getElementById('status-box').classList.remove('hidden');
-        if (document.getElementById('start-btn')) document.getElementById('start-btn').classList.add('hidden');
-        if (document.getElementById('multi-actions')) document.getElementById('multi-actions').classList.remove('hidden');
-        
-        updateProgress(Math.round(((totalTargets - campaignQueue.length) / totalTargets) * 100));
-        addLog(`Resumed campaign: ${campaignQueue.length} remaining.`, 'info');
-    }
-
-    // [v1.2.0] Populate saved lists
-    await updateSavedListsUI();
-    
-    // [v1.7.0] Populate template library
-    await updateTemplateDropdown();
-}
+// [R6.4] loadSettings alias to hydrateSettings
+const loadSettings = hydrateSettings;
 
 // ─── [XPIDER] Browser Language-Change Broadcast Listener ──────────────
 // When the XPIDER browser language setting changes, this extension updates instantly.
