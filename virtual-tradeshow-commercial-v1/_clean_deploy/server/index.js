@@ -783,6 +783,11 @@ app.get('/api/build-info', (req, res) => {
   });
 });
 
+// ── RI Live Diagnostics Helper (Round 118 P0 Diagnostic) ────────────────
+const { setupRiLiveDiagnostics } = require('./ri_live_diagnostics');
+setupRiLiveDiagnostics(app, { getGitCommitSha });
+
+
 const workerIntegrityHandler = (req, res) => {
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   const getHash = (filename) => {

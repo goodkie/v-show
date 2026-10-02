@@ -20108,6 +20108,317 @@ class VisualLoopDetector {
   }
 }
 
+
+// ══════════════════════════════════════════════════════════════════════
+// ROUND 118: RI LIVE DIAGNOSTIC HELPER (READ-ONLY OBSERVATIONAL TELEMETRY)
+// ══════════════════════════════════════════════════════════════════════
+class RILiveDiagnosticHelper {
+  constructor() {
+    this.isEnabled = false;
+    this.sessionId = null;
+    this.startTime = 0;
+    this.lastEventTimestamp = 0;
+    this.acceptedCount = 0;
+    this.rejectedCount = 0;
+    this.initialAlpha = null;
+    this.eventBuffer = [];
+    this.closureBuffer = [];
+    this.stateTransitions = [];
+    this.errors = [];
+    this.allEvents = [];
+    this.allClosures = [];
+    this.flushTimer = null;
+    this.uiElement = null;
+    this.latestEvent = null;
+    this.latestClosure = null;
+    this.sessionEpoch = 0;
+
+    if (typeof window !== 'undefined') {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        this.isEnabled = params.get('riDebug') === '1' || window.__RI_DEBUG_ENABLED__ === true;
+      } catch (e) {
+        this.isEnabled = false;
+      }
+      if (this.isEnabled) {
+        this.initSession(0);
+      }
+    }
+  }
+
+  initSession(sessionEpoch = 0) {
+    if (!this.isEnabled) return;
+    this.sessionId = 'RI-DIAG-' + Date.now() + '-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+    this.startTime = Date.now();
+    this.lastEventTimestamp = this.startTime;
+    this.acceptedCount = 0;
+    this.rejectedCount = 0;
+    this.initialAlpha = null;
+    this.eventBuffer = [];
+    this.closureBuffer = [];
+    this.stateTransitions = [];
+    this.errors = [];
+    this.allEvents = [];
+    this.allClosures = [];
+    this.sessionEpoch = sessionEpoch;
+
+    if (typeof document !== 'undefined') {
+      this.mountUI();
+    }
+    this.startBatchFlush();
+  }
+
+  mountUI() {
+    if (!this.isEnabled || typeof document === 'undefined') return;
+    if (this.uiElement) {
+      try { this.uiElement.remove(); } catch (e) {}
+      this.uiElement = null;
+    }
+
+    const hud = document.createElement('div');
+    hud.id = 'ri-live-diagnostic-hud';
+    hud.style.cssText = [
+      'position: fixed',
+      'top: 10px',
+      'right: 10px',
+      'z-index: 999999',
+      'width: 270px',
+      'max-width: 92vw',
+      'background: rgba(10, 18, 30, 0.90)',
+      'border: 1px solid #00ffcc',
+      'box-shadow: 0 4px 18px rgba(0, 255, 204, 0.35)',
+      'border-radius: 8px',
+      'padding: 8px 10px',
+      'color: #00ffcc',
+      'font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+      'font-size: 11px',
+      'line-height: 1.4',
+      'pointer-events: none',
+      'user-select: none',
+      'box-sizing: border-box'
+    ].join(';');
+
+    hud.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid rgba(0,255,204,0.3); padding-bottom: 4px; margin-bottom: 4px;">
+        <span style="font-weight: bold; color: #fff;"><span style="color:#00ffcc;">●</span> RI LIVE DIAG</span>
+        <span id="ri-hud-status" style="font-size: 10px; color: #00ffcc; background: rgba(0,255,204,0.18); padding: 1px 5px; border-radius: 3px;">ACTIVE</span>
+      </div>
+      <div style="font-size: 10px; color: #99bbcc; margin-bottom: 4px; word-break: break-all;" id="ri-hud-session">ID: ${this.sessionId || 'READY'}</div>
+      <div id="ri-hud-events" style="margin-bottom: 2px;">Events: 0 | Acc: 0 | Rej: 0</div>
+      <div id="ri-hud-rot" style="margin-bottom: 2px;">Rot: 0.0° | Prog: 0%</div>
+      <div id="ri-hud-sensor" style="margin-bottom: 2px; color: #e6f0ff;">α: -- β: -- γ: --</div>
+      <div id="ri-hud-delta" style="margin-bottom: 2px; color: #e6f0ff;">Δ: -- (norm: --)</div>
+      <div id="ri-hud-closure" style="margin-bottom: 6px; color: #ffcc00;">State: IDLE | Conf: NO</div>
+      <div style="display:flex; gap: 6px; pointer-events: auto;">
+        <button id="ri-copy-btn" type="button" style="flex:1; background: #132430; border: 1px solid #00ffcc; color: #00ffcc; padding: 4px 6px; border-radius: 4px; font-size: 10px; cursor: pointer; font-weight: bold;">COPY RI LOG</button>
+        <button id="ri-dl-btn" type="button" style="flex:1; background: #132430; border: 1px solid #00ffcc; color: #00ffcc; padding: 4px 6px; border-radius: 4px; font-size: 10px; cursor: pointer; font-weight: bold;">DOWNLOAD RI JSON</button>
+      </div>
+    `;
+
+    document.body.appendChild(hud);
+    this.uiElement = hud;
+
+    const copyBtn = hud.querySelector('#ri-copy-btn');
+    if (copyBtn) {
+      copyBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.copyLog(copyBtn);
+      });
+    }
+
+    const dlBtn = hud.querySelector('#ri-dl-btn');
+    if (dlBtn) {
+      dlBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.downloadJson();
+      });
+    }
+  }
+
+  updateUI() {
+    if (!this.uiElement) return;
+    const ev = this.latestEvent;
+    if (ev) {
+      const evEl = this.uiElement.querySelector('#ri-hud-events');
+      if (evEl) evEl.textContent = `Events: ${this.allEvents.length} | Acc: ${this.acceptedCount} | Rej: ${this.rejectedCount}`;
+      const rotEl = this.uiElement.querySelector('#ri-hud-rot');
+      if (rotEl) rotEl.textContent = `Rot: ${Math.round(ev.accumulatedRotation * 10) / 10}° | Prog: ${ev.progressPercent}%`;
+      const sensorEl = this.uiElement.querySelector('#ri-hud-sensor');
+      if (sensorEl) sensorEl.textContent = `α: ${Math.round(ev.alpha * 10) / 10}° β: ${Math.round(ev.beta * 10) / 10}° γ: ${Math.round(ev.gamma * 10) / 10}°`;
+      const deltaEl = this.uiElement.querySelector('#ri-hud-delta');
+      if (deltaEl) deltaEl.textContent = `Δ: ${Math.round(ev.rawDelta * 100) / 100}° (norm: ${Math.round(ev.normalizedDelta * 100) / 100}°)`;
+      const closureEl = this.uiElement.querySelector('#ri-hud-closure');
+      if (closureEl) closureEl.textContent = `State: ${ev.captureState} | Conf: ${ev.closureConfirmed ? 'YES' : 'NO'}`;
+    }
+  }
+
+  recordOrientationEvent(data) {
+    if (!this.isEnabled) return;
+    if (!this.sessionId) this.initSession(data.sessionEpoch || 0);
+
+    if (this.initialAlpha === null && data.alpha !== null && data.alpha !== undefined) {
+      this.initialAlpha = data.alpha;
+    }
+
+    if (data.accepted) {
+      this.acceptedCount++;
+    } else {
+      this.rejectedCount++;
+    }
+
+    data.acceptedCount = this.acceptedCount;
+    data.rejectedCount = this.rejectedCount;
+    this.latestEvent = data;
+    this.lastEventTimestamp = data.timestamp;
+
+    this.eventBuffer.push(data);
+    if (this.allEvents.length < 5000) {
+      this.allEvents.push(data);
+    }
+
+    this.updateUI();
+  }
+
+  recordClosureEvent(data) {
+    if (!this.isEnabled) return;
+    this.latestClosure = data;
+    this.closureBuffer.push(data);
+    if (this.allClosures.length < 500) {
+      this.allClosures.push(data);
+    }
+    this.updateUI();
+  }
+
+  recordStateTransition(fromState, toState) {
+    if (!this.isEnabled) return;
+    const transition = { from: fromState, to: toState, timestamp: Date.now(), elapsedMs: Date.now() - this.startTime };
+    this.stateTransitions.push(transition);
+  }
+
+  recordError(err) {
+    if (!this.isEnabled) return;
+    this.errors.push({ message: err?.message || String(err), stack: err?.stack, timestamp: Date.now() });
+  }
+
+  startBatchFlush() {
+    if (this.flushTimer) clearInterval(this.flushTimer);
+    if (typeof setInterval !== 'undefined') {
+      this.flushTimer = setInterval(() => this.flushBatch(), 250);
+    }
+  }
+
+  flushBatch() {
+    if (!this.isEnabled || !this.sessionId) return;
+    if (this.eventBuffer.length === 0 && this.closureBuffer.length === 0 && this.stateTransitions.length === 0 && this.errors.length === 0) {
+      return;
+    }
+
+    const eventsToSend = this.eventBuffer.slice();
+    const closuresToSend = this.closureBuffer.slice();
+    const transitionsToSend = this.stateTransitions.slice();
+    const errorsToSend = this.errors.slice();
+
+    this.eventBuffer = [];
+    this.closureBuffer = [];
+    this.stateTransitions = [];
+    this.errors = [];
+
+    const payload = {
+      sessionId: this.sessionId,
+      commitSha: (typeof window !== 'undefined' && window.__3DZ_BUILD_INFO__?.gitCommit) ? window.__3DZ_BUILD_INFO__.gitCommit : 'UNKNOWN',
+      startedAt: new Date(this.startTime).toISOString(),
+      environment: {
+        userAgent: (typeof navigator !== 'undefined') ? navigator.userAgent : '',
+        viewport: (typeof window !== 'undefined') ? { width: window.innerWidth, height: window.innerHeight } : {},
+        devicePixelRatio: (typeof window !== 'undefined') ? (window.devicePixelRatio || 1) : 1,
+        cameraDimensions: this.getCameraDimensions()
+      },
+      events: eventsToSend,
+      closures: closuresToSend,
+      stateTransitions: transitionsToSend,
+      errors: errorsToSend
+    };
+
+    if (typeof fetch === 'function') {
+      fetch('/api/ri-debug/batch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      }).catch(() => {});
+    }
+  }
+
+  getCameraDimensions() {
+    try {
+      if (typeof document !== 'undefined') {
+        const v = document.getElementById('guidedCaptureVideo');
+        if (v && v.videoWidth > 0) return { width: v.videoWidth, height: v.videoHeight };
+      }
+    } catch (e) {}
+    return { width: 0, height: 0 };
+  }
+
+  getFullDiagnosticDump() {
+    return {
+      sessionId: this.sessionId,
+      commitSha: (typeof window !== 'undefined' && window.__3DZ_BUILD_INFO__?.gitCommit) ? window.__3DZ_BUILD_INFO__.gitCommit : 'UNKNOWN',
+      startedAt: new Date(this.startTime).toISOString(),
+      environment: {
+        userAgent: (typeof navigator !== 'undefined') ? navigator.userAgent : '',
+        viewport: (typeof window !== 'undefined') ? { width: window.innerWidth, height: window.innerHeight } : {},
+        devicePixelRatio: (typeof window !== 'undefined') ? (window.devicePixelRatio || 1) : 1,
+        cameraDimensions: this.getCameraDimensions()
+      },
+      summary: {
+        totalEvents: this.allEvents.length,
+        acceptedCount: this.acceptedCount,
+        rejectedCount: this.rejectedCount,
+        latestEvent: this.latestEvent,
+        latestClosure: this.latestClosure
+      },
+      events: this.allEvents,
+      closures: this.allClosures,
+      stateTransitions: this.stateTransitions,
+      errors: this.errors
+    };
+  }
+
+  copyLog(btn) {
+    const data = JSON.stringify(this.getFullDiagnosticDump(), null, 2);
+    if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(data).then(() => {
+        const oldText = btn.textContent;
+        btn.textContent = 'COPIED!';
+        btn.style.background = '#00ffcc';
+        btn.style.color = '#000';
+        setTimeout(() => {
+          btn.textContent = oldText;
+          btn.style.background = '#132430';
+          btn.style.color = '#00ffcc';
+        }, 2000);
+      }).catch(() => alert('Copy failed. Use download instead.'));
+    } else if (typeof prompt === 'function') {
+      prompt('Copy JSON below:', data);
+    }
+  }
+
+  downloadJson() {
+    if (typeof Blob === 'undefined' || typeof document === 'undefined') return;
+    const data = JSON.stringify(this.getFullDiagnosticDump(), null, 2);
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = (this.sessionId || 'RI-DIAG') + '.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+}
+window.RILiveDiagnosticHelper = RILiveDiagnosticHelper;
+
+
 class GuidedCaptureController {
   round(val, dec = 1) {
     const p = Math.pow(10, dec);
@@ -20121,6 +20432,7 @@ class GuidedCaptureController {
     this.onComplete = options.onComplete || null;
     this.onError = options.onError || null;
 
+    this.riDiagnosticHelper = (typeof RILiveDiagnosticHelper !== 'undefined') ? new RILiveDiagnosticHelper() : null;
     this.KEYFRAME_SELECTION_MODE = 'ADAPTIVE_CLOSURE_PRESERVING';
     this.MIN_CANONICAL_KEYFRAMES = 8;
     this.SOFT_TARGET_KEYFRAMES = 12;
@@ -20787,6 +21099,9 @@ class GuidedCaptureController {
       console.warn('[GuidedCapture] Sensor listener note:', e);
     }
 
+    if (this.riDiagnosticHelper && this.riDiagnosticHelper.isEnabled) {
+      this.riDiagnosticHelper.initSession(this.sessionEpoch || 0);
+    }
     this.state = 'CAPTURING';
     this.isCapturing = true;
     this.telemetry.captureLoopActive = true;
@@ -21825,6 +22140,9 @@ class GuidedCaptureController {
       this.levelStatus = 'LEVEL';
     }
 
+    const lastAngleBefore = this.lastAngle;
+    const accumulatedRotationBefore = this.accumulatedRotation;
+
     if (this.lastAngle === null) {
       this.lastAngle = alpha;
       this.lastTimestamp = now;
@@ -21832,6 +22150,34 @@ class GuidedCaptureController {
       this.telemetry.rawBeta = beta;
       this.telemetry.rawGamma = gamma;
       this.notifyProgress();
+
+      if (this.riDiagnosticHelper && this.riDiagnosticHelper.isEnabled) {
+        this.riDiagnosticHelper.recordOrientationEvent({
+          timestamp: now,
+          elapsedMs: now - this.riDiagnosticHelper.startTime,
+          alpha,
+          beta,
+          gamma,
+          eventSource: e.type || 'deviceorientation',
+          permissionState: this.capabilities.MOTION_PERMISSION_GRANTED ? 'granted' : 'unknown',
+          eventInterval: now - (this.riDiagnosticHelper.lastEventTimestamp || now),
+          lastAngleBefore: null,
+          lastAngleAfter: this.lastAngle,
+          rawDelta: 0,
+          normalizedDelta: 0,
+          accepted: false,
+          rejectionReason: 'first_sample',
+          cumulativeAcceptedDegrees: 0,
+          rotationDirection: this.rotationDirection,
+          directionLocked: this.directionLocked,
+          initialAlpha: alpha,
+          accumulatedRotation: 0,
+          progressPercent: 0,
+          captureState: this.state,
+          sessionEpoch: this.sessionEpoch || 0,
+          sessionId: this.riDiagnosticHelper.sessionId
+        });
+      }
       return;
     }
 
@@ -21847,6 +22193,50 @@ class GuidedCaptureController {
 
     this.applyMotionDelta(delta, now);
     this.lastAngle = alpha;
+
+    if (this.riDiagnosticHelper && this.riDiagnosticHelper.isEnabled) {
+      const accepted = (this.accumulatedRotation !== accumulatedRotationBefore);
+      let rejectionReason = null;
+      if (!accepted) {
+        if (this.directionLocked) {
+          const isConsistent = (this.rotationDirection === 'CLOCKWISE' && delta > 0) ||
+                               (this.rotationDirection === 'COUNTERCLOCKWISE' && delta < 0);
+          if (!isConsistent) rejectionReason = 'direction_inconsistent';
+        } else if (Math.abs(delta) <= 0.5) {
+          rejectionReason = 'delta_sub_initial_threshold';
+        } else {
+          rejectionReason = 'delta_zero';
+        }
+      }
+
+      this.riDiagnosticHelper.recordOrientationEvent({
+        timestamp: now,
+        elapsedMs: now - this.riDiagnosticHelper.startTime,
+        alpha,
+        beta,
+        gamma,
+        eventSource: e.type || 'deviceorientation',
+        permissionState: this.capabilities.MOTION_PERMISSION_GRANTED ? 'granted' : 'unknown',
+        eventInterval: now - (this.riDiagnosticHelper.lastEventTimestamp || now),
+        lastAngleBefore,
+        lastAngleAfter: this.lastAngle,
+        rawDelta: alpha - lastAngleBefore,
+        normalizedDelta: delta,
+        accepted,
+        rejectionReason,
+        cumulativeAcceptedDegrees: this.accumulatedRotation,
+        rotationDirection: this.rotationDirection,
+        directionLocked: this.directionLocked,
+        initialAlpha: this.riDiagnosticHelper.initialAlpha,
+        accumulatedRotation: this.accumulatedRotation,
+        progressPercent: this.telemetry.normalizedSensorRotationDeg ? Math.min(100, Math.round(this.accumulatedRotation / 360 * 100)) : 0,
+        uiProgress: this.telemetry.normalizedSensorRotationDeg ? Math.min(100, Math.round(this.accumulatedRotation / 360 * 100)) : 0,
+        captureState: this.state,
+        closureConfirmed: Boolean(this.closureConfirmed),
+        sessionEpoch: this.sessionEpoch || 0,
+        sessionId: this.riDiagnosticHelper.sessionId
+      });
+    }
   }
 
   handleMotion(e) {
@@ -22056,6 +22446,12 @@ class GuidedCaptureController {
     this.telemetry.normalizedSensorRotationDeg = this.round(this.accumulatedRotation, 1);
     this.normalizedSensorRotationDeg = this.round(this.accumulatedRotation, 1);
     this.telemetry.state = this.state;
+    if (this._lastObservedState !== this.state) {
+      if (this.riDiagnosticHelper && this.riDiagnosticHelper.isEnabled) {
+        this.riDiagnosticHelper.recordStateTransition(this._lastObservedState || 'INIT', this.state);
+      }
+      this._lastObservedState = this.state;
+    }
 
     // C12.9-P1R3: Strict customer-visible progress semantics
     // 100% strictly requires VISUAL LOOP CONFIRMED (closureConfirmed===true).
