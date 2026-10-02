@@ -19686,11 +19686,12 @@ class VisualLoopDetector {
     return ((v + (v >>> 4) & 0xF0F0F0F) * 0x1010101) >>> 24;
   }
 
-  addStartReference(candidateId, angle, featureData) {
+  addStartReference(candidateId, angle, featureData, heading = null) {
     if (this.startReferences.length >= 5) return false;
     this.startReferences.push({
       candidateId,
       angle,
+      heading,
       featureData
     });
     return true;
@@ -19717,10 +19718,16 @@ class VisualLoopDetector {
     let bestResult = null;
 
     for (const ref of this.startReferences) {
-      // Sensor consistency prior: current angle should be close to 360° + ref.angle (±55°)
+      // Sensor consistency prior: physical heading within 50° OR accumulated rotation within 90° of 360°
       const expectedYaw = 360.0 + ref.angle;
       const deltaFromExpected = Math.abs(currentAngle - expectedYaw);
-      if (deltaFromExpected > 55.0) continue;
+      let headingDelta = 999;
+      if (ref.heading !== null && ref.heading !== undefined && this._currentHeading !== null && this._currentHeading !== undefined) {
+        let diff = Math.abs(this._currentHeading - ref.heading);
+        if (diff > 180) diff = 360 - diff;
+        headingDelta = diff;
+      }
+      if (deltaFromExpected > 90.0 && headingDelta > 50.0) continue;
 
       const matchResult = this.matchAndEstimateCascade(ref.featureData, featureData);
       if (!bestResult || (matchResult.pass && !bestResult.pass) || (matchResult.inlierCount > bestResult.inlierCount)) {
@@ -20125,6 +20132,8 @@ class RILiveDiagnosticHelper {
     this.closureBuffer = [];
     this.stateTransitions = [];
     this.errors = [];
+    this.allStateTransitions = [];
+    this.allErrors = [];
     this.allEvents = [];
     this.allClosures = [];
     this.flushTimer = null;
@@ -20137,9 +20146,11 @@ class RILiveDiagnosticHelper {
       try {
         const params = new URLSearchParams(window.location.search);
         // Round 120: RI Helper enabled by default on isolated Preview URL
-        const isIsolatedPreview = (typeof window !== 'undefined' && window.location && (
+        const isIsolatedPreview = (typeof window !== 'undefined' && window.location && typeof window.location.hostname === 'string' && (
           window.location.hostname.includes('3d2r-dark-minimal-flow-preview') ||
-          window.location.hostname.includes('railway.app')
+          window.location.hostname.includes('-preview-') ||
+          window.location.hostname === 'localhost' ||
+          window.location.hostname === '127.0.0.1'
         ));
         this.isEnabled = params.get('riDebug') === '1' || window.__RI_DEBUG_ENABLED__ === true || isIsolatedPreview;
       } catch (e) {
@@ -20187,17 +20198,17 @@ class RILiveDiagnosticHelper {
       'top: 10px',
       'right: 10px',
       'z-index: 999999',
-      'width: 270px',
-      'max-width: 92vw',
-      'background: rgba(10, 18, 30, 0.90)',
+      'width: 220px',
+      'max-width: 90vw',
+      'background: rgba(10, 18, 30, 0.92)',
       'border: 1px solid #00ffcc',
-      'box-shadow: 0 4px 18px rgba(0, 255, 204, 0.35)',
-      'border-radius: 8px',
-      'padding: 8px 10px',
+      'box-shadow: 0 2px 12px rgba(0, 255, 204, 0.25)',
+      'border-radius: 6px',
+      'padding: 6px 8px',
       'color: #00ffcc',
       'font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-      'font-size: 11px',
-      'line-height: 1.4',
+      'font-size: 9.5px',
+      'line-height: 1.25',
       'pointer-events: none',
       'user-select: none',
       'box-sizing: border-box'
@@ -20205,7 +20216,7 @@ class RILiveDiagnosticHelper {
 
     hud.innerHTML = `
       <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid rgba(0,255,204,0.3); padding-bottom: 4px; margin-bottom: 4px;">
-        <span style="font-weight: bold; color: #fff;"><span style="color:#00ffcc;">●</span> RI LIVE DIAG</span>
+        <span style="font-weight: bold; color: #fff; cursor: pointer;" id="ri-toggle-btn"><span style="color:#00ffcc;">●</span> RI DIAG <span id="ri-collapse-icon" style="font-size:9px; color:#aaa;">[−]</span></span>
         <span id="ri-hud-status" style="font-size: 10px; color: #00ffcc; background: rgba(0,255,204,0.18); padding: 1px 5px; border-radius: 3px;">ACTIVE</span>
       </div>
       <div style="font-size: 10px; color: #99bbcc; margin-bottom: 4px; word-break: break-all;" id="ri-hud-session">ID: ${this.sessionId || 'READY'}</div>
@@ -20228,6 +20239,19 @@ class RILiveDiagnosticHelper {
       copyBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         this.copyLog(copyBtn);
+      });
+    }
+
+    const toggleBtn = hud.querySelector('#ri-toggle-btn');
+    if (toggleBtn) {
+      let isCollapsed = false;
+      toggleBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        isCollapsed = !isCollapsed;
+        const icon = hud.querySelector('#ri-collapse-icon');
+        const bodyEls = hud.querySelectorAll('#ri-hud-events, #ri-hud-sensor, #ri-hud-delta, #ri-copy-btn, #ri-dl-btn');
+        bodyEls.forEach(el => { el.style.display = isCollapsed ? 'none' : (el.tagName === 'BUTTON' ? 'inline-block' : 'block'); });
+        if (icon) icon.textContent = isCollapsed ? '[+]' : '[−]';
       });
     }
 
@@ -20307,11 +20331,20 @@ class RILiveDiagnosticHelper {
     if (!this.isEnabled) return;
     const transition = { from: fromState, to: toState, timestamp: Date.now(), elapsedMs: Date.now() - this.startTime };
     this.stateTransitions.push(transition);
+    if (!this.allStateTransitions) this.allStateTransitions = [];
+    if (this.allStateTransitions.length < 500) {
+      this.allStateTransitions.push(transition);
+    }
   }
 
   recordError(err) {
     if (!this.isEnabled) return;
-    this.errors.push({ message: err?.message || String(err), stack: err?.stack, timestamp: Date.now() });
+    const errObj = { message: err?.message || String(err), stack: err?.stack, timestamp: Date.now() };
+    this.errors.push(errObj);
+    if (!this.allErrors) this.allErrors = [];
+    if (this.allErrors.length < 200) {
+      this.allErrors.push(errObj);
+    }
   }
 
   startBatchFlush() {
@@ -20365,7 +20398,7 @@ class RILiveDiagnosticHelper {
   getCameraDimensions() {
     try {
       if (typeof document !== 'undefined') {
-        const v = document.getElementById('guidedCaptureVideo');
+        const v = document.getElementById('guidedCaptureVideo') || (typeof window !== 'undefined' && window.setupWizard?.guidedCaptureController?.videoElement);
         if (v && v.videoWidth > 0) return { width: v.videoWidth, height: v.videoHeight };
       }
     } catch (e) {}
@@ -20383,17 +20416,19 @@ class RILiveDiagnosticHelper {
         devicePixelRatio: (typeof window !== 'undefined') ? (window.devicePixelRatio || 1) : 1,
         cameraDimensions: this.getCameraDimensions()
       },
+      priorSessionSnapshot: (typeof window !== 'undefined' && window.__R120_LAST_RI_SNAPSHOT__) ? window.__R120_LAST_RI_SNAPSHOT__ : null,
       summary: {
         totalEvents: this.allEvents.length,
         acceptedCount: this.acceptedCount,
         rejectedCount: this.rejectedCount,
+        totalClosures: (this.allClosures || []).length,
         latestEvent: this.latestEvent,
         latestClosure: this.latestClosure
       },
       events: this.allEvents,
       closures: this.allClosures,
-      stateTransitions: this.stateTransitions,
-      errors: this.errors
+      stateTransitions: (this.allStateTransitions && this.allStateTransitions.length > 0) ? this.allStateTransitions : this.stateTransitions,
+      errors: (this.allErrors && this.allErrors.length > 0) ? this.allErrors : this.errors
     };
   }
 
@@ -21575,9 +21610,11 @@ class GuidedCaptureController {
     // Candidate Extraction Trigger (adaptive sampling)
     const angleDelta = Math.abs(this.accumulatedRotation - (this.lastCandidateAngle !== null ? this.lastCandidateAngle : -999));
     const timeDelta = now - (this.lastCandidateTimestamp || 0);
+    const inClosureZone = (this.accumulatedRotation >= 280.0 || this.state === 'SEARCHING_FOR_START_OVERLAP' || this.state === 'CLOSURE_CANDIDATE');
     const shouldSample = (this.candidateFrames.length === 0 && this.videoElement.videoWidth > 0) ||
                          (angleDelta >= 8.0) ||
-                         (timeDelta >= 350 && angleDelta >= 4.0);
+                         (timeDelta >= 350 && angleDelta >= 4.0) ||
+                         (inClosureZone && timeDelta >= 180);
 
     const activeStates = ['CAPTURING', 'APPROACHING_CLOSURE', 'SEARCHING_FOR_START_OVERLAP', 'CLOSURE_CANDIDATE'];
     if (shouldSample && activeStates.includes(this.state)) {
@@ -21711,20 +21748,45 @@ class GuidedCaptureController {
       }
       const features = this.visualLoopDetector.extractFeatures(lumArray, offW, offH);
 
-      // Save early frames into start-region reference set (up to 5 references across 0° - 36°)
-      if (this.visualLoopDetector.startReferences.length < 5 && currentAngle <= 36.0) {
+      // Save early frames into start-region reference set (guaranteed reference #1, up to 5 references across 0° - 40°)
+      if (this.visualLoopDetector && (this.visualLoopDetector.startReferences.length < 5) && (currentAngle <= 40.0 || this.visualLoopDetector.startReferences.length === 0)) {
         const lastRef = this.visualLoopDetector.startReferences[this.visualLoopDetector.startReferences.length - 1];
         const angleDiff = lastRef ? Math.abs(currentAngle - lastRef.angle) : 999;
         if (this.visualLoopDetector.startReferences.length === 0 || angleDiff >= 4.0) {
-          this.visualLoopDetector.addStartReference(candId, currentAngle, features);
+          this.visualLoopDetector.addStartReference(candId, currentAngle, features, this.currentHeading);
         }
       }
 
       // If in closure search zone (300° to 450°), evaluate closure match
       if (this.visualClosureSearchEnabled) {
+        if (this.visualLoopDetector) this.visualLoopDetector._currentHeading = this.currentHeading;
         const evalRes = this.visualLoopDetector.evaluateClosure(candId, this.accumulatedRotation, features);
         this.closureCheckCount = this.visualLoopDetector.closureCheckCount;
         this.telemetry.closureCheckCount = this.closureCheckCount;
+
+        // Round 121: Record closure attempt in RI Diagnostics
+        if (this.riDiagnosticHelper && this.riDiagnosticHelper.isEnabled && evalRes) {
+          this.riDiagnosticHelper.recordClosureEvent({
+            candidateId: candId,
+            accumulatedRotation: Math.round(this.accumulatedRotation * 10) / 10,
+            currentHeading: this.currentHeading !== null && this.currentHeading !== undefined ? Math.round(this.currentHeading * 10) / 10 : null,
+            pass: Boolean(evalRes.pass),
+            closureConfirmed: Boolean(evalRes.closureConfirmed),
+            reason: evalRes.reason || evalRes.rejectionReason || 'UNKNOWN',
+            modelUsed: evalRes.modelUsed || 'NONE',
+            inlierCount: evalRes.inlierCount || 0,
+            goodMatchCount: evalRes.goodMatchCount || 0,
+            rawMatchCount: evalRes.rawMatchCount || 0,
+            inlierRatio: evalRes.inlierRatio || 0,
+            reprojectionError: evalRes.reprojectionError || 99,
+            spatialDistributionPass: Boolean(evalRes.spatialDistributionPass),
+            consecutiveConfirmations: evalRes.consecutiveConfirmations || 0,
+            referenceId: evalRes.referenceId || null,
+            referenceAngle: evalRes.referenceAngle !== undefined ? evalRes.referenceAngle : null,
+            deltaFromExpected: evalRes.deltaFromExpected !== undefined ? evalRes.deltaFromExpected : null,
+            timestamp: Date.now()
+          });
+        }
 
         if (evalRes && evalRes.inlierCount !== undefined) {
           this.bestClosureMatch = evalRes;
@@ -22328,8 +22390,9 @@ class GuidedCaptureController {
         directionLocked: this.directionLocked,
         initialAlpha: this.riDiagnosticHelper.initialAlpha,
         accumulatedRotation: this.accumulatedRotation,
-        progressPercent: this.telemetry.normalizedSensorRotationDeg ? Math.min(100, Math.round(this.accumulatedRotation / 360 * 100)) : 0,
-        uiProgress: this.telemetry.normalizedSensorRotationDeg ? Math.min(100, Math.round(this.accumulatedRotation / 360 * 100)) : 0,
+        rotationProgress: this.telemetry.normalizedSensorRotationDeg ? Math.min(100, Math.round(this.accumulatedRotation / 360 * 100)) : 0,
+        progressPercent: this.closureConfirmed ? 100 : Math.min(99, this.telemetry.normalizedSensorRotationDeg ? Math.round(this.accumulatedRotation / 360 * 100) : 0),
+        uiProgress: this.closureConfirmed ? 100 : Math.min(99, this.telemetry.normalizedSensorRotationDeg ? Math.round(this.accumulatedRotation / 360 * 100) : 0),
         captureState: this.state,
         closureConfirmed: Boolean(this.closureConfirmed),
         sessionEpoch: this.sessionEpoch || 0,
@@ -23232,10 +23295,11 @@ class SetupWizardController {
 
     controller.onAttention = (attn) => {
       if (this._captureSessionEpoch !== sessionEpoch) return;
+      // Round 121: Consolidate duplicate retry - keep primary start button as review indicator, RETRY button as sole actionable retry
       if (btn) {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-rotate-right"></i> TRY AGAIN';
-        btn.onclick = () => this.retryGuidedCapture();
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Capture Stalled';
+        btn.style.opacity = '0.6';
       }
       // Round 120: Also enable the persistent RETRY button
       const retryBtnAttn = document.getElementById('btnRetryGuidedCapture');
@@ -23243,6 +23307,7 @@ class SetupWizardController {
         retryBtnAttn.disabled = false;
         retryBtnAttn.style.opacity = '1';
         retryBtnAttn.style.pointerEvents = 'auto';
+        retryBtnAttn.innerHTML = '<i class="fa-solid fa-rotate-right"></i> RETRY CAPTURE';
       }
       if (pill) {
         pill.textContent = attn.message || 'Starting view not recognized. Continue a little farther or try again.';
