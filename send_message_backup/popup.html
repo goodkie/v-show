@@ -394,22 +394,22 @@
                         <div class="settings-group" id="captcha-method-group" style="display: block;">
                             <label data-i18n="label_captcha_method">Solving Method</label>
                             <select id="captcha-method-select" class="premium-select">
-                                <option value="audio" data-i18n="method_audio" selected>AI Audio Bypass (High Stability)</option>
-                                <option value="api" data-i18n="method_api">2Captcha API (Paid)</option>
+                                <option value="api" data-i18n="method_api" selected>2Captcha API (Paid)</option>
+                                <option value="audio" data-i18n="method_audio">AI Audio Bypass (High Stability)</option>
                                 <option value="nopecha" data-i18n="method_nopecha">NopeCHA API (Fast AI)</option>
                                 <option value="native" data-i18n="method_native">Browser Native (Free/Zero-Key)</option>
                             </select>
                         </div>
 
                         <!-- API Key Input (Dynamic) -->
-                        <div class="settings-group" id="captcha-api-group" style="display: none;">
+                        <div class="settings-group" id="captcha-api-group" style="display: block;">
                             <label data-i18n="label_captcha_api_key">Service API Key</label>
-                            <input type="text" id="captcha-api-key" class="premium-input" placeholder="Enter API Key">
-                            <p class="settings-subtip" id="api-link-tip"></p>
+                            <input type="text" id="captcha-api-key" class="premium-input" placeholder="Enter 2Captcha API Key">
+                            <p class="settings-subtip" id="api-link-tip"><a href="https://2captcha.com" target="_blank" style="color:#00ffcc;text-decoration:underline;font-size:11px;">Get your 2Captcha API Key here ↗</a></p>
                         </div>
 
                         <!-- Wit.ai Key Input (Dynamic) -->
-                        <div class="settings-group" id="audio-stt-group" style="display: block;">
+                        <div class="settings-group" id="audio-stt-group" style="display: none;">
                             <label data-i18n="label_stt_api_key">Audio STT Key (Wit.ai)</label>
                             <input type="text" id="audio-stt-key" class="premium-input" placeholder="Enter Wit.ai Server Access Token">
                             <div style="margin-top: 4px;">

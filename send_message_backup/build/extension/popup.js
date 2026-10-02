@@ -3227,6 +3227,12 @@ async function saveSettings() {
     // [WitKey] Sync to background engine via UPDATE_WIT_KEY without dead native IPC
     if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
         chrome.runtime.sendMessage({ action: 'UPDATE_WIT_KEY', key: settings.xpider_stt_api_key }).catch(() => {});
+        // [Auto CAPTCHA Solver] Sync 2Captcha key to background solver engine
+        chrome.runtime.sendMessage({ 
+            action: 'UPDATE_CAPTCHA_KEY', 
+            method: settings.xpider_captcha_method, 
+            key: settings.xpider_captcha_api_key 
+        }).catch(() => {});
     }
     
     const saveBtn = document.getElementById('save-settings-btn');
@@ -3255,9 +3261,11 @@ async function loadSettings() {
         if (langSelect) langSelect.value = data.xpider_lang;
     }
     
-    // Captcha Settings (v1.2.3: Set high-stability defaults if not present)
+    // Captcha Settings (v2.0: Default to 2Captcha API if not previously set)
     const captchaEnabled = (data.xpider_captcha_enabled !== undefined) ? !!data.xpider_captcha_enabled : true;
-    const captchaMethod = data.xpider_captcha_method || 'audio';
+    const captchaMethod = data.xpider_captcha_method || 'api';
+    // [Auto CAPTCHA Solver] If no API key stored yet, apply the configured default
+    const captchaApiKey = data.xpider_captcha_api_key || '';
 
     if (document.getElementById('captcha-solve-toggle')) {
         document.getElementById('captcha-solve-toggle').checked = captchaEnabled;
@@ -3266,7 +3274,7 @@ async function loadSettings() {
         document.getElementById('captcha-method-select').value = captchaMethod;
     }
     if (document.getElementById('captcha-api-key')) {
-        document.getElementById('captcha-api-key').value = data.xpider_captcha_api_key || '';
+        document.getElementById('captcha-api-key').value = captchaApiKey;
     }
     if (document.getElementById('audio-stt-key')) {
         document.getElementById('audio-stt-key').value = data.xpider_stt_api_key || '';

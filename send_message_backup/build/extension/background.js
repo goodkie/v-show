@@ -731,6 +731,34 @@ if (typeof self.XpiderSolverCore === 'undefined') {
 
 markBoot("solver_instantiation");
 const solver = new self.XpiderSolverCore();
+
+// [Auto CAPTCHA Solver Boot] Restore CAPTCHA credentials from persistent storage on startup
+(async () => {
+    try {
+        const stored = await chrome.storage.local.get([
+            'xpider_captcha_method', 'xpider_captcha_api_key', 'captchaMethod', 'captchaApiKey',
+            'xpider_stt_api_key', 'audioSttKey', 'witKey'
+        ]);
+        const method = stored.xpider_captcha_method || stored.captchaMethod || 'api';
+        const apiKey = stored.xpider_captcha_api_key || stored.captchaApiKey || '';
+        const witKey = stored.xpider_stt_api_key || stored.audioSttKey || stored.witKey || '';
+
+        if (witKey) solver.config.witAiKey = witKey;
+        if (method === 'api' || method === '2captcha') {
+            if (apiKey) {
+                solver.config.twoCaptchaKey = apiKey;
+                logBg(null, `[Auto CAPTCHA Solver Boot] 2Captcha key restored (${apiKey.substring(0, 8)}...)`, 'info');
+            }
+        } else if (method === 'nopecha') {
+            if (apiKey) {
+                solver.config.nopeChaKey = apiKey;
+                logBg(null, `[Auto CAPTCHA Solver Boot] NopeCHA key restored`, 'info');
+            }
+        }
+    } catch (bootErr) {
+        console.warn('[Auto CAPTCHA Solver Boot] Failed to restore credentials:', bootErr.message);
+    }
+})();
 console.log("[X PIDER] Background script initializing (Unified Mode)...");
 
 markBoot("side_panel_config");
@@ -1085,16 +1113,47 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                         'captchaMethod', 'captchaApiKey', 'xpider_captcha_method', 'xpider_captcha_api_key', 'xpider_stt_api_key', 'audioSttKey', 'witKey'
                     ], resolve));
                     
-                    const method = request.method || storage.xpider_captcha_method || storage.captchaMethod || 'audio';
-                    const apiKey = storage.xpider_captcha_api_key || storage.captchaApiKey;
-                    // [F13-Sanitized] No hardcoded credentials. User must supply Wit.ai key via Settings UI.
+                    // [Auto CAPTCHA Solver v2] Default to 2Captcha API if not set
+                    const method = request.method || storage.xpider_captcha_method || storage.captchaMethod || 'api';
+                    const apiKey = storage.xpider_captcha_api_key || storage.captchaApiKey || '';
                     const witKey = storage.xpider_stt_api_key || storage.audioSttKey || storage.witKey || null;
                     
+                    // Refresh live solver config from storage on every call
                     solver.config.witAiKey = witKey;
-                    if (method === 'nopecha') solver.config.nopeChaKey = apiKey;
-                    if (method === 'api' || method === '2captcha') solver.config.twoCaptchaKey = apiKey;
+                    if (method === 'nopecha') {
+                        solver.config.nopeChaKey = apiKey;
+                    } else if (method === 'api' || method === '2captcha') {
+                        solver.config.twoCaptchaKey = apiKey;
+                    }
+
+                    logBg(null, `[Auto CAPTCHA Solver] SOLVE_CAPTCHA: method=${method} sitekey=${(request.sitekey||'').substring(0,12)}... url=${request.url||''}`, 'info');
                     
-                    // [Owner Authorized Enhancement] Use Autonomous Multi-Tier Fallback Chain if available
+                    // [Priority 1] 2Captcha token solver (API method)
+                    if ((method === 'api' || method === '2captcha') && solver.config.twoCaptchaKey) {
+                        try {
+                            const token = await solver.solve2Captcha(request.sitekey, request.url, request.type || 'recaptcha');
+                            logBg(null, `[Auto CAPTCHA Solver] 2Captcha SUCCESS token=${token ? token.substring(0, 16) + '...' : 'null'}`, 'success');
+                            sendResponse({ success: true, method: '2captcha', token });
+                            return;
+                        } catch (e2) {
+                            logBg(null, `[Auto CAPTCHA Solver] 2Captcha FAILED: ${e2.message}`, 'error');
+                            // Fall through to smart fallback chain
+                        }
+                    }
+
+                    // [Priority 2] NopeCHA fast token
+                    if (method === 'nopecha' && solver.config.nopeChaKey) {
+                        try {
+                            const token = await solver.solveNopeCha(request.sitekey, request.url, request.type || 'recaptcha');
+                            logBg(null, `[Auto CAPTCHA Solver] NopeCHA SUCCESS`, 'success');
+                            sendResponse({ success: true, method: 'nopecha', token });
+                            return;
+                        } catch (enp) {
+                            logBg(null, `[Auto CAPTCHA Solver] NopeCHA FAILED: ${enp.message}`, 'error');
+                        }
+                    }
+
+                    // [Priority 3] Autonomous Multi-Tier Fallback Chain
                     if (typeof solver.solveSmartFallbackChain === 'function') {
                         const result = await solver.solveSmartFallbackChain(request.type || 'recaptcha', {
                             siteKey: request.sitekey,
@@ -1107,25 +1166,19 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                         }
                     }
                     
-                    // Direct method fallback
-                    let token;
-                    if (method === 'nopecha' && solver.config.nopeChaKey) {
-                        token = await solver.solveNopeCha(request.sitekey, request.url, request.type);
-                        sendResponse({ success: true, token });
-                    } else if ((method === 'api' || method === '2captcha') && solver.config.twoCaptchaKey) {
-                        token = await solver.solve2Captcha(request.sitekey, request.url, request.type);
-                        sendResponse({ success: true, token });
-                    } else if (method === 'audio' || method === 'native' || witKey) {
-                        // Autonomous iframe solver (solver-content.js) is actively transcribing/solving
+                    // [Priority 4] Audio/Native fallback (solver-content.js handles iframe)
+                    if (method === 'audio' || method === 'native' || witKey) {
                         sendResponse({ success: true, method: 'audio_frame_solver', message: 'Autonomous audio solver active in iframe' });
                     } else {
-                        throw new Error(`Solver API Key or method not configured (method: ${method}).`);
+                        throw new Error(`CAPTCHA solver: no valid method/key configured (method: ${method}). Configure API key in Settings.`);
                     }
                 } catch (e) {
+                    logBg(null, `[Auto CAPTCHA Solver] SOLVE_CAPTCHA ERROR: ${e.message}`, 'error');
                     sendResponse({ success: false, error: e.message });
                 }
             })();
             return true;
+
 
         case 'UPDATE_WIT_KEY':
             (async () => {
@@ -1134,6 +1187,34 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 await chrome.storage.local.set({ xpider_stt_api_key: key });
                 solver.config.witAiKey = key; // Solver 인스턴스 설정도 갱신
                 sendResponse({ success: true });
+            })();
+            return true;
+
+        case 'UPDATE_CAPTCHA_KEY':
+            // [Auto CAPTCHA Solver] Live sync of CAPTCHA method + API key to solver engine
+            (async () => {
+                const method = request.method || 'api';
+                const key = request.key || '';
+                const shortKey = key ? key.substring(0, 8) + '...' : 'NONE';
+                logBg(null, `[CAPTCHA-Sync] method=${method} key=${shortKey}`, 'info');
+                await chrome.storage.local.set({
+                    xpider_captcha_method: method,
+                    xpider_captcha_api_key: key,
+                    captchaMethod: method,
+                    captchaApiKey: key
+                });
+                // Apply to live solver instance immediately
+                if (method === 'api' || method === '2captcha') {
+                    solver.config.twoCaptchaKey = key;
+                    solver.config.nopeChaKey = null;
+                } else if (method === 'nopecha') {
+                    solver.config.nopeChaKey = key;
+                    solver.config.twoCaptchaKey = null;
+                } else {
+                    solver.config.twoCaptchaKey = null;
+                    solver.config.nopeChaKey = null;
+                }
+                sendResponse({ success: true, method, applied: !!key });
             })();
             return true;
 

@@ -3603,6 +3603,22 @@
                     await this.repairActivation(primary);
                 }
 
+                // [Issue #6 R6 SUBMIT-R2-1] If still disabled after repair, handle per observeDisabledMs option
+                if (this.isDisabled(primary) && options.observeDisabledMs > 0) {
+                    const observeMs = options.observeDisabledMs;
+                    const pollInterval = 50;
+                    const deadline = Date.now() + observeMs;
+                    while (Date.now() < deadline) {
+                        await new Promise(r => setTimeout(r, pollInterval));
+                        if (!this.isDisabled(primary)) break;
+                    }
+                    // After exhausting the wait window: if still disabled, fail with specific reason
+                    if (this.isDisabled(primary)) {
+                        return { success: false, reasonCode: 'SUBMIT_BUTTON_NEVER_ENABLED', strategy: 'none', submitEventFired: false };
+                    }
+                }
+
+
                 if (!this.isDisabled(primary)) {
                     // Stage A: form.requestSubmit(submitter) with observer installed
                     if (form && form.tagName === 'FORM' && typeof form.requestSubmit === 'function') {
@@ -3626,6 +3642,7 @@
                         return { success: true, reasonCode: 'SUBMIT_TRIGGERED', strategy: 'keyboard_enter', submitEventFired: submitEventFired || true };
                     } catch (_) {}
                 }
+
 
                 // Stage D: Alternate candidate fallback (max 1 alternate) ONLY IF submitEvent has NOT fired
                 if (!submitEventFired && alternate && !this.isDisabled(alternate)) {
