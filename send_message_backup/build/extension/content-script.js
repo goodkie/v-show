@@ -29,7 +29,7 @@
 // ── END DEV LOG BRIDGE ───────────────────────────────────────────────────
 
 (function() {
-    console.log("🚀 [XpiderSender] Advanced Engine Loaded: " + window.location.href);
+    console.log("🚀 [XpiderSender] Advanced Engine Loaded: " + (typeof window !== 'undefined' ? window.location.href : '(node-test)'));
 
     const _ContactGate = (typeof ContactGate !== 'undefined' && ContactGate) || 
         (typeof window !== 'undefined' && window.ContactGate) || 
@@ -42,6 +42,14 @@
     const _ContactDiscoveryEngine = (typeof ContactDiscoveryEngine !== 'undefined' && ContactDiscoveryEngine) || 
         (typeof window !== 'undefined' && window.ContactDiscoveryEngine) || 
         (typeof require !== 'undefined' ? require('./modules/contact-discovery-engine.js') : null);
+
+    const _CheckboxResolverR2 = (typeof CheckboxResolverR2 !== 'undefined' && CheckboxResolverR2) || 
+        (typeof window !== 'undefined' && window.CheckboxResolverR2) || 
+        (typeof require !== 'undefined' ? require('./modules/checkbox-resolver-r2.js') : null);
+
+    const _SelectResolverR2 = (typeof SelectResolverR2 !== 'undefined' && SelectResolverR2) || 
+        (typeof window !== 'undefined' && window.SelectResolverR2) || 
+        (typeof require !== 'undefined' ? require('./modules/select-resolver-r2.js') : null);
 
     // [Issue #6 R4 Top-Level Scope Guarantee] Downloadable extensions filter
     const NON_HTML_DOWNLOADABLE_EXTENSIONS = /\.(vcf|ics|ical|ifb|msg|eml|pdf|doc|docx|rtf|odt|xls|xlsx|csv|tsv|ppt|pptx|zip|rar|7z|tar|gz|bz2|exe|msi|bat|cmd|sh|apk|dmg|pkg|bin|mp3|wav|ogg|mp4|avi|mov|mkv|webm|jpg|jpeg|png|gif|svg|webp|ico|bmp|tiff|xml|json)(\?.*)?$/i;
@@ -567,6 +575,14 @@
 
             if (currentForm) {
                 logDev("🎯 Step 2: Contact form discovered. Preparing submission...", "success");
+                logDev("[STAGE] stage=CONTACT_PAGE_FOUND", "success");
+                try {
+                    chrome.runtime.sendMessage({
+                        action: 'STAGE_PROGRESSION',
+                        stage: 'CONTACT_PAGE_FOUND',
+                        url: window.location.href
+                    }).catch(() => {});
+                } catch (_) {}
                 sessionStorage.removeItem('xpider_recursion_debt');
                 sessionStorage.removeItem('xpider_guessed_paths');
                 
@@ -587,20 +603,20 @@
                 }
             }
 
-            // 2. [v1.3.4] Direct Path Guessing (Before expensive link scanning)
-            if (recursionDebt === 0) {
-                logDev("⚡ [Discovery] No form on current page. Trying common paths...");
-                const directPath = await guessDirectContactPaths(template);
-                if (directPath) return; // Navigation handled inside
-            }
-
-            // 3. Search for Links (Optimized Scoring)
-            logDev("🕵️ [Discovery] Scanning DOM for contact links...");
+            // 2. Track A: DOM Contact Link Scanning (Baseline First)
+            logDev("🕵️ [Discovery] Scanning DOM for contact links (Track A)...");
             const bestLink = findBestContactLink();
             if (bestLink && normalizeUrl(bestLink) !== normalizeUrl(currentUrl)) {
                 logDev(`🎯 Step 1: Contact page link found! Navigating to: ${bestLink}`, "success");
                 await safeNavigate(bestLink, template);
                 return;
+            }
+
+            // 3. Direct Path Guessing (Only if DOM links not found)
+            if (recursionDebt === 0) {
+                logDev("⚡ [Discovery] No form or links on current page. Trying common paths...");
+                const directPath = await guessDirectContactPaths(template);
+                if (directPath) return; // Navigation handled inside
             }
 
             // 4. Recursive Search (Deep Form Hunting)
@@ -746,12 +762,18 @@
                     return false;
                 }
                 logDev(`[CONTACT_GATE] PASS bodyField=${classification.bodyFieldType}`, "success");
+                logDev("[STAGE] stage=ELIGIBLE_FORM_FOUND", "success");
                 try {
                     chrome.runtime.sendMessage({
                         action: 'FORM_GATE_PASSED',
                         contactPageUrl: window.location.href,
                         formPageUrl: window.location.href,
                         bodyFieldType: classification.bodyFieldType
+                    }).catch(() => {});
+                    chrome.runtime.sendMessage({
+                        action: 'STAGE_PROGRESSION',
+                        stage: 'ELIGIBLE_FORM_FOUND',
+                        url: window.location.href
                     }).catch(() => {});
                 } catch (_) {}
             }
@@ -789,6 +811,14 @@
 
             logDev("📤 [Action] Triggering submission sequence...");
             logDev("[SUBMIT] triggered=true", "info");
+            logDev("[STAGE] stage=SUBMIT_TRIGGERED", "info");
+            try {
+                chrome.runtime.sendMessage({
+                    action: 'STAGE_PROGRESSION',
+                    stage: 'SUBMIT_TRIGGERED',
+                    url: window.location.href
+                }).catch(() => {});
+            } catch (_) {}
             
             // [Hotfix R2] Prepare SubmissionOutcomeVerifier BEFORE submit action
             const verifier = new SubmissionOutcomeVerifier(form, template);
@@ -942,7 +972,25 @@
             return controls;
         }
 
-        // D2. Group fields by logical container and score container coherence
+        // Framework-Specific Detection Adapters (R6 Section 6.3)
+        detectFrameworkAdapter(container) {
+            if (!container) return null;
+            const sig = `${container.id || ''} ${container.className || ''} ${container.getAttribute('data-form-id') || ''}`.toLowerCase();
+            const action = (container.action || container.getAttribute('action') || '').toLowerCase();
+
+            if (sig.includes('hs-') || sig.includes('hubspot') || (container.querySelector && container.querySelector('.hs-form, [data-form-id]'))) return 'HubSpot';
+            if (sig.includes('gform') || sig.includes('gravity') || (container.querySelector && container.querySelector('.gform_wrapper'))) return 'GravityForms';
+            if (sig.includes('wpcf7') || (container.querySelector && container.querySelector('.wpcf7-form'))) return 'ContactForm7';
+            if (sig.includes('wpforms') || (container.querySelector && container.querySelector('.wpforms-form'))) return 'WPForms';
+            if (sig.includes('ninja') || sig.includes('nf-') || (container.querySelector && container.querySelector('.nf-form-cont'))) return 'NinjaForms';
+            if (sig.includes('wix') || (container.querySelector && container.querySelector('[data-testid*="form"], .wixui-form'))) return 'Wix';
+            if (sig.includes('sqs-') || sig.includes('squarespace') || (container.querySelector && container.querySelector('.sqs-block-form'))) return 'Squarespace';
+            if (sig.includes('w-form') || sig.includes('webflow') || (container.querySelector && container.querySelector('.w-form'))) return 'Webflow';
+            if (action.includes('salesforce') || action.includes('pipedrive') || action.includes('activecampaign')) return 'EmbeddedCRM';
+            return null;
+        }
+
+        // D2. Group fields by logical container and score container coherence (R6 Section 6.1 & 6.2)
         groupAndScoreContainers(root = document) {
             const bodyControls = this.findInquiryBodyControls(root);
             if (bodyControls.length === 0) return [];
@@ -959,34 +1007,46 @@
                 if (!container || evaluatedContainers.has(container)) continue;
                 evaluatedContainers.add(container);
 
-                // Hard eligibility gate check
+                // Hard eligibility gate check: Must be eligible contact inquiry
                 if (_ContactGate && typeof _ContactGate.classifyFormIntent === 'function') {
                     const c = _ContactGate.classifyFormIntent(container);
                     if (!c.eligible) continue;
                 }
 
+                // Surrounding controls discovery
                 const allInputs = queryAllInputs(container);
                 const textareas = container.querySelectorAll ? container.querySelectorAll('textarea') : [];
                 const emails = container.querySelectorAll ? container.querySelectorAll('input[type="email"], input[name*="email" i], input[id*="email" i]') : [];
+                const names = container.querySelectorAll ? container.querySelectorAll('input[name*="name" i], input[id*="name" i]') : [];
+                const phones = container.querySelectorAll ? container.querySelectorAll('input[type="tel"], input[name*="phone" i], input[id*="phone" i]') : [];
+                const subjects = container.querySelectorAll ? container.querySelectorAll('input[name*="subject" i], input[id*="subject" i]') : [];
+                const selects = container.querySelectorAll ? container.querySelectorAll('select, [role="combobox"]') : [];
+                const checkboxes = container.querySelectorAll ? container.querySelectorAll('input[type="checkbox"], [role="checkbox"]') : [];
                 const submits = container.querySelectorAll ? container.querySelectorAll('button[type="submit"], input[type="submit"], button, [role="button"]') : [];
 
+                // Form Coherence Score (R6 Section 6.2)
                 let score = 50;
-                if (container.tagName === 'FORM') score += 100;
-                if (textareas.length > 0) score += 50;
-                if (emails.length > 0) score += 40;
-                if (submits.length > 0) score += 30;
-                if (allInputs.length >= 2 && allInputs.length <= 35) score += 25;
+                if (container.tagName === 'FORM') score += 50;
+                if (textareas.length > 0) score += 40;
+                if (names.length > 0) score += 20;
+                if (emails.length > 0) score += 25;
+                if (phones.length > 0) score += 15;
+                if (subjects.length > 0) score += 15;
+                if (selects.length > 0) score += 10;
+                if (checkboxes.length > 0) score += 10;
+                if (submits.length > 0) score += 20;
 
-                // Framework signature hints (D5)
-                const sig = `${container.id || ''} ${container.className || ''}`.toLowerCase();
-                if (/hs-|hubspot|wpcf7|gform|gravity|nf-|ninja|wpforms|wixui|sqs-|webflow/i.test(sig)) {
-                    score += 150;
+                // Framework-specific adapter score bonus (R6 Section 6.3)
+                const adapter = this.detectFrameworkAdapter(container);
+                if (adapter) {
+                    score += 50;
                 }
 
                 scoredContainers.push({
                     container,
                     score,
                     bodyControl: bc,
+                    adapter,
                     inputCount: allInputs.length
                 });
             }
@@ -1385,6 +1445,12 @@
         // ============================================================
         async function applySelect(el, preferredKeywords = []) {
             if (!el || el.tagName !== 'SELECT') return false;
+            if (_SelectResolverR2) {
+                const resolver = new _SelectResolverR2({ logger: logDev });
+                const res = await resolver.resolveNativeSelect(el);
+                if (res && res.selected) filledFields++;
+                return res && res.selected;
+            }
             if (el.options.length <= 1) return false;
             // 이미 유효한 값이 선택된 경우 스킵
             if (el.selectedIndex > 0 && el.options[el.selectedIndex].value) {
@@ -1452,6 +1518,14 @@
         // ============================================================
         async function applyCustomDropdown(container) {
             if (!container) return false;
+            if (_SelectResolverR2) {
+                const resolver = new _SelectResolverR2({ logger: logDev });
+                const res = await resolver.resolveAllInForm(container);
+                if (res && res.handledCount > 0) {
+                    filledFields += res.handledCount;
+                    return true;
+                }
+            }
             
             const CUSTOM_SELECTORS = [
                 // React Select
@@ -1621,6 +1695,11 @@
         // ============================================================
         async function applyCheckbox(cbEl) {
             if (!cbEl) return;
+            if (_CheckboxResolverR2) {
+                const resolver = new _CheckboxResolverR2({ logger: logDev });
+                const res = await resolver.resolveCheckbox(cbEl);
+                return res && res.actual;
+            }
             if (cbEl.checked) return;
 
             cbEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -2043,33 +2122,60 @@
 
         logDev(`   [v4.0] 총 ${inputs.length}개 입력 필드 발견 (radio: ${allRadios.length}, checkbox: ${allCheckboxes.length})`);
 
-        // ── 2단계: 네이티브 SELECT 드롭다운 전수 처리 ──
-        logDev("🎯 [HyperEngine v4.0] Phase 1 - 네이티브 드롭다운 전수 처리...");
-        for (const el of inputs) {
-            if (isHoneypotV4(el)) continue;
-            if (el.tagName === 'SELECT') await applySelect(el);
+        // ── 2단계: 드롭다운(Native & Custom) SelectResolverR2 전수 처리 ──
+        logDev("🎯 [HyperEngine v4.0] Phase 1 & 2 - 드롭다운 SelectResolverR2 전수 처리...");
+        let selectStability = { stable: true };
+        if (_SelectResolverR2) {
+            try {
+                const selectResolver = new _SelectResolverR2({ logger: logDev });
+                const selRes = await selectResolver.resolveAllInForm(form);
+                if (selRes && selRes.handledCount > 0) filledFields += selRes.handledCount;
+                if (selRes && !selRes.stable) {
+                    selectStability.stable = false;
+                    selectStability.reasonCode = 'REQUIRED_SELECT_UNSTABLE';
+                }
+            } catch (selErr) {
+                logDev(`⚠️ [SelectResolverR2] Error: ${selErr.message}`, 'warning');
+            }
+        } else {
+            for (const el of inputs) {
+                if (isHoneypotV4(el)) continue;
+                if (el.tagName === 'SELECT') await applySelect(el);
+            }
+            await applyCustomDropdown(form);
         }
 
-        // ── 3단계: 커스텀 드롭다운 처리 (div/span 기반) ──
-        logDev("🎯 [HyperEngine v4.0] Phase 2 - 커스텀 드롭다운 처리...");
-        await applyCustomDropdown(form);
-
-        // ── 4단계: 약관/동의 체크박스 우선 처리 ──
-        logDev("🎯 [HyperEngine v4.0] Phase 3 - 약관/동의 체크박스 처리...");
-        for (const el of inputs) {
-            if (isHoneypotV4(el)) continue;
-            if (el.type === 'checkbox') {
-                const labelText = getLabelFor(el).toLowerCase();
-                const containerText = (el.closest('div, label, span, p')?.textContent || '').toLowerCase().substring(0, 300);
-                const combined = labelText + ' ' + containerText;
-                const termsKeywords = [
-                    'agree', 'terms', 'policy', 'consent', 'accept', 'privacy',
-                    '동의', '규정', '약관', '개인정보', '수집', '이용',
-                    'gdpr', 'einwilligung', 'datenschutz', 'consentement', 'aceptar'
-                ];
-                if (termsKeywords.some(k => combined.includes(k))) {
-                    await applyCheckbox(el);
-                    filledFields++;
+        // ── 4단계: 체크박스 전수 처리 (CheckboxResolverR2: 10-카테고리, Boston BJJ 그룹, 약관/동의 필수 체크) ──
+        logDev("🎯 [HyperEngine v4.0] Phase 3 - 체크박스 CheckboxResolverR2 전수 처리...");
+        let checkboxStability = { stable: true };
+        if (_CheckboxResolverR2) {
+            try {
+                const checkboxResolver = new _CheckboxResolverR2({ logger: logDev });
+                const cbRes = await checkboxResolver.resolveAllInForm(form);
+                if (cbRes && cbRes.handledCount > 0) filledFields += cbRes.handledCount;
+                if (cbRes && !cbRes.stable) {
+                    checkboxStability.stable = false;
+                    checkboxStability.reasonCode = 'REQUIRED_CHECKBOX_UNSTABLE';
+                }
+            } catch (cbErr) {
+                logDev(`⚠️ [CheckboxResolverR2] Error: ${cbErr.message}`, 'warning');
+            }
+        } else {
+            for (const el of inputs) {
+                if (isHoneypotV4(el)) continue;
+                if (el.type === 'checkbox') {
+                    const labelText = getLabelFor(el).toLowerCase();
+                    const containerText = (el.closest('div, label, span, p')?.textContent || '').toLowerCase().substring(0, 300);
+                    const combined = labelText + ' ' + containerText;
+                    const termsKeywords = [
+                        'agree', 'terms', 'policy', 'consent', 'accept', 'privacy',
+                        '동의', '규정', '약관', '개인정보', '수집', '이용',
+                        'gdpr', 'einwilligung', 'datenschutz', 'consentement', 'aceptar'
+                    ];
+                    if (termsKeywords.some(k => combined.includes(k))) {
+                        await applyCheckbox(el);
+                        filledFields++;
+                    }
                 }
             }
         }
@@ -2189,30 +2295,32 @@
             logDev(`⚠️ [Radio Phase] Error: ${e.message}`, 'warning');
         }
 
-        // ── 8단계: 일반 체크박스 전수 처리 (필수 필드만) ──
-        logDev("🎯 [HyperEngine v4.0] Phase 7 - 필수 체크박스 처리...");
-        try {
-            const checkboxElements = Array.from(queryAllDeep('input[type="checkbox"]', form)).filter(cb => !isHoneypotV4(cb));
-            for (const cb of checkboxElements) {
-                if (cb.checked) continue;
+        // ── 8단계: 일반 체크박스 전수 처리 (필수 필드만 - CheckboxResolverR2 없을 때 레거시 폴백) ──
+        if (!_CheckboxResolverR2) {
+            logDev("🎯 [HyperEngine v4.0] Phase 7 - 필수 체크박스 레거시 폴백 처리...");
+            try {
+                const checkboxElements = Array.from(queryAllDeep('input[type="checkbox"]', form)).filter(cb => !isHoneypotV4(cb));
+                for (const cb of checkboxElements) {
+                    if (cb.checked) continue;
 
-                // 필수 체크박스 판별 (required 속성 또는 asterisk 표시)
-                const isRequired = cb.required || cb.getAttribute('aria-required') === 'true';
-                const labelText = getLabelFor(cb).toLowerCase();
-                const containerText = (cb.closest('div, label, span, li')?.textContent || '').toLowerCase().substring(0, 300);
-                const hasAsterisk = containerText.includes('*') || containerText.includes('필수');
+                    // 필수 체크박스 판별 (required 속성 또는 asterisk 표시)
+                    const isRequired = cb.required || cb.getAttribute('aria-required') === 'true';
+                    const labelText = getLabelFor(cb).toLowerCase();
+                    const containerText = (cb.closest('div, label, span, li')?.textContent || '').toLowerCase().substring(0, 300);
+                    const hasAsterisk = containerText.includes('*') || containerText.includes('필수');
 
-                // 뉴스레터/마케팅 체크박스는 스킵
-                const marketingKeywords = ['newsletter', 'marketing', 'subscribe', 'promotion', 'offer', '뉴스레터', '광고', '마케팅', '프로모션'];
-                const isMarketing = marketingKeywords.some(k => labelText.includes(k) || containerText.includes(k));
+                    // 뉴스레터/마케팅 체크박스는 스킵
+                    const marketingKeywords = ['newsletter', 'marketing', 'subscribe', 'promotion', 'offer', '뉴스레터', '광고', '마케팅', '프로모션'];
+                    const isMarketing = marketingKeywords.some(k => labelText.includes(k) || containerText.includes(k));
 
-                if ((isRequired || hasAsterisk) && !isMarketing) {
-                    await applyCheckbox(cb);
-                    filledFields++;
+                    if ((isRequired || hasAsterisk) && !isMarketing) {
+                        await applyCheckbox(cb);
+                        filledFields++;
+                    }
                 }
+            } catch (e) {
+                logDev(`⚠️ [Checkbox Phase] Error: ${e.message}`, 'warning');
             }
-        } catch (e) {
-            logDev(`⚠️ [Checkbox Phase] Error: ${e.message}`, 'warning');
         }
 
         // ── 9단계: 커스텀 체크박스/라디오 (div/span 기반 ARIA) 처리 ──
@@ -2253,11 +2361,15 @@
                 if (currentVal.trim() !== '') continue;
 
                 if (el.tagName === 'SELECT') {
-                    await applySelect(el);
-                    filledFields++;
+                    if (!_SelectResolverR2) {
+                        await applySelect(el);
+                        filledFields++;
+                    }
                 } else if (el.type === 'checkbox') {
-                    await applyCheckbox(el);
-                    filledFields++;
+                    if (!_CheckboxResolverR2) {
+                        await applyCheckbox(el);
+                        filledFields++;
+                    }
                 } else if (el.type === 'radio') {
                     await applyRadio(el);
                     filledFields++;
@@ -2323,6 +2435,54 @@
         } catch (e) {
             logDev(`⚠️ [Wizard Phase] Error: ${e.message}`, 'warning');
         }
+
+        // ── Directive 4 & Verification: FREEZE_VALUES gate & Stability check ──
+        if (!checkboxStability.stable) {
+            logDev(`❌ [Fill] Required checkbox unstable: ${checkboxStability.reasonCode}`, "error");
+            return { filledAny: false, reasonCode: 'REQUIRED_CHECKBOX_UNSTABLE' };
+        }
+        if (!selectStability.stable) {
+            logDev(`❌ [Fill] Required select unstable: ${selectStability.reasonCode}`, "error");
+            return { filledAny: false, reasonCode: 'REQUIRED_SELECT_UNSTABLE' };
+        }
+
+        // Verify message body is filled
+        const finalAllInputs = Array.from(queryAllInputs(form));
+        let messageFilled = finalAllInputs.some(el => {
+            const isMsg = el.tagName === 'TEXTAREA' || el.contentEditable === 'true' || (el.name && /message|comment|inquiry|body/i.test(el.name));
+            const val = el.contentEditable === 'true' ? (el.textContent || '') : (el.value || '');
+            return isMsg && val.trim().length > 0;
+        });
+
+        if (!messageFilled) {
+            const rescueTarget = finalAllInputs.find(el => el.tagName === 'TEXTAREA' || el.contentEditable === 'true')
+                || finalAllInputs.find(el => !el.value && !['hidden', 'submit', 'button', 'checkbox', 'radio'].includes(el.type));
+            if (rescueTarget) {
+                await applyVal(rescueTarget, tpl.message || getRandomTemplateVal(), 'Fallback-Message-Rescue');
+                filledFields++;
+                messageFilled = true;
+            }
+        }
+
+        if (!messageFilled) {
+            logDev("❌ [Fill] Message body was not filled", "error");
+            return { filledAny: false, reasonCode: 'REQUIRED_FIELD_LOST_BEFORE_SUBMIT' };
+        }
+
+        logDev("[STAGE] stage=REQUIRED_FIELDS_RESOLVED", "success");
+        logDev("[STAGE] stage=FIELD_STATE_STABLE", "success");
+        try {
+            chrome.runtime.sendMessage({
+                action: 'STAGE_PROGRESSION',
+                stage: 'REQUIRED_FIELDS_RESOLVED',
+                url: window.location.href
+            }).catch(() => {});
+            chrome.runtime.sendMessage({
+                action: 'STAGE_PROGRESSION',
+                stage: 'FIELD_STATE_STABLE',
+                url: window.location.href
+            }).catch(() => {});
+        } catch (_) {}
 
         logDev(`✅ [HyperEngine v4.0] 폼 작성 완료 - 입력 필드 ${filledFields}개 처리됨`);
         return { filledAny: filledFields > 0 };
@@ -3141,15 +3301,17 @@
     }
 
     // ========================================================================
-    // SubmitExecutorR3 — Controlled Escalation Submit Ladder (Issue #6 R5)
+    // SubmitExecutorR4 — Controlled Escalation Submit Ladder (Issue #6 R6)
     // ========================================================================
-    class SubmitExecutorR3 {
+    class SubmitExecutorR4 {
         constructor(form, template = {}, options = {}) {
             this.form = form;
             this.template = template;
             this.options = options;
+            this.maxAlternateAttempts = 1;
         }
 
+        // 7.2 Candidate Ranking
         discoverSubmitActions() {
             const form = this.form;
             const candidates = [];
@@ -3177,16 +3339,51 @@
                 const type = (btn.type || '').toLowerCase();
                 const cls = (btn.className || '').toLowerCase();
                 const id = (btn.id || '').toLowerCase();
+
+                // Strict rejection
                 if (rejectKeywords.some(kw => text.includes(kw))) continue;
+
                 let score = 0;
-                if (type === 'submit') score += 100;
-                if (submitKeywords.some(kw => text.includes(kw))) score += 50;
-                if (/submit|send/i.test(cls) || /submit|send/i.test(id)) score += 30;
+                let rankTier = 4;
+
+                // 1. Native submit button owned by form
+                if (type === 'submit' && form.contains(btn)) {
+                    rankTier = 1;
+                    score = 150;
+                }
+                // 2. Associated external submitter
+                else if (form.id && (btn.getAttribute('form') === form.id)) {
+                    rankTier = 2;
+                    score = 130;
+                }
+                // 3. Framework final submit button
+                else if (/hs-button|gform_button|wpcf7-submit|wpforms-submit|wixui-button|nf-btn/i.test(cls)) {
+                    rankTier = 3;
+                    score = 110;
+                }
+                // 4. Semantic Send/Submit button
+                else if (submitKeywords.some(kw => text.includes(kw))) {
+                    rankTier = 4;
+                    score = 90;
+                }
+                // 5. General button
+                else {
+                    rankTier = 5;
+                    score = 50;
+                }
+
+                if (/submit|send/i.test(cls) || /submit|send/i.test(id)) score += 15;
                 if (btn.tagName === 'BUTTON') score += 10;
                 if (btn.tagName === 'INPUT' && (type === 'button' || type === 'text')) score -= 20;
-                candidates.push({ button: btn, score });
+
+                candidates.push({ button: btn, score, rankTier });
             }
-            candidates.sort((a, b) => b.score - a.score);
+
+            candidates.sort((a, b) => {
+                if (a.rankTier !== b.rankTier) return a.rankTier - b.rankTier;
+                return b.score - a.score;
+            });
+
             return candidates;
         }
 
@@ -3200,22 +3397,62 @@
             return false;
         }
 
+        // 7.4 Disabled submit repair: identify exact blocking required field, repair only that field, commit/blur
         async repairActivation(button) {
             if (!button) return;
-            try {
-                if (button.disabled) button.disabled = false;
-                if (button.hasAttribute && button.hasAttribute('aria-disabled')) button.setAttribute('aria-disabled', 'false');
-                if (button.classList) button.classList.remove('disabled', 'is-disabled', 'btn-disabled');
-                if (button.style) {
-                    if (button.style.pointerEvents === 'none') button.style.pointerEvents = 'auto';
-                    if (button.style.opacity === '0') button.style.opacity = '1';
+            const form = this.form;
+            const tpl = this.template || {};
+
+            logDev("🛡️ [SubmitExecutorR4] Submit button is disabled. Running targeted blocking-field repair...", "info");
+
+            if (form && form.querySelectorAll) {
+                // Find invalid fields or empty required fields
+                const invalidInputs = Array.from(form.querySelectorAll(':invalid, [aria-invalid="true"]'));
+                for (const inp of invalidInputs) {
+                    try {
+                        if (inp.type === 'checkbox') {
+                            const ctx = ((inp.name || '') + ' ' + (inp.id || '') + ' ' + (inp.getAttribute('aria-label') || '')).toLowerCase();
+                            if (!/newsletter|marketing|sms|promo|subscribe/i.test(ctx)) {
+                                setNativeChecked(inp, true);
+                                inp.checked = true;
+                                inp.dispatchEvent(new Event('input', { bubbles: true }));
+                                inp.dispatchEvent(new Event('change', { bubbles: true }));
+                                if (typeof inp.blur === 'function') inp.blur();
+                            }
+                        } else if (inp.tagName === 'SELECT') {
+                            if (inp.options && inp.options.length > 1 && inp.selectedIndex <= 0) {
+                                inp.selectedIndex = 1;
+                                setNativeValue(inp, inp.options[1].value);
+                                inp.dispatchEvent(new Event('change', { bubbles: true }));
+                                if (typeof inp.blur === 'function') inp.blur();
+                            }
+                        } else if (!inp.value || inp.value.trim() === '') {
+                            const authorVal = getAuthoritativeValue(inp, { type: inp.type, name: inp.name }, tpl);
+                            if (authorVal) {
+                                setNativeValue(inp, authorVal);
+                                inp.value = authorVal;
+                                inp.dispatchEvent(new Event('input', { bubbles: true }));
+                                inp.dispatchEvent(new Event('change', { bubbles: true }));
+                                if (typeof inp.blur === 'function') inp.blur();
+                            }
+                        }
+                    } catch (_) {}
                 }
-                if (this.form && typeof this.form.dispatchEvent === 'function') {
-                    this.form.dispatchEvent(new Event('input', { bubbles: true }));
-                    this.form.dispatchEvent(new Event('change', { bubbles: true }));
-                }
-                await new Promise(r => setTimeout(r, 100));
-            } catch (_) {}
+            }
+
+            // Wait for framework state commit
+            await new Promise(r => setTimeout(r, 100));
+
+            // Recheck button
+            if (this.isDisabled(button)) {
+                // Controlled attribute clearance only as secondary fallback
+                try {
+                    if (button.disabled) button.disabled = false;
+                    if (button.hasAttribute && button.hasAttribute('aria-disabled')) button.setAttribute('aria-disabled', 'false');
+                    if (button.classList) button.classList.remove('disabled', 'is-disabled', 'btn-disabled');
+                    if (button.style && button.style.pointerEvents === 'none') button.style.pointerEvents = 'auto';
+                } catch (_) {}
+            }
         }
 
         async handleOverlay(submitter) {
@@ -3247,72 +3484,62 @@
             return true;
         }
 
+        // 7.1 Pre-submit readiness pass
+        async checkPreSubmitReadiness(expectedSnapshot) {
+            const form = this.form;
+            if (!form) return { ready: false, reasonCode: 'NO_FORM' };
+
+            // 1. Field integrity check
+            if (expectedSnapshot && typeof verifyFieldIntegrity === 'function') {
+                const integrity = verifyFieldIntegrity(form, expectedSnapshot, this.template);
+                if (!integrity.intact) {
+                    return { ready: false, reasonCode: integrity.reasonCode || 'FIELD_INTEGRITY_COMPROMISED' };
+                }
+            }
+
+            // 2. checkValidity
+            if (typeof form.checkValidity === 'function') {
+                let isValid = false;
+                try { isValid = form.checkValidity(); } catch (_) { isValid = true; }
+                if (!isValid) {
+                    return { ready: false, reasonCode: 'VALIDATION_FAILED' };
+                }
+            }
+
+            // 3. No visible field-level error messages
+            if (typeof document !== 'undefined' && form.querySelectorAll) {
+                const visibleErrors = Array.from(form.querySelectorAll('.error, .invalid, [aria-invalid="true"], .wpcf7-not-valid-tip, .gfield_error'))
+                    .filter(el => typeof elementIsVisible === 'function' ? elementIsVisible(el) : true);
+                if (visibleErrors.length > 0) {
+                    logDev(`⚠️ [PreSubmitReadiness] Visible field errors detected (${visibleErrors.length})`, "warning");
+                }
+            }
+
+            return { ready: true };
+        }
+
+        // 7.3 Activation ladder
         async execute() {
             const form = this.form;
             const tpl = this.template || {};
             const options = this.options || {};
 
-            // 1. Stop any active field stabilizer
+            // Stop stabilizers & sweepers
+            stopActiveEmptyFieldSweeper();
             if (tpl && typeof tpl.stop === 'function') {
                 try { tpl.stop(); } catch(_) {}
-            } else if (options && typeof options.stop === 'function') {
-                try { options.stop(); } catch(_) {}
-            } else if (tpl && tpl.stabilizer && typeof tpl.stabilizer.stop === 'function') {
-                try { tpl.stabilizer.stop(); } catch(_) {}
-            } else if (options && options.stabilizer && typeof options.stabilizer.stop === 'function') {
-                try { options.stabilizer.stop(); } catch(_) {}
-            } else {
-                stopActiveEmptyFieldSweeper();
             }
 
-            // 2. Commit and blur active input
+            // Blur active input
             if (typeof document !== 'undefined' && document.activeElement && typeof document.activeElement.blur === 'function') {
                 try { document.activeElement.blur(); } catch(_) {}
             }
 
-            // 3. Pre-submit validity check
-            if (form && typeof form.checkValidity === 'function') {
-                let isValid = false;
-                try { isValid = form.checkValidity(); } catch (_) { isValid = true; }
-                if (!isValid) {
-                    logDev("⚠️ [SubmitStateMachine] form.checkValidity() reported invalid. Running targeted repair...", "warning");
-                    const invalidInputs = form.querySelectorAll ? form.querySelectorAll(':invalid') : [];
-                    for (const inp of Array.from(invalidInputs)) {
-                        try {
-                            if (inp.type === 'checkbox') {
-                                const ctx = ((inp.name || '') + ' ' + (inp.id || '') + ' ' + (inp.getAttribute('aria-label') || '')).toLowerCase();
-                                if (!/newsletter|marketing|sms|promo|subscribe/i.test(ctx)) {
-                                    setNativeChecked(inp, true);
-                                    inp.checked = true;
-                                    inp.dispatchEvent(new Event('input', { bubbles: true }));
-                                    inp.dispatchEvent(new Event('change', { bubbles: true }));
-                                }
-                            } else if (inp.tagName === 'SELECT' && inp.options && inp.options.length > 1) {
-                                if (inp.selectedIndex <= 0) {
-                                    inp.selectedIndex = 1;
-                                    setNativeValue(inp, inp.options[1].value);
-                                    inp.dispatchEvent(new Event('change', { bubbles: true }));
-                                }
-                            } else if (!inp.value || inp.value.trim() === '') {
-                                const authorVal = getAuthoritativeValue(inp, { type: inp.type, name: inp.name }, tpl);
-                                if (authorVal) {
-                                    setNativeValue(inp, authorVal);
-                                    inp.value = authorVal;
-                                    inp.dispatchEvent(new Event('input', { bubbles: true }));
-                                    inp.dispatchEvent(new Event('change', { bubbles: true }));
-                                }
-                            }
-                        } catch (_) {}
-                    }
-                    try { isValid = form.checkValidity(); } catch (_) { isValid = true; }
-                    if (!isValid) {
-                        const invalidDesc = Array.from(form.querySelectorAll ? form.querySelectorAll(':invalid') : []).map(el => ({
-                            tag: el.tagName, type: el.type || 'text', required: !!el.required
-                        }));
-                        logDev(`❌ [SubmitStateMachine] Validation blocked after targeted repair (${invalidDesc.length} invalid fields)`, "error");
-                        return { success: false, reasonCode: 'VALIDATION_FAILED', invalidFields: invalidDesc };
-                    }
-                }
+            // Pre-submit readiness check
+            const readiness = await this.checkPreSubmitReadiness(options.expectedSnapshot);
+            if (!readiness.ready && readiness.reasonCode === 'FIELD_INTEGRITY_COMPROMISED') {
+                logDev(`❌ [SubmitExecutorR4] Pre-submit readiness failed: ${readiness.reasonCode}`, "error");
+                return { success: false, reasonCode: readiness.reasonCode };
             }
 
             let submitEventFired = false;
@@ -3321,30 +3548,32 @@
                 form.addEventListener('submit', onSubmit, { once: true });
             }
 
-            // Stage 0: Discover submit actions
+            // Candidate discovery
             const candidates = this.discoverSubmitActions();
             const primary = candidates.length > 0 ? candidates[0].button : null;
             const alternate = candidates.length > 1 ? candidates[1].button : null;
 
             if (primary) {
-                await this.handleOverlay(primary);                       // G: Overlay
-                if (this.isDisabled(primary)) await this.repairActivation(primary); // Stage 1
+                await this.handleOverlay(primary);
+                if (this.isDisabled(primary)) {
+                    await this.repairActivation(primary);
+                }
 
-                // Stage 2: form.requestSubmit
+                // Stage A: form.requestSubmit(submitter)
                 if (form && form.tagName === 'FORM' && typeof form.requestSubmit === 'function' && !this.isDisabled(primary)) {
                     try {
                         form.requestSubmit(primary);
                         return { success: true, reasonCode: 'SUBMIT_TRIGGERED', strategy: 'requestSubmit', submitEventFired: true };
-                    } catch (e) {}
+                    } catch (_) {}
                 }
 
-                // Stage 3: Direct click
+                // Stage B: one submitter.click()
                 try {
                     _dispatchSingleClickSequence(primary);
                     return { success: true, reasonCode: 'SUBMIT_TRIGGERED', strategy: 'button_click', submitEventFired };
                 } catch (_) {}
 
-                // Stage 4: Keyboard Enter
+                // Stage C: Custom framework focus + one validated keyboard/Enter
                 try {
                     if (typeof primary.focus === 'function') primary.focus();
                     const enterEvt = new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true, cancelable: true });
@@ -3352,7 +3581,7 @@
                     return { success: true, reasonCode: 'SUBMIT_TRIGGERED', strategy: 'keyboard_enter', submitEventFired };
                 } catch (_) {}
 
-                // Stage 5: Alternate candidate
+                // Stage D: Alternate candidate fallback (max 1 alternate)
                 if (alternate && !this.isDisabled(alternate)) {
                     try {
                         _dispatchSingleClickSequence(alternate);
@@ -3368,7 +3597,7 @@
                 }
             }
 
-            // Stage 6: FORCED_NATIVE_SUBMIT_LAST_RESORT
+            // Stage E: FORCED_NATIVE_SUBMIT_LAST_RESORT (opt-in only)
             if (this.options && this.options.allowForcedNativeSubmit && form && typeof form.submit === 'function') {
                 try {
                     form.submit();
@@ -3385,8 +3614,10 @@
         }
     }
 
+    const SubmitExecutorR3 = SubmitExecutorR4; // Backwards compatibility alias
+
     async function executeSubmitStateMachine(form, template = {}, options = {}) {
-        const executor = new SubmitExecutorR3(form, template, options);
+        const executor = new SubmitExecutorR4(form, template, options);
         return await executor.execute();
     }
 
@@ -3719,6 +3950,14 @@
 
             if (isSuccess) {
                 logDev(`[FINAL] status=${finalDecision}`, "success");
+                logDev("[STAGE] stage=CONFIRMED_SUCCESS", "success");
+                try {
+                    chrome.runtime.sendMessage({
+                        action: 'STAGE_PROGRESSION',
+                        stage: 'CONFIRMED_SUCCESS',
+                        url: window.location.href
+                    }).catch(() => {});
+                } catch (_) {}
                 finishCampaign(true, null, finalDecision, {
                     resultUrl: (typeof window !== 'undefined') ? window.location.href : '',
                     decision: finalDecision,
@@ -3767,6 +4006,8 @@
         });
     }
 
+    const FormDiscoveryEngineR2 = FormDiscoveryEngine; // R6 Alias
+
     if (typeof window !== 'undefined') {
         window.__xpiderFormStabilizer = FormStabilizer;
         window.__xpiderSubmitStateMachine = executeSubmitStateMachine;
@@ -3777,14 +4018,20 @@
         window.__xpiderContactDiscoveryEngine = _ContactDiscoveryEngine;
         window.__xpiderSubmissionOutcomeVerifier = SubmissionOutcomeVerifier;
         window.__xpiderFormDiscoveryEngine = FormDiscoveryEngine;
+        window.__xpiderFormDiscoveryEngineR2 = FormDiscoveryEngineR2;
         window.__xpiderSubmitExecutorR3 = SubmitExecutorR3;
+        window.__xpiderSubmitExecutorR4 = SubmitExecutorR4;
+        window.__xpiderCheckboxResolverR2 = _CheckboxResolverR2;
+        window.__xpiderSelectResolverR2 = _SelectResolverR2;
     }
 
     if (typeof module !== 'undefined' && module.exports) {
         module.exports = {
             FormStabilizer,
             FormDiscoveryEngine,
+            FormDiscoveryEngineR2,
             SubmitExecutorR3,
+            SubmitExecutorR4,
             executeSubmitStateMachine,
             startActiveEmptyFieldSweeper,
             stopActiveEmptyFieldSweeper,
@@ -3795,7 +4042,9 @@
             SubmissionOutcomeVerifier,
             ContactGate: _ContactGate,
             SmartFieldResolver: _SmartFieldResolver,
-            ContactDiscoveryEngine: _ContactDiscoveryEngine
+            ContactDiscoveryEngine: _ContactDiscoveryEngine,
+            CheckboxResolverR2: _CheckboxResolverR2,
+            SelectResolverR2: _SelectResolverR2
         };
     }
 })();

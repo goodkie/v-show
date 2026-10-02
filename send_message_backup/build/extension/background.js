@@ -997,6 +997,28 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             }
             return true;
 
+        case 'STAGE_PROGRESSION':
+            // [Issue #6 R6] Directive 1: Standardized pipeline metrics logging
+            if (sender.tab && request.stage) {
+                const stageMap = {
+                    SOURCE_OPENED: '📂',
+                    CONTACT_PAGE_FOUND: '📍',
+                    ELIGIBLE_FORM_FOUND: '📋',
+                    REQUIRED_FIELDS_RESOLVED: '✅',
+                    FIELD_STATE_STABLE: '🔒',
+                    SUBMIT_TRIGGERED: '📤',
+                    CONFIRMED_SUCCESS: '🎉'
+                };
+                const icon = stageMap[request.stage] || '📌';
+                logBg(sender.tab.id, `${icon} [PIPELINE][${request.stage}] url=${request.url || sender.tab.url}`, 'success');
+                if (campaignState.currentDiscoveryCtx) {
+                    if (!campaignState.currentDiscoveryCtx.stageHistory) campaignState.currentDiscoveryCtx.stageHistory = [];
+                    campaignState.currentDiscoveryCtx.stageHistory.push({ stage: request.stage, ts: Date.now(), url: request.url || sender.tab.url });
+                }
+                sendResponse({ success: true });
+            }
+            return true;
+
         case 'QUEUE_BRANCHES':
             // [v1.2.0 Audit-Compliant] Parent-Owned Candidate Discovery
             // Candidates belong strictly to the active parent target's traversal context.
@@ -2838,7 +2860,7 @@ async function orchestrateSending(urlInput, template) {
                     return; 
                 }
                 
-                await safeScripting.executeScript({ target: { tabId }, files: ['modules/contact-gate.js', 'modules/smart-field-resolver.js', 'modules/contact-discovery-engine.js', 'content-script.js'] });
+                await safeScripting.executeScript({ target: { tabId }, files: ['modules/contact-gate.js', 'modules/smart-field-resolver.js', 'modules/contact-discovery-engine.js', 'modules/checkbox-resolver-r2.js', 'modules/select-resolver-r2.js', 'content-script.js'] });
                 safeScripting.executeScript({ target: { tabId }, files: ['solver-content.js'] }).catch(() => {});
                 startPolling();
             } catch (e) {

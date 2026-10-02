@@ -950,7 +950,42 @@
             const registry = new Map(); // canonicalUrl -> candidate record
             const errors = [];
 
-            // 1. Execute Engine 1 (Sniper URL / Route) with fault isolation
+            // 0. Existing-Page Form Check (R6 Section 5.3)
+            // If eligible inquiry form already exists on current page, use current page first!
+            if (pageContext.formOnCurrentPage || pageContext.isEligibleInquiryFormOnCurrentPage) {
+                const currentUrl = pageContext.currentUrl || baseUrl;
+                const canonicalCurrent = resolveCandidateUrl(currentUrl, baseUrl);
+                if (canonicalCurrent) {
+                    registry.set(canonicalCurrent, {
+                        url: canonicalCurrent,
+                        sources: ['current_page_form'],
+                        score: 100,
+                        tier: 0,
+                        isCurrentPageForm: true,
+                        actualLoadedUrl: canonicalCurrent,
+                        verifiedEligibleForm: true,
+                        signals: ['EXISTING_HOMEPAGE_FORM'],
+                        negativeSignals: [],
+                        isFooter: false,
+                        isNav: false,
+                        depth: 0
+                    });
+                }
+            }
+
+            // 1. Track A: Direct Semantic DOM Discovery runs FIRST on source page (R6 Section 5.1)
+            let engine2Candidates = [];
+            try {
+                const doc = pageContext.document || (typeof document !== 'undefined' ? document : null);
+                if (doc) {
+                    engine2Candidates = await this.semanticEngine.discover(doc, baseUrl, pageContext);
+                }
+            } catch (err) {
+                errors.push({ engine: 'SemanticDOMGraphEngine', error: err.message });
+                console.warn('[Ensemble] Engine 2 error (continuing with Engine 1):', err.message);
+            }
+
+            // 2. Track B: Route / Sitemap Discovery (Sniper URL / Route) runs bounded fallback (R6 Section 5.1)
             let engine1Candidates = [];
             try {
                 engine1Candidates = await this.sniperEngine.discover(baseUrl, pageContext);
@@ -959,42 +994,67 @@
                 console.warn('[Ensemble] Engine 1 error (continuing with Engine 2):', err.message);
             }
 
-            // 2. Execute Engine 2 (Semantic DOM / Graph) with fault isolation
-            let engine2Candidates = [];
-            try {
-                const doc = pageContext.document || (typeof document !== 'undefined' ? document : null);
-                engine2Candidates = await this.semanticEngine.discover(doc, baseUrl, pageContext);
-            } catch (err) {
-                errors.push({ engine: 'SemanticDOMGraphEngine', error: err.message });
-                console.warn('[Ensemble] Engine 2 error (continuing with Engine 1):', err.message);
-            }
-
-            // 3. Candidate Merge & Deduplication into Target-Scoped Registry
-            const combined = [...engine1Candidates, ...engine2Candidates];
+            // 3. Candidate Merge & Deduplication into Target-Scoped Registry with 5-Tier Ranking (R6 Section 5.2)
+            // Ranking order:
+            // Tier 1: Real visible DOM anchor/button from source site
+            // Tier 2: Sitemap/structured-data confirmed URL
+            // Tier 3: Previously verified host path
+            // Tier 4: Common path guess
+            // Tier 5: Graph expansion guess
+            const combined = [...engine2Candidates, ...engine1Candidates]; // Track A first
             for (const cand of combined) {
                 if (!cand || !cand.url) continue;
                 const canonical = resolveCandidateUrl(cand.url, baseUrl);
                 if (!canonical) continue;
 
+                // Determine Tier (1 to 5)
+                let tier = 4;
+                const src = cand.source || 'unknown';
+                const isGraphDepth2 = (cand.depth && cand.depth > 1);
+
+                if (isGraphDepth2) {
+                    tier = 5;
+                } else if (src === 'anchor' || src === 'semantic_graph' || src === 'shadow_dom' || src === 'iframe' || src === 'dom_anchor' || src === 'mobile_nav') {
+                    tier = 1;
+                } else if (src === 'sitemap' || src === 'jsonld' || src === 'structured_data') {
+                    tier = 2;
+                } else if (src === 'cache' || src === 'history' || src === 'known_good' || src === 'hostname_cache') {
+                    tier = 3;
+                } else {
+                    tier = 4;
+                }
+
+                const tierBaseScore = { 0: 100, 1: 90, 2: 80, 3: 70, 4: 55, 5: 40 }[tier] || 50;
+                const confidenceBonus = cand.confidence ? Math.round(cand.confidence * 10) : 5;
+                const footerBonus = cand.isFooter ? 3 : 0;
+                const navBonus = cand.isNav ? 5 : 0;
+
+                const redirectRelation = pageContext.redirectRelation || (pageContext.isVerifiedRedirect ? 'verified_http_redirect' : null);
+
                 if (!registry.has(canonical)) {
                     registry.set(canonical, {
                         url: canonical,
-                        sources: [cand.source || 'unknown'],
-                        score: cand.confidence ? Math.round(cand.confidence * 100) : 50,
+                        sources: [src],
+                        tier: tier,
+                        score: tierBaseScore + confidenceBonus + footerBonus + navBonus,
                         actualLoadedUrl: null,
                         verifiedEligibleForm: false,
                         signals: cand.signals ? [...cand.signals] : [],
                         negativeSignals: cand.negativeSignals ? [...cand.negativeSignals] : [],
                         isFooter: !!cand.isFooter,
                         isNav: !!cand.isNav,
-                        depth: cand.depth || 1
+                        depth: cand.depth || 1,
+                        redirectRelation: redirectRelation
                     });
                 } else {
                     const existing = registry.get(canonical);
-                    const src = cand.source || 'unknown';
                     if (!existing.sources.includes(src)) {
                         existing.sources.push(src);
-                        existing.score += 15; // Multi-source corroboration bonus
+                        existing.score += 10; // Multi-source corroboration bonus
+                    }
+                    if (tier < existing.tier) {
+                        existing.tier = tier; // Upgrade to higher tier
+                        existing.score = Math.max(existing.score, tierBaseScore + confidenceBonus);
                     }
                     if (cand.signals) existing.signals.push(...cand.signals);
                     if (cand.negativeSignals) existing.negativeSignals.push(...cand.negativeSignals);
@@ -1003,7 +1063,12 @@
                 }
             }
 
-            const sorted = Array.from(registry.values()).sort((a, b) => b.score - a.score);
+            // Sort: Tier ascending (0 is current page, 1 is DOM anchor, etc.), then score descending
+            const sorted = Array.from(registry.values()).sort((a, b) => {
+                if (a.tier !== b.tier) return a.tier - b.tier;
+                return b.score - a.score;
+            });
+
             return {
                 baseUrl,
                 candidates: sorted.slice(0, this.config.maxUniqueCandidates),
