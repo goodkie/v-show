@@ -20057,7 +20057,12 @@ class RILiveDiagnosticHelper {
     if (typeof window !== 'undefined') {
       try {
         const params = new URLSearchParams(window.location.search);
-        this.isEnabled = params.get('riDebug') === '1' || window.__RI_DEBUG_ENABLED__ === true;
+        // Round 120: RI Helper enabled by default on isolated Preview URL
+        const isIsolatedPreview = (typeof window !== 'undefined' && window.location && (
+          window.location.hostname.includes('3d2r-dark-minimal-flow-preview') ||
+          window.location.hostname.includes('railway.app')
+        ));
+        this.isEnabled = params.get('riDebug') === '1' || window.__RI_DEBUG_ENABLED__ === true || isIsolatedPreview;
       } catch (e) {
         this.isEnabled = false;
       }
@@ -20165,11 +20170,20 @@ class RILiveDiagnosticHelper {
       const rotEl = this.uiElement.querySelector('#ri-hud-rot');
       if (rotEl) rotEl.textContent = `Rot: ${Math.round(ev.accumulatedRotation * 10) / 10}° | Prog: ${ev.progressPercent}%`;
       const sensorEl = this.uiElement.querySelector('#ri-hud-sensor');
-      if (sensorEl) sensorEl.textContent = `α: ${Math.round(ev.alpha * 10) / 10}° β: ${Math.round(ev.beta * 10) / 10}° γ: ${Math.round(ev.gamma * 10) / 10}°`;
+      if (sensorEl) {
+        const rawA = ev.alpha !== null && ev.alpha !== undefined ? Math.round(ev.alpha * 10) / 10 : '--';
+        const head = ev.heading !== null && ev.heading !== undefined ? Math.round(ev.heading * 10) / 10 : '--';
+        const src = ev.eventSource || '--';
+        sensorEl.textContent = `rawα:${rawA}° head:${head}° src:${src}`;
+      }
       const deltaEl = this.uiElement.querySelector('#ri-hud-delta');
-      if (deltaEl) deltaEl.textContent = `Δ: ${Math.round(ev.rawDelta * 100) / 100}° (norm: ${Math.round(ev.normalizedDelta * 100) / 100}°)`;
+      if (deltaEl) {
+        const norm = Math.round((ev.normalizedDelta || 0) * 100) / 100;
+        const rej = ev.rejectionReason ? ` ❌${ev.rejectionReason}` : (ev.accepted ? ' ✓' : '');
+        deltaEl.textContent = `Δnorm:${norm}° acc:${ev.acceptedCount} rej:${ev.rejectedCount}${rej}`;
+      }
       const closureEl = this.uiElement.querySelector('#ri-hud-closure');
-      if (closureEl) closureEl.textContent = `State: ${ev.captureState} | Conf: ${ev.closureConfirmed ? 'YES' : 'NO'}`;
+      if (closureEl) closureEl.textContent = `State:${ev.captureState} | Closure:${ev.closureConfirmed ? 'YES' : 'NO'}`;
     }
   }
 
@@ -22985,6 +22999,13 @@ class SetupWizardController {
             <i class="fa-solid fa-play"></i> START 360° CAPTURE
           </button>
           <!-- C12.9-P2R6: Demo Stitch removed from physical path -->
+          <!-- Round 120: Always-visible RETRY button for 360° capture -->
+          <button type="button" id="btnRetryGuidedCapture"
+            onclick="if(window.setupWizard && !window.setupWizard._isRetrying){ window.setupWizard.retryGuidedCapture120(); }"
+            style="background: linear-gradient(135deg, #7c3aed, #4f46e5); border: 1px solid #a78bfa; color: #fff; font-size: 13px; font-weight: 800; border-radius: 8px; padding: 10px 20px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; opacity: 0.5; pointer-events: none;"
+            id="btnRetryGuidedCapture" disabled>
+            <i class="fa-solid fa-rotate-right"></i> RETRY
+          </button>
         </div>
       </div>
     `;
@@ -23089,6 +23110,13 @@ class SetupWizardController {
         btn.innerHTML = '<i class="fa-solid fa-rotate-right"></i> TRY AGAIN';
         btn.onclick = () => this.retryGuidedCapture();
       }
+      // Round 120: Also enable the persistent RETRY button
+      const retryBtnAttn = document.getElementById('btnRetryGuidedCapture');
+      if (retryBtnAttn) {
+        retryBtnAttn.disabled = false;
+        retryBtnAttn.style.opacity = '1';
+        retryBtnAttn.style.pointerEvents = 'auto';
+      }
       if (pill) {
         pill.textContent = attn.message || 'Starting view not recognized. Continue a little farther or try again.';
       }
@@ -23108,6 +23136,13 @@ class SetupWizardController {
       await controller.start({ videoElement: video });
       if (btn) btn.innerHTML = '<i class="fa-solid fa-arrows-spin fa-spin"></i> Capturing 360° Circle...';
       if (pill) pill.textContent = 'Stand in one spot. Rotate slowly...';
+      // Round 120: Enable RETRY button once CAPTURING is live
+      const retryBtn120 = document.getElementById('btnRetryGuidedCapture');
+      if (retryBtn120) {
+        retryBtn120.disabled = false;
+        retryBtn120.style.opacity = '1';
+        retryBtn120.style.pointerEvents = 'auto';
+      }
     } catch(err) {
       console.warn('[GuidedCapture Start Error]', err);
       if (btn) {
@@ -23115,6 +23150,13 @@ class SetupWizardController {
         btn.innerHTML = '<i class="fa-solid fa-rotate-right"></i> Try Again';
       }
       if (pill) pill.textContent = 'Camera start note: ' + (err.message || 'Permission required');
+      // Round 120: Also enable RETRY on error
+      const retryBtnErr = document.getElementById('btnRetryGuidedCapture');
+      if (retryBtnErr) {
+        retryBtnErr.disabled = false;
+        retryBtnErr.style.opacity = '1';
+        retryBtnErr.style.pointerEvents = 'auto';
+      }
     }
   }
 
@@ -23128,6 +23170,93 @@ class SetupWizardController {
     // startGuidedCapture() re-attaches onProgress; the first tick will update to 0% naturally
     // without a visible stale-to-zero flash on retry tap.
     this.startGuidedCapture();
+  }
+
+  // Round 120: Enhanced retry with RI trace snapshot + epoch isolation
+  async retryGuidedCapture120() {
+    if (this._isRetrying) {
+      console.warn('[SetupWizard][R120] Rapid retry suppressed by debounce guard.');
+      return;
+    }
+    if (this._isStartingCapture) {
+      console.warn('[SetupWizard][R120] Rapid retry suppressed: capture acquisition in progress.');
+      return;
+    }
+    this._isRetrying = true;
+
+    try {
+      // Step 1: Snapshot/flush RI trace BEFORE destroying the old controller
+      const oldController = window.guidedCaptureController;
+      if (oldController && oldController.riDiagnosticHelper && oldController.riDiagnosticHelper.isEnabled) {
+        try {
+          const helper = oldController.riDiagnosticHelper;
+          // Force flush any pending events
+          if (typeof helper.flushBatch === 'function') helper.flushBatch();
+          // Save snapshot locally so it persists across retry
+          const snapshot = {
+            sessionId: helper.sessionId,
+            sessionEpoch: helper.sessionEpoch,
+            acceptedCount: helper.acceptedCount,
+            rejectedCount: helper.rejectedCount,
+            allEvents: helper.allEvents ? [...helper.allEvents] : [],
+            allClosures: helper.allClosures ? [...helper.allClosures] : [],
+            stateTransitions: helper.stateTransitions ? [...helper.stateTransitions] : [],
+            errors: helper.errors ? [...helper.errors] : [],
+            accumulatedRotation: oldController.accumulatedRotation,
+            rotationDirection: oldController.rotationDirection,
+            snapshotTime: new Date().toISOString()
+          };
+          window.__R120_LAST_RI_SNAPSHOT__ = snapshot;
+          console.log('[SetupWizard][R120] RI trace snapshot saved:', snapshot.sessionId, 
+            'Acc:', snapshot.acceptedCount, 'Rej:', snapshot.rejectedCount,
+            'Events:', snapshot.allEvents.length);
+        } catch (snapshotErr) {
+          console.warn('[SetupWizard][R120] RI snapshot warning:', snapshotErr);
+        }
+      }
+
+      // Step 2: Invalidate old session epoch
+      this._captureSessionEpoch = (this._captureSessionEpoch || 0) + 1;
+      console.log('[SetupWizard][R120] New epoch:', this._captureSessionEpoch);
+
+      // Step 3: Fully stop old controller + cancel pending async work
+      if (window.guidedCaptureController) {
+        try {
+          window.guidedCaptureController.stopCaptureResources();
+          if (typeof window.guidedCaptureController.destroy === 'function') {
+            window.guidedCaptureController.destroy();
+          }
+        } catch (e) {}
+        window.guidedCaptureController = null;
+      }
+
+      // Step 4: Reset UI to zero
+      this.currentStep = 6;
+      this.state.currentStep = 6;
+      this.state.step = 6;
+      this.renderStep6CaptureWheel();
+
+      const btn = document.getElementById('btnStartGuidedCapture');
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-play"></i> START 360° CAPTURE';
+        btn.onclick = () => this.startGuidedCapture();
+      }
+      const pill = document.getElementById('guidedStatusPill');
+      if (pill) pill.textContent = 'Retrying — ready to capture';
+      const pText = document.getElementById('guidedPercentText');
+      if (pText) pText.textContent = '0%';
+      const rText = document.getElementById('guidedRotText');
+      if (rText) rText.textContent = '0° ROTATION';
+      const pCircle = document.getElementById('guidedProgressCircle');
+      if (pCircle) pCircle.setAttribute('stroke-dashoffset', '565.48');
+
+      // Step 5: Start fresh capture with new session
+      await new Promise(r => setTimeout(r, 80));
+      await this.startGuidedCapture();
+    } finally {
+      this._isRetrying = false;
+    }
   }
 
   reviewSavedViews() {
