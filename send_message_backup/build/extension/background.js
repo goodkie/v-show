@@ -117,7 +117,16 @@ const LIST_DATA_KEYS = {
         'xpider_email_current_site_v1',
         'xpider_email_records',
         'xpider_email_collector_stats',
-        'xpider_collected_emails'
+        'xpider_collected_emails',
+        'collected_emails',
+        'email_export_cache',
+        'allEmailsList',
+        'emailExtractorInit',
+        'xpider_email_generation',
+        'xpider_email_clearing',
+        'xpider_email_seen_fingerprints',
+        'xpider_email_search_cache',
+        'xpider_email_filter_cache'
     ]
 };
 
@@ -834,9 +843,13 @@ async function clearDiagnosticsData() {
 
 async function clearEmailCollectorData() {
     try {
-        if (self.EmailCollectorStore) {
-            const emailStore = new self.EmailCollectorStore(chrome.storage.local);
-            await emailStore.clearAll();
+        const StoreClass = self.EmailCollectorStore || (typeof EmailCollectorStore !== 'undefined' ? EmailCollectorStore : null);
+        if (StoreClass) {
+            const emailStore = (typeof StoreClass.getInstance === 'function')
+                ? StoreClass.getInstance(chrome.storage.local)
+                : (self.__xpiderEmailStore || new StoreClass(chrome.storage.local));
+            self.__xpiderEmailStore = emailStore;
+            await emailStore.clearAll({ suppressRecollectMs: 5000 });
         }
     } catch (_) {}
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
@@ -844,6 +857,9 @@ async function clearEmailCollectorData() {
         if (chrome.storage.session) {
             await chrome.storage.session.remove(LIST_DATA_KEYS.emailCollector).catch(() => {});
         }
+    }
+    if (typeof chrome !== 'undefined' && chrome.action && chrome.action.setBadgeText) {
+        chrome.action.setBadgeText({ text: '' });
     }
     return { success: true, message: "Email collector lists cleared." };
 }
@@ -1330,25 +1346,27 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             });
             return true;
         case 'EMAIL_COLLECT_FOUND':
-            // [Issue #6 Email Collector Integration] Non-blocking email accumulation
+            // [Issue #6 Email Collector Integration] Non-blocking email accumulation with generation check
             (async () => {
                 try {
-                    const { emails, hostname, url } = request;
+                    const { emails, hostname, url, generation } = request;
                     if (Array.isArray(emails) && emails.length > 0) {
                         const StoreClass = self.EmailCollectorStore || (typeof EmailCollectorStore !== 'undefined' ? EmailCollectorStore : null);
                         if (StoreClass) {
-                            if (!self.__xpiderEmailStore) {
-                                self.__xpiderEmailStore = new StoreClass(chrome.storage.local);
+                            const store = (typeof StoreClass.getInstance === 'function')
+                                ? StoreClass.getInstance(chrome.storage.local)
+                                : (self.__xpiderEmailStore || new StoreClass(chrome.storage.local));
+                            self.__xpiderEmailStore = store;
+                            const stats = await store.add(hostname, emails, url, generation);
+                            if (!stats.suppressed && !stats.staleGeneration && !stats.baselineSuppressed) {
+                                logBg(sender.tab?.id, `[TARGET][${hostname}] emailsFoundCurrentPage=${stats.currentPageCount} emailsNewGlobal=${stats.newGlobalCount} totalEmailsGlobal=${stats.totalGlobalCount}`, 'info');
                             }
-                            const stats = await self.__xpiderEmailStore.recordEmails(hostname, emails, url);
-                            logBg(sender.tab?.id, `[TARGET][${hostname}] emailsFoundCurrentPage=${stats.currentPageCount} emailsNewGlobal=${stats.newGlobalCount} totalEmailsGlobal=${stats.totalGlobalCount}`, 'info');
                             sendResponse({ success: true, ...stats });
                             return;
                         }
                     }
                     sendResponse({ success: true, count: 0 });
                 } catch (err) {
-                    // Failures in email persistence must NEVER break form sending
                     console.warn('[EmailCollector] Auxiliary persistence error:', err);
                     sendResponse({ success: false, error: err.message });
                 }
@@ -1359,11 +1377,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             (async () => {
                 try {
                     const StoreClass = self.EmailCollectorStore || (typeof EmailCollectorStore !== 'undefined' ? EmailCollectorStore : null);
-                    const store = self.__xpiderEmailStore || (StoreClass ? new StoreClass(chrome.storage.local) : null);
+                    const store = (typeof StoreClass.getInstance === 'function')
+                        ? StoreClass.getInstance(chrome.storage.local)
+                        : (self.__xpiderEmailStore || (StoreClass ? new StoreClass(chrome.storage.local) : null));
                     if (store) {
-                        const current = await store.loadCurrentSiteStore();
-                        const globalStore = await store.loadGlobalStore();
-                        sendResponse({ success: true, current, all: globalStore });
+                        const state = await store.getState();
+                        sendResponse({ success: true, current: state.currentSite, all: state.allCollected, state });
                     } else {
                         sendResponse({ success: false, error: "Store unavailable" });
                     }
@@ -1377,14 +1396,17 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             (async () => {
                 try {
                     const StoreClass = self.EmailCollectorStore || (typeof EmailCollectorStore !== 'undefined' ? EmailCollectorStore : null);
-                    const store = self.__xpiderEmailStore || (StoreClass ? new StoreClass(chrome.storage.local) : null);
+                    const store = (typeof StoreClass.getInstance === 'function')
+                        ? StoreClass.getInstance(chrome.storage.local)
+                        : (self.__xpiderEmailStore || (StoreClass ? new StoreClass(chrome.storage.local) : null));
                     if (store) {
                         if (request.mode === 'current') {
-                            await store.clearCurrent();
+                            await store.clearCurrentSite(request.hostname, request.url, { suppressRecollectMs: 5000 });
+                            sendResponse({ success: true, mode: 'current' });
                         } else {
-                            await store.clearAll();
+                            await clearEmailCollectorData();
+                            sendResponse({ success: true, mode: 'all' });
                         }
-                        sendResponse({ success: true });
                     } else {
                         sendResponse({ success: false, error: "Store unavailable" });
                     }

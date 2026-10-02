@@ -1,7 +1,7 @@
 /**
- * X PIDER Email Collector Module v1.0.0
+ * X PIDER Email Collector Module v2.0.0
  * Universal UMD & Service Worker Compatible
- * Ported & enhanced from Email_Extractor_Source reference
+ * Authoritative Single-Store Implementation (Issue #6 R5)
  */
 
 (function (root, factory) {
@@ -13,6 +13,7 @@
         const exports = factory();
         root.EmailCollector = exports;
         root.EmailCollectorStore = exports.EmailCollectorStore;
+        root.AUTHORITATIVE_EMAIL_KEYS = exports.AUTHORITATIVE_EMAIL_KEYS;
         root.extractEmailsFromDocument = exports.extractEmailsFromDocument;
         root.extractEmailsFromText = exports.extractEmailsFromText;
         root.normalizeEmail = exports.normalizeEmail;
@@ -32,6 +33,24 @@
 
     const EXTRACT_REGEX = /([a-zA-Z0-9._+-]+@[a-zA-Z0-9._-]+\.[a-zA-Z]{2,})/gi;
     const STRICT_EMAIL_REGEX = /^[a-zA-Z0-9._+-]+@[a-zA-Z0-9._-]+\.[a-zA-Z]{2,}$/;
+
+    // All authoritative storage keys used across entire email collector lineage
+    const AUTHORITATIVE_EMAIL_KEYS = [
+        'xpider_email_collector_v1',
+        'xpider_email_current_site_v1',
+        'xpider_email_records',
+        'xpider_email_collector_stats',
+        'xpider_collected_emails',
+        'collected_emails',
+        'email_export_cache',
+        'allEmailsList',
+        'emailExtractorInit',
+        'xpider_email_generation',
+        'xpider_email_clearing',
+        'xpider_email_seen_fingerprints',
+        'xpider_email_search_cache',
+        'xpider_email_filter_cache'
+    ];
 
     function normalizeEmail(raw) {
         if (!raw || typeof raw !== 'string') return null;
@@ -116,8 +135,45 @@
     class EmailCollectorStore {
         constructor(storageArea = null) {
             this.storage = storageArea || (typeof chrome !== 'undefined' && chrome.storage ? chrome.storage.local : null);
+            this.sessionStorage = (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.session) ? chrome.storage.session : null;
             this.globalKey = 'xpider_email_collector_v1';
             this.currentKey = 'xpider_email_current_site_v1';
+            this.generationKey = 'xpider_email_generation';
+            
+            // In-memory state caches
+            this.generation = 1;
+            this.isClearing = false;
+            this.memoryEmails = new Map(); // email -> record
+            this.currentSiteCache = { hostname: '', url: '', emails: [], count: 0, scannedAt: '' };
+            this.seenFingerprints = new Set();
+            this.suppressRecollectUntil = 0;
+            this._initialized = false;
+        }
+
+        static getInstance(storageArea = null) {
+            if (!EmailCollectorStore._instance) {
+                EmailCollectorStore._instance = new EmailCollectorStore(storageArea);
+            }
+            return EmailCollectorStore._instance;
+        }
+
+        async init() {
+            if (this._initialized) return;
+            try {
+                const storedGen = await this.getStoredData(this.generationKey);
+                if (typeof storedGen === 'number') {
+                    this.generation = storedGen;
+                }
+                const globalData = await this.loadGlobalStore();
+                if (globalData && globalData.emails) {
+                    this.memoryEmails = new Map(Object.entries(globalData.emails));
+                }
+                const currentData = await this.loadCurrentSiteStore();
+                if (currentData) {
+                    this.currentSiteCache = currentData;
+                }
+            } catch (_) {}
+            this._initialized = true;
         }
 
         async getStoredData(key) {
@@ -140,6 +196,37 @@
                     }
                 });
             });
+        }
+
+        async removeKeys(keys) {
+            if (!Array.isArray(keys) || keys.length === 0) return;
+            if (this.storage && typeof this.storage.remove === 'function') {
+                await new Promise((resolve) => {
+                    this.storage.remove(keys, () => resolve());
+                });
+            }
+            if (this.sessionStorage && typeof this.sessionStorage.remove === 'function') {
+                await new Promise((resolve) => {
+                    this.sessionStorage.remove(keys, () => resolve()).catch(() => resolve());
+                });
+            }
+        }
+
+        async getState() {
+            await this.init();
+            const currentData = await this.loadCurrentSiteStore();
+            const globalData = await this.loadGlobalStore();
+            return {
+                generation: this.generation,
+                isClearing: this.isClearing,
+                suppressed: Date.now() < this.suppressRecollectUntil,
+                currentSite: currentData,
+                allCollected: globalData,
+                counts: {
+                    current: currentData.count || (currentData.emails ? currentData.emails.length : 0),
+                    all: globalData.totalUnique || Object.keys(globalData.emails || {}).length || 0
+                }
+            };
         }
 
         async loadGlobalStore() {
@@ -169,9 +256,33 @@
             };
         }
 
-        async recordEmails(hostname, rawEmails, pageUrl = '') {
+        /**
+         * Add collected emails with generation validation and post-clear baseline check
+         */
+        async add(hostname, rawEmails, pageUrl = '', generation = null) {
+            await this.init();
+
+            // 1. Generation & suppression isolation guard
+            if (this.isClearing || Date.now() < this.suppressRecollectUntil) {
+                return {
+                    currentPageCount: 0,
+                    newGlobalCount: 0,
+                    totalGlobalCount: this.memoryEmails.size,
+                    suppressed: true
+                };
+            }
+
+            if (typeof generation === 'number' && generation < this.generation) {
+                return {
+                    currentPageCount: 0,
+                    newGlobalCount: 0,
+                    totalGlobalCount: this.memoryEmails.size,
+                    staleGeneration: true
+                };
+            }
+
             if (!Array.isArray(rawEmails) || rawEmails.length === 0) {
-                return { currentPageCount: 0, newGlobalCount: 0, totalGlobalCount: 0 };
+                return { currentPageCount: 0, newGlobalCount: 0, totalGlobalCount: this.memoryEmails.size };
             }
 
             const cleanHost = (hostname || 'unknown').toLowerCase().trim();
@@ -187,7 +298,18 @@
             }
 
             if (validUnique.length === 0) {
-                return { currentPageCount: 0, newGlobalCount: 0, totalGlobalCount: 0 };
+                return { currentPageCount: 0, newGlobalCount: 0, totalGlobalCount: this.memoryEmails.size };
+            }
+
+            // Post-clear observation baseline check: if all emails were already marked seen in current baseline
+            const newCandidateEmails = validUnique.filter(e => !this.seenFingerprints.has(`${cleanHost}::${e}`));
+            if (newCandidateEmails.length === 0) {
+                return {
+                    currentPageCount: validUnique.length,
+                    newGlobalCount: 0,
+                    totalGlobalCount: this.memoryEmails.size,
+                    baselineSuppressed: true
+                };
             }
 
             const globalStore = await this.loadGlobalStore();
@@ -195,6 +317,7 @@
             let newGlobalCount = 0;
 
             for (const email of validUnique) {
+                this.seenFingerprints.add(`${cleanHost}::${email}`);
                 if (globalStore.emails[email]) {
                     const record = globalStore.emails[email];
                     record.lastSeenAt = now;
@@ -202,14 +325,17 @@
                     if (!record.sourceHostnames.includes(cleanHost)) {
                         record.sourceHostnames.push(cleanHost);
                     }
+                    this.memoryEmails.set(email, record);
                 } else {
-                    globalStore.emails[email] = {
+                    const record = {
                         email: email,
                         firstSeenAt: now,
                         lastSeenAt: now,
                         sourceHostnames: [cleanHost],
                         seenCount: 1
                     };
+                    globalStore.emails[email] = record;
+                    this.memoryEmails.set(email, record);
                     newGlobalCount++;
                 }
             }
@@ -226,13 +352,168 @@
                 count: validUnique.length,
                 scannedAt: now
             };
+            this.currentSiteCache = currentStore;
             await this.setStoredData(this.currentKey, currentStore);
+
+            // Update badge if available
+            this._updateBadge(globalStore.totalUnique);
 
             return {
                 currentPageCount: validUnique.length,
                 newGlobalCount: newGlobalCount,
-                totalGlobalCount: globalStore.totalUnique
+                totalGlobalCount: globalStore.totalUnique,
+                generation: this.generation
             };
+        }
+
+        // Backward compatibility alias
+        async recordEmails(hostname, rawEmails, pageUrl = '', generation = null) {
+            return this.add(hostname, rawEmails, pageUrl, generation);
+        }
+
+        /**
+         * Clear current site emails only
+         */
+        async clearCurrentSite(hostname = '', pageUrl = '', { suppressRecollectMs = 5000 } = {}) {
+            await this.init();
+            const emptyCurrent = {
+                hostname: hostname || '',
+                url: pageUrl || '',
+                emails: [],
+                count: 0,
+                scannedAt: new Date().toISOString()
+            };
+            this.currentSiteCache = emptyCurrent;
+            await this.setStoredData(this.currentKey, emptyCurrent);
+
+            // Broadcast cleared event
+            this._broadcastCleared({
+                mode: 'current',
+                hostname,
+                pageUrl,
+                generation: this.generation,
+                suppressRecollectMs
+            });
+
+            return { success: true, mode: 'current' };
+        }
+
+        // Backward compatibility alias
+        async clearCurrent() {
+            return this.clearCurrentSite();
+        }
+
+        /**
+         * Authoritative Full Clear: resets memory, deletes all lineage keys, increments generation
+         */
+        async clearAll({ suppressRecollectMs = 5000 } = {}) {
+            await this.init();
+            
+            // 1. Increment emailCollectorGeneration
+            this.generation = (this.generation || 1) + 1;
+            
+            // 2. Set collector clearing flag & temporary recollection suppression
+            this.isClearing = true;
+            this.suppressRecollectUntil = Date.now() + suppressRecollectMs;
+
+            // 3. Clear in-memory state
+            this.memoryEmails.clear();
+            this.currentSiteCache = {
+                hostname: '',
+                url: '',
+                emails: [],
+                count: 0,
+                scannedAt: new Date().toISOString()
+            };
+            this.seenFingerprints.clear();
+
+            // 4. Delete ALL authoritative persistent keys
+            await this.removeKeys(AUTHORITATIVE_EMAIL_KEYS);
+
+            // 5. Store empty initialized structures with new generation
+            const emptyGlobal = {
+                version: 1,
+                emails: {},
+                totalUnique: 0,
+                updatedAt: new Date().toISOString()
+            };
+            await this.setStoredData(this.globalKey, emptyGlobal);
+            await this.setStoredData(this.currentKey, this.currentSiteCache);
+            await this.setStoredData(this.generationKey, this.generation);
+
+            // 6. Zero badge
+            this._updateBadge(0);
+
+            // 7. Audit logging
+            this.auditLog();
+
+            // 8. Broadcast EMAIL_COLLECTOR_CLEARED to popup, background, and all content scripts
+            this._broadcastCleared({
+                mode: 'all',
+                generation: this.generation,
+                suppressRecollectMs
+            });
+
+            // 9. Reset clearing flag after cycle isolation
+            setTimeout(() => {
+                this.isClearing = false;
+            }, suppressRecollectMs);
+
+            return {
+                success: true,
+                generation: this.generation,
+                totalGlobalCount: 0,
+                currentPageCount: 0
+            };
+        }
+
+        auditLog() {
+            const localKeys = AUTHORITATIVE_EMAIL_KEYS;
+            const sessionKeys = AUTHORITATIVE_EMAIL_KEYS;
+            const memCount = this.memoryEmails.size;
+            const curCount = this.currentSiteCache.count || (this.currentSiteCache.emails ? this.currentSiteCache.emails.length : 0);
+            const allCount = this.memoryEmails.size;
+            console.log(`[EMAIL_RESET_AUDIT] localKeys=[${localKeys.join(',')}]`);
+            console.log(`[EMAIL_RESET_AUDIT] sessionKeys=[${sessionKeys.join(',')}]`);
+            console.log(`[EMAIL_RESET_AUDIT] moduleMemoryCount=${memCount}`);
+            console.log(`[EMAIL_RESET_AUDIT] currentSiteCount=${curCount}`);
+            console.log(`[EMAIL_RESET_AUDIT] allCollectedCount=${allCount}`);
+        }
+
+        _broadcastCleared(payload) {
+            try {
+                if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
+                    chrome.runtime.sendMessage({
+                        action: 'EMAIL_COLLECTOR_CLEARED',
+                        ...payload
+                    }).catch(() => {});
+                }
+            } catch (_) {}
+            try {
+                if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.query) {
+                    chrome.tabs.query({}, (tabs) => {
+                        for (const tab of tabs || []) {
+                            if (tab && tab.id) {
+                                chrome.tabs.sendMessage(tab.id, {
+                                    action: 'EMAIL_COLLECTOR_CLEARED',
+                                    ...payload
+                                }).catch(() => {});
+                            }
+                        }
+                    });
+                }
+            } catch (_) {}
+        }
+
+        _updateBadge(count) {
+            try {
+                if (typeof chrome !== 'undefined' && chrome.action && chrome.action.setBadgeText) {
+                    chrome.action.setBadgeText({ text: count > 0 ? String(count) : '' });
+                    if (count > 0 && chrome.action.setBadgeBackgroundColor) {
+                        chrome.action.setBadgeBackgroundColor({ color: '#ff2a5f' });
+                    }
+                }
+            } catch (_) {}
         }
 
         async exportToCsv(mode = 'all') {
@@ -275,33 +556,10 @@
                 return sortedKeys.join('\n');
             }
         }
-
-        async clearCurrent() {
-            const emptyCurrent = {
-                hostname: '',
-                url: '',
-                emails: [],
-                count: 0,
-                scannedAt: new Date().toISOString()
-            };
-            await this.setStoredData(this.currentKey, emptyCurrent);
-            return { success: true };
-        }
-
-        async clearAll() {
-            const emptyGlobal = {
-                version: 1,
-                emails: {},
-                totalUnique: 0,
-                updatedAt: new Date().toISOString()
-            };
-            await this.setStoredData(this.globalKey, emptyGlobal);
-            await this.clearCurrent();
-            return { success: true };
-        }
     }
 
     return {
+        AUTHORITATIVE_EMAIL_KEYS,
         normalizeEmail,
         extractEmailsFromText,
         extractEmailsFromDocument,

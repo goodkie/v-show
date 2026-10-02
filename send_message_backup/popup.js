@@ -88,7 +88,16 @@ const LIST_DATA_KEYS = {
         'xpider_email_current_site_v1',
         'xpider_email_records',
         'xpider_email_collector_stats',
-        'xpider_collected_emails'
+        'xpider_collected_emails',
+        'collected_emails',
+        'email_export_cache',
+        'allEmailsList',
+        'emailExtractorInit',
+        'xpider_email_generation',
+        'xpider_email_clearing',
+        'xpider_email_seen_fingerprints',
+        'xpider_email_search_cache',
+        'xpider_email_filter_cache'
     ]
 };
 
@@ -509,6 +518,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateRealTimeStatus(request.data);
             } else if (request.action === 'CORE_RUNTIME_BROKEN_ALERT') {
                 addLog(`🚨 [CIRCUIT BREAKER] Core runtime broken: ${request.symbol} is not defined. Campaign paused.`, 'error');
+            } else if (request.action === 'EMAIL_COLLECTOR_CLEARED') {
+                if (typeof renderEmailCollectorUI === 'function') {
+                    renderEmailCollectorUI();
+                }
             }
         });
         console.log("✅ [Popup] Real-time messaging listener registered via chrome.runtime.");
@@ -3751,18 +3764,35 @@ function bindEmailCollectorEvents() {
     if (clearBtn) {
         clearBtn.addEventListener('click', async () => {
             const store = getEmailCollectorStore();
-            if (!store) return;
             if (emailActiveView === 'current') {
-                await store.clearCurrent();
+                if (store) await store.clearCurrentSite();
+                chrome.runtime.sendMessage({ action: 'CLEAR_COLLECTED_EMAILS', mode: 'current' }, () => {});
                 addLog("🧹 Cleared current site emails.", 'info');
+                const curStat = document.getElementById('stat-email-current-count');
+                const curChip = document.getElementById('email-chip-current-num');
+                if (curStat) curStat.textContent = '0';
+                if (curChip) curChip.textContent = '0';
+                const textarea = document.getElementById('email-collector-textarea');
+                if (textarea) textarea.value = '// Current site emails cleared (0 records)';
                 renderEmailCollectorUI();
             } else {
                 const confirmed = (typeof confirm === 'function')
                     ? confirm("Are you sure you want to delete ALL accumulated emails?")
                     : true;
                 if (confirmed) {
-                    await store.clearAll();
+                    if (store) await store.clearAll({ suppressRecollectMs: 5000 });
+                    chrome.runtime.sendMessage({ action: 'CLEAR_COLLECTED_EMAILS', mode: 'all' }, () => {});
                     addLog("🗑️ Cleared all accumulated emails.", 'info');
+                    const curStat = document.getElementById('stat-email-current-count');
+                    const globStat = document.getElementById('stat-email-global-count');
+                    const curChip = document.getElementById('email-chip-current-num');
+                    const globChip = document.getElementById('email-chip-all-num');
+                    if (curStat) curStat.textContent = '0';
+                    if (globStat) globStat.textContent = '0';
+                    if (curChip) curChip.textContent = '0';
+                    if (globChip) globChip.textContent = '0';
+                    const textarea = document.getElementById('email-collector-textarea');
+                    if (textarea) textarea.value = '// All emails cleared (0 records)';
                     renderEmailCollectorUI();
                 }
             }

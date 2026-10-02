@@ -31,7 +31,11 @@
         const ContactGate = require('./contact-gate.js');
         module.exports = factory(ContactGate);
     } else {
-        root.ContactDiscoveryEngine = factory(root.ContactGate);
+        const exports = factory(root.ContactGate);
+        root.ContactDiscoveryEngine = exports.ContactDiscoveryEngine;
+        root.SniperDiscoveryEngine = exports.SniperDiscoveryEngine;
+        root.SemanticGraphDiscoveryEngine = exports.SemanticGraphDiscoveryEngine;
+        root.ContactDiscoveryEnsemble = exports.ContactDiscoveryEnsemble;
     }
 }(typeof self !== 'undefined' ? self : this, function (ContactGate) {
 
@@ -542,27 +546,61 @@
 
             for (const iframe of iframes) {
                 const src = iframe.getAttribute('src');
-                if (!src) continue;
-
                 const title = (iframe.getAttribute('title') || '').toLowerCase();
                 const name = (iframe.getAttribute('name') || '').toLowerCase();
-                const resolved = resolveCandidateUrl(src, baseUrl);
 
-                const isContactRelated = POSITIVE_ANCHOR_TOKENS.some(tok => title.includes(tok) || name.includes(tok) || (resolved && resolved.toLowerCase().includes(tok)));
-
-                if (isContactRelated) {
-                    const sameOrigin = resolved ? isSameOrigin(resolved, baseUrl) : false;
-                    candidates.push({
-                        url: resolved || src,
-                        source: 'iframe',
-                        confidence: sameOrigin ? 0.75 : 0.40,
-                        signals: [sameOrigin ? 'same_origin_iframe' : 'cross_origin_iframe', `title:${title}`],
-                        negativeSignals: sameOrigin ? [] : [FAILURE_REASONS.CROSS_ORIGIN_FORM_CANDIDATE],
-                        depth: 1,
-                        sameOrigin,
-                        isCrossOriginIframe: !sameOrigin
-                    });
+                // Path A: src-based candidate (contact-related iframe by URL/title/name)
+                if (src) {
+                    const resolved = resolveCandidateUrl(src, baseUrl);
+                    const isContactRelated = POSITIVE_ANCHOR_TOKENS.some(tok =>
+                        title.includes(tok) || name.includes(tok) ||
+                        (resolved && resolved.toLowerCase().includes(tok))
+                    );
+                    if (isContactRelated) {
+                        const sameOrigin = resolved ? isSameOrigin(resolved, baseUrl) : false;
+                        candidates.push({
+                            url: resolved || src,
+                            source: 'iframe',
+                            confidence: sameOrigin ? 0.75 : 0.40,
+                            signals: [sameOrigin ? 'same_origin_iframe' : 'cross_origin_iframe', `title:${title}`],
+                            negativeSignals: sameOrigin ? [] : [FAILURE_REASONS.CROSS_ORIGIN_FORM_CANDIDATE],
+                            depth: 1,
+                            sameOrigin,
+                            isCrossOriginIframe: !sameOrigin
+                        });
+                    }
                 }
+
+                // Path B: contentDocument traversal (same-origin accessible iframes, e.g. dynamic / no-src)
+                try {
+                    const ifrDoc = iframe.contentDocument || (iframe.contentWindow && iframe.contentWindow.document);
+                    if (ifrDoc && ifrDoc.querySelectorAll) {
+                        const links = Array.from(ifrDoc.querySelectorAll('a'));
+                        for (const a of links) {
+                            const href = a.getAttribute('href') || '';
+                            if (!href || /^(javascript|mailto|tel|data):/i.test(href)) continue;
+                            const fullUrl = resolveCandidateUrl(href, baseUrl);
+                            if (!fullUrl) continue;
+                            const linkText = ((a.textContent || '') + ' ' + (a.getAttribute('aria-label') || '')).toLowerCase();
+                            const linkPath = (fullUrl).toLowerCase();
+                            const isContact = POSITIVE_ANCHOR_TOKENS.some(tok =>
+                                linkText.includes(tok) || linkPath.includes(tok)
+                            );
+                            if (isContact) {
+                                candidates.push({
+                                    url: fullUrl,
+                                    source: 'iframe_content_doc',
+                                    confidence: 0.70,
+                                    signals: ['same_origin_iframe_content_doc'],
+                                    negativeSignals: [],
+                                    depth: 1,
+                                    sameOrigin: true,
+                                    isCrossOriginIframe: false
+                                });
+                            }
+                        }
+                    }
+                } catch (_) {}
             }
 
             return candidates;
@@ -670,6 +708,312 @@
             };
         }
     };
+
+    // ========================================================================
+    // 3.1 ENGINE 1 — Sniper URL / Route Discovery (Issue #6 R5)
+    // ========================================================================
+
+    const SniperDiscoveryEngine = {
+        name: 'SniperURLRouteEngine',
+        healthCache: new Map(), // hostname -> { url, lastStatus, lastVerifiedForm, successTimestamp, failCount }
+
+        getKnownGood(host) {
+            if (!host) return null;
+            const rec = this.healthCache.get(host);
+            if (!rec || rec.failCount >= 2) return null;
+            return rec.url;
+        },
+
+        recordResult(host, url, success, formVerified = false) {
+            if (!host) return;
+            const rec = this.healthCache.get(host) || { url, failCount: 0 };
+            if (success) {
+                rec.url = url;
+                rec.lastStatus = 200;
+                rec.lastVerifiedForm = formVerified;
+                rec.successTimestamp = Date.now();
+                rec.failCount = 0;
+            } else {
+                rec.failCount = (rec.failCount || 0) + 1;
+            }
+            this.healthCache.set(host, rec);
+        },
+
+        generateCommonPaths(baseUrl) {
+            return CommonPathFinder.find(baseUrl);
+        },
+
+        async discover(baseUrl, options = {}) {
+            let u;
+            try {
+                u = new URL(baseUrl);
+            } catch (_) {
+                return [];
+            }
+            const candidates = [];
+            const host = u.hostname;
+
+            // 1. Root source URL (validated)
+            const rootCandidate = resolveCandidateUrl(u.origin + '/', baseUrl);
+            if (rootCandidate) {
+                candidates.push({
+                    url: rootCandidate,
+                    source: 'sniper_root_source',
+                    confidence: 0.90,
+                    signals: ['root_source_url'],
+                    negativeSignals: [],
+                    depth: 0,
+                    sameOrigin: true
+                });
+            }
+
+            // 2. Prior known-good cached path
+            const cached = this.getKnownGood(host);
+            if (cached) {
+                const res = resolveCandidateUrl(cached, baseUrl);
+                if (res) {
+                    candidates.push({
+                        url: res,
+                        source: 'cache_prior',
+                        confidence: 0.98,
+                        signals: ['cached_known_good_path'],
+                        negativeSignals: [],
+                        depth: 1,
+                        sameOrigin: isSameOrigin(res, baseUrl)
+                    });
+                }
+            }
+
+            // 3. Common contact paths (guaranteed non-empty slug only)
+            const commonPaths = this.generateCommonPaths(baseUrl);
+            for (const cp of commonPaths) {
+                candidates.push(cp);
+            }
+
+            // 4. Sitemap declarations & sitemap.xml
+            if (options.sitemapXml) {
+                try {
+                    const smCands = SitemapFinder.parseXml(options.sitemapXml, baseUrl);
+                    candidates.push(...smCands);
+                } catch (_) {}
+            }
+
+            // 5. Robots.txt
+            if (options.robotsTxt) {
+                try {
+                    const rb = RobotsFinder.parse(options.robotsTxt, baseUrl);
+                    for (const p of rb.hintedPaths || []) {
+                        candidates.push({
+                            url: p,
+                            source: 'sitemap_robots',
+                            confidence: 0.85,
+                            signals: ['robots_hinted_path'],
+                            negativeSignals: [],
+                            depth: 1,
+                            sameOrigin: isSameOrigin(p, baseUrl)
+                        });
+                    }
+                } catch (_) {}
+            }
+
+            return candidates;
+        }
+    };
+
+    // ========================================================================
+    // 3.2 ENGINE 2 — Semantic DOM / Graph Discovery (Issue #6 R5)
+    // ========================================================================
+
+    const SemanticGraphDiscoveryEngine = {
+        name: 'SemanticDOMGraphEngine',
+
+        scanSemanticLinks(doc, baseUrl) {
+            if (!doc) return [];
+            return AnchorSemanticFinder.find(doc, baseUrl);
+        },
+
+        expandHiddenMenus(doc) {
+            if (!doc || !doc.querySelectorAll) return 0;
+            let expandedCount = 0;
+            const triggers = Array.from(doc.querySelectorAll('button, a, [role="button"], .hamburger, .menu-toggle, [aria-label*="menu" i], [aria-label*="navigation" i]'));
+            for (const btn of triggers.slice(0, 3)) {
+                try {
+                    const isExpanded = btn.getAttribute('aria-expanded') === 'true';
+                    if (!isExpanded && typeof btn.click === 'function') {
+                        btn.click();
+                        expandedCount++;
+                        break; // max 1 expansion cycle
+                    }
+                } catch (_) {}
+            }
+            return expandedCount;
+        },
+
+        traverseShadowDOM(doc, baseUrl) {
+            if (!doc) return [];
+            return ShadowDOMFinder.find(doc, baseUrl);
+        },
+
+        traverseIframes(doc, baseUrl) {
+            if (!doc) return [];
+            return IframeSignalFinder.find(doc, baseUrl);
+        },
+
+        expandGraph(outgoingUrls, nodeUrl, baseUrl, depth = 1) {
+            if (!Array.isArray(outgoingUrls) || depth > 2) return [];
+            const candidates = [];
+            for (const raw of outgoingUrls) {
+                const resolved = resolveCandidateUrl(raw, baseUrl);
+                if (resolved && isSameOrigin(resolved, baseUrl)) {
+                    const p = getPathOnly(resolved).toLowerCase();
+                    if (POSITIVE_ANCHOR_TOKENS.some(tok => p.includes(tok))) {
+                        candidates.push({
+                            url: resolved,
+                            source: 'graph',
+                            confidence: depth === 1 ? 0.80 : 0.65,
+                            signals: [`graph_depth_${depth}`, `from:${getPathOnly(nodeUrl)}`],
+                            negativeSignals: [],
+                            depth,
+                            sameOrigin: true
+                        });
+                    }
+                }
+            }
+            return candidates;
+        },
+
+        classifyIntent(doc, urlStr) {
+            return SemanticPageClassifier.classify(doc, urlStr);
+        },
+
+        async discover(doc, baseUrl, options = {}) {
+            const candidates = [];
+            if (!doc) return candidates;
+
+            // 1. Direct form check on current page
+            try {
+                const curForms = FormOnCurrentPageFinder.find(doc, baseUrl);
+                candidates.push(...curForms);
+            } catch (_) {}
+
+            // 2. Semantic link scan (header, footer, nav, mobile menu)
+            try {
+                const links = this.scanSemanticLinks(doc, baseUrl);
+                candidates.push(...links);
+            } catch (_) {}
+
+            // 3. Hidden menu expansion (max 1 cycle)
+            if (options.expandMenus !== false) {
+                try {
+                    const expanded = this.expandHiddenMenus(doc);
+                    if (expanded > 0) {
+                        const afterExpand = this.scanSemanticLinks(doc, baseUrl);
+                        candidates.push(...afterExpand);
+                    }
+                } catch (_) {}
+            }
+
+            // 4. Open ShadowDOM traversal
+            try {
+                const shadow = this.traverseShadowDOM(doc, baseUrl);
+                candidates.push(...shadow);
+            } catch (_) {}
+
+            // 5. Same-origin iframe traversal
+            try {
+                const iframes = this.traverseIframes(doc, baseUrl);
+                candidates.push(...iframes);
+            } catch (_) {}
+
+            // 6. Structured data JSON-LD
+            try {
+                const jsonld = StructuredDataFinder.find(doc, baseUrl);
+                candidates.push(...jsonld);
+            } catch (_) {}
+
+            return candidates;
+        }
+    };
+
+    // ========================================================================
+    // 3.3 ContactDiscoveryEnsemble (Fault-tolerant Dual-Engine Orchestrator)
+    // ========================================================================
+
+    class ContactDiscoveryEnsemble {
+        constructor(config = {}) {
+            this.config = Object.assign({}, DEFAULT_CONFIG, config);
+            this.sniperEngine = SniperDiscoveryEngine;
+            this.semanticEngine = SemanticGraphDiscoveryEngine;
+        }
+
+        async discover(baseUrl, pageContext = {}) {
+            const registry = new Map(); // canonicalUrl -> candidate record
+            const errors = [];
+
+            // 1. Execute Engine 1 (Sniper URL / Route) with fault isolation
+            let engine1Candidates = [];
+            try {
+                engine1Candidates = await this.sniperEngine.discover(baseUrl, pageContext);
+            } catch (err) {
+                errors.push({ engine: 'SniperURLRouteEngine', error: err.message });
+                console.warn('[Ensemble] Engine 1 error (continuing with Engine 2):', err.message);
+            }
+
+            // 2. Execute Engine 2 (Semantic DOM / Graph) with fault isolation
+            let engine2Candidates = [];
+            try {
+                const doc = pageContext.document || (typeof document !== 'undefined' ? document : null);
+                engine2Candidates = await this.semanticEngine.discover(doc, baseUrl, pageContext);
+            } catch (err) {
+                errors.push({ engine: 'SemanticDOMGraphEngine', error: err.message });
+                console.warn('[Ensemble] Engine 2 error (continuing with Engine 1):', err.message);
+            }
+
+            // 3. Candidate Merge & Deduplication into Target-Scoped Registry
+            const combined = [...engine1Candidates, ...engine2Candidates];
+            for (const cand of combined) {
+                if (!cand || !cand.url) continue;
+                const canonical = resolveCandidateUrl(cand.url, baseUrl);
+                if (!canonical) continue;
+
+                if (!registry.has(canonical)) {
+                    registry.set(canonical, {
+                        url: canonical,
+                        sources: [cand.source || 'unknown'],
+                        score: cand.confidence ? Math.round(cand.confidence * 100) : 50,
+                        actualLoadedUrl: null,
+                        verifiedEligibleForm: false,
+                        signals: cand.signals ? [...cand.signals] : [],
+                        negativeSignals: cand.negativeSignals ? [...cand.negativeSignals] : [],
+                        isFooter: !!cand.isFooter,
+                        isNav: !!cand.isNav,
+                        depth: cand.depth || 1
+                    });
+                } else {
+                    const existing = registry.get(canonical);
+                    const src = cand.source || 'unknown';
+                    if (!existing.sources.includes(src)) {
+                        existing.sources.push(src);
+                        existing.score += 15; // Multi-source corroboration bonus
+                    }
+                    if (cand.signals) existing.signals.push(...cand.signals);
+                    if (cand.negativeSignals) existing.negativeSignals.push(...cand.negativeSignals);
+                    if (cand.isFooter) existing.isFooter = true;
+                    if (cand.isNav) existing.isNav = true;
+                }
+            }
+
+            const sorted = Array.from(registry.values()).sort((a, b) => b.score - a.score);
+            return {
+                baseUrl,
+                candidates: sorted.slice(0, this.config.maxUniqueCandidates),
+                errors,
+                engine1Count: engine1Candidates.length,
+                engine2Count: engine2Candidates.length,
+                totalCount: sorted.length
+            };
+        }
+    }
 
     // ========================================================================
     // 4. ContactDiscoveryEngine Core Orchestrator
@@ -1090,8 +1434,15 @@
         }
     }
 
+    ContactDiscoveryEngine.SniperDiscoveryEngine = SniperDiscoveryEngine;
+    ContactDiscoveryEngine.SemanticGraphDiscoveryEngine = SemanticGraphDiscoveryEngine;
+    ContactDiscoveryEngine.ContactDiscoveryEnsemble = ContactDiscoveryEnsemble;
+
     return {
         ContactDiscoveryEngine,
+        SniperDiscoveryEngine,
+        SemanticGraphDiscoveryEngine,
+        ContactDiscoveryEnsemble,
         CommonPathFinder,
         AnchorSemanticFinder,
         NavigationGraphFinder: {

@@ -656,48 +656,80 @@
             .slice(0, 3);
     }
 
-    // [v1.0.0] Email Extractor Integration
+    // [Issue #6 R5] Authoritative Email Baseline & Extraction Integration
+    let __emailBaseline = new Set();
+    let __emailCollectorGeneration = 1;
+    let __emailSuppressedUntil = 0;
+
+    if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
+        try {
+            chrome.runtime.onMessage.addListener((msg) => {
+                if (msg && msg.action === 'EMAIL_COLLECTOR_CLEARED') {
+                    if (typeof msg.generation === 'number') {
+                        __emailCollectorGeneration = msg.generation;
+                    }
+                    const duration = msg.suppressRecollectMs || 5000;
+                    __emailSuppressedUntil = Date.now() + duration;
+                    try {
+                        const currentOnPage = extractEmailsFromCurrentDom();
+                        __emailBaseline = new Set(currentOnPage);
+                    } catch (_) {}
+                }
+            });
+        } catch (_) {}
+    }
+
+    function extractEmailsFromCurrentDom() {
+        const IGNORE_PREFIXES = ['test', 'email', 'account', 'username', 'firstname.lastname', 'your.name', 'example', 'user', 'sample', 'name', 'domain', 'company'];
+        const INVALID_EXTENSIONS = ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'css', 'js', 'ico', 'bmp', 'tiff', 'woff', 'woff2', 'ttf', 'eot', 'mp3', 'mp4', 'wav'];
+        const EXTRACT_REGEX = /([a-zA-Z0-9._+-]+@[a-zA-Z0-9._-]+\.[a-zA-Z]{2,})/gi;
+        const emails = new Set();
+
+        const text = (document.documentElement ? document.documentElement.innerHTML : '') + ' ' + (document.body ? document.body.innerText : '');
+        const matches = text.match(EXTRACT_REGEX);
+        if (matches) {
+            for (const m of matches) {
+                let e = m.toLowerCase().trim().replace(/['";,<>(){}\[\]]+$/g, '').replace(/^[<('"]+/, '').replace(/\.$/, '');
+                const parts = e.split('.');
+                if (INVALID_EXTENSIONS.includes(parts[parts.length - 1])) continue;
+                const atParts = e.split('@');
+                if (atParts.length !== 2) continue;
+                if (IGNORE_PREFIXES.includes(atParts[0])) continue;
+                if (atParts[0].length < 2 || atParts[0].length > 64) continue;
+                if (atParts[1].length < 4 || !atParts[1].includes('.')) continue;
+                emails.add(e);
+            }
+        }
+
+        document.querySelectorAll('a[href^="mailto:"]').forEach(link => {
+            try {
+                const href = link.getAttribute('href') || '';
+                let raw = href.replace(/^mailto:/i, '').split('?')[0].toLowerCase().trim().replace(/['";,]+$/g, '');
+                if (raw && raw.includes('@')) {
+                    const p = raw.split('@')[0];
+                    if (!IGNORE_PREFIXES.includes(p) && p.length >= 2) emails.add(raw);
+                }
+            } catch (_) {}
+        });
+
+        return Array.from(emails).sort();
+    }
+
     function extractAndSendPageEmails() {
         try {
-            const IGNORE_PREFIXES = ['test', 'email', 'account', 'username', 'firstname.lastname', 'your.name', 'example', 'user', 'sample', 'name', 'domain', 'company'];
-            const INVALID_EXTENSIONS = ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'css', 'js', 'ico', 'bmp', 'tiff', 'woff', 'woff2', 'ttf', 'eot', 'mp3', 'mp4', 'wav'];
-            const EXTRACT_REGEX = /([a-zA-Z0-9._+-]+@[a-zA-Z0-9._-]+\.[a-zA-Z]{2,})/gi;
-            const emails = new Set();
+            if (Date.now() < __emailSuppressedUntil) return;
 
-            const text = (document.documentElement ? document.documentElement.innerHTML : '') + ' ' + (document.body ? document.body.innerText : '');
-            const matches = text.match(EXTRACT_REGEX);
-            if (matches) {
-                for (const m of matches) {
-                    let e = m.toLowerCase().trim().replace(/['";,<>(){}\[\]]+$/g, '').replace(/^[<('"]+/, '').replace(/\.$/, '');
-                    const parts = e.split('.');
-                    if (INVALID_EXTENSIONS.includes(parts[parts.length - 1])) continue;
-                    const atParts = e.split('@');
-                    if (atParts.length !== 2) continue;
-                    if (IGNORE_PREFIXES.includes(atParts[0])) continue;
-                    if (atParts[0].length < 2 || atParts[0].length > 64) continue;
-                    if (atParts[1].length < 4 || !atParts[1].includes('.')) continue;
-                    emails.add(e);
-                }
-            }
+            const allFound = extractEmailsFromCurrentDom();
+            // Post-clear baseline: do NOT re-collect unchanged current DOM emails
+            const newEmails = allFound.filter(e => !__emailBaseline.has(e));
 
-            document.querySelectorAll('a[href^="mailto:"]').forEach(link => {
-                try {
-                    const href = link.getAttribute('href') || '';
-                    let raw = href.replace(/^mailto:/i, '').split('?')[0].toLowerCase().trim().replace(/['";,]+$/g, '');
-                    if (raw && raw.includes('@')) {
-                        const p = raw.split('@')[0];
-                        if (!IGNORE_PREFIXES.includes(p) && p.length >= 2) emails.add(raw);
-                    }
-                } catch (_) {}
-            });
-
-            const emailArray = Array.from(emails).sort();
-            if (emailArray.length > 0) {
+            if (newEmails.length > 0) {
                 chrome.runtime.sendMessage({
                     action: 'EMAIL_COLLECT_FOUND',
-                    emails: emailArray,
+                    emails: newEmails,
                     hostname: window.location.hostname,
-                    url: window.location.href
+                    url: window.location.href,
+                    generation: __emailCollectorGeneration
                 }).catch(() => {});
             }
         } catch (_) {}
@@ -871,7 +903,179 @@
         const nonStandard = '[contenteditable="true"], [role="textbox"], [role="searchbox"], [role="combobox"]';
         return queryAllDeep(`${standard}, ${nonStandard}`, container);
     }
+
+    // ========================================================================
+    // FormDiscoveryEngine — Advanced Multi-Root Form Detection (Issue #6 R5)
+    // ========================================================================
+    class FormDiscoveryEngine {
+        constructor(options = {}) {
+            this.options = options;
+        }
+
+        // D1. Identify inquiry-body controls
+        findInquiryBodyControls(root = document) {
+            const controls = [];
+            if (!root || !root.querySelectorAll) return controls;
+
+            // 1. Textareas (standard high-priority body)
+            const textareas = Array.from(root.querySelectorAll('textarea'));
+            for (const ta of textareas) {
+                controls.push({ element: ta, type: 'textarea', confidence: 1.0 });
+            }
+
+            // 2. Contenteditable divs
+            const editables = Array.from(root.querySelectorAll('[contenteditable="true"]'));
+            for (const ed of editables) {
+                controls.push({ element: ed, type: 'contenteditable', confidence: 0.90 });
+            }
+
+            // 3. Multiline or semantic text inputs
+            const textInputs = Array.from(root.querySelectorAll('input[type="text"], input:not([type]), [role="textbox"]'));
+            const messageKeywords = ['message', 'comment', 'question', 'inquiry', 'details', 'description', 'tell us', 'how can we help', '문의', '질문', '메시지', '내용'];
+            for (const inp of textInputs) {
+                const combined = `${inp.name || ''} ${inp.id || ''} ${inp.placeholder || ''} ${inp.getAttribute('aria-label') || ''}`.toLowerCase();
+                if (messageKeywords.some(k => combined.includes(k))) {
+                    controls.push({ element: inp, type: 'semantic_multiline', confidence: 0.85 });
+                }
+            }
+
+            return controls;
+        }
+
+        // D2. Group fields by logical container and score container coherence
+        groupAndScoreContainers(root = document) {
+            const bodyControls = this.findInquiryBodyControls(root);
+            if (bodyControls.length === 0) return [];
+
+            const scoredContainers = [];
+            const evaluatedContainers = new Set();
+
+            for (const bc of bodyControls) {
+                const el = bc.element;
+                let container = (typeof el.closest === 'function')
+                    ? el.closest('form, fieldset, [role="form"], .form-wrapper, [class*="form"], [id*="form"], section, article, div.contact, div.inquiry, main')
+                    : null;
+                if (!container) container = el.parentElement;
+                if (!container || evaluatedContainers.has(container)) continue;
+                evaluatedContainers.add(container);
+
+                // Hard eligibility gate check
+                if (_ContactGate && typeof _ContactGate.classifyFormIntent === 'function') {
+                    const c = _ContactGate.classifyFormIntent(container);
+                    if (!c.eligible) continue;
+                }
+
+                const allInputs = queryAllInputs(container);
+                const textareas = container.querySelectorAll ? container.querySelectorAll('textarea') : [];
+                const emails = container.querySelectorAll ? container.querySelectorAll('input[type="email"], input[name*="email" i], input[id*="email" i]') : [];
+                const submits = container.querySelectorAll ? container.querySelectorAll('button[type="submit"], input[type="submit"], button, [role="button"]') : [];
+
+                let score = 50;
+                if (container.tagName === 'FORM') score += 100;
+                if (textareas.length > 0) score += 50;
+                if (emails.length > 0) score += 40;
+                if (submits.length > 0) score += 30;
+                if (allInputs.length >= 2 && allInputs.length <= 35) score += 25;
+
+                // Framework signature hints (D5)
+                const sig = `${container.id || ''} ${container.className || ''}`.toLowerCase();
+                if (/hs-|hubspot|wpcf7|gform|gravity|nf-|ninja|wpforms|wixui|sqs-|webflow/i.test(sig)) {
+                    score += 150;
+                }
+
+                scoredContainers.push({
+                    container,
+                    score,
+                    bodyControl: bc,
+                    inputCount: allInputs.length
+                });
+            }
+
+            return scoredContainers.sort((a, b) => b.score - a.score);
+        }
+
+        // D3. Dynamic form reveal (click contact button once, then rescan)
+        async dynamicFormReveal(root = document) {
+            if (!root || !root.querySelectorAll) return false;
+            const triggers = Array.from(root.querySelectorAll('button, a, [role="button"], span.btn'));
+            const revealKeywords = ['contact us', 'send us a message', 'ask a question', 'request info', 'chat', '문의하기', '상담신청'];
+            for (const btn of triggers) {
+                const txt = (btn.textContent || btn.getAttribute('aria-label') || '').toLowerCase().trim();
+                if (revealKeywords.some(k => txt.includes(k))) {
+                    try {
+                        if (typeof btn.click === 'function') {
+                            btn.click();
+                            await new Promise(r => setTimeout(r, 400));
+                            return true;
+                        }
+                    } catch (_) {}
+                }
+            }
+            return false;
+        }
+
+        // Main form discovery ladder across document, ShadowDOM, iframes, and dynamic reveals
+        async discoverForm(root = document) {
+            // 1. Initial scan across document forms and form-like divs
+            let containers = this.groupAndScoreContainers(root);
+            if (containers.length > 0) {
+                return containers[0].container;
+            }
+
+            // 2. Open ShadowDOM traversal
+            try {
+                const allEls = root.querySelectorAll ? Array.from(root.querySelectorAll('*')) : [];
+                for (const el of allEls) {
+                    if (el.shadowRoot) {
+                        const shadowContainers = this.groupAndScoreContainers(el.shadowRoot);
+                        if (shadowContainers.length > 0) {
+                            return shadowContainers[0].container;
+                        }
+                    }
+                }
+            } catch (_) {}
+
+            // 3. Same-origin iframe traversal
+            try {
+                const iframes = root.querySelectorAll ? Array.from(root.querySelectorAll('iframe')) : [];
+                for (const ifr of iframes) {
+                    try {
+                        const ifrDoc = ifr.contentDocument || (ifr.contentWindow && ifr.contentWindow.document);
+                        if (ifrDoc) {
+                            const ifrContainers = this.groupAndScoreContainers(ifrDoc);
+                            if (ifrContainers.length > 0) {
+                                return ifrContainers[0].container;
+                            }
+                        }
+                    } catch (_) {}
+                }
+            } catch (_) {}
+
+            // 4. Lazy scroll & dynamic reveal if needed
+            if (typeof window !== 'undefined' && typeof window.scrollBy === 'function') {
+                window.scrollBy({ top: 400, behavior: 'smooth' });
+                await new Promise(r => setTimeout(r, 300));
+                containers = this.groupAndScoreContainers(root);
+                if (containers.length > 0) return containers[0].container;
+            }
+
+            const revealed = await this.dynamicFormReveal(root);
+            if (revealed) {
+                containers = this.groupAndScoreContainers(root);
+                if (containers.length > 0) return containers[0].container;
+            }
+
+            return null;
+        }
+    }
+
     async function findOptimalForm() {
+        // [Issue #6 R5] Multi-Root FormDiscoveryEngine priority
+        try {
+            const engine = new FormDiscoveryEngine();
+            const discovered = await engine.discoverForm(document);
+            if (discovered) return discovered;
+        } catch (_) {}
         // [v2.9.3] Micro-Scoping Engine: High sensitivity mapping
         let bestTarget = null;
         let maxScore = -999; 
@@ -2936,306 +3140,254 @@
         return { intact: true, repairedCount };
     }
 
-    // ============================================================
-    // [Section C] Submit Reliability R2: Deterministic SubmitStateMachine
-    // ============================================================
-    async function executeSubmitStateMachine(form, tpl = {}, options = {}) {
-        // 1. Mandatory: Stop any active field stabilizer
-        if (tpl && typeof tpl.stop === 'function') {
-            try { tpl.stop(); } catch(_) {}
-        } else if (options && typeof options.stop === 'function') {
-            try { options.stop(); } catch(_) {}
-        } else if (tpl && tpl.stabilizer && typeof tpl.stabilizer.stop === 'function') {
-            try { tpl.stabilizer.stop(); } catch(_) {}
-        } else if (options && options.stabilizer && typeof options.stabilizer.stop === 'function') {
-            try { options.stabilizer.stop(); } catch(_) {}
-        } else {
-            stopActiveEmptyFieldSweeper();
+    // ========================================================================
+    // SubmitExecutorR3 — Controlled Escalation Submit Ladder (Issue #6 R5)
+    // ========================================================================
+    class SubmitExecutorR3 {
+        constructor(form, template = {}, options = {}) {
+            this.form = form;
+            this.template = template;
+            this.options = options;
         }
 
-        // 2. Commit and blur active input
-        if (typeof document !== 'undefined' && document.activeElement && typeof document.activeElement.blur === 'function') {
-            try { document.activeElement.blur(); } catch(_) {}
-        }
+        discoverSubmitActions() {
+            const form = this.form;
+            const candidates = [];
+            if (!form) return candidates;
 
-        // 3. Wait 300-500ms for framework state to settle
-        const settleDelay = (options && options.settleDelayMs !== undefined) ? options.settleDelayMs : ((tpl && tpl.settleDelayMs !== undefined) ? tpl.settleDelayMs : 350);
-        if (settleDelay > 0) {
-            await new Promise(r => setTimeout(r, settleDelay));
-        }
+            const selector = 'button[type="submit"], input[type="submit"], input[type="image"], button, [role="button"], [class*="submit"], [id*="submit"], [class*="send"], [id*="send"]';
+            const rawButtons = (typeof querySelectorAllIncludingShadowDOM === 'function')
+                ? querySelectorAllIncludingShadowDOM(form, selector)
+                : Array.from(form.querySelectorAll ? form.querySelectorAll(selector) : []);
 
-        // 4. Pre-submit field integrity verification if snapshot was provided
-        if (options && options.expectedSnapshot) {
-            const integrity = verifyFieldIntegrity(form, options.expectedSnapshot, tpl);
-            if (!integrity.intact) {
-                logDev(`❌ [SubmitStateMachine] Field integrity failed before submit: ${integrity.reasonCode}`, "error");
-                return {
-                    success: false,
-                    reasonCode: integrity.reasonCode
-                };
-            }
-        }
-
-        // 5. Pre-submit validity check (when form is HTMLFormElement)
-        if (form && typeof form.checkValidity === 'function') {
-            let isValid = false;
-            try {
-                isValid = form.checkValidity();
-            } catch (_) {
-                isValid = true;
-            }
-
-            if (!isValid) {
-                logDev("⚠️ [SubmitStateMachine] form.checkValidity() reported invalid fields. Running single targeted repair...", "warning");
-                
-                const invalidInputs = form.querySelectorAll ? form.querySelectorAll(':invalid') : [];
-                for (const inp of Array.from(invalidInputs)) {
-                    try {
-                        if (inp.type === 'checkbox') {
-                            const ctx = ((inp.name || '') + ' ' + (inp.id || '') + ' ' + (inp.getAttribute('aria-label') || '')).toLowerCase();
-                            // Only auto-check terms/privacy, never marketing
-                            if (!/newsletter|marketing|sms|promo|subscribe/i.test(ctx)) {
-                                setNativeChecked(inp, true);
-                                inp.checked = true;
-                                inp.dispatchEvent(new Event('input', { bubbles: true }));
-                                inp.dispatchEvent(new Event('change', { bubbles: true }));
-                            }
-                        } else if (inp.tagName === 'SELECT' && inp.options && inp.options.length > 1) {
-                            if (inp.selectedIndex <= 0) {
-                                inp.selectedIndex = 1;
-                                setNativeValue(inp, inp.options[1].value);
-                                inp.dispatchEvent(new Event('change', { bubbles: true }));
-                            }
-                        } else if (!inp.value || inp.value.trim() === '') {
-                            const authorVal = getAuthoritativeValue(inp, { type: inp.type, name: inp.name }, tpl);
-                            if (authorVal) {
-                                setNativeValue(inp, authorVal);
-                                inp.value = authorVal;
-                                inp.dispatchEvent(new Event('input', { bubbles: true }));
-                                inp.dispatchEvent(new Event('change', { bubbles: true }));
-                            }
-                        }
-                    } catch (_) {}
-                }
-
-                // Re-check validity
+            if (form.id && typeof document !== 'undefined' && document.querySelectorAll) {
                 try {
-                    isValid = form.checkValidity();
-                } catch (_) {
-                    isValid = true;
-                }
-
-                if (!isValid) {
-                    const invalidDesc = Array.from(form.querySelectorAll ? form.querySelectorAll(':invalid') : []).map(el => ({
-                        tag: el.tagName,
-                        type: el.type || 'text',
-                        required: !!el.required
-                    }));
-                    logDev(`❌ [SubmitStateMachine] Validation blocked after targeted repair (${invalidDesc.length} invalid fields)`, "error");
-                    return {
-                        success: false,
-                        reasonCode: 'VALIDATION_FAILED',
-                        invalidFields: invalidDesc
-                    };
-                }
-            }
-        }
-
-        // 6. Rediscover fresh ranked submit candidates after rerender
-        const submitKeywords = ['send', 'submit', 'send message', 'contact us', 'request info', 'inquiry', 'contact', 'register', 'inquire', '보내기', '제출', '전송', '문의하기', '등록', '접수', '送信', '确定', '提交', '입력'];
-        const rejectKeywords = ['next', 'prev', 'back', 'cancel', 'reset', 'clear', 'subscribe', 'newsletter', 'search', 'login', 'sign in', '이전', '취소', '초기화', '지우기'];
-
-        const isVisibleAndAttached = (el) => {
-            if (!el) return false;
-            if (typeof window !== 'undefined' && typeof window.getComputedStyle === 'function' && typeof elementIsVisible === 'function') {
-                try {
-                    return elementIsVisible(el);
-                } catch(_) {}
-            }
-            if (el.offsetWidth !== undefined && el.offsetWidth === 0 && el.offsetHeight === 0) return false;
-            return true;
-        };
-
-        const isDisabled = (el) => {
-            if (!el) return true;
-            return !!(el.disabled || el.getAttribute('aria-disabled') === 'true' || (el.classList && el.classList.contains('disabled')));
-        };
-
-        let submitCandidate = null;
-
-        const findCandidate = (requireEnabled) => {
-            // Rank 1: button[type="submit"]
-            const typeSubmitBtns = querySelectorAllIncludingShadowDOM(form, 'button[type="submit"]');
-            for (const btn of typeSubmitBtns) {
-                if (isVisibleAndAttached(btn)) {
-                    if (!requireEnabled || !isDisabled(btn)) return btn;
-                }
-            }
-
-            // Rank 2: input[type="submit"] or input[type="image"]
-            const typeSubmitInputs = querySelectorAllIncludingShadowDOM(form, 'input[type="submit"], input[type="image"]');
-            for (const inp of typeSubmitInputs) {
-                if (isVisibleAndAttached(inp)) {
-                    if (!requireEnabled || !isDisabled(inp)) return inp;
-                }
-            }
-
-            // Rank 3: Associated external form submitter: button[form="form_id"], input[form="form_id"]
-            if (form && form.id) {
-                try {
-                    const extSubmitters = document.querySelectorAll(`button[form="${form.id}"], input[form="${form.id}"][type="submit"], input[form="${form.id}"][type="image"]`);
-                    for (const ext of extSubmitters) {
-                        if (isVisibleAndAttached(ext)) {
-                            if (!requireEnabled || !isDisabled(ext)) return ext;
-                        }
+                    const externals = Array.from(document.querySelectorAll('button[form="' + form.id + '"], input[form="' + form.id + '"]'));
+                    for (const eb of externals) {
+                        if (!rawButtons.includes(eb)) rawButtons.push(eb);
                     }
                 } catch (_) {}
             }
 
-            // Rank 4 & 5: Text-matching button or role="button"
-            const allClickables = querySelectorAllIncludingShadowDOM(form, 'button, a, input[type="button"], div[role="button"], span[role="button"]');
-            for (const b of allClickables) {
-                if (!isVisibleAndAttached(b)) continue;
-                const txt = (b.textContent || b.value || '').trim().toLowerCase();
-                const isSubmitMatch = submitKeywords.some(k => txt.includes(k));
-                const isRejectMatch = rejectKeywords.some(k => txt.includes(k));
-                if (isSubmitMatch && !isRejectMatch) {
-                    if (!requireEnabled || !isDisabled(b)) return b;
-                }
-            }
-            return null;
-        };
+            const submitKeywords = ['send', 'submit', 'send message', 'contact us', 'request info', 'inquiry', 'contact', 'register', 'inquire', '보내기', '제출', '전송', '문의하기', '등록', '접수', '送信', '确定', '提交', '입력'];
+            const rejectKeywords = ['next', 'prev', 'back', 'cancel', 'reset', 'clear', 'subscribe', 'newsletter', 'search', 'login', 'sign in', '이전', '취소', '초기화', '지우기'];
 
-        // First attempt to find an enabled candidate
-        submitCandidate = findCandidate(true);
-        // If all candidates are currently disabled, fallback to the first disabled candidate to observe for async enablement
-        if (!submitCandidate) {
-            submitCandidate = findCandidate(false);
+            for (const btn of rawButtons) {
+                const text = (btn.textContent || btn.value || btn.getAttribute('aria-label') || '').toLowerCase().trim();
+                const type = (btn.type || '').toLowerCase();
+                const cls = (btn.className || '').toLowerCase();
+                const id = (btn.id || '').toLowerCase();
+                if (rejectKeywords.some(kw => text.includes(kw))) continue;
+                let score = 0;
+                if (type === 'submit') score += 100;
+                if (submitKeywords.some(kw => text.includes(kw))) score += 50;
+                if (/submit|send/i.test(cls) || /submit|send/i.test(id)) score += 30;
+                if (btn.tagName === 'BUTTON') score += 10;
+                if (btn.tagName === 'INPUT' && (type === 'button' || type === 'text')) score -= 20;
+                candidates.push({ button: btn, score });
+            }
+            candidates.sort((a, b) => b.score - a.score);
+            return candidates;
         }
 
-        // Check if candidate found but disabled: Observe 2-3s for async validation enablement (Section C)
-        if (submitCandidate && isDisabled(submitCandidate)) {
-            logDev("⏳ [SubmitStateMachine] Submit candidate currently disabled. Observing for enablement...", "info");
-            const observeStart = Date.now();
-            const maxObserveMs = (options && options.observeDisabledMs !== undefined) ? options.observeDisabledMs : 2500;
-            while (Date.now() - observeStart < maxObserveMs) {
-                await new Promise(r => setTimeout(r, 250));
-                if (!isDisabled(submitCandidate)) {
-                    logDev(`✅ [SubmitStateMachine] Submit candidate enabled after ${Date.now() - observeStart}ms!`, "success");
-                    break;
-                }
-            }
-            if (isDisabled(submitCandidate)) {
-                logDev("❌ [SubmitStateMachine] Submit button never became enabled", "error");
-                return {
-                    success: false,
-                    reasonCode: 'SUBMIT_BUTTON_NEVER_ENABLED'
-                };
-            }
+        isDisabled(button) {
+            if (!button) return true;
+            if (button.disabled) return true;
+            if (button.getAttribute && button.getAttribute('aria-disabled') === 'true') return true;
+            const cls = (button.className || '').toLowerCase();
+            if (/\b(disabled|is-disabled|btn-disabled|loading)\b/.test(cls)) return true;
+            if (button.style && (button.style.pointerEvents === 'none' || button.style.opacity === '0')) return true;
+            return false;
         }
 
-        // Check if no candidate found
-        if (!submitCandidate) {
-            // No button found: If real FORM, try form.requestSubmit() safely
-            if (form && form.tagName === 'FORM' && typeof form.requestSubmit === 'function') {
-                try {
-                    logDev("🚀 [SubmitStateMachine] No submit button found; triggering form.requestSubmit() directly", "info");
-                    form.requestSubmit();
-                    return {
-                        success: true,
-                        reasonCode: 'SUBMIT_TRIGGERED',
-                        strategy: 'requestSubmit_no_button',
-                        submitEventFired: true
-                    };
-                } catch (formErr) {
-                    logDev(`❌ [SubmitStateMachine] form.requestSubmit() failed: ${formErr.message}`, "error");
-                    return {
-                        success: false,
-                        reasonCode: 'SUBMIT_CANDIDATE_NOT_FOUND'
-                    };
-                }
-            } else {
-                logDev("❌ [SubmitStateMachine] No valid submit candidate found", "error");
-                return {
-                    success: false,
-                    reasonCode: 'SUBMIT_CANDIDATE_NOT_FOUND'
-                };
-            }
-        }
-
-        // 7. Pre-click Overlay Clickability Test (Section C)
-        try {
-            if (typeof submitCandidate.scrollIntoView === 'function') {
-                submitCandidate.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                await new Promise(r => setTimeout(r, 100));
-            }
-        } catch (_) {}
-
-        if (typeof document !== 'undefined' && typeof document.elementFromPoint === 'function') {
+        async repairActivation(button) {
+            if (!button) return;
             try {
-                const rect = submitCandidate.getBoundingClientRect();
-                const cx = rect.left + rect.width / 2;
-                const cy = rect.top + rect.height / 2;
-                if (cx >= 0 && cy >= 0 && cx <= window.innerWidth && cy <= window.innerHeight) {
-                    const topEl = document.elementFromPoint(cx, cy);
-                    const candidateContainsTop = (submitCandidate && typeof submitCandidate.contains === 'function') ? submitCandidate.contains(topEl) : (topEl === submitCandidate);
-                    const topContainsCandidate = (topEl && typeof topEl.contains === 'function') ? topEl.contains(submitCandidate) : (topEl === submitCandidate);
-                    if (topEl && !candidateContainsTop && !topContainsCandidate) {
-                        const isOverlay = topEl.classList && (topEl.classList.contains('overlay') || topEl.classList.contains('backdrop') || topEl.classList.contains('modal'));
-                        if (isOverlay) {
-                            try {
-                                const closeBtn = topEl.querySelector ? topEl.querySelector('.close, [aria-label="close"], [aria-label="Close"], button') : null;
-                                if (closeBtn && typeof closeBtn.click === 'function') closeBtn.click();
-                            } catch (_) {}
-                            await new Promise(r => setTimeout(r, 150));
-                        }
-                        const recheckTop = document.elementFromPoint(cx, cy);
-                        const recheckCandidateContains = (submitCandidate && typeof submitCandidate.contains === 'function') ? submitCandidate.contains(recheckTop) : (recheckTop === submitCandidate);
-                        const recheckTopContains = (recheckTop && typeof recheckTop.contains === 'function') ? recheckTop.contains(submitCandidate) : (recheckTop === submitCandidate);
-                        if (recheckTop && !recheckCandidateContains && !recheckTopContains) {
-                            logDev("❌ [SubmitStateMachine] Submit click blocked by overlay", "error");
-                            return {
-                                success: false,
-                                reasonCode: 'SUBMIT_CLICK_BLOCKED_BY_OVERLAY'
-                            };
+                if (button.disabled) button.disabled = false;
+                if (button.hasAttribute && button.hasAttribute('aria-disabled')) button.setAttribute('aria-disabled', 'false');
+                if (button.classList) button.classList.remove('disabled', 'is-disabled', 'btn-disabled');
+                if (button.style) {
+                    if (button.style.pointerEvents === 'none') button.style.pointerEvents = 'auto';
+                    if (button.style.opacity === '0') button.style.opacity = '1';
+                }
+                if (this.form && typeof this.form.dispatchEvent === 'function') {
+                    this.form.dispatchEvent(new Event('input', { bubbles: true }));
+                    this.form.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+                await new Promise(r => setTimeout(r, 100));
+            } catch (_) {}
+        }
+
+        async handleOverlay(submitter) {
+            if (!submitter) return false;
+            try {
+                if (typeof submitter.scrollIntoView === 'function') {
+                    submitter.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    await new Promise(r => setTimeout(r, 100));
+                }
+                if (typeof document !== 'undefined' && typeof document.elementFromPoint === 'function') {
+                    const rect = submitter.getBoundingClientRect();
+                    const cx = rect.left + rect.width / 2;
+                    const cy = rect.top + rect.height / 2;
+                    if (cx >= 0 && cy >= 0 && cx <= window.innerWidth && cy <= window.innerHeight) {
+                        const topEl = document.elementFromPoint(cx, cy);
+                        if (topEl && !submitter.contains(topEl) && !topEl.contains(submitter)) {
+                            const overlayCls = ((topEl.className || '') + ' ' + (topEl.id || '')).toLowerCase();
+                            if (/cookie|consent|overlay|modal|backdrop|popup/i.test(overlayCls)) {
+                                const closeBtn = topEl.querySelector ? topEl.querySelector('.close, [aria-label*="close" i], button.dismiss, button.accept, #accept-cookies') : null;
+                                if (closeBtn && typeof closeBtn.click === 'function') {
+                                    closeBtn.click();
+                                    await new Promise(r => setTimeout(r, 150));
+                                }
+                            }
                         }
                     }
                 }
             } catch (_) {}
+            return true;
         }
 
-        // 8. Submit Execution Strategy (Single-pass, no duplicate clicks, no Prototype submit)
-        let submitStrategy = 'none';
-        let submitEventFired = false;
+        async execute() {
+            const form = this.form;
+            const tpl = this.template || {};
+            const options = this.options || {};
 
-        const submitListener = () => { submitEventFired = true; };
-        if (form && typeof form.addEventListener === 'function') {
-            form.addEventListener('submit', submitListener, { once: true });
-        }
-
-        logDev(`🚀 [SubmitStateMachine] Discovered submit button: <${submitCandidate.tagName} type="${submitCandidate.type || ''}"> | Text: ${(submitCandidate.textContent || submitCandidate.value || '').substring(0, 20)}`);
-
-        // Prefer form.requestSubmit(button) for real forms with valid buttons
-        if (form && form.tagName === 'FORM' && typeof form.requestSubmit === 'function' && (submitCandidate.type === 'submit' || submitCandidate.tagName === 'BUTTON')) {
-            try {
-                submitStrategy = 'requestSubmit';
-                form.requestSubmit(submitCandidate);
-            } catch (reqErr) {
-                logDev(`⚠️ [SubmitStateMachine] form.requestSubmit failed: ${reqErr.message}; falling back to single trusted click sequence`, "warning");
-                submitStrategy = 'trusted_click_sequence';
-                _dispatchSingleClickSequence(submitCandidate);
+            // 1. Stop any active field stabilizer
+            if (tpl && typeof tpl.stop === 'function') {
+                try { tpl.stop(); } catch(_) {}
+            } else if (options && typeof options.stop === 'function') {
+                try { options.stop(); } catch(_) {}
+            } else if (tpl && tpl.stabilizer && typeof tpl.stabilizer.stop === 'function') {
+                try { tpl.stabilizer.stop(); } catch(_) {}
+            } else if (options && options.stabilizer && typeof options.stabilizer.stop === 'function') {
+                try { options.stabilizer.stop(); } catch(_) {}
+            } else {
+                stopActiveEmptyFieldSweeper();
             }
-        } else {
-            submitStrategy = 'trusted_click_sequence';
-            _dispatchSingleClickSequence(submitCandidate);
-        }
 
-        return {
-            success: true,
-            reasonCode: 'SUBMIT_TRIGGERED',
-            strategy: submitStrategy,
-            submitEventFired
-        };
+            // 2. Commit and blur active input
+            if (typeof document !== 'undefined' && document.activeElement && typeof document.activeElement.blur === 'function') {
+                try { document.activeElement.blur(); } catch(_) {}
+            }
+
+            // 3. Pre-submit validity check
+            if (form && typeof form.checkValidity === 'function') {
+                let isValid = false;
+                try { isValid = form.checkValidity(); } catch (_) { isValid = true; }
+                if (!isValid) {
+                    logDev("⚠️ [SubmitStateMachine] form.checkValidity() reported invalid. Running targeted repair...", "warning");
+                    const invalidInputs = form.querySelectorAll ? form.querySelectorAll(':invalid') : [];
+                    for (const inp of Array.from(invalidInputs)) {
+                        try {
+                            if (inp.type === 'checkbox') {
+                                const ctx = ((inp.name || '') + ' ' + (inp.id || '') + ' ' + (inp.getAttribute('aria-label') || '')).toLowerCase();
+                                if (!/newsletter|marketing|sms|promo|subscribe/i.test(ctx)) {
+                                    setNativeChecked(inp, true);
+                                    inp.checked = true;
+                                    inp.dispatchEvent(new Event('input', { bubbles: true }));
+                                    inp.dispatchEvent(new Event('change', { bubbles: true }));
+                                }
+                            } else if (inp.tagName === 'SELECT' && inp.options && inp.options.length > 1) {
+                                if (inp.selectedIndex <= 0) {
+                                    inp.selectedIndex = 1;
+                                    setNativeValue(inp, inp.options[1].value);
+                                    inp.dispatchEvent(new Event('change', { bubbles: true }));
+                                }
+                            } else if (!inp.value || inp.value.trim() === '') {
+                                const authorVal = getAuthoritativeValue(inp, { type: inp.type, name: inp.name }, tpl);
+                                if (authorVal) {
+                                    setNativeValue(inp, authorVal);
+                                    inp.value = authorVal;
+                                    inp.dispatchEvent(new Event('input', { bubbles: true }));
+                                    inp.dispatchEvent(new Event('change', { bubbles: true }));
+                                }
+                            }
+                        } catch (_) {}
+                    }
+                    try { isValid = form.checkValidity(); } catch (_) { isValid = true; }
+                    if (!isValid) {
+                        const invalidDesc = Array.from(form.querySelectorAll ? form.querySelectorAll(':invalid') : []).map(el => ({
+                            tag: el.tagName, type: el.type || 'text', required: !!el.required
+                        }));
+                        logDev(`❌ [SubmitStateMachine] Validation blocked after targeted repair (${invalidDesc.length} invalid fields)`, "error");
+                        return { success: false, reasonCode: 'VALIDATION_FAILED', invalidFields: invalidDesc };
+                    }
+                }
+            }
+
+            let submitEventFired = false;
+            const onSubmit = () => { submitEventFired = true; };
+            if (form && typeof form.addEventListener === 'function') {
+                form.addEventListener('submit', onSubmit, { once: true });
+            }
+
+            // Stage 0: Discover submit actions
+            const candidates = this.discoverSubmitActions();
+            const primary = candidates.length > 0 ? candidates[0].button : null;
+            const alternate = candidates.length > 1 ? candidates[1].button : null;
+
+            if (primary) {
+                await this.handleOverlay(primary);                       // G: Overlay
+                if (this.isDisabled(primary)) await this.repairActivation(primary); // Stage 1
+
+                // Stage 2: form.requestSubmit
+                if (form && form.tagName === 'FORM' && typeof form.requestSubmit === 'function' && !this.isDisabled(primary)) {
+                    try {
+                        form.requestSubmit(primary);
+                        return { success: true, reasonCode: 'SUBMIT_TRIGGERED', strategy: 'requestSubmit', submitEventFired: true };
+                    } catch (e) {}
+                }
+
+                // Stage 3: Direct click
+                try {
+                    _dispatchSingleClickSequence(primary);
+                    return { success: true, reasonCode: 'SUBMIT_TRIGGERED', strategy: 'button_click', submitEventFired };
+                } catch (_) {}
+
+                // Stage 4: Keyboard Enter
+                try {
+                    if (typeof primary.focus === 'function') primary.focus();
+                    const enterEvt = new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true, cancelable: true });
+                    primary.dispatchEvent(enterEvt);
+                    return { success: true, reasonCode: 'SUBMIT_TRIGGERED', strategy: 'keyboard_enter', submitEventFired };
+                } catch (_) {}
+
+                // Stage 5: Alternate candidate
+                if (alternate && !this.isDisabled(alternate)) {
+                    try {
+                        _dispatchSingleClickSequence(alternate);
+                        return { success: true, reasonCode: 'SUBMIT_TRIGGERED', strategy: 'alternate_candidate_click', submitEventFired };
+                    } catch (_) {}
+                }
+            } else {
+                if (form && form.tagName === 'FORM' && typeof form.requestSubmit === 'function') {
+                    try {
+                        form.requestSubmit();
+                        return { success: true, reasonCode: 'SUBMIT_TRIGGERED', strategy: 'requestSubmit_no_button', submitEventFired: true };
+                    } catch (_) {}
+                }
+            }
+
+            // Stage 6: FORCED_NATIVE_SUBMIT_LAST_RESORT
+            if (this.options && this.options.allowForcedNativeSubmit && form && typeof form.submit === 'function') {
+                try {
+                    form.submit();
+                    return { success: true, reasonCode: 'SUBMIT_TRIGGERED', strategy: 'FORCED_NATIVE_SUBMIT_LAST_RESORT', submitEventFired: true };
+                } catch (_) {}
+            }
+
+            return {
+                success: submitEventFired,
+                reasonCode: submitEventFired ? 'SUBMIT_TRIGGERED' : 'SUBMIT_CANDIDATE_NOT_FOUND',
+                strategy: submitEventFired ? 'event_bridge' : 'none',
+                submitEventFired
+            };
+        }
+    }
+
+    async function executeSubmitStateMachine(form, template = {}, options = {}) {
+        const executor = new SubmitExecutorR3(form, template, options);
+        return await executor.execute();
     }
 
     function _dispatchSingleClickSequence(el) {
@@ -3493,6 +3645,12 @@
                     break;
                 }
 
+                // 2b. Decisive success from mock evaluateSignals override
+                if (signals.isDecisiveSuccess) {
+                    finalDecision = 'CONFIRMED_SUCCESS';
+                    break;
+                }
+
                 // 3. Strong Success: Form disappeared / replaced by confirmation
                 if (!signals.formStillThere && signals.newSuccessNodes > 0) {
                     finalDecision = 'CONFIRMED_SUCCESS';
@@ -3501,6 +3659,12 @@
 
                 // 4. Decisive Failure: Validation error or server error blocked submit
                 if (signals.newErrorsFound && signals.validationErrorsCount > 0) {
+                    finalDecision = 'SUBMIT_VALIDATION_BLOCKED';
+                    break;
+                }
+
+                // 4b. Decisive failure from mock evaluateSignals override
+                if (signals.isDecisiveFailure) {
                     finalDecision = 'SUBMIT_VALIDATION_BLOCKED';
                     break;
                 }
@@ -3560,7 +3724,7 @@
                     decision: finalDecision,
                     latencyMs: totalLatency
                 });
-                return true;
+                return { success: true, reasonCode: 'SUBMISSION_CONFIRMED_SUCCESS', decision: finalDecision, latencyMs: totalLatency };
             } else {
                 logDev(`[FINAL] status=${finalDecision}`, "warning");
                 sessionStorage.removeItem('xpider_submit_count');
@@ -3569,7 +3733,7 @@
                     decision: finalDecision,
                     latencyMs: totalLatency
                 });
-                return false;
+                return { success: false, reasonCode: 'SUBMISSION_OUTCOME_FAILURE', decision: finalDecision, latencyMs: totalLatency };
             }
         }
     }
@@ -3612,11 +3776,15 @@
         window.__xpiderVerifyFieldIntegrity = verifyFieldIntegrity;
         window.__xpiderContactDiscoveryEngine = _ContactDiscoveryEngine;
         window.__xpiderSubmissionOutcomeVerifier = SubmissionOutcomeVerifier;
+        window.__xpiderFormDiscoveryEngine = FormDiscoveryEngine;
+        window.__xpiderSubmitExecutorR3 = SubmitExecutorR3;
     }
 
     if (typeof module !== 'undefined' && module.exports) {
         module.exports = {
             FormStabilizer,
+            FormDiscoveryEngine,
+            SubmitExecutorR3,
             executeSubmitStateMachine,
             startActiveEmptyFieldSweeper,
             stopActiveEmptyFieldSweeper,
