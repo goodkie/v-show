@@ -19698,6 +19698,7 @@ class VisualLoopDetector {
   }
 
   matchAndEstimateCascade(refFeatures, currFeatures) {
+    const t0 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
     const rawMatches = [];
     const refKp = refFeatures.keypoints;
     const currKp = currFeatures.keypoints;
@@ -19731,12 +19732,14 @@ class VisualLoopDetector {
       }
     }
 
-    const goodMatches = rawMatches.filter(m => m.dist <= 10 && (m.dist / Math.max(1, m.secondDist)) <= 0.82);
+    const goodMatches = rawMatches.filter(m => m.dist <= 10 && (m.dist / Math.max(1, m.secondDist)) <= 0.85);
 
     if (goodMatches.length < 4) {
+      const matchDurationMs = Math.round(((typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now()) - t0);
       return {
         modelUsed: 'NONE',
         pass: false,
+        rejectionReason: 'INSUFFICIENT_GOOD_MATCHES_' + goodMatches.length,
         rawMatchCount: rawMatches.length,
         goodMatchCount: goodMatches.length,
         inlierCount: 0,
@@ -19746,61 +19749,88 @@ class VisualLoopDetector {
         inlierCellCount: 0,
         bboxAreaRatio: 0,
         relativeRotationDeg: 0,
-        scale: 1.0
+        scale: 1.0,
+        affineAttempted: false,
+        matchDurationMs
       };
     }
 
     // ── STAGE 1: Fast 2D Similarity RANSAC (4 DOF) ──
-    const simResult = this.fitSimilarityRANSAC(goodMatches, refKp, currKp, 80, 6.5, currFeatures.width, currFeatures.height);
+    // Max iterations increased to 120; calibrated against real phone multi-plane parallax
+    const simResult = this.fitSimilarityRANSAC(goodMatches, refKp, currKp, 120, 6.5, currFeatures.width, currFeatures.height);
     const simPass = (
-      simResult.inlierCount >= 10 &&
-      simResult.inlierRatio >= 0.35 &&
+      simResult.inlierCount >= 6 &&
+      simResult.inlierRatio >= 0.18 &&
       simResult.reprojectionError <= 6.5 &&
       simResult.spatialDistributionPass &&
-      Math.abs(simResult.relativeRotationDeg) <= 30.0 &&
-      simResult.scale >= 0.70 && simResult.scale <= 1.40
+      Math.abs(simResult.relativeRotationDeg) <= 35.0 &&
+      simResult.scale >= 0.65 && simResult.scale <= 1.50
     );
+
+    const matchDurationMs = Math.round(((typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now()) - t0);
 
     if (simPass) {
       return {
         modelUsed: 'SIMILARITY',
         pass: true,
+        rejectionReason: null,
         rawMatchCount: rawMatches.length,
         goodMatchCount: goodMatches.length,
+        affineAttempted: false,
+        matchDurationMs,
         ...simResult
       };
     }
 
     // ── STAGE 2: Perspective-Tolerant Fallback - Affine 2D RANSAC (6 DOF) ──
-    if (goodMatches.length >= 18) {
-      const affResult = this.fitAffineRANSAC(goodMatches, refKp, currKp, 100, 6.5, currFeatures.width, currFeatures.height);
-      const affPass = (
+    // 250 iterations for >92% probability of picking 3 inliers from 20% inlier pool
+    let affResult = null;
+    let affPass = false;
+    if (goodMatches.length >= 8) {
+      affResult = this.fitAffineRANSAC(goodMatches, refKp, currKp, 250, 6.5, currFeatures.width, currFeatures.height);
+      affPass = (
         affResult.plausible &&
-        affResult.inlierCount >= 4 &&
-        affResult.inlierRatio >= 0.12 &&
-        affResult.reprojectionError <= 2.5 &&
-        affResult.inlierCellCount >= 2 &&
-        affResult.bboxAreaRatio >= 0.05
+        affResult.inlierCount >= 6 &&
+        affResult.inlierRatio >= 0.18 &&
+        affResult.reprojectionError <= 5.5 &&
+        affResult.inlierCellCount >= 3 &&
+        affResult.bboxAreaRatio >= 0.08
       );
 
       if (affPass) {
         return {
           modelUsed: 'AFFINE_FALLBACK',
           pass: true,
+          rejectionReason: null,
           rawMatchCount: rawMatches.length,
           goodMatchCount: goodMatches.length,
+          affineAttempted: true,
+          matchDurationMs,
           ...affResult
         };
       }
     }
 
-    // Failed both stages
+    // Diagnostic rejection summary showing both stages
+    let diagReason = 'SIM_FAIL(' + simResult.inlierCount + '/' + goodMatches.length + ',r=' + (simResult.inlierRatio ? simResult.inlierRatio.toFixed(2) : '0') + ',err=' + (simResult.reprojectionError ? simResult.reprojectionError.toFixed(1) : '99') + ')';
+    if (affResult) {
+      diagReason += '|AFF_FAIL(' + affResult.inlierCount + '/' + goodMatches.length + ',r=' + (affResult.inlierRatio ? affResult.inlierRatio.toFixed(2) : '0') + ',err=' + (affResult.reprojectionError ? affResult.reprojectionError.toFixed(1) : '99') + ')';
+    } else {
+      diagReason += '|AFF_SKIPPED(goodMatches<8)';
+    }
+
+    const bestResult = (affResult && affResult.inlierCount > simResult.inlierCount) ? affResult : simResult;
+    const modelUsed = affResult ? (affResult.inlierCount > simResult.inlierCount ? 'AFFINE_ATTEMPTED' : 'SIMILARITY_ATTEMPTED') : (simResult.inlierCount > 0 ? 'SIMILARITY_ATTEMPTED' : 'NONE');
+
     return {
-      modelUsed: simResult.inlierCount > 0 ? 'SIMILARITY' : 'NONE',
+      modelUsed,
       pass: false,
+      rejectionReason: diagReason,
       rawMatchCount: rawMatches.length,
       goodMatchCount: goodMatches.length,
-      ...simResult
+      affineAttempted: Boolean(affResult),
+      matchDurationMs,
+      ...bestResult
     };
   }
 
@@ -20318,8 +20348,17 @@ class RILiveDiagnosticHelper {
 
   getCameraDimensions() {
     try {
+      if (typeof window !== 'undefined' && window.setupWizard?.guidedCaptureController) {
+        const ctrl = window.setupWizard.guidedCaptureController;
+        if (ctrl.telemetry && ctrl.telemetry.videoWidth > 0) {
+          return { width: ctrl.telemetry.videoWidth, height: ctrl.telemetry.videoHeight };
+        }
+        if (ctrl.videoElement && ctrl.videoElement.videoWidth > 0) {
+          return { width: ctrl.videoElement.videoWidth, height: ctrl.videoElement.videoHeight };
+        }
+      }
       if (typeof document !== 'undefined') {
-        const v = document.getElementById('guidedCaptureVideo') || (typeof window !== 'undefined' && window.setupWizard?.guidedCaptureController?.videoElement);
+        const v = document.getElementById('guidedCaptureVideo');
         if (v && v.videoWidth > 0) return { width: v.videoWidth, height: v.videoHeight };
       }
     } catch (e) {}
@@ -20747,6 +20786,7 @@ class GuidedCaptureController {
     // 8. Cleanly reset physical rotation, angles, sensors, and progress for the new capture attempt
     this.accumulatedRotation = 0.0;
     this.normalizedSensorRotationDeg = 0.0;
+    this.currentHeading = null;
     this.progressPercent = 0;
     this.directionLocked = false;
     this.rotationDirection = null;
@@ -21677,7 +21717,9 @@ class GuidedCaptureController {
       // If in closure search zone (300° to 450°), evaluate closure match
       if (this.visualClosureSearchEnabled) {
         if (this.visualLoopDetector) this.visualLoopDetector._currentHeading = this.currentHeading;
+        const evalT0 = Date.now();
         const evalRes = this.visualLoopDetector.evaluateClosure(candId, this.accumulatedRotation, features);
+        const evalDurationMs = Date.now() - evalT0;
         this.closureCheckCount = this.visualLoopDetector.closureCheckCount;
         this.telemetry.closureCheckCount = this.closureCheckCount;
 
@@ -21701,6 +21743,7 @@ class GuidedCaptureController {
             referenceId: evalRes.referenceId || null,
             referenceAngle: evalRes.referenceAngle !== undefined ? evalRes.referenceAngle : null,
             deltaFromExpected: evalRes.deltaFromExpected !== undefined ? evalRes.deltaFromExpected : null,
+            matcherDurationMs: evalRes.matchDurationMs || evalDurationMs,
             timestamp: Date.now()
           });
         }
@@ -22148,6 +22191,8 @@ class GuidedCaptureController {
     }
 
     const heading = (rawHeading % 360.0 + 360.0) % 360.0;
+    this.currentHeading = heading;
+    this.telemetry.heading = heading;
     const beta = (e.beta !== null && e.beta !== undefined && Number.isFinite(e.beta)) ? Number(e.beta) : 0;
     const gamma = (e.gamma !== null && e.gamma !== undefined && Number.isFinite(e.gamma)) ? Number(e.gamma) : 0;
     const now = Date.now();
@@ -22339,9 +22384,13 @@ class GuidedCaptureController {
 
       // Failsafe rotation limit: if extended beyond 450° without visual loop
       if (this.accumulatedRotation >= 450.0 && !this.closureConfirmed) {
+        const prevState = this.state;
         this.state = 'CAPTURE_NEEDS_RETRY';
+        if (this.riDiagnosticHelper && this.riDiagnosticHelper.isEnabled) {
+          this.riDiagnosticHelper.recordStateTransition(prevState, 'CAPTURE_NEEDS_RETRY');
+        }
         this.telemetry.captureCompletionReason = 'RETRY_REQUIRED';
-        this.guidanceMessage = 'Starting view not recognized. Continue a little farther or tap to retry.';
+        this.guidanceMessage = 'Starting view not recognized after 360° turn. Tap RETRY to capture again.';
         
         // C12.9-P1R3: Preserve terminal immutable snapshot on failure
         this.failedAttemptSnapshot = {
