@@ -1,0 +1,50 @@
+{
+  "manifestVersion": "1.0.0",
+  "generatedAt": "2026-10-02T19:20:00Z",
+  "description": "Provenance, hashes, and capture metadata for Round 122 test fixtures",
+  "sourceAsset": {
+    "relPath": "/assets/demo/dna-showcase/pano360/node0_360_panorama_4k_opt.jpg",
+    "sha256": "bbb37511be4fcc0875127d7b65d53dc14ab0c2a4ed02f47a21a403ebb050f12a",
+    "dimensions": "4096x2048",
+    "format": "FULL_SPHERE_EQUIRECTANGULAR"
+  },
+  "generationMethod": "Perspective camera viewport projection in headless browser during Stage 2 Panorama Browser Optical Proof milestone (Round 53-64, executed 2026-09-29). Note: These are synthetic perspective optical test fixtures derived from the equirectangular panorama asset, NOT raw camera sensor dumps from a physical Samsung Galaxy S23 Ultra handheld session. Physical device closure validation will be supplied via the bounded Preview frame-pair export tool.",
+  "fixtures": [
+    {
+      "fileName": "cand_01.jpg",
+      "fileSizeBytes": 247124,
+      "sha256": "006f2952544dd03335a97960bd3a712c65c44d98596f0bb9877e2787de8b64c3",
+      "dimensions": "1920x1080",
+      "simulatedYawDeg": 0.0,
+      "simulatedPitchDeg": 0.0,
+      "simulatedRollDeg": 0.0,
+      "role": "Initial start reference view (#1)",
+      "isPhysicalPhoneCapture": false,
+      "isSyntheticPerspectiveProjection": true
+    },
+    {
+      "fileName": "cand_wrap_01.jpg",
+      "fileSizeBytes": 255730,
+      "sha256": "9aac5b87ec65ef3e566224b345071caef9e998d04554c50dcf2529d573ba5469",
+      "dimensions": "1920x1080",
+      "simulatedYawDeg": 360.2,
+      "simulatedPitchDeg": 0.0,
+      "simulatedRollDeg": 0.0,
+      "role": "Loop closure return candidate after 360° rotation",
+      "isPhysicalPhoneCapture": false,
+      "isSyntheticPerspectiveProjection": true
+    },
+    {
+      "fileName": "cand_06.jpg",
+      "fileSizeBytes": 335550,
+      "sha256": "a210ac2028166801d40eaf305be220e86a003fd9879770d7e7babede056eff51",
+      "dimensions": "1920x1080",
+      "simulatedYawDeg": 180.0,
+      "simulatedPitchDeg": 0.0,
+      "simulatedRollDeg": 0.0,
+      "role": "180° opposite scene negative fixture",
+      "isPhysicalPhoneCapture": false,
+      "isSyntheticPerspectiveProjection": true
+    }
+  ]
+}

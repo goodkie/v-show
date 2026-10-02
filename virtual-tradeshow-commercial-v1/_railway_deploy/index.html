@@ -19451,7 +19451,7 @@ class VisualLoopDetector {
     this.minRotationSearchGate = options.minRotationSearchGate || 300.0;
     this.maxRotationSearchGate = options.maxRotationSearchGate || 450.0;
     this.inlierThreshold = options.inlierThreshold || 10;
-    this.inlierRatioThreshold = options.inlierRatioThreshold || 0.35;
+    this.inlierRatioThreshold = options.inlierRatioThreshold || 0.30;
     this.reprojectionThreshold = options.reprojectionThreshold || 6.5;
     this.minInlierCellCount = options.minInlierCellCount || 3;
     this.minBboxAreaRatio = options.minBboxAreaRatio || 0.15;
@@ -19752,9 +19752,9 @@ class VisualLoopDetector {
     // Max iterations increased to 120; calibrated against real phone multi-plane parallax
     const simResult = this.fitSimilarityRANSAC(goodMatches, refKp, currKp, 120, 6.5, currFeatures.width, currFeatures.height);
     const simPass = (
-      simResult.inlierCount >= 6 &&
-      simResult.inlierRatio >= 0.18 &&
-      simResult.reprojectionError <= 6.5 &&
+      simResult.inlierCount >= this.inlierThreshold &&
+      simResult.inlierRatio >= this.inlierRatioThreshold &&
+      simResult.reprojectionError <= this.reprojectionThreshold &&
       simResult.spatialDistributionPass &&
       Math.abs(simResult.relativeRotationDeg) <= 35.0 &&
       simResult.scale >= 0.65 && simResult.scale <= 1.50
@@ -19783,8 +19783,8 @@ class VisualLoopDetector {
       affResult = this.fitAffineRANSAC(goodMatches, refKp, currKp, 250, 6.5, currFeatures.width, currFeatures.height);
       affPass = (
         affResult.plausible &&
-        affResult.inlierCount >= 6 &&
-        affResult.inlierRatio >= 0.18 &&
+        affResult.inlierCount >= this.inlierThreshold &&
+        affResult.inlierRatio >= this.inlierRatioThreshold &&
         affResult.reprojectionError <= 5.5 &&
         affResult.inlierCellCount >= 3 &&
         affResult.bboxAreaRatio >= 0.08
@@ -20394,12 +20394,17 @@ class RILiveDiagnosticHelper {
       stateTransitions: (this.allStateTransitions && this.allStateTransitions.length > 0) ? this.allStateTransitions : this.stateTransitions,
       errors: (this.allErrors && this.allErrors.length > 0) ? this.allErrors : this.errors,
       framePair: {
+        hasEvaluatedRef: Boolean(typeof window !== 'undefined' && (window.__RI_CLOSURE_PAIR__?.evaluatedReference?.dataUrl || window.__RI_EVALUATED_REF_DATAURL__ || window.__RI_START_REF_DATAURL__)),
+        hasClosureCand: Boolean(typeof window !== 'undefined' && (window.__RI_CLOSURE_PAIR__?.closureCandidate?.dataUrl || window.__RI_LATEST_CLOSURE_CAND_DATAURL__)),
+        evaluatedRefId: (typeof window !== 'undefined') ? (window.__RI_CLOSURE_PAIR__?.evaluatedReference?.candidateId || window.__RI_EVALUATED_REF_ID__ || window.__RI_START_REF_CAND_ID__) : null,
+        closureCandId: (typeof window !== 'undefined') ? (window.__RI_CLOSURE_PAIR__?.closureCandidate?.candidateId || window.__RI_LATEST_CLOSURE_CAND_ID__) : null,
+        evaluatedRefAngle: (typeof window !== 'undefined') ? (window.__RI_CLOSURE_PAIR__?.evaluatedReference?.angle ?? window.__RI_EVALUATED_REF_ANGLE__ ?? window.__RI_START_REF_ANGLE__) : null,
+        closureCandAngle: (typeof window !== 'undefined') ? (window.__RI_CLOSURE_PAIR__?.closureCandidate?.angle ?? window.__RI_LATEST_CLOSURE_ANGLE__) : null,
+        sessionEpoch: (typeof window !== 'undefined') ? (window.__RI_CLOSURE_PAIR__?.epoch || this.sessionEpoch || 1) : 1,
+        matcherResult: (typeof window !== 'undefined') ? (window.__RI_CLOSURE_PAIR__?.matcherResult || window.__RI_LATEST_CLOSURE_EVAL_RES__) : null,
         hasStartRef: Boolean(typeof window !== 'undefined' && window.__RI_START_REF_DATAURL__),
-        hasClosureCand: Boolean(typeof window !== 'undefined' && window.__RI_LATEST_CLOSURE_CAND_DATAURL__),
         startRefCandId: (typeof window !== 'undefined') ? window.__RI_START_REF_CAND_ID__ : null,
-        closureCandId: (typeof window !== 'undefined') ? window.__RI_LATEST_CLOSURE_CAND_ID__ : null,
         startRefAngle: (typeof window !== 'undefined') ? window.__RI_START_REF_ANGLE__ : null,
-        closureCandAngle: (typeof window !== 'undefined') ? window.__RI_LATEST_CLOSURE_ANGLE__ : null,
         startRefDataUrlLength: (typeof window !== 'undefined' && window.__RI_START_REF_DATAURL__) ? window.__RI_START_REF_DATAURL__.length : 0,
         closureCandDataUrlLength: (typeof window !== 'undefined' && window.__RI_LATEST_CLOSURE_CAND_DATAURL__) ? window.__RI_LATEST_CLOSURE_CAND_DATAURL__.length : 0
       }
@@ -20426,13 +20431,18 @@ class RILiveDiagnosticHelper {
   }
 
   downloadFramePair() {
-    const startDataUrl = (typeof window !== 'undefined') ? window.__RI_START_REF_DATAURL__ : null;
-    const closureDataUrl = (typeof window !== 'undefined') ? window.__RI_LATEST_CLOSURE_CAND_DATAURL__ : null;
-    const startId = (typeof window !== 'undefined') ? window.__RI_START_REF_CAND_ID__ || 'C001' : 'C001';
-    const closureId = (typeof window !== 'undefined') ? window.__RI_LATEST_CLOSURE_CAND_ID__ || 'CLOSURE_CAND' : 'CLOSURE_CAND';
-    const evalRes = (typeof window !== 'undefined') ? window.__RI_LATEST_CLOSURE_EVAL_RES__ : null;
+    const pair = (typeof window !== 'undefined' && window.__RI_CLOSURE_PAIR__) ? window.__RI_CLOSURE_PAIR__ : null;
+    const refDataUrl = pair?.evaluatedReference?.dataUrl || (typeof window !== 'undefined' ? window.__RI_EVALUATED_REF_DATAURL__ || window.__RI_START_REF_DATAURL__ : null);
+    const closureDataUrl = pair?.closureCandidate?.dataUrl || (typeof window !== 'undefined' ? window.__RI_LATEST_CLOSURE_CAND_DATAURL__ : null);
+    const refId = pair?.evaluatedReference?.candidateId || (typeof window !== 'undefined' ? window.__RI_EVALUATED_REF_ID__ || window.__RI_START_REF_CAND_ID__ || 'C001' : 'C001');
+    const closureId = pair?.closureCandidate?.candidateId || (typeof window !== 'undefined' ? window.__RI_LATEST_CLOSURE_CAND_ID__ || 'CLOSURE_CAND' : 'CLOSURE_CAND');
+    const refAngle = pair?.evaluatedReference?.angle !== undefined ? pair.evaluatedReference.angle : ((typeof window !== 'undefined') ? (window.__RI_EVALUATED_REF_ANGLE__ ?? window.__RI_START_REF_ANGLE__ ?? 0) : 0);
+    const closureAngle = pair?.closureCandidate?.angle !== undefined ? pair.closureCandidate.angle : ((typeof window !== 'undefined') ? (window.__RI_LATEST_CLOSURE_ANGLE__ ?? '--') : '--');
+    const evalRes = pair?.matcherResult || ((typeof window !== 'undefined') ? window.__RI_LATEST_CLOSURE_EVAL_RES__ : null);
+    const session = pair?.sessionId || this.sessionId || 'UNKNOWN';
+    const epoch = pair?.epoch || this.sessionEpoch || 1;
 
-    if (!startDataUrl && !closureDataUrl) {
+    if (!refDataUrl && !closureDataUrl) {
       alert('No capture frames recorded yet. Start capture and rotate first.');
       return;
     }
@@ -20442,27 +20452,27 @@ class RILiveDiagnosticHelper {
 <head><meta charset="utf-8"><title>RI Diagnostic Frame Pair Export</title>
 <style>
 body { font-family: monospace; background: #0b1118; color: #e6f0ff; padding: 20px; }
-h2 { color: #00ffcc; }
+h2 { color: #00ffcc; margin-bottom: 4px; }
+.meta { color: #88aabb; font-size: 12px; margin-bottom: 16px; }
 .pair { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 15px; }
-.card { background: #132430; border: 1px solid #00ffcc; border-radius: 8px; padding: 12px; max-width: 480px; }
+.card { background: #132430; border: 1px solid #00ffcc; border-radius: 8px; padding: 12px; max-width: 480px; flex: 1; min-width: 300px; }
 img { max-width: 100%; border-radius: 4px; border: 1px solid #335566; display: block; margin-top: 8px; }
-pre { background: #070c12; padding: 10px; border-radius: 4px; overflow: auto; font-size: 11px; }
+pre { background: #070c12; padding: 10px; border-radius: 4px; overflow: auto; font-size: 11px; border: 1px solid #223344; }
 </style>
 </head>
 <body>
 <h2>RI DIAGNOSTIC FRAME PAIR EXPORT</h2>
-<div>Session: ${this.sessionId || 'UNKNOWN'} | Commit: ${(typeof window !== 'undefined' && window.__3DZ_BUILD_INFO__?.gitCommit) || 'UNKNOWN'}</div>
-<div>Generated: ${new Date().toISOString()}</div>
+<div class="meta">Session: ${session} | Epoch: ${epoch} | Commit: ${(typeof window !== 'undefined' && window.__3DZ_BUILD_INFO__?.gitCommit) || 'UNKNOWN'} | Generated: ${new Date().toISOString()}</div>
 <div class="pair">
   <div class="card">
-    <h3>Start Reference (#1 - ${startId})</h3>
-    <div>Angle: ${(typeof window !== 'undefined' && window.__RI_START_REF_ANGLE__) || 0}°</div>
-    ${startDataUrl ? `<img src="${startDataUrl}" alt="Start Reference">` : '<div>(No start frame recorded)</div>'}
+    <h3>Evaluated Reference Frame (${refId})</h3>
+    <div>Angle: ${refAngle}°</div>
+    ${refDataUrl ? `<img src="${refDataUrl}" alt="Reference Frame ${refId}">` : '<div>(No reference frame recorded)</div>'}
   </div>
   <div class="card">
-    <h3>Latest Closure Candidate (${closureId})</h3>
-    <div>Angle: ${(typeof window !== 'undefined' && window.__RI_LATEST_CLOSURE_ANGLE__) || '--'}°</div>
-    ${closureDataUrl ? `<img src="${closureDataUrl}" alt="Closure Candidate">` : '<div>(No closure candidate recorded)</div>'}
+    <h3>Closure Candidate Frame (${closureId})</h3>
+    <div>Angle: ${closureAngle}°</div>
+    ${closureDataUrl ? `<img src="${closureDataUrl}" alt="Closure Candidate ${closureId}">` : '<div>(No closure candidate recorded)</div>'}
   </div>
 </div>
 <h3>Visual Matcher Evaluation Result</h3>
@@ -20474,7 +20484,7 @@ pre { background: #070c12; padding: 10px; border-radius: 4px; overflow: auto; fo
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `ri_frame_pair_${this.sessionId || Date.now()}.html`;
+    a.download = `ri_frame_pair_${session}_${Date.now()}.html`;
     document.body.appendChild(a);
     a.click();
     setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 500);
@@ -20536,8 +20546,8 @@ class GuidedCaptureController {
     // Visual Loop Detector
     this.visualLoopDetector = new VisualLoopDetector({
       minRotationSearchGate: this.MIN_ROTATION_SEARCH_GATE,
-      inlierThreshold: 15,
-      inlierRatioThreshold: 0.35,
+      inlierThreshold: 10,
+      inlierRatioThreshold: 0.30,
       reprojectionThreshold: 6.5,
       minInlierCellCount: 3,
       minBboxAreaRatio: 0.15,
@@ -20745,6 +20755,23 @@ class GuidedCaptureController {
     this.resetCaptureForRetryCallCount = (this.resetCaptureForRetryCallCount || 0) + 1;
     this.lastResetReason = reason;
 
+    // Reset frame-pair & diagnostic globals on retry
+    if (typeof window !== 'undefined') {
+      window.__RI_CLOSURE_PAIR__ = null;
+      window.__RI_START_REF_DATAURL__ = null;
+      window.__RI_START_REF_CAND_ID__ = null;
+      window.__RI_START_REF_ANGLE__ = null;
+      window.__RI_LATEST_CLOSURE_CAND_DATAURL__ = null;
+      window.__RI_LATEST_CLOSURE_CAND_ID__ = null;
+      window.__RI_LATEST_CLOSURE_ANGLE__ = null;
+      window.__RI_LATEST_CLOSURE_EVAL_RES__ = null;
+      window.__RI_EVALUATED_REF_DATAURL__ = null;
+      window.__RI_EVALUATED_REF_ID__ = null;
+      window.__RI_EVALUATED_REF_ANGLE__ = null;
+      window.__RI_REF_DATAURLS__ = {};
+    }
+    this._referenceFrames = {};
+
     // Freeze previous attempt in attempts history to preserve forensic continuity
     if (!this.previousAttempts) this.previousAttempts = [];
     if (this.diagnosticSessionId) {
@@ -20892,9 +20919,27 @@ class GuidedCaptureController {
   }
 
   start(options = {}) {
+    // Reset frame-pair & diagnostic globals on fresh start
+    if (typeof window !== 'undefined') {
+      window.__RI_CLOSURE_PAIR__ = null;
+      window.__RI_START_REF_DATAURL__ = null;
+      window.__RI_START_REF_CAND_ID__ = null;
+      window.__RI_START_REF_ANGLE__ = null;
+      window.__RI_LATEST_CLOSURE_CAND_DATAURL__ = null;
+      window.__RI_LATEST_CLOSURE_CAND_ID__ = null;
+      window.__RI_LATEST_CLOSURE_ANGLE__ = null;
+      window.__RI_LATEST_CLOSURE_EVAL_RES__ = null;
+      window.__RI_EVALUATED_REF_DATAURL__ = null;
+      window.__RI_EVALUATED_REF_ID__ = null;
+      window.__RI_EVALUATED_REF_ANGLE__ = null;
+      window.__RI_REF_DATAURLS__ = {};
+    }
+    this._referenceFrames = {};
+
     // Round 119 P0: Synchronous fresh-start hard-zero & rebaseline
     this.accumulatedRotation = 0.0;
     this.normalizedSensorRotationDeg = 0.0;
+    this.currentHeading = null;
     this.lastAngle = null;
     this.lastAlpha = null;
     this.initialAlpha = null;
@@ -21780,10 +21825,21 @@ class GuidedCaptureController {
         const angleDiff = lastRef ? Math.abs(currentAngle - lastRef.angle) : 999;
         if (this.visualLoopDetector.startReferences.length === 0 || angleDiff >= 4.0) {
           this.visualLoopDetector.addStartReference(candId, currentAngle, features, this.currentHeading);
-          if (typeof window !== 'undefined' && !window.__RI_START_REF_DATAURL__) {
-            window.__RI_START_REF_DATAURL__ = cand.dataUrl;
-            window.__RI_START_REF_CAND_ID__ = candId;
-            window.__RI_START_REF_ANGLE__ = currentAngle;
+          if (!this._referenceFrames) this._referenceFrames = {};
+          this._referenceFrames[candId] = {
+            candidateId: candId,
+            angle: currentAngle,
+            heading: this.currentHeading,
+            dataUrl: cand.dataUrl
+          };
+          if (typeof window !== 'undefined') {
+            window.__RI_REF_DATAURLS__ = window.__RI_REF_DATAURLS__ || {};
+            window.__RI_REF_DATAURLS__[candId] = this._referenceFrames[candId];
+            if (!window.__RI_START_REF_DATAURL__) {
+              window.__RI_START_REF_DATAURL__ = cand.dataUrl;
+              window.__RI_START_REF_CAND_ID__ = candId;
+              window.__RI_START_REF_ANGLE__ = currentAngle;
+            }
           }
         }
       }
@@ -21793,11 +21849,42 @@ class GuidedCaptureController {
         if (this.visualLoopDetector) this.visualLoopDetector._currentHeading = this.currentHeading;
         const evalT0 = Date.now();
         const evalRes = this.visualLoopDetector.evaluateClosure(candId, this.accumulatedRotation, features);
+        
+        // Exact reference frame lookup (handles C001, C002, C003, C004, C005)
+        const refId = evalRes ? evalRes.referenceId : null;
+        const refObj = (refId && this._referenceFrames && this._referenceFrames[refId]) ||
+                       (refId && typeof window !== 'undefined' && window.__RI_REF_DATAURLS__ && window.__RI_REF_DATAURLS__[refId]) || null;
+        const refDataUrl = (refObj && refObj.dataUrl) || (typeof window !== 'undefined' ? window.__RI_START_REF_DATAURL__ : null);
+        const refAngle = (refObj && refObj.angle !== undefined) ? refObj.angle : (evalRes ? evalRes.referenceAngle : 0);
+
         if (typeof window !== 'undefined') {
           window.__RI_LATEST_CLOSURE_CAND_DATAURL__ = cand.dataUrl;
           window.__RI_LATEST_CLOSURE_CAND_ID__ = candId;
           window.__RI_LATEST_CLOSURE_ANGLE__ = this.accumulatedRotation;
           window.__RI_LATEST_CLOSURE_EVAL_RES__ = evalRes;
+          window.__RI_EVALUATED_REF_DATAURL__ = refDataUrl;
+          window.__RI_EVALUATED_REF_ID__ = refId;
+          window.__RI_EVALUATED_REF_ANGLE__ = refAngle;
+
+          // Atomic frame pair object corresponding to exact evaluated reference and candidate
+          window.__RI_CLOSURE_PAIR__ = {
+            sessionId: this.diagnosticSessionId,
+            epoch: this.sessionEpoch || 1,
+            timestamp: Date.now(),
+            evaluatedReference: {
+              candidateId: refId || 'C001',
+              angle: refAngle,
+              heading: refObj ? refObj.heading : null,
+              dataUrl: refDataUrl
+            },
+            closureCandidate: {
+              candidateId: candId,
+              angle: this.accumulatedRotation,
+              heading: this.currentHeading,
+              dataUrl: cand.dataUrl
+            },
+            matcherResult: evalRes
+          };
         }
         const evalDurationMs = Date.now() - evalT0;
         this.closureCheckCount = this.visualLoopDetector.closureCheckCount;
@@ -22544,7 +22631,11 @@ class GuidedCaptureController {
 
     // 2. Validate Minimum Gate & Loop Closure Confirmation
     if (!selectionOk || this.canonicalKeyframes.length < this.MIN_CANONICAL_KEYFRAMES || !this.closureConfirmed) {
+      const prevState = this.state;
       this.state = 'CAPTURE_NEEDS_RETRY';
+      if (this.riDiagnosticHelper && this.riDiagnosticHelper.isEnabled) {
+        this.riDiagnosticHelper.recordStateTransition(prevState, 'CAPTURE_NEEDS_RETRY');
+      }
       this.guidanceMessage = "We couldn't confirm full 360° visual closure. Please rotate slowly and try again.";
       this.stopCaptureResources();
       this.failedAttemptSnapshot = {
@@ -23407,6 +23498,22 @@ class SetupWizardController {
         } catch (snapshotErr) {
           console.warn('[SetupWizard][R120] RI snapshot warning:', snapshotErr);
         }
+      }
+
+      // Step 1.5: Reset stale globals on retry
+      if (typeof window !== 'undefined') {
+        window.__RI_CLOSURE_PAIR__ = null;
+        window.__RI_START_REF_DATAURL__ = null;
+        window.__RI_START_REF_CAND_ID__ = null;
+        window.__RI_START_REF_ANGLE__ = null;
+        window.__RI_LATEST_CLOSURE_CAND_DATAURL__ = null;
+        window.__RI_LATEST_CLOSURE_CAND_ID__ = null;
+        window.__RI_LATEST_CLOSURE_ANGLE__ = null;
+        window.__RI_LATEST_CLOSURE_EVAL_RES__ = null;
+        window.__RI_EVALUATED_REF_DATAURL__ = null;
+        window.__RI_EVALUATED_REF_ID__ = null;
+        window.__RI_EVALUATED_REF_ANGLE__ = null;
+        window.__RI_REF_DATAURLS__ = {};
       }
 
       // Step 2: Invalidate old session epoch
