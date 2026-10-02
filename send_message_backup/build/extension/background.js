@@ -2030,8 +2030,12 @@ if (chrome.alarms) {
             const parts = alarm.name.split('_');
             const session = parseInt(parts[parts.length - 1]);
             
-            if (session === campaignState.sessionId) {
-                logBg(null, `⚠️ [Protection] Global Session Timeout triggered. Advancing...`, "warning");
+            if (session !== campaignState.sessionId) {
+                // [R6.3 C] Stale timeout callback from prior target/session — ignore
+                logBg(null, `[TIMEOUT_GUARD] staleGeneration=true alarm.session=${session} current.session=${campaignState.sessionId} -> ignored`, "info");
+                return;
+            }
+            logBg(null, `⚠️ [Protection] Global Session Timeout triggered. Advancing...`, "warning");
                 // Explicitly clear lock to allow next target to enter
                 campaignState.isLoopRunning = false;
                 processNextCampaignTarget();
@@ -2829,7 +2833,8 @@ async function orchestrateSending(urlInput, template) {
         } catch (_) {}
 
         // Note: [CONTACT_COMMIT] and [FORM_COMMIT] are deferred until FORM_GATE_PASSED passes strict inquiry-form gate!
-        logBg(tabId, `[SUBMIT_LOCK] submittedFromUrl=${actualLoadedUrl}`, "info");
+        // [R6.3 A1] FOCUS_SECURED log only — actual SUBMIT_LOCK is emitted by content-script after FINAL_AUDIT_PASS
+        logBg(tabId, `[FOCUS_SECURED] formPageUrl=${actualLoadedUrl}`, "info");
 
         if (_attemptId) {
             try {

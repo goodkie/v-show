@@ -3222,7 +3222,34 @@ async function saveSettings() {
         xpider_random_delay: randomToggle ? randomToggle.checked : false,
         xpider_fill_mode: fillMode
     };
-    await chrome.storage.local.set(settings);
+
+    // [R6.3 D2] Authoritative save with read-back verification
+    const requestedKeys = Object.keys(settings);
+    try {
+        console.log('[SETTINGS_SAVE] requestedKeys=', requestedKeys);
+        await chrome.storage.local.set(settings);
+        // Read back immediately
+        const readback = await chrome.storage.local.get(requestedKeys);
+        const persistedKeys = Object.keys(readback);
+        let verified = true;
+        const mismatches = [];
+        for (const key of requestedKeys) {
+            const written = typeof settings[key] === 'boolean' ? settings[key] : String(settings[key]);
+            const stored = readback[key] !== undefined ? (typeof readback[key] === 'boolean' ? readback[key] : String(readback[key])) : undefined;
+            if (stored === undefined || written !== stored) {
+                verified = false;
+                mismatches.push(`${key}: wrote=${written}, stored=${stored}`);
+            }
+        }
+        console.log('[SETTINGS_SAVE] persistedKeys=', persistedKeys);
+        if (verified) {
+            console.log('[SETTINGS_SAVE] verified=true — SETTINGS_SAVE_OK');
+        } else {
+            console.warn('[SETTINGS_SAVE] SETTINGS_SAVE_VERIFY_FAILED mismatches:', mismatches);
+        }
+    } catch (saveErr) {
+        console.error('[SETTINGS_SAVE] write failed:', saveErr);
+    }
     
     // [WitKey] Sync to background engine via UPDATE_WIT_KEY without dead native IPC
     if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {

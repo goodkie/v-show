@@ -149,17 +149,61 @@
         });
     }
 
-    // [Issue #6 R6.2 Requirement 8] Reset Duplicate/SPA Suppression Per Real Navigation
+    // [Issue #6 R6.2 Requirement 8 / R6.3 A2] Reset Duplicate/SPA Suppression Per Real Navigation
     const currentSetupUrl = (typeof window !== 'undefined' && window.location ? window.location.href : '');
     const isNewSetupUrl = !window.__xpider_last_setup_url || window.__xpider_last_setup_url !== currentSetupUrl;
     window.__xpider_last_setup_url = currentSetupUrl;
 
+    // [R6.3 A2] Execution Identity — multi-dimension lock replacing single boolean
+    // Format: { attemptId, url, domGeneration }
+    // URL change invalidates previous page's processing latch entirely.
     if (isNewSetupUrl) {
+        const prevUrl = window.__xpider_exec_identity ? window.__xpider_exec_identity.url : null;
+        if (prevUrl && prevUrl !== currentSetupUrl) {
+            try {
+                chrome.runtime.sendMessage({
+                    action: 'SENDER_LOG',
+                    message: `[TARGET_PAGE] url=${currentSetupUrl} domGeneration=${Date.now()} (prev=${prevUrl} invalidated)`,
+                    logType: 'info'
+                });
+            } catch (_) {}
+        }
         // Clear stale setup and running latch from previous DOM generation
         window.__xpider_initialized = false;
-        window.__xpider_running = false;
+        window.__xpider_exec_identity = null;  // [R6.3] replaces __xpider_running boolean
+        window.__xpider_running = false;        // legacy compat — keep in sync
         window.__xpider_running_url = null;
     }
+
+    // [R6.3] Expose execution identity helpers on window for testability
+    window.__xpider_acquireProcessingLock = function(attemptId, url, domGeneration) {
+        if (window.__xpider_exec_identity) {
+            const id = window.__xpider_exec_identity;
+            // Same execution key — suppress duplicate
+            if (id.attemptId === attemptId || (id.url === url && id.domGeneration === domGeneration)) {
+                return false;
+            }
+            // Different URL or domGeneration — must have been released already (stale)
+        }
+        window.__xpider_exec_identity = { attemptId, url, domGeneration };
+        window.__xpider_running = true;
+        window.__xpider_running_url = url;
+        return true;
+    };
+    window.__xpider_releaseProcessingLock = function(forUrl) {
+        if (!forUrl || (window.__xpider_exec_identity && window.__xpider_exec_identity.url === forUrl)) {
+            window.__xpider_exec_identity = null;
+            window.__xpider_running = false;
+            window.__xpider_running_url = null;
+        }
+    };
+    window.__xpider_hasProcessingLock = function(url, domGeneration) {
+        const id = window.__xpider_exec_identity;
+        if (!id) return false;
+        if (url && id.url !== url) return false;  // different URL -> no lock
+        if (domGeneration !== undefined && id.domGeneration !== domGeneration) return false;
+        return true;
+    };
 
     const alreadyInitialized = window.__xpider_initialized;
     window.__xpider_initialized = true;
@@ -226,13 +270,25 @@
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         if (request.action === 'START_SENDING') {
             const currentRunUrl = (typeof window !== 'undefined' && window.location ? window.location.href : '');
-            if (window.__xpider_running && window.__xpider_running_url === currentRunUrl) {
-                logDev("⚠️ [Engine] Already processing. Ignoring duplicate START_SENDING.", "warning");
+            // [R6.3 A2] Execution identity: use acquireProcessingLock with domGeneration
+            const domGeneration = window.__xpider_dom_generation || (window.__xpider_dom_generation = Date.now());
+            const attemptId = (request.attemptId) || (Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 7));
+
+            if (window.__xpider_hasProcessingLock && window.__xpider_hasProcessingLock(currentRunUrl)) {
+                logDev(`⚠️ [Engine] Already processing. Ignoring duplicate START_SENDING. executionKey=${attemptId} url=${currentRunUrl}`, "warning");
                 return;
             }
-            window.__xpider_running = true;
-            window.__xpider_running_url = currentRunUrl;
-            
+
+            // [R6.3 A2] Acquire lock before proceeding
+            if (window.__xpider_acquireProcessingLock) {
+                window.__xpider_acquireProcessingLock(attemptId, currentRunUrl, domGeneration);
+            } else {
+                window.__xpider_running = true;
+                window.__xpider_running_url = currentRunUrl;
+            }
+
+            logDev(`[TARGET_PAGE] url=${currentRunUrl} domGeneration=${domGeneration} attemptId=${attemptId}`, "info");
+
             // [v17.6.0] Redirect Recovery
             const isVerificationMode = sessionStorage.getItem('xpider_pending_verify') === 'true';
             if (isVerificationMode) {
@@ -575,10 +631,23 @@
                 extractAndSendPageEmails();
             } catch (_) {}
             
+            // [R6.3 B] FORM_SCAN log
             let currentForm = null;
+            let formScanBodyCandidates = 0;
+            let formScanForms = 0;
+            let formScanLogical = 0;
             for (let i = 1; i <= 3; i++) {
                 logDev(`🧐 [Discovery] Polling attempt ${i}/3... | URL: ${window.location.href} | Recursion: ${recursionDebt}`);
                 currentForm = await findOptimalForm();
+
+                // Count form scan stats
+                try {
+                    const allForms = document.querySelectorAll('form');
+                    const allTextareas = document.querySelectorAll('textarea');
+                    formScanForms = allForms.length;
+                    formScanBodyCandidates = allTextareas.length;
+                    formScanLogical = document.querySelectorAll('[role="form"], form, [data-form]').length;
+                } catch (_) {}
                 
                 if (currentForm) break;
                 
@@ -594,9 +663,41 @@
                 await new Promise(r => setTimeout(r, 1500)); 
             }
 
+            // [R6.3 A3 & B] Page classification and FORM_SCAN log
+            const isContactPageUrl = isContactPage();
+            let pageClass = 'UNKNOWN';
+            if (currentForm) {
+                pageClass = 'CONTACT_FORM_PAGE';
+            } else {
+                // Detect contact info only (phone/email visible, no form)
+                const pageText = (document.body ? document.body.innerText : '').toLowerCase();
+                const hasContactInfo = /@[a-z0-9.-]+\.[a-z]{2,}/.test(pageText) || /\b\d{3}[-.]?\d{3}[-.]?\d{4}\b/.test(pageText);
+                const hasFormSignals = document.querySelectorAll('input[type="text"], input[type="email"], textarea').length > 0;
+                if (hasContactInfo && !hasFormSignals) {
+                    pageClass = 'CONTACT_INFO_ONLY';
+                } else if (!hasContactInfo && !hasFormSignals) {
+                    pageClass = 'NO_CONTACT';
+                } else if (hasFormSignals) {
+                    pageClass = 'NEWSLETTER_ONLY'; // form exists but not inquiry body
+                }
+            }
+
+            logDev(`[FORM_SCAN] bodyCandidates=${formScanBodyCandidates} forms=${formScanForms} logicalContainers=${formScanLogical}`, "info");
+            logDev(`[PAGE_CLASS] ${pageClass}`, "info");
+
+            // [R6.3 A3] CONTACT_INFO_ONLY: do NOT acquire submit lock; continue discovery
+            if (pageClass === 'CONTACT_INFO_ONLY' && !currentForm) {
+                logDev("[FORM_GATE] eligible=false reason=CONTACT_INFO_ONLY", "info");
+                logDev("[DISCOVERY_CONTINUE] from=CONTACT_INFO_ONLY — skipping autofill, searching alternate candidates", "info");
+                // Release processing lock so alternate pages can be processed
+                if (window.__xpider_releaseProcessingLock) window.__xpider_releaseProcessingLock(currentUrl);
+                // Let the DOM link scanner and path guesser handle discovery (fall through)
+            }
+
             if (currentForm) {
                 logDev("🎯 Step 2: Contact form discovered. Preparing submission...", "success");
                 logDev("[STAGE] stage=CONTACT_PAGE_FOUND", "success");
+                logDev(`[FORM_GATE] eligible=true reason=BODY_FIELD_PRESENT`, "info");
                 try {
                     chrome.runtime.sendMessage({
                         action: 'STAGE_PROGRESSION',
@@ -615,11 +716,15 @@
                 }
 
                 // [Issue #6 R6.2 Autofill Bridge] Canonical startAutofillForEligibleForm
-                const attemptId = Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 7);
+                // [R6.3 B] AUTOFILL_LOCK log — acquired only after eligible form verified
+                const autofillAttemptId = (window.__xpider_exec_identity && window.__xpider_exec_identity.attemptId) ||
+                    (Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 7));
+                const autofillKey = `${autofillAttemptId}:${currentUrl}:${currentForm ? (currentForm.id || currentForm.className || 'form') : 'none'}`;
+                logDev(`[AUTOFILL_LOCK] acquired=true key=${autofillKey}`, "info");
                 const bridgeFn = (_FormDiscoveryEngineR2 && _FormDiscoveryEngineR2.startAutofillForEligibleForm) || 
                                  (typeof window !== 'undefined' && window.__xpiderStartAutofillForEligibleForm);
                 if (typeof bridgeFn === 'function') {
-                    bridgeFn(attemptId, { form: currentForm, template, speed });
+                    bridgeFn(autofillAttemptId, { form: currentForm, template, speed });
                 }
 
                 const fillResult = await fillAndSubmit(currentForm, template, speed);
@@ -862,6 +967,10 @@
             // [Section B] FREEZE_VALUES: Stop sweeper, snapshot field values, freeze further mutations
             stopActiveEmptyFieldSweeper();
             const frozenSnapshot = freezeFieldValues(form, template);
+
+            // [R6.3 A1 & B] SUBMIT_LOCK must only be acquired here — after FINAL_AUDIT_PASS, eligible form confirmed
+            const submitLockUrl = (typeof window !== 'undefined' && window.location) ? window.location.href : '';
+            logDev(`[SUBMIT_LOCK] acquired=true submittedFromUrl=${submitLockUrl} — post FINAL_AUDIT_PASS`, "info");
 
             logDev("📤 [Action] Triggering submission sequence...");
             logDev("[SUBMIT] triggered=true", "info");
