@@ -20813,6 +20813,29 @@ class GuidedCaptureController {
   }
 
   start(options = {}) {
+    // Round 119 P0: Synchronous fresh-start hard-zero & rebaseline
+    this.accumulatedRotation = 0.0;
+    this.normalizedSensorRotationDeg = 0.0;
+    this.lastAngle = null;
+    this.lastAlpha = null;
+    this.initialAlpha = null;
+    this.lastTimestamp = null;
+    this.rotationDirection = null;
+    this.directionLocked = false;
+    this.sensorSource = null;
+    this.sensorSourceLocked = false;
+    this.visualClosureSearchEnabled = false;
+    this.closureConfirmed = false;
+    this.consecutiveClosureConfirmations = 0;
+    this.closureCheckCount = 0;
+    this.bestClosureMatch = null;
+    this.progressPercent = 0;
+    this.sessionEpoch = (this.sessionEpoch || 0) + 1;
+    if (this.visualLoopDetector && typeof this.visualLoopDetector.reset === 'function') {
+      this.visualLoopDetector.reset();
+    }
+    this.candidateFrames = [];
+
     this.startCallCountPerTap = (this.startCallCountPerTap || 0) + 1;
     this.telemetry.startCallCountPerTap = this.startCallCountPerTap;
 
@@ -21098,6 +21121,29 @@ class GuidedCaptureController {
     } catch (e) {
       console.warn('[GuidedCapture] Sensor listener note:', e);
     }
+
+    // Fresh-start hard-zero & rebaseline (Round 119 P0 physical repair)
+    this.accumulatedRotation = 0.0;
+    this.normalizedSensorRotationDeg = 0.0;
+    this.lastAngle = null;
+    this.lastAlpha = null;
+    this.initialAlpha = null;
+    this.lastTimestamp = null;
+    this.rotationDirection = null;
+    this.directionLocked = false;
+    this.sensorSource = null;
+    this.sensorSourceLocked = false;
+    this.visualClosureSearchEnabled = false;
+    this.closureConfirmed = false;
+    this.consecutiveClosureConfirmations = 0;
+    this.closureCheckCount = 0;
+    this.bestClosureMatch = null;
+    this.progressPercent = 0;
+    this.sessionEpoch = (this.sessionEpoch || 0) + 1;
+    if (this.visualLoopDetector && typeof this.visualLoopDetector.reset === 'function') {
+      this.visualLoopDetector.reset();
+    }
+    this.candidateFrames = [];
 
     if (this.riDiagnosticHelper && this.riDiagnosticHelper.isEnabled) {
       this.riDiagnosticHelper.initSession(this.sessionEpoch || 0);
@@ -22124,11 +22170,37 @@ class GuidedCaptureController {
     if (!activeStates.includes(this.state)) return;
     this.telemetry.deviceOrientationEventCount++;
 
-    const alpha = (e.alpha !== null && e.alpha !== undefined && Number.isFinite(e.alpha))
-      ? e.alpha
-      : ((e.webkitCompassHeading !== null && e.webkitCompassHeading !== undefined && Number.isFinite(e.webkitCompassHeading)) ? e.webkitCompassHeading : 0);
-    const beta = (e.beta !== null && e.beta !== undefined && Number.isFinite(e.beta)) ? e.beta : 0;
-    const gamma = (e.gamma !== null && e.gamma !== undefined && Number.isFinite(e.gamma)) ? e.gamma : 0;
+    // ── 1. Sensor Source Identification & Canonical Clockwise Heading (Round 119 P0) ──
+    let rawHeading = null;
+    let currentSource = null;
+    let rawAlpha = null;
+
+    if (e.webkitCompassHeading !== null && e.webkitCompassHeading !== undefined && Number.isFinite(e.webkitCompassHeading)) {
+      currentSource = 'webkitCompassHeading';
+      rawHeading = Number(e.webkitCompassHeading); // already clockwise-positive
+      rawAlpha = (e.alpha !== null && e.alpha !== undefined && Number.isFinite(e.alpha)) ? Number(e.alpha) : rawHeading;
+    } else if (e.alpha !== null && e.alpha !== undefined && Number.isFinite(e.alpha)) {
+      currentSource = e.absolute ? 'deviceorientationabsolute' : 'standardAlpha';
+      rawAlpha = Number(e.alpha);
+      // W3C alpha is CCW around Z. Convert to canonical clockwise-positive heading:
+      rawHeading = (360.0 - (rawAlpha % 360.0) + 360.0) % 360.0;
+    } else {
+      return; // No valid heading data
+    }
+
+    // Source locking: do not interleave mixed sources (e.g. webkitCompassHeading vs standard alpha)
+    if (!this.sensorSourceLocked) {
+      this.sensorSource = currentSource;
+      this.sensorSourceLocked = true;
+    } else if (this.sensorSource && this.sensorSource !== currentSource) {
+      if (this.sensorSource === 'webkitCompassHeading' || currentSource === 'webkitCompassHeading') {
+        return;
+      }
+    }
+
+    const heading = (rawHeading % 360.0 + 360.0) % 360.0;
+    const beta = (e.beta !== null && e.beta !== undefined && Number.isFinite(e.beta)) ? Number(e.beta) : 0;
+    const gamma = (e.gamma !== null && e.gamma !== undefined && Number.isFinite(e.gamma)) ? Number(e.gamma) : 0;
     const now = Date.now();
 
     const pitchDeviation = Math.abs(Math.abs(beta) - 90);
@@ -22144,21 +22216,25 @@ class GuidedCaptureController {
     const accumulatedRotationBefore = this.accumulatedRotation;
 
     if (this.lastAngle === null) {
-      this.lastAngle = alpha;
+      this.lastAngle = heading;
+      this.lastAlpha = rawAlpha;
+      this.initialAlpha = heading;
       this.lastTimestamp = now;
-      this.telemetry.rawAlpha = alpha;
+      this.telemetry.rawAlpha = rawAlpha;
       this.telemetry.rawBeta = beta;
       this.telemetry.rawGamma = gamma;
+      this.telemetry.heading = heading;
       this.notifyProgress();
 
       if (this.riDiagnosticHelper && this.riDiagnosticHelper.isEnabled) {
         this.riDiagnosticHelper.recordOrientationEvent({
           timestamp: now,
           elapsedMs: now - this.riDiagnosticHelper.startTime,
-          alpha,
+          alpha: rawAlpha,
+          heading: heading,
           beta,
           gamma,
-          eventSource: e.type || 'deviceorientation',
+          eventSource: currentSource,
           permissionState: this.capabilities.MOTION_PERMISSION_GRANTED ? 'granted' : 'unknown',
           eventInterval: now - (this.riDiagnosticHelper.lastEventTimestamp || now),
           lastAngleBefore: null,
@@ -22170,7 +22246,7 @@ class GuidedCaptureController {
           cumulativeAcceptedDegrees: 0,
           rotationDirection: this.rotationDirection,
           directionLocked: this.directionLocked,
-          initialAlpha: alpha,
+          initialAlpha: rawAlpha,
           accumulatedRotation: 0,
           progressPercent: 0,
           captureState: this.state,
@@ -22181,18 +22257,26 @@ class GuidedCaptureController {
       return;
     }
 
-    let delta = alpha - this.lastAngle;
-    if (delta > 180) delta -= 360;
-    if (delta < -180) delta += 360;
+    let delta = heading - this.lastAngle;
+    while (delta > 180.0) delta -= 360.0;
+    while (delta < -180.0) delta += 360.0;
+
+    // Bounded spike protection: reject impossible physical sensor teleportation (>1200 dps)
+    const dt = Math.max((now - (this.lastTimestamp || now)) / 1000, 0.001);
+    if (Math.abs(delta) > 120.0 && dt < 0.1) {
+      return;
+    }
 
     // Telemetry instrumentation without altering or dropping samples
-    this.telemetry.rawAlpha = alpha;
+    this.telemetry.rawAlpha = rawAlpha;
     this.telemetry.rawBeta = beta;
     this.telemetry.rawGamma = gamma;
+    this.telemetry.heading = heading;
     this.telemetry.lastYawDelta = Math.round(delta * 100) / 100;
 
     this.applyMotionDelta(delta, now);
-    this.lastAngle = alpha;
+    this.lastAngle = heading;
+    this.lastAlpha = rawAlpha;
 
     if (this.riDiagnosticHelper && this.riDiagnosticHelper.isEnabled) {
       const accepted = (this.accumulatedRotation !== accumulatedRotationBefore);
@@ -22212,15 +22296,16 @@ class GuidedCaptureController {
       this.riDiagnosticHelper.recordOrientationEvent({
         timestamp: now,
         elapsedMs: now - this.riDiagnosticHelper.startTime,
-        alpha,
+        alpha: rawAlpha,
+        heading: heading,
         beta,
         gamma,
-        eventSource: e.type || 'deviceorientation',
+        eventSource: currentSource,
         permissionState: this.capabilities.MOTION_PERMISSION_GRANTED ? 'granted' : 'unknown',
         eventInterval: now - (this.riDiagnosticHelper.lastEventTimestamp || now),
         lastAngleBefore,
         lastAngleAfter: this.lastAngle,
-        rawDelta: alpha - lastAngleBefore,
+        rawDelta: heading - lastAngleBefore,
         normalizedDelta: delta,
         accepted,
         rejectionReason,
