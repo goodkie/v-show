@@ -63,6 +63,24 @@
     const NON_HTML_DOWNLOADABLE_EXTENSIONS = /\.(vcf|ics|ical|ifb|msg|eml|pdf|doc|docx|rtf|odt|xls|xlsx|csv|tsv|ppt|pptx|zip|rar|7z|tar|gz|bz2|exe|msi|bat|cmd|sh|apk|dmg|pkg|bin|mp3|wav|ogg|mp4|avi|mov|mkv|webm|jpg|jpeg|png|gif|svg|webp|ico|bmp|tiff|xml|json)(\?.*)?$/i;
     console.log("[RUNTIME_ASSERT] NON_HTML_DOWNLOADABLE_EXTENSIONS ready=true");
 
+    // [Issue #6 R6.5] Target Lifecycle State Machine
+    const TargetLifecycleState = {
+        ACTIVE_FORM: 'ACTIVE_FORM',
+        SUBMIT_RECOVERY: 'SUBMIT_RECOVERY',
+        DISCOVERY_FALLBACK: 'DISCOVERY_FALLBACK',
+        SETTLING: 'SETTLING',
+        SETTLED: 'SETTLED'
+    };
+    let currentTargetLifecycleState = TargetLifecycleState.ACTIVE_FORM;
+
+    function getTargetLifecycleState() {
+        return currentTargetLifecycleState;
+    }
+    function setTargetLifecycleState(state) {
+        currentTargetLifecycleState = state;
+    }
+
+
     // ============================================================
     // [HyperEngine v4.0] Top-level React/Vue/Angular Native Value & Checked Setters
     // ============================================================
@@ -727,15 +745,27 @@
                     bridgeFn(autofillAttemptId, { form: currentForm, template, speed });
                 }
 
+                currentTargetLifecycleState = TargetLifecycleState.ACTIVE_FORM;
                 const fillResult = await fillAndSubmit(currentForm, template, speed);
                 if (fillResult) {
                     logDev("✅ [Engine] Campaign step successfully executed.", "success");
                     return; // EXIT: Step complete
                 } else {
+                    if (currentTargetLifecycleState === TargetLifecycleState.SETTLED || currentTargetLifecycleState === TargetLifecycleState.SETTLING) {
+                        logDev("[LIFECYCLE] Target already settling/settled post-audit form submit recovery. Aborting fallback discovery.", "info");
+                        return;
+                    }
                     logDev("⚠️ [Engine] Mapping incomplete or form hidden. Retrying alternative discovery...", "warning");
                     // Continue to next discovery steps...
                 }
             }
+
+            // Fallback Discovery Phase
+            if (currentTargetLifecycleState === TargetLifecycleState.SETTLED || currentTargetLifecycleState === TargetLifecycleState.SETTLING) {
+                logDev("[LIFECYCLE] Target settled. Fallback discovery suppressed.", "info");
+                return;
+            }
+            currentTargetLifecycleState = TargetLifecycleState.DISCOVERY_FALLBACK;
 
             // 2. Track A: DOM Contact Link Scanning (Baseline First)
             logDev("🕵️ [Discovery] Scanning DOM for contact links (Track A)...");
@@ -773,8 +803,8 @@
             logDev("❌ [Discovery] No valid forms or links found. Jumping to root/next candidate...", "warning");
             sessionStorage.removeItem('xpider_recursion_debt');
             sessionStorage.removeItem('xpider_guessed_paths');
-            sessionStorage.removeItem('xpider_visited_subs');
-            finishCampaign(false, "NO_FORM_ON_PAGE");
+            currentTargetLifecycleState = TargetLifecycleState.SETTLING;
+            finishCampaign(false, "NO_FORM_ON_PAGE", "CONTACT_DISCOVERY_EXHAUSTED");
         } catch (e) {
             logDev(`🚨 [Engine] Fatal runtime error: ${e.message}`, "error");
             const isRef = (e instanceof ReferenceError) || /is not defined/i.test(e.message);
@@ -972,13 +1002,15 @@
             const submitLockUrl = (typeof window !== 'undefined' && window.location) ? window.location.href : '';
             logDev(`[SUBMIT_LOCK] acquired=true submittedFromUrl=${submitLockUrl} — post FINAL_AUDIT_PASS`, "info");
 
+            currentTargetLifecycleState = TargetLifecycleState.SUBMIT_RECOVERY;
+
             logDev("📤 [Action] Triggering submission sequence...");
-            logDev("[SUBMIT] triggered=true", "info");
-            logDev("[STAGE] stage=SUBMIT_TRIGGERED", "info");
+            logDev("[SUBMIT] attemptStarted=true", "info");
+            logDev("[STAGE] stage=SUBMIT_ATTEMPT_STARTED", "info");
             try {
                 chrome.runtime.sendMessage({
                     action: 'STAGE_PROGRESSION',
-                    stage: 'SUBMIT_TRIGGERED',
+                    stage: 'SUBMIT_ATTEMPT_STARTED',
                     url: window.location.href
                 }).catch(() => {});
             } catch (_) {}
@@ -998,10 +1030,23 @@
             const submitOutcome = await executeSubmitStateMachine(form, template, { expectedSnapshot: frozenSnapshot });
             if (!submitOutcome.success) {
                 verifier.cleanup();
+                logDev("[SUBMIT] triggered=false", "warning");
                 logDev(`❌ [Submit] Submission blocked: ${submitOutcome.reasonCode}`, "error");
+                currentTargetLifecycleState = TargetLifecycleState.SETTLING;
                 finishCampaign(false, submitOutcome.reasonCode, submitOutcome.reasonCode);
                 return false;
             }
+
+            // [Issue #6 R6.5 Bug B] Only emit SUBMIT_TRIGGERED after successful activation/submit event
+            logDev("[SUBMIT] triggered=true", "info");
+            logDev("[STAGE] stage=SUBMIT_TRIGGERED", "info");
+            try {
+                chrome.runtime.sendMessage({
+                    action: 'STAGE_PROGRESSION',
+                    stage: 'SUBMIT_TRIGGERED',
+                    url: window.location.href
+                }).catch(() => {});
+            } catch (_) {}
 
             return await verifier.verify(submitOutcome);
         } catch (e) {
@@ -1016,7 +1061,7 @@
         
         if (questionEl && inputEl) {
             const text = (questionEl.textContent || '').trim();
-            logDev(`🧩 [Action] Math Captcha detected: "${text}"`);
+            logDev("🧩 [Action] Math Captcha detected");
             
             // Extract numbers and operator (e.g. "2 + 10 =")
             const match = text.match(/(\d+)\s*([\+\-\*])\s*(\d+)/);
@@ -2105,7 +2150,26 @@
             // 초지능 인간 타이핑 시뮬레이터 실행!
             await typeHumanlike(el, val);
 
-            logDev(`   - [Input✅] "${(matchedAttr || '').toString().substring(0,20)}" | Val: ${val.substring(0, 20)}...`);
+            // [Issue #6 R6.5 Section 10] Privacy Logging: Sanitize raw PII values
+            let category = 'text';
+            const attrStr = `${matchedAttr || ''} ${el.name || ''} ${el.id || ''} ${el.type || ''}`.toLowerCase();
+            if (/email|mail/i.test(attrStr)) category = 'email';
+            else if (/phone|tel|mobile|cell/i.test(attrStr)) category = 'phone';
+            else if (/first.?name|given.?name/i.test(attrStr)) category = 'name';
+            else if (/last.?name|family.?name|surname/i.test(attrStr)) category = 'name';
+            else if (/name|성함|이름/i.test(attrStr)) category = 'name';
+            else if (/message|body|comment|inquiry|content/i.test(attrStr) || el.tagName === 'TEXTAREA') category = 'message';
+            else if (/subject|title/i.test(attrStr)) category = 'subject';
+
+            if (category === 'email') {
+                logDev(`   - [Input✅] category=email filled=true length=${(val || '').length}`);
+            } else if (category === 'phone') {
+                logDev(`   - [Input✅] category=phone filled=true`);
+            } else if (category === 'name') {
+                logDev(`   - [Input✅] category=name filled=true`);
+            } else {
+                logDev(`   - [Input✅] category=${category} filled=true length=${(val || '').length}`);
+            }
             filledFields++;
         };
 
@@ -3634,6 +3698,91 @@
             }
         }
 
+        checkPointerHit(submitter) {
+            if (!submitter) return { clickable: false, reason: 'NO_SUBMITTER' };
+            if (typeof document === 'undefined' || typeof document.elementFromPoint !== 'function') {
+                return { clickable: true, submitter, hit: submitter, isDescendant: true };
+            }
+            try {
+                if (typeof submitter.getBoundingClientRect !== 'function') {
+                    return { clickable: true, submitter, hit: submitter, isDescendant: true };
+                }
+                const rect = submitter.getBoundingClientRect();
+                const cx = rect.left + rect.width / 2;
+                const cy = rect.top + rect.height / 2;
+                if (cx < 0 || cy < 0 || (typeof window !== 'undefined' && (cx > window.innerWidth || cy > window.innerHeight))) {
+                    return { clickable: true, submitter, hit: submitter, isDescendant: true };
+                }
+
+                const hit = document.elementFromPoint(cx, cy);
+                if (!hit) {
+                    return { clickable: true, submitter, hit: submitter, isDescendant: true };
+                }
+
+                // [Issue #6 R6.5 Bug A Section C] elementFromPoint descendant handling
+                // Consider submitter clickable if:
+                // hit === submitter OR submitter.contains(hit) OR hit.closest(validSubmitterSelector) === submitter
+                const isDescendant = (hit === submitter) ||
+                    (typeof submitter.contains === 'function' && submitter.contains(hit)) ||
+                    (typeof hit.closest === 'function' && hit.closest('button, input[type="submit"], input[type="button"], [role="button"]') === submitter);
+
+                if (isDescendant) {
+                    logDev(`[SUBMIT_HITTEST] submitter=${submitter.tagName || 'BTN'} id=${submitter.id || 'none'}`);
+                    logDev(`[SUBMIT_HITTEST] hit=${hit.tagName || 'EL'} id=${hit.id || 'none'}`);
+                    logDev(`[SUBMIT_HITTEST] descendant=true`);
+                    logDev(`[SUBMIT_HITTEST] verdict=CLICKABLE`);
+                    return { clickable: true, submitter, hit, isDescendant: true };
+                }
+
+                // [Issue #6 R6.5 Bug A Section D] Blocker must be proven
+                const hitStyle = (typeof window !== 'undefined' && window.getComputedStyle) ? window.getComputedStyle(hit) : (hit.style || {});
+                const pointerEvents = hitStyle.pointerEvents || 'auto';
+                const display = hitStyle.display || 'block';
+                const visibility = hitStyle.visibility || 'visible';
+                const opacity = parseFloat(hitStyle.opacity !== undefined ? hitStyle.opacity : '1');
+
+                if (pointerEvents === 'none' || display === 'none' || visibility === 'hidden' || opacity === 0) {
+                    logDev(`[SUBMIT_HITTEST] submitter=${submitter.tagName || 'BTN'} id=${submitter.id || 'none'}`);
+                    logDev(`[SUBMIT_HITTEST] hit=${hit.tagName || 'EL'} id=${hit.id || 'none'}`);
+                    logDev(`[SUBMIT_HITTEST] descendant=false`);
+                    logDev(`[SUBMIT_HITTEST] verdict=CLICKABLE reason=blocker_non_interactive`);
+                    return { clickable: true, submitter, hit, isDescendant: false };
+                }
+
+                const blockerZ = hitStyle.zIndex || 'auto';
+                const subStyle = (typeof window !== 'undefined' && window.getComputedStyle) ? window.getComputedStyle(submitter) : (submitter.style || {});
+                const submitterZ = subStyle.zIndex || 'auto';
+                const blockerPosition = hitStyle.position || 'static';
+
+                logDev(`[SUBMIT_HITTEST] submitter=${submitter.tagName || 'BTN'} id=${submitter.id || 'none'}`);
+                logDev(`[SUBMIT_HITTEST] hit=${hit.tagName || 'EL'} id=${hit.id || 'none'} cls=${hit.className || 'none'}`);
+                logDev(`[SUBMIT_HITTEST] descendant=false`);
+                logDev(`[SUBMIT_HITTEST] blockerPosition=${blockerPosition}`);
+                logDev(`[SUBMIT_HITTEST] blockerZ=${blockerZ}`);
+                logDev(`[SUBMIT_HITTEST] submitterZ=${submitterZ}`);
+                logDev(`[SUBMIT_HITTEST] verdict=BLOCKED`);
+
+                return { clickable: false, submitter, hit, blocker: hit, isDescendant: false };
+            } catch (_) {
+                return { clickable: true, submitter, hit: submitter, isDescendant: true };
+            }
+        }
+
+        async safeDismissOverlay(blocker) {
+            if (!blocker) return false;
+            try {
+                const overlayCls = ((blocker.className || '') + ' ' + (blocker.id || '')).toLowerCase();
+                const closeBtn = blocker.querySelector ? blocker.querySelector('.close, [aria-label*="close" i], button.dismiss, button.accept, #accept-cookies, [id*="cookie" i] button, [class*="cookie" i] button') : null;
+                if (closeBtn && typeof closeBtn.click === 'function') {
+                    logDev("🛡️ [SubmitExecutorR5] Safe overlay dismissal: dismissing modal/cookie consent banner", "info");
+                    closeBtn.click();
+                    await new Promise(r => setTimeout(r, 150));
+                    return true;
+                }
+            } catch (_) {}
+            return false;
+        }
+
         async handleOverlay(submitter) {
             if (!submitter) return { ok: false, reason: 'NO_SUBMITTER' };
             try {
@@ -3641,28 +3790,12 @@
                     submitter.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     await new Promise(r => setTimeout(r, 100));
                 }
-                if (typeof document !== 'undefined' && typeof document.elementFromPoint === 'function') {
-                    const rect = submitter.getBoundingClientRect();
-                    const cx = rect.left + rect.width / 2;
-                    const cy = rect.top + rect.height / 2;
-                    if (cx >= 0 && cy >= 0 && cx <= window.innerWidth && cy <= window.innerHeight) {
-                        const topEl = document.elementFromPoint(cx, cy);
-                        if (topEl && !submitter.contains(topEl) && !topEl.contains(submitter)) {
-                            const overlayCls = ((topEl.className || '') + ' ' + (topEl.id || '')).toLowerCase();
-                            if (/cookie|consent|overlay|modal|backdrop|popup/i.test(overlayCls)) {
-                                const closeBtn = topEl.querySelector ? topEl.querySelector('.close, [aria-label*="close" i], button.dismiss, button.accept, #accept-cookies') : null;
-                                if (closeBtn && typeof closeBtn.click === 'function') {
-                                    closeBtn.click();
-                                    await new Promise(r => setTimeout(r, 150));
-                                }
-                            }
-                            // Recheck if still covered
-                            const topElAfter = document.elementFromPoint(cx, cy);
-                            if (topElAfter && !submitter.contains(topElAfter) && !topElAfter.contains(submitter)) {
-                                logDev("⚠️ [SubmitExecutorR5] Submitter blocked by overlay", "warning");
-                                return { ok: false, reason: 'SUBMIT_CLICK_BLOCKED_BY_OVERLAY' };
-                            }
-                        }
+                const hitRes = this.checkPointerHit(submitter);
+                if (hitRes && !hitRes.clickable && hitRes.blocker) {
+                    await this.safeDismissOverlay(hitRes.blocker);
+                    const recheck = this.checkPointerHit(submitter);
+                    if (recheck && !recheck.clickable) {
+                        return { ok: false, reason: 'SUBMIT_CLICK_BLOCKED_BY_OVERLAY' };
                     }
                 }
             } catch (_) {}
@@ -3740,11 +3873,6 @@
             const alternate = candidates.length > 1 ? candidates[1].button : null;
 
             if (primary) {
-                const overlayRes = await this.handleOverlay(primary);
-                if (overlayRes && !overlayRes.ok && overlayRes.reason === 'SUBMIT_CLICK_BLOCKED_BY_OVERLAY') {
-                    return { success: false, reasonCode: 'SUBMIT_CLICK_BLOCKED_BY_OVERLAY' };
-                }
-
                 if (this.isDisabled(primary)) {
                     await this.repairActivation(primary);
                 }
@@ -3764,45 +3892,91 @@
                     }
                 }
 
-
-                if (!this.isDisabled(primary)) {
-                    // Stage A: form.requestSubmit(submitter) with observer installed
-                    if (form && form.tagName === 'FORM' && typeof form.requestSubmit === 'function') {
-                        try {
-                            form.requestSubmit(primary);
+                // [Issue #6 R6.5 Section 5: SUBMIT FAILURE RECOVERY ORDER]
+                // 1. requestSubmit(submitter) — visual overlay is irrelevant to requestSubmit
+                if (!this.isDisabled(primary) && form && form.tagName === 'FORM' && typeof form.requestSubmit === 'function') {
+                    try {
+                        form.requestSubmit(primary);
+                        if (submitEventFired) {
                             return { success: true, reasonCode: 'SUBMIT_TRIGGERED', strategy: 'requestSubmit', submitEventFired: true };
-                        } catch (_) {}
+                        }
+                    } catch (e) {
+                        logDev(`⚠️ [SubmitExecutorR5] requestSubmit threw: ${e.message}`, "warning");
                     }
+                }
 
-                    // Stage B: one submitter.click()
+                // 2. if zero effect -> submitter.click() once (direct click does not require pointer hit testing)
+                if (!this.isDisabled(primary) && primary && typeof primary.click === 'function') {
+                    try {
+                        primary.click();
+                        if (submitEventFired) {
+                            return { success: true, reasonCode: 'SUBMIT_TRIGGERED', strategy: 'button_click', submitEventFired: true };
+                        }
+                    } catch (_) {}
+                }
+
+                // 3. if zero effect -> check pointer hit-test & fresh candidate re-query
+                const hitTest = this.checkPointerHit(primary);
+                if (!hitTest.clickable && hitTest.blocker) {
+                    // 4. if blocker exists -> safe overlay dismissal once
+                    await this.safeDismissOverlay(hitTest.blocker);
+                    // 5. re-query candidate
+                    const freshCandidates = this.discoverSubmitActions();
+                    const freshPrimary = freshCandidates.length > 0 ? freshCandidates[0].button : primary;
+                    // 6. retry ONE activation
+                    if (freshPrimary && !this.isDisabled(freshPrimary)) {
+                        if (form && form.tagName === 'FORM' && typeof form.requestSubmit === 'function') {
+                            try { form.requestSubmit(freshPrimary); } catch (_) {}
+                        }
+                        if (!submitEventFired && typeof freshPrimary.click === 'function') {
+                            try { freshPrimary.click(); } catch (_) {}
+                        }
+                        if (!submitEventFired) {
+                            try { _dispatchSingleClickSequence(freshPrimary); } catch (_) {}
+                        }
+                        if (submitEventFired) {
+                            return { success: true, reasonCode: 'SUBMIT_TRIGGERED', strategy: 'retry_after_overlay_dismiss', submitEventFired: true };
+                        }
+                    }
+                } else if (!this.isDisabled(primary)) {
+                    // Pointer simulation fallback on primary
                     try {
                         _dispatchSingleClickSequence(primary);
-                        return { success: true, reasonCode: 'SUBMIT_TRIGGERED', strategy: 'button_click', submitEventFired: submitEventFired || true };
+                        if (submitEventFired) {
+                            return { success: true, reasonCode: 'SUBMIT_TRIGGERED', strategy: 'pointer_events', submitEventFired: true };
+                        }
                     } catch (_) {}
 
-                    // Stage C: Custom framework focus + one validated keyboard/Enter/Space
+                    // Keyboard Enter fallback
                     try {
                         if (typeof primary.focus === 'function') primary.focus();
                         const enterEvt = new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true, cancelable: true });
                         primary.dispatchEvent(enterEvt);
-                        return { success: true, reasonCode: 'SUBMIT_TRIGGERED', strategy: 'keyboard_enter', submitEventFired: submitEventFired || true };
+                        if (submitEventFired) {
+                            return { success: true, reasonCode: 'SUBMIT_TRIGGERED', strategy: 'keyboard_enter', submitEventFired: true };
+                        }
                     } catch (_) {}
                 }
 
-
-                // Stage D: Alternate candidate fallback (max 1 alternate) ONLY IF submitEvent has NOT fired
+                // 7. try one alternate valid submitter
                 if (!submitEventFired && alternate && !this.isDisabled(alternate)) {
                     try {
-                        await this.handleOverlay(alternate);
-                        _dispatchSingleClickSequence(alternate);
-                        return { success: true, reasonCode: 'SUBMIT_TRIGGERED', strategy: 'alternate_candidate_click', submitEventFired: submitEventFired || true };
+                        if (typeof alternate.click === 'function') alternate.click();
+                        if (!submitEventFired) _dispatchSingleClickSequence(alternate);
+                        if (submitEventFired) {
+                            return { success: true, reasonCode: 'SUBMIT_TRIGGERED', strategy: 'alternate_candidate_click', submitEventFired: true };
+                        }
                     } catch (_) {}
                 }
 
-                // If button click produced side effects or didn't throw
+                // 8. only then terminal SUBMIT_ACTIVATION_EXHAUSTED or SUBMIT_CLICK_BLOCKED_BY_OVERLAY
                 if (submitEventFired) {
                     return { success: true, reasonCode: 'SUBMIT_TRIGGERED', strategy: 'button_click', submitEventFired: true };
                 }
+                if (hitTest && !hitTest.clickable) {
+                    return { success: false, reasonCode: 'SUBMIT_CLICK_BLOCKED_BY_OVERLAY', strategy: 'none', submitEventFired: false };
+                }
+                return { success: false, reasonCode: 'SUBMIT_ACTIVATION_EXHAUSTED', strategy: 'none', submitEventFired: false };
             } else if (multiStepCandidates.length > 0) {
                 // Multi-step form support: Bounded max 5 steps
                 logDev("🔄 [SubmitExecutorR5] Multi-step form detected (Next/Continue button)", "info");
@@ -4219,6 +4393,7 @@
     }
 
     function finishCampaign(success, error = null, reasonCode = null, metadata = {}) {
+        currentTargetLifecycleState = TargetLifecycleState.SETTLED;
         sessionStorage.removeItem('xpider_pending_verify'); // [v17.6.0] Clear recovery flag
         chrome.runtime.sendMessage({
             action: 'SENDER_FINISHED',
@@ -4234,6 +4409,9 @@
     const FormDiscoveryEngineR2 = FormDiscoveryEngine; // R6 Alias
 
     if (typeof window !== 'undefined') {
+        window.__xpiderTargetLifecycleState = TargetLifecycleState;
+        window.__xpiderGetTargetLifecycleState = getTargetLifecycleState;
+        window.__xpiderSetTargetLifecycleState = setTargetLifecycleState;
         window.__xpiderFormStabilizer = FormStabilizer;
         window.__xpiderSubmitStateMachine = executeSubmitStateMachine;
         window.__xpiderStartActiveEmptyFieldSweeper = startActiveEmptyFieldSweeper;
@@ -4256,6 +4434,9 @@
 
     if (typeof module !== 'undefined' && module.exports) {
         module.exports = {
+            TargetLifecycleState,
+            getTargetLifecycleState,
+            setTargetLifecycleState,
             FormStabilizer,
             FormDiscoveryEngine,
             FormDiscoveryEngineR2,

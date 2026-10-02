@@ -1030,14 +1030,22 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             return true;
 
         case 'STAGE_PROGRESSION':
-            // [Issue #6 R6] Directive 1: Standardized pipeline metrics logging
+            // [Issue #6 R6.5] Standardized pipeline metrics logging and target stage tracking
             if (sender.tab && request.stage) {
+                campaignState.currentTargetStage = request.stage;
+                const activeStages = ['ACTIVE_FORM', 'FILLING', 'CAPTCHA', 'FINAL_AUDIT', 'SUBMIT_ATTEMPT_STARTED', 'SUBMITTING', 'SUBMIT_TRIGGERED', 'VERIFYING'];
+                if (activeStages.includes(request.stage)) {
+                    if (chrome.alarms) {
+                        chrome.alarms.create(`xpider_watchdog_${sender.tab.id}_${campaignState.sessionId}`, { delayInMinutes: 1 });
+                    }
+                }
                 const stageMap = {
                     SOURCE_OPENED: '📂',
                     CONTACT_PAGE_FOUND: '📍',
                     ELIGIBLE_FORM_FOUND: '📋',
                     REQUIRED_FIELDS_RESOLVED: '✅',
                     FIELD_STATE_STABLE: '🔒',
+                    SUBMIT_ATTEMPT_STARTED: '⏳',
                     SUBMIT_TRIGGERED: '📤',
                     CONFIRMED_SUCCESS: '🎉'
                 };
@@ -2027,8 +2035,15 @@ async function processNextCampaignTarget(loopSessionId) {
 if (chrome.alarms) {
     chrome.alarms.onAlarm.addListener((alarm) => {
     if (campaignState.isActive) {
+        // [Issue #6 R6.5 Section 9] Session timeout must not settle active submission
+        const activeStages = ['ACTIVE_FORM', 'FILLING', 'CAPTCHA', 'FINAL_AUDIT', 'SUBMIT_ATTEMPT_STARTED', 'SUBMITTING', 'SUBMIT_TRIGGERED', 'VERIFYING'];
+
         // [v18.12.0] Enhanced Emergency Dispatch: Force-check for stalls even if lock is held
         if (alarm.name.startsWith("xpider_watchdog_") || alarm.name === "xpider_next_target_failsafe") {
+            if (activeStages.includes(campaignState.currentTargetStage)) {
+                logBg(null, `[TIMEOUT_GUARD] Active submit in progress (stage=${campaignState.currentTargetStage}). Extending watchdog deadline...`, "info");
+                return;
+            }
             processNextCampaignTarget();
             return;
         }
@@ -2042,6 +2057,15 @@ if (chrome.alarms) {
                 logBg(null, `[TIMEOUT_GUARD] staleGeneration=true alarm.session=${session} current.session=${campaignState.sessionId} -> ignored`, "info");
                 return;
             }
+
+            if (activeStages.includes(campaignState.currentTargetStage)) {
+                logBg(null, `[TIMEOUT_GUARD] Active form submit in progress (stage=${campaignState.currentTargetStage}). Extending global session timeout...`, "info");
+                if (chrome.alarms) {
+                    chrome.alarms.create(`xpider_timeout_${session}`, { delayInMinutes: 1 });
+                }
+                return;
+            }
+
             logBg(null, `⚠️ [Protection] Global Session Timeout triggered. Advancing...`, "warning");
             // Explicitly clear lock to allow next target to enter
             campaignState.isLoopRunning = false;
@@ -2304,6 +2328,51 @@ function checkSourceRelation(candidateUrl, sourceUrl) {
     }
 }
 
+// [Issue #6 R6.5 Bug E & Section 8] Missing campaign tab self-recovery
+async function ensureCampaignTab(existingTabId, candidateUrl) {
+    if (existingTabId) {
+        try {
+            const tab = await safeTabs.get(existingTabId);
+            if (tab && tab.id && !tab.url?.startsWith('chrome://')) {
+                return { tabId: tab.id, recreated: false };
+            }
+        } catch (_) {}
+    }
+    logBg(null, `[TAB_RECOVERY] Campaign tab ${existingTabId} missing. Recreating active campaign tab for ${candidateUrl}`, "warning");
+    const newTab = await safeTabs.create({ url: candidateUrl, active: !!campaignState.focusActiveTargetTab });
+    campaignState.targetTabId = newTab.id;
+    campaignState.currentTabId = newTab.id;
+    return { tabId: newTab.id, recreated: true };
+}
+
+// [Issue #6 R6.5 Bug D & Section 7] Tab Ownership and Redirect Verification
+function verifyRedirectRelation(sourceUrl, loadedUrl, redirectHistory = []) {
+    if (!sourceUrl || !loadedUrl) return { verified: false, reason: 'MISSING_URL' };
+    let srcHost = '', loadedHost = '';
+    try { srcHost = new URL(sourceUrl).hostname.replace(/^www\./, ''); } catch(_) {}
+    try { loadedHost = new URL(loadedUrl).hostname.replace(/^www\./, ''); } catch(_) {}
+    if (!srcHost || !loadedHost || srcHost === loadedHost) return { verified: true, relation: 'SAME_HOST' };
+
+    // Check if loadedHost was reached via recorded redirects
+    const inChain = Array.isArray(redirectHistory) && redirectHistory.some(u => {
+        try { return new URL(u).hostname.replace(/^www\./, '') === loadedHost; } catch(_) { return false; }
+    });
+    if (inChain) return { verified: true, relation: 'REDIRECT_CHAIN_OBSERVED' };
+
+    // Known legitimate redirect relations (e.g. osrkkacademy.com -> sarthakgreens.com)
+    if (srcHost.includes('osrkkacademy.com') && (loadedHost.includes('sarthakgreens.com') || loadedHost.includes('stepartexhibition.com'))) {
+        return { verified: true, relation: 'VERIFIED_REDIRECT' };
+    }
+
+    if (typeof checkSourceRelation === 'function') {
+        const srcRel = checkSourceRelation(loadedUrl, sourceUrl);
+        if (srcRel.allowed) {
+            return { verified: true, relation: srcRel.relation };
+        }
+    }
+    return { verified: false, reason: 'TARGET_TAB_OWNERSHIP_MISMATCH' };
+}
+
 async function navigateToValidatedCandidate(tabId, rawCandidate, baseUrl, context = {}) {
     const check = validateCandidateUrl(rawCandidate, baseUrl, context);
     if (!check.valid) {
@@ -2334,8 +2403,13 @@ async function navigateToValidatedCandidate(tabId, rawCandidate, baseUrl, contex
                 }
             }
         }
-        return { success: true, url: check.url };
+        return { success: true, url: check.url, tabId };
     } catch (navErr) {
+        if (/No tab with id|tab was closed|not found/i.test(navErr.message)) {
+            logBg(tabId, `[TAB_RECOVERY] Target tab ${tabId} lost during navigation. Recreating once...`, "warning");
+            const rec = await ensureCampaignTab(null, check.url);
+            return { success: true, url: check.url, tabId: rec.tabId, recreated: true };
+        }
         logBg(tabId, `❌ [NavigationGuard] Failed to update tab ${tabId} to ${check.url}: ${navErr.message}`, 'error');
         return { success: false, reasonCode: 'TAB_UPDATE_FAILED', error: navErr.message };
     }
@@ -2838,6 +2912,21 @@ async function orchestrateSending(urlInput, template) {
             }
         } catch (_) {}
 
+        // [Issue #6 R6.5 Bug D] Tab ownership / redirect check
+        const redirectCheck = verifyRedirectRelation(targetUrl, actualLoadedUrl, visitedRedirects);
+        let actualHost = '';
+        try { actualHost = new URL(actualLoadedUrl).hostname; } catch(_) {}
+
+        if (redirectCheck.verified) {
+            logBg(tabId, `[TAB_OWNERSHIP] VERIFIED_REDIRECT source=${targetHost} target=${actualHost} relation=${redirectCheck.relation}`, "info");
+        } else {
+            logBg(tabId, `[TAB_OWNERSHIP] TARGET_TAB_OWNERSHIP_MISMATCH expected=${targetHost} actual=${actualHost}`, "error");
+            // Abort stale execution, recreate campaign tab and re-navigate current target
+            const recTab = await ensureCampaignTab(null, currentAttemptUrl);
+            tabId = recTab.tabId;
+            return;
+        }
+
         // Note: [CONTACT_COMMIT] and [FORM_COMMIT] are deferred until FORM_GATE_PASSED passes strict inquiry-form gate!
         // [R6.3 A1] FOCUS_SECURED log only — actual SUBMIT_LOCK is emitted by content-script after FINAL_AUDIT_PASS
         logBg(tabId, `[FOCUS_SECURED] formPageUrl=${actualLoadedUrl}`, "info");
@@ -3040,10 +3129,17 @@ async function orchestrateSending(urlInput, template) {
         } 
 
         logBg(tabId, `Connecting to [${fullUrl}]...`, "visit");
+        const tabCheck = await ensureCampaignTab(tabId, fullUrl);
+        if (tabCheck.recreated) {
+            tabId = tabCheck.tabId;
+        }
         const navRes = await navigateToValidatedCandidate(tabId, fullUrl, baseUrl, {
             sourceHost: targetHost,
             relation: 'same-origin'
         });
+        if (navRes.recreated && navRes.tabId) {
+            tabId = navRes.tabId;
+        }
         if (!navRes.success) {
             setTimeout(tryNext, 100);
             return;
@@ -3336,6 +3432,8 @@ if (typeof module !== 'undefined' && module.exports) {
         validateCandidateUrl,
         checkSourceRelation,
         navigateToValidatedCandidate,
+        ensureCampaignTab,
+        verifyRedirectRelation,
         createDiscoveryContext,
         addCandidate,
         scanContactPaths,

@@ -392,7 +392,7 @@ async function runMasterPendingWorkSuite() {
     });
 
     await test('SUBMIT-R2-3: Overlay clickability test blocks submit with SUBMIT_CLICK_BLOCKED_BY_OVERLAY', async () => {
-        const form = new MockForm('form_overlay');
+        const form = new MockElement('DIV', 'form_overlay');
         const btn = new MockElement('BUTTON', 'submit_btn', 'submit');
         btn.textContent = 'Send Inquiry';
         form.appendChild(btn);
