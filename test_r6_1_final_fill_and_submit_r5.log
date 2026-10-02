@@ -1,0 +1,89 @@
+🚀 [XpiderSender] Advanced Engine Loaded: https://example.com/
+[RUNTIME_ASSERT] NON_HTML_DOWNLOADABLE_EXTENSIONS ready=true
+
+=== [R6.1 ACCEPTANCE TEST SUITE -- FINAL FILL + SUBMIT R5] ===
+
+[FINAL_FILL] controls=1 unresolvedBefore=1 checkboxResolved=1 radioResolved=0 selectResolved=0 unresolvedAfter=0
+[FINAL_AUDIT] FAIL
+[FIELD_SUMMARY] text required 0/0 | checkbox 1/1 | radio 0/0 | select 0/0 | message 0/1 | unresolved 0
+  [PASS] R6.1-01: Unchecked required checkbox -> selected
+[MISSED_FIELD] type=INPUT label="inquiry_topic cb2" reason=REQUIRED_UNRESOLVED
+[FINAL_FILL] controls=2 unresolvedBefore=2 checkboxResolved=1 radioResolved=0 selectResolved=0 unresolvedAfter=1
+[FINAL_AUDIT] FAIL
+[FIELD_SUMMARY] text required 0/0 | checkbox 1/2 | radio 0/0 | select 0/0 | message 0/1 | unresolved 1
+  [PASS] R6.1-02: Required checkbox group selects exact minimum (1 option) and caches
+[FINAL_FILL] controls=2 unresolvedBefore=2 checkboxResolved=0 radioResolved=2 selectResolved=0 unresolvedAfter=0
+[FINAL_AUDIT] FAIL
+[FIELD_SUMMARY] text required 0/0 | checkbox 0/0 | radio 2/2 | select 0/0 | message 0/1 | unresolved 0
+  [PASS] R6.1-03: Required radio group chooses one safe enabled option
+[SELECT] type=native purpose=general_dropdown options=2 strategy=semantic
+[SELECT] selected=true stable=true retry=0
+[FINAL_FILL] controls=1 unresolvedBefore=1 checkboxResolved=0 radioResolved=0 selectResolved=0 unresolvedAfter=0
+[FINAL_AUDIT] FAIL
+[FIELD_SUMMARY] text required 0/0 | checkbox 0/0 | radio 0/0 | select 1/1 | message 0/1 | unresolved 0
+  [PASS] R6.1-04: Native select placeholder -> safe valid option selected
+[FINAL_FILL] controls=1 unresolvedBefore=0 checkboxResolved=0 radioResolved=0 selectResolved=0 unresolvedAfter=0
+[FINAL_AUDIT] FAIL
+[FIELD_SUMMARY] text required 1/1 | checkbox 0/0 | radio 0/0 | select 0/0 | message 0/1 | unresolved 0
+  [PASS] R6.1-05: Custom ARIA combobox/listbox handled safely without crash
+[FINAL_FILL] controls=1 unresolvedBefore=1 checkboxResolved=1 radioResolved=0 selectResolved=0 unresolvedAfter=0
+[FINAL_AUDIT] FAIL
+[FIELD_SUMMARY] text required 0/0 | checkbox 1/1 | radio 0/0 | select 0/0 | message 0/1 | unresolved 0
+[FINAL_FILL] controls=1 unresolvedBefore=1 checkboxResolved=1 radioResolved=0 selectResolved=0 unresolvedAfter=0
+[FINAL_AUDIT] FAIL
+[FIELD_SUMMARY] text required 0/0 | checkbox 1/1 | radio 0/0 | select 0/0 | message 0/1 | unresolved 0
+  [PASS] R6.1-06: React rerender restores identical cached choice
+[FINAL_FILL] controls=1 unresolvedBefore=0 checkboxResolved=0 radioResolved=0 selectResolved=0 unresolvedAfter=0
+[FINAL_AUDIT] FAIL
+[FIELD_SUMMARY] text required 0/0 | checkbox 0/0 | radio 0/0 | select 0/0 | message 0/1 | unresolved 0
+  [PASS] R6.1-07: Newsletter / marketing checkbox remains strictly unchecked
+[FINAL_FILL] controls=1 unresolvedBefore=1 checkboxResolved=1 radioResolved=0 selectResolved=0 unresolvedAfter=0
+[FINAL_AUDIT] FAIL
+[FIELD_SUMMARY] text required 0/0 | checkbox 1/1 | radio 0/0 | select 0/0 | message 0/1 | unresolved 0
+  [PASS] R6.1-08: Terms/Privacy checked when required
+[FINAL_FILL] controls=1 unresolvedBefore=0 checkboxResolved=0 radioResolved=0 selectResolved=0 unresolvedAfter=0
+[FINAL_AUDIT] FAIL
+[FIELD_SUMMARY] text required 0/0 | checkbox 0/0 | radio 0/0 | select 0/0 | message 0/1 | unresolved 0
+  [PASS] R6.1-09: Honeypot field must never be touched
+[FINAL_FILL] controls=1 unresolvedBefore=1 checkboxResolved=0 radioResolved=0 selectResolved=0 unresolvedAfter=0
+[FINAL_AUDIT] FAIL
+[FIELD_SUMMARY] text required 1/1 | checkbox 0/0 | radio 0/0 | select 0/0 | message 0/1 | unresolved 0
+  [PASS] R6.1-10: Low-stakes required short-answer text filled with generic answer
+[MISSED_FIELD] type=INPUT label="ssn_number" reason=UNRESOLVED_REQUIRED_FACT
+  [PASS] R6.1-11: Sensitive factual required field blocks submit (UNRESOLVED_REQUIRED_FACT)
+[MISSED_FIELD] type=INPUT label="extra_req" reason=REQUIRED_UNRESOLVED
+  [PASS] R6.1-12: Newly inserted required field caught by final audit -> FAIL
+  [PASS] R6.1-13: SubmitExecutorR5 triggers requestSubmit on standard form
+[XpiderLog] 🛡️ [SubmitExecutorR5] Submit button is disabled. Running targeted blocking-field repair...
+  [PASS] R6.1-14: Disabled submit button repairs blocking field, enables, and submits
+  [PASS] R6.1-15: Direct click path executed when requestSubmit is unavailable
+  [PASS] R6.1-16: Keyboard fallback dispatched once
+[XpiderLog] 🛡️ [SubmitExecutorR5] Submit button is disabled. Running targeted blocking-field repair...
+[XpiderLog] ⚠️ [SubmitExecutorR5] Submit button remains disabled after targeted blocking field repair pass
+  [PASS] R6.1-17: Primary no effect -> alternate candidate attempted
+  [PASS] R6.1-18: Submit event observed -> no alternate candidate attempted
+  [PASS] R6.1-19: Overlay repair dismisses overlay
+[XpiderLog] 🔄 [SubmitExecutorR5] Multi-step form detected (Next/Continue button)
+  [PASS] R6.1-20: Multi-step Next button advances step
+[XpiderLog] 🕵️ [SubmissionOutcomeVerifier] Verifying submission status (Multi-Polling)...
+[XpiderLog] [SUBMIT_VERIFY] submitEvent=true
+[XpiderLog] [SUBMIT_VERIFY] urlChanged=false
+[XpiderLog] [SUBMIT_VERIFY] newSuccessNodes=0
+[XpiderLog] [SUBMIT_VERIFY] validationErrors=0
+[XpiderLog] [SUBMIT_VERIFY] formReset=false
+[XpiderLog] [SUBMIT_VERIFY] decision=CONFIRMED_SUCCESS_COMPOSITE
+[XpiderLog] [SUBMIT_VERIFY] latencyMs=786
+[XpiderLog] [FINAL] status=CONFIRMED_SUCCESS_COMPOSITE
+[XpiderLog] [STAGE] stage=CONFIRMED_SUCCESS
+  [PASS] R6.1-21: AJAX submission recognized by verifier
+  [PASS] R6.1-22: No duplicate submit events fired
+[XpiderLog] ⚠️ [SubmitExecutorR5] FORCED_FORM_SUBMIT_LAST_RESORT executing...
+  [PASS] R6.1-23: FORCED_FORM_SUBMIT_LAST_RESORT fires only when opt-in is enabled
+  [PASS] R6.1-24: SubmitExecutor backward compatibility aliases
+
+========================================================
+
+  R6.1 TEST RESULTS: 24 PASSED  |  0 FAILED
+
+  ALL R6.1 ACCEPTANCE TESTS PASSED
+

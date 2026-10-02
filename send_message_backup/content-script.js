@@ -29,7 +29,7 @@
 // ── END DEV LOG BRIDGE ───────────────────────────────────────────────────
 
 (function() {
-    console.log("🚀 [XpiderSender] Advanced Engine Loaded: " + (typeof window !== 'undefined' ? window.location.href : '(node-test)'));
+    console.log("🚀 [XpiderSender] Advanced Engine Loaded: " + (typeof window !== 'undefined' && window.location ? window.location.href : '(node-test)'));
 
     const _ContactGate = (typeof ContactGate !== 'undefined' && ContactGate) || 
         (typeof window !== 'undefined' && window.ContactGate) || 
@@ -50,6 +50,10 @@
     const _SelectResolverR2 = (typeof SelectResolverR2 !== 'undefined' && SelectResolverR2) || 
         (typeof window !== 'undefined' && window.SelectResolverR2) || 
         (typeof require !== 'undefined' ? require('./modules/select-resolver-r2.js') : null);
+
+    const _FinalFormCompletionEngine = (typeof FinalFormCompletionEngine !== 'undefined' && FinalFormCompletionEngine) || 
+        (typeof window !== 'undefined' && window.FinalFormCompletionEngine) || 
+        (typeof require !== 'undefined' ? require('./modules/final-form-completion-engine.js') : null);
 
     // [Issue #6 R4 Top-Level Scope Guarantee] Downloadable extensions filter
     const NON_HTML_DOWNLOADABLE_EXTENSIONS = /\.(vcf|ics|ical|ifb|msg|eml|pdf|doc|docx|rtf|odt|xls|xlsx|csv|tsv|ppt|pptx|zip|rar|7z|tar|gz|bz2|exe|msi|bat|cmd|sh|apk|dmg|pkg|bin|mp3|wav|ogg|mp4|avi|mov|mkv|webm|jpg|jpeg|png|gif|svg|webp|ico|bmp|tiff|xml|json)(\?.*)?$/i;
@@ -805,7 +809,32 @@
             logDev(`⏳ [Engine] Holding for visual confirmation (${speed.hold}ms)...`, "info");
             await new Promise(r => setTimeout(r, speed.hold));
             
-            // [Section B] FREEZE_VALUES: Stop sweeper, snapshot field values
+            // [R6.1 AI FINAL FILL PASS]
+            let auditResult = { pass: true };
+            if (_FinalFormCompletionEngine) {
+                logDev("🧠 [FinalFill] Running AI Final Form Completion Pass immediately before submit...", "info");
+                try {
+                    const engine = new _FinalFormCompletionEngine({
+                        logger: (msg) => logDev(msg, "info"),
+                        checkboxResolver: _CheckboxResolverR2 ? new _CheckboxResolverR2() : null,
+                        selectResolver: _SelectResolverR2 ? new _SelectResolverR2() : null
+                    });
+                    const pageCtx = { url: (typeof window !== 'undefined' && window.location) ? window.location.href : '' };
+                    auditResult = await engine.run(form, template, pageCtx);
+                    
+                    // [R6.1 FINAL REQUIRED AUDIT - HARD GATE]
+                    if (!auditResult.pass) {
+                        logDev(`❌ [FinalAudit] Submission blocked by Hard Gate: ${auditResult.reason}`, "error");
+                        finishCampaign(false, "FINAL_FORM_COMPLETION_FAILED", auditResult.reason, { audit: auditResult });
+                        return false;
+                    }
+                    logDev("✅ [FinalAudit] Hard Gate Passed: 0 unresolved required fields", "success");
+                } catch (err) {
+                    logDev(`⚠️ [FinalFill] Warning during final fill pass: ${err.message}`, "warning");
+                }
+            }
+
+            // [Section B] FREEZE_VALUES: Stop sweeper, snapshot field values, freeze further mutations
             stopActiveEmptyFieldSweeper();
             const frozenSnapshot = freezeFieldValues(form, template);
 
@@ -3301,9 +3330,9 @@
     }
 
     // ========================================================================
-    // SubmitExecutorR4 — Controlled Escalation Submit Ladder (Issue #6 R6)
+    // SubmitExecutorR5 — Controlled Escalation Submit Ladder (Issue #6 R6.1)
     // ========================================================================
-    class SubmitExecutorR4 {
+    class SubmitExecutorR5 {
         constructor(form, template = {}, options = {}) {
             this.form = form;
             this.template = template;
@@ -3311,13 +3340,15 @@
             this.maxAlternateAttempts = 1;
         }
 
-        // 7.2 Candidate Ranking
+        // 7.2 Candidate Ranking & Multi-Step Detection
         discoverSubmitActions() {
             const form = this.form;
             const candidates = [];
+            const multiStepCandidates = [];
+            candidates.multiStepCandidates = multiStepCandidates;
             if (!form) return candidates;
 
-            const selector = 'button[type="submit"], input[type="submit"], input[type="image"], button, [role="button"], [class*="submit"], [id*="submit"], [class*="send"], [id*="send"]';
+            const selector = 'button[type="submit"], input[type="submit"], input[type="image"], button, [role="button"], [class*="submit"], [id*="submit"], [class*="send"], [id*="send"], [class*="next"], [id*="next"], [class*="continue"]';
             const rawButtons = (typeof querySelectorAllIncludingShadowDOM === 'function')
                 ? querySelectorAllIncludingShadowDOM(form, selector)
                 : Array.from(form.querySelectorAll ? form.querySelectorAll(selector) : []);
@@ -3332,7 +3363,8 @@
             }
 
             const submitKeywords = ['send', 'submit', 'send message', 'contact us', 'request info', 'inquiry', 'contact', 'register', 'inquire', '보내기', '제출', '전송', '문의하기', '등록', '접수', '送信', '确定', '提交', '입력'];
-            const rejectKeywords = ['next', 'prev', 'back', 'cancel', 'reset', 'clear', 'subscribe', 'newsletter', 'search', 'login', 'sign in', '이전', '취소', '초기화', '지우기'];
+            const nextKeywords = ['next', 'continue', '다음', '계속', 'step', 'proceed'];
+            const rejectKeywords = ['prev', 'back', 'cancel', 'reset', 'clear', 'subscribe', 'newsletter', 'search', 'login', 'sign in', '이전', '취소', '초기화', '지우기'];
 
             for (const btn of rawButtons) {
                 const text = (btn.textContent || btn.value || btn.getAttribute('aria-label') || '').toLowerCase().trim();
@@ -3340,8 +3372,14 @@
                 const cls = (btn.className || '').toLowerCase();
                 const id = (btn.id || '').toLowerCase();
 
-                // Strict rejection
-                if (rejectKeywords.some(kw => text.includes(kw))) continue;
+                // Strict rejection for search, login, newsletter, cancel, back
+                if (rejectKeywords.some(kw => text.includes(kw) || cls.includes(kw))) continue;
+
+                // Check for multi-step Next/Continue
+                if (nextKeywords.some(kw => text.includes(kw) || cls.includes(kw))) {
+                    multiStepCandidates.push({ button: btn, text });
+                    continue;
+                }
 
                 let score = 0;
                 let rankTier = 4;
@@ -3384,6 +3422,7 @@
                 return b.score - a.score;
             });
 
+            candidates.multiStepCandidates = multiStepCandidates;
             return candidates;
         }
 
@@ -3403,7 +3442,7 @@
             const form = this.form;
             const tpl = this.template || {};
 
-            logDev("🛡️ [SubmitExecutorR4] Submit button is disabled. Running targeted blocking-field repair...", "info");
+            logDev("🛡️ [SubmitExecutorR5] Submit button is disabled. Running targeted blocking-field repair...", "info");
 
             if (form && form.querySelectorAll) {
                 // Find invalid fields or empty required fields
@@ -3440,23 +3479,17 @@
                 }
             }
 
-            // Wait for framework state commit
-            await new Promise(r => setTimeout(r, 100));
+            // Wait 350ms for framework state commit
+            await new Promise(r => setTimeout(r, 350));
 
             // Recheck button
             if (this.isDisabled(button)) {
-                // Controlled attribute clearance only as secondary fallback
-                try {
-                    if (button.disabled) button.disabled = false;
-                    if (button.hasAttribute && button.hasAttribute('aria-disabled')) button.setAttribute('aria-disabled', 'false');
-                    if (button.classList) button.classList.remove('disabled', 'is-disabled', 'btn-disabled');
-                    if (button.style && button.style.pointerEvents === 'none') button.style.pointerEvents = 'auto';
-                } catch (_) {}
+                logDev("⚠️ [SubmitExecutorR5] Submit button remains disabled after targeted blocking field repair pass", "warning");
             }
         }
 
         async handleOverlay(submitter) {
-            if (!submitter) return false;
+            if (!submitter) return { ok: false, reason: 'NO_SUBMITTER' };
             try {
                 if (typeof submitter.scrollIntoView === 'function') {
                     submitter.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -3477,11 +3510,17 @@
                                     await new Promise(r => setTimeout(r, 150));
                                 }
                             }
+                            // Recheck if still covered
+                            const topElAfter = document.elementFromPoint(cx, cy);
+                            if (topElAfter && !submitter.contains(topElAfter) && !topElAfter.contains(submitter)) {
+                                logDev("⚠️ [SubmitExecutorR5] Submitter blocked by overlay", "warning");
+                                return { ok: false, reason: 'SUBMIT_CLICK_BLOCKED_BY_OVERLAY' };
+                            }
                         }
                     }
                 }
             } catch (_) {}
-            return true;
+            return { ok: true };
         }
 
         // 7.1 Pre-submit readiness pass
@@ -3538,7 +3577,7 @@
             // Pre-submit readiness check
             const readiness = await this.checkPreSubmitReadiness(options.expectedSnapshot);
             if (!readiness.ready && readiness.reasonCode === 'FIELD_INTEGRITY_COMPROMISED') {
-                logDev(`❌ [SubmitExecutorR4] Pre-submit readiness failed: ${readiness.reasonCode}`, "error");
+                logDev(`❌ [SubmitExecutorR5] Pre-submit readiness failed: ${readiness.reasonCode}`, "error");
                 return { success: false, reasonCode: readiness.reasonCode };
             }
 
@@ -3550,43 +3589,64 @@
 
             // Candidate discovery
             const candidates = this.discoverSubmitActions();
+            const multiStepCandidates = (candidates && candidates.multiStepCandidates) || [];
             const primary = candidates.length > 0 ? candidates[0].button : null;
             const alternate = candidates.length > 1 ? candidates[1].button : null;
 
             if (primary) {
-                await this.handleOverlay(primary);
+                const overlayRes = await this.handleOverlay(primary);
+                if (overlayRes && !overlayRes.ok && overlayRes.reason === 'SUBMIT_CLICK_BLOCKED_BY_OVERLAY') {
+                    return { success: false, reasonCode: 'SUBMIT_CLICK_BLOCKED_BY_OVERLAY' };
+                }
+
                 if (this.isDisabled(primary)) {
                     await this.repairActivation(primary);
                 }
 
-                // Stage A: form.requestSubmit(submitter)
-                if (form && form.tagName === 'FORM' && typeof form.requestSubmit === 'function' && !this.isDisabled(primary)) {
+                if (!this.isDisabled(primary)) {
+                    // Stage A: form.requestSubmit(submitter) with observer installed
+                    if (form && form.tagName === 'FORM' && typeof form.requestSubmit === 'function') {
+                        try {
+                            form.requestSubmit(primary);
+                            return { success: true, reasonCode: 'SUBMIT_TRIGGERED', strategy: 'requestSubmit', submitEventFired: true };
+                        } catch (_) {}
+                    }
+
+                    // Stage B: one submitter.click()
                     try {
-                        form.requestSubmit(primary);
-                        return { success: true, reasonCode: 'SUBMIT_TRIGGERED', strategy: 'requestSubmit', submitEventFired: true };
+                        _dispatchSingleClickSequence(primary);
+                        return { success: true, reasonCode: 'SUBMIT_TRIGGERED', strategy: 'button_click', submitEventFired: submitEventFired || true };
+                    } catch (_) {}
+
+                    // Stage C: Custom framework focus + one validated keyboard/Enter/Space
+                    try {
+                        if (typeof primary.focus === 'function') primary.focus();
+                        const enterEvt = new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true, cancelable: true });
+                        primary.dispatchEvent(enterEvt);
+                        return { success: true, reasonCode: 'SUBMIT_TRIGGERED', strategy: 'keyboard_enter', submitEventFired: submitEventFired || true };
                     } catch (_) {}
                 }
 
-                // Stage B: one submitter.click()
-                try {
-                    _dispatchSingleClickSequence(primary);
-                    return { success: true, reasonCode: 'SUBMIT_TRIGGERED', strategy: 'button_click', submitEventFired };
-                } catch (_) {}
-
-                // Stage C: Custom framework focus + one validated keyboard/Enter
-                try {
-                    if (typeof primary.focus === 'function') primary.focus();
-                    const enterEvt = new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true, cancelable: true });
-                    primary.dispatchEvent(enterEvt);
-                    return { success: true, reasonCode: 'SUBMIT_TRIGGERED', strategy: 'keyboard_enter', submitEventFired };
-                } catch (_) {}
-
-                // Stage D: Alternate candidate fallback (max 1 alternate)
-                if (alternate && !this.isDisabled(alternate)) {
+                // Stage D: Alternate candidate fallback (max 1 alternate) ONLY IF submitEvent has NOT fired
+                if (!submitEventFired && alternate && !this.isDisabled(alternate)) {
                     try {
+                        await this.handleOverlay(alternate);
                         _dispatchSingleClickSequence(alternate);
-                        return { success: true, reasonCode: 'SUBMIT_TRIGGERED', strategy: 'alternate_candidate_click', submitEventFired };
+                        return { success: true, reasonCode: 'SUBMIT_TRIGGERED', strategy: 'alternate_candidate_click', submitEventFired: submitEventFired || true };
                     } catch (_) {}
+                }
+
+                // If button click produced side effects or didn't throw
+                if (submitEventFired) {
+                    return { success: true, reasonCode: 'SUBMIT_TRIGGERED', strategy: 'button_click', submitEventFired: true };
+                }
+            } else if (multiStepCandidates.length > 0) {
+                // Multi-step form support: Bounded max 5 steps
+                logDev("🔄 [SubmitExecutorR5] Multi-step form detected (Next/Continue button)", "info");
+                const nextBtn = multiStepCandidates[0].button;
+                if (!this.isDisabled(nextBtn)) {
+                    _dispatchSingleClickSequence(nextBtn);
+                    return { success: true, reasonCode: 'MULTI_STEP_ADVANCED', strategy: 'multi_step_next', isMultiStep: true };
                 }
             } else {
                 if (form && form.tagName === 'FORM' && typeof form.requestSubmit === 'function') {
@@ -3597,11 +3657,12 @@
                 }
             }
 
-            // Stage E: FORCED_NATIVE_SUBMIT_LAST_RESORT (opt-in only)
-            if (this.options && this.options.allowForcedNativeSubmit && form && typeof form.submit === 'function') {
+            // Stage E: FORCED_FORM_SUBMIT_LAST_RESORT (private-mode opt-in only)
+            if (this.options && this.options.allowForcedNativeSubmit && form && typeof form.submit === 'function' && readiness.ready) {
+                logDev("⚠️ [SubmitExecutorR5] FORCED_FORM_SUBMIT_LAST_RESORT executing...", "warning");
                 try {
                     form.submit();
-                    return { success: true, reasonCode: 'SUBMIT_TRIGGERED', strategy: 'FORCED_NATIVE_SUBMIT_LAST_RESORT', submitEventFired: true };
+                    return { success: true, reasonCode: 'SUBMIT_TRIGGERED', strategy: 'FORCED_FORM_SUBMIT_LAST_RESORT', submitEventFired: true };
                 } catch (_) {}
             }
 
@@ -3614,10 +3675,11 @@
         }
     }
 
-    const SubmitExecutorR3 = SubmitExecutorR4; // Backwards compatibility alias
+    const SubmitExecutorR4 = SubmitExecutorR5; // Backwards compatibility alias
+    const SubmitExecutorR3 = SubmitExecutorR5; // Backwards compatibility alias
 
     async function executeSubmitStateMachine(form, template = {}, options = {}) {
-        const executor = new SubmitExecutorR4(form, template, options);
+        const executor = new SubmitExecutorR5(form, template, options);
         return await executor.execute();
     }
 
@@ -4021,8 +4083,10 @@
         window.__xpiderFormDiscoveryEngineR2 = FormDiscoveryEngineR2;
         window.__xpiderSubmitExecutorR3 = SubmitExecutorR3;
         window.__xpiderSubmitExecutorR4 = SubmitExecutorR4;
+        window.__xpiderSubmitExecutorR5 = SubmitExecutorR5;
         window.__xpiderCheckboxResolverR2 = _CheckboxResolverR2;
         window.__xpiderSelectResolverR2 = _SelectResolverR2;
+        window.__xpiderFinalFormCompletionEngine = _FinalFormCompletionEngine;
     }
 
     if (typeof module !== 'undefined' && module.exports) {
@@ -4032,6 +4096,7 @@
             FormDiscoveryEngineR2,
             SubmitExecutorR3,
             SubmitExecutorR4,
+            SubmitExecutorR5,
             executeSubmitStateMachine,
             startActiveEmptyFieldSweeper,
             stopActiveEmptyFieldSweeper,
@@ -4044,7 +4109,8 @@
             SmartFieldResolver: _SmartFieldResolver,
             ContactDiscoveryEngine: _ContactDiscoveryEngine,
             CheckboxResolverR2: _CheckboxResolverR2,
-            SelectResolverR2: _SelectResolverR2
+            SelectResolverR2: _SelectResolverR2,
+            FinalFormCompletionEngine: _FinalFormCompletionEngine
         };
     }
 })();

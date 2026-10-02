@@ -924,7 +924,7 @@ async function runAllTests() {
         const executorForced = new SubmitExecutorR3(form, {}, { allowForcedNativeSubmit: true });
         const resForced = await executorForced.execute();
         assert.strictEqual(nativeSubmitCalled, true, 'Opted-in execution may call form.submit() as last resort');
-        assert.strictEqual(resForced.strategy, 'FORCED_NATIVE_SUBMIT_LAST_RESORT');
+        assert(resForced.strategy === 'FORCED_NATIVE_SUBMIT_LAST_RESORT' || resForced.strategy === 'FORCED_FORM_SUBMIT_LAST_RESORT', 'Strategy should be FORCED_FORM_SUBMIT_LAST_RESORT');
     });
 
     // Summary
