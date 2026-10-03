@@ -946,11 +946,38 @@
             .slice(0, 3);
     }
 
-    // [Issue #6 R5] Authoritative Email Baseline & Extraction Integration
-    let __emailBaseline = new Set();
-    let __emailCollectorGeneration = 1;
-    let __emailSuppressedUntil = 0;
+    // [Issue #6 R5 & R6.9C] Authoritative Email Collector Runtime Bridge
+    let __emailCollectorGeneration = null;
+    let __emailCollectorSuppressedUntil = 0;
+    let __emailCollectorBaseline = new Set();
+    let __emailCollectorLastFingerprint = '';
+    let __emailCollectorObserver = null;
+    let __emailCollectorDebounceTimer = null;
 
+    // Generation synchronization from chrome.storage.local (Directive Section 2 & 8)
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+        try {
+            chrome.storage.local.get(['xpider_email_generation'], (res) => {
+                if (res && typeof res.xpider_email_generation === 'number') {
+                    __emailCollectorGeneration = res.xpider_email_generation;
+                } else if (__emailCollectorGeneration === null) {
+                    __emailCollectorGeneration = 1;
+                }
+                const modLoaded = (typeof extractEmailsFromDocument === 'function') || 
+                    (typeof self !== 'undefined' && typeof self.extractEmailsFromDocument === 'function') ||
+                    (typeof window !== 'undefined' && typeof window.extractEmailsFromDocument === 'function');
+                console.log(`[EMAIL_COLLECTOR_INIT] generation=${__emailCollectorGeneration} moduleLoaded=${modLoaded}`);
+                extractAndSendPageEmails('INIT');
+                setupEmailCollectorObserver();
+            });
+        } catch (_) {
+            if (__emailCollectorGeneration === null) __emailCollectorGeneration = 1;
+        }
+    } else {
+        if (__emailCollectorGeneration === null) __emailCollectorGeneration = 1;
+    }
+
+    // Clear broadcast listener (Directive Section 7)
     if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
         try {
             chrome.runtime.onMessage.addListener((msg) => {
@@ -959,22 +986,33 @@
                         __emailCollectorGeneration = msg.generation;
                     }
                     const duration = msg.suppressRecollectMs || 5000;
-                    __emailSuppressedUntil = Date.now() + duration;
+                    __emailCollectorSuppressedUntil = Date.now() + duration;
                     try {
                         const currentOnPage = extractEmailsFromCurrentDom();
-                        __emailBaseline = new Set(currentOnPage);
+                        __emailCollectorBaseline = new Set(currentOnPage);
+                        __emailCollectorLastFingerprint = ''; // clear fingerprint so dynamic additions after clear can be detected
                     } catch (_) {}
+                    console.log(`[EMAIL_COLLECTOR_CLEARED] generation=${__emailCollectorGeneration} suppressedUntil=${__emailCollectorSuppressedUntil} baseline=${__emailCollectorBaseline.size}`);
                 }
             });
         } catch (_) {}
     }
 
     function extractEmailsFromCurrentDom() {
+        if (typeof self !== 'undefined' && typeof self.extractEmailsFromDocument === 'function') {
+            return self.extractEmailsFromDocument(document);
+        }
+        if (typeof window !== 'undefined' && typeof window.extractEmailsFromDocument === 'function') {
+            return window.extractEmailsFromDocument(document);
+        }
+        if (typeof extractEmailsFromDocument === 'function') {
+            return extractEmailsFromDocument(document);
+        }
+        // Minimal fallback extractor if module is not in global scope
         const IGNORE_PREFIXES = ['test', 'email', 'account', 'username', 'firstname.lastname', 'your.name', 'example', 'user', 'sample', 'name', 'domain', 'company'];
         const INVALID_EXTENSIONS = ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'css', 'js', 'ico', 'bmp', 'tiff', 'woff', 'woff2', 'ttf', 'eot', 'mp3', 'mp4', 'wav'];
         const EXTRACT_REGEX = /([a-zA-Z0-9._+-]+@[a-zA-Z0-9._-]+\.[a-zA-Z]{2,})/gi;
         const emails = new Set();
-
         const text = (document.documentElement ? document.documentElement.innerHTML : '') + ' ' + (document.body ? document.body.innerText : '');
         const matches = text.match(EXTRACT_REGEX);
         if (matches) {
@@ -990,7 +1028,6 @@
                 emails.add(e);
             }
         }
-
         document.querySelectorAll('a[href^="mailto:"]').forEach(link => {
             try {
                 const href = link.getAttribute('href') || '';
@@ -1001,32 +1038,91 @@
                 }
             } catch (_) {}
         });
-
         return Array.from(emails).sort();
     }
 
-    function extractAndSendPageEmails() {
+    function extractAndSendPageEmails(trigger = 'SCAN') {
         try {
-            if (Date.now() < __emailSuppressedUntil) return;
+            if (Date.now() < __emailCollectorSuppressedUntil) return;
 
-            const allFound = extractEmailsFromCurrentDom();
+            const allFound = extractEmailsFromCurrentDom() || [];
+            const pageUrl = (typeof window !== 'undefined' && window.location) ? window.location.href : '';
+            const hostname = (typeof window !== 'undefined' && window.location) ? window.location.hostname : 'unknown';
+
+            console.log(`[EMAIL_SCAN] url=${pageUrl} found=${allFound.length} trigger=${trigger}`);
+
             // Post-clear baseline: do NOT re-collect unchanged current DOM emails
-            const newEmails = allFound.filter(e => !__emailBaseline.has(e));
+            const newEmails = allFound.filter(e => !__emailCollectorBaseline.has(e));
 
-            if (newEmails.length > 0) {
+            // If page has emails, but all are baseline (unchanged post-clear), do not send
+            if (allFound.length > 0 && newEmails.length === 0) {
+                return;
+            }
+
+            // Deterministic fingerprint: hostname + sorted emails
+            const fingerprint = `${hostname}::${allFound.slice().sort().join(',')}`;
+            if (fingerprint === __emailCollectorLastFingerprint && trigger !== 'FORCE') {
+                return;
+            }
+            __emailCollectorLastFingerprint = fingerprint;
+
+            const genToSend = typeof __emailCollectorGeneration === 'number' ? __emailCollectorGeneration : 1;
+            console.log(`[EMAIL_SEND] generation=${genToSend} count=${newEmails.length} hostname=${hostname}`);
+
+            if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
                 chrome.runtime.sendMessage({
                     action: 'EMAIL_COLLECT_FOUND',
                     emails: newEmails,
-                    hostname: window.location.hostname,
-                    url: window.location.href,
-                    generation: __emailCollectorGeneration
-                }).catch(() => {});
+                    hostname: hostname,
+                    url: pageUrl,
+                    generation: genToSend
+                }, (response) => {
+                    if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.lastError) {
+                        console.warn(`[EMAIL_COLLECTOR_ERROR] stage=send error=${chrome.runtime.lastError.message}`);
+                        return;
+                    }
+                    if (response) {
+                        console.log(`[EMAIL_ACK] currentPageCount=${response.currentPageCount || 0} newGlobalCount=${response.newGlobalCount || 0} totalGlobalCount=${response.totalGlobalCount || 0} suppressed=${!!response.suppressed} staleGeneration=${!!response.staleGeneration}`);
+                    }
+                });
+            }
+        } catch (err) {
+            console.warn(`[EMAIL_COLLECTOR_ERROR] stage=extractAndSend error=${err.message}`);
+        }
+    }
+
+    function setupEmailCollectorObserver() {
+        if (__emailCollectorObserver) return;
+        try {
+            if (typeof MutationObserver !== 'undefined' && typeof document !== 'undefined' && document.body) {
+                __emailCollectorObserver = new MutationObserver(() => {
+                    if (__emailCollectorDebounceTimer) clearTimeout(__emailCollectorDebounceTimer);
+                    __emailCollectorDebounceTimer = setTimeout(() => {
+                        extractAndSendPageEmails('MUTATION');
+                    }, 800);
+                });
+                __emailCollectorObserver.observe(document.body, { childList: true, subtree: true });
             }
         } catch (_) {}
     }
 
+    if (typeof window !== 'undefined' && window.addEventListener) {
+        window.addEventListener('beforeunload', () => {
+            if (__emailCollectorObserver) {
+                __emailCollectorObserver.disconnect();
+                __emailCollectorObserver = null;
+            }
+            if (__emailCollectorDebounceTimer) {
+                clearTimeout(__emailCollectorDebounceTimer);
+                __emailCollectorDebounceTimer = null;
+            }
+        });
+    }
+
     async function fillAndSubmit(form, template, speed) {
         try {
+            extractAndSendPageEmails('FORM_ENTRY');
+
             // [HARD ELIGIBILITY GATE] Verify form eligibility before any autofill or submit
             if (_ContactGate && typeof _ContactGate.classifyFormIntent === 'function') {
                 const classification = _ContactGate.classifyFormIntent(form);
@@ -4934,6 +5030,9 @@
         window.__xpiderVisionSubmitExecutor = _VisionSubmitExecutor;
         window.__xpiderCollectAccessibleRoots = _FormDiscoveryEngineR2 ? _FormDiscoveryEngineR2.collectAccessibleRoots : null;
         window.__xpiderStartAutofillForEligibleForm = _FormDiscoveryEngineR2 ? _FormDiscoveryEngineR2.startAutofillForEligibleForm : null;
+        window.__xpiderExtractAndSendPageEmails = extractAndSendPageEmails;
+        window.__xpiderExtractEmailsFromCurrentDom = extractEmailsFromCurrentDom;
+        window.__xpider_initialized = true;
     }
 
     if (typeof module !== 'undefined' && module.exports) {
@@ -4966,7 +5065,13 @@
             SelectResolverR2: _SelectResolverR2,
             FinalFormCompletionEngine: _FinalFormCompletionEngine,
             collectAccessibleRoots: _FormDiscoveryEngineR2 ? _FormDiscoveryEngineR2.collectAccessibleRoots : null,
-            startAutofillForEligibleForm: _FormDiscoveryEngineR2 ? _FormDiscoveryEngineR2.startAutofillForEligibleForm : null
+            startAutofillForEligibleForm: _FormDiscoveryEngineR2 ? _FormDiscoveryEngineR2.startAutofillForEligibleForm : null,
+            extractAndSendPageEmails,
+            extractEmailsFromCurrentDom,
+            getCollectorGeneration: () => __emailCollectorGeneration,
+            setCollectorGeneration: (g) => { __emailCollectorGeneration = g; },
+            setCollectorBaseline: (b) => { __emailCollectorBaseline = b; },
+            getCollectorBaseline: () => __emailCollectorBaseline
         };
     }
 })();

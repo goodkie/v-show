@@ -1441,7 +1441,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     ], resolve));
                     
                     // [Auto CAPTCHA Solver v2] Default to 2Captcha API if not set
-                    const method = request.method || storage.xpider_captcha_method || storage.captchaMethod || 'api';
+                    const method = request.method || storage.xpider_captcha_method || storage.captchaMethod || 'api'; // storage.captchaMethod || 'audio'
                     const apiKey = storage.xpider_captcha_api_key || storage.captchaApiKey || '';
                     const witKey = storage.xpider_stt_api_key || storage.audioSttKey || storage.witKey || null;
                     
@@ -1912,24 +1912,24 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             });
             return true;
         case 'EMAIL_COLLECT_FOUND':
-            // [Issue #6 Email Collector Integration] Non-blocking email accumulation with generation check
+            // [Issue #6 Email Collector Integration & R6.9C] Non-blocking email accumulation with generation check
             (async () => {
                 try {
                     const { emails, hostname, url, generation } = request;
-                    if (Array.isArray(emails) && emails.length > 0) {
-                        const StoreClass = self.EmailCollectorStore || (typeof EmailCollectorStore !== 'undefined' ? EmailCollectorStore : null);
-                        if (StoreClass) {
-                            const store = (typeof StoreClass.getInstance === 'function')
-                                ? StoreClass.getInstance(chrome.storage.local)
-                                : (self.__xpiderEmailStore || new StoreClass(chrome.storage.local));
-                            self.__xpiderEmailStore = store;
-                            const stats = await store.add(hostname, emails, url, generation);
-                            if (!stats.suppressed && !stats.staleGeneration && !stats.baselineSuppressed) {
-                                logBg(sender.tab?.id, `[TARGET][${hostname}] emailsFoundCurrentPage=${stats.currentPageCount} emailsNewGlobal=${stats.newGlobalCount} totalEmailsGlobal=${stats.totalGlobalCount}`, 'info');
-                            }
-                            sendResponse({ success: true, ...stats });
-                            return;
+                    const cleanEmails = Array.isArray(emails) ? emails : [];
+                    const cleanHost = hostname || (url ? new URL(url).hostname : 'unknown');
+                    const StoreClass = self.EmailCollectorStore || (typeof EmailCollectorStore !== 'undefined' ? EmailCollectorStore : null);
+                    if (StoreClass) {
+                        const store = (typeof StoreClass.getInstance === 'function')
+                            ? StoreClass.getInstance(chrome.storage.local)
+                            : (self.__xpiderEmailStore || new StoreClass(chrome.storage.local));
+                        self.__xpiderEmailStore = store;
+                        const stats = await store.add(cleanHost, cleanEmails, url, generation);
+                        if (!stats.suppressed && !stats.staleGeneration && !stats.baselineSuppressed && cleanEmails.length > 0) {
+                            logBg(sender.tab?.id, `[TARGET][${cleanHost}] emailsFoundCurrentPage=${stats.currentPageCount} emailsNewGlobal=${stats.newGlobalCount} totalEmailsGlobal=${stats.totalGlobalCount}`, 'info');
                         }
+                        sendResponse({ success: true, ...stats });
+                        return;
                     }
                     sendResponse({ success: true, count: 0 });
                 } catch (err) {
@@ -3709,6 +3709,7 @@ async function orchestrateSending(urlInput, template) {
                     'modules/final-form-completion-engine.js',
                     'modules/form-discovery-engine-r2.js',
                     'modules/vision-submit-executor.js',
+                    'modules/email-collector.js',
                     'content-script.js'
                 ] });
                 safeScripting.executeScript({ target: { tabId, allFrames: true }, files: ['solver-content.js'] }).catch(() => {});

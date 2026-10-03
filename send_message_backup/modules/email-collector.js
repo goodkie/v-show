@@ -281,11 +281,22 @@
                 };
             }
 
+            const cleanHost = (hostname || 'unknown').toLowerCase().trim();
+            const now = new Date().toISOString();
+
             if (!Array.isArray(rawEmails) || rawEmails.length === 0) {
+                const currentStore = {
+                    hostname: cleanHost,
+                    url: pageUrl || cleanHost,
+                    emails: [],
+                    count: 0,
+                    scannedAt: now
+                };
+                this.currentSiteCache = currentStore;
+                await this.setStoredData(this.currentKey, currentStore);
                 return { currentPageCount: 0, newGlobalCount: 0, totalGlobalCount: this.memoryEmails.size };
             }
 
-            const cleanHost = (hostname || 'unknown').toLowerCase().trim();
             const validUnique = [];
             const seenInBatch = new Set();
 
@@ -298,26 +309,22 @@
             }
 
             if (validUnique.length === 0) {
+                const currentStore = {
+                    hostname: cleanHost,
+                    url: pageUrl || cleanHost,
+                    emails: [],
+                    count: 0,
+                    scannedAt: now
+                };
+                this.currentSiteCache = currentStore;
+                await this.setStoredData(this.currentKey, currentStore);
                 return { currentPageCount: 0, newGlobalCount: 0, totalGlobalCount: this.memoryEmails.size };
             }
 
-            // Post-clear observation baseline check: if all emails were already marked seen in current baseline
-            const newCandidateEmails = validUnique.filter(e => !this.seenFingerprints.has(`${cleanHost}::${e}`));
-            if (newCandidateEmails.length === 0) {
-                return {
-                    currentPageCount: validUnique.length,
-                    newGlobalCount: 0,
-                    totalGlobalCount: this.memoryEmails.size,
-                    baselineSuppressed: true
-                };
-            }
-
             const globalStore = await this.loadGlobalStore();
-            const now = new Date().toISOString();
             let newGlobalCount = 0;
 
             for (const email of validUnique) {
-                this.seenFingerprints.add(`${cleanHost}::${email}`);
                 if (globalStore.emails[email]) {
                     const record = globalStore.emails[email];
                     record.lastSeenAt = now;
@@ -368,6 +375,10 @@
 
         // Backward compatibility alias
         async recordEmails(hostname, rawEmails, pageUrl = '', generation = null) {
+            return this.add(hostname, rawEmails, pageUrl, generation);
+        }
+
+        async recordPageScan(hostname, rawEmails, pageUrl = '', generation = null) {
             return this.add(hostname, rawEmails, pageUrl, generation);
         }
 
