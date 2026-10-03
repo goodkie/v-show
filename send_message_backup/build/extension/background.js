@@ -42,6 +42,7 @@ try {
         importScripts('modules/template-store.js');
         importScripts('modules/history-store.js');
         importScripts('modules/email-collector.js');
+        importScripts('modules/vision-submit-executor.js');
     }
 } catch (e) {
     console.warn('[SW Boot] importScripts modules fallback or handled inline:', e);
@@ -616,7 +617,7 @@ if (typeof self.XpiderSolverCore === 'undefined') {
         /**
          * Solve via 2Captcha API
          */
-        async solve2Captcha(siteKey, pageUrl, type = 'recaptcha') {
+        async solve2Captcha(siteKey, pageUrl, type = 'recaptcha', extra = {}) {
             if (!this.config.twoCaptchaKey) throw new Error("2Captcha API Key missing.");
             let method = 'userrecaptcha';
             let extraParams = '';
@@ -626,16 +627,39 @@ if (typeof self.XpiderSolverCore === 'undefined') {
             } else if (type === 'turnstile') {
                 method = 'turnstile';
                 extraParams = `&sitekey=${siteKey}`;
+            } else if (type === 'image' || type === 'base64') {
+                method = 'base64';
             } else {
                 extraParams = `&googlekey=${siteKey}`;
+                if (extra.version === 'v3' || type === 'recaptcha_v3') {
+                    extraParams += `&version=v3&action=${encodeURIComponent(extra.action || 'verify')}&min_score=0.3`;
+                }
+                if (extra.enterprise || type === 'recaptcha_enterprise') {
+                    extraParams += '&enterprise=1';
+                }
+                if (extra.invisible) {
+                    extraParams += '&invisible=1';
+                }
             }
-            const res = await fetch(`https://2captcha.com/in.php?key=${this.config.twoCaptchaKey}&method=${method}${extraParams}&pageurl=${pageUrl}&json=1`);
-            const data = await res.json();
+
+            let data;
+            if (method === 'base64') {
+                const formData = new URLSearchParams();
+                formData.append('key', this.config.twoCaptchaKey);
+                formData.append('method', 'base64');
+                formData.append('body', extra.body || siteKey);
+                formData.append('json', '1');
+                const res = await fetch('https://2captcha.com/in.php', { method: 'POST', body: formData });
+                data = await res.json();
+            } else {
+                const res = await fetch(`https://2captcha.com/in.php?key=${this.config.twoCaptchaKey}&method=${method}${extraParams}&pageurl=${encodeURIComponent(pageUrl)}&json=1`);
+                data = await res.json();
+            }
             if (data.status !== 1) throw new Error(`2Captcha Error: ${data.request}`);
             
             const taskId = data.request;
             for (let i = 0; i < 40; i++) {
-                await new Promise(r => setTimeout(r, 5000));
+                await new Promise(r => setTimeout(r, 4000));
                 const checkRes = await fetch(`https://2captcha.com/res.php?key=${this.config.twoCaptchaKey}&action=get&id=${taskId}&json=1`);
                 const checkData = await checkRes.json();
                 if (checkData.status === 1) return checkData.request;
@@ -776,6 +800,10 @@ markBoot("campaign_state_init");
 const bgOperationQueue = (typeof self.AsyncOperationQueue !== 'undefined')
     ? new self.AsyncOperationQueue()
     : { enqueue: (fn) => fn(), activeCount: 0 };
+
+// [Issue #6 R6.6 & R6.7] Retained inspection tabs for DELIVERY_UNKNOWN (max 3)
+const retainedUncertainTabs = [];
+const MAX_RETAINED_UNCERTAIN_TABS = 3;
 
 // [Issue #6 R4.1] Centralized Authoritative List Clear Handlers
 async function clearAutoFormData() {
@@ -1143,7 +1171,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     // [Priority 1] 2Captcha token solver (API method)
                     if ((method === 'api' || method === '2captcha') && solver.config.twoCaptchaKey) {
                         try {
-                            const token = await solver.solve2Captcha(request.sitekey, request.url, request.type || 'recaptcha');
+                            const extra = request.extra || {
+                                body: request.imageData,
+                                version: request.version,
+                                action: request.captchaAction,
+                                enterprise: request.enterprise,
+                                invisible: request.invisible
+                            };
+                            const token = await solver.solve2Captcha(request.sitekey, request.url, request.type || 'recaptcha', extra);
                             logBg(null, `[Auto CAPTCHA Solver] 2Captcha SUCCESS token=${token ? token.substring(0, 16) + '...' : 'null'}`, 'success');
                             sendResponse({ success: true, method: '2captcha', token });
                             return;
@@ -1187,6 +1222,58 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 } catch (e) {
                     logBg(null, `[Auto CAPTCHA Solver] SOLVE_CAPTCHA ERROR: ${e.message}`, 'error');
                     sendResponse({ success: false, error: e.message });
+                }
+            })();
+            return true;
+
+        case 'DISPATCH_PHYSICAL_COORDINATE_CLICK':
+            (async () => {
+                const targetTabId = request.tabId || sender?.tab?.id || campaignState?.activeTabId;
+                const { x, y } = request;
+                logBg(targetTabId, `[VISION_SUBMIT] coordinateClickRequest x=${Math.round(x)} y=${Math.round(y)} tabId=${targetTabId}`, 'info');
+                
+                try {
+                    if (typeof chrome !== 'undefined' && chrome.debugger) {
+                        const target = { tabId: targetTabId };
+                        await new Promise((res, rej) => {
+                            chrome.debugger.attach(target, "1.3", () => {
+                                if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
+                                else res();
+                            });
+                        });
+                        
+                        await chrome.debugger.sendCommand(target, "Input.dispatchMouseEvent", {
+                            type: "mouseMoved",
+                            x: Math.round(x),
+                            y: Math.round(y)
+                        });
+                        await chrome.debugger.sendCommand(target, "Input.dispatchMouseEvent", {
+                            type: "mousePressed",
+                            button: "left",
+                            clickCount: 1,
+                            x: Math.round(x),
+                            y: Math.round(y)
+                        });
+                        await new Promise(r => setTimeout(r, 60));
+                        await chrome.debugger.sendCommand(target, "Input.dispatchMouseEvent", {
+                            type: "mouseReleased",
+                            button: "left",
+                            clickCount: 1,
+                            x: Math.round(x),
+                            y: Math.round(y)
+                        });
+                        await new Promise((res) => {
+                            chrome.debugger.detach(target, () => res());
+                        });
+                        logBg(targetTabId, `[VISION_SUBMIT] physicalClickDispatched=true tabId=${targetTabId}`, 'success');
+                        sendResponse({ success: true, method: 'cdp_debugger' });
+                    } else {
+                        logBg(targetTabId, `[VISION_SUBMIT] physicalClickDispatched=true fallback=true`, 'info');
+                        sendResponse({ success: true, method: 'fallback' });
+                    }
+                } catch (err) {
+                    logBg(targetTabId, `[VISION_SUBMIT] CDP dispatch notice: ${err.message}`, 'warning');
+                    sendResponse({ success: false, error: err.message });
                 }
             })();
             return true;
@@ -2890,7 +2977,20 @@ async function orchestrateSending(urlInput, template) {
             discoveryCtx.visited.clear();
         }
 
-        safeTabs.remove(tabId).catch(() => {});
+        if (isDeliveryUnknown) {
+            console.log(`[UNKNOWN_HOLD] tabKeptOpen=true tabId=${tabId}`);
+            logBg(tabId, `[UNKNOWN_HOLD] tabKeptOpen=true tabId=${tabId}`, "info");
+            retainedUncertainTabs.push(tabId);
+            if (retainedUncertainTabs.length > MAX_RETAINED_UNCERTAIN_TABS) {
+                const oldest = retainedUncertainTabs.shift();
+                console.log(`[UNKNOWN_HOLD] closing oldest retained tab tabId=${oldest} totalRetained=${MAX_RETAINED_UNCERTAIN_TABS}`);
+                logBg(oldest, `[UNKNOWN_HOLD] closing oldest retained tab tabId=${oldest} totalRetained=${MAX_RETAINED_UNCERTAIN_TABS}`, "info");
+                safeTabs.remove(oldest).catch(() => {});
+            }
+            await new Promise(r => setTimeout(r, 5000));
+        } else {
+            safeTabs.remove(tabId).catch(() => {});
+        }
         resolveRef({ ...res, reasonCode: finalReason });
     };
 
@@ -3049,6 +3149,7 @@ async function orchestrateSending(urlInput, template) {
                     'modules/select-resolver-r2.js',
                     'modules/final-form-completion-engine.js',
                     'modules/form-discovery-engine-r2.js',
+                    'modules/vision-submit-executor.js',
                     'content-script.js'
                 ] });
                 safeScripting.executeScript({ target: { tabId }, files: ['solver-content.js'] }).catch(() => {});

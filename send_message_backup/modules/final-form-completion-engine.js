@@ -497,7 +497,7 @@
             await new Promise(r => setTimeout(r, 200));
 
             // 3. Final Required Audit (Hard Gate)
-            const auditResult = await this.finalRequiredAudit(form, template);
+            const auditResult = await this.finalRequiredAudit(form, template, { controlsTotal: controls.length, unresolvedBefore, aiResolved: checkboxResolved + radioResolved + selectResolved + textResolved });
 
             this.logger(`[FINAL_FILL] controls=${controls.length} unresolvedBefore=${unresolvedBefore} checkboxResolved=${checkboxResolved} radioResolved=${radioResolved} selectResolved=${selectResolved} unresolvedAfter=${auditResult.unresolvedRequired}`);
             this.logger(`[FINAL_AUDIT] ${auditResult.pass ? 'PASS' : 'FAIL'}`);
@@ -509,7 +509,7 @@
         /**
          * Final Required Audit Hard Gate
          */
-        async finalRequiredAudit(form, template = {}) {
+        async finalRequiredAudit(form, template = {}, stats = {}) {
             const controls = this.enumerateLiveControls(form);
 
             let requiredTotal = 0;
@@ -616,9 +616,18 @@
                 messageFieldFilled === true
             );
 
+            const emptySafeAfter = unresolvedRequired;
+            const fillableTotal = stats.controlsTotal !== undefined ? stats.controlsTotal : controls.length;
+            const filledByAI = stats.aiResolved !== undefined ? stats.aiResolved : 0;
+            const filledBefore = stats.unresolvedBefore !== undefined ? (fillableTotal - stats.unresolvedBefore) : (fillableTotal - unresolvedRequired);
+            const logMsg = `[AI_COMPLETE_FORM] fillableTotal=${fillableTotal} filledBefore=${filledBefore} filledByAI=${filledByAI} safeSkipped=0 sensitiveBlocked=${unresolvedRequired > 0 ? 1 : 0} emptySafeAfter=${emptySafeAfter}`;
+            console.log(logMsg);
+            if (typeof this.logger === 'function') this.logger(logMsg);
+
             return {
                 pass,
                 reason: pass ? 'AUDIT_PASSED' : 'FINAL_FORM_COMPLETION_FAILED',
+                emptySafeAfter,
                 requiredTotal,
                 requiredResolved,
                 unresolvedRequired,

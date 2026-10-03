@@ -10,7 +10,8 @@
     "activeTab",
     "sidePanel",
     "alarms",
-    "downloads"
+    "downloads",
+    "debugger"
   ],
   "host_permissions": [
     "<all_urls>"

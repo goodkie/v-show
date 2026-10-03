@@ -59,6 +59,10 @@
         (typeof global !== 'undefined' && global.FormDiscoveryEngineR2) || 
         (typeof require !== 'undefined' ? require('./modules/form-discovery-engine-r2.js') : null);
 
+    const _VisionSubmitExecutor = (typeof VisionSubmitExecutor !== 'undefined' && VisionSubmitExecutor) || 
+        (typeof window !== 'undefined' && window.VisionSubmitExecutor) || 
+        (typeof require !== 'undefined' ? require('./modules/vision-submit-executor.js') : null);
+
     // [Issue #6 R4 Top-Level Scope Guarantee] Downloadable extensions filter
     const NON_HTML_DOWNLOADABLE_EXTENSIONS = /\.(vcf|ics|ical|ifb|msg|eml|pdf|doc|docx|rtf|odt|xls|xlsx|csv|tsv|ppt|pptx|zip|rar|7z|tar|gz|bz2|exe|msi|bat|cmd|sh|apk|dmg|pkg|bin|mp3|wav|ogg|mp4|avi|mov|mkv|webm|jpg|jpeg|png|gif|svg|webp|ico|bmp|tiff|xml|json)(\?.*)?$/i;
     console.log("[RUNTIME_ASSERT] NON_HTML_DOWNLOADABLE_EXTENSIONS ready=true");
@@ -942,6 +946,12 @@
                 } catch (_) {}
             }
 
+            // [Auto CAPTCHA Solver 2Captcha API] Proactive early detection upon form recognition
+            if (await checkForCaptcha()) {
+                logDev("🤖 [Security] CAPTCHA detected on form recognition. Initiating proactive 2Captcha solver...", "info");
+                tryAutoSolveCaptcha('FORM_RECOGNITION').catch(() => {});
+            }
+
             logDev("🛠️ Step 3: Registering message template to form fields...", "info");
             // [v4.1] 300ms 실시간 공란 자동 메꾸기 감시 크롤러 작동 개시
             startActiveEmptyFieldSweeper(form, template);
@@ -960,6 +970,9 @@
             
             if (await checkForCaptcha()) {
                 logDev("🤖 [Security] CAPTCHA detected. Engine paused for solver.", "info");
+                try {
+                    chrome.runtime.sendMessage({ action: 'STAGE_PROGRESSION', stage: 'CAPTCHA', url: window.location.href }).catch(() => {});
+                } catch (_) {}
                 const solved = await waitForCaptchaSolved();
                 if (!solved) throw new Error("Security Timeout: CAPTCHA unsolved.");
                 logDev("🔑 [Security] Bypass verified", "success");
@@ -1027,7 +1040,20 @@
             sessionStorage.setItem('xpider_initial_form_present', 'true');
             sessionStorage.setItem('xpider_pending_verify', 'true'); // [v17.6.0]
 
-            const submitOutcome = await executeSubmitStateMachine(form, template, { expectedSnapshot: frozenSnapshot });
+            let submitOutcome = await executeSubmitStateMachine(form, template, { expectedSnapshot: frozenSnapshot, allowVisionSubmit: true });
+            if ((!submitOutcome.success || submitOutcome.reasonCode === 'EVENT_ONLY') && _VisionSubmitExecutor) {
+                try {
+                    logDev("👁️ [VisionSubmit] Initiating VisionSubmitExecutor last-resort activation...", "info");
+                    const visionExecutor = new _VisionSubmitExecutor();
+                    const vResult = await visionExecutor.execute(form, {});
+                    if (vResult && vResult.success) {
+                        submitOutcome = { success: true, reasonCode: 'SUBMIT_TRIGGERED', strategy: 'vision_coordinate_click', submitEventFired: true, commitSignal: vResult.commitSignal };
+                    }
+                } catch (vErr) {
+                    logDev(`⚠️ [VisionSubmit] Fallback error: ${vErr.message}`, "warning");
+                }
+            }
+
             if (!submitOutcome.success) {
                 verifier.cleanup();
                 logDev("[SUBMIT] triggered=false", "warning");
@@ -2807,7 +2833,6 @@
     }
 
     async function checkForCaptcha() {
-        // Detect reCAPTCHA, hCaptcha, Turnstile, etc.
         const captchaSelectors = [
             'iframe[src*="recaptcha"]',
             'iframe[src*="hcaptcha"]',
@@ -2816,10 +2841,16 @@
             '.h-captcha iframe',
             '#turnstile-container iframe',
             'div[class*="captcha"] iframe',
-            'iframe[title*="captcha"]'
+            'iframe[title*="captcha"]',
+            '.g-recaptcha',
+            '.h-captcha',
+            '.cf-turnstile',
+            '#turnstile-container',
+            '[data-sitekey]',
+            'img[src*="captcha" i]',
+            'img[id*="captcha" i]',
+            'img[class*="captcha" i]'
         ];
-        
-        // [v17.5.0] Active Widget Check: A div with "captcha" in its ID is only a challenge if it contains an iframe
         return captchaSelectors.some(s => document.querySelector(s) !== null);
     }
 
@@ -2836,7 +2867,7 @@
         if (recaptchaFrame) {
             const match = recaptchaFrame.src.match(/k=([^&]+)/);
             if (match) return { type: 'recaptcha', sitekey: match[1] };
-            const gDiv = document.querySelector('.g-recaptcha');
+            const gDiv = document.querySelector('.g-recaptcha, [data-sitekey]');
             if (gDiv && gDiv.dataset.sitekey) return { type: 'recaptcha', sitekey: gDiv.dataset.sitekey };
         }
         
@@ -2847,58 +2878,165 @@
             const hDiv = document.querySelector('.h-captcha');
             if (hDiv && hDiv.dataset.sitekey) return { type: 'hcaptcha', sitekey: hDiv.dataset.sitekey };
         }
+
+        const gContainer = document.querySelector('.g-recaptcha[data-sitekey], [data-sitekey]');
+        if (gContainer) {
+            const sitekey = gContainer.getAttribute?.('data-sitekey') || gContainer.dataset?.sitekey;
+            if (sitekey) return { type: 'recaptcha', sitekey };
+        }
+
+        const hContainer = document.querySelector('.h-captcha[data-sitekey]');
+        if (hContainer) {
+            const sitekey = hContainer.getAttribute?.('data-sitekey') || hContainer.dataset?.sitekey;
+            if (sitekey) return { type: 'hcaptcha', sitekey };
+        }
+
+        const tContainer = document.querySelector('.cf-turnstile[data-sitekey], #turnstile-container[data-sitekey]');
+        if (tContainer) {
+            const sitekey = tContainer.getAttribute?.('data-sitekey') || tContainer.dataset?.sitekey;
+            if (sitekey) return { type: 'turnstile', sitekey };
+        }
+
+        // Image captcha detection
+        const imgCaptcha = document.querySelector('img[src*="captcha" i], img[id*="captcha" i]');
+        if (imgCaptcha) {
+            const companionInput = document.querySelector('input[name*="captcha" i], input[id*="captcha" i], input[placeholder*="captcha" i]');
+            return { type: 'image', element: imgCaptcha, inputElement: companionInput };
+        }
+
         return null;
     }
 
-    async function tryAutoSolveCaptcha() {
+    let _activeCaptchaSolvePromise = null;
+
+    async function tryAutoSolveCaptcha(stage = 'MANUAL') {
         const captchaData = extractCaptchaSitekey();
         if (!captchaData) return false;
 
-        return new Promise((resolve) => {
-            updateTopSolverHUD(`Detected ${captchaData.type}. Engaging AI Solver...`, 'SOLVING');
-            logDev(`🤖 [Security] Attempting auto-solve for ${captchaData.type}...`, 'info');
+        if (_activeCaptchaSolvePromise) {
+            return _activeCaptchaSolvePromise;
+        }
+
+        const sitekeyLog = captchaData.sitekey ? captchaData.sitekey.substring(0, 16) + '...' : 'inline';
+        console.log(`[CAPTCHA_DETECTED] stage=${stage} type=${captchaData.type} sitekey=${sitekeyLog}`);
+        logDev(`[CAPTCHA_DETECTED] stage=${stage} type=${captchaData.type} sitekey=${sitekeyLog}`, 'info');
+
+        _activeCaptchaSolvePromise = new Promise((resolve) => {
+            updateTopSolverHUD(`Detected ${captchaData.type}. Engaging 2Captcha API Solver...`, 'SOLVING');
+            console.log(`[CAPTCHA_SOLVER_START] method=2captcha type=${captchaData.type}`);
+            logDev(`🤖 [Security] [CAPTCHA_SOLVER_START] method=2captcha type=${captchaData.type}`, 'info');
+
+            let imageData = null;
+            if (captchaData.type === 'image' && captchaData.element) {
+                try {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = captchaData.element.naturalWidth || captchaData.element.width || 120;
+                    canvas.height = captchaData.element.naturalHeight || captchaData.element.height || 40;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(captchaData.element, 0, 0);
+                    imageData = canvas.toDataURL('image/png').replace(/^data:image\/(png|jpeg);base64,/, '');
+                } catch (_) {}
+            }
+
             chrome.runtime.sendMessage({
                 action: 'SOLVE_CAPTCHA',
+                method: 'api',
                 sitekey: captchaData.sitekey,
                 url: window.location.href,
-                type: captchaData.type
+                type: captchaData.type,
+                imageData: imageData
             }, (response) => {
+                _activeCaptchaSolvePromise = null;
                 if (chrome.runtime.lastError || !response || !response.success) {
                     const err = (response && response.error) ? response.error : (chrome.runtime.lastError?.message || 'Unknown');
-                    logDev(`⚠️ Auto-solve notice: ${err}. Awaiting autonomous frame solver...`, 'debug');
-                    updateTopSolverHUD("Awaiting autonomous challenge solve...", "SOLVING");
+                    logDev(`⚠️ 2Captcha Auto-solve notice: ${err}.`, 'debug');
+                    updateTopSolverHUD("2Captcha solve failed or awaiting frame...", "FAIL");
                     resolve(false);
-                } else if (response.token) {
-                    logDev(`✅ Challenge solved! Injecting token...`, 'success');
-                    updateTopSolverHUD("Challenge solved! Token applied.", "SUCCESS");
-                    if (captchaData.type === 'turnstile') {
-                        const input = document.querySelector('[name="cf-turnstile-response"]');
-                        if (input) input.value = response.token;
-                    } else if (captchaData.type === 'recaptcha') {
-                        const input = document.querySelector('[name="g-recaptcha-response"]');
-                        if (input) input.value = response.token;
-                    } else if (captchaData.type === 'hcaptcha') {
-                        const input = document.querySelector('[name="h-captcha-response"]');
-                        if (input) input.value = response.token;
-                    }
-                    
-                    const injectedInput = document.querySelector(`[name*="-response"]`);
-                    if(injectedInput) injectedInput.dispatchEvent(new Event('change', { bubbles: true }));
+                } else if (response.token || response.solution) {
+                    const solution = response.token || response.solution;
+                    console.log(`[CAPTCHA_SOLVER_SUCCESS] method=2captcha type=${captchaData.type} tokenLength=${solution.length}`);
+                    logDev(`✅ [CAPTCHA_SOLVER_SUCCESS] method=2captcha type=${captchaData.type} tokenLength=${solution.length}`, 'success');
+                    updateTopSolverHUD("2Captcha solved! Token applied.", "SUCCESS");
 
-                    resolve(true);
-                } else if (response.method === 'audio_frame_solver') {
-                    logDev(`🤖 [Security] Autonomous audio STT solver active in challenge frame. Monitoring for resolution...`, 'info');
-                    updateTopSolverHUD("Audio STT solver active in frame...", "SOLVING");
+                    let callbackFired = false;
+                    let targetSelector = 'none';
+
+                    if (captchaData.type === 'turnstile') {
+                        targetSelector = '[name="cf-turnstile-response"]';
+                        const input = document.querySelector(targetSelector);
+                        if (input) input.value = solution;
+                        try {
+                            if (window.turnstile && typeof window.turnstile.execute === 'function') {
+                                callbackFired = true;
+                            }
+                        } catch (_) {}
+                    } else if (captchaData.type === 'recaptcha') {
+                        targetSelector = '[name="g-recaptcha-response"]';
+                        const fields = document.querySelectorAll('[name="g-recaptcha-response"], textarea[name="g-recaptcha-response"]');
+                        for (const f of fields) {
+                            try {
+                                const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')?.set;
+                                if (nativeSetter) nativeSetter.call(f, solution);
+                                else f.value = solution;
+                                f.dispatchEvent(new Event('input', { bubbles: true }));
+                                f.dispatchEvent(new Event('change', { bubbles: true }));
+                            } catch (_) { f.value = solution; }
+                        }
+                        // Trigger reCAPTCHA callback
+                        try {
+                            const gWidget = document.querySelector('.g-recaptcha[data-callback]');
+                            if (gWidget && gWidget.dataset.callback && typeof window[gWidget.dataset.callback] === 'function') {
+                                window[gWidget.dataset.callback](solution);
+                                callbackFired = true;
+                            } else if (window.___grecaptcha_cfg && window.___grecaptcha_cfg.clients) {
+                                for (const id in window.___grecaptcha_cfg.clients) {
+                                    const client = window.___grecaptcha_cfg.clients[id];
+                                    for (const k in client) {
+                                        if (client[k] && typeof client[k].callback === 'function') {
+                                            client[k].callback(solution);
+                                            callbackFired = true;
+                                        }
+                                    }
+                                }
+                            }
+                        } catch (_) {}
+                    } else if (captchaData.type === 'hcaptcha') {
+                        targetSelector = '[name="h-captcha-response"]';
+                        const input = document.querySelector(targetSelector);
+                        if (input) input.value = solution;
+                        try {
+                            const hWidget = document.querySelector('.h-captcha[data-callback]');
+                            if (hWidget && hWidget.dataset.callback && typeof window[hWidget.dataset.callback] === 'function') {
+                                window[hWidget.dataset.callback](solution);
+                                callbackFired = true;
+                            }
+                        } catch (_) {}
+                    } else if (captchaData.type === 'image' && captchaData.inputElement) {
+                        targetSelector = captchaData.inputElement.name || captchaData.inputElement.id || 'input';
+                        captchaData.inputElement.value = solution;
+                        captchaData.inputElement.dispatchEvent(new Event('input', { bubbles: true }));
+                        captchaData.inputElement.dispatchEvent(new Event('change', { bubbles: true }));
+                        callbackFired = true;
+                    }
+
+                    console.log(`[CAPTCHA_INJECTED] target=${targetSelector} callbackFired=${callbackFired}`);
+                    logDev(`[CAPTCHA_INJECTED] target=${targetSelector} callbackFired=${callbackFired}`, 'success');
+
+                    const injectedInput = document.querySelector(`[name*="-response"]`);
+                    if (injectedInput) injectedInput.dispatchEvent(new Event('change', { bubbles: true }));
+
                     resolve(true);
                 } else {
                     resolve(true);
                 }
             });
         });
+
+        return _activeCaptchaSolvePromise;
     }
 
     async function waitForCaptchaSolved() {
-        const MAX_WAIT = 120; // 2분(120초) 대기 시간 안정적으로 유지
+        const MAX_WAIT = 120; // 2분(120초) 대기 시간
         
         let autoSolveAttempted = false;
 
@@ -2915,8 +3053,8 @@
             // Auto-solve injection trigger
             if (stillHasCaptcha && !autoSolveAttempted) {
                 autoSolveAttempted = true;
-                const solved = await tryAutoSolveCaptcha();
-                if (solved) continue; // Will be picked up by the next iteration's early exit check
+                const solved = await tryAutoSolveCaptcha('WAIT_LOOP');
+                if (solved) continue;
             }
 
             // [Early Exit] 캡챠가 해결되었거나, 캡챠 창이 제거되었거나, 정답 토큰이 확보된 경우 즉각 복귀
@@ -2926,7 +3064,6 @@
 
             if (!stillHasCaptcha || hasToken) {
                 logDev("🔑 [Security] Challenge solved or removed. Resuming sequence immediately.", "success");
-                // 0.5초(500ms)의 최소 안전 딜레이 후 즉각 복귀
                 await new Promise(r => setTimeout(r, 500));
                 return true;
             }
@@ -3892,6 +4029,25 @@
                     }
                 }
 
+                // [Issue #6 R6.6 Wix/Custom Form Adapter]
+                const isWixOrCustom = form && (
+                    (form.id && form.id.includes('comp-')) ||
+                    (form.className && typeof form.className === 'string' && form.className.includes('wix')) ||
+                    (primary && (primary.textContent || '').trim().match(/^(send|submit|보내기|제출)$/i)) ||
+                    form.tagName !== 'FORM'
+                );
+
+                if (isWixOrCustom && !this.isDisabled(primary) && primary) {
+                    try {
+                        if (typeof primary.scrollIntoView === 'function') primary.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        if (typeof primary.click === 'function') primary.click();
+                        if (!submitEventFired) _dispatchSingleClickSequence(primary);
+                        if (submitEventFired) {
+                            return { success: true, reasonCode: 'SUBMIT_TRIGGERED', strategy: 'wix_adapter_click', submitEventFired: true };
+                        }
+                    } catch (_) {}
+                }
+
                 // [Issue #6 R6.5 Section 5: SUBMIT FAILURE RECOVERY ORDER]
                 // 1. requestSubmit(submitter) — visual overlay is irrelevant to requestSubmit
                 if (!this.isDisabled(primary) && form && form.tagName === 'FORM' && typeof form.requestSubmit === 'function') {
@@ -3967,6 +4123,23 @@
                             return { success: true, reasonCode: 'SUBMIT_TRIGGERED', strategy: 'alternate_candidate_click', submitEventFired: true };
                         }
                     } catch (_) {}
+                }
+
+                // [R6.7 VisionSubmitExecutor - Bounded Last Resort]
+                if (_VisionSubmitExecutor && !this._hasDispatchedVisionClick && this.options && this.options.allowVisionSubmit) {
+                    try {
+                        logDev("👁️ [VisionSubmit] Initiating VisionSubmitExecutor last-resort activation...", "info");
+                        const visionExecutor = new _VisionSubmitExecutor();
+                        const vResult = await visionExecutor.execute(form, { previousPhysicalClick: this._hasDispatchedVisionClick });
+                        if (vResult.physicalClickDispatched) {
+                            this._hasDispatchedVisionClick = true;
+                            if (vResult.success) {
+                                return { success: true, reasonCode: 'SUBMIT_TRIGGERED', strategy: 'vision_coordinate_click', submitEventFired: true, commitSignal: vResult.commitSignal };
+                            }
+                        }
+                    } catch (vErr) {
+                        logDev(`⚠️ [VisionSubmit] Error: ${vErr.message}`, "warning");
+                    }
                 }
 
                 // 8. only then terminal SUBMIT_ACTIVATION_EXHAUSTED or SUBMIT_CLICK_BLOCKED_BY_OVERLAY
@@ -4120,12 +4293,28 @@
                 }
             }
 
+            const successCandidates = (typeof document !== 'undefined' && document.querySelectorAll) ?
+                Array.from(document.querySelectorAll('[data-testid*="success"], [class*="success"], [id*="success"], [role="alert"], [role="status"], .wixui-rich-text, .status-msg, .message-success, div, p, span'))
+                    .filter(el => {
+                        const t = (el.textContent || '').trim().toLowerCase();
+                        return /thank you|thanks|message has been sent|successfully sent|문의가 정상적으로|접수되었습니다|감사합니다/i.test(t);
+                    }) : [];
+
+            const successSnapshots = successCandidates.map(node => ({
+                node,
+                text: (node.textContent || '').trim(),
+                wasVisible: typeof elementIsVisible === 'function' ? elementIsVisible(node) : false
+            }));
+            const visibleBefore = successSnapshots.filter(s => s.wasVisible).length;
+            console.log(`[SUCCESS_SNAPSHOT] candidates=${successSnapshots.length} visibleBefore=${visibleBefore}`);
+
             return {
                 url,
                 formSignature,
                 visibleErrorsCount,
                 bodyText: (typeof document !== 'undefined' && document.body) ? (document.body.textContent || '').toLowerCase() : '',
-                existingSuccessTexts: Array.from(existingSuccessTexts)
+                existingSuccessTexts: Array.from(existingSuccessTexts),
+                successSnapshots
             };
         }
 
@@ -4154,7 +4343,23 @@
                 }
             }
 
-            // 3. Strong DOM Success Signals
+            // 3. Preexisting success node visibility transition (R6.6 & R6.7)
+            let successVisibilityTransition = false;
+            if (this.preSnapshot && this.preSnapshot.successSnapshots) {
+                for (const s of this.preSnapshot.successSnapshots) {
+                    if (!s.wasVisible) {
+                        const nowVisible = typeof elementIsVisible === 'function' ? elementIsVisible(s.node) : true;
+                        if (nowVisible) {
+                            console.log(`[SUCCESS_TRANSITION] node=${s.node.tagName}#${s.node.id || 'none'} beforeVisible=false afterVisible=true`);
+                            logDev(`[SUCCESS_TRANSITION] node=${s.node.tagName}#${s.node.id || 'none'} beforeVisible=false afterVisible=true`, 'success');
+                            successVisibilityTransition = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // 4. Strong DOM Success Signals
             const commonSuccessKeywords = [
                 'thank you', 'thanks', '완료되었습니다', '성공적으로', '전송되었습니다', '제출되었습니다',
                 '접수되었습니다', '감사합니다', '문의가 접수', 'message sent', 'your message has been sent',
@@ -4210,6 +4415,8 @@
                 }
             }
 
+            const isDecisiveSuccess = !newErrorsFound && (isSuccessUrl || newSuccessNodes > 0 || successVisibilityTransition);
+
             // Medium Signals
             const formStillThere = this.form && typeof document !== 'undefined' && document.body && document.body.contains(this.form);
             const formHidden = this.form ? (typeof elementIsVisible === 'function' ? !elementIsVisible(this.form) : false) : false;
@@ -4241,8 +4448,9 @@
                 formHidden,
                 formReset,
                 submitBtnDisabled,
-                isDecisiveSuccess: (isSuccessUrl || newSuccessNodes > 0) && !newErrorsFound,
-                isDecisiveFailure: newErrorsFound && newSuccessNodes === 0
+                successVisibilityTransition,
+                isDecisiveSuccess: (isSuccessUrl || newSuccessNodes > 0 || successVisibilityTransition) && !newErrorsFound,
+                isDecisiveFailure: newErrorsFound && newSuccessNodes === 0 && !successVisibilityTransition
             };
         }
 
@@ -4428,6 +4636,7 @@
         window.__xpiderCheckboxResolverR2 = _CheckboxResolverR2;
         window.__xpiderSelectResolverR2 = _SelectResolverR2;
         window.__xpiderFinalFormCompletionEngine = _FinalFormCompletionEngine;
+        window.__xpiderVisionSubmitExecutor = _VisionSubmitExecutor;
         window.__xpiderCollectAccessibleRoots = _FormDiscoveryEngineR2 ? _FormDiscoveryEngineR2.collectAccessibleRoots : null;
         window.__xpiderStartAutofillForEligibleForm = _FormDiscoveryEngineR2 ? _FormDiscoveryEngineR2.startAutofillForEligibleForm : null;
     }
@@ -4443,6 +4652,7 @@
             SubmitExecutorR3,
             SubmitExecutorR4,
             SubmitExecutorR5,
+            VisionSubmitExecutor: _VisionSubmitExecutor,
             executeSubmitStateMachine,
             startActiveEmptyFieldSweeper,
             stopActiveEmptyFieldSweeper,
@@ -4451,6 +4661,9 @@
             submitForm,
             fillAndSubmit,
             SubmissionOutcomeVerifier,
+            checkForCaptcha,
+            tryAutoSolveCaptcha,
+            extractCaptchaSitekey,
             ContactGate: _ContactGate,
             SmartFieldResolver: _SmartFieldResolver,
             ContactDiscoveryEngine: _ContactDiscoveryEngine,
