@@ -226,48 +226,72 @@
                 }
                 this.lastAttemptTime = now;
 
-                // [Auto CAPTCHA Solver v2] 2Captcha API token injection (highest priority)
-                if ((method === 'api' || method === '2captcha') && apiKey) {
-                    // Extract sitekey from reCAPTCHA/hCaptcha iframe or div
+                // [Auto CAPTCHA Solver v2.5] 2Captcha API / NopeCHA API token injection (highest priority)
+                const isApiMethod = (method === 'api' || method === '2captcha' || method === 'nopecha');
+                if (isApiMethod) {
+                    if (!apiKey) {
+                        this.log(`${method === 'nopecha' ? 'NopeCHA' : '2Captcha'} API Key missing in Settings`, "CONFIG_REQUIRED");
+                        return; // CRITICAL: Stop here, NEVER fall through to audio challenge!
+                    }
+
+                    if (this.solving) {
+                        this.log(`Requesting ${method === 'nopecha' ? 'NopeCHA' : '2Captcha'} token... (waiting)`, "SOLVING");
+                        return; // CRITICAL: While solving, DO NOT fall through!
+                    }
+
+                    // Check if already solved
+                    const existingToken = document.querySelector('[name="g-recaptcha-response"]') || document.querySelector('[name="h-captcha-response"]');
+                    if (existingToken && existingToken.value && existingToken.value.length > 20) {
+                        this.log("Token already injected. Solved!", "PASS");
+                        return;
+                    }
+
                     const sitekey = this._extractSitekey();
-                    const pageUrl = (typeof window !== 'undefined' && window.location) ? window.location.href : '';
-                    if (sitekey && pageUrl && !this.solving) {
+                    const pageUrl = this._getHostPageUrl();
+                    if (sitekey) {
                         const captchaType = this._detectCaptchaType();
-                        // Check if already solved
-                        const existingToken = document.querySelector('[name="g-recaptcha-response"]') || document.querySelector('[name="h-captcha-response"]');
-                        if (existingToken && existingToken.value && existingToken.value.length > 20) {
-                            this.log("Token already injected. Solved!", "PASS");
-                            return;
-                        }
                         this.solving = true;
-                        this.log(`Requesting ${captchaType} token via 2Captcha API...`, "SOLVING");
+                        this.log(`Requesting ${captchaType} token via ${method === 'nopecha' ? 'NopeCHA' : '2Captcha'} API...`, "SOLVING");
                         chrome.runtime.sendMessage({
                             action: 'SOLVE_CAPTCHA',
-                            method: 'api',
+                            method: method === 'nopecha' ? 'nopecha' : 'api',
                             type: captchaType,
                             sitekey: sitekey,
-                            url: pageUrl
+                            url: pageUrl,
+                            hostUrl: pageUrl,
+                            referrer: (typeof document !== 'undefined' && document.referrer) ? document.referrer : ''
                         }, async (resp) => {
                             this.solving = false;
                             if (resp && resp.success && resp.token) {
                                 this.log(`Token received! Injecting...`, "INJECT");
                                 const injected = this._injectToken(resp.token, captchaType);
                                 if (injected) {
-                                    this.log("2Captcha: Token injected successfully!", "SUCCESS");
+                                    this.log(`${method === 'nopecha' ? 'NopeCHA' : '2Captcha'}: Token injected successfully!`, "SUCCESS");
                                     await chrome.storage.local.set({ captchaAttempts: 0, captchaBlocked: false });
                                 } else {
-                                    this.log("Token injection failed, retrying...", "RETRY");
+                                    this.log("Token injection dispatched across frames...", "INJECTED");
                                 }
                             } else {
                                 const errMsg = resp?.error || "Unknown error";
-                                this.log(`2Captcha API failed: ${errMsg}`, "FAIL");
+                                this.log(`${method === 'nopecha' ? 'NopeCHA' : '2Captcha'} API failed: ${errMsg}`, "FAIL");
                                 const res = await chrome.storage.local.get(['captchaAttempts']);
                                 const newCount = (res.captchaAttempts || 0) + 1;
                                 await chrome.storage.local.set({ captchaAttempts: newCount });
                             }
                         });
                         return;
+                    } else {
+                        // Sitekey not found in this frame yet
+                        return;
                     }
+                }
+
+                // ============================================================
+                // AUDIO / BROWSER NATIVE CHALLENGE (Strictly guarded by solver method)
+                // When 2Captcha or NopeCHA is chosen, NEVER run audio solver!
+                // ============================================================
+                if (method !== 'audio' && method !== 'native' && method !== 'wit') {
+                    return;
                 }
 
                 // [F13-Sanitized] Dynamically read configured keys from chrome.storage.local
@@ -334,28 +358,90 @@
         }
 
         /**
-         * Extract reCAPTCHA / hCaptcha sitekey from page DOM
+         * Extract reCAPTCHA / hCaptcha / Turnstile sitekey from page DOM, iframes, scripts, or location query
          */
         _extractSitekey() {
-            // reCAPTCHA v2 div
+            // 1. Current window location query params (essential when running inside reCAPTCHA/hCaptcha iframe)
+            if (typeof window !== 'undefined' && window.location) {
+                try {
+                    const searchParams = new URLSearchParams(window.location.search);
+                    const k = searchParams.get('k') || searchParams.get('sitekey');
+                    if (k && k !== 'explicit') return k;
+                    const match = window.location.href.match(/[?&](?:k|sitekey)=([^&#]+)/);
+                    if (match && match[1] && match[1] !== 'explicit') return match[1];
+                } catch (_) {}
+            }
+
+            // 2. reCAPTCHA v2 div with data-sitekey
             const rcDiv = document.querySelector('[data-sitekey]');
-            if (rcDiv) return rcDiv.getAttribute('data-sitekey');
-            // iframe src parameter
-            const iframes = document.querySelectorAll('iframe[src*="recaptcha"], iframe[src*="hcaptcha"]');
+            if (rcDiv) {
+                const key = rcDiv.getAttribute('data-sitekey') || rcDiv.dataset?.sitekey;
+                if (key) return key;
+            }
+
+            // 3. iframe src parameter (recaptcha, hcaptcha, turnstile)
+            const iframes = document.querySelectorAll('iframe[src*="recaptcha"], iframe[src*="hcaptcha"], iframe[src*="turnstile"], iframe[src*="challenges.cloudflare.com"]');
             for (const f of iframes) {
                 try {
                     const url = new URL(f.src);
                     const k = url.searchParams.get('k') || url.searchParams.get('sitekey');
-                    if (k) return k;
+                    if (k && k !== 'explicit') return k;
                 } catch (_) {}
             }
-            // Script tag with sitekey
-            const scripts = document.querySelectorAll('script[src*="recaptcha"]');
+
+            // 4. External script tag with sitekey param
+            const scripts = document.querySelectorAll('script[src*="recaptcha"], script[src*="hcaptcha"], script[src*="turnstile"]');
             for (const s of scripts) {
                 const m = s.src.match(/[?&](?:k|sitekey)=([^&]+)/);
-                if (m) return m[1];
+                if (m && m[1] && m[1] !== 'explicit') return m[1];
             }
+
+            // 5. Inline script scan for grecaptcha.render('...', { 'sitekey': '...' }) or sitekey: '...'
+            try {
+                const inlineScripts = document.querySelectorAll('script:not([src])');
+                for (const s of inlineScripts) {
+                    const text = s.textContent || '';
+                    const m = text.match(/['"]sitekey['"]\s*:\s*['"]([a-zA-Z0-9_\-]+)['"]/i);
+                    if (m && m[1]) return m[1];
+                }
+            } catch (_) {}
+
             return null;
+        }
+
+        /**
+         * Resolve the actual host website URL for 2Captcha API verification
+         */
+        _getHostPageUrl() {
+            // 1. If document.referrer is not google.com/recaptcha, it is the host embedding page
+            if (typeof document !== 'undefined' && document.referrer) {
+                const ref = document.referrer;
+                if (!ref.includes('google.com/recaptcha') && !ref.includes('recaptcha.net')) {
+                    return ref;
+                }
+            }
+            // 2. Decode 'co' parameter in reCAPTCHA URL (base64 encoded origin of host page)
+            try {
+                if (typeof window !== 'undefined' && window.location) {
+                    const params = new URLSearchParams(window.location.search);
+                    const co = params.get('co');
+                    if (co) {
+                        const padded = co.padEnd(co.length + (4 - co.length % 4) % 4, '=');
+                        const decoded = atob(padded);
+                        if (decoded && (decoded.startsWith('http://') || decoded.startsWith('https://'))) {
+                            return decoded.replace(/:443$/, '').replace(/:80$/, '');
+                        }
+                    }
+                }
+            } catch (_) {}
+            // 3. Fallback to window.location.href if not a recaptcha iframe
+            if (typeof window !== 'undefined' && window.location) {
+                const href = window.location.href;
+                if (!href.includes('google.com/recaptcha') && !href.includes('recaptcha.net')) {
+                    return href;
+                }
+            }
+            return '';
         }
 
         /**
@@ -391,19 +477,30 @@
                     } catch (_) { field.value = token; injected = true; }
                 }
 
-                // 2. Trigger reCAPTCHA v2 callback
+                // 2. Trigger reCAPTCHA v2 callbacks
                 try {
-                    if (typeof window !== 'undefined' && window.___grecaptcha_cfg) {
-                        const clients = window.___grecaptcha_cfg.clients;
-                        for (const id in clients) {
-                            const client = clients[id];
-                            for (const key in client) {
-                                const obj = client[key];
-                                if (obj && typeof obj.callback === 'function') {
-                                    obj.callback(token);
-                                    injected = true;
+                    if (typeof window !== 'undefined') {
+                        if (window.___grecaptcha_cfg && window.___grecaptcha_cfg.clients) {
+                            const clients = window.___grecaptcha_cfg.clients;
+                            for (const id in clients) {
+                                const client = clients[id];
+                                for (const key in client) {
+                                    const obj = client[key];
+                                    if (obj) {
+                                        if (typeof obj.callback === 'function') {
+                                            obj.callback(token);
+                                            injected = true;
+                                        } else if (typeof obj.callback === 'string' && typeof window[obj.callback] === 'function') {
+                                            window[obj.callback](token);
+                                            injected = true;
+                                        }
+                                    }
                                 }
                             }
+                        }
+                        if (typeof window.validateRecaptcha === 'function') {
+                            window.validateRecaptcha(token);
+                            injected = true;
                         }
                     }
                 } catch (_) {}
@@ -411,7 +508,6 @@
                 // 3. Trigger hCaptcha callback
                 try {
                     if (type === 'hcaptcha' && typeof window !== 'undefined' && window.hcaptcha) {
-                        // hCaptcha widget callback
                         const widgets = document.querySelectorAll('[data-hcaptcha-widget-id]');
                         for (const w of widgets) {
                             const wid = w.getAttribute('data-hcaptcha-widget-id');
@@ -420,10 +516,39 @@
                     }
                 } catch (_) {}
 
-                // 4. Post message to parent (iframe context)
+                // 4. Update visual checkbox state in anchor frame
                 try {
-                    if (typeof window !== 'undefined' && window.parent !== window) {
-                        window.parent.postMessage({ 'g-recaptcha-response': token, 'h-captcha-response': token, type: 'captchaToken', token }, '*');
+                    const anchor = document.querySelector('#recaptcha-anchor, .recaptcha-checkbox');
+                    if (anchor) {
+                        anchor.setAttribute('aria-checked', 'true');
+                        anchor.classList.add('recaptcha-checkbox-checked');
+                        injected = true;
+                    }
+                } catch (_) {}
+
+                // 5. Hide error labels
+                try {
+                    const errLabels = document.querySelectorAll("label[for='g-recaptcha-Reg'], .recaptcha-wrapper label");
+                    errLabels.forEach(el => el.style.display = 'none');
+                } catch (_) {}
+
+                // 6. Post message to parent & top (cross-frame coordination)
+                try {
+                    const msgPayload = {
+                        'g-recaptcha-response': token,
+                        'h-captcha-response': token,
+                        type: 'captchaToken',
+                        action: 'CAPTCHA_SOLVED',
+                        source: 'xpider_solver',
+                        token: token
+                    };
+                    if (typeof window !== 'undefined') {
+                        if (window.parent && window.parent !== window) {
+                            window.parent.postMessage(msgPayload, '*');
+                        }
+                        if (window.top && window.top !== window) {
+                            window.top.postMessage(msgPayload, '*');
+                        }
                     }
                 } catch (_) {}
 

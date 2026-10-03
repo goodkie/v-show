@@ -2855,6 +2855,15 @@
     }
 
     function extractCaptchaSitekey() {
+        // 1. Current window location query params
+        if (typeof window !== 'undefined' && window.location) {
+            try {
+                const searchParams = new URLSearchParams(window.location.search);
+                const k = searchParams.get('k') || searchParams.get('sitekey');
+                if (k && k !== 'explicit') return { type: 'recaptcha', sitekey: k };
+            } catch (_) {}
+        }
+
         const turnstileFrame = document.querySelector('iframe[src*="turnstile"]');
         if (turnstileFrame) {
             const match = turnstileFrame.src.match(/sitekey=([^&]+)/) || turnstileFrame.src.match(/k=([^&]+)/);
@@ -2896,6 +2905,16 @@
             const sitekey = tContainer.getAttribute?.('data-sitekey') || tContainer.dataset?.sitekey;
             if (sitekey) return { type: 'turnstile', sitekey };
         }
+
+        // Inline script scan for grecaptcha.render('...', { 'sitekey': '...' })
+        try {
+            const inlineScripts = document.querySelectorAll('script:not([src])');
+            for (const s of inlineScripts) {
+                const text = s.textContent || '';
+                const m = text.match(/['"]sitekey['"]\s*:\s*['"]([a-zA-Z0-9_\-]+)['"]/i);
+                if (m && m[1]) return { type: 'recaptcha', sitekey: m[1] };
+            }
+        } catch (_) {}
 
         // Image captcha detection
         const imgCaptcha = document.querySelector('img[src*="captcha" i], img[id*="captcha" i]');
@@ -2999,6 +3018,10 @@
                                     }
                                 }
                             }
+                            if (typeof window.validateRecaptcha === 'function') {
+                                window.validateRecaptcha(solution);
+                                callbackFired = true;
+                            }
                         } catch (_) {}
                     } else if (captchaData.type === 'hcaptcha') {
                         targetSelector = '[name="h-captcha-response"]';
@@ -3033,6 +3056,26 @@
         });
 
         return _activeCaptchaSolvePromise;
+    }
+
+    // [Cross-Frame Coordination] Listen for solved captcha tokens from other frames or background
+    if (typeof window !== 'undefined' && window.addEventListener) {
+        window.addEventListener('message', (event) => {
+            if (event.data && (event.data.type === 'captchaToken' || event.data.action === 'CAPTCHA_SOLVED') && event.data.token) {
+                const solution = event.data.token;
+                const fields = document.querySelectorAll('[name="g-recaptcha-response"], textarea[name="g-recaptcha-response"], [name="h-captcha-response"], textarea[name="h-captcha-response"]');
+                for (const f of fields) {
+                    try {
+                        f.value = solution;
+                        f.dispatchEvent(new Event('input', { bubbles: true }));
+                        f.dispatchEvent(new Event('change', { bubbles: true }));
+                    } catch (_) {}
+                }
+                if (typeof window.validateRecaptcha === 'function') {
+                    try { window.validateRecaptcha(solution); } catch (_) {}
+                }
+            }
+        });
     }
 
     async function waitForCaptchaSolved() {

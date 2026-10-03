@@ -1168,6 +1168,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
                     logBg(null, `[Auto CAPTCHA Solver] SOLVE_CAPTCHA: method=${method} sitekey=${(request.sitekey||'').substring(0,12)}... url=${request.url||''}`, 'info');
                     
+                    // Normalize host page URL (crucial when request originated from reCAPTCHA / external iframe)
+                    let targetPageUrl = request.url || '';
+                    if (!targetPageUrl || targetPageUrl.includes('google.com/recaptcha') || targetPageUrl.includes('recaptcha.net')) {
+                        targetPageUrl = request.hostUrl || request.referrer || (sender && sender.tab && sender.tab.url) || '';
+                    }
+
                     // [Priority 1] 2Captcha token solver (API method)
                     if ((method === 'api' || method === '2captcha') && solver.config.twoCaptchaKey) {
                         try {
@@ -1178,47 +1184,118 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                 enterprise: request.enterprise,
                                 invisible: request.invisible
                             };
-                            const token = await solver.solve2Captcha(request.sitekey, request.url, request.type || 'recaptcha', extra);
+                            const token = await solver.solve2Captcha(request.sitekey, targetPageUrl, request.type || 'recaptcha', extra);
                             logBg(null, `[Auto CAPTCHA Solver] 2Captcha SUCCESS token=${token ? token.substring(0, 16) + '...' : 'null'}`, 'success');
+
+                            // [Multi-Frame Autonomous Injection] Inject solved token across ALL frames in the tab (supports nested iframes like PerfectMind)
+                            const activeTabId = (sender && sender.tab && sender.tab.id) || request.tabId || campaignState?.activeTabId;
+                            if (activeTabId) {
+                                try {
+                                    await safeScripting.executeScript({
+                                        target: { tabId: activeTabId, allFrames: true },
+                                        func: (solToken, capType) => {
+                                            try {
+                                                const fields = capType === 'hcaptcha'
+                                                    ? document.querySelectorAll('[name="h-captcha-response"], textarea[name="h-captcha-response"]')
+                                                    : document.querySelectorAll('[name="g-recaptcha-response"], textarea[name="g-recaptcha-response"]');
+                                                for (const f of fields) {
+                                                    try {
+                                                        const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')?.set;
+                                                        if (nativeSetter) nativeSetter.call(f, solToken);
+                                                        else f.value = solToken;
+                                                        f.dispatchEvent(new Event('input', { bubbles: true }));
+                                                        f.dispatchEvent(new Event('change', { bubbles: true }));
+                                                    } catch (_) { f.value = solToken; }
+                                                }
+                                                if (window.___grecaptcha_cfg && window.___grecaptcha_cfg.clients) {
+                                                    for (const cid in window.___grecaptcha_cfg.clients) {
+                                                        const client = window.___grecaptcha_cfg.clients[cid];
+                                                        for (const k in client) {
+                                                            const obj = client[k];
+                                                            if (obj) {
+                                                                if (typeof obj.callback === 'function') obj.callback(solToken);
+                                                                else if (typeof obj.callback === 'string' && typeof window[obj.callback] === 'function') window[obj.callback](solToken);
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                                if (typeof window.validateRecaptcha === 'function') {
+                                                    try { window.validateRecaptcha(solToken); } catch (_) {}
+                                                }
+                                                const gWidget = document.querySelector('.g-recaptcha[data-callback]');
+                                                if (gWidget && gWidget.dataset.callback && typeof window[gWidget.dataset.callback] === 'function') {
+                                                    try { window[gWidget.dataset.callback](solToken); } catch (_) {}
+                                                }
+                                                const anchor = document.querySelector('#recaptcha-anchor, .recaptcha-checkbox');
+                                                if (anchor) {
+                                                    anchor.setAttribute('aria-checked', 'true');
+                                                    anchor.classList.add('recaptcha-checkbox-checked');
+                                                }
+                                                const errLabel = document.querySelector("label[for='g-recaptcha-Reg'], .recaptcha-wrapper label");
+                                                if (errLabel) errLabel.style.display = 'none';
+                                                window.postMessage({ type: 'captchaToken', 'g-recaptcha-response': solToken, token: solToken, action: 'CAPTCHA_SOLVED', source: 'xpider_solver' }, '*');
+                                            } catch (e) {
+                                                console.warn('[CrossFrameTokenInject] frame err:', e);
+                                            }
+                                        },
+                                        args: [token, request.type || 'recaptcha']
+                                    });
+                                } catch (eScript) {
+                                    console.warn('[CrossFrameTokenInject] executeScript failed:', eScript);
+                                }
+                            }
+
                             sendResponse({ success: true, method: '2captcha', token });
                             return;
                         } catch (e2) {
                             logBg(null, `[Auto CAPTCHA Solver] 2Captcha FAILED: ${e2.message}`, 'error');
-                            // Fall through to smart fallback chain
+                            sendResponse({ success: false, error: e2.message });
+                            return;
                         }
+                    } else if (method === 'api' || method === '2captcha') {
+                        const errMsg = "2Captcha API Key is missing in Settings.";
+                        logBg(null, `[Auto CAPTCHA Solver] 2Captcha FAILED: ${errMsg}`, 'error');
+                        sendResponse({ success: false, error: errMsg });
+                        return;
                     }
 
                     // [Priority 2] NopeCHA fast token
                     if (method === 'nopecha' && solver.config.nopeChaKey) {
                         try {
-                            const token = await solver.solveNopeCha(request.sitekey, request.url, request.type || 'recaptcha');
+                            const token = await solver.solveNopeCha(request.sitekey, targetPageUrl, request.type || 'recaptcha');
                             logBg(null, `[Auto CAPTCHA Solver] NopeCHA SUCCESS`, 'success');
                             sendResponse({ success: true, method: 'nopecha', token });
                             return;
                         } catch (enp) {
                             logBg(null, `[Auto CAPTCHA Solver] NopeCHA FAILED: ${enp.message}`, 'error');
-                        }
-                    }
-
-                    // [Priority 3] Autonomous Multi-Tier Fallback Chain
-                    if (typeof solver.solveSmartFallbackChain === 'function') {
-                        const result = await solver.solveSmartFallbackChain(request.type || 'recaptcha', {
-                            siteKey: request.sitekey,
-                            pageUrl: request.url,
-                            audioData: request.audioData
-                        });
-                        if (result.success) {
-                            sendResponse(result);
+                            sendResponse({ success: false, error: enp.message });
                             return;
                         }
+                    } else if (method === 'nopecha') {
+                        const errMsg = "NopeCHA API Key is missing in Settings.";
+                        logBg(null, `[Auto CAPTCHA Solver] NopeCHA FAILED: ${errMsg}`, 'error');
+                        sendResponse({ success: false, error: errMsg });
+                        return;
                     }
-                    
-                    // [Priority 4] Audio/Native fallback (solver-content.js handles iframe)
+
+                    // [Priority 3] Autonomous Multi-Tier Fallback Chain (Only if explicitly enabled or audio method)
                     if (method === 'audio' || method === 'native' || witKey) {
+                        if (typeof solver.solveSmartFallbackChain === 'function') {
+                            const result = await solver.solveSmartFallbackChain(request.type || 'recaptcha', {
+                                siteKey: request.sitekey,
+                                pageUrl: targetPageUrl,
+                                audioData: request.audioData
+                            });
+                            if (result.success) {
+                                sendResponse(result);
+                                return;
+                            }
+                        }
                         sendResponse({ success: true, method: 'audio_frame_solver', message: 'Autonomous audio solver active in iframe' });
-                    } else {
-                        throw new Error(`CAPTCHA solver: no valid method/key configured (method: ${method}). Configure API key in Settings.`);
+                        return;
                     }
+
+                    throw new Error(`CAPTCHA solver: no valid method/key configured (method: ${method}). Configure API key in Settings.`);
                 } catch (e) {
                     logBg(null, `[Auto CAPTCHA Solver] SOLVE_CAPTCHA ERROR: ${e.message}`, 'error');
                     sendResponse({ success: false, error: e.message });
@@ -3152,7 +3229,7 @@ async function orchestrateSending(urlInput, template) {
                     'modules/vision-submit-executor.js',
                     'content-script.js'
                 ] });
-                safeScripting.executeScript({ target: { tabId }, files: ['solver-content.js'] }).catch(() => {});
+                safeScripting.executeScript({ target: { tabId, allFrames: true }, files: ['solver-content.js'] }).catch(() => {});
                 startPolling();
             } catch (e) {
                 logBg(tabId, `❌ [InfectError] ${e.message}`, "error");

@@ -301,7 +301,7 @@ class XpiderSolverCore {
         } else {
             extraParams = `&googlekey=${siteKey}`;
         }
-        const res = await fetch(`https://2captcha.com/in.php?key=${this.config.twoCaptchaKey}&method=${method}${extraParams}&pageurl=${pageUrl}&json=1`);
+        const res = await fetch(`https://2captcha.com/in.php?key=${this.config.twoCaptchaKey}&method=${method}${extraParams}&pageurl=${encodeURIComponent(pageUrl)}&json=1`);
         const data = await res.json();
         if (data.status !== 1) throw new Error(`2Captcha Error: ${data.request}`);
         
