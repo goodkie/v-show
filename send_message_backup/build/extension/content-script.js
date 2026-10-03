@@ -289,39 +289,55 @@
     // [v2.5.0] Branch Discovery Keywords
     const BRANCH_KEYWORDS = ['location', 'branch', 'office', 'direction', '지점', '위치', '오시는길', '찾아오시는길', '약도', '본사', '사업소'];
 
-    chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-        if (request.action === 'START_SENDING') {
-            const currentRunUrl = (typeof window !== 'undefined' && window.location ? window.location.href : '');
-            // [R6.3 A2] Execution identity: use acquireProcessingLock with domGeneration
-            const domGeneration = window.__xpider_dom_generation || (window.__xpider_dom_generation = Date.now());
-            const attemptId = (request.attemptId) || (Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 7));
-
-            if (window.__xpider_hasProcessingLock && window.__xpider_hasProcessingLock(currentRunUrl)) {
-                logDev(`⚠️ [Engine] Already processing. Ignoring duplicate START_SENDING. executionKey=${attemptId} url=${currentRunUrl}`, "warning");
-                return;
-            }
-
-            // [R6.3 A2] Acquire lock before proceeding
-            if (window.__xpider_acquireProcessingLock) {
-                window.__xpider_acquireProcessingLock(attemptId, currentRunUrl, domGeneration);
-            } else {
-                window.__xpider_running = true;
-                window.__xpider_running_url = currentRunUrl;
-            }
-
-            logDev(`[TARGET_PAGE] url=${currentRunUrl} domGeneration=${domGeneration} attemptId=${attemptId}`, "info");
-
-            // [v17.6.0] Redirect Recovery
-            const isVerificationMode = sessionStorage.getItem('xpider_pending_verify') === 'true';
-            if (isVerificationMode) {
-                logDev("🔄 [Engine] Post-Redirect Recovery active. Verifying previous attempt...", "info");
-                detectSubmissionResult(null, request.template);
-                return;
-            }
-            
-            processCampaign(request.template, request.delayMs, request.triedUrl, request.fillDelayMs, request.submitDelayMs);
+    // [Issue #6 R6.8 P0-8] Single-Flight START_SENDING listener registration
+    if (typeof window !== 'undefined') {
+        if (window.__xpider_start_sending_handler && typeof chrome !== 'undefined' && chrome.runtime?.onMessage) {
+            try {
+                chrome.runtime.onMessage.removeListener(window.__xpider_start_sending_handler);
+            } catch (_) {}
         }
-    });
+        
+        window.__xpider_start_sending_handler = (request, sender, sendResponse) => {
+            if (request.action === 'START_SENDING') {
+                const currentRunUrl = (window.location ? window.location.href : '');
+                const domGeneration = window.__xpider_dom_generation || (window.__xpider_dom_generation = Date.now());
+                const attemptId = request.attemptId || (Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 7));
+                const singleFlightKey = `${attemptId}:${currentRunUrl}:${domGeneration}`;
+
+                if (window.__xpider_active_single_flight === singleFlightKey || (window.__xpider_hasProcessingLock && window.__xpider_hasProcessingLock(currentRunUrl))) {
+                    console.log(`[CONTROL_PLANE] duplicate START_SENDING suppressed key=${singleFlightKey}`);
+                    return;
+                }
+                window.__xpider_active_single_flight = singleFlightKey;
+
+                // [R6.3 A2] Acquire lock before proceeding
+                if (window.__xpider_acquireProcessingLock) {
+                    window.__xpider_acquireProcessingLock(attemptId, currentRunUrl, domGeneration);
+                } else {
+                    window.__xpider_running = true;
+                    window.__xpider_running_url = currentRunUrl;
+                }
+
+                console.log(`[CONTROL_PLANE] listenersActive=1 key=${singleFlightKey}`);
+                logDev(`[TARGET_PAGE] url=${currentRunUrl} domGeneration=${domGeneration} attemptId=${attemptId}`, "info");
+
+                // [v17.6.0] Redirect Recovery
+                const isVerificationMode = sessionStorage.getItem('xpider_pending_verify') === 'true';
+                if (isVerificationMode) {
+                    logDev("🔄 [Engine] Post-Redirect Recovery active. Verifying previous attempt...", "info");
+                    detectSubmissionResult(null, request.template);
+                    return;
+                }
+                
+                processCampaign(request.template, request.delayMs, request.triedUrl, request.fillDelayMs, request.submitDelayMs);
+            }
+        };
+
+        if (typeof chrome !== 'undefined' && chrome.runtime?.onMessage) {
+            chrome.runtime.onMessage.addListener(window.__xpider_start_sending_handler);
+            console.log('[CONTROL_PLANE] listenersActive=1');
+        }
+    }
 
     function getSpeedProfile(delayMs, fillDelayMs = 300, submitDelayMs = 1500) {
         return {
@@ -685,6 +701,30 @@
                 await new Promise(r => setTimeout(r, 1500)); 
             }
 
+            // [Issue #6 R6.8 P0-2] Strict Long-Text Gate & Container Assertion
+            const validContainerTags = ['FORM', 'FIELDSET', 'DIV', 'SECTION', 'ARTICLE', 'MAIN', 'ASIDE'];
+            if (currentForm && (!currentForm.tagName || !validContainerTags.includes(currentForm.tagName.toUpperCase()))) {
+                console.log(`[FORM_GATE_INVARIANT_VIOLATION] Discarding invalid form container element: ${currentForm.tagName || typeof currentForm}`);
+                logDev(`[FORM_GATE_INVARIANT_VIOLATION] Discarding invalid container: ${currentForm.tagName || typeof currentForm}`, "warning");
+                currentForm = null;
+            }
+
+            let inquiryBody = null;
+            if (currentForm && _ContactGate && typeof _ContactGate.detectInquiryBodyField === 'function') {
+                inquiryBody = _ContactGate.detectInquiryBodyField(currentForm);
+            } else if (currentForm && currentForm.querySelector) {
+                inquiryBody = currentForm.querySelector('textarea, [contenteditable="true"], [role="textbox"][aria-multiline="true"]');
+            }
+
+            // [P0-2 Rule 1 & 2] bodyCandidates === 0 or no genuine inquiry body field -> hard eligible=false
+            if (formScanBodyCandidates === 0 || !inquiryBody) {
+                if (currentForm) {
+                    console.log(`[FORM_GATE_INVARIANT_VIOLATION] bodyCandidates=${formScanBodyCandidates} hasInquiryBody=${!!inquiryBody} -> eligible=false`);
+                    logDev(`[FORM_GATE_INVARIANT_VIOLATION] bodyCandidates=${formScanBodyCandidates} -> rejecting container`, "warning");
+                    currentForm = null;
+                }
+            }
+
             // [R6.3 A3 & B] Page classification and FORM_SCAN log
             const isContactPageUrl = isContactPage();
             let pageClass = 'UNKNOWN';
@@ -711,14 +751,17 @@
             if (pageClass === 'CONTACT_INFO_ONLY' && !currentForm) {
                 logDev("[FORM_GATE] eligible=false reason=CONTACT_INFO_ONLY", "info");
                 logDev("[DISCOVERY_CONTINUE] from=CONTACT_INFO_ONLY — skipping autofill, searching alternate candidates", "info");
-                // Release processing lock so alternate pages can be processed
                 if (window.__xpider_releaseProcessingLock) window.__xpider_releaseProcessingLock(currentUrl);
-                // Let the DOM link scanner and path guesser handle discovery (fall through)
+            } else if (!currentForm) {
+                logDev("[LONG_TEXT_GATE] found=false", "info");
+                logDev("[FORM_GATE] eligible=false reason=NO_LONG_TEXT_INQUIRY_FIELD", "info");
+                if (window.__xpider_releaseProcessingLock) window.__xpider_releaseProcessingLock(currentUrl);
             }
 
             if (currentForm) {
                 logDev("🎯 Step 2: Contact form discovered. Preparing submission...", "success");
                 logDev("[STAGE] stage=CONTACT_PAGE_FOUND", "success");
+                logDev(`[LONG_TEXT_GATE] found=true type=${inquiryBody?.type || 'textarea'} semantic=${inquiryBody?.semantic || 'message'}`, "info");
                 logDev(`[FORM_GATE] eligible=true reason=BODY_FIELD_PRESENT`, "info");
                 try {
                     chrome.runtime.sendMessage({
@@ -1132,6 +1175,20 @@
             if (href.startsWith('mailto:') || href.startsWith('tel:') || href.includes('javascript:')) continue;
             if (DOMAIN_BLACKLIST.some(d => href.includes(d))) continue;
             if (href.length < window.location.origin.length + 2) continue; // Skip home links
+
+            // [Issue #6 R6.8 P0-3] Contact discovery defaults strictly to same-origin
+            try {
+                const linkObj = new URL(link.href);
+                if (linkObj.origin !== window.location.origin) {
+                    continue; // Prevent external link promotion (e.g. panzagear.com -> help.shopify.com)
+                }
+                const linkPath = linkObj.pathname.toLowerCase();
+                if (linkPath.includes('/search') || linkObj.hostname.includes('shopify.com') || linkPath.includes('/help') || linkPath.includes('/support/search')) {
+                    continue; // Reject search and generic help portals
+                }
+            } catch (_) {
+                continue;
+            }
             
             let score = 0;
             const combined = `${text} ${href} ${title} ${aria} ${cls}`;
@@ -3079,16 +3136,16 @@
     }
 
     async function waitForCaptchaSolved() {
-        const MAX_WAIT = 120; // 2분(120초) 대기 시간
-        
+        const MAX_WAIT = 30; // Bounded wait (Issue #6 R6.8 P1-1)
         let autoSolveAttempted = false;
+        let autoSolveFinishedTs = 0;
 
         for (let i = 0; i < MAX_WAIT; i++) {
             await new Promise(r => setTimeout(r, 1000));
             
             const stillHasCaptcha = await checkForCaptcha();
             
-            // 모든 프레임과 폼 영역에서 캡챠 토큰 응답 필드 탐색
+            // Search all frames and forms for captcha token fields
             const gResponse = document.querySelector('[name="g-recaptcha-response"]') || document.querySelector('#g-recaptcha-response');
             const hResponse = document.querySelector('[name="h-captcha-response"]') || document.querySelector('#h-captcha-response');
             const tResponse = document.querySelector('[name="cf-turnstile-response"]') || document.querySelector('#cf-turnstile-response') || document.querySelector('[name="cf_challenge_response"]');
@@ -3097,13 +3154,21 @@
             if (stillHasCaptcha && !autoSolveAttempted) {
                 autoSolveAttempted = true;
                 const solved = await tryAutoSolveCaptcha('WAIT_LOOP');
+                autoSolveFinishedTs = Date.now();
                 if (solved) continue;
             }
 
-            // [Early Exit] 캡챠가 해결되었거나, 캡챠 창이 제거되었거나, 정답 토큰이 확보된 경우 즉각 복귀
             const hasToken = (gResponse && gResponse.value && gResponse.value.trim() !== '') || 
                              (hResponse && hResponse.value && hResponse.value.trim() !== '') || 
                              (tResponse && tResponse.value && tResponse.value.trim() !== '');
+
+            // [P1-1 Fast-Fail] If token injected but challenge not accepted within 15s post-solve:
+            if (autoSolveFinishedTs > 0 && (Date.now() - autoSolveFinishedTs > 15000)) {
+                if (stillHasCaptcha && !document.querySelector('.recaptcha-checkbox-checked, [aria-checked="true"]')) {
+                    logDev("[CAPTCHA_INTEGRATION_FAILURE] reason=CAPTCHA_TOKEN_NOT_ACCEPTED", "error");
+                    throw new Error("CAPTCHA_TOKEN_NOT_ACCEPTED");
+                }
+            }
 
             if (!stillHasCaptcha || hasToken) {
                 logDev("🔑 [Security] Challenge solved or removed. Resuming sequence immediately.", "success");
@@ -4366,9 +4431,10 @@
             const initialUrl = this.preSnapshot ? this.preSnapshot.url : '';
             const urlChanged = (currentUrl !== initialUrl);
 
-            // 1. URL / Navigation Strong Signal
+            // 1. URL / Navigation Strong Signal (Issue #6 R6.8 P0-3 & P0-4: /search/ is strictly negative)
             const successUrlKeywords = ['thank', 'thanks', 'success', 'confirm', 'submitted', 'message-sent', 'complete'];
-            const isSuccessUrl = urlChanged && successUrlKeywords.some(k => currentUrl.toLowerCase().includes(k));
+            const isSearchUrl = currentUrl.toLowerCase().includes('/search') || currentUrl.toLowerCase().includes('search=') || currentUrl.toLowerCase().includes('q=') || currentUrl.toLowerCase().includes('help.shopify.com');
+            const isSuccessUrl = urlChanged && !isSearchUrl && successUrlKeywords.some(k => currentUrl.toLowerCase().includes(k));
 
             // 2. Negative / Error Signals (Strict Override)
             let newErrorsFound = false;
@@ -4550,16 +4616,13 @@
                     break;
                 }
 
-                // 5. Composite Success (Requires submitTriggered AND >= 2 medium signals AND zero errors)
+                // 5. Composite Confirmed Outcome (Issue #6 R6.8 P0-4: EVENT_ONLY can never become CONFIRMED_SUCCESS)
                 if (submitOutcome && submitOutcome.success && !signals.newErrorsFound) {
-                    let mediumSignals = 0;
-                    if (this.submitEventSeen) mediumSignals++;
-                    if (signals.submitBtnDisabled) mediumSignals++;
-                    if (signals.formReset) mediumSignals++;
-                    if (signals.formHidden || !signals.formStillThere) mediumSignals++;
+                    const hasPositiveConfirmation = signals.newSuccessNodes > 0 || signals.successVisibilityTransition || signals.isSuccessUrl;
+                    const hasStructuralResolution = signals.formReset && (signals.formHidden || !signals.formStillThere);
 
-                    // Conservative composite: at least 2 independent signals, zero errors, latency guard
-                    if (mediumSignals >= 2 && (this.submitEventSeen || signals.submitBtnDisabled) && latency >= 750) {
+                    // Requires an independent positive result (never bare submitEvent + disabled button alone)
+                    if ((hasPositiveConfirmation || hasStructuralResolution) && latency >= 750) {
                         finalDecision = 'CONFIRMED_SUCCESS_COMPOSITE';
                         break;
                     }

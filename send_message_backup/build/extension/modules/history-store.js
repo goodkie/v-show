@@ -363,22 +363,41 @@
                 attempt.selectedCandidateUrl = contactInfo.selectedCandidateUrl;
             }
 
+            if (contactInfo.committedContactUrl) {
+                attempt.committedContactUrl = contactInfo.committedContactUrl;
+                attempt.contactPageUrl = contactInfo.committedContactUrl;
+                try {
+                    attempt.contactPageHostname = new URL(contactInfo.committedContactUrl).hostname || '';
+                } catch (_) {}
+            }
+            if (contactInfo.committedFormUrl) {
+                attempt.committedFormUrl = contactInfo.committedFormUrl;
+                attempt.formPageUrl = contactInfo.committedFormUrl;
+            }
+
             // Only update contactPageUrl/formPageUrl if not locked before submit
             if (!attempt.isPreSubmitLocked) {
                 if (contactInfo.contactPageUrl) {
                     try {
                         const parsed = new URL(contactInfo.contactPageUrl);
-                        if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
-                            attempt.contactPageUrl = contactInfo.contactPageUrl;
-                            attempt.contactPageHostname = parsed.hostname || '';
+                        const isRoot = parsed.pathname === '/' || parsed.pathname === '';
+                        // Do not overwrite committed contact URL or specific URL with root
+                        if (!attempt.committedContactUrl && !(isRoot && attempt.contactPageUrl && !attempt.contactPageUrl.endsWith('/'))) {
+                            if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+                                attempt.contactPageUrl = contactInfo.contactPageUrl;
+                                attempt.contactPageHostname = parsed.hostname || '';
+                            }
                         }
                     } catch (_) {}
                 }
                 if (contactInfo.formPageUrl) {
                     try {
                         const parsed = new URL(contactInfo.formPageUrl);
-                        if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
-                            attempt.formPageUrl = contactInfo.formPageUrl;
+                        const isRoot = parsed.pathname === '/' || parsed.pathname === '';
+                        if (!attempt.committedFormUrl && !(isRoot && attempt.formPageUrl && !attempt.formPageUrl.endsWith('/'))) {
+                            if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+                                attempt.formPageUrl = contactInfo.formPageUrl;
+                            }
                         }
                     } catch (_) {}
                 }
@@ -448,6 +467,24 @@
                 if (extra.submittedFromUrl && !attempt.submittedFromUrl) {
                     attempt.submittedFromUrl = extra.submittedFromUrl;
                 }
+                if (extra.committedContactUrl) {
+                    attempt.committedContactUrl = extra.committedContactUrl;
+                    attempt.contactPageUrl = extra.committedContactUrl;
+                    try {
+                        attempt.contactPageHostname = new URL(extra.committedContactUrl).hostname || '';
+                    } catch (_) {}
+                }
+                if (extra.committedFormUrl) {
+                    attempt.committedFormUrl = extra.committedFormUrl;
+                    attempt.formPageUrl = extra.committedFormUrl;
+                }
+                if (attempt.committedContactUrl) {
+                    attempt.contactPageUrl = attempt.committedContactUrl;
+                }
+                if (attempt.committedFormUrl) {
+                    attempt.formPageUrl = attempt.committedFormUrl;
+                }
+
                 // Never overwrite pre-submit locked contactPageUrl with post-submit/thank-you URL
                 if (!attempt.isPreSubmitLocked) {
                     if (extra.contactPageUrl && !attempt.contactPageUrl) {

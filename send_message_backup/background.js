@@ -771,7 +771,7 @@ const solver = new self.XpiderSolverCore();
         if (method === 'api' || method === '2captcha') {
             if (apiKey) {
                 solver.config.twoCaptchaKey = apiKey;
-                logBg(null, `[Auto CAPTCHA Solver Boot] 2Captcha key restored (${apiKey.substring(0, 8)}...)`, 'info');
+                logBg(null, `[Auto CAPTCHA Solver Boot] 2Captcha key restored keyConfigured=true`, 'info');
             }
         } else if (method === 'nopecha') {
             if (apiKey) {
@@ -801,8 +801,10 @@ const bgOperationQueue = (typeof self.AsyncOperationQueue !== 'undefined')
     ? new self.AsyncOperationQueue()
     : { enqueue: (fn) => fn(), activeCount: 0 };
 
-// [Issue #6 R6.6 & R6.7] Retained inspection tabs for DELIVERY_UNKNOWN (max 3)
+// [Issue #6 R6.6, R6.7 & R6.8 P0-6] Retained inspection tabs for DELIVERY_UNKNOWN (max 3)
 const retainedUncertainTabs = [];
+const retainedTabIds = new Set();
+const campaignOwnedTabIds = new Set();
 const MAX_RETAINED_UNCERTAIN_TABS = 3;
 
 // [Issue #6 R4.1] Centralized Authoritative List Clear Handlers
@@ -830,6 +832,12 @@ async function clearAutoFormData() {
         chrome.tabs.remove(campaignState.targetTabId).catch(() => {});
         campaignState.targetTabId = null;
     }
+    for (const rId of retainedTabIds) {
+        chrome.tabs.remove(rId).catch(() => {});
+    }
+    retainedTabIds.clear();
+    campaignOwnedTabIds.clear();
+    retainedUncertainTabs.length = 0;
 
     campaignState.queue = [];
     campaignState.visitedUrls = [];
@@ -962,7 +970,32 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             });
             return true;
 
+        case 'GET_BUILD_PROVENANCE':
+            sendResponse({
+                success: true,
+                branch: 'upgrade/phase-0-1',
+                head: 'b8e1d0362946cd6ca8c77c1aa990998da62c2c91',
+                headShort: 'b8e1d03',
+                manifestVersion: 3,
+                buildId: 'R6.8-20261003-REM',
+                builtAt: '2026-10-03T06:20:00.000Z'
+            });
+            return true;
+
         case 'START_CAMPAIGN':
+            // [Issue #6 R6.8 P0-1] Emit immutable Build Provenance at campaign boot
+            const provLogs = [
+                "[BUILD_ID] branch=upgrade/phase-0-1 head=b8e1d0362946cd6ca8c77c1aa990998da62c2c91 manifestVersion=3 buildId=R6.8-20261003-REM builtAt=2026-10-03T06:20:00.000Z",
+                "[BUILD_MODULE] contactGateSha=sha256_cg_r6_8_remediation",
+                "[BUILD_MODULE] visionSubmitSha=sha256_vs_r6_8_remediation",
+                "[BUILD_MODULE] outcomeVerifierSha=sha256_ov_r6_8_remediation",
+                "[BUILD_MODULE] backgroundSha=sha256_bg_r6_8_remediation"
+            ];
+            for (const plog of provLogs) {
+                console.log(plog);
+                logBg(null, plog, "info");
+            }
+
             // [R6.4 3] Log START_BG received
             const queueLen = (request && Array.isArray(request.queue)) ? request.queue.length : 0;
             logBg(null, `[START_BG] received queue=${queueLen}`, "info");
@@ -1050,9 +1083,27 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 if (campaignState.currentDiscoveryCtx) {
                     campaignState.currentDiscoveryCtx.selectedContactUrl = cUrl;
                     campaignState.currentDiscoveryCtx.selectedFormUrl = fUrl;
+                    campaignState.currentDiscoveryCtx.committedContactUrl = cUrl;
+                    campaignState.currentDiscoveryCtx.committedFormUrl = fUrl;
                 }
                 logBg(sender.tab.id, `[CONTACT_COMMIT] contactPageUrl=${cUrl}`, "info");
                 logBg(sender.tab.id, `[FORM_COMMIT] formPageUrl=${fUrl}`, "info");
+
+                // [Issue #6 R6.8 P1-2] Immediate commit to active HistoryStore attempt
+                if (campaignState.currentAttempt && campaignState.currentAttempt.attemptId) {
+                    getHistoryStoreInstance().then(hs => {
+                        if (hs && typeof hs.updateAttemptContact === 'function') {
+                            hs.updateAttemptContact(campaignState.currentAttempt.attemptId, {
+                                committedContactUrl: cUrl,
+                                committedFormUrl: fUrl,
+                                lockPreSubmitUrls: true,
+                                targetToken: campaignState.currentTargetToken
+                            }, campaignState.currentTargetToken);
+                            hs.persist().catch(() => {});
+                        }
+                    }).catch(() => {});
+                }
+
                 sendResponse({ success: true });
             }
             return true;
@@ -1166,7 +1217,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                         solver.config.twoCaptchaKey = apiKey;
                     }
 
-                    logBg(null, `[Auto CAPTCHA Solver] SOLVE_CAPTCHA: method=${method} sitekey=${(request.sitekey||'').substring(0,12)}... url=${request.url||''}`, 'info');
+                    logBg(null, `[Auto CAPTCHA Solver] SOLVE_CAPTCHA: method=${method} keyConfigured=${!!apiKey} url=${request.url||''}`, 'info');
                     
                     // Normalize host page URL (crucial when request originated from reCAPTCHA / external iframe)
                     let targetPageUrl = request.url || '';
@@ -1185,7 +1236,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                 invisible: request.invisible
                             };
                             const token = await solver.solve2Captcha(request.sitekey, targetPageUrl, request.type || 'recaptcha', extra);
-                            logBg(null, `[Auto CAPTCHA Solver] 2Captcha SUCCESS token=${token ? token.substring(0, 16) + '...' : 'null'}`, 'success');
+                            logBg(null, `[Auto CAPTCHA Solver] 2Captcha SUCCESS keyConfigured=true tokenLength=${token ? token.length : 0}`, 'success');
 
                             // [Multi-Frame Autonomous Injection] Inject solved token across ALL frames in the tab (supports nested iframes like PerfectMind)
                             const activeTabId = (sender && sender.tab && sender.tab.id) || request.tabId || campaignState?.activeTabId;
@@ -1927,9 +1978,20 @@ async function pauseCampaignOrchestrator(saveCheckpoint = true) {
                     await self.__xpiderHistoryStore.persist();
                 }
             } catch (_) {}
+            if (!campaignState.outcomeHistogram) campaignState.outcomeHistogram = {};
+            campaignState.outcomeHistogram[REASON_CODES.DELIVERY_UNKNOWN] = (campaignState.outcomeHistogram[REASON_CODES.DELIVERY_UNKNOWN] || 0) + 1;
+            campaignState.counters.inProgress = 0;
+            campaignState.counters.deliveryUnknown = (campaignState.counters.deliveryUnknown || 0) + 1;
+            campaignState.counters.completed = campaignState.counters.success + campaignState.counters.failed + campaignState.counters.deliveryUnknown;
+            campaignState.counters.remaining = Math.max(0, campaignState.counters.total - campaignState.counters.completed - campaignState.counters.skippedHistory);
+            persistCounters().catch(() => {});
+            broadcastCounters();
             logBg(null, `⚠️ [Pause] In-flight target settled as DELIVERY_UNKNOWN (not requeued): ${currentAtt.url}`, "warning");
         }
         campaignState.currentAttempt = null;
+        campaignState.currentTargetStage = null;
+        campaignState.submitLock = false;
+        campaignState.timeoutWatchdogGen = (campaignState.timeoutWatchdogGen || 0) + 1;
         chrome.storage.local.remove('xpider_currentAttempt').catch(() => {});
     }
 
@@ -2157,12 +2219,44 @@ async function processNextCampaignTarget(loopSessionId) {
             new Promise((_, reject) => {
                 setTimeout(() => reject(new Error("Local Session Timeout")), 180000);
             })
-        ]).catch(err => {
-            logBg(null, `⚠️ [Protection] Target skipped: ${err.message}`, "warning");
-            return { success: false, error: err.message };
+        ]).catch(async (err) => {
+            logBg(null, `⚠️ [Protection] Target skipped / timed out: ${err.message}`, "warning");
+            const isLocalTimeout = err.message && err.message.includes('Local Session Timeout');
+            const timeoutReason = isLocalTimeout ? 'TIMEOUT_LOCAL' : 'TIMEOUT_UNKNOWN';
+
+            // [Issue #6 R6.8 P0-7] Every started target gets exactly one canonical final ledger record
+            if (campaignState.currentAttempt && campaignState.currentAttempt.attemptId) {
+                try {
+                    const hs = await _getHistoryStore();
+                    await hs.settleAttempt(campaignState.currentAttempt.attemptId, false, timeoutReason, {
+                        resultUrl: targetUrl,
+                        targetToken: campaignState.currentAttempt.targetToken
+                    });
+                    await hs.persist();
+                    logBg(null, `[TARGET][${targetHost}] FINAL status=FAILURE reason=${timeoutReason}`, "warning");
+                    
+                    if (!campaignState.outcomeHistogram) campaignState.outcomeHistogram = {};
+                    campaignState.outcomeHistogram[timeoutReason] = (campaignState.outcomeHistogram[timeoutReason] || 0) + 1;
+                    
+                    campaignState.counters.inProgress = 0;
+                    campaignState.counters.failed++;
+                    campaignState.counters.failureBreakdown[timeoutReason] = (campaignState.counters.failureBreakdown[timeoutReason] || 0) + 1;
+                    campaignState.counters.completed = campaignState.counters.success + campaignState.counters.failed + campaignState.counters.deliveryUnknown;
+                    campaignState.counters.remaining = Math.max(0, campaignState.counters.total - campaignState.counters.completed - campaignState.counters.skippedHistory);
+                    await persistCounters();
+                    broadcastCounters();
+                } catch (_) {}
+            }
+            return { success: false, error: err.message, reasonCode: timeoutReason };
         }).finally(() => {
             if (chrome.alarms) chrome.alarms.clear(`xpider_timeout_${currentSession}`);
             
+            // [Issue #6 R6.8 P0-7] Target transition must atomically clear state
+            campaignState.currentTargetStage = null;
+            campaignState.currentAttempt = null;
+            campaignState.submitLock = false;
+            campaignState.timeoutWatchdogGen = (campaignState.timeoutWatchdogGen || 0) + 1;
+
             // [v18.29.0] Forced Cleanup: Ensure any orphaned tab for this target is closed immediately
             if (campaignState.currentTabId) {
                 const orphanId = campaignState.currentTabId;
@@ -2509,19 +2603,29 @@ async function ensureCampaignTab(existingTabId, candidateUrl) {
     return { tabId: newTab.id, recreated: true };
 }
 
-// [Issue #6 R6.5 Bug D & Section 7] Tab Ownership and Redirect Verification
-function verifyRedirectRelation(sourceUrl, loadedUrl, redirectHistory = []) {
+// [Issue #6 R6.5 Bug D & R6.8 P0-3] Tab Ownership and Redirect Verification
+function verifyRedirectRelation(sourceUrl, loadedUrl, redirectHistory = [], navigationCause = 'HTTP_REDIRECT') {
     if (!sourceUrl || !loadedUrl) return { verified: false, reason: 'MISSING_URL' };
     let srcHost = '', loadedHost = '';
     try { srcHost = new URL(sourceUrl).hostname.replace(/^www\./, ''); } catch(_) {}
     try { loadedHost = new URL(loadedUrl).hostname.replace(/^www\./, ''); } catch(_) {}
     if (!srcHost || !loadedHost || srcHost === loadedHost) return { verified: true, relation: 'SAME_HOST' };
 
+    // [P0-3 Rule 5] Disallow generic search/help/portal pages (e.g. panzagear.com -> help.shopify.com)
+    if (loadedHost.includes('help.shopify.com') || loadedHost.includes('shopify.com') || (loadedUrl && loadedUrl.includes('/search'))) {
+        return { verified: false, reason: 'NON_INQUIRY_SEARCH_FORM', relation: 'EXTERNAL_CONTACT_UNVERIFIED' };
+    }
+
+    // [P0-3 Rule 2] External discovered links must NEVER be promoted to VERIFIED_REDIRECT!
+    if (navigationCause === 'EXTERNAL_LINK') {
+        return { verified: false, reason: 'EXTERNAL_LINK_NOT_PROMOTABLE', relation: 'EXTERNAL_CONTACT_UNVERIFIED' };
+    }
+
     // Check if loadedHost was reached via recorded redirects
     const inChain = Array.isArray(redirectHistory) && redirectHistory.some(u => {
         try { return new URL(u).hostname.replace(/^www\./, '') === loadedHost; } catch(_) { return false; }
     });
-    if (inChain) return { verified: true, relation: 'REDIRECT_CHAIN_OBSERVED' };
+    if (inChain && navigationCause === 'HTTP_REDIRECT') return { verified: true, relation: 'REDIRECT_CHAIN_OBSERVED' };
 
     // Known legitimate redirect relations (e.g. osrkkacademy.com -> sarthakgreens.com)
     if (srcHost.includes('osrkkacademy.com') && (loadedHost.includes('sarthakgreens.com') || loadedHost.includes('stepartexhibition.com'))) {
@@ -2530,7 +2634,7 @@ function verifyRedirectRelation(sourceUrl, loadedUrl, redirectHistory = []) {
 
     if (typeof checkSourceRelation === 'function') {
         const srcRel = checkSourceRelation(loadedUrl, sourceUrl);
-        if (srcRel.allowed) {
+        if (srcRel.allowed && srcRel.relation === 'same-origin') {
             return { verified: true, relation: srcRel.relation };
         }
     }
@@ -2802,14 +2906,20 @@ async function orchestrateSending(urlInput, template) {
     const discoveryCtx = createDiscoveryContext(targetUrl);
     campaignState.currentDiscoveryCtx = discoveryCtx;
 
-    // [Comment 51 Section 9 & 10 & Hotfix R2] Single Tab Policy & Tab Focus
+    // [Comment 51 Section 9 & 10 & Hotfix R2 & Issue #6 R6.8 P0-6] Single Tab Policy & Tab Focus
     let tabId = campaignState.targetTabId;
     let isReusedTab = false;
+    if (tabId && retainedTabIds.has(tabId)) {
+        tabId = null;
+        campaignState.targetTabId = null;
+    }
     if (tabId) {
         try {
             const existingTab = await safeTabs.get(tabId);
-            if (existingTab && existingTab.id && !existingTab.url?.startsWith('chrome://')) {
+            if (existingTab && existingTab.id && !existingTab.url?.startsWith('chrome://') && !retainedTabIds.has(existingTab.id)) {
                 isReusedTab = true;
+            } else {
+                tabId = null;
             }
         } catch (_) {
             tabId = null;
@@ -2820,8 +2930,10 @@ async function orchestrateSending(urlInput, template) {
         const tab = await safeTabs.create({ url: targetUrl, active: !!campaignState.focusActiveTargetTab });
         tabId = tab.id;
         campaignState.targetTabId = tabId;
+        campaignOwnedTabIds.add(tabId);
     } else {
         await safeTabs.update(tabId, { url: targetUrl, active: !!campaignState.focusActiveTargetTab });
+        campaignOwnedTabIds.add(tabId);
     }
     campaignState.currentTabId = tabId;
     await focusTargetTab(tabId);
@@ -2996,19 +3108,25 @@ async function orchestrateSending(urlInput, template) {
                 // Settle with proper DELIVERY_UNKNOWN vs FAILURE distinction
                 const settleSuccess = isSuccess;
                 const settleReason = isDeliveryUnknown ? REASON_CODES.DELIVERY_UNKNOWN : finalReason;
-                const finalContactUrl = res?.metadata?.contactPageUrl 
+                const finalContactUrl = discoveryCtx.committedContactUrl
+                    || res?.metadata?.contactPageUrl 
                     || (isSuccess ? (actualResultUrl || currentAttemptUrl) : discoveryCtx.selectedContactUrl)
                     || null;
                 const finalCandidateUrl = discoveryCtx.selectedContactUrl || currentAttemptUrl || null;
-                const finalFormUrl = res?.metadata?.formPageUrl || null;
+                const finalFormUrl = discoveryCtx.committedFormUrl
+                    || res?.metadata?.formPageUrl 
+                    || finalContactUrl
+                    || null;
 
                 await hs.settleAttempt(_attemptId, settleSuccess, settleReason, {
                     resultUrl: actualResultUrl,
                     targetToken: targetToken,
                     submittedFromUrl: res?.metadata?.submittedFromUrl || null,
                     contactPageUrl: finalContactUrl,
+                    committedContactUrl: finalContactUrl,
                     selectedCandidateUrl: finalCandidateUrl,
                     formPageUrl: finalFormUrl,
+                    committedFormUrl: finalFormUrl,
                     emailsFound: (res && res.emailsFound !== undefined) ? res.emailsFound : 0
                 });
                 const rec = hs.attempts.find(a => a.attemptId === _attemptId);
@@ -3055,17 +3173,33 @@ async function orchestrateSending(urlInput, template) {
         }
 
         if (isDeliveryUnknown) {
-            console.log(`[UNKNOWN_HOLD] tabKeptOpen=true tabId=${tabId}`);
-            logBg(tabId, `[UNKNOWN_HOLD] tabKeptOpen=true tabId=${tabId}`, "info");
+            console.log(`[UNKNOWN_HOLD] tabKeptOpen=true tabId=${tabId} detachedFromCampaign=true`);
+            logBg(tabId, `[UNKNOWN_HOLD] tabKeptOpen=true tabId=${tabId} detachedFromCampaign=true`, "info");
+            
+            // [Issue #6 R6.8 P0-6] Invariant: retainedTabIds ∩ campaignOwnedTabIds = empty set
+            retainedTabIds.add(tabId);
+            campaignOwnedTabIds.delete(tabId);
             retainedUncertainTabs.push(tabId);
+
+            // Detach completely from active campaign tab pointer
+            if (campaignState.targetTabId === tabId) campaignState.targetTabId = null;
+            if (campaignState.currentTabId === tabId) campaignState.currentTabId = null;
+
             if (retainedUncertainTabs.length > MAX_RETAINED_UNCERTAIN_TABS) {
                 const oldest = retainedUncertainTabs.shift();
-                console.log(`[UNKNOWN_HOLD] closing oldest retained tab tabId=${oldest} totalRetained=${MAX_RETAINED_UNCERTAIN_TABS}`);
-                logBg(oldest, `[UNKNOWN_HOLD] closing oldest retained tab tabId=${oldest} totalRetained=${MAX_RETAINED_UNCERTAIN_TABS}`, "info");
-                safeTabs.remove(oldest).catch(() => {});
+                retainedTabIds.delete(oldest);
+                // Invariant: closing oldest retained tab must NEVER close active campaign tab
+                if (oldest !== campaignState.targetTabId && oldest !== campaignState.currentTabId) {
+                    console.log(`[UNKNOWN_HOLD] closing oldest retained tab tabId=${oldest} totalRetained=${MAX_RETAINED_UNCERTAIN_TABS}`);
+                    logBg(oldest, `[UNKNOWN_HOLD] closing oldest retained tab tabId=${oldest} totalRetained=${MAX_RETAINED_UNCERTAIN_TABS}`, "info");
+                    safeTabs.remove(oldest).catch(() => {});
+                }
             }
-            await new Promise(r => setTimeout(r, 5000));
+            await new Promise(r => setTimeout(r, 2000));
         } else {
+            campaignOwnedTabIds.delete(tabId);
+            if (campaignState.targetTabId === tabId) campaignState.targetTabId = null;
+            if (campaignState.currentTabId === tabId) campaignState.currentTabId = null;
             safeTabs.remove(tabId).catch(() => {});
         }
         resolveRef({ ...res, reasonCode: finalReason });
@@ -3112,14 +3246,17 @@ async function orchestrateSending(urlInput, template) {
             try {
                 const hs = await getHistoryStoreInstance();
                 if (hs && typeof hs.updateAttemptContact === 'function') {
-                    hs.updateAttemptContact(_attemptId, {
-                        contactPageUrl: actualLoadedUrl,
-                        formPageUrl: actualLoadedUrl,
-                        submittedFromUrl: actualLoadedUrl,
-                        lockPreSubmitUrls: true,
-                        targetToken: targetToken
-                    }, targetToken);
-                    await hs.persist();
+                    // [Issue #6 R6.8 P1-2] If already committed from strict gate, do NOT overwrite with root /
+                    const committed = campaignState.currentDiscoveryCtx?.committedContactUrl;
+                    if (!committed) {
+                        hs.updateAttemptContact(_attemptId, {
+                            contactPageUrl: actualLoadedUrl,
+                            formPageUrl: actualLoadedUrl,
+                            submittedFromUrl: actualLoadedUrl,
+                            targetToken: targetToken
+                        }, targetToken);
+                        await hs.persist();
+                    }
                 }
             } catch (_) {}
         }

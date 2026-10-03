@@ -29,20 +29,22 @@
 (function() {
   let _devKeyCount = 0;
   let _devKeyTimer = null;
-  document.addEventListener('keydown', (e) => {
-    if (e.ctrlKey && e.shiftKey && e.key === 'D') {
-      e.preventDefault();
-      _devKeyCount++;
-      if (_devKeyTimer) clearTimeout(_devKeyTimer);
-      if (_devKeyCount >= 2) {
-        _devKeyCount = 0;
-        // In Chrome extension runtime, direct operator to Chrome DevTools without dead IPC
-        console.log('[DEV] DevConsole: To view extension console and network logs, open Chrome DevTools (right-click popup -> Inspect, or chrome://extensions -> Inspect service worker).');
-      } else {
-        _devKeyTimer = setTimeout(() => { _devKeyCount = 0; }, 2000);
+  if (typeof document !== 'undefined' && document.addEventListener) {
+    document.addEventListener('keydown', (e) => {
+      if (e.ctrlKey && e.shiftKey && e.key === 'D') {
+        e.preventDefault();
+        _devKeyCount++;
+        if (_devKeyTimer) clearTimeout(_devKeyTimer);
+        if (_devKeyCount >= 2) {
+          _devKeyCount = 0;
+          // In Chrome extension runtime, direct operator to Chrome DevTools without dead IPC
+          console.log('[DEV] DevConsole: To view extension console and network logs, open Chrome DevTools (right-click popup -> Inspect, or chrome://extensions -> Inspect service worker).');
+        } else {
+          _devKeyTimer = setTimeout(() => { _devKeyCount = 0; }, 2000);
+        }
       }
-    }
-  }, true);
+    }, true);
+  }
 })();
 // ── END DEV LOG BRIDGE ───────────────────────────────────────────────────
 
@@ -143,6 +145,10 @@ function redactSensitiveText(str) {
             const prefix = match.split(/[\s:="']+/)[0];
             return `${prefix}: [REDACTED_SECRET]`;
         })
+        // 2Captcha / NopeCHA / hex API keys (32 hex characters)
+        .replace(/\b[a-f0-9]{32}\b/gi, '[REDACTED_API_KEY]')
+        // reCAPTCHA / hCaptcha long response tokens
+        .replace(/\b(?:03[a-zA-Z0-9_-]{30,}|P1_[a-zA-Z0-9_-]{30,}|[a-zA-Z0-9_-]{60,})\b/g, (token) => `[REDACTED_TOKEN_LEN_${token.length}]`)
         // Cookie headers
         .replace(/Cookie:\s*[^;\r\n]+(?:;\s*[^;\r\n]+)*/gi, 'Cookie: [REDACTED_COOKIE]')
         // URLs with query params/paths that may leak customer data -> retain protocol + hostname only
@@ -854,7 +860,7 @@ async function renderAuxiliaryUI() {
                     if (setupModal) setupModal.classList.remove('hidden');
                 } else {
                     if (witStatusText) {
-                        witStatusText.textContent = `Configured (${latestKey.substring(0, 6)}...)`;
+                        witStatusText.textContent = "Configured";
                         witStatusText.style.color = "#00ffcc";
                     }
                     const sttKeyInput = document.getElementById('audio-stt-key');
@@ -1289,7 +1295,7 @@ function bindEvents() {
             _sttDebounceTimer = setTimeout(() => {
                 const key = sttKeyEl.value.trim();
                 chrome.storage.local.set({ xpider_stt_api_key: key, audioSttKey: key, witKey: key }, () => {
-                    console.log(`[WitKey-Sync v2] Sender 실시간 입력 동기화: ${key ? key.substring(0, 8) + '...' : 'NONE'}`);
+                    console.log(`[WitKey-Sync v2] Sender 실시간 입력 동기화: keyConfigured=${!!key}`);
                 });
             }, 600); // 600ms 타이핑 중지 후 저장
         });
@@ -1625,6 +1631,26 @@ function bindEvents() {
     }
 
     try { bindEmailCollectorEvents(); } catch (_) {}
+    try { initBuildProvenanceBadge(); } catch (_) {}
+}
+
+function initBuildProvenanceBadge() {
+    if (typeof document === 'undefined') return;
+    const badge = document.getElementById('build-provenance-badge');
+    if (!badge) return;
+    if (typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO) {
+        const info = BuildProvenance.BUILD_INFO;
+        badge.textContent = `${info.buildId.split('-')[0]} [${info.headShort}]`;
+        badge.title = `Build: ${info.buildId} | SHA: ${info.head} | Branch: ${info.branch}`;
+    } else if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
+        chrome.runtime.sendMessage({ action: 'GET_BUILD_PROVENANCE' }, (res) => {
+            if (res && res.success && res.provenance) {
+                const info = res.provenance;
+                badge.textContent = `${info.buildId.split('-')[0]} [${info.headShort}]`;
+                badge.title = `Build: ${info.buildId} | SHA: ${info.head} | Branch: ${info.branch}`;
+            }
+        });
+    }
 }
 
 function toggleCaptchaApiVisibility() {
@@ -3628,7 +3654,7 @@ chrome.storage.onChanged.addListener((changes) => {
     }
     
     if (newKey !== null) {
-        console.log(`[WitKey-Sync] Sender Popup Storage changed → Syncing UI to new key: ${newKey ? newKey.substring(0, 8) + '...' : 'NONE'}`);
+        console.log(`[WitKey-Sync] Sender Popup Storage changed → Syncing UI: keyConfigured=${!!newKey}`);
         
         // 1) 설정창의 STT API Key 입력창 갱신
         const sttKeyInput = document.getElementById('audio-stt-key');

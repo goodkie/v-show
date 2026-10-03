@@ -90,7 +90,14 @@
 
         init() {
             if (this.options.showHUD) this.ensureHUD();
-            setInterval(() => this.loop(), this.options.checkInterval);
+            if (typeof window !== 'undefined') {
+                if (window.__xpider_solver_active_interval) {
+                    clearInterval(window.__xpider_solver_active_interval);
+                    window.__xpider_solver_active_interval = null;
+                }
+                window.__xpider_solver_active_interval = setInterval(() => this.loop(), this.options.checkInterval);
+                console.log("[SOLVER_TIMER] activeTimers=1");
+            }
             console.log("🤖 [XpiderSolver] Content script initialized.");
         }
 
@@ -110,7 +117,24 @@
         }
 
         log(msg, status = null) {
-            if (msg === this.lastLog) return;
+            // [Issue #6 R6.8 P1-3] Redact secrets before logging
+            if (typeof msg === 'string') {
+                msg = msg.replace(/([a-zA-Z0-9_-]{24,})/g, (m) => `[REDACTED_LEN_${m.length}]`)
+                         .replace(/(key=)[a-zA-Z0-9_-]+/gi, '$1[REDACTED]')
+                         .replace(/(token=)[a-zA-Z0-9._-]+/gi, '$1[REDACTED]');
+            }
+
+            // [Issue #6 R6.8 P0-8] Throttle cooldown logs to at most once per 10s
+            const now = Date.now();
+            const isCooldown = (typeof msg === 'string' && msg.includes('Cooling down'));
+            if (isCooldown) {
+                if (now - (this.lastCooldownLogTs || 0) < 10000) {
+                    return; // Suppress cooldown log spam
+                }
+                this.lastCooldownLogTs = now;
+            }
+
+            if (msg === this.lastLog && !isCooldown) return;
             this.lastLog = msg;
             if (this.hud) {
                 this.hud.innerHTML = `<span>🤖 ${this.options.hudTitle}</span><span style="color: ${status === 'FAIL' ? '#ff3333' : '#ffcc00'}">${status || msg}</span>`;

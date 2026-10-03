@@ -88,16 +88,29 @@
                     continue;
                 }
 
+                // Reject dummy default coordinates or unverified viewport edge coordinates
+                const isDummyDefault = (bbox.x === 0 && bbox.y === 0 && bbox.width === 100 && bbox.height === 36 && !item.domElement);
+                const isViewportEdge = (centerX <= 50 && centerY <= 20 && !item.domElement);
+                if (isDummyDefault || isViewportEdge) {
+                    console.log(`[VISION_SUBMIT] Rejected dummy edge coordinate without bbox proof: x=${centerX} y=${centerY}`);
+                    continue;
+                }
+
                 // Check positive label match
                 const isPreferred = PREFERRED_VISUAL_LABELS.some(pos => lowerLabel.includes(pos));
                 
                 // Check if inside form bounding box
                 const insideForm = (
-                    centerX >= formRect.left - 20 &&
-                    centerX <= formRect.right + 20 &&
-                    centerY >= formRect.top - 20 &&
-                    centerY <= formRect.bottom + 50
+                    centerX >= formRect.left &&
+                    centerX <= formRect.right &&
+                    centerY >= formRect.top &&
+                    centerY <= formRect.bottom
                 );
+
+                if (!insideForm) {
+                    console.log(`[VISION_SUBMIT] Rejected candidate outside form: x=${centerX} y=${centerY}`);
+                    continue;
+                }
 
                 // Check DOM correlation
                 const domCorrelated = !!item.domElement || domButtons.some(b => {
@@ -114,8 +127,9 @@
                 if (domCorrelated) signalsCount++;
                 if (item.enabledAppearance !== false) signalsCount++;
 
-                // Requires at least TWO independent signals
+                // Requires at least TWO independent signals (Hard reject: independentSignals < 2)
                 if (signalsCount < 2) {
+                    console.log(`[VISION_SUBMIT] Rejected candidate: independentSignals=${signalsCount} < 2`);
                     continue;
                 }
 
@@ -129,6 +143,7 @@
                     confidence,
                     insideForm,
                     domCorrelated,
+                    independentSignals: signalsCount,
                     domElement: item.domElement || null
                 });
             }
@@ -169,7 +184,18 @@
             }
 
             const chosen = candidates[0];
-            console.log(`[VISION_SUBMIT] chosenLabel=${chosen.label} confidence=${chosen.confidence.toFixed(2)}`);
+            if (chosen.independentSignals < 2) {
+                console.log("[VISION_SUBMIT] VISION_SUBMIT_REJECTED: independentSignals < 2");
+                return { success: false, reason: 'INDEPENDENT_SIGNALS_TOO_LOW' };
+            }
+
+            // Specification Required Exact Diagnostic Logs
+            console.log(`[VISION_SUBMIT] chosenLabel=${chosen.label}`);
+            console.log(`[VISION_SUBMIT] bbox=${Math.round(chosen.bbox.x)},${Math.round(chosen.bbox.y)},${Math.round(chosen.bbox.width)},${Math.round(chosen.bbox.height)}`);
+            console.log(`[VISION_SUBMIT] insideForm=${chosen.insideForm}`);
+            console.log(`[VISION_SUBMIT] domCorrelated=${chosen.domCorrelated}`);
+            console.log(`[VISION_SUBMIT] confidence=${chosen.confidence.toFixed(2)}`);
+            console.log(`[VISION_SUBMIT] independentSignals=${chosen.independentSignals}`);
             console.log(`[VISION_SUBMIT] x=${Math.round(chosen.centerX)} y=${Math.round(chosen.centerY)}`);
 
             // Dispatch physical coordinate click
@@ -202,7 +228,6 @@
                     }
                 });
             } else if (chosen.domElement && typeof chosen.domElement.click === 'function') {
-                // Fallback simulation
                 chosen.domElement.click();
                 clickResult = { success: true };
             }

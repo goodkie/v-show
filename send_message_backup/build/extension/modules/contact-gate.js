@@ -108,11 +108,18 @@
     }
 
     /**
-     * Strict Long-Text Inquiry Body Field Detection (R6.7)
+     * Strict Long-Text Inquiry Body Field Detection (R6.7 & R6.8 P0-2)
      */
     function detectInquiryBodyField(formEl) {
         if (!formEl || !formEl.querySelectorAll) {
             console.log('[LONG_TEXT_GATE] found=false');
+            return null;
+        }
+
+        // Assert valid container type: raw input/button cannot be a form container
+        const tag = (formEl.tagName || '').toUpperCase();
+        if (['INPUT', 'TEXTAREA', 'BUTTON', 'A', 'SPAN', 'LABEL'].includes(tag)) {
+            console.log(`[LONG_TEXT_GATE] found=false reason=INVALID_CONTAINER_TAG_${tag}`);
             return null;
         }
 
@@ -122,7 +129,8 @@
             const ctx = getElementContextText(ta);
             const isNewsletterOnly = NEWSLETTER_NEGATIVE_TOKENS.some(tok => ctx.includes(tok)) &&
                 !INQUIRY_SEMANTIC_TOKENS.some(tok => ctx.includes(tok));
-            if (!isNewsletterOnly) {
+            const isSearchOnly = ctx.includes('search') && !INQUIRY_SEMANTIC_TOKENS.some(tok => ctx.includes(tok));
+            if (!isNewsletterOnly && !isSearchOnly) {
                 const semantic = INQUIRY_SEMANTIC_TOKENS.find(tok => ctx.includes(tok)) || 'message';
                 console.log(`[LONG_TEXT_GATE] found=true type=textarea semantic=${semantic}`);
                 return { el: ta, type: 'textarea', name: ta.name || ta.id || 'textarea', semantic };
@@ -167,6 +175,8 @@
      */
     function classifyFormIntent(formEl, pageContext = {}) {
         if (!formEl || !formEl.querySelectorAll) {
+            console.log('[LONG_TEXT_GATE] found=false type=none semantic=none');
+            console.log('[FORM_INTENT] intent=OTHER confidence=0.00 negativeClass=NO_FORM_ELEMENT');
             return {
                 eligible: false,
                 intent: 'OTHER',
@@ -183,8 +193,37 @@
             };
         }
 
+        // Assert valid container element: raw input, textarea, button cannot be a logical container
+        const tag = (formEl.tagName || '').toUpperCase();
+        if (['INPUT', 'TEXTAREA', 'BUTTON', 'A', 'SPAN', 'LABEL'].includes(tag)) {
+            console.log(`[FORM_GATE_INVARIANT_VIOLATION] reason=INVALID_CONTAINER_TYPE_${tag} -> eligible=false`);
+            console.log('[LONG_TEXT_GATE] found=false type=none semantic=none');
+            console.log('[FORM_INTENT] intent=OTHER confidence=0.00 negativeClass=INVALID_CONTAINER_TYPE');
+            return {
+                eligible: false,
+                intent: 'OTHER',
+                hasInquiryBodyField: false,
+                bodyFieldType: null,
+                inquiryBodyElement: null,
+                positiveSignals: [],
+                negativeSignals: [`INVALID_CONTAINER_TYPE_${tag}`],
+                fieldsCount: 0,
+                submitText: '',
+                decision: 'REJECT',
+                reason: 'INVALID_CONTAINER_TYPE',
+                score: -999
+            };
+        }
+
         const positiveSignals = [];
         const negativeSignals = [];
+
+        // Check page URL context for Shopify Help/Search pages
+        const currentUrl = (pageContext && pageContext.url ? pageContext.url : (typeof window !== 'undefined' && window.location ? window.location.href : '')).toLowerCase();
+        const isShopifyHelpOrSearch = currentUrl.includes('help.shopify.com') || currentUrl.includes('shopify.com/search') || (currentUrl.includes('/search') && !currentUrl.includes('contact'));
+        if (isShopifyHelpOrSearch) {
+            negativeSignals.push('shopify_help_search_page');
+        }
 
         // 1. Gather all form text and identifiers
         const formId = (formEl.id || '').toLowerCase();
@@ -256,8 +295,11 @@
         const isBookingButton = submitText.includes('book') || submitText.includes('reserve') || submitText.includes('schedule') || submitText.includes('appointment') || submitText.includes('예약');
         const hasBookingFields = (dateInputs.length > 0 || timeInputs.length > 0) || negativeSignals.some(s => s.startsWith('booking_token'));
 
-        // Check Booking / Reservation dominant intent
-        if (isBookingButton || hasBookingFields) {
+        if (isShopifyHelpOrSearch || formAction.includes('search') || (negativeSignals.some(s => s.includes('search')) && !hasInquiryBodyField)) {
+            intent = 'SEARCH';
+            decision = 'REJECT';
+            reason = 'NON_INQUIRY_SEARCH_FORM';
+        } else if (isBookingButton || hasBookingFields) {
             if (headingText.includes('appointment') || submitText.includes('appointment')) {
                 intent = 'APPOINTMENT';
             } else if (headingText.includes('reservation') || submitText.includes('reservation') || submitText.includes('reserve')) {
@@ -266,16 +308,12 @@
                 intent = 'BOOKING';
             }
 
-            // Booking special rule (R6.7 Section 3 & Test R6.7-F10):
-            // If dominant booking semantics exist, even if a tiny "notes" field is present,
-            // the form must be skipped unless it has clear standalone contact inquiry semantics.
             if (!hasInquiryBodyField) {
                 decision = 'REJECT';
                 if (intent === 'APPOINTMENT') reason = 'NON_INQUIRY_APPOINTMENT_FORM';
                 else if (intent === 'RESERVATION') reason = 'NON_INQUIRY_RESERVATION_FORM';
                 else reason = 'NON_INQUIRY_BOOKING_FORM';
             } else {
-                // If textarea exists, check if it's merely a tiny booking note vs a genuine contact form
                 const isOnlyTinyNotes = inquiryBody && (inquiryBody.name.includes('note') || inquiryBody.semantic === 'notes') &&
                                        (dateInputs.length > 0 || timeInputs.length > 0 || isBookingButton);
                 const hasStrongContactHeader = ['contact', 'inquiry', 'message', '문의', '연락'].some(t => headingText.includes(t) || formId.includes(t));
@@ -284,20 +322,17 @@
                     decision = 'REJECT';
                     reason = 'NON_INQUIRY_BOOKING_FORM';
                 } else {
-                    // Genuine contact form on booking page (Test R6.7-F11)
                     intent = 'CONTACT_INQUIRY';
                     decision = 'ACCEPT';
                     reason = 'ELIGIBLE_CONTACT_INQUIRY';
                 }
             }
         } else if (isSubscribeButton || negativeSignals.some(s => s.startsWith('newsletter_token')) || (allInputs.length <= 2 && emailInputs.length >= 1)) {
-            // Subscribe / Newsletter Classification
             intent = isSubscribeButton ? 'SUBSCRIBE' : 'NEWSLETTER';
             if (!hasInquiryBodyField) {
                 decision = 'REJECT';
                 reason = intent === 'SUBSCRIBE' ? 'NON_INQUIRY_SUBSCRIBE_FORM' : 'NON_INQUIRY_NEWSLETTER_FORM';
             } else {
-                // Even with textarea, if button is strictly Subscribe and heading is Newsletter, reject (AI-FIELD-11)
                 const isPureNewsletter = !['contact', 'inquiry', '문의'].some(t => headingText.includes(t) || formId.includes(t));
                 if (isPureNewsletter) {
                     decision = 'REJECT';
@@ -323,10 +358,17 @@
             reason = 'ELIGIBLE_CONTACT_INQUIRY';
             positiveSignals.push(`inquiry_body:${inquiryBody.type}`);
         } else {
-            // No inquiry body field
             intent = 'OTHER';
             decision = 'REJECT';
             reason = 'NO_LONG_TEXT_INQUIRY_FIELD';
+        }
+
+        // HARD INVARIANT: If bodyCandidates === 0 / !hasInquiryBodyField, eligible can NEVER be true!
+        if (!hasInquiryBodyField) {
+            decision = 'REJECT';
+            if (!reason) {
+                reason = 'NO_LONG_TEXT_INQUIRY_FIELD';
+            }
         }
 
         // Scoring: numeric score can NEVER override hard reject
@@ -334,7 +376,11 @@
 
         const result = {
             eligible: decision === 'ACCEPT',
+            isEligible: decision === 'ACCEPT',
+            gatePassed: decision === 'ACCEPT',
             intent,
+            formIntent: intent,
+            bodyCandidates: hasInquiryBodyField ? 1 : 0,
             hasInquiryBodyField,
             longTextInquiry: hasInquiryBodyField,
             bodyFieldType: inquiryBody ? inquiryBody.type : null,
@@ -348,6 +394,10 @@
             score
         };
 
+        const confidence = (decision === 'ACCEPT' ? 0.95 : 0.85).toFixed(2);
+        const negativeClass = negativeSignals[0] || 'none';
+        console.log(`[LONG_TEXT_GATE] found=${hasInquiryBodyField} type=${inquiryBody ? inquiryBody.type : 'none'} semantic=${inquiryBody ? inquiryBody.semantic : 'none'}`);
+        console.log(`[FORM_INTENT] intent=${intent} confidence=${confidence} negativeClass=${negativeClass}`);
         if (typeof console !== 'undefined' && console.log) {
             console.log(`[FORM_CLASSIFY] intent=${intent} eligible=${result.eligible} hasInquiryBody=${hasInquiryBodyField} bodyFieldType=${result.bodyFieldType || 'none'} decision=${decision} reason=${reason}`);
         }
@@ -388,6 +438,19 @@
         };
     }
 
+    function findOptimalForm(container) {
+        if (!container || !container.tagName) return null;
+        const tag = container.tagName.toUpperCase();
+        if (['INPUT', 'TEXTAREA', 'BUTTON', 'A', 'SPAN', 'LABEL', 'SELECT'].includes(tag)) {
+            return null;
+        }
+        const classification = classifyFormIntent(container);
+        if (!classification.eligible) {
+            return null;
+        }
+        return container;
+    }
+
     return {
         INQUIRY_SEMANTIC_TOKENS,
         NEWSLETTER_NEGATIVE_TOKENS,
@@ -397,6 +460,7 @@
         getElementContextText,
         detectInquiryBodyField,
         classifyFormIntent,
-        classifyFormIntentWithAI
+        classifyFormIntentWithAI,
+        findOptimalForm
     };
 }));
