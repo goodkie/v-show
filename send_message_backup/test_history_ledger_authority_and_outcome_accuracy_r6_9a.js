@@ -23,6 +23,7 @@
  * 18. five owner false-negative fixtures exercise delayed observer.
  * 19. khaskarate submitEvent=false cannot be upgraded merely by timeout.
  * 20. old valid HistoryStore attempts survive migration.
+ * 21. legacy attempts with no campaignRunId + 20 CONFIRMED_SUCCESS => upgrade => History authoritative Succeeded remains 20.
  */
 
 const assert = require('assert');
@@ -623,6 +624,65 @@ async function runAllTests() {
         assert.strictEqual(allStats.failure, 1, "Legacy FAILED must map to canonical failure");
         assert.strictEqual(allStats.unknown, 1, "Legacy UNKNOWN must map to canonical unknown");
         assert.strictEqual(allStats.completed, 3, "All 3 attempts counted in allHistory");
+    });
+
+    // -------------------------------------------------------------------------
+    // Test 21: Legacy attempts with no campaignRunId + 20 CONFIRMED_SUCCESS => upgrade => History authoritative Succeeded remains 20
+    // -------------------------------------------------------------------------
+    await itAsync("Test 21: legacy attempts with no campaignRunId + 20 CONFIRMED_SUCCESS => upgrade => History authoritative Succeeded remains 20", async () => {
+        // Construct 20 legacy attempts without campaignRunId
+        const legacyAttempts = [];
+        for (let i = 1; i <= 20; i++) {
+            legacyAttempts.push({
+                attemptId: `att_legacy_${i}`,
+                targetIdentity: `https://site-${i}.com`,
+                status: 'CONFIRMED_SUCCESS',
+                reasonCode: 'SUCCESS_CONFIRMED',
+                // Explicitly no campaignRunId or generationId (legacy format)
+                createdAt: Date.now() - (25 - i) * 60000
+            });
+        }
+
+        const legacyStorageData = {
+            xpider_history_attempts: legacyAttempts,
+            xpider_history_generation: 1
+        };
+
+        const storage = new MockStorage(legacyStorageData);
+        const hs = new HistoryStore(storage);
+        await hs.load();
+
+        // 1. Authoritative Succeeded in default currentGeneration scope must be 20
+        const genStats = hs.getLedgerStats('currentGeneration');
+        assert.strictEqual(genStats.success, 20, "Authoritative Succeeded in currentGeneration must remain 20 after upgrade");
+
+        // 2. Default getLedgerStats() scope is currentGeneration
+        const defaultStats = hs.getLedgerStats();
+        assert.strictEqual(defaultStats.success, 20, "Default getLedgerStats() scope must be currentGeneration and return 20");
+
+        // 3. Reconcile legacy counters preserves 20 and doesn't erase valid records
+        await hs.reconcileLegacyCounters('currentGeneration');
+        const postReconcileStats = hs.getLedgerStats('currentGeneration');
+        assert.strictEqual(postReconcileStats.success, 20, "Reconcile legacy counters must preserve 20 successes");
+
+        // 4. When a new activeCampaignRunId starts/resumes, deterministic backfill migrates them
+        const newRunId = 'run_migrated_owner_session';
+        hs.activeCampaignRunId = newRunId;
+        const backfilled = hs.backfillLegacyRunId(newRunId);
+        assert.strictEqual(backfilled, 20, "Deterministic backfill must assign runId to all 20 legacy attempts");
+
+        const runStats = hs.getLedgerStats('currentRun', newRunId);
+        assert.strictEqual(runStats.success, 20, "After deterministic backfill, currentRun success must equal 20");
+
+        // 5. CSV export under currentGeneration scope includes all 20 CONFIRMED_SUCCESS records
+        const csv = hs.exportToCsv({ exportScope: 'currentGeneration' });
+        const csvSuccessMatches = (csv.match(/"CONFIRMED_SUCCESS"/g) || []).length;
+        assert.strictEqual(csvSuccessMatches, 20, "CSV export must contain all 20 CONFIRMED_SUCCESS records");
+
+        // 6. Google Sheets CSV export also includes all 20 CONFIRMED_SUCCESS records
+        const gsheetsCsv = hs.exportGoogleSheetsCsv({ exportScope: 'currentGeneration' });
+        const gsheetsSuccessMatches = (gsheetsCsv.match(/"CONFIRMED_SUCCESS"/g) || []).length;
+        assert.strictEqual(gsheetsSuccessMatches, 20, "Google Sheets CSV export must contain all 20 CONFIRMED_SUCCESS records");
     });
 
     console.log("\n===============================================================================");

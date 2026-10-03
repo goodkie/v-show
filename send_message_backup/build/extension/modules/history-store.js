@@ -139,9 +139,37 @@
                 if (Array.isArray(data.xpider_history_targets)) this.targets = new Map(data.xpider_history_targets);
                 if (Array.isArray(data.xpider_history_attempts)) this.attempts = data.xpider_history_attempts;
                 if (Array.isArray(data.xpider_history_resets)) this.resetEvents = data.xpider_history_resets;
-                if (typeof data.xpider_history_generation === 'number') this.currentGeneration = data.xpider_history_generation;
                 if (data.xpider_active_campaign_run_id) this.activeCampaignRunId = data.xpider_active_campaign_run_id;
+
+                // [R6.9A Migration] Attribute attempts without generation/runId to currentGeneration
+                for (const att of this.attempts) {
+                    if (att.generation === undefined && att.generationId === undefined) {
+                        att.generation = this.currentGeneration || 1;
+                        att.generationId = this.currentGeneration || 1;
+                    }
+                }
+                if (this.activeCampaignRunId) {
+                    this.backfillLegacyRunId(this.activeCampaignRunId);
+                }
             }
+        }
+
+        /**
+         * R6.9A Migration: Deterministically backfill legacy attempts in active generation with runId
+         */
+        backfillLegacyRunId(runId) {
+            if (!runId) return 0;
+            let count = 0;
+            for (const att of this.attempts) {
+                if (!att.campaignRunId) {
+                    const gen = att.generation !== undefined ? att.generation : att.generationId;
+                    if (gen === undefined || gen === this.currentGeneration) {
+                        att.campaignRunId = runId;
+                        count++;
+                    }
+                }
+            }
+            return count;
         }
 
         /**
@@ -642,18 +670,25 @@
 
         /**
          * R6.9A Section 5: Authoritative Ledger Statistics
-         * Scopes: 'currentRun' (default), 'currentGeneration', 'allHistory'
+         * Scopes: 'currentGeneration' (default), 'currentRun', 'allHistory'
          */
-        getLedgerStats(scope = 'currentRun', campaignRunId = null) {
+        getLedgerStats(scope = 'currentGeneration', campaignRunId = null) {
             const targetRunId = campaignRunId || this.activeCampaignRunId;
             let scopedAttempts = this.attempts;
 
-            if (scope === 'currentRun' && targetRunId) {
-                scopedAttempts = this.attempts.filter(a => a.campaignRunId === targetRunId);
-            } else if (scope === 'currentGeneration') {
-                scopedAttempts = this.attempts.filter(a => (a.generation === this.currentGeneration || a.generationId === this.currentGeneration));
-            } else {
+            if (scope === 'currentRun') {
+                if (targetRunId) {
+                    scopedAttempts = this.attempts.filter(a => a.campaignRunId === targetRunId);
+                }
+                // Migration fallback: if no attempts match currentRun yet, fall back to currentGeneration
+                if (scopedAttempts.length === 0) {
+                    scopedAttempts = this.attempts.filter(a => (a.generation === this.currentGeneration || a.generationId === this.currentGeneration || (!a.generation && !a.generationId)));
+                }
+            } else if (scope === 'allHistory') {
                 scopedAttempts = this.attempts;
+            } else {
+                scope = 'currentGeneration';
+                scopedAttempts = this.attempts.filter(a => (a.generation === this.currentGeneration || a.generationId === this.currentGeneration || (!a.generation && !a.generationId)));
             }
 
             let success = 0;
@@ -767,9 +802,12 @@
          * Overwrites stale counters cache with ledger-derived numbers (LEDGER_WINS).
          * Does not erase valid historical attempts.
          */
-        async reconcileLegacyCounters() {
+        async reconcileLegacyCounters(scope = 'currentGeneration') {
             await this.load();
-            const stats = this.getLedgerStats('currentRun');
+            if (this.activeCampaignRunId) {
+                this.backfillLegacyRunId(this.activeCampaignRunId);
+            }
+            const stats = this.getLedgerStats(scope);
             let legacySuccess = 0;
             if (this.storage && typeof this.storage.get === 'function') {
                 const stored = await new Promise(r => {
@@ -901,6 +939,7 @@
          */
         exportToCsv(options = {}) {
             const safeFormula = options.safeFormula !== false; // Default true
+            const exportScope = options.exportScope || options.scope || 'currentGeneration';
             const headers = [
                 "SourceRowId",
                 "RawInputUrl",
@@ -935,24 +974,65 @@
 
             const lines = [headers.map(escapeCell).join(",")];
 
-            // Join ImportRows with Attempts to guarantee 1:1 original row preservation
-            for (const row of this.importRows) {
-                const attempt = this.attempts.find(a => a.attemptId === row.attemptId);
-                const rowLine = [
-                    row.sourceRowId,
-                    row.rawInputUrl,
-                    row.targetIdentity,
-                    row.importId,
-                    row.status,
-                    attempt ? attempt.reasonCode : (row.status === "INVALID_INPUT" ? "INVALID_INPUT" : "NOT_ATTEMPTED"),
-                    row.attemptId || "",
-                    attempt ? attempt.generationId : this.currentGeneration,
-                    attempt ? attempt.timing.durationMs : 0,
-                    attempt ? new Date(attempt.createdAt).toISOString() : new Date(row.createdAt).toISOString(),
-                    attempt ? (attempt.templateId || "") : "",
-                    attempt ? (attempt.templateVersion || "") : ""
-                ];
-                lines.push(rowLine.map(escapeCell).join(","));
+            if (this.importRows && this.importRows.length > 0) {
+                // Join ImportRows with Attempts to guarantee 1:1 original row preservation
+                for (const row of this.importRows) {
+                    const attempt = this.attempts.find(a => a.attemptId === row.attemptId);
+                    
+                    if (exportScope === 'currentRun') {
+                        const runId = options.campaignRunId || this.activeCampaignRunId;
+                        if (runId && attempt && attempt.campaignRunId && attempt.campaignRunId !== runId) continue;
+                    } else if (exportScope === 'currentGeneration') {
+                        const gen = attempt ? (attempt.generation !== undefined ? attempt.generation : attempt.generationId) : this.currentGeneration;
+                        if (gen !== undefined && gen !== this.currentGeneration) continue;
+                    }
+
+                    const rowLine = [
+                        row.sourceRowId,
+                        row.rawInputUrl,
+                        row.targetIdentity,
+                        row.importId,
+                        row.status,
+                        attempt ? attempt.reasonCode : (row.status === "INVALID_INPUT" ? "INVALID_INPUT" : "NOT_ATTEMPTED"),
+                        row.attemptId || "",
+                        attempt ? (attempt.generationId !== undefined ? attempt.generationId : attempt.generation) : this.currentGeneration,
+                        attempt ? attempt.timing.durationMs : 0,
+                        attempt ? new Date(attempt.createdAt).toISOString() : new Date(row.createdAt).toISOString(),
+                        attempt ? (attempt.templateId || "") : "",
+                        attempt ? (attempt.templateVersion || "") : ""
+                    ];
+                    lines.push(rowLine.map(escapeCell).join(","));
+                }
+            } else if (this.attempts && this.attempts.length > 0) {
+                let scopedAttempts = this.attempts;
+                if (exportScope === 'currentRun') {
+                    const runId = options.campaignRunId || this.activeCampaignRunId;
+                    if (runId) {
+                        const matched = this.attempts.filter(a => a.campaignRunId === runId);
+                        if (matched.length > 0) scopedAttempts = matched;
+                    }
+                } else if (exportScope === 'currentGeneration') {
+                    scopedAttempts = this.attempts.filter(a => (a.generation === this.currentGeneration || a.generationId === this.currentGeneration || (!a.generation && !a.generationId)));
+                }
+
+                let rowIdx = 1;
+                for (const attempt of scopedAttempts) {
+                    const rowLine = [
+                        rowIdx++,
+                        attempt.sourceUrl || attempt.targetIdentity || "",
+                        attempt.targetIdentity || "",
+                        "legacy_import",
+                        attempt.status,
+                        attempt.reasonCode || "NONE",
+                        attempt.attemptId || "",
+                        attempt.generationId !== undefined ? attempt.generationId : (attempt.generation || this.currentGeneration),
+                        attempt.timing ? attempt.timing.durationMs : 0,
+                        attempt.createdAt ? new Date(attempt.createdAt).toISOString() : new Date().toISOString(),
+                        attempt.templateId || "",
+                        attempt.templateVersion || ""
+                    ];
+                    lines.push(rowLine.map(escapeCell).join(","));
+                }
             }
 
             return lines.join("\r\n");
@@ -962,7 +1042,9 @@
          * [Section K] Google Sheets RFC-4180 CSV Export Engine (16 Standard Columns)
          */
         exportGoogleSheetsCsv(options = {}) {
-            const records = options.records || this.getFilteredRecords({ status: 'ALL', search: '', limit: 100000 }).records;
+            const exportScope = options.exportScope || options.scope || 'currentGeneration';
+            const filterOptions = Object.assign({ status: 'ALL', search: '', limit: 100000, exportScope }, options);
+            const records = options.records || this.getFilteredRecords(filterOptions).records;
             const headers = [
                 "Status",
                 "Reason",
@@ -1077,6 +1159,7 @@
                         sessionId: attempt ? (attempt.sessionId || '') : '',
                         isSuppressed,
                         suppressionReason: target ? target.suppressionReason : null,
+                        campaignRunId: attempt ? (attempt.campaignRunId || null) : null,
                         generationId: attempt ? attempt.generationId : this.currentGeneration,
                         templateId: attempt ? (attempt.templateId || null) : null,
                         templateVersion: attempt ? (attempt.templateVersion || null) : null,
@@ -1086,7 +1169,7 @@
                         timestamp: attempt ? attempt.createdAt : row.createdAt
                     });
                 }
-            } else {
+            } else if (this.targets && this.targets.size > 0) {
                 let rowIdx = 1;
                 for (const [identity, target] of this.targets.entries()) {
                     const attempt = target.lastAttemptId ? this.attempts.find(a => a.attemptId === target.lastAttemptId) : null;
@@ -1118,6 +1201,7 @@
                         sessionId: attempt ? (attempt.sessionId || '') : '',
                         isSuppressed,
                         suppressionReason: target.suppressionReason,
+                        campaignRunId: attempt ? (attempt.campaignRunId || null) : null,
                         generationId: attempt ? attempt.generationId : target.effectiveGeneration,
                         templateId: attempt ? (attempt.templateId || null) : null,
                         templateVersion: attempt ? (attempt.templateVersion || null) : null,
@@ -1126,6 +1210,65 @@
                         completedAt: (attempt && attempt.timing && attempt.timing.finalizedTime) ? new Date(attempt.timing.finalizedTime).toISOString() : '',
                         timestamp: target.updatedTs || Date.now()
                     });
+                }
+            } else if (this.attempts && this.attempts.length > 0) {
+                let rowIdx = 1;
+                for (const attempt of this.attempts) {
+                    const isSuppressed = attempt.targetIdentity ? this.isSuppressed(attempt.targetIdentity) : false;
+                    const sourceUrl = attempt.sourceUrl || attempt.targetIdentity || '';
+                    let sourceHostname = attempt.sourceHostname || '';
+                    if (!sourceHostname && sourceUrl) {
+                        try { sourceHostname = new URL(sourceUrl).hostname; } catch (_) { sourceHostname = attempt.targetIdentity || ''; }
+                    }
+
+                    records.push({
+                        id: attempt.attemptId || `att_${rowIdx}`,
+                        sourceRowId: rowIdx++,
+                        rawUrl: sourceUrl,
+                        sourceUrl,
+                        sourceHostname,
+                        contactPageUrl: attempt.contactPageUrl || '',
+                        contactPageHostname: attempt.contactPageHostname || '',
+                        selectedCandidateUrl: attempt.selectedCandidateUrl || '',
+                        submittedFromUrl: attempt.submittedFromUrl || '',
+                        resultUrl: attempt.resultUrl || '',
+                        contactDiscoverySource: attempt.contactDiscoverySource || '',
+                        formPageUrl: attempt.formPageUrl || '',
+                        emailsFound: attempt.emailsFound !== undefined ? attempt.emailsFound : 0,
+                        targetIdentity: attempt.targetIdentity || sourceUrl,
+                        status: attempt.status,
+                        reasonCode: attempt.reasonCode || 'NONE',
+                        attemptId: attempt.attemptId,
+                        sessionId: attempt.sessionId || '',
+                        isSuppressed,
+                        suppressionReason: null,
+                        campaignRunId: attempt.campaignRunId || null,
+                        generationId: attempt.generationId !== undefined ? attempt.generationId : (attempt.generation || this.currentGeneration),
+                        templateId: attempt.templateId || null,
+                        templateVersion: attempt.templateVersion || null,
+                        durationMs: attempt.timing ? attempt.timing.durationMs : 0,
+                        startedAt: attempt.timing && attempt.timing.intentTime ? new Date(attempt.timing.intentTime).toISOString() : (attempt.createdAt ? new Date(attempt.createdAt).toISOString() : new Date().toISOString()),
+                        completedAt: attempt.timing && attempt.timing.finalizedTime ? new Date(attempt.timing.finalizedTime).toISOString() : '',
+                        timestamp: attempt.createdAt || Date.now()
+                    });
+                }
+            }
+
+            if (options.exportScope || options.scope) {
+                const s = options.exportScope || options.scope;
+                if (s === 'currentRun') {
+                    const runId = options.campaignRunId || this.activeCampaignRunId;
+                    if (runId) {
+                        const matched = records.filter(r => r.campaignRunId === runId);
+                        if (matched.length > 0) {
+                            records.length = 0;
+                            records.push(...matched);
+                        }
+                    }
+                } else if (s === 'currentGeneration') {
+                    const matched = records.filter(r => (r.generationId === this.currentGeneration || !r.generationId));
+                    records.length = 0;
+                    records.push(...matched);
                 }
             }
 

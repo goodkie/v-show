@@ -1030,7 +1030,7 @@ function applyTranslations(lang) {
 
 function updateRealTimeStatus(data) {
     if (data.scope || data.campaignRunId) {
-        console.log(`[LEDGER_STATS] scope=${data.scope || 'currentRun'} success=${data.successCount || 0} failed=${data.failedCount || 0} unknown=${data.deliveryUnknownCount || 0}`);
+        console.log(`[LEDGER_STATS] scope=${data.scope || 'currentGeneration'} success=${data.successCount || 0} failed=${data.failedCount || 0} unknown=${data.deliveryUnknownCount || 0}`);
     }
     if (data.totalTargets !== undefined) {
         totalTargets = data.totalTargets;
@@ -3304,7 +3304,7 @@ async function dispatchFullCampaignReset() {
 /**
  * [Section K] Trigger Google Sheets RFC-4180 CSV export download
  */
-async function triggerGoogleSheetsCsvExport({ exportCurrentFilter = false } = {}) {
+async function triggerGoogleSheetsCsvExport({ exportCurrentFilter = false, exportScope = 'currentGeneration' } = {}) {
     const hs = getPopupHistoryStore();
     let csv = '';
     let exportRecords = null;
@@ -3315,17 +3315,18 @@ async function triggerGoogleSheetsCsvExport({ exportCurrentFilter = false } = {}
             status: ledgerState.filter,
             search: ledgerState.search,
             limit: 100000,
-            offset: 0
+            offset: 0,
+            exportScope
         });
         exportRecords = fullFiltered.records;
     }
 
     if (hs && typeof hs.exportGoogleSheetsCsv === 'function') {
         await hs.load();
-        csv = hs.exportGoogleSheetsCsv({ records: exportRecords });
+        csv = hs.exportGoogleSheetsCsv({ records: exportRecords, exportScope });
     } else {
         csv = await new Promise((resolve, reject) => {
-            chrome.runtime.sendMessage({ action: 'EXPORT_GSHEETS_CSV', options: { records: exportRecords } }, (res) => {
+            chrome.runtime.sendMessage({ action: 'EXPORT_GSHEETS_CSV', options: { records: exportRecords, exportScope } }, (res) => {
                 if (res && res.success && res.csv) resolve(res.csv);
                 else reject(new Error(res?.error || 'Failed to generate Google Sheets CSV'));
             });
@@ -3343,7 +3344,7 @@ async function triggerGoogleSheetsCsvExport({ exportCurrentFilter = false } = {}
             a.click();
         }
         URL.revokeObjectURL(url);
-        addLog(`📊 Google Sheets CSV (${exportCurrentFilter ? 'Filtered' : 'All'}) exported successfully.`, "success");
+        addLog(`📊 Google Sheets CSV (${exportCurrentFilter ? 'Filtered' : 'All'}) [scope=${exportScope}] exported successfully.`, "success");
     }
 
     return csv;
@@ -3353,14 +3354,15 @@ async function triggerGoogleSheetsCsvExport({ exportCurrentFilter = false } = {}
  * Phase 2B (Component B): Trigger RFC-4180 compliant CSV audit export download
  */
 async function triggerCsvExport(options = {}) {
+    const exportOptions = Object.assign({ exportScope: 'currentGeneration' }, options);
     const hs = getPopupHistoryStore();
     let csv = '';
     if (hs) {
         await hs.load();
-        csv = hs.exportToCsv(options);
+        csv = hs.exportToCsv(exportOptions);
     } else {
         csv = await new Promise((resolve, reject) => {
-            chrome.runtime.sendMessage({ action: 'EXPORT_HISTORY_CSV', options }, (res) => {
+            chrome.runtime.sendMessage({ action: 'EXPORT_HISTORY_CSV', options: exportOptions }, (res) => {
                 if (res && res.success && res.csv) resolve(res.csv);
                 else reject(new Error(res?.error || 'Failed to generate CSV'));
             });
@@ -3748,7 +3750,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const exportBtn = document.getElementById('export-csv-btn');
     if (exportBtn) {
         exportBtn.addEventListener('click', () => {
-            chrome.runtime.sendMessage({ action: 'EXPORT_HISTORY_CSV' }, (res) => {
+            chrome.runtime.sendMessage({ action: 'EXPORT_HISTORY_CSV', options: { exportScope: 'currentGeneration' } }, (res) => {
                 if (res && res.success && res.csv) {
                     const blob = new Blob([res.csv], { type: 'text/csv;charset=utf-8;' });
                     const url = URL.createObjectURL(blob);
@@ -3757,7 +3759,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     a.download = `xpider_campaign_report_${Date.now()}.csv`;
                     a.click();
                     URL.revokeObjectURL(url);
-                    addLog("📊 CSV Report downloaded successfully.", "success");
+                    addLog("📊 CSV Report [scope=currentGeneration] downloaded successfully.", "success");
                 } else {
                     addLog("⚠️ Failed to generate CSV report.", "warning");
                 }
@@ -3808,6 +3810,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const panel = document.getElementById('history-status-panel');
         if (!panel) return;
         try {
+            const hs = getPopupHistoryStore();
+            let stats = null;
+            if (hs) {
+                await hs.load();
+                stats = hs.getLedgerStats('currentGeneration');
+            }
             const data = await chrome.storage.local.get(['xpider_history_rows', 'xpider_history_attempts', 'xpider_history_generation']);
             const rows = data.xpider_history_rows || [];
             const attempts = data.xpider_history_attempts || [];
@@ -3815,12 +3823,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const pending = rows.filter(r => r.status === 'PENDING').length;
             const invalid = rows.filter(r => r.status === 'INVALID_INPUT').length;
-            const succeeded = attempts.filter(a => a.status === 'CONFIRMED_SUCCESS').length;
-            const failed = attempts.filter(a => a.status === 'FAILURE').length;
-            const unknown = attempts.filter(a => a.status === 'DELIVERY_UNKNOWN' || a.status === 'PAUSED_UNKNOWN').length;
-            const skipped = attempts.filter(a => a.status === 'SKIPPED').length;
+            const succeeded = stats ? stats.success : attempts.filter(a => a.status === 'CONFIRMED_SUCCESS').length;
+            const failed = stats ? stats.failure : attempts.filter(a => a.status === 'FAILURE').length;
+            const unknown = stats ? stats.unknown : attempts.filter(a => a.status === 'DELIVERY_UNKNOWN' || a.status === 'PAUSED_UNKNOWN').length;
+            const skipped = stats ? stats.skipped : attempts.filter(a => a.status === 'SKIPPED').length;
+
+            console.log(`[LEDGER_STATS] scope=currentGeneration success=${succeeded} failed=${failed} unknown=${unknown}`);
 
             panel.innerHTML = `
+                <div class="history-stat-row">
+                    <span>Scope:</span><span><b style="color:#00ffcc">currentGeneration</b></span>
+                </div>
                 <div class="history-stat-row">
                     <span>Generation:</span><span><b>${gen}</b></span>
                 </div>

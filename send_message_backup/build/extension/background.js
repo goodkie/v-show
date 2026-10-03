@@ -177,7 +177,8 @@ function broadcastCounters() {
     chrome.runtime.sendMessage({
         action: 'UPDATE_STATS',
         data: {
-            scope: 'currentRun',
+            scope: 'currentGeneration',
+            runScope: 'currentRun',
             campaignRunId: campaignState.campaignRunId,
             successCount: campaignState.counters.success,
             failedCount: campaignState.counters.failed,
