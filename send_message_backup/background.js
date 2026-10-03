@@ -223,6 +223,12 @@ const safeTabs = {
             chrome.runtime.sendMessage({ action: 'NATIVE_TABS_GET', tabId: id }, (res) => resolve(res || { id, url: '' }));
         });
     },
+    query: (queryInfo = {}) => {
+        if (chrome.tabs?.query) return chrome.tabs.query(queryInfo);
+        return new Promise(resolve => {
+            chrome.runtime.sendMessage({ action: 'NATIVE_TABS_QUERY', queryInfo }, (res) => resolve(res || []));
+        });
+    },
     update: (id, props) => {
         if (chrome.tabs?.update) {
             if (id) return chrome.tabs.update(id, props);
@@ -813,13 +819,190 @@ const bgOperationQueue = (typeof self.AsyncOperationQueue !== 'undefined')
     ? new self.AsyncOperationQueue()
     : { enqueue: (fn) => fn(), activeCount: 0 };
 
-// [Issue #6 R6.6, R6.7 & R6.8 P0-6] Retained inspection tabs for DELIVERY_UNKNOWN (max 3)
+// [Issue #6 R6.9B] Strict Single-Tab Runtime Policy & Tab Ownership Tracking
+const STRICT_SINGLE_TARGET_TAB = true;
+const KEEP_DELIVERY_UNKNOWN_TABS = false;
+const MAX_RETAINED_UNCERTAIN_TABS = 0; // Deprecated retention: close all tabs by default
+
 const retainedUncertainTabs = [];
 const retainedTabIds = new Set();
 const campaignOwnedTabIds = new Set();
-const MAX_RETAINED_UNCERTAIN_TABS = 3;
+const campaignTabParent = new Map(); // childTabId -> openerTabId
+const preCampaignTabIds = new Set(); // Pre-existing user tabs captured at campaign start (IMMUTABLE SAFETY BASELINE)
 
-// [Issue #6 R4.1] Centralized Authoritative List Clear Handlers
+// [Issue #6 R6.9B Section 4] Track child tabs opened by target pages (target=_blank, window.open)
+if (typeof chrome !== 'undefined' && chrome.tabs) {
+    if (chrome.tabs.onCreated && typeof chrome.tabs.onCreated.addListener === 'function') {
+        chrome.tabs.onCreated.addListener((tab) => {
+            try {
+                if (!campaignState.isActive) return;
+                if (tab && tab.id && tab.openerTabId) {
+                    if (campaignOwnedTabIds.has(tab.openerTabId) || retainedTabIds.has(tab.openerTabId)) {
+                        campaignOwnedTabIds.add(tab.id);
+                        campaignTabParent.set(tab.id, tab.openerTabId);
+                        console.log(`[TAB_CHILD_OWNED] tabId=${tab.id} openerTabId=${tab.openerTabId} url=${tab.url || 'pending'}`);
+                        logBg(tab.openerTabId, `[TAB_CHILD_OWNED] Detected campaign child tab tabId=${tab.id} from opener=${tab.openerTabId}`, "info");
+                    }
+                }
+            } catch (_) {}
+        });
+    }
+
+    if (chrome.tabs.onRemoved && typeof chrome.tabs.onRemoved.addListener === 'function') {
+        chrome.tabs.onRemoved.addListener((removedTabId) => {
+            campaignOwnedTabIds.delete(removedTabId);
+            retainedTabIds.delete(removedTabId);
+            campaignTabParent.delete(removedTabId);
+            if (campaignState.currentTabId === removedTabId) campaignState.currentTabId = null;
+            if (campaignState.targetTabId === removedTabId) campaignState.targetTabId = null;
+        });
+    }
+}
+
+/**
+ * [Issue #6 R6.9B Section 1] Centralized Hard Tab Cleanup Barrier
+ * Scans all campaign-owned and tracked pointers, excludes keepTabId, verifies closure with retry.
+ * NEVER closes pre-existing user baseline tabs.
+ */
+async function closeAllCampaignTabsExcept(keepTabId = null, reason = 'CLEANUP') {
+    const candidates = new Set();
+    for (const id of campaignOwnedTabIds) candidates.add(id);
+    for (const id of retainedTabIds) candidates.add(id);
+    for (const [childId] of campaignTabParent) candidates.add(childId);
+    if (campaignState.currentTabId) candidates.add(campaignState.currentTabId);
+    if (campaignState.targetTabId) candidates.add(campaignState.targetTabId);
+
+    if (keepTabId != null) {
+        candidates.delete(keepTabId);
+    }
+
+    // Safety Baseline: never close user baseline tabs unless explicitly adopted into campaignOwnedTabIds
+    for (const id of candidates) {
+        if (preCampaignTabIds.has(id) && !campaignOwnedTabIds.has(id)) {
+            candidates.delete(id);
+        }
+    }
+
+    const ownedBefore = candidates.size;
+    console.log(`[TAB_BARRIER] phase=${reason} ownedBefore=${ownedBefore}`);
+
+    let closedCount = 0;
+    const maxRetries = 3;
+
+    for (const tabId of candidates) {
+        let isClosed = false;
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                const existing = await safeTabs.get(tabId);
+                if (!existing || !existing.id) {
+                    isClosed = true;
+                    console.log(`[TAB_CLOSE] tabId=${tabId} attempt=${attempt} result=CLOSED`);
+                    break;
+                }
+                await safeTabs.remove(tabId);
+            } catch (_) {
+                // remove error: check if closed or still open in verify step below
+            }
+
+            await new Promise(r => setTimeout(r, 150));
+            try {
+                const check = await safeTabs.get(tabId);
+                if (!check || !check.id) {
+                    isClosed = true;
+                    console.log(`[TAB_CLOSE] tabId=${tabId} attempt=${attempt} result=CLOSED`);
+                    break;
+                } else {
+                    console.log(`[TAB_CLOSE] tabId=${tabId} attempt=${attempt} result=STILL_OPEN`);
+                    await new Promise(r => setTimeout(r, 150));
+                }
+            } catch (_) {
+                isClosed = true;
+                console.log(`[TAB_CLOSE] tabId=${tabId} attempt=${attempt} result=CLOSED`);
+                break;
+            }
+        }
+
+        if (isClosed) {
+            campaignOwnedTabIds.delete(tabId);
+            retainedTabIds.delete(tabId);
+            campaignTabParent.delete(tabId);
+            if (campaignState.currentTabId === tabId) campaignState.currentTabId = null;
+            if (campaignState.targetTabId === tabId) campaignState.targetTabId = null;
+            closedCount++;
+        } else {
+            console.warn(`[TAB_BARRIER_FAIL] tabId=${tabId} phase=${reason} failed to close after ${maxRetries} retries`);
+        }
+    }
+
+    const remainingOwned = Array.from(campaignOwnedTabIds).filter(id => id !== keepTabId).length;
+    const result = remainingOwned === 0 ? 'PASS' : 'FAIL';
+    console.log(`[TAB_BARRIER] phase=${reason} ownedAfter=${remainingOwned} result=${result}`);
+
+    if (keepTabId != null) {
+        console.log(`[TAB_KILL_SWITCH] keepTabId=${keepTabId} closedOthers=${closedCount} remainingOwned=${campaignOwnedTabIds.has(keepTabId) ? 1 : 0} result=${result}`);
+    }
+
+    return {
+        success: remainingOwned === 0,
+        closedCount,
+        ownedBefore,
+        remainingOwned
+    };
+}
+
+/**
+ * [Issue #6 R6.9B Section 7] Await verified closure of a single owned tab
+ */
+async function closeOwnedTabVerified(tabId, reason = 'TARGET_FINAL') {
+    if (!tabId) return true;
+    if (preCampaignTabIds.has(tabId) && !campaignOwnedTabIds.has(tabId)) {
+        return false;
+    }
+
+    const maxRetries = 3;
+    let isClosed = false;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            const t = await safeTabs.get(tabId);
+            if (!t || !t.id) {
+                isClosed = true;
+                console.log(`[TAB_CLOSE] tabId=${tabId} attempt=${attempt} result=CLOSED`);
+                break;
+            }
+            await safeTabs.remove(tabId);
+        } catch (_) {
+            // remove error: check if closed or still open in verify step below
+        }
+
+        await new Promise(r => setTimeout(r, 150));
+        try {
+            const check = await safeTabs.get(tabId);
+            if (!check || !check.id) {
+                isClosed = true;
+                console.log(`[TAB_CLOSE] tabId=${tabId} attempt=${attempt} result=CLOSED`);
+                break;
+            } else {
+                console.log(`[TAB_CLOSE] tabId=${tabId} attempt=${attempt} result=STILL_OPEN`);
+                await new Promise(r => setTimeout(r, 150));
+            }
+        } catch (_) {
+            isClosed = true;
+            console.log(`[TAB_CLOSE] tabId=${tabId} attempt=${attempt} result=CLOSED`);
+            break;
+        }
+    }
+
+    campaignOwnedTabIds.delete(tabId);
+    retainedTabIds.delete(tabId);
+    campaignTabParent.delete(tabId);
+    if (campaignState.currentTabId === tabId) campaignState.currentTabId = null;
+    if (campaignState.targetTabId === tabId) campaignState.targetTabId = null;
+
+    return isClosed;
+}
+
+// [Issue #6 R4.1 & R6.9B] Centralized Authoritative List Clear Handlers
 async function clearAutoFormData() {
     campaignState.isActive = false;
     campaignState.isPaused = false;
@@ -836,17 +1019,7 @@ async function clearAutoFormData() {
         chrome.alarms.clear("xpider_next_target");
         chrome.alarms.clear("xpider_next_target_failsafe");
     }
-    if (campaignState.currentTabId) {
-        chrome.tabs.remove(campaignState.currentTabId).catch(() => {});
-        campaignState.currentTabId = null;
-    }
-    if (campaignState.targetTabId) {
-        chrome.tabs.remove(campaignState.targetTabId).catch(() => {});
-        campaignState.targetTabId = null;
-    }
-    for (const rId of retainedTabIds) {
-        chrome.tabs.remove(rId).catch(() => {});
-    }
+    await closeAllCampaignTabsExcept(null, 'CLEAR_AUTO_FORM_DATA');
     retainedTabIds.clear();
     campaignOwnedTabIds.clear();
     retainedUncertainTabs.length = 0;
@@ -1864,15 +2037,22 @@ async function startCampaignOrchestrator(queue, template, delayMs, fillDelayMs =
         campaignState.lastActionTime = Date.now();
         campaignState.isInitialized = true; 
         
-        // [v12.0.0] Mission Critical Timer/Tab Cleanup
+        // [Issue #6 R6.9B Section 5] Capture baseline pre-existing user tabs (NEVER CLOSE THEM)
+        try {
+            preCampaignTabIds.clear();
+            const existingTabs = await safeTabs.query({});
+            for (const t of existingTabs) {
+                if (t && t.id) preCampaignTabIds.add(t.id);
+            }
+            console.log(`[SESSION_BASELINE] Captured ${preCampaignTabIds.size} pre-existing user tabs as protected baseline.`);
+        } catch (_) {}
+
+        // [v12.0.0 & R6.9B] Mission Critical Timer/Tab Cleanup
         if (campaignState.activeTimeoutId) {
             clearTimeout(campaignState.activeTimeoutId);
             campaignState.activeTimeoutId = null;
         }
-        if (campaignState.currentTabId) {
-            chrome.tabs.remove(campaignState.currentTabId).catch(() => {});
-            campaignState.currentTabId = null;
-        }
+        await closeAllCampaignTabsExcept(null, 'START_CAMPAIGN_BOOT');
         if (chrome.alarms) chrome.alarms.clearAll(); 
 
         logBg(null, "[Boot] Previous state cleared.", "debug");
@@ -2015,15 +2195,10 @@ async function pauseCampaignOrchestrator(saveCheckpoint = true) {
         chrome.alarms.clear("xpider_next_target_failsafe");
     }
 
-    // Close current target tab if safe
-    if (campaignState.currentTabId) {
-        chrome.tabs.remove(campaignState.currentTabId).catch(() => {});
-        campaignState.currentTabId = null;
-    }
-    if (campaignState.targetTabId) {
-        chrome.tabs.remove(campaignState.targetTabId).catch(() => {});
-        campaignState.targetTabId = null;
-    }
+    // [Issue #6 R6.9B Section 9] Close all campaign tabs on pause
+    await closeAllCampaignTabsExcept(null, 'PAUSE_CAMPAIGN');
+    campaignState.currentTabId = null;
+    campaignState.targetTabId = null;
 
     // Current target handling
     const currentAtt = campaignState.currentAttempt;
@@ -2197,10 +2372,9 @@ async function endCampaignOrchestrator() {
         clearTimeout(campaignState.activeTimeoutId);
         campaignState.activeTimeoutId = null;
     }
-    if (campaignState.currentTabId) {
-        chrome.tabs.remove(campaignState.currentTabId).catch(() => {});
-        campaignState.currentTabId = null;
-    }
+    await closeAllCampaignTabsExcept(null, 'END_CAMPAIGN');
+    campaignState.currentTabId = null;
+    campaignState.targetTabId = null;
     await chrome.storage.local.remove(['xpider_paused_checkpoint', 'xpider_currentAttempt', 'xpider_isActive', 'xpider_isPaused']);
     printCampaignOutcomeSummary();
     return { success: true };
@@ -2265,12 +2439,18 @@ async function processNextCampaignTarget(loopSessionId) {
             if (campaignState.isActive) {
                 logBg(null, "Campaign finished!", "complete");
                 campaignState.isActive = false;
-                // [URL 세션 성공 완료] 여분의 브라우저 새 탭 일괄 닫기 트리거
-                chrome.runtime.sendMessage({ action: 'CLOSE_ALL_EXTRA_TABS' }).catch(() => {});
+                await closeAllCampaignTabsExcept(null, 'CAMPAIGN_FINISHED');
             }
             campaignState.isLoopRunning = false;
             return;
         }
+
+        // [Issue #6 R6.9B Section 2] PRE-NEXT-TARGET Hard Tab Cleanup Barrier
+        await closeAllCampaignTabsExcept(null, 'PRE_NEXT_TARGET');
+        campaignOwnedTabIds.clear();
+        retainedTabIds.clear();
+        campaignState.currentTabId = null;
+        campaignState.targetTabId = null;
 
         const currentUrl = campaignState.queue.shift();
         const normalized = normalizeUrl(currentUrl);
@@ -2714,9 +2894,9 @@ function checkSourceRelation(candidateUrl, sourceUrl) {
     }
 }
 
-// [Issue #6 R6.5 Bug E & Section 8] Missing campaign tab self-recovery
-async function ensureCampaignTab(existingTabId, candidateUrl) {
-    if (existingTabId) {
+// [Issue #6 R6.5 Bug E & R6.9B Section 8] Missing campaign tab self-recovery
+async function ensureCampaignTab(existingTabId, candidateUrl, forceRecreate = false) {
+    if (existingTabId && !forceRecreate) {
         try {
             const tab = await safeTabs.get(existingTabId);
             if (tab && tab.id && !tab.url?.startsWith('chrome://')) {
@@ -2724,8 +2904,12 @@ async function ensureCampaignTab(existingTabId, candidateUrl) {
             }
         } catch (_) {}
     }
-    logBg(null, `[TAB_RECOVERY] Campaign tab ${existingTabId} missing. Recreating active campaign tab for ${candidateUrl}`, "warning");
+    logBg(null, `[TAB_RECOVERY] Campaign tab ${existingTabId} missing/mismatched. Recreating active campaign tab for ${candidateUrl}`, "warning");
+    if (existingTabId) {
+        await closeOwnedTabVerified(existingTabId, 'TAB_RECOVERY_STALE');
+    }
     const newTab = await safeTabs.create({ url: candidateUrl, active: !!campaignState.focusActiveTargetTab });
+    campaignOwnedTabIds.add(newTab.id);
     campaignState.targetTabId = newTab.id;
     campaignState.currentTabId = newTab.id;
     return { tabId: newTab.id, recreated: true };
@@ -3065,6 +3249,12 @@ async function orchestrateSending(urlInput, template) {
         campaignOwnedTabIds.add(tabId);
     }
     campaignState.currentTabId = tabId;
+
+    // [Issue #6 R6.9B Section 3] POST-CREATE CONFIRM KILL
+    await closeAllCampaignTabsExcept(tabId, 'POST_NEW_TARGET_CREATE');
+    campaignOwnedTabIds.clear();
+    campaignOwnedTabIds.add(tabId);
+
     await focusTargetTab(tabId);
 
     let resolveRef;
@@ -3326,11 +3516,12 @@ async function orchestrateSending(urlInput, template) {
             discoveryCtx.visited.clear();
         }
 
-        if (isDeliveryUnknown) {
+        // [Issue #6 R6.9B Section 6 & 7] Strictly verified tab closure
+        if (isDeliveryUnknown && KEEP_DELIVERY_UNKNOWN_TABS && MAX_RETAINED_UNCERTAIN_TABS > 0) {
             console.log(`[UNKNOWN_HOLD] tabKeptOpen=true tabId=${tabId} detachedFromCampaign=true`);
             logBg(tabId, `[UNKNOWN_HOLD] tabKeptOpen=true tabId=${tabId} detachedFromCampaign=true`, "info");
             
-            // [Issue #6 R6.8 P0-6] Invariant: retainedTabIds ∩ campaignOwnedTabIds = empty set
+            // Invariant: retainedTabIds ∩ campaignOwnedTabIds = empty set
             retainedTabIds.add(tabId);
             campaignOwnedTabIds.delete(tabId);
             retainedUncertainTabs.push(tabId);
@@ -3342,20 +3533,20 @@ async function orchestrateSending(urlInput, template) {
             if (retainedUncertainTabs.length > MAX_RETAINED_UNCERTAIN_TABS) {
                 const oldest = retainedUncertainTabs.shift();
                 retainedTabIds.delete(oldest);
-                // Invariant: closing oldest retained tab must NEVER close active campaign tab
                 if (oldest !== campaignState.targetTabId && oldest !== campaignState.currentTabId) {
-                    console.log(`[UNKNOWN_HOLD] closing oldest retained tab tabId=${oldest} totalRetained=${MAX_RETAINED_UNCERTAIN_TABS}`);
-                    logBg(oldest, `[UNKNOWN_HOLD] closing oldest retained tab tabId=${oldest} totalRetained=${MAX_RETAINED_UNCERTAIN_TABS}`, "info");
-                    safeTabs.remove(oldest).catch(() => {});
+                    console.log(`[UNKNOWN_HOLD] closing oldest retained tab tabId=${oldest}`);
+                    await closeOwnedTabVerified(oldest, 'RETAINED_OVERFLOW');
                 }
             }
-            await new Promise(r => setTimeout(r, 2000));
         } else {
-            campaignOwnedTabIds.delete(tabId);
-            if (campaignState.targetTabId === tabId) campaignState.targetTabId = null;
-            if (campaignState.currentTabId === tabId) campaignState.currentTabId = null;
-            safeTabs.remove(tabId).catch(() => {});
+            await closeOwnedTabVerified(tabId, 'TARGET_FINAL');
         }
+
+        const remainingOwned = Array.from(campaignOwnedTabIds).length;
+        const remainingRetained = retainedTabIds.size;
+        const finalInvariant = (remainingOwned === 0 && (!KEEP_DELIVERY_UNKNOWN_TABS || remainingRetained === 0)) ? 'PASS' : (KEEP_DELIVERY_UNKNOWN_TABS ? 'PASS_RETAINED' : 'FAIL');
+        console.log(`[POST_FINAL_TAB_INVARIANT] target=${targetUrl} remainingOwnedTabs=${remainingOwned} retainedTabs=${remainingRetained} result=${finalInvariant}`);
+
         resolveRef({ ...res, reasonCode: finalReason });
     };
 
@@ -3387,7 +3578,7 @@ async function orchestrateSending(urlInput, template) {
         } else {
             logBg(tabId, `[TAB_OWNERSHIP] TARGET_TAB_OWNERSHIP_MISMATCH expected=${targetHost} actual=${actualHost}`, "error");
             // Abort stale execution, recreate campaign tab and re-navigate current target
-            const recTab = await ensureCampaignTab(null, currentAttemptUrl);
+            const recTab = await ensureCampaignTab(tabId, currentAttemptUrl, true);
             tabId = recTab.tabId;
             return;
         }
@@ -3959,6 +4150,18 @@ if (typeof module !== 'undefined' && module.exports) {
         clearHistoryData,
         clearDiagnosticsData,
         clearEmailCollectorData,
-        resetAllListData
+        resetAllListData,
+        safeTabs,
+        campaignOwnedTabIds,
+        retainedTabIds,
+        retainedUncertainTabs,
+        campaignTabParent,
+        preCampaignTabIds,
+        closeAllCampaignTabsExcept,
+        closeOwnedTabVerified,
+        processNextCampaignTarget,
+        STRICT_SINGLE_TARGET_TAB,
+        KEEP_DELIVERY_UNKNOWN_TABS,
+        MAX_RETAINED_UNCERTAIN_TABS
     };
 }
