@@ -332,8 +332,13 @@
                     templateId: opts.templateId || null,
                     templateVersion: opts.templateVersion || 1,
                     targetToken: opts.targetToken || null,
+                    campaignRunId: opts.campaignRunId || undefined,
+                    generation: opts.generation !== undefined ? opts.generation : undefined,
+                    generationId: opts.generationId || opts.generation || undefined,
+                    importId: opts.importId || null,
                     status: opts.status || (opts.outcome ? (opts.outcome === 'SUCCESS' ? 'CONFIRMED_SUCCESS' : 'FAILURE') : 'PREPARING'),
                     reasonCode: opts.reason || opts.reasonCode || 'PREPARING',
+                    failureClass: opts.failureClass || null,
                     contactPageUrl: opts.contactPageUrl || null,
                     formPageUrl: opts.formPageUrl || null,
                     selectedCandidateUrl: opts.selectedCandidateUrl || null,
@@ -362,6 +367,8 @@
             }
 
             const startedAt = timing.intentTime || Date.now();
+            const attemptGen = descriptor.generation ?? opts.generation ?? this.currentGeneration;
+            const attemptGenId = descriptor.generationId ?? descriptor.generation ?? opts.generationId ?? opts.generation ?? this.currentGeneration;
             const attempt = {
                 attemptId,
                 targetIdentity,
@@ -369,9 +376,9 @@
                 templateId,
                 templateVersion: templateVersion || 1,
                 targetToken: descriptor.targetToken || null,
-                campaignRunId: descriptor.campaignRunId || opts.campaignRunId || this.activeCampaignRunId || 'run_default',
-                generation: descriptor.generation || this.currentGeneration,
-                generationId: descriptor.generation || this.currentGeneration,
+                campaignRunId: descriptor.campaignRunId ?? opts.campaignRunId ?? this.activeCampaignRunId ?? 'run_default',
+                generation: attemptGen,
+                generationId: attemptGenId,
                 importId: descriptor.importId || opts.importId || null,
                 status: status || 'DELIVERY_UNKNOWN',
                 reasonCode: reasonCode || 'UNKNOWN',
@@ -409,7 +416,7 @@
                     rawSampleUrl: typeof targetOrDesc === 'string' ? targetOrDesc : targetIdentity,
                     isSuppressed: false,
                     suppressionReason: null,
-                    effectiveGeneration: 1,
+                    effectiveGeneration: attemptGen,
                     lastAttemptId: null,
                     updatedTs: Date.now()
                 });
@@ -424,7 +431,7 @@
                 if (status === 'CONFIRMED_SUCCESS' || status === 'DELIVERY_UNKNOWN') {
                     target.isSuppressed = true;
                     target.suppressionReason = status;
-                    target.effectiveGeneration = this.currentGeneration;
+                    target.effectiveGeneration = attemptGen;
                 }
             }
 
@@ -676,16 +683,17 @@
             if (target) {
                 target.lastAttemptId = attemptId;
                 target.updatedTs = now;
+                const effGen = attempt.generation ?? this.currentGeneration;
                 if (canonicalStatus === 'CONFIRMED_SUCCESS' || canonicalStatus === 'DELIVERY_UNKNOWN') {
                     target.isSuppressed = true;
                     target.suppressionReason = canonicalStatus;
-                    target.effectiveGeneration = this.currentGeneration;
+                    target.effectiveGeneration = effGen;
                 } else if (canonicalStatus === 'FAILURE') {
                     target.isSuppressed = false;
                 } else if (canonicalStatus === 'SKIPPED' && extra.suppressTarget) {
                     target.isSuppressed = true;
                     target.suppressionReason = 'SKIPPED';
-                    target.effectiveGeneration = this.currentGeneration;
+                    target.effectiveGeneration = effGen;
                 }
             }
 
@@ -698,6 +706,47 @@
 
             await this.persist();
             return { settled: true, attemptId, status: canonicalStatus, attempt };
+        }
+
+        /**
+         * R6.9A Addendum 5: Completely purge an attempt and its linked target/import rows
+         * Guarantees zero synthetic artifact/state residue.
+         */
+        async purgeAttempt(attemptId, purgeTargetIfLast = true) {
+            const idx = this.attempts.findIndex(a => a.attemptId === attemptId);
+            let targetIdentity = null;
+            if (idx !== -1) {
+                targetIdentity = this.attempts[idx].targetIdentity;
+                this.attempts.splice(idx, 1);
+            }
+
+            if (targetIdentity && purgeTargetIfLast) {
+                const remaining = this.attempts.filter(a => a.targetIdentity === targetIdentity);
+                if (remaining.length === 0) {
+                    this.targets.delete(targetIdentity);
+                } else {
+                    const last = remaining[remaining.length - 1];
+                    const target = this.targets.get(targetIdentity);
+                    if (target) {
+                        target.lastAttemptId = last.attemptId;
+                        target.updatedTs = Date.now();
+                        target.isSuppressed = (last.status === 'CONFIRMED_SUCCESS' || last.status === 'DELIVERY_UNKNOWN');
+                        target.suppressionReason = target.isSuppressed ? last.status : null;
+                        target.effectiveGeneration = last.generation ?? this.currentGeneration;
+                    }
+                }
+            }
+
+            // Unlink from any import rows
+            for (const row of this.importRows) {
+                if (row.attemptId === attemptId) {
+                    row.attemptId = null;
+                    row.status = null;
+                }
+            }
+
+            await this.persist();
+            return { purged: true, attemptId, targetIdentity };
         }
 
         /**

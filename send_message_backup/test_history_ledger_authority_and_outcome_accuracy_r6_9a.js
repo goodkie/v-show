@@ -896,6 +896,85 @@ async function runAllTests() {
         assert.strictEqual(hs.attempts.find(a => a.attemptId === att2.attemptId).status, 'CONFIRMED_SUCCESS');
     });
 
+    // -------------------------------------------------------------------------
+    // Test 26: opts.generation is strictly honored by recordAttempt, isolating
+    // audit probes from owner currentGeneration scope
+    // -------------------------------------------------------------------------
+    await itAsync("Test 26: recordAttempt honors generation override; probe in gen 999 isolates owner gen 7", async () => {
+        const storage = new MockStorage();
+        const hs = new HistoryStore(storage);
+        await hs.load();
+        hs.currentGeneration = 7;
+
+        // Seed 20 owner generation 7 attempts
+        for (let i = 1; i <= 20; i++) {
+            const { attemptId } = await hs.recordAttempt(`https://owner-${i}.org`, { generation: 7 });
+            await hs.settleCanonicalAttempt(attemptId, 'CONFIRMED_SUCCESS', 'SUCCESS_CONFIRMED');
+        }
+
+        const preStats = hs.getLedgerStats('currentGeneration');
+        assert.strictEqual(preStats.success, 20, "Pre-probe Gen 7 success must be strictly 20");
+
+        // Record synthetic probe with generation: 999
+        const { attemptId: probeId, attempt: probeAttempt } = await hs.recordAttempt('https://audit-immutability.com', {
+            generation: 999,
+            campaignRunId: 'run_audit_probe_999'
+        });
+
+        assert.strictEqual(probeAttempt.generation, 999, "Attempt generation must strictly equal 999");
+        assert.strictEqual(probeAttempt.generationId, 999, "Attempt generationId must strictly equal 999");
+
+        // Settle synthetic probe as CONFIRMED_SUCCESS
+        await hs.settleCanonicalAttempt(probeId, 'CONFIRMED_SUCCESS', 'SUCCESS_CONFIRMED');
+
+        // Verify owner generation 7 remains strictly 20 (zero contamination)
+        const duringStats = hs.getLedgerStats('currentGeneration');
+        assert.strictEqual(duringStats.success, 20, "DURING probe settlement, owner Gen 7 success MUST remain strictly 20");
+        assert.strictEqual(duringStats.totalStarted, 20, "DURING probe settlement, owner Gen 7 totalStarted MUST remain strictly 20");
+    });
+
+    // -------------------------------------------------------------------------
+    // Test 27: Complete cleanup via purgeAttempt removes attempt, target,
+    // and all linked state with zero residue
+    // -------------------------------------------------------------------------
+    await itAsync("Test 27: purgeAttempt cleans attempt, target entry, and metadata completely", async () => {
+        const storage = new MockStorage();
+        const hs = new HistoryStore(storage);
+        await hs.load();
+        hs.currentGeneration = 7;
+
+        // Seed 1 owner attempt
+        const { attemptId: ownerAttId } = await hs.recordAttempt('https://legit-client.com');
+        await hs.settleCanonicalAttempt(ownerAttId, 'CONFIRMED_SUCCESS', 'SUCCESS_CONFIRMED');
+
+        // Record and settle isolated probe
+        const { attemptId: probeId } = await hs.recordAttempt('https://temporary-probe.org', { generation: 999 });
+        await hs.settleCanonicalAttempt(probeId, 'CONFIRMED_SUCCESS', 'SUCCESS_CONFIRMED');
+
+        const normTarget = hs.normalizeTargetIdentity('https://temporary-probe.org');
+        assert.strictEqual(hs.targets.has(normTarget), true, "Target must exist prior to purge");
+
+        // Purge probe
+        const purgeRes = await hs.purgeAttempt(probeId);
+        assert.strictEqual(purgeRes.purged, true);
+
+        // Verify attempt is removed
+        assert.strictEqual(hs.attempts.some(a => a.attemptId === probeId), false, "Attempt must be completely purged");
+
+        // Verify target entry is removed
+        assert.strictEqual(hs.targets.has(normTarget), false, "Target entry must be completely purged");
+
+        // Verify reload from storage preserves zero residue
+        await hs.load();
+        assert.strictEqual(hs.attempts.some(a => a.attemptId === probeId), false, "Attempt absent after reload");
+        assert.strictEqual(hs.targets.has(normTarget), false, "Target absent after reload");
+
+        // Owner stats unaffected
+        const stats = hs.getLedgerStats('currentGeneration');
+        assert.strictEqual(stats.success, 1);
+        assert.strictEqual(stats.totalStarted, 1);
+    });
+
     console.log("\n===============================================================================");
     console.log(`  RESULTS: ${passCount} / ${passCount + failCount} PASSED (${failCount} FAILED)`);
     console.log("===============================================================================");

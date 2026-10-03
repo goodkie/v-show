@@ -252,15 +252,21 @@ async function runLivePipelineAudit() {
 
         const part2Result = await evalInPopup(`(async () => {
             const hs = getPopupHistoryStore();
+            const gen7StatsPreProbe = hs.getLedgerStats('currentGeneration');
+
             // ISOLATED AUDIT GENERATION (Gen 999) - Strictly prevents polluting owner Gen 7 scope
-            const att = await hs.recordAttempt('https://audit-immutability.com', { 
+            const { attemptId: attId, attempt } = await hs.recordAttempt('https://audit-immutability.com', { 
                 generation: 999, 
                 campaignRunId: 'run_immutability_isolated_probe' 
             });
-            const attId = att.attemptId;
+
+            const recordedGeneration = attempt.generation;
 
             // 1. Initial settlement: CONFIRMED_SUCCESS
             const settle1 = await hs.settleCanonicalAttempt(attId, 'CONFIRMED_SUCCESS', 'SUCCESS_CONFIRMED');
+
+            // Check generation 7 stats DURING settled probe (MUST REMAIN 20 - ZERO CONTAMINATION)
+            const gen7StatsDuringProbe = hs.getLedgerStats('currentGeneration');
 
             // 2. Late TIMEOUT callback attempt -> Must be rejected!
             const settleLateTimeout = await hs.settleCanonicalAttempt(attId, 'TIMEOUT_LOCAL', 'TIMEOUT_AFTER_20S');
@@ -274,38 +280,56 @@ async function runLivePipelineAudit() {
             const finalAttempt = hs.attempts.find(a => a.attemptId === attId);
             const statusVerified = finalAttempt.status;
 
-            // Strict cleanup of probe record: completely purge from attempts array & persist
-            const idx = hs.attempts.findIndex(a => a.attemptId === attId);
-            if (idx !== -1) hs.attempts.splice(idx, 1);
-            await hs.persist();
+            // Strict cleanup of probe record: completely purge attempt, target map entry, and linked metadata
+            const purgeRes = typeof hs.purgeAttempt === 'function' 
+                ? await hs.purgeAttempt(attId)
+                : { purged: false };
 
-            // Re-load to prove clean state
+            // Re-load to prove clean state across cold rehydrate
             await hs.load();
-            const gen7Stats = hs.getLedgerStats('currentGeneration');
+            const gen7StatsPostCleanup = hs.getLedgerStats('currentGeneration');
+
+            const hasAttemptPost = hs.attempts.some(a => a.targetIdentity && a.targetIdentity.includes('audit-immutability.com'));
+            const hasTargetPost = hs.targets.has('https://audit-immutability.com') || hs.targets.has('audit-immutability.com');
 
             return {
+                recordedGeneration,
+                gen7SuccessPre: gen7StatsPreProbe.success,
+                gen7SuccessDuring: gen7StatsDuringProbe.success,
                 settle1Success: settle1.settled,
                 lateTimeoutRejected: !settleLateTimeout.settled && settleLateTimeout.reason === 'TERMINAL_ALREADY_SETTLED',
                 staleUnknownRejected: !settleStaleUnknown.settled && settleStaleUnknown.reason === 'TERMINAL_ALREADY_SETTLED',
                 duplicateIdempotent: settleDuplicate.settled && settleDuplicate.idempotent,
                 finalStatus: statusVerified,
-                cleanGen7Success: gen7Stats.success,
-                cleanGen7Total: gen7Stats.total
+                cleanGen7Success: gen7StatsPostCleanup.success,
+                cleanGen7Total: gen7StatsPostCleanup.total,
+                hasAttemptPost,
+                hasTargetPost
             };
         })()`);
 
+        recordLog(`[IMMUTABILITY_CHECK] Probe Recorded Generation: ${part2Result.recordedGeneration} (Expected: 999)`);
+        recordLog(`[IMMUTABILITY_CHECK] Gen 7 Success Pre-Probe: ${part2Result.gen7SuccessPre} (Strictly 20)`);
+        recordLog(`[IMMUTABILITY_CHECK] Gen 7 Success During Probe: ${part2Result.gen7SuccessDuring} (Strictly 20 - ZERO CONTAMINATION)`);
         recordLog(`[IMMUTABILITY_CHECK] Initial Settlement: ${part2Result.settle1Success ? 'SETTLED' : 'FAIL'}`);
         recordLog(`[IMMUTABILITY_CHECK] Late TIMEOUT Settle Rejected: ${part2Result.lateTimeoutRejected ? 'YES (TERMINAL_ALREADY_SETTLED)' : 'NO'}`);
         recordLog(`[IMMUTABILITY_CHECK] Stale UNKNOWN Settle Rejected: ${part2Result.staleUnknownRejected ? 'YES (TERMINAL_ALREADY_SETTLED)' : 'NO'}`);
         recordLog(`[IMMUTABILITY_CHECK] Duplicate Re-Settlement Idempotent: ${part2Result.duplicateIdempotent ? 'YES' : 'NO'}`);
         recordLog(`[IMMUTABILITY_CHECK] Final Stored Status: ${part2Result.finalStatus} (Guaranteed CONFIRMED_SUCCESS)`);
+        recordLog(`[IMMUTABILITY_CHECK] Post-Probe Target Purged: ${!part2Result.hasTargetPost ? 'YES' : 'NO'}`);
+        recordLog(`[IMMUTABILITY_CHECK] Post-Probe Attempt Purged: ${!part2Result.hasAttemptPost ? 'YES' : 'NO'}`);
         recordLog(`[IMMUTABILITY_CHECK] Post-Probe Gen 7 Success: ${part2Result.cleanGen7Success} (Strictly 20), Total: ${part2Result.cleanGen7Total}`);
 
-        const immutabilityPassed = part2Result.lateTimeoutRejected && 
+        const immutabilityPassed = part2Result.recordedGeneration === 999 &&
+                                   part2Result.gen7SuccessPre === 20 &&
+                                   part2Result.gen7SuccessDuring === 20 &&
+                                   part2Result.lateTimeoutRejected && 
                                    part2Result.staleUnknownRejected && 
                                    part2Result.finalStatus === 'CONFIRMED_SUCCESS' &&
+                                   !part2Result.hasAttemptPost &&
+                                   !part2Result.hasTargetPost &&
                                    part2Result.cleanGen7Success === 20;
-        recordLog(`[PART_2_VERIFICATION] ${immutabilityPassed ? 'PASSED (Terminal status immutable; Gen 7 strictly preserved at 20)' : 'FAILED'}`);
+        recordLog(`[PART_2_VERIFICATION] ${immutabilityPassed ? 'PASSED (True Gen 999 isolation; Gen 7 strictly 20 before/during/after; probe & target completely purged)' : 'FAILED'}`);
 
         // =========================================================================
         // PART 3: ACTUAL CONTROL-PLANE LIVE PIPELINE EXECUTION OVER REAL WEB TARGETS
