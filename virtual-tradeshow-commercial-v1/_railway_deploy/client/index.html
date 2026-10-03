@@ -19909,7 +19909,7 @@ class VisualLoopDetector {
   }
 
   // FAST-9 Corner Detector with grid-based bucketing
-  extractFeatures(luminance, width, height) {
+  extractFeatures(luminance, width, height, mode = 'UPRIGHT') {
     const keypoints = [];
     const threshold = 18;
     const circleOffsets = [
@@ -20004,17 +20004,27 @@ class VisualLoopDetector {
       }
     }
 
-    // Extract steered BRIEF descriptor for each keypoint
+    // Extract BRIEF descriptor for each keypoint (supports UPRIGHT or STEERED mode)
     const descriptors = new Uint32Array(keypoints.length);
     for (let i = 0; i < keypoints.length; i++) {
       const kp = keypoints[i];
       let desc = 0;
 
-      // Upright BRIEF: Mobile phone 360 panorama capture is constrained to upright portrait pose.
-      // Unsteered Upright BRIEF (cosA=1, sinA=0) eliminates orientation centroid noise from small 9x9 patches,
-      // dramatically increasing descriptor stability and inlier yield on real physical handheld returns.
-      const cosA = 1.0;
-      const sinA = 0.0;
+      let cosA = 1.0;
+      let sinA = 0.0;
+      if (mode === 'STEERED') {
+        let m10 = 0, m01 = 0;
+        for (let dy = -4; dy <= 4; dy++) {
+          for (let dx = -4; dx <= 4; dx++) {
+            const val = luminance[(kp.y + dy) * width + (kp.x + dx)];
+            m10 += dx * val;
+            m01 += dy * val;
+          }
+        }
+        const angle = Math.atan2(m01, m10);
+        cosA = Math.cos(angle);
+        sinA = Math.sin(angle);
+      }
 
       for (let p = 0; p < BRIEF_PAIRS.length; p++) {
         const pair = BRIEF_PAIRS[p];
@@ -20788,18 +20798,20 @@ class RILiveDiagnosticHelper {
 
   getCameraDimensions() {
     try {
-      if (typeof window !== 'undefined' && window.setupWizard?.guidedCaptureController) {
-        const ctrl = window.setupWizard.guidedCaptureController;
-        if (ctrl.telemetry && ctrl.telemetry.videoWidth > 0) {
-          return { width: ctrl.telemetry.videoWidth, height: ctrl.telemetry.videoHeight };
-        }
-        if (ctrl.videoElement && ctrl.videoElement.videoWidth > 0) {
-          return { width: ctrl.videoElement.videoWidth, height: ctrl.videoElement.videoHeight };
+      if (typeof window !== 'undefined') {
+        const ctrl = window.setupWizard?.guidedCaptureController || window.guidedCaptureController;
+        if (ctrl) {
+          if (ctrl.telemetry && ctrl.telemetry.videoWidth > 0 && ctrl.telemetry.videoHeight > 0) {
+            return { width: ctrl.telemetry.videoWidth, height: ctrl.telemetry.videoHeight };
+          }
+          if (ctrl.videoElement && ctrl.videoElement.videoWidth > 0 && ctrl.videoElement.videoHeight > 0) {
+            return { width: ctrl.videoElement.videoWidth, height: ctrl.videoElement.videoHeight };
+          }
         }
       }
       if (typeof document !== 'undefined') {
         const v = document.getElementById('guidedCaptureVideo');
-        if (v && v.videoWidth > 0) return { width: v.videoWidth, height: v.videoHeight };
+        if (v && v.videoWidth > 0 && v.videoHeight > 0) return { width: v.videoWidth, height: v.videoHeight };
       }
     } catch (e) {}
     return { width: 0, height: 0 };
@@ -21334,6 +21346,21 @@ class GuidedCaptureController {
     this.sensorSourceLocked = false;
     this.visualClosureSearchEnabled = false;
     this.failedAttemptSnapshot = null;
+    this._referenceFrames = {};
+    if (typeof window !== 'undefined') {
+      window.__RI_CLOSURE_PAIR__ = null;
+      window.__RI_START_REF_DATAURL__ = null;
+      window.__RI_START_REF_CAND_ID__ = null;
+      window.__RI_START_REF_ANGLE__ = null;
+      window.__RI_REF_DATAURLS__ = null;
+      window.__RI_LATEST_CLOSURE_CAND_DATAURL__ = null;
+      window.__RI_LATEST_CLOSURE_CAND_ID__ = null;
+      window.__RI_LATEST_CLOSURE_ANGLE__ = null;
+      window.__RI_LATEST_CLOSURE_EVAL_RES__ = null;
+      window.__RI_EVALUATED_REF_DATAURL__ = null;
+      window.__RI_EVALUATED_REF_ID__ = null;
+      window.__RI_EVALUATED_REF_ANGLE__ = null;
+    }
 
     // 9. Reset states & errors
     this.state = 'IDLE';
