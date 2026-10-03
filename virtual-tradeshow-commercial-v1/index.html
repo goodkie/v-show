@@ -20801,12 +20801,20 @@ class RILiveDiagnosticHelper {
       if (typeof window !== 'undefined') {
         const ctrl = window.setupWizard?.guidedCaptureController || window.guidedCaptureController;
         if (ctrl) {
-          if (ctrl.telemetry && ctrl.telemetry.videoWidth > 0 && ctrl.telemetry.videoHeight > 0) {
-            return { width: ctrl.telemetry.videoWidth, height: ctrl.telemetry.videoHeight };
+          // 1. Live videoElement priority
+          if (ctrl.videoElement) {
+            if (ctrl.videoElement.videoWidth > 0 && ctrl.videoElement.videoHeight > 0) {
+              return { width: ctrl.videoElement.videoWidth, height: ctrl.videoElement.videoHeight };
+            }
+            return { width: 0, height: 0 };
           }
-          if (ctrl.videoElement && ctrl.videoElement.videoWidth > 0 && ctrl.videoElement.videoHeight > 0) {
-            return { width: ctrl.videoElement.videoWidth, height: ctrl.videoElement.videoHeight };
+          // 2. Active DOM video fallback
+          if (typeof document !== 'undefined') {
+            const v = document.getElementById('guidedCaptureVideo');
+            if (v && v.videoWidth > 0 && v.videoHeight > 0) return { width: v.videoWidth, height: v.videoHeight };
           }
+          // Controller has no active live video element -> unavailable (do not return stale telemetry)
+          return { width: 0, height: 0 };
         }
       }
       if (typeof document !== 'undefined') {
@@ -22149,10 +22157,11 @@ class GuidedCaptureController {
     const angleDelta = Math.abs(this.accumulatedRotation - (this.lastCandidateAngle !== null ? this.lastCandidateAngle : -999));
     const timeDelta = now - (this.lastCandidateTimestamp || 0);
     const inClosureZone = (this.accumulatedRotation >= 280.0 || this.state === 'SEARCHING_FOR_START_OVERLAP' || this.state === 'CLOSURE_CANDIDATE');
-    const shouldSample = (this.candidateFrames.length === 0 && this.videoElement.videoWidth > 0) ||
-                         (angleDelta >= 8.0) ||
-                         (timeDelta >= 350 && angleDelta >= 4.0) ||
-                         (inClosureZone && timeDelta >= 180);
+    const shouldSample = (this.levelStatus !== 'TILTED') &&
+                         ((this.candidateFrames.length === 0 && this.videoElement.videoWidth > 0) ||
+                          (angleDelta >= 8.0) ||
+                          (timeDelta >= 350 && angleDelta >= 4.0) ||
+                          (inClosureZone && timeDelta >= 180));
 
     const activeStates = ['CAPTURING', 'APPROACHING_CLOSURE', 'SEARCHING_FOR_START_OVERLAP', 'CLOSURE_CANDIDATE'];
     if (shouldSample && activeStates.includes(this.state)) {
@@ -22162,6 +22171,8 @@ class GuidedCaptureController {
 
   extractCandidateFrame(currentAngle) {
     if (!this.videoElement || !this.fullCaptureCanvas) return null;
+    // Physical Levelness Gate: strictly suppress candidate extraction & closure matching when phone is tilted
+    if (this.levelStatus === 'TILTED') return null;
     const vw = this.videoElement.videoWidth || 1920;
     const vh = this.videoElement.videoHeight || 1080;
     if (vw === 0 || vh === 0) return null;

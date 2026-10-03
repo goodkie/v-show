@@ -214,37 +214,35 @@ ctrl2.videoElement = mockVideo;
 sandbox.window.guidedCaptureController = ctrl2;
 const riHelper2 = ctrl2.riDiagnosticHelper;
 
-// 2a: Zero / not-ready state -> accurately reports unavailable { width: 0, height: 0 }, never fabricates
+// 2a: Not-ready state with STALE positive telemetry -> must accurately report unavailable { width: 0, height: 0 }, never return stale telemetry
 mockVideo.videoWidth = 0;
 mockVideo.videoHeight = 0;
-ctrl2.telemetry.videoWidth = 0;
-ctrl2.telemetry.videoHeight = 0;
+ctrl2.telemetry.videoWidth = 1920; // Stale positive telemetry from prior session
+ctrl2.telemetry.videoHeight = 1080;
 const dimsZero = riHelper2.getCameraDimensions();
-assert.strictEqual(dimsZero.width, 0, 'Zero width must report 0 (unavailable)');
-assert.strictEqual(dimsZero.height, 0, 'Zero height must report 0 (unavailable)');
+assert.strictEqual(dimsZero.width, 0, 'Zero videoWidth must report 0 (stale telemetry must NOT be returned)');
+assert.strictEqual(dimsZero.height, 0, 'Zero videoHeight must report 0 (stale telemetry must NOT be returned)');
 const dumpZero = riHelper2.getFullDiagnosticDump();
 assert.strictEqual(dumpZero.environment.cameraDimensions.width, 0);
 assert.strictEqual(dumpZero.environment.cameraDimensions.height, 0);
-console.log('  - 2a: Not-ready state accurately reports unavailable (0x0, no fabricated dimensions).');
+console.log('  - 2a: Not-ready state accurately reports unavailable (0x0, stale positive telemetry suppressed).');
 
-// 2b: Live-like state (1280x720)
+// 2b: Live-like state (1280x720) overriding stale telemetry
 mockVideo.videoWidth = 1280;
 mockVideo.videoHeight = 720;
-ctrl2.telemetry.videoWidth = 1280;
-ctrl2.telemetry.videoHeight = 720;
+ctrl2.telemetry.videoWidth = 1920; // Stale telemetry
+ctrl2.telemetry.videoHeight = 1080;
 const dimsLive = riHelper2.getCameraDimensions();
-assert.strictEqual(dimsLive.width, 1280);
-assert.strictEqual(dimsLive.height, 720);
+assert.strictEqual(dimsLive.width, 1280, 'Live video width (1280) must override stale telemetry');
+assert.strictEqual(dimsLive.height, 720, 'Live video height (720) must override stale telemetry');
 const dumpLive = riHelper2.getFullDiagnosticDump();
 assert.strictEqual(dumpLive.environment.cameraDimensions.width, 1280);
 assert.strictEqual(dumpLive.environment.cameraDimensions.height, 720);
-console.log('  - 2b: Live dimensions dynamically resolved (1280x720) in getCameraDimensions() and diagnostic dump.');
+console.log('  - 2b: Live video dimensions dynamically resolved (1280x720) overriding stale telemetry.');
 
 // 2c: Changed dimensions (portrait orientation stream 1080x1920)
 mockVideo.videoWidth = 1080;
 mockVideo.videoHeight = 1920;
-ctrl2.telemetry.videoWidth = 1080;
-ctrl2.telemetry.videoHeight = 1920;
 const dimsChanged = riHelper2.getCameraDimensions();
 assert.strictEqual(dimsChanged.width, 1080);
 assert.strictEqual(dimsChanged.height, 1920);
@@ -253,15 +251,15 @@ assert.strictEqual(dumpChanged.environment.cameraDimensions.width, 1080);
 assert.strictEqual(dumpChanged.environment.cameraDimensions.height, 1920);
 console.log('  - 2c: Stream dimension update dynamically resolved (1080x1920) in diagnostic dump.');
 
-// 2d: Detached/destroyed controller
+// 2d: Detached/destroyed controller with stale telemetry -> must return 0x0
 ctrl2.videoElement = null;
-ctrl2.telemetry.videoWidth = 0;
-ctrl2.telemetry.videoHeight = 0;
+ctrl2.telemetry.videoWidth = 1280;
+ctrl2.telemetry.videoHeight = 720;
 const dimsNull = riHelper2.getCameraDimensions();
-assert.strictEqual(dimsNull.width, 0);
-assert.strictEqual(dimsNull.height, 0);
-console.log('  - 2d: Detached video element cleanly resolves to unavailable (0x0).');
-console.log('  [PASS] Test 2: Production camera dimension resolver and dump verified across all states.');
+assert.strictEqual(dimsNull.width, 0, 'Detached controller must report 0 width');
+assert.strictEqual(dimsNull.height, 0, 'Detached controller must report 0 height');
+console.log('  - 2d: Detached video element cleanly resolves to unavailable (0x0, no stale telemetry leak).');
+console.log('  [PASS] Test 2: Production camera dimension resolver and dump verified across all states with stale telemetry immunity.');
 
 // Test 3: Terminal state CAPTURE_NEEDS_RETRY runtime transition
 console.log('\nTest 3: Terminal state CAPTURE_NEEDS_RETRY runtime transition');
@@ -601,29 +599,43 @@ console.log('── PART 6: PRODUCTION CONTROLLER UNIT & STATE INTEGRATION TESTS
 // Subtest 13A: Roll, Pitch, and Landscape Levelness Gate Runtime Tests
 console.log('Test 13A: Roll, Pitch, and Landscape Levelness Gate Runtime Tests');
 const ctrlTilt = new GuidedCaptureController();
+ctrlTilt.fullCaptureCanvas = createMockCanvas(1920, 1080);
+ctrlTilt.fullCaptureCtx = ctrlTilt.fullCaptureCanvas.getContext('2d');
+ctrlTilt.offscreenCanvas = createMockCanvas(320, 240);
+ctrlTilt.offscreenCtx = ctrlTilt.offscreenCanvas.getContext('2d');
+ctrlTilt.videoElement = mockVideo;
+mockVideo._currentBuffer = cand01Decoded.data;
+ctrlTilt.offscreenCanvas._setPixels(lum320Cand01);
 ctrlTilt.state = 'CAPTURING';
 
 // 1. Normal portrait level pose: beta ~ 90°, gamma ~ 0°
 ctrlTilt.handleOrientation({ alpha: 0, beta: 88.0, gamma: 2.0 });
 assert.strictEqual(ctrlTilt.levelStatus, 'LEVEL', 'Phone within pitch ±28° and roll ±25° must be LEVEL');
+const candLevel1 = ctrlTilt.extractCandidateFrame(0.0);
+assert.ok(candLevel1 !== null, 'extractCandidateFrame must succeed when LEVEL');
 
 // 2. Excessive roll tilt: gamma = 35° (> 25°)
 ctrlTilt.handleOrientation({ alpha: 0, beta: 88.0, gamma: 35.0 });
 assert.strictEqual(ctrlTilt.levelStatus, 'TILTED', 'Roll tilt > 25° must set levelStatus to TILTED');
 assert.strictEqual(ctrlTilt.guidanceMessage, 'Keep your phone level.', 'Guidance message must warn user to level phone');
+assert.strictEqual(ctrlTilt.extractCandidateFrame(10.0), null, 'extractCandidateFrame must return null when roll TILTED');
 
 // 3. Excessive pitch tilt: beta = 55° (|55 - 90| = 35° > 28°)
 ctrlTilt.handleOrientation({ alpha: 0, beta: 55.0, gamma: 2.0 });
 assert.strictEqual(ctrlTilt.levelStatus, 'TILTED', 'Pitch deviation > 28° must set levelStatus to TILTED');
+assert.strictEqual(ctrlTilt.extractCandidateFrame(20.0), null, 'extractCandidateFrame must return null when pitch TILTED');
 
 // 4. Landscape rotation: gamma = 85° (phone rotated to side)
 ctrlTilt.handleOrientation({ alpha: 0, beta: 88.0, gamma: 85.0 });
 assert.strictEqual(ctrlTilt.levelStatus, 'TILTED', 'Landscape rotation must be rejected by level gate');
+assert.strictEqual(ctrlTilt.extractCandidateFrame(30.0), null, 'extractCandidateFrame must return null when landscape TILTED');
 
 // 5. Recovery back to upright level pose: beta = 90°, gamma = 0°
 ctrlTilt.handleOrientation({ alpha: 0, beta: 90.0, gamma: 1.0 });
 assert.strictEqual(ctrlTilt.levelStatus, 'LEVEL', 'Recovery must restore LEVEL status');
-console.log('  [PASS] Test 13A: Production levelness gate (|gamma|<=25°, |beta-90|<=28°) correctly rejects roll, pitch tilt, and landscape holds.');
+const candRecovered = ctrlTilt.extractCandidateFrame(30.0);
+assert.ok(candRecovered !== null, 'extractCandidateFrame must succeed after recovery to LEVEL');
+console.log('  [PASS] Test 13A: Production levelness gate (|gamma|<=25°, |beta-90|<=28°) correctly rejects roll, pitch tilt, and landscape holds, and strictly blocks candidate extraction.');
 
 // Subtest 13B: Sweep 360° with non-matching closure frame -> Visual gate blocks completion
 console.log('\nTest 13B: Sweep 360° with non-matching closure frame (Production Controller Unit Test)');
