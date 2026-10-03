@@ -22,8 +22,11 @@
  * 17. completed reconciliation: started = success + failure + unknown + timeout + skipped + paused.
  * 18. five owner false-negative fixtures exercise delayed observer.
  * 19. khaskarate submitEvent=false cannot be upgraded merely by timeout.
- * 20. old valid HistoryStore attempts survive migration.
  * 21. legacy attempts with no campaignRunId + 20 CONFIRMED_SUCCESS => upgrade => History authoritative Succeeded remains 20.
+ * 22. persisted xpider_history_generation=7 restores before migration, keeping Succeeded=20 in generation 7.
+ * 23. durable & idempotent migration across cold instances.
+ * 24. partially-migrated currentRun scope unions unassigned current-gen attempts (no undercounting).
+ * 25. terminal immutability guards against late timeouts and stale callbacks.
  */
 
 const assert = require('assert');
@@ -683,6 +686,175 @@ async function runAllTests() {
         const gsheetsCsv = hs.exportGoogleSheetsCsv({ exportScope: 'currentGeneration' });
         const gsheetsSuccessMatches = (gsheetsCsv.match(/"CONFIRMED_SUCCESS"/g) || []).length;
         assert.strictEqual(gsheetsSuccessMatches, 20, "Google Sheets CSV export must contain all 20 CONFIRMED_SUCCESS records");
+    });
+
+    // -------------------------------------------------------------------------
+    // Test 22: Persisted xpider_history_generation=7 + 20 legacy CONFIRMED_SUCCESS
+    // => load => all 20 assigned generation 7 => currentGeneration success remains 20
+    // -------------------------------------------------------------------------
+    await itAsync("Test 22: persisted xpider_history_generation=7 restores before migration, keeping Succeeded=20 in generation 7", async () => {
+        const legacyAttempts = [];
+        for (let i = 1; i <= 20; i++) {
+            legacyAttempts.push({
+                attemptId: `att_gen7_${i}`,
+                targetIdentity: `https://site-gen7-${i}.com`,
+                status: 'CONFIRMED_SUCCESS',
+                reasonCode: 'SUCCESS_CONFIRMED',
+                // Explicitly no generation or runId
+                createdAt: Date.now() - i * 10000
+            });
+        }
+
+        const storageData = {
+            xpider_history_attempts: legacyAttempts,
+            xpider_history_generation: 7
+        };
+
+        const storage = new MockStorage(storageData);
+        const hs = new HistoryStore(storage);
+        await hs.load();
+
+        assert.strictEqual(hs.currentGeneration, 7, "currentGeneration must be restored to 7");
+        for (const att of hs.attempts) {
+            assert.strictEqual(att.generation, 7, "Attempt generation must be 7");
+            assert.strictEqual(att.generationId, 7, "Attempt generationId must be 7");
+        }
+
+        const stats = hs.getLedgerStats('currentGeneration');
+        assert.strictEqual(stats.success, 20, "Authoritative success in generation 7 must be 20");
+    });
+
+    // -------------------------------------------------------------------------
+    // Test 23: Durable & idempotent migration across cold instances
+    // -------------------------------------------------------------------------
+    await itAsync("Test 23: durable & idempotent migration across cold instances", async () => {
+        const rawAttempts = [
+            { attemptId: 'att_mig_1', targetIdentity: 'https://m1.com', status: 'CONFIRMED_SUCCESS', createdAt: Date.now() - 20000 },
+            { attemptId: 'att_mig_2', targetIdentity: 'https://m2.com', status: 'FAILURE', createdAt: Date.now() - 10000 }
+        ];
+        const sharedStorage = new MockStorage({
+            xpider_history_attempts: rawAttempts,
+            xpider_history_generation: 3,
+            xpider_active_campaign_run_id: 'run_mig_durable_01'
+        });
+
+        // First instance loads and migrates
+        const hs1 = new HistoryStore(sharedStorage);
+        await hs1.load();
+
+        assert.strictEqual(hs1.attempts[0].generation, 3);
+        assert.strictEqual(hs1.attempts[0].campaignRunId, 'run_mig_durable_01');
+
+        // Verify storage received the persisted updates durably
+        const storedAttempts = sharedStorage.store.xpider_history_attempts;
+        assert.strictEqual(storedAttempts[0].generation, 3, "Migrated generation must be written to storage");
+        assert.strictEqual(storedAttempts[0].campaignRunId, 'run_mig_durable_01', "Migrated runId must be written to storage");
+
+        // Second independent instance (simulating worker restart) loads without re-mutating
+        const hs2 = new HistoryStore(sharedStorage);
+        await hs2.load();
+
+        assert.strictEqual(hs2.currentGeneration, 3);
+        assert.strictEqual(hs2.attempts[0].generation, 3);
+        assert.strictEqual(hs2.attempts[0].campaignRunId, 'run_mig_durable_01');
+        assert.strictEqual(hs2.getLedgerStats('currentGeneration').success, 1);
+    });
+
+    // -------------------------------------------------------------------------
+    // Test 24: Partially-migrated currentRun scope unions unassigned attempts
+    // (1 new runId attempt + 20 legacy unassigned attempts => currentRun success is 21)
+    // -------------------------------------------------------------------------
+    await itAsync("Test 24: partially-migrated currentRun scope unions unassigned current-gen attempts (no undercounting)", async () => {
+        const attempts = [];
+        // 20 legacy attempts without campaignRunId in generation 1
+        for (let i = 1; i <= 20; i++) {
+            attempts.push({
+                attemptId: `att_union_${i}`,
+                targetIdentity: `https://site-union-${i}.com`,
+                status: 'CONFIRMED_SUCCESS',
+                reasonCode: 'SUCCESS_CONFIRMED',
+                generation: 1,
+                generationId: 1,
+                createdAt: Date.now() - (30 - i) * 1000
+            });
+        }
+        // 1 newly added attempt with active runId
+        const activeRunId = 'run_union_active_new';
+        attempts.push({
+            attemptId: 'att_union_new_21',
+            targetIdentity: 'https://site-union-21.com',
+            status: 'CONFIRMED_SUCCESS',
+            reasonCode: 'SUCCESS_CONFIRMED',
+            generation: 1,
+            generationId: 1,
+            campaignRunId: activeRunId,
+            createdAt: Date.now()
+        });
+
+        const storage = new MockStorage({
+            xpider_history_attempts: attempts,
+            xpider_history_generation: 1,
+            xpider_active_campaign_run_id: activeRunId
+        });
+
+        const hs = new HistoryStore(storage);
+        // Load without backfill to simulate raw partial migration state
+        hs.currentGeneration = 1;
+        hs.activeCampaignRunId = activeRunId;
+        hs.attempts = attempts;
+
+        // currentRun must union active runId + eligible unassigned current-gen attempts => 21, NOT 1
+        const runStats = hs.getLedgerStats('currentRun', activeRunId);
+        assert.strictEqual(runStats.success, 21, "currentRun scope must not drop unassigned current-generation attempts (expected 21, got " + runStats.success + ")");
+    });
+
+    // -------------------------------------------------------------------------
+    // Test 25: Terminal immutability: terminal status cannot be overwritten
+    // by late timeouts or stale callbacks; idempotent re-settlement preserved
+    // -------------------------------------------------------------------------
+    await itAsync("Test 25: terminal immutability guards against late timeouts and stale callbacks", async () => {
+        const storage = new MockStorage();
+        const hs = new HistoryStore(storage);
+        await hs.load();
+
+        const att = await hs.recordAttempt('https://immutable-test.com', { campaignRunId: 'run_immut_01' });
+        const attId = att.attemptId;
+
+        // 1. Settle as CONFIRMED_SUCCESS
+        const res1 = await hs.settleCanonicalAttempt(attId, 'CONFIRMED_SUCCESS', 'SUCCESS_CONFIRMED', {
+            confirmationStrength: 'STRONG_POSITIVE'
+        });
+        assert.strictEqual(res1.settled, true);
+        assert.strictEqual(hs.attempts.find(a => a.attemptId === attId).status, 'CONFIRMED_SUCCESS');
+
+        // 2. Late TIMEOUT_LOCAL callback arrives -> must be REJECTED!
+        const resLateTimeout = await hs.settleCanonicalAttempt(attId, 'TIMEOUT_LOCAL', 'TIMEOUT_AFTER_20S');
+        assert.strictEqual(resLateTimeout.settled, false, "Late timeout cannot settle an already terminal attempt");
+        assert.strictEqual(resLateTimeout.reason, 'TERMINAL_ALREADY_SETTLED');
+        assert.strictEqual(hs.attempts.find(a => a.attemptId === attId).status, 'CONFIRMED_SUCCESS', "Status must remain CONFIRMED_SUCCESS");
+
+        // 3. Stale DELIVERY_UNKNOWN callback arrives -> must be REJECTED!
+        const resStaleUnknown = await hs.settleCanonicalAttempt(attId, 'DELIVERY_UNKNOWN', 'NO_CONFIRMATION_FOUND');
+        assert.strictEqual(resStaleUnknown.settled, false, "Stale unknown callback cannot settle an already terminal attempt");
+        assert.strictEqual(hs.attempts.find(a => a.attemptId === attId).status, 'CONFIRMED_SUCCESS', "Status must remain CONFIRMED_SUCCESS");
+
+        // 4. Duplicate same-status settlement -> idempotent pass-through without modifying evidence
+        const resDuplicateSuccess = await hs.settleCanonicalAttempt(attId, 'CONFIRMED_SUCCESS', 'SUCCESS_CONFIRMED');
+        assert.strictEqual(resDuplicateSuccess.settled, true);
+        assert.strictEqual(resDuplicateSuccess.idempotent, true);
+
+        // 5. Explicit operator visual reconciliation -> allowed and audited
+        const att2 = await hs.recordAttempt('https://uncertain-partner.com', { campaignRunId: 'run_immut_01' });
+        await hs.settleCanonicalAttempt(att2.attemptId, 'DELIVERY_UNKNOWN', 'UNKNOWN_RETAINED');
+        assert.strictEqual(hs.attempts.find(a => a.attemptId === att2.attemptId).status, 'DELIVERY_UNKNOWN');
+
+        const reconcileRes = await hs.reconcileAttemptVisual(att2.attemptId, 'CONFIRMED_SUCCESS', {
+            reason: 'OWNER_VISUALLY_VERIFIED_RECEIPT'
+        });
+        assert.strictEqual(reconcileRes.success, true);
+        assert.strictEqual(reconcileRes.priorStatus, 'DELIVERY_UNKNOWN');
+        assert.strictEqual(reconcileRes.status, 'CONFIRMED_SUCCESS');
+        assert.strictEqual(hs.attempts.find(a => a.attemptId === att2.attemptId).status, 'CONFIRMED_SUCCESS');
     });
 
     console.log("\n===============================================================================");

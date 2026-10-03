@@ -141,15 +141,32 @@
                 if (Array.isArray(data.xpider_history_resets)) this.resetEvents = data.xpider_history_resets;
                 if (data.xpider_active_campaign_run_id) this.activeCampaignRunId = data.xpider_active_campaign_run_id;
 
-                // [R6.9A Migration] Attribute attempts without generation/runId to currentGeneration
+                // [Point 1: Restore persisted generation BEFORE migration/backfill]
+                if (Number.isInteger(data.xpider_history_generation) && data.xpider_history_generation > 0) {
+                    this.currentGeneration = data.xpider_history_generation;
+                }
+
+                // [Point 2: Attribute attempts without generation/runId and persist durably]
+                let migrationChangedCount = 0;
                 for (const att of this.attempts) {
                     if (att.generation === undefined && att.generationId === undefined) {
                         att.generation = this.currentGeneration || 1;
                         att.generationId = this.currentGeneration || 1;
+                        migrationChangedCount++;
                     }
                 }
                 if (this.activeCampaignRunId) {
-                    this.backfillLegacyRunId(this.activeCampaignRunId);
+                    const backfilled = this.backfillLegacyRunId(this.activeCampaignRunId);
+                    migrationChangedCount += backfilled;
+                }
+
+                if (migrationChangedCount > 0 && !this._isPersistingMigration) {
+                    this._isPersistingMigration = true;
+                    try {
+                        await this.persist();
+                    } finally {
+                        this._isPersistingMigration = false;
+                    }
                 }
             }
         }
@@ -522,6 +539,19 @@
             return 'FAILURE';
         }
 
+        isTerminalStatus(status) {
+            if (!status) return false;
+            const s = String(status).toUpperCase();
+            return [
+                'CONFIRMED_SUCCESS', 'SUCCESS', 'CONFIRMED_SUCCESS_COMPOSITE',
+                'DELIVERY_UNKNOWN', 'UNKNOWN',
+                'TIMEOUT_LOCAL', 'TIMEOUT_GLOBAL', 'TIMEOUT',
+                'FAILURE', 'FAILED',
+                'SKIPPED', 'HISTORY_SKIPPED',
+                'PAUSED_UNKNOWN', 'INTERRUPTED', 'PAUSED'
+            ].includes(s);
+        }
+
         /**
          * R6.9A Section 4: Single Atomic Settlement Path
          * @param {string} attemptId - ID of attempt to settle
@@ -541,6 +571,23 @@
             }
 
             const canonicalStatus = this.normalizeTerminalStatus(terminalStatus);
+
+            // [Point 4: Terminal Immutability Guard]
+            if (this.isTerminalStatus(attempt.status)) {
+                if (attempt.status === canonicalStatus) {
+                    // Idempotent re-settlement: return existing record without modifying counters/timestamps
+                    return { settled: true, attemptId, status: attempt.status, attempt, idempotent: true };
+                }
+                console.warn(`[SETTLEMENT_REJECTED] attemptId=${attemptId} priorStatus=${attempt.status} rejectedStatus=${canonicalStatus} reason=TERMINAL_ALREADY_SETTLED`);
+                return {
+                    settled: false,
+                    reason: 'TERMINAL_ALREADY_SETTLED',
+                    attemptId,
+                    priorStatus: attempt.status,
+                    rejectedStatus: canonicalStatus,
+                    attempt
+                };
+            }
             const now = Date.now();
             const reasonCode = reason || (canonicalStatus === 'CONFIRMED_SUCCESS' ? 'SUCCESS_CONFIRMED' : canonicalStatus);
 
@@ -677,11 +724,20 @@
             let scopedAttempts = this.attempts;
 
             if (scope === 'currentRun') {
+                const unassignedCurrentGen = this.attempts.filter(a => (!a.campaignRunId) && (a.generation === this.currentGeneration || a.generationId === this.currentGeneration || (!a.generation && !a.generationId)));
+                console.log(`[LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=${unassignedCurrentGen.length}`);
+
                 if (targetRunId) {
-                    scopedAttempts = this.attempts.filter(a => a.campaignRunId === targetRunId);
-                }
-                // Migration fallback: if no attempts match currentRun yet, fall back to currentGeneration
-                if (scopedAttempts.length === 0) {
+                    if (unassignedCurrentGen.length > 0) {
+                        // Union matching runId + eligible unassigned current-generation legacy attempts
+                        scopedAttempts = this.attempts.filter(a => 
+                            a.campaignRunId === targetRunId || 
+                            ((!a.campaignRunId) && (a.generation === this.currentGeneration || a.generationId === this.currentGeneration || (!a.generation && !a.generationId)))
+                        );
+                    } else {
+                        scopedAttempts = this.attempts.filter(a => a.campaignRunId === targetRunId);
+                    }
+                } else {
                     scopedAttempts = this.attempts.filter(a => (a.generation === this.currentGeneration || a.generationId === this.currentGeneration || (!a.generation && !a.generationId)));
                 }
             } else if (scope === 'allHistory') {
