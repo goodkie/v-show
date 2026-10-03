@@ -1,8 +1,23 @@
 /**
  * run_real_campaign_pipeline_audit.js
- * R6.9A Acceptance Suite:
- * Part A: Live Pipeline Execution over Real Web Targets (Non-synthetic, Extension-originated logs)
- * Part B: Browser Integration, Durable Migration, and Terminal Immutability Verification
+ * R6.9A Acceptance Suite: Actual Control-Plane Real Campaign Pipeline Audit
+ * 
+ * Strict Auditor Directives:
+ * 1. Launch unpacked extension in Chromium (Edge).
+ * 2. Connect to actual popup page and background service worker via CDP.
+ * 3. Part 1: Verify Generation 7 restore, Succeeded=20 preservation, and durable persistence.
+ * 4. Part 2: Verify terminal immutability (late timeout/unknown rejected, idempotent re-settle).
+ * 5. Part 3: Execute ACTUAL extension control plane:
+ *    - Populate popup inputs and queue with real web targets:
+ *      Target 1: https://news.ycombinator.com/login (Real Live Non-Inquiry Login Page)
+ *      Target 2: https://panzagear.com (Real Live Site / No Inquiry Body)
+ *    - Click actual popup #start-btn via DOM click to trigger startCampaign() and START_CAMPAIGN IPC.
+ *    - Background orchestrator creates tabs and injects content scripts.
+ *    - Content script runs discovery -> LONG_TEXT_GATE -> FORM_INTENT -> FORM_GATE.
+ *    - Background orchestrator canonicalizes NON_INQUIRY_* to SKIPPED with failureClass=null.
+ *    - Harness role is strictly READ-ONLY: listen, collect, and inspect final ledger state.
+ *    - Harness NEVER calls HistoryStore.recordAttempt() or settleCanonicalAttempt().
+ *    - Succeeded: 20 from generation 7 remains strictly preserved!
  */
 
 const fs = require('fs');
@@ -20,7 +35,7 @@ async function runLivePipelineAudit() {
     }
 
     recordLog(`================================================================================`);
-    recordLog(`[R6.9A REAL BROWSER LIVE PIPELINE & DURABLE MIGRATION ACCEPTANCE AUDIT]`);
+    recordLog(`[R6.9A ACTUAL CONTROL-PLANE REAL CAMPAIGN PIPELINE ACCEPTANCE AUDIT]`);
     recordLog(`================================================================================`);
     recordLog(`Host OS: Windows (${os.platform()} ${os.release()})`);
 
@@ -74,14 +89,23 @@ async function runLivePipelineAudit() {
         swWs.onmessage = (evt) => {
             const data = JSON.parse(evt.data);
             if (data.method === 'Runtime.consoleAPICalled') {
-                const args = data.params.args.map(a => a.value !== undefined ? a.value : a.description).join(' ');
-                if (args.includes('[TARGET]') || args.includes('[CONTROL_PLANE]') || args.includes('[STAGE]') ||
-                    args.includes('[LONG_TEXT_GATE]') || args.includes('[FORM_INTENT]') || args.includes('[FORM_CLASSIFY]') ||
-                    args.includes('[LEDGER_STATS]') || args.includes('[LEDGER_MIGRATION]') || args.includes('[SETTLEMENT]') ||
-                    args.includes('[COUNTER_RECONCILE]')) {
-                    recordLog(`[SW_CONSOLE] ${args}`);
-                }
+                const args = data.params.args.map(a => a.value !== undefined ? a.value : (a.description || '')).join(' ');
+                recordLog(`[SW_CONSOLE] ${args}`);
             }
+        };
+
+        // Attach to browser target events to capture campaign tab content script logs
+        browserWs.send(JSON.stringify({ id: 50, method: 'Target.setDiscoverTargets', params: { discover: true } }));
+        browserWs.onmessage = async (evt) => {
+            try {
+                const data = JSON.parse(evt.data);
+                if (data.method === 'Target.targetCreated' && data.params.targetInfo.type === 'page') {
+                    const tInfo = data.params.targetInfo;
+                    if (tInfo.url && (tInfo.url.includes('ycombinator') || tInfo.url.includes('panzagear'))) {
+                        recordLog(`[BROWSER_EVENT] Campaign Tab Created: ${tInfo.url}`);
+                    }
+                }
+            } catch (_) {}
         };
 
         // Create Popup Target
@@ -117,10 +141,8 @@ async function runLivePipelineAudit() {
         popupWs.onmessage = (evt) => {
             const data = JSON.parse(evt.data);
             if (data.method === 'Runtime.consoleAPICalled') {
-                const args = data.params.args.map(a => a.value !== undefined ? a.value : a.description).join(' ');
-                if (args.includes('[LEDGER_STATS]') || args.includes('[LEDGER_MIGRATION]') || args.includes('[POPUP]')) {
-                    recordLog(`[POPUP_CONSOLE] ${args}`);
-                }
+                const args = data.params.args.map(a => a.value !== undefined ? a.value : (a.description || '')).join(' ');
+                recordLog(`[POPUP_CONSOLE] ${args}`);
             }
         };
 
@@ -266,55 +288,161 @@ async function runLivePipelineAudit() {
         recordLog(`[PART_2_VERIFICATION] ${immutabilityPassed ? 'PASSED (Terminal status cannot be corrupted by late callbacks)' : 'FAILED'}`);
 
         // =========================================================================
-        // PART 3: LIVE PIPELINE EXECUTION OVER REAL WEB TARGETS
+        // PART 3: ACTUAL CONTROL-PLANE LIVE PIPELINE EXECUTION OVER REAL WEB TARGETS
         // =========================================================================
         recordLog(`\n================================================================================`);
-        recordLog(`[PART 3: LIVE PIPELINE EXECUTION OVER REAL WEB TARGETS (NON-SYNTHETIC)]`);
+        recordLog(`[PART 3: ACTUAL EXTENSION CONTROL-PLANE PIPELINE OVER REAL WEB TARGETS]`);
         recordLog(`================================================================================`);
-        recordLog(`[LIVE_TARGET_1] https://news.ycombinator.com/login (Real Live Non-Inquiry Page)`);
-        recordLog(`[LIVE_TARGET_2] https://panzagear.com (Real Live Site / No Inquiry Body)`);
+        recordLog(`Control Plane Trigger: Real Popup Start Button (#start-btn) Click`);
+        recordLog(`Target 1: https://news.ycombinator.com/login (Real Live Non-Inquiry Login Page)`);
+        recordLog(`Target 2: https://panzagear.com (Real Live Target)`);
+        recordLog(`Harness Mode: STRICT READ-ONLY OBSERVER (No manual recordAttempt / settleCanonicalAttempt)`);
 
-        const part3Result = await evalInPopup(`(async () => {
-            const hs = getPopupHistoryStore();
-            const runId = 'run_live_real_pipeline_01';
-            hs.activeCampaignRunId = runId;
+        // Trigger campaign via actual popup DOM interaction
+        const startTriggerResult = await evalInPopup(`(async () => {
+            // 1. Switch to Campaign Tab
+            const campTabBtn = document.querySelector('[data-tab="campaign"]');
+            if (campTabBtn) campTabBtn.click();
 
-            // Target 1: news.ycombinator.com/login (Non-inquiry login form)
-            const att1 = await hs.recordAttempt('https://news.ycombinator.com/login', { campaignRunId: runId });
-            // Simulate classification outcome from live ContactGate execution
-            const t1Res = await hs.settleCanonicalAttempt(att1.attemptId, 'FAILURE', 'NON_INQUIRY_LOGIN_FORM', {
-                hasInquiryBody: false,
-                formIntent: 'LOGIN'
-            }, { campaignRunId: runId, failureClass: 'NON_INQUIRY_FORM' });
+            // 2. Set Template inputs
+            const tplSub = document.getElementById('tpl-subject');
+            if (tplSub) tplSub.value = 'Audit Inquiry Verification';
+            const tplMsg = document.getElementById('tpl-message');
+            if (tplMsg) tplMsg.value = 'Hello, this is an automated audit probe message with sufficient length for form validation testing.';
+            const tplName = document.getElementById('tpl-name');
+            if (tplName) tplName.value = 'Auditor Probe';
+            const tplEmail = document.getElementById('tpl-email');
+            if (tplEmail) tplEmail.value = 'audit-probe@example.org';
 
-            // Target 2: panzagear.com (Store unavailable / no form)
-            const att2 = await hs.recordAttempt('https://panzagear.com', { campaignRunId: runId });
-            const t2Res = await hs.settleCanonicalAttempt(att2.attemptId, 'FAILURE', 'FORM_NOT_FOUND', {
-                formsFound: 0
-            }, { campaignRunId: runId, failureClass: 'FORM_DISCOVERY_FAILED' });
+            // 3. Set speed sliders to Level 9 (fastest safe delay)
+            const dCol = document.getElementById('delay-input-collect'); if (dCol) dCol.value = '9';
+            const dFill = document.getElementById('delay-input-fill'); if (dFill) dFill.value = '9';
+            const dSub = document.getElementById('delay-input-submit'); if (dSub) dSub.value = '9';
 
-            if (typeof window._renderHistoryPanel === 'function') await window._renderHistoryPanel();
-            if (typeof renderLedgerUI === 'function') await renderLedgerUI();
+            // 4. Disable skip-previously-attempted so targets execute
+            const skipEl = document.getElementById('skip-attempted-toggle');
+            if (skipEl) skipEl.checked = false;
 
-            const finalStats = hs.getLedgerStats('currentGeneration');
+            // 5. Populate campaignQueue via manual URL input
+            if (typeof campaignQueue !== 'undefined') {
+                campaignQueue.length = 0;
+            }
+
+            const inputEl = document.getElementById('manual-url-input');
+            if (inputEl && typeof addSingleUrl === 'function') {
+                inputEl.value = 'https://news.ycombinator.com/login';
+                await addSingleUrl();
+                inputEl.value = 'https://panzagear.com';
+                await addSingleUrl();
+            }
+
+            const queueLen = typeof campaignQueue !== 'undefined' ? campaignQueue.length : 0;
+            console.log('[POPUP_CONTROL] Queue populated with ' + queueLen + ' targets. Clicking #start-btn...');
+
+            // 6. Click the actual start button!
+            const startBtn = document.getElementById('start-btn');
+            if (!startBtn) throw new Error('#start-btn not found in popup DOM!');
+            startBtn.click();
+
             return {
-                t1Status: t1Res.attempt.status,
-                t1Reason: t1Res.attempt.reasonCode,
-                t2Status: t2Res.attempt.status,
-                t2Reason: t2Res.attempt.reasonCode,
-                totalAttempts: hs.attempts.length,
-                success: finalStats.success,
-                failure: finalStats.failure
+                clicked: true,
+                queueLength: queueLen,
+                btnText: startBtn.textContent
             };
         })()`);
 
-        recordLog(`[LIVE_RESULT_TARGET_1] status=${part3Result.t1Status} reason=${part3Result.t1Reason}`);
-        recordLog(`[LIVE_RESULT_TARGET_2] status=${part3Result.t2Status} reason=${part3Result.t2Reason}`);
-        recordLog(`[LIVE_OUTCOME_HONESTY] Real live submission success: UNVERIFIED IN BOUNDED PROBE (Compliance protected: no arbitrary spam sent to external sites)`);
-        recordLog(`[LEDGER_TOTALS] Succeeded=${part3Result.success}, Failed=${part3Result.failure}, TotalAttempts=${part3Result.totalAttempts}`);
+        recordLog(`[CONTROL_PLANE_START] Button clicked. Queue length: ${startTriggerResult.queueLength}, Button text: "${startTriggerResult.btnText}"`);
+
+        // Wait for background orchestrator to process both targets and settle them
+        recordLog(`Waiting for background orchestrator and content scripts to execute pipeline...`);
+        const maxWaitMs = 150000;
+        const pollStart = Date.now();
+        let pipelineSettled = false;
+        let pollStatus = null;
+
+        while (!pipelineSettled && (Date.now() - pollStart) < maxWaitMs) {
+            await new Promise(r => setTimeout(r, 2500));
+            pollStatus = await evalInPopup(`(async () => {
+                const hs = getPopupHistoryStore();
+                if (typeof hs.load === 'function') await hs.load();
+
+                const hnAttempt = hs.attempts.find(a => (a.sourceUrl && a.sourceUrl.includes('news.ycombinator.com')) || (a.targetIdentity && a.targetIdentity.includes('news.ycombinator.com')));
+                const panzaAttempt = hs.attempts.find(a => (a.sourceUrl && a.sourceUrl.includes('panzagear.com')) || (a.targetIdentity && a.targetIdentity.includes('panzagear.com')));
+                const isCampaignActive = (typeof window.campaignActive !== 'undefined') ? window.campaignActive : false;
+                const startBtn = document.getElementById('start-btn');
+
+                return {
+                    isCampaignActive,
+                    startBtnText: startBtn ? startBtn.textContent : '',
+                    hnAttempt: hnAttempt ? {
+                        attemptId: hnAttempt.attemptId,
+                        status: hnAttempt.status,
+                        reasonCode: hnAttempt.reasonCode,
+                        failureClass: hnAttempt.failureClass
+                    } : null,
+                    panzaAttempt: panzaAttempt ? {
+                        attemptId: panzaAttempt.attemptId,
+                        status: panzaAttempt.status,
+                        reasonCode: panzaAttempt.reasonCode,
+                        failureClass: panzaAttempt.failureClass
+                    } : null,
+                    totalAttempts: hs.attempts.length
+                };
+            })()`);
+
+            const elapsedSec = Math.round((Date.now() - pollStart) / 1000);
+            recordLog(`[PIPELINE_POLL] ${elapsedSec}s elapsed | Active=${pollStatus.isCampaignActive} | HN=${pollStatus.hnAttempt ? pollStatus.hnAttempt.status : 'PENDING'} | Panza=${pollStatus.panzaAttempt ? pollStatus.panzaAttempt.status : 'PENDING'}`);
+
+            if (pollStatus.hnAttempt && pollStatus.hnAttempt.status !== 'PREPARING' &&
+                pollStatus.panzaAttempt && pollStatus.panzaAttempt.status !== 'PREPARING') {
+                pipelineSettled = true;
+            }
+        }
+
+        // Final Read-Only Verification of HistoryStore Ledger
+        recordLog(`\n--- Final Read-Only Inspection of HistoryStore Ledger ---`);
+        const finalInspection = await evalInPopup(`(async () => {
+            const hs = getPopupHistoryStore();
+            await hs.load();
+
+            const hnRec = hs.attempts.find(a => a.sourceUrl && a.sourceUrl.includes('news.ycombinator.com'));
+            const panzaRec = hs.attempts.find(a => a.sourceUrl && a.sourceUrl.includes('panzagear.com'));
+
+            const statsGen = hs.getLedgerStats('currentGeneration');
+            const statsAll = hs.getLedgerStats('allHistory');
+
+            return {
+                hnRec,
+                panzaRec,
+                statsGen,
+                statsAll,
+                totalAttempts: hs.attempts.length
+            };
+        })()`);
+
+        recordLog(`[READ_ONLY_LEDGER] Target 1 (news.ycombinator.com/login):`);
+        recordLog(`  - Status: ${finalInspection.hnRec?.status} (Expected: SKIPPED)`);
+        recordLog(`  - ReasonCode: ${finalInspection.hnRec?.reasonCode} (Expected: NON_INQUIRY_LOGIN_FORM)`);
+        recordLog(`  - FailureClass: ${finalInspection.hnRec?.failureClass} (Expected: null)`);
+
+        recordLog(`[READ_ONLY_LEDGER] Target 2 (panzagear.com):`);
+        recordLog(`  - Status: ${finalInspection.panzaRec?.status}`);
+        recordLog(`  - ReasonCode: ${finalInspection.panzaRec?.reasonCode}`);
+
+        recordLog(`[READ_ONLY_LEDGER] Authoritative Ledger Counters:`);
+        recordLog(`  - Current Generation Succeeded: ${finalInspection.statsGen.success} (20 legacy + 1 immutability probe strictly preserved)`);
+        recordLog(`  - Current Generation Skipped: ${finalInspection.statsGen.skipped}`);
+        recordLog(`  - Current Generation Failed: ${finalInspection.statsGen.failure}`);
+
+        const hnSkippedCorrect = finalInspection.hnRec?.status === 'SKIPPED' &&
+                                finalInspection.hnRec?.reasonCode === 'NON_INQUIRY_LOGIN_FORM' &&
+                                finalInspection.hnRec?.failureClass === null;
+        const panzaSettled = finalInspection.panzaRec && finalInspection.panzaRec.status !== 'PREPARING';
+        const gen7Preserved = finalInspection.statsGen.success === 21;
 
         recordLog(`\n================================================================================`);
-        recordLog(`[R6.9A ACCEPTANCE AUDIT EXECUTION COMPLETE: 100% PASS]`);
+        recordLog(`[PART 3 VERIFICATION]: ${hnSkippedCorrect && panzaSettled && gen7Preserved ? 'PASSED (Real Control Plane, Non-Inquiry SKIPPED, Succeeded:20 Preserved)' : 'FAILED'}`);
+        recordLog(`[LIVE_OUTCOME_HONESTY] Real live submission success: UNVERIFIED IN BOUNDED PROBE (Compliance protected)`);
         recordLog(`================================================================================`);
 
         fs.writeFileSync(logFilePath, logLines.join('\n'), 'utf8');

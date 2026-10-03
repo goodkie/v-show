@@ -528,13 +528,18 @@
         /**
          * R6.9A: Canonical terminal statuses
          */
-        normalizeTerminalStatus(status) {
+        normalizeTerminalStatus(status, reason) {
             const s = String(status || '').toUpperCase();
+            const r = String(reason || '').toUpperCase();
+            // [R6.9A Acceptance Directive] Non-inquiry forms (login, newsletter, booking, search, etc.)
+            // are NOT delivery failures. They are canonically classified as SKIPPED.
+            if (s.startsWith('NON_INQUIRY') || s.includes('NON_INQUIRY') || r.startsWith('NON_INQUIRY') || r.includes('NON_INQUIRY') || s === 'SKIPPED' || s === 'HISTORY_SKIPPED' || r === 'SKIPPED' || r.includes('SKIPPED')) {
+                return 'SKIPPED';
+            }
             if (s === 'CONFIRMED_SUCCESS' || s === 'SUCCESS' || s === 'CONFIRMED_SUCCESS_COMPOSITE') return 'CONFIRMED_SUCCESS';
             if (s === 'DELIVERY_UNKNOWN' || s === 'UNKNOWN') return 'DELIVERY_UNKNOWN';
             if (s === 'TIMEOUT_LOCAL' || s === 'TIMEOUT') return 'TIMEOUT_LOCAL';
             if (s === 'TIMEOUT_GLOBAL') return 'TIMEOUT_GLOBAL';
-            if (s === 'SKIPPED' || s === 'HISTORY_SKIPPED') return 'SKIPPED';
             if (s === 'PAUSED_UNKNOWN' || s === 'INTERRUPTED' || s === 'PAUSED') return 'PAUSED_UNKNOWN';
             return 'FAILURE';
         }
@@ -570,7 +575,7 @@
                 return { settled: false, reason: 'HISTORY_STALE_DISCOVERY_WRITE_BLOCKED' };
             }
 
-            const canonicalStatus = this.normalizeTerminalStatus(terminalStatus);
+            const canonicalStatus = this.normalizeTerminalStatus(terminalStatus, reason);
 
             // [Point 4: Terminal Immutability Guard]
             if (this.isTerminalStatus(attempt.status)) {

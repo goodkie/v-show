@@ -429,20 +429,59 @@ async function runAllTests() {
     });
 
     // -------------------------------------------------------------------------
-    // Test 14: Non-inquiry -> SKIPPED, not FAILURE
+    // Test 14: Non-inquiry forms (login, newsletter, booking, search) -> SKIPPED, not FAILURE
     // -------------------------------------------------------------------------
-    await itAsync("Test 14: non-inquiry -> SKIPPED, not FAILURE", async () => {
+    await itAsync("Test 14: non-inquiry (login, newsletter, booking, search) -> SKIPPED, not FAILURE, failureClass=null", async () => {
         const storage = new MockStorage();
         const hs = new HistoryStore(storage);
         await hs.load();
-        const runId = 'run_non_inquiry';
+        const runId = 'run_non_inquiry_comprehensive';
 
-        const { attemptId } = await hs.recordAttempt('https://newsletter-only.com', { campaignRunId: runId });
-        await hs.settleCanonicalAttempt(attemptId, 'SKIPPED', 'NON_INQUIRY_FORM_SKIPPED', {}, { campaignRunId: runId });
+        // 1. Login form (e.g. HN login) - even if passed with initial status FAILURE or NON_INQUIRY_LOGIN_FORM
+        const att1 = await hs.recordAttempt('https://news.ycombinator.com/login', { campaignRunId: runId });
+        await hs.settleCanonicalAttempt(att1.attemptId, 'FAILURE', 'NON_INQUIRY_LOGIN_FORM', {}, { campaignRunId: runId });
 
+        // 2. Newsletter-only form
+        const att2 = await hs.recordAttempt('https://newsletter-only.com', { campaignRunId: runId });
+        await hs.settleCanonicalAttempt(att2.attemptId, 'SKIPPED', 'NON_INQUIRY_NEWSLETTER_FORM', {}, { campaignRunId: runId });
+
+        // 3. Booking form
+        const att3 = await hs.recordAttempt('https://booking-clinic.com/book', { campaignRunId: runId });
+        await hs.settleCanonicalAttempt(att3.attemptId, 'FAILURE', 'NON_INQUIRY_BOOKING_FORM', {}, { campaignRunId: runId });
+
+        // 4. Search form
+        const att4 = await hs.recordAttempt('https://search-portal.com', { campaignRunId: runId });
+        await hs.settleCanonicalAttempt(att4.attemptId, 'SKIPPED', 'NON_INQUIRY_SEARCH_FORM', {}, { campaignRunId: runId });
+
+        // Verify all 4 are canonically SKIPPED with failureClass === null
+        const rec1 = hs.attempts.find(a => a.attemptId === att1.attemptId);
+        const rec2 = hs.attempts.find(a => a.attemptId === att2.attemptId);
+        const rec3 = hs.attempts.find(a => a.attemptId === att3.attemptId);
+        const rec4 = hs.attempts.find(a => a.attemptId === att4.attemptId);
+
+        assert.strictEqual(rec1.status, 'SKIPPED', "Login form must be canonicalized to SKIPPED");
+        assert.strictEqual(rec1.failureClass, null, "failureClass must remain null for SKIPPED login form");
+
+        assert.strictEqual(rec2.status, 'SKIPPED', "Newsletter form must be SKIPPED");
+        assert.strictEqual(rec2.failureClass, null, "failureClass must remain null for SKIPPED newsletter form");
+
+        assert.strictEqual(rec3.status, 'SKIPPED', "Booking form must be canonicalized to SKIPPED");
+        assert.strictEqual(rec3.failureClass, null, "failureClass must remain null for SKIPPED booking form");
+
+        assert.strictEqual(rec4.status, 'SKIPPED', "Search form must be SKIPPED");
+        assert.strictEqual(rec4.failureClass, null, "failureClass must remain null for SKIPPED search form");
+
+        // Verify ledger counters
         const stats = hs.getLedgerStats('currentRun', runId);
-        assert.strictEqual(stats.skipped, 1, "Non-inquiry must be counted as SKIPPED");
-        assert.strictEqual(stats.failure, 0, "Non-inquiry must NOT be counted as FAILURE");
+        assert.strictEqual(stats.skipped, 4, "All 4 non-inquiry attempts must increment skipped counter");
+        assert.strictEqual(stats.failure, 0, "Non-inquiry forms must NOT increment failure counter");
+
+        // Verify CSV export output reflects SKIPPED
+        if (typeof hs.exportAttemptsCSV === 'function') {
+            const csv = hs.exportAttemptsCSV('currentRun', runId);
+            assert.ok(csv.includes('SKIPPED'), "CSV must contain SKIPPED status");
+            assert.ok(!csv.includes('NON_INQUIRY_LOGIN_FORM,FAILURE'), "CSV must not classify login form as FAILURE");
+        }
     });
 
     // -------------------------------------------------------------------------

@@ -265,6 +265,7 @@ let logQueue = [];
 let logSaveTimer = null;
 
 function logBg(tabId, msg, type = 'info') {
+    console.log(`[BG_LOG][tab=${tabId || 'none'}] ${msg}`);
     const timestamp = new Date().toLocaleTimeString();
     const logEntry = { timestamp, message: msg, type, tabId };
     
@@ -1114,7 +1115,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         case 'SENDER_READY':
             // [v18.24.0] Direct Route: Handle content-script ready signal via global state
             if (sender.tab && sender.tab.id === campaignState.currentTabId && campaignState.targetReady) {
-                campaignState.targetReady(sender.tab.url, true);
+                campaignState.targetReady(sender.tab.url, false);
                 sendResponse({ success: true });
             }
             return true;
@@ -1878,6 +1879,8 @@ async function startCampaignOrchestrator(queue, template, delayMs, fillDelayMs =
         try {
             if (!self.__xpiderHistoryStore) {
                 self.__xpiderHistoryStore = new self.HistoryStore(chrome.storage.local);
+            }
+            if (self.__xpiderHistoryStore && typeof self.__xpiderHistoryStore.load === 'function') {
                 await self.__xpiderHistoryStore.load();
             }
             hs = self.__xpiderHistoryStore;
@@ -3074,6 +3077,8 @@ async function orchestrateSending(urlInput, template) {
     let lastActivity = Date.now();
     let validPaths = [];
     let pathIdx = 0;
+    let isScanningPaths = true;
+    let waitingForPaths = false;
     let currentAttemptUrl = targetUrl; // [v2.9.7] Track intended path for redirect detection
     let visitedRedirects = []; 
     let lastInjectedUrl = '';  
@@ -3121,7 +3126,14 @@ async function orchestrateSending(urlInput, template) {
         if (res && !res.success && res.error === "NO_FORM_ON_PAGE") {
             logBg(tabId, `⚠️ [Engine] No form on current path. Advancing to next candidate...`, "warning");
             campaignState.targetResolve = finish;
-            tryNext();
+            if (pathIdx < validPaths.length) {
+                tryNext();
+            } else if (isScanningPaths) {
+                waitingForPaths = true;
+                logBg(tabId, `⏳ [Engine] Waiting for contact path scan to finish...`, "info");
+            } else {
+                tryNext();
+            }
             return;
         }
 
@@ -3203,8 +3215,6 @@ async function orchestrateSending(urlInput, template) {
         } catch (_) {
             hostName = targetUrl;
         }
-        logBg(tabId, `[TARGET][${hostName}] FINAL status=${isSuccess ? 'CONFIRMED_SUCCESS' : (isDeliveryUnknown ? 'DELIVERY_UNKNOWN' : 'FAILURE')} reason=${finalReason}`, isSuccess ? "success" : "warning");
-        
         let actualResultUrl = null;
         try {
             const finalTab = await safeTabs.get(tabId);
@@ -3223,11 +3233,13 @@ async function orchestrateSending(urlInput, template) {
             terminalStatus = 'DELIVERY_UNKNOWN';
         } else if (finalReason === 'TIMEOUT_LOCAL' || finalReason === 'TIMEOUT_GLOBAL') {
             terminalStatus = finalReason;
-        } else if (finalReason === 'SKIPPED' || finalReason?.includes('SKIPPED') || finalReason === 'NON_INQUIRY_FORM_SKIPPED') {
+        } else if (finalReason === 'SKIPPED' || finalReason?.includes('SKIPPED') || finalReason?.includes('NON_INQUIRY') || finalReason?.startsWith('NON_INQUIRY')) {
             terminalStatus = 'SKIPPED';
         } else {
             terminalStatus = 'FAILURE';
         }
+
+        logBg(tabId, `[TARGET][${hostName}] FINAL status=${terminalStatus} reason=${finalReason}`, terminalStatus === 'CONFIRMED_SUCCESS' ? "success" : (terminalStatus === 'SKIPPED' ? "info" : "warning"));
 
         const evidence = res?.metadata?.outcomeEvidence || {};
 
@@ -3594,18 +3606,27 @@ async function orchestrateSending(urlInput, template) {
     };
 
     scanContactPaths(baseUrl, tabId, discoveryCtx).then(paths => {
+        isScanningPaths = false;
         if (isFinished) return;
         validPaths.push(...paths);
-        tryNext();
+        logBg(tabId, `[SniperScan] Identified ${validPaths.length} candidate paths in background.`, "info");
+        if (waitingForPaths) {
+            waitingForPaths = false;
+            tryNext();
+        }
     }).catch(err => {
+        isScanningPaths = false;
         if (isFinished) return;
         logBg(tabId, `❌ [CONTACT_DISCOVERY_RUNTIME_ERROR][${targetHost}] ${err.name}: ${err.message}`, "error");
         discoveryCtx.errors.push({ phase: 'scanContactPaths', error: err.message, stack: err.stack });
-        finish({ 
-            success: false, 
-            error: err.message, 
-            reasonCode: 'CONTACT_DISCOVERY_RUNTIME_ERROR' 
-        });
+        if (waitingForPaths) {
+            waitingForPaths = false;
+            finish({ 
+                success: false, 
+                error: err.message, 
+                reasonCode: 'CONTACT_DISCOVERY_RUNTIME_ERROR' 
+            });
+        }
     });
 
     return resultPromise;

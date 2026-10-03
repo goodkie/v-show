@@ -721,6 +721,17 @@
                 if (currentForm) {
                     console.log(`[FORM_GATE_INVARIANT_VIOLATION] bodyCandidates=${formScanBodyCandidates} hasInquiryBody=${!!inquiryBody} -> eligible=false`);
                     logDev(`[FORM_GATE_INVARIANT_VIOLATION] bodyCandidates=${formScanBodyCandidates} -> rejecting container`, "warning");
+
+                    // [R6.9A Acceptance Directive] Non-inquiry forms (login, newsletter, search, booking)
+                    // must be settled as SKIPPED rather than attempting fallback link discovery.
+                    if (_ContactGate && typeof _ContactGate.classifyFormIntent === 'function') {
+                        const classification = _ContactGate.classifyFormIntent(currentForm);
+                        if (!classification.eligible && classification.reason && classification.reason.startsWith('NON_INQUIRY')) {
+                            logDev(`❌ [ContactGate] Non-inquiry form rejected: ${classification.reason}`, "error");
+                            finishCampaign(false, classification.reason, classification.reason);
+                            return;
+                        }
+                    }
                     currentForm = null;
                 }
             }
@@ -756,6 +767,26 @@
                 logDev("[LONG_TEXT_GATE] found=false", "info");
                 logDev("[FORM_GATE] eligible=false reason=NO_LONG_TEXT_INQUIRY_FIELD", "info");
                 if (window.__xpider_releaseProcessingLock) window.__xpider_releaseProcessingLock(currentUrl);
+
+                // [R6.9A Acceptance Directive] Non-inquiry forms (login, newsletter, search, booking)
+                // on dedicated pages must be settled as SKIPPED rather than attempting fallback link discovery.
+                if (typeof document !== 'undefined') {
+                    const pageForms = Array.from(document.querySelectorAll('form, [role="form"]'));
+                    for (const pf of pageForms) {
+                        if (_ContactGate && typeof _ContactGate.classifyFormIntent === 'function') {
+                            const classification = _ContactGate.classifyFormIntent(pf);
+                            if (!classification.eligible && classification.reason && classification.reason.startsWith('NON_INQUIRY')) {
+                                const bestLink = typeof findBestContactLink === 'function' ? findBestContactLink() : null;
+                                if (classification.reason === 'NON_INQUIRY_LOGIN_FORM' || !bestLink) {
+                                    logDev(`❌ [ContactGate] Page rejected: non-inquiry form (${classification.reason})`, "error");
+                                    currentTargetLifecycleState = TargetLifecycleState.SETTLING;
+                                    finishCampaign(false, classification.reason, classification.reason);
+                                    return;
+                                }
+                            }
+                        }
+                    }
+                }
             }
 
             if (currentForm) {
