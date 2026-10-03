@@ -118,7 +118,15 @@ const sandbox = {
   },
   navigator: { userAgent: 'NodeTest/S23-Ultra' },
   performance: { now: () => Date.now() },
+  location: { href: 'http://localhost/?guided=1', search: '?guided=1', pathname: '/' },
   URLSearchParams,
+  URL: { createObjectURL: () => 'blob:mock', revokeObjectURL: () => {} },
+  Blob: class MockBlob { constructor() {} },
+  Image: class MockImage {
+    constructor() { this.onload = null; this.onerror = null; this.src = ''; }
+    set src(v) { this._src = v; if (this.onload) setTimeout(() => this.onload(), 0); }
+    get src() { return this._src || ''; }
+  },
   Math,
   Date,
   Uint8Array,
