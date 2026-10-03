@@ -626,6 +626,12 @@
 
     async function processCampaign(template, delayMs = 10000, triedUrl = '', fillDelayMs = 300, submitDelayMs = 1500) {
         try {
+            if (typeof document !== 'undefined' && document.readyState === 'loading') {
+                await new Promise(r => {
+                    document.addEventListener('DOMContentLoaded', r, { once: true });
+                    setTimeout(r, 1000);
+                });
+            }
             const speed = getSpeedProfile(delayMs, fillDelayMs, submitDelayMs);
             const currentUrl = window.location.href;
             
@@ -659,6 +665,7 @@
 
             const recursionDebt = parseInt(sessionStorage.getItem('xpider_recursion_debt') || '0');
 
+            logDev(`[TARGET_PAGE] url=${currentUrl} recursion=${recursionDebt}`);
             logDev(`🔍 [Discovery] URL: ${currentUrl} | Recursion: ${recursionDebt}`);
             
             // 1. [v1.3.7] Ultra Polling Form Discovery
@@ -775,16 +782,41 @@
                     for (const pf of pageForms) {
                         if (_ContactGate && typeof _ContactGate.classifyFormIntent === 'function') {
                             const classification = _ContactGate.classifyFormIntent(pf);
-                            if (!classification.eligible && classification.reason && classification.reason.startsWith('NON_INQUIRY')) {
+                            logDev(`[FORM_CLASSIFY] intent=${classification.intent} eligible=${classification.eligible} reason=${classification.reason}`);
+                            const isNonInquiry = !classification.eligible && (
+                                (classification.reason && classification.reason.startsWith('NON_INQUIRY')) ||
+                                classification.intent === 'LOGIN' ||
+                                classification.intent === 'SEARCH' ||
+                                classification.intent === 'SUBSCRIBE' ||
+                                classification.intent === 'NEWSLETTER' ||
+                                classification.intent === 'BOOKING'
+                            );
+                            if (isNonInquiry) {
+                                const settleReason = (classification.reason && classification.reason.startsWith('NON_INQUIRY'))
+                                    ? classification.reason
+                                    : `NON_INQUIRY_${classification.intent}_FORM`;
                                 const bestLink = typeof findBestContactLink === 'function' ? findBestContactLink() : null;
-                                if (classification.reason === 'NON_INQUIRY_LOGIN_FORM' || !bestLink) {
-                                    logDev(`❌ [ContactGate] Page rejected: non-inquiry form (${classification.reason})`, "error");
+                                if (settleReason === 'NON_INQUIRY_LOGIN_FORM' || !bestLink) {
+                                    logDev(`[FORM_GATE] eligible=false reason=${settleReason}`);
+                                    logDev(`❌ [ContactGate] Page rejected: non-inquiry form (${settleReason})`, "error");
                                     currentTargetLifecycleState = TargetLifecycleState.SETTLING;
-                                    finishCampaign(false, classification.reason, classification.reason);
+                                    finishCampaign(false, settleReason, settleReason);
                                     return;
                                 }
                             }
                         }
+                    }
+
+                    // Also check dedicated non-inquiry URL endpoints (e.g. /login, /signin)
+                    const lowerUrl = currentUrl.toLowerCase();
+                    if (lowerUrl.includes('/login') || lowerUrl.includes('/signin') || lowerUrl.includes('/auth/')) {
+                        const settleReason = 'NON_INQUIRY_LOGIN_FORM';
+                        logDev(`[FORM_CLASSIFY] intent=LOGIN eligible=false reason=${settleReason}`);
+                        logDev(`[FORM_GATE] eligible=false reason=${settleReason}`);
+                        logDev(`❌ [ContactGate] Dedicated login page rejected: ${settleReason}`, "error");
+                        currentTargetLifecycleState = TargetLifecycleState.SETTLING;
+                        finishCampaign(false, settleReason, settleReason);
+                        return;
                     }
                 }
             }

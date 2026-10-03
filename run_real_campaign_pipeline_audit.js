@@ -252,7 +252,11 @@ async function runLivePipelineAudit() {
 
         const part2Result = await evalInPopup(`(async () => {
             const hs = getPopupHistoryStore();
-            const att = await hs.recordAttempt('https://audit-immutability.com', { campaignRunId: 'run_r6_9a_owner_audit' });
+            // ISOLATED AUDIT GENERATION (Gen 999) - Strictly prevents polluting owner Gen 7 scope
+            const att = await hs.recordAttempt('https://audit-immutability.com', { 
+                generation: 999, 
+                campaignRunId: 'run_immutability_isolated_probe' 
+            });
             const attId = att.attemptId;
 
             // 1. Initial settlement: CONFIRMED_SUCCESS
@@ -268,13 +272,25 @@ async function runLivePipelineAudit() {
             const settleDuplicate = await hs.settleCanonicalAttempt(attId, 'CONFIRMED_SUCCESS', 'SUCCESS_CONFIRMED');
 
             const finalAttempt = hs.attempts.find(a => a.attemptId === attId);
+            const statusVerified = finalAttempt.status;
+
+            // Strict cleanup of probe record: completely purge from attempts array & persist
+            const idx = hs.attempts.findIndex(a => a.attemptId === attId);
+            if (idx !== -1) hs.attempts.splice(idx, 1);
+            await hs.persist();
+
+            // Re-load to prove clean state
+            await hs.load();
+            const gen7Stats = hs.getLedgerStats('currentGeneration');
 
             return {
                 settle1Success: settle1.settled,
                 lateTimeoutRejected: !settleLateTimeout.settled && settleLateTimeout.reason === 'TERMINAL_ALREADY_SETTLED',
                 staleUnknownRejected: !settleStaleUnknown.settled && settleStaleUnknown.reason === 'TERMINAL_ALREADY_SETTLED',
                 duplicateIdempotent: settleDuplicate.settled && settleDuplicate.idempotent,
-                finalStatus: finalAttempt.status
+                finalStatus: statusVerified,
+                cleanGen7Success: gen7Stats.success,
+                cleanGen7Total: gen7Stats.total
             };
         })()`);
 
@@ -283,9 +299,13 @@ async function runLivePipelineAudit() {
         recordLog(`[IMMUTABILITY_CHECK] Stale UNKNOWN Settle Rejected: ${part2Result.staleUnknownRejected ? 'YES (TERMINAL_ALREADY_SETTLED)' : 'NO'}`);
         recordLog(`[IMMUTABILITY_CHECK] Duplicate Re-Settlement Idempotent: ${part2Result.duplicateIdempotent ? 'YES' : 'NO'}`);
         recordLog(`[IMMUTABILITY_CHECK] Final Stored Status: ${part2Result.finalStatus} (Guaranteed CONFIRMED_SUCCESS)`);
+        recordLog(`[IMMUTABILITY_CHECK] Post-Probe Gen 7 Success: ${part2Result.cleanGen7Success} (Strictly 20), Total: ${part2Result.cleanGen7Total}`);
 
-        const immutabilityPassed = part2Result.lateTimeoutRejected && part2Result.staleUnknownRejected && part2Result.finalStatus === 'CONFIRMED_SUCCESS';
-        recordLog(`[PART_2_VERIFICATION] ${immutabilityPassed ? 'PASSED (Terminal status cannot be corrupted by late callbacks)' : 'FAILED'}`);
+        const immutabilityPassed = part2Result.lateTimeoutRejected && 
+                                   part2Result.staleUnknownRejected && 
+                                   part2Result.finalStatus === 'CONFIRMED_SUCCESS' &&
+                                   part2Result.cleanGen7Success === 20;
+        recordLog(`[PART_2_VERIFICATION] ${immutabilityPassed ? 'PASSED (Terminal status immutable; Gen 7 strictly preserved at 20)' : 'FAILED'}`);
 
         // =========================================================================
         // PART 3: ACTUAL CONTROL-PLANE LIVE PIPELINE EXECUTION OVER REAL WEB TARGETS
@@ -297,6 +317,36 @@ async function runLivePipelineAudit() {
         recordLog(`Target 1: https://news.ycombinator.com/login (Real Live Non-Inquiry Login Page)`);
         recordLog(`Target 2: https://panzagear.com (Real Live Target)`);
         recordLog(`Harness Mode: STRICT READ-ONLY OBSERVER (No manual recordAttempt / settleCanonicalAttempt)`);
+
+        // Continuous CDP connector for any opened campaign page targets
+        const attachedTargetIds = new Set();
+        const pollPageTargets = async () => {
+            try {
+                const liveTargets = await (await fetch('http://127.0.0.1:9222/json')).json();
+                for (const lt of liveTargets) {
+                    if (lt.type === 'page' && !lt.url.includes('popup.html') && (lt.url.includes('ycombinator') || lt.url.includes('panzagear'))) {
+                        if (!attachedTargetIds.has(lt.id) && lt.webSocketDebuggerUrl) {
+                            attachedTargetIds.add(lt.id);
+                            recordLog(`[CDP_PAGE_ATTACH] targetId=${lt.id} url=${lt.url}`);
+                            const pageWs = new WebSocket(lt.webSocketDebuggerUrl);
+                            pageWs.onopen = () => {
+                                pageWs.send(JSON.stringify({ id: 1, method: 'Runtime.enable' }));
+                                pageWs.send(JSON.stringify({ id: 2, method: 'Console.enable' }));
+                            };
+                            pageWs.onmessage = (e) => {
+                                try {
+                                    const d = JSON.parse(e.data);
+                                    if (d.method === 'Runtime.consoleAPICalled') {
+                                        const args = d.params.args.map(a => a.value !== undefined ? a.value : (a.description || '')).join(' ');
+                                        recordLog(`[CONTENT_CONSOLE][${lt.url}] ${args}`);
+                                    }
+                                } catch (_) {}
+                            };
+                        }
+                    }
+                }
+            } catch (_) {}
+        };
 
         // Trigger campaign via actual popup DOM interaction
         const startTriggerResult = await evalInPopup(`(async () => {
@@ -352,6 +402,8 @@ async function runLivePipelineAudit() {
         })()`);
 
         recordLog(`[CONTROL_PLANE_START] Button clicked. Queue length: ${startTriggerResult.queueLength}, Button text: "${startTriggerResult.btnText}"`);
+        recordLog(`[PRE_CAMPAIGN_LEDGER] Owner Gen 7 Succeeded BEFORE control-plane run: ${part2Result.cleanGen7Success} (Strictly: 20)`);
+        await pollPageTargets();
 
         // Wait for background orchestrator to process both targets and settle them
         recordLog(`Waiting for background orchestrator and content scripts to execute pipeline...`);
@@ -362,6 +414,8 @@ async function runLivePipelineAudit() {
 
         while (!pipelineSettled && (Date.now() - pollStart) < maxWaitMs) {
             await new Promise(r => setTimeout(r, 2500));
+            await pollPageTargets();
+
             pollStatus = await evalInPopup(`(async () => {
                 const hs = getPopupHistoryStore();
                 if (typeof hs.load === 'function') await hs.load();
@@ -410,12 +464,14 @@ async function runLivePipelineAudit() {
 
             const statsGen = hs.getLedgerStats('currentGeneration');
             const statsAll = hs.getLedgerStats('allHistory');
+            const gen7Attempts = hs.attempts.filter(a => a.generation === 7);
 
             return {
                 hnRec,
                 panzaRec,
                 statsGen,
                 statsAll,
+                gen7AttemptsCount: gen7Attempts.length,
                 totalAttempts: hs.attempts.length
             };
         })()`);
@@ -426,22 +482,27 @@ async function runLivePipelineAudit() {
         recordLog(`  - FailureClass: ${finalInspection.hnRec?.failureClass} (Expected: null)`);
 
         recordLog(`[READ_ONLY_LEDGER] Target 2 (panzagear.com):`);
-        recordLog(`  - Status: ${finalInspection.panzaRec?.status}`);
-        recordLog(`  - ReasonCode: ${finalInspection.panzaRec?.reasonCode}`);
+        recordLog(`  - Status: ${finalInspection.panzaRec?.status} (Expected: FAILURE)`);
+        recordLog(`  - ReasonCode: ${finalInspection.panzaRec?.reasonCode} (Expected: CONTACT_DISCOVERY_EXHAUSTED)`);
 
-        recordLog(`[READ_ONLY_LEDGER] Authoritative Ledger Counters:`);
-        recordLog(`  - Current Generation Succeeded: ${finalInspection.statsGen.success} (20 legacy + 1 immutability probe strictly preserved)`);
-        recordLog(`  - Current Generation Skipped: ${finalInspection.statsGen.skipped}`);
-        recordLog(`  - Current Generation Failed: ${finalInspection.statsGen.failure}`);
+        recordLog(`[READ_ONLY_LEDGER] Authoritative Ledger Counters (Scope: currentGeneration):`);
+        recordLog(`  - Current Generation Succeeded: ${finalInspection.statsGen.success} (Strictly Preserved: 20)`);
+        recordLog(`  - Current Generation Skipped: ${finalInspection.statsGen.skipped} (HN Login: +1)`);
+        recordLog(`  - Current Generation Failed: ${finalInspection.statsGen.failure} (Panzagear: +1)`);
+        recordLog(`  - Total Current Generation Attempts: ${finalInspection.gen7AttemptsCount} (20 legacy + 1 skipped + 1 failed = 22)`);
 
         const hnSkippedCorrect = finalInspection.hnRec?.status === 'SKIPPED' &&
                                 finalInspection.hnRec?.reasonCode === 'NON_INQUIRY_LOGIN_FORM' &&
                                 finalInspection.hnRec?.failureClass === null;
-        const panzaSettled = finalInspection.panzaRec && finalInspection.panzaRec.status !== 'PREPARING';
-        const gen7Preserved = finalInspection.statsGen.success === 21;
+        const panzaSettled = finalInspection.panzaRec && finalInspection.panzaRec.status === 'FAILURE' &&
+                             finalInspection.panzaRec?.reasonCode === 'CONTACT_DISCOVERY_EXHAUSTED';
+        const gen7SuccessStrictly20 = finalInspection.statsGen.success === 20;
+        const totalGen7Matches22 = finalInspection.gen7AttemptsCount === 22;
 
         recordLog(`\n================================================================================`);
-        recordLog(`[PART 3 VERIFICATION]: ${hnSkippedCorrect && panzaSettled && gen7Preserved ? 'PASSED (Real Control Plane, Non-Inquiry SKIPPED, Succeeded:20 Preserved)' : 'FAILED'}`);
+        recordLog(`[PART 3 VERIFICATION]: ${hnSkippedCorrect && panzaSettled && gen7SuccessStrictly20 && totalGen7Matches22 ? 'PASSED (Real Control Plane, Non-Inquiry SKIPPED, Succeeded:20 Strictly Preserved, Zero Contamination)' : 'FAILED'}`);
+        recordLog(`[LIVE_OUTCOME_HONESTY] Real live submission success: UNVERIFIED IN BOUNDED PROBE (Compliance protected)`);
+        recordLog(`================================================================================`);
         recordLog(`[LIVE_OUTCOME_HONESTY] Real live submission success: UNVERIFIED IN BOUNDED PROBE (Compliance protected)`);
         recordLog(`================================================================================`);
 

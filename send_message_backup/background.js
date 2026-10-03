@@ -1108,6 +1108,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             sendResponse({ success: true });
             return true;
 
+        case 'SENDER_LOG':
+            if (sender.tab) {
+                const attId = campaignState.currentAttempt?.attemptId || 'none';
+                const tag = `[CONTENT_EVENT][tabId=${sender.tab.id}][attemptId=${attId}][url=${sender.tab.url || 'unknown'}]`;
+                console.log(`${tag} ${request.message}`);
+                logBg(sender.tab.id, `${tag} ${request.message}`, request.logType || 'info');
+            }
+            sendResponse({ success: true });
+            return true;
+
         case 'UI_HEARTBEAT':
             sendResponse({ success: true, timestamp: Date.now() });
             return true;
