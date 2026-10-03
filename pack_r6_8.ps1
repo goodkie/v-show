@@ -14,7 +14,9 @@ $files = @(
     "send_message_backup\test_owner_4h_runtime_remediation_r6_8.js",
     "send_message_backup\verify_owner_runtime_acceptance_r6_8.js",
     "evidence_owner_runtime_traces_r6_8.log",
-    "send_message_backup\build\preserved_r6.7_pre_remediation_b8e1d03\checksums.json"
+    "verify_true_chrome_runtime.js",
+    "evidence_true_chrome_runtime_r6_8.log",
+    "send_message_backup\restore_points\r6.7_pre_remediation_b8e1d03\checksums.json"
 )
 
 $zipName = "evidence_r6_8_owner_4h_log_remediation.zip"
