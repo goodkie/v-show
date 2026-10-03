@@ -1,0 +1,227 @@
+[
+  {
+    "file": "AUDIT_MANIFEST.json",
+    "sha256": "cb6bf6ea2f7ed0431581137450243c2eb19495b9e040bb706694bf705206e75c",
+    "size": 9447
+  },
+  {
+    "file": "COMMIT_PROVENANCE.txt",
+    "sha256": "e0e395b198e5181c5309e29b0b585bd444727bca48e897d0af6625b2bcf46b71",
+    "size": 3999
+  },
+  {
+    "file": "FILE_HASHES.txt",
+    "sha256": "b3a35ca563c1764a99ffa514d021a4d2f0fa9e2cdf151d9a18bfc2aeebc239f1",
+    "size": 1480
+  },
+  {
+    "file": "LOCAL_GIT_PROVENANCE.txt",
+    "sha256": "56554ccaa2cb752fd4da06f3232c6c0b755b856aad36e521f61cb2e32f00f837",
+    "size": 9987
+  },
+  {
+    "file": "PACKAGE_INVENTORY_SHA256.txt",
+    "sha256": "89fa37a9d3f89a508bd05f69bca82a8c8b2a9a16657cc0bcfb78422eea3f1c51",
+    "size": 694
+  },
+  {
+    "file": "PNG.PNG",
+    "sha256": "d47c771ad5de68760560c4d747c1a8993126d32a4201903b81d9abc998176c55",
+    "size": 199367
+  },
+  {
+    "file": "RESTORE_POINT_SUMMARY.md",
+    "sha256": "2300ac5edbeb6bb9e9ba979f8e3709263d01dd7a72c1cfe934f7bcaeb26216b8",
+    "size": 1617
+  },
+  {
+    "file": "background.js",
+    "sha256": "8002bd7c606e3891eaa122e44f7d300260ab19ac2c33d615b004d756882dfe90",
+    "size": 171329
+  },
+  {
+    "file": "banner.jpg",
+    "sha256": "83878d70df6dddf45c36ad6807e3de7897b58b719abb047d643a16a018114037",
+    "size": 45555
+  },
+  {
+    "file": "blacklist_data.js",
+    "sha256": "b27c5227d8116bfec1e2c8833204cebe05f223a04340fcb681ec988ec4f46ec3",
+    "size": 7163
+  },
+  {
+    "file": "content-script.js",
+    "sha256": "b4d7a5b541d3a47b627a4a8640a4ec4f3a2e94251344d1588384ad1dea31ec36",
+    "size": 245962
+  },
+  {
+    "file": "icons/app-logo.png",
+    "sha256": "8dc5c14f18784dcae13d13c990e9059ee158bea7b507f7619bdc89c2e7dfca5c",
+    "size": 524650
+  },
+  {
+    "file": "icons/banner.png",
+    "sha256": "d1932153fca475d92cc5095c81edff6528189046b1f1aa8c43e3b08969522cff",
+    "size": 86770
+  },
+  {
+    "file": "icons/folder.png",
+    "sha256": "9b0fcf6e499fd174a1547544decc7541ca39a7018cc4c76d2686f733ce8f6c1b",
+    "size": 9904
+  },
+  {
+    "file": "icons/gear.png",
+    "sha256": "6f17ba22f38a40c00c6bc1a572f6219826074afe490dd919dfb051c0dde27249",
+    "size": 684887
+  },
+  {
+    "file": "icons/icon128.png",
+    "sha256": "67663f4d21daedfcbd1a9c9c17589879bc76ceb5633c9d9eeb89509829c2be3e",
+    "size": 722086
+  },
+  {
+    "file": "icons/icon16.png",
+    "sha256": "67663f4d21daedfcbd1a9c9c17589879bc76ceb5633c9d9eeb89509829c2be3e",
+    "size": 722086
+  },
+  {
+    "file": "icons/icon48.png",
+    "sha256": "67663f4d21daedfcbd1a9c9c17589879bc76ceb5633c9d9eeb89509829c2be3e",
+    "size": 722086
+  },
+  {
+    "file": "imgi_1_spider-man-logo-png_seeklogo-385417.png",
+    "sha256": "29cdfc5fa1a890c2df8f7c5b3e86152794f0814f1b00aee47192923b37f1800e",
+    "size": 85484
+  },
+  {
+    "file": "manifest.json",
+    "sha256": "84d12ba735cf711adbf2f8c4ebfdb55e1544e778d474cb810272b86b17245456",
+    "size": 1484
+  },
+  {
+    "file": "modules/checkbox-resolver-r2.js",
+    "sha256": "6435fc2b61b43fe46e31afd7798dfadde4f3b6280f078d795e40edcfce8d6cb4",
+    "size": 16948
+  },
+  {
+    "file": "modules/contact-discovery-engine.js",
+    "sha256": "68d2bd6672369aabc1eab43f4c950f6b4669fb05058a32ed1a0f0e102901f7d6",
+    "size": 65890
+  },
+  {
+    "file": "modules/contact-gate.js",
+    "sha256": "1dba302ed54225b92469cbaec762424cfb2674933e70b912533663a51a777f1b",
+    "size": 19357
+  },
+  {
+    "file": "modules/email-collector.js",
+    "sha256": "c6b217db8178f7d0b509e6d0287caf835d78369620538cd4e9faccb5320a601a",
+    "size": 21781
+  },
+  {
+    "file": "modules/final-form-completion-engine.js",
+    "sha256": "3509f085cb6de8006b2e3f31d5e8341b007fb926e523c17c8be27d7796566281",
+    "size": 32274
+  },
+  {
+    "file": "modules/form-discovery-engine-r2.js",
+    "sha256": "39184ebe33576925dac04d6f8e4712e46f0976f7f0129f89251fb8ed25378c25",
+    "size": 33123
+  },
+  {
+    "file": "modules/history-store.js",
+    "sha256": "90eb5c64524419f23dcd9c2d309890ed1a101a4ec5a6b6e1f023d5568f2653fc",
+    "size": 45606
+  },
+  {
+    "file": "modules/operation-queue.js",
+    "sha256": "e1f5f540a714b200176980cda6c28a5062e8d3011d52f0aefede86bbb31530ab",
+    "size": 1470
+  },
+  {
+    "file": "modules/select-resolver-r2.js",
+    "sha256": "ad572dee7701340ad46e818795ec003c14ba42486e733320c73e0ba4ad81179c",
+    "size": 18055
+  },
+  {
+    "file": "modules/smart-field-resolver.js",
+    "sha256": "9737f9807d073363220922e59dc114056eb79e54b527211ac3ca2817dffc03e3",
+    "size": 29668
+  },
+  {
+    "file": "modules/template-store.js",
+    "sha256": "d6e04e18cd6673d09380fa4983f0e696d837b16d73f62ca3e32bfe49034d1b64",
+    "size": 23045
+  },
+  {
+    "file": "modules/vision-submit-executor.js",
+    "sha256": "7f9a75a1c1d7d84a7f39ec7b325898190293ebec23618c9d6b83a8ec5d8b340c",
+    "size": 9773
+  },
+  {
+    "file": "popup.css",
+    "sha256": "0034101a23c75f9602d6c2075e7473bc82a46b7fe221088a0d18887c72698104",
+    "size": 35316
+  },
+  {
+    "file": "popup.html",
+    "sha256": "08577c1cfc1145d404987851b5b550b2877a9334521b37c42773b13ff6025289",
+    "size": 39725
+  },
+  {
+    "file": "popup.js",
+    "sha256": "28921eb92b73e5bdc212a099c6ef2c6e0fe0600e1ebe32a6d932d8ae2fd8f831",
+    "size": 176305
+  },
+  {
+    "file": "solver-content.js",
+    "sha256": "4afbedf4a2601fbc731f651370aea093e956c5b67be240949fe75bc1091adff3",
+    "size": 42891
+  },
+  {
+    "file": "solver-core.js",
+    "sha256": "6c2f5f1f3b8cf747e8dfcb9d18d373c8eab14a887be979db0f4ce439b466002d",
+    "size": 16539
+  },
+  {
+    "file": "translations.js",
+    "sha256": "a7f818ae924271db7072fdbe8e6394c7cb24753b5c6040eedf7f9f603e76effa",
+    "size": 15273
+  },
+  {
+    "file": "upload-folder.png",
+    "sha256": "78de98a55d36b888abdf31d06c7e0a3602911e6170830a75eacba9ebf661784c",
+    "size": 17952
+  },
+  {
+    "file": "upload-folder2.png",
+    "sha256": "9b0fcf6e499fd174a1547544decc7541ca39a7018cc4c76d2686f733ce8f6c1b",
+    "size": 9904
+  },
+  {
+    "file": "x-sender pro.png",
+    "sha256": "9aad99df3c3ff9a19b8475c32a638c8c93d354394e361fc2d0e8ef5f42aba05b",
+    "size": 65464
+  },
+  {
+    "file": "x-sender.png",
+    "sha256": "1dd905718c0b0163ce72f2348d416ba3c065d7a4f4d487a8936157f86a8c5491",
+    "size": 69243
+  },
+  {
+    "file": "xpider logo-banner2.png",
+    "sha256": "e2a93e5180331e4e1121f79b1716822745390c9d24ac3d741ec7a103996f4795",
+    "size": 59915
+  },
+  {
+    "file": "캡처.JPG",
+    "sha256": "d3085ae05f9e6ef41d34545ddf3cd9f9d9a43ebd91887f41a6f91e83bc6b800b",
+    "size": 2514
+  },
+  {
+    "file": "캡처2.JPG",
+    "sha256": "244fbcd08d635c2d0942b5ab2db28c394750efd3e6e5f7dc9cd93bfb47c52620",
+    "size": 7771
+  }
+]

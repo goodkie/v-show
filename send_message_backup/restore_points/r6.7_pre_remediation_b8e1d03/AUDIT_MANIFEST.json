@@ -1,0 +1,150 @@
+{
+  "manifest_version": "1.0",
+  "package": "evidence_form_execution_reliability_r1",
+  "audit_phase": "Phase 2B + Issue #6 Form Execution Reliability & Resumability R1",
+  "commit_sha": "e25780278d6bd5dc520be72d427358df71b9e19f",
+  "rollback_anchor_sha": "812c930e758835b7c2336602d27997cd54dcee08",
+  "rollback_artifact_sha256": "4D9F9EB83E82243A7C12DFEC4731E7D3CE8F01777243ECBBD722B34B8FA2DBB2",
+  "branch": "upgrade/phase-0-1",
+  "repository": "local:extension-form-sender",
+  "collaboration_hub": "goodkie/v-show (Issue #6)",
+  "timestamp": "2026-10-01T12:25:00Z",
+  "form_execution_reliability": {
+    "status": "IMPLEMENTED_AND_VERIFIED",
+    "core_deliverables": {
+      "form_stabilizer": {
+        "status": "ACTIVE",
+        "description": "FormStabilizer replaces unbounded empty-field sweeper with bounded lifetime (max 5s, max 2 element attempts, 500ms cooldown, 2 stable cycles, deterministic values). Eliminates infinite reactive fighting on React/Wix forms."
+      },
+      "submit_state_machine": {
+        "status": "ACTIVE",
+        "description": "executeSubmitStateMachine provides deterministic submission: stops stabilizer, waits 350ms settle delay, pre-submit validity check (aborts with VALIDATION_FAILED if invalid after single bounded self-heal), discovers ranked submit candidates skipping disabled and aria-disabled elements, prefers form.requestSubmit(btn), falls back to single trusted click sequence, strictly forbids HTMLFormElement.prototype.submit."
+      },
+      "resumable_campaign": {
+        "status": "ACTIVE",
+        "description": "pauseCampaignOrchestrator, resumeCampaignOrchestrator, and endCampaignOrchestrator store/restore remainingQueue in xpider_paused_checkpoint without reloading full 492 targets. Supported in UI via PAUSE NOW, STOP & SAVE, RESUME, and END CAMPAIGN."
+      },
+      "history_skip": {
+        "status": "ACTIVE",
+        "description": "Skip Previously Attempted (default ON) filters targets before starting orchestrator using HistoryStore.hasPriorAttempt() checking durable execution statuses (PREPARING, SUBMIT_PENDING, CONFIRMED_SUCCESS, FAILURE, DELIVERY_UNKNOWN)."
+      },
+      "forensic_logging_and_histogram": {
+        "status": "ACTIVE",
+        "description": "Lifecycle logs [TARGET idx/total][host] START and [TARGET][host] FINAL status=... reason=... with outcomeHistogram aggregation in campaignState."
+      }
+    },
+    "verification_suite": "13/13 tests in test_reliability_r1.js",
+    "qa_status": "AUTOMATED SUITES = PASS (87/87); LIVE EXTENSION RUN = PENDING OWNER VALIDATION IN UNPACKED CHROME"
+  },
+  "runtime_transport_hotfix": {
+    "status": "HOTFIX_COMPLETE",
+    "problem_statement": "The unpacked Chrome extension had a dead Electron/main-process window.postMessage bridge (xpiderInvoke), causing a 30-second timeout on START SENDING in real Chrome (IPC timeout: xpider-campaign-start).",
+    "resolution_architecture": "Completely eliminated dead native IPC calls in Chrome operator workflows, routing all campaign start, control, state retrieval, and configuration directly through the Chrome Background Service Worker (background.js) and chrome.downloads API.",
+    "dead_channels_eliminated": [
+      { "channel": "xpider-campaign-start", "replacement": "chrome.runtime.sendMessage({ action: 'START_CAMPAIGN', queue, template, ... }) with ACK verification" },
+      { "channel": "xpider-campaign-get-state", "replacement": "chrome.runtime.sendMessage({ action: 'GET_STATE' }) directly on popup load" },
+      { "channel": "xpider-campaign-pause", "replacement": "chrome.runtime.sendMessage({ action: 'PAUSE_CAMPAIGN' })" },
+      { "channel": "xpider-campaign-resume", "replacement": "chrome.runtime.sendMessage({ action: 'RESUME_CAMPAIGN' })" },
+      { "channel": "xpider-campaign-stop", "replacement": "chrome.runtime.sendMessage({ action: 'STOP_CAMPAIGN' })" },
+      { "channel": "xpider-ext-get-wit-key", "replacement": "chrome.storage.local direct read" },
+      { "channel": "xpider-ext-sync-wit-key", "replacement": "chrome.runtime.sendMessage({ action: 'UPDATE_WIT_KEY', key })" },
+      { "channel": "xpider-show-save-dialog", "replacement": "chrome.downloads.download({ url, filename, saveAs: true })" }
+    ],
+    "verification_suite": "TRANSPORT-1 through TRANSPORT-7 in test_phase2b_acceptance.js",
+    "qa_status": "AUTOMATED SUITE = PASS (74/74); LIVE EXTENSION RUN = PENDING OWNER VERIFICATION IN REAL CHROME"
+  },
+  "ipc_diagnostic_patch": {
+    "status": "PRESERVED",
+    "diagnostic_controls": [
+      "#copy-diagnostic-btn (Copy Diagnostic Report)",
+      "#download-diagnostic-btn (Download Diagnostic TXT)",
+      "#clear-diagnostic-btn (Clear Diagnostic Log)"
+    ],
+    "verification_tests": [
+      "DIAG-IPC-1: No Responder Path — Rejection, Checkpoints, and Structured Diagnostic Dump",
+      "DIAG-IPC-2: Responder Present Path — ID Match, Latency Capture, and Clean Resolution",
+      "TC-2B-11: Privacy-Safe Redaction Engine & User Diagnostic Controls"
+    ],
+    "privacy_redaction": "Automatic redaction of emails, phone numbers, auth tokens/secrets, full URL lists",
+    "qa_status": "Diagnostic and redaction subsystem verified; active engine logs [Engine][TX], [Engine][ACK], [Engine][VERIFY]"
+  },
+  "remediation_r1_mandates": {
+    "R1_MANDATE_1_PAYLOAD_BINDING": {
+      "status": "SATISFIED",
+      "description": "startCampaign() explicitly calls bindCampaignTemplateMetadata(currentTpl) and binds templateId and templateVersion into startPayload, passing them directly to background START_CAMPAIGN."
+    },
+    "R1_MANDATE_2_DEFAULT_TEMPLATE_DELETION_GUARD": {
+      "status": "SATISFIED",
+      "description": "TemplateStore.deleteTemplate() and popup handleDeleteTemplate() enforce that default templates cannot be deleted; users must set another template as default first (eliminates templates_v2 / xpider_tpl split-brain)."
+    },
+    "R1_MANDATE_3_STORAGE_REJECTION_COMPLIANCE": {
+      "status": "SATISFIED",
+      "description": "TemplateStore setStore(), saveTemplateRecord(), and setDefaultTemplate() inspect chrome.runtime.lastError and callback errors, properly rejecting on storage failure."
+    },
+    "R1_MANDATE_4_ACTIVE_SUBMIT_LOCK_QUERY": {
+      "status": "SATISFIED",
+      "description": "Popup controllers (dispatchSelectiveReset, dispatchGlobalReset) invoke checkActiveSubmitLock() to authoritatively query background campaignState (GET_STATE) and chrome.storage.local (xpider_currentAttempt for SUBMIT_PENDING)."
+    },
+    "R1_MANDATE_5_ACTUAL_CONTROLLER_TESTING": {
+      "status": "SATISFIED",
+      "description": "test_phase2b_acceptance.js directly invokes all production controller functions exported by popup.js plus startCampaign(). All 18 suite tests pass."
+    },
+    "R1_MANDATE_6_EXECUTABLE_REPO_LAYOUT": {
+      "status": "SATISFIED",
+      "description": "Repackaged evidence strictly preserves repository layout (send_message_backup/... and root regression test files) so all test commands run directly upon extraction."
+    }
+  },
+  "implementation_components": {
+    "COMPONENT_A_TEMPLATE_MANAGER": {
+      "status": "IMPLEMENTED",
+      "controls": [
+        "#tpl-library-select (dropdown selector)",
+        "#new-tpl-btn (create new template)",
+        "#save-tpl-changes-btn (authoritative save)",
+        "#dup-tpl-btn (clone active template)",
+        "#default-tpl-btn (set default and sync legacy)",
+        "#del-tpl-btn (delete non-default template)",
+        "#load-tpl-file-btn (import template text file)"
+      ],
+      "storage_sync": "Dual-accessor FormTemplateV2 canonical schema in templates_v2; synchronized to xpider_tpl on default change."
+    },
+    "COMPONENT_B_AUDIT_LEDGER": {
+      "status": "IMPLEMENTED",
+      "controls": [
+        "#ledger-stats-banner (TOTAL, SUCCESS, SUPPRESSED, UNKNOWN, FAILED)",
+        "#ledger-filter-chips (ALL, SUCCESS, SUPPRESSED, DELIVERY_UNKNOWN, FAILED, INVALID)",
+        "#ledger-search-input (domain, URL, and reason code text search)",
+        "#ledger-export-csv-btn (RFC-4180 audit export trigger)",
+        "#ledger-list-container (compact responsive cards, status badges, timestamp)",
+        "#ledger-pagination-bar (50 per page pagination with Prev/Next)"
+      ]
+    },
+    "COMPONENT_C_RESET_AND_RETRY": {
+      "status": "IMPLEMENTED",
+      "controls": [
+        "#ledger-reset-selected-btn (selective suppression release for checked targets)",
+        "#ledger-retry-failed-btn (auditor correction 1: queues failed targets for retry without mutating suppression or generation)",
+        "#ledger-reset-all-btn (2-step modal confirmation, active submission lock guard, global generation advance)"
+      ]
+    },
+    "COMPONENT_D_EXECUTION_BINDING": {
+      "status": "IMPLEMENTED",
+      "metadata": [
+        "templateId and templateVersion attached to campaignState on campaign start",
+        "passed to recordAttempt and stamped on attempt records additively",
+        "exported to CSV audit log as additive columns (backward-compatible, missing fields tolerated)"
+      ]
+    }
+  },
+  "test_results": {
+    "test_reliability_r1": "13/13 PASS (100%)",
+    "test_phase2a": "14/14 PASS (100%)",
+    "test_phase0_1": "5/5 PASS (100%)",
+    "test_phase0_1_behavioral": "5/5 PASS (100%)",
+    "test_phase2a_integration_f7f13": "32/32 PASS (100%)",
+    "test_phase2b_acceptance": "18/18 PASS (100%)",
+    "total_suite_count": 87,
+    "total_passed": 87,
+    "total_failed": 0
+  }
+}

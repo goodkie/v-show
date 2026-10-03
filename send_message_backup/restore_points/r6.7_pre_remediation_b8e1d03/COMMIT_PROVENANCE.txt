@@ -1,0 +1,42 @@
+[ANTIGRAVITY][PROVENANCE][extension-form-sender][CHROME RUNTIME HOTFIX BUILD]
+
+=== REPOSITORY & PROVENANCE METADATA ===
+Repository Type: Standalone Local Development Repository (local-only, no remote origin attached)
+Workspace Root: e:\vivpr\ai\extension-form-sender
+Branch: upgrade/phase-0-1
+Commit SHA: e25780278d6bd5dc520be72d427358df71b9e19f
+Auditor Collaboration Hub: GitHub Issue #6 on goodkie/v-show
+Timestamp: 2026-10-01T12:25:00Z
+Rollback Anchor: 812c930e758835b7c2336602d27997cd54dcee08 (evidence_phase2b_chrome_runtime_hotfix.zip / 4D9F9EB83E82243A7C12DFEC4731E7D3CE8F01777243ECBBD722B34B8FA2DBB2)
+
+=== CHROME RUNTIME TRANSPORT HOTFIX SUMMARY ===
+1. Issue #6 Root Cause: The unpacked Chrome extension had a dead Electron/main-process window.postMessage bridge (xpiderInvoke), causing a 30-second timeout on "START SENDING" in real Chrome (IPC timeout: xpider-campaign-start).
+2. Elimination of Dead Native IPC:
+   - xpider-campaign-start -> replaced with direct chrome.runtime.sendMessage({ action: 'START_CAMPAIGN', ... })
+   - xpider-campaign-get-state -> replaced with direct chrome.runtime.sendMessage({ action: 'GET_STATE' }) on popup load
+   - xpider-campaign-pause / resume -> replaced with PAUSE_CAMPAIGN / RESUME_CAMPAIGN
+   - xpider-campaign-stop -> replaced with STOP_CAMPAIGN
+   - xpider-ext-get-wit-key -> replaced with direct chrome.storage.local loader
+   - xpider-ext-sync-wit-key -> replaced with chrome.runtime.sendMessage({ action: 'UPDATE_WIT_KEY', key })
+   - xpider-show-save-dialog -> replaced with chrome.downloads.download({ url, filename, saveAs: true })
+3. Strict Start ACK & UI Lifecycle: UI transitions to 'Starting...' first; campaignActive is set to true only upon receiving background ACK; failure immediately restores the start button; followed by post-ACK GET_STATE verification.
+4. Preserved Diagnostics: Diagnostic buffer and UI buttons (#copy-diagnostic-btn, #download-diagnostic-btn, #clear-diagnostic-btn) preserved with automatic privacy redaction.
+5. Verification Test Suite: TRANSPORT-1 through TRANSPORT-7 added to test_phase2b_acceptance.js, verifying start/ack, error recovery, immediate GET_STATE, pause/resume/stop, Wit key management, template download, and zero calls to the 8 dead native channels.
+
+=== FORM EXECUTION RELIABILITY & RESUMABILITY R1 SUMMARY ===
+1. Issue #6 Directives (2026-10-01T11:55:57Z):
+   - FormStabilizer: Bounded stabilization (max 5s, max 2 attempts/element, 500ms cooldown, 2 stable cycles, deterministic values). Eliminates infinite empty field sweeper loop fighting React/Wix forms.
+   - executeSubmitStateMachine: Stops stabilizer, 350ms settle delay, pre-submit validity check (VALIDATION_FAILED abort after single bounded self-heal), discover ranked submit candidates skipping disabled and aria-disabled elements, prefer form.requestSubmit(btn), single trusted click sequence fallback, strictly forbids HTMLFormElement.prototype.submit.
+   - Resumable Campaign: PAUSE NOW / STOP & SAVE, RESUME, END CAMPAIGN store/restore remainingQueue in xpider_paused_checkpoint without reloading full 492 targets.
+   - History Skip: Skip Previously Attempted (default ON) filters targets before starting orchestrator using HistoryStore.hasPriorAttempt() checking durable execution statuses (PREPARING, SUBMIT_PENDING, CONFIRMED_SUCCESS, FAILURE, DELIVERY_UNKNOWN).
+   - Forensic Logging: [TARGET idx/total][host] START and [TARGET][host] FINAL status=... reason=... with outcomeHistogram aggregation in campaignState.
+
+=== VERIFICATION STATUS (87 / 87 PASS, 100%) ===
+- send_message_backup/test_reliability_r1.js: 13/13 PASS (100%)
+- test_phase2a.js: 14/14 PASS (100%)
+- test_phase0_1.js: 5/5 PASS (100%)
+- test_phase0_1_behavioral.js: 5/5 PASS (100%)
+- send_message_backup/test_phase2a_integration_f7f13.js: 32/32 PASS (100%)
+- send_message_backup/test_phase2b_acceptance.js: 18/18 PASS (100%)
+- Total: 87/87 PASS (100%)
+- QA Status: AUTOMATED SUITES = PASS (100%); real Chrome execution = PENDING OWNER LIVE VALIDATION

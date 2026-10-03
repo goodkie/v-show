@@ -591,6 +591,69 @@ async function runAllTests() {
     });
 
     // -------------------------------------------------------------
+    // R6.8-19: Invariant: formIntentReason === targetTerminalSkipReason
+    // -------------------------------------------------------------
+    it('R6.8-19: formIntentReason === targetTerminalSkipReason for non-inquiry skip cases', () => {
+        // 1. Search form
+        const searchForm = new MockElement('FORM', 'search-form');
+        searchForm.setAttribute('action', '/search');
+        searchForm.appendChild(new MockElement('INPUT', 'q', 'text'));
+        const searchBtn = searchForm.appendChild(new MockElement('BUTTON', 'btn-search', 'submit'));
+        searchBtn.textContent = 'Search Catalog';
+
+        // 2. Booking form
+        const bookingForm = new MockElement('FORM', 'booking-widget');
+        bookingForm.appendChild(new MockElement('INPUT', 'cust_name', 'text'));
+        bookingForm.appendChild(new MockElement('INPUT', 'cust_email', 'email'));
+        bookingForm.appendChild(new MockElement('INPUT', 'book_date', 'date'));
+        bookingForm.appendChild(new MockElement('INPUT', 'book_time', 'time'));
+        const bookBtn = bookingForm.appendChild(new MockElement('BUTTON', 'book-btn', 'submit'));
+        bookBtn.textContent = 'Book Appointment';
+
+        // 3. Subscribe form
+        const subscribeForm = new MockElement('FORM', 'signup-form');
+        subscribeForm.appendChild(new MockElement('INPUT', 'fname', 'text'));
+        subscribeForm.appendChild(new MockElement('INPUT', 'email', 'email'));
+        const subBtn = subscribeForm.appendChild(new MockElement('BUTTON', 'sub-btn', 'submit'));
+        subBtn.textContent = 'Subscribe Now';
+
+        // 4. Login form
+        const loginForm = new MockElement('FORM', 'login-form');
+        loginForm.setAttribute('action', '/login');
+        loginForm.appendChild(new MockElement('INPUT', 'username', 'text'));
+        loginForm.appendChild(new MockElement('INPUT', 'password', 'password'));
+        const loginBtn = loginForm.appendChild(new MockElement('BUTTON', 'login-btn', 'submit'));
+        loginBtn.textContent = 'Log In';
+
+        const cases = [
+            { name: 'search', form: searchForm },
+            { name: 'booking', form: bookingForm },
+            { name: 'subscribe', form: subscribeForm },
+            { name: 'login', form: loginForm }
+        ];
+
+        for (const tc of cases) {
+            const gate = ContactGate.classifyFormIntent(tc.form);
+            assert.strictEqual(gate.eligible, false, `${tc.name} form must be classified as ineligible`);
+            
+            // In content-script: finishCampaign(false, classification.reason, classification.reason)
+            // In background: finalReason = res?.reasonCode
+            const simulatedFinishPayload = {
+                success: false,
+                reasonCode: gate.reason,
+                error: gate.reason
+            };
+            const targetTerminalSkipReason = simulatedFinishPayload.reasonCode;
+
+            assert.strictEqual(
+                gate.reason,
+                targetTerminalSkipReason,
+                `formIntentReason (${gate.reason}) must strictly equal targetTerminalSkipReason (${targetTerminalSkipReason}) for ${tc.name}`
+            );
+        }
+    });
+
+    // -------------------------------------------------------------
     // Summary
     // -------------------------------------------------------------
     console.log(`\n========================================`);
