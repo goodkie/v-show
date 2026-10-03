@@ -1029,6 +1029,9 @@ function applyTranslations(lang) {
 }
 
 function updateRealTimeStatus(data) {
+    if (data.scope || data.campaignRunId) {
+        console.log(`[LEDGER_STATS] scope=${data.scope || 'currentRun'} success=${data.successCount || 0} failed=${data.failedCount || 0} unknown=${data.deliveryUnknownCount || 0}`);
+    }
     if (data.totalTargets !== undefined) {
         totalTargets = data.totalTargets;
     }
@@ -2883,14 +2886,16 @@ async function renderLedgerUI() {
     const totalCount = allRecords.length;
     const successCount = allRecords.filter(r => r.status === 'CONFIRMED_SUCCESS').length;
     const suppressedCount = allRecords.filter(r => r.isSuppressed).length;
-    const unknownCount = allRecords.filter(r => r.status === 'DELIVERY_UNKNOWN').length;
+    const unknownCount = allRecords.filter(r => r.status === 'DELIVERY_UNKNOWN' || r.status === 'PAUSED_UNKNOWN').length;
     const failedCount = allRecords.filter(r => r.status === 'FAILURE').length;
+    const skippedCount = allRecords.filter(r => r.status === 'SKIPPED').length;
 
     const elTot = document.getElementById('stat-ledger-total'); if (elTot) elTot.textContent = totalCount;
     const elSuc = document.getElementById('stat-ledger-success'); if (elSuc) elSuc.textContent = successCount;
     const elSup = document.getElementById('stat-ledger-suppressed'); if (elSup) elSup.textContent = suppressedCount;
     const elUnk = document.getElementById('stat-ledger-unknown'); if (elUnk) elUnk.textContent = unknownCount;
     const elFld = document.getElementById('stat-ledger-failed'); if (elFld) elFld.textContent = failedCount;
+    const elSkp = document.getElementById('stat-ledger-skipped'); if (elSkp) elSkp.textContent = skippedCount;
 
     // Filtered page
     const pageData = await filterHistoryRecords();
@@ -2913,7 +2918,7 @@ async function renderLedgerUI() {
             } else if (rec.isSuppressed) {
                 badgeClass = 'status-suppressed';
                 badgeLabel = 'SUPPRESSED';
-            } else if (rec.status === 'DELIVERY_UNKNOWN' || rec.status === 'UNKNOWN') {
+            } else if (rec.status === 'DELIVERY_UNKNOWN' || rec.status === 'UNKNOWN' || rec.status === 'PAUSED_UNKNOWN') {
                 badgeClass = 'status-unknown';
                 badgeLabel = 'UNKNOWN';
             } else if (rec.status === 'FAILURE' || rec.status === 'FAILED') {
@@ -2961,6 +2966,14 @@ async function renderLedgerUI() {
                 ? `<a href="${contactUrl}" target="_blank" rel="noopener noreferrer" class="ledger-contact-link" style="color: #38bdf8; text-decoration: underline;" title="${contactUrl}">📍 ${contactDisplay}</a>`
                 : `<span style="color: #64748b;">Not verified</span>`;
 
+            const isUnknown = (rec.status === 'DELIVERY_UNKNOWN' || rec.status === 'UNKNOWN' || rec.status === 'PAUSED_UNKNOWN');
+            const reconcileHtml = isUnknown && rec.attemptId ? `
+                <div class="ledger-reconcile-actions" style="display: flex; gap: 8px; margin: 6px 0 4px 22px;">
+                    <button class="reconcile-btn success-btn" data-attempt-id="${rec.attemptId}" style="background: rgba(34, 197, 94, 0.15); border: 1px solid #22c55e; color: #22c55e; border-radius: 4px; padding: 2px 8px; font-size: 10px; cursor: pointer; font-weight: 600;">✅ Mark as Success</button>
+                    <button class="reconcile-btn failed-btn" data-attempt-id="${rec.attemptId}" style="background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #ef4444; border-radius: 4px; padding: 2px 8px; font-size: 10px; cursor: pointer; font-weight: 600;">❌ Mark as Failed</button>
+                </div>
+            ` : '';
+
             card.innerHTML = `
                 <div class="ledger-item-top">
                     <div class="ledger-item-left">
@@ -2974,6 +2987,7 @@ async function renderLedgerUI() {
                     ${contactElement}
                     ${rec.emailsFound ? `<span style="color: #4ade80;">📧 ${rec.emailsFound} emails</span>` : ''}
                 </div>
+                ${reconcileHtml}
                 <div class="ledger-item-meta">
                     <span class="ledger-item-row-idx">Row #${rec.sourceRowId} · Gen ${rec.generationId || 1}</span>
                     <span class="ledger-item-reason" title="${rec.reasonCode}">${rec.reasonCode}</span>
@@ -2994,6 +3008,33 @@ async function renderLedgerUI() {
                 }
                 updateSelectionCountUI();
                 e.target.closest('.ledger-item-card')?.classList.toggle('is-selected', e.target.checked);
+            });
+        });
+
+        // Bind visual reconciliation clicks
+        container.querySelectorAll('.reconcile-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const attemptId = e.currentTarget.dataset.attemptId;
+                const isSuccess = e.currentTarget.classList.contains('success-btn');
+                const targetStatus = isSuccess ? 'CONFIRMED_SUCCESS' : 'FAILURE';
+                try {
+                    btn.disabled = true;
+                    btn.textContent = 'Updating...';
+                    await new Promise((resolve) => {
+                        chrome.runtime.sendMessage({
+                            action: 'RECONCILE_ATTEMPT_VISUAL',
+                            attemptId: attemptId,
+                            status: targetStatus
+                        }, resolve);
+                    });
+                    await renderLedgerUI();
+                    if (typeof _renderHistoryPanel === 'function') {
+                        await _renderHistoryPanel();
+                    }
+                } catch (err) {
+                    console.error('Visual reconciliation error:', err);
+                }
             });
         });
     }
@@ -3776,6 +3817,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const invalid = rows.filter(r => r.status === 'INVALID_INPUT').length;
             const succeeded = attempts.filter(a => a.status === 'CONFIRMED_SUCCESS').length;
             const failed = attempts.filter(a => a.status === 'FAILURE').length;
+            const unknown = attempts.filter(a => a.status === 'DELIVERY_UNKNOWN' || a.status === 'PAUSED_UNKNOWN').length;
+            const skipped = attempts.filter(a => a.status === 'SKIPPED').length;
 
             panel.innerHTML = `
                 <div class="history-stat-row">
@@ -3795,6 +3838,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 <div class="history-stat-row">
                     <span>Failed:</span><span><b style="color:#f59e0b">${failed}</b></span>
+                </div>
+                <div class="history-stat-row">
+                    <span>Unknown:</span><span><b style="color:#a855f7">${unknown}</b></span>
+                </div>
+                <div class="history-stat-row">
+                    <span>Skipped:</span><span><b style="color:#64748b">${skipped}</b></span>
                 </div>
             `;
         } catch (e) {

@@ -4341,6 +4341,8 @@
         prepare() {
             this.startTime = Date.now();
             this.submitEventSeen = false;
+            this.lastMutationTime = Date.now();
+            this.mutationCount = 0;
             this.preSnapshot = this.capturePreSubmitSnapshot();
 
             if (this.form && typeof this.form.addEventListener === 'function') {
@@ -4352,7 +4354,9 @@
 
             if (typeof MutationObserver !== 'undefined' && typeof document !== 'undefined' && document.body) {
                 try {
-                    this.observer = new MutationObserver(() => {
+                    this.observer = new MutationObserver((mutations) => {
+                        this.lastMutationTime = Date.now();
+                        this.mutationCount += (mutations ? mutations.length : 1);
                         if (!this.decisiveOutcome) {
                             const quick = this.evaluateSignals();
                             if (quick && (quick.isDecisiveSuccess || quick.isDecisiveFailure)) {
@@ -4452,7 +4456,18 @@
                 }
             }
 
-            // 3. Preexisting success node visibility transition (R6.6 & R6.7)
+            // 2b. Server / transport error signals
+            let serverErrorFound = false;
+            if (typeof document !== 'undefined' && document.body) {
+                const bodyTextLower = (document.body.textContent || '').toLowerCase();
+                if (/500 internal server error|an error occurred while processing|submission failed|could not send message|서버 오류/i.test(bodyTextLower)) {
+                    if (!this.preSnapshot || !this.preSnapshot.bodyText.includes('500 internal server error')) {
+                        serverErrorFound = true;
+                    }
+                }
+            }
+
+            // 3. Preexisting success node visibility transition (R6.6 & R6.7 & R6.9A)
             let successVisibilityTransition = false;
             if (this.preSnapshot && this.preSnapshot.successSnapshots) {
                 for (const s of this.preSnapshot.successSnapshots) {
@@ -4475,6 +4490,22 @@
                 'successfully submitted', 'submission received', 'we received your message', 'we\'ll be in touch',
                 'ありがとうございます', '送信完了', '受け付けました', '提交成功', 'vielen dank', 'gesendet', 'erfolgreich', 'merci'
             ];
+
+            // 4a. aria-live / role=status / role=alert success transition (R6.9A)
+            let ariaLiveSuccessTransition = false;
+            if (typeof document !== 'undefined' && document.querySelectorAll) {
+                const liveNodes = document.querySelectorAll('[aria-live], [role="status"], [role="alert"]');
+                for (const node of liveNodes) {
+                    if (typeof elementIsVisible === 'function' && !elementIsVisible(node)) continue;
+                    const txt = (node.textContent || '').trim().toLowerCase();
+                    if (!txt) continue;
+                    if (this.preSnapshot && this.preSnapshot.existingSuccessTexts.includes(txt)) continue;
+                    if (commonSuccessKeywords.some(k => txt.includes(k))) {
+                        ariaLiveSuccessTransition = true;
+                        break;
+                    }
+                }
+            }
 
             let newSuccessNodes = 0;
             const frameworkSuccessSelectors = [
@@ -4514,17 +4545,29 @@
             }
 
             // Body text delta
+            let successTextTransition = false;
             const currentBodyText = (typeof document !== 'undefined' && document.body) ? (document.body.textContent || '').toLowerCase() : '';
-            if (newSuccessNodes === 0 && this.preSnapshot) {
+            if (this.preSnapshot) {
                 for (const kw of commonSuccessKeywords) {
                     if (currentBodyText.includes(kw) && !this.preSnapshot.bodyText.includes(kw)) {
                         newSuccessNodes++;
+                        successTextTransition = true;
                         break;
                     }
                 }
             }
 
-            const isDecisiveSuccess = !newErrorsFound && (isSuccessUrl || newSuccessNodes > 0 || successVisibilityTransition);
+            // Submit button sent state (R6.9A)
+            let buttonSuccessState = false;
+            if (this.form && this.form.querySelector) {
+                const btn = this.form.querySelector('button[type="submit"], input[type="submit"], button');
+                if (btn) {
+                    const btnTxt = (btn.textContent || btn.value || '').trim().toLowerCase();
+                    if (/sent|submitted|완료|전송완료|보냄|complete|success/i.test(btnTxt)) {
+                        buttonSuccessState = true;
+                    }
+                }
+            }
 
             // Medium Signals
             const formStillThere = this.form && typeof document !== 'undefined' && document.body && document.body.contains(this.form);
@@ -4547,19 +4590,28 @@
                 }
             }
 
+            const formReplaced = !formStillThere && (newSuccessNodes > 0 || successVisibilityTransition || ariaLiveSuccessTransition);
+            const isDecisiveSuccess = !newErrorsFound && !serverErrorFound && (isSuccessUrl || newSuccessNodes > 0 || successVisibilityTransition || ariaLiveSuccessTransition || buttonSuccessState || formReplaced);
+            const isDecisiveFailure = (newErrorsFound && validationErrorsCount > 0) || serverErrorFound;
+
             return {
                 urlChanged,
                 isSuccessUrl,
                 newErrorsFound,
                 validationErrorsCount,
+                serverErrorFound,
                 newSuccessNodes,
+                successVisibilityTransition,
+                ariaLiveSuccessTransition,
+                successTextTransition,
+                buttonSuccessState,
                 formStillThere,
                 formHidden,
                 formReset,
+                formReplaced,
                 submitBtnDisabled,
-                successVisibilityTransition,
-                isDecisiveSuccess: (isSuccessUrl || newSuccessNodes > 0 || successVisibilityTransition) && !newErrorsFound,
-                isDecisiveFailure: newErrorsFound && newSuccessNodes === 0 && !successVisibilityTransition
+                isDecisiveSuccess,
+                isDecisiveFailure
             };
         }
 
@@ -4569,37 +4621,57 @@
                 this.submitEventSeen = true;
             }
 
-            const maxWaitMs = 8000;
+            const baseWaitMs = 8000;
+            const extendedWaitMs = 20000;
+            const transportWaitMs = 30000;
             const intervalMs = 250;
             const start = Date.now();
             let finalDecision = null;
             let finalSignals = null;
 
-            while (Date.now() - start < maxWaitMs) {
-                const latency = Date.now() - start;
+            while (true) {
+                const elapsed = Date.now() - start;
                 const signals = this.evaluateSignals();
                 finalSignals = signals;
 
                 // 1. Strong Success: URL Redirect
-                if (signals.isSuccessUrl && !signals.newErrorsFound) {
+                if (signals.isSuccessUrl && !signals.newErrorsFound && !signals.serverErrorFound) {
                     finalDecision = 'CONFIRMED_SUCCESS';
                     break;
                 }
 
-                // 2. Strong Success: New explicit success DOM element
-                if (signals.newSuccessNodes > 0 && !signals.newErrorsFound) {
+                // 2. Strong Success: Hidden success node becomes visible
+                if (signals.successVisibilityTransition && !signals.newErrorsFound && !signals.serverErrorFound) {
                     finalDecision = 'CONFIRMED_SUCCESS';
                     break;
                 }
 
-                // 2b. Decisive success from mock evaluateSignals override
+                // 2b. Strong Success: aria-live / role=status / role=alert success transition
+                if (signals.ariaLiveSuccessTransition && !signals.newErrorsFound && !signals.serverErrorFound) {
+                    finalDecision = 'CONFIRMED_SUCCESS';
+                    break;
+                }
+
+                // 2c. Strong Success: New explicit success DOM element / text mutation
+                if (signals.newSuccessNodes > 0 && !signals.newErrorsFound && !signals.serverErrorFound) {
+                    finalDecision = 'CONFIRMED_SUCCESS';
+                    break;
+                }
+
+                // 2d. Strong Success: Button changes to sent/complete state
+                if (signals.buttonSuccessState && !signals.newErrorsFound && !signals.serverErrorFound) {
+                    finalDecision = 'CONFIRMED_SUCCESS';
+                    break;
+                }
+
+                // 2e. Decisive success from mock or composite
                 if (signals.isDecisiveSuccess) {
                     finalDecision = 'CONFIRMED_SUCCESS';
                     break;
                 }
 
                 // 3. Strong Success: Form disappeared / replaced by confirmation
-                if (!signals.formStillThere && signals.newSuccessNodes > 0) {
+                if (signals.formReplaced && !signals.newErrorsFound && !signals.serverErrorFound) {
                     finalDecision = 'CONFIRMED_SUCCESS';
                     break;
                 }
@@ -4609,27 +4681,45 @@
                     finalDecision = 'SUBMIT_VALIDATION_BLOCKED';
                     break;
                 }
-
-                // 4b. Decisive failure from mock evaluateSignals override
+                if (signals.serverErrorFound) {
+                    finalDecision = 'SUBMISSION_SERVER_ERROR';
+                    break;
+                }
                 if (signals.isDecisiveFailure) {
                     finalDecision = 'SUBMIT_VALIDATION_BLOCKED';
                     break;
                 }
 
-                // 5. Composite Confirmed Outcome (Issue #6 R6.8 P0-4: EVENT_ONLY can never become CONFIRMED_SUCCESS)
-                if (submitOutcome && submitOutcome.success && !signals.newErrorsFound) {
-                    const hasPositiveConfirmation = signals.newSuccessNodes > 0 || signals.successVisibilityTransition || signals.isSuccessUrl;
+                // 5. Composite Confirmed Outcome
+                if (submitOutcome && submitOutcome.success && !signals.newErrorsFound && !signals.serverErrorFound) {
+                    const hasPositiveConfirmation = signals.newSuccessNodes > 0 || signals.successVisibilityTransition || signals.ariaLiveSuccessTransition || signals.isSuccessUrl || signals.buttonSuccessState;
                     const hasStructuralResolution = signals.formReset && (signals.formHidden || !signals.formStillThere);
 
-                    // Requires an independent positive result (never bare submitEvent + disabled button alone)
-                    if ((hasPositiveConfirmation || hasStructuralResolution) && latency >= 750) {
+                    if ((hasPositiveConfirmation || hasStructuralResolution) && elapsed >= 750) {
                         finalDecision = 'CONFIRMED_SUCCESS_COMPOSITE';
                         break;
                     }
                 }
 
-                // Phase C (>3500ms): only keep polling if submit was seen or button was busy/loading
-                if (latency > 3500 && !this.submitEventSeen && !signals.submitBtnDisabled && !signals.formReset) {
+                // Dynamic max wait calculation (R6.9A Section 7)
+                // Base: 8s. Extend to 20s if: submitEventSeen OR network pending OR button disabled/busy OR recent mutations
+                let maxWaitMs = baseWaitMs;
+                const recentMutation = (Date.now() - this.lastMutationTime < 2000);
+                const hasPendingActivity = this.submitEventSeen || (submitOutcome && submitOutcome.networkPending) || signals.submitBtnDisabled || recentMutation;
+                if (hasPendingActivity) {
+                    maxWaitMs = extendedWaitMs;
+                }
+                // Extend to 30s ONLY while transport is actively pending
+                if (submitOutcome && submitOutcome.transportPending) {
+                    maxWaitMs = transportWaitMs;
+                }
+
+                if (elapsed >= maxWaitMs) {
+                    break;
+                }
+
+                // Phase C (>3500ms): early exit if NO submit seen, NO button busy, NO form reset, and NO mutations
+                if (elapsed > 3500 && !this.submitEventSeen && !signals.submitBtnDisabled && !signals.formReset && !recentMutation) {
                     break;
                 }
 
@@ -4640,8 +4730,10 @@
 
             const totalLatency = Date.now() - start;
             if (!finalDecision) {
-                if (finalSignals && finalSignals.newErrorsFound) {
-                    finalDecision = 'SUBMIT_VALIDATION_BLOCKED';
+                if (finalSignals && (finalSignals.newErrorsFound || finalSignals.serverErrorFound)) {
+                    finalDecision = finalSignals.serverErrorFound ? 'SUBMISSION_SERVER_ERROR' : 'SUBMIT_VALIDATION_BLOCKED';
+                } else if (this.submitEventSeen || (submitOutcome && submitOutcome.networkCommitObserved)) {
+                    finalDecision = 'DELIVERY_UNKNOWN';
                 } else if (submitOutcome && submitOutcome.strategy === 'trusted_click_sequence' && !this.submitEventSeen) {
                     finalDecision = 'SUBMIT_CLICK_NO_EFFECT';
                 } else {
@@ -4649,16 +4741,46 @@
                 }
             }
 
+            // Structured outcome evidence (R6.9A Section 3 & 7)
+            const isSuccess = (finalDecision === 'CONFIRMED_SUCCESS' || finalDecision === 'CONFIRMED_SUCCESS_COMPOSITE');
+            let confirmationStrength = 'NONE';
+            if (isSuccess) {
+                if (finalSignals && finalSignals.isSuccessUrl) confirmationStrength = 'URL_CHANGE';
+                else if (submitOutcome && submitOutcome.networkCommitObserved) confirmationStrength = 'NETWORK_PLUS_DOM';
+                else confirmationStrength = 'STRONG_DOM';
+            }
+
+            const outcomeEvidence = {
+                submitAttempted: true,
+                submitEventSeen: !!this.submitEventSeen,
+                physicalClickDispatched: !!(submitOutcome && submitOutcome.physicalClickDispatched),
+                networkCommitObserved: !!(submitOutcome && submitOutcome.networkCommitObserved),
+                networkStatus: (submitOutcome && submitOutcome.networkStatus !== undefined) ? submitOutcome.networkStatus : null,
+                successNodeVisibleTransition: !!(finalSignals && finalSignals.successVisibilityTransition),
+                successTextTransition: !!(finalSignals && (finalSignals.successTextTransition || finalSignals.newSuccessNodes > 0)),
+                ariaLiveSuccessTransition: !!(finalSignals && finalSignals.ariaLiveSuccessTransition),
+                formReset: !!(finalSignals && finalSignals.formReset),
+                formHidden: !!(finalSignals && finalSignals.formHidden),
+                formReplaced: !!(finalSignals && finalSignals.formReplaced),
+                buttonSuccessState: !!(finalSignals && finalSignals.buttonSuccessState),
+                thankYouUrlTransition: !!(finalSignals && finalSignals.isSuccessUrl),
+                frameworkSuccessState: !!(finalSignals && finalSignals.newSuccessNodes > 0),
+                validationErrorTransition: !!(finalSignals && finalSignals.newErrorsFound && finalSignals.validationErrorsCount > 0),
+                serverErrorTransition: !!(finalSignals && finalSignals.serverErrorFound),
+                captchaRejected: !!(submitOutcome && submitOutcome.captchaRejected),
+                confirmationStrength,
+                evidenceTimestamp: Date.now()
+            };
+
             // Specification Required Diagnostic Output
             logDev(`[SUBMIT_VERIFY] submitEvent=${this.submitEventSeen}`, "info");
             logDev(`[SUBMIT_VERIFY] urlChanged=${finalSignals ? finalSignals.urlChanged : false}`, "info");
             logDev(`[SUBMIT_VERIFY] newSuccessNodes=${finalSignals ? finalSignals.newSuccessNodes : 0}`, "info");
             logDev(`[SUBMIT_VERIFY] validationErrors=${finalSignals ? finalSignals.validationErrorsCount : 0}`, "info");
             logDev(`[SUBMIT_VERIFY] formReset=${finalSignals ? finalSignals.formReset : false}`, "info");
-            logDev(`[SUBMIT_VERIFY] decision=${finalDecision}`, (finalDecision.includes('SUCCESS') ? "success" : "warning"));
+            logDev(`[SUBMIT_VERIFY] decision=${finalDecision}`, (isSuccess ? "success" : "warning"));
             logDev(`[SUBMIT_VERIFY] latencyMs=${totalLatency}`, "info");
 
-            const isSuccess = (finalDecision === 'CONFIRMED_SUCCESS' || finalDecision === 'CONFIRMED_SUCCESS_COMPOSITE');
             stopActiveEmptyFieldSweeper();
 
             if (isSuccess) {
@@ -4674,18 +4796,22 @@
                 finishCampaign(true, null, finalDecision, {
                     resultUrl: (typeof window !== 'undefined') ? window.location.href : '',
                     decision: finalDecision,
-                    latencyMs: totalLatency
+                    latencyMs: totalLatency,
+                    outcomeEvidence,
+                    confirmationStrength
                 });
-                return { success: true, reasonCode: 'SUBMISSION_CONFIRMED_SUCCESS', decision: finalDecision, latencyMs: totalLatency };
+                return { success: true, reasonCode: 'SUBMISSION_CONFIRMED_SUCCESS', decision: finalDecision, latencyMs: totalLatency, outcomeEvidence };
             } else {
                 logDev(`[FINAL] status=${finalDecision}`, "warning");
                 sessionStorage.removeItem('xpider_submit_count');
                 finishCampaign(false, `Submission outcome: ${finalDecision}`, finalDecision, {
                     resultUrl: (typeof window !== 'undefined') ? window.location.href : '',
                     decision: finalDecision,
-                    latencyMs: totalLatency
+                    latencyMs: totalLatency,
+                    outcomeEvidence,
+                    confirmationStrength
                 });
-                return { success: false, reasonCode: 'SUBMISSION_OUTCOME_FAILURE', decision: finalDecision, latencyMs: totalLatency };
+                return { success: false, reasonCode: 'SUBMISSION_OUTCOME_FAILURE', decision: finalDecision, latencyMs: totalLatency, outcomeEvidence };
             }
         }
     }

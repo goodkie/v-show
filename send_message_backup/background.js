@@ -136,6 +136,7 @@ let campaignState = {
     isActive: false,
     queue: [],
     template: null,
+    campaignRunId: null, // [R6.9A] Persistent campaign run identifier for ledger scoping
     successCount: 0,
     totalTargets: 0,
     delayMs: 12000,
@@ -153,13 +154,16 @@ let campaignState = {
     currentDiscoveryCtx: null,
     currentAttempt: null, // [v1.2.0 Intent Ledger] { url, attemptId, status: 'SUBMIT_PENDING'|'RESOLVED', reasonCode, ts }
     focusActiveTargetTab: true, // [Hotfix R2] Auto-focus campaign target tab
-    // [Authoritative Real-Time Campaign Counters]
+    // [R6.9A Authoritative Real-Time Campaign Counters (Ledger-Derived)]
     counters: {
         success: 0,
         failed: 0,
         completed: 0,
         remaining: 0,
         deliveryUnknown: 0,
+        timeout: 0,
+        skipped: 0,
+        paused: 0,
         skippedHistory: 0,
         inProgress: 0,
         total: 0,
@@ -173,8 +177,14 @@ function broadcastCounters() {
     chrome.runtime.sendMessage({
         action: 'UPDATE_STATS',
         data: {
+            scope: 'currentRun',
+            campaignRunId: campaignState.campaignRunId,
             successCount: campaignState.counters.success,
             failedCount: campaignState.counters.failed,
+            deliveryUnknownCount: campaignState.counters.deliveryUnknown,
+            timeoutCount: campaignState.counters.timeout,
+            skippedCount: campaignState.counters.skipped,
+            pausedCount: campaignState.counters.paused,
             completedCount: campaignState.counters.completed,
             remainingCount: campaignState.counters.remaining,
             totalTargets: campaignState.counters.total,
@@ -1033,6 +1043,44 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             sendResponse({ success: true, counters: campaignState.counters });
             return true;
 
+        case 'GET_LEDGER_STATS':
+            (async () => {
+                try {
+                    const hs = await getHistoryStoreInstance();
+                    const scope = request.scope || 'currentRun';
+                    const stats = hs.getLedgerStats(scope, campaignState.campaignRunId);
+                    sendResponse({ success: true, stats });
+                } catch (e) {
+                    sendResponse({ success: false, error: e.message });
+                }
+            })();
+            return true;
+
+        case 'RECONCILE_ATTEMPT_VISUAL':
+            (async () => {
+                try {
+                    const hs = await getHistoryStoreInstance();
+                    const result = await hs.reconcileAttemptVisual(request.attemptId, request.status, request.extra || {});
+                    const ledgerStats = hs.getLedgerStats('currentRun', campaignState.campaignRunId);
+                    campaignState.counters.success = ledgerStats.success;
+                    campaignState.counters.failed = ledgerStats.failure;
+                    campaignState.counters.deliveryUnknown = ledgerStats.unknown;
+                    campaignState.counters.timeout = ledgerStats.timeout;
+                    campaignState.counters.skipped = ledgerStats.skipped;
+                    campaignState.counters.paused = ledgerStats.paused;
+                    campaignState.counters.completed = ledgerStats.completed;
+                    campaignState.counters.failureBreakdown = ledgerStats.failureBreakdown;
+                    campaignState.counters.remaining = Math.max(0, campaignState.counters.total - campaignState.counters.completed);
+                    campaignState.successCount = ledgerStats.success;
+                    await persistCounters();
+                    broadcastCounters();
+                    sendResponse({ success: true, result, ledgerStats });
+                } catch (e) {
+                    sendResponse({ success: false, error: e.message });
+                }
+            })();
+            return true;
+
         case 'STOP_CAMPAIGN':
         case 'STOP_AND_SAVE_CAMPAIGN':
             (async () => {
@@ -1864,7 +1912,7 @@ async function startCampaignOrchestrator(queue, template, delayMs, fillDelayMs =
             logBg(null, `⚠️ [Queue Filter] All ${originalInputCount} targets were skipped (historySkipped=${historySkippedCount}, suppressed=${suppressedCount}). If re-testing, disable 'Skip Previously Attempted' or reset history suppression.`, "warning");
         }
 
-        // [v18.15.5] Restore Campaign Variables
+        // [v18.15.5 & R6.9A] Restore Campaign Variables
         campaignState.queue = executableQueue;
         campaignState.template = template;
         campaignState.templateId = (template && (template.id || template.templateId)) || 'default';
@@ -1875,7 +1923,6 @@ async function startCampaignOrchestrator(queue, template, delayMs, fillDelayMs =
         campaignState.isActive = true;
         campaignState.isPaused = false; // [v18.7] Reset pause on new start
         campaignState.sessionId++; 
-        campaignState.successCount = 0;
         campaignState.totalTargets = executableQueue.length;
         campaignState.visitedUrls = []; 
         campaignState.successfulUrls = []; 
@@ -1885,6 +1932,13 @@ async function startCampaignOrchestrator(queue, template, delayMs, fillDelayMs =
         campaignState.outcomeHistogram = {};
         campaignState.pausedCheckpoint = null;
         for (const k of Object.keys(coreRuntimeRefErrors)) delete coreRuntimeRefErrors[k];
+
+        // [R6.9A] Persistent campaignRunId for ledger scoping
+        if (!options.isResume || !campaignState.campaignRunId) {
+            campaignState.campaignRunId = 'run_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
+            if (hs) hs.activeCampaignRunId = campaignState.campaignRunId;
+            chrome.storage.local.set({ xpider_active_campaign_run_id: campaignState.campaignRunId }).catch(() => {});
+        }
         
         logBg(null, "[Boot] Variables initialized.", "debug");
         logBg(null, "🚀 Engine booting...", "start");
@@ -1894,17 +1948,26 @@ async function startCampaignOrchestrator(queue, template, delayMs, fillDelayMs =
         saveCampaignState().catch(() => {}); 
         logBg(null, "[Boot] Storage sync initiated.", "debug");
 
+        const ledgerStats = hs ? hs.getLedgerStats('currentRun', campaignState.campaignRunId) : null;
         campaignState.counters = {
-            success: 0,
-            failed: 0,
-            completed: 0,
+            success: ledgerStats ? ledgerStats.success : 0,
+            failed: ledgerStats ? ledgerStats.failure : 0,
+            completed: ledgerStats ? ledgerStats.completed : 0,
             remaining: executableQueue.length,
-            deliveryUnknown: 0,
+            deliveryUnknown: ledgerStats ? ledgerStats.unknown : 0,
+            timeout: ledgerStats ? ledgerStats.timeout : 0,
+            skipped: ledgerStats ? ledgerStats.skipped : 0,
+            paused: ledgerStats ? ledgerStats.paused : 0,
             skippedHistory: historySkippedCount,
             inProgress: 0,
             total: executableQueue.length,
-            failureBreakdown: {}
+            failureBreakdown: ledgerStats ? { ...ledgerStats.failureBreakdown } : {}
         };
+        campaignState.successCount = campaignState.counters.success;
+        if (ledgerStats) {
+            console.log(ledgerStats.logStr);
+            logBg(null, ledgerStats.logStr, "info");
+        }
         await persistCounters();
         broadcastCounters();
 
@@ -1954,13 +2017,12 @@ async function pauseCampaignOrchestrator(saveCheckpoint = true) {
         if (currentAtt.status === 'PREPARING') {
             // No submit boundary crossed: settle INTERRUPTED_PAUSE and requeue to front
             try {
-                if (!self.__xpiderHistoryStore) {
-                    self.__xpiderHistoryStore = new self.HistoryStore(chrome.storage.local);
-                    await self.__xpiderHistoryStore.load();
-                }
-                if (currentAtt.attemptId) {
-                    await self.__xpiderHistoryStore.settleAttempt(currentAtt.attemptId, false, 'INTERRUPTED_PAUSE');
-                    await self.__xpiderHistoryStore.persist();
+                const hs = await getHistoryStoreInstance();
+                if (currentAtt.attemptId && hs) {
+                    await hs.settleCanonicalAttempt(currentAtt.attemptId, 'FAILURE', 'INTERRUPTED_PAUSE', {}, {
+                        campaignRunId: campaignState.campaignRunId
+                    });
+                    await hs.persist();
                 }
             } catch (_) {}
             const normUrl = normalizeUrl(currentAtt.url);
@@ -1970,26 +2032,32 @@ async function pauseCampaignOrchestrator(saveCheckpoint = true) {
             }
             logBg(null, `🔄 [Pause] Current target re-queued to front: ${currentAtt.url}`, "info");
         } else if (currentAtt.status === 'SUBMIT_PENDING') {
-            // In-flight submit: settle DELIVERY_UNKNOWN and do NOT blindly resend
+            // In-flight submit: settle PAUSED_UNKNOWN and do NOT blindly resend
             try {
-                if (!self.__xpiderHistoryStore) {
-                    self.__xpiderHistoryStore = new self.HistoryStore(chrome.storage.local);
-                    await self.__xpiderHistoryStore.load();
-                }
-                if (currentAtt.attemptId) {
-                    await self.__xpiderHistoryStore.settleAttempt(currentAtt.attemptId, false, REASON_CODES.DELIVERY_UNKNOWN);
-                    await self.__xpiderHistoryStore.persist();
+                const hs = await getHistoryStoreInstance();
+                if (currentAtt.attemptId && hs) {
+                    await hs.settleCanonicalAttempt(currentAtt.attemptId, 'PAUSED_UNKNOWN', REASON_CODES.DELIVERY_UNKNOWN, {}, {
+                        campaignRunId: campaignState.campaignRunId
+                    });
+                    await hs.persist();
+                    const stats = hs.getLedgerStats('currentRun', campaignState.campaignRunId);
+                    campaignState.counters.success = stats.success;
+                    campaignState.counters.failed = stats.failure;
+                    campaignState.counters.deliveryUnknown = stats.unknown;
+                    campaignState.counters.timeout = stats.timeout;
+                    campaignState.counters.skipped = stats.skipped;
+                    campaignState.counters.paused = stats.paused;
+                    campaignState.counters.completed = stats.completed;
+                    campaignState.counters.failureBreakdown = { ...stats.failureBreakdown };
+                    campaignState.counters.remaining = Math.max(0, campaignState.counters.total - stats.completed - campaignState.counters.skippedHistory);
+                    campaignState.successCount = stats.success;
+                    await persistCounters();
+                    broadcastCounters();
                 }
             } catch (_) {}
             if (!campaignState.outcomeHistogram) campaignState.outcomeHistogram = {};
             campaignState.outcomeHistogram[REASON_CODES.DELIVERY_UNKNOWN] = (campaignState.outcomeHistogram[REASON_CODES.DELIVERY_UNKNOWN] || 0) + 1;
-            campaignState.counters.inProgress = 0;
-            campaignState.counters.deliveryUnknown = (campaignState.counters.deliveryUnknown || 0) + 1;
-            campaignState.counters.completed = campaignState.counters.success + campaignState.counters.failed + campaignState.counters.deliveryUnknown;
-            campaignState.counters.remaining = Math.max(0, campaignState.counters.total - campaignState.counters.completed - campaignState.counters.skippedHistory);
-            persistCounters().catch(() => {});
-            broadcastCounters();
-            logBg(null, `⚠️ [Pause] In-flight target settled as DELIVERY_UNKNOWN (not requeued): ${currentAtt.url}`, "warning");
+            logBg(null, `⚠️ [Pause] In-flight target settled as PAUSED_UNKNOWN (not requeued): ${currentAtt.url}`, "warning");
         }
         campaignState.currentAttempt = null;
         campaignState.currentTargetStage = null;
@@ -2001,6 +2069,7 @@ async function pauseCampaignOrchestrator(saveCheckpoint = true) {
     // Save checkpoint snapshot
     if (saveCheckpoint) {
         const checkpoint = {
+            campaignRunId: campaignState.campaignRunId,
             remainingQueue: [...campaignState.queue],
             visitedUrls: [...campaignState.visitedUrls],
             successfulUrls: [...campaignState.successfulUrls],
@@ -2059,11 +2128,35 @@ async function resumeCampaignOrchestrator() {
     campaignState.fillDelayMs = checkpoint.fillDelayMs || 300;
     campaignState.submitDelayMs = checkpoint.submitDelayMs || 1500;
     campaignState.outcomeHistogram = { ...(checkpoint.outcomeHistogram || {}) };
-    if (checkpoint.counters) {
-        campaignState.counters = { ...checkpoint.counters };
-        await persistCounters();
-        broadcastCounters();
+    if (checkpoint.campaignRunId) {
+        campaignState.campaignRunId = checkpoint.campaignRunId;
     }
+    const hs = await getHistoryStoreInstance();
+    if (hs && campaignState.campaignRunId) {
+        hs.activeCampaignRunId = campaignState.campaignRunId;
+    }
+    const ledgerStats = hs ? hs.getLedgerStats('currentRun', campaignState.campaignRunId) : null;
+    if (ledgerStats) {
+        campaignState.counters = {
+            success: ledgerStats.success,
+            failed: ledgerStats.failure,
+            completed: ledgerStats.completed,
+            remaining: campaignState.queue.length,
+            deliveryUnknown: ledgerStats.unknown,
+            timeout: ledgerStats.timeout,
+            skipped: ledgerStats.skipped,
+            paused: ledgerStats.paused,
+            skippedHistory: (checkpoint.counters && checkpoint.counters.skippedHistory) || 0,
+            inProgress: 0,
+            total: campaignState.totalTargets,
+            failureBreakdown: { ...ledgerStats.failureBreakdown }
+        };
+        campaignState.successCount = ledgerStats.success;
+    } else if (checkpoint.counters) {
+        campaignState.counters = { ...checkpoint.counters };
+    }
+    await persistCounters();
+    broadcastCounters();
     
     campaignState.sessionId = (checkpoint.sessionId || 0) + 1;
     campaignState.isActive = true;
@@ -2188,26 +2281,35 @@ async function processNextCampaignTarget(loopSessionId) {
             try {
                 const hs = await getHistoryStoreInstance();
                 if (hs && typeof hs.recordAttempt === 'function') {
-                    const record = await hs.recordAttempt({
-                        targetUrl,
+                    const record = await hs.recordAttempt(targetUrl, {
+                        campaignRunId: campaignState.campaignRunId,
                         status: 'SKIPPED',
-                        reasonCode: 'NON_BUSINESS_OR_GOV_SKIPPED'
+                        reason: 'NON_BUSINESS_OR_GOV_SKIPPED'
                     });
-                    if (record && record.attempt && typeof hs.settleAttempt === 'function') {
-                        await hs.settleAttempt(record.attempt.attemptId, false, 'NON_BUSINESS_OR_GOV_SKIPPED', {
+                    const attId = record?.attemptId || record?.attempt?.attemptId;
+                    if (attId && typeof hs.settleCanonicalAttempt === 'function') {
+                        await hs.settleCanonicalAttempt(attId, 'SKIPPED', 'NON_BUSINESS_OR_GOV_SKIPPED', {}, {
+                            campaignRunId: campaignState.campaignRunId,
                             resultUrl: targetUrl,
                             skipReason: nonBizCheck.reason
                         });
                     }
                     await hs.persist();
+                    const ledgerStats = hs.getLedgerStats('currentRun', campaignState.campaignRunId);
+                    campaignState.counters.success = ledgerStats.success;
+                    campaignState.counters.failed = ledgerStats.failure;
+                    campaignState.counters.deliveryUnknown = ledgerStats.unknown;
+                    campaignState.counters.timeout = ledgerStats.timeout;
+                    campaignState.counters.skipped = ledgerStats.skipped;
+                    campaignState.counters.paused = ledgerStats.paused;
+                    campaignState.counters.completed = ledgerStats.completed;
+                    campaignState.counters.failureBreakdown = { ...ledgerStats.failureBreakdown };
+                    campaignState.counters.remaining = Math.max(0, campaignState.counters.total - ledgerStats.completed - campaignState.counters.skippedHistory);
+                    campaignState.successCount = ledgerStats.success;
+                    await persistCounters();
+                    broadcastCounters();
                 }
             } catch (_) {}
-
-            campaignState.counters.skippedHistory = (campaignState.counters.skippedHistory || 0) + 1;
-            campaignState.counters.completed = campaignState.counters.success + campaignState.counters.failed + campaignState.counters.deliveryUnknown;
-            campaignState.counters.remaining = Math.max(0, campaignState.counters.total - campaignState.counters.completed - campaignState.counters.skippedHistory);
-            await persistCounters();
-            broadcastCounters();
 
             return processNextCampaignTarget(currentSession);
         }
@@ -2231,21 +2333,30 @@ async function processNextCampaignTarget(loopSessionId) {
             if (campaignState.currentAttempt && campaignState.currentAttempt.attemptId) {
                 try {
                     const hs = await _getHistoryStore();
-                    await hs.settleAttempt(campaignState.currentAttempt.attemptId, false, timeoutReason, {
+                    const timeoutStatus = isLocalTimeout ? 'TIMEOUT_LOCAL' : 'TIMEOUT_GLOBAL';
+                    await hs.settleCanonicalAttempt(campaignState.currentAttempt.attemptId, timeoutStatus, timeoutReason, {}, {
+                        campaignRunId: campaignState.campaignRunId,
                         resultUrl: targetUrl,
                         targetToken: campaignState.currentAttempt.targetToken
                     });
                     await hs.persist();
-                    logBg(null, `[TARGET][${targetHost}] FINAL status=FAILURE reason=${timeoutReason}`, "warning");
+                    logBg(null, `[TARGET][${targetHost}] FINAL status=${timeoutStatus} reason=${timeoutReason}`, "warning");
                     
                     if (!campaignState.outcomeHistogram) campaignState.outcomeHistogram = {};
                     campaignState.outcomeHistogram[timeoutReason] = (campaignState.outcomeHistogram[timeoutReason] || 0) + 1;
                     
+                    const ledgerStats = hs.getLedgerStats('currentRun', campaignState.campaignRunId);
+                    campaignState.counters.success = ledgerStats.success;
+                    campaignState.counters.failed = ledgerStats.failure;
+                    campaignState.counters.deliveryUnknown = ledgerStats.unknown;
+                    campaignState.counters.timeout = ledgerStats.timeout;
+                    campaignState.counters.skipped = ledgerStats.skipped;
+                    campaignState.counters.paused = ledgerStats.paused;
+                    campaignState.counters.completed = ledgerStats.completed;
+                    campaignState.counters.failureBreakdown = { ...ledgerStats.failureBreakdown };
                     campaignState.counters.inProgress = 0;
-                    campaignState.counters.failed++;
-                    campaignState.counters.failureBreakdown[timeoutReason] = (campaignState.counters.failureBreakdown[timeoutReason] || 0) + 1;
-                    campaignState.counters.completed = campaignState.counters.success + campaignState.counters.failed + campaignState.counters.deliveryUnknown;
-                    campaignState.counters.remaining = Math.max(0, campaignState.counters.total - campaignState.counters.completed - campaignState.counters.skippedHistory);
+                    campaignState.counters.remaining = Math.max(0, campaignState.counters.total - ledgerStats.completed - campaignState.counters.skippedHistory);
+                    campaignState.successCount = ledgerStats.success;
                     await persistCounters();
                     broadcastCounters();
                 } catch (_) {}
@@ -2840,6 +2951,7 @@ async function orchestrateSending(urlInput, template) {
     try {
         const hs = await _getHistoryStore();
         const attemptResult = await hs.recordAttempt(targetUrl, {
+            campaignRunId: campaignState.campaignRunId,
             status: 'PREPARING',
             reason: 'PREPARING',
             templateId: campaignState.templateId || null,
@@ -3025,8 +3137,6 @@ async function orchestrateSending(urlInput, template) {
         }
 
         if (res && res.success) {
-            campaignState.successCount++; 
-            broadcastStats(); 
             try {
                 const finalTab = await safeTabs.get(tabId);
                 const norm = normalizeUrl(finalTab.url || '');
@@ -3104,12 +3214,26 @@ async function orchestrateSending(urlInput, template) {
         }
         logBg(tabId, `[RESULT] resultUrl=${actualResultUrl || 'none'}`, "info");
 
-        // [F8 & Hotfix R2] Settle the single canonical durable attempt (same HistoryStore record opened before tab)
+        // [R6.9A Canonical Terminal Status Determination]
+        let terminalStatus;
+        if (isSuccess) {
+            terminalStatus = 'CONFIRMED_SUCCESS';
+        } else if (isDeliveryUnknown) {
+            terminalStatus = 'DELIVERY_UNKNOWN';
+        } else if (finalReason === 'TIMEOUT_LOCAL' || finalReason === 'TIMEOUT_GLOBAL') {
+            terminalStatus = finalReason;
+        } else if (finalReason === 'SKIPPED' || finalReason?.includes('SKIPPED') || finalReason === 'NON_INQUIRY_FORM_SKIPPED') {
+            terminalStatus = 'SKIPPED';
+        } else {
+            terminalStatus = 'FAILURE';
+        }
+
+        const evidence = res?.metadata?.outcomeEvidence || {};
+
+        // [F8 & R6.9A] Settle the single canonical durable attempt in HistoryStore ledger
         try {
             const hs = await _getHistoryStore();
             if (_attemptId) {
-                // Settle with proper DELIVERY_UNKNOWN vs FAILURE distinction
-                const settleSuccess = isSuccess;
                 const settleReason = isDeliveryUnknown ? REASON_CODES.DELIVERY_UNKNOWN : finalReason;
                 const finalContactUrl = discoveryCtx.committedContactUrl
                     || res?.metadata?.contactPageUrl 
@@ -3121,7 +3245,8 @@ async function orchestrateSending(urlInput, template) {
                     || finalContactUrl
                     || null;
 
-                await hs.settleAttempt(_attemptId, settleSuccess, settleReason, {
+                await hs.settleCanonicalAttempt(_attemptId, terminalStatus, settleReason, evidence, {
+                    campaignRunId: campaignState.campaignRunId,
                     resultUrl: actualResultUrl,
                     targetToken: targetToken,
                     submittedFromUrl: res?.metadata?.submittedFromUrl || null,
@@ -3136,8 +3261,24 @@ async function orchestrateSending(urlInput, template) {
                 logBg(tabId, `[HISTORY_FINAL] sourceUrl=${rec?.sourceUrl || targetUrl} contactPageUrl=${rec?.contactPageUrl || ''} formPageUrl=${rec?.formPageUrl || ''} resultUrl=${rec?.resultUrl || ''}`, "info");
             }
             await hs.persist();
+
+            // [R6.9A Single Source of Truth: All counters strictly derived from HistoryStore ledger]
+            const ledgerStats = hs.getLedgerStats('currentRun', campaignState.campaignRunId);
+            campaignState.counters.success = ledgerStats.success;
+            campaignState.counters.failed = ledgerStats.failure;
+            campaignState.counters.deliveryUnknown = ledgerStats.unknown;
+            campaignState.counters.timeout = ledgerStats.timeout;
+            campaignState.counters.skipped = ledgerStats.skipped;
+            campaignState.counters.paused = ledgerStats.paused;
+            campaignState.counters.completed = ledgerStats.completed;
+            campaignState.counters.failureBreakdown = { ...ledgerStats.failureBreakdown };
+            campaignState.counters.inProgress = 0;
+            campaignState.counters.remaining = Math.max(0, campaignState.counters.total - ledgerStats.completed - campaignState.counters.skippedHistory);
+            campaignState.successCount = ledgerStats.success;
+            console.log(ledgerStats.logStr);
+            logBg(tabId, ledgerStats.logStr, "info");
         } catch (hsErr) {
-            logBg(tabId, `⚠️ [F8-HistoryStore] settleAttempt failed: ${hsErr.message}`, 'warning');
+            logBg(tabId, `⚠️ [F8-HistoryStore] settleCanonicalAttempt failed: ${hsErr.message}`, 'warning');
         }
         
         try {
@@ -3146,19 +3287,6 @@ async function orchestrateSending(urlInput, template) {
             logBg(tabId, `⚠️ [IntentGuard] Failed to settle submission intent: ${intentErr.message}`, "warning");
         }
 
-        // [Authoritative Real-Time Counter Settlement]
-        campaignState.counters.inProgress = 0;
-        if (isSuccess) {
-            campaignState.counters.success++;
-        } else if (isDeliveryUnknown) {
-            campaignState.counters.deliveryUnknown++;
-        } else {
-            campaignState.counters.failed++;
-            const reasonKey = finalReason || 'UNKNOWN_FAILURE';
-            campaignState.counters.failureBreakdown[reasonKey] = (campaignState.counters.failureBreakdown[reasonKey] || 0) + 1;
-        }
-        campaignState.counters.completed = campaignState.counters.success + campaignState.counters.failed + campaignState.counters.deliveryUnknown;
-        campaignState.counters.remaining = Math.max(0, campaignState.counters.total - campaignState.counters.completed - campaignState.counters.skippedHistory);
         await persistCounters();
         broadcastCounters();
 
@@ -3543,7 +3671,8 @@ async function saveCampaignState() {
                 xpider_total: campaignState.totalTargets,
                 xpider_visited: campaignState.visitedUrls,
                 xpider_successful: campaignState.successfulUrls,
-                xpider_currentAttempt: campaignState.currentAttempt
+                xpider_currentAttempt: campaignState.currentAttempt,
+                xpider_active_campaign_run_id: campaignState.campaignRunId
             }, () => {
                 if (chrome.runtime.lastError) console.error("Save error:", chrome.runtime.lastError);
                 resolve();
@@ -3572,9 +3701,24 @@ async function restoreCampaignState() {
             chrome.storage.local.get([
                 'xpider_isActive', 'xpider_queue', 'xpider_tpl', 'xpider_delayMs', 'xpider_fillDelayMs', 'xpider_submitDelayMs',
                 'xpider_sessionId', 'xpider_success', 'xpider_total', 'xpider_visited', 'xpider_successful', 'xpider_currentAttempt',
-                'xpider_paused_checkpoint', 'xpider_isPaused'
+                'xpider_paused_checkpoint', 'xpider_isPaused', 'xpider_active_campaign_run_id'
             ], async (data) => {
                 try {
+                    const hs = await getHistoryStoreInstance();
+                    if (data.xpider_active_campaign_run_id) {
+                        campaignState.campaignRunId = data.xpider_active_campaign_run_id;
+                    } else if (data.xpider_paused_checkpoint && data.xpider_paused_checkpoint.campaignRunId) {
+                        campaignState.campaignRunId = data.xpider_paused_checkpoint.campaignRunId;
+                    } else if (hs && hs.activeCampaignRunId) {
+                        campaignState.campaignRunId = hs.activeCampaignRunId;
+                    }
+                    if (hs && campaignState.campaignRunId) {
+                        hs.activeCampaignRunId = campaignState.campaignRunId;
+                    }
+                    if (hs && typeof hs.reconcileLegacyCounters === 'function') {
+                        await hs.reconcileLegacyCounters();
+                    }
+
                     // [v1.2.0 Delivery Protection on SW Restart]
                     let visited = Array.isArray(data.xpider_visited) ? [...data.xpider_visited] : [];
                     if (data.xpider_currentAttempt) {
@@ -3602,15 +3746,12 @@ async function restoreCampaignState() {
                             });
 
                             try {
-                                if (!self.__xpiderHistoryStore) {
-                                    self.__xpiderHistoryStore = new self.HistoryStore(chrome.storage.local);
+                                if (hs && interruptedAttemptId) {
+                                    await hs.settleCanonicalAttempt(interruptedAttemptId, 'DELIVERY_UNKNOWN', REASON_CODES.DELIVERY_UNKNOWN, {}, {
+                                        campaignRunId: campaignState.campaignRunId
+                                    });
+                                    await hs.persist();
                                 }
-                                await self.__xpiderHistoryStore.load();
-                                const hs = self.__xpiderHistoryStore;
-                                if (interruptedAttemptId) {
-                                    await hs.settleAttempt(interruptedAttemptId, false, REASON_CODES.DELIVERY_UNKNOWN);
-                                }
-                                await hs.persist();
                                 logBg(null, `🛡️ [F8-Recovery] Settled HistoryStore attempt ${interruptedAttemptId} as DELIVERY_UNKNOWN (suppression active).`, "warning");
                             } catch (hsRecErr) {
                                 console.error('[F8-Recovery] Failed to settle HistoryStore on SW restart:', hsRecErr);
@@ -3634,16 +3775,13 @@ async function restoreCampaignState() {
                             });
 
                             try {
-                                if (!self.__xpiderHistoryStore) {
-                                    self.__xpiderHistoryStore = new self.HistoryStore(chrome.storage.local);
-                                }
-                                await self.__xpiderHistoryStore.load();
-                                const hs = self.__xpiderHistoryStore;
-                                if (interruptedAttemptId) {
+                                if (hs && interruptedAttemptId) {
                                     // FAILURE does NOT suppress target!
-                                    await hs.settleAttempt(interruptedAttemptId, false, 'INTERRUPTED_PREPARING');
+                                    await hs.settleCanonicalAttempt(interruptedAttemptId, 'FAILURE', 'INTERRUPTED_PREPARING', {}, {
+                                        campaignRunId: campaignState.campaignRunId
+                                    });
+                                    await hs.persist();
                                 }
-                                await hs.persist();
                                 logBg(null, `🔄 [F8-Recovery] Settled PREPARING attempt ${interruptedAttemptId} as FAILURE (target remains retryable).`, "info");
                             } catch (hsRecErr) {
                                 console.error('[F8-Recovery] Failed to settle PREPARING attempt on SW restart:', hsRecErr);
@@ -3687,6 +3825,29 @@ async function restoreCampaignState() {
                         
                         if (!campaignState.isLoopRunning) processNextCampaignTarget(campaignState.sessionId);
                     }
+
+                    // Rebuild authoritative counters from HistoryStore ledger
+                    if (hs && campaignState.campaignRunId) {
+                        const ledgerStats = hs.getLedgerStats('currentRun', campaignState.campaignRunId);
+                        campaignState.counters = {
+                            success: ledgerStats.success,
+                            failed: ledgerStats.failure,
+                            completed: ledgerStats.completed,
+                            remaining: campaignState.queue ? campaignState.queue.length : 0,
+                            deliveryUnknown: ledgerStats.unknown,
+                            timeout: ledgerStats.timeout,
+                            skipped: ledgerStats.skipped,
+                            paused: ledgerStats.paused,
+                            skippedHistory: campaignState.counters?.skippedHistory || 0,
+                            inProgress: 0,
+                            total: campaignState.totalTargets,
+                            failureBreakdown: { ...ledgerStats.failureBreakdown }
+                        };
+                        campaignState.successCount = ledgerStats.success;
+                        await persistCounters();
+                        broadcastCounters();
+                    }
+
                     markBoot("restore_complete");
                 } catch (innerErr) {
                     console.error("[Boot] State application failed:", innerErr);

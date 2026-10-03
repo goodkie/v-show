@@ -20,6 +20,52 @@
             this.attempts = [];       // Attempt[]
             this.resetEvents = [];    // ResetEvent[]
             this.currentGeneration = 1;
+            this.activeCampaignRunId = null;
+        }
+
+        _createDefaultOutcomeEvidence() {
+            return {
+                submitAttempted: false,
+                submitEventSeen: false,
+                physicalClickDispatched: false,
+                networkCommitObserved: false,
+                networkStatus: null,
+                successNodeVisibleTransition: false,
+                successTextTransition: false,
+                ariaLiveSuccessTransition: false,
+                formReset: false,
+                formHidden: false,
+                formReplaced: false,
+                buttonSuccessState: false,
+                thankYouUrlTransition: false,
+                frameworkSuccessState: false,
+                validationErrorTransition: false,
+                serverErrorTransition: false,
+                captchaRejected: false,
+                confirmationStrength: 'NONE',
+                evidenceTimestamp: Date.now()
+            };
+        }
+
+        classifyFailure(terminalStatus, reasonCode = '', evidence = {}) {
+            if (terminalStatus !== 'FAILURE') return null;
+            const r = String(reasonCode || '').toUpperCase();
+            if (r.includes('CAPTCHA') || (evidence && evidence.captchaRejected) || r.includes('SECURITY') || r.includes('CLOUDFLARE') || r.includes('BOT_DETECTED')) {
+                return 'SECURITY_BLOCKED';
+            }
+            if (r.includes('VALIDATION') || (evidence && evidence.validationErrorTransition) || (evidence && evidence.validationErrorsCount > 0)) {
+                return 'SUBMISSION_REJECTED';
+            }
+            if (r.includes('SERVER_ERROR') || (evidence && evidence.serverErrorTransition) || (evidence && typeof evidence.networkStatus === 'number' && evidence.networkStatus >= 400)) {
+                return 'SUBMISSION_REJECTED';
+            }
+            if (r.includes('NO_ELIGIBLE') || r.includes('NO_FORM') || r.includes('DISCOVERY_EXHAUSTED') || r.includes('EXHAUST') || r.includes('NOT_FOUND')) {
+                return 'DISCOVERY_EXHAUSTED';
+            }
+            if (r.includes('PRE_SUBMIT') || r.includes('CLICK_NO_EFFECT') || r.includes('INTERRUPTED_PREPARING') || r.includes('NO_SUBMIT_BUTTON') || r.includes('INPUT_FILL_FAILED')) {
+                return 'PRE_SUBMIT';
+            }
+            return 'RUNTIME_ERROR';
         }
 
         /**
@@ -33,6 +79,7 @@
                 xpider_history_attempts: this.attempts,
                 xpider_history_resets: this.resetEvents,
                 xpider_history_generation: this.currentGeneration,
+                xpider_active_campaign_run_id: this.activeCampaignRunId,
                 xpider_history_saved_at: Date.now()
             };
             await new Promise((resolve, reject) => {
@@ -70,7 +117,8 @@
                         'xpider_history_targets',
                         'xpider_history_attempts',
                         'xpider_history_resets',
-                        'xpider_history_generation'
+                        'xpider_history_generation',
+                        'xpider_active_campaign_run_id'
                     ], (out) => {
                         if (called) return;
                         called = true;
@@ -92,6 +140,7 @@
                 if (Array.isArray(data.xpider_history_attempts)) this.attempts = data.xpider_history_attempts;
                 if (Array.isArray(data.xpider_history_resets)) this.resetEvents = data.xpider_history_resets;
                 if (typeof data.xpider_history_generation === 'number') this.currentGeneration = data.xpider_history_generation;
+                if (data.xpider_active_campaign_run_id) this.activeCampaignRunId = data.xpider_active_campaign_run_id;
             }
         }
 
@@ -267,6 +316,7 @@
                 try { contactPageHostname = new URL(contactPageUrl).hostname; } catch (_) { contactPageHostname = ''; }
             }
 
+            const startedAt = timing.intentTime || Date.now();
             const attempt = {
                 attemptId,
                 targetIdentity,
@@ -274,9 +324,13 @@
                 templateId,
                 templateVersion: templateVersion || 1,
                 targetToken: descriptor.targetToken || null,
-                generationId: this.currentGeneration,
+                campaignRunId: descriptor.campaignRunId || opts.campaignRunId || this.activeCampaignRunId || 'run_default',
+                generation: descriptor.generation || this.currentGeneration,
+                generationId: descriptor.generation || this.currentGeneration,
+                importId: descriptor.importId || opts.importId || null,
                 status: status || 'DELIVERY_UNKNOWN',
                 reasonCode: reasonCode || 'UNKNOWN',
+                failureClass: descriptor.failureClass || null,
                 sourceUrl,
                 sourceHostname,
                 selectedCandidateUrl: descriptor.selectedCandidateUrl || null,
@@ -289,12 +343,15 @@
                 resultUrl: descriptor.resultUrl || null,
                 isPreSubmitLocked: false,
                 emailsFound: descriptor.emailsFound || 0,
+                startedAt: startedAt,
+                settledAt: null,
                 timing: {
-                    intentTime: timing.intentTime || Date.now(),
+                    intentTime: startedAt,
                     finalizedTime: timing.finalizedTime || null,
                     durationMs: timing.durationMs || 0
                 },
                 evidence: evidence || {},
+                outcomeEvidence: descriptor.outcomeEvidence || (opts.outcomeEvidence ? { ...this._createDefaultOutcomeEvidence(), ...opts.outcomeEvidence } : this._createDefaultOutcomeEvidence()),
                 createdAt: Date.now()
             };
 
@@ -424,68 +481,80 @@
         }
 
         /**
-         * F8: Settle a previously recorded PENDING_INTENT attempt with the final outcome.
-         * @param {string} attemptId - ID returned from recordAttempt
-         * @param {boolean} isSuccess - Whether the submission succeeded
-         * @param {string} reason - Reason code string
-         * @param {object} [extra={}] - Optional metadata (contactPageUrl, formPageUrl, emailsFound, resultUrl, targetToken)
+         * R6.9A: Canonical terminal statuses
          */
-        async settleAttempt(attemptId, isSuccess, reason, extra = {}) {
+        normalizeTerminalStatus(status) {
+            const s = String(status || '').toUpperCase();
+            if (s === 'CONFIRMED_SUCCESS' || s === 'SUCCESS' || s === 'CONFIRMED_SUCCESS_COMPOSITE') return 'CONFIRMED_SUCCESS';
+            if (s === 'DELIVERY_UNKNOWN' || s === 'UNKNOWN') return 'DELIVERY_UNKNOWN';
+            if (s === 'TIMEOUT_LOCAL' || s === 'TIMEOUT') return 'TIMEOUT_LOCAL';
+            if (s === 'TIMEOUT_GLOBAL') return 'TIMEOUT_GLOBAL';
+            if (s === 'SKIPPED' || s === 'HISTORY_SKIPPED') return 'SKIPPED';
+            if (s === 'PAUSED_UNKNOWN' || s === 'INTERRUPTED' || s === 'PAUSED') return 'PAUSED_UNKNOWN';
+            return 'FAILURE';
+        }
+
+        /**
+         * R6.9A Section 4: Single Atomic Settlement Path
+         * @param {string} attemptId - ID of attempt to settle
+         * @param {string} terminalStatus - Canonical status: CONFIRMED_SUCCESS, DELIVERY_UNKNOWN, FAILURE, TIMEOUT_LOCAL, TIMEOUT_GLOBAL, SKIPPED, PAUSED_UNKNOWN
+         * @param {string} reason - Detailed reason string
+         * @param {object} evidence - Structured outcomeEvidence fields
+         * @param {object} extra - Additional metadata (urls, token, etc.)
+         */
+        async settleCanonicalAttempt(attemptId, terminalStatus, reason, evidence = {}, extra = {}) {
             const attempt = this.attempts.find(a => a.attemptId === attemptId);
             if (!attempt) return { settled: false, reason: 'ATTEMPT_NOT_FOUND' };
 
             // Attempt-scoped token check
             if (extra.targetToken && attempt.targetToken && attempt.targetToken !== extra.targetToken) {
-                console.warn(`[HistoryStore] HISTORY_STALE_DISCOVERY_WRITE_BLOCKED settleAttempt attemptId=${attemptId}`);
+                console.warn(`[HistoryStore] HISTORY_STALE_DISCOVERY_WRITE_BLOCKED settleCanonicalAttempt attemptId=${attemptId}`);
                 return { settled: false, reason: 'HISTORY_STALE_DISCOVERY_WRITE_BLOCKED' };
             }
 
+            const canonicalStatus = this.normalizeTerminalStatus(terminalStatus);
             const now = Date.now();
-            const reasonCode = reason || (isSuccess ? 'SUCCESS_CONFIRMED' : 'UNKNOWN');
+            const reasonCode = reason || (canonicalStatus === 'CONFIRMED_SUCCESS' ? 'SUCCESS_CONFIRMED' : canonicalStatus);
 
-            // [F8] DELIVERY_UNKNOWN is a distinct final attempt status (not collapsed to FAILURE)
-            if (reason === 'DELIVERY_UNKNOWN' || reasonCode === 'DELIVERY_UNKNOWN') {
-                attempt.status = 'DELIVERY_UNKNOWN';
-                attempt.reasonCode = 'DELIVERY_UNKNOWN';
-            } else if (isSuccess) {
-                attempt.status = 'CONFIRMED_SUCCESS';
-                attempt.reasonCode = reasonCode;
-            } else {
-                attempt.status = 'FAILURE';
-                attempt.reasonCode = reasonCode;
-            }
+            attempt.status = canonicalStatus;
+            attempt.reasonCode = reasonCode;
+            attempt.settledAt = now;
             attempt.timing.finalizedTime = now;
-            attempt.timing.durationMs = now - attempt.timing.intentTime;
+            const startTime = attempt.startedAt || attempt.timing.intentTime || attempt.createdAt || now;
+            attempt.timing.durationMs = Math.max(0, now - startTime);
+
+            // Merge structured outcomeEvidence
+            if (!attempt.outcomeEvidence) {
+                attempt.outcomeEvidence = this._createDefaultOutcomeEvidence();
+            }
+            if (evidence && typeof evidence === 'object') {
+                Object.assign(attempt.outcomeEvidence, evidence);
+                attempt.outcomeEvidence.evidenceTimestamp = now;
+            }
+
+            // Failure classification
+            if (canonicalStatus === 'FAILURE') {
+                attempt.failureClass = extra.failureClass || this.classifyFailure(canonicalStatus, reasonCode, attempt.outcomeEvidence);
+            } else {
+                attempt.failureClass = null;
+            }
 
             if (extra) {
-                if (extra.resultUrl) {
-                    attempt.resultUrl = extra.resultUrl;
-                }
-                if (extra.selectedCandidateUrl && !attempt.selectedCandidateUrl) {
-                    attempt.selectedCandidateUrl = extra.selectedCandidateUrl;
-                }
-                if (extra.submittedFromUrl && !attempt.submittedFromUrl) {
-                    attempt.submittedFromUrl = extra.submittedFromUrl;
-                }
+                if (extra.resultUrl) attempt.resultUrl = extra.resultUrl;
+                if (extra.selectedCandidateUrl && !attempt.selectedCandidateUrl) attempt.selectedCandidateUrl = extra.selectedCandidateUrl;
+                if (extra.submittedFromUrl && !attempt.submittedFromUrl) attempt.submittedFromUrl = extra.submittedFromUrl;
                 if (extra.committedContactUrl) {
                     attempt.committedContactUrl = extra.committedContactUrl;
                     attempt.contactPageUrl = extra.committedContactUrl;
-                    try {
-                        attempt.contactPageHostname = new URL(extra.committedContactUrl).hostname || '';
-                    } catch (_) {}
+                    try { attempt.contactPageHostname = new URL(extra.committedContactUrl).hostname || ''; } catch (_) {}
                 }
                 if (extra.committedFormUrl) {
                     attempt.committedFormUrl = extra.committedFormUrl;
                     attempt.formPageUrl = extra.committedFormUrl;
                 }
-                if (attempt.committedContactUrl) {
-                    attempt.contactPageUrl = attempt.committedContactUrl;
-                }
-                if (attempt.committedFormUrl) {
-                    attempt.formPageUrl = attempt.committedFormUrl;
-                }
+                if (attempt.committedContactUrl) attempt.contactPageUrl = attempt.committedContactUrl;
+                if (attempt.committedFormUrl) attempt.formPageUrl = attempt.committedFormUrl;
 
-                // Never overwrite pre-submit locked contactPageUrl with post-submit/thank-you URL
                 if (!attempt.isPreSubmitLocked) {
                     if (extra.contactPageUrl && !attempt.contactPageUrl) {
                         try {
@@ -505,7 +574,7 @@
                             }
                         } catch (_) {}
                     }
-                    if (!attempt.contactPageUrl && isSuccess && attempt.selectedCandidateUrl) {
+                    if (!attempt.contactPageUrl && canonicalStatus === 'CONFIRMED_SUCCESS' && attempt.selectedCandidateUrl) {
                         try {
                             const parsed = new URL(attempt.selectedCandidateUrl);
                             if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
@@ -519,31 +588,219 @@
                     attempt.contactDiscoverySource = extra.contactDiscoverySource;
                 }
                 if (extra.emailsFound !== undefined) attempt.emailsFound = extra.emailsFound;
+                if (extra.confirmationStrength) attempt.confirmationStrength = extra.confirmationStrength;
             }
 
-            // Update suppression state on the linked target
+            // Update suppression state on target
             const target = this.targets.get(attempt.targetIdentity);
             if (target) {
                 target.lastAttemptId = attemptId;
                 target.updatedTs = now;
-                // [F8] CONFIRMED_SUCCESS and DELIVERY_UNKNOWN both suppress; FAILURE does NOT
-                if (attempt.status === 'CONFIRMED_SUCCESS' || attempt.status === 'DELIVERY_UNKNOWN') {
+                if (canonicalStatus === 'CONFIRMED_SUCCESS' || canonicalStatus === 'DELIVERY_UNKNOWN') {
                     target.isSuppressed = true;
-                    target.suppressionReason = attempt.status;
+                    target.suppressionReason = canonicalStatus;
+                    target.effectiveGeneration = this.currentGeneration;
+                } else if (canonicalStatus === 'FAILURE') {
+                    target.isSuppressed = false;
+                } else if (canonicalStatus === 'SKIPPED' && extra.suppressTarget) {
+                    target.isSuppressed = true;
+                    target.suppressionReason = 'SKIPPED';
                     target.effectiveGeneration = this.currentGeneration;
                 }
-                // FAILURE: isSuppressed remains false — target stays retryable
             }
 
             // Update linked import rows
             for (const row of this.importRows) {
                 if (row.attemptId === attemptId) {
-                    row.status = attempt.status;
+                    row.status = canonicalStatus;
                 }
             }
 
-            // Caller is responsible for calling persist() after
-            return { settled: true, attemptId, status: attempt.status };
+            await this.persist();
+            return { settled: true, attemptId, status: canonicalStatus, attempt };
+        }
+
+        /**
+         * F8 & R6.9A: Backward-compatible settlement delegating to settleCanonicalAttempt.
+         */
+        async settleAttempt(attemptId, isSuccess, reason, extra = {}) {
+            let terminalStatus;
+            if (extra && extra.canonicalStatus) {
+                terminalStatus = extra.canonicalStatus;
+            } else if (reason === 'DELIVERY_UNKNOWN' || (extra && extra.isDeliveryUnknown)) {
+                terminalStatus = 'DELIVERY_UNKNOWN';
+            } else if (reason === 'INTERRUPTED_PAUSE' || reason === 'PAUSED_UNKNOWN') {
+                terminalStatus = 'PAUSED_UNKNOWN';
+            } else if (isSuccess) {
+                terminalStatus = 'CONFIRMED_SUCCESS';
+            } else {
+                terminalStatus = 'FAILURE';
+            }
+            const evidence = extra.evidence || extra.outcomeEvidence || {};
+            return await this.settleCanonicalAttempt(attemptId, terminalStatus, reason, evidence, extra);
+        }
+
+        /**
+         * R6.9A Section 5: Authoritative Ledger Statistics
+         * Scopes: 'currentRun' (default), 'currentGeneration', 'allHistory'
+         */
+        getLedgerStats(scope = 'currentRun', campaignRunId = null) {
+            const targetRunId = campaignRunId || this.activeCampaignRunId;
+            let scopedAttempts = this.attempts;
+
+            if (scope === 'currentRun' && targetRunId) {
+                scopedAttempts = this.attempts.filter(a => a.campaignRunId === targetRunId);
+            } else if (scope === 'currentGeneration') {
+                scopedAttempts = this.attempts.filter(a => (a.generation === this.currentGeneration || a.generationId === this.currentGeneration));
+            } else {
+                scopedAttempts = this.attempts;
+            }
+
+            let success = 0;
+            let failure = 0;
+            let unknown = 0;
+            let timeoutLocal = 0;
+            let timeoutGlobal = 0;
+            let skipped = 0;
+            let paused = 0;
+            const failureBreakdown = {};
+
+            for (const att of scopedAttempts) {
+                const s = this.normalizeTerminalStatus(att.status);
+                if (s === 'CONFIRMED_SUCCESS') {
+                    success++;
+                } else if (s === 'DELIVERY_UNKNOWN') {
+                    unknown++;
+                } else if (s === 'FAILURE') {
+                    failure++;
+                    const r = att.reasonCode || 'UNKNOWN_FAILURE';
+                    failureBreakdown[r] = (failureBreakdown[r] || 0) + 1;
+                } else if (s === 'TIMEOUT_LOCAL') {
+                    timeoutLocal++;
+                } else if (s === 'TIMEOUT_GLOBAL') {
+                    timeoutGlobal++;
+                } else if (s === 'SKIPPED') {
+                    skipped++;
+                } else if (s === 'PAUSED_UNKNOWN') {
+                    paused++;
+                }
+            }
+
+            const timeout = timeoutLocal + timeoutGlobal;
+            const completed = success + failure + unknown + timeout + skipped + paused;
+            const totalStarted = scopedAttempts.length;
+            const logStr = `[LEDGER_STATS] scope=${scope} success=${success} failure=${failure} unknown=${unknown} timeout=${timeout} skipped=${skipped}`;
+
+            return {
+                scope,
+                campaignRunId: targetRunId,
+                totalStarted,
+                success,
+                failure,
+                unknown,
+                timeout,
+                timeoutLocal,
+                timeoutGlobal,
+                skipped,
+                paused,
+                completed,
+                failureBreakdown,
+                logStr
+            };
+        }
+
+        /**
+         * R6.9A Section 10: Operator Visual Reconciliation
+         * Mutates the SAME attempt atomically without creating a second attempt or double-counting.
+         */
+        async reconcileAttemptVisual(attemptId, newStatus, extra = {}) {
+            if (newStatus !== 'CONFIRMED_SUCCESS' && newStatus !== 'FAILURE') {
+                throw new Error(`Invalid visual reconciliation status: ${newStatus}`);
+            }
+            const attempt = this.attempts.find(a => a.attemptId === attemptId);
+            if (!attempt) return { success: false, reconciled: false, reason: 'ATTEMPT_NOT_FOUND' };
+
+            const priorStatus = attempt.status;
+            attempt.priorStatus = priorStatus;
+            attempt.status = newStatus;
+            attempt.confirmationStrength = 'OWNER_VISUAL';
+            attempt.reviewedAt = Date.now();
+            if (!attempt.outcomeEvidence) {
+                attempt.outcomeEvidence = this._createDefaultOutcomeEvidence();
+            }
+            attempt.outcomeEvidence.confirmationStrength = 'OWNER_VISUAL';
+            attempt.outcomeEvidence.evidenceTimestamp = Date.now();
+
+            if (newStatus === 'CONFIRMED_SUCCESS') {
+                attempt.reasonCode = extra.reason || 'OWNER_VISUALLY_CONFIRMED';
+                attempt.failureClass = null;
+            } else {
+                attempt.reasonCode = extra.reason || 'OWNER_VISUALLY_REJECTED';
+                attempt.failureClass = extra.failureClass || 'SUBMISSION_REJECTED';
+            }
+
+            const target = this.targets.get(attempt.targetIdentity);
+            if (target) {
+                target.lastAttemptId = attemptId;
+                target.updatedTs = Date.now();
+                if (newStatus === 'CONFIRMED_SUCCESS') {
+                    target.isSuppressed = true;
+                    target.suppressionReason = 'CONFIRMED_SUCCESS';
+                    target.effectiveGeneration = this.currentGeneration;
+                } else {
+                    target.isSuppressed = false;
+                }
+            }
+
+            for (const row of this.importRows) {
+                if (row.attemptId === attemptId) {
+                    row.status = newStatus;
+                }
+            }
+
+            await this.persist();
+            return { success: true, reconciled: true, attemptId, priorStatus, status: newStatus, attempt };
+        }
+
+        /**
+         * R6.9A Section 6: Startup Migration & Counter Reconciliation
+         * Overwrites stale counters cache with ledger-derived numbers (LEDGER_WINS).
+         * Does not erase valid historical attempts.
+         */
+        async reconcileLegacyCounters() {
+            await this.load();
+            const stats = this.getLedgerStats('currentRun');
+            let legacySuccess = 0;
+            if (this.storage && typeof this.storage.get === 'function') {
+                const stored = await new Promise(r => {
+                    this.storage.get(['xpider_campaign_counters_v1', 'xpider_success'], r);
+                });
+                legacySuccess = (stored && stored.xpider_campaign_counters_v1 && stored.xpider_campaign_counters_v1.success !== undefined)
+                    ? stored.xpider_campaign_counters_v1.success
+                    : ((stored && stored.xpider_success) || 0);
+            }
+            console.log(`[COUNTER_RECONCILE] legacySuccess=${legacySuccess} ledgerSuccess=${stats.success} action=LEDGER_WINS`);
+
+            if (this.storage && typeof this.storage.set === 'function') {
+                await new Promise(r => {
+                    this.storage.set({
+                        xpider_success: stats.success,
+                        xpider_campaign_counters_v1: {
+                            total: stats.totalStarted,
+                            success: stats.success,
+                            failed: stats.failure,
+                            deliveryUnknown: stats.unknown,
+                            timeout: stats.timeout,
+                            skipped: stats.skipped,
+                            paused: stats.paused,
+                            completed: stats.completed,
+                            remaining: 0,
+                            failureBreakdown: stats.failureBreakdown
+                        }
+                    }, r);
+                });
+            }
+            return { success: true, reconciled: true, legacySuccess, ledgerSuccess: stats.success, action: 'LEDGER_WINS', stats };
         }
 
         /**
@@ -816,7 +1073,7 @@
                         targetIdentity: row.targetIdentity,
                         status: attempt ? attempt.status : row.status,
                         reasonCode: attempt ? attempt.reasonCode : (row.status === 'INVALID_INPUT' ? 'INVALID_INPUT' : 'PENDING'),
-                        attemptId: row.attemptId,
+                        attemptId: effectiveAttemptId,
                         sessionId: attempt ? (attempt.sessionId || '') : '',
                         isSuppressed,
                         suppressionReason: target ? target.suppressionReason : null,
@@ -889,10 +1146,12 @@
                     filtered = filtered.filter(r => r.status === 'PREPARING' || r.reasonCode === 'PREPARING');
                 } else if (s === 'SUBMIT_PENDING') {
                     filtered = filtered.filter(r => r.status === 'SUBMIT_PENDING' || r.status === 'PENDING_INTENT');
+                } else if (s === 'TIMEOUT' || s === 'TIMEOUT_LOCAL' || s === 'TIMEOUT_GLOBAL') {
+                    filtered = filtered.filter(r => r.status === 'TIMEOUT_LOCAL' || r.status === 'TIMEOUT_GLOBAL' || r.status === 'TIMEOUT');
                 } else if (s === 'SKIPPED' || s === 'HISTORY_SKIPPED') {
-                    filtered = filtered.filter(r => r.status === 'SKIPPED' || r.reasonCode === 'HISTORY_SKIPPED' || r.reasonCode === 'ALREADY_ATTEMPTED');
-                } else if (s === 'INTERRUPTED' || s === 'STALE_PREPARING') {
-                    filtered = filtered.filter(r => r.status === 'INTERRUPTED' || r.reasonCode === 'INTERRUPTED_PAUSE' || r.reasonCode === 'STALE_PREPARING');
+                    filtered = filtered.filter(r => r.status === 'SKIPPED' || r.reasonCode === 'HISTORY_SKIPPED' || r.reasonCode === 'ALREADY_ATTEMPTED' || (r.reasonCode && r.reasonCode.includes('SKIPPED')));
+                } else if (s === 'INTERRUPTED' || s === 'STALE_PREPARING' || s === 'PAUSED_UNKNOWN') {
+                    filtered = filtered.filter(r => r.status === 'INTERRUPTED' || r.status === 'PAUSED_UNKNOWN' || r.reasonCode === 'INTERRUPTED_PAUSE' || r.reasonCode === 'STALE_PREPARING');
                 } else {
                     filtered = filtered.filter(r => r.status === s);
                 }
