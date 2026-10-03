@@ -576,14 +576,14 @@ async function runAllTests() {
     it('R6.8-18: build provenance matches loaded build', () => {
         const info = BuildProvenance.BUILD_INFO;
         assert.strictEqual(info.buildId, 'R6.8-20261003-REM');
-        assert.strictEqual(info.headShort, 'b7983ad');
-        assert.strictEqual(info.head, 'b7983adf85f5edd81fc9a58558ca81cc7a499fc1');
+        assert.strictEqual(info.headShort, '951e33f');
+        assert.strictEqual(info.head, '951e33f064d5137a000adaf976f18d26e64139bc');
         assert.strictEqual(info.branch, 'upgrade/phase-0-1');
 
         const verified = BuildProvenance.verifyBuildProvenance({ manifest_version: 3 });
         assert.strictEqual(verified.valid, true);
         assert.strictEqual(verified.buildId, 'R6.8-20261003-REM');
-        assert.strictEqual(verified.headShort, 'b7983ad');
+        assert.strictEqual(verified.headShort, '951e33f');
 
         const logs = BuildProvenance.getBuildProvenanceLogs();
         assert.ok(logs.length >= 5, 'Must produce all 5 provenance log entries');

@@ -974,12 +974,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             sendResponse({
                 success: true,
                 branch: 'upgrade/phase-0-1',
-                head: 'b7983adf85f5edd81fc9a58558ca81cc7a499fc1',
-                headShort: 'b7983ad',
+                head: '951e33f064d5137a000adaf976f18d26e64139bc',
+                headShort: '951e33f',
                 rollbackBase: 'b8e1d0362946cd6ca8c77c1aa990998da62c2c91',
                 manifestVersion: 3,
                 buildId: 'R6.8-20261003-REM',
-                builtAt: '2026-10-03T07:15:00.000Z'
+                builtAt: '2026-10-03T07:45:00.000Z'
             });
             return true;
 
@@ -988,7 +988,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             const provLogs = (typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.getBuildProvenanceLogs === 'function')
                 ? BuildProvenance.getBuildProvenanceLogs()
                 : [
-                    "[BUILD_ID] branch=upgrade/phase-0-1 head=b7983adf85f5edd81fc9a58558ca81cc7a499fc1 manifestVersion=3 buildId=R6.8-20261003-REM builtAt=2026-10-03T07:15:00.000Z",
+                    "[BUILD_ID] branch=upgrade/phase-0-1 head=951e33f064d5137a000adaf976f18d26e64139bc manifestVersion=3 buildId=R6.8-20261003-REM builtAt=2026-10-03T07:45:00.000Z",
                     "[BUILD_MODULE] contactGateSha=sha256_cg_r6_8_remediation",
                     "[BUILD_MODULE] visionSubmitSha=sha256_vs_r6_8_remediation",
                     "[BUILD_MODULE] outcomeVerifierSha=sha256_ov_r6_8_remediation",
