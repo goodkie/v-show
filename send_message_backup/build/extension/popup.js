@@ -3863,6 +3863,9 @@ document.addEventListener('DOMContentLoaded', () => {
             panel.innerHTML = `<span style="color:#ef4444">History load error: ${e.message}</span>`;
         }
     }
+    if (typeof window !== 'undefined') {
+        window._renderHistoryPanel = _renderHistoryPanel;
+    }
 
     // Initial render on popup open
     _renderHistoryPanel();
