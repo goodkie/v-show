@@ -974,23 +974,26 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             sendResponse({
                 success: true,
                 branch: 'upgrade/phase-0-1',
-                head: 'b8e1d0362946cd6ca8c77c1aa990998da62c2c91',
-                headShort: 'b8e1d03',
+                head: 'b7983adf85f5edd81fc9a58558ca81cc7a499fc1',
+                headShort: 'b7983ad',
+                rollbackBase: 'b8e1d0362946cd6ca8c77c1aa990998da62c2c91',
                 manifestVersion: 3,
                 buildId: 'R6.8-20261003-REM',
-                builtAt: '2026-10-03T06:20:00.000Z'
+                builtAt: '2026-10-03T07:15:00.000Z'
             });
             return true;
 
         case 'START_CAMPAIGN':
             // [Issue #6 R6.8 P0-1] Emit immutable Build Provenance at campaign boot
-            const provLogs = [
-                "[BUILD_ID] branch=upgrade/phase-0-1 head=b8e1d0362946cd6ca8c77c1aa990998da62c2c91 manifestVersion=3 buildId=R6.8-20261003-REM builtAt=2026-10-03T06:20:00.000Z",
-                "[BUILD_MODULE] contactGateSha=sha256_cg_r6_8_remediation",
-                "[BUILD_MODULE] visionSubmitSha=sha256_vs_r6_8_remediation",
-                "[BUILD_MODULE] outcomeVerifierSha=sha256_ov_r6_8_remediation",
-                "[BUILD_MODULE] backgroundSha=sha256_bg_r6_8_remediation"
-            ];
+            const provLogs = (typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.getBuildProvenanceLogs === 'function')
+                ? BuildProvenance.getBuildProvenanceLogs()
+                : [
+                    "[BUILD_ID] branch=upgrade/phase-0-1 head=b7983adf85f5edd81fc9a58558ca81cc7a499fc1 manifestVersion=3 buildId=R6.8-20261003-REM builtAt=2026-10-03T07:15:00.000Z",
+                    "[BUILD_MODULE] contactGateSha=sha256_cg_r6_8_remediation",
+                    "[BUILD_MODULE] visionSubmitSha=sha256_vs_r6_8_remediation",
+                    "[BUILD_MODULE] outcomeVerifierSha=sha256_ov_r6_8_remediation",
+                    "[BUILD_MODULE] backgroundSha=sha256_bg_r6_8_remediation"
+                ];
             for (const plog of provLogs) {
                 console.log(plog);
                 logBg(null, plog, "info");
