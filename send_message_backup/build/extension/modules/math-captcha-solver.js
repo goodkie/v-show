@@ -176,11 +176,21 @@
     function solveField(el, getContextFn) {
         if (!el) return null;
 
-        // 1. Custom context function if provided
+        const type = (el.type || '').toLowerCase();
+        if (type === 'hidden' || type === 'submit' || type === 'button' || type === 'image' || type === 'file' || type === 'checkbox' || type === 'radio') {
+            return null;
+        }
+        if (el.tagName === 'TEXTAREA' || el.tagName === 'SELECT') {
+            return null;
+        }
+
+        // 1. Custom context function if provided (e.g. getLabelFor / getElementContextText)
         if (typeof getContextFn === 'function') {
             const ctxText = getContextFn(el);
-            const ans = solveMathCaptcha(ctxText);
-            if (ans !== null) return ans;
+            if (ctxText && typeof ctxText === 'string') {
+                const ans = solveMathCaptcha(ctxText);
+                if (ans !== null) return ans;
+            }
         }
 
         // 2. Element attributes (placeholder, aria-label, title)
@@ -193,10 +203,11 @@
         const attrAns = solveMathCaptcha(attrContext);
         if (attrAns !== null) return attrAns;
 
-        // 3. Associated label elements
+        // 3. Associated label elements (label[for="..."] or el.labels)
         if (el.id && typeof document !== 'undefined') {
             try {
-                const label = document.querySelector(`label[for="${CSS.escape(el.id)}"]`);
+                const safeId = (typeof CSS !== 'undefined' && CSS.escape) ? CSS.escape(el.id) : el.id.replace(/["\\]/g, '\\$&');
+                const label = document.querySelector(`label[for="${safeId}"]`);
                 if (label && label.textContent) {
                     const labelAns = solveMathCaptcha(label.textContent);
                     if (labelAns !== null) return labelAns;
@@ -205,25 +216,53 @@
         }
         if (el.labels && el.labels.length > 0) {
             for (let i = 0; i < el.labels.length; i++) {
-                if (el.labels[i].textContent) {
+                if (el.labels[i] && el.labels[i].textContent) {
                     const lAns = solveMathCaptcha(el.labels[i].textContent);
                     if (lAns !== null) return lAns;
                 }
             }
         }
 
-        // 4. Surrounding DOM nodes (parent, preceding sibling, closest label/fieldset)
-        if (el.parentElement) {
-            // Preceding sibling text
-            if (el.previousElementSibling && el.previousElementSibling.textContent) {
-                const prevAns = solveMathCaptcha(el.previousElementSibling.textContent);
-                if (prevAns !== null) return prevAns;
+        // 4. Preceding siblings (spans, labels, divs directly before this input)
+        let sib = el.previousElementSibling;
+        let sibHops = 0;
+        let sibText = '';
+        while (sib && sibHops < 3) {
+            if (sib.tagName === 'INPUT' && sib.type !== 'hidden') break;
+            if (sib.tagName === 'TEXTAREA' || sib.tagName === 'SELECT') break;
+            if (sib.textContent) {
+                sibText = sib.textContent + ' ' + sibText;
+                const sibAns = solveMathCaptcha(sibText);
+                if (sibAns !== null) return sibAns;
             }
-            // Parent label or container text
-            const parentLabel = el.closest ? el.closest('label, .form-group, .field, .wpcf7-form-control-wrap, div') : el.parentElement;
-            if (parentLabel && parentLabel.textContent) {
-                const pAns = solveMathCaptcha(parentLabel.textContent);
+            sib = sib.previousElementSibling;
+            sibHops++;
+        }
+
+        // 5. Immediate parent or dedicated field container
+        // CRITICAL INVARIANT: The container must NOT contain other visible interactive inputs!
+        // Never climb to generic 'div' or 'form' or 'fieldset' that wraps multiple fields.
+        const parent = el.parentElement;
+        if (parent) {
+            const inputsInParent = (typeof parent.querySelectorAll === 'function')
+                ? parent.querySelectorAll('input:not([type="hidden"]), textarea, select')
+                : null;
+            if (!inputsInParent || inputsInParent.length <= 1) {
+                const parentText = parent.textContent || '';
+                const pAns = solveMathCaptcha(parentText);
                 if (pAns !== null) return pAns;
+            } else if (el.closest) {
+                // If parent has multiple inputs, check dedicated single-field wrapper (e.g. .wpcf7-form-control-wrap, label)
+                const dedicatedWrapper = el.closest('.wpcf7-form-control-wrap, label');
+                if (dedicatedWrapper && dedicatedWrapper !== parent) {
+                    const inputsInWrap = (typeof dedicatedWrapper.querySelectorAll === 'function')
+                        ? dedicatedWrapper.querySelectorAll('input:not([type="hidden"]), textarea, select')
+                        : null;
+                    if (!inputsInWrap || inputsInWrap.length <= 1) {
+                        const wAns = solveMathCaptcha(dedicatedWrapper.textContent || '');
+                        if (wAns !== null) return wAns;
+                    }
+                }
             }
         }
 
