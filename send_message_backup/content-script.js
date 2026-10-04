@@ -1266,8 +1266,14 @@
                 }).catch(() => {});
             } catch (_) {}
             
-            // [Hotfix R2] Prepare SubmissionOutcomeVerifier BEFORE submit action
-            const verifier = new SubmissionOutcomeVerifier(form, template);
+            // [Hotfix R2 & R6.9E] Prepare SubmissionOutcomeVerifier BEFORE submit action
+            const submitHoldMs = (speed && speed.hold) || submitDelayMs || 4000;
+            const verifier = new SubmissionOutcomeVerifier(form, template, {
+                submitDelayMs: submitHoldMs,
+                baseWaitMs: Math.max(12000, submitHoldMs * 2),
+                extendedWaitMs: Math.max(25000, submitHoldMs * 4),
+                transportWaitMs: 35000
+            });
             verifier.prepare();
 
             // [v1.6.5] Record submission attempt to prevent loops AND store initial state for persistence
@@ -5111,9 +5117,9 @@
                 this.submitEventSeen = true;
             }
 
-            const baseWaitMs = (this.options && this.options.baseWaitMs) || 8000;
-            const extendedWaitMs = (this.options && this.options.extendedWaitMs) || 20000;
-            const transportWaitMs = (this.options && this.options.transportWaitMs) || 30000;
+            const baseWaitMs = (this.options && this.options.baseWaitMs) || 12000;
+            const extendedWaitMs = (this.options && this.options.extendedWaitMs) || 25000;
+            const transportWaitMs = (this.options && this.options.transportWaitMs) || 35000;
             const intervalMs = (this.options && this.options.intervalMs) || 250;
             const start = Date.now();
             let finalDecision = null;
@@ -5198,8 +5204,12 @@
                     break;
                 }
 
-                // Phase C (>3500ms): early exit if NO submit seen, NO button busy, NO form reset, and NO mutations
-                if (elapsed > 3500 && !this.submitEventSeen && !signals.submitBtnDisabled && !signals.formReset && !recentMutation) {
+                // Phase C: early exit if NO submit seen, NO button busy, NO form reset, and NO mutations
+                // Ensure ample time is provided for slow server response / registration completion
+                const minPhaseCTime = (this.options && this.options.extendedWaitMs && this.options.extendedWaitMs < 3500)
+                    ? this.options.extendedWaitMs
+                    : Math.max(8000, (this.options && this.options.submitDelayMs ? this.options.submitDelayMs * 2 : 8000));
+                if (elapsed > minPhaseCTime && !this.submitEventSeen && !signals.submitBtnDisabled && !signals.formReset && !recentMutation) {
                     break;
                 }
 
@@ -5282,6 +5292,17 @@
                         url: window.location.href
                     }).catch(() => {});
                 } catch (_) {}
+
+                // [R6.9E Post-Registration Completion Grace] Maintain page so registration finishes completely
+                const defaultGrace = (this.options && this.options.extendedWaitMs && this.options.extendedWaitMs <= 1000) ? 0 : 3000;
+                const postSubmitGraceMs = (this.options && this.options.submitDelayMs !== undefined)
+                    ? parseInt(this.options.submitDelayMs)
+                    : defaultGrace;
+                if (postSubmitGraceMs > 0) {
+                    logDev(`⏳ [PostSubmit] Maintaining page for registration completion (${postSubmitGraceMs}ms)...`, "info");
+                    await new Promise(r => setTimeout(r, postSubmitGraceMs));
+                }
+
                 finishCampaign(true, null, finalDecision, {
                     resultUrl: (typeof window !== 'undefined') ? window.location.href : '',
                     decision: finalDecision,

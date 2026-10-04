@@ -1213,13 +1213,13 @@ function updateSpeedLabels() {
         fillDisplay.innerHTML = label;
     }
 
-    // 3. 등록 속도 매핑 라벨
+    // 3. 등록 완료 대기 속도 매핑 라벨
     const submitSlider = document.getElementById('delay-input-submit');
     const submitDisplay = document.getElementById('speed-submit-display');
     if (submitSlider && submitDisplay) {
         const level = submitSlider.value;
-        const msArr = [5000, 4000, 3000, 2500, 2000, 1800, 1500, 1000, 700, 500];
-        const sec = ((msArr[parseInt(level)] || 1500) / 1000).toFixed(1);
+        const msArr = [15000, 12000, 10000, 8000, 6000, 5000, 4000, 3000, 2000, 1000];
+        const sec = ((msArr[parseInt(level)] || 4000) / 1000).toFixed(1);
         let label = `${dict.speed_level || 'Level'} ${level} <small>(${sec}s)</small>`;
         if (level === '6') label += ` <small>${dict.speed_normal || '(Normal)'}</small>`;
         submitDisplay.innerHTML = label;
@@ -2175,11 +2175,11 @@ async function startCampaign() {
     
     const levelToCollectMs = [60000, 45000, 30000, 25000, 20000, 15000, 10000, 7000, 5000, 3000];
     const levelToFillMs = [2000, 1500, 1000, 800, 500, 400, 300, 200, 150, 100];
-    const levelToSubmitMs = [5000, 4000, 3000, 2500, 2000, 1800, 1500, 1000, 700, 500];
+    const levelToSubmitMs = [15000, 12000, 10000, 8000, 6000, 5000, 4000, 3000, 2000, 1000];
     
     const delayMs = levelToCollectMs[levelCollect] || 10000;
     const fillDelayMs = levelToFillMs[levelFill] || 300;
-    const submitDelayMs = levelToSubmitMs[levelSubmit] || 1500;
+    const submitDelayMs = levelToSubmitMs[levelSubmit] || 4000;
 
     // [v4.15.0] 폼 자동 입력 방식 획득 및 동기화 저장
     const fillModeEl = document.querySelector('input[name="fill-mode"]:checked');

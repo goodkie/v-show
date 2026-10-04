@@ -45,6 +45,7 @@ var I18N_DATA = {
         "label_stealth_mode": "Stealth Mode (Mimic Human)",
         "stealth_tip": "Mimics human behavior to avoid detection.",
         "label_delay": "Playback Speed",
+        "label_delay_submit": "Submission & Completion Hold Delay",
         "speed_level": "Level",
         "speed_normal": "(Normal)",
         "speed_variation": "Random Variation",
@@ -123,6 +124,7 @@ var I18N_DATA = {
         "label_stealth_mode": "🛡️ 스텔스 모드 (사람처럼 행동)",
         "stealth_tip": "사람의 움직임을 분석/모방하여 캡차 차단을 우회합니다.",
         "label_delay": "재생 속도 (Slider 단계)",
+        "label_delay_submit": "등록 및 완료 대기 시간 (Hold Delay)",
         "speed_level": "단계",
         "speed_normal": "(정상)",
         "speed_variation": "무작위 변화 스피드",
@@ -201,6 +203,7 @@ var I18N_DATA = {
         "stt_setup_placeholder": "Wit.ai Server Access Tokenを入力してください",
         "stt_setup_btn_save": "保存して続ける",
         "label_double_submit": "二重送信モード (成功後に再送信)",
+        "label_delay_submit": "送信・登録完了待機時間 (Hold Delay)",
         "double_submit_tip": "送信が成功した場合、同じサイトに対してフォームの自動入力と送信をもう一度実行します。",
         "btn_save_template": "Save",
         "btn_load_file": "Load"
@@ -271,6 +274,7 @@ var I18N_DATA = {
         "stt_setup_placeholder": "请输入您的 Wit.ai Server Access Token",
         "stt_setup_btn_save": "保存并继续",
         "label_double_submit": "双重发送模式 (成功后再发一次)",
+        "label_delay_submit": "提交与完成等待时间 (Hold Delay)",
         "double_submit_tip": "提交成功后，对同一站点再次自动填写并提交表单。",
         "btn_save_template": "Save",
         "btn_load_file": "Load"

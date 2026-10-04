@@ -25,8 +25,8 @@
         builtAt: '2026-10-04T12:15:18.569Z',
         provenanceSchema: 2,
         modules: {
-            backgroundSha: 'bbc93f7b0cf2eaa4daf239fb83bef56f379ebe5471256b1d8d416fb34b5a34c4',
-            contentScriptSha: '20947ca0aa03240ad6dc8820e7155f9245d40f79a9d029ab6b3c912c6660b3da',
+            backgroundSha: '9d44b0882a9f8e6c38cb421107eced01baa58676ab0305a0ef6c99aef0aaca31',
+            contentScriptSha: '6a87d7f6f7eaf8b614b94239508a649a4f6852dbb99e68e2b1ad5519771c780b',
             emailCollectorSha: '3f1147a379e159e7777158f2caa74cc8d40b2a0b0eb2c244f440af379cb5c9c9',
             historyStoreSha: '7c9e22e0f62c4f1b3d82510dcc6604eaefff72e80f79c25041319bdf169305ac',
             contactGateSha: '524933622d1a862425d7302b051bb063d5a3cbec166d868fa73825fa4d38f334',

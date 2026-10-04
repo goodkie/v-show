@@ -3534,8 +3534,9 @@ async function orchestrateSending(urlInput, template) {
         broadcastCounters();
 
         if (res && res.success) {
-            logBg(tabId, "✨ [Engine] Submission confirmed. Tab will close shortly...", "success");
-            await new Promise(r => setTimeout(r, 2000));
+            const holdMs = Math.max(3500, campaignState.submitDelayMs ? parseInt(campaignState.submitDelayMs) : 3500);
+            logBg(tabId, `✨ [Engine] Submission confirmed. Maintaining tab for completion (${holdMs}ms)...`, "success");
+            await new Promise(r => setTimeout(r, holdMs));
         } else {
             await new Promise(r => setTimeout(r, 1000));
         }
