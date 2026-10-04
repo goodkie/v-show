@@ -265,9 +265,9 @@
         }
 
         /**
-         * Add collected emails with generation validation and post-clear baseline check
+         * Add collected emails with generation validation, separate Current Site vs Global Collectible semantics
          */
-        async add(hostname, rawEmails, pageUrl = '', generation = null) {
+        async add(hostname, rawEmails, pageUrl = '', generation = null, options = {}) {
             await this.init();
 
             // 1. Generation & suppression isolation guard
@@ -292,102 +292,99 @@
             const cleanHost = (hostname || 'unknown').toLowerCase().trim();
             const now = new Date().toISOString();
 
-            if (!Array.isArray(rawEmails) || rawEmails.length === 0) {
-                const currentStore = {
-                    hostname: cleanHost,
-                    url: pageUrl || cleanHost,
-                    emails: [],
-                    count: 0,
-                    scannedAt: now
-                };
-                this.currentSiteCache = currentStore;
-                await this.setStoredData(this.currentKey, currentStore);
-                return { currentPageCount: 0, newGlobalCount: 0, totalGlobalCount: this.memoryEmails.size };
-            }
+            // Separate CURRENT SITE sources vs GLOBAL COLLECTIBLE sources
+            const rawPageEmails = (options && Array.isArray(options.pageEmails))
+                ? options.pageEmails
+                : (Array.isArray(rawEmails) ? rawEmails : []);
 
-            const validUnique = [];
-            const seenInBatch = new Set();
+            const rawCollectibleEmails = (options && Array.isArray(options.collectibleEmails))
+                ? options.collectibleEmails
+                : (Array.isArray(rawEmails) ? rawEmails : []);
 
-            for (const r of rawEmails) {
+            // Normalize page emails for Current Site cache
+            const validPageUnique = [];
+            const seenPageBatch = new Set();
+            for (const r of rawPageEmails) {
                 const norm = normalizeEmail(r);
-                if (norm && !seenInBatch.has(norm)) {
-                    seenInBatch.add(norm);
-                    validUnique.push(norm);
+                if (norm && !seenPageBatch.has(norm)) {
+                    seenPageBatch.add(norm);
+                    validPageUnique.push(norm);
+                }
+            }
+            validPageUnique.sort();
+
+            // Normalize collectible emails for Global Store accumulation
+            const validCollectibleUnique = [];
+            const seenCollectBatch = new Set();
+            for (const r of rawCollectibleEmails) {
+                const norm = normalizeEmail(r);
+                if (norm && !seenCollectBatch.has(norm)) {
+                    seenCollectBatch.add(norm);
+                    validCollectibleUnique.push(norm);
                 }
             }
 
-            if (validUnique.length === 0) {
-                const currentStore = {
-                    hostname: cleanHost,
-                    url: pageUrl || cleanHost,
-                    emails: [],
-                    count: 0,
-                    scannedAt: now
-                };
-                this.currentSiteCache = currentStore;
-                await this.setStoredData(this.currentKey, currentStore);
-                return { currentPageCount: 0, newGlobalCount: 0, totalGlobalCount: this.memoryEmails.size };
-            }
-
-            const globalStore = await this.loadGlobalStore();
-            let newGlobalCount = 0;
-
-            for (const email of validUnique) {
-                if (globalStore.emails[email]) {
-                    const record = globalStore.emails[email];
-                    record.lastSeenAt = now;
-                    record.seenCount = (record.seenCount || 1) + 1;
-                    if (!record.sourceHostnames.includes(cleanHost)) {
-                        record.sourceHostnames.push(cleanHost);
-                    }
-                    this.memoryEmails.set(email, record);
-                } else {
-                    const record = {
-                        email: email,
-                        firstSeenAt: now,
-                        lastSeenAt: now,
-                        sourceHostnames: [cleanHost],
-                        seenCount: 1
-                    };
-                    globalStore.emails[email] = record;
-                    this.memoryEmails.set(email, record);
-                    newGlobalCount++;
-                }
-            }
-
-            globalStore.totalUnique = Object.keys(globalStore.emails).length;
-            globalStore.updatedAt = now;
-            await this.setStoredData(this.globalKey, globalStore);
-
-            // Update Current Site Cache
+            // 1. Authoritative Update of Current Site Store
             const currentStore = {
                 hostname: cleanHost,
                 url: pageUrl || cleanHost,
-                emails: validUnique.sort(),
-                count: validUnique.length,
+                emails: validPageUnique,
+                count: validPageUnique.length,
                 scannedAt: now
             };
             this.currentSiteCache = currentStore;
             await this.setStoredData(this.currentKey, currentStore);
 
+            // 2. Authoritative Update of Global Store (only if collectible emails present)
+            const globalStore = await this.loadGlobalStore();
+            let newGlobalCount = 0;
+
+            if (validCollectibleUnique.length > 0) {
+                for (const email of validCollectibleUnique) {
+                    if (globalStore.emails[email]) {
+                        const record = globalStore.emails[email];
+                        record.lastSeenAt = now;
+                        record.seenCount = (record.seenCount || 1) + 1;
+                        if (!record.sourceHostnames.includes(cleanHost)) {
+                            record.sourceHostnames.push(cleanHost);
+                        }
+                        this.memoryEmails.set(email, record);
+                    } else {
+                        const record = {
+                            email: email,
+                            firstSeenAt: now,
+                            lastSeenAt: now,
+                            sourceHostnames: [cleanHost],
+                            seenCount: 1
+                        };
+                        globalStore.emails[email] = record;
+                        this.memoryEmails.set(email, record);
+                        newGlobalCount++;
+                    }
+                }
+                globalStore.totalUnique = Object.keys(globalStore.emails).length;
+                globalStore.updatedAt = now;
+                await this.setStoredData(this.globalKey, globalStore);
+            }
+
             // Update badge if available
-            this._updateBadge(globalStore.totalUnique);
+            this._updateBadge(globalStore.totalUnique || Object.keys(globalStore.emails || {}).length);
 
             return {
-                currentPageCount: validUnique.length,
+                currentPageCount: validPageUnique.length,
                 newGlobalCount: newGlobalCount,
-                totalGlobalCount: globalStore.totalUnique,
+                totalGlobalCount: globalStore.totalUnique || Object.keys(globalStore.emails || {}).length,
                 generation: this.generation
             };
         }
 
-        // Backward compatibility alias
-        async recordEmails(hostname, rawEmails, pageUrl = '', generation = null) {
-            return this.add(hostname, rawEmails, pageUrl, generation);
+        // Backward compatibility aliases
+        async recordEmails(hostname, rawEmails, pageUrl = '', generation = null, options = {}) {
+            return this.add(hostname, rawEmails, pageUrl, generation, options);
         }
 
-        async recordPageScan(hostname, rawEmails, pageUrl = '', generation = null) {
-            return this.add(hostname, rawEmails, pageUrl, generation);
+        async recordPageScan(hostname, rawEmails, pageUrl = '', generation = null, options = {}) {
+            return this.add(hostname, rawEmails, pageUrl, generation, options);
         }
 
         /**

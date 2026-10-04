@@ -1,0 +1,683 @@
+================================================================================
+[R6.9C ACTUAL OPERATOR-PATH EMAIL COLLECTOR RUNTIME AUDIT]
+================================================================================
+Timestamp: 2026-10-04T08:24:09.122Z
+Host OS: Windows (win32 10.0.19045)
+[HTTP_SERVER] Local fixture server listening on http://127.0.0.1:8971
+[BROWSER_LAUNCH] Binary: C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe
+[BROWSER_LAUNCH] Extension: E:\vivpr\ai\extension-form-sender\send_message_backup\build\extension
+[BROWSER_LAUNCH] Remote Debugging Port: 9223
+[CDP_CONNECT] Connected to Chrome DevTools Protocol: Edg/154.0.4258.53
+[EXT_DISCOVERY] Discovered active Extension ID: pjohcallgmjmbfckiaogjokelhobfceg
+[SW_CONSOLE] [BootStep] solver_instantiation
+[SW_CONSOLE] [X PIDER] Background script initializing (Unified Mode)...
+[SW_CONSOLE] [BootStep] side_panel_config
+[SW_CONSOLE] [BootStep] campaign_state_init
+[SW_CONSOLE] [BootStep] global_functions_defined
+[SW_CONSOLE] [BootStep] worker_online
+[SW_CONSOLE] [BootStep] restoring_campaign_state
+
+--- STEP 1: Open Actual Extension Popup ---
+[SW_CONSOLE] [Boot] Initializing campaign state...
+[SW_CONSOLE] [COUNTER_RECONCILE] legacySuccess=0 ledgerSuccess=0 action=LEDGER_WINS
+[SW_CONSOLE] [BootStep] restore_complete
+[SW_CONSOLE] [BG_LOG][tab=none] 📦 [Migration] Safely migrated to v2 (Backup: xpider_backup_v1_1791102254108)
+[POPUP_CONSOLE] [XPIDER] Blacklist loaded with 3333 items.
+[POPUP_CONSOLE] [POPUP_BOOT] started
+[POPUP_CONSOLE] [POPUP_BOOT] startHandlerBound=true
+[POPUP_CONSOLE] [POPUP_BOOT] saveHandlerBound=true
+[POPUP_CONSOLE] [POPUP_BOOT] settingsHydrated=true
+[POPUP_CONSOLE] [LEDGER_STATS] scope=currentGeneration success=0 failed=0 unknown=0
+[POPUP_CONSOLE] [XPIDER_DIAG] [Engine] Initial handshake synced: active=false
+[POPUP_CONSOLE] [POPUP_BOOT] getStateAck=true
+[POPUP_CONSOLE] [POPUP_BOOT] ready=true
+[POPUP_CONSOLE] [Popup] Storage migration verified / initialized to v2.
+[POPUP_BOOT_STATUS] ready=true startBtnExists=true clearBtnExists=true
+[INIT_STORAGE] generation=1 currentSiteCount=0 globalUnique=0
+
+--- STEP 2: Load 2-Target List via Popup UI Controls ---
+[POPUP_QUEUE_LOADED] count=2 targets=["http://127.0.0.1:8971/page-a.html","http://127.0.0.1:8971/page-b.html"]
+
+--- STEP 3: Click Actual Popup #start-btn ---
+[POPUP_CONSOLE] [START_UI] click
+[POPUP_CONSOLE] [START_IPC] sent queue=2
+[POPUP_CONSOLE] [XPIDER_DIAG] [Engine][TX] action=START_CAMPAIGN queue=2 templateId=default v=1 skipAttempted=true
+[POPUP_START_CLICKED] {"success":true}
+
+--- STEP 4: Natural Background Orchestration for Target 1 (Alpha) ---
+[POLL] Waiting for natural injection & EmailCollectorStore update from Target 1...
+[SW_CONSOLE] [BUILD_ID] branch=upgrade/phase-0-1 head=951e33f064d5137a000adaf976f18d26e64139bc manifestVersion=3 buildId=R6.8-20261003-REM builtAt=2026-10-03T07:45:00.000Z
+[SW_CONSOLE] [BG_LOG][tab=none] [BUILD_ID] branch=upgrade/phase-0-1 head=951e33f064d5137a000adaf976f18d26e64139bc manifestVersion=3 buildId=R6.8-20261003-REM builtAt=2026-10-03T07:45:00.000Z
+[SW_CONSOLE] [BUILD_MODULE] contactGateSha=sha256_cg_r6_8_remediation
+[SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] contactGateSha=sha256_cg_r6_8_remediation
+[SW_CONSOLE] [BUILD_MODULE] visionSubmitSha=sha256_vs_r6_8_remediation
+[SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] visionSubmitSha=sha256_vs_r6_8_remediation
+[SW_CONSOLE] [BUILD_MODULE] outcomeVerifierSha=sha256_ov_r6_8_remediation
+[SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] outcomeVerifierSha=sha256_ov_r6_8_remediation
+[SW_CONSOLE] [BUILD_MODULE] backgroundSha=sha256_bg_r6_8_remediation
+[SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] backgroundSha=sha256_bg_r6_8_remediation
+[SW_CONSOLE] [BG_LOG][tab=none] [START_BG] received queue=2
+[SW_CONSOLE] [START_BG] received queue=2
+[SW_CONSOLE] [BG_LOG][tab=none] [Boot] Orchestrator entered.
+[POPUP_CONSOLE] [START_ACK] ok=true latencyMs=16
+[POPUP_CONSOLE] [START_STATE] active=true queue=2
+[POPUP_CONSOLE] [XPIDER_DIAG] [Engine][ACK][+16ms] status=acknowledged
+[SW_CONSOLE] [SESSION_BASELINE] Captured 2 pre-existing user tabs as protected baseline.
+[SW_CONSOLE] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedBefore=0
+[SW_CONSOLE] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedAfter=0 result=PASS
+[SW_CONSOLE] [BG_LOG][tab=none] [Boot] Previous state cleared.
+[SW_CONSOLE] [BG_LOG][tab=none] 📊 [Queue Filter] Input: 2 | Duplicates: 0 | Suppressed: 0 | History-Attempted: 0 | Executable: 2
+[SW_CONSOLE] [BG_LOG][tab=none] [Boot] Variables initialized.
+[SW_CONSOLE] [BG_LOG][tab=none] 🚀 Engine booting...
+[SW_CONSOLE] [BG_LOG][tab=none] [Boot] Storage sync initiated.
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[SW_CONSOLE] [LEDGER_STATS] scope=currentRun success=0 failure=0 unknown=0 timeout=0 skipped=0
+[SW_CONSOLE] [BG_LOG][tab=none] [LEDGER_STATS] scope=currentRun success=0 failure=0 unknown=0 timeout=0 skipped=0
+[SW_CONSOLE] [BG_LOG][tab=none] [Boot] Target loop triggered.
+[SW_CONSOLE] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedBefore=0
+[SW_CONSOLE] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedAfter=0 result=PASS
+[SW_CONSOLE] [BG_LOG][tab=none] [TARGET 1/2][127.0.0.1] START
+[CDP_TARGET_CREATED] tabId=0E4F54B5F007293F65FEF5ED10230472 url=http://127.0.0.1:8971/page-a.html
+[SW_CONSOLE] [TAB_BARRIER] phase=POST_NEW_TARGET_CREATE ownedBefore=0
+[SW_CONSOLE] [TAB_BARRIER] phase=POST_NEW_TARGET_CREATE ownedAfter=0 result=PASS
+[SW_CONSOLE] [TAB_KILL_SWITCH] keepTabId=789318099 closedOthers=0 remainingOwned=1 result=PASS
+[SW_CONSOLE] [BG_LOG][tab=789318099] [TAB_FOCUS] tabId=789318099 windowId=789318093 active=true focused=true
+[SW_CONSOLE] [BG_LOG][tab=789318099] Step 1: Sniper Mode active. Searching for contact page...
+[SW_CONSOLE] [BG_LOG][tab=789318099] 🔦 Scanning paths 1-10...
+[SW_CONSOLE] [BG_LOG][tab=789318099] Pre-scan complete. Identified 10 valid paths.
+[SW_CONSOLE] [BG_LOG][tab=789318099] [SniperScan] Identified 10 candidate paths in background.
+[POPUP_CONSOLE] [XPIDER_DIAG] [Engine][VERIFY] active=true queue=2
+[POPUP_CONSOLE] [LEDGER_STATS] scope=currentGeneration success=0 failed=0 unknown=0
+[SW_CONSOLE] [BG_LOG][tab=789318099] [TAB_FOCUS] tabId=789318099 windowId=789318093 active=true focused=true
+[SW_CONSOLE] [BG_LOG][tab=789318099] [TAB_OWNERSHIP] VERIFIED_REDIRECT source=127.0.0.1 target=127.0.0.1 relation=SAME_HOST
+[SW_CONSOLE] [BG_LOG][tab=789318099] [FOCUS_SECURED] formPageUrl=http://127.0.0.1:8971/page-a.html
+[POPUP_CONSOLE] [LEDGER_STATS] scope=currentGeneration success=0 failed=0 unknown=0
+[SW_CONSOLE] [BG_LOG][tab=789318099] Extraction focus secured. Mapping template fields...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [TARGET_PAGE] url=http://127.0.0.1:8971/page-a.html domGeneration=1791102258453 attemptId=mutk1fkm_7bo5e
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [TARGET_PAGE] url=http://127.0.0.1:8971/page-a.html domGeneration=1791102258453 attemptId=mutk1fkm_7bo5e
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] 🚀 [Engine] Ultra-Mode process started
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] 🚀 [Engine] Ultra-Mode process started
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[SW_CONSOLE] [BG_LOG][tab=789318099] [TARGET][127.0.0.1] emailsFoundCurrentPage=3 emailsNewGlobal=3 totalEmailsGlobal=3
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [TARGET_PAGE] url=http://127.0.0.1:8971/page-a.html recursion=0
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [TARGET_PAGE] url=http://127.0.0.1:8971/page-a.html recursion=0
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] 🔍 [Discovery] URL: http://127.0.0.1:8971/page-a.html | Recursion: 0
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] 🔍 [Discovery] URL: http://127.0.0.1:8971/page-a.html | Recursion: 0
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1:8971/page-a.html | Recursion: 0
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1:8971/page-a.html | Recursion: 0
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [FORM_SCAN] bodyCandidates=1 forms=1 logicalContainers=1
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [FORM_SCAN] bodyCandidates=1 forms=1 logicalContainers=1
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [PAGE_CLASS] CONTACT_FORM_PAGE
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [PAGE_CLASS] CONTACT_FORM_PAGE
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] 🎯 Step 2: Contact form discovered. Preparing submission...
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] 🎯 Step 2: Contact form discovered. Preparing submission...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [STAGE] stage=CONTACT_PAGE_FOUND
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [STAGE] stage=CONTACT_PAGE_FOUND
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [LONG_TEXT_GATE] found=true type=textarea semantic=message
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [LONG_TEXT_GATE] found=true type=textarea semantic=message
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [FORM_GATE] eligible=true reason=BODY_FIELD_PRESENT
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [FORM_GATE] eligible=true reason=BODY_FIELD_PRESENT
+[SW_CONSOLE] [BG_LOG][tab=789318099] 📍 [PIPELINE][CONTACT_PAGE_FOUND] url=http://127.0.0.1:8971/page-a.html
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] 🔍 [Supreme-X 5.0] Scanning for multi-location / branch links...
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] 🔍 [Supreme-X 5.0] Scanning for multi-location / branch links...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [AUTOFILL_LOCK] acquired=true key=mutk1fkm_7bo5e:http://127.0.0.1:8971/page-a.html:contact-form
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [AUTOFILL_LOCK] acquired=true key=mutk1fkm_7bo5e:http://127.0.0.1:8971/page-a.html:contact-form
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [CONTACT_GATE] PASS bodyField=textarea
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [CONTACT_GATE] PASS bodyField=textarea
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTACT_COMMIT] contactPageUrl=http://127.0.0.1:8971/page-a.html
+[SW_CONSOLE] [BG_LOG][tab=789318099] [FORM_COMMIT] formPageUrl=http://127.0.0.1:8971/page-a.html
+[SW_CONSOLE] [BG_LOG][tab=789318099] 📋 [PIPELINE][ELIGIBLE_FORM_FOUND] url=http://127.0.0.1:8971/page-a.html
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] 🛠️ Step 3: Registering message template to form fields...
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] 🛠️ Step 3: Registering message template to form fields...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] 🛡️ [FormStabilizer] Starting bounded stabilization (max 5s, max 2 retries/element)...
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] 🛡️ [FormStabilizer] Starting bounded stabilization (max 5s, max 2 retries/element)...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] 🛡️ [FormStabilizer] Stopped (ALL_FIELDS_STABLE_OR_RESOLVED): seen=4 stable=true unresolved=0 (selects=0, cbs=0, radios=0)
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] 🛡️ [FormStabilizer] Stopped (ALL_FIELDS_STABLE_OR_RESOLVED): seen=4 stable=true unresolved=0 (selects=0, cbs=0, radios=0)
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] 🛠️ [Action][HyperEngine v4.0] 초강력 폼 자동 등록기 시작...
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] 🛠️ [Action][HyperEngine v4.0] 초강력 폼 자동 등록기 시작...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] 🎯 [HyperEngine v4.0] Phase 0 - 입력 필드 전수 수집...
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] 🎯 [HyperEngine v4.0] Phase 0 - 입력 필드 전수 수집...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html]    [v4.0] 총 4개 입력 필드 발견 (radio: 0, checkbox: 0)
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html]    [v4.0] 총 4개 입력 필드 발견 (radio: 0, checkbox: 0)
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] 🎯 [HyperEngine v4.0] Phase 1 & 2 - 드롭다운 SelectResolverR2 전수 처리...
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] 🎯 [HyperEngine v4.0] Phase 1 & 2 - 드롭다운 SelectResolverR2 전수 처리...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] 🎯 [HyperEngine v4.0] Phase 3 - 체크박스 CheckboxResolverR2 전수 처리...
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] 🎯 [HyperEngine v4.0] Phase 3 - 체크박스 CheckboxResolverR2 전수 처리...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] 🎯 [HyperEngine v4.0] Phase 4 - 텍스트 필드 패턴 매칭...
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] 🎯 [HyperEngine v4.0] Phase 4 - 텍스트 필드 패턴 매칭...
+[CONTENT_CONSOLE] 🚀 [XpiderSender] Advanced Engine Loaded: http://127.0.0.1:8971/page-a.html
+[CONTENT_CONSOLE] [RUNTIME_ASSERT] NON_HTML_DOWNLOADABLE_EXTENSIONS ready=true
+[CONTENT_CONSOLE] [CONTROL_PLANE] listenersActive=1
+[CONTENT_CONSOLE] [EMAIL_COLLECTOR_INIT] generation=1 moduleLoaded=true
+[CONTENT_CONSOLE] [EMAIL_SCAN] url=http://127.0.0.1:8971/page-a.html found=3 trigger=INIT
+[CONTENT_CONSOLE] [EMAIL_SEND] generation=1 pageCount=3 collectibleCount=3 count=3 hostname=127.0.0.1
+[CONTENT_CONSOLE] 🛡️ [XPIDER Stealth v2.0] Main World stealth injection applied successfully.
+[CONTENT_CONSOLE] [CONTROL_PLANE] listenersActive=1 key=mutk1fkm_7bo5e:http://127.0.0.1:8971/page-a.html:1791102258453
+[CONTENT_CONSOLE] [XpiderLog] [TARGET_PAGE] url=http://127.0.0.1:8971/page-a.html domGeneration=1791102258453 attemptId=mutk1fkm_7bo5e
+[CONTENT_CONSOLE] [XpiderLog] 🚀 [Engine] Ultra-Mode process started
+[CONTENT_CONSOLE] [XpiderLog] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[CONTENT_CONSOLE] [XpiderLog] [TARGET_PAGE] url=http://127.0.0.1:8971/page-a.html recursion=0
+[CONTENT_CONSOLE] [XpiderLog] 🔍 [Discovery] URL: http://127.0.0.1:8971/page-a.html | Recursion: 0
+[CONTENT_CONSOLE] [XpiderLog] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[CONTENT_CONSOLE] [XpiderLog] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1:8971/page-a.html | Recursion: 0
+[CONTENT_CONSOLE] [FORM_GATE] candidate=form#contact-form.[name,email,subject,message] bodyField=true contactFields=2 submitters=1 eligible=true reason=ELIGIBLE_INQUIRY_FORM
+[CONTENT_CONSOLE] [FORM_SCAN] pass=1 url=http://127.0.0.1:8971/page-a.html roots=1
+[CONTENT_CONSOLE] [FORM_SCAN] bodyCandidates=1 nativeForms=1 logicalContainers=0
+[CONTENT_CONSOLE] [FORM_SCAN] shadowRoots=0 iframes=0 modalTriggers=12
+[CONTENT_CONSOLE] [EMAIL_SCAN] url=http://127.0.0.1:8971/page-a.html found=3 trigger=SCAN
+[CONTENT_CONSOLE] [LONG_TEXT_GATE] found=true type=textarea semantic=message
+[CONTENT_CONSOLE] [XpiderLog] [FORM_SCAN] bodyCandidates=1 forms=1 logicalContainers=1
+[CONTENT_CONSOLE] [XpiderLog] [PAGE_CLASS] CONTACT_FORM_PAGE
+[CONTENT_CONSOLE] [XpiderLog] 🎯 Step 2: Contact form discovered. Preparing submission...
+[CONTENT_CONSOLE] [XpiderLog] [STAGE] stage=CONTACT_PAGE_FOUND
+[CONTENT_CONSOLE] [XpiderLog] [LONG_TEXT_GATE] found=true type=textarea semantic=message
+[CONTENT_CONSOLE] [XpiderLog] [FORM_GATE] eligible=true reason=BODY_FIELD_PRESENT
+[CONTENT_CONSOLE] [XpiderLog] 🔍 [Supreme-X 5.0] Scanning for multi-location / branch links...
+[CONTENT_CONSOLE] [XpiderLog] [AUTOFILL_LOCK] acquired=true key=mutk1fkm_7bo5e:http://127.0.0.1:8971/page-a.html:contact-form
+[CONTENT_CONSOLE] [LONG_TEXT_GATE] found=true type=textarea semantic=message
+[CONTENT_CONSOLE] [LONG_TEXT_GATE] found=true type=textarea semantic=message
+[CONTENT_CONSOLE] [FORM_INTENT] intent=CONTACT_INQUIRY confidence=0.95 negativeClass=none
+[CONTENT_CONSOLE] [FORM_CLASSIFY] intent=CONTACT_INQUIRY eligible=true hasInquiryBody=true bodyFieldType=textarea decision=ACCEPT reason=ELIGIBLE_CONTACT_INQUIRY
+[CONTENT_CONSOLE] [XpiderLog] [CONTACT_GATE] PASS bodyField=textarea
+[CONTENT_CONSOLE] [XpiderLog] [STAGE] stage=ELIGIBLE_FORM_FOUND
+[CONTENT_CONSOLE] [EMAIL_SCAN] url=http://127.0.0.1:8971/page-a.html found=3 trigger=FORM_ENTRY
+[CONTENT_CONSOLE] [XpiderLog] 🛠️ Step 3: Registering message template to form fields...
+[CONTENT_CONSOLE] [XpiderLog] 🛡️ [FormStabilizer] Starting bounded stabilization (max 5s, max 2 retries/element)...
+[CONTENT_CONSOLE] [XpiderLog] 🛡️ [FormStabilizer] Stopped (ALL_FIELDS_STABLE_OR_RESOLVED): seen=4 stable=true unresolved=0 (selects=0, cbs=0, radios=0)
+[CONTENT_CONSOLE] [XpiderLog] 🛠️ [Action][HyperEngine v4.0] 초강력 폼 자동 등록기 시작...
+[CONTENT_CONSOLE] [XpiderLog] 🎯 [HyperEngine v4.0] Phase 0 - 입력 필드 전수 수집...
+[CONTENT_CONSOLE] [XpiderLog]    [v4.0] 총 4개 입력 필드 발견 (radio: 0, checkbox: 0)
+[CONTENT_CONSOLE] [XpiderLog] 🎯 [HyperEngine v4.0] Phase 1 & 2 - 드롭다운 SelectResolverR2 전수 처리...
+[CONTENT_CONSOLE] [XpiderLog] 🎯 [HyperEngine v4.0] Phase 3 - 체크박스 CheckboxResolverR2 전수 처리...
+[CONTENT_CONSOLE] [XpiderLog] 🎯 [HyperEngine v4.0] Phase 4 - 텍스트 필드 패턴 매칭...
+[CONTENT_CONSOLE] [EMAIL_ACK] currentPageCount=3 newGlobalCount=3 totalGlobalCount=3 suppressed=false staleGeneration=false
+[STORAGE_AFTER_PAGE_A] generation=1
+[STORAGE_AFTER_PAGE_A] currentSiteCount=3 emails=["executive@alpha-corp.com","sales@alpha-corp.com","support@alpha-corp.com"]
+[STORAGE_AFTER_PAGE_A] globalUnique=3
+[POPUP_UI_AFTER_PAGE_A] currentSiteUI=3 globalUI=3
+
+--- STEP 5: Natural Background Orchestration for Target 2 (Beta - Zero Emails) ---
+[POLL] Waiting for background to navigate and scan zero-email Page B...
+[CONTENT_CONSOLE] [XpiderLog]    - [Input✅] category=name filled=true
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html]    - [Input✅] category=name filled=true
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html]    - [Input✅] category=name filled=true
+[CONTENT_CONSOLE] [XpiderLog] 💓 [Heartbeat] Engine active and processing...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] 💓 [Heartbeat] Engine active and processing...
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] 💓 [Heartbeat] Engine active and processing...
+[CONTENT_CONSOLE] [XpiderLog]    - [Input✅] category=email filled=true length=25
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html]    - [Input✅] category=email filled=true length=25
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html]    - [Input✅] category=email filled=true length=25
+[CONTENT_CONSOLE] [XpiderLog]    - [Input✅] category=subject filled=true length=26
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html]    - [Input✅] category=subject filled=true length=26
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html]    - [Input✅] category=subject filled=true length=26
+[CONTENT_CONSOLE] [XpiderLog] 💓 [Heartbeat] Engine active and processing...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] 💓 [Heartbeat] Engine active and processing...
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] 💓 [Heartbeat] Engine active and processing...
+[CONTENT_CONSOLE] [XpiderLog]    - [Input✅] category=message filled=true length=45
+[CONTENT_CONSOLE] [XpiderLog] 🎯 [HyperEngine v4.0] Phase 5 - 빈 필드 강제 채우기...
+[CONTENT_CONSOLE] [XpiderLog] 🎯 [HyperEngine v4.0] Phase 6 - 라디오 버튼 미선택 그룹 처리...
+[CONTENT_CONSOLE] [XpiderLog] 🎯 [HyperEngine v4.0] Phase 8 - 커스텀 ARIA 체크박스/라디오 처리...
+[CONTENT_CONSOLE] [XpiderLog] 🛠️ [HyperEngine v4.0] Phase 9 - BruteForce contentEditable/role=textbox...
+[CONTENT_CONSOLE] [XpiderLog] 🎯 [HyperEngine v4.0] Phase 10 - Super-BruteForce Sweeper (초강력 입력기) 가동...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html]    - [Input✅] category=message filled=true length=45
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html]    - [Input✅] category=message filled=true length=45
+[CONTENT_CONSOLE] [XpiderLog] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
+[CONTENT_CONSOLE] [XpiderLog] [STAGE] stage=FIELD_STATE_STABLE
+[CONTENT_CONSOLE] [XpiderLog] ✅ [HyperEngine v4.0] 폼 작성 완료 - 입력 필드 4개 처리됨
+[CONTENT_CONSOLE] [XpiderLog] [FILL] messageBodyFilled=true
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] 🎯 [HyperEngine v4.0] Phase 5 - 빈 필드 강제 채우기...
+[CONTENT_CONSOLE] [XpiderLog] ✅ [Action] Sequence complete: Success
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] 🎯 [HyperEngine v4.0] Phase 5 - 빈 필드 강제 채우기...
+[CONTENT_CONSOLE] [XpiderLog] ⏳ [Engine] Holding for visual confirmation (500ms)...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] 🎯 [HyperEngine v4.0] Phase 6 - 라디오 버튼 미선택 그룹 처리...
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] 🎯 [HyperEngine v4.0] Phase 6 - 라디오 버튼 미선택 그룹 처리...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] 🎯 [HyperEngine v4.0] Phase 8 - 커스텀 ARIA 체크박스/라디오 처리...
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] 🎯 [HyperEngine v4.0] Phase 8 - 커스텀 ARIA 체크박스/라디오 처리...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] 🛠️ [HyperEngine v4.0] Phase 9 - BruteForce contentEditable/role=textbox...
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] 🛠️ [HyperEngine v4.0] Phase 9 - BruteForce contentEditable/role=textbox...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] 🎯 [HyperEngine v4.0] Phase 10 - Super-BruteForce Sweeper (초강력 입력기) 가동...
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] 🎯 [HyperEngine v4.0] Phase 10 - Super-BruteForce Sweeper (초강력 입력기) 가동...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [STAGE] stage=FIELD_STATE_STABLE
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [STAGE] stage=FIELD_STATE_STABLE
+[SW_CONSOLE] [BG_LOG][tab=789318099] ✅ [PIPELINE][REQUIRED_FIELDS_RESOLVED] url=http://127.0.0.1:8971/page-a.html
+[SW_CONSOLE] [BG_LOG][tab=789318099] 🔒 [PIPELINE][FIELD_STATE_STABLE] url=http://127.0.0.1:8971/page-a.html
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] ✅ [HyperEngine v4.0] 폼 작성 완료 - 입력 필드 4개 처리됨
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] ✅ [HyperEngine v4.0] 폼 작성 완료 - 입력 필드 4개 처리됨
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [FILL] messageBodyFilled=true
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [FILL] messageBodyFilled=true
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] ✅ [Action] Sequence complete: Success
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] ✅ [Action] Sequence complete: Success
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] ⏳ [Engine] Holding for visual confirmation (500ms)...
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] ⏳ [Engine] Holding for visual confirmation (500ms)...
+[CONTENT_CONSOLE] [XpiderLog] 🧠 [FinalFill] Running AI Final Form Completion Pass immediately before submit...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] 🧠 [FinalFill] Running AI Final Form Completion Pass immediately before submit...
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] 🧠 [FinalFill] Running AI Final Form Completion Pass immediately before submit...
+[CONTENT_CONSOLE] [AI_COMPLETE_FORM] fillableTotal=4 filledBefore=4 filledByAI=0 safeSkipped=0 sensitiveBlocked=0 emptySafeAfter=0
+[CONTENT_CONSOLE] [XpiderLog] [AI_COMPLETE_FORM] fillableTotal=4 filledBefore=4 filledByAI=0 safeSkipped=0 sensitiveBlocked=0 emptySafeAfter=0
+[CONTENT_CONSOLE] [XpiderLog] [FINAL_FILL] controls=4 unresolvedBefore=0 checkboxResolved=0 radioResolved=0 selectResolved=0 unresolvedAfter=0
+[CONTENT_CONSOLE] [XpiderLog] [FINAL_AUDIT] PASS
+[CONTENT_CONSOLE] [XpiderLog] [FIELD_SUMMARY] text required 0/0 | checkbox 0/0 | radio 0/0 | select 0/0 | message 1/1 | unresolved 0
+[CONTENT_CONSOLE] [XpiderLog] ✅ [FinalAudit] Hard Gate Passed: 0 unresolved required fields
+[CONTENT_CONSOLE] [XpiderLog] [SUBMIT_LOCK] acquired=true submittedFromUrl=http://127.0.0.1:8971/page-a.html — post FINAL_AUDIT_PASS
+[CONTENT_CONSOLE] [XpiderLog] 📤 [Action] Triggering submission sequence...
+[CONTENT_CONSOLE] [XpiderLog] [SUBMIT] attemptStarted=true
+[CONTENT_CONSOLE] [XpiderLog] [STAGE] stage=SUBMIT_ATTEMPT_STARTED
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [AI_COMPLETE_FORM] fillableTotal=4 filledBefore=4 filledByAI=0 safeSkipped=0 sensitiveBlocked=0 emptySafeAfter=0
+[CONTENT_CONSOLE] [SUCCESS_SNAPSHOT] candidates=1 visibleBefore=0
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [AI_COMPLETE_FORM] fillableTotal=4 filledBefore=4 filledByAI=0 safeSkipped=0 sensitiveBlocked=0 emptySafeAfter=0
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [FINAL_FILL] controls=4 unresolvedBefore=0 checkboxResolved=0 radioResolved=0 selectResolved=0 unresolvedAfter=0
+[CONTENT_CONSOLE] [SUCCESS_TRANSITION] node=DIV#confirmation beforeVisible=false afterVisible=true
+[CONTENT_CONSOLE] [XpiderLog] [SUCCESS_TRANSITION] node=DIV#confirmation beforeVisible=false afterVisible=true
+[CONTENT_CONSOLE] [XpiderLog] [SUBMIT] triggered=true
+[CONTENT_CONSOLE] [XpiderLog] [STAGE] stage=SUBMIT_TRIGGERED
+[CONTENT_CONSOLE] [XpiderLog] 🕵️ [SubmissionOutcomeVerifier] Verifying submission status (Multi-Polling)...
+[CONTENT_CONSOLE] [SUCCESS_TRANSITION] node=DIV#confirmation beforeVisible=false afterVisible=true
+[CONTENT_CONSOLE] [XpiderLog] [SUCCESS_TRANSITION] node=DIV#confirmation beforeVisible=false afterVisible=true
+[CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] submitEvent=true
+[CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] urlChanged=false
+[CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] newSuccessNodes=0
+[CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] validationErrors=0
+[CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] formReset=false
+[CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] decision=CONFIRMED_SUCCESS
+[CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] latencyMs=1
+[CONTENT_CONSOLE] [XpiderLog] [FINAL] status=CONFIRMED_SUCCESS
+[CONTENT_CONSOLE] [XpiderLog] [STAGE] stage=CONFIRMED_SUCCESS
+[CONTENT_CONSOLE] [XpiderLog] ✅ [Engine] Campaign step successfully executed.
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [FINAL_FILL] controls=4 unresolvedBefore=0 checkboxResolved=0 radioResolved=0 selectResolved=0 unresolvedAfter=0
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [FINAL_AUDIT] PASS
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [FINAL_AUDIT] PASS
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [FIELD_SUMMARY] text required 0/0 | checkbox 0/0 | radio 0/0 | select 0/0 | message 1/1 | unresolved 0
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [FIELD_SUMMARY] text required 0/0 | checkbox 0/0 | radio 0/0 | select 0/0 | message 1/1 | unresolved 0
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] ✅ [FinalAudit] Hard Gate Passed: 0 unresolved required fields
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] ✅ [FinalAudit] Hard Gate Passed: 0 unresolved required fields
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [SUBMIT_LOCK] acquired=true submittedFromUrl=http://127.0.0.1:8971/page-a.html — post FINAL_AUDIT_PASS
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [SUBMIT_LOCK] acquired=true submittedFromUrl=http://127.0.0.1:8971/page-a.html — post FINAL_AUDIT_PASS
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] 📤 [Action] Triggering submission sequence...
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] 📤 [Action] Triggering submission sequence...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [SUBMIT] attemptStarted=true
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [SUBMIT] attemptStarted=true
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [STAGE] stage=SUBMIT_ATTEMPT_STARTED
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [STAGE] stage=SUBMIT_ATTEMPT_STARTED
+[SW_CONSOLE] [BG_LOG][tab=789318099] ⏳ [PIPELINE][SUBMIT_ATTEMPT_STARTED] url=http://127.0.0.1:8971/page-a.html
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [SUCCESS_TRANSITION] node=DIV#confirmation beforeVisible=false afterVisible=true
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [SUCCESS_TRANSITION] node=DIV#confirmation beforeVisible=false afterVisible=true
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [SUBMIT] triggered=true
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [SUBMIT] triggered=true
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [STAGE] stage=SUBMIT_TRIGGERED
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [STAGE] stage=SUBMIT_TRIGGERED
+[SW_CONSOLE] [BG_LOG][tab=789318099] 📤 [PIPELINE][SUBMIT_TRIGGERED] url=http://127.0.0.1:8971/page-a.html
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] 🕵️ [SubmissionOutcomeVerifier] Verifying submission status (Multi-Polling)...
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] 🕵️ [SubmissionOutcomeVerifier] Verifying submission status (Multi-Polling)...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [SUCCESS_TRANSITION] node=DIV#confirmation beforeVisible=false afterVisible=true
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [SUCCESS_TRANSITION] node=DIV#confirmation beforeVisible=false afterVisible=true
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [SUBMIT_VERIFY] submitEvent=true
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [SUBMIT_VERIFY] submitEvent=true
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [SUBMIT_VERIFY] urlChanged=false
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [SUBMIT_VERIFY] urlChanged=false
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [SUBMIT_VERIFY] newSuccessNodes=0
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [SUBMIT_VERIFY] newSuccessNodes=0
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [SUBMIT_VERIFY] validationErrors=0
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [SUBMIT_VERIFY] validationErrors=0
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [SUBMIT_VERIFY] formReset=false
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [SUBMIT_VERIFY] formReset=false
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [SUBMIT_VERIFY] decision=CONFIRMED_SUCCESS
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [SUBMIT_VERIFY] decision=CONFIRMED_SUCCESS
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [SUBMIT_VERIFY] latencyMs=1
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [SUBMIT_VERIFY] latencyMs=1
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [FINAL] status=CONFIRMED_SUCCESS
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [FINAL] status=CONFIRMED_SUCCESS
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [STAGE] stage=CONFIRMED_SUCCESS
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] [STAGE] stage=CONFIRMED_SUCCESS
+[SW_CONSOLE] [BG_LOG][tab=789318099] 🎉 [PIPELINE][CONFIRMED_SUCCESS] url=http://127.0.0.1:8971/page-a.html
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] ✅ [Engine] Campaign step successfully executed.
+[SW_CONSOLE] [BG_LOG][tab=789318099] [CONTENT_EVENT][tabId=789318099][attemptId=att_1791102258160_1ki09][url=http://127.0.0.1:8971/page-a.html] ✅ [Engine] Campaign step successfully executed.
+[SW_CONSOLE] [BG_LOG][tab=789318099] [RESULT] resultUrl=http://127.0.0.1:8971/page-a.html
+[SW_CONSOLE] [BG_LOG][tab=789318099] [TARGET][127.0.0.1] FINAL status=CONFIRMED_SUCCESS reason=SUCCESS_CONFIRMED
+[SW_CONSOLE] [BG_LOG][tab=789318099] [HISTORY_FINAL] sourceUrl=http://127.0.0.1:8971/page-a.html contactPageUrl=http://127.0.0.1:8971/page-a.html formPageUrl=http://127.0.0.1:8971/page-a.html resultUrl=http://127.0.0.1:8971/page-a.html
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[SW_CONSOLE] [LEDGER_STATS] scope=currentRun success=1 failure=0 unknown=0 timeout=0 skipped=0
+[SW_CONSOLE] [BG_LOG][tab=789318099] [LEDGER_STATS] scope=currentRun success=1 failure=0 unknown=0 timeout=0 skipped=0
+[SW_CONSOLE] [BG_LOG][tab=789318099] ✨ [Engine] Submission confirmed. Tab will close shortly...
+[POPUP_CONSOLE] [LEDGER_STATS] scope=currentGeneration success=1 failed=0 unknown=0
+[SW_CONSOLE] [TAB_CLOSE] tabId=789318099 attempt=1 result=CLOSED
+[SW_CONSOLE] [POST_FINAL_TAB_INVARIANT] target=http://127.0.0.1:8971/page-a.html remainingOwnedTabs=0 retainedTabs=0 result=PASS
+[SW_CONSOLE] [BG_LOG][tab=none] Waiting 3000ms before next target...
+[SW_CONSOLE] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedBefore=0
+[SW_CONSOLE] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedAfter=0 result=PASS
+[SW_CONSOLE] [BG_LOG][tab=none] [TARGET 2/2][127.0.0.1] START
+[POPUP_CONSOLE] [LEDGER_STATS] scope=currentGeneration success=1 failed=0 unknown=0
+[CDP_TARGET_CREATED] tabId=5FBD7922CC709144236CA010CDEB3817 url=http://127.0.0.1:8971/page-b.html
+[SW_CONSOLE] [TAB_BARRIER] phase=POST_NEW_TARGET_CREATE ownedBefore=0
+[SW_CONSOLE] [TAB_BARRIER] phase=POST_NEW_TARGET_CREATE ownedAfter=0 result=PASS
+[SW_CONSOLE] [TAB_KILL_SWITCH] keepTabId=789318101 closedOthers=0 remainingOwned=1 result=PASS
+[SW_CONSOLE] [BG_LOG][tab=789318101] [TAB_FOCUS] tabId=789318101 windowId=789318093 active=true focused=true
+[SW_CONSOLE] [BG_LOG][tab=789318101] Step 1: Sniper Mode active. Searching for contact page...
+[SW_CONSOLE] [BG_LOG][tab=789318101] 🔦 Scanning paths 1-10...
+[SW_CONSOLE] [BG_LOG][tab=789318101] Pre-scan complete. Identified 10 valid paths.
+[SW_CONSOLE] [BG_LOG][tab=789318101] [SniperScan] Identified 10 candidate paths in background.
+[SW_CONSOLE] [BG_LOG][tab=789318101] [TAB_FOCUS] tabId=789318101 windowId=789318093 active=true focused=true
+[SW_CONSOLE] [BG_LOG][tab=789318101] [TAB_OWNERSHIP] VERIFIED_REDIRECT source=127.0.0.1 target=127.0.0.1 relation=SAME_HOST
+[SW_CONSOLE] [BG_LOG][tab=789318101] [FOCUS_SECURED] formPageUrl=http://127.0.0.1:8971/page-b.html
+[SW_CONSOLE] [BG_LOG][tab=789318101] Extraction focus secured. Mapping template fields...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318101][attemptId=att_1791102275387_x33o1][url=http://127.0.0.1:8971/page-b.html] [TARGET_PAGE] url=http://127.0.0.1:8971/page-b.html domGeneration=1791102275648 attemptId=mutk1su8_hehad
+[SW_CONSOLE] [BG_LOG][tab=789318101] [CONTENT_EVENT][tabId=789318101][attemptId=att_1791102275387_x33o1][url=http://127.0.0.1:8971/page-b.html] [TARGET_PAGE] url=http://127.0.0.1:8971/page-b.html domGeneration=1791102275648 attemptId=mutk1su8_hehad
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318101][attemptId=att_1791102275387_x33o1][url=http://127.0.0.1:8971/page-b.html] 🚀 [Engine] Ultra-Mode process started
+[SW_CONSOLE] [BG_LOG][tab=789318101] [CONTENT_EVENT][tabId=789318101][attemptId=att_1791102275387_x33o1][url=http://127.0.0.1:8971/page-b.html] 🚀 [Engine] Ultra-Mode process started
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318101][attemptId=att_1791102275387_x33o1][url=http://127.0.0.1:8971/page-b.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[SW_CONSOLE] [BG_LOG][tab=789318101] [CONTENT_EVENT][tabId=789318101][attemptId=att_1791102275387_x33o1][url=http://127.0.0.1:8971/page-b.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318101][attemptId=att_1791102275387_x33o1][url=http://127.0.0.1:8971/page-b.html] [TARGET_PAGE] url=http://127.0.0.1:8971/page-b.html recursion=0
+[SW_CONSOLE] [BG_LOG][tab=789318101] [CONTENT_EVENT][tabId=789318101][attemptId=att_1791102275387_x33o1][url=http://127.0.0.1:8971/page-b.html] [TARGET_PAGE] url=http://127.0.0.1:8971/page-b.html recursion=0
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318101][attemptId=att_1791102275387_x33o1][url=http://127.0.0.1:8971/page-b.html] 🔍 [Discovery] URL: http://127.0.0.1:8971/page-b.html | Recursion: 0
+[SW_CONSOLE] [BG_LOG][tab=789318101] [CONTENT_EVENT][tabId=789318101][attemptId=att_1791102275387_x33o1][url=http://127.0.0.1:8971/page-b.html] 🔍 [Discovery] URL: http://127.0.0.1:8971/page-b.html | Recursion: 0
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318101][attemptId=att_1791102275387_x33o1][url=http://127.0.0.1:8971/page-b.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[SW_CONSOLE] [BG_LOG][tab=789318101] [CONTENT_EVENT][tabId=789318101][attemptId=att_1791102275387_x33o1][url=http://127.0.0.1:8971/page-b.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318101][attemptId=att_1791102275387_x33o1][url=http://127.0.0.1:8971/page-b.html] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1:8971/page-b.html | Recursion: 0
+[SW_CONSOLE] [BG_LOG][tab=789318101] [CONTENT_EVENT][tabId=789318101][attemptId=att_1791102275387_x33o1][url=http://127.0.0.1:8971/page-b.html] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1:8971/page-b.html | Recursion: 0
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318101][attemptId=att_1791102275387_x33o1][url=http://127.0.0.1:8971/page-b.html] [FORM_SCAN] bodyCandidates=1 forms=1 logicalContainers=1
+[SW_CONSOLE] [BG_LOG][tab=789318101] [CONTENT_EVENT][tabId=789318101][attemptId=att_1791102275387_x33o1][url=http://127.0.0.1:8971/page-b.html] [FORM_SCAN] bodyCandidates=1 forms=1 logicalContainers=1
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318101][attemptId=att_1791102275387_x33o1][url=http://127.0.0.1:8971/page-b.html] [PAGE_CLASS] CONTACT_FORM_PAGE
+[SW_CONSOLE] [BG_LOG][tab=789318101] [CONTENT_EVENT][tabId=789318101][attemptId=att_1791102275387_x33o1][url=http://127.0.0.1:8971/page-b.html] [PAGE_CLASS] CONTACT_FORM_PAGE
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318101][attemptId=att_1791102275387_x33o1][url=http://127.0.0.1:8971/page-b.html] 🎯 Step 2: Contact form discovered. Preparing submission...
+[SW_CONSOLE] [BG_LOG][tab=789318101] [CONTENT_EVENT][tabId=789318101][attemptId=att_1791102275387_x33o1][url=http://127.0.0.1:8971/page-b.html] 🎯 Step 2: Contact form discovered. Preparing submission...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318101][attemptId=att_1791102275387_x33o1][url=http://127.0.0.1:8971/page-b.html] [STAGE] stage=CONTACT_PAGE_FOUND
+[SW_CONSOLE] [BG_LOG][tab=789318101] [CONTENT_EVENT][tabId=789318101][attemptId=att_1791102275387_x33o1][url=http://127.0.0.1:8971/page-b.html] [STAGE] stage=CONTACT_PAGE_FOUND
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318101][attemptId=att_1791102275387_x33o1][url=http://127.0.0.1:8971/page-b.html] [LONG_TEXT_GATE] found=true type=textarea semantic=message
+[SW_CONSOLE] [BG_LOG][tab=789318101] [CONTENT_EVENT][tabId=789318101][attemptId=att_1791102275387_x33o1][url=http://127.0.0.1:8971/page-b.html] [LONG_TEXT_GATE] found=true type=textarea semantic=message
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318101][attemptId=att_1791102275387_x33o1][url=http://127.0.0.1:8971/page-b.html] [FORM_GATE] eligible=true reason=BODY_FIELD_PRESENT
+[SW_CONSOLE] [BG_LOG][tab=789318101] [CONTENT_EVENT][tabId=789318101][attemptId=att_1791102275387_x33o1][url=http://127.0.0.1:8971/page-b.html] [FORM_GATE] eligible=true reason=BODY_FIELD_PRESENT
+[SW_CONSOLE] [BG_LOG][tab=789318101] 📍 [PIPELINE][CONTACT_PAGE_FOUND] url=http://127.0.0.1:8971/page-b.html
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318101][attemptId=att_1791102275387_x33o1][url=http://127.0.0.1:8971/page-b.html] 🔍 [Supreme-X 5.0] Scanning for multi-location / branch links...
+[SW_CONSOLE] [BG_LOG][tab=789318101] [CONTENT_EVENT][tabId=789318101][attemptId=att_1791102275387_x33o1][url=http://127.0.0.1:8971/page-b.html] 🔍 [Supreme-X 5.0] Scanning for multi-location / branch links...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318101][attemptId=att_1791102275387_x33o1][url=http://127.0.0.1:8971/page-b.html] [AUTOFILL_LOCK] acquired=true key=mutk1su8_hehad:http://127.0.0.1:8971/page-b.html:contact-form
+[SW_CONSOLE] [BG_LOG][tab=789318101] [CONTENT_EVENT][tabId=789318101][attemptId=att_1791102275387_x33o1][url=http://127.0.0.1:8971/page-b.html] [AUTOFILL_LOCK] acquired=true key=mutk1su8_hehad:http://127.0.0.1:8971/page-b.html:contact-form
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318101][attemptId=att_1791102275387_x33o1][url=http://127.0.0.1:8971/page-b.html] [CONTACT_GATE] PASS bodyField=textarea
+[SW_CONSOLE] [BG_LOG][tab=789318101] [CONTENT_EVENT][tabId=789318101][attemptId=att_1791102275387_x33o1][url=http://127.0.0.1:8971/page-b.html] [CONTACT_GATE] PASS bodyField=textarea
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318101][attemptId=att_1791102275387_x33o1][url=http://127.0.0.1:8971/page-b.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
+[SW_CONSOLE] [BG_LOG][tab=789318101] [CONTENT_EVENT][tabId=789318101][attemptId=att_1791102275387_x33o1][url=http://127.0.0.1:8971/page-b.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
+[SW_CONSOLE] [BG_LOG][tab=789318101] [CONTACT_COMMIT] contactPageUrl=http://127.0.0.1:8971/page-b.html
+[SW_CONSOLE] [BG_LOG][tab=789318101] [FORM_COMMIT] formPageUrl=http://127.0.0.1:8971/page-b.html
+[SW_CONSOLE] [BG_LOG][tab=789318101] 📋 [PIPELINE][ELIGIBLE_FORM_FOUND] url=http://127.0.0.1:8971/page-b.html
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318101][attemptId=att_1791102275387_x33o1][url=http://127.0.0.1:8971/page-b.html] 🛠️ Step 3: Registering message template to form fields...
+[SW_CONSOLE] [BG_LOG][tab=789318101] [CONTENT_EVENT][tabId=789318101][attemptId=att_1791102275387_x33o1][url=http://127.0.0.1:8971/page-b.html] 🛠️ Step 3: Registering message template to form fields...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318101][attemptId=att_1791102275387_x33o1][url=http://127.0.0.1:8971/page-b.html] 🛡️ [FormStabilizer] Starting bounded stabilization (max 5s, max 2 retries/element)...
+[SW_CONSOLE] [BG_LOG][tab=789318101] [CONTENT_EVENT][tabId=789318101][attemptId=att_1791102275387_x33o1][url=http://127.0.0.1:8971/page-b.html] 🛡️ [FormStabilizer] Starting bounded stabilization (max 5s, max 2 retries/element)...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318101][attemptId=att_1791102275387_x33o1][url=http://127.0.0.1:8971/page-b.html] 🛡️ [FormStabilizer] Stopped (ALL_FIELDS_STABLE_OR_RESOLVED): seen=4 stable=true unresolved=0 (selects=0, cbs=0, radios=0)
+[SW_CONSOLE] [BG_LOG][tab=789318101] [CONTENT_EVENT][tabId=789318101][attemptId=att_1791102275387_x33o1][url=http://127.0.0.1:8971/page-b.html] 🛡️ [FormStabilizer] Stopped (ALL_FIELDS_STABLE_OR_RESOLVED): seen=4 stable=true unresolved=0 (selects=0, cbs=0, radios=0)
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318101][attemptId=att_1791102275387_x33o1][url=http://127.0.0.1:8971/page-b.html] 🛠️ [Action][HyperEngine v4.0] 초강력 폼 자동 등록기 시작...
+[SW_CONSOLE] [BG_LOG][tab=789318101] [CONTENT_EVENT][tabId=789318101][attemptId=att_1791102275387_x33o1][url=http://127.0.0.1:8971/page-b.html] 🛠️ [Action][HyperEngine v4.0] 초강력 폼 자동 등록기 시작...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318101][attemptId=att_1791102275387_x33o1][url=http://127.0.0.1:8971/page-b.html] 🎯 [HyperEngine v4.0] Phase 0 - 입력 필드 전수 수집...
+[SW_CONSOLE] [BG_LOG][tab=789318101] [CONTENT_EVENT][tabId=789318101][attemptId=att_1791102275387_x33o1][url=http://127.0.0.1:8971/page-b.html] 🎯 [HyperEngine v4.0] Phase 0 - 입력 필드 전수 수집...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318101][attemptId=att_1791102275387_x33o1][url=http://127.0.0.1:8971/page-b.html]    [v4.0] 총 4개 입력 필드 발견 (radio: 0, checkbox: 0)
+[SW_CONSOLE] [BG_LOG][tab=789318101] [CONTENT_EVENT][tabId=789318101][attemptId=att_1791102275387_x33o1][url=http://127.0.0.1:8971/page-b.html]    [v4.0] 총 4개 입력 필드 발견 (radio: 0, checkbox: 0)
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318101][attemptId=att_1791102275387_x33o1][url=http://127.0.0.1:8971/page-b.html] 🎯 [HyperEngine v4.0] Phase 1 & 2 - 드롭다운 SelectResolverR2 전수 처리...
+[SW_CONSOLE] [BG_LOG][tab=789318101] [CONTENT_EVENT][tabId=789318101][attemptId=att_1791102275387_x33o1][url=http://127.0.0.1:8971/page-b.html] 🎯 [HyperEngine v4.0] Phase 1 & 2 - 드롭다운 SelectResolverR2 전수 처리...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318101][attemptId=att_1791102275387_x33o1][url=http://127.0.0.1:8971/page-b.html] 🎯 [HyperEngine v4.0] Phase 3 - 체크박스 CheckboxResolverR2 전수 처리...
+[SW_CONSOLE] [BG_LOG][tab=789318101] [CONTENT_EVENT][tabId=789318101][attemptId=att_1791102275387_x33o1][url=http://127.0.0.1:8971/page-b.html] 🎯 [HyperEngine v4.0] Phase 3 - 체크박스 CheckboxResolverR2 전수 처리...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318101][attemptId=att_1791102275387_x33o1][url=http://127.0.0.1:8971/page-b.html] 🎯 [HyperEngine v4.0] Phase 4 - 텍스트 필드 패턴 매칭...
+[SW_CONSOLE] [BG_LOG][tab=789318101] [CONTENT_EVENT][tabId=789318101][attemptId=att_1791102275387_x33o1][url=http://127.0.0.1:8971/page-b.html] 🎯 [HyperEngine v4.0] Phase 4 - 텍스트 필드 패턴 매칭...
+[STORAGE_AFTER_PAGE_B] currentSiteUrl=http://127.0.0.1:8971/page-b.html
+[STORAGE_AFTER_PAGE_B] currentSiteCount=0 (MUST BE 0)
+[STORAGE_AFTER_PAGE_B] globalUnique=3 (MUST PRESERVE 3)
+[POPUP_UI_AFTER_PAGE_B] currentSiteUI=0 globalUI=3
+
+--- STEP 6: Exercise Actual Popup Clear All Control (#email-clear-btn) ---
+[PRE_CLEAR_GEN] generation=1
+[POPUP_CLEAR_CLICKED] {"success":true}
+[SW_CONSOLE] [EMAIL_RESET_AUDIT] localKeys=[xpider_email_collector_v1,xpider_email_current_site_v1,xpider_email_records,xpider_email_collector_stats,xpider_collected_emails,collected_emails,email_export_cache,allEmailsList,emailExtractorInit,xpider_email_generation,xpider_email_clearing,xpider_email_seen_fingerprints,xpider_email_search_cache,xpider_email_filter_cache]
+[SW_CONSOLE] [EMAIL_RESET_AUDIT] sessionKeys=[xpider_email_collector_v1,xpider_email_current_site_v1,xpider_email_records,xpider_email_collector_stats,xpider_collected_emails,collected_emails,email_export_cache,allEmailsList,emailExtractorInit,xpider_email_generation,xpider_email_clearing,xpider_email_seen_fingerprints,xpider_email_search_cache,xpider_email_filter_cache]
+[SW_CONSOLE] [EMAIL_RESET_AUDIT] moduleMemoryCount=0
+[SW_CONSOLE] [EMAIL_RESET_AUDIT] currentSiteCount=0
+[SW_CONSOLE] [EMAIL_RESET_AUDIT] allCollectedCount=0
+[CONTENT_CONSOLE] 🚀 [XpiderSender] Advanced Engine Loaded: http://127.0.0.1:8971/page-b.html
+[CONTENT_CONSOLE] [RUNTIME_ASSERT] NON_HTML_DOWNLOADABLE_EXTENSIONS ready=true
+[CONTENT_CONSOLE] [CONTROL_PLANE] listenersActive=1
+[CONTENT_CONSOLE] [EMAIL_COLLECTOR_INIT] generation=1 moduleLoaded=true
+[CONTENT_CONSOLE] [EMAIL_SCAN] url=http://127.0.0.1:8971/page-b.html found=0 trigger=INIT
+[CONTENT_CONSOLE] [EMAIL_SEND] generation=1 pageCount=0 collectibleCount=0 count=0 hostname=127.0.0.1
+[CONTENT_CONSOLE] 🛡️ [XPIDER Stealth v2.0] Main World stealth injection applied successfully.
+[CONTENT_CONSOLE] [EMAIL_ACK] currentPageCount=0 newGlobalCount=0 totalGlobalCount=3 suppressed=false staleGeneration=false
+[CONTENT_CONSOLE] [CONTROL_PLANE] listenersActive=1 key=mutk1su8_hehad:http://127.0.0.1:8971/page-b.html:1791102275648
+[CONTENT_CONSOLE] [XpiderLog] [TARGET_PAGE] url=http://127.0.0.1:8971/page-b.html domGeneration=1791102275648 attemptId=mutk1su8_hehad
+[CONTENT_CONSOLE] [XpiderLog] 🚀 [Engine] Ultra-Mode process started
+[CONTENT_CONSOLE] [XpiderLog] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[CONTENT_CONSOLE] [XpiderLog] [TARGET_PAGE] url=http://127.0.0.1:8971/page-b.html recursion=0
+[CONTENT_CONSOLE] [XpiderLog] 🔍 [Discovery] URL: http://127.0.0.1:8971/page-b.html | Recursion: 0
+[CONTENT_CONSOLE] [XpiderLog] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[CONTENT_CONSOLE] [XpiderLog] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1:8971/page-b.html | Recursion: 0
+[CONTENT_CONSOLE] [FORM_GATE] candidate=form#contact-form.[name,email,subject,message] bodyField=true contactFields=2 submitters=1 eligible=true reason=ELIGIBLE_INQUIRY_FORM
+[CONTENT_CONSOLE] [FORM_SCAN] pass=1 url=http://127.0.0.1:8971/page-b.html roots=1
+[CONTENT_CONSOLE] [FORM_SCAN] bodyCandidates=1 nativeForms=1 logicalContainers=0
+[CONTENT_CONSOLE] [FORM_SCAN] shadowRoots=0 iframes=0 modalTriggers=12
+[CONTENT_CONSOLE] [EMAIL_SCAN] url=http://127.0.0.1:8971/page-b.html found=0 trigger=SCAN
+[CONTENT_CONSOLE] [LONG_TEXT_GATE] found=true type=textarea semantic=message
+[CONTENT_CONSOLE] [XpiderLog] [FORM_SCAN] bodyCandidates=1 forms=1 logicalContainers=1
+[CONTENT_CONSOLE] [XpiderLog] [PAGE_CLASS] CONTACT_FORM_PAGE
+[CONTENT_CONSOLE] [XpiderLog] 🎯 Step 2: Contact form discovered. Preparing submission...
+[CONTENT_CONSOLE] [XpiderLog] [STAGE] stage=CONTACT_PAGE_FOUND
+[CONTENT_CONSOLE] [XpiderLog] [LONG_TEXT_GATE] found=true type=textarea semantic=message
+[CONTENT_CONSOLE] [XpiderLog] [FORM_GATE] eligible=true reason=BODY_FIELD_PRESENT
+[CONTENT_CONSOLE] [XpiderLog] 🔍 [Supreme-X 5.0] Scanning for multi-location / branch links...
+[CONTENT_CONSOLE] [XpiderLog] [AUTOFILL_LOCK] acquired=true key=mutk1su8_hehad:http://127.0.0.1:8971/page-b.html:contact-form
+[CONTENT_CONSOLE] [LONG_TEXT_GATE] found=true type=textarea semantic=message
+[CONTENT_CONSOLE] [LONG_TEXT_GATE] found=true type=textarea semantic=message
+[CONTENT_CONSOLE] [FORM_INTENT] intent=CONTACT_INQUIRY confidence=0.95 negativeClass=none
+[CONTENT_CONSOLE] [FORM_CLASSIFY] intent=CONTACT_INQUIRY eligible=true hasInquiryBody=true bodyFieldType=textarea decision=ACCEPT reason=ELIGIBLE_CONTACT_INQUIRY
+[CONTENT_CONSOLE] [XpiderLog] [CONTACT_GATE] PASS bodyField=textarea
+[CONTENT_CONSOLE] [XpiderLog] [STAGE] stage=ELIGIBLE_FORM_FOUND
+[CONTENT_CONSOLE] [EMAIL_SCAN] url=http://127.0.0.1:8971/page-b.html found=0 trigger=FORM_ENTRY
+[CONTENT_CONSOLE] [XpiderLog] 🛠️ Step 3: Registering message template to form fields...
+[CONTENT_CONSOLE] [XpiderLog] 🛡️ [FormStabilizer] Starting bounded stabilization (max 5s, max 2 retries/element)...
+[CONTENT_CONSOLE] [XpiderLog] 🛡️ [FormStabilizer] Stopped (ALL_FIELDS_STABLE_OR_RESOLVED): seen=4 stable=true unresolved=0 (selects=0, cbs=0, radios=0)
+[CONTENT_CONSOLE] [XpiderLog] 🛠️ [Action][HyperEngine v4.0] 초강력 폼 자동 등록기 시작...
+[CONTENT_CONSOLE] [XpiderLog] 🎯 [HyperEngine v4.0] Phase 0 - 입력 필드 전수 수집...
+[CONTENT_CONSOLE] [XpiderLog]    [v4.0] 총 4개 입력 필드 발견 (radio: 0, checkbox: 0)
+[CONTENT_CONSOLE] [XpiderLog] 🎯 [HyperEngine v4.0] Phase 1 & 2 - 드롭다운 SelectResolverR2 전수 처리...
+[CONTENT_CONSOLE] [XpiderLog] 🎯 [HyperEngine v4.0] Phase 3 - 체크박스 CheckboxResolverR2 전수 처리...
+[CONTENT_CONSOLE] [XpiderLog] 🎯 [HyperEngine v4.0] Phase 4 - 텍스트 필드 패턴 매칭...
+[CONTENT_CONSOLE] [EMAIL_COLLECTOR_CLEARED] generation=2 suppressedUntil=1791102280824 baseline=0
+[STORAGE_AFTER_POPUP_CLEAR] generation=2 (MUST BE EXACTLY 2)
+[STORAGE_AFTER_POPUP_CLEAR] currentSite={"count":0,"emails":[],"hostname":"","scannedAt":"2026-10-04T08:24:35.810Z","url":""} (CANONICAL EMPTY OBJECT PRESENT)
+[STORAGE_AFTER_POPUP_CLEAR] collector={"emails":{},"totalUnique":0,"updatedAt":"2026-10-04T08:24:35.811Z","version":1} (CANONICAL EMPTY OBJECT PRESENT)
+[POPUP_UI_AFTER_CLEAR] currentSiteUI=0 globalUI=0
+
+--- STEP 7: Start Another Real Target Post-Clear (Delta Tech) ---
+[WAIT_SUPPRESSION] Waiting 5.5s for clear suppression window (5000ms) to elapse...
+[CONTENT_CONSOLE] [XpiderLog]    - [Input✅] category=name filled=true
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318101][attemptId=att_1791102275387_x33o1][url=http://127.0.0.1:8971/page-b.html]    - [Input✅] category=name filled=true
+[SW_CONSOLE] [BG_LOG][tab=789318101] [CONTENT_EVENT][tabId=789318101][attemptId=att_1791102275387_x33o1][url=http://127.0.0.1:8971/page-b.html]    - [Input✅] category=name filled=true
+[CONTENT_CONSOLE] [XpiderLog] 💓 [Heartbeat] Engine active and processing...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318101][attemptId=att_1791102275387_x33o1][url=http://127.0.0.1:8971/page-b.html] 💓 [Heartbeat] Engine active and processing...
+[SW_CONSOLE] [BG_LOG][tab=789318101] [CONTENT_EVENT][tabId=789318101][attemptId=att_1791102275387_x33o1][url=http://127.0.0.1:8971/page-b.html] 💓 [Heartbeat] Engine active and processing...
+[CONTENT_CONSOLE] [XpiderLog]    - [Input✅] category=email filled=true length=25
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318101][attemptId=att_1791102275387_x33o1][url=http://127.0.0.1:8971/page-b.html]    - [Input✅] category=email filled=true length=25
+[SW_CONSOLE] [BG_LOG][tab=789318101] [CONTENT_EVENT][tabId=789318101][attemptId=att_1791102275387_x33o1][url=http://127.0.0.1:8971/page-b.html]    - [Input✅] category=email filled=true length=25
+[POPUP_CONSOLE] [XPIDER_DIAG] [Engine][TX] action=END_CAMPAIGN
+[SW_CONSOLE] [BG_LOG][tab=none] 🛑 [Engine] END_CAMPAIGN requested. Clearing queue and snapshot.
+[SW_CONSOLE] [TAB_BARRIER] phase=END_CAMPAIGN ownedBefore=1
+[SW_CONSOLE] [TAB_CLOSE] tabId=789318101 attempt=1 result=CLOSED
+[SW_CONSOLE] [TAB_BARRIER] phase=END_CAMPAIGN ownedAfter=0 result=PASS
+[SW_CONSOLE] [BG_LOG][tab=none] === CAMPAIGN OUTCOME SUMMARY ===
+[SW_CONSOLE] [BG_LOG][tab=none] SUCCESS_CONFIRMED:           1
+[SW_CONSOLE] [BG_LOG][tab=none] ================================
+[POPUP_START_CLICK_TARGET_3] Clicking popup #start-btn for Target 3
+[POPUP_CONSOLE] [START_UI] click
+[SW_CONSOLE] [BUILD_ID] branch=upgrade/phase-0-1 head=951e33f064d5137a000adaf976f18d26e64139bc manifestVersion=3 buildId=R6.8-20261003-REM builtAt=2026-10-03T07:45:00.000Z
+[POPUP_CONSOLE] [START_IPC] sent queue=3
+[SW_CONSOLE] [BG_LOG][tab=none] [BUILD_ID] branch=upgrade/phase-0-1 head=951e33f064d5137a000adaf976f18d26e64139bc manifestVersion=3 buildId=R6.8-20261003-REM builtAt=2026-10-03T07:45:00.000Z
+[POPUP_CONSOLE] [XPIDER_DIAG] [Engine][TX] action=START_CAMPAIGN queue=3 templateId=default v=1 skipAttempted=true
+[SW_CONSOLE] [BUILD_MODULE] contactGateSha=sha256_cg_r6_8_remediation
+[POLL] Waiting for natural injection & EmailCollectorStore update from Target 3...
+[SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] contactGateSha=sha256_cg_r6_8_remediation
+[SW_CONSOLE] [BUILD_MODULE] visionSubmitSha=sha256_vs_r6_8_remediation
+[SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] visionSubmitSha=sha256_vs_r6_8_remediation
+[SW_CONSOLE] [BUILD_MODULE] outcomeVerifierSha=sha256_ov_r6_8_remediation
+[POPUP_CONSOLE] [START_ACK] ok=true latencyMs=40
+[SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] outcomeVerifierSha=sha256_ov_r6_8_remediation
+[POPUP_CONSOLE] [START_STATE] active=true queue=3
+[SW_CONSOLE] [BUILD_MODULE] backgroundSha=sha256_bg_r6_8_remediation
+[POPUP_CONSOLE] [XPIDER_DIAG] [Engine][ACK][+40ms] status=acknowledged
+[SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] backgroundSha=sha256_bg_r6_8_remediation
+[SW_CONSOLE] [BG_LOG][tab=none] [START_BG] received queue=3
+[SW_CONSOLE] [START_BG] received queue=3
+[SW_CONSOLE] [BG_LOG][tab=none] [Boot] Orchestrator entered.
+[SW_CONSOLE] [SESSION_BASELINE] Captured 2 pre-existing user tabs as protected baseline.
+[SW_CONSOLE] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedBefore=0
+[SW_CONSOLE] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedAfter=0 result=PASS
+[SW_CONSOLE] [BG_LOG][tab=none] [Boot] Previous state cleared.
+[SW_CONSOLE] [BG_LOG][tab=none] ⏭️ [HistorySkip] Skipping previously attempted target: https://127.0.0.1/page-b.html
+[SW_CONSOLE] [BG_LOG][tab=none] 📊 [Queue Filter] Input: 3 | Duplicates: 0 | Suppressed: 1 | History-Attempted: 1 | Executable: 1
+[SW_CONSOLE] [BG_LOG][tab=none] [Boot] Variables initialized.
+[SW_CONSOLE] [BG_LOG][tab=none] 🚀 Engine booting...
+[SW_CONSOLE] [BG_LOG][tab=none] [Boot] Storage sync initiated.
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[SW_CONSOLE] [LEDGER_STATS] scope=currentRun success=0 failure=0 unknown=0 timeout=0 skipped=0
+[SW_CONSOLE] [BG_LOG][tab=none] [LEDGER_STATS] scope=currentRun success=0 failure=0 unknown=0 timeout=0 skipped=0
+[POPUP_CONSOLE] [XPIDER_DIAG] [Engine][VERIFY] active=true queue=1
+[SW_CONSOLE] [BG_LOG][tab=none] [Boot] Target loop triggered.
+[SW_CONSOLE] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedBefore=0
+[SW_CONSOLE] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedAfter=0 result=PASS
+[SW_CONSOLE] [BG_LOG][tab=none] [TARGET 1/1][127.0.0.1] START
+[POPUP_CONSOLE] [LEDGER_STATS] scope=currentGeneration success=0 failed=0 unknown=0
+[POPUP_CONSOLE] [LEDGER_STATS] scope=currentGeneration success=0 failed=0 unknown=0
+[CDP_TARGET_CREATED] tabId=BC7AE093FA61A479A8D2B95AD522F8A0 url=http://127.0.0.1:8971/page-c.html
+[SW_CONSOLE] [TAB_BARRIER] phase=POST_NEW_TARGET_CREATE ownedBefore=0
+[SW_CONSOLE] [TAB_BARRIER] phase=POST_NEW_TARGET_CREATE ownedAfter=0 result=PASS
+[SW_CONSOLE] [TAB_KILL_SWITCH] keepTabId=789318103 closedOthers=0 remainingOwned=1 result=PASS
+[SW_CONSOLE] [BG_LOG][tab=789318103] [TAB_FOCUS] tabId=789318103 windowId=789318093 active=true focused=true
+[SW_CONSOLE] [BG_LOG][tab=789318103] Step 1: Sniper Mode active. Searching for contact page...
+[SW_CONSOLE] [BG_LOG][tab=789318103] 🔦 Scanning paths 1-10...
+[SW_CONSOLE] [BG_LOG][tab=789318103] Pre-scan complete. Identified 10 valid paths.
+[SW_CONSOLE] [BG_LOG][tab=789318103] [SniperScan] Identified 10 candidate paths in background.
+[SW_CONSOLE] [BG_LOG][tab=789318103] [TAB_FOCUS] tabId=789318103 windowId=789318093 active=true focused=true
+[SW_CONSOLE] [BG_LOG][tab=789318103] [TAB_OWNERSHIP] VERIFIED_REDIRECT source=127.0.0.1 target=127.0.0.1 relation=SAME_HOST
+[SW_CONSOLE] [BG_LOG][tab=789318103] [FOCUS_SECURED] formPageUrl=http://127.0.0.1:8971/page-c.html
+[SW_CONSOLE] [BG_LOG][tab=789318103] Extraction focus secured. Mapping template fields...
+[SW_CONSOLE] [BG_LOG][tab=789318103] [TARGET][127.0.0.1] emailsFoundCurrentPage=2 emailsNewGlobal=2 totalEmailsGlobal=2
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318103][attemptId=att_1791102283244_3n7fq][url=http://127.0.0.1:8971/page-c.html] [TARGET_PAGE] url=http://127.0.0.1:8971/page-c.html domGeneration=1791102283565 attemptId=mutk1yy5_h9yw9
+[SW_CONSOLE] [BG_LOG][tab=789318103] [CONTENT_EVENT][tabId=789318103][attemptId=att_1791102283244_3n7fq][url=http://127.0.0.1:8971/page-c.html] [TARGET_PAGE] url=http://127.0.0.1:8971/page-c.html domGeneration=1791102283565 attemptId=mutk1yy5_h9yw9
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318103][attemptId=att_1791102283244_3n7fq][url=http://127.0.0.1:8971/page-c.html] 🚀 [Engine] Ultra-Mode process started
+[SW_CONSOLE] [BG_LOG][tab=789318103] [CONTENT_EVENT][tabId=789318103][attemptId=att_1791102283244_3n7fq][url=http://127.0.0.1:8971/page-c.html] 🚀 [Engine] Ultra-Mode process started
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318103][attemptId=att_1791102283244_3n7fq][url=http://127.0.0.1:8971/page-c.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[SW_CONSOLE] [BG_LOG][tab=789318103] [CONTENT_EVENT][tabId=789318103][attemptId=att_1791102283244_3n7fq][url=http://127.0.0.1:8971/page-c.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318103][attemptId=att_1791102283244_3n7fq][url=http://127.0.0.1:8971/page-c.html] [TARGET_PAGE] url=http://127.0.0.1:8971/page-c.html recursion=0
+[SW_CONSOLE] [BG_LOG][tab=789318103] [CONTENT_EVENT][tabId=789318103][attemptId=att_1791102283244_3n7fq][url=http://127.0.0.1:8971/page-c.html] [TARGET_PAGE] url=http://127.0.0.1:8971/page-c.html recursion=0
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318103][attemptId=att_1791102283244_3n7fq][url=http://127.0.0.1:8971/page-c.html] 🔍 [Discovery] URL: http://127.0.0.1:8971/page-c.html | Recursion: 0
+[SW_CONSOLE] [BG_LOG][tab=789318103] [CONTENT_EVENT][tabId=789318103][attemptId=att_1791102283244_3n7fq][url=http://127.0.0.1:8971/page-c.html] 🔍 [Discovery] URL: http://127.0.0.1:8971/page-c.html | Recursion: 0
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318103][attemptId=att_1791102283244_3n7fq][url=http://127.0.0.1:8971/page-c.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[SW_CONSOLE] [BG_LOG][tab=789318103] [CONTENT_EVENT][tabId=789318103][attemptId=att_1791102283244_3n7fq][url=http://127.0.0.1:8971/page-c.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318103][attemptId=att_1791102283244_3n7fq][url=http://127.0.0.1:8971/page-c.html] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1:8971/page-c.html | Recursion: 0
+[SW_CONSOLE] [BG_LOG][tab=789318103] [CONTENT_EVENT][tabId=789318103][attemptId=att_1791102283244_3n7fq][url=http://127.0.0.1:8971/page-c.html] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1:8971/page-c.html | Recursion: 0
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318103][attemptId=att_1791102283244_3n7fq][url=http://127.0.0.1:8971/page-c.html] [FORM_SCAN] bodyCandidates=1 forms=1 logicalContainers=1
+[SW_CONSOLE] [BG_LOG][tab=789318103] [CONTENT_EVENT][tabId=789318103][attemptId=att_1791102283244_3n7fq][url=http://127.0.0.1:8971/page-c.html] [FORM_SCAN] bodyCandidates=1 forms=1 logicalContainers=1
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318103][attemptId=att_1791102283244_3n7fq][url=http://127.0.0.1:8971/page-c.html] [PAGE_CLASS] CONTACT_FORM_PAGE
+[SW_CONSOLE] [BG_LOG][tab=789318103] [CONTENT_EVENT][tabId=789318103][attemptId=att_1791102283244_3n7fq][url=http://127.0.0.1:8971/page-c.html] [PAGE_CLASS] CONTACT_FORM_PAGE
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318103][attemptId=att_1791102283244_3n7fq][url=http://127.0.0.1:8971/page-c.html] 🎯 Step 2: Contact form discovered. Preparing submission...
+[SW_CONSOLE] [BG_LOG][tab=789318103] [CONTENT_EVENT][tabId=789318103][attemptId=att_1791102283244_3n7fq][url=http://127.0.0.1:8971/page-c.html] 🎯 Step 2: Contact form discovered. Preparing submission...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318103][attemptId=att_1791102283244_3n7fq][url=http://127.0.0.1:8971/page-c.html] [STAGE] stage=CONTACT_PAGE_FOUND
+[SW_CONSOLE] [BG_LOG][tab=789318103] [CONTENT_EVENT][tabId=789318103][attemptId=att_1791102283244_3n7fq][url=http://127.0.0.1:8971/page-c.html] [STAGE] stage=CONTACT_PAGE_FOUND
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318103][attemptId=att_1791102283244_3n7fq][url=http://127.0.0.1:8971/page-c.html] [LONG_TEXT_GATE] found=true type=textarea semantic=message
+[SW_CONSOLE] [BG_LOG][tab=789318103] [CONTENT_EVENT][tabId=789318103][attemptId=att_1791102283244_3n7fq][url=http://127.0.0.1:8971/page-c.html] [LONG_TEXT_GATE] found=true type=textarea semantic=message
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318103][attemptId=att_1791102283244_3n7fq][url=http://127.0.0.1:8971/page-c.html] [FORM_GATE] eligible=true reason=BODY_FIELD_PRESENT
+[SW_CONSOLE] [BG_LOG][tab=789318103] [CONTENT_EVENT][tabId=789318103][attemptId=att_1791102283244_3n7fq][url=http://127.0.0.1:8971/page-c.html] [FORM_GATE] eligible=true reason=BODY_FIELD_PRESENT
+[SW_CONSOLE] [BG_LOG][tab=789318103] 📍 [PIPELINE][CONTACT_PAGE_FOUND] url=http://127.0.0.1:8971/page-c.html
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318103][attemptId=att_1791102283244_3n7fq][url=http://127.0.0.1:8971/page-c.html] 🔍 [Supreme-X 5.0] Scanning for multi-location / branch links...
+[SW_CONSOLE] [BG_LOG][tab=789318103] [CONTENT_EVENT][tabId=789318103][attemptId=att_1791102283244_3n7fq][url=http://127.0.0.1:8971/page-c.html] 🔍 [Supreme-X 5.0] Scanning for multi-location / branch links...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318103][attemptId=att_1791102283244_3n7fq][url=http://127.0.0.1:8971/page-c.html] [AUTOFILL_LOCK] acquired=true key=mutk1yy5_h9yw9:http://127.0.0.1:8971/page-c.html:contact-form
+[SW_CONSOLE] [BG_LOG][tab=789318103] [CONTENT_EVENT][tabId=789318103][attemptId=att_1791102283244_3n7fq][url=http://127.0.0.1:8971/page-c.html] [AUTOFILL_LOCK] acquired=true key=mutk1yy5_h9yw9:http://127.0.0.1:8971/page-c.html:contact-form
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318103][attemptId=att_1791102283244_3n7fq][url=http://127.0.0.1:8971/page-c.html] [CONTACT_GATE] PASS bodyField=textarea
+[SW_CONSOLE] [BG_LOG][tab=789318103] [CONTENT_EVENT][tabId=789318103][attemptId=att_1791102283244_3n7fq][url=http://127.0.0.1:8971/page-c.html] [CONTACT_GATE] PASS bodyField=textarea
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318103][attemptId=att_1791102283244_3n7fq][url=http://127.0.0.1:8971/page-c.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
+[SW_CONSOLE] [BG_LOG][tab=789318103] [CONTENT_EVENT][tabId=789318103][attemptId=att_1791102283244_3n7fq][url=http://127.0.0.1:8971/page-c.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
+[SW_CONSOLE] [BG_LOG][tab=789318103] [CONTACT_COMMIT] contactPageUrl=http://127.0.0.1:8971/page-c.html
+[SW_CONSOLE] [BG_LOG][tab=789318103] [FORM_COMMIT] formPageUrl=http://127.0.0.1:8971/page-c.html
+[SW_CONSOLE] [BG_LOG][tab=789318103] 📋 [PIPELINE][ELIGIBLE_FORM_FOUND] url=http://127.0.0.1:8971/page-c.html
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318103][attemptId=att_1791102283244_3n7fq][url=http://127.0.0.1:8971/page-c.html] 🛠️ Step 3: Registering message template to form fields...
+[SW_CONSOLE] [BG_LOG][tab=789318103] [CONTENT_EVENT][tabId=789318103][attemptId=att_1791102283244_3n7fq][url=http://127.0.0.1:8971/page-c.html] 🛠️ Step 3: Registering message template to form fields...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318103][attemptId=att_1791102283244_3n7fq][url=http://127.0.0.1:8971/page-c.html] 🛡️ [FormStabilizer] Starting bounded stabilization (max 5s, max 2 retries/element)...
+[SW_CONSOLE] [BG_LOG][tab=789318103] [CONTENT_EVENT][tabId=789318103][attemptId=att_1791102283244_3n7fq][url=http://127.0.0.1:8971/page-c.html] 🛡️ [FormStabilizer] Starting bounded stabilization (max 5s, max 2 retries/element)...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318103][attemptId=att_1791102283244_3n7fq][url=http://127.0.0.1:8971/page-c.html] 🛡️ [FormStabilizer] Stopped (ALL_FIELDS_STABLE_OR_RESOLVED): seen=4 stable=true unresolved=0 (selects=0, cbs=0, radios=0)
+[SW_CONSOLE] [BG_LOG][tab=789318103] [CONTENT_EVENT][tabId=789318103][attemptId=att_1791102283244_3n7fq][url=http://127.0.0.1:8971/page-c.html] 🛡️ [FormStabilizer] Stopped (ALL_FIELDS_STABLE_OR_RESOLVED): seen=4 stable=true unresolved=0 (selects=0, cbs=0, radios=0)
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318103][attemptId=att_1791102283244_3n7fq][url=http://127.0.0.1:8971/page-c.html] 🛠️ [Action][HyperEngine v4.0] 초강력 폼 자동 등록기 시작...
+[SW_CONSOLE] [BG_LOG][tab=789318103] [CONTENT_EVENT][tabId=789318103][attemptId=att_1791102283244_3n7fq][url=http://127.0.0.1:8971/page-c.html] 🛠️ [Action][HyperEngine v4.0] 초강력 폼 자동 등록기 시작...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318103][attemptId=att_1791102283244_3n7fq][url=http://127.0.0.1:8971/page-c.html] 🎯 [HyperEngine v4.0] Phase 0 - 입력 필드 전수 수집...
+[SW_CONSOLE] [BG_LOG][tab=789318103] [CONTENT_EVENT][tabId=789318103][attemptId=att_1791102283244_3n7fq][url=http://127.0.0.1:8971/page-c.html] 🎯 [HyperEngine v4.0] Phase 0 - 입력 필드 전수 수집...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318103][attemptId=att_1791102283244_3n7fq][url=http://127.0.0.1:8971/page-c.html]    [v4.0] 총 4개 입력 필드 발견 (radio: 0, checkbox: 0)
+[SW_CONSOLE] [BG_LOG][tab=789318103] [CONTENT_EVENT][tabId=789318103][attemptId=att_1791102283244_3n7fq][url=http://127.0.0.1:8971/page-c.html]    [v4.0] 총 4개 입력 필드 발견 (radio: 0, checkbox: 0)
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318103][attemptId=att_1791102283244_3n7fq][url=http://127.0.0.1:8971/page-c.html] 🎯 [HyperEngine v4.0] Phase 1 & 2 - 드롭다운 SelectResolverR2 전수 처리...
+[SW_CONSOLE] [BG_LOG][tab=789318103] [CONTENT_EVENT][tabId=789318103][attemptId=att_1791102283244_3n7fq][url=http://127.0.0.1:8971/page-c.html] 🎯 [HyperEngine v4.0] Phase 1 & 2 - 드롭다운 SelectResolverR2 전수 처리...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318103][attemptId=att_1791102283244_3n7fq][url=http://127.0.0.1:8971/page-c.html] 🎯 [HyperEngine v4.0] Phase 3 - 체크박스 CheckboxResolverR2 전수 처리...
+[SW_CONSOLE] [BG_LOG][tab=789318103] [CONTENT_EVENT][tabId=789318103][attemptId=att_1791102283244_3n7fq][url=http://127.0.0.1:8971/page-c.html] 🎯 [HyperEngine v4.0] Phase 3 - 체크박스 CheckboxResolverR2 전수 처리...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=789318103][attemptId=att_1791102283244_3n7fq][url=http://127.0.0.1:8971/page-c.html] 🎯 [HyperEngine v4.0] Phase 4 - 텍스트 필드 패턴 매칭...
+[SW_CONSOLE] [BG_LOG][tab=789318103] [CONTENT_EVENT][tabId=789318103][attemptId=att_1791102283244_3n7fq][url=http://127.0.0.1:8971/page-c.html] 🎯 [HyperEngine v4.0] Phase 4 - 텍스트 필드 패턴 매칭...
+[CONTENT_CONSOLE] 🚀 [XpiderSender] Advanced Engine Loaded: http://127.0.0.1:8971/page-c.html
+[CONTENT_CONSOLE] [RUNTIME_ASSERT] NON_HTML_DOWNLOADABLE_EXTENSIONS ready=true
+[CONTENT_CONSOLE] [CONTROL_PLANE] listenersActive=1
+[CONTENT_CONSOLE] [EMAIL_COLLECTOR_INIT] generation=2 moduleLoaded=true
+[CONTENT_CONSOLE] [EMAIL_SCAN] url=http://127.0.0.1:8971/page-c.html found=2 trigger=INIT
+[CONTENT_CONSOLE] [EMAIL_SEND] generation=2 pageCount=2 collectibleCount=2 count=2 hostname=127.0.0.1
+[CONTENT_CONSOLE] 🛡️ [XPIDER Stealth v2.0] Main World stealth injection applied successfully.
+[CONTENT_CONSOLE] [CONTROL_PLANE] listenersActive=1 key=mutk1yy5_h9yw9:http://127.0.0.1:8971/page-c.html:1791102283565
+[CONTENT_CONSOLE] [XpiderLog] [TARGET_PAGE] url=http://127.0.0.1:8971/page-c.html domGeneration=1791102283565 attemptId=mutk1yy5_h9yw9
+[CONTENT_CONSOLE] [XpiderLog] 🚀 [Engine] Ultra-Mode process started
+[CONTENT_CONSOLE] [XpiderLog] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[CONTENT_CONSOLE] [XpiderLog] [TARGET_PAGE] url=http://127.0.0.1:8971/page-c.html recursion=0
+[CONTENT_CONSOLE] [XpiderLog] 🔍 [Discovery] URL: http://127.0.0.1:8971/page-c.html | Recursion: 0
+[CONTENT_CONSOLE] [XpiderLog] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[CONTENT_CONSOLE] [XpiderLog] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1:8971/page-c.html | Recursion: 0
+[CONTENT_CONSOLE] [FORM_GATE] candidate=form#contact-form.[name,email,subject,message] bodyField=true contactFields=2 submitters=1 eligible=true reason=ELIGIBLE_INQUIRY_FORM
+[CONTENT_CONSOLE] [FORM_SCAN] pass=1 url=http://127.0.0.1:8971/page-c.html roots=1
+[CONTENT_CONSOLE] [FORM_SCAN] bodyCandidates=1 nativeForms=1 logicalContainers=0
+[CONTENT_CONSOLE] [FORM_SCAN] shadowRoots=0 iframes=0 modalTriggers=12
+[CONTENT_CONSOLE] [EMAIL_SCAN] url=http://127.0.0.1:8971/page-c.html found=2 trigger=SCAN
+[CONTENT_CONSOLE] [LONG_TEXT_GATE] found=true type=textarea semantic=message
+[CONTENT_CONSOLE] [XpiderLog] [FORM_SCAN] bodyCandidates=1 forms=1 logicalContainers=1
+[CONTENT_CONSOLE] [XpiderLog] [PAGE_CLASS] CONTACT_FORM_PAGE
+[CONTENT_CONSOLE] [XpiderLog] 🎯 Step 2: Contact form discovered. Preparing submission...
+[CONTENT_CONSOLE] [XpiderLog] [STAGE] stage=CONTACT_PAGE_FOUND
+[CONTENT_CONSOLE] [XpiderLog] [LONG_TEXT_GATE] found=true type=textarea semantic=message
+[CONTENT_CONSOLE] [XpiderLog] [FORM_GATE] eligible=true reason=BODY_FIELD_PRESENT
+[CONTENT_CONSOLE] [XpiderLog] 🔍 [Supreme-X 5.0] Scanning for multi-location / branch links...
+[CONTENT_CONSOLE] [XpiderLog] [AUTOFILL_LOCK] acquired=true key=mutk1yy5_h9yw9:http://127.0.0.1:8971/page-c.html:contact-form
+[CONTENT_CONSOLE] [LONG_TEXT_GATE] found=true type=textarea semantic=message
+[CONTENT_CONSOLE] [LONG_TEXT_GATE] found=true type=textarea semantic=message
+[CONTENT_CONSOLE] [FORM_INTENT] intent=CONTACT_INQUIRY confidence=0.95 negativeClass=none
+[CONTENT_CONSOLE] [FORM_CLASSIFY] intent=CONTACT_INQUIRY eligible=true hasInquiryBody=true bodyFieldType=textarea decision=ACCEPT reason=ELIGIBLE_CONTACT_INQUIRY
+[CONTENT_CONSOLE] [XpiderLog] [CONTACT_GATE] PASS bodyField=textarea
+[CONTENT_CONSOLE] [XpiderLog] [STAGE] stage=ELIGIBLE_FORM_FOUND
+[CONTENT_CONSOLE] [EMAIL_SCAN] url=http://127.0.0.1:8971/page-c.html found=2 trigger=FORM_ENTRY
+[CONTENT_CONSOLE] [XpiderLog] 🛠️ Step 3: Registering message template to form fields...
+[CONTENT_CONSOLE] [XpiderLog] 🛡️ [FormStabilizer] Starting bounded stabilization (max 5s, max 2 retries/element)...
+[CONTENT_CONSOLE] [XpiderLog] 🛡️ [FormStabilizer] Stopped (ALL_FIELDS_STABLE_OR_RESOLVED): seen=4 stable=true unresolved=0 (selects=0, cbs=0, radios=0)
+[CONTENT_CONSOLE] [XpiderLog] 🛠️ [Action][HyperEngine v4.0] 초강력 폼 자동 등록기 시작...
+[CONTENT_CONSOLE] [XpiderLog] 🎯 [HyperEngine v4.0] Phase 0 - 입력 필드 전수 수집...
+[CONTENT_CONSOLE] [XpiderLog]    [v4.0] 총 4개 입력 필드 발견 (radio: 0, checkbox: 0)
+[CONTENT_CONSOLE] [XpiderLog] 🎯 [HyperEngine v4.0] Phase 1 & 2 - 드롭다운 SelectResolverR2 전수 처리...
+[CONTENT_CONSOLE] [XpiderLog] 🎯 [HyperEngine v4.0] Phase 3 - 체크박스 CheckboxResolverR2 전수 처리...
+[CONTENT_CONSOLE] [XpiderLog] 🎯 [HyperEngine v4.0] Phase 4 - 텍스트 필드 패턴 매칭...
+[CONTENT_CONSOLE] [EMAIL_ACK] currentPageCount=2 newGlobalCount=2 totalGlobalCount=2 suppressed=false staleGeneration=false
+[STORAGE_AFTER_PAGE_C] generation=2 (MUST REMAIN EXACTLY 2)
+[STORAGE_AFTER_PAGE_C] currentSiteCount=2 emails=["contact@delta-tech.org","founder@delta-tech.org"]
+[STORAGE_AFTER_PAGE_C] globalUnique=2
+[POPUP_UI_AFTER_PAGE_C] currentSiteUI=2 globalUI=2
+
+================================================================================
+[R6.9C AUDIT VERDICT & OPERATOR-PATH INVARIANT VERIFICATION]
+================================================================================
+Criteria 1 (Target 1 Page A Collected: 3 current, 3 global): PASS
+Criteria 2 (Target 2 Page B Zero Current Reset: 0 current, 3 global): PASS
+Criteria 3 (Popup Clear All Single Writer: gen +1, canonical empty stores): PASS
+Criteria 4 (Generation Advance Exactly Once: retained post-clear): PASS
+Criteria 5 (Target 3 Page C Post-Clear Resumed: 2 current, 2 global): PASS
+
+✅ PASS: ALL 5 ACTUAL OPERATOR-PATH ACCEPTANCE CRITERIA VERIFIED!
+✅ PASS: Real popup control-plane (#start-btn, #email-clear-btn) exercised without harness script injection.
+✅ PASS: Natural background orchestrator created tabs, navigated, and injected scripts naturally.
+✅ PASS: Current-Site vs Global-Collect semantics verified under live Chromium runtime.
+✅ PASS: Clear/Reset single-writer invariant verified under live operator control.

@@ -1077,11 +1077,13 @@
             __emailCollectorLastFingerprint = fingerprint;
 
             const genToSend = typeof __emailCollectorGeneration === 'number' ? __emailCollectorGeneration : 1;
-            console.log(`[EMAIL_SEND] generation=${genToSend} count=${newEmails.length} hostname=${hostname}`);
+            console.log(`[EMAIL_SEND] generation=${genToSend} pageCount=${allFound.length} collectibleCount=${newEmails.length} count=${newEmails.length} hostname=${hostname}`);
 
             if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
                 chrome.runtime.sendMessage({
                     action: 'EMAIL_COLLECT_FOUND',
+                    pageEmails: allFound,
+                    collectibleEmails: newEmails,
                     emails: newEmails,
                     hostname: hostname,
                     url: pageUrl,

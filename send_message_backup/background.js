@@ -1914,8 +1914,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             // [Issue #6 Email Collector Integration & R6.9C] Non-blocking email accumulation with generation check
             (async () => {
                 try {
-                    const { emails, hostname, url, generation } = request;
-                    const cleanEmails = Array.isArray(emails) ? emails : [];
+                    const { emails, pageEmails, collectibleEmails, hostname, url, generation } = request;
+                    const cleanPageEmails = Array.isArray(pageEmails) ? pageEmails : (Array.isArray(emails) ? emails : []);
+                    const cleanCollectibleEmails = Array.isArray(collectibleEmails) ? collectibleEmails : (Array.isArray(emails) ? emails : []);
                     const cleanHost = hostname || (url ? new URL(url).hostname : 'unknown');
                     const StoreClass = self.EmailCollectorStore || (typeof EmailCollectorStore !== 'undefined' ? EmailCollectorStore : null);
                     if (StoreClass) {
@@ -1923,8 +1924,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                             ? StoreClass.getInstance(chrome.storage.local)
                             : (self.__xpiderEmailStore || new StoreClass(chrome.storage.local));
                         self.__xpiderEmailStore = store;
-                        const stats = await store.add(cleanHost, cleanEmails, url, generation);
-                        if (!stats.suppressed && !stats.staleGeneration && !stats.baselineSuppressed && cleanEmails.length > 0) {
+                        const stats = await store.add(cleanHost, cleanCollectibleEmails, url, generation, {
+                            pageEmails: cleanPageEmails,
+                            collectibleEmails: cleanCollectibleEmails
+                        });
+                        if (!stats.suppressed && !stats.staleGeneration && !stats.baselineSuppressed && cleanPageEmails.length > 0) {
                             logBg(sender.tab?.id, `[TARGET][${cleanHost}] emailsFoundCurrentPage=${stats.currentPageCount} emailsNewGlobal=${stats.newGlobalCount} totalEmailsGlobal=${stats.totalGlobalCount}`, 'info');
                         }
                         sendResponse({ success: true, ...stats });

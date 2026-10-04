@@ -122,7 +122,7 @@ const cs = require('./content-script.js');
 
 async function runR69CTests() {
     console.log('===============================================================================');
-    console.log('  R6.9C EMAIL COLLECTOR RUNTIME RESTORE TEST SUITE (26 TESTS)');
+    console.log('  R6.9C EMAIL COLLECTOR RUNTIME RESTORE TEST SUITE (30 TESTS)');
     console.log('===============================================================================\n');
 
     let passCount = 0;
@@ -593,6 +593,140 @@ async function runR69CTests() {
         const popupStore = new EmailCollectorStore(sharedStorage);
         await popupStore.init();
         assert.strictEqual(popupStore.generation, 14, "Popup open must match SW generation 14");
+    });
+
+    // -------------------------------------------------------------------------
+    // Test 27: pre-clear page={a,b}; clear; add c -> Current Site={a,b,c}, Global={c}
+    // -------------------------------------------------------------------------
+    let test27Storage = null;
+    let test27Store = null;
+
+    await test("Test 27: pre-clear page={a,b}; clear; add c -> Current Site={a,b,c}, Global={c}", async () => {
+        test27Storage = new MockChromeStorage();
+        test27Store = new EmailCollectorStore(test27Storage);
+        await test27Store.init();
+
+        // 1. Pre-clear scan: page has user-a@site.com and user-b@site.com
+        const page1Emails = ['user-a@site.com', 'user-b@site.com'];
+        await test27Store.add('site.com', page1Emails, 'https://site.com', test27Store.generation, {
+            pageEmails: page1Emails,
+            collectibleEmails: page1Emails
+        });
+
+        let cur = await test27Store.loadCurrentSiteStore();
+        let globalStore = await test27Store.loadGlobalStore();
+        assert.strictEqual(cur.count, 2);
+        assert.deepStrictEqual(cur.emails, ['user-a@site.com', 'user-b@site.com']);
+        assert.strictEqual(globalStore.totalUnique, 2);
+        assert.ok(globalStore.emails['user-a@site.com']);
+        assert.ok(globalStore.emails['user-b@site.com']);
+
+        // 2. Clear all
+        await test27Store.clearAll({ suppressRecollectMs: 50 });
+        await new Promise(r => setTimeout(r, 60));
+        cur = await test27Store.loadCurrentSiteStore();
+        globalStore = await test27Store.loadGlobalStore();
+        assert.strictEqual(cur.count, 0);
+        assert.strictEqual(globalStore.totalUnique, 0);
+
+        // 3. Page dynamically adds user-c@site.com
+        // pageEmails = ['user-a@site.com', 'user-b@site.com', 'user-c@site.com']
+        // collectibleEmails = ['user-c@site.com'] (filtered against pre-clear baseline)
+        const postClearPageEmails = ['user-a@site.com', 'user-b@site.com', 'user-c@site.com'];
+        const postClearCollectibleEmails = ['user-c@site.com'];
+        const res = await test27Store.add('site.com', postClearCollectibleEmails, 'https://site.com', test27Store.generation, {
+            pageEmails: postClearPageEmails,
+            collectibleEmails: postClearCollectibleEmails
+        });
+
+        assert.strictEqual(res.currentPageCount, 3, "Current site count must be 3 (full visible set)");
+        assert.strictEqual(res.newGlobalCount, 1, "Only new email c is collected globally");
+        assert.strictEqual(res.totalGlobalCount, 1, "Global store has exactly 1 email");
+
+        cur = await test27Store.loadCurrentSiteStore();
+        globalStore = await test27Store.loadGlobalStore();
+        assert.deepStrictEqual(cur.emails, ['user-a@site.com', 'user-b@site.com', 'user-c@site.com']);
+        assert.strictEqual(cur.count, 3);
+        assert.strictEqual(globalStore.totalUnique, 1);
+        assert.ok(globalStore.emails['user-c@site.com']);
+        assert.strictEqual(globalStore.emails['user-a@site.com'], undefined);
+        assert.strictEqual(globalStore.emails['user-b@site.com'], undefined);
+    });
+
+    // -------------------------------------------------------------------------
+    // Test 28: same post-clear DOM scanned again -> no duplicate Global increment
+    // -------------------------------------------------------------------------
+    await test("Test 28: same post-clear DOM scanned again -> no duplicate Global increment", async () => {
+        const pageEmails = ['user-a@site.com', 'user-b@site.com', 'user-c@site.com'];
+        const collectibleEmails = []; // No new uncollected emails
+
+        const res = await test27Store.add('site.com', collectibleEmails, 'https://site.com', test27Store.generation, {
+            pageEmails: pageEmails,
+            collectibleEmails: collectibleEmails
+        });
+
+        assert.strictEqual(res.currentPageCount, 3, "Current site remains 3");
+        assert.strictEqual(res.newGlobalCount, 0, "No duplicate global count increment");
+        assert.strictEqual(res.totalGlobalCount, 1, "Total global count remains 1");
+
+        const cur = await test27Store.loadCurrentSiteStore();
+        const globalStore = await test27Store.loadGlobalStore();
+        assert.deepStrictEqual(cur.emails, ['user-a@site.com', 'user-b@site.com', 'user-c@site.com']);
+        assert.strictEqual(globalStore.totalUnique, 1);
+        assert.ok(globalStore.emails['user-c@site.com']);
+    });
+
+    // -------------------------------------------------------------------------
+    // Test 29: another new d -> Current Site={a,b,c,d}, Global={c,d}
+    // -------------------------------------------------------------------------
+    await test("Test 29: another new d -> Current Site={a,b,c,d}, Global={c,d}", async () => {
+        const pageEmails = ['user-a@site.com', 'user-b@site.com', 'user-c@site.com', 'user-d@site.com'];
+        const collectibleEmails = ['user-d@site.com'];
+
+        const res = await test27Store.add('site.com', collectibleEmails, 'https://site.com', test27Store.generation, {
+            pageEmails: pageEmails,
+            collectibleEmails: collectibleEmails
+        });
+
+        assert.strictEqual(res.currentPageCount, 4, "Current site expands to {a,b,c,d}");
+        assert.strictEqual(res.newGlobalCount, 1, "New email d incremented");
+        assert.strictEqual(res.totalGlobalCount, 2, "Total global count is 2 ({c,d})");
+
+        const cur = await test27Store.loadCurrentSiteStore();
+        const globalStore = await test27Store.loadGlobalStore();
+        assert.deepStrictEqual(cur.emails, ['user-a@site.com', 'user-b@site.com', 'user-c@site.com', 'user-d@site.com']);
+        assert.strictEqual(cur.count, 4);
+        assert.strictEqual(globalStore.totalUnique, 2);
+        assert.ok(globalStore.emails['user-c@site.com']);
+        assert.ok(globalStore.emails['user-d@site.com']);
+        assert.strictEqual(globalStore.emails['user-a@site.com'], undefined);
+        assert.strictEqual(globalStore.emails['user-b@site.com'], undefined);
+    });
+
+    // -------------------------------------------------------------------------
+    // Test 30: zero-email next page -> Current Site=0, Global={c,d}
+    // -------------------------------------------------------------------------
+    await test("Test 30: zero-email next page -> Current Site=0, Global={c,d}", async () => {
+        const pageEmails = [];
+        const collectibleEmails = [];
+
+        const res = await test27Store.add('next-empty-site.com', collectibleEmails, 'https://next-empty-site.com/contact', test27Store.generation, {
+            pageEmails: pageEmails,
+            collectibleEmails: collectibleEmails
+        });
+
+        assert.strictEqual(res.currentPageCount, 0, "Current site resets to 0 for new page");
+        assert.strictEqual(res.newGlobalCount, 0, "No new global emails");
+        assert.strictEqual(res.totalGlobalCount, 2, "Global store retains previous {c,d}");
+
+        const cur = await test27Store.loadCurrentSiteStore();
+        const globalStore = await test27Store.loadGlobalStore();
+        assert.strictEqual(cur.count, 0, "Current site count is 0");
+        assert.deepStrictEqual(cur.emails, []);
+        assert.strictEqual(cur.hostname, 'next-empty-site.com');
+        assert.strictEqual(globalStore.totalUnique, 2, "Global store retains 2 emails");
+        assert.ok(globalStore.emails['user-c@site.com']);
+        assert.ok(globalStore.emails['user-d@site.com']);
     });
 
     console.log('\n===============================================================================');
