@@ -26,7 +26,7 @@
         provenanceSchema: 2,
         modules: {
             backgroundSha: 'a64e89d49e834bf4203f8204da1d2edf3467141a0d8dc9b831f1334e99983a27',
-            contentScriptSha: '3eb808950b7b04529f2aa181f983a0896195fd42a0786d1ba5deeef5656f2a58',
+            contentScriptSha: 'fdfb48f51ac6a820296ae43fb708285b46dae3464483ee1e7125833e3ffa2a9f',
             emailCollectorSha: '3f1147a379e159e7777158f2caa74cc8d40b2a0b0eb2c244f440af379cb5c9c9',
             historyStoreSha: '7c9e22e0f62c4f1b3d82510dcc6604eaefff72e80f79c25041319bdf169305ac',
             contactGateSha: '524933622d1a862425d7302b051bb063d5a3cbec166d868fa73825fa4d38f334',

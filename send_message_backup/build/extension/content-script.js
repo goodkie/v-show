@@ -1202,7 +1202,7 @@
             // [v1.5.7] Math Captcha Handling (Divi & Others)
             await solveMathCaptcha(form);
 
-            logDev(`✅ [Action] Sequence complete: ${result.filledAny ? 'Success' : 'Fail'}`, "success");
+            logDev(`✅ [FORM_PREP] COMPLETE`, "info");
             
             if (await checkForCaptcha()) {
                 logDev("🤖 [Security] CAPTCHA detected. Engine paused for solver.", "info");
@@ -4547,8 +4547,40 @@
     }
 
     // ============================================================
-    // [Section C & Hotfix R2] Submission Outcome Verifier (Target-Scoped)
+    // [Section C & Hotfix R2 / R6.9D] Submission Outcome Verifier (Target-Scoped)
     // ============================================================
+    function getElementSignature(el) {
+        if (!el) return 'null';
+        try {
+            const tag = (el.tagName || '').toLowerCase();
+            const id = el.id ? `#${el.id}` : '';
+            const name = (el.getAttribute && el.getAttribute('name')) || el.name ? `[name="${(el.getAttribute && el.getAttribute('name')) || el.name}"]` : '';
+            let cls = '';
+            if (el.className && typeof el.className === 'string') {
+                cls = '.' + el.className.trim().split(/\s+/).slice(0, 3).join('.');
+            }
+            return `${tag}${id}${name}${cls}`;
+        } catch (_) {
+            return 'element';
+        }
+    }
+
+    const SERVER_ERROR_PATTERNS = [
+        '500 internal server error',
+        'internal server error',
+        'an error occurred while processing',
+        'submission failed',
+        'could not send message',
+        'failed to send message',
+        'could not be sent',
+        'error occurred while submitting',
+        'cannot send message',
+        'processing error',
+        '서버 오류',
+        '전송에 실패했습니다',
+        '오류가 발생했습니다'
+    ];
+
     class SubmissionOutcomeVerifier {
         constructor(form, template = {}, options = {}) {
             this.form = form;
@@ -4560,6 +4592,9 @@
             this.observer = null;
             this.decisiveOutcome = null;
             this._onSubmit = () => { this.submitEventSeen = true; };
+            this.pollCount = 0;
+            this.domServerErrorFirstSeen = null;
+            this.domServerErrorPolls = 0;
         }
 
         prepare() {
@@ -4567,6 +4602,8 @@
             this.submitEventSeen = false;
             this.lastMutationTime = Date.now();
             this.mutationCount = 0;
+            this.domServerErrorFirstSeen = null;
+            this.domServerErrorPolls = 0;
             this.preSnapshot = this.capturePreSubmitSnapshot();
 
             if (this.form && typeof this.form.addEventListener === 'function') {
@@ -4644,17 +4681,85 @@
             const visibleBefore = successSnapshots.filter(s => s.wasVisible).length;
             console.log(`[SUCCESS_SNAPSHOT] candidates=${successSnapshots.length} visibleBefore=${visibleBefore}`);
 
+            // [R6.9D] Delta-based Negative Signals Pre-Snapshot
+            const preBodyText = (typeof document !== 'undefined' && document.body) ? (document.body.textContent || '').toLowerCase() : '';
+            const serverErrorPhrases = new Set();
+            for (const p of SERVER_ERROR_PATTERNS) {
+                if (preBodyText.includes(p)) serverErrorPhrases.add(p);
+            }
+
+            const serverErrorNodes = [];
+            if (typeof document !== 'undefined' && document.querySelectorAll) {
+                try {
+                    const allTextNodes = document.querySelectorAll('[role="alert"], [role="status"], .status-msg, .error, .message-error, .server-error, div, p, span');
+                    for (const node of allTextNodes) {
+                        const txt = (node.textContent || '').trim().toLowerCase();
+                        if (!txt) continue;
+                        const matched = SERVER_ERROR_PATTERNS.find(p => txt.includes(p));
+                        if (matched) {
+                            const wasVis = typeof elementIsVisible === 'function' ? elementIsVisible(node) : false;
+                            serverErrorNodes.push({
+                                node,
+                                text: txt,
+                                phrase: matched,
+                                wasVisible: wasVis,
+                                signature: getElementSignature(node)
+                            });
+                        }
+                    }
+                } catch (_) {}
+            }
+
+            const visibleValidationSignatures = new Set();
+            const validationTexts = new Set();
+            const validationNodes = [];
+            if (typeof document !== 'undefined' && document.querySelectorAll) {
+                try {
+                    const vEls = document.querySelectorAll('[role="alert"], .error, .invalid, [aria-invalid="true"], :invalid, .wpcf7-not-valid-tip, .gfield_error, .form-error, .help-block-error, .field-error');
+                    for (const el of vEls) {
+                        const isVis = typeof elementIsVisible === 'function' ? elementIsVisible(el) : false;
+                        const txt = (el.textContent || '').trim().toLowerCase();
+                        if (SERVER_ERROR_PATTERNS.some(p => txt.includes(p))) continue;
+                        const isAria = (el.getAttribute && el.getAttribute('aria-invalid') === 'true');
+                        const isNative = !!(el.validity && !el.validity.valid);
+                        const sig = getElementSignature(el);
+                        if (isVis) {
+                            visibleValidationSignatures.add(sig);
+                            if (txt) validationTexts.add(txt);
+                        }
+                        validationNodes.push({
+                            node: el,
+                            wasVisible: isVis,
+                            ariaInvalid: isAria,
+                            nativeInvalid: isNative,
+                            text: txt,
+                            signature: sig
+                        });
+                    }
+                } catch (_) {}
+            }
+
+            const negativeSignals = {
+                visibleErrorSignatures: visibleValidationSignatures,
+                validationTexts,
+                validationNodes,
+                serverErrorPhrases,
+                serverErrorNodes,
+                bodyText: preBodyText
+            };
+
             return {
                 url,
                 formSignature,
                 visibleErrorsCount,
-                bodyText: (typeof document !== 'undefined' && document.body) ? (document.body.textContent || '').toLowerCase() : '',
+                bodyText: preBodyText,
                 existingSuccessTexts: Array.from(existingSuccessTexts),
-                successSnapshots
+                successSnapshots,
+                negativeSignals
             };
         }
 
-        evaluateSignals() {
+        evaluateSignals(submitOutcome = {}) {
             const currentUrl = (typeof window !== 'undefined') ? window.location.href : '';
             const initialUrl = this.preSnapshot ? this.preSnapshot.url : '';
             const urlChanged = (currentUrl !== initialUrl);
@@ -4664,29 +4769,131 @@
             const isSearchUrl = currentUrl.toLowerCase().includes('/search') || currentUrl.toLowerCase().includes('search=') || currentUrl.toLowerCase().includes('q=') || currentUrl.toLowerCase().includes('help.shopify.com');
             const isSuccessUrl = urlChanged && !isSearchUrl && successUrlKeywords.some(k => currentUrl.toLowerCase().includes(k));
 
-            // 2. Negative / Error Signals (Strict Override)
+            // [R6.9D] 2. Negative / Error Signals (Delta / Transition Based)
             let newErrorsFound = false;
             let validationErrorsCount = 0;
-            if (typeof document !== 'undefined' && document.querySelectorAll) {
-                const errEls = document.querySelectorAll('[role="alert"], .error, .invalid, [aria-invalid="true"], .wpcf7-not-valid-tip, .gfield_error');
-                for (const el of errEls) {
-                    if (typeof elementIsVisible === 'function' ? elementIsVisible(el) : true) {
+            let validationErrorTransition = false;
+            let serverErrorFound = false;
+            let serverErrorTransition = false;
+            let actualTransportFailure = false;
+            let domServerErrorTransition = false;
+            let matchedServerError = 'none';
+
+            const elapsedNow = this.startTime ? (Date.now() - this.startTime) : 0;
+
+            // 2a. Actual transport failure (networkStatus >= 400 or transport rejection)
+            if (submitOutcome) {
+                const nStatus = submitOutcome.networkStatus !== undefined ? submitOutcome.networkStatus : null;
+                const isNet5xx = (typeof nStatus === 'number' && nStatus >= 500);
+                const isNet4xx = (typeof nStatus === 'number' && nStatus >= 400);
+                const isFrameworkReject = !!(submitOutcome.transportRejected || submitOutcome.fetchRejected || submitOutcome.promiseRejected || submitOutcome.transportStatus === 'FAILED' || submitOutcome.transportStatus === 'REJECTED');
+
+                if (isNet5xx || isNet4xx || isFrameworkReject) {
+                    actualTransportFailure = true;
+                    serverErrorFound = true;
+                    serverErrorTransition = true;
+                    matchedServerError = isNet5xx ? `HTTP_${nStatus}` : (isNet4xx ? `HTTP_${nStatus}_REJECT` : 'FRAMEWORK_TRANSPORT_REJECTED');
+                    logDev(`[NEGATIVE_SIGNAL] type=SERVER_ERROR source=NETWORK phrase="${matchedServerError}" preExisting=false transition=true visible=true firstSeenMs=${elapsedNow}`, 'error');
+                }
+            }
+
+            // 2b. DOM Server Error Transition (Only if no actual transport failure already asserted)
+            if (!actualTransportFailure && typeof document !== 'undefined') {
+                const preServerErrorPhrases = (this.preSnapshot && this.preSnapshot.negativeSignals && this.preSnapshot.negativeSignals.serverErrorPhrases) || 
+                    (this.preSnapshot && this.preSnapshot.bodyText ? new Set(SERVER_ERROR_PATTERNS.filter(p => this.preSnapshot.bodyText.includes(p))) : new Set());
+                const preServerErrorNodes = (this.preSnapshot && this.preSnapshot.negativeSignals && this.preSnapshot.negativeSignals.serverErrorNodes) || [];
+
+                // Check if hidden pre-existing server-error node transitioned to visible
+                for (const sn of preServerErrorNodes) {
+                    const nowVisible = typeof elementIsVisible === 'function' ? elementIsVisible(sn.node) : true;
+                    if (!sn.wasVisible && nowVisible) {
+                        domServerErrorTransition = true;
+                        serverErrorFound = true;
+                        serverErrorTransition = true;
+                        matchedServerError = sn.phrase;
+                        logDev(`[NEGATIVE_SIGNAL] type=SERVER_ERROR source=DOM phrase="${sn.phrase}" preExisting=false transition=true visible=true firstSeenMs=${elapsedNow}`, 'error');
+                        break;
+                    }
+                }
+
+                // Check visible nodes in DOM
+                if (!domServerErrorTransition) {
+                    const candidateEls = document.querySelectorAll ?
+                        document.querySelectorAll('[role="alert"], [role="status"], .status-msg, .error, .message-error, .server-error, .alert-danger, div, p, span') : [];
+                    for (const el of candidateEls) {
+                        const nowVis = typeof elementIsVisible === 'function' ? elementIsVisible(el) : true;
+                        if (!nowVis) continue;
                         const txt = (el.textContent || '').trim().toLowerCase();
-                        if (/error|failed|please correct|try again|required|invalid|문제|오류|실패/i.test(txt) || el.getAttribute('aria-invalid') === 'true') {
-                            validationErrorsCount++;
-                            newErrorsFound = true;
+                        if (!txt) continue;
+                        const matched = SERVER_ERROR_PATTERNS.find(p => txt.includes(p));
+                        if (matched) {
+                            const sig = getElementSignature(el);
+                            const preMatch = preServerErrorNodes.find(pn => pn.node === el || (pn.signature === sig && pn.phrase === matched));
+                            const preExistingInBody = preServerErrorPhrases.has(matched);
+
+                            if (preMatch && preMatch.wasVisible) {
+                                // Pre-existing visible error unchanged
+                                logDev(`[NEGATIVE_SIGNAL] type=SERVER_ERROR source=DOM phrase="${matched}" preExisting=true transition=false visible=true firstSeenMs=${elapsedNow}`, 'info');
+                            } else if (!preExistingInBody || (preMatch && !preMatch.wasVisible)) {
+                                // Real new transition!
+                                domServerErrorTransition = true;
+                                serverErrorFound = true;
+                                serverErrorTransition = true;
+                                matchedServerError = matched;
+                                logDev(`[NEGATIVE_SIGNAL] type=SERVER_ERROR source=DOM phrase="${matched}" preExisting=false transition=true visible=true firstSeenMs=${elapsedNow}`, 'error');
+                                break;
+                            } else {
+                                // Was in body text pre-submit, emit preExisting=true
+                                logDev(`[NEGATIVE_SIGNAL] type=SERVER_ERROR source=DOM phrase="${matched}" preExisting=true transition=false visible=true firstSeenMs=${elapsedNow}`, 'info');
+                            }
                         }
                     }
                 }
             }
 
-            // 2b. Server / transport error signals
-            let serverErrorFound = false;
-            if (typeof document !== 'undefined' && document.body) {
-                const bodyTextLower = (document.body.textContent || '').toLowerCase();
-                if (/500 internal server error|an error occurred while processing|submission failed|could not send message|서버 오류/i.test(bodyTextLower)) {
-                    if (!this.preSnapshot || !this.preSnapshot.bodyText.includes('500 internal server error')) {
-                        serverErrorFound = true;
+            // 2c. Validation Errors (Delta based)
+            if (typeof document !== 'undefined' && document.querySelectorAll) {
+                const preValidationNodes = (this.preSnapshot && this.preSnapshot.negativeSignals && this.preSnapshot.negativeSignals.validationNodes) || [];
+
+                const errEls = document.querySelectorAll('[role="alert"], .error, .invalid, [aria-invalid="true"], :invalid, .wpcf7-not-valid-tip, .gfield_error, .form-error, .help-block-error, .field-error');
+                for (const el of errEls) {
+                    const isVis = typeof elementIsVisible === 'function' ? elementIsVisible(el) : true;
+                    if (!isVis) continue;
+
+                    const txt = (el.textContent || '').trim().toLowerCase();
+                    const isAria = (el.getAttribute && el.getAttribute('aria-invalid') === 'true');
+                    const isNative = !!(el.validity && !el.validity.valid);
+                    const isErrorText = /error|failed|please correct|try again|required|invalid|문제|오류|실패/i.test(txt);
+                    if (SERVER_ERROR_PATTERNS.some(p => txt.includes(p))) continue;
+
+                    if (!isErrorText && !isAria && !isNative) continue;
+
+                    const sig = getElementSignature(el);
+                    const preMatch = preValidationNodes.find(pn => pn.node === el || pn.signature === sig);
+
+                    if (preMatch && preMatch.wasVisible) {
+                        const ariaTransition = (!preMatch.ariaInvalid && isAria);
+                        const nativeTransition = (!preMatch.nativeInvalid && isNative);
+                        const textTransition = (preMatch.text !== txt && isErrorText);
+
+                        if (ariaTransition || nativeTransition || textTransition) {
+                            validationErrorsCount++;
+                            newErrorsFound = true;
+                            validationErrorTransition = true;
+                            logDev(`[NEGATIVE_SIGNAL] type=VALIDATION selector="${sig}" preExisting=false transition=true`, 'warning');
+                        } else {
+                            logDev(`[NEGATIVE_SIGNAL] type=VALIDATION selector="${sig}" preExisting=true transition=false`, 'info');
+                        }
+                    } else if (preMatch && !preMatch.wasVisible) {
+                        validationErrorsCount++;
+                        newErrorsFound = true;
+                        validationErrorTransition = true;
+                        logDev(`[NEGATIVE_SIGNAL] type=VALIDATION selector="${sig}" preExisting=false transition=true`, 'warning');
+                    } else {
+                        validationErrorsCount++;
+                        newErrorsFound = true;
+                        validationErrorTransition = true;
+                        logDev(`[NEGATIVE_SIGNAL] type=VALIDATION selector="${sig}" preExisting=false transition=true`, 'warning');
                     }
                 }
             }
@@ -4723,7 +4930,7 @@
                     if (typeof elementIsVisible === 'function' && !elementIsVisible(node)) continue;
                     const txt = (node.textContent || '').trim().toLowerCase();
                     if (!txt) continue;
-                    if (this.preSnapshot && this.preSnapshot.existingSuccessTexts.includes(txt)) continue;
+                    if (this.preSnapshot && this.preSnapshot.existingSuccessTexts && this.preSnapshot.existingSuccessTexts.includes(txt)) continue;
                     if (commonSuccessKeywords.some(k => txt.includes(k))) {
                         ariaLiveSuccessTransition = true;
                         break;
@@ -4755,7 +4962,7 @@
                     if (typeof elementIsVisible === 'function' && !elementIsVisible(node)) continue;
                     const txt = (node.textContent || '').trim().toLowerCase();
                     if (!txt) continue;
-                    if (this.preSnapshot && this.preSnapshot.existingSuccessTexts.includes(txt)) continue;
+                    if (this.preSnapshot && this.preSnapshot.existingSuccessTexts && this.preSnapshot.existingSuccessTexts.includes(txt)) continue;
 
                     if (commonSuccessKeywords.some(k => txt.includes(k)) || 
                         node.classList.contains('gform_confirmation_message') ||
@@ -4773,7 +4980,7 @@
             const currentBodyText = (typeof document !== 'undefined' && document.body) ? (document.body.textContent || '').toLowerCase() : '';
             if (this.preSnapshot) {
                 for (const kw of commonSuccessKeywords) {
-                    if (currentBodyText.includes(kw) && !this.preSnapshot.bodyText.includes(kw)) {
+                    if (currentBodyText.includes(kw) && (!this.preSnapshot.bodyText || !this.preSnapshot.bodyText.includes(kw))) {
                         newSuccessNodes++;
                         successTextTransition = true;
                         break;
@@ -4794,7 +5001,7 @@
             }
 
             // Medium Signals
-            const formStillThere = this.form && typeof document !== 'undefined' && document.body && document.body.contains(this.form);
+            const formStillThere = this.form && typeof document !== 'undefined' && document.body && (typeof document.body.contains === 'function' ? document.body.contains(this.form) : true);
             const formHidden = this.form ? (typeof elementIsVisible === 'function' ? !elementIsVisible(this.form) : false) : false;
 
             let formReset = false;
@@ -4815,15 +5022,23 @@
             }
 
             const formReplaced = !formStillThere && (newSuccessNodes > 0 || successVisibilityTransition || ariaLiveSuccessTransition);
-            const isDecisiveSuccess = !newErrorsFound && !serverErrorFound && (isSuccessUrl || newSuccessNodes > 0 || successVisibilityTransition || ariaLiveSuccessTransition || buttonSuccessState || formReplaced);
-            const isDecisiveFailure = (newErrorsFound && validationErrorsCount > 0) || serverErrorFound;
+
+            // [R6.9D Point 5] Positive success defeats stale/pre-existing negatives
+            const hasStrongPositive = isSuccessUrl || newSuccessNodes > 0 || successVisibilityTransition || ariaLiveSuccessTransition || buttonSuccessState || formReplaced;
+            const isDecisiveSuccess = hasStrongPositive && !actualTransportFailure;
+            const isDecisiveFailure = actualTransportFailure || (newErrorsFound && validationErrorsCount > 0);
 
             return {
                 urlChanged,
                 isSuccessUrl,
                 newErrorsFound,
                 validationErrorsCount,
+                validationErrorTransition,
                 serverErrorFound,
+                serverErrorTransition,
+                actualTransportFailure,
+                domServerErrorTransition,
+                matchedServerError,
                 newSuccessNodes,
                 successVisibilityTransition,
                 ariaLiveSuccessTransition,
@@ -4834,6 +5049,7 @@
                 formReset,
                 formReplaced,
                 submitBtnDisabled,
+                hasStrongPositive,
                 isDecisiveSuccess,
                 isDecisiveFailure
             };
@@ -4845,73 +5061,65 @@
                 this.submitEventSeen = true;
             }
 
-            const baseWaitMs = 8000;
-            const extendedWaitMs = 20000;
-            const transportWaitMs = 30000;
-            const intervalMs = 250;
+            const baseWaitMs = (this.options && this.options.baseWaitMs) || 8000;
+            const extendedWaitMs = (this.options && this.options.extendedWaitMs) || 20000;
+            const transportWaitMs = (this.options && this.options.transportWaitMs) || 30000;
+            const intervalMs = (this.options && this.options.intervalMs) || 250;
             const start = Date.now();
             let finalDecision = null;
             let finalSignals = null;
+            let pollCount = 0;
+            let domServerErrorFirstSeen = null;
+            let domServerErrorPolls = 0;
 
             while (true) {
+                pollCount++;
                 const elapsed = Date.now() - start;
-                const signals = this.evaluateSignals();
+                const signals = this.evaluateSignals(submitOutcome);
                 finalSignals = signals;
 
-                // 1. Strong Success: URL Redirect
-                if (signals.isSuccessUrl && !signals.newErrorsFound && !signals.serverErrorFound) {
+                // 1. Positive Success defeats stale/pre-existing negatives (R6.9D Point 5)
+                if (signals.hasStrongPositive && !signals.actualTransportFailure) {
                     finalDecision = 'CONFIRMED_SUCCESS';
                     break;
                 }
 
-                // 2. Strong Success: Hidden success node becomes visible
-                if (signals.successVisibilityTransition && !signals.newErrorsFound && !signals.serverErrorFound) {
-                    finalDecision = 'CONFIRMED_SUCCESS';
+                // 2. Actual Transport Failure (network >= 400 or transport rejection) => Immediate terminal
+                if (signals.actualTransportFailure) {
+                    finalDecision = 'SUBMISSION_SERVER_ERROR';
                     break;
                 }
 
-                // 2b. Strong Success: aria-live / role=status / role=alert success transition
-                if (signals.ariaLiveSuccessTransition && !signals.newErrorsFound && !signals.serverErrorFound) {
-                    finalDecision = 'CONFIRMED_SUCCESS';
-                    break;
-                }
-
-                // 2c. Strong Success: New explicit success DOM element / text mutation
-                if (signals.newSuccessNodes > 0 && !signals.newErrorsFound && !signals.serverErrorFound) {
-                    finalDecision = 'CONFIRMED_SUCCESS';
-                    break;
-                }
-
-                // 2d. Strong Success: Button changes to sent/complete state
-                if (signals.buttonSuccessState && !signals.newErrorsFound && !signals.serverErrorFound) {
-                    finalDecision = 'CONFIRMED_SUCCESS';
-                    break;
-                }
-
-                // 2e. Decisive success from mock or composite
-                if (signals.isDecisiveSuccess) {
-                    finalDecision = 'CONFIRMED_SUCCESS';
-                    break;
-                }
-
-                // 3. Strong Success: Form disappeared / replaced by confirmation
-                if (signals.formReplaced && !signals.newErrorsFound && !signals.serverErrorFound) {
-                    finalDecision = 'CONFIRMED_SUCCESS';
-                    break;
-                }
-
-                // 4. Decisive Failure: Validation error or server error blocked submit
+                // 3. Validation errors (Delta-based) => Immediate terminal
                 if (signals.newErrorsFound && signals.validationErrorsCount > 0) {
                     finalDecision = 'SUBMIT_VALIDATION_BLOCKED';
                     break;
                 }
-                if (signals.serverErrorFound) {
-                    finalDecision = 'SUBMISSION_SERVER_ERROR';
-                    break;
-                }
-                if (signals.isDecisiveFailure) {
-                    finalDecision = 'SUBMIT_VALIDATION_BLOCKED';
-                    break;
+
+                // 4. DOM-only Server Error observation rule (R6.9D Point 3)
+                // - require a NEW error transition
+                // - require at least two consistent polls separated by >=250ms
+                // - require elapsed >= 750ms before terminal SUBMISSION_SERVER_ERROR
+                if (signals.domServerErrorTransition) {
+                    if (domServerErrorFirstSeen === null) {
+                        domServerErrorFirstSeen = Date.now();
+                        domServerErrorPolls = 1;
+                    } else {
+                        domServerErrorPolls++;
+                    }
+
+                    const timeSeparated = (Date.now() - domServerErrorFirstSeen >= 250);
+                    const elapsedEnough = (elapsed >= 750);
+                    const consistentPolls = (domServerErrorPolls >= 2);
+
+                    if (timeSeparated && elapsedEnough && consistentPolls) {
+                        finalDecision = 'SUBMISSION_SERVER_ERROR';
+                        break;
+                    }
+                    // Otherwise continue observing! Do not exit at t=3ms!
+                } else {
+                    domServerErrorFirstSeen = null;
+                    domServerErrorPolls = 0;
                 }
 
                 // 5. Composite Confirmed Outcome
@@ -4926,14 +5134,12 @@
                 }
 
                 // Dynamic max wait calculation (R6.9A Section 7)
-                // Base: 8s. Extend to 20s if: submitEventSeen OR network pending OR button disabled/busy OR recent mutations
                 let maxWaitMs = baseWaitMs;
                 const recentMutation = (Date.now() - this.lastMutationTime < 2000);
                 const hasPendingActivity = this.submitEventSeen || (submitOutcome && submitOutcome.networkPending) || signals.submitBtnDisabled || recentMutation;
                 if (hasPendingActivity) {
                     maxWaitMs = extendedWaitMs;
                 }
-                // Extend to 30s ONLY while transport is actively pending
                 if (submitOutcome && submitOutcome.transportPending) {
                     maxWaitMs = transportWaitMs;
                 }
@@ -4954,9 +5160,13 @@
 
             const totalLatency = Date.now() - start;
             if (!finalDecision) {
-                if (finalSignals && (finalSignals.newErrorsFound || finalSignals.serverErrorFound)) {
-                    finalDecision = finalSignals.serverErrorFound ? 'SUBMISSION_SERVER_ERROR' : 'SUBMIT_VALIDATION_BLOCKED';
-                } else if (this.submitEventSeen || (submitOutcome && submitOutcome.networkCommitObserved)) {
+                if (finalSignals && finalSignals.actualTransportFailure) {
+                    finalDecision = 'SUBMISSION_SERVER_ERROR';
+                } else if (finalSignals && finalSignals.domServerErrorTransition && domServerErrorPolls >= 2 && totalLatency >= 750) {
+                    finalDecision = 'SUBMISSION_SERVER_ERROR';
+                } else if (finalSignals && finalSignals.newErrorsFound && finalSignals.validationErrorsCount > 0) {
+                    finalDecision = 'SUBMIT_VALIDATION_BLOCKED';
+                } else if (this.submitEventSeen || (submitOutcome && submitOutcome.submitEventFired) || (submitOutcome && submitOutcome.networkCommitObserved)) {
                     finalDecision = 'DELIVERY_UNKNOWN';
                 } else if (submitOutcome && submitOutcome.strategy === 'trusted_click_sequence' && !this.submitEventSeen) {
                     finalDecision = 'SUBMIT_CLICK_NO_EFFECT';
@@ -4989,14 +5199,19 @@
                 buttonSuccessState: !!(finalSignals && finalSignals.buttonSuccessState),
                 thankYouUrlTransition: !!(finalSignals && finalSignals.isSuccessUrl),
                 frameworkSuccessState: !!(finalSignals && finalSignals.newSuccessNodes > 0),
-                validationErrorTransition: !!(finalSignals && finalSignals.newErrorsFound && finalSignals.validationErrorsCount > 0),
-                serverErrorTransition: !!(finalSignals && finalSignals.serverErrorFound),
+                validationErrorTransition: !!(finalSignals && finalSignals.validationErrorTransition),
+                serverErrorTransition: !!(finalSignals && finalSignals.serverErrorTransition),
                 captchaRejected: !!(submitOutcome && submitOutcome.captchaRejected),
                 confirmationStrength,
                 evidenceTimestamp: Date.now()
             };
 
             // Specification Required Diagnostic Output
+            logDev(`[SUBMIT_VERIFY] pollCount=${pollCount}`, "info");
+            logDev(`[SUBMIT_VERIFY] elapsedMs=${totalLatency}`, "info");
+            logDev(`[SUBMIT_VERIFY] transportStatus=${submitOutcome && (submitOutcome.transportStatus || submitOutcome.networkStatus || 'NONE')}`, "info");
+            logDev(`[SUBMIT_VERIFY] serverErrorTransition=${finalSignals ? !!finalSignals.serverErrorTransition : false}`, "info");
+            logDev(`[SUBMIT_VERIFY] matchedServerError=${finalSignals ? (finalSignals.matchedServerError || 'none') : 'none'}`, "info");
             logDev(`[SUBMIT_VERIFY] submitEvent=${this.submitEventSeen}`, "info");
             logDev(`[SUBMIT_VERIFY] urlChanged=${finalSignals ? finalSignals.urlChanged : false}`, "info");
             logDev(`[SUBMIT_VERIFY] newSuccessNodes=${finalSignals ? finalSignals.newSuccessNodes : 0}`, "info");
