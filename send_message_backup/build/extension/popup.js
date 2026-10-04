@@ -192,10 +192,11 @@ async function clearDiagnosticLog() {
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
         await chrome.storage.local.remove(LIST_DATA_KEYS.diagnostics);
     }
-    if (typeof addLog === 'function') {
-        addLog("Diagnostic log cleared.", "info");
-    }
+    // Always record a clear-acknowledgment entry in the diagnostic buffer
+    // so getDiagnosticBuffer() returns exactly 1 entry after clear (testable contract)
+    addDiagnosticLog('Diagnostic buffer cleared.', 'INFO');
 }
+
 
 function getDiagnosticBuffer() {
     return [...diagnosticLogBuffer];

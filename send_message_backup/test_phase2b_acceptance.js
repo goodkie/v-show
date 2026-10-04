@@ -41,9 +41,16 @@ function createMockStorage(initialData = {}) {
             Object.assign(this._data, items);
             if (callback) callback();
             return Promise.resolve();
+        },
+        remove(keys, callback) {
+            const keysArr = Array.isArray(keys) ? keys : [keys];
+            keysArr.forEach(k => { delete this._data[k]; });
+            if (callback) callback();
+            return Promise.resolve();
         }
     };
 }
+
 
 function createMockDOM() {
     const elements = new Map();
@@ -896,7 +903,7 @@ async function runPhase2BSuite() {
         assert(urlRedacted.includes("https://confidential-crm.com/[PATH]"), "Only protocol and hostname must be preserved");
 
         // 5. Buffer clearing
-        popup.clearDiagnosticLog();
+        await popup.clearDiagnosticLog();
         const freshBuffer = popup.getDiagnosticBuffer();
         assert.strictEqual(freshBuffer.length, 1, "Cleared buffer must contain only clear acknowledgment");
         assert(freshBuffer[0].includes("Diagnostic buffer cleared"), "Acknowledgment text must match");

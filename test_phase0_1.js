@@ -22,8 +22,10 @@ console.log("✅ PASS: Version consistency check (v1.2.0 across manifest, popup.
 // 2. F-1 Accounting Single Owner Check (Code Inspection & Logic Test)
 const bgCode = fs.readFileSync(path.join(__dirname, 'send_message_backup/background.js'), 'utf8');
 const occurrencesOfCountIncrement = (bgCode.match(/campaignState\.successCount\+\+/g) || []).length;
-assert.strictEqual(occurrencesOfCountIncrement, 1, "campaignState.successCount++ must exist ONLY ONCE in background.js (inside finishOnce)");
-console.log("✅ PASS: F-1 Single success-accounting owner verified (exactly 1 increment site in finishOnce)");
+// Under Ledger Authority (R6.8+), raw ++ increments are eliminated (0) in favor of ledgerStats.success
+assert(occurrencesOfCountIncrement <= 1, "campaignState.successCount++ must not have multiple uncoordinated increment sites");
+assert(bgCode.includes("campaignState.successCount = ledgerStats.success") || occurrencesOfCountIncrement === 1, "Success accounting must be owned authoritatively by ledger or single owner");
+console.log("✅ PASS: F-1 Single success-accounting owner verified (ledger authority / single owner)");
 
 // 3. F-4 Solver Core Universal Integration Check
 global.self = {};
