@@ -15,14 +15,17 @@
 
     const BUILD_INFO = {
         branch: 'upgrade/phase-0-1',
+        implementationHead: '7ae652f0a5ce81c4c0325e61790aa893ea4b139f',
+        implementationHeadShort: '7ae652f',
         head: '7ae652f0a5ce81c4c0325e61790aa893ea4b139f',
         headShort: '7ae652f',
         rollbackBase: 'b8e1d0362946cd6ca8c77c1aa990998da62c2c91',
         manifestVersion: 3,
         buildId: 'R6.9C-20261004-OPR',
         builtAt: '2026-10-04T08:35:00.000Z',
+        provenanceSchema: 2,
         modules: {
-            backgroundSha: '4f117f19853562589a19088e85e4d24bb30e80fa6287ad338539eaa61afa0bd7',
+            backgroundSha: '118c054edd330c739d03c2f6c95fb51c323c278eba11e147b3de632f456521f3',
             contentScriptSha: '5d232f84b3cb1969e528aede1bd097473a08e4e3c1ac9d8d975a0fab449f55b0',
             emailCollectorSha: '3f1147a379e159e7777158f2caa74cc8d40b2a0b0eb2c244f440af379cb5c9c9',
             historyStoreSha: '7c9e22e0f62c4f1b3d82510dcc6604eaefff72e80f79c25041319bdf169305ac',
@@ -33,7 +36,7 @@
 
     function getBuildProvenanceLogs() {
         return [
-            `[BUILD_ID] branch=${BUILD_INFO.branch} head=${BUILD_INFO.head} manifestVersion=${BUILD_INFO.manifestVersion} buildId=${BUILD_INFO.buildId} builtAt=${BUILD_INFO.builtAt}`,
+            `[BUILD_ID] branch=${BUILD_INFO.branch} implementationHead=${BUILD_INFO.implementationHead} manifestVersion=${BUILD_INFO.manifestVersion} buildId=${BUILD_INFO.buildId} builtAt=${BUILD_INFO.builtAt}`,
             `[BUILD_MODULE] contactGateSha=${BUILD_INFO.modules.contactGateSha}`,
             `[BUILD_MODULE] visionSubmitSha=${BUILD_INFO.modules.visionSubmitSha}`,
             `[BUILD_MODULE] historyStoreSha=${BUILD_INFO.modules.historyStoreSha}`,
@@ -56,6 +59,8 @@
         return {
             valid: true,
             buildId: BUILD_INFO.buildId,
+            implementationHead: BUILD_INFO.implementationHead,
+            implementationHeadShort: BUILD_INFO.implementationHeadShort,
             head: BUILD_INFO.head,
             headShort: BUILD_INFO.headShort
         };

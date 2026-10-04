@@ -1,6 +1,6 @@
 /**
  * verify_build_provenance_r6_9c.js
- * Verification of R6.9C Build Provenance and Module Hash Parity (Issue #6)
+ * Verification of R6.9C Build Provenance Semantics and Module Hash Parity (Issue #6)
  */
 
 const fs = require('fs');
@@ -16,18 +16,40 @@ console.log('===================================================================
 console.log(' [R6.9C BUILD PROVENANCE & MODULE HASH VERIFICATION]');
 console.log('======================================================================\n');
 
-// 1. Git HEAD resolution
-let gitHead = '';
-try {
-    gitHead = execSync('git rev-parse HEAD', { cwd: __dirname }).toString().trim();
-} catch (e) {
-    // If running standalone, fallback to git in parent directory
-    try {
-        gitHead = execSync('git rev-parse HEAD', { cwd: path.join(__dirname, '..') }).toString().trim();
-    } catch (_) {}
-}
-const EXPECTED_HEAD = '7ae652f0a5ce81c4c0325e61790aa893ea4b139f';
+const EXPECTED_IMPLEMENTATION_HEAD = '7ae652f0a5ce81c4c0325e61790aa893ea4b139f';
+const EXPECTED_IMPLEMENTATION_HEAD_SHORT = '7ae652f';
 const EXPECTED_BUILD_ID = 'R6.9C-20261004-OPR';
+
+// 1. Resolve current git HEAD and verify git ancestor hierarchy
+let currentGitHead = '';
+let isAncestorOfHead = false;
+try {
+    currentGitHead = execSync('git rev-parse HEAD', { cwd: __dirname }).toString().trim();
+    execSync(`git merge-base --is-ancestor ${EXPECTED_IMPLEMENTATION_HEAD} HEAD`, { cwd: __dirname });
+    isAncestorOfHead = true;
+} catch (e) {
+    try {
+        const repoRoot = path.join(__dirname, '..');
+        currentGitHead = execSync('git rev-parse HEAD', { cwd: repoRoot }).toString().trim();
+        execSync(`git merge-base --is-ancestor ${EXPECTED_IMPLEMENTATION_HEAD} HEAD`, { cwd: repoRoot });
+        isAncestorOfHead = true;
+    } catch (err) {
+        isAncestorOfHead = false;
+    }
+}
+
+console.log(`[GIT_STATUS] currentHead=${currentGitHead}`);
+console.log(`[GIT_STATUS] implementationHead=${EXPECTED_IMPLEMENTATION_HEAD}`);
+
+let passed = true;
+
+// Assert ancestor relationship
+if (!isAncestorOfHead) {
+    console.error(`❌ FAIL: Current commit (${currentGitHead}) is NOT a descendant of implementationHead (${EXPECTED_IMPLEMENTATION_HEAD})`);
+    passed = false;
+} else {
+    console.log(`✅ PASS: git merge-base --is-ancestor ${EXPECTED_IMPLEMENTATION_HEAD_SHORT} HEAD => SUCCESS`);
+}
 
 // 2. Load BuildProvenance module
 const bpPath = path.join(__dirname, 'modules', 'build-provenance.js');
@@ -36,32 +58,43 @@ const bp = require(bpPath);
 const buildInfo = bp.BUILD_INFO;
 const logs = bp.getBuildProvenanceLogs();
 
-console.log(`[GIT_HEAD] resolved=${gitHead || '7ae652f0a5ce81c4c0325e61790aa893ea4b139f'}`);
-console.log(`[PROVENANCE_INFO] branch=${buildInfo.branch} head=${buildInfo.head} buildId=${buildInfo.buildId}`);
+console.log(`\n[PROVENANCE_INFO] branch=${buildInfo.branch} implementationHead=${buildInfo.implementationHead} buildId=${buildInfo.buildId} schema=${buildInfo.provenanceSchema}`);
 
-// 3. Assert GET_BUILD_PROVENANCE and START_CAMPAIGN HEAD match
-let passed = true;
-
-if (buildInfo.head !== EXPECTED_HEAD) {
-    console.error(`❌ FAIL: buildInfo.head (${buildInfo.head}) !== EXPECTED_HEAD (${EXPECTED_HEAD})`);
+// 3. Assert implementationHead, short SHA, schema and buildId
+if (buildInfo.implementationHead !== EXPECTED_IMPLEMENTATION_HEAD) {
+    console.error(`❌ FAIL: buildInfo.implementationHead (${buildInfo.implementationHead}) !== EXPECTED (${EXPECTED_IMPLEMENTATION_HEAD})`);
     passed = false;
 } else {
-    console.log(`✅ PASS: GET_BUILD_PROVENANCE.head === EXPECTED_HEAD (${EXPECTED_HEAD})`);
+    console.log(`✅ PASS: GET_BUILD_PROVENANCE.implementationHead === ${EXPECTED_IMPLEMENTATION_HEAD}`);
+}
+
+if (buildInfo.implementationHeadShort !== EXPECTED_IMPLEMENTATION_HEAD_SHORT) {
+    console.error(`❌ FAIL: buildInfo.implementationHeadShort (${buildInfo.implementationHeadShort}) !== EXPECTED (${EXPECTED_IMPLEMENTATION_HEAD_SHORT})`);
+    passed = false;
+} else {
+    console.log(`✅ PASS: GET_BUILD_PROVENANCE.implementationHeadShort === ${EXPECTED_IMPLEMENTATION_HEAD_SHORT}`);
 }
 
 if (buildInfo.buildId !== EXPECTED_BUILD_ID) {
-    console.error(`❌ FAIL: buildInfo.buildId (${buildInfo.buildId}) !== EXPECTED_BUILD_ID (${EXPECTED_BUILD_ID})`);
+    console.error(`❌ FAIL: buildInfo.buildId (${buildInfo.buildId}) !== EXPECTED (${EXPECTED_BUILD_ID})`);
     passed = false;
 } else {
-    console.log(`✅ PASS: GET_BUILD_PROVENANCE.buildId === EXPECTED_BUILD_ID (${EXPECTED_BUILD_ID})`);
+    console.log(`✅ PASS: GET_BUILD_PROVENANCE.buildId === ${EXPECTED_BUILD_ID}`);
+}
+
+if (buildInfo.provenanceSchema !== 2) {
+    console.error(`❌ FAIL: buildInfo.provenanceSchema (${buildInfo.provenanceSchema}) !== 2`);
+    passed = false;
+} else {
+    console.log(`✅ PASS: GET_BUILD_PROVENANCE.provenanceSchema === 2`);
 }
 
 const buildIdLog = logs.find(l => l.startsWith('[BUILD_ID]'));
-if (!buildIdLog || !buildIdLog.includes(`head=${EXPECTED_HEAD}`) || !buildIdLog.includes(`buildId=${EXPECTED_BUILD_ID}`)) {
+if (!buildIdLog || !buildIdLog.includes(`implementationHead=${EXPECTED_IMPLEMENTATION_HEAD}`) || !buildIdLog.includes(`buildId=${EXPECTED_BUILD_ID}`)) {
     console.error(`❌ FAIL: Startup [BUILD_ID] log mismatch: ${buildIdLog}`);
     passed = false;
 } else {
-    console.log(`✅ PASS: START_CAMPAIGN [BUILD_ID] log matches exact HEAD and buildId: ${buildIdLog}`);
+    console.log(`✅ PASS: START_CAMPAIGN [BUILD_ID] log contains exact implementationHead and buildId: ${buildIdLog}`);
 }
 
 // 4. Verify release-critical module SHA256 hashes against actual files
@@ -128,9 +161,20 @@ if (!popupHtml.includes('R6.9C [7ae652f]') || !popupHtml.includes('title="Build:
     console.log(`✅ PASS: popup.html badge text/title matches R6.9C [7ae652f]`);
 }
 
+// 7. Assert no stale R6.8 identifiers in provenance files
+console.log('\n--- Stale R6.8 Check ---');
+const bpFileContent = fs.readFileSync(bpPath, 'utf8');
+const bgFileContent = fs.readFileSync(path.join(__dirname, 'background.js'), 'utf8');
+if (bpFileContent.includes('R6.8-20261003-REM') || bgFileContent.includes('R6.8-20261003-REM') || bpFileContent.includes('951e33f064d5137a000adaf976f18d26e64139bc')) {
+    console.error(`❌ FAIL: Stale R6.8 identifiers found in build-provenance.js or background.js!`);
+    passed = false;
+} else {
+    console.log(`✅ PASS: No stale R6.8 identifiers detected in provenance or background modules`);
+}
+
 console.log('\n======================================================================');
 if (passed) {
-    console.log(' ✅ ALL R6.9C BUILD PROVENANCE CHECKS PASSED PERFECTLY!');
+    console.log(' ✅ ALL R6.9C BUILD PROVENANCE SEMANTICS & CHECKS PASSED!');
 } else {
     console.error(' ❌ SOME CHECKS FAILED!');
     process.exit(1);
