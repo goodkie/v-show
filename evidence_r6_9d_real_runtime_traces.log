@@ -1,0 +1,1119 @@
+================================================================================
+[R6.9D ACTUAL OPERATOR-PATH OUTCOME VERIFIER RUNTIME AUDIT]
+================================================================================
+Timestamp: 2026-10-04T12:22:51.295Z
+gitHead: f383dc8910b40cc6a24680cbc009217831353d36
+[HTTP_SERVER] http://127.0.0.1:8972
+[BROWSER_LAUNCH] C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe ext=E:\vivpr\ai\extension-form-sender\send_message_backup\build\extension
+[CDP_CONNECT] Edg/154.0.4258.53
+[EXT_DISCOVERY] extId=pjohcallgmjmbfckiaogjokelhobfceg
+[SW_CONSOLE] [BootStep] solver_instantiation
+[SW_CONSOLE] [X PIDER] Background script initializing (Unified Mode)...
+[SW_CONSOLE] [BootStep] side_panel_config
+[SW_CONSOLE] [BootStep] campaign_state_init
+[SW_CONSOLE] [BootStep] global_functions_defined
+[SW_CONSOLE] [BootStep] worker_online
+[SW_CONSOLE] [BootStep] restoring_campaign_state
+[SW_CONSOLE] [Boot] Initializing campaign state...
+[SW_CONSOLE] [COUNTER_RECONCILE] legacySuccess=0 ledgerSuccess=0 action=LEDGER_WINS
+[SW_CONSOLE] [BootStep] restore_complete
+[SW_CONSOLE] [BG_LOG][tab=none] 📦 [Migration] Safely migrated to v2 (Backup: xpider_backup_v1_1791116576755)
+[POPUP_CONSOLE] [XPIDER] Blacklist loaded with 3333 items.
+[POPUP_CONSOLE] [POPUP_BOOT] started
+[POPUP_CONSOLE] [POPUP_BOOT] startHandlerBound=true
+[POPUP_CONSOLE] [POPUP_BOOT] saveHandlerBound=true
+[POPUP_CONSOLE] [POPUP_BOOT] settingsHydrated=true
+[POPUP_CONSOLE] [LEDGER_STATS] scope=currentGeneration success=0 failed=0 unknown=0
+[POPUP_CONSOLE] [XPIDER_DIAG] [Engine] Initial handshake synced: active=false
+[POPUP_CONSOLE] [POPUP_BOOT] getStateAck=true
+[POPUP_CONSOLE] [Popup] Storage migration verified / initialized to v2.
+[POPUP_CONSOLE] [POPUP_BOOT] ready=true
+[BUILD_PROVENANCE_LIVE] buildId=R6.9D-20261004-OUTCOME implementationHead=b97d85ecf026221a85d0ef880a2743cb98ec3059
+[POPUP_BADGE_LIVE] R6.9D [b97d85e]
+
+--- STEP 1: load 3 targets through popup list input ---
+[POPUP_QUEUE_LOADED] count=3 targets=["http://127.0.0.1:8972/false-failure.html","http://127.0.0.1:8972/true-failure.html","http://127.0.0.1:8972/ambiguous.html"]
+
+--- STEP 2: click actual #start-btn ---
+[POPUP_CONSOLE] [START_UI] click
+[POPUP_CONSOLE] [START_IPC] sent queue=3
+[POPUP_CONSOLE] [XPIDER_DIAG] [Engine][TX] action=START_CAMPAIGN queue=3 templateId=default v=1 skipAttempted=true
+[POPUP_START_CLICKED] {"success":true}
+
+--- STEP 3: poll live counters (read-only) until 3 targets are settled ---
+[SW_CONSOLE] [BUILD_ID] branch=upgrade/phase-0-1 implementationHead=b97d85ecf026221a85d0ef880a2743cb98ec3059 manifestVersion=3 buildId=R6.9D-20261004-OUTCOME builtAt=2026-10-04T12:15:18.569Z
+[SW_CONSOLE] [BG_LOG][tab=none] [BUILD_ID] branch=upgrade/phase-0-1 implementationHead=b97d85ecf026221a85d0ef880a2743cb98ec3059 manifestVersion=3 buildId=R6.9D-20261004-OUTCOME builtAt=2026-10-04T12:15:18.569Z
+[SW_CONSOLE] [BUILD_MODULE] contactGateSha=524933622d1a862425d7302b051bb063d5a3cbec166d868fa73825fa4d38f334
+[SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] contactGateSha=524933622d1a862425d7302b051bb063d5a3cbec166d868fa73825fa4d38f334
+[SW_CONSOLE] [BUILD_MODULE] visionSubmitSha=25cf18a4834bb476edff5e8f19a78dd2723bd556ede649ada69bc801543c83f3
+[SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] visionSubmitSha=25cf18a4834bb476edff5e8f19a78dd2723bd556ede649ada69bc801543c83f3
+[SW_CONSOLE] [BUILD_MODULE] historyStoreSha=7c9e22e0f62c4f1b3d82510dcc6604eaefff72e80f79c25041319bdf169305ac
+[SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] historyStoreSha=7c9e22e0f62c4f1b3d82510dcc6604eaefff72e80f79c25041319bdf169305ac
+[SW_CONSOLE] [BUILD_MODULE] emailCollectorSha=3f1147a379e159e7777158f2caa74cc8d40b2a0b0eb2c244f440af379cb5c9c9
+[SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] emailCollectorSha=3f1147a379e159e7777158f2caa74cc8d40b2a0b0eb2c244f440af379cb5c9c9
+[SW_CONSOLE] [BUILD_MODULE] contentScriptSha=fdfb48f51ac6a820296ae43fb708285b46dae3464483ee1e7125833e3ffa2a9f
+[SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] contentScriptSha=fdfb48f51ac6a820296ae43fb708285b46dae3464483ee1e7125833e3ffa2a9f
+[SW_CONSOLE] [BUILD_MODULE] backgroundSha=09d07e2b9d932cc4138e133d9e2511071fdbb1995a870bc0609bb0211d14041e
+[SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] backgroundSha=09d07e2b9d932cc4138e133d9e2511071fdbb1995a870bc0609bb0211d14041e
+[SW_CONSOLE] [BG_LOG][tab=none] [START_BG] received queue=3
+[SW_CONSOLE] [START_BG] received queue=3
+[SW_CONSOLE] [BG_LOG][tab=none] [Boot] Orchestrator entered.
+[POPUP_CONSOLE] [START_ACK] ok=true latencyMs=13
+[POPUP_CONSOLE] [START_STATE] active=true queue=3
+[POPUP_CONSOLE] [XPIDER_DIAG] [Engine][ACK][+13ms] status=acknowledged
+[SW_CONSOLE] [SESSION_BASELINE] Captured 2 pre-existing user tabs as protected baseline.
+[SW_CONSOLE] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedBefore=0
+[SW_CONSOLE] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedAfter=0 result=PASS
+[SW_CONSOLE] [BG_LOG][tab=none] [Boot] Previous state cleared.
+[SW_CONSOLE] [BG_LOG][tab=none] 📊 [Queue Filter] Input: 3 | Duplicates: 0 | Suppressed: 0 | History-Attempted: 0 | Executable: 3
+[SW_CONSOLE] [BG_LOG][tab=none] [Boot] Variables initialized.
+[SW_CONSOLE] [BG_LOG][tab=none] 🚀 Engine booting...
+[SW_CONSOLE] [BG_LOG][tab=none] [Boot] Storage sync initiated.
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[SW_CONSOLE] [LEDGER_STATS] scope=currentRun success=0 failure=0 unknown=0 timeout=0 skipped=0
+[SW_CONSOLE] [BG_LOG][tab=none] [LEDGER_STATS] scope=currentRun success=0 failure=0 unknown=0 timeout=0 skipped=0
+[SW_CONSOLE] [BG_LOG][tab=none] [Boot] Target loop triggered.
+[SW_CONSOLE] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedBefore=0
+[SW_CONSOLE] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedAfter=0 result=PASS
+[SW_CONSOLE] [BG_LOG][tab=none] [TARGET 1/3][127.0.0.1] START
+[CDP_TARGET_CREATED] http://127.0.0.1:8972/false-failure.html
+[SW_CONSOLE] [TAB_BARRIER] phase=POST_NEW_TARGET_CREATE ownedBefore=0
+[SW_CONSOLE] [TAB_BARRIER] phase=POST_NEW_TARGET_CREATE ownedAfter=0 result=PASS
+[SW_CONSOLE] [TAB_KILL_SWITCH] keepTabId=870394003 closedOthers=0 remainingOwned=1 result=PASS
+[SW_CONSOLE] [BG_LOG][tab=870394003] [TAB_FOCUS] tabId=870394003 windowId=870393997 active=true focused=true
+[SW_CONSOLE] [BG_LOG][tab=870394003] Step 1: Sniper Mode active. Searching for contact page...
+[SW_CONSOLE] [BG_LOG][tab=870394003] 🔦 Scanning paths 1-10...
+[SW_CONSOLE] [BG_LOG][tab=870394003] Pre-scan complete. Identified 10 valid paths.
+[SW_CONSOLE] [BG_LOG][tab=870394003] [SniperScan] Identified 10 candidate paths in background.
+[POPUP_CONSOLE] [XPIDER_DIAG] [Engine][VERIFY] active=true queue=3
+[POPUP_CONSOLE] [LEDGER_STATS] scope=currentGeneration success=0 failed=0 unknown=0
+[POPUP_CONSOLE] [LEDGER_STATS] scope=currentGeneration success=0 failed=0 unknown=0
+[CONTENT_CONSOLE] 🚀 [XpiderSender] Advanced Engine Loaded: http://127.0.0.1:8972/false-failure.html
+[CONTENT_CONSOLE] [RUNTIME_ASSERT] NON_HTML_DOWNLOADABLE_EXTENSIONS ready=true
+[CONTENT_CONSOLE] [CONTROL_PLANE] listenersActive=1
+[CONTENT_CONSOLE] [EMAIL_COLLECTOR_INIT] generation=1 moduleLoaded=true
+[CONTENT_CONSOLE] [EMAIL_SCAN] url=http://127.0.0.1:8972/false-failure.html found=0 trigger=INIT
+[SW_CONSOLE] [BG_LOG][tab=870394003] [TAB_FOCUS] tabId=870394003 windowId=870393997 active=true focused=true
+[CONTENT_CONSOLE] [EMAIL_SEND] generation=1 pageCount=0 collectibleCount=0 count=0 hostname=127.0.0.1
+[SW_CONSOLE] [BG_LOG][tab=870394003] [TAB_OWNERSHIP] VERIFIED_REDIRECT source=127.0.0.1 target=127.0.0.1 relation=SAME_HOST
+[SW_CONSOLE] [BG_LOG][tab=870394003] [FOCUS_SECURED] formPageUrl=http://127.0.0.1:8972/false-failure.html
+[CONTENT_CONSOLE] 🛡️ [XPIDER Stealth v2.0] Main World stealth injection applied successfully.
+[SW_CONSOLE] [BG_LOG][tab=870394003] Extraction focus secured. Mapping template fields...
+[CONTENT_CONSOLE] [CONTROL_PLANE] listenersActive=1 key=mutskg7h_8nacw:http://127.0.0.1:8972/false-failure.html:1791116582669
+[CONTENT_CONSOLE] [XpiderLog] [TARGET_PAGE] url=http://127.0.0.1:8972/false-failure.html domGeneration=1791116582669 attemptId=mutskg7h_8nacw
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [TARGET_PAGE] url=http://127.0.0.1:8972/false-failure.html domGeneration=1791116582669 attemptId=mutskg7h_8nacw
+[CONTENT_CONSOLE] [XpiderLog] 🚀 [Engine] Ultra-Mode process started
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [TARGET_PAGE] url=http://127.0.0.1:8972/false-failure.html domGeneration=1791116582669 attemptId=mutskg7h_8nacw
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] 🚀 [Engine] Ultra-Mode process started
+[CONTENT_CONSOLE] [XpiderLog] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] 🚀 [Engine] Ultra-Mode process started
+[CONTENT_CONSOLE] [XpiderLog] [TARGET_PAGE] url=http://127.0.0.1:8972/false-failure.html recursion=0
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[CONTENT_CONSOLE] [XpiderLog] 🔍 [Discovery] URL: http://127.0.0.1:8972/false-failure.html | Recursion: 0
+[CONTENT_CONSOLE] [XpiderLog] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[CONTENT_CONSOLE] [XpiderLog] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1:8972/false-failure.html | Recursion: 0
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[CONTENT_CONSOLE] [FORM_GATE] candidate=form#contact-form.[name,email,subject,message] bodyField=true contactFields=2 submitters=1 eligible=true reason=ELIGIBLE_INQUIRY_FORM
+[CONTENT_CONSOLE] [FORM_SCAN] pass=1 url=http://127.0.0.1:8972/false-failure.html roots=1
+[CONTENT_CONSOLE] [FORM_SCAN] bodyCandidates=1 nativeForms=1 logicalContainers=0
+[CONTENT_CONSOLE] [FORM_SCAN] shadowRoots=0 iframes=0 modalTriggers=12
+[CONTENT_CONSOLE] [EMAIL_SCAN] url=http://127.0.0.1:8972/false-failure.html found=0 trigger=SCAN
+[CONTENT_CONSOLE] [LONG_TEXT_GATE] found=true type=textarea semantic=message
+[CONTENT_CONSOLE] [XpiderLog] [FORM_SCAN] bodyCandidates=1 forms=1 logicalContainers=1
+[CONTENT_CONSOLE] [XpiderLog] [PAGE_CLASS] CONTACT_FORM_PAGE
+[CONTENT_CONSOLE] [XpiderLog] 🎯 Step 2: Contact form discovered. Preparing submission...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [TARGET_PAGE] url=http://127.0.0.1:8972/false-failure.html recursion=0
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [TARGET_PAGE] url=http://127.0.0.1:8972/false-failure.html recursion=0
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] 🔍 [Discovery] URL: http://127.0.0.1:8972/false-failure.html | Recursion: 0
+[CONTENT_CONSOLE] [XpiderLog] [STAGE] stage=CONTACT_PAGE_FOUND
+[CONTENT_CONSOLE] [XpiderLog] [LONG_TEXT_GATE] found=true type=textarea semantic=message
+[CONTENT_CONSOLE] [XpiderLog] [FORM_GATE] eligible=true reason=BODY_FIELD_PRESENT
+[CONTENT_CONSOLE] [XpiderLog] 🔍 [Supreme-X 5.0] Scanning for multi-location / branch links...
+[CONTENT_CONSOLE] [XpiderLog] [AUTOFILL_LOCK] acquired=true key=mutskg7h_8nacw:http://127.0.0.1:8972/false-failure.html:contact-form
+[CONTENT_CONSOLE] [LONG_TEXT_GATE] found=true type=textarea semantic=message
+[CONTENT_CONSOLE] [LONG_TEXT_GATE] found=true type=textarea semantic=message
+[CONTENT_CONSOLE] [FORM_INTENT] intent=CONTACT_INQUIRY confidence=0.95 negativeClass=none
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] 🔍 [Discovery] URL: http://127.0.0.1:8972/false-failure.html | Recursion: 0
+[CONTENT_CONSOLE] [FORM_CLASSIFY] intent=CONTACT_INQUIRY eligible=true hasInquiryBody=true bodyFieldType=textarea decision=ACCEPT reason=ELIGIBLE_CONTACT_INQUIRY
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[CONTENT_CONSOLE] [XpiderLog] [CONTACT_GATE] PASS bodyField=textarea
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[CONTENT_CONSOLE] [XpiderLog] [STAGE] stage=ELIGIBLE_FORM_FOUND
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1:8972/false-failure.html | Recursion: 0
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1:8972/false-failure.html | Recursion: 0
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [FORM_SCAN] bodyCandidates=1 forms=1 logicalContainers=1
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [FORM_SCAN] bodyCandidates=1 forms=1 logicalContainers=1
+[CONTENT_CONSOLE] [EMAIL_SCAN] url=http://127.0.0.1:8972/false-failure.html found=0 trigger=FORM_ENTRY
+[CONTENT_CONSOLE] [XpiderLog] 🛠️ Step 3: Registering message template to form fields...
+[CONTENT_CONSOLE] [XpiderLog] 🛡️ [FormStabilizer] Starting bounded stabilization (max 5s, max 2 retries/element)...
+[CONTENT_CONSOLE] [XpiderLog] 🛡️ [FormStabilizer] Stopped (ALL_FIELDS_STABLE_OR_RESOLVED): seen=4 stable=true unresolved=0 (selects=0, cbs=0, radios=0)
+[CONTENT_CONSOLE] [XpiderLog] 🛠️ [Action][HyperEngine v4.0] 초강력 폼 자동 등록기 시작...
+[CONTENT_CONSOLE] [XpiderLog] 🎯 [HyperEngine v4.0] Phase 0 - 입력 필드 전수 수집...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [PAGE_CLASS] CONTACT_FORM_PAGE
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [PAGE_CLASS] CONTACT_FORM_PAGE
+[CONTENT_CONSOLE] [XpiderLog]    [v4.0] 총 4개 입력 필드 발견 (radio: 0, checkbox: 0)
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] 🎯 Step 2: Contact form discovered. Preparing submission...
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] 🎯 Step 2: Contact form discovered. Preparing submission...
+[CONTENT_CONSOLE] [XpiderLog] 🎯 [HyperEngine v4.0] Phase 1 & 2 - 드롭다운 SelectResolverR2 전수 처리...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [STAGE] stage=CONTACT_PAGE_FOUND
+[CONTENT_CONSOLE] [XpiderLog] 🎯 [HyperEngine v4.0] Phase 3 - 체크박스 CheckboxResolverR2 전수 처리...
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [STAGE] stage=CONTACT_PAGE_FOUND
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [LONG_TEXT_GATE] found=true type=textarea semantic=message
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [LONG_TEXT_GATE] found=true type=textarea semantic=message
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [FORM_GATE] eligible=true reason=BODY_FIELD_PRESENT
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [FORM_GATE] eligible=true reason=BODY_FIELD_PRESENT
+[CONTENT_CONSOLE] [XpiderLog] 🎯 [HyperEngine v4.0] Phase 3.5 - 휴먼 테스트 수식/방정식 퀴즈 검출 및 자동 해결...
+[CONTENT_CONSOLE] [XpiderLog] 🎯 [HyperEngine v4.0] Phase 4 - 텍스트 필드 패턴 매칭...
+[CONTENT_CONSOLE] [EMAIL_ACK] currentPageCount=0 newGlobalCount=0 totalGlobalCount=0 suppressed=false staleGeneration=false
+[SW_CONSOLE] [BG_LOG][tab=870394003] 📍 [PIPELINE][CONTACT_PAGE_FOUND] url=http://127.0.0.1:8972/false-failure.html
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] 🔍 [Supreme-X 5.0] Scanning for multi-location / branch links...
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] 🔍 [Supreme-X 5.0] Scanning for multi-location / branch links...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [AUTOFILL_LOCK] acquired=true key=mutskg7h_8nacw:http://127.0.0.1:8972/false-failure.html:contact-form
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [AUTOFILL_LOCK] acquired=true key=mutskg7h_8nacw:http://127.0.0.1:8972/false-failure.html:contact-form
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [CONTACT_GATE] PASS bodyField=textarea
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [CONTACT_GATE] PASS bodyField=textarea
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTACT_COMMIT] contactPageUrl=http://127.0.0.1:8972/false-failure.html
+[SW_CONSOLE] [BG_LOG][tab=870394003] [FORM_COMMIT] formPageUrl=http://127.0.0.1:8972/false-failure.html
+[SW_CONSOLE] [BG_LOG][tab=870394003] 📋 [PIPELINE][ELIGIBLE_FORM_FOUND] url=http://127.0.0.1:8972/false-failure.html
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] 🛠️ Step 3: Registering message template to form fields...
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] 🛠️ Step 3: Registering message template to form fields...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] 🛡️ [FormStabilizer] Starting bounded stabilization (max 5s, max 2 retries/element)...
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] 🛡️ [FormStabilizer] Starting bounded stabilization (max 5s, max 2 retries/element)...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] 🛡️ [FormStabilizer] Stopped (ALL_FIELDS_STABLE_OR_RESOLVED): seen=4 stable=true unresolved=0 (selects=0, cbs=0, radios=0)
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] 🛡️ [FormStabilizer] Stopped (ALL_FIELDS_STABLE_OR_RESOLVED): seen=4 stable=true unresolved=0 (selects=0, cbs=0, radios=0)
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] 🛠️ [Action][HyperEngine v4.0] 초강력 폼 자동 등록기 시작...
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] 🛠️ [Action][HyperEngine v4.0] 초강력 폼 자동 등록기 시작...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] 🎯 [HyperEngine v4.0] Phase 0 - 입력 필드 전수 수집...
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] 🎯 [HyperEngine v4.0] Phase 0 - 입력 필드 전수 수집...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html]    [v4.0] 총 4개 입력 필드 발견 (radio: 0, checkbox: 0)
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html]    [v4.0] 총 4개 입력 필드 발견 (radio: 0, checkbox: 0)
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] 🎯 [HyperEngine v4.0] Phase 1 & 2 - 드롭다운 SelectResolverR2 전수 처리...
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] 🎯 [HyperEngine v4.0] Phase 1 & 2 - 드롭다운 SelectResolverR2 전수 처리...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] 🎯 [HyperEngine v4.0] Phase 3 - 체크박스 CheckboxResolverR2 전수 처리...
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] 🎯 [HyperEngine v4.0] Phase 3 - 체크박스 CheckboxResolverR2 전수 처리...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] 🎯 [HyperEngine v4.0] Phase 3.5 - 휴먼 테스트 수식/방정식 퀴즈 검출 및 자동 해결...
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] 🎯 [HyperEngine v4.0] Phase 3.5 - 휴먼 테스트 수식/방정식 퀴즈 검출 및 자동 해결...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] 🎯 [HyperEngine v4.0] Phase 4 - 텍스트 필드 패턴 매칭...
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] 🎯 [HyperEngine v4.0] Phase 4 - 텍스트 필드 패턴 매칭...
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[CONTENT_CONSOLE] [XpiderLog]    - [Input✅] category=name filled=true
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html]    - [Input✅] category=name filled=true
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html]    - [Input✅] category=name filled=true
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[CONTENT_CONSOLE] [XpiderLog] 💓 [Heartbeat] Engine active and processing...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] 💓 [Heartbeat] Engine active and processing...
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] 💓 [Heartbeat] Engine active and processing...
+[CONTENT_CONSOLE] [XpiderLog]    - [Input✅] category=email filled=true length=25
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html]    - [Input✅] category=email filled=true length=25
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html]    - [Input✅] category=email filled=true length=25
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[CONTENT_CONSOLE] [XpiderLog]    - [Input✅] category=subject filled=true length=18
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html]    - [Input✅] category=subject filled=true length=18
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html]    - [Input✅] category=subject filled=true length=18
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[CONTENT_CONSOLE] [XpiderLog]    - [Input✅] category=message filled=true length=51
+[CONTENT_CONSOLE] [XpiderLog] 🎯 [HyperEngine v4.0] Phase 5 - 빈 필드 강제 채우기...
+[CONTENT_CONSOLE] [XpiderLog] 🎯 [HyperEngine v4.0] Phase 6 - 라디오 버튼 미선택 그룹 처리...
+[CONTENT_CONSOLE] [XpiderLog] 🎯 [HyperEngine v4.0] Phase 8 - 커스텀 ARIA 체크박스/라디오 처리...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html]    - [Input✅] category=message filled=true length=51
+[CONTENT_CONSOLE] [XpiderLog] 🛠️ [HyperEngine v4.0] Phase 9 - BruteForce contentEditable/role=textbox...
+[CONTENT_CONSOLE] [XpiderLog] 🎯 [HyperEngine v4.0] Phase 10 - Super-BruteForce Sweeper (초강력 입력기) 가동...
+[CONTENT_CONSOLE] [XpiderLog] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html]    - [Input✅] category=message filled=true length=51
+[CONTENT_CONSOLE] [XpiderLog] [STAGE] stage=FIELD_STATE_STABLE
+[CONTENT_CONSOLE] [XpiderLog] ✅ [HyperEngine v4.0] 폼 작성 완료 - 입력 필드 4개 처리됨
+[CONTENT_CONSOLE] [XpiderLog] [FILL] messageBodyFilled=true
+[CONTENT_CONSOLE] [XpiderLog] ✅ [FORM_PREP] COMPLETE
+[CONTENT_CONSOLE] [XpiderLog] ⏳ [Engine] Holding for visual confirmation (500ms)...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] 🎯 [HyperEngine v4.0] Phase 5 - 빈 필드 강제 채우기...
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] 🎯 [HyperEngine v4.0] Phase 5 - 빈 필드 강제 채우기...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] 🎯 [HyperEngine v4.0] Phase 6 - 라디오 버튼 미선택 그룹 처리...
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] 🎯 [HyperEngine v4.0] Phase 6 - 라디오 버튼 미선택 그룹 처리...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] 🎯 [HyperEngine v4.0] Phase 8 - 커스텀 ARIA 체크박스/라디오 처리...
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] 🎯 [HyperEngine v4.0] Phase 8 - 커스텀 ARIA 체크박스/라디오 처리...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] 🛠️ [HyperEngine v4.0] Phase 9 - BruteForce contentEditable/role=textbox...
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] 🛠️ [HyperEngine v4.0] Phase 9 - BruteForce contentEditable/role=textbox...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] 🎯 [HyperEngine v4.0] Phase 10 - Super-BruteForce Sweeper (초강력 입력기) 가동...
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] 🎯 [HyperEngine v4.0] Phase 10 - Super-BruteForce Sweeper (초강력 입력기) 가동...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [STAGE] stage=FIELD_STATE_STABLE
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [STAGE] stage=FIELD_STATE_STABLE
+[SW_CONSOLE] [BG_LOG][tab=870394003] ✅ [PIPELINE][REQUIRED_FIELDS_RESOLVED] url=http://127.0.0.1:8972/false-failure.html
+[SW_CONSOLE] [BG_LOG][tab=870394003] 🔒 [PIPELINE][FIELD_STATE_STABLE] url=http://127.0.0.1:8972/false-failure.html
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] ✅ [HyperEngine v4.0] 폼 작성 완료 - 입력 필드 4개 처리됨
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] ✅ [HyperEngine v4.0] 폼 작성 완료 - 입력 필드 4개 처리됨
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [FILL] messageBodyFilled=true
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [FILL] messageBodyFilled=true
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] ✅ [FORM_PREP] COMPLETE
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] ✅ [FORM_PREP] COMPLETE
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] ⏳ [Engine] Holding for visual confirmation (500ms)...
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] ⏳ [Engine] Holding for visual confirmation (500ms)...
+[CONTENT_CONSOLE] [XpiderLog] 💓 [Heartbeat] Engine active and processing...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] 💓 [Heartbeat] Engine active and processing...
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] 💓 [Heartbeat] Engine active and processing...
+[CONTENT_CONSOLE] [XpiderLog] 🧠 [FinalFill] Running AI Final Form Completion Pass immediately before submit...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] 🧠 [FinalFill] Running AI Final Form Completion Pass immediately before submit...
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] 🧠 [FinalFill] Running AI Final Form Completion Pass immediately before submit...
+[CONTENT_CONSOLE] [AI_COMPLETE_FORM] fillableTotal=4 filledBefore=4 filledByAI=0 safeSkipped=0 sensitiveBlocked=0 emptySafeAfter=0
+[CONTENT_CONSOLE] [XpiderLog] [AI_COMPLETE_FORM] fillableTotal=4 filledBefore=4 filledByAI=0 safeSkipped=0 sensitiveBlocked=0 emptySafeAfter=0
+[CONTENT_CONSOLE] [XpiderLog] [FINAL_FILL] controls=4 unresolvedBefore=0 checkboxResolved=0 radioResolved=0 selectResolved=0 unresolvedAfter=0
+[CONTENT_CONSOLE] [XpiderLog] [FINAL_AUDIT] PASS
+[CONTENT_CONSOLE] [XpiderLog] [FIELD_SUMMARY] text required 0/0 | checkbox 0/0 | radio 0/0 | select 0/0 | message 1/1 | unresolved 0
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [AI_COMPLETE_FORM] fillableTotal=4 filledBefore=4 filledByAI=0 safeSkipped=0 sensitiveBlocked=0 emptySafeAfter=0
+[CONTENT_CONSOLE] [XpiderLog] ✅ [FinalAudit] Hard Gate Passed: 0 unresolved required fields
+[CONTENT_CONSOLE] [XpiderLog] [SUBMIT_LOCK] acquired=true submittedFromUrl=http://127.0.0.1:8972/false-failure.html — post FINAL_AUDIT_PASS
+[CONTENT_CONSOLE] [XpiderLog] 📤 [Action] Triggering submission sequence...
+[CONTENT_CONSOLE] [XpiderLog] [SUBMIT] attemptStarted=true
+[CONTENT_CONSOLE] [XpiderLog] [STAGE] stage=SUBMIT_ATTEMPT_STARTED
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [AI_COMPLETE_FORM] fillableTotal=4 filledBefore=4 filledByAI=0 safeSkipped=0 sensitiveBlocked=0 emptySafeAfter=0
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [FINAL_FILL] controls=4 unresolvedBefore=0 checkboxResolved=0 radioResolved=0 selectResolved=0 unresolvedAfter=0
+[CONTENT_CONSOLE] [SUCCESS_SNAPSHOT] candidates=0 visibleBefore=0
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [FINAL_FILL] controls=4 unresolvedBefore=0 checkboxResolved=0 radioResolved=0 selectResolved=0 unresolvedAfter=0
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [FINAL_AUDIT] PASS
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [FINAL_AUDIT] PASS
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [FIELD_SUMMARY] text required 0/0 | checkbox 0/0 | radio 0/0 | select 0/0 | message 1/1 | unresolved 0
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [FIELD_SUMMARY] text required 0/0 | checkbox 0/0 | radio 0/0 | select 0/0 | message 1/1 | unresolved 0
+[CONTENT_CONSOLE] [XpiderLog] [SUBMIT] triggered=true
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] ✅ [FinalAudit] Hard Gate Passed: 0 unresolved required fields
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] ✅ [FinalAudit] Hard Gate Passed: 0 unresolved required fields
+[CONTENT_CONSOLE] [XpiderLog] [STAGE] stage=SUBMIT_TRIGGERED
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [SUBMIT_LOCK] acquired=true submittedFromUrl=http://127.0.0.1:8972/false-failure.html — post FINAL_AUDIT_PASS
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [SUBMIT_LOCK] acquired=true submittedFromUrl=http://127.0.0.1:8972/false-failure.html — post FINAL_AUDIT_PASS
+[CONTENT_CONSOLE] [XpiderLog] 🕵️ [SubmissionOutcomeVerifier] Verifying submission status (Multi-Polling)...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] 📤 [Action] Triggering submission sequence...
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] 📤 [Action] Triggering submission sequence...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [SUBMIT] attemptStarted=true
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [SUBMIT] attemptStarted=true
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [STAGE] stage=SUBMIT_ATTEMPT_STARTED
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [STAGE] stage=SUBMIT_ATTEMPT_STARTED
+[SW_CONSOLE] [BG_LOG][tab=870394003] ⏳ [PIPELINE][SUBMIT_ATTEMPT_STARTED] url=http://127.0.0.1:8972/false-failure.html
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [SUBMIT] triggered=true
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [SUBMIT] triggered=true
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [STAGE] stage=SUBMIT_TRIGGERED
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [STAGE] stage=SUBMIT_TRIGGERED
+[SW_CONSOLE] [BG_LOG][tab=870394003] 📤 [PIPELINE][SUBMIT_TRIGGERED] url=http://127.0.0.1:8972/false-failure.html
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] 🕵️ [SubmissionOutcomeVerifier] Verifying submission status (Multi-Polling)...
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] 🕵️ [SubmissionOutcomeVerifier] Verifying submission status (Multi-Polling)...
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] pollCount=4
+[CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] elapsedMs=790
+[CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] transportStatus=NONE
+[CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] serverErrorTransition=false
+[CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] matchedServerError=none
+[CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] submitEvent=true
+[CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] urlChanged=false
+[CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] newSuccessNodes=1
+[CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] validationErrors=0
+[CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] formReset=false
+[CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] decision=CONFIRMED_SUCCESS
+[CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] latencyMs=790
+[CONTENT_CONSOLE] [XpiderLog] [FINAL] status=CONFIRMED_SUCCESS
+[CONTENT_CONSOLE] [XpiderLog] [STAGE] stage=CONFIRMED_SUCCESS
+[CONTENT_CONSOLE] [XpiderLog] ✅ [Engine] Campaign step successfully executed.
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [SUBMIT_VERIFY] pollCount=4
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [SUBMIT_VERIFY] pollCount=4
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [SUBMIT_VERIFY] elapsedMs=790
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [SUBMIT_VERIFY] elapsedMs=790
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [SUBMIT_VERIFY] transportStatus=NONE
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [SUBMIT_VERIFY] transportStatus=NONE
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [SUBMIT_VERIFY] serverErrorTransition=false
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [SUBMIT_VERIFY] serverErrorTransition=false
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [SUBMIT_VERIFY] matchedServerError=none
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [SUBMIT_VERIFY] matchedServerError=none
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [SUBMIT_VERIFY] submitEvent=true
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [SUBMIT_VERIFY] submitEvent=true
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [SUBMIT_VERIFY] urlChanged=false
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [SUBMIT_VERIFY] urlChanged=false
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [SUBMIT_VERIFY] newSuccessNodes=1
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [SUBMIT_VERIFY] newSuccessNodes=1
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [SUBMIT_VERIFY] validationErrors=0
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [SUBMIT_VERIFY] validationErrors=0
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [SUBMIT_VERIFY] formReset=false
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [SUBMIT_VERIFY] formReset=false
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [SUBMIT_VERIFY] decision=CONFIRMED_SUCCESS
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [SUBMIT_VERIFY] decision=CONFIRMED_SUCCESS
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [SUBMIT_VERIFY] latencyMs=790
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [SUBMIT_VERIFY] latencyMs=790
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [FINAL] status=CONFIRMED_SUCCESS
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [FINAL] status=CONFIRMED_SUCCESS
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [STAGE] stage=CONFIRMED_SUCCESS
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [STAGE] stage=CONFIRMED_SUCCESS
+[SW_CONSOLE] [BG_LOG][tab=870394003] 🎉 [PIPELINE][CONFIRMED_SUCCESS] url=http://127.0.0.1:8972/false-failure.html
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] ✅ [Engine] Campaign step successfully executed.
+[SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] ✅ [Engine] Campaign step successfully executed.
+[SW_CONSOLE] [BG_LOG][tab=870394003] [RESULT] resultUrl=http://127.0.0.1:8972/false-failure.html
+[SW_CONSOLE] [BG_LOG][tab=870394003] [TARGET][127.0.0.1] FINAL status=CONFIRMED_SUCCESS reason=SUCCESS_CONFIRMED
+[SW_CONSOLE] [BG_LOG][tab=870394003] [HISTORY_FINAL] sourceUrl=http://127.0.0.1:8972/false-failure.html contactPageUrl=http://127.0.0.1:8972/false-failure.html formPageUrl=http://127.0.0.1:8972/false-failure.html resultUrl=http://127.0.0.1:8972/false-failure.html
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[SW_CONSOLE] [LEDGER_STATS] scope=currentRun success=1 failure=0 unknown=0 timeout=0 skipped=0
+[SW_CONSOLE] [BG_LOG][tab=870394003] [LEDGER_STATS] scope=currentRun success=1 failure=0 unknown=0 timeout=0 skipped=0
+[SW_CONSOLE] [BG_LOG][tab=870394003] ✨ [Engine] Submission confirmed. Tab will close shortly...
+[POPUP_CONSOLE] [LEDGER_STATS] scope=currentGeneration success=1 failed=0 unknown=0
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[CONTENT_CONSOLE] [EMAIL_SCAN] url=http://127.0.0.1:8972/false-failure.html found=0 trigger=MUTATION
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[SW_CONSOLE] [TAB_CLOSE] tabId=870394003 attempt=1 result=CLOSED
+[SW_CONSOLE] [POST_FINAL_TAB_INVARIANT] target=http://127.0.0.1:8972/false-failure.html remainingOwnedTabs=0 retainedTabs=0 result=PASS
+[SW_CONSOLE] [BG_LOG][tab=none] Waiting 3000ms before next target...
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[SW_CONSOLE] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedBefore=0
+[SW_CONSOLE] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedAfter=0 result=PASS
+[SW_CONSOLE] [BG_LOG][tab=none] [TARGET 2/3][127.0.0.1] START
+[POPUP_CONSOLE] [LEDGER_STATS] scope=currentGeneration success=1 failed=0 unknown=0
+[CDP_TARGET_CREATED] http://127.0.0.1:8972/true-failure.html
+[SW_CONSOLE] [TAB_BARRIER] phase=POST_NEW_TARGET_CREATE ownedBefore=0
+[SW_CONSOLE] [TAB_BARRIER] phase=POST_NEW_TARGET_CREATE ownedAfter=0 result=PASS
+[SW_CONSOLE] [TAB_KILL_SWITCH] keepTabId=870394005 closedOthers=0 remainingOwned=1 result=PASS
+[SW_CONSOLE] [BG_LOG][tab=870394005] [TAB_FOCUS] tabId=870394005 windowId=870393997 active=true focused=true
+[SW_CONSOLE] [BG_LOG][tab=870394005] Step 1: Sniper Mode active. Searching for contact page...
+[SW_CONSOLE] [BG_LOG][tab=870394005] 🔦 Scanning paths 1-10...
+[SW_CONSOLE] [BG_LOG][tab=870394005] Pre-scan complete. Identified 10 valid paths.
+[SW_CONSOLE] [BG_LOG][tab=870394005] [SniperScan] Identified 10 candidate paths in background.
+[CONTENT_CONSOLE] 🚀 [XpiderSender] Advanced Engine Loaded: http://127.0.0.1:8972/true-failure.html
+[CONTENT_CONSOLE] [RUNTIME_ASSERT] NON_HTML_DOWNLOADABLE_EXTENSIONS ready=true
+[CONTENT_CONSOLE] [CONTROL_PLANE] listenersActive=1
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[CONTENT_CONSOLE] [EMAIL_COLLECTOR_INIT] generation=1 moduleLoaded=true
+[SW_CONSOLE] [BG_LOG][tab=870394005] [TAB_FOCUS] tabId=870394005 windowId=870393997 active=true focused=true
+[CONTENT_CONSOLE] [EMAIL_SCAN] url=http://127.0.0.1:8972/true-failure.html found=0 trigger=INIT
+[CONTENT_CONSOLE] [EMAIL_SEND] generation=1 pageCount=0 collectibleCount=0 count=0 hostname=127.0.0.1
+[SW_CONSOLE] [BG_LOG][tab=870394005] [TAB_OWNERSHIP] VERIFIED_REDIRECT source=127.0.0.1 target=127.0.0.1 relation=SAME_HOST
+[SW_CONSOLE] [BG_LOG][tab=870394005] [FOCUS_SECURED] formPageUrl=http://127.0.0.1:8972/true-failure.html
+[CONTENT_CONSOLE] 🛡️ [XPIDER Stealth v2.0] Main World stealth injection applied successfully.
+[SW_CONSOLE] [BG_LOG][tab=870394005] Extraction focus secured. Mapping template fields...
+[CONTENT_CONSOLE] [CONTROL_PLANE] listenersActive=1 key=mutskt90_sh478:http://127.0.0.1:8972/true-failure.html:1791116599572
+[CONTENT_CONSOLE] [XpiderLog] [TARGET_PAGE] url=http://127.0.0.1:8972/true-failure.html domGeneration=1791116599572 attemptId=mutskt90_sh478
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [TARGET_PAGE] url=http://127.0.0.1:8972/true-failure.html domGeneration=1791116599572 attemptId=mutskt90_sh478
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [TARGET_PAGE] url=http://127.0.0.1:8972/true-failure.html domGeneration=1791116599572 attemptId=mutskt90_sh478
+[CONTENT_CONSOLE] [XpiderLog] 🚀 [Engine] Ultra-Mode process started
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] 🚀 [Engine] Ultra-Mode process started
+[CONTENT_CONSOLE] [XpiderLog] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] 🚀 [Engine] Ultra-Mode process started
+[CONTENT_CONSOLE] [XpiderLog] [TARGET_PAGE] url=http://127.0.0.1:8972/true-failure.html recursion=0
+[CONTENT_CONSOLE] [XpiderLog] 🔍 [Discovery] URL: http://127.0.0.1:8972/true-failure.html | Recursion: 0
+[CONTENT_CONSOLE] [XpiderLog] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[CONTENT_CONSOLE] [XpiderLog] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1:8972/true-failure.html | Recursion: 0
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[CONTENT_CONSOLE] [FORM_GATE] candidate=form#contact-form.[name,email,subject,message] bodyField=true contactFields=2 submitters=1 eligible=true reason=ELIGIBLE_INQUIRY_FORM
+[CONTENT_CONSOLE] [FORM_SCAN] pass=1 url=http://127.0.0.1:8972/true-failure.html roots=1
+[CONTENT_CONSOLE] [FORM_SCAN] bodyCandidates=1 nativeForms=1 logicalContainers=0
+[CONTENT_CONSOLE] [FORM_SCAN] shadowRoots=0 iframes=0 modalTriggers=12
+[CONTENT_CONSOLE] [EMAIL_SCAN] url=http://127.0.0.1:8972/true-failure.html found=0 trigger=SCAN
+[CONTENT_CONSOLE] [LONG_TEXT_GATE] found=true type=textarea semantic=message
+[CONTENT_CONSOLE] [XpiderLog] [FORM_SCAN] bodyCandidates=1 forms=1 logicalContainers=1
+[CONTENT_CONSOLE] [XpiderLog] [PAGE_CLASS] CONTACT_FORM_PAGE
+[CONTENT_CONSOLE] [XpiderLog] 🎯 Step 2: Contact form discovered. Preparing submission...
+[CONTENT_CONSOLE] [XpiderLog] [STAGE] stage=CONTACT_PAGE_FOUND
+[CONTENT_CONSOLE] [XpiderLog] [LONG_TEXT_GATE] found=true type=textarea semantic=message
+[CONTENT_CONSOLE] [XpiderLog] [FORM_GATE] eligible=true reason=BODY_FIELD_PRESENT
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [TARGET_PAGE] url=http://127.0.0.1:8972/true-failure.html recursion=0
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [TARGET_PAGE] url=http://127.0.0.1:8972/true-failure.html recursion=0
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] 🔍 [Discovery] URL: http://127.0.0.1:8972/true-failure.html | Recursion: 0
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] 🔍 [Discovery] URL: http://127.0.0.1:8972/true-failure.html | Recursion: 0
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[CONTENT_CONSOLE] [XpiderLog] 🔍 [Supreme-X 5.0] Scanning for multi-location / branch links...
+[CONTENT_CONSOLE] [XpiderLog] [AUTOFILL_LOCK] acquired=true key=mutskt90_sh478:http://127.0.0.1:8972/true-failure.html:contact-form
+[CONTENT_CONSOLE] [LONG_TEXT_GATE] found=true type=textarea semantic=message
+[CONTENT_CONSOLE] [LONG_TEXT_GATE] found=true type=textarea semantic=message
+[CONTENT_CONSOLE] [FORM_INTENT] intent=CONTACT_INQUIRY confidence=0.95 negativeClass=none
+[CONTENT_CONSOLE] [FORM_CLASSIFY] intent=CONTACT_INQUIRY eligible=true hasInquiryBody=true bodyFieldType=textarea decision=ACCEPT reason=ELIGIBLE_CONTACT_INQUIRY
+[CONTENT_CONSOLE] [XpiderLog] [CONTACT_GATE] PASS bodyField=textarea
+[CONTENT_CONSOLE] [XpiderLog] [STAGE] stage=ELIGIBLE_FORM_FOUND
+[CONTENT_CONSOLE] [EMAIL_SCAN] url=http://127.0.0.1:8972/true-failure.html found=0 trigger=FORM_ENTRY
+[CONTENT_CONSOLE] [XpiderLog] 🛠️ Step 3: Registering message template to form fields...
+[CONTENT_CONSOLE] [XpiderLog] 🛡️ [FormStabilizer] Starting bounded stabilization (max 5s, max 2 retries/element)...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1:8972/true-failure.html | Recursion: 0
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1:8972/true-failure.html | Recursion: 0
+[CONTENT_CONSOLE] [XpiderLog] 🛡️ [FormStabilizer] Stopped (ALL_FIELDS_STABLE_OR_RESOLVED): seen=4 stable=true unresolved=0 (selects=0, cbs=0, radios=0)
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [FORM_SCAN] bodyCandidates=1 forms=1 logicalContainers=1
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [FORM_SCAN] bodyCandidates=1 forms=1 logicalContainers=1
+[CONTENT_CONSOLE] [XpiderLog] 🛠️ [Action][HyperEngine v4.0] 초강력 폼 자동 등록기 시작...
+[CONTENT_CONSOLE] [XpiderLog] 🎯 [HyperEngine v4.0] Phase 0 - 입력 필드 전수 수집...
+[CONTENT_CONSOLE] [XpiderLog]    [v4.0] 총 4개 입력 필드 발견 (radio: 0, checkbox: 0)
+[CONTENT_CONSOLE] [XpiderLog] 🎯 [HyperEngine v4.0] Phase 1 & 2 - 드롭다운 SelectResolverR2 전수 처리...
+[CONTENT_CONSOLE] [XpiderLog] 🎯 [HyperEngine v4.0] Phase 3 - 체크박스 CheckboxResolverR2 전수 처리...
+[CONTENT_CONSOLE] [XpiderLog] 🎯 [HyperEngine v4.0] Phase 3.5 - 휴먼 테스트 수식/방정식 퀴즈 검출 및 자동 해결...
+[CONTENT_CONSOLE] [XpiderLog] 🎯 [HyperEngine v4.0] Phase 4 - 텍스트 필드 패턴 매칭...
+[CONTENT_CONSOLE] [EMAIL_ACK] currentPageCount=0 newGlobalCount=0 totalGlobalCount=0 suppressed=false staleGeneration=false
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [PAGE_CLASS] CONTACT_FORM_PAGE
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [PAGE_CLASS] CONTACT_FORM_PAGE
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] 🎯 Step 2: Contact form discovered. Preparing submission...
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] 🎯 Step 2: Contact form discovered. Preparing submission...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [STAGE] stage=CONTACT_PAGE_FOUND
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [STAGE] stage=CONTACT_PAGE_FOUND
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [LONG_TEXT_GATE] found=true type=textarea semantic=message
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [LONG_TEXT_GATE] found=true type=textarea semantic=message
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [FORM_GATE] eligible=true reason=BODY_FIELD_PRESENT
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [FORM_GATE] eligible=true reason=BODY_FIELD_PRESENT
+[SW_CONSOLE] [BG_LOG][tab=870394005] 📍 [PIPELINE][CONTACT_PAGE_FOUND] url=http://127.0.0.1:8972/true-failure.html
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] 🔍 [Supreme-X 5.0] Scanning for multi-location / branch links...
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] 🔍 [Supreme-X 5.0] Scanning for multi-location / branch links...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [AUTOFILL_LOCK] acquired=true key=mutskt90_sh478:http://127.0.0.1:8972/true-failure.html:contact-form
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [AUTOFILL_LOCK] acquired=true key=mutskt90_sh478:http://127.0.0.1:8972/true-failure.html:contact-form
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [CONTACT_GATE] PASS bodyField=textarea
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [CONTACT_GATE] PASS bodyField=textarea
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTACT_COMMIT] contactPageUrl=http://127.0.0.1:8972/true-failure.html
+[SW_CONSOLE] [BG_LOG][tab=870394005] [FORM_COMMIT] formPageUrl=http://127.0.0.1:8972/true-failure.html
+[SW_CONSOLE] [BG_LOG][tab=870394005] 📋 [PIPELINE][ELIGIBLE_FORM_FOUND] url=http://127.0.0.1:8972/true-failure.html
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] 🛠️ Step 3: Registering message template to form fields...
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] 🛠️ Step 3: Registering message template to form fields...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] 🛡️ [FormStabilizer] Starting bounded stabilization (max 5s, max 2 retries/element)...
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] 🛡️ [FormStabilizer] Starting bounded stabilization (max 5s, max 2 retries/element)...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] 🛡️ [FormStabilizer] Stopped (ALL_FIELDS_STABLE_OR_RESOLVED): seen=4 stable=true unresolved=0 (selects=0, cbs=0, radios=0)
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] 🛡️ [FormStabilizer] Stopped (ALL_FIELDS_STABLE_OR_RESOLVED): seen=4 stable=true unresolved=0 (selects=0, cbs=0, radios=0)
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] 🛠️ [Action][HyperEngine v4.0] 초강력 폼 자동 등록기 시작...
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] 🛠️ [Action][HyperEngine v4.0] 초강력 폼 자동 등록기 시작...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] 🎯 [HyperEngine v4.0] Phase 0 - 입력 필드 전수 수집...
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] 🎯 [HyperEngine v4.0] Phase 0 - 입력 필드 전수 수집...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html]    [v4.0] 총 4개 입력 필드 발견 (radio: 0, checkbox: 0)
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html]    [v4.0] 총 4개 입력 필드 발견 (radio: 0, checkbox: 0)
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] 🎯 [HyperEngine v4.0] Phase 1 & 2 - 드롭다운 SelectResolverR2 전수 처리...
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] 🎯 [HyperEngine v4.0] Phase 1 & 2 - 드롭다운 SelectResolverR2 전수 처리...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] 🎯 [HyperEngine v4.0] Phase 3 - 체크박스 CheckboxResolverR2 전수 처리...
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] 🎯 [HyperEngine v4.0] Phase 3 - 체크박스 CheckboxResolverR2 전수 처리...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] 🎯 [HyperEngine v4.0] Phase 3.5 - 휴먼 테스트 수식/방정식 퀴즈 검출 및 자동 해결...
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] 🎯 [HyperEngine v4.0] Phase 3.5 - 휴먼 테스트 수식/방정식 퀴즈 검출 및 자동 해결...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] 🎯 [HyperEngine v4.0] Phase 4 - 텍스트 필드 패턴 매칭...
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] 🎯 [HyperEngine v4.0] Phase 4 - 텍스트 필드 패턴 매칭...
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[CONTENT_CONSOLE] [XpiderLog]    - [Input✅] category=name filled=true
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html]    - [Input✅] category=name filled=true
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html]    - [Input✅] category=name filled=true
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[CONTENT_CONSOLE] [XpiderLog] 💓 [Heartbeat] Engine active and processing...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] 💓 [Heartbeat] Engine active and processing...
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] 💓 [Heartbeat] Engine active and processing...
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[CONTENT_CONSOLE] [XpiderLog]    - [Input✅] category=email filled=true length=25
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html]    - [Input✅] category=email filled=true length=25
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html]    - [Input✅] category=email filled=true length=25
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[CONTENT_CONSOLE] [XpiderLog]    - [Input✅] category=subject filled=true length=18
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html]    - [Input✅] category=subject filled=true length=18
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html]    - [Input✅] category=subject filled=true length=18
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[CONTENT_CONSOLE] [XpiderLog]    - [Input✅] category=message filled=true length=51
+[CONTENT_CONSOLE] [XpiderLog] 🎯 [HyperEngine v4.0] Phase 5 - 빈 필드 강제 채우기...
+[CONTENT_CONSOLE] [XpiderLog] 🎯 [HyperEngine v4.0] Phase 6 - 라디오 버튼 미선택 그룹 처리...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html]    - [Input✅] category=message filled=true length=51
+[CONTENT_CONSOLE] [XpiderLog] 🎯 [HyperEngine v4.0] Phase 8 - 커스텀 ARIA 체크박스/라디오 처리...
+[CONTENT_CONSOLE] [XpiderLog] 🛠️ [HyperEngine v4.0] Phase 9 - BruteForce contentEditable/role=textbox...
+[CONTENT_CONSOLE] [XpiderLog] 🎯 [HyperEngine v4.0] Phase 10 - Super-BruteForce Sweeper (초강력 입력기) 가동...
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html]    - [Input✅] category=message filled=true length=51
+[CONTENT_CONSOLE] [XpiderLog] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] 🎯 [HyperEngine v4.0] Phase 5 - 빈 필드 강제 채우기...
+[CONTENT_CONSOLE] [XpiderLog] [STAGE] stage=FIELD_STATE_STABLE
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] 🎯 [HyperEngine v4.0] Phase 5 - 빈 필드 강제 채우기...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] 🎯 [HyperEngine v4.0] Phase 6 - 라디오 버튼 미선택 그룹 처리...
+[CONTENT_CONSOLE] [XpiderLog] ✅ [HyperEngine v4.0] 폼 작성 완료 - 입력 필드 4개 처리됨
+[CONTENT_CONSOLE] [XpiderLog] [FILL] messageBodyFilled=true
+[CONTENT_CONSOLE] [XpiderLog] ✅ [FORM_PREP] COMPLETE
+[CONTENT_CONSOLE] [XpiderLog] ⏳ [Engine] Holding for visual confirmation (500ms)...
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] 🎯 [HyperEngine v4.0] Phase 6 - 라디오 버튼 미선택 그룹 처리...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] 🎯 [HyperEngine v4.0] Phase 8 - 커스텀 ARIA 체크박스/라디오 처리...
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] 🎯 [HyperEngine v4.0] Phase 8 - 커스텀 ARIA 체크박스/라디오 처리...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] 🛠️ [HyperEngine v4.0] Phase 9 - BruteForce contentEditable/role=textbox...
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] 🛠️ [HyperEngine v4.0] Phase 9 - BruteForce contentEditable/role=textbox...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] 🎯 [HyperEngine v4.0] Phase 10 - Super-BruteForce Sweeper (초강력 입력기) 가동...
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] 🎯 [HyperEngine v4.0] Phase 10 - Super-BruteForce Sweeper (초강력 입력기) 가동...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [STAGE] stage=FIELD_STATE_STABLE
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [STAGE] stage=FIELD_STATE_STABLE
+[SW_CONSOLE] [BG_LOG][tab=870394005] ✅ [PIPELINE][REQUIRED_FIELDS_RESOLVED] url=http://127.0.0.1:8972/true-failure.html
+[SW_CONSOLE] [BG_LOG][tab=870394005] 🔒 [PIPELINE][FIELD_STATE_STABLE] url=http://127.0.0.1:8972/true-failure.html
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] ✅ [HyperEngine v4.0] 폼 작성 완료 - 입력 필드 4개 처리됨
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] ✅ [HyperEngine v4.0] 폼 작성 완료 - 입력 필드 4개 처리됨
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [FILL] messageBodyFilled=true
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [FILL] messageBodyFilled=true
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] ✅ [FORM_PREP] COMPLETE
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] ✅ [FORM_PREP] COMPLETE
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] ⏳ [Engine] Holding for visual confirmation (500ms)...
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] ⏳ [Engine] Holding for visual confirmation (500ms)...
+[CONTENT_CONSOLE] [XpiderLog] 💓 [Heartbeat] Engine active and processing...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] 💓 [Heartbeat] Engine active and processing...
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] 💓 [Heartbeat] Engine active and processing...
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[CONTENT_CONSOLE] [XpiderLog] 🧠 [FinalFill] Running AI Final Form Completion Pass immediately before submit...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] 🧠 [FinalFill] Running AI Final Form Completion Pass immediately before submit...
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] 🧠 [FinalFill] Running AI Final Form Completion Pass immediately before submit...
+[CONTENT_CONSOLE] [AI_COMPLETE_FORM] fillableTotal=4 filledBefore=4 filledByAI=0 safeSkipped=0 sensitiveBlocked=0 emptySafeAfter=0
+[CONTENT_CONSOLE] [XpiderLog] [AI_COMPLETE_FORM] fillableTotal=4 filledBefore=4 filledByAI=0 safeSkipped=0 sensitiveBlocked=0 emptySafeAfter=0
+[CONTENT_CONSOLE] [XpiderLog] [FINAL_FILL] controls=4 unresolvedBefore=0 checkboxResolved=0 radioResolved=0 selectResolved=0 unresolvedAfter=0
+[CONTENT_CONSOLE] [XpiderLog] [FINAL_AUDIT] PASS
+[CONTENT_CONSOLE] [XpiderLog] [FIELD_SUMMARY] text required 0/0 | checkbox 0/0 | radio 0/0 | select 0/0 | message 1/1 | unresolved 0
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [AI_COMPLETE_FORM] fillableTotal=4 filledBefore=4 filledByAI=0 safeSkipped=0 sensitiveBlocked=0 emptySafeAfter=0
+[CONTENT_CONSOLE] [XpiderLog] ✅ [FinalAudit] Hard Gate Passed: 0 unresolved required fields
+[CONTENT_CONSOLE] [XpiderLog] [SUBMIT_LOCK] acquired=true submittedFromUrl=http://127.0.0.1:8972/true-failure.html — post FINAL_AUDIT_PASS
+[CONTENT_CONSOLE] [XpiderLog] 📤 [Action] Triggering submission sequence...
+[CONTENT_CONSOLE] [XpiderLog] [SUBMIT] attemptStarted=true
+[CONTENT_CONSOLE] [XpiderLog] [STAGE] stage=SUBMIT_ATTEMPT_STARTED
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [AI_COMPLETE_FORM] fillableTotal=4 filledBefore=4 filledByAI=0 safeSkipped=0 sensitiveBlocked=0 emptySafeAfter=0
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [FINAL_FILL] controls=4 unresolvedBefore=0 checkboxResolved=0 radioResolved=0 selectResolved=0 unresolvedAfter=0
+[CONTENT_CONSOLE] [SUCCESS_SNAPSHOT] candidates=0 visibleBefore=0
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [FINAL_FILL] controls=4 unresolvedBefore=0 checkboxResolved=0 radioResolved=0 selectResolved=0 unresolvedAfter=0
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [FINAL_AUDIT] PASS
+[CONTENT_CONSOLE] [XpiderLog] [SUBMIT] triggered=true
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [FINAL_AUDIT] PASS
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [FIELD_SUMMARY] text required 0/0 | checkbox 0/0 | radio 0/0 | select 0/0 | message 1/1 | unresolved 0
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [FIELD_SUMMARY] text required 0/0 | checkbox 0/0 | radio 0/0 | select 0/0 | message 1/1 | unresolved 0
+[CONTENT_CONSOLE] [XpiderLog] [STAGE] stage=SUBMIT_TRIGGERED
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] ✅ [FinalAudit] Hard Gate Passed: 0 unresolved required fields
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] ✅ [FinalAudit] Hard Gate Passed: 0 unresolved required fields
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [SUBMIT_LOCK] acquired=true submittedFromUrl=http://127.0.0.1:8972/true-failure.html — post FINAL_AUDIT_PASS
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [SUBMIT_LOCK] acquired=true submittedFromUrl=http://127.0.0.1:8972/true-failure.html — post FINAL_AUDIT_PASS
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] 📤 [Action] Triggering submission sequence...
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] 📤 [Action] Triggering submission sequence...
+[CONTENT_CONSOLE] [XpiderLog] 🕵️ [SubmissionOutcomeVerifier] Verifying submission status (Multi-Polling)...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [SUBMIT] attemptStarted=true
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [SUBMIT] attemptStarted=true
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [STAGE] stage=SUBMIT_ATTEMPT_STARTED
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [STAGE] stage=SUBMIT_ATTEMPT_STARTED
+[SW_CONSOLE] [BG_LOG][tab=870394005] ⏳ [PIPELINE][SUBMIT_ATTEMPT_STARTED] url=http://127.0.0.1:8972/true-failure.html
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [SUBMIT] triggered=true
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [SUBMIT] triggered=true
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [STAGE] stage=SUBMIT_TRIGGERED
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [STAGE] stage=SUBMIT_TRIGGERED
+[SW_CONSOLE] [BG_LOG][tab=870394005] 📤 [PIPELINE][SUBMIT_TRIGGERED] url=http://127.0.0.1:8972/true-failure.html
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] 🕵️ [SubmissionOutcomeVerifier] Verifying submission status (Multi-Polling)...
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] 🕵️ [SubmissionOutcomeVerifier] Verifying submission status (Multi-Polling)...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [NEGATIVE_SIGNAL] type=SERVER_ERROR source=DOM phrase="could not send message" preExisting=false transition=true visible=true firstSeenMs=89
+[CONTENT_CONSOLE] [XpiderLog] [NEGATIVE_SIGNAL] type=SERVER_ERROR source=DOM phrase="could not send message" preExisting=false transition=true visible=true firstSeenMs=89
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [NEGATIVE_SIGNAL] type=SERVER_ERROR source=DOM phrase="could not send message" preExisting=false transition=true visible=true firstSeenMs=89
+[CONTENT_CONSOLE] [XpiderLog] [NEGATIVE_SIGNAL] type=SERVER_ERROR source=DOM phrase="could not send message" preExisting=false transition=true visible=true firstSeenMs=274
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [NEGATIVE_SIGNAL] type=SERVER_ERROR source=DOM phrase="could not send message" preExisting=false transition=true visible=true firstSeenMs=274
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [NEGATIVE_SIGNAL] type=SERVER_ERROR source=DOM phrase="could not send message" preExisting=false transition=true visible=true firstSeenMs=274
+[CONTENT_CONSOLE] [XpiderLog] [NEGATIVE_SIGNAL] type=SERVER_ERROR source=DOM phrase="could not send message" preExisting=false transition=true visible=true firstSeenMs=538
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [NEGATIVE_SIGNAL] type=SERVER_ERROR source=DOM phrase="could not send message" preExisting=false transition=true visible=true firstSeenMs=538
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [NEGATIVE_SIGNAL] type=SERVER_ERROR source=DOM phrase="could not send message" preExisting=false transition=true visible=true firstSeenMs=538
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[CONTENT_CONSOLE] [XpiderLog] [NEGATIVE_SIGNAL] type=SERVER_ERROR source=DOM phrase="could not send message" preExisting=false transition=true visible=true firstSeenMs=800
+[CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] pollCount=4
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [NEGATIVE_SIGNAL] type=SERVER_ERROR source=DOM phrase="could not send message" preExisting=false transition=true visible=true firstSeenMs=800
+[CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] elapsedMs=793
+[CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] transportStatus=NONE
+[CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] serverErrorTransition=true
+[CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] matchedServerError=could not send message
+[CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] submitEvent=true
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [NEGATIVE_SIGNAL] type=SERVER_ERROR source=DOM phrase="could not send message" preExisting=false transition=true visible=true firstSeenMs=800
+[CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] urlChanged=false
+[CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] newSuccessNodes=0
+[CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] validationErrors=0
+[CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] formReset=false
+[CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] decision=SUBMISSION_SERVER_ERROR
+[CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] latencyMs=793
+[CONTENT_CONSOLE] [XpiderLog] [FINAL] status=SUBMISSION_SERVER_ERROR
+[CONTENT_CONSOLE] [XpiderLog] ✅ [Engine] Campaign step successfully executed.
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [SUBMIT_VERIFY] pollCount=4
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [SUBMIT_VERIFY] pollCount=4
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [SUBMIT_VERIFY] elapsedMs=793
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [SUBMIT_VERIFY] elapsedMs=793
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [SUBMIT_VERIFY] transportStatus=NONE
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [SUBMIT_VERIFY] transportStatus=NONE
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [SUBMIT_VERIFY] serverErrorTransition=true
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [SUBMIT_VERIFY] serverErrorTransition=true
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [SUBMIT_VERIFY] matchedServerError=could not send message
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [SUBMIT_VERIFY] matchedServerError=could not send message
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [SUBMIT_VERIFY] submitEvent=true
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [SUBMIT_VERIFY] submitEvent=true
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [SUBMIT_VERIFY] urlChanged=false
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [SUBMIT_VERIFY] urlChanged=false
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [SUBMIT_VERIFY] newSuccessNodes=0
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [SUBMIT_VERIFY] newSuccessNodes=0
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [SUBMIT_VERIFY] validationErrors=0
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [SUBMIT_VERIFY] validationErrors=0
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [SUBMIT_VERIFY] formReset=false
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [SUBMIT_VERIFY] formReset=false
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [SUBMIT_VERIFY] decision=SUBMISSION_SERVER_ERROR
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [SUBMIT_VERIFY] decision=SUBMISSION_SERVER_ERROR
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [SUBMIT_VERIFY] latencyMs=793
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [SUBMIT_VERIFY] latencyMs=793
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [FINAL] status=SUBMISSION_SERVER_ERROR
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [FINAL] status=SUBMISSION_SERVER_ERROR
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] ✅ [Engine] Campaign step successfully executed.
+[SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] ✅ [Engine] Campaign step successfully executed.
+[SW_CONSOLE] [BG_LOG][tab=870394005] [RESULT] resultUrl=http://127.0.0.1:8972/true-failure.html
+[SW_CONSOLE] [BG_LOG][tab=870394005] [TARGET][127.0.0.1] FINAL status=FAILURE reason=SUBMISSION_SERVER_ERROR
+[SW_CONSOLE] [BG_LOG][tab=870394005] [HISTORY_FINAL] sourceUrl=http://127.0.0.1:8972/true-failure.html contactPageUrl=http://127.0.0.1:8972/true-failure.html formPageUrl=http://127.0.0.1:8972/true-failure.html resultUrl=http://127.0.0.1:8972/true-failure.html
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[SW_CONSOLE] [LEDGER_STATS] scope=currentRun success=1 failure=1 unknown=0 timeout=0 skipped=0
+[SW_CONSOLE] [BG_LOG][tab=870394005] [LEDGER_STATS] scope=currentRun success=1 failure=1 unknown=0 timeout=0 skipped=0
+[POPUP_CONSOLE] [LEDGER_STATS] scope=currentGeneration success=1 failed=1 unknown=0
+[CONTENT_CONSOLE] [EMAIL_SCAN] url=http://127.0.0.1:8972/true-failure.html found=0 trigger=MUTATION
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[SW_CONSOLE] [TAB_CLOSE] tabId=870394005 attempt=1 result=CLOSED
+[SW_CONSOLE] [POST_FINAL_TAB_INVARIANT] target=http://127.0.0.1:8972/true-failure.html remainingOwnedTabs=0 retainedTabs=0 result=PASS
+[SW_CONSOLE] [BG_LOG][tab=none] Waiting 3000ms before next target...
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[SW_CONSOLE] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedBefore=0
+[SW_CONSOLE] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedAfter=0 result=PASS
+[SW_CONSOLE] [BG_LOG][tab=none] [TARGET 3/3][127.0.0.1] START
+[POPUP_CONSOLE] [LEDGER_STATS] scope=currentGeneration success=1 failed=1 unknown=0
+[CDP_TARGET_CREATED] http://127.0.0.1:8972/ambiguous.html
+[SW_CONSOLE] [TAB_BARRIER] phase=POST_NEW_TARGET_CREATE ownedBefore=0
+[SW_CONSOLE] [TAB_BARRIER] phase=POST_NEW_TARGET_CREATE ownedAfter=0 result=PASS
+[SW_CONSOLE] [TAB_KILL_SWITCH] keepTabId=870394007 closedOthers=0 remainingOwned=1 result=PASS
+[SW_CONSOLE] [BG_LOG][tab=870394007] [TAB_FOCUS] tabId=870394007 windowId=870393997 active=true focused=true
+[SW_CONSOLE] [BG_LOG][tab=870394007] Step 1: Sniper Mode active. Searching for contact page...
+[SW_CONSOLE] [BG_LOG][tab=870394007] 🔦 Scanning paths 1-10...
+[SW_CONSOLE] [BG_LOG][tab=870394007] Pre-scan complete. Identified 10 valid paths.
+[SW_CONSOLE] [BG_LOG][tab=870394007] [SniperScan] Identified 10 candidate paths in background.
+[CONTENT_CONSOLE] 🚀 [XpiderSender] Advanced Engine Loaded: http://127.0.0.1:8972/ambiguous.html
+[CONTENT_CONSOLE] [RUNTIME_ASSERT] NON_HTML_DOWNLOADABLE_EXTENSIONS ready=true
+[CONTENT_CONSOLE] [CONTROL_PLANE] listenersActive=1
+[CONTENT_CONSOLE] [EMAIL_COLLECTOR_INIT] generation=1 moduleLoaded=true
+[SW_CONSOLE] [BG_LOG][tab=870394007] [TAB_FOCUS] tabId=870394007 windowId=870393997 active=true focused=true
+[CONTENT_CONSOLE] [EMAIL_SCAN] url=http://127.0.0.1:8972/ambiguous.html found=0 trigger=INIT
+[CONTENT_CONSOLE] [EMAIL_SEND] generation=1 pageCount=0 collectibleCount=0 count=0 hostname=127.0.0.1
+[SW_CONSOLE] [BG_LOG][tab=870394007] [TAB_OWNERSHIP] VERIFIED_REDIRECT source=127.0.0.1 target=127.0.0.1 relation=SAME_HOST
+[SW_CONSOLE] [BG_LOG][tab=870394007] [FOCUS_SECURED] formPageUrl=http://127.0.0.1:8972/ambiguous.html
+[CONTENT_CONSOLE] 🛡️ [XPIDER Stealth v2.0] Main World stealth injection applied successfully.
+[SW_CONSOLE] [BG_LOG][tab=870394007] Extraction focus secured. Mapping template fields...
+[CONTENT_CONSOLE] [EMAIL_ACK] currentPageCount=0 newGlobalCount=0 totalGlobalCount=0 suppressed=false staleGeneration=false
+[CONTENT_CONSOLE] [CONTROL_PLANE] listenersActive=1 key=mutsl5b8_xr8uc:http://127.0.0.1:8972/ambiguous.html:1791116615204
+[CONTENT_CONSOLE] [XpiderLog] [TARGET_PAGE] url=http://127.0.0.1:8972/ambiguous.html domGeneration=1791116615204 attemptId=mutsl5b8_xr8uc
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [TARGET_PAGE] url=http://127.0.0.1:8972/ambiguous.html domGeneration=1791116615204 attemptId=mutsl5b8_xr8uc
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [TARGET_PAGE] url=http://127.0.0.1:8972/ambiguous.html domGeneration=1791116615204 attemptId=mutsl5b8_xr8uc
+[CONTENT_CONSOLE] [XpiderLog] 🚀 [Engine] Ultra-Mode process started
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] 🚀 [Engine] Ultra-Mode process started
+[CONTENT_CONSOLE] [XpiderLog] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] 🚀 [Engine] Ultra-Mode process started
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[CONTENT_CONSOLE] [XpiderLog] [TARGET_PAGE] url=http://127.0.0.1:8972/ambiguous.html recursion=0
+[CONTENT_CONSOLE] [XpiderLog] 🔍 [Discovery] URL: http://127.0.0.1:8972/ambiguous.html | Recursion: 0
+[CONTENT_CONSOLE] [XpiderLog] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[CONTENT_CONSOLE] [XpiderLog] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1:8972/ambiguous.html | Recursion: 0
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [TARGET_PAGE] url=http://127.0.0.1:8972/ambiguous.html recursion=0
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [TARGET_PAGE] url=http://127.0.0.1:8972/ambiguous.html recursion=0
+[CONTENT_CONSOLE] [FORM_GATE] candidate=form#contact-form.[name,email,subject,message] bodyField=true contactFields=2 submitters=1 eligible=true reason=ELIGIBLE_INQUIRY_FORM
+[CONTENT_CONSOLE] [FORM_SCAN] pass=1 url=http://127.0.0.1:8972/ambiguous.html roots=1
+[CONTENT_CONSOLE] [FORM_SCAN] bodyCandidates=1 nativeForms=1 logicalContainers=0
+[CONTENT_CONSOLE] [FORM_SCAN] shadowRoots=0 iframes=0 modalTriggers=12
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] 🔍 [Discovery] URL: http://127.0.0.1:8972/ambiguous.html | Recursion: 0
+[CONTENT_CONSOLE] [EMAIL_SCAN] url=http://127.0.0.1:8972/ambiguous.html found=0 trigger=SCAN
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] 🔍 [Discovery] URL: http://127.0.0.1:8972/ambiguous.html | Recursion: 0
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1:8972/ambiguous.html | Recursion: 0
+[CONTENT_CONSOLE] [LONG_TEXT_GATE] found=true type=textarea semantic=message
+[CONTENT_CONSOLE] [XpiderLog] [FORM_SCAN] bodyCandidates=1 forms=1 logicalContainers=1
+[CONTENT_CONSOLE] [XpiderLog] [PAGE_CLASS] CONTACT_FORM_PAGE
+[CONTENT_CONSOLE] [XpiderLog] 🎯 Step 2: Contact form discovered. Preparing submission...
+[CONTENT_CONSOLE] [XpiderLog] [STAGE] stage=CONTACT_PAGE_FOUND
+[CONTENT_CONSOLE] [XpiderLog] [LONG_TEXT_GATE] found=true type=textarea semantic=message
+[CONTENT_CONSOLE] [XpiderLog] [FORM_GATE] eligible=true reason=BODY_FIELD_PRESENT
+[CONTENT_CONSOLE] [XpiderLog] 🔍 [Supreme-X 5.0] Scanning for multi-location / branch links...
+[CONTENT_CONSOLE] [XpiderLog] [AUTOFILL_LOCK] acquired=true key=mutsl5b8_xr8uc:http://127.0.0.1:8972/ambiguous.html:contact-form
+[CONTENT_CONSOLE] [LONG_TEXT_GATE] found=true type=textarea semantic=message
+[CONTENT_CONSOLE] [LONG_TEXT_GATE] found=true type=textarea semantic=message
+[CONTENT_CONSOLE] [FORM_INTENT] intent=CONTACT_INQUIRY confidence=0.95 negativeClass=none
+[CONTENT_CONSOLE] [FORM_CLASSIFY] intent=CONTACT_INQUIRY eligible=true hasInquiryBody=true bodyFieldType=textarea decision=ACCEPT reason=ELIGIBLE_CONTACT_INQUIRY
+[CONTENT_CONSOLE] [XpiderLog] [CONTACT_GATE] PASS bodyField=textarea
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1:8972/ambiguous.html | Recursion: 0
+[CONTENT_CONSOLE] [XpiderLog] [STAGE] stage=ELIGIBLE_FORM_FOUND
+[CONTENT_CONSOLE] [EMAIL_SCAN] url=http://127.0.0.1:8972/ambiguous.html found=0 trigger=FORM_ENTRY
+[CONTENT_CONSOLE] [XpiderLog] 🛠️ Step 3: Registering message template to form fields...
+[CONTENT_CONSOLE] [XpiderLog] 🛡️ [FormStabilizer] Starting bounded stabilization (max 5s, max 2 retries/element)...
+[CONTENT_CONSOLE] [XpiderLog] 🛡️ [FormStabilizer] Stopped (ALL_FIELDS_STABLE_OR_RESOLVED): seen=4 stable=true unresolved=0 (selects=0, cbs=0, radios=0)
+[CONTENT_CONSOLE] [XpiderLog] 🛠️ [Action][HyperEngine v4.0] 초강력 폼 자동 등록기 시작...
+[CONTENT_CONSOLE] [XpiderLog] 🎯 [HyperEngine v4.0] Phase 0 - 입력 필드 전수 수집...
+[CONTENT_CONSOLE] [XpiderLog]    [v4.0] 총 4개 입력 필드 발견 (radio: 0, checkbox: 0)
+[CONTENT_CONSOLE] [XpiderLog] 🎯 [HyperEngine v4.0] Phase 1 & 2 - 드롭다운 SelectResolverR2 전수 처리...
+[CONTENT_CONSOLE] [XpiderLog] 🎯 [HyperEngine v4.0] Phase 3 - 체크박스 CheckboxResolverR2 전수 처리...
+[CONTENT_CONSOLE] [XpiderLog] 🎯 [HyperEngine v4.0] Phase 3.5 - 휴먼 테스트 수식/방정식 퀴즈 검출 및 자동 해결...
+[CONTENT_CONSOLE] [XpiderLog] 🎯 [HyperEngine v4.0] Phase 4 - 텍스트 필드 패턴 매칭...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [FORM_SCAN] bodyCandidates=1 forms=1 logicalContainers=1
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [FORM_SCAN] bodyCandidates=1 forms=1 logicalContainers=1
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [PAGE_CLASS] CONTACT_FORM_PAGE
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [PAGE_CLASS] CONTACT_FORM_PAGE
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] 🎯 Step 2: Contact form discovered. Preparing submission...
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] 🎯 Step 2: Contact form discovered. Preparing submission...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [STAGE] stage=CONTACT_PAGE_FOUND
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [STAGE] stage=CONTACT_PAGE_FOUND
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [LONG_TEXT_GATE] found=true type=textarea semantic=message
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [LONG_TEXT_GATE] found=true type=textarea semantic=message
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [FORM_GATE] eligible=true reason=BODY_FIELD_PRESENT
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [FORM_GATE] eligible=true reason=BODY_FIELD_PRESENT
+[SW_CONSOLE] [BG_LOG][tab=870394007] 📍 [PIPELINE][CONTACT_PAGE_FOUND] url=http://127.0.0.1:8972/ambiguous.html
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] 🔍 [Supreme-X 5.0] Scanning for multi-location / branch links...
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] 🔍 [Supreme-X 5.0] Scanning for multi-location / branch links...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [AUTOFILL_LOCK] acquired=true key=mutsl5b8_xr8uc:http://127.0.0.1:8972/ambiguous.html:contact-form
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [AUTOFILL_LOCK] acquired=true key=mutsl5b8_xr8uc:http://127.0.0.1:8972/ambiguous.html:contact-form
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [CONTACT_GATE] PASS bodyField=textarea
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [CONTACT_GATE] PASS bodyField=textarea
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTACT_COMMIT] contactPageUrl=http://127.0.0.1:8972/ambiguous.html
+[SW_CONSOLE] [BG_LOG][tab=870394007] [FORM_COMMIT] formPageUrl=http://127.0.0.1:8972/ambiguous.html
+[SW_CONSOLE] [BG_LOG][tab=870394007] 📋 [PIPELINE][ELIGIBLE_FORM_FOUND] url=http://127.0.0.1:8972/ambiguous.html
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] 🛠️ Step 3: Registering message template to form fields...
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] 🛠️ Step 3: Registering message template to form fields...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] 🛡️ [FormStabilizer] Starting bounded stabilization (max 5s, max 2 retries/element)...
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] 🛡️ [FormStabilizer] Starting bounded stabilization (max 5s, max 2 retries/element)...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] 🛡️ [FormStabilizer] Stopped (ALL_FIELDS_STABLE_OR_RESOLVED): seen=4 stable=true unresolved=0 (selects=0, cbs=0, radios=0)
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] 🛡️ [FormStabilizer] Stopped (ALL_FIELDS_STABLE_OR_RESOLVED): seen=4 stable=true unresolved=0 (selects=0, cbs=0, radios=0)
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] 🛠️ [Action][HyperEngine v4.0] 초강력 폼 자동 등록기 시작...
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] 🛠️ [Action][HyperEngine v4.0] 초강력 폼 자동 등록기 시작...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] 🎯 [HyperEngine v4.0] Phase 0 - 입력 필드 전수 수집...
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] 🎯 [HyperEngine v4.0] Phase 0 - 입력 필드 전수 수집...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html]    [v4.0] 총 4개 입력 필드 발견 (radio: 0, checkbox: 0)
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html]    [v4.0] 총 4개 입력 필드 발견 (radio: 0, checkbox: 0)
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] 🎯 [HyperEngine v4.0] Phase 1 & 2 - 드롭다운 SelectResolverR2 전수 처리...
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] 🎯 [HyperEngine v4.0] Phase 1 & 2 - 드롭다운 SelectResolverR2 전수 처리...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] 🎯 [HyperEngine v4.0] Phase 3 - 체크박스 CheckboxResolverR2 전수 처리...
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] 🎯 [HyperEngine v4.0] Phase 3 - 체크박스 CheckboxResolverR2 전수 처리...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] 🎯 [HyperEngine v4.0] Phase 3.5 - 휴먼 테스트 수식/방정식 퀴즈 검출 및 자동 해결...
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] 🎯 [HyperEngine v4.0] Phase 3.5 - 휴먼 테스트 수식/방정식 퀴즈 검출 및 자동 해결...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] 🎯 [HyperEngine v4.0] Phase 4 - 텍스트 필드 패턴 매칭...
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] 🎯 [HyperEngine v4.0] Phase 4 - 텍스트 필드 패턴 매칭...
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[CONTENT_CONSOLE] [XpiderLog]    - [Input✅] category=name filled=true
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html]    - [Input✅] category=name filled=true
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html]    - [Input✅] category=name filled=true
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[CONTENT_CONSOLE] [XpiderLog] 💓 [Heartbeat] Engine active and processing...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] 💓 [Heartbeat] Engine active and processing...
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] 💓 [Heartbeat] Engine active and processing...
+[CONTENT_CONSOLE] [XpiderLog]    - [Input✅] category=email filled=true length=25
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html]    - [Input✅] category=email filled=true length=25
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html]    - [Input✅] category=email filled=true length=25
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[CONTENT_CONSOLE] [XpiderLog]    - [Input✅] category=subject filled=true length=18
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html]    - [Input✅] category=subject filled=true length=18
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html]    - [Input✅] category=subject filled=true length=18
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[CONTENT_CONSOLE] [XpiderLog] 💓 [Heartbeat] Engine active and processing...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] 💓 [Heartbeat] Engine active and processing...
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] 💓 [Heartbeat] Engine active and processing...
+[CONTENT_CONSOLE] [XpiderLog]    - [Input✅] category=message filled=true length=51
+[CONTENT_CONSOLE] [XpiderLog] 🎯 [HyperEngine v4.0] Phase 5 - 빈 필드 강제 채우기...
+[CONTENT_CONSOLE] [XpiderLog] 🎯 [HyperEngine v4.0] Phase 6 - 라디오 버튼 미선택 그룹 처리...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html]    - [Input✅] category=message filled=true length=51
+[CONTENT_CONSOLE] [XpiderLog] 🎯 [HyperEngine v4.0] Phase 8 - 커스텀 ARIA 체크박스/라디오 처리...
+[CONTENT_CONSOLE] [XpiderLog] 🛠️ [HyperEngine v4.0] Phase 9 - BruteForce contentEditable/role=textbox...
+[CONTENT_CONSOLE] [XpiderLog] 🎯 [HyperEngine v4.0] Phase 10 - Super-BruteForce Sweeper (초강력 입력기) 가동...
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html]    - [Input✅] category=message filled=true length=51
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] 🎯 [HyperEngine v4.0] Phase 5 - 빈 필드 강제 채우기...
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] 🎯 [HyperEngine v4.0] Phase 5 - 빈 필드 강제 채우기...
+[CONTENT_CONSOLE] [XpiderLog] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
+[CONTENT_CONSOLE] [XpiderLog] [STAGE] stage=FIELD_STATE_STABLE
+[CONTENT_CONSOLE] [XpiderLog] ✅ [HyperEngine v4.0] 폼 작성 완료 - 입력 필드 4개 처리됨
+[CONTENT_CONSOLE] [XpiderLog] [FILL] messageBodyFilled=true
+[CONTENT_CONSOLE] [XpiderLog] ✅ [FORM_PREP] COMPLETE
+[CONTENT_CONSOLE] [XpiderLog] ⏳ [Engine] Holding for visual confirmation (500ms)...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] 🎯 [HyperEngine v4.0] Phase 6 - 라디오 버튼 미선택 그룹 처리...
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] 🎯 [HyperEngine v4.0] Phase 6 - 라디오 버튼 미선택 그룹 처리...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] 🎯 [HyperEngine v4.0] Phase 8 - 커스텀 ARIA 체크박스/라디오 처리...
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] 🎯 [HyperEngine v4.0] Phase 8 - 커스텀 ARIA 체크박스/라디오 처리...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] 🛠️ [HyperEngine v4.0] Phase 9 - BruteForce contentEditable/role=textbox...
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] 🛠️ [HyperEngine v4.0] Phase 9 - BruteForce contentEditable/role=textbox...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] 🎯 [HyperEngine v4.0] Phase 10 - Super-BruteForce Sweeper (초강력 입력기) 가동...
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] 🎯 [HyperEngine v4.0] Phase 10 - Super-BruteForce Sweeper (초강력 입력기) 가동...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [STAGE] stage=FIELD_STATE_STABLE
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [STAGE] stage=FIELD_STATE_STABLE
+[SW_CONSOLE] [BG_LOG][tab=870394007] ✅ [PIPELINE][REQUIRED_FIELDS_RESOLVED] url=http://127.0.0.1:8972/ambiguous.html
+[SW_CONSOLE] [BG_LOG][tab=870394007] 🔒 [PIPELINE][FIELD_STATE_STABLE] url=http://127.0.0.1:8972/ambiguous.html
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] ✅ [HyperEngine v4.0] 폼 작성 완료 - 입력 필드 4개 처리됨
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] ✅ [HyperEngine v4.0] 폼 작성 완료 - 입력 필드 4개 처리됨
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [FILL] messageBodyFilled=true
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [FILL] messageBodyFilled=true
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] ✅ [FORM_PREP] COMPLETE
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] ✅ [FORM_PREP] COMPLETE
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] ⏳ [Engine] Holding for visual confirmation (500ms)...
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] ⏳ [Engine] Holding for visual confirmation (500ms)...
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[CONTENT_CONSOLE] [XpiderLog] 🧠 [FinalFill] Running AI Final Form Completion Pass immediately before submit...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] 🧠 [FinalFill] Running AI Final Form Completion Pass immediately before submit...
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] 🧠 [FinalFill] Running AI Final Form Completion Pass immediately before submit...
+[CONTENT_CONSOLE] [AI_COMPLETE_FORM] fillableTotal=4 filledBefore=4 filledByAI=0 safeSkipped=0 sensitiveBlocked=0 emptySafeAfter=0
+[CONTENT_CONSOLE] [XpiderLog] [AI_COMPLETE_FORM] fillableTotal=4 filledBefore=4 filledByAI=0 safeSkipped=0 sensitiveBlocked=0 emptySafeAfter=0
+[CONTENT_CONSOLE] [XpiderLog] [FINAL_FILL] controls=4 unresolvedBefore=0 checkboxResolved=0 radioResolved=0 selectResolved=0 unresolvedAfter=0
+[CONTENT_CONSOLE] [XpiderLog] [FINAL_AUDIT] PASS
+[CONTENT_CONSOLE] [XpiderLog] [FIELD_SUMMARY] text required 0/0 | checkbox 0/0 | radio 0/0 | select 0/0 | message 1/1 | unresolved 0
+[CONTENT_CONSOLE] [XpiderLog] ✅ [FinalAudit] Hard Gate Passed: 0 unresolved required fields
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [AI_COMPLETE_FORM] fillableTotal=4 filledBefore=4 filledByAI=0 safeSkipped=0 sensitiveBlocked=0 emptySafeAfter=0
+[CONTENT_CONSOLE] [XpiderLog] [SUBMIT_LOCK] acquired=true submittedFromUrl=http://127.0.0.1:8972/ambiguous.html — post FINAL_AUDIT_PASS
+[CONTENT_CONSOLE] [XpiderLog] 📤 [Action] Triggering submission sequence...
+[CONTENT_CONSOLE] [XpiderLog] [SUBMIT] attemptStarted=true
+[CONTENT_CONSOLE] [XpiderLog] [STAGE] stage=SUBMIT_ATTEMPT_STARTED
+[CONTENT_CONSOLE] [SUCCESS_SNAPSHOT] candidates=0 visibleBefore=0
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [AI_COMPLETE_FORM] fillableTotal=4 filledBefore=4 filledByAI=0 safeSkipped=0 sensitiveBlocked=0 emptySafeAfter=0
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [FINAL_FILL] controls=4 unresolvedBefore=0 checkboxResolved=0 radioResolved=0 selectResolved=0 unresolvedAfter=0
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [FINAL_FILL] controls=4 unresolvedBefore=0 checkboxResolved=0 radioResolved=0 selectResolved=0 unresolvedAfter=0
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [FINAL_AUDIT] PASS
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [FINAL_AUDIT] PASS
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [FIELD_SUMMARY] text required 0/0 | checkbox 0/0 | radio 0/0 | select 0/0 | message 1/1 | unresolved 0
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [FIELD_SUMMARY] text required 0/0 | checkbox 0/0 | radio 0/0 | select 0/0 | message 1/1 | unresolved 0
+[CONTENT_CONSOLE] [XpiderLog] [SUBMIT] triggered=true
+[CONTENT_CONSOLE] [XpiderLog] [STAGE] stage=SUBMIT_TRIGGERED
+[CONTENT_CONSOLE] [XpiderLog] 🕵️ [SubmissionOutcomeVerifier] Verifying submission status (Multi-Polling)...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] ✅ [FinalAudit] Hard Gate Passed: 0 unresolved required fields
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] ✅ [FinalAudit] Hard Gate Passed: 0 unresolved required fields
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [SUBMIT_LOCK] acquired=true submittedFromUrl=http://127.0.0.1:8972/ambiguous.html — post FINAL_AUDIT_PASS
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [SUBMIT_LOCK] acquired=true submittedFromUrl=http://127.0.0.1:8972/ambiguous.html — post FINAL_AUDIT_PASS
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] 📤 [Action] Triggering submission sequence...
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] 📤 [Action] Triggering submission sequence...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [SUBMIT] attemptStarted=true
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [SUBMIT] attemptStarted=true
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [STAGE] stage=SUBMIT_ATTEMPT_STARTED
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [STAGE] stage=SUBMIT_ATTEMPT_STARTED
+[SW_CONSOLE] [BG_LOG][tab=870394007] ⏳ [PIPELINE][SUBMIT_ATTEMPT_STARTED] url=http://127.0.0.1:8972/ambiguous.html
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [SUBMIT] triggered=true
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [SUBMIT] triggered=true
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [STAGE] stage=SUBMIT_TRIGGERED
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [STAGE] stage=SUBMIT_TRIGGERED
+[SW_CONSOLE] [BG_LOG][tab=870394007] 📤 [PIPELINE][SUBMIT_TRIGGERED] url=http://127.0.0.1:8972/ambiguous.html
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] 🕵️ [SubmissionOutcomeVerifier] Verifying submission status (Multi-Polling)...
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] 🕵️ [SubmissionOutcomeVerifier] Verifying submission status (Multi-Polling)...
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[CONTENT_CONSOLE] [XpiderLog] 💓 [Heartbeat] Engine active and processing...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] 💓 [Heartbeat] Engine active and processing...
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] 💓 [Heartbeat] Engine active and processing...
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[CONTENT_CONSOLE] [XpiderLog] 💓 [Heartbeat] Engine active and processing...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] 💓 [Heartbeat] Engine active and processing...
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] 💓 [Heartbeat] Engine active and processing...
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[CONTENT_CONSOLE] [XpiderLog] 💓 [Heartbeat] Engine active and processing...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] 💓 [Heartbeat] Engine active and processing...
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] 💓 [Heartbeat] Engine active and processing...
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[CONTENT_CONSOLE] [XpiderLog] 💓 [Heartbeat] Engine active and processing...
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] 💓 [Heartbeat] Engine active and processing...
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] 💓 [Heartbeat] Engine active and processing...
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] pollCount=78
+[CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] elapsedMs=20203
+[CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] transportStatus=NONE
+[CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] serverErrorTransition=false
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [SUBMIT_VERIFY] pollCount=78
+[CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] matchedServerError=none
+[CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] submitEvent=true
+[CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] urlChanged=false
+[CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] newSuccessNodes=0
+[CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] validationErrors=0
+[CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] formReset=false
+[CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] decision=DELIVERY_UNKNOWN
+[CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] latencyMs=20203
+[CONTENT_CONSOLE] [XpiderLog] [FINAL] status=DELIVERY_UNKNOWN
+[CONTENT_CONSOLE] [XpiderLog] ✅ [Engine] Campaign step successfully executed.
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [SUBMIT_VERIFY] pollCount=78
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [SUBMIT_VERIFY] elapsedMs=20203
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [SUBMIT_VERIFY] elapsedMs=20203
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [SUBMIT_VERIFY] transportStatus=NONE
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [SUBMIT_VERIFY] transportStatus=NONE
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [SUBMIT_VERIFY] serverErrorTransition=false
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [SUBMIT_VERIFY] serverErrorTransition=false
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [SUBMIT_VERIFY] matchedServerError=none
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [SUBMIT_VERIFY] matchedServerError=none
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [SUBMIT_VERIFY] submitEvent=true
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [SUBMIT_VERIFY] submitEvent=true
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [SUBMIT_VERIFY] urlChanged=false
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [SUBMIT_VERIFY] urlChanged=false
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [SUBMIT_VERIFY] newSuccessNodes=0
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [SUBMIT_VERIFY] newSuccessNodes=0
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [SUBMIT_VERIFY] validationErrors=0
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [SUBMIT_VERIFY] validationErrors=0
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [SUBMIT_VERIFY] formReset=false
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [SUBMIT_VERIFY] formReset=false
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [SUBMIT_VERIFY] decision=DELIVERY_UNKNOWN
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [SUBMIT_VERIFY] decision=DELIVERY_UNKNOWN
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [SUBMIT_VERIFY] latencyMs=20203
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [SUBMIT_VERIFY] latencyMs=20203
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [FINAL] status=DELIVERY_UNKNOWN
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [FINAL] status=DELIVERY_UNKNOWN
+[SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] ✅ [Engine] Campaign step successfully executed.
+[SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] ✅ [Engine] Campaign step successfully executed.
+[SW_CONSOLE] [BG_LOG][tab=870394007] [RESULT] resultUrl=http://127.0.0.1:8972/ambiguous.html
+[SW_CONSOLE] [BG_LOG][tab=870394007] [TARGET][127.0.0.1] FINAL status=DELIVERY_UNKNOWN reason=DELIVERY_UNKNOWN
+[SW_CONSOLE] [BG_LOG][tab=870394007] [HISTORY_FINAL] sourceUrl=http://127.0.0.1:8972/ambiguous.html contactPageUrl=http://127.0.0.1:8972/ambiguous.html formPageUrl=http://127.0.0.1:8972/ambiguous.html resultUrl=http://127.0.0.1:8972/ambiguous.html
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[SW_CONSOLE] [LEDGER_STATS] scope=currentRun success=1 failure=1 unknown=1 timeout=0 skipped=0
+[SW_CONSOLE] [BG_LOG][tab=870394007] [LEDGER_STATS] scope=currentRun success=1 failure=1 unknown=1 timeout=0 skipped=0
+[POPUP_CONSOLE] [LEDGER_STATS] scope=currentGeneration success=1 failed=1 unknown=1
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[SW_CONSOLE] [TAB_CLOSE] tabId=870394007 attempt=1 result=CLOSED
+[SW_CONSOLE] [POST_FINAL_TAB_INVARIANT] target=http://127.0.0.1:8972/ambiguous.html remainingOwnedTabs=0 retainedTabs=0 result=PASS
+[SW_CONSOLE] [BG_LOG][tab=none] Waiting 3000ms before next target...
+[SW_CONSOLE] [BG_LOG][tab=none] Campaign finished!
+[SW_CONSOLE] [TAB_BARRIER] phase=CAMPAIGN_FINISHED ownedBefore=0
+[SW_CONSOLE] [TAB_BARRIER] phase=CAMPAIGN_FINISHED ownedAfter=0 result=PASS
+[ATTEMPTS_DUMP_READONLY] [{"id":"att_1791116582433_7324r","url":"http://127.0.0.1:8972/false-failure.html","status":"CONFIRMED_SUCCESS","runId":"run_1791116582422_i9jxs"},{"id":"att_1791116599371_w7457","url":"http://127.0.0.1:8972/true-failure.html","status":"FAILURE","runId":"run_1791116582422_i9jxs"},{"id":"att_1791116615000_86puz","url":"http://127.0.0.1:8972/ambiguous.html","status":"DELIVERY_UNKNOWN","runId":"run_1791116582422_i9jxs"}]
+[SW_CONSOLE] [LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=0
+[POPUP_UI_COUNTERS] {"liveSuccess":"1","liveFailed":"1","ledgerSuccess":"1","ledgerFailed":"1","ledgerUnknown":"1"}
+
+--- STEP 4: counter parity ---
+[HISTORYSTORE_currentRun] success=1 failure=1 unknown=1 completed=3 timeout=0 skipped=0
+[CAMPAIGN_COUNTERS] success=1 failed=1 deliveryUnknown=1 completed=3 total=3
+[POPUP_UI_COUNTERS] {"liveSuccess":"1","liveFailed":"1","ledgerSuccess":"1","ledgerFailed":"1","ledgerUnknown":"1"}
+
+--- STEP 5: collected [SUBMIT_VERIFY] traces (natural runtime) ---
+[TRACE] [CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] pollCount=4
+[TRACE] [CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] elapsedMs=790
+[TRACE] [CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] transportStatus=NONE
+[TRACE] [CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] serverErrorTransition=false
+[TRACE] [CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] matchedServerError=none
+[TRACE] [CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] submitEvent=true
+[TRACE] [CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] urlChanged=false
+[TRACE] [CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] newSuccessNodes=1
+[TRACE] [CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] validationErrors=0
+[TRACE] [CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] formReset=false
+[TRACE] [CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] decision=CONFIRMED_SUCCESS
+[TRACE] [CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] latencyMs=790
+[TRACE] [SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [SUBMIT_VERIFY] pollCount=4
+[TRACE] [SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [SUBMIT_VERIFY] pollCount=4
+[TRACE] [SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [SUBMIT_VERIFY] elapsedMs=790
+[TRACE] [SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [SUBMIT_VERIFY] elapsedMs=790
+[TRACE] [SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [SUBMIT_VERIFY] transportStatus=NONE
+[TRACE] [SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [SUBMIT_VERIFY] transportStatus=NONE
+[TRACE] [SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [SUBMIT_VERIFY] serverErrorTransition=false
+[TRACE] [SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [SUBMIT_VERIFY] serverErrorTransition=false
+[TRACE] [SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [SUBMIT_VERIFY] matchedServerError=none
+[TRACE] [SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [SUBMIT_VERIFY] matchedServerError=none
+[TRACE] [SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [SUBMIT_VERIFY] submitEvent=true
+[TRACE] [SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [SUBMIT_VERIFY] submitEvent=true
+[TRACE] [SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [SUBMIT_VERIFY] urlChanged=false
+[TRACE] [SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [SUBMIT_VERIFY] urlChanged=false
+[TRACE] [SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [SUBMIT_VERIFY] newSuccessNodes=1
+[TRACE] [SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [SUBMIT_VERIFY] newSuccessNodes=1
+[TRACE] [SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [SUBMIT_VERIFY] validationErrors=0
+[TRACE] [SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [SUBMIT_VERIFY] validationErrors=0
+[TRACE] [SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [SUBMIT_VERIFY] formReset=false
+[TRACE] [SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [SUBMIT_VERIFY] formReset=false
+[TRACE] [SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [SUBMIT_VERIFY] decision=CONFIRMED_SUCCESS
+[TRACE] [SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [SUBMIT_VERIFY] decision=CONFIRMED_SUCCESS
+[TRACE] [SW_CONSOLE] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [SUBMIT_VERIFY] latencyMs=790
+[TRACE] [SW_CONSOLE] [BG_LOG][tab=870394003] [CONTENT_EVENT][tabId=870394003][attemptId=att_1791116582433_7324r][url=http://127.0.0.1:8972/false-failure.html] [SUBMIT_VERIFY] latencyMs=790
+[TRACE] [CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] pollCount=4
+[TRACE] [CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] elapsedMs=793
+[TRACE] [CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] transportStatus=NONE
+[TRACE] [CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] serverErrorTransition=true
+[TRACE] [CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] matchedServerError=could not send message
+[TRACE] [CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] submitEvent=true
+[TRACE] [CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] urlChanged=false
+[TRACE] [CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] newSuccessNodes=0
+[TRACE] [CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] validationErrors=0
+[TRACE] [CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] formReset=false
+[TRACE] [CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] decision=SUBMISSION_SERVER_ERROR
+[TRACE] [CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] latencyMs=793
+[TRACE] [SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [SUBMIT_VERIFY] pollCount=4
+[TRACE] [SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [SUBMIT_VERIFY] pollCount=4
+[TRACE] [SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [SUBMIT_VERIFY] elapsedMs=793
+[TRACE] [SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [SUBMIT_VERIFY] elapsedMs=793
+[TRACE] [SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [SUBMIT_VERIFY] transportStatus=NONE
+[TRACE] [SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [SUBMIT_VERIFY] transportStatus=NONE
+[TRACE] [SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [SUBMIT_VERIFY] serverErrorTransition=true
+[TRACE] [SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [SUBMIT_VERIFY] serverErrorTransition=true
+[TRACE] [SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [SUBMIT_VERIFY] matchedServerError=could not send message
+[TRACE] [SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [SUBMIT_VERIFY] matchedServerError=could not send message
+[TRACE] [SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [SUBMIT_VERIFY] submitEvent=true
+[TRACE] [SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [SUBMIT_VERIFY] submitEvent=true
+[TRACE] [SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [SUBMIT_VERIFY] urlChanged=false
+[TRACE] [SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [SUBMIT_VERIFY] urlChanged=false
+[TRACE] [SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [SUBMIT_VERIFY] newSuccessNodes=0
+[TRACE] [SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [SUBMIT_VERIFY] newSuccessNodes=0
+[TRACE] [SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [SUBMIT_VERIFY] validationErrors=0
+[TRACE] [SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [SUBMIT_VERIFY] validationErrors=0
+[TRACE] [SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [SUBMIT_VERIFY] formReset=false
+[TRACE] [SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [SUBMIT_VERIFY] formReset=false
+[TRACE] [SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [SUBMIT_VERIFY] decision=SUBMISSION_SERVER_ERROR
+[TRACE] [SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [SUBMIT_VERIFY] decision=SUBMISSION_SERVER_ERROR
+[TRACE] [SW_CONSOLE] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [SUBMIT_VERIFY] latencyMs=793
+[TRACE] [SW_CONSOLE] [BG_LOG][tab=870394005] [CONTENT_EVENT][tabId=870394005][attemptId=att_1791116599371_w7457][url=http://127.0.0.1:8972/true-failure.html] [SUBMIT_VERIFY] latencyMs=793
+[TRACE] [CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] pollCount=78
+[TRACE] [CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] elapsedMs=20203
+[TRACE] [CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] transportStatus=NONE
+[TRACE] [CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] serverErrorTransition=false
+[TRACE] [SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [SUBMIT_VERIFY] pollCount=78
+[TRACE] [CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] matchedServerError=none
+[TRACE] [CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] submitEvent=true
+[TRACE] [CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] urlChanged=false
+[TRACE] [CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] newSuccessNodes=0
+[TRACE] [CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] validationErrors=0
+[TRACE] [CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] formReset=false
+[TRACE] [CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] decision=DELIVERY_UNKNOWN
+[TRACE] [CONTENT_CONSOLE] [XpiderLog] [SUBMIT_VERIFY] latencyMs=20203
+[TRACE] [SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [SUBMIT_VERIFY] pollCount=78
+[TRACE] [SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [SUBMIT_VERIFY] elapsedMs=20203
+[TRACE] [SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [SUBMIT_VERIFY] elapsedMs=20203
+[TRACE] [SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [SUBMIT_VERIFY] transportStatus=NONE
+[TRACE] [SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [SUBMIT_VERIFY] transportStatus=NONE
+[TRACE] [SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [SUBMIT_VERIFY] serverErrorTransition=false
+[TRACE] [SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [SUBMIT_VERIFY] serverErrorTransition=false
+[TRACE] [SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [SUBMIT_VERIFY] matchedServerError=none
+[TRACE] [SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [SUBMIT_VERIFY] matchedServerError=none
+[TRACE] [SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [SUBMIT_VERIFY] submitEvent=true
+[TRACE] [SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [SUBMIT_VERIFY] submitEvent=true
+[TRACE] [SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [SUBMIT_VERIFY] urlChanged=false
+[TRACE] [SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [SUBMIT_VERIFY] urlChanged=false
+[TRACE] [SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [SUBMIT_VERIFY] newSuccessNodes=0
+[TRACE] [SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [SUBMIT_VERIFY] newSuccessNodes=0
+[TRACE] [SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [SUBMIT_VERIFY] validationErrors=0
+[TRACE] [SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [SUBMIT_VERIFY] validationErrors=0
+[TRACE] [SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [SUBMIT_VERIFY] formReset=false
+[TRACE] [SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [SUBMIT_VERIFY] formReset=false
+[TRACE] [SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [SUBMIT_VERIFY] decision=DELIVERY_UNKNOWN
+[TRACE] [SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [SUBMIT_VERIFY] decision=DELIVERY_UNKNOWN
+[TRACE] [SW_CONSOLE] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [SUBMIT_VERIFY] latencyMs=20203
+[TRACE] [SW_CONSOLE] [BG_LOG][tab=870394007] [CONTENT_EVENT][tabId=870394007][attemptId=att_1791116615000_86puz][url=http://127.0.0.1:8972/ambiguous.html] [SUBMIT_VERIFY] latencyMs=20203
+PASS: HistoryStore currentRun success=1
+PASS: HistoryStore currentRun failure=1
+PASS: HistoryStore currentRun unknown=1
+PASS: campaign counters == HistoryStore
+PASS: popup ledger UI == HistoryStore
+PASS: decision=CONFIRMED_SUCCESS observed
+PASS: decision=SUBMISSION_SERVER_ERROR observed exactly for the true-failure target (1x)
+PASS: decision=DELIVERY_UNKNOWN observed
+[ELAPSED_MS_ALL_TARGETS] [790,793,20203]
+PASS: false-failure fixture: decision=CONFIRMED_SUCCESS and not SUBMISSION_SERVER_ERROR
+PASS: true-failure fixture: decision=SUBMISSION_SERVER_ERROR
+[DOM_ONLY_FAILURE_LATENCY_MS] 793
+PASS: DOM-only true failure latency >= 750ms
+PASS: ambiguous fixture: DELIVERY_UNKNOWN (not FAILURE)
+
+[RESULT] 12/12 checks passed
