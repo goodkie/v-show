@@ -15,17 +15,19 @@
 
     const BUILD_INFO = {
         branch: 'upgrade/phase-0-1',
-        head: '951e33f064d5137a000adaf976f18d26e64139bc',
-        headShort: '951e33f',
+        head: '7ae652f0a5ce81c4c0325e61790aa893ea4b139f',
+        headShort: '7ae652f',
         rollbackBase: 'b8e1d0362946cd6ca8c77c1aa990998da62c2c91',
         manifestVersion: 3,
-        buildId: 'R6.8-20261003-REM',
-        builtAt: '2026-10-03T07:45:00.000Z',
+        buildId: 'R6.9C-20261004-OPR',
+        builtAt: '2026-10-04T08:35:00.000Z',
         modules: {
-            contactGateSha: 'sha256_cg_r6_8_remediation',
-            visionSubmitSha: 'sha256_vs_r6_8_remediation',
-            outcomeVerifierSha: 'sha256_ov_r6_8_remediation',
-            backgroundSha: 'sha256_bg_r6_8_remediation'
+            backgroundSha: '4f117f19853562589a19088e85e4d24bb30e80fa6287ad338539eaa61afa0bd7',
+            contentScriptSha: '5d232f84b3cb1969e528aede1bd097473a08e4e3c1ac9d8d975a0fab449f55b0',
+            emailCollectorSha: '3f1147a379e159e7777158f2caa74cc8d40b2a0b0eb2c244f440af379cb5c9c9',
+            historyStoreSha: '7c9e22e0f62c4f1b3d82510dcc6604eaefff72e80f79c25041319bdf169305ac',
+            contactGateSha: '524933622d1a862425d7302b051bb063d5a3cbec166d868fa73825fa4d38f334',
+            visionSubmitSha: '25cf18a4834bb476edff5e8f19a78dd2723bd556ede649ada69bc801543c83f3'
         }
     };
 
@@ -34,7 +36,9 @@
             `[BUILD_ID] branch=${BUILD_INFO.branch} head=${BUILD_INFO.head} manifestVersion=${BUILD_INFO.manifestVersion} buildId=${BUILD_INFO.buildId} builtAt=${BUILD_INFO.builtAt}`,
             `[BUILD_MODULE] contactGateSha=${BUILD_INFO.modules.contactGateSha}`,
             `[BUILD_MODULE] visionSubmitSha=${BUILD_INFO.modules.visionSubmitSha}`,
-            `[BUILD_MODULE] outcomeVerifierSha=${BUILD_INFO.modules.outcomeVerifierSha}`,
+            `[BUILD_MODULE] historyStoreSha=${BUILD_INFO.modules.historyStoreSha}`,
+            `[BUILD_MODULE] emailCollectorSha=${BUILD_INFO.modules.emailCollectorSha}`,
+            `[BUILD_MODULE] contentScriptSha=${BUILD_INFO.modules.contentScriptSha}`,
             `[BUILD_MODULE] backgroundSha=${BUILD_INFO.modules.backgroundSha}`
         ];
     }

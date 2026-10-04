@@ -43,6 +43,7 @@ try {
         importScripts('modules/history-store.js');
         importScripts('modules/email-collector.js');
         importScripts('modules/vision-submit-executor.js');
+        importScripts('modules/build-provenance.js');
     }
 } catch (e) {
     console.warn('[SW Boot] importScripts modules fallback or handled inline:', e);
@@ -1155,28 +1156,31 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             return true;
 
         case 'GET_BUILD_PROVENANCE':
+            const bpData = (typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO)
+                ? BuildProvenance.BUILD_INFO
+                : {
+                    branch: 'upgrade/phase-0-1',
+                    head: '7ae652f0a5ce81c4c0325e61790aa893ea4b139f',
+                    headShort: '7ae652f',
+                    rollbackBase: 'b8e1d0362946cd6ca8c77c1aa990998da62c2c91',
+                    manifestVersion: 3,
+                    buildId: 'R6.9C-20261004-OPR',
+                    builtAt: '2026-10-04T08:35:00.000Z',
+                    modules: {}
+                };
             sendResponse({
                 success: true,
-                branch: 'upgrade/phase-0-1',
-                head: '951e33f064d5137a000adaf976f18d26e64139bc',
-                headShort: '951e33f',
-                rollbackBase: 'b8e1d0362946cd6ca8c77c1aa990998da62c2c91',
-                manifestVersion: 3,
-                buildId: 'R6.8-20261003-REM',
-                builtAt: '2026-10-03T07:45:00.000Z'
+                provenance: bpData,
+                ...bpData
             });
             return true;
 
         case 'START_CAMPAIGN':
-            // [Issue #6 R6.8 P0-1] Emit immutable Build Provenance at campaign boot
+            // [Issue #6 R6.8 P0-1 & R6.9C] Emit immutable Build Provenance at campaign boot
             const provLogs = (typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.getBuildProvenanceLogs === 'function')
                 ? BuildProvenance.getBuildProvenanceLogs()
                 : [
-                    "[BUILD_ID] branch=upgrade/phase-0-1 head=951e33f064d5137a000adaf976f18d26e64139bc manifestVersion=3 buildId=R6.8-20261003-REM builtAt=2026-10-03T07:45:00.000Z",
-                    "[BUILD_MODULE] contactGateSha=sha256_cg_r6_8_remediation",
-                    "[BUILD_MODULE] visionSubmitSha=sha256_vs_r6_8_remediation",
-                    "[BUILD_MODULE] outcomeVerifierSha=sha256_ov_r6_8_remediation",
-                    "[BUILD_MODULE] backgroundSha=sha256_bg_r6_8_remediation"
+                    "[BUILD_ID] branch=upgrade/phase-0-1 head=7ae652f0a5ce81c4c0325e61790aa893ea4b139f manifestVersion=3 buildId=R6.9C-20261004-OPR builtAt=2026-10-04T08:35:00.000Z"
                 ];
             for (const plog of provLogs) {
                 console.log(plog);
