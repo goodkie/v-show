@@ -80,12 +80,34 @@
                 ...options
             };
             this.solving = false;
+            this.solved = false;
             this.hud = null;
             this.lastLog = "";
             this.lastCheckboxClickTime = 0;
             this.lastAttemptTime = 0; // [v2.0] Auto-reset timer
             this.waitCycles = 0;
             this.init();
+        }
+
+        markSolved(token = 'solved', type = 'unknown') {
+            this.solved = true;
+            if (typeof window !== 'undefined' && window.__xpider_solver_active_interval) {
+                clearInterval(window.__xpider_solver_active_interval);
+                window.__xpider_solver_active_interval = null;
+            }
+            try {
+                if (typeof window !== 'undefined') {
+                    if (window.parent && window.parent !== window) {
+                        window.parent.postMessage({ type: 'captchaToken', action: 'CAPTCHA_SOLVED', source: 'xpider_solver', token, captchaType: type }, '*');
+                    }
+                    if (window.top && window.top !== window) {
+                        window.top.postMessage({ type: 'captchaToken', action: 'CAPTCHA_SOLVED', source: 'xpider_solver', token, captchaType: type }, '*');
+                    }
+                }
+                if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
+                    chrome.runtime.sendMessage({ action: 'CAPTCHA_SOLVED', type, url: this._getHostPageUrl(), token }).catch(() => {});
+                }
+            } catch (_) {}
         }
 
         init() {
@@ -229,6 +251,9 @@
         }
 
         async loop() {
+            if (this.solved) {
+                return;
+            }
             try {
                 const state = await chrome.storage.local.get(['captchaAttempts', 'captchaBlocked', 'xpider_captcha_method', 'xpider_captcha_api_key', 'captchaMethod', 'captchaApiKey']);
                 const attempts = state.captchaAttempts || 0;
@@ -267,6 +292,7 @@
                     const existingToken = document.querySelector('[name="g-recaptcha-response"]') || document.querySelector('[name="h-captcha-response"]');
                     if (existingToken && existingToken.value && existingToken.value.length > 20) {
                         this.log("Token already injected. Solved!", "PASS");
+                        this.markSolved(existingToken.value, 'existing');
                         return;
                     }
 
@@ -289,6 +315,7 @@
                             if (resp && resp.success && resp.token) {
                                 this.log(`Token received! Injecting...`, "INJECT");
                                 const injected = this._injectToken(resp.token, captchaType);
+                                this.markSolved(resp.token, captchaType);
                                 if (injected) {
                                     this.log(`${method === 'nopecha' ? 'NopeCHA' : '2Captcha'}: Token injected successfully!`, "SUCCESS");
                                     await chrome.storage.local.set({ captchaAttempts: 0, captchaBlocked: false });
@@ -345,6 +372,7 @@
                         }
                     } else {
                         this.log("Solved!", "PASS");
+                        this.markSolved('checkbox_verified', 'checkbox');
                     }
                     return;
                 }
@@ -374,7 +402,7 @@
                     }
                 } else {
                     this.waitCycles++;
-                    if (this.waitCycles > 20) this.reload(); // Ghost state recovery
+                    if (this.waitCycles > 20 && !this.solved) this.reload(); // Ghost state recovery
                 }
             } catch (e) {
                 console.error("[XpiderSolver] Loop error:", e);
@@ -826,6 +854,7 @@
                             if (newCount < (this.options.maxAttempts || 10)) this.reload();
                         } else {
                             this.log("Challenge Solved!", "SUCCESS");
+                            this.markSolved(cleanDigits || 'audio_verified', 'audio');
                             await chrome.storage.local.set({ captchaAttempts: 0, captchaBlocked: false });
                         }
                     }, 3000);
@@ -834,8 +863,9 @@
         }
 
         reload() {
+            if (this.solved) return;
             const btn = this.findButtonByPattern(['reload', '새로', '업데이트'], ['#recaptcha-reload-button', '.rc-button-reload']);
-            if (btn) setTimeout(() => btn.click(), 1000);
+            if (btn) setTimeout(() => { if (!this.solved) btn.click(); }, 1000);
         }
     }
 

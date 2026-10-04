@@ -80,6 +80,7 @@
         SETTLED: 'SETTLED'
     };
     let currentTargetLifecycleState = TargetLifecycleState.ACTIVE_FORM;
+    let _isCaptchaSolved = false;
 
     function getTargetLifecycleState() {
         return currentTargetLifecycleState;
@@ -1155,6 +1156,7 @@
 
     async function fillAndSubmit(form, template, speed) {
         try {
+            _isCaptchaSolved = false;
             extractAndSendPageEmails('FORM_ENTRY');
 
             // [HARD ELIGIBILITY GATE] Verify form eligibility before any autofill or submit
@@ -1183,7 +1185,7 @@
             }
 
             // [Auto CAPTCHA Solver 2Captcha API] Proactive early detection upon form recognition
-            if (await checkForCaptcha()) {
+            if (!_isCaptchaSolved && (await checkForCaptcha())) {
                 logDev("🤖 [Security] CAPTCHA detected on form recognition. Initiating proactive 2Captcha solver...", "info");
                 tryAutoSolveCaptcha('FORM_RECOGNITION').catch(() => {});
             }
@@ -1204,7 +1206,7 @@
 
             logDev(`✅ [FORM_PREP] COMPLETE`, "info");
             
-            if (await checkForCaptcha()) {
+            if (!_isCaptchaSolved && (await checkForCaptcha())) {
                 logDev("🤖 [Security] CAPTCHA detected. Engine paused for solver.", "info");
                 try {
                     chrome.runtime.sendMessage({ action: 'STAGE_PROGRESSION', stage: 'CAPTCHA', url: window.location.href }).catch(() => {});
@@ -1341,6 +1343,7 @@
                 inputEl.value = answer.toString();
                 inputEl.dispatchEvent(new Event('input', { bubbles: true }));
                 inputEl.dispatchEvent(new Event('change', { bubbles: true }));
+                _isCaptchaSolved = true;
             }
         }
     }
@@ -3325,8 +3328,10 @@
                     const injectedInput = document.querySelector(`[name*="-response"]`);
                     if (injectedInput) injectedInput.dispatchEvent(new Event('change', { bubbles: true }));
 
+                    _isCaptchaSolved = true;
                     resolve(true);
                 } else {
+                    _isCaptchaSolved = true;
                     resolve(true);
                 }
             });
@@ -3338,12 +3343,16 @@
     // [Cross-Frame Coordination] Listen for solved captcha tokens from other frames or background
     if (typeof window !== 'undefined' && window.addEventListener) {
         window.addEventListener('message', (event) => {
-            if (event.data && (event.data.type === 'captchaToken' || event.data.action === 'CAPTCHA_SOLVED') && event.data.token) {
-                const solution = event.data.token;
-                const fields = document.querySelectorAll('[name="g-recaptcha-response"], textarea[name="g-recaptcha-response"], [name="h-captcha-response"], textarea[name="h-captcha-response"]');
+            if (event.data && (event.data.type === 'captchaToken' || event.data.action === 'CAPTCHA_SOLVED')) {
+                _isCaptchaSolved = true;
+                const solution = event.data.token || '';
+                logDev(`🔑 [Security] Captcha solved signal received from frame (${solution.substring(0, 10)}...)`, 'success');
+                const fields = document.querySelectorAll('[name="g-recaptcha-response"], textarea[name="g-recaptcha-response"], [name="h-captcha-response"], textarea[name="h-captcha-response"], [name="cf-turnstile-response"]');
                 for (const f of fields) {
                     try {
-                        f.value = solution;
+                        if (solution && solution.length > 5) {
+                            f.value = solution;
+                        }
                         f.dispatchEvent(new Event('input', { bubbles: true }));
                         f.dispatchEvent(new Event('change', { bubbles: true }));
                     } catch (_) {}
@@ -3355,48 +3364,74 @@
         });
     }
 
+    if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
+        try {
+            chrome.runtime.onMessage.addListener((msg) => {
+                if (msg && msg.action === 'CAPTCHA_SOLVED') {
+                    _isCaptchaSolved = true;
+                    logDev(`🔑 [Security] Captcha solved signal received via runtime message`, 'success');
+                }
+            });
+        } catch (_) {}
+    }
+
     async function waitForCaptchaSolved() {
         const MAX_WAIT = 30; // Bounded wait (Issue #6 R6.8 P1-1)
         let autoSolveAttempted = false;
         let autoSolveFinishedTs = 0;
 
         for (let i = 0; i < MAX_WAIT; i++) {
-            await new Promise(r => setTimeout(r, 1000));
-            
+            if (_isCaptchaSolved) {
+                logDev("🔑 [Security] Challenge solved verified. Resuming sequence immediately.", "success");
+                await new Promise(r => setTimeout(r, 400));
+                return true;
+            }
+
             const stillHasCaptcha = await checkForCaptcha();
             
             // Search all frames and forms for captcha token fields
             const gResponse = document.querySelector('[name="g-recaptcha-response"]') || document.querySelector('#g-recaptcha-response');
             const hResponse = document.querySelector('[name="h-captcha-response"]') || document.querySelector('#h-captcha-response');
-            const tResponse = document.querySelector('[name="cf-turnstile-response"]') || document.querySelector('#cf-turnstile-response') || document.querySelector('[name="cf_challenge_response"]');
+            const tResponse = document.querySelector('[name="cf-turnstile-response"]') || document.querySelector('#cf-turnstile-response') || document.querySelector('[name="cf_challenge_response"]') || document.querySelector('input[name*="turnstile"]');
+            const imgInput = document.querySelector('input[name*="captcha" i], input[id*="captcha" i], input[placeholder*="captcha" i]');
             
+            const hasToken = _isCaptchaSolved ||
+                             (gResponse && gResponse.value && gResponse.value.trim() !== '') || 
+                             (hResponse && hResponse.value && hResponse.value.trim() !== '') || 
+                             (tResponse && tResponse.value && tResponse.value.trim() !== '') ||
+                             (imgInput && imgInput.value && imgInput.value.trim() !== '');
+
             // Auto-solve injection trigger
-            if (stillHasCaptcha && !autoSolveAttempted) {
+            if (stillHasCaptcha && !autoSolveAttempted && !_isCaptchaSolved) {
                 autoSolveAttempted = true;
                 const solved = await tryAutoSolveCaptcha('WAIT_LOOP');
                 autoSolveFinishedTs = Date.now();
-                if (solved) continue;
+                if (solved) {
+                    _isCaptchaSolved = true;
+                    logDev("🔑 [Security] Auto-solve succeeded. Resuming sequence immediately.", "success");
+                    await new Promise(r => setTimeout(r, 500));
+                    return true;
+                }
             }
-
-            const hasToken = (gResponse && gResponse.value && gResponse.value.trim() !== '') || 
-                             (hResponse && hResponse.value && hResponse.value.trim() !== '') || 
-                             (tResponse && tResponse.value && tResponse.value.trim() !== '');
 
             // [P1-1 Fast-Fail] If token injected but challenge not accepted within 15s post-solve:
             if (autoSolveFinishedTs > 0 && (Date.now() - autoSolveFinishedTs > 15000)) {
-                if (stillHasCaptcha && !document.querySelector('.recaptcha-checkbox-checked, [aria-checked="true"]')) {
+                if (!_isCaptchaSolved && !hasToken && stillHasCaptcha && !document.querySelector('.recaptcha-checkbox-checked, [aria-checked="true"]')) {
                     logDev("[CAPTCHA_INTEGRATION_FAILURE] reason=CAPTCHA_TOKEN_NOT_ACCEPTED", "error");
                     throw new Error("CAPTCHA_TOKEN_NOT_ACCEPTED");
                 }
             }
 
-            if (!stillHasCaptcha || hasToken) {
+            if (!stillHasCaptcha || hasToken || _isCaptchaSolved) {
+                _isCaptchaSolved = true;
                 logDev("🔑 [Security] Challenge solved or removed. Resuming sequence immediately.", "success");
                 await new Promise(r => setTimeout(r, 500));
                 return true;
             }
+
+            await new Promise(r => setTimeout(r, 1000));
         }
-        return false;
+        return _isCaptchaSolved;
     }
 
     // ============================================================
@@ -4344,6 +4379,21 @@
             if (primary) {
                 if (this.isDisabled(primary)) {
                     await this.repairActivation(primary);
+                }
+
+                // If still disabled after repair, unlock for activation pass
+                if (this.isDisabled(primary)) {
+                    logDev("🔓 [SubmitExecutorR5] Unlocking disabled submit button for execution...", "info");
+                    try {
+                        primary.removeAttribute('disabled');
+                        primary.disabled = false;
+                        primary.removeAttribute('aria-disabled');
+                        primary.classList.remove('disabled', 'is-disabled', 'btn-disabled');
+                        if (primary.style) {
+                            primary.style.pointerEvents = 'auto';
+                            if (primary.style.opacity === '0') primary.style.opacity = '1';
+                        }
+                    } catch (_) {}
                 }
 
                 // [Issue #6 R6 SUBMIT-R2-1] If still disabled after repair, handle per observeDisabledMs option
