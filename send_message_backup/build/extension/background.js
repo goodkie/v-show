@@ -1311,10 +1311,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
         case 'SENDER_FINISHED':
             // [v18.24.0] Direct Route: Resolve current target process from main listener
-            if (sender.tab && sender.tab.id === campaignState.currentTabId && campaignState.targetResolve) {
-                const resolve = campaignState.targetResolve;
-                resolve(request.result);
-                sendResponse({ success: true });
+            if (campaignState.targetResolve) {
+                const isTabMatch = !sender.tab || sender.tab.id === campaignState.currentTabId || sender.tab.id === campaignState.targetTabId || (campaignOwnedTabIds && campaignOwnedTabIds.has(sender.tab.id));
+                if (isTabMatch) {
+                    const resolve = campaignState.targetResolve;
+                    resolve(request.result);
+                    sendResponse({ success: true });
+                }
             }
             return true;
 
@@ -1405,12 +1408,17 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         case 'GET_STATE':
             chrome.storage.local.get(['xpider_paused_checkpoint'], (stored) => {
                 const checkpoint = campaignState.pausedCheckpoint || stored.xpider_paused_checkpoint || null;
+                const counters = campaignState.counters || { success: 0, failed: 0, completed: 0, remaining: 0, total: 0 };
                 sendResponse({
                     success: true,
                     isActive: campaignState.isActive,
-                    successCount: campaignState.successCount,
-                    totalTargets: campaignState.totalTargets,
-                    remainingCount: campaignState.queue.length,
+                    successCount: counters.success !== undefined ? counters.success : campaignState.successCount,
+                    failedCount: counters.failed !== undefined ? counters.failed : 0,
+                    completedCount: counters.completed !== undefined ? counters.completed : 0,
+                    remainingCount: counters.remaining !== undefined ? counters.remaining : campaignState.queue.length,
+                    totalTargets: counters.total !== undefined && counters.total > 0 ? counters.total : campaignState.totalTargets,
+                    failureBreakdown: counters.failureBreakdown || {},
+                    counters: counters,
                     isPaused: campaignState.isPaused,
                     hasPausedCheckpoint: !!(checkpoint && checkpoint.remainingQueue && checkpoint.remainingQueue.length > 0),
                     pausedRemainingCount: (checkpoint && checkpoint.remainingQueue) ? checkpoint.remainingQueue.length : 0,
@@ -2449,7 +2457,15 @@ async function processNextCampaignTarget(loopSessionId) {
             if (campaignState.isActive) {
                 logBg(null, "Campaign finished!", "complete");
                 campaignState.isActive = false;
+                campaignState.counters.inProgress = 0;
+                campaignState.counters.remaining = 0;
                 await closeAllCampaignTabsExcept(null, 'CAMPAIGN_FINISHED');
+                await persistCounters();
+                broadcastCounters();
+                chrome.runtime.sendMessage({
+                    action: 'CAMPAIGN_FINISHED',
+                    counters: campaignState.counters
+                }).catch(() => {});
             }
             campaignState.isLoopRunning = false;
             return;
@@ -3487,6 +3503,10 @@ async function orchestrateSending(urlInput, template) {
 
             // [R6.9A Single Source of Truth: All counters strictly derived from HistoryStore ledger]
             const ledgerStats = hs.getLedgerStats('currentRun', campaignState.campaignRunId);
+            if (isSuccess && ledgerStats.success === 0) {
+                ledgerStats.success = 1;
+                ledgerStats.completed = Math.max(ledgerStats.completed, 1);
+            }
             campaignState.counters.success = ledgerStats.success;
             campaignState.counters.failed = ledgerStats.failure;
             campaignState.counters.deliveryUnknown = ledgerStats.unknown;

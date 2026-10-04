@@ -108,6 +108,8 @@ let campaignQueue = [];
 let campaignActive = false;
 let campaignPaused = false;
 let successCount = 0;
+let failedCount = 0;
+let completedCount = 0;
 let totalTargets = 0;
 let i18nData = null;
 let lastLogMessage = "Ready...";
@@ -705,14 +707,26 @@ async function hydrateCampaignState() {
             }
 
             if (response && response.success) {
+                totalTargets = response.totalTargets || 0;
+                successCount = response.successCount || 0;
+                failedCount = response.failedCount || 0;
+                completedCount = response.completedCount || 0;
+                remainingTargets = response.remainingCount !== undefined ? response.remainingCount : 0;
+                campaignPaused = !!response.isPaused;
+
+                if (typeof updateRealTimeStatus === 'function') {
+                    updateRealTimeStatus({
+                        successCount: successCount,
+                        failedCount: failedCount,
+                        completedCount: completedCount,
+                        remainingCount: remainingTargets,
+                        totalTargets: totalTargets,
+                        failureBreakdown: response.failureBreakdown || {}
+                    });
+                }
+
                 if (response.isActive) {
                     campaignActive = true;
-                    totalTargets = response.totalTargets || 0;
-                    successCount = response.successCount || 0;
-                    remainingTargets = response.remainingCount || 0;
-                    campaignPaused = !!response.isPaused;
-                    
-                    const completedCount = response.completedCount || 0;
                     
                     const statusBox = document.getElementById('status-box');
                     if (statusBox) statusBox.classList.remove('hidden');
@@ -720,15 +734,6 @@ async function hydrateCampaignState() {
                     if (multiActions) multiActions.classList.remove('hidden');
                     const startBtn = document.getElementById('start-btn');
                     if (startBtn) startBtn.classList.add('hidden');
-                    
-                    if (typeof updateRealTimeStatus === 'function') {
-                        updateRealTimeStatus({
-                            successCount: successCount,
-                            completedCount: completedCount,
-                            remainingCount: remainingTargets,
-                            totalTargets: totalTargets
-                        });
-                    }
                     
                     const btn = document.getElementById('pause-btn');
                     const langSelect = document.getElementById('language-select');
@@ -750,7 +755,11 @@ async function hydrateCampaignState() {
                     if (startBtn) startBtn.classList.remove('hidden');
                     const multiActions = document.getElementById('multi-actions');
                     if (multiActions) multiActions.classList.add('hidden');
-                    addDiagnosticLog(`[Engine] Initial handshake synced: active=false`);
+                    if (totalTargets > 0 || completedCount > 0 || successCount > 0 || failedCount > 0) {
+                        const statusBox = document.getElementById('status-box');
+                        if (statusBox) statusBox.classList.remove('hidden');
+                    }
+                    addDiagnosticLog(`[Engine] Initial handshake synced: active=false, completed=${completedCount}, success=${successCount}, failed=${failedCount}`);
                 }
                 return resolve(true);
             }
@@ -888,6 +897,22 @@ document.addEventListener('DOMContentLoaded', async () => {
                     addLog(request.message, request.logType);
                 } else if (request.action === 'UPDATE_STATS') {
                     updateRealTimeStatus(request.data);
+                } else if (request.action === 'CAMPAIGN_FINISHED') {
+                    if (request.counters) {
+                        updateRealTimeStatus({
+                            totalTargets: request.counters.total,
+                            successCount: request.counters.success,
+                            failedCount: request.counters.failed,
+                            completedCount: request.counters.completed,
+                            remainingCount: 0,
+                            failureBreakdown: request.counters.failureBreakdown
+                        });
+                    }
+                    updateProgress(100);
+                    const statusTitle = document.getElementById('status-title');
+                    if (statusTitle) statusTitle.textContent = "Live Progress (Finished)";
+                    const statusDetail = document.getElementById('status-detail');
+                    if (statusDetail) statusDetail.textContent = "Campaign Complete: All targets finished.";
                 } else if (request.action === 'CORE_RUNTIME_BROKEN_ALERT') {
                     addLog(`🚨 [CIRCUIT BREAKER] Core runtime broken: ${request.symbol} is not defined. Campaign paused.`, 'error');
                 } else if (request.action === 'EMAIL_COLLECTOR_CLEARED') {
@@ -1029,78 +1054,92 @@ function applyTranslations(lang) {
 }
 
 function updateRealTimeStatus(data) {
+    if (!data) return;
     if (data.scope || data.campaignRunId) {
         console.log(`[LEDGER_STATS] scope=${data.scope || 'currentGeneration'} success=${data.successCount || 0} failed=${data.failedCount || 0} unknown=${data.deliveryUnknownCount || 0}`);
     }
-    if (data.totalTargets !== undefined) {
+    if (data.totalTargets !== undefined && data.totalTargets > 0) {
         totalTargets = data.totalTargets;
     }
-    
-    let completedCount = 0;
+
+    // 1. Success Count
+    if (data.successCount !== undefined) {
+        successCount = data.successCount;
+    } else if (data.counters && data.counters.success !== undefined) {
+        successCount = data.counters.success;
+    }
+    const successDisplay = document.getElementById('success-count-display');
+    if (successDisplay) successDisplay.textContent = successCount;
+
+    // Refresh the status label if finished
+    const statusLabel = document.querySelector('[data-i18n="status_finished"]');
+    if (statusLabel) {
+        const lang = document.getElementById('language-select')?.value || 'en';
+        const dict = i18nData ? (i18nData[lang] || i18nData['en'] || {}) : {};
+        let text = dict['status_finished'] || 'Campaign Status: {count} sent';
+        const parts = text.split('{count}');
+        const prefixText = parts[0] ? parts[0].trim() : 'Campaign Status:';
+        const suffixText = parts[1] ? parts[1].trim() : 'sent';
+        statusLabel.textContent = prefixText;
+        const suffixLabel = document.querySelector('.status-suffix');
+        if (suffixLabel) suffixLabel.textContent = suffixText;
+    }
+
+    // 2. Failed Count
+    if (data.failedCount !== undefined) {
+        failedCount = data.failedCount;
+    } else if (data.counters && data.counters.failed !== undefined) {
+        failedCount = data.counters.failed;
+    }
+    const failedDisplay = document.getElementById('failed-count-display');
+    if (failedDisplay) failedDisplay.textContent = failedCount;
+
+    // 3. Completed Count (never clobber with 0 on partial updates)
     if (data.completedCount !== undefined) {
         completedCount = data.completedCount;
-    } else if (data.remainingCount !== undefined) {
-        completedCount = totalTargets - data.remainingCount;
+    } else if (data.counters && data.counters.completed !== undefined) {
+        completedCount = data.counters.completed;
+    } else if (data.remainingCount !== undefined && totalTargets > 0) {
+        completedCount = Math.max(0, totalTargets - data.remainingCount);
+    } else if (data.successCount !== undefined || data.failedCount !== undefined) {
+        completedCount = Math.max(completedCount, successCount + failedCount);
     }
-    if (completedCount < 0) completedCount = 0;
-    
-    // Update Completed count display
     const completedDisplay = document.getElementById('completed-count-display');
     if (completedDisplay) completedDisplay.textContent = completedCount;
 
-    if (data.successCount !== undefined) {
-        successCount = data.successCount;
-        const display = document.getElementById('success-count-display');
-        if (display) display.textContent = successCount;
+    // 4. Remaining Count (prioritize authoritative remainingCount)
+    if (data.remainingCount !== undefined) {
+        remainingTargets = data.remainingCount;
+    } else if (data.counters && data.counters.remaining !== undefined) {
+        remainingTargets = data.counters.remaining;
+    } else if (totalTargets > 0) {
+        remainingTargets = Math.max(0, totalTargets - completedCount);
+    }
+    const remainingDisplay = document.getElementById('remaining-count-display');
+    if (remainingDisplay) remainingDisplay.textContent = remainingTargets;
 
-        // Refresh the label if it has a placeholder
-        const statusLabel = document.querySelector('[data-i18n="status_finished"]');
-        if (statusLabel) {
-            const lang = document.getElementById('language-select')?.value || 'en';
-            const dict = i18nData ? (i18nData[lang] || i18nData['en'] || {}) : {};
-            let text = dict['status_finished'] || 'Campaign Status: {count} sent';
-            
-            const parts = text.split('{count}');
-            const prefixText = parts[0] ? parts[0].trim() : 'Campaign Status:';
-            const suffixText = parts[1] ? parts[1].trim() : 'sent';
-            
-            statusLabel.textContent = prefixText;
-            
-            const suffixLabel = document.querySelector('.status-suffix');
-            if (suffixLabel) {
-                suffixLabel.textContent = suffixText;
-            }
-        }
+    // Ensure status box is unhidden whenever there are counts or active campaign
+    if (totalTargets > 0 || completedCount > 0 || successCount > 0 || failedCount > 0 || remainingTargets > 0 || campaignActive) {
+        const statusBox = document.getElementById('status-box');
+        if (statusBox) statusBox.classList.remove('hidden');
     }
 
-    if (data.failedCount !== undefined) {
-        const failedDisplay = document.getElementById('failed-count-display');
-        if (failedDisplay) failedDisplay.textContent = data.failedCount;
+    // Update Progress Bar
+    const progress = totalTargets > 0 ? Math.min(100, Math.round((completedCount / totalTargets) * 100)) : (completedCount > 0 && remainingTargets === 0 ? 100 : 0);
+    updateProgress(progress);
+
+    refreshStatusDetailUI();
+
+    const countDisplay = document.getElementById('url-count-display');
+    if (countDisplay) {
+        const lang = document.getElementById('language-select')?.value || 'en';
+        const dict = i18nData ? (i18nData[lang] || i18nData['en'] || {}) : {};
+        const remainingLabel = dict.remaining_suffix || 'remaining';
+        countDisplay.textContent = `${remainingTargets} (${remainingLabel}) / ${totalTargets} URLs`;
     }
 
     if (data.failureBreakdown && typeof data.failureBreakdown === 'object') {
         renderFailureBreakdown(data.failureBreakdown);
-    }
-    
-    if (data.remainingCount !== undefined) {
-        remainingTargets = data.remainingCount;
-        
-        // Update Remaining count display
-        const remainingDisplay = document.getElementById('remaining-count-display');
-        if (remainingDisplay) remainingDisplay.textContent = totalTargets - completedCount;
-
-        const progress = totalTargets > 0 ? Math.round((completedCount / totalTargets) * 100) : 0;
-        updateProgress(progress);
-        
-        refreshStatusDetailUI();
-
-        const countDisplay = document.getElementById('url-count-display');
-        if (countDisplay) {
-            const lang = document.getElementById('language-select')?.value || 'en';
-            const dict = i18nData ? (i18nData[lang] || i18nData['en'] || {}) : {};
-            const remainingLabel = dict.remaining_suffix || 'remaining';
-            countDisplay.textContent = `${remainingTargets} (${remainingLabel}) / ${totalTargets} URLs`;
-        }
     }
 }
 
@@ -2249,7 +2288,13 @@ async function startCampaign() {
                 startBtn.disabled = false;
                 startBtn.textContent = "🚀 START SENDING";
             }
-            updateRealTimeStatus({ successCount: 0, remainingCount: campaignQueue.length });
+            updateRealTimeStatus({
+                successCount: 0,
+                failedCount: 0,
+                completedCount: 0,
+                remainingCount: campaignQueue.length,
+                totalTargets: campaignQueue.length
+            });
             updateProgress(0);
 
             // Post-ACK GET_STATE verification
