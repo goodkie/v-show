@@ -1100,13 +1100,12 @@ async function clearEmailCollectorData() {
             self.__xpiderEmailStore = emailStore;
             await emailStore.clearAll({ suppressRecollectMs: 5000 });
         }
-    } catch (_) {}
-    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-        await chrome.storage.local.remove(LIST_DATA_KEYS.emailCollector);
-        if (chrome.storage.session) {
-            await chrome.storage.session.remove(LIST_DATA_KEYS.emailCollector).catch(() => {});
-        }
+    } catch (err) {
+        console.warn('[clearEmailCollectorData] clearAll error:', err);
     }
+    // [Issue #6 R6.9C Single-Writer Fix]: Do NOT remove canonical Email Collector keys again here.
+    // emailStore.clearAll() is the authoritative writer that pruned old lineage and wrote
+    // the canonical clean store objects and new generation.
     if (typeof chrome !== 'undefined' && chrome.action && chrome.action.setBadgeText) {
         chrome.action.setBadgeText({ text: '' });
     }
@@ -1118,16 +1117,16 @@ async function resetAllListData() {
     await clearAutoFormData();
     // 2. Clear history data
     await clearHistoryData();
-    // 3. Clear email collector data
+    // 3. Clear email collector data (authoritative single-writer clearAll)
     await clearEmailCollectorData();
     // 4. Clear diagnostics data
     await clearDiagnosticsData();
-    // 5. Ensure all keys in storage registry are removed
+    // 5. Ensure non-email list keys in storage registry are removed
+    // [Issue #6 R6.9C Single-Writer Fix]: Exclude LIST_DATA_KEYS.emailCollector from post-clear removal!
     const allKeysToRemove = [
         ...LIST_DATA_KEYS.autoform,
         ...LIST_DATA_KEYS.history,
-        ...LIST_DATA_KEYS.diagnostics,
-        ...LIST_DATA_KEYS.emailCollector
+        ...LIST_DATA_KEYS.diagnostics
     ];
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
         await chrome.storage.local.remove(allKeysToRemove);

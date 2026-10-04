@@ -202,12 +202,20 @@
             if (!Array.isArray(keys) || keys.length === 0) return;
             if (this.storage && typeof this.storage.remove === 'function') {
                 await new Promise((resolve) => {
-                    this.storage.remove(keys, () => resolve());
+                    try {
+                        this.storage.remove(keys, () => resolve());
+                    } catch (_) {
+                        resolve();
+                    }
                 });
             }
             if (this.sessionStorage && typeof this.sessionStorage.remove === 'function') {
                 await new Promise((resolve) => {
-                    this.sessionStorage.remove(keys, () => resolve()).catch(() => resolve());
+                    try {
+                        this.sessionStorage.remove(keys, () => resolve());
+                    } catch (_) {
+                        resolve();
+                    }
                 });
             }
         }

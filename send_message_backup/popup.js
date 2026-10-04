@@ -3263,22 +3263,25 @@ async function dispatchResetAllListData() {
         if (el) el.textContent = '0';
     });
 
-    const emailStore = getEmailCollectorStore();
-    if (emailStore && typeof emailStore.clearAll === 'function') {
-        await emailStore.clearAll();
+    // [Issue #6 R6.9C Single-Writer Fix]: Background is authoritative writer for Email Collector reset.
+    // Do NOT call clearAll on collector store or remove emailCollector keys in popup!
+    // Discard cached store instance so popup reloads clean background-authoritative state.
+    emailCollectorStore = null;
+    if (typeof window !== 'undefined') {
+        window.__xpiderEmailStore = null;
     }
-    renderEmailCollectorUI();
+    await renderEmailCollectorUI();
 
     diagnosticLogBuffer.length = 0;
     const logContainer = document.getElementById('log-container');
     if (logContainer) logContainer.innerHTML = '';
 
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+        // [Issue #6 R6.9C Single-Writer Fix]: Exclude LIST_DATA_KEYS.emailCollector from post-clear removal!
         const allKeys = [
             ...LIST_DATA_KEYS.autoform,
             ...LIST_DATA_KEYS.history,
-            ...LIST_DATA_KEYS.diagnostics,
-            ...LIST_DATA_KEYS.emailCollector
+            ...LIST_DATA_KEYS.diagnostics
         ];
         await chrome.storage.local.remove(allKeys);
     }
@@ -4064,8 +4067,13 @@ function bindEmailCollectorEvents() {
                     ? confirm("Are you sure you want to delete ALL accumulated emails?")
                     : true;
                 if (confirmed) {
-                    if (store) await store.clearAll({ suppressRecollectMs: 5000 });
-                    chrome.runtime.sendMessage({ action: 'CLEAR_COLLECTED_EMAILS', mode: 'all' }, () => {});
+                    if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
+                        await new Promise(r => chrome.runtime.sendMessage({ action: 'CLEAR_COLLECTED_EMAILS', mode: 'all' }, r));
+                    }
+                    emailCollectorStore = null;
+                    if (typeof window !== 'undefined') {
+                        window.__xpiderEmailStore = null;
+                    }
                     addLog("🗑️ Cleared all accumulated emails.", 'info');
                     const curStat = document.getElementById('stat-email-current-count');
                     const globStat = document.getElementById('stat-email-global-count');
@@ -4077,7 +4085,7 @@ function bindEmailCollectorEvents() {
                     if (globChip) globChip.textContent = '0';
                     const textarea = document.getElementById('email-collector-textarea');
                     if (textarea) textarea.value = '// All emails cleared (0 records)';
-                    renderEmailCollectorUI();
+                    await renderEmailCollectorUI();
                 }
             }
         });

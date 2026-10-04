@@ -953,29 +953,38 @@
     let __emailCollectorLastFingerprint = '';
     let __emailCollectorObserver = null;
     let __emailCollectorDebounceTimer = null;
+    let __emailCollectorResyncing = false;
 
-    // Generation synchronization from chrome.storage.local (Directive Section 2 & 8)
-    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-        try {
-            chrome.storage.local.get(['xpider_email_generation'], (res) => {
-                if (res && typeof res.xpider_email_generation === 'number') {
-                    __emailCollectorGeneration = res.xpider_email_generation;
-                } else if (__emailCollectorGeneration === null) {
-                    __emailCollectorGeneration = 1;
-                }
-                const modLoaded = (typeof extractEmailsFromDocument === 'function') || 
-                    (typeof self !== 'undefined' && typeof self.extractEmailsFromDocument === 'function') ||
-                    (typeof window !== 'undefined' && typeof window.extractEmailsFromDocument === 'function');
-                console.log(`[EMAIL_COLLECTOR_INIT] generation=${__emailCollectorGeneration} moduleLoaded=${modLoaded}`);
-                extractAndSendPageEmails('INIT');
-                setupEmailCollectorObserver();
-            });
-        } catch (_) {
+    // Generation synchronization from chrome.storage.local with readiness gate (Bug 3 Fix)
+    const __emailCollectorReady = new Promise((resolve) => {
+        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+            try {
+                chrome.storage.local.get(['xpider_email_generation'], (res) => {
+                    if (res && typeof res.xpider_email_generation === 'number') {
+                        __emailCollectorGeneration = res.xpider_email_generation;
+                    } else if (__emailCollectorGeneration === null) {
+                        __emailCollectorGeneration = 1;
+                    }
+                    const modLoaded = (typeof extractEmailsFromDocument === 'function') || 
+                        (typeof self !== 'undefined' && typeof self.extractEmailsFromDocument === 'function') ||
+                        (typeof window !== 'undefined' && typeof window.extractEmailsFromDocument === 'function');
+                    console.log(`[EMAIL_COLLECTOR_INIT] generation=${__emailCollectorGeneration} moduleLoaded=${modLoaded}`);
+                    resolve(__emailCollectorGeneration);
+                });
+            } catch (_) {
+                if (__emailCollectorGeneration === null) __emailCollectorGeneration = 1;
+                resolve(__emailCollectorGeneration);
+            }
+        } else {
             if (__emailCollectorGeneration === null) __emailCollectorGeneration = 1;
+            resolve(__emailCollectorGeneration);
         }
-    } else {
-        if (__emailCollectorGeneration === null) __emailCollectorGeneration = 1;
-    }
+    });
+
+    __emailCollectorReady.then(() => {
+        extractAndSendPageEmails('INIT');
+        setupEmailCollectorObserver();
+    });
 
     // Clear broadcast listener (Directive Section 7)
     if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
@@ -1041,8 +1050,9 @@
         return Array.from(emails).sort();
     }
 
-    function extractAndSendPageEmails(trigger = 'SCAN') {
+    async function extractAndSendPageEmails(trigger = 'SCAN') {
         try {
+            await __emailCollectorReady;
             if (Date.now() < __emailCollectorSuppressedUntil) return;
 
             const allFound = extractEmailsFromCurrentDom() || [];
@@ -1083,6 +1093,24 @@
                     }
                     if (response) {
                         console.log(`[EMAIL_ACK] currentPageCount=${response.currentPageCount || 0} newGlobalCount=${response.newGlobalCount || 0} totalGlobalCount=${response.totalGlobalCount || 0} suppressed=${!!response.suppressed} staleGeneration=${!!response.staleGeneration}`);
+                        if (response.staleGeneration === true && !__emailCollectorResyncing) {
+                            __emailCollectorResyncing = true;
+                            console.log(`[EMAIL_GENERATION_RESYNC] trigger=${trigger} previousGen=${genToSend}`);
+                            __emailCollectorLastFingerprint = '';
+                            if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+                                chrome.storage.local.get(['xpider_email_generation'], (res) => {
+                                    if (res && typeof res.xpider_email_generation === 'number') {
+                                        __emailCollectorGeneration = res.xpider_email_generation;
+                                    }
+                                    setTimeout(() => {
+                                        __emailCollectorResyncing = false;
+                                        extractAndSendPageEmails('FORCE');
+                                    }, 50);
+                                });
+                            } else {
+                                __emailCollectorResyncing = false;
+                            }
+                        }
                     }
                 });
             }
@@ -5071,7 +5099,8 @@
             getCollectorGeneration: () => __emailCollectorGeneration,
             setCollectorGeneration: (g) => { __emailCollectorGeneration = g; },
             setCollectorBaseline: (b) => { __emailCollectorBaseline = b; },
-            getCollectorBaseline: () => __emailCollectorBaseline
+            getCollectorBaseline: () => __emailCollectorBaseline,
+            getCollectorReadyPromise: () => __emailCollectorReady
         };
     }
 })();
