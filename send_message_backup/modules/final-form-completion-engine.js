@@ -6,17 +6,23 @@
 
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
-        define(['./checkbox-resolver-r2', './select-resolver-r2'], factory);
+        define(['./checkbox-resolver-r2', './select-resolver-r2', './math-captcha-solver'], factory);
     } else if (typeof module === 'object' && module.exports) {
-        let cb, sel;
+        let cb, sel, mcs;
         try { cb = require('./checkbox-resolver-r2'); } catch (_) {}
         try { sel = require('./select-resolver-r2'); } catch (_) {}
-        module.exports = factory(cb, sel);
+        try { mcs = require('./math-captcha-solver'); } catch (_) {}
+        module.exports = factory(cb, sel, mcs);
     } else {
-        root.FinalFormCompletionEngine = factory(root.CheckboxResolverR2, root.SelectResolverR2);
+        root.FinalFormCompletionEngine = factory(root.CheckboxResolverR2, root.SelectResolverR2, root.MathCaptchaSolver);
     }
-}(typeof self !== 'undefined' ? self : this, function (CheckboxResolverR2, SelectResolverR2) {
+}(typeof self !== 'undefined' ? self : this, function (CheckboxResolverR2, SelectResolverR2, MathCaptchaSolver) {
     'use strict';
+
+    const _MathCaptchaSolver = (typeof MathCaptchaSolver !== 'undefined' && MathCaptchaSolver) ||
+        (typeof self !== 'undefined' && self.MathCaptchaSolver) ||
+        (typeof window !== 'undefined' && window.MathCaptchaSolver) ||
+        (typeof require !== 'undefined' ? (function(){ try { return require('./math-captcha-solver'); } catch(_) { return null; } })() : null);
 
     // ------------------------------------------------------------------------
     // Lexical & Semantic Dictionaries
@@ -238,6 +244,14 @@
                 return { category: 'honeypot', isSensitive: false, isHoneypot: true };
             }
 
+            // Math Captcha / Human Verification Equation Guard
+            if (_MathCaptchaSolver && typeof _MathCaptchaSolver.solveField === 'function') {
+                const mathVal = _MathCaptchaSolver.solveField(el, getElementContextText);
+                if (mathVal !== null) {
+                    return { category: 'math_captcha', value: String(mathVal), isSensitive: false, isHoneypot: false };
+                }
+            }
+
             // Sensitive Factual Guard
             if (SENSITIVE_FACT_KEYWORDS.some(kw => ctx.includes(kw))) {
                 return { category: 'sensitive_factual', isSensitive: true, isHoneypot: false };
@@ -331,6 +345,11 @@
                 return true;
             }
 
+            if (classification && classification.category === 'math_captcha') {
+                const val = (el.value || '').trim();
+                return val === classification.value || (val.length > 0 && !isNaN(Number(val)));
+            }
+
             if (tag === 'input' || tag === 'textarea') {
                 const val = (el.value || '').trim();
                 if (isElementRequired(el)) {
@@ -391,11 +410,15 @@
                         continue;
                     }
 
-                    // TIER 1: Template mapping
+                    // TIER 1: Template mapping & Math Captcha
                     const ctx = getElementContextText(el);
                     let handled = false;
 
-                    if (classification.category === 'name' && (template.name || template.fullName || template.firstName)) {
+                    if (classification.category === 'math_captcha') {
+                        setNativeValue(el, classification.value);
+                        textResolved++;
+                        handled = true;
+                    } else if (classification.category === 'name' && (template.name || template.fullName || template.firstName)) {
                         setNativeValue(el, template.name || template.fullName || template.firstName);
                         textResolved++;
                         handled = true;

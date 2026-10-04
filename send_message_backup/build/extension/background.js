@@ -3712,6 +3712,7 @@ async function orchestrateSending(urlInput, template) {
                 
                 await safeScripting.executeScript({ target: { tabId }, files: [
                     'modules/contact-gate.js',
+                    'modules/math-captcha-solver.js',
                     'modules/smart-field-resolver.js',
                     'modules/contact-discovery-engine.js',
                     'modules/checkbox-resolver-r2.js',

@@ -39,6 +39,10 @@
         (typeof window !== 'undefined' && window.SmartFieldResolver) || 
         (typeof require !== 'undefined' ? require('./modules/smart-field-resolver.js') : null);
 
+    const _MathCaptchaSolver = (typeof MathCaptchaSolver !== 'undefined' && MathCaptchaSolver) || 
+        (typeof window !== 'undefined' && window.MathCaptchaSolver) || 
+        (typeof require !== 'undefined' ? (function(){ try { return require('./modules/math-captcha-solver.js'); } catch(_) { return null; } })() : null);
+
     const _ContactDiscoveryEngine = (typeof ContactDiscoveryEngine !== 'undefined' && ContactDiscoveryEngine) || 
         (typeof window !== 'undefined' && window.ContactDiscoveryEngine) || 
         (typeof require !== 'undefined' ? require('./modules/contact-discovery-engine.js') : null);
@@ -2691,6 +2695,26 @@
             }
         }
 
+        // ── 4.5단계: 휴먼 검증 산수 퀴즈 (Math Captcha Equation Quiz) 해결 ──
+        logDev("🎯 [HyperEngine v4.0] Phase 3.5 - 휴먼 테스트 수식/방정식 퀴즈 검출 및 자동 해결...");
+        if (_MathCaptchaSolver && typeof _MathCaptchaSolver.solveField === 'function') {
+            for (const el of inputs) {
+                if (isHoneypotV4(el)) continue;
+                if (el.type === 'checkbox' || el.type === 'radio' || el.tagName === 'SELECT') continue;
+                if (el.type === 'hidden' || el.type === 'submit' || el.type === 'button' || el.type === 'image' || el.type === 'file') continue;
+                if (el.tagName === 'TEXTAREA') continue;
+
+                const currentVal = el.contentEditable === 'true' ? (el.textContent || '') : (el.value || '');
+                if (currentVal.trim() !== '') continue;
+
+                const mathAnswer = _MathCaptchaSolver.solveField(el, getLabelFor);
+                if (mathAnswer !== null) {
+                    logDev(`🧮 [MathCaptcha] 휴먼 테스트 수식 감지! 자동 계산 결과="${mathAnswer}" 입력 시작...`, 'info');
+                    await applyVal(el, String(mathAnswer), 'MathCaptcha-Solved');
+                }
+            }
+        }
+
         // ── 5단계: 텍스트 필드 패턴 매칭 ──
         logDev("🎯 [HyperEngine v4.0] Phase 4 - 텍스트 필드 패턴 매칭...");
         for (const el of inputs) {
@@ -2735,6 +2759,13 @@
             if (el.tagName === 'TEXTAREA' || el.contentEditable === 'true') {
                 await applyVal(el, tpl.message || getRandomTemplateVal(), 'Fallback-Message');
             } else {
+                if (_MathCaptchaSolver && typeof _MathCaptchaSolver.solveField === 'function') {
+                    const mathAnswer = _MathCaptchaSolver.solveField(el, getLabelFor);
+                    if (mathAnswer !== null) {
+                        await applyVal(el, String(mathAnswer), 'MathCaptcha-Fallback');
+                        continue;
+                    }
+                }
                 const ph = (el.placeholder || '').toLowerCase();
                 const nm = (el.name || '').toLowerCase();
                 const tp = (el.type || '').toLowerCase();
@@ -3907,6 +3938,10 @@
         if (isPhone && tpl.phone) return tpl.phone;
         if (isSubj && tpl.subject) return tpl.subject;
         if (isName && tpl.name) return tpl.name;
+        if (_MathCaptchaSolver && typeof _MathCaptchaSolver.solveField === 'function') {
+            const mathAns = _MathCaptchaSolver.solveField(el, getLabelFor);
+            if (mathAns !== null) return String(mathAns);
+        }
         if (expected.name && tpl[expected.name]) return tpl[expected.name];
         if (expected.id && tpl[expected.id]) return tpl[expected.id];
         return null;

@@ -16,13 +16,20 @@
 
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
-        define([], factory);
+        define(['./math-captcha-solver'], factory);
     } else if (typeof module === 'object' && module.exports) {
-        module.exports = factory();
+        let mcs;
+        try { mcs = require('./math-captcha-solver'); } catch (_) {}
+        module.exports = factory(mcs);
     } else {
-        root.SmartFieldResolver = factory();
+        root.SmartFieldResolver = factory(root.MathCaptchaSolver);
     }
-}(typeof self !== 'undefined' ? self : this, function () {
+}(typeof self !== 'undefined' ? self : this, function (MathCaptchaSolver) {
+
+    const _MathCaptchaSolver = (typeof MathCaptchaSolver !== 'undefined' && MathCaptchaSolver) ||
+        (typeof self !== 'undefined' && self.MathCaptchaSolver) ||
+        (typeof window !== 'undefined' && window.MathCaptchaSolver) ||
+        (typeof require !== 'undefined' ? (function(){ try { return require('./math-captcha-solver'); } catch(_) { return null; } })() : null);
 
     const PRIVACY_CHECKBOX_KEYWORDS = [
         'privacy', 'terms', 'condition', 'policy', 'agree', 'consent', 'accurate', 
@@ -115,6 +122,25 @@
                 this.cache.set(cacheKey, honeypotRes);
                 this.logDecision(fieldContext, honeypotRes);
                 return honeypotRes;
+            }
+
+            // ============================================================
+            // Section H: Human Verification Math Captcha Equation Solver
+            // ============================================================
+            if (fieldContext.type !== 'textarea' && !fieldContext.isInquiryBody && _MathCaptchaSolver && typeof _MathCaptchaSolver.solveMathCaptcha === 'function') {
+                const mathVal = _MathCaptchaSolver.solveMathCaptcha(ctxText);
+                if (mathVal !== null) {
+                    const mathRes = {
+                        action: 'fill',
+                        value: String(mathVal),
+                        confidence: 0.99,
+                        source: 'math_captcha_solver',
+                        fieldCategory: 'math_captcha'
+                    };
+                    this.cache.set(cacheKey, mathRes);
+                    this.logDecision(fieldContext, mathRes);
+                    return mathRes;
+                }
             }
 
             // ============================================================
