@@ -33,7 +33,7 @@ const WebSocket = require('ws');
 const jpeg = require('jpeg-js');
 const assert = require('assert');
 
-const PREVIEW_URL = 'https://3d2r-dark-minimal-flow-preview-production.up.railway.app/?guided=1&ri=1';
+const PREVIEW_URL = process.env.TEST_URL || 'https://3d2r-dark-minimal-flow-preview-production.up.railway.app/?guided=1&ri=1';
 const CHROME_PATH = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
 const USER_DATA_DIR = path.resolve(__dirname, 'chrome_tmp_profile_' + Date.now());
 const DOWNLOAD_DIR = path.resolve(__dirname, 'browser_downloads');

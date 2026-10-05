@@ -1977,6 +1977,324 @@
       cursor: crosshair !important;
     }
   
+
+    /* ═══════════════════════════════════════════════════════════════════════════════ */
+    /* ─── 3D2R MINIMAL 3-STAGE CONNECTED FLOW COMPONENT (ROUND 115) ───────────── */
+    /* ═══════════════════════════════════════════════════════════════════════════════ */
+    .flow-pipeline-container {
+      display: flex;
+      align-items: stretch;
+      justify-content: center;
+      gap: 16px;
+      max-width: 980px;
+      margin: 0 auto 28px auto;
+      padding: 6px 4px;
+      box-sizing: border-box;
+      width: 100%;
+    }
+
+    .flow-node {
+      flex: 1 1 0;
+      min-width: 240px;
+      background: rgba(11, 21, 38, 0.78);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 20px 18px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5);
+      transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+      position: relative;
+      box-sizing: border-box;
+    }
+
+    /* Active Entry Node (Stage 1) */
+    .flow-node.active-entry {
+      background: rgba(14, 27, 49, 0.92);
+      border: 1.5px solid rgba(56, 189, 248, 0.55);
+      box-shadow: 0 14px 44px rgba(0, 0, 0, 0.6), 0 0 30px rgba(14, 165, 233, 0.18);
+    }
+    .flow-node.active-entry:hover {
+      border-color: #38bdf8;
+      transform: translateY(-2px);
+      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.7), 0 0 40px rgba(56, 189, 248, 0.25);
+    }
+
+    /* Downstream Nodes (Stage 2 & Stage 3) */
+    .flow-node.downstream-node {
+      background: rgba(8, 14, 26, 0.65);
+      border: 1px dashed rgba(255, 255, 255, 0.16);
+      opacity: 0.92;
+    }
+    .flow-node.downstream-node:hover {
+      border-color: rgba(255, 255, 255, 0.3);
+      transform: translateY(-1px);
+    }
+
+    /* Badge Row */
+    .node-badge-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .node-number {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 800;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .active-entry .node-number {
+      background: #0284c7;
+      color: #fff;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+    }
+    .node-status-pill {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 3px 10px;
+      border-radius: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .active-pill {
+      background: rgba(56, 189, 248, 0.15);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      color: #38bdf8;
+    }
+    .downstream-pill {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #94a3b8;
+    }
+    .conversion-pill {
+      background: rgba(52, 211, 153, 0.15);
+      border: 1px solid rgba(52, 211, 153, 0.4);
+      color: #34d399;
+    }
+    .pulse-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #34d399;
+      box-shadow: 0 0 6px #34d399;
+      animation: pulseDot 1.8s infinite;
+    }
+    @keyframes pulseDot {
+      0% { transform: scale(0.9); opacity: 0.7; }
+      50% { transform: scale(1.3); opacity: 1; }
+      100% { transform: scale(0.9); opacity: 0.7; }
+    }
+
+    /* Title & Sublabel */
+    .node-title-group {
+      margin-bottom: 16px;
+      text-align: left;
+    }
+    .node-icon {
+      font-size: 22px;
+      color: #38bdf8;
+      margin-bottom: 8px;
+    }
+    .downstream-node .node-icon {
+      color: #94a3b8;
+    }
+    #flowNode3 .node-icon {
+      color: #34d399;
+    }
+    .node-heading {
+      font-size: 16px;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -0.3px;
+      margin-bottom: 4px;
+    }
+    .node-sublabel {
+      font-size: 12px;
+      color: #94a3b8;
+      line-height: 1.4;
+    }
+
+    /* Actions Container */
+    .node-actions-container {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: auto;
+    }
+
+    /* Action Buttons */
+    .btn-flow-action {
+      width: 100%;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-family: inherit;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 10px;
+      text-align: left;
+      transition: all 0.2s ease;
+      box-sizing: border-box;
+      text-decoration: none;
+    }
+    .btn-flow-action i {
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+    .btn-text-wrap {
+      display: flex;
+      flex-direction: column;
+    }
+    .btn-main-txt {
+      font-size: 13px;
+      font-weight: 800;
+      line-height: 1.2;
+    }
+    .btn-sub-txt {
+      font-size: 9.5px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      opacity: 0.8;
+      margin-top: 1px;
+    }
+
+    /* Primary Flow Button (실시간 촬영) */
+    .btn-flow-primary {
+      background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%);
+      border: 1px solid #38bdf8;
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(2, 132, 199, 0.4);
+    }
+    .btn-flow-primary:hover {
+      background: linear-gradient(135deg, #0369a1 0%, #1d4ed8 100%);
+      box-shadow: 0 6px 20px rgba(56, 189, 248, 0.5);
+      transform: translateY(-1px);
+    }
+    .btn-flow-primary:active {
+      transform: translateY(0);
+    }
+
+    /* Secondary Flow Button (사진 업로드) */
+    .btn-flow-secondary {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      color: #f1f5f9;
+    }
+    .btn-flow-secondary:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(255, 255, 255, 0.28);
+      color: #fff;
+      transform: translateY(-1px);
+    }
+
+    /* Downstream Indicator */
+    .downstream-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11.5px;
+      color: #94a3b8;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-top: auto;
+      line-height: 1.35;
+    }
+    .downstream-indicator i {
+      color: #38bdf8;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    /* Outline Viewer Button (shown if active viewer exists) */
+    .btn-flow-outline {
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      color: #38bdf8;
+    }
+    .btn-flow-outline:hover {
+      background: rgba(56, 189, 248, 0.22);
+      border-color: #38bdf8;
+      color: #fff;
+    }
+
+    /* Buyer Intent Button (Stage 3) */
+    .btn-flow-buyer {
+      background: rgba(52, 211, 153, 0.12);
+      border: 1px solid rgba(52, 211, 153, 0.45);
+      color: #34d399;
+    }
+    .btn-flow-buyer:hover {
+      background: rgba(52, 211, 153, 0.24);
+      border-color: #34d399;
+      color: #fff;
+      box-shadow: 0 4px 16px rgba(52, 211, 153, 0.3);
+      transform: translateY(-1px);
+    }
+
+    /* Directional Connectors */
+    .flow-connector {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: rgba(56, 189, 248, 0.45);
+      font-size: 16px;
+      flex-shrink: 0;
+      padding: 0 2px;
+      animation: flowPulse 2.4s ease-in-out infinite;
+    }
+    @keyframes flowPulse {
+      0% { transform: translateX(0); opacity: 0.45; }
+      50% { transform: translateX(3px); opacity: 0.9; color: #38bdf8; }
+      100% { transform: translateX(0); opacity: 0.45; }
+    }
+
+    /* Mobile Responsive Adjustments (S23 Ultra / Android Chrome) */
+    @media (max-width: 860px) {
+      .flow-pipeline-container {
+        flex-direction: column;
+        gap: 12px;
+        padding: 0 6px;
+        margin-bottom: 20px;
+      }
+      .flow-node {
+        min-width: unset;
+        width: 100%;
+        padding: 16px 14px;
+      }
+      .flow-connector {
+        transform: rotate(90deg);
+        padding: 2px 0;
+        margin: -4px 0;
+      }
+      @keyframes flowPulse {
+        0% { transform: rotate(90deg) translateY(0); opacity: 0.45; }
+        50% { transform: rotate(90deg) translateY(3px); opacity: 0.9; color: #38bdf8; }
+        100% { transform: rotate(90deg) translateY(0); opacity: 0.45; }
+      }
+      .btn-flow-action {
+        padding: 12px 14px;
+      }
+      .btn-main-txt {
+        font-size: 14px;
+      }
+    }
+
 </style>
 
   <script>
@@ -2255,47 +2573,96 @@
     <!-- Upload CTA Frame -->
     <div class="upload-cta-frame">
 
+            <!-- ============================================================ -->
+      <!-- ─── 3D2R MINIMAL 3-STAGE FLOW: [1. 촬영/업로드] → [2. 3D 뷰어 배포] → [3. 구매유도] ─ -->
       <!-- ============================================================ -->
-      <!-- ─── C11.27-R1: 360 PANORAMIC BOOTH CAPTURE GUIDE (CENTER-ORIGIN) ─ -->
-      <!-- ============================================================ -->
-      <div id="landing-capture-guide-section" style="background: rgba(15, 23, 42, 0.82); backdrop-filter: blur(16px); border: 1.5px solid rgba(56, 189, 248, 0.4); border-radius: 16px; padding: 24px 20px; margin-bottom: 24px; box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);">
-        <div style="text-align: center; margin-bottom: 16px;">
-          <div style="display: inline-flex; align-items: center; gap: 8px; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.4); padding: 4px 14px; border-radius: 20px; font-size: 11px; font-weight: 800; color: #38bdf8; text-transform: uppercase; margin-bottom: 8px;">
-            <i class="fa-solid fa-circle-nodes"></i> 360 PANORAMIC BOOTH CAPTURE GUIDE
+      <div id="landing-3stage-flow" class="flow-pipeline-container" aria-label="3D2R 3-Stage Process Flow">
+        <!-- STAGE 1: 촬영 / 업로드 (ACTIVE ENTRY) -->
+        <div class="flow-node active-entry" id="flowNode1">
+          <div class="node-badge-row">
+            <span class="node-number">1</span>
+            <span class="node-status-pill active-pill"><span class="pulse-dot"></span> ACTIVE ENTRY</span>
           </div>
-          <h2 style="font-size: 22px; font-weight: 800; color: #fff; margin: 0 0 6px 0; letter-spacing: -0.3px;">YOUR 12-SHOT 360 CAPTURE</h2>
-          <p style="font-size: 13.5px; color: #94a3b8; margin: 0; line-height: 1.4;">Stand near the center of the space. Stay in one spot and rotate 360°.</p>
+          <div class="node-title-group">
+            <div class="node-icon"><i class="fa-solid fa-camera-rotate"></i></div>
+            <div class="node-heading">1. 촬영 / 업로드</div>
+            <div class="node-sublabel">실시간 360° 촬영 또는 사진 업로드</div>
+          </div>
+          <div class="node-actions-container">
+            <button type="button" id="btnLandingRealtimeCapture" class="btn-flow-action btn-flow-primary" onclick="window.triggerLandingRealtimeCapture()">
+              <i class="fa-solid fa-camera"></i>
+              <div class="btn-text-wrap">
+                <span class="btn-main-txt">실시간 촬영</span>
+                <span class="btn-sub-txt">I'M READY TO CAPTURE</span>
+              </div>
+            </button>
+            <button type="button" id="btnLandingUploadPhotos" class="btn-flow-action btn-flow-secondary" onclick="window.triggerLandingUploadPhotos()">
+              <i class="fa-solid fa-arrow-up-from-bracket"></i>
+              <div class="btn-text-wrap">
+                <span class="btn-main-txt">사진 업로드</span>
+                <span class="btn-sub-txt">UPLOAD PHOTOS</span>
+              </div>
+            </button>
+          </div>
         </div>
 
-        <!-- Prominent Rebuilt 12-Shot Center-Origin Cartoon Illustration -->
-        <div id="captureGuideMainIllustration" style="text-align: center; margin-bottom: 18px;">
-          <img src="/assets/spatial-booth/12-shot-360-capture-guide.svg" alt="YOUR 12-SHOT 360 CAPTURE — Center Origin Fixed Position Rotation Guide" style="width: 100%; max-width: 720px; height: auto; border-radius: 12px; border: 1.5px solid rgba(56, 189, 248, 0.35); box-shadow: 0 10px 32px rgba(0, 0, 0, 0.7);" loading="eager">
+        <!-- CONNECTOR 1 -> 2 -->
+        <div class="flow-connector" aria-hidden="true">
+          <i class="fa-solid fa-chevron-right"></i>
         </div>
 
-        <!-- 4 Small Rule Cards + 5th Closure Card -->
-        <div id="captureGuideRulesContainer" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-bottom: 14px;">
-          <div style="background: rgba(255, 255, 255, 0.04); border-radius: 8px; padding: 12px 14px; border-left: 3px solid #22c55e;">
-            <div style="font-size: 11.5px; font-weight: 800; color: #22c55e; margin-bottom: 2px;"><i class="fa-solid fa-location-dot"></i> 1. STAY IN ONE SPOT</div>
-            <div style="font-size: 11px; color: #cbd5e1; line-height: 1.35;">Stand near the center of the space.</div>
+        <!-- STAGE 2: 3D 뷰어로 즉시 배포 (DOWNSTREAM NODE) -->
+        <div class="flow-node downstream-node" id="flowNode2">
+          <div class="node-badge-row">
+            <span class="node-number">2</span>
+            <span class="node-status-pill downstream-pill" id="flowNode2Status">NEXT STATE</span>
           </div>
-          <div style="background: rgba(255, 255, 255, 0.04); border-radius: 8px; padding: 12px 14px; border-left: 3px solid #38bdf8;">
-            <div style="font-size: 11.5px; font-weight: 800; color: #38bdf8; margin-bottom: 2px;"><i class="fa-solid fa-rotate"></i> 2. ROTATE — DON'T WALK</div>
-            <div style="font-size: 11px; color: #cbd5e1; line-height: 1.35;">Turn around from the same camera position.</div>
+          <div class="node-title-group">
+            <div class="node-icon"><i class="fa-solid fa-cube"></i></div>
+            <div class="node-heading">2. 3D 뷰어로 즉시 배포</div>
+            <div class="node-sublabel">인터랙티브 3D / 360° 워크스루 자동 생성</div>
           </div>
-          <div style="background: rgba(255, 255, 255, 0.04); border-radius: 8px; padding: 12px 14px; border-left: 3px solid #f59e0b;">
-            <div style="font-size: 11.5px; font-weight: 800; color: #f59e0b; margin-bottom: 2px;"><i class="fa-solid fa-clone"></i> 3. OVERLAP EACH SHOT</div>
-            <div style="font-size: 11px; color: #cbd5e1; line-height: 1.35;">Keep about half (~50%) of the previous view visible.</div>
-          </div>
-          <div style="background: rgba(255, 255, 255, 0.04); border-radius: 8px; padding: 12px 14px; border-left: 3px solid #38bdf8;">
-            <div style="font-size: 11.5px; font-weight: 800; color: #38bdf8; margin-bottom: 2px;"><i class="fa-solid fa-arrows-up-down"></i> 4. KEEP THE SAME HEIGHT</div>
-            <div style="font-size: 11px; color: #cbd5e1; line-height: 1.35;">Hold the camera at eye level throughout the capture.</div>
-          </div>
-          <div style="background: rgba(255, 255, 255, 0.04); border-radius: 8px; padding: 12px 14px; border-left: 3px solid #a855f7;">
-            <div style="font-size: 11.5px; font-weight: 800; color: #a855f7; margin-bottom: 2px;"><i class="fa-solid fa-circle-check"></i> 5. CLOSE THE CIRCLE</div>
-            <div style="font-size: 11px; color: #cbd5e1; line-height: 1.35;">Make the final shot overlap the first shot for full 360.</div>
+          <div class="node-actions-container" id="flowNode2Content">
+            <div class="downstream-indicator" id="flowNode2Indicator">
+              <i class="fa-solid fa-wand-magic-sparkles"></i>
+              <span>촬영 / 업로드 완료 시 즉시 3D 뷰어 렌더링</span>
+            </div>
+            <button type="button" id="btnLandingOpenViewer" class="btn-flow-action btn-flow-outline" style="display: none;" onclick="window.triggerLandingOpenViewer()">
+              <i class="fa-solid fa-vr-cardboard"></i>
+              <div class="btn-text-wrap">
+                <span class="btn-main-txt">3D 뷰어 열기</span>
+                <span class="btn-sub-txt">VIEW 3D SHOWROOM</span>
+              </div>
+            </button>
           </div>
         </div>
-        <div style="text-align: center; font-size: 11.5px; color: #64748b; font-weight: 500;">Clear, sharp photos with consistent lighting work best. Recommended: 12 photos (optional 16 for high-detail spaces).</div>
+
+        <!-- CONNECTOR 2 -> 3 -->
+        <div class="flow-connector" aria-hidden="true">
+          <i class="fa-solid fa-chevron-right"></i>
+        </div>
+
+        <!-- STAGE 3: 구매유도 (BUYER CONVERSION) -->
+        <div class="flow-node downstream-node" id="flowNode3">
+          <div class="node-badge-row">
+            <span class="node-number">3</span>
+            <span class="node-status-pill conversion-pill">CONVERSION</span>
+          </div>
+          <div class="node-title-group">
+            <div class="node-icon"><i class="fa-solid fa-handshake"></i></div>
+            <div class="node-heading">3. 구매유도</div>
+            <div class="node-sublabel">RFQ 견적 요청 • 샘플 신청 • 상담 문의</div>
+          </div>
+          <div class="node-actions-container">
+            <button type="button" id="btnLandingBuyerIntent" class="btn-flow-action btn-flow-buyer" onclick="window.triggerLandingBuyerIntent()">
+              <i class="fa-solid fa-file-invoice-dollar"></i>
+              <div class="btn-text-wrap">
+                <span class="btn-main-txt">구매 / 견적 문의</span>
+                <span class="btn-sub-txt">REQUEST RFQ &amp; SAMPLE</span>
+              </div>
+            </button>
+          </div>
+        </div>
       </div>
 
       <div class="frame-title">Create Your Free 3D Booth</div>
@@ -16463,7 +16830,7 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
             initialPinchDistance = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
             initialPinchFov = this.currentFov;
           }
-        });
+        };
 
         this._r114PointerMoveHandler = (e) => {
           if (!activePointers.has(e.pointerId)) return;
@@ -16512,7 +16879,7 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
               emitSpatialTextureLifecycle('PANORAMA_PITCH_CHANGE', { pitch: this.pitch });
             }
           }
-        });
+        };
 
         const onPointerEnd = (e) => {
           activePointers.delete(e.pointerId);
@@ -17061,6 +17428,18 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
       window.addEventListener('resize', checkOrientation, { passive: true });
       window.addEventListener('orientationchange', checkOrientation, { passive: true });
     };
+
+    try {
+      const initOfficial = document.getElementById('viewer-container');
+      if (initOfficial) {
+        window.setupViewerLandscapeSupport(initOfficial, null, null, 'OFFICIAL_INITIAL');
+      } else {
+        document.addEventListener('DOMContentLoaded', () => {
+          const c = document.getElementById('viewer-container');
+          if (c) window.setupViewerLandscapeSupport(c, null, null, 'OFFICIAL_INITIAL');
+        });
+      }
+    } catch (e) {}
 
     function mountActivePanoramicBoothViewer(projectData, activeBg) {
       if (!activeBg) activeBg = {};
@@ -19670,7 +20049,7 @@ class VisualLoopDetector {
   }
 
   // FAST-9 Corner Detector with grid-based bucketing
-  extractFeatures(luminance, width, height) {
+  extractFeatures(luminance, width, height, mode = 'UPRIGHT') {
     const keypoints = [];
     const threshold = 18;
     const circleOffsets = [
@@ -19765,17 +20144,27 @@ class VisualLoopDetector {
       }
     }
 
-    // Extract steered BRIEF descriptor for each keypoint
+    // Extract BRIEF descriptor for each keypoint (supports UPRIGHT or STEERED mode)
     const descriptors = new Uint32Array(keypoints.length);
     for (let i = 0; i < keypoints.length; i++) {
       const kp = keypoints[i];
       let desc = 0;
 
-      // Upright BRIEF: Mobile phone 360 panorama capture is constrained to upright portrait pose.
-      // Unsteered Upright BRIEF (cosA=1, sinA=0) eliminates orientation centroid noise from small 9x9 patches,
-      // dramatically increasing descriptor stability and inlier yield on real physical handheld returns.
-      const cosA = 1.0;
-      const sinA = 0.0;
+      let cosA = 1.0;
+      let sinA = 0.0;
+      if (mode === 'STEERED') {
+        let m10 = 0, m01 = 0;
+        for (let dy = -4; dy <= 4; dy++) {
+          for (let dx = -4; dx <= 4; dx++) {
+            const val = luminance[(kp.y + dy) * width + (kp.x + dx)];
+            m10 += dx * val;
+            m01 += dy * val;
+          }
+        }
+        const angle = Math.atan2(m01, m10);
+        cosA = Math.cos(angle);
+        sinA = Math.sin(angle);
+      }
 
       for (let p = 0; p < BRIEF_PAIRS.length; p++) {
         const pair = BRIEF_PAIRS[p];
@@ -20430,6 +20819,7 @@ class RILiveDiagnosticHelper {
         <div style="display:flex; gap: 4px;">
           <button id="ri-copy-btn" type="button" style="flex:1; background: #132430; border: 1px solid #00ffcc; color: #00ffcc; padding: 4px 6px; border-radius: 4px; font-size: 10px; cursor: pointer; font-weight: bold;">COPY LOG</button>
           <button id="ri-dl-btn" type="button" style="flex:1; background: #132430; border: 1px solid #00ffcc; color: #00ffcc; padding: 4px 6px; border-radius: 4px; font-size: 10px; cursor: pointer; font-weight: bold;">DL JSON</button>
+          <button id="ri-retry-btn" type="button" style="flex:1; background: #2b1a1a; border: 1px solid #ff5555; color: #ff8888; padding: 4px 6px; border-radius: 4px; font-size: 10px; cursor: pointer; font-weight: bold;">RETRY</button>
         </div>
         <button id="ri-frames-btn" type="button" style="width:100%; background: #1a2a1a; border: 1px solid #00ff88; color: #00ff88; padding: 4px 6px; border-radius: 4px; font-size: 10px; cursor: pointer; font-weight: bold;">📷 DOWNLOAD FRAME PAIR</button>
       </div>
@@ -20443,6 +20833,17 @@ class RILiveDiagnosticHelper {
       copyBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         this.copyLog(copyBtn);
+      });
+    }
+
+    const retryBtn = hud.querySelector('#ri-retry-btn');
+    if (retryBtn) {
+      retryBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const ctrl = window.setupWizard?.guidedCaptureController || window.guidedCaptureController;
+        if (ctrl) {
+          ctrl.resetCaptureForRetry('RI_HUD_RETRY');
+        }
       });
     }
 
@@ -20609,18 +21010,29 @@ class RILiveDiagnosticHelper {
 
   getCameraDimensions() {
     try {
-      if (typeof window !== 'undefined' && window.setupWizard?.guidedCaptureController) {
-        const ctrl = window.setupWizard.guidedCaptureController;
-        if (ctrl.telemetry && ctrl.telemetry.videoWidth > 0) {
-          return { width: ctrl.telemetry.videoWidth, height: ctrl.telemetry.videoHeight };
-        }
-        if (ctrl.videoElement && ctrl.videoElement.videoWidth > 0) {
-          return { width: ctrl.videoElement.videoWidth, height: ctrl.videoElement.videoHeight };
+      if (typeof window !== 'undefined') {
+        const ctrl = window.setupWizard?.guidedCaptureController || window.guidedCaptureController;
+        if (ctrl) {
+          // 1. Live videoElement priority
+          if (ctrl.videoElement) {
+            if (ctrl.videoElement.videoWidth > 0 && ctrl.videoElement.videoHeight > 0) {
+              this.recordMeasuredCameraDimensions(ctrl.videoElement.videoWidth, ctrl.videoElement.videoHeight);
+              return { width: ctrl.videoElement.videoWidth, height: ctrl.videoElement.videoHeight };
+            }
+            return { width: 0, height: 0 };
+          }
+          // 2. Active DOM video fallback
+          if (typeof document !== 'undefined') {
+            const v = document.getElementById('guidedCaptureVideo');
+            if (v && v.videoWidth > 0 && v.videoHeight > 0) return { width: v.videoWidth, height: v.videoHeight };
+          }
+          // Controller has no active live video element -> unavailable (do not return stale telemetry)
+          return { width: 0, height: 0 };
         }
       }
       if (typeof document !== 'undefined') {
         const v = document.getElementById('guidedCaptureVideo');
-        if (v && v.videoWidth > 0) return { width: v.videoWidth, height: v.videoHeight };
+        if (v && v.videoWidth > 0 && v.videoHeight > 0) return { width: v.videoWidth, height: v.videoHeight };
       }
     } catch (e) {}
     return { width: 0, height: 0 };
@@ -21166,6 +21578,21 @@ class GuidedCaptureController {
     this.sensorSourceLocked = false;
     this.visualClosureSearchEnabled = false;
     this.failedAttemptSnapshot = null;
+    this._referenceFrames = {};
+    if (typeof window !== 'undefined') {
+      window.__RI_CLOSURE_PAIR__ = null;
+      window.__RI_START_REF_DATAURL__ = null;
+      window.__RI_START_REF_CAND_ID__ = null;
+      window.__RI_START_REF_ANGLE__ = null;
+      window.__RI_REF_DATAURLS__ = null;
+      window.__RI_LATEST_CLOSURE_CAND_DATAURL__ = null;
+      window.__RI_LATEST_CLOSURE_CAND_ID__ = null;
+      window.__RI_LATEST_CLOSURE_ANGLE__ = null;
+      window.__RI_LATEST_CLOSURE_EVAL_RES__ = null;
+      window.__RI_EVALUATED_REF_DATAURL__ = null;
+      window.__RI_EVALUATED_REF_ID__ = null;
+      window.__RI_EVALUATED_REF_ANGLE__ = null;
+    }
 
     // 9. Reset states & errors
     this.state = 'IDLE';
@@ -21891,7 +22318,12 @@ class GuidedCaptureController {
       targetW = Math.max(1, Math.round(320 * vw / vh));
     }
 
-    if (this.offscreenCanvas.width !== targetW || this.offscreenCanvas.height !== targetH) {
+    if (!this.offscreenCanvas) {
+      this.offscreenCanvas = document.createElement('canvas');
+      this.offscreenCanvas.width = targetW;
+      this.offscreenCanvas.height = targetH;
+      this.offscreenCtx = this.offscreenCanvas.getContext('2d', { willReadFrequently: true });
+    } else if (this.offscreenCanvas.width !== targetW || this.offscreenCanvas.height !== targetH) {
       this.offscreenCanvas.width = targetW;
       this.offscreenCanvas.height = targetH;
       this.offscreenCtx = this.offscreenCanvas.getContext('2d', { willReadFrequently: true });
@@ -21960,10 +22392,11 @@ class GuidedCaptureController {
     const angleDelta = Math.abs(this.accumulatedRotation - (this.lastCandidateAngle !== null ? this.lastCandidateAngle : -999));
     const timeDelta = now - (this.lastCandidateTimestamp || 0);
     const inClosureZone = (this.accumulatedRotation >= 280.0 || this.state === 'SEARCHING_FOR_START_OVERLAP' || this.state === 'CLOSURE_CANDIDATE');
-    const shouldSample = (this.candidateFrames.length === 0 && this.videoElement.videoWidth > 0) ||
-                         (angleDelta >= 8.0) ||
-                         (timeDelta >= 350 && angleDelta >= 4.0) ||
-                         (inClosureZone && timeDelta >= 180);
+    const shouldSample = (this.levelStatus !== 'TILTED') &&
+                         ((this.candidateFrames.length === 0 && this.videoElement.videoWidth > 0) ||
+                          (angleDelta >= 8.0) ||
+                          (timeDelta >= 350 && angleDelta >= 4.0) ||
+                          (inClosureZone && timeDelta >= 180));
 
     const activeStates = ['CAPTURING', 'APPROACHING_CLOSURE', 'SEARCHING_FOR_START_OVERLAP', 'CLOSURE_CANDIDATE'];
     if (shouldSample && activeStates.includes(this.state)) {
@@ -21973,6 +22406,8 @@ class GuidedCaptureController {
 
   extractCandidateFrame(currentAngle) {
     if (!this.videoElement || !this.fullCaptureCanvas) return null;
+    // Physical Levelness Gate: strictly suppress candidate extraction & closure matching when phone is tilted
+    if (this.levelStatus === 'TILTED') return null;
     const vw = this.videoElement.videoWidth || 1920;
     const vh = this.videoElement.videoHeight || 1080;
     if (vw === 0 || vh === 0) return null;
@@ -22939,6 +23374,10 @@ class GuidedCaptureController {
       console.log('[GuidedCapture] Finalize already in progress, skipping duplicate call.');
       return;
     }
+    if (this._destroyed || this.state === 'DESTROYED') {
+      console.log('[GuidedCapture] Finalize aborted: controller is destroyed.');
+      return;
+    }
     this._isFinalizing = true;
 
     this.state = 'FINALIZING_CANDIDATES';
@@ -23184,10 +23623,21 @@ class GuidedCaptureController {
     this.state = 'IDLE';
     this.stopCaptureResources();
   }
+
+  destroy() {
+    this.state = 'DESTROYED';
+    this._destroyed = true;
+    this.stopCaptureResources();
+    this.onProgress = null;
+    this.onComplete = null;
+    this.onAttention = null;
+  }
 }
 
 
 
+window.VisualLoopDetector = VisualLoopDetector;
+window.GuidedCaptureController = GuidedCaptureController;
 window.guidedCaptureController = new GuidedCaptureController();
 
 
@@ -23236,7 +23686,9 @@ class SetupWizardController {
     const urlParams = new URLSearchParams(window.location.search);
     const urlStep = parseInt(urlParams.get('step') || '', 10);
     let targetStep = overrideStep !== undefined && overrideStep !== null ? overrideStep : (!isNaN(urlStep) && urlStep > 0 ? urlStep : null);
-    if (targetStep === null && (urlParams.get('mode') === 'booth-tour-wizard' || urlParams.get('openWizard') === '1')) {
+    if (urlParams.get('guided') === '1') {
+      targetStep = 6;
+    } else if (targetStep === null && (urlParams.get('mode') === 'booth-tour-wizard' || urlParams.get('openWizard') === '1')) {
       targetStep = 1;
     }
 
@@ -23654,6 +24106,19 @@ class SetupWizardController {
   }
 
   async startGuidedCapture() {
+    if (this._isStartingCapture) {
+      console.warn('[SetupWizard] Capture start already in progress, suppressing duplicate call.');
+      return;
+    }
+    this._isStartingCapture = true;
+    try {
+      await this._doStartGuidedCapture();
+    } finally {
+      this._isStartingCapture = false;
+    }
+  }
+
+  async _doStartGuidedCapture() {
     const video = document.getElementById('guidedCaptureVideo');
     const btn = document.getElementById('btnStartGuidedCapture');
     const pill = document.getElementById('guidedStatusPill');
@@ -23666,7 +24131,8 @@ class SetupWizardController {
     const sessionEpoch = this._captureSessionEpoch;
 
     if (!window.guidedCaptureController) {
-      window.guidedCaptureController = new GuidedCaptureController();
+      const ControllerClass = window.GuidedCaptureController || GuidedCaptureController;
+      window.guidedCaptureController = new ControllerClass();
     }
     const controller = window.guidedCaptureController;
 
@@ -23793,55 +24259,63 @@ class SetupWizardController {
     }
   }
 
-  retryGuidedCapture() {
+  async retryGuidedCapture() {
     // R114B Fix A: Debounce guard against rapid double-clicks
     if (this._isRetrying) {
       console.warn('[SetupWizard] Rapid retry suppressed by debounce guard.');
       return;
     }
+    if (this._isStartingCapture) {
+      console.warn('[SetupWizard] Rapid retry suppressed: capture acquisition in progress.');
+      return;
+    }
     this._isRetrying = true;
 
-    // R114B Fix A: Invalidate any pending callbacks from previous capture sessions via epoch token
-    this._captureSessionEpoch = (this._captureSessionEpoch || 0) + 1;
+    try {
+      // Invalidate any pending callbacks from previous capture sessions via epoch token
+      this._captureSessionEpoch = (this._captureSessionEpoch || 0) + 1;
 
-    console.log('[SetupWizard][R114B-FixA] Idempotent retry epoch ' + this._captureSessionEpoch + ': stopping old resources, navigating to Step 6...');
+      console.log('[SetupWizard][R114C-FixA] Idempotent retry epoch ' + this._captureSessionEpoch + ': stopping old resources, navigating to Step 6...');
 
-    // Stop old MediaStream tracks and cancel animation frames before any DOM operation
-    if (window.guidedCaptureController) {
-      try {
-        window.guidedCaptureController.stopCaptureResources();
-        if (typeof window.guidedCaptureController.destroy === 'function') {
-          window.guidedCaptureController.destroy();
-        }
-      } catch (e) {}
-      window.guidedCaptureController = null;
-    }
+      // Stop old MediaStream tracks and cleanly destroy before any DOM operation
+      if (window.guidedCaptureController) {
+        try {
+          window.guidedCaptureController.stopCaptureResources();
+          if (typeof window.guidedCaptureController.destroy === 'function') {
+            window.guidedCaptureController.destroy();
+          }
+        } catch (e) {}
+        window.guidedCaptureController = null;
+      }
 
-    // Navigate back to Step 6 so DOM elements (#guidedCaptureVideo, #btnStartGuidedCapture) exist
-    this.state.currentStep = 6;
-    this.renderStep6CaptureWheel();
+      // Navigate back to Step 6 so DOM elements (#guidedCaptureVideo, #btnStartGuidedCapture) exist
+      this.currentStep = 6;
+      this.state.currentStep = 6;
+      this.state.step = 6;
+      this.renderStep6CaptureWheel();
 
-    // Reset Step 6 UI to fresh start state
-    const btn = document.getElementById('btnStartGuidedCapture');
-    if (btn) {
-      btn.disabled = false;
-      btn.innerHTML = '<i class="fa-solid fa-play"></i> START 360° CAPTURE';
-      btn.onclick = () => this.startGuidedCapture();
-    }
-    const pill = document.getElementById('guidedStatusPill');
-    if (pill) pill.textContent = 'Ready to capture';
-    const pText = document.getElementById('guidedPercentText');
-    if (pText) pText.textContent = '0%';
-    const rText = document.getElementById('guidedRotText');
-    if (rText) rText.textContent = '0° ROTATION';
-    const pCircle = document.getElementById('guidedProgressCircle');
-    if (pCircle) pCircle.setAttribute('stroke-dashoffset', '565.48');
+      // Reset Step 6 UI to fresh start state
+      const btn = document.getElementById('btnStartGuidedCapture');
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-play"></i> START 360° CAPTURE';
+        btn.onclick = () => this.startGuidedCapture();
+      }
+      const pill = document.getElementById('guidedStatusPill');
+      if (pill) pill.textContent = 'Ready to capture';
+      const pText = document.getElementById('guidedPercentText');
+      if (pText) pText.textContent = '0%';
+      const rText = document.getElementById('guidedRotText');
+      if (rText) rText.textContent = '0° ROTATION';
+      const pCircle = document.getElementById('guidedProgressCircle');
+      if (pCircle) pCircle.setAttribute('stroke-dashoffset', '565.48');
 
-    // Brief delay so renderStep6CaptureWheel DOM has settled, then fresh capture
-    setTimeout(() => {
+      // Allow DOM settle, then start fresh capture and await full camera acquisition
+      await new Promise(r => setTimeout(r, 60));
+      await this.startGuidedCapture();
+    } finally {
       this._isRetrying = false;
-      this.startGuidedCapture();
-    }, 80);
+    }
   }
 
   // Round 120: Enhanced retry with RI trace snapshot + epoch isolation
@@ -24902,7 +25376,7 @@ window.saveBoothMapEditorChanges = async function() {
 };
 
 
-// Auto-open wizard to specified step from URL parameter
+// Auto-open wizard to specified step from URL parameter (Round 115 Flow Routing)
 setTimeout(() => {
   try {
     const urlParams = new URLSearchParams(window.location.search);
@@ -24919,13 +25393,108 @@ setTimeout(() => {
         if (window.setupWizard) {
           window.setupWizard.currentStep = targetStep;
           window.setupWizard.renderStep();
+          if ((urlParams.get('autostart') === '1' || urlParams.get('action') === 'capture') && typeof window.setupWizard.startGuidedCapture === 'function') {
+            window.setupWizard.startGuidedCapture();
+          }
         }
       }, 400);
+    } else if (urlParams.get('action') === 'upload') {
+      const form = document.getElementById('free-booth-form');
+      if (form) {
+        form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const bizInput = document.getElementById('business-name-input');
+        if (bizInput) bizInput.focus();
+      }
+    } else if (urlParams.get('action') === 'rfq') {
+      if (typeof openTrue3dQuoteModal === 'function') openTrue3dQuoteModal();
+      else if (typeof openConsultationModal === 'function') openConsultationModal();
     }
   } catch(e) {
     console.warn('[Wizard AutoOpen]', e);
   }
 }, 300);
+
+
+// ─── 3D2R ROUND 115 3-STAGE FLOW RUNTIME ADAPTER ────────────────────────────
+window.triggerLandingRealtimeCapture = function() {
+  if (typeof openMultiPointTourWizard === 'function' && window.setupWizard) {
+    openMultiPointTourWizard(6);
+    setTimeout(() => {
+      if (window.setupWizard) {
+        window.setupWizard.currentStep = 6;
+        window.setupWizard.state.step = 6;
+        window.setupWizard.state.currentStep = 6;
+        window.setupWizard.renderStep();
+        if (typeof window.setupWizard.startGuidedCapture === 'function') {
+          window.setupWizard.startGuidedCapture();
+        }
+      }
+    }, 150);
+  } else {
+    window.location.href = '/?mode=booth-tour-wizard&step=6&source=landing&vertical=TRADE_SHOW&intent=create_virtual_booth&autostart=1';
+  }
+};
+
+window.triggerLandingUploadPhotos = function() {
+  const form = document.getElementById('free-booth-form');
+  if (form) {
+    form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    const bizInput = document.getElementById('business-name-input');
+    if (bizInput) bizInput.focus();
+  } else {
+    window.location.href = '/?source=landing&action=upload#free-booth-form';
+  }
+};
+
+window.triggerLandingOpenViewer = function() {
+  const studio = document.getElementById('freeStudioSection');
+  if (studio && (studio.style.display !== 'none' || window.currentCandidateId)) {
+    studio.style.display = 'block';
+    studio.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } else {
+    window.location.href = '/';
+  }
+};
+
+window.triggerLandingBuyerIntent = function() {
+  if (typeof openTrue3dQuoteModal === 'function') {
+    openTrue3dQuoteModal();
+  } else if (typeof openConsultationModal === 'function') {
+    openConsultationModal();
+  } else {
+    window.location.href = '/?source=landing&action=rfq';
+  }
+};
+
+function updateLandingFlowViewerState() {
+  const viewerBtn = document.getElementById('btnLandingOpenViewer');
+  const viewerIndicator = document.getElementById('flowNode2Indicator');
+  const statusPill = document.getElementById('flowNode2Status');
+  if (!viewerBtn) return;
+
+  const studio = document.getElementById('freeStudioSection');
+  const hasLiveStudio = studio && studio.style.display !== 'none';
+  const hasCandidate = !!(window.currentCandidateId || (window.activeProjectData && window.activeProjectData.hasViewer));
+
+  if (hasLiveStudio || hasCandidate) {
+    viewerBtn.style.display = 'inline-flex';
+    if (viewerIndicator) viewerIndicator.style.display = 'none';
+    if (statusPill) {
+      statusPill.textContent = 'READY TO VIEW';
+      statusPill.className = 'node-status-pill conversion-pill';
+    }
+  } else {
+    viewerBtn.style.display = 'none';
+    if (viewerIndicator) viewerIndicator.style.display = 'inline-flex';
+    if (statusPill) {
+      statusPill.textContent = 'NEXT STATE';
+      statusPill.className = 'node-status-pill downstream-pill';
+    }
+  }
+}
+setTimeout(updateLandingFlowViewerState, 500);
+window.addEventListener('load', updateLandingFlowViewerState);
+
 
 function toggleMobileBoothMap(forceState) {
   const sheet = document.getElementById('mobileBoothMapSheet');
