@@ -295,7 +295,27 @@
         const isBookingButton = submitText.includes('book') || submitText.includes('reserve') || submitText.includes('schedule') || submitText.includes('appointment') || submitText.includes('예약');
         const hasBookingFields = (dateInputs.length > 0 || timeInputs.length > 0) || negativeSignals.some(s => s.startsWith('booking_token'));
 
-        if (isShopifyHelpOrSearch || formAction.includes('search') || (negativeSignals.some(s => s.includes('search')) && !hasInquiryBodyField)) {
+        // [R6.9F] Hard Negative Classification: NON_INQUIRY_COMMENT_FORM
+        // Rejects WordPress / Jetpack / Article comment and reply forms based on structural evidence
+        const hasWpCommentAction = formAction.includes('wp-comments-post.php') || formAction.includes('/comments/post');
+        const hasCommentIdOrClass = formId.includes('commentform') || formId.includes('comment-form') || formId.includes('jp-carousel-comment-form') ||
+                                    formClass.includes('commentform') || formClass.includes('comment-form') || formClass.includes('jp-carousel-comment-form') ||
+                                    formId === 'respond' || formClass.includes('comment-respond');
+        const hasWpCommentInputs = formEl.querySelector && !!formEl.querySelector('input[name="comment_post_ID"], input[name="comment_parent"]');
+        const isPostCommentSubmit = submitText.includes('post comment') || submitText.includes('leave a comment') || submitText.includes('post reply') || submitText.includes('leave a reply');
+        const hasCommentHeading = headingText.includes('leave a comment') || headingText.includes('leave a reply') || headingText.includes('add a comment') || headingText.includes('post a comment');
+
+        const isCommentForm = hasWpCommentAction ||
+                              (hasCommentIdOrClass && (isPostCommentSubmit || hasWpCommentInputs || hasCommentHeading || !headingText.includes('contact'))) ||
+                              hasWpCommentInputs ||
+                              (isPostCommentSubmit && (formId.includes('comment') || formClass.includes('comment') || formAction.includes('comment')));
+
+        if (isCommentForm) {
+            intent = 'COMMENT';
+            decision = 'REJECT';
+            reason = 'NON_INQUIRY_COMMENT_FORM';
+            negativeSignals.push('comment_form_structure');
+        } else if (isShopifyHelpOrSearch || formAction.includes('search') || (negativeSignals.some(s => s.includes('search')) && !hasInquiryBodyField)) {
             intent = 'SEARCH';
             decision = 'REJECT';
             reason = 'NON_INQUIRY_SEARCH_FORM';

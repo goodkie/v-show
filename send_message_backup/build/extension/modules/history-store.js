@@ -779,21 +779,10 @@
             let scopedAttempts = this.attempts;
 
             if (scope === 'currentRun') {
-                const unassignedCurrentGen = this.attempts.filter(a => (!a.campaignRunId) && (a.generation === this.currentGeneration || a.generationId === this.currentGeneration || (!a.generation && !a.generationId)));
-                console.log(`[LEDGER_MIGRATION] unassignedCurrentGenerationAttempts=${unassignedCurrentGen.length}`);
-
                 if (targetRunId) {
-                    if (unassignedCurrentGen.length > 0) {
-                        // Union matching runId + eligible unassigned current-generation legacy attempts
-                        scopedAttempts = this.attempts.filter(a => 
-                            a.campaignRunId === targetRunId || 
-                            ((!a.campaignRunId) && (a.generation === this.currentGeneration || a.generationId === this.currentGeneration || (!a.generation && !a.generationId)))
-                        );
-                    } else {
-                        scopedAttempts = this.attempts.filter(a => a.campaignRunId === targetRunId);
-                    }
+                    scopedAttempts = this.attempts.filter(a => a.campaignRunId === targetRunId);
                 } else {
-                    scopedAttempts = this.attempts.filter(a => (a.generation === this.currentGeneration || a.generationId === this.currentGeneration || (!a.generation && !a.generationId)));
+                    scopedAttempts = []; // [R6.9F] Never fall back to currentGeneration when currentRun is requested
                 }
             } else if (scope === 'allHistory') {
                 scopedAttempts = this.attempts;

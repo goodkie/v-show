@@ -786,13 +786,28 @@
                 inquiryBody = currentForm.querySelector('textarea, [contenteditable="true"], [role="textbox"][aria-multiline="true"]');
             }
 
+            // [R6.9F] Hard Contact-Gate Assertion: Genuinely eligible inquiry form vs Comment / Non-Inquiry form
+            if (currentForm && _ContactGate && typeof _ContactGate.classifyFormIntent === 'function') {
+                const classification = _ContactGate.classifyFormIntent(currentForm);
+                if (!classification.eligible) {
+                    const settleReason = (classification.reason && classification.reason.startsWith('NON_INQUIRY'))
+                        ? classification.reason
+                        : `NON_INQUIRY_${classification.intent}_FORM`;
+                    logDev(`[FORM_GATE] eligible=false reason=${settleReason}`);
+                    logDev(`❌ [ContactGate] Non-inquiry form rejected: ${settleReason}`, "error");
+                    currentTargetLifecycleState = TargetLifecycleState.SETTLING;
+                    finishCampaign(false, settleReason, settleReason);
+                    return;
+                }
+            }
+
             // [P0-2 Rule 1 & 2] bodyCandidates === 0 or no genuine inquiry body field -> hard eligible=false
             if (formScanBodyCandidates === 0 || !inquiryBody) {
                 if (currentForm) {
                     console.log(`[FORM_GATE_INVARIANT_VIOLATION] bodyCandidates=${formScanBodyCandidates} hasInquiryBody=${!!inquiryBody} -> eligible=false`);
                     logDev(`[FORM_GATE_INVARIANT_VIOLATION] bodyCandidates=${formScanBodyCandidates} -> rejecting container`, "warning");
 
-                    // [R6.9A Acceptance Directive] Non-inquiry forms (login, newsletter, search, booking)
+                    // [R6.9A Acceptance Directive] Non-inquiry forms (login, newsletter, search, booking, comment)
                     // must be settled as SKIPPED rather than attempting fallback link discovery.
                     if (_ContactGate && typeof _ContactGate.classifyFormIntent === 'function') {
                         const classification = _ContactGate.classifyFormIntent(currentForm);
@@ -852,14 +867,15 @@
                                 classification.intent === 'SEARCH' ||
                                 classification.intent === 'SUBSCRIBE' ||
                                 classification.intent === 'NEWSLETTER' ||
-                                classification.intent === 'BOOKING'
+                                classification.intent === 'BOOKING' ||
+                                classification.intent === 'COMMENT'
                             );
                             if (isNonInquiry) {
                                 const settleReason = (classification.reason && classification.reason.startsWith('NON_INQUIRY'))
                                     ? classification.reason
                                     : `NON_INQUIRY_${classification.intent}_FORM`;
                                 const bestLink = typeof findBestContactLink === 'function' ? findBestContactLink() : null;
-                                if (settleReason === 'NON_INQUIRY_LOGIN_FORM' || !bestLink) {
+                                if (settleReason === 'NON_INQUIRY_LOGIN_FORM' || settleReason === 'NON_INQUIRY_COMMENT_FORM' || !bestLink) {
                                     logDev(`[FORM_GATE] eligible=false reason=${settleReason}`);
                                     logDev(`❌ [ContactGate] Page rejected: non-inquiry form (${settleReason})`, "error");
                                     currentTargetLifecycleState = TargetLifecycleState.SETTLING;
@@ -1271,7 +1287,10 @@
                     (window.__xpider_sendExecutionMessage || chrome.runtime.sendMessage)({ action: 'STAGE_PROGRESSION', stage: 'CAPTCHA', url: window.location.href });
                 } catch (_) {}
                 const solved = await waitForCaptchaSolved();
-                if (!solved) throw new Error("Security Timeout: CAPTCHA unsolved.");
+                if (!solved) {
+                    logDev("❌ [Security] CAPTCHA unsolved or solver unavailable. Halting sequence.", "error");
+                    return false;
+                }
                 logDev("🔑 [Security] Bypass verified", "success");
             }
             
@@ -1314,15 +1333,46 @@
 
             currentTargetLifecycleState = TargetLifecycleState.SUBMIT_RECOVERY;
 
+            // [Issue #6 R6.9F] Persistent submit boundary & Duplicate Submit Block
+            const curAttemptId = (window.__xpider_exec_identity && window.__xpider_exec_identity.attemptId) || 'default';
+            if (window.__xpider_submitBoundaryReached && window.__xpider_submitBoundaryReached[curAttemptId]) {
+                logDev(`[SUBMIT_DUPLICATE_BLOCK] attemptId=${curAttemptId} result=REJECT`, "warning");
+                return false;
+            }
+
+            // Also check background persistent boundary before emitting submit
+            try {
+                const bRes = await new Promise(res => {
+                    const sendFn = window.__xpider_sendExecutionMessage || chrome.runtime.sendMessage;
+                    sendFn({ action: 'QUERY_SUBMIT_BOUNDARY', attemptId: curAttemptId }, res);
+                });
+                if (bRes && bRes.reached) {
+                    logDev(`[SUBMIT_DUPLICATE_BLOCK] attemptId=${curAttemptId} result=REJECT`, "warning");
+                    return false;
+                }
+            } catch (_) {}
+
+            if (!window.__xpider_submitBoundaryReached) window.__xpider_submitBoundaryReached = {};
+            window.__xpider_submitBoundaryReached[curAttemptId] = true;
+
             logDev("📤 [Action] Triggering submission sequence...");
             logDev("[SUBMIT] attemptStarted=true", "info");
             logDev("[STAGE] stage=SUBMIT_ATTEMPT_STARTED", "info");
             try {
-                (window.__xpider_sendExecutionMessage || chrome.runtime.sendMessage)({
-                    action: 'STAGE_PROGRESSION',
-                    stage: 'SUBMIT_ATTEMPT_STARTED',
-                    url: window.location.href
+                const stageProgRes = await new Promise(res => {
+                    const sendFn = window.__xpider_sendExecutionMessage || chrome.runtime.sendMessage;
+                    sendFn({
+                        action: 'STAGE_PROGRESSION',
+                        stage: 'SUBMIT_ATTEMPT_STARTED',
+                        attemptId: curAttemptId,
+                        targetToken: (window.__xpider_exec_identity && window.__xpider_exec_identity.targetToken),
+                        url: window.location.href
+                    }, res);
                 });
+                if (stageProgRes && stageProgRes.duplicateBlocked) {
+                    logDev(`[SUBMIT_DUPLICATE_BLOCK] attemptId=${curAttemptId} result=REJECT`, "warning");
+                    return false;
+                }
             } catch (_) {}
             
             // [Hotfix R2 & R6.9E] Prepare SubmissionOutcomeVerifier BEFORE submit action
@@ -3317,6 +3367,11 @@
                     const err = (response && response.error) ? response.error : (chrome.runtime.lastError?.message || 'Unknown');
                     logDev(`⚠️ 2Captcha Auto-solve notice: ${err}.`, 'debug');
                     updateTopSolverHUD("2Captcha solve failed or awaiting frame...", "FAIL");
+                    const isTerminal = (response && response.terminalError) || err.includes('ERROR_ZERO_BALANCE') || err.includes('ZERO_BALANCE');
+                    if (isTerminal) {
+                        resolve({ success: false, terminalError: 'ERROR_ZERO_BALANCE', settleReason: 'CAPTCHA_SOLVER_UNAVAILABLE' });
+                        return;
+                    }
                     resolve(false);
                 } else if (response.token || response.solution) {
                     const solution = response.token || response.solution;
@@ -3471,9 +3526,16 @@
             // Auto-solve injection trigger
             if (stillHasCaptcha && !autoSolveAttempted && !_isCaptchaSolved) {
                 autoSolveAttempted = true;
-                const solved = await tryAutoSolveCaptcha('WAIT_LOOP');
+                const solveResult = await tryAutoSolveCaptcha('WAIT_LOOP');
                 autoSolveFinishedTs = Date.now();
-                if (solved) {
+                if (solveResult && solveResult.terminalError) {
+                    logDev(`[CAPTCHA_GATE] eligible=false reason=CAPTCHA_SOLVER_UNAVAILABLE error=${solveResult.terminalError}`, "error");
+                    updateTopSolverHUD(`2Captcha solver unavailable: ${solveResult.terminalError}`, "FAIL");
+                    currentTargetLifecycleState = TargetLifecycleState.SETTLING;
+                    finishCampaign(false, 'CAPTCHA_SOLVER_UNAVAILABLE', `2Captcha failed: ${solveResult.terminalError}`);
+                    return false;
+                }
+                if (solveResult === true || (solveResult && solveResult.success)) {
                     _isCaptchaSolved = true;
                     logDev("🔑 [Security] Auto-solve succeeded. Resuming sequence immediately.", "success");
                     await new Promise(r => setTimeout(r, 500));
@@ -4122,6 +4184,7 @@
         }
 
         // 7.2 Candidate Ranking & Multi-Step Detection
+        // 7.2 Candidate Ranking & Multi-Step Detection (R6.9F Multi-Dimensional Discovery)
         discoverSubmitActions() {
             const form = this.form;
             const candidates = [];
@@ -4129,31 +4192,77 @@
             candidates.multiStepCandidates = multiStepCandidates;
             if (!form) return candidates;
 
-            const selector = 'button[type="submit"], input[type="submit"], input[type="image"], button, [role="button"], [class*="submit"], [id*="submit"], [class*="send"], [id*="send"], [class*="next"], [id*="next"], [class*="continue"]';
-            const rawButtons = (typeof querySelectorAllIncludingShadowDOM === 'function')
-                ? querySelectorAllIncludingShadowDOM(form, selector)
-                : Array.from(form.querySelectorAll ? form.querySelectorAll(selector) : []);
+            const submitKeywords = ['send', 'submit', 'send message', 'contact us', 'request info', 'inquiry', 'contact', 'register', 'inquire', '보내기', '제출', '전송', '문의하기', '등록', '접수', '送信', '确定', '提交', '입력'];
+            const nextKeywords = ['next', 'continue', '다음', '계속', 'step', 'proceed'];
+            const rejectKeywords = ['prev', 'back', 'cancel', 'reset', 'clear', 'subscribe', 'newsletter', 'search', 'login', 'sign in', '이전', '취소', '초기화', '지우기', 'book', 'reserve'];
 
+            function isRejectedContext(el) {
+                if (!el) return true;
+                // Reject navigation / header / footer / menu controls (Test Case 9)
+                if (typeof el.closest === 'function') {
+                    if (el.closest('header, nav, footer, [role="navigation"], .header, .nav, .menu, .footer, #header, #nav, #footer')) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            // 1. Native DOM controls in form (and shadow DOM)
+            const nativeSelector = 'button[type="submit"], input[type="submit"], input[type="image"], button, [role="button"], input[type="button"]';
+            const nativeButtons = (typeof querySelectorAllIncludingShadowDOM === 'function')
+                ? querySelectorAllIncludingShadowDOM(form, nativeSelector)
+                : Array.from(form.querySelectorAll ? form.querySelectorAll(nativeSelector) : []);
+
+            // 2. Associated external controls
+            const externalButtons = [];
             if (form.id && typeof document !== 'undefined' && document.querySelectorAll) {
                 try {
-                    const externals = Array.from(document.querySelectorAll('button[form="' + form.id + '"], input[form="' + form.id + '"]'));
+                    const escId = (typeof CSS !== 'undefined' && CSS.escape) ? CSS.escape(form.id) : form.id;
+                    const externals = Array.from(document.querySelectorAll(`button[form="${escId}"], input[form="${escId}"], [data-form="${escId}"]`));
                     for (const eb of externals) {
-                        if (!rawButtons.includes(eb)) rawButtons.push(eb);
+                        if (!nativeButtons.includes(eb) && !externalButtons.includes(eb)) externalButtons.push(eb);
                     }
                 } catch (_) {}
             }
 
-            const submitKeywords = ['send', 'submit', 'send message', 'contact us', 'request info', 'inquiry', 'contact', 'register', 'inquire', '보내기', '제출', '전송', '문의하기', '등록', '접수', '送信', '确定', '提交', '입력'];
-            const nextKeywords = ['next', 'continue', '다음', '계속', 'step', 'proceed'];
-            const rejectKeywords = ['prev', 'back', 'cancel', 'reset', 'clear', 'subscribe', 'newsletter', 'search', 'login', 'sign in', '이전', '취소', '초기화', '지우기'];
+            // 3. Custom semantic controls inside form (<a>, clickable <div>, <span>, custom CTA components)
+            const customSelector = 'a, [class*="submit"], [id*="submit"], [class*="send"], [id*="send"], [class*="btn"], [class*="button"], [class*="cta"], [onclick], [tabindex]';
+            const customRaw = (typeof querySelectorAllIncludingShadowDOM === 'function')
+                ? querySelectorAllIncludingShadowDOM(form, customSelector)
+                : Array.from(form.querySelectorAll ? form.querySelectorAll(customSelector) : []);
 
-            for (const btn of rawButtons) {
+            const customButtons = [];
+            for (const el of customRaw) {
+                if (nativeButtons.includes(el) || externalButtons.includes(el)) continue;
+                const tag = (el.tagName || '').toUpperCase();
+                if (['A', 'DIV', 'SPAN', 'P'].includes(tag)) {
+                    customButtons.push(el);
+                }
+            }
+
+            const allGathered = [
+                ...nativeButtons.map(b => ({ el: b, kind: 'native' })),
+                ...externalButtons.map(b => ({ el: b, kind: 'external' })),
+                ...customButtons.map(b => ({ el: b, kind: 'custom' }))
+            ];
+
+            const seenElements = new Set();
+
+            for (const item of allGathered) {
+                const btn = item.el;
+                if (!btn || seenElements.has(btn)) continue;
+                seenElements.add(btn);
+
+                if (isRejectedContext(btn)) continue;
+
                 const text = (btn.textContent || btn.value || btn.getAttribute('aria-label') || '').toLowerCase().trim();
                 const type = (btn.type || '').toLowerCase();
-                const cls = (btn.className || '').toLowerCase();
+                const cls = (btn.className || '').toString().toLowerCase();
                 const id = (btn.id || '').toLowerCase();
+                const tag = (btn.tagName || '').toUpperCase();
+                const role = (btn.getAttribute('role') || '').toLowerCase();
 
-                // Strict rejection for search, login, newsletter, cancel, back
+                // Strict rejection for search, login, newsletter, booking, cancel, back
                 if (rejectKeywords.some(kw => text.includes(kw) || cls.includes(kw))) continue;
 
                 // Check for multi-step Next/Continue
@@ -4162,8 +4271,18 @@
                     continue;
                 }
 
+                const hasSubmitKeyword = submitKeywords.some(kw => text.includes(kw));
+
+                // For custom elements (<a>, <div>, <span>), require positive submit keyword or submit/send class/id
+                if (item.kind === 'custom') {
+                    const hasSubmitIdentifier = /submit|send/i.test(cls) || /submit|send/i.test(id);
+                    if (!hasSubmitKeyword && !hasSubmitIdentifier) {
+                        continue;
+                    }
+                }
+
                 let score = 0;
-                let rankTier = 4;
+                let rankTier = 5;
 
                 // 1. Native submit button owned by form
                 if (type === 'submit' && form.contains(btn)) {
@@ -4178,30 +4297,63 @@
                 // 3. Framework final submit button
                 else if (/hs-button|gform_button|wpcf7-submit|wpforms-submit|wixui-button|nf-btn/i.test(cls)) {
                     rankTier = 3;
-                    score = 110;
+                    score = 115;
                 }
-                // 4. Semantic Send/Submit button
-                else if (submitKeywords.some(kw => text.includes(kw))) {
+                // 4. Semantic <a> Send/Submit inside form
+                else if (tag === 'A' && hasSubmitKeyword) {
                     rankTier = 4;
+                    score = 100;
+                }
+                // 5. Semantic Send/Submit button or clickable div/span
+                else if (hasSubmitKeyword) {
+                    rankTier = 5;
                     score = 90;
                 }
-                // 5. General button
+                // 6. General button
                 else {
-                    rankTier = 5;
+                    rankTier = 6;
                     score = 50;
                 }
 
                 if (/submit|send/i.test(cls) || /submit|send/i.test(id)) score += 15;
-                if (btn.tagName === 'BUTTON') score += 10;
-                if (btn.tagName === 'INPUT' && (type === 'button' || type === 'text')) score -= 20;
+                if (tag === 'BUTTON') score += 10;
+                if (tag === 'INPUT' && (type === 'button' || type === 'text')) score -= 15;
+                if (text === 'send' || text === 'submit' || text === 'send message') score += 20;
 
-                candidates.push({ button: btn, score, rankTier });
+                const insideForm = form.contains(btn);
+                const associated = insideForm || (form.id && btn.getAttribute('form') === form.id);
+
+                candidates.push({
+                    button: btn,
+                    score,
+                    rankTier,
+                    kind: item.kind,
+                    tag: tag.toLowerCase(),
+                    role: role || (type === 'submit' ? 'submit' : 'none'),
+                    label: text.substring(0, 30),
+                    insideForm,
+                    associated
+                });
             }
 
             candidates.sort((a, b) => {
                 if (a.rankTier !== b.rankTier) return a.rankTier - b.rankTier;
                 return b.score - a.score;
             });
+
+            // Diagnostic logging
+            const nativeCount = candidates.filter(c => c.kind === 'native').length;
+            const externalCount = candidates.filter(c => c.kind === 'external').length;
+            const customCount = candidates.filter(c => c.kind === 'custom').length;
+            const visionCount = 0;
+
+            console.log(`[SUBMIT_CANDIDATES] total=${candidates.length} native=${nativeCount} external=${externalCount} custom=${customCount} vision=${visionCount}`);
+            logDev(`[SUBMIT_CANDIDATES] total=${candidates.length} native=${nativeCount} external=${externalCount} custom=${customCount} vision=${visionCount}`, "info");
+
+            for (const c of candidates) {
+                console.log(`[SUBMIT_CANDIDATE] tag=${c.tag} role=${c.role} label="${c.label}" insideForm=${c.insideForm} associated=${c.associated} score=${c.score}`);
+                logDev(`[SUBMIT_CANDIDATE] tag=${c.tag} role=${c.role} label="${c.label}" insideForm=${c.insideForm} associated=${c.associated} score=${c.score}`, "debug");
+            }
 
             candidates.multiStepCandidates = multiStepCandidates;
             return candidates;
@@ -4444,6 +4596,11 @@
             const alternate = candidates.length > 1 ? candidates[1].button : null;
 
             if (primary) {
+                const chosenTag = (primary.tagName || 'button').toLowerCase();
+                const chosenStrategy = candidates[0].kind || 'button_click';
+                console.log(`[SUBMIT_DECISION] chosen=${chosenTag} strategy=${chosenStrategy}`);
+                logDev(`[SUBMIT_DECISION] chosen=${chosenTag} strategy=${chosenStrategy}`, "info");
+
                 if (this.isDisabled(primary)) {
                     await this.repairActivation(primary);
                 }
@@ -4616,6 +4773,25 @@
                 }
             }
 
+            // [R6.7 & R6.9F VisionSubmitExecutor - Bounded Last Resort before candidate failure]
+            if (!submitEventFired && _VisionSubmitExecutor && !this._hasDispatchedVisionClick && this.options && this.options.allowVisionSubmit) {
+                try {
+                    logDev("👁️ [VisionSubmit] Initiating VisionSubmitExecutor last-resort activation...", "info");
+                    const visionExecutor = new _VisionSubmitExecutor();
+                    const vResult = await visionExecutor.execute(form, { previousPhysicalClick: this._hasDispatchedVisionClick });
+                    if (vResult.physicalClickDispatched) {
+                        this._hasDispatchedVisionClick = true;
+                        if (vResult.success) {
+                            console.log('[SUBMIT_DECISION] chosen=vision strategy=vision_coordinate_click');
+                            logDev('[SUBMIT_DECISION] chosen=vision strategy=vision_coordinate_click', 'info');
+                            return { success: true, reasonCode: 'SUBMIT_TRIGGERED', strategy: 'vision_coordinate_click', submitEventFired: true, commitSignal: vResult.commitSignal };
+                        }
+                    }
+                } catch (vErr) {
+                    logDev(`⚠️ [VisionSubmit] Error: ${vErr.message}`, "warning");
+                }
+            }
+
             // Stage E: FORCED_FORM_SUBMIT_LAST_RESORT (private-mode opt-in only)
             if (this.options && this.options.allowForcedNativeSubmit && form && typeof form.submit === 'function' && readiness.ready) {
                 logDev("⚠️ [SubmitExecutorR5] FORCED_FORM_SUBMIT_LAST_RESORT executing...", "warning");
@@ -4623,6 +4799,11 @@
                     form.submit();
                     return { success: true, reasonCode: 'SUBMIT_TRIGGERED', strategy: 'FORCED_FORM_SUBMIT_LAST_RESORT', submitEventFired: true };
                 } catch (_) {}
+            }
+
+            if (!submitEventFired) {
+                console.log('[SUBMIT_DECISION] chosen=none strategy=none');
+                logDev('[SUBMIT_DECISION] chosen=none strategy=none', 'warning');
             }
 
             return {

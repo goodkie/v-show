@@ -1086,7 +1086,7 @@ function updateRealTimeStatus(data) {
         if (suffixLabel) suffixLabel.textContent = suffixText;
     }
 
-    // 2. Failed Count
+    // 2. Failed Count (deterministic failure only)
     if (data.failedCount !== undefined) {
         failedCount = data.failedCount;
     } else if (data.counters && data.counters.failed !== undefined) {
@@ -1095,7 +1095,28 @@ function updateRealTimeStatus(data) {
     const failedDisplay = document.getElementById('failed-count-display');
     if (failedDisplay) failedDisplay.textContent = failedCount;
 
-    // 3. Completed Count (never clobber with 0 on partial updates)
+    // 3. Timeout Count
+    const timeoutCount = (data.timeoutCount !== undefined) 
+        ? data.timeoutCount 
+        : (data.counters && data.counters.timeout !== undefined ? data.counters.timeout : 0);
+    const timeoutDisplay = document.getElementById('timeout-count-display');
+    if (timeoutDisplay) timeoutDisplay.textContent = timeoutCount;
+
+    // 4. Delivery Unknown Count
+    const unknownCount = (data.deliveryUnknownCount !== undefined)
+        ? data.deliveryUnknownCount
+        : (data.counters && data.counters.deliveryUnknown !== undefined ? data.counters.deliveryUnknown : (data.unknownCount || 0));
+    const unknownDisplay = document.getElementById('unknown-count-display');
+    if (unknownDisplay) unknownDisplay.textContent = unknownCount;
+
+    // 5. Skipped Count
+    const skippedCount = (data.skippedCount !== undefined)
+        ? data.skippedCount
+        : (data.counters && data.counters.skipped !== undefined ? data.counters.skipped : 0);
+    const skippedDisplay = document.getElementById('skipped-count-display');
+    if (skippedDisplay) skippedDisplay.textContent = skippedCount;
+
+    // 6. Completed Count (all terminal rows)
     if (data.completedCount !== undefined) {
         completedCount = data.completedCount;
     } else if (data.counters && data.counters.completed !== undefined) {
@@ -1103,12 +1124,12 @@ function updateRealTimeStatus(data) {
     } else if (data.remainingCount !== undefined && totalTargets > 0) {
         completedCount = Math.max(0, totalTargets - data.remainingCount);
     } else if (data.successCount !== undefined || data.failedCount !== undefined) {
-        completedCount = Math.max(completedCount, successCount + failedCount);
+        completedCount = Math.max(completedCount, successCount + failedCount + timeoutCount + unknownCount + skippedCount);
     }
     const completedDisplay = document.getElementById('completed-count-display');
     if (completedDisplay) completedDisplay.textContent = completedCount;
 
-    // 4. Remaining Count (prioritize authoritative remainingCount)
+    // 7. Remaining Count
     if (data.remainingCount !== undefined) {
         remainingTargets = data.remainingCount;
     } else if (data.counters && data.counters.remaining !== undefined) {
@@ -1677,23 +1698,99 @@ function bindEvents() {
     try { initBuildProvenanceBadge(); } catch (_) {}
 }
 
+async function verifyBuildHandshake() {
+    const localInfo = (typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO)
+        ? BuildProvenance.BUILD_INFO
+        : {
+            implementationHead: 'fab660c9e3f33d6c60109dc13e8a24926e52d424',
+            headShort: 'fab660c',
+            buildId: 'R6.9F-20261005-RUNTIME-SUBMIT-COUNTERS',
+            manifestVersion: 3
+        };
+
+    const localHead = localInfo.implementationHead;
+    const localBuild = localInfo.buildId;
+
+    return new Promise((resolve) => {
+        if (typeof chrome === 'undefined' || !chrome.runtime || !chrome.runtime.sendMessage) {
+            console.warn('[BUILD_HANDSHAKE] chrome.runtime.sendMessage not available');
+            resolve({ ok: true, localInfo, bgInfo: localInfo });
+            return;
+        }
+
+        chrome.runtime.sendMessage({ action: 'GET_BUILD_PROVENANCE' }, (res) => {
+            const lastErr = chrome.runtime.lastError;
+            if (lastErr || !res || !res.success) {
+                const err = (lastErr && lastErr.message) || (res && res.error) || 'Failed to contact background';
+                console.error(`[BUILD_HANDSHAKE] localHead=${localHead} backgroundHead=UNREACHABLE result=REJECT error=${err}`);
+                _applyHandshakeUiState(false, `Background service worker unreachable: ${err}`);
+                resolve({ ok: false, error: err, localInfo, bgInfo: null });
+                return;
+            }
+
+            const bgInfo = res.provenance || res;
+            const bgHead = bgInfo.implementationHead;
+            const bgBuild = bgInfo.buildId;
+
+            const isMatch = (localHead === bgHead && localBuild === bgBuild);
+            if (isMatch) {
+                console.log(`[BUILD_HANDSHAKE] localHead=${localHead} backgroundHead=${bgHead} result=PASS`);
+                _applyHandshakeUiState(true);
+                resolve({ ok: true, localInfo, bgInfo });
+            } else {
+                console.error(`[BUILD_HANDSHAKE] localHead=${localHead} backgroundHead=${bgHead} result=REJECT mismatch`);
+                const reason = `Runtime build mismatch! Popup is ${localBuild} [${localHead ? localHead.substring(0, 7) : ''}], but background worker is ${bgBuild} [${bgHead ? bgHead.substring(0, 7) : ''}]. Please reload the extension.`;
+                _applyHandshakeUiState(false, reason);
+                resolve({ ok: false, error: reason, localInfo, bgInfo });
+            }
+        });
+    });
+}
+
+function _applyHandshakeUiState(isPassed, errorReason = '') {
+    if (typeof document === 'undefined') return;
+    const mismatchBanner = document.getElementById('build-mismatch-banner');
+    const startBtn = document.getElementById('start-btn');
+
+    if (isPassed) {
+        if (mismatchBanner) mismatchBanner.style.display = 'none';
+        if (startBtn && startBtn.hasAttribute('data-build-locked')) {
+            startBtn.removeAttribute('data-build-locked');
+            startBtn.disabled = false;
+            startBtn.title = '';
+        }
+    } else {
+        if (mismatchBanner) {
+            mismatchBanner.style.display = 'block';
+            mismatchBanner.title = errorReason;
+        }
+        if (startBtn) {
+            startBtn.setAttribute('data-build-locked', 'true');
+            startBtn.disabled = true;
+            startBtn.title = `⚠️ ${errorReason}`;
+        }
+    }
+}
+
 function initBuildProvenanceBadge() {
     if (typeof document === 'undefined') return;
     const badge = document.getElementById('build-provenance-badge');
-    if (!badge) return;
-    if (typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO) {
-        const info = BuildProvenance.BUILD_INFO;
-        badge.textContent = `${info.buildId.split('-')[0]} [${info.headShort}]`;
-        badge.title = `Build: ${info.buildId} | SHA: ${info.head} | Branch: ${info.branch}`;
-    } else if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
-        chrome.runtime.sendMessage({ action: 'GET_BUILD_PROVENANCE' }, (res) => {
-            if (res && res.success && res.provenance) {
-                const info = res.provenance;
-                badge.textContent = `${info.buildId.split('-')[0]} [${info.headShort}]`;
-                badge.title = `Build: ${info.buildId} | SHA: ${info.head} | Branch: ${info.branch}`;
-            }
-        });
+    const localInfo = (typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO)
+        ? BuildProvenance.BUILD_INFO
+        : null;
+    if (badge && localInfo) {
+        badge.textContent = `${localInfo.buildId.split('-')[0]} [${localInfo.headShort}]`;
+        badge.title = `Build: ${localInfo.buildId} | SHA: ${localInfo.head} | Branch: ${localInfo.branch}`;
     }
+    verifyBuildHandshake().then((res) => {
+        if (badge && res && res.bgInfo) {
+            const b = res.bgInfo;
+            badge.textContent = `${b.buildId.split('-')[0]} [${b.headShort || (b.implementationHeadShort || (b.implementationHead ? b.implementationHead.substring(0, 7) : ''))}]`;
+            badge.title = `Build: ${b.buildId} | SHA: ${b.implementationHead || b.head} | Branch: ${b.branch}`;
+        }
+    }).catch((err) => {
+        console.error('[BUILD_HANDSHAKE_INIT_ERR]', err);
+    });
 }
 
 function toggleCaptchaApiVisibility() {
@@ -2228,6 +2325,14 @@ async function startCampaign() {
         if (multiActions) multiActions.classList.add('hidden');
     }
 
+    // [R6.9F Fail-Closed Build Handshake]
+    const handshake = await verifyBuildHandshake();
+    if (!handshake.ok) {
+        alert(`❌ CANNOT START CAMPAIGN: RUNTIME BUILD MISMATCH\n\n${handshake.error || 'Extension components are running different builds.'}\n\nPlease reload the extension.`);
+        _restoreStartButton();
+        return Promise.reject(new Error(handshake.error || 'RUNTIME_BUILD_MISMATCH'));
+    }
+
     return new Promise((resolve, reject) => {
         if (typeof chrome === 'undefined' || !chrome.runtime || !chrome.runtime.sendMessage) {
             const err = new Error("Chrome runtime messaging is not available");
@@ -2237,8 +2342,15 @@ async function startCampaign() {
             return reject(err);
         }
 
+        const localInfo = (typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO)
+            ? BuildProvenance.BUILD_INFO
+            : { implementationHead: 'fab660c9e3f33d6c60109dc13e8a24926e52d424', buildId: 'R6.9F-20261005-RUNTIME-SUBMIT-COUNTERS', manifestVersion: 3 };
+
         chrome.runtime.sendMessage({
             action: 'START_CAMPAIGN',
+            expectedImplementationHead: localInfo.implementationHead,
+            expectedBuildId: localInfo.buildId,
+            expectedManifestVersion: localInfo.manifestVersion || 3,
             queue: startPayload.queue,
             template: startPayload.template,
             delayMs: startPayload.delayMs,
@@ -2266,6 +2378,10 @@ async function startCampaign() {
                 const err = new Error(errMsg);
                 console.error('[START_BG_HANDLER_NOT_REACHED]', err);
                 _restoreStartButton();
+                if (errMsg === 'RUNTIME_BUILD_MISMATCH') {
+                    _applyHandshakeUiState(false, response.detail || errMsg);
+                    alert(`❌ RUNTIME BUILD MISMATCH DETECTED BY BACKGROUND\n\n${response.detail || errMsg}\n\nPlease reload extension.`);
+                }
                 addDiagnosticLog(`[Engine][RX_REJECT][+${elapsedAckMs}ms] error=${errMsg}`, "ERROR");
                 addLog(`❌ [Background Engine] Start failed: ${errMsg}`, "error");
                 return reject(err);
@@ -3878,14 +3994,17 @@ document.addEventListener('DOMContentLoaded', () => {
             const invalid = rows.filter(r => r.status === 'INVALID_INPUT').length;
             const succeeded = stats ? stats.success : attempts.filter(a => a.status === 'CONFIRMED_SUCCESS').length;
             const failed = stats ? stats.failure : attempts.filter(a => a.status === 'FAILURE').length;
+            const timeout = stats ? (stats.timeout || 0) : attempts.filter(a => a.status === 'TIMEOUT_LOCAL' || a.status === 'TIMEOUT_GLOBAL').length;
             const unknown = stats ? stats.unknown : attempts.filter(a => a.status === 'DELIVERY_UNKNOWN' || a.status === 'PAUSED_UNKNOWN').length;
             const skipped = stats ? stats.skipped : attempts.filter(a => a.status === 'SKIPPED').length;
 
             const scopeLabel = scopePref === 'currentRun' 
-                ? '<b style="color:#00ffcc">currentRun</b> <span style="font-size:10px;opacity:0.8;">(Live Run)</span>' 
+                ? (activeRunId 
+                    ? `<b style="color:#00ffcc">currentRun</b> <span style="font-size:10px;opacity:0.8;">(${activeRunId})</span>` 
+                    : '<b style="color:#94a3b8">currentRun</b> <span style="font-size:10px;color:#cbd5e1;">(No active run)</span>')
                 : '<b style="color:#f59e0b">currentGeneration</b> <span style="font-size:10px;color:#fca5a5;">(Generation totals — not current run)</span>';
 
-            console.log(`[LEDGER_STATS] scope=${scopePref} success=${succeeded} failed=${failed} unknown=${unknown}`);
+            console.log(`[LEDGER_STATS] scope=${scopePref} success=${succeeded} failed=${failed} timeout=${timeout} unknown=${unknown}`);
 
             panel.innerHTML = `
                 <div class="history-stat-row">
@@ -3908,6 +4027,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 <div class="history-stat-row">
                     <span>Failed:</span><span><b style="color:#f59e0b">${failed}</b></span>
+                </div>
+                <div class="history-stat-row">
+                    <span>Timeout:</span><span><b style="color:#f97316">${timeout}</b></span>
                 </div>
                 <div class="history-stat-row">
                     <span>Unknown:</span><span><b style="color:#a855f7">${unknown}</b></span>

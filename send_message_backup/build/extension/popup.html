@@ -14,7 +14,7 @@
                     <img src="icons/icon128.png" alt="Icon" class="app-icon-large">
                     <div class="text-group">
                         <h1 class="main-title" data-i18n="app_title">XPIDER AutoForm</h1>
-                        <h2 class="sub-title">Sender Pro <span class="version-tag">v1.2.0</span> <span id="build-provenance-badge" class="build-provenance-tag" style="font-size: 10px; background: rgba(0, 255, 204, 0.15); color: #00ffcc; border: 1px solid rgba(0, 255, 204, 0.4); border-radius: 4px; padding: 2px 6px; margin-left: 6px; font-family: monospace;" title="Build: R6.9E.1-20261004-LIFECYCLE (db3011c)">R6.9E.1 [db3011c]</span></h2>
+                        <h2 class="sub-title">Sender Pro <span class="version-tag">v1.2.0</span> <span id="build-provenance-badge" class="build-provenance-tag" style="font-size: 10px; background: rgba(0, 255, 204, 0.15); color: #00ffcc; border: 1px solid rgba(0, 255, 204, 0.4); border-radius: 4px; padding: 2px 6px; margin-left: 6px; font-family: monospace;" title="Build: R6.9F-20261005-RUNTIME-SUBMIT-COUNTERS (fab660c)">R6.9F [fab660c]</span></h2>
                     </div>
                 </div>
                 <div class="header-actions">
@@ -23,6 +23,9 @@
                 </div>
             </div>
             <p class="subtitle" data-i18n="app_subtitle">The Next-Gen AI Form Submission Engine</p>
+            <div id="build-mismatch-banner" class="alert-danger" style="display: none; color: #ff4d4f; background: rgba(255, 77, 79, 0.15); border: 1px solid #ff4d4f; padding: 8px 12px; border-radius: 6px; margin: 8px 0; font-weight: bold; text-align: center; font-size: 12px; letter-spacing: 0.5px;">
+                ⚠️ RUNTIME BUILD MISMATCH — RELOAD EXTENSION
+            </div>
         </header>
 
         <main>
@@ -484,16 +487,30 @@
                 <div class="progress-bar-bg">
                     <div id="progress-bar"></div>
                 </div>
-                <!-- Stats Area: Modern Premium Neon Grid -->
+                <!-- Stats Area: Modern Premium Neon Grid (R6.9F 7-Bucket Parity) -->
                 <div class="stats-premium-box stats-yellow-neon">
-                    <div class="stats-grid-premium" style="grid-template-columns: repeat(4, 1fr);">
+                    <div class="stats-grid-premium" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-bottom: 4px;">
                         <div class="stats-card-premium">
                             <div class="stats-card-label neon-green-text">SUCCESS</div>
                             <div class="stats-card-value" id="success-count-display">0</div>
                         </div>
                         <div class="stats-card-premium" id="failed-card-btn" style="cursor: pointer;" title="Click to view failure breakdown">
-                            <div class="stats-card-label neon-red-text">FAILED</div>
+                            <div class="stats-card-label neon-red-text">FAILURE</div>
                             <div class="stats-card-value" id="failed-count-display">0</div>
+                        </div>
+                        <div class="stats-card-premium">
+                            <div class="stats-card-label" style="color: #f97316;">TIMEOUT</div>
+                            <div class="stats-card-value" id="timeout-count-display">0</div>
+                        </div>
+                        <div class="stats-card-premium">
+                            <div class="stats-card-label" style="color: #c084fc;">UNKNOWN</div>
+                            <div class="stats-card-value" id="unknown-count-display">0</div>
+                        </div>
+                    </div>
+                    <div class="stats-grid-premium" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px;">
+                        <div class="stats-card-premium">
+                            <div class="stats-card-label" style="color: #94a3b8;">SKIPPED</div>
+                            <div class="stats-card-value" id="skipped-count-display">0</div>
                         </div>
                         <div class="stats-card-premium">
                             <div class="stats-card-label neon-blue-text">COMPLETED</div>

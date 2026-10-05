@@ -159,6 +159,7 @@ let campaignState = {
     targetReady: null,
     currentDiscoveryCtx: null,
     currentAttempt: null, // [v1.2.0 Intent Ledger] { url, attemptId, status: 'PREPARING'|'SUBMIT_PENDING'|'RESOLVED', reasonCode, ts }
+    submitBoundaryReached: {}, // [Issue #6 R6.9F] Track exact attemptIds reaching submit to prevent duplicates
     focusActiveTargetTab: true, // [Hotfix R2] Auto-focus campaign target tab
     // [R6.9A Authoritative Real-Time Campaign Counters (Ledger-Derived)]
     counters: {
@@ -1280,14 +1281,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 ? BuildProvenance.BUILD_INFO
                 : {
                     branch: 'upgrade/phase-0-1',
-                    implementationHead: 'db3011ca6ebdddc49c3fe17bd99c3da0c5ad583b',
-                    implementationHeadShort: 'db3011c',
-                    head: 'db3011ca6ebdddc49c3fe17bd99c3da0c5ad583b',
-                    headShort: 'db3011c',
+                    implementationHead: 'fab660c9e3f33d6c60109dc13e8a24926e52d424',
+                    implementationHeadShort: 'fab660c',
+                    head: 'fab660c9e3f33d6c60109dc13e8a24926e52d424',
+                    headShort: 'fab660c',
                     rollbackBase: 'b8e1d0362946cd6ca8c77c1aa990998da62c2c91',
                     manifestVersion: 3,
-                    buildId: 'R6.9E.1-20261004-LIFECYCLE',
-                    builtAt: '2026-10-04T08:35:00.000Z',
+                    buildId: 'R6.9F-20261005-RUNTIME-SUBMIT-COUNTERS',
+                    builtAt: '2026-10-05T08:50:00.000Z',
                     provenanceSchema: 2,
                     modules: {}
                 };
@@ -1298,12 +1299,44 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             });
             return true;
 
-        case 'START_CAMPAIGN':
-            // [Issue #6 R6.8 P0-1 & R6.9C] Emit immutable Build Provenance at campaign boot
+        case 'START_CAMPAIGN': {
+            // [Issue #6 R6.9F] Fail-Closed Build Handshake Verification
+            const liveBp = (typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO) ? BuildProvenance.BUILD_INFO : null;
+            const liveHead = liveBp ? liveBp.implementationHead : 'fab660c9e3f33d6c60109dc13e8a24926e52d424';
+            const liveBuild = liveBp ? liveBp.buildId : 'R6.9F-20261005-RUNTIME-SUBMIT-COUNTERS';
+            const reqHead = request.expectedImplementationHead;
+            const reqBuild = request.expectedBuildId;
+
+            if (reqHead && liveHead && reqHead !== liveHead) {
+                console.error(`[BUILD_HANDSHAKE] popup=${reqHead} background=${liveHead} result=REJECT`);
+                logBg(null, `[BUILD_HANDSHAKE] popup=${reqHead} background=${liveHead} result=REJECT`, 'error');
+                sendResponse({
+                    success: false,
+                    error: 'RUNTIME_BUILD_MISMATCH',
+                    detail: `Popup implementationHead (${reqHead}) does not match background (${liveHead}). Reload extension.`
+                });
+                return true;
+            }
+
+            if (reqBuild && liveBuild && reqBuild !== liveBuild) {
+                console.error(`[BUILD_HANDSHAKE] popup=${reqBuild} background=${liveBuild} result=REJECT`);
+                logBg(null, `[BUILD_HANDSHAKE] popup=${reqBuild} background=${liveBuild} result=REJECT`, 'error');
+                sendResponse({
+                    success: false,
+                    error: 'RUNTIME_BUILD_MISMATCH',
+                    detail: `Popup buildId (${reqBuild}) does not match background (${liveBuild}). Reload extension.`
+                });
+                return true;
+            }
+
+            console.log(`[BUILD_HANDSHAKE] popup=${reqHead || 'omitted'} background=${liveHead} result=PASS`);
+            logBg(null, `[BUILD_HANDSHAKE] popup=${reqHead || 'omitted'} background=${liveHead} result=PASS`, 'info');
+
+            // [Issue #6 R6.8 P0-1 & R6.9C & R6.9F] Emit immutable Build Provenance at campaign boot
             const provLogs = (typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.getBuildProvenanceLogs === 'function')
                 ? BuildProvenance.getBuildProvenanceLogs()
                 : [
-                    "[BUILD_ID] branch=upgrade/phase-0-1 implementationHead=db3011ca6ebdddc49c3fe17bd99c3da0c5ad583b manifestVersion=3 buildId=R6.9E.1-20261004-LIFECYCLE builtAt=2026-10-04T08:35:00.000Z"
+                    `[BUILD_ID] branch=upgrade/phase-0-1 implementationHead=${liveHead} manifestVersion=3 buildId=${liveBuild} builtAt=2026-10-05T08:50:00.000Z`
                 ];
             for (const plog of provLogs) {
                 console.log(plog);
@@ -1335,10 +1368,20 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 }
             })();
             return true;
+        }
 
         case 'PING':
             sendResponse({ success: true, timestamp: Date.now() });
             return true;
+
+        case 'QUERY_SUBMIT_BOUNDARY': {
+            const attId = request.attemptId || (campaignState.currentAttempt && campaignState.currentAttempt.attemptId);
+            const tok = request.targetToken || (campaignState.activeTargetExecution && campaignState.activeTargetExecution.targetToken);
+            const key = `${attId}:${tok}`;
+            const reached = !!(campaignState.submitBoundaryReached && (campaignState.submitBoundaryReached[attId] || campaignState.submitBoundaryReached[key]));
+            sendResponse({ success: true, reached });
+            return true;
+        }
 
         case 'GET_CAMPAIGN_COUNTERS':
             sendResponse({ success: true, counters: campaignState.counters });
@@ -1518,8 +1561,26 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                         }
                     }
 
-                    // [Issue #6 R6.9E B1] Move true submit boundary to SUBMIT_ATTEMPT_STARTED
+                    // [Issue #6 R6.9F] Persistent submit boundary & Duplicate Submit Block
                     if (request.stage === 'SUBMIT_ATTEMPT_STARTED') {
+                        const curAttId = (campaignState.currentAttempt && campaignState.currentAttempt.attemptId) || request.attemptId || 'default';
+                        const curToken = (campaignState.activeTargetExecution && campaignState.activeTargetExecution.targetToken) || request.targetToken || 'default';
+                        const attemptKey = `${curAttId}:${curToken}`;
+                        if (!campaignState.submitBoundaryReached) campaignState.submitBoundaryReached = {};
+
+                        if (campaignState.submitBoundaryReached[curAttId] || campaignState.submitBoundaryReached[attemptKey]) {
+                            logBg(sTab.id, `[SUBMIT_DUPLICATE_BLOCK] attemptId=${curAttId} result=REJECT`, 'warning');
+                            console.warn(`[SUBMIT_DUPLICATE_BLOCK] attemptId=${curAttId} result=REJECT`);
+                            sendResponse({ success: false, duplicateBlocked: true, error: 'SUBMIT_DUPLICATE_BLOCK' });
+                            return;
+                        }
+
+                        campaignState.submitBoundaryReached[curAttId] = true;
+                        campaignState.submitBoundaryReached[attemptKey] = true;
+                        try {
+                            chrome.storage.local.set({ xpider_submitBoundaryReached: campaignState.submitBoundaryReached }).catch(() => {});
+                        } catch (_) {}
+
                         if (campaignState.currentAttempt) {
                             campaignState.currentAttempt.status = 'SUBMIT_PENDING';
                             campaignState.submitLock = true;
@@ -1763,11 +1824,17 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                             return;
                         } catch (e2) {
                             logBg(null, `[Auto CAPTCHA Solver] 2Captcha FAILED: ${e2.message}`, 'error');
-                            // [Issue #6 R6.9E B4] Record permanent error to block repeat spam in same epoch
-                            if (e2.message && (e2.message.includes('ERROR_ZERO_BALANCE') || e2.message.includes('ZERO_BALANCE'))) {
+                            // [Issue #6 R6.9E B4 & R6.9F] Record permanent error to block repeat spam in same epoch
+                            const isZeroBal = e2.message && (e2.message.includes('ERROR_ZERO_BALANCE') || e2.message.includes('ZERO_BALANCE'));
+                            if (isZeroBal) {
                                 campaignState.captchaEpochBlockedErrors[curEpoch] = 'ERROR_ZERO_BALANCE';
                             }
-                            sendResponse({ success: false, error: e2.message });
+                            sendResponse({ 
+                                success: false, 
+                                error: e2.message,
+                                terminalError: isZeroBal ? 'ERROR_ZERO_BALANCE' : null,
+                                settleReason: isZeroBal ? 'CAPTCHA_SOLVER_UNAVAILABLE' : null
+                            });
                             return;
                         }
                     } else if (method === 'api' || method === '2captcha') {
@@ -2584,18 +2651,27 @@ function stopCampaignOrchestrator() {
     return pauseCampaignOrchestrator(true);
 }
 
-function printCampaignOutcomeSummary() {
-    logBg(null, "=== CAMPAIGN OUTCOME SUMMARY ===", "info");
-    const hist = campaignState.outcomeHistogram || {};
-    const keys = Object.keys(hist);
-    if (keys.length === 0) {
-        logBg(null, "No target outcomes recorded.", "info");
-    } else {
-        for (const k of keys) {
-            logBg(null, `${(k + ':').padEnd(28)} ${hist[k]}`, "info");
-        }
+async function printCampaignOutcomeSummary() {
+    logBg(null, "=== CAMPAIGN OUTCOME SUMMARY (currentRun) ===", "info");
+    try {
+        const hs = await getHistoryStoreInstance();
+        const stats = hs.getLedgerStats('currentRun', campaignState.campaignRunId);
+        
+        logBg(null, `${('CONFIRMED_SUCCESS:').padEnd(28)} ${stats.success}`, "info");
+        logBg(null, `${('FAILURE:').padEnd(28)} ${stats.failure}`, "info");
+        logBg(null, `${('TIMEOUT_LOCAL:').padEnd(28)} ${stats.timeoutLocal}`, "info");
+        logBg(null, `${('TIMEOUT_GLOBAL:').padEnd(28)} ${stats.timeoutGlobal}`, "info");
+        logBg(null, `${('DELIVERY_UNKNOWN:').padEnd(28)} ${stats.unknown}`, "info");
+        logBg(null, `${('SKIPPED:').padEnd(28)} ${stats.skipped}`, "info");
+        logBg(null, `${('PAUSED_UNKNOWN:').padEnd(28)} ${stats.paused}`, "info");
+        logBg(null, "----------------------------------------", "info");
+        logBg(null, `${('TOTAL TERMINAL / COMPLETED:').padEnd(28)} ${stats.completed}`, "info");
+        
+        console.log(`[CAMPAIGN_SUMMARY] success=${stats.success} failure=${stats.failure} timeoutLocal=${stats.timeoutLocal} timeoutGlobal=${stats.timeoutGlobal} unknown=${stats.unknown} skipped=${stats.skipped} paused=${stats.paused} completed=${stats.completed}`);
+    } catch (e) {
+        logBg(null, `Failed to load ledger stats for summary: ${e.message}`, "warning");
     }
-    logBg(null, "================================", "info");
+    logBg(null, "========================================", "info");
 }
 
 /**
