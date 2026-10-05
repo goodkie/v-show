@@ -15,10 +15,10 @@
 
     const BUILD_INFO = {
         branch: 'upgrade/phase-0-1',
-        implementationHead: 'fab660c9e3f33d6c60109dc13e8a24926e52d424',
-        implementationHeadShort: 'fab660c',
-        head: 'fab660c9e3f33d6c60109dc13e8a24926e52d424',
-        headShort: 'fab660c',
+        implementationHead: '8963ece6f069562b7af028e354c75f9eac15857b',
+        implementationHeadShort: '8963ece',
+        head: '8963ece6f069562b7af028e354c75f9eac15857b',
+        headShort: '8963ece',
         rollbackBase: 'b8e1d0362946cd6ca8c77c1aa990998da62c2c91',
         manifestVersion: 3,
         buildId: 'R6.9F-20261005-RUNTIME-SUBMIT-COUNTERS',
