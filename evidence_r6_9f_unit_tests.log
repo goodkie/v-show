@@ -1,0 +1,33 @@
+================================================================
+ R6.9F RUNTIME BUILD LOCK, SUBMIT DISCOVERY, COUNTER SEMANTICS
+================================================================
+✅ [PASS] 1. Build Handshake: popup verifyBuildHandshake matches local and bg build
+✅ [PASS] 2. Build Handshake: popup blocks start-btn and displays banner on mismatch
+✅ [PASS] 3. Build Handshake: background rejects START_CAMPAIGN on mismatch
+✅ [PASS] 4. Build Handshake: background logs [BUILD_HANDSHAKE] with PASS/REJECT
+[LONG_TEXT_GATE] found=true type=textarea semantic=message
+[LONG_TEXT_GATE] found=true type=textarea semantic=message
+[FORM_INTENT] intent=COMMENT confidence=0.85 negativeClass=comment_form_structure
+[FORM_CLASSIFY] intent=COMMENT eligible=false hasInquiryBody=true bodyFieldType=textarea decision=REJECT reason=NON_INQUIRY_COMMENT_FORM
+✅ [PASS] 5. Comment Form: ContactGate rejects WP comment form with NON_INQUIRY_COMMENT_FORM
+[LONG_TEXT_GATE] found=true type=textarea semantic=message
+[LONG_TEXT_GATE] found=true type=textarea semantic=message
+[FORM_INTENT] intent=CONTACT_INQUIRY confidence=0.95 negativeClass=none
+[FORM_CLASSIFY] intent=CONTACT_INQUIRY eligible=true hasInquiryBody=true bodyFieldType=textarea decision=ACCEPT reason=ELIGIBLE_CONTACT_INQUIRY
+✅ [PASS] 6. Comment Form: ContactGate preserves inquiry forms with "Comments" textarea and submit button
+✅ [PASS] 7. Comment Form: Content script early form gate aborts autofill lock
+✅ [PASS] 8. Submit Discovery: Native submit buttons discovered and scored highest
+✅ [PASS] 9. Submit Discovery: Associated external form submit button discovered via form attribute
+✅ [PASS] 10. Submit Discovery: Shadow DOM submit candidates inspected via querySelectorAllIncludingShadowDOM
+✅ [PASS] 11. Submit Discovery: Semantic custom buttons (a, div, span) inside form context discovered
+✅ [PASS] 12. Submit Discovery: Unrelated contact links in header/nav/footer rejected
+✅ [PASS] 13. Submit Discovery: Candidate scan and decision logged with strategy
+✅ [PASS] 14. Submit Discovery: Fallback to VisionSubmitExecutor before SUBMIT_CANDIDATE_NOT_FOUND
+✅ [PASS] 15. Duplicate Submit Block: Background tracks submitBoundaryReached per attempt
+✅ [PASS] 16. Duplicate Submit Block: Content script checks QUERY_SUBMIT_BOUNDARY and aborts duplicate
+✅ [PASS] 17. Captcha Zero Balance: 2Captcha ERROR_ZERO_BALANCE settled as CAPTCHA_SOLVER_UNAVAILABLE
+✅ [PASS] 18. Captcha Zero Balance: Content script aborts submit on terminal captcha error
+✅ [PASS] 19. Counter Bucket Parity: HistoryStore currentRun returns 7 distinct buckets with sum === completed
+================================================================
+TOTAL TESTS: 19 | PASSED: 19 | FAILED: 0
+================================================================

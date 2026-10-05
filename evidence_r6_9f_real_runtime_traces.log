@@ -1,0 +1,517 @@
+[2026-10-05T10:24:05.760Z] ================================================================================
+[2026-10-05T10:24:05.764Z] [R6.9F ACTUAL OPERATOR-PATH REAL EDGE BROWSER ACCEPTANCE AUDIT]
+[2026-10-05T10:24:05.764Z] ================================================================================
+[2026-10-05T10:24:05.764Z] Timestamp: 2026-10-05T10:24:05.764Z
+[2026-10-05T10:24:05.855Z] gitHead: 23426a89eed60a52c8e76768582a9f5b69edf89d
+[2026-10-05T10:24:05.875Z] [HTTP_SERVER] http://127.0.0.1:8974
+[2026-10-05T10:24:05.876Z] [BROWSER_LAUNCH] C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe ext=E:\vivpr\ai\extension-form-sender\send_message_backup\build\extension
+[2026-10-05T10:24:10.911Z] [CDP_CONNECT] Edg/154.0.4258.53
+[2026-10-05T10:24:10.916Z] [EXT_DISCOVERY] extId=pjohcallgmjmbfckiaogjokelhobfceg
+[2026-10-05T10:24:10.965Z] [SW_CONSOLE] [BootStep] solver_instantiation
+[2026-10-05T10:24:10.965Z] [SW_CONSOLE] [X PIDER] Background script initializing (Unified Mode)...
+[2026-10-05T10:24:10.966Z] [SW_CONSOLE] [BootStep] side_panel_config
+[2026-10-05T10:24:10.966Z] [SW_CONSOLE] [BootStep] campaign_state_init
+[2026-10-05T10:24:10.966Z] [SW_CONSOLE] [BootStep] global_functions_defined
+[2026-10-05T10:24:10.967Z] [SW_CONSOLE] [BootStep] worker_online
+[2026-10-05T10:24:10.967Z] [SW_CONSOLE] [BootStep] restoring_campaign_state
+[2026-10-05T10:24:10.968Z] [SW_CONSOLE] [Boot] Initializing campaign state...
+[2026-10-05T10:24:10.968Z] [SW_CONSOLE] [COUNTER_RECONCILE] legacySuccess=0 ledgerSuccess=0 action=LEDGER_WINS
+[2026-10-05T10:24:10.968Z] [SW_CONSOLE] [BootStep] restore_complete
+[2026-10-05T10:24:11.234Z] [SW_CONSOLE] [BG_LOG][tab=none] 📦 [Migration] Safely migrated to v2 (Backup: xpider_backup_v1_1791195851182)
+[2026-10-05T10:24:13.473Z] [POPUP_CONSOLE] [XPIDER] Blacklist loaded with 3333 items.
+[2026-10-05T10:24:13.473Z] [POPUP_CONSOLE] [POPUP_BOOT] started
+[2026-10-05T10:24:13.473Z] [POPUP_CONSOLE] [POPUP_BOOT] startHandlerBound=true
+[2026-10-05T10:24:13.473Z] [POPUP_CONSOLE] [POPUP_BOOT] saveHandlerBound=true
+[2026-10-05T10:24:13.473Z] [POPUP_CONSOLE] [BUILD_HANDSHAKE] localHead=8963ece6f069562b7af028e354c75f9eac15857b backgroundHead=8963ece6f069562b7af028e354c75f9eac15857b result=PASS
+[2026-10-05T10:24:13.474Z] [POPUP_CONSOLE] [POPUP_BOOT] settingsHydrated=true
+[2026-10-05T10:24:13.474Z] [POPUP_CONSOLE] [LEDGER_STATS] scope=currentGeneration success=0 failed=0 timeout=0 unknown=0
+[2026-10-05T10:24:13.474Z] [POPUP_CONSOLE] [XPIDER_DIAG] [Engine] Initial handshake synced: active=false, completed=0, success=0, failed=0
+[2026-10-05T10:24:13.474Z] [POPUP_CONSOLE] [POPUP_BOOT] getStateAck=true
+[2026-10-05T10:24:13.475Z] [POPUP_CONSOLE] [POPUP_BOOT] ready=true
+[2026-10-05T10:24:13.475Z] [POPUP_CONSOLE] [Popup] Storage migration verified / initialized to v2.
+[2026-10-05T10:24:15.488Z] [POPUP_BADGE_LIVE] R6.9F [8963ece]
+[2026-10-05T10:24:15.488Z] [BUILD_MISMATCH_BANNER_VISIBLE] false
+[2026-10-05T10:24:15.488Z] [START_BTN_LOCKED] disabled=false locked=false
+[2026-10-05T10:24:15.488Z] 
+--- STEP 1: load targets through popup queue ---
+[2026-10-05T10:24:15.489Z] [POPUP_QUEUE_LOADED] count=3
+[2026-10-05T10:24:15.489Z] 
+--- STEP 2: click actual #start-btn ---
+[2026-10-05T10:24:15.492Z] [POPUP_CONSOLE] [START_UI] click
+[2026-10-05T10:24:15.493Z] [POPUP_CONSOLE] [START_IPC] sent queue=3
+[2026-10-05T10:24:15.498Z] [POPUP_CONSOLE] [XPIDER_DIAG] [Engine][TX] action=START_CAMPAIGN queue=3 templateId=default v=1 skipAttempted=true
+[2026-10-05T10:24:15.501Z] [POPUP_START_CLICKED] {"success":true}
+[2026-10-05T10:24:15.501Z] 
+--- STEP 3: poll live execution until campaign finishes ---
+[2026-10-05T10:24:15.502Z] [POPUP_CONSOLE] [BUILD_HANDSHAKE] localHead=8963ece6f069562b7af028e354c75f9eac15857b backgroundHead=8963ece6f069562b7af028e354c75f9eac15857b result=PASS
+[2026-10-05T10:24:15.504Z] [SW_CONSOLE] [BUILD_HANDSHAKE] popup=8963ece6f069562b7af028e354c75f9eac15857b background=8963ece6f069562b7af028e354c75f9eac15857b result=PASS
+[2026-10-05T10:24:15.504Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_HANDSHAKE] popup=8963ece6f069562b7af028e354c75f9eac15857b background=8963ece6f069562b7af028e354c75f9eac15857b result=PASS
+[2026-10-05T10:24:15.506Z] [SW_CONSOLE] [BUILD_ID] branch=upgrade/phase-0-1 implementationHead=8963ece6f069562b7af028e354c75f9eac15857b manifestVersion=3 buildId=R6.9F-20261005-RUNTIME-SUBMIT-COUNTERS builtAt=2026-10-05T08:50:00.000Z
+[2026-10-05T10:24:15.508Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_ID] branch=upgrade/phase-0-1 implementationHead=8963ece6f069562b7af028e354c75f9eac15857b manifestVersion=3 buildId=R6.9F-20261005-RUNTIME-SUBMIT-COUNTERS builtAt=2026-10-05T08:50:00.000Z
+[2026-10-05T10:24:15.510Z] [SW_CONSOLE] [BUILD_MODULE] contactGateSha=524933622d1a862425d7302b051bb063d5a3cbec166d868fa73825fa4d38f334
+[2026-10-05T10:24:15.511Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] contactGateSha=524933622d1a862425d7302b051bb063d5a3cbec166d868fa73825fa4d38f334
+[2026-10-05T10:24:15.511Z] [SW_CONSOLE] [BUILD_MODULE] visionSubmitSha=25cf18a4834bb476edff5e8f19a78dd2723bd556ede649ada69bc801543c83f3
+[2026-10-05T10:24:15.517Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] visionSubmitSha=25cf18a4834bb476edff5e8f19a78dd2723bd556ede649ada69bc801543c83f3
+[2026-10-05T10:24:15.522Z] [SW_CONSOLE] [BUILD_MODULE] historyStoreSha=38816d8b6e66114e24cdff84a52e0c22dac38bda23a38826b3ae581d252b8791
+[2026-10-05T10:24:15.522Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] historyStoreSha=38816d8b6e66114e24cdff84a52e0c22dac38bda23a38826b3ae581d252b8791
+[2026-10-05T10:24:15.523Z] [SW_CONSOLE] [BUILD_MODULE] emailCollectorSha=3f1147a379e159e7777158f2caa74cc8d40b2a0b0eb2c244f440af379cb5c9c9
+[2026-10-05T10:24:15.523Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] emailCollectorSha=3f1147a379e159e7777158f2caa74cc8d40b2a0b0eb2c244f440af379cb5c9c9
+[2026-10-05T10:24:15.524Z] [SW_CONSOLE] [BUILD_MODULE] contentScriptSha=0091ab06d2458fdbea64911979529f81d701f6b997d33fef17ee4791cbbe1e32
+[2026-10-05T10:24:15.524Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] contentScriptSha=0091ab06d2458fdbea64911979529f81d701f6b997d33fef17ee4791cbbe1e32
+[2026-10-05T10:24:15.525Z] [SW_CONSOLE] [BUILD_MODULE] backgroundSha=d3c1618a72507b8965ec9f57500b0c7b80f732f3890c863ce528a4fca591a62f
+[2026-10-05T10:24:15.525Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] backgroundSha=d3c1618a72507b8965ec9f57500b0c7b80f732f3890c863ce528a4fca591a62f
+[2026-10-05T10:24:15.525Z] [SW_CONSOLE] [BG_LOG][tab=none] [START_BG] received queue=3
+[2026-10-05T10:24:15.526Z] [SW_CONSOLE] [START_BG] received queue=3
+[2026-10-05T10:24:15.530Z] [SW_CONSOLE] [BG_LOG][tab=none] [Boot] Orchestrator entered.
+[2026-10-05T10:24:15.532Z] [POPUP_CONSOLE] [START_ACK] ok=true latencyMs=27
+[2026-10-05T10:24:15.534Z] [POPUP_CONSOLE] [START_STATE] active=true queue=3
+[2026-10-05T10:24:15.534Z] [POPUP_CONSOLE] [XPIDER_DIAG] [Engine][ACK][+27ms] status=acknowledged
+[2026-10-05T10:24:15.539Z] [SW_CONSOLE] [SESSION_BASELINE] Captured 2 pre-existing user tabs as protected baseline.
+[2026-10-05T10:24:15.539Z] [SW_CONSOLE] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedBefore=0
+[2026-10-05T10:24:15.539Z] [SW_CONSOLE] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedAfter=0 result=PASS
+[2026-10-05T10:24:15.540Z] [SW_CONSOLE] [BG_LOG][tab=none] [Boot] Previous state cleared.
+[2026-10-05T10:24:15.550Z] [SW_CONSOLE] [BG_LOG][tab=none] 📊 [Queue Filter] Input: 3 | Duplicates: 0 | Suppressed: 0 | History-Attempted: 0 | Executable: 3
+[2026-10-05T10:24:15.552Z] [SW_CONSOLE] [BG_LOG][tab=none] [Boot] Variables initialized.
+[2026-10-05T10:24:15.553Z] [SW_CONSOLE] [BG_LOG][tab=none] 🚀 Engine booting...
+[2026-10-05T10:24:15.555Z] [SW_CONSOLE] [BG_LOG][tab=none] [Boot] Storage sync initiated.
+[2026-10-05T10:24:15.557Z] [SW_CONSOLE] [BG_LOG][tab=none] [Boot] Target loop triggered.
+[2026-10-05T10:24:15.561Z] [SW_CONSOLE] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedBefore=0
+[2026-10-05T10:24:15.565Z] [SW_CONSOLE] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedAfter=0 result=PASS
+[2026-10-05T10:24:15.566Z] [SW_CONSOLE] [BG_LOG][tab=none] [TARGET 1/3][127.0.0.1] START
+[2026-10-05T10:24:15.633Z] [SW_CONSOLE] [TAB_BARRIER] phase=POST_NEW_TARGET_CREATE ownedBefore=0
+[2026-10-05T10:24:15.633Z] [SW_CONSOLE] [TAB_BARRIER] phase=POST_NEW_TARGET_CREATE ownedAfter=0 result=PASS
+[2026-10-05T10:24:15.634Z] [SW_CONSOLE] [TAB_KILL_SWITCH] keepTabId=802702083 closedOthers=0 remainingOwned=1 result=PASS
+[2026-10-05T10:24:15.673Z] [SW_CONSOLE] [BG_LOG][tab=802702083] [TAB_FOCUS] tabId=802702083 windowId=802702077 active=true focused=true
+[2026-10-05T10:24:15.683Z] [SW_CONSOLE] [BG_LOG][tab=802702083] Step 1: Sniper Mode active. Searching for contact page...
+[2026-10-05T10:24:15.692Z] [SW_CONSOLE] [BG_LOG][tab=802702083] 🔦 Scanning paths 1-10...
+[2026-10-05T10:24:15.758Z] [SW_CONSOLE] [BG_LOG][tab=802702083] Pre-scan complete. Identified 10 valid paths.
+[2026-10-05T10:24:15.774Z] [SW_CONSOLE] [BG_LOG][tab=802702083] [SniperScan] Identified 10 candidate paths in background.
+[2026-10-05T10:24:15.860Z] [SW_CONSOLE] [BG_LOG][tab=802702083] [TAB_FOCUS] tabId=802702083 windowId=802702077 active=true focused=true
+[2026-10-05T10:24:15.868Z] [SW_CONSOLE] [BG_LOG][tab=802702083] [TAB_OWNERSHIP] VERIFIED_REDIRECT source=127.0.0.1 target=127.0.0.1 relation=SAME_HOST
+[2026-10-05T10:24:15.868Z] [SW_CONSOLE] [BG_LOG][tab=802702083] [FOCUS_SECURED] formPageUrl=http://127.0.0.1:8974/wp-comment.html
+[2026-10-05T10:24:15.871Z] [SW_CONSOLE] [BG_LOG][tab=802702083] Extraction focus secured. Mapping template fields...
+[2026-10-05T10:24:15.876Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702083][attemptId=att_1791195855560_mwjrt][url=http://127.0.0.1:8974/wp-comment.html] [TARGET_PAGE] url=http://127.0.0.1:8974/wp-comment.html domGeneration=1791195855873 attemptId=att_1791195855560_mwjrt
+[2026-10-05T10:24:15.876Z] [SW_CONSOLE] [BG_LOG][tab=802702083] [CONTENT_EVENT][tabId=802702083][attemptId=att_1791195855560_mwjrt][url=http://127.0.0.1:8974/wp-comment.html] [TARGET_PAGE] url=http://127.0.0.1:8974/wp-comment.html domGeneration=1791195855873 attemptId=att_1791195855560_mwjrt
+[2026-10-05T10:24:15.903Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702083][attemptId=att_1791195855560_mwjrt][url=http://127.0.0.1:8974/wp-comment.html] 🚀 [Engine] Ultra-Mode process started
+[2026-10-05T10:24:15.904Z] [SW_CONSOLE] [BG_LOG][tab=802702083] [CONTENT_EVENT][tabId=802702083][attemptId=att_1791195855560_mwjrt][url=http://127.0.0.1:8974/wp-comment.html] 🚀 [Engine] Ultra-Mode process started
+[2026-10-05T10:24:15.906Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702083][attemptId=att_1791195855560_mwjrt][url=http://127.0.0.1:8974/wp-comment.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[2026-10-05T10:24:15.907Z] [SW_CONSOLE] [BG_LOG][tab=802702083] [CONTENT_EVENT][tabId=802702083][attemptId=att_1791195855560_mwjrt][url=http://127.0.0.1:8974/wp-comment.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[2026-10-05T10:24:15.909Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702083][attemptId=att_1791195855560_mwjrt][url=http://127.0.0.1:8974/wp-comment.html] [TARGET_PAGE] url=http://127.0.0.1:8974/wp-comment.html recursion=0
+[2026-10-05T10:24:15.911Z] [SW_CONSOLE] [BG_LOG][tab=802702083] [CONTENT_EVENT][tabId=802702083][attemptId=att_1791195855560_mwjrt][url=http://127.0.0.1:8974/wp-comment.html] [TARGET_PAGE] url=http://127.0.0.1:8974/wp-comment.html recursion=0
+[2026-10-05T10:24:15.914Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702083][attemptId=att_1791195855560_mwjrt][url=http://127.0.0.1:8974/wp-comment.html] 🔍 [Discovery] URL: http://127.0.0.1:8974/wp-comment.html | Recursion: 0
+[2026-10-05T10:24:15.915Z] [SW_CONSOLE] [BG_LOG][tab=802702083] [CONTENT_EVENT][tabId=802702083][attemptId=att_1791195855560_mwjrt][url=http://127.0.0.1:8974/wp-comment.html] 🔍 [Discovery] URL: http://127.0.0.1:8974/wp-comment.html | Recursion: 0
+[2026-10-05T10:24:15.916Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702083][attemptId=att_1791195855560_mwjrt][url=http://127.0.0.1:8974/wp-comment.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[2026-10-05T10:24:15.917Z] [SW_CONSOLE] [BG_LOG][tab=802702083] [CONTENT_EVENT][tabId=802702083][attemptId=att_1791195855560_mwjrt][url=http://127.0.0.1:8974/wp-comment.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[2026-10-05T10:24:15.918Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702083][attemptId=att_1791195855560_mwjrt][url=http://127.0.0.1:8974/wp-comment.html] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1:8974/wp-comment.html | Recursion: 0
+[2026-10-05T10:24:15.920Z] [SW_CONSOLE] [BG_LOG][tab=802702083] [CONTENT_EVENT][tabId=802702083][attemptId=att_1791195855560_mwjrt][url=http://127.0.0.1:8974/wp-comment.html] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1:8974/wp-comment.html | Recursion: 0
+[2026-10-05T10:24:15.922Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702083][attemptId=att_1791195855560_mwjrt][url=http://127.0.0.1:8974/wp-comment.html] [FORM_GATE] eligible=false reason=NON_INQUIRY_COMMENT_FORM
+[2026-10-05T10:24:15.922Z] [SW_CONSOLE] [BG_LOG][tab=802702083] [CONTENT_EVENT][tabId=802702083][attemptId=att_1791195855560_mwjrt][url=http://127.0.0.1:8974/wp-comment.html] [FORM_GATE] eligible=false reason=NON_INQUIRY_COMMENT_FORM
+[2026-10-05T10:24:15.923Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702083][attemptId=att_1791195855560_mwjrt][url=http://127.0.0.1:8974/wp-comment.html] ❌ [ContactGate] Non-inquiry form rejected: NON_INQUIRY_COMMENT_FORM
+[2026-10-05T10:24:15.924Z] [SW_CONSOLE] [BG_LOG][tab=802702083] [CONTENT_EVENT][tabId=802702083][attemptId=att_1791195855560_mwjrt][url=http://127.0.0.1:8974/wp-comment.html] ❌ [ContactGate] Non-inquiry form rejected: NON_INQUIRY_COMMENT_FORM
+[2026-10-05T10:24:15.930Z] [SW_CONSOLE] [BG_LOG][tab=802702083] [RESULT] resultUrl=http://127.0.0.1:8974/wp-comment.html
+[2026-10-05T10:24:15.932Z] [SW_CONSOLE] [BG_LOG][tab=802702083] [TARGET][127.0.0.1] FINAL status=SKIPPED reason=NON_INQUIRY_COMMENT_FORM
+[2026-10-05T10:24:15.935Z] [SW_CONSOLE] [BG_LOG][tab=802702083] [HISTORY_FINAL] sourceUrl=http://127.0.0.1:8974/wp-comment.html contactPageUrl=http://127.0.0.1:8974/wp-comment.html formPageUrl=http://127.0.0.1:8974/wp-comment.html resultUrl=http://127.0.0.1:8974/wp-comment.html
+[2026-10-05T10:24:15.938Z] [SW_CONSOLE] [LEDGER_STATS] scope=currentRun success=0 failure=0 unknown=0 timeout=0 skipped=1
+[2026-10-05T10:24:15.939Z] [SW_CONSOLE] [BG_LOG][tab=802702083] [LEDGER_STATS] scope=currentRun success=0 failure=0 unknown=0 timeout=0 skipped=1
+[2026-10-05T10:24:15.954Z] [POPUP_CONSOLE] [XPIDER_DIAG] [Engine][VERIFY] active=false queue=0
+[2026-10-05T10:24:15.955Z] [POPUP_CONSOLE] [START_STATE_NOT_ACTIVE] stateResp.isActive is false post-ACK
+[2026-10-05T10:24:15.979Z] [POPUP_CONSOLE] [LEDGER_STATS] scope=currentGeneration success=0 failed=0 unknown=0
+[2026-10-05T10:24:15.981Z] [POPUP_CONSOLE] [LEDGER_STATS] scope=currentGeneration success=0 failed=0 unknown=0
+[2026-10-05T10:24:16.038Z] [POPUP_CONSOLE] [LEDGER_STATS] scope=currentGeneration success=0 failed=0 unknown=0
+[2026-10-05T10:24:16.510Z] [POLL_EXECUTION][0s] active=true completed=1/3 success=0 failed=0 skipped=1
+[2026-10-05T10:24:17.116Z] [SW_CONSOLE] [TAB_CLOSE] tabId=802702083 attempt=1 result=CLOSED
+[2026-10-05T10:24:17.117Z] [SW_CONSOLE] [POST_FINAL_TAB_INVARIANT] target=http://127.0.0.1:8974/wp-comment.html remainingOwnedTabs=0 retainedTabs=0 result=PASS
+[2026-10-05T10:24:17.117Z] [SW_CONSOLE] [BG_LOG][tab=none] Waiting 3000ms before next target...
+[2026-10-05T10:24:17.519Z] [POLL_EXECUTION][1s] active=true completed=1/3 success=0 failed=0 skipped=1
+[2026-10-05T10:24:18.528Z] [POLL_EXECUTION][2s] active=true completed=1/3 success=0 failed=0 skipped=1
+[2026-10-05T10:24:19.535Z] [POLL_EXECUTION][3s] active=true completed=1/3 success=0 failed=0 skipped=1
+[2026-10-05T10:24:20.125Z] [SW_CONSOLE] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedBefore=0
+[2026-10-05T10:24:20.125Z] [SW_CONSOLE] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedAfter=0 result=PASS
+[2026-10-05T10:24:20.126Z] [SW_CONSOLE] [BG_LOG][tab=none] [TARGET 2/3][127.0.0.1] START
+[2026-10-05T10:24:20.132Z] [POPUP_CONSOLE] [LEDGER_STATS] scope=currentGeneration success=0 failed=0 unknown=0
+[2026-10-05T10:24:20.184Z] [SW_CONSOLE] [TAB_BARRIER] phase=POST_NEW_TARGET_CREATE ownedBefore=0
+[2026-10-05T10:24:20.185Z] [SW_CONSOLE] [TAB_BARRIER] phase=POST_NEW_TARGET_CREATE ownedAfter=0 result=PASS
+[2026-10-05T10:24:20.185Z] [SW_CONSOLE] [TAB_KILL_SWITCH] keepTabId=802702085 closedOthers=0 remainingOwned=1 result=PASS
+[2026-10-05T10:24:20.204Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [TAB_FOCUS] tabId=802702085 windowId=802702077 active=true focused=true
+[2026-10-05T10:24:20.207Z] [SW_CONSOLE] [BG_LOG][tab=802702085] Step 1: Sniper Mode active. Searching for contact page...
+[2026-10-05T10:24:20.208Z] [SW_CONSOLE] [BG_LOG][tab=802702085] 🔦 Scanning paths 1-10...
+[2026-10-05T10:24:20.229Z] [SW_CONSOLE] [BG_LOG][tab=802702085] Pre-scan complete. Identified 10 valid paths.
+[2026-10-05T10:24:20.231Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [SniperScan] Identified 10 candidate paths in background.
+[2026-10-05T10:24:20.344Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [TAB_FOCUS] tabId=802702085 windowId=802702077 active=true focused=true
+[2026-10-05T10:24:20.348Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [TAB_OWNERSHIP] VERIFIED_REDIRECT source=127.0.0.1 target=127.0.0.1 relation=SAME_HOST
+[2026-10-05T10:24:20.351Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [FOCUS_SECURED] formPageUrl=http://127.0.0.1:8974/custom-submit.html
+[2026-10-05T10:24:20.356Z] [SW_CONSOLE] [BG_LOG][tab=802702085] Extraction focus secured. Mapping template fields...
+[2026-10-05T10:24:20.360Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] [TARGET_PAGE] url=http://127.0.0.1:8974/custom-submit.html domGeneration=1791195860358 attemptId=att_1791195860126_1x5d3
+[2026-10-05T10:24:20.363Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] [TARGET_PAGE] url=http://127.0.0.1:8974/custom-submit.html domGeneration=1791195860358 attemptId=att_1791195860126_1x5d3
+[2026-10-05T10:24:20.368Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] 🚀 [Engine] Ultra-Mode process started
+[2026-10-05T10:24:20.375Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] 🚀 [Engine] Ultra-Mode process started
+[2026-10-05T10:24:20.375Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[2026-10-05T10:24:20.376Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[2026-10-05T10:24:20.384Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] [TARGET_PAGE] url=http://127.0.0.1:8974/custom-submit.html recursion=0
+[2026-10-05T10:24:20.385Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] [TARGET_PAGE] url=http://127.0.0.1:8974/custom-submit.html recursion=0
+[2026-10-05T10:24:20.385Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] 🔍 [Discovery] URL: http://127.0.0.1:8974/custom-submit.html | Recursion: 0
+[2026-10-05T10:24:20.386Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] 🔍 [Discovery] URL: http://127.0.0.1:8974/custom-submit.html | Recursion: 0
+[2026-10-05T10:24:20.386Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[2026-10-05T10:24:20.386Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[2026-10-05T10:24:20.387Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1:8974/custom-submit.html | Recursion: 0
+[2026-10-05T10:24:20.387Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1:8974/custom-submit.html | Recursion: 0
+[2026-10-05T10:24:20.404Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] [FORM_SCAN] bodyCandidates=1 forms=1 logicalContainers=1
+[2026-10-05T10:24:20.417Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] [FORM_SCAN] bodyCandidates=1 forms=1 logicalContainers=1
+[2026-10-05T10:24:20.417Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] [PAGE_CLASS] CONTACT_FORM_PAGE
+[2026-10-05T10:24:20.417Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] [PAGE_CLASS] CONTACT_FORM_PAGE
+[2026-10-05T10:24:20.418Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] 🎯 Step 2: Contact form discovered. Preparing submission...
+[2026-10-05T10:24:20.418Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] 🎯 Step 2: Contact form discovered. Preparing submission...
+[2026-10-05T10:24:20.418Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] [STAGE] stage=CONTACT_PAGE_FOUND
+[2026-10-05T10:24:20.418Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] [STAGE] stage=CONTACT_PAGE_FOUND
+[2026-10-05T10:24:20.419Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] [LONG_TEXT_GATE] found=true type=textarea semantic=message
+[2026-10-05T10:24:20.419Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] [LONG_TEXT_GATE] found=true type=textarea semantic=message
+[2026-10-05T10:24:20.427Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] [FORM_GATE] eligible=true reason=BODY_FIELD_PRESENT
+[2026-10-05T10:24:20.427Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] [FORM_GATE] eligible=true reason=BODY_FIELD_PRESENT
+[2026-10-05T10:24:20.427Z] [SW_CONSOLE] [BG_LOG][tab=802702085] 📍 [PIPELINE][CONTACT_PAGE_FOUND] url=http://127.0.0.1:8974/custom-submit.html
+[2026-10-05T10:24:20.427Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] 🔍 [Supreme-X 5.0] Scanning for multi-location / branch links...
+[2026-10-05T10:24:20.428Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] 🔍 [Supreme-X 5.0] Scanning for multi-location / branch links...
+[2026-10-05T10:24:20.430Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] [AUTOFILL_LOCK] acquired=true key=att_1791195860126_1x5d3:http://127.0.0.1:8974/custom-submit.html:contact-form
+[2026-10-05T10:24:20.430Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] [AUTOFILL_LOCK] acquired=true key=att_1791195860126_1x5d3:http://127.0.0.1:8974/custom-submit.html:contact-form
+[2026-10-05T10:24:20.431Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] [CONTACT_GATE] PASS bodyField=textarea
+[2026-10-05T10:24:20.431Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] [CONTACT_GATE] PASS bodyField=textarea
+[2026-10-05T10:24:20.431Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
+[2026-10-05T10:24:20.432Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
+[2026-10-05T10:24:20.441Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTACT_COMMIT] contactPageUrl=http://127.0.0.1:8974/custom-submit.html
+[2026-10-05T10:24:20.441Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [FORM_COMMIT] formPageUrl=http://127.0.0.1:8974/custom-submit.html
+[2026-10-05T10:24:20.441Z] [SW_CONSOLE] [BG_LOG][tab=802702085] 📋 [PIPELINE][ELIGIBLE_FORM_FOUND] url=http://127.0.0.1:8974/custom-submit.html
+[2026-10-05T10:24:20.441Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] 🛠️ Step 3: Registering message template to form fields...
+[2026-10-05T10:24:20.442Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] 🛠️ Step 3: Registering message template to form fields...
+[2026-10-05T10:24:20.442Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] 🛡️ [FormStabilizer] Starting bounded stabilization (max 5s, max 2 retries/element)...
+[2026-10-05T10:24:20.442Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] 🛡️ [FormStabilizer] Starting bounded stabilization (max 5s, max 2 retries/element)...
+[2026-10-05T10:24:20.442Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] 🛡️ [FormStabilizer] Stopped (ALL_FIELDS_STABLE_OR_RESOLVED): seen=3 stable=true unresolved=0 (selects=0, cbs=0, radios=0)
+[2026-10-05T10:24:20.443Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] 🛡️ [FormStabilizer] Stopped (ALL_FIELDS_STABLE_OR_RESOLVED): seen=3 stable=true unresolved=0 (selects=0, cbs=0, radios=0)
+[2026-10-05T10:24:20.443Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] 🛠️ [Action][HyperEngine v4.0] 초강력 폼 자동 등록기 시작...
+[2026-10-05T10:24:20.443Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] 🛠️ [Action][HyperEngine v4.0] 초강력 폼 자동 등록기 시작...
+[2026-10-05T10:24:20.443Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] 🎯 [HyperEngine v4.0] Phase 0 - 입력 필드 전수 수집...
+[2026-10-05T10:24:20.448Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] 🎯 [HyperEngine v4.0] Phase 0 - 입력 필드 전수 수집...
+[2026-10-05T10:24:20.456Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html]    [v4.0] 총 3개 입력 필드 발견 (radio: 0, checkbox: 0)
+[2026-10-05T10:24:20.456Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html]    [v4.0] 총 3개 입력 필드 발견 (radio: 0, checkbox: 0)
+[2026-10-05T10:24:20.456Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] 🎯 [HyperEngine v4.0] Phase 1 & 2 - 드롭다운 SelectResolverR2 전수 처리...
+[2026-10-05T10:24:20.457Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] 🎯 [HyperEngine v4.0] Phase 1 & 2 - 드롭다운 SelectResolverR2 전수 처리...
+[2026-10-05T10:24:20.457Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] 🎯 [HyperEngine v4.0] Phase 3 - 체크박스 CheckboxResolverR2 전수 처리...
+[2026-10-05T10:24:20.458Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] 🎯 [HyperEngine v4.0] Phase 3 - 체크박스 CheckboxResolverR2 전수 처리...
+[2026-10-05T10:24:20.458Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] 🎯 [HyperEngine v4.0] Phase 3.5 - 휴먼 테스트 수식/방정식 퀴즈 검출 및 자동 해결...
+[2026-10-05T10:24:20.458Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] 🎯 [HyperEngine v4.0] Phase 3.5 - 휴먼 테스트 수식/방정식 퀴즈 검출 및 자동 해결...
+[2026-10-05T10:24:20.459Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] 🎯 [HyperEngine v4.0] Phase 4 - 텍스트 필드 패턴 매칭...
+[2026-10-05T10:24:20.459Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] 🎯 [HyperEngine v4.0] Phase 4 - 텍스트 필드 패턴 매칭...
+[2026-10-05T10:24:20.541Z] [POLL_EXECUTION][4s] active=true completed=1/3 success=0 failed=0 skipped=1
+[2026-10-05T10:24:21.555Z] [POLL_EXECUTION][5s] active=true completed=1/3 success=0 failed=0 skipped=1
+[2026-10-05T10:24:22.563Z] [POLL_EXECUTION][6s] active=true completed=1/3 success=0 failed=0 skipped=1
+[2026-10-05T10:24:22.717Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html]    - [Input✅] category=name filled=true
+[2026-10-05T10:24:22.718Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html]    - [Input✅] category=name filled=true
+[2026-10-05T10:24:23.572Z] [POLL_EXECUTION][7s] active=true completed=1/3 success=0 failed=0 skipped=1
+[2026-10-05T10:24:24.578Z] [POLL_EXECUTION][8s] active=true completed=1/3 success=0 failed=0 skipped=1
+[2026-10-05T10:24:25.364Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] 💓 [Heartbeat] Engine active and processing...
+[2026-10-05T10:24:25.364Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] 💓 [Heartbeat] Engine active and processing...
+[2026-10-05T10:24:25.476Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html]    - [Input✅] category=email filled=true length=20
+[2026-10-05T10:24:25.476Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html]    - [Input✅] category=email filled=true length=20
+[2026-10-05T10:24:25.583Z] [POLL_EXECUTION][9s] active=true completed=1/3 success=0 failed=0 skipped=1
+[2026-10-05T10:24:26.592Z] [POLL_EXECUTION][10s] active=true completed=1/3 success=0 failed=0 skipped=1
+[2026-10-05T10:24:27.596Z] [POLL_EXECUTION][11s] active=true completed=1/3 success=0 failed=0 skipped=1
+[2026-10-05T10:24:28.259Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html]    - [Input✅] category=message filled=true length=65
+[2026-10-05T10:24:28.266Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html]    - [Input✅] category=message filled=true length=65
+[2026-10-05T10:24:28.266Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] 🎯 [HyperEngine v4.0] Phase 5 - 빈 필드 강제 채우기...
+[2026-10-05T10:24:28.266Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] 🎯 [HyperEngine v4.0] Phase 5 - 빈 필드 강제 채우기...
+[2026-10-05T10:24:28.266Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] 🎯 [HyperEngine v4.0] Phase 6 - 라디오 버튼 미선택 그룹 처리...
+[2026-10-05T10:24:28.275Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] 🎯 [HyperEngine v4.0] Phase 6 - 라디오 버튼 미선택 그룹 처리...
+[2026-10-05T10:24:28.276Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] 🎯 [HyperEngine v4.0] Phase 8 - 커스텀 ARIA 체크박스/라디오 처리...
+[2026-10-05T10:24:28.276Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] 🎯 [HyperEngine v4.0] Phase 8 - 커스텀 ARIA 체크박스/라디오 처리...
+[2026-10-05T10:24:28.276Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] 🛠️ [HyperEngine v4.0] Phase 9 - BruteForce contentEditable/role=textbox...
+[2026-10-05T10:24:28.276Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] 🛠️ [HyperEngine v4.0] Phase 9 - BruteForce contentEditable/role=textbox...
+[2026-10-05T10:24:28.276Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] 🎯 [HyperEngine v4.0] Phase 10 - Super-BruteForce Sweeper (초강력 입력기) 가동...
+[2026-10-05T10:24:28.277Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] 🎯 [HyperEngine v4.0] Phase 10 - Super-BruteForce Sweeper (초강력 입력기) 가동...
+[2026-10-05T10:24:28.277Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
+[2026-10-05T10:24:28.277Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
+[2026-10-05T10:24:28.278Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] [STAGE] stage=FIELD_STATE_STABLE
+[2026-10-05T10:24:28.278Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] [STAGE] stage=FIELD_STATE_STABLE
+[2026-10-05T10:24:28.281Z] [SW_CONSOLE] [BG_LOG][tab=802702085] ✅ [PIPELINE][REQUIRED_FIELDS_RESOLVED] url=http://127.0.0.1:8974/custom-submit.html
+[2026-10-05T10:24:28.281Z] [SW_CONSOLE] [BG_LOG][tab=802702085] 🔒 [PIPELINE][FIELD_STATE_STABLE] url=http://127.0.0.1:8974/custom-submit.html
+[2026-10-05T10:24:28.287Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] ✅ [HyperEngine v4.0] 폼 작성 완료 - 입력 필드 3개 처리됨
+[2026-10-05T10:24:28.288Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] ✅ [HyperEngine v4.0] 폼 작성 완료 - 입력 필드 3개 처리됨
+[2026-10-05T10:24:28.288Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] [FILL] messageBodyFilled=true
+[2026-10-05T10:24:28.288Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] [FILL] messageBodyFilled=true
+[2026-10-05T10:24:28.288Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] ✅ [FORM_PREP] COMPLETE
+[2026-10-05T10:24:28.288Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] ✅ [FORM_PREP] COMPLETE
+[2026-10-05T10:24:28.289Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] ⏳ [Engine] Holding for visual confirmation (1000ms)...
+[2026-10-05T10:24:28.289Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] ⏳ [Engine] Holding for visual confirmation (1000ms)...
+[2026-10-05T10:24:28.597Z] [POLL_EXECUTION][12s] active=true completed=1/3 success=0 failed=0 skipped=1
+[2026-10-05T10:24:29.265Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] 🧠 [FinalFill] Running AI Final Form Completion Pass immediately before submit...
+[2026-10-05T10:24:29.265Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] 🧠 [FinalFill] Running AI Final Form Completion Pass immediately before submit...
+[2026-10-05T10:24:29.484Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] [AI_COMPLETE_FORM] fillableTotal=3 filledBefore=3 filledByAI=0 safeSkipped=0 sensitiveBlocked=0 emptySafeAfter=0
+[2026-10-05T10:24:29.491Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] [AI_COMPLETE_FORM] fillableTotal=3 filledBefore=3 filledByAI=0 safeSkipped=0 sensitiveBlocked=0 emptySafeAfter=0
+[2026-10-05T10:24:29.491Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] [FINAL_FILL] controls=3 unresolvedBefore=0 checkboxResolved=0 radioResolved=0 selectResolved=0 unresolvedAfter=0
+[2026-10-05T10:24:29.491Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] [FINAL_FILL] controls=3 unresolvedBefore=0 checkboxResolved=0 radioResolved=0 selectResolved=0 unresolvedAfter=0
+[2026-10-05T10:24:29.491Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] [FINAL_AUDIT] PASS
+[2026-10-05T10:24:29.492Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] [FINAL_AUDIT] PASS
+[2026-10-05T10:24:29.492Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] [FIELD_SUMMARY] text required 0/0 | checkbox 0/0 | radio 0/0 | select 0/0 | message 1/1 | unresolved 0
+[2026-10-05T10:24:29.492Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] [FIELD_SUMMARY] text required 0/0 | checkbox 0/0 | radio 0/0 | select 0/0 | message 1/1 | unresolved 0
+[2026-10-05T10:24:29.492Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] ✅ [FinalAudit] Hard Gate Passed: 0 unresolved required fields
+[2026-10-05T10:24:29.492Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] ✅ [FinalAudit] Hard Gate Passed: 0 unresolved required fields
+[2026-10-05T10:24:29.496Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] [SUBMIT_LOCK] acquired=true submittedFromUrl=http://127.0.0.1:8974/custom-submit.html — post FINAL_AUDIT_PASS
+[2026-10-05T10:24:29.496Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] [SUBMIT_LOCK] acquired=true submittedFromUrl=http://127.0.0.1:8974/custom-submit.html — post FINAL_AUDIT_PASS
+[2026-10-05T10:24:29.501Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] 📤 [Action] Triggering submission sequence...
+[2026-10-05T10:24:29.504Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] 📤 [Action] Triggering submission sequence...
+[2026-10-05T10:24:29.504Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] [SUBMIT] attemptStarted=true
+[2026-10-05T10:24:29.505Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] [SUBMIT] attemptStarted=true
+[2026-10-05T10:24:29.508Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] [STAGE] stage=SUBMIT_ATTEMPT_STARTED
+[2026-10-05T10:24:29.508Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] [STAGE] stage=SUBMIT_ATTEMPT_STARTED
+[2026-10-05T10:24:29.510Z] [SW_CONSOLE] [BG_LOG][tab=none] [STALE_TARGET_EVENT] action=STAGE_PROGRESSION reqToken=none curToken=tok_1791195860126_jdvb4m result=REJECTED reason=token_mismatch
+[2026-10-05T10:24:29.518Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] [SUBMIT_CANDIDATES] total=1 native=0 external=0 custom=1 vision=0
+[2026-10-05T10:24:29.523Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] [SUBMIT_CANDIDATES] total=1 native=0 external=0 custom=1 vision=0
+[2026-10-05T10:24:29.523Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] [SUBMIT_CANDIDATE] tag=a role=none label="send message" insideForm=true associated=true score=135
+[2026-10-05T10:24:29.523Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] [SUBMIT_CANDIDATE] tag=a role=none label="send message" insideForm=true associated=true score=135
+[2026-10-05T10:24:29.541Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] [SUBMIT_DECISION] chosen=a strategy=custom
+[2026-10-05T10:24:29.541Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] [SUBMIT_DECISION] chosen=a strategy=custom
+[2026-10-05T10:24:29.542Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] ⚠️ [SubmitExecutorR5] requestSubmit threw: Failed to execute 'requestSubmit' on 'HTMLFormElement': The specified element is not a submit button.
+[2026-10-05T10:24:29.542Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] ⚠️ [SubmitExecutorR5] requestSubmit threw: Failed to execute 'requestSubmit' on 'HTMLFormElement': The specified element is not a submit button.
+[2026-10-05T10:24:29.557Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] [SUBMIT_HITTEST] submitter=A id=send-btn
+[2026-10-05T10:24:29.558Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] [SUBMIT_HITTEST] submitter=A id=send-btn
+[2026-10-05T10:24:29.558Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] [SUBMIT_HITTEST] hit=A id=send-btn
+[2026-10-05T10:24:29.558Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] [SUBMIT_HITTEST] hit=A id=send-btn
+[2026-10-05T10:24:29.558Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] [SUBMIT_HITTEST] descendant=true
+[2026-10-05T10:24:29.558Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] [SUBMIT_HITTEST] descendant=true
+[2026-10-05T10:24:29.558Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] [SUBMIT_HITTEST] verdict=CLICKABLE
+[2026-10-05T10:24:29.559Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] [SUBMIT_HITTEST] verdict=CLICKABLE
+[2026-10-05T10:24:29.559Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] 👁️ [VisionSubmit] Initiating VisionSubmitExecutor last-resort activation...
+[2026-10-05T10:24:29.559Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] 👁️ [VisionSubmit] Initiating VisionSubmitExecutor last-resort activation...
+[2026-10-05T10:24:29.569Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] 👁️ [VisionSubmit] Initiating VisionSubmitExecutor last-resort activation...
+[2026-10-05T10:24:29.570Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] 👁️ [VisionSubmit] Initiating VisionSubmitExecutor last-resort activation...
+[2026-10-05T10:24:29.570Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] [SUBMIT] triggered=false
+[2026-10-05T10:24:29.570Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] [SUBMIT] triggered=false
+[2026-10-05T10:24:29.570Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] ❌ [Submit] Submission blocked: SUBMIT_ACTIVATION_EXHAUSTED
+[2026-10-05T10:24:29.571Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] ❌ [Submit] Submission blocked: SUBMIT_ACTIVATION_EXHAUSTED
+[2026-10-05T10:24:29.571Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] [LIFECYCLE] Target already settling/settled post-audit form submit recovery. Aborting fallback discovery.
+[2026-10-05T10:24:29.571Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] [LIFECYCLE] Target already settling/settled post-audit form submit recovery. Aborting fallback discovery.
+[2026-10-05T10:24:29.574Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [RESULT] resultUrl=http://127.0.0.1:8974/custom-submit.html
+[2026-10-05T10:24:29.574Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [TARGET][127.0.0.1] FINAL status=FAILURE reason=SUBMIT_ACTIVATION_EXHAUSTED
+[2026-10-05T10:24:29.577Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [HISTORY_FINAL] sourceUrl=http://127.0.0.1:8974/custom-submit.html contactPageUrl=http://127.0.0.1:8974/custom-submit.html formPageUrl=http://127.0.0.1:8974/custom-submit.html resultUrl=http://127.0.0.1:8974/custom-submit.html
+[2026-10-05T10:24:29.584Z] [SW_CONSOLE] [LEDGER_STATS] scope=currentRun success=0 failure=1 unknown=0 timeout=0 skipped=1
+[2026-10-05T10:24:29.584Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [LEDGER_STATS] scope=currentRun success=0 failure=1 unknown=0 timeout=0 skipped=1
+[2026-10-05T10:24:29.603Z] [POLL_EXECUTION][13s] active=true completed=2/3 success=0 failed=1 skipped=1
+[2026-10-05T10:24:29.611Z] [POPUP_CONSOLE] [LEDGER_STATS] scope=currentGeneration success=0 failed=1 unknown=0
+[2026-10-05T10:24:30.363Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] 💓 [Heartbeat] Engine active and processing...
+[2026-10-05T10:24:30.364Z] [SW_CONSOLE] [BG_LOG][tab=802702085] [CONTENT_EVENT][tabId=802702085][attemptId=att_1791195860126_1x5d3][url=http://127.0.0.1:8974/custom-submit.html] 💓 [Heartbeat] Engine active and processing...
+[2026-10-05T10:24:30.618Z] [POLL_EXECUTION][14s] active=true completed=2/3 success=0 failed=1 skipped=1
+[2026-10-05T10:24:30.767Z] [SW_CONSOLE] [TAB_CLOSE] tabId=802702085 attempt=1 result=CLOSED
+[2026-10-05T10:24:30.768Z] [SW_CONSOLE] [POST_FINAL_TAB_INVARIANT] target=http://127.0.0.1:8974/custom-submit.html remainingOwnedTabs=0 retainedTabs=0 result=PASS
+[2026-10-05T10:24:30.769Z] [SW_CONSOLE] [BG_LOG][tab=none] Waiting 3000ms before next target...
+[2026-10-05T10:24:31.631Z] [POLL_EXECUTION][15s] active=true completed=2/3 success=0 failed=1 skipped=1
+[2026-10-05T10:24:32.645Z] [POLL_EXECUTION][16s] active=true completed=2/3 success=0 failed=1 skipped=1
+[2026-10-05T10:24:33.648Z] [POLL_EXECUTION][17s] active=true completed=2/3 success=0 failed=1 skipped=1
+[2026-10-05T10:24:33.770Z] [SW_CONSOLE] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedBefore=0
+[2026-10-05T10:24:33.770Z] [SW_CONSOLE] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedAfter=0 result=PASS
+[2026-10-05T10:24:33.771Z] [SW_CONSOLE] [BG_LOG][tab=none] [TARGET 3/3][127.0.0.1] START
+[2026-10-05T10:24:33.776Z] [POPUP_CONSOLE] [LEDGER_STATS] scope=currentGeneration success=0 failed=1 unknown=0
+[2026-10-05T10:24:33.820Z] [SW_CONSOLE] [TAB_BARRIER] phase=POST_NEW_TARGET_CREATE ownedBefore=0
+[2026-10-05T10:24:33.823Z] [SW_CONSOLE] [TAB_BARRIER] phase=POST_NEW_TARGET_CREATE ownedAfter=0 result=PASS
+[2026-10-05T10:24:33.823Z] [SW_CONSOLE] [TAB_KILL_SWITCH] keepTabId=802702087 closedOthers=0 remainingOwned=1 result=PASS
+[2026-10-05T10:24:33.855Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [TAB_FOCUS] tabId=802702087 windowId=802702077 active=true focused=true
+[2026-10-05T10:24:33.861Z] [SW_CONSOLE] [BG_LOG][tab=802702087] Step 1: Sniper Mode active. Searching for contact page...
+[2026-10-05T10:24:33.867Z] [SW_CONSOLE] [BG_LOG][tab=802702087] 🔦 Scanning paths 1-10...
+[2026-10-05T10:24:33.886Z] [SW_CONSOLE] [BG_LOG][tab=802702087] Pre-scan complete. Identified 10 valid paths.
+[2026-10-05T10:24:33.886Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [SniperScan] Identified 10 candidate paths in background.
+[2026-10-05T10:24:33.997Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [TAB_FOCUS] tabId=802702087 windowId=802702077 active=true focused=true
+[2026-10-05T10:24:34.004Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [TAB_OWNERSHIP] VERIFIED_REDIRECT source=127.0.0.1 target=127.0.0.1 relation=SAME_HOST
+[2026-10-05T10:24:34.007Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [FOCUS_SECURED] formPageUrl=http://127.0.0.1:8974/standard-inquiry.html
+[2026-10-05T10:24:34.018Z] [SW_CONSOLE] [BG_LOG][tab=802702087] Extraction focus secured. Mapping template fields...
+[2026-10-05T10:24:34.023Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [TARGET_PAGE] url=http://127.0.0.1:8974/standard-inquiry.html domGeneration=1791195874020 attemptId=att_1791195873771_pytqb
+[2026-10-05T10:24:34.028Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [TARGET_PAGE] url=http://127.0.0.1:8974/standard-inquiry.html domGeneration=1791195874020 attemptId=att_1791195873771_pytqb
+[2026-10-05T10:24:34.038Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] 🚀 [Engine] Ultra-Mode process started
+[2026-10-05T10:24:34.040Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] 🚀 [Engine] Ultra-Mode process started
+[2026-10-05T10:24:34.040Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[2026-10-05T10:24:34.042Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[2026-10-05T10:24:34.052Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [TARGET_PAGE] url=http://127.0.0.1:8974/standard-inquiry.html recursion=0
+[2026-10-05T10:24:34.068Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [TARGET_PAGE] url=http://127.0.0.1:8974/standard-inquiry.html recursion=0
+[2026-10-05T10:24:34.069Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] 🔍 [Discovery] URL: http://127.0.0.1:8974/standard-inquiry.html | Recursion: 0
+[2026-10-05T10:24:34.069Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] 🔍 [Discovery] URL: http://127.0.0.1:8974/standard-inquiry.html | Recursion: 0
+[2026-10-05T10:24:34.069Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[2026-10-05T10:24:34.069Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[2026-10-05T10:24:34.070Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1:8974/standard-inquiry.html | Recursion: 0
+[2026-10-05T10:24:34.070Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1:8974/standard-inquiry.html | Recursion: 0
+[2026-10-05T10:24:34.070Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [FORM_SCAN] bodyCandidates=1 forms=1 logicalContainers=1
+[2026-10-05T10:24:34.070Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [FORM_SCAN] bodyCandidates=1 forms=1 logicalContainers=1
+[2026-10-05T10:24:34.090Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [PAGE_CLASS] CONTACT_FORM_PAGE
+[2026-10-05T10:24:34.091Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [PAGE_CLASS] CONTACT_FORM_PAGE
+[2026-10-05T10:24:34.091Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] 🎯 Step 2: Contact form discovered. Preparing submission...
+[2026-10-05T10:24:34.091Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] 🎯 Step 2: Contact form discovered. Preparing submission...
+[2026-10-05T10:24:34.091Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [STAGE] stage=CONTACT_PAGE_FOUND
+[2026-10-05T10:24:34.092Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [STAGE] stage=CONTACT_PAGE_FOUND
+[2026-10-05T10:24:34.092Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [LONG_TEXT_GATE] found=true type=textarea semantic=message
+[2026-10-05T10:24:34.092Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [LONG_TEXT_GATE] found=true type=textarea semantic=message
+[2026-10-05T10:24:34.092Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [FORM_GATE] eligible=true reason=BODY_FIELD_PRESENT
+[2026-10-05T10:24:34.092Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [FORM_GATE] eligible=true reason=BODY_FIELD_PRESENT
+[2026-10-05T10:24:34.093Z] [SW_CONSOLE] [BG_LOG][tab=802702087] 📍 [PIPELINE][CONTACT_PAGE_FOUND] url=http://127.0.0.1:8974/standard-inquiry.html
+[2026-10-05T10:24:34.093Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] 🔍 [Supreme-X 5.0] Scanning for multi-location / branch links...
+[2026-10-05T10:24:34.093Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] 🔍 [Supreme-X 5.0] Scanning for multi-location / branch links...
+[2026-10-05T10:24:34.118Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [AUTOFILL_LOCK] acquired=true key=att_1791195873771_pytqb:http://127.0.0.1:8974/standard-inquiry.html:contact-form
+[2026-10-05T10:24:34.118Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [AUTOFILL_LOCK] acquired=true key=att_1791195873771_pytqb:http://127.0.0.1:8974/standard-inquiry.html:contact-form
+[2026-10-05T10:24:34.119Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [CONTACT_GATE] PASS bodyField=textarea
+[2026-10-05T10:24:34.119Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [CONTACT_GATE] PASS bodyField=textarea
+[2026-10-05T10:24:34.119Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
+[2026-10-05T10:24:34.120Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
+[2026-10-05T10:24:34.120Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTACT_COMMIT] contactPageUrl=http://127.0.0.1:8974/standard-inquiry.html
+[2026-10-05T10:24:34.120Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [FORM_COMMIT] formPageUrl=http://127.0.0.1:8974/standard-inquiry.html
+[2026-10-05T10:24:34.120Z] [SW_CONSOLE] [BG_LOG][tab=802702087] 📋 [PIPELINE][ELIGIBLE_FORM_FOUND] url=http://127.0.0.1:8974/standard-inquiry.html
+[2026-10-05T10:24:34.121Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] 🛠️ Step 3: Registering message template to form fields...
+[2026-10-05T10:24:34.121Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] 🛠️ Step 3: Registering message template to form fields...
+[2026-10-05T10:24:34.121Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] 🛡️ [FormStabilizer] Starting bounded stabilization (max 5s, max 2 retries/element)...
+[2026-10-05T10:24:34.121Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] 🛡️ [FormStabilizer] Starting bounded stabilization (max 5s, max 2 retries/element)...
+[2026-10-05T10:24:34.121Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] 🛡️ [FormStabilizer] Stopped (ALL_FIELDS_STABLE_OR_RESOLVED): seen=3 stable=true unresolved=0 (selects=0, cbs=0, radios=0)
+[2026-10-05T10:24:34.122Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] 🛡️ [FormStabilizer] Stopped (ALL_FIELDS_STABLE_OR_RESOLVED): seen=3 stable=true unresolved=0 (selects=0, cbs=0, radios=0)
+[2026-10-05T10:24:34.122Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] 🛠️ [Action][HyperEngine v4.0] 초강력 폼 자동 등록기 시작...
+[2026-10-05T10:24:34.122Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] 🛠️ [Action][HyperEngine v4.0] 초강력 폼 자동 등록기 시작...
+[2026-10-05T10:24:34.123Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] 🎯 [HyperEngine v4.0] Phase 0 - 입력 필드 전수 수집...
+[2026-10-05T10:24:34.123Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] 🎯 [HyperEngine v4.0] Phase 0 - 입력 필드 전수 수집...
+[2026-10-05T10:24:34.123Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html]    [v4.0] 총 3개 입력 필드 발견 (radio: 0, checkbox: 0)
+[2026-10-05T10:24:34.123Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html]    [v4.0] 총 3개 입력 필드 발견 (radio: 0, checkbox: 0)
+[2026-10-05T10:24:34.124Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] 🎯 [HyperEngine v4.0] Phase 1 & 2 - 드롭다운 SelectResolverR2 전수 처리...
+[2026-10-05T10:24:34.124Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] 🎯 [HyperEngine v4.0] Phase 1 & 2 - 드롭다운 SelectResolverR2 전수 처리...
+[2026-10-05T10:24:34.136Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] 🎯 [HyperEngine v4.0] Phase 3 - 체크박스 CheckboxResolverR2 전수 처리...
+[2026-10-05T10:24:34.136Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] 🎯 [HyperEngine v4.0] Phase 3 - 체크박스 CheckboxResolverR2 전수 처리...
+[2026-10-05T10:24:34.136Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] 🎯 [HyperEngine v4.0] Phase 3.5 - 휴먼 테스트 수식/방정식 퀴즈 검출 및 자동 해결...
+[2026-10-05T10:24:34.136Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] 🎯 [HyperEngine v4.0] Phase 3.5 - 휴먼 테스트 수식/방정식 퀴즈 검출 및 자동 해결...
+[2026-10-05T10:24:34.137Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] 🎯 [HyperEngine v4.0] Phase 4 - 텍스트 필드 패턴 매칭...
+[2026-10-05T10:24:34.137Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] 🎯 [HyperEngine v4.0] Phase 4 - 텍스트 필드 패턴 매칭...
+[2026-10-05T10:24:34.663Z] [POLL_EXECUTION][18s] active=true completed=2/3 success=0 failed=1 skipped=1
+[2026-10-05T10:24:35.667Z] [POLL_EXECUTION][19s] active=true completed=2/3 success=0 failed=1 skipped=1
+[2026-10-05T10:24:36.103Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html]    - [Input✅] category=name filled=true
+[2026-10-05T10:24:36.104Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html]    - [Input✅] category=name filled=true
+[2026-10-05T10:24:36.677Z] [POLL_EXECUTION][20s] active=true completed=2/3 success=0 failed=1 skipped=1
+[2026-10-05T10:24:37.686Z] [POLL_EXECUTION][21s] active=true completed=2/3 success=0 failed=1 skipped=1
+[2026-10-05T10:24:38.693Z] [POLL_EXECUTION][22s] active=true completed=2/3 success=0 failed=1 skipped=1
+[2026-10-05T10:24:38.832Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html]    - [Input✅] category=email filled=true length=20
+[2026-10-05T10:24:38.832Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html]    - [Input✅] category=email filled=true length=20
+[2026-10-05T10:24:39.033Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] 💓 [Heartbeat] Engine active and processing...
+[2026-10-05T10:24:39.033Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] 💓 [Heartbeat] Engine active and processing...
+[2026-10-05T10:24:39.697Z] [POLL_EXECUTION][23s] active=true completed=2/3 success=0 failed=1 skipped=1
+[2026-10-05T10:24:40.703Z] [POLL_EXECUTION][24s] active=true completed=2/3 success=0 failed=1 skipped=1
+[2026-10-05T10:24:40.984Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html]    - [Input✅] category=message filled=true length=65
+[2026-10-05T10:24:40.986Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html]    - [Input✅] category=message filled=true length=65
+[2026-10-05T10:24:40.991Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] 🎯 [HyperEngine v4.0] Phase 5 - 빈 필드 강제 채우기...
+[2026-10-05T10:24:41.001Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] 🎯 [HyperEngine v4.0] Phase 5 - 빈 필드 강제 채우기...
+[2026-10-05T10:24:41.002Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] 🎯 [HyperEngine v4.0] Phase 6 - 라디오 버튼 미선택 그룹 처리...
+[2026-10-05T10:24:41.002Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] 🎯 [HyperEngine v4.0] Phase 6 - 라디오 버튼 미선택 그룹 처리...
+[2026-10-05T10:24:41.002Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] 🎯 [HyperEngine v4.0] Phase 8 - 커스텀 ARIA 체크박스/라디오 처리...
+[2026-10-05T10:24:41.002Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] 🎯 [HyperEngine v4.0] Phase 8 - 커스텀 ARIA 체크박스/라디오 처리...
+[2026-10-05T10:24:41.002Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] 🛠️ [HyperEngine v4.0] Phase 9 - BruteForce contentEditable/role=textbox...
+[2026-10-05T10:24:41.003Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] 🛠️ [HyperEngine v4.0] Phase 9 - BruteForce contentEditable/role=textbox...
+[2026-10-05T10:24:41.003Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] 🎯 [HyperEngine v4.0] Phase 10 - Super-BruteForce Sweeper (초강력 입력기) 가동...
+[2026-10-05T10:24:41.003Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] 🎯 [HyperEngine v4.0] Phase 10 - Super-BruteForce Sweeper (초강력 입력기) 가동...
+[2026-10-05T10:24:41.003Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
+[2026-10-05T10:24:41.004Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
+[2026-10-05T10:24:41.009Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [STAGE] stage=FIELD_STATE_STABLE
+[2026-10-05T10:24:41.010Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [STAGE] stage=FIELD_STATE_STABLE
+[2026-10-05T10:24:41.010Z] [SW_CONSOLE] [BG_LOG][tab=802702087] ✅ [PIPELINE][REQUIRED_FIELDS_RESOLVED] url=http://127.0.0.1:8974/standard-inquiry.html
+[2026-10-05T10:24:41.010Z] [SW_CONSOLE] [BG_LOG][tab=802702087] 🔒 [PIPELINE][FIELD_STATE_STABLE] url=http://127.0.0.1:8974/standard-inquiry.html
+[2026-10-05T10:24:41.010Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] ✅ [HyperEngine v4.0] 폼 작성 완료 - 입력 필드 3개 처리됨
+[2026-10-05T10:24:41.010Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] ✅ [HyperEngine v4.0] 폼 작성 완료 - 입력 필드 3개 처리됨
+[2026-10-05T10:24:41.018Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [FILL] messageBodyFilled=true
+[2026-10-05T10:24:41.018Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [FILL] messageBodyFilled=true
+[2026-10-05T10:24:41.018Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] ✅ [FORM_PREP] COMPLETE
+[2026-10-05T10:24:41.018Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] ✅ [FORM_PREP] COMPLETE
+[2026-10-05T10:24:41.019Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] ⏳ [Engine] Holding for visual confirmation (1000ms)...
+[2026-10-05T10:24:41.019Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] ⏳ [Engine] Holding for visual confirmation (1000ms)...
+[2026-10-05T10:24:41.706Z] [POLL_EXECUTION][25s] active=true completed=2/3 success=0 failed=1 skipped=1
+[2026-10-05T10:24:42.004Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] 🧠 [FinalFill] Running AI Final Form Completion Pass immediately before submit...
+[2026-10-05T10:24:42.006Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] 🧠 [FinalFill] Running AI Final Form Completion Pass immediately before submit...
+[2026-10-05T10:24:42.221Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [AI_COMPLETE_FORM] fillableTotal=3 filledBefore=3 filledByAI=0 safeSkipped=0 sensitiveBlocked=0 emptySafeAfter=0
+[2026-10-05T10:24:42.226Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [AI_COMPLETE_FORM] fillableTotal=3 filledBefore=3 filledByAI=0 safeSkipped=0 sensitiveBlocked=0 emptySafeAfter=0
+[2026-10-05T10:24:42.226Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [FINAL_FILL] controls=3 unresolvedBefore=0 checkboxResolved=0 radioResolved=0 selectResolved=0 unresolvedAfter=0
+[2026-10-05T10:24:42.226Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [FINAL_FILL] controls=3 unresolvedBefore=0 checkboxResolved=0 radioResolved=0 selectResolved=0 unresolvedAfter=0
+[2026-10-05T10:24:42.226Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [FINAL_AUDIT] PASS
+[2026-10-05T10:24:42.226Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [FINAL_AUDIT] PASS
+[2026-10-05T10:24:42.232Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [FIELD_SUMMARY] text required 0/0 | checkbox 0/0 | radio 0/0 | select 0/0 | message 1/1 | unresolved 0
+[2026-10-05T10:24:42.233Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [FIELD_SUMMARY] text required 0/0 | checkbox 0/0 | radio 0/0 | select 0/0 | message 1/1 | unresolved 0
+[2026-10-05T10:24:42.233Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] ✅ [FinalAudit] Hard Gate Passed: 0 unresolved required fields
+[2026-10-05T10:24:42.233Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] ✅ [FinalAudit] Hard Gate Passed: 0 unresolved required fields
+[2026-10-05T10:24:42.233Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [SUBMIT_LOCK] acquired=true submittedFromUrl=http://127.0.0.1:8974/standard-inquiry.html — post FINAL_AUDIT_PASS
+[2026-10-05T10:24:42.233Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [SUBMIT_LOCK] acquired=true submittedFromUrl=http://127.0.0.1:8974/standard-inquiry.html — post FINAL_AUDIT_PASS
+[2026-10-05T10:24:42.237Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] 📤 [Action] Triggering submission sequence...
+[2026-10-05T10:24:42.242Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] 📤 [Action] Triggering submission sequence...
+[2026-10-05T10:24:42.242Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [SUBMIT] attemptStarted=true
+[2026-10-05T10:24:42.242Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [SUBMIT] attemptStarted=true
+[2026-10-05T10:24:42.242Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [STAGE] stage=SUBMIT_ATTEMPT_STARTED
+[2026-10-05T10:24:42.243Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [STAGE] stage=SUBMIT_ATTEMPT_STARTED
+[2026-10-05T10:24:42.247Z] [SW_CONSOLE] [BG_LOG][tab=none] [STALE_TARGET_EVENT] action=STAGE_PROGRESSION reqToken=none curToken=tok_1791195873771_dhcnnl result=REJECTED reason=token_mismatch
+[2026-10-05T10:24:42.253Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [SUBMIT_CANDIDATES] total=1 native=1 external=0 custom=0 vision=0
+[2026-10-05T10:24:42.266Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [SUBMIT_CANDIDATES] total=1 native=1 external=0 custom=0 vision=0
+[2026-10-05T10:24:42.285Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [SUBMIT_CANDIDATE] tag=button role=submit label="send message" insideForm=true associated=true score=195
+[2026-10-05T10:24:42.285Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [SUBMIT_CANDIDATE] tag=button role=submit label="send message" insideForm=true associated=true score=195
+[2026-10-05T10:24:42.286Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [SUBMIT_DECISION] chosen=button strategy=native
+[2026-10-05T10:24:42.286Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [SUBMIT_DECISION] chosen=button strategy=native
+[2026-10-05T10:24:42.315Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [SUBMIT] triggered=true
+[2026-10-05T10:24:42.316Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [SUBMIT] triggered=true
+[2026-10-05T10:24:42.316Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [STAGE] stage=SUBMIT_TRIGGERED
+[2026-10-05T10:24:42.317Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [STAGE] stage=SUBMIT_TRIGGERED
+[2026-10-05T10:24:42.317Z] [SW_CONSOLE] [BG_LOG][tab=802702087] 📤 [PIPELINE][SUBMIT_TRIGGERED] url=http://127.0.0.1:8974/standard-inquiry.html
+[2026-10-05T10:24:42.317Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] 🕵️ [SubmissionOutcomeVerifier] Verifying submission status (Multi-Polling)...
+[2026-10-05T10:24:42.317Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] 🕵️ [SubmissionOutcomeVerifier] Verifying submission status (Multi-Polling)...
+[2026-10-05T10:24:42.317Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [SUBMIT_VERIFY] pollCount=1
+[2026-10-05T10:24:42.318Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [SUBMIT_VERIFY] pollCount=1
+[2026-10-05T10:24:42.318Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [SUBMIT_VERIFY] elapsedMs=1
+[2026-10-05T10:24:42.318Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [SUBMIT_VERIFY] elapsedMs=1
+[2026-10-05T10:24:42.318Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [SUBMIT_VERIFY] transportStatus=NONE
+[2026-10-05T10:24:42.318Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [SUBMIT_VERIFY] transportStatus=NONE
+[2026-10-05T10:24:42.319Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [SUBMIT_VERIFY] serverErrorTransition=false
+[2026-10-05T10:24:42.319Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [SUBMIT_VERIFY] serverErrorTransition=false
+[2026-10-05T10:24:42.319Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [SUBMIT_VERIFY] matchedServerError=none
+[2026-10-05T10:24:42.319Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [SUBMIT_VERIFY] matchedServerError=none
+[2026-10-05T10:24:42.319Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [SUBMIT_VERIFY] submitEvent=true
+[2026-10-05T10:24:42.320Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [SUBMIT_VERIFY] submitEvent=true
+[2026-10-05T10:24:42.320Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [SUBMIT_VERIFY] urlChanged=false
+[2026-10-05T10:24:42.320Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [SUBMIT_VERIFY] urlChanged=false
+[2026-10-05T10:24:42.320Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [SUBMIT_VERIFY] newSuccessNodes=1
+[2026-10-05T10:24:42.320Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [SUBMIT_VERIFY] newSuccessNodes=1
+[2026-10-05T10:24:42.321Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [SUBMIT_VERIFY] validationErrors=0
+[2026-10-05T10:24:42.321Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [SUBMIT_VERIFY] validationErrors=0
+[2026-10-05T10:24:42.321Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [SUBMIT_VERIFY] formReset=false
+[2026-10-05T10:24:42.321Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [SUBMIT_VERIFY] formReset=false
+[2026-10-05T10:24:42.321Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [SUBMIT_VERIFY] decision=CONFIRMED_SUCCESS
+[2026-10-05T10:24:42.322Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [SUBMIT_VERIFY] decision=CONFIRMED_SUCCESS
+[2026-10-05T10:24:42.322Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [SUBMIT_VERIFY] latencyMs=1
+[2026-10-05T10:24:42.322Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [SUBMIT_VERIFY] latencyMs=1
+[2026-10-05T10:24:42.322Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [FINAL] status=CONFIRMED_SUCCESS
+[2026-10-05T10:24:42.322Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [FINAL] status=CONFIRMED_SUCCESS
+[2026-10-05T10:24:42.322Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [STAGE] stage=CONFIRMED_SUCCESS
+[2026-10-05T10:24:42.323Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] [STAGE] stage=CONFIRMED_SUCCESS
+[2026-10-05T10:24:42.326Z] [SW_CONSOLE] [BG_LOG][tab=802702087] 🎉 [PIPELINE][CONFIRMED_SUCCESS] url=http://127.0.0.1:8974/standard-inquiry.html
+[2026-10-05T10:24:42.327Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] ⏳ [PostSubmit] Maintaining page for registration completion (1000ms)...
+[2026-10-05T10:24:42.327Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] ⏳ [PostSubmit] Maintaining page for registration completion (1000ms)...
+[2026-10-05T10:24:42.710Z] [POLL_EXECUTION][26s] active=true completed=2/3 success=0 failed=1 skipped=1
+[2026-10-05T10:24:43.277Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] ✅ [Engine] Campaign step successfully executed.
+[2026-10-05T10:24:43.277Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] ✅ [Engine] Campaign step successfully executed.
+[2026-10-05T10:24:43.284Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [RESULT] resultUrl=http://127.0.0.1:8974/standard-inquiry.html
+[2026-10-05T10:24:43.286Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [TARGET][127.0.0.1] FINAL status=CONFIRMED_SUCCESS reason=SUCCESS_CONFIRMED
+[2026-10-05T10:24:43.292Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [HISTORY_FINAL] sourceUrl=http://127.0.0.1:8974/standard-inquiry.html contactPageUrl=http://127.0.0.1:8974/standard-inquiry.html formPageUrl=http://127.0.0.1:8974/standard-inquiry.html resultUrl=http://127.0.0.1:8974/standard-inquiry.html
+[2026-10-05T10:24:43.301Z] [SW_CONSOLE] [LEDGER_STATS] scope=currentRun success=1 failure=1 unknown=0 timeout=0 skipped=1
+[2026-10-05T10:24:43.302Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [LEDGER_STATS] scope=currentRun success=1 failure=1 unknown=0 timeout=0 skipped=1
+[2026-10-05T10:24:43.308Z] [POPUP_CONSOLE] [LEDGER_STATS] scope=currentGeneration success=1 failed=1 unknown=0
+[2026-10-05T10:24:43.310Z] [SW_CONSOLE] [BG_LOG][tab=802702087] ✨ [Engine] Submission confirmed. Maintaining tab for completion (3500ms)...
+[2026-10-05T10:24:43.726Z] [POLL_EXECUTION][27s] active=true completed=3/3 success=1 failed=1 skipped=1
+[2026-10-05T10:24:44.038Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] 💓 [Heartbeat] Engine active and processing...
+[2026-10-05T10:24:44.040Z] [SW_CONSOLE] [BG_LOG][tab=802702087] [CONTENT_EVENT][tabId=802702087][attemptId=att_1791195873771_pytqb][url=http://127.0.0.1:8974/standard-inquiry.html] 💓 [Heartbeat] Engine active and processing...
+[2026-10-05T10:24:46.739Z] 
+--- STEP 4: counter parity & audit verification ---
+[2026-10-05T10:24:46.739Z] [LEDGER_STATS_currentRun] {"scope":"currentRun","campaignRunId":"run_1791195855550_lr2ke","totalStarted":3,"success":1,"failure":1,"unknown":0,"timeout":0,"timeoutLocal":0,"timeoutGlobal":0,"skipped":1,"paused":0,"completed":3,"failureBreakdown":{"SUBMIT_ACTIVATION_EXHAUSTED":1},"logStr":"[LEDGER_STATS] scope=currentRun success=1 failure=1 unknown=0 timeout=0 skipped=1"}
+[2026-10-05T10:24:46.739Z] [POPUP_UI_COUNTERS] {"success":"1","failure":"1","timeout":"0","unknown":"0","skipped":"1","completed":"3","remaining":"0"}
+[2026-10-05T10:24:46.740Z] PASS: Fixture 1: Popup badge matches R6.9F [8963ece]
+[2026-10-05T10:24:46.740Z] PASS: Fixture 1: Build mismatch banner hidden when builds match
+[2026-10-05T10:24:46.740Z] PASS: Fixture 1: Start button enabled and not build-locked
+[2026-10-05T10:24:46.740Z] PASS: Fixture 1: Background logs [BUILD_HANDSHAKE] result=PASS
+[2026-10-05T10:24:46.740Z] PASS: Fixture 2: WP comment form rejected as NON_INQUIRY_COMMENT_FORM
+[2026-10-05T10:24:46.740Z] PASS: Fixture 2: WP comment form settled as SKIPPED (not success)
+[2026-10-05T10:24:46.740Z] PASS: Fixture 3: Semantic custom submit button discovered
+[2026-10-05T10:24:46.740Z] PASS: Fixture 3: Custom submit strategy selected and executed
+[2026-10-05T10:24:46.740Z] PASS: Fixture 6: HistoryStore success matches Popup Live Success
+[2026-10-05T10:24:46.740Z] PASS: Fixture 6: HistoryStore failure matches Popup Live Failure
+[2026-10-05T10:24:46.740Z] PASS: Fixture 6: HistoryStore skipped matches Popup Live Skipped
+[2026-10-05T10:24:46.740Z] PASS: Fixture 6: HistoryStore completed == 3
+[2026-10-05T10:24:46.740Z] PASS: Fixture 6: sum(terminal buckets) === completed
+[2026-10-05T10:24:46.740Z] PASS: Fixture 6: Popup Live Completed matches HistoryStore
+[2026-10-05T10:24:46.740Z] 
+[RESULT] 14/14 checks passed

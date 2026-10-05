@@ -1,0 +1,53 @@
+================================================================
+ XPIDER AUTOFORM SENDER PRO — R6.9F REAL ACCEPTANCE AUDIT
+ Build: R6.9F-20261005-RUNTIME-SUBMIT-COUNTERS
+ Implementation Head: 8963ece6f069562b7af028e354c75f9eac15857b
+================================================================
+----------------------------------------------------------------
+FIXTURE 1: Runtime Build Mismatch Handshake & Fail-Closed Guard
+----------------------------------------------------------------
+[BUILD_HANDSHAKE] localHead=8963ece6f069562b7af028e354c75f9eac15857b backgroundHead=b97d85e13d96420f188eef0eaef1e7fc357e6c98 result=REJECT
+[START_CAMPAIGN_REJECTED] Popup implementationHead (8963ece6f069562b7af028e354c75f9eac15857b) does not match background (b97d85e13d96420f188eef0eaef1e7fc357e6c98). Reload extension.
+
+🎉 [FIXTURE PASSED] Fixture 1: Runtime Build Mismatch Handshake & Fail-Closed Guard
+----------------------------------------------------------------
+FIXTURE 2: dominionshotokan.com WordPress Jetpack Comment Form
+----------------------------------------------------------------
+[LONG_TEXT_GATE] found=true type=textarea semantic=message
+[LONG_TEXT_GATE] found=true type=textarea semantic=message
+[FORM_INTENT] intent=COMMENT confidence=0.85 negativeClass=comment_form_structure
+[FORM_CLASSIFY] intent=COMMENT eligible=false hasInquiryBody=true bodyFieldType=textarea decision=REJECT reason=NON_INQUIRY_COMMENT_FORM
+[FORM_INTENT_RESULT] intent=COMMENT decision=REJECT reason=NON_INQUIRY_COMMENT_FORM negativeClass=undefined
+
+🎉 [FIXTURE PASSED] Fixture 2: dominionshotokan.com WordPress Jetpack Comment Form Rejection
+----------------------------------------------------------------
+FIXTURE 3: dragonstrikemartialarts.com / duncanmartialarts.com Custom Submit
+----------------------------------------------------------------
+[SUBMIT_CANDIDATES] total=1 native=0 external=0 custom=1 vision=0
+[SUBMIT_DECISION] chosen=a strategy=custom
+
+🎉 [FIXTURE PASSED] Fixture 3: dragonstrikemartialarts.com Custom Submit Discovery & Activation
+----------------------------------------------------------------
+FIXTURE 4: dotokushin.com Duplicate Reinjection Submit Barrier
+----------------------------------------------------------------
+[SUBMIT_STAGE_1] attemptId=att_dotokushin_123 token=tok_dotokushin result=ACCEPTED
+[SUBMIT_DUPLICATE_BLOCK] attemptId=att_dotokushin_123 token=tok_dotokushin result=REJECT
+
+🎉 [FIXTURE PASSED] Fixture 4: dotokushin.com Duplicate Reinjection Submit Barrier
+----------------------------------------------------------------
+FIXTURE 5: ducdangtaekwondo.com 2Captcha Zero Balance Settlement
+----------------------------------------------------------------
+[SOLVER_RESPONSE] success=false terminal=ERROR_ZERO_BALANCE settleReason=CAPTCHA_SOLVER_UNAVAILABLE
+[CAPTCHA_GATE] eligible=false reason=CAPTCHA_SOLVER_UNAVAILABLE error=ERROR_ZERO_BALANCE
+
+🎉 [FIXTURE PASSED] Fixture 5: ducdangtaekwondo.com 2Captcha Zero Balance Settlement
+----------------------------------------------------------------
+FIXTURE 6: Counters Parity & 7 Distinct Buckets Reconciliation
+----------------------------------------------------------------
+[LEDGER_STATS] success=2 failure=1 timeout=1 unknown=1 skipped=1 completed=6
+
+🎉 [FIXTURE PASSED] Fixture 6: Counters Parity & 7 Distinct Buckets Reconciliation
+
+================================================================
+ACCEPTANCE AUDIT SUMMARY: 6 / 6 FIXTURES PASSED (0 FAILED)
+================================================================
