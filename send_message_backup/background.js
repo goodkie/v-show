@@ -1233,7 +1233,7 @@ function validateActiveExecution(request, sender, action, options = {}) {
     if (options.expectedIdentity) {
         const exp = options.expectedIdentity;
         if (exp.tabId !== curTabId || exp.attemptId !== curAttemptId || exp.targetToken !== curTok || exp.campaignRunId !== curRunId || Number(exp.sessionId) !== Number(curSessionId)) {
-            logBg(null, `[STALE_TARGET_EVENT] action=${action} reason=identity_drift result=REJECTED`, 'warning');
+            logBg(null, `[CAPTCHA_STALE_RESULT] action=${action} reason=identity_drift action=DROP`, 'warning');
             return { valid: false, reason: 'identity_drift' };
         }
         if (exp.captchaEpoch !== undefined && exp.captchaEpoch !== (campaignState.captchaEpoch || 1)) {
@@ -1286,7 +1286,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     headShort: 'b97d85e',
                     rollbackBase: 'b8e1d0362946cd6ca8c77c1aa990998da62c2c91',
                     manifestVersion: 3,
-                    buildId: 'R6.9E-20261004-LIFECYCLE',
+                    buildId: 'R6.9E.1-20261004-LIFECYCLE',
                     builtAt: '2026-10-04T08:35:00.000Z',
                     provenanceSchema: 2,
                     modules: {}
@@ -1303,7 +1303,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             const provLogs = (typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.getBuildProvenanceLogs === 'function')
                 ? BuildProvenance.getBuildProvenanceLogs()
                 : [
-                    "[BUILD_ID] branch=upgrade/phase-0-1 implementationHead=b97d85ecf026221a85d0ef880a2743cb98ec3059 manifestVersion=3 buildId=R6.9E-20261004-LIFECYCLE builtAt=2026-10-04T08:35:00.000Z"
+                    "[BUILD_ID] branch=upgrade/phase-0-1 implementationHead=b97d85ecf026221a85d0ef880a2743cb98ec3059 manifestVersion=3 buildId=R6.9E.1-20261004-LIFECYCLE builtAt=2026-10-04T08:35:00.000Z"
                 ];
             for (const plog of provLogs) {
                 console.log(plog);
@@ -1626,6 +1626,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     // [Issue #6 R6.9E.1 Section 8A/8D] Strict Execution Identity & Epoch pre-await check
                     const validation = validateActiveExecution(request, sender, 'SOLVE_CAPTCHA', { checkEpoch: true });
                     if (!validation.valid) {
+                        logBg(null, `[CAPTCHA_STALE_REQUEST] action=REJECT reason=${validation.reason}`, 'warning');
                         sendResponse({ success: false, error: validation.reason });
                         return;
                     }

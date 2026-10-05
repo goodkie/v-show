@@ -22,7 +22,7 @@ const files = [
     'send_message_backup/test_target_lifecycle_counter_authority_r6_9e.js',
     'run_real_r6_9e_lifecycle_runtime_audit.js',
     'evidence_r6_9e_real_runtime_traces.log',
-    'stamp_r6_9e.js'
+    'stamp_r6_9e_1.js'
 ];
 
 const fileListStr = files.map(f => `"${path.join(__dirname, f)}"`).join(', ');

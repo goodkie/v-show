@@ -324,6 +324,24 @@
             }
         };
 
+        // [Issue #6 R6.9E.1 Section 9] Test hook for controlled same-tab stale message verification
+        if (typeof window !== 'undefined' && window.addEventListener) {
+            window.addEventListener('message', (event) => {
+                if (event.data && event.data.type === 'XPIDER_TEST_STALE_CONTROL_MESSAGE') {
+                    const sendFn = window.__xpider_sendExecutionMessage || chrome.runtime.sendMessage;
+                    sendFn(Object.assign({
+                        action: 'STAGE_PROGRESSION',
+                        stage: 'SUBMIT_ATTEMPT_STARTED'
+                    }, event.data.payload));
+                } else if (event.data && event.data.type === 'XPIDER_TEST_STALE_SOLVER_MESSAGE') {
+                    const sendFn = window.__xpider_sendExecutionMessage || chrome.runtime.sendMessage;
+                    sendFn(Object.assign({
+                        action: 'SOLVE_CAPTCHA'
+                    }, event.data.payload));
+                }
+            });
+        }
+
         window.__xpider_start_sending_handler = (request, sender, sendResponse) => {
             if (request.action === 'START_SENDING') {
                 const currentRunUrl = (window.location ? window.location.href : '');
@@ -5320,11 +5338,12 @@
                 logDev(`[FINAL] status=${finalDecision}`, "success");
                 logDev("[STAGE] stage=CONFIRMED_SUCCESS", "success");
                 try {
-                    chrome.runtime.sendMessage({
+                    const sendProg = window.__xpider_sendExecutionMessage || chrome.runtime.sendMessage;
+                    sendProg({
                         action: 'STAGE_PROGRESSION',
                         stage: 'CONFIRMED_SUCCESS',
                         url: window.location.href
-                    }).catch(() => {});
+                    });
                 } catch (_) {}
 
                 // [R6.9E Post-Registration Completion Grace] Maintain page so registration finishes completely

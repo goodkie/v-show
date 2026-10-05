@@ -1178,6 +1178,87 @@ async function resetAllListData() {
     return { success: true, message: "All list data authoritatively reset to 0." };
 }
 
+// [Issue #6 R6.9E.1 Section 8A] Authoritative Single Execution Validator
+function validateActiveExecution(request, sender, action, options = {}) {
+    const curTabId = campaignState.currentTabId;
+    const curAtt = campaignState.currentAttempt;
+    const curAttemptId = curAtt?.attemptId;
+    const curTok = campaignState.currentTargetToken;
+    const curRunId = campaignState.campaignRunId;
+    const curSessionId = campaignState.sessionId;
+
+    const sTabId = sender?.tab?.id;
+    const reqAttemptId = request?.attemptId;
+    const reqTok = request?.targetToken;
+    const reqRunId = request?.campaignRunId;
+    const reqSessionId = request?.sessionId;
+
+    // 1. Campaign active check
+    if (!campaignState.isActive) {
+        logBg(null, `[STALE_TARGET_EVENT] action=${action} reason=campaign_inactive result=REJECTED`, 'warning');
+        return { valid: false, reason: 'campaign_inactive' };
+    }
+
+    // 2. Strict exact target tab verification
+    if (!sTabId || !curTabId || sTabId !== curTabId) {
+        logBg(null, `[STALE_TARGET_EVENT] action=${action} senderTab=${sTabId || 'none'} expectedTab=${curTabId} result=REJECTED reason=tab_mismatch`, 'warning');
+        return { valid: false, reason: 'tab_mismatch' };
+    }
+
+    // 3. Mandatory attemptId equality
+    if (!reqAttemptId || !curAttemptId || reqAttemptId !== curAttemptId) {
+        logBg(null, `[STALE_TARGET_EVENT] action=${action} reqAttempt=${reqAttemptId || 'none'} curAttempt=${curAttemptId || 'none'} result=REJECTED reason=attempt_mismatch`, 'warning');
+        return { valid: false, reason: 'attempt_mismatch' };
+    }
+
+    // 4. Mandatory targetToken equality
+    if (!reqTok || !curTok || reqTok !== curTok) {
+        logBg(null, `[STALE_TARGET_EVENT] action=${action} reqToken=${reqTok || 'none'} curToken=${curTok || 'none'} result=REJECTED reason=token_mismatch`, 'warning');
+        return { valid: false, reason: 'token_mismatch' };
+    }
+
+    // 5. Mandatory campaignRunId equality
+    if (!reqRunId || !curRunId || reqRunId !== curRunId) {
+        logBg(null, `[STALE_TARGET_EVENT] action=${action} reqRunId=${reqRunId || 'none'} curRunId=${curRunId || 'none'} result=REJECTED reason=campaign_run_mismatch`, 'warning');
+        return { valid: false, reason: 'campaign_run_mismatch' };
+    }
+
+    // 6. Mandatory sessionId equality
+    if (reqSessionId === undefined || reqSessionId === null || curSessionId === undefined || Number(reqSessionId) !== Number(curSessionId)) {
+        logBg(null, `[STALE_TARGET_EVENT] action=${action} reqSession=${reqSessionId} curSession=${curSessionId} result=REJECTED reason=session_mismatch`, 'warning');
+        return { valid: false, reason: 'session_mismatch' };
+    }
+
+    // 7. Optional expected solve identity check (for post-await or snapshot validation)
+    if (options.expectedIdentity) {
+        const exp = options.expectedIdentity;
+        if (exp.tabId !== curTabId || exp.attemptId !== curAttemptId || exp.targetToken !== curTok || exp.campaignRunId !== curRunId || Number(exp.sessionId) !== Number(curSessionId)) {
+            logBg(null, `[CAPTCHA_STALE_RESULT] action=${action} reason=identity_drift action=DROP`, 'warning');
+            return { valid: false, reason: 'identity_drift' };
+        }
+        if (exp.captchaEpoch !== undefined && exp.captchaEpoch !== (campaignState.captchaEpoch || 1)) {
+            logBg(null, `[CAPTCHA_STALE_RESULT] action=${action} callEpoch=${exp.captchaEpoch} currentEpoch=${campaignState.captchaEpoch} action=DROP reason=epoch_mismatch`, 'warning');
+            return { valid: false, reason: 'epoch_mismatch' };
+        }
+    }
+
+    // 8. Optional epoch check for solver pre-await
+    if (options.checkEpoch) {
+        const curEpoch = campaignState.captchaEpoch || 1;
+        const reqEpoch = request?.captchaEpoch;
+        if (reqEpoch && reqEpoch !== curEpoch) {
+            logBg(null, `[CAPTCHA_STALE_REQUEST] reqEpoch=${reqEpoch} curEpoch=${curEpoch} action=REJECT reason=epoch_mismatch`, 'warning');
+            return { valid: false, reason: 'epoch_mismatch' };
+        }
+    }
+
+    return { valid: true, execution: { tabId: curTabId, attemptId: curAttemptId, targetToken: curTok, campaignRunId: curRunId, sessionId: curSessionId } };
+}
+
+if (typeof global !== 'undefined') {
+    global.__validateActiveExecution = validateActiveExecution;
+}
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     switch (request.action) {
         case 'SEND_MESSAGE':
@@ -1205,7 +1286,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     headShort: 'b97d85e',
                     rollbackBase: 'b8e1d0362946cd6ca8c77c1aa990998da62c2c91',
                     manifestVersion: 3,
-                    buildId: 'R6.9E-20261004-LIFECYCLE',
+                    buildId: 'R6.9E.1-20261004-LIFECYCLE',
                     builtAt: '2026-10-04T08:35:00.000Z',
                     provenanceSchema: 2,
                     modules: {}
@@ -1222,7 +1303,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             const provLogs = (typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.getBuildProvenanceLogs === 'function')
                 ? BuildProvenance.getBuildProvenanceLogs()
                 : [
-                    "[BUILD_ID] branch=upgrade/phase-0-1 implementationHead=b97d85ecf026221a85d0ef880a2743cb98ec3059 manifestVersion=3 buildId=R6.9E-20261004-LIFECYCLE builtAt=2026-10-04T08:35:00.000Z"
+                    "[BUILD_ID] branch=upgrade/phase-0-1 implementationHead=b97d85ecf026221a85d0ef880a2743cb98ec3059 manifestVersion=3 buildId=R6.9E.1-20261004-LIFECYCLE builtAt=2026-10-04T08:35:00.000Z"
                 ];
             for (const plog of provLogs) {
                 console.log(plog);
@@ -1349,35 +1430,29 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             return true;
 
         case 'SENDER_FINISHED':
-            // [Issue #6 R6.9E B3] Strict Terminal Barrier: Accept only from exact active target and execution identity
+            // [Issue #6 R6.9E.1 Section 8A/8B] Strict Terminal Barrier with Unified Execution Validator
             (() => {
-                const sTab = sender && sender.tab;
-                const reqAtt = request.attemptId;
-                const reqTok = request.targetToken;
-                const curAtt = campaignState.currentAttempt;
-                const curTabId = campaignState.currentTabId;
-                const curTok = campaignState.currentTargetToken;
+                const validation = validateActiveExecution(request, sender, 'SENDER_FINISHED');
+                if (!validation.valid) {
+                    sendResponse({ success: false, reason: validation.reason });
+                    return;
+                }
+
                 const curStage = campaignState.currentTargetStage;
-
-                // 1. Mandatory sender.tab existence and exact tab match
-                const isTabMatch = sTab && (sTab.id === curTabId);
-                // 2. Identity match: if attemptId was sent, it must match
-                const isAttemptMatch = !curAtt || !reqAtt || (curAtt.attemptId === reqAtt);
-                const isTokenMatch = !curTok || !reqTok || (curTok === reqTok);
-
-                // 3. Stage authority: must be at allowed terminal stage or explicit failure/skip
-                const allowedTerminalStages = ['VERIFYING', 'CONFIRMED_SUCCESS', 'SUBMITTING', 'SUBMIT_TRIGGERED'];
+                // Stage authority: must be at allowed terminal stage or explicit failure/skip
+                const allowedTerminalStages = ['VERIFYING', 'CONFIRMED_SUCCESS', 'SUBMITTING', 'SUBMIT_TRIGGERED', 'SUBMIT_ATTEMPT_STARTED', 'POST_SUBMIT_CONFIRMING', 'SETTLED'];
                 const isTerminalStageAllowed = allowedTerminalStages.includes(curStage) || 
                     (request.result && (!request.result.success || request.result.error || request.result.reasonCode === 'PREPARING_REQUEUE'));
 
-                if (!isTabMatch || !isAttemptMatch || !isTokenMatch || !isTerminalStageAllowed) {
-                    logBg(null, `[STALE_TARGET_EVENT] action=SENDER_FINISHED senderTab=${sTab ? sTab.id : 'none'} expectedTab=${curTabId} attempt=${reqAtt} expectedAttempt=${curAtt?.attemptId} stage=${curStage} result=REJECTED`, 'warning');
-                    sendResponse({ success: false, reason: 'STALE_OR_INVALID_STAGE' });
+                if (!isTerminalStageAllowed) {
+                    logBg(null, `[STALE_TARGET_EVENT] action=SENDER_FINISHED stage=${curStage} result=REJECTED reason=non_terminal_stage`, 'warning');
+                    sendResponse({ success: false, reason: 'INVALID_STAGE_FOR_FINISH' });
                     return;
                 }
 
                 if (campaignState.targetResolve) {
                     const resolve = campaignState.targetResolve;
+                    campaignState.targetResolve = null; // [Section 8B] One-shot clear to prevent duplicate terminal resolution
                     resolve(request.result);
                     sendResponse({ success: true });
                 } else {
@@ -1387,14 +1462,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             return true;
 
         case 'FORM_GATE_PASSED':
+            // [Issue #6 R6.9E.1 Section 8A] Unified Execution Validator for FORM_GATE_PASSED
             (() => {
-                const sTab = sender && sender.tab;
-                const curTabId = campaignState.currentTabId;
-                if (!sTab || sTab.id !== curTabId) {
-                    logBg(null, `[STALE_TARGET_EVENT] action=FORM_GATE_PASSED senderTab=${sTab ? sTab.id : 'none'} expectedTab=${curTabId} attempt=${request.attemptId} expectedAttempt=${campaignState.currentAttempt?.attemptId} result=REJECTED`, 'warning');
-                    sendResponse({ success: false, reason: 'STALE_TARGET' });
+                const validation = validateActiveExecution(request, sender, 'FORM_GATE_PASSED');
+                if (!validation.valid) {
+                    sendResponse({ success: false, reason: validation.reason });
                     return;
                 }
+                const sTab = sender.tab;
                 const cUrl = request.contactPageUrl || sTab.url;
                 const fUrl = request.formPageUrl || sTab.url;
                 if (campaignState.currentDiscoveryCtx) {
@@ -1425,16 +1500,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             return true;
 
         case 'STAGE_PROGRESSION':
-            // [Issue #6 R6.5 & R6.9E B1/B2] Standardized pipeline metrics & Authoritative Submit Boundary
+            // [Issue #6 R6.9E.1 Section 8A/8C] Standardized pipeline metrics & Authoritative Submit Boundary with Unified Execution Validator
             (async () => {
-                const sTab = sender && sender.tab;
-                const curTabId = campaignState.currentTabId;
-                if (!sTab || sTab.id !== curTabId) {
-                    logBg(null, `[STALE_TARGET_EVENT] action=STAGE_PROGRESSION senderTab=${sTab ? sTab.id : 'none'} expectedTab=${curTabId} attempt=${request.attemptId} expectedAttempt=${campaignState.currentAttempt?.attemptId} result=REJECTED`, 'warning');
-                    sendResponse({ success: false, reason: 'STALE_TARGET' });
+                const validation = validateActiveExecution(request, sender, 'STAGE_PROGRESSION');
+                if (!validation.valid) {
+                    sendResponse({ success: false, reason: validation.reason });
                     return;
                 }
 
+                const sTab = sender.tab;
                 if (request.stage) {
                     campaignState.currentTargetStage = request.stage;
                     const activeStages = ['ACTIVE_FORM', 'FILLING', 'CAPTCHA', 'FINAL_AUDIT', 'SUBMIT_ATTEMPT_STARTED', 'SUBMITTING', 'SUBMIT_TRIGGERED', 'VERIFYING'];
@@ -1547,21 +1621,18 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         case 'SOLVE_CAPTCHA':
             (async () => {
                 try {
-                    const curTabId = campaignState.currentTabId;
                     const curEpoch = campaignState.captchaEpoch || 1;
-                    const reqEpoch = request.captchaEpoch;
-                    const reqAtt = request.attemptId;
 
-                    // [Issue #6 R6.9E B4] Inactive / paused guard
-                    if (!campaignState.isActive || campaignState.isPaused) {
-                        sendResponse({ success: false, error: 'CAMPAIGN_INACTIVE_OR_PAUSED' });
+                    // [Issue #6 R6.9E.1 Section 8A/8D] Strict Execution Identity & Epoch pre-await check
+                    const validation = validateActiveExecution(request, sender, 'SOLVE_CAPTCHA', { checkEpoch: true });
+                    if (!validation.valid) {
+                        logBg(null, `[CAPTCHA_STALE_REQUEST] action=REJECT reason=${validation.reason}`, 'warning');
+                        sendResponse({ success: false, error: validation.reason });
                         return;
                     }
 
-                    // [Issue #6 R6.9E B4] Stale request rejection: check epoch and sender tab
-                    if ((reqEpoch && reqEpoch !== curEpoch) || (sender?.tab && curTabId && sender.tab.id !== curTabId)) {
-                        logBg(null, `[CAPTCHA_STALE_REQUEST] reqEpoch=${reqEpoch} curEpoch=${curEpoch} senderTab=${sender?.tab?.id} expectedTab=${curTabId} action=REJECT`, 'warning');
-                        sendResponse({ success: false, error: 'STALE_CAPTCHA_EPOCH' });
+                    if (!campaignState.isActive || campaignState.isPaused) {
+                        sendResponse({ success: false, error: 'CAMPAIGN_INACTIVE_OR_PAUSED' });
                         return;
                     }
 
@@ -1572,6 +1643,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                         sendResponse({ success: false, error: blockedErr });
                         return;
                     }
+
+                    // [Issue #6 R6.9E.1 Section 8D] Capture immutable solve identity before await
+                    const solveIdentity = {
+                        tabId: campaignState.currentTabId,
+                        attemptId: campaignState.currentAttempt?.attemptId,
+                        targetToken: campaignState.currentTargetToken,
+                        campaignRunId: campaignState.campaignRunId,
+                        sessionId: Number(campaignState.sessionId),
+                        captchaEpoch: curEpoch
+                    };
 
                     const storage = await new Promise(resolve => chrome.storage.local.get([
                         'captchaMethod', 'captchaApiKey', 'xpider_captcha_method', 'xpider_captcha_api_key', 'xpider_stt_api_key', 'audioSttKey', 'witKey'
@@ -1610,14 +1691,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                             };
                             const token = await solver.solve2Captcha(request.sitekey, targetPageUrl, request.type || 'recaptcha', extra);
 
-                            // [Issue #6 R6.9E B4] Validate execution identity AGAIN before injecting/returning token
-                            const postEpoch = campaignState.captchaEpoch || 1;
-                            const isStillValid = (reqEpoch ? reqEpoch === postEpoch : true) &&
-                                campaignState.isActive && !campaignState.isPaused &&
-                                (!sender?.tab || !campaignState.currentTabId || sender.tab.id === campaignState.currentTabId);
-
-                            if (!isStillValid) {
-                                logBg(null, `[CAPTCHA_STALE_RESULT] reqEpoch=${reqEpoch} curEpoch=${postEpoch} action=DROP`, 'warning');
+                            // [Issue #6 R6.9E.1 Section 8A/8D] Validate complete execution identity AGAIN before injecting/returning token
+                            const postValidation = validateActiveExecution(request, sender, 'SOLVE_CAPTCHA_POST', { expectedIdentity: solveIdentity });
+                            if (!postValidation.valid || !campaignState.isActive || campaignState.isPaused) {
+                                logBg(null, `[CAPTCHA_STALE_RESULT] action=DROP reason=${postValidation.reason || 'inactive_or_paused'}`, 'warning');
                                 sendResponse({ success: false, error: 'STALE_RESULT_DROPPED' });
                                 return;
                             }
@@ -2696,6 +2773,7 @@ async function processNextCampaignTarget(loopSessionId) {
 
             // [Issue #6 R6.8 P0-7] Target transition state cleanup
             campaignState.currentTargetStage = null;
+            campaignState.currentTargetToken = null;
             campaignState.currentAttempt = null;
             campaignState.submitLock = false;
             campaignState.timeoutWatchdogGen = (campaignState.timeoutWatchdogGen || 0) + 1;
@@ -3296,6 +3374,7 @@ async function orchestrateSending(urlInput, template) {
             targetToken: targetToken,
             timestamp: Date.now()
         };
+        campaignState.currentTargetToken = targetToken;
 
         // Mark target as in progress
         campaignState.counters.inProgress = 1;
