@@ -1280,10 +1280,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 ? BuildProvenance.BUILD_INFO
                 : {
                     branch: 'upgrade/phase-0-1',
-                    implementationHead: 'b97d85ecf026221a85d0ef880a2743cb98ec3059',
-                    implementationHeadShort: 'b97d85e',
-                    head: 'b97d85ecf026221a85d0ef880a2743cb98ec3059',
-                    headShort: 'b97d85e',
+                    implementationHead: 'db3011ca6ebdddc49c3fe17bd99c3da0c5ad583b',
+                    implementationHeadShort: 'db3011c',
+                    head: 'db3011ca6ebdddc49c3fe17bd99c3da0c5ad583b',
+                    headShort: 'db3011c',
                     rollbackBase: 'b8e1d0362946cd6ca8c77c1aa990998da62c2c91',
                     manifestVersion: 3,
                     buildId: 'R6.9E.1-20261004-LIFECYCLE',
@@ -1303,7 +1303,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             const provLogs = (typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.getBuildProvenanceLogs === 'function')
                 ? BuildProvenance.getBuildProvenanceLogs()
                 : [
-                    "[BUILD_ID] branch=upgrade/phase-0-1 implementationHead=b97d85ecf026221a85d0ef880a2743cb98ec3059 manifestVersion=3 buildId=R6.9E.1-20261004-LIFECYCLE builtAt=2026-10-04T08:35:00.000Z"
+                    "[BUILD_ID] branch=upgrade/phase-0-1 implementationHead=db3011ca6ebdddc49c3fe17bd99c3da0c5ad583b manifestVersion=3 buildId=R6.9E.1-20261004-LIFECYCLE builtAt=2026-10-04T08:35:00.000Z"
                 ];
             for (const plog of provLogs) {
                 console.log(plog);

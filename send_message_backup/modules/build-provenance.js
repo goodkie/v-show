@@ -22,10 +22,10 @@
         rollbackBase: 'b8e1d0362946cd6ca8c77c1aa990998da62c2c91',
         manifestVersion: 3,
         buildId: 'R6.9E.1-20261004-LIFECYCLE',
-        builtAt: '2026-10-05T03:14:40.097Z',
+        builtAt: '2026-10-05T03:25:44.817Z',
         provenanceSchema: 2,
         modules: {
-            backgroundSha: '4fbb7d07dde753172956d01f0b5609fc9b08046e0ac129c14b29c1482d83c6b9',
+            backgroundSha: 'd3c1618a72507b8965ec9f57500b0c7b80f732f3890c863ce528a4fca591a62f',
             contentScriptSha: '0091ab06d2458fdbea64911979529f81d701f6b997d33fef17ee4791cbbe1e32',
             emailCollectorSha: '3f1147a379e159e7777158f2caa74cc8d40b2a0b0eb2c244f440af379cb5c9c9',
             historyStoreSha: '38816d8b6e66114e24cdff84a52e0c22dac38bda23a38826b3ae581d252b8791',
