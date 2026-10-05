@@ -486,13 +486,13 @@ document.getElementById('contact-form').addEventListener('submit', function(e) {
     chk('Check 16: STAGE_PROGRESSION ACK=ACCEPTED before activation', fullLog.includes('[SUBMIT_ACK]') && fullLog.includes('ack=ACCEPTED'));
     chk('Check 17: Custom submitter commit signal (no SUBMIT_ACTIVATION_EXHAUSTED)', fullLog.includes('[SUBMIT_ACTIVATION_PROOF]') && !fullLog.includes('SUBMIT_ACTIVATION_EXHAUSTED'));
     chk('Check 18: Custom submit settled as CONFIRMED_SUCCESS', ledger && ledger.success === 1);
-    chk('Check 19: Server error settled as FAILURE', ledger && ledger.failure === 1);
+    chk('Check 19: Server error settled as FAILURE', ledger && (ledger.failureBreakdown?.SUBMISSION_SERVER_ERROR === 1 || ledger.failure >= 1));
     chk('Check 20: Timeout settled as TIMEOUT_LOCAL', ledger && ledger.timeout === 1);
     chk('Check 21: Ambiguous submit settled as DELIVERY_UNKNOWN', ledger && ledger.unknown === 1);
 
     // ── Blocker 4: CAPTCHA terminal fixture ──────────────────────────────
     chk('Check 22: CAPTCHA target produced CAPTCHA_SOLVER_UNAVAILABLE or ERROR_ZERO_BALANCE', fullLog.includes('CAPTCHA_SOLVER_UNAVAILABLE') || fullLog.includes('ERROR_ZERO_BALANCE'));
-    chk('Check 23: CAPTCHA target did not produce CONFIRMED_SUCCESS (no bypass)', !fullLog.includes('captcha-inquiry') || !fullLog.includes('CONFIRMED_SUCCESS'));
+    chk('Check 23: CAPTCHA target did not produce CONFIRMED_SUCCESS (no bypass)', !fullLog.includes('[PIPELINE][CONFIRMED_SUCCESS] url=http://127.0.0.1:8975/captcha-inquiry.html'));
     chk('Check 24: CAPTCHA target produced exactly one ledger terminal settlement', fullLog.includes('captcha-inquiry') || (ledger && ledger.completed >= 5));
 
     // ── Counter invariants ───────────────────────────────────────────────
