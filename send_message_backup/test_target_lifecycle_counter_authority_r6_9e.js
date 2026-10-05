@@ -138,25 +138,25 @@ async function main() {
     // -------------------------------------------------------------
     runTest('7. stale SENDER_FINISHED from previous tab rejected', () => {
         const sfHandler = bgSrc.substring(bgSrc.indexOf("case 'SENDER_FINISHED':"), bgSrc.indexOf("case 'FORM_GATE_PASSED':"));
-        assert(sfHandler.includes("sTab && (sTab.id === curTabId)"), 'Must require sender.tab and exact tabId match');
-        assert(sfHandler.includes("[STALE_TARGET_EVENT] action=SENDER_FINISHED"), 'Must log STALE_TARGET_EVENT on rejection');
-        assert(sfHandler.includes("result=REJECTED"), 'Must explicitly mark result=REJECTED');
+        assert(sfHandler.includes("validateActiveExecution(request, sender, 'SENDER_FINISHED')"), 'Must use validateActiveExecution');
+        assert(bgSrc.includes("function validateActiveExecution"), 'Must define unified validateActiveExecution');
+        assert(bgSrc.includes("senderTab=${sTabId || 'none'} expectedTab=${curTabId} result=REJECTED reason=tab_mismatch"), 'Must reject tab mismatch');
     });
 
     // -------------------------------------------------------------
     // Test 8: stale SENDER_FINISHED from same tab but wrong attemptId rejected
     // -------------------------------------------------------------
     runTest('8. stale SENDER_FINISHED from same tab but wrong attemptId rejected', () => {
-        const sfHandler = bgSrc.substring(bgSrc.indexOf("case 'SENDER_FINISHED':"), bgSrc.indexOf("case 'FORM_GATE_PASSED':"));
-        assert(sfHandler.includes("curAtt.attemptId === reqAtt"), 'Must require attemptId match');
+        assert(bgSrc.includes("!reqAttemptId || !curAttemptId || reqAttemptId !== curAttemptId"), 'Must require strict attemptId equality');
+        assert(bgSrc.includes("result=REJECTED reason=attempt_mismatch"), 'Must log attempt_mismatch on wrong attemptId');
     });
 
     // -------------------------------------------------------------
     // Test 9: stale targetToken rejected
     // -------------------------------------------------------------
     runTest('9. stale targetToken rejected', () => {
-        const sfHandler = bgSrc.substring(bgSrc.indexOf("case 'SENDER_FINISHED':"), bgSrc.indexOf("case 'FORM_GATE_PASSED':"));
-        assert(sfHandler.includes("curTok === reqTok"), 'Must require targetToken match');
+        assert(bgSrc.includes("!reqTok || !curTok || reqTok !== curTok"), 'Must require strict targetToken equality');
+        assert(bgSrc.includes("result=REJECTED reason=token_mismatch"), 'Must log token_mismatch on wrong token');
     });
 
     // -------------------------------------------------------------
@@ -165,6 +165,7 @@ async function main() {
     runTest('10. exact active SENDER_FINISHED accepted once', () => {
         const sfHandler = bgSrc.substring(bgSrc.indexOf("case 'SENDER_FINISHED':"), bgSrc.indexOf("case 'FORM_GATE_PASSED':"));
         assert(sfHandler.includes("isTerminalStageAllowed"), 'Must verify allowed terminal stage');
+        assert(sfHandler.includes("campaignState.targetResolve = null;"), 'Must one-shot clear targetResolve');
         assert(sfHandler.includes("resolve(request.result)"), 'Must resolve with request.result');
     });
 
@@ -173,10 +174,9 @@ async function main() {
     // -------------------------------------------------------------
     runTest('11. stale CAPTCHA request from old target rejected', () => {
         const scHandler = bgSrc.substring(bgSrc.indexOf("case 'SOLVE_CAPTCHA':"), bgSrc.indexOf("case 'DISPATCH_PHYSICAL_COORDINATE_CLICK':"));
-        assert(scHandler.includes("[CAPTCHA_STALE_REQUEST]"), 'Must log [CAPTCHA_STALE_REQUEST]');
-        assert(scHandler.includes("action=REJECT"), 'Must reject stale epoch or wrong tab');
-        assert(scHandler.includes("sendResponse({ success: false, error: 'STALE_CAPTCHA_EPOCH' })"),
-            'Must return STALE_CAPTCHA_EPOCH error');
+        assert(scHandler.includes("validateActiveExecution(request, sender, 'SOLVE_CAPTCHA', { checkEpoch: true })"), 'Must validate active execution with checkEpoch');
+        assert(bgSrc.includes("[CAPTCHA_STALE_REQUEST]"), 'Must log [CAPTCHA_STALE_REQUEST]');
+        assert(bgSrc.includes("reqEpoch=${reqEpoch} curEpoch=${curEpoch} action=REJECT reason=epoch_mismatch"), 'Must reject stale epoch');
     });
 
     // -------------------------------------------------------------

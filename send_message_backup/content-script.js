@@ -5320,11 +5320,12 @@
                 logDev(`[FINAL] status=${finalDecision}`, "success");
                 logDev("[STAGE] stage=CONFIRMED_SUCCESS", "success");
                 try {
-                    chrome.runtime.sendMessage({
+                    const sendProg = window.__xpider_sendExecutionMessage || chrome.runtime.sendMessage;
+                    sendProg({
                         action: 'STAGE_PROGRESSION',
                         stage: 'CONFIRMED_SUCCESS',
                         url: window.location.href
-                    }).catch(() => {});
+                    });
                 } catch (_) {}
 
                 // [R6.9E Post-Registration Completion Grace] Maintain page so registration finishes completely
