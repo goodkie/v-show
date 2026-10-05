@@ -17321,12 +17321,136 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
     window.onSpatialRailSliderChange = onSpatialRailSliderInput;
 
     
+    window.requestViewerLandscape = async function(containerElement, triggerLabel = 'VIEWER') {
+      const helper = window.setupWizard?.guidedCaptureController?.riDiagnosticHelper || window.riDiagnosticHelper;
+      if (helper && typeof helper.recordMilestone === 'function') {
+        helper.recordMilestone('LANDSCAPE_REQUESTED', { trigger: triggerLabel, w: window.innerWidth, h: window.innerHeight });
+      }
+      const target = containerElement || document.getElementById('viewer-container') || document.documentElement;
+      if (!document.fullscreenElement && target.requestFullscreen) {
+        try { await target.requestFullscreen(); } catch (fsErr) {
+          console.warn('[Landscape] Fullscreen request note:', fsErr.message);
+        }
+      }
+      if (screen && screen.orientation && typeof screen.orientation.lock === 'function') {
+        try {
+          await screen.orientation.lock('landscape');
+          if (helper && typeof helper.recordMilestone === 'function') {
+            helper.recordMilestone('LANDSCAPE_LOCK_SUCCESS', { trigger: triggerLabel });
+          }
+        } catch (lockErr) {
+          console.warn('[Landscape] Orientation lock note:', lockErr.message);
+          if (helper && typeof helper.recordMilestone === 'function') {
+            helper.recordMilestone('LANDSCAPE_LOCK_REJECTED', { trigger: triggerLabel, error: lockErr.message });
+          }
+        }
+      }
+    };
+
+    window.setupViewerLandscapeSupport = function(container, canvas, viewerInstance, surfaceName = 'VIEWER') {
+      if (!container) return;
+      const isMobile = (typeof window !== 'undefined') && (
+        /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || (window.innerWidth < 850)
+      );
+
+      // Enforce wide 16:9 landscape aspect ratio
+      container.style.aspectRatio = '16 / 9';
+      container.style.width = '100%';
+      container.style.height = 'auto';
+      container.style.maxHeight = '80vh';
+
+      let lsBtn = container.querySelector('.viewer-landscape-btn');
+      if (!lsBtn) {
+        lsBtn = document.createElement('button');
+        lsBtn.className = 'viewer-landscape-btn';
+        lsBtn.type = 'button';
+        lsBtn.style.cssText = [
+          'position: absolute', 'top: 10px', 'right: 10px', 'z-index: 25',
+          'background: rgba(10, 18, 30, 0.85)', 'border: 1px solid #38bdf8',
+          'color: #38bdf8', 'border-radius: 6px', 'padding: 4px 8px',
+          'font-size: 11px', 'font-weight: 700', 'cursor: pointer',
+          'display: flex', 'align-items: center', 'gap: 5px',
+          'backdrop-filter: blur(4px)', 'touch-action: manipulation'
+        ].join(';');
+        lsBtn.innerHTML = '<i class="fa-solid fa-expand"></i> <span>Landscape</span>';
+        container.appendChild(lsBtn);
+      }
+      lsBtn.onclick = (e) => {
+        e.stopPropagation();
+        window.requestViewerLandscape(container, surfaceName);
+      };
+
+      let promptEl = container.querySelector('.viewer-rotate-prompt');
+      if (!promptEl && isMobile && window.innerHeight > window.innerWidth) {
+        promptEl = document.createElement('div');
+        promptEl.className = 'viewer-rotate-prompt';
+        promptEl.style.cssText = [
+          'position: absolute', 'bottom: 12px', 'left: 50%',
+          'transform: translateX(-50%)', 'z-index: 30',
+          'background: rgba(15, 23, 42, 0.94)', 'border: 1px solid #38bdf8',
+          'border-radius: 20px', 'padding: 6px 12px', 'font-size: 11px',
+          'color: #e2e8f0', 'display: flex', 'align-items: center', 'gap: 8px',
+          'box-shadow: 0 4px 14px rgba(0,0,0,0.5)', 'pointer-events: auto',
+          'max-width: 90%'
+        ].join(';');
+        promptEl.innerHTML = `
+          <i class="fa-solid fa-mobile-screen-button" style="color: #38bdf8; transform: rotate(90deg);"></i>
+          <span style="white-space: nowrap;">Rotate phone for 360° view</span>
+          <button type="button" class="btn-lock-ls" style="background: #38bdf8; color: #020617; border: none; border-radius: 12px; padding: 2px 8px; font-size: 10px; font-weight: 800; cursor: pointer;">⛶ Enter</button>
+          <button type="button" class="btn-dismiss-ls" style="background: none; border: none; color: #94a3b8; font-size: 14px; line-height: 1; cursor: pointer; padding: 0 2px;">×</button>
+        `;
+        container.appendChild(promptEl);
+
+        const lockBtn = promptEl.querySelector('.btn-lock-ls');
+        if (lockBtn) {
+          lockBtn.onclick = (e) => {
+            e.stopPropagation();
+            window.requestViewerLandscape(container, surfaceName);
+          };
+        }
+        const dismissBtn = promptEl.querySelector('.btn-dismiss-ls');
+        if (dismissBtn) {
+          dismissBtn.onclick = (e) => {
+            e.stopPropagation();
+            promptEl.style.display = 'none';
+          };
+        }
+      }
+
+      const checkOrientation = () => {
+        const isLandscape = window.innerWidth > window.innerHeight;
+        if (promptEl) promptEl.style.display = isLandscape ? 'none' : 'flex';
+        if (viewerInstance && typeof viewerInstance.handleResize === 'function') {
+          viewerInstance.handleResize();
+        }
+      };
+
+      window.addEventListener('resize', checkOrientation, { passive: true });
+      window.addEventListener('orientationchange', checkOrientation, { passive: true });
+    };
+
     function mountActivePanoramicBoothViewer(projectData, activeBg) {
       if (!activeBg) activeBg = {};
       const previewCand = window.currentSpatialCandidate || window.previewCandidateSnapshot;
-      if (previewCand && previewCand.stitchedPanoramaUrl && !activeBg.stitchedPanoramaUrl) {
-        activeBg.stitchedPanoramaUrl = previewCand.stitchedPanoramaUrl;
-        activeBg.angularAnchors = previewCand.angularAnchors;
+      const wizardJobCand = window.setupWizard?.state?.currentPanoramaJob?.candidate;
+      const wizardVp = window.setupWizard?.state?.viewpoints?.[0];
+
+      if (!activeBg.stitchedPanoramaUrl) {
+        if (wizardJobCand && (wizardJobCand.stitchedPanoramaUrl || wizardJobCand.masterUrl)) {
+          activeBg.stitchedPanoramaUrl = wizardJobCand.stitchedPanoramaUrl || wizardJobCand.masterUrl;
+          activeBg.candidateId = wizardJobCand.candidateId || 'cand-wizard-stitched';
+          activeBg.viewerMode = 'PANORAMIC_IMMERSIVE';
+          activeBg.sourceType = 'PANORAMIC_IMMERSIVE';
+          activeBg.horizontalCoverageDeg = wizardJobCand.horizontalCoverageDeg || 360;
+        } else if (wizardVp && wizardVp.panoramaUrl) {
+          activeBg.stitchedPanoramaUrl = wizardVp.panoramaUrl;
+          activeBg.candidateId = 'cand-wizard-vp1';
+          activeBg.viewerMode = 'PANORAMIC_IMMERSIVE';
+          activeBg.sourceType = 'PANORAMIC_IMMERSIVE';
+        } else if (previewCand && previewCand.stitchedPanoramaUrl) {
+          activeBg.stitchedPanoramaUrl = previewCand.stitchedPanoramaUrl;
+          activeBg.angularAnchors = previewCand.angularAnchors;
+        }
       }
 
       if (typeof emitSpatialTextureLifecycle === 'function') {
@@ -17364,6 +17488,10 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
           }
         }
       });
+
+      if (typeof window.setupViewerLandscapeSupport === 'function') {
+        window.setupViewerLandscapeSupport(container, canvas, window.activeSpatialBoothRenderer, 'OFFICIAL_ACTIVE');
+      }
     }
     window.mountActivePanoramicBoothViewer = mountActivePanoramicBoothViewer;
 
@@ -20552,6 +20680,61 @@ class RILiveDiagnosticHelper {
     }
   }
 
+  recordMeasuredCameraDimensions(width, height) {
+    if (width > 0 && height > 0) {
+      this.measuredCaptureDimensions = { width, height };
+    }
+  }
+
+  recordMilestone(type, details = {}) {
+    if (!this.isEnabled) return;
+    const entry = { type, details, timestamp: Date.now(), elapsedMs: Date.now() - this.startTime };
+    if (!this.milestones) this.milestones = [];
+    if (this.milestones.length < 500) this.milestones.push(entry);
+  }
+
+  recordUploadStatus(candidateId, status, error = null) {
+    if (!this.isEnabled) return;
+    if (!this.uploadStatuses) this.uploadStatuses = [];
+    if (this.uploadStatuses.length < 200) {
+      this.uploadStatuses.push({
+        candidateId,
+        status,
+        error: error ? (error.message || String(error)) : null,
+        timestamp: Date.now()
+      });
+    }
+  }
+
+  recordPanoramaJob(jobId, status, progress, url = null, error = null) {
+    if (!this.isEnabled) return;
+    if (!this.panoramaJobs) this.panoramaJobs = [];
+    if (this.panoramaJobs.length < 200) {
+      this.panoramaJobs.push({
+        jobId,
+        status,
+        progress,
+        url,
+        error: error ? (error.message || String(error)) : null,
+        timestamp: Date.now()
+      });
+    }
+  }
+
+  recordViewerOutcome(surface, status, url = null, error = null) {
+    if (!this.isEnabled) return;
+    if (!this.viewerOutcomes) this.viewerOutcomes = [];
+    if (this.viewerOutcomes.length < 100) {
+      this.viewerOutcomes.push({
+        surface,
+        status,
+        url,
+        error: error ? (error.message || String(error)) : null,
+        timestamp: Date.now()
+      });
+    }
+  }
+
   initSession(sessionEpoch = 0) {
     if (!this.isEnabled) return;
     this.sessionId = 'RI-DIAG-' + Date.now() + '-' + Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -20567,6 +20750,11 @@ class RILiveDiagnosticHelper {
     this.allEvents = [];
     this.allClosures = [];
     this.sessionEpoch = sessionEpoch;
+    this.milestones = [];
+    this.uploadStatuses = [];
+    this.panoramaJobs = [];
+    this.viewerOutcomes = [];
+    this.measuredCaptureDimensions = null;
 
     if (typeof document !== 'undefined') {
       this.mountUI();
@@ -20619,6 +20807,7 @@ class RILiveDiagnosticHelper {
         <div style="display:flex; gap: 4px;">
           <button id="ri-copy-btn" type="button" style="flex:1; background: #132430; border: 1px solid #00ffcc; color: #00ffcc; padding: 4px 6px; border-radius: 4px; font-size: 10px; cursor: pointer; font-weight: bold;">COPY LOG</button>
           <button id="ri-dl-btn" type="button" style="flex:1; background: #132430; border: 1px solid #00ffcc; color: #00ffcc; padding: 4px 6px; border-radius: 4px; font-size: 10px; cursor: pointer; font-weight: bold;">DL JSON</button>
+          <button id="ri-retry-btn" type="button" style="flex:1; background: #2b1a1a; border: 1px solid #ff5555; color: #ff8888; padding: 4px 6px; border-radius: 4px; font-size: 10px; cursor: pointer; font-weight: bold;">RETRY</button>
         </div>
         <button id="ri-frames-btn" type="button" style="width:100%; background: #1a2a1a; border: 1px solid #00ff88; color: #00ff88; padding: 4px 6px; border-radius: 4px; font-size: 10px; cursor: pointer; font-weight: bold;">📷 DOWNLOAD FRAME PAIR</button>
       </div>
@@ -20632,6 +20821,17 @@ class RILiveDiagnosticHelper {
       copyBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         this.copyLog(copyBtn);
+      });
+    }
+
+    const retryBtn = hud.querySelector('#ri-retry-btn');
+    if (retryBtn) {
+      retryBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const ctrl = window.setupWizard?.guidedCaptureController || window.guidedCaptureController;
+        if (ctrl) {
+          ctrl.resetCaptureForRetry('RI_HUD_RETRY');
+        }
       });
     }
 
@@ -20804,6 +21004,7 @@ class RILiveDiagnosticHelper {
           // 1. Live videoElement priority
           if (ctrl.videoElement) {
             if (ctrl.videoElement.videoWidth > 0 && ctrl.videoElement.videoHeight > 0) {
+              this.recordMeasuredCameraDimensions(ctrl.videoElement.videoWidth, ctrl.videoElement.videoHeight);
               return { width: ctrl.videoElement.videoWidth, height: ctrl.videoElement.videoHeight };
             }
             return { width: 0, height: 0 };
@@ -20826,6 +21027,11 @@ class RILiveDiagnosticHelper {
   }
 
   getFullDiagnosticDump() {
+    const liveDims = this.getCameraDimensions();
+    const ctrl = (typeof window !== 'undefined') ? (window.setupWizard?.guidedCaptureController || window.guidedCaptureController) : null;
+    const measuredDims = this.measuredCaptureDimensions || (ctrl && ctrl.measuredCameraDimensions) || null;
+    const finalDims = (liveDims && liveDims.width > 0 && liveDims.height > 0) ? liveDims : (measuredDims || liveDims);
+
     return {
       sessionId: this.sessionId,
       commitSha: (typeof window !== 'undefined' && window.__3DZ_BUILD_INFO__?.gitCommit) ? window.__3DZ_BUILD_INFO__.gitCommit : 'UNKNOWN',
@@ -20834,8 +21040,13 @@ class RILiveDiagnosticHelper {
         userAgent: (typeof navigator !== 'undefined') ? navigator.userAgent : '',
         viewport: (typeof window !== 'undefined') ? { width: window.innerWidth, height: window.innerHeight } : {},
         devicePixelRatio: (typeof window !== 'undefined') ? (window.devicePixelRatio || 1) : 1,
-        cameraDimensions: this.getCameraDimensions()
+        cameraDimensions: finalDims,
+        measuredCaptureDimensions: measuredDims
       },
+      postCaptureMilestones: this.milestones || [],
+      candidateUploads: this.uploadStatuses || [],
+      panoramaJobs: this.panoramaJobs || [],
+      viewerViews: this.viewerOutcomes || [],
       priorSessionSnapshot: (typeof window !== 'undefined' && window.__R120_LAST_RI_SNAPSHOT__) ? window.__R120_LAST_RI_SNAPSHOT__ : null,
       summary: {
         totalEvents: this.allEvents.length,
@@ -21226,6 +21437,7 @@ class GuidedCaptureController {
       window.__RI_EVALUATED_REF_ANGLE__ = null;
       window.__RI_REF_DATAURLS__ = {};
     }
+    this.measuredCameraDimensions = null;
     this._referenceFrames = {};
 
     // Freeze previous attempt in attempts history to preserve forensic continuity
@@ -22079,6 +22291,12 @@ class GuidedCaptureController {
     // C12.9-P2: Preserve aspect ratio: scale long side to 320
     const vw = this.videoElement.videoWidth;
     const vh = this.videoElement.videoHeight;
+    if (vw > 0 && vh > 0) {
+      this.measuredCameraDimensions = { width: vw, height: vh };
+      if (this.riDiagnosticHelper && typeof this.riDiagnosticHelper.recordMeasuredCameraDimensions === 'function') {
+        this.riDiagnosticHelper.recordMeasuredCameraDimensions(vw, vh);
+      }
+    }
     let targetW, targetH;
     if (vw >= vh) {
       targetW = 320;
@@ -22176,6 +22394,10 @@ class GuidedCaptureController {
     const vw = this.videoElement.videoWidth || 1920;
     const vh = this.videoElement.videoHeight || 1080;
     if (vw === 0 || vh === 0) return null;
+    this.measuredCameraDimensions = { width: vw, height: vh };
+    if (this.riDiagnosticHelper && typeof this.riDiagnosticHelper.recordMeasuredCameraDimensions === 'function') {
+      this.riDiagnosticHelper.recordMeasuredCameraDimensions(vw, vh);
+    }
 
     if (this.fullCaptureCanvas.width !== vw || this.fullCaptureCanvas.height !== vh) {
       this.fullCaptureCanvas.width = vw;
@@ -22736,6 +22958,9 @@ class GuidedCaptureController {
 
       if (res.ok) {
         cand.uploadStatus = 'PERSISTED';
+        if (this.riDiagnosticHelper && typeof this.riDiagnosticHelper.recordUploadStatus === 'function') {
+          this.riDiagnosticHelper.recordUploadStatus(cand.candidateId, 'PERSISTED');
+        }
         cand.serverAssetUrl = '/data/guided_capture_keyframes/' + this.diagnosticSessionId + '/candidates/' + cand.candidateId + '.jpg';
         this.persistedCandidateCount = (this.persistedCandidateCount || 0) + 1;
         this.telemetry.persistedCandidateCount = this.persistedCandidateCount;
@@ -22772,6 +22997,12 @@ class GuidedCaptureController {
 
   async persistCaptureOutput() {
     try {
+      if (this.riDiagnosticHelper && typeof this.riDiagnosticHelper.recordMilestone === 'function') {
+        this.riDiagnosticHelper.recordMilestone('PERSIST_OUTPUT_START', {
+          candidateCount: this.candidateFrames ? this.candidateFrames.length : 0,
+          canonicalCount: this.canonicalKeyframes ? this.canonicalKeyframes.length : 0
+        });
+      }
       const projectId = (window.activeProjectData && window.activeProjectData.id) ||
                         new URLSearchParams(window.location.search).get('projectId') ||
                         'prj-free-b0c6f3ea';
@@ -23478,6 +23709,12 @@ class SetupWizardController {
   close() {
     document.body.style.overflow = '';
     if (this.modal) this.modal.style.display = 'none';
+    if (this.state && this.state.panoramaJobStatus === 'READY' && window.activeProjectData) {
+      if (typeof window.mountActivePanoramicBoothViewer === 'function') {
+        const bg = (typeof getActiveBoothBackground === 'function') ? getActiveBoothBackground(window.activeProjectData) : null;
+        window.mountActivePanoramicBoothViewer(window.activeProjectData, bg);
+      }
+    }
     this.saveState();
   }
 
@@ -23906,6 +24143,13 @@ class SetupWizardController {
     };
 
     controller.onComplete = async (result) => {
+      const helper = controller.riDiagnosticHelper || window.riDiagnosticHelper;
+      if (helper && typeof helper.recordMilestone === 'function') {
+        helper.recordMilestone('CONTROLLER_ON_COMPLETE', {
+          canonicalKeyframeCount: result?.canonicalKeyframeCount,
+          closureConfirmed: result?.closureConfirmed
+        });
+      }
       if (this._captureSessionEpoch !== sessionEpoch) {
         console.warn('[SetupWizard] Ignoring onComplete from stale session epoch:', sessionEpoch, 'current:', this._captureSessionEpoch);
         return;
@@ -24171,6 +24415,13 @@ class SetupWizardController {
 
   async startPanoramaFromGuidedCapture(captureResult) {
     console.log('[SetupWizard] startPanoramaFromGuidedCapture called for session:', captureResult?.captureSessionId);
+    const helper = this.guidedCaptureController?.riDiagnosticHelper || window.riDiagnosticHelper;
+    if (helper && typeof helper.recordMilestone === 'function') {
+      helper.recordMilestone('PANORAMA_START_REQUEST', {
+        captureSessionId: captureResult?.captureSessionId,
+        canonicalKeyframeCount: captureResult?.canonicalKeyframeCount || (captureResult?.keyframes ? captureResult.keyframes.length : 0)
+      });
+    }
     this.state.activeCaptureSessionId = captureResult?.captureSessionId;
     this.state.canonicalKeyframeCount = captureResult?.canonicalKeyframeCount || (captureResult?.keyframes ? captureResult.keyframes.length : 0);
     this.state.panoramaJobStatus = 'STARTING';
@@ -24210,6 +24461,9 @@ class SetupWizardController {
     }
 
     console.log('[SetupWizard] Panorama job successfully created:', data.jobId);
+    if (helper && typeof helper.recordMilestone === 'function') {
+      helper.recordMilestone('PANORAMA_START_ACCEPTED', { jobId: data.jobId, status: data.status });
+    }
     this.state.currentPanoramaJobId = data.jobId;
     this.state.panoramaJobStatus = data.status || 'QUEUED';
 
@@ -24242,13 +24496,44 @@ class SetupWizardController {
           clearInterval(this._panoPollInterval);
           this.state.panoramaJobStatus = 'READY';
           this.state.currentPanoramaJob = job;
+          const panoUrl = job.candidate?.stitchedPanoramaUrl || job.candidate?.masterUrl;
           const vp = this.state.viewpoints[0];
           if (vp) {
             vp.status = 'STITCHED';
-            if (job.candidate?.stitchedPanoramaUrl) vp.panoramaUrl = job.candidate.stitchedPanoramaUrl;
+            if (panoUrl) vp.panoramaUrl = panoUrl;
+          }
+          if (window.activeProjectData) {
+            window.activeProjectData.viewerMode = 'PANORAMIC_IMMERSIVE';
+            const versionId = 'pano-ver-' + (job.candidate?.candidateId || Date.now());
+            window.activeProjectData.activePanoramaVersionId = versionId;
+            if (!Array.isArray(window.activeProjectData.panoramaVersions)) {
+              window.activeProjectData.panoramaVersions = [];
+            }
+            const panoVersionObj = {
+              id: versionId,
+              versionId: versionId,
+              candidateId: job.candidate?.candidateId || 'cand-stitched',
+              stitchedPanoramaUrl: panoUrl,
+              activeBackgroundUrl: panoUrl,
+              textureUrl: panoUrl,
+              sourceType: 'PANORAMIC_IMMERSIVE',
+              viewerMode: 'PANORAMIC_IMMERSIVE',
+              horizontalCoverageDeg: job.candidate?.horizontalCoverageDeg || 360,
+              full360Qualified: true,
+              angularAnchors: job.candidate?.angularAnchors || []
+            };
+            window.activeProjectData.panoramaVersions.unshift(panoVersionObj);
+          }
+          const helper = this.guidedCaptureController?.riDiagnosticHelper || window.riDiagnosticHelper;
+          if (helper && typeof helper.recordPanoramaJob === 'function') {
+            helper.recordPanoramaJob(jobId, 'READY', 100, panoUrl, null);
           }
           this.renderStep7ViewpointReady();
         } else if (job.status === 'FAILED') {
+          const helper = this.guidedCaptureController?.riDiagnosticHelper || window.riDiagnosticHelper;
+          if (helper && typeof helper.recordPanoramaJob === 'function') {
+            helper.recordPanoramaJob(jobId, 'FAILED', job.progress || 0, null, job.userMessage || job.error);
+          }
           clearInterval(this._panoPollInterval);
           this.state.panoramaJobStatus = 'FAILED';
           this.renderPanoramaJobFailed(job);
@@ -24384,6 +24669,9 @@ class SetupWizardController {
         candidate: candObj,
         hostMode: 'PREVIEW'
       });
+      if (typeof window.setupViewerLandscapeSupport === 'function') {
+        window.setupViewerLandscapeSupport(container, canvas, this.step7Viewer, 'PREVIEW_STEP7');
+      }
     }
   }
 
@@ -24533,6 +24821,9 @@ class SetupWizardController {
         candidate: candObj,
         hostMode: 'PREVIEW'
       });
+      if (typeof window.setupViewerLandscapeSupport === 'function') {
+        window.setupViewerLandscapeSupport(s11Container, s11Canvas, this.step11Viewer, 'PREVIEW_STEP11');
+      }
     }
   }
 
@@ -24639,6 +24930,10 @@ class SetupWizardController {
       this.close();
       if (typeof window.togglePreviewMode === 'function') {
         window.togglePreviewMode(true);
+      }
+      if (typeof window.mountActivePanoramicBoothViewer === 'function' && window.activeProjectData) {
+        const bg = (typeof getActiveBoothBackground === 'function') ? getActiveBoothBackground(window.activeProjectData) : null;
+        window.mountActivePanoramicBoothViewer(window.activeProjectData, bg);
       }
     };
     this.content.innerHTML = `
@@ -25066,12 +25361,12 @@ window.saveBoothMapEditorChanges = async function() {
 setTimeout(() => {
   try {
     const urlParams = new URLSearchParams(window.location.search);
-    const hasWizardIntent = urlParams.get('step') !== null || urlParams.get('openWizard') === '1' || urlParams.get('mode') === 'booth-tour-wizard';
+    const hasWizardIntent = urlParams.get('step') !== null || urlParams.get('openWizard') === '1' || urlParams.get('mode') === 'booth-tour-wizard' || urlParams.get('guided') === '1';
     if (hasWizardIntent) {
       const stepParam = urlParams.get('step');
-      let targetStep = stepParam ? parseInt(stepParam, 10) : 1;
-      // If coming from landing capture CTA with step=1 or step=6, route to Step 6 real capture
-      if (urlParams.get('source') === 'landing' && (targetStep === 1 || targetStep === 6)) {
+      let targetStep = stepParam ? parseInt(stepParam, 10) : (urlParams.get('guided') === '1' ? 6 : 1);
+      // If coming from landing capture CTA with step=1 or step=6, or guided=1, route to Step 6 real capture
+      if ((urlParams.get('source') === 'landing' && (targetStep === 1 || targetStep === 6)) || urlParams.get('guided') === '1') {
         targetStep = 6;
       }
       openMultiPointTourWizard(targetStep);
