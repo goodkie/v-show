@@ -1,6 +1,6 @@
 /**
  * build-provenance.js
- * Immutable Build Provenance & Module Verification (Issue #6 R6.8 P0-1)
+ * Immutable Build Provenance & Module Verification (Issue #6 R6.9F.1)
  */
 
 (function (root, factory) {
@@ -15,17 +15,17 @@
 
     const BUILD_INFO = {
         branch: 'upgrade/phase-0-1',
-        implementationHead: '8963ece6f069562b7af028e354c75f9eac15857b',
-        implementationHeadShort: '8963ece',
-        head: '8963ece6f069562b7af028e354c75f9eac15857b',
-        headShort: '8963ece',
+        implementationHead: '48c23c7f8b0e81099d45aeb584e65d8713db7b37',
+        implementationHeadShort: '48c23c7',
+        head: '48c23c7f8b0e81099d45aeb584e65d8713db7b37',
+        headShort: '48c23c7',
         rollbackBase: 'b8e1d0362946cd6ca8c77c1aa990998da62c2c91',
         manifestVersion: 3,
-        buildId: 'R6.9F-20261005-RUNTIME-SUBMIT-COUNTERS',
-        builtAt: '2026-10-05T08:50:00.000Z',
+        buildId: 'R6.9F.1-20261005-RUNTIME-SUBMIT-COUNTERS',
+        builtAt: '2026-10-05T14:30:00.000Z',
         provenanceSchema: 2,
         modules: {
-            backgroundSha: 'e57b3a6abad42e26ee80b3535e92f3b9feeeda6621f207f65675f058e9d04052',
+            backgroundSha: 'f3ba9ce0039b2e91d5050dc51ff782539d172469e679f0fe59e1ca4d1d30fde7',
             contentScriptSha: '0db24eac12580d81500680d32f654da8971d3231ab19c19cf2b12a5e37a5c09e',
             emailCollectorSha: '3f1147a379e159e7777158f2caa74cc8d40b2a0b0eb2c244f440af379cb5c9c9',
             historyStoreSha: 'c31dba092c67a6bac6d8fffb616109328e50c5a13e73110bc4c3720060e9c406',

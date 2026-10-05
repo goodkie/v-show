@@ -1703,9 +1703,9 @@ async function verifyBuildHandshake() {
     const localInfo = (typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO)
         ? BuildProvenance.BUILD_INFO
         : {
-            implementationHead: '8963ece6f069562b7af028e354c75f9eac15857b',
-            headShort: '8963ece',
-            buildId: 'R6.9F-20261005-RUNTIME-SUBMIT-COUNTERS',
+            implementationHead: '48c23c7f8b0e81099d45aeb584e65d8713db7b37',
+            headShort: '48c23c7',
+            buildId: 'R6.9F.1-20261005-RUNTIME-SUBMIT-COUNTERS',
             manifestVersion: 3
         };
 
@@ -2347,7 +2347,7 @@ async function startCampaign() {
 
         const localInfo = (typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO)
             ? BuildProvenance.BUILD_INFO
-            : { implementationHead: '8963ece6f069562b7af028e354c75f9eac15857b', buildId: 'R6.9F-20261005-RUNTIME-SUBMIT-COUNTERS', manifestVersion: 3 };
+            : { implementationHead: '48c23c7f8b0e81099d45aeb584e65d8713db7b37', buildId: 'R6.9F.1-20261005-RUNTIME-SUBMIT-COUNTERS', manifestVersion: 3 };
 
         chrome.runtime.sendMessage({
             action: 'START_CAMPAIGN',

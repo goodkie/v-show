@@ -1281,14 +1281,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 ? BuildProvenance.BUILD_INFO
                 : {
                     branch: 'upgrade/phase-0-1',
-                    implementationHead: '8963ece6f069562b7af028e354c75f9eac15857b',
-                    implementationHeadShort: '8963ece',
-                    head: '8963ece6f069562b7af028e354c75f9eac15857b',
-                    headShort: '8963ece',
+                    implementationHead: '48c23c7f8b0e81099d45aeb584e65d8713db7b37',
+                    implementationHeadShort: '48c23c7',
+                    head: '48c23c7f8b0e81099d45aeb584e65d8713db7b37',
+                    headShort: '48c23c7',
                     rollbackBase: 'b8e1d0362946cd6ca8c77c1aa990998da62c2c91',
                     manifestVersion: 3,
-                    buildId: 'R6.9F-20261005-RUNTIME-SUBMIT-COUNTERS',
-                    builtAt: '2026-10-05T08:50:00.000Z',
+                    buildId: 'R6.9F.1-20261005-RUNTIME-SUBMIT-COUNTERS',
+                    builtAt: '2026-10-05T14:30:00.000Z',
                     provenanceSchema: 2,
                     modules: {}
                 };
@@ -1302,8 +1302,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         case 'START_CAMPAIGN': {
             // [Issue #6 R6.9F] Fail-Closed Build Handshake Verification
             const liveBp = (typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO) ? BuildProvenance.BUILD_INFO : null;
-            const liveHead = liveBp ? liveBp.implementationHead : '8963ece6f069562b7af028e354c75f9eac15857b';
-            const liveBuild = liveBp ? liveBp.buildId : 'R6.9F-20261005-RUNTIME-SUBMIT-COUNTERS';
+            const liveHead = liveBp ? liveBp.implementationHead : '48c23c7f8b0e81099d45aeb584e65d8713db7b37';
+            const liveBuild = liveBp ? liveBp.buildId : 'R6.9F.1-20261005-RUNTIME-SUBMIT-COUNTERS';
             const reqHead = request.expectedImplementationHead;
             const reqBuild = request.expectedBuildId;
             const reqManifest = request.expectedManifestVersion;
