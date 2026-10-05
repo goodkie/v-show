@@ -337,10 +337,10 @@ document.getElementById('contact-form').addEventListener('submit', function(e) {
       const st = await evalSw(`(() => ({
         active: campaignState.isActive,
         attemptId: campaignState.currentAttempt ? campaignState.currentAttempt.attemptId : null,
-        targetToken: campaignState.activeTargetExecution ? campaignState.activeTargetExecution.targetToken : null,
+        targetToken: campaignState.currentTargetToken || (campaignState.currentAttempt ? campaignState.currentAttempt.targetToken : null),
         campaignRunId: campaignState.campaignRunId,
         sessionId: campaignState.sessionId,
-        tabId: campaignState.activeTabId || campaignState.currentTabId,
+        tabId: campaignState.currentTabId || campaignState.targetTabId,
         boundaryCount: Object.keys(campaignState.submitBoundaryReached || {}).length
       }))()`);
       rec(`[DUP_POLL][${i}s] active=${st.active} attemptId=${st.attemptId} boundaryCount=${st.boundaryCount}`);
@@ -365,18 +365,49 @@ document.getElementById('contact-form').addEventListener('submit', function(e) {
     }
 
     // Step C2: REAL SECOND SUBMIT ATTEMPT under the identical execution identity (Blocker 1)
+    // Dispatched from inside the target tab (dupTabId) so sender.tab.id matches validateActiveExecution
     let secondSubmitRes = null;
-    if (dupAttemptId) {
-      secondSubmitRes = await evalPop(`new Promise(r => chrome.runtime.sendMessage({
-        action: 'STAGE_PROGRESSION',
-        stage: 'SUBMIT_ATTEMPT_STARTED',
-        attemptId: '${dupAttemptId}',
-        targetToken: '${dupTargetToken}',
-        campaignRunId: '${dupCampaignRunId}',
-        sessionId: ${dupSessionId},
-        tabId: ${dupTabId}
-      }, r))`);
+    let pageActivationCount = null;
+    if (dupAttemptId && dupTabId) {
+      const execRes = await evalSw(`(async () => {
+        const tabId = ${dupTabId};
+        const req = {
+          action: 'STAGE_PROGRESSION',
+          stage: 'SUBMIT_ATTEMPT_STARTED',
+          attemptId: '${dupAttemptId}',
+          targetToken: '${dupTargetToken}',
+          campaignRunId: '${dupCampaignRunId}',
+          sessionId: ${dupSessionId}
+        };
+        try {
+          // 1. Send second submit from isolated world where chrome.runtime.sendMessage is available
+          const [submitCall] = await chrome.scripting.executeScript({
+            target: { tabId },
+            func: (payload) => new Promise(res => chrome.runtime.sendMessage(payload, res)),
+            args: [req]
+          });
+          // 2. Query activation count from MAIN world where page script defined window.__activationCount
+          const [countCall] = await chrome.scripting.executeScript({
+            target: { tabId },
+            world: 'MAIN',
+            func: () => {
+              if (window.__activationCount !== undefined && window.__activationCount !== null) {
+                return window.__activationCount;
+              }
+              const slot = document.getElementById('result-slot');
+              return (slot && slot.children.length > 0) ? 1 : 0;
+            }
+          });
+          return { submitRes: submitCall?.result, count: countCall?.result };
+        } catch (e) {
+          return { error: e.message };
+        }
+      })()`);
+
+      secondSubmitRes = execRes?.submitRes;
+      pageActivationCount = execRes?.count;
       rec(`[DUP_SECOND_SUBMIT_RES] ${JSON.stringify(secondSubmitRes)}`);
+      rec(`[NATURAL_DUP_ACTIVATION_COUNT] count=${pageActivationCount}`);
     }
 
     // Step D: Wait for mini-campaign to settle
