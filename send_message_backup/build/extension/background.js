@@ -144,6 +144,11 @@ let campaignState = {
     isPaused: false,
     activeTimeoutId: null,
     currentTabId: null,
+    targetTabId: null,
+    currentTargetToken: null,
+    currentTargetStage: null,
+    captchaEpoch: 1, // [Issue #6 R6.9E] Scoped solver epoch
+    captchaEpochBlockedErrors: {}, // [Issue #6 R6.9E] Permanent/config error suppression per epoch
     visitedUrls: [],
     successfulUrls: [],
     sessionId: 0,
@@ -153,7 +158,7 @@ let campaignState = {
     targetResolve: null,
     targetReady: null,
     currentDiscoveryCtx: null,
-    currentAttempt: null, // [v1.2.0 Intent Ledger] { url, attemptId, status: 'SUBMIT_PENDING'|'RESOLVED', reasonCode, ts }
+    currentAttempt: null, // [v1.2.0 Intent Ledger] { url, attemptId, status: 'PREPARING'|'SUBMIT_PENDING'|'RESOLVED', reasonCode, ts }
     focusActiveTargetTab: true, // [Hotfix R2] Auto-focus campaign target tab
     // [R6.9A Authoritative Real-Time Campaign Counters (Ledger-Derived)]
     counters: {
@@ -173,6 +178,40 @@ let campaignState = {
 };
 
 let coreRuntimeRefErrors = {};
+
+// [Issue #6 R6.9E] Authoritative single-writer counter synchronization strictly from HistoryStore ledger
+async function syncCampaignCountersFromLedger(hsInstance = null) {
+    try {
+        const hs = hsInstance || await getHistoryStoreInstance();
+        if (!hs) return campaignState.counters;
+        const stats = hs.getLedgerStats('currentRun', campaignState.campaignRunId);
+        
+        campaignState.counters.success = stats.success;
+        campaignState.counters.failed = stats.failure;
+        campaignState.counters.deliveryUnknown = stats.unknown;
+        campaignState.counters.timeout = stats.timeout;
+        campaignState.counters.skipped = stats.skipped;
+        campaignState.counters.paused = stats.paused;
+        campaignState.counters.completed = stats.completed;
+        campaignState.counters.failureBreakdown = { ...stats.failureBreakdown };
+
+        // inProgress: exactly 1 if active target in flight and not paused, else 0
+        const inProgress = (campaignState.isActive && !campaignState.isPaused && campaignState.currentAttempt) ? 1 : 0;
+        campaignState.counters.inProgress = inProgress;
+
+        // [Issue #6 R6.9E Invariant]: total = executable targets in this run
+        // remaining = Math.max(0, total - completed)
+        campaignState.counters.remaining = Math.max(0, campaignState.counters.total - stats.completed);
+        campaignState.successCount = stats.success;
+
+        await persistCounters();
+        broadcastCounters();
+        return campaignState.counters;
+    } catch (e) {
+        console.error('[syncCampaignCountersFromLedger] failed:', e);
+        return campaignState.counters;
+    }
+}
 
 function broadcastCounters() {
     chrome.runtime.sendMessage({
@@ -1166,7 +1205,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     headShort: 'b97d85e',
                     rollbackBase: 'b8e1d0362946cd6ca8c77c1aa990998da62c2c91',
                     manifestVersion: 3,
-                    buildId: 'R6.9D-20261004-OUTCOME',
+                    buildId: 'R6.9E-20261004-LIFECYCLE',
                     builtAt: '2026-10-04T08:35:00.000Z',
                     provenanceSchema: 2,
                     modules: {}
@@ -1183,7 +1222,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             const provLogs = (typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.getBuildProvenanceLogs === 'function')
                 ? BuildProvenance.getBuildProvenanceLogs()
                 : [
-                    "[BUILD_ID] branch=upgrade/phase-0-1 implementationHead=b97d85ecf026221a85d0ef880a2743cb98ec3059 manifestVersion=3 buildId=R6.9D-20261004-OUTCOME builtAt=2026-10-04T08:35:00.000Z"
+                    "[BUILD_ID] branch=upgrade/phase-0-1 implementationHead=b97d85ecf026221a85d0ef880a2743cb98ec3059 manifestVersion=3 buildId=R6.9E-20261004-LIFECYCLE builtAt=2026-10-04T08:35:00.000Z"
                 ];
             for (const plog of provLogs) {
                 console.log(plog);
@@ -1310,29 +1349,62 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             return true;
 
         case 'SENDER_FINISHED':
-            // [v18.24.0] Direct Route: Resolve current target process from main listener
-            if (campaignState.targetResolve) {
-                const isTabMatch = !sender.tab || sender.tab.id === campaignState.currentTabId || sender.tab.id === campaignState.targetTabId || (campaignOwnedTabIds && campaignOwnedTabIds.has(sender.tab.id));
-                if (isTabMatch) {
+            // [Issue #6 R6.9E B3] Strict Terminal Barrier: Accept only from exact active target and execution identity
+            (() => {
+                const sTab = sender && sender.tab;
+                const reqAtt = request.attemptId;
+                const reqTok = request.targetToken;
+                const curAtt = campaignState.currentAttempt;
+                const curTabId = campaignState.currentTabId;
+                const curTok = campaignState.currentTargetToken;
+                const curStage = campaignState.currentTargetStage;
+
+                // 1. Mandatory sender.tab existence and exact tab match
+                const isTabMatch = sTab && (sTab.id === curTabId);
+                // 2. Identity match: if attemptId was sent, it must match
+                const isAttemptMatch = !curAtt || !reqAtt || (curAtt.attemptId === reqAtt);
+                const isTokenMatch = !curTok || !reqTok || (curTok === reqTok);
+
+                // 3. Stage authority: must be at allowed terminal stage or explicit failure/skip
+                const allowedTerminalStages = ['VERIFYING', 'CONFIRMED_SUCCESS', 'SUBMITTING', 'SUBMIT_TRIGGERED'];
+                const isTerminalStageAllowed = allowedTerminalStages.includes(curStage) || 
+                    (request.result && (!request.result.success || request.result.error || request.result.reasonCode === 'PREPARING_REQUEUE'));
+
+                if (!isTabMatch || !isAttemptMatch || !isTokenMatch || !isTerminalStageAllowed) {
+                    logBg(null, `[STALE_TARGET_EVENT] action=SENDER_FINISHED senderTab=${sTab ? sTab.id : 'none'} expectedTab=${curTabId} attempt=${reqAtt} expectedAttempt=${curAtt?.attemptId} stage=${curStage} result=REJECTED`, 'warning');
+                    sendResponse({ success: false, reason: 'STALE_OR_INVALID_STAGE' });
+                    return;
+                }
+
+                if (campaignState.targetResolve) {
                     const resolve = campaignState.targetResolve;
                     resolve(request.result);
                     sendResponse({ success: true });
+                } else {
+                    sendResponse({ success: false, reason: 'NO_TARGET_RESOLVER' });
                 }
-            }
+            })();
             return true;
 
         case 'FORM_GATE_PASSED':
-            if (sender.tab && sender.tab.id === campaignState.currentTabId) {
-                const cUrl = request.contactPageUrl || sender.tab.url;
-                const fUrl = request.formPageUrl || sender.tab.url;
+            (() => {
+                const sTab = sender && sender.tab;
+                const curTabId = campaignState.currentTabId;
+                if (!sTab || sTab.id !== curTabId) {
+                    logBg(null, `[STALE_TARGET_EVENT] action=FORM_GATE_PASSED senderTab=${sTab ? sTab.id : 'none'} expectedTab=${curTabId} attempt=${request.attemptId} expectedAttempt=${campaignState.currentAttempt?.attemptId} result=REJECTED`, 'warning');
+                    sendResponse({ success: false, reason: 'STALE_TARGET' });
+                    return;
+                }
+                const cUrl = request.contactPageUrl || sTab.url;
+                const fUrl = request.formPageUrl || sTab.url;
                 if (campaignState.currentDiscoveryCtx) {
                     campaignState.currentDiscoveryCtx.selectedContactUrl = cUrl;
                     campaignState.currentDiscoveryCtx.selectedFormUrl = fUrl;
                     campaignState.currentDiscoveryCtx.committedContactUrl = cUrl;
                     campaignState.currentDiscoveryCtx.committedFormUrl = fUrl;
                 }
-                logBg(sender.tab.id, `[CONTACT_COMMIT] contactPageUrl=${cUrl}`, "info");
-                logBg(sender.tab.id, `[FORM_COMMIT] formPageUrl=${fUrl}`, "info");
+                logBg(sTab.id, `[CONTACT_COMMIT] contactPageUrl=${cUrl}`, "info");
+                logBg(sTab.id, `[FORM_COMMIT] formPageUrl=${fUrl}`, "info");
 
                 // [Issue #6 R6.8 P1-2] Immediate commit to active HistoryStore attempt
                 if (campaignState.currentAttempt && campaignState.currentAttempt.attemptId) {
@@ -1348,39 +1420,64 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                         }
                     }).catch(() => {});
                 }
-
                 sendResponse({ success: true });
-            }
+            })();
             return true;
 
         case 'STAGE_PROGRESSION':
-            // [Issue #6 R6.5] Standardized pipeline metrics logging and target stage tracking
-            if (sender.tab && request.stage) {
-                campaignState.currentTargetStage = request.stage;
-                const activeStages = ['ACTIVE_FORM', 'FILLING', 'CAPTCHA', 'FINAL_AUDIT', 'SUBMIT_ATTEMPT_STARTED', 'SUBMITTING', 'SUBMIT_TRIGGERED', 'VERIFYING'];
-                if (activeStages.includes(request.stage)) {
-                    if (chrome.alarms) {
-                        chrome.alarms.create(`xpider_watchdog_${sender.tab.id}_${campaignState.sessionId}`, { delayInMinutes: 1 });
+            // [Issue #6 R6.5 & R6.9E B1/B2] Standardized pipeline metrics & Authoritative Submit Boundary
+            (async () => {
+                const sTab = sender && sender.tab;
+                const curTabId = campaignState.currentTabId;
+                if (!sTab || sTab.id !== curTabId) {
+                    logBg(null, `[STALE_TARGET_EVENT] action=STAGE_PROGRESSION senderTab=${sTab ? sTab.id : 'none'} expectedTab=${curTabId} attempt=${request.attemptId} expectedAttempt=${campaignState.currentAttempt?.attemptId} result=REJECTED`, 'warning');
+                    sendResponse({ success: false, reason: 'STALE_TARGET' });
+                    return;
+                }
+
+                if (request.stage) {
+                    campaignState.currentTargetStage = request.stage;
+                    const activeStages = ['ACTIVE_FORM', 'FILLING', 'CAPTCHA', 'FINAL_AUDIT', 'SUBMIT_ATTEMPT_STARTED', 'SUBMITTING', 'SUBMIT_TRIGGERED', 'VERIFYING'];
+                    if (activeStages.includes(request.stage)) {
+                        if (chrome.alarms) {
+                            chrome.alarms.create(`xpider_watchdog_${sTab.id}_${campaignState.sessionId}`, { delayInMinutes: 1 });
+                        }
                     }
+
+                    // [Issue #6 R6.9E B1] Move true submit boundary to SUBMIT_ATTEMPT_STARTED
+                    if (request.stage === 'SUBMIT_ATTEMPT_STARTED') {
+                        if (campaignState.currentAttempt) {
+                            campaignState.currentAttempt.status = 'SUBMIT_PENDING';
+                            campaignState.submitLock = true;
+                            try {
+                                await recordSubmissionIntent(campaignState.currentAttempt.url, 'SUBMIT_PENDING', campaignState.currentAttempt.attemptId);
+                                await chrome.storage.local.set({ xpider_currentAttempt: campaignState.currentAttempt });
+                                logBg(sTab.id, `[STAGE_PROGRESSION] SUBMIT_ATTEMPT_STARTED -> SUBMIT_PENDING committed attemptId=${campaignState.currentAttempt.attemptId}`, 'info');
+                            } catch (intentErr) {
+                                logBg(sTab.id, `❌ [IntentGuard] Failed to persist submit intent: ${intentErr.message}`, 'error');
+                            }
+                        }
+                    }
+
+                    const stageMap = {
+                        SOURCE_OPENED: '📂',
+                        CONTACT_PAGE_FOUND: '📍',
+                        ELIGIBLE_FORM_FOUND: '📋',
+                        REQUIRED_FIELDS_RESOLVED: '✅',
+                        FIELD_STATE_STABLE: '🔒',
+                        SUBMIT_ATTEMPT_STARTED: '⏳',
+                        SUBMIT_TRIGGERED: '📤',
+                        CONFIRMED_SUCCESS: '🎉'
+                    };
+                    const icon = stageMap[request.stage] || '📌';
+                    logBg(sTab.id, `${icon} [PIPELINE][${request.stage}] url=${request.url || sTab.url}`, 'success');
+                    if (campaignState.currentDiscoveryCtx) {
+                        if (!campaignState.currentDiscoveryCtx.stageHistory) campaignState.currentDiscoveryCtx.stageHistory = [];
+                        campaignState.currentDiscoveryCtx.stageHistory.push({ stage: request.stage, ts: Date.now(), url: request.url || sTab.url });
+                    }
+                    sendResponse({ success: true });
                 }
-                const stageMap = {
-                    SOURCE_OPENED: '📂',
-                    CONTACT_PAGE_FOUND: '📍',
-                    ELIGIBLE_FORM_FOUND: '📋',
-                    REQUIRED_FIELDS_RESOLVED: '✅',
-                    FIELD_STATE_STABLE: '🔒',
-                    SUBMIT_ATTEMPT_STARTED: '⏳',
-                    SUBMIT_TRIGGERED: '📤',
-                    CONFIRMED_SUCCESS: '🎉'
-                };
-                const icon = stageMap[request.stage] || '📌';
-                logBg(sender.tab.id, `${icon} [PIPELINE][${request.stage}] url=${request.url || sender.tab.url}`, 'success');
-                if (campaignState.currentDiscoveryCtx) {
-                    if (!campaignState.currentDiscoveryCtx.stageHistory) campaignState.currentDiscoveryCtx.stageHistory = [];
-                    campaignState.currentDiscoveryCtx.stageHistory.push({ stage: request.stage, ts: Date.now(), url: request.url || sender.tab.url });
-                }
-                sendResponse({ success: true });
-            }
+            })();
             return true;
 
         case 'QUEUE_BRANCHES':
@@ -1450,6 +1547,32 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         case 'SOLVE_CAPTCHA':
             (async () => {
                 try {
+                    const curTabId = campaignState.currentTabId;
+                    const curEpoch = campaignState.captchaEpoch || 1;
+                    const reqEpoch = request.captchaEpoch;
+                    const reqAtt = request.attemptId;
+
+                    // [Issue #6 R6.9E B4] Inactive / paused guard
+                    if (!campaignState.isActive || campaignState.isPaused) {
+                        sendResponse({ success: false, error: 'CAMPAIGN_INACTIVE_OR_PAUSED' });
+                        return;
+                    }
+
+                    // [Issue #6 R6.9E B4] Stale request rejection: check epoch and sender tab
+                    if ((reqEpoch && reqEpoch !== curEpoch) || (sender?.tab && curTabId && sender.tab.id !== curTabId)) {
+                        logBg(null, `[CAPTCHA_STALE_REQUEST] reqEpoch=${reqEpoch} curEpoch=${curEpoch} senderTab=${sender?.tab?.id} expectedTab=${curTabId} action=REJECT`, 'warning');
+                        sendResponse({ success: false, error: 'STALE_CAPTCHA_EPOCH' });
+                        return;
+                    }
+
+                    // [Issue #6 R6.9E B4] Permanent / config error suppression (e.g., ERROR_ZERO_BALANCE)
+                    const blockedErr = campaignState.captchaEpochBlockedErrors && campaignState.captchaEpochBlockedErrors[curEpoch];
+                    if (blockedErr) {
+                        logBg(null, `[CAPTCHA_CONFIG_BLOCKED] epoch=${curEpoch} blockedError=${blockedErr} action=REJECT_REPEAT`, 'warning');
+                        sendResponse({ success: false, error: blockedErr });
+                        return;
+                    }
+
                     const storage = await new Promise(resolve => chrome.storage.local.get([
                         'captchaMethod', 'captchaApiKey', 'xpider_captcha_method', 'xpider_captcha_api_key', 'xpider_stt_api_key', 'audioSttKey', 'witKey'
                     ], resolve));
@@ -1467,7 +1590,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                         solver.config.twoCaptchaKey = apiKey;
                     }
 
-                    logBg(null, `[Auto CAPTCHA Solver] SOLVE_CAPTCHA: method=${method} keyConfigured=${!!apiKey} url=${request.url||''}`, 'info');
+                    logBg(null, `[Auto CAPTCHA Solver] SOLVE_CAPTCHA: method=${method} keyConfigured=${!!apiKey} epoch=${curEpoch} url=${request.url||''}`, 'info');
                     
                     // Normalize host page URL (crucial when request originated from reCAPTCHA / external iframe)
                     let targetPageUrl = request.url || '';
@@ -1486,10 +1609,23 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                                 invisible: request.invisible
                             };
                             const token = await solver.solve2Captcha(request.sitekey, targetPageUrl, request.type || 'recaptcha', extra);
+
+                            // [Issue #6 R6.9E B4] Validate execution identity AGAIN before injecting/returning token
+                            const postEpoch = campaignState.captchaEpoch || 1;
+                            const isStillValid = (reqEpoch ? reqEpoch === postEpoch : true) &&
+                                campaignState.isActive && !campaignState.isPaused &&
+                                (!sender?.tab || !campaignState.currentTabId || sender.tab.id === campaignState.currentTabId);
+
+                            if (!isStillValid) {
+                                logBg(null, `[CAPTCHA_STALE_RESULT] reqEpoch=${reqEpoch} curEpoch=${postEpoch} action=DROP`, 'warning');
+                                sendResponse({ success: false, error: 'STALE_RESULT_DROPPED' });
+                                return;
+                            }
+
                             logBg(null, `[Auto CAPTCHA Solver] 2Captcha SUCCESS keyConfigured=true tokenLength=${token ? token.length : 0}`, 'success');
 
-                            // [Multi-Frame Autonomous Injection] Inject solved token across ALL frames in the tab (supports nested iframes like PerfectMind)
-                            const activeTabId = (sender && sender.tab && sender.tab.id) || request.tabId || campaignState?.activeTabId;
+                            // [Multi-Frame Autonomous Injection] Inject solved token across ALL frames in the tab
+                            const activeTabId = (sender && sender.tab && sender.tab.id) || campaignState.currentTabId;
                             if (activeTabId) {
                                 try {
                                     await safeScripting.executeScript({
@@ -1550,6 +1686,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                             return;
                         } catch (e2) {
                             logBg(null, `[Auto CAPTCHA Solver] 2Captcha FAILED: ${e2.message}`, 'error');
+                            // [Issue #6 R6.9E B4] Record permanent error to block repeat spam in same epoch
+                            if (e2.message && (e2.message.includes('ERROR_ZERO_BALANCE') || e2.message.includes('ZERO_BALANCE'))) {
+                                campaignState.captchaEpochBlockedErrors[curEpoch] = 'ERROR_ZERO_BALANCE';
+                            }
                             sendResponse({ success: false, error: e2.message });
                             return;
                         }
@@ -2141,8 +2281,11 @@ async function startCampaignOrchestrator(queue, template, delayMs, fillDelayMs =
         campaignState.captchaCounts = {}; // [v4.12.23] 캡차 시도 횟수 초기화
         campaignState.activeTimeoutId = null;
         campaignState.currentTabId = null;
+        campaignState.targetTabId = null;
         campaignState.outcomeHistogram = {};
         campaignState.pausedCheckpoint = null;
+        campaignState.captchaEpoch = (campaignState.captchaEpoch || 0) + 1; // [Issue #6 R6.9E B4] New epoch on start
+        campaignState.captchaEpochBlockedErrors = {};
         for (const k of Object.keys(coreRuntimeRefErrors)) delete coreRuntimeRefErrors[k];
 
         // [R6.9A] Persistent campaignRunId for ledger scoping
@@ -2160,28 +2303,7 @@ async function startCampaignOrchestrator(queue, template, delayMs, fillDelayMs =
         saveCampaignState().catch(() => {}); 
         logBg(null, "[Boot] Storage sync initiated.", "debug");
 
-        const ledgerStats = hs ? hs.getLedgerStats('currentRun', campaignState.campaignRunId) : null;
-        campaignState.counters = {
-            success: ledgerStats ? ledgerStats.success : 0,
-            failed: ledgerStats ? ledgerStats.failure : 0,
-            completed: ledgerStats ? ledgerStats.completed : 0,
-            remaining: executableQueue.length,
-            deliveryUnknown: ledgerStats ? ledgerStats.unknown : 0,
-            timeout: ledgerStats ? ledgerStats.timeout : 0,
-            skipped: ledgerStats ? ledgerStats.skipped : 0,
-            paused: ledgerStats ? ledgerStats.paused : 0,
-            skippedHistory: historySkippedCount,
-            inProgress: 0,
-            total: executableQueue.length,
-            failureBreakdown: ledgerStats ? { ...ledgerStats.failureBreakdown } : {}
-        };
-        campaignState.successCount = campaignState.counters.success;
-        if (ledgerStats) {
-            console.log(ledgerStats.logStr);
-            logBg(null, ledgerStats.logStr, "info");
-        }
-        await persistCounters();
-        broadcastCounters();
+        await syncCampaignCountersFromLedger(hs);
 
         processNextCampaignTarget(campaignState.sessionId);
         logBg(null, "[Boot] Target loop triggered.", "debug");
@@ -2194,16 +2316,17 @@ async function startCampaignOrchestrator(queue, template, delayMs, fillDelayMs =
 }
 
 async function pauseCampaignOrchestrator(saveCheckpoint = true) {
+    // [Issue #6 R6.9E B5] 1. Mark paused & invalidate solver epoch
     campaignState.isPaused = true;
+    campaignState.captchaEpoch = (campaignState.captchaEpoch || 0) + 1;
     logBg(null, "⏸️ [Engine] Campaign PAUSED / STOP & SAVE requested.", "info");
 
-    // Cancel discovery if in flight
+    // [Issue #6 R6.9E B5] 2. Freeze target lifecycle & timers
     if (campaignState.currentDiscoveryCtx) {
         campaignState.currentDiscoveryCtx.aborted = true;
         campaignState.currentDiscoveryCtx = null;
     }
 
-    // Cancel pending next-target timer
     if (campaignState.activeTimeoutId) {
         clearTimeout(campaignState.activeTimeoutId);
         campaignState.activeTimeoutId = null;
@@ -2213,33 +2336,19 @@ async function pauseCampaignOrchestrator(saveCheckpoint = true) {
         chrome.alarms.clear("xpider_next_target_failsafe");
     }
 
-    // [Issue #6 R6.9B Section 9] Close all campaign tabs on pause
-    await closeAllCampaignTabsExcept(null, 'PAUSE_CAMPAIGN');
-    campaignState.currentTabId = null;
-    campaignState.targetTabId = null;
-
-    // Current target handling
+    // [Issue #6 R6.9E B5] 3. Inspect currentAttempt state BEFORE closing tabs
     const currentAtt = campaignState.currentAttempt;
     if (currentAtt && currentAtt.url) {
         if (currentAtt.status === 'PREPARING') {
-            // No submit boundary crossed: settle INTERRUPTED_PAUSE and requeue to front
-            try {
-                const hs = await getHistoryStoreInstance();
-                if (currentAtt.attemptId && hs) {
-                    await hs.settleCanonicalAttempt(currentAtt.attemptId, 'FAILURE', 'INTERRUPTED_PAUSE', {}, {
-                        campaignRunId: campaignState.campaignRunId
-                    });
-                    await hs.persist();
-                }
-            } catch (_) {}
+            // [Issue #6 R6.9E B5] PREPARING -> retryable/requeue, NOT failure and NOT delivery unknown!
             const normUrl = normalizeUrl(currentAtt.url);
             campaignState.visitedUrls = campaignState.visitedUrls.filter(u => u !== normUrl && u !== currentAtt.url);
             if (!campaignState.queue.includes(currentAtt.url)) {
                 campaignState.queue.unshift(currentAtt.url);
             }
-            logBg(null, `🔄 [Pause] Current target re-queued to front: ${currentAtt.url}`, "info");
+            logBg(null, `🔄 [Pause] Current target PREPARING re-queued to front: ${currentAtt.url}`, "info");
         } else if (currentAtt.status === 'SUBMIT_PENDING') {
-            // In-flight submit: settle PAUSED_UNKNOWN and do NOT blindly resend
+            // [Issue #6 R6.9E B5] SUBMIT_PENDING -> PAUSED_UNKNOWN (delivery-uncertain)
             try {
                 const hs = await getHistoryStoreInstance();
                 if (currentAtt.attemptId && hs) {
@@ -2247,19 +2356,6 @@ async function pauseCampaignOrchestrator(saveCheckpoint = true) {
                         campaignRunId: campaignState.campaignRunId
                     });
                     await hs.persist();
-                    const stats = hs.getLedgerStats('currentRun', campaignState.campaignRunId);
-                    campaignState.counters.success = stats.success;
-                    campaignState.counters.failed = stats.failure;
-                    campaignState.counters.deliveryUnknown = stats.unknown;
-                    campaignState.counters.timeout = stats.timeout;
-                    campaignState.counters.skipped = stats.skipped;
-                    campaignState.counters.paused = stats.paused;
-                    campaignState.counters.completed = stats.completed;
-                    campaignState.counters.failureBreakdown = { ...stats.failureBreakdown };
-                    campaignState.counters.remaining = Math.max(0, campaignState.counters.total - stats.completed - campaignState.counters.skippedHistory);
-                    campaignState.successCount = stats.success;
-                    await persistCounters();
-                    broadcastCounters();
                 }
             } catch (_) {}
             if (!campaignState.outcomeHistogram) campaignState.outcomeHistogram = {};
@@ -2268,10 +2364,19 @@ async function pauseCampaignOrchestrator(saveCheckpoint = true) {
         }
         campaignState.currentAttempt = null;
         campaignState.currentTargetStage = null;
-        campaignState.submitLock = false;
-        campaignState.timeoutWatchdogGen = (campaignState.timeoutWatchdogGen || 0) + 1;
-        chrome.storage.local.remove('xpider_currentAttempt').catch(() => {});
     }
+
+    // [Issue #6 R6.9E B5] 4. Persist ledger/counters/checkpoint
+    const hsInstance = await getHistoryStoreInstance();
+    await syncCampaignCountersFromLedger(hsInstance);
+
+    // [Issue #6 R6.9E B5] 5. ONLY THEN close campaign tabs
+    await closeAllCampaignTabsExcept(null, 'PAUSE_CAMPAIGN');
+    campaignState.currentTabId = null;
+    campaignState.targetTabId = null;
+    campaignState.submitLock = false;
+    campaignState.timeoutWatchdogGen = (campaignState.timeoutWatchdogGen || 0) + 1;
+    chrome.storage.local.remove('xpider_currentAttempt').catch(() => {});
 
     // Save checkpoint snapshot
     if (saveCheckpoint) {
@@ -2571,32 +2676,29 @@ async function processNextCampaignTarget(loopSessionId) {
                     campaignState.counters.deliveryUnknown = ledgerStats.unknown;
                     campaignState.counters.timeout = ledgerStats.timeout;
                     campaignState.counters.skipped = ledgerStats.skipped;
-                    campaignState.counters.paused = ledgerStats.paused;
-                    campaignState.counters.completed = ledgerStats.completed;
-                    campaignState.counters.failureBreakdown = { ...ledgerStats.failureBreakdown };
-                    campaignState.counters.inProgress = 0;
-                    campaignState.counters.remaining = Math.max(0, campaignState.counters.total - ledgerStats.completed - campaignState.counters.skippedHistory);
-                    campaignState.successCount = ledgerStats.success;
-                    await persistCounters();
-                    broadcastCounters();
+                    await syncCampaignCountersFromLedger(hs);
                 } catch (_) {}
             }
             return { success: false, error: err.message, reasonCode: timeoutReason };
-        }).finally(() => {
+        }).finally(async () => {
             if (chrome.alarms) chrome.alarms.clear(`xpider_timeout_${currentSession}`);
             
-            // [Issue #6 R6.8 P0-7] Target transition must atomically clear state
+            // [Issue #6 R6.9E B6] Centralized Verified Tab Closure Guard
+            // Do NOT close an active tab merely because the outer promise returned unless state is terminal or requeued
+            if (campaignState.currentTabId) {
+                const orphanId = campaignState.currentTabId;
+                const isTerminalOrSettled = !campaignState.targetResolve || !campaignState.currentAttempt || campaignState.currentAttempt.status === 'RESOLVED';
+                if (isTerminalOrSettled) {
+                    campaignState.currentTabId = null;
+                    await closeOwnedTabVerified(orphanId, 'ORPHAN_CLEANUP');
+                }
+            }
+
+            // [Issue #6 R6.8 P0-7] Target transition state cleanup
             campaignState.currentTargetStage = null;
             campaignState.currentAttempt = null;
             campaignState.submitLock = false;
             campaignState.timeoutWatchdogGen = (campaignState.timeoutWatchdogGen || 0) + 1;
-
-            // [v18.29.0] Forced Cleanup: Ensure any orphaned tab for this target is closed immediately
-            if (campaignState.currentTabId) {
-                const orphanId = campaignState.currentTabId;
-                campaignState.currentTabId = null; // Clear first to prevent race
-                safeTabs.remove(orphanId).catch(() => {});
-            }
         });
         // [v1.2.0-Fix-F1] Single success-accounting owner:
         // successCount is strictly and exclusively incremented inside finishOnce() on line 886.
@@ -3501,25 +3603,13 @@ async function orchestrateSending(urlInput, template) {
             }
             await hs.persist();
 
-            // [R6.9A Single Source of Truth: All counters strictly derived from HistoryStore ledger]
+            // [Issue #6 R6.9E B7] Single Source of Truth: All counters strictly derived from HistoryStore ledger via syncCampaignCountersFromLedger
+            await syncCampaignCountersFromLedger(hs);
             const ledgerStats = hs.getLedgerStats('currentRun', campaignState.campaignRunId);
-            if (isSuccess && ledgerStats.success === 0) {
-                ledgerStats.success = 1;
-                ledgerStats.completed = Math.max(ledgerStats.completed, 1);
+            if (ledgerStats) {
+                console.log(ledgerStats.logStr);
+                logBg(tabId, ledgerStats.logStr, "info");
             }
-            campaignState.counters.success = ledgerStats.success;
-            campaignState.counters.failed = ledgerStats.failure;
-            campaignState.counters.deliveryUnknown = ledgerStats.unknown;
-            campaignState.counters.timeout = ledgerStats.timeout;
-            campaignState.counters.skipped = ledgerStats.skipped;
-            campaignState.counters.paused = ledgerStats.paused;
-            campaignState.counters.completed = ledgerStats.completed;
-            campaignState.counters.failureBreakdown = { ...ledgerStats.failureBreakdown };
-            campaignState.counters.inProgress = 0;
-            campaignState.counters.remaining = Math.max(0, campaignState.counters.total - ledgerStats.completed - campaignState.counters.skippedHistory);
-            campaignState.successCount = ledgerStats.success;
-            console.log(ledgerStats.logStr);
-            logBg(tabId, ledgerStats.logStr, "info");
         } catch (hsErr) {
             logBg(tabId, `⚠️ [F8-HistoryStore] settleCanonicalAttempt failed: ${hsErr.message}`, 'warning');
         }
@@ -3529,9 +3619,6 @@ async function orchestrateSending(urlInput, template) {
         } catch (intentErr) {
             logBg(tabId, `⚠️ [IntentGuard] Failed to settle submission intent: ${intentErr.message}`, "warning");
         }
-
-        await persistCounters();
-        broadcastCounters();
 
         if (res && res.success) {
             const holdMs = Math.max(3500, campaignState.submitDelayMs ? parseInt(campaignState.submitDelayMs) : 3500);
@@ -3637,21 +3724,20 @@ async function orchestrateSending(urlInput, template) {
             } catch (_) {}
         }
         
-        // [v1.2.0 & F2 & F8] Transition to SUBMIT_PENDING immediately BEFORE triggering submission side-effects
-        // Reuses the single canonical _attemptId from HistoryStore (never generates a second ID)
-        try {
-            await recordSubmissionIntent(targetUrl, 'SUBMIT_PENDING', _attemptId);
-        } catch (intentErr) {
-            logBg(tabId, `❌ [IntentGuard] Failed to persist submission intent: ${intentErr.message}. Aborting submission.`, "error");
-            // [F8-B] Pre-submit persistence failure MUST remain retryable, NOT DELIVERY_UNKNOWN!
-            finish({ success: false, error: "PRE_SUBMIT_PERSISTENCE_FAILED", reasonCode: "PRE_SUBMIT_PERSISTENCE_FAILED" });
-            return;
+        // [Issue #6 R6.9E B1] Attempt remains PREPARING here. SUBMIT_PENDING is deferred until content reports SUBMIT_ATTEMPT_STARTED
+        if (campaignState.currentAttempt) {
+            campaignState.currentAttempt.status = 'PREPARING';
         }
-        
+
         if (injectionTimer) clearTimeout(injectionTimer);
         logBg(tabId, "Extraction focus secured. Mapping template fields...", "info");
         safeTabs.sendMessage(tabId, { 
             action: 'START_SENDING', 
+            attemptId: _attemptId,
+            targetToken: targetToken,
+            campaignRunId: campaignState.campaignRunId,
+            sessionId: currentSession,
+            captchaEpoch: campaignState.captchaEpoch,
             template: template, 
             delayMs: campaignState.delayMs,
             fillDelayMs: campaignState.fillDelayMs || 300,
@@ -3982,10 +4068,11 @@ async function restoreCampaignState() {
                         const interruptedAttemptId = data.xpider_currentAttempt.attemptId;
 
                         if (data.xpider_currentAttempt.status === 'SUBMIT_PENDING') {
-                            // [F8] True submit-pending interruption: form submission may have crossed boundary -> DELIVERY_UNKNOWN (suppress)
-                            const normInterrupted = normalizeUrl(interruptedUrl || '');
-                            console.warn(`[Protection] Service worker restarted with pending submission for: ${interruptedUrl} (Attempt: ${interruptedAttemptId}). Flagging as DELIVERY_UNKNOWN.`);
+                            // [Issue #6 R6.9E B9] True submit-pending interruption: real submit boundary crossed -> DELIVERY_UNKNOWN
+                            logBg(null, `[RECOVERY_CLASSIFY] attemptId=${interruptedAttemptId} status=SUBMIT_PENDING action=DELIVERY_UNKNOWN`, "warning");
+                            console.warn(`[RECOVERY_CLASSIFY] attemptId=${interruptedAttemptId} status=SUBMIT_PENDING action=DELIVERY_UNKNOWN url=${interruptedUrl}`);
                             
+                            const normInterrupted = normalizeUrl(interruptedUrl || '');
                             if (normInterrupted && !visited.includes(normInterrupted)) {
                                 visited.push(normInterrupted);
                             }
@@ -4016,31 +4103,22 @@ async function restoreCampaignState() {
                             logBg(null, `⚠️ [Protection] Unresolved submission for ${interruptedUrl} recovered as DELIVERY_UNKNOWN to avoid duplicate send.`, "warning");
 
                         } else if (data.xpider_currentAttempt.status === 'PREPARING') {
-                            // [F8-A] Restart occurred during preparation / navigation BEFORE any submit attempt!
-                            // Target was NEVER submitted -> DO NOT suppress! Target remains retryable!
-                            console.warn(`[Protection] Service worker restarted during PREPARING for: ${interruptedUrl} (Attempt: ${interruptedAttemptId}). Settling as FAILURE; target remains retryable.`);
+                            // [Issue #6 R6.9E B9] Restart occurred during PREPARING: NOT submitted -> REQUEUE, NOT failure/unknown!
+                            logBg(null, `[RECOVERY_CLASSIFY] attemptId=${interruptedAttemptId} status=PREPARING action=REQUEUE`, "info");
+                            console.warn(`[RECOVERY_CLASSIFY] attemptId=${interruptedAttemptId} status=PREPARING action=REQUEUE url=${interruptedUrl}`);
+                            
                             const settledAttempt = {
                                 ...data.xpider_currentAttempt,
-                                status: 'RESOLVED',
-                                reasonCode: 'INTERRUPTED_PREPARING',
+                                status: 'REQUEUED',
                                 interruptedAt: Date.now()
                             };
                             chrome.storage.local.set({ 
                                 xpider_currentAttempt: settledAttempt
-                                // Visited is NOT updated — target remains retryable!
                             });
 
-                            try {
-                                if (hs && interruptedAttemptId) {
-                                    // FAILURE does NOT suppress target!
-                                    await hs.settleCanonicalAttempt(interruptedAttemptId, 'FAILURE', 'INTERRUPTED_PREPARING', {}, {
-                                        campaignRunId: campaignState.campaignRunId
-                                    });
-                                    await hs.persist();
-                                }
-                                logBg(null, `🔄 [F8-Recovery] Settled PREPARING attempt ${interruptedAttemptId} as FAILURE (target remains retryable).`, "info");
-                            } catch (hsRecErr) {
-                                console.error('[F8-Recovery] Failed to settle PREPARING attempt on SW restart:', hsRecErr);
+                            // Requeue target if not already in queue
+                            if (interruptedUrl && !campaignState.queue.includes(interruptedUrl)) {
+                                campaignState.queue.unshift(interruptedUrl);
                             }
                         }
                     }

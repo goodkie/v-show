@@ -547,6 +547,7 @@
             if (s === 'DELIVERY_UNKNOWN' || s === 'UNKNOWN') return 'DELIVERY_UNKNOWN';
             if (s === 'TIMEOUT_LOCAL' || s === 'TIMEOUT') return 'TIMEOUT_LOCAL';
             if (s === 'TIMEOUT_GLOBAL') return 'TIMEOUT_GLOBAL';
+            if (s === 'PREPARING' || s === 'REQUEUED' || s === 'IN_PROGRESS' || s === 'PENDING') return 'NON_TERMINAL';
             if (s === 'PAUSED_UNKNOWN' || s === 'INTERRUPTED' || s === 'PAUSED') return 'PAUSED_UNKNOWN';
             return 'FAILURE';
         }
@@ -812,6 +813,7 @@
 
             for (const att of scopedAttempts) {
                 const s = this.normalizeTerminalStatus(att.status);
+                if (s === 'NON_TERMINAL') continue;
                 if (s === 'CONFIRMED_SUCCESS') {
                     success++;
                 } else if (s === 'DELIVERY_UNKNOWN') {

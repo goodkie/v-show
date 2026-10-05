@@ -21,14 +21,14 @@
         headShort: 'b97d85e',
         rollbackBase: 'b8e1d0362946cd6ca8c77c1aa990998da62c2c91',
         manifestVersion: 3,
-        buildId: 'R6.9D-20261004-OUTCOME',
-        builtAt: '2026-10-04T12:15:18.569Z',
+        buildId: 'R6.9E-20261004-LIFECYCLE',
+        builtAt: '2026-10-05T02:08:54.692Z',
         provenanceSchema: 2,
         modules: {
-            backgroundSha: '9d44b0882a9f8e6c38cb421107eced01baa58676ab0305a0ef6c99aef0aaca31',
-            contentScriptSha: '6a87d7f6f7eaf8b614b94239508a649a4f6852dbb99e68e2b1ad5519771c780b',
+            backgroundSha: 'd0787c1341cc5599a2f05b06f727b48ee74ef104e72e1a04ded91402fbb40cb0',
+            contentScriptSha: 'b9b477ac0485ab23f6dc1536cc59ca196829a932c2b3a7beb1b6f0c4cf73de28',
             emailCollectorSha: '3f1147a379e159e7777158f2caa74cc8d40b2a0b0eb2c244f440af379cb5c9c9',
-            historyStoreSha: '7c9e22e0f62c4f1b3d82510dcc6604eaefff72e80f79c25041319bdf169305ac',
+            historyStoreSha: '38816d8b6e66114e24cdff84a52e0c22dac38bda23a38826b3ae581d252b8791',
             contactGateSha: '524933622d1a862425d7302b051bb063d5a3cbec166d868fa73825fa4d38f334',
             visionSubmitSha: '25cf18a4834bb476edff5e8f19a78dd2723bd556ede649ada69bc801543c83f3'
         }

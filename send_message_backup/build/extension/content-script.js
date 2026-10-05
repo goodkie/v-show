@@ -302,12 +302,43 @@
             } catch (_) {}
         }
         
+        window.__xpider_getExecutionPayload = (extra = {}) => {
+            const ident = window.__xpider_execution_identity || {};
+            return Object.assign({
+                attemptId: ident.attemptId || null,
+                targetToken: ident.targetToken || null,
+                campaignRunId: ident.campaignRunId || null,
+                sessionId: ident.sessionId || null,
+                captchaEpoch: ident.captchaEpoch || 1
+            }, extra);
+        };
+
+        window.__xpider_sendExecutionMessage = (msg, cb) => {
+            const payload = window.__xpider_getExecutionPayload ? window.__xpider_getExecutionPayload(msg) : msg;
+            if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
+                try {
+                    const p = chrome.runtime.sendMessage(payload, cb);
+                    if (p && typeof p.catch === 'function') p.catch(() => {});
+                    return p;
+                } catch (_) {}
+            }
+        };
+
         window.__xpider_start_sending_handler = (request, sender, sendResponse) => {
             if (request.action === 'START_SENDING') {
                 const currentRunUrl = (window.location ? window.location.href : '');
                 const domGeneration = window.__xpider_dom_generation || (window.__xpider_dom_generation = Date.now());
                 const attemptId = request.attemptId || (Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 7));
                 const singleFlightKey = `${attemptId}:${currentRunUrl}:${domGeneration}`;
+
+                // [Issue #6 R6.9E] Canonical Execution Identity Binding
+                window.__xpider_execution_identity = {
+                    attemptId: request.attemptId || attemptId,
+                    targetToken: request.targetToken || null,
+                    campaignRunId: request.campaignRunId || null,
+                    sessionId: request.sessionId || null,
+                    captchaEpoch: request.captchaEpoch || 1
+                };
 
                 if (window.__xpider_active_single_flight === singleFlightKey || (window.__xpider_hasProcessingLock && window.__xpider_hasProcessingLock(currentRunUrl))) {
                     console.log(`[CONTROL_PLANE] duplicate START_SENDING suppressed key=${singleFlightKey}`);
@@ -832,11 +863,11 @@
                 logDev(`[LONG_TEXT_GATE] found=true type=${inquiryBody?.type || 'textarea'} semantic=${inquiryBody?.semantic || 'message'}`, "info");
                 logDev(`[FORM_GATE] eligible=true reason=BODY_FIELD_PRESENT`, "info");
                 try {
-                    chrome.runtime.sendMessage({
+                    (window.__xpider_sendExecutionMessage || chrome.runtime.sendMessage)({
                         action: 'STAGE_PROGRESSION',
                         stage: 'CONTACT_PAGE_FOUND',
                         url: window.location.href
-                    }).catch(() => {});
+                    });
                 } catch (_) {}
                 sessionStorage.removeItem('xpider_recursion_debt');
                 sessionStorage.removeItem('xpider_guessed_paths');
@@ -1170,17 +1201,18 @@
                 logDev(`[CONTACT_GATE] PASS bodyField=${classification.bodyFieldType}`, "success");
                 logDev("[STAGE] stage=ELIGIBLE_FORM_FOUND", "success");
                 try {
-                    chrome.runtime.sendMessage({
+                    const sendFn = window.__xpider_sendExecutionMessage || chrome.runtime.sendMessage;
+                    sendFn({
                         action: 'FORM_GATE_PASSED',
                         contactPageUrl: window.location.href,
                         formPageUrl: window.location.href,
                         bodyFieldType: classification.bodyFieldType
-                    }).catch(() => {});
-                    chrome.runtime.sendMessage({
+                    });
+                    sendFn({
                         action: 'STAGE_PROGRESSION',
                         stage: 'ELIGIBLE_FORM_FOUND',
                         url: window.location.href
-                    }).catch(() => {});
+                    });
                 } catch (_) {}
             }
 
@@ -1209,7 +1241,7 @@
             if (!_isCaptchaSolved && (await checkForCaptcha())) {
                 logDev("🤖 [Security] CAPTCHA detected. Engine paused for solver.", "info");
                 try {
-                    chrome.runtime.sendMessage({ action: 'STAGE_PROGRESSION', stage: 'CAPTCHA', url: window.location.href }).catch(() => {});
+                    (window.__xpider_sendExecutionMessage || chrome.runtime.sendMessage)({ action: 'STAGE_PROGRESSION', stage: 'CAPTCHA', url: window.location.href });
                 } catch (_) {}
                 const solved = await waitForCaptchaSolved();
                 if (!solved) throw new Error("Security Timeout: CAPTCHA unsolved.");
@@ -1259,11 +1291,11 @@
             logDev("[SUBMIT] attemptStarted=true", "info");
             logDev("[STAGE] stage=SUBMIT_ATTEMPT_STARTED", "info");
             try {
-                chrome.runtime.sendMessage({
+                (window.__xpider_sendExecutionMessage || chrome.runtime.sendMessage)({
                     action: 'STAGE_PROGRESSION',
                     stage: 'SUBMIT_ATTEMPT_STARTED',
                     url: window.location.href
-                }).catch(() => {});
+                });
             } catch (_) {}
             
             // [Hotfix R2 & R6.9E] Prepare SubmissionOutcomeVerifier BEFORE submit action
@@ -1311,11 +1343,11 @@
             logDev("[SUBMIT] triggered=true", "info");
             logDev("[STAGE] stage=SUBMIT_TRIGGERED", "info");
             try {
-                chrome.runtime.sendMessage({
+                (window.__xpider_sendExecutionMessage || chrome.runtime.sendMessage)({
                     action: 'STAGE_PROGRESSION',
                     stage: 'SUBMIT_TRIGGERED',
                     url: window.location.href
-                }).catch(() => {});
+                });
             } catch (_) {}
 
             return await verifier.verify(submitOutcome);
@@ -3023,16 +3055,17 @@
         logDev("[STAGE] stage=REQUIRED_FIELDS_RESOLVED", "success");
         logDev("[STAGE] stage=FIELD_STATE_STABLE", "success");
         try {
-            chrome.runtime.sendMessage({
+            const sendFn = window.__xpider_sendExecutionMessage || chrome.runtime.sendMessage;
+            sendFn({
                 action: 'STAGE_PROGRESSION',
                 stage: 'REQUIRED_FIELDS_RESOLVED',
                 url: window.location.href
-            }).catch(() => {});
-            chrome.runtime.sendMessage({
+            });
+            sendFn({
                 action: 'STAGE_PROGRESSION',
                 stage: 'FIELD_STATE_STABLE',
                 url: window.location.href
-            }).catch(() => {});
+            });
         } catch (_) {}
 
         logDev(`✅ [HyperEngine v4.0] 폼 작성 완료 - 입력 필드 ${filledFields}개 처리됨`);
@@ -3243,7 +3276,8 @@
                 } catch (_) {}
             }
 
-            chrome.runtime.sendMessage({
+            const sendFn = window.__xpider_sendExecutionMessage || chrome.runtime.sendMessage;
+            sendFn({
                 action: 'SOLVE_CAPTCHA',
                 method: 'api',
                 sitekey: captchaData.sitekey,
@@ -5345,7 +5379,8 @@
     function finishCampaign(success, error = null, reasonCode = null, metadata = {}) {
         currentTargetLifecycleState = TargetLifecycleState.SETTLED;
         sessionStorage.removeItem('xpider_pending_verify'); // [v17.6.0] Clear recovery flag
-        chrome.runtime.sendMessage({
+        const sendFn = window.__xpider_sendExecutionMessage || chrome.runtime.sendMessage;
+        sendFn({
             action: 'SENDER_FINISHED',
             result: {
                 success: success,

@@ -3860,15 +3860,19 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!panel) return;
         try {
             const hs = getPopupHistoryStore();
+            const storedState = await chrome.storage.local.get(['xpider_active_campaign_run_id', 'xpider_isActive', 'xpider_isPaused', 'xpider_history_scope_preference', 'xpider_history_rows', 'xpider_history_attempts', 'xpider_history_generation']);
+            const activeRunId = storedState.xpider_active_campaign_run_id || null;
+            const isCampaignActive = storedState.xpider_isActive || storedState.xpider_isPaused;
+            const scopePref = storedState.xpider_history_scope_preference || (isCampaignActive || activeRunId ? 'currentRun' : 'currentGeneration');
+
             let stats = null;
             if (hs) {
                 await hs.load();
-                stats = hs.getLedgerStats('currentGeneration');
+                stats = hs.getLedgerStats(scopePref, activeRunId);
             }
-            const data = await chrome.storage.local.get(['xpider_history_rows', 'xpider_history_attempts', 'xpider_history_generation']);
-            const rows = data.xpider_history_rows || [];
-            const attempts = data.xpider_history_attempts || [];
-            const gen = data.xpider_history_generation || 1;
+            const rows = storedState.xpider_history_rows || [];
+            const attempts = storedState.xpider_history_attempts || [];
+            const gen = storedState.xpider_history_generation || 1;
 
             const pending = rows.filter(r => r.status === 'PENDING').length;
             const invalid = rows.filter(r => r.status === 'INVALID_INPUT').length;
@@ -3877,11 +3881,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const unknown = stats ? stats.unknown : attempts.filter(a => a.status === 'DELIVERY_UNKNOWN' || a.status === 'PAUSED_UNKNOWN').length;
             const skipped = stats ? stats.skipped : attempts.filter(a => a.status === 'SKIPPED').length;
 
-            console.log(`[LEDGER_STATS] scope=currentGeneration success=${succeeded} failed=${failed} unknown=${unknown}`);
+            const scopeLabel = scopePref === 'currentRun' 
+                ? '<b style="color:#00ffcc">currentRun</b> <span style="font-size:10px;opacity:0.8;">(Live Run)</span>' 
+                : '<b style="color:#f59e0b">currentGeneration</b> <span style="font-size:10px;color:#fca5a5;">(Generation totals — not current run)</span>';
+
+            console.log(`[LEDGER_STATS] scope=${scopePref} success=${succeeded} failed=${failed} unknown=${unknown}`);
 
             panel.innerHTML = `
                 <div class="history-stat-row">
-                    <span>Scope:</span><span><b style="color:#00ffcc">currentGeneration</b></span>
+                    <span>Scope:</span><span>${scopeLabel}</span>
                 </div>
                 <div class="history-stat-row">
                     <span>Generation:</span><span><b>${gen}</b></span>
