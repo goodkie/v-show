@@ -15,14 +15,14 @@
 
     const BUILD_INFO = {
         branch: 'upgrade/phase-0-1',
-        implementationHead: '66cf675b3c5ee9a691653ceb1f3c30a5db89ff10',
-        implementationHeadShort: '66cf675',
-        head: '66cf675b3c5ee9a691653ceb1f3c30a5db89ff10',
-        headShort: '66cf675',
+        implementationHead: '2ec4ff8089456209b55239e32f507b9a7c365aa5',
+        implementationHeadShort: '2ec4ff8',
+        head: '2ec4ff8089456209b55239e32f507b9a7c365aa5',
+        headShort: '2ec4ff8',
         rollbackBase: 'b8e1d0362946cd6ca8c77c1aa990998da62c2c91',
         manifestVersion: 3,
         buildId: 'R6.9E.1-20261004-LIFECYCLE',
-        builtAt: '2026-10-05T02:59:03.376Z',
+        builtAt: '2026-10-05T03:02:32.162Z',
         provenanceSchema: 2,
         modules: {
             backgroundSha: '4fbb7d07dde753172956d01f0b5609fc9b08046e0ac129c14b29c1482d83c6b9',

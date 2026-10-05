@@ -7,8 +7,8 @@ const SRC = path.join(__dirname, 'send_message_backup');
 const BLD = path.join(SRC, 'build', 'extension');
 const OLD_ID = 'R6.9E-20261004-LIFECYCLE';
 const NEW_ID = 'R6.9E.1-20261004-LIFECYCLE';
-const HEAD = '66cf675b3c5ee9a691653ceb1f3c30a5db89ff10';
-const SHORT = '66cf675';
+const HEAD = '2ec4ff8089456209b55239e32f507b9a7c365aa5';
+const SHORT = '2ec4ff8';
 
 const rd = (p) => fs.readFileSync(p, 'utf8');
 const sha = (p) => crypto.createHash('sha256').update(fs.readFileSync(p)).digest('hex');
