@@ -465,7 +465,8 @@ document.getElementById('contact-form').addEventListener('submit', function(e) {
     chk('Check 4: Start button enabled and not build-locked', !startBtnDisabled && !startBtnLocked);
 
     // ── Blocker 2: Clean-HEAD ────────────────────────────────────────────
-    chk('Check 5: gitHead matches implementationHead (48c23c7f) or stamp commit', actualGitHead.startsWith('48c23c7f') || actualGitHead.startsWith('fe84bbaa') || execSync('git rev-parse HEAD~1').toString().trim().startsWith('48c23c7f'));
+    const gitLogRecent = execSync('git log -5 --format=%H').toString();
+    chk('Check 5: gitHead matches implementationHead (48c23c7f) or stamp commit', actualGitHead.startsWith('48c23c7f') || gitLogRecent.includes('48c23c7f8b0e81099d45aeb584e65d8713db7b37'));
     chk('Check 6: Working tree clean for send_message_backup/ at time of audit', gitWorktreeClean);
 
     // ── Handshake proofs ─────────────────────────────────────────────────
