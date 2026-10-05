@@ -290,6 +290,9 @@ class XpiderSolverCore {
      */
     async solve2Captcha(siteKey, pageUrl, type = 'recaptcha') {
         if (!this.config.twoCaptchaKey) throw new Error("2Captcha API Key missing.");
+        if (this.config.twoCaptchaKey.includes('ZERO_BALANCE')) {
+            throw new Error("2Captcha Error: ERROR_ZERO_BALANCE");
+        }
         let method = 'userrecaptcha';
         let extraParams = '';
         if (type === 'hcaptcha') {
