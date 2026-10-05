@@ -324,8 +324,8 @@
             }
         };
 
-        // [Issue #6 R6.9E.1 Section 9] Test hook for controlled same-tab stale message verification
-        if (typeof window !== 'undefined' && window.addEventListener) {
+        // [Issue #6 R6.9E.1A Section Cleanup] Test hook strictly gated to local test fixtures (127.0.0.1 / localhost)
+        if (typeof window !== 'undefined' && window.addEventListener && window.location && (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost')) {
             window.addEventListener('message', (event) => {
                 if (event.data && event.data.type === 'XPIDER_TEST_STALE_CONTROL_MESSAGE') {
                     const sendFn = window.__xpider_sendExecutionMessage || chrome.runtime.sendMessage;
@@ -337,6 +337,15 @@
                     const sendFn = window.__xpider_sendExecutionMessage || chrome.runtime.sendMessage;
                     sendFn(Object.assign({
                         action: 'SOLVE_CAPTCHA'
+                    }, event.data.payload));
+                } else if (event.data && event.data.type === 'XPIDER_TEST_ACTIVE_SOLVER_REQUEST') {
+                    const sendFn = window.__xpider_sendExecutionMessage || chrome.runtime.sendMessage;
+                    sendFn(Object.assign({
+                        action: 'SOLVE_CAPTCHA',
+                        method: '2captcha',
+                        type: 'recaptcha',
+                        sitekey: '6Le-wvkSAAAAAPBMRTvw0Q4Muexq9bi0DJwx_nqU',
+                        url: window.location ? window.location.href : ''
                     }, event.data.payload));
                 }
             });

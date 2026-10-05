@@ -1,32 +1,33 @@
-/**
- * run_real_r6_9e_lifecycle_runtime_audit.js
- * R6.9E.1 Acceptance: ACTUAL Chromium (Edge) operator-path lifecycle & counter authority audit.
- *
- * Requirements (ChatGPT Audit Directive Section 9):
- * 1. PRE-SUBMIT / NO EARLY CLOSE: Tab remains physically present before SUBMIT_ATTEMPT_STARTED.
- * 2. REAL SUBMIT: SUBMIT_ATTEMPT_STARTED -> SUBMIT_TRIGGERED -> VERIFYING -> settlement -> completion hold -> TAB_CLOSE.
- * 3. STALE SAME-TAB MESSAGE: Rejects spoofed/stale message from same tab, logs [STALE_TARGET_EVENT] ... REJECTED.
- * 4. STALE SOLVER: Drops stale solver request/result with [CAPTCHA_STALE_REQUEST] / [CAPTCHA_STALE_RESULT] action=DROP.
- * 5. COUNTERS: 2 SUCCESS, 1 FAILURE, 1 DELIVERY_UNKNOWN, 1 SKIPPED => total completed=5, with 1:1 Live/History parity.
- */
+// run_real_r6_9e_lifecycle_runtime_audit.js
+// R6.9E.1A: Real Microsoft Edge Browser Operator-Path Lifecycle & Counter Authority Runtime Audit
+// Enforcing exact physical tab timings, pre-await rejection, post-await stale solver drop, and 1:1 Live/History parity.
+
+const http = require('http');
+const { spawn, execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
-const http = require('http');
-const { spawn, execSync } = require('child_process');
+const WebSocket = require('ws');
 
 const PORT = 8973;
 const CDP = 9225;
 const OUT = path.resolve('evidence_r6_9e_real_runtime_traces.log');
-const lines = [];
-const rec = (l) => { lines.push(l); console.log(l); };
 
-const FORM = (id, title, preSubmitDelayMs, onsubmit, extraScript = '') => `<!DOCTYPE html><html><head><title>${title}</title></head><body>
-<h1>${title}</h1><p>Please use the form below to contact our team.</p>
-<form id="contact-form" onsubmit="${onsubmit}">
-  <input type="text" name="name" placeholder="Your Name">
-  <input type="email" name="email" placeholder="Your Email">
-  <input type="text" name="subject" placeholder="Subject">
+const lines = [];
+function rec(msg) {
+  const ts = new Date().toISOString();
+  const line = `[${ts}] ${msg}`;
+  console.log(line);
+  lines.push(line);
+}
+
+const FORM = (prefix, title, preSubmitDelayMs = 0, extraScript = '') => `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title}</title></head><body>
+<h2>${title}</h2>
+<p>Please use the form below to contact our team.</p>
+<form id="${prefix}-form" method="POST" action="/submit" onsubmit="return handleFormSubmit(event)">
+  <input type="text" name="name" placeholder="Your Name" value="" />
+  <input type="email" name="email" placeholder="Your Email" value="" />
+  <input type="text" name="subject" placeholder="Subject" value="" />
   <textarea name="message" placeholder="Your Message"></textarea>
   <button type="submit" id="submit-btn" ${preSubmitDelayMs > 0 ? 'style="display:none"' : ''}>Send Message</button>
 </form>
@@ -38,14 +39,15 @@ ${extraScript}
 </body></html>`;
 
 const PAGES = {
-  // 1. PRE-SUBMIT / DELAYED: submit button hidden for 1000ms to verify tab stays open during PREPARING
-  '/delayed-presubmit.html': FORM('dp', 'Delayed PreSubmit Contact', 1000,
+  // 1. PRE-SUBMIT / DELAYED: submit button hidden for 1500ms to verify tab stays open during PREPARING
+  '/delayed-presubmit.html': FORM('dp', 'Delayed PreSubmit Contact', 1500,
     "event.preventDefault(); setTimeout(function(){ var d=document.createElement('div'); d.id='thanks'; d.className='thank-you-message'; d.style.cssText='color:green;font-weight:bold'; d.textContent='Thank you! Message received.'; document.getElementById('result-slot').appendChild(d); }, 400); return false;"),
 
-  // 2. STALE SAME-TAB MESSAGE: emits rogue message and stale solver from same tab via content script bridge
+  // 2. STALE SAME-TAB & POST-AWAIT SOLVER TEST: emits rogue messages and active solver request from same tab
   '/stale-same-tab.html': FORM('st', 'Stale Message Contact', 0,
-    "event.preventDefault(); setTimeout(function(){ var d=document.createElement('div'); d.id='thanks'; d.className='thank-you-message'; d.style.cssText='color:green;font-weight:bold'; d.textContent='Thank you for contacting us!'; document.getElementById('result-slot').appendChild(d); }, 400); return false;",
+    "event.preventDefault(); setTimeout(function(){ var d=document.createElement('div'); d.id='thanks'; d.className='thank-you-message'; d.style.cssText='color:green;font-weight:bold'; d.textContent='Thank you for contacting us!'; document.getElementById('result-slot').appendChild(d); }, 2200); return false;",
     `setTimeout(function(){
+       // 1. Rogue same-tab control plane message -> STALE_TARGET_EVENT REJECTED
        window.postMessage({
          type: 'XPIDER_TEST_STALE_CONTROL_MESSAGE',
          payload: {
@@ -55,6 +57,7 @@ const PAGES = {
            sessionId: 9999
          }
        }, '*');
+       // 2. Rogue same-tab solver message with wrong attempt/epoch -> CAPTCHA_STALE_REQUEST REJECTED
        window.postMessage({
          type: 'XPIDER_TEST_STALE_SOLVER_MESSAGE',
          payload: {
@@ -65,7 +68,12 @@ const PAGES = {
            captchaEpoch: 999
          }
        }, '*');
-     }, 300);`),
+       // 3. Valid active execution solver call that becomes stale during in-flight await -> CAPTCHA_STALE_RESULT DROP
+       window.postMessage({
+         type: 'XPIDER_TEST_ACTIVE_SOLVER_REQUEST',
+         payload: {}
+       }, '*');
+     }, 400);`),
 
   // 3. TRUE FAILURE: DOM server error appears after submit
   '/true-failure.html': FORM('tf', 'Broken Contact', 0,
@@ -78,7 +86,7 @@ const PAGES = {
 
 (async () => {
   rec('================================================================================');
-  rec('[R6.9E.1 ACTUAL OPERATOR-PATH LIFECYCLE & COUNTER AUTHORITY RUNTIME AUDIT]');
+  rec('[R6.9E.1A ACTUAL OPERATOR-PATH LIFECYCLE & COUNTER AUTHORITY RUNTIME AUDIT]');
   rec('================================================================================');
   rec(`Timestamp: ${new Date().toISOString()}`);
   rec(`gitHead: ${execSync('git rev-parse HEAD').toString().trim()}`);
@@ -135,27 +143,104 @@ const PAGES = {
     };
     const consoleArgs = (d) => d.params.args.map(a => a.value !== undefined ? a.value : (a.description || '')).join(' ');
 
+    const targetTiming = {
+      targetCreatedTs: 0,
+      submitAttemptStartedTs: 0,
+      submitTriggeredTs: 0,
+      terminalSettledTs: 0,
+      holdStartedTs: 0,
+      targetDestroyedTs: 0,
+      delayedTargetId: null,
+      destroyedBeforeSubmitAttempt: false
+    };
+
     const swWs = await open(sw.webSocketDebuggerUrl);
     swWs.send(JSON.stringify({ id: 1, method: 'Runtime.enable' }));
-    swWs.onmessage = (e) => { const d = JSON.parse(e.data); if (d.method === 'Runtime.consoleAPICalled') rec(`[SW_CONSOLE] ${consoleArgs(d)}`); };
+    swWs.onmessage = (e) => {
+      const d = JSON.parse(e.data);
+      if (d.method === 'Runtime.consoleAPICalled') {
+        const line = consoleArgs(d);
+        rec(`[SW_CONSOLE] ${line}`);
+        const now = Date.now();
+        if (line.includes('delayed-presubmit.html') || line.includes('delayed-presubmit')) {
+          if (line.includes('[TARGET_DISCOVERY]') && !targetTiming.targetCreatedTs) {
+            targetTiming.targetCreatedTs = now;
+          }
+          if (line.includes('[STAGE_PROGRESSION] SUBMIT_ATTEMPT_STARTED') && !targetTiming.submitAttemptStartedTs) {
+            targetTiming.submitAttemptStartedTs = now;
+          }
+          if (line.includes('[PIPELINE][SUBMIT_TRIGGERED]') && !targetTiming.submitTriggeredTs) {
+            targetTiming.submitTriggeredTs = now;
+          }
+          if (line.includes('[FINAL] status=CONFIRMED_SUCCESS') && !targetTiming.terminalSettledTs) {
+            targetTiming.terminalSettledTs = now;
+          }
+          if ((line.includes('Maintaining tab for completion') || line.includes('Maintaining page for registration completion')) && !targetTiming.holdStartedTs) {
+            targetTiming.holdStartedTs = now;
+          }
+          if (line.includes('[TAB_CLOSE]') && line.includes('result=CLOSED') && !targetTiming.targetDestroyedTs) {
+            targetTiming.targetDestroyedTs = now;
+            if (targetTiming.submitAttemptStartedTs === 0) {
+              targetTiming.destroyedBeforeSubmitAttempt = true;
+            }
+          }
+        }
+      }
+    };
     const evalSW = mkEval(swWs, 200);
 
     const targetLifecycleEvents = [];
     const browserWs = await open(ver.webSocketDebuggerUrl);
     browserWs.onmessage = async (e) => {
       const d = JSON.parse(e.data);
-      if (d.method === 'Target.targetCreated') {
+      if (d.method === 'Target.targetCreated' || d.method === 'Target.targetInfoChanged') {
         const ti = d.params.targetInfo;
-        if (ti.type === 'page' && (ti.url.includes(`127.0.0.1:${PORT}`) || ti.url.includes('example.gov'))) {
-          targetLifecycleEvents.push({ type: 'CREATED', url: ti.url, targetId: ti.targetId, ts: Date.now() });
-          rec(`[CDP_TARGET_CREATED] ts=${Date.now()} ${ti.url}`);
+        if (ti && ti.type === 'page') {
+          const now = Date.now();
+          targetLifecycleEvents.push({ type: 'CREATED', url: ti.url, targetId: ti.targetId, ts: now });
+          if (ti.url && ti.url.includes('delayed-presubmit.html') && !targetTiming.targetCreatedTs) {
+            targetTiming.targetCreatedTs = now;
+            targetTiming.delayedTargetId = ti.targetId;
+            rec(`[CDP_TARGET_CREATED] ts=${now} targetId=${ti.targetId} url=${ti.url}`);
+          }
         }
       } else if (d.method === 'Target.targetDestroyed') {
-        targetLifecycleEvents.push({ type: 'DESTROYED', targetId: d.params.targetId, ts: Date.now() });
-        rec(`[CDP_TARGET_DESTROYED] ts=${Date.now()} targetId=${d.params.targetId}`);
+        const now = Date.now();
+        targetLifecycleEvents.push({ type: 'DESTROYED', targetId: d.params.targetId, ts: now });
+        rec(`[CDP_TARGET_DESTROYED] ts=${now} targetId=${d.params.targetId}`);
+        if (d.params.targetId === targetTiming.delayedTargetId) {
+          targetTiming.targetDestroyedTs = now;
+          if (targetTiming.submitAttemptStartedTs === 0) {
+            targetTiming.destroyedBeforeSubmitAttempt = true;
+          }
+        }
       }
     };
     browserWs.send(JSON.stringify({ id: 2, method: 'Target.setDiscoverTargets', params: { discover: true } }));
+
+    // Instrument SW for controlled delayed solver & post-await stale result test
+    await evalSW(`(() => {
+      chrome.storage.local.set({ xpider_captcha_api_key: 'test_key_dummy_123', xpider_captcha_method: '2captcha' });
+      if (typeof solver !== 'undefined') {
+        solver.config.twoCaptchaKey = 'test_key_dummy_123';
+        const origSolve = solver.solve2Captcha.bind(solver);
+        let postAwaitTested = false;
+        solver.solve2Captcha = async function(sitekey, url, type, extra) {
+          if (!postAwaitTested) {
+            postAwaitTested = true;
+            console.log('[AUDIT_SW_SOLVER] Controlled delayed solve2Captcha started for post-await test');
+            setTimeout(() => {
+              campaignState.captchaEpoch = (campaignState.captchaEpoch || 1) + 1;
+              console.log('[AUDIT_SW_EPOCH] Advanced captchaEpoch while awaiting solver to ' + campaignState.captchaEpoch);
+            }, 300);
+            await new Promise(r => setTimeout(r, 800));
+            console.log('[AUDIT_SW_SOLVER] Controlled delayed solve2Captcha returning resolved token');
+            return 'dummy_delayed_token_post_await';
+          }
+          return origSolve(sitekey, url, type, extra);
+        };
+      }
+    })()`);
 
     // --- Open actual popup page
     const popupUrl = `chrome-extension://${extId}/popup.html`;
@@ -243,21 +328,33 @@ const PAGES = {
     const checks = [];
     const chk = (name, ok) => { checks.push({ name, ok }); rec(`${ok ? 'PASS' : 'FAIL'}: ${name}`); };
 
-    // 1. Fixture 1: Pre-submit / no early close
-    chk('Fixture 1: Tab remained physically open before submit attempt started', fullLog.includes('[STAGE_PROGRESSION] SUBMIT_ATTEMPT_STARTED'));
+    // 1. Fixture 1: Pre-submit / no early close with strict timestamp ordering
+    const timingOk = (
+      targetTiming.targetCreatedTs > 0 &&
+      targetTiming.submitAttemptStartedTs >= targetTiming.targetCreatedTs &&
+      targetTiming.submitTriggeredTs >= targetTiming.submitAttemptStartedTs &&
+      targetTiming.terminalSettledTs >= targetTiming.submitTriggeredTs &&
+      targetTiming.holdStartedTs >= targetTiming.terminalSettledTs &&
+      targetTiming.targetDestroyedTs >= targetTiming.holdStartedTs &&
+      !targetTiming.destroyedBeforeSubmitAttempt
+    );
+    rec(`[TAB_LIFECYCLE_ASSERT] targetCreatedTs=${targetTiming.targetCreatedTs} submitAttemptStartedTs=${targetTiming.submitAttemptStartedTs} submitTriggeredTs=${targetTiming.submitTriggeredTs} terminalSettledTs=${targetTiming.terminalSettledTs} holdStartedTs=${targetTiming.holdStartedTs} targetDestroyedTs=${targetTiming.targetDestroyedTs} destroyedBeforeSubmit=${targetTiming.destroyedBeforeSubmitAttempt} result=${timingOk ? 'PASS' : 'FAIL'}`);
+    chk('Fixture 1: Physical tab lifecycle ordering strictly preserved (no early close)', timingOk);
     
     // 2. Fixture 2: Real submit sequence
     chk('Fixture 2: SUBMIT_ATTEMPT_STARTED reached', fullLog.includes('SUBMIT_ATTEMPT_STARTED'));
     chk('Fixture 2: SUBMIT_TRIGGERED reached', fullLog.includes('SUBMIT_TRIGGERED'));
     chk('Fixture 2: VERIFYING / CONFIRMED_SUCCESS reached', fullLog.includes('CONFIRMED_SUCCESS'));
-    chk('Fixture 2: Maintaining page for registration completion observed', fullLog.includes('Maintaining page for registration completion'));
+    chk('Fixture 2: Maintaining page for registration completion observed', fullLog.includes('Maintaining tab for completion') || fullLog.includes('Maintaining page for registration completion'));
 
     // 3. Fixture 3: Stale same-tab message rejected
     chk('Fixture 3: Spoofed same-tab message rejected with [STALE_TARGET_EVENT]', fullLog.includes('[STALE_TARGET_EVENT]') && fullLog.includes('result=REJECTED'));
     chk('Fixture 3: Rejection reason was attempt_mismatch or session_mismatch', fullLog.includes('attempt_mismatch') || fullLog.includes('session_mismatch'));
 
-    // 4. Fixture 4: Stale solver rejected
-    chk('Fixture 4: Stale solver call rejected with [CAPTCHA_STALE_REQUEST]', fullLog.includes('[CAPTCHA_STALE_REQUEST]') && fullLog.includes('action=REJECT'));
+    // 4. Fixture 4: Stale solver pre-await rejection AND post-await stale drop
+    chk('Fixture 4: Stale solver pre-await call rejected with [CAPTCHA_STALE_REQUEST]', fullLog.includes('[CAPTCHA_STALE_REQUEST]') && fullLog.includes('action=REJECT'));
+    chk('Fixture 4: Stale solver post-await result dropped with [CAPTCHA_STALE_RESULT] action=DROP', fullLog.includes('[CAPTCHA_STALE_RESULT]') && fullLog.includes('action=DROP'));
+    chk('Fixture 4: Post-await drop reason was epoch_mismatch', fullLog.includes('epoch_mismatch'));
 
     // 5. Fixture 5: Exact counters parity
     chk('Fixture 5: HistoryStore currentRun success == 2', ledger.success === 2);
