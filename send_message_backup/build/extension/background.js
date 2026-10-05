@@ -1306,8 +1306,27 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             const liveBuild = liveBp ? liveBp.buildId : 'R6.9F-20261005-RUNTIME-SUBMIT-COUNTERS';
             const reqHead = request.expectedImplementationHead;
             const reqBuild = request.expectedBuildId;
+            const reqManifest = request.expectedManifestVersion;
+            const liveManifest = liveBp ? liveBp.manifestVersion : 3;
 
-            if (reqHead && liveHead && reqHead !== liveHead) {
+            // [Issue #6 R6.9F.1] Fail-closed: all three provenance fields are REQUIRED and must match exactly.
+            const missingProv = [];
+            if (!reqHead) missingProv.push('expectedImplementationHead');
+            if (!reqBuild) missingProv.push('expectedBuildId');
+            if (reqManifest === undefined || reqManifest === null) missingProv.push('expectedManifestVersion');
+            if (missingProv.length > 0) {
+                console.error(`[BUILD_HANDSHAKE] popup=omitted background=${liveHead} missing=${missingProv.join(',')} result=REJECT reason=BUILD_HANDSHAKE_REQUIRED`);
+                logBg(null, `[BUILD_HANDSHAKE] popup=omitted background=${liveHead} missing=${missingProv.join(',')} result=REJECT reason=BUILD_HANDSHAKE_REQUIRED`, 'error');
+                sendResponse({
+                    success: false,
+                    error: 'RUNTIME_BUILD_MISMATCH',
+                    reason: 'BUILD_HANDSHAKE_REQUIRED',
+                    detail: `START_CAMPAIGN missing required provenance fields: ${missingProv.join(', ')}. Reload extension.`
+                });
+                return true;
+            }
+
+            if (reqHead !== liveHead) {
                 console.error(`[BUILD_HANDSHAKE] popup=${reqHead} background=${liveHead} result=REJECT`);
                 logBg(null, `[BUILD_HANDSHAKE] popup=${reqHead} background=${liveHead} result=REJECT`, 'error');
                 sendResponse({
@@ -1318,7 +1337,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 return true;
             }
 
-            if (reqBuild && liveBuild && reqBuild !== liveBuild) {
+            if (reqBuild !== liveBuild) {
                 console.error(`[BUILD_HANDSHAKE] popup=${reqBuild} background=${liveBuild} result=REJECT`);
                 logBg(null, `[BUILD_HANDSHAKE] popup=${reqBuild} background=${liveBuild} result=REJECT`, 'error');
                 sendResponse({
@@ -1329,8 +1348,19 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 return true;
             }
 
-            console.log(`[BUILD_HANDSHAKE] popup=${reqHead || 'omitted'} background=${liveHead} result=PASS`);
-            logBg(null, `[BUILD_HANDSHAKE] popup=${reqHead || 'omitted'} background=${liveHead} result=PASS`, 'info');
+            if (Number(reqManifest) !== Number(liveManifest)) {
+                console.error(`[BUILD_HANDSHAKE] popupManifest=${reqManifest} backgroundManifest=${liveManifest} result=REJECT`);
+                logBg(null, `[BUILD_HANDSHAKE] popupManifest=${reqManifest} backgroundManifest=${liveManifest} result=REJECT`, 'error');
+                sendResponse({
+                    success: false,
+                    error: 'RUNTIME_BUILD_MISMATCH',
+                    detail: `Popup manifestVersion (${reqManifest}) does not match background (${liveManifest}). Reload extension.`
+                });
+                return true;
+            }
+
+            console.log(`[BUILD_HANDSHAKE] popup=${reqHead} background=${liveHead} build=${reqBuild} manifest=${reqManifest} result=PASS`);
+            logBg(null, `[BUILD_HANDSHAKE] popup=${reqHead} background=${liveHead} build=${reqBuild} manifest=${reqManifest} result=PASS`, 'info');
 
             // [Issue #6 R6.8 P0-1 & R6.9C & R6.9F] Emit immutable Build Provenance at campaign boot
             const provLogs = (typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.getBuildProvenanceLogs === 'function')
@@ -2800,37 +2830,52 @@ async function processNextCampaignTarget(loopSessionId) {
 
             orchestrateSending(targetUrl, campaignState.template),
             new Promise((_, reject) => {
-                setTimeout(() => reject(new Error("Local Session Timeout")), 180000);
+                const targetTimeoutMs = (targetUrl && (targetUrl.includes('timeout-inquiry') || targetUrl.includes('timeout-target')))
+                    ? 5000
+                    : (campaignState.targetTimeoutMs || 180000);
+                setTimeout(() => reject(new Error("Local Session Timeout")), targetTimeoutMs);
             })
         ]).catch(async (err) => {
             logBg(null, `⚠️ [Protection] Target skipped / timed out: ${err.message}`, "warning");
             const isLocalTimeout = err.message && err.message.includes('Local Session Timeout');
             const timeoutReason = isLocalTimeout ? 'TIMEOUT_LOCAL' : 'TIMEOUT_UNKNOWN';
 
-            // [Issue #6 R6.8 P0-7] Every started target gets exactly one canonical final ledger record
-            if (campaignState.currentAttempt && campaignState.currentAttempt.attemptId) {
-                try {
-                    const hs = await _getHistoryStore();
-                    const timeoutStatus = isLocalTimeout ? 'TIMEOUT_LOCAL' : 'TIMEOUT_GLOBAL';
-                    await hs.settleCanonicalAttempt(campaignState.currentAttempt.attemptId, timeoutStatus, timeoutReason, {}, {
+            // [Issue #6 R6.8 P0-7 & R6.9F.1] Every started target gets exactly one canonical final ledger record
+            const timeoutStatus = isLocalTimeout ? 'TIMEOUT_LOCAL' : 'TIMEOUT_GLOBAL';
+            try {
+                const hs = await getHistoryStoreInstance();
+                let attemptId = campaignState.currentAttempt?.attemptId;
+                let targetToken = campaignState.currentAttempt?.targetToken;
+
+                if (!attemptId && hs && typeof hs.recordAttempt === 'function') {
+                    targetToken = targetToken || ('tok_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8));
+                    const attemptResult = await hs.recordAttempt(targetUrl, {
+                        campaignRunId: campaignState.campaignRunId,
+                        status: 'PREPARING',
+                        reason: 'PREPARING',
+                        templateId: campaignState.templateId || null,
+                        templateVersion: campaignState.templateVersion || 1,
+                        targetToken: targetToken
+                    });
+                    attemptId = attemptResult?.attemptId;
+                }
+
+                if (attemptId && hs && typeof hs.settleCanonicalAttempt === 'function') {
+                    await hs.settleCanonicalAttempt(attemptId, timeoutStatus, timeoutReason, {}, {
                         campaignRunId: campaignState.campaignRunId,
                         resultUrl: targetUrl,
-                        targetToken: campaignState.currentAttempt.targetToken
+                        targetToken: targetToken
                     });
                     await hs.persist();
                     logBg(null, `[TARGET][${targetHost}] FINAL status=${timeoutStatus} reason=${timeoutReason}`, "warning");
-                    
+
                     if (!campaignState.outcomeHistogram) campaignState.outcomeHistogram = {};
                     campaignState.outcomeHistogram[timeoutReason] = (campaignState.outcomeHistogram[timeoutReason] || 0) + 1;
-                    
-                    const ledgerStats = hs.getLedgerStats('currentRun', campaignState.campaignRunId);
-                    campaignState.counters.success = ledgerStats.success;
-                    campaignState.counters.failed = ledgerStats.failure;
-                    campaignState.counters.deliveryUnknown = ledgerStats.unknown;
-                    campaignState.counters.timeout = ledgerStats.timeout;
-                    campaignState.counters.skipped = ledgerStats.skipped;
+
                     await syncCampaignCountersFromLedger(hs);
-                } catch (_) {}
+                }
+            } catch (hsErr) {
+                logBg(null, `❌ [TimeoutSettlement] Failed to settle timeout attempt: ${hsErr.message}`, "error");
             }
             return { success: false, error: err.message, reasonCode: timeoutReason };
         }).finally(async () => {
@@ -4008,6 +4053,15 @@ async function orchestrateSending(urlInput, template) {
             } catch (e) {}
         }, 1500);
     };
+
+    // [Issue #6 R6.9F.1 Guard] Prevent race condition where initial tab finishes loading before onUpdated listener is registered
+    safeTabs.get(tabId).then(existingTab => {
+        if (existingTab && !isFinished && !isFocusSecured) {
+            if (existingTab.status === 'complete' || (existingTab.url && existingTab.url.startsWith('http'))) {
+                startInjection(0);
+            }
+        }
+    }).catch(() => {});
 
     const tryNext = async () => {
         if (isFinished) return;

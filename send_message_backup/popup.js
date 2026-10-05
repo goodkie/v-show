@@ -1057,7 +1057,8 @@ function applyTranslations(lang) {
 function updateRealTimeStatus(data) {
     if (!data) return;
     if (data.scope || data.campaignRunId) {
-        console.log(`[LEDGER_STATS] scope=${data.scope || 'currentGeneration'} success=${data.successCount || 0} failed=${data.failedCount || 0} unknown=${data.deliveryUnknownCount || 0}`);
+        const _liveScope = data.scope || (data.campaignRunId ? 'currentRun' : 'currentGeneration');
+        console.log(`[LEDGER_STATS] scope=${_liveScope}${data.campaignRunId ? ' campaignRunId=' + data.campaignRunId : ''} success=${data.successCount || 0} failed=${data.failedCount || 0} unknown=${data.deliveryUnknownCount || 0}`);
     }
     if (data.totalTargets !== undefined && data.totalTargets > 0) {
         totalTargets = data.totalTargets;
@@ -1732,7 +1733,9 @@ async function verifyBuildHandshake() {
             const bgHead = bgInfo.implementationHead;
             const bgBuild = bgInfo.buildId;
 
-            const isMatch = (localHead === bgHead && localBuild === bgBuild);
+            const localManifest = localInfo.manifestVersion || 3;
+            const bgManifest = bgInfo.manifestVersion;
+            const isMatch = (localHead === bgHead && localBuild === bgBuild && Number(localManifest) === Number(bgManifest));
             if (isMatch) {
                 console.log(`[BUILD_HANDSHAKE] localHead=${localHead} backgroundHead=${bgHead} result=PASS`);
                 _applyHandshakeUiState(true);
@@ -3979,7 +3982,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const storedState = await chrome.storage.local.get(['xpider_active_campaign_run_id', 'xpider_isActive', 'xpider_isPaused', 'xpider_history_scope_preference', 'xpider_history_rows', 'xpider_history_attempts', 'xpider_history_generation']);
             const activeRunId = storedState.xpider_active_campaign_run_id || null;
             const isCampaignActive = storedState.xpider_isActive || storedState.xpider_isPaused;
-            const scopePref = storedState.xpider_history_scope_preference || (isCampaignActive || activeRunId ? 'currentRun' : 'currentGeneration');
+            // [Issue #6 R6.9F.1] While a run is active (or a run id is persisted) the visible panel MUST be currentRun.
+            let scopePref = storedState.xpider_history_scope_preference || (isCampaignActive || activeRunId ? 'currentRun' : 'currentGeneration');
+            if (isCampaignActive && activeRunId) scopePref = 'currentRun';
 
             let stats = null;
             if (hs) {
@@ -4004,7 +4009,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     : '<b style="color:#94a3b8">currentRun</b> <span style="font-size:10px;color:#cbd5e1;">(No active run)</span>')
                 : '<b style="color:#f59e0b">currentGeneration</b> <span style="font-size:10px;color:#fca5a5;">(Generation totals — not current run)</span>';
 
-            console.log(`[LEDGER_STATS] scope=${scopePref} success=${succeeded} failed=${failed} timeout=${timeout} unknown=${unknown}`);
+            console.log(`[LEDGER_STATS] scope=${scopePref}${scopePref === 'currentRun' ? ' campaignRunId=' + (activeRunId || 'none') : ''} success=${succeeded} failed=${failed} timeout=${timeout} unknown=${unknown}`);
 
             panel.innerHTML = `
                 <div class="history-stat-row">
@@ -4045,6 +4050,17 @@ document.addEventListener('DOMContentLoaded', () => {
     if (typeof window !== 'undefined') {
         window._renderHistoryPanel = _renderHistoryPanel;
     }
+
+    // [Issue #6 R6.9F.1] Re-render History panel whenever run identity / run state changes
+    try {
+        chrome.storage.onChanged.addListener((changes, area) => {
+            if (area && area !== 'local') return;
+            if (changes.xpider_active_campaign_run_id || changes.xpider_isActive || changes.xpider_isPaused) {
+                console.log('[HISTORY_SCOPE_REFRESH] trigger=' + Object.keys(changes).filter(k => /^xpider_(active_campaign_run_id|isActive|isPaused)$/.test(k)).join(','));
+                _renderHistoryPanel();
+            }
+        });
+    } catch (_) {}
 
     // Initial render on popup open
     _renderHistoryPanel();

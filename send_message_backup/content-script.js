@@ -308,7 +308,7 @@
                 attemptId: ident.attemptId || null,
                 targetToken: ident.targetToken || null,
                 campaignRunId: ident.campaignRunId || null,
-                sessionId: ident.sessionId || null,
+                sessionId: (ident.sessionId !== undefined && ident.sessionId !== null) ? ident.sessionId : null,
                 captchaEpoch: ident.captchaEpoch || 1
             }, extra);
         };
@@ -363,7 +363,7 @@
                     attemptId: request.attemptId || attemptId,
                     targetToken: request.targetToken || null,
                     campaignRunId: request.campaignRunId || null,
-                    sessionId: request.sessionId || null,
+                    sessionId: (request.sessionId !== undefined && request.sessionId !== null) ? request.sessionId : null,
                     captchaEpoch: request.captchaEpoch || 1
                 };
 
@@ -1333,8 +1333,20 @@
 
             currentTargetLifecycleState = TargetLifecycleState.SUBMIT_RECOVERY;
 
-            // [Issue #6 R6.9F] Persistent submit boundary & Duplicate Submit Block
-            const curAttemptId = (window.__xpider_exec_identity && window.__xpider_exec_identity.attemptId) || 'default';
+            // [Issue #6 R6.9F.1] Canonical execution identity assertion — no submit without a fully bound identity.
+            // (Root cause of reqToken=none: the previous code read targetToken from the legacy lock object
+            // __xpider_exec_identity, which never carries it, and its explicit undefined overrode the canonical payload.)
+            const _execIdent = window.__xpider_execution_identity || {};
+            const _legacyIdent = window.__xpider_exec_identity || {};
+            const curAttemptId = _execIdent.attemptId || _legacyIdent.attemptId || 'default';
+            const _sessOk = (_execIdent.sessionId !== undefined && _execIdent.sessionId !== null);
+            const _identComplete = !!(_execIdent.attemptId && _execIdent.targetToken && _execIdent.campaignRunId && _sessOk);
+            logDev(`[EXECUTION_IDENTITY_ASSERT] attemptId=${_execIdent.attemptId || 'none'} targetToken=${_execIdent.targetToken || 'none'} campaignRunId=${_execIdent.campaignRunId || 'none'} sessionId=${_sessOk ? _execIdent.sessionId : 'none'} result=${_identComplete ? 'PASS' : 'FAIL'}`, _identComplete ? "info" : "error");
+            if (!_identComplete) {
+                logDev("[SUBMIT_IDENTITY_FAIL_CLOSED] canonical execution identity incomplete — submit withheld", "error");
+                return false;
+            }
+
             if (window.__xpider_submitBoundaryReached && window.__xpider_submitBoundaryReached[curAttemptId]) {
                 logDev(`[SUBMIT_DUPLICATE_BLOCK] attemptId=${curAttemptId} result=REJECT`, "warning");
                 return false;
@@ -1358,23 +1370,39 @@
             logDev("📤 [Action] Triggering submission sequence...");
             logDev("[SUBMIT] attemptStarted=true", "info");
             logDev("[STAGE] stage=SUBMIT_ATTEMPT_STARTED", "info");
+
+            // [Issue #6 R6.9F.1] STAGE_PROGRESSION ACK is REQUIRED before any activation may occur.
+            let stageProgRes = null;
             try {
-                const stageProgRes = await new Promise(res => {
+                stageProgRes = await new Promise(res => {
+                    const ackTimer = setTimeout(() => res({ success: false, reason: 'ack_timeout' }), 5000);
                     const sendFn = window.__xpider_sendExecutionMessage || chrome.runtime.sendMessage;
-                    sendFn({
-                        action: 'STAGE_PROGRESSION',
-                        stage: 'SUBMIT_ATTEMPT_STARTED',
-                        attemptId: curAttemptId,
-                        targetToken: (window.__xpider_exec_identity && window.__xpider_exec_identity.targetToken),
-                        url: window.location.href
-                    }, res);
+                    try {
+                        sendFn({
+                            action: 'STAGE_PROGRESSION',
+                            stage: 'SUBMIT_ATTEMPT_STARTED',
+                            attemptId: curAttemptId,
+                            url: window.location.href
+                        }, (r) => { clearTimeout(ackTimer); res(r); });
+                    } catch (sendErr) {
+                        clearTimeout(ackTimer);
+                        res({ success: false, reason: 'send_threw:' + (sendErr && sendErr.message) });
+                    }
                 });
-                if (stageProgRes && stageProgRes.duplicateBlocked) {
-                    logDev(`[SUBMIT_DUPLICATE_BLOCK] attemptId=${curAttemptId} result=REJECT`, "warning");
-                    return false;
-                }
-            } catch (_) {}
-            
+            } catch (ackErr) {
+                stageProgRes = { success: false, reason: 'ack_exception' };
+            }
+            if (stageProgRes && stageProgRes.duplicateBlocked) {
+                logDev(`[SUBMIT_DUPLICATE_BLOCK] attemptId=${curAttemptId} result=REJECT`, "warning");
+                return false;
+            }
+            if (!stageProgRes || stageProgRes.success !== true) {
+                try { delete window.__xpider_submitBoundaryReached[curAttemptId]; } catch (_) {}
+                logDev(`[SUBMIT_ACK_REQUIRED] stage=SUBMIT_ATTEMPT_STARTED ack=REJECTED reason=${(stageProgRes && (stageProgRes.reason || stageProgRes.error)) || 'no_response'} — activation withheld`, "error");
+                return false;
+            }
+            logDev(`[SUBMIT_ACK] stage=SUBMIT_ATTEMPT_STARTED ack=ACCEPTED attemptId=${curAttemptId}`, "info");
+
             // [Hotfix R2 & R6.9E] Prepare SubmissionOutcomeVerifier BEFORE submit action
             const submitHoldMs = (speed && speed.hold) || submitDelayMs || 4000;
             const verifier = new SubmissionOutcomeVerifier(form, template, {
@@ -4176,6 +4204,127 @@
     // SubmitExecutorR5 — Controlled Escalation Submit Ladder (Issue #6 R6.1)
     // ========================================================================
     class SubmitExecutorR5 {
+
+        // ── [Issue #6 R6.9F.1] Custom submitter activation proof (single click + bounded commit window) ──
+        _isElementVisible(el) {
+            try {
+                if (!el || !el.isConnected) return false;
+                const r = el.getBoundingClientRect();
+                if (!(r.width > 0 && r.height > 0)) return false;
+                const cs = window.getComputedStyle(el);
+                return cs.display !== 'none' && cs.visibility !== 'hidden';
+            } catch (_) { return false; }
+        }
+
+        _countNetworkCommits() {
+            try {
+                return performance.getEntriesByType('resource')
+                    .filter(e => e.initiatorType === 'fetch' || e.initiatorType === 'xmlhttprequest' || e.initiatorType === 'beacon').length;
+            } catch (_) { return 0; }
+        }
+
+        _countStatusNodes() {
+            try {
+                const sel = '[role="alert"],[role="status"],[aria-live],[class*="success"],[class*="thank"],[class*="sent"],[class*="confirm"],[id*="success"],[id*="thank"],[id*="confirm"]';
+                return Array.from(document.querySelectorAll(sel)).filter(n => this._isElementVisible(n) && (n.textContent || '').trim().length > 0).length;
+            } catch (_) { return 0; }
+        }
+
+        _hasSuccessText() {
+            try {
+                const txt = ((document.body && document.body.innerText) || '').slice(0, 30000);
+                return /(thank you|thanks for|successfully (sent|submitted)|message (has been )?sent|has been (sent|received|submitted)|we('| wi)ll (get back|be in touch|respond)|감사합니다|접수되었|전송되었|발송되었|완료되었)/i.test(txt);
+            } catch (_) { return false; }
+        }
+
+        _hasValidationError(form) {
+            try {
+                if (!form || !form.querySelector) return false;
+                if (form.tagName === 'FORM' && form.querySelector(':invalid')) return true;
+                const bad = form.querySelector('[aria-invalid="true"], .invalid-feedback, .wpcf7-not-valid-tip, .field-error, .error-message');
+                return !!(bad && this._isElementVisible(bad) && (bad.textContent || '').trim().length > 0);
+            } catch (_) { return false; }
+        }
+
+        _captureActivationSnapshot(primary, form) {
+            return {
+                href: window.location.href,
+                netCount: this._countNetworkCommits(),
+                statusNodes: this._countStatusNodes(),
+                hasSuccessText: this._hasSuccessText(),
+                formVisible: this._isElementVisible(form),
+                primaryConnected: !!(primary && primary.isConnected),
+                primaryDisabled: this.isDisabled(primary),
+                primaryBusy: !!(primary.getAttribute && primary.getAttribute('aria-busy') === 'true'),
+                primaryText: ((primary.textContent || primary.value || '') + '').trim().slice(0, 80),
+                primaryClass: String(primary.className || ''),
+                hadValidationError: this._hasValidationError(form)
+            };
+        }
+
+        _collectCommitSignals(snap, primary, form, submitFired) {
+            const s = [];
+            if (submitFired && submitFired()) s.push('NATIVE_SUBMIT_EVENT');
+            if (window.location.href !== snap.href) s.push('URL_TRANSITION');
+            if (this._countNetworkCommits() > snap.netCount) s.push('NETWORK_COMMIT');
+            if (this._countStatusNodes() > snap.statusNodes) s.push('STATUS_NODE_APPEARED');
+            if (!snap.hasSuccessText && this._hasSuccessText()) s.push('SUCCESS_TEXT_APPEARED');
+            if (snap.formVisible && form && form.isConnected === false) s.push('FORM_REPLACED');
+            else if (snap.formVisible && !this._isElementVisible(form)) s.push('FORM_HIDDEN');
+            if (snap.primaryConnected && !primary.isConnected) s.push('SUBMITTER_CONSUMED');
+            else if (primary.isConnected) {
+                if (!snap.primaryDisabled && this.isDisabled(primary)) s.push('SUBMITTER_DISABLED');
+                if (!snap.primaryBusy && primary.getAttribute && primary.getAttribute('aria-busy') === 'true') s.push('SUBMITTER_BUSY');
+                const nowText = ((primary.textContent || primary.value || '') + '').trim().slice(0, 80);
+                if (nowText && nowText !== snap.primaryText) s.push('SUBMITTER_TEXT_CHANGED');
+                const nowCls = String(primary.className || '');
+                if (nowCls !== snap.primaryClass && /(loading|sending|submitted|busy|processing)/i.test(nowCls) && !/(loading|sending|submitted|busy|processing)/i.test(snap.primaryClass)) s.push('SUBMITTER_STATE_CLASS');
+            }
+            return s;
+        }
+
+        async _observeActivationCommit(snap, primary, form, submitFired, windowMs) {
+            const deadline = Date.now() + windowMs;
+            for (;;) {
+                const signals = this._collectCommitSignals(snap, primary, form, submitFired);
+                const validationError = !snap.hadValidationError && this._hasValidationError(form);
+                if (validationError) return { committed: false, validationError: true, signals };
+                if (signals.length > 0) return { committed: true, validationError: false, signals };
+                if (Date.now() >= deadline) return { committed: false, validationError: false, signals: [] };
+                await new Promise(r => setTimeout(r, 100));
+            }
+        }
+
+        async _activateCustomSubmitter(primary, form, submitFired) {
+            const snap = this._captureActivationSnapshot(primary, form);
+            const tag = (primary.tagName || 'el').toLowerCase();
+            logDev(`[CUSTOM_ACTIVATION] phase=SNAPSHOT tag=${tag} formVisible=${snap.formVisible} statusNodes=${snap.statusNodes} netCount=${snap.netCount}`, "info");
+            try { if (typeof primary.scrollIntoView === 'function') primary.scrollIntoView({ block: 'center' }); } catch (_) {}
+            try { primary.click(); } catch (e) { logDev(`⚠️ [CUSTOM_ACTIVATION] click threw: ${e.message}`, "warning"); }
+            logDev("[CUSTOM_ACTIVATION] phase=CLICK count=1", "info");
+            let obs = await this._observeActivationCommit(snap, primary, form, submitFired, 1800);
+            if (!obs.committed && !obs.validationError) {
+                // Zero observable effect from the DOM click: exactly one pointer-sequence fallback (handlers bound to pointer/mouse events).
+                logDev("[CUSTOM_ACTIVATION] phase=ZERO_EFFECT_FALLBACK pointer_sequence count=1", "info");
+                try { _dispatchSingleClickSequence(primary); } catch (_) {}
+                obs = await this._observeActivationCommit(snap, primary, form, submitFired, 1200);
+            }
+            if (obs.committed) {
+                logDev(`[SUBMIT_ACTIVATION_PROOF] strategy=custom signals=${obs.signals.join(',')} result=SUBMIT_TRIGGERED activationProved=true deliveryConfirmed=false`, "info");
+                return {
+                    success: true,
+                    reasonCode: 'SUBMIT_TRIGGERED',
+                    strategy: 'custom_click_commit_observed',
+                    submitEventFired: !!(submitFired && submitFired()),
+                    activationProved: true,
+                    activationSignals: obs.signals,
+                    commitSignal: obs.signals[0]
+                };
+            }
+            const reason = obs.validationError ? 'SUBMIT_VALIDATION_BLOCKED' : 'SUBMIT_ACTIVATION_EXHAUSTED';
+            logDev(`[SUBMIT_ACTIVATION_PROOF] strategy=custom signals=none result=${reason}`, "warning");
+            return { success: false, reasonCode: reason, strategy: 'custom_click_no_commit', submitEventFired: false };
+        }
         constructor(form, template = {}, options = {}) {
             this.form = form;
             this.template = template;
@@ -4633,6 +4782,15 @@
                     if (this.isDisabled(primary)) {
                         return { success: false, reasonCode: 'SUBMIT_BUTTON_NEVER_ENABLED', strategy: 'none', submitEventFired: false };
                     }
+                }
+
+                // [Issue #6 R6.9F.1] Non-native (semantic custom) submitters: ONE activation + bounded commit observation.
+                // A custom <a>/<div>/<span> control can run its handler, mutate the DOM, call fetch/XHR, and never fire a
+                // native form 'submit' event — so submitEventFired is NOT the only activation proof for these controls.
+                // ACTIVATION_PROVED != DELIVERY_CONFIRMED: final success is still decided by SubmissionOutcomeVerifier.
+                const _isNativeSubmitter = (chosenTag === 'button' || chosenTag === 'input') && form && form.tagName === 'FORM';
+                if (!_isNativeSubmitter && !this.isDisabled(primary)) {
+                    return await this._activateCustomSubmitter(primary, form, () => submitEventFired);
                 }
 
                 // [Issue #6 R6.6 Wix/Custom Form Adapter]

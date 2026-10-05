@@ -25,11 +25,11 @@
         builtAt: '2026-10-05T08:50:00.000Z',
         provenanceSchema: 2,
         modules: {
-            backgroundSha: 'd3c1618a72507b8965ec9f57500b0c7b80f732f3890c863ce528a4fca591a62f',
-            contentScriptSha: '0091ab06d2458fdbea64911979529f81d701f6b997d33fef17ee4791cbbe1e32',
+            backgroundSha: 'e57b3a6abad42e26ee80b3535e92f3b9feeeda6621f207f65675f058e9d04052',
+            contentScriptSha: '0db24eac12580d81500680d32f654da8971d3231ab19c19cf2b12a5e37a5c09e',
             emailCollectorSha: '3f1147a379e159e7777158f2caa74cc8d40b2a0b0eb2c244f440af379cb5c9c9',
-            historyStoreSha: '38816d8b6e66114e24cdff84a52e0c22dac38bda23a38826b3ae581d252b8791',
-            contactGateSha: '524933622d1a862425d7302b051bb063d5a3cbec166d868fa73825fa4d38f334',
+            historyStoreSha: 'c31dba092c67a6bac6d8fffb616109328e50c5a13e73110bc4c3720060e9c406',
+            contactGateSha: '88c60303e5b42ef28e53167ce14ca1cb96628cbf0f73c9e4b7a50004663092e4',
             visionSubmitSha: '25cf18a4834bb476edff5e8f19a78dd2723bd556ede649ada69bc801543c83f3'
         }
     };
