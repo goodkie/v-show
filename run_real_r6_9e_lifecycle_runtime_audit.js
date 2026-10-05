@@ -7,7 +7,7 @@ const { spawn, execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
-const WebSocket = require('ws');
+const WebSocket = globalThis.WebSocket;
 
 const PORT = 8973;
 const CDP = 9225;
@@ -21,10 +21,10 @@ function rec(msg) {
   lines.push(line);
 }
 
-const FORM = (prefix, title, preSubmitDelayMs = 0, extraScript = '') => `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title}</title></head><body>
+const FORM = (prefix, title, preSubmitDelayMs, onsubmit, extraScript = '') => `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title}</title></head><body>
 <h2>${title}</h2>
 <p>Please use the form below to contact our team.</p>
-<form id="${prefix}-form" method="POST" action="/submit" onsubmit="return handleFormSubmit(event)">
+<form id="contact-form" onsubmit="${onsubmit}">
   <input type="text" name="name" placeholder="Your Name" value="" />
   <input type="email" name="email" placeholder="Your Email" value="" />
   <input type="text" name="subject" placeholder="Subject" value="" />
@@ -45,7 +45,7 @@ const PAGES = {
 
   // 2. STALE SAME-TAB & POST-AWAIT SOLVER TEST: emits rogue messages and active solver request from same tab
   '/stale-same-tab.html': FORM('st', 'Stale Message Contact', 0,
-    "event.preventDefault(); setTimeout(function(){ var d=document.createElement('div'); d.id='thanks'; d.className='thank-you-message'; d.style.cssText='color:green;font-weight:bold'; d.textContent='Thank you for contacting us!'; document.getElementById('result-slot').appendChild(d); }, 2200); return false;",
+    "event.preventDefault(); setTimeout(function(){ var d=document.createElement('div'); d.id='thanks'; d.className='thank-you-message'; d.style.cssText='color:green;font-weight:bold'; d.textContent='Thank you for contacting us!'; document.getElementById('result-slot').appendChild(d); }, 400); return false;",
     `setTimeout(function(){
        // 1. Rogue same-tab control plane message -> STALE_TARGET_EVENT REJECTED
        window.postMessage({
@@ -162,17 +162,17 @@ const PAGES = {
         const line = consoleArgs(d);
         rec(`[SW_CONSOLE] ${line}`);
         const now = Date.now();
-        if (line.includes('delayed-presubmit.html') || line.includes('delayed-presubmit')) {
-          if (line.includes('[TARGET_DISCOVERY]') && !targetTiming.targetCreatedTs) {
-            targetTiming.targetCreatedTs = now;
-          }
-          if (line.includes('[STAGE_PROGRESSION] SUBMIT_ATTEMPT_STARTED') && !targetTiming.submitAttemptStartedTs) {
+        if (line.includes('[TARGET_DISCOVERY]') && line.includes('delayed-presubmit.html') && !targetTiming.targetCreatedTs) {
+          targetTiming.targetCreatedTs = now;
+        }
+        if (targetTiming.targetCreatedTs > 0 && targetTiming.targetDestroyedTs === 0) {
+          if (line.includes('SUBMIT_ATTEMPT_STARTED') && !targetTiming.submitAttemptStartedTs) {
             targetTiming.submitAttemptStartedTs = now;
           }
-          if (line.includes('[PIPELINE][SUBMIT_TRIGGERED]') && !targetTiming.submitTriggeredTs) {
+          if (line.includes('SUBMIT_TRIGGERED') && !targetTiming.submitTriggeredTs) {
             targetTiming.submitTriggeredTs = now;
           }
-          if (line.includes('[FINAL] status=CONFIRMED_SUCCESS') && !targetTiming.terminalSettledTs) {
+          if (line.includes('CONFIRMED_SUCCESS') && !targetTiming.terminalSettledTs) {
             targetTiming.terminalSettledTs = now;
           }
           if ((line.includes('Maintaining tab for completion') || line.includes('Maintaining page for registration completion')) && !targetTiming.holdStartedTs) {
@@ -198,10 +198,12 @@ const PAGES = {
         if (ti && ti.type === 'page') {
           const now = Date.now();
           targetLifecycleEvents.push({ type: 'CREATED', url: ti.url, targetId: ti.targetId, ts: now });
-          if (ti.url && ti.url.includes('delayed-presubmit.html') && !targetTiming.targetCreatedTs) {
-            targetTiming.targetCreatedTs = now;
-            targetTiming.delayedTargetId = ti.targetId;
-            rec(`[CDP_TARGET_CREATED] ts=${now} targetId=${ti.targetId} url=${ti.url}`);
+          if (ti.url && ti.url.includes('delayed-presubmit.html')) {
+            if (!targetTiming.targetCreatedTs) targetTiming.targetCreatedTs = now;
+            if (!targetTiming.delayedTargetId) {
+              targetTiming.delayedTargetId = ti.targetId;
+              rec(`[CDP_TARGET_CREATED] ts=${now} targetId=${ti.targetId} url=${ti.url}`);
+            }
           }
         }
       } else if (d.method === 'Target.targetDestroyed') {
