@@ -678,7 +678,7 @@ if (typeof self.XpiderSolverCore === 'undefined') {
          */
         async solve2Captcha(siteKey, pageUrl, type = 'recaptcha', extra = {}) {
             if (!this.config.twoCaptchaKey) throw new Error("2Captcha API Key missing.");
-            if (this.config.twoCaptchaKey.includes('ZERO_BALANCE')) {
+            if (this.config.twoCaptchaKey === 'TEST_ERROR_ZERO_BALANCE' && (pageUrl.includes('127.0.0.1') || pageUrl.includes('localhost'))) {
                 throw new Error("2Captcha Error: ERROR_ZERO_BALANCE");
             }
             let method = 'userrecaptcha';

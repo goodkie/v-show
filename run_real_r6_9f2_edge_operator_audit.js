@@ -52,8 +52,11 @@ const PAGES = {
 </form>
 <div id="result-slot"></div>
 <script>
+window.__activationCount = 0;
 document.getElementById('contact-form').addEventListener('submit', function(e) {
   e.preventDefault();
+  window.__activationCount = (window.__activationCount || 0) + 1;
+  console.log('[NATURAL_DUP_ACTIVATION_COUNT] count=' + window.__activationCount);
   var d = document.createElement('div');
   d.id = 'success-message';
   d.textContent = 'Thank you! Your message has been sent successfully.';
@@ -152,15 +155,26 @@ document.getElementById('contact-form').addEventListener('submit', function(e) {
   rec('================================================================================');
   rec(`Timestamp: ${new Date().toISOString()}`);
 
-  // ── Blocker 2: Record actual git HEAD and working-tree cleanliness BEFORE launch ──
+  // ── Blocker 2 & 3: Record strict git HEAD and working-tree cleanliness BEFORE launch ──
   const actualGitHead = execSync('git rev-parse HEAD').toString().trim();
   const gitStatus = execSync('git status --porcelain -- send_message_backup/').toString().trim();
   const gitWorktreeClean = gitStatus === '';
+  const stampedHead = '48c23c7f8b0e81099d45aeb584e65d8713db7b37';
+  let isAncestor = false;
+  try {
+    execSync(`git merge-base --is-ancestor ${stampedHead} ${actualGitHead}`);
+    isAncestor = true;
+  } catch (_) {
+    isAncestor = false;
+  }
   rec(`[BUILD_PROVENANCE] gitHead=${actualGitHead}`);
   rec(`[BUILD_PROVENANCE] gitWorktreeClean=${gitWorktreeClean} (relevant: send_message_backup/)`);
-  if (!gitWorktreeClean) {
-    rec(`[BUILD_PROVENANCE][WARN] Dirty files: ${gitStatus}`);
-  }
+  rec(`[AUDIT_BUILD_IDENTITY]`);
+  rec(`gitHead=${actualGitHead}`);
+  rec(`implementationHead=${stampedHead}`);
+  rec(`ancestor=${isAncestor}`);
+  rec(`worktreeClean=${gitWorktreeClean}`);
+  rec(`result=${isAncestor && gitWorktreeClean ? 'PASS' : 'FAIL'}`);
 
   const server = http.createServer((req, res) => {
     const p = req.url.split('?')[0];
@@ -314,28 +328,55 @@ document.getElementById('contact-form').addEventListener('submit', function(e) {
 
     // Step B: Wait for SUBMIT_ATTEMPT_STARTED and natural boundary commit (boundaryCount > 0)
     let dupAttemptId = null;
+    let dupTargetToken = null;
+    let dupCampaignRunId = null;
+    let dupSessionId = null;
+    let dupTabId = null;
     for (let i = 0; i < 20; i++) {
       await new Promise(r => setTimeout(r, 1000));
       const st = await evalSw(`(() => ({
         active: campaignState.isActive,
         attemptId: campaignState.currentAttempt ? campaignState.currentAttempt.attemptId : null,
+        targetToken: campaignState.activeTargetExecution ? campaignState.activeTargetExecution.targetToken : null,
+        campaignRunId: campaignState.campaignRunId,
+        sessionId: campaignState.sessionId,
+        tabId: campaignState.activeTabId || campaignState.currentTabId,
         boundaryCount: Object.keys(campaignState.submitBoundaryReached || {}).length
       }))()`);
       rec(`[DUP_POLL][${i}s] active=${st.active} attemptId=${st.attemptId} boundaryCount=${st.boundaryCount}`);
       if (st.boundaryCount > 0) {
         dupAttemptId = st.attemptId;
+        dupTargetToken = st.targetToken;
+        dupCampaignRunId = st.campaignRunId;
+        dupSessionId = st.sessionId;
+        dupTabId = st.tabId;
         break;
       }
     }
-    rec(`[DUP_ATTEMPT_ID] ${dupAttemptId}`);
+    rec(`[DUP_ATTEMPT_ID] ${dupAttemptId} token=${dupTargetToken} run=${dupCampaignRunId} session=${dupSessionId}`);
 
-    // Step C: With the REAL boundary committed by background, immediately query it
+    // Step C1: Query naturally committed boundary latch
     let dupBoundaryNatural = null;
     if (dupAttemptId) {
       dupBoundaryNatural = await evalPop(`new Promise(r => chrome.runtime.sendMessage({ action: 'QUERY_SUBMIT_BOUNDARY', attemptId: '${dupAttemptId}' }, r))`);
       rec(`[DUP_BOUNDARY_NATURAL_QUERY] attemptId=${dupAttemptId} result=${JSON.stringify(dupBoundaryNatural)}`);
     } else {
       rec(`[DUP_BOUNDARY_NATURAL_QUERY] SKIPPED - no attemptId with committed boundary available yet`);
+    }
+
+    // Step C2: REAL SECOND SUBMIT ATTEMPT under the identical execution identity (Blocker 1)
+    let secondSubmitRes = null;
+    if (dupAttemptId) {
+      secondSubmitRes = await evalPop(`new Promise(r => chrome.runtime.sendMessage({
+        action: 'STAGE_PROGRESSION',
+        stage: 'SUBMIT_ATTEMPT_STARTED',
+        attemptId: '${dupAttemptId}',
+        targetToken: '${dupTargetToken}',
+        campaignRunId: '${dupCampaignRunId}',
+        sessionId: ${dupSessionId},
+        tabId: ${dupTabId}
+      }, r))`);
+      rec(`[DUP_SECOND_SUBMIT_RES] ${JSON.stringify(secondSubmitRes)}`);
     }
 
     // Step D: Wait for mini-campaign to settle
@@ -464,19 +505,18 @@ document.getElementById('contact-form').addEventListener('submit', function(e) {
     chk('Check 3: Build mismatch banner hidden when builds match', !mismatchBannerVisible);
     chk('Check 4: Start button enabled and not build-locked', !startBtnDisabled && !startBtnLocked);
 
-    // ── Blocker 2: Clean-HEAD ────────────────────────────────────────────
-    const gitLogRecent = execSync('git log -5 --format=%H').toString();
-    chk('Check 5: gitHead matches implementationHead (48c23c7f) or stamp commit', actualGitHead.startsWith('48c23c7f') || gitLogRecent.includes('48c23c7f8b0e81099d45aeb584e65d8713db7b37'));
+    // ── Blocker 2 & 3: Strict Clean-HEAD Identity ───────────────────────
+    chk('Check 5: Strict clean-HEAD: gitHead descends from stamped implementationHead and worktree clean', isAncestor && gitWorktreeClean && actualGitHead.length === 40);
     chk('Check 6: Working tree clean for send_message_backup/ at time of audit', gitWorktreeClean);
 
     // ── Handshake proofs ─────────────────────────────────────────────────
     chk('Check 7: Missing provenance fields in START_CAMPAIGN → RUNTIME_BUILD_MISMATCH', missingFieldsRes && missingFieldsRes.error === 'RUNTIME_BUILD_MISMATCH');
     chk('Check 8: Mismatched commit hash in START_CAMPAIGN → RUNTIME_BUILD_MISMATCH', mismatchRes && mismatchRes.error === 'RUNTIME_BUILD_MISMATCH');
 
-    // ── Blocker 3: Natural duplicate submit ──────────────────────────────
+    // ── Blocker 1: Natural duplicate submit & real 2nd attempt block ────
     chk('Check 9: Natural SUBMIT_ATTEMPT_STARTED produced real attemptId (no CDP pre-seeding)', !!dupAttemptId);
-    chk('Check 10: Background committed boundary latch naturally (reached=true)', dupBoundaryNatural && dupBoundaryNatural.reached === true);
-    chk('Check 11: Boundary latch persists post-settlement (durable)', dupBoundaryPostSettle && dupBoundaryPostSettle.reached === true);
+    chk('Check 10: Second SUBMIT_ATTEMPT_STARTED rejected with duplicateBlocked=true & [SUBMIT_DUPLICATE_BLOCK]', secondSubmitRes && (secondSubmitRes.duplicateBlocked === true || secondSubmitRes.error === 'SUBMIT_DUPLICATE_BLOCK') && fullLog.includes('[SUBMIT_DUPLICATE_BLOCK]'));
+    chk('Check 11: Physical submit activation occurred exactly once (activationCount=1) and latch is durable', dupBoundaryPostSettle && dupBoundaryPostSettle.reached === true && fullLog.includes('[NATURAL_DUP_ACTIVATION_COUNT] count=1') && !fullLog.includes('[NATURAL_DUP_ACTIVATION_COUNT] count=2'));
 
     // ── Main campaign: 6-bucket results ─────────────────────────────────
     chk('Check 12: WP comment form rejected as NON_INQUIRY_COMMENT_FORM', fullLog.includes('NON_INQUIRY_COMMENT_FORM'));
@@ -493,7 +533,10 @@ document.getElementById('contact-form').addEventListener('submit', function(e) {
     // ── Blocker 4: CAPTCHA terminal fixture ──────────────────────────────
     chk('Check 22: CAPTCHA target produced CAPTCHA_SOLVER_UNAVAILABLE or ERROR_ZERO_BALANCE', fullLog.includes('CAPTCHA_SOLVER_UNAVAILABLE') || fullLog.includes('ERROR_ZERO_BALANCE'));
     chk('Check 23: CAPTCHA target did not produce CONFIRMED_SUCCESS (no bypass)', !fullLog.includes('[PIPELINE][CONFIRMED_SUCCESS] url=http://127.0.0.1:8975/captcha-inquiry.html'));
-    chk('Check 24: CAPTCHA target produced exactly one ledger terminal settlement', fullLog.includes('captcha-inquiry') || (ledger && ledger.completed >= 5));
+    const captchaSettlements = (fullLog.match(/\[TARGET\]\[127\.0\.0\.1\] FINAL status=FAILURE reason=2Captcha failed: ERROR_ZERO_BALANCE/g) || []).length;
+    const captchaSubmits = (fullLog.match(/\[SUBMIT\] triggered=true.*captcha-inquiry/g) || []).length;
+    const captchaTerminalOnce = captchaSettlements === 1 && captchaSubmits === 0 && fullLog.includes('[CAPTCHA_CONFIG_BLOCKED] epoch=3 blockedError=ERROR_ZERO_BALANCE action=REJECT_REPEAT');
+    chk('Check 24: CAPTCHA target has exactly one terminal settlement, zero submit triggers, and no repeat loop', captchaTerminalOnce);
 
     // ── Counter invariants ───────────────────────────────────────────────
     chk('Check 25: HistoryStore completed >= 5 (main targets)', ledger && ledger.completed >= 5);
