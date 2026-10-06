@@ -3449,9 +3449,16 @@
 
                     console.log(`[CAPTCHA_TOKEN_APPLIED] target=${captchaData.type} applied=${applied}`);
 
-                    // [R6.9G.4] Genuine independent challenge resolution check on DOM:
+                    // [R6.9G.5] FAIL-CLOSED challenge resolution check on DOM:
                     // Token application is necessary but NOT sufficient for verified=true.
-                    // Verification independently observes that the target challenge state actually transitioned to resolved.
+                    // Verification requires INDEPENDENT evidence that the challenge state actually transitioned.
+                    // POLICY: If no independent resolution signal is present => verified = false (UNKNOWN).
+                    //         Token-in-DOM alone NEVER sets verified = true.
+                    // Acceptable independent signals:
+                    //   (a) data-challenge-state="resolved" / data-status="solved" / class "challenge-resolved"
+                    //   (b) window.__captcha_challenge_resolved === true (callback-confirmed)
+                    //   (c) Challenge iframe removed from DOM (disappearance evidence)
+                    //   (d) captchaData.callbackConfirmed === true (solver-side callback signal)
                     let verified = false;
                     if (applied) {
                         const widget = document.querySelector('.g-recaptcha, .h-captcha, [data-challenge-state], #cf-turnstile, #captcha-widget');
@@ -3462,7 +3469,21 @@
                         );
                         const hasGlobalResolvedFlag = typeof window !== 'undefined' && window.__captcha_challenge_resolved === true;
 
-                        // Check if token exists in target DOM field
+                        // Signal (c): iframe disappearance — challenge iframe was present before token inject and is now gone
+                        const captchaIframeGone = (() => {
+                            const iframes = document.querySelectorAll('iframe[src*="recaptcha"], iframe[src*="hcaptcha"], iframe[src*="challenges.cloudflare"]');
+                            // If zero matching iframes remain AND a token was applied, this is valid evidence of resolution
+                            return iframes.length === 0 && (
+                                captchaData.type === 'recaptcha' ||
+                                captchaData.type === 'hcaptcha' ||
+                                captchaData.type === 'turnstile'
+                            );
+                        })();
+
+                        // Signal (d): solver explicitly confirmed via callback
+                        const callbackConfirmed = captchaData.callbackConfirmed === true;
+
+                        // Check if token exists in target DOM field (necessary but not sufficient)
                         let tokenPresentInDom = false;
                         if (captchaData.type === 'turnstile') {
                             const inp = document.querySelector('[name="cf-turnstile-response"]');
@@ -3479,12 +3500,21 @@
                             tokenPresentInDom = !!(captchaData.inputElement && captchaData.inputElement.value === solution);
                         }
 
+                        // [FAIL-CLOSED] verified = true ONLY when token is present AND at least ONE
+                        // independent resolution signal is confirmed.
+                        // If tokenPresentInDom is true but NO independent signal => verified = false (UNKNOWN).
                         if (tokenPresentInDom) {
-                            if (widget && widget.getAttribute('data-challenge-state')) {
-                                verified = (widget.getAttribute('data-challenge-state') === 'resolved') || isResolvedState || hasGlobalResolvedFlag;
-                            } else {
+                            const hasIndependentSignal = isResolvedState || hasGlobalResolvedFlag || captchaIframeGone || callbackConfirmed;
+                            if (hasIndependentSignal) {
                                 verified = true;
+                                console.log(`[CAPTCHA_FAIL_CLOSED] verified=true via independent signal: resolvedState=${isResolvedState} globalFlag=${hasGlobalResolvedFlag} iframeGone=${captchaIframeGone} callback=${callbackConfirmed}`);
+                            } else {
+                                verified = false;
+                                console.warn(`[CAPTCHA_FAIL_CLOSED] verified=false — token present but NO independent resolution signal. Token-only != Challenge verified. Not incrementing CAPTCHA OK.`);
                             }
+                        } else {
+                            verified = false;
+                            console.warn(`[CAPTCHA_FAIL_CLOSED] verified=false — token not present in DOM. applied=${applied}`);
                         }
                     }
 
