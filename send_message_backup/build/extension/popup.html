@@ -415,6 +415,22 @@
                             <p class="settings-subtip" id="api-link-tip"><a href="https://2captcha.com" target="_blank" style="color:#00ffcc;text-decoration:underline;font-size:11px;">Get your 2Captcha API Key here ↗</a></p>
                         </div>
 
+                        <!-- CAPTCHA Request Waiting / Polling Settings (Dynamic) -->
+                        <div class="settings-group" id="captcha-timing-group" style="display: block;">
+                            <label data-i18n="label_captcha_waiting_time">Request Waiting Time & Polling</label>
+                            <div style="display: flex; gap: 8px; align-items: center; margin-top: 4px;">
+                                <div style="flex: 1;">
+                                    <span style="font-size: 11px; color: var(--text-muted, #888); display: block; margin-bottom: 3px;" data-i18n="label_poll_interval">Poll Interval (sec)</span>
+                                    <input type="number" id="captcha-poll-interval" class="premium-input" placeholder="3" min="1" max="30" step="1" style="height: 32px; font-size: 12px;">
+                                </div>
+                                <div style="flex: 1;">
+                                    <span style="font-size: 11px; color: var(--text-muted, #888); display: block; margin-bottom: 3px;" data-i18n="label_max_wait">Max Wait (sec)</span>
+                                    <input type="number" id="captcha-max-wait" class="premium-input" placeholder="120" min="10" max="600" step="5" style="height: 32px; font-size: 12px;">
+                                </div>
+                            </div>
+                            <p class="settings-subtip" data-i18n="captcha_timing_tip">Time to wait between polling requests and maximum wait time for CAPTCHA solving.</p>
+                        </div>
+
                         <!-- Wit.ai Key Input (Dynamic) -->
                         <div class="settings-group" id="audio-stt-group" style="display: none;">
                             <label data-i18n="label_stt_api_key">Audio STT Key (Wit.ai)</label>
@@ -519,6 +535,17 @@
                         <div class="stats-card-premium">
                             <div class="stats-card-label neon-yellow-text">REMAINING</div>
                             <div class="stats-card-value" id="remaining-count-display">0</div>
+                        </div>
+                    </div>
+                    <!-- [R6.9F.3] CAPTCHA Solver Stats Row -->
+                    <div class="stats-grid-premium" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; margin-top: 4px;">
+                        <div class="stats-card-premium" title="Auto CAPTCHA Solver: successful solves">
+                            <div class="stats-card-label" style="color: #22d3ee;">🔓 CAPTCHA OK</div>
+                            <div class="stats-card-value" id="captcha-solved-display" style="color: #22d3ee;">0</div>
+                        </div>
+                        <div class="stats-card-premium" title="Auto CAPTCHA Solver: failed/rejected solves">
+                            <div class="stats-card-label" style="color: #fb923c;">🔒 CAPTCHA FAIL</div>
+                            <div class="stats-card-value" id="captcha-failed-display" style="color: #fb923c;">0</div>
                         </div>
                     </div>
                     <!-- Failure Reason Breakdown (Compact & Interactive) -->

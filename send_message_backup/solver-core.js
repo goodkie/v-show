@@ -274,25 +274,167 @@ class XpiderSolverCore {
     }
 
     /**
-     * Solve via NopeCHA Token API
+     * Solve via NopeCHA Token API (POST submit → GET polling)
+     * Reference: https://developers.nopecha.com/recognition/token_api/
+     * @param {string} siteKey
+     * @param {string} pageUrl
+     * @param {string} type
+     * @param {number} [pollIntervalMs=3000]  Milliseconds between each poll request
+     * @param {number} [maxWaitSec=120]       Maximum total wait time in seconds
      */
-    async solveNopeCha(siteKey, pageUrl, type = 'recaptcha') {
+    async solveNopeCha(siteKey, pageUrl, type = 'recaptcha', pollIntervalMs = 3000, maxWaitSec = 120) {
         if (!this.config.nopeChaKey) throw new Error("NopeCHA API Key missing.");
-        const nopechaType = type === 'turnstile' ? 'turnstile' : (type === 'hcaptcha' ? 'hcaptcha' : 'recaptcha');
-        const res = await fetch(`https://api.nopecha.com/token?key=${this.config.nopeChaKey}&type=${nopechaType}&sitekey=${siteKey}&url=${pageUrl}`);
-        const data = await res.json();
-        if (!data || data.error) throw new Error(`NopeCHA Error: ${data?.message || 'Unknown'}`);
-        return data.data;
+
+        // Normalize CAPTCHA type for NopeCHA v1 endpoints
+        let nopechaType = 'recaptcha2';
+        if (type === 'turnstile') nopechaType = 'turnstile';
+        else if (type === 'hcaptcha') nopechaType = 'hcaptcha';
+        else if (type === 'recaptcha3' || type === 'recaptcha_v3' || type === 'v3') nopechaType = 'recaptcha3';
+
+        // Clamp to sane bounds
+        const interval = Math.min(Math.max(Number(pollIntervalMs) || 3000, 1000), 30000);
+        const maxSec = Math.min(Math.max(Number(maxWaitSec) || 120, 10), 600);
+        const maxPolls = Math.ceil((maxSec * 1000) / interval);
+
+        // [NopeCHA Fix R2] Official SDK (nopecha@1.0.11) uses Bearer auth and the SAME
+        // endpoint (/token) for POST submit and GET poll (?id=JOB_ID).
+        const authHeaders = {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${this.config.nopeChaKey}`
+        };
+        const getHeaders = { 'Authorization': `Bearer ${this.config.nopeChaKey}` };
+
+        const postBody = {
+            key: this.config.nopeChaKey,
+            type: nopechaType,
+            sitekey: siteKey,
+            url: pageUrl
+        };
+
+        // Step 1: POST to submit the CAPTCHA job (with automatic rate-limit backoff retry)
+        let jobId = null;
+        let submitUrl = 'https://api.nopecha.com/token';
+        for (let submitAttempt = 0; submitAttempt < 3; submitAttempt++) {
+            try {
+                let postRes = await fetch(submitUrl, {
+                    method: 'POST',
+                    headers: authHeaders,
+                    body: JSON.stringify(postBody)
+                });
+
+                // Fallback to v1 typed endpoint if /token route not found (404)
+                if (postRes.status === 404 && !submitUrl.includes('/v1/')) {
+                    console.log(`[NopeCHA] /token 404, falling back to /v1/token/${nopechaType}...`);
+                    submitUrl = `https://api.nopecha.com/v1/token/${nopechaType}`;
+                    postRes = await fetch(submitUrl, {
+                        method: 'POST',
+                        headers: authHeaders,
+                        body: JSON.stringify(postBody)
+                    });
+                }
+
+                const postData = await postRes.json();
+                if (postData && postData.error) {
+                    // Error 11 = Rate limit reached -> back off and retry submit up to 2 times
+                    if (postData.error === 11 && submitAttempt < 2) {
+                        const backoffMs = (submitAttempt + 1) * 3500;
+                        console.warn(`[NopeCHA] Submit rate limited (11). Backing off ${backoffMs}ms before retry ${submitAttempt + 1}/2...`);
+                        await new Promise(r => setTimeout(r, backoffMs));
+                        continue;
+                    }
+                    throw new Error(`NopeCHA Submit Error (${postData.error}): ${postData.message || 'Unknown'}`);
+                }
+
+                jobId = typeof postData.data === 'string' ? postData.data : (postData.data?.id || postData.id || postData.job_id);
+                if (jobId) break;
+            } catch (err) {
+                if (submitAttempt < 2 && (err.message.includes('11') || err.message.includes('Rate limit') || err.message.includes('network'))) {
+                    await new Promise(r => setTimeout(r, 3000));
+                    continue;
+                }
+                throw err;
+            }
+        }
+
+        if (!jobId) throw new Error('NopeCHA: No valid job ID returned from submit.');
+        console.log(`[NopeCHA] Job submitted successfully id=${jobId} pollInterval=${interval}ms maxWait=${maxSec}s polls=${maxPolls}`);
+
+        // Step 2: GET polling until token is ready (supports v1 & legacy fallback with rate-limit recovery)
+        let invalidRequestCount = 0;
+        // Poll the SAME endpoint the job was submitted to (job IDs are endpoint-scoped)
+        let pollUrl = `${submitUrl}?id=${encodeURIComponent(jobId)}&key=${encodeURIComponent(this.config.nopeChaKey)}`;
+
+        for (let i = 0; i < maxPolls; i++) {
+            await new Promise(r => setTimeout(r, interval));
+
+            let getRes;
+            try {
+                // GET must NOT carry Content-Type (some gateways reject GET+JSON content-type as invalid)
+                getRes = await fetch(pollUrl, { headers: getHeaders });
+            } catch (netErr) {
+                console.warn(`[NopeCHA] Transient poll network error: ${netErr.message}, continuing...`);
+                continue;
+            }
+
+            let getData;
+            try {
+                getData = await getRes.json();
+            } catch (_) {
+                continue;
+            }
+
+            if (getData && getData.error) {
+                // Error 14 = Incomplete job (still processing)
+                // Error 100 = Not ready yet (legacy)
+                if (getData.error === 14 || getData.error === 100) {
+                    continue;
+                }
+                // Error 11 = Rate limit reached on poll -> back off 3s and continue polling
+                if (getData.error === 11) {
+                    console.warn(`[NopeCHA] Poll rate limited (11). Backing off 3000ms...`);
+                    await new Promise(r => setTimeout(r, 3000));
+                    continue;
+                }
+                // Error 10 = Invalid request -> could be transient router/legacy path glitch; retry up to 3 times
+                if (getData.error === 10 && invalidRequestCount < 3) {
+                    invalidRequestCount++;
+                    console.warn(`[NopeCHA] Poll error 10 (Invalid request), retrying (${invalidRequestCount}/3)...`);
+                    await new Promise(r => setTimeout(r, 2000));
+                    continue;
+                }
+
+                throw new Error(`NopeCHA Poll Error (${getData.error}): ${getData.message || 'Unknown'}`);
+            }
+
+            const token = getData?.data || getData?.token;
+            if (token && typeof token === 'string' && token.length > 20) {
+                console.log(`[NopeCHA] Token resolved after ${i + 1} polls (${Math.round((i + 1) * interval / 1000)}s) tokenLen=${token.length}`);
+                return token;
+            }
+        }
+        throw new Error(`NopeCHA Timeout: Token not resolved within ${maxSec} seconds.`);
     }
 
     /**
      * Solve via 2Captcha API
+     * @param {string} siteKey
+     * @param {string} pageUrl
+     * @param {string} [type='recaptcha']
+     * @param {Object} [extra={}]
+     * @param {number} [pollIntervalMs=5000]  Milliseconds between each poll request
+     * @param {number} [maxWaitSec=200]       Maximum total wait time in seconds
      */
-    async solve2Captcha(siteKey, pageUrl, type = 'recaptcha') {
+    async solve2Captcha(siteKey, pageUrl, type = 'recaptcha', extra = {}, pollIntervalMs = 5000, maxWaitSec = 200) {
         if (!this.config.twoCaptchaKey) throw new Error("2Captcha API Key missing.");
         if (this.config.twoCaptchaKey === 'TEST_ERROR_ZERO_BALANCE' && (pageUrl.includes('127.0.0.1') || pageUrl.includes('localhost'))) {
             throw new Error("2Captcha Error: ERROR_ZERO_BALANCE");
         }
+
+        // Clamp to sane bounds
+        const interval = Math.min(Math.max(Number(pollIntervalMs) || 5000, 1000), 30000);
+        const maxSec = Math.min(Math.max(Number(maxWaitSec) || 200, 10), 600);
+        const maxPolls = Math.ceil((maxSec * 1000) / interval);
+
         let method = 'userrecaptcha';
         let extraParams = '';
         if (type === 'hcaptcha') {
@@ -309,14 +451,15 @@ class XpiderSolverCore {
         if (data.status !== 1) throw new Error(`2Captcha Error: ${data.request}`);
         
         const taskId = data.request;
-        for (let i = 0; i < 40; i++) {
-            await new Promise(r => setTimeout(r, 5000));
+        console.log(`[2Captcha] Task submitted id=${taskId} pollInterval=${interval}ms maxWait=${maxSec}s`);
+        for (let i = 0; i < maxPolls; i++) {
+            await new Promise(r => setTimeout(r, interval));
             const checkRes = await fetch(`https://2captcha.com/res.php?key=${this.config.twoCaptchaKey}&action=get&id=${taskId}&json=1`);
             const checkData = await checkRes.json();
             if (checkData.status === 1) return checkData.request;
             if (checkData.request !== "CAPCHA_NOT_READY") throw new Error(`2Captcha Error: ${checkData.request}`);
         }
-        throw new Error("2Captcha Timeout");
+        throw new Error(`2Captcha Timeout: Token not resolved within ${maxSec} seconds.`);
     }
 
     _dataURLtoBlob(dataurl) {

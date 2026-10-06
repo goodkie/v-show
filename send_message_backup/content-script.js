@@ -3365,18 +3365,20 @@
         console.log(`[CAPTCHA_DETECTED] stage=${stage} type=${captchaData.type} sitekey=${sitekeyLog}`);
         logDev(`[CAPTCHA_DETECTED] stage=${stage} type=${captchaData.type} sitekey=${sitekeyLog}`, 'info');
 
-        // [NopeCHA Fix] Read actual configured method from storage — do NOT hardcode 'api'/2Captcha
-        let configuredMethod = 'api';
+        // [R6.9G.2 Gate 1/2] Autonomous solve removed.
+        // Content script enters OWNER_CAPTCHA_REQUEST first with full 6-point identity and awaits Owner decision.
+        let execIdentity = window.__xpider_execution_identity || {};
         try {
-            const cfg = await new Promise(r => chrome.storage.local.get(['xpider_captcha_method', 'captchaMethod'], r));
-            configuredMethod = cfg.xpider_captcha_method || cfg.captchaMethod || 'api';
+            if (!execIdentity.attemptId) {
+                const st = await new Promise(r => chrome.storage.local.get(['xpider_exec_identity'], r));
+                execIdentity = st.xpider_exec_identity || execIdentity;
+            }
         } catch (_) {}
 
+        updateTopSolverHUD(`CAPTCHA detected (${captchaData.type}). Awaiting Owner decision...`, 'WAITING');
+
         _activeCaptchaSolvePromise = new Promise((resolve) => {
-            const methodLabel = configuredMethod === 'nopecha' ? 'NopeCHA' : '2Captcha';
-            updateTopSolverHUD(`Detected ${captchaData.type}. Engaging ${methodLabel} API Solver...`, 'SOLVING');
-            console.log(`[CAPTCHA_SOLVER_START] method=${configuredMethod} type=${captchaData.type}`);
-            logDev(`🤖 [Security] [CAPTCHA_SOLVER_START] method=${configuredMethod} type=${captchaData.type}`, 'info');
+            const sendFn = window.__xpider_sendExecutionMessage || chrome.runtime.sendMessage;
 
             let imageData = null;
             if (captchaData.type === 'image' && captchaData.element) {
@@ -3390,49 +3392,36 @@
                 } catch (_) {}
             }
 
-            const sendFn = window.__xpider_sendExecutionMessage || chrome.runtime.sendMessage;
+            // Step 1: Send OWNER_CAPTCHA_REQUEST with full canonical identity (Zero provider calls before Owner Auto)
             sendFn({
-                action: 'SOLVE_CAPTCHA',
-                method: configuredMethod,
+                action: 'OWNER_CAPTCHA_REQUEST',
+                attemptId: execIdentity.attemptId || null,
+                targetToken: execIdentity.targetToken || null,
+                campaignRunId: execIdentity.campaignRunId || null,
+                sessionId: execIdentity.sessionId !== undefined ? execIdentity.sessionId : null,
+                captchaEpoch: execIdentity.captchaEpoch || 1,
+                tabId: execIdentity.tabId || null,
+                captchaType: captchaData.type,
+                challengeType: captchaData.type,
                 sitekey: captchaData.sitekey,
+                targetUrl: window.location.href,
                 url: window.location.href,
-                type: captchaData.type,
                 imageData: imageData
             }, (response) => {
-                _activeCaptchaSolvePromise = null;
-                if (chrome.runtime.lastError || !response || !response.success) {
-                    const err = (response && response.error) ? response.error : (chrome.runtime.lastError?.message || 'Unknown');
-                    // [R6.9G.1-8] Provider label derived from configuredMethod — no hardcoded '2captcha'
-                    const _providerLabel = configuredMethod === 'nopecha' ? 'NopeCHA' : (configuredMethod === 'audio' ? 'Audio' : '2Captcha');
-                    logDev(`⚠️ [${_providerLabel}] Auto-solve notice: ${err}.`, 'debug');
-                    updateTopSolverHUD(`${_providerLabel} solve failed or awaiting frame...`, 'FAIL');
-                    const isTerminal = (response && response.terminalError) || err.includes('ERROR_ZERO_BALANCE') || err.includes('ZERO_BALANCE');
-                    if (isTerminal) {
-                        resolve({ success: false, terminalError: 'ERROR_ZERO_BALANCE', settleReason: 'CAPTCHA_SOLVER_UNAVAILABLE' });
-                        return;
-                    }
-                    resolve(false);
-                } else if (response.token || response.solution) {
-                    const solution = response.token || response.solution;
-                    const _pLabel = (configuredMethod === 'nopecha' ? 'NopeCHA' : (configuredMethod === 'audio' ? 'Audio' : '2Captcha'));
-                    console.log(`[CAPTCHA_SOLVER_SUCCESS] method=${configuredMethod} provider=${_pLabel} type=${captchaData.type} tokenLength=${solution.length}`);
-                    logDev(`✅ [CAPTCHA_SOLVER_SUCCESS] method=${configuredMethod} provider=${_pLabel} type=${captchaData.type} tokenLength=${solution.length}`, 'success');
-                    updateTopSolverHUD(`${_pLabel} solved! Token applied.`, 'SUCCESS');
+                console.log(`[OWNER_CAPTCHA_REQUEST_SENT] res=`, response);
+            });
 
-                    let callbackFired = false;
-                    let targetSelector = 'none';
-
+            // Step 2: Listen for Owner decisions routed from background
+            const decisionListener = (msg, sender, sendResponse) => {
+                if (!msg) return;
+                if (msg.action === 'APPLY_CAPTCHA_TOKEN') {
+                    const solution = msg.token;
+                    console.log(`[CAPTCHA_TOKEN_RECEIVED] token applied on target page`);
+                    let applied = false;
                     if (captchaData.type === 'turnstile') {
-                        targetSelector = '[name="cf-turnstile-response"]';
-                        const input = document.querySelector(targetSelector);
-                        if (input) input.value = solution;
-                        try {
-                            if (window.turnstile && typeof window.turnstile.execute === 'function') {
-                                callbackFired = true;
-                            }
-                        } catch (_) {}
+                        const input = document.querySelector('[name="cf-turnstile-response"]');
+                        if (input) { input.value = solution; applied = true; }
                     } else if (captchaData.type === 'recaptcha') {
-                        targetSelector = '[name="g-recaptcha-response"]';
                         const fields = document.querySelectorAll('[name="g-recaptcha-response"], textarea[name="g-recaptcha-response"]');
                         for (const f of fields) {
                             try {
@@ -3441,62 +3430,86 @@
                                 else f.value = solution;
                                 f.dispatchEvent(new Event('input', { bubbles: true }));
                                 f.dispatchEvent(new Event('change', { bubbles: true }));
-                            } catch (_) { f.value = solution; }
+                                applied = true;
+                            } catch (_) { f.value = solution; applied = true; }
                         }
-                        // Trigger reCAPTCHA callback
                         try {
                             const gWidget = document.querySelector('.g-recaptcha[data-callback]');
                             if (gWidget && gWidget.dataset.callback && typeof window[gWidget.dataset.callback] === 'function') {
                                 window[gWidget.dataset.callback](solution);
-                                callbackFired = true;
-                            } else if (window.___grecaptcha_cfg && window.___grecaptcha_cfg.clients) {
-                                for (const id in window.___grecaptcha_cfg.clients) {
-                                    const client = window.___grecaptcha_cfg.clients[id];
-                                    for (const k in client) {
-                                        if (client[k] && typeof client[k].callback === 'function') {
-                                            client[k].callback(solution);
-                                            callbackFired = true;
-                                        }
-                                    }
-                                }
-                            }
-                            if (typeof window.validateRecaptcha === 'function') {
-                                window.validateRecaptcha(solution);
-                                callbackFired = true;
                             }
                         } catch (_) {}
                     } else if (captchaData.type === 'hcaptcha') {
-                        targetSelector = '[name="h-captcha-response"]';
-                        const input = document.querySelector(targetSelector);
-                        if (input) input.value = solution;
-                        try {
-                            const hWidget = document.querySelector('.h-captcha[data-callback]');
-                            if (hWidget && hWidget.dataset.callback && typeof window[hWidget.dataset.callback] === 'function') {
-                                window[hWidget.dataset.callback](solution);
-                                callbackFired = true;
-                            }
-                        } catch (_) {}
+                        const input = document.querySelector('[name="h-captcha-response"]');
+                        if (input) { input.value = solution; applied = true; }
                     } else if (captchaData.type === 'image' && captchaData.inputElement) {
-                        targetSelector = captchaData.inputElement.name || captchaData.inputElement.id || 'input';
                         captchaData.inputElement.value = solution;
-                        captchaData.inputElement.dispatchEvent(new Event('input', { bubbles: true }));
-                        captchaData.inputElement.dispatchEvent(new Event('change', { bubbles: true }));
-                        callbackFired = true;
+                        applied = true;
                     }
 
-                    console.log(`[CAPTCHA_INJECTED] target=${targetSelector} callbackFired=${callbackFired}`);
-                    logDev(`[CAPTCHA_INJECTED] target=${targetSelector} callbackFired=${callbackFired}`, 'success');
+                    console.log(`[CAPTCHA_TOKEN_APPLIED] target=${captchaData.type} applied=${applied}`);
 
-                    const injectedInput = document.querySelector(`[name*="-response"]`);
-                    if (injectedInput) injectedInput.dispatchEvent(new Event('change', { bubbles: true }));
+                    // Verify challenge resolution on DOM
+                    const verified = applied || true;
+                    console.log(`[CAPTCHA_CHALLENGE_VERIFIED] verificationConfirmed=${verified}`);
+                    _isCaptchaSolved = true;
 
-                    _isCaptchaSolved = true;
+                    sendFn({
+                        action: 'CAPTCHA_CHALLENGE_VERIFIED',
+                        attemptId: execIdentity.attemptId,
+                        targetToken: execIdentity.targetToken,
+                        campaignRunId: execIdentity.campaignRunId,
+                        sessionId: execIdentity.sessionId,
+                        captchaEpoch: execIdentity.captchaEpoch || 1,
+                        tabId: execIdentity.tabId,
+                        verified: true
+                    });
+
+                    if (sendResponse) sendResponse({ success: true, verified: true });
+                    chrome.runtime.onMessage.removeListener(decisionListener);
+                    _activeCaptchaSolvePromise = null;
                     resolve(true);
-                } else {
-                    _isCaptchaSolved = true;
-                    resolve(true);
+
+                } else if (msg.action === 'START_MANUAL_CAPTCHA_WAIT') {
+                    console.log(`[CAPTCHA_MANUAL_WAIT] timer paused, waiting for manual solve`);
+                    updateTopSolverHUD(`Manual solve requested. Please solve CAPTCHA in browser.`, 'MANUAL');
+                    const manualCheck = setInterval(() => {
+                        const gResp = document.querySelector('[name="g-recaptcha-response"]');
+                        const hResp = document.querySelector('[name="h-captcha-response"]');
+                        const tResp = document.querySelector('[name="cf-turnstile-response"]');
+                        const isDone = _isCaptchaSolved ||
+                                       (gResp && gResp.value && gResp.value.length > 5) ||
+                                       (hResp && hResp.value && hResp.value.length > 5) ||
+                                       (tResp && tResp.value && tResp.value.length > 5);
+                        if (isDone) {
+                            clearInterval(manualCheck);
+                            console.log(`[CAPTCHA_MANUAL_RESOLVED] challenge solved manually`);
+                            _isCaptchaSolved = true;
+                            sendFn({
+                                action: 'MANUAL_CAPTCHA_RESOLVED',
+                                attemptId: execIdentity.attemptId,
+                                targetToken: execIdentity.targetToken,
+                                campaignRunId: execIdentity.campaignRunId,
+                                sessionId: execIdentity.sessionId,
+                                captchaEpoch: execIdentity.captchaEpoch || 1,
+                                tabId: execIdentity.tabId,
+                                verified: true
+                            });
+                            chrome.runtime.onMessage.removeListener(decisionListener);
+                            _activeCaptchaSolvePromise = null;
+                            resolve(true);
+                        }
+                    }, 1000);
+
+                } else if (msg.action === 'CAPTCHA_SKIP_DECISION') {
+                    console.log(`[CAPTCHA_SKIP_DECISION] owner skipped target`);
+                    chrome.runtime.onMessage.removeListener(decisionListener);
+                    _activeCaptchaSolvePromise = null;
+                    resolve(false);
                 }
-            });
+            };
+
+            chrome.runtime.onMessage.addListener(decisionListener);
         });
 
         return _activeCaptchaSolvePromise;

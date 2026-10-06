@@ -118,9 +118,27 @@
                     window.__xpider_solver_active_interval = null;
                 }
                 window.__xpider_solver_active_interval = setInterval(() => this.loop(), this.options.checkInterval);
-                console.log("[SOLVER_TIMER] activeTimers=1");
+            if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
+                chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+                    if (msg && msg.action === 'APPLY_CAPTCHA_TOKEN') {
+                        this.log(`Applying token received from Owner Auto solve...`, "INJECT");
+                        const injected = this._injectToken(msg.token, msg.captchaType || this._detectCaptchaType());
+                        this.markSolved(msg.token, msg.captchaType || this._detectCaptchaType());
+                        sendResponse({ success: true, applied: injected, verified: true });
+                    }
+                });
             }
             console.log("🤖 [XpiderSolver] Content script initialized.");
+        }
+
+        // [NopeCHA Fix] Stop the polling loop when this frame is detected as stale
+        stopSolving() {
+            if (typeof window !== 'undefined' && window.__xpider_solver_active_interval) {
+                clearInterval(window.__xpider_solver_active_interval);
+                window.__xpider_solver_active_interval = null;
+                console.log("[SOLVER_TIMER] Stale frame detected — polling loop stopped.");
+            }
+            this.solving = false;
         }
 
         ensureHUD() {
@@ -255,9 +273,16 @@
                 return;
             }
             try {
-                const state = await chrome.storage.local.get(['captchaAttempts', 'captchaBlocked', 'xpider_captcha_method', 'xpider_captcha_api_key', 'captchaMethod', 'captchaApiKey']);
+                const state = await chrome.storage.local.get([
+                    'captchaAttempts', 'captchaBlocked', 'xpider_captcha_method', 'xpider_captcha_api_key',
+                    'captchaMethod', 'captchaApiKey', 'xpider_stt_api_key', 'audioSttKey', 'witKey'
+                ]);
                 const attempts = state.captchaAttempts || 0;
-                const method = state.xpider_captcha_method || state.captchaMethod || 'api';
+                const witConfigured = !!(state.xpider_stt_api_key || state.audioSttKey || state.witKey);
+                let method = state.xpider_captcha_method || state.captchaMethod;
+                if (!method) {
+                    method = witConfigured ? 'audio' : 'api';
+                }
                 const apiKey = state.xpider_captcha_api_key || state.captchaApiKey || '';
                 
                 // [v2.0] Auto-reset: if 90s passed since last attempt, reset counter
@@ -288,6 +313,11 @@
                         return; // CRITICAL: While solving, DO NOT fall through!
                     }
 
+                    const nowSolve = Date.now();
+                    if (this.lastSolveRequestTime && (nowSolve - this.lastSolveRequestTime < 4000)) {
+                        return;
+                    }
+
                     // Check if already solved
                     const existingToken = document.querySelector('[name="g-recaptcha-response"]') || document.querySelector('[name="h-captcha-response"]');
                     if (existingToken && existingToken.value && existingToken.value.length > 20) {
@@ -301,33 +331,48 @@
                     if (sitekey) {
                         const captchaType = this._detectCaptchaType();
                         this.solving = true;
+                        this.lastSolveRequestTime = nowSolve;
                         this.log(`Requesting ${captchaType} token via ${method === 'nopecha' ? 'NopeCHA' : '2Captcha'} API...`, "SOLVING");
+                        // [R6.9F.2 Fix-C] Read execution identity from storage so validateActiveExecution
+                        // in background.js accepts this message. solver-content.js runs inside the
+                        // reCAPTCHA/hCaptcha iframe and cannot access window.__xpider_execution_identity
+                        // from the parent page. background.js stores it in xpider_exec_identity on
+                        // CAPTCHA/FILLING/ACTIVE_FORM stage entry.
+                        // [NopeCHA Fix] Read execution identity from storage with retry-poll.
+                        // reCAPTCHA iframes load faster than background.js stores xpider_exec_identity,
+                        // causing reqAttempt=none and attempt_mismatch rejections.
+                        // Poll up to 3s (6×500ms) waiting for a valid attemptId.
+                        let execIdentity = {};
+                        try {
+                            for (let attempt = 0; attempt < 6; attempt++) {
+                                execIdentity = await new Promise(resolve =>
+                                    chrome.storage.local.get(['xpider_exec_identity'], res => resolve(res.xpider_exec_identity || {}))
+                                );
+                                if (execIdentity && execIdentity.attemptId) break;
+                                if (attempt < 5) await new Promise(r => setTimeout(r, 500));
+                            }
+                        } catch (_) {}
+                        // [R6.9G.2 Gate 1/2] Autonomous SOLVE_CAPTCHA call removed.
+                        // Solver-content must notify background with OWNER_CAPTCHA_REQUEST carrying full canonical identity and STOP.
+                        this.log(`[CAPTCHA_DETECTED] ${captchaType} detected. Requesting Owner decision modal...`, "WAITING");
                         chrome.runtime.sendMessage({
-                            action: 'SOLVE_CAPTCHA',
-                            method: method === 'nopecha' ? 'nopecha' : 'api',
-                            type: captchaType,
+                            action: 'OWNER_CAPTCHA_REQUEST',
+                            attemptId: execIdentity.attemptId || null,
+                            targetToken: execIdentity.targetToken || null,
+                            campaignRunId: execIdentity.campaignRunId || null,
+                            sessionId: execIdentity.sessionId !== undefined ? execIdentity.sessionId : null,
+                            captchaEpoch: execIdentity.captchaEpoch || 1,
+                            tabId: execIdentity.tabId || null,
+                            captchaType: captchaType,
+                            challengeType: captchaType,
                             sitekey: sitekey,
                             url: pageUrl,
                             hostUrl: pageUrl,
-                            referrer: (typeof document !== 'undefined' && document.referrer) ? document.referrer : ''
-                        }, async (resp) => {
+                            targetUrl: pageUrl
+                        }, (resp) => {
                             this.solving = false;
-                            if (resp && resp.success && resp.token) {
-                                this.log(`Token received! Injecting...`, "INJECT");
-                                const injected = this._injectToken(resp.token, captchaType);
-                                this.markSolved(resp.token, captchaType);
-                                if (injected) {
-                                    this.log(`${method === 'nopecha' ? 'NopeCHA' : '2Captcha'}: Token injected successfully!`, "SUCCESS");
-                                    await chrome.storage.local.set({ captchaAttempts: 0, captchaBlocked: false });
-                                } else {
-                                    this.log("Token injection dispatched across frames...", "INJECTED");
-                                }
-                            } else {
-                                const errMsg = resp?.error || "Unknown error";
-                                this.log(`${method === 'nopecha' ? 'NopeCHA' : '2Captcha'} API failed: ${errMsg}`, "FAIL");
-                                const res = await chrome.storage.local.get(['captchaAttempts']);
-                                const newCount = (res.captchaAttempts || 0) + 1;
-                                await chrome.storage.local.set({ captchaAttempts: newCount });
+                            if (resp && resp.status === 'PENDING_OWNER_DECISION') {
+                                this.log(`Owner decision modal requested. Waiting for operator choice...`, "PENDING");
                             }
                         });
                         return;

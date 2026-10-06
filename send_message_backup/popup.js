@@ -974,7 +974,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                     // [R6.9G.1-1/2] Owner CAPTCHA Decision Modal with exact attempt-bound identity
                     const _cReq = request;
                     const _attemptId = _cReq.attemptId || '';
+                    const _targetToken = _cReq.targetToken || '';
+                    const _campaignRunId = _cReq.campaignRunId || '';
+                    const _sessionId = _cReq.sessionId;
                     const _captchaEpoch = _cReq.captchaEpoch || 0;
+                    const _tabId = _cReq.tabId || 0;
                     const _captchaType = _cReq.captchaType || 'recaptcha';
                     const _sitekey = _cReq.sitekey || '';
                     const _targetUrl = _cReq.targetUrl || '';
@@ -1004,8 +1008,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                         '<div style="font-size:15px;font-weight:700;color:#e2e8f0;">CAPTCHA Detected</div>',
                         '<div style="font-size:11px;color:#a78bfa;margin-top:2px;">' + _typeLabel + ' \u00b7 ' + _shortUrl + '</div>',
                         '</div></div>',
-                        '<div style="font-size:12px;color:#94a3b8;margin-bottom:6px;">Attempt: <code style="color:#7c3aed;">' + _attemptId.substring(0, 16) + '\u2026</code></div>',
-                        '<div style="font-size:12px;color:#94a3b8;margin-bottom:20px;">Epoch: <code style="color:#7c3aed;">' + _captchaEpoch + '</code></div>',
+                        '<div style="font-size:12px;color:#94a3b8;margin-bottom:4px;">Attempt: <code style="color:#7c3aed;">' + (_attemptId ? _attemptId.substring(0, 16) + '\u2026' : 'none') + '</code></div>',
+                        '<div style="font-size:12px;color:#94a3b8;margin-bottom:4px;">Token: <code style="color:#7c3aed;">' + (_targetToken ? _targetToken.substring(0, 12) + '\u2026' : 'none') + '</code></div>',
+                        '<div style="font-size:12px;color:#94a3b8;margin-bottom:16px;">Epoch: <code style="color:#7c3aed;">' + _captchaEpoch + '</code> | Tab: <code style="color:#7c3aed;">' + _tabId + '</code></div>',
                         '<div style="font-size:13px;color:#e2e8f0;margin-bottom:20px;">Choose how to handle this CAPTCHA challenge:</div>',
                         '<div style="display:flex;gap:10px;flex-direction:column;">',
                         '<button id="xpider-captcha-auto-btn" style="background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;border:none;border-radius:8px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;">\u26a1 Auto-Solve (Selected Provider)</button>',
@@ -1025,7 +1030,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                             action: 'CAPTCHA_OWNER_DECISION',
                             decision: decision,
                             attemptId: _attemptId,
-                            captchaEpoch: _captchaEpoch
+                            targetToken: _targetToken,
+                            campaignRunId: _campaignRunId,
+                            sessionId: _sessionId,
+                            captchaEpoch: _captchaEpoch,
+                            tabId: _tabId,
+                            captchaType: _captchaType,
+                            sitekey: _sitekey
                         }, function(resp) {
                             const _s = document.getElementById('xpider-captcha-status');
                             if (_s) _s.textContent = (resp && resp.success)
