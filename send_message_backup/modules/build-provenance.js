@@ -1,6 +1,6 @@
 /**
  * build-provenance.js
- * Immutable Build Provenance & Module Verification (Issue #6 R6.9G.2)
+ * Immutable Build Provenance & Module Verification (Issue #6 R6.9G.5)
  */
 
 (function (root, factory) {
@@ -15,18 +15,21 @@
 
     const BUILD_INFO = {
         branch: 'upgrade/phase-0-1',
-        implementationHead: '58a787070a42385ff3ad5555a1165dbce411e867',
-        implementationHeadShort: '58a78707',
-        head: '58a787070a42385ff3ad5555a1165dbce411e867',
-        headShort: '58a78707',
+        // [R6.9G.5] implementationHead = functional commit containing fail-closed verifier (BLOCKER 1)
+        //           and real target-pump serialization test (BLOCKER 2)
+        implementationHead: 'c566f110903126f869a9c44e0a202053b20c34bd',
+        implementationHeadShort: 'c566f110',
+        head: 'c566f110903126f869a9c44e0a202053b20c34bd',
+        headShort: 'c566f110',
         rollbackBase: '48c23c7f8b0e81099d45aeb584e65d8713db7b37',
         manifestVersion: 3,
-        buildId: 'R6.9G.4-20261006-CLEAN-HEAD-ACCEPTANCE',
-        builtAt: '2026-10-06T15:00:00.000Z',
+        buildId: 'R6.9G.5-20261006-FAIL-CLOSED-CAPTCHA-REAL-PUMP',
+        builtAt: '2026-10-06T16:00:00.000Z',
         provenanceSchema: 2,
         modules: {
             backgroundSha: '2e3a12d55922c0a89f8cfd7f929e9aec51563467b81bacb08f2c7f4ad6040b65',
-            contentScriptSha: 'c116865a60c1b516fdfb866e9419806c8884f9d166bfca9de45e1e84e902021c',
+            // [R6.9G.5] contentScriptSha updated: fail-closed CAPTCHA verifier (BLOCKER 1 fix)
+            contentScriptSha: '317de1c50adcf4cbf6216e9bb6a3646d8755ad81b15e64355d8dd20108c783c5',
             popupSha: 'b0853e487f76954901efccd0a67e044807da4da80777e1eda46a6f554583e2d1',
             solverContentSha: '2e964bf785d8a315ae805cf15f2583cec120746ba56a4b2a7f20c7ec07107745',
             emailCollectorSha: '3f1147a379e159e7777158f2caa74cc8d40b2a0b0eb2c244f440af379cb5c9c9',
