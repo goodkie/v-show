@@ -1783,32 +1783,164 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             })();
             return true;
 
+        // [R6.9G.1-1/2] Owner CAPTCHA Decision Gate
+        // Fired by content-script when a CAPTCHA challenge is detected.
+        // Background suspends target timeout and broadcasts to popup for owner decision.
+        case 'OWNER_CAPTCHA_REQUEST':
+            (async () => {
+                try {
+                    const { attemptId, captchaEpoch, captchaType, sitekey, targetUrl } = request;
+                    // Validate identity
+                    if (!campaignState.currentAttempt || campaignState.currentAttempt.attemptId !== attemptId) {
+                        logBg(null, `[OWNER_CAPTCHA] REJECT: attemptId mismatch. req=${attemptId} cur=${campaignState.currentAttempt?.attemptId}`, 'warning');
+                        sendResponse({ success: false, error: 'ATTEMPT_MISMATCH' });
+                        return;
+                    }
+                    if (captchaEpoch !== campaignState.captchaEpoch) {
+                        logBg(null, `[OWNER_CAPTCHA] REJECT: epoch mismatch. req=${captchaEpoch} cur=${campaignState.captchaEpoch}`, 'warning');
+                        sendResponse({ success: false, error: 'EPOCH_MISMATCH' });
+                        return;
+                    }
+
+                    // [R6.9G.1-2] Suspend target timer while waiting for owner decision
+                    campaignState.currentTargetStage = 'CAPTCHA_PENDING_OWNER';
+                    campaignState.captchaLedger.detected++;
+                    campaignState.captchaLedger.pendingOwner++;
+
+                    // Pause active timeout/alarm so target timer doesn't expire during owner decision
+                    if (campaignState.activeTimeoutId) {
+                        clearTimeout(campaignState.activeTimeoutId);
+                        campaignState.activeTimeoutId = null;
+                    }
+                    if (chrome.alarms) chrome.alarms.clear(`xpider_timeout_${campaignState.sessionId}`);
+
+                    logBg(null, `[OWNER_CAPTCHA] Detected: type=${captchaType} sitekey=${sitekey}. Timer suspended. Awaiting owner decision.`, 'info');
+
+                    // Broadcast to popup for modal display
+                    chrome.runtime.sendMessage({
+                        action: 'SHOW_CAPTCHA_DECISION_MODAL',
+                        attemptId,
+                        captchaEpoch,
+                        captchaType: captchaType || 'recaptcha',
+                        sitekey: sitekey || '',
+                        targetUrl: targetUrl || campaignState.currentAttempt?.url || ''
+                    }).catch(() => {});
+
+                    sendResponse({ success: true, status: 'PENDING_OWNER_DECISION' });
+                } catch (e) {
+                    logBg(null, `[OWNER_CAPTCHA] Error: ${e.message}`, 'error');
+                    sendResponse({ success: false, error: e.message });
+                }
+            })();
+            return true;
+
+        // [R6.9G.1-1/2] Owner made CAPTCHA decision: 'auto' or 'manual'
+        case 'CAPTCHA_OWNER_DECISION':
+            (async () => {
+                try {
+                    const { decision, attemptId, captchaEpoch } = request;
+                    // Validate identity match
+                    if (!campaignState.currentAttempt || campaignState.currentAttempt.attemptId !== attemptId) {
+                        logBg(null, `[CAPTCHA_DECISION] REJECT: attemptId mismatch.`, 'warning');
+                        sendResponse({ success: false, error: 'ATTEMPT_MISMATCH' });
+                        return;
+                    }
+                    if (captchaEpoch !== campaignState.captchaEpoch) {
+                        logBg(null, `[CAPTCHA_DECISION] REJECT: epoch mismatch.`, 'warning');
+                        sendResponse({ success: false, error: 'EPOCH_MISMATCH' });
+                        return;
+                    }
+
+                    logBg(null, `[CAPTCHA_DECISION] Owner chose: ${decision}`, 'info');
+
+                    if (decision === 'auto') {
+                        // [R6.9G.1-2] Auto: start provider ONLY AFTER explicit click
+                        campaignState.currentTargetStage = 'CAPTCHA';
+                        // Restore target timeout from this point
+                        const remainingMs = campaignState.targetTimeoutMs || 180000;
+                        campaignState.activeTimeoutId = setTimeout(() => {
+                            if (campaignState.currentAttempt?.attemptId === attemptId) {
+                                logBg(null, `[CAPTCHA_DECISION] Target timeout after auto-solve wait.`, 'warning');
+                            }
+                        }, remainingMs);
+                        // Signal content-script to start auto-solve
+                        chrome.tabs.sendMessage(campaignState.currentTabId, {
+                            action: 'START_AUTO_CAPTCHA_SOLVE',
+                            attemptId,
+                            captchaEpoch
+                        }).catch(() => {});
+                        // Update ledger: pendingOwner resolved → auto path
+                        campaignState.captchaLedger.pendingOwner = Math.max(0, campaignState.captchaLedger.pendingOwner - 1);
+                        sendResponse({ success: true, status: 'AUTO_STARTED' });
+
+                    } else if (decision === 'manual') {
+                        // [R6.9G.1-2] Manual: hold timer, wait for verified solve evidence or skip
+                        campaignState.currentTargetStage = 'CAPTCHA_MANUAL_WAIT';
+                        logBg(null, `[CAPTCHA_DECISION] Manual mode: timer paused. Waiting for owner solve or skip.`, 'info');
+                        // Timer remains cleared (no auto-restart). Content-script will send CAPTCHA_MANUAL_RESULT.
+                        campaignState.captchaLedger.pendingOwner = Math.max(0, campaignState.captchaLedger.pendingOwner - 1);
+                        sendResponse({ success: true, status: 'MANUAL_HOLD' });
+
+                    } else if (decision === 'skip') {
+                        // Owner chose to skip this CAPTCHA challenge
+                        campaignState.captchaLedger.manualSkip++;
+                        campaignState.currentTargetStage = 'CAPTCHA_SKIPPED';
+                        chrome.tabs.sendMessage(campaignState.currentTabId, {
+                            action: 'CAPTCHA_SKIP_DECISION',
+                            attemptId
+                        }).catch(() => {});
+                        campaignState.captchaLedger.pendingOwner = Math.max(0, campaignState.captchaLedger.pendingOwner - 1);
+                        sendResponse({ success: true, status: 'SKIPPED' });
+                    } else {
+                        sendResponse({ success: false, error: `Unknown decision: ${decision}` });
+                    }
+                } catch (e) {
+                    logBg(null, `[CAPTCHA_DECISION] Error: ${e.message}`, 'error');
+                    sendResponse({ success: false, error: e.message });
+                }
+            })();
+            return true;
+
+        // [R6.9G.1-2] Manual CAPTCHA result: owner completed manual solve
+        case 'CAPTCHA_MANUAL_RESULT':
+            (async () => {
+                try {
+                    const { verified, attemptId } = request;
+                    if (verified) {
+                        campaignState.captchaLedger.manualSuccess++;
+                        campaignState.counters.captchaSolved = (campaignState.counters.captchaSolved || 0) + 1;
+                        logBg(null, `[CAPTCHA_MANUAL_RESULT] Manual solve verified. attemptId=${attemptId}`, 'info');
+                    }
+                    // Resume target timeout
+                    campaignState.currentTargetStage = 'CAPTCHA';
+                    broadcastCounters();
+                    sendResponse({ success: true });
+                } catch(e) {
+                    sendResponse({ success: false, error: e.message });
+                }
+            })();
+            return true;
+
         case 'SOLVE_CAPTCHA':
             (async () => {
                 try {
                     const curEpoch = campaignState.captchaEpoch || 1;
 
-                    // [R6.9F.3 Fix] Lenient validation for SOLVE_CAPTCHA:
-                    // solver-content.js runs inside a cross-origin reCAPTCHA/hCaptcha iframe.
-                    // The iframe loads BEFORE background.js stores xpider_exec_identity,
-                    // so attemptId in the request may be null or stale.
-                    // We allow the solve as long as the campaign is active and the sender tab matches.
+                    // [R6.9G.1-3] HARD REJECT: identity soft-pass removed entirely.
+                    // Execution identity IS available from storage by the time SOLVE_CAPTCHA fires
+                    // (persisted at CAPTCHA stage entry in STAGE_CHANGE handler).
+                    // If currentAttempt is absent => hard reject. No exceptions.
+                    if (!campaignState.currentAttempt || !campaignState.currentAttempt.attemptId) {
+                        logBg(null, '[SOLVE_CAPTCHA] HARD_REJECT: currentAttempt absent. Cannot solve without canonical identity.', 'warning');
+                        sendResponse({ success: false, error: 'NO_CURRENT_ATTEMPT' });
+                        return;
+                    }
                     const validation = validateActiveExecution(request, sender, 'SOLVE_CAPTCHA', { checkEpoch: true });
                     if (!validation.valid) {
-                        const isIframeIdentityIssue = validation.reason === 'attempt_mismatch' ||
-                            validation.reason === 'token_mismatch' ||
-                            validation.reason === 'campaign_run_mismatch' ||
-                            validation.reason === 'session_mismatch';
-                        if (isIframeIdentityIssue && campaignState.isActive && !campaignState.isPaused) {
-                            // Allow through — identity fields are unavailable from iframe context.
-                            // Tab match is already enforced by sender.tab.id check inside validateActiveExecution;
-                            // if tab_mismatch we would have gotten a different reason.
-                            logBg(null, `[SOLVE_CAPTCHA] identity soft-pass reason=${validation.reason} (iframe context, campaign active)`, 'info');
-                        } else {
-                            logBg(null, `[CAPTCHA_STALE_REQUEST] action=REJECT reason=${validation.reason}`, 'warning');
-                            sendResponse({ success: false, error: validation.reason });
-                            return;
-                        }
+                        // [R6.9G.1-3] ALL reasons = hard reject. No iframe soft-pass permitted.
+                        logBg(null, `[SOLVE_CAPTCHA] HARD_REJECT reason=${validation.reason}. Stale or mismatched identity.`, 'warning');
+                        sendResponse({ success: false, error: validation.reason });
+                        return;
                     }
 
                     if (!campaignState.isActive || campaignState.isPaused) {
@@ -1840,7 +1972,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     if (!globalThis.__xpider_activeSolvingPromises) {
                         globalThis.__xpider_activeSolvingPromises = new Map();
                     }
-                    const dedupeKey = `${curEpoch}:${activeTabId}:${request.sitekey || ''}:${request.type || 'recaptcha'}`;
+                    // [R6.9G.1-9] Single-flight dedupeKey includes attemptId + provider + epoch + tabId + sitekey + type
+                    // Old attempts or different providers can NEVER join a new solve promise.
+                    const _solveAttemptId = campaignState.currentAttempt?.attemptId || 'no-attempt';
+                    const _solveProvider = (await new Promise(r => chrome.storage.local.get(['xpider_captcha_method', 'captchaMethod'], r)))
+                        .xpider_captcha_method || (await new Promise(r => chrome.storage.local.get(['captchaMethod'], r))).captchaMethod || 'audio';
+                    const dedupeKey = `${curEpoch}:${_solveAttemptId}:${_solveProvider}:${activeTabId}:${request.sitekey || ''}:${request.type || 'recaptcha'}`;
                     if (globalThis.__xpider_activeSolvingPromises.has(dedupeKey)) {
                         logBg(null, `[Auto CAPTCHA Solver] In-flight solve already running for key=${dedupeKey}. Joining single-flight execution...`, 'info');
                         const sharedResp = await globalThis.__xpider_activeSolvingPromises.get(dedupeKey);
@@ -2966,25 +3103,30 @@ async function checkPause() {
     }
 }
 
-// [R6.9G-A] Serialized lifecycle: prevent next target from starting while current is in flight
-async function waitForTargetSlot(sessionId) {
+// [R6.9G-A / R6.9G.1-4] Serialized lifecycle: prevent next target from starting while current is in flight.
+// ONLY the current target's own finalizer (via activeTargetInFlight=false in its finally block) may release the lease.
+// Waiters NEVER force-release. If waiter times out, it self-terminates WITHOUT touching the lease.
+async function waitForTargetSlot(sessionId, leaseToken) {
     const SLOT_POLL_MS = 200;
     const SLOT_TIMEOUT_MS = 300000; // 5 min absolute max
     const start = Date.now();
     while (campaignState.activeTargetInFlight) {
         if (sessionId !== undefined && sessionId !== campaignState.sessionId) {
             console.log(`[SERIALIZED_GATE] Stale session ${sessionId} aborted while waiting for slot.`);
-            return false; // stale
+            return { granted: false, reason: 'STALE_SESSION' };
         }
-        if (!campaignState.isActive || campaignState.isPaused) return false;
+        if (!campaignState.isActive || campaignState.isPaused) {
+            return { granted: false, reason: 'INACTIVE_OR_PAUSED' };
+        }
         if (Date.now() - start > SLOT_TIMEOUT_MS) {
-            console.warn('[SERIALIZED_GATE] Slot timeout exceeded — forcing slot release.');
-            campaignState.activeTargetInFlight = false;
-            break;
+            // [R6.9G.1-4] NEVER force-release. The current target is still alive.
+            // Self-terminate this waiter; do NOT touch activeTargetInFlight.
+            console.warn(`[SERIALIZED_GATE] Waiter timeout after ${SLOT_TIMEOUT_MS}ms. Self-terminating waiter (NOT releasing lease).`);
+            return { granted: false, reason: 'WAITER_TIMEOUT' };
         }
         await new Promise(r => setTimeout(r, SLOT_POLL_MS));
     }
-    return true;
+    return { granted: true, reason: 'SLOT_FREE' };
 }
 
 async function processNextCampaignTarget(loopSessionId) {
@@ -3016,9 +3158,9 @@ async function processNextCampaignTarget(loopSessionId) {
         await checkPause(); // [v18.7] First checkpoint
 
         // [R6.9G-A] Serialized Lifecycle: wait for previous target slot to be released
-        const slotGranted = await waitForTargetSlot(currentSession);
-        if (!slotGranted) {
-            console.log('[SERIALIZED_GATE] Slot not granted (paused/stopped/stale). Exiting loop.');
+        const slotResult = await waitForTargetSlot(currentSession);
+        if (!slotResult.granted) {
+            console.log(`[SERIALIZED_GATE] Slot not granted reason=${slotResult.reason}. Exiting loop.`);
             campaignState.isLoopRunning = false;
             return;
         }
@@ -3032,24 +3174,39 @@ async function processNextCampaignTarget(loopSessionId) {
         
         if (!campaignState.isActive || campaignState.queue.length === 0) {
             if (campaignState.isActive) {
-                // [R6.9G-C] CAMPAIGN_FINISHED Barrier: must fire AFTER last TARGET FINAL
-                // Wait for slot to be free (last target must have set lastFinalTs via its finally block)
+                // [R6.9G.1-5] CAMPAIGN_FINISHED Barrier: NEVER force-finish.
+                // Must wait for last target FINAL (activeTargetInFlight=false) with no timeout force.
+                // If barrier cannot close within hard limit => enter FAULT state, not Finished.
                 const FINISH_BARRIER_POLL_MS = 100;
-                const FINISH_BARRIER_TIMEOUT_MS = 30000;
+                const FINISH_BARRIER_FAULT_MS = 120000; // 2 minutes hard limit before FAULT
                 const barrierStart = Date.now();
                 while (campaignState.activeTargetInFlight) {
-                    if (Date.now() - barrierStart > FINISH_BARRIER_TIMEOUT_MS) {
-                        console.warn('[FINISH_BARRIER] Timeout waiting for last target FINAL — forcing finish.');
-                        break;
+                    if (Date.now() - barrierStart > FINISH_BARRIER_FAULT_MS) {
+                        // [R6.9G.1-5] Do NOT force-finish. Enter FAULT state.
+                        console.error('[FINISH_BARRIER] FAULT: last target did not finalize within 120s. Campaign entering FAULT state (not FINISHED).');
+                        logBg(null, '[FINISH_BARRIER] FAULT: campaign cannot finish — last target still in flight.', 'error');
+                        campaignState.isFaulted = true;
+                        campaignState.isLoopRunning = false;
+                        chrome.runtime.sendMessage({
+                            action: 'CAMPAIGN_FAULT',
+                            reason: 'FINISH_BARRIER_TIMEOUT',
+                            counters: campaignState.counters
+                        }).catch(() => {});
+                        return;
                     }
                     await new Promise(r => setTimeout(r, FINISH_BARRIER_POLL_MS));
                 }
-                console.log(`[FINISH_BARRIER] lastFinalTs=${campaignState.lastFinalTs} barrierWait=${Date.now() - barrierStart}ms CAMPAIGN_FINISHED proceeding`);
+                // [R6.9G.1-5] Fresh ledger sync immediately before finish (no forced remaining=0)
+                const hsForFinish = await getHistoryStoreInstance();
+                await syncCampaignCountersFromLedger(hsForFinish);
+                const finishStats = hsForFinish ? hsForFinish.getLedgerStats('currentRun', campaignState.campaignRunId) : null;
+                console.log(`[FINISH_BARRIER] Clear. lastFinalTs=${campaignState.lastFinalTs} ledgerCompleted=${finishStats?.completed} total=${campaignState.counters.total}`);
+                logBg(null, `[FINISH_BARRIER] lastFinalTs=${campaignState.lastFinalTs} barrierClear. CAMPAIGN_FINISHED proceeding.`, 'info');
 
-                logBg(null, "Campaign finished!", "complete");
+                logBg(null, 'Campaign finished!', 'complete');
                 campaignState.isActive = false;
+                // remaining is ledger-derived only (syncCampaignCountersFromLedger above already set it)
                 campaignState.counters.inProgress = 0;
-                campaignState.counters.remaining = 0;
                 await closeAllCampaignTabsExcept(null, 'CAMPAIGN_FINISHED');
                 await persistCounters();
                 broadcastCounters();

@@ -3402,8 +3402,10 @@
                 _activeCaptchaSolvePromise = null;
                 if (chrome.runtime.lastError || !response || !response.success) {
                     const err = (response && response.error) ? response.error : (chrome.runtime.lastError?.message || 'Unknown');
-                    logDev(`⚠️ 2Captcha Auto-solve notice: ${err}.`, 'debug');
-                    updateTopSolverHUD("2Captcha solve failed or awaiting frame...", "FAIL");
+                    // [R6.9G.1-8] Provider label derived from configuredMethod — no hardcoded '2captcha'
+                    const _providerLabel = configuredMethod === 'nopecha' ? 'NopeCHA' : (configuredMethod === 'audio' ? 'Audio' : '2Captcha');
+                    logDev(`⚠️ [${_providerLabel}] Auto-solve notice: ${err}.`, 'debug');
+                    updateTopSolverHUD(`${_providerLabel} solve failed or awaiting frame...`, 'FAIL');
                     const isTerminal = (response && response.terminalError) || err.includes('ERROR_ZERO_BALANCE') || err.includes('ZERO_BALANCE');
                     if (isTerminal) {
                         resolve({ success: false, terminalError: 'ERROR_ZERO_BALANCE', settleReason: 'CAPTCHA_SOLVER_UNAVAILABLE' });
@@ -3412,9 +3414,10 @@
                     resolve(false);
                 } else if (response.token || response.solution) {
                     const solution = response.token || response.solution;
-                    console.log(`[CAPTCHA_SOLVER_SUCCESS] method=2captcha type=${captchaData.type} tokenLength=${solution.length}`);
-                    logDev(`✅ [CAPTCHA_SOLVER_SUCCESS] method=2captcha type=${captchaData.type} tokenLength=${solution.length}`, 'success');
-                    updateTopSolverHUD("2Captcha solved! Token applied.", "SUCCESS");
+                    const _pLabel = (configuredMethod === 'nopecha' ? 'NopeCHA' : (configuredMethod === 'audio' ? 'Audio' : '2Captcha'));
+                    console.log(`[CAPTCHA_SOLVER_SUCCESS] method=${configuredMethod} provider=${_pLabel} type=${captchaData.type} tokenLength=${solution.length}`);
+                    logDev(`✅ [CAPTCHA_SOLVER_SUCCESS] method=${configuredMethod} provider=${_pLabel} type=${captchaData.type} tokenLength=${solution.length}`, 'success');
+                    updateTopSolverHUD(`${_pLabel} solved! Token applied.`, 'SUCCESS');
 
                     let callbackFired = false;
                     let targetSelector = 'none';

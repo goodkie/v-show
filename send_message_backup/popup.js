@@ -599,7 +599,13 @@ async function hydrateSettings() {
     const data = await chrome.storage.local.get([
         'xpider_lang', 'xpider_tpl', 'templates_v2',
         'xpider_delay', 'xpider_delay_collect', 'xpider_delay_fill', 'xpider_delay_submit',
-        'xpider_captcha_enabled', 'xpider_captcha_method', 'xpider_captcha_api_key',
+        'xpider_captcha_enabled', 'xpider_captcha_method',
+        'xpider_captcha_api_key',
+        'xpider_captcha_api_key_nopecha',
+        'xpider_captcha_api_key_2captcha',
+        'xpider_captcha_poll_interval_sec',
+        'xpider_captcha_poll_interval_ms',
+        'xpider_captcha_max_wait_sec',
         'xpider_stt_api_key', 'xpider_stealth_mode', 'xpider_double_submit', 'xpider_fill_mode',
         'xpider_random_delay'
     ]);
@@ -611,16 +617,52 @@ async function hydrateSettings() {
 
     const captchaEnabled = (data.xpider_captcha_enabled !== undefined) ? !!data.xpider_captcha_enabled : true;
     const captchaMethod = data.xpider_captcha_method || 'api';
-    const captchaApiKey = data.xpider_captcha_api_key || '';
+
+    // [NopeCHA Fix] Load per-method API key: each method stores its own key separately
+    function getMethodKey(method) {
+        if (method === 'nopecha') return data.xpider_captcha_api_key_nopecha || data.xpider_captcha_api_key || '';
+        return data.xpider_captcha_api_key_2captcha || data.xpider_captcha_api_key || '';
+    }
+    const captchaApiKey = getMethodKey(captchaMethod);
 
     const captchaToggle = document.getElementById('captcha-solve-toggle');
     if (captchaToggle) captchaToggle.checked = captchaEnabled;
 
     const methodSelect = document.getElementById('captcha-method-select');
-    if (methodSelect) methodSelect.value = captchaMethod;
+    if (methodSelect) {
+        methodSelect.value = captchaMethod;
+        // [NopeCHA Fix] When method changes in UI, swap in the correct saved key & update timing placeholders
+        methodSelect.addEventListener('change', async () => {
+            const newMethod = methodSelect.value;
+            const stored = await chrome.storage.local.get(['xpider_captcha_api_key_nopecha', 'xpider_captcha_api_key_2captcha']);
+            const apiKeyEl = document.getElementById('captcha-api-key');
+            if (apiKeyEl) {
+                apiKeyEl.value = newMethod === 'nopecha'
+                    ? (stored.xpider_captcha_api_key_nopecha || '')
+                    : (stored.xpider_captcha_api_key_2captcha || '');
+            }
+            const pollInput = document.getElementById('captcha-poll-interval');
+            const waitInput = document.getElementById('captcha-max-wait');
+            if (pollInput) pollInput.placeholder = newMethod === 'nopecha' ? '3' : '5';
+            if (waitInput) waitInput.placeholder = newMethod === 'nopecha' ? '120' : '200';
+        });
+    }
 
     const apiKeyInput = document.getElementById('captcha-api-key');
     if (apiKeyInput) apiKeyInput.value = captchaApiKey;
+
+    // Load Solver Waiting & Polling Time settings
+    const pollIntervalInput = document.getElementById('captcha-poll-interval');
+    if (pollIntervalInput) {
+        const storedSec = data.xpider_captcha_poll_interval_sec || (data.xpider_captcha_poll_interval_ms ? data.xpider_captcha_poll_interval_ms / 1000 : '');
+        pollIntervalInput.value = storedSec || '';
+        pollIntervalInput.placeholder = captchaMethod === 'nopecha' ? '3' : '5';
+    }
+    const maxWaitInput = document.getElementById('captcha-max-wait');
+    if (maxWaitInput) {
+        maxWaitInput.value = data.xpider_captcha_max_wait_sec || '';
+        maxWaitInput.placeholder = captchaMethod === 'nopecha' ? '120' : '200';
+    }
 
     const sttKeyInput = document.getElementById('audio-stt-key');
     if (sttKeyInput) sttKeyInput.value = data.xpider_stt_api_key || '';
@@ -915,11 +957,90 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const statusDetail = document.getElementById('status-detail');
                     if (statusDetail) statusDetail.textContent = "Campaign Complete: All targets finished.";
                 } else if (request.action === 'CORE_RUNTIME_BROKEN_ALERT') {
-                    addLog(`🚨 [CIRCUIT BREAKER] Core runtime broken: ${request.symbol} is not defined. Campaign paused.`, 'error');
+                    addLog(`\uD83D\uDEA8 [CIRCUIT BREAKER] Core runtime broken: ${request.symbol} is not defined. Campaign paused.`, 'error');
                 } else if (request.action === 'EMAIL_COLLECTOR_CLEARED') {
                     if (typeof renderEmailCollectorUI === 'function') {
                         renderEmailCollectorUI();
                     }
+                } else if (request.action === 'CAMPAIGN_FAULT') {
+                    // [R6.9G.1-5] Campaign FAULT state (barrier could not close)
+                    addLog(`\uD83D\uDEA8 [CAMPAIGN_FAULT] reason=${request.reason}. Campaign in FAULT state \u2014 not Finished.`, 'error');
+                    const statusTitle = document.getElementById('status-title');
+                    if (statusTitle) statusTitle.textContent = 'Live Progress (FAULT)';
+                    const statusDetail = document.getElementById('status-detail');
+                    if (statusDetail) statusDetail.textContent = `Campaign FAULT: ${request.reason}. Check extension log.`;
+
+                } else if (request.action === 'SHOW_CAPTCHA_DECISION_MODAL') {
+                    // [R6.9G.1-1/2] Owner CAPTCHA Decision Modal with exact attempt-bound identity
+                    const _cReq = request;
+                    const _attemptId = _cReq.attemptId || '';
+                    const _captchaEpoch = _cReq.captchaEpoch || 0;
+                    const _captchaType = _cReq.captchaType || 'recaptcha';
+                    const _sitekey = _cReq.sitekey || '';
+                    const _targetUrl = _cReq.targetUrl || '';
+
+                    // Remove any stale modal
+                    const _existingModal = document.getElementById('xpider-captcha-decision-modal');
+                    if (_existingModal) _existingModal.remove();
+
+                    const _modal = document.createElement('div');
+                    _modal.id = 'xpider-captcha-decision-modal';
+                    _modal.setAttribute('style', [
+                        'position:fixed', 'top:0', 'left:0', 'width:100%', 'height:100%',
+                        'background:rgba(10,10,20,0.88)', 'z-index:99999',
+                        'display:flex', 'align-items:center', 'justify-content:center',
+                        'font-family:Inter,sans-serif'
+                    ].join(';'));
+
+                    const _typeLabel = _captchaType === 'hcaptcha' ? 'hCaptcha' : (_captchaType === 'turnstile' ? 'Cloudflare Turnstile' : 'reCAPTCHA');
+                    let _shortUrl = '?';
+                    try { _shortUrl = _targetUrl ? new URL(_targetUrl).hostname : '?'; } catch(_) {}
+
+                    _modal.innerHTML = [
+                        '<div style="background:#1a1d2e;border:1.5px solid #7c3aed;border-radius:14px;padding:28px 32px;max-width:400px;width:92%;box-shadow:0 8px 48px #0008;">',
+                        '<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">',
+                        '<span style="font-size:24px;">\uD83D\uDD10</span>',
+                        '<div>',
+                        '<div style="font-size:15px;font-weight:700;color:#e2e8f0;">CAPTCHA Detected</div>',
+                        '<div style="font-size:11px;color:#a78bfa;margin-top:2px;">' + _typeLabel + ' \u00b7 ' + _shortUrl + '</div>',
+                        '</div></div>',
+                        '<div style="font-size:12px;color:#94a3b8;margin-bottom:6px;">Attempt: <code style="color:#7c3aed;">' + _attemptId.substring(0, 16) + '\u2026</code></div>',
+                        '<div style="font-size:12px;color:#94a3b8;margin-bottom:20px;">Epoch: <code style="color:#7c3aed;">' + _captchaEpoch + '</code></div>',
+                        '<div style="font-size:13px;color:#e2e8f0;margin-bottom:20px;">Choose how to handle this CAPTCHA challenge:</div>',
+                        '<div style="display:flex;gap:10px;flex-direction:column;">',
+                        '<button id="xpider-captcha-auto-btn" style="background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;border:none;border-radius:8px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;">\u26a1 Auto-Solve (Selected Provider)</button>',
+                        '<button id="xpider-captcha-manual-btn" style="background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;border:none;border-radius:8px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;">\u270B Manual Solve (Timer Paused)</button>',
+                        '<button id="xpider-captcha-skip-btn" style="background:transparent;color:#64748b;border:1px solid #334155;border-radius:8px;padding:10px;font-size:13px;cursor:pointer;">Skip this target</button>',
+                        '</div>',
+                        '<div id="xpider-captcha-status" style="margin-top:14px;font-size:12px;color:#64748b;text-align:center;"></div>',
+                        '</div>'
+                    ].join('');
+
+                    document.body.appendChild(_modal);
+
+                    function _sendCaptchaDecision(decision) {
+                        const _statusEl = document.getElementById('xpider-captcha-status');
+                        if (_statusEl) _statusEl.textContent = 'Sending decision: ' + decision + '\u2026';
+                        chrome.runtime.sendMessage({
+                            action: 'CAPTCHA_OWNER_DECISION',
+                            decision: decision,
+                            attemptId: _attemptId,
+                            captchaEpoch: _captchaEpoch
+                        }, function(resp) {
+                            const _s = document.getElementById('xpider-captcha-status');
+                            if (_s) _s.textContent = (resp && resp.success)
+                                ? '\u2705 Decision sent: ' + decision + ' \u2192 ' + (resp.status || 'OK')
+                                : '\u274C Decision failed: ' + (resp && resp.error ? resp.error : 'no response');
+                            setTimeout(function() {
+                                const _m = document.getElementById('xpider-captcha-decision-modal');
+                                if (_m) _m.remove();
+                            }, 1500);
+                        });
+                    }
+
+                    document.getElementById('xpider-captcha-auto-btn').addEventListener('click', function() { _sendCaptchaDecision('auto'); });
+                    document.getElementById('xpider-captcha-manual-btn').addEventListener('click', function() { _sendCaptchaDecision('manual'); });
+                    document.getElementById('xpider-captcha-skip-btn').addEventListener('click', function() { _sendCaptchaDecision('skip'); });
                 }
             });
         } catch(e) { console.error('[POPUP_BOOT] onMessage registration failed:', e); }
@@ -1146,6 +1267,18 @@ function updateRealTimeStatus(data) {
         const statusBox = document.getElementById('status-box');
         if (statusBox) statusBox.classList.remove('hidden');
     }
+
+    // 8. CAPTCHA Solver Counters [R6.9F.3]
+    const captchaSolvedCount = (data.captchaSolvedCount !== undefined)
+        ? data.captchaSolvedCount
+        : (data.counters && data.counters.captchaSolved !== undefined ? data.counters.captchaSolved : null);
+    const captchaFailedCount = (data.captchaFailedCount !== undefined)
+        ? data.captchaFailedCount
+        : (data.counters && data.counters.captchaFailed !== undefined ? data.counters.captchaFailed : null);
+    const captchaSolvedDisplay = document.getElementById('captcha-solved-display');
+    if (captchaSolvedDisplay && captchaSolvedCount !== null) captchaSolvedDisplay.textContent = captchaSolvedCount;
+    const captchaFailedDisplay = document.getElementById('captcha-failed-display');
+    if (captchaFailedDisplay && captchaFailedCount !== null) captchaFailedDisplay.textContent = captchaFailedCount;
 
     // Update Progress Bar
     const progress = totalTargets > 0 ? Math.min(100, Math.round((completedCount / totalTargets) * 100)) : (completedCount > 0 && remainingTargets === 0 ? 100 : 0);
@@ -1377,10 +1510,17 @@ function bindEvents() {
                 return;
             }
             
-            // [WitKey-Sync v2] 3개 키 모두 저장하여 Crawler와 실시간 동기화
-            await chrome.storage.local.set({ xpider_stt_api_key: key, audioSttKey: key, witKey: key });
+            // [WitKey-Sync v2] 3개 키 모두 저장하여 Crawler와 실시간 동기화 및 캡챠 모드를 audio로 전환
+            await chrome.storage.local.set({ 
+                xpider_stt_api_key: key, 
+                audioSttKey: key, 
+                witKey: key,
+                xpider_captcha_method: 'audio'
+            });
             const settingsInput = document.getElementById('audio-stt-key');
             if (settingsInput) settingsInput.value = key;
+            const methodSelect = document.getElementById('captcha-method-select');
+            if (methodSelect) methodSelect.value = 'audio';
             
             // [WitKey] Sync to background service worker via UPDATE_WIT_KEY
             if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
@@ -1809,6 +1949,9 @@ function toggleCaptchaApiVisibility() {
     
     const apiGroup = document.getElementById('captcha-api-group');
     if (apiGroup) apiGroup.style.display = (enabled && isApi) ? 'block' : 'none';
+
+    const timingGroup = document.getElementById('captcha-timing-group');
+    if (timingGroup) timingGroup.style.display = (enabled && isApi) ? 'block' : 'none';
     
     const sttGroup = document.getElementById('audio-stt-group');
     if (sttGroup) sttGroup.style.display = (enabled && isAudio) ? 'block' : 'none';
@@ -3453,7 +3596,9 @@ async function dispatchResetAllListData() {
 
     updateRealTimeStatus({ successCount: 0, remainingCount: 0, totalTargets: 0 });
     updateProgress(0);
-    ['stat-success-count', 'stat-failed-count', 'stat-completed-count', 'stat-remaining-count', 'success-count-display', 'failed-count-display', 'completed-count-display', 'remaining-count-display'].forEach(id => {
+    ['stat-success-count', 'stat-failed-count', 'stat-completed-count', 'stat-remaining-count',
+     'success-count-display', 'failed-count-display', 'completed-count-display', 'remaining-count-display',
+     'captcha-solved-display', 'captcha-failed-display'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.textContent = '0';
     });
@@ -3695,11 +3840,37 @@ async function saveSettings() {
         const sttKeyVal = sttKeyInput ? sttKeyInput.value.trim() : '';
         const fillModeEl = document.querySelector('input[name="fill-mode"]:checked');
         const fillMode = fillModeEl ? fillModeEl.value : 'instant';
+        const selectedMethod = methodSelect ? methodSelect.value : 'audio';
+        const enteredApiKey = apiKeyInput ? apiKeyInput.value : '';
+        const pollIntervalInput = document.getElementById('captcha-poll-interval');
+        const maxWaitInput = document.getElementById('captcha-max-wait');
+        const pollIntervalVal = pollIntervalInput ? pollIntervalInput.value.trim() : '';
+        const maxWaitVal = maxWaitInput ? maxWaitInput.value.trim() : '';
+        const pollSecNum = pollIntervalVal !== '' ? Math.max(1, Number(pollIntervalVal)) : null;
+        const maxWaitNum = maxWaitVal !== '' ? Math.max(5, Number(maxWaitVal)) : null;
+
         settings = {
             xpider_lang: lang,
             xpider_captcha_enabled: captchaToggle ? captchaToggle.checked : false,
-            xpider_captcha_method: methodSelect ? methodSelect.value : 'audio',
-            xpider_captcha_api_key: apiKeyInput ? apiKeyInput.value : '',
+            xpider_captcha_method: selectedMethod,
+            // [NopeCHA Fix] Save generic key (for backward compat) AND per-method key
+            xpider_captcha_api_key: enteredApiKey,
+            // Per-method keys so switching methods doesn't erase the other method's key
+            ...(selectedMethod === 'nopecha'
+                ? { xpider_captcha_api_key_nopecha: enteredApiKey }
+                : { xpider_captcha_api_key_2captcha: enteredApiKey }),
+            ...(pollSecNum !== null
+                ? {
+                    xpider_captcha_poll_interval_sec: pollSecNum,
+                    xpider_captcha_poll_interval_ms: pollSecNum * 1000
+                }
+                : {
+                    xpider_captcha_poll_interval_sec: null,
+                    xpider_captcha_poll_interval_ms: null
+                }),
+            ...(maxWaitNum !== null
+                ? { xpider_captcha_max_wait_sec: maxWaitNum }
+                : { xpider_captcha_max_wait_sec: null }),
             xpider_stt_api_key: sttKeyVal,
             // [WitKey-Sync v2] 공유 키 필드: Crawler와 실시간 동기화를 위해 모두 저장
             audioSttKey: sttKeyVal,
