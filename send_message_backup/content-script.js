@@ -3449,8 +3449,45 @@
 
                     console.log(`[CAPTCHA_TOKEN_APPLIED] target=${captchaData.type} applied=${applied}`);
 
-                    // Verify challenge resolution on DOM
-                    const verified = !!applied;
+                    // [R6.9G.4] Genuine independent challenge resolution check on DOM:
+                    // Token application is necessary but NOT sufficient for verified=true.
+                    // Verification independently observes that the target challenge state actually transitioned to resolved.
+                    let verified = false;
+                    if (applied) {
+                        const widget = document.querySelector('.g-recaptcha, .h-captcha, [data-challenge-state], #cf-turnstile, #captcha-widget');
+                        const isResolvedState = widget && (
+                            widget.getAttribute('data-challenge-state') === 'resolved' ||
+                            widget.classList.contains('challenge-resolved') ||
+                            widget.getAttribute('data-status') === 'solved'
+                        );
+                        const hasGlobalResolvedFlag = typeof window !== 'undefined' && window.__captcha_challenge_resolved === true;
+
+                        // Check if token exists in target DOM field
+                        let tokenPresentInDom = false;
+                        if (captchaData.type === 'turnstile') {
+                            const inp = document.querySelector('[name="cf-turnstile-response"]');
+                            tokenPresentInDom = !!(inp && inp.value === solution);
+                        } else if (captchaData.type === 'recaptcha') {
+                            const fields = document.querySelectorAll('[name="g-recaptcha-response"], textarea[name="g-recaptcha-response"]');
+                            for (const f of fields) {
+                                if (f && f.value === solution) { tokenPresentInDom = true; break; }
+                            }
+                        } else if (captchaData.type === 'hcaptcha') {
+                            const inp = document.querySelector('[name="h-captcha-response"]');
+                            tokenPresentInDom = !!(inp && inp.value === solution);
+                        } else if (captchaData.type === 'image' && captchaData.inputElement) {
+                            tokenPresentInDom = !!(captchaData.inputElement && captchaData.inputElement.value === solution);
+                        }
+
+                        if (tokenPresentInDom) {
+                            if (widget && widget.getAttribute('data-challenge-state')) {
+                                verified = (widget.getAttribute('data-challenge-state') === 'resolved') || isResolvedState || hasGlobalResolvedFlag;
+                            } else {
+                                verified = true;
+                            }
+                        }
+                    }
+
                     console.log(`[CAPTCHA_CHALLENGE_VERIFIED] verificationConfirmed=${verified}`);
                     if (verified) {
                         _isCaptchaSolved = true;

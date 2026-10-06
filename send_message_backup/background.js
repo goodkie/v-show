@@ -163,6 +163,8 @@ let campaignState = {
     focusActiveTargetTab: true, // [Hotfix R2] Auto-focus campaign target tab
     // [R6.9G-A] Serialized Target Lifecycle: Exactly one target in flight at a time
     activeTargetInFlight: false, // TRUE while orchestrateSending is executing; prevents concurrent starts
+    activeTargetCount: 0,        // [R6.9G.4] Authoritative active-target in flight counter
+    maxConcurrentObserved: 0,    // [R6.9G.4] Peak observed concurrent targets (strictly invariant === 1)
     lastFinalTs: 0,              // Timestamp of last TARGET FINAL — CAMPAIGN_FINISHED must follow it
     // [R6.9G-G] CAPTCHA Attempt-Bound Ledger
     captchaLedger: {
@@ -1521,7 +1523,7 @@ if (typeof global !== 'undefined') {
                                 }, (res) => resolve(res || { verified: false }));
                                 setTimeout(() => resolve({ verified: false }), 4000);
                             });
-                            challengeVerified = !!(vRes && (vRes.verified === true || (vRes.success === true && vRes.applied === true)));
+                            challengeVerified = !!(vRes && vRes.verified === true);
                         } catch (_) {
                             challengeVerified = false;
                         }
@@ -2953,6 +2955,8 @@ async function startCampaignOrchestrator(queue, template, delayMs, fillDelayMs =
         campaignState.captchaLedger = { detected: 0, pendingOwner: 0, autoSuccess: 0, autoFailure: 0, manualSuccess: 0, manualSkip: 0 };
         // [R6.9G-A] Reset serialized lifecycle state
         campaignState.activeTargetInFlight = false;
+        campaignState.activeTargetCount = 0;
+        campaignState.maxConcurrentObserved = 0;
         campaignState.lastFinalTs = 0;
         for (const k of Object.keys(coreRuntimeRefErrors)) delete coreRuntimeRefErrors[k];
 
@@ -3392,7 +3396,9 @@ async function processNextCampaignTarget(loopSessionId) {
 
         // [R6.9G-A] Mark slot as occupied before async work begins
         campaignState.activeTargetInFlight = true;
-        console.log(`[SERIALIZED_GATE] Slot acquired for ${targetHost}. activeTargetInFlight=true`);
+        campaignState.activeTargetCount = (campaignState.activeTargetCount || 0) + 1;
+        campaignState.maxConcurrentObserved = Math.max(campaignState.maxConcurrentObserved || 0, campaignState.activeTargetCount);
+        console.log(`[SERIALIZED_GATE] Slot acquired for ${targetHost}. activeTargetInFlight=true activeTargetCount=${campaignState.activeTargetCount}`);
 
         const result = await Promise.race([
 
@@ -3494,6 +3500,7 @@ async function processNextCampaignTarget(loopSessionId) {
             // [R6.9G-A] Release serialized slot — next target may now proceed
             campaignState.lastFinalTs = Date.now();
             campaignState.activeTargetInFlight = false;
+            campaignState.activeTargetCount = Math.max(0, (campaignState.activeTargetCount || 1) - 1);
             console.log(`[SERIALIZED_GATE] Slot released. activeTargetInFlight=false lastFinalTs=${campaignState.lastFinalTs}`);
         });
         // [v1.2.0-Fix-F1] Single success-accounting owner:

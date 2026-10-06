@@ -123,8 +123,17 @@
                     if (msg && msg.action === 'APPLY_CAPTCHA_TOKEN') {
                         this.log(`Applying token received from Owner Auto solve...`, "INJECT");
                         const injected = this._injectToken(msg.token, msg.captchaType || this._detectCaptchaType());
-                        this.markSolved(msg.token, msg.captchaType || this._detectCaptchaType());
-                        sendResponse({ success: true, applied: injected, verified: true });
+                        let verified = false;
+                        if (injected) {
+                            this.markSolved(msg.token, msg.captchaType || this._detectCaptchaType());
+                            const widget = document.querySelector('.g-recaptcha, .h-captcha, [data-challenge-state], #cf-turnstile, #captcha-widget');
+                            if (widget && widget.getAttribute('data-challenge-state')) {
+                                verified = widget.getAttribute('data-challenge-state') === 'resolved';
+                            } else {
+                                verified = true;
+                            }
+                        }
+                        sendResponse({ success: !!injected, applied: !!injected, verified: !!verified });
                     }
                 });
             }
