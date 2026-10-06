@@ -641,6 +641,24 @@ const server = http.createServer((req, res) => {
     const flightAttemptId = 'att_flight_concur_1';
     const flightTargetToken = 'tok_flight_concur_1';
 
+    // Reset target DOM state & execution identity on target tab
+    await evalTarget(`(() => {
+      const el = document.getElementById("g-recaptcha-response");
+      el.value = "";
+      const w = document.getElementById("captcha-widget");
+      w.setAttribute("data-challenge-state", "unresolved");
+      w.classList.remove("challenge-resolved");
+      window.__captcha_challenge_resolved = false;
+      window.__xpider_execution_identity = {
+        attemptId: '${flightAttemptId}',
+        targetToken: '${flightTargetToken}',
+        campaignRunId: '${campaignRunId}',
+        sessionId: ${sessionId},
+        captchaEpoch: ${singleFlightEpoch},
+        tabId: ${realTargetTabId}
+      };
+    })()`);
+
     // Set canonical execution state in SW for single-flight test
     await evalSw(`(() => {
       campaignState.currentTabId = ${realTargetTabId};
@@ -653,6 +671,26 @@ const server = http.createServer((req, res) => {
       };
       campaignState.currentTargetStage = 'ACTIVE_FORM';
     })()`);
+
+    // Trigger detection on target tab to arm decisionListener
+    rec(`[TRIGGER_DETECTION_FLIGHT] Sending TRIGGER_CAPTCHA_DETECTION for flight attempt to tab ${realTargetTabId}`);
+    evalSw(`new Promise(r => chrome.tabs.sendMessage(${realTargetTabId}, {
+      action: 'TRIGGER_CAPTCHA_DETECTION',
+      stage: 'MANUAL',
+      executionIdentity: {
+        attemptId: '${flightAttemptId}',
+        targetToken: '${flightTargetToken}',
+        campaignRunId: '${campaignRunId}',
+        sessionId: ${sessionId},
+        captchaEpoch: ${singleFlightEpoch},
+        tabId: ${realTargetTabId}
+      }
+    }, r))`).catch(() => {});
+
+    await new Promise(r => setTimeout(r, 2000));
+
+    // Transition stage to CAPTCHA_AUTO_SOLVING in background
+    await evalSw(`campaignState.currentTargetStage = 'CAPTCHA_AUTO_SOLVING'`);
 
     // Trigger TWO real concurrent SOLVE_CAPTCHA requests with ownerAuthorized=true
     // through the shipped production message path for the exact same canonical identity
