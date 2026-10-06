@@ -18,14 +18,16 @@ _Last updated: 2026-10-06_
 | R6.9F.2 RESTORE | PASS / IMMUTABLE |
 | R6.9G.1 | FAIL |
 | R6.9G.2 | FAIL |
-| R6.9G.3 기능 개선 | PROVISIONAL PASS |
-| R6.9G.3 E2E 게이트 | FAIL |
-| Provenance | FAIL (stale - R6.9G.2 SHA) |
-| Gate 13 (Single-flight lock) | FAIL (synthetic Map) |
-| Gate 14 (Target 직렬화) | FAIL (synthetic/defaulted) |
-| True Challenge Verify | FAIL (applied != verified) |
-| OWNER RETEST | HOLD |
-| BULK | HOLD |
+| R6.9G.3 | FAIL (provenance stale, Gate 13/14 synthetic) |
+| R6.9G.4 Functional | PASS (commit 58a78707) |
+| R6.9G.4 Provenance Stamp | PASS (commit 8f4e9881, buildId R6.9G.4-20261006-CLEAN-HEAD-ACCEPTANCE) |
+| R6.9G.4 E2E Edge Audit (17 Gates) | PASS (all 17 real Edge gates verified in evidence_r6_9g4_real_runtime_traces.log) |
+| Gate 13 (Real Single-Flight Lock) | PASS (2 concurrent calls -> 1 inner solve) |
+| Gate 14 (Real Concurrency Invariant) | PASS (observed maxConcurrent === 1 strictly enforced) |
+| True Challenge Verify | PASS (unresolved -> resolved DOM transition independently verified) |
+| Gate 15 (Ledger Reconciliation) | PASS (autoSuccess: 2 + manualSuccess: 1 === captchaSolved: 3) |
+| Gate 16 (Popup Badge & Handshake) | PASS (R6.9G.4 [58a7870]) |
+| Next Receipt | [ANTIGRAVITY][RECEIPT][XPIDER AutoForm Sender Pro][R6.9G.4 CLEAN-HEAD REAL E2E + TRUE CHALLENGE VERIFY + REAL CONCURRENCY] |
 
 ---
 
