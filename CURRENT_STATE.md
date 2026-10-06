@@ -22,14 +22,38 @@ _Last updated: 2026-10-06_
 | R6.9G.4 Functional | PASS (commit 58a78707) |
 | R6.9G.4 Provenance Stamp | PASS (commit 8f4e9881, buildId R6.9G.4-20261006-CLEAN-HEAD-ACCEPTANCE) |
 | R6.9G.4 E2E Edge Audit (17 Gates) | PASS (all 17 real Edge gates verified in evidence_r6_9g4_real_runtime_traces.log) |
-| Gate 13 (Real Single-Flight Lock) | PASS (2 concurrent calls -> 1 inner solve) |
-| Gate 14 (Real Concurrency Invariant) | PASS (observed maxConcurrent === 1 strictly enforced) |
-| True Challenge Verify | PASS (unresolved -> resolved DOM transition independently verified) |
-| Gate 15 (Ledger Reconciliation) | PASS (autoSuccess: 2 + manualSuccess: 1 === captchaSolved: 3) |
-| Gate 16 (Popup Badge & Handshake) | PASS (R6.9G.4 [58a7870]) |
-| Next Receipt | [ANTIGRAVITY][RECEIPT][XPIDER AutoForm Sender Pro][R6.9G.4 CLEAN-HEAD REAL E2E + TRUE CHALLENGE VERIFY + REAL CONCURRENCY] |
+| R6.9G.4 Gate 13 (Real Single-Flight Lock) | PASS (2 concurrent calls -> 1 inner solve) |
+| R6.9G.4 Gate 14 (Real Concurrency Invariant) | PROVISIONAL PASS / FINAL ACCEPTANCE HOLD |
+| R6.9G.4 Challenge Verify | PROVISIONAL PASS / FINAL ACCEPTANCE HOLD |
+| **R6.9G.5 BLOCKER 1 FIX** | **IMPLEMENTED (commit c566f110) — Fail-Closed Verifier** |
+| **R6.9G.5 BLOCKER 2 FIX** | **IMPLEMENTED (commit c566f110) — Real Target-Pump Serialization Test** |
+| Next Receipt | [ANTIGRAVITY][RECEIPT][XPIDER AutoForm Sender Pro][R6.9G.5 FAIL-CLOSED CAPTCHA VERIFY + REAL TARGET-PUMP SERIALIZATION] |
 
 ---
+
+## Next Required Action: R6.9G.5 Edge Operator Audit
+
+**실행할 감사 러너:** `run_real_r6_9g5_edge_operator_audit.js`
+
+### R6.9G.5 구현 내용 (commit c566f110)
+
+**BLOCKER 1 해결 — Fail-Closed CAPTCHA Verifier (content-script.js)**
+- `verified = true` fallback 완전 제거 (widget state 없을 때 token만으로 true가 되던 경로)
+- 이제 `verified = true`는 독립 증거 신호 최소 1개 필수:
+  - (a) `data-challenge-state="resolved"` / `data-status="solved"` / class `challenge-resolved`
+  - (b) `window.__captcha_challenge_resolved === true` (callback 확인)
+  - (c) CAPTCHA iframe이 DOM에서 사라짐 (iframe disappearance)
+  - (d) `captchaData.callbackConfirmed === true` (solver callback)
+- token 존재만으로는 절대 `verified = true`가 되지 않음 (`[CAPTCHA_FAIL_CLOSED]` 로그 표시)
+
+**BLOCKER 2 해결 — Real Target-Pump Serialization Test**
+- Gate 14RL: 실제 `processNextCampaignTarget` 생산 펌프 구동 (A→B 라이프사이클)
+- Target A: 실제 펌프로 시작, 2500ms 지연 후 production finalizer가 슬롯 해제
+- Target B: 실제 production `setTimeout` 스케줄러에 의해 트리거 (수동 flag flip 없음)
+- `activeTargetInFlight`는 러너가 절대 수동으로 설정하지 않음
+- 증명: B not started while A alive | A finalized before B | maxConcurrent === 1
+
+
 
 ## Next Required Action: R6.9G.4 CLEAN-HEAD FINAL ACCEPTANCE
 
