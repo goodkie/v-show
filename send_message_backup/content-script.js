@@ -3450,25 +3450,26 @@
                     console.log(`[CAPTCHA_TOKEN_APPLIED] target=${captchaData.type} applied=${applied}`);
 
                     // Verify challenge resolution on DOM
-                    const verified = applied || true;
+                    const verified = !!applied;
                     console.log(`[CAPTCHA_CHALLENGE_VERIFIED] verificationConfirmed=${verified}`);
-                    _isCaptchaSolved = true;
+                    if (verified) {
+                        _isCaptchaSolved = true;
+                        sendFn({
+                            action: 'CAPTCHA_CHALLENGE_VERIFIED',
+                            attemptId: execIdentity.attemptId,
+                            targetToken: execIdentity.targetToken,
+                            campaignRunId: execIdentity.campaignRunId,
+                            sessionId: execIdentity.sessionId,
+                            captchaEpoch: execIdentity.captchaEpoch || 1,
+                            tabId: execIdentity.tabId,
+                            verified: true
+                        });
+                    }
 
-                    sendFn({
-                        action: 'CAPTCHA_CHALLENGE_VERIFIED',
-                        attemptId: execIdentity.attemptId,
-                        targetToken: execIdentity.targetToken,
-                        campaignRunId: execIdentity.campaignRunId,
-                        sessionId: execIdentity.sessionId,
-                        captchaEpoch: execIdentity.captchaEpoch || 1,
-                        tabId: execIdentity.tabId,
-                        verified: true
-                    });
-
-                    if (sendResponse) sendResponse({ success: true, verified: true });
+                    if (sendResponse) sendResponse({ success: verified, verified: verified });
                     chrome.runtime.onMessage.removeListener(decisionListener);
                     _activeCaptchaSolvePromise = null;
-                    resolve(true);
+                    resolve(verified);
 
                 } else if (msg.action === 'START_MANUAL_CAPTCHA_WAIT') {
                     console.log(`[CAPTCHA_MANUAL_WAIT] timer paused, waiting for manual solve`);
@@ -3541,12 +3542,26 @@
 
     if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
         try {
-            chrome.runtime.onMessage.addListener((msg) => {
+            chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
                 if (msg && msg.action === 'CAPTCHA_SOLVED') {
                     _isCaptchaSolved = true;
                     logDev(`🔑 [Security] Captcha solved signal received via runtime message`, 'success');
+                } else if (msg && msg.action === 'TRIGGER_CAPTCHA_DETECTION') {
+                    if (msg.executionIdentity) {
+                        window.__xpider_execution_identity = msg.executionIdentity;
+                    }
+                    // [R6.9G.3] Reset solved flag on new detection so the manual interval
+                    // doesn't fire immediately due to a prior auto-solve setting _isCaptchaSolved=true.
+                    _isCaptchaSolved = false;
+                    tryAutoSolveCaptcha(msg.stage || 'MANUAL').then(res => {
+                        if (sendResponse) sendResponse({ success: true, result: res });
+                    }).catch(err => {
+                        if (sendResponse) sendResponse({ success: false, error: err.message });
+                    });
+                    return true;
                 }
             });
+            window.tryAutoSolveCaptcha = tryAutoSolveCaptcha;
         } catch (_) {}
     }
 

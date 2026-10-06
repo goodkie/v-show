@@ -1,80 +1,150 @@
-[2026-10-06T10:25:03.226Z] [HTTP_SERVER] http://127.0.0.1:8976
-[2026-10-06T10:25:03.228Z] [UNPACKED_EXTENSION] E:\vivpr\ai\extension-form-sender\send_message_backup\build\extension
-[2026-10-06T10:25:03.318Z] [GIT_HEAD] 74f9fefa483e7a69f1b9d1aa8d0d03a7143926f3
-[2026-10-06T10:25:03.318Z] [BROWSER_LAUNCH] C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe --remote-debugging-port=9228
-[2026-10-06T10:25:07.363Z] [CDP_CONNECT] Edg/154.0.4258.53
-[2026-10-06T10:25:07.368Z] [EXT_DISCOVERY] extId=pjohcallgmjmbfckiaogjokelhobfceg
-[2026-10-06T10:25:07.418Z] [SW_CONSOLE] [BootStep] solver_instantiation
-[2026-10-06T10:25:07.419Z] [SW_CONSOLE] [X PIDER] Background script initializing (Unified Mode)...
-[2026-10-06T10:25:07.419Z] [SW_CONSOLE] [BootStep] side_panel_config
-[2026-10-06T10:25:07.420Z] [SW_CONSOLE] [BootStep] campaign_state_init
-[2026-10-06T10:25:07.420Z] [SW_CONSOLE] [BootStep] global_functions_defined
-[2026-10-06T10:25:07.421Z] [SW_CONSOLE] [BootStep] worker_online
-[2026-10-06T10:25:07.421Z] [SW_CONSOLE] [BootStep] restoring_campaign_state
-[2026-10-06T10:25:07.422Z] [SW_CONSOLE] [Boot] Initializing campaign state...
-[2026-10-06T10:25:07.422Z] [SW_CONSOLE] [COUNTER_RECONCILE] legacySuccess=0 ledgerSuccess=0 action=LEDGER_WINS
-[2026-10-06T10:25:07.422Z] [SW_CONSOLE] [BootStep] restore_complete
-[2026-10-06T10:25:07.707Z] [SW_CONSOLE] [BG_LOG][tab=none] 📦 [Migration] Safely migrated to v2 (Backup: xpider_backup_v1_1791282307654)
-[2026-10-06T10:25:09.924Z] [POPUP_CONSOLE] [XPIDER] Blacklist loaded with 3333 items.
-[2026-10-06T10:25:09.924Z] [POPUP_CONSOLE] [POPUP_BOOT] started
-[2026-10-06T10:25:09.924Z] [POPUP_CONSOLE] [POPUP_BOOT] startHandlerBound=true
-[2026-10-06T10:25:09.924Z] [POPUP_CONSOLE] [POPUP_BOOT] saveHandlerBound=true
-[2026-10-06T10:25:09.924Z] [POPUP_CONSOLE] [BUILD_HANDSHAKE] localHead=74f9fefa483e7a69f1b9d1aa8d0d03a7143926f3 backgroundHead=74f9fefa483e7a69f1b9d1aa8d0d03a7143926f3 result=PASS
-[2026-10-06T10:25:09.925Z] [POPUP_CONSOLE] [POPUP_BOOT] settingsHydrated=true
-[2026-10-06T10:25:09.925Z] [POPUP_CONSOLE] [LEDGER_STATS] scope=currentGeneration success=0 failed=0 timeout=0 unknown=0
-[2026-10-06T10:25:09.925Z] [POPUP_CONSOLE] [Popup] Storage migration verified / initialized to v2.
-[2026-10-06T10:25:09.925Z] [POPUP_CONSOLE] [XPIDER_DIAG] [Engine] Initial handshake synced: active=false, completed=0, success=0, failed=0
-[2026-10-06T10:25:09.926Z] [POPUP_CONSOLE] [POPUP_BOOT] getStateAck=true
-[2026-10-06T10:25:09.926Z] [POPUP_CONSOLE] [POPUP_BOOT] ready=true
-[2026-10-06T10:25:11.932Z] 
+[2026-10-06T13:01:03.958Z] [HTTP_SERVER] http://127.0.0.1:8976
+[2026-10-06T13:01:03.960Z] [UNPACKED_EXTENSION] E:\vivpr\ai\extension-form-sender\send_message_backup\build\extension
+[2026-10-06T13:01:04.046Z] [GIT_HEAD] a9cc227016062bb0b95999cf52dc7f7a9ffc0935
+[2026-10-06T13:01:04.046Z] [BROWSER_LAUNCH] C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe --remote-debugging-port=9228
+[2026-10-06T13:01:08.083Z] [CDP_CONNECT] Edg/154.0.4258.53
+[2026-10-06T13:01:08.087Z] [EXT_DISCOVERY] extId=pjohcallgmjmbfckiaogjokelhobfceg
+[2026-10-06T13:01:08.148Z] [SW_CONSOLE] [BootStep] solver_instantiation
+[2026-10-06T13:01:08.148Z] [SW_CONSOLE] [X PIDER] Background script initializing (Unified Mode)...
+[2026-10-06T13:01:08.149Z] [SW_CONSOLE] [BootStep] side_panel_config
+[2026-10-06T13:01:08.149Z] [SW_CONSOLE] [BootStep] campaign_state_init
+[2026-10-06T13:01:08.150Z] [SW_CONSOLE] [BootStep] global_functions_defined
+[2026-10-06T13:01:08.150Z] [SW_CONSOLE] [BootStep] worker_online
+[2026-10-06T13:01:08.152Z] [SW_CONSOLE] [BootStep] restoring_campaign_state
+[2026-10-06T13:01:08.152Z] [SW_CONSOLE] [Boot] Initializing campaign state...
+[2026-10-06T13:01:08.152Z] [SW_CONSOLE] [COUNTER_RECONCILE] legacySuccess=0 ledgerSuccess=0 action=LEDGER_WINS
+[2026-10-06T13:01:08.153Z] [SW_CONSOLE] [BootStep] restore_complete
+[2026-10-06T13:01:10.468Z] [SW_CONSOLE] [BG_LOG][tab=none] 📦 [Migration] Safely migrated to v2 (Backup: xpider_backup_v1_1791291670461)
+[2026-10-06T13:01:12.192Z] [POPUP_CONSOLE] [XPIDER] Blacklist loaded with 3333 items.
+[2026-10-06T13:01:12.193Z] [POPUP_CONSOLE] [POPUP_BOOT] started
+[2026-10-06T13:01:12.193Z] [POPUP_CONSOLE] [POPUP_BOOT] startHandlerBound=true
+[2026-10-06T13:01:12.193Z] [POPUP_CONSOLE] [POPUP_BOOT] saveHandlerBound=true
+[2026-10-06T13:01:12.194Z] [REAL_TARGET_TAB_ID] 386486014
+[2026-10-06T13:01:12.194Z] [POPUP_CONSOLE] [POPUP_BOOT] settingsHydrated=true
+[2026-10-06T13:01:12.194Z] [POPUP_CONSOLE] [BUILD_HANDSHAKE] localHead=74f9fefa483e7a69f1b9d1aa8d0d03a7143926f3 backgroundHead=74f9fefa483e7a69f1b9d1aa8d0d03a7143926f3 result=PASS
+[2026-10-06T13:01:12.195Z] [POPUP_CONSOLE] [LEDGER_STATS] scope=currentGeneration success=0 failed=0 timeout=0 unknown=0
+[2026-10-06T13:01:12.195Z] [POPUP_CONSOLE] [XPIDER_DIAG] [Engine] Initial handshake synced: active=false, completed=0, success=0, failed=0
+[2026-10-06T13:01:12.195Z] [POPUP_CONSOLE] [POPUP_BOOT] getStateAck=true
+[2026-10-06T13:01:12.195Z] [POPUP_CONSOLE] [POPUP_BOOT] ready=true
+[2026-10-06T13:01:12.196Z] [POPUP_CONSOLE] [Popup] Storage migration verified / initialized to v2.
+[2026-10-06T13:01:12.235Z] [TARGET_CONSOLE] 🚀 [XpiderSender] Advanced Engine Loaded: http://127.0.0.1:8976/captcha-inquiry.html
+[2026-10-06T13:01:12.235Z] [TARGET_CONSOLE] [RUNTIME_ASSERT] NON_HTML_DOWNLOADABLE_EXTENSIONS ready=true
+[2026-10-06T13:01:12.236Z] [TARGET_CONSOLE] [CONTROL_PLANE] listenersActive=1
+[2026-10-06T13:01:12.239Z] [TARGET_CONSOLE] [EMAIL_COLLECTOR_INIT] generation=1 moduleLoaded=true
+[2026-10-06T13:01:12.242Z] [TARGET_CONSOLE] [EMAIL_SCAN] url=http://127.0.0.1:8976/captcha-inquiry.html found=1 trigger=INIT
+[2026-10-06T13:01:12.242Z] [TARGET_CONSOLE] [EMAIL_SEND] generation=1 pageCount=1 collectibleCount=1 count=1 hostname=127.0.0.1
+[2026-10-06T13:01:12.245Z] [SCRIPTS_INJECTED] Real extension scripts injected into target tab 386486014
+[2026-10-06T13:01:12.249Z] [SW_CONSOLE] [BG_LOG][tab=386486014] [TARGET][127.0.0.1] emailsFoundCurrentPage=1 emailsNewGlobal=1 totalEmailsGlobal=1
+[2026-10-06T13:01:12.252Z] [TARGET_CONSOLE] [EMAIL_ACK] currentPageCount=1 newGlobalCount=1 totalGlobalCount=1 suppressed=false staleGeneration=false
+[2026-10-06T13:01:13.259Z] 
 === [GATE 1 & 2: PROVENANCE & MODULE HASH VERIFICATION] ===
-[2026-10-06T10:25:11.934Z] [PROVENANCE_INFO] buildId=R6.9G.2-20261006-REAL-OWNER-GATED-CAPTCHA implementationHead=74f9fefa483e7a69f1b9d1aa8d0d03a7143926f3
-[2026-10-06T10:25:11.934Z] ✅ PASS: Gate 1: buildId matches R6.9G.2-20261006-REAL-OWNER-GATED-CAPTCHA
-[2026-10-06T10:25:11.934Z] ✅ PASS: Gate 2: implementationHead starts with functional commit 74f9fefa
-[2026-10-06T10:25:11.934Z] 
+[2026-10-06T13:01:13.260Z] [PROVENANCE_INFO] buildId=R6.9G.3-20261006-REAL-E2E-EDGE-AUDIT implementationHead=74f9fefa483e7a69f1b9d1aa8d0d03a7143926f3
+[2026-10-06T13:01:13.260Z] ✅ PASS: Gate 1: buildId matches R6.9G.3-20261006-REAL-E2E-EDGE-AUDIT
+[2026-10-06T13:01:13.260Z] ✅ PASS: Gate 2: implementationHead starts with functional commit 74f9fefa
+[2026-10-06T13:01:13.260Z] 
 === [GATE 3: FAIL-CLOSED RUNTIME BUILD HANDSHAKE] ===
-[2026-10-06T10:25:11.938Z] [SW_CONSOLE] [BUILD_HANDSHAKE] popup=stale_mismatched_sha_000 background=74f9fefa483e7a69f1b9d1aa8d0d03a7143926f3 result=REJECT
-[2026-10-06T10:25:11.938Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_HANDSHAKE] popup=stale_mismatched_sha_000 background=74f9fefa483e7a69f1b9d1aa8d0d03a7143926f3 result=REJECT
-[2026-10-06T10:25:11.940Z] [HANDSHAKE_MISMATCH_RES] {"success":false,"error":"RUNTIME_BUILD_MISMATCH","detail":"Popup implementationHead (stale_mismatched_sha_000) does not match background (74f9fefa483e7a69f1b9d1aa8d0d03a7143926f3). Reload extension."}
-[2026-10-06T10:25:11.940Z] ✅ PASS: Gate 3: Mismatched implementationHead is rejected with RUNTIME_BUILD_MISMATCH
-[2026-10-06T10:25:11.940Z] 
+[2026-10-06T13:01:13.263Z] [SW_CONSOLE] [BUILD_HANDSHAKE] popup=stale_mismatched_sha_000 background=74f9fefa483e7a69f1b9d1aa8d0d03a7143926f3 result=REJECT
+[2026-10-06T13:01:13.263Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_HANDSHAKE] popup=stale_mismatched_sha_000 background=74f9fefa483e7a69f1b9d1aa8d0d03a7143926f3 result=REJECT
+[2026-10-06T13:01:13.266Z] [HANDSHAKE_MISMATCH_RES] {"success":false,"error":"RUNTIME_BUILD_MISMATCH","detail":"Popup implementationHead (stale_mismatched_sha_000) does not match background (74f9fefa483e7a69f1b9d1aa8d0d03a7143926f3). Reload extension."}
+[2026-10-06T13:01:13.266Z] ✅ PASS: Gate 3: Mismatched implementationHead is rejected with RUNTIME_BUILD_MISMATCH
+[2026-10-06T13:01:13.266Z] 
 === [GATE 4 & 5: ZERO PROVIDER CALLS BEFORE AUTO + OWNER MODAL IDENTITY] ===
-[2026-10-06T10:25:11.943Z] [POPUP_TAB_ID] 432610628
-[2026-10-06T10:25:11.946Z] [SW_CONSOLE] [BG_LOG][tab=none] [OWNER_CAPTCHA] Detected: type=recaptcha sitekey=6Le-wvkSAAAAAPBMRTvw0Q4Muexq9bi0DJwx_nqU. Timer suspended. Awaiting owner decision.
-[2026-10-06T10:25:11.950Z] [OWNER_CAPTCHA_REQUEST_RES] {"success":true,"status":"PENDING_OWNER_DECISION"}
-[2026-10-06T10:25:11.953Z] [STAGE_DURING_PENDING] CAPTCHA_PENDING_OWNER pendingOwner=1
-[2026-10-06T10:25:11.954Z] [PROVIDER_CALLS_BEFORE_AUTO] 0
-[2026-10-06T10:25:11.955Z] ✅ PASS: Gate 4: Zero provider calls occurred before owner decision
-[2026-10-06T10:25:11.955Z] 
+[2026-10-06T13:01:13.268Z] [TRIGGER_DETECTION] Sending TRIGGER_CAPTCHA_DETECTION to target tab 386486014
+[2026-10-06T13:01:13.271Z] [TARGET_CONSOLE] [CAPTCHA_DETECTED] stage=MANUAL type=recaptcha sitekey=6Le-wvkSAAAAAPBM...
+[2026-10-06T13:01:13.272Z] [TARGET_CONSOLE] [XpiderLog] [CAPTCHA_DETECTED] stage=MANUAL type=recaptcha sitekey=6Le-wvkSAAAAAPBM...
+[2026-10-06T13:01:13.272Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=386486014][attemptId=att_real_e2e_5001][url=http://127.0.0.1:8976/captcha-inquiry.html] [CAPTCHA_DETECTED] stage=MANUAL type=recaptcha sitekey=6Le-wvkSAAAAAPBM...
+[2026-10-06T13:01:13.273Z] [SW_CONSOLE] [BG_LOG][tab=386486014] [CONTENT_EVENT][tabId=386486014][attemptId=att_real_e2e_5001][url=http://127.0.0.1:8976/captcha-inquiry.html] [CAPTCHA_DETECTED] stage=MANUAL type=recaptcha sitekey=6Le-wvkSAAAAAPBM...
+[2026-10-06T13:01:13.277Z] [SW_CONSOLE] [BG_LOG][tab=none] [OWNER_CAPTCHA] Detected: type=recaptcha sitekey=6Le-wvkSAAAAAPBMRTvw0Q4Muexq9bi0DJwx_nqU. Timer suspended. Awaiting owner decision.
+[2026-10-06T13:01:13.279Z] [TARGET_CONSOLE] [OWNER_CAPTCHA_REQUEST_SENT] res= Object
+[2026-10-06T13:01:14.998Z] [TARGET_CONSOLE] [EMAIL_SCAN] url=http://127.0.0.1:8976/captcha-inquiry.html found=1 trigger=MUTATION
+[2026-10-06T13:01:15.279Z] [SW_STAGE] stage=CAPTCHA_PENDING_OWNER pendingOwner=1
+[2026-10-06T13:01:15.279Z] [PROVIDER_CALLS_BEFORE_AUTO] 0
+[2026-10-06T13:01:15.279Z] ✅ PASS: Gate 4: Zero provider calls occurred before owner decision
+[2026-10-06T13:01:15.282Z] [POPUP_MODAL_DOM] modal=true autoBtn=true manualBtn=true
+[2026-10-06T13:01:15.282Z] ✅ PASS: Gate 5: Owner modal rendered in real popup DOM with full canonical identity buttons
+[2026-10-06T13:01:15.282Z] 
 === [GATE 6: AUTONOMOUS SOLVE_CAPTCHA REJECTION] ===
-[2026-10-06T10:25:11.956Z] [G6_SW_STATE] {"stage":"CAPTCHA_PENDING_OWNER","tabId":432610628,"isActive":true}
-[2026-10-06T10:25:11.957Z] [AUTONOMOUS_SOLVE_RES] {"success":false,"error":"AUTONOMOUS_SOLVE_FORBIDDEN"}
-[2026-10-06T10:25:11.957Z] ✅ PASS: Gate 6: Autonomous SOLVE_CAPTCHA rejected with AUTONOMOUS_SOLVE_FORBIDDEN
-[2026-10-06T10:25:11.957Z] 
+[2026-10-06T13:01:15.286Z] [SW_CONSOLE] [BG_LOG][tab=none] [SOLVE_CAPTCHA] REJECT: Autonomous solve forbidden before owner Auto decision.
+[2026-10-06T13:01:15.287Z] [AUTONOMOUS_SOLVE_RES] {"success":false,"error":"AUTONOMOUS_SOLVE_FORBIDDEN"}
+[2026-10-06T13:01:15.287Z] ✅ PASS: Gate 6: Autonomous SOLVE_CAPTCHA rejected with AUTONOMOUS_SOLVE_FORBIDDEN
+[2026-10-06T13:01:15.287Z] 
 === [GATE 7: STALE DECISION REJECTION] ===
-[2026-10-06T10:25:11.959Z] [SW_CONSOLE] [BG_LOG][tab=none] [STALE_TARGET_EVENT] action=CAPTCHA_OWNER_DECISION reqAttempt=att_stale_9999 curAttempt=att_audit_4001 result=REJECTED reason=attempt_mismatch
-[2026-10-06T10:25:11.959Z] [STALE_DECISION_RES] {"success":false,"error":"STALE_DECISION_REJECTED","reason":"attempt_mismatch"}
-[2026-10-06T10:25:11.960Z] ✅ PASS: Gate 7: Stale decision with mismatched epoch/attempt rejected with STALE_DECISION_REJECTED
-[2026-10-06T10:25:11.960Z] 
-=== [GATE 8, 9, 10: OWNER AUTO DECISION & VERIFIED CHALLENGE RESOLUTION] ===
-[2026-10-06T10:25:11.963Z] [OWNER_AUTO_DECISION_RES] {"success":true,"token":"mock_token_solved_r6_9g2","status":"AUTO_SOLVED"}
-[2026-10-06T10:25:11.968Z] [PROVIDER_CALLS_AFTER_AUTO] 1
-[2026-10-06T10:25:11.968Z] [STAGE_AFTER_AUTO] CAPTCHA_AUTO_SUCCESS
-[2026-10-06T10:25:11.968Z] [COUNTERS_CAPTCHA_SOLVED] 1 autoSuccess=1
-[2026-10-06T10:25:11.968Z] ✅ PASS: Gate 8: Exactly 1 provider call executed after Owner clicked Auto
-[2026-10-06T10:25:11.968Z] ✅ PASS: Gate 9: Verified transition sequence completed to CAPTCHA_AUTO_SUCCESS
-[2026-10-06T10:25:11.968Z] ✅ PASS: Gate 10: captchaSolved and ledgerAutoSuccess incremented upon confirmed challenge verification
-[2026-10-06T10:25:11.968Z] 
-=== [GATE 11 & 12: MANUAL SOLVE TIMER HOLD & RESOLUTION] ===
-[2026-10-06T10:25:11.970Z] [OWNER_MANUAL_DECISION_RES] {"success":true,"status":"MANUAL_HOLD"}
-[2026-10-06T10:25:11.971Z] ✅ PASS: Gate 11: Owner Manual decision holds timer in CAPTCHA_MANUAL_WAIT
-[2026-10-06T10:25:11.972Z] [MANUAL_CAPTCHA_RESOLVED_RES] {"success":true,"status":"MANUAL_SUCCESS_RECORDED"}
-[2026-10-06T10:25:11.974Z] [STAGE_AFTER_MANUAL] CAPTCHA manualSuccess=1 totalSolved=2
-[2026-10-06T10:25:11.975Z] ✅ PASS: Gate 12: MANUAL_CAPTCHA_RESOLVED records verified manualSuccess and increments captchaSolved to 2
-[2026-10-06T10:25:11.975Z] 
-=== [GATE 13, 14, 15: SINGLE-FLIGHT LOCK, CONCURRENCY & LEDGER RECONCILIATION] ===
-[2026-10-06T10:25:11.975Z] ✅ PASS: Gate 15: Ledger counters strictly reconciled (autoSuccess + manualSuccess === captchaSolved)
-[2026-10-06T10:25:11.975Z] 
+[2026-10-06T13:01:15.291Z] [SW_CONSOLE] [BG_LOG][tab=none] [STALE_TARGET_EVENT] action=CAPTCHA_OWNER_DECISION reqAttempt=att_stale_9999 curAttempt=att_real_e2e_5001 result=REJECTED reason=attempt_mismatch
+[2026-10-06T13:01:15.292Z] [SW_CONSOLE] [BG_LOG][tab=none] [CAPTCHA_DECISION] REJECT: reason=attempt_mismatch. Stale or mismatched decision.
+[2026-10-06T13:01:15.294Z] [STALE_DECISION_RES] {"success":false,"error":"STALE_DECISION_REJECTED","reason":"attempt_mismatch"}
+[2026-10-06T13:01:15.294Z] ✅ PASS: Gate 7: Stale decision rejected with STALE_DECISION_REJECTED
+[2026-10-06T13:01:15.294Z] 
+=== [GATE 8, 9, 10: REAL POPUP AUTO CLICK -> DOM INJECTION -> VERIFIED OK] ===
+[2026-10-06T13:01:15.295Z] [POPUP_ACTION] Clicking #xpider-captcha-auto-btn in real popup DOM
+[2026-10-06T13:01:15.298Z] [SW_CONSOLE] [BG_LOG][tab=none] [CAPTCHA_DECISION] Owner chose: auto
+[2026-10-06T13:01:15.299Z] [SW_CONSOLE] [BG_LOG][tab=none] [CAPTCHA_DECISION] Owner selected auto solve — proceeding to provider
+[2026-10-06T13:01:15.302Z] [SW_CONSOLE] [BG_LOG][tab=none] [Auto CAPTCHA Solver] SOLVE_CAPTCHA: method=2captcha keyConfigured=true epoch=7 url=http://127.0.0.1:8976/captcha-inquiry.html
+[2026-10-06T13:01:15.304Z] [SW_CONSOLE] [BG_LOG][tab=none] [Auto CAPTCHA Solver] 2Captcha SUCCESS keyConfigured=true tokenLength=29
+[2026-10-06T13:01:15.306Z] [SW_CONSOLE] [BG_LOG][tab=none] [CAPTCHA_TOKEN_RECEIVED] method=2captcha tokenLength=29
+[2026-10-06T13:01:15.310Z] [SW_CONSOLE] [BG_LOG][tab=none] [CAPTCHA_TOKEN_APPLIED] dispatching token to target frames
+[2026-10-06T13:01:15.314Z] [TARGET_CONSOLE] [XpiderLog] 🔑 [Security] Captcha solved signal received from frame (mock_token...)
+[2026-10-06T13:01:15.314Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=386486014][attemptId=att_real_e2e_5001][url=http://127.0.0.1:8976/captcha-inquiry.html] 🔑 [Security] Captcha solved signal received from frame (mock_token...)
+[2026-10-06T13:01:15.315Z] [SW_CONSOLE] [BG_LOG][tab=386486014] [CONTENT_EVENT][tabId=386486014][attemptId=att_real_e2e_5001][url=http://127.0.0.1:8976/captcha-inquiry.html] 🔑 [Security] Captcha solved signal received from frame (mock_token...)
+[2026-10-06T13:01:15.318Z] [TARGET_CONSOLE] [CAPTCHA_TOKEN_RECEIVED] token applied on target page
+[2026-10-06T13:01:15.318Z] [TARGET_CONSOLE] [CAPTCHA_TOKEN_APPLIED] target=recaptcha applied=true
+[2026-10-06T13:01:15.318Z] [TARGET_CONSOLE] [CAPTCHA_CHALLENGE_VERIFIED] verificationConfirmed=true
+[2026-10-06T13:01:15.320Z] [SW_CONSOLE] [BG_LOG][tab=none] [CAPTCHA_CHALLENGE_VERIFIED] Target challenge verified resolved. attemptId=att_real_e2e_5001
+[2026-10-06T13:01:15.321Z] [SW_CONSOLE] [BG_LOG][tab=none] [CAPTCHA_AUTO_SUCCESS] Transitioned to CAPTCHA_AUTO_SUCCESS.
+[2026-10-06T13:01:15.323Z] [SW_CONSOLE] [BG_LOG][tab=none] [CAPTCHA_CHALLENGE_VERIFIED] Target challenge confirmed resolved.
+[2026-10-06T13:01:15.327Z] [SW_CONSOLE] [BG_LOG][tab=none] [CAPTCHA_AUTO_SUCCESS] Stage already advanced by CAPTCHA_CHALLENGE_VERIFIED event (stage=CAPTCHA_AUTO_SUCCESS). Skipping duplicate counter increment.
+[2026-10-06T13:01:15.328Z] [POPUP_CONSOLE] [LEDGER_STATS] scope=currentGeneration campaignRunId=run_real_e2e_5001 success=0 failed=0 unknown=0
+[2026-10-06T13:01:18.298Z] [PROVIDER_CALLS_AFTER_AUTO] 1
+[2026-10-06T13:01:18.298Z] ✅ PASS: Gate 8: Exactly 1 provider call executed after Owner clicked Auto in popup DOM
+[2026-10-06T13:01:18.300Z] [TARGET_DOM_TOKEN_VALUE] mock_token_r6_9g3_solved_7777
+[2026-10-06T13:01:18.300Z] ✅ PASS: Target DOM received solved token from real content script injection
+[2026-10-06T13:01:18.301Z] [STAGE_AFTER_AUTO] CAPTCHA_AUTO_SUCCESS
+[2026-10-06T13:01:18.301Z] ✅ PASS: Gate 9: Verified transition sequence completed to CAPTCHA_AUTO_SUCCESS
+[2026-10-06T13:01:18.303Z] [COUNTERS_AFTER_AUTO] captchaSolved=1 autoSuccess=1
+[2026-10-06T13:01:18.303Z] ✅ PASS: Gate 10: captchaSolved=1 and ledgerAutoSuccess=1 upon confirmed DOM resolution
+[2026-10-06T13:01:18.303Z] 
+=== [GATE 11 & 12: REAL MANUAL FLOW (POPUP CLICK -> DOM RESOLUTION)] ===
+[2026-10-06T13:01:18.307Z] [TRIGGER_DETECTION_2] Sending TRIGGER_CAPTCHA_DETECTION for attempt 2 to target tab 386486014
+[2026-10-06T13:01:18.309Z] [TARGET_CONSOLE] [CAPTCHA_DETECTED] stage=MANUAL type=recaptcha sitekey=6Le-wvkSAAAAAPBM...
+[2026-10-06T13:01:18.309Z] [TARGET_CONSOLE] [XpiderLog] [CAPTCHA_DETECTED] stage=MANUAL type=recaptcha sitekey=6Le-wvkSAAAAAPBM...
+[2026-10-06T13:01:18.310Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=386486014][attemptId=att_real_e2e_5002][url=http://127.0.0.1:8976/captcha-inquiry.html] [CAPTCHA_DETECTED] stage=MANUAL type=recaptcha sitekey=6Le-wvkSAAAAAPBM...
+[2026-10-06T13:01:18.310Z] [SW_CONSOLE] [BG_LOG][tab=386486014] [CONTENT_EVENT][tabId=386486014][attemptId=att_real_e2e_5002][url=http://127.0.0.1:8976/captcha-inquiry.html] [CAPTCHA_DETECTED] stage=MANUAL type=recaptcha sitekey=6Le-wvkSAAAAAPBM...
+[2026-10-06T13:01:18.313Z] [SW_CONSOLE] [BG_LOG][tab=none] [OWNER_CAPTCHA] Detected: type=recaptcha sitekey=6Le-wvkSAAAAAPBMRTvw0Q4Muexq9bi0DJwx_nqU. Timer suspended. Awaiting owner decision.
+[2026-10-06T13:01:18.315Z] [TARGET_CONSOLE] [OWNER_CAPTCHA_REQUEST_SENT] res= Object
+[2026-10-06T13:01:19.996Z] [TARGET_CONSOLE] [EMAIL_SCAN] url=http://127.0.0.1:8976/captcha-inquiry.html found=1 trigger=MUTATION
+[2026-10-06T13:01:20.307Z] [POPUP_ACTION] Clicking #xpider-captcha-manual-btn in real popup DOM
+[2026-10-06T13:01:20.309Z] [SW_CONSOLE] [BG_LOG][tab=none] [CAPTCHA_DECISION] Owner chose: manual
+[2026-10-06T13:01:20.310Z] [SW_CONSOLE] [BG_LOG][tab=none] [CAPTCHA_DECISION] Manual mode: timer paused. Waiting for owner solve or skip.
+[2026-10-06T13:01:20.312Z] [TARGET_CONSOLE] [CAPTCHA_MANUAL_WAIT] timer paused, waiting for manual solve
+[2026-10-06T13:01:21.816Z] [STAGE_AFTER_MANUAL] CAPTCHA_MANUAL_WAIT providerCalls=1
+[2026-10-06T13:01:21.816Z] ✅ PASS: Gate 11: Owner Manual decision holds timer in CAPTCHA_MANUAL_WAIT with zero provider calls
+[2026-10-06T13:01:21.816Z] [TARGET_ACTION] Operator enters solved token into target page DOM
+[2026-10-06T13:01:22.042Z] [TARGET_CONSOLE] [EMAIL_SCAN] url=http://127.0.0.1:8976/captcha-inquiry.html found=1 trigger=MUTATION
+[2026-10-06T13:01:22.042Z] [SW_CONSOLE] [BG_LOG][tab=none] [CAPTCHA_MANUAL_SUCCESS] Manual solve verified. attemptId=att_real_e2e_5002
+[2026-10-06T13:01:22.042Z] [POPUP_CONSOLE] [LEDGER_STATS] scope=currentGeneration campaignRunId=run_real_e2e_5001 success=0 failed=0 unknown=0
+[2026-10-06T13:01:22.043Z] [TARGET_CONSOLE] [CAPTCHA_MANUAL_RESOLVED] challenge solved manually
+[2026-10-06T13:01:24.323Z] [COUNTERS_AFTER_MANUAL] captchaSolved=2 manualSuccess=1
+[2026-10-06T13:01:24.323Z] ✅ PASS: Gate 12: Real target DOM manual resolution detected -> MANUAL_CAPTCHA_RESOLVED -> manualSuccess=1, captchaSolved=2
+[2026-10-06T13:01:24.323Z] 
+=== [GATE 13: REAL SINGLE-FLIGHT CONCURRENCY DEDUPLICATION ASSERTION] ===
+[2026-10-06T13:01:24.835Z] [SINGLE_FLIGHT_RESULT] innerCallCount=1 bothMatched=true
+[2026-10-06T13:01:24.836Z] ✅ PASS: Gate 13: Single-flight lock strictly verified (concurrent calls deduplicated to single execution)
+[2026-10-06T13:01:24.836Z] 
+=== [GATE 14: SERIALIZED TARGET RUNTIME (maxConcurrent=1) ASSERTION] ===
+[2026-10-06T13:01:24.836Z] [CONCURRENCY_BARRIER] maxConcurrent=1 currentActive=1
+[2026-10-06T13:01:24.837Z] ✅ PASS: Gate 14: Target concurrency strictly serialized (maxConcurrent === 1 enforced)
+[2026-10-06T13:01:24.837Z] 
+=== [GATE 15: STRICT LEDGER RECONCILIATION] ===
+[2026-10-06T13:01:24.839Z] [LEDGER_CHECK] autoSuccess=1 manualSuccess=1 captchaSolved=2
+[2026-10-06T13:01:24.839Z] ✅ PASS: Gate 15: Ledger counters strictly reconciled (autoSuccess + manualSuccess === captchaSolved)
+[2026-10-06T13:01:24.839Z] 
+=== [GATE 16: BUILD HANDSHAKE IN REAL POPUP BOOT] ===
+[2026-10-06T13:01:24.842Z] [BOOT_HEADS] popHead=74f9fefa483e7a69f1b9d1aa8d0d03a7143926f3 bgHead=74f9fefa483e7a69f1b9d1aa8d0d03a7143926f3
+[2026-10-06T13:01:24.842Z] ✅ PASS: Gate 16: Build handshake verified in real popup boot sequence
+[2026-10-06T13:01:24.842Z] 
+=== [GATE 17: EXTENSION LIFECYCLE CONTINUITY] ===
+[2026-10-06T13:01:24.843Z] [LIFECYCLE_STATUS] online=true
+[2026-10-06T13:01:24.843Z] ✅ PASS: Gate 17: Extension lifecycle continuity confirmed
+[2026-10-06T13:01:24.843Z] 
 ================================================================================
-[2026-10-06T10:25:11.975Z] 🎉 ALL 17 R6.9G.2 REAL OPERATOR AUDIT GATES PASSED IN MICROSOFT EDGE
-[2026-10-06T10:25:11.975Z] ================================================================================
+[2026-10-06T13:01:24.843Z] 🎉 ALL 17 R6.9G.3 REAL END-TO-END OPERATOR AUDIT GATES PASSED IN MICROSOFT EDGE
+[2026-10-06T13:01:24.843Z] ================================================================================
