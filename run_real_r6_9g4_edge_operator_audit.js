@@ -836,10 +836,10 @@ const server = http.createServer((req, res) => {
     const totalSolved = await evalSw('campaignState.counters.captchaSolved');
 
     rec(`[LEDGER_CHECK] autoSuccess=${autoOk} manualSuccess=${manualOk} captchaSolved=${totalSolved}`);
-    if (autoOk + manualOk !== totalSolved || totalSolved !== 2) {
-      throw new Error(`Ledger mismatch: ${autoOk} + ${manualOk} !== ${totalSolved}`);
+    if (autoOk + manualOk !== totalSolved || totalSolved !== 3) {
+      throw new Error(`Ledger mismatch: ${autoOk} + ${manualOk} !== ${totalSolved} (expected 3)`);
     }
-    rec('✅ PASS: Gate 15: Ledger counters strictly reconciled (autoSuccess + manualSuccess === captchaSolved === 2)');
+    rec('✅ PASS: Gate 15: Ledger counters strictly reconciled (autoSuccess + manualSuccess === captchaSolved === 3)');
 
     // ─────────────────────────────────────────────────────────────────────────────
     // GATE 16: BUILD HANDSHAKE IN REAL POPUP BOOT
