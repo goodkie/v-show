@@ -3238,7 +3238,8 @@
         
         // Common Honeypot identifiers
         const honeypotKeywords = ['honeypot', 'website_url', 'trap', 'bottom_field'];
-        const idOrName = (el.id + ' ' + el.name).toLowerCase();
+        // [R6.9G-K] Normalize potentially non-string DOM properties before string ops to prevent TypeError
+        const idOrName = (String(el.id || '') + ' ' + String(el.name || '')).toLowerCase();
         return honeypotKeywords.some(k => idOrName.includes(k));
     }
 
@@ -3364,10 +3365,18 @@
         console.log(`[CAPTCHA_DETECTED] stage=${stage} type=${captchaData.type} sitekey=${sitekeyLog}`);
         logDev(`[CAPTCHA_DETECTED] stage=${stage} type=${captchaData.type} sitekey=${sitekeyLog}`, 'info');
 
+        // [NopeCHA Fix] Read actual configured method from storage — do NOT hardcode 'api'/2Captcha
+        let configuredMethod = 'api';
+        try {
+            const cfg = await new Promise(r => chrome.storage.local.get(['xpider_captcha_method', 'captchaMethod'], r));
+            configuredMethod = cfg.xpider_captcha_method || cfg.captchaMethod || 'api';
+        } catch (_) {}
+
         _activeCaptchaSolvePromise = new Promise((resolve) => {
-            updateTopSolverHUD(`Detected ${captchaData.type}. Engaging 2Captcha API Solver...`, 'SOLVING');
-            console.log(`[CAPTCHA_SOLVER_START] method=2captcha type=${captchaData.type}`);
-            logDev(`🤖 [Security] [CAPTCHA_SOLVER_START] method=2captcha type=${captchaData.type}`, 'info');
+            const methodLabel = configuredMethod === 'nopecha' ? 'NopeCHA' : '2Captcha';
+            updateTopSolverHUD(`Detected ${captchaData.type}. Engaging ${methodLabel} API Solver...`, 'SOLVING');
+            console.log(`[CAPTCHA_SOLVER_START] method=${configuredMethod} type=${captchaData.type}`);
+            logDev(`🤖 [Security] [CAPTCHA_SOLVER_START] method=${configuredMethod} type=${captchaData.type}`, 'info');
 
             let imageData = null;
             if (captchaData.type === 'image' && captchaData.element) {
@@ -3384,7 +3393,7 @@
             const sendFn = window.__xpider_sendExecutionMessage || chrome.runtime.sendMessage;
             sendFn({
                 action: 'SOLVE_CAPTCHA',
-                method: 'api',
+                method: configuredMethod,
                 sitekey: captchaData.sitekey,
                 url: window.location.href,
                 type: captchaData.type,
@@ -5060,6 +5069,7 @@
             this.mutationCount = 0;
             this.domServerErrorFirstSeen = null;
             this.domServerErrorPolls = 0;
+            this._preExistingLoggedPhrases = new Set();
             this.preSnapshot = this.capturePreSubmitSnapshot();
 
             if (this.form && typeof this.form.addEventListener === 'function') {
@@ -5075,10 +5085,16 @@
                         this.lastMutationTime = Date.now();
                         this.mutationCount += (mutations ? mutations.length : 1);
                         if (!this.decisiveOutcome) {
-                            const quick = this.evaluateSignals();
-                            if (quick && (quick.isDecisiveSuccess || quick.isDecisiveFailure)) {
-                                this.decisiveOutcome = quick;
-                            }
+                            if (this._moEvalTimeout) return;
+                            this._moEvalTimeout = setTimeout(() => {
+                                this._moEvalTimeout = null;
+                                if (!this.decisiveOutcome) {
+                                    const quick = this.evaluateSignals();
+                                    if (quick && (quick.isDecisiveSuccess || quick.isDecisiveFailure)) {
+                                        this.decisiveOutcome = quick;
+                                    }
+                                }
+                            }, 100);
                         }
                     });
                     this.observer.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true });
@@ -5087,6 +5103,10 @@
         }
 
         cleanup() {
+            if (this._moEvalTimeout) {
+                clearTimeout(this._moEvalTimeout);
+                this._moEvalTimeout = null;
+            }
             if (this.observer) {
                 try { this.observer.disconnect(); } catch (_) {}
                 this.observer = null;
@@ -5274,8 +5294,17 @@
 
                 // Check visible nodes in DOM
                 if (!domServerErrorTransition) {
+                    // [R6.9F.2 Fix-A] Restore original broad selector so real DOM error
+                    // mutations (e.g. div textContent change) are still caught.
+                    // IPC saturation was caused by repeated logs, not the selector width.
+                    // The per-evaluation throttle Set below ensures each preExisting phrase
+                    // is logged at most once per 250ms poll cycle instead of once per matching node.
                     const candidateEls = document.querySelectorAll ?
                         document.querySelectorAll('[role="alert"], [role="status"], .status-msg, .error, .message-error, .server-error, .alert-danger, div, p, span') : [];
+                    // [R6.9F.2 Fix-A] Throttle preExisting phrase logs to at most once across the entire outcome verification run
+                    if (!this._preExistingLoggedPhrases) {
+                        this._preExistingLoggedPhrases = new Set();
+                    }
                     for (const el of candidateEls) {
                         const nowVis = typeof elementIsVisible === 'function' ? elementIsVisible(el) : true;
                         if (!nowVis) continue;
@@ -5288,10 +5317,13 @@
                             const preExistingInBody = preServerErrorPhrases.has(matched);
 
                             if (preMatch && preMatch.wasVisible) {
-                                // Pre-existing visible error unchanged
-                                logDev(`[NEGATIVE_SIGNAL] type=SERVER_ERROR source=DOM phrase="${matched}" preExisting=true transition=false visible=true firstSeenMs=${elapsedNow}`, 'info');
+                                // Pre-existing visible error unchanged — log once across entire verification run
+                                if (!this._preExistingLoggedPhrases.has(matched)) {
+                                    this._preExistingLoggedPhrases.add(matched);
+                                    logDev(`[NEGATIVE_SIGNAL] type=SERVER_ERROR source=DOM phrase="${matched}" preExisting=true transition=false visible=true firstSeenMs=${elapsedNow}`, 'info');
+                                }
                             } else if (!preExistingInBody || (preMatch && !preMatch.wasVisible)) {
-                                // Real new transition!
+                                // Real new transition — this is a genuine post-submit error
                                 domServerErrorTransition = true;
                                 serverErrorFound = true;
                                 serverErrorTransition = true;
@@ -5299,8 +5331,11 @@
                                 logDev(`[NEGATIVE_SIGNAL] type=SERVER_ERROR source=DOM phrase="${matched}" preExisting=false transition=true visible=true firstSeenMs=${elapsedNow}`, 'error');
                                 break;
                             } else {
-                                // Was in body text pre-submit, emit preExisting=true
-                                logDev(`[NEGATIVE_SIGNAL] type=SERVER_ERROR source=DOM phrase="${matched}" preExisting=true transition=false visible=true firstSeenMs=${elapsedNow}`, 'info');
+                                // Was in body text pre-submit — log once across entire verification run
+                                if (!this._preExistingLoggedPhrases.has(matched)) {
+                                    this._preExistingLoggedPhrases.add(matched);
+                                    logDev(`[NEGATIVE_SIGNAL] type=SERVER_ERROR source=DOM phrase="${matched}" preExisting=true transition=false visible=true firstSeenMs=${elapsedNow}`, 'info');
+                                }
                             }
                         }
                     }
@@ -5627,7 +5662,17 @@
                 } else if (finalSignals && finalSignals.newErrorsFound && finalSignals.validationErrorsCount > 0) {
                     finalDecision = 'SUBMIT_VALIDATION_BLOCKED';
                 } else if (this.submitEventSeen || (submitOutcome && submitOutcome.submitEventFired) || (submitOutcome && submitOutcome.networkCommitObserved)) {
-                    finalDecision = 'DELIVERY_UNKNOWN';
+                    // [R6.9F.2 Fix-B] Before falling back to DELIVERY_UNKNOWN, check structural
+                    // success evidence. formReset (fields cleared) after submission is a reliable
+                    // AJAX success indicator for React/Wix/SPA forms that don't navigate.
+                    const hasStructuralSuccess = !!(finalSignals && (finalSignals.formReset || finalSignals.formHidden || finalSignals.formReplaced || finalSignals.successTextTransition));
+                    const hasAnyPositive = !!(finalSignals && (finalSignals.newSuccessNodes > 0 || finalSignals.successVisibilityTransition || finalSignals.ariaLiveSuccessTransition || finalSignals.buttonSuccessState));
+                    if ((hasStructuralSuccess || hasAnyPositive) && !(finalSignals && finalSignals.serverErrorFound)) {
+                        logDev(`[SUBMIT_VERIFY] Promoting DELIVERY_UNKNOWN -> CONFIRMED_SUCCESS_COMPOSITE via structural evidence (formReset=${!!(finalSignals&&finalSignals.formReset)} textTransition=${!!(finalSignals&&finalSignals.successTextTransition)} positiveNode=${hasAnyPositive})`, 'success');
+                        finalDecision = 'CONFIRMED_SUCCESS_COMPOSITE';
+                    } else {
+                        finalDecision = 'DELIVERY_UNKNOWN';
+                    }
                 } else if (submitOutcome && submitOutcome.strategy === 'trusted_click_sequence' && !this.submitEventSeen) {
                     finalDecision = 'SUBMIT_CLICK_NO_EFFECT';
                 } else {
