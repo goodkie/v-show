@@ -21,7 +21,7 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const { spawn, execSync } = require('child_process');
-const WebSocket = require('ws');
+const WebSocket = globalThis.WebSocket;
 
 const PORT = 8976;
 const CDP_PORT = 9228;
