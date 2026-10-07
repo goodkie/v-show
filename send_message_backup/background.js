@@ -1432,7 +1432,7 @@ if (typeof global !== 'undefined') {
                     } else {
                         apiKey = storage.xpider_captcha_api_key_2captcha || storage.xpider_captcha_api_key || storage.captchaApiKey || '';
                     }
-                    const witKey = storage.xpider_stt_api_key || storage.audioSttKey || storage.witKey || null;
+                    const witKey = storage.xpider_stt_api_key || storage.audioSttKey || storage.witKey || campaignState.witAiKey || request.witKey || null;
                     const pollIntervalMs = Number(storage.xpider_captcha_poll_interval_ms) || (Number(storage.xpider_captcha_poll_interval_sec) ? Number(storage.xpider_captcha_poll_interval_sec) * 1000 : null) || (method === 'nopecha' ? 3000 : 5000);
                     const maxWaitSec = Number(storage.xpider_captcha_max_wait_sec) || (method === 'nopecha' ? 120 : 200);
                     

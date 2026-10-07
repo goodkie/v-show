@@ -548,6 +548,7 @@ rec('\n=== [GATE A: TARGET-PUMP ATOMIC SLOT ACQUISITION CONCURRENCY RACE] ===');
           sessionId: 400,
           tabId: dummyTabId,
           captchaEpoch: 1,
+          witKey: 'test_wit_key',
           ownerAuthorized: true
         }, { tab: { id: dummyTabId } }, () => {});
 
