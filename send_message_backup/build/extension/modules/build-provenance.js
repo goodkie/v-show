@@ -29,7 +29,7 @@
         modules: {
             backgroundSha: '0336262f04e97ea0c4a39d26fb10d16e712ca7370b0f13e2f97fabb5e41668b8',
             contentScriptSha: 'db15cc0900d9171bb79b31a0aeaae09a16712f1d06413db7230e75633cf5b257',
-            popupSha: '591f0ff5b75397bd6879797eda525c7a2a7fe62770825f58b12fa969cf03881f',
+            popupSha: '316564d25517f51966b83f23dbcb5cdd876ee7cd3f544ea9d5e1957a86f2116f',
             solverContentSha: 'dca775d4db576dd48be191a80b2e1b5394448c572cf3860735cf0be99ff966da',
             solverCoreSha: '01b3d96048ea933403e4599854dcdca28027e7f676aa5077eb6c5eb0582ac1e7',
             emailCollectorSha: '3f1147a379e159e7777158f2caa74cc8d40b2a0b0eb2c244f440af379cb5c9c9',
