@@ -8,13 +8,13 @@
 ---
 
 ## 1. Package Inventory & Verification
-- **Build ID:** `R6.9G.9-20261007-PRIVACY-GATEWAY-FAIL-CLOSED`
-- **Implementation HEAD:** `5ebb51510eda9ca09a6921879d1269b15cf692fb`
-- **Visible Badge in UI:** `TEST-ONLY R6.9G.9 [5ebb5151]`
+- **Build ID:** `R6.9G.9.2-20261007-STRICT-EGRESS-PROXY-AUTH`
+- **Implementation HEAD:** `0730794dfa6908a4cf9bafb4705f1e16c410bc8d`
+- **Visible Badge in UI:** `TEST-ONLY R6.9G.9.2 [0730794d]`
 - **Unpacked Extension Path:** `send_message_backup/build/extension`
-- **ZIP Package:** `XPIDER_R6.9G.9_OWNER_DIAGNOSTIC_TEST_ONLY.zip`
-- **ZIP SHA-256:** `83c6e0a4f323b43b420e5abba053300363c400f0931ae4468129bc5d0935dd8b`
-- **File Manifest:** See [PACKAGE_INVENTORY_SHA256.txt](file:///E:/vivpr/ai/extension-form-sender/PACKAGE_INVENTORY_SHA256.txt)
+- **ZIP Package:** `XPIDER_R6.9G.9.2_OWNER_DIAGNOSTIC_TEST_ONLY.zip`
+- **ZIP SHA-256:** `56dae801d8154640b43b5b2be23729d67cfd09642ab007aecaae9c0c9d542cd2`
+- **File Manifest:** See [PACKAGE_INVENTORY_SHA256.txt](file:///E:/vivpr\ai\extension-form-sender\PACKAGE_INVENTORY_SHA256.txt)
 
 ---
 
