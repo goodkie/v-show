@@ -2522,9 +2522,9 @@ function _applyHandshakeUiState(isPassed, errorReason = '') {
 }
 
 function getBadgeTextFromBuildInfo(info) {
-    if (!info) return 'TEST-ONLY R6.9G.9.3';
+    if (!info) return 'TEST-ONLY R6.9G.9.4';
     const m = (info.buildId || '').match(/R\d+\.\d+[A-Za-z0-9\.]*/);
-    const ver = m ? m[0] : 'R6.9G.9.3';
+    const ver = m ? m[0] : 'R6.9G.9.4';
     const sha = info.implementationHeadShort || info.headShort || (info.implementationHead ? info.implementationHead.substring(0, 7) : 'dev');
     return `TEST-ONLY ${ver} [${sha}]`;
 }

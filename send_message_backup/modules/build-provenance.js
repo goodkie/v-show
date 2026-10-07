@@ -15,28 +15,28 @@
 
     const BUILD_INFO = {
         branch: 'upgrade/phase-0-1',
-        // [R6.9G.9.3] implementationHead = functional commit containing real proxy path,
-        //             MV3 asyncBlocking onAuthRequired handler, bounded proxy canary, and scheduler quiescence
-        implementationHead: 'ba845562d8fae41c1e4add0906c8c4c046f1885f',
-        implementationHeadShort: 'ba845562',
-        head: 'ba845562d8fae41c1e4add0906c8c4c046f1885f',
-        headShort: 'ba845562',
+        // [R6.9G.9.4] implementationHead = functional commit containing production public canary fallback,
+        //             bounded proxy auth retries (max 2), fail-closed canary error, and privacy status accuracy
+        implementationHead: '008468d4c0876acbcb2a7035201fda0d7c37e0f0',
+        implementationHeadShort: '008468d4',
+        head: '008468d4c0876acbcb2a7035201fda0d7c37e0f0',
+        headShort: '008468d4',
         rollbackBase: 'dc0740a0c69e2f7fa96b6989841acf0831b3619e',
         manifestVersion: 3,
-        buildId: 'R6.9G.9.3-20261007-REAL-PROXY-MV3-AUTH',
-        builtAt: '2026-10-07T20:50:00.000Z',
+        buildId: 'R6.9G.9.4-20261007-PROD-CANARY-BOUNDED-AUTH',
+        builtAt: '2026-10-07T22:50:00.000Z',
         provenanceSchema: 2,
         modules: {
             backgroundSha: '2aee0d95a2f7aae4a591350189bb86d4ad23f6e25b467baa489eb85f3e06ac73',
             contentScriptSha: 'db15cc0900d9171bb79b31a0aeaae09a16712f1d06413db7230e75633cf5b257',
-            popupSha: '6228be8f77870492051ec7968b3ee34c9019de8b33339bbe0159461f8d03857d',
+            popupSha: '6372761801a5ed48410942978ea91b62cb32e406e77b928dbf1f5bf71555dd07',
             solverContentSha: 'dca775d4db576dd48be191a80b2e1b5394448c572cf3860735cf0be99ff966da',
             solverCoreSha: '01b3d96048ea933403e4599854dcdca28027e7f676aa5077eb6c5eb0582ac1e7',
             emailCollectorSha: '3f1147a379e159e7777158f2caa74cc8d40b2a0b0eb2c244f440af379cb5c9c9',
             historyStoreSha: 'ef148329c5c019877fef3708ac63472ce86d5f7f06da467a557a74e038eab6b4',
             contactGateSha: '0d01acb2d0a9448d154353fac5b527c17afa42fed56c68d6a49b39053629bd7d',
             visionSubmitSha: '25cf18a4834bb476edff5e8f19a78dd2723bd556ede649ada69bc801543c83f3',
-            privacyGatewaySha: 'ec2f54d7aadc7f83be4aa7664b7774ec0b44929b8fc59cf3544bf8fc0f01386f'
+            privacyGatewaySha: '6af5534697f4f50c629c2b99b03e45af15d377a348020319e1154c089648ade9'
         }
     };
 

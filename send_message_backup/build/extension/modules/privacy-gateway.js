@@ -282,6 +282,10 @@
             this._mockEgressProbe = fn;
         }
 
+        setMockFetch(fn) {
+            this._mockFetch = fn;
+        }
+
         simulateEgressChange(newVal = 'simulated-new-ip-change') {
             this._mockEgressProbe = () => newVal;
         }
@@ -295,7 +299,8 @@
          * - Fail closed if fetch is unavailable: returns PROXY_CANARY_UNAVAILABLE (never success: true).
          */
         async probeProxyCanary(canaryUrl = null, timeoutMs = 3000) {
-            if (typeof fetch === 'undefined') {
+            const fetchFn = this._mockFetch !== undefined ? this._mockFetch : (typeof fetch !== 'undefined' ? fetch : null);
+            if (!fetchFn || typeof fetchFn !== 'function') {
                 return { success: false, reason: 'PROXY_CANARY_UNAVAILABLE' };
             }
 
@@ -310,7 +315,7 @@
                 const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
                 const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
                 try {
-                    const resp = await fetch(target, {
+                    const resp = await fetchFn(target, {
                         method: 'GET',
                         cache: 'no-store',
                         signal: controller ? controller.signal : undefined

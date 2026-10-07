@@ -1,0 +1,361 @@
+[2026-10-07T22:59:27.964Z] ========================================================================
+[2026-10-07T22:59:27.966Z] XPIDER R6.9G.9.4 MICROSOFT EDGE REAL BROWSER OPERATOR AUDIT
+[2026-10-07T22:59:27.966Z] Production Public Canary + Bounded Proxy Auth + Privacy Status Accuracy
+[2026-10-07T22:59:27.966Z] ========================================================================
+[2026-10-07T22:59:27.991Z] [HARNESS_INIT] Target server listening on http://127.0.0.1:8980
+[2026-10-07T22:59:27.994Z] [HARNESS_INIT] Forward proxy server listening on http://127.0.0.1:8982
+[2026-10-07T22:59:27.995Z] [BROWSER_DETECTED] Edge binary: C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe
+[2026-10-07T22:59:27.996Z] [EXTENSION_PATH] E:\vivpr\ai\extension-form-sender\send_message_backup\build\extension
+[2026-10-07T22:59:27.996Z] [BROWSER_SPAWN] Launching Microsoft Edge on CDP port 9232...
+[2026-10-07T22:59:28.809Z] [CDP_CONNECTED] Found 6 browser targets.
+[2026-10-07T22:59:29.363Z] [SW_TARGET_ATTACHED] chrome-extension://pjohcallgmjmbfckiaogjokelhobfceg/background.js
+[2026-10-07T22:59:29.388Z] [EXT_ID_RESOLVED] pjohcallgmjmbfckiaogjokelhobfceg
+[2026-10-07T22:59:29.500Z] [SW_CONSOLE] [PRIVACY_GATE] Proxy onAuthRequired asyncBlocking listener registered with bounded retries.
+[2026-10-07T22:59:29.505Z] [SW_CONSOLE] [BootStep] solver_instantiation
+[2026-10-07T22:59:29.507Z] [SW_CONSOLE] [X PIDER] Background script initializing (Unified Mode)...
+[2026-10-07T22:59:29.508Z] [SW_CONSOLE] [BootStep] side_panel_config
+[2026-10-07T22:59:29.509Z] [SW_CONSOLE] [BootStep] campaign_state_init
+[2026-10-07T22:59:29.512Z] [SW_CONSOLE] [BootStep] global_functions_defined
+[2026-10-07T22:59:29.513Z] [SW_CONSOLE] [BootStep] worker_online
+[2026-10-07T22:59:30.017Z] [SW_CONSOLE] [BootStep] restoring_campaign_state
+[2026-10-07T22:59:30.019Z] [SW_CONSOLE] [Boot] Initializing campaign state...
+[2026-10-07T22:59:30.023Z] [SW_CONSOLE] [COUNTER_RECONCILE] legacySuccess=0 ledgerSuccess=0 action=LEDGER_WINS
+[2026-10-07T22:59:30.025Z] [SW_CONSOLE] [BootStep] restore_complete
+[2026-10-07T22:59:30.422Z] [SW_PROBE_GLOBALS] {"hasSelf":true,"hasPrivacyGateway":true,"hasGlobalPrivacyGateway":true,"hasBuildProvenance":true,"keys":["BuildProvenance","PrivacyGateway"]}
+[2026-10-07T22:59:30.422Z] 
+=============================================================
+[2026-10-07T22:59:30.422Z] GATE A: DIRECT MODE + FAIL-CLOSED (Preflight Synchronous Block)
+[2026-10-07T22:59:30.422Z] =============================================================
+[2026-10-07T22:59:30.428Z] [GATE_A_EVAL] {"ready":false,"mode":"DIRECT","failClosed":true,"failureReason":"DIRECT_MODE_BLOCKED_BY_FAIL_CLOSED"}
+[2026-10-07T22:59:30.428Z] ✅ [GATE A: PASS] DIRECT mode strictly blocked with DIRECT_MODE_BLOCKED_BY_FAIL_CLOSED
+[2026-10-07T22:59:30.428Z] 
+=============================================================
+[2026-10-07T22:59:30.428Z] GATE B.1: MANAGED PROXY ROUTING, PRODUCTION CANARY & STATUS ACCURACY
+[2026-10-07T22:59:30.428Z] =============================================================
+[2026-10-07T22:59:30.438Z] [PROXY_FORWARD_REQ] GET http://127.0.0.1:8980/privacy-canary
+[2026-10-07T22:59:30.445Z] [TARGET_HTTP_REQ] GET /privacy-canary Host=127.0.0.1:8980
+[2026-10-07T22:59:30.449Z] [GATE_B1_EVAL] {"ready":true,"mode":"HTTPS_PROXY","directFallbackBlocked":"BLOCKED","egressCheck":"PASS","dnsPrivacy":"UNKNOWN","ipv6Protection":"UNKNOWN","failureReason":null}
+[2026-10-07T22:59:30.450Z] ✅ [GATE B.1: STATUS ACCURACY] Managed proxy reports dnsPrivacy=UNKNOWN and ipv6Protection=UNKNOWN
+[2026-10-07T22:59:30.450Z] [GATE_B1_CANARY_TRACE] canaryInProxy=true
+[2026-10-07T22:59:30.455Z] [PROXY_FORWARD_REQ] GET http://127.0.0.1:8980/privacy-target
+[2026-10-07T22:59:30.456Z] [TARGET_HTTP_REQ] GET /privacy-target Host=127.0.0.1:8980
+[2026-10-07T22:59:30.460Z] [GATE_B1_TARGET_FETCH] {"ok":true,"status":200,"hasForm":true}
+[2026-10-07T22:59:30.462Z] [PROXY_FORWARD_REQ] GET http://127.0.0.1:8980/subresource-asset
+[2026-10-07T22:59:30.463Z] [TARGET_HTTP_REQ] GET /subresource-asset Host=127.0.0.1:8980
+[2026-10-07T22:59:30.465Z] [GATE_B1_SUBRESOURCE_FETCH] {"ok":true,"status":200}
+[2026-10-07T22:59:30.465Z] [GATE_B1_TRAFFIC] targetInProxy=true subresourceInProxy=true proxyCount=3 targetCount=3
+[2026-10-07T22:59:30.465Z] [GATE_B1_PROD_CANARY_TEST] Probing public HTTPS endpoints through proxy without canary override...
+[2026-10-07T22:59:30.471Z] [PROXY_CONNECT] cloudflare.com:443
+[2026-10-07T22:59:30.890Z] [PROXY_CONNECT] www.bing.com:443
+[2026-10-07T22:59:31.494Z] [GATE_B1_PROD_CANARY_RES] {"success":true,"status":200,"endpoint":"https://cloudflare.com/cdn-cgi/trace"}
+[2026-10-07T22:59:31.494Z] [GATE_B1_PROD_CANARY_CONNECT] connectInProxy=true
+[2026-10-07T22:59:31.495Z] ✅ [GATE B.1: PRODUCTION CANARY] Real public HTTPS canary probe routed through proxy and verified
+[2026-10-07T22:59:31.496Z] [GATE_B1_FETCH_UNAVAIL_RES] {"success":false,"reason":"PROXY_CANARY_UNAVAILABLE"}
+[2026-10-07T22:59:31.496Z] ✅ [GATE B.1: FAIL-CLOSED FETCH] Missing fetch returns PROXY_CANARY_UNAVAILABLE fail-closed
+[2026-10-07T22:59:31.496Z] ✅ [GATE B.1: PASS] All Gate B.1 requirements verified: proxy routing, production canary fallback, status accuracy, and fail-closed fetch
+[2026-10-07T22:59:31.496Z] 
+=============================================================
+[2026-10-07T22:59:31.496Z] GATE B.2: PROXY AUTHENTICATION & BOUNDED RETRIES
+[2026-10-07T22:59:31.496Z] =============================================================
+[2026-10-07T22:59:31.499Z] [PROXY_AUTH_CHALLENGE] 407 sent for http://127.0.0.1:8980/privacy-canary
+[2026-10-07T22:59:31.506Z] [PROXY_AUTH_SUCCESS] Authenticated proxy user=testproxyuser
+[2026-10-07T22:59:31.506Z] [PROXY_FORWARD_REQ] GET http://127.0.0.1:8980/privacy-canary
+[2026-10-07T22:59:31.508Z] [TARGET_HTTP_REQ] GET /privacy-canary Host=127.0.0.1:8980
+[2026-10-07T22:59:31.510Z] [GATE_B2_SETUP] {"preflightReady":true,"hasCreds":true,"wrongHostScoped":true,"wrongPortScoped":true}
+[2026-10-07T22:59:31.513Z] [PROXY_AUTH_SUCCESS] Authenticated proxy user=testproxyuser
+[2026-10-07T22:59:31.513Z] [PROXY_FORWARD_REQ] GET http://127.0.0.1:8980/privacy-target
+[2026-10-07T22:59:31.514Z] [TARGET_HTTP_REQ] GET /privacy-target Host=127.0.0.1:8980
+[2026-10-07T22:59:31.516Z] [GATE_B2_AUTH_FETCH] {"ok":true,"status":200}
+[2026-10-07T22:59:31.517Z] [GATE_B2_AUTH_TRACES] hasAuthChallenge=true hasAuthSuccess=true
+[2026-10-07T22:59:31.524Z] [PROXY_AUTH_FAIL] Wrong credentials (challenge #1): user=testproxyuser
+[2026-10-07T22:59:31.526Z] [PROXY_AUTH_FAIL] Wrong credentials (challenge #2): user=testproxyuser
+[2026-10-07T22:59:31.527Z] [PROXY_AUTH_FAIL] Wrong credentials (challenge #3): user=testproxyuser
+[2026-10-07T22:59:31.530Z] [SW_CONSOLE] [PRIVACY_GATE] [PROXY_AUTH_REJECTED] Bounded retry limit reached (attempts=3) for 26, canceling request fail-closed.
+[2026-10-07T22:59:31.531Z] [GATE_B2_WRONG_PASS] {"ok":false,"status":407}
+[2026-10-07T22:59:31.532Z] [GATE_B2_WRONG_PASS_CHALLENGES] count=3
+[2026-10-07T22:59:32.036Z] [GATE_B2_AUTH_REJECTED_LOGGED] hasAuthRejected=true
+[2026-10-07T22:59:32.036Z] [GATE_B2_DIRECT_RETRY_CHECK] newTargetRequestsDuringFailure=0
+[2026-10-07T22:59:32.036Z] ✅ [GATE B.2: BOUNDED RETRY PASS] Exactly 3 challenges before fail-closed cancel; storm eliminated
+[2026-10-07T22:59:32.041Z] [GATE_B2_INCOMPLETE] ready=false reason=PROXY_CREDENTIALS_INCOMPLETE
+[2026-10-07T22:59:32.046Z] [GATE_B2_EPHEMERAL_CLEANUP] hasBefore=true hasAfter=false
+[2026-10-07T22:59:32.046Z] ✅ [GATE B.2: PASS] Real HTTP 407 challenge handled via onAuthRequired, credentials scoped, bounded retries (<= 2) eliminate storms, wrong password fails closed, ephemeral cleanup verified
+[2026-10-07T22:59:32.046Z] 
+=============================================================
+[2026-10-07T22:59:32.047Z] GATE C: LIVE PROXY DROP DURING ACTIVE CAMPAIGN & FAIL-CLOSED QUIESCENCE
+[2026-10-07T22:59:32.047Z] =============================================================
+[2026-10-07T22:59:32.060Z] [PROXY_FORWARD_REQ] GET http://127.0.0.1:8980/privacy-canary
+[2026-10-07T22:59:32.061Z] [TARGET_HTTP_REQ] GET /privacy-canary Host=127.0.0.1:8980
+[2026-10-07T22:59:32.066Z] [GATE_C_CAMPAIGN_SETUP] {"isActive":true,"queueLen":2}
+[2026-10-07T22:59:32.072Z] [PROXY_FORWARD_REQ] GET http://127.0.0.1:8980/privacy-target
+[2026-10-07T22:59:32.073Z] [TARGET_HTTP_REQ] GET /privacy-target Host=127.0.0.1:8980
+[2026-10-07T22:59:32.078Z] [GATE_C_FIRST_TARGET_PROXIED] {"ok":true,"status":200}
+[2026-10-07T22:59:32.078Z] ✅ [GATE C: FIRST TARGET] Confirmed first target traversed active proxy
+[2026-10-07T22:59:32.078Z] [GATE_C_PROXY_DROPPED] mockProxyActive set to false
+[2026-10-07T22:59:32.081Z] [SW_CONSOLE] [SERIALIZED_GATE] Slot acquired atomically. activeTargetInFlight=true activeTargetCount=1 maxConcurrent=1
+[2026-10-07T22:59:32.082Z] [SW_CONSOLE] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedBefore=0
+[2026-10-07T22:59:32.082Z] [SW_CONSOLE] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedAfter=0 result=PASS
+[2026-10-07T22:59:32.084Z] [PROXY_REJECT_DEAD] 502 returned for http://127.0.0.1:8980/privacy-canary
+[2026-10-07T22:59:32.091Z] [SW_CONSOLE] [BG_LOG][tab=none] [PRIVACY_GATE_BLOCK] reason=MANAGED_PROXY_DROPPED: PROXY_CANARY_FAILED: HTTP_STATUS_502 attemptId=none targetUrl=next_queue
+[2026-10-07T22:59:32.113Z] [SW_CONSOLE] [PRIVACY_GATE_BLOCK] reason=MANAGED_PROXY_DROPPED: PROXY_CANARY_FAILED: HTTP_STATUS_502 attemptId=none targetUrl=next_queue
+[2026-10-07T22:59:32.113Z] [SW_CONSOLE] [SERIALIZED_GATE] Slot released. activeTargetInFlight=false activeTargetCount=0
+[2026-10-07T22:59:32.114Z] [SW_CONSOLE] [BG_LOG][tab=none] ⏸️ [Engine] Campaign PAUSED / STOP & SAVE requested.
+[2026-10-07T22:59:32.122Z] [SW_CONSOLE] [TAB_BARRIER] phase=PAUSE_CAMPAIGN ownedBefore=0
+[2026-10-07T22:59:32.123Z] [SW_CONSOLE] [TAB_BARRIER] phase=PAUSE_CAMPAIGN ownedAfter=0 result=PASS
+[2026-10-07T22:59:32.131Z] [SW_CONSOLE] [PRIVACY_GATE_RESTORED] status=READY
+[2026-10-07T22:59:32.132Z] [SW_CONSOLE] [BG_LOG][tab=none] [PRIVACY_GATE_RESTORED] status=READY
+[2026-10-07T22:59:32.138Z] [SW_CONSOLE] [BG_LOG][tab=none] 💾 [Checkpoint] Campaign snapshot saved: 2 targets remaining.
+[2026-10-07T22:59:32.140Z] [SW_CONSOLE] [BG_LOG][tab=none] === CAMPAIGN OUTCOME SUMMARY (currentRun) ===
+[2026-10-07T22:59:32.141Z] [SW_CONSOLE] [BG_LOG][tab=none] CONFIRMED_SUCCESS:           0
+[2026-10-07T22:59:32.144Z] [SW_CONSOLE] [BG_LOG][tab=none] FAILURE:                     0
+[2026-10-07T22:59:32.145Z] [SW_CONSOLE] [BG_LOG][tab=none] TIMEOUT_LOCAL:               0
+[2026-10-07T22:59:32.146Z] [SW_CONSOLE] [BG_LOG][tab=none] TIMEOUT_GLOBAL:              0
+[2026-10-07T22:59:32.147Z] [SW_CONSOLE] [BG_LOG][tab=none] DELIVERY_UNKNOWN:            0
+[2026-10-07T22:59:32.148Z] [SW_CONSOLE] [BG_LOG][tab=none] SKIPPED:                     0
+[2026-10-07T22:59:32.149Z] [SW_CONSOLE] [BG_LOG][tab=none] PAUSED_UNKNOWN:              0
+[2026-10-07T22:59:32.150Z] [SW_CONSOLE] [BG_LOG][tab=none] ----------------------------------------
+[2026-10-07T22:59:32.155Z] [SW_CONSOLE] [BG_LOG][tab=none] TOTAL TERMINAL / COMPLETED:  0
+[2026-10-07T22:59:32.155Z] [SW_CONSOLE] [CAMPAIGN_SUMMARY] success=0 failure=0 timeoutLocal=0 timeoutGlobal=0 unknown=0 skipped=0 paused=0 completed=0
+[2026-10-07T22:59:32.156Z] [SW_CONSOLE] [BG_LOG][tab=none] ========================================
+[2026-10-07T22:59:32.156Z] [GATE_C_DROP_SCHEDULER] {"isActive":false,"isPaused":true,"isFaulted":true,"faultReason":"PRIVACY_GATEWAY_BLOCKED","activeTargetInFlight":false,"queueLen":2}
+[2026-10-07T22:59:32.156Z] [GATE_C_DIRECT_FALLBACK_CHECK] newTargetRequestsAfterDrop=0
+[2026-10-07T22:59:32.162Z] [GATE_C_MISSING_CONFIG] ready=false reason=PROXY_HOST_OR_PORT_MISSING
+[2026-10-07T22:59:32.162Z] ✅ [GATE C: PASS] Active campaign detected dropped proxy, scheduler paused/faulted fail-closed, zero next target in-flight, zero direct fallback request
+[2026-10-07T22:59:32.162Z] 
+=============================================================
+[2026-10-07T22:59:32.162Z] GATE D: WEBRTC LEAK GUARD & RESTORATION
+[2026-10-07T22:59:32.162Z] =============================================================
+[2026-10-07T22:59:32.165Z] [GATE_D_EVAL] webrtcVal=disable_non_proxied_udp netPredVal=false
+[2026-10-07T22:59:32.165Z] ✅ [GATE D: PASS] WebRTC hardened to disable_non_proxied_udp, network prediction disabled
+[2026-10-07T22:59:32.165Z] 
+=============================================================
+[2026-10-07T22:59:32.165Z] GATE E: CHILD / EXTERNAL TAB INVARIANT
+[2026-10-07T22:59:32.165Z] =============================================================
+[2026-10-07T22:59:32.166Z] [GATE_E_EVAL] {"readyState":false,"meta":{"privacyMode":"SYSTEM_VPN","privacyTransport":"SYSTEM_VPN","privacyGatePassed":false,"privacyGateCheckedAt":"2026-10-07T22:59:32.166Z","privacyFailureReason":"PROXY_HOST_OR_PORT_MISSING"}}
+[2026-10-07T22:59:32.166Z] ✅ [GATE E: PASS] Attempt privacy metadata captures zero PII and enforces invariant
+[2026-10-07T22:59:32.166Z] 
+=============================================================
+[2026-10-07T22:59:32.167Z] GATE F: POPUP SETTINGS, UI CLARIFICATION & EXACT BUILD PROVENANCE BADGE
+[2026-10-07T22:59:32.167Z] =============================================================
+[2026-10-07T22:59:32.593Z] [SW_CONSOLE] [BG_LOG][tab=none] 📦 [Migration] Safely migrated to v2 (Backup: xpider_backup_v1_1791413972513)
+[2026-10-07T22:59:34.253Z] [POPUP_ATTACHED] chrome-extension://pjohcallgmjmbfckiaogjokelhobfceg/popup.html
+[2026-10-07T22:59:34.295Z] [GATE_F_EVAL] {"hasPrivacyToggle":true,"hasModeSelect":true,"hasVpnSection":true,"hasVpnBadge":true,"hasVpnCheckbox":true,"hasVpnVerifyBtn":true,"hasVpnRevokeBtn":true,"hasRememberPass":true,"rememberLabelText":"Remember password in local browser storage (chrome.storage.local)","badgeText":"NOT CONFIRMED","provenanceBadgeText":"TEST-ONLY R6.9G.9.4 [008468d4]"}
+[2026-10-07T22:59:34.295Z] ✅ [GATE F: UI CLARIFICATION PASS] Remember password UI specifies local browser storage (chrome.storage.local)
+[2026-10-07T22:59:34.295Z] ✅ [GATE F: PASS] All UI elements verified in popup DOM. Exact provenance badge: TEST-ONLY R6.9G.9.4 [008468d4]
+[2026-10-07T22:59:34.295Z] 
+=============================================================
+[2026-10-07T22:59:34.295Z] GATE G: DIAGNOSTIC REDACTION
+[2026-10-07T22:59:34.295Z] =============================================================
+[2026-10-07T22:59:34.314Z] [GATE_G_EVAL] redacted="Connected to proxy user:[REDACTED_SECRET] proxyPassword: [REDACTED_SECRET] with https://[REDACTED_USER]:[REDACTED_PASS]@proxy.example.com at [REDACTED_IP]:8080 and [REDACTED_IPV6], local test on 127.0.0.1"
+[2026-10-07T22:59:34.314Z] ✅ [GATE G: PASS] Sensitive IPv4, IPv6, and proxy passwords strictly redacted; loopback fixture preserved
+[2026-10-07T22:59:34.314Z] 
+=============================================================
+[2026-10-07T22:59:34.314Z] GATE H.1: UNCONFIRMED SYSTEM VPN BLOCKS CAMPAIGN START
+[2026-10-07T22:59:34.314Z] =============================================================
+[2026-10-07T22:59:35.352Z] [SW_CONSOLE] [BUILD_HANDSHAKE] popup=008468d4c0876acbcb2a7035201fda0d7c37e0f0 background=008468d4c0876acbcb2a7035201fda0d7c37e0f0 build=R6.9G.9.4-20261007-PROD-CANARY-BOUNDED-AUTH manifest=3 result=PASS
+[2026-10-07T22:59:35.354Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_HANDSHAKE] popup=008468d4c0876acbcb2a7035201fda0d7c37e0f0 background=008468d4c0876acbcb2a7035201fda0d7c37e0f0 build=R6.9G.9.4-20261007-PROD-CANARY-BOUNDED-AUTH manifest=3 result=PASS
+[2026-10-07T22:59:35.356Z] [SW_CONSOLE] [BUILD_ID] branch=upgrade/phase-0-1 implementationHead=008468d4c0876acbcb2a7035201fda0d7c37e0f0 manifestVersion=3 buildId=R6.9G.9.4-20261007-PROD-CANARY-BOUNDED-AUTH builtAt=2026-10-07T22:50:00.000Z
+[2026-10-07T22:59:35.358Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_ID] branch=upgrade/phase-0-1 implementationHead=008468d4c0876acbcb2a7035201fda0d7c37e0f0 manifestVersion=3 buildId=R6.9G.9.4-20261007-PROD-CANARY-BOUNDED-AUTH builtAt=2026-10-07T22:50:00.000Z
+[2026-10-07T22:59:35.358Z] [SW_CONSOLE] [BUILD_MODULE] contactGateSha=0d01acb2d0a9448d154353fac5b527c17afa42fed56c68d6a49b39053629bd7d
+[2026-10-07T22:59:35.360Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] contactGateSha=0d01acb2d0a9448d154353fac5b527c17afa42fed56c68d6a49b39053629bd7d
+[2026-10-07T22:59:35.361Z] [SW_CONSOLE] [BUILD_MODULE] visionSubmitSha=25cf18a4834bb476edff5e8f19a78dd2723bd556ede649ada69bc801543c83f3
+[2026-10-07T22:59:35.361Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] visionSubmitSha=25cf18a4834bb476edff5e8f19a78dd2723bd556ede649ada69bc801543c83f3
+[2026-10-07T22:59:35.367Z] [SW_CONSOLE] [BUILD_MODULE] historyStoreSha=ef148329c5c019877fef3708ac63472ce86d5f7f06da467a557a74e038eab6b4
+[2026-10-07T22:59:35.372Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] historyStoreSha=ef148329c5c019877fef3708ac63472ce86d5f7f06da467a557a74e038eab6b4
+[2026-10-07T22:59:35.373Z] [SW_CONSOLE] [BUILD_MODULE] emailCollectorSha=3f1147a379e159e7777158f2caa74cc8d40b2a0b0eb2c244f440af379cb5c9c9
+[2026-10-07T22:59:35.374Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] emailCollectorSha=3f1147a379e159e7777158f2caa74cc8d40b2a0b0eb2c244f440af379cb5c9c9
+[2026-10-07T22:59:35.375Z] [SW_CONSOLE] [BUILD_MODULE] contentScriptSha=db15cc0900d9171bb79b31a0aeaae09a16712f1d06413db7230e75633cf5b257
+[2026-10-07T22:59:35.375Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] contentScriptSha=db15cc0900d9171bb79b31a0aeaae09a16712f1d06413db7230e75633cf5b257
+[2026-10-07T22:59:35.376Z] [SW_CONSOLE] [BUILD_MODULE] backgroundSha=2aee0d95a2f7aae4a591350189bb86d4ad23f6e25b467baa489eb85f3e06ac73
+[2026-10-07T22:59:35.376Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] backgroundSha=2aee0d95a2f7aae4a591350189bb86d4ad23f6e25b467baa489eb85f3e06ac73
+[2026-10-07T22:59:35.376Z] [SW_CONSOLE] [BUILD_MODULE] popupSha=6372761801a5ed48410942978ea91b62cb32e406e77b928dbf1f5bf71555dd07
+[2026-10-07T22:59:35.377Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] popupSha=6372761801a5ed48410942978ea91b62cb32e406e77b928dbf1f5bf71555dd07
+[2026-10-07T22:59:35.377Z] [SW_CONSOLE] [BUILD_MODULE] solverContentSha=dca775d4db576dd48be191a80b2e1b5394448c572cf3860735cf0be99ff966da
+[2026-10-07T22:59:35.377Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] solverContentSha=dca775d4db576dd48be191a80b2e1b5394448c572cf3860735cf0be99ff966da
+[2026-10-07T22:59:35.383Z] [SW_CONSOLE] [BUILD_MODULE] solverCoreSha=01b3d96048ea933403e4599854dcdca28027e7f676aa5077eb6c5eb0582ac1e7
+[2026-10-07T22:59:35.383Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] solverCoreSha=01b3d96048ea933403e4599854dcdca28027e7f676aa5077eb6c5eb0582ac1e7
+[2026-10-07T22:59:35.389Z] [SW_CONSOLE] [BUILD_MODULE] privacyGatewaySha=6af5534697f4f50c629c2b99b03e45af15d377a348020319e1154c089648ade9
+[2026-10-07T22:59:35.389Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] privacyGatewaySha=6af5534697f4f50c629c2b99b03e45af15d377a348020319e1154c089648ade9
+[2026-10-07T22:59:35.392Z] [SW_CONSOLE] [PRIVACY_GATE] mode=SYSTEM_VPN transport=SYSTEM_VPN failClosed=true webrtcGuard=PASS directFallbackBlocked=BLOCKED egressCheck=BLOCKED dnsPrivacy=PASS ipv6Protection=PROTECTED status=BLOCKED
+[2026-10-07T22:59:35.393Z] [SW_CONSOLE] [BG_LOG][tab=none] [PRIVACY_GATE] mode=SYSTEM_VPN transport=SYSTEM_VPN failClosed=true webrtcGuard=PASS directFallbackBlocked=BLOCKED egressCheck=BLOCKED dnsPrivacy=PASS ipv6Protection=PROTECTED status=BLOCKED
+[2026-10-07T22:59:35.394Z] [SW_CONSOLE] [BG_LOG][tab=none] [PRIVACY_GATE_BLOCK] reason=SYSTEM_VPN_UNCONFIRMED_PREFLIGHT_BLOCKED attemptId=none targetUrl=none
+[2026-10-07T22:59:36.855Z] [GATE_H_1_BLOCKED] alert="🛡️ PRIVACY GATEWAY FAIL-CLOSED
+
+Campaign START blocked:
+System VPN mode is selected, but VPN confirmation has not been completed.
+
+Open Settings > Privacy Gateway, connect your VPN, then click 'Verify & Use System VPN'." badge=NOT CONFIRMED settingsVisible=true
+[2026-10-07T22:59:36.855Z] ✅ [GATE H.1: PASS] Unconfirmed System VPN blocks campaign start, displays actionable guidance, opens Settings
+[2026-10-07T22:59:36.855Z] 
+=============================================================
+[2026-10-07T22:59:36.855Z] GATE H.2: FORCED PREFLIGHT FAILURE IN VERIFY BUTTON
+[2026-10-07T22:59:36.855Z] =============================================================
+[2026-10-07T22:59:38.370Z] [GATE_H_2_FORCED_FAIL] badge=NOT CONFIRMED storedConfirmed=false alert="🛡️ PRIVACY GATEWAY FAIL-CLOSED
+
+System VPN verification failed:
+FORCED_PREFLIGHT_SIMULATED_PROBE_ERROR
+
+Please verify your OS-level VPN is active and connected, then try again."
+[2026-10-07T22:59:38.370Z] ✅ [GATE H.2: PASS] Verify button strictly requires preflight.ready === true; UI remains NOT CONFIRMED on preflight error
+[2026-10-07T22:59:38.370Z] 
+=============================================================
+[2026-10-07T22:59:38.370Z] GATE H.3: EGRESS PROBE UNAVAILABLE & TIMEOUT FAIL-CLOSED
+[2026-10-07T22:59:38.370Z] =============================================================
+[2026-10-07T22:59:38.373Z] [GATE_H_3_UNAVAIL] {"ready":false,"egressCheck":"FAIL","ownerVpnConfirmed":true,"egressVerified":false,"failureReason":"EGRESS_PROBE_UNAVAILABLE"}
+[2026-10-07T22:59:38.376Z] [GATE_H_3_TIMEOUT] {"ready":false,"egressCheck":"FAIL","ownerVpnConfirmed":true,"egressVerified":false,"failureReason":"EGRESS_PROBE_TIMEOUT"}
+[2026-10-07T22:59:38.376Z] ✅ [GATE H.3: PASS] Egress probe unavailable and timeout strictly block campaign start in fail-closed mode
+[2026-10-07T22:59:38.376Z] 
+=============================================================
+[2026-10-07T22:59:38.376Z] GATE H.4: REAL DOM VERIFY & REOPEN PERSISTENCE
+[2026-10-07T22:59:38.376Z] =============================================================
+[2026-10-07T22:59:38.588Z] [GATE_H_4_VERIFY] badge=CONFIRMED checkbox=true stored=true
+[2026-10-07T22:59:38.592Z] [GATE_H_4_POPUP_CLOSED]
+[2026-10-07T22:59:42.150Z] [GATE_H_4_REOPEN_STATE] badge=CONFIRMED checkbox=true
+[2026-10-07T22:59:42.160Z] [SW_CONSOLE] [BUILD_HANDSHAKE] popup=008468d4c0876acbcb2a7035201fda0d7c37e0f0 background=008468d4c0876acbcb2a7035201fda0d7c37e0f0 build=R6.9G.9.4-20261007-PROD-CANARY-BOUNDED-AUTH manifest=3 result=PASS
+[2026-10-07T22:59:42.161Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_HANDSHAKE] popup=008468d4c0876acbcb2a7035201fda0d7c37e0f0 background=008468d4c0876acbcb2a7035201fda0d7c37e0f0 build=R6.9G.9.4-20261007-PROD-CANARY-BOUNDED-AUTH manifest=3 result=PASS
+[2026-10-07T22:59:42.162Z] [SW_CONSOLE] [BUILD_ID] branch=upgrade/phase-0-1 implementationHead=008468d4c0876acbcb2a7035201fda0d7c37e0f0 manifestVersion=3 buildId=R6.9G.9.4-20261007-PROD-CANARY-BOUNDED-AUTH builtAt=2026-10-07T22:50:00.000Z
+[2026-10-07T22:59:42.166Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_ID] branch=upgrade/phase-0-1 implementationHead=008468d4c0876acbcb2a7035201fda0d7c37e0f0 manifestVersion=3 buildId=R6.9G.9.4-20261007-PROD-CANARY-BOUNDED-AUTH builtAt=2026-10-07T22:50:00.000Z
+[2026-10-07T22:59:42.167Z] [SW_CONSOLE] [BUILD_MODULE] contactGateSha=0d01acb2d0a9448d154353fac5b527c17afa42fed56c68d6a49b39053629bd7d
+[2026-10-07T22:59:42.172Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] contactGateSha=0d01acb2d0a9448d154353fac5b527c17afa42fed56c68d6a49b39053629bd7d
+[2026-10-07T22:59:42.173Z] [SW_CONSOLE] [BUILD_MODULE] visionSubmitSha=25cf18a4834bb476edff5e8f19a78dd2723bd556ede649ada69bc801543c83f3
+[2026-10-07T22:59:42.173Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] visionSubmitSha=25cf18a4834bb476edff5e8f19a78dd2723bd556ede649ada69bc801543c83f3
+[2026-10-07T22:59:42.190Z] [SW_CONSOLE] [BUILD_MODULE] historyStoreSha=ef148329c5c019877fef3708ac63472ce86d5f7f06da467a557a74e038eab6b4
+[2026-10-07T22:59:42.191Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] historyStoreSha=ef148329c5c019877fef3708ac63472ce86d5f7f06da467a557a74e038eab6b4
+[2026-10-07T22:59:42.192Z] [SW_CONSOLE] [BUILD_MODULE] emailCollectorSha=3f1147a379e159e7777158f2caa74cc8d40b2a0b0eb2c244f440af379cb5c9c9
+[2026-10-07T22:59:42.192Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] emailCollectorSha=3f1147a379e159e7777158f2caa74cc8d40b2a0b0eb2c244f440af379cb5c9c9
+[2026-10-07T22:59:42.193Z] [SW_CONSOLE] [BUILD_MODULE] contentScriptSha=db15cc0900d9171bb79b31a0aeaae09a16712f1d06413db7230e75633cf5b257
+[2026-10-07T22:59:42.193Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] contentScriptSha=db15cc0900d9171bb79b31a0aeaae09a16712f1d06413db7230e75633cf5b257
+[2026-10-07T22:59:42.193Z] [SW_CONSOLE] [BUILD_MODULE] backgroundSha=2aee0d95a2f7aae4a591350189bb86d4ad23f6e25b467baa489eb85f3e06ac73
+[2026-10-07T22:59:42.193Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] backgroundSha=2aee0d95a2f7aae4a591350189bb86d4ad23f6e25b467baa489eb85f3e06ac73
+[2026-10-07T22:59:42.194Z] [SW_CONSOLE] [BUILD_MODULE] popupSha=6372761801a5ed48410942978ea91b62cb32e406e77b928dbf1f5bf71555dd07
+[2026-10-07T22:59:42.194Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] popupSha=6372761801a5ed48410942978ea91b62cb32e406e77b928dbf1f5bf71555dd07
+[2026-10-07T22:59:42.194Z] [SW_CONSOLE] [BUILD_MODULE] solverContentSha=dca775d4db576dd48be191a80b2e1b5394448c572cf3860735cf0be99ff966da
+[2026-10-07T22:59:42.194Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] solverContentSha=dca775d4db576dd48be191a80b2e1b5394448c572cf3860735cf0be99ff966da
+[2026-10-07T22:59:42.195Z] [SW_CONSOLE] [BUILD_MODULE] solverCoreSha=01b3d96048ea933403e4599854dcdca28027e7f676aa5077eb6c5eb0582ac1e7
+[2026-10-07T22:59:42.195Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] solverCoreSha=01b3d96048ea933403e4599854dcdca28027e7f676aa5077eb6c5eb0582ac1e7
+[2026-10-07T22:59:42.195Z] [SW_CONSOLE] [BUILD_MODULE] privacyGatewaySha=6af5534697f4f50c629c2b99b03e45af15d377a348020319e1154c089648ade9
+[2026-10-07T22:59:42.196Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] privacyGatewaySha=6af5534697f4f50c629c2b99b03e45af15d377a348020319e1154c089648ade9
+[2026-10-07T22:59:42.240Z] [SW_CONSOLE] [PRIVACY_GATE] mode=SYSTEM_VPN transport=SYSTEM_VPN failClosed=true webrtcGuard=PASS directFallbackBlocked=BLOCKED egressCheck=PASS dnsPrivacy=PASS ipv6Protection=PROTECTED status=READY
+[2026-10-07T22:59:42.244Z] [SW_CONSOLE] [BG_LOG][tab=none] [PRIVACY_GATE] mode=SYSTEM_VPN transport=SYSTEM_VPN failClosed=true webrtcGuard=PASS directFallbackBlocked=BLOCKED egressCheck=PASS dnsPrivacy=PASS ipv6Protection=PROTECTED status=READY
+[2026-10-07T22:59:42.245Z] [SW_CONSOLE] [BG_LOG][tab=none] [START_BG] received queue=1
+[2026-10-07T22:59:42.245Z] [SW_CONSOLE] [START_BG] received queue=1
+[2026-10-07T22:59:42.246Z] [SW_CONSOLE] [BG_LOG][tab=none] [Boot] Orchestrator entered.
+[2026-10-07T22:59:42.247Z] [SW_CONSOLE] [SESSION_BASELINE] Captured 3 pre-existing user tabs as protected baseline.
+[2026-10-07T22:59:42.257Z] [SW_CONSOLE] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedBefore=0
+[2026-10-07T22:59:42.258Z] [SW_CONSOLE] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedAfter=0 result=PASS
+[2026-10-07T22:59:42.259Z] [SW_CONSOLE] [BG_LOG][tab=none] [Boot] Previous state cleared.
+[2026-10-07T22:59:42.261Z] [SW_CONSOLE] [BG_LOG][tab=none] [Boot] CAPTCHA solver state reset (attempts=0, identity=null).
+[2026-10-07T22:59:42.265Z] [SW_CONSOLE] [BG_LOG][tab=none] 📊 [Queue Filter] Input: 1 | Duplicates: 0 | Suppressed: 0 | History-Attempted: 0 | Executable: 0
+[2026-10-07T22:59:42.271Z] [SW_CONSOLE] [BG_LOG][tab=none] ⚠️ [Queue Filter] All 1 targets were skipped (historySkipped=0, suppressed=0). If re-testing, disable 'Skip Previously Attempted' or reset history suppression.
+[2026-10-07T22:59:42.275Z] [SW_CONSOLE] [BG_LOG][tab=none] [Boot] Variables initialized.
+[2026-10-07T22:59:42.276Z] [SW_CONSOLE] [BG_LOG][tab=none] 🚀 Engine booting...
+[2026-10-07T22:59:42.277Z] [SW_CONSOLE] [BG_LOG][tab=none] [Boot] Storage sync initiated.
+[2026-10-07T22:59:42.283Z] [SW_CONSOLE] [BG_LOG][tab=none] [Boot] Target loop triggered.
+[2026-10-07T22:59:42.293Z] [SW_CONSOLE] [FINISH_BARRIER] Clear. lastFinalTs=0 ledgerCompleted=0 total=0
+[2026-10-07T22:59:42.296Z] [SW_CONSOLE] [BG_LOG][tab=none] [FINISH_BARRIER] lastFinalTs=0 barrierClear. CAMPAIGN_FINISHED proceeding.
+[2026-10-07T22:59:42.297Z] [SW_CONSOLE] [BG_LOG][tab=none] Campaign finished!
+[2026-10-07T22:59:42.297Z] [SW_CONSOLE] [TAB_BARRIER] phase=CAMPAIGN_FINISHED ownedBefore=0
+[2026-10-07T22:59:42.299Z] [SW_CONSOLE] [TAB_BARRIER] phase=CAMPAIGN_FINISHED ownedAfter=0 result=PASS
+[2026-10-07T22:59:42.317Z] [SW_CONSOLE] [PRIVACY_GATE_RESTORED] status=READY
+[2026-10-07T22:59:42.324Z] [SW_CONSOLE] [BG_LOG][tab=none] [PRIVACY_GATE_RESTORED] status=READY
+[2026-10-07T22:59:43.661Z] [GATE_H_4_START_PERMITTED] {"campaignActive":true,"startHidden":true,"statusBoxVisible":true,"lastAlert":""}
+[2026-10-07T22:59:43.662Z] [SW_CONSOLE] [BG_LOG][tab=none] ⏸️ [Engine] Campaign PAUSED / STOP & SAVE requested.
+[2026-10-07T22:59:43.666Z] [SW_CONSOLE] [TAB_BARRIER] phase=PAUSE_CAMPAIGN ownedBefore=0
+[2026-10-07T22:59:43.671Z] [SW_CONSOLE] [TAB_BARRIER] phase=PAUSE_CAMPAIGN ownedAfter=0 result=PASS
+[2026-10-07T22:59:43.674Z] [SW_CONSOLE] [PRIVACY_GATE_RESTORED] status=READY
+[2026-10-07T22:59:43.675Z] [SW_CONSOLE] [BG_LOG][tab=none] [PRIVACY_GATE_RESTORED] status=READY
+[2026-10-07T22:59:43.677Z] [SW_CONSOLE] [BG_LOG][tab=none] 💾 [Checkpoint] Campaign snapshot saved: 0 targets remaining.
+[2026-10-07T22:59:43.678Z] [SW_CONSOLE] [BG_LOG][tab=none] === CAMPAIGN OUTCOME SUMMARY (currentRun) ===
+[2026-10-07T22:59:43.683Z] [SW_CONSOLE] [BG_LOG][tab=none] CONFIRMED_SUCCESS:           0
+[2026-10-07T22:59:43.683Z] [SW_CONSOLE] [BG_LOG][tab=none] FAILURE:                     0
+[2026-10-07T22:59:43.690Z] [SW_CONSOLE] [BG_LOG][tab=none] TIMEOUT_LOCAL:               0
+[2026-10-07T22:59:43.690Z] [SW_CONSOLE] [BG_LOG][tab=none] TIMEOUT_GLOBAL:              0
+[2026-10-07T22:59:43.696Z] [SW_CONSOLE] [BG_LOG][tab=none] DELIVERY_UNKNOWN:            0
+[2026-10-07T22:59:43.697Z] [SW_CONSOLE] [BG_LOG][tab=none] SKIPPED:                     0
+[2026-10-07T22:59:43.697Z] [SW_CONSOLE] [BG_LOG][tab=none] PAUSED_UNKNOWN:              0
+[2026-10-07T22:59:43.697Z] [SW_CONSOLE] [BG_LOG][tab=none] ----------------------------------------
+[2026-10-07T22:59:43.697Z] [SW_CONSOLE] [BG_LOG][tab=none] TOTAL TERMINAL / COMPLETED:  0
+[2026-10-07T22:59:43.698Z] [SW_CONSOLE] [CAMPAIGN_SUMMARY] success=0 failure=0 timeoutLocal=0 timeoutGlobal=0 unknown=0 skipped=0 paused=0 completed=0
+[2026-10-07T22:59:43.698Z] [SW_CONSOLE] [BG_LOG][tab=none] ========================================
+[2026-10-07T22:59:43.698Z] ✅ [GATE H.4: PASS] Owner-visible Verify button confirms VPN, persists across close/reopen, and permits START
+[2026-10-07T22:59:43.698Z] 
+=============================================================
+[2026-10-07T22:59:43.698Z] GATE H.5: REVOKE CONFIRMATION
+[2026-10-07T22:59:43.698Z] =============================================================
+[2026-10-07T22:59:44.745Z] [GATE_H_5_REVOKE] badge=NOT CONFIRMED checkbox=false stored=false
+[2026-10-07T22:59:44.745Z] [GATE_H_5_POPUP_CLOSED]
+[2026-10-07T22:59:48.297Z] [GATE_H_5_REOPENED] badge=NOT CONFIRMED checkbox=false
+[2026-10-07T22:59:48.310Z] [SW_CONSOLE] [BUILD_HANDSHAKE] popup=008468d4c0876acbcb2a7035201fda0d7c37e0f0 background=008468d4c0876acbcb2a7035201fda0d7c37e0f0 build=R6.9G.9.4-20261007-PROD-CANARY-BOUNDED-AUTH manifest=3 result=PASS
+[2026-10-07T22:59:48.311Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_HANDSHAKE] popup=008468d4c0876acbcb2a7035201fda0d7c37e0f0 background=008468d4c0876acbcb2a7035201fda0d7c37e0f0 build=R6.9G.9.4-20261007-PROD-CANARY-BOUNDED-AUTH manifest=3 result=PASS
+[2026-10-07T22:59:48.312Z] [SW_CONSOLE] [BUILD_ID] branch=upgrade/phase-0-1 implementationHead=008468d4c0876acbcb2a7035201fda0d7c37e0f0 manifestVersion=3 buildId=R6.9G.9.4-20261007-PROD-CANARY-BOUNDED-AUTH builtAt=2026-10-07T22:50:00.000Z
+[2026-10-07T22:59:48.317Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_ID] branch=upgrade/phase-0-1 implementationHead=008468d4c0876acbcb2a7035201fda0d7c37e0f0 manifestVersion=3 buildId=R6.9G.9.4-20261007-PROD-CANARY-BOUNDED-AUTH builtAt=2026-10-07T22:50:00.000Z
+[2026-10-07T22:59:48.327Z] [SW_CONSOLE] [BUILD_MODULE] contactGateSha=0d01acb2d0a9448d154353fac5b527c17afa42fed56c68d6a49b39053629bd7d
+[2026-10-07T22:59:48.328Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] contactGateSha=0d01acb2d0a9448d154353fac5b527c17afa42fed56c68d6a49b39053629bd7d
+[2026-10-07T22:59:48.328Z] [SW_CONSOLE] [BUILD_MODULE] visionSubmitSha=25cf18a4834bb476edff5e8f19a78dd2723bd556ede649ada69bc801543c83f3
+[2026-10-07T22:59:48.328Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] visionSubmitSha=25cf18a4834bb476edff5e8f19a78dd2723bd556ede649ada69bc801543c83f3
+[2026-10-07T22:59:48.348Z] [SW_CONSOLE] [BUILD_MODULE] historyStoreSha=ef148329c5c019877fef3708ac63472ce86d5f7f06da467a557a74e038eab6b4
+[2026-10-07T22:59:48.349Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] historyStoreSha=ef148329c5c019877fef3708ac63472ce86d5f7f06da467a557a74e038eab6b4
+[2026-10-07T22:59:48.349Z] [SW_CONSOLE] [BUILD_MODULE] emailCollectorSha=3f1147a379e159e7777158f2caa74cc8d40b2a0b0eb2c244f440af379cb5c9c9
+[2026-10-07T22:59:48.349Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] emailCollectorSha=3f1147a379e159e7777158f2caa74cc8d40b2a0b0eb2c244f440af379cb5c9c9
+[2026-10-07T22:59:48.350Z] [SW_CONSOLE] [BUILD_MODULE] contentScriptSha=db15cc0900d9171bb79b31a0aeaae09a16712f1d06413db7230e75633cf5b257
+[2026-10-07T22:59:48.350Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] contentScriptSha=db15cc0900d9171bb79b31a0aeaae09a16712f1d06413db7230e75633cf5b257
+[2026-10-07T22:59:48.355Z] [SW_CONSOLE] [BUILD_MODULE] backgroundSha=2aee0d95a2f7aae4a591350189bb86d4ad23f6e25b467baa489eb85f3e06ac73
+[2026-10-07T22:59:48.356Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] backgroundSha=2aee0d95a2f7aae4a591350189bb86d4ad23f6e25b467baa489eb85f3e06ac73
+[2026-10-07T22:59:48.357Z] [SW_CONSOLE] [BUILD_MODULE] popupSha=6372761801a5ed48410942978ea91b62cb32e406e77b928dbf1f5bf71555dd07
+[2026-10-07T22:59:48.357Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] popupSha=6372761801a5ed48410942978ea91b62cb32e406e77b928dbf1f5bf71555dd07
+[2026-10-07T22:59:48.357Z] [SW_CONSOLE] [BUILD_MODULE] solverContentSha=dca775d4db576dd48be191a80b2e1b5394448c572cf3860735cf0be99ff966da
+[2026-10-07T22:59:48.357Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] solverContentSha=dca775d4db576dd48be191a80b2e1b5394448c572cf3860735cf0be99ff966da
+[2026-10-07T22:59:48.358Z] [SW_CONSOLE] [BUILD_MODULE] solverCoreSha=01b3d96048ea933403e4599854dcdca28027e7f676aa5077eb6c5eb0582ac1e7
+[2026-10-07T22:59:48.358Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] solverCoreSha=01b3d96048ea933403e4599854dcdca28027e7f676aa5077eb6c5eb0582ac1e7
+[2026-10-07T22:59:48.358Z] [SW_CONSOLE] [BUILD_MODULE] privacyGatewaySha=6af5534697f4f50c629c2b99b03e45af15d377a348020319e1154c089648ade9
+[2026-10-07T22:59:48.358Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] privacyGatewaySha=6af5534697f4f50c629c2b99b03e45af15d377a348020319e1154c089648ade9
+[2026-10-07T22:59:48.410Z] [SW_CONSOLE] [PRIVACY_GATE] mode=SYSTEM_VPN transport=SYSTEM_VPN failClosed=true webrtcGuard=PASS directFallbackBlocked=BLOCKED egressCheck=BLOCKED dnsPrivacy=PASS ipv6Protection=PROTECTED status=BLOCKED
+[2026-10-07T22:59:48.417Z] [SW_CONSOLE] [BG_LOG][tab=none] [PRIVACY_GATE] mode=SYSTEM_VPN transport=SYSTEM_VPN failClosed=true webrtcGuard=PASS directFallbackBlocked=BLOCKED egressCheck=BLOCKED dnsPrivacy=PASS ipv6Protection=PROTECTED status=BLOCKED
+[2026-10-07T22:59:48.419Z] [SW_CONSOLE] [BG_LOG][tab=none] [PRIVACY_GATE_BLOCK] reason=SYSTEM_VPN_UNCONFIRMED_PREFLIGHT_BLOCKED attemptId=none targetUrl=none
+[2026-10-07T22:59:49.803Z] [GATE_H_5_START_BLOCKED] alert="🛡️ PRIVACY GATEWAY FAIL-CLOSED
+
+Campaign START blocked:
+System VPN mode is selected, but VPN confirmation has not been completed.
+
+Open Settings > Privacy Gateway, connect your VPN, then click 'Verify & Use System VPN'." settingsVisible=true
+[2026-10-07T22:59:49.803Z] ✅ [GATE H.5: PASS] Revoke confirmation immediately resets UI, persists across reopen, and blocks START again
+[2026-10-07T22:59:49.803Z] 
+=============================================================
+[2026-10-07T22:59:49.803Z] GATE H.6: EGRESS CONTINUITY WATCH (Tunnel-Drop Detection via Scheduler)
+[2026-10-07T22:59:49.803Z] =============================================================
+[2026-10-07T22:59:50.017Z] [GATE_H_6_CONFIRMED] ready=true fp=ea3f6e8890630ff0
+[2026-10-07T22:59:50.021Z] [GATE_H_6_CAMPAIGN_SETUP] {"isActive":true,"queueLen":1}
+[2026-10-07T22:59:50.022Z] [GATE_H_6_SIMULATED_CHANGE] Injected egress IP change
+[2026-10-07T22:59:50.025Z] [SW_CONSOLE] [SERIALIZED_GATE] Slot acquired atomically. activeTargetInFlight=true activeTargetCount=1 maxConcurrent=1
+[2026-10-07T22:59:50.027Z] [SW_CONSOLE] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedBefore=0
+[2026-10-07T22:59:50.027Z] [SW_CONSOLE] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedAfter=0 result=PASS
+[2026-10-07T22:59:50.027Z] [SW_CONSOLE] [PRIVACY_GATE] Egress fingerprint changed unexpectedly! Invalidate confirmation.
+[2026-10-07T22:59:50.029Z] [SW_CONSOLE] [BG_LOG][tab=none] [PRIVACY_GATE_BLOCK] reason=SYSTEM_VPN_EGRESS_CHANGED attemptId=none targetUrl=next_queue
+[2026-10-07T22:59:50.031Z] [SW_CONSOLE] [PRIVACY_GATE_BLOCK] reason=SYSTEM_VPN_EGRESS_CHANGED attemptId=none targetUrl=next_queue
+[2026-10-07T22:59:50.037Z] [SW_CONSOLE] [SERIALIZED_GATE] Slot released. activeTargetInFlight=false activeTargetCount=0
+[2026-10-07T22:59:50.038Z] [SW_CONSOLE] [BG_LOG][tab=none] ⏸️ [Engine] Campaign PAUSED / STOP & SAVE requested.
+[2026-10-07T22:59:50.045Z] [SW_CONSOLE] [TAB_BARRIER] phase=PAUSE_CAMPAIGN ownedBefore=0
+[2026-10-07T22:59:50.048Z] [SW_CONSOLE] [TAB_BARRIER] phase=PAUSE_CAMPAIGN ownedAfter=0 result=PASS
+[2026-10-07T22:59:50.060Z] [SW_CONSOLE] [PRIVACY_GATE_RESTORED] status=READY
+[2026-10-07T22:59:50.060Z] [SW_CONSOLE] [BG_LOG][tab=none] [PRIVACY_GATE_RESTORED] status=READY
+[2026-10-07T22:59:50.071Z] [SW_CONSOLE] [BG_LOG][tab=none] 💾 [Checkpoint] Campaign snapshot saved: 1 targets remaining.
+[2026-10-07T22:59:50.073Z] [SW_CONSOLE] [BG_LOG][tab=none] === CAMPAIGN OUTCOME SUMMARY (currentRun) ===
+[2026-10-07T22:59:50.074Z] [SW_CONSOLE] [BG_LOG][tab=none] CONFIRMED_SUCCESS:           0
+[2026-10-07T22:59:50.078Z] [SW_CONSOLE] [BG_LOG][tab=none] FAILURE:                     0
+[2026-10-07T22:59:50.080Z] [SW_CONSOLE] [BG_LOG][tab=none] TIMEOUT_LOCAL:               0
+[2026-10-07T22:59:50.080Z] [SW_CONSOLE] [BG_LOG][tab=none] TIMEOUT_GLOBAL:              0
+[2026-10-07T22:59:50.080Z] [SW_CONSOLE] [BG_LOG][tab=none] DELIVERY_UNKNOWN:            0
+[2026-10-07T22:59:50.091Z] [SW_CONSOLE] [BG_LOG][tab=none] SKIPPED:                     0
+[2026-10-07T22:59:50.092Z] [SW_CONSOLE] [BG_LOG][tab=none] PAUSED_UNKNOWN:              0
+[2026-10-07T22:59:50.092Z] [SW_CONSOLE] [BG_LOG][tab=none] ----------------------------------------
+[2026-10-07T22:59:50.092Z] [SW_CONSOLE] [BG_LOG][tab=none] TOTAL TERMINAL / COMPLETED:  0
+[2026-10-07T22:59:50.093Z] [SW_CONSOLE] [CAMPAIGN_SUMMARY] success=0 failure=0 timeoutLocal=0 timeoutGlobal=0 unknown=0 skipped=0 paused=0 completed=0
+[2026-10-07T22:59:50.093Z] [SW_CONSOLE] [BG_LOG][tab=none] ========================================
+[2026-10-07T22:59:50.094Z] [GATE_H_6_SCHEDULER_RES] {"isActive":false,"isPaused":true,"isFaulted":true,"faultReason":"PRIVACY_GATEWAY_BLOCKED","activeTargetInFlight":false,"queueLen":1}
+[2026-10-07T22:59:50.094Z] [GATE_H_6_ZERO_DIRECT_CHECK] newTargetRequestsAfterDrop=0
+[2026-10-07T22:59:50.096Z] [GATE_H_6_INVALIDATED] confirmed=false ready=false
+[2026-10-07T22:59:50.101Z] [GATE_H_6_CHECKPOINT_RETAINED] hasCheckpoint=true
+[2026-10-07T22:59:50.101Z] ✅ [GATE H.6: PASS] Egress continuity watch detects tunnel drop in processNextCampaignTarget, halts campaign scheduler, pauses/faults fail-closed, retains checkpoint, and sends zero direct requests
+[2026-10-07T22:59:50.113Z] 
+=============================================================
+[2026-10-07T22:59:50.113Z] [AUDIT_COMPLETE] ALL GATES PASSED (A through H) in real Microsoft Edge.
+[2026-10-07T22:59:50.113Z] =============================================================

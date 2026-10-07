@@ -8,12 +8,12 @@
 ---
 
 ## 1. Package Inventory & Verification
-- **Build ID:** `R6.9G.9.3-20261007-REAL-PROXY-MV3-AUTH`
-- **Implementation HEAD:** `ba845562d8fae41c1e4add0906c8c4c046f1885f`
-- **Visible Badge in UI:** `TEST-ONLY R6.9G.9.3 [ba845562]`
+- **Build ID:** `R6.9G.9.4-20261007-PROD-CANARY-BOUNDED-AUTH`
+- **Implementation HEAD:** `008468d4c0876acbcb2a7035201fda0d7c37e0f0`
+- **Visible Badge in UI:** `TEST-ONLY R6.9G.9.4 [008468d4]`
 - **Unpacked Extension Path:** `send_message_backup/build/extension`
-- **ZIP Package:** `XPIDER_R6.9G.9.3_OWNER_DIAGNOSTIC_TEST_ONLY.zip`
-- **ZIP SHA-256:** `cf6f3f46110fe096bae7fdf952d0cdd9c93d71ac1af279f7bb25f24ee0673fad`
+- **ZIP Package:** `XPIDER_R6.9G.9.4_OWNER_DIAGNOSTIC_TEST_ONLY.zip`
+- **ZIP SHA-256:** `dd4118a53900b14f0bf4e5c645a9401233af05de7d55e6751388ad289d71120b`
 - **File Manifest:** See [PACKAGE_INVENTORY_SHA256.txt](file:///E:/vivpr\ai\extension-form-sender\PACKAGE_INVENTORY_SHA256.txt)
 
 ---
@@ -51,7 +51,7 @@ Run a small test of **3 to 5 URLs only**. If testing locally or against live end
 
 ## 4. One-Click Diagnostic Log Export Instructions
 1. Open the XPIDER Extension Popup.
-2. Ensure the top badge displays: `TEST-ONLY R6.9G.7 [db15feb]`.
+2. Ensure the top badge displays: `TEST-ONLY R6.9G.9.4 [008468d4]`.
 3. In the diagnostic action bar at the top or bottom of the popup, click either:
    - **📋 Copy Diagnostic Report**: Copies the complete sanitized diagnostic JSON/text to clipboard.
    - **💾 Download Diagnostic TXT**: Downloads `xpider-diagnostic-report-<timestamp>.txt` directly.
