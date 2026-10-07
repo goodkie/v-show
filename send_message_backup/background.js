@@ -2095,6 +2095,53 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             return true;
         }
 
+        case 'VERIFY_SYSTEM_VPN': {
+            (async () => {
+                try {
+                    const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+                    if (!pg) return sendResponse({ success: false, error: 'PrivacyGateway unavailable' });
+                    await pg.init();
+                    await pg.saveConfig({ transportMode: 'SYSTEM_VPN', systemVpnConfirmed: true });
+                    const preflight = await pg.runPreflight({ transportMode: 'SYSTEM_VPN', systemVpnConfirmed: true });
+                    sendResponse({ success: true, preflight });
+                } catch (e) {
+                    sendResponse({ success: false, error: e.message });
+                }
+            })();
+            return true;
+        }
+
+        case 'REVOKE_SYSTEM_VPN': {
+            (async () => {
+                try {
+                    const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+                    if (!pg) return sendResponse({ success: false, error: 'PrivacyGateway unavailable' });
+                    await pg.init();
+                    await pg.saveConfig({ transportMode: 'SYSTEM_VPN', systemVpnConfirmed: false });
+                    await pg.invalidateVpnConfirmation('OWNER_REVOKED');
+                    const preflight = await pg.runPreflight({ transportMode: 'SYSTEM_VPN', systemVpnConfirmed: false });
+                    sendResponse({ success: true, preflight });
+                } catch (e) {
+                    sendResponse({ success: false, error: e.message });
+                }
+            })();
+            return true;
+        }
+
+        case 'CHECK_EGRESS_CONTINUITY': {
+            (async () => {
+                try {
+                    const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+                    if (!pg) return sendResponse({ success: false, error: 'PrivacyGateway unavailable' });
+                    const continuity = await pg.checkEgressContinuity();
+                    sendResponse({ success: true, continuity });
+                } catch (e) {
+                    sendResponse({ success: false, error: e.message });
+                }
+            })();
+            return true;
+        }
+
         case 'PING':
             sendResponse({ success: true, timestamp: Date.now() });
             return true;
@@ -3941,6 +3988,26 @@ async function processNextCampaignTarget(loopSessionId, loopGeneration) {
                     reason: pg.failureReason || 'PRIVACY_GATE_NOT_READY'
                 }).catch(() => {});
                 return;
+            }
+
+            // [R6.9G.9.1 Egress Continuity Watch Invariant]
+            if (pg && pg.isPrivacyGateReady()) {
+                const egressCheck = await pg.checkEgressContinuity();
+                if (egressCheck && !egressCheck.pass) {
+                    const blkReason = egressCheck.reason || 'SYSTEM_VPN_EGRESS_CHANGED';
+                    logBg(null, `[PRIVACY_GATE_BLOCK] reason=${blkReason} attemptId=none targetUrl=next_queue`, 'error');
+                    console.error(`[PRIVACY_GATE_BLOCK] reason=${blkReason} attemptId=none targetUrl=next_queue`);
+                    orchestrationSettled = true;
+                    releaseLease();
+                    await pauseCampaignOrchestrator(true);
+                    campaignState.isFaulted = true;
+                    campaignState.faultReason = 'PRIVACY_GATEWAY_BLOCKED';
+                    chrome.runtime.sendMessage({
+                        action: 'PRIVACY_GATEWAY_BLOCKED',
+                        reason: blkReason
+                    }).catch(() => {});
+                    return;
+                }
             }
 
             if (targetAbortController.signal.aborted || campaignState.isPaused || !campaignState.isActive) {

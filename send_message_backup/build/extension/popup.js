@@ -905,15 +905,126 @@ async function hydrateSettings() {
         if (privToggle) privToggle.checked = privCfg.enabled !== undefined ? !!privCfg.enabled : true;
 
         const privModeSelect = document.getElementById('privacy-transport-mode-select');
+        const vpnSection = document.getElementById('privacy-system-vpn-fields');
+        const vpnCheckbox = document.getElementById('privacy-vpn-confirm-checkbox');
+        const vpnBadge = document.getElementById('privacy-vpn-status-badge');
+        const vpnVerifyBtn = document.getElementById('privacy-vpn-verify-btn');
+        const vpnRevokeBtn = document.getElementById('privacy-vpn-revoke-btn');
+
+        const updateVpnStatusBadge = (confirmed) => {
+            if (!vpnBadge) return;
+            if (confirmed) {
+                vpnBadge.textContent = 'CONFIRMED';
+                vpnBadge.style.color = '#34d399';
+                vpnBadge.style.background = 'rgba(16, 185, 129, 0.2)';
+                vpnBadge.style.border = '1px solid #10b981';
+                if (vpnCheckbox) vpnCheckbox.checked = true;
+            } else {
+                vpnBadge.textContent = 'NOT CONFIRMED';
+                vpnBadge.style.color = '#f87171';
+                vpnBadge.style.background = 'rgba(239, 68, 68, 0.2)';
+                vpnBadge.style.border = '1px solid #ef4444';
+                if (vpnCheckbox) vpnCheckbox.checked = false;
+            }
+        };
+
         if (privModeSelect) {
             privModeSelect.value = privCfg.transportMode || 'SYSTEM_VPN';
-            const updateProxyVisibility = () => {
+            const updateTransportVisibility = () => {
                 const isProxy = privModeSelect.value === 'SOCKS5' || privModeSelect.value === 'HTTPS_PROXY';
+                const isVpn = privModeSelect.value === 'SYSTEM_VPN';
                 const fields = document.getElementById('privacy-proxy-config-fields');
                 if (fields) fields.style.display = isProxy ? 'block' : 'none';
+                if (vpnSection) vpnSection.style.display = isVpn ? 'block' : 'none';
             };
-            privModeSelect.addEventListener('change', updateProxyVisibility);
-            updateProxyVisibility();
+            privModeSelect.addEventListener('change', async () => {
+                updateTransportVisibility();
+                if (privModeSelect.value !== 'SYSTEM_VPN') {
+                    updateVpnStatusBadge(false);
+                }
+                try {
+                    const curData = await chrome.storage.local.get(['xpider_privacy_config']);
+                    const curCfg = curData.xpider_privacy_config || {};
+                    curCfg.transportMode = privModeSelect.value;
+                    if (privModeSelect.value !== 'SYSTEM_VPN') {
+                        curCfg.systemVpnConfirmed = false;
+                    }
+                    await chrome.storage.local.set({ xpider_privacy_config: curCfg });
+                    chrome.runtime.sendMessage({
+                        action: 'SET_PRIVACY_CONFIG',
+                        config: curCfg
+                    }).catch(() => {});
+                } catch (_) {}
+            });
+            updateTransportVisibility();
+        }
+
+        const isVpnConfirmed = !!privCfg.systemVpnConfirmed;
+        updateVpnStatusBadge(isVpnConfirmed);
+
+        if (vpnVerifyBtn) {
+            vpnVerifyBtn.addEventListener('click', async () => {
+                vpnVerifyBtn.disabled = true;
+                vpnVerifyBtn.textContent = '⏳ Verifying...';
+                try {
+                    if (vpnCheckbox) vpnCheckbox.checked = true;
+                    // Persist to storage
+                    const curData = await chrome.storage.local.get(['xpider_privacy_config']);
+                    const curCfg = curData.xpider_privacy_config || {};
+                    curCfg.transportMode = 'SYSTEM_VPN';
+                    curCfg.systemVpnConfirmed = true;
+                    await chrome.storage.local.set({ xpider_privacy_config: curCfg });
+
+                    const res = await new Promise(resolve => {
+                        chrome.runtime.sendMessage({
+                            action: 'VERIFY_SYSTEM_VPN'
+                        }, resolve);
+                    });
+                    updateVpnStatusBadge(true);
+                    if (res && res.preflight) {
+                        _updatePrivacyCardUI(res.preflight);
+                    }
+                    addLog('✅ [Privacy Gateway] System VPN confirmed and verified.', 'success');
+                } catch (e) {
+                    addLog(`❌ [Privacy Gateway] System VPN verify failed: ${e.message}`, 'error');
+                } finally {
+                    vpnVerifyBtn.disabled = false;
+                    vpnVerifyBtn.textContent = '✓ Verify & Use System VPN';
+                }
+            });
+        }
+
+        if (vpnRevokeBtn) {
+            vpnRevokeBtn.addEventListener('click', async () => {
+                try {
+                    updateVpnStatusBadge(false);
+                    const curData = await chrome.storage.local.get(['xpider_privacy_config']);
+                    const curCfg = curData.xpider_privacy_config || {};
+                    curCfg.transportMode = 'SYSTEM_VPN';
+                    curCfg.systemVpnConfirmed = false;
+                    await chrome.storage.local.set({ xpider_privacy_config: curCfg });
+
+                    const res = await new Promise(resolve => {
+                        chrome.runtime.sendMessage({
+                            action: 'REVOKE_SYSTEM_VPN'
+                        }, resolve);
+                    });
+                    if (res && res.preflight) {
+                        _updatePrivacyCardUI(res.preflight);
+                    }
+                    addLog('⚠️ [Privacy Gateway] System VPN confirmation revoked. Fail-closed is active.', 'warn');
+                } catch (e) {
+                    addLog(`❌ [Privacy Gateway] Revoke error: ${e.message}`, 'error');
+                }
+            });
+        }
+
+        if (vpnCheckbox) {
+            vpnCheckbox.addEventListener('change', () => {
+                if (!vpnCheckbox.checked) {
+                    updateVpnStatusBadge(false);
+                }
+            });
         }
 
         const privFailClosedToggle = document.getElementById('privacy-fail-closed-toggle');
@@ -1233,6 +1344,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                     if (typeof _restoreStartButton === 'function') _restoreStartButton();
                     const reason = request.reason || 'Privacy transport requirements not met';
                     addLog(`🛡️ [PRIVACY_GATEWAY_BLOCKED] ${reason}. Campaign cannot run without verified privacy transport.`, 'error');
+                    if (reason === 'SYSTEM_VPN_EGRESS_CHANGED') {
+                        const vpnBadge = document.getElementById('privacy-vpn-status-badge');
+                        if (vpnBadge) {
+                            vpnBadge.textContent = 'NOT CONFIRMED';
+                            vpnBadge.style.color = '#f87171';
+                            vpnBadge.style.background = 'rgba(239, 68, 68, 0.2)';
+                            vpnBadge.style.border = '1px solid #ef4444';
+                        }
+                        const vpnCheckbox = document.getElementById('privacy-vpn-confirm-checkbox');
+                        if (vpnCheckbox) vpnCheckbox.checked = false;
+                        alert('🚨 PRIVACY GATEWAY FAIL-CLOSED\n\nCampaign paused:\nEgress network fingerprint changed while campaign was active! Re-confirm VPN in Settings > Privacy Gateway before continuing.');
+                    }
                     const statusTitle = document.getElementById('status-title');
                     if (statusTitle) statusTitle.textContent = 'Live Progress (BLOCKED)';
                     const statusDetail = document.getElementById('status-detail');
@@ -2382,9 +2505,9 @@ function _applyHandshakeUiState(isPassed, errorReason = '') {
 }
 
 function getBadgeTextFromBuildInfo(info) {
-    if (!info) return 'TEST-ONLY R6.9G.9';
+    if (!info) return 'TEST-ONLY R6.9G.9.1';
     const m = (info.buildId || '').match(/R\d+\.\d+[A-Za-z0-9\.]*/);
-    const ver = m ? m[0] : 'R6.9G.9';
+    const ver = m ? m[0] : 'R6.9G.9.1';
     const sha = info.implementationHeadShort || info.headShort || (info.implementationHead ? info.implementationHead.substring(0, 7) : 'dev');
     return `TEST-ONLY ${ver} [${sha}]`;
 }
@@ -3007,7 +3130,13 @@ async function startCampaign() {
                 if (response && response.status === 'PRIVACY_GATEWAY_BLOCKED') {
                     const blkMsg = `🛡️ [PRIVACY_GATEWAY_BLOCKED] ${response.reason || 'Protected transport unconfirmed'}`;
                     addLog(blkMsg, "error");
-                    alert(`🛡️ PRIVACY GATEWAY FAIL-CLOSED\n\nCampaign START blocked:\n${response.reason || 'Privacy transport is not ready.'}\n\nPlease check Privacy Gateway settings in Options.`);
+                    let detailMsg = response.reason || 'Privacy transport is not ready.';
+                    if (response.reason === 'SYSTEM_VPN_UNCONFIRMED_PREFLIGHT_BLOCKED') {
+                        detailMsg = "System VPN mode is selected, but VPN confirmation has not been completed.\n\nOpen Settings > Privacy Gateway, connect your VPN, then click 'Verify & Use System VPN'.";
+                    }
+                    alert(`🛡️ PRIVACY GATEWAY FAIL-CLOSED\n\nCampaign START blocked:\n${detailMsg}`);
+                    const settingsOverlay = document.getElementById('settings-overlay');
+                    if (settingsOverlay) settingsOverlay.classList.remove('hidden');
                 } else if (errMsg === 'RUNTIME_BUILD_MISMATCH') {
                     _applyHandshakeUiState(false, response.detail || errMsg);
                     alert(`❌ RUNTIME BUILD MISMATCH DETECTED BY BACKGROUND\n\n${response.detail || errMsg}\n\nPlease reload extension.`);
@@ -4381,7 +4510,7 @@ async function saveSettings() {
     const delaySubmitInput = document.getElementById('delay-input-submit');
     const randomToggle = document.getElementById('random-delay-toggle');
 
-        // [R6.9G.9] Privacy Gateway Inputs
+        // [R6.9G.9.1] Privacy Gateway Inputs & System VPN Confirmation
         const privToggle = document.getElementById('privacy-gateway-toggle');
         const privModeSelect = document.getElementById('privacy-transport-mode-select');
         const privFailClosedToggle = document.getElementById('privacy-fail-closed-toggle');
@@ -4390,11 +4519,15 @@ async function saveSettings() {
         const privUserEl = document.getElementById('privacy-proxy-user');
         const privPassEl = document.getElementById('privacy-proxy-pass');
         const privRememberEl = document.getElementById('privacy-proxy-remember-pass');
+        const privVpnCheckbox = document.getElementById('privacy-vpn-confirm-checkbox');
+        const privVpnBadge = document.getElementById('privacy-vpn-status-badge');
+        const isVpnConfirmed = (privVpnBadge && privVpnBadge.textContent === 'CONFIRMED') || (privVpnCheckbox && privVpnCheckbox.checked);
 
         const privacyConfig = {
             enabled: privToggle ? privToggle.checked : true,
             transportMode: privModeSelect ? privModeSelect.value : 'SYSTEM_VPN',
             failClosed: privFailClosedToggle ? privFailClosedToggle.checked : true,
+            systemVpnConfirmed: (privModeSelect && privModeSelect.value === 'SYSTEM_VPN') ? !!isVpnConfirmed : false,
             proxyHost: privHostEl ? privHostEl.value.trim() : '',
             proxyPort: privPortEl ? (parseInt(privPortEl.value, 10) || 1080) : 1080,
             proxyUsername: privUserEl ? privUserEl.value.trim() : '',

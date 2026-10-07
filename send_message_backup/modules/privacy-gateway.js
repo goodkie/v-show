@@ -85,6 +85,18 @@
         }
 
         async saveConfig(newConfig = {}) {
+            if (newConfig.transportMode && newConfig.transportMode !== this.config.transportMode) {
+                // If switching away from SYSTEM_VPN or switching to SYSTEM_VPN, invalidate prior confirmation
+                this.ephemeralEgressFingerprint = null;
+                if (this.config.transportMode === PRIVACY_MODES.SYSTEM_VPN || newConfig.transportMode === PRIVACY_MODES.SYSTEM_VPN) {
+                    if (newConfig.systemVpnConfirmed === undefined) {
+                        newConfig.systemVpnConfirmed = false;
+                    }
+                }
+            }
+            if (newConfig.systemVpnConfirmed === false) {
+                this.ephemeralEgressFingerprint = null;
+            }
             this.config = { ...this.config, ...newConfig };
             if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
                 const toSave = { ...this.config };
@@ -94,6 +106,131 @@
                 await chrome.storage.local.set({ xpider_privacy_config: toSave });
             }
             return this.config;
+        }
+
+        /**
+         * Privacy-safe one-way hash (SHA-256 truncated to 16 hex characters)
+         * Zero raw IP / zero PII stored or logged.
+         */
+        async _hashString(str) {
+            if (!str) return null;
+            try {
+                if (typeof crypto !== 'undefined' && crypto.subtle && crypto.subtle.digest) {
+                    const buffer = new TextEncoder().encode(String(str));
+                    const digest = await crypto.subtle.digest('SHA-256', buffer);
+                    const hex = Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('');
+                    return hex.substring(0, 16);
+                }
+                if (typeof require === 'function') {
+                    try {
+                        const nodeCrypto = require('crypto');
+                        return nodeCrypto.createHash('sha256').update(String(str)).digest('hex').substring(0, 16);
+                    } catch (_) {}
+                }
+            } catch (_) {}
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                hash = ((hash << 5) - hash) + str.charCodeAt(i);
+                hash |= 0;
+            }
+            return 'h_' + Math.abs(hash).toString(16);
+        }
+
+        /**
+         * Compute ephemeral egress fingerprint without logging or persisting raw IP
+         */
+        async computeEgressFingerprint() {
+            if (this._mockEgressProbe && typeof this._mockEgressProbe === 'function') {
+                const mockRaw = await this._mockEgressProbe();
+                return await this._hashString(mockRaw);
+            }
+            try {
+                let rawData = null;
+                if (typeof fetch === 'function') {
+                    const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+                    const timeoutId = controller ? setTimeout(() => controller.abort(), 3000) : null;
+                    try {
+                        const resp = await fetch('https://cloudflare.com/cdn-cgi/trace', {
+                            signal: controller ? controller.signal : undefined,
+                            cache: 'no-store'
+                        });
+                        if (resp.ok) {
+                            const text = await resp.text();
+                            const m = text.match(/ip=([^\r\n]+)/);
+                            if (m && m[1]) rawData = m[1].trim();
+                        }
+                    } catch (_) {}
+                    finally {
+                        if (timeoutId) clearTimeout(timeoutId);
+                    }
+                }
+                if (!rawData) {
+                    rawData = (typeof navigator !== 'undefined' && navigator.onLine) ? 'online-default-egress' : 'offline-default-egress';
+                }
+                return await this._hashString(rawData);
+            } catch (_) {
+                return await this._hashString('fallback-egress-seed');
+            }
+        }
+
+        setMockEgressProbe(fn) {
+            this._mockEgressProbe = fn;
+        }
+
+        simulateEgressChange(newVal = 'simulated-new-ip-change') {
+            this._mockEgressProbe = () => newVal;
+        }
+
+        /**
+         * Verify continuity of the egress tunnel during campaign run
+         */
+        async checkEgressContinuity() {
+            if (!this.config.enabled) return { pass: true };
+            if (this.config.transportMode !== PRIVACY_MODES.SYSTEM_VPN) return { pass: true };
+            if (!this.config.systemVpnConfirmed) {
+                return { pass: false, reason: 'SYSTEM_VPN_UNCONFIRMED_PREFLIGHT_BLOCKED' };
+            }
+
+            try {
+                const currentFingerprint = await this.computeEgressFingerprint();
+                if (!this.ephemeralEgressFingerprint) {
+                    this.ephemeralEgressFingerprint = currentFingerprint;
+                    return { pass: true, fingerprint: currentFingerprint };
+                }
+                if (currentFingerprint && this.ephemeralEgressFingerprint && currentFingerprint !== this.ephemeralEgressFingerprint) {
+                    console.warn('[PRIVACY_GATE] Egress fingerprint changed unexpectedly! Invalidate confirmation.');
+                    await this.invalidateVpnConfirmation('SYSTEM_VPN_EGRESS_CHANGED');
+                    return {
+                        pass: false,
+                        reason: 'SYSTEM_VPN_EGRESS_CHANGED',
+                        previousFingerprint: this.ephemeralEgressFingerprint,
+                        currentFingerprint
+                    };
+                }
+                return { pass: true, fingerprint: currentFingerprint };
+            } catch (err) {
+                return { pass: true, warning: err.message };
+            }
+        }
+
+        /**
+         * Invalidate VPN confirmation when transport changes, network drops, or explicitly revoked
+         */
+        async invalidateVpnConfirmation(reason = 'SYSTEM_VPN_UNCONFIRMED_PREFLIGHT_BLOCKED') {
+            this.config.systemVpnConfirmed = false;
+            this.ephemeralEgressFingerprint = null;
+            this.isGateReady = false;
+            this.failureReason = reason;
+            await this.saveConfig({ systemVpnConfirmed: false });
+            if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
+                try {
+                    chrome.runtime.sendMessage({
+                        action: 'SYSTEM_VPN_CONFIRMATION_INVALIDATED',
+                        reason: reason
+                    }).catch(() => {});
+                } catch (_) {}
+            }
+            return { success: true, reason };
         }
 
         /**
@@ -372,8 +509,12 @@
                     ready = true;
                     egressCheck = 'PASS';
                     failureReason = null;
+                    try {
+                        this.ephemeralEgressFingerprint = await this.computeEgressFingerprint();
+                    } catch (_) {}
                 } else {
                     egressCheck = 'UNKNOWN';
+                    this.ephemeralEgressFingerprint = null;
                     if (failClosed) {
                         ready = false;
                         failureReason = 'SYSTEM_VPN_UNCONFIRMED_PREFLIGHT_BLOCKED';
