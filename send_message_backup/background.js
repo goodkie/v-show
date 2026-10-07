@@ -1728,13 +1728,16 @@ if (typeof global !== 'undefined') {
 
                 try {
                     const res = await flightPromise;
-                    sendResponse(res);
+                    if (typeof sendResponse === 'function') sendResponse(res);
+                    return res;
                 } finally {
                     globalThis.__xpider_activeSolvingPromises.delete(dedupeKey);
                 }
             } catch (e) {
                 logBg(null, `[Auto CAPTCHA Solver] SOLVE_CAPTCHA ERROR: ${e.message}`, 'error');
-                sendResponse({ success: false, error: e.message });
+                const errRes = { success: false, error: e.message };
+                if (typeof sendResponse === 'function') sendResponse(errRes);
+                return errRes;
             }
         }
 

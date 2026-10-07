@@ -539,7 +539,8 @@ rec('\n=== [GATE A: TARGET-PUMP ATOMIC SLOT ACQUISITION CONCURRENCY RACE] ===');
         campaignState.witAiKey = 'test_wit_key';
 
         // 1. Invoke handleSolveCaptchaInternal with missing NopeCHA key + Wit fallback
-        const fallbackReturn = await handleSolveCaptchaInternal({
+        let sendRespVal = null;
+        const rawReturn = await handleSolveCaptchaInternal({
           action: 'SOLVE_CAPTCHA',
           method: 'nopecha',
           attemptId: 'att_d1',
@@ -550,7 +551,8 @@ rec('\n=== [GATE A: TARGET-PUMP ATOMIC SLOT ACQUISITION CONCURRENCY RACE] ===');
           captchaEpoch: 1,
           witKey: 'test_wit_key',
           ownerAuthorized: true
-        }, { tab: { id: dummyTabId } }, () => {});
+        }, { tab: { id: dummyTabId } }, (res) => { sendRespVal = res; });
+        const fallbackReturn = rawReturn || sendRespVal;
 
         // 2. Test terminal failure idempotence
         recordTerminalCaptchaFailure('att_d1', 'TEST_PROVIDER_ERROR_1');
