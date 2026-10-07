@@ -15,28 +15,28 @@
 
     const BUILD_INFO = {
         branch: 'upgrade/phase-0-1',
-        // [R6.9G.9] implementationHead = functional commit containing Privacy Gateway,
-        //           managed proxy without DIRECT fallback, WebRTC leak guard, and fail-closed start barrier
-        implementationHead: '5ebb51510eda9ca09a6921879d1269b15cf692fb',
-        implementationHeadShort: '5ebb5151',
-        head: '5ebb51510eda9ca09a6921879d1269b15cf692fb',
-        headShort: '5ebb5151',
+        // [R6.9G.9.1] implementationHead = functional commit containing user-reachable System VPN UX
+        //             and egress continuity monitoring
+        implementationHead: '9cd344250e386b4ee35eccb90bc9e7f3c42382ef',
+        implementationHeadShort: '9cd34425',
+        head: '9cd344250e386b4ee35eccb90bc9e7f3c42382ef',
+        headShort: '9cd34425',
         rollbackBase: 'dc0740a0c69e2f7fa96b6989841acf0831b3619e',
         manifestVersion: 3,
-        buildId: 'R6.9G.9-20261007-PRIVACY-GATEWAY-FAIL-CLOSED',
-        builtAt: '2026-10-07T18:10:00.000Z',
+        buildId: 'R6.9G.9.1-20261007-SYSTEM-VPN-CONFIRMATION-UX',
+        builtAt: '2026-10-07T19:15:00.000Z',
         provenanceSchema: 2,
         modules: {
-            backgroundSha: '0336262f04e97ea0c4a39d26fb10d16e712ca7370b0f13e2f97fabb5e41668b8',
+            backgroundSha: '7713ad985d02787d11391c254cc490df34ab6566aaa1760a4771152323d4bf08',
             contentScriptSha: 'db15cc0900d9171bb79b31a0aeaae09a16712f1d06413db7230e75633cf5b257',
-            popupSha: '316564d25517f51966b83f23dbcb5cdd876ee7cd3f544ea9d5e1957a86f2116f',
+            popupSha: '80f01608f674b9ac558545c2f6ae407e43e60407856dcd9034ea1ea14ffa72cd',
             solverContentSha: 'dca775d4db576dd48be191a80b2e1b5394448c572cf3860735cf0be99ff966da',
             solverCoreSha: '01b3d96048ea933403e4599854dcdca28027e7f676aa5077eb6c5eb0582ac1e7',
             emailCollectorSha: '3f1147a379e159e7777158f2caa74cc8d40b2a0b0eb2c244f440af379cb5c9c9',
             historyStoreSha: 'ef148329c5c019877fef3708ac63472ce86d5f7f06da467a557a74e038eab6b4',
             contactGateSha: '0d01acb2d0a9448d154353fac5b527c17afa42fed56c68d6a49b39053629bd7d',
             visionSubmitSha: '25cf18a4834bb476edff5e8f19a78dd2723bd556ede649ada69bc801543c83f3',
-            privacyGatewaySha: '42eb49bfae0cd2dc0f6614aa67deac605e43e8e51697bb474676226834b0217a'
+            privacyGatewaySha: '6ccc04c9ee09126944244b80bccd06c1637945a9d840dec51ef980ce0b80743b'
         }
     };
 
