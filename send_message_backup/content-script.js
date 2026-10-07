@@ -3417,6 +3417,15 @@
                 if (msg.action === 'APPLY_CAPTCHA_TOKEN') {
                     const solution = msg.token;
                     console.log(`[CAPTCHA_TOKEN_RECEIVED] token applied on target page`);
+                    // [R6.9G.6] Snapshot matching iframe presence BEFORE applying token:
+                    const iframesBeforeApply = document.querySelectorAll(
+                        'iframe[src*="recaptcha"], iframe[src*="hcaptcha"], iframe[src*="challenges.cloudflare"]'
+                    );
+                    const hadMatchingIframeBeforeApply = Boolean(
+                        (captchaData && captchaData.hadIframeBefore === true) ||
+                        (iframesBeforeApply.length > 0)
+                    );
+
                     let applied = false;
                     if (captchaData.type === 'turnstile') {
                         const input = document.querySelector('[name="cf-turnstile-response"]');
@@ -3447,9 +3456,9 @@
                         applied = true;
                     }
 
-                    console.log(`[CAPTCHA_TOKEN_APPLIED] target=${captchaData.type} applied=${applied}`);
+                    console.log(`[CAPTCHA_TOKEN_APPLIED] target=${captchaData.type} applied=${applied} hadIframeBefore=${hadMatchingIframeBeforeApply}`);
 
-                    // [R6.9G.5] FAIL-CLOSED challenge resolution check on DOM:
+                    // [R6.9G.6] FAIL-CLOSED challenge resolution check on DOM:
                     // Token application is necessary but NOT sufficient for verified=true.
                     // Verification requires INDEPENDENT evidence that the challenge state actually transitioned.
                     // POLICY: If no independent resolution signal is present => verified = false (UNKNOWN).
@@ -3457,7 +3466,7 @@
                     // Acceptable independent signals:
                     //   (a) data-challenge-state="resolved" / data-status="solved" / class "challenge-resolved"
                     //   (b) window.__captcha_challenge_resolved === true (callback-confirmed)
-                    //   (c) Challenge iframe removed from DOM (disappearance evidence)
+                    //   (c) Challenge iframe verified present before apply AND removed post-apply (true disappearance)
                     //   (d) captchaData.callbackConfirmed === true (solver-side callback signal)
                     let verified = false;
                     if (applied) {
@@ -3469,10 +3478,12 @@
                         );
                         const hasGlobalResolvedFlag = typeof window !== 'undefined' && window.__captcha_challenge_resolved === true;
 
-                        // Signal (c): iframe disappearance — challenge iframe was present before token inject and is now gone
+                        // Signal (c): iframe disappearance — challenge iframe was verified present before token inject AND is now gone post-inject
                         const captchaIframeGone = (() => {
+                            if (!hadMatchingIframeBeforeApply) {
+                                return false; // Fail-closed: "iframe was never there" is NOT disappearance!
+                            }
                             const iframes = document.querySelectorAll('iframe[src*="recaptcha"], iframe[src*="hcaptcha"], iframe[src*="challenges.cloudflare"]');
-                            // If zero matching iframes remain AND a token was applied, this is valid evidence of resolution
                             return iframes.length === 0 && (
                                 captchaData.type === 'recaptcha' ||
                                 captchaData.type === 'hcaptcha' ||
