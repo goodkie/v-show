@@ -6,36 +6,33 @@
 - Workspace: E:\\vivpr\\ai\\extension-form-sender
 - Authority: goodkie/v-show Issue #6
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-07.3
+- State Rev: 2026-10-07.4
 
 ## Current Gate
-- Formal Gate: R6.9G.6 ENGINEERING GATE = PASS (Issue #6 comment #6032990573).
-- State: OWNER SMOKE REQUIRED.
-- Engineering Blockers Remaining: 0.
-- Bulk Campaign: HOLD (until Owner smoke passes).
-- Owner Action: MINIMAL SMOKE TEST ONLY.
+- Formal Gate: R6.9G.6 OWNER SMOKE = FAIL (Issue #6 comment #6033658247 & addendum #6033679566).
+- State: REOPENED -> R6.9G.7 DIRECTIVE.
+- Bulk Campaign: HOLD.
+- Owner Action: NONE (Antigravity remediation in progress; do not delegate unfinished debugging).
 
-## Verified Remote Commits
-- Functional commit (Blocker 1 fix): `7b908efe524ce0b8c88b85aa562318ddabe1dd80`
-- Provenance stamp commit: `6848a8f781fd706a1c545ee42e7130afc100dd7f` (buildId `R6.9G.6-20261007-TRUE-IFRAME-UNPATCHED-PUMP`)
-- Audit runner commit (Blocker 2 fix): `03da948ebad7bd1997c70a34edb1583e69f89106` (`run_real_r6_9g6_edge_operator_audit.js`)
-- Evidence trace commit: `b36f22d1d86c852d3dc150fcb034b5d827d7e681` (`evidence_r6_9g6_real_runtime_traces.log`)
-- State metadata commits: `1de573b8919592343b2c508c46e5293c96cc93e9`, `9aa434b0e5a6444bea6cd6cfa4e2c54a55a27470`
-
-## Build Provenance
-- buildId: `R6.9G.6-20261007-TRUE-IFRAME-UNPATCHED-PUMP`
-- implementationHead: `7b908efe524ce0b8c88b85aa562318ddabe1dd80`
-- contentScriptSha: `8e72935c1b951ce985ab958c7ab6687e24046e41572e30108c267d0d0f6212c3`
+## R6.9G.7 Active Blockers & Scope
+1. **Target Concurrency Race (TOCTOU)**: `waitForTargetSlot` check followed by async delay before setting `activeTargetInFlight` caused overlapping `TARGET START` in real 100-target loop. Fix: Indivisible atomic acquire + single active scheduler-generation ownership.
+2. **Timeout Un-aborted Leak**: Outer `Promise.race` timeout released lease while inner `orchestrateSending` continued in background. Fix: Per-target `AbortController` cancellation token; do not release lease until inner path quiesces.
+3. **Sticky `CAPTCHA_PENDING_OWNER` Overwrite**: Generic content stage updates overwrote `CAPTCHA_PENDING_OWNER`, causing background rejection of Owner modal click. Fix: `CAPTCHA_PENDING_OWNER` strictly sticky until explicit decision/cancellation.
+4. **False CAPTCHA Fallback Success**: Background returned `{ success: true, method: 'audio_frame_solver' }` upon fallback entry without verified solve, suppressing `autoFailure` counter. Fix: Fallback handoff is not success; never return `success: true` without independent challenge verification.
+5. **Build Provenance Coverage for `solver-core.js`**: `background.js` executes `solver-core.js` but provenance did not hash it. Fix: Add `solverCoreSha` to `BuildProvenance` and handshake.
+6. **Provider Health & Error Diagnostics**: Expose safe provider status without leaking secrets; reconcile `autoFailure` / `captchaFailed` on terminal provider error.
+7. **DOM ID TypeError**: `(formEl.id || "").toLowerCase` crashed when `formEl.id` was an HTMLInputElement. Fix: Safe string extraction helper.
+8. **Counter Truth Reconciliation**: Inconsistent `remaining` / `completed` across UI, history, and checkpoint. Fix: Derive strictly from ledger.
+9. **Pause Quiescence**: Extra `TIMEOUT_LOCAL` arriving after pause summary. Fix: Await active target quiescence before checkpoint summary.
 
 ## Rollback Anchor
 - Branch: `remotes/origin/restore/xpider-r6.9f2-owner-smoke-ready-2026-10-06`
 - HEAD: `dc0740a0c69e2f7fa96b6989841acf0831b3619e` (immutable, verified untouched)
 
 ## Next Required Actions
-1. Owner performs minimal human smoke test in normal real-use behavior (1-2 real target forms).
-2. Owner reports smoke results to Issue #6.
-3. Upon successful Owner smoke, ChatGPT issues final release/bulk authorization gate.
-4. Antigravity introduces NO runtime code changes before Owner smoke.
+1. Antigravity implement R6.9G.7 remediation across `background.js`, `content-script.js`, and `build-provenance.js`.
+2. Antigravity execute integration tests (concurrent wakeups race test, timeout abort quiescence test, sticky state test, fallback failure accounting test).
+3. Commit, push, and submit R6.9G.7 Receipt to Issue #6.
 
 ## Critical Files
 - AGENTS.md
@@ -44,5 +41,4 @@
 - send_message_backup/background.js
 - send_message_backup/content-script.js
 - send_message_backup/modules/build-provenance.js
-- run_real_r6_9g6_edge_operator_audit.js
-- evidence_r6_9g6_real_runtime_traces.log
+- send_message_backup/solver-core.js
