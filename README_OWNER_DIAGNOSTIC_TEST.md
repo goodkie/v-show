@@ -8,12 +8,12 @@
 ---
 
 ## 1. Package Inventory & Verification
-- **Build ID:** `R6.9G.7-20261007-ATOMIC-PUMP-QUIESCENT-CAPTCHA`
-- **Implementation HEAD:** `db15feb4cd86e08774bd0c0e5b4724c0af418e44`
-- **Visible Badge in UI:** `TEST-ONLY R6.9G.7 [db15feb]`
+- **Build ID:** `R6.9G.8-20261007-MANUAL-ASSIST-HARD-CAPTCHA-LEDGER`
+- **Implementation HEAD:** `65fbdf69851cc0fee9c1adb0182e59b3b5992316`
+- **Visible Badge in UI:** `TEST-ONLY R6.9G.8 [65fbdf69]`
 - **Unpacked Extension Path:** `send_message_backup/build/extension`
-- **ZIP Package:** `XPIDER_R6.9G.7_OWNER_DIAGNOSTIC_TEST_ONLY.zip`
-- **ZIP SHA-256:** `f1f9cf12bfec04e383c2df2345cb6f86a6f1f125d6923d640c6cdd73d431ee91`
+- **ZIP Package:** `XPIDER_R6.9G.8_OWNER_DIAGNOSTIC_TEST_ONLY.zip`
+- **ZIP SHA-256:** `af320386b64b728193e1549f0b9dc4ee639c3deebb8ed1172af9671b4c06e387`
 - **File Manifest:** See [PACKAGE_INVENTORY_SHA256.txt](file:///E:/vivpr/ai/extension-form-sender/PACKAGE_INVENTORY_SHA256.txt)
 
 ---
