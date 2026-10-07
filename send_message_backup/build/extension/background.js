@@ -50,36 +50,57 @@ try {
     console.warn('[SW Boot] importScripts modules fallback or handled inline:', e);
 }
 
-// [R6.9G.9.2] Proxy Authentication Handler (MV3 Blocking onAuthRequired)
+// [R6.9G.9.3] Proxy Authentication Handler (MV3 asyncBlocking onAuthRequired)
+let isProxyAuthHandlerRegistered = false;
 if (typeof chrome !== 'undefined' && chrome.webRequest && chrome.webRequest.onAuthRequired) {
     try {
         chrome.webRequest.onAuthRequired.addListener(
-            (details) => {
-                if (!details || !details.isProxy) return {};
+            (details, asyncCallback) => {
+                if (!details || !details.isProxy) {
+                    if (typeof asyncCallback === 'function') asyncCallback({});
+                    return {};
+                }
                 try {
                     const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
-                    if (!pg) return {};
+                    if (!pg) {
+                        if (typeof asyncCallback === 'function') asyncCallback({});
+                        return {};
+                    }
                     const creds = pg.getProxyAuthCredentials(details.challenger);
                     if (creds && creds.username && creds.password) {
-                        return {
+                        const auth = {
                             authCredentials: {
                                 username: creds.username,
                                 password: creds.password
                             }
                         };
+                        if (typeof asyncCallback === 'function') {
+                            asyncCallback(auth);
+                            return;
+                        }
+                        return auth;
                     }
                 } catch (err) {
                     console.warn('[PRIVACY_GATE] Proxy onAuthRequired error:', err);
                 }
+                if (typeof asyncCallback === 'function') asyncCallback({});
                 return {};
             },
             { urls: ["<all_urls>"] },
-            ["blocking"]
+            ["asyncBlocking"]
         );
-        console.log('[PRIVACY_GATE] Proxy onAuthRequired listener registered.');
+        isProxyAuthHandlerRegistered = true;
+        console.log('[PRIVACY_GATE] Proxy onAuthRequired asyncBlocking listener registered.');
     } catch (e) {
+        isProxyAuthHandlerRegistered = false;
         console.warn('[PRIVACY_GATE] Failed to register onAuthRequired listener:', e);
     }
+}
+if (typeof self !== 'undefined') {
+    self.isProxyAuthHandlerRegistered = isProxyAuthHandlerRegistered;
+}
+if (typeof globalThis !== 'undefined') {
+    globalThis.isProxyAuthHandlerRegistered = isProxyAuthHandlerRegistered;
 }
 
 // [v18.25.0] Boot Diagnostic Telemetry: Track SW startup steps in real-time
@@ -5945,4 +5966,11 @@ if (typeof module !== 'undefined' && module.exports) {
         KEEP_DELIVERY_UNKNOWN_TABS,
         MAX_RETAINED_UNCERTAIN_TABS
     };
+}
+
+if (typeof self !== 'undefined') {
+    self.processNextCampaignTarget = processNextCampaignTarget;
+    self.pauseCampaignOrchestrator = pauseCampaignOrchestrator;
+    self.startCampaignOrchestrator = startCampaignOrchestrator;
+    self.campaignState = campaignState;
 }

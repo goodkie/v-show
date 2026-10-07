@@ -36,6 +36,9 @@
         proxyPort: 1080,
         proxyUsername: '',
         proxyPassword: '',
+        proxyScheme: 'http',
+        proxyBypassList: null,
+        canaryUrl: null,
         rememberPassword: false,
         strictPrivacy: {
             blockGeolocation: true,
@@ -284,10 +287,60 @@
         }
 
         /**
+         * Perform bounded network canary through the configured proxy
+         */
+        async probeProxyCanary(canaryUrl = null, timeoutMs = 3000) {
+            const targetUrl = canaryUrl || this.config.canaryUrl || 'http://127.0.0.1:8980/privacy-canary';
+            if (typeof fetch === 'undefined') {
+                return { success: true, reason: 'FETCH_UNAVAILABLE_SKIPPED' };
+            }
+            const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+            const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
+            try {
+                const resp = await fetch(targetUrl, {
+                    method: 'GET',
+                    cache: 'no-store',
+                    signal: controller ? controller.signal : undefined
+                });
+                if (timer) clearTimeout(timer);
+                if (resp.status >= 200 && resp.status < 400) {
+                    return { success: true, status: resp.status };
+                } else if (resp.status === 407) {
+                    return { success: false, reason: 'PROXY_AUTH_REQUIRED_407' };
+                } else {
+                    return { success: false, reason: `HTTP_STATUS_${resp.status}` };
+                }
+            } catch (err) {
+                if (timer) clearTimeout(timer);
+                const isTimeout = err.name === 'AbortError' || (err.message && err.message.includes('abort'));
+                return {
+                    success: false,
+                    reason: isTimeout ? 'CANARY_TIMEOUT' : (err.message || 'NETWORK_ERROR')
+                };
+            }
+        }
+
+        /**
          * Verify continuity of the egress tunnel during campaign run
          */
         async checkEgressContinuity() {
             if (!this.config.enabled) return { pass: true };
+
+            // [R6.9G.9.3] Managed proxy continuity check
+            if (this.config.transportMode === PRIVACY_MODES.SOCKS5 || this.config.transportMode === PRIVACY_MODES.HTTPS_PROXY) {
+                if (!this.isGateActive || !this.isGateReady) {
+                    return { pass: false, reason: this.failureReason || 'MANAGED_PROXY_NOT_READY' };
+                }
+                const canaryUrl = this.config.canaryUrl || 'http://127.0.0.1:8980/privacy-canary';
+                const canaryRes = await this.probeProxyCanary(canaryUrl, 2500);
+                if (!canaryRes.success) {
+                    this.isGateReady = false;
+                    this.failureReason = `MANAGED_PROXY_DROPPED: ${canaryRes.reason}`;
+                    return { pass: false, reason: this.failureReason };
+                }
+                return { pass: true };
+            }
+
             if (this.config.transportMode !== PRIVACY_MODES.SYSTEM_VPN) return { pass: true };
             if (!this.config.systemVpnConfirmed) {
                 return { pass: false, reason: 'SYSTEM_VPN_UNCONFIRMED_PREFLIGHT_BLOCKED' };
@@ -458,16 +511,21 @@
         /**
          * Apply Managed Proxy (SOCKS5 or HTTPS) without DIRECT fallback
          */
-        async applyManagedProxy(mode, host, port) {
+        async applyManagedProxy(mode, host, port, bypassList = null) {
             if (typeof chrome === 'undefined' || !chrome.proxy || !chrome.proxy.settings) {
                 return { success: true, mocked: true };
             }
 
             const parsedPort = parseInt(port) || (mode === PRIVACY_MODES.SOCKS5 ? 1080 : 8080);
-            const scheme = mode === PRIVACY_MODES.SOCKS5 ? 'socks5' : 'https';
+            const scheme = mode === PRIVACY_MODES.SOCKS5 ? 'socks5' : (this.config.proxyScheme || 'http');
 
-            // Route ALL HTTP/HTTPS traffic through the proxy without DIRECT fallback for remote destinations.
-            // Only localhost/<local> bypasses proxy for local audit harnesses.
+            // [R6.9G.9.3] If bypassList is explicitly provided or configured, use it.
+            // If proxy host is loopback (127.0.0.1/localhost) for testing, use ['<-loopback>']
+            // so requests to 127.0.0.1 (such as local fixtures or test canary) actually traverse the proxy.
+            const resolvedBypass = (bypassList !== null && bypassList !== undefined)
+                ? bypassList
+                : (this.config.proxyBypassList || ((host === '127.0.0.1' || host === 'localhost') ? ['<-loopback>'] : ['<local>']));
+
             const proxyConfig = {
                 mode: 'fixed_servers',
                 rules: {
@@ -476,7 +534,7 @@
                         host: host,
                         port: parsedPort
                     },
-                    bypassList: ['<local>']
+                    bypassList: resolvedBypass
                 }
             };
 
@@ -488,7 +546,7 @@
                     if (chrome.runtime && chrome.runtime.lastError) {
                         return reject(chrome.runtime.lastError);
                     }
-                    resolve({ success: true, mode, host, port: parsedPort });
+                    resolve({ success: true, mode, host, port: parsedPort, bypassList: resolvedBypass });
                 });
             });
         }
@@ -697,6 +755,12 @@
                 const username = options.proxyUsername !== undefined ? options.proxyUsername : this.config.proxyUsername;
                 const password = options.proxyPassword !== undefined ? options.proxyPassword : (this.config.proxyPassword || this.ephemeralProxyPassword);
 
+                const authRegistered = typeof globalThis !== 'undefined' && typeof globalThis.isProxyAuthHandlerRegistered !== 'undefined'
+                    ? globalThis.isProxyAuthHandlerRegistered
+                    : (typeof self !== 'undefined' && typeof self.isProxyAuthHandlerRegistered !== 'undefined'
+                        ? self.isProxyAuthHandlerRegistered
+                        : (typeof chrome !== 'undefined' && !!(chrome.webRequest && chrome.webRequest.onAuthRequired)));
+
                 if (!host || !port) {
                     ready = false;
                     directFallbackBlocked = 'ALLOWED';
@@ -706,16 +770,34 @@
                     directFallbackBlocked = 'BLOCKED';
                     egressCheck = 'FAIL';
                     failureReason = 'PROXY_CREDENTIALS_INCOMPLETE';
+                } else if (username && password && !authRegistered) {
+                    ready = false;
+                    directFallbackBlocked = 'BLOCKED';
+                    egressCheck = 'FAIL';
+                    failureReason = 'PROXY_AUTH_HANDLER_UNAVAILABLE';
                 } else {
                     try {
-                        await this.applyManagedProxy(mode, host, port);
-                        directFallbackBlocked = 'BLOCKED';
-                        dnsPrivacy = (mode === PRIVACY_MODES.SOCKS5) ? 'PASS' : 'PASS';
-                        ipv6Protection = 'PROTECTED';
-                        egressCheck = 'PASS';
-                        ready = true;
-                        failureReason = null;
-                        this.isGateActive = true;
+                        const bypassList = options.proxyBypassList !== undefined ? options.proxyBypassList : this.config.proxyBypassList;
+                        await this.applyManagedProxy(mode, host, port, bypassList);
+
+                        // [R6.9G.9.3] Perform bounded network canary through the configured proxy
+                        const canaryUrl = options.canaryUrl || this.config.canaryUrl || 'http://127.0.0.1:8980/privacy-canary';
+                        const canaryRes = await this.probeProxyCanary(canaryUrl, 3000);
+
+                        if (!canaryRes.success) {
+                            ready = false;
+                            directFallbackBlocked = 'BLOCKED';
+                            egressCheck = 'FAIL';
+                            failureReason = `PROXY_CANARY_FAILED: ${canaryRes.reason}`;
+                        } else {
+                            directFallbackBlocked = 'BLOCKED';
+                            dnsPrivacy = (mode === PRIVACY_MODES.SOCKS5) ? 'PASS' : 'PASS';
+                            ipv6Protection = 'PROTECTED';
+                            egressCheck = 'PASS';
+                            ready = true;
+                            failureReason = null;
+                            this.isGateActive = true;
+                        }
                     } catch (proxyErr) {
                         ready = false;
                         directFallbackBlocked = 'BLOCKED';
@@ -736,7 +818,7 @@
                 mode,
                 failClosed,
                 ownerVpnConfirmed: false,
-                egressVerified: mode === PRIVACY_MODES.SOCKS5 || mode === PRIVACY_MODES.HTTPS_PROXY,
+                egressVerified: (mode === PRIVACY_MODES.SOCKS5 || mode === PRIVACY_MODES.HTTPS_PROXY) ? ready : false,
                 webrtcGuard,
                 directFallbackBlocked,
                 egressCheck,
