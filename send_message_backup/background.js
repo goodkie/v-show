@@ -44,6 +44,7 @@ try {
         importScripts('modules/email-collector.js');
         importScripts('modules/vision-submit-executor.js');
         importScripts('modules/build-provenance.js');
+        importScripts('modules/privacy-gateway.js');
     }
 } catch (e) {
     console.warn('[SW Boot] importScripts modules fallback or handled inline:', e);
@@ -1981,13 +1982,38 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 logBg(null, plog, "info");
             }
 
-            // [R6.4 3] Log START_BG received
-            const queueLen = (request && Array.isArray(request.queue)) ? request.queue.length : 0;
-            logBg(null, `[START_BG] received queue=${queueLen}`, "info");
-            console.log(`[START_BG] received queue=${queueLen}`);
-            // [v18.25.0] Total Decoupling: Respond first, boot async
-            sendResponse({ success: true, status: 'acknowledged', queueCount: queueLen });
             (async () => {
+                // [R6.9G.9 Privacy Gateway Preflight]
+                const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+                if (pg) {
+                    await pg.init();
+                    const preflight = await pg.runPreflight();
+                    const pLog = `[PRIVACY_GATE] mode=${preflight.mode} transport=${preflight.mode} failClosed=${preflight.failClosed} webrtcGuard=${preflight.webrtcGuard} directFallbackBlocked=${preflight.directFallbackBlocked} egressCheck=${preflight.egressCheck} dnsPrivacy=${preflight.dnsPrivacy} ipv6Protection=${preflight.ipv6Protection} status=${preflight.ready ? 'READY' : 'BLOCKED'}`;
+                    console.log(pLog);
+                    logBg(null, pLog, preflight.ready ? "info" : "error");
+
+                    if (!preflight.ready && preflight.failClosed) {
+                        logBg(null, `[PRIVACY_GATE_BLOCK] reason=${preflight.failureReason} attemptId=none targetUrl=none`, 'error');
+                        chrome.runtime.sendMessage({
+                            action: 'PRIVACY_GATEWAY_BLOCKED',
+                            reason: preflight.failureReason
+                        }).catch(() => {});
+                        sendResponse({
+                            success: false,
+                            status: 'PRIVACY_GATEWAY_BLOCKED',
+                            error: 'PRIVACY_GATEWAY_BLOCKED',
+                            reason: preflight.failureReason
+                        });
+                        return;
+                    }
+                }
+
+                // [R6.4 3] Log START_BG received
+                const queueLen = (request && Array.isArray(request.queue)) ? request.queue.length : 0;
+                logBg(null, `[START_BG] received queue=${queueLen}`, "info");
+                console.log(`[START_BG] received queue=${queueLen}`);
+                sendResponse({ success: true, status: 'acknowledged', queueCount: queueLen });
+
                 try {
                     if (bootPromise) {
                         // Wait max 1s for boot to finish during a fresh start message
@@ -2003,6 +2029,67 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 } catch (e) {
                     console.error("[StartError]", e);
                     logBg(null, `❌ Engine failed to start: ${e.message}`, "error");
+                }
+            })();
+            return true;
+        }
+
+        case 'RUN_PRIVACY_PREFLIGHT': {
+            (async () => {
+                try {
+                    const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+                    if (!pg) return sendResponse({ success: false, error: 'PrivacyGateway unavailable' });
+                    await pg.init();
+                    const preflight = await pg.runPreflight(request.options || {});
+                    sendResponse({ success: true, preflight });
+                } catch (e) {
+                    sendResponse({ success: false, error: e.message });
+                }
+            })();
+            return true;
+        }
+
+        case 'GET_PRIVACY_CONFIG': {
+            (async () => {
+                try {
+                    const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+                    if (!pg) return sendResponse({ success: false, error: 'PrivacyGateway unavailable' });
+                    await pg.init();
+                    sendResponse({
+                        success: true,
+                        config: pg.config,
+                        isGateReady: pg.isPrivacyGateReady(),
+                        lastPreflight: pg.lastPreflightResult
+                    });
+                } catch (e) {
+                    sendResponse({ success: false, error: e.message });
+                }
+            })();
+            return true;
+        }
+
+        case 'SET_PRIVACY_CONFIG': {
+            (async () => {
+                try {
+                    const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+                    if (!pg) return sendResponse({ success: false, error: 'PrivacyGateway unavailable' });
+                    const cfg = await pg.saveConfig(request.config || {});
+                    sendResponse({ success: true, config: cfg });
+                } catch (e) {
+                    sendResponse({ success: false, error: e.message });
+                }
+            })();
+            return true;
+        }
+
+        case 'RESTORE_PRIVACY_SETTINGS': {
+            (async () => {
+                try {
+                    const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+                    if (pg) await pg.restoreOriginalSettings();
+                    sendResponse({ success: true });
+                } catch (e) {
+                    sendResponse({ success: false, error: e.message });
                 }
             })();
             return true;
@@ -3480,6 +3567,14 @@ async function pauseCampaignOrchestrator(saveCheckpoint = true) {
     campaignState.timeoutWatchdogGen = (campaignState.timeoutWatchdogGen || 0) + 1;
     chrome.storage.local.remove('xpider_currentAttempt').catch(() => {});
 
+    // [R6.9G.9 Restore Privacy Settings on Pause/Stop]
+    const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+    if (pg) {
+        await pg.restoreOriginalSettings();
+        console.log('[PRIVACY_GATE_RESTORED] status=READY');
+        logBg(null, '[PRIVACY_GATE_RESTORED] status=READY', 'info');
+    }
+
     // Save checkpoint snapshot
     if (saveCheckpoint) {
         const checkpoint = {
@@ -3778,6 +3873,14 @@ async function processNextCampaignTarget(loopSessionId, loopGeneration) {
                     action: 'CAMPAIGN_FINISHED',
                     counters: campaignState.counters
                 }).catch(() => {});
+
+                // [R6.9G.9 Restore Privacy Settings on Campaign Finished]
+                const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+                if (pg) {
+                    await pg.restoreOriginalSettings();
+                    console.log('[PRIVACY_GATE_RESTORED] status=READY');
+                    logBg(null, '[PRIVACY_GATE_RESTORED] status=READY', 'info');
+                }
             }
             campaignState.isLoopRunning = false;
             return;
@@ -3822,6 +3925,23 @@ async function processNextCampaignTarget(loopSessionId, loopGeneration) {
             retainedTabIds.clear();
             campaignState.currentTabId = null;
             campaignState.targetTabId = null;
+
+            // [R6.9G.9 Target Tab Invariant]
+            const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+            if (pg && !pg.isPrivacyGateReady()) {
+                logBg(null, `[PRIVACY_GATE_BLOCK] reason=${pg.failureReason || 'PRIVACY_GATE_NOT_READY'} attemptId=none targetUrl=next_queue`, 'error');
+                console.error(`[PRIVACY_GATE_BLOCK] reason=${pg.failureReason || 'PRIVACY_GATE_NOT_READY'} attemptId=none targetUrl=next_queue`);
+                orchestrationSettled = true;
+                releaseLease();
+                await pauseCampaignOrchestrator(true);
+                campaignState.isFaulted = true;
+                campaignState.faultReason = 'PRIVACY_GATEWAY_BLOCKED';
+                chrome.runtime.sendMessage({
+                    action: 'PRIVACY_GATEWAY_BLOCKED',
+                    reason: pg.failureReason || 'PRIVACY_GATE_NOT_READY'
+                }).catch(() => {});
+                return;
+            }
 
             if (targetAbortController.signal.aborted || campaignState.isPaused || !campaignState.isActive) {
                 logBg(null, `⏸️ [Engine] Target abort or pause detected before queue advance. Quiescing cleanly.`, "info");
@@ -4634,13 +4754,15 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
     const targetToken = 'tok_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8);
     try {
         const hs = await _getHistoryStore();
+        const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
         const attemptResult = await hs.recordAttempt(targetUrl, {
             campaignRunId: campaignState.campaignRunId,
             status: 'PREPARING',
             reason: 'PREPARING',
             templateId: campaignState.templateId || null,
             templateVersion: campaignState.templateVersion || 1,
-            targetToken: targetToken
+            targetToken: targetToken,
+            ...(pg ? pg.getAttemptPrivacyMetadata() : {})
         });
         _attemptId = attemptResult && attemptResult.attemptId ? attemptResult.attemptId : null;
         if (!_attemptId) throw new Error('recordAttempt returned no attemptId');
@@ -4737,6 +4859,29 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
         } catch (_) {
             tabId = null;
         }
+    }
+
+    // [R6.9G.9 Target Tab Invariant]
+    const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+    if (pg && !pg.isPrivacyGateReady()) {
+        logBg(tabId, `[PRIVACY_GATE_BLOCK] reason=${pg.failureReason || 'PRIVACY_GATE_NOT_READY'} attemptId=${_attemptId} targetUrl=${targetUrl}`, 'error');
+        console.error(`[PRIVACY_GATE_BLOCK] reason=${pg.failureReason || 'PRIVACY_GATE_NOT_READY'} attemptId=${_attemptId} targetUrl=${targetUrl}`);
+        if (_attemptId) {
+            try {
+                const hs = await _getHistoryStore();
+                await hs.updateAttemptContact(_attemptId, {
+                    ...pg.getAttemptPrivacyMetadata(),
+                    submissionStatus: 'PRIVACY_GATEWAY_BLOCKED',
+                    formDetectionStatus: 'NOT_FOUND'
+                });
+                await hs.persist();
+            } catch (_) {}
+        }
+        return {
+            success: false,
+            reasonCode: 'PRIVACY_GATEWAY_BLOCKED',
+            error: pg.failureReason || 'PRIVACY_GATE_NOT_READY'
+        };
     }
 
     if (!isReusedTab) {

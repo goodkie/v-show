@@ -22,7 +22,8 @@ const modules = {
     emailCollectorSha: 'modules/email-collector.js',
     historyStoreSha: 'modules/history-store.js',
     contactGateSha: 'modules/contact-gate.js',
-    visionSubmitSha: 'modules/vision-submit-executor.js'
+    visionSubmitSha: 'modules/vision-submit-executor.js',
+    privacyGatewaySha: 'modules/privacy-gateway.js'
 };
 
 for (const [key, relPath] of Object.entries(modules)) {
@@ -58,7 +59,8 @@ const filesToMirror = [
     'modules/final-form-completion-engine.js',
     'modules/form-discovery-engine-r2.js',
     'modules/vision-submit-executor.js',
-    'modules/math-captcha-solver.js'
+    'modules/math-captcha-solver.js',
+    'modules/privacy-gateway.js'
 ];
 
 let allMatch = true;

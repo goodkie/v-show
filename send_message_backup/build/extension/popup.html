@@ -461,6 +461,84 @@
                             <p class="settings-subtip" data-i18n="double_submit_tip">Automatically submits the form one more time after a successful submission.</p>
                         </div>
 
+                        <!-- [R6.9G.9] Privacy Gateway Group -->
+                        <div class="settings-group" id="privacy-gateway-group">
+                            <label style="color: #38bdf8; font-weight: 700; display: flex; justify-content: space-between; align-items: center;">
+                                <span>🛡️ Privacy Gateway (Fail-Closed)</span>
+                                <label class="switch" style="margin: 0;">
+                                    <input type="checkbox" id="privacy-gateway-toggle" checked>
+                                    <span class="slider round"></span>
+                                </label>
+                            </label>
+                            <p class="settings-subtip">Enforces network privacy and prevents direct IP/WebRTC leak for campaign tabs.</p>
+
+                            <!-- Transport Mode -->
+                            <div style="margin-top: 8px;">
+                                <span style="font-size: 11px; color: var(--text-muted, #888); display: block; margin-bottom: 3px;">Privacy Transport Mode</span>
+                                <select id="privacy-transport-mode-select" class="premium-select" style="font-size: 11px; height: 32px;">
+                                    <option value="SYSTEM_VPN" selected>Mode A: System VPN Required [Recommended]</option>
+                                    <option value="SOCKS5">Mode B: Managed SOCKS5 Proxy</option>
+                                    <option value="HTTPS_PROXY">Mode B: Managed HTTPS Proxy</option>
+                                    <option value="DIRECT">Mode C: Direct (Privacy OFF)</option>
+                                </select>
+                            </div>
+
+                            <!-- Fail-Closed Toggle -->
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+                                <span style="font-size: 11px; color: #f87171; font-weight: 600;">Campaign Fail-Closed Kill Switch</span>
+                                <label class="switch" style="margin: 0;">
+                                    <input type="checkbox" id="privacy-fail-closed-toggle" checked>
+                                    <span class="slider round"></span>
+                                </label>
+                            </div>
+                            <p class="settings-subtip" style="color: #fca5a5;">When active, campaign START is strictly blocked if protected transport fails.</p>
+
+                            <!-- Proxy Configuration (Dynamic) -->
+                            <div id="privacy-proxy-config-fields" style="display: none; margin-top: 8px; background: rgba(30, 41, 59, 0.5); padding: 8px; border-radius: 4px; border: 1px solid #334155;">
+                                <div style="display: flex; gap: 6px; margin-bottom: 6px;">
+                                    <div style="flex: 2;">
+                                        <span style="font-size: 10px; color: #94a3b8; display: block;">Proxy Host</span>
+                                        <input type="text" id="privacy-proxy-host" class="premium-input" placeholder="127.0.0.1 or proxy.example.com" style="height: 28px; font-size: 11px;">
+                                    </div>
+                                    <div style="flex: 1;">
+                                        <span style="font-size: 10px; color: #94a3b8; display: block;">Port</span>
+                                        <input type="number" id="privacy-proxy-port" class="premium-input" placeholder="1080" style="height: 28px; font-size: 11px;">
+                                    </div>
+                                </div>
+                                <div style="display: flex; gap: 6px; margin-bottom: 6px;">
+                                    <div style="flex: 1;">
+                                        <span style="font-size: 10px; color: #94a3b8; display: block;">Username (opt)</span>
+                                        <input type="text" id="privacy-proxy-user" class="premium-input" placeholder="User" style="height: 28px; font-size: 11px;">
+                                    </div>
+                                    <div style="flex: 1;">
+                                        <span style="font-size: 10px; color: #94a3b8; display: block;">Password (opt)</span>
+                                        <input type="password" id="privacy-proxy-pass" class="premium-input" placeholder="••••••••" style="height: 28px; font-size: 11px;">
+                                    </div>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <input type="checkbox" id="privacy-proxy-remember-pass">
+                                    <label for="privacy-proxy-remember-pass" style="font-size: 10px; color: #94a3b8; cursor: pointer;">Remember password in local extension storage</label>
+                                </div>
+                            </div>
+
+                            <!-- Privacy Preflight Status Card -->
+                            <div id="privacy-status-card" style="background: rgba(15, 23, 42, 0.7); border: 1px solid #334155; border-radius: 6px; padding: 8px; margin-top: 10px; font-family: monospace; font-size: 10px;">
+                                <div style="font-weight: 700; color: #38bdf8; margin-bottom: 6px; font-size: 11px;">🛡️ PRIVACY STATUS CARD</div>
+                                <div style="display: flex; flex-direction: column; gap: 3px;">
+                                    <div>PRIVACY GATEWAY: <span id="priv-card-enabled" style="font-weight: 600; color: #4ade80;">ON</span></div>
+                                    <div>TRANSPORT: <span id="priv-card-transport" style="font-weight: 600; color: #38bdf8;">SYSTEM_VPN</span></div>
+                                    <div>FAIL-CLOSED: <span id="priv-card-fail-closed" style="font-weight: 600; color: #f87171;">ON</span></div>
+                                    <div>WEBRTC GUARD: <span id="priv-card-webrtc" style="font-weight: 600; color: #4ade80;">PASS</span></div>
+                                    <div>DIRECT FALLBACK: <span id="priv-card-fallback" style="font-weight: 600; color: #4ade80;">BLOCKED</span></div>
+                                    <div>EGRESS CHECK: <span id="priv-card-egress" style="font-weight: 600; color: #fde047;">UNKNOWN</span></div>
+                                    <div>DNS PRIVACY: <span id="priv-card-dns" style="font-weight: 600; color: #4ade80;">PASS</span></div>
+                                    <div>IPV6: <span id="priv-card-ipv6" style="font-weight: 600; color: #4ade80;">PROTECTED</span></div>
+                                    <div>LAST CHECK: <span id="priv-card-last-check" style="color: #94a3b8;">Never</span></div>
+                                </div>
+                                <button id="priv-run-preflight-btn" type="button" class="secondary-btn" style="margin-top: 8px; width: 100%; font-size: 10px; padding: 4px; border-radius: 4px; background: #1e293b; color: #38bdf8; border: 1px solid #38bdf8; cursor: pointer;">🔍 Run Privacy Preflight</button>
+                            </div>
+                        </div>
+
                         <!-- [v18.23.0] Emergency Recovery Tools -->
                         <div class="settings-group emergency-group">
                             <label data-i18n="label_emergency_tools">Emergency Recovery</label>
@@ -586,6 +664,7 @@
         </main>
     </div>
     <script src="modules/build-provenance.js"></script>
+    <script src="modules/privacy-gateway.js"></script>
     <script src="modules/template-store.js"></script>
     <script src="modules/history-store.js"></script>
     <script src="modules/email-collector.js"></script>

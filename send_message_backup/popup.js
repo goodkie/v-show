@@ -187,6 +187,16 @@ function redactSensitiveText(str) {
             } catch (_) {
                 return urlStr;
             }
+        })
+        // [R6.9G.9 Privacy Redaction] IPv4 Addresses (preserve local 127.0.0.1 / 0.0.0.0 for test fixtures)
+        .replace(/\b(?:(?!127\.0\.0\.1)(?!0\.0\.0\.0)\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\b/g, '[REDACTED_IP]')
+        // IPv6 Addresses
+        .replace(/\b(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}\b/g, '[REDACTED_IPV6]')
+        // Proxy Password & Credentials
+        .replace(/proxy(?:-password|Pass|Password)[\s:="']+[^\s"'`]+/gi, 'proxyPassword: [REDACTED_SECRET]')
+        .replace(/(?:socks5|http|https):\/\/[^:\s]+:[^@\s]+@/gi, (match) => {
+            const protocol = match.split('://')[0];
+            return `${protocol}://[REDACTED_USER]:[REDACTED_PASS]@`;
         });
 }
 
@@ -887,7 +897,90 @@ async function hydrateSettings() {
     const fillModeEl = document.getElementById(`fill-mode-${fillMode}`);
     if (fillModeEl) fillModeEl.checked = true;
 
+    // [R6.9G.9] Hydrate Privacy Gateway settings & Status Card
+    try {
+        const privData = await chrome.storage.local.get(['xpider_privacy_config']);
+        const privCfg = privData.xpider_privacy_config || {};
+        const privToggle = document.getElementById('privacy-gateway-toggle');
+        if (privToggle) privToggle.checked = privCfg.enabled !== undefined ? !!privCfg.enabled : true;
+
+        const privModeSelect = document.getElementById('privacy-transport-mode-select');
+        if (privModeSelect) {
+            privModeSelect.value = privCfg.transportMode || 'SYSTEM_VPN';
+            const updateProxyVisibility = () => {
+                const isProxy = privModeSelect.value === 'SOCKS5' || privModeSelect.value === 'HTTPS_PROXY';
+                const fields = document.getElementById('privacy-proxy-config-fields');
+                if (fields) fields.style.display = isProxy ? 'block' : 'none';
+            };
+            privModeSelect.addEventListener('change', updateProxyVisibility);
+            updateProxyVisibility();
+        }
+
+        const privFailClosedToggle = document.getElementById('privacy-fail-closed-toggle');
+        if (privFailClosedToggle) privFailClosedToggle.checked = privCfg.failClosed !== undefined ? !!privCfg.failClosed : true;
+
+        const privHostEl = document.getElementById('privacy-proxy-host');
+        if (privHostEl) privHostEl.value = privCfg.proxyHost || '';
+        const privPortEl = document.getElementById('privacy-proxy-port');
+        if (privPortEl) privPortEl.value = privCfg.proxyPort || 1080;
+        const privUserEl = document.getElementById('privacy-proxy-user');
+        if (privUserEl) privUserEl.value = privCfg.proxyUsername || '';
+        const privPassEl = document.getElementById('privacy-proxy-pass');
+        if (privPassEl) privPassEl.value = privCfg.proxyPassword || '';
+        const privRememberEl = document.getElementById('privacy-proxy-remember-pass');
+        if (privRememberEl) privRememberEl.checked = !!privCfg.rememberPassword;
+
+        const preflightBtn = document.getElementById('priv-run-preflight-btn');
+        if (preflightBtn) {
+            preflightBtn.addEventListener('click', async () => {
+                preflightBtn.disabled = true;
+                preflightBtn.textContent = '⏳ Verifying Privacy Preflight...';
+                try {
+                    const res = await new Promise(resolve => {
+                        chrome.runtime.sendMessage({ action: 'RUN_PRIVACY_PREFLIGHT' }, resolve);
+                    });
+                    if (res && res.preflight) {
+                        _updatePrivacyCardUI(res.preflight);
+                    }
+                } catch (_) {}
+                finally {
+                    preflightBtn.disabled = false;
+                    preflightBtn.textContent = '🔍 Run Privacy Preflight';
+                }
+            });
+        }
+
+        chrome.runtime.sendMessage({ action: 'GET_PRIVACY_CONFIG' }, (res) => {
+            if (res && res.lastPreflight) {
+                _updatePrivacyCardUI(res.lastPreflight);
+            }
+        });
+    } catch (_) {}
+
     return true;
+}
+
+function _updatePrivacyCardUI(pf) {
+    if (!pf) return;
+    const elEn = document.getElementById('priv-card-enabled');
+    const elTr = document.getElementById('priv-card-transport');
+    const elFc = document.getElementById('priv-card-fail-closed');
+    const elWb = document.getElementById('priv-card-webrtc');
+    const elFb = document.getElementById('priv-card-fallback');
+    const elEg = document.getElementById('priv-card-egress');
+    const elDn = document.getElementById('priv-card-dns');
+    const elIp = document.getElementById('priv-card-ipv6');
+    const elLc = document.getElementById('priv-card-last-check');
+
+    if (elEn) { elEn.textContent = pf.ready ? 'ON (READY)' : (pf.failureReason ? 'BLOCKED' : 'ON'); elEn.style.color = pf.ready ? '#4ade80' : '#f87171'; }
+    if (elTr) elTr.textContent = pf.mode || 'SYSTEM_VPN';
+    if (elFc) elFc.textContent = pf.failClosed ? 'ON' : 'OFF';
+    if (elWb) { elWb.textContent = pf.webrtcGuard; elWb.style.color = pf.webrtcGuard === 'PASS' ? '#4ade80' : '#f87171'; }
+    if (elFb) { elFb.textContent = pf.directFallbackBlocked; elFb.style.color = pf.directFallbackBlocked === 'BLOCKED' ? '#4ade80' : '#fde047'; }
+    if (elEg) { elEg.textContent = pf.egressCheck; elEg.style.color = pf.egressCheck === 'PASS' ? '#4ade80' : (pf.egressCheck === 'FAIL' ? '#f87171' : '#fde047'); }
+    if (elDn) { elDn.textContent = pf.dnsPrivacy; elDn.style.color = pf.dnsPrivacy === 'PASS' ? '#4ade80' : '#fde047'; }
+    if (elIp) { elIp.textContent = pf.ipv6Protection; elIp.style.color = pf.ipv6Protection === 'PROTECTED' ? '#4ade80' : '#fde047'; }
+    if (elLc) elLc.textContent = pf.lastCheck ? new Date(pf.lastCheck).toLocaleTimeString() : 'Never';
 }
 
 async function hydrateCampaignState() {
@@ -1134,6 +1227,21 @@ document.addEventListener('DOMContentLoaded', async () => {
                     if (statusTitle) statusTitle.textContent = 'Live Progress (FAULT)';
                     const statusDetail = document.getElementById('status-detail');
                     if (statusDetail) statusDetail.textContent = `Campaign FAULT: ${request.reason}. Check extension log.`;
+
+                } else if (request.action === 'PRIVACY_GATEWAY_BLOCKED') {
+                    // [R6.9G.9] Fail-closed privacy gateway blocked start or execution
+                    if (typeof _restoreStartButton === 'function') _restoreStartButton();
+                    const reason = request.reason || 'Privacy transport requirements not met';
+                    addLog(`🛡️ [PRIVACY_GATEWAY_BLOCKED] ${reason}. Campaign cannot run without verified privacy transport.`, 'error');
+                    const statusTitle = document.getElementById('status-title');
+                    if (statusTitle) statusTitle.textContent = 'Live Progress (BLOCKED)';
+                    const statusDetail = document.getElementById('status-detail');
+                    if (statusDetail) statusDetail.textContent = `Privacy Gateway: ${reason}. Check Privacy settings.`;
+                    try {
+                        chrome.runtime.sendMessage({ action: 'GET_PRIVACY_CONFIG' }, (res) => {
+                            if (res && res.lastPreflight) _updatePrivacyCardUI(res.lastPreflight);
+                        });
+                    } catch (_) {}
 
                 } else if (request.action === 'SHOW_CAPTCHA_DECISION_MODAL') {
                     // [R6.9G.1-1/2] Owner CAPTCHA Decision Modal with exact attempt-bound identity
@@ -2892,11 +3000,15 @@ async function startCampaign() {
             }
 
             if (!response || response.success === false) {
-                const errMsg = (response && response.error) || "Start rejected by background engine";
+                const errMsg = (response && (response.reason || response.error)) || "Start rejected by background engine";
                 const err = new Error(errMsg);
                 console.error('[START_BG_HANDLER_NOT_REACHED]', err);
                 _restoreStartButton();
-                if (errMsg === 'RUNTIME_BUILD_MISMATCH') {
+                if (response && response.status === 'PRIVACY_GATEWAY_BLOCKED') {
+                    const blkMsg = `🛡️ [PRIVACY_GATEWAY_BLOCKED] ${response.reason || 'Protected transport unconfirmed'}`;
+                    addLog(blkMsg, "error");
+                    alert(`🛡️ PRIVACY GATEWAY FAIL-CLOSED\n\nCampaign START blocked:\n${response.reason || 'Privacy transport is not ready.'}\n\nPlease check Privacy Gateway settings in Options.`);
+                } else if (errMsg === 'RUNTIME_BUILD_MISMATCH') {
                     _applyHandshakeUiState(false, response.detail || errMsg);
                     alert(`❌ RUNTIME BUILD MISMATCH DETECTED BY BACKGROUND\n\n${response.detail || errMsg}\n\nPlease reload extension.`);
                 }
@@ -4269,6 +4381,27 @@ async function saveSettings() {
     const delaySubmitInput = document.getElementById('delay-input-submit');
     const randomToggle = document.getElementById('random-delay-toggle');
 
+        // [R6.9G.9] Privacy Gateway Inputs
+        const privToggle = document.getElementById('privacy-gateway-toggle');
+        const privModeSelect = document.getElementById('privacy-transport-mode-select');
+        const privFailClosedToggle = document.getElementById('privacy-fail-closed-toggle');
+        const privHostEl = document.getElementById('privacy-proxy-host');
+        const privPortEl = document.getElementById('privacy-proxy-port');
+        const privUserEl = document.getElementById('privacy-proxy-user');
+        const privPassEl = document.getElementById('privacy-proxy-pass');
+        const privRememberEl = document.getElementById('privacy-proxy-remember-pass');
+
+        const privacyConfig = {
+            enabled: privToggle ? privToggle.checked : true,
+            transportMode: privModeSelect ? privModeSelect.value : 'SYSTEM_VPN',
+            failClosed: privFailClosedToggle ? privFailClosedToggle.checked : true,
+            proxyHost: privHostEl ? privHostEl.value.trim() : '',
+            proxyPort: privPortEl ? (parseInt(privPortEl.value, 10) || 1080) : 1080,
+            proxyUsername: privUserEl ? privUserEl.value.trim() : '',
+            proxyPassword: (privRememberEl && privRememberEl.checked && privPassEl) ? privPassEl.value : (privPassEl ? privPassEl.value : ''),
+            rememberPassword: privRememberEl ? privRememberEl.checked : false
+        };
+
     let settings;
     try {
         const lang = langSelect ? langSelect.value : 'en';
@@ -4317,7 +4450,9 @@ async function saveSettings() {
             xpider_delay_fill: delayFillInput ? delayFillInput.value : 6,
             xpider_delay_submit: delaySubmitInput ? delaySubmitInput.value : 6,
             xpider_random_delay: randomToggle ? randomToggle.checked : false,
-            xpider_fill_mode: fillMode
+            xpider_fill_mode: fillMode,
+            // [R6.9G.9] Persist Privacy Gateway Config
+            xpider_privacy_config: privacyConfig
         };
         console.log(`[SETTINGS_COLLECT] keys=${Object.keys(settings).length}`);
     } catch (collectErr) {
@@ -4349,8 +4484,10 @@ async function saveSettings() {
 
         const mismatches = [];
         for (const key of requestedKeys) {
-            const written = typeof settings[key] === 'boolean' ? settings[key] : String(settings[key]);
-            const stored = readback[key] !== undefined ? (typeof readback[key] === 'boolean' ? readback[key] : String(readback[key])) : undefined;
+            const valW = settings[key];
+            const valR = readback[key];
+            const written = typeof valW === 'object' && valW !== null ? JSON.stringify(valW) : (typeof valW === 'boolean' ? valW : String(valW));
+            const stored = typeof valR === 'object' && valR !== null ? JSON.stringify(valR) : (valR !== undefined ? (typeof valR === 'boolean' ? valR : String(valR)) : undefined);
             if (stored === undefined || written !== stored) {
                 mismatches.push(`${key}: wrote=${written}, stored=${stored}`);
             }
@@ -4376,6 +4513,17 @@ async function saveSettings() {
             action: 'UPDATE_CAPTCHA_KEY', 
             method: settings.xpider_captcha_method, 
             key: settings.xpider_captcha_api_key 
+        }).catch(() => {});
+        // [R6.9G.9] Sync Privacy Gateway config to background and update status card
+        chrome.runtime.sendMessage({
+            action: 'SET_PRIVACY_CONFIG',
+            config: privacyConfig
+        }).then(() => {
+            chrome.runtime.sendMessage({ action: 'RUN_PRIVACY_PREFLIGHT' }, (res) => {
+                if (res && res.preflight) {
+                    _updatePrivacyCardUI(res.preflight);
+                }
+            });
         }).catch(() => {});
     }
     

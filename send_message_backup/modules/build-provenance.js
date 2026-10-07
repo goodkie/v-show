@@ -27,15 +27,16 @@
         builtAt: '2026-10-07T17:43:00.000Z',
         provenanceSchema: 2,
         modules: {
-            backgroundSha: '1d45dd1ebf11b0f29f5bf1d2c64a0056a0079ad7efa684cfc9a314746de1b402',
+            backgroundSha: '0336262f04e97ea0c4a39d26fb10d16e712ca7370b0f13e2f97fabb5e41668b8',
             contentScriptSha: 'db15cc0900d9171bb79b31a0aeaae09a16712f1d06413db7230e75633cf5b257',
-            popupSha: 'bf6040554cea3d9bfaefcc2d429c7ff0a797254352f55381d06510872a39c454',
+            popupSha: '591f0ff5b75397bd6879797eda525c7a2a7fe62770825f58b12fa969cf03881f',
             solverContentSha: 'dca775d4db576dd48be191a80b2e1b5394448c572cf3860735cf0be99ff966da',
             solverCoreSha: '01b3d96048ea933403e4599854dcdca28027e7f676aa5077eb6c5eb0582ac1e7',
             emailCollectorSha: '3f1147a379e159e7777158f2caa74cc8d40b2a0b0eb2c244f440af379cb5c9c9',
-            historyStoreSha: 'f09c66249516b3eb80e08922b1f21f9ae0453f54083011972e73fea2fabf7986',
+            historyStoreSha: 'ef148329c5c019877fef3708ac63472ce86d5f7f06da467a557a74e038eab6b4',
             contactGateSha: '0d01acb2d0a9448d154353fac5b527c17afa42fed56c68d6a49b39053629bd7d',
-            visionSubmitSha: '25cf18a4834bb476edff5e8f19a78dd2723bd556ede649ada69bc801543c83f3'
+            visionSubmitSha: '25cf18a4834bb476edff5e8f19a78dd2723bd556ede649ada69bc801543c83f3',
+            privacyGatewaySha: '42eb49bfae0cd2dc0f6614aa67deac605e43e8e51697bb474676226834b0217a'
         }
     };
 

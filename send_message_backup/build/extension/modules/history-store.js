@@ -401,6 +401,11 @@
                 ownerManualConfirmed: !!descriptor.ownerManualConfirmed,
                 isPreSubmitLocked: false,
                 emailsFound: descriptor.emailsFound || 0,
+                privacyMode: descriptor.privacyMode ?? opts.privacyMode ?? null,
+                privacyTransport: descriptor.privacyTransport ?? opts.privacyTransport ?? null,
+                privacyGatePassed: descriptor.privacyGatePassed !== undefined ? descriptor.privacyGatePassed : (opts.privacyGatePassed !== undefined ? opts.privacyGatePassed : true),
+                privacyGateCheckedAt: descriptor.privacyGateCheckedAt || opts.privacyGateCheckedAt || null,
+                privacyFailureReason: descriptor.privacyFailureReason || opts.privacyFailureReason || null,
                 startedAt: startedAt,
                 settledAt: null,
                 timing: {
@@ -539,6 +544,11 @@
             if (contactInfo.contactDiscoverySource) attempt.contactDiscoverySource = contactInfo.contactDiscoverySource;
             if (contactInfo.contactDiscoveryConfidence !== undefined) attempt.contactDiscoveryConfidence = contactInfo.contactDiscoveryConfidence;
             if (contactInfo.emailsFound !== undefined) attempt.emailsFound = contactInfo.emailsFound;
+            if (contactInfo.privacyMode !== undefined) attempt.privacyMode = contactInfo.privacyMode;
+            if (contactInfo.privacyTransport !== undefined) attempt.privacyTransport = contactInfo.privacyTransport;
+            if (contactInfo.privacyGatePassed !== undefined) attempt.privacyGatePassed = contactInfo.privacyGatePassed;
+            if (contactInfo.privacyGateCheckedAt !== undefined) attempt.privacyGateCheckedAt = contactInfo.privacyGateCheckedAt;
+            if (contactInfo.privacyFailureReason !== undefined) attempt.privacyFailureReason = contactInfo.privacyFailureReason;
             return true;
         }
 

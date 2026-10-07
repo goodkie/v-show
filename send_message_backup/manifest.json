@@ -11,7 +11,9 @@
     "sidePanel",
     "alarms",
     "downloads",
-    "debugger"
+    "debugger",
+    "privacy",
+    "proxy"
   ],
   "host_permissions": [
     "<all_urls>"

@@ -1,0 +1,68 @@
+[2026-10-07T18:09:29.870Z] [TARGET_SERVER] http://127.0.0.1:8980
+[2026-10-07T18:09:29.872Z] [MOCK_PROXY] http://127.0.0.1:8982
+[2026-10-07T18:09:30.744Z] [UNPACKED_EXTENSION] E:\vivpr\ai\extension-form-sender\send_message_backup\build\extension
+[2026-10-07T18:09:30.745Z] [BROWSER_LAUNCH] C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe --remote-debugging-port=9232
+[2026-10-07T18:09:35.280Z] [CDP_CONNECT] Edg/154.0.4258.62
+[2026-10-07T18:09:35.284Z] [EXT_DISCOVERY] extId=pjohcallgmjmbfckiaogjokelhobfceg
+[2026-10-07T18:09:37.347Z] [BG_BUILD_INFO] buildId=R6.9G.8.1-20261007-REAL-PATH-MANUAL-ASSIST-PERSISTENT-DIAG hasPrivacyGateway=true hasProxyPermission=true hasPrivacyPermission=true
+[2026-10-07T18:09:37.347Z] 
+========================================
+[2026-10-07T18:09:37.347Z] GATE A: DIRECT MODE + FAIL-CLOSED
+[2026-10-07T18:09:37.347Z] ========================================
+[2026-10-07T18:09:37.351Z] [GATE_A_PREFLIGHT] mode=DIRECT ready=false failClosed=true reason=DIRECT_MODE_BLOCKED_BY_FAIL_CLOSED
+[2026-10-07T18:09:37.392Z] [GATE_A_START_ATTEMPT] success=false status=PRIVACY_GATEWAY_BLOCKED reason=DIRECT_MODE_BLOCKED_BY_FAIL_CLOSED
+[2026-10-07T18:09:37.392Z] ✅ [GATE A: PASS] DIRECT mode + Fail-Closed strictly blocks campaign START with status=PRIVACY_GATEWAY_BLOCKED
+[2026-10-07T18:09:37.392Z] 
+========================================
+[2026-10-07T18:09:37.392Z] GATE B: MANAGED PROXY SUCCESS & HARDENING
+[2026-10-07T18:09:37.392Z] ========================================
+[2026-10-07T18:09:37.395Z] [GATE_B_PREFLIGHT] mode=HTTPS_PROXY ready=true webrtcGuard=PASS directFallbackBlocked=BLOCKED
+[2026-10-07T18:09:37.397Z] [GATE_B_CHROME_PROXY_SETTINGS] mode=fixed_servers singleProxy={"host":"127.0.0.1","port":8982,"scheme":"https"}
+[2026-10-07T18:09:37.398Z] [GATE_B_INVARIANT] isPrivacyGateReady=true
+[2026-10-07T18:09:37.398Z] ✅ [GATE B: PASS] Managed Proxy configured with fixed_servers, zero direct fallback, ready=true
+[2026-10-07T18:09:37.398Z] 
+========================================
+[2026-10-07T18:09:37.399Z] GATE C: PROXY FAILURE & FAIL-CLOSED QUIESCENCE
+[2026-10-07T18:09:37.399Z] ========================================
+[2026-10-07T18:09:37.400Z] [GATE_C_PROXY_FAILURE] ready=false reason=PROXY_HOST_OR_PORT_MISSING
+[2026-10-07T18:09:37.401Z] [GATE_C_INVARIANT_CHECK] readyCheck=false
+[2026-10-07T18:09:37.401Z] ✅ [GATE C: PASS] Proxy failure triggers fail-closed barrier; isPrivacyGateReady=false prevents navigation without direct fallback
+[2026-10-07T18:09:37.401Z] 
+========================================
+[2026-10-07T18:09:37.401Z] GATE D: WEBRTC LEAK GUARD & RESTORATION
+[2026-10-07T18:09:37.401Z] ========================================
+[2026-10-07T18:09:37.404Z] [GATE_D_WEBRTC_POLICY] value=disable_non_proxied_udp
+[2026-10-07T18:09:37.406Z] [GATE_D_NET_PREDICTION] value=false
+[2026-10-07T18:09:37.410Z] [GATE_D_SETTINGS_RESTORED] status=RESTORED
+[2026-10-07T18:09:37.410Z] ✅ [GATE D: PASS] WebRTC hardened to disable_non_proxied_udp, networkPrediction disabled, cleanly restorable
+[2026-10-07T18:09:37.410Z] 
+========================================
+[2026-10-07T18:09:37.410Z] GATE E: CHILD / EXTERNAL TAB INVARIANT
+[2026-10-07T18:09:37.410Z] ========================================
+[2026-10-07T18:09:37.411Z] [GATE_E_METADATA] privacyGatePassed=false failureReason=FAIL_CLOSED_TAB_GUARD
+[2026-10-07T18:09:37.412Z] ✅ [GATE E: PASS] Target Tab Invariant strictly enforces PRIVACY_GATE_READY across all child and redirect attempts
+[2026-10-07T18:09:37.412Z] 
+========================================
+[2026-10-07T18:09:37.412Z] GATE F: POPUP / EXTENSION RELOAD & SETTINGS INTEGRITY
+[2026-10-07T18:09:37.412Z] ========================================
+[2026-10-07T18:09:37.413Z] [GATE_F_POPUP_UI] {"hasToggle":true,"hasModeSelect":true,"hasFailClosed":true,"hasStatusCard":true,"hasPreflightBtn":true,"hasHostInput":true,"hasPortInput":true,"hasUserInput":true,"hasPassInput":true}
+[2026-10-07T18:09:38.917Z] [GATE_F_POPUP_PREFLIGHT_UI] cardStatus=ON (READY) transport=HTTPS_PROXY webrtc=PASS
+[2026-10-07T18:09:38.917Z] ✅ [GATE F: PASS] Popup Settings card, preflight runner, and 9-field status display verified in real UI
+[2026-10-07T18:09:38.918Z] 
+========================================
+[2026-10-07T18:09:38.918Z] GATE G: DIAGNOSTIC REDACTION
+[2026-10-07T18:09:38.918Z] ========================================
+[2026-10-07T18:09:38.919Z] [GATE_G_REDACTION] Redacted[0]="Client public IPv4 is [REDACTED_IP] on port 8080"
+[2026-10-07T18:09:38.919Z] [GATE_G_REDACTION] Redacted[1]="Client IPv6 address [REDACTED_IPV6] detected"
+[2026-10-07T18:09:38.919Z] [GATE_G_REDACTION] Redacted[2]="Proxy authentication socks5://admin_user:[REDACTED_EMAIL]:1080"
+[2026-10-07T18:09:38.919Z] [GATE_G_REDACTION] Redacted[3]="Local fixture loopback http://127.0.0.1:8980/privacy-target"
+[2026-10-07T18:09:38.919Z] ✅ [GATE G: PASS] All public IPv4, IPv6, and proxy credentials strictly redacted; local harness preserved
+[2026-10-07T18:09:38.919Z] 
+========================================
+[2026-10-07T18:09:38.919Z] GATE H: SYSTEM VPN MODE
+[2026-10-07T18:09:38.919Z] ========================================
+[2026-10-07T18:09:38.922Z] [GATE_H_VPN_UNCONFIRMED] ready=false reason=SYSTEM_VPN_UNCONFIRMED_PREFLIGHT_BLOCKED
+[2026-10-07T18:09:38.924Z] [GATE_H_VPN_CONFIRMED] ready=true dnsPrivacy=PASS ipv6=PROTECTED
+[2026-10-07T18:09:38.924Z] ✅ [GATE H: PASS] System VPN mode: Unconfirmed blocks start in fail-closed; Confirmed permits start with full leak guards
+[2026-10-07T18:09:38.927Z] 
+[AUDIT_COMPLETE] All 8 Gates verified successfully.
