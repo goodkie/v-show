@@ -3432,6 +3432,7 @@ async function processNextCampaignTarget(loopSessionId, loopGeneration) {
 
         // Now we own activeTargetInFlight = true
         let leaseReleased = false;
+        let orchestrationSettled = false;
         const releaseLease = () => {
             if (!leaseReleased) {
                 leaseReleased = true;
@@ -3519,7 +3520,7 @@ async function processNextCampaignTarget(loopSessionId, loopGeneration) {
                 timeoutTimerId = setTimeout(() => reject(new Error("Local Session Timeout")), targetTimeoutMs);
             });
 
-            let orchestrationSettled = false;
+            orchestrationSettled = false;
             const orchestrationPromise = (async () => {
                 try {
                     return await orchestrateSending(targetUrl, campaignState.template, targetAbortController.signal);
@@ -3652,7 +3653,7 @@ async function processNextCampaignTarget(loopSessionId, loopGeneration) {
                 releaseLease();
             });
         } finally {
-            if (orchestrationSettled) {
+            if (!leaseReleased && !campaignState.isFaulted) {
                 releaseLease();
             }
         }

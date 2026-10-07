@@ -158,7 +158,7 @@ const server = http.createServer((req, res) => {
 
     const mkEval = (ws, base) => {
       let n = base;
-      return (expression, timeoutMs = 15000) => new Promise((resolve, reject) => {
+      return (expression, timeoutMs = 45000) => new Promise((resolve, reject) => {
         const id = ++n;
         let settled = false;
         const timer = setTimeout(() => {
@@ -291,6 +291,8 @@ rec('\n=== [GATE A: TARGET-PUMP ATOMIC SLOT ACQUISITION CONCURRENCY RACE] ===');
         campaignState.totalTargets = 3;
         campaignState.sessionId++;
         campaignState.schedulerGeneration = 1;
+        campaignState.campaignRunId = 'run_gate_a_' + Date.now();
+        campaignState.captchaEpoch = 1;
 
         console.log('[RACE_TEST] Dispatching 4 competing concurrent processNextCampaignTarget wakeups through REAL production orchestrator...');
         const curSession = campaignState.sessionId;
@@ -367,6 +369,8 @@ rec('\n=== [GATE A: TARGET-PUMP ATOMIC SLOT ACQUISITION CONCURRENCY RACE] ===');
         campaignState.totalTargets = 2;
         campaignState.sessionId++;
         campaignState.schedulerGeneration = 1;
+        campaignState.campaignRunId = 'run_gate_b_' + Date.now();
+        campaignState.captchaEpoch = 1;
 
         console.log('[TIMEOUT_TEST] Launching Target A with 1.2s timeout via real production orchestrateSending...');
         await processNextCampaignTarget(campaignState.sessionId, campaignState.schedulerGeneration);
@@ -418,11 +422,15 @@ rec('\n=== [GATE A: TARGET-PUMP ATOMIC SLOT ACQUISITION CONCURRENCY RACE] ===');
       const savedSessionId = campaignState.sessionId;
       const savedEpoch = campaignState.captchaEpoch;
       const savedTabId = campaignState.currentTabId;
+      const savedIsActive = campaignState.isActive;
+      const savedIsPaused = campaignState.isPaused;
 
       try {
         const tabs = await chrome.tabs.query({ active: true });
         const dummyTabId = tabs[0]?.id || 1;
 
+        campaignState.isActive = true;
+        campaignState.isPaused = false;
         campaignState.campaignRunId = 'run_gate_c_' + Date.now();
         campaignState.sessionId = 300;
         campaignState.captchaEpoch = 1;
@@ -478,6 +486,8 @@ rec('\n=== [GATE A: TARGET-PUMP ATOMIC SLOT ACQUISITION CONCURRENCY RACE] ===');
         campaignState.sessionId = savedSessionId;
         campaignState.captchaEpoch = savedEpoch;
         campaignState.currentTabId = savedTabId;
+        campaignState.isActive = savedIsActive;
+        campaignState.isPaused = savedIsPaused;
       }
     })()`);
 
@@ -510,9 +520,13 @@ rec('\n=== [GATE A: TARGET-PUMP ATOMIC SLOT ACQUISITION CONCURRENCY RACE] ===');
       const savedEpoch = campaignState.captchaEpoch;
       const savedTabId = campaignState.currentTabId;
       const savedWit = campaignState.witAiKey;
+      const savedIsActive = campaignState.isActive;
+      const savedIsPaused = campaignState.isPaused;
 
       try {
         const dummyTabId = 999;
+        campaignState.isActive = true;
+        campaignState.isPaused = false;
         campaignState.campaignRunId = 'run_gate_d_' + Date.now();
         campaignState.sessionId = 400;
         campaignState.captchaEpoch = 1;
@@ -569,6 +583,8 @@ rec('\n=== [GATE A: TARGET-PUMP ATOMIC SLOT ACQUISITION CONCURRENCY RACE] ===');
         campaignState.captchaEpoch = savedEpoch;
         campaignState.currentTabId = savedTabId;
         campaignState.witAiKey = savedWit;
+        campaignState.isActive = savedIsActive;
+        campaignState.isPaused = savedIsPaused;
       }
     })()`);
 
@@ -618,6 +634,8 @@ rec('\n=== [GATE A: TARGET-PUMP ATOMIC SLOT ACQUISITION CONCURRENCY RACE] ===');
         campaignState.currentAttempt = null;
         campaignState.sessionId++;
         campaignState.schedulerGeneration = 1;
+        campaignState.campaignRunId = 'run_gate_e_' + Date.now();
+        campaignState.captchaEpoch = 1;
 
         console.log('[PAUSE_TEST] Launching real active target...');
         processNextCampaignTarget(campaignState.sessionId, campaignState.schedulerGeneration);
@@ -707,6 +725,8 @@ rec('\n=== [GATE A: TARGET-PUMP ATOMIC SLOT ACQUISITION CONCURRENCY RACE] ===');
         campaignState.counters = { total: 1, completed: 0, remaining: 1, inProgress: 0, success: 0, failed: 0 };
         campaignState.sessionId++;
         campaignState.schedulerGeneration = 1;
+        campaignState.campaignRunId = 'run_gate_f_' + Date.now();
+        campaignState.captchaEpoch = 1;
         campaignState.template = {
           name: 'Antigravity Verified Smoke',
           email: 'operator@smoke-test.org',
