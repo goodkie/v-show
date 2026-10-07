@@ -144,27 +144,42 @@
             if (node.tagName === 'IFRAME') {
                 iframeCount++;
                 try {
-                    const ifrDoc = node.contentDocument || (node.contentWindow && node.contentWindow.document);
+                    let ifrDoc = null;
+                    try {
+                        ifrDoc = node.contentDocument || (node.contentWindow && node.contentWindow.document);
+                    } catch (_) {
+                        ifrDoc = null;
+                    }
                     if (ifrDoc && !roots.includes(ifrDoc)) {
                         roots.push(ifrDoc);
                         traverse(ifrDoc, depth + 1);
+                    } else if (!ifrDoc) {
+                        // Cross-origin iframe or inaccessible boundary
+                        const rawSrc = (node.src || node.getAttribute?.('src') || '').trim();
+                        const srcLower = rawSrc.toLowerCase();
+                        const title = (node.title || node.getAttribute?.('title') || '').toLowerCase();
+                        const idCls = `${node.id || ''} ${node.className || ''}`.toLowerCase();
+                        const WIDGET_KEYWORDS = [
+                            'contact', 'form', 'hubspot', 'jotform', 'typeform', 'wufoo', 'inquiry',
+                            'message', 'pushpress', 'grow', 'lead', 'cognito', 'forms.gle', 'tally',
+                            'google.com/forms', 'activecampaign', 'marketo', 'pardot', 'calendly', 'chilipiper'
+                        ];
+                        const isContactRelated = WIDGET_KEYWORDS.some(k => 
+                            srcLower.includes(k) || title.includes(k) || idCls.includes(k)
+                        );
+                        // Also promote if source is HTTP and not same-origin and not 0x0 hidden pixel
+                        const isLikelyExternalForm = isContactRelated || (rawSrc.startsWith('http') && (
+                            srcLower.includes('api.') || srcLower.includes('app.') || srcLower.includes('widget') || srcLower.includes('embed')
+                        ));
+                        if (isLikelyExternalForm || isContactRelated) {
+                            crossOriginSignals.push({
+                                src: rawSrc,
+                                title,
+                                reason: 'CROSS_ORIGIN_CONTACT_FORM_DETECTED'
+                            });
+                        }
                     }
-                } catch (e) {
-                    // Cross-origin iframe
-                    const src = (node.src || node.getAttribute?.('src') || '').toLowerCase();
-                    const title = (node.title || node.getAttribute?.('title') || '').toLowerCase();
-                    const idCls = `${node.id || ''} ${node.className || ''}`.toLowerCase();
-                    const isContactRelated = ['contact', 'form', 'hubspot', 'jotform', 'typeform', 'wufoo', 'inquiry', 'message'].some(k => 
-                        src.includes(k) || title.includes(k) || idCls.includes(k)
-                    );
-                    if (isContactRelated) {
-                        crossOriginSignals.push({
-                            src,
-                            title,
-                            reason: 'CROSS_ORIGIN_CONTACT_FORM_DETECTED'
-                        });
-                    }
-                }
+                } catch (_) {}
             }
 
             // Traverse children
@@ -639,13 +654,15 @@
 
             console.log(`[FORM_DISCOVERY_EXHAUSTED] bodyCandidatesSeen=${totalBodySeen} logicalContainersSeen=${totalContainersSeen} eligibleCandidatesSeen=0 reason=${terminalReason}`);
 
+            const primaryCrossOrigin = allCrossOriginSignals.length > 0 ? (allCrossOriginSignals[0].src || null) : null;
             this.lastDiscoveryResult = {
                 success: false,
                 container: null,
                 reasonCode: terminalReason,
                 bodyCandidatesSeen: totalBodySeen,
                 logicalContainersSeen: totalContainersSeen,
-                crossOriginSignals: allCrossOriginSignals
+                crossOriginSignals: allCrossOriginSignals,
+                externalFormUrl: primaryCrossOrigin
             };
 
             return null;

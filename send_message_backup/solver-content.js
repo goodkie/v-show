@@ -118,6 +118,7 @@
                     window.__xpider_solver_active_interval = null;
                 }
                 window.__xpider_solver_active_interval = setInterval(() => this.loop(), this.options.checkInterval);
+            }
             if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
                 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
                     if (msg && msg.action === 'APPLY_CAPTCHA_TOKEN') {

@@ -393,6 +393,12 @@
                 formPageUrl: descriptor.formPageUrl || null,
                 submittedFromUrl: descriptor.submittedFromUrl || null,
                 resultUrl: descriptor.resultUrl || null,
+                externalFormUrl: descriptor.externalFormUrl || null,
+                formDetectionStatus: descriptor.formDetectionStatus || 'NOT_FOUND',
+                autofillStatus: descriptor.autofillStatus || 'N_A',
+                submissionStatus: descriptor.submissionStatus || status || 'PREPARING',
+                captchaStatus: descriptor.captchaStatus || 'NONE',
+                ownerManualConfirmed: !!descriptor.ownerManualConfirmed,
                 isPreSubmitLocked: false,
                 emailsFound: descriptor.emailsFound || 0,
                 startedAt: startedAt,
@@ -526,6 +532,10 @@
             if (contactInfo.resultUrl) {
                 attempt.resultUrl = contactInfo.resultUrl;
             }
+            if (contactInfo.externalFormUrl) attempt.externalFormUrl = contactInfo.externalFormUrl;
+            if (contactInfo.formDetectionStatus) attempt.formDetectionStatus = contactInfo.formDetectionStatus;
+            if (contactInfo.autofillStatus) attempt.autofillStatus = contactInfo.autofillStatus;
+            if (contactInfo.captchaStatus) attempt.captchaStatus = contactInfo.captchaStatus;
             if (contactInfo.contactDiscoverySource) attempt.contactDiscoverySource = contactInfo.contactDiscoverySource;
             if (contactInfo.contactDiscoveryConfidence !== undefined) attempt.contactDiscoveryConfidence = contactInfo.contactDiscoveryConfidence;
             if (contactInfo.emailsFound !== undefined) attempt.emailsFound = contactInfo.emailsFound;
@@ -675,6 +685,14 @@
                 if (extra.contactDiscoverySource && !attempt.contactDiscoverySource) {
                     attempt.contactDiscoverySource = extra.contactDiscoverySource;
                 }
+                if (extra.externalFormUrl) attempt.externalFormUrl = extra.externalFormUrl;
+                if (extra.formDetectionStatus) attempt.formDetectionStatus = extra.formDetectionStatus;
+                if (extra.autofillStatus) attempt.autofillStatus = extra.autofillStatus;
+                if (extra.submissionStatus) attempt.submissionStatus = extra.submissionStatus;
+                else if (extra.ownerManualConfirmed) attempt.submissionStatus = 'OWNER_MANUAL_CONFIRMED';
+                else attempt.submissionStatus = canonicalStatus;
+                if (extra.captchaStatus) attempt.captchaStatus = extra.captchaStatus;
+                if (extra.ownerManualConfirmed !== undefined) attempt.ownerManualConfirmed = !!extra.ownerManualConfirmed;
                 if (extra.emailsFound !== undefined) attempt.emailsFound = extra.emailsFound;
                 if (extra.confirmationStrength) attempt.confirmationStrength = extra.confirmationStrength;
             }
@@ -1252,6 +1270,12 @@
                         resultUrl: attempt ? (attempt.resultUrl || '') : '',
                         contactDiscoverySource: attempt ? (attempt.contactDiscoverySource || '') : '',
                         formPageUrl: attempt ? (attempt.formPageUrl || '') : '',
+                        externalFormUrl: attempt ? (attempt.externalFormUrl || '') : '',
+                        formDetectionStatus: attempt ? (attempt.formDetectionStatus || (attempt.formPageUrl ? 'FOUND' : 'NOT_FOUND')) : 'NOT_FOUND',
+                        autofillStatus: attempt ? (attempt.autofillStatus || 'N_A') : 'N_A',
+                        submissionStatus: attempt ? (attempt.submissionStatus || attempt.status) : (row.status || 'PENDING'),
+                        captchaStatus: attempt ? (attempt.captchaStatus || 'NONE') : 'NONE',
+                        ownerManualConfirmed: attempt ? !!attempt.ownerManualConfirmed : false,
                         emailsFound: attempt ? (attempt.emailsFound !== undefined ? attempt.emailsFound : 0) : 0,
                         targetIdentity: row.targetIdentity,
                         status: attempt ? attempt.status : row.status,
@@ -1294,6 +1318,12 @@
                         resultUrl: attempt ? (attempt.resultUrl || '') : '',
                         contactDiscoverySource: attempt ? (attempt.contactDiscoverySource || '') : '',
                         formPageUrl: attempt ? (attempt.formPageUrl || '') : '',
+                        externalFormUrl: attempt ? (attempt.externalFormUrl || '') : '',
+                        formDetectionStatus: attempt ? (attempt.formDetectionStatus || (attempt.formPageUrl ? 'FOUND' : 'NOT_FOUND')) : 'NOT_FOUND',
+                        autofillStatus: attempt ? (attempt.autofillStatus || 'N_A') : 'N_A',
+                        submissionStatus: attempt ? (attempt.submissionStatus || attempt.status) : (isSuppressed ? 'SUPPRESSED' : 'READY'),
+                        captchaStatus: attempt ? (attempt.captchaStatus || 'NONE') : 'NONE',
+                        ownerManualConfirmed: attempt ? !!attempt.ownerManualConfirmed : false,
                         emailsFound: attempt ? (attempt.emailsFound !== undefined ? attempt.emailsFound : 0) : 0,
                         targetIdentity: identity,
                         status: attempt ? attempt.status : (isSuppressed ? 'SUPPRESSED' : 'READY'),
@@ -1335,6 +1365,12 @@
                         resultUrl: attempt.resultUrl || '',
                         contactDiscoverySource: attempt.contactDiscoverySource || '',
                         formPageUrl: attempt.formPageUrl || '',
+                        externalFormUrl: attempt.externalFormUrl || '',
+                        formDetectionStatus: attempt.formDetectionStatus || (attempt.formPageUrl ? 'FOUND' : 'NOT_FOUND'),
+                        autofillStatus: attempt.autofillStatus || 'N_A',
+                        submissionStatus: attempt.submissionStatus || attempt.status,
+                        captchaStatus: attempt.captchaStatus || 'NONE',
+                        ownerManualConfirmed: !!attempt.ownerManualConfirmed,
                         emailsFound: attempt.emailsFound !== undefined ? attempt.emailsFound : 0,
                         targetIdentity: attempt.targetIdentity || sourceUrl,
                         status: attempt.status,

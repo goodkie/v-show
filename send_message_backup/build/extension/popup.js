@@ -117,7 +117,7 @@ let remainingTargets = 0;
 let lastStatsData = null;
 
 // ── [IPC DIAGNOSTIC TRACE & BUFFER SUBSYSTEM] ──────────────────────────────
-const DIAG_LOG_CAPACITY = 500;
+const DIAG_LOG_CAPACITY = 20000;
 const diagnosticLogBuffer = [];
 const diagnosticSessionId = 'diag_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 8);
 
@@ -127,7 +127,7 @@ const diagnosticSessionId = 'diag_' + Date.now().toString(36) + '_' + Math.rando
  * - Email addresses
  * - Phone numbers
  * - Template message body, secrets, auth tokens, passwords, cookies
- * - Full target URL lists (hostnames or counts only)
+ * - Sensitive query parameters (preserves full URL path for exact diagnostics)
  */
 function redactSensitiveText(str) {
     if (str === null || str === undefined) return '';
@@ -154,13 +154,22 @@ function redactSensitiveText(str) {
         .replace(/\b(?:03[a-zA-Z0-9_-]{30,}|P1_[a-zA-Z0-9_-]{30,}|[a-zA-Z0-9_-]{60,})\b/g, (token) => `[REDACTED_TOKEN_LEN_${token.length}]`)
         // Cookie headers
         .replace(/Cookie:\s*[^;\r\n]+(?:;\s*[^;\r\n]+)*/gi, 'Cookie: [REDACTED_COOKIE]')
-        // URLs with query params/paths that may leak customer data -> retain protocol + hostname only
-        .replace(/https?:\/\/[^\s"'`<>]+(?:\/[^\s"'`<>]*)?/gi, (url) => {
+        // [R6.9G.8] Preserve exact URL paths (e.g. /contact-kaizen-karate-martial-arts-in-belmont-ma); redact sensitive query parameters only
+        .replace(/https?:\/\/[^\s"'`<>]+/gi, (urlStr) => {
             try {
-                const u = new URL(url);
-                return `${u.protocol}//${u.hostname}${u.pathname.length > 1 ? '/[PATH]' : ''}`;
+                const u = new URL(urlStr);
+                const safeParams = new URLSearchParams();
+                for (const [k, v] of u.searchParams.entries()) {
+                    if (/token|key|secret|auth|email|phone|password|jwt/i.test(k)) {
+                        safeParams.set(k, '[REDACTED]');
+                    } else {
+                        safeParams.set(k, v);
+                    }
+                }
+                const qs = safeParams.toString();
+                return `${u.origin}${u.pathname}${qs ? '?' + qs : ''}`;
             } catch (_) {
-                return '[REDACTED_URL]';
+                return urlStr;
             }
         });
 }
@@ -214,52 +223,99 @@ function getDiagnosticReport() {
         : 'unknown';
 
     const buildInfo = (typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO) ? BuildProvenance.BUILD_INFO : {};
-    const successVal = document.getElementById('success-count-display')?.textContent || (lastStatsData?.successCount || 0);
-    const failedVal = document.getElementById('failed-count-display')?.textContent || (lastStatsData?.failedCount || 0);
-    const timeoutVal = document.getElementById('timeout-count-display')?.textContent || (lastStatsData?.timeoutCount || 0);
-    const unknownVal = document.getElementById('unknown-count-display')?.textContent || (lastStatsData?.deliveryUnknownCount || 0);
-    const skippedVal = document.getElementById('skipped-count-display')?.textContent || (lastStatsData?.skippedCount || 0);
-    const completedVal = document.getElementById('completed-count-display')?.textContent || (lastStatsData?.completedCount || 0);
-    const remainingVal = document.getElementById('remaining-count-display')?.textContent || (lastStatsData?.remainingCount || 0);
-    const cSolvedVal = document.getElementById('captcha-solved-display')?.textContent || (lastStatsData?.captchaSolvedCount || 0);
-    const cFailedVal = document.getElementById('captcha-failed-display')?.textContent || (lastStatsData?.captchaFailedCount || 0);
+    const hs = (typeof getPopupHistoryStore === 'function') ? getPopupHistoryStore() : null;
+    const currentRunId = lastStatsData?.campaignRunId || 'N/A';
+    const records = hs ? (hs.attempts || []) : [];
+    const runRecords = currentRunId !== 'N/A' ? records.filter(a => a.campaignRunId === currentRunId) : records;
 
-    const header = [
+    const allEvents = [...diagnosticLogBuffer];
+    const eventCount = allEvents.length;
+    const targetCount = runRecords.length;
+
+    // SECTION 1: BUILD
+    const buildSection = [
         "=================================================================",
-        "        XPIDER EXTENSION RUNTIME IPC DIAGNOSTIC REPORT          ",
+        "SECTION 1: BUILD",
         "=================================================================",
-        `Build ID:           ${buildInfo.buildId || 'R6.9G.7-20261007-ATOMIC-PUMP-QUIESCENT-CAPTCHA'}`,
-        `Implementation Head:${buildInfo.implementationHead || 'db15feb4cd86e08774bd0c0e5b4724c0af418e44'}`,
-        `Session ID:         ${diagnosticSessionId}`,
-        `Campaign Run ID:    ${lastStatsData?.campaignRunId || 'N/A'}`,
-        `Report Timestamp:   ${new Date().toISOString()}`,
-        `Extension Version:  ${extVer}`,
-        `Chrome Runtime ID:  ${runtimeId}`,
-        `Document Origin:    ${originPath}`,
-        `Visibility State:   ${docVis}`,
-        `Max Concurrent Obs: 1 (Strict Indivisible Lease Enforced)`,
-        `Campaign Active:    ${typeof campaignActive !== 'undefined' ? campaignActive : false}`,
-        `Campaign Paused:    ${typeof campaignPaused !== 'undefined' ? campaignPaused : false}`,
-        `Counters Summary:   SUCCESS=${successVal} FAILURE=${failedVal} TIMEOUT=${timeoutVal} UNKNOWN=${unknownVal} SKIPPED=${skippedVal} COMPLETED=${completedVal} REMAINING=${remainingVal}`,
-        `CAPTCHA Counters:   OK=${cSolvedVal} FAIL=${cFailedVal}`,
-        `Queue Count:        ${typeof campaignQueue !== 'undefined' && Array.isArray(campaignQueue) ? campaignQueue.length : 0}`,
-        `Template ID:        ${currentTpl?.templateId || currentTpl?.id || 'none'}`,
-        `Template Version:   ${currentTpl?.templateVersion || currentTpl?.version || 1}`,
-        "Privacy Status:     AUTOMATICALLY REDACTED (Zero customer PII / Zero API Secrets / Hostnames only)",
-        "=================================================================",
-        "DIAGNOSTIC TRACE LOG (Last 500 lines):",
-        "-----------------------------------------------------------------"
+        `buildId:            ${buildInfo.buildId || 'R6.9G.8-20261007-MANUAL-ASSIST-HARD-CAPTCHA-LEDGER'}`,
+        `implementationHead: ${buildInfo.implementationHead || 'N/A'}`,
+        `branch:             upgrade/phase-0-1`,
+        `version:            ${extVer}`,
+        `chromeRuntimeId:    ${runtimeId}`,
+        `moduleHashes:       ${JSON.stringify(buildInfo.moduleHashes || {})}`
     ];
 
-    const lines = diagnosticLogBuffer.slice(-500);
-    const body = lines.length > 0 ? lines.join('\n') : "  (No diagnostic entries recorded)";
-    const footer = [
-        "-----------------------------------------------------------------",
-        "END OF XPIDER IPC DIAGNOSTIC REPORT",
+    // SECTION 2: CAMPAIGN
+    const campaignSection = [
+        "=================================================================",
+        "SECTION 2: CAMPAIGN",
+        "=================================================================",
+        `campaignRunId:      ${currentRunId}`,
+        `sessionId:          ${diagnosticSessionId}`,
+        `generation:         ${typeof campaignGeneration !== 'undefined' ? campaignGeneration : 1}`,
+        `sourceImportCount:  ${lastStatsData?.totalTargets || records.length || 0}`,
+        `executableCount:    ${lastStatsData?.remainingCount !== undefined ? lastStatsData.remainingCount : 0}`,
+        `campaignActive:     ${typeof campaignActive !== 'undefined' ? campaignActive : false}`,
+        `campaignPaused:     ${typeof campaignPaused !== 'undefined' ? campaignPaused : false}`,
+        `reportTimestamp:    ${new Date().toISOString()}`,
+        `documentOrigin:     ${originPath}`,
+        `visibilityState:    ${docVis}`,
+        `DIAG_REPORT_COMPLETE=true`,
+        `TRUNCATED=false`,
+        `EVENT_COUNT=${eventCount}`,
+        `TARGET_COUNT=${targetCount}`,
+        "Privacy Status:     AUTOMATICALLY REDACTED (Zero customer PII / Zero API Secrets / URL paths preserved)"
+    ];
+
+    // SECTION 3: PER TARGET CHRONOLOGICAL TIMELINE
+    const timelineLines = [
+        "=================================================================",
+        "SECTION 3: PER TARGET CHRONOLOGICAL TIMELINE",
+        "================================================================="
+    ];
+    if (runRecords.length === 0) {
+        timelineLines.push("  (No target attempts recorded in current run)");
+    } else {
+        runRecords.forEach((att, idx) => {
+            timelineLines.push(`--- TARGET #${idx + 1} [${att.attemptId || 'no-id'}] ---`);
+            timelineLines.push(`  sourceUrl:          ${att.sourceUrl || att.url || 'none'}`);
+            timelineLines.push(`  contactPageUrl:     ${att.contactPageUrl || 'none'}`);
+            timelineLines.push(`  formPageUrl:        ${att.formPageUrl || 'none'}`);
+            timelineLines.push(`  externalFormUrl:    ${att.externalFormUrl || 'none'}`);
+            timelineLines.push(`  resultUrl:          ${att.resultUrl || 'none'}`);
+            timelineLines.push(`  formDetectionState: ${att.formDetectionStatus || (att.formPageUrl ? 'FOUND' : 'NOT_FOUND')}`);
+            timelineLines.push(`  autofillState:      ${att.autofillStatus || 'N_A'}`);
+            timelineLines.push(`  submissionState:    ${att.submissionStatus || att.status || 'UNKNOWN'}`);
+            timelineLines.push(`  captchaState:       ${att.captchaStatus || 'NONE'}`);
+            timelineLines.push(`  ownerManualConfirmed:${!!att.ownerManualConfirmed}`);
+            timelineLines.push(`  canonicalStatus:    ${att.status || 'UNKNOWN'}`);
+            timelineLines.push(`  reasonCode:         ${att.reasonCode || 'none'}`);
+            timelineLines.push(`  startedAt:          ${att.startedAt ? new Date(att.startedAt).toISOString() : 'none'}`);
+            timelineLines.push(`  resolvedAt:         ${att.resolvedAt ? new Date(att.resolvedAt).toISOString() : 'none'}`);
+            timelineLines.push(`  emailsFound:        ${att.emailsFound || 0}`);
+            if (att.evidence) {
+                timelineLines.push(`  evidence:           ${JSON.stringify(att.evidence)}`);
+            }
+        });
+    }
+
+    // SECTION 4: COMPLETE EVENT TRACE
+    const traceSection = [
+        "=================================================================",
+        `SECTION 4: COMPLETE EVENT TRACE (${eventCount} events)`,
+        "=================================================================",
+        ...(allEvents.length > 0 ? allEvents : ["  (No events recorded)"]),
+        "=================================================================",
+        "END OF COMPLETE XPIDER DIAGNOSTIC REPORT",
         "================================================================="
     ];
 
-    return `${header.join('\n')}\n${body}\n${footer.join('\n')}`;
+    return [
+        ...buildSection,
+        ...campaignSection,
+        ...timelineLines,
+        ...traceSection
+    ].join('\n');
 }
 
 async function copyDiagnosticReport() {
@@ -1057,19 +1113,200 @@ document.addEventListener('DOMContentLoaded', async () => {
                             sitekey: _sitekey
                         }, function(resp) {
                             const _s = document.getElementById('xpider-captcha-status');
-                            if (_s) _s.textContent = (resp && resp.success)
-                                ? '\u2705 Decision sent: ' + decision + ' \u2192 ' + (resp.status || 'OK')
-                                : '\u274C Decision failed: ' + (resp && resp.error ? resp.error : 'no response');
-                            setTimeout(function() {
-                                const _m = document.getElementById('xpider-captcha-decision-modal');
-                                if (_m) _m.remove();
-                            }, 1500);
+                            if (_s) {
+                                if (decision === 'auto') {
+                                    _s.innerHTML = (resp && resp.success)
+                                        ? '<span style="color:#a78bfa;">⚡ Solving via provider... Modal remains open until verified.</span>'
+                                        : '<span style="color:#ef4444;">❌ Auto-solve request failed: ' + (resp?.error || 'no response') + '</span>';
+                                } else if (decision === 'manual') {
+                                    _s.innerHTML = '<span style="color:#38bdf8;">✋ Manual solve active. Timer paused until resolution or Skip.</span>';
+                                } else if (decision === 'skip') {
+                                    _s.innerHTML = '<span style="color:#94a3b8;">⏭️ Target skipped.</span>';
+                                    setTimeout(function() {
+                                        const _m = document.getElementById('xpider-captcha-decision-modal');
+                                        if (_m) _m.remove();
+                                    }, 800);
+                                }
+                            }
                         });
                     }
 
-                    document.getElementById('xpider-captcha-auto-btn').addEventListener('click', function() { _sendCaptchaDecision('auto'); });
-                    document.getElementById('xpider-captcha-manual-btn').addEventListener('click', function() { _sendCaptchaDecision('manual'); });
-                    document.getElementById('xpider-captcha-skip-btn').addEventListener('click', function() { _sendCaptchaDecision('skip'); });
+                    document.getElementById('xpider-captcha-auto-btn')?.addEventListener('click', function() { _sendCaptchaDecision('auto'); });
+                    document.getElementById('xpider-captcha-manual-btn')?.addEventListener('click', function() { _sendCaptchaDecision('manual'); });
+                    document.getElementById('xpider-captcha-skip-btn')?.addEventListener('click', function() { _sendCaptchaDecision('skip'); });
+
+                } else if (request.action === 'CAPTCHA_PROVIDER_FAILED') {
+                    // [R6.9G.8 Directive 5] Provider failure: modal remains open and paused, shows safe error, offers Retry/Manual/Skip
+                    const _modal = document.getElementById('xpider-captcha-decision-modal');
+                    if (_modal) {
+                        const _statusEl = document.getElementById('xpider-captcha-status');
+                        if (_statusEl) {
+                            _statusEl.innerHTML = [
+                                '<div style="color:#ef4444;font-weight:600;margin-bottom:6px;">⚠️ Provider Error (' + (request.provider || 'Solver') + '): ' + (request.error || 'Failed') + '</div>',
+                                '<div style="color:#cbd5e1;font-size:11px;margin-bottom:8px;">Target deadline remains frozen. Choose next action:</div>',
+                                '<div style="display:flex;gap:6px;justify-content:center;">',
+                                '<button id="xpider-provider-retry-btn" style="background:#4f46e5;color:#fff;border:none;border-radius:6px;padding:6px 10px;font-size:11px;cursor:pointer;font-weight:600;">🔄 Retry Provider</button>',
+                                '<button id="xpider-provider-manual-btn" style="background:#0284c7;color:#fff;border:none;border-radius:6px;padding:6px 10px;font-size:11px;cursor:pointer;font-weight:600;">✋ Manual Solve</button>',
+                                '<button id="xpider-provider-skip-btn" style="background:#334155;color:#fff;border:none;border-radius:6px;padding:6px 10px;font-size:11px;cursor:pointer;">⏭️ Skip</button>',
+                                '</div>'
+                            ].join('');
+
+                            document.getElementById('xpider-provider-retry-btn')?.addEventListener('click', function() {
+                                document.getElementById('xpider-captcha-auto-btn')?.click();
+                            });
+                            document.getElementById('xpider-provider-manual-btn')?.addEventListener('click', function() {
+                                document.getElementById('xpider-captcha-manual-btn')?.click();
+                            });
+                            document.getElementById('xpider-provider-skip-btn')?.addEventListener('click', function() {
+                                document.getElementById('xpider-captcha-skip-btn')?.click();
+                            });
+                        }
+                    }
+
+                } else if (request.action === 'SHOW_MANUAL_FORM_ASSIST_MODAL') {
+                    // [R6.9G.8 Directive 2] Sticky Owner-Gated Manual Form Assist Modal
+                    const _mReq = request;
+                    const _attemptId = _mReq.attemptId || '';
+                    const _targetToken = _mReq.targetToken || '';
+                    const _campaignRunId = _mReq.campaignRunId || '';
+                    const _sessionId = _mReq.sessionId;
+                    const _sourceUrl = _mReq.sourceUrl || '';
+                    const _contactUrl = _mReq.contactPageUrl || '';
+                    const _formUrl = _mReq.formPageUrl || '';
+                    const _extUrl = _mReq.externalFormUrl || '';
+                    const _reason = _mReq.reason || 'MANUAL_ASSIST_REQUIRED';
+                    const _unresolved = _mReq.unresolvedFields || [];
+                    const _tpl = _mReq.template || {};
+
+                    const _existingModal = document.getElementById('xpider-manual-assist-modal');
+                    if (_existingModal) _existingModal.remove();
+
+                    const _modal = document.createElement('div');
+                    _modal.id = 'xpider-manual-assist-modal';
+                    _modal.setAttribute('style', [
+                        'position:fixed', 'top:0', 'left:0', 'width:100%', 'height:100%',
+                        'background:rgba(10,10,20,0.92)', 'z-index:99999',
+                        'display:flex', 'align-items:center', 'justify-content:center',
+                        'font-family:Inter,sans-serif', 'overflow-y:auto', 'padding:20px 0'
+                    ].join(';'));
+
+                    const _tVals = {
+                        firstName: _tpl.firstName || _tpl.first_name || '',
+                        lastName: _tpl.lastName || _tpl.last_name || '',
+                        fullName: _tpl.fullName || _tpl.name || `${_tpl.firstName || ''} ${_tpl.lastName || ''}`.trim(),
+                        email: _tpl.email || '',
+                        phone: _tpl.phone || '',
+                        subject: _tpl.subject || '',
+                        message: _tpl.message || _tpl.messageBody || _tpl.body || ''
+                    };
+
+                    const copyItemHtml = (label, val) => `
+                        <div style="display:flex;align-items:center;justify-content:space-between;background:#111322;border:1px solid #334155;border-radius:6px;padding:6px 10px;margin-bottom:6px;">
+                            <div style="font-size:12px;color:#94a3b8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:260px;"><strong style="color:#e2e8f0;">${label}:</strong> <span style="color:#cbd5e1;">${val ? val : '<em style="color:#64748b;">(empty)</em>'}</span></div>
+                            <button class="manual-copy-field-btn" data-val="${encodeURIComponent(val)}" style="background:#3b82f6;color:#fff;border:none;border-radius:4px;padding:3px 8px;font-size:11px;cursor:pointer;font-weight:600;flex-shrink:0;">Copy</button>
+                        </div>
+                    `;
+
+                    _modal.innerHTML = `
+                        <div style="background:#1a1d2e;border:1.5px solid #f59e0b;border-radius:14px;padding:24px 28px;max-width:480px;width:92%;box-shadow:0 8px 48px #0008;max-height:90vh;overflow-y:auto;">
+                            <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+                                <span style="font-size:26px;">🛠️</span>
+                                <div>
+                                    <div style="font-size:16px;font-weight:700;color:#f59e0b;">Manual Form Assist Required</div>
+                                    <div style="font-size:11px;color:#cbd5e1;margin-top:2px;">Target deadline paused · Automation waiting for Owner</div>
+                                </div>
+                            </div>
+                            <div style="background:#0f172a;border-radius:8px;padding:10px;margin-bottom:14px;font-size:12px;">
+                                <div style="margin-bottom:4px;color:#94a3b8;"><strong>Reason:</strong> <span style="color:#f59e0b;font-weight:600;">${_reason}</span></div>
+                                <div style="margin-bottom:4px;color:#94a3b8;"><strong>Source:</strong> <a href="${_sourceUrl}" target="_blank" rel="noopener noreferrer" style="color:#60a5fa;text-decoration:underline;">${_sourceUrl}</a></div>
+                                <div style="margin-bottom:4px;color:#94a3b8;"><strong>Contact Page:</strong> <a href="${_contactUrl}" target="_blank" rel="noopener noreferrer" style="color:#38bdf8;text-decoration:underline;">${_contactUrl || 'None'}</a></div>
+                                ${_extUrl ? `<div style="margin-bottom:4px;color:#94a3b8;"><strong>External Form / Widget:</strong> <a href="${_extUrl}" target="_blank" rel="noopener noreferrer" style="color:#ec4899;text-decoration:underline;">${_extUrl}</a></div>` : ''}
+                                ${_unresolved.length > 0 ? `<div style="margin-top:6px;color:#f87171;"><strong>Unresolved Fields:</strong> ${_unresolved.join(', ')}</div>` : ''}
+                            </div>
+                            <div style="margin-bottom:12px;">
+                                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                                    <span style="font-size:13px;font-weight:600;color:#e2e8f0;">Saved Template Values:</span>
+                                    <button id="manual-copy-all-btn" style="background:#8b5cf6;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-weight:600;">📋 COPY ALL TEMPLATE</button>
+                                </div>
+                                ${copyItemHtml('First Name', _tVals.firstName)}
+                                ${copyItemHtml('Last Name', _tVals.lastName)}
+                                ${copyItemHtml('Full Name', _tVals.fullName)}
+                                ${copyItemHtml('Email', _tVals.email)}
+                                ${copyItemHtml('Phone', _tVals.phone)}
+                                ${copyItemHtml('Subject', _tVals.subject)}
+                                ${copyItemHtml('Message', _tVals.message)}
+                            </div>
+                            <div style="font-size:12px;color:#94a3b8;margin-bottom:10px;">Owner Actions:</div>
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                                <button id="manual-action-retry-btn" style="background:#2563eb;color:#fff;border:none;border-radius:6px;padding:10px;font-size:12px;font-weight:600;cursor:pointer;">🔄 Retry Detection/Autofill</button>
+                                <button id="manual-action-wait-btn" style="background:#475569;color:#fff;border:none;border-radius:6px;padding:10px;font-size:12px;font-weight:600;cursor:pointer;">✋ Manual Fill (Remain Paused)</button>
+                                <button id="manual-action-confirmed-btn" style="background:#16a34a;color:#fff;border:none;border-radius:6px;padding:10px;font-size:12px;font-weight:600;cursor:pointer;">✅ I Submitted Manually</button>
+                                <button id="manual-action-skip-btn" style="background:#dc2626;color:#fff;border:none;border-radius:6px;padding:10px;font-size:12px;font-weight:600;cursor:pointer;">⏭️ Could Not Submit / Skip</button>
+                            </div>
+                            <div id="manual-assist-status" style="margin-top:12px;font-size:12px;color:#94a3b8;text-align:center;"></div>
+                        </div>
+                    `;
+
+                    document.body.appendChild(_modal);
+
+                    // Copy handlers
+                    _modal.querySelectorAll('.manual-copy-field-btn').forEach(btn => {
+                        btn.addEventListener('click', (e) => {
+                            const val = decodeURIComponent(e.target.dataset.val || '');
+                            if (navigator.clipboard && navigator.clipboard.writeText) {
+                                navigator.clipboard.writeText(val);
+                            }
+                            e.target.textContent = 'Copied!';
+                            setTimeout(() => { e.target.textContent = 'Copy'; }, 1200);
+                        });
+                    });
+                    const copyAllBtn = document.getElementById('manual-copy-all-btn');
+                    if (copyAllBtn) {
+                        copyAllBtn.addEventListener('click', () => {
+                            const allText = Object.entries(_tVals).map(([k, v]) => `${k}: ${v}`).join('\n');
+                            if (navigator.clipboard && navigator.clipboard.writeText) {
+                                navigator.clipboard.writeText(allText);
+                            }
+                            copyAllBtn.textContent = '✅ Copied All!';
+                            setTimeout(() => { copyAllBtn.textContent = '📋 COPY ALL TEMPLATE'; }, 1500);
+                        });
+                    }
+
+                    // Action handlers
+                    function _sendManualDecision(decision) {
+                        const statusEl = document.getElementById('manual-assist-status');
+                        if (statusEl) statusEl.textContent = `Applying decision: ${decision}...`;
+                        chrome.runtime.sendMessage({
+                            action: 'FORM_MANUAL_ASSIST_DECISION',
+                            decision: decision,
+                            attemptId: _attemptId,
+                            targetToken: _targetToken,
+                            campaignRunId: _campaignRunId,
+                            sessionId: _sessionId,
+                            reason: _reason
+                        }, (resp) => {
+                            if (statusEl) {
+                                statusEl.textContent = (resp && resp.success)
+                                    ? `Decision applied: ${decision}`
+                                    : `Failed: ${resp?.error || 'no response'}`;
+                            }
+                            if (decision !== 'manual_fill') {
+                                setTimeout(() => {
+                                    const m = document.getElementById('xpider-manual-assist-modal');
+                                    if (m) m.remove();
+                                }, 1000);
+                            }
+                        });
+                    }
+
+                    document.getElementById('manual-action-retry-btn')?.addEventListener('click', () => _sendManualDecision('retry'));
+                    document.getElementById('manual-action-wait-btn')?.addEventListener('click', () => _sendManualDecision('manual_fill'));
+                    document.getElementById('manual-action-confirmed-btn')?.addEventListener('click', () => _sendManualDecision('submitted_manually'));
+                    document.getElementById('manual-action-skip-btn')?.addEventListener('click', () => _sendManualDecision('skip'));
+
+                } else if (request.action === 'CLOSE_ALL_MODALS') {
+                    document.getElementById('xpider-captcha-decision-modal')?.remove();
+                    document.getElementById('xpider-manual-assist-modal')?.remove();
                 }
             });
         } catch(e) { console.error('[POPUP_BOOT] onMessage registration failed:', e); }
@@ -3293,27 +3530,73 @@ async function renderLedgerUI() {
             const timeStr = rec.timestamp ? new Date(rec.timestamp).toLocaleTimeString() : '';
             const checked = ledgerState.selectedTargets.has(rec.targetIdentity) ? 'checked' : '';
 
-            // Section J: Format shortened display for Source and Contact URLs
+            // [R6.9G.8 Directive 8] Canonical Reusable Link Record (Source, Contact, Form, External, Result)
             const sourceUrl = rec.sourceUrl || rec.rawUrl || rec.targetIdentity || '';
             const contactUrl = rec.contactPageUrl || rec.selectedCandidateUrl || '';
+            const formUrl = rec.formPageUrl || '';
+            const externalFormUrl = rec.externalFormUrl || '';
+            const resultUrl = rec.resultUrl || '';
 
             const formatShortUrl = (urlStr) => {
                 if (!urlStr) return '-';
                 try {
                     const u = new URL(urlStr);
                     let display = u.hostname + (u.pathname !== '/' ? u.pathname : '');
-                    if (display.length > 34) display = display.substring(0, 31) + '...';
+                    if (display.length > 30) display = display.substring(0, 27) + '...';
                     return display;
                 } catch (_) {
-                    return urlStr.length > 34 ? urlStr.substring(0, 31) + '...' : urlStr;
+                    return urlStr.length > 30 ? urlStr.substring(0, 27) + '...' : urlStr;
                 }
             };
 
             const sourceDisplay = formatShortUrl(sourceUrl);
-            const contactDisplay = contactUrl ? formatShortUrl(contactUrl) : 'Not verified';
+            const contactDisplay = contactUrl ? formatShortUrl(contactUrl) : null;
+            const formDisplay = formUrl ? formatShortUrl(formUrl) : null;
+            const externalDisplay = externalFormUrl ? formatShortUrl(externalFormUrl) : null;
+            const resultDisplay = (resultUrl && resultUrl !== sourceUrl && resultUrl !== contactUrl) ? formatShortUrl(resultUrl) : null;
+
             const contactElement = contactUrl 
-                ? `<a href="${contactUrl}" target="_blank" rel="noopener noreferrer" class="ledger-contact-link" style="color: #38bdf8; text-decoration: underline;" title="${contactUrl}">📍 ${contactDisplay}</a>`
-                : `<span style="color: #64748b;">Not verified</span>`;
+                ? `<a href="${contactUrl}" target="_blank" rel="noopener noreferrer" class="ledger-contact-link" style="color: #38bdf8; text-decoration: underline;" title="${contactUrl}">📍 Contact: ${contactDisplay}</a>`
+                : `<span style="color: #64748b;">📍 Contact: None</span>`;
+
+            const formElement = formUrl
+                ? `<a href="${formUrl}" target="_blank" rel="noopener noreferrer" class="ledger-form-link" style="color: #a78bfa; text-decoration: underline;" title="${formUrl}">📝 Form: ${formDisplay}</a>`
+                : '';
+
+            const externalElement = externalFormUrl
+                ? `<a href="${externalFormUrl}" target="_blank" rel="noopener noreferrer" class="ledger-external-link" style="color: #f59e0b; text-decoration: underline;" title="${externalFormUrl}">🔗 External: ${externalDisplay}</a>`
+                : '';
+
+            const resultElement = resultDisplay
+                ? `<a href="${resultUrl}" target="_blank" rel="noopener noreferrer" class="ledger-result-link" style="color: #34d399; text-decoration: underline;" title="${resultUrl}">🏁 Result: ${resultDisplay}</a>`
+                : '';
+
+            // Structured state badges
+            const formDetStatus = rec.formDetectionStatus || (formUrl ? 'FOUND' : 'NOT_FOUND');
+            const autofillStatus = rec.autofillStatus || 'N_A';
+            const submissionStatus = rec.submissionStatus || rec.status || 'UNKNOWN';
+            const captchaStatus = rec.captchaStatus || 'NONE';
+
+            const badgePill = (label, bg, color) => `<span style="background:${bg};color:${color};font-size:9px;font-weight:600;padding:1px 5px;border-radius:4px;letter-spacing:0.3px;">${label}</span>`;
+
+            const formPill = formDetStatus === 'FOUND' ? badgePill('FORM: FOUND', '#065f46', '#6ee7b7')
+                : (formDetStatus === 'EXTERNAL_WIDGET' ? badgePill('FORM: EXTERNAL', '#78350f', '#fde68a') : badgePill('FORM: NOT_FOUND', '#334155', '#94a3b8'));
+
+            const autoPill = autofillStatus === 'SUCCESS' ? badgePill('AUTOFILL: SUCCESS', '#065f46', '#6ee7b7')
+                : (autofillStatus === 'PARTIAL' ? badgePill('AUTOFILL: PARTIAL', '#78350f', '#fde68a')
+                : (autofillStatus === 'MANUAL_REQUIRED' ? badgePill('AUTOFILL: MANUAL_REQ', '#581c87', '#d8b4fe')
+                : (autofillStatus === 'FAILED' ? badgePill('AUTOFILL: FAILED', '#7f1d1d', '#fca5a5') : badgePill('AUTOFILL: N/A', '#334155', '#94a3b8'))));
+
+            const subPill = submissionStatus === 'CONFIRMED_SUCCESS' ? badgePill('SUB: SUCCESS', '#065f46', '#6ee7b7')
+                : (submissionStatus === 'OWNER_MANUAL_CONFIRMED' ? badgePill('SUB: OWNER_CONFIRMED', '#047857', '#a7f3d0')
+                : (submissionStatus === 'DELIVERY_UNKNOWN' ? badgePill('SUB: UNKNOWN', '#78350f', '#fde68a')
+                : (submissionStatus.includes('TIMEOUT') ? badgePill('SUB: TIMEOUT', '#713f12', '#fef08a')
+                : (submissionStatus === 'FAILURE' ? badgePill('SUB: FAILED', '#7f1d1d', '#fca5a5') : badgePill(`SUB: ${submissionStatus}`, '#334155', '#94a3b8')))));
+
+            const capPill = captchaStatus === 'VERIFIED' ? badgePill('CAPTCHA: VERIFIED', '#065f46', '#6ee7b7')
+                : (captchaStatus === 'PENDING_OWNER' ? badgePill('CAPTCHA: PENDING', '#78350f', '#fde68a')
+                : (captchaStatus === 'MANUAL_WAIT' ? badgePill('CAPTCHA: MANUAL_WAIT', '#0c4a6e', '#7dd3fc')
+                : (captchaStatus === 'AUTO_FAILED' ? badgePill('CAPTCHA: AUTO_FAIL', '#7f1d1d', '#fca5a5') : badgePill('CAPTCHA: NONE', '#1e293b', '#64748b'))));
 
             const isUnknown = (rec.status === 'DELIVERY_UNKNOWN' || rec.status === 'UNKNOWN' || rec.status === 'PAUSED_UNKNOWN');
             const reconcileHtml = isUnknown && rec.attemptId ? `
@@ -3331,10 +3614,20 @@ async function renderLedgerUI() {
                     </div>
                     <span class="status-badge ${badgeClass}">${badgeLabel}</span>
                 </div>
-                <div class="ledger-item-sublinks" style="display: flex; gap: 8px; font-size: 11px; margin: 3px 0 3px 22px;">
-                    <span style="color: #94a3b8;">Contact:</span>
-                    ${contactElement}
-                    ${rec.emailsFound ? `<span style="color: #4ade80;">📧 ${rec.emailsFound} emails</span>` : ''}
+                <div class="ledger-item-sublinks" style="display: flex; flex-direction: column; gap: 3px; font-size: 11px; margin: 3px 0 3px 22px;">
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        ${contactElement}
+                        ${formElement}
+                        ${externalElement}
+                        ${resultElement}
+                        ${rec.emailsFound ? `<span style="color: #4ade80;">📧 ${rec.emailsFound} emails</span>` : ''}
+                    </div>
+                    <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 2px;">
+                        ${formPill}
+                        ${autoPill}
+                        ${subPill}
+                        ${capPill}
+                    </div>
                 </div>
                 ${reconcileHtml}
                 <div class="ledger-item-meta">

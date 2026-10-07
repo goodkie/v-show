@@ -132,6 +132,101 @@ const LIST_DATA_KEYS = {
     ]
 };
 
+// [R6.9G.8] Authoritative Pauseable Target Deadline Controller
+class TargetDeadlineController {
+    constructor({ attemptId, targetToken, campaignRunId, sessionId }) {
+        this.attemptId = attemptId;
+        this.targetToken = targetToken;
+        this.campaignRunId = campaignRunId;
+        this.sessionId = sessionId;
+        this.totalBudgetMs = 0;
+        this.remainingMs = 0;
+        this.isPaused = false;
+        this.isCancelled = false;
+        this.isExpired = false;
+        this.pauseReason = null;
+        this.timerId = null;
+        this.lastStartOrResumeTime = 0;
+        this.timeoutPromise = null;
+        this._rejectFn = null;
+    }
+
+    start(totalBudgetMs) {
+        this.totalBudgetMs = totalBudgetMs;
+        this.remainingMs = totalBudgetMs;
+        this.isPaused = false;
+        this.isCancelled = false;
+        this.isExpired = false;
+        this.lastStartOrResumeTime = Date.now();
+
+        this.timeoutPromise = new Promise((_, reject) => {
+            this._rejectFn = reject;
+            this._armTimer();
+        });
+        return this.timeoutPromise;
+    }
+
+    _armTimer() {
+        if (this.timerId) {
+            clearTimeout(this.timerId);
+            this.timerId = null;
+        }
+        if (this.isPaused || this.isCancelled || this.isExpired) return;
+
+        this.lastStartOrResumeTime = Date.now();
+        this.timerId = setTimeout(() => {
+            this.isExpired = true;
+            this.remainingMs = 0;
+            if (this._rejectFn) {
+                this._rejectFn(new Error("Local Session Timeout"));
+            }
+        }, this.remainingMs);
+    }
+
+    pause(reason = 'PAUSED') {
+        if (this.isCancelled || this.isExpired) return this.remainingMs;
+        if (this.isPaused) {
+            this.pauseReason = reason;
+            return this.remainingMs;
+        }
+        if (this.timerId) {
+            clearTimeout(this.timerId);
+            this.timerId = null;
+        }
+        const elapsed = Date.now() - this.lastStartOrResumeTime;
+        this.remainingMs = Math.max(0, this.remainingMs - elapsed);
+        this.isPaused = true;
+        this.pauseReason = reason;
+        console.log(`[TARGET_DEADLINE] Paused: reason=${reason} remainingMs=${this.remainingMs}`);
+        return this.remainingMs;
+    }
+
+    resume() {
+        if (!this.isPaused || this.isCancelled || this.isExpired) return;
+        this.isPaused = false;
+        const prevReason = this.pauseReason;
+        this.pauseReason = null;
+        console.log(`[TARGET_DEADLINE] Resumed: wasReason=${prevReason} remainingMs=${this.remainingMs}`);
+        this._armTimer();
+    }
+
+    cancel(reason = 'CANCELLED') {
+        if (this.timerId) {
+            clearTimeout(this.timerId);
+            this.timerId = null;
+        }
+        this.isCancelled = true;
+        this.pauseReason = reason;
+    }
+
+    getRemainingMs() {
+        if (this.isPaused) return this.remainingMs;
+        if (this.isExpired || this.isCancelled) return 0;
+        const elapsed = Date.now() - this.lastStartOrResumeTime;
+        return Math.max(0, this.remainingMs - elapsed);
+    }
+}
+
 // [v1.2.0] Global Campaign State Registry (Ensures availability across all scopes)
 let campaignState = {
     isActive: false,
@@ -143,6 +238,7 @@ let campaignState = {
     delayMs: 12000,
     isPaused: false,
     activeTimeoutId: null,
+    targetDeadlineController: null, // [R6.9G.8] Authoritative pauseable target deadline controller
     currentTabId: null,
     targetTabId: null,
     currentTargetToken: null,
@@ -1582,6 +1678,8 @@ if (typeof global !== 'undefined') {
 
                     // [Priority 1] 2Captcha token solver
                     if ((method === 'api' || method === '2captcha') && solver.config.twoCaptchaKey) {
+                        const twoCapStart = Date.now();
+                        logBg(null, `[CAPTCHA_PROVIDER] provider=2captcha status=REQUEST_START keyConfigured=true epoch=${curEpoch}`, 'info');
                         try {
                             const extra = request.extra || {
                                 body: request.imageData,
@@ -1598,45 +1696,65 @@ if (typeof global !== 'undefined') {
                                 return { success: false, error: 'STALE_RESULT_DROPPED' };
                             }
 
+                            const elapsedMs = Date.now() - twoCapStart;
+                            logBg(null, `[CAPTCHA_PROVIDER] provider=2captcha status=RESPONSE_RECEIVED tokenLength=${token ? token.length : 0} elapsedMs=${elapsedMs}`, 'info');
                             logBg(null, `[Auto CAPTCHA Solver] 2Captcha SUCCESS keyConfigured=true tokenLength=${token ? token.length : 0}`, 'success');
                             return await verifyAndRecordCaptchaSuccess(token, '2captcha');
                         } catch (e2) {
+                            const elapsedMs = Date.now() - twoCapStart;
                             const isWrongKey = e2.message && (e2.message.includes('ERROR_WRONG_USER_KEY') || e2.message.includes('ERROR_KEY_DOES_NOT_EXIST'));
                             if (isWrongKey) {
                                 campaignState.captchaEpochBlockedErrors[curEpoch] = 'ERROR_WRONG_USER_KEY';
                                 logBg(null, '[Auto CAPTCHA Solver] 2Captcha CONFIGURATION FAILURE: ERROR_WRONG_USER_KEY. Cannot substitute another solver silently.', 'error');
+                                logBg(null, `[CAPTCHA_PROVIDER] provider=2captcha status=FAILED errorClass=CONFIGURATION_FAILURE elapsedMs=${elapsedMs} error="${e2.message}"`, 'error');
+                                chrome.runtime.sendMessage({
+                                    action: 'CAPTCHA_PROVIDER_FAILED',
+                                    provider: '2captcha',
+                                    error: `CONFIGURATION_FAILURE: ${e2.message}`,
+                                    attemptId: solveIdentity?.attemptId
+                                }).catch(() => {});
                                 recordTerminalCaptchaFailure(solveIdentity?.attemptId, 'ERROR_WRONG_USER_KEY');
-                                return { success: false, error: e2.message, terminalError: 'ERROR_WRONG_USER_KEY' };
+                                return { success: false, error: e2.message, terminalError: 'ERROR_WRONG_USER_KEY', remainingPaused: true };
                             }
                             const isZeroBal = e2.message && (e2.message.includes('ERROR_ZERO_BALANCE') || e2.message.includes('ZERO_BALANCE'));
                             if (isZeroBal) {
                                 campaignState.captchaEpochBlockedErrors[curEpoch] = 'ERROR_ZERO_BALANCE';
                             }
-                            if (witKey) {
-                                logBg(null, `[Auto CAPTCHA Solver] 2Captcha failed. Handoff to Wit.ai Audio Solver (unverified)`, 'info');
-                                return { success: false, fallback: 'audio_frame_solver', inProgress: true, error: e2.message, message: 'Handoff to autonomous audio solver' };
-                            }
-                            // [R6.9G.7.1] Terminal provider failure must reconcile autoFailure / captchaFailed exactly once
+                            const safeErrClass = isZeroBal ? 'ZERO_BALANCE' : 'PROVIDER_ERROR';
+                            logBg(null, `[CAPTCHA_PROVIDER] provider=2captcha status=FAILED errorClass=${safeErrClass} elapsedMs=${elapsedMs} error="${e2.message}"`, 'error');
+                            chrome.runtime.sendMessage({
+                                action: 'CAPTCHA_PROVIDER_FAILED',
+                                provider: '2captcha',
+                                error: `${safeErrClass}: ${e2.message}`,
+                                attemptId: solveIdentity?.attemptId
+                            }).catch(() => {});
                             recordTerminalCaptchaFailure(solveIdentity?.attemptId, e2.message);
                             return { 
                                 success: false, 
                                 error: e2.message,
+                                safeErrorClass: safeErrClass,
                                 terminalError: isZeroBal ? 'ERROR_ZERO_BALANCE' : null,
-                                settleReason: isZeroBal ? 'CAPTCHA_SOLVER_UNAVAILABLE' : null
+                                settleReason: isZeroBal ? 'CAPTCHA_SOLVER_UNAVAILABLE' : null,
+                                remainingPaused: true
                             };
                         }
                     } else if (method === 'api' || method === '2captcha') {
-                        if (witKey) {
-                            logBg(null, `[Auto CAPTCHA Solver] 2Captcha API Key missing, auto-fallback to Wit.ai Audio Solver`, 'info');
-                        } else {
-                            const errMsg = "2Captcha API Key is missing in Settings.";
-                            logBg(null, `[Auto CAPTCHA Solver] 2Captcha FAILED: ${errMsg}`, 'error');
-                            return { success: false, error: errMsg };
-                        }
+                        const errMsg = "2Captcha API Key is missing in Settings.";
+                        logBg(null, `[CAPTCHA_PROVIDER] provider=2captcha status=FAILED errorClass=CONFIG_ERROR error="${errMsg}"`, 'error');
+                        chrome.runtime.sendMessage({
+                            action: 'CAPTCHA_PROVIDER_FAILED',
+                            provider: '2captcha',
+                            error: errMsg,
+                            attemptId: solveIdentity?.attemptId
+                        }).catch(() => {});
+                        recordTerminalCaptchaFailure(solveIdentity?.attemptId, errMsg);
+                        return { success: false, error: errMsg, remainingPaused: true };
                     }
 
                     // [Priority 2] NopeCHA fast token
                     if (method === 'nopecha' && solver.config.nopeChaKey) {
+                        const nopechaStart = Date.now();
+                        logBg(null, `[CAPTCHA_PROVIDER] provider=nopecha status=REQUEST_START keyConfigured=true epoch=${curEpoch}`, 'info');
                         try {
                             const token = await solver.solveNopeCha(request.sitekey, targetPageUrl, request.type || request.captchaType || 'recaptcha', pollIntervalMs, maxWaitSec);
                             
@@ -1646,63 +1764,42 @@ if (typeof global !== 'undefined') {
                                 return { success: false, error: 'STALE_RESULT_DROPPED' };
                             }
 
+                            const elapsedMs = Date.now() - nopechaStart;
+                            logBg(null, `[CAPTCHA_PROVIDER] provider=nopecha status=RESPONSE_RECEIVED tokenLength=${token ? token.length : 0} elapsedMs=${elapsedMs}`, 'info');
                             logBg(null, `[Auto CAPTCHA Solver] NopeCHA SUCCESS tokenLength=${token ? token.length : 0}`, 'success');
                             return await verifyAndRecordCaptchaSuccess(token, 'nopecha');
                         } catch (enp) {
-                            logBg(null, `[Auto CAPTCHA Solver] NopeCHA FAILED: ${enp.message}`, 'error');
-                            
-                            if (solver.config.twoCaptchaKey) {
-                                logBg(null, `[Auto CAPTCHA Solver] NopeCHA failed. Attempting auto-fallback to 2Captcha...`, 'info');
-                                try {
-                                    const extra = request.extra || {
-                                        body: request.imageData,
-                                        version: request.version,
-                                        action: request.captchaAction,
-                                        enterprise: request.enterprise,
-                                        invisible: request.invisible
-                                    };
-                                    const fbToken = await solver.solve2Captcha(request.sitekey, targetPageUrl, request.type || request.captchaType || 'recaptcha', extra, pollIntervalMs, maxWaitSec);
-                                    return await verifyAndRecordCaptchaSuccess(fbToken, '2captcha');
-                                } catch (e2fb) {
-                                    logBg(null, `[Auto CAPTCHA Solver] 2Captcha Fallback FAILED: ${e2fb.message}`, 'error');
-                                }
-                            }
-
-                            // [R6.9G.7.1] Classify NopeCHA error and reconcile failure counters exactly once
+                            const elapsedMs = Date.now() - nopechaStart;
                             const isNopeChaTimeout = enp.message && enp.message.includes('NopeCHA Timeout');
                             const isNopeChaInvalidReq = enp.message && enp.message.includes('Error (10)');
                             const isNopeChaRateLimit = enp.message && enp.message.includes('Error (11)');
-                            logBg(null, `[Auto CAPTCHA Solver] NopeCHA error classified: ${isNopeChaTimeout ? 'TIMEOUT' : isNopeChaInvalidReq ? 'INVALID_REQUEST' : isNopeChaRateLimit ? 'RATE_LIMIT' : 'PROVIDER_ERROR'} (${enp.message})`, 'warning');
+                            const safeErrClass = isNopeChaTimeout ? 'TIMEOUT' : (isNopeChaInvalidReq ? 'INVALID_REQUEST' : (isNopeChaRateLimit ? 'RATE_LIMIT' : 'PROVIDER_ERROR'));
 
-                            if (witKey) {
-                                logBg(null, `[Auto CAPTCHA Solver] NopeCHA failed. Handoff to Wit.ai Audio Solver (unverified)`, 'info');
-                                return { success: false, fallback: 'audio_frame_solver', inProgress: true, error: enp.message, message: 'Handoff to autonomous audio solver' };
-                            }
+                            logBg(null, `[CAPTCHA_PROVIDER] provider=nopecha status=FAILED errorClass=${safeErrClass} elapsedMs=${elapsedMs} error="${enp.message}"`, 'error');
+                            logBg(null, `[Auto CAPTCHA Solver] NopeCHA FAILED: ${enp.message}`, 'error');
+
+                            // [R6.9G.8 Directive 5] Provider failure remains paused, show safe error in modal, offer Retry / Manual / Skip. Zero silent provider chaining!
+                            chrome.runtime.sendMessage({
+                                action: 'CAPTCHA_PROVIDER_FAILED',
+                                provider: 'nopecha',
+                                error: `${safeErrClass}: ${enp.message}`,
+                                attemptId: solveIdentity?.attemptId
+                            }).catch(() => {});
 
                             recordTerminalCaptchaFailure(solveIdentity?.attemptId, enp.message);
-                            return { success: false, error: enp.message };
+                            return { success: false, error: enp.message, safeErrorClass: safeErrClass, remainingPaused: true };
                         }
                     } else if (method === 'nopecha') {
-                        if (solver.config.twoCaptchaKey) {
-                            logBg(null, `[Auto CAPTCHA Solver] NopeCHA key missing, falling back to 2Captcha`, 'info');
-                            try {
-                                const extra = request.extra || {};
-                                const fbToken = await solver.solve2Captcha(request.sitekey, targetPageUrl, request.type || request.captchaType || 'recaptcha', extra, pollIntervalMs, maxWaitSec);
-                                return await verifyAndRecordCaptchaSuccess(fbToken, '2captcha');
-                            } catch (e2f) {
-                                recordTerminalCaptchaFailure(solveIdentity?.attemptId, e2f.message);
-                                return { success: false, error: e2f.message };
-                            }
-                        } else if (witKey) {
-                            // [R6.9G.7.1] Fix false success: fallback handoff != success
-                            logBg(null, `[Auto CAPTCHA Solver] NopeCHA key missing, falling back to Wit.ai`, 'info');
-                            return { success: false, fallback: 'audio_frame_solver', inProgress: true, message: 'Handoff to autonomous audio solver' };
-                        } else {
-                            const errMsg = "NopeCHA API Key is missing in Settings.";
-                            logBg(null, `[Auto CAPTCHA Solver] NopeCHA FAILED: ${errMsg}`, 'error');
-                            recordTerminalCaptchaFailure(solveIdentity?.attemptId, errMsg);
-                            return { success: false, error: errMsg };
-                        }
+                        const errMsg = "NopeCHA API Key is missing in Settings.";
+                        logBg(null, `[CAPTCHA_PROVIDER] provider=nopecha status=FAILED errorClass=CONFIG_ERROR error="${errMsg}"`, 'error');
+                        chrome.runtime.sendMessage({
+                            action: 'CAPTCHA_PROVIDER_FAILED',
+                            provider: 'nopecha',
+                            error: errMsg,
+                            attemptId: solveIdentity?.attemptId
+                        }).catch(() => {});
+                        recordTerminalCaptchaFailure(solveIdentity?.attemptId, errMsg);
+                        return { success: false, error: errMsg, remainingPaused: true };
                     }
 
                     // [Priority 3] Autonomous Multi-Tier Fallback Chain
@@ -2239,13 +2336,18 @@ case 'OWNER_CAPTCHA_REQUEST':
                     campaignState.captchaLedger.detected++;
                     campaignState.captchaLedger.pendingOwner++;
 
-                    // Pause active timeout/alarm so target timer doesn't expire during owner decision
+                    // Pause target deadline controller!
+                    if (campaignState.targetDeadlineController) {
+                        campaignState.targetDeadlineController.pause('CAPTCHA_PENDING_OWNER');
+                    }
                     if (campaignState.activeTimeoutId) {
                         clearTimeout(campaignState.activeTimeoutId);
                         campaignState.activeTimeoutId = null;
                     }
                     if (chrome.alarms) chrome.alarms.clear(`xpider_timeout_${campaignState.sessionId}`);
 
+                    const remBudgetMs = campaignState.targetDeadlineController ? campaignState.targetDeadlineController.getRemainingMs() : (campaignState.targetTimeoutMs || 180000);
+                    logBg(null, `[CAPTCHA_WAIT] state=CAPTCHA_PENDING_OWNER deadlinePaused=true remainingMs=${remBudgetMs}`, 'info');
                     logBg(null, `[OWNER_CAPTCHA] Detected: type=${captchaType} sitekey=${sitekey}. Timer suspended. Awaiting owner decision.`, 'info');
 
                     // Broadcast to popup for modal display with complete 6-point canonical identity
@@ -2296,6 +2398,11 @@ case 'OWNER_CAPTCHA_REQUEST':
                     if (decision === 'auto') {
                         // [R6.9G.2 Gate 4/5] Auto: transition to CAPTCHA_AUTO_SOLVING and start provider solve
                         campaignState.currentTargetStage = 'CAPTCHA_AUTO_SOLVING';
+                        if (campaignState.targetDeadlineController) {
+                            campaignState.targetDeadlineController.pause('CAPTCHA_AUTO_SOLVING');
+                        }
+                        const remMs = campaignState.targetDeadlineController ? campaignState.targetDeadlineController.getRemainingMs() : 0;
+                        logBg(null, `[CAPTCHA_WAIT] state=CAPTCHA_AUTO_SOLVING deadlinePaused=true remainingMs=${remMs}`, 'info');
                         logBg(null, `[CAPTCHA_DECISION] Owner selected auto solve — proceeding to provider`, 'info');
 
                         const solveReq = Object.assign({}, request, {
@@ -2311,6 +2418,11 @@ case 'OWNER_CAPTCHA_REQUEST':
                     } else if (decision === 'manual') {
                         // [R6.9G.2 Gate 6] Manual: hold timer, wait for verified solve evidence
                         campaignState.currentTargetStage = 'CAPTCHA_MANUAL_WAIT';
+                        if (campaignState.targetDeadlineController) {
+                            campaignState.targetDeadlineController.pause('CAPTCHA_MANUAL_WAIT');
+                        }
+                        const remMs = campaignState.targetDeadlineController ? campaignState.targetDeadlineController.getRemainingMs() : 0;
+                        logBg(null, `[CAPTCHA_WAIT] state=CAPTCHA_MANUAL_WAIT deadlinePaused=true remainingMs=${remMs}`, 'info');
                         logBg(null, `[CAPTCHA_DECISION] Manual mode: timer paused. Waiting for owner solve or skip.`, 'info');
 
                         chrome.tabs.sendMessage(campaignState.currentTabId, {
@@ -2330,6 +2442,9 @@ case 'OWNER_CAPTCHA_REQUEST':
                         campaignState.captchaLedger.manualSkip++;
                         campaignState.currentTargetStage = 'CAPTCHA_SKIPPED';
                         logBg(null, `[CAPTCHA_DECISION] Owner skipped CAPTCHA challenge.`, 'info');
+                        if (campaignState.targetDeadlineController) {
+                            campaignState.targetDeadlineController.resume();
+                        }
                         chrome.tabs.sendMessage(campaignState.currentTabId, {
                             action: 'CAPTCHA_SKIP_DECISION',
                             attemptId: campaignState.currentAttempt?.attemptId,
@@ -2376,13 +2491,10 @@ case 'OWNER_CAPTCHA_REQUEST':
                         campaignState.currentTargetStage = 'CAPTCHA';
                         broadcastCounters();
 
-                        // Restore target timeout
-                        const remainingMs = campaignState.targetTimeoutMs || 180000;
-                        campaignState.activeTimeoutId = setTimeout(() => {
-                            if (campaignState.currentAttempt?.attemptId === attemptId) {
-                                logBg(null, `[CAPTCHA_DECISION] Target timeout after manual-solve.`, 'warning');
-                            }
-                        }, remainingMs);
+                        // [R6.9G.8] Resume deadline controller with exact remaining budget
+                        if (campaignState.targetDeadlineController) {
+                            campaignState.targetDeadlineController.resume();
+                        }
 
                         sendResponse({ success: true, status: 'MANUAL_SUCCESS_RECORDED' });
                     } else {
@@ -2410,9 +2522,162 @@ case 'OWNER_CAPTCHA_REQUEST':
                         campaignState.captchaLedger.autoSuccess++;
                         campaignState.counters.captchaSolved = (campaignState.counters.captchaSolved || 0) + 1;
                         broadcastCounters();
+
+                        // [R6.9G.8] Resume deadline controller with exact remaining budget
+                        if (campaignState.targetDeadlineController) {
+                            campaignState.targetDeadlineController.resume();
+                        }
                     }
                     sendResponse({ success: true });
                 } catch(e) {
+                    sendResponse({ success: false, error: e.message });
+                }
+            })();
+            return true;
+
+        // [R6.9G.8] Form Manual Assist Request (Triggered by Content Script)
+        case 'FORM_MANUAL_ASSIST_REQUEST':
+            (async () => {
+                try {
+                    const { attemptId, sourceUrl, contactPageUrl, formPageUrl, externalFormUrl, reason, unresolvedFields } = request;
+                    campaignState.currentTargetStage = 'FORM_MANUAL_ASSIST_PENDING_OWNER';
+
+                    // Pause target deadline controller!
+                    if (campaignState.targetDeadlineController) {
+                        campaignState.targetDeadlineController.pause('FORM_MANUAL_ASSIST_PENDING_OWNER');
+                    }
+                    if (campaignState.activeTimeoutId) {
+                        clearTimeout(campaignState.activeTimeoutId);
+                        campaignState.activeTimeoutId = null;
+                    }
+                    if (chrome.alarms) chrome.alarms.clear(`xpider_timeout_${campaignState.sessionId}`);
+
+                    logBg(null, `[MANUAL_ASSIST] state=FORM_MANUAL_ASSIST_PENDING_OWNER reason=${reason} contactPageUrl=${contactPageUrl} formPageUrl=${formPageUrl} externalFormUrl=${externalFormUrl || 'none'}`, 'warning');
+
+                    // Update HistoryStore attempt with externalFormUrl and structured statuses
+                    try {
+                        const hs = await getHistoryStoreInstance();
+                        const curAttemptId = attemptId || campaignState.currentAttempt?.attemptId;
+                        if (curAttemptId && hs) {
+                            await hs.updateAttemptContact(curAttemptId, {
+                                contactPageUrl: contactPageUrl,
+                                formPageUrl: formPageUrl,
+                                externalFormUrl: externalFormUrl || null,
+                                formDetectionStatus: externalFormUrl ? 'EXTERNAL_WIDGET' : (reason === 'FORM_NOT_ACCESSIBLE' ? 'NOT_FOUND' : 'FOUND'),
+                                autofillStatus: reason === 'AUTOFILL_PARTIAL' ? 'PARTIAL' : (reason === 'REQUIRED_FIELDS_UNRESOLVED' ? 'PARTIAL' : 'MANUAL_REQUIRED'),
+                                captchaStatus: campaignState.currentTargetStage?.includes('CAPTCHA') ? 'PENDING_OWNER' : 'NONE'
+                            });
+                            await hs.persist();
+                        }
+                    } catch (_) {}
+
+                    // Broadcast to popup
+                    chrome.runtime.sendMessage({
+                        action: 'SHOW_MANUAL_FORM_ASSIST_MODAL',
+                        attemptId: attemptId || campaignState.currentAttempt?.attemptId,
+                        targetToken: campaignState.currentTargetToken,
+                        campaignRunId: campaignState.campaignRunId,
+                        sessionId: campaignState.sessionId,
+                        sourceUrl: sourceUrl || campaignState.currentAttempt?.url || '',
+                        contactPageUrl: contactPageUrl || '',
+                        formPageUrl: formPageUrl || '',
+                        externalFormUrl: externalFormUrl || '',
+                        reason: reason || 'MANUAL_ASSIST_REQUIRED',
+                        unresolvedFields: unresolvedFields || [],
+                        template: campaignState.template || {}
+                    }).catch(() => {});
+
+                    sendResponse({ success: true, status: 'FORM_MANUAL_ASSIST_PENDING' });
+                } catch (e) {
+                    logBg(null, `[MANUAL_ASSIST] Error: ${e.message}`, 'error');
+                    sendResponse({ success: false, error: e.message });
+                }
+            })();
+            return true;
+
+        // [R6.9G.8] Form Manual Assist Decision (From Popup Owner Action)
+        case 'FORM_MANUAL_ASSIST_DECISION':
+            (async () => {
+                try {
+                    const { decision, attemptId, reason } = request;
+                    const curAttemptId = attemptId || campaignState.currentAttempt?.attemptId;
+                    logBg(null, `[MANUAL_ASSIST_DECISION] Owner chose: ${decision} for attemptId=${curAttemptId}`, 'info');
+
+                    if (decision === 'retry') {
+                        campaignState.currentTargetStage = 'IN_FLIGHT';
+                        if (campaignState.targetDeadlineController) {
+                            campaignState.targetDeadlineController.resume();
+                        }
+                        if (campaignState.currentTabId) {
+                            chrome.tabs.sendMessage(campaignState.currentTabId, {
+                                action: 'RETRY_DETECTION',
+                                attemptId: curAttemptId
+                            }).catch(() => {});
+                        }
+                        sendResponse({ success: true, status: 'RETRYING' });
+                    } else if (decision === 'manual_fill') {
+                        campaignState.currentTargetStage = 'FORM_MANUAL_WAIT';
+                        if (campaignState.targetDeadlineController) {
+                            campaignState.targetDeadlineController.pause('FORM_MANUAL_WAIT');
+                        }
+                        logBg(null, `[MANUAL_ASSIST] state=FORM_MANUAL_WAIT deadlinePaused=true`, 'info');
+                        sendResponse({ success: true, status: 'MANUAL_WAIT' });
+                    } else if (decision === 'submitted_manually') {
+                        campaignState.currentTargetStage = 'SUBMISSION_CONFIRMED';
+                        if (campaignState.targetDeadlineController) {
+                            campaignState.targetDeadlineController.cancel('OWNER_MANUAL_CONFIRMED');
+                        }
+                        try {
+                            const hs = await getHistoryStoreInstance();
+                            if (curAttemptId && hs) {
+                                await hs.settleCanonicalAttempt(curAttemptId, 'CONFIRMED_SUCCESS', 'OWNER_MANUAL_CONFIRMED', {}, {
+                                    campaignRunId: campaignState.campaignRunId,
+                                    ownerManualConfirmed: true,
+                                    submissionStatus: 'OWNER_MANUAL_CONFIRMED',
+                                    autofillStatus: 'MANUAL_REQUIRED'
+                                });
+                                await hs.persist();
+                                await syncCampaignCountersFromLedger(hs);
+                            }
+                        } catch (hsErr) {
+                            logBg(null, `[MANUAL_ASSIST] Failed to settle manual confirmation: ${hsErr.message}`, 'error');
+                        }
+                        if (campaignState.currentTabId) {
+                            chrome.tabs.sendMessage(campaignState.currentTabId, {
+                                action: 'CANCEL_MANUAL_ASSIST'
+                            }).catch(() => {});
+                        }
+                        sendResponse({ success: true, status: 'CONFIRMED_SUCCESS' });
+                    } else if (decision === 'skip') {
+                        campaignState.currentTargetStage = 'SKIPPED';
+                        if (campaignState.targetDeadlineController) {
+                            campaignState.targetDeadlineController.cancel('FORM_MANUAL_ASSIST_SKIPPED');
+                        }
+                        try {
+                            const hs = await getHistoryStoreInstance();
+                            if (curAttemptId && hs) {
+                                await hs.settleCanonicalAttempt(curAttemptId, 'SKIPPED', 'FORM_MANUAL_ASSIST_SKIPPED', {}, {
+                                    campaignRunId: campaignState.campaignRunId,
+                                    submissionStatus: 'SKIPPED',
+                                    autofillStatus: 'MANUAL_REQUIRED'
+                                });
+                                await hs.persist();
+                                await syncCampaignCountersFromLedger(hs);
+                            }
+                        } catch (hsErr) {
+                            logBg(null, `[MANUAL_ASSIST] Failed to settle skip: ${hsErr.message}`, 'error');
+                        }
+                        if (campaignState.currentTabId) {
+                            chrome.tabs.sendMessage(campaignState.currentTabId, {
+                                action: 'CANCEL_MANUAL_ASSIST'
+                            }).catch(() => {});
+                        }
+                        sendResponse({ success: true, status: 'SKIPPED' });
+                    } else {
+                        sendResponse({ success: false, error: `Unknown decision: ${decision}` });
+                    }
+                } catch (e) {
+                    logBg(null, `[MANUAL_ASSIST_DECISION] Error: ${e.message}`, 'error');
                     sendResponse({ success: false, error: e.message });
                 }
             })();
@@ -3050,6 +3315,11 @@ async function pauseCampaignOrchestrator(saveCheckpoint = true) {
         clearTimeout(campaignState.activeTimeoutId);
         campaignState.activeTimeoutId = null;
     }
+    if (campaignState.targetDeadlineController) {
+        campaignState.targetDeadlineController.cancel('PAUSE');
+        campaignState.targetDeadlineController = null;
+    }
+    chrome.runtime.sendMessage({ action: 'CLOSE_ALL_MODALS' }).catch(() => {});
     if (chrome.alarms) {
         chrome.alarms.clear("xpider_next_target");
         chrome.alarms.clear("xpider_next_target_failsafe");
@@ -3536,10 +3806,15 @@ async function processNextCampaignTarget(loopSessionId, loopGeneration) {
                 ? 5000
                 : (campaignState.targetTimeoutMs || 180000);
 
-            let timeoutTimerId = null;
-            const timeoutPromise = new Promise((_, reject) => {
-                timeoutTimerId = setTimeout(() => reject(new Error("Local Session Timeout")), targetTimeoutMs);
+            // [R6.9G.8] Authoritative pauseable target deadline controller
+            const deadlineController = new TargetDeadlineController({
+                attemptId: campaignState.currentAttempt?.attemptId,
+                targetToken: campaignState.currentTargetToken,
+                campaignRunId: campaignState.campaignRunId,
+                sessionId: currentSession
             });
+            campaignState.targetDeadlineController = deadlineController;
+            const timeoutPromise = deadlineController.start(targetTimeoutMs);
 
             orchestrationSettled = false;
             const orchestrationPromise = (async () => {
@@ -3583,7 +3858,8 @@ async function processNextCampaignTarget(loopSessionId, loopGeneration) {
                 const currentStage = campaignState.currentTargetStage || '';
                 const postSubmitStages = ['SUBMIT_TRIGGERED', 'VERIFYING', 'SUBMITTING'];
                 const isPostSubmitTimeout = postSubmitStages.includes(currentStage);
-                const isCaptchaPauseStage = currentStage === 'CAPTCHA_PENDING_OWNER';
+                const isCaptchaPauseStage = currentStage === 'CAPTCHA_PENDING_OWNER' || currentStage === 'CAPTCHA_AUTO_SOLVING' || currentStage === 'CAPTCHA_MANUAL_WAIT';
+                const isManualAssistPauseStage = currentStage === 'FORM_MANUAL_ASSIST_PENDING_OWNER' || currentStage === 'FORM_MANUAL_WAIT';
 
                 let timeoutStatus, timeoutReason;
                 if (isPostSubmitTimeout) {
@@ -3594,6 +3870,10 @@ async function processNextCampaignTarget(loopSessionId, loopGeneration) {
                     timeoutStatus = 'FAILURE';
                     timeoutReason = 'CAPTCHA_OWNER_TIMEOUT';
                     console.log(`[TIMEOUT_CLASS] stage=${currentStage} => CAPTCHA_OWNER_TIMEOUT`);
+                } else if (isManualAssistPauseStage) {
+                    timeoutStatus = 'FAILURE';
+                    timeoutReason = 'FORM_MANUAL_ASSIST_TIMEOUT';
+                    console.log(`[TIMEOUT_CLASS] stage=${currentStage} => FORM_MANUAL_ASSIST_TIMEOUT`);
                 } else if (isLocalTimeout) {
                     timeoutStatus = 'TIMEOUT_LOCAL';
                     timeoutReason = 'TIMEOUT_LOCAL';
@@ -3628,6 +3908,7 @@ async function processNextCampaignTarget(loopSessionId, loopGeneration) {
                             targetToken: targetToken
                         });
                         await hs.persist();
+                        logBg(null, `[FINAL_CANONICAL] status=${timeoutStatus} reason=${timeoutReason} attemptId=${attemptId}`, "warning");
                         logBg(null, `[TARGET][${targetHost}] FINAL status=${timeoutStatus} reason=${timeoutReason}`, "warning");
 
                         if (!campaignState.outcomeHistogram) campaignState.outcomeHistogram = {};
@@ -3640,7 +3921,8 @@ async function processNextCampaignTarget(loopSessionId, loopGeneration) {
                 }
                 return { success: false, error: err.message, reasonCode: timeoutReason };
             }).finally(async () => {
-                if (timeoutTimerId) clearTimeout(timeoutTimerId);
+                if (deadlineController) deadlineController.cancel();
+                campaignState.targetDeadlineController = null;
                 if (chrome.alarms) chrome.alarms.clear(`xpider_timeout_${currentSession}`);
 
                 // Quiescence wait in finally
@@ -4452,6 +4734,16 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
 
         if (isFinished) return;
         isFinished = true;
+
+        if (abortSignal && abortSignal.aborted) {
+            logBg(tabId, `[ORCHESTRATION_ABORTED] abortSignal was triggered externally (${abortSignal.reason || 'ABORTED'}). Delegating terminal settlement to outer target lifecycle.`, "info");
+            if (chrome.alarms) chrome.alarms.clear(`xpider_watchdog_${tabId}_${currentSession}`);
+            if (injectionTimer) clearTimeout(injectionTimer);
+            if (pollerTimer) clearInterval(pollerTimer);
+            safeTabs.onUpdated.removeListener(navWatcher);
+            if (resolveRef) resolveRef({ success: false, error: abortSignal.reason || 'ABORTED', reasonCode: abortSignal.reason || 'ABORTED' });
+            return;
+        }
         
         if (campaignState.currentTabId === tabId) {
             campaignState.currentTabId = null;
@@ -4552,6 +4844,7 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
             terminalStatus = 'FAILURE';
         }
 
+        logBg(tabId, `[FINAL_CANONICAL] status=${terminalStatus} reason=${finalReason} attemptId=${_attemptId}`, terminalStatus === 'CONFIRMED_SUCCESS' ? "success" : (terminalStatus === 'SKIPPED' ? "info" : "warning"));
         logBg(tabId, `[TARGET][${hostName}] FINAL status=${terminalStatus} reason=${finalReason}`, terminalStatus === 'CONFIRMED_SUCCESS' ? "success" : (terminalStatus === 'SKIPPED' ? "info" : "warning"));
 
         const evidence = res?.metadata?.outcomeEvidence || {};
@@ -4581,6 +4874,12 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
                     selectedCandidateUrl: finalCandidateUrl,
                     formPageUrl: finalFormUrl,
                     committedFormUrl: finalFormUrl,
+                    externalFormUrl: res?.metadata?.externalFormUrl || null,
+                    formDetectionStatus: res?.metadata?.formDetectionStatus || (finalFormUrl ? 'FOUND' : 'NOT_FOUND'),
+                    autofillStatus: res?.metadata?.autofillStatus || (isSuccess ? 'SUCCESS' : 'N_A'),
+                    submissionStatus: isSuccess ? 'CONFIRMED_SUCCESS' : terminalStatus,
+                    captchaStatus: campaignState.currentTargetStage?.includes('CAPTCHA') ? 'PENDING_OWNER' : 'NONE',
+                    ownerManualConfirmed: !!res?.metadata?.ownerManualConfirmed,
                     emailsFound: (res && res.emailsFound !== undefined) ? res.emailsFound : 0
                 });
                 const rec = hs.attempts.find(a => a.attemptId === _attemptId);

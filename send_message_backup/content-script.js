@@ -878,8 +878,50 @@
                 }
             }
 
-            logDev(`[FORM_SCAN] bodyCandidates=${formScanBodyCandidates} forms=${formScanForms} logicalContainers=${formScanLogical}`, "info");
+            // Check for cross-origin iframes or external widget forms (PushPress, etc.)
+            let crossOriginFramesCount = 0;
+            let externalFormCandidatesCount = 0;
+            let detectedExternalFormUrl = null;
+            try {
+                const iframes = Array.from(document.querySelectorAll('iframe'));
+                crossOriginFramesCount = iframes.length;
+                const WIDGET_KEYWORDS = [
+                    'contact', 'form', 'hubspot', 'jotform', 'typeform', 'wufoo', 'inquiry',
+                    'message', 'pushpress', 'grow', 'lead', 'cognito', 'forms.gle', 'tally',
+                    'google.com/forms', 'activecampaign', 'marketo', 'pardot', 'calendly', 'chilipiper'
+                ];
+                for (const ifr of iframes) {
+                    const rawSrc = (ifr.src || ifr.getAttribute('src') || '').trim();
+                    const srcLower = rawSrc.toLowerCase();
+                    const title = (ifr.title || ifr.getAttribute('title') || '').toLowerCase();
+                    const idCls = `${ifr.id || ''} ${ifr.className || ''}`.toLowerCase();
+                    const isWidget = WIDGET_KEYWORDS.some(k => srcLower.includes(k) || title.includes(k) || idCls.includes(k));
+                    const isCrossOriginOnContact = isContactPageUrl && rawSrc.startsWith('http') && !rawSrc.startsWith(window.location.origin);
+                    if (isWidget || isCrossOriginOnContact) {
+                        externalFormCandidatesCount++;
+                        if (!detectedExternalFormUrl) {
+                            detectedExternalFormUrl = rawSrc;
+                        }
+                    }
+                }
+            } catch (_) {}
+
+            logDev(`[FORM_SCAN] forms=${formScanForms} logicalContainers=${formScanLogical} crossOriginFrames=${crossOriginFramesCount} externalFormCandidates=${externalFormCandidatesCount}`, "info");
             logDev(`[PAGE_CLASS] ${pageClass}`, "info");
+
+            // [R6.9G.8] If no accessible native form is found, check for external widget or contact page boundary -> trigger Manual Assist!
+            if (!currentForm && (detectedExternalFormUrl || isContactPageUrl)) {
+                const assistReason = detectedExternalFormUrl ? 'EXTERNAL_CROSS_ORIGIN_FORM' : 'FORM_NOT_ACCESSIBLE';
+                logDev(`[FORM_BOUNDARY] type=${detectedExternalFormUrl ? 'CROSS_ORIGIN_IFRAME' : 'CONTACT_PAGE_NO_DOM_FORM'} formPageUrl=${window.location.href} externalFormUrl=${detectedExternalFormUrl || 'none'}`, "info");
+                logDev(`[FORM_GATE] eligible=false reason=${assistReason}`, "info");
+                if (window.__xpider_releaseProcessingLock) window.__xpider_releaseProcessingLock(currentUrl);
+
+                const assistHandled = await requestManualFormAssist(assistReason, detectedExternalFormUrl || '', []);
+                if (assistHandled) {
+                    return analyzePageAndExecute(template, speed, recursionDebt);
+                }
+                return;
+            }
 
             // [R6.3 A3] CONTACT_INFO_ONLY: do NOT acquire submit lock; continue discovery
             if (pageClass === 'CONTACT_INFO_ONLY' && !currentForm) {
@@ -1266,6 +1308,43 @@
         });
     }
 
+    // [R6.9G.8] Manual Form Assist: Sticky Owner-Gated Pause
+    async function requestManualFormAssist(reason, externalFormUrl = '', unresolvedFields = []) {
+        logDev(`[MANUAL_ASSIST] state=FORM_MANUAL_ASSIST_PENDING_OWNER reason=${reason} contactPageUrl=${window.location.href} formPageUrl=${window.location.href} externalFormUrl=${externalFormUrl || 'none'}`, "warning");
+        logDev(`⚠️ [ManualAssist] Pausing automation for Owner assist: ${reason}`, "info");
+
+        const sendFn = window.__xpider_sendExecutionMessage || chrome.runtime.sendMessage;
+        const attemptId = (window.__xpider_exec_identity && window.__xpider_exec_identity.attemptId) || null;
+
+        try {
+            sendFn({
+                action: 'FORM_MANUAL_ASSIST_REQUEST',
+                attemptId: attemptId,
+                sourceUrl: window.__xpider_running_url || window.location.href,
+                contactPageUrl: window.location.href,
+                formPageUrl: window.location.href,
+                externalFormUrl: externalFormUrl || '',
+                reason: reason,
+                unresolvedFields: unresolvedFields || []
+            });
+        } catch (e) {
+            logDev(`❌ [ManualAssist] Failed to signal background: ${e.message}`, "error");
+        }
+
+        return new Promise((resolve) => {
+            const messageHandler = (msg) => {
+                if (msg.action === 'ABORT_TARGET' || msg.action === 'CANCEL_MANUAL_ASSIST') {
+                    chrome.runtime.onMessage.removeListener(messageHandler);
+                    resolve(false);
+                } else if (msg.action === 'RESUME_AUTOFILL' || msg.action === 'RETRY_DETECTION') {
+                    chrome.runtime.onMessage.removeListener(messageHandler);
+                    resolve(true);
+                }
+            };
+            chrome.runtime.onMessage.addListener(messageHandler);
+        });
+    }
+
     async function fillAndSubmit(form, template, speed) {
         try {
             _isCaptchaSolved = false;
@@ -1308,9 +1387,21 @@
             startActiveEmptyFieldSweeper(form, template);
 
             const result = await fillFormIntelligent(form, template, speed);
-            if (!result || !result.filledAny) {
+            const detectedCount = result?.fieldsDetected || 0;
+            const filledCount = result?.fieldsFilled || (result?.filledAny ? 1 : 0);
+            const unresolvedCount = Math.max(0, detectedCount - filledCount);
+            const isAutofillSuccess = !!(result && result.filledAny && unresolvedCount === 0);
+            const autofillStatus = isAutofillSuccess ? 'SUCCESS' : (result?.filledAny ? 'PARTIAL' : 'FAILED');
+            logDev(`[AUTOFILL_RESULT] status=${autofillStatus} fieldsDetected=${detectedCount} fieldsFilled=${filledCount} unresolved=${unresolvedCount} reason=${result?.reasonCode || 'ok'}`, "info");
+
+            if (!result || !result.filledAny || autofillStatus === 'PARTIAL') {
                 const failReason = (result && result.reasonCode) || "Zero-mapping: No usable fields found.";
-                throw new Error(failReason);
+                logDev(`⚠️ [Engine] Autofill ${autofillStatus}: requesting manual form assist.`, "warning");
+                const assistHandled = await requestManualFormAssist('AUTOFILL_PARTIAL', '', ['message_body', 'name', 'email']);
+                if (assistHandled) {
+                    return fillAndSubmit(form, template, speed);
+                }
+                return false;
             }
             logDev("[FILL] messageBodyFilled=true", "success");
             
@@ -1352,6 +1443,11 @@
                     // [R6.1 FINAL REQUIRED AUDIT - HARD GATE]
                     if (!auditResult.pass) {
                         logDev(`❌ [FinalAudit] Submission blocked by Hard Gate: ${auditResult.reason}`, "error");
+                        const unres = auditResult.unresolvedFields || [auditResult.reason];
+                        const assistHandled = await requestManualFormAssist('REQUIRED_FIELDS_UNRESOLVED', '', unres);
+                        if (assistHandled) {
+                            return fillAndSubmit(form, template, speed);
+                        }
                         finishCampaign(false, "FINAL_FORM_COMPLETION_FAILED", auditResult.reason, { audit: auditResult });
                         return false;
                     }
