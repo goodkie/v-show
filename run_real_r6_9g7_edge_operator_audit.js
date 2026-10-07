@@ -414,82 +414,79 @@ rec('\n=== [GATE A: TARGET-PUMP ATOMIC SLOT ACQUISITION CONCURRENCY RACE] ===');
     // ─────────────────────────────────────────────────────────────────────────────
     rec('\n=== [GATE C: STICKY CAPTCHA_PENDING_OWNER VIA REAL RUNTIME MESSAGING] ===');
 
-    const stickyTestResult = await evalSw(`(async () => {
-      const savedAttempt = campaignState.currentAttempt;
-      const savedStage = campaignState.currentTargetStage;
-      const savedToken = campaignState.currentTargetToken;
-      const savedRunId = campaignState.campaignRunId;
-      const savedSessionId = campaignState.sessionId;
-      const savedEpoch = campaignState.captchaEpoch;
-      const savedTabId = campaignState.currentTabId;
-      const savedIsActive = campaignState.isActive;
-      const savedIsPaused = campaignState.isPaused;
+    const gateCRunId = 'run_gate_c_' + Date.now();
+    const initCResult = await evalSw(`(async () => {
+      const tabs = await chrome.tabs.query({ active: true });
+      const dummyTabId = tabs[0]?.id || 1;
 
-      try {
-        const tabs = await chrome.tabs.query({ active: true });
-        const dummyTabId = tabs[0]?.id || 1;
+      campaignState.isActive = true;
+      campaignState.isPaused = false;
+      campaignState.campaignRunId = '${gateCRunId}';
+      campaignState.sessionId = 300;
+      campaignState.captchaEpoch = 1;
+      campaignState.currentTabId = dummyTabId;
+      campaignState.currentTargetToken = 'tok_sticky_c';
+      campaignState.currentTargetStage = 'CAPTCHA_PENDING_OWNER';
+      campaignState.currentAttempt = {
+        attemptId: 'att_sticky_c',
+        targetToken: 'tok_sticky_c',
+        status: 'PREPARING',
+        url: 'http://127.0.0.1:${PORT}/captcha-inquiry.html'
+      };
 
-        campaignState.isActive = true;
-        campaignState.isPaused = false;
-        campaignState.campaignRunId = 'run_gate_c_' + Date.now();
-        campaignState.sessionId = 300;
-        campaignState.captchaEpoch = 1;
-        campaignState.currentTabId = dummyTabId;
-        campaignState.currentTargetToken = 'tok_sticky_c';
-        campaignState.currentTargetStage = 'CAPTCHA_PENDING_OWNER';
-        campaignState.currentAttempt = {
-          attemptId: 'att_sticky_c',
-          targetToken: 'tok_sticky_c',
-          status: 'PREPARING',
-          url: 'http://127.0.0.1:${PORT}/captcha-inquiry.html'
-        };
-
-        // Dispatch real STAGE_PROGRESSION runtime messages
-        const stages = ['CAPTCHA', 'FILLING', 'ACTIVE_FORM', 'FORM_PREP'];
-        for (const s of stages) {
-          await chrome.runtime.sendMessage({
-            action: 'STAGE_PROGRESSION',
-            stage: s,
-            attemptId: 'att_sticky_c',
-            targetToken: 'tok_sticky_c',
-            campaignRunId: campaignState.campaignRunId,
-            sessionId: 300,
-            tabId: dummyTabId,
-            captchaEpoch: 1
-          });
-        }
-
-        const stageAfterInterleave = campaignState.currentTargetStage;
-
-        // Dispatch real CAPTCHA_OWNER_DECISION runtime message
-        const decisionResponse = await chrome.runtime.sendMessage({
-          action: 'CAPTCHA_OWNER_DECISION',
-          decision: 'manual',
-          attemptId: 'att_sticky_c',
-          targetToken: 'tok_sticky_c',
-          campaignRunId: campaignState.campaignRunId,
-          sessionId: 300,
-          tabId: dummyTabId,
-          captchaEpoch: 1
-        });
-
-        return {
-          stageAfterInterleave,
-          decisionAccepted: decisionResponse?.success === true,
-          finalStage: campaignState.currentTargetStage
-        };
-      } finally {
-        campaignState.currentAttempt = savedAttempt;
-        campaignState.currentTargetStage = savedStage;
-        campaignState.currentTargetToken = savedToken;
-        campaignState.campaignRunId = savedRunId;
-        campaignState.sessionId = savedSessionId;
-        campaignState.captchaEpoch = savedEpoch;
-        campaignState.currentTabId = savedTabId;
-        campaignState.isActive = savedIsActive;
-        campaignState.isPaused = savedIsPaused;
-      }
+      return { dummyTabId };
     })()`);
+
+    const dummyTabId = initCResult.dummyTabId;
+
+    // Dispatch real STAGE_PROGRESSION runtime messages from POPUP via Chrome IPC
+    const stages = ['CAPTCHA', 'FILLING', 'ACTIVE_FORM', 'FORM_PREP'];
+    for (const s of stages) {
+      await evalPop(`new Promise(resolve => {
+        chrome.runtime.sendMessage({
+          action: 'STAGE_PROGRESSION',
+          stage: '${s}',
+          attemptId: 'att_sticky_c',
+          targetToken: 'tok_sticky_c',
+          campaignRunId: '${gateCRunId}',
+          sessionId: 300,
+          tabId: ${dummyTabId},
+          captchaEpoch: 1
+        }, resolve);
+      })`);
+    }
+
+    const stageAfterInterleave = await evalSw('campaignState.currentTargetStage');
+
+    // Dispatch real CAPTCHA_OWNER_DECISION runtime message from POPUP via Chrome IPC
+    const decisionResponse = await evalPop(`new Promise(resolve => {
+      chrome.runtime.sendMessage({
+        action: 'CAPTCHA_OWNER_DECISION',
+        decision: 'manual',
+        attemptId: 'att_sticky_c',
+        targetToken: 'tok_sticky_c',
+        campaignRunId: '${gateCRunId}',
+        sessionId: 300,
+        tabId: ${dummyTabId},
+        captchaEpoch: 1
+      }, resolve);
+    })`);
+
+    const finalStage = await evalSw('campaignState.currentTargetStage');
+
+    // Cleanup Gate C SW state
+    await evalSw(`(() => {
+      campaignState.isActive = false;
+      campaignState.currentTargetStage = null;
+      campaignState.currentTargetToken = null;
+      campaignState.currentAttempt = null;
+    })()`);
+
+    const stickyTestResult = {
+      stageAfterInterleave,
+      decisionAccepted: decisionResponse?.success === true,
+      finalStage
+    };
 
     rec(`[STICKY_TEST_RESULT] ${JSON.stringify(stickyTestResult)}`);
 
