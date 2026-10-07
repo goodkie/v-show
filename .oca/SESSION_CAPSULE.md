@@ -7,7 +7,7 @@ WORKSPACE_ROOT: c:\Users\server4\ai\v-show-stage2-fast-track
 AUTHORITY_SOURCE: https://github.com/goodkie/v-show/issues/4
 ACTIVE_BRANCH: fix/panorama-capture-rotation-repair-round119
 STATE_REV: 1791359600
-AUTHORITY_CURSOR: 6033528966
+AUTHORITY_CURSOR: 6033874989
 LAST_ACCEPTED_GATE: VIEWER ACCEPTANCE: FAIL / RELEASE: HOLD (360 capture: PASS, Preview display: PASS, Preview landscape: FAIL, Official viewer: FAIL)
 REMOTE_HEAD: 5148fb347db1d3246ebcfd5dc8ea81da0d5926ec
 ROLLBACK_ANCHOR: restore/round123-p0-baseline-20261005 at 4181d146c82302e1a3ad49d793836371ff8217bb
