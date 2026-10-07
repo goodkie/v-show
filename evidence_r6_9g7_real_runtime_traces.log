@@ -1,0 +1,139 @@
+[2026-10-07T08:50:07.210Z] [HTTP_SERVER] http://127.0.0.1:8979
+[2026-10-07T08:50:07.212Z] [UNPACKED_EXTENSION] E:\vivpr\ai\extension-form-sender\send_message_backup\build\extension
+[2026-10-07T08:50:07.315Z] [GIT_HEAD] 2e65367c2dba095e7cf5ad351bca411dbe77ae9f
+[2026-10-07T08:50:07.425Z] [GIT_DIRTY_RUNTIME] CLEAN
+[2026-10-07T08:50:07.425Z] [BROWSER_LAUNCH] C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe --remote-debugging-port=9231
+[2026-10-07T08:50:11.968Z] [CDP_CONNECT] Edg/154.0.4258.53
+[2026-10-07T08:50:11.974Z] [EXT_DISCOVERY] extId=pjohcallgmjmbfckiaogjokelhobfceg
+[2026-10-07T08:50:12.036Z] [SW_CONSOLE] [BootStep] solver_instantiation
+[2026-10-07T08:50:12.044Z] [SW_CONSOLE] [X PIDER] Background script initializing (Unified Mode)...
+[2026-10-07T08:50:12.045Z] [SW_CONSOLE] [BootStep] side_panel_config
+[2026-10-07T08:50:12.045Z] [SW_CONSOLE] [BootStep] campaign_state_init
+[2026-10-07T08:50:12.046Z] [SW_CONSOLE] [BootStep] global_functions_defined
+[2026-10-07T08:50:12.046Z] [SW_CONSOLE] [BootStep] worker_online
+[2026-10-07T08:50:12.047Z] [SW_CONSOLE] [BootStep] restoring_campaign_state
+[2026-10-07T08:50:12.047Z] [SW_CONSOLE] [Boot] Initializing campaign state...
+[2026-10-07T08:50:12.048Z] [SW_CONSOLE] [COUNTER_RECONCILE] legacySuccess=0 ledgerSuccess=0 action=LEDGER_WINS
+[2026-10-07T08:50:12.054Z] [SW_CONSOLE] [BootStep] restore_complete
+[2026-10-07T08:50:12.384Z] [SW_CONSOLE] [BG_LOG][tab=none] 📦 [Migration] Safely migrated to v2 (Backup: xpider_backup_v1_1791363012315)
+[2026-10-07T08:50:14.046Z] 
+=== [PROVENANCE & BUILD HANDSHAKE VERIFICATION] ===
+[2026-10-07T08:50:14.048Z] [POP_CONSOLE] [XPIDER] Blacklist loaded with 3333 items.
+[2026-10-07T08:50:14.048Z] [POP_CONSOLE] [POPUP_BOOT] started
+[2026-10-07T08:50:14.048Z] [POP_CONSOLE] [POPUP_BOOT] startHandlerBound=true
+[2026-10-07T08:50:14.048Z] [POP_CONSOLE] [POPUP_BOOT] saveHandlerBound=true
+[2026-10-07T08:50:14.048Z] [POP_CONSOLE] [BUILD_HANDSHAKE] localHead=db15feb4cd86e08774bd0c0e5b4724c0af418e44 backgroundHead=db15feb4cd86e08774bd0c0e5b4724c0af418e44 result=PASS
+[2026-10-07T08:50:14.049Z] [POP_CONSOLE] [POPUP_BOOT] settingsHydrated=true
+[2026-10-07T08:50:14.049Z] [POP_CONSOLE] [LEDGER_STATS] scope=currentGeneration success=0 failed=0 timeout=0 unknown=0
+[2026-10-07T08:50:14.049Z] [POP_CONSOLE] [Popup] Storage migration verified / initialized to v2.
+[2026-10-07T08:50:14.049Z] [POP_CONSOLE] [XPIDER_DIAG] [Engine] Initial handshake synced: active=false, completed=0, success=0, failed=0
+[2026-10-07T08:50:14.049Z] [POP_CONSOLE] [POPUP_BOOT] getStateAck=true
+[2026-10-07T08:50:14.050Z] [POP_CONSOLE] [POPUP_BOOT] ready=true
+[2026-10-07T08:50:14.054Z] [BOOT_HEADS] badge="R6.9G.7 [db15feb4]" popHead=db15feb4cd86e08774bd0c0e5b4724c0af418e44 bgHead=db15feb4cd86e08774bd0c0e5b4724c0af418e44 buildId=R6.9G.7-20261007-ATOMIC-PUMP-QUIESCENT-CAPTCHA
+[2026-10-07T08:50:14.055Z] [SOLVER_CORE_SHA] 01b3d96048ea933403e4599854dcdca28027e7f676aa5077eb6c5eb0582ac1e7
+[2026-10-07T08:50:14.055Z] ✅ PASS: Provenance & Build Handshake verified with R6.9G.7 [db15feb4] and tracked solverCoreSha
+[2026-10-07T08:50:14.055Z] 
+=== [GATE A: TARGET-PUMP ATOMIC SLOT ACQUISITION CONCURRENCY RACE] ===
+[2026-10-07T08:50:14.058Z] [SW_CONSOLE] [RACE_TEST] Dispatching 4 competing concurrent processNextCampaignTarget wakeups...
+[2026-10-07T08:50:14.059Z] [SW_CONSOLE] [SERIALIZED_GATE] Slot acquired atomically. activeTargetInFlight=true activeTargetCount=1 maxConcurrent=1
+[2026-10-07T08:50:14.060Z] [SW_CONSOLE] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedBefore=0
+[2026-10-07T08:50:14.060Z] [SW_CONSOLE] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedAfter=0 result=PASS
+[2026-10-07T08:50:14.061Z] [SW_CONSOLE] [BG_LOG][tab=none] [TARGET 1/3][127.0.0.1] START
+[2026-10-07T08:50:14.063Z] [SW_CONSOLE] [RACE_TEST] Target START: http://127.0.0.1:8979/gate-a-target-1 activeCount=1
+[2026-10-07T08:50:14.675Z] [SW_CONSOLE] [RACE_TEST] Target FINAL: http://127.0.0.1:8979/gate-a-target-1
+[2026-10-07T08:50:14.678Z] [SW_CONSOLE] [SERIALIZED_GATE] Slot released. activeTargetInFlight=false activeTargetCount=0
+[2026-10-07T08:50:14.680Z] [SW_CONSOLE] [BG_LOG][tab=none] Waiting 1000ms before next target...
+[2026-10-07T08:50:14.680Z] [POP_CONSOLE] [HISTORY_SCOPE_REFRESH] trigger=xpider_active_campaign_run_id,xpider_isActive
+[2026-10-07T08:50:14.682Z] [POP_CONSOLE] [LEDGER_STATS] scope=currentRun campaignRunId=none success=0 failed=0 timeout=0 unknown=0
+[2026-10-07T08:50:14.735Z] [SW_CONSOLE] [SERIALIZED_GATE] Slot not granted reason=STALE_GENERATION. Exiting loop.
+[2026-10-07T08:50:14.735Z] [SW_CONSOLE] [BG_LOG][tab=none] Waiting 1000ms before next target...
+[2026-10-07T08:50:14.737Z] [SW_CONSOLE] [SERIALIZED_GATE] Slot not granted reason=STALE_GENERATION. Exiting loop.
+[2026-10-07T08:50:14.741Z] [SW_CONSOLE] [BG_LOG][tab=none] Waiting 1000ms before next target...
+[2026-10-07T08:50:14.742Z] [SW_CONSOLE] [SERIALIZED_GATE] Slot not granted reason=STALE_GENERATION. Exiting loop.
+[2026-10-07T08:50:14.742Z] [SW_CONSOLE] [BG_LOG][tab=none] Waiting 1000ms before next target...
+[2026-10-07T08:50:15.738Z] [SW_CONSOLE] [SERIALIZED_GATE] Slot acquired atomically. activeTargetInFlight=true activeTargetCount=1 maxConcurrent=1
+[2026-10-07T08:50:15.739Z] [SW_CONSOLE] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedBefore=0
+[2026-10-07T08:50:15.739Z] [SW_CONSOLE] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedAfter=0 result=PASS
+[2026-10-07T08:50:15.742Z] [SW_CONSOLE] [BG_LOG][tab=none] [TARGET 2/3][127.0.0.1] START
+[2026-10-07T08:50:15.743Z] [SW_CONSOLE] [RACE_TEST] Target START: http://127.0.0.1:8979/gate-a-target-2 activeCount=1
+[2026-10-07T08:50:16.351Z] [SW_CONSOLE] [RACE_TEST] Target FINAL: http://127.0.0.1:8979/gate-a-target-2
+[2026-10-07T08:50:16.352Z] [SW_CONSOLE] [SERIALIZED_GATE] Slot released. activeTargetInFlight=false activeTargetCount=0
+[2026-10-07T08:50:16.352Z] [SW_CONSOLE] [BG_LOG][tab=none] Waiting 1000ms before next target...
+[2026-10-07T08:50:17.249Z] [RACE_TEST_RESULT] {"startCount":2,"startTimes":[{"url":"http://127.0.0.1:8979/gate-a-target-1","ts":1791363014061,"conc":1},{"url":"http://127.0.0.1:8979/gate-a-target-2","ts":1791363015738,"conc":1}],"maxConcObserved":1,"finalInFlight":false,"finalCount":0}
+[2026-10-07T08:50:17.249Z] ✅ PASS: Gate A: Observed maxConcurrent === 1 strictly enforced across 4 competing wakeups
+[2026-10-07T08:50:17.249Z] 
+=== [GATE B: TIMEOUT CANCELLATION & QUIESCENCE BARRIER] ===
+[2026-10-07T08:50:17.252Z] [SW_CONSOLE] [TIMEOUT_TEST] Launching Target A with 1s timeout...
+[2026-10-07T08:50:17.252Z] [SW_CONSOLE] [SERIALIZED_GATE] Slot acquired atomically. activeTargetInFlight=true activeTargetCount=1 maxConcurrent=1
+[2026-10-07T08:50:17.253Z] [SW_CONSOLE] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedBefore=0
+[2026-10-07T08:50:17.255Z] [SW_CONSOLE] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedAfter=0 result=PASS
+[2026-10-07T08:50:17.255Z] [SW_CONSOLE] [BG_LOG][tab=none] [TARGET 1/2][127.0.0.1] START
+[2026-10-07T08:50:17.358Z] [SW_CONSOLE] [Engine] Stale generation 6 (expected 1). Ignoring wakeup.
+[2026-10-07T08:50:22.263Z] [SW_CONSOLE] [BG_LOG][tab=none] ⚠️ [Protection] Target skipped / timed out: Local Session Timeout
+[2026-10-07T08:50:22.264Z] [SW_CONSOLE] [TIMEOUT_TEST] AbortSignal received on Target A
+[2026-10-07T08:50:22.448Z] [SW_CONSOLE] [TIMEOUT_CLASS] stage= => TIMEOUT_LOCAL (pre-submit)
+[2026-10-07T08:50:22.451Z] [SW_CONSOLE] [BG_LOG][tab=none] [TARGET][127.0.0.1] FINAL status=TIMEOUT_LOCAL reason=TIMEOUT_LOCAL
+[2026-10-07T08:50:22.454Z] [SW_CONSOLE] [SERIALIZED_GATE] Slot released. activeTargetInFlight=false activeTargetCount=0
+[2026-10-07T08:50:22.454Z] [SW_CONSOLE] [BG_LOG][tab=none] Waiting 1000ms before next target...
+[2026-10-07T08:50:22.456Z] [POP_CONSOLE] [LEDGER_STATS] scope=currentGeneration success=0 failed=0 unknown=0
+[2026-10-07T08:50:23.455Z] [SW_CONSOLE] [SERIALIZED_GATE] Slot acquired atomically. activeTargetInFlight=true activeTargetCount=1 maxConcurrent=1
+[2026-10-07T08:50:23.456Z] [SW_CONSOLE] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedBefore=0
+[2026-10-07T08:50:23.460Z] [SW_CONSOLE] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedAfter=0 result=PASS
+[2026-10-07T08:50:23.466Z] [SW_CONSOLE] [BG_LOG][tab=none] [TARGET 2/2][127.0.0.1] START
+[2026-10-07T08:50:23.467Z] [SW_CONSOLE] [TIMEOUT_TEST] Target B started cleanly. Target A quiesced=true
+[2026-10-07T08:50:23.467Z] [SW_CONSOLE] [SERIALIZED_GATE] Slot released. activeTargetInFlight=false activeTargetCount=0
+[2026-10-07T08:50:23.469Z] [SW_CONSOLE] [BG_LOG][tab=none] Waiting 1000ms before next target...
+[2026-10-07T08:50:24.478Z] [SW_CONSOLE] [FINISH_BARRIER] Clear. lastFinalTs=1791363023457 ledgerCompleted=0 total=2
+[2026-10-07T08:50:24.478Z] [SW_CONSOLE] [BG_LOG][tab=none] [FINISH_BARRIER] lastFinalTs=1791363023457 barrierClear. CAMPAIGN_FINISHED proceeding.
+[2026-10-07T08:50:24.479Z] [POP_CONSOLE] [LEDGER_STATS] scope=currentGeneration success=0 failed=0 unknown=0
+[2026-10-07T08:50:24.479Z] [SW_CONSOLE] [BG_LOG][tab=none] Campaign finished!
+[2026-10-07T08:50:24.481Z] [SW_CONSOLE] [TAB_BARRIER] phase=CAMPAIGN_FINISHED ownedBefore=0
+[2026-10-07T08:50:24.482Z] [SW_CONSOLE] [TAB_BARRIER] phase=CAMPAIGN_FINISHED ownedAfter=0 result=PASS
+[2026-10-07T08:50:24.486Z] [POP_CONSOLE] [LEDGER_STATS] scope=currentGeneration success=0 failed=0 unknown=0
+[2026-10-07T08:50:25.954Z] [TIMEOUT_TEST_RESULT] {"timeoutTargetAbortReceived":true,"timeoutTargetQuiesced":true,"nextTargetStarted":true,"nextTargetStartedBeforeQuiesce":false,"finalInFlight":false}
+[2026-10-07T08:50:25.955Z] ✅ PASS: Gate B: Target A timeout aborted cleanly; Target B started strictly AFTER Target A quiesced
+[2026-10-07T08:50:25.955Z] 
+=== [GATE C: STICKY CAPTCHA_PENDING_OWNER] ===
+[2026-10-07T08:50:25.957Z] [STICKY_TEST_RESULT] {"stageAfterInterleave":"CAPTCHA_PENDING_OWNER","decisionAccepted":true,"finalStage":"CAPTCHA_AUTO_SOLVING"}
+[2026-10-07T08:50:25.957Z] ✅ PASS: Gate C: Sticky CAPTCHA_PENDING_OWNER preserved across generic updates; Owner decision accepted
+[2026-10-07T08:50:25.957Z] 
+=== [GATE D: CAPTCHA PROVIDER FAILURE ACCOUNTING & NO FALSE SUCCESS] ===
+[2026-10-07T08:50:25.960Z] [FAILURE_ACCOUNTING_RESULT] {"fallbackSuccess":false,"fallbackField":"audio_frame_solver","autoFailIncrement":1,"capFailIncrement":1,"autoSuccUnchanged":true,"capSolvedUnchanged":true}
+[2026-10-07T08:50:25.960Z] ✅ PASS: Gate D: Fallback returns success === false and reconciles autoFailure / captchaFailed exactly once
+[2026-10-07T08:50:25.960Z] 
+=== [GATE E: COUNTER TRUTH & QUIESCENT PAUSE] ===
+[2026-10-07T08:50:25.962Z] [SW_CONSOLE] [BG_LOG][tab=none] ⏸️ [Engine] Campaign PAUSED / STOP & SAVE requested.
+[2026-10-07T08:50:25.966Z] [SW_CONSOLE] [TAB_BARRIER] phase=PAUSE_CAMPAIGN ownedBefore=0
+[2026-10-07T08:50:25.967Z] [SW_CONSOLE] [TAB_BARRIER] phase=PAUSE_CAMPAIGN ownedAfter=0 result=PASS
+[2026-10-07T08:50:25.967Z] [POP_CONSOLE] [LEDGER_STATS] scope=currentGeneration success=0 failed=0 unknown=0
+[2026-10-07T08:50:25.969Z] [POP_CONSOLE] [HISTORY_SCOPE_REFRESH] trigger=xpider_isActive,xpider_isPaused
+[2026-10-07T08:50:25.978Z] [SW_CONSOLE] [BG_LOG][tab=none] 💾 [Checkpoint] Campaign snapshot saved: 8 targets remaining.
+[2026-10-07T08:50:25.978Z] [SW_CONSOLE] [BG_LOG][tab=none] === CAMPAIGN OUTCOME SUMMARY (currentRun) ===
+[2026-10-07T08:50:25.979Z] [SW_CONSOLE] [BG_LOG][tab=none] CONFIRMED_SUCCESS:           0
+[2026-10-07T08:50:25.979Z] [SW_CONSOLE] [BG_LOG][tab=none] FAILURE:                     0
+[2026-10-07T08:50:25.979Z] [SW_CONSOLE] [BG_LOG][tab=none] TIMEOUT_LOCAL:               0
+[2026-10-07T08:50:25.980Z] [SW_CONSOLE] [BG_LOG][tab=none] TIMEOUT_GLOBAL:              0
+[2026-10-07T08:50:25.981Z] [SW_CONSOLE] [BG_LOG][tab=none] DELIVERY_UNKNOWN:            0
+[2026-10-07T08:50:25.982Z] [SW_CONSOLE] [BG_LOG][tab=none] SKIPPED:                     0
+[2026-10-07T08:50:25.982Z] [SW_CONSOLE] [BG_LOG][tab=none] PAUSED_UNKNOWN:              0
+[2026-10-07T08:50:25.983Z] [SW_CONSOLE] [BG_LOG][tab=none] ----------------------------------------
+[2026-10-07T08:50:25.983Z] [SW_CONSOLE] [BG_LOG][tab=none] TOTAL TERMINAL / COMPLETED:  0
+[2026-10-07T08:50:25.983Z] [SW_CONSOLE] [CAMPAIGN_SUMMARY] success=0 failure=0 timeoutLocal=0 timeoutGlobal=0 unknown=0 skipped=0 paused=0 completed=0
+[2026-10-07T08:50:25.984Z] [SW_CONSOLE] [BG_LOG][tab=none] ========================================
+[2026-10-07T08:50:25.987Z] [COUNTER_TEST_RESULT] {"derivedRemaining":8,"derivedTotal":10,"pauseSuccess":true,"pauseRemainingCount":8,"checkpointRemainingQueue":8,"checkpointTotal":2}
+[2026-10-07T08:50:25.987Z] ✅ PASS: Gate E: Counter truth derived from queue + ledger; checkpoint agrees (remaining === 8)
+[2026-10-07T08:50:25.987Z] 
+=== [GATE F: REAL CONTROLLED TARGET LIFECYCLE SMOKE] ===
+[2026-10-07T08:50:26.026Z] [POP_CONSOLE] [LEDGER_STATS] scope=currentRun campaignRunId=none success=0 failed=0 timeout=0 unknown=0
+[2026-10-07T08:50:28.045Z] [SMOKE_RESULT] {"tabCreated":true,"formFound":true,"formId":"inquiry-form","inputsCount":4}
+[2026-10-07T08:50:28.045Z] ✅ PASS: Gate F: Real Edge browser target opened, form recognized id=inquiry-form fields=4
+[2026-10-07T08:50:28.045Z] 
+================================================================================
+[2026-10-07T08:50:28.045Z] 🎉 ALL R6.9G.7 REAL END-TO-END OPERATOR AUDIT GATES PASSED IN MICROSOFT EDGE
+[2026-10-07T08:50:28.045Z]    GATE A (Atomic Slot Acquisition Concurrency Race) = VERIFIED PASS
+[2026-10-07T08:50:28.045Z]    GATE B (Timeout Cancellation & Quiescence Barrier) = VERIFIED PASS
+[2026-10-07T08:50:28.045Z]    GATE C (Sticky CAPTCHA_PENDING_OWNER State)       = VERIFIED PASS
+[2026-10-07T08:50:28.045Z]    GATE D (Provider Fallback Semantics & Accounting) = VERIFIED PASS
+[2026-10-07T08:50:28.045Z]    GATE E (Counter Truth & Quiescent Pause)          = VERIFIED PASS
+[2026-10-07T08:50:28.045Z]    GATE F (Real Browser Target Lifecycle Smoke)      = VERIFIED PASS
+[2026-10-07T08:50:28.045Z] ================================================================================
