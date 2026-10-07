@@ -15,16 +15,16 @@
 
     const BUILD_INFO = {
         branch: 'upgrade/phase-0-1',
-        // [R6.9G.8.1] implementationHead = functional commit containing Manual Form Assist,
-        //             TargetDeadlineController, canonical timeout settlement, and complete diagnostic ledger
-        implementationHead: '89bdf2e303cc1ae2a4e79d4dc7a6166698b48fae',
-        implementationHeadShort: '89bdf2e3',
-        head: '89bdf2e303cc1ae2a4e79d4dc7a6166698b48fae',
-        headShort: '89bdf2e3',
+        // [R6.9G.9] implementationHead = functional commit containing Privacy Gateway,
+        //           managed proxy without DIRECT fallback, WebRTC leak guard, and fail-closed start barrier
+        implementationHead: '5ebb51510eda9ca09a6921879d1269b15cf692fb',
+        implementationHeadShort: '5ebb5151',
+        head: '5ebb51510eda9ca09a6921879d1269b15cf692fb',
+        headShort: '5ebb5151',
         rollbackBase: 'dc0740a0c69e2f7fa96b6989841acf0831b3619e',
         manifestVersion: 3,
-        buildId: 'R6.9G.8.1-20261007-REAL-PATH-MANUAL-ASSIST-PERSISTENT-DIAG',
-        builtAt: '2026-10-07T17:43:00.000Z',
+        buildId: 'R6.9G.9-20261007-PRIVACY-GATEWAY-FAIL-CLOSED',
+        builtAt: '2026-10-07T18:10:00.000Z',
         provenanceSchema: 2,
         modules: {
             backgroundSha: '0336262f04e97ea0c4a39d26fb10d16e712ca7370b0f13e2f97fabb5e41668b8',
@@ -51,7 +51,8 @@
             `[BUILD_MODULE] backgroundSha=${BUILD_INFO.modules.backgroundSha}`,
             `[BUILD_MODULE] popupSha=${BUILD_INFO.modules.popupSha}`,
             `[BUILD_MODULE] solverContentSha=${BUILD_INFO.modules.solverContentSha}`,
-            `[BUILD_MODULE] solverCoreSha=${BUILD_INFO.modules.solverCoreSha}`
+            `[BUILD_MODULE] solverCoreSha=${BUILD_INFO.modules.solverCoreSha}`,
+            `[BUILD_MODULE] privacyGatewaySha=${BUILD_INFO.modules.privacyGatewaySha}`
         ];
     }
 

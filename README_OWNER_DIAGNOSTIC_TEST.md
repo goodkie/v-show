@@ -8,12 +8,12 @@
 ---
 
 ## 1. Package Inventory & Verification
-- **Build ID:** `R6.9G.8.1-20261007-REAL-PATH-MANUAL-ASSIST-PERSISTENT-DIAG`
-- **Implementation HEAD:** `65fbdf69851cc0fee9c1adb0182e59b3b5992316`
-- **Visible Badge in UI:** `TEST-ONLY R6.9G.8.1 [65fbdf69]`
+- **Build ID:** `R6.9G.9-20261007-PRIVACY-GATEWAY-FAIL-CLOSED`
+- **Implementation HEAD:** `5ebb51510eda9ca09a6921879d1269b15cf692fb`
+- **Visible Badge in UI:** `TEST-ONLY R6.9G.9 [5ebb5151]`
 - **Unpacked Extension Path:** `send_message_backup/build/extension`
-- **ZIP Package:** `XPIDER_R6.9G.8.1_OWNER_DIAGNOSTIC_TEST_ONLY.zip`
-- **ZIP SHA-256:** `2c5e81933477e2fe52bc7d9590ccbf6d6818cb70470ec28794ad9e485b7dcad1`
+- **ZIP Package:** `XPIDER_R6.9G.9_OWNER_DIAGNOSTIC_TEST_ONLY.zip`
+- **ZIP SHA-256:** `534bf9275244bc3aa96079c5f7bac4ec251e59728d1818fd807882f566d98c37`
 - **File Manifest:** See [PACKAGE_INVENTORY_SHA256.txt](file:///E:/vivpr/ai/extension-form-sender/PACKAGE_INVENTORY_SHA256.txt)
 
 ---
