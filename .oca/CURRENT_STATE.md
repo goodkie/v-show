@@ -11,9 +11,9 @@
 
 ## Current Gate
 - Phase: Round 123 Output Viewer Handoff & Landscape Containment Repair v3 (Preview Deployed)
-- Gate: VIEWER ACCEPTANCE: FAIL / RELEASE: HOLD (360 capture: PASS, Preview display: PASS, Preview landscape: PROVEN IN CDP, Official viewer: PROVEN IN CDP - Awaiting ChatGPT Gate)
-- Audit Authority Cursor: `6034645785`
-- Remote Deployed HEAD: `95f76e0dabd318fa89e6799e03d3879758796c10`
+- Gate: ROUND123-VIEWER-REPAIR-V3: RECEIPT POSTED (#6042142938) / AWAITING CHATGPT GATE
+- Audit Authority Cursor: `6042142938`
+- Remote Deployed HEAD: `a43d83e1159a54496a51349e7302d3532b7aebc6`
 - Rollback anchor: `restore/round123-p0-baseline-20261005` at `4181d146c82302e1a3ad49d793836371ff8217bb`
 
 ## Audit Remediation Status (ChatGPT Audit #6034387832 & Deployment #6034645785)
