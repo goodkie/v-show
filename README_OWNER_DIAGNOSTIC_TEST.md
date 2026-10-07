@@ -8,12 +8,12 @@
 ---
 
 ## 1. Package Inventory & Verification
-- **Build ID:** `R6.9G.8-20261007-MANUAL-ASSIST-HARD-CAPTCHA-LEDGER`
+- **Build ID:** `R6.9G.8.1-20261007-REAL-PATH-MANUAL-ASSIST-PERSISTENT-DIAG`
 - **Implementation HEAD:** `65fbdf69851cc0fee9c1adb0182e59b3b5992316`
-- **Visible Badge in UI:** `TEST-ONLY R6.9G.8 [65fbdf69]`
+- **Visible Badge in UI:** `TEST-ONLY R6.9G.8.1 [65fbdf69]`
 - **Unpacked Extension Path:** `send_message_backup/build/extension`
-- **ZIP Package:** `XPIDER_R6.9G.8_OWNER_DIAGNOSTIC_TEST_ONLY.zip`
-- **ZIP SHA-256:** `af320386b64b728193e1549f0b9dc4ee639c3deebb8ed1172af9671b4c06e387`
+- **ZIP Package:** `XPIDER_R6.9G.8.1_OWNER_DIAGNOSTIC_TEST_ONLY.zip`
+- **ZIP SHA-256:** `689c395b115e1b691094c2739ec32abc31fc90cfde819f4f0f4bf77d101eb409`
 - **File Manifest:** See [PACKAGE_INVENTORY_SHA256.txt](file:///E:/vivpr/ai/extension-form-sender/PACKAGE_INVENTORY_SHA256.txt)
 
 ---

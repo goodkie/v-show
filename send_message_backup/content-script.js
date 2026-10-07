@@ -2793,6 +2793,9 @@
             const ariaLabel = (el.getAttribute('aria-label') || '').toLowerCase();
             const autocomplete = (el.getAttribute('autocomplete') || '').toLowerCase();
             const c = `${label} ${placeholder} ${name} ${id} ${cls} ${ariaLabel} ${autocomplete}`.toLowerCase();
+            if (/ssn|social.*security|ein|tax.*id|taxpayer|revenue|headcount|employee.*count|passport|license|puzzle|captcha/i.test(c)) {
+                return '';
+            }
             
             const type = (el.type || 'text').toLowerCase();
             
@@ -3053,7 +3056,8 @@
                 const autocomp = (el.getAttribute('autocomplete') || '').toLowerCase();
                 const label = getLabelFor(el).toLowerCase();
                 const hint = `${ph} ${nm} ${ariaLabel} ${autocomp} ${label}`;
-
+                const isSensitiveFact = /ssn|social.*security|ein|tax.*id|taxpayer|revenue|headcount|employee.*count|passport|license|puzzle|captcha/i.test(hint);
+                if (isSensitiveFact) continue;
                 let val;
                 if (tp === 'email' || hint.includes('email') || hint.includes('mail')) val = tpl.email;
                 else if (tp === 'tel' || hint.includes('phone') || hint.includes('tel') || hint.includes('mobile') || hint.includes('전화') || hint.includes('연락처')) val = tpl.phone;
@@ -3181,6 +3185,11 @@
                 // 텍스트/셀렉트 박스 값 검사
                 const currentVal = el.contentEditable === 'true' ? (el.textContent || '') : (el.value || '');
                 if (currentVal.trim() !== '') continue;
+
+                const elCtx = `${el.name || ''} ${el.id || ''} ${el.placeholder || ''}`.toLowerCase();
+                if (/ssn|social.*security|ein|tax.*id|taxpayer|revenue|headcount|employee.*count|passport|license|puzzle|captcha/i.test(elCtx)) {
+                    continue;
+                }
 
                 if (el.tagName === 'SELECT') {
                     if (!_SelectResolverR2) {
@@ -4168,6 +4177,12 @@
                     t.stableCycles++;
                     if (t.stableCycles >= this.requiredStableCycles) t.state = 'STABLE';
                 } else if (isRequired) {
+                    const elCtx = `${el.name || ''} ${el.id || ''} ${el.placeholder || ''}`.toLowerCase();
+                    const isSensitiveOrConstrained = /ssn|social.*security|ein|tax.*id|taxpayer|revenue|headcount|employee.*count|passport|license|puzzle|captcha|math/i.test(elCtx) || (el.pattern && !new RegExp(el.pattern).test(this.tpl.subject || this.tpl.name || 'Inquiry'));
+                    if (isSensitiveOrConstrained) {
+                        t.state = 'UNRESOLVED';
+                        continue;
+                    }
                     t.stableCycles = 0;
                     if (t.attempts < this.maxAttemptsPerElement && (Date.now() - t.lastAttemptTs) >= this.cooldownMs) {
                         t.attempts++;

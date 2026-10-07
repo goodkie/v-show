@@ -1,0 +1,496 @@
+[2026-10-07T17:41:32.047Z] [HTTP_SERVER] http://127.0.0.1:8980
+[2026-10-07T17:41:33.061Z] [UNPACKED_EXTENSION] E:\vivpr\ai\extension-form-sender\send_message_backup\build\extension
+[2026-10-07T17:41:33.061Z] [BROWSER_LAUNCH] C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe --remote-debugging-port=9232
+[2026-10-07T17:41:37.597Z] [CDP_CONNECT] Edg/154.0.4258.62
+[2026-10-07T17:41:37.602Z] [EXT_DISCOVERY] extId=pjohcallgmjmbfckiaogjokelhobfceg
+[2026-10-07T17:41:37.657Z] [SW_CONSOLE_LOG] [BootStep] solver_instantiation
+[2026-10-07T17:41:37.658Z] [SW_CONSOLE_LOG] [X PIDER] Background script initializing (Unified Mode)...
+[2026-10-07T17:41:37.659Z] [SW_CONSOLE_LOG] [BootStep] side_panel_config
+[2026-10-07T17:41:37.659Z] [SW_CONSOLE_LOG] [BootStep] campaign_state_init
+[2026-10-07T17:41:37.660Z] [SW_CONSOLE_LOG] [BootStep] global_functions_defined
+[2026-10-07T17:41:37.660Z] [SW_CONSOLE_LOG] [BootStep] worker_online
+[2026-10-07T17:41:37.661Z] [SW_CONSOLE_LOG] [BootStep] restoring_campaign_state
+[2026-10-07T17:41:37.661Z] [SW_CONSOLE_LOG] [Boot] Initializing campaign state...
+[2026-10-07T17:41:37.661Z] [SW_CONSOLE_LOG] [COUNTER_RECONCILE] legacySuccess=0 ledgerSuccess=0 action=LEDGER_WINS
+[2026-10-07T17:41:37.662Z] [SW_CONSOLE_LOG] [BootStep] restore_complete
+[2026-10-07T17:41:37.983Z] [SW_CONSOLE_LOG] [BG_LOG][tab=none] 📦 [Migration] Safely migrated to v2 (Backup: xpider_backup_v1_1791394897924)
+[2026-10-07T17:41:39.665Z] [BUILD_PROVENANCE_SW] buildId=R6.9G.8.1-20261007-REAL-PATH-MANUAL-ASSIST-PERSISTENT-DIAG implementationHead=65fbdf69851cc0fee9c1adb0182e59b3b5992316
+[2026-10-07T17:41:39.666Z] [POPUP_BADGE] text="TEST-ONLY R6.9G.8.1 [65fbdf69]"
+[2026-10-07T17:41:39.666Z] ------------------------------------------------------------
+[2026-10-07T17:41:39.666Z] STARTING GATE A: KZKMA / Cross-Origin Form Assist (Real Content Script Path)
+[2026-10-07T17:41:39.666Z] ------------------------------------------------------------
+[2026-10-07T17:41:39.735Z] [SW_CONSOLE_LOG] [TAB_BARRIER] phase=POST_NEW_TARGET_CREATE ownedBefore=0
+[2026-10-07T17:41:39.741Z] [SW_CONSOLE_LOG] [TAB_BARRIER] phase=POST_NEW_TARGET_CREATE ownedAfter=0 result=PASS
+[2026-10-07T17:41:39.742Z] [SW_CONSOLE_LOG] [TAB_KILL_SWITCH] keepTabId=1596499639 closedOthers=0 remainingOwned=1 result=PASS
+[2026-10-07T17:41:39.816Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499639] [TAB_FOCUS] tabId=1596499639 windowId=1596499633 active=true focused=true
+[2026-10-07T17:41:39.822Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499639] Step 1: Sniper Mode active. Searching for contact page...
+[2026-10-07T17:41:39.830Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499639] 🔦 Scanning paths 1-10...
+[2026-10-07T17:41:39.884Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499639] Pre-scan complete. Identified 10 valid paths.
+[2026-10-07T17:41:39.895Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499639] [SniperScan] Identified 10 candidate paths in background.
+[2026-10-07T17:41:40.007Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499639] [TAB_FOCUS] tabId=1596499639 windowId=1596499633 active=true focused=true
+[2026-10-07T17:41:40.012Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499639] [TAB_OWNERSHIP] VERIFIED_REDIRECT source=127.0.0.1 target=127.0.0.1 relation=SAME_HOST
+[2026-10-07T17:41:40.017Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499639] [FOCUS_SECURED] formPageUrl=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma
+[2026-10-07T17:41:40.034Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499639] Extraction focus secured. Mapping template fields...
+[2026-10-07T17:41:40.058Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499639][attemptId=att_1791394899669_k7zby][url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma] [TARGET_PAGE] url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma domGeneration=1791394900036 attemptId=att_1791394899669_k7zby
+[2026-10-07T17:41:40.067Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499639] [CONTENT_EVENT][tabId=1596499639][attemptId=att_1791394899669_k7zby][url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma] [TARGET_PAGE] url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma domGeneration=1791394900036 attemptId=att_1791394899669_k7zby
+[2026-10-07T17:41:40.067Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499639][attemptId=att_1791394899669_k7zby][url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma] 🚀 [Engine] Ultra-Mode process started
+[2026-10-07T17:41:40.067Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499639] [CONTENT_EVENT][tabId=1596499639][attemptId=att_1791394899669_k7zby][url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma] 🚀 [Engine] Ultra-Mode process started
+[2026-10-07T17:41:40.068Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499639][attemptId=att_1791394899669_k7zby][url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[2026-10-07T17:41:40.068Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499639] [CONTENT_EVENT][tabId=1596499639][attemptId=att_1791394899669_k7zby][url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[2026-10-07T17:41:40.068Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499639][attemptId=att_1791394899669_k7zby][url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma] [TARGET_PAGE] url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma recursion=0
+[2026-10-07T17:41:40.068Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499639] [CONTENT_EVENT][tabId=1596499639][attemptId=att_1791394899669_k7zby][url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma] [TARGET_PAGE] url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma recursion=0
+[2026-10-07T17:41:40.068Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499639][attemptId=att_1791394899669_k7zby][url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma] 🔍 [Discovery] URL: http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma | Recursion: 0
+[2026-10-07T17:41:40.069Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499639] [CONTENT_EVENT][tabId=1596499639][attemptId=att_1791394899669_k7zby][url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma] 🔍 [Discovery] URL: http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma | Recursion: 0
+[2026-10-07T17:41:40.069Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499639][attemptId=att_1791394899669_k7zby][url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[2026-10-07T17:41:40.069Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499639] [CONTENT_EVENT][tabId=1596499639][attemptId=att_1791394899669_k7zby][url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[2026-10-07T17:41:40.070Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499639][attemptId=att_1791394899669_k7zby][url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma | Recursion: 0
+[2026-10-07T17:41:40.071Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499639] [CONTENT_EVENT][tabId=1596499639][attemptId=att_1791394899669_k7zby][url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma | Recursion: 0
+[2026-10-07T17:41:41.463Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499639][attemptId=att_1791394899669_k7zby][url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma] 🕵️ [UltraFinder] Scanning complex structures (ShadowDOM & Multi-Root)...
+[2026-10-07T17:41:41.466Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499639] [CONTENT_EVENT][tabId=1596499639][attemptId=att_1791394899669_k7zby][url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma] 🕵️ [UltraFinder] Scanning complex structures (ShadowDOM & Multi-Root)...
+[2026-10-07T17:41:41.469Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499639][attemptId=att_1791394899669_k7zby][url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma] 🕵️ [Supreme-Scan 5.0] Pre-scanning labels and context...
+[2026-10-07T17:41:41.470Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499639] [CONTENT_EVENT][tabId=1596499639][attemptId=att_1791394899669_k7zby][url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma] 🕵️ [Supreme-Scan 5.0] Pre-scanning labels and context...
+[2026-10-07T17:41:41.471Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499639][attemptId=att_1791394899669_k7zby][url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma] 🔍 [Scan] Scanned 1 elements. Highest score: -999
+[2026-10-07T17:41:41.472Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499639] [CONTENT_EVENT][tabId=1596499639][attemptId=att_1791394899669_k7zby][url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma] 🔍 [Scan] Scanned 1 elements. Highest score: -999
+[2026-10-07T17:41:41.472Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499639][attemptId=att_1791394899669_k7zby][url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma] ⚠️ [Scan] No valid forms reached threshold score (Target Score: 10)
+[2026-10-07T17:41:41.474Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499639] [CONTENT_EVENT][tabId=1596499639][attemptId=att_1791394899669_k7zby][url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma] ⚠️ [Scan] No valid forms reached threshold score (Target Score: 10)
+[2026-10-07T17:41:41.474Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499639][attemptId=att_1791394899669_k7zby][url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma] 🚀 [Engine] Ultra-Mode: Scrolling to reveal lazy-loaded content...
+[2026-10-07T17:41:41.475Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499639] [CONTENT_EVENT][tabId=1596499639][attemptId=att_1791394899669_k7zby][url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma] 🚀 [Engine] Ultra-Mode: Scrolling to reveal lazy-loaded content...
+[2026-10-07T17:41:42.977Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499639][attemptId=att_1791394899669_k7zby][url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma] 🧐 [Discovery] Polling attempt 2/3... | URL: http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma | Recursion: 0
+[2026-10-07T17:41:42.978Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499639] [CONTENT_EVENT][tabId=1596499639][attemptId=att_1791394899669_k7zby][url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma] 🧐 [Discovery] Polling attempt 2/3... | URL: http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma | Recursion: 0
+[2026-10-07T17:41:44.399Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499639][attemptId=att_1791394899669_k7zby][url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma] 🕵️ [UltraFinder] Scanning complex structures (ShadowDOM & Multi-Root)...
+[2026-10-07T17:41:44.402Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499639] [CONTENT_EVENT][tabId=1596499639][attemptId=att_1791394899669_k7zby][url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma] 🕵️ [UltraFinder] Scanning complex structures (ShadowDOM & Multi-Root)...
+[2026-10-07T17:41:44.403Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499639][attemptId=att_1791394899669_k7zby][url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma] 🕵️ [Supreme-Scan 5.0] Pre-scanning labels and context...
+[2026-10-07T17:41:44.403Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499639] [CONTENT_EVENT][tabId=1596499639][attemptId=att_1791394899669_k7zby][url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma] 🕵️ [Supreme-Scan 5.0] Pre-scanning labels and context...
+[2026-10-07T17:41:44.406Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499639][attemptId=att_1791394899669_k7zby][url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma] 🔍 [Scan] Scanned 1 elements. Highest score: -999
+[2026-10-07T17:41:44.406Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499639] [CONTENT_EVENT][tabId=1596499639][attemptId=att_1791394899669_k7zby][url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma] 🔍 [Scan] Scanned 1 elements. Highest score: -999
+[2026-10-07T17:41:44.412Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499639][attemptId=att_1791394899669_k7zby][url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma] ⚠️ [Scan] No valid forms reached threshold score (Target Score: 10)
+[2026-10-07T17:41:44.412Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499639] [CONTENT_EVENT][tabId=1596499639][attemptId=att_1791394899669_k7zby][url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma] ⚠️ [Scan] No valid forms reached threshold score (Target Score: 10)
+[2026-10-07T17:41:44.413Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499639][attemptId=att_1791394899669_k7zby][url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma] 🔘 [Supreme-Scan] No form found. Attempting to trigger hidden contact containers...
+[2026-10-07T17:41:44.413Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499639] [CONTENT_EVENT][tabId=1596499639][attemptId=att_1791394899669_k7zby][url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma] 🔘 [Supreme-Scan] No form found. Attempting to trigger hidden contact containers...
+[2026-10-07T17:41:45.049Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499639][attemptId=att_1791394899669_k7zby][url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma] 💓 [Heartbeat] Engine active and processing...
+[2026-10-07T17:41:45.049Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499639] [CONTENT_EVENT][tabId=1596499639][attemptId=att_1791394899669_k7zby][url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma] 💓 [Heartbeat] Engine active and processing...
+[2026-10-07T17:41:45.914Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499639][attemptId=att_1791394899669_k7zby][url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma] 🧐 [Discovery] Polling attempt 3/3... | URL: http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma | Recursion: 0
+[2026-10-07T17:41:45.914Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499639] [CONTENT_EVENT][tabId=1596499639][attemptId=att_1791394899669_k7zby][url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma] 🧐 [Discovery] Polling attempt 3/3... | URL: http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma | Recursion: 0
+[2026-10-07T17:41:47.335Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499639][attemptId=att_1791394899669_k7zby][url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma] 🕵️ [UltraFinder] Scanning complex structures (ShadowDOM & Multi-Root)...
+[2026-10-07T17:41:47.340Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499639] [CONTENT_EVENT][tabId=1596499639][attemptId=att_1791394899669_k7zby][url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma] 🕵️ [UltraFinder] Scanning complex structures (ShadowDOM & Multi-Root)...
+[2026-10-07T17:41:47.341Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499639][attemptId=att_1791394899669_k7zby][url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma] 🕵️ [Supreme-Scan 5.0] Pre-scanning labels and context...
+[2026-10-07T17:41:47.341Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499639] [CONTENT_EVENT][tabId=1596499639][attemptId=att_1791394899669_k7zby][url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma] 🕵️ [Supreme-Scan 5.0] Pre-scanning labels and context...
+[2026-10-07T17:41:47.341Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499639][attemptId=att_1791394899669_k7zby][url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma] 🔍 [Scan] Scanned 1 elements. Highest score: -999
+[2026-10-07T17:41:47.345Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499639] [CONTENT_EVENT][tabId=1596499639][attemptId=att_1791394899669_k7zby][url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma] 🔍 [Scan] Scanned 1 elements. Highest score: -999
+[2026-10-07T17:41:47.346Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499639][attemptId=att_1791394899669_k7zby][url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma] ⚠️ [Scan] No valid forms reached threshold score (Target Score: 10)
+[2026-10-07T17:41:47.346Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499639] [CONTENT_EVENT][tabId=1596499639][attemptId=att_1791394899669_k7zby][url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma] ⚠️ [Scan] No valid forms reached threshold score (Target Score: 10)
+[2026-10-07T17:41:48.846Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499639][attemptId=att_1791394899669_k7zby][url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma] [FORM_SCAN] forms=0 logicalContainers=0 crossOriginFrames=1 externalFormCandidates=1
+[2026-10-07T17:41:48.853Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499639] [CONTENT_EVENT][tabId=1596499639][attemptId=att_1791394899669_k7zby][url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma] [FORM_SCAN] forms=0 logicalContainers=0 crossOriginFrames=1 externalFormCandidates=1
+[2026-10-07T17:41:48.856Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499639][attemptId=att_1791394899669_k7zby][url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma] [PAGE_CLASS] NO_CONTACT
+[2026-10-07T17:41:48.856Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499639] [CONTENT_EVENT][tabId=1596499639][attemptId=att_1791394899669_k7zby][url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma] [PAGE_CLASS] NO_CONTACT
+[2026-10-07T17:41:48.857Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499639][attemptId=att_1791394899669_k7zby][url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma] [FORM_BOUNDARY] type=CROSS_ORIGIN_IFRAME formPageUrl=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma externalFormUrl=https://api.grow.pushpress.com/form/kzkma-registration
+[2026-10-07T17:41:48.858Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499639] [CONTENT_EVENT][tabId=1596499639][attemptId=att_1791394899669_k7zby][url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma] [FORM_BOUNDARY] type=CROSS_ORIGIN_IFRAME formPageUrl=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma externalFormUrl=https://api.grow.pushpress.com/form/kzkma-registration
+[2026-10-07T17:41:48.858Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499639][attemptId=att_1791394899669_k7zby][url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma] [FORM_GATE] eligible=false reason=EXTERNAL_CROSS_ORIGIN_FORM
+[2026-10-07T17:41:48.859Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499639] [CONTENT_EVENT][tabId=1596499639][attemptId=att_1791394899669_k7zby][url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma] [FORM_GATE] eligible=false reason=EXTERNAL_CROSS_ORIGIN_FORM
+[2026-10-07T17:41:48.866Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499639][attemptId=att_1791394899669_k7zby][url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma] [MANUAL_ASSIST] state=FORM_MANUAL_ASSIST_PENDING_OWNER reason=EXTERNAL_CROSS_ORIGIN_FORM contactPageUrl=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma formPageUrl=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma externalFormUrl=https://api.grow.pushpress.com/form/kzkma-registration
+[2026-10-07T17:41:48.866Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499639] [CONTENT_EVENT][tabId=1596499639][attemptId=att_1791394899669_k7zby][url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma] [MANUAL_ASSIST] state=FORM_MANUAL_ASSIST_PENDING_OWNER reason=EXTERNAL_CROSS_ORIGIN_FORM contactPageUrl=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma formPageUrl=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma externalFormUrl=https://api.grow.pushpress.com/form/kzkma-registration
+[2026-10-07T17:41:48.866Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499639][attemptId=att_1791394899669_k7zby][url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma] ⚠️ [ManualAssist] Pausing automation for Owner assist: EXTERNAL_CROSS_ORIGIN_FORM
+[2026-10-07T17:41:48.867Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499639] [CONTENT_EVENT][tabId=1596499639][attemptId=att_1791394899669_k7zby][url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma] ⚠️ [ManualAssist] Pausing automation for Owner assist: EXTERNAL_CROSS_ORIGIN_FORM
+[2026-10-07T17:41:48.867Z] [SW_CONSOLE_LOG] [TARGET_DEADLINE] Paused: reason=FORM_MANUAL_ASSIST_PENDING_OWNER remainingMs=170822
+[2026-10-07T17:41:48.867Z] [SW_CONSOLE_LOG] [BG_LOG][tab=none] [MANUAL_ASSIST] state=FORM_MANUAL_ASSIST_PENDING_OWNER reason=EXTERNAL_CROSS_ORIGIN_FORM contactPageUrl=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma formPageUrl=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma externalFormUrl=https://api.grow.pushpress.com/form/kzkma-registration
+[2026-10-07T17:41:48.949Z] [GATE_A_STAGE] stage=FORM_MANUAL_ASSIST_PENDING_OWNER elapsed=9280ms
+[2026-10-07T17:41:48.951Z] [GATE_A_MODAL] visible=true paused=true reason=FORM_MANUAL_ASSIST_PENDING_OWNER remMs=170822
+[2026-10-07T17:41:48.953Z] [GATE_A_ACTION] Clicked "I Submitted Manually" button in Popup UI
+[2026-10-07T17:41:48.956Z] [SW_CONSOLE_LOG] [BG_LOG][tab=none] [MANUAL_ASSIST_DECISION] Owner chose: submitted_manually for attemptId=att_1791394899669_k7zby
+[2026-10-07T17:41:48.961Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499639] [RESULT] resultUrl=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma
+[2026-10-07T17:41:48.962Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499639] [FINAL_CANONICAL] status=CONFIRMED_SUCCESS reason=SUCCESS_CONFIRMED attemptId=att_1791394899669_k7zby
+[2026-10-07T17:41:48.963Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499639] [TARGET][127.0.0.1] FINAL status=CONFIRMED_SUCCESS reason=SUCCESS_CONFIRMED
+[2026-10-07T17:41:48.966Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499639] [HISTORY_FINAL] sourceUrl=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma contactPageUrl=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma formPageUrl=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma resultUrl=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma
+[2026-10-07T17:41:48.968Z] [SW_CONSOLE_LOG] [LEDGER_STATS] scope=currentRun success=1 failure=0 unknown=0 timeout=0 skipped=0
+[2026-10-07T17:41:48.969Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499639] [LEDGER_STATS] scope=currentRun success=1 failure=0 unknown=0 timeout=0 skipped=0
+[2026-10-07T17:41:48.974Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499639] ✨ [Engine] Submission confirmed. Maintaining tab for completion (3500ms)...
+[2026-10-07T17:41:50.044Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499639][attemptId=att_1791394899669_k7zby][url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma] 💓 [Heartbeat] Engine active and processing...
+[2026-10-07T17:41:50.044Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499639] [CONTENT_EVENT][tabId=1596499639][attemptId=att_1791394899669_k7zby][url=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma] 💓 [Heartbeat] Engine active and processing...
+[2026-10-07T17:41:52.664Z] [SW_CONSOLE_LOG] [TAB_CLOSE] tabId=1596499639 attempt=1 result=CLOSED
+[2026-10-07T17:41:52.667Z] [SW_CONSOLE_LOG] [POST_FINAL_TAB_INVARIANT] target=http://127.0.0.1:8980/contact-kaizen-karate-martial-arts-in-belmont-ma remainingOwnedTabs=0 retainedTabs=0 result=PASS
+[2026-10-07T17:41:52.668Z] [GATE_A_ORCHESTRATE_RES] success=true reasonCode=SUCCESS_CONFIRMED
+[2026-10-07T17:41:52.678Z] [GATE_A_FINAL] status=CONFIRMED_SUCCESS reason=SUCCESS_CONFIRMED ownerManualConfirmed=true extUrl=https://api.grow.pushpress.com/form/kzkma-registration formStatus=EXTERNAL_WIDGET
+[2026-10-07T17:41:52.678Z] GATE A PASS: KZKMA PushPress external widget discovered by real content script and confirmed.
+[2026-10-07T17:41:52.678Z] ------------------------------------------------------------
+[2026-10-07T17:41:52.678Z] STARTING GATE B: Generic Cross-Origin Fixture (Real Content Script Path)
+[2026-10-07T17:41:52.678Z] ------------------------------------------------------------
+[2026-10-07T17:41:52.743Z] [SW_CONSOLE_LOG] [TAB_BARRIER] phase=POST_NEW_TARGET_CREATE ownedBefore=0
+[2026-10-07T17:41:52.746Z] [SW_CONSOLE_LOG] [TAB_BARRIER] phase=POST_NEW_TARGET_CREATE ownedAfter=0 result=PASS
+[2026-10-07T17:41:52.746Z] [SW_CONSOLE_LOG] [TAB_KILL_SWITCH] keepTabId=1596499641 closedOthers=0 remainingOwned=1 result=PASS
+[2026-10-07T17:41:52.822Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499641] [TAB_FOCUS] tabId=1596499641 windowId=1596499633 active=true focused=true
+[2026-10-07T17:41:52.826Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499641] Step 1: Sniper Mode active. Searching for contact page...
+[2026-10-07T17:41:52.831Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499641] 🔦 Scanning paths 1-10...
+[2026-10-07T17:41:52.885Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499641] Pre-scan complete. Identified 10 valid paths.
+[2026-10-07T17:41:52.890Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499641] [SniperScan] Identified 10 candidate paths in background.
+[2026-10-07T17:41:53.014Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499641] [TAB_FOCUS] tabId=1596499641 windowId=1596499633 active=true focused=true
+[2026-10-07T17:41:53.018Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499641] [TAB_OWNERSHIP] VERIFIED_REDIRECT source=127.0.0.1 target=127.0.0.1 relation=SAME_HOST
+[2026-10-07T17:41:53.020Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499641] [FOCUS_SECURED] formPageUrl=http://127.0.0.1:8980/generic-widget-page
+[2026-10-07T17:41:53.029Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499641] Extraction focus secured. Mapping template fields...
+[2026-10-07T17:41:53.052Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499641][attemptId=att_1791394912680_llpm6][url=http://127.0.0.1:8980/generic-widget-page] [TARGET_PAGE] url=http://127.0.0.1:8980/generic-widget-page domGeneration=1791394913032 attemptId=att_1791394912680_llpm6
+[2026-10-07T17:41:53.053Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499641] [CONTENT_EVENT][tabId=1596499641][attemptId=att_1791394912680_llpm6][url=http://127.0.0.1:8980/generic-widget-page] [TARGET_PAGE] url=http://127.0.0.1:8980/generic-widget-page domGeneration=1791394913032 attemptId=att_1791394912680_llpm6
+[2026-10-07T17:41:53.067Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499641][attemptId=att_1791394912680_llpm6][url=http://127.0.0.1:8980/generic-widget-page] 🚀 [Engine] Ultra-Mode process started
+[2026-10-07T17:41:53.075Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499641] [CONTENT_EVENT][tabId=1596499641][attemptId=att_1791394912680_llpm6][url=http://127.0.0.1:8980/generic-widget-page] 🚀 [Engine] Ultra-Mode process started
+[2026-10-07T17:41:53.113Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499641][attemptId=att_1791394912680_llpm6][url=http://127.0.0.1:8980/generic-widget-page] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[2026-10-07T17:41:53.118Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499641] [CONTENT_EVENT][tabId=1596499641][attemptId=att_1791394912680_llpm6][url=http://127.0.0.1:8980/generic-widget-page] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[2026-10-07T17:41:53.135Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499641][attemptId=att_1791394912680_llpm6][url=http://127.0.0.1:8980/generic-widget-page] [TARGET_PAGE] url=http://127.0.0.1:8980/generic-widget-page recursion=0
+[2026-10-07T17:41:53.141Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499641] [CONTENT_EVENT][tabId=1596499641][attemptId=att_1791394912680_llpm6][url=http://127.0.0.1:8980/generic-widget-page] [TARGET_PAGE] url=http://127.0.0.1:8980/generic-widget-page recursion=0
+[2026-10-07T17:41:53.146Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499641][attemptId=att_1791394912680_llpm6][url=http://127.0.0.1:8980/generic-widget-page] 🔍 [Discovery] URL: http://127.0.0.1:8980/generic-widget-page | Recursion: 0
+[2026-10-07T17:41:53.155Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499641] [CONTENT_EVENT][tabId=1596499641][attemptId=att_1791394912680_llpm6][url=http://127.0.0.1:8980/generic-widget-page] 🔍 [Discovery] URL: http://127.0.0.1:8980/generic-widget-page | Recursion: 0
+[2026-10-07T17:41:53.202Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499641][attemptId=att_1791394912680_llpm6][url=http://127.0.0.1:8980/generic-widget-page] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[2026-10-07T17:41:53.205Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499641] [CONTENT_EVENT][tabId=1596499641][attemptId=att_1791394912680_llpm6][url=http://127.0.0.1:8980/generic-widget-page] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[2026-10-07T17:41:53.210Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499641][attemptId=att_1791394912680_llpm6][url=http://127.0.0.1:8980/generic-widget-page] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1:8980/generic-widget-page | Recursion: 0
+[2026-10-07T17:41:53.211Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499641] [CONTENT_EVENT][tabId=1596499641][attemptId=att_1791394912680_llpm6][url=http://127.0.0.1:8980/generic-widget-page] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1:8980/generic-widget-page | Recursion: 0
+[2026-10-07T17:41:54.458Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499641][attemptId=att_1791394912680_llpm6][url=http://127.0.0.1:8980/generic-widget-page] 🕵️ [UltraFinder] Scanning complex structures (ShadowDOM & Multi-Root)...
+[2026-10-07T17:41:54.459Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499641] [CONTENT_EVENT][tabId=1596499641][attemptId=att_1791394912680_llpm6][url=http://127.0.0.1:8980/generic-widget-page] 🕵️ [UltraFinder] Scanning complex structures (ShadowDOM & Multi-Root)...
+[2026-10-07T17:41:54.462Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499641][attemptId=att_1791394912680_llpm6][url=http://127.0.0.1:8980/generic-widget-page] 🕵️ [Supreme-Scan 5.0] Pre-scanning labels and context...
+[2026-10-07T17:41:54.463Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499641] [CONTENT_EVENT][tabId=1596499641][attemptId=att_1791394912680_llpm6][url=http://127.0.0.1:8980/generic-widget-page] 🕵️ [Supreme-Scan 5.0] Pre-scanning labels and context...
+[2026-10-07T17:41:54.466Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499641][attemptId=att_1791394912680_llpm6][url=http://127.0.0.1:8980/generic-widget-page] 🔍 [Scan] Scanned 2 elements. Highest score: -999
+[2026-10-07T17:41:54.471Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499641] [CONTENT_EVENT][tabId=1596499641][attemptId=att_1791394912680_llpm6][url=http://127.0.0.1:8980/generic-widget-page] 🔍 [Scan] Scanned 2 elements. Highest score: -999
+[2026-10-07T17:41:54.473Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499641][attemptId=att_1791394912680_llpm6][url=http://127.0.0.1:8980/generic-widget-page] ⚠️ [Scan] No valid forms reached threshold score (Target Score: 10)
+[2026-10-07T17:41:54.473Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499641] [CONTENT_EVENT][tabId=1596499641][attemptId=att_1791394912680_llpm6][url=http://127.0.0.1:8980/generic-widget-page] ⚠️ [Scan] No valid forms reached threshold score (Target Score: 10)
+[2026-10-07T17:41:54.473Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499641][attemptId=att_1791394912680_llpm6][url=http://127.0.0.1:8980/generic-widget-page] 🚀 [Engine] Ultra-Mode: Scrolling to reveal lazy-loaded content...
+[2026-10-07T17:41:54.474Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499641] [CONTENT_EVENT][tabId=1596499641][attemptId=att_1791394912680_llpm6][url=http://127.0.0.1:8980/generic-widget-page] 🚀 [Engine] Ultra-Mode: Scrolling to reveal lazy-loaded content...
+[2026-10-07T17:41:55.976Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499641][attemptId=att_1791394912680_llpm6][url=http://127.0.0.1:8980/generic-widget-page] 🧐 [Discovery] Polling attempt 2/3... | URL: http://127.0.0.1:8980/generic-widget-page | Recursion: 0
+[2026-10-07T17:41:55.976Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499641] [CONTENT_EVENT][tabId=1596499641][attemptId=att_1791394912680_llpm6][url=http://127.0.0.1:8980/generic-widget-page] 🧐 [Discovery] Polling attempt 2/3... | URL: http://127.0.0.1:8980/generic-widget-page | Recursion: 0
+[2026-10-07T17:41:57.392Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499641][attemptId=att_1791394912680_llpm6][url=http://127.0.0.1:8980/generic-widget-page] 🕵️ [UltraFinder] Scanning complex structures (ShadowDOM & Multi-Root)...
+[2026-10-07T17:41:57.395Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499641] [CONTENT_EVENT][tabId=1596499641][attemptId=att_1791394912680_llpm6][url=http://127.0.0.1:8980/generic-widget-page] 🕵️ [UltraFinder] Scanning complex structures (ShadowDOM & Multi-Root)...
+[2026-10-07T17:41:57.400Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499641][attemptId=att_1791394912680_llpm6][url=http://127.0.0.1:8980/generic-widget-page] 🕵️ [Supreme-Scan 5.0] Pre-scanning labels and context...
+[2026-10-07T17:41:57.400Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499641] [CONTENT_EVENT][tabId=1596499641][attemptId=att_1791394912680_llpm6][url=http://127.0.0.1:8980/generic-widget-page] 🕵️ [Supreme-Scan 5.0] Pre-scanning labels and context...
+[2026-10-07T17:41:57.400Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499641][attemptId=att_1791394912680_llpm6][url=http://127.0.0.1:8980/generic-widget-page] 🔍 [Scan] Scanned 2 elements. Highest score: -999
+[2026-10-07T17:41:57.401Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499641] [CONTENT_EVENT][tabId=1596499641][attemptId=att_1791394912680_llpm6][url=http://127.0.0.1:8980/generic-widget-page] 🔍 [Scan] Scanned 2 elements. Highest score: -999
+[2026-10-07T17:41:57.406Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499641][attemptId=att_1791394912680_llpm6][url=http://127.0.0.1:8980/generic-widget-page] ⚠️ [Scan] No valid forms reached threshold score (Target Score: 10)
+[2026-10-07T17:41:57.407Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499641] [CONTENT_EVENT][tabId=1596499641][attemptId=att_1791394912680_llpm6][url=http://127.0.0.1:8980/generic-widget-page] ⚠️ [Scan] No valid forms reached threshold score (Target Score: 10)
+[2026-10-07T17:41:57.407Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499641][attemptId=att_1791394912680_llpm6][url=http://127.0.0.1:8980/generic-widget-page] 🔘 [Supreme-Scan] No form found. Attempting to trigger hidden contact containers...
+[2026-10-07T17:41:57.407Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499641] [CONTENT_EVENT][tabId=1596499641][attemptId=att_1791394912680_llpm6][url=http://127.0.0.1:8980/generic-widget-page] 🔘 [Supreme-Scan] No form found. Attempting to trigger hidden contact containers...
+[2026-10-07T17:41:58.040Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499641][attemptId=att_1791394912680_llpm6][url=http://127.0.0.1:8980/generic-widget-page] 💓 [Heartbeat] Engine active and processing...
+[2026-10-07T17:41:58.041Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499641] [CONTENT_EVENT][tabId=1596499641][attemptId=att_1791394912680_llpm6][url=http://127.0.0.1:8980/generic-widget-page] 💓 [Heartbeat] Engine active and processing...
+[2026-10-07T17:41:58.901Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499641][attemptId=att_1791394912680_llpm6][url=http://127.0.0.1:8980/generic-widget-page] 🧐 [Discovery] Polling attempt 3/3... | URL: http://127.0.0.1:8980/generic-widget-page | Recursion: 0
+[2026-10-07T17:41:58.901Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499641] [CONTENT_EVENT][tabId=1596499641][attemptId=att_1791394912680_llpm6][url=http://127.0.0.1:8980/generic-widget-page] 🧐 [Discovery] Polling attempt 3/3... | URL: http://127.0.0.1:8980/generic-widget-page | Recursion: 0
+[2026-10-07T17:42:00.326Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499641][attemptId=att_1791394912680_llpm6][url=http://127.0.0.1:8980/generic-widget-page] 🕵️ [UltraFinder] Scanning complex structures (ShadowDOM & Multi-Root)...
+[2026-10-07T17:42:00.329Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499641] [CONTENT_EVENT][tabId=1596499641][attemptId=att_1791394912680_llpm6][url=http://127.0.0.1:8980/generic-widget-page] 🕵️ [UltraFinder] Scanning complex structures (ShadowDOM & Multi-Root)...
+[2026-10-07T17:42:00.335Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499641][attemptId=att_1791394912680_llpm6][url=http://127.0.0.1:8980/generic-widget-page] 🕵️ [Supreme-Scan 5.0] Pre-scanning labels and context...
+[2026-10-07T17:42:00.335Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499641] [CONTENT_EVENT][tabId=1596499641][attemptId=att_1791394912680_llpm6][url=http://127.0.0.1:8980/generic-widget-page] 🕵️ [Supreme-Scan 5.0] Pre-scanning labels and context...
+[2026-10-07T17:42:00.335Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499641][attemptId=att_1791394912680_llpm6][url=http://127.0.0.1:8980/generic-widget-page] 🔍 [Scan] Scanned 2 elements. Highest score: -999
+[2026-10-07T17:42:00.335Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499641] [CONTENT_EVENT][tabId=1596499641][attemptId=att_1791394912680_llpm6][url=http://127.0.0.1:8980/generic-widget-page] 🔍 [Scan] Scanned 2 elements. Highest score: -999
+[2026-10-07T17:42:00.336Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499641][attemptId=att_1791394912680_llpm6][url=http://127.0.0.1:8980/generic-widget-page] ⚠️ [Scan] No valid forms reached threshold score (Target Score: 10)
+[2026-10-07T17:42:00.336Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499641] [CONTENT_EVENT][tabId=1596499641][attemptId=att_1791394912680_llpm6][url=http://127.0.0.1:8980/generic-widget-page] ⚠️ [Scan] No valid forms reached threshold score (Target Score: 10)
+[2026-10-07T17:42:01.831Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499641][attemptId=att_1791394912680_llpm6][url=http://127.0.0.1:8980/generic-widget-page] [FORM_SCAN] forms=0 logicalContainers=0 crossOriginFrames=1 externalFormCandidates=1
+[2026-10-07T17:42:01.837Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499641] [CONTENT_EVENT][tabId=1596499641][attemptId=att_1791394912680_llpm6][url=http://127.0.0.1:8980/generic-widget-page] [FORM_SCAN] forms=0 logicalContainers=0 crossOriginFrames=1 externalFormCandidates=1
+[2026-10-07T17:42:01.837Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499641][attemptId=att_1791394912680_llpm6][url=http://127.0.0.1:8980/generic-widget-page] [PAGE_CLASS] NO_CONTACT
+[2026-10-07T17:42:01.838Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499641] [CONTENT_EVENT][tabId=1596499641][attemptId=att_1791394912680_llpm6][url=http://127.0.0.1:8980/generic-widget-page] [PAGE_CLASS] NO_CONTACT
+[2026-10-07T17:42:01.838Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499641][attemptId=att_1791394912680_llpm6][url=http://127.0.0.1:8980/generic-widget-page] [FORM_BOUNDARY] type=CROSS_ORIGIN_IFRAME formPageUrl=http://127.0.0.1:8980/generic-widget-page externalFormUrl=https://forms.hubspot.com/embed/v3/form123
+[2026-10-07T17:42:01.839Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499641] [CONTENT_EVENT][tabId=1596499641][attemptId=att_1791394912680_llpm6][url=http://127.0.0.1:8980/generic-widget-page] [FORM_BOUNDARY] type=CROSS_ORIGIN_IFRAME formPageUrl=http://127.0.0.1:8980/generic-widget-page externalFormUrl=https://forms.hubspot.com/embed/v3/form123
+[2026-10-07T17:42:01.839Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499641][attemptId=att_1791394912680_llpm6][url=http://127.0.0.1:8980/generic-widget-page] [FORM_GATE] eligible=false reason=EXTERNAL_CROSS_ORIGIN_FORM
+[2026-10-07T17:42:01.839Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499641] [CONTENT_EVENT][tabId=1596499641][attemptId=att_1791394912680_llpm6][url=http://127.0.0.1:8980/generic-widget-page] [FORM_GATE] eligible=false reason=EXTERNAL_CROSS_ORIGIN_FORM
+[2026-10-07T17:42:01.847Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499641][attemptId=att_1791394912680_llpm6][url=http://127.0.0.1:8980/generic-widget-page] [MANUAL_ASSIST] state=FORM_MANUAL_ASSIST_PENDING_OWNER reason=EXTERNAL_CROSS_ORIGIN_FORM contactPageUrl=http://127.0.0.1:8980/generic-widget-page formPageUrl=http://127.0.0.1:8980/generic-widget-page externalFormUrl=https://forms.hubspot.com/embed/v3/form123
+[2026-10-07T17:42:01.847Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499641] [CONTENT_EVENT][tabId=1596499641][attemptId=att_1791394912680_llpm6][url=http://127.0.0.1:8980/generic-widget-page] [MANUAL_ASSIST] state=FORM_MANUAL_ASSIST_PENDING_OWNER reason=EXTERNAL_CROSS_ORIGIN_FORM contactPageUrl=http://127.0.0.1:8980/generic-widget-page formPageUrl=http://127.0.0.1:8980/generic-widget-page externalFormUrl=https://forms.hubspot.com/embed/v3/form123
+[2026-10-07T17:42:01.847Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499641][attemptId=att_1791394912680_llpm6][url=http://127.0.0.1:8980/generic-widget-page] ⚠️ [ManualAssist] Pausing automation for Owner assist: EXTERNAL_CROSS_ORIGIN_FORM
+[2026-10-07T17:42:01.848Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499641] [CONTENT_EVENT][tabId=1596499641][attemptId=att_1791394912680_llpm6][url=http://127.0.0.1:8980/generic-widget-page] ⚠️ [ManualAssist] Pausing automation for Owner assist: EXTERNAL_CROSS_ORIGIN_FORM
+[2026-10-07T17:42:01.848Z] [SW_CONSOLE_LOG] [BG_LOG][tab=none] [MANUAL_ASSIST] state=FORM_MANUAL_ASSIST_PENDING_OWNER reason=EXTERNAL_CROSS_ORIGIN_FORM contactPageUrl=http://127.0.0.1:8980/generic-widget-page formPageUrl=http://127.0.0.1:8980/generic-widget-page externalFormUrl=https://forms.hubspot.com/embed/v3/form123
+[2026-10-07T17:42:01.852Z] [GATE_B_STAGE] stage=FORM_MANUAL_ASSIST_PENDING_OWNER elapsed=9171ms
+[2026-10-07T17:42:01.864Z] [GATE_B_ACTION] Clicked "Could Not Submit / Skip" button in Popup UI
+[2026-10-07T17:42:01.865Z] [SW_CONSOLE_LOG] [BG_LOG][tab=none] [MANUAL_ASSIST_DECISION] Owner chose: skip for attemptId=att_1791394912680_llpm6
+[2026-10-07T17:42:01.869Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499641] [RESULT] resultUrl=http://127.0.0.1:8980/generic-widget-page
+[2026-10-07T17:42:01.872Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499641] [FINAL_CANONICAL] status=SKIPPED reason=FORM_MANUAL_ASSIST_SKIPPED attemptId=att_1791394912680_llpm6
+[2026-10-07T17:42:01.872Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499641] [TARGET][127.0.0.1] FINAL status=SKIPPED reason=FORM_MANUAL_ASSIST_SKIPPED
+[2026-10-07T17:42:01.878Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499641] [HISTORY_FINAL] sourceUrl=http://127.0.0.1:8980/generic-widget-page contactPageUrl=http://127.0.0.1:8980/generic-widget-page formPageUrl=http://127.0.0.1:8980/generic-widget-page resultUrl=http://127.0.0.1:8980/generic-widget-page
+[2026-10-07T17:42:01.881Z] [SW_CONSOLE_LOG] [LEDGER_STATS] scope=currentRun success=0 failure=0 unknown=0 timeout=0 skipped=1
+[2026-10-07T17:42:01.883Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499641] [LEDGER_STATS] scope=currentRun success=0 failure=0 unknown=0 timeout=0 skipped=1
+[2026-10-07T17:42:03.077Z] [SW_CONSOLE_LOG] [TAB_CLOSE] tabId=1596499641 attempt=1 result=CLOSED
+[2026-10-07T17:42:03.077Z] [SW_CONSOLE_LOG] [POST_FINAL_TAB_INVARIANT] target=http://127.0.0.1:8980/generic-widget-page remainingOwnedTabs=0 retainedTabs=0 result=PASS
+[2026-10-07T17:42:03.078Z] [GATE_B_ORCHESTRATE_RES] success=false reasonCode=FORM_MANUAL_ASSIST_SKIPPED
+[2026-10-07T17:42:03.080Z] [GATE_B_FINAL] status=SKIPPED formDetectionStatus=EXTERNAL_WIDGET autofillStatus=MANUAL_REQUIRED extUrl=https://forms.hubspot.com/embed/v3/form123
+[2026-10-07T17:42:03.080Z] GATE B PASS: Generic cross-origin Hubspot fixture correctly discovered and classified by real content script.
+[2026-10-07T17:42:03.080Z] ------------------------------------------------------------
+[2026-10-07T17:42:03.080Z] STARTING GATE C: Autofill Partial Fixture (Real Autofill / Final Audit Path)
+[2026-10-07T17:42:03.080Z] ------------------------------------------------------------
+[2026-10-07T17:42:03.134Z] [SW_CONSOLE_LOG] [TAB_BARRIER] phase=POST_NEW_TARGET_CREATE ownedBefore=0
+[2026-10-07T17:42:03.137Z] [SW_CONSOLE_LOG] [TAB_BARRIER] phase=POST_NEW_TARGET_CREATE ownedAfter=0 result=PASS
+[2026-10-07T17:42:03.139Z] [SW_CONSOLE_LOG] [TAB_KILL_SWITCH] keepTabId=1596499643 closedOthers=0 remainingOwned=1 result=PASS
+[2026-10-07T17:42:03.175Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] [TAB_FOCUS] tabId=1596499643 windowId=1596499633 active=true focused=true
+[2026-10-07T17:42:03.181Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] Step 1: Sniper Mode active. Searching for contact page...
+[2026-10-07T17:42:03.189Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] 🔦 Scanning paths 1-10...
+[2026-10-07T17:42:03.223Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] Pre-scan complete. Identified 10 valid paths.
+[2026-10-07T17:42:03.231Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] [SniperScan] Identified 10 candidate paths in background.
+[2026-10-07T17:42:03.340Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
+[2026-10-07T17:42:03.341Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
+[2026-10-07T17:42:03.358Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] [TAB_FOCUS] tabId=1596499643 windowId=1596499633 active=true focused=true
+[2026-10-07T17:42:03.369Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] [TAB_OWNERSHIP] VERIFIED_REDIRECT source=127.0.0.1 target=127.0.0.1 relation=SAME_HOST
+[2026-10-07T17:42:03.373Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] [FOCUS_SECURED] formPageUrl=http://127.0.0.1:8980/partial-form-page
+[2026-10-07T17:42:03.382Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] Extraction focus secured. Mapping template fields...
+[2026-10-07T17:42:03.396Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] [TARGET_PAGE] url=http://127.0.0.1:8980/partial-form-page domGeneration=1791394923384 attemptId=att_1791394923082_xdj6o
+[2026-10-07T17:42:03.429Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] [TARGET_PAGE] url=http://127.0.0.1:8980/partial-form-page domGeneration=1791394923384 attemptId=att_1791394923082_xdj6o
+[2026-10-07T17:42:03.440Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] 🚀 [Engine] Ultra-Mode process started
+[2026-10-07T17:42:03.444Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] 🚀 [Engine] Ultra-Mode process started
+[2026-10-07T17:42:03.444Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[2026-10-07T17:42:03.444Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[2026-10-07T17:42:03.445Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] [TARGET_PAGE] url=http://127.0.0.1:8980/partial-form-page recursion=0
+[2026-10-07T17:42:03.445Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] [TARGET_PAGE] url=http://127.0.0.1:8980/partial-form-page recursion=0
+[2026-10-07T17:42:03.451Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] 🔍 [Discovery] URL: http://127.0.0.1:8980/partial-form-page | Recursion: 0
+[2026-10-07T17:42:03.459Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] 🔍 [Discovery] URL: http://127.0.0.1:8980/partial-form-page | Recursion: 0
+[2026-10-07T17:42:03.478Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[2026-10-07T17:42:03.482Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[2026-10-07T17:42:03.486Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1:8980/partial-form-page | Recursion: 0
+[2026-10-07T17:42:03.492Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1:8980/partial-form-page | Recursion: 0
+[2026-10-07T17:42:03.503Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] [FORM_SCAN] forms=1 logicalContainers=1 crossOriginFrames=0 externalFormCandidates=0
+[2026-10-07T17:42:03.506Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] [FORM_SCAN] forms=1 logicalContainers=1 crossOriginFrames=0 externalFormCandidates=0
+[2026-10-07T17:42:03.510Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] [PAGE_CLASS] CONTACT_FORM_PAGE
+[2026-10-07T17:42:03.511Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] [PAGE_CLASS] CONTACT_FORM_PAGE
+[2026-10-07T17:42:03.513Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] 🎯 Step 2: Contact form discovered. Preparing submission...
+[2026-10-07T17:42:03.515Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] 🎯 Step 2: Contact form discovered. Preparing submission...
+[2026-10-07T17:42:03.517Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] [STAGE] stage=CONTACT_PAGE_FOUND
+[2026-10-07T17:42:03.518Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] [STAGE] stage=CONTACT_PAGE_FOUND
+[2026-10-07T17:42:03.523Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] [LONG_TEXT_GATE] found=true type=textarea semantic=message
+[2026-10-07T17:42:03.526Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] [LONG_TEXT_GATE] found=true type=textarea semantic=message
+[2026-10-07T17:42:03.528Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] [FORM_GATE] eligible=true reason=BODY_FIELD_PRESENT
+[2026-10-07T17:42:03.529Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] [FORM_GATE] eligible=true reason=BODY_FIELD_PRESENT
+[2026-10-07T17:42:03.532Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] 📍 [PIPELINE][CONTACT_PAGE_FOUND] url=http://127.0.0.1:8980/partial-form-page
+[2026-10-07T17:42:03.535Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] 🔍 [Supreme-X 5.0] Scanning for multi-location / branch links...
+[2026-10-07T17:42:03.537Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] 🔍 [Supreme-X 5.0] Scanning for multi-location / branch links...
+[2026-10-07T17:42:03.541Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] [AUTOFILL_LOCK] acquired=true key=att_1791394923082_xdj6o:http://127.0.0.1:8980/partial-form-page:contact-form
+[2026-10-07T17:42:03.542Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] [AUTOFILL_LOCK] acquired=true key=att_1791394923082_xdj6o:http://127.0.0.1:8980/partial-form-page:contact-form
+[2026-10-07T17:42:03.545Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] [CONTACT_GATE] PASS bodyField=textarea
+[2026-10-07T17:42:03.546Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] [CONTACT_GATE] PASS bodyField=textarea
+[2026-10-07T17:42:03.561Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] [STAGE] stage=ELIGIBLE_FORM_FOUND
+[2026-10-07T17:42:03.562Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] [STAGE] stage=ELIGIBLE_FORM_FOUND
+[2026-10-07T17:42:03.566Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] [CONTACT_COMMIT] contactPageUrl=http://127.0.0.1:8980/partial-form-page
+[2026-10-07T17:42:03.577Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] [FORM_COMMIT] formPageUrl=http://127.0.0.1:8980/partial-form-page
+[2026-10-07T17:42:03.579Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] 📋 [PIPELINE][ELIGIBLE_FORM_FOUND] url=http://127.0.0.1:8980/partial-form-page
+[2026-10-07T17:42:03.586Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] 🛠️ Step 3: Registering message template to form fields...
+[2026-10-07T17:42:03.590Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] 🛠️ Step 3: Registering message template to form fields...
+[2026-10-07T17:42:03.592Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] 🛡️ [FormStabilizer] Starting bounded stabilization (max 5s, max 2 retries/element)...
+[2026-10-07T17:42:03.595Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] 🛡️ [FormStabilizer] Starting bounded stabilization (max 5s, max 2 retries/element)...
+[2026-10-07T17:42:03.596Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] 🛡️ [FormStabilizer] Stopped (ALL_FIELDS_STABLE_OR_RESOLVED): seen=4 stable=true unresolved=1 (selects=0, cbs=0, radios=0)
+[2026-10-07T17:42:03.603Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] 🛡️ [FormStabilizer] Stopped (ALL_FIELDS_STABLE_OR_RESOLVED): seen=4 stable=true unresolved=1 (selects=0, cbs=0, radios=0)
+[2026-10-07T17:42:03.604Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] 🛠️ [Action][HyperEngine v4.0] 초강력 폼 자동 등록기 시작...
+[2026-10-07T17:42:03.605Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] 🛠️ [Action][HyperEngine v4.0] 초강력 폼 자동 등록기 시작...
+[2026-10-07T17:42:03.606Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] 🎯 [HyperEngine v4.0] Phase 0 - 입력 필드 전수 수집...
+[2026-10-07T17:42:03.606Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] 🎯 [HyperEngine v4.0] Phase 0 - 입력 필드 전수 수집...
+[2026-10-07T17:42:03.606Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page]    [v4.0] 총 4개 입력 필드 발견 (radio: 0, checkbox: 0)
+[2026-10-07T17:42:03.606Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page]    [v4.0] 총 4개 입력 필드 발견 (radio: 0, checkbox: 0)
+[2026-10-07T17:42:03.607Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] 🎯 [HyperEngine v4.0] Phase 1 & 2 - 드롭다운 SelectResolverR2 전수 처리...
+[2026-10-07T17:42:03.617Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] 🎯 [HyperEngine v4.0] Phase 1 & 2 - 드롭다운 SelectResolverR2 전수 처리...
+[2026-10-07T17:42:03.617Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] 🎯 [HyperEngine v4.0] Phase 3 - 체크박스 CheckboxResolverR2 전수 처리...
+[2026-10-07T17:42:03.617Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] 🎯 [HyperEngine v4.0] Phase 3 - 체크박스 CheckboxResolverR2 전수 처리...
+[2026-10-07T17:42:03.617Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] 🎯 [HyperEngine v4.0] Phase 3.5 - 휴먼 테스트 수식/방정식 퀴즈 검출 및 자동 해결...
+[2026-10-07T17:42:03.618Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] 🎯 [HyperEngine v4.0] Phase 3.5 - 휴먼 테스트 수식/방정식 퀴즈 검출 및 자동 해결...
+[2026-10-07T17:42:03.618Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] 🎯 [HyperEngine v4.0] Phase 4 - 텍스트 필드 패턴 매칭...
+[2026-10-07T17:42:03.618Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] 🎯 [HyperEngine v4.0] Phase 4 - 텍스트 필드 패턴 매칭...
+[2026-10-07T17:42:03.619Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] 🎯 [HyperEngine v4.0] Phase 5 - 빈 필드 강제 채우기...
+[2026-10-07T17:42:03.619Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] 🎯 [HyperEngine v4.0] Phase 5 - 빈 필드 강제 채우기...
+[2026-10-07T17:42:06.471Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page]    - [Input✅] category=email filled=true length=20
+[2026-10-07T17:42:06.474Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page]    - [Input✅] category=email filled=true length=20
+[2026-10-07T17:42:06.474Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] 🎯 [HyperEngine v4.0] Phase 6 - 라디오 버튼 미선택 그룹 처리...
+[2026-10-07T17:42:06.477Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] 🎯 [HyperEngine v4.0] Phase 6 - 라디오 버튼 미선택 그룹 처리...
+[2026-10-07T17:42:06.481Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] 🎯 [HyperEngine v4.0] Phase 8 - 커스텀 ARIA 체크박스/라디오 처리...
+[2026-10-07T17:42:06.481Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] 🎯 [HyperEngine v4.0] Phase 8 - 커스텀 ARIA 체크박스/라디오 처리...
+[2026-10-07T17:42:06.490Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] 🛠️ [HyperEngine v4.0] Phase 9 - BruteForce contentEditable/role=textbox...
+[2026-10-07T17:42:06.490Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] 🛠️ [HyperEngine v4.0] Phase 9 - BruteForce contentEditable/role=textbox...
+[2026-10-07T17:42:06.491Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] 🎯 [HyperEngine v4.0] Phase 10 - Super-BruteForce Sweeper (초강력 입력기) 가동...
+[2026-10-07T17:42:06.491Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] 🎯 [HyperEngine v4.0] Phase 10 - Super-BruteForce Sweeper (초강력 입력기) 가동...
+[2026-10-07T17:42:06.491Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
+[2026-10-07T17:42:06.495Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
+[2026-10-07T17:42:06.501Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] [STAGE] stage=FIELD_STATE_STABLE
+[2026-10-07T17:42:06.506Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] [STAGE] stage=FIELD_STATE_STABLE
+[2026-10-07T17:42:06.509Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] ✅ [PIPELINE][REQUIRED_FIELDS_RESOLVED] url=http://127.0.0.1:8980/partial-form-page
+[2026-10-07T17:42:06.512Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] 🔒 [PIPELINE][FIELD_STATE_STABLE] url=http://127.0.0.1:8980/partial-form-page
+[2026-10-07T17:42:06.513Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] ✅ [HyperEngine v4.0] 폼 작성 완료 - 입력 필드 1개 처리됨
+[2026-10-07T17:42:06.515Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] ✅ [HyperEngine v4.0] 폼 작성 완료 - 입력 필드 1개 처리됨
+[2026-10-07T17:42:06.516Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] [AUTOFILL_RESULT] status=SUCCESS fieldsDetected=0 fieldsFilled=1 unresolved=0 reason=ok
+[2026-10-07T17:42:06.517Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] [AUTOFILL_RESULT] status=SUCCESS fieldsDetected=0 fieldsFilled=1 unresolved=0 reason=ok
+[2026-10-07T17:42:06.519Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] [FILL] messageBodyFilled=true
+[2026-10-07T17:42:06.524Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] [FILL] messageBodyFilled=true
+[2026-10-07T17:42:06.525Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] ✅ [FORM_PREP] COMPLETE
+[2026-10-07T17:42:06.525Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] ✅ [FORM_PREP] COMPLETE
+[2026-10-07T17:42:06.527Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] ⏳ [Engine] Holding for visual confirmation (1500ms)...
+[2026-10-07T17:42:06.527Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] ⏳ [Engine] Holding for visual confirmation (1500ms)...
+[2026-10-07T17:42:07.977Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] 🧠 [FinalFill] Running AI Final Form Completion Pass immediately before submit...
+[2026-10-07T17:42:07.977Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] 🧠 [FinalFill] Running AI Final Form Completion Pass immediately before submit...
+[2026-10-07T17:42:07.981Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] [MISSED_FIELD] type=INPUT label="tax_id_required tax_id_required contact inquiry contact partial form page" reason=UNRESOLVED_REQUIRED_FACT
+[2026-10-07T17:42:07.985Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] [MISSED_FIELD] type=INPUT label="tax_id_required tax_id_required contact inquiry contact partial form page" reason=UNRESOLVED_REQUIRED_FACT
+[2026-10-07T17:42:07.987Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] ❌ [FinalAudit] Submission blocked by Hard Gate: UNRESOLVED_REQUIRED_FACT
+[2026-10-07T17:42:07.988Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] ❌ [FinalAudit] Submission blocked by Hard Gate: UNRESOLVED_REQUIRED_FACT
+[2026-10-07T17:42:07.989Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] [MANUAL_ASSIST] state=FORM_MANUAL_ASSIST_PENDING_OWNER reason=REQUIRED_FIELDS_UNRESOLVED contactPageUrl=http://127.0.0.1:8980/partial-form-page formPageUrl=http://127.0.0.1:8980/partial-form-page externalFormUrl=none
+[2026-10-07T17:42:07.989Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] [MANUAL_ASSIST] state=FORM_MANUAL_ASSIST_PENDING_OWNER reason=REQUIRED_FIELDS_UNRESOLVED contactPageUrl=http://127.0.0.1:8980/partial-form-page formPageUrl=http://127.0.0.1:8980/partial-form-page externalFormUrl=none
+[2026-10-07T17:42:07.995Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] ⚠️ [ManualAssist] Pausing automation for Owner assist: REQUIRED_FIELDS_UNRESOLVED
+[2026-10-07T17:42:07.995Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] ⚠️ [ManualAssist] Pausing automation for Owner assist: REQUIRED_FIELDS_UNRESOLVED
+[2026-10-07T17:42:07.995Z] [SW_CONSOLE_LOG] [BG_LOG][tab=none] [MANUAL_ASSIST] state=FORM_MANUAL_ASSIST_PENDING_OWNER reason=REQUIRED_FIELDS_UNRESOLVED contactPageUrl=http://127.0.0.1:8980/partial-form-page formPageUrl=http://127.0.0.1:8980/partial-form-page externalFormUrl=none
+[2026-10-07T17:42:08.190Z] [GATE_C_STAGE] stage=FORM_MANUAL_ASSIST_PENDING_OWNER elapsed=5107ms
+[2026-10-07T17:42:08.192Z] [GATE_C_MODAL] hasUnresolvedField=true
+[2026-10-07T17:42:08.193Z] [GATE_C_ACTION] Clicked "Could Not Submit / Skip" button in Popup UI
+[2026-10-07T17:42:08.194Z] [SW_CONSOLE_LOG] [BG_LOG][tab=none] [MANUAL_ASSIST_DECISION] Owner chose: skip for attemptId=att_1791394923082_xdj6o
+[2026-10-07T17:42:08.198Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] [RESULT] resultUrl=http://127.0.0.1:8980/partial-form-page
+[2026-10-07T17:42:08.198Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] [FINAL_CANONICAL] status=SKIPPED reason=FORM_MANUAL_ASSIST_SKIPPED attemptId=att_1791394923082_xdj6o
+[2026-10-07T17:42:08.198Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] [TARGET][127.0.0.1] FINAL status=SKIPPED reason=FORM_MANUAL_ASSIST_SKIPPED
+[2026-10-07T17:42:08.201Z] [SW_CONSOLE_LOG] [BG_LOG][tab=none] [STALE_TARGET_EVENT] action=SENDER_FINISHED senderTab=1596499643 expectedTab=null result=REJECTED reason=tab_mismatch
+[2026-10-07T17:42:08.202Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] [LIFECYCLE] Target already settling/settled post-audit form submit recovery. Aborting fallback discovery.
+[2026-10-07T17:42:08.206Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] [LIFECYCLE] Target already settling/settled post-audit form submit recovery. Aborting fallback discovery.
+[2026-10-07T17:42:08.210Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] [HISTORY_FINAL] sourceUrl=http://127.0.0.1:8980/partial-form-page contactPageUrl=http://127.0.0.1:8980/partial-form-page formPageUrl=http://127.0.0.1:8980/partial-form-page resultUrl=http://127.0.0.1:8980/partial-form-page
+[2026-10-07T17:42:08.216Z] [SW_CONSOLE_LOG] [LEDGER_STATS] scope=currentRun success=0 failure=0 unknown=0 timeout=0 skipped=1
+[2026-10-07T17:42:08.217Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] [LEDGER_STATS] scope=currentRun success=0 failure=0 unknown=0 timeout=0 skipped=1
+[2026-10-07T17:42:08.405Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] 💓 [Heartbeat] Engine active and processing...
+[2026-10-07T17:42:08.406Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499643] [CONTENT_EVENT][tabId=1596499643][attemptId=att_1791394923082_xdj6o][url=http://127.0.0.1:8980/partial-form-page] 💓 [Heartbeat] Engine active and processing...
+[2026-10-07T17:42:09.409Z] [SW_CONSOLE_LOG] [TAB_CLOSE] tabId=1596499643 attempt=1 result=CLOSED
+[2026-10-07T17:42:09.409Z] [SW_CONSOLE_LOG] [POST_FINAL_TAB_INVARIANT] target=http://127.0.0.1:8980/partial-form-page remainingOwnedTabs=0 retainedTabs=0 result=PASS
+[2026-10-07T17:42:09.410Z] [GATE_C_ORCHESTRATE_RES] success=false reasonCode=FORM_MANUAL_ASSIST_SKIPPED
+[2026-10-07T17:42:09.411Z] [GATE_C_FINAL] status=SKIPPED formDetectionStatus=FOUND autofillStatus=PARTIAL
+[2026-10-07T17:42:09.411Z] GATE C PASS: Autofill Partial Fixture correctly triggers manual assist via real FinalFormCompletionEngine.
+[2026-10-07T17:42:09.411Z] ------------------------------------------------------------
+[2026-10-07T17:42:09.411Z] STARTING GATE D: CAPTCHA Hard Pause & Deadline Freeze
+[2026-10-07T17:42:09.411Z] ------------------------------------------------------------
+[2026-10-07T17:42:09.417Z] [SW_CONSOLE_LOG] [TARGET_DEADLINE] Paused: reason=CAPTCHA_PENDING_OWNER remainingMs=2498
+[2026-10-07T17:42:09.417Z] [SW_CONSOLE_LOG] [BG_LOG][tab=none] [CAPTCHA_WAIT] state=CAPTCHA_PENDING_OWNER deadlinePaused=true remainingMs=2498
+[2026-10-07T17:42:09.418Z] [SW_CONSOLE_LOG] [BG_LOG][tab=none] [OWNER_CAPTCHA] Detected: type=recaptcha sitekey=6Le-wvkSAAAAAPBMRTvw0Q4Muexq9bi0DJwx_nqU. Timer suspended. Awaiting owner decision.
+[2026-10-07T17:42:12.944Z] [GATE_D_STAGE1] timedOut=false paused=true remBudget=2498
+[2026-10-07T17:42:12.946Z] [SW_CONSOLE_LOG] [BG_LOG][tab=none] [CAPTCHA_DECISION] Owner chose: manual
+[2026-10-07T17:42:12.947Z] [SW_CONSOLE_LOG] [BG_LOG][tab=none] [CAPTCHA_WAIT] state=CAPTCHA_MANUAL_WAIT deadlinePaused=true remainingMs=2498
+[2026-10-07T17:42:12.949Z] [SW_CONSOLE_LOG] [BG_LOG][tab=none] [CAPTCHA_DECISION] Manual mode: timer paused. Waiting for owner solve or skip.
+[2026-10-07T17:42:14.464Z] [GATE_D_STAGE2] timedOut=false
+[2026-10-07T17:42:14.466Z] [SW_CONSOLE_LOG] [BG_LOG][tab=none] [CAPTCHA_MANUAL_SUCCESS] Manual solve verified. attemptId=att_1791394929413_w6ycu
+[2026-10-07T17:42:14.468Z] [SW_CONSOLE_LOG] [TARGET_DEADLINE] Resumed: wasReason=CAPTCHA_MANUAL_WAIT remainingMs=2498
+[2026-10-07T17:42:14.474Z] [GATE_D_RESUME] isResumed=true
+[2026-10-07T17:42:14.474Z] GATE D PASS: CAPTCHA hard pause and deadline freeze verified.
+[2026-10-07T17:42:14.474Z] ------------------------------------------------------------
+[2026-10-07T17:42:14.474Z] STARTING GATE E: Canonical Timeout (Real processNextCampaignTarget Race)
+[2026-10-07T17:42:14.474Z] ------------------------------------------------------------
+[2026-10-07T17:42:14.476Z] [SW_CONSOLE_LOG] [SERIALIZED_GATE] Slot acquired atomically. activeTargetInFlight=true activeTargetCount=1 maxConcurrent=1
+[2026-10-07T17:42:14.477Z] [SW_CONSOLE_LOG] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedBefore=1
+[2026-10-07T17:42:14.634Z] [SW_CONSOLE_LOG] [TAB_CLOSE] tabId=999 attempt=1 result=CLOSED
+[2026-10-07T17:42:14.634Z] [SW_CONSOLE_LOG] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedAfter=0 result=PASS
+[2026-10-07T17:42:14.635Z] [SW_CONSOLE_LOG] [BG_LOG][tab=none] [TARGET 0/0][127.0.0.1] START
+[2026-10-07T17:42:14.690Z] [SW_CONSOLE_LOG] [TAB_BARRIER] phase=POST_NEW_TARGET_CREATE ownedBefore=0
+[2026-10-07T17:42:14.698Z] [SW_CONSOLE_LOG] [TAB_BARRIER] phase=POST_NEW_TARGET_CREATE ownedAfter=0 result=PASS
+[2026-10-07T17:42:14.699Z] [SW_CONSOLE_LOG] [TAB_KILL_SWITCH] keepTabId=1596499645 closedOthers=0 remainingOwned=1 result=PASS
+[2026-10-07T17:42:14.702Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499645] [TAB_FOCUS] tabId=1596499645 windowId=1596499633 active=true focused=true
+[2026-10-07T17:42:14.708Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499645] Step 1: Sniper Mode active. Searching for contact page...
+[2026-10-07T17:42:14.713Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499645] 🔦 Scanning paths 1-10...
+[2026-10-07T17:42:14.733Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499645] Pre-scan complete. Identified 10 valid paths.
+[2026-10-07T17:42:14.733Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499645] [SniperScan] Identified 10 candidate paths in background.
+[2026-10-07T17:42:19.647Z] [SW_CONSOLE_LOG] [BG_LOG][tab=none] ⚠️ [Protection] Target skipped / timed out: Local Session Timeout
+[2026-10-07T17:42:19.648Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499645] [ORCHESTRATION_ABORTED] abortSignal was triggered externally (Local Session Timeout). Delegating terminal settlement to outer target lifecycle.
+[2026-10-07T17:42:19.833Z] [SW_CONSOLE_LOG] [TAB_CLOSE] tabId=1596499645 attempt=1 result=CLOSED
+[2026-10-07T17:42:19.893Z] [SW_CONSOLE_LOG] [TIMEOUT_CLASS] stage=CAPTCHA => TIMEOUT_LOCAL (pre-submit)
+[2026-10-07T17:42:19.898Z] [SW_CONSOLE_LOG] [BG_LOG][tab=none] [FINAL_CANONICAL] status=TIMEOUT_LOCAL reason=TIMEOUT_LOCAL attemptId=att_1791394934635_o53hq
+[2026-10-07T17:42:19.899Z] [SW_CONSOLE_LOG] [BG_LOG][tab=none] [TARGET][127.0.0.1] FINAL status=TIMEOUT_LOCAL reason=TIMEOUT_LOCAL
+[2026-10-07T17:42:19.902Z] [SW_CONSOLE_LOG] [SERIALIZED_GATE] Slot released. activeTargetInFlight=false activeTargetCount=0
+[2026-10-07T17:42:19.903Z] [SW_CONSOLE_LOG] [BG_LOG][tab=none] Waiting 12000ms before next target...
+[2026-10-07T17:42:19.907Z] [GATE_E_VERIFY] status=TIMEOUT_LOCAL reason=TIMEOUT_LOCAL attempts=1 timeoutLocalCount=1
+[2026-10-07T17:42:19.907Z] GATE E PASS: Real processNextCampaignTarget lifecycle settles exactly one TIMEOUT_LOCAL with sole authority.
+[2026-10-07T17:42:19.907Z] ------------------------------------------------------------
+[2026-10-07T17:42:19.907Z] STARTING GATE F: Persistent Diagnostic Export (Close/Reopen Popup & Byte Equivalence)
+[2026-10-07T17:42:19.907Z] ------------------------------------------------------------
+[2026-10-07T17:42:24.172Z] [GATE_F_VERIFY] count=1413 isComplete=true notTruncated=true hasRealModules=true isByteEqual=true len=175886
+[2026-10-07T17:42:24.173Z] GATE F PASS: Diagnostic export persisted across popup lifecycle, contains real module hashes, and is byte-equivalent.
+[2026-10-07T17:42:24.173Z] ------------------------------------------------------------
+[2026-10-07T17:42:24.173Z] STARTING GATE G: Persistent Ledger (Reload from Storage & 5 Clickable Links)
+[2026-10-07T17:42:24.173Z] ------------------------------------------------------------
+[2026-10-07T17:42:24.179Z] [GATE_G_VERIFY] cards=5 domainLink=true contactLink=true externalLink=true pushPressUrl=true
+[2026-10-07T17:42:24.179Z] GATE G PASS: All 5 clickable links and structured badges survived storage reload.
+[2026-10-07T17:42:24.179Z] ------------------------------------------------------------
+[2026-10-07T17:42:24.179Z] STARTING GATE H: Real Pause/Stop Quiescence While Modal Open
+[2026-10-07T17:42:24.180Z] ------------------------------------------------------------
+[2026-10-07T17:42:24.243Z] [SW_CONSOLE_LOG] [TAB_BARRIER] phase=POST_NEW_TARGET_CREATE ownedBefore=0
+[2026-10-07T17:42:24.246Z] [SW_CONSOLE_LOG] [TAB_BARRIER] phase=POST_NEW_TARGET_CREATE ownedAfter=0 result=PASS
+[2026-10-07T17:42:24.246Z] [SW_CONSOLE_LOG] [TAB_KILL_SWITCH] keepTabId=1596499651 closedOthers=0 remainingOwned=1 result=PASS
+[2026-10-07T17:42:24.296Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499651] [TAB_FOCUS] tabId=1596499651 windowId=1596499633 active=true focused=true
+[2026-10-07T17:42:24.299Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499651] Step 1: Sniper Mode active. Searching for contact page...
+[2026-10-07T17:42:24.327Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499651] 🔦 Scanning paths 1-10...
+[2026-10-07T17:42:24.365Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499651] Pre-scan complete. Identified 10 valid paths.
+[2026-10-07T17:42:24.367Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499651] [SniperScan] Identified 10 candidate paths in background.
+[2026-10-07T17:42:24.512Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499651] [TAB_FOCUS] tabId=1596499651 windowId=1596499633 active=true focused=true
+[2026-10-07T17:42:24.519Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499651] [TAB_OWNERSHIP] VERIFIED_REDIRECT source=127.0.0.1 target=127.0.0.1 relation=SAME_HOST
+[2026-10-07T17:42:24.523Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499651] [FOCUS_SECURED] formPageUrl=http://127.0.0.1:8980/pause-quiesce-test-target
+[2026-10-07T17:42:24.528Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499651][attemptId=att_1791394944182_jhi6e][url=http://127.0.0.1:8980/pause-quiesce-test-target] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
+[2026-10-07T17:42:24.531Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499651] [CONTENT_EVENT][tabId=1596499651][attemptId=att_1791394944182_jhi6e][url=http://127.0.0.1:8980/pause-quiesce-test-target] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
+[2026-10-07T17:42:24.531Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499651] Extraction focus secured. Mapping template fields...
+[2026-10-07T17:42:24.549Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499651][attemptId=att_1791394944182_jhi6e][url=http://127.0.0.1:8980/pause-quiesce-test-target] [TARGET_PAGE] url=http://127.0.0.1:8980/pause-quiesce-test-target domGeneration=1791394944533 attemptId=att_1791394944182_jhi6e
+[2026-10-07T17:42:24.551Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499651] [CONTENT_EVENT][tabId=1596499651][attemptId=att_1791394944182_jhi6e][url=http://127.0.0.1:8980/pause-quiesce-test-target] [TARGET_PAGE] url=http://127.0.0.1:8980/pause-quiesce-test-target domGeneration=1791394944533 attemptId=att_1791394944182_jhi6e
+[2026-10-07T17:42:24.554Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499651][attemptId=att_1791394944182_jhi6e][url=http://127.0.0.1:8980/pause-quiesce-test-target] 🚀 [Engine] Ultra-Mode process started
+[2026-10-07T17:42:24.558Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499651] [CONTENT_EVENT][tabId=1596499651][attemptId=att_1791394944182_jhi6e][url=http://127.0.0.1:8980/pause-quiesce-test-target] 🚀 [Engine] Ultra-Mode process started
+[2026-10-07T17:42:24.560Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499651][attemptId=att_1791394944182_jhi6e][url=http://127.0.0.1:8980/pause-quiesce-test-target] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[2026-10-07T17:42:24.560Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499651] [CONTENT_EVENT][tabId=1596499651][attemptId=att_1791394944182_jhi6e][url=http://127.0.0.1:8980/pause-quiesce-test-target] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[2026-10-07T17:42:24.563Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499651][attemptId=att_1791394944182_jhi6e][url=http://127.0.0.1:8980/pause-quiesce-test-target] [TARGET_PAGE] url=http://127.0.0.1:8980/pause-quiesce-test-target recursion=0
+[2026-10-07T17:42:24.565Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499651] [CONTENT_EVENT][tabId=1596499651][attemptId=att_1791394944182_jhi6e][url=http://127.0.0.1:8980/pause-quiesce-test-target] [TARGET_PAGE] url=http://127.0.0.1:8980/pause-quiesce-test-target recursion=0
+[2026-10-07T17:42:24.567Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499651][attemptId=att_1791394944182_jhi6e][url=http://127.0.0.1:8980/pause-quiesce-test-target] 🔍 [Discovery] URL: http://127.0.0.1:8980/pause-quiesce-test-target | Recursion: 0
+[2026-10-07T17:42:24.567Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499651] [CONTENT_EVENT][tabId=1596499651][attemptId=att_1791394944182_jhi6e][url=http://127.0.0.1:8980/pause-quiesce-test-target] 🔍 [Discovery] URL: http://127.0.0.1:8980/pause-quiesce-test-target | Recursion: 0
+[2026-10-07T17:42:24.575Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499651][attemptId=att_1791394944182_jhi6e][url=http://127.0.0.1:8980/pause-quiesce-test-target] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[2026-10-07T17:42:24.577Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499651] [CONTENT_EVENT][tabId=1596499651][attemptId=att_1791394944182_jhi6e][url=http://127.0.0.1:8980/pause-quiesce-test-target] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[2026-10-07T17:42:24.580Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499651][attemptId=att_1791394944182_jhi6e][url=http://127.0.0.1:8980/pause-quiesce-test-target] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1:8980/pause-quiesce-test-target | Recursion: 0
+[2026-10-07T17:42:24.582Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499651] [CONTENT_EVENT][tabId=1596499651][attemptId=att_1791394944182_jhi6e][url=http://127.0.0.1:8980/pause-quiesce-test-target] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1:8980/pause-quiesce-test-target | Recursion: 0
+[2026-10-07T17:42:25.964Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499651][attemptId=att_1791394944182_jhi6e][url=http://127.0.0.1:8980/pause-quiesce-test-target] 🕵️ [UltraFinder] Scanning complex structures (ShadowDOM & Multi-Root)...
+[2026-10-07T17:42:25.967Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499651] [CONTENT_EVENT][tabId=1596499651][attemptId=att_1791394944182_jhi6e][url=http://127.0.0.1:8980/pause-quiesce-test-target] 🕵️ [UltraFinder] Scanning complex structures (ShadowDOM & Multi-Root)...
+[2026-10-07T17:42:25.973Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499651][attemptId=att_1791394944182_jhi6e][url=http://127.0.0.1:8980/pause-quiesce-test-target] 🕵️ [Supreme-Scan 5.0] Pre-scanning labels and context...
+[2026-10-07T17:42:25.973Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499651] [CONTENT_EVENT][tabId=1596499651][attemptId=att_1791394944182_jhi6e][url=http://127.0.0.1:8980/pause-quiesce-test-target] 🕵️ [Supreme-Scan 5.0] Pre-scanning labels and context...
+[2026-10-07T17:42:25.973Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499651][attemptId=att_1791394944182_jhi6e][url=http://127.0.0.1:8980/pause-quiesce-test-target] 🔍 [Scan] Scanned 1 elements. Highest score: -999
+[2026-10-07T17:42:25.973Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499651] [CONTENT_EVENT][tabId=1596499651][attemptId=att_1791394944182_jhi6e][url=http://127.0.0.1:8980/pause-quiesce-test-target] 🔍 [Scan] Scanned 1 elements. Highest score: -999
+[2026-10-07T17:42:25.974Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499651][attemptId=att_1791394944182_jhi6e][url=http://127.0.0.1:8980/pause-quiesce-test-target] ⚠️ [Scan] No valid forms reached threshold score (Target Score: 35)
+[2026-10-07T17:42:25.978Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499651] [CONTENT_EVENT][tabId=1596499651][attemptId=att_1791394944182_jhi6e][url=http://127.0.0.1:8980/pause-quiesce-test-target] ⚠️ [Scan] No valid forms reached threshold score (Target Score: 35)
+[2026-10-07T17:42:25.978Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499651][attemptId=att_1791394944182_jhi6e][url=http://127.0.0.1:8980/pause-quiesce-test-target] 🚀 [Engine] Ultra-Mode: Scrolling to reveal lazy-loaded content...
+[2026-10-07T17:42:25.979Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499651] [CONTENT_EVENT][tabId=1596499651][attemptId=att_1791394944182_jhi6e][url=http://127.0.0.1:8980/pause-quiesce-test-target] 🚀 [Engine] Ultra-Mode: Scrolling to reveal lazy-loaded content...
+[2026-10-07T17:42:27.474Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499651][attemptId=att_1791394944182_jhi6e][url=http://127.0.0.1:8980/pause-quiesce-test-target] 🧐 [Discovery] Polling attempt 2/3... | URL: http://127.0.0.1:8980/pause-quiesce-test-target | Recursion: 0
+[2026-10-07T17:42:27.475Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499651] [CONTENT_EVENT][tabId=1596499651][attemptId=att_1791394944182_jhi6e][url=http://127.0.0.1:8980/pause-quiesce-test-target] 🧐 [Discovery] Polling attempt 2/3... | URL: http://127.0.0.1:8980/pause-quiesce-test-target | Recursion: 0
+[2026-10-07T17:42:28.886Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499651][attemptId=att_1791394944182_jhi6e][url=http://127.0.0.1:8980/pause-quiesce-test-target] 🕵️ [UltraFinder] Scanning complex structures (ShadowDOM & Multi-Root)...
+[2026-10-07T17:42:28.890Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499651] [CONTENT_EVENT][tabId=1596499651][attemptId=att_1791394944182_jhi6e][url=http://127.0.0.1:8980/pause-quiesce-test-target] 🕵️ [UltraFinder] Scanning complex structures (ShadowDOM & Multi-Root)...
+[2026-10-07T17:42:28.890Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499651][attemptId=att_1791394944182_jhi6e][url=http://127.0.0.1:8980/pause-quiesce-test-target] 🕵️ [Supreme-Scan 5.0] Pre-scanning labels and context...
+[2026-10-07T17:42:28.890Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499651] [CONTENT_EVENT][tabId=1596499651][attemptId=att_1791394944182_jhi6e][url=http://127.0.0.1:8980/pause-quiesce-test-target] 🕵️ [Supreme-Scan 5.0] Pre-scanning labels and context...
+[2026-10-07T17:42:28.895Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499651][attemptId=att_1791394944182_jhi6e][url=http://127.0.0.1:8980/pause-quiesce-test-target] 🔍 [Scan] Scanned 1 elements. Highest score: -999
+[2026-10-07T17:42:28.895Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499651] [CONTENT_EVENT][tabId=1596499651][attemptId=att_1791394944182_jhi6e][url=http://127.0.0.1:8980/pause-quiesce-test-target] 🔍 [Scan] Scanned 1 elements. Highest score: -999
+[2026-10-07T17:42:28.895Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499651][attemptId=att_1791394944182_jhi6e][url=http://127.0.0.1:8980/pause-quiesce-test-target] ⚠️ [Scan] No valid forms reached threshold score (Target Score: 35)
+[2026-10-07T17:42:28.895Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499651] [CONTENT_EVENT][tabId=1596499651][attemptId=att_1791394944182_jhi6e][url=http://127.0.0.1:8980/pause-quiesce-test-target] ⚠️ [Scan] No valid forms reached threshold score (Target Score: 35)
+[2026-10-07T17:42:28.900Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499651][attemptId=att_1791394944182_jhi6e][url=http://127.0.0.1:8980/pause-quiesce-test-target] 🔘 [Supreme-Scan] No form found. Attempting to trigger hidden contact containers...
+[2026-10-07T17:42:28.900Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499651] [CONTENT_EVENT][tabId=1596499651][attemptId=att_1791394944182_jhi6e][url=http://127.0.0.1:8980/pause-quiesce-test-target] 🔘 [Supreme-Scan] No form found. Attempting to trigger hidden contact containers...
+[2026-10-07T17:42:29.556Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499651][attemptId=att_1791394944182_jhi6e][url=http://127.0.0.1:8980/pause-quiesce-test-target] 💓 [Heartbeat] Engine active and processing...
+[2026-10-07T17:42:29.559Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499651] [CONTENT_EVENT][tabId=1596499651][attemptId=att_1791394944182_jhi6e][url=http://127.0.0.1:8980/pause-quiesce-test-target] 💓 [Heartbeat] Engine active and processing...
+[2026-10-07T17:42:30.390Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499651][attemptId=att_1791394944182_jhi6e][url=http://127.0.0.1:8980/pause-quiesce-test-target] 🧐 [Discovery] Polling attempt 3/3... | URL: http://127.0.0.1:8980/pause-quiesce-test-target | Recursion: 0
+[2026-10-07T17:42:30.391Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499651] [CONTENT_EVENT][tabId=1596499651][attemptId=att_1791394944182_jhi6e][url=http://127.0.0.1:8980/pause-quiesce-test-target] 🧐 [Discovery] Polling attempt 3/3... | URL: http://127.0.0.1:8980/pause-quiesce-test-target | Recursion: 0
+[2026-10-07T17:42:31.806Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499651][attemptId=att_1791394944182_jhi6e][url=http://127.0.0.1:8980/pause-quiesce-test-target] 🕵️ [UltraFinder] Scanning complex structures (ShadowDOM & Multi-Root)...
+[2026-10-07T17:42:31.808Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499651] [CONTENT_EVENT][tabId=1596499651][attemptId=att_1791394944182_jhi6e][url=http://127.0.0.1:8980/pause-quiesce-test-target] 🕵️ [UltraFinder] Scanning complex structures (ShadowDOM & Multi-Root)...
+[2026-10-07T17:42:31.809Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499651][attemptId=att_1791394944182_jhi6e][url=http://127.0.0.1:8980/pause-quiesce-test-target] 🕵️ [Supreme-Scan 5.0] Pre-scanning labels and context...
+[2026-10-07T17:42:31.811Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499651] [CONTENT_EVENT][tabId=1596499651][attemptId=att_1791394944182_jhi6e][url=http://127.0.0.1:8980/pause-quiesce-test-target] 🕵️ [Supreme-Scan 5.0] Pre-scanning labels and context...
+[2026-10-07T17:42:31.811Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499651][attemptId=att_1791394944182_jhi6e][url=http://127.0.0.1:8980/pause-quiesce-test-target] 🔍 [Scan] Scanned 1 elements. Highest score: -999
+[2026-10-07T17:42:31.812Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499651] [CONTENT_EVENT][tabId=1596499651][attemptId=att_1791394944182_jhi6e][url=http://127.0.0.1:8980/pause-quiesce-test-target] 🔍 [Scan] Scanned 1 elements. Highest score: -999
+[2026-10-07T17:42:31.815Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499651][attemptId=att_1791394944182_jhi6e][url=http://127.0.0.1:8980/pause-quiesce-test-target] ⚠️ [Scan] No valid forms reached threshold score (Target Score: 35)
+[2026-10-07T17:42:31.815Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499651] [CONTENT_EVENT][tabId=1596499651][attemptId=att_1791394944182_jhi6e][url=http://127.0.0.1:8980/pause-quiesce-test-target] ⚠️ [Scan] No valid forms reached threshold score (Target Score: 35)
+[2026-10-07T17:42:31.911Z] [SW_CONSOLE_LOG] [Engine] Stale session 1791394934474 detected (expected 1791394944180). Killing loop.
+[2026-10-07T17:42:33.314Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499651][attemptId=att_1791394944182_jhi6e][url=http://127.0.0.1:8980/pause-quiesce-test-target] [FORM_SCAN] forms=0 logicalContainers=0 crossOriginFrames=1 externalFormCandidates=1
+[2026-10-07T17:42:33.319Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499651] [CONTENT_EVENT][tabId=1596499651][attemptId=att_1791394944182_jhi6e][url=http://127.0.0.1:8980/pause-quiesce-test-target] [FORM_SCAN] forms=0 logicalContainers=0 crossOriginFrames=1 externalFormCandidates=1
+[2026-10-07T17:42:33.320Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499651][attemptId=att_1791394944182_jhi6e][url=http://127.0.0.1:8980/pause-quiesce-test-target] [PAGE_CLASS] NO_CONTACT
+[2026-10-07T17:42:33.320Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499651] [CONTENT_EVENT][tabId=1596499651][attemptId=att_1791394944182_jhi6e][url=http://127.0.0.1:8980/pause-quiesce-test-target] [PAGE_CLASS] NO_CONTACT
+[2026-10-07T17:42:33.320Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499651][attemptId=att_1791394944182_jhi6e][url=http://127.0.0.1:8980/pause-quiesce-test-target] [FORM_BOUNDARY] type=CROSS_ORIGIN_IFRAME formPageUrl=http://127.0.0.1:8980/pause-quiesce-test-target externalFormUrl=https://forms.hubspot.com/embed/v3/form999
+[2026-10-07T17:42:33.320Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499651] [CONTENT_EVENT][tabId=1596499651][attemptId=att_1791394944182_jhi6e][url=http://127.0.0.1:8980/pause-quiesce-test-target] [FORM_BOUNDARY] type=CROSS_ORIGIN_IFRAME formPageUrl=http://127.0.0.1:8980/pause-quiesce-test-target externalFormUrl=https://forms.hubspot.com/embed/v3/form999
+[2026-10-07T17:42:33.329Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499651][attemptId=att_1791394944182_jhi6e][url=http://127.0.0.1:8980/pause-quiesce-test-target] [FORM_GATE] eligible=false reason=EXTERNAL_CROSS_ORIGIN_FORM
+[2026-10-07T17:42:33.329Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499651] [CONTENT_EVENT][tabId=1596499651][attemptId=att_1791394944182_jhi6e][url=http://127.0.0.1:8980/pause-quiesce-test-target] [FORM_GATE] eligible=false reason=EXTERNAL_CROSS_ORIGIN_FORM
+[2026-10-07T17:42:33.329Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499651][attemptId=att_1791394944182_jhi6e][url=http://127.0.0.1:8980/pause-quiesce-test-target] [MANUAL_ASSIST] state=FORM_MANUAL_ASSIST_PENDING_OWNER reason=EXTERNAL_CROSS_ORIGIN_FORM contactPageUrl=http://127.0.0.1:8980/pause-quiesce-test-target formPageUrl=http://127.0.0.1:8980/pause-quiesce-test-target externalFormUrl=https://forms.hubspot.com/embed/v3/form999
+[2026-10-07T17:42:33.330Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499651] [CONTENT_EVENT][tabId=1596499651][attemptId=att_1791394944182_jhi6e][url=http://127.0.0.1:8980/pause-quiesce-test-target] [MANUAL_ASSIST] state=FORM_MANUAL_ASSIST_PENDING_OWNER reason=EXTERNAL_CROSS_ORIGIN_FORM contactPageUrl=http://127.0.0.1:8980/pause-quiesce-test-target formPageUrl=http://127.0.0.1:8980/pause-quiesce-test-target externalFormUrl=https://forms.hubspot.com/embed/v3/form999
+[2026-10-07T17:42:33.330Z] [SW_CONSOLE_LOG] [CONTENT_EVENT][tabId=1596499651][attemptId=att_1791394944182_jhi6e][url=http://127.0.0.1:8980/pause-quiesce-test-target] ⚠️ [ManualAssist] Pausing automation for Owner assist: EXTERNAL_CROSS_ORIGIN_FORM
+[2026-10-07T17:42:33.330Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499651] [CONTENT_EVENT][tabId=1596499651][attemptId=att_1791394944182_jhi6e][url=http://127.0.0.1:8980/pause-quiesce-test-target] ⚠️ [ManualAssist] Pausing automation for Owner assist: EXTERNAL_CROSS_ORIGIN_FORM
+[2026-10-07T17:42:33.330Z] [SW_CONSOLE_LOG] [TARGET_DEADLINE] Paused: reason=FORM_MANUAL_ASSIST_PENDING_OWNER remainingMs=170870
+[2026-10-07T17:42:33.330Z] [SW_CONSOLE_LOG] [BG_LOG][tab=none] [MANUAL_ASSIST] state=FORM_MANUAL_ASSIST_PENDING_OWNER reason=EXTERNAL_CROSS_ORIGIN_FORM contactPageUrl=http://127.0.0.1:8980/pause-quiesce-test-target formPageUrl=http://127.0.0.1:8980/pause-quiesce-test-target externalFormUrl=https://forms.hubspot.com/embed/v3/form999
+[2026-10-07T17:42:33.513Z] [GATE_H_STAGE] stage=FORM_MANUAL_ASSIST_PENDING_OWNER elapsed=9330ms
+[2026-10-07T17:42:33.514Z] [GATE_H_MODAL_BEFORE] visible=true
+[2026-10-07T17:42:33.517Z] [SW_CONSOLE_LOG] [BG_LOG][tab=none] ⏸️ [Engine] Campaign PAUSED / STOP & SAVE requested.
+[2026-10-07T17:42:33.518Z] [SW_CONSOLE_LOG] [BG_LOG][tab=1596499651] [ORCHESTRATION_ABORTED] abortSignal was triggered externally (PAUSE). Delegating terminal settlement to outer target lifecycle.
+[2026-10-07T17:42:33.521Z] [SW_CONSOLE_LOG] [BG_LOG][tab=none] 🔄 [Pause] Current target PREPARING re-queued to front: http://127.0.0.1:8980/pause-quiesce-test-target
+[2026-10-07T17:42:33.570Z] [SW_CONSOLE_LOG] [TAB_BARRIER] phase=PAUSE_CAMPAIGN ownedBefore=1
+[2026-10-07T17:42:33.714Z] [SW_CONSOLE_LOG] [TAB_CLOSE] tabId=1596499651 attempt=1 result=CLOSED
+[2026-10-07T17:42:33.730Z] [SW_CONSOLE_LOG] [TAB_CLOSE] tabId=1596499651 attempt=1 result=CLOSED
+[2026-10-07T17:42:33.731Z] [SW_CONSOLE_LOG] [TAB_BARRIER] phase=PAUSE_CAMPAIGN ownedAfter=0 result=PASS
+[2026-10-07T17:42:33.733Z] [SW_CONSOLE_LOG] [BG_LOG][tab=none] 💾 [Checkpoint] Campaign snapshot saved: 1 targets remaining.
+[2026-10-07T17:42:33.740Z] [SW_CONSOLE_LOG] [BG_LOG][tab=none] === CAMPAIGN OUTCOME SUMMARY (currentRun) ===
+[2026-10-07T17:42:33.741Z] [SW_CONSOLE_LOG] [BG_LOG][tab=none] CONFIRMED_SUCCESS:           0
+[2026-10-07T17:42:33.741Z] [SW_CONSOLE_LOG] [BG_LOG][tab=none] FAILURE:                     0
+[2026-10-07T17:42:33.741Z] [SW_CONSOLE_LOG] [BG_LOG][tab=none] TIMEOUT_LOCAL:               0
+[2026-10-07T17:42:33.741Z] [SW_CONSOLE_LOG] [BG_LOG][tab=none] TIMEOUT_GLOBAL:              0
+[2026-10-07T17:42:33.746Z] [SW_CONSOLE_LOG] [BG_LOG][tab=none] DELIVERY_UNKNOWN:            0
+[2026-10-07T17:42:33.746Z] [SW_CONSOLE_LOG] [BG_LOG][tab=none] SKIPPED:                     0
+[2026-10-07T17:42:33.747Z] [SW_CONSOLE_LOG] [BG_LOG][tab=none] PAUSED_UNKNOWN:              0
+[2026-10-07T17:42:33.747Z] [SW_CONSOLE_LOG] [BG_LOG][tab=none] ----------------------------------------
+[2026-10-07T17:42:33.750Z] [SW_CONSOLE_LOG] [BG_LOG][tab=none] TOTAL TERMINAL / COMPLETED:  0
+[2026-10-07T17:42:33.751Z] [SW_CONSOLE_LOG] [CAMPAIGN_SUMMARY] success=0 failure=0 timeoutLocal=0 timeoutGlobal=0 unknown=0 skipped=0 paused=0 completed=0
+[2026-10-07T17:42:33.751Z] [SW_CONSOLE_LOG] [BG_LOG][tab=none] ========================================
+[2026-10-07T17:42:33.751Z] [GATE_H_PAUSE] result={"success":true,"remainingCount":1}
+[2026-10-07T17:42:37.261Z] [GATE_H_VERIFY] isPaused=true controllerNull=true tabClosed=true modalDismissed=true
+[2026-10-07T17:42:37.261Z] GATE H PASS: Real pauseCampaignOrchestrator cleanly quiesces active target, closes modal, and cancels deadline.
+[2026-10-07T17:42:37.261Z] ============================================================
+[2026-10-07T17:42:37.261Z] ALL R6.9G.8.1 AUDIT GATES A THROUGH H PASSED IN REAL MICROSOFT EDGE BROWSER
+[2026-10-07T17:42:37.261Z] ============================================================

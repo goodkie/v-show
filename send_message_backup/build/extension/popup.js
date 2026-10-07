@@ -119,7 +119,23 @@ let lastStatsData = null;
 // ── [IPC DIAGNOSTIC TRACE & BUFFER SUBSYSTEM] ──────────────────────────────
 const DIAG_LOG_CAPACITY = 20000;
 const diagnosticLogBuffer = [];
+let diagnosticLogTruncated = false;
+let _lastDiagnosticReportSnapshot = null;
 const diagnosticSessionId = 'diag_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 8);
+
+async function loadPersistentDiagnostics() {
+    try {
+        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+            const data = await chrome.storage.local.get(['xpider_current_run_diagnostics']);
+            const diag = data.xpider_current_run_diagnostics;
+            if (diag && Array.isArray(diag.events) && diag.events.length > 0) {
+                diagnosticLogBuffer.length = 0;
+                diagnosticLogBuffer.push(...diag.events);
+                if (diag.truncated) diagnosticLogTruncated = true;
+            }
+        }
+    } catch (_) {}
+}
 
 /**
  * Privacy-safe Redaction Engine
@@ -174,6 +190,57 @@ function redactSensitiveText(str) {
         });
 }
 
+let _diagStorageFlushTimer = null;
+let _diagFlushInProgress = false;
+let _diagNeedsReFlush = false;
+
+async function flushDiagnosticStorage() {
+    if (_diagStorageFlushTimer) {
+        clearTimeout(_diagStorageFlushTimer);
+        _diagStorageFlushTimer = null;
+    }
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+        if (_diagFlushInProgress) {
+            _diagNeedsReFlush = true;
+            return;
+        }
+        _diagFlushInProgress = true;
+        try {
+            await new Promise((resolve) => {
+                chrome.storage.local.set({
+                    xpider_current_run_diagnostics: {
+                        events: [...diagnosticLogBuffer],
+                        truncated: !!diagnosticLogTruncated
+                    }
+                }, () => resolve());
+            });
+        } catch (e) {
+            console.error('[XPIDER_DIAG] Failed to flush diagnostic storage:', e);
+        } finally {
+            _diagFlushInProgress = false;
+            if (_diagNeedsReFlush) {
+                _diagNeedsReFlush = false;
+                await flushDiagnosticStorage();
+            }
+        }
+    }
+}
+
+function scheduleDiagnosticStorageFlush() {
+    if (!_diagStorageFlushTimer) {
+        _diagStorageFlushTimer = setTimeout(() => {
+            _diagStorageFlushTimer = null;
+            flushDiagnosticStorage();
+        }, 50);
+    }
+}
+
+if (typeof window !== 'undefined') {
+    window.flushDiagnosticStorage = flushDiagnosticStorage;
+    window.addEventListener('beforeunload', () => { flushDiagnosticStorage(); });
+    window.addEventListener('pagehide', () => { flushDiagnosticStorage(); });
+}
+
 function addDiagnosticLog(message, level = 'INFO') {
     const timestamp = new Date().toISOString();
     const redacted = redactSensitiveText(message);
@@ -181,7 +248,12 @@ function addDiagnosticLog(message, level = 'INFO') {
     diagnosticLogBuffer.push(entry);
     if (diagnosticLogBuffer.length > DIAG_LOG_CAPACITY) {
         diagnosticLogBuffer.shift();
+        diagnosticLogTruncated = true;
     }
+    _lastDiagnosticReportSnapshot = null; // Invalidate cached report snapshot
+
+    scheduleDiagnosticStorageFlush();
+
     if (level === 'ERROR') {
         console.error(`[XPIDER_DIAG] ${redacted}`);
     } else if (level === 'WARN') {
@@ -192,7 +264,13 @@ function addDiagnosticLog(message, level = 'INFO') {
 }
 
 async function clearDiagnosticLog() {
+    if (_diagStorageFlushTimer) {
+        clearTimeout(_diagStorageFlushTimer);
+        _diagStorageFlushTimer = null;
+    }
     diagnosticLogBuffer.length = 0;
+    diagnosticLogTruncated = false;
+    _lastDiagnosticReportSnapshot = null;
     const logContainer = document.getElementById('log-container');
     if (logContainer) logContainer.innerHTML = '';
 
@@ -201,6 +279,7 @@ async function clearDiagnosticLog() {
     }
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
         await chrome.storage.local.remove(LIST_DATA_KEYS.diagnostics);
+        await chrome.storage.local.set({ xpider_current_run_diagnostics: { runId: null, truncated: false, events: [] } });
     }
     // Always record a clear-acknowledgment entry in the diagnostic buffer
     // so getDiagnosticBuffer() returns exactly 1 entry after clear (testable contract)
@@ -212,7 +291,11 @@ function getDiagnosticBuffer() {
     return [...diagnosticLogBuffer];
 }
 
-function getDiagnosticReport() {
+function getDiagnosticReport(fresh = false) {
+    if (!fresh && _lastDiagnosticReportSnapshot) {
+        return _lastDiagnosticReportSnapshot;
+    }
+
     const extVer = (typeof chrome !== 'undefined' && chrome.runtime?.getManifest) 
         ? chrome.runtime.getManifest()?.version 
         : '1.2.0';
@@ -237,15 +320,17 @@ function getDiagnosticReport() {
         "=================================================================",
         "SECTION 1: BUILD",
         "=================================================================",
-        `buildId:            ${buildInfo.buildId || 'R6.9G.8-20261007-MANUAL-ASSIST-HARD-CAPTCHA-LEDGER'}`,
+        `buildId:            ${buildInfo.buildId || 'R6.9G.8.1-20261007-REAL-PATH-MANUAL-ASSIST-PERSISTENT-DIAG'}`,
         `implementationHead: ${buildInfo.implementationHead || 'N/A'}`,
         `branch:             upgrade/phase-0-1`,
         `version:            ${extVer}`,
         `chromeRuntimeId:    ${runtimeId}`,
-        `moduleHashes:       ${JSON.stringify(buildInfo.moduleHashes || {})}`
+        `moduleHashes:       ${JSON.stringify(buildInfo.modules || buildInfo.moduleHashes || {})}`
     ];
 
     // SECTION 2: CAMPAIGN
+    const isTruncated = !!diagnosticLogTruncated;
+    const isComplete = !isTruncated;
     const campaignSection = [
         "=================================================================",
         "SECTION 2: CAMPAIGN",
@@ -260,8 +345,8 @@ function getDiagnosticReport() {
         `reportTimestamp:    ${new Date().toISOString()}`,
         `documentOrigin:     ${originPath}`,
         `visibilityState:    ${docVis}`,
-        `DIAG_REPORT_COMPLETE=true`,
-        `TRUNCATED=false`,
+        `DIAG_REPORT_COMPLETE=${isComplete}`,
+        `TRUNCATED=${isTruncated}`,
         `EVENT_COUNT=${eventCount}`,
         `TARGET_COUNT=${targetCount}`,
         "Privacy Status:     AUTOMATICALLY REDACTED (Zero customer PII / Zero API Secrets / URL paths preserved)"
@@ -310,16 +395,21 @@ function getDiagnosticReport() {
         "================================================================="
     ];
 
-    return [
+    const reportText = [
         ...buildSection,
+        "",
         ...campaignSection,
+        "",
         ...timelineLines,
+        "",
         ...traceSection
     ].join('\n');
+    _lastDiagnosticReportSnapshot = reportText;
+    return reportText;
 }
 
 async function copyDiagnosticReport() {
-    const report = getDiagnosticReport();
+    const report = getDiagnosticReport(true);
     if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
         try {
             await navigator.clipboard.writeText(report);
@@ -350,7 +440,7 @@ async function copyDiagnosticReport() {
 }
 
 function downloadDiagnosticTxt() {
-    const report = getDiagnosticReport();
+    const report = getDiagnosticReport(false);
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const filename = `xpider_diagnostic_${timestamp}.txt`;
     if (typeof Blob !== 'undefined' && typeof document !== 'undefined') {
@@ -888,6 +978,7 @@ async function hydrateCampaignState() {
 async function renderAuxiliaryUI() {
     try { await initLocalizer(); } catch(e) { console.warn('[Popup] initLocalizer non-fatal:', e); }
     try { await loadBlackBoxLogs(); } catch(e) {}
+    try { await loadPersistentDiagnostics(); } catch(e) {}
     try { await updateSavedListsUI(); } catch(e) {}
     try { await updateTemplateDropdown(); } catch(e) {}
 
@@ -2182,6 +2273,14 @@ function _applyHandshakeUiState(isPassed, errorReason = '') {
     }
 }
 
+function getBadgeTextFromBuildInfo(info) {
+    if (!info) return 'TEST-ONLY R6.9G.8.1';
+    const m = (info.buildId || '').match(/R\d+\.\d+[A-Za-z0-9\.]*/);
+    const ver = m ? m[0] : 'R6.9G.8.1';
+    const sha = info.implementationHeadShort || info.headShort || (info.implementationHead ? info.implementationHead.substring(0, 7) : 'dev');
+    return `TEST-ONLY ${ver} [${sha}]`;
+}
+
 function initBuildProvenanceBadge() {
     if (typeof document === 'undefined') return;
     const badge = document.getElementById('build-provenance-badge');
@@ -2189,7 +2288,7 @@ function initBuildProvenanceBadge() {
         ? BuildProvenance.BUILD_INFO
         : null;
     if (badge && localInfo) {
-        badge.textContent = `TEST-ONLY R6.9G.7 [${localInfo.headShort}]`;
+        badge.textContent = getBadgeTextFromBuildInfo(localInfo);
         badge.title = `TEST-ONLY DIAGNOSTIC BUILD: ${localInfo.buildId} | SHA: ${localInfo.head} | Branch: ${localInfo.branch}`;
         badge.style.background = 'rgba(234, 179, 8, 0.2)';
         badge.style.color = '#eab308';
@@ -2198,8 +2297,7 @@ function initBuildProvenanceBadge() {
     verifyBuildHandshake().then((res) => {
         if (badge && res && res.bgInfo) {
             const b = res.bgInfo;
-            const shortSha = b.headShort || (b.implementationHeadShort || (b.implementationHead ? b.implementationHead.substring(0, 7) : 'db15feb'));
-            badge.textContent = `TEST-ONLY R6.9G.7 [${shortSha}]`;
+            badge.textContent = getBadgeTextFromBuildInfo(b);
             badge.title = `TEST-ONLY DIAGNOSTIC BUILD: ${b.buildId} | SHA: ${b.implementationHead || b.head} | Branch: ${b.branch}`;
             badge.style.background = 'rgba(234, 179, 8, 0.2)';
             badge.style.color = '#eab308';
@@ -3498,7 +3596,10 @@ async function renderLedgerUI() {
             
             let badgeClass = 'status-ready';
             let badgeLabel = rec.status;
-            if (rec.status === 'CONFIRMED_SUCCESS' || rec.status === 'SUCCESS') {
+            if (rec.status === 'CONFIRMED_SUCCESS') {
+                badgeClass = 'status-success';
+                badgeLabel = 'CONFIRMED_SUCCESS';
+            } else if (rec.status === 'SUCCESS') {
                 badgeClass = 'status-success';
                 badgeLabel = 'SUCCESS';
             } else if (rec.isSuppressed) {
@@ -3587,7 +3688,7 @@ async function renderLedgerUI() {
                 : (autofillStatus === 'MANUAL_REQUIRED' ? badgePill('AUTOFILL: MANUAL_REQ', '#581c87', '#d8b4fe')
                 : (autofillStatus === 'FAILED' ? badgePill('AUTOFILL: FAILED', '#7f1d1d', '#fca5a5') : badgePill('AUTOFILL: N/A', '#334155', '#94a3b8'))));
 
-            const subPill = submissionStatus === 'CONFIRMED_SUCCESS' ? badgePill('SUB: SUCCESS', '#065f46', '#6ee7b7')
+            const subPill = submissionStatus === 'CONFIRMED_SUCCESS' ? badgePill('SUB: CONFIRMED_SUCCESS', '#065f46', '#6ee7b7')
                 : (submissionStatus === 'OWNER_MANUAL_CONFIRMED' ? badgePill('SUB: OWNER_CONFIRMED', '#047857', '#a7f3d0')
                 : (submissionStatus === 'DELIVERY_UNKNOWN' ? badgePill('SUB: UNKNOWN', '#78350f', '#fde68a')
                 : (submissionStatus.includes('TIMEOUT') ? badgePill('SUB: TIMEOUT', '#713f12', '#fef08a')

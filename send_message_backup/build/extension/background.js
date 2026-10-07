@@ -433,8 +433,38 @@ let bootPromise = null;
 let logQueue = [];
 let logSaveTimer = null;
 
+// [R6.9G.8.1] Persistent Current-Run Diagnostic Event Stream
+let currentRunDiagEvents = [];
+let currentRunDiagSaveTimer = null;
+let currentRunDiagTruncated = false;
+
+function recordCurrentRunDiagEvent(msg, type = 'INFO') {
+    const ts = new Date().toISOString();
+    const entry = `[${ts}][${(type || 'INFO').toUpperCase()}] ${msg}`;
+    currentRunDiagEvents.push(entry);
+    if (currentRunDiagEvents.length > 20000) {
+        currentRunDiagEvents.shift();
+        currentRunDiagTruncated = true;
+    }
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+        if (!currentRunDiagSaveTimer) {
+            currentRunDiagSaveTimer = setTimeout(() => {
+                currentRunDiagSaveTimer = null;
+                chrome.storage.local.set({
+                    xpider_current_run_diagnostics: {
+                        runId: (typeof campaignState !== 'undefined' && campaignState?.campaignRunId) || null,
+                        truncated: currentRunDiagTruncated,
+                        events: currentRunDiagEvents
+                    }
+                });
+            }, 300);
+        }
+    }
+}
+
 function logBg(tabId, msg, type = 'info') {
     console.log(`[BG_LOG][tab=${tabId || 'none'}] ${msg}`);
+    recordCurrentRunDiagEvent(msg, type);
     const timestamp = new Date().toLocaleTimeString();
     const logEntry = { timestamp, message: msg, type, tabId };
     
@@ -2058,6 +2088,20 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             sendResponse({ success: true });
             return true;
 
+        case 'GET_CURRENT_RUN_DIAGNOSTICS':
+            sendResponse({
+                success: true,
+                runId: (typeof campaignState !== 'undefined' && campaignState?.campaignRunId) || null,
+                truncated: currentRunDiagTruncated,
+                events: currentRunDiagEvents
+            });
+            return true;
+
+        case 'APPEND_DIAGNOSTIC_LOG':
+            recordCurrentRunDiagEvent(request.message, request.level || 'INFO');
+            sendResponse({ success: true });
+            return true;
+
         case 'SENDER_LOG':
             if (sender.tab) {
                 const attId = campaignState.currentAttempt?.attemptId || 'none';
@@ -2541,6 +2585,15 @@ case 'OWNER_CAPTCHA_REQUEST':
                 try {
                     const { attemptId, sourceUrl, contactPageUrl, formPageUrl, externalFormUrl, reason, unresolvedFields } = request;
                     campaignState.currentTargetStage = 'FORM_MANUAL_ASSIST_PENDING_OWNER';
+                    campaignState.manualAssistDetails = {
+                        attemptId: attemptId || campaignState.currentAttempt?.attemptId,
+                        sourceUrl: sourceUrl || campaignState.currentAttempt?.url || '',
+                        contactPageUrl: contactPageUrl || '',
+                        formPageUrl: formPageUrl || '',
+                        externalFormUrl: externalFormUrl || '',
+                        reason: reason || 'MANUAL_ASSIST_REQUIRED',
+                        unresolvedFields: unresolvedFields || []
+                    };
 
                     // Pause target deadline controller!
                     if (campaignState.targetDeadlineController) {
@@ -2627,25 +2680,41 @@ case 'OWNER_CAPTCHA_REQUEST':
                         if (campaignState.targetDeadlineController) {
                             campaignState.targetDeadlineController.cancel('OWNER_MANUAL_CONFIRMED');
                         }
-                        try {
-                            const hs = await getHistoryStoreInstance();
-                            if (curAttemptId && hs) {
-                                await hs.settleCanonicalAttempt(curAttemptId, 'CONFIRMED_SUCCESS', 'OWNER_MANUAL_CONFIRMED', {}, {
-                                    campaignRunId: campaignState.campaignRunId,
-                                    ownerManualConfirmed: true,
-                                    submissionStatus: 'OWNER_MANUAL_CONFIRMED',
-                                    autofillStatus: 'MANUAL_REQUIRED'
-                                });
-                                await hs.persist();
-                                await syncCampaignCountersFromLedger(hs);
-                            }
-                        } catch (hsErr) {
-                            logBg(null, `[MANUAL_ASSIST] Failed to settle manual confirmation: ${hsErr.message}`, 'error');
-                        }
                         if (campaignState.currentTabId) {
                             chrome.tabs.sendMessage(campaignState.currentTabId, {
                                 action: 'CANCEL_MANUAL_ASSIST'
                             }).catch(() => {});
+                        }
+                        const extUrl = campaignState.manualAssistDetails?.externalFormUrl || null;
+                        const formStatus = extUrl ? 'EXTERNAL_WIDGET' : 'FOUND';
+                        const meta = {
+                            ownerManualConfirmed: true,
+                            submissionStatus: 'OWNER_MANUAL_CONFIRMED',
+                            autofillStatus: 'MANUAL_REQUIRED',
+                            formDetectionStatus: formStatus,
+                            externalFormUrl: extUrl
+                        };
+                        if (typeof campaignState.targetResolve === 'function') {
+                            const resolve = campaignState.targetResolve;
+                            campaignState.targetResolve = null;
+                            resolve({
+                                success: true,
+                                metadata: meta
+                            });
+                        } else {
+                            try {
+                                const hs = await getHistoryStoreInstance();
+                                if (curAttemptId && hs) {
+                                    await hs.settleCanonicalAttempt(curAttemptId, 'CONFIRMED_SUCCESS', 'OWNER_MANUAL_CONFIRMED', {}, {
+                                        campaignRunId: campaignState.campaignRunId,
+                                        ...meta
+                                    });
+                                    await hs.persist();
+                                    await syncCampaignCountersFromLedger(hs);
+                                }
+                            } catch (hsErr) {
+                                logBg(null, `[MANUAL_ASSIST] Failed to settle manual confirmation: ${hsErr.message}`, 'error');
+                            }
                         }
                         sendResponse({ success: true, status: 'CONFIRMED_SUCCESS' });
                     } else if (decision === 'skip') {
@@ -2653,24 +2722,43 @@ case 'OWNER_CAPTCHA_REQUEST':
                         if (campaignState.targetDeadlineController) {
                             campaignState.targetDeadlineController.cancel('FORM_MANUAL_ASSIST_SKIPPED');
                         }
-                        try {
-                            const hs = await getHistoryStoreInstance();
-                            if (curAttemptId && hs) {
-                                await hs.settleCanonicalAttempt(curAttemptId, 'SKIPPED', 'FORM_MANUAL_ASSIST_SKIPPED', {}, {
-                                    campaignRunId: campaignState.campaignRunId,
-                                    submissionStatus: 'SKIPPED',
-                                    autofillStatus: 'MANUAL_REQUIRED'
-                                });
-                                await hs.persist();
-                                await syncCampaignCountersFromLedger(hs);
-                            }
-                        } catch (hsErr) {
-                            logBg(null, `[MANUAL_ASSIST] Failed to settle skip: ${hsErr.message}`, 'error');
-                        }
                         if (campaignState.currentTabId) {
                             chrome.tabs.sendMessage(campaignState.currentTabId, {
                                 action: 'CANCEL_MANUAL_ASSIST'
                             }).catch(() => {});
+                        }
+                        const extUrl = campaignState.manualAssistDetails?.externalFormUrl || null;
+                        const isPartial = campaignState.manualAssistDetails?.reason === 'AUTOFILL_PARTIAL' || campaignState.manualAssistDetails?.reason === 'REQUIRED_FIELDS_UNRESOLVED';
+                        const formStatus = extUrl ? 'EXTERNAL_WIDGET' : (campaignState.manualAssistDetails?.reason === 'FORM_NOT_ACCESSIBLE' ? 'NOT_FOUND' : 'FOUND');
+                        const autoStatus = isPartial ? 'PARTIAL' : 'MANUAL_REQUIRED';
+                        const meta = {
+                            submissionStatus: 'SKIPPED',
+                            autofillStatus: autoStatus,
+                            formDetectionStatus: formStatus,
+                            externalFormUrl: extUrl
+                        };
+                        if (typeof campaignState.targetResolve === 'function') {
+                            const resolve = campaignState.targetResolve;
+                            campaignState.targetResolve = null;
+                            resolve({
+                                success: false,
+                                reasonCode: 'FORM_MANUAL_ASSIST_SKIPPED',
+                                metadata: meta
+                            });
+                        } else {
+                            try {
+                                const hs = await getHistoryStoreInstance();
+                                if (curAttemptId && hs) {
+                                    await hs.settleCanonicalAttempt(curAttemptId, 'SKIPPED', 'FORM_MANUAL_ASSIST_SKIPPED', {}, {
+                                        campaignRunId: campaignState.campaignRunId,
+                                        ...meta
+                                    });
+                                    await hs.persist();
+                                    await syncCampaignCountersFromLedger(hs);
+                                }
+                            } catch (hsErr) {
+                                logBg(null, `[MANUAL_ASSIST] Failed to settle skip: ${hsErr.message}`, 'error');
+                            }
                         }
                         sendResponse({ success: true, status: 'SKIPPED' });
                     } else {
@@ -3318,6 +3406,15 @@ async function pauseCampaignOrchestrator(saveCheckpoint = true) {
     if (campaignState.targetDeadlineController) {
         campaignState.targetDeadlineController.cancel('PAUSE');
         campaignState.targetDeadlineController = null;
+    }
+    if (typeof campaignState.targetResolve === 'function') {
+        const resolve = campaignState.targetResolve;
+        campaignState.targetResolve = null;
+        resolve({
+            success: false,
+            reasonCode: 'PAUSED',
+            metadata: { submissionStatus: 'PAUSED' }
+        });
     }
     chrome.runtime.sendMessage({ action: 'CLOSE_ALL_MODALS' }).catch(() => {});
     if (chrome.alarms) {
@@ -4498,6 +4595,12 @@ async function scanContactPaths(baseUrl, tabId, discoveryCtx = null) {
 }
 
 async function orchestrateSending(urlInput, template, abortSignal = null) {
+    if (!abortSignal) {
+        if (!campaignState.currentTargetAbortController) {
+            campaignState.currentTargetAbortController = new AbortController();
+        }
+        abortSignal = campaignState.currentTargetAbortController.signal;
+    }
     let targetUrl = urlInput.trim();
     if (!targetUrl.startsWith('http')) targetUrl = 'https://' + targetUrl;
 
@@ -4552,6 +4655,18 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
             timestamp: Date.now()
         };
         campaignState.currentTargetToken = targetToken;
+        if (!campaignState.targetDeadlineController) {
+            campaignState.targetDeadlineController = new TargetDeadlineController({
+                attemptId: _attemptId,
+                targetToken: targetToken,
+                campaignRunId: campaignState.campaignRunId,
+                sessionId: campaignState.sessionId
+            });
+            campaignState.targetDeadlineController.start(campaignState.targetTimeoutMs || 180000);
+        } else if (!campaignState.targetDeadlineController.attemptId) {
+            campaignState.targetDeadlineController.attemptId = _attemptId;
+            campaignState.targetDeadlineController.targetToken = targetToken;
+        }
 
         // Mark target as in progress
         campaignState.counters.inProgress = 1;
@@ -4741,6 +4856,12 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
             if (injectionTimer) clearTimeout(injectionTimer);
             if (pollerTimer) clearInterval(pollerTimer);
             safeTabs.onUpdated.removeListener(navWatcher);
+            if (campaignState.currentTabId === tabId) {
+                campaignState.currentTabId = null;
+            }
+            campaignState.targetResolve = null;
+            campaignState.targetReady = null;
+            await closeOwnedTabVerified(tabId, 'ABORTED');
             if (resolveRef) resolveRef({ success: false, error: abortSignal.reason || 'ABORTED', reasonCode: abortSignal.reason || 'ABORTED' });
             return;
         }

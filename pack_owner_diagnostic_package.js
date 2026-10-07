@@ -7,7 +7,7 @@ console.log('1. Verifying parity with sync_build_parity.js...');
 execSync('node sync_build_parity.js', { stdio: 'inherit' });
 
 const extDir = path.resolve('send_message_backup/build/extension');
-const zipOut = path.resolve('XPIDER_R6.9G.8_OWNER_DIAGNOSTIC_TEST_ONLY.zip');
+const zipOut = path.resolve('XPIDER_R6.9G.8.1_OWNER_DIAGNOSTIC_TEST_ONLY.zip');
 
 function getAllFiles(dir, base = dir) {
   let results = [];
@@ -38,7 +38,7 @@ for (const f of files) {
   fileHashes.push({ relPath: f.relPath, hash, size: buf.length });
 }
 
-console.log('3. Creating XPIDER_R6.9G.8_OWNER_DIAGNOSTIC_TEST_ONLY.zip...');
+console.log('3. Creating XPIDER_R6.9G.8.1_OWNER_DIAGNOSTIC_TEST_ONLY.zip...');
 if (fs.existsSync(zipOut)) {
   fs.unlinkSync(zipOut);
 }
@@ -52,7 +52,7 @@ console.log(`Zip created: ${zipOut} (${zipBuf.length} bytes, SHA-256: ${zipSha})
 
 console.log('4. Generating PACKAGE_INVENTORY_SHA256.txt...');
 const nowIso = new Date().toISOString();
-let inventoryContent = `PACKAGE INVENTORY SHA256 (XPIDER R6.9G.8 TEST-ONLY)\n`;
+let inventoryContent = `PACKAGE INVENTORY SHA256 (XPIDER R6.9G.8.1 TEST-ONLY)\n`;
 inventoryContent += `Root: send_message_backup/build/extension\n`;
 inventoryContent += `Generated: ${nowIso}\n\n`;
 
@@ -61,7 +61,7 @@ for (const fh of fileHashes) {
 }
 
 inventoryContent += `\nZIP ARTIFACT SHA256:\n`;
-inventoryContent += `${zipSha}  XPIDER_R6.9G.8_OWNER_DIAGNOSTIC_TEST_ONLY.zip\n`;
+inventoryContent += `${zipSha}  XPIDER_R6.9G.8.1_OWNER_DIAGNOSTIC_TEST_ONLY.zip\n`;
 
 fs.writeFileSync('PACKAGE_INVENTORY_SHA256.txt', inventoryContent, 'utf8');
 console.log('Saved PACKAGE_INVENTORY_SHA256.txt');
