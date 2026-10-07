@@ -6,12 +6,12 @@ PROJECT_NAME: XPIDER AutoForm Sender Pro
 WORKSPACE_ROOT: E:\\vivpr\\ai\\extension-form-sender
 AUTHORITY_SOURCE: goodkie/v-show Issue #6
 ACTIVE_BRANCH: upgrade/phase-0-1
-STATE_REV: 2026-10-07.4
-AUTHORITY_CURSOR: 6032913243
-LAST_ACCEPTED_GATE: R6.9G.4 PROVISIONAL PASS / R6.9G.6 SUBMITTED (#6032913243)
-REMOTE_HEAD: 1de573b8919592343b2c508c46e5293c96cc93e9
+STATE_REV: 2026-10-07.5
+AUTHORITY_CURSOR: 6032990573
+LAST_ACCEPTED_GATE: R6.9G.6 ENGINEERING PASS / OWNER SMOKE REQUIRED (#6032990573)
+REMOTE_HEAD: 9aa434b0e5a6444bea6cd6cfa4e2c54a55a27470
 ROLLBACK_ANCHOR: dc0740a0c69e2f7fa96b6989841acf0831b3619e
-NEXT_ACTION: ChatGPT independently audit Antigravity R6.9G.6 Receipt against remote commits, runner, provenance, and raw Edge trace.
-BLOCKERS: NONE (Antigravity resolved Blocker 1 and Blocker 2 in R6.9G.6; ChatGPT independent audit pending).
-OWNER_ACTION: NONE
+NEXT_ACTION: Owner execute minimal human smoke test on R6.9G.6 in normal real-use behavior.
+BLOCKERS: NONE (Engineering blockers remaining = 0)
+OWNER_ACTION: MINIMAL SMOKE TEST ONLY
 EVIDENCE_REF: evidence_r6_9g6_real_runtime_traces.log
