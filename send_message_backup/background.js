@@ -50,7 +50,9 @@ try {
     console.warn('[SW Boot] importScripts modules fallback or handled inline:', e);
 }
 
-// [R6.9G.9.3] Proxy Authentication Handler (MV3 asyncBlocking onAuthRequired)
+// [R6.9G.9.4] Proxy Authentication Handler with Bounded Retries (MV3 asyncBlocking onAuthRequired)
+const proxyAuthAttempts = new Map(); // reqKey -> { count: number, timestamp: number }
+
 let isProxyAuthHandlerRegistered = false;
 if (typeof chrome !== 'undefined' && chrome.webRequest && chrome.webRequest.onAuthRequired) {
     try {
@@ -60,11 +62,42 @@ if (typeof chrome !== 'undefined' && chrome.webRequest && chrome.webRequest.onAu
                     if (typeof asyncCallback === 'function') asyncCallback({});
                     return {};
                 }
+
+                // [R6.9G.9.4] Bounded Retry Guard: Cap challenges to max 2 attempts (initial + 1 replay)
+                const reqKey = details.requestId || `${details.challenger?.host}:${details.challenger?.port}:${details.url || ''}`;
+                const now = Date.now();
+                const attemptEntry = proxyAuthAttempts.get(reqKey) || { count: 0, timestamp: now };
+                attemptEntry.count += 1;
+                attemptEntry.timestamp = now;
+                proxyAuthAttempts.set(reqKey, attemptEntry);
+
+                // Housekeeping: purge entries older than 60s if map grows
+                if (proxyAuthAttempts.size > 200) {
+                    for (const [k, v] of proxyAuthAttempts.entries()) {
+                        if (now - v.timestamp > 60000) {
+                            proxyAuthAttempts.delete(k);
+                        }
+                    }
+                }
+
+                if (attemptEntry.count > 2) {
+                    console.warn(`[PRIVACY_GATE] [PROXY_AUTH_REJECTED] Bounded retry limit reached (attempts=${attemptEntry.count}) for ${reqKey}, canceling request fail-closed.`);
+                    if (typeof asyncCallback === 'function') {
+                        asyncCallback({ cancel: true });
+                        return;
+                    }
+                    return { cancel: true };
+                }
+
                 try {
                     const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
                     if (!pg) {
-                        if (typeof asyncCallback === 'function') asyncCallback({});
-                        return {};
+                        console.warn('[PRIVACY_GATE] [PROXY_AUTH_REJECTED] PrivacyGateway instance unavailable, canceling request.');
+                        if (typeof asyncCallback === 'function') {
+                            asyncCallback({ cancel: true });
+                            return;
+                        }
+                        return { cancel: true };
                     }
                     const creds = pg.getProxyAuthCredentials(details.challenger);
                     if (creds && creds.username && creds.password) {
@@ -79,18 +112,28 @@ if (typeof chrome !== 'undefined' && chrome.webRequest && chrome.webRequest.onAu
                             return;
                         }
                         return auth;
+                    } else {
+                        console.warn('[PRIVACY_GATE] [PROXY_AUTH_REJECTED] No matching scoped proxy credentials, canceling request.');
+                        if (typeof asyncCallback === 'function') {
+                            asyncCallback({ cancel: true });
+                            return;
+                        }
+                        return { cancel: true };
                     }
                 } catch (err) {
-                    console.warn('[PRIVACY_GATE] Proxy onAuthRequired error:', err);
+                    console.warn('[PRIVACY_GATE] [PROXY_AUTH_REJECTED] Proxy onAuthRequired error:', err);
+                    if (typeof asyncCallback === 'function') {
+                        asyncCallback({ cancel: true });
+                        return;
+                    }
+                    return { cancel: true };
                 }
-                if (typeof asyncCallback === 'function') asyncCallback({});
-                return {};
             },
             { urls: ["<all_urls>"] },
             ["asyncBlocking"]
         );
         isProxyAuthHandlerRegistered = true;
-        console.log('[PRIVACY_GATE] Proxy onAuthRequired asyncBlocking listener registered.');
+        console.log('[PRIVACY_GATE] Proxy onAuthRequired asyncBlocking listener registered with bounded retries.');
     } catch (e) {
         isProxyAuthHandlerRegistered = false;
         console.warn('[PRIVACY_GATE] Failed to register onAuthRequired listener:', e);

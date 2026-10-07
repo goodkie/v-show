@@ -287,37 +287,53 @@
         }
 
         /**
-         * Perform bounded network canary through the configured proxy
+         * [R6.9G.9.4] Perform bounded network canary through the configured proxy
+         * - If canaryUrl or this.config.canaryUrl is explicitly configured, probe that single endpoint.
+         * - If neither is set (Owner production default), probe real public HTTPS endpoints:
+         *   Primary: https://cloudflare.com/cdn-cgi/trace
+         *   Secondary fallback: https://api64.ipify.org?format=text
+         * - Fail closed if fetch is unavailable: returns PROXY_CANARY_UNAVAILABLE (never success: true).
          */
         async probeProxyCanary(canaryUrl = null, timeoutMs = 3000) {
-            const targetUrl = canaryUrl || this.config.canaryUrl || 'http://127.0.0.1:8980/privacy-canary';
             if (typeof fetch === 'undefined') {
-                return { success: true, reason: 'FETCH_UNAVAILABLE_SKIPPED' };
+                return { success: false, reason: 'PROXY_CANARY_UNAVAILABLE' };
             }
-            const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-            const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
-            try {
-                const resp = await fetch(targetUrl, {
-                    method: 'GET',
-                    cache: 'no-store',
-                    signal: controller ? controller.signal : undefined
-                });
-                if (timer) clearTimeout(timer);
-                if (resp.status >= 200 && resp.status < 400) {
-                    return { success: true, status: resp.status };
-                } else if (resp.status === 407) {
-                    return { success: false, reason: 'PROXY_AUTH_REQUIRED_407' };
-                } else {
-                    return { success: false, reason: `HTTP_STATUS_${resp.status}` };
+
+            const explicitTarget = canaryUrl || this.config.canaryUrl || null;
+            const targetList = explicitTarget ? [explicitTarget] : [
+                'https://cloudflare.com/cdn-cgi/trace',
+                'https://api64.ipify.org?format=text'
+            ];
+
+            let lastReason = 'PROXY_CANARY_FAILED';
+            for (const target of targetList) {
+                const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+                const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
+                try {
+                    const resp = await fetch(target, {
+                        method: 'GET',
+                        cache: 'no-store',
+                        signal: controller ? controller.signal : undefined
+                    });
+                    if (timer) clearTimeout(timer);
+                    if (resp.status >= 200 && resp.status < 400) {
+                        return { success: true, status: resp.status, endpoint: target };
+                    } else if (resp.status === 407) {
+                        return { success: false, reason: 'PROXY_AUTH_REQUIRED_407', endpoint: target };
+                    } else {
+                        lastReason = `HTTP_STATUS_${resp.status}`;
+                    }
+                } catch (err) {
+                    if (timer) clearTimeout(timer);
+                    const isTimeout = err.name === 'AbortError' || (err.message && err.message.includes('abort'));
+                    lastReason = isTimeout ? 'CANARY_TIMEOUT' : (err.message || 'NETWORK_ERROR');
                 }
-            } catch (err) {
-                if (timer) clearTimeout(timer);
-                const isTimeout = err.name === 'AbortError' || (err.message && err.message.includes('abort'));
-                return {
-                    success: false,
-                    reason: isTimeout ? 'CANARY_TIMEOUT' : (err.message || 'NETWORK_ERROR')
-                };
             }
+
+            return {
+                success: false,
+                reason: `PROXY_CANARY_FAILED: ${lastReason}`
+            };
         }
 
         /**
@@ -331,7 +347,7 @@
                 if (!this.isGateActive || !this.isGateReady) {
                     return { pass: false, reason: this.failureReason || 'MANAGED_PROXY_NOT_READY' };
                 }
-                const canaryUrl = this.config.canaryUrl || 'http://127.0.0.1:8980/privacy-canary';
+                const canaryUrl = this.config.canaryUrl || null;
                 const canaryRes = await this.probeProxyCanary(canaryUrl, 2500);
                 if (!canaryRes.success) {
                     this.isGateReady = false;
@@ -780,8 +796,8 @@
                         const bypassList = options.proxyBypassList !== undefined ? options.proxyBypassList : this.config.proxyBypassList;
                         await this.applyManagedProxy(mode, host, port, bypassList);
 
-                        // [R6.9G.9.3] Perform bounded network canary through the configured proxy
-                        const canaryUrl = options.canaryUrl || this.config.canaryUrl || 'http://127.0.0.1:8980/privacy-canary';
+                        // [R6.9G.9.4] Perform bounded network canary through the configured proxy
+                        const canaryUrl = options.canaryUrl || this.config.canaryUrl || null;
                         const canaryRes = await this.probeProxyCanary(canaryUrl, 3000);
 
                         if (!canaryRes.success) {
@@ -791,8 +807,8 @@
                             failureReason = `PROXY_CANARY_FAILED: ${canaryRes.reason}`;
                         } else {
                             directFallbackBlocked = 'BLOCKED';
-                            dnsPrivacy = (mode === PRIVACY_MODES.SOCKS5) ? 'PASS' : 'PASS';
-                            ipv6Protection = 'PROTECTED';
+                            dnsPrivacy = 'UNKNOWN';
+                            ipv6Protection = 'UNKNOWN';
                             egressCheck = 'PASS';
                             ready = true;
                             failureReason = null;

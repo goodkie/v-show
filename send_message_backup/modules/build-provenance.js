@@ -27,7 +27,7 @@
         builtAt: '2026-10-07T20:50:00.000Z',
         provenanceSchema: 2,
         modules: {
-            backgroundSha: 'f12fc2abba966ee8e1e96082c2be96cf581125d3e9bfc2bee04031cec38cd976',
+            backgroundSha: '2aee0d95a2f7aae4a591350189bb86d4ad23f6e25b467baa489eb85f3e06ac73',
             contentScriptSha: 'db15cc0900d9171bb79b31a0aeaae09a16712f1d06413db7230e75633cf5b257',
             popupSha: '6228be8f77870492051ec7968b3ee34c9019de8b33339bbe0159461f8d03857d',
             solverContentSha: 'dca775d4db576dd48be191a80b2e1b5394448c572cf3860735cf0be99ff966da',
@@ -36,7 +36,7 @@
             historyStoreSha: 'ef148329c5c019877fef3708ac63472ce86d5f7f06da467a557a74e038eab6b4',
             contactGateSha: '0d01acb2d0a9448d154353fac5b527c17afa42fed56c68d6a49b39053629bd7d',
             visionSubmitSha: '25cf18a4834bb476edff5e8f19a78dd2723bd556ede649ada69bc801543c83f3',
-            privacyGatewaySha: '719e8b3d5d3b62849dc86409481f13673a781edf574c4537ba59a5c1404288c2'
+            privacyGatewaySha: 'ec2f54d7aadc7f83be4aa7664b7774ec0b44929b8fc59cf3544bf8fc0f01386f'
         }
     };
 

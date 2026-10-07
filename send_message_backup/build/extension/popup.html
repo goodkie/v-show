@@ -534,9 +534,12 @@
                                         <input type="password" id="privacy-proxy-pass" class="premium-input" placeholder="••••••••" style="height: 28px; font-size: 11px;">
                                     </div>
                                 </div>
-                                <div style="display: flex; align-items: center; gap: 6px;">
-                                    <input type="checkbox" id="privacy-proxy-remember-pass">
-                                    <label for="privacy-proxy-remember-pass" style="font-size: 10px; color: #94a3b8; cursor: pointer;">Remember password in local extension storage</label>
+                                <div style="display: flex; flex-direction: column; gap: 2px;">
+                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                        <input type="checkbox" id="privacy-proxy-remember-pass">
+                                        <label for="privacy-proxy-remember-pass" style="font-size: 10px; color: #94a3b8; cursor: pointer;">Remember password in local browser storage (chrome.storage.local)</label>
+                                    </div>
+                                    <div style="font-size: 9px; color: #64748b; margin-left: 19px;">Default is ephemeral memory-only. Stored locally in browser profile, not an OS credential vault.</div>
                                 </div>
                             </div>
 
