@@ -18,7 +18,7 @@
   - Preview landscape default: FAIL
   - Official viewer output: FAIL
 - Last accepted audit/gate: ChatGPT Gate decision `issuecomment-6033528966`
-- Remote head: `9ac6f60baa9f2c42ed249594d67ec8a59a81babf`
+- Remote head: `5148fb347db1d3246ebcfd5dc8ea81da0d5926ec`
 - Rollback anchor: `restore/round123-p0-baseline-20261005` at `4181d146c82302e1a3ad49d793836371ff8217bb`
 
 ## Active Blockers
