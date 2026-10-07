@@ -27,7 +27,7 @@
         builtAt: '2026-10-07T08:45:00.000Z',
         provenanceSchema: 2,
         modules: {
-            backgroundSha: '1727200abf81b3e2b99320ee46f4400affbc6f1d8ee27e3812cf54833d7e1878',
+            backgroundSha: 'd76c1506b2efcb489d6efd0754f334553aa59d879c618aba066bba4d0652ea11',
             contentScriptSha: 'ceeb088954c779c5a8842d5f91a63ac33312d8da5b00f2ea33471c62678f58a2',
             popupSha: 'a5482e501076d06dfd4e568dd41a56eeb30cf16462cc3e89684be8e67ca53868',
             solverContentSha: '2e964bf785d8a315ae805cf15f2583cec120746ba56a4b2a7f20c7ec07107745',

@@ -3057,7 +3057,7 @@ async function pauseCampaignOrchestrator(saveCheckpoint = true) {
 
     // 3. WAIT FOR ACTIVE ORCHESTRATION TO QUIESCE BEFORE WRITING CHECKPOINT SNAPSHOT
     const pauseQuiesceStart = Date.now();
-    while (campaignState.activeTargetInFlight && (Date.now() - pauseQuiesceStart < 3000)) {
+    while (campaignState.activeTargetInFlight && (Date.now() - pauseQuiesceStart < 5000)) {
         await new Promise(r => setTimeout(r, 50));
     }
 
@@ -3436,6 +3436,8 @@ async function processNextCampaignTarget(loopSessionId, loopGeneration) {
         // Now we own activeTargetInFlight = true
         let leaseReleased = false;
         let orchestrationSettled = false;
+        const targetAbortController = new AbortController();
+        campaignState.currentTargetAbortController = targetAbortController;
         const releaseLease = () => {
             if (!leaseReleased) {
                 leaseReleased = true;
@@ -3454,7 +3456,15 @@ async function processNextCampaignTarget(loopSessionId, loopGeneration) {
             campaignState.currentTabId = null;
             campaignState.targetTabId = null;
 
+            if (targetAbortController.signal.aborted || campaignState.isPaused || !campaignState.isActive) {
+                logBg(null, `⏸️ [Engine] Target abort or pause detected before queue advance. Quiescing cleanly.`, "info");
+                orchestrationSettled = true;
+                releaseLease();
+                return;
+            }
+
             if (campaignState.queue.length === 0) {
+                orchestrationSettled = true;
                 releaseLease();
                 campaignState.isLoopRunning = false;
                 return processNextCampaignTarget(currentSession, campaignState.schedulerGeneration);
@@ -3465,6 +3475,7 @@ async function processNextCampaignTarget(loopSessionId, loopGeneration) {
 
             if (campaignState.visitedUrls.includes(normalized)) {
                 logBg(null, `Skipping already visited target: ${currentUrl}`, "info");
+                orchestrationSettled = true;
                 releaseLease();
                 return processNextCampaignTarget(currentSession, campaignState.schedulerGeneration);
             }
@@ -3502,17 +3513,24 @@ async function processNextCampaignTarget(loopSessionId, loopGeneration) {
                     }
                 } catch (_) {}
 
+                orchestrationSettled = true;
                 releaseLease();
                 return processNextCampaignTarget(currentSession, campaignState.schedulerGeneration);
+            }
+
+            if (targetAbortController.signal.aborted || campaignState.isPaused || !campaignState.isActive) {
+                logBg(null, `⏸️ [Engine] Target abort or pause detected before orchestration. Requeuing target.`, "info");
+                campaignState.queue.unshift(currentUrl);
+                orchestrationSettled = true;
+                releaseLease();
+                return;
             }
 
             const targetIdx = campaignState.totalTargets - campaignState.queue.length;
             logBg(null, `[TARGET ${targetIdx}/${campaignState.totalTargets}][${targetHost}] START`, "info");
             if (chrome.alarms) chrome.alarms.create(`xpider_timeout_${currentSession}`, { delayInMinutes: 3 });
 
-            // [R6.9G.7 P0-2] Target AbortController & Inner Orchestration Promise
-            const targetAbortController = new AbortController();
-            campaignState.currentTargetAbortController = targetAbortController;
+            // [R6.9G.7 P0-2] Target AbortController & Inner Orchestration Promise (bound to current lease)
 
             const targetTimeoutMs = (targetUrl && (targetUrl.includes('timeout-inquiry') || targetUrl.includes('timeout-target')))
                 ? 5000
@@ -4591,7 +4609,7 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
             const holdMs = Math.max(3500, campaignState.submitDelayMs ? parseInt(campaignState.submitDelayMs) : 3500);
             logBg(tabId, `✨ [Engine] Submission confirmed. Maintaining tab for completion (${holdMs}ms)...`, "success");
             await new Promise(r => setTimeout(r, holdMs));
-        } else {
+        } else if (res?.error !== 'ABORTED' && res?.reasonCode !== 'ABORTED' && !campaignState.isPaused) {
             await new Promise(r => setTimeout(r, 1000));
         }
 
