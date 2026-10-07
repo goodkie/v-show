@@ -11291,6 +11291,10 @@ app.post('/api/projects/:id/guided-capture/finalize-capture', express.json({ lim
     const body = req.body || {};
     const captureSessionId = body.captureSessionId || ('sess_' + Date.now());
     const paths = getGuidedCaptureStoragePaths(captureSessionId);
+    // Ensure guided capture dirs exist
+    [paths.sessionRoot, paths.candidateDir, paths.canonicalDir].forEach(d => {
+      if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
+    });
 
     let poolData = { candidates: [] };
     if (fs.existsSync(paths.metadataFile)) {

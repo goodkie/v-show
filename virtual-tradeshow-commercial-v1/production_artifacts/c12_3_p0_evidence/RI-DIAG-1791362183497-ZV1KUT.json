@@ -1,0 +1,56 @@
+{
+  "sessionId": "RI-DIAG-1791362183497-ZV1KUT",
+  "commitSha": "36a6e95b6c9818fa939aec86087945d915383b2a",
+  "startedAt": "2026-10-07T08:36:23.498Z",
+  "environment": {
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+    "viewport": {
+      "width": 1264,
+      "height": 649
+    },
+    "devicePixelRatio": 1,
+    "cameraDimensions": {
+      "width": 1920,
+      "height": 1080
+    },
+    "measuredCaptureDimensions": {
+      "width": 1920,
+      "height": 1080
+    }
+  },
+  "postCaptureMilestones": [
+    {
+      "type": "CDP_TEST_CAPTURE_ACTIVE",
+      "details": {
+        "width": 1920,
+        "height": 1080
+      },
+      "timestamp": 1791362186377,
+      "elapsedMs": 2879
+    }
+  ],
+  "candidateUploads": [],
+  "panoramaJobs": [],
+  "viewerViews": [],
+  "priorSessionSnapshot": null,
+  "summary": {
+    "totalEvents": 0,
+    "acceptedCount": 0,
+    "rejectedCount": 0,
+    "totalClosures": 0,
+    "latestEvent": null,
+    "latestClosure": null
+  },
+  "events": [],
+  "closures": [],
+  "stateTransitions": [],
+  "errors": [],
+  "framePair": {
+    "hasEvaluatedRef": false,
+    "hasClosureCand": false,
+    "sessionEpoch": 1,
+    "hasStartRef": false,
+    "startRefDataUrlLength": 0,
+    "closureCandDataUrlLength": 0
+  }
+}

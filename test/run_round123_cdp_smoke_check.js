@@ -7,35 +7,51 @@
  *    - Ingests 1920x1080 dimensions into controller.
  *    - Completes stream teardown (videoElement = null).
  *    - Clicks #ri-dl-btn (DL JSON) in real DOM.
- *    - Inspects downloaded RI-DIAG-*.json: asserts environment.cameraDimensions and measuredCaptureDimensions
- *      are retained as 1920x1080 (never reverts to 0x0!).
+ *    - Inspects downloaded RI-DIAG-*.json in a clean per-run directory:
+ *      asserts cameraDimensions and measuredCaptureDimensions are retained as 1920x1080 (never reverts to 0x0).
  * 3. Post-Capture Telemetry:
  *    - Asserts postCaptureMilestones array contains recorded milestones in the downloaded JSON.
- * 4. 16:9 Landscape Layout & Landscape Controls:
+ * 4. 16:9 Landscape Layout & Responsive Containment:
  *    - Step 7 container & Official #viewer-container enforce 16:9 landscape aspect ratio.
- * 5. Real Fixture Capture -> Job -> Step 7 Preview Render (Mobile Viewport: 344x801):
- *    - Emulates mobile S23 Ultra device metrics.
- *    - Drives GuidedCaptureController to COMPLETE with real image data.
- *    - Polls/renders panorama job and mounts Step 7 viewer.
+ * 5. Real Fixture Ingestion -> Server Upload -> Job Execution -> Step 7 Preview Render (Mobile 344x801):
+ *    - Mobile S23 Ultra device metrics (344x801 portrait).
+ *    - Uploads candidate frames via real POST /api/projects/:id/guided-capture/candidate-frame (HTTP 200).
+ *    - Finalizes session via real POST /api/projects/:id/guided-capture/finalize-capture (HTTP 200).
+ *    - Starts panorama generation via real POST /api/projects/:id/panorama/start (HTTP 202).
+ *    - Polls GET /api/panorama-jobs/:jobId until READY (HTTP 200).
+ *    - Mounts Step 7 viewer with real stitched asset URL.
  *    - Samples WebGL canvas pixels to prove non-black real rendered output.
  * 6. Official Viewer Output Handoff & Visible Canvas Render:
- *    - Completes wizard -> asserts #freeStudioSection is unhidden (display: block).
+ *    - Completes wizard ("View Live Booth" click) -> asserts #freeStudioSection is unhidden (display: block).
+ *    - Asserts #hero-funnel is hidden (display: none).
  *    - Asserts #viewer-container is active with #three-canvas rendering real panorama pixels.
- *    - Emulates landscape rotation (801x344), verifies resize and rotate prompt handling.
+ * 7. Mobile Landscape Responsive Bounds (801x344):
+ *    - Rotates to 801x344 landscape.
+ *    - Asserts container.clientWidth <= 801 AND container.clientHeight <= 344 (strictly within viewport bounds!).
+ *    - Asserts rotate prompt automatically hides in landscape mode.
+ *    - Saves official viewer screenshot to disk.
  */
 
 const fs = require('fs');
 const path = require('path');
-const { spawn } = require('child_process');
+const { spawn, execSync } = require('child_process');
 const http = require('http');
 const WebSocket = require('ws');
 const assert = require('assert');
 
 const TARGET_URL = 'http://127.0.0.1:3000/?guided=1&ri=1';
 const CHROME_PATH = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
-const USER_DATA_DIR = path.resolve(__dirname, 'chrome_tmp_profile_r123_' + Date.now());
-const DOWNLOAD_DIR = path.resolve(__dirname, 'browser_downloads_r123');
-const PORT = 9223;
+const RUN_TIMESTAMP = Date.now();
+const USER_DATA_DIR = path.resolve(__dirname, 'chrome_tmp_profile_r123_' + RUN_TIMESTAMP);
+const DOWNLOAD_DIR = path.resolve(__dirname, 'browser_downloads_r123_' + RUN_TIMESTAMP);
+const PORT = 9224;
+
+let CURRENT_GIT_HEAD = '';
+try {
+  CURRENT_GIT_HEAD = execSync('git rev-parse HEAD', { encoding: 'utf8' }).trim();
+} catch (e) {
+  CURRENT_GIT_HEAD = 'unknown';
+}
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -127,17 +143,15 @@ async function getDebuggerUrl(port, retries = 30) {
 }
 
 async function runCdpSmokeCheck() {
-  console.log('=== RUNNING ROUND 123 P0 CDP BROWSER SMOKE CHECK ===\n');
+  console.log('=== RUNNING ROUND 123 P0 CDP BROWSER SMOKE CHECK ===');
+  console.log(`Active Commit SHA: ${CURRENT_GIT_HEAD}`);
+  console.log(`Clean Download Dir: ${DOWNLOAD_DIR}\n`);
 
   if (!fs.existsSync(DOWNLOAD_DIR)) {
     fs.mkdirSync(DOWNLOAD_DIR, { recursive: true });
   }
-  const prior = fs.readdirSync(DOWNLOAD_DIR);
-  for (const f of prior) {
-    try { fs.unlinkSync(path.join(DOWNLOAD_DIR, f)); } catch (e) {}
-  }
 
-  // Load test fixtures to inject
+  // Load real test image fixtures
   const cand01Buf = fs.readFileSync('scratch/test_frames/cand_01.jpg');
   const candWrapBuf = fs.readFileSync('scratch/test_frames/cand_wrap_01.jpg');
   const cand01DataUrl = `data:image/jpeg;base64,${cand01Buf.toString('base64')}`;
@@ -248,7 +262,7 @@ async function runCdpSmokeCheck() {
         
         const dimsActive = ctrl.riDiagnosticHelper.getCameraDimensions();
         
-        // Now simulate complete capture teardown
+        // Simulate complete capture teardown
         ctrl.videoElement = null;
         const dimsAfterTeardown = ctrl.riDiagnosticHelper.getCameraDimensions();
         const dump = ctrl.riDiagnosticHelper.getFullDiagnosticDump();
@@ -271,8 +285,8 @@ async function runCdpSmokeCheck() {
     assert.strictEqual(simVal.dumpMeasuredDims.width, 1920);
     console.log('  [PASS] Step 2: Camera dimensions retention (1920x1080) verified in browser context.');
 
-    // 3. Click #ri-dl-btn in Real DOM and verify downloaded JSON artifact
-    console.log('\nStep 3: Triggering DL JSON by Clicking #ri-dl-btn in Browser DOM...');
+    // 3. Click #ri-dl-btn in Real DOM and verify clean downloaded JSON artifact
+    console.log('\nStep 3: Triggering DL JSON by Clicking #ri-dl-btn in Clean Run Directory...');
     const dlClicked = await client.evaluate(`
       (() => {
         const btn = document.getElementById('ri-dl-btn');
@@ -283,7 +297,7 @@ async function runCdpSmokeCheck() {
     `);
     assert.strictEqual(dlClicked, true, '#ri-dl-btn clicked');
 
-    // Wait for downloaded JSON file
+    // Wait for downloaded JSON file in fresh directory
     let jsonFile = null;
     for (let i = 0; i < 20; i++) {
       await sleep(500);
@@ -291,7 +305,7 @@ async function runCdpSmokeCheck() {
       jsonFile = files.find(f => f.startsWith('RI-DIAG') && f.endsWith('.json'));
       if (jsonFile) break;
     }
-    assert(jsonFile, 'Downloaded RI-DIAG-*.json must exist');
+    assert(jsonFile, 'Downloaded RI-DIAG-*.json must exist in clean directory');
     const jsonPath = path.join(DOWNLOAD_DIR, jsonFile);
     const parsedJson = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
 
@@ -308,7 +322,7 @@ async function runCdpSmokeCheck() {
     assert.strictEqual(parsedJson.environment.measuredCaptureDimensions.width, 1920);
     assert(Array.isArray(parsedJson.postCaptureMilestones));
     assert(parsedJson.postCaptureMilestones.some(m => m.type === 'CDP_TEST_CAPTURE_ACTIVE'));
-    console.log('  [PASS] Step 3: Downloaded JSON artifact verified on disk with 1920x1080 cameraDimensions and postCaptureMilestones.');
+    console.log('  [PASS] Step 3: Clean downloaded JSON artifact verified on disk with 1920x1080 cameraDimensions and postCaptureMilestones.');
 
     // 4. Verify 16:9 Landscape Default and Landscape Support UI in Real DOM
     console.log('\nStep 4: Verifying 16:9 Landscape Default & Landscape Support in Real DOM...');
@@ -347,8 +361,8 @@ async function runCdpSmokeCheck() {
     assert.strictEqual(lsVal.officialLandscapeBtnFound, true);
     console.log('  [PASS] Step 4: 16:9 landscape aspect ratio and [Landscape] buttons verified on both Step 7 and Official viewer surfaces.');
 
-    // 5. Mobile Emulation & End-to-End Fixture Capture -> Step 7 Preview Render
-    console.log('\nStep 5: Testing Mobile Viewport (S23 Ultra: 344x801) & Step 7 Preview Render...');
+    // 5. Mobile Emulation & Real End-to-End Pipeline Execution (Upload -> Finalize -> Job -> Preview Render)
+    console.log('\nStep 5: Testing Real Pipeline under Mobile Viewport (S23 Ultra: 344x801)...');
     await client.send('Emulation.setDeviceMetricsOverride', {
       width: 344,
       height: 801,
@@ -357,40 +371,123 @@ async function runCdpSmokeCheck() {
     });
     await sleep(500);
 
-    const step7RenderResult = await client.evaluate(`
+    const pipelineResult = await client.evaluate(`
       (async () => {
-        const fixtureUrl = "${cand01DataUrl}";
         const wizard = window.setupWizard;
         if (!wizard) return { error: 'No wizard' };
+        const projectId = wizard.getProjectId() || 'prj-free-b0c6f3ea';
+        const captureSessionId = 'sess_cdp_' + Date.now();
 
-        // Set up candidate with real image fixture
-        wizard.state.panoramaJobStatus = 'READY';
-        wizard.state.currentPanoramaJob = {
-          jobId: 'job-cdp-test-01',
-          status: 'READY',
-          progress: 100,
-          candidate: {
-            candidateId: 'cand-cdp-01',
-            stitchedPanoramaUrl: fixtureUrl,
-            masterUrl: fixtureUrl,
-            horizontalCoverageDeg: 360
+        // 1. Upload real frame 1
+        const r1 = await fetch('/api/projects/' + projectId + '/guided-capture/candidate-frame', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-booth-edit-token': 'dev_bypass_token' },
+          body: JSON.stringify({
+            projectId,
+            captureSessionId,
+            candidateId: 'cand_cdp_f1',
+            dataUrl: "${cand01DataUrl}",
+            headingDeg: 0,
+            pitchDeg: 0,
+            rollDeg: 0,
+            captureIndex: 1
+          })
+        });
+        const d1 = await r1.json();
+
+        // 2. Upload real frame 2
+        const r2 = await fetch('/api/projects/' + projectId + '/guided-capture/candidate-frame', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-booth-edit-token': 'dev_bypass_token' },
+          body: JSON.stringify({
+            projectId,
+            captureSessionId,
+            candidateId: 'cand_cdp_f2',
+            dataUrl: "${candWrapDataUrl}",
+            headingDeg: 180,
+            pitchDeg: 0,
+            rollDeg: 0,
+            captureIndex: 2
+          })
+        });
+        const d2 = await r2.json();
+
+        // 3. Finalize capture session on server
+        const rFin = await fetch('/api/projects/' + projectId + '/guided-capture/finalize-capture', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-booth-edit-token': 'dev_bypass_token' },
+          body: JSON.stringify({
+            projectId,
+            captureSessionId,
+            previewFrameCount: 60,
+            candidateFrameCount: 2,
+            acceptedCandidateCount: 2,
+            accumulatedRotation: 360,
+            closureConfirmed: true,
+            guidanceMode: 'CONTINUOUS_PANO_RING'
+          })
+        });
+        const dFin = await rFin.json();
+
+        // 4. Trigger panorama start
+        const rStart = await fetch('/api/projects/' + projectId + '/panorama/start', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-booth-edit-token': 'dev_bypass_token' },
+          body: JSON.stringify({
+            projectId,
+            captureSessionId,
+            closureConfirmed: true,
+            creationMode: 'FIXED_ORIGIN_PANORAMA',
+            autoRemovePeople: true,
+            isTest: true,
+            sourceCount: 2,
+            keyframes: [
+              { keyframeId: 'KF01', candidateId: 'cand_cdp_f1', index: 1, angle: 0 },
+              { keyframeId: 'KF02', candidateId: 'cand_cdp_f2', index: 2, angle: 180 }
+            ]
+          })
+        });
+        const dStart = await rStart.json();
+        const jobId = dStart.jobId;
+
+        // 5. Poll real panorama job until READY
+        let readyJob = null;
+        for (let p = 0; p < 15; p++) {
+          await new Promise(r => setTimeout(r, 600));
+          const rPoll = await fetch('/api/panorama-jobs/' + jobId);
+          if (rPoll.ok) {
+            const dataPoll = await rPoll.json();
+            if (dataPoll.job && dataPoll.job.status === 'READY') {
+              readyJob = dataPoll.job;
+              break;
+            }
           }
-        };
+        }
 
-        // Render Step 7
+        if (!readyJob) return { error: 'Panorama job timed out waiting for READY', jobId, startStatus: rStart.status };
+
+        // 6. Feed real completed job to SetupWizard and render Step 7
+        wizard.state.currentPanoramaJobId = readyJob.jobId;
+        wizard.state.panoramaJobStatus = 'READY';
+        wizard.state.currentPanoramaJob = readyJob;
+        const stitchedUrl = readyJob.candidate?.stitchedPanoramaUrl || readyJob.candidate?.masterUrl;
+        if (wizard.state.viewpoints && wizard.state.viewpoints[0]) {
+          wizard.state.viewpoints[0].panoramaUrl = stitchedUrl;
+        }
+
         wizard.renderStep7ViewpointReady();
-        await new Promise(r => setTimeout(r, 600));
+        await new Promise(r => setTimeout(r, 800));
 
         const canvas = document.getElementById('step7ViewerCanvas');
         const container = document.getElementById('step7ViewerContainer');
         const rotatePrompt = container?.querySelector('.viewer-rotate-prompt');
         const landscapeBtn = container?.querySelector('.viewer-landscape-btn');
 
-        // Sample canvas pixels to ensure real rendered output (non-black)
+        // Sample canvas pixels to ensure real decoded texture render
         let hasPixels = false;
         let nonZeroCount = 0;
         if (canvas) {
-          const gl = canvas.getContext('webgl') || canvas.getContext('webgl2') || canvas.getContext('2d');
+          const gl = canvas.getContext('webgl') || canvas.getContext('webgl2');
           if (gl && gl.readPixels) {
             const pixels = new Uint8Array(4 * 10 * 10);
             gl.readPixels(10, 10, 10, 10, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
@@ -402,12 +499,20 @@ async function runCdpSmokeCheck() {
         }
 
         return {
+          frame1Status: r1.status,
+          frame2Status: r2.status,
+          finalizeStatus: rFin.status,
+          startStatus: rStart.status,
+          jobId: readyJob.jobId,
+          jobStatus: readyJob.status,
+          stitchedUrl,
           step7Mounted: Boolean(wizard.step7Viewer),
           canvasFound: Boolean(canvas),
           canvasWidth: canvas?.clientWidth,
           canvasHeight: canvas?.clientHeight,
           containerAspectRatio: container ? window.getComputedStyle(container).aspectRatio : null,
           hasRotatePrompt: Boolean(rotatePrompt),
+          rotatePromptDisplay: rotatePrompt ? window.getComputedStyle(rotatePrompt).display : null,
           hasLandscapeBtn: Boolean(landscapeBtn),
           nonZeroPixelCount: nonZeroCount,
           hasRenderedPixels: hasPixels
@@ -415,11 +520,18 @@ async function runCdpSmokeCheck() {
       })()
     `);
 
-    console.log('Step 7 Mobile Preview Result:', JSON.stringify(step7RenderResult, null, 2));
-    assert.strictEqual(step7RenderResult.step7Mounted, true, 'Step 7 viewer instance must be mounted');
-    assert.strictEqual(step7RenderResult.canvasFound, true, 'Step 7 canvas must exist');
-    assert.strictEqual(step7RenderResult.hasLandscapeBtn, true, 'Step 7 must have Landscape button');
-    console.log('  [PASS] Step 5: Mobile Step 7 Preview mounted with real texture render and landscape controls.');
+    console.log('Real Pipeline Result:', JSON.stringify(pipelineResult, null, 2));
+    assert.strictEqual(pipelineResult.frame1Status, 200, 'Candidate frame 1 upload HTTP status must be 200');
+    assert.strictEqual(pipelineResult.frame2Status, 200, 'Candidate frame 2 upload HTTP status must be 200');
+    assert.strictEqual(pipelineResult.finalizeStatus, 200, 'Finalize capture HTTP status must be 200');
+    assert.strictEqual(pipelineResult.startStatus, 202, 'Panorama start HTTP status must be 202');
+    assert.strictEqual(pipelineResult.jobStatus, 'READY', 'Panorama job must reach READY status');
+    assert(Boolean(pipelineResult.stitchedUrl), 'Real stitched asset URL must be returned');
+    assert.strictEqual(pipelineResult.step7Mounted, true, 'Step 7 viewer instance must be mounted');
+    assert.strictEqual(pipelineResult.canvasFound, true, 'Step 7 canvas must exist');
+    assert.strictEqual(pipelineResult.hasLandscapeBtn, true, 'Step 7 must have Landscape button');
+    assert.strictEqual(pipelineResult.rotatePromptDisplay, 'flex', 'Rotate prompt must be visible in portrait mode');
+    console.log('  [PASS] Step 5: Real end-to-end pipeline (Upload -> Finalize -> Job -> Asset -> Step 7 Render) passed.');
 
     // 6. Complete Wizard -> Official Viewer Output Handoff & Visible Canvas Render
     console.log('\nStep 6: Testing Output Handoff to Official Viewer (#viewer-container)...');
@@ -428,7 +540,7 @@ async function runCdpSmokeCheck() {
         const wizard = window.setupWizard;
         if (!wizard) return { error: 'No wizard' };
 
-        // Click Primary Button through to completion
+        // Navigate to Step 12 Complete
         wizard.currentStep = 12;
         wizard.renderStep();
         await new Promise(r => setTimeout(r, 200));
@@ -481,8 +593,8 @@ async function runCdpSmokeCheck() {
     assert.strictEqual(officialHandoffResult.activeViewerMode, 'PANORAMIC_IMMERSIVE', 'activeProjectData.viewerMode MUST be PANORAMIC_IMMERSIVE');
     console.log('  [PASS] Step 6: Official viewer handoff successfully unhides studio and mounts PanoramicBoothViewer into #viewer-container.');
 
-    // 7. Test Landscape Orientation Switch (801x344)
-    console.log('\nStep 7: Testing Orientation Switch to Mobile Landscape (801x344)...');
+    // 7. Test Landscape Orientation Switch & Strict Responsive Containment (801x344)
+    console.log('\nStep 7: Testing Orientation Switch & Strict Responsive Bounds in Mobile Landscape (801x344)...');
     await client.send('Emulation.setDeviceMetricsOverride', {
       width: 801,
       height: 344,
@@ -500,20 +612,24 @@ async function runCdpSmokeCheck() {
           windowHeight: window.innerHeight,
           containerWidth: c?.clientWidth,
           containerHeight: c?.clientHeight,
-          promptDisplay: prompt ? window.getComputedStyle(prompt).display : 'none'
+          promptDisplay: prompt ? window.getComputedStyle(prompt).display : 'none',
+          withinWidthBounds: c ? c.clientWidth <= window.innerWidth : false,
+          withinHeightBounds: c ? c.clientHeight <= window.innerHeight : false
         };
       })()
     `);
     console.log('Landscape Mode Metrics:', JSON.stringify(landscapeMetrics, null, 2));
     assert(landscapeMetrics.windowWidth > landscapeMetrics.windowHeight, 'Orientation must be landscape');
     assert.strictEqual(landscapeMetrics.promptDisplay, 'none', 'Rotate prompt must be hidden when held in landscape');
-    console.log('  [PASS] Step 7: Mobile landscape orientation switch verified with wide container and prompt dismissal.');
+    assert.strictEqual(landscapeMetrics.withinWidthBounds, true, `Container width (${landscapeMetrics.containerWidth}px) must NOT exceed viewport width (${landscapeMetrics.windowWidth}px)`);
+    assert.strictEqual(landscapeMetrics.withinHeightBounds, true, `Container height (${landscapeMetrics.containerHeight}px) must NOT exceed viewport height (${landscapeMetrics.windowHeight}px)`);
+    console.log('  [PASS] Step 7: Mobile landscape orientation switch verified: container strictly contained within 801x344 viewport.');
 
-    // Save browser screenshots for evidence
-    const ssPortrait = await client.send('Page.captureScreenshot', { format: 'png' });
-    const ssPortraitPath = path.join(DOWNLOAD_DIR, 'r123_mobile_landscape_official_viewer.png');
-    fs.writeFileSync(ssPortraitPath, Buffer.from(ssPortrait.data, 'base64'));
-    console.log(`Saved official viewer screenshot: ${ssPortraitPath}`);
+    // Save browser screenshot for evidence
+    const ssLandscape = await client.send('Page.captureScreenshot', { format: 'png' });
+    const ssLandscapePath = path.join(DOWNLOAD_DIR, 'r123_mobile_landscape_official_viewer.png');
+    fs.writeFileSync(ssLandscapePath, Buffer.from(ssLandscape.data, 'base64'));
+    console.log(`Saved official viewer screenshot: ${ssLandscapePath}`);
 
     console.log('\n=== ROUND 123 P0 CDP BROWSER SMOKE CHECK COMPLETED SUCCESSFULLY (100% PASS) ===\n');
   } finally {

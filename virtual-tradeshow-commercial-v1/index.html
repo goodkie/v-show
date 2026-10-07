@@ -2399,6 +2399,25 @@
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3"></script>
 
 <style id="spatial-booth-c11-17-p1-styles">
+  /* Round 123 P0 Responsive Viewer Container Bounds */
+  #viewer-container {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    box-sizing: border-box;
+    overflow: hidden;
+    background: #000;
+    border-radius: 12px;
+  }
+  @media (max-width: 900px), (orientation: landscape) and (max-height: 600px) {
+    #viewer-container {
+      min-height: unset !important;
+      max-height: min(85vh, calc(100vh - 40px)) !important;
+      max-width: 100% !important;
+      width: min(100%, calc((100vh - 40px) * 16 / 9)) !important;
+      margin: 0 auto !important;
+    }
+  }
   .pro-spatial-slots-grid {
     display: grid;
     grid-template-columns: repeat(6, 1fr);
@@ -3075,7 +3094,7 @@
           </div>
         </div>
 
-        <div id="viewer-container" style="position: relative; width: 100%; height: 100%; min-height: 520px; overflow: hidden; background: #000; border-radius: 12px;">
+        <div id="viewer-container" style="position: relative; width: 100%; height: auto; aspect-ratio: 16 / 9; max-width: 100%; max-height: 80vh; overflow: hidden; background: #000; border-radius: 12px; box-sizing: border-box;">
           <canvas id="three-canvas" style="width: 100%; height: 100%; display: block; touch-action: none;"></canvas>
           <div id="hotspot-layer" style="position: absolute; inset: 0; pointer-events: none; z-index: 20;"></div>
 
@@ -17353,11 +17372,11 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
         /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || (window.innerWidth < 850)
       );
 
-      // Enforce wide 16:9 landscape aspect ratio
+      // Enforce wide 16:9 landscape aspect ratio and strict responsive containment
       container.style.aspectRatio = '16 / 9';
-      container.style.width = '100%';
-      container.style.height = 'auto';
-      container.style.maxHeight = '80vh';
+      container.style.minHeight = 'unset';
+      container.style.maxWidth = '100%';
+      container.style.boxSizing = 'border-box';
 
       let lsBtn = container.querySelector('.viewer-landscape-btn');
       if (!lsBtn) {
@@ -17420,10 +17439,24 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
       const checkOrientation = () => {
         const isLandscape = window.innerWidth > window.innerHeight;
         if (promptEl) promptEl.style.display = isLandscape ? 'none' : 'flex';
+        if (isLandscape && (isMobile || window.innerHeight < 600)) {
+          container.style.minHeight = 'unset';
+          container.style.maxHeight = 'min(85vh, calc(100vh - 40px))';
+          container.style.height = 'auto';
+          container.style.width = 'min(100%, calc((100vh - 40px) * 16 / 9))';
+          container.style.margin = '0 auto';
+        } else {
+          container.style.minHeight = 'unset';
+          container.style.maxHeight = '80vh';
+          container.style.height = 'auto';
+          container.style.width = '100%';
+          container.style.margin = '0 auto';
+        }
         if (viewerInstance && typeof viewerInstance.handleResize === 'function') {
           viewerInstance.handleResize();
         }
       };
+      checkOrientation();
 
       window.addEventListener('resize', checkOrientation, { passive: true });
       window.addEventListener('orientationchange', checkOrientation, { passive: true });

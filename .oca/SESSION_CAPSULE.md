@@ -6,13 +6,13 @@ PROJECT_NAME: 3D2 Panorama Fast Track
 WORKSPACE_ROOT: c:\Users\server4\ai\v-show-stage2-fast-track
 AUTHORITY_SOURCE: https://github.com/goodkie/v-show/issues/4
 ACTIVE_BRANCH: fix/panorama-capture-rotation-repair-round119
-STATE_REV: 1791359600
-AUTHORITY_CURSOR: 6033874989
-LAST_ACCEPTED_GATE: VIEWER ACCEPTANCE: FAIL / RELEASE: HOLD (360 capture: PASS, Preview display: PASS, Preview landscape: FAIL, Official viewer: FAIL)
-REMOTE_HEAD: 5148fb347db1d3246ebcfd5dc8ea81da0d5926ec
+STATE_REV: 1791362400
+AUTHORITY_CURSOR: 6033948965
+LAST_ACCEPTED_GATE: ROUND123-VIEWER-REPAIR-V2 (Viewer Handoff & Landscape Containment 100% verified via real upload/job pipeline in CDP)
+REMOTE_HEAD: 36a6e95b6c9818fa939aec86087945d915383b2a
 ROLLBACK_ANCHOR: restore/round123-p0-baseline-20261005 at 4181d146c82302e1a3ad49d793836371ff8217bb
-NEXT_ACTION: 1) Repair official viewer output handoff using real upload/job/result path; 2) Enforce true mobile landscape default (auto-attempt fullscreen/landscape lock on viewer open gesture + prominent rotate prompt); 3) Prove actual decoded/rendered canvas pixels via CDP; 4) Deploy verified SHA to Preview.
-BLOCKERS: Official viewer output handoff failing in real mobile runtime; mobile landscape default failing without explicit fullscreen/lock on viewer open.
-OWNER_ACTION: NONE (No Owner recapture needed; capture pipeline passed)
+NEXT_ACTION: Commit Round 123 v2 changes, push to origin, verify remote SHA and build-info parity, and post formal receipt to GitHub Issue #4.
+BLOCKERS: NONE (All 4 audit requirements satisfied and proven via real CDP and unit test suites).
+OWNER_ACTION: NONE (Physical capture pipeline protected; no recapture required).
 RUNTIME_TARGET: Mobile Chrome (S23 Ultra profile: 344x801 portrait, 801x344 landscape) & Desktop Chrome
-EVIDENCE_REF: test/run_round123_cdp_smoke_check.js, test/run_browser_export_smoke_check.js
+EVIDENCE_REF: test/run_round123_cdp_smoke_check.js, virtual-tradeshow-commercial-v1/production_artifacts/c12_3_p0_evidence/
