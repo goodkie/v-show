@@ -16,6 +16,9 @@ let bpContent = fs.readFileSync(bpPath, 'utf8');
 const modules = {
     backgroundSha: 'background.js',
     contentScriptSha: 'content-script.js',
+    popupSha: 'popup.js',
+    solverContentSha: 'solver-content.js',
+    solverCoreSha: 'solver-core.js',
     emailCollectorSha: 'modules/email-collector.js',
     historyStoreSha: 'modules/history-store.js',
     contactGateSha: 'modules/contact-gate.js',

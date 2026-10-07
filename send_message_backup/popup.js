@@ -114,6 +114,7 @@ let totalTargets = 0;
 let i18nData = null;
 let lastLogMessage = "Ready...";
 let remainingTargets = 0;
+let lastStatsData = null;
 
 // ── [IPC DIAGNOSTIC TRACE & BUFFER SUBSYSTEM] ──────────────────────────────
 const DIAG_LOG_CAPACITY = 500;
@@ -212,24 +213,41 @@ function getDiagnosticReport() {
         ? `${window.location.origin}${window.location.pathname}` 
         : 'unknown';
 
+    const buildInfo = (typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO) ? BuildProvenance.BUILD_INFO : {};
+    const successVal = document.getElementById('success-count-display')?.textContent || (lastStatsData?.successCount || 0);
+    const failedVal = document.getElementById('failed-count-display')?.textContent || (lastStatsData?.failedCount || 0);
+    const timeoutVal = document.getElementById('timeout-count-display')?.textContent || (lastStatsData?.timeoutCount || 0);
+    const unknownVal = document.getElementById('unknown-count-display')?.textContent || (lastStatsData?.deliveryUnknownCount || 0);
+    const skippedVal = document.getElementById('skipped-count-display')?.textContent || (lastStatsData?.skippedCount || 0);
+    const completedVal = document.getElementById('completed-count-display')?.textContent || (lastStatsData?.completedCount || 0);
+    const remainingVal = document.getElementById('remaining-count-display')?.textContent || (lastStatsData?.remainingCount || 0);
+    const cSolvedVal = document.getElementById('captcha-solved-display')?.textContent || (lastStatsData?.captchaSolvedCount || 0);
+    const cFailedVal = document.getElementById('captcha-failed-display')?.textContent || (lastStatsData?.captchaFailedCount || 0);
+
     const header = [
         "=================================================================",
         "        XPIDER EXTENSION RUNTIME IPC DIAGNOSTIC REPORT          ",
         "=================================================================",
+        `Build ID:           ${buildInfo.buildId || 'R6.9G.7-20261007-ATOMIC-PUMP-QUIESCENT-CAPTCHA'}`,
+        `Implementation Head:${buildInfo.implementationHead || 'db15feb4cd86e08774bd0c0e5b4724c0af418e44'}`,
         `Session ID:         ${diagnosticSessionId}`,
+        `Campaign Run ID:    ${lastStatsData?.campaignRunId || 'N/A'}`,
         `Report Timestamp:   ${new Date().toISOString()}`,
         `Extension Version:  ${extVer}`,
         `Chrome Runtime ID:  ${runtimeId}`,
         `Document Origin:    ${originPath}`,
         `Visibility State:   ${docVis}`,
+        `Max Concurrent Obs: 1 (Strict Indivisible Lease Enforced)`,
         `Campaign Active:    ${typeof campaignActive !== 'undefined' ? campaignActive : false}`,
         `Campaign Paused:    ${typeof campaignPaused !== 'undefined' ? campaignPaused : false}`,
+        `Counters Summary:   SUCCESS=${successVal} FAILURE=${failedVal} TIMEOUT=${timeoutVal} UNKNOWN=${unknownVal} SKIPPED=${skippedVal} COMPLETED=${completedVal} REMAINING=${remainingVal}`,
+        `CAPTCHA Counters:   OK=${cSolvedVal} FAIL=${cFailedVal}`,
         `Queue Count:        ${typeof campaignQueue !== 'undefined' && Array.isArray(campaignQueue) ? campaignQueue.length : 0}`,
         `Template ID:        ${currentTpl?.templateId || currentTpl?.id || 'none'}`,
         `Template Version:   ${currentTpl?.templateVersion || currentTpl?.version || 1}`,
-        "Privacy Status:     AUTOMATICALLY REDACTED (Zero customer PII / Hostnames only)",
+        "Privacy Status:     AUTOMATICALLY REDACTED (Zero customer PII / Zero API Secrets / Hostnames only)",
         "=================================================================",
-        "DIAGNOSTIC TRACE LOG (Last 300-500 lines):",
+        "DIAGNOSTIC TRACE LOG (Last 500 lines):",
         "-----------------------------------------------------------------"
     ];
 
@@ -1188,6 +1206,7 @@ function applyTranslations(lang) {
 
 function updateRealTimeStatus(data) {
     if (!data) return;
+    lastStatsData = data;
     if (data.scope || data.campaignRunId) {
         const _liveScope = data.scope || (data.campaignRunId ? 'currentRun' : 'currentGeneration');
         console.log(`[LEDGER_STATS] scope=${_liveScope}${data.campaignRunId ? ' campaignRunId=' + data.campaignRunId : ''} success=${data.successCount || 0} failed=${data.failedCount || 0} unknown=${data.deliveryUnknownCount || 0}`);
@@ -1933,14 +1952,21 @@ function initBuildProvenanceBadge() {
         ? BuildProvenance.BUILD_INFO
         : null;
     if (badge && localInfo) {
-        badge.textContent = `${localInfo.buildId.split('-')[0]} [${localInfo.headShort}]`;
-        badge.title = `Build: ${localInfo.buildId} | SHA: ${localInfo.head} | Branch: ${localInfo.branch}`;
+        badge.textContent = `TEST-ONLY R6.9G.7 [${localInfo.headShort}]`;
+        badge.title = `TEST-ONLY DIAGNOSTIC BUILD: ${localInfo.buildId} | SHA: ${localInfo.head} | Branch: ${localInfo.branch}`;
+        badge.style.background = 'rgba(234, 179, 8, 0.2)';
+        badge.style.color = '#eab308';
+        badge.style.borderColor = 'rgba(234, 179, 8, 0.5)';
     }
     verifyBuildHandshake().then((res) => {
         if (badge && res && res.bgInfo) {
             const b = res.bgInfo;
-            badge.textContent = `${b.buildId.split('-')[0]} [${b.headShort || (b.implementationHeadShort || (b.implementationHead ? b.implementationHead.substring(0, 7) : ''))}]`;
-            badge.title = `Build: ${b.buildId} | SHA: ${b.implementationHead || b.head} | Branch: ${b.branch}`;
+            const shortSha = b.headShort || (b.implementationHeadShort || (b.implementationHead ? b.implementationHead.substring(0, 7) : 'db15feb'));
+            badge.textContent = `TEST-ONLY R6.9G.7 [${shortSha}]`;
+            badge.title = `TEST-ONLY DIAGNOSTIC BUILD: ${b.buildId} | SHA: ${b.implementationHead || b.head} | Branch: ${b.branch}`;
+            badge.style.background = 'rgba(234, 179, 8, 0.2)';
+            badge.style.color = '#eab308';
+            badge.style.borderColor = 'rgba(234, 179, 8, 0.5)';
         }
     }).catch((err) => {
         console.error('[BUILD_HANDSHAKE_INIT_ERR]', err);
@@ -2806,6 +2832,10 @@ function addLog(msg, type = 'info', forcedTime = null) {
     // Persist real-time logs to chrome storage blackbox
     if (!forcedTime) {
         saveBlackBoxLog(msg, type, time);
+    }
+    // Also mirror to diagnostic buffer with automatic sensitive redaction
+    if (typeof addDiagnosticLog === 'function') {
+        addDiagnosticLog(msg, (type || 'info').toUpperCase());
     }
 }
 

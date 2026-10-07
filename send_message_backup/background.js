@@ -168,6 +168,9 @@ let campaignState = {
     activeTargetCount: 0,        // [R6.9G.4] Authoritative active-target in flight counter
     maxConcurrentObserved: 0,    // [R6.9G.4] Peak observed concurrent targets (strictly invariant === 1)
     lastFinalTs: 0,              // Timestamp of last TARGET FINAL — CAMPAIGN_FINISHED must follow it
+    isFaulted: false,            // [R6.9G.7.1] Set to true if orchestration fails to quiesce
+    faultReason: null,
+    captchaFailuresRecorded: new Set(), // [R6.9G.7.1] Idempotent attempt-bound CAPTCHA failure recorder
     // [R6.9G-G] CAPTCHA Attempt-Bound Ledger
     captchaLedger: {
         detected: 0,       // CAPTCHA_DETECTED: challenge found for target
@@ -1323,6 +1326,24 @@ if (typeof global !== 'undefined') {
     global.__validateActiveExecution = validateActiveExecution;
 }
 
+// [R6.9G.7.1] Centralized Idempotent CAPTCHA Failure Accounting
+function recordTerminalCaptchaFailure(attemptId, reason) {
+    if (!campaignState.captchaFailuresRecorded) {
+        campaignState.captchaFailuresRecorded = new Set();
+    }
+    const key = attemptId || `epoch_${campaignState.captchaEpoch || 0}`;
+    if (campaignState.captchaFailuresRecorded.has(key)) {
+        return; // Idempotent: already recorded for this attempt / epoch
+    }
+    campaignState.captchaFailuresRecorded.add(key);
+    campaignState.captchaLedger.autoFailure = (campaignState.captchaLedger.autoFailure || 0) + 1;
+    campaignState.counters.captchaFailed = (campaignState.counters.captchaFailed || 0) + 1;
+    broadcastCounters();
+}
+if (typeof global !== 'undefined') {
+    global.__recordTerminalCaptchaFailure = recordTerminalCaptchaFailure;
+}
+
 // [R6.9G.2 Gate 4/5/8/9] Authoritative Single-Flight CAPTCHA Solve Engine
         // Gated strictly behind Owner 'Auto' decision. Autonomous requests without owner authorization are rejected.
         async function handleSolveCaptchaInternal(request, sender, sendResponse) {
@@ -1433,9 +1454,7 @@ if (typeof global !== 'undefined') {
                             const cfgErr = `2Captcha CONFIGURATION FAILURE: ${keyCheckResp.request}. Configure valid API key in Settings.`;
                             logBg(null, `[Auto CAPTCHA Solver] ${cfgErr}`, 'error');
                             campaignState.captchaEpochBlockedErrors[curEpoch] = keyCheckResp.request;
-                            campaignState.captchaLedger.autoFailure++;
-                            campaignState.counters.captchaFailed = (campaignState.counters.captchaFailed || 0) + 1;
-                            broadcastCounters();
+                            recordTerminalCaptchaFailure(solveIdentity?.attemptId, keyCheckResp.request);
                             return { success: false, error: cfgErr, terminalError: keyCheckResp.request };
                         }
                     }
@@ -1556,9 +1575,7 @@ if (typeof global !== 'undefined') {
                             return { success: true, method: solMethod, token: solToken };
                         } else {
                             logBg(null, `[CAPTCHA_VERIFICATION_FAILED] Challenge could not be verified on target page.`, 'error');
-                            campaignState.captchaLedger.autoFailure++;
-                            campaignState.counters.captchaFailed = (campaignState.counters.captchaFailed || 0) + 1;
-                            broadcastCounters();
+                            recordTerminalCaptchaFailure(solveIdentity?.attemptId, 'CHALLENGE_VERIFICATION_FAILED');
                             return { success: false, error: 'CHALLENGE_VERIFICATION_FAILED' };
                         }
                     };
@@ -1588,26 +1605,19 @@ if (typeof global !== 'undefined') {
                             if (isWrongKey) {
                                 campaignState.captchaEpochBlockedErrors[curEpoch] = 'ERROR_WRONG_USER_KEY';
                                 logBg(null, '[Auto CAPTCHA Solver] 2Captcha CONFIGURATION FAILURE: ERROR_WRONG_USER_KEY. Cannot substitute another solver silently.', 'error');
-                                campaignState.captchaLedger.autoFailure++;
-                                campaignState.counters.captchaFailed = (campaignState.counters.captchaFailed || 0) + 1;
-                                broadcastCounters();
+                                recordTerminalCaptchaFailure(solveIdentity?.attemptId, 'ERROR_WRONG_USER_KEY');
                                 return { success: false, error: e2.message, terminalError: 'ERROR_WRONG_USER_KEY' };
                             }
                             const isZeroBal = e2.message && (e2.message.includes('ERROR_ZERO_BALANCE') || e2.message.includes('ZERO_BALANCE'));
                             if (isZeroBal) {
                                 campaignState.captchaEpochBlockedErrors[curEpoch] = 'ERROR_ZERO_BALANCE';
                             }
-                            // [R6.9G.7 P0-4] Terminal provider failure must reconcile autoFailure / captchaFailed exactly once
-                            campaignState.captchaLedger.autoFailure++;
-                            campaignState.counters.captchaFailed = (campaignState.counters.captchaFailed || 0) + 1;
-                            broadcastCounters();
                             if (witKey) {
                                 logBg(null, `[Auto CAPTCHA Solver] 2Captcha failed. Handoff to Wit.ai Audio Solver (unverified)`, 'info');
                                 return { success: false, fallback: 'audio_frame_solver', inProgress: true, error: e2.message, message: 'Handoff to autonomous audio solver' };
                             }
-                            campaignState.captchaLedger.autoFailure++;
-                            campaignState.counters.captchaFailed = (campaignState.counters.captchaFailed || 0) + 1;
-                            broadcastCounters();
+                            // [R6.9G.7.1] Terminal provider failure must reconcile autoFailure / captchaFailed exactly once
+                            recordTerminalCaptchaFailure(solveIdentity?.attemptId, e2.message);
                             return { 
                                 success: false, 
                                 error: e2.message,
@@ -1658,21 +1668,18 @@ if (typeof global !== 'undefined') {
                                 }
                             }
 
-                            // [R6.9G.7 P0-4] Classify NopeCHA error and reconcile failure counters exactly once
+                            // [R6.9G.7.1] Classify NopeCHA error and reconcile failure counters exactly once
                             const isNopeChaTimeout = enp.message && enp.message.includes('NopeCHA Timeout');
                             const isNopeChaInvalidReq = enp.message && enp.message.includes('Error (10)');
                             const isNopeChaRateLimit = enp.message && enp.message.includes('Error (11)');
                             logBg(null, `[Auto CAPTCHA Solver] NopeCHA error classified: ${isNopeChaTimeout ? 'TIMEOUT' : isNopeChaInvalidReq ? 'INVALID_REQUEST' : isNopeChaRateLimit ? 'RATE_LIMIT' : 'PROVIDER_ERROR'} (${enp.message})`, 'warning');
-
-                            campaignState.captchaLedger.autoFailure++;
-                            campaignState.counters.captchaFailed = (campaignState.counters.captchaFailed || 0) + 1;
-                            broadcastCounters();
 
                             if (witKey) {
                                 logBg(null, `[Auto CAPTCHA Solver] NopeCHA failed. Handoff to Wit.ai Audio Solver (unverified)`, 'info');
                                 return { success: false, fallback: 'audio_frame_solver', inProgress: true, error: enp.message, message: 'Handoff to autonomous audio solver' };
                             }
 
+                            recordTerminalCaptchaFailure(solveIdentity?.attemptId, enp.message);
                             return { success: false, error: enp.message };
                         }
                     } else if (method === 'nopecha') {
@@ -1683,14 +1690,17 @@ if (typeof global !== 'undefined') {
                                 const fbToken = await solver.solve2Captcha(request.sitekey, targetPageUrl, request.type || request.captchaType || 'recaptcha', extra, pollIntervalMs, maxWaitSec);
                                 return await verifyAndRecordCaptchaSuccess(fbToken, '2captcha');
                             } catch (e2f) {
+                                recordTerminalCaptchaFailure(solveIdentity?.attemptId, e2f.message);
                                 return { success: false, error: e2f.message };
                             }
                         } else if (witKey) {
+                            // [R6.9G.7.1] Fix false success: fallback handoff != success
                             logBg(null, `[Auto CAPTCHA Solver] NopeCHA key missing, falling back to Wit.ai`, 'info');
-                            return { success: true, method: 'audio_frame_solver' };
+                            return { success: false, fallback: 'audio_frame_solver', inProgress: true, message: 'Handoff to autonomous audio solver' };
                         } else {
                             const errMsg = "NopeCHA API Key is missing in Settings.";
                             logBg(null, `[Auto CAPTCHA Solver] NopeCHA FAILED: ${errMsg}`, 'error');
+                            recordTerminalCaptchaFailure(solveIdentity?.attemptId, errMsg);
                             return { success: false, error: errMsg };
                         }
                     }
@@ -2968,21 +2978,17 @@ async function startCampaignOrchestrator(queue, template, delayMs, fillDelayMs =
         campaignState.counters.completed = 0;
         campaignState.visitedUrls = []; 
         campaignState.successfulUrls = []; 
-        campaignState.captchaCounts = {}; // [v4.12.23] 캡차 시도 횟수 초기화
-        campaignState.activeTimeoutId = null;
-        campaignState.currentTabId = null;
-        campaignState.targetTabId = null;
-        campaignState.outcomeHistogram = {};
-        campaignState.pausedCheckpoint = null;
-        campaignState.captchaEpoch = (campaignState.captchaEpoch || 0) + 1; // [Issue #6 R6.9E B4] New epoch on start
-        campaignState.captchaEpochBlockedErrors = {};
-        // [R6.9G-G] Reset CAPTCHA attempt-bound ledger for new campaign run
         campaignState.captchaLedger = { detected: 0, pendingOwner: 0, autoSuccess: 0, autoFailure: 0, manualSuccess: 0, manualSkip: 0 };
-        // [R6.9G-A] Reset serialized lifecycle state
+        campaignState.captchaFailuresRecorded = new Set();
+        campaignState.isFaulted = false;
+        campaignState.faultReason = null;
         campaignState.activeTargetInFlight = false;
         campaignState.activeTargetCount = 0;
         campaignState.maxConcurrentObserved = 0;
         campaignState.lastFinalTs = 0;
+        campaignState.pausedCheckpoint = null;
+        campaignState.captchaEpoch = (campaignState.captchaEpoch || 0) + 1; // [Issue #6 R6.9E B4] New epoch on start
+        campaignState.captchaEpochBlockedErrors = {};
         for (const k of Object.keys(coreRuntimeRefErrors)) delete coreRuntimeRefErrors[k];
 
         // [R6.9A] Persistent campaignRunId for ledger scoping
@@ -3048,8 +3054,15 @@ async function pauseCampaignOrchestrator(saveCheckpoint = true) {
 
     // 3. WAIT FOR ACTIVE ORCHESTRATION TO QUIESCE BEFORE WRITING CHECKPOINT SNAPSHOT
     const pauseQuiesceStart = Date.now();
-    while (campaignState.activeTargetInFlight && (Date.now() - pauseQuiesceStart < 2500)) {
+    while (campaignState.activeTargetInFlight && (Date.now() - pauseQuiesceStart < 3000)) {
         await new Promise(r => setTimeout(r, 50));
+    }
+
+    if (campaignState.activeTargetInFlight) {
+        logBg(null, `🚨 [PAUSE_FAULT] Active target failed to quiesce during pause. Entering HOLD/FAULT state. Checkpoint held.`, 'error');
+        campaignState.isFaulted = true;
+        campaignState.faultReason = 'PAUSE_QUIESCENCE_TIMEOUT';
+        return { success: false, status: 'HOLD_FAULT', reason: 'PAUSE_QUIESCENCE_TIMEOUT' };
     }
 
     // [Issue #6 R6.9E B5] 4. Inspect currentAttempt state BEFORE closing tabs
@@ -3265,7 +3278,14 @@ async function acquireTargetSlot(sessionId, expectedGeneration) {
     const SLOT_POLL_MS = 50;
     const SLOT_TIMEOUT_MS = 300000;
     const start = Date.now();
+    if (campaignState.isFaulted) {
+        console.error(`[SERIALIZED_GATE] Cannot acquire slot: campaign is in FAULT state (reason=${campaignState.faultReason})`);
+        return { granted: false, reason: 'SYSTEM_FAULTED' };
+    }
     while (campaignState.activeTargetInFlight) {
+        if (campaignState.isFaulted) {
+            return { granted: false, reason: 'SYSTEM_FAULTED' };
+        }
         if (sessionId !== undefined && sessionId !== campaignState.sessionId) {
             console.log(`[SERIALIZED_GATE] Stale session ${sessionId} aborted while waiting for slot.`);
             return { granted: false, reason: 'STALE_SESSION' };
@@ -3282,6 +3302,10 @@ async function acquireTargetSlot(sessionId, expectedGeneration) {
             return { granted: false, reason: 'WAITER_TIMEOUT' };
         }
         await new Promise(r => setTimeout(r, SLOT_POLL_MS));
+    }
+
+    if (campaignState.isFaulted) {
+        return { granted: false, reason: 'SYSTEM_FAULTED' };
     }
 
     if (sessionId !== undefined && sessionId !== campaignState.sessionId) {
@@ -3599,7 +3623,7 @@ async function processNextCampaignTarget(loopSessionId, loopGeneration) {
 
                 // Quiescence wait in finally
                 const quiesceStart = Date.now();
-                while (!orchestrationSettled && (Date.now() - quiesceStart < 1500)) {
+                while (!orchestrationSettled && (Date.now() - quiesceStart < 2500)) {
                     await new Promise(r => setTimeout(r, 50));
                 }
 
@@ -3616,10 +3640,21 @@ async function processNextCampaignTarget(loopSessionId, loopGeneration) {
                 campaignState.submitLock = false;
                 campaignState.timeoutWatchdogGen = (campaignState.timeoutWatchdogGen || 0) + 1;
 
+                if (!orchestrationSettled) {
+                    logBg(null, `🚨 [QUIESCENCE_FAULT] Target inner orchestration failed to settle within grace period. Entering FAULT state; lease held.`, 'error');
+                    campaignState.isFaulted = true;
+                    campaignState.faultReason = 'TARGET_QUIESCENCE_TIMEOUT';
+                    campaignState.isActive = false;
+                    broadcastCounters();
+                    return; // DO NOT release lease!
+                }
+
                 releaseLease();
             });
         } finally {
-            releaseLease();
+            if (orchestrationSettled) {
+                releaseLease();
+            }
         }
     } catch (e) {
         logBg(null, `❌ Critical target error: ${e.message}. Skipping...`, "error");
