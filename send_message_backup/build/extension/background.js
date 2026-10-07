@@ -50,6 +50,38 @@ try {
     console.warn('[SW Boot] importScripts modules fallback or handled inline:', e);
 }
 
+// [R6.9G.9.2] Proxy Authentication Handler (MV3 Blocking onAuthRequired)
+if (typeof chrome !== 'undefined' && chrome.webRequest && chrome.webRequest.onAuthRequired) {
+    try {
+        chrome.webRequest.onAuthRequired.addListener(
+            (details) => {
+                if (!details || !details.isProxy) return {};
+                try {
+                    const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+                    if (!pg) return {};
+                    const creds = pg.getProxyAuthCredentials(details.challenger);
+                    if (creds && creds.username && creds.password) {
+                        return {
+                            authCredentials: {
+                                username: creds.username,
+                                password: creds.password
+                            }
+                        };
+                    }
+                } catch (err) {
+                    console.warn('[PRIVACY_GATE] Proxy onAuthRequired error:', err);
+                }
+                return {};
+            },
+            { urls: ["<all_urls>"] },
+            ["blocking"]
+        );
+        console.log('[PRIVACY_GATE] Proxy onAuthRequired listener registered.');
+    } catch (e) {
+        console.warn('[PRIVACY_GATE] Failed to register onAuthRequired listener:', e);
+    }
+}
+
 // [v18.25.0] Boot Diagnostic Telemetry: Track SW startup steps in real-time
 function markBoot(step) {
     console.log(`[BootStep] ${step}`);
@@ -2103,6 +2135,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     await pg.init();
                     await pg.saveConfig({ transportMode: 'SYSTEM_VPN', systemVpnConfirmed: true });
                     const preflight = await pg.runPreflight({ transportMode: 'SYSTEM_VPN', systemVpnConfirmed: true });
+                    if (!preflight || preflight.ready !== true) {
+                        await pg.saveConfig({ systemVpnConfirmed: false });
+                        pg.config.systemVpnConfirmed = false;
+                        pg.isGateReady = false;
+                        return sendResponse({
+                            success: false,
+                            preflight,
+                            error: (preflight && preflight.failureReason) || 'PREFLIGHT_VERIFICATION_FAILED'
+                        });
+                    }
                     sendResponse({ success: true, preflight });
                 } catch (e) {
                     sendResponse({ success: false, error: e.message });

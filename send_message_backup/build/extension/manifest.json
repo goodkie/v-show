@@ -13,7 +13,9 @@
     "downloads",
     "debugger",
     "privacy",
-    "proxy"
+    "proxy",
+    "webRequest",
+    "webRequestAuthProvider"
   ],
   "host_permissions": [
     "<all_urls>"

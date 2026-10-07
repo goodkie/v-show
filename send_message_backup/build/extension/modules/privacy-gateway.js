@@ -60,9 +60,13 @@
             };
             this.hasCapturedOriginals = false;
             this.ephemeralEgressFingerprint = null; // Truncated hash only, never raw IP
+            this.ephemeralProxyPassword = null; // Memory-only password if rememberPassword is false
         }
 
         async init(customConfig = {}) {
+            if (customConfig.proxyPassword !== undefined) {
+                this.ephemeralProxyPassword = customConfig.proxyPassword;
+            }
             if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
                 try {
                     const data = await chrome.storage.local.get(['xpider_privacy_config']);
@@ -70,16 +74,37 @@
                         this.config = { ...DEFAULT_CONFIG, ...data.xpider_privacy_config, ...customConfig };
                         // Password is never persisted unless rememberPassword was true
                         if (!this.config.rememberPassword) {
+                            if (customConfig.proxyPassword) {
+                                this.ephemeralProxyPassword = customConfig.proxyPassword;
+                            }
                             this.config.proxyPassword = '';
                         }
                     } else {
                         this.config = { ...DEFAULT_CONFIG, ...customConfig };
+                        if (!this.config.rememberPassword) {
+                            if (customConfig.proxyPassword) {
+                                this.ephemeralProxyPassword = customConfig.proxyPassword;
+                            }
+                            this.config.proxyPassword = '';
+                        }
                     }
                 } catch (_) {
                     this.config = { ...DEFAULT_CONFIG, ...customConfig };
+                    if (!this.config.rememberPassword) {
+                        if (customConfig.proxyPassword) {
+                            this.ephemeralProxyPassword = customConfig.proxyPassword;
+                        }
+                        this.config.proxyPassword = '';
+                    }
                 }
             } else {
                 this.config = { ...DEFAULT_CONFIG, ...customConfig };
+                if (!this.config.rememberPassword) {
+                    if (customConfig.proxyPassword) {
+                        this.ephemeralProxyPassword = customConfig.proxyPassword;
+                    }
+                    this.config.proxyPassword = '';
+                }
             }
             return this.config;
         }
@@ -98,6 +123,9 @@
                 this.ephemeralEgressFingerprint = null;
             }
             this.config = { ...this.config, ...newConfig };
+            if (newConfig.proxyPassword !== undefined) {
+                this.ephemeralProxyPassword = newConfig.proxyPassword;
+            }
             if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
                 const toSave = { ...this.config };
                 if (!toSave.rememberPassword) {
@@ -106,6 +134,33 @@
                 await chrome.storage.local.set({ xpider_privacy_config: toSave });
             }
             return this.config;
+        }
+
+        /**
+         * [R6.9G.9.2] Get proxy authentication credentials scoped to configured host/port
+         */
+        getProxyAuthCredentials(challenger) {
+            if (this.config.transportMode !== PRIVACY_MODES.SOCKS5 && this.config.transportMode !== PRIVACY_MODES.HTTPS_PROXY) {
+                return null;
+            }
+            const proxyHost = (this.config.proxyHost || '').toLowerCase().trim();
+            const proxyPort = parseInt(this.config.proxyPort, 10);
+            const username = (this.config.proxyUsername || '').trim();
+            const password = this.config.proxyPassword || this.ephemeralProxyPassword || '';
+
+            if (!username || !password) return null;
+
+            if (challenger && challenger.host) {
+                const challengerHost = challenger.host.toLowerCase().trim();
+                if (proxyHost && challengerHost !== proxyHost) {
+                    return null; // Scoped strictly to configured proxy host
+                }
+                if (proxyPort && challenger.port && challenger.port !== proxyPort) {
+                    return null; // Scoped strictly to configured proxy port
+                }
+            }
+
+            return { username, password };
         }
 
         /**
@@ -137,39 +192,86 @@
         }
 
         /**
-         * Compute ephemeral egress fingerprint without logging or persisting raw IP
+         * Compute ephemeral egress fingerprint without logging or persisting raw IP.
+         * Returns structured result:
+         *   { verified: true, fingerprint: '...' } OR
+         *   { verified: false, reason: '...' }
+         * Never accepts synthetic or fallback seeds as verified egress.
          */
         async computeEgressFingerprint() {
-            if (this._mockEgressProbe && typeof this._mockEgressProbe === 'function') {
-                const mockRaw = await this._mockEgressProbe();
-                return await this._hashString(mockRaw);
-            }
             try {
                 let rawData = null;
-                if (typeof fetch === 'function') {
-                    const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-                    const timeoutId = controller ? setTimeout(() => controller.abort(), 3000) : null;
-                    try {
-                        const resp = await fetch('https://cloudflare.com/cdn-cgi/trace', {
-                            signal: controller ? controller.signal : undefined,
-                            cache: 'no-store'
-                        });
-                        if (resp.ok) {
-                            const text = await resp.text();
-                            const m = text.match(/ip=([^\r\n]+)/);
-                            if (m && m[1]) rawData = m[1].trim();
-                        }
-                    } catch (_) {}
-                    finally {
-                        if (timeoutId) clearTimeout(timeoutId);
+                if (this._mockEgressProbe && typeof this._mockEgressProbe === 'function') {
+                    const mockRaw = await this._mockEgressProbe();
+                    if (!mockRaw) {
+                        return { verified: false, reason: 'EGRESS_PROBE_UNAVAILABLE' };
                     }
+                    if (typeof mockRaw === 'object' && mockRaw.error) {
+                        return { verified: false, reason: mockRaw.error };
+                    }
+                    rawData = String(mockRaw).trim();
+                } else if (typeof fetch === 'function') {
+                    const probeEndpoints = [
+                        {
+                            url: 'https://cloudflare.com/cdn-cgi/trace',
+                            extract: (text) => {
+                                const m = text.match(/ip=([^\r\n]+)/);
+                                return m && m[1] ? m[1].trim() : null;
+                            }
+                        },
+                        {
+                            url: 'https://api64.ipify.org?format=text',
+                            extract: (text) => (text && text.trim().length > 0 ? text.trim() : null)
+                        }
+                    ];
+
+                    let lastReason = 'EGRESS_PROBE_UNAVAILABLE';
+                    for (const probe of probeEndpoints) {
+                        const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+                        const timeoutId = controller ? setTimeout(() => controller.abort(), 3000) : null;
+                        try {
+                            const resp = await fetch(probe.url, {
+                                signal: controller ? controller.signal : undefined,
+                                cache: 'no-store'
+                            });
+                            if (resp.ok) {
+                                const text = await resp.text();
+                                const extracted = probe.extract(text);
+                                if (extracted) {
+                                    rawData = extracted;
+                                    break;
+                                } else {
+                                    lastReason = 'EGRESS_PROBE_PARSE_FAILED';
+                                }
+                            } else {
+                                lastReason = `EGRESS_PROBE_HTTP_${resp.status}`;
+                            }
+                        } catch (err) {
+                            if (err.name === 'AbortError') {
+                                lastReason = 'EGRESS_PROBE_TIMEOUT';
+                            } else {
+                                lastReason = 'EGRESS_PROBE_UNAVAILABLE';
+                            }
+                        } finally {
+                            if (timeoutId) clearTimeout(timeoutId);
+                        }
+                    }
+
+                    if (!rawData) {
+                        return { verified: false, reason: lastReason };
+                    }
+                } else {
+                    return { verified: false, reason: 'EGRESS_PROBE_UNAVAILABLE' };
                 }
+
                 if (!rawData) {
-                    rawData = (typeof navigator !== 'undefined' && navigator.onLine) ? 'online-default-egress' : 'offline-default-egress';
+                    return { verified: false, reason: 'EGRESS_PROBE_UNAVAILABLE' };
                 }
-                return await this._hashString(rawData);
-            } catch (_) {
-                return await this._hashString('fallback-egress-seed');
+
+                const fingerprint = await this._hashString(rawData);
+                return { verified: true, fingerprint };
+            } catch (err) {
+                return { verified: false, reason: 'EGRESS_PROBE_UNVERIFIED' };
             }
         }
 
@@ -192,12 +294,24 @@
             }
 
             try {
-                const currentFingerprint = await this.computeEgressFingerprint();
+                const fpResult = await this.computeEgressFingerprint();
+                if (!fpResult || !fpResult.verified) {
+                    const failReason = (fpResult && fpResult.reason) || 'EGRESS_PROBE_UNVERIFIED';
+                    if (this.config.failClosed) {
+                        console.warn('[PRIVACY_GATE] Egress probe unverified in fail-closed mode:', failReason);
+                        await this.invalidateVpnConfirmation(failReason);
+                        return { pass: false, reason: failReason };
+                    }
+                    return { pass: true, warning: failReason };
+                }
+
+                const currentFingerprint = fpResult.fingerprint;
                 if (!this.ephemeralEgressFingerprint) {
                     this.ephemeralEgressFingerprint = currentFingerprint;
                     return { pass: true, fingerprint: currentFingerprint };
                 }
-                if (currentFingerprint && this.ephemeralEgressFingerprint && currentFingerprint !== this.ephemeralEgressFingerprint) {
+
+                if (currentFingerprint !== this.ephemeralEgressFingerprint) {
                     console.warn('[PRIVACY_GATE] Egress fingerprint changed unexpectedly! Invalidate confirmation.');
                     await this.invalidateVpnConfirmation('SYSTEM_VPN_EGRESS_CHANGED');
                     return {
@@ -207,8 +321,13 @@
                         currentFingerprint
                     };
                 }
+
                 return { pass: true, fingerprint: currentFingerprint };
             } catch (err) {
+                if (this.config.failClosed) {
+                    await this.invalidateVpnConfirmation('EGRESS_PROBE_UNVERIFIED');
+                    return { pass: false, reason: 'EGRESS_PROBE_UNVERIFIED' };
+                }
                 return { pass: true, warning: err.message };
             }
         }
@@ -378,7 +497,15 @@
          * Restore original browser settings on campaign stop/pause/exit
          */
         async restoreOriginalSettings() {
-            if (!this.hasCapturedOriginals) return;
+            if (!this.config.rememberPassword) {
+                this.ephemeralProxyPassword = null;
+            }
+
+            if (!this.hasCapturedOriginals) {
+                this.isGateActive = false;
+                this.isGateReady = false;
+                return;
+            }
 
             // 1. Restore Proxy
             if (typeof chrome !== 'undefined' && chrome.proxy && chrome.proxy.settings) {
@@ -423,6 +550,10 @@
                 } catch (e) {
                     console.warn('[PRIVACY_GATE] Network prediction restore failed:', e);
                 }
+            }
+
+            if (!this.config.rememberPassword) {
+                this.ephemeralProxyPassword = null;
             }
 
             this.isGateActive = false;
@@ -505,15 +636,11 @@
                     ? options.systemVpnConfirmed
                     : this.config.systemVpnConfirmed;
 
-                if (isVpnConfirmed) {
-                    ready = true;
-                    egressCheck = 'PASS';
-                    failureReason = null;
-                    try {
-                        this.ephemeralEgressFingerprint = await this.computeEgressFingerprint();
-                    } catch (_) {}
-                } else {
-                    egressCheck = 'UNKNOWN';
+                const ownerVpnConfirmed = Boolean(isVpnConfirmed);
+                let egressVerified = false;
+
+                if (!ownerVpnConfirmed) {
+                    egressCheck = 'BLOCKED';
                     this.ephemeralEgressFingerprint = null;
                     if (failClosed) {
                         ready = false;
@@ -522,15 +649,63 @@
                         ready = true;
                         dnsPrivacy = 'DEGRADED';
                     }
+                } else {
+                    // Owner confirmed VPN. Now verify actual external egress via probe.
+                    const fpResult = await this.computeEgressFingerprint();
+                    if (fpResult && fpResult.verified) {
+                        egressVerified = true;
+                        egressCheck = 'PASS';
+                        this.ephemeralEgressFingerprint = fpResult.fingerprint;
+                        ready = true;
+                        failureReason = null;
+                    } else {
+                        egressVerified = false;
+                        egressCheck = 'FAIL';
+                        this.ephemeralEgressFingerprint = null;
+                        const probeReason = (fpResult && fpResult.reason) || 'EGRESS_PROBE_UNVERIFIED';
+                        if (failClosed) {
+                            ready = false;
+                            failureReason = probeReason;
+                        } else {
+                            ready = true;
+                            dnsPrivacy = 'DEGRADED';
+                            failureReason = null;
+                        }
+                    }
                 }
+
+                this.isGateReady = ready;
+                this.failureReason = failureReason;
+
+                return this._recordPreflightResult({
+                    ready,
+                    mode,
+                    failClosed,
+                    ownerVpnConfirmed,
+                    egressVerified,
+                    webrtcGuard,
+                    directFallbackBlocked,
+                    egressCheck,
+                    egressFingerprint: this.ephemeralEgressFingerprint,
+                    dnsPrivacy,
+                    ipv6Protection,
+                    failureReason
+                });
             } else if (mode === PRIVACY_MODES.SOCKS5 || mode === PRIVACY_MODES.HTTPS_PROXY) {
                 const host = options.proxyHost !== undefined ? options.proxyHost : this.config.proxyHost;
                 const port = options.proxyPort !== undefined ? options.proxyPort : this.config.proxyPort;
+                const username = options.proxyUsername !== undefined ? options.proxyUsername : this.config.proxyUsername;
+                const password = options.proxyPassword !== undefined ? options.proxyPassword : (this.config.proxyPassword || this.ephemeralProxyPassword);
 
                 if (!host || !port) {
                     ready = false;
                     directFallbackBlocked = 'ALLOWED';
                     failureReason = 'PROXY_HOST_OR_PORT_MISSING';
+                } else if (username && !password) {
+                    ready = false;
+                    directFallbackBlocked = 'BLOCKED';
+                    egressCheck = 'FAIL';
+                    failureReason = 'PROXY_CREDENTIALS_INCOMPLETE';
                 } else {
                     try {
                         await this.applyManagedProxy(mode, host, port);
@@ -560,9 +735,12 @@
                 ready,
                 mode,
                 failClosed,
+                ownerVpnConfirmed: false,
+                egressVerified: mode === PRIVACY_MODES.SOCKS5 || mode === PRIVACY_MODES.HTTPS_PROXY,
                 webrtcGuard,
                 directFallbackBlocked,
                 egressCheck,
+                egressFingerprint: null,
                 dnsPrivacy,
                 ipv6Protection,
                 failureReason
@@ -625,7 +803,8 @@
                 .replace(/(?:socks5|http|https):\/\/[^:\s]+:[^@\s]+@/gi, (match) => {
                     const protocol = match.split('://')[0];
                     return `${protocol}://[REDACTED_USER]:[REDACTED_PASS]@`;
-                });
+                })
+                .replace(/proxy\s+user:[^\s@,]+/gi, 'proxy user:[REDACTED_SECRET]');
         }
     }
 

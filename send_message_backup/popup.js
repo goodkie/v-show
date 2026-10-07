@@ -968,25 +968,42 @@ async function hydrateSettings() {
                 vpnVerifyBtn.textContent = '⏳ Verifying...';
                 try {
                     if (vpnCheckbox) vpnCheckbox.checked = true;
-                    // Persist to storage
-                    const curData = await chrome.storage.local.get(['xpider_privacy_config']);
-                    const curCfg = curData.xpider_privacy_config || {};
-                    curCfg.transportMode = 'SYSTEM_VPN';
-                    curCfg.systemVpnConfirmed = true;
-                    await chrome.storage.local.set({ xpider_privacy_config: curCfg });
 
                     const res = await new Promise(resolve => {
                         chrome.runtime.sendMessage({
                             action: 'VERIFY_SYSTEM_VPN'
                         }, resolve);
                     });
-                    updateVpnStatusBadge(true);
-                    if (res && res.preflight) {
-                        _updatePrivacyCardUI(res.preflight);
+
+                    const isPreflightReady = !!(res && res.success && res.preflight && res.preflight.ready === true);
+                    if (isPreflightReady) {
+                        updateVpnStatusBadge(true);
+                        const curData = await chrome.storage.local.get(['xpider_privacy_config']);
+                        const curCfg = curData.xpider_privacy_config || {};
+                        curCfg.transportMode = 'SYSTEM_VPN';
+                        curCfg.systemVpnConfirmed = true;
+                        await chrome.storage.local.set({ xpider_privacy_config: curCfg });
+                        if (res.preflight) {
+                            _updatePrivacyCardUI(res.preflight);
+                        }
+                        addLog('✅ [Privacy Gateway] System VPN confirmed and verified ready.', 'success');
+                    } else {
+                        updateVpnStatusBadge(false);
+                        const failureReason = (res && res.preflight && res.preflight.failureReason) || (res && res.error) || 'PREFLIGHT_VERIFICATION_FAILED';
+                        const curData = await chrome.storage.local.get(['xpider_privacy_config']);
+                        const curCfg = curData.xpider_privacy_config || {};
+                        curCfg.transportMode = 'SYSTEM_VPN';
+                        curCfg.systemVpnConfirmed = false;
+                        await chrome.storage.local.set({ xpider_privacy_config: curCfg });
+                        if (res && res.preflight) {
+                            _updatePrivacyCardUI(res.preflight);
+                        }
+                        addLog(`❌ [Privacy Gateway] System VPN verification blocked: ${failureReason}`, 'error');
+                        alert(`🛡️ PRIVACY GATEWAY FAIL-CLOSED\n\nSystem VPN verification failed:\n${failureReason}\n\nPlease verify your OS-level VPN is active and connected, then try again.`);
                     }
-                    addLog('✅ [Privacy Gateway] System VPN confirmed and verified.', 'success');
                 } catch (e) {
-                    addLog(`❌ [Privacy Gateway] System VPN verify failed: ${e.message}`, 'error');
+                    updateVpnStatusBadge(false);
+                    addLog(`❌ [Privacy Gateway] System VPN verify error: ${e.message}`, 'error');
                 } finally {
                     vpnVerifyBtn.disabled = false;
                     vpnVerifyBtn.textContent = '✓ Verify & Use System VPN';
@@ -2505,9 +2522,9 @@ function _applyHandshakeUiState(isPassed, errorReason = '') {
 }
 
 function getBadgeTextFromBuildInfo(info) {
-    if (!info) return 'TEST-ONLY R6.9G.9.1';
+    if (!info) return 'TEST-ONLY R6.9G.9.2';
     const m = (info.buildId || '').match(/R\d+\.\d+[A-Za-z0-9\.]*/);
-    const ver = m ? m[0] : 'R6.9G.9.1';
+    const ver = m ? m[0] : 'R6.9G.9.2';
     const sha = info.implementationHeadShort || info.headShort || (info.implementationHead ? info.implementationHead.substring(0, 7) : 'dev');
     return `TEST-ONLY ${ver} [${sha}]`;
 }
