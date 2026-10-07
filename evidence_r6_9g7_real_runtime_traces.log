@@ -1,139 +1,754 @@
-[2026-10-07T08:50:07.210Z] [HTTP_SERVER] http://127.0.0.1:8979
-[2026-10-07T08:50:07.212Z] [UNPACKED_EXTENSION] E:\vivpr\ai\extension-form-sender\send_message_backup\build\extension
-[2026-10-07T08:50:07.315Z] [GIT_HEAD] 2e65367c2dba095e7cf5ad351bca411dbe77ae9f
-[2026-10-07T08:50:07.425Z] [GIT_DIRTY_RUNTIME] CLEAN
-[2026-10-07T08:50:07.425Z] [BROWSER_LAUNCH] C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe --remote-debugging-port=9231
-[2026-10-07T08:50:11.968Z] [CDP_CONNECT] Edg/154.0.4258.53
-[2026-10-07T08:50:11.974Z] [EXT_DISCOVERY] extId=pjohcallgmjmbfckiaogjokelhobfceg
-[2026-10-07T08:50:12.036Z] [SW_CONSOLE] [BootStep] solver_instantiation
-[2026-10-07T08:50:12.044Z] [SW_CONSOLE] [X PIDER] Background script initializing (Unified Mode)...
-[2026-10-07T08:50:12.045Z] [SW_CONSOLE] [BootStep] side_panel_config
-[2026-10-07T08:50:12.045Z] [SW_CONSOLE] [BootStep] campaign_state_init
-[2026-10-07T08:50:12.046Z] [SW_CONSOLE] [BootStep] global_functions_defined
-[2026-10-07T08:50:12.046Z] [SW_CONSOLE] [BootStep] worker_online
-[2026-10-07T08:50:12.047Z] [SW_CONSOLE] [BootStep] restoring_campaign_state
-[2026-10-07T08:50:12.047Z] [SW_CONSOLE] [Boot] Initializing campaign state...
-[2026-10-07T08:50:12.048Z] [SW_CONSOLE] [COUNTER_RECONCILE] legacySuccess=0 ledgerSuccess=0 action=LEDGER_WINS
-[2026-10-07T08:50:12.054Z] [SW_CONSOLE] [BootStep] restore_complete
-[2026-10-07T08:50:12.384Z] [SW_CONSOLE] [BG_LOG][tab=none] 📦 [Migration] Safely migrated to v2 (Backup: xpider_backup_v1_1791363012315)
-[2026-10-07T08:50:14.046Z] 
+[2026-10-07T12:33:07.056Z] [HTTP_SERVER] http://127.0.0.1:8979
+[2026-10-07T12:33:07.058Z] [UNPACKED_EXTENSION] E:\vivpr\ai\extension-form-sender\send_message_backup\build\extension
+[2026-10-07T12:33:07.144Z] [GIT_HEAD] fa5858896f024acebb5c82e212acbeedf28c68ee
+[2026-10-07T12:33:07.237Z] [GIT_DIRTY_RUNTIME] CLEAN
+[2026-10-07T12:33:07.237Z] [BROWSER_LAUNCH] C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe --remote-debugging-port=9231
+[2026-10-07T12:33:11.798Z] [CDP_CONNECT] Edg/154.0.4258.62
+[2026-10-07T12:33:11.803Z] [EXT_DISCOVERY] extId=pjohcallgmjmbfckiaogjokelhobfceg
+[2026-10-07T12:33:11.871Z] [SW_CONSOLE] [BootStep] solver_instantiation
+[2026-10-07T12:33:11.872Z] [SW_CONSOLE] [X PIDER] Background script initializing (Unified Mode)...
+[2026-10-07T12:33:11.872Z] [SW_CONSOLE] [BootStep] side_panel_config
+[2026-10-07T12:33:11.873Z] [SW_CONSOLE] [BootStep] campaign_state_init
+[2026-10-07T12:33:11.874Z] [SW_CONSOLE] [BootStep] global_functions_defined
+[2026-10-07T12:33:11.876Z] [SW_CONSOLE] [BootStep] worker_online
+[2026-10-07T12:33:11.876Z] [SW_CONSOLE] [BootStep] restoring_campaign_state
+[2026-10-07T12:33:11.877Z] [SW_CONSOLE] [Boot] Initializing campaign state...
+[2026-10-07T12:33:11.877Z] [SW_CONSOLE] [COUNTER_RECONCILE] legacySuccess=0 ledgerSuccess=0 action=LEDGER_WINS
+[2026-10-07T12:33:11.877Z] [SW_CONSOLE] [BootStep] restore_complete
+[2026-10-07T12:33:12.101Z] [SW_CONSOLE] [BG_LOG][tab=none] 📦 [Migration] Safely migrated to v2 (Backup: xpider_backup_v1_1791376392094)
+[2026-10-07T12:33:13.881Z] 
 === [PROVENANCE & BUILD HANDSHAKE VERIFICATION] ===
-[2026-10-07T08:50:14.048Z] [POP_CONSOLE] [XPIDER] Blacklist loaded with 3333 items.
-[2026-10-07T08:50:14.048Z] [POP_CONSOLE] [POPUP_BOOT] started
-[2026-10-07T08:50:14.048Z] [POP_CONSOLE] [POPUP_BOOT] startHandlerBound=true
-[2026-10-07T08:50:14.048Z] [POP_CONSOLE] [POPUP_BOOT] saveHandlerBound=true
-[2026-10-07T08:50:14.048Z] [POP_CONSOLE] [BUILD_HANDSHAKE] localHead=db15feb4cd86e08774bd0c0e5b4724c0af418e44 backgroundHead=db15feb4cd86e08774bd0c0e5b4724c0af418e44 result=PASS
-[2026-10-07T08:50:14.049Z] [POP_CONSOLE] [POPUP_BOOT] settingsHydrated=true
-[2026-10-07T08:50:14.049Z] [POP_CONSOLE] [LEDGER_STATS] scope=currentGeneration success=0 failed=0 timeout=0 unknown=0
-[2026-10-07T08:50:14.049Z] [POP_CONSOLE] [Popup] Storage migration verified / initialized to v2.
-[2026-10-07T08:50:14.049Z] [POP_CONSOLE] [XPIDER_DIAG] [Engine] Initial handshake synced: active=false, completed=0, success=0, failed=0
-[2026-10-07T08:50:14.049Z] [POP_CONSOLE] [POPUP_BOOT] getStateAck=true
-[2026-10-07T08:50:14.050Z] [POP_CONSOLE] [POPUP_BOOT] ready=true
-[2026-10-07T08:50:14.054Z] [BOOT_HEADS] badge="R6.9G.7 [db15feb4]" popHead=db15feb4cd86e08774bd0c0e5b4724c0af418e44 bgHead=db15feb4cd86e08774bd0c0e5b4724c0af418e44 buildId=R6.9G.7-20261007-ATOMIC-PUMP-QUIESCENT-CAPTCHA
-[2026-10-07T08:50:14.055Z] [SOLVER_CORE_SHA] 01b3d96048ea933403e4599854dcdca28027e7f676aa5077eb6c5eb0582ac1e7
-[2026-10-07T08:50:14.055Z] ✅ PASS: Provenance & Build Handshake verified with R6.9G.7 [db15feb4] and tracked solverCoreSha
-[2026-10-07T08:50:14.055Z] 
+[2026-10-07T12:33:13.883Z] [POP_CONSOLE] [XPIDER] Blacklist loaded with 3333 items.
+[2026-10-07T12:33:13.883Z] [POP_CONSOLE] [POPUP_BOOT] started
+[2026-10-07T12:33:13.883Z] [POP_CONSOLE] [POPUP_BOOT] startHandlerBound=true
+[2026-10-07T12:33:13.883Z] [POP_CONSOLE] [POPUP_BOOT] saveHandlerBound=true
+[2026-10-07T12:33:13.884Z] [POP_CONSOLE] [BUILD_HANDSHAKE] localHead=db15feb4cd86e08774bd0c0e5b4724c0af418e44 backgroundHead=db15feb4cd86e08774bd0c0e5b4724c0af418e44 result=PASS
+[2026-10-07T12:33:13.884Z] [POP_CONSOLE] [POPUP_BOOT] settingsHydrated=true
+[2026-10-07T12:33:13.884Z] [POP_CONSOLE] [LEDGER_STATS] scope=currentGeneration success=0 failed=0 timeout=0 unknown=0
+[2026-10-07T12:33:13.884Z] [POP_CONSOLE] [XPIDER_DIAG] [Engine] Initial handshake synced: active=false, completed=0, success=0, failed=0
+[2026-10-07T12:33:13.884Z] [POP_CONSOLE] [POPUP_BOOT] getStateAck=true
+[2026-10-07T12:33:13.885Z] [POP_CONSOLE] [POPUP_BOOT] ready=true
+[2026-10-07T12:33:13.885Z] [POP_CONSOLE] [XPIDER_DIAG] [System] 📦 [Migration] Safely migrated to v2 (Backup: xpider_backup_v1_[REDACTED_PHONE])
+[2026-10-07T12:33:13.885Z] [POP_CONSOLE] [Popup] Storage migration verified / initialized to v2.
+[2026-10-07T12:33:13.888Z] [BOOT_HEADS] badge="TEST-ONLY R6.9G.7 [db15feb4]" popHead=db15feb4cd86e08774bd0c0e5b4724c0af418e44 bgHead=db15feb4cd86e08774bd0c0e5b4724c0af418e44 buildId=R6.9G.7-20261007-ATOMIC-PUMP-QUIESCENT-CAPTCHA
+[2026-10-07T12:33:13.888Z] [SOLVER_CORE_SHA] 01b3d96048ea933403e4599854dcdca28027e7f676aa5077eb6c5eb0582ac1e7
+[2026-10-07T12:33:13.888Z] ✅ PASS: Provenance & Build Handshake verified with R6.9G.7 [db15feb4] and tracked solverCoreSha
+[2026-10-07T12:33:13.888Z] 
 === [GATE A: TARGET-PUMP ATOMIC SLOT ACQUISITION CONCURRENCY RACE] ===
-[2026-10-07T08:50:14.058Z] [SW_CONSOLE] [RACE_TEST] Dispatching 4 competing concurrent processNextCampaignTarget wakeups...
-[2026-10-07T08:50:14.059Z] [SW_CONSOLE] [SERIALIZED_GATE] Slot acquired atomically. activeTargetInFlight=true activeTargetCount=1 maxConcurrent=1
-[2026-10-07T08:50:14.060Z] [SW_CONSOLE] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedBefore=0
-[2026-10-07T08:50:14.060Z] [SW_CONSOLE] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedAfter=0 result=PASS
-[2026-10-07T08:50:14.061Z] [SW_CONSOLE] [BG_LOG][tab=none] [TARGET 1/3][127.0.0.1] START
-[2026-10-07T08:50:14.063Z] [SW_CONSOLE] [RACE_TEST] Target START: http://127.0.0.1:8979/gate-a-target-1 activeCount=1
-[2026-10-07T08:50:14.675Z] [SW_CONSOLE] [RACE_TEST] Target FINAL: http://127.0.0.1:8979/gate-a-target-1
-[2026-10-07T08:50:14.678Z] [SW_CONSOLE] [SERIALIZED_GATE] Slot released. activeTargetInFlight=false activeTargetCount=0
-[2026-10-07T08:50:14.680Z] [SW_CONSOLE] [BG_LOG][tab=none] Waiting 1000ms before next target...
-[2026-10-07T08:50:14.680Z] [POP_CONSOLE] [HISTORY_SCOPE_REFRESH] trigger=xpider_active_campaign_run_id,xpider_isActive
-[2026-10-07T08:50:14.682Z] [POP_CONSOLE] [LEDGER_STATS] scope=currentRun campaignRunId=none success=0 failed=0 timeout=0 unknown=0
-[2026-10-07T08:50:14.735Z] [SW_CONSOLE] [SERIALIZED_GATE] Slot not granted reason=STALE_GENERATION. Exiting loop.
-[2026-10-07T08:50:14.735Z] [SW_CONSOLE] [BG_LOG][tab=none] Waiting 1000ms before next target...
-[2026-10-07T08:50:14.737Z] [SW_CONSOLE] [SERIALIZED_GATE] Slot not granted reason=STALE_GENERATION. Exiting loop.
-[2026-10-07T08:50:14.741Z] [SW_CONSOLE] [BG_LOG][tab=none] Waiting 1000ms before next target...
-[2026-10-07T08:50:14.742Z] [SW_CONSOLE] [SERIALIZED_GATE] Slot not granted reason=STALE_GENERATION. Exiting loop.
-[2026-10-07T08:50:14.742Z] [SW_CONSOLE] [BG_LOG][tab=none] Waiting 1000ms before next target...
-[2026-10-07T08:50:15.738Z] [SW_CONSOLE] [SERIALIZED_GATE] Slot acquired atomically. activeTargetInFlight=true activeTargetCount=1 maxConcurrent=1
-[2026-10-07T08:50:15.739Z] [SW_CONSOLE] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedBefore=0
-[2026-10-07T08:50:15.739Z] [SW_CONSOLE] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedAfter=0 result=PASS
-[2026-10-07T08:50:15.742Z] [SW_CONSOLE] [BG_LOG][tab=none] [TARGET 2/3][127.0.0.1] START
-[2026-10-07T08:50:15.743Z] [SW_CONSOLE] [RACE_TEST] Target START: http://127.0.0.1:8979/gate-a-target-2 activeCount=1
-[2026-10-07T08:50:16.351Z] [SW_CONSOLE] [RACE_TEST] Target FINAL: http://127.0.0.1:8979/gate-a-target-2
-[2026-10-07T08:50:16.352Z] [SW_CONSOLE] [SERIALIZED_GATE] Slot released. activeTargetInFlight=false activeTargetCount=0
-[2026-10-07T08:50:16.352Z] [SW_CONSOLE] [BG_LOG][tab=none] Waiting 1000ms before next target...
-[2026-10-07T08:50:17.249Z] [RACE_TEST_RESULT] {"startCount":2,"startTimes":[{"url":"http://127.0.0.1:8979/gate-a-target-1","ts":1791363014061,"conc":1},{"url":"http://127.0.0.1:8979/gate-a-target-2","ts":1791363015738,"conc":1}],"maxConcObserved":1,"finalInFlight":false,"finalCount":0}
-[2026-10-07T08:50:17.249Z] ✅ PASS: Gate A: Observed maxConcurrent === 1 strictly enforced across 4 competing wakeups
-[2026-10-07T08:50:17.249Z] 
+[2026-10-07T12:33:13.890Z] [SW_CONSOLE] [RACE_TEST] Dispatching 4 competing concurrent processNextCampaignTarget wakeups through REAL production orchestrator...
+[2026-10-07T12:33:13.891Z] [SW_CONSOLE] [SERIALIZED_GATE] Slot acquired atomically. activeTargetInFlight=true activeTargetCount=1 maxConcurrent=1
+[2026-10-07T12:33:13.892Z] [SW_CONSOLE] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedBefore=0
+[2026-10-07T12:33:13.893Z] [SW_CONSOLE] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedAfter=0 result=PASS
+[2026-10-07T12:33:13.894Z] [SW_CONSOLE] [BG_LOG][tab=none] [TARGET 1/3][127.0.0.1] START
+[2026-10-07T12:33:13.896Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [TARGET 1/3][127.0.0.1] START
+[2026-10-07T12:33:13.898Z] [POP_CONSOLE] [HISTORY_SCOPE_REFRESH] trigger=xpider_active_campaign_run_id
+[2026-10-07T12:33:13.900Z] [POP_CONSOLE] [LEDGER_STATS] scope=currentGeneration campaignRunId=run_gate_a_1791376393890 success=0 failed=0 unknown=0
+[2026-10-07T12:33:13.901Z] [POP_CONSOLE] [LEDGER_STATS] scope=currentGeneration success=0 failed=0 timeout=0 unknown=0
+[2026-10-07T12:33:13.947Z] [SW_CONSOLE] [TAB_BARRIER] phase=POST_NEW_TARGET_CREATE ownedBefore=0
+[2026-10-07T12:33:13.950Z] [SW_CONSOLE] [TAB_BARRIER] phase=POST_NEW_TARGET_CREATE ownedAfter=0 result=PASS
+[2026-10-07T12:33:13.950Z] [SW_CONSOLE] [TAB_KILL_SWITCH] keepTabId=1954482736 closedOthers=0 remainingOwned=1 result=PASS
+[2026-10-07T12:33:13.980Z] [SW_CONSOLE] [BG_LOG][tab=1954482736] [TAB_FOCUS] tabId=1954482736 windowId=1954482730 active=true focused=true
+[2026-10-07T12:33:13.981Z] [SW_CONSOLE] [BG_LOG][tab=1954482736] Step 1: Sniper Mode active. Searching for contact page...
+[2026-10-07T12:33:13.991Z] [SW_CONSOLE] [BG_LOG][tab=1954482736] 🔦 Scanning paths 1-10...
+[2026-10-07T12:33:14.026Z] [SW_CONSOLE] [BG_LOG][tab=1954482736] Pre-scan complete. Identified 10 valid paths.
+[2026-10-07T12:33:14.033Z] [SW_CONSOLE] [BG_LOG][tab=1954482736] [SniperScan] Identified 10 candidate paths in background.
+[2026-10-07T12:33:14.067Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
+[2026-10-07T12:33:14.070Z] [SW_CONSOLE] [BG_LOG][tab=1954482736] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
+[2026-10-07T12:33:14.074Z] [SW_CONSOLE] [BG_LOG][tab=1954482736] [TAB_FOCUS] tabId=1954482736 windowId=1954482730 active=true focused=true
+[2026-10-07T12:33:14.080Z] [SW_CONSOLE] [BG_LOG][tab=1954482736] [TAB_OWNERSHIP] VERIFIED_REDIRECT source=127.0.0.1 target=127.0.0.1 relation=SAME_HOST
+[2026-10-07T12:33:14.083Z] [SW_CONSOLE] [BG_LOG][tab=1954482736] [FOCUS_SECURED] formPageUrl=http://127.0.0.1:8979/gate-a-target-1
+[2026-10-07T12:33:14.085Z] [SW_CONSOLE] [BG_LOG][tab=1954482736] Extraction focus secured. Mapping template fields...
+[2026-10-07T12:33:14.092Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] [TARGET_PAGE] url=http://127.0.0.1:8979/gate-a-target-1 domGeneration=1791376394087 attemptId=att_1791376393894_h1ik9
+[2026-10-07T12:33:14.100Z] [SW_CONSOLE] [BG_LOG][tab=1954482736] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] [TARGET_PAGE] url=http://127.0.0.1:8979/gate-a-target-1 domGeneration=1791376394087 attemptId=att_1791376393894_h1ik9
+[2026-10-07T12:33:14.107Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] 🚀 [Engine] Ultra-Mode process started
+[2026-10-07T12:33:14.107Z] [SW_CONSOLE] [BG_LOG][tab=1954482736] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] 🚀 [Engine] Ultra-Mode process started
+[2026-10-07T12:33:14.107Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[2026-10-07T12:33:14.108Z] [SW_CONSOLE] [BG_LOG][tab=1954482736] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[2026-10-07T12:33:14.114Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] [TARGET_PAGE] url=http://127.0.0.1:8979/gate-a-target-1 recursion=0
+[2026-10-07T12:33:14.115Z] [SW_CONSOLE] [BG_LOG][tab=1954482736] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] [TARGET_PAGE] url=http://127.0.0.1:8979/gate-a-target-1 recursion=0
+[2026-10-07T12:33:14.115Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] 🔍 [Discovery] URL: http://127.0.0.1:8979/gate-a-target-1 | Recursion: 0
+[2026-10-07T12:33:14.115Z] [SW_CONSOLE] [BG_LOG][tab=1954482736] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] 🔍 [Discovery] URL: http://127.0.0.1:8979/gate-a-target-1 | Recursion: 0
+[2026-10-07T12:33:14.116Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[2026-10-07T12:33:14.116Z] [SW_CONSOLE] [BG_LOG][tab=1954482736] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[2026-10-07T12:33:14.116Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1:8979/gate-a-target-1 | Recursion: 0
+[2026-10-07T12:33:14.117Z] [SW_CONSOLE] [BG_LOG][tab=1954482736] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1:8979/gate-a-target-1 | Recursion: 0
+[2026-10-07T12:33:14.185Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [TAB_FOCUS] tabId=[REDACTED_PHONE] windowId=[REDACTED_PHONE] active=true focused=true
+[2026-10-07T12:33:14.186Z] [POP_CONSOLE] [XPIDER_DIAG] [System] Step 1: Sniper Mode active. Searching for contact page...
+[2026-10-07T12:33:14.187Z] [POP_CONSOLE] [XPIDER_DIAG] [System] 🔦 Scanning paths 1-10...
+[2026-10-07T12:33:14.193Z] [POP_CONSOLE] [XPIDER_DIAG] [System] Pre-scan complete. Identified 10 valid paths.
+[2026-10-07T12:33:14.203Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [SniperScan] Identified 10 candidate paths in background.
+[2026-10-07T12:33:14.204Z] [POP_CONSOLE] [XPIDER_DIAG] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
+[2026-10-07T12:33:14.207Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_h1ik9][url=http://127.0.0.1/[PATH] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
+[2026-10-07T12:33:14.210Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [TAB_FOCUS] tabId=[REDACTED_PHONE] windowId=[REDACTED_PHONE] active=true focused=true
+[2026-10-07T12:33:14.217Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [TAB_OWNERSHIP] VERIFIED_REDIRECT source=127.0.0.1 target=127.0.0.1 relation=SAME_HOST
+[2026-10-07T12:33:14.218Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [FOCUS_SECURED] formPageUrl=http://127.0.0.1/[PATH]
+[2026-10-07T12:33:14.219Z] [POP_CONSOLE] [XPIDER_DIAG] [System] Extraction focus secured. Mapping template fields...
+[2026-10-07T12:33:14.220Z] [POP_CONSOLE] [XPIDER_DIAG] [TARGET_PAGE] url=http://127.0.0.1/[PATH] domGeneration=[REDACTED_PHONE] attemptId=att_[REDACTED_PHONE]_h1ik9
+[2026-10-07T12:33:14.222Z] [POP_CONSOLE] [XPIDER_DIAG] 🚀 [Engine] Ultra-Mode process started
+[2026-10-07T12:33:14.225Z] [POP_CONSOLE] [XPIDER_DIAG] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[2026-10-07T12:33:14.227Z] [POP_CONSOLE] [XPIDER_DIAG] [TARGET_PAGE] url=http://127.0.0.1/[PATH] recursion=0
+[2026-10-07T12:33:14.234Z] [POP_CONSOLE] [XPIDER_DIAG] 🔍 [Discovery] URL: http://127.0.0.1/[PATH] | Recursion: 0
+[2026-10-07T12:33:14.234Z] [POP_CONSOLE] [XPIDER_DIAG] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[2026-10-07T12:33:14.237Z] [POP_CONSOLE] [XPIDER_DIAG] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1/[PATH] | Recursion: 0
+[2026-10-07T12:33:14.239Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_h1ik9][url=http://127.0.0.1/[PATH] [TARGET_PAGE] url=http://127.0.0.1/[PATH] domGeneration=[REDACTED_PHONE] attemptId=att_[REDACTED_PHONE]_h1ik9
+[2026-10-07T12:33:14.241Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_h1ik9][url=http://127.0.0.1/[PATH] 🚀 [Engine] Ultra-Mode process started
+[2026-10-07T12:33:14.243Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_h1ik9][url=http://127.0.0.1/[PATH] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[2026-10-07T12:33:14.245Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_h1ik9][url=http://127.0.0.1/[PATH] [TARGET_PAGE] url=http://127.0.0.1/[PATH] recursion=0
+[2026-10-07T12:33:14.251Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_h1ik9][url=http://127.0.0.1/[PATH] 🔍 [Discovery] URL: http://127.0.0.1/[PATH] | Recursion: 0
+[2026-10-07T12:33:14.253Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_h1ik9][url=http://127.0.0.1/[PATH] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[2026-10-07T12:33:14.254Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_h1ik9][url=http://127.0.0.1/[PATH] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1/[PATH] | Recursion: 0
+[2026-10-07T12:33:15.515Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] 🕵️ [UltraFinder] Scanning complex structures (ShadowDOM & Multi-Root)...
+[2026-10-07T12:33:15.518Z] [SW_CONSOLE] [BG_LOG][tab=1954482736] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] 🕵️ [UltraFinder] Scanning complex structures (ShadowDOM & Multi-Root)...
+[2026-10-07T12:33:15.522Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] 🕵️ [Supreme-Scan 5.0] Pre-scanning labels and context...
+[2026-10-07T12:33:15.522Z] [SW_CONSOLE] [BG_LOG][tab=1954482736] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] 🕵️ [Supreme-Scan 5.0] Pre-scanning labels and context...
+[2026-10-07T12:33:15.522Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] 🔍 [Scan] Scanned 1 elements. Highest score: -999
+[2026-10-07T12:33:15.523Z] [SW_CONSOLE] [BG_LOG][tab=1954482736] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] 🔍 [Scan] Scanned 1 elements. Highest score: -999
+[2026-10-07T12:33:15.523Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] ⚠️ [Scan] No valid forms reached threshold score (Target Score: 35)
+[2026-10-07T12:33:15.523Z] [SW_CONSOLE] [BG_LOG][tab=1954482736] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] ⚠️ [Scan] No valid forms reached threshold score (Target Score: 35)
+[2026-10-07T12:33:15.524Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] 🚀 [Engine] Ultra-Mode: Scrolling to reveal lazy-loaded content...
+[2026-10-07T12:33:15.524Z] [POP_CONSOLE] [XPIDER_DIAG] 🕵️ [UltraFinder] Scanning complex structures (ShadowDOM & Multi-Root)...
+[2026-10-07T12:33:15.525Z] [POP_CONSOLE] [XPIDER_DIAG] 🕵️ [Supreme-Scan 5.0] Pre-scanning labels and context...
+[2026-10-07T12:33:15.525Z] [SW_CONSOLE] [BG_LOG][tab=1954482736] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] 🚀 [Engine] Ultra-Mode: Scrolling to reveal lazy-loaded content...
+[2026-10-07T12:33:15.526Z] [POP_CONSOLE] [XPIDER_DIAG] 🔍 [Scan] Scanned 1 elements. Highest score: -999
+[2026-10-07T12:33:15.527Z] [POP_CONSOLE] [XPIDER_DIAG] ⚠️ [Scan] No valid forms reached threshold score (Target Score: 35)
+[2026-10-07T12:33:15.529Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_h1ik9][url=http://127.0.0.1/[PATH] 🕵️ [UltraFinder] Scanning complex structures (ShadowDOM & Multi-Root)...
+[2026-10-07T12:33:15.531Z] [POP_CONSOLE] [XPIDER_DIAG] 🚀 [Engine] Ultra-Mode: Scrolling to reveal lazy-loaded content...
+[2026-10-07T12:33:15.533Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_h1ik9][url=http://127.0.0.1/[PATH] 🕵️ [Supreme-Scan 5.0] Pre-scanning labels and context...
+[2026-10-07T12:33:15.534Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_h1ik9][url=http://127.0.0.1/[PATH] 🔍 [Scan] Scanned 1 elements. Highest score: -999
+[2026-10-07T12:33:15.536Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_h1ik9][url=http://127.0.0.1/[PATH] ⚠️ [Scan] No valid forms reached threshold score (Target Score: 35)
+[2026-10-07T12:33:15.538Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_h1ik9][url=http://127.0.0.1/[PATH] 🚀 [Engine] Ultra-Mode: Scrolling to reveal lazy-loaded content...
+[2026-10-07T12:33:17.027Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] 🧐 [Discovery] Polling attempt 2/3... | URL: http://127.0.0.1:8979/gate-a-target-1 | Recursion: 0
+[2026-10-07T12:33:17.027Z] [SW_CONSOLE] [BG_LOG][tab=1954482736] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] 🧐 [Discovery] Polling attempt 2/3... | URL: http://127.0.0.1:8979/gate-a-target-1 | Recursion: 0
+[2026-10-07T12:33:17.028Z] [POP_CONSOLE] [XPIDER_DIAG] 🧐 [Discovery] Polling attempt 2/3... | URL: http://127.0.0.1/[PATH] | Recursion: 0
+[2026-10-07T12:33:17.030Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_h1ik9][url=http://127.0.0.1/[PATH] 🧐 [Discovery] Polling attempt 2/3... | URL: http://127.0.0.1/[PATH] | Recursion: 0
+[2026-10-07T12:33:18.455Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] 🕵️ [UltraFinder] Scanning complex structures (ShadowDOM & Multi-Root)...
+[2026-10-07T12:33:18.456Z] [POP_CONSOLE] [XPIDER_DIAG] 🕵️ [UltraFinder] Scanning complex structures (ShadowDOM & Multi-Root)...
+[2026-10-07T12:33:18.459Z] [SW_CONSOLE] [BG_LOG][tab=1954482736] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] 🕵️ [UltraFinder] Scanning complex structures (ShadowDOM & Multi-Root)...
+[2026-10-07T12:33:18.460Z] [POP_CONSOLE] [XPIDER_DIAG] 🕵️ [Supreme-Scan 5.0] Pre-scanning labels and context...
+[2026-10-07T12:33:18.460Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] 🕵️ [Supreme-Scan 5.0] Pre-scanning labels and context...
+[2026-10-07T12:33:18.460Z] [SW_CONSOLE] [BG_LOG][tab=1954482736] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] 🕵️ [Supreme-Scan 5.0] Pre-scanning labels and context...
+[2026-10-07T12:33:18.464Z] [POP_CONSOLE] [XPIDER_DIAG] 🔍 [Scan] Scanned 1 elements. Highest score: -999
+[2026-10-07T12:33:18.466Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] 🔍 [Scan] Scanned 1 elements. Highest score: -999
+[2026-10-07T12:33:18.466Z] [POP_CONSOLE] [XPIDER_DIAG] ⚠️ [Scan] No valid forms reached threshold score (Target Score: 35)
+[2026-10-07T12:33:18.466Z] [SW_CONSOLE] [BG_LOG][tab=1954482736] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] 🔍 [Scan] Scanned 1 elements. Highest score: -999
+[2026-10-07T12:33:18.467Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] ⚠️ [Scan] No valid forms reached threshold score (Target Score: 35)
+[2026-10-07T12:33:18.467Z] [SW_CONSOLE] [BG_LOG][tab=1954482736] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] ⚠️ [Scan] No valid forms reached threshold score (Target Score: 35)
+[2026-10-07T12:33:18.467Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] 🔘 [Supreme-Scan] No form found. Attempting to trigger hidden contact containers...
+[2026-10-07T12:33:18.468Z] [SW_CONSOLE] [BG_LOG][tab=1954482736] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] 🔘 [Supreme-Scan] No form found. Attempting to trigger hidden contact containers...
+[2026-10-07T12:33:18.468Z] [POP_CONSOLE] [XPIDER_DIAG] 🔘 [Supreme-Scan] No form found. Attempting to trigger hidden contact containers...
+[2026-10-07T12:33:18.470Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_h1ik9][url=http://127.0.0.1/[PATH] 🕵️ [UltraFinder] Scanning complex structures (ShadowDOM & Multi-Root)...
+[2026-10-07T12:33:18.474Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_h1ik9][url=http://127.0.0.1/[PATH] 🕵️ [Supreme-Scan 5.0] Pre-scanning labels and context...
+[2026-10-07T12:33:18.476Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_h1ik9][url=http://127.0.0.1/[PATH] 🔍 [Scan] Scanned 1 elements. Highest score: -999
+[2026-10-07T12:33:18.479Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_h1ik9][url=http://127.0.0.1/[PATH] ⚠️ [Scan] No valid forms reached threshold score (Target Score: 35)
+[2026-10-07T12:33:18.482Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_h1ik9][url=http://127.0.0.1/[PATH] 🔘 [Supreme-Scan] No form found. Attempting to trigger hidden contact containers...
+[2026-10-07T12:33:19.093Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] 💓 [Heartbeat] Engine active and processing...
+[2026-10-07T12:33:19.094Z] [SW_CONSOLE] [BG_LOG][tab=1954482736] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] 💓 [Heartbeat] Engine active and processing...
+[2026-10-07T12:33:19.095Z] [POP_CONSOLE] [XPIDER_DIAG] 💓 [Heartbeat] Engine active and processing...
+[2026-10-07T12:33:19.097Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_h1ik9][url=http://127.0.0.1/[PATH] 💓 [Heartbeat] Engine active and processing...
+[2026-10-07T12:33:19.967Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] 🧐 [Discovery] Polling attempt 3/3... | URL: http://127.0.0.1:8979/gate-a-target-1 | Recursion: 0
+[2026-10-07T12:33:19.967Z] [SW_CONSOLE] [BG_LOG][tab=1954482736] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] 🧐 [Discovery] Polling attempt 3/3... | URL: http://127.0.0.1:8979/gate-a-target-1 | Recursion: 0
+[2026-10-07T12:33:19.969Z] [POP_CONSOLE] [XPIDER_DIAG] 🧐 [Discovery] Polling attempt 3/3... | URL: http://127.0.0.1/[PATH] | Recursion: 0
+[2026-10-07T12:33:19.970Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_h1ik9][url=http://127.0.0.1/[PATH] 🧐 [Discovery] Polling attempt 3/3... | URL: http://127.0.0.1/[PATH] | Recursion: 0
+[2026-10-07T12:33:21.385Z] [POP_CONSOLE] [XPIDER_DIAG] 🕵️ [UltraFinder] Scanning complex structures (ShadowDOM & Multi-Root)...
+[2026-10-07T12:33:21.385Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] 🕵️ [UltraFinder] Scanning complex structures (ShadowDOM & Multi-Root)...
+[2026-10-07T12:33:21.388Z] [SW_CONSOLE] [BG_LOG][tab=1954482736] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] 🕵️ [UltraFinder] Scanning complex structures (ShadowDOM & Multi-Root)...
+[2026-10-07T12:33:21.388Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] 🕵️ [Supreme-Scan 5.0] Pre-scanning labels and context...
+[2026-10-07T12:33:21.389Z] [POP_CONSOLE] [XPIDER_DIAG] 🕵️ [Supreme-Scan 5.0] Pre-scanning labels and context...
+[2026-10-07T12:33:21.389Z] [SW_CONSOLE] [BG_LOG][tab=1954482736] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] 🕵️ [Supreme-Scan 5.0] Pre-scanning labels and context...
+[2026-10-07T12:33:21.389Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] 🔍 [Scan] Scanned 1 elements. Highest score: -999
+[2026-10-07T12:33:21.389Z] [SW_CONSOLE] [BG_LOG][tab=1954482736] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] 🔍 [Scan] Scanned 1 elements. Highest score: -999
+[2026-10-07T12:33:21.392Z] [POP_CONSOLE] [XPIDER_DIAG] 🔍 [Scan] Scanned 1 elements. Highest score: -999
+[2026-10-07T12:33:21.393Z] [POP_CONSOLE] [XPIDER_DIAG] ⚠️ [Scan] No valid forms reached threshold score (Target Score: 35)
+[2026-10-07T12:33:21.394Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] ⚠️ [Scan] No valid forms reached threshold score (Target Score: 35)
+[2026-10-07T12:33:21.395Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_h1ik9][url=http://127.0.0.1/[PATH] 🕵️ [UltraFinder] Scanning complex structures (ShadowDOM & Multi-Root)...
+[2026-10-07T12:33:21.395Z] [SW_CONSOLE] [BG_LOG][tab=1954482736] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] ⚠️ [Scan] No valid forms reached threshold score (Target Score: 35)
+[2026-10-07T12:33:21.396Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_h1ik9][url=http://127.0.0.1/[PATH] 🕵️ [Supreme-Scan 5.0] Pre-scanning labels and context...
+[2026-10-07T12:33:21.397Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_h1ik9][url=http://127.0.0.1/[PATH] 🔍 [Scan] Scanned 1 elements. Highest score: -999
+[2026-10-07T12:33:21.399Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_h1ik9][url=http://127.0.0.1/[PATH] ⚠️ [Scan] No valid forms reached threshold score (Target Score: 35)
+[2026-10-07T12:33:22.897Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] [FORM_SCAN] bodyCandidates=0 forms=0 logicalContainers=0
+[2026-10-07T12:33:22.899Z] [POP_CONSOLE] [XPIDER_DIAG] [FORM_SCAN] bodyCandidates=0 forms=0 logicalContainers=0
+[2026-10-07T12:33:22.903Z] [POP_CONSOLE] [XPIDER_DIAG] [PAGE_CLASS] NO_CONTACT
+[2026-10-07T12:33:22.904Z] [SW_CONSOLE] [BG_LOG][tab=1954482736] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] [FORM_SCAN] bodyCandidates=0 forms=0 logicalContainers=0
+[2026-10-07T12:33:22.904Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] [PAGE_CLASS] NO_CONTACT
+[2026-10-07T12:33:22.905Z] [POP_CONSOLE] [XPIDER_DIAG] [LONG_TEXT_GATE] found=false
+[2026-10-07T12:33:22.905Z] [SW_CONSOLE] [BG_LOG][tab=1954482736] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] [PAGE_CLASS] NO_CONTACT
+[2026-10-07T12:33:22.905Z] [POP_CONSOLE] [XPIDER_DIAG] [FORM_GATE] eligible=false reason=NO_LONG_TEXT_INQUIRY_FIELD
+[2026-10-07T12:33:22.906Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] [LONG_TEXT_GATE] found=false
+[2026-10-07T12:33:22.906Z] [SW_CONSOLE] [BG_LOG][tab=1954482736] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] [LONG_TEXT_GATE] found=false
+[2026-10-07T12:33:22.914Z] [POP_CONSOLE] [XPIDER_DIAG] 🕵️ [Discovery] Scanning DOM for contact links (Track A)...
+[2026-10-07T12:33:22.917Z] [POP_CONSOLE] [XPIDER_DIAG] ⚡ [Discovery] No form or links on current page. Trying common paths...
+[2026-10-07T12:33:22.918Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] [FORM_GATE] eligible=false reason=NO_LONG_TEXT_INQUIRY_FIELD
+[2026-10-07T12:33:22.919Z] [SW_CONSOLE] [BG_LOG][tab=1954482736] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] [FORM_GATE] eligible=false reason=NO_LONG_TEXT_INQUIRY_FIELD
+[2026-10-07T12:33:22.919Z] [POP_CONSOLE] [XPIDER_DIAG] 🔦 [DeepSearch] No obvious links. Searching secondary pages...
+[2026-10-07T12:33:22.919Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] 🕵️ [Discovery] Scanning DOM for contact links (Track A)...
+[2026-10-07T12:33:22.920Z] [SW_CONSOLE] [BG_LOG][tab=1954482736] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] 🕵️ [Discovery] Scanning DOM for contact links (Track A)...
+[2026-10-07T12:33:22.920Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] ⚡ [Discovery] No form or links on current page. Trying common paths...
+[2026-10-07T12:33:22.920Z] [SW_CONSOLE] [BG_LOG][tab=1954482736] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] ⚡ [Discovery] No form or links on current page. Trying common paths...
+[2026-10-07T12:33:22.920Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] 🔦 [DeepSearch] No obvious links. Searching secondary pages...
+[2026-10-07T12:33:22.921Z] [SW_CONSOLE] [BG_LOG][tab=1954482736] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] 🔦 [DeepSearch] No obvious links. Searching secondary pages...
+[2026-10-07T12:33:22.921Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] ❌ [Discovery] No valid forms or links found. Jumping to root/next candidate...
+[2026-10-07T12:33:22.921Z] [SW_CONSOLE] [BG_LOG][tab=1954482736] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/gate-a-target-1] ❌ [Discovery] No valid forms or links found. Jumping to root/next candidate...
+[2026-10-07T12:33:22.922Z] [POP_CONSOLE] [XPIDER_DIAG] ❌ [Discovery] No valid forms or links found. Jumping to root/next candidate...
+[2026-10-07T12:33:22.922Z] [SW_CONSOLE] [BG_LOG][tab=1954482736] ⚠️ [Engine] No form on current path. Advancing to next candidate...
+[2026-10-07T12:33:22.922Z] [SW_CONSOLE] [BG_LOG][tab=1954482736] [DISCOVERY] selectedCandidate=http://127.0.0.1:8979/
+[2026-10-07T12:33:22.923Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_h1ik9][url=http://127.0.0.1/[PATH] [FORM_SCAN] bodyCandidates=0 forms=0 logicalContainers=0
+[2026-10-07T12:33:22.925Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_h1ik9][url=http://127.0.0.1/[PATH] [PAGE_CLASS] NO_CONTACT
+[2026-10-07T12:33:22.926Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_h1ik9][url=http://127.0.0.1/[PATH] [LONG_TEXT_GATE] found=false
+[2026-10-07T12:33:22.928Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_h1ik9][url=http://127.0.0.1/[PATH] [FORM_GATE] eligible=false reason=NO_LONG_TEXT_INQUIRY_FIELD
+[2026-10-07T12:33:22.929Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_h1ik9][url=http://127.0.0.1/[PATH] 🕵️ [Discovery] Scanning DOM for contact links (Track A)...
+[2026-10-07T12:33:22.931Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_h1ik9][url=http://127.0.0.1/[PATH] ⚡ [Discovery] No form or links on current page. Trying common paths...
+[2026-10-07T12:33:22.933Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_h1ik9][url=http://127.0.0.1/[PATH] 🔦 [DeepSearch] No obvious links. Searching secondary pages...
+[2026-10-07T12:33:22.934Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_h1ik9][url=http://127.0.0.1/[PATH] ❌ [Discovery] No valid forms or links found. Jumping to root/next candidate...
+[2026-10-07T12:33:22.936Z] [POP_CONSOLE] [XPIDER_DIAG] [System] ⚠️ [Engine] No form on current path. Advancing to next candidate...
+[2026-10-07T12:33:22.937Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [DISCOVERY] selectedCandidate=http://127.0.0.1
+[2026-10-07T12:33:22.938Z] [SW_CONSOLE] [BG_LOG][tab=1954482736] Connecting to [http://127.0.0.1:8979/]...
+[2026-10-07T12:33:22.940Z] [SW_CONSOLE] [BG_LOG][tab=1954482736] [TARGET_NAV] sourceHost=127.0.0.1 candidate=http://127.0.0.1:8979/ relation=same-origin
+[2026-10-07T12:33:22.950Z] [POP_CONSOLE] [XPIDER_DIAG] [System] Connecting to [http://127.0.0.1/[PATH]
+[2026-10-07T12:33:22.951Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [TARGET_NAV] sourceHost=127.0.0.1 candidate=http://127.0.0.1 relation=same-origin
+[2026-10-07T12:33:22.964Z] [SW_CONSOLE] [BG_LOG][tab=1954482736] [TAB_FOCUS] tabId=1954482736 windowId=1954482730 active=true focused=true
+[2026-10-07T12:33:22.984Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [TAB_FOCUS] tabId=[REDACTED_PHONE] windowId=[REDACTED_PHONE] active=true focused=true
+[2026-10-07T12:33:22.986Z] [SW_CONSOLE] [BG_LOG][tab=1954482736] 🔄 [Engine] Internal navigation detected (SPA). Preparing re-injection...
+[2026-10-07T12:33:22.998Z] [POP_CONSOLE] [XPIDER_DIAG] [System] 🔄 [Engine] Internal navigation detected (SPA). Preparing re-injection...
+[2026-10-07T12:33:23.030Z] [SW_CONSOLE] [BG_LOG][tab=1954482736] [TAB_FOCUS] tabId=1954482736 windowId=1954482730 active=true focused=true
+[2026-10-07T12:33:23.033Z] [SW_CONSOLE] [BG_LOG][tab=1954482736] [TAB_OWNERSHIP] VERIFIED_REDIRECT source=127.0.0.1 target=127.0.0.1 relation=SAME_HOST
+[2026-10-07T12:33:23.034Z] [SW_CONSOLE] [BG_LOG][tab=1954482736] [FOCUS_SECURED] formPageUrl=http://127.0.0.1:8979/
+[2026-10-07T12:33:23.035Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [TAB_FOCUS] tabId=[REDACTED_PHONE] windowId=[REDACTED_PHONE] active=true focused=true
+[2026-10-07T12:33:23.037Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [TAB_OWNERSHIP] VERIFIED_REDIRECT source=127.0.0.1 target=127.0.0.1 relation=SAME_HOST
+[2026-10-07T12:33:23.039Z] [SW_CONSOLE] [BG_LOG][tab=1954482736] Extraction focus secured. Mapping template fields...
+[2026-10-07T12:33:23.039Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [FOCUS_SECURED] formPageUrl=http://127.0.0.1
+[2026-10-07T12:33:23.044Z] [POP_CONSOLE] [XPIDER_DIAG] [System] Extraction focus secured. Mapping template fields...
+[2026-10-07T12:33:23.046Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/] [TARGET_PAGE] url=http://127.0.0.1:8979/ domGeneration=1791376403041 attemptId=att_1791376393894_h1ik9
+[2026-10-07T12:33:23.048Z] [POP_CONSOLE] [XPIDER_DIAG] [TARGET_PAGE] url=http://127.0.0.1 domGeneration=[REDACTED_PHONE] attemptId=att_[REDACTED_PHONE]_h1ik9
+[2026-10-07T12:33:23.049Z] [SW_CONSOLE] [BG_LOG][tab=1954482736] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/] [TARGET_PAGE] url=http://127.0.0.1:8979/ domGeneration=1791376403041 attemptId=att_1791376393894_h1ik9
+[2026-10-07T12:33:23.049Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/] 🚀 [Engine] Ultra-Mode process started
+[2026-10-07T12:33:23.049Z] [SW_CONSOLE] [BG_LOG][tab=1954482736] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/] 🚀 [Engine] Ultra-Mode process started
+[2026-10-07T12:33:23.052Z] [POP_CONSOLE] [XPIDER_DIAG] 🚀 [Engine] Ultra-Mode process started
+[2026-10-07T12:33:23.053Z] [POP_CONSOLE] [XPIDER_DIAG] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[2026-10-07T12:33:23.054Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[2026-10-07T12:33:23.054Z] [SW_CONSOLE] [BG_LOG][tab=1954482736] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[2026-10-07T12:33:23.054Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/] ⚠️ [Recovery] Error page detected. Aborting path.
+[2026-10-07T12:33:23.054Z] [SW_CONSOLE] [BG_LOG][tab=1954482736] [CONTENT_EVENT][tabId=1954482736][attemptId=att_1791376393894_h1ik9][url=http://127.0.0.1:8979/] ⚠️ [Recovery] Error page detected. Aborting path.
+[2026-10-07T12:33:23.058Z] [POP_CONSOLE] [XPIDER_DIAG] ⚠️ [Recovery] Error page detected. Aborting path.
+[2026-10-07T12:33:23.060Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_h1ik9][url=http://127.0.0.1/[PATH] [TARGET_PAGE] url=http://127.0.0.1 domGeneration=[REDACTED_PHONE] attemptId=att_[REDACTED_PHONE]_h1ik9
+[2026-10-07T12:33:23.062Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_h1ik9][url=http://127.0.0.1/[PATH] 🚀 [Engine] Ultra-Mode process started
+[2026-10-07T12:33:23.063Z] [SW_CONSOLE] [BG_LOG][tab=1954482736] [RESULT] resultUrl=http://127.0.0.1:8979/
+[2026-10-07T12:33:23.066Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_h1ik9][url=http://127.0.0.1/[PATH] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[2026-10-07T12:33:23.068Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_h1ik9][url=http://127.0.0.1/[PATH] ⚠️ [Recovery] Error page detected. Aborting path.
+[2026-10-07T12:33:23.069Z] [SW_CONSOLE] [BG_LOG][tab=1954482736] [TARGET][127.0.0.1] FINAL status=FAILURE reason=UNKNOWN
+[2026-10-07T12:33:23.072Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [RESULT] resultUrl=http://127.0.0.1
+[2026-10-07T12:33:23.074Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [TARGET][127.0.0.1] FINAL status=FAILURE reason=UNKNOWN
+[2026-10-07T12:33:23.078Z] [SW_CONSOLE] [BG_LOG][tab=1954482736] [HISTORY_FINAL] sourceUrl=http://127.0.0.1:8979/gate-a-target-1 contactPageUrl=http://127.0.0.1:8979/ formPageUrl=http://127.0.0.1:8979/ resultUrl=http://127.0.0.1:8979/
+[2026-10-07T12:33:23.084Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [HISTORY_FINAL] sourceUrl=http://127.0.0.1/[PATH] contactPageUrl=http://127.0.0.1 formPageUrl=http://127.0.0.1 resultUrl=http://127.0.0.1
+[2026-10-07T12:33:23.086Z] [SW_CONSOLE] [LEDGER_STATS] scope=currentRun success=0 failure=1 unknown=0 timeout=0 skipped=0
+[2026-10-07T12:33:23.087Z] [SW_CONSOLE] [BG_LOG][tab=1954482736] [LEDGER_STATS] scope=currentRun success=0 failure=1 unknown=0 timeout=0 skipped=0
+[2026-10-07T12:33:23.088Z] [POP_CONSOLE] [LEDGER_STATS] scope=currentGeneration campaignRunId=run_gate_a_1791376393890 success=0 failed=1 unknown=0
+[2026-10-07T12:33:23.092Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [LEDGER_STATS] scope=currentRun success=0 failure=1 unknown=0 timeout=0 skipped=0
+[2026-10-07T12:33:24.270Z] [SW_CONSOLE] [TAB_CLOSE] tabId=1954482736 attempt=1 result=CLOSED
+[2026-10-07T12:33:24.270Z] [SW_CONSOLE] [POST_FINAL_TAB_INVARIANT] target=http://127.0.0.1:8979/gate-a-target-1 remainingOwnedTabs=0 retainedTabs=0 result=PASS
+[2026-10-07T12:33:24.271Z] [SW_CONSOLE] [SERIALIZED_GATE] Slot released. activeTargetInFlight=false activeTargetCount=0
+[2026-10-07T12:33:24.273Z] [SW_CONSOLE] [BG_LOG][tab=none] Waiting 1000ms before next target...
+[2026-10-07T12:33:24.275Z] [POP_CONSOLE] [XPIDER_DIAG] [System] Waiting 1000ms before next target...
+[2026-10-07T12:33:24.275Z] [POP_CONSOLE] [HISTORY_SCOPE_REFRESH] trigger=xpider_active_campaign_run_id,xpider_isActive
+[2026-10-07T12:33:24.277Z] [POP_CONSOLE] [LEDGER_STATS] scope=currentRun campaignRunId=run_gate_a_1791376393890 success=0 failed=1 timeout=0 unknown=0
+[2026-10-07T12:33:24.318Z] [SW_CONSOLE] [SERIALIZED_GATE] Slot not granted reason=STALE_GENERATION. Exiting loop.
+[2026-10-07T12:33:24.319Z] [SW_CONSOLE] [BG_LOG][tab=none] Waiting 1000ms before next target...
+[2026-10-07T12:33:24.319Z] [SW_CONSOLE] [SERIALIZED_GATE] Slot not granted reason=STALE_GENERATION. Exiting loop.
+[2026-10-07T12:33:24.321Z] [SW_CONSOLE] [BG_LOG][tab=none] Waiting 1000ms before next target...
+[2026-10-07T12:33:24.321Z] [SW_CONSOLE] [SERIALIZED_GATE] Slot not granted reason=STALE_GENERATION. Exiting loop.
+[2026-10-07T12:33:24.322Z] [POP_CONSOLE] [XPIDER_DIAG] [System] Waiting 1000ms before next target...
+[2026-10-07T12:33:24.324Z] [SW_CONSOLE] [BG_LOG][tab=none] Waiting 1000ms before next target...
+[2026-10-07T12:33:24.325Z] [POP_CONSOLE] [XPIDER_DIAG] [System] Waiting 1000ms before next target...
+[2026-10-07T12:33:24.327Z] [POP_CONSOLE] [XPIDER_DIAG] [System] Waiting 1000ms before next target...
+[2026-10-07T12:33:25.332Z] [SW_CONSOLE] [SERIALIZED_GATE] Slot acquired atomically. activeTargetInFlight=true activeTargetCount=1 maxConcurrent=1
+[2026-10-07T12:33:25.333Z] [SW_CONSOLE] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedBefore=0
+[2026-10-07T12:33:25.334Z] [SW_CONSOLE] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedAfter=0 result=PASS
+[2026-10-07T12:33:25.335Z] [SW_CONSOLE] [BG_LOG][tab=none] [TARGET 2/3][127.0.0.1] START
+[2026-10-07T12:33:25.337Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [TARGET 2/3][127.0.0.1] START
+[2026-10-07T12:33:25.338Z] [POP_CONSOLE] [HISTORY_SCOPE_REFRESH] trigger=xpider_active_campaign_run_id
+[2026-10-07T12:33:25.340Z] [POP_CONSOLE] [LEDGER_STATS] scope=currentGeneration campaignRunId=run_gate_a_1791376393890 success=0 failed=1 unknown=0
+[2026-10-07T12:33:25.374Z] [POP_CONSOLE] [LEDGER_STATS] scope=currentRun campaignRunId=none success=0 failed=1 timeout=0 unknown=0
+[2026-10-07T12:33:25.378Z] [SW_CONSOLE] [TAB_BARRIER] phase=POST_NEW_TARGET_CREATE ownedBefore=0
+[2026-10-07T12:33:25.381Z] [SW_CONSOLE] [TAB_BARRIER] phase=POST_NEW_TARGET_CREATE ownedAfter=0 result=PASS
+[2026-10-07T12:33:25.381Z] [SW_CONSOLE] [TAB_KILL_SWITCH] keepTabId=1954482738 closedOthers=0 remainingOwned=1 result=PASS
+[2026-10-07T12:33:25.402Z] [SW_CONSOLE] [BG_LOG][tab=1954482738] [TAB_FOCUS] tabId=1954482738 windowId=1954482730 active=true focused=true
+[2026-10-07T12:33:25.405Z] [SW_CONSOLE] [BG_LOG][tab=1954482738] Step 1: Sniper Mode active. Searching for contact page...
+[2026-10-07T12:33:25.408Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [TAB_FOCUS] tabId=[REDACTED_PHONE] windowId=[REDACTED_PHONE] active=true focused=true
+[2026-10-07T12:33:25.411Z] [POP_CONSOLE] [XPIDER_DIAG] [System] Step 1: Sniper Mode active. Searching for contact page...
+[2026-10-07T12:33:25.411Z] [SW_CONSOLE] [BG_LOG][tab=1954482738] 🔦 Scanning paths 1-10...
+[2026-10-07T12:33:25.415Z] [POP_CONSOLE] [XPIDER_DIAG] [System] 🔦 Scanning paths 1-10...
+[2026-10-07T12:33:25.438Z] [SW_CONSOLE] [BG_LOG][tab=1954482738] Pre-scan complete. Identified 10 valid paths.
+[2026-10-07T12:33:25.442Z] [SW_CONSOLE] [BG_LOG][tab=1954482738] [SniperScan] Identified 10 candidate paths in background.
+[2026-10-07T12:33:25.453Z] [POP_CONSOLE] [XPIDER_DIAG] [System] Pre-scan complete. Identified 10 valid paths.
+[2026-10-07T12:33:25.457Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [SniperScan] Identified 10 candidate paths in background.
+[2026-10-07T12:33:25.492Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482738][attemptId=att_1791376405333_me0lu][url=http://127.0.0.1:8979/gate-a-target-2] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
+[2026-10-07T12:33:25.492Z] [SW_CONSOLE] [BG_LOG][tab=1954482738] [CONTENT_EVENT][tabId=1954482738][attemptId=att_1791376405333_me0lu][url=http://127.0.0.1:8979/gate-a-target-2] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
+[2026-10-07T12:33:25.494Z] [POP_CONSOLE] [XPIDER_DIAG] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
+[2026-10-07T12:33:25.503Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_me0lu][url=http://127.0.0.1/[PATH] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
+[2026-10-07T12:33:25.508Z] [SW_CONSOLE] [BG_LOG][tab=1954482738] [TAB_FOCUS] tabId=1954482738 windowId=1954482730 active=true focused=true
+[2026-10-07T12:33:25.511Z] [SW_CONSOLE] [BG_LOG][tab=1954482738] [TAB_OWNERSHIP] VERIFIED_REDIRECT source=127.0.0.1 target=127.0.0.1 relation=SAME_HOST
+[2026-10-07T12:33:25.511Z] [SW_CONSOLE] [BG_LOG][tab=1954482738] [FOCUS_SECURED] formPageUrl=http://127.0.0.1:8979/gate-a-target-2
+[2026-10-07T12:33:25.516Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [TAB_FOCUS] tabId=[REDACTED_PHONE] windowId=[REDACTED_PHONE] active=true focused=true
+[2026-10-07T12:33:25.517Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [TAB_OWNERSHIP] VERIFIED_REDIRECT source=127.0.0.1 target=127.0.0.1 relation=SAME_HOST
+[2026-10-07T12:33:25.522Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [FOCUS_SECURED] formPageUrl=http://127.0.0.1/[PATH]
+[2026-10-07T12:33:25.522Z] [SW_CONSOLE] [BG_LOG][tab=1954482738] Extraction focus secured. Mapping template fields...
+[2026-10-07T12:33:25.526Z] [POP_CONSOLE] [XPIDER_DIAG] [System] Extraction focus secured. Mapping template fields...
+[2026-10-07T12:33:25.526Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482738][attemptId=att_1791376405333_me0lu][url=http://127.0.0.1:8979/gate-a-target-2] [TARGET_PAGE] url=http://127.0.0.1:8979/gate-a-target-2 domGeneration=1791376405524 attemptId=att_1791376405333_me0lu
+[2026-10-07T12:33:25.528Z] [SW_CONSOLE] [BG_LOG][tab=1954482738] [CONTENT_EVENT][tabId=1954482738][attemptId=att_1791376405333_me0lu][url=http://127.0.0.1:8979/gate-a-target-2] [TARGET_PAGE] url=http://127.0.0.1:8979/gate-a-target-2 domGeneration=1791376405524 attemptId=att_1791376405333_me0lu
+[2026-10-07T12:33:25.530Z] [POP_CONSOLE] [XPIDER_DIAG] [TARGET_PAGE] url=http://127.0.0.1/[PATH] domGeneration=[REDACTED_PHONE] attemptId=att_[REDACTED_PHONE]_me0lu
+[2026-10-07T12:33:25.537Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482738][attemptId=att_1791376405333_me0lu][url=http://127.0.0.1:8979/gate-a-target-2] 🚀 [Engine] Ultra-Mode process started
+[2026-10-07T12:33:25.539Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_me0lu][url=http://127.0.0.1/[PATH] [TARGET_PAGE] url=http://127.0.0.1/[PATH] domGeneration=[REDACTED_PHONE] attemptId=att_[REDACTED_PHONE]_me0lu
+[2026-10-07T12:33:25.540Z] [POP_CONSOLE] [XPIDER_DIAG] 🚀 [Engine] Ultra-Mode process started
+[2026-10-07T12:33:25.541Z] [POP_CONSOLE] [XPIDER_DIAG] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[2026-10-07T12:33:25.545Z] [SW_CONSOLE] [BG_LOG][tab=1954482738] [CONTENT_EVENT][tabId=1954482738][attemptId=att_1791376405333_me0lu][url=http://127.0.0.1:8979/gate-a-target-2] 🚀 [Engine] Ultra-Mode process started
+[2026-10-07T12:33:25.545Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482738][attemptId=att_1791376405333_me0lu][url=http://127.0.0.1:8979/gate-a-target-2] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[2026-10-07T12:33:25.545Z] [POP_CONSOLE] [XPIDER_DIAG] [TARGET_PAGE] url=http://127.0.0.1/[PATH] recursion=0
+[2026-10-07T12:33:25.545Z] [SW_CONSOLE] [BG_LOG][tab=1954482738] [CONTENT_EVENT][tabId=1954482738][attemptId=att_1791376405333_me0lu][url=http://127.0.0.1:8979/gate-a-target-2] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[2026-10-07T12:33:25.546Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482738][attemptId=att_1791376405333_me0lu][url=http://127.0.0.1:8979/gate-a-target-2] [TARGET_PAGE] url=http://127.0.0.1:8979/gate-a-target-2 recursion=0
+[2026-10-07T12:33:25.546Z] [SW_CONSOLE] [BG_LOG][tab=1954482738] [CONTENT_EVENT][tabId=1954482738][attemptId=att_1791376405333_me0lu][url=http://127.0.0.1:8979/gate-a-target-2] [TARGET_PAGE] url=http://127.0.0.1:8979/gate-a-target-2 recursion=0
+[2026-10-07T12:33:25.546Z] [POP_CONSOLE] [XPIDER_DIAG] 🔍 [Discovery] URL: http://127.0.0.1/[PATH] | Recursion: 0
+[2026-10-07T12:33:25.553Z] [POP_CONSOLE] [XPIDER_DIAG] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[2026-10-07T12:33:25.555Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482738][attemptId=att_1791376405333_me0lu][url=http://127.0.0.1:8979/gate-a-target-2] 🔍 [Discovery] URL: http://127.0.0.1:8979/gate-a-target-2 | Recursion: 0
+[2026-10-07T12:33:25.555Z] [SW_CONSOLE] [BG_LOG][tab=1954482738] [CONTENT_EVENT][tabId=1954482738][attemptId=att_1791376405333_me0lu][url=http://127.0.0.1:8979/gate-a-target-2] 🔍 [Discovery] URL: http://127.0.0.1:8979/gate-a-target-2 | Recursion: 0
+[2026-10-07T12:33:25.555Z] [POP_CONSOLE] [XPIDER_DIAG] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1/[PATH] | Recursion: 0
+[2026-10-07T12:33:25.555Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482738][attemptId=att_1791376405333_me0lu][url=http://127.0.0.1:8979/gate-a-target-2] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[2026-10-07T12:33:25.556Z] [SW_CONSOLE] [BG_LOG][tab=1954482738] [CONTENT_EVENT][tabId=1954482738][attemptId=att_1791376405333_me0lu][url=http://127.0.0.1:8979/gate-a-target-2] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[2026-10-07T12:33:25.556Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482738][attemptId=att_1791376405333_me0lu][url=http://127.0.0.1:8979/gate-a-target-2] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1:8979/gate-a-target-2 | Recursion: 0
+[2026-10-07T12:33:25.556Z] [SW_CONSOLE] [BG_LOG][tab=1954482738] [CONTENT_EVENT][tabId=1954482738][attemptId=att_1791376405333_me0lu][url=http://127.0.0.1:8979/gate-a-target-2] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1:8979/gate-a-target-2 | Recursion: 0
+[2026-10-07T12:33:25.558Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_me0lu][url=http://127.0.0.1/[PATH] 🚀 [Engine] Ultra-Mode process started
+[2026-10-07T12:33:25.560Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_me0lu][url=http://127.0.0.1/[PATH] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[2026-10-07T12:33:25.567Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_me0lu][url=http://127.0.0.1/[PATH] [TARGET_PAGE] url=http://127.0.0.1/[PATH] recursion=0
+[2026-10-07T12:33:25.569Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_me0lu][url=http://127.0.0.1/[PATH] 🔍 [Discovery] URL: http://127.0.0.1/[PATH] | Recursion: 0
+[2026-10-07T12:33:25.570Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_me0lu][url=http://127.0.0.1/[PATH] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[2026-10-07T12:33:25.573Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_me0lu][url=http://127.0.0.1/[PATH] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1/[PATH] | Recursion: 0
+[2026-10-07T12:33:26.969Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482738][attemptId=att_1791376405333_me0lu][url=http://127.0.0.1:8979/gate-a-target-2] 🕵️ [UltraFinder] Scanning complex structures (ShadowDOM & Multi-Root)...
+[2026-10-07T12:33:26.972Z] [SW_CONSOLE] [BG_LOG][tab=1954482738] [CONTENT_EVENT][tabId=1954482738][attemptId=att_1791376405333_me0lu][url=http://127.0.0.1:8979/gate-a-target-2] 🕵️ [UltraFinder] Scanning complex structures (ShadowDOM & Multi-Root)...
+[2026-10-07T12:33:26.972Z] [POP_CONSOLE] [XPIDER_DIAG] 🕵️ [UltraFinder] Scanning complex structures (ShadowDOM & Multi-Root)...
+[2026-10-07T12:33:26.976Z] [POP_CONSOLE] [XPIDER_DIAG] 🕵️ [Supreme-Scan 5.0] Pre-scanning labels and context...
+[2026-10-07T12:33:26.977Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482738][attemptId=att_1791376405333_me0lu][url=http://127.0.0.1:8979/gate-a-target-2] 🕵️ [Supreme-Scan 5.0] Pre-scanning labels and context...
+[2026-10-07T12:33:26.977Z] [SW_CONSOLE] [BG_LOG][tab=1954482738] [CONTENT_EVENT][tabId=1954482738][attemptId=att_1791376405333_me0lu][url=http://127.0.0.1:8979/gate-a-target-2] 🕵️ [Supreme-Scan 5.0] Pre-scanning labels and context...
+[2026-10-07T12:33:26.977Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482738][attemptId=att_1791376405333_me0lu][url=http://127.0.0.1:8979/gate-a-target-2] 🔍 [Scan] Scanned 1 elements. Highest score: -999
+[2026-10-07T12:33:26.978Z] [SW_CONSOLE] [BG_LOG][tab=1954482738] [CONTENT_EVENT][tabId=1954482738][attemptId=att_1791376405333_me0lu][url=http://127.0.0.1:8979/gate-a-target-2] 🔍 [Scan] Scanned 1 elements. Highest score: -999
+[2026-10-07T12:33:26.978Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482738][attemptId=att_1791376405333_me0lu][url=http://127.0.0.1:8979/gate-a-target-2] ⚠️ [Scan] No valid forms reached threshold score (Target Score: 35)
+[2026-10-07T12:33:26.978Z] [SW_CONSOLE] [BG_LOG][tab=1954482738] [CONTENT_EVENT][tabId=1954482738][attemptId=att_1791376405333_me0lu][url=http://127.0.0.1:8979/gate-a-target-2] ⚠️ [Scan] No valid forms reached threshold score (Target Score: 35)
+[2026-10-07T12:33:26.978Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482738][attemptId=att_1791376405333_me0lu][url=http://127.0.0.1:8979/gate-a-target-2] 🚀 [Engine] Ultra-Mode: Scrolling to reveal lazy-loaded content...
+[2026-10-07T12:33:26.980Z] [POP_CONSOLE] [XPIDER_DIAG] 🔍 [Scan] Scanned 1 elements. Highest score: -999
+[2026-10-07T12:33:26.981Z] [POP_CONSOLE] [XPIDER_DIAG] ⚠️ [Scan] No valid forms reached threshold score (Target Score: 35)
+[2026-10-07T12:33:26.983Z] [SW_CONSOLE] [BG_LOG][tab=1954482738] [CONTENT_EVENT][tabId=1954482738][attemptId=att_1791376405333_me0lu][url=http://127.0.0.1:8979/gate-a-target-2] 🚀 [Engine] Ultra-Mode: Scrolling to reveal lazy-loaded content...
+[2026-10-07T12:33:26.983Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_me0lu][url=http://127.0.0.1/[PATH] 🕵️ [UltraFinder] Scanning complex structures (ShadowDOM & Multi-Root)...
+[2026-10-07T12:33:26.984Z] [POP_CONSOLE] [XPIDER_DIAG] 🚀 [Engine] Ultra-Mode: Scrolling to reveal lazy-loaded content...
+[2026-10-07T12:33:26.986Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_me0lu][url=http://127.0.0.1/[PATH] 🕵️ [Supreme-Scan 5.0] Pre-scanning labels and context...
+[2026-10-07T12:33:26.987Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_me0lu][url=http://127.0.0.1/[PATH] 🔍 [Scan] Scanned 1 elements. Highest score: -999
+[2026-10-07T12:33:26.990Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_me0lu][url=http://127.0.0.1/[PATH] ⚠️ [Scan] No valid forms reached threshold score (Target Score: 35)
+[2026-10-07T12:33:26.991Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_me0lu][url=http://127.0.0.1/[PATH] 🚀 [Engine] Ultra-Mode: Scrolling to reveal lazy-loaded content...
+[2026-10-07T12:33:28.473Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482738][attemptId=att_1791376405333_me0lu][url=http://127.0.0.1:8979/gate-a-target-2] 🧐 [Discovery] Polling attempt 2/3... | URL: http://127.0.0.1:8979/gate-a-target-2 | Recursion: 0
+[2026-10-07T12:33:28.473Z] [SW_CONSOLE] [BG_LOG][tab=1954482738] [CONTENT_EVENT][tabId=1954482738][attemptId=att_1791376405333_me0lu][url=http://127.0.0.1:8979/gate-a-target-2] 🧐 [Discovery] Polling attempt 2/3... | URL: http://127.0.0.1:8979/gate-a-target-2 | Recursion: 0
+[2026-10-07T12:33:28.475Z] [POP_CONSOLE] [XPIDER_DIAG] 🧐 [Discovery] Polling attempt 2/3... | URL: http://127.0.0.1/[PATH] | Recursion: 0
+[2026-10-07T12:33:28.477Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_me0lu][url=http://127.0.0.1/[PATH] 🧐 [Discovery] Polling attempt 2/3... | URL: http://127.0.0.1/[PATH] | Recursion: 0
+[2026-10-07T12:33:29.890Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482738][attemptId=att_1791376405333_me0lu][url=http://127.0.0.1:8979/gate-a-target-2] 🕵️ [UltraFinder] Scanning complex structures (ShadowDOM & Multi-Root)...
+[2026-10-07T12:33:29.893Z] [POP_CONSOLE] [XPIDER_DIAG] 🕵️ [UltraFinder] Scanning complex structures (ShadowDOM & Multi-Root)...
+[2026-10-07T12:33:29.893Z] [SW_CONSOLE] [BG_LOG][tab=1954482738] [CONTENT_EVENT][tabId=1954482738][attemptId=att_1791376405333_me0lu][url=http://127.0.0.1:8979/gate-a-target-2] 🕵️ [UltraFinder] Scanning complex structures (ShadowDOM & Multi-Root)...
+[2026-10-07T12:33:29.893Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482738][attemptId=att_1791376405333_me0lu][url=http://127.0.0.1:8979/gate-a-target-2] 🕵️ [Supreme-Scan 5.0] Pre-scanning labels and context...
+[2026-10-07T12:33:29.893Z] [SW_CONSOLE] [BG_LOG][tab=1954482738] [CONTENT_EVENT][tabId=1954482738][attemptId=att_1791376405333_me0lu][url=http://127.0.0.1:8979/gate-a-target-2] 🕵️ [Supreme-Scan 5.0] Pre-scanning labels and context...
+[2026-10-07T12:33:29.894Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482738][attemptId=att_1791376405333_me0lu][url=http://127.0.0.1:8979/gate-a-target-2] 🔍 [Scan] Scanned 1 elements. Highest score: -999
+[2026-10-07T12:33:29.898Z] [POP_CONSOLE] [XPIDER_DIAG] 🕵️ [Supreme-Scan 5.0] Pre-scanning labels and context...
+[2026-10-07T12:33:29.900Z] [SW_CONSOLE] [BG_LOG][tab=1954482738] [CONTENT_EVENT][tabId=1954482738][attemptId=att_1791376405333_me0lu][url=http://127.0.0.1:8979/gate-a-target-2] 🔍 [Scan] Scanned 1 elements. Highest score: -999
+[2026-10-07T12:33:29.901Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482738][attemptId=att_1791376405333_me0lu][url=http://127.0.0.1:8979/gate-a-target-2] ⚠️ [Scan] No valid forms reached threshold score (Target Score: 35)
+[2026-10-07T12:33:29.901Z] [POP_CONSOLE] [XPIDER_DIAG] 🔍 [Scan] Scanned 1 elements. Highest score: -999
+[2026-10-07T12:33:29.901Z] [SW_CONSOLE] [BG_LOG][tab=1954482738] [CONTENT_EVENT][tabId=1954482738][attemptId=att_1791376405333_me0lu][url=http://127.0.0.1:8979/gate-a-target-2] ⚠️ [Scan] No valid forms reached threshold score (Target Score: 35)
+[2026-10-07T12:33:29.901Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482738][attemptId=att_1791376405333_me0lu][url=http://127.0.0.1:8979/gate-a-target-2] 🔘 [Supreme-Scan] No form found. Attempting to trigger hidden contact containers...
+[2026-10-07T12:33:29.901Z] [SW_CONSOLE] [BG_LOG][tab=1954482738] [CONTENT_EVENT][tabId=1954482738][attemptId=att_1791376405333_me0lu][url=http://127.0.0.1:8979/gate-a-target-2] 🔘 [Supreme-Scan] No form found. Attempting to trigger hidden contact containers...
+[2026-10-07T12:33:29.903Z] [POP_CONSOLE] [XPIDER_DIAG] ⚠️ [Scan] No valid forms reached threshold score (Target Score: 35)
+[2026-10-07T12:33:29.904Z] [POP_CONSOLE] [XPIDER_DIAG] 🔘 [Supreme-Scan] No form found. Attempting to trigger hidden contact containers...
+[2026-10-07T12:33:29.906Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_me0lu][url=http://127.0.0.1/[PATH] 🕵️ [UltraFinder] Scanning complex structures (ShadowDOM & Multi-Root)...
+[2026-10-07T12:33:29.907Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_me0lu][url=http://127.0.0.1/[PATH] 🕵️ [Supreme-Scan 5.0] Pre-scanning labels and context...
+[2026-10-07T12:33:29.909Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_me0lu][url=http://127.0.0.1/[PATH] 🔍 [Scan] Scanned 1 elements. Highest score: -999
+[2026-10-07T12:33:29.911Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_me0lu][url=http://127.0.0.1/[PATH] ⚠️ [Scan] No valid forms reached threshold score (Target Score: 35)
+[2026-10-07T12:33:29.913Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_me0lu][url=http://127.0.0.1/[PATH] 🔘 [Supreme-Scan] No form found. Attempting to trigger hidden contact containers...
+[2026-10-07T12:33:30.543Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482738][attemptId=att_1791376405333_me0lu][url=http://127.0.0.1:8979/gate-a-target-2] 💓 [Heartbeat] Engine active and processing...
+[2026-10-07T12:33:30.543Z] [SW_CONSOLE] [BG_LOG][tab=1954482738] [CONTENT_EVENT][tabId=1954482738][attemptId=att_1791376405333_me0lu][url=http://127.0.0.1:8979/gate-a-target-2] 💓 [Heartbeat] Engine active and processing...
+[2026-10-07T12:33:30.545Z] [POP_CONSOLE] [XPIDER_DIAG] 💓 [Heartbeat] Engine active and processing...
+[2026-10-07T12:33:30.546Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_me0lu][url=http://127.0.0.1/[PATH] 💓 [Heartbeat] Engine active and processing...
+[2026-10-07T12:33:30.854Z] [RACE_TEST_RESULT] {"maxConcObserved":1,"finalInFlight":true,"finalCount":1,"remainingQueue":1}
+[2026-10-07T12:33:30.854Z] ✅ PASS: Gate A: Observed maxConcurrent === 1 strictly enforced across 4 competing wakeups via real production orchestrateSending
+[2026-10-07T12:33:30.854Z] 
 === [GATE B: TIMEOUT CANCELLATION & QUIESCENCE BARRIER] ===
-[2026-10-07T08:50:17.252Z] [SW_CONSOLE] [TIMEOUT_TEST] Launching Target A with 1s timeout...
-[2026-10-07T08:50:17.252Z] [SW_CONSOLE] [SERIALIZED_GATE] Slot acquired atomically. activeTargetInFlight=true activeTargetCount=1 maxConcurrent=1
-[2026-10-07T08:50:17.253Z] [SW_CONSOLE] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedBefore=0
-[2026-10-07T08:50:17.255Z] [SW_CONSOLE] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedAfter=0 result=PASS
-[2026-10-07T08:50:17.255Z] [SW_CONSOLE] [BG_LOG][tab=none] [TARGET 1/2][127.0.0.1] START
-[2026-10-07T08:50:17.358Z] [SW_CONSOLE] [Engine] Stale generation 6 (expected 1). Ignoring wakeup.
-[2026-10-07T08:50:22.263Z] [SW_CONSOLE] [BG_LOG][tab=none] ⚠️ [Protection] Target skipped / timed out: Local Session Timeout
-[2026-10-07T08:50:22.264Z] [SW_CONSOLE] [TIMEOUT_TEST] AbortSignal received on Target A
-[2026-10-07T08:50:22.448Z] [SW_CONSOLE] [TIMEOUT_CLASS] stage= => TIMEOUT_LOCAL (pre-submit)
-[2026-10-07T08:50:22.451Z] [SW_CONSOLE] [BG_LOG][tab=none] [TARGET][127.0.0.1] FINAL status=TIMEOUT_LOCAL reason=TIMEOUT_LOCAL
-[2026-10-07T08:50:22.454Z] [SW_CONSOLE] [SERIALIZED_GATE] Slot released. activeTargetInFlight=false activeTargetCount=0
-[2026-10-07T08:50:22.454Z] [SW_CONSOLE] [BG_LOG][tab=none] Waiting 1000ms before next target...
-[2026-10-07T08:50:22.456Z] [POP_CONSOLE] [LEDGER_STATS] scope=currentGeneration success=0 failed=0 unknown=0
-[2026-10-07T08:50:23.455Z] [SW_CONSOLE] [SERIALIZED_GATE] Slot acquired atomically. activeTargetInFlight=true activeTargetCount=1 maxConcurrent=1
-[2026-10-07T08:50:23.456Z] [SW_CONSOLE] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedBefore=0
-[2026-10-07T08:50:23.460Z] [SW_CONSOLE] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedAfter=0 result=PASS
-[2026-10-07T08:50:23.466Z] [SW_CONSOLE] [BG_LOG][tab=none] [TARGET 2/2][127.0.0.1] START
-[2026-10-07T08:50:23.467Z] [SW_CONSOLE] [TIMEOUT_TEST] Target B started cleanly. Target A quiesced=true
-[2026-10-07T08:50:23.467Z] [SW_CONSOLE] [SERIALIZED_GATE] Slot released. activeTargetInFlight=false activeTargetCount=0
-[2026-10-07T08:50:23.469Z] [SW_CONSOLE] [BG_LOG][tab=none] Waiting 1000ms before next target...
-[2026-10-07T08:50:24.478Z] [SW_CONSOLE] [FINISH_BARRIER] Clear. lastFinalTs=1791363023457 ledgerCompleted=0 total=2
-[2026-10-07T08:50:24.478Z] [SW_CONSOLE] [BG_LOG][tab=none] [FINISH_BARRIER] lastFinalTs=1791363023457 barrierClear. CAMPAIGN_FINISHED proceeding.
-[2026-10-07T08:50:24.479Z] [POP_CONSOLE] [LEDGER_STATS] scope=currentGeneration success=0 failed=0 unknown=0
-[2026-10-07T08:50:24.479Z] [SW_CONSOLE] [BG_LOG][tab=none] Campaign finished!
-[2026-10-07T08:50:24.481Z] [SW_CONSOLE] [TAB_BARRIER] phase=CAMPAIGN_FINISHED ownedBefore=0
-[2026-10-07T08:50:24.482Z] [SW_CONSOLE] [TAB_BARRIER] phase=CAMPAIGN_FINISHED ownedAfter=0 result=PASS
-[2026-10-07T08:50:24.486Z] [POP_CONSOLE] [LEDGER_STATS] scope=currentGeneration success=0 failed=0 unknown=0
-[2026-10-07T08:50:25.954Z] [TIMEOUT_TEST_RESULT] {"timeoutTargetAbortReceived":true,"timeoutTargetQuiesced":true,"nextTargetStarted":true,"nextTargetStartedBeforeQuiesce":false,"finalInFlight":false}
-[2026-10-07T08:50:25.955Z] ✅ PASS: Gate B: Target A timeout aborted cleanly; Target B started strictly AFTER Target A quiesced
-[2026-10-07T08:50:25.955Z] 
-=== [GATE C: STICKY CAPTCHA_PENDING_OWNER] ===
-[2026-10-07T08:50:25.957Z] [STICKY_TEST_RESULT] {"stageAfterInterleave":"CAPTCHA_PENDING_OWNER","decisionAccepted":true,"finalStage":"CAPTCHA_AUTO_SOLVING"}
-[2026-10-07T08:50:25.957Z] ✅ PASS: Gate C: Sticky CAPTCHA_PENDING_OWNER preserved across generic updates; Owner decision accepted
-[2026-10-07T08:50:25.957Z] 
+[2026-10-07T12:33:30.856Z] [SW_CONSOLE] [TIMEOUT_TEST] Launching Target A with 1.2s timeout via real production orchestrateSending...
+[2026-10-07T12:33:30.857Z] [SW_CONSOLE] [SERIALIZED_GATE] Slot acquired atomically. activeTargetInFlight=true activeTargetCount=1 maxConcurrent=1
+[2026-10-07T12:33:30.857Z] [SW_CONSOLE] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedBefore=1
+[2026-10-07T12:33:31.040Z] [SW_CONSOLE] [TAB_CLOSE] tabId=1954482738 attempt=1 result=CLOSED
+[2026-10-07T12:33:31.040Z] [SW_CONSOLE] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedAfter=0 result=PASS
+[2026-10-07T12:33:31.041Z] [SW_CONSOLE] [BG_LOG][tab=none] [TARGET 1/2][127.0.0.1] START
+[2026-10-07T12:33:31.044Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [TARGET 1/2][127.0.0.1] START
+[2026-10-07T12:33:31.050Z] [POP_CONSOLE] [LEDGER_STATS] scope=currentGeneration campaignRunId=run_gate_b_1791376410856 success=0 failed=1 unknown=0
+[2026-10-07T12:33:31.087Z] [SW_CONSOLE] [TAB_BARRIER] phase=POST_NEW_TARGET_CREATE ownedBefore=0
+[2026-10-07T12:33:31.100Z] [SW_CONSOLE] [TAB_BARRIER] phase=POST_NEW_TARGET_CREATE ownedAfter=0 result=PASS
+[2026-10-07T12:33:31.100Z] [SW_CONSOLE] [TAB_KILL_SWITCH] keepTabId=1954482740 closedOthers=0 remainingOwned=1 result=PASS
+[2026-10-07T12:33:31.108Z] [SW_CONSOLE] [BG_LOG][tab=1954482740] [TAB_FOCUS] tabId=1954482740 windowId=1954482730 active=true focused=true
+[2026-10-07T12:33:31.118Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [TAB_FOCUS] tabId=[REDACTED_PHONE] windowId=[REDACTED_PHONE] active=true focused=true
+[2026-10-07T12:33:31.123Z] [SW_CONSOLE] [BG_LOG][tab=1954482740] Step 1: Sniper Mode active. Searching for contact page...
+[2026-10-07T12:33:31.127Z] [SW_CONSOLE] [BG_LOG][tab=1954482740] 🔦 Scanning paths 1-10...
+[2026-10-07T12:33:31.128Z] [POP_CONSOLE] [XPIDER_DIAG] [System] Step 1: Sniper Mode active. Searching for contact page...
+[2026-10-07T12:33:31.133Z] [POP_CONSOLE] [XPIDER_DIAG] [System] 🔦 Scanning paths 1-10...
+[2026-10-07T12:33:31.150Z] [SW_CONSOLE] [BG_LOG][tab=1954482740] Pre-scan complete. Identified 10 valid paths.
+[2026-10-07T12:33:31.152Z] [SW_CONSOLE] [BG_LOG][tab=1954482740] [SniperScan] Identified 10 candidate paths in background.
+[2026-10-07T12:33:31.155Z] [POP_CONSOLE] [XPIDER_DIAG] [System] Pre-scan complete. Identified 10 valid paths.
+[2026-10-07T12:33:31.156Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [SniperScan] Identified 10 candidate paths in background.
+[2026-10-07T12:33:35.091Z] [SW_CONSOLE] [BG_LOG][tab=1954482740] 🔄 [Engine] Internal navigation detected (SPA). Preparing re-injection...
+[2026-10-07T12:33:35.096Z] [POP_CONSOLE] [XPIDER_DIAG] [System] 🔄 [Engine] Internal navigation detected (SPA). Preparing re-injection...
+[2026-10-07T12:33:35.152Z] [SW_CONSOLE] [BG_LOG][tab=1954482740] [TAB_FOCUS] tabId=1954482740 windowId=1954482730 active=true focused=true
+[2026-10-07T12:33:35.154Z] [SW_CONSOLE] [BG_LOG][tab=1954482740] [TAB_OWNERSHIP] VERIFIED_REDIRECT source=127.0.0.1 target=127.0.0.1 relation=SAME_HOST
+[2026-10-07T12:33:35.156Z] [SW_CONSOLE] [BG_LOG][tab=1954482740] [FOCUS_SECURED] formPageUrl=http://127.0.0.1:8979/gate-b-timeout-target
+[2026-10-07T12:33:35.157Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [TAB_FOCUS] tabId=[REDACTED_PHONE] windowId=[REDACTED_PHONE] active=true focused=true
+[2026-10-07T12:33:35.158Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [TAB_OWNERSHIP] VERIFIED_REDIRECT source=127.0.0.1 target=127.0.0.1 relation=SAME_HOST
+[2026-10-07T12:33:35.160Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [FOCUS_SECURED] formPageUrl=http://127.0.0.1/[PATH]
+[2026-10-07T12:33:35.160Z] [SW_CONSOLE] [BG_LOG][tab=1954482740] Extraction focus secured. Mapping template fields...
+[2026-10-07T12:33:35.164Z] [POP_CONSOLE] [XPIDER_DIAG] [System] Extraction focus secured. Mapping template fields...
+[2026-10-07T12:33:35.166Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482740][attemptId=att_1791376411041_ql07n][url=http://127.0.0.1:8979/gate-b-timeout-target] [TARGET_PAGE] url=http://127.0.0.1:8979/gate-b-timeout-target domGeneration=1791376415162 attemptId=att_1791376411041_ql07n
+[2026-10-07T12:33:35.169Z] [SW_CONSOLE] [BG_LOG][tab=1954482740] [CONTENT_EVENT][tabId=1954482740][attemptId=att_1791376411041_ql07n][url=http://127.0.0.1:8979/gate-b-timeout-target] [TARGET_PAGE] url=http://127.0.0.1:8979/gate-b-timeout-target domGeneration=1791376415162 attemptId=att_1791376411041_ql07n
+[2026-10-07T12:33:35.169Z] [POP_CONSOLE] [XPIDER_DIAG] [TARGET_PAGE] url=http://127.0.0.1/[PATH] domGeneration=[REDACTED_PHONE] attemptId=att_[REDACTED_PHONE]_ql07n
+[2026-10-07T12:33:35.174Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482740][attemptId=att_1791376411041_ql07n][url=http://127.0.0.1:8979/gate-b-timeout-target] 🚀 [Engine] Ultra-Mode process started
+[2026-10-07T12:33:35.174Z] [SW_CONSOLE] [BG_LOG][tab=1954482740] [CONTENT_EVENT][tabId=1954482740][attemptId=att_1791376411041_ql07n][url=http://127.0.0.1:8979/gate-b-timeout-target] 🚀 [Engine] Ultra-Mode process started
+[2026-10-07T12:33:35.176Z] [POP_CONSOLE] [XPIDER_DIAG] 🚀 [Engine] Ultra-Mode process started
+[2026-10-07T12:33:35.179Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_ql07n][url=http://127.0.0.1/[PATH] [TARGET_PAGE] url=http://127.0.0.1/[PATH] domGeneration=[REDACTED_PHONE] attemptId=att_[REDACTED_PHONE]_ql07n
+[2026-10-07T12:33:35.180Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482740][attemptId=att_1791376411041_ql07n][url=http://127.0.0.1:8979/gate-b-timeout-target] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[2026-10-07T12:33:35.180Z] [SW_CONSOLE] [BG_LOG][tab=1954482740] [CONTENT_EVENT][tabId=1954482740][attemptId=att_1791376411041_ql07n][url=http://127.0.0.1:8979/gate-b-timeout-target] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[2026-10-07T12:33:35.180Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482740][attemptId=att_1791376411041_ql07n][url=http://127.0.0.1:8979/gate-b-timeout-target] [TARGET_PAGE] url=http://127.0.0.1:8979/gate-b-timeout-target recursion=0
+[2026-10-07T12:33:35.183Z] [POP_CONSOLE] [XPIDER_DIAG] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[2026-10-07T12:33:35.186Z] [POP_CONSOLE] [XPIDER_DIAG] [TARGET_PAGE] url=http://127.0.0.1/[PATH] recursion=0
+[2026-10-07T12:33:35.187Z] [SW_CONSOLE] [BG_LOG][tab=1954482740] [CONTENT_EVENT][tabId=1954482740][attemptId=att_1791376411041_ql07n][url=http://127.0.0.1:8979/gate-b-timeout-target] [TARGET_PAGE] url=http://127.0.0.1:8979/gate-b-timeout-target recursion=0
+[2026-10-07T12:33:35.187Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482740][attemptId=att_1791376411041_ql07n][url=http://127.0.0.1:8979/gate-b-timeout-target] 🔍 [Discovery] URL: http://127.0.0.1:8979/gate-b-timeout-target | Recursion: 0
+[2026-10-07T12:33:35.187Z] [SW_CONSOLE] [BG_LOG][tab=1954482740] [CONTENT_EVENT][tabId=1954482740][attemptId=att_1791376411041_ql07n][url=http://127.0.0.1:8979/gate-b-timeout-target] 🔍 [Discovery] URL: http://127.0.0.1:8979/gate-b-timeout-target | Recursion: 0
+[2026-10-07T12:33:35.187Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482740][attemptId=att_1791376411041_ql07n][url=http://127.0.0.1:8979/gate-b-timeout-target] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[2026-10-07T12:33:35.187Z] [SW_CONSOLE] [BG_LOG][tab=1954482740] [CONTENT_EVENT][tabId=1954482740][attemptId=att_1791376411041_ql07n][url=http://127.0.0.1:8979/gate-b-timeout-target] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[2026-10-07T12:33:35.189Z] [POP_CONSOLE] [XPIDER_DIAG] 🔍 [Discovery] URL: http://127.0.0.1/[PATH] | Recursion: 0
+[2026-10-07T12:33:35.190Z] [POP_CONSOLE] [XPIDER_DIAG] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[2026-10-07T12:33:35.193Z] [POP_CONSOLE] [XPIDER_DIAG] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1/[PATH] | Recursion: 0
+[2026-10-07T12:33:35.193Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482740][attemptId=att_1791376411041_ql07n][url=http://127.0.0.1:8979/gate-b-timeout-target] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1:8979/gate-b-timeout-target | Recursion: 0
+[2026-10-07T12:33:35.193Z] [SW_CONSOLE] [BG_LOG][tab=1954482740] [CONTENT_EVENT][tabId=1954482740][attemptId=att_1791376411041_ql07n][url=http://127.0.0.1:8979/gate-b-timeout-target] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1:8979/gate-b-timeout-target | Recursion: 0
+[2026-10-07T12:33:35.194Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_ql07n][url=http://127.0.0.1/[PATH] 🚀 [Engine] Ultra-Mode process started
+[2026-10-07T12:33:35.197Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_ql07n][url=http://127.0.0.1/[PATH] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[2026-10-07T12:33:35.199Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_ql07n][url=http://127.0.0.1/[PATH] [TARGET_PAGE] url=http://127.0.0.1/[PATH] recursion=0
+[2026-10-07T12:33:35.201Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_ql07n][url=http://127.0.0.1/[PATH] 🔍 [Discovery] URL: http://127.0.0.1/[PATH] | Recursion: 0
+[2026-10-07T12:33:35.202Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_ql07n][url=http://127.0.0.1/[PATH] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[2026-10-07T12:33:35.204Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_ql07n][url=http://127.0.0.1/[PATH] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1/[PATH] | Recursion: 0
+[2026-10-07T12:33:36.091Z] [SW_CONSOLE] [BG_LOG][tab=none] ⚠️ [Protection] Target skipped / timed out: Local Session Timeout
+[2026-10-07T12:33:36.095Z] [SW_CONSOLE] [BG_LOG][tab=1954482740] [RESULT] resultUrl=http://127.0.0.1:8979/gate-b-timeout-target
+[2026-10-07T12:33:36.095Z] [POP_CONSOLE] [XPIDER_DIAG] [System] ⚠️ [Protection] Target skipped / timed out: Local Session Timeout
+[2026-10-07T12:33:36.099Z] [SW_CONSOLE] [BG_LOG][tab=1954482740] [TARGET][127.0.0.1] FINAL status=FAILURE reason=ABORTED
+[2026-10-07T12:33:36.102Z] [SW_CONSOLE] [BG_LOG][tab=1954482740] [HISTORY_FINAL] sourceUrl=http://127.0.0.1:8979/gate-b-timeout-target contactPageUrl=http://127.0.0.1:8979/gate-b-timeout-target formPageUrl=http://127.0.0.1:8979/gate-b-timeout-target resultUrl=http://127.0.0.1:8979/gate-b-timeout-target
+[2026-10-07T12:33:36.102Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [RESULT] resultUrl=http://127.0.0.1/[PATH]
+[2026-10-07T12:33:36.106Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [TARGET][127.0.0.1] FINAL status=FAILURE reason=ABORTED
+[2026-10-07T12:33:36.108Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [HISTORY_FINAL] sourceUrl=http://127.0.0.1/[PATH] contactPageUrl=http://127.0.0.1/[PATH] formPageUrl=http://127.0.0.1/[PATH] resultUrl=http://127.0.0.1/[PATH]
+[2026-10-07T12:33:36.109Z] [SW_CONSOLE] [LEDGER_STATS] scope=currentRun success=0 failure=1 unknown=0 timeout=0 skipped=0
+[2026-10-07T12:33:36.109Z] [POP_CONSOLE] [LEDGER_STATS] scope=currentGeneration campaignRunId=run_gate_b_1791376410856 success=0 failed=1 unknown=0
+[2026-10-07T12:33:36.110Z] [SW_CONSOLE] [BG_LOG][tab=1954482740] [LEDGER_STATS] scope=currentRun success=0 failure=1 unknown=0 timeout=0 skipped=0
+[2026-10-07T12:33:36.114Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [LEDGER_STATS] scope=currentRun success=0 failure=1 unknown=0 timeout=0 skipped=0
+[2026-10-07T12:33:36.292Z] [SW_CONSOLE] [TAB_CLOSE] tabId=1954482740 attempt=1 result=CLOSED
+[2026-10-07T12:33:36.293Z] [SW_CONSOLE] [POST_FINAL_TAB_INVARIANT] target=http://127.0.0.1:8979/gate-b-timeout-target remainingOwnedTabs=0 retainedTabs=0 result=PASS
+[2026-10-07T12:33:36.340Z] [SW_CONSOLE] [TIMEOUT_CLASS] stage= => TIMEOUT_LOCAL (pre-submit)
+[2026-10-07T12:33:36.340Z] [SW_CONSOLE] [SETTLEMENT_REJECTED] attemptId=att_1791376411041_ql07n priorStatus=FAILURE rejectedStatus=TIMEOUT_LOCAL reason=TERMINAL_ALREADY_SETTLED
+[2026-10-07T12:33:36.342Z] [SW_CONSOLE] [BG_LOG][tab=none] [TARGET][127.0.0.1] FINAL status=TIMEOUT_LOCAL reason=TIMEOUT_LOCAL
+[2026-10-07T12:33:36.345Z] [SW_CONSOLE] [SERIALIZED_GATE] Slot released. activeTargetInFlight=false activeTargetCount=0
+[2026-10-07T12:33:36.346Z] [SW_CONSOLE] [BG_LOG][tab=none] Waiting 1000ms before next target...
+[2026-10-07T12:33:36.347Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [TARGET][127.0.0.1] FINAL status=TIMEOUT_LOCAL reason=TIMEOUT_LOCAL
+[2026-10-07T12:33:36.349Z] [POP_CONSOLE] [LEDGER_STATS] scope=currentGeneration campaignRunId=run_gate_b_1791376410856 success=0 failed=1 unknown=0
+[2026-10-07T12:33:36.352Z] [POP_CONSOLE] [XPIDER_DIAG] [System] Waiting 1000ms before next target...
+[2026-10-07T12:33:36.352Z] [POP_CONSOLE] [HISTORY_SCOPE_REFRESH] trigger=xpider_active_campaign_run_id
+[2026-10-07T12:33:36.355Z] [POP_CONSOLE] [LEDGER_STATS] scope=currentRun campaignRunId=run_gate_b_1791376410856 success=0 failed=1 timeout=0 unknown=0
+[2026-10-07T12:33:37.358Z] [SW_CONSOLE] [SERIALIZED_GATE] Slot acquired atomically. activeTargetInFlight=true activeTargetCount=1 maxConcurrent=1
+[2026-10-07T12:33:37.359Z] [SW_CONSOLE] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedBefore=0
+[2026-10-07T12:33:37.359Z] [SW_CONSOLE] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedAfter=0 result=PASS
+[2026-10-07T12:33:37.361Z] [SW_CONSOLE] [BG_LOG][tab=none] [TARGET 2/2][127.0.0.1] START
+[2026-10-07T12:33:37.363Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [TARGET 2/2][127.0.0.1] START
+[2026-10-07T12:33:37.366Z] [POP_CONSOLE] [HISTORY_SCOPE_REFRESH] trigger=xpider_active_campaign_run_id
+[2026-10-07T12:33:37.367Z] [POP_CONSOLE] [LEDGER_STATS] scope=currentGeneration campaignRunId=run_gate_b_1791376410856 success=0 failed=1 unknown=0
+[2026-10-07T12:33:37.406Z] [SW_CONSOLE] [TAB_BARRIER] phase=POST_NEW_TARGET_CREATE ownedBefore=0
+[2026-10-07T12:33:37.410Z] [SW_CONSOLE] [TAB_BARRIER] phase=POST_NEW_TARGET_CREATE ownedAfter=0 result=PASS
+[2026-10-07T12:33:37.410Z] [SW_CONSOLE] [TAB_KILL_SWITCH] keepTabId=1954482742 closedOthers=0 remainingOwned=1 result=PASS
+[2026-10-07T12:33:37.432Z] [POP_CONSOLE] [LEDGER_STATS] scope=currentRun campaignRunId=none success=0 failed=1 timeout=0 unknown=0
+[2026-10-07T12:33:37.444Z] [SW_CONSOLE] [BG_LOG][tab=1954482742] [TAB_FOCUS] tabId=1954482742 windowId=1954482730 active=true focused=true
+[2026-10-07T12:33:37.449Z] [SW_CONSOLE] [BG_LOG][tab=1954482742] Step 1: Sniper Mode active. Searching for contact page...
+[2026-10-07T12:33:37.452Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [TAB_FOCUS] tabId=[REDACTED_PHONE] windowId=[REDACTED_PHONE] active=true focused=true
+[2026-10-07T12:33:37.454Z] [SW_CONSOLE] [BG_LOG][tab=1954482742] 🔦 Scanning paths 1-10...
+[2026-10-07T12:33:37.459Z] [POP_CONSOLE] [XPIDER_DIAG] [System] Step 1: Sniper Mode active. Searching for contact page...
+[2026-10-07T12:33:37.474Z] [POP_CONSOLE] [XPIDER_DIAG] [System] 🔦 Scanning paths 1-10...
+[2026-10-07T12:33:37.489Z] [SW_CONSOLE] [BG_LOG][tab=1954482742] Pre-scan complete. Identified 10 valid paths.
+[2026-10-07T12:33:37.492Z] [SW_CONSOLE] [BG_LOG][tab=1954482742] [SniperScan] Identified 10 candidate paths in background.
+[2026-10-07T12:33:37.502Z] [POP_CONSOLE] [XPIDER_DIAG] [System] Pre-scan complete. Identified 10 valid paths.
+[2026-10-07T12:33:37.504Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [SniperScan] Identified 10 candidate paths in background.
+[2026-10-07T12:33:37.539Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482742][attemptId=att_1791376417359_h0571][url=http://127.0.0.1:8979/gate-b-next-target] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
+[2026-10-07T12:33:37.540Z] [SW_CONSOLE] [BG_LOG][tab=1954482742] [CONTENT_EVENT][tabId=1954482742][attemptId=att_1791376417359_h0571][url=http://127.0.0.1:8979/gate-b-next-target] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
+[2026-10-07T12:33:37.542Z] [POP_CONSOLE] [XPIDER_DIAG] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
+[2026-10-07T12:33:37.547Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_h0571][url=http://127.0.0.1/[PATH] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
+[2026-10-07T12:33:37.548Z] [SW_CONSOLE] [BG_LOG][tab=1954482742] [TAB_FOCUS] tabId=1954482742 windowId=1954482730 active=true focused=true
+[2026-10-07T12:33:37.552Z] [SW_CONSOLE] [BG_LOG][tab=1954482742] [TAB_OWNERSHIP] VERIFIED_REDIRECT source=127.0.0.1 target=127.0.0.1 relation=SAME_HOST
+[2026-10-07T12:33:37.555Z] [SW_CONSOLE] [BG_LOG][tab=1954482742] [FOCUS_SECURED] formPageUrl=http://127.0.0.1:8979/gate-b-next-target
+[2026-10-07T12:33:37.556Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [TAB_FOCUS] tabId=[REDACTED_PHONE] windowId=[REDACTED_PHONE] active=true focused=true
+[2026-10-07T12:33:37.559Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [TAB_OWNERSHIP] VERIFIED_REDIRECT source=127.0.0.1 target=127.0.0.1 relation=SAME_HOST
+[2026-10-07T12:33:37.566Z] [SW_CONSOLE] [BG_LOG][tab=1954482742] Extraction focus secured. Mapping template fields...
+[2026-10-07T12:33:37.567Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [FOCUS_SECURED] formPageUrl=http://127.0.0.1/[PATH]
+[2026-10-07T12:33:37.573Z] [POP_CONSOLE] [XPIDER_DIAG] [System] Extraction focus secured. Mapping template fields...
+[2026-10-07T12:33:37.573Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482742][attemptId=att_1791376417359_h0571][url=http://127.0.0.1:8979/gate-b-next-target] [TARGET_PAGE] url=http://127.0.0.1:8979/gate-b-next-target domGeneration=1791376417569 attemptId=att_1791376417359_h0571
+[2026-10-07T12:33:37.576Z] [SW_CONSOLE] [BG_LOG][tab=1954482742] [CONTENT_EVENT][tabId=1954482742][attemptId=att_1791376417359_h0571][url=http://127.0.0.1:8979/gate-b-next-target] [TARGET_PAGE] url=http://127.0.0.1:8979/gate-b-next-target domGeneration=1791376417569 attemptId=att_1791376417359_h0571
+[2026-10-07T12:33:37.580Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482742][attemptId=att_1791376417359_h0571][url=http://127.0.0.1:8979/gate-b-next-target] 🚀 [Engine] Ultra-Mode process started
+[2026-10-07T12:33:37.581Z] [POP_CONSOLE] [XPIDER_DIAG] [TARGET_PAGE] url=http://127.0.0.1/[PATH] domGeneration=[REDACTED_PHONE] attemptId=att_[REDACTED_PHONE]_h0571
+[2026-10-07T12:33:37.583Z] [SW_CONSOLE] [BG_LOG][tab=1954482742] [CONTENT_EVENT][tabId=1954482742][attemptId=att_1791376417359_h0571][url=http://127.0.0.1:8979/gate-b-next-target] 🚀 [Engine] Ultra-Mode process started
+[2026-10-07T12:33:37.583Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482742][attemptId=att_1791376417359_h0571][url=http://127.0.0.1:8979/gate-b-next-target] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[2026-10-07T12:33:37.585Z] [POP_CONSOLE] [XPIDER_DIAG] 🚀 [Engine] Ultra-Mode process started
+[2026-10-07T12:33:37.587Z] [SW_CONSOLE] [BG_LOG][tab=1954482742] [CONTENT_EVENT][tabId=1954482742][attemptId=att_1791376417359_h0571][url=http://127.0.0.1:8979/gate-b-next-target] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[2026-10-07T12:33:37.587Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482742][attemptId=att_1791376417359_h0571][url=http://127.0.0.1:8979/gate-b-next-target] [TARGET_PAGE] url=http://127.0.0.1:8979/gate-b-next-target recursion=0
+[2026-10-07T12:33:37.592Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_h0571][url=http://127.0.0.1/[PATH] [TARGET_PAGE] url=http://127.0.0.1/[PATH] domGeneration=[REDACTED_PHONE] attemptId=att_[REDACTED_PHONE]_h0571
+[2026-10-07T12:33:37.593Z] [SW_CONSOLE] [BG_LOG][tab=1954482742] [CONTENT_EVENT][tabId=1954482742][attemptId=att_1791376417359_h0571][url=http://127.0.0.1:8979/gate-b-next-target] [TARGET_PAGE] url=http://127.0.0.1:8979/gate-b-next-target recursion=0
+[2026-10-07T12:33:37.594Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482742][attemptId=att_1791376417359_h0571][url=http://127.0.0.1:8979/gate-b-next-target] 🔍 [Discovery] URL: http://127.0.0.1:8979/gate-b-next-target | Recursion: 0
+[2026-10-07T12:33:37.594Z] [POP_CONSOLE] [XPIDER_DIAG] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[2026-10-07T12:33:37.594Z] [SW_CONSOLE] [BG_LOG][tab=1954482742] [CONTENT_EVENT][tabId=1954482742][attemptId=att_1791376417359_h0571][url=http://127.0.0.1:8979/gate-b-next-target] 🔍 [Discovery] URL: http://127.0.0.1:8979/gate-b-next-target | Recursion: 0
+[2026-10-07T12:33:37.594Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482742][attemptId=att_1791376417359_h0571][url=http://127.0.0.1:8979/gate-b-next-target] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[2026-10-07T12:33:37.594Z] [SW_CONSOLE] [BG_LOG][tab=1954482742] [CONTENT_EVENT][tabId=1954482742][attemptId=att_1791376417359_h0571][url=http://127.0.0.1:8979/gate-b-next-target] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[2026-10-07T12:33:37.595Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482742][attemptId=att_1791376417359_h0571][url=http://127.0.0.1:8979/gate-b-next-target] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1:8979/gate-b-next-target | Recursion: 0
+[2026-10-07T12:33:37.598Z] [POP_CONSOLE] [XPIDER_DIAG] [TARGET_PAGE] url=http://127.0.0.1/[PATH] recursion=0
+[2026-10-07T12:33:37.599Z] [POP_CONSOLE] [XPIDER_DIAG] 🔍 [Discovery] URL: http://127.0.0.1/[PATH] | Recursion: 0
+[2026-10-07T12:33:37.600Z] [SW_CONSOLE] [BG_LOG][tab=1954482742] [CONTENT_EVENT][tabId=1954482742][attemptId=att_1791376417359_h0571][url=http://127.0.0.1:8979/gate-b-next-target] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1:8979/gate-b-next-target | Recursion: 0
+[2026-10-07T12:33:37.601Z] [POP_CONSOLE] [XPIDER_DIAG] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[2026-10-07T12:33:37.604Z] [POP_CONSOLE] [XPIDER_DIAG] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1/[PATH] | Recursion: 0
+[2026-10-07T12:33:37.606Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_h0571][url=http://127.0.0.1/[PATH] 🚀 [Engine] Ultra-Mode process started
+[2026-10-07T12:33:37.608Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_h0571][url=http://127.0.0.1/[PATH] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[2026-10-07T12:33:37.613Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_h0571][url=http://127.0.0.1/[PATH] [TARGET_PAGE] url=http://127.0.0.1/[PATH] recursion=0
+[2026-10-07T12:33:37.615Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_h0571][url=http://127.0.0.1/[PATH] 🔍 [Discovery] URL: http://127.0.0.1/[PATH] | Recursion: 0
+[2026-10-07T12:33:37.620Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_h0571][url=http://127.0.0.1/[PATH] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[2026-10-07T12:33:37.621Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_h0571][url=http://127.0.0.1/[PATH] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1/[PATH] | Recursion: 0
+[2026-10-07T12:33:38.569Z] [SW_CONSOLE] [BG_LOG][tab=none] ⚠️ [Protection] Target skipped / timed out: Local Session Timeout
+[2026-10-07T12:33:38.571Z] [SW_CONSOLE] [BG_LOG][tab=1954482742] [RESULT] resultUrl=http://127.0.0.1:8979/gate-b-next-target
+[2026-10-07T12:33:38.571Z] [SW_CONSOLE] [BG_LOG][tab=1954482742] [TARGET][127.0.0.1] FINAL status=FAILURE reason=ABORTED
+[2026-10-07T12:33:38.573Z] [POP_CONSOLE] [XPIDER_DIAG] [System] ⚠️ [Protection] Target skipped / timed out: Local Session Timeout
+[2026-10-07T12:33:38.575Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [RESULT] resultUrl=http://127.0.0.1/[PATH]
+[2026-10-07T12:33:38.576Z] [SW_CONSOLE] [BG_LOG][tab=1954482742] [HISTORY_FINAL] sourceUrl=http://127.0.0.1:8979/gate-b-next-target contactPageUrl=http://127.0.0.1:8979/gate-b-next-target formPageUrl=http://127.0.0.1:8979/gate-b-next-target resultUrl=http://127.0.0.1:8979/gate-b-next-target
+[2026-10-07T12:33:38.577Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [TARGET][127.0.0.1] FINAL status=FAILURE reason=ABORTED
+[2026-10-07T12:33:38.579Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [HISTORY_FINAL] sourceUrl=http://127.0.0.1/[PATH] contactPageUrl=http://127.0.0.1/[PATH] formPageUrl=http://127.0.0.1/[PATH] resultUrl=http://127.0.0.1/[PATH]
+[2026-10-07T12:33:38.580Z] [SW_CONSOLE] [LEDGER_STATS] scope=currentRun success=0 failure=2 unknown=0 timeout=0 skipped=0
+[2026-10-07T12:33:38.581Z] [SW_CONSOLE] [BG_LOG][tab=1954482742] [LEDGER_STATS] scope=currentRun success=0 failure=2 unknown=0 timeout=0 skipped=0
+[2026-10-07T12:33:38.582Z] [POP_CONSOLE] [LEDGER_STATS] scope=currentGeneration campaignRunId=run_gate_b_1791376410856 success=0 failed=2 unknown=0
+[2026-10-07T12:33:38.583Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [LEDGER_STATS] scope=currentRun success=0 failure=2 unknown=0 timeout=0 skipped=0
+[2026-10-07T12:33:38.757Z] [SW_CONSOLE] [TAB_CLOSE] tabId=1954482742 attempt=1 result=CLOSED
+[2026-10-07T12:33:38.757Z] [SW_CONSOLE] [POST_FINAL_TAB_INVARIANT] target=http://127.0.0.1:8979/gate-b-next-target remainingOwnedTabs=0 retainedTabs=0 result=PASS
+[2026-10-07T12:33:38.803Z] [SW_CONSOLE] [TIMEOUT_CLASS] stage= => TIMEOUT_LOCAL (pre-submit)
+[2026-10-07T12:33:38.803Z] [SW_CONSOLE] [SETTLEMENT_REJECTED] attemptId=att_1791376417359_h0571 priorStatus=FAILURE rejectedStatus=TIMEOUT_LOCAL reason=TERMINAL_ALREADY_SETTLED
+[2026-10-07T12:33:38.805Z] [SW_CONSOLE] [BG_LOG][tab=none] [TARGET][127.0.0.1] FINAL status=TIMEOUT_LOCAL reason=TIMEOUT_LOCAL
+[2026-10-07T12:33:38.808Z] [SW_CONSOLE] [SERIALIZED_GATE] Slot released. activeTargetInFlight=false activeTargetCount=0
+[2026-10-07T12:33:38.809Z] [SW_CONSOLE] [BG_LOG][tab=none] Waiting 1000ms before next target...
+[2026-10-07T12:33:38.809Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [TARGET][127.0.0.1] FINAL status=TIMEOUT_LOCAL reason=TIMEOUT_LOCAL
+[2026-10-07T12:33:38.811Z] [POP_CONSOLE] [LEDGER_STATS] scope=currentGeneration campaignRunId=run_gate_b_1791376410856 success=0 failed=2 unknown=0
+[2026-10-07T12:33:38.814Z] [POP_CONSOLE] [XPIDER_DIAG] [System] Waiting 1000ms before next target...
+[2026-10-07T12:33:38.814Z] [POP_CONSOLE] [HISTORY_SCOPE_REFRESH] trigger=xpider_active_campaign_run_id
+[2026-10-07T12:33:38.818Z] [POP_CONSOLE] [LEDGER_STATS] scope=currentRun campaignRunId=run_gate_b_1791376410856 success=0 failed=2 timeout=0 unknown=0
+[2026-10-07T12:33:38.849Z] [TIMEOUT_TEST_RESULT] {"maxConcObserved":1,"timeoutAttemptSettled":true,"timeoutAttemptStatus":"FAILURE","nextAttemptSettled":true,"finalInFlight":false}
+[2026-10-07T12:33:38.849Z] ✅ PASS: Gate B: Target A timeout aborted cleanly; Target B started strictly AFTER Target A quiesced (maxConcObserved === 1)
+[2026-10-07T12:33:38.849Z] 
+=== [GATE C: STICKY CAPTCHA_PENDING_OWNER VIA REAL RUNTIME MESSAGING] ===
+[2026-10-07T12:33:38.853Z] [SW_CONSOLE] [STAGE_PROGRESSION] Preserving sticky CAPTCHA_PENDING_OWNER (ignoring generic stage=CAPTCHA)
+[2026-10-07T12:33:38.854Z] [SW_CONSOLE] [BG_LOG][tab=1954482734] [EXEC_IDENTITY_STORED] stage=CAPTCHA attemptId=att_sticky_c epoch=1
+[2026-10-07T12:33:38.855Z] [SW_CONSOLE] [BG_LOG][tab=1954482734] 📌 [PIPELINE][CAPTCHA] url=chrome-extension://pjohcallgmjmbfckiaogjokelhobfceg/popup.html
+[2026-10-07T12:33:38.858Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [EXEC_IDENTITY_STORED] stage=CAPTCHA attemptId=att_sticky_c epoch=1
+[2026-10-07T12:33:38.864Z] [POP_CONSOLE] [XPIDER_DIAG] [System] 📌 [PIPELINE][CAPTCHA] url=chrome-extension://pjohcallgmjmbfckiaogjokelhobfceg/popup.html
+[2026-10-07T12:33:38.870Z] [SW_CONSOLE] [STAGE_PROGRESSION] Preserving sticky CAPTCHA_PENDING_OWNER (ignoring generic stage=FILLING)
+[2026-10-07T12:33:38.872Z] [SW_CONSOLE] [BG_LOG][tab=1954482734] [EXEC_IDENTITY_STORED] stage=FILLING attemptId=att_sticky_c epoch=1
+[2026-10-07T12:33:38.873Z] [SW_CONSOLE] [BG_LOG][tab=1954482734] 📌 [PIPELINE][FILLING] url=chrome-extension://pjohcallgmjmbfckiaogjokelhobfceg/popup.html
+[2026-10-07T12:33:38.874Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [EXEC_IDENTITY_STORED] stage=FILLING attemptId=att_sticky_c epoch=1
+[2026-10-07T12:33:38.877Z] [POP_CONSOLE] [XPIDER_DIAG] [System] 📌 [PIPELINE][FILLING] url=chrome-extension://pjohcallgmjmbfckiaogjokelhobfceg/popup.html
+[2026-10-07T12:33:38.883Z] [SW_CONSOLE] [STAGE_PROGRESSION] Preserving sticky CAPTCHA_PENDING_OWNER (ignoring generic stage=ACTIVE_FORM)
+[2026-10-07T12:33:38.883Z] [SW_CONSOLE] [BG_LOG][tab=1954482734] [EXEC_IDENTITY_STORED] stage=ACTIVE_FORM attemptId=att_sticky_c epoch=1
+[2026-10-07T12:33:38.885Z] [SW_CONSOLE] [BG_LOG][tab=1954482734] 📌 [PIPELINE][ACTIVE_FORM] url=chrome-extension://pjohcallgmjmbfckiaogjokelhobfceg/popup.html
+[2026-10-07T12:33:38.887Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [EXEC_IDENTITY_STORED] stage=ACTIVE_FORM attemptId=att_sticky_c epoch=1
+[2026-10-07T12:33:38.890Z] [POP_CONSOLE] [XPIDER_DIAG] [System] 📌 [PIPELINE][ACTIVE_FORM] url=chrome-extension://pjohcallgmjmbfckiaogjokelhobfceg/popup.html
+[2026-10-07T12:33:38.893Z] [SW_CONSOLE] [STAGE_PROGRESSION] Preserving sticky CAPTCHA_PENDING_OWNER (ignoring generic stage=FORM_PREP)
+[2026-10-07T12:33:38.894Z] [SW_CONSOLE] [BG_LOG][tab=1954482734] 📌 [PIPELINE][FORM_PREP] url=chrome-extension://pjohcallgmjmbfckiaogjokelhobfceg/popup.html
+[2026-10-07T12:33:38.898Z] [POP_CONSOLE] [XPIDER_DIAG] [System] 📌 [PIPELINE][FORM_PREP] url=chrome-extension://pjohcallgmjmbfckiaogjokelhobfceg/popup.html
+[2026-10-07T12:33:38.904Z] [SW_CONSOLE] [BG_LOG][tab=none] [CAPTCHA_DECISION] Owner chose: manual
+[2026-10-07T12:33:38.904Z] [SW_CONSOLE] [BG_LOG][tab=none] [CAPTCHA_DECISION] Manual mode: timer paused. Waiting for owner solve or skip.
+[2026-10-07T12:33:38.906Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CAPTCHA_DECISION] Owner chose: manual
+[2026-10-07T12:33:38.908Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [CAPTCHA_DECISION] Manual mode: timer paused. Waiting for owner solve or skip.
+[2026-10-07T12:33:38.911Z] [STICKY_TEST_RESULT] {"stageAfterInterleave":"CAPTCHA_PENDING_OWNER","decisionAccepted":true,"finalStage":"CAPTCHA_MANUAL_WAIT"}
+[2026-10-07T12:33:38.911Z] ✅ PASS: Gate C: Sticky CAPTCHA_PENDING_OWNER preserved across real STAGE_PROGRESSION messages; Owner decision accepted
+[2026-10-07T12:33:38.911Z] 
 === [GATE D: CAPTCHA PROVIDER FAILURE ACCOUNTING & NO FALSE SUCCESS] ===
-[2026-10-07T08:50:25.960Z] [FAILURE_ACCOUNTING_RESULT] {"fallbackSuccess":false,"fallbackField":"audio_frame_solver","autoFailIncrement":1,"capFailIncrement":1,"autoSuccUnchanged":true,"capSolvedUnchanged":true}
-[2026-10-07T08:50:25.960Z] ✅ PASS: Gate D: Fallback returns success === false and reconciles autoFailure / captchaFailed exactly once
-[2026-10-07T08:50:25.960Z] 
-=== [GATE E: COUNTER TRUTH & QUIESCENT PAUSE] ===
-[2026-10-07T08:50:25.962Z] [SW_CONSOLE] [BG_LOG][tab=none] ⏸️ [Engine] Campaign PAUSED / STOP & SAVE requested.
-[2026-10-07T08:50:25.966Z] [SW_CONSOLE] [TAB_BARRIER] phase=PAUSE_CAMPAIGN ownedBefore=0
-[2026-10-07T08:50:25.967Z] [SW_CONSOLE] [TAB_BARRIER] phase=PAUSE_CAMPAIGN ownedAfter=0 result=PASS
-[2026-10-07T08:50:25.967Z] [POP_CONSOLE] [LEDGER_STATS] scope=currentGeneration success=0 failed=0 unknown=0
-[2026-10-07T08:50:25.969Z] [POP_CONSOLE] [HISTORY_SCOPE_REFRESH] trigger=xpider_isActive,xpider_isPaused
-[2026-10-07T08:50:25.978Z] [SW_CONSOLE] [BG_LOG][tab=none] 💾 [Checkpoint] Campaign snapshot saved: 8 targets remaining.
-[2026-10-07T08:50:25.978Z] [SW_CONSOLE] [BG_LOG][tab=none] === CAMPAIGN OUTCOME SUMMARY (currentRun) ===
-[2026-10-07T08:50:25.979Z] [SW_CONSOLE] [BG_LOG][tab=none] CONFIRMED_SUCCESS:           0
-[2026-10-07T08:50:25.979Z] [SW_CONSOLE] [BG_LOG][tab=none] FAILURE:                     0
-[2026-10-07T08:50:25.979Z] [SW_CONSOLE] [BG_LOG][tab=none] TIMEOUT_LOCAL:               0
-[2026-10-07T08:50:25.980Z] [SW_CONSOLE] [BG_LOG][tab=none] TIMEOUT_GLOBAL:              0
-[2026-10-07T08:50:25.981Z] [SW_CONSOLE] [BG_LOG][tab=none] DELIVERY_UNKNOWN:            0
-[2026-10-07T08:50:25.982Z] [SW_CONSOLE] [BG_LOG][tab=none] SKIPPED:                     0
-[2026-10-07T08:50:25.982Z] [SW_CONSOLE] [BG_LOG][tab=none] PAUSED_UNKNOWN:              0
-[2026-10-07T08:50:25.983Z] [SW_CONSOLE] [BG_LOG][tab=none] ----------------------------------------
-[2026-10-07T08:50:25.983Z] [SW_CONSOLE] [BG_LOG][tab=none] TOTAL TERMINAL / COMPLETED:  0
-[2026-10-07T08:50:25.983Z] [SW_CONSOLE] [CAMPAIGN_SUMMARY] success=0 failure=0 timeoutLocal=0 timeoutGlobal=0 unknown=0 skipped=0 paused=0 completed=0
-[2026-10-07T08:50:25.984Z] [SW_CONSOLE] [BG_LOG][tab=none] ========================================
-[2026-10-07T08:50:25.987Z] [COUNTER_TEST_RESULT] {"derivedRemaining":8,"derivedTotal":10,"pauseSuccess":true,"pauseRemainingCount":8,"checkpointRemainingQueue":8,"checkpointTotal":2}
-[2026-10-07T08:50:25.987Z] ✅ PASS: Gate E: Counter truth derived from queue + ledger; checkpoint agrees (remaining === 8)
-[2026-10-07T08:50:25.987Z] 
+[2026-10-07T12:33:38.915Z] [SW_CONSOLE] [BG_LOG][tab=none] [Auto CAPTCHA Solver] SOLVE_CAPTCHA: method=nopecha keyConfigured=false epoch=1 url=
+[2026-10-07T12:33:38.915Z] [SW_CONSOLE] [BG_LOG][tab=none] [Auto CAPTCHA Solver] NopeCHA key missing, falling back to Wit.ai
+[2026-10-07T12:33:38.917Z] [FAILURE_ACCOUNTING_RESULT] {"fallbackSuccess":false,"fallbackField":"audio_frame_solver","inProgress":true,"autoFailIncrement":1,"capFailIncrement":1,"idempotentHeld":true,"autoSuccUnchanged":true,"capSolvedUnchanged":true}
+[2026-10-07T12:33:38.917Z] ✅ PASS: Gate D: Fallback returns success === false and reconciles autoFailure / captchaFailed idempotently exactly once
+[2026-10-07T12:33:38.917Z] 
+=== [GATE E: COUNTER TRUTH & QUIESCENT PAUSE ON REAL LIVE TARGET] ===
+[2026-10-07T12:33:38.918Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [Auto CAPTCHA Solver] SOLVE_CAPTCHA: method=nopecha keyConfigured=false epoch=1 url=
+[2026-10-07T12:33:38.919Z] [SW_CONSOLE] [PAUSE_TEST] Launching real active target...
+[2026-10-07T12:33:38.919Z] [SW_CONSOLE] [SERIALIZED_GATE] Slot acquired atomically. activeTargetInFlight=true activeTargetCount=1 maxConcurrent=1
+[2026-10-07T12:33:38.920Z] [SW_CONSOLE] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedBefore=1
+[2026-10-07T12:33:38.921Z] [POP_CONSOLE] [XPIDER_DIAG] [System] [Auto CAPTCHA Solver] NopeCHA key missing, falling back to Wit.ai
+[2026-10-07T12:33:38.973Z] [SW_CONSOLE] [BG_LOG][tab=none] ⏸️ [Engine] Campaign PAUSED / STOP & SAVE requested.
+[2026-10-07T12:33:39.099Z] [SW_CONSOLE] [TAB_CLOSE] tabId=1954482734 attempt=1 result=CLOSED
+[2026-10-07T12:33:39.099Z] [SW_CONSOLE] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedAfter=0 result=PASS
+[2026-10-07T12:33:39.100Z] [SW_CONSOLE] [BG_LOG][tab=none] ⏸️ [Engine] Target abort or pause detected before queue advance. Quiescing cleanly.
+[2026-10-07T12:33:39.101Z] [SW_CONSOLE] [SERIALIZED_GATE] Slot released. activeTargetInFlight=false activeTargetCount=0
+[2026-10-07T12:33:39.158Z] [SW_CONSOLE] [TAB_BARRIER] phase=PAUSE_CAMPAIGN ownedBefore=0
+[2026-10-07T12:33:39.159Z] [SW_CONSOLE] [TAB_BARRIER] phase=PAUSE_CAMPAIGN ownedAfter=0 result=PASS
+[2026-10-07T12:33:39.161Z] [SW_CONSOLE] [BG_LOG][tab=none] 💾 [Checkpoint] Campaign snapshot saved: 2 targets remaining.
+[2026-10-07T12:33:39.162Z] [SW_CONSOLE] [BG_LOG][tab=none] === CAMPAIGN OUTCOME SUMMARY (currentRun) ===
+[2026-10-07T12:33:39.163Z] [SW_CONSOLE] [BG_LOG][tab=none] CONFIRMED_SUCCESS:           0
+[2026-10-07T12:33:39.163Z] [SW_CONSOLE] [BG_LOG][tab=none] FAILURE:                     0
+[2026-10-07T12:33:39.164Z] [SW_CONSOLE] [BG_LOG][tab=none] TIMEOUT_LOCAL:               0
+[2026-10-07T12:33:39.166Z] [SW_CONSOLE] [BG_LOG][tab=none] TIMEOUT_GLOBAL:              0
+[2026-10-07T12:33:39.166Z] [SW_CONSOLE] [BG_LOG][tab=none] DELIVERY_UNKNOWN:            0
+[2026-10-07T12:33:39.169Z] [SW_CONSOLE] [BG_LOG][tab=none] SKIPPED:                     0
+[2026-10-07T12:33:39.169Z] [SW_CONSOLE] [BG_LOG][tab=none] PAUSED_UNKNOWN:              0
+[2026-10-07T12:33:39.169Z] [SW_CONSOLE] [BG_LOG][tab=none] ----------------------------------------
+[2026-10-07T12:33:39.169Z] [SW_CONSOLE] [BG_LOG][tab=none] TOTAL TERMINAL / COMPLETED:  0
+[2026-10-07T12:33:39.174Z] [SW_CONSOLE] [CAMPAIGN_SUMMARY] success=0 failure=0 timeoutLocal=0 timeoutGlobal=0 unknown=0 skipped=0 paused=0 completed=0
+[2026-10-07T12:33:39.174Z] [SW_CONSOLE] [BG_LOG][tab=none] ========================================
+[2026-10-07T12:33:40.108Z] [SW_CONSOLE] [BG_LOG][tab=none] Waiting 12000ms before next target...
+[2026-10-07T12:33:40.480Z] [COUNTER_TEST_RESULT] {"wasInFlightBeforePause":true,"pauseSuccess":true,"remainingAfterPause":2,"totalAfterPause":2,"completedAfterPause":0,"checkpointTotal":2,"checkpointRemainingQueue":2,"lateEventsDetected":0,"finalInFlight":false}
+[2026-10-07T12:33:40.480Z] ✅ PASS: Gate E: Real active target paused cleanly; counter truth holds across state + checkpoint; zero late events
+[2026-10-07T12:33:40.480Z] 
 === [GATE F: REAL CONTROLLED TARGET LIFECYCLE SMOKE] ===
-[2026-10-07T08:50:26.026Z] [POP_CONSOLE] [LEDGER_STATS] scope=currentRun campaignRunId=none success=0 failed=0 timeout=0 unknown=0
-[2026-10-07T08:50:28.045Z] [SMOKE_RESULT] {"tabCreated":true,"formFound":true,"formId":"inquiry-form","inputsCount":4}
-[2026-10-07T08:50:28.045Z] ✅ PASS: Gate F: Real Edge browser target opened, form recognized id=inquiry-form fields=4
-[2026-10-07T08:50:28.045Z] 
+[2026-10-07T12:33:40.482Z] [SW_CONSOLE] [GATE_F] Launching production processNextCampaignTarget -> orchestrateSending pipeline...
+[2026-10-07T12:33:40.482Z] [SW_CONSOLE] [SERIALIZED_GATE] Slot acquired atomically. activeTargetInFlight=true activeTargetCount=1 maxConcurrent=1
+[2026-10-07T12:33:40.483Z] [SW_CONSOLE] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedBefore=0
+[2026-10-07T12:33:40.484Z] [SW_CONSOLE] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedAfter=0 result=PASS
+[2026-10-07T12:33:40.484Z] [SW_CONSOLE] [BG_LOG][tab=none] [TARGET 1/1][127.0.0.1] START
+[2026-10-07T12:33:40.525Z] [SW_CONSOLE] [TAB_BARRIER] phase=POST_NEW_TARGET_CREATE ownedBefore=0
+[2026-10-07T12:33:40.527Z] [SW_CONSOLE] [TAB_BARRIER] phase=POST_NEW_TARGET_CREATE ownedAfter=0 result=PASS
+[2026-10-07T12:33:40.528Z] [SW_CONSOLE] [TAB_KILL_SWITCH] keepTabId=1954482746 closedOthers=0 remainingOwned=1 result=PASS
+[2026-10-07T12:33:40.550Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] [TAB_FOCUS] tabId=1954482746 windowId=1954482730 active=true focused=true
+[2026-10-07T12:33:40.554Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] Step 1: Sniper Mode active. Searching for contact page...
+[2026-10-07T12:33:40.556Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] 🔦 Scanning paths 1-10...
+[2026-10-07T12:33:40.572Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] Pre-scan complete. Identified 10 valid paths.
+[2026-10-07T12:33:40.573Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] [SniperScan] Identified 10 candidate paths in background.
+[2026-10-07T12:33:40.676Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
+[2026-10-07T12:33:40.676Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
+[2026-10-07T12:33:40.680Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] [TAB_FOCUS] tabId=1954482746 windowId=1954482730 active=true focused=true
+[2026-10-07T12:33:40.684Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] [TAB_OWNERSHIP] VERIFIED_REDIRECT source=127.0.0.1 target=127.0.0.1 relation=SAME_HOST
+[2026-10-07T12:33:40.686Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] [FOCUS_SECURED] formPageUrl=http://127.0.0.1:8979/live-smoke-target.html
+[2026-10-07T12:33:40.690Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] Extraction focus secured. Mapping template fields...
+[2026-10-07T12:33:40.699Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] [TARGET_PAGE] url=http://127.0.0.1:8979/live-smoke-target.html domGeneration=1791376420692 attemptId=att_1791376420484_yu2eq
+[2026-10-07T12:33:40.701Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] [TARGET_PAGE] url=http://127.0.0.1:8979/live-smoke-target.html domGeneration=1791376420692 attemptId=att_1791376420484_yu2eq
+[2026-10-07T12:33:40.701Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] 🚀 [Engine] Ultra-Mode process started
+[2026-10-07T12:33:40.704Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] 🚀 [Engine] Ultra-Mode process started
+[2026-10-07T12:33:40.707Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[2026-10-07T12:33:40.707Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[2026-10-07T12:33:40.711Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] [TARGET_PAGE] url=http://127.0.0.1:8979/live-smoke-target.html recursion=0
+[2026-10-07T12:33:40.711Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] [TARGET_PAGE] url=http://127.0.0.1:8979/live-smoke-target.html recursion=0
+[2026-10-07T12:33:40.716Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] 🔍 [Discovery] URL: http://127.0.0.1:8979/live-smoke-target.html | Recursion: 0
+[2026-10-07T12:33:40.719Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] 🔍 [Discovery] URL: http://127.0.0.1:8979/live-smoke-target.html | Recursion: 0
+[2026-10-07T12:33:40.719Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[2026-10-07T12:33:40.720Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[2026-10-07T12:33:40.724Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1:8979/live-smoke-target.html | Recursion: 0
+[2026-10-07T12:33:40.725Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1:8979/live-smoke-target.html | Recursion: 0
+[2026-10-07T12:33:40.729Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] [FORM_SCAN] bodyCandidates=1 forms=1 logicalContainers=1
+[2026-10-07T12:33:40.729Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] [FORM_SCAN] bodyCandidates=1 forms=1 logicalContainers=1
+[2026-10-07T12:33:40.730Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] [PAGE_CLASS] CONTACT_FORM_PAGE
+[2026-10-07T12:33:40.730Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] [PAGE_CLASS] CONTACT_FORM_PAGE
+[2026-10-07T12:33:40.736Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] 🎯 Step 2: Contact form discovered. Preparing submission...
+[2026-10-07T12:33:40.736Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] 🎯 Step 2: Contact form discovered. Preparing submission...
+[2026-10-07T12:33:40.736Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] [STAGE] stage=CONTACT_PAGE_FOUND
+[2026-10-07T12:33:40.736Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] [STAGE] stage=CONTACT_PAGE_FOUND
+[2026-10-07T12:33:40.748Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] [LONG_TEXT_GATE] found=true type=textarea semantic=message
+[2026-10-07T12:33:40.748Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] [LONG_TEXT_GATE] found=true type=textarea semantic=message
+[2026-10-07T12:33:40.749Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] [FORM_GATE] eligible=true reason=BODY_FIELD_PRESENT
+[2026-10-07T12:33:40.749Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] [FORM_GATE] eligible=true reason=BODY_FIELD_PRESENT
+[2026-10-07T12:33:40.749Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] 📍 [PIPELINE][CONTACT_PAGE_FOUND] url=http://127.0.0.1:8979/live-smoke-target.html
+[2026-10-07T12:33:40.762Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] 🔍 [Supreme-X 5.0] Scanning for multi-location / branch links...
+[2026-10-07T12:33:40.763Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] 🔍 [Supreme-X 5.0] Scanning for multi-location / branch links...
+[2026-10-07T12:33:40.763Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] [AUTOFILL_LOCK] acquired=true key=att_1791376420484_yu2eq:http://127.0.0.1:8979/live-smoke-target.html:inquiry-form
+[2026-10-07T12:33:40.764Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] [AUTOFILL_LOCK] acquired=true key=att_1791376420484_yu2eq:http://127.0.0.1:8979/live-smoke-target.html:inquiry-form
+[2026-10-07T12:33:40.764Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] [CONTACT_GATE] PASS bodyField=textarea
+[2026-10-07T12:33:40.764Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] [CONTACT_GATE] PASS bodyField=textarea
+[2026-10-07T12:33:40.764Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
+[2026-10-07T12:33:40.764Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] [STAGE] stage=ELIGIBLE_FORM_FOUND
+[2026-10-07T12:33:40.764Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] [CONTACT_COMMIT] contactPageUrl=http://127.0.0.1:8979/live-smoke-target.html
+[2026-10-07T12:33:40.765Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] [FORM_COMMIT] formPageUrl=http://127.0.0.1:8979/live-smoke-target.html
+[2026-10-07T12:33:40.765Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] 📋 [PIPELINE][ELIGIBLE_FORM_FOUND] url=http://127.0.0.1:8979/live-smoke-target.html
+[2026-10-07T12:33:40.765Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] 🛠️ Step 3: Registering message template to form fields...
+[2026-10-07T12:33:40.765Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] 🛠️ Step 3: Registering message template to form fields...
+[2026-10-07T12:33:40.765Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] 🛡️ [FormStabilizer] Starting bounded stabilization (max 5s, max 2 retries/element)...
+[2026-10-07T12:33:40.765Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] 🛡️ [FormStabilizer] Starting bounded stabilization (max 5s, max 2 retries/element)...
+[2026-10-07T12:33:40.766Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] 🛡️ [FormStabilizer] Stopped (ALL_FIELDS_STABLE_OR_RESOLVED): seen=4 stable=true unresolved=0 (selects=0, cbs=0, radios=0)
+[2026-10-07T12:33:40.783Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] 🛡️ [FormStabilizer] Stopped (ALL_FIELDS_STABLE_OR_RESOLVED): seen=4 stable=true unresolved=0 (selects=0, cbs=0, radios=0)
+[2026-10-07T12:33:40.783Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] 🛠️ [Action][HyperEngine v4.0] 초강력 폼 자동 등록기 시작...
+[2026-10-07T12:33:40.783Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] 🛠️ [Action][HyperEngine v4.0] 초강력 폼 자동 등록기 시작...
+[2026-10-07T12:33:40.783Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] 🎯 [HyperEngine v4.0] Phase 0 - 입력 필드 전수 수집...
+[2026-10-07T12:33:40.784Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] 🎯 [HyperEngine v4.0] Phase 0 - 입력 필드 전수 수집...
+[2026-10-07T12:33:40.784Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html]    [v4.0] 총 4개 입력 필드 발견 (radio: 0, checkbox: 0)
+[2026-10-07T12:33:40.784Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html]    [v4.0] 총 4개 입력 필드 발견 (radio: 0, checkbox: 0)
+[2026-10-07T12:33:40.784Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] 🎯 [HyperEngine v4.0] Phase 1 & 2 - 드롭다운 SelectResolverR2 전수 처리...
+[2026-10-07T12:33:40.784Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] 🎯 [HyperEngine v4.0] Phase 1 & 2 - 드롭다운 SelectResolverR2 전수 처리...
+[2026-10-07T12:33:40.785Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] 🎯 [HyperEngine v4.0] Phase 3 - 체크박스 CheckboxResolverR2 전수 처리...
+[2026-10-07T12:33:40.785Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] 🎯 [HyperEngine v4.0] Phase 3 - 체크박스 CheckboxResolverR2 전수 처리...
+[2026-10-07T12:33:40.785Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] 🎯 [HyperEngine v4.0] Phase 3.5 - 휴먼 테스트 수식/방정식 퀴즈 검출 및 자동 해결...
+[2026-10-07T12:33:40.785Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] 🎯 [HyperEngine v4.0] Phase 3.5 - 휴먼 테스트 수식/방정식 퀴즈 검출 및 자동 해결...
+[2026-10-07T12:33:40.785Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] 🎯 [HyperEngine v4.0] Phase 4 - 텍스트 필드 패턴 매칭...
+[2026-10-07T12:33:40.785Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] 🎯 [HyperEngine v4.0] Phase 4 - 텍스트 필드 패턴 매칭...
+[2026-10-07T12:33:40.786Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] 🎯 [HyperEngine v4.0] Phase 5 - 빈 필드 강제 채우기...
+[2026-10-07T12:33:40.786Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] 🎯 [HyperEngine v4.0] Phase 5 - 빈 필드 강제 채우기...
+[2026-10-07T12:33:40.786Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] 🎯 [HyperEngine v4.0] Phase 6 - 라디오 버튼 미선택 그룹 처리...
+[2026-10-07T12:33:40.786Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] 🎯 [HyperEngine v4.0] Phase 6 - 라디오 버튼 미선택 그룹 처리...
+[2026-10-07T12:33:40.786Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] 🎯 [HyperEngine v4.0] Phase 8 - 커스텀 ARIA 체크박스/라디오 처리...
+[2026-10-07T12:33:40.786Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] 🎯 [HyperEngine v4.0] Phase 8 - 커스텀 ARIA 체크박스/라디오 처리...
+[2026-10-07T12:33:40.787Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] 🛠️ [HyperEngine v4.0] Phase 9 - BruteForce contentEditable/role=textbox...
+[2026-10-07T12:33:40.787Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] 🛠️ [HyperEngine v4.0] Phase 9 - BruteForce contentEditable/role=textbox...
+[2026-10-07T12:33:40.787Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] 🎯 [HyperEngine v4.0] Phase 10 - Super-BruteForce Sweeper (초강력 입력기) 가동...
+[2026-10-07T12:33:40.787Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] 🎯 [HyperEngine v4.0] Phase 10 - Super-BruteForce Sweeper (초강력 입력기) 가동...
+[2026-10-07T12:33:40.787Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
+[2026-10-07T12:33:40.788Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] [STAGE] stage=REQUIRED_FIELDS_RESOLVED
+[2026-10-07T12:33:40.788Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] [STAGE] stage=FIELD_STATE_STABLE
+[2026-10-07T12:33:40.806Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] [STAGE] stage=FIELD_STATE_STABLE
+[2026-10-07T12:33:40.806Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] ✅ [PIPELINE][REQUIRED_FIELDS_RESOLVED] url=http://127.0.0.1:8979/live-smoke-target.html
+[2026-10-07T12:33:40.806Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] 🔒 [PIPELINE][FIELD_STATE_STABLE] url=http://127.0.0.1:8979/live-smoke-target.html
+[2026-10-07T12:33:40.807Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] ✅ [HyperEngine v4.0] 폼 작성 완료 - 입력 필드 0개 처리됨
+[2026-10-07T12:33:40.807Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] ✅ [HyperEngine v4.0] 폼 작성 완료 - 입력 필드 0개 처리됨
+[2026-10-07T12:33:40.807Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] ❌ [Action] Sequence aborted: Zero-mapping: No usable fields found.
+[2026-10-07T12:33:40.807Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] ❌ [Action] Sequence aborted: Zero-mapping: No usable fields found.
+[2026-10-07T12:33:40.807Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] ⚠️ [Engine] Mapping incomplete or form hidden. Retrying alternative discovery...
+[2026-10-07T12:33:40.807Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] ⚠️ [Engine] Mapping incomplete or form hidden. Retrying alternative discovery...
+[2026-10-07T12:33:40.808Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] 🕵️ [Discovery] Scanning DOM for contact links (Track A)...
+[2026-10-07T12:33:40.808Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] 🕵️ [Discovery] Scanning DOM for contact links (Track A)...
+[2026-10-07T12:33:40.808Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] ⚡ [Discovery] No form or links on current page. Trying common paths...
+[2026-10-07T12:33:40.808Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] ⚡ [Discovery] No form or links on current page. Trying common paths...
+[2026-10-07T12:33:40.808Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] 🔦 [DeepSearch] No obvious links. Searching secondary pages...
+[2026-10-07T12:33:40.808Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] 🔦 [DeepSearch] No obvious links. Searching secondary pages...
+[2026-10-07T12:33:40.809Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] ❌ [Discovery] No valid forms or links found. Jumping to root/next candidate...
+[2026-10-07T12:33:40.809Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/live-smoke-target.html] ❌ [Discovery] No valid forms or links found. Jumping to root/next candidate...
+[2026-10-07T12:33:40.809Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] ⚠️ [Engine] No form on current path. Advancing to next candidate...
+[2026-10-07T12:33:40.809Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] [DISCOVERY] selectedCandidate=http://127.0.0.1:8979/
+[2026-10-07T12:33:40.816Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] Connecting to [http://127.0.0.1:8979/]...
+[2026-10-07T12:33:40.818Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] [TARGET_NAV] sourceHost=127.0.0.1 candidate=http://127.0.0.1:8979/ relation=same-origin
+[2026-10-07T12:33:40.832Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] [TAB_FOCUS] tabId=1954482746 windowId=1954482730 active=true focused=true
+[2026-10-07T12:33:40.853Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] 🔄 [Engine] Internal navigation detected (SPA). Preparing re-injection...
+[2026-10-07T12:33:40.875Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] [TAB_FOCUS] tabId=1954482746 windowId=1954482730 active=true focused=true
+[2026-10-07T12:33:40.877Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] [TAB_OWNERSHIP] VERIFIED_REDIRECT source=127.0.0.1 target=127.0.0.1 relation=SAME_HOST
+[2026-10-07T12:33:40.879Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] [FOCUS_SECURED] formPageUrl=http://127.0.0.1:8979/
+[2026-10-07T12:33:40.881Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] Extraction focus secured. Mapping template fields...
+[2026-10-07T12:33:40.887Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/] [TARGET_PAGE] url=http://127.0.0.1:8979/ domGeneration=1791376420883 attemptId=att_1791376420484_yu2eq
+[2026-10-07T12:33:40.889Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/] [TARGET_PAGE] url=http://127.0.0.1:8979/ domGeneration=1791376420883 attemptId=att_1791376420484_yu2eq
+[2026-10-07T12:33:40.890Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/] 🚀 [Engine] Ultra-Mode process started
+[2026-10-07T12:33:40.890Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/] 🚀 [Engine] Ultra-Mode process started
+[2026-10-07T12:33:40.894Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[2026-10-07T12:33:40.894Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[2026-10-07T12:33:40.894Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/] ⚠️ [Recovery] Error page detected. Aborting path.
+[2026-10-07T12:33:40.894Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] [CONTENT_EVENT][tabId=1954482746][attemptId=att_1791376420484_yu2eq][url=http://127.0.0.1:8979/] ⚠️ [Recovery] Error page detected. Aborting path.
+[2026-10-07T12:33:40.897Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] [RESULT] resultUrl=http://127.0.0.1:8979/
+[2026-10-07T12:33:40.898Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] [TARGET][127.0.0.1] FINAL status=FAILURE reason=UNKNOWN
+[2026-10-07T12:33:40.907Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] [HISTORY_FINAL] sourceUrl=http://127.0.0.1:8979/live-smoke-target.html contactPageUrl=http://127.0.0.1:8979/live-smoke-target.html formPageUrl=http://127.0.0.1:8979/live-smoke-target.html resultUrl=http://127.0.0.1:8979/
+[2026-10-07T12:33:40.911Z] [SW_CONSOLE] [LEDGER_STATS] scope=currentRun success=0 failure=1 unknown=0 timeout=0 skipped=0
+[2026-10-07T12:33:40.912Z] [SW_CONSOLE] [BG_LOG][tab=1954482746] [LEDGER_STATS] scope=currentRun success=0 failure=1 unknown=0 timeout=0 skipped=0
+[2026-10-07T12:33:42.090Z] [SW_CONSOLE] [TAB_CLOSE] tabId=1954482746 attempt=1 result=CLOSED
+[2026-10-07T12:33:42.090Z] [SW_CONSOLE] [POST_FINAL_TAB_INVARIANT] target=http://127.0.0.1:8979/live-smoke-target.html remainingOwnedTabs=0 retainedTabs=0 result=PASS
+[2026-10-07T12:33:42.091Z] [SW_CONSOLE] [SERIALIZED_GATE] Slot released. activeTargetInFlight=false activeTargetCount=0
+[2026-10-07T12:33:42.092Z] [SW_CONSOLE] [BG_LOG][tab=none] Waiting 12000ms before next target...
+[2026-10-07T12:33:42.093Z] [SMOKE_RESULT] {"attemptSettled":true,"attemptStatus":"FAILURE","successCount":0,"completedCount":1,"finalInFlight":false,"remainingQueue":0}
+[2026-10-07T12:33:42.093Z] ✅ PASS: Gate F: Real production orchestrateSending completed live target: status=FAILURE reason=undefined
+[2026-10-07T12:33:42.093Z] 
 ================================================================================
-[2026-10-07T08:50:28.045Z] 🎉 ALL R6.9G.7 REAL END-TO-END OPERATOR AUDIT GATES PASSED IN MICROSOFT EDGE
-[2026-10-07T08:50:28.045Z]    GATE A (Atomic Slot Acquisition Concurrency Race) = VERIFIED PASS
-[2026-10-07T08:50:28.045Z]    GATE B (Timeout Cancellation & Quiescence Barrier) = VERIFIED PASS
-[2026-10-07T08:50:28.045Z]    GATE C (Sticky CAPTCHA_PENDING_OWNER State)       = VERIFIED PASS
-[2026-10-07T08:50:28.045Z]    GATE D (Provider Fallback Semantics & Accounting) = VERIFIED PASS
-[2026-10-07T08:50:28.045Z]    GATE E (Counter Truth & Quiescent Pause)          = VERIFIED PASS
-[2026-10-07T08:50:28.045Z]    GATE F (Real Browser Target Lifecycle Smoke)      = VERIFIED PASS
-[2026-10-07T08:50:28.045Z] ================================================================================
+[2026-10-07T12:33:42.093Z] 🎉 ALL R6.9G.7 REAL END-TO-END OPERATOR AUDIT GATES PASSED IN MICROSOFT EDGE
+[2026-10-07T12:33:42.093Z]    GATE A (Atomic Slot Acquisition Concurrency Race) = VERIFIED PASS
+[2026-10-07T12:33:42.093Z]    GATE B (Timeout Cancellation & Quiescence Barrier) = VERIFIED PASS
+[2026-10-07T12:33:42.093Z]    GATE C (Sticky CAPTCHA_PENDING_OWNER State)       = VERIFIED PASS
+[2026-10-07T12:33:42.093Z]    GATE D (Provider Fallback Semantics & Accounting) = VERIFIED PASS
+[2026-10-07T12:33:42.093Z]    GATE E (Counter Truth & Quiescent Pause)          = VERIFIED PASS
+[2026-10-07T12:33:42.093Z]    GATE F (Real Browser Target Lifecycle Smoke)      = VERIFIED PASS
+[2026-10-07T12:33:42.093Z] ================================================================================

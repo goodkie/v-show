@@ -13,8 +13,10 @@ PROTOCOL: OCA-DEV-1.4
 - One active project per agent session; this project may continue across unlimited new ChatGPT/Antigravity windows.
 
 ## Session Start — Mandatory Continuity Recovery
+NEW WINDOW != NEW PROJECT
+NEW WINDOW -> RECOVER CURRENT PROJECT -> CONTINUE EXISTING WORK
 1. Read `.oca/SESSION_CAPSULE.md`.
-2. Verify WORKSPACE_ROOT and active branch.
+2. Verify WORKSPACE_ROOT and active branch (`upgrade/phase-0-1`).
 3. Search this project/workspace for prior work before starting anything new.
 4. Recover the latest valid implementation state from CURRENT_STATE/HANDOVER, git status + relevant recent commits, current source/runtime files, receipts, evidence, tests, build/provenance, blockers, and unfinished tasks.
 5. Fetch Issue #6 events newer than `AUTHORITY_CURSOR` when available.
@@ -28,23 +30,21 @@ Search the current WORKSPACE_ROOT for prior project materials and prior work bef
 ### ChatGPT Continuity Command
 Search the currently bound project for prior project materials and prior work before proceeding. Recover the latest requirements, decisions, accepted/rejected gates, working files, prior outputs, evidence, blockers, active branch/build state, and unfinished next actions from project files/knowledge, Issue #6, repository/connectors, and recoverable prior project context. Reconstruct the latest valid project state and continue that work from the same point. Do not treat a new chat as a blank project and do not ask the Owner to repeat recoverable information.
 
-## Role Split
-- Owner: intent, credentials/budget/destructive approval, final human smoke only.
-- ChatGPT: architecture, sequencing, independent audit, gate decisions.
-- Antigravity: implementation, integration/runtime testing, evidence, rollback execution.
-- Do not delegate unfinished engineering verification to Owner.
+## Role Split & Collaboration Loop
+- Owner: intent, credentials/budget/destructive approval, final human acceptance only. Not routine project manager.
+- ChatGPT: architecture, sequencing, acceptance criteria, consolidated directives, independent audit, gate decisions.
+- Antigravity: autonomous execution of active Directive:
+  RECOVER STATE -> IMPLEMENT -> TEST -> DIAGNOSE -> SELF-REMEDIATE -> RE-TEST -> COLLECT EVIDENCE -> VERIFY BUILD/REMOTE -> UPDATE STATE -> POST RECEIPT.
+- Do not delegate unfinished engineering verification or debugging to Owner.
 
-## Communication
-- Full project bind is required once per new session, not every turn.
-- Use formal [CHATGPT]/[ANTIGRAVITY]/[OWNER] prefixes only for durable Issue #6 messages.
-- Prefer action over repeated status reporting.
+## No-Chase Invariant
+- ACTIVE DIRECTIVE + NO TRUE BLOCKER = ANTIGRAVITY CONTINUES AUTONOMOUSLY.
+- RECEIPT POSTED = CHATGPT AUDITS TO GATE.
+- OWNER SILENCE != STOP.
+- OWNER SILENCE != DESTRUCTIVE / CREDENTIAL / BILLING / LEGAL / PUBLIC-RELEASE APPROVAL.
 
-## Session End
+## Session End & State Maintenance
 After meaningful state changes:
-1. update `CURRENT_STATE.md`;
-2. update `.oca/SESSION_CAPSULE.md`;
-3. post to Issue #6 only for Directive / Receipt / Audit / Gate / Decision / material Blocker.
-
-## Continuity Invariant
-NEW WINDOW != NEW PROJECT
-NEW WINDOW -> RECOVER CURRENT PROJECT -> CONTINUE EXISTING WORK
+1. Update `CURRENT_STATE.md`;
+2. Update `.oca/SESSION_CAPSULE.md`;
+3. Post to Issue #6 for Directive / Receipt / Audit / Gate / Decision / material Blocker / Progress / Test-Package.
