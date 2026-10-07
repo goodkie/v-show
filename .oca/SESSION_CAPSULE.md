@@ -6,12 +6,15 @@ PROJECT_NAME: XPIDER AutoForm Sender Pro
 WORKSPACE_ROOT: E:\\vivpr\\ai\\extension-form-sender
 AUTHORITY_SOURCE: goodkie/v-show Issue #6
 ACTIVE_BRANCH: upgrade/phase-0-1
-STATE_REV: 2026-10-07.7
+STATE_REV: 2026-10-07.8
 AUTHORITY_CURSOR: 6033844107
 LAST_ACCEPTED_GATE: R6.9G.7 EXPEDITE DIRECTIVE (#6033844107)
-REMOTE_HEAD: afd2a9eebb3d7d745502c3b65ef71d09ca0c088a
+FUNCTIONAL_SHA: db15feb4cd86e08774bd0c0e5b4724c0af418e44
+STAMP_SHA: 2e65367c3b2f210d65b1aa51ae11a519808df1ea
+BUILD_ID: R6.9G.7-20261007-ATOMIC-PUMP-QUIESCENT-CAPTCHA
+SOLVER_CORE_SHA: 01b3d96048ea933403e4599854dcdca28027e7f676aa5077eb6c5eb0582ac1e7
 ROLLBACK_ANCHOR: dc0740a0c69e2f7fa96b6989841acf0831b3619e
-NEXT_ACTION: Antigravity execute R6.9G.7 engineering order (atomic lease, cancellation quiescence, sticky pending, fallback semantics, solverCoreSha, DOM id fix, counter/pause truth, tests A-F).
-BLOCKERS: P0 Target concurrency race (TOCTOU), un-aborted timeout race, overwritten CAPTCHA_PENDING_OWNER stage, false fallback success, missing solver-core provenance.
+NEXT_ACTION: Post R6.9G.7 Receipt to Issue #6.
+BLOCKERS: NONE (All R6.9G.7 remediation items implemented and verified in real Microsoft Edge browser).
 OWNER_ACTION: NONE
-EVIDENCE_REF: evidence_r6_9g6_real_runtime_traces.log
+EVIDENCE_REF: evidence_r6_9g7_real_runtime_traces.log
