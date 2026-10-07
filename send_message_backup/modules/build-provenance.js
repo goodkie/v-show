@@ -15,16 +15,16 @@
 
     const BUILD_INFO = {
         branch: 'upgrade/phase-0-1',
-        // [R6.9G.8] implementationHead = functional commit containing Manual Form Assist,
-        //           TargetDeadlineController, canonical timeout settlement, and complete diagnostic ledger
-        implementationHead: '65fbdf69851cc0fee9c1adb0182e59b3b5992316',
-        implementationHeadShort: '65fbdf69',
-        head: '65fbdf69851cc0fee9c1adb0182e59b3b5992316',
-        headShort: '65fbdf69',
+        // [R6.9G.8.1] implementationHead = functional commit containing Manual Form Assist,
+        //             TargetDeadlineController, canonical timeout settlement, and complete diagnostic ledger
+        implementationHead: '89bdf2e303cc1ae2a4e79d4dc7a6166698b48fae',
+        implementationHeadShort: '89bdf2e3',
+        head: '89bdf2e303cc1ae2a4e79d4dc7a6166698b48fae',
+        headShort: '89bdf2e3',
         rollbackBase: 'dc0740a0c69e2f7fa96b6989841acf0831b3619e',
         manifestVersion: 3,
         buildId: 'R6.9G.8.1-20261007-REAL-PATH-MANUAL-ASSIST-PERSISTENT-DIAG',
-        builtAt: '2026-10-07T16:28:00.000Z',
+        builtAt: '2026-10-07T17:43:00.000Z',
         provenanceSchema: 2,
         modules: {
             backgroundSha: '1d45dd1ebf11b0f29f5bf1d2c64a0056a0079ad7efa684cfc9a314746de1b402',
