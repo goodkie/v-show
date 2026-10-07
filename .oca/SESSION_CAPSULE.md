@@ -1,6 +1,6 @@
 # OCA SESSION CAPSULE
 
-PROTOCOL: OCA-DEV-1.3
+PROTOCOL: OCA-DEV-1.4
 PROJECT_ID: xpider-autoform-sender-pro
 PROJECT_NAME: XPIDER AutoForm Sender Pro
 WORKSPACE_ROOT: E:\\vivpr\\ai\\extension-form-sender
@@ -19,3 +19,5 @@ NEXT_ACTION: Await ChatGPT Audit of R6.9G.7 Receipt (#6034482424).
 BLOCKERS: NONE (All R6.9G.7 remediation items implemented, tested, and verified in real Microsoft Edge browser).
 OWNER_ACTION: NONE (Hold until ChatGPT audit sign-off).
 EVIDENCE_REF: evidence_r6_9g7_real_runtime_traces.log
+
+CONTINUITY_RULE: On every new ChatGPT or Antigravity window, search the current project for prior work, recover the latest valid state, and continue existing work instead of restarting.
