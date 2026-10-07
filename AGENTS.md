@@ -1,56 +1,37 @@
-# [OCA-DEV-1.1] XPIDER AutoForm Sender Pro — Workspace Guardrails
+# OCA-DEV-1.3 Workspace Guardrails
 
-## 1. Project Identity & Boundary Enforcement
-- **PROJECT NAME:** XPIDER AutoForm Sender Pro
-- **EXCLUSIVE WORKSPACE ROOT:** `E:\vivpr\ai\extension-form-sender`
-- **EXCLUSIVE GITHUB THREAD:** `goodkie/v-show Issue #6`
-- **ACTIVE BRANCH:** `upgrade/phase-0-1`
-- **PROTOCOL:** OCA-DEV-1.1
-- **WORKSPACE BOUNDARY POLICY:**
-  - All inspections, modifications, commands, tests, and artifacts MUST remain strictly within `E:\vivpr\ai\extension-form-sender`.
-  - The bound GitHub issue for all directives, receipts, and communication is strictly `goodkie/v-show Issue #6`.
+PROJECT_ID: xpider-autoform-sender-pro
+PROJECT_NAME: XPIDER AutoForm Sender Pro
+WORKSPACE_ROOT: E:\\vivpr\\ai\\extension-form-sender
+AUTHORITY_SOURCE: goodkie/v-show Issue #6
+ACTIVE_BRANCH: upgrade/phase-0-1
+PROTOCOL: OCA-DEV-1.3
 
-## 2. Mandatory 4-Point Project Identity Handshake
-EVERY response, command, report, and thought process MUST begin with the following 4-Point Header:
+## Hard Boundary
+- Work only inside WORKSPACE_ROOT unless the Owner explicitly authorizes otherwise.
+- Do not mix requirements, files, comments, or evidence from other projects.
+- One active project per agent session; this project may continue across unlimited new ChatGPT/Antigravity windows.
 
-```markdown
-[PROJECT]: XPIDER AutoForm Sender Pro
-[WORKSPACE ROOT]: E:\vivpr\ai\extension-form-sender
-[BOUND THREAD]: goodkie/v-show Issue #6
-[ISOLATION SANITY CHECK]: VERIFIED (Zero cross-project contamination)
-```
+## Session Start — Fast Path
+1. Read `.oca/SESSION_CAPSULE.md`.
+2. Verify workspace root and active branch.
+3. Fetch only Issue #6 events newer than `AUTHORITY_CURSOR` when available.
+4. Continue `NEXT_ACTION` immediately unless a real conflict exists.
+5. Read `CURRENT_STATE.md` or deeper history only when needed.
 
-## 3. Pre-Execution Guard
-Before running any tool or command:
-1. Verify `Cwd` is within `E:\vivpr\ai\extension-form-sender`.
-2. Verify all file paths are within `E:\vivpr\ai\extension-form-sender`.
-3. Verify the subject matter is strictly XPIDER AutoForm Sender Pro (Chrome extension form automation, solver, history ledger, templates).
+## Role Split
+- Owner: intent, credentials/budget/destructive approval, final human smoke only.
+- ChatGPT: architecture, sequencing, independent audit, gate decisions.
+- Antigravity: implementation, integration/runtime testing, evidence, rollback execution.
+- Do not delegate unfinished engineering verification to Owner.
 
-## 4. Session Continuity Protocol (OCA-DEV-1.1 Addition)
-At the START of every new Antigravity session, BEFORE any other action:
+## Communication
+- Full project bind is required once per new session, not every turn.
+- Use formal [CHATGPT]/[ANTIGRAVITY]/[OWNER] prefixes only for durable Issue #6 messages.
+- Prefer action over repeated status reporting.
 
-1. **Read `CURRENT_STATE.md`** — Loads the last known gate status, active phase, and next required action.
-2. **Read this file (`AGENTS.md`)** — Confirms workspace identity and boundary rules.
-3. **Check GitHub Issue #6** — Fetches the latest ChatGPT directives and audit outcomes.
-4. **Check Knowledge Items** — KI summaries are auto-loaded; read relevant KI artifacts.
-
-At the END of every work session, BEFORE closing:
-1. **Update `CURRENT_STATE.md`** — Record the current gate status, last commit SHA, and next action.
-2. **Update relevant Knowledge Items** — Persist any newly discovered architectural context.
-
-## 5. Knowledge Items Reference
-The following Knowledge Items (KIs) are maintained for this project:
-
-| KI Name | Contents |
-|---------|----------|
-| `xpider-project-context` | Architecture, component map, key files, storage schema |
-| `xpider-gate-history` | Gate pass/fail history per phase |
-
-KI artifacts are stored at:
-`C:\Users\oPus\.gemini\antigravity-ide\knowledge\`
-
-## 6. Current Active Phase
-- **Phase:** R6.9G.4 — CLEAN-HEAD FINAL ACCEPTANCE
-- **Previous:** R6.9G.3 = FAIL (ChatGPT audit 2026-10-06 13:07 UTC)
-- **Restore Point:** R6.9F.2 = PASS / IMMUTABLE
-- **Next Receipt:** `[ANTIGRAVITY][RECEIPT][XPIDER AutoForm Sender Pro][R6.9G.4 CLEAN-HEAD REAL E2E]`
+## Session End
+After meaningful state changes:
+1. update `CURRENT_STATE.md`;
+2. update `.oca/SESSION_CAPSULE.md`;
+3. post to Issue #6 only for Directive / Receipt / Audit / Gate / Decision / material Blocker.
