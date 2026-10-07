@@ -8,12 +8,12 @@
 ---
 
 ## 1. Package Inventory & Verification
-- **Build ID:** `R6.9G.9.2-20261007-STRICT-EGRESS-PROXY-AUTH`
-- **Implementation HEAD:** `0730794dfa6908a4cf9bafb4705f1e16c410bc8d`
-- **Visible Badge in UI:** `TEST-ONLY R6.9G.9.2 [0730794d]`
+- **Build ID:** `R6.9G.9.3-20261007-REAL-PROXY-MV3-AUTH`
+- **Implementation HEAD:** `ba845562d8fae41c1e4add0906c8c4c046f1885f`
+- **Visible Badge in UI:** `TEST-ONLY R6.9G.9.3 [ba845562]`
 - **Unpacked Extension Path:** `send_message_backup/build/extension`
-- **ZIP Package:** `XPIDER_R6.9G.9.2_OWNER_DIAGNOSTIC_TEST_ONLY.zip`
-- **ZIP SHA-256:** `56dae801d8154640b43b5b2be23729d67cfd09642ab007aecaae9c0c9d542cd2`
+- **ZIP Package:** `XPIDER_R6.9G.9.3_OWNER_DIAGNOSTIC_TEST_ONLY.zip`
+- **ZIP SHA-256:** `cf6f3f46110fe096bae7fdf952d0cdd9c93d71ac1af279f7bb25f24ee0673fad`
 - **File Manifest:** See [PACKAGE_INVENTORY_SHA256.txt](file:///E:/vivpr\ai\extension-form-sender\PACKAGE_INVENTORY_SHA256.txt)
 
 ---
