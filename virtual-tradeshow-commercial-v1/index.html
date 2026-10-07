@@ -17442,7 +17442,14 @@ window.publicOpenProduct3dViewerFromCatalog = function(encoded) {
     } catch (e) {}
 
     function mountActivePanoramicBoothViewer(projectData, activeBg) {
-      if (!activeBg) activeBg = {};
+      if (!projectData) projectData = window.activeProjectData || { id: 'default-project' };
+      if (!activeBg) activeBg = (typeof getActiveBoothBackground === 'function' ? getActiveBoothBackground(projectData) : null) || {};
+      const studioEl = document.getElementById('freeStudioSection');
+      if (studioEl && studioEl.style.display === 'none') {
+        studioEl.style.display = 'block';
+        const heroEl = document.getElementById('hero-funnel');
+        if (heroEl) heroEl.style.display = 'none';
+      }
       const previewCand = window.currentSpatialCandidate || window.previewCandidateSnapshot;
       const wizardJobCand = window.setupWizard?.state?.currentPanoramaJob?.candidate;
       const wizardVp = window.setupWizard?.state?.viewpoints?.[0];
@@ -23728,7 +23735,47 @@ class SetupWizardController {
   close() {
     document.body.style.overflow = '';
     if (this.modal) this.modal.style.display = 'none';
-    if (this.state && this.state.panoramaJobStatus === 'READY' && window.activeProjectData) {
+
+    // Output Viewer Handoff: Ensure official studio section is displayed
+    const panoCand = this.state.currentPanoramaJob?.candidate;
+    const panoUrl = panoCand?.stitchedPanoramaUrl || panoCand?.masterUrl || this.state.viewpoints?.[0]?.panoramaUrl;
+    const hasPano = Boolean(this.state && (this.state.panoramaJobStatus === 'READY' || panoUrl));
+
+    if (hasPano) {
+      const studio = document.getElementById('freeStudioSection');
+      if (studio) {
+        studio.style.display = 'block';
+        const hero = document.getElementById('hero-funnel');
+        if (hero) hero.style.display = 'none';
+        studio.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+
+      if (!window.activeProjectData) {
+        window.activeProjectData = { id: this.getProjectId() || 'default-project' };
+      }
+      window.activeProjectData.viewerMode = 'PANORAMIC_IMMERSIVE';
+      if (!window.activeProjectData.activePanoramaVersionId) {
+        window.activeProjectData.activePanoramaVersionId = 'pano-ver-' + (panoCand?.candidateId || Date.now());
+      }
+      if (!Array.isArray(window.activeProjectData.panoramaVersions)) {
+        window.activeProjectData.panoramaVersions = [];
+      }
+      const existingVer = window.activeProjectData.panoramaVersions.find(v => v.stitchedPanoramaUrl === panoUrl);
+      if (!existingVer && panoUrl) {
+        window.activeProjectData.panoramaVersions.unshift({
+          id: window.activeProjectData.activePanoramaVersionId,
+          versionId: window.activeProjectData.activePanoramaVersionId,
+          candidateId: panoCand?.candidateId || 'cand-stitched',
+          stitchedPanoramaUrl: panoUrl,
+          activeBackgroundUrl: panoUrl,
+          textureUrl: panoUrl,
+          sourceType: 'PANORAMIC_IMMERSIVE',
+          viewerMode: 'PANORAMIC_IMMERSIVE',
+          horizontalCoverageDeg: panoCand?.horizontalCoverageDeg || 360,
+          full360Qualified: true
+        });
+      }
+
       if (typeof window.mountActivePanoramicBoothViewer === 'function') {
         const bg = (typeof getActiveBoothBackground === 'function') ? getActiveBoothBackground(window.activeProjectData) : null;
         window.mountActivePanoramicBoothViewer(window.activeProjectData, bg);
@@ -24950,9 +24997,21 @@ class SetupWizardController {
       if (typeof window.togglePreviewMode === 'function') {
         window.togglePreviewMode(true);
       }
-      if (typeof window.mountActivePanoramicBoothViewer === 'function' && window.activeProjectData) {
+      const studio = document.getElementById('freeStudioSection');
+      if (studio) {
+        studio.style.display = 'block';
+        const hero = document.getElementById('hero-funnel');
+        if (hero) hero.style.display = 'none';
+        studio.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+      if (typeof window.mountActivePanoramicBoothViewer === 'function') {
         const bg = (typeof getActiveBoothBackground === 'function') ? getActiveBoothBackground(window.activeProjectData) : null;
         window.mountActivePanoramicBoothViewer(window.activeProjectData, bg);
+      }
+      const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || (window.innerWidth < 850);
+      if (isMobile && typeof window.requestViewerLandscape === 'function') {
+        const officialContainer = document.getElementById('viewer-container');
+        window.requestViewerLandscape(officialContainer, 'OFFICIAL_VIEW_LIVE_CLICK');
       }
     };
     this.content.innerHTML = `

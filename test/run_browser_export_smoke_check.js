@@ -217,7 +217,7 @@ async function main() {
       try {
         const curUrl = await client.evaluate('window.location.href');
         const readyState = await client.evaluate('document.readyState');
-        if (curUrl && curUrl.includes('railway.app') && (readyState === 'interactive' || readyState === 'complete')) {
+        if (curUrl && (curUrl.includes('railway.app') || curUrl.includes('127.0.0.1') || curUrl.includes('localhost')) && (readyState === 'interactive' || readyState === 'complete')) {
           console.log(`Browser on target page: ${curUrl} (readyState: ${readyState})`);
           ready = true;
           break;
