@@ -9,7 +9,7 @@
 - State Rev: 2026-10-07.14
 
 ## Current Gate
-- Formal Gate: R6.9G.9 PRIVACY GATEWAY — FAIL-CLOSED NETWORK PRIVACY FOR CAMPAIGN TABS -> VERIFIED PASS -> RECEIPT POSTED.
+- Formal Gate: R6.9G.9 PRIVACY GATEWAY — FAIL-CLOSED NETWORK PRIVACY FOR CAMPAIGN TABS -> VERIFIED PASS -> RECEIPT POSTED ([#6044011581](https://github.com/goodkie/v-show/issues/6#issuecomment-6044011581)).
 - Status: AUDIT READY (Autonomous execution active under OCA-DEV-1.4).
 - Real Browser Verification: ALL 8 GATES (A through H) PASSED in Microsoft Edge (`run_real_r6_9g9_edge_operator_audit.js`).
 - Owner Diagnostic Test: PREPARED & EXPORTED (Test-only package: `XPIDER_R6.9G.9_OWNER_DIAGNOSTIC_TEST_ONLY.zip`, SHA256: `534bf9275244bc3aa96079c5f7bac4ec251e59728d1818fd807882f566d98c37`).
