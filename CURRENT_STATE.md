@@ -4,48 +4,52 @@
 - Protocol: OCA-DEV-1.4
 - Project ID: xpider-autoform-sender-pro
 - Workspace: E:\vivpr\ai\extension-form-sender
-- Authority: goodkie/v-show Issue #6 (Directive comment IC_kwDOT53X288AAAABaAbhWw / #6040248667 by ChatGPT)
+- Authority: goodkie/v-show Issue #6 (Directives #6042506545 [R6.9G.8.1] and #6043135140 [R6.9G.9] by ChatGPT)
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-07.12
+- State Rev: 2026-10-07.13
 
 ## Current Gate
-- Formal Gate: R6.9G.8 MANUAL ASSIST + HARD CAPTCHA PAUSE + COMPLETE DIAGNOSTIC LEDGER -> VERIFIED PASS -> RECEIPT POSTED.
+- Formal Gate: R6.9G.8.1 REAL-PATH MANUAL ASSIST + CANONICAL TIMEOUT + PERSISTENT DIAGNOSTICS -> VERIFIED PASS -> RECEIPT POSTED.
 - Status: AUDIT READY (Autonomous execution active under OCA-DEV-1.4).
-- Real Browser Verification: ALL 8 GATES (A through H) PASSED in Microsoft Edge (`run_real_r6_9g8_edge_operator_audit.js`).
-- Owner Diagnostic Test: PREPARED & EXPORTED (Test-only package: `XPIDER_R6.9G.8_OWNER_DIAGNOSTIC_TEST_ONLY.zip`, SHA256: `af320386b64b728193e1549f0b9dc4ee639c3deebb8ed1172af9671b4c06e387`).
+- Real Browser Verification: ALL 8 GATES (A through H) PASSED in Microsoft Edge (`run_real_r6_9g8_1_edge_operator_audit.js`).
+- Owner Diagnostic Test: PREPARED & EXPORTED (Test-only package: `XPIDER_R6.9G.8.1_OWNER_DIAGNOSTIC_TEST_ONLY.zip`, SHA256: `2c5e81933477e2fe52bc7d9590ccbf6d6818cb70470ec28794ad9e485b7dcad1`).
 - Bulk Campaign: HOLD.
 - Rollback Anchor: `dc0740a0c69e2f7fa96b6989841acf0831b3619e` (immutable, verified untouched).
+- Next Directive: R6.9G.9 PRIVACY GATEWAY (Comment #6043135140).
 
-## R6.9G.8 Completed Implementations & Real Browser Audit Results
+## R6.9G.8.1 Completed Implementations & Real Browser Audit Results
 1. **KZKMA Cross-Origin Form Assist & Deadline Pause [Gate A: PASS]**:
-   - Detected external PushPress widget (`https://api.grow.pushpress.com/form/kzkma-registration`) inside cross-origin iframe boundary.
-   - Stage transitioned to sticky `FORM_MANUAL_ASSIST_PENDING_OWNER`; `TargetDeadlineController` paused target countdown cleanly.
+   - Discovered PushPress widget (`https://api.grow.pushpress.com/form/kzkma-registration`) inside real cross-origin iframe via real content-script navigation.
+   - Stage transitioned to sticky `FORM_MANUAL_ASSIST_PENDING_OWNER`; `TargetDeadlineController` paused countdown.
    - Owner confirmed manual submission -> settled canonical `CONFIRMED_SUCCESS` with `ownerManualConfirmed: true`.
 2. **Generic Cross-Origin Fixture [Gate B: PASS]**:
-   - Hubspot embedded form iframe correctly flagged as `EXTERNAL_WIDGET` and autofill status `MANUAL_REQUIRED`.
-3. **Autofill Partial Fixture [Gate C: PASS]**:
-   - Complex custom required field unresolved during autofill correctly prompted manual assist with missing field list.
+   - Real Hubspot iframe (`https://forms.hubspot.com/embed/v3/form123`) discovered and classified as `EXTERNAL_WIDGET` with `MANUAL_REQUIRED`.
+   - Owner clicked Skip -> settled canonical `SKIPPED`.
+3. **Autofill Partial Fixture & Sensitive Field Guard [Gate C: PASS]**:
+   - Sensitive required fields (`tax_id`, `ssn`, `ein`) guarded from dummy value synthesis across FormStabilizer, HyperEngine Phase 5/10, and generateSmartRandomValue.
+   - FormCompletionEngine halted on missing fact -> modal displayed with missing field list -> settled `SKIPPED`, `FOUND`, `PARTIAL`.
 4. **CAPTCHA Hard Pause & Deadline Freeze [Gate D: PASS]**:
    - `TargetDeadlineController` froze countdown during `CAPTCHA_PENDING_OWNER` and `CAPTCHA_MANUAL_WAIT`.
    - Local timeout never fired while paused (`timedOutWhilePending=false`, `timedOutWhileManual=false`).
    - Resumed with remaining budget upon verified manual solve. Safe error displayed on external provider balance failure.
 5. **Canonical Timeout Settlement Authority [Gate E: PASS]**:
-   - Outer lifecycle owns settlement on local timeout abort; inner `orchestrateSending.finish` delegates settlement.
-   - Zero duplicate `TARGET FINAL` logs; zero `TERMINAL_ALREADY_SETTLED` rejections; UI timeout counter increments by 1.
-6. **Full Diagnostic Export (>1000 Events) [Gate F: PASS]**:
-   - Capacity increased to 20,000 events. Verified 1,162 events exported without truncation (`TRUNCATED=false`, `DIAG_REPORT_COMPLETE=true`).
-   - All 4 mandatory sections present (`BUILD`, `CAMPAIGN`, `PER TARGET CHRONOLOGICAL TIMELINE`, `COMPLETE EVENT TRACE`).
-   - URL paths fully preserved (e.g. `/contact-kaizen-karate-martial-arts-in-belmont-ma`).
-7. **Ledger Record & 5 Clickable Links [Gate G: PASS]**:
-   - Rendered 5 clickable links: Source URL, Contact URL, Form URL, External Form URL, Result URL.
-   - Displayed structured badges for FORM, AUTOFILL, SUBMISSION, CAPTCHA status.
-8. **Stop/Pause While Modal Open [Gate H: PASS]**:
-   - Broadcast `CLOSE_ALL_MODALS` on pause/quiescence closes open modal cleanly; deadline controller cancelled.
+   - Real `processNextCampaignTarget` with slow server endpoint settled exactly one `TIMEOUT_LOCAL` with sole authority.
+   - Zero preceding failure, zero duplicate `TARGET FINAL` logs, zero `TERMINAL_ALREADY_SETTLED` rejections; timeout counter incremented exactly once.
+6. **Persistent Diagnostic Log (>1000 Events) [Gate F: PASS]**:
+   - Storage write batching and flushable persistence engine implemented in `popup.js`.
+   - 1,413 events persisted across popup close and reopen (`TRUNCATED=false`, `DIAG_REPORT_COMPLETE=true`).
+   - Section 1 contains real module hashes (`BUILD_INFO.modules`), Section 4 byte-equivalent across snapshot (`isByteEqual=true`). URL paths fully preserved.
+7. **Persistent Ledger Record & 5 Clickable Links [Gate G: PASS]**:
+   - All 5 target records and links (Source, Contact, Form, External, Result) persisted across storage reload.
+   - Rendered distinct `CONFIRMED_SUCCESS` badges and structured status pills (`FORM:`, `AUTOFILL:`, `SUB:`, `CAPTCHA:`).
+8. **Real Stop/Pause While Modal Open [Gate H: PASS]**:
+   - Real `pauseCampaignOrchestrator` called while manual assist modal was active.
+   - Immediate quiescence achieved (`isPaused=true`, `targetDeadlineController=null`, `currentTabId=null`, `modalDismissed=true`), zero late events.
 
 ## Build Provenance
-- Build ID: `R6.9G.8-20261007-MANUAL-ASSIST-HARD-CAPTCHA-LEDGER`
-- Implementation HEAD: `65fbdf69851cc0fee9c1adb0182e59b3b5992316`
-- Provenance HEAD: `e1a04d025e1fc4a806cba6e855018f4efda847f9`
-- Visible UI Badge: `TEST-ONLY R6.9G.8 [65fbdf69]`
-- Package SHA-256: `af320386b64b728193e1549f0b9dc4ee639c3deebb8ed1172af9671b4c06e387`
+- Build ID: `R6.9G.8.1-20261007-REAL-PATH-MANUAL-ASSIST-PERSISTENT-DIAG`
+- Implementation HEAD: `89bdf2e303cc1ae2a4e79d4dc7a6166698b48fae`
+- Provenance HEAD: `d084f35489f6643ca5b5bb7089fa2d287bb204f1`
+- Visible UI Badge: `TEST-ONLY R6.9G.8.1 [89bdf2e3]`
+- Package SHA-256: `2c5e81933477e2fe52bc7d9590ccbf6d6818cb70470ec28794ad9e485b7dcad1`
 - Rollback Anchor: `dc0740a0c69e2f7fa96b6989841acf0831b3619e`
