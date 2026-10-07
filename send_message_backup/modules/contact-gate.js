@@ -225,10 +225,11 @@
             negativeSignals.push('shopify_help_search_page');
         }
 
-        // 1. Gather all form text and identifiers
-        const formId = (formEl.id || '').toLowerCase();
-        const formClass = (formEl.className || '').toString().toLowerCase();
-        const formAction = (formEl.getAttribute?.('action') || '').toLowerCase();
+        // 1. Gather all form text and identifiers safely (prevents input clobbering TypeError)
+        const safeFormId = (typeof formEl.id === 'string' ? formEl.id : (typeof formEl.getAttribute === 'function' ? formEl.getAttribute('id') : '') || '').toLowerCase();
+        const formId = safeFormId;
+        const formClass = (typeof formEl.className === 'string' ? formEl.className : (typeof formEl.getAttribute === 'function' ? formEl.getAttribute('class') : '') || '').toLowerCase();
+        const formAction = (typeof formEl.getAttribute === 'function' ? (formEl.getAttribute('action') || '') : '').toLowerCase();
         const fullFormText = ((formEl.innerText || formEl.textContent || '')).toLowerCase();
         const headingText = Array.from(formEl.querySelectorAll('h1, h2, h3, h4, h5, legend, .title, .form-title'))
             .map(h => (h.textContent || '').trim().toLowerCase())

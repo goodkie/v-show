@@ -248,14 +248,35 @@
         return;
     }
 
-    // [v1.6.2] Bulletproof Heartbeat - Keep background alive during slow operations
+    // [R6.9G.7 Safe Identifier Extraction] Prevents HTMLInputElement name/id clobbering TypeError
+    function safeGetStrAttr(el, attr) {
+        if (!el) return '';
+        try {
+            const val = el[attr];
+            if (typeof val === 'string') return val.toLowerCase();
+            if (typeof el.getAttribute === 'function') {
+                const a = el.getAttribute(attr);
+                if (typeof a === 'string') return a.toLowerCase();
+            }
+        } catch (_) {}
+        return '';
+    }
+
+    // [v1.6.2 / R6.9G.7] Bulletproof Heartbeat with Abort Suppression
     function startHeartbeat() {
-        setInterval(() => {
+        if (window.__xpider_heartbeat_interval) clearInterval(window.__xpider_heartbeat_interval);
+        window.__xpider_heartbeat_interval = setInterval(() => {
+            if (window.__xpider_aborted) {
+                clearInterval(window.__xpider_heartbeat_interval);
+                window.__xpider_heartbeat_interval = null;
+                return;
+            }
             logDev("💓 [Heartbeat] Engine active and processing...", "debug");
         }, 5000); // [v18.9.0] 5s Heartbeat for MV3 Service Worker survival
     }
 
     function logDev(msg, type = 'info') {
+        if (window.__xpider_aborted && !msg.includes('[ABORT_TARGET]')) return;
         try {
             chrome.runtime.sendMessage({
                 action: 'SENDER_LOG',
@@ -352,7 +373,24 @@
         }
 
         window.__xpider_start_sending_handler = (request, sender, sendResponse) => {
+            // [R6.9G.7 Abort Target Controller] Immediately halt target execution upon timeout/cancel
+            if (request.action === 'ABORT_TARGET') {
+                console.log(`[ABORT_TARGET] Cancellation received for target tab. Halting pipeline immediately.`);
+                window.__xpider_aborted = true;
+                window.__xpider_running = false;
+                if (window.__xpider_heartbeat_interval) {
+                    clearInterval(window.__xpider_heartbeat_interval);
+                    window.__xpider_heartbeat_interval = null;
+                }
+                if (window.__xpider_releaseProcessingLock) {
+                    window.__xpider_releaseProcessingLock(window.location ? window.location.href : '');
+                }
+                if (typeof sendResponse === 'function') sendResponse({ success: true, aborted: true });
+                return true;
+            }
+
             if (request.action === 'START_SENDING') {
+                window.__xpider_aborted = false;
                 const currentRunUrl = (window.location ? window.location.href : '');
                 const domGeneration = window.__xpider_dom_generation || (window.__xpider_dom_generation = Date.now());
                 const attemptId = request.attemptId || (Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 7));
@@ -515,10 +553,10 @@
             '.sqs-announcement-bar', '.sp-popup-wrapper', '[class*="popup"]', '[id*="popup"]'
         ];
         
-        // [v18.0.0] Protected Elements: Squarespace Modal & Lightbox Shield
+        // [v18.0.0 / R6.9G.7] Protected Elements: Squarespace Modal & Lightbox Shield (safe extraction)
         const isFormProtected = (el) => {
-            const id = (el.id || '').toLowerCase();
-            const cls = (el.className || '').toString().toLowerCase();
+            const id = safeGetStrAttr(el, 'id');
+            const cls = safeGetStrAttr(el, 'className');
             const identifier = `${id} ${cls}`;
             return el.querySelector('input, textarea, select, canvas, iframe, .wpcf7-form, .gform_wrapper') || 
                    identifier.includes('sqs-modal') || identifier.includes('lightbox') || identifier.includes('yui3-');

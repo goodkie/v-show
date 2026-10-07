@@ -297,8 +297,8 @@
             const tag = (curr.tagName || '').toUpperCase();
             if (tag === 'BODY' || tag === 'HTML') break;
 
-            const id = (curr.id || '').toLowerCase();
-            const cls = (curr.className || '').toString().toLowerCase();
+            const id = (typeof curr.id === 'string' ? curr.id : (typeof curr.getAttribute === 'function' ? curr.getAttribute('id') : '') || '').toLowerCase();
+            const cls = (typeof curr.className === 'string' ? curr.className : (typeof curr.getAttribute === 'function' ? curr.getAttribute('class') : '') || '').toLowerCase();
             const role = (curr.getAttribute?.('role') || '').toLowerCase();
             const combined = `${id} ${cls} ${role}`;
 

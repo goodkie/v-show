@@ -147,6 +147,8 @@ let campaignState = {
     targetTabId: null,
     currentTargetToken: null,
     currentTargetStage: null,
+    schedulerGeneration: 1,
+    currentTargetAbortController: null,
     captchaEpoch: 1, // [Issue #6 R6.9E] Scoped solver epoch
     captchaEpochBlockedErrors: {}, // [Issue #6 R6.9E] Permanent/config error suppression per epoch
     visitedUrls: [],
@@ -213,12 +215,13 @@ async function syncCampaignCountersFromLedger(hsInstance = null) {
         campaignState.counters.failureBreakdown = { ...stats.failureBreakdown };
 
         // inProgress: exactly 1 if active target in flight and not paused, else 0
-        const inProgress = (campaignState.isActive && !campaignState.isPaused && campaignState.currentAttempt) ? 1 : 0;
+        const inProgress = (campaignState.isActive && !campaignState.isPaused && (campaignState.activeTargetInFlight || campaignState.currentAttempt)) ? 1 : 0;
         campaignState.counters.inProgress = inProgress;
 
-        // [Issue #6 R6.9E Invariant]: total = executable targets in this run
-        // remaining = Math.max(0, total - completed)
-        campaignState.counters.remaining = Math.max(0, campaignState.counters.total - stats.completed);
+        // [R6.9G.7 P0-7 Counter Truth] UI == currentRun ledger == History == checkpoint
+        const queuePending = Array.isArray(campaignState.queue) ? campaignState.queue.length : 0;
+        campaignState.counters.remaining = Math.max(0, queuePending + inProgress);
+        campaignState.counters.total = Math.max(campaignState.counters.total || 0, stats.completed + campaignState.counters.remaining);
         campaignState.successCount = stats.success;
 
         await persistCounters();
@@ -1594,9 +1597,13 @@ if (typeof global !== 'undefined') {
                             if (isZeroBal) {
                                 campaignState.captchaEpochBlockedErrors[curEpoch] = 'ERROR_ZERO_BALANCE';
                             }
+                            // [R6.9G.7 P0-4] Terminal provider failure must reconcile autoFailure / captchaFailed exactly once
+                            campaignState.captchaLedger.autoFailure++;
+                            campaignState.counters.captchaFailed = (campaignState.counters.captchaFailed || 0) + 1;
+                            broadcastCounters();
                             if (witKey) {
-                                logBg(null, `[Auto CAPTCHA Solver] 2Captcha failed. Auto-fallback to Wit.ai Audio Solver`, 'info');
-                                return { success: true, method: 'audio_frame_solver', message: 'Fallback to autonomous audio solver' };
+                                logBg(null, `[Auto CAPTCHA Solver] 2Captcha failed. Handoff to Wit.ai Audio Solver (unverified)`, 'info');
+                                return { success: false, fallback: 'audio_frame_solver', inProgress: true, error: e2.message, message: 'Handoff to autonomous audio solver' };
                             }
                             campaignState.captchaLedger.autoFailure++;
                             campaignState.counters.captchaFailed = (campaignState.counters.captchaFailed || 0) + 1;
@@ -1651,14 +1658,21 @@ if (typeof global !== 'undefined') {
                                 }
                             }
 
-                            if (witKey) {
-                                logBg(null, `[Auto CAPTCHA Solver] NopeCHA failed. Auto-fallback to Wit.ai Audio Solver`, 'info');
-                                return { success: true, method: 'audio_frame_solver', message: 'Fallback to autonomous audio solver' };
-                            }
+                            // [R6.9G.7 P0-4] Classify NopeCHA error and reconcile failure counters exactly once
+                            const isNopeChaTimeout = enp.message && enp.message.includes('NopeCHA Timeout');
+                            const isNopeChaInvalidReq = enp.message && enp.message.includes('Error (10)');
+                            const isNopeChaRateLimit = enp.message && enp.message.includes('Error (11)');
+                            logBg(null, `[Auto CAPTCHA Solver] NopeCHA error classified: ${isNopeChaTimeout ? 'TIMEOUT' : isNopeChaInvalidReq ? 'INVALID_REQUEST' : isNopeChaRateLimit ? 'RATE_LIMIT' : 'PROVIDER_ERROR'} (${enp.message})`, 'warning');
 
                             campaignState.captchaLedger.autoFailure++;
                             campaignState.counters.captchaFailed = (campaignState.counters.captchaFailed || 0) + 1;
                             broadcastCounters();
+
+                            if (witKey) {
+                                logBg(null, `[Auto CAPTCHA Solver] NopeCHA failed. Handoff to Wit.ai Audio Solver (unverified)`, 'info');
+                                return { success: false, fallback: 'audio_frame_solver', inProgress: true, error: enp.message, message: 'Handoff to autonomous audio solver' };
+                            }
+
                             return { success: false, error: enp.message };
                         }
                     } else if (method === 'nopecha') {
@@ -1693,7 +1707,7 @@ if (typeof global !== 'undefined') {
                                 return result;
                             }
                         }
-                        return { success: true, method: 'audio_frame_solver', message: 'Autonomous audio solver active in iframe' };
+                        return { success: false, fallback: 'audio_frame_solver', inProgress: true, message: 'Autonomous audio solver active in iframe' };
                     }
 
                     throw new Error(`CAPTCHA solver: no valid method/key configured (method: ${method}). Configure API key in Settings.`);
@@ -2037,7 +2051,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
                 const sTab = sender.tab;
                 if (request.stage) {
-                    campaignState.currentTargetStage = request.stage;
+                    // [R6.9G.7 P0-3] Sticky CAPTCHA_PENDING_OWNER: generic stage updates must not overwrite it
+                    if (campaignState.currentTargetStage !== 'CAPTCHA_PENDING_OWNER') {
+                        campaignState.currentTargetStage = request.stage;
+                    } else {
+                        console.log(`[STAGE_PROGRESSION] Preserving sticky CAPTCHA_PENDING_OWNER (ignoring generic stage=${request.stage})`);
+                    }
                     const activeStages = ['ACTIVE_FORM', 'FILLING', 'CAPTCHA', 'FINAL_AUDIT', 'SUBMIT_ATTEMPT_STARTED', 'SUBMITTING', 'SUBMIT_TRIGGERED', 'VERIFYING'];
                     if (activeStages.includes(request.stage)) {
                         if (chrome.alarms) {
@@ -2940,7 +2959,13 @@ async function startCampaignOrchestrator(queue, template, delayMs, fillDelayMs =
         campaignState.isActive = true;
         campaignState.isPaused = false; // [v18.7] Reset pause on new start
         campaignState.sessionId++; 
+        campaignState.schedulerGeneration = (campaignState.schedulerGeneration || 0) + 1;
+        campaignState.currentTargetAbortController = null;
         campaignState.totalTargets = executableQueue.length;
+        campaignState.counters.total = executableQueue.length;
+        campaignState.counters.remaining = executableQueue.length;
+        campaignState.counters.inProgress = 0;
+        campaignState.counters.completed = 0;
         campaignState.visitedUrls = []; 
         campaignState.successfulUrls = []; 
         campaignState.captchaCounts = {}; // [v4.12.23] 캡차 시도 횟수 초기화
@@ -2988,12 +3013,25 @@ async function startCampaignOrchestrator(queue, template, delayMs, fillDelayMs =
 }
 
 async function pauseCampaignOrchestrator(saveCheckpoint = true) {
-    // [Issue #6 R6.9E B5] 1. Mark paused & invalidate solver epoch
+    // [R6.9G.7 P0-8 Quiescent Pause Barrier]
+    // 1. Invalidate scheduler generation so any pending setTimeout / alarm no-ops immediately
+    campaignState.schedulerGeneration = (campaignState.schedulerGeneration || 0) + 1;
     campaignState.isPaused = true;
     campaignState.captchaEpoch = (campaignState.captchaEpoch || 0) + 1;
     logBg(null, "⏸️ [Engine] Campaign PAUSED / STOP & SAVE requested.", "info");
 
-    // [Issue #6 R6.9E B5] 2. Freeze target lifecycle & timers
+    // 2. Abort active target orchestration and content script
+    if (campaignState.currentTargetAbortController) {
+        campaignState.currentTargetAbortController.abort('PAUSE');
+    }
+    if (campaignState.currentTabId) {
+        chrome.tabs.sendMessage(campaignState.currentTabId, {
+            action: 'ABORT_TARGET',
+            reason: 'PAUSE',
+            targetToken: campaignState.currentTargetToken
+        }).catch(() => {});
+    }
+
     if (campaignState.currentDiscoveryCtx) {
         campaignState.currentDiscoveryCtx.aborted = true;
         campaignState.currentDiscoveryCtx = null;
@@ -3008,7 +3046,13 @@ async function pauseCampaignOrchestrator(saveCheckpoint = true) {
         chrome.alarms.clear("xpider_next_target_failsafe");
     }
 
-    // [Issue #6 R6.9E B5] 3. Inspect currentAttempt state BEFORE closing tabs
+    // 3. WAIT FOR ACTIVE ORCHESTRATION TO QUIESCE BEFORE WRITING CHECKPOINT SNAPSHOT
+    const pauseQuiesceStart = Date.now();
+    while (campaignState.activeTargetInFlight && (Date.now() - pauseQuiesceStart < 2500)) {
+        await new Promise(r => setTimeout(r, 50));
+    }
+
+    // [Issue #6 R6.9E B5] 4. Inspect currentAttempt state BEFORE closing tabs
     const currentAtt = campaignState.currentAttempt;
     if (currentAtt && currentAtt.url) {
         if (currentAtt.status === 'PREPARING') {
@@ -3037,6 +3081,9 @@ async function pauseCampaignOrchestrator(saveCheckpoint = true) {
         campaignState.currentAttempt = null;
         campaignState.currentTargetStage = null;
     }
+
+    campaignState.activeTargetInFlight = false;
+    campaignState.activeTargetCount = 0;
 
     // [Issue #6 R6.9E B5] 4. Persist ledger/counters/checkpoint
     const hsInstance = await getHistoryStoreInstance();
@@ -3211,33 +3258,67 @@ async function checkPause() {
     }
 }
 
-// [R6.9G-A / R6.9G.1-4] Serialized lifecycle: prevent next target from starting while current is in flight.
-// ONLY the current target's own finalizer (via activeTargetInFlight=false in its finally block) may release the lease.
-// Waiters NEVER force-release. If waiter times out, it self-terminates WITHOUT touching the lease.
-async function waitForTargetSlot(sessionId, leaseToken) {
-    const SLOT_POLL_MS = 200;
-    const SLOT_TIMEOUT_MS = 300000; // 5 min absolute max
+// [R6.9G.7 P0-1] Atomic Target Slot Acquisition:
+// Check + claim is indivisible. Synchronously sets activeTargetInFlight=true before returning.
+// Stale scheduler generations and stale sessions immediately no-op.
+async function acquireTargetSlot(sessionId, expectedGeneration) {
+    const SLOT_POLL_MS = 50;
+    const SLOT_TIMEOUT_MS = 300000;
     const start = Date.now();
     while (campaignState.activeTargetInFlight) {
         if (sessionId !== undefined && sessionId !== campaignState.sessionId) {
             console.log(`[SERIALIZED_GATE] Stale session ${sessionId} aborted while waiting for slot.`);
             return { granted: false, reason: 'STALE_SESSION' };
         }
+        if (expectedGeneration !== undefined && expectedGeneration !== campaignState.schedulerGeneration) {
+            console.log(`[SERIALIZED_GATE] Stale generation ${expectedGeneration} (current: ${campaignState.schedulerGeneration}) aborted.`);
+            return { granted: false, reason: 'STALE_GENERATION' };
+        }
         if (!campaignState.isActive || campaignState.isPaused) {
             return { granted: false, reason: 'INACTIVE_OR_PAUSED' };
         }
         if (Date.now() - start > SLOT_TIMEOUT_MS) {
-            // [R6.9G.1-4] NEVER force-release. The current target is still alive.
-            // Self-terminate this waiter; do NOT touch activeTargetInFlight.
             console.warn(`[SERIALIZED_GATE] Waiter timeout after ${SLOT_TIMEOUT_MS}ms. Self-terminating waiter (NOT releasing lease).`);
             return { granted: false, reason: 'WAITER_TIMEOUT' };
         }
         await new Promise(r => setTimeout(r, SLOT_POLL_MS));
     }
-    return { granted: true, reason: 'SLOT_FREE' };
+
+    if (sessionId !== undefined && sessionId !== campaignState.sessionId) {
+        return { granted: false, reason: 'STALE_SESSION' };
+    }
+    if (expectedGeneration !== undefined && expectedGeneration !== campaignState.schedulerGeneration) {
+        return { granted: false, reason: 'STALE_GENERATION' };
+    }
+    if (!campaignState.isActive || campaignState.isPaused) {
+        return { granted: false, reason: 'INACTIVE_OR_PAUSED' };
+    }
+
+    // Double check under tick
+    if (campaignState.activeTargetInFlight) {
+        return acquireTargetSlot(sessionId, expectedGeneration);
+    }
+
+    // ATOMIC SYNCHRONOUS CLAIM:
+    campaignState.activeTargetInFlight = true;
+    campaignState.activeTargetCount = (campaignState.activeTargetCount || 0) + 1;
+    campaignState.maxConcurrentObserved = Math.max(campaignState.maxConcurrentObserved || 0, campaignState.activeTargetCount);
+    console.log(`[SERIALIZED_GATE] Slot acquired atomically. activeTargetInFlight=true activeTargetCount=${campaignState.activeTargetCount} maxConcurrent=${campaignState.maxConcurrentObserved}`);
+    return { granted: true, reason: 'SLOT_ACQUIRED' };
 }
 
-async function processNextCampaignTarget(loopSessionId) {
+// Retain backward-compatible waitForTargetSlot signature calling acquireTargetSlot
+async function waitForTargetSlot(sessionId, leaseToken) {
+    return acquireTargetSlot(sessionId, campaignState.schedulerGeneration);
+}
+
+async function processNextCampaignTarget(loopSessionId, loopGeneration) {
+    // [R6.9G.7 P0-1] Generation Guard: stale wakeups no-op
+    if (loopGeneration !== undefined && loopGeneration !== campaignState.schedulerGeneration) {
+        console.log(`[Engine] Stale generation ${loopGeneration} (expected ${campaignState.schedulerGeneration}). Ignoring wakeup.`);
+        return;
+    }
+
     // [v18.21.0] Session Guard: If this loop belongs to a stale session, self-destruct
     if (loopSessionId !== undefined && loopSessionId !== campaignState.sessionId) {
         console.log(`[Engine] Stale session ${loopSessionId} detected (expected ${campaignState.sessionId}). Killing loop.`);
@@ -3258,6 +3339,7 @@ async function processNextCampaignTarget(loopSessionId) {
     
     // Default to current session if none provided
     const currentSession = loopSessionId || campaignState.sessionId;
+    const currentGen = loopGeneration || campaignState.schedulerGeneration;
 
     campaignState.isLoopRunning = true;
     campaignState.lastActionTime = Date.now();
@@ -3265,32 +3347,14 @@ async function processNextCampaignTarget(loopSessionId) {
     try {
         await checkPause(); // [v18.7] First checkpoint
 
-        // [R6.9G-A] Serialized Lifecycle: wait for previous target slot to be released
-        const slotResult = await waitForTargetSlot(currentSession);
-        if (!slotResult.granted) {
-            console.log(`[SERIALIZED_GATE] Slot not granted reason=${slotResult.reason}. Exiting loop.`);
-            campaignState.isLoopRunning = false;
-            return;
-        }
-
-        // [R6.9G-B] PAUSED race guard: do not start target if campaign is paused right now
-        if (!campaignState.isActive || campaignState.isPaused) {
-            console.log('[SERIALIZED_GATE] Campaign paused/inactive at slot entry — aborting target start.');
-            campaignState.isLoopRunning = false;
-            return;
-        }
-        
+        // Check if queue is empty before acquiring slot
         if (!campaignState.isActive || campaignState.queue.length === 0) {
             if (campaignState.isActive) {
-                // [R6.9G.1-5] CAMPAIGN_FINISHED Barrier: NEVER force-finish.
-                // Must wait for last target FINAL (activeTargetInFlight=false) with no timeout force.
-                // If barrier cannot close within hard limit => enter FAULT state, not Finished.
                 const FINISH_BARRIER_POLL_MS = 100;
                 const FINISH_BARRIER_FAULT_MS = 120000; // 2 minutes hard limit before FAULT
                 const barrierStart = Date.now();
                 while (campaignState.activeTargetInFlight) {
                     if (Date.now() - barrierStart > FINISH_BARRIER_FAULT_MS) {
-                        // [R6.9G.1-5] Do NOT force-finish. Enter FAULT state.
                         console.error('[FINISH_BARRIER] FAULT: last target did not finalize within 120s. Campaign entering FAULT state (not FINISHED).');
                         logBg(null, '[FINISH_BARRIER] FAULT: campaign cannot finish — last target still in flight.', 'error');
                         campaignState.isFaulted = true;
@@ -3304,7 +3368,6 @@ async function processNextCampaignTarget(loopSessionId) {
                     }
                     await new Promise(r => setTimeout(r, FINISH_BARRIER_POLL_MS));
                 }
-                // [R6.9G.1-5] Fresh ledger sync immediately before finish (no forced remaining=0)
                 const hsForFinish = await getHistoryStoreInstance();
                 await syncCampaignCountersFromLedger(hsForFinish);
                 const finishStats = hsForFinish ? hsForFinish.getLedgerStats('currentRun', campaignState.campaignRunId) : null;
@@ -3313,7 +3376,6 @@ async function processNextCampaignTarget(loopSessionId) {
 
                 logBg(null, 'Campaign finished!', 'complete');
                 campaignState.isActive = false;
-                // remaining is ledger-derived only (syncCampaignCountersFromLedger above already set it)
                 campaignState.counters.inProgress = 0;
                 await closeAllCampaignTabsExcept(null, 'CAMPAIGN_FINISHED');
                 await persistCounters();
@@ -3327,201 +3389,252 @@ async function processNextCampaignTarget(loopSessionId) {
             return;
         }
 
-        // [Issue #6 R6.9B Section 2] PRE-NEXT-TARGET Hard Tab Cleanup Barrier
-        await closeAllCampaignTabsExcept(null, 'PRE_NEXT_TARGET');
-        campaignOwnedTabIds.clear();
-        retainedTabIds.clear();
-        campaignState.currentTabId = null;
-        campaignState.targetTabId = null;
-
-        const currentUrl = campaignState.queue.shift();
-        const normalized = normalizeUrl(currentUrl);
-
-        if (campaignState.visitedUrls.includes(normalized)) {
-            logBg(null, `Skipping already visited target: ${currentUrl}`, "info");
-            return processNextCampaignTarget(currentSession);
-        }
-        campaignState.visitedUrls.push(normalized);
-        const targetUrl = currentUrl.startsWith('http') ? currentUrl : 'https://' + currentUrl;
-        let targetHost = 'unknown';
-        try {
-            targetHost = new URL(targetUrl).hostname;
-        } catch (_) {
-            targetHost = normalized || currentUrl;
+        // [R6.9G.7 P0-1] Atomic Slot Acquisition: Indivisibly claims activeTargetInFlight=true
+        const slotResult = await acquireTargetSlot(currentSession, currentGen);
+        if (!slotResult.granted) {
+            console.log(`[SERIALIZED_GATE] Slot not granted reason=${slotResult.reason}. Exiting loop.`);
+            campaignState.isLoopRunning = false;
+            return;
         }
 
-        // [Filter Guard] Skip government/military/academic and major portal/platform/shopping mall targets
-        const nonBizCheck = isNonBusinessOrMajorPlatform(targetUrl);
-        if (nonBizCheck.skip) {
-            logBg(null, `⏭️ [Filter] Skipping non-business/gov/platform target: ${targetUrl} (${nonBizCheck.reason})`, "info");
-            try {
-                const hs = await getHistoryStoreInstance();
-                if (hs && typeof hs.recordAttempt === 'function') {
-                    const record = await hs.recordAttempt(targetUrl, {
-                        campaignRunId: campaignState.campaignRunId,
-                        status: 'SKIPPED',
-                        reason: 'NON_BUSINESS_OR_GOV_SKIPPED'
-                    });
-                    const attId = record?.attemptId || record?.attempt?.attemptId;
-                    if (attId && typeof hs.settleCanonicalAttempt === 'function') {
-                        await hs.settleCanonicalAttempt(attId, 'SKIPPED', 'NON_BUSINESS_OR_GOV_SKIPPED', {}, {
-                            campaignRunId: campaignState.campaignRunId,
-                            resultUrl: targetUrl,
-                            skipReason: nonBizCheck.reason
-                        });
-                    }
-                    await hs.persist();
-                    const ledgerStats = hs.getLedgerStats('currentRun', campaignState.campaignRunId);
-                    campaignState.counters.success = ledgerStats.success;
-                    campaignState.counters.failed = ledgerStats.failure;
-                    campaignState.counters.deliveryUnknown = ledgerStats.unknown;
-                    campaignState.counters.timeout = ledgerStats.timeout;
-                    campaignState.counters.skipped = ledgerStats.skipped;
-                    campaignState.counters.paused = ledgerStats.paused;
-                    campaignState.counters.completed = ledgerStats.completed;
-                    campaignState.counters.failureBreakdown = { ...ledgerStats.failureBreakdown };
-                    campaignState.counters.remaining = Math.max(0, campaignState.counters.total - ledgerStats.completed - campaignState.counters.skippedHistory);
-                    campaignState.successCount = ledgerStats.success;
-                    await persistCounters();
-                    broadcastCounters();
-                }
-            } catch (_) {}
-
-            return processNextCampaignTarget(currentSession);
-        }
-
-        const targetIdx = campaignState.totalTargets - campaignState.queue.length;
-        logBg(null, `[TARGET ${targetIdx}/${campaignState.totalTargets}][${targetHost}] START`, "info");
-        if (chrome.alarms) chrome.alarms.create(`xpider_timeout_${currentSession}`, { delayInMinutes: 3 });
-
-        // [R6.9G-A] Mark slot as occupied before async work begins
-        campaignState.activeTargetInFlight = true;
-        campaignState.activeTargetCount = (campaignState.activeTargetCount || 0) + 1;
-        campaignState.maxConcurrentObserved = Math.max(campaignState.maxConcurrentObserved || 0, campaignState.activeTargetCount);
-        console.log(`[SERIALIZED_GATE] Slot acquired for ${targetHost}. activeTargetInFlight=true activeTargetCount=${campaignState.activeTargetCount}`);
-
-        const result = await Promise.race([
-
-            orchestrateSending(targetUrl, campaignState.template),
-            new Promise((_, reject) => {
-                const targetTimeoutMs = (targetUrl && (targetUrl.includes('timeout-inquiry') || targetUrl.includes('timeout-target')))
-                    ? 5000
-                    : (campaignState.targetTimeoutMs || 180000);
-                setTimeout(() => reject(new Error("Local Session Timeout")), targetTimeoutMs);
-            })
-        ]).catch(async (err) => {
-            logBg(null, `⚠️ [Protection] Target skipped / timed out: ${err.message}`, "warning");
-            const isLocalTimeout = err.message && err.message.includes('Local Session Timeout');
-
-            // [R6.9G-J] Timeout Classification: TIMEOUT_LOCAL is pre-submit inactivity only.
-            // Post-submit ambiguity => DELIVERY_UNKNOWN, not TIMEOUT_LOCAL.
-            // Owner-waiting / manual CAPTCHA solve => pauses timer, not TIMEOUT_LOCAL.
-            const currentStage = campaignState.currentTargetStage || '';
-            const postSubmitStages = ['SUBMIT_TRIGGERED', 'VERIFYING', 'SUBMITTING'];
-            const isPostSubmitTimeout = postSubmitStages.includes(currentStage);
-            const isCaptchaPauseStage = currentStage === 'CAPTCHA_PENDING_OWNER';
-
-            let timeoutStatus, timeoutReason;
-            if (isPostSubmitTimeout) {
-                // Submission was triggered but delivery ambiguous — DELIVERY_UNKNOWN, not TIMEOUT_LOCAL
-                timeoutStatus = 'DELIVERY_UNKNOWN';
-                timeoutReason = 'DELIVERY_UNKNOWN_POST_SUBMIT_TIMEOUT';
-                console.log(`[TIMEOUT_CLASS] stage=${currentStage} => DELIVERY_UNKNOWN (post-submit, not TIMEOUT_LOCAL)`);
-            } else if (isCaptchaPauseStage) {
-                // Should not happen (timer should be paused) but classify correctly
-                timeoutStatus = 'FAILURE';
-                timeoutReason = 'CAPTCHA_OWNER_TIMEOUT';
-                console.log(`[TIMEOUT_CLASS] stage=${currentStage} => CAPTCHA_OWNER_TIMEOUT`);
-            } else if (isLocalTimeout) {
-                timeoutStatus = 'TIMEOUT_LOCAL';
-                timeoutReason = 'TIMEOUT_LOCAL';
-                console.log(`[TIMEOUT_CLASS] stage=${currentStage} => TIMEOUT_LOCAL (pre-submit)`);
-            } else {
-                timeoutStatus = 'TIMEOUT_GLOBAL';
-                timeoutReason = 'TIMEOUT_GLOBAL';
-                console.log(`[TIMEOUT_CLASS] stage=${currentStage} => TIMEOUT_GLOBAL`);
-            }
-            try {
-                const hs = await getHistoryStoreInstance();
-                let attemptId = campaignState.currentAttempt?.attemptId;
-                let targetToken = campaignState.currentAttempt?.targetToken;
-
-                if (!attemptId && hs && typeof hs.recordAttempt === 'function') {
-                    targetToken = targetToken || ('tok_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8));
-                    const attemptResult = await hs.recordAttempt(targetUrl, {
-                        campaignRunId: campaignState.campaignRunId,
-                        status: 'PREPARING',
-                        reason: 'PREPARING',
-                        templateId: campaignState.templateId || null,
-                        templateVersion: campaignState.templateVersion || 1,
-                        targetToken: targetToken
-                    });
-                    attemptId = attemptResult?.attemptId;
-                }
-
-                if (attemptId && hs && typeof hs.settleCanonicalAttempt === 'function') {
-                    await hs.settleCanonicalAttempt(attemptId, timeoutStatus, timeoutReason, {}, {
-                        campaignRunId: campaignState.campaignRunId,
-                        resultUrl: targetUrl,
-                        targetToken: targetToken
-                    });
-                    await hs.persist();
-                    logBg(null, `[TARGET][${targetHost}] FINAL status=${timeoutStatus} reason=${timeoutReason}`, "warning");
-
-                    if (!campaignState.outcomeHistogram) campaignState.outcomeHistogram = {};
-                    campaignState.outcomeHistogram[timeoutReason] = (campaignState.outcomeHistogram[timeoutReason] || 0) + 1;
-
-                    await syncCampaignCountersFromLedger(hs);
-                }
-            } catch (hsErr) {
-                logBg(null, `❌ [TimeoutSettlement] Failed to settle timeout attempt: ${hsErr.message}`, "error");
-            }
-            return { success: false, error: err.message, reasonCode: timeoutReason };
-        }).finally(async () => {
-            if (chrome.alarms) chrome.alarms.clear(`xpider_timeout_${currentSession}`);
-
-            // [Issue #6 R6.9E B6] Centralized Verified Tab Closure Guard
-            if (campaignState.currentTabId) {
-                const orphanId = campaignState.currentTabId;
-                const isTerminalOrSettled = !campaignState.targetResolve || !campaignState.currentAttempt || campaignState.currentAttempt.status === 'RESOLVED';
-                if (isTerminalOrSettled) {
-                    campaignState.currentTabId = null;
-                    await closeOwnedTabVerified(orphanId, 'ORPHAN_CLEANUP');
-                }
-            }
-
-            // [Issue #6 R6.8 P0-7] Target transition state cleanup
-            campaignState.currentTargetStage = null;
-            campaignState.currentTargetToken = null;
-            campaignState.currentAttempt = null;
-            campaignState.submitLock = false;
-            campaignState.timeoutWatchdogGen = (campaignState.timeoutWatchdogGen || 0) + 1;
-
-            // [R6.9G-A] Release serialized slot — next target may now proceed
-            campaignState.lastFinalTs = Date.now();
+        // Guard against pause during slot acquisition
+        if (!campaignState.isActive || campaignState.isPaused) {
+            console.log('[SERIALIZED_GATE] Campaign paused/inactive at slot entry — releasing lease and aborting start.');
             campaignState.activeTargetInFlight = false;
             campaignState.activeTargetCount = Math.max(0, (campaignState.activeTargetCount || 1) - 1);
-            console.log(`[SERIALIZED_GATE] Slot released. activeTargetInFlight=false lastFinalTs=${campaignState.lastFinalTs}`);
-        });
-        // [v1.2.0-Fix-F1] Single success-accounting owner:
-        // successCount is strictly and exclusively incremented inside finishOnce() on line 886.
-        // Duplicate increment removed here to prevent false accounting inflation.
+            campaignState.isLoopRunning = false;
+            return;
+        }
+
+        // Now we own activeTargetInFlight = true
+        let leaseReleased = false;
+        const releaseLease = () => {
+            if (!leaseReleased) {
+                leaseReleased = true;
+                campaignState.lastFinalTs = Date.now();
+                campaignState.activeTargetInFlight = false;
+                campaignState.activeTargetCount = Math.max(0, (campaignState.activeTargetCount || 1) - 1);
+                console.log(`[SERIALIZED_GATE] Slot released. activeTargetInFlight=false activeTargetCount=${campaignState.activeTargetCount}`);
+            }
+        };
+
+        try {
+            // [Issue #6 R6.9B Section 2] PRE-NEXT-TARGET Hard Tab Cleanup Barrier
+            await closeAllCampaignTabsExcept(null, 'PRE_NEXT_TARGET');
+            campaignOwnedTabIds.clear();
+            retainedTabIds.clear();
+            campaignState.currentTabId = null;
+            campaignState.targetTabId = null;
+
+            if (campaignState.queue.length === 0) {
+                releaseLease();
+                campaignState.isLoopRunning = false;
+                return processNextCampaignTarget(currentSession, campaignState.schedulerGeneration);
+            }
+
+            const currentUrl = campaignState.queue.shift();
+            const normalized = normalizeUrl(currentUrl);
+
+            if (campaignState.visitedUrls.includes(normalized)) {
+                logBg(null, `Skipping already visited target: ${currentUrl}`, "info");
+                releaseLease();
+                return processNextCampaignTarget(currentSession, campaignState.schedulerGeneration);
+            }
+            campaignState.visitedUrls.push(normalized);
+            const targetUrl = currentUrl.startsWith('http') ? currentUrl : 'https://' + currentUrl;
+            let targetHost = 'unknown';
+            try {
+                targetHost = new URL(targetUrl).hostname;
+            } catch (_) {
+                targetHost = normalized || currentUrl;
+            }
+
+            // [Filter Guard] Skip government/military/academic and major portal/platform/shopping mall targets
+            const nonBizCheck = isNonBusinessOrMajorPlatform(targetUrl);
+            if (nonBizCheck.skip) {
+                logBg(null, `⏭️ [Filter] Skipping non-business/gov/platform target: ${targetUrl} (${nonBizCheck.reason})`, "info");
+                try {
+                    const hs = await getHistoryStoreInstance();
+                    if (hs && typeof hs.recordAttempt === 'function') {
+                        const record = await hs.recordAttempt(targetUrl, {
+                            campaignRunId: campaignState.campaignRunId,
+                            status: 'SKIPPED',
+                            reason: 'NON_BUSINESS_OR_GOV_SKIPPED'
+                        });
+                        const attId = record?.attemptId || record?.attempt?.attemptId;
+                        if (attId && typeof hs.settleCanonicalAttempt === 'function') {
+                            await hs.settleCanonicalAttempt(attId, 'SKIPPED', 'NON_BUSINESS_OR_GOV_SKIPPED', {}, {
+                                campaignRunId: campaignState.campaignRunId,
+                                resultUrl: targetUrl,
+                                skipReason: nonBizCheck.reason
+                            });
+                        }
+                        await hs.persist();
+                        await syncCampaignCountersFromLedger(hs);
+                    }
+                } catch (_) {}
+
+                releaseLease();
+                return processNextCampaignTarget(currentSession, campaignState.schedulerGeneration);
+            }
+
+            const targetIdx = campaignState.totalTargets - campaignState.queue.length;
+            logBg(null, `[TARGET ${targetIdx}/${campaignState.totalTargets}][${targetHost}] START`, "info");
+            if (chrome.alarms) chrome.alarms.create(`xpider_timeout_${currentSession}`, { delayInMinutes: 3 });
+
+            // [R6.9G.7 P0-2] Target AbortController & Inner Orchestration Promise
+            const targetAbortController = new AbortController();
+            campaignState.currentTargetAbortController = targetAbortController;
+
+            const targetTimeoutMs = (targetUrl && (targetUrl.includes('timeout-inquiry') || targetUrl.includes('timeout-target')))
+                ? 5000
+                : (campaignState.targetTimeoutMs || 180000);
+
+            let timeoutTimerId = null;
+            const timeoutPromise = new Promise((_, reject) => {
+                timeoutTimerId = setTimeout(() => reject(new Error("Local Session Timeout")), targetTimeoutMs);
+            });
+
+            let orchestrationSettled = false;
+            const orchestrationPromise = (async () => {
+                try {
+                    return await orchestrateSending(targetUrl, campaignState.template, targetAbortController.signal);
+                } finally {
+                    orchestrationSettled = true;
+                }
+            })();
+
+            const result = await Promise.race([
+                orchestrationPromise,
+                timeoutPromise
+            ]).catch(async (err) => {
+                logBg(null, `⚠️ [Protection] Target skipped / timed out: ${err.message}`, "warning");
+
+                // 1. SIGNAL ABORT IMMEDIATELY
+                targetAbortController.abort(err.message);
+                if (campaignState.currentTabId) {
+                    chrome.tabs.sendMessage(campaignState.currentTabId, {
+                        action: 'ABORT_TARGET',
+                        reason: err.message,
+                        targetToken: campaignState.currentTargetToken
+                    }).catch(() => {});
+                }
+
+                // 2. WAIT FOR INNER ORCHESTRATION TO QUIESCE BEFORE RELEASING LEASE
+                const quiesceStart = Date.now();
+                while (!orchestrationSettled && (Date.now() - quiesceStart < 2000)) {
+                    await new Promise(r => setTimeout(r, 50));
+                }
+
+                // 3. Verified tab closure
+                if (campaignState.currentTabId) {
+                    const orphanId = campaignState.currentTabId;
+                    campaignState.currentTabId = null;
+                    await closeOwnedTabVerified(orphanId, 'TIMEOUT_ABORT');
+                }
+
+                const isLocalTimeout = err.message && err.message.includes('Local Session Timeout');
+                const currentStage = campaignState.currentTargetStage || '';
+                const postSubmitStages = ['SUBMIT_TRIGGERED', 'VERIFYING', 'SUBMITTING'];
+                const isPostSubmitTimeout = postSubmitStages.includes(currentStage);
+                const isCaptchaPauseStage = currentStage === 'CAPTCHA_PENDING_OWNER';
+
+                let timeoutStatus, timeoutReason;
+                if (isPostSubmitTimeout) {
+                    timeoutStatus = 'DELIVERY_UNKNOWN';
+                    timeoutReason = 'DELIVERY_UNKNOWN_POST_SUBMIT_TIMEOUT';
+                    console.log(`[TIMEOUT_CLASS] stage=${currentStage} => DELIVERY_UNKNOWN (post-submit, not TIMEOUT_LOCAL)`);
+                } else if (isCaptchaPauseStage) {
+                    timeoutStatus = 'FAILURE';
+                    timeoutReason = 'CAPTCHA_OWNER_TIMEOUT';
+                    console.log(`[TIMEOUT_CLASS] stage=${currentStage} => CAPTCHA_OWNER_TIMEOUT`);
+                } else if (isLocalTimeout) {
+                    timeoutStatus = 'TIMEOUT_LOCAL';
+                    timeoutReason = 'TIMEOUT_LOCAL';
+                    console.log(`[TIMEOUT_CLASS] stage=${currentStage} => TIMEOUT_LOCAL (pre-submit)`);
+                } else {
+                    timeoutStatus = 'TIMEOUT_GLOBAL';
+                    timeoutReason = 'TIMEOUT_GLOBAL';
+                    console.log(`[TIMEOUT_CLASS] stage=${currentStage} => TIMEOUT_GLOBAL`);
+                }
+                try {
+                    const hs = await getHistoryStoreInstance();
+                    let attemptId = campaignState.currentAttempt?.attemptId;
+                    let targetToken = campaignState.currentAttempt?.targetToken;
+
+                    if (!attemptId && hs && typeof hs.recordAttempt === 'function') {
+                        targetToken = targetToken || ('tok_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8));
+                        const attemptResult = await hs.recordAttempt(targetUrl, {
+                            campaignRunId: campaignState.campaignRunId,
+                            status: 'PREPARING',
+                            reason: 'PREPARING',
+                            templateId: campaignState.templateId || null,
+                            templateVersion: campaignState.templateVersion || 1,
+                            targetToken: targetToken
+                        });
+                        attemptId = attemptResult?.attemptId;
+                    }
+
+                    if (attemptId && hs && typeof hs.settleCanonicalAttempt === 'function') {
+                        await hs.settleCanonicalAttempt(attemptId, timeoutStatus, timeoutReason, {}, {
+                            campaignRunId: campaignState.campaignRunId,
+                            resultUrl: targetUrl,
+                            targetToken: targetToken
+                        });
+                        await hs.persist();
+                        logBg(null, `[TARGET][${targetHost}] FINAL status=${timeoutStatus} reason=${timeoutReason}`, "warning");
+
+                        if (!campaignState.outcomeHistogram) campaignState.outcomeHistogram = {};
+                        campaignState.outcomeHistogram[timeoutReason] = (campaignState.outcomeHistogram[timeoutReason] || 0) + 1;
+
+                        await syncCampaignCountersFromLedger(hs);
+                    }
+                } catch (hsErr) {
+                    logBg(null, `❌ [TimeoutSettlement] Failed to settle timeout attempt: ${hsErr.message}`, "error");
+                }
+                return { success: false, error: err.message, reasonCode: timeoutReason };
+            }).finally(async () => {
+                if (timeoutTimerId) clearTimeout(timeoutTimerId);
+                if (chrome.alarms) chrome.alarms.clear(`xpider_timeout_${currentSession}`);
+
+                // Quiescence wait in finally
+                const quiesceStart = Date.now();
+                while (!orchestrationSettled && (Date.now() - quiesceStart < 1500)) {
+                    await new Promise(r => setTimeout(r, 50));
+                }
+
+                if (campaignState.currentTabId) {
+                    const orphanId = campaignState.currentTabId;
+                    campaignState.currentTabId = null;
+                    await closeOwnedTabVerified(orphanId, 'TARGET_FINALLY_CLEANUP');
+                }
+
+                campaignState.currentTargetAbortController = null;
+                campaignState.currentTargetStage = null;
+                campaignState.currentTargetToken = null;
+                campaignState.currentAttempt = null;
+                campaignState.submitLock = false;
+                campaignState.timeoutWatchdogGen = (campaignState.timeoutWatchdogGen || 0) + 1;
+
+                releaseLease();
+            });
+        } finally {
+            releaseLease();
+        }
     } catch (e) {
         logBg(null, `❌ Critical target error: ${e.message}. Skipping...`, "error");
     } finally {
         if (campaignState.isActive) {
-            saveCampaignState(); // Sync after each target
-            
-            await checkPause(); // [v18.7] Pre-delay checkpoint
-            
-            // [v18.10.0] Hybrid Precise Scheduling: setTimeout for speed, Alarm for worker survival
+            saveCampaignState();
+            await checkPause();
             const delay = Math.max(1000, campaignState.delayMs || 10000);
             logBg(null, `Waiting ${delay}ms before next target...`, "debug");
 
             if (campaignState.activeTimeoutId) clearTimeout(campaignState.activeTimeoutId);
-            campaignState.activeTimeoutId = setTimeout(processNextCampaignTarget, delay);
+            campaignState.schedulerGeneration = (campaignState.schedulerGeneration || 0) + 1;
+            const nextGen = campaignState.schedulerGeneration;
+            campaignState.activeTimeoutId = setTimeout(() => processNextCampaignTarget(currentSession, nextGen), delay);
 
-            // Fail-safe alarm (min 1 min) to wake up if worker is suspended
             if (chrome.alarms) chrome.alarms.create("xpider_next_target_failsafe", { delayInMinutes: 1 });
         }
         campaignState.isLoopRunning = false;
@@ -4045,7 +4158,7 @@ async function scanContactPaths(baseUrl, tabId, discoveryCtx = null) {
     return validPaths;
 }
 
-async function orchestrateSending(urlInput, template) {
+async function orchestrateSending(urlInput, template, abortSignal = null) {
     let targetUrl = urlInput.trim();
     if (!targetUrl.startsWith('http')) targetUrl = 'https://' + targetUrl;
 
@@ -4103,7 +4216,8 @@ async function orchestrateSending(urlInput, template) {
 
         // Mark target as in progress
         campaignState.counters.inProgress = 1;
-        campaignState.counters.remaining = Math.max(0, campaignState.counters.total - campaignState.counters.completed - campaignState.counters.inProgress - campaignState.counters.skippedHistory);
+        const queuePending = Array.isArray(campaignState.queue) ? campaignState.queue.length : 0;
+        campaignState.counters.remaining = Math.max(0, queuePending + 1);
         persistCounters().catch(() => {});
         broadcastCounters();
 
@@ -4191,6 +4305,16 @@ async function orchestrateSending(urlInput, template) {
 
     let resolveRef;
     const resultPromise = new Promise(resolve => resolveRef = resolve);
+    if (abortSignal) {
+        if (abortSignal.aborted) {
+            return { success: false, error: 'ABORTED', reasonCode: 'ABORTED' };
+        }
+        abortSignal.addEventListener('abort', () => {
+            if (!isFinished && typeof finish === 'function') {
+                finish({ success: false, error: 'ABORTED', reasonCode: 'ABORTED' }).catch(() => {});
+            }
+        });
+    }
     
     let isFinished = false;
     let isFocusSecured = false;
