@@ -1,0 +1,121 @@
+{
+  "timestamp": "2026-10-07T15:35:41.935Z",
+  "targetUrl": "https://3d2r-dark-minimal-flow-preview-production.up.railway.app/?guided=1&ri=1",
+  "remoteHead": "869adbad37325a600020d86c7dc86c4a49a4d76f",
+  "steps": {
+    "step1_router": {
+      "currentStep": 6,
+      "hasController": false,
+      "isRouterActive": false
+    },
+    "step2_camera_retention": {
+      "dimsActive": {
+        "width": 1920,
+        "height": 1080
+      },
+      "dimsAfterTeardown": {
+        "width": 0,
+        "height": 0
+      },
+      "dumpCameraDims": {
+        "width": 1920,
+        "height": 1080
+      },
+      "dumpMeasuredDims": {
+        "width": 1920,
+        "height": 1080
+      },
+      "milestonesCount": 1
+    },
+    "step3_diagnostic_json": {
+      "downloaded": true,
+      "cameraDimensions": {
+        "width": 1920,
+        "height": 1080
+      },
+      "commitSha": "869adbad37325a600020d86c7dc86c4a49a4d76f"
+    },
+    "step4_landscape_controls": {
+      "hasRequestViewerLandscape": true,
+      "hasSetupViewerLandscapeSupport": true,
+      "s7ContainerFound": true,
+      "s7LandscapeBtnFound": true,
+      "officialContainerFound": true,
+      "officialLandscapeBtnFound": true,
+      "gestureTriggered": true
+    },
+    "step5_real_pipeline": {
+      "frame1Status": 200,
+      "frame2Status": 200,
+      "frame3Status": 200,
+      "finalizeStatus": 200,
+      "startStatus": 202,
+      "jobId": "job-pano-1791387304576-3lo5u",
+      "jobStatus": "READY",
+      "stitchedUrl": "/uploads/cand-panorama-1791387304580_native.jpg",
+      "activePanoramaVersionId": "pano-ver-job-pano-1791387304576-3lo5u",
+      "step7Mounted": true,
+      "canvasFound": true,
+      "canvasWidth": 267,
+      "canvasHeight": 149,
+      "containerAspectRatio": "16 / 9",
+      "hasRotatePrompt": true,
+      "rotatePromptDisplay": "flex",
+      "hasLandscapeBtn": true,
+      "nonZeroRgbPixelCount": 100,
+      "totalSampledPixels": 100,
+      "avgRgb": [
+        51,
+        9,
+        15
+      ],
+      "hasRenderedRgbPixels": true,
+      "screenshot": "preview_step7_mobile_portrait.png"
+    },
+    "step6_official_handoff": {
+      "stepHistory": [
+        7,
+        8,
+        9,
+        10,
+        11,
+        11,
+        12
+      ],
+      "studioVisible": true,
+      "heroHidden": true,
+      "officialContainerVisible": true,
+      "officialAspectRatio": "16 / 9",
+      "hasOfficialRenderer": true,
+      "officialCanvasWidth": 326,
+      "officialCanvasHeight": 183,
+      "officialNonZeroRgbPixels": 100,
+      "officialTotalSampled": 100,
+      "officialAvgRgb": [
+        47,
+        8,
+        13
+      ],
+      "officialHasRenderedRgbPixels": true,
+      "activePanoramaVersionId": "pano-ver-cand-panorama-1791387304580",
+      "activeViewerMode": "PANORAMIC_IMMERSIVE",
+      "screenshot": "official_viewer_mobile_portrait.png"
+    },
+    "step7_landscape_containment_and_interaction": {
+      "windowWidth": 801,
+      "windowHeight": 344,
+      "containerWidth": 538,
+      "containerHeight": 290,
+      "promptDisplay": "none",
+      "withinWidthBounds": true,
+      "withinHeightBounds": true,
+      "lsBtnClicked": true,
+      "lsBtnReachable": true,
+      "dragDispatched": true,
+      "pinchDispatched": true,
+      "lsNonZeroRgb": 73,
+      "screenshot": "official_viewer_mobile_landscape.png"
+    }
+  },
+  "verdict": "ALL_PASS"
+}

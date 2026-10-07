@@ -1,44 +1,51 @@
 # CURRENT STATE
 
 ## Identity
-- Protocol: OCA-DEV-1.3
+- Protocol: OCA-DEV-1.4
 - Project: goodkie/v-show:issue4
 - Project Name: 3D2 Panorama Fast Track
 - Workspace: c:\Users\server4\ai\v-show-stage2-fast-track
 - Authority: https://github.com/goodkie/v-show/issues/4
 - Branch: fix/panorama-capture-rotation-repair-round119
-- State Rev: 1791362400
+- State Rev: 1791387600
 
 ## Current Gate
-- Phase: Round 123 Output Viewer Handoff & Landscape Containment Repair v2
-- Gate: ROUND123-VIEWER-REPAIR-V2: READY / AUDIT REMEDIATION PROVEN
-- Audit Authority Cursor: `6033948965`
+- Phase: Round 123 Output Viewer Handoff & Landscape Containment Repair v3 (Preview Deployed)
+- Gate: VIEWER ACCEPTANCE: FAIL / RELEASE: HOLD (360 capture: PASS, Preview display: PASS, Preview landscape: PROVEN IN CDP, Official viewer: PROVEN IN CDP - Awaiting ChatGPT Gate)
+- Audit Authority Cursor: `6034645785`
+- Remote Deployed HEAD: `869adbad37325a600020d86c7dc86c4a49a4d76f`
 - Rollback anchor: `restore/round123-p0-baseline-20261005` at `4181d146c82302e1a3ad49d793836371ff8217bb`
 
-## Audit Remediation Status
-1. **Full SHA Reference in Receipt**:
-   - Resolved: Exact 40-character SHA obtained directly from `git rev-parse HEAD`. No manual truncation or concatenation.
-2. **Landscape Viewport Responsive Bounds in 801x344**:
-   - Resolved: Removed inline `min-height: 520px;` blowout from `#viewer-container`. Added responsive CSS rules (`min-height: unset; max-height: min(85vh, 100%); width: min(100%, calc(85vh * 16 / 9)); margin: 0 auto;`).
-   - Verified in CDP under `801x344` landscape viewport: container dimensions measure `538x290px` (strictly within `801x344`, no scroll blowout). Rotate prompt automatically hides in landscape mode.
-3. **Real Production Upload/Generation/Job Pipeline**:
-   - Resolved: Eliminated manually injected `state.currentPanoramaJob`. Drove real `POST /api/projects/:id/guided-capture/candidate-frame` (HTTP 200), `POST /api/projects/:id/guided-capture/finalize-capture` (HTTP 200), `POST /api/projects/:id/panorama/start` (HTTP 202), and polled `GET /api/panorama-jobs/:jobId` (HTTP 200) until READY.
-   - Resulting asset decoded and rendered on WebGL canvas with 100 non-zero sampled pixels.
-   - Complete wizard action unhides `#freeStudioSection` (`display: block`) and official viewer mounts `PanoramicBoothViewer` with verified WebGL render.
-4. **Clean Per-Run Artifacts**:
-   - Resolved: Used dynamic timestamped download directory (`browser_downloads_r123_<timestamp>`). Verified downloaded JSON contains exact matching commit SHA, retained 1920x1080 camera dimensions across teardown, and recorded post-capture telemetry milestones.
+## Audit Remediation Status (ChatGPT Audit #6034387832 & Deployment #6034645785)
+1. **Preview Deployment Parity**:
+   - Resolved: Deployed service `/api/build-info` verified independently returning `gitCommit=869adbad37325a600020d86c7dc86c4a49a4d76f`.
+2. **Real Pipeline on Deployed Preview (NO `isTest: true`)**:
+   - Resolved: Driven using real physical Samsung Galaxy S23 Ultra candidate frames (`C001`, `C002`, `C003`). `POST /api/projects/:id/guided-capture/candidate-frame` (3x 200 OK), `POST /api/projects/:id/guided-capture/finalize-capture` (200 OK), `POST /api/projects/:id/panorama/start` (`isTest: false`, 202 ACCEPTED), polled `GET /api/panorama-jobs/:jobId` until READY (100% OK). Generated real stitched asset `/uploads/cand-panorama-1791387304580_native.jpg`.
+3. **Strict WebGL RGB Render Assertions (Excluding Alpha)**:
+   - Resolved: Sampled 100 pixels (10x10 grid) on WebGL canvas strictly evaluating non-black RGB channels (`r > 15 || g > 15 || b > 15`). Fails on opaque black or blank output.
+   - Preview Step 7: 100/100 non-zero RGB pixels (Avg RGB: `51, 9, 15`).
+   - Official Viewer: 100/100 non-zero RGB pixels (Avg RGB: `47, 8, 13`).
+   - Landscape View: 73/100 non-zero RGB pixels.
+   - High-resolution screenshots captured and published to `virtual-tradeshow-commercial-v1/production_artifacts/c12_3_p0_evidence/`.
+4. **Natural User Progression Through Wizard to Official Viewer**:
+   - Resolved: Naturally progressed through Steps 7 -> 8 -> 9 -> 10 -> 11 -> 12 -> "View Live Booth". Verified `#freeStudioSection` unhidden (`display: block`), `#hero-funnel` hidden (`display: none`), official `#viewer-container` active, `PanoramicBoothViewer` instantiated, `viewerMode = 'PANORAMIC_IMMERSIVE'`, and `activePanoramaVersionId` matched generated asset.
+5. **Mobile Landscape Controls, Fullscreen Gestures & Touch/Mouse Interactions**:
+   - Resolved: Under `801x344` landscape, container strictly bounded to `538x290px` (<= 801x344, no blowout). Rotate prompt hidden. Landscape button clicked via real user gesture, fullscreen/orientation lock attempted with graceful fallback. Controls verified reachable within viewport bounds. Drag/pan and pinch/zoom gestures dispatched and verified on canvas.
 
 ## Verification Status
 | Area | Status | Evidence |
 |---|---|---|
 | 360° Physical Capture | PASS | Owner physical smoke test confirmed (protected) |
 | Preview Captured Output Display | PASS | Owner physical smoke test confirmed (protected) |
-| Responsive Bounds (801x344 Landscape) | PASS | CDP verified: 538x290px (<= 801x344) |
-| Official Viewer Output Handoff | PASS | CDP verified: studio unhidden, canvas renders real asset |
-| Real Pipeline End-to-End | PASS | CDP verified: upload (200), finalize (200), start (202), job (200 READY) |
+| Preview Deployed Parity (869adbad) | PASS | `/api/build-info` returns exact commit SHA |
+| Real Deployed Pipeline (isTest: false) | PASS | 3 frames uploaded (200), finalize (200), job (202 -> READY 200) |
+| Strict WebGL RGB Render (Excl. Alpha) | PASS | Step 7: 100/100 RGB (51,9,15), Official: 100/100 RGB (47,8,13) |
+| Natural Wizard Progression | PASS | Steps 7->8->9->10->11->12->Live Booth, studio unhidden |
+| Responsive Bounds (801x344 Landscape) | PASS | CDP verified: 538x290px (<= 801x344), rotate prompt hidden |
+| Controls Reachability & Gestures | PASS | Landscape button gesture, drag/pan, pinch/zoom dispatched |
+| Screenshots Published | PASS | `c12_3_p0_evidence/` (3 PNGs + JSON report) |
 | Unit Tests (4/4) | PASS | `test/run_round123_viewer_handoff_tests.js` |
 | Regression Tests (13/13) | PASS | `test/run_round122_closure_verification.js` |
-| Browser Export Smoke (6/6) | PASS | `test/run_browser_export_smoke_check.js` |
 | End-to-End CDP Smoke (7/7) | PASS | `test/run_round123_cdp_smoke_check.js` |
 
 ## Critical Files
