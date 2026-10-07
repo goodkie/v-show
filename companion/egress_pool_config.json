@@ -1,0 +1,43 @@
+{
+  "version": "1.0.0",
+  "rotationMode": "CAMPAIGN_BOUNDARY",
+  "healthCheckTimeoutMs": 3000,
+  "nodes": [
+    {
+      "id": "egress-node-1",
+      "name": "US-East Privacy Node 1",
+      "type": "HTTPS_PROXY",
+      "host": "127.0.0.1",
+      "port": 18991,
+      "username": "",
+      "password": "",
+      "region": "US-EAST",
+      "active": true,
+      "lastHealth": "HEALTHY"
+    },
+    {
+      "id": "egress-node-2",
+      "name": "EU-Central Privacy Node 2",
+      "type": "HTTPS_PROXY",
+      "host": "127.0.0.1",
+      "port": 18992,
+      "username": "",
+      "password": "",
+      "region": "EU-CENTRAL",
+      "active": true,
+      "lastHealth": "HEALTHY"
+    },
+    {
+      "id": "egress-node-3",
+      "name": "AP-East Privacy Node 3",
+      "type": "HTTPS_PROXY",
+      "host": "127.0.0.1",
+      "port": 18993,
+      "username": "",
+      "password": "",
+      "region": "AP-EAST",
+      "active": true,
+      "lastHealth": "HEALTHY"
+    }
+  ]
+}

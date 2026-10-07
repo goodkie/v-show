@@ -14,7 +14,7 @@
                     <img src="icons/icon128.png" alt="Icon" class="app-icon-large">
                     <div class="text-group">
                         <h1 class="main-title" data-i18n="app_title">XPIDER AutoForm</h1>
-                        <h2 class="sub-title">Sender Pro <span class="version-tag">v1.2.0</span> <span id="build-provenance-badge" class="build-provenance-tag" style="font-size: 10px; background: rgba(234, 179, 8, 0.2); color: #eab308; border: 1px solid rgba(234, 179, 8, 0.5); border-radius: 4px; padding: 2px 6px; margin-left: 6px; font-family: monospace; font-weight: bold;" title="TEST-ONLY: R6.9G.9.4">TEST-ONLY R6.9G.9.4</span></h2>
+                        <h2 class="sub-title">Sender Pro <span class="version-tag">v1.2.0</span> <span id="build-provenance-badge" class="build-provenance-tag" style="font-size: 10px; background: rgba(234, 179, 8, 0.2); color: #eab308; border: 1px solid rgba(234, 179, 8, 0.5); border-radius: 4px; padding: 2px 6px; margin-left: 6px; font-family: monospace; font-weight: bold;" title="TEST-ONLY: R6.9G.10">TEST-ONLY R6.9G.10</span></h2>
                     </div>
                 </div>
                 <div class="header-actions">
@@ -479,6 +479,7 @@
                                     <option value="SYSTEM_VPN" selected>Mode A: System VPN Required [Recommended]</option>
                                     <option value="SOCKS5">Mode B: Managed SOCKS5 Proxy</option>
                                     <option value="HTTPS_PROXY">Mode B: Managed HTTPS Proxy</option>
+                                    <option value="PRIVACY_RELAY">Mode D: XPIDER Privacy Relay (Companion Service) [Zero-Touch]</option>
                                     <option value="DIRECT">Mode C: Direct (Privacy OFF)</option>
                                 </select>
                             </div>
@@ -541,6 +542,39 @@
                                     </div>
                                     <div style="font-size: 9px; color: #64748b; margin-left: 19px;">Default is ephemeral memory-only. Stored locally in browser profile, not an OS credential vault.</div>
                                 </div>
+                            </div>
+
+                            <!-- [R6.9G.10] Privacy Relay Configuration (Dynamic) -->
+                            <div id="privacy-relay-config-fields" style="display: none; margin-top: 8px; background: rgba(30, 41, 59, 0.6); padding: 8px; border-radius: 6px; border: 1px solid #334155;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                    <span style="font-size: 11px; color: #38bdf8; font-weight: 700;">🔄 PRIVACY RELAY COMPANION</span>
+                                    <span id="priv-relay-daemon-badge" style="font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid #10b981;">ONLINE</span>
+                                </div>
+                                <div style="display: flex; gap: 6px; margin-bottom: 6px;">
+                                    <div style="flex: 1;">
+                                        <span style="font-size: 10px; color: #94a3b8; display: block;">Rotation Mode</span>
+                                        <select id="privacy-relay-mode-select" class="premium-select" style="height: 28px; font-size: 10px;">
+                                            <option value="FIXED">FIXED (Sticky Node)</option>
+                                            <option value="MANUAL">MANUAL (Owner Trigger)</option>
+                                            <option value="CAMPAIGN_BOUNDARY">CAMPAIGN BOUNDARY (Per Campaign)</option>
+                                            <option value="HEALTH_FAILOVER">HEALTH FAILOVER (Auto Node Drop)</option>
+                                        </select>
+                                    </div>
+                                    <div style="flex: 1;">
+                                        <span style="font-size: 10px; color: #94a3b8; display: block;">Active Node ID</span>
+                                        <div id="priv-relay-active-node-display" style="height: 26px; line-height: 26px; padding: 0 6px; background: #0f172a; border: 1px solid #334155; border-radius: 4px; font-size: 10px; font-family: monospace; color: #e2e8f0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">egress-node-1</div>
+                                    </div>
+                                </div>
+                                <div style="font-size: 10px; font-family: monospace; color: #94a3b8; margin-bottom: 6px;">
+                                    Fingerprint: <span id="priv-relay-fingerprint-display" style="color: #38bdf8;">Loading...</span>
+                                </div>
+                                <div style="display: flex; gap: 6px; margin-bottom: 6px;">
+                                    <button type="button" id="priv-relay-rotate-btn" class="primary-btn-small" style="flex: 1; padding: 4px 8px; font-size: 10px; background: #0284c7; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">🔄 Rotate Egress Now</button>
+                                    <button type="button" id="priv-relay-repair-btn" class="secondary-btn-small" style="padding: 4px 8px; font-size: 10px; background: #1e293b; color: #38bdf8; border: 1px solid #38bdf8; border-radius: 4px; cursor: pointer;">⚡ Start / Repair</button>
+                                </div>
+                                <p class="settings-subtip" style="color: #94a3b8; font-size: 9px; line-height: 1.3; margin: 4px 0 0 0;">
+                                    Changing egress IPs can reduce long-lived network linkability, but it does not make the browser anonymous by itself. Cookies, accounts, browser fingerprinting, and form content can still identify a session.
+                                </p>
                             </div>
 
                             <!-- Privacy Preflight Status Card -->

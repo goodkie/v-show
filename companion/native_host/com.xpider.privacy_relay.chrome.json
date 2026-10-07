@@ -1,0 +1,9 @@
+{
+  "name": "com.xpider.privacy_relay",
+  "description": "XPIDER Companion Privacy Relay Native Controller",
+  "path": "E:\\vivpr\\ai\\extension-form-sender\\companion\\native_host\\xpider_native_host.bat",
+  "type": "stdio",
+  "allowed_origins": [
+    "chrome-extension://*/*"
+  ]
+}

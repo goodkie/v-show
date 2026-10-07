@@ -25,6 +25,7 @@
         SYSTEM_VPN: 'SYSTEM_VPN',
         SOCKS5: 'SOCKS5',
         HTTPS_PROXY: 'HTTPS_PROXY',
+        PRIVACY_RELAY: 'PRIVACY_RELAY',
         DIRECT: 'DIRECT'
     };
 
@@ -46,7 +47,15 @@
             clearTargetDataOnComplete: false
         },
         systemVpnConfirmed: false,
-        systemVpnEgressRegion: null
+        systemVpnEgressRegion: null,
+        // [Issue #6 R6.9G.10 Privacy Relay Settings]
+        relayHost: '127.0.0.1',
+        relayProxyPort: 18988,
+        relayControlPort: 18989,
+        relayRotationMode: 'FIXED', // FIXED | MANUAL | CAMPAIGN_BOUNDARY | HEALTH_FAILOVER
+        rotateAtCampaignStart: false,
+        healthFailover: true,
+        selectedEgressId: null
     };
 
     class PrivacyGatewayEngine {
@@ -342,10 +351,159 @@
         }
 
         /**
+         * [R6.9G.10] Query Companion Privacy Relay Control API (/status)
+         */
+        async queryRelayStatus() {
+            const host = this.config.relayHost || '127.0.0.1';
+            const port = this.config.relayControlPort || 18989;
+            try {
+                const fetchFn = this._mockFetch !== undefined ? this._mockFetch : (typeof fetch !== 'undefined' ? fetch : null);
+                if (!fetchFn) return { success: false, reason: 'FETCH_UNAVAILABLE' };
+                const res = await fetchFn(`http://${host}:${port}/status`, { cache: 'no-store' });
+                if (res.ok) {
+                    const data = await res.json();
+                    return { success: true, status: data };
+                }
+                return { success: false, reason: `HTTP_${res.status}` };
+            } catch (e) {
+                return { success: false, reason: e.message };
+            }
+        }
+
+        /**
+         * [R6.9G.10] Safe Egress Rotation via Companion Relay Control API (/rotate)
+         */
+        async rotateRelayEgress(reason = 'MANUAL') {
+            const host = this.config.relayHost || '127.0.0.1';
+            const port = this.config.relayControlPort || 18989;
+            try {
+                const fetchFn = this._mockFetch !== undefined ? this._mockFetch : (typeof fetch !== 'undefined' ? fetch : null);
+                if (!fetchFn) return { success: false, reason: 'FETCH_UNAVAILABLE' };
+                const res = await fetchFn(`http://${host}:${port}/rotate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reason })
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.success) {
+                        this.ephemeralEgressFingerprint = data.egressFingerprint;
+                        this.config.selectedEgressId = data.selectedEgressId;
+                    }
+                    return data;
+                }
+                return { success: false, reason: `HTTP_${res.status}` };
+            } catch (e) {
+                return { success: false, reason: e.message };
+            }
+        }
+
+        /**
+         * [R6.9G.10] Select specific egress node in pool (/select)
+         */
+        async selectRelayEgress(egressId) {
+            const host = this.config.relayHost || '127.0.0.1';
+            const port = this.config.relayControlPort || 18989;
+            try {
+                const fetchFn = this._mockFetch !== undefined ? this._mockFetch : (typeof fetch !== 'undefined' ? fetch : null);
+                if (!fetchFn) return { success: false, reason: 'FETCH_UNAVAILABLE' };
+                const res = await fetchFn(`http://${host}:${port}/select`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ egressId })
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.success) {
+                        this.ephemeralEgressFingerprint = data.egressFingerprint;
+                        this.config.selectedEgressId = data.selectedEgressId;
+                    }
+                    return data;
+                }
+                return { success: false, reason: `HTTP_${res.status}` };
+            } catch (e) {
+                return { success: false, reason: e.message };
+            }
+        }
+
+        /**
+         * [R6.9G.10] Set relay rotation mode (/mode)
+         */
+        async setRelayMode(rotationMode) {
+            const host = this.config.relayHost || '127.0.0.1';
+            const port = this.config.relayControlPort || 18989;
+            try {
+                const fetchFn = this._mockFetch !== undefined ? this._mockFetch : (typeof fetch !== 'undefined' ? fetch : null);
+                if (!fetchFn) return { success: false, reason: 'FETCH_UNAVAILABLE' };
+                const res = await fetchFn(`http://${host}:${port}/mode`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ rotationMode })
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    this.config.relayRotationMode = rotationMode;
+                    await this.saveConfig({ relayRotationMode: rotationMode });
+                    return data;
+                }
+                return { success: false, reason: `HTTP_${res.status}` };
+            } catch (e) {
+                return { success: false, reason: e.message };
+            }
+        }
+
+        /**
          * Verify continuity of the egress tunnel during campaign run
          */
         async checkEgressContinuity() {
             if (!this.config.enabled) return { pass: true };
+
+            // [R6.9G.10] Companion Privacy Relay Continuity Check
+            if (this.config.transportMode === PRIVACY_MODES.PRIVACY_RELAY) {
+                if (!this.isGateActive || !this.isGateReady) {
+                    return { pass: false, reason: this.failureReason || 'PRIVACY_RELAY_NOT_READY' };
+                }
+                const statusRes = await this.queryRelayStatus();
+                if (!statusRes.success || !statusRes.status || !statusRes.status.relayReady) {
+                    if (this.config.healthFailover) {
+                        console.log('[PRIVACY_RELAY] Current egress failed, executing HEALTH_FAILOVER...');
+                        const rotRes = await this.rotateRelayEgress('HEALTH_FAILOVER');
+                        if (rotRes.success) {
+                            const canaryRes = await this.probeProxyCanary(null, 3000);
+                            if (canaryRes.success) {
+                                this.ephemeralEgressFingerprint = rotRes.egressFingerprint;
+                                return { pass: true, recovered: true, newEgressId: rotRes.selectedEgressId };
+                            }
+                        }
+                    }
+                    this.isGateReady = false;
+                    this.failureReason = 'PRIVACY_RELAY_NO_HEALTHY_EGRESS';
+                    return { pass: false, reason: 'PRIVACY_RELAY_NO_HEALTHY_EGRESS' };
+                }
+
+                const currentFp = statusRes.status.egressFingerprint;
+                const rotMode = this.config.relayRotationMode || 'FIXED';
+                if ((rotMode === 'FIXED' || rotMode === 'CAMPAIGN_BOUNDARY') && this.ephemeralEgressFingerprint) {
+                    if (currentFp !== this.ephemeralEgressFingerprint) {
+                        this.isGateReady = false;
+                        this.failureReason = 'PRIVACY_RELAY_EGRESS_CHANGED';
+                        return {
+                            pass: false,
+                            reason: 'PRIVACY_RELAY_EGRESS_CHANGED',
+                            previousFingerprint: this.ephemeralEgressFingerprint,
+                            currentFingerprint: currentFp
+                        };
+                    }
+                }
+
+                const canaryRes = await this.probeProxyCanary(null, 2500);
+                if (!canaryRes.success) {
+                    this.isGateReady = false;
+                    this.failureReason = `PRIVACY_RELAY_DROPPED: ${canaryRes.reason}`;
+                    return { pass: false, reason: this.failureReason };
+                }
+                return { pass: true, fingerprint: currentFp };
+            }
 
             // [R6.9G.9.3] Managed proxy continuity check
             if (this.config.transportMode === PRIVACY_MODES.SOCKS5 || this.config.transportMode === PRIVACY_MODES.HTTPS_PROXY) {
@@ -826,6 +984,55 @@
                         failureReason = `MANAGED_PROXY_CONFIGURATION_FAILED: ${proxyErr.message}`;
                     }
                 }
+            } else if (mode === PRIVACY_MODES.PRIVACY_RELAY) {
+                const relayHost = options.relayHost !== undefined ? options.relayHost : (this.config.relayHost || '127.0.0.1');
+                const relayControlPort = options.relayControlPort !== undefined ? options.relayControlPort : (this.config.relayControlPort || 18989);
+                const relayProxyPort = options.relayProxyPort !== undefined ? options.relayProxyPort : (this.config.relayProxyPort || 18988);
+
+                // 1. Probe Companion Control Plane
+                const statusRes = await this.queryRelayStatus();
+                if (!statusRes.success || !statusRes.status) {
+                    ready = false;
+                    directFallbackBlocked = 'BLOCKED';
+                    egressCheck = 'FAIL';
+                    failureReason = 'PRIVACY_RELAY_OFFLINE';
+                } else if (!statusRes.status.relayReady || statusRes.status.health === 'NO_NODES') {
+                    ready = false;
+                    directFallbackBlocked = 'BLOCKED';
+                    egressCheck = 'FAIL';
+                    failureReason = 'PRIVACY_RELAY_NO_HEALTHY_EGRESS';
+                } else {
+                    try {
+                        // 2. Configure Chrome Proxy to loopback proxy on 18988
+                        await this.applyManagedProxy(PRIVACY_MODES.HTTPS_PROXY, relayHost, relayProxyPort, ['<-loopback>']);
+
+                        // 3. Canary probe through Relay Proxy
+                        const canaryUrl = options.canaryUrl || this.config.canaryUrl || null;
+                        const canaryRes = await this.probeProxyCanary(canaryUrl, 3000);
+
+                        if (!canaryRes.success) {
+                            ready = false;
+                            directFallbackBlocked = 'BLOCKED';
+                            egressCheck = 'FAIL';
+                            failureReason = `PRIVACY_RELAY_CANARY_FAILED: ${canaryRes.reason}`;
+                        } else {
+                            ready = true;
+                            this.isGateActive = true;
+                            directFallbackBlocked = 'BLOCKED';
+                            dnsPrivacy = 'UNKNOWN';
+                            ipv6Protection = 'UNKNOWN';
+                            egressCheck = 'PASS';
+                            this.ephemeralEgressFingerprint = statusRes.status.egressFingerprint;
+                            this.config.selectedEgressId = statusRes.status.selectedEgressId;
+                            failureReason = null;
+                        }
+                    } catch (relayErr) {
+                        ready = false;
+                        directFallbackBlocked = 'BLOCKED';
+                        egressCheck = 'FAIL';
+                        failureReason = `PRIVACY_RELAY_SETUP_ERROR: ${relayErr.message}`;
+                    }
+                }
             } else {
                 ready = false;
                 failureReason = `UNKNOWN_TRANSPORT_MODE: ${mode}`;
@@ -839,11 +1046,12 @@
                 mode,
                 failClosed,
                 ownerVpnConfirmed: false,
-                egressVerified: (mode === PRIVACY_MODES.SOCKS5 || mode === PRIVACY_MODES.HTTPS_PROXY) ? ready : false,
+                egressVerified: (mode === PRIVACY_MODES.SOCKS5 || mode === PRIVACY_MODES.HTTPS_PROXY || mode === PRIVACY_MODES.PRIVACY_RELAY) ? ready : false,
                 webrtcGuard,
                 directFallbackBlocked,
                 egressCheck,
-                egressFingerprint: null,
+                egressFingerprint: this.ephemeralEgressFingerprint,
+                selectedEgressId: this.config.selectedEgressId || null,
                 dnsPrivacy,
                 ipv6Protection,
                 failureReason

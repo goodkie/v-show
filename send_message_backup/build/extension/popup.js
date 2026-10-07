@@ -933,9 +933,12 @@ async function hydrateSettings() {
             const updateTransportVisibility = () => {
                 const isProxy = privModeSelect.value === 'SOCKS5' || privModeSelect.value === 'HTTPS_PROXY';
                 const isVpn = privModeSelect.value === 'SYSTEM_VPN';
+                const isRelay = privModeSelect.value === 'PRIVACY_RELAY';
                 const fields = document.getElementById('privacy-proxy-config-fields');
+                const relayFields = document.getElementById('privacy-relay-config-fields');
                 if (fields) fields.style.display = isProxy ? 'block' : 'none';
                 if (vpnSection) vpnSection.style.display = isVpn ? 'block' : 'none';
+                if (relayFields) relayFields.style.display = isRelay ? 'block' : 'none';
             };
             privModeSelect.addEventListener('change', async () => {
                 updateTransportVisibility();
@@ -957,6 +960,95 @@ async function hydrateSettings() {
                 } catch (_) {}
             });
             updateTransportVisibility();
+        }
+
+        // [R6.9G.10] Hydrate Privacy Relay UI
+        const relayModeSelect = document.getElementById('privacy-relay-mode-select');
+        const relayDaemonBadge = document.getElementById('priv-relay-daemon-badge');
+        const relayNodeDisplay = document.getElementById('priv-relay-active-node-display');
+        const relayFpDisplay = document.getElementById('priv-relay-fingerprint-display');
+        const relayRotateBtn = document.getElementById('priv-relay-rotate-btn');
+        const relayRepairBtn = document.getElementById('priv-relay-repair-btn');
+
+        const updateRelayStatusUI = (statusData) => {
+            if (!statusData) return;
+            if (relayDaemonBadge) {
+                const online = statusData.relayReady !== false;
+                relayDaemonBadge.textContent = online ? 'ONLINE' : 'OFFLINE';
+                relayDaemonBadge.style.color = online ? '#34d399' : '#f87171';
+                relayDaemonBadge.style.background = online ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)';
+                relayDaemonBadge.style.border = online ? '1px solid #10b981' : '1px solid #ef4444';
+            }
+            if (relayNodeDisplay && statusData.selectedEgressId) {
+                relayNodeDisplay.textContent = statusData.selectedEgressId;
+            }
+            if (relayFpDisplay && statusData.egressFingerprint) {
+                relayFpDisplay.textContent = 'sha256:' + statusData.egressFingerprint;
+            }
+            if (relayModeSelect && statusData.rotationMode) {
+                relayModeSelect.value = statusData.rotationMode;
+            }
+        };
+
+        const refreshRelayStatus = () => {
+            chrome.runtime.sendMessage({ action: 'QUERY_PRIVACY_RELAY_STATUS' }, (res) => {
+                if (res && res.success && res.result && res.result.status) {
+                    updateRelayStatusUI(res.result.status);
+                } else if (relayDaemonBadge) {
+                    relayDaemonBadge.textContent = 'OFFLINE';
+                    relayDaemonBadge.style.color = '#f87171';
+                    relayDaemonBadge.style.background = 'rgba(239, 68, 68, 0.2)';
+                    relayDaemonBadge.style.border = '1px solid #ef4444';
+                }
+            });
+        };
+        refreshRelayStatus();
+
+        if (relayModeSelect) {
+            relayModeSelect.value = privCfg.relayRotationMode || 'FIXED';
+            relayModeSelect.addEventListener('change', () => {
+                chrome.runtime.sendMessage({
+                    action: 'SET_PRIVACY_RELAY_MODE',
+                    rotationMode: relayModeSelect.value
+                }, () => refreshRelayStatus());
+            });
+        }
+
+        if (relayRotateBtn) {
+            relayRotateBtn.addEventListener('click', () => {
+                relayRotateBtn.disabled = true;
+                relayRotateBtn.textContent = '⏳ Rotating...';
+                chrome.runtime.sendMessage({
+                    action: 'ROTATE_PRIVACY_RELAY',
+                    reason: 'OWNER_MANUAL_CLICK'
+                }, (res) => {
+                    relayRotateBtn.disabled = false;
+                    relayRotateBtn.textContent = '🔄 Rotate Egress Now';
+                    if (res && res.success && res.result) {
+                        updateRelayStatusUI(res.result);
+                        addLog(`🔄 [Privacy Relay] Egress rotated to: ${res.result.selectedEgressId} (FP: ${res.result.egressFingerprint})`, 'info');
+                    }
+                });
+            });
+        }
+
+        if (relayRepairBtn) {
+            relayRepairBtn.addEventListener('click', () => {
+                relayRepairBtn.disabled = true;
+                relayRepairBtn.textContent = '⚡ Starting...';
+                chrome.runtime.sendMessage({ action: 'START_PRIVACY_RELAY_NATIVE' }, (res) => {
+                    setTimeout(() => {
+                        relayRepairBtn.disabled = false;
+                        relayRepairBtn.textContent = '⚡ Start / Repair';
+                        refreshRelayStatus();
+                        if (res && res.success) {
+                            addLog('⚡ [Privacy Relay] Native launch command dispatched.', 'success');
+                        } else {
+                            addLog('⚠️ [Privacy Relay] Could not start via Native Messaging. Run install_companion.bat if needed.', 'warn');
+                        }
+                    }, 1000);
+                });
+            });
         }
 
         const isVpnConfirmed = !!privCfg.systemVpnConfirmed;
@@ -4538,6 +4630,7 @@ async function saveSettings() {
         const privRememberEl = document.getElementById('privacy-proxy-remember-pass');
         const privVpnCheckbox = document.getElementById('privacy-vpn-confirm-checkbox');
         const privVpnBadge = document.getElementById('privacy-vpn-status-badge');
+        const privRelayModeEl = document.getElementById('privacy-relay-mode-select');
         const isVpnConfirmed = (privVpnBadge && privVpnBadge.textContent === 'CONFIRMED') || (privVpnCheckbox && privVpnCheckbox.checked);
 
         const privacyConfig = {
@@ -4549,7 +4642,11 @@ async function saveSettings() {
             proxyPort: privPortEl ? (parseInt(privPortEl.value, 10) || 1080) : 1080,
             proxyUsername: privUserEl ? privUserEl.value.trim() : '',
             proxyPassword: (privRememberEl && privRememberEl.checked && privPassEl) ? privPassEl.value : (privPassEl ? privPassEl.value : ''),
-            rememberPassword: privRememberEl ? privRememberEl.checked : false
+            rememberPassword: privRememberEl ? privRememberEl.checked : false,
+            relayHost: '127.0.0.1',
+            relayProxyPort: 18988,
+            relayControlPort: 18989,
+            relayRotationMode: privRelayModeEl ? privRelayModeEl.value : 'FIXED'
         };
 
     let settings;

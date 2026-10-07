@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  xpider-privacy-relay:
+    build: .
+    container_name: xpider-privacy-relay
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:18988:18988"
+      - "127.0.0.1:18989:18989"
+    volumes:
+      - ./egress_pool_config.json:/app/egress_pool_config.json:ro
+      - ./privacy_relay.log:/app/privacy_relay.log:rw
+    environment:
+      - NODE_ENV=production

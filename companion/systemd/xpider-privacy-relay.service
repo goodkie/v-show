@@ -1,0 +1,17 @@
+[Unit]
+Description=XPIDER Privacy Relay Companion Service
+After=network.target
+
+[Service]
+Type=simple
+User=xpider
+WorkingDirectory=/opt/xpider/companion
+ExecStart=/usr/bin/node /opt/xpider/companion/privacy-relay-service.js
+Restart=always
+RestartSec=5
+StandardOutput=append:/var/log/xpider-privacy-relay.log
+StandardError=append:/var/log/xpider-privacy-relay-err.log
+Environment=NODE_ENV=production
+
+[Install]
+WantedBy=multi-user.target

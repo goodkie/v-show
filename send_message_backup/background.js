@@ -2083,6 +2083,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
                 if (pg) {
                     await pg.init();
+                    if (pg.config.transportMode === 'PRIVACY_RELAY' && (pg.config.relayRotationMode === 'CAMPAIGN_BOUNDARY' || pg.config.rotateAtCampaignStart)) {
+                        logBg(null, '[PRIVACY_RELAY] Campaign boundary reached: rotating egress before campaign start...', 'info');
+                        await pg.rotateRelayEgress('CAMPAIGN_BOUNDARY');
+                    }
                     const preflight = await pg.runPreflight();
                     const pLog = `[PRIVACY_GATE] mode=${preflight.mode} transport=${preflight.mode} failClosed=${preflight.failClosed} webrtcGuard=${preflight.webrtcGuard} directFallbackBlocked=${preflight.directFallbackBlocked} egressCheck=${preflight.egressCheck} dnsPrivacy=${preflight.dnsPrivacy} ipv6Protection=${preflight.ipv6Protection} status=${preflight.ready ? 'READY' : 'BLOCKED'}`;
                     console.log(pLog);
@@ -2244,6 +2248,82 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 } catch (e) {
                     sendResponse({ success: false, error: e.message });
                 }
+            })();
+            return true;
+        }
+
+        case 'ROTATE_PRIVACY_RELAY': {
+            (async () => {
+                try {
+                    const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+                    if (!pg) return sendResponse({ success: false, error: 'PrivacyGateway unavailable' });
+                    const res = await pg.rotateRelayEgress(request.reason || 'MANUAL');
+                    sendResponse({ success: true, result: res });
+                } catch (e) {
+                    sendResponse({ success: false, error: e.message });
+                }
+            })();
+            return true;
+        }
+
+        case 'SELECT_PRIVACY_RELAY_EGRESS': {
+            (async () => {
+                try {
+                    const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+                    if (!pg) return sendResponse({ success: false, error: 'PrivacyGateway unavailable' });
+                    const res = await pg.selectRelayEgress(request.egressId);
+                    sendResponse({ success: true, result: res });
+                } catch (e) {
+                    sendResponse({ success: false, error: e.message });
+                }
+            })();
+            return true;
+        }
+
+        case 'SET_PRIVACY_RELAY_MODE': {
+            (async () => {
+                try {
+                    const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+                    if (!pg) return sendResponse({ success: false, error: 'PrivacyGateway unavailable' });
+                    const res = await pg.setRelayMode(request.rotationMode);
+                    sendResponse({ success: true, result: res });
+                } catch (e) {
+                    sendResponse({ success: false, error: e.message });
+                }
+            })();
+            return true;
+        }
+
+        case 'QUERY_PRIVACY_RELAY_STATUS': {
+            (async () => {
+                try {
+                    const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+                    if (!pg) return sendResponse({ success: false, error: 'PrivacyGateway unavailable' });
+                    const res = await pg.queryRelayStatus();
+                    sendResponse({ success: true, result: res });
+                } catch (e) {
+                    sendResponse({ success: false, error: e.message });
+                }
+            })();
+            return true;
+        }
+
+        case 'START_PRIVACY_RELAY_NATIVE': {
+            (async () => {
+                if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendNativeMessage) {
+                    try {
+                        chrome.runtime.sendNativeMessage('com.xpider.privacy_relay', { action: 'START' }, (response) => {
+                            if (chrome.runtime.lastError) {
+                                return sendResponse({ success: false, error: chrome.runtime.lastError.message });
+                            }
+                            sendResponse({ success: true, response });
+                        });
+                        return;
+                    } catch (err) {
+                        return sendResponse({ success: false, error: err.message });
+                    }
+                }
+                sendResponse({ success: false, error: 'NATIVE_MESSAGING_UNSUPPORTED' });
             })();
             return true;
         }
