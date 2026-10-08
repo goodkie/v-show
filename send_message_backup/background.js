@@ -3289,36 +3289,42 @@ case 'OWNER_CAPTCHA_REQUEST':
                     const migrationResult = await tStore.migrateLegacyData(data);
 
                     if (migrationResult.migrated && migrationResult.commit) {
-                        // [F11] Step 1: Verify backup can be written before touching live data
-                        const backupOnly = {};
-                        for (const [k, v] of Object.entries(migrationResult.commit)) {
-                            if (k.startsWith('xpider_backup_')) backupOnly[k] = v;
+                        if (migrationResult.repaired) {
+                            // [R6.9G.10.3.4] Idempotent repair commit on already-promoted v2 schema
+                            await chrome.storage.local.set(migrationResult.commit);
+                            logBg(null, `📦 [Migration] Repaired templates_v2 from source=${migrationResult.repairSource}`, 'info');
+                        } else {
+                            // [F11] Step 1: Verify backup can be written before touching live data
+                            const backupOnly = {};
+                            for (const [k, v] of Object.entries(migrationResult.commit)) {
+                                if (k.startsWith('xpider_backup_')) backupOnly[k] = v;
+                            }
+                            await chrome.storage.local.set(backupOnly);
+
+                            // [F11] Step 2: Mark STAGE_COMMIT (v2 data written, schema NOT yet promoted)
+                            await chrome.storage.local.set({ xpider_migration_phase: 'STAGE_COMMIT' });
+
+                            // [F11] Step 3: Write v2 data WITHOUT schema_version yet
+                            const dataWithoutVersion = { ...migrationResult.commit };
+                            delete dataWithoutVersion.xpider_schema_version;
+                            await chrome.storage.local.set(dataWithoutVersion);
+
+                            // [F11] Step 4: Verify complete staged payload was written, then promote schema version
+                            const verification = await chrome.storage.local.get(['templates_v2', 'savedUrlLists_v2', 'savedUrlLists']);
+                            const v2Ok = verification.templates_v2
+                                && typeof verification.templates_v2 === 'object'
+                                && !Array.isArray(verification.templates_v2)
+                                && verification.templates_v2.version === 2
+                                && typeof verification.templates_v2.templates === 'object';
+                            const urlListsOk = (verification.savedUrlLists_v2 !== undefined || verification.savedUrlLists !== undefined);
+
+                            if (!v2Ok || !urlListsOk) {
+                                throw new Error('MIGRATION_VERIFY_FAILED: complete staged v2 payload not verified after write');
+                            }
+                            await chrome.storage.local.set({ xpider_schema_version: 2, xpider_migration_phase: 'COMPLETED' });
+
+                            logBg(null, `📦 [Migration] Safely migrated to v2 (Backup: ${migrationResult.backupKey})`, 'info');
                         }
-                        await chrome.storage.local.set(backupOnly);
-
-                        // [F11] Step 2: Mark STAGE_COMMIT (v2 data written, schema NOT yet promoted)
-                        await chrome.storage.local.set({ xpider_migration_phase: 'STAGE_COMMIT' });
-
-                        // [F11] Step 3: Write v2 data WITHOUT schema_version yet
-                        const dataWithoutVersion = { ...migrationResult.commit };
-                        delete dataWithoutVersion.xpider_schema_version;
-                        await chrome.storage.local.set(dataWithoutVersion);
-
-                        // [F11] Step 4: Verify complete staged payload was written, then promote schema version
-                        const verification = await chrome.storage.local.get(['templates_v2', 'savedUrlLists_v2', 'savedUrlLists']);
-                        const v2Ok = verification.templates_v2
-                            && typeof verification.templates_v2 === 'object'
-                            && !Array.isArray(verification.templates_v2)
-                            && verification.templates_v2.version === 2
-                            && typeof verification.templates_v2.templates === 'object';
-                        const urlListsOk = (verification.savedUrlLists_v2 !== undefined || verification.savedUrlLists !== undefined);
-
-                        if (!v2Ok || !urlListsOk) {
-                            throw new Error('MIGRATION_VERIFY_FAILED: complete staged v2 payload not verified after write');
-                        }
-                        await chrome.storage.local.set({ xpider_schema_version: 2, xpider_migration_phase: 'COMPLETED' });
-
-                        logBg(null, `📦 [Migration] Safely migrated to v2 (Backup: ${migrationResult.backupKey})`, 'info');
                     }
                     sendResponse({ success: true, ...migrationResult });
                 } catch (err) {

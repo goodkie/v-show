@@ -108,21 +108,194 @@
          * Authoritative Legacy Migration: Converts legacy tplLibrary and savedUrlLists
          * Must be executed by Single Writer (Background Service Worker).
          */
+        _extractMessage(item) {
+            if (!item || typeof item !== 'object') return '';
+            if (typeof item.message === 'string' && item.message.trim().length > 0) return item.message.trim();
+            if (item.content && typeof item.content.message === 'string' && item.content.message.trim().length > 0) return item.content.message.trim();
+            if (typeof item.message_val === 'string' && item.message_val.trim().length > 0) return item.message_val.trim();
+            return '';
+        }
+
+        /**
+         * Authoritative Legacy Migration & Idempotent Repair (R6.9G.10.3.4):
+         * Converts legacy tplLibrary, xpider_tpl, and recent templates without data loss.
+         * If already on schema v2, idempotently repairs empty default templates from xpider_tpl or backups.
+         */
         async migrateLegacyData(storageData, autoCommit = false) {
             if (!storageData || typeof storageData !== 'object') {
                 throw new Error("Invalid storage data provided for migration");
             }
 
             const currentVersion = storageData.xpider_schema_version || 0;
+
+            // [R6.9G.10.3.4] Idempotent v2 inspection and backup-safe repair path
             if (currentVersion >= 2) {
-                const existingTemplates = Array.isArray(storageData.templates_v2)
-                    ? storageData.templates_v2
-                    : (storageData.templates_v2 && storageData.templates_v2.templates ? Object.values(storageData.templates_v2.templates) : []);
+                let templatesDict = {};
+                let defaultId = null;
+                let recentIds = [];
+
+                if (storageData.templates_v2 && typeof storageData.templates_v2 === 'object') {
+                    if (Array.isArray(storageData.templates_v2)) {
+                        for (const t of storageData.templates_v2) {
+                            if (t && t.id) templatesDict[t.id] = t;
+                        }
+                        defaultId = storageData.templates_v2[0]?.id || null;
+                    } else {
+                        templatesDict = { ...(storageData.templates_v2.templates || {}) };
+                        defaultId = storageData.templates_v2.defaultId || null;
+                        recentIds = Array.isArray(storageData.templates_v2.recentIds) ? [...storageData.templates_v2.recentIds] : [];
+                    }
+                }
+
+                // Check default template message
+                const defaultTpl = defaultId ? templatesDict[defaultId] : null;
+                const defaultMsg = this._extractMessage(defaultTpl);
+
+                if (defaultMsg.length > 0) {
+                    console.log('[TEMPLATE_REPAIR] repaired=false source=canonical reason=CANONICAL_DEFAULT_ALREADY_VALID');
+                    return {
+                        migrated: false,
+                        repaired: false,
+                        reason: 'ALREADY_V2_VALID',
+                        sourceCounts: Object.keys(templatesDict).length,
+                        templates: Object.values(templatesDict),
+                        templates_v2: { version: 2, templates: templatesDict, defaultId, recentIds },
+                        savedUrlLists: storageData.savedUrlLists_v2 || storageData.savedUrlLists || storageData.xpider_saved_lists || []
+                    };
+                }
+
+                // Canonical default message is empty or missing! Search for recoverable message
+                let recoverableItem = null;
+                let repairSource = 'none';
+
+                // 1. Check storageData.xpider_tpl
+                if (storageData.xpider_tpl && typeof storageData.xpider_tpl === 'object') {
+                    const msg = this._extractMessage(storageData.xpider_tpl);
+                    if (msg.length > 0) {
+                        recoverableItem = storageData.xpider_tpl;
+                        repairSource = 'xpider_tpl';
+                    }
+                }
+
+                // 2. Check backups xpider_backup_v1_* (sorted newest first)
+                if (!recoverableItem) {
+                    const backupKeys = Object.keys(storageData).filter(k => k.startsWith('xpider_backup_v1_'));
+                    backupKeys.sort((a, b) => {
+                        const tsA = parseInt(a.replace('xpider_backup_v1_', '')) || 0;
+                        const tsB = parseInt(b.replace('xpider_backup_v1_', '')) || 0;
+                        return tsB - tsA;
+                    });
+
+                    for (const bk of backupKeys) {
+                        const backup = storageData[bk];
+                        if (!backup || typeof backup !== 'object') continue;
+
+                        if (backup.xpider_tpl && typeof backup.xpider_tpl === 'object') {
+                            const bMsg = this._extractMessage(backup.xpider_tpl);
+                            if (bMsg.length > 0) {
+                                recoverableItem = backup.xpider_tpl;
+                                repairSource = 'backup-repair';
+                                break;
+                            }
+                        }
+                        if (backup.tplLibrary && typeof backup.tplLibrary === 'object') {
+                            const libItems = Array.isArray(backup.tplLibrary) ? backup.tplLibrary : Object.values(backup.tplLibrary);
+                            for (const item of libItems) {
+                                const lMsg = this._extractMessage(item);
+                                if (lMsg.length > 0) {
+                                    recoverableItem = item;
+                                    repairSource = 'backup-repair';
+                                    break;
+                                }
+                            }
+                            if (recoverableItem) break;
+                        }
+                    }
+                }
+
+                // 3. Check if another template in templatesDict has a non-empty message
+                if (!recoverableItem) {
+                    for (const t of Object.values(templatesDict)) {
+                        const tMsg = this._extractMessage(t);
+                        if (tMsg.length > 0) {
+                            defaultId = t.id;
+                            t.isDefault = true;
+                            recoverableItem = t;
+                            repairSource = 'templates_v2_alternate';
+                            break;
+                        }
+                    }
+                }
+
+                if (recoverableItem && repairSource !== 'templates_v2_alternate') {
+                    const recMsg = this._extractMessage(recoverableItem);
+                    const recSub = recoverableItem.subject || (recoverableItem.content && recoverableItem.content.subject) || recoverableItem.subject_val || '';
+                    const recEmail = recoverableItem.email || (recoverableItem.sender && recoverableItem.sender.email) || recoverableItem.email_val || '';
+                    const recName = recoverableItem.name || recoverableItem.fullName || (recoverableItem.sender && (recoverableItem.sender.fullName || recoverableItem.sender.name)) || '';
+
+                    if (defaultTpl) {
+                        defaultTpl.message = recMsg;
+                        if (!defaultTpl.content) defaultTpl.content = {};
+                        defaultTpl.content.message = recMsg;
+                        if (!defaultTpl.subject && recSub) {
+                            defaultTpl.subject = recSub;
+                            defaultTpl.content.subject = recSub;
+                        }
+                        if (!defaultTpl.email && recEmail) defaultTpl.email = recEmail;
+                        if (!defaultTpl.fullName && recName) defaultTpl.fullName = recName;
+                        defaultTpl.updatedAt = Date.now();
+                    } else {
+                        const newTpl = this._convertLegacyItem(recoverableItem, 'Default Template');
+                        newTpl.isDefault = true;
+                        templatesDict[newTpl.id] = newTpl;
+                        defaultId = newTpl.id;
+                        recentIds.unshift(defaultId);
+                    }
+
+                    const repairedTemplatesV2 = {
+                        version: 2,
+                        templates: templatesDict,
+                        defaultId: defaultId,
+                        recentIds: recentIds
+                    };
+
+                    const repairCommit = {
+                        templates_v2: repairedTemplatesV2,
+                        xpider_tpl: templatesDict[defaultId] || null,
+                        xpider_repair_ts: Date.now()
+                    };
+
+                    if (autoCommit && this.storage && typeof this.storage.set === 'function') {
+                        await new Promise((resolve, reject) => {
+                            this.storage.set(repairCommit, (err) => {
+                                if (err) reject(err); else resolve();
+                            });
+                        });
+                    }
+
+                    console.log(`[TEMPLATE_REPAIR] repaired=true source=${repairSource} reason=CANONICAL_DEFAULT_MESSAGE_EMPTY`);
+
+                    return {
+                        migrated: true,
+                        repaired: true,
+                        repairSource: repairSource,
+                        reason: 'REPAIRED_EMPTY_DEFAULT',
+                        commit: repairCommit,
+                        sourceCounts: Object.keys(templatesDict).length,
+                        templates: Object.values(templatesDict),
+                        templates_v2: repairedTemplatesV2,
+                        savedUrlLists: storageData.savedUrlLists_v2 || storageData.savedUrlLists || storageData.xpider_saved_lists || []
+                    };
+                }
+
+                console.log('[TEMPLATE_REPAIR] repaired=false source=none reason=NO_RECOVERABLE_MESSAGE');
                 return {
                     migrated: false,
-                    reason: 'ALREADY_V2',
-                    templates: existingTemplates,
-                    templates_v2: storageData.templates_v2 || null,
+                    repaired: false,
+                    reason: 'NO_RECOVERABLE_MESSAGE',
+                    sourceCounts: Object.keys(templatesDict).length,
+                    templates: Object.values(templatesDict),
+                    templates_v2: { version: 2, templates: templatesDict, defaultId, recentIds },
                     savedUrlLists: storageData.savedUrlLists_v2 || storageData.savedUrlLists || storageData.xpider_saved_lists || []
                 };
             }
@@ -141,7 +314,7 @@
             const templatesV2 = [];
             const legacyLibrary = storageData.tplLibrary;
 
-            // 2. Transform legacy tplLibrary
+            // 2. Transform legacy sources (examine BOTH tplLibrary, xpider_tpl, and xpider_recent_templates)
             if (legacyLibrary && typeof legacyLibrary === 'object') {
                 if (Array.isArray(legacyLibrary)) {
                     for (const item of legacyLibrary) {
@@ -153,25 +326,90 @@
                         templatesV2.push(converted);
                     }
                 }
-            } else if (storageData.xpider_tpl && typeof storageData.xpider_tpl === 'object') {
-                templatesV2.push(this._convertLegacyItem(storageData.xpider_tpl, 'Default Template'));
             }
 
-            // 3. Build canonical templates_v2 object schema { version: 2, templates: { [id]: tpl }, defaultId, recentIds }
-            // to match popup CRUD, default selection, and background staged migration verification.
-            let defaultId = null;
+            let xpiderTplConverted = null;
+            if (storageData.xpider_tpl && typeof storageData.xpider_tpl === 'object') {
+                xpiderTplConverted = this._convertLegacyItem(storageData.xpider_tpl, 'Default Template');
+                xpiderTplConverted._isXpiderTpl = true;
+            }
+
+            // Also check xpider_recent_templates
+            if (Array.isArray(storageData.xpider_recent_templates)) {
+                for (const item of storageData.xpider_recent_templates) {
+                    if (item && typeof item === 'object') {
+                        templatesV2.push(this._convertLegacyItem(item));
+                    }
+                }
+            }
+
+            // Deduplicate templates and ensure non-empty messages are preserved
             const templatesDict = {};
             const recentIds = [];
+            let defaultId = null;
+
+            const xpiderMsg = xpiderTplConverted ? this._extractMessage(xpiderTplConverted) : '';
 
             for (const t of templatesV2) {
                 templatesDict[t.id] = t;
                 recentIds.push(t.id);
-                if (t.isDefault && !defaultId) {
-                    defaultId = t.id;
+            }
+
+            if (xpiderTplConverted) {
+                const anyHasMsg = Object.values(templatesDict).some(t => this._extractMessage(t).length > 0);
+                if (!anyHasMsg && xpiderMsg.length > 0) {
+                    templatesDict[xpiderTplConverted.id] = xpiderTplConverted;
+                    defaultId = xpiderTplConverted.id;
+                    xpiderTplConverted.isDefault = true;
+                    recentIds.unshift(defaultId);
+                } else if (!templatesDict[xpiderTplConverted.id]) {
+                    const existingWithSameSubject = Object.values(templatesDict).find(t => 
+                        (t.subject && xpiderTplConverted.subject && t.subject === xpiderTplConverted.subject) ||
+                        (t.name && xpiderTplConverted.name && t.name === xpiderTplConverted.name)
+                    );
+                    if (existingWithSameSubject) {
+                        if (!this._extractMessage(existingWithSameSubject) && xpiderMsg.length > 0) {
+                            existingWithSameSubject.message = xpiderMsg;
+                            if (existingWithSameSubject.content) existingWithSameSubject.content.message = xpiderMsg;
+                        }
+                    } else {
+                        templatesDict[xpiderTplConverted.id] = xpiderTplConverted;
+                        recentIds.push(xpiderTplConverted.id);
+                    }
                 }
             }
-            if (!defaultId && templatesV2.length > 0) {
-                defaultId = templatesV2[0].id;
+
+            // Priority rule for defaultId:
+            // 1. Explicitly isDefault with non-empty message
+            for (const t of Object.values(templatesDict)) {
+                if (t.isDefault && this._extractMessage(t).length > 0) {
+                    defaultId = t.id;
+                    break;
+                }
+            }
+            // 2. xpiderTplConverted if it has a non-empty message
+            if (!defaultId && xpiderTplConverted && xpiderMsg.length > 0 && templatesDict[xpiderTplConverted.id]) {
+                defaultId = xpiderTplConverted.id;
+                templatesDict[defaultId].isDefault = true;
+            }
+            // 3. ANY template with non-empty message
+            if (!defaultId) {
+                for (const t of Object.values(templatesDict)) {
+                    if (this._extractMessage(t).length > 0) {
+                        defaultId = t.id;
+                        t.isDefault = true;
+                        break;
+                    }
+                }
+            }
+            // 4. Fallback to existing isDefault or first template
+            if (!defaultId) {
+                for (const t of Object.values(templatesDict)) {
+                    if (t.isDefault) { defaultId = t.id; break; }
+                }
+            }
+            if (!defaultId && Object.keys(templatesDict).length > 0) {
+                defaultId = Object.keys(templatesDict)[0];
                 templatesDict[defaultId].isDefault = true;
             }
 
@@ -197,7 +435,7 @@
             }
 
             // 5. Verify converted templates
-            for (const t of templatesV2) {
+            for (const t of Object.values(templatesDict)) {
                 if (!this.validateTemplate(t)) {
                     throw new Error(`Migration validation failed for template: ${JSON.stringify(t)}`);
                 }
@@ -245,7 +483,8 @@
                 migrated: true,
                 commit: migrationCommit,
                 backupKey,
-                templates: templatesV2,
+                sourceCounts: Object.keys(templatesDict).length,
+                templates: Object.values(templatesDict),
                 templates_v2: canonicalTemplatesV2,
                 savedUrlLists: savedUrlListsV2
             };

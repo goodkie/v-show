@@ -769,7 +769,152 @@ function bindCriticalControls() {
     return { startBound, saveBound };
 }
 
-async function hydrateSettings() {
+let isMessageDirty = false;
+let isTemplateDirty = false;
+
+function _getTemplateMessageString(tpl) {
+    if (!tpl || typeof tpl !== 'object') return '';
+    if (typeof tpl.message === 'string' && tpl.message.trim().length > 0) return tpl.message.trim();
+    if (tpl.content && typeof tpl.content.message === 'string' && tpl.content.message.trim().length > 0) return tpl.content.message.trim();
+    if (typeof tpl.message_val === 'string' && tpl.message_val.trim().length > 0) return tpl.message_val.trim();
+    return '';
+}
+
+/**
+ * [R6.9G.10.3.4] Re-hydrate template form controls and dropdown from canonical or fallback store
+ */
+async function rehydrateTemplateUI(source = 'boot', overrideStore = null) {
+    let v2Store = overrideStore;
+    let legacyTpl = null;
+    if (!v2Store) {
+        try {
+            const stored = await chrome.storage.local.get(['templates_v2', 'xpider_tpl']);
+            v2Store = stored.templates_v2;
+            legacyTpl = stored.xpider_tpl;
+        } catch (_) {}
+    } else {
+        try {
+            const stored = await chrome.storage.local.get(['xpider_tpl']);
+            legacyTpl = stored.xpider_tpl;
+        } catch (_) {}
+    }
+
+    let defaultId = v2Store?.defaultId || null;
+    let defaultTpl = (defaultId && v2Store?.templates) ? v2Store.templates[defaultId] : null;
+    let chosenSource = 'templates_v2';
+
+    const defaultMsg = _getTemplateMessageString(defaultTpl);
+    const legacyMsg = _getTemplateMessageString(legacyTpl);
+
+    if (defaultMsg.length === 0 && legacyMsg.length > 0) {
+        defaultTpl = legacyTpl;
+        chosenSource = 'xpider_tpl';
+    } else if (!defaultTpl && legacyTpl) {
+        defaultTpl = legacyTpl;
+        chosenSource = 'xpider_tpl';
+    }
+
+    if (defaultTpl) {
+        populateFormFromTemplate(defaultTpl);
+    }
+
+    if (typeof updateTemplateDropdown === 'function') {
+        try {
+            await updateTemplateDropdown(defaultId);
+        } catch (_) {}
+    }
+
+    const msgEl = document.getElementById('tpl-message');
+    const hasMsg = !!(msgEl && msgEl.value && msgEl.value.trim().length > 0);
+    console.log(`[TEMPLATE_HYDRATE] templateId=${defaultTpl?.id || defaultId || 'none'} source=${chosenSource} messagePresent=${hasMsg}`);
+    addLog(`[TEMPLATE_HYDRATE] templateId=${defaultTpl?.id || defaultId || 'none'} source=${chosenSource} messagePresent=${hasMsg}`, 'info');
+
+    return { templateId: defaultTpl?.id || defaultId || 'none', source: chosenSource, messagePresent: hasMsg };
+}
+
+/**
+ * [R6.9G.10.3.4] Serialized Migration Promise: Single Writer Handshake before UI hydration
+ */
+async function ensureSchemaReady() {
+    console.log('[POPUP_BOOT] ensureSchemaReady starting...');
+    let migrationRes = null;
+    try {
+        migrationRes = await new Promise((resolve) => {
+            const timer = setTimeout(() => {
+                console.warn('[POPUP_BOOT] ensureSchemaReady timeout after 2500ms, proceeding with storage read');
+                resolve({ success: false, reason: 'TIMEOUT' });
+            }, 2500);
+
+            chrome.runtime.sendMessage({ action: 'EXECUTE_MIGRATION' }, (res) => {
+                clearTimeout(timer);
+                if (chrome.runtime.lastError) {
+                    console.warn('[POPUP_BOOT] EXECUTE_MIGRATION IPC error:', chrome.runtime.lastError.message);
+                    resolve({ success: false, reason: 'IPC_ERROR', error: chrome.runtime.lastError.message });
+                } else {
+                    resolve(res || { success: false, reason: 'NO_RESPONSE' });
+                }
+            });
+        });
+    } catch (e) {
+        console.warn('[POPUP_BOOT] ensureSchemaReady exception:', e);
+        migrationRes = { success: false, reason: 'EXCEPTION', error: e.message };
+    }
+
+    const status = migrationRes?.repaired ? 'REPAIRED' : (migrationRes?.migrated ? 'MIGRATED' : (migrationRes?.reason || 'READY'));
+    const sourceCounts = migrationRes?.sourceCounts || (migrationRes?.templates ? migrationRes.templates.length : (migrationRes?.templates_v2?.templates ? Object.keys(migrationRes.templates_v2.templates).length : 0));
+    console.log(`[TEMPLATE_MIGRATION] status=${status} sourceCounts=${sourceCounts}`);
+    addLog(`[TEMPLATE_MIGRATION] status=${status} sourceCounts=${sourceCounts}`, 'info');
+    return migrationRes;
+}
+
+/**
+ * [R6.9G.10.3.4] Start-time template readiness guard
+ */
+async function ensureTemplateReadyForStart() {
+    const msgEl = document.getElementById('tpl-message');
+    const domMsg = (msgEl ? msgEl.value : '').trim();
+    const hasDomMsg = domMsg.length > 0;
+
+    let stored = null;
+    try {
+        stored = await chrome.storage.local.get(['templates_v2', 'xpider_tpl']);
+    } catch (_) {}
+
+    const v2Store = stored?.templates_v2;
+    const defaultId = v2Store?.defaultId || 'unknown';
+    const canonicalTpl = (defaultId && v2Store?.templates) ? v2Store.templates[defaultId] : stored?.xpider_tpl;
+    const canonicalMsg = _getTemplateMessageString(canonicalTpl);
+    const hasCanonicalMsg = canonicalMsg.length > 0;
+
+    console.log(`[TEMPLATE_START_GUARD] templateId=${defaultId} domMessage=${hasDomMsg} canonicalMessage=${hasCanonicalMsg} dirty=${isMessageDirty}`);
+
+    if (!hasDomMsg) {
+        if (!isMessageDirty && hasCanonicalMsg) {
+            const hydResult = await rehydrateTemplateUI('start_guard', v2Store);
+            return { ready: hydResult.messagePresent, message: (msgEl ? msgEl.value : '').trim() };
+        }
+        return { ready: false, message: '' };
+    }
+
+    return { ready: true, message: domMsg };
+}
+
+/**
+ * [R6.9G.10.3.4] UI Safety: automatically switch to Message Template tab and highlight Message Body
+ */
+function switchToTemplateTabAndFocusMessage() {
+    const tplTabBtn = document.querySelector('.tab-btn[data-tab="template"]');
+    if (tplTabBtn) tplTabBtn.click();
+    const msgEl = document.getElementById('tpl-message');
+    if (msgEl) {
+        msgEl.focus();
+        msgEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        msgEl.style.outline = '2px solid #ef4444';
+        setTimeout(() => { if (msgEl) msgEl.style.outline = ''; }, 3000);
+    }
+}
+
+async function hydrateSettings(overrideV2Store = null) {
     if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.local) {
         console.warn('[hydrateSettings] chrome.storage.local not available');
         return false;
@@ -855,29 +1000,8 @@ async function hydrateSettings() {
     if (methodGroup) methodGroup.style.display = captchaEnabled ? 'block' : 'none';
     if (typeof toggleCaptchaApiVisibility === 'function') toggleCaptchaApiVisibility();
 
-    // Template
-    let tplToLoad = data.xpider_tpl || null;
-    if (data.templates_v2 && data.templates_v2.defaultId && data.templates_v2.templates) {
-        const v2default = data.templates_v2.templates[data.templates_v2.defaultId];
-        if (v2default) tplToLoad = v2default;
-    }
-    if (tplToLoad) {
-        const firstName = tplToLoad.firstName || (tplToLoad.sender && tplToLoad.sender.firstName) || '';
-        const lastName  = tplToLoad.lastName  || (tplToLoad.sender && tplToLoad.sender.lastName)  || '';
-        const name      = tplToLoad.name      || tplToLoad.fullName || (tplToLoad.sender && (tplToLoad.sender.fullName || tplToLoad.sender.name)) || '';
-        const email     = tplToLoad.email     || (tplToLoad.sender && tplToLoad.sender.email)     || '';
-        const phone     = tplToLoad.phone     || (tplToLoad.sender && tplToLoad.sender.phone)     || '';
-        const subject   = tplToLoad.subject   || (tplToLoad.content && tplToLoad.content.subject) || '';
-        const message   = tplToLoad.message   || (tplToLoad.content && tplToLoad.content.message) || '';
-
-        if (document.getElementById('tpl-first-name')) document.getElementById('tpl-first-name').value = firstName;
-        if (document.getElementById('tpl-last-name'))  document.getElementById('tpl-last-name').value  = lastName;
-        if (document.getElementById('tpl-name'))       document.getElementById('tpl-name').value       = name;
-        if (document.getElementById('tpl-email'))      document.getElementById('tpl-email').value      = email;
-        if (document.getElementById('tpl-phone'))      document.getElementById('tpl-phone').value      = phone;
-        if (document.getElementById('tpl-subject'))    document.getElementById('tpl-subject').value    = subject;
-        if (document.getElementById('tpl-message'))    document.getElementById('tpl-message').value    = message;
-    }
+    // [R6.9G.10.3.4] Template Hydration & Dropdown Sync
+    await rehydrateTemplateUI('boot', overrideV2Store || data.templates_v2);
 
     if (document.getElementById('delay-input-collect')) {
         document.getElementById('delay-input-collect').value = data.xpider_delay_collect || data.xpider_delay || 6;
@@ -1926,9 +2050,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 3. Runtime connection
         try { chrome.runtime.connect({ name: 'xpider_popup' }); } catch(e) {}
 
+        // 3.5. Schema Migration / Repair Synchronization (Single Writer Handshake)
+        let migrationResult = null;
+        try {
+            migrationResult = await ensureSchemaReady();
+            window.__xpider_boot.schemaReady = true;
+            console.log(`[POPUP_BOOT] schemaReady=true migrated=${!!migrationResult?.migrated} repaired=${!!migrationResult?.repaired}`);
+        } catch (e) {
+            window.__xpider_boot.schemaReady = false;
+            console.warn('[POPUP_BOOT] ensureSchemaReady error:', e);
+        }
+
         // 4. Settings Hydration (Isolated boundary - failure does NOT block Start button)
         try {
-            const hydOk = await hydrateSettings();
+            const hydOk = await hydrateSettings(migrationResult?.templates_v2);
             window.__xpider_boot.settingsHydrated = !!hydOk;
             console.log(`[POPUP_BOOT] settingsHydrated=${!!hydOk}`);
         } catch (e) {
@@ -2475,10 +2610,21 @@ function bindEvents() {
         });
     }
 
-    // Persistence for Template
+    // Persistence for Template with Dirty Tracking
     ['tpl-first-name', 'tpl-last-name', 'tpl-name', 'tpl-email', 'tpl-phone', 'tpl-subject', 'tpl-message'].forEach(id => {
         const el = document.getElementById(id);
-        if (el) el.addEventListener('input', saveTemplate);
+        if (el) {
+            el.addEventListener('input', () => {
+                if (id === 'tpl-message') isMessageDirty = true;
+                isTemplateDirty = true;
+                saveTemplate();
+            });
+            el.addEventListener('change', () => {
+                if (id === 'tpl-message') isMessageDirty = true;
+                isTemplateDirty = true;
+                saveTemplate();
+            });
+        }
     });
 
     // Single URL & List Management
@@ -3346,6 +3492,13 @@ async function startCampaign() {
         return alert("Please upload a file or enter a URL first.");
     }
 
+    // [R6.9G.10.3.4] Start-time template readiness guard
+    const tplReady = await ensureTemplateReadyForStart();
+    if (tplReady && tplReady.ready && tplReady.message) {
+        const msgEl = document.getElementById('tpl-message');
+        if (msgEl && !msgEl.value) msgEl.value = tplReady.message;
+    }
+
     currentTpl = {
         firstName: document.getElementById('tpl-first-name')?.value || '',
         lastName: document.getElementById('tpl-last-name')?.value || '',
@@ -3353,7 +3506,7 @@ async function startCampaign() {
         email: document.getElementById('tpl-email')?.value || '',
         phone: document.getElementById('tpl-phone')?.value || '',
         subject: document.getElementById('tpl-subject')?.value || '',
-        message: document.getElementById('tpl-message')?.value || ''
+        message: document.getElementById('tpl-message')?.value || (tplReady?.message || '')
     };
 
     // Explicit diagnostic on empty message (No silent returns!)
@@ -3362,7 +3515,8 @@ async function startCampaign() {
         addLog('⚠️ [START_BLOCKED_EMPTY_MESSAGE] Message body is empty. Enter message content before starting.', 'warn');
         addDiagnosticLog('[Engine][GUARD_FAIL] reason=START_BLOCKED_EMPTY_MESSAGE', 'WARN');
         _restoreStartButton();
-        return alert("Please enter a message body.");
+        switchToTemplateTabAndFocusMessage();
+        return;
     }
 
     // [Phase 2B Component D / R1] Authoritatively bind template metadata to execution state & payload
@@ -5163,14 +5317,7 @@ chrome.storage.onChanged.addListener((changes) => {
 
 // [P2A Foundation UI Wiring]
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Trigger background single-writer migration
-    try {
-        chrome.runtime.sendMessage({ action: 'EXECUTE_MIGRATION' }, (res) => {
-            if (res && res.success) {
-                console.log('[Popup] Storage migration verified / initialized to v2.');
-            }
-        });
-    } catch(e) {}
+    // Note: Background migration is serialized during primary boot via ensureSchemaReady()
 
     // 2. Export CSV Report Button
     const exportBtn = document.getElementById('export-csv-btn');
@@ -5609,6 +5756,11 @@ if (typeof module !== 'undefined' && module.exports) {
         copyDiagnosticReport,
         downloadDiagnosticTxt,
         redactSensitiveText,
-        calculatePayloadBytes
+        calculatePayloadBytes,
+        // R6.9G.10.3.4 Template Hydration & Start Guard Exports
+        ensureSchemaReady,
+        rehydrateTemplateUI,
+        ensureTemplateReadyForStart,
+        switchToTemplateTabAndFocusMessage
     };
 }
