@@ -8,11 +8,11 @@
 ---
 
 ## 1. Package Inventory & Verification
-- **Build ID:** `R6.9G.10-20261007-PRIVACY-RELAY-SAFE-ROTATION`
-- **Implementation HEAD:** `365bad6817e73166ea8779c9df7f387c28fe9330`
-- **Visible Badge in UI:** `TEST-ONLY R6.9G.10 [365bad68]`
+- **Build ID:** `R6.9G.10.1-20261007-AUTHENTICATED-RELAY-VERIFIED-EGRESS`
+- **Implementation HEAD:** `36fc8d5cafa505314aa8ca1733cbb373ad3d7bf8`
+- **Visible Badge in UI:** `TEST-ONLY R6.9G.10.1 [36fc8d5c]`
 - **Unpacked Extension Path:** `send_message_backup/build/extension`
-- **ZIP Package:** `XPIDER_R6.9G.10_OWNER_DIAGNOSTIC_TEST_ONLY.zip`
+- **ZIP Package:** `XPIDER_R6.9G.10.1_OWNER_DIAGNOSTIC_TEST_ONLY.zip`
 - **ZIP SHA-256:** `PENDING`
 - **File Manifest:** See [PACKAGE_INVENTORY_SHA256.txt](file:///E:/vivpr\ai\extension-form-sender\PACKAGE_INVENTORY_SHA256.txt)
 
@@ -51,7 +51,7 @@ Run a small test of **3 to 5 URLs only**. If testing locally or against live end
 
 ## 4. One-Click Diagnostic Log Export Instructions
 1. Open the XPIDER Extension Popup.
-2. Ensure the top badge displays: `TEST-ONLY R6.9G.10 [365bad68]`.
+2. Ensure the top badge displays: `TEST-ONLY R6.9G.10.1 [36fc8d5c]`.
 3. In the diagnostic action bar at the top or bottom of the popup, click either:
    - **📋 Copy Diagnostic Report**: Copies the complete sanitized diagnostic JSON/text to clipboard.
    - **💾 Download Diagnostic TXT**: Downloads `xpider-diagnostic-report-<timestamp>.txt` directly.

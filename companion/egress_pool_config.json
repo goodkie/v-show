@@ -17,7 +17,7 @@
       "lastHealth": "HEALTHY",
       "observedEgressIp": "198.51.100.101",
       "observedFingerprint": "6a817846a3f74339",
-      "lastVerifiedAt": 1791418960764
+      "lastVerifiedAt": 1791419062946
     },
     {
       "id": "egress-node-2",
@@ -33,7 +33,7 @@
       "lastHealth": "HEALTHY",
       "observedEgressIp": "198.51.100.202",
       "observedFingerprint": "cbc847d27d6f5694",
-      "lastVerifiedAt": 1791418960699
+      "lastVerifiedAt": 1791419062876
     },
     {
       "id": "egress-node-3",

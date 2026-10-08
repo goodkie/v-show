@@ -1,0 +1,96 @@
+[2026-10-08T00:24:17.677Z] ========================================================================
+[2026-10-08T00:24:17.679Z]   XPIDER AUTOFORM SENDER PRO - REAL MS EDGE OPERATOR AUDIT (R6.9G.10.1)
+[2026-10-08T00:24:17.680Z]   AUTHENTICATED RELAY + OBSERVED EGRESS + REAL NATIVE AUTO-RECOVERY
+[2026-10-08T00:24:17.680Z] ========================================================================
+[2026-10-08T00:24:17.707Z] [SERVERS_STARTED] Target server on http://127.0.0.1:8980
+[2026-10-08T00:24:17.714Z] [UPSTREAMS_STARTED] Node 1 (18991), Node 2 (18992), Node 3 (18993)
+[2026-10-08T00:24:17.714Z] 
+>>> GATE A: COMPANION CONTROL PLANE TOKEN AUTH & RESTRICTED CORS <<<
+[2026-10-08T00:24:17.746Z] [UPSTREAM_NODE1_CONNECT] 127.0.0.1:18991
+[2026-10-08T00:24:17.749Z] [UPSTREAM_NODE1] GET /privacy-canary
+[2026-10-08T00:24:18.530Z] [GATE_A_TOKEN_GENERATED] Length=64 chars (High-entropy SHA-256 equivalent)
+[2026-10-08T00:24:18.556Z] [GATE_A_UNAUTH_STATUS] HTTP 401 (Expected 401)
+[2026-10-08T00:24:18.561Z] [GATE_A_UNAUTH_ROTATE] HTTP 401 (Expected 401)
+[2026-10-08T00:24:18.565Z] [GATE_A_AUTH_STATUS] HTTP 200 (Expected 200)
+[2026-10-08T00:24:18.568Z] [GATE_A_STATUS_DATA] relayReady=true rotationMode=HEALTH_FAILOVER nodes=3
+[2026-10-08T00:24:18.576Z] [GATE_A_CORS_CHECK] Access-Control-Allow-Origin="chrome-extension://pjohcallgmjmbfckiaogjokelhobfceg" (Wildcard * prohibited)
+[2026-10-08T00:24:18.576Z] ✅ GATE A: CONTROL PLANE TOKEN AUTH & RESTRICTED CORS VERIFIED PASS
+[2026-10-08T00:24:18.576Z] 
+>>> GATE B: NATIVE MESSAGING HOST PROTOCOL & MANIFEST REGISTRY <<<
+[2026-10-08T00:24:18.576Z] [EXTENSION_PATH] E:\vivpr\ai\extension-form-sender\send_message_backup\build\extension
+[2026-10-08T00:24:18.716Z] ✅ GATE B: DYNAMIC MANIFEST & REGISTRY REGISTRATION VERIFIED PASS
+[2026-10-08T00:24:18.716Z] 
+>>> STOPPING COMPANION TO TEST ZERO-MANUAL-LAUNCH AUTO-BOOT <<<
+[2026-10-08T00:24:19.306Z] [RELAY_PRE_BOOT_STATE] offline=true (Must be true for fresh recovery test)
+[2026-10-08T00:24:19.306Z] 
+>>> GATE C: LAUNCHING EDGE & VERIFYING NATIVE IPC AUTO-BOOT <<<
+[2026-10-08T00:24:19.315Z] [EDGE_SPAWNED] PID=12696 CDP=9244
+[2026-10-08T00:24:20.863Z] [BG_TARGET_FOUND] ws=ws://127.0.0.1:9244/devtools/page/C8CF356DE1D08A4A1B68C089529180AC
+[2026-10-08T00:24:20.881Z] [EXT_ID_RESOLVED] pjohcallgmjmbfckiaogjokelhobfceg
+[2026-10-08T00:24:21.045Z] [SW_CONSOLE] [PRIVACY_GATE] Proxy onAuthRequired asyncBlocking listener registered with bounded retries.
+[2026-10-08T00:24:21.046Z] [SW_CONSOLE] [BootStep] solver_instantiation
+[2026-10-08T00:24:21.047Z] [SW_CONSOLE] [X PIDER] Background script initializing (Unified Mode)...
+[2026-10-08T00:24:21.047Z] [SW_CONSOLE] [BootStep] side_panel_config
+[2026-10-08T00:24:21.048Z] [SW_CONSOLE] [BootStep] campaign_state_init
+[2026-10-08T00:24:21.061Z] [SW_CONSOLE] [BootStep] global_functions_defined
+[2026-10-08T00:24:21.063Z] [SW_CONSOLE] [BootStep] worker_online
+[2026-10-08T00:24:21.065Z] [SW_RUNTIME_READY] attempt=1
+[2026-10-08T00:24:21.304Z] [GATE_C_NATIVE_PING_EDGE] response={"resp":{"action":"PONG","timestamp":1791419061300}}
+[2026-10-08T00:24:21.501Z] [SW_CONSOLE] [PRIVACY_GATE] Relay offline. Dispatching Native Messaging START command...
+[2026-10-08T00:24:21.556Z] [SW_CONSOLE] [BootStep] restoring_campaign_state
+[2026-10-08T00:24:21.557Z] [SW_CONSOLE] [Boot] Initializing campaign state...
+[2026-10-08T00:24:21.561Z] [SW_CONSOLE] [COUNTER_RECONCILE] legacySuccess=0 ledgerSuccess=0 action=LEDGER_WINS
+[2026-10-08T00:24:21.562Z] [SW_CONSOLE] [BootStep] restore_complete
+[2026-10-08T00:24:22.248Z] [UPSTREAM_NODE1_CONNECT] 127.0.0.1:8980
+[2026-10-08T00:24:22.251Z] [TARGET_DIRECT_REQ] GET /privacy-canary Host=127.0.0.1
+[2026-10-08T00:24:22.812Z] [GATE_C_AUTO_START_RESULT] active=true status={"service":"XPIDER Privacy Relay","version":"1.0.1","relayReady":true,"paused":false,"controlPort":18989,"proxyPort":18988,"rotationMode":"HEALTH_FAILOVER","selectedEgressId":"egress-node-1","egressFingerprint":"6a817846a3f74339","transport":"HTTP_PROXY","health":"HEALTHY","activeNodeIndex":0,"totalNodes":3,"rotationCount":0,"lastCheck":"2026-10-08T00:24:22.810Z","nodes":[{"id":"egress-node-1","name":"US-East Privacy Node 1","type":"HTTP_PROXY","host":"127.0.0.1","port":18991,"region":"US-EAST","active":true,"lastHealth":"HEALTHY","hasCredentials":false,"fingerprint":"6a817846a3f74339"},{"id":"egress-node-2","name":"EU-Central Privacy Node 2","type":"HTTP_PROXY","host":"127.0.0.1","port":18992,"region":"EU-CENTRAL","active":true,"lastHealth":"UNKNOWN","hasCredentials":false,"fingerprint":null},{"id":"egress-node-3","name":"AP-East Privacy Node 3","type":"HTTP_PROXY","host":"127.0.0.1","port":18993,"region":"AP-EAST","active":true,"lastHealth":"UNKNOWN","hasCredentials":false,"fingerprint":null}],"trafficStats":{"requestsProxied":0,"connectTunnels":0,"failClosedDrops":0}}
+[2026-10-08T00:24:22.812Z] ✅ GATE C: EDGE NATIVE MESSAGING IPC & ZERO-MANUAL-LAUNCH BOOT VERIFIED PASS
+[2026-10-08T00:24:22.812Z] 
+>>> GATE D: OBSERVED PUBLIC EGRESS FINGERPRINT & TUNNELING <<<
+[2026-10-08T00:24:22.833Z] [UPSTREAM_NODE1] GET http://127.0.0.1:8980/privacy-canary
+[2026-10-08T00:24:22.841Z] [GATE_D_PREFLIGHT] ready=true mode=PRIVACY_RELAY egressCheck=PASS fingerprint=6a817846a3f74339
+[2026-10-08T00:24:22.844Z] [UPSTREAM_NODE1] GET http://127.0.0.1:8980/privacy-canary
+[2026-10-08T00:24:22.848Z] [GATE_D_PROXY_FETCH] ok=true status=200 text="ip=198.51.100.101
+loc=NODE1"
+[2026-10-08T00:24:22.848Z] [GATE_D_TRAFFIC_AUDIT] node1_reqs=1 target_direct_reqs=0
+[2026-10-08T00:24:22.848Z] ✅ GATE D: OBSERVED PUBLIC EGRESS FINGERPRINT & OWNED EGRESS VERIFIED PASS
+[2026-10-08T00:24:22.848Z] 
+>>> GATE E: HEALTH-AWARE ROTATION & PRE-COMMIT VERIFICATION <<<
+[2026-10-08T00:24:22.854Z] [UPSTREAM_NODE1] POST http://127.0.0.1:18989/rotate
+[2026-10-08T00:24:22.872Z] [UPSTREAM_NODE2_CONNECT] 127.0.0.1:8980
+[2026-10-08T00:24:22.874Z] [TARGET_DIRECT_REQ] GET /privacy-canary Host=127.0.0.1
+[2026-10-08T00:24:22.890Z] [GATE_E_ROTATE_RESULT] success=true selected=egress-node-2 fp=cbc847d27d6f5694
+[2026-10-08T00:24:22.895Z] [UPSTREAM_NODE2] GET http://127.0.0.1:8980/privacy-canary
+[2026-10-08T00:24:22.898Z] [GATE_E_NODE2_FETCH] ok=true node2_reqs=1
+[2026-10-08T00:24:22.899Z] [NODE3_STOPPED] Egress Node 3 stopped to simulate dead candidate
+[2026-10-08T00:24:22.901Z] [UPSTREAM_NODE2] POST http://127.0.0.1:18989/rotate
+[2026-10-08T00:24:22.942Z] [UPSTREAM_NODE1_CONNECT] 127.0.0.1:8980
+[2026-10-08T00:24:22.944Z] [TARGET_DIRECT_REQ] GET /privacy-canary Host=127.0.0.1
+[2026-10-08T00:24:22.961Z] [GATE_E_DEAD_ROTATE_RES] selected=egress-node-1
+[2026-10-08T00:24:22.962Z] ✅ GATE E: HEALTH-AWARE ROTATION & PRE-COMMIT VERIFICATION VERIFIED PASS
+[2026-10-08T00:24:22.962Z] 
+>>> GATE F: REAL HEALTH_FAILOVER & ALL-NODES-DOWN FAIL-CLOSED <<<
+[2026-10-08T00:24:22.965Z] [UPSTREAM_NODE1] POST http://127.0.0.1:18989/mode
+[2026-10-08T00:24:22.984Z] [ALL_NODES_STOPPED] Node 1 and Node 2 stopped; 0 healthy egress nodes remaining.
+[2026-10-08T00:24:23.039Z] [GATE_F_ALL_DOWN_STATUS] relayReady=undefined
+[2026-10-08T00:24:23.117Z] [GATE_F_ALL_DOWN_PREFLIGHT] ready=false reason=PRIVACY_RELAY_OFFLINE
+[2026-10-08T00:24:23.175Z] [GATE_F_DROP_FETCH] ok=false status=502
+[2026-10-08T00:24:23.175Z] ✅ GATE F: HEALTH FAILOVER & ALL-NODES-DOWN FAIL-CLOSED VERIFIED PASS
+[2026-10-08T00:24:23.175Z] 
+>>> GATE G: REAL TLS UPSTREAM FOR HTTPS_PROXY & SECRET REDACTION <<<
+[2026-10-08T00:24:23.200Z] [GATE_G_TLS_CHECK] verified=false reason="UPSTREAM_TLS_CONNECT_ERROR: connect ECONNREFUSED 127.0.0.1:19999"
+[2026-10-08T00:24:23.212Z] ✅ GATE G: REAL TLS UPSTREAM FOR HTTPS_PROXY & SECRET REDACTION VERIFIED PASS
+[2026-10-08T00:24:23.212Z] 
+>>> GATE H: POPUP UI INTEGRATION & LIMITATIONS DISCLAIMER <<<
+[2026-10-08T00:24:23.612Z] [SW_CONSOLE] [BG_LOG][tab=none] 📦 [Migration] Safely migrated to v2 (Backup: xpider_backup_v1_1791419063582)
+[2026-10-08T00:24:25.297Z] [GATE_H_POPUP_DOM] badge="TEST-ONLY R6.9G.10.1 [36fc8d5c]" hasRelayOption=true hasDisclaimer=true
+[2026-10-08T00:24:25.297Z] ✅ GATE H: POPUP UI & LIMITATIONS DISCLAIMER VERIFIED PASS
+[2026-10-08T00:24:25.297Z] 
+>>> GATE I: LIFECYCLE & CLEAN UNINSTALLATION <<<
+[2026-10-08T00:24:25.429Z] ✅ GATE I: REGISTRY UNINSTALLATION VERIFIED PASS
+[2026-10-08T00:24:25.429Z] 
+========================================================================
+[2026-10-08T00:24:25.429Z]   🎉 ALL R6.9G.10.1 OPERATOR AUDIT GATES (A THROUGH I) VERIFIED PASS! 🎉
+[2026-10-08T00:24:25.429Z] ========================================================================
+[2026-10-08T00:24:25.429Z] 
+[TEARDOWN] Cleaning up processes and servers...

@@ -15,17 +15,16 @@
 
     const BUILD_INFO = {
         branch: 'upgrade/phase-0-1',
-        // [R6.9G.10] implementationHead = functional commit containing Companion Privacy Relay,
-        //            safe rotation modes (FIXED, MANUAL, CAMPAIGN_BOUNDARY, HEALTH_FAILOVER),
-        //            zero-manual-launch Windows UX, and extension privacy gateway integration
-        implementationHead: '365bad6817e73166ea8779c9df7f387c28fe9330',
-        implementationHeadShort: '365bad68',
-        head: '365bad6817e73166ea8779c9df7f387c28fe9330',
-        headShort: '365bad68',
+        // [R6.9G.10.1] implementationHead = functional commit containing Authenticated Relay,
+        //              Verified Egress, Real Native Auto-Recovery, and Fail-Closed Engine
+        implementationHead: '36fc8d5cafa505314aa8ca1733cbb373ad3d7bf8',
+        implementationHeadShort: '36fc8d5c',
+        head: '36fc8d5cafa505314aa8ca1733cbb373ad3d7bf8',
+        headShort: '36fc8d5c',
         rollbackBase: 'dc0740a0c69e2f7fa96b6989841acf0831b3619e',
         manifestVersion: 3,
         buildId: 'R6.9G.10.1-20261007-AUTHENTICATED-RELAY-VERIFIED-EGRESS',
-        builtAt: '2026-10-07T23:55:00.000Z',
+        builtAt: '2026-10-08T00:23:00.000Z',
         provenanceSchema: 2,
         modules: {
             backgroundSha: 'ef1054c1ee53fc267acf00712ececdd7883bd30680ac2f4c4083bd1ba62ea101',
