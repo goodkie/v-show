@@ -1318,6 +1318,19 @@ async function runRealEdgeAudit() {
     egressNode1 = createMockEgressProxy('node1', NODE1_PORT, '198.51.100.101', egressTraffic.node1);
     await new Promise(r => egressNode1.listen(NODE1_PORT, '127.0.0.1', r));
 
+    // Gate G (R6.9G.10.3.4): Seed saved template into storage before opening popup to verify automatic hydration
+    rec('\n[GATE_I_TEST_F_SEED_TEMPLATE] Seeding legacy xpider_tpl into extension storage to verify automatic hydration...');
+    await evalRestartSw(`(async () => {
+      await chrome.storage.local.set({
+        xpider_tpl: {
+          name: 'Test Audit Operator',
+          email: 'audit-operator@example.com',
+          message: 'Inquiry regarding privacy verification and automated dispatch.',
+          subject: 'Partnership Inquiry'
+        }
+      });
+    })()`);
+
     // Create a new tab with popup.html
     let popupTarget = null;
     try {
@@ -1396,12 +1409,8 @@ async function runRealEdgeAudit() {
         addBtn.click();
         await new Promise(r => setTimeout(r, 60));
       }
+      // [R6.9G.10.3.4 Gate G]: DO NOT manually type Message Body; verify it was automatically hydrated from storage!
       const tplMsg = document.getElementById('tpl-message');
-      if (tplMsg) tplMsg.value = 'Inquiry regarding privacy verification and automated dispatch.';
-      const tplName = document.getElementById('tpl-name');
-      if (tplName) tplName.value = 'Test Audit Operator';
-      const tplEmail = document.getElementById('tpl-email');
-      if (tplEmail) tplEmail.value = 'audit-operator@example.com';
       const startBtn = document.getElementById('start-btn');
       return {
         urlCount: document.getElementById('url-count-display')?.textContent || '',
@@ -1411,7 +1420,7 @@ async function runRealEdgeAudit() {
     })()`);
     rec(`[GATE_I_TEST_F_POPULATED] ${JSON.stringify(populateRes)}`);
     if (populateRes.msgLen === 0) {
-      throw new Error(`Gate I Test F: Failed to populate test campaign queue or message: ${JSON.stringify(populateRes)}`);
+      throw new Error(`Gate I Test F: Template Message was NOT auto-hydrated! msgLen=0. Logs:\n${popupLogs.join('\n')}`);
     }
 
     // Capture background console logs for START_BG via restartWs
@@ -1461,8 +1470,13 @@ async function runRealEdgeAudit() {
       if (startUiFound && startGuardFound && startIpcFound && startBgFound && startAckFound) break;
     }
 
-    rec(`[GATE_I_TEST_F_EVIDENCE] START_UI=${startUiFound} START_GUARD=${startGuardFound} START_IPC=${startIpcFound} START_BG=${startBgFound} START_ACK=${startAckFound} TargetDispatched=${targetDispatched}`);
+    const finalPopupLogs = popupLogs.join('\n');
+    const templateHydrateFound = finalPopupLogs.includes('[TEMPLATE_HYDRATE]') && finalPopupLogs.includes('messagePresent=true');
+    rec(`[GATE_I_TEST_F_EVIDENCE] TEMPLATE_HYDRATE=${templateHydrateFound} START_UI=${startUiFound} START_GUARD=${startGuardFound} START_IPC=${startIpcFound} START_BG=${startBgFound} START_ACK=${startAckFound} TargetDispatched=${targetDispatched}`);
 
+    if (!templateHydrateFound) {
+      throw new Error(`Gate I Test F: [TEMPLATE_HYDRATE] messagePresent=true log missing from popup console! Logs:\n${finalPopupLogs}`);
+    }
     if (!startUiFound) {
       throw new Error(`Gate I Test F: [START_UI] log missing from popup console! Logs:\n${popupLogs.join('\n')}`);
     }
