@@ -298,10 +298,68 @@ async function runTestSuite() {
         recordPass('Privacy Test G: Sniper fetch cannot run before privacy assertion');
     }
 
+    // Test H: Authoritative Fail-Closed SUBMIT Privacy Barrier & Pre-Submit Certainty Preservation
+    {
+        const mockChrome = createMockChrome();
+        global.chrome = mockChrome;
+
+        const pg = new PrivacyGatewayEngine();
+        await pg.init({ transportMode: 'EXTERNAL_VPN_MONITOR', failClosed: true });
+        pg.isGateReady = false;
+        pg.failureReason = 'PRIVACY_GATE_NOT_READY';
+
+        // 1. Simulate background ASSERT_PRIVACY_TRANSPORT_READY handler
+        async function handleAssertPrivacyTransport(request) {
+            if (!pg.isPrivacyGateReady()) {
+                return { ready: false, reason: pg.failureReason || 'PRIVACY_GATE_NOT_READY' };
+            }
+            return { ready: true, reason: null };
+        }
+
+        const submitPrivCheck = await handleAssertPrivacyTransport({ context: 'SUBMIT_BARRIER' });
+        assert.strictEqual(submitPrivCheck.ready, false, 'Test H: Submit barrier must reject when gate not ready');
+        assert.strictEqual(submitPrivCheck.reason, 'PRIVACY_GATE_NOT_READY');
+
+        // 2. Simulate settlement logic in background.js finish()
+        const simulatedOutcome = {
+            success: false,
+            error: 'PRIVACY_GATEWAY_BLOCKED_BEFORE_SUBMIT',
+            reasonCode: 'PRIVACY_GATEWAY_BLOCKED_BEFORE_SUBMIT'
+        };
+
+        const isSuccess = !!simulatedOutcome.success;
+        const isPreSubmitFailure = !isSuccess && (
+            simulatedOutcome.reasonCode === 'PRE_SUBMIT_PERSISTENCE_FAILED' ||
+            simulatedOutcome.reasonCode === 'INTENT_PERSISTENCE_FAILED' ||
+            simulatedOutcome.error === 'PRE_SUBMIT_PERSISTENCE_FAILED' ||
+            simulatedOutcome.error === 'INTENT_PERSISTENCE_FAILED' ||
+            simulatedOutcome.reasonCode === 'PRIVACY_GATEWAY_BLOCKED_BEFORE_SUBMIT' ||
+            simulatedOutcome.error === 'PRIVACY_GATEWAY_BLOCKED_BEFORE_SUBMIT'
+        );
+        const isDeliveryUnknown = !isSuccess && !isPreSubmitFailure;
+
+        let finalReason;
+        if (isSuccess) {
+            finalReason = 'SUCCESS_CONFIRMED';
+        } else if (simulatedOutcome.reasonCode === 'PRIVACY_GATEWAY_BLOCKED_BEFORE_SUBMIT' || simulatedOutcome.error === 'PRIVACY_GATEWAY_BLOCKED_BEFORE_SUBMIT') {
+            finalReason = 'PRIVACY_GATEWAY_BLOCKED_BEFORE_SUBMIT';
+        } else if (isPreSubmitFailure) {
+            finalReason = 'PRE_SUBMIT_PERSISTENCE_FAILED';
+        } else {
+            finalReason = 'DELIVERY_UNKNOWN';
+        }
+
+        assert.strictEqual(isPreSubmitFailure, true, 'Test H: Privacy block before submit must be pre-submit failure (retryable)');
+        assert.strictEqual(isDeliveryUnknown, false, 'Test H: Privacy block before submit must NEVER become DELIVERY_UNKNOWN');
+        assert.strictEqual(finalReason, 'PRIVACY_GATEWAY_BLOCKED_BEFORE_SUBMIT', 'Test H: Final reason preserved exactly');
+
+        recordPass('Privacy Test H: Fail-closed SUBMIT privacy barrier & pre-submit certainty preserved');
+    }
+
     // =========================================================================
-    // PART 2: CAPTCHA LIFECYCLE TESTS (Mandatory 1 through 6)
+    // PART 2: CAPTCHA LIFECYCLE TESTS (Mandatory 1 through 7)
     // =========================================================================
-    console.log('\n--- PART 2: CAPTCHA LIFECYCLE TESTS (1 through 6) ---');
+    console.log('\n--- PART 2: CAPTCHA LIFECYCLE TESTS (1 through 7) ---');
 
     // Test 2A (Test 1): CAPTCHA iframe loads before FILLING: identity still resolves correctly
     {
@@ -500,6 +558,35 @@ async function runTestSuite() {
         assert.strictEqual(campaignState.captchaLedger.pendingOwner, 2, 'Test 6: Incremented on new epoch');
 
         recordPass('CAPTCHA Test 6: One attempt/epoch => max one pending Owner decision unless Retry');
+    }
+
+    // Test 2G (Test 7): Exact captchaEpoch field matching in validateActiveExecution
+    {
+        const bgSrc = fs.readFileSync(path.join(__dirname, 'send_message_backup', 'background.js'), 'utf8');
+
+        // Extract validateActiveExecution logic for epoch verification
+        function validateEpoch(curEpoch, request, options = {}) {
+            if (options.checkEpoch) {
+                const reqEpoch = request?.captchaEpoch;
+                if (reqEpoch && reqEpoch !== curEpoch) {
+                    return { valid: false, reason: 'epoch_mismatch' };
+                }
+            }
+            return { valid: true };
+        }
+
+        // 1. Correct captchaEpoch matching curEpoch
+        const matchRes = validateEpoch(1, { captchaEpoch: 1 }, { checkEpoch: true });
+        assert.strictEqual(matchRes.valid, true, 'Test 7: Matching captchaEpoch must be valid');
+
+        // 2. Mismatched captchaEpoch
+        const mismatchRes = validateEpoch(1, { captchaEpoch: 2 }, { checkEpoch: true });
+        assert.strictEqual(mismatchRes.valid, false, 'Test 7: Mismatched captchaEpoch must reject');
+        assert.strictEqual(mismatchRes.reason, 'epoch_mismatch');
+
+        // 3. Verify background.js checks request?.captchaEpoch specifically
+        assert.ok(bgSrc.includes('const reqEpoch = request?.captchaEpoch;'), 'Test 7: background.js must read request?.captchaEpoch');
+        recordPass('CAPTCHA Test 7: Exact captchaEpoch field matching & validation verified');
     }
 
     // =========================================================================

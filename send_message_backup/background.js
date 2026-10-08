@@ -2826,6 +2826,34 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
             })();
             return true;
 
+        // [R6.9G.10.3.5.1 Section 3] Authoritative Fail-Closed SUBMIT Privacy Transport Barrier
+        case 'ASSERT_PRIVACY_TRANSPORT_READY':
+            (async () => {
+                try {
+                    const validation = validateActiveExecution(request, sender, 'ASSERT_PRIVACY_TRANSPORT_READY', { checkEpoch: true, allowBodyTabId: true });
+                    if (!validation.valid) {
+                        logBg(null, `[ASSERT_PRIVACY_TRANSPORT_READY] REJECT: reason=${validation.reason}. Identity invalid or stale.`, 'warning');
+                        sendResponse({ ready: false, reason: validation.reason, isIdentityValid: false });
+                        return;
+                    }
+
+                    const context = request.context || 'SUBMIT_BARRIER';
+                    const privCheck = await assertPrivacyTransportReady(context);
+                    if (!privCheck || privCheck.ready !== true) {
+                        const blkReason = privCheck?.reason || 'PRIVACY_GATE_NOT_READY';
+                        logBg(sender?.tab?.id || campaignState.currentTabId, `[PRIVACY_SUBMIT_BLOCK] context=${context} reason=${blkReason} — submit blocked fail-closed`, 'error');
+                        sendResponse({ ready: false, reason: blkReason, isIdentityValid: true });
+                        return;
+                    }
+
+                    sendResponse({ ready: true, reason: null, isIdentityValid: true });
+                } catch (err) {
+                    logBg(null, `[ASSERT_PRIVACY_TRANSPORT_READY] ERROR: ${err.message}`, 'error');
+                    sendResponse({ ready: false, reason: err.message, isIdentityValid: false });
+                }
+            })();
+            return true;
+
         // [R6.9G.1-1/2 & R6.9G.10.3.5 A.4] Owner CAPTCHA Decision Gate with Single Latch & Idempotent Counters
         case 'OWNER_CAPTCHA_REQUEST':
             (async () => {
@@ -5484,12 +5512,14 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
         safeTabs.onUpdated.removeListener(navWatcher);
 
         const isSuccess = !!(res && res.success);
-        // [F8] Pre-submit persistence failures must remain retryable (not DELIVERY_UNKNOWN)
+        // [F8 & R6.9G.10.3.5.1] Pre-submit persistence and privacy barrier failures must remain retryable (not DELIVERY_UNKNOWN)
         const isPreSubmitFailure = !isSuccess && (
             res?.reasonCode === 'PRE_SUBMIT_PERSISTENCE_FAILED' ||
             res?.reasonCode === 'INTENT_PERSISTENCE_FAILED' ||
             res?.error === 'PRE_SUBMIT_PERSISTENCE_FAILED' ||
-            res?.error === 'INTENT_PERSISTENCE_FAILED'
+            res?.error === 'INTENT_PERSISTENCE_FAILED' ||
+            res?.reasonCode === 'PRIVACY_GATEWAY_BLOCKED_BEFORE_SUBMIT' ||
+            res?.error === 'PRIVACY_GATEWAY_BLOCKED_BEFORE_SUBMIT'
         );
         // [F8] DELIVERY_UNKNOWN is strictly reserved for true in-flight submission ambiguities
         const isDeliveryUnknown = !isSuccess && !isPreSubmitFailure && (
@@ -5500,12 +5530,20 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
         let finalReason;
         if (isSuccess) {
             finalReason = REASON_CODES.SUCCESS_CONFIRMED;
+        } else if (res?.reasonCode === 'PRIVACY_GATEWAY_BLOCKED_BEFORE_SUBMIT' || res?.error === 'PRIVACY_GATEWAY_BLOCKED_BEFORE_SUBMIT') {
+            finalReason = 'PRIVACY_GATEWAY_BLOCKED_BEFORE_SUBMIT';
         } else if (isPreSubmitFailure) {
             finalReason = 'PRE_SUBMIT_PERSISTENCE_FAILED';
         } else if (isDeliveryUnknown) {
             finalReason = REASON_CODES.DELIVERY_UNKNOWN;
         } else {
             finalReason = res?.reasonCode || (res?.error ? String(res.error) : REASON_CODES.DELIVERY_UNKNOWN);
+        }
+
+        // [R6.9G.10.3.5.1] Fail-closed auto-pause on submit privacy barrier block
+        if (res?.reasonCode === 'PRIVACY_GATEWAY_BLOCKED_BEFORE_SUBMIT' || res?.error === 'PRIVACY_GATEWAY_BLOCKED_BEFORE_SUBMIT') {
+            logBg(tabId, `🛑 [PRIVACY_SUBMIT_BLOCK] Submission withheld due to privacy transport failure. Auto-pausing campaign fail-closed.`, 'error');
+            pauseCampaignOrchestrator(true).catch(() => {});
         }
 
         // [Circuit Breaker] Core runtime ReferenceError tracking

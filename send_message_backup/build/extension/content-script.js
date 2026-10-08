@@ -1537,6 +1537,37 @@
             }
             logDev(`[SUBMIT_ACK] stage=SUBMIT_ATTEMPT_STARTED ack=ACCEPTED attemptId=${curAttemptId}`, "info");
 
+            // [R6.9G.10.3.5.1 Section 3] Authoritative Fail-Closed SUBMIT Privacy Transport Barrier
+            let privCheck = null;
+            try {
+                privCheck = await new Promise(res => {
+                    const ackTimer = setTimeout(() => res({ ready: false, reason: 'privacy_barrier_ack_timeout' }), 5000);
+                    const sendFn = window.__xpider_sendExecutionMessage || chrome.runtime.sendMessage;
+                    try {
+                        sendFn({
+                            action: 'ASSERT_PRIVACY_TRANSPORT_READY',
+                            context: 'SUBMIT_BARRIER',
+                            url: window.location.href
+                        }, (r) => { clearTimeout(ackTimer); res(r); });
+                    } catch (pSendErr) {
+                        clearTimeout(ackTimer);
+                        res({ ready: false, reason: 'send_threw:' + (pSendErr && pSendErr.message) });
+                    }
+                });
+            } catch (pErr) {
+                privCheck = { ready: false, reason: 'privacy_barrier_exception:' + (pErr && pErr.message) };
+            }
+
+            if (!privCheck || privCheck.ready !== true) {
+                const blkReason = (privCheck && (privCheck.reason || privCheck.error)) || 'PRIVACY_GATE_NOT_READY';
+                logDev(`[PRIVACY_SUBMIT_BLOCK] attemptId=${curAttemptId} reason=${blkReason} — submit activation withheld`, "error");
+                try { delete window.__xpider_submitBoundaryReached[curAttemptId]; } catch (_) {}
+                currentTargetLifecycleState = TargetLifecycleState.SETTLING;
+                finishCampaign(false, "PRIVACY_GATEWAY_BLOCKED_BEFORE_SUBMIT", "PRIVACY_GATEWAY_BLOCKED_BEFORE_SUBMIT");
+                return false;
+            }
+            logDev(`[PRIVACY_SUBMIT_PASS] attemptId=${curAttemptId} submit transport verified ready`, "info");
+
             // [Hotfix R2 & R6.9E] Prepare SubmissionOutcomeVerifier BEFORE submit action
             const submitHoldMs = (speed && speed.hold) || submitDelayMs || 4000;
             const verifier = new SubmissionOutcomeVerifier(form, template, {
@@ -1556,6 +1587,14 @@
             sessionStorage.setItem('xpider_pending_verify', 'true'); // [v17.6.0]
 
             let submitOutcome = await executeSubmitStateMachine(form, template, { expectedSnapshot: frozenSnapshot, allowVisionSubmit: true });
+            if (submitOutcome.reasonCode === 'PRIVACY_GATEWAY_BLOCKED_BEFORE_SUBMIT') {
+                verifier.cleanup();
+                logDev("[SUBMIT] triggered=false", "warning");
+                logDev(`❌ [Submit] Submission blocked: PRIVACY_GATEWAY_BLOCKED_BEFORE_SUBMIT`, "error");
+                currentTargetLifecycleState = TargetLifecycleState.SETTLING;
+                finishCampaign(false, "PRIVACY_GATEWAY_BLOCKED_BEFORE_SUBMIT", "PRIVACY_GATEWAY_BLOCKED_BEFORE_SUBMIT");
+                return false;
+            }
             if ((!submitOutcome.success || submitOutcome.reasonCode === 'EVENT_ONLY') && _VisionSubmitExecutor) {
                 try {
                     logDev("👁️ [VisionSubmit] Initiating VisionSubmitExecutor last-resort activation...", "info");
@@ -4997,6 +5036,27 @@
             if (!readiness.ready && readiness.reasonCode === 'FIELD_INTEGRITY_COMPROMISED') {
                 logDev(`❌ [SubmitExecutorR5] Pre-submit readiness failed: ${readiness.reasonCode}`, "error");
                 return { success: false, reasonCode: readiness.reasonCode };
+            }
+
+            // [R6.9G.10.3.5.1 Section 3] SubmitExecutorR5 Defense-in-Depth Privacy Barrier
+            if (typeof window !== 'undefined' && window.__xpider_sendExecutionMessage) {
+                const privCheck = await new Promise(res => {
+                    const t = setTimeout(() => res({ ready: false, reason: 'privacy_barrier_timeout' }), 3000);
+                    try {
+                        window.__xpider_sendExecutionMessage({ action: 'ASSERT_PRIVACY_TRANSPORT_READY', context: 'SUBMIT_EXECUTOR_BARRIER' }, r => {
+                            clearTimeout(t);
+                            res(r);
+                        });
+                    } catch (e) {
+                        clearTimeout(t);
+                        res({ ready: false, reason: 'privacy_send_error:' + e.message });
+                    }
+                }).catch(() => ({ ready: false, reason: 'privacy_exception' }));
+                if (!privCheck || privCheck.ready !== true) {
+                    const blkReason = privCheck?.reason || 'PRIVACY_GATE_NOT_READY';
+                    logDev(`[PRIVACY_SUBMIT_BLOCK] reason=${blkReason} — SubmitExecutorR5 activation withheld`, "error");
+                    return { success: false, reasonCode: 'PRIVACY_GATEWAY_BLOCKED_BEFORE_SUBMIT' };
+                }
             }
 
             let submitEventFired = false;
