@@ -88,7 +88,16 @@
                 try {
                     const data = await chrome.storage.local.get(['xpider_privacy_config']);
                     if (data && data.xpider_privacy_config) {
+                        // [R6.9G.10.2 Blocker 4 Sanitization]: Purge any old persisted relayControlToken from storage
+                        if (data.xpider_privacy_config.relayControlToken) {
+                            delete data.xpider_privacy_config.relayControlToken;
+                            await chrome.storage.local.set({ xpider_privacy_config: data.xpider_privacy_config });
+                        }
                         this.config = { ...DEFAULT_CONFIG, ...data.xpider_privacy_config, ...customConfig };
+                        this.config.relayControlToken = ''; // Memory-only isolation
+                        if (customConfig.relayControlToken) {
+                            this.ephemeralRelayToken = customConfig.relayControlToken;
+                        }
                         // Password is never persisted unless rememberPassword was true
                         if (!this.config.rememberPassword) {
                             if (customConfig.proxyPassword) {
@@ -98,6 +107,7 @@
                         }
                     } else {
                         this.config = { ...DEFAULT_CONFIG, ...customConfig };
+                        this.config.relayControlToken = '';
                         if (!this.config.rememberPassword) {
                             if (customConfig.proxyPassword) {
                                 this.ephemeralProxyPassword = customConfig.proxyPassword;
@@ -107,6 +117,7 @@
                     }
                 } catch (_) {
                     this.config = { ...DEFAULT_CONFIG, ...customConfig };
+                    this.config.relayControlToken = '';
                     if (!this.config.rememberPassword) {
                         if (customConfig.proxyPassword) {
                             this.ephemeralProxyPassword = customConfig.proxyPassword;
@@ -116,6 +127,7 @@
                 }
             } else {
                 this.config = { ...DEFAULT_CONFIG, ...customConfig };
+                this.config.relayControlToken = '';
                 if (!this.config.rememberPassword) {
                     if (customConfig.proxyPassword) {
                         this.ephemeralProxyPassword = customConfig.proxyPassword;
@@ -140,6 +152,7 @@
                 this.ephemeralEgressFingerprint = null;
             }
             this.config = { ...this.config, ...newConfig };
+            this.config.relayControlToken = ''; // Keep memory-only; never in this.config
             if (newConfig.proxyPassword !== undefined) {
                 this.ephemeralProxyPassword = newConfig.proxyPassword;
             }
@@ -148,6 +161,8 @@
                 if (!toSave.rememberPassword) {
                     toSave.proxyPassword = '';
                 }
+                // [R6.9G.10.2 Blocker 4]: relayControlToken must NEVER be written to chrome.storage.local
+                delete toSave.relayControlToken;
                 await chrome.storage.local.set({ xpider_privacy_config: toSave });
             }
             return this.config;
@@ -359,7 +374,7 @@
          * [R6.9G.10.1] Get Bearer authorization headers for Companion Privacy Relay Control API
          */
         getRelayAuthHeaders() {
-            const token = this.config.relayControlToken || this.ephemeralRelayToken || '';
+            const token = this.ephemeralRelayToken || this.config.relayControlToken || '';
             const headers = { 'Content-Type': 'application/json' };
             if (token) {
                 headers['Authorization'] = `Bearer ${token}`;
@@ -368,7 +383,7 @@
         }
 
         /**
-         * [R6.9G.10.1] Retrieve control token via Native Messaging host
+         * [R6.9G.10.2 Blocker 4] Retrieve control token via Native Messaging host (Memory-Only)
          */
         async fetchRelayControlToken() {
             if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendNativeMessage) {
@@ -378,8 +393,7 @@
                             return resolve(null);
                         }
                         this.ephemeralRelayToken = resp.controlToken;
-                        this.config.relayControlToken = resp.controlToken;
-                        this.saveConfig({ relayControlToken: resp.controlToken });
+                        this.config.relayControlToken = ''; // Memory-only; never in this.config or storage
                         resolve(resp.controlToken);
                     });
                 });
@@ -388,7 +402,7 @@
         }
 
         /**
-         * [R6.9G.10.1] Ensure companion privacy relay is started and responsive
+         * [R6.9G.10.2] Ensure companion privacy relay is started and responsive
          * Auto-invokes Native Messaging START if relay is offline.
          */
         async ensureRelayActive(autoStart = true) {
@@ -397,8 +411,8 @@
                 return { active: true, status: statusRes.status };
             }
 
-            // If unauthorized, attempt to get token
-            if (statusRes.reason === 'HTTP_401' || !this.config.relayControlToken) {
+            // If unauthorized or token missing from memory, retrieve from Native Messaging
+            if (statusRes.reason === 'HTTP_401' || !this.ephemeralRelayToken) {
                 await this.fetchRelayControlToken();
                 statusRes = await this.queryRelayStatus();
                 if (statusRes.success && statusRes.status) {
@@ -416,8 +430,7 @@
                         }
                         if (resp.controlToken) {
                             this.ephemeralRelayToken = resp.controlToken;
-                            this.config.relayControlToken = resp.controlToken;
-                            this.saveConfig({ relayControlToken: resp.controlToken });
+                            this.config.relayControlToken = ''; // Memory-only
                         }
                         resolve({ success: true, ...resp });
                     });
@@ -587,12 +600,12 @@
                     return { pass: false, reason: this.failureReason || 'PRIVACY_RELAY_NOT_READY' };
                 }
                 const statusRes = await this.queryRelayStatus();
-                if (!statusRes.success || !statusRes.status || !statusRes.status.relayReady) {
+                if (!statusRes.success || !statusRes.status || !statusRes.status.relayReady || statusRes.status.health === 'EXPIRED') {
                     if (this.config.healthFailover) {
-                        console.log('[PRIVACY_RELAY] Current egress failed, executing HEALTH_FAILOVER...');
-                        const rotRes = await this.rotateRelayEgress('HEALTH_FAILOVER');
+                        console.log('[PRIVACY_RELAY] Current egress failed or expired, executing HEALTH_FAILOVER...');
+                        const rotRes = await this.rotateRelayEgress('HEALTH_FAILOVER', this.config.canaryUrl || null);
                         if (rotRes.success) {
-                            const canaryRes = await this.probeProxyCanary(null, 3000);
+                            const canaryRes = await this.probeProxyCanary(this.config.canaryUrl || null, 3000);
                             if (canaryRes.success) {
                                 this.ephemeralEgressFingerprint = rotRes.egressFingerprint;
                                 return { pass: true, recovered: true, newEgressId: rotRes.selectedEgressId };
@@ -600,8 +613,8 @@
                         }
                     }
                     this.isGateReady = false;
-                    this.failureReason = 'PRIVACY_RELAY_NO_HEALTHY_EGRESS';
-                    return { pass: false, reason: 'PRIVACY_RELAY_NO_HEALTHY_EGRESS' };
+                    this.failureReason = statusRes.status && statusRes.status.health === 'EXPIRED' ? 'PRIVACY_RELAY_HEALTH_EXPIRED' : 'PRIVACY_RELAY_NO_HEALTHY_EGRESS';
+                    return { pass: false, reason: this.failureReason };
                 }
 
                 const currentFp = statusRes.status.egressFingerprint;

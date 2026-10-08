@@ -1,7 +1,7 @@
 /**
  * privacy-relay-service.js
  * 
- * XPIDER Companion Privacy Relay Service (Issue #6 R6.9G.10.1)
+ * XPIDER Companion Privacy Relay Service (Issue #6 R6.9G.10.2)
  * 
  * Architecture:
  *   Browser / XPIDER Extension
@@ -16,13 +16,16 @@
  *   - CAMPAIGN_BOUNDARY: Rotates once at campaign start; sticky for entire campaign
  *   - HEALTH_FAILOVER: Pauses XPIDER and selects next healthy node if active node fails
  * 
- * Invariants (R6.9G.10.1):
+ * Invariants (R6.9G.10.2):
+ *   - Clean Production Config: Zero fixture nodes, zero synthetic IPs, public canary URL (Blocker 1)
  *   - Bearer Control Auth: High-entropy per-install secret token required on all mutating / status endpoints
- *   - Restricted CORS: Origin restricted to chrome-extension:// origins; no wildcard *
- *   - Zero DIRECT leak: All failed upstream connections result in HTTP 502 fail-closed
- *   - Observed Public Egress: Egress fingerprints computed strictly from observed exit IP canary probes
- *   - Real TLS Upstream: HTTPS_PROXY connects over TLS (tls.connect) with strict certificate validation
- *   - Health Verification Pre-Commit: Rotation verifies candidate health before committing
+ *   - Strict Exact-Origin CORS: Origin restricted strictly to chrome-extension://${allowedExtensionId}; rogue origins rejected with 403 (Blocker 3)
+ *   - Ephemeral Memory-Only Tokens: Tokens never persisted in extension storage (Blocker 4)
+ *   - Stable Extension ID: Discovered from manifest key or exact CLI param (Blocker 5)
+ *   - Enforced Health TTL: Nodes with verification older than healthTtlMs marked EXPIRED/NOT_READY (Blocker 6)
+ *   - Verified A->B Failover: Seamless auto-failover with synchronous relayReady=false during transition (Blockers 7 & 8)
+ *   - Strict TLS HTTPS_PROXY: rejectUnauthorized=true hardcoded across all TLS connections (Blocker 9)
+ *   - Windows DPAPI Secret Storage: Passwords encrypted via DPAPI; never saved in plaintext (Blocker 10)
  */
 
 const http = require('http');
@@ -32,45 +35,22 @@ const tls = require('tls');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const winsec = require('./winsec');
+const { discoverExtensionId } = require('./install_native_host');
 
 const CONTROL_PORT = 18989;
 const PROXY_PORT = 18988;
-const CONFIG_FILE = path.join(__dirname, 'egress_pool_config.json');
+const CONFIG_FILE = process.env.XPIDER_RELAY_CONFIG_FILE || path.join(__dirname, 'egress_pool_config.json');
 const LOG_FILE = path.join(__dirname, 'privacy_relay.log');
 const TOKEN_FILE = path.join(__dirname, '.control_token');
 
 const DEFAULT_POOL = {
-  version: '1.0.1',
-  rotationMode: 'FIXED', // FIXED | MANUAL | CAMPAIGN_BOUNDARY | HEALTH_FAILOVER
-  healthCheckTimeoutMs: 3000,
-  nodes: [
-    {
-      id: 'egress-node-1',
-      name: 'Primary Privacy Node 1',
-      type: 'HTTPS_PROXY',
-      host: '127.0.0.1',
-      port: 18991,
-      credentialRef: '',
-      username: '',
-      password: '',
-      region: 'US-EAST',
-      active: true,
-      lastHealth: 'UNKNOWN'
-    },
-    {
-      id: 'egress-node-2',
-      name: 'Secondary Privacy Node 2',
-      type: 'HTTPS_PROXY',
-      host: '127.0.0.1',
-      port: 18992,
-      credentialRef: '',
-      username: '',
-      password: '',
-      region: 'EU-CENTRAL',
-      active: true,
-      lastHealth: 'UNKNOWN'
-    }
-  ]
+  version: '1.0.2',
+  rotationMode: 'HEALTH_FAILOVER', // FIXED | MANUAL | CAMPAIGN_BOUNDARY | HEALTH_FAILOVER
+  healthCheckTimeoutMs: 5000,
+  healthTtlMs: 60000,
+  canaryUrl: 'https://cloudflare.com/cdn-cgi/trace',
+  nodes: []
 };
 
 class PrivacyRelayService {
@@ -78,8 +58,9 @@ class PrivacyRelayService {
     this.controlPort = options.controlPort || CONTROL_PORT;
     this.proxyPort = options.proxyPort || PROXY_PORT;
     this.canaryUrl = options.canaryUrl || null;
-    this.allowedExtensionId = options.allowedExtensionId || null;
+    this.allowedExtensionId = options.allowedExtensionId || process.env.XPIDER_ALLOWED_EXT_ID || discoverExtensionId(__dirname) || null;
     this.healthTtlMs = options.healthTtlMs || 60000;
+    this.configFile = options.configFile || CONFIG_FILE;
     this.startTime = Date.now();
     this.activeNodeIndex = 0;
     this.rotationCount = 0;
@@ -88,7 +69,7 @@ class PrivacyRelayService {
     this.controlToken = this.loadOrGenerateControlToken(options.controlToken);
     this.pool = this.loadConfig();
 
-    // Reset all runtime health states on process start (Blocker 4)
+    // Reset all runtime health states on process start
     if (this.pool.nodes && Array.isArray(this.pool.nodes)) {
       this.pool.nodes.forEach(n => {
         n.lastHealth = 'UNKNOWN';
@@ -151,24 +132,13 @@ class PrivacyRelayService {
   }
 
   static resolveNodeCredentials(node) {
-    if (!node) return { username: '', password: '' };
-    let username = node.username || '';
-    let password = node.password || '';
-    if (node.credentialRef) {
-      if (node.credentialRef.startsWith('ENV:')) {
-        const envKey = node.credentialRef.slice(4);
-        password = process.env[envKey] || password;
-      } else if (process.env[node.credentialRef]) {
-        password = process.env[node.credentialRef];
-      }
-    }
-    return { username, password };
+    return winsec.resolveNodeCredentials(node);
   }
 
   loadConfig() {
     try {
-      if (fs.existsSync(CONFIG_FILE)) {
-        const data = fs.readFileSync(CONFIG_FILE, 'utf8');
+      if (fs.existsSync(this.configFile)) {
+        const data = fs.readFileSync(this.configFile, 'utf8');
         return { ...DEFAULT_POOL, ...JSON.parse(data) };
       }
     } catch (e) {
@@ -179,16 +149,16 @@ class PrivacyRelayService {
 
   saveConfig() {
     try {
-      // Redact passwords before persisting
-      const sanitizedNodes = (this.pool.nodes || []).map(n => {
-        const copy = { ...n };
-        if (copy.credentialRef) {
-          copy.password = '';
-        }
-        return copy;
-      });
-      const toSave = { ...this.pool, nodes: sanitizedNodes };
-      fs.writeFileSync(CONFIG_FILE, JSON.stringify(toSave, null, 2), 'utf8');
+      const sanitizedNodes = (this.pool.nodes || []).map(n => winsec.sanitizeNodeForSave(n));
+      const toSave = {
+        version: this.pool.version || '1.0.2',
+        rotationMode: this.pool.rotationMode || 'HEALTH_FAILOVER',
+        healthCheckTimeoutMs: this.pool.healthCheckTimeoutMs || 5000,
+        healthTtlMs: this.pool.healthTtlMs || 60000,
+        canaryUrl: this.pool.canaryUrl || 'https://cloudflare.com/cdn-cgi/trace',
+        nodes: sanitizedNodes
+      };
+      fs.writeFileSync(this.configFile, JSON.stringify(toSave, null, 2), 'utf8');
     } catch (e) {
       this.log(`Failed to save config: ${e.message}`);
     }
@@ -208,11 +178,27 @@ class PrivacyRelayService {
   }
 
   /**
-   * [R6.9G.10.1] Perform authenticated egress canary probe through candidate node.
+   * Enforce Health TTL (Blocker 6)
+   */
+  isNodeHealthValid(node) {
+    if (!node || node.active === false) return false;
+    if (node.lastHealth !== 'HEALTHY') return false;
+    if (!node.observedFingerprint) return false;
+    const ttl = this.healthTtlMs || (this.pool && this.pool.healthTtlMs) || 60000;
+    const now = Date.now();
+    if (!node.lastVerifiedAt || (now - node.lastVerifiedAt > ttl)) {
+      return false; // Stale verification expired
+    }
+    return true;
+  }
+
+  /**
+   * [R6.9G.10.2] Perform authenticated egress canary probe through candidate node.
    * Probes bounded external endpoint, extracts observed public IP, and computes
    * one-way truncated SHA-256 fingerprint.
+   * Strict TLS certificate verification (rejectUnauthorized: true hardcoded).
    */
-  async verifyNodeEgress(node, timeoutMs = 3000, overrideCanaryUrl = null) {
+  async verifyNodeEgress(node, timeoutMs = 5000, overrideCanaryUrl = null) {
     if (!node) return { verified: false, reason: 'NO_NODE' };
 
     const creds = PrivacyRelayService.resolveNodeCredentials(node);
@@ -255,8 +241,11 @@ class PrivacyRelayService {
           if (isHttps) {
             const tlsOptions = {
               socket: sock,
-              rejectUnauthorized: node.rejectUnauthorized !== false
+              rejectUnauthorized: true // Strictly hardcoded (Blocker 9)
             };
+            if (node.ca) {
+              tlsOptions.ca = node.ca;
+            }
             if (!net.isIP(parsedTarget.hostname)) {
               tlsOptions.servername = parsedTarget.hostname;
             }
@@ -274,7 +263,6 @@ class PrivacyRelayService {
 
           clientSock.on('end', () => {
             clearTimeout(timer);
-            // Parse response body
             const bodyIdx = responseBody.indexOf('\r\n\r\n');
             const body = bodyIdx !== -1 ? responseBody.substring(bodyIdx + 4) : responseBody;
 
@@ -319,8 +307,11 @@ class PrivacyRelayService {
         const tlsConnectOptions = {
           host: node.host,
           port: node.port,
-          rejectUnauthorized: node.rejectUnauthorized !== false
+          rejectUnauthorized: true // Strictly hardcoded (Blocker 9)
         };
+        if (node.ca) {
+          tlsConnectOptions.ca = node.ca;
+        }
         if (!net.isIP(node.host)) {
           tlsConnectOptions.servername = node.host;
         }
@@ -340,7 +331,7 @@ class PrivacyRelayService {
   }
 
   /**
-   * [R6.9G.10.1] Verify candidate before switching; never claim verified=true prematurely.
+   * [R6.9G.10.2] Verify candidate before switching; never claim verified=true prematurely.
    */
   async rotateEgress(reason = 'MANUAL', overrideCanaryUrl = null) {
     if (!this.pool.nodes || this.pool.nodes.length === 0) {
@@ -356,7 +347,7 @@ class PrivacyRelayService {
       const candidate = this.pool.nodes[candidateIndex];
       if (candidate.active !== false) {
         this.log(`[PRIVACY_RELAY_PROBING] candidate=${candidate.id} host=${candidate.host} port=${candidate.port}`);
-        const verifyRes = await this.verifyNodeEgress(candidate, this.pool.healthCheckTimeoutMs || 3000, overrideCanaryUrl);
+        const verifyRes = await this.verifyNodeEgress(candidate, this.pool.healthCheckTimeoutMs || 5000, overrideCanaryUrl);
         if (verifyRes.verified) {
           this.activeNodeIndex = candidateIndex;
           this.rotationCount++;
@@ -403,7 +394,7 @@ class PrivacyRelayService {
     }
 
     const prev = this.getActiveNode();
-    const verifyRes = await this.verifyNodeEgress(candidate, this.pool.healthCheckTimeoutMs || 3000, overrideCanaryUrl);
+    const verifyRes = await this.verifyNodeEgress(candidate, this.pool.healthCheckTimeoutMs || 5000, overrideCanaryUrl);
     if (!verifyRes.verified) {
       return { success: false, reason: 'CANDIDATE_HEALTH_CHECK_FAILED', details: verifyRes.reason };
     }
@@ -422,17 +413,28 @@ class PrivacyRelayService {
     };
   }
 
+  /**
+   * [R6.9G.10.2 Blocker 8] Synchronously set relayReady = false IMMEDIATELY upon failure.
+   * Eliminates the ready-race window where new requests slip through before failover finishes.
+   */
   async handleActiveFailure(reason) {
+    // 1. Synchronously revoke ready state IMMEDIATELY
+    this.relayReady = false;
     this.trafficStats.failClosedDrops++;
     const active = this.getActiveNode();
-    if (active) active.lastHealth = 'UNREACHABLE';
-    this.log(`[PRIVACY_RELAY_ACTIVE_FAIL] active=${active ? active.id : 'none'} reason=${reason}`);
+    if (active) {
+      active.lastHealth = 'UNREACHABLE';
+      active.lastVerifiedAt = 0;
+    }
+    this.log(`[PRIVACY_RELAY_ACTIVE_FAIL] active=${active ? active.id : 'none'} reason=${reason} (relayReady=false SYNCHRONOUS)`);
 
+    // 2. If HEALTH_FAILOVER is configured, attempt automated rotation to candidate
     if (this.pool.rotationMode === 'HEALTH_FAILOVER') {
       this.log(`[PRIVACY_RELAY_FAILOVER_TRIGGER] Attempting failover to secondary node...`);
       const rotRes = await this.rotateEgress('HEALTH_FAILOVER');
       if (rotRes.success) {
         this.log(`[PRIVACY_RELAY_FAILOVER_SUCCESS] Failover completed to ${rotRes.selectedEgressId}`);
+        // relayReady is set to true inside rotateEgress ONLY after candidate passes verification!
         return true;
       }
     }
@@ -444,35 +446,43 @@ class PrivacyRelayService {
 
   getStatus() {
     const active = this.getActiveNode();
-    const isEgressVerified = active && active.lastHealth === 'HEALTHY' && !!active.observedFingerprint;
-    const ready = !this.isPaused && this.relayReady && isEgressVerified;
+    const ttl = this.healthTtlMs || (this.pool && this.pool.healthTtlMs) || 60000;
+    const isHealthValid = this.isNodeHealthValid(active);
+    const isExpired = active && active.lastVerifiedAt > 0 && (Date.now() - active.lastVerifiedAt > ttl);
+    const ready = !this.isPaused && this.relayReady && isHealthValid;
 
     // Redact nodes
-    const redactedNodes = (this.pool.nodes || []).map(n => ({
-      id: n.id,
-      name: n.name,
-      type: n.type,
-      host: n.host,
-      port: n.port,
-      region: n.region,
-      active: n.active,
-      lastHealth: n.lastHealth,
-      hasCredentials: Boolean(n.username || n.credentialRef || n.password),
-      fingerprint: n.observedFingerprint || null
-    }));
+    const redactedNodes = (this.pool.nodes || []).map(n => {
+      const nodeExpired = n.lastVerifiedAt > 0 && (Date.now() - n.lastVerifiedAt > ttl);
+      const healthStatus = nodeExpired ? 'EXPIRED' : (n.lastHealth || 'UNKNOWN');
+      return {
+        id: n.id,
+        name: n.name,
+        type: n.type,
+        host: n.host,
+        port: n.port,
+        region: n.region,
+        active: n.active,
+        lastHealth: healthStatus,
+        hasCredentials: Boolean(n.username || n.credentialRef || n.password),
+        fingerprint: n.observedFingerprint || null,
+        lastVerifiedAt: n.lastVerifiedAt || 0
+      };
+    });
 
     return {
       service: 'XPIDER Privacy Relay',
-      version: this.pool.version || '1.0.1',
+      version: this.pool.version || '1.0.2',
       relayReady: ready,
       paused: this.isPaused,
       controlPort: this.controlPort,
       proxyPort: this.proxyPort,
-      rotationMode: this.pool.rotationMode || 'FIXED',
+      rotationMode: this.pool.rotationMode || 'HEALTH_FAILOVER',
       selectedEgressId: active ? active.id : null,
       egressFingerprint: active ? active.observedFingerprint : null,
       transport: active ? active.type : 'NONE',
-      health: active ? (active.lastHealth || 'UNKNOWN') : 'NO_NODES',
+      health: isExpired ? 'EXPIRED' : (active ? (active.lastHealth || 'UNKNOWN') : 'NO_NODES'),
+      healthTtlMs: ttl,
       activeNodeIndex: this.activeNodeIndex,
       totalNodes: this.pool.nodes ? this.pool.nodes.length : 0,
       rotationCount: this.rotationCount,
@@ -489,16 +499,26 @@ class PrivacyRelayService {
 
       res.setHeader('Content-Type', 'application/json');
 
-      // Restricted CORS: only allow extension origin
+      // Restricted CORS: strictly allow only the exact XPIDER extension ID (Blocker 3)
       const origin = req.headers['origin'];
       if (origin && typeof origin === 'string') {
-        if (origin.startsWith('chrome-extension://')) {
+        const expectedOrigin = this.allowedExtensionId ? `chrome-extension://${this.allowedExtensionId}` : null;
+        if (expectedOrigin && origin === expectedOrigin) {
           res.setHeader('Access-Control-Allow-Origin', origin);
           res.setHeader('Vary', 'Origin');
+          res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+          res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+        } else {
+          // Reject rogue extension origins with 403 Forbidden
+          this.log(`[PRIVACY_RELAY_FORBIDDEN_CORS] origin=${origin} expected=${expectedOrigin}`);
+          res.writeHead(403, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            error: 'FORBIDDEN_ORIGIN',
+            message: `Origin ${origin} is not authorized for this privacy relay instance`
+          }));
+          return;
         }
       }
-      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
       if (req.method === 'OPTIONS') {
         res.writeHead(204);
@@ -509,12 +529,13 @@ class PrivacyRelayService {
       // GET /health: Public unauthenticated ping (does not disclose fingerprints or secrets)
       if (pathname === '/health' && req.method === 'GET') {
         const active = this.getActiveNode();
+        const isHealthValid = this.isNodeHealthValid(active);
         res.writeHead(200);
         res.end(JSON.stringify({
           status: 'OK',
-          relayReady: !this.isPaused && this.relayReady && !!active && active.lastHealth === 'HEALTHY',
+          relayReady: !this.isPaused && this.relayReady && isHealthValid,
           service: 'XPIDER Privacy Relay',
-          version: this.pool.version || '1.0.1',
+          version: this.pool.version || '1.0.2',
           controlPort: this.controlPort,
           proxyPort: this.proxyPort,
           selectedEgressId: active ? active.id : null,
@@ -523,7 +544,7 @@ class PrivacyRelayService {
         return;
       }
 
-      // Check Bearer Token Authorization for all other endpoints (Blocker 1)
+      // Check Bearer Token Authorization for all other endpoints
       const authHeader = req.headers['authorization'] || '';
       const isAuthorized = authHeader === `Bearer ${this.controlToken}`;
       if (!isAuthorized) {
@@ -649,7 +670,7 @@ class PrivacyRelayService {
             res.end(JSON.stringify({ success: false, reason: 'NO_ACTIVE_NODE' }));
             return;
           }
-          const verifyRes = await this.verifyNodeEgress(active, this.pool.healthCheckTimeoutMs || 3000, probeCanaryUrl);
+          const verifyRes = await this.verifyNodeEgress(active, this.pool.healthCheckTimeoutMs || 5000, probeCanaryUrl);
           if (verifyRes.verified) {
             this.relayReady = true;
           }
@@ -671,9 +692,14 @@ class PrivacyRelayService {
             const data = JSON.parse(body);
             if (Array.isArray(data.nodes) && data.nodes.length > 0) {
               this.pool.nodes = data.nodes;
+              if (data.canaryUrl) {
+                this.pool.canaryUrl = data.canaryUrl;
+              }
               this.activeNodeIndex = 0;
               this.relayReady = false; // Require re-verification
-              this.saveConfig();
+              if (data.persist === true) {
+                this.saveConfig();
+              }
               res.writeHead(200);
               res.end(JSON.stringify({ success: true, count: this.pool.nodes.length }));
             } else {
@@ -728,6 +754,15 @@ class PrivacyRelayService {
         return;
       }
 
+      // Enforce Health TTL (Blocker 6)
+      if (!this.isNodeHealthValid(active)) {
+        this.trafficStats.failClosedDrops++;
+        this.log(`[PRIVACY_RELAY_BLOCK] reason=HEALTH_TTL_EXPIRED active=${active.id}`);
+        res.writeHead(502, { 'Content-Type': 'text/plain' });
+        res.end('PRIVACY_RELAY_FAIL_CLOSED: Egress health TTL expired; re-verification required');
+        return;
+      }
+
       const creds = PrivacyRelayService.resolveNodeCredentials(active);
       const isUpstreamTls = active.type === 'HTTPS_PROXY';
 
@@ -746,7 +781,10 @@ class PrivacyRelayService {
 
       const httpModule = isUpstreamTls ? https : http;
       if (isUpstreamTls) {
-        options.rejectUnauthorized = active.rejectUnauthorized !== false;
+        options.rejectUnauthorized = true; // Strictly hardcoded (Blocker 9)
+        if (active.ca) {
+          options.ca = active.ca;
+        }
       }
 
       const proxyReq = httpModule.request(options, (proxyRes) => {
@@ -783,6 +821,15 @@ class PrivacyRelayService {
         return;
       }
 
+      // Enforce Health TTL (Blocker 6)
+      if (!this.isNodeHealthValid(active)) {
+        this.trafficStats.failClosedDrops++;
+        this.log(`[PRIVACY_RELAY_BLOCK] reason=HEALTH_TTL_EXPIRED_CONNECT active=${active.id}`);
+        clientSocket.write('HTTP/1.1 502 Bad Gateway\r\n\r\n');
+        clientSocket.destroy();
+        return;
+      }
+
       const creds = PrivacyRelayService.resolveNodeCredentials(active);
       const isUpstreamTls = active.type === 'HTTPS_PROXY';
 
@@ -812,12 +859,16 @@ class PrivacyRelayService {
       };
 
       if (isUpstreamTls) {
-        const tlsSocket = tls.connect({
+        const tlsOptions = {
           host: active.host,
           port: active.port,
           servername: active.host,
-          rejectUnauthorized: active.rejectUnauthorized !== false
-        }, () => setupTunnel(tlsSocket));
+          rejectUnauthorized: true // Strictly hardcoded (Blocker 9)
+        };
+        if (active.ca) {
+          tlsOptions.ca = active.ca;
+        }
+        const tlsSocket = tls.connect(tlsOptions, () => setupTunnel(tlsSocket));
 
         tlsSocket.on('error', (err) => {
           this.handleActiveFailure(`UPSTREAM_TLS_CONNECT_ERROR: ${err.message}`);
@@ -846,14 +897,14 @@ class PrivacyRelayService {
     // Verify initial active node before marking relay ready
     const active = this.getActiveNode();
     if (active && active.active !== false) {
-      const vRes = await this.verifyNodeEgress(active, this.pool.healthCheckTimeoutMs || 3000);
+      const vRes = await this.verifyNodeEgress(active, this.pool.healthCheckTimeoutMs || 5000);
       if (vRes.verified) {
         this.relayReady = true;
       }
     }
 
     const currentFp = this.computeFingerprint(this.getActiveNode());
-    this.log(`[PRIVACY_RELAY] state=RUNNING selectedEgressId=${active ? active.id : 'none'} transport=${active ? active.type : 'none'} health=${active ? active.lastHealth : 'NONE'} rotationMode=${this.pool.rotationMode || 'FIXED'} fingerprint=${currentFp || 'UNVERIFIED'}`);
+    this.log(`[PRIVACY_RELAY] state=RUNNING selectedEgressId=${active ? active.id : 'none'} transport=${active ? active.type : 'none'} health=${active ? active.lastHealth : 'NONE'} rotationMode=${this.pool.rotationMode || 'HEALTH_FAILOVER'} fingerprint=${currentFp || 'UNVERIFIED'}`);
     console.log(`[PRIVACY_RELAY] XPIDER Privacy Relay Companion running.`);
     console.log(`[PRIVACY_RELAY] Control Plane: http://127.0.0.1:${this.controlPort}`);
     console.log(`[PRIVACY_RELAY] Proxy Gateway: http://127.0.0.1:${this.proxyPort}`);

@@ -105,7 +105,8 @@ async function startRelay() {
             const child = spawn(process.execPath, [RELAY_SCRIPT], {
               detached: true,
               stdio: 'ignore',
-              windowsHide: true
+              windowsHide: true,
+              env: process.env
             });
             child.unref();
             resolve({ success: true, message: 'SPAWNED_DETACHED' });
@@ -120,7 +121,8 @@ async function startRelay() {
       try {
         const child = spawn(process.execPath, [RELAY_SCRIPT], {
           detached: true,
-          stdio: 'ignore'
+          stdio: 'ignore',
+          env: process.env
         });
         child.unref();
         resolve({ success: true, message: 'SPAWNED_DETACHED' });

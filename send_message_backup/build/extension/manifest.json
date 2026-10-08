@@ -2,6 +2,7 @@
   "manifest_version": 3,
   "name": "XPIDER AutoForm Sender Pro",
   "version": "1.2.0",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAptFaNxZjQI/XrDhTj5DqDYCZfSCUcJMVaQyqvQqX8v7CJK4qeKCeR6YFxAn8/plYZ/yZF0uJZxdtbPPYJ1Xr7pBy3y4tgbnwLl8KELmXB2f0yPrl3vbr2gc8veTwN+/bWgBKBEJya52KCGK2HX/KcNqOcwmYtCU5TrfHWX1+dEQcmGnCRIrwjwcnuO9joQj79WTncmWZx4TuhKDQsiPzep+J1r2ob5Iv6RnW9V4bu/JB8oSVmAOlN8bSz9dojUSRdRETqqAOMl3lF42ZNQP0bCPuWrQv76n/9/Ohhc44dAXjTYPMdJwUeTjnfre2zNtubnKIx8Jt5P0IfIA1Xb+IbwIDAQAB",
   "description": "웹사이트의 문의 양식(Contact Form)을 자동으로 감지하고 메시지를 대량 발송하는 강력한 폼 마케팅 엔진입니다.",
   "permissions": [
     "storage",

@@ -23,8 +23,8 @@
         headShort: '36fc8d5c',
         rollbackBase: 'dc0740a0c69e2f7fa96b6989841acf0831b3619e',
         manifestVersion: 3,
-        buildId: 'R6.9G.10.1-20261007-AUTHENTICATED-RELAY-VERIFIED-EGRESS',
-        builtAt: '2026-10-08T00:23:00.000Z',
+        buildId: 'R6.9G.10.2-20261008-PROD-RELAY-EXACT-CORS-FAILOVER-WINSEC',
+        builtAt: '2026-10-08T06:00:00.000Z',
         provenanceSchema: 2,
         modules: {
             backgroundSha: 'ef1054c1ee53fc267acf00712ececdd7883bd30680ac2f4c4083bd1ba62ea101',
@@ -36,7 +36,7 @@
             historyStoreSha: 'ef148329c5c019877fef3708ac63472ce86d5f7f06da467a557a74e038eab6b4',
             contactGateSha: '0d01acb2d0a9448d154353fac5b527c17afa42fed56c68d6a49b39053629bd7d',
             visionSubmitSha: '25cf18a4834bb476edff5e8f19a78dd2723bd556ede649ada69bc801543c83f3',
-            privacyGatewaySha: '83015d9924c39e54c1df721b8565fbb229632b59f922209722965026a6890f36'
+            privacyGatewaySha: 'a8b6dfb9c91cb86082a163d25dc708462077e721197b72646f3d9f8588345b24'
         }
     };
 
