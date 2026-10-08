@@ -41,4 +41,4 @@
 - Evidence SHA-256: `aa670269c0f9a075e937918e965d213f026228bd1907ab3aed3c5a714e9964b6`
 - Evidence Bytes: 16,757
 - GitHub Release URL: https://github.com/goodkie/v-show/releases/tag/v6.9g.10.3-audit.1
-- Authority Cursor: `6055886598` (ChatGPT Audit #6055886598)
+- Authority Cursor: 6055940504 (Antigravity ACK #6055940504)
