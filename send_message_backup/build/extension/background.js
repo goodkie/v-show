@@ -2125,11 +2125,35 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                 logBg(null, plog, "info");
             }
 
+            const queueLen = (request && Array.isArray(request.queue)) ? request.queue.length : 0;
+            console.log(`[START_BG] received queue=${queueLen}`);
+            logBg(null, `[START_BG] received queue=${queueLen}`, "info");
+
             (async () => {
-                // [R6.9G.9 Privacy Gateway Preflight]
+                // [R6.9G.9 Privacy Gateway Preflight & R6.9G.10.3.6 Auto-Enforced Start Prep]
                 const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
                 if (pg) {
                     await pg.init();
+                    if (!pg.isGateReady || pg.config.transportMode === 'EXTERNAL_VPN_MONITOR' || pg.config.transportMode === 'SYSTEM_VPN') {
+                        const prep = await pg.ensureEnforcedPrivacyForStart();
+                        if (!prep.ready && pg.config.failClosed) {
+                            logBg(null, `[PRIVACY_GATE_BLOCK] reason=${prep.reason} attemptId=none targetUrl=none`, 'error');
+                            chrome.runtime.sendMessage({
+                                action: 'PRIVACY_GATEWAY_BLOCKED',
+                                reason: prep.reason,
+                                userMessage: prep.userMessage
+                            }).catch(() => {});
+                            sendResponse({
+                                success: false,
+                                status: 'PRIVACY_GATEWAY_BLOCKED',
+                                error: 'PRIVACY_GATEWAY_BLOCKED',
+                                reason: prep.reason,
+                                userMessage: prep.userMessage
+                            });
+                            return;
+                        }
+                    }
+
                     if (pg.config.transportMode === 'PRIVACY_RELAY') {
                         await pg.ensureRelayActive(true);
                         if (pg.config.relayRotationMode === 'CAMPAIGN_BOUNDARY' || pg.config.rotateAtCampaignStart) {
@@ -2146,22 +2170,20 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                         logBg(null, `[PRIVACY_GATE_BLOCK] reason=${preflight.failureReason} attemptId=none targetUrl=none`, 'error');
                         chrome.runtime.sendMessage({
                             action: 'PRIVACY_GATEWAY_BLOCKED',
-                            reason: preflight.failureReason
+                            reason: preflight.failureReason,
+                            userMessage: preflight.userMessage || 'Strict Privacy transport could not be enforced.'
                         }).catch(() => {});
                         sendResponse({
                             success: false,
                             status: 'PRIVACY_GATEWAY_BLOCKED',
                             error: 'PRIVACY_GATEWAY_BLOCKED',
-                            reason: preflight.failureReason
+                            reason: preflight.failureReason,
+                            userMessage: preflight.userMessage || 'Strict Privacy transport could not be enforced.'
                         });
                         return;
                     }
                 }
 
-                // [R6.4 3] Log START_BG received
-                const queueLen = (request && Array.isArray(request.queue)) ? request.queue.length : 0;
-                logBg(null, `[START_BG] received queue=${queueLen}`, "info");
-                console.log(`[START_BG] received queue=${queueLen}`);
                 sendResponse({ success: true, status: 'acknowledged', queueCount: queueLen });
 
                 try {
@@ -2382,6 +2404,17 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                     }
                 }
                 sendResponse({ success: false, error: 'NATIVE_MESSAGING_UNSUPPORTED' });
+            })();
+            return true;
+        }
+
+        case 'ENSURE_ENFORCED_PRIVACY_FOR_START': {
+            (async () => {
+                const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+                if (!pg) return sendResponse({ success: false, error: 'PrivacyGateway unavailable' });
+                await pg.init();
+                const res = await pg.ensureEnforcedPrivacyForStart(request.options || {});
+                sendResponse({ success: true, result: res });
             })();
             return true;
         }

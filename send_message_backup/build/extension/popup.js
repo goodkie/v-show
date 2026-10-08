@@ -3644,6 +3644,53 @@ async function startCampaign() {
     const banner = document.getElementById('resumable-campaign-banner');
     if (banner) banner.style.display = 'none';
 
+    // [R6.9G.10.3.6 Auto-Enforced Privacy Start Prep]
+    const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+    if (pg) {
+        await pg.init();
+        const prepResult = await pg.ensureEnforcedPrivacyForStart();
+        if (!prepResult.ready) {
+            _restoreStartButton();
+            console.error(`[START_BLOCKED] PRIVACY_START_BLOCKED reason=${prepResult.reason}`);
+            addLog(`🛡️ [START_BLOCKED] ${prepResult.userMessage || prepResult.reason}`, 'error');
+            
+            // Open settings overlay and focus actionable field
+            const settingsOverlay = document.getElementById('settings-overlay');
+            if (settingsOverlay) settingsOverlay.classList.remove('hidden');
+
+            const privGroup = document.getElementById('privacy-gateway-group');
+            if (privGroup) privGroup.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+            if (prepResult.actionSection === 'privacy-relay-add-form') {
+                const relayFields = document.getElementById('privacy-relay-config-fields');
+                if (relayFields) relayFields.style.display = 'block';
+                const addForm = document.getElementById('priv-relay-add-form');
+                if (addForm) addForm.style.display = 'block';
+                const nodeHost = document.getElementById('priv-node-host');
+                if (nodeHost) nodeHost.focus();
+            } else if (prepResult.actionSection === 'privacy-proxy-config-fields') {
+                const proxyFields = document.getElementById('privacy-proxy-config-fields');
+                if (proxyFields) proxyFields.style.display = 'block';
+                const proxyHost = document.getElementById('privacy-proxy-host');
+                if (proxyHost) proxyHost.focus();
+            }
+
+            alert(`🛡️ STRICT PRIVACY REQUIREMENT\n\n${prepResult.userMessage || 'Strict Privacy needs an enforced relay/proxy.'}`);
+            return Promise.reject(new Error(prepResult.reason || 'PRIVACY_START_BLOCKED'));
+        }
+
+        // If self-healed, sync mode dropdown in UI
+        if (prepResult.mode) {
+            const privModeSelect = document.getElementById('privacy-transport-mode-select');
+            if (privModeSelect && privModeSelect.value !== prepResult.mode) {
+                privModeSelect.value = prepResult.mode;
+                try {
+                    privModeSelect.dispatchEvent(new Event('change'));
+                } catch (_) {}
+            }
+        }
+    }
+
     // [v20.0 Chrome Runtime Transport] Dispatch START_CAMPAIGN directly to background service worker
     console.log(`[START_IPC] sent queue=${startPayload.queue.length}`);
     addLog("[Engine] START_CAMPAIGN request sent", "info");
@@ -3696,11 +3743,21 @@ async function startCampaign() {
                 console.error('[START_BG_HANDLER_NOT_REACHED]', err);
                 _restoreStartButton();
                 if (response && response.status === 'PRIVACY_GATEWAY_BLOCKED') {
-                    const blkMsg = `🛡️ [PRIVACY_GATEWAY_BLOCKED] ${response.reason || 'Protected transport unconfirmed'}`;
+                    const blkMsg = `🛡️ [PRIVACY_GATEWAY_BLOCKED] ${response.userMessage || response.reason || 'Protected transport unconfirmed'}`;
                     addLog(blkMsg, "error");
-                    let detailMsg = response.reason || 'Privacy transport is not ready.';
-                    if (response.reason === 'SYSTEM_VPN_UNCONFIRMED_PREFLIGHT_BLOCKED') {
-                        detailMsg = "System VPN mode is selected, but VPN confirmation has not been completed.\n\nOpen Settings > Privacy Gateway, connect your VPN, then click 'Verify & Use System VPN'.";
+                    let detailMsg = response.userMessage;
+                    if (!detailMsg) {
+                        if (response.reason === 'EXTERNAL_VPN_NOT_ENFORCEABLE_IN_STRICT_MODE') {
+                            detailMsg = "Strict Privacy needs an enforced relay/proxy. External VPN Monitor is not enforceable in Strict mode.";
+                        } else if (response.reason === 'NO_HEALTHY_EGRESS' || response.reason === 'PRIVACY_RELAY_NO_HEALTHY_EGRESS') {
+                            detailMsg = "Strict Privacy needs an enforced relay/proxy. No healthy egress is configured. Please add an HTTP/HTTPS proxy node.";
+                        } else if (response.reason === 'RELAY_OFFLINE' || response.reason === 'PRIVACY_RELAY_OFFLINE') {
+                            detailMsg = "Privacy Relay companion is offline. Run companion/install_companion.bat or start the service.";
+                        } else if (response.reason === 'SYSTEM_VPN_UNCONFIRMED_PREFLIGHT_BLOCKED') {
+                            detailMsg = "System VPN mode is selected, but VPN confirmation has not been completed.\n\nOpen Settings > Privacy Gateway, connect your VPN, then click 'Verify & Use System VPN'.";
+                        } else {
+                            detailMsg = response.reason || 'Privacy transport is not ready.';
+                        }
                     }
                     alert(`🛡️ PRIVACY GATEWAY FAIL-CLOSED\n\nCampaign START blocked:\n${detailMsg}`);
                     const settingsOverlay = document.getElementById('settings-overlay');

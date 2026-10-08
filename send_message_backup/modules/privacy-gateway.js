@@ -136,6 +136,9 @@
                     this.config.proxyPassword = '';
                 }
             }
+            if (this.config.transportMode === 'SYSTEM_VPN') {
+                this.config.transportMode = PRIVACY_MODES.EXTERNAL_VPN_MONITOR;
+            }
             return this.config;
         }
 
@@ -422,9 +425,10 @@
             }
 
             // If offline and autoStart is enabled, dispatch Native Messaging START
+            let startRes = null;
             if (autoStart && typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendNativeMessage) {
                 console.log('[PRIVACY_GATE] Relay offline. Dispatching Native Messaging START command...');
-                const startRes = await new Promise((resolve) => {
+                startRes = await new Promise((resolve) => {
                     chrome.runtime.sendNativeMessage('com.xpider.privacy_relay', { action: 'START' }, (resp) => {
                         if (chrome.runtime.lastError || !resp) {
                             return resolve({ success: false, error: chrome.runtime.lastError ? chrome.runtime.lastError.message : 'NO_RESPONSE' });
@@ -437,9 +441,12 @@
                     });
                 });
 
-                if (startRes.success) {
+                if (startRes && startRes.success) {
                     for (let i = 0; i < 8; i++) {
                         await new Promise(r => setTimeout(r, 400));
+                        if (!this.ephemeralRelayToken) {
+                            await this.fetchRelayControlToken();
+                        }
                         statusRes = await this.queryRelayStatus();
                         if (statusRes.success && statusRes.status) {
                             return { active: true, status: statusRes.status };
@@ -448,7 +455,7 @@
                 }
             }
 
-            return { active: false, reason: statusRes.reason || 'RELAY_UNAVAILABLE' };
+            return { active: false, reason: (startRes && startRes.error) || statusRes.reason || 'RELAY_UNAVAILABLE' };
         }
 
         /**
@@ -1444,6 +1451,210 @@
         }
 
         /**
+         * [R6.9G.10.3.6] Auto-Enforced Privacy Start Preparation & Legacy VPN Self-Healing
+         * Orchestrates deterministic preparation sequence before campaign execution:
+         * [PRIVACY_START_PREP] -> [PRIVACY_AUTO_RECOVERY] -> [PRIVACY_TRANSPORT_APPLIED] -> [PRIVACY_CANARY] PASS -> [PRIVACY_START_READY]
+         * If recovery fails: [PRIVACY_START_BLOCKED] reason=...
+         */
+        async ensureEnforcedPrivacyForStart(options = {}) {
+            const currentMode = this.config.transportMode || PRIVACY_MODES.PRIVACY_RELAY;
+            const failClosed = this.config.failClosed !== false;
+            console.log(`[PRIVACY_START_PREP] currentMode=${currentMode} failClosed=${failClosed}`);
+
+            // If Privacy Gateway is disabled:
+            if (!this.config.enabled) {
+                if (failClosed) {
+                    const blockReason = 'PRIVACY_GATEWAY_DISABLED_FAIL_CLOSED';
+                    console.log(`[PRIVACY_START_BLOCKED] reason=${blockReason}`);
+                    this.isGateReady = false;
+                    this.failureReason = blockReason;
+                    return {
+                        ready: false,
+                        reason: blockReason,
+                        userMessage: 'Strict Privacy is enabled, but Privacy Gateway is toggled off. Enable Privacy Gateway or configure an enforced transport.',
+                        actionSection: 'privacy-gateway-group'
+                    };
+                }
+                console.log('[PRIVACY_START_READY] mode=DIRECT');
+                return { ready: true, mode: PRIVACY_MODES.DIRECT };
+            }
+
+            // If Owner explicitly disabled strict fail-closed (failClosed === false):
+            if (!failClosed) {
+                const preflight = await this.runPreflight(options);
+                if (preflight.ready) {
+                    console.log(`[PRIVACY_START_READY] mode=${currentMode}`);
+                    return { ready: true, mode: currentMode };
+                }
+                console.log(`[PRIVACY_START_BLOCKED] reason=${preflight.failureReason}`);
+                return {
+                    ready: false,
+                    reason: preflight.failureReason,
+                    userMessage: preflight.failureReason === 'EXTERNAL_VPN_UNCONFIRMED_PREFLIGHT_BLOCKED'
+                        ? 'System VPN mode is selected, but not confirmed. Connect your VPN and confirm in Settings > Privacy Gateway.'
+                        : `Privacy preflight check failed: ${preflight.failureReason}`,
+                    actionSection: 'privacy-system-vpn-fields'
+                };
+            }
+
+            // Strict mode (failClosed === true):
+            // Priority A: If current transport is already an enforceable mode AND gate is already active & ready
+            const isCurrentModeEnforceable = (
+                currentMode === PRIVACY_MODES.PRIVACY_RELAY ||
+                currentMode === PRIVACY_MODES.HTTPS_PROXY ||
+                currentMode === PRIVACY_MODES.SOCKS5
+            );
+
+            if (isCurrentModeEnforceable && this.isGateReady && this.isGateActive) {
+                console.log(`[PRIVACY_START_READY] mode=${currentMode}`);
+                return { ready: true, mode: currentMode };
+            }
+
+            // Priority B: Check Privacy Relay companion (Auto-recover / self-heal)
+            let relayUsable = false;
+            let relayStatus = null;
+            let nativeHostMissing = false;
+
+            try {
+                let statusRes = await this.queryRelayStatus();
+                if ((!statusRes.success || !statusRes.status || statusRes.reason === 'HTTP_401') && options.autoStart !== false) {
+                    console.log('[PRIVACY_AUTO_RECOVERY] candidate=PRIVACY_RELAY daemon_check=starting');
+                    const activeRes = await this.ensureRelayActive(true);
+                    if (activeRes.active && activeRes.status) {
+                        relayStatus = activeRes.status;
+                    } else {
+                        if (activeRes.reason && (
+                            activeRes.reason.includes('Specified native messaging host not found') ||
+                            activeRes.reason.includes('NATIVE_HOST_NOT_FOUND')
+                        )) {
+                            nativeHostMissing = true;
+                        }
+                    }
+                } else if (statusRes.success && statusRes.status) {
+                    relayStatus = statusRes.status;
+                }
+            } catch (err) {
+                console.warn('[PRIVACY_RELAY_CHECK_ERROR]', err);
+            }
+
+            // Re-check status if we have active daemon
+            if (!relayStatus) {
+                const retryStatus = await this.queryRelayStatus();
+                if (retryStatus.success && retryStatus.status) {
+                    relayStatus = retryStatus.status;
+                }
+            }
+
+            if (relayStatus) {
+                const nodeCount = relayStatus.totalNodes !== undefined
+                    ? relayStatus.totalNodes
+                    : (relayStatus.nodes ? relayStatus.nodes.length : 0);
+                if (nodeCount > 0 && relayStatus.health !== 'NO_NODES') {
+                    relayUsable = true;
+                } else {
+                    console.log(`[PRIVACY_RELAY_ZERO_NODES] totalNodes=${nodeCount} health=${relayStatus.health}`);
+                }
+            }
+
+            if (relayUsable) {
+                console.log('[PRIVACY_AUTO_RECOVERY] candidate=PRIVACY_RELAY');
+                this.config.transportMode = PRIVACY_MODES.PRIVACY_RELAY;
+                this.config.relayRotationMode = this.config.relayRotationMode || 'FIXED';
+                await this.saveConfig({
+                    transportMode: PRIVACY_MODES.PRIVACY_RELAY,
+                    relayRotationMode: this.config.relayRotationMode
+                });
+
+                const relayHost = this.config.relayHost || '127.0.0.1';
+                const relayProxyPort = this.config.relayProxyPort || 18988;
+                try {
+                    // Apply chrome.proxy to loopback on 18988 and verify settings readback
+                    await this.applyManagedProxy(PRIVACY_MODES.HTTPS_PROXY, relayHost, relayProxyPort, ['<-loopback>']);
+                    console.log(`[PRIVACY_TRANSPORT_APPLIED] mode=PRIVACY_RELAY host=${relayHost}:${relayProxyPort}`);
+
+                    // Run canary probe through proxy
+                    const canaryRes = await this.probeProxyCanary(options.canaryUrl || this.config.canaryUrl || null, 3000);
+                    if (canaryRes.success) {
+                        console.log(`[PRIVACY_CANARY] PASS endpoint=${canaryRes.endpoint || 'default'}`);
+                        this.isGateReady = true;
+                        this.isGateActive = true;
+                        this.failureReason = null;
+                        this.ephemeralEgressFingerprint = relayStatus.egressFingerprint || null;
+                        this.config.selectedEgressId = relayStatus.selectedEgressId || null;
+                        console.log('[PRIVACY_START_READY] mode=PRIVACY_RELAY');
+                        return { ready: true, mode: PRIVACY_MODES.PRIVACY_RELAY };
+                    } else {
+                        console.warn(`[PRIVACY_CANARY] FAIL reason=${canaryRes.reason}`);
+                    }
+                } catch (applyErr) {
+                    console.warn('[PRIVACY_TRANSPORT_APPLY_FAILED]', applyErr);
+                }
+            }
+
+            // Priority C: Check Managed Proxy (HTTPS / SOCKS5)
+            const hasProxyHost = !!(this.config.proxyHost && this.config.proxyHost.trim());
+            const hasProxyPort = !!(this.config.proxyPort);
+            const proxyCandidate = (this.config.transportMode === PRIVACY_MODES.SOCKS5)
+                ? PRIVACY_MODES.SOCKS5
+                : PRIVACY_MODES.HTTPS_PROXY;
+
+            if (hasProxyHost && hasProxyPort) {
+                console.log(`[PRIVACY_AUTO_RECOVERY] candidate=${proxyCandidate}`);
+                try {
+                    await this.applyManagedProxy(proxyCandidate, this.config.proxyHost, this.config.proxyPort, this.config.proxyBypassList);
+                    console.log(`[PRIVACY_TRANSPORT_APPLIED] mode=${proxyCandidate} host=${this.config.proxyHost}:${this.config.proxyPort}`);
+
+                    const canaryRes = await this.probeProxyCanary(options.canaryUrl || this.config.canaryUrl || null, 3000);
+                    if (canaryRes.success) {
+                        console.log(`[PRIVACY_CANARY] PASS endpoint=${canaryRes.endpoint || 'default'}`);
+                        this.config.transportMode = proxyCandidate;
+                        await this.saveConfig({ transportMode: proxyCandidate });
+                        this.isGateReady = true;
+                        this.isGateActive = true;
+                        this.failureReason = null;
+                        this.ephemeralEgressFingerprint = await this._hashString(`${this.config.proxyHost}:${this.config.proxyPort}`);
+                        console.log(`[PRIVACY_START_READY] mode=${proxyCandidate}`);
+                        return { ready: true, mode: proxyCandidate };
+                    } else {
+                        console.warn(`[PRIVACY_CANARY] FAIL reason=${canaryRes.reason}`);
+                    }
+                } catch (proxyErr) {
+                    console.warn('[PRIVACY_PROXY_APPLY_FAILED]', proxyErr);
+                }
+            }
+
+            // Priority D: Neither relay nor proxy is usable / healthy -> Fail-closed!
+            let blockReason = 'PROXY_NOT_CONFIGURED';
+            let userMsg = 'Strict Privacy needs an enforced relay/proxy. No healthy egress is configured.';
+            let actionSection = 'privacy-relay-config-fields';
+
+            if (relayStatus && (relayStatus.totalNodes === 0 || relayStatus.health === 'NO_NODES')) {
+                blockReason = 'NO_HEALTHY_EGRESS';
+                userMsg = 'Strict Privacy needs an enforced relay/proxy. No healthy egress is configured. Please add an HTTP/HTTPS proxy node to Privacy Relay.';
+                actionSection = 'privacy-relay-add-form';
+            } else if (nativeHostMissing) {
+                blockReason = 'RELAY_OFFLINE';
+                userMsg = 'Strict Privacy needs an enforced relay/proxy. Privacy Relay companion is not installed. Run companion/install_companion.bat to install it, or configure a Managed Proxy.';
+                actionSection = 'privacy-relay-config-fields';
+            } else if (!relayStatus && !hasProxyHost) {
+                blockReason = 'RELAY_OFFLINE';
+                userMsg = 'Strict Privacy needs an enforced relay/proxy. Privacy Relay is offline and no Managed Proxy is configured. Start the Privacy Relay companion or enter proxy credentials below.';
+                actionSection = 'privacy-relay-config-fields';
+            }
+
+            console.log(`[PRIVACY_START_BLOCKED] reason=${blockReason}`);
+            this.isGateReady = false;
+            this.failureReason = blockReason;
+
+            return {
+                ready: false,
+                reason: blockReason,
+                userMessage: userMsg,
+                actionSection: actionSection
+            };
+        }
+
+        /**
          * Mandatory Invariant Check before any target tab navigation:
          * PRIVACY_GATE_READY === true
          */
@@ -1499,6 +1710,7 @@
         PrivacyGatewayEngine,
         PRIVACY_MODES,
         getInstance: () => instance,
+        ensureEnforcedPrivacyForStart: (options) => instance.ensureEnforcedPrivacyForStart(options),
         redactSensitivePrivacyInfo: PrivacyGatewayEngine.redactSensitivePrivacyInfo
     };
 }));
