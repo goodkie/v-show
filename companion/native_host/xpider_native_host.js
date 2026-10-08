@@ -1,10 +1,10 @@
 /**
  * xpider_native_host.js
  * 
- * Native Messaging Host for Chrome / Microsoft Edge MV3 (Issue #6 R6.9G.10)
+ * Native Messaging Host for Chrome / Microsoft Edge MV3 (Issue #6 R6.9G.10.1)
  * Provides Zero-Manual-Launch UX:
- * Allows the XPIDER Extension to probe, start, stop, or recover the Companion Privacy Relay
- * without requiring the Owner to open a terminal or launch manual proxy processes.
+ * Allows the XPIDER Extension to probe, start, stop, recover, and retrieve the control token
+ * for the Companion Privacy Relay without requiring the Owner to open terminal windows.
  */
 
 const { exec, spawn } = require('child_process');
@@ -15,7 +15,18 @@ const fs = require('fs');
 const RELAY_DIR = path.resolve(__dirname, '..');
 const SILENT_RUNNER_VBS = path.join(RELAY_DIR, 'start_relay_silent.vbs');
 const RELAY_SCRIPT = path.join(RELAY_DIR, 'privacy-relay-service.js');
+const TOKEN_FILE = path.join(RELAY_DIR, '.control_token');
 const CONTROL_PORT = 18989;
+const PROXY_PORT = 18988;
+
+function getControlToken() {
+  try {
+    if (fs.existsSync(TOKEN_FILE)) {
+      return fs.readFileSync(TOKEN_FILE, 'utf8').trim();
+    }
+  } catch (_) {}
+  return null;
+}
 
 function sendNativeMessage(msg) {
   const jsonStr = JSON.stringify(msg);
@@ -27,16 +38,23 @@ function sendNativeMessage(msg) {
 }
 
 async function checkRelayStatus() {
+  const token = getControlToken();
   return new Promise((resolve) => {
-    const req = http.get(`http://127.0.0.1:${CONTROL_PORT}/status`, (res) => {
+    const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+    const req = http.get({
+      hostname: '127.0.0.1',
+      port: CONTROL_PORT,
+      path: '/status',
+      headers
+    }, (res) => {
       let body = '';
       res.on('data', d => body += d);
       res.on('end', () => {
         try {
           const parsed = JSON.parse(body);
-          resolve({ running: true, status: parsed });
+          resolve({ running: res.statusCode === 200, status: parsed, statusCode: res.statusCode });
         } catch (_) {
-          resolve({ running: true, raw: body });
+          resolve({ running: res.statusCode === 200, raw: body, statusCode: res.statusCode });
         }
       });
     });
@@ -50,18 +68,39 @@ async function checkRelayStatus() {
   });
 }
 
+async function checkRelayHealth() {
+  return new Promise((resolve) => {
+    const req = http.get(`http://127.0.0.1:${CONTROL_PORT}/health`, (res) => {
+      let body = '';
+      res.on('data', d => body += d);
+      res.on('end', () => {
+        try {
+          resolve({ running: res.statusCode === 200, health: JSON.parse(body) });
+        } catch (_) {
+          resolve({ running: res.statusCode === 200, raw: body });
+        }
+      });
+    });
+    req.on('error', () => {
+      resolve({ running: false });
+    });
+    req.setTimeout(1000, () => {
+      req.destroy();
+      resolve({ running: false });
+    });
+  });
+}
+
 async function startRelay() {
-  const status = await checkRelayStatus();
-  if (status.running) {
-    return { success: true, message: 'ALREADY_RUNNING', status: status.status };
+  const health = await checkRelayHealth();
+  if (health.running) {
+    return { success: true, message: 'ALREADY_RUNNING', controlToken: getControlToken() };
   }
 
   return new Promise((resolve) => {
-    // Launch silently on Windows via wscript or detached child_process
     if (process.platform === 'win32' && fs.existsSync(SILENT_RUNNER_VBS)) {
       exec(`wscript.exe "${SILENT_RUNNER_VBS}"`, (err) => {
         if (err) {
-          // Fallback to detached node spawn
           try {
             const child = spawn(process.execPath, [RELAY_SCRIPT], {
               detached: true,
@@ -93,12 +132,17 @@ async function startRelay() {
 }
 
 async function stopRelay() {
+  const token = getControlToken();
   return new Promise((resolve) => {
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
     const req = http.request({
       hostname: '127.0.0.1',
       port: CONTROL_PORT,
       path: '/stop',
-      method: 'POST'
+      method: 'POST',
+      headers
     }, (res) => {
       resolve({ success: true, statusCode: res.statusCode });
     });
@@ -119,17 +163,45 @@ async function handleMessage(msg) {
     case 'PING':
       return { action: 'PONG', timestamp: Date.now() };
 
+    case 'GET_TOKEN': {
+      const token = getControlToken();
+      return {
+        action: 'TOKEN_RESPONSE',
+        controlToken: token,
+        controlPort: CONTROL_PORT,
+        proxyPort: PROXY_PORT
+      };
+    }
+
     case 'STATUS': {
       const st = await checkRelayStatus();
-      return { action: 'STATUS_RESPONSE', ...st };
+      const token = getControlToken();
+      return {
+        action: 'STATUS_RESPONSE',
+        ...st,
+        controlToken: token,
+        controlPort: CONTROL_PORT,
+        proxyPort: PROXY_PORT
+      };
     }
 
     case 'START': {
       const res = await startRelay();
-      // Wait 600ms and probe again
-      await new Promise(r => setTimeout(r, 600));
-      const verify = await checkRelayStatus();
-      return { action: 'START_RESPONSE', result: res, isRunningNow: verify.running, status: verify.status };
+      // Poll up to 5 times for relay to become responsive
+      let verify = await checkRelayHealth();
+      for (let i = 0; i < 6 && !verify.running; i++) {
+        await new Promise(r => setTimeout(r, 400));
+        verify = await checkRelayHealth();
+      }
+      const token = getControlToken();
+      return {
+        action: 'START_RESPONSE',
+        result: res,
+        isRunningNow: verify.running,
+        controlToken: token,
+        controlPort: CONTROL_PORT,
+        proxyPort: PROXY_PORT
+      };
     }
 
     case 'STOP': {
@@ -139,11 +211,18 @@ async function handleMessage(msg) {
 
     case 'RESTART': {
       await stopRelay();
-      await new Promise(r => setTimeout(r, 1000));
-      const startRes = await startRelay();
-      await new Promise(r => setTimeout(r, 600));
-      const verify = await checkRelayStatus();
-      return { action: 'RESTART_RESPONSE', startRes, isRunningNow: verify.running, status: verify.status };
+      await new Promise(r => setTimeout(r, 800));
+      await startRelay();
+      let verify = await checkRelayHealth();
+      for (let i = 0; i < 6 && !verify.running; i++) {
+        await new Promise(r => setTimeout(r, 400));
+        verify = await checkRelayHealth();
+      }
+      return {
+        action: 'RESTART_RESPONSE',
+        isRunningNow: verify.running,
+        controlToken: getControlToken()
+      };
     }
 
     default:
@@ -160,7 +239,6 @@ process.stdin.on('data', async (chunk) => {
   while (inputBuffer.length >= 4) {
     const msgLen = inputBuffer.readUInt32LE(0);
     if (inputBuffer.length < 4 + msgLen) {
-      // Need more data
       break;
     }
 

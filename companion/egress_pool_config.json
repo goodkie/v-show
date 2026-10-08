@@ -1,43 +1,56 @@
 {
-  "version": "1.0.0",
-  "rotationMode": "CAMPAIGN_BOUNDARY",
+  "version": "1.0.1",
+  "rotationMode": "HEALTH_FAILOVER",
   "healthCheckTimeoutMs": 3000,
   "nodes": [
     {
       "id": "egress-node-1",
       "name": "US-East Privacy Node 1",
-      "type": "HTTPS_PROXY",
+      "type": "HTTP_PROXY",
       "host": "127.0.0.1",
       "port": 18991,
+      "credentialRef": "",
       "username": "",
       "password": "",
       "region": "US-EAST",
       "active": true,
-      "lastHealth": "HEALTHY"
+      "lastHealth": "HEALTHY",
+      "observedEgressIp": "198.51.100.101",
+      "observedFingerprint": "6a817846a3f74339",
+      "lastVerifiedAt": 1791418960764
     },
     {
       "id": "egress-node-2",
       "name": "EU-Central Privacy Node 2",
-      "type": "HTTPS_PROXY",
+      "type": "HTTP_PROXY",
       "host": "127.0.0.1",
       "port": 18992,
+      "credentialRef": "",
       "username": "",
       "password": "",
       "region": "EU-CENTRAL",
       "active": true,
-      "lastHealth": "HEALTHY"
+      "lastHealth": "HEALTHY",
+      "observedEgressIp": "198.51.100.202",
+      "observedFingerprint": "cbc847d27d6f5694",
+      "lastVerifiedAt": 1791418960699
     },
     {
       "id": "egress-node-3",
       "name": "AP-East Privacy Node 3",
-      "type": "HTTPS_PROXY",
+      "type": "HTTP_PROXY",
       "host": "127.0.0.1",
       "port": 18993,
+      "credentialRef": "",
       "username": "",
       "password": "",
       "region": "AP-EAST",
       "active": true,
-      "lastHealth": "HEALTHY"
+      "lastHealth": "UNKNOWN",
+      "observedEgressIp": null,
+      "observedFingerprint": null,
+      "lastVerifiedAt": 0
     }
-  ]
+  ],
+  "canaryUrl": "http://127.0.0.1:8980/privacy-canary"
 }

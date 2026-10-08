@@ -1,31 +1,57 @@
 /**
  * install_native_host.js
- * Registers the XPIDER Privacy Relay Native Messaging Host in Windows Registry for Chrome & Edge.
+ * 
+ * Registers the XPIDER Privacy Relay Native Messaging Host in Windows Registry for Chrome & Edge (Issue #6 R6.9G.10.1).
+ * Generates portable manifests at install time using exact installed paths and exact extension IDs.
  */
 
 const { execSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 
-const chromeManifest = path.join(__dirname, 'native_host', 'com.xpider.privacy_relay.chrome.json');
-const edgeManifest = path.join(__dirname, 'native_host', 'com.xpider.privacy_relay.edge.json');
+const DEFAULT_EXT_IDS = [
+  'pjohcallgmjmbfckiaogjokelhobfceg' // Default unpacked dev extension ID
+];
 
-function registerInRegistry() {
+function generateManifests(baseDir = __dirname, extIds = DEFAULT_EXT_IDS) {
+  const hostBatPath = path.resolve(baseDir, 'native_host', 'xpider_native_host.bat');
+  const allowedOrigins = extIds.map(id => `chrome-extension://${id}/`);
+
+  const manifestContent = {
+    name: 'com.xpider.privacy_relay',
+    description: 'XPIDER Companion Privacy Relay Native Controller',
+    path: hostBatPath,
+    type: 'stdio',
+    allowed_origins: allowedOrigins
+  };
+
+  const chromeManifestPath = path.resolve(baseDir, 'native_host', 'com.xpider.privacy_relay.chrome.json');
+  const edgeManifestPath = path.resolve(baseDir, 'native_host', 'com.xpider.privacy_relay.edge.json');
+
+  fs.writeFileSync(chromeManifestPath, JSON.stringify(manifestContent, null, 2), 'utf8');
+  fs.writeFileSync(edgeManifestPath, JSON.stringify(manifestContent, null, 2), 'utf8');
+
+  return { chromeManifestPath, edgeManifestPath, hostBatPath, allowedOrigins };
+}
+
+function registerInRegistry(baseDir = __dirname, extIds = DEFAULT_EXT_IDS) {
+  const { chromeManifestPath, edgeManifestPath } = generateManifests(baseDir, extIds);
+
   if (process.platform !== 'win32') {
     console.log('[NATIVE_HOST] Non-Windows platform detected; skipping registry registration.');
     return true;
   }
 
   try {
-    // 1. Chrome
+    // 1. Google Chrome
     const chromeKey = 'HKCU\\Software\\Google\\Chrome\\NativeMessagingHosts\\com.xpider.privacy_relay';
-    execSync(`reg add "${chromeKey}" /ve /t REG_SZ /d "${chromeManifest}" /f`, { stdio: 'ignore' });
-    console.log('[NATIVE_HOST] Registered for Chrome:', chromeManifest);
+    execSync(`reg add "${chromeKey}" /ve /t REG_SZ /d "${chromeManifestPath}" /f`, { stdio: 'ignore' });
+    console.log('[NATIVE_HOST] Registered for Chrome:', chromeManifestPath);
 
     // 2. Microsoft Edge
     const edgeKey = 'HKCU\\Software\\Microsoft\\Edge\\NativeMessagingHosts\\com.xpider.privacy_relay';
-    execSync(`reg add "${edgeKey}" /ve /t REG_SZ /d "${edgeManifest}" /f`, { stdio: 'ignore' });
-    console.log('[NATIVE_HOST] Registered for Edge:', edgeManifest);
+    execSync(`reg add "${edgeKey}" /ve /t REG_SZ /d "${edgeManifestPath}" /f`, { stdio: 'ignore' });
+    console.log('[NATIVE_HOST] Registered for Edge:', edgeManifestPath);
 
     return true;
   } catch (err) {
@@ -52,11 +78,17 @@ function unregisterFromRegistry() {
 }
 
 if (require.main === module) {
-  if (process.argv[2] === '--uninstall') {
+  const args = process.argv.slice(2);
+  if (args.includes('--uninstall')) {
     unregisterFromRegistry();
   } else {
-    registerInRegistry();
+    let customExtIds = [...DEFAULT_EXT_IDS];
+    const extIdIdx = args.indexOf('--ext-id');
+    if (extIdIdx !== -1 && args[extIdIdx + 1]) {
+      customExtIds = [args[extIdIdx + 1]];
+    }
+    registerInRegistry(__dirname, customExtIds);
   }
 }
 
-module.exports = { registerInRegistry, unregisterFromRegistry };
+module.exports = { registerInRegistry, unregisterFromRegistry, generateManifests };

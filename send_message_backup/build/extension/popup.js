@@ -995,7 +995,8 @@ async function hydrateSettings() {
                 if (res && res.success && res.result && res.result.status) {
                     updateRelayStatusUI(res.result.status);
                 } else if (relayDaemonBadge) {
-                    relayDaemonBadge.textContent = 'OFFLINE';
+                    const isUnauth = res && res.result && res.result.reason === 'HTTP_401';
+                    relayDaemonBadge.textContent = isUnauth ? 'UNAUTH' : 'OFFLINE';
                     relayDaemonBadge.style.color = '#f87171';
                     relayDaemonBadge.style.background = 'rgba(239, 68, 68, 0.2)';
                     relayDaemonBadge.style.border = '1px solid #ef4444';

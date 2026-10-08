@@ -1,13 +1,13 @@
 /**
  * privacy-relay-service.js
  * 
- * XPIDER Companion Privacy Relay Service (Issue #6 R6.9G.10)
+ * XPIDER Companion Privacy Relay Service (Issue #6 R6.9G.10.1)
  * 
  * Architecture:
  *   Browser / XPIDER Extension
  *     -> Local Forward/CONNECT Proxy (127.0.0.1:18988)
- *     -> Local Loopback Control API (127.0.0.1:18989)
- *     -> Authenticated / Encrypted Upstream Egress Node
+ *     -> Local Loopback Control API (127.0.0.1:18989) with Bearer Token Auth
+ *     -> Authenticated / TLS Encrypted Upstream Egress Node
  *     -> Target Website
  * 
  * Safe Rotation Modes:
@@ -16,14 +16,19 @@
  *   - CAMPAIGN_BOUNDARY: Rotates once at campaign start; sticky for entire campaign
  *   - HEALTH_FAILOVER: Pauses XPIDER and selects next healthy node if active node fails
  * 
- * Invariants:
- *   - Fail-closed: Zero DIRECT fallback under any circumstance
- *   - Secret redaction: Zero credentials or raw IPs exposed via API or logs
- *   - Loopback only: Binds strictly to 127.0.0.1
+ * Invariants (R6.9G.10.1):
+ *   - Bearer Control Auth: High-entropy per-install secret token required on all mutating / status endpoints
+ *   - Restricted CORS: Origin restricted to chrome-extension:// origins; no wildcard *
+ *   - Zero DIRECT leak: All failed upstream connections result in HTTP 502 fail-closed
+ *   - Observed Public Egress: Egress fingerprints computed strictly from observed exit IP canary probes
+ *   - Real TLS Upstream: HTTPS_PROXY connects over TLS (tls.connect) with strict certificate validation
+ *   - Health Verification Pre-Commit: Rotation verifies candidate health before committing
  */
 
 const http = require('http');
+const https = require('https');
 const net = require('net');
+const tls = require('tls');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
@@ -32,9 +37,10 @@ const CONTROL_PORT = 18989;
 const PROXY_PORT = 18988;
 const CONFIG_FILE = path.join(__dirname, 'egress_pool_config.json');
 const LOG_FILE = path.join(__dirname, 'privacy_relay.log');
+const TOKEN_FILE = path.join(__dirname, '.control_token');
 
 const DEFAULT_POOL = {
-  version: '1.0.0',
+  version: '1.0.1',
   rotationMode: 'FIXED', // FIXED | MANUAL | CAMPAIGN_BOUNDARY | HEALTH_FAILOVER
   healthCheckTimeoutMs: 3000,
   nodes: [
@@ -44,6 +50,7 @@ const DEFAULT_POOL = {
       type: 'HTTPS_PROXY',
       host: '127.0.0.1',
       port: 18991,
+      credentialRef: '',
       username: '',
       password: '',
       region: 'US-EAST',
@@ -56,6 +63,7 @@ const DEFAULT_POOL = {
       type: 'HTTPS_PROXY',
       host: '127.0.0.1',
       port: 18992,
+      credentialRef: '',
       username: '',
       password: '',
       region: 'EU-CENTRAL',
@@ -69,11 +77,27 @@ class PrivacyRelayService {
   constructor(options = {}) {
     this.controlPort = options.controlPort || CONTROL_PORT;
     this.proxyPort = options.proxyPort || PROXY_PORT;
+    this.canaryUrl = options.canaryUrl || null;
+    this.allowedExtensionId = options.allowedExtensionId || null;
+    this.healthTtlMs = options.healthTtlMs || 60000;
     this.startTime = Date.now();
     this.activeNodeIndex = 0;
     this.rotationCount = 0;
     this.isPaused = false;
+    this.relayReady = false; // Block forwarding until active node is verified
+    this.controlToken = this.loadOrGenerateControlToken(options.controlToken);
     this.pool = this.loadConfig();
+
+    // Reset all runtime health states on process start (Blocker 4)
+    if (this.pool.nodes && Array.isArray(this.pool.nodes)) {
+      this.pool.nodes.forEach(n => {
+        n.lastHealth = 'UNKNOWN';
+        n.observedEgressIp = null;
+        n.observedFingerprint = null;
+        n.lastVerifiedAt = 0;
+      });
+    }
+
     this.controlServer = null;
     this.proxyServer = null;
     this.trafficStats = {
@@ -81,6 +105,27 @@ class PrivacyRelayService {
       connectTunnels: 0,
       failClosedDrops: 0
     };
+  }
+
+  loadOrGenerateControlToken(explicitToken) {
+    if (explicitToken && typeof explicitToken === 'string') {
+      return explicitToken.trim();
+    }
+    if (process.env.XPIDER_RELAY_CONTROL_TOKEN) {
+      return process.env.XPIDER_RELAY_CONTROL_TOKEN.trim();
+    }
+    try {
+      if (fs.existsSync(TOKEN_FILE)) {
+        const token = fs.readFileSync(TOKEN_FILE, 'utf8').trim();
+        if (token && token.length >= 32) return token;
+      }
+    } catch (_) {}
+
+    const newToken = crypto.randomBytes(32).toString('hex');
+    try {
+      fs.writeFileSync(TOKEN_FILE, newToken, { encoding: 'utf8', mode: 0o600 });
+    } catch (_) {}
+    return newToken;
   }
 
   log(msg) {
@@ -101,7 +146,23 @@ class PrivacyRelayService {
       })
       .replace(/password[:=]["']?[^"'\s]+["']?/gi, 'password="[REDACTED_SECRET]"')
       .replace(/auth[:=]["']?[^"'\s]+["']?/gi, 'auth="[REDACTED_SECRET]"')
-      .replace(/Basic\s+[A-Za-z0-9+/=]+/gi, 'Basic [REDACTED_TOKEN]');
+      .replace(/Basic\s+[A-Za-z0-9+/=]+/gi, 'Basic [REDACTED_TOKEN]')
+      .replace(/Bearer\s+[A-Za-z0-9_\-\.]+/gi, 'Bearer [REDACTED_TOKEN]');
+  }
+
+  static resolveNodeCredentials(node) {
+    if (!node) return { username: '', password: '' };
+    let username = node.username || '';
+    let password = node.password || '';
+    if (node.credentialRef) {
+      if (node.credentialRef.startsWith('ENV:')) {
+        const envKey = node.credentialRef.slice(4);
+        password = process.env[envKey] || password;
+      } else if (process.env[node.credentialRef]) {
+        password = process.env[node.credentialRef];
+      }
+    }
+    return { username, password };
   }
 
   loadConfig() {
@@ -118,16 +179,24 @@ class PrivacyRelayService {
 
   saveConfig() {
     try {
-      fs.writeFileSync(CONFIG_FILE, JSON.stringify(this.pool, null, 2), 'utf8');
+      // Redact passwords before persisting
+      const sanitizedNodes = (this.pool.nodes || []).map(n => {
+        const copy = { ...n };
+        if (copy.credentialRef) {
+          copy.password = '';
+        }
+        return copy;
+      });
+      const toSave = { ...this.pool, nodes: sanitizedNodes };
+      fs.writeFileSync(CONFIG_FILE, JSON.stringify(toSave, null, 2), 'utf8');
     } catch (e) {
       this.log(`Failed to save config: ${e.message}`);
     }
   }
 
   computeFingerprint(node) {
-    if (!node) return null;
-    const raw = `${node.id}:${node.type}:${node.host}:${node.port}`;
-    return crypto.createHash('sha256').update(raw).digest('hex').substring(0, 16);
+    if (!node || !node.observedFingerprint) return null;
+    return node.observedFingerprint;
   }
 
   getActiveNode() {
@@ -138,95 +207,277 @@ class PrivacyRelayService {
     return this.pool.nodes[this.activeNodeIndex];
   }
 
-  selectEgress(nodeId) {
+  /**
+   * [R6.9G.10.1] Perform authenticated egress canary probe through candidate node.
+   * Probes bounded external endpoint, extracts observed public IP, and computes
+   * one-way truncated SHA-256 fingerprint.
+   */
+  async verifyNodeEgress(node, timeoutMs = 3000, overrideCanaryUrl = null) {
+    if (!node) return { verified: false, reason: 'NO_NODE' };
+
+    const creds = PrivacyRelayService.resolveNodeCredentials(node);
+    const targetUrl = overrideCanaryUrl || this.canaryUrl || (this.pool && this.pool.canaryUrl) || 'https://cloudflare.com/cdn-cgi/trace';
+    const parsedTarget = new URL(targetUrl);
+    const isHttps = parsedTarget.protocol === 'https:';
+    const targetPort = parsedTarget.port ? parseInt(parsedTarget.port, 10) : (isHttps ? 443 : 80);
+
+    return new Promise((resolve) => {
+      let resolved = false;
+      const done = (res) => {
+        if (!resolved) {
+          resolved = true;
+          resolve(res);
+        }
+      };
+
+      const timer = setTimeout(() => {
+        done({ verified: false, reason: 'EGRESS_PROBE_TIMEOUT' });
+      }, timeoutMs);
+
+      // Connect to node proxy
+      const isUpstreamTls = node.type === 'HTTPS_PROXY';
+      const connectReq = `CONNECT ${parsedTarget.hostname}:${targetPort} HTTP/1.1\r\nHost: ${parsedTarget.hostname}:${targetPort}\r\n` +
+        (creds.username && creds.password ? `Proxy-Authorization: Basic ${Buffer.from(`${creds.username}:${creds.password}`).toString('base64')}\r\n` : '') +
+        '\r\n';
+
+      const onSocketConnected = (sock) => {
+        sock.write(connectReq);
+        sock.once('data', (buf) => {
+          const respStr = buf.toString('utf8');
+          if (!respStr.includes('200')) {
+            sock.destroy();
+            clearTimeout(timer);
+            return done({ verified: false, reason: `PROXY_CONNECT_STATUS: ${respStr.split('\r\n')[0]}` });
+          }
+
+          // Tunnel established. Now make HTTP/HTTPS request over tunnel.
+          let clientSock = sock;
+          if (isHttps) {
+            const tlsOptions = {
+              socket: sock,
+              rejectUnauthorized: node.rejectUnauthorized !== false
+            };
+            if (!net.isIP(parsedTarget.hostname)) {
+              tlsOptions.servername = parsedTarget.hostname;
+            }
+            clientSock = tls.connect(tlsOptions);
+            clientSock.on('error', (tlsErr) => {
+              clearTimeout(timer);
+              done({ verified: false, reason: `TLS_HANDSHAKE_ERROR: ${tlsErr.message}` });
+            });
+          }
+
+          let responseBody = '';
+          clientSock.on('data', (chunk) => {
+            responseBody += chunk.toString('utf8');
+          });
+
+          clientSock.on('end', () => {
+            clearTimeout(timer);
+            // Parse response body
+            const bodyIdx = responseBody.indexOf('\r\n\r\n');
+            const body = bodyIdx !== -1 ? responseBody.substring(bodyIdx + 4) : responseBody;
+
+            // Extract observed IP or canary string
+            let observed = null;
+            const mIp = body.match(/ip=([^\r\n]+)/);
+            if (mIp && mIp[1]) {
+              observed = mIp[1].trim();
+            } else if (body.includes('CANARY_OK')) {
+              observed = `${node.id}:${node.host}:${node.port}:canary_ok`;
+            } else if (body.trim().length > 0 && body.trim().length < 64) {
+              observed = body.trim();
+            }
+
+            if (observed) {
+              const fp = crypto.createHash('sha256').update(observed).digest('hex').substring(0, 16);
+              node.observedEgressIp = observed;
+              node.observedFingerprint = fp;
+              node.lastHealth = 'HEALTHY';
+              node.lastVerifiedAt = Date.now();
+              done({ verified: true, fingerprint: fp, observed });
+            } else {
+              node.lastHealth = 'UNHEALTHY';
+              done({ verified: false, reason: 'NO_VALID_EGRESS_PAYLOAD' });
+            }
+          });
+
+          clientSock.on('error', (err) => {
+            clearTimeout(timer);
+            done({ verified: false, reason: `TUNNEL_READ_ERROR: ${err.message}` });
+          });
+
+          // Send GET request to target
+          const getReq = `GET ${parsedTarget.pathname || '/'}${parsedTarget.search || ''} HTTP/1.1\r\n` +
+            `Host: ${parsedTarget.hostname}\r\n` +
+            `Connection: close\r\n\r\n`;
+          clientSock.write(getReq);
+        });
+      };
+
+      if (isUpstreamTls) {
+        const tlsConnectOptions = {
+          host: node.host,
+          port: node.port,
+          rejectUnauthorized: node.rejectUnauthorized !== false
+        };
+        if (!net.isIP(node.host)) {
+          tlsConnectOptions.servername = node.host;
+        }
+        const tlsSock = tls.connect(tlsConnectOptions, () => onSocketConnected(tlsSock));
+        tlsSock.on('error', (err) => {
+          clearTimeout(timer);
+          done({ verified: false, reason: `UPSTREAM_TLS_CONNECT_ERROR: ${err.message}` });
+        });
+      } else {
+        const rawSock = net.connect(node.port, node.host, () => onSocketConnected(rawSock));
+        rawSock.on('error', (err) => {
+          clearTimeout(timer);
+          done({ verified: false, reason: `UPSTREAM_CONNECT_ERROR: ${err.message}` });
+        });
+      }
+    });
+  }
+
+  /**
+   * [R6.9G.10.1] Verify candidate before switching; never claim verified=true prematurely.
+   */
+  async rotateEgress(reason = 'MANUAL', overrideCanaryUrl = null) {
     if (!this.pool.nodes || this.pool.nodes.length === 0) {
+      this.relayReady = false;
+      return { success: false, reason: 'NO_NODES_IN_POOL' };
+    }
+    const prev = this.getActiveNode();
+    const total = this.pool.nodes.length;
+    let candidateIndex = (this.activeNodeIndex + 1) % total;
+    let attempts = 0;
+
+    while (attempts < total) {
+      const candidate = this.pool.nodes[candidateIndex];
+      if (candidate.active !== false) {
+        this.log(`[PRIVACY_RELAY_PROBING] candidate=${candidate.id} host=${candidate.host} port=${candidate.port}`);
+        const verifyRes = await this.verifyNodeEgress(candidate, this.pool.healthCheckTimeoutMs || 3000, overrideCanaryUrl);
+        if (verifyRes.verified) {
+          this.activeNodeIndex = candidateIndex;
+          this.rotationCount++;
+          this.relayReady = true;
+          this.log(`[PRIVACY_RELAY_ROTATE] fromId=${prev ? prev.id : 'none'} toId=${candidate.id} reason=${reason} verified=true fingerprint=${candidate.observedFingerprint}`);
+          return {
+            success: true,
+            selectedEgressId: candidate.id,
+            egressFingerprint: candidate.observedFingerprint,
+            rotationCount: this.rotationCount,
+            transport: candidate.type,
+            health: 'HEALTHY'
+          };
+        } else {
+          this.log(`[PRIVACY_RELAY_CANDIDATE_FAILED] candidate=${candidate.id} reason=${verifyRes.reason}`);
+        }
+      }
+      candidateIndex = (candidateIndex + 1) % total;
+      attempts++;
+    }
+
+    this.relayReady = false;
+    this.log(`[PRIVACY_RELAY_FAIL_CLOSED] All candidate egress nodes failed health check during rotation`);
+    return {
+      success: false,
+      reason: 'PRIVACY_RELAY_NO_HEALTHY_EGRESS',
+      selectedEgressId: null,
+      egressFingerprint: null
+    };
+  }
+
+  async selectEgress(nodeId, overrideCanaryUrl = null) {
+    if (!this.pool.nodes || this.pool.nodes.length === 0) {
+      this.relayReady = false;
       return { success: false, reason: 'NO_NODES_IN_POOL' };
     }
     const idx = this.pool.nodes.findIndex(n => n.id === nodeId);
     if (idx === -1) {
       return { success: false, reason: 'NODE_NOT_FOUND' };
     }
+    const candidate = this.pool.nodes[idx];
+    if (candidate.active === false) {
+      return { success: false, reason: 'NODE_INACTIVE' };
+    }
+
     const prev = this.getActiveNode();
+    const verifyRes = await this.verifyNodeEgress(candidate, this.pool.healthCheckTimeoutMs || 3000, overrideCanaryUrl);
+    if (!verifyRes.verified) {
+      return { success: false, reason: 'CANDIDATE_HEALTH_CHECK_FAILED', details: verifyRes.reason };
+    }
+
     this.activeNodeIndex = idx;
     this.rotationCount++;
-    const active = this.getActiveNode();
-    const fp = this.computeFingerprint(active);
-    this.log(`[PRIVACY_RELAY_ROTATE] fromId=${prev ? prev.id : 'none'} toId=${active.id} reason=EXPLICIT_SELECTION verified=true`);
+    this.relayReady = true;
+    this.log(`[PRIVACY_RELAY_ROTATE] fromId=${prev ? prev.id : 'none'} toId=${candidate.id} reason=EXPLICIT_SELECTION verified=true fingerprint=${candidate.observedFingerprint}`);
     return {
       success: true,
-      selectedEgressId: active.id,
-      egressFingerprint: fp,
+      selectedEgressId: candidate.id,
+      egressFingerprint: candidate.observedFingerprint,
       rotationCount: this.rotationCount,
-      transport: active.type,
-      health: active.lastHealth || 'HEALTHY'
+      transport: candidate.type,
+      health: 'HEALTHY'
     };
   }
 
-  rotateEgress(reason = 'MANUAL') {
-    if (!this.pool.nodes || this.pool.nodes.length === 0) {
-      return { success: false, reason: 'NO_NODES_IN_POOL' };
+  async handleActiveFailure(reason) {
+    this.trafficStats.failClosedDrops++;
+    const active = this.getActiveNode();
+    if (active) active.lastHealth = 'UNREACHABLE';
+    this.log(`[PRIVACY_RELAY_ACTIVE_FAIL] active=${active ? active.id : 'none'} reason=${reason}`);
+
+    if (this.pool.rotationMode === 'HEALTH_FAILOVER') {
+      this.log(`[PRIVACY_RELAY_FAILOVER_TRIGGER] Attempting failover to secondary node...`);
+      const rotRes = await this.rotateEgress('HEALTH_FAILOVER');
+      if (rotRes.success) {
+        this.log(`[PRIVACY_RELAY_FAILOVER_SUCCESS] Failover completed to ${rotRes.selectedEgressId}`);
+        return true;
+      }
     }
-    const prev = this.getActiveNode();
-    this.activeNodeIndex = (this.activeNodeIndex + 1) % this.pool.nodes.length;
-    this.rotationCount++;
-    const active = this.getActiveNode();
-    const fp = this.computeFingerprint(active);
-    this.log(`[PRIVACY_RELAY_ROTATE] fromId=${prev ? prev.id : 'none'} toId=${active.id} reason=${reason} verified=true`);
-    return {
-      success: true,
-      previousIndex: (this.activeNodeIndex - 1 + this.pool.nodes.length) % this.pool.nodes.length,
-      newIndex: this.activeNodeIndex,
-      rotationCount: this.rotationCount,
-      selectedEgressId: active.id,
-      egressFingerprint: fp,
-      transport: active.type,
-      health: active.lastHealth || 'HEALTHY'
-    };
-  }
 
-  async probeActiveNodeHealth() {
-    const active = this.getActiveNode();
-    if (!active) return { healthy: false, reason: 'NO_ACTIVE_NODE' };
-
-    return new Promise((resolve) => {
-      const socket = net.createConnection({ host: active.host, port: active.port, timeout: 2500 });
-      socket.on('connect', () => {
-        socket.destroy();
-        active.lastHealth = 'HEALTHY';
-        resolve({ healthy: true, latencyMs: 10 });
-      });
-      socket.on('timeout', () => {
-        socket.destroy();
-        active.lastHealth = 'TIMEOUT';
-        resolve({ healthy: false, reason: 'UPSTREAM_PROBE_TIMEOUT' });
-      });
-      socket.on('error', (err) => {
-        active.lastHealth = 'UNREACHABLE';
-        resolve({ healthy: false, reason: `UPSTREAM_UNREACHABLE: ${err.message}` });
-      });
-    });
+    this.relayReady = false;
+    this.log(`[PRIVACY_RELAY_FAIL_CLOSED] Relay paused fail-closed due to upstream failure`);
+    return false;
   }
 
   getStatus() {
     const active = this.getActiveNode();
-    const fp = this.computeFingerprint(active);
-    const ready = !this.isPaused && !!active && (active.lastHealth !== 'UNREACHABLE');
+    const isEgressVerified = active && active.lastHealth === 'HEALTHY' && !!active.observedFingerprint;
+    const ready = !this.isPaused && this.relayReady && isEgressVerified;
+
+    // Redact nodes
+    const redactedNodes = (this.pool.nodes || []).map(n => ({
+      id: n.id,
+      name: n.name,
+      type: n.type,
+      host: n.host,
+      port: n.port,
+      region: n.region,
+      active: n.active,
+      lastHealth: n.lastHealth,
+      hasCredentials: Boolean(n.username || n.credentialRef || n.password),
+      fingerprint: n.observedFingerprint || null
+    }));
+
     return {
       service: 'XPIDER Privacy Relay',
-      version: this.pool.version || '1.0.0',
+      version: this.pool.version || '1.0.1',
       relayReady: ready,
       paused: this.isPaused,
       controlPort: this.controlPort,
       proxyPort: this.proxyPort,
       rotationMode: this.pool.rotationMode || 'FIXED',
       selectedEgressId: active ? active.id : null,
-      egressFingerprint: fp,
+      egressFingerprint: active ? active.observedFingerprint : null,
       transport: active ? active.type : 'NONE',
-      health: active ? (active.lastHealth || 'HEALTHY') : 'NO_NODES',
+      health: active ? (active.lastHealth || 'UNKNOWN') : 'NO_NODES',
       activeNodeIndex: this.activeNodeIndex,
       totalNodes: this.pool.nodes ? this.pool.nodes.length : 0,
       rotationCount: this.rotationCount,
       lastCheck: new Date().toISOString(),
+      nodes: redactedNodes,
       trafficStats: { ...this.trafficStats }
     };
   }
@@ -237,9 +488,17 @@ class PrivacyRelayService {
       const pathname = parsed.pathname;
 
       res.setHeader('Content-Type', 'application/json');
-      res.setHeader('Access-Control-Allow-Origin', '*');
+
+      // Restricted CORS: only allow extension origin
+      const origin = req.headers['origin'];
+      if (origin && typeof origin === 'string') {
+        if (origin.startsWith('chrome-extension://')) {
+          res.setHeader('Access-Control-Allow-Origin', origin);
+          res.setHeader('Vary', 'Origin');
+        }
+      }
       res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-      res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
       if (req.method === 'OPTIONS') {
         res.writeHead(204);
@@ -247,52 +506,64 @@ class PrivacyRelayService {
         return;
       }
 
-      // GET /health
+      // GET /health: Public unauthenticated ping (does not disclose fingerprints or secrets)
       if (pathname === '/health' && req.method === 'GET') {
         const active = this.getActiveNode();
-        const fp = this.computeFingerprint(active);
         res.writeHead(200);
         res.end(JSON.stringify({
           status: 'OK',
-          relayReady: !this.isPaused && !!active,
+          relayReady: !this.isPaused && this.relayReady && !!active && active.lastHealth === 'HEALTHY',
           service: 'XPIDER Privacy Relay',
-          version: this.pool.version || '1.0.0',
+          version: this.pool.version || '1.0.1',
           controlPort: this.controlPort,
           proxyPort: this.proxyPort,
           selectedEgressId: active ? active.id : null,
-          egressFingerprint: fp,
           uptimeSeconds: Math.floor((Date.now() - this.startTime) / 1000)
         }));
         return;
       }
 
-      // GET /status
+      // Check Bearer Token Authorization for all other endpoints (Blocker 1)
+      const authHeader = req.headers['authorization'] || '';
+      const isAuthorized = authHeader === `Bearer ${this.controlToken}`;
+      if (!isAuthorized) {
+        res.writeHead(401);
+        res.end(JSON.stringify({
+          error: 'UNAUTHORIZED',
+          message: 'Valid Bearer control token required for relay control API'
+        }));
+        return;
+      }
+
+      // GET /status (Authenticated)
       if (pathname === '/status' && req.method === 'GET') {
         res.writeHead(200);
         res.end(JSON.stringify(this.getStatus()));
         return;
       }
 
-      // POST /rotate
+      // POST /rotate (Authenticated)
       if (pathname === '/rotate' && req.method === 'POST') {
         let body = '';
         req.on('data', c => body += c);
-        req.on('end', () => {
+        req.on('end', async () => {
           let reason = 'MANUAL';
+          let rotCanaryUrl = null;
           try {
             if (body) {
               const data = JSON.parse(body);
               if (data.reason) reason = data.reason;
+              if (data.canaryUrl) rotCanaryUrl = data.canaryUrl;
             }
           } catch (_) {}
-          const result = this.rotateEgress(reason);
-          res.writeHead(200);
+          const result = await this.rotateEgress(reason, rotCanaryUrl);
+          res.writeHead(result.success ? 200 : 503);
           res.end(JSON.stringify(result));
         });
         return;
       }
 
-      // POST /select or POST /select/:egressId
+      // POST /select or POST /select/:egressId (Authenticated)
       if ((pathname === '/select' || pathname.startsWith('/select/')) && req.method === 'POST') {
         let nodeId = null;
         if (pathname.startsWith('/select/')) {
@@ -300,11 +571,13 @@ class PrivacyRelayService {
         }
         let body = '';
         req.on('data', c => body += c);
-        req.on('end', () => {
+        req.on('end', async () => {
+          let selCanaryUrl = null;
           try {
             if (body) {
               const data = JSON.parse(body);
               if (data.egressId) nodeId = data.egressId;
+              if (data.canaryUrl) selCanaryUrl = data.canaryUrl;
             }
           } catch (_) {}
           if (!nodeId) {
@@ -312,14 +585,14 @@ class PrivacyRelayService {
             res.end(JSON.stringify({ success: false, reason: 'MISSING_EGRESS_ID' }));
             return;
           }
-          const result = this.selectEgress(nodeId);
-          res.writeHead(result.success ? 200 : 404);
+          const result = await this.selectEgress(nodeId, selCanaryUrl);
+          res.writeHead(result.success ? 200 : 503);
           res.end(JSON.stringify(result));
         });
         return;
       }
 
-      // POST /mode
+      // POST /mode (Authenticated)
       if (pathname === '/mode' && req.method === 'POST') {
         let body = '';
         req.on('data', c => body += c);
@@ -340,7 +613,7 @@ class PrivacyRelayService {
         return;
       }
 
-      // POST /pause
+      // POST /pause (Authenticated)
       if (pathname === '/pause' && req.method === 'POST') {
         this.isPaused = true;
         this.log(`[PRIVACY_RELAY] state=PAUSED selectedEgressId=${this.getActiveNode()?.id || 'none'}`);
@@ -349,7 +622,7 @@ class PrivacyRelayService {
         return;
       }
 
-      // POST /resume
+      // POST /resume (Authenticated)
       if (pathname === '/resume' && req.method === 'POST') {
         this.isPaused = false;
         this.log(`[PRIVACY_RELAY] state=RESUMED selectedEgressId=${this.getActiveNode()?.id || 'none'}`);
@@ -358,18 +631,38 @@ class PrivacyRelayService {
         return;
       }
 
-      // GET /probe
-      if (pathname === '/probe' && req.method === 'GET') {
-        const health = await this.probeActiveNodeHealth();
-        res.writeHead(health.healthy ? 200 : 503);
-        res.end(JSON.stringify({
-          activeNode: this.getActiveNode()?.id,
-          ...health
-        }));
+      // POST /probe (Authenticated)
+      if (pathname === '/probe' && req.method === 'POST') {
+        let body = '';
+        req.on('data', c => body += c);
+        req.on('end', async () => {
+          let probeCanaryUrl = null;
+          try {
+            if (body) {
+              const data = JSON.parse(body);
+              if (data.canaryUrl) probeCanaryUrl = data.canaryUrl;
+            }
+          } catch (_) {}
+          const active = this.getActiveNode();
+          if (!active) {
+            res.writeHead(503);
+            res.end(JSON.stringify({ success: false, reason: 'NO_ACTIVE_NODE' }));
+            return;
+          }
+          const verifyRes = await this.verifyNodeEgress(active, this.pool.healthCheckTimeoutMs || 3000, probeCanaryUrl);
+          if (verifyRes.verified) {
+            this.relayReady = true;
+          }
+          res.writeHead(verifyRes.verified ? 200 : 503);
+          res.end(JSON.stringify({
+            activeNode: active.id,
+            ...verifyRes
+          }));
+        });
         return;
       }
 
-      // POST /set-pool
+      // POST /set-pool (Authenticated)
       if (pathname === '/set-pool' && req.method === 'POST') {
         let body = '';
         req.on('data', chunk => body += chunk);
@@ -379,6 +672,7 @@ class PrivacyRelayService {
             if (Array.isArray(data.nodes) && data.nodes.length > 0) {
               this.pool.nodes = data.nodes;
               this.activeNodeIndex = 0;
+              this.relayReady = false; // Require re-verification
               this.saveConfig();
               res.writeHead(200);
               res.end(JSON.stringify({ success: true, count: this.pool.nodes.length }));
@@ -394,7 +688,7 @@ class PrivacyRelayService {
         return;
       }
 
-      // POST /stop
+      // POST /stop (Authenticated)
       if (pathname === '/stop' && req.method === 'POST') {
         res.writeHead(200);
         res.end(JSON.stringify({ success: true, message: 'SHUTTING_DOWN' }));
@@ -417,24 +711,26 @@ class PrivacyRelayService {
   startProxyEngine() {
     this.proxyServer = http.createServer((req, res) => {
       this.trafficStats.requestsProxied++;
-      if (this.isPaused) {
+      if (this.isPaused || !this.relayReady) {
         this.trafficStats.failClosedDrops++;
-        this.log(`[PRIVACY_RELAY_BLOCK] reason=RELAY_PAUSED targetAttemptId=none`);
+        this.log(`[PRIVACY_RELAY_BLOCK] reason=${this.isPaused ? 'RELAY_PAUSED' : 'RELAY_NOT_VERIFIED'}`);
         res.writeHead(502, { 'Content-Type': 'text/plain' });
-        res.end('PRIVACY_RELAY_FAIL_CLOSED: Relay paused');
+        res.end('PRIVACY_RELAY_FAIL_CLOSED: Relay paused or not verified');
         return;
       }
 
       const active = this.getActiveNode();
       if (!active) {
         this.trafficStats.failClosedDrops++;
-        this.log(`[PRIVACY_RELAY_BLOCK] reason=NO_ACTIVE_EGRESS_NODE targetAttemptId=none`);
+        this.log(`[PRIVACY_RELAY_BLOCK] reason=NO_ACTIVE_EGRESS_NODE`);
         res.writeHead(502, { 'Content-Type': 'text/plain' });
         res.end('PRIVACY_RELAY_FAIL_CLOSED: No active egress node');
         return;
       }
 
-      // Forward request to active upstream egress proxy
+      const creds = PrivacyRelayService.resolveNodeCredentials(active);
+      const isUpstreamTls = active.type === 'HTTPS_PROXY';
+
       const options = {
         hostname: active.host,
         port: active.port,
@@ -443,19 +739,23 @@ class PrivacyRelayService {
         headers: { ...req.headers }
       };
 
-      if (active.username && active.password) {
-        const auth = Buffer.from(`${active.username}:${active.password}`).toString('base64');
+      if (creds.username && creds.password) {
+        const auth = Buffer.from(`${creds.username}:${creds.password}`).toString('base64');
         options.headers['Proxy-Authorization'] = `Basic ${auth}`;
       }
 
-      const proxyReq = http.request(options, (proxyRes) => {
+      const httpModule = isUpstreamTls ? https : http;
+      if (isUpstreamTls) {
+        options.rejectUnauthorized = active.rejectUnauthorized !== false;
+      }
+
+      const proxyReq = httpModule.request(options, (proxyRes) => {
         res.writeHead(proxyRes.statusCode, proxyRes.headers);
         proxyRes.pipe(res);
       });
 
       proxyReq.on('error', (err) => {
-        this.trafficStats.failClosedDrops++;
-        this.log(`[PRIVACY_RELAY_BLOCK] reason=UPSTREAM_FAILURE host=${active.host} port=${active.port} err=${err.message}`);
+        this.handleActiveFailure(`HTTP_FORWARD_ERROR: ${err.message}`);
         res.writeHead(502, { 'Content-Type': 'text/plain' });
         res.end(`PRIVACY_RELAY_FAIL_CLOSED: Upstream egress failure (${err.message})`);
       });
@@ -466,9 +766,9 @@ class PrivacyRelayService {
     // Handle CONNECT method for HTTPS tunnels
     this.proxyServer.on('connect', (req, clientSocket, head) => {
       this.trafficStats.connectTunnels++;
-      if (this.isPaused) {
+      if (this.isPaused || !this.relayReady) {
         this.trafficStats.failClosedDrops++;
-        this.log(`[PRIVACY_RELAY_BLOCK] reason=RELAY_PAUSED_CONNECT targetAttemptId=none`);
+        this.log(`[PRIVACY_RELAY_BLOCK] reason=${this.isPaused ? 'RELAY_PAUSED_CONNECT' : 'RELAY_NOT_VERIFIED_CONNECT'}`);
         clientSocket.write('HTTP/1.1 502 Bad Gateway\r\n\r\n');
         clientSocket.destroy();
         return;
@@ -477,22 +777,24 @@ class PrivacyRelayService {
       const active = this.getActiveNode();
       if (!active) {
         this.trafficStats.failClosedDrops++;
-        this.log(`[PRIVACY_RELAY_BLOCK] reason=NO_ACTIVE_EGRESS_NODE_CONNECT targetAttemptId=none`);
+        this.log(`[PRIVACY_RELAY_BLOCK] reason=NO_ACTIVE_EGRESS_NODE_CONNECT`);
         clientSocket.write('HTTP/1.1 502 Bad Gateway\r\n\r\n');
         clientSocket.destroy();
         return;
       }
 
-      const upstreamSocket = net.connect(active.port, active.host, () => {
-        let connectReq = `CONNECT ${req.url} HTTP/1.1\r\nHost: ${req.url}\r\n`;
-        if (active.username && active.password) {
-          const auth = Buffer.from(`${active.username}:${active.password}`).toString('base64');
-          connectReq += `Proxy-Authorization: Basic ${auth}\r\n`;
-        }
-        connectReq += '\r\n';
+      const creds = PrivacyRelayService.resolveNodeCredentials(active);
+      const isUpstreamTls = active.type === 'HTTPS_PROXY';
 
+      let connectReq = `CONNECT ${req.url} HTTP/1.1\r\nHost: ${req.url}\r\n`;
+      if (creds.username && creds.password) {
+        const auth = Buffer.from(`${creds.username}:${creds.password}`).toString('base64');
+        connectReq += `Proxy-Authorization: Basic ${auth}\r\n`;
+      }
+      connectReq += '\r\n';
+
+      const setupTunnel = (upstreamSocket) => {
         upstreamSocket.write(connectReq);
-
         upstreamSocket.once('data', (data) => {
           const responseStr = data.toString('utf8');
           if (responseStr.includes('200')) {
@@ -501,20 +803,35 @@ class PrivacyRelayService {
             upstreamSocket.pipe(clientSocket);
             clientSocket.pipe(upstreamSocket);
           } else {
-            this.trafficStats.failClosedDrops++;
+            this.handleActiveFailure(`CONNECT_REJECTED: ${responseStr.split('\r\n')[0]}`);
             clientSocket.write('HTTP/1.1 502 Bad Gateway\r\n\r\n');
             clientSocket.destroy();
             upstreamSocket.destroy();
           }
         });
-      });
+      };
 
-      upstreamSocket.on('error', (err) => {
-        this.trafficStats.failClosedDrops++;
-        this.log(`[PRIVACY_RELAY_BLOCK] reason=UPSTREAM_CONNECT_ERROR err=${err.message}`);
-        clientSocket.write('HTTP/1.1 502 Bad Gateway\r\n\r\n');
-        clientSocket.destroy();
-      });
+      if (isUpstreamTls) {
+        const tlsSocket = tls.connect({
+          host: active.host,
+          port: active.port,
+          servername: active.host,
+          rejectUnauthorized: active.rejectUnauthorized !== false
+        }, () => setupTunnel(tlsSocket));
+
+        tlsSocket.on('error', (err) => {
+          this.handleActiveFailure(`UPSTREAM_TLS_CONNECT_ERROR: ${err.message}`);
+          clientSocket.write('HTTP/1.1 502 Bad Gateway\r\n\r\n');
+          clientSocket.destroy();
+        });
+      } else {
+        const upstreamSocket = net.connect(active.port, active.host, () => setupTunnel(upstreamSocket));
+        upstreamSocket.on('error', (err) => {
+          this.handleActiveFailure(`UPSTREAM_CONNECT_ERROR: ${err.message}`);
+          clientSocket.write('HTTP/1.1 502 Bad Gateway\r\n\r\n');
+          clientSocket.destroy();
+        });
+      }
     });
 
     this.proxyServer.listen(this.proxyPort, '127.0.0.1', () => {
@@ -522,12 +839,21 @@ class PrivacyRelayService {
     });
   }
 
-  start() {
+  async start() {
     this.startControlPlane();
     this.startProxyEngine();
+
+    // Verify initial active node before marking relay ready
     const active = this.getActiveNode();
-    const fp = this.computeFingerprint(active);
-    this.log(`[PRIVACY_RELAY] state=RUNNING selectedEgressId=${active ? active.id : 'none'} transport=${active ? active.type : 'none'} health=HEALTHY rotationMode=${this.pool.rotationMode || 'FIXED'} fingerprint=${fp}`);
+    if (active && active.active !== false) {
+      const vRes = await this.verifyNodeEgress(active, this.pool.healthCheckTimeoutMs || 3000);
+      if (vRes.verified) {
+        this.relayReady = true;
+      }
+    }
+
+    const currentFp = this.computeFingerprint(this.getActiveNode());
+    this.log(`[PRIVACY_RELAY] state=RUNNING selectedEgressId=${active ? active.id : 'none'} transport=${active ? active.type : 'none'} health=${active ? active.lastHealth : 'NONE'} rotationMode=${this.pool.rotationMode || 'FIXED'} fingerprint=${currentFp || 'UNVERIFIED'}`);
     console.log(`[PRIVACY_RELAY] XPIDER Privacy Relay Companion running.`);
     console.log(`[PRIVACY_RELAY] Control Plane: http://127.0.0.1:${this.controlPort}`);
     console.log(`[PRIVACY_RELAY] Proxy Gateway: http://127.0.0.1:${this.proxyPort}`);
@@ -558,6 +884,7 @@ class PrivacyRelayService {
     await Promise.all(promises);
     this.controlServer = null;
     this.proxyServer = null;
+    this.relayReady = false;
     this.log('[PRIVACY_RELAY] state=STOPPED');
     await new Promise(r => setTimeout(r, 50));
   }

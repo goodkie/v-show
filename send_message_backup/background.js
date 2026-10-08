@@ -2083,9 +2083,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
                 if (pg) {
                     await pg.init();
-                    if (pg.config.transportMode === 'PRIVACY_RELAY' && (pg.config.relayRotationMode === 'CAMPAIGN_BOUNDARY' || pg.config.rotateAtCampaignStart)) {
-                        logBg(null, '[PRIVACY_RELAY] Campaign boundary reached: rotating egress before campaign start...', 'info');
-                        await pg.rotateRelayEgress('CAMPAIGN_BOUNDARY');
+                    if (pg.config.transportMode === 'PRIVACY_RELAY') {
+                        await pg.ensureRelayActive(true);
+                        if (pg.config.relayRotationMode === 'CAMPAIGN_BOUNDARY' || pg.config.rotateAtCampaignStart) {
+                            logBg(null, '[PRIVACY_RELAY] Campaign boundary reached: rotating egress before campaign start...', 'info');
+                            await pg.rotateRelayEgress('CAMPAIGN_BOUNDARY');
+                        }
                     }
                     const preflight = await pg.runPreflight();
                     const pLog = `[PRIVACY_GATE] mode=${preflight.mode} transport=${preflight.mode} failClosed=${preflight.failClosed} webrtcGuard=${preflight.webrtcGuard} directFallbackBlocked=${preflight.directFallbackBlocked} egressCheck=${preflight.egressCheck} dnsPrivacy=${preflight.dnsPrivacy} ipv6Protection=${preflight.ipv6Protection} status=${preflight.ready ? 'READY' : 'BLOCKED'}`;
@@ -2316,6 +2319,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                             if (chrome.runtime.lastError) {
                                 return sendResponse({ success: false, error: chrome.runtime.lastError.message });
                             }
+                            if (response && response.controlToken) {
+                                const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+                                if (pg) {
+                                    pg.ephemeralRelayToken = response.controlToken;
+                                    pg.config.relayControlToken = response.controlToken;
+                                    pg.saveConfig({ relayControlToken: response.controlToken });
+                                }
+                            }
                             sendResponse({ success: true, response });
                         });
                         return;
@@ -2324,6 +2335,19 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     }
                 }
                 sendResponse({ success: false, error: 'NATIVE_MESSAGING_UNSUPPORTED' });
+            })();
+            return true;
+        }
+
+        case 'GET_PRIVACY_RELAY_TOKEN_NATIVE': {
+            (async () => {
+                const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+                if (pg) {
+                    const token = await pg.fetchRelayControlToken();
+                    sendResponse({ success: !!token, token });
+                } else {
+                    sendResponse({ success: false, error: 'PrivacyGateway unavailable' });
+                }
             })();
             return true;
         }
@@ -5995,6 +6019,20 @@ async function restoreCampaignState() {
                     }
 
                     markBoot("restore_complete");
+
+                    // [R6.9G.10.1] Auto-recover Privacy Relay companion on background boot if configured
+                    try {
+                        const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+                        if (pg) {
+                            await pg.init();
+                            if (pg.config.transportMode === 'PRIVACY_RELAY') {
+                                console.log('[Boot] Privacy Relay configured — checking status and auto-recovering if offline...');
+                                await pg.ensureRelayActive(true);
+                            }
+                        }
+                    } catch (relayBootErr) {
+                        console.warn('[Boot] Privacy Relay auto-recovery non-fatal error:', relayBootErr.message);
+                    }
                 } catch (innerErr) {
                     console.error("[Boot] State application failed:", innerErr);
                     markBoot("restore_failed_inner");

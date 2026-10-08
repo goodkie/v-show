@@ -52,6 +52,7 @@
         relayHost: '127.0.0.1',
         relayProxyPort: 18988,
         relayControlPort: 18989,
+        relayControlToken: '',
         relayRotationMode: 'FIXED', // FIXED | MANUAL | CAMPAIGN_BOUNDARY | HEALTH_FAILOVER
         rotateAtCampaignStart: false,
         healthFailover: true,
@@ -73,11 +74,15 @@
             this.hasCapturedOriginals = false;
             this.ephemeralEgressFingerprint = null; // Truncated hash only, never raw IP
             this.ephemeralProxyPassword = null; // Memory-only password if rememberPassword is false
+            this.ephemeralRelayToken = null; // Ephemeral relay token from Native Messaging
         }
 
         async init(customConfig = {}) {
             if (customConfig.proxyPassword !== undefined) {
                 this.ephemeralProxyPassword = customConfig.proxyPassword;
+            }
+            if (customConfig.relayControlToken !== undefined) {
+                this.ephemeralRelayToken = customConfig.relayControlToken;
             }
             if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
                 try {
@@ -351,6 +356,88 @@
         }
 
         /**
+         * [R6.9G.10.1] Get Bearer authorization headers for Companion Privacy Relay Control API
+         */
+        getRelayAuthHeaders() {
+            const token = this.config.relayControlToken || this.ephemeralRelayToken || '';
+            const headers = { 'Content-Type': 'application/json' };
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+            return headers;
+        }
+
+        /**
+         * [R6.9G.10.1] Retrieve control token via Native Messaging host
+         */
+        async fetchRelayControlToken() {
+            if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendNativeMessage) {
+                return new Promise((resolve) => {
+                    chrome.runtime.sendNativeMessage('com.xpider.privacy_relay', { action: 'GET_TOKEN' }, (resp) => {
+                        if (chrome.runtime.lastError || !resp || !resp.controlToken) {
+                            return resolve(null);
+                        }
+                        this.ephemeralRelayToken = resp.controlToken;
+                        this.config.relayControlToken = resp.controlToken;
+                        this.saveConfig({ relayControlToken: resp.controlToken });
+                        resolve(resp.controlToken);
+                    });
+                });
+            }
+            return null;
+        }
+
+        /**
+         * [R6.9G.10.1] Ensure companion privacy relay is started and responsive
+         * Auto-invokes Native Messaging START if relay is offline.
+         */
+        async ensureRelayActive(autoStart = true) {
+            let statusRes = await this.queryRelayStatus();
+            if (statusRes.success && statusRes.status) {
+                return { active: true, status: statusRes.status };
+            }
+
+            // If unauthorized, attempt to get token
+            if (statusRes.reason === 'HTTP_401' || !this.config.relayControlToken) {
+                await this.fetchRelayControlToken();
+                statusRes = await this.queryRelayStatus();
+                if (statusRes.success && statusRes.status) {
+                    return { active: true, status: statusRes.status };
+                }
+            }
+
+            // If offline and autoStart is enabled, dispatch Native Messaging START
+            if (autoStart && typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendNativeMessage) {
+                console.log('[PRIVACY_GATE] Relay offline. Dispatching Native Messaging START command...');
+                const startRes = await new Promise((resolve) => {
+                    chrome.runtime.sendNativeMessage('com.xpider.privacy_relay', { action: 'START' }, (resp) => {
+                        if (chrome.runtime.lastError || !resp) {
+                            return resolve({ success: false, error: chrome.runtime.lastError ? chrome.runtime.lastError.message : 'NO_RESPONSE' });
+                        }
+                        if (resp.controlToken) {
+                            this.ephemeralRelayToken = resp.controlToken;
+                            this.config.relayControlToken = resp.controlToken;
+                            this.saveConfig({ relayControlToken: resp.controlToken });
+                        }
+                        resolve({ success: true, ...resp });
+                    });
+                });
+
+                if (startRes.success) {
+                    for (let i = 0; i < 8; i++) {
+                        await new Promise(r => setTimeout(r, 400));
+                        statusRes = await this.queryRelayStatus();
+                        if (statusRes.success && statusRes.status) {
+                            return { active: true, status: statusRes.status };
+                        }
+                    }
+                }
+            }
+
+            return { active: false, reason: statusRes.reason || 'RELAY_UNAVAILABLE' };
+        }
+
+        /**
          * [R6.9G.10] Query Companion Privacy Relay Control API (/status)
          */
         async queryRelayStatus() {
@@ -359,7 +446,11 @@
             try {
                 const fetchFn = this._mockFetch !== undefined ? this._mockFetch : (typeof fetch !== 'undefined' ? fetch : null);
                 if (!fetchFn) return { success: false, reason: 'FETCH_UNAVAILABLE' };
-                const res = await fetchFn(`http://${host}:${port}/status`, { cache: 'no-store' });
+                const headers = this.getRelayAuthHeaders();
+                const res = await fetchFn(`http://${host}:${port}/status`, {
+                    cache: 'no-store',
+                    headers
+                });
                 if (res.ok) {
                     const data = await res.json();
                     return { success: true, status: data };
@@ -371,18 +462,48 @@
         }
 
         /**
-         * [R6.9G.10] Safe Egress Rotation via Companion Relay Control API (/rotate)
+         * [R6.9G.10.1] Trigger candidate egress health check and canary probe (/probe)
          */
-        async rotateRelayEgress(reason = 'MANUAL') {
+        async probeRelayEgress(canaryUrl = null) {
             const host = this.config.relayHost || '127.0.0.1';
             const port = this.config.relayControlPort || 18989;
             try {
                 const fetchFn = this._mockFetch !== undefined ? this._mockFetch : (typeof fetch !== 'undefined' ? fetch : null);
                 if (!fetchFn) return { success: false, reason: 'FETCH_UNAVAILABLE' };
+                const headers = this.getRelayAuthHeaders();
+                const res = await fetchFn(`http://${host}:${port}/probe`, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify({ canaryUrl: canaryUrl || this.config.canaryUrl || null })
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.verified) {
+                        this.ephemeralEgressFingerprint = data.fingerprint;
+                        this.config.selectedEgressId = data.activeNode;
+                    }
+                    return data;
+                }
+                return { success: false, reason: `HTTP_${res.status}` };
+            } catch (e) {
+                return { success: false, reason: e.message };
+            }
+        }
+
+        /**
+         * [R6.9G.10] Safe Egress Rotation via Companion Relay Control API (/rotate)
+         */
+        async rotateRelayEgress(reason = 'MANUAL', canaryUrl = null) {
+            const host = this.config.relayHost || '127.0.0.1';
+            const port = this.config.relayControlPort || 18989;
+            try {
+                const fetchFn = this._mockFetch !== undefined ? this._mockFetch : (typeof fetch !== 'undefined' ? fetch : null);
+                if (!fetchFn) return { success: false, reason: 'FETCH_UNAVAILABLE' };
+                const headers = this.getRelayAuthHeaders();
                 const res = await fetchFn(`http://${host}:${port}/rotate`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ reason })
+                    headers,
+                    body: JSON.stringify({ reason, canaryUrl: canaryUrl || this.config.canaryUrl || null })
                 });
                 if (res.ok) {
                     const data = await res.json();
@@ -401,16 +522,17 @@
         /**
          * [R6.9G.10] Select specific egress node in pool (/select)
          */
-        async selectRelayEgress(egressId) {
+        async selectRelayEgress(egressId, canaryUrl = null) {
             const host = this.config.relayHost || '127.0.0.1';
             const port = this.config.relayControlPort || 18989;
             try {
                 const fetchFn = this._mockFetch !== undefined ? this._mockFetch : (typeof fetch !== 'undefined' ? fetch : null);
                 if (!fetchFn) return { success: false, reason: 'FETCH_UNAVAILABLE' };
+                const headers = this.getRelayAuthHeaders();
                 const res = await fetchFn(`http://${host}:${port}/select`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ egressId })
+                    headers,
+                    body: JSON.stringify({ egressId, canaryUrl: canaryUrl || this.config.canaryUrl || null })
                 });
                 if (res.ok) {
                     const data = await res.json();
@@ -435,9 +557,10 @@
             try {
                 const fetchFn = this._mockFetch !== undefined ? this._mockFetch : (typeof fetch !== 'undefined' ? fetch : null);
                 if (!fetchFn) return { success: false, reason: 'FETCH_UNAVAILABLE' };
+                const headers = this.getRelayAuthHeaders();
                 const res = await fetchFn(`http://${host}:${port}/mode`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers,
                     body: JSON.stringify({ rotationMode })
                 });
                 if (res.ok) {
@@ -989,19 +1112,36 @@
                 const relayControlPort = options.relayControlPort !== undefined ? options.relayControlPort : (this.config.relayControlPort || 18989);
                 const relayProxyPort = options.relayProxyPort !== undefined ? options.relayProxyPort : (this.config.relayProxyPort || 18988);
 
-                // 1. Probe Companion Control Plane
-                const statusRes = await this.queryRelayStatus();
+                // 1. Probe Companion Control Plane with Bearer Token (Auto-recover if offline)
+                let statusRes = await this.queryRelayStatus();
+                if ((!statusRes.success || statusRes.reason === 'HTTP_401') && options.autoStart !== false) {
+                    const activeRes = await this.ensureRelayActive(true);
+                    if (activeRes.active) {
+                        statusRes = await this.queryRelayStatus();
+                    }
+                }
+
                 if (!statusRes.success || !statusRes.status) {
                     ready = false;
                     directFallbackBlocked = 'BLOCKED';
                     egressCheck = 'FAIL';
-                    failureReason = 'PRIVACY_RELAY_OFFLINE';
-                } else if (!statusRes.status.relayReady || statusRes.status.health === 'NO_NODES') {
-                    ready = false;
-                    directFallbackBlocked = 'BLOCKED';
-                    egressCheck = 'FAIL';
-                    failureReason = 'PRIVACY_RELAY_NO_HEALTHY_EGRESS';
+                    failureReason = statusRes.reason === 'HTTP_401' ? 'PRIVACY_RELAY_UNAUTHORIZED' : 'PRIVACY_RELAY_OFFLINE';
                 } else {
+                    const canaryUrl = options.canaryUrl || this.config.canaryUrl || null;
+                    if (!statusRes.status.relayReady && options.autoStart !== false) {
+                        // Unverified on boot -> execute candidate canary probe
+                        const probeRes = await this.probeRelayEgress(canaryUrl);
+                        if (probeRes && probeRes.verified) {
+                            statusRes = await this.queryRelayStatus();
+                        }
+                    }
+
+                    if (!statusRes.status || !statusRes.status.relayReady || statusRes.status.health === 'NO_NODES') {
+                        ready = false;
+                        directFallbackBlocked = 'BLOCKED';
+                        egressCheck = 'FAIL';
+                        failureReason = 'PRIVACY_RELAY_NO_HEALTHY_EGRESS';
+                    } else {
                     try {
                         // 2. Configure Chrome Proxy to loopback proxy on 18988
                         await this.applyManagedProxy(PRIVACY_MODES.HTTPS_PROXY, relayHost, relayProxyPort, ['<-loopback>']);
@@ -1033,6 +1173,7 @@
                         failureReason = `PRIVACY_RELAY_SETUP_ERROR: ${relayErr.message}`;
                     }
                 }
+            }
             } else {
                 ready = false;
                 failureReason = `UNKNOWN_TRANSPORT_MODE: ${mode}`;

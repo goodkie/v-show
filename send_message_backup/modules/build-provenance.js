@@ -24,20 +24,20 @@
         headShort: '365bad68',
         rollbackBase: 'dc0740a0c69e2f7fa96b6989841acf0831b3619e',
         manifestVersion: 3,
-        buildId: 'R6.9G.10-20261007-PRIVACY-RELAY-SAFE-ROTATION',
-        builtAt: '2026-10-07T23:31:00.000Z',
+        buildId: 'R6.9G.10.1-20261007-AUTHENTICATED-RELAY-VERIFIED-EGRESS',
+        builtAt: '2026-10-07T23:55:00.000Z',
         provenanceSchema: 2,
         modules: {
-            backgroundSha: '92c5b26bbfe8610ef74c366b3c9ddf9fbe0a2bbfca5bc5c15aa3d480906c4f2b',
+            backgroundSha: 'ef1054c1ee53fc267acf00712ececdd7883bd30680ac2f4c4083bd1ba62ea101',
             contentScriptSha: 'db15cc0900d9171bb79b31a0aeaae09a16712f1d06413db7230e75633cf5b257',
-            popupSha: 'a99a01e287675a1d95d0d3ed2edfee48d7ded6c1ea9054c8838e9a5d9f789c4d',
+            popupSha: '0eab4ffbe6ac2473509a986185ec3d2a7529be3b8d80fed1c380c4e1a84f1d51',
             solverContentSha: 'dca775d4db576dd48be191a80b2e1b5394448c572cf3860735cf0be99ff966da',
             solverCoreSha: '01b3d96048ea933403e4599854dcdca28027e7f676aa5077eb6c5eb0582ac1e7',
             emailCollectorSha: '3f1147a379e159e7777158f2caa74cc8d40b2a0b0eb2c244f440af379cb5c9c9',
             historyStoreSha: 'ef148329c5c019877fef3708ac63472ce86d5f7f06da467a557a74e038eab6b4',
             contactGateSha: '0d01acb2d0a9448d154353fac5b527c17afa42fed56c68d6a49b39053629bd7d',
             visionSubmitSha: '25cf18a4834bb476edff5e8f19a78dd2723bd556ede649ada69bc801543c83f3',
-            privacyGatewaySha: '00a39dbdfe068a6c1fee3c192dd4b82f89f07b7238a86e3844b62f5c5b692d1e'
+            privacyGatewaySha: '83015d9924c39e54c1df721b8565fbb229632b59f922209722965026a6890f36'
         }
     };
 

@@ -1,27 +1,27 @@
 {
-  "version": "1.0.0",
+  "version": "1.0.1",
   "rotationMode": "FIXED",
   "healthCheckTimeoutMs": 3000,
   "nodes": [
     {
       "id": "node-vps-us",
-      "name": "Owner US VPS SOCKS5/HTTPS",
+      "name": "Owner US VPS HTTPS Proxy",
       "type": "HTTPS_PROXY",
       "host": "vps-us.example.com",
       "port": 8443,
       "username": "relay_user",
-      "password": "REPLACE_WITH_OWNER_SECRET",
+      "credentialRef": "ENV:XPIDER_EGRESS_SECRET_US",
       "region": "US-EAST",
       "active": true
     },
     {
       "id": "node-vps-eu",
-      "name": "Owner EU VPS SOCKS5/HTTPS",
+      "name": "Owner EU VPS HTTPS Proxy",
       "type": "HTTPS_PROXY",
       "host": "vps-eu.example.com",
       "port": 8443,
       "username": "relay_user",
-      "password": "REPLACE_WITH_OWNER_SECRET",
+      "credentialRef": "ENV:XPIDER_EGRESS_SECRET_EU",
       "region": "EU-CENTRAL",
       "active": true
     }

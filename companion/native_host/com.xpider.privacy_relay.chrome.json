@@ -4,6 +4,6 @@
   "path": "E:\\vivpr\\ai\\extension-form-sender\\companion\\native_host\\xpider_native_host.bat",
   "type": "stdio",
   "allowed_origins": [
-    "chrome-extension://*/*"
+    "chrome-extension://pjohcallgmjmbfckiaogjokelhobfceg/"
   ]
 }
