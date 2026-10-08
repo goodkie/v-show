@@ -1057,10 +1057,11 @@ async function hydrateSettings(overrideV2Store = null) {
         };
 
         if (privModeSelect) {
-            privModeSelect.value = privCfg.transportMode || 'SYSTEM_VPN';
+            const rawMode = privCfg.transportMode || 'PRIVACY_RELAY';
+            privModeSelect.value = (rawMode === 'SYSTEM_VPN') ? 'EXTERNAL_VPN_MONITOR' : rawMode;
             const updateTransportVisibility = () => {
                 const isProxy = privModeSelect.value === 'SOCKS5' || privModeSelect.value === 'HTTPS_PROXY';
-                const isVpn = privModeSelect.value === 'SYSTEM_VPN';
+                const isVpn = privModeSelect.value === 'EXTERNAL_VPN_MONITOR' || privModeSelect.value === 'SYSTEM_VPN';
                 const isRelay = privModeSelect.value === 'PRIVACY_RELAY';
                 const fields = document.getElementById('privacy-proxy-config-fields');
                 const relayFields = document.getElementById('privacy-relay-config-fields');
@@ -1070,14 +1071,14 @@ async function hydrateSettings(overrideV2Store = null) {
             };
             privModeSelect.addEventListener('change', async () => {
                 updateTransportVisibility();
-                if (privModeSelect.value !== 'SYSTEM_VPN') {
+                if (privModeSelect.value !== 'EXTERNAL_VPN_MONITOR' && privModeSelect.value !== 'SYSTEM_VPN') {
                     updateVpnStatusBadge(false);
                 }
                 try {
                     const curData = await chrome.storage.local.get(['xpider_privacy_config']);
                     const curCfg = curData.xpider_privacy_config || {};
                     curCfg.transportMode = privModeSelect.value;
-                    if (privModeSelect.value !== 'SYSTEM_VPN') {
+                    if (privModeSelect.value !== 'EXTERNAL_VPN_MONITOR' && privModeSelect.value !== 'SYSTEM_VPN') {
                         curCfg.systemVpnConfirmed = false;
                     }
                     await chrome.storage.local.set({ xpider_privacy_config: curCfg });
@@ -1467,14 +1468,61 @@ function _updatePrivacyCardUI(pf) {
     const elIp = document.getElementById('priv-card-ipv6');
     const elLc = document.getElementById('priv-card-last-check');
 
-    if (elEn) { elEn.textContent = pf.ready ? 'ON (READY)' : (pf.failureReason ? 'BLOCKED' : 'ON'); elEn.style.color = pf.ready ? '#4ade80' : '#f87171'; }
-    if (elTr) elTr.textContent = pf.mode || 'SYSTEM_VPN';
+    // [R6.9G.10.3.5 B.8] Truthful Transport Distinction
+    let transportLabel = 'BLOCKED';
+    let transportColor = '#f87171';
+    const mode = pf.mode || '';
+
+    if (mode === 'EXTERNAL_VPN_MONITOR' || mode === 'SYSTEM_VPN') {
+        transportLabel = 'EXTERNAL VPN MONITORED (not enforced)';
+        transportColor = '#fde047'; // Yellow: monitored, not enforced
+    } else if (mode === 'SOCKS5' || mode === 'HTTPS_PROXY') {
+        transportLabel = pf.ready ? 'MANAGED PROXY ENFORCED' : 'MANAGED PROXY (UNVERIFIED)';
+        transportColor = pf.ready ? '#4ade80' : '#f87171';
+    } else if (mode === 'PRIVACY_RELAY') {
+        transportLabel = pf.ready ? 'PRIVACY RELAY ENFORCED' : 'PRIVACY RELAY (OFFLINE/UNVERIFIED)';
+        transportColor = pf.ready ? '#4ade80' : '#f87171';
+    } else if (mode === 'DIRECT') {
+        transportLabel = 'DIRECT (PRIVACY OFF)';
+        transportColor = '#94a3b8';
+    }
+
+    if (elTr) {
+        elTr.textContent = transportLabel;
+        elTr.style.color = transportColor;
+    }
+
+    if (elEn) {
+        if (pf.ready) {
+            elEn.textContent = 'ON (READY)';
+            elEn.style.color = '#4ade80';
+        } else if (mode === 'EXTERNAL_VPN_MONITOR' || mode === 'SYSTEM_VPN') {
+            elEn.textContent = pf.failClosed ? 'BLOCKED (UNENFORCED)' : 'MONITORED ONLY';
+            elEn.style.color = pf.failClosed ? '#f87171' : '#fde047';
+        } else {
+            elEn.textContent = pf.failureReason ? `BLOCKED (${pf.failureReason})` : 'NOT READY';
+            elEn.style.color = '#f87171';
+        }
+    }
+
     if (elFc) elFc.textContent = pf.failClosed ? 'ON' : 'OFF';
     if (elWb) { elWb.textContent = pf.webrtcGuard; elWb.style.color = pf.webrtcGuard === 'PASS' ? '#4ade80' : '#f87171'; }
-    if (elFb) { elFb.textContent = pf.directFallbackBlocked; elFb.style.color = pf.directFallbackBlocked === 'BLOCKED' ? '#4ade80' : '#fde047'; }
-    if (elEg) { elEg.textContent = pf.egressCheck; elEg.style.color = pf.egressCheck === 'PASS' ? '#4ade80' : (pf.egressCheck === 'FAIL' ? '#f87171' : '#fde047'); }
-    if (elDn) { elDn.textContent = pf.dnsPrivacy; elDn.style.color = pf.dnsPrivacy === 'PASS' ? '#4ade80' : '#fde047'; }
-    if (elIp) { elIp.textContent = pf.ipv6Protection; elIp.style.color = pf.ipv6Protection === 'PROTECTED' ? '#4ade80' : '#fde047'; }
+    if (elFb) {
+        elFb.textContent = pf.directFallbackBlocked;
+        elFb.style.color = pf.directFallbackBlocked === 'BLOCKED' ? '#4ade80' : (pf.directFallbackBlocked === 'UNVERIFIED' ? '#fde047' : '#f87171');
+    }
+    if (elEg) {
+        elEg.textContent = pf.egressCheck;
+        elEg.style.color = pf.egressCheck === 'PASS' ? '#4ade80' : (pf.egressCheck === 'FAIL' ? '#f87171' : '#fde047');
+    }
+    if (elDn) {
+        elDn.textContent = pf.dnsPrivacy;
+        elDn.style.color = pf.dnsPrivacy === 'PASS' ? '#4ade80' : '#94a3b8';
+    }
+    if (elIp) {
+        elIp.textContent = pf.ipv6Protection;
+        elIp.style.color = pf.ipv6Protection === 'PROTECTED' ? '#4ade80' : '#94a3b8';
+    }
     if (elLc) elLc.textContent = pf.lastCheck ? new Date(pf.lastCheck).toLocaleTimeString() : 'Never';
 }
 

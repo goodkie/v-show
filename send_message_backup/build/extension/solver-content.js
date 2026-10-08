@@ -86,6 +86,10 @@
             this.lastCheckboxClickTime = 0;
             this.lastAttemptTime = 0; // [v2.0] Auto-reset timer
             this.waitCycles = 0;
+            this.isTerminalStale = false;
+            this.identityUnavailableLogged = false;
+            this.captchaLatchKey = null;
+            this.pendingOwnerDecision = false;
             this.init();
         }
 
@@ -121,6 +125,17 @@
             }
             if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
                 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+                    if (msg && (msg.action === 'SHOW_CAPTCHA_DECISION_MODAL' || msg.action === 'CAPTCHA_PENDING_OWNER')) {
+                        this.pendingOwnerDecision = true;
+                    }
+                    if (msg && (msg.action === 'CAPTCHA_REARM' || msg.action === 'CAPTCHA_RETRY')) {
+                        this.pendingOwnerDecision = false;
+                        this.isTerminalStale = false;
+                        this.captchaLatchKey = null;
+                        if (typeof window !== 'undefined' && !window.__xpider_solver_active_interval) {
+                            window.__xpider_solver_active_interval = setInterval(() => this.loop(), this.options.checkInterval);
+                        }
+                    }
                     if (msg && msg.action === 'APPLY_CAPTCHA_TOKEN') {
                         this.log(`Applying token received from Owner Auto solve...`, "INJECT");
                         const injected = this._injectToken(msg.token, msg.captchaType || this._detectCaptchaType());
@@ -279,7 +294,7 @@
         }
 
         async loop() {
-            if (this.solved) {
+            if (this.solved || this.isTerminalStale || this.pendingOwnerDecision) {
                 return;
             }
             try {
@@ -340,34 +355,60 @@
                     const pageUrl = this._getHostPageUrl();
                     if (sitekey) {
                         const captchaType = this._detectCaptchaType();
-                        this.solving = true;
-                        this.lastSolveRequestTime = nowSolve;
-                        this.log(`Requesting ${captchaType} token via ${method === 'nopecha' ? 'NopeCHA' : '2Captcha'} API...`, "SOLVING");
-                        // [R6.9F.2 Fix-C] Read execution identity from storage so validateActiveExecution
-                        // in background.js accepts this message. solver-content.js runs inside the
-                        // reCAPTCHA/hCaptcha iframe and cannot access window.__xpider_execution_identity
-                        // from the parent page. background.js stores it in xpider_exec_identity on
-                        // CAPTCHA/FILLING/ACTIVE_FORM stage entry.
-                        // [NopeCHA Fix] Read execution identity from storage with retry-poll.
-                        // reCAPTCHA iframes load faster than background.js stores xpider_exec_identity,
-                        // causing reqAttempt=none and attempt_mismatch rejections.
-                        // Poll up to 3s (6×500ms) waiting for a valid attemptId.
-                        let execIdentity = {};
+
+                        // [R6.9G.10.3.5 A.2] Live Identity Query for CAPTCHA iframes
+                        let execIdentity = null;
                         try {
-                            for (let attempt = 0; attempt < 6; attempt++) {
-                                execIdentity = await new Promise(resolve =>
-                                    chrome.storage.local.get(['xpider_exec_identity'], res => resolve(res.xpider_exec_identity || {}))
-                                );
-                                if (execIdentity && execIdentity.attemptId) break;
-                                if (attempt < 5) await new Promise(r => setTimeout(r, 500));
+                            for (let attempt = 0; attempt < 5; attempt++) {
+                                const bgRes = await new Promise(resolve => {
+                                    chrome.runtime.sendMessage({ action: 'GET_ACTIVE_EXECUTION_IDENTITY' }, resp => {
+                                        if (chrome.runtime.lastError || !resp || !resp.success) return resolve(null);
+                                        resolve(resp.identity);
+                                    });
+                                });
+                                if (bgRes && bgRes.attemptId) {
+                                    execIdentity = bgRes;
+                                    break;
+                                }
+                                // Fallback: storage check
+                                const stRes = await new Promise(resolve => {
+                                    chrome.storage.local.get(['xpider_exec_identity'], res => resolve(res.xpider_exec_identity || null));
+                                });
+                                if (stRes && stRes.attemptId) {
+                                    execIdentity = stRes;
+                                    break;
+                                }
+                                if (attempt < 4) await new Promise(r => setTimeout(r, 400));
                             }
                         } catch (_) {}
-                        // [R6.9G.2 Gate 1/2] Autonomous SOLVE_CAPTCHA call removed.
-                        // Solver-content must notify background with OWNER_CAPTCHA_REQUEST carrying full canonical identity and STOP.
+
+                        // [R6.9G.10.3.5 A.3] Never send OWNER_CAPTCHA_REQUEST with missing canonical identity
+                        if (!execIdentity || !execIdentity.attemptId) {
+                            if (!this.identityUnavailableLogged) {
+                                this.identityUnavailableLogged = true;
+                                this.log(`[CAPTCHA_IDENTITY_UNAVAILABLE] challengeType=${captchaType} sitekey=${sitekey}. Freezing solver for this frame generation.`, "WARN");
+                            }
+                            this.solving = false;
+                            this.isTerminalStale = true;
+                            this.stopSolving();
+                            return;
+                        }
+
+                        // [R6.9G.10.3.5 A.4] Single Latch per Attempt / Epoch
+                        const requestKey = `${execIdentity.attemptId}:${execIdentity.captchaEpoch || 1}:${sitekey || captchaType}`;
+                        if (this.captchaLatchKey === requestKey && this.pendingOwnerDecision) {
+                            return; // Suppress duplicate detection
+                        }
+
+                        this.solving = true;
+                        this.lastSolveRequestTime = nowSolve;
+                        this.captchaLatchKey = requestKey;
+                        this.pendingOwnerDecision = true;
+
                         this.log(`[CAPTCHA_DETECTED] ${captchaType} detected. Requesting Owner decision modal...`, "WAITING");
                         chrome.runtime.sendMessage({
                             action: 'OWNER_CAPTCHA_REQUEST',
-                            attemptId: execIdentity.attemptId || null,
+                            attemptId: execIdentity.attemptId,
                             targetToken: execIdentity.targetToken || null,
                             campaignRunId: execIdentity.campaignRunId || null,
                             sessionId: execIdentity.sessionId !== undefined ? execIdentity.sessionId : null,
@@ -381,8 +422,20 @@
                             targetUrl: pageUrl
                         }, (resp) => {
                             this.solving = false;
+                            if (chrome.runtime.lastError || !resp || !resp.success) {
+                                const errMsg = (resp && resp.error) || (chrome.runtime.lastError && chrome.runtime.lastError.message) || 'UNKNOWN_ERROR';
+                                if (errMsg.includes('mismatch') || errMsg.includes('stale') || errMsg.includes('inactive') || resp?.isTerminal) {
+                                    this.log(`[CAPTCHA_REJECTED] Terminal rejection: ${errMsg}. Freezing frame solver.`, "WARN");
+                                    this.isTerminalStale = true;
+                                    this.stopSolving();
+                                    return;
+                                }
+                                this.pendingOwnerDecision = false;
+                                return;
+                            }
                             if (resp && resp.status === 'PENDING_OWNER_DECISION') {
                                 this.log(`Owner decision modal requested. Waiting for operator choice...`, "PENDING");
+                                this.pendingOwnerDecision = true;
                             }
                         });
                         return;

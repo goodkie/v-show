@@ -1567,6 +1567,53 @@ if (typeof global !== 'undefined') {
     global.__recordTerminalCaptchaFailure = recordTerminalCaptchaFailure;
 }
 
+/**
+ * [R6.9G.10.3.5 B.5] Authoritative Central Network-Side-Effect Gate
+ * Used before:
+ * - target tab create/update
+ * - Sniper background fetch probes
+ * - candidate navigation
+ * - redirects/retries/child tab navigation
+ * - submit-time navigation if any
+ */
+async function assertPrivacyTransportReady(context = 'GENERAL') {
+    const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+    if (!pg) return { ready: true };
+
+    if (!pg.config.enabled) {
+        if (pg.config.failClosed) {
+            const blkReason = 'PRIVACY_GATEWAY_DISABLED_WHILE_FAIL_CLOSED';
+            logBg(null, `[PRIVACY_GATE_BLOCK] context=${context} reason=${blkReason}`, 'error');
+            return { ready: false, reason: blkReason };
+        }
+        return { ready: true };
+    }
+
+    if (!pg.isPrivacyGateReady()) {
+        const blkReason = pg.failureReason || 'PRIVACY_GATE_NOT_READY';
+        logBg(null, `[PRIVACY_GATE_BLOCK] context=${context} reason=${blkReason}`, 'error');
+        return { ready: false, reason: blkReason };
+    }
+
+    // Continuity verification
+    const egressCheck = await pg.checkEgressContinuity();
+    if (egressCheck && !egressCheck.pass) {
+        const blkReason = egressCheck.reason || 'PRIVACY_CONTINUITY_FAILED';
+        logBg(null, `[PRIVACY_GATE_BLOCK] context=${context} reason=${blkReason}`, 'error');
+        return { ready: false, reason: blkReason };
+    }
+
+    return { ready: true };
+}
+
+if (typeof globalThis !== 'undefined') {
+    globalThis.assertPrivacyTransportReady = assertPrivacyTransportReady;
+}
+if (typeof global !== 'undefined') {
+    global.assertPrivacyTransportReady = assertPrivacyTransportReady;
+}
+
+
 // [R6.9G.2 Gate 4/5/8/9] Authoritative Single-Flight CAPTCHA Solve Engine
         // Gated strictly behind Owner 'Auto' decision. Autonomous requests without owner authorization are rejected.
         async function handleSolveCaptchaInternal(request, sender, sendResponse) {
@@ -1965,7 +2012,7 @@ if (typeof global !== 'undefined') {
             }
         }
 
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+const mainBackgroundMessageListener = (request, sender, sendResponse) => {
     switch (request.action) {
         case 'SEND_MESSAGE':
             handleSendMessage(request.url, request.template, sendResponse);
@@ -2742,29 +2789,79 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             })();
             return true;
 
-        // [R6.9G.1-1/2] Owner CAPTCHA Decision Gate
-        // Fired by content-script when a CAPTCHA challenge is detected.
-        // Background suspends target timeout and broadcasts to popup for owner decision.
-        // [R6.9G.2] Owner CAPTCHA Decision Gate
-        // Fired by content-script when a CAPTCHA challenge is detected.
-        // Carries full 6-point canonical identity. Suspends target timeout and broadcasts to popup for owner decision.
-        
-case 'OWNER_CAPTCHA_REQUEST':
+        // [R6.9G.10.3.5 A.2] Live Identity Query for CAPTCHA iframes
+        case 'GET_ACTIVE_EXECUTION_IDENTITY':
+            (async () => {
+                try {
+                    const senderTabId = sender?.tab?.id;
+                    const isCampaignActive = campaignState.isActive;
+                    const currentAttempt = campaignState.currentAttempt;
+                    const targetTabId = campaignState.targetTabId || campaignState.currentTabId;
+
+                    if (!isCampaignActive || !currentAttempt || !senderTabId || senderTabId !== targetTabId) {
+                        sendResponse({
+                            success: false,
+                            error: 'NO_ACTIVE_EXECUTION_IDENTITY',
+                            reason: !isCampaignActive ? 'CAMPAIGN_INACTIVE' : (!currentAttempt ? 'NO_CURRENT_ATTEMPT' : 'TAB_MISMATCH')
+                        });
+                        return;
+                    }
+
+                    sendResponse({
+                        success: true,
+                        identity: {
+                            attemptId: currentAttempt.attemptId,
+                            targetToken: campaignState.currentTargetToken || currentAttempt.targetToken,
+                            campaignRunId: campaignState.campaignRunId,
+                            sessionId: Number(campaignState.sessionId),
+                            captchaEpoch: campaignState.captchaEpoch || 1,
+                            tabId: targetTabId,
+                            targetUrl: currentAttempt.url,
+                            ts: Date.now()
+                        }
+                    });
+                } catch (err) {
+                    sendResponse({ success: false, error: err.message });
+                }
+            })();
+            return true;
+
+        // [R6.9G.1-1/2 & R6.9G.10.3.5 A.4] Owner CAPTCHA Decision Gate with Single Latch & Idempotent Counters
+        case 'OWNER_CAPTCHA_REQUEST':
             (async () => {
                 try {
                     const validation = validateActiveExecution(request, sender, 'OWNER_CAPTCHA_REQUEST', { checkEpoch: true, allowBodyTabId: true });
                     if (!validation.valid) {
                         logBg(null, `[OWNER_CAPTCHA] REJECT: reason=${validation.reason}. Stale or mismatched identity.`, 'warning');
-                        sendResponse({ success: false, error: validation.reason });
+                        sendResponse({ success: false, error: validation.reason, isTerminal: true });
                         return;
                     }
 
                     const { captchaType, sitekey, targetUrl } = request;
+                    const curEpoch = campaignState.captchaEpoch || 1;
+                    const challengeKey = `${validation.attemptId || campaignState.currentAttempt?.attemptId}:${curEpoch}:${sitekey || captchaType || 'default'}`;
+
+                    if (!campaignState.captchaRequestLatch) campaignState.captchaRequestLatch = {};
+
+                    if (campaignState.captchaRequestLatch[challengeKey] === 'PENDING_OWNER' && campaignState.currentTargetStage === 'CAPTCHA_PENDING_OWNER') {
+                        // Suppress duplicate detector events idempotently without inflating counters
+                        sendResponse({ success: true, status: 'PENDING_OWNER_DECISION', duplicateSuppressed: true });
+                        return;
+                    }
+
+                    campaignState.captchaRequestLatch[challengeKey] = 'PENDING_OWNER';
 
                     // Suspend target timer while waiting for owner decision
                     campaignState.currentTargetStage = 'CAPTCHA_PENDING_OWNER';
-                    campaignState.captchaLedger.detected++;
-                    campaignState.captchaLedger.pendingOwner++;
+
+                    // Idempotent counters: count only once per attemptId + captchaEpoch
+                    if (!campaignState.captchaRecordedAttempts) campaignState.captchaRecordedAttempts = new Set();
+                    const attemptEpochKey = `${campaignState.currentAttempt?.attemptId}:${curEpoch}`;
+                    if (!campaignState.captchaRecordedAttempts.has(attemptEpochKey)) {
+                        campaignState.captchaRecordedAttempts.add(attemptEpochKey);
+                        campaignState.captchaLedger.detected++;
+                        campaignState.captchaLedger.pendingOwner++;
+                    }
 
                     // Pause target deadline controller!
                     if (campaignState.targetDeadlineController) {
@@ -2787,7 +2884,7 @@ case 'OWNER_CAPTCHA_REQUEST':
                         targetToken: campaignState.currentTargetToken,
                         campaignRunId: campaignState.campaignRunId,
                         sessionId: campaignState.sessionId,
-                        captchaEpoch: campaignState.captchaEpoch || 1,
+                        captchaEpoch: curEpoch,
                         tabId: campaignState.currentTabId,
                         captchaType: captchaType || 'recaptcha',
                         sitekey: sitekey || '',
@@ -3596,7 +3693,10 @@ case 'OWNER_CAPTCHA_REQUEST':
         default:
             return false;
     }
-});
+};
+chrome.runtime.onMessage.addListener(mainBackgroundMessageListener);
+if (typeof globalThis !== 'undefined') globalThis.__dispatchBackgroundMessage = mainBackgroundMessageListener;
+if (typeof global !== 'undefined') global.__dispatchBackgroundMessage = mainBackgroundMessageListener;
 
 function normalizeUrl(url) {
     if (!url) return '';
@@ -3876,8 +3976,8 @@ async function pauseCampaignOrchestrator(saveCheckpoint = true) {
     const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
     if (pg) {
         await pg.restoreOriginalSettings();
-        console.log('[PRIVACY_GATE_RESTORED] status=READY');
-        logBg(null, '[PRIVACY_GATE_RESTORED] status=READY', 'info');
+        console.log('[PRIVACY_SETTINGS_RESTORED] gateReady=false transportEnforced=false');
+        logBg(null, '[PRIVACY_SETTINGS_RESTORED] gateReady=false transportEnforced=false', 'info');
     }
 
     // Save checkpoint snapshot
@@ -4183,8 +4283,8 @@ async function processNextCampaignTarget(loopSessionId, loopGeneration) {
                 const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
                 if (pg) {
                     await pg.restoreOriginalSettings();
-                    console.log('[PRIVACY_GATE_RESTORED] status=READY');
-                    logBg(null, '[PRIVACY_GATE_RESTORED] status=READY', 'info');
+                    console.log('[PRIVACY_SETTINGS_RESTORED] gateReady=false transportEnforced=false');
+                    logBg(null, '[PRIVACY_SETTINGS_RESTORED] gateReady=false transportEnforced=false', 'info');
                 }
             }
             campaignState.isLoopRunning = false;
@@ -4223,6 +4323,8 @@ async function processNextCampaignTarget(loopSessionId, loopGeneration) {
             }
         };
 
+
+
         try {
             // [Issue #6 R6.9B Section 2] PRE-NEXT-TARGET Hard Tab Cleanup Barrier
             await closeAllCampaignTabsExcept(null, 'PRE_NEXT_TARGET');
@@ -4231,11 +4333,12 @@ async function processNextCampaignTarget(loopSessionId, loopGeneration) {
             campaignState.currentTabId = null;
             campaignState.targetTabId = null;
 
-            // [R6.9G.9 Target Tab Invariant]
-            const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
-            if (pg && !pg.isPrivacyGateReady()) {
-                logBg(null, `[PRIVACY_GATE_BLOCK] reason=${pg.failureReason || 'PRIVACY_GATE_NOT_READY'} attemptId=none targetUrl=next_queue`, 'error');
-                console.error(`[PRIVACY_GATE_BLOCK] reason=${pg.failureReason || 'PRIVACY_GATE_NOT_READY'} attemptId=none targetUrl=next_queue`);
+            // [R6.9G.10.3.5 Central Privacy Barrier]
+            const privCheck = await assertPrivacyTransportReady('PRE_TARGET_BARRIER');
+            if (!privCheck.ready) {
+                const blkReason = privCheck.reason || 'PRIVACY_GATE_NOT_READY';
+                logBg(null, `[PRIVACY_GATE_BLOCK] reason=${blkReason} attemptId=none targetUrl=next_queue`, 'error');
+                console.error(`[PRIVACY_GATE_BLOCK] reason=${blkReason} attemptId=none targetUrl=next_queue`);
                 orchestrationSettled = true;
                 releaseLease();
                 await pauseCampaignOrchestrator(true);
@@ -4243,29 +4346,9 @@ async function processNextCampaignTarget(loopSessionId, loopGeneration) {
                 campaignState.faultReason = 'PRIVACY_GATEWAY_BLOCKED';
                 chrome.runtime.sendMessage({
                     action: 'PRIVACY_GATEWAY_BLOCKED',
-                    reason: pg.failureReason || 'PRIVACY_GATE_NOT_READY'
+                    reason: blkReason
                 }).catch(() => {});
                 return;
-            }
-
-            // [R6.9G.9.1 Egress Continuity Watch Invariant]
-            if (pg && pg.isPrivacyGateReady()) {
-                const egressCheck = await pg.checkEgressContinuity();
-                if (egressCheck && !egressCheck.pass) {
-                    const blkReason = egressCheck.reason || 'SYSTEM_VPN_EGRESS_CHANGED';
-                    logBg(null, `[PRIVACY_GATE_BLOCK] reason=${blkReason} attemptId=none targetUrl=next_queue`, 'error');
-                    console.error(`[PRIVACY_GATE_BLOCK] reason=${blkReason} attemptId=none targetUrl=next_queue`);
-                    orchestrationSettled = true;
-                    releaseLease();
-                    await pauseCampaignOrchestrator(true);
-                    campaignState.isFaulted = true;
-                    campaignState.faultReason = 'PRIVACY_GATEWAY_BLOCKED';
-                    chrome.runtime.sendMessage({
-                        action: 'PRIVACY_GATEWAY_BLOCKED',
-                        reason: blkReason
-                    }).catch(() => {});
-                    return;
-                }
             }
 
             if (targetAbortController.signal.aborted || campaignState.isPaused || !campaignState.isActive) {
@@ -4485,6 +4568,9 @@ async function processNextCampaignTarget(loopSessionId, loopGeneration) {
                 campaignState.currentAttempt = null;
                 campaignState.submitLock = false;
                 campaignState.timeoutWatchdogGen = (campaignState.timeoutWatchdogGen || 0) + 1;
+                if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+                    chrome.storage.local.set({ xpider_exec_identity: null }).catch(() => {});
+                }
 
                 if (!orchestrationSettled) {
                     logBg(null, `🚨 [QUIESCENCE_FAULT] Target inner orchestration failed to settle within grace period. Entering FAULT state; lease held.`, 'error');
@@ -4962,6 +5048,16 @@ function addCandidate(ctx, rawUrl, source = 'ensemble', evidence = {}) {
 }
 
 async function scanContactPaths(baseUrl, tabId, discoveryCtx = null) {
+    // [R6.9G.10.3.5 B.5/G] Background Sniper fetch cannot run before privacy assertion
+    const privCheck = await assertPrivacyTransportReady('SNIPER_FETCH');
+    if (!privCheck.ready) {
+        logBg(tabId, `🚫 [SniperScan] Blocked by privacy transport assertion: ${privCheck.reason}`, 'error');
+        if (discoveryCtx) {
+            discoveryCtx.errors.push({ phase: 'scanContactPaths', error: `PRIVACY_GATE_BLOCK: ${privCheck.reason}` });
+        }
+        return [];
+    }
+
     logBg(tabId, "Step 1: Sniper Mode active. Searching for contact page...", "info");
     const validPaths = [];
 
@@ -5122,15 +5218,29 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
         persistCounters().catch(() => {});
         broadcastCounters();
 
-        // Persist to chrome.storage.local immediately
+        // [R6.9G.10.3.5 A.1] Persist canonical execution identity BEFORE any target network/navigation side effect
+        const execIdentity = {
+            attemptId: _attemptId,
+            targetToken: targetToken,
+            campaignRunId: campaignState.campaignRunId || null,
+            sessionId: Number(campaignState.sessionId),
+            captchaEpoch: campaignState.captchaEpoch || 1,
+            tabId: null,
+            targetUrl: targetUrl,
+            ts: Date.now()
+        };
         if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
             await new Promise((resolve, reject) => {
-                chrome.storage.local.set({ xpider_currentAttempt: campaignState.currentAttempt }, () => {
+                chrome.storage.local.set({
+                    xpider_exec_identity: execIdentity,
+                    xpider_currentAttempt: campaignState.currentAttempt
+                }, () => {
                     if (chrome.runtime && chrome.runtime.lastError) return reject(chrome.runtime.lastError);
                     resolve();
                 });
             });
         }
+        logBg(null, `[EXEC_IDENTITY_PRE_NAV] attemptId=${_attemptId} token=${targetToken} epoch=${execIdentity.captchaEpoch}`, 'info');
     } catch (hsErr) {
         logBg(null, `❌ [F8-Intent] recordAttempt failed: ${hsErr.message} — aborting to prevent untracked send.`, 'error');
         return { success: false, reasonCode: 'INTENT_PERSISTENCE_FAILED', error: 'INTENT_PERSISTENCE_FAILED' };
@@ -5186,16 +5296,18 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
         }
     }
 
-    // [R6.9G.9 Target Tab Invariant]
-    const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
-    if (pg && !pg.isPrivacyGateReady()) {
-        logBg(tabId, `[PRIVACY_GATE_BLOCK] reason=${pg.failureReason || 'PRIVACY_GATE_NOT_READY'} attemptId=${_attemptId} targetUrl=${targetUrl}`, 'error');
-        console.error(`[PRIVACY_GATE_BLOCK] reason=${pg.failureReason || 'PRIVACY_GATE_NOT_READY'} attemptId=${_attemptId} targetUrl=${targetUrl}`);
+    // [R6.9G.10.3.5 Central Privacy Barrier before Target Tab Creation/Update]
+    const privCheck = await assertPrivacyTransportReady('TARGET_TAB_CREATION');
+    if (!privCheck.ready) {
+        const blkReason = privCheck.reason || 'PRIVACY_GATE_NOT_READY';
+        logBg(tabId, `[PRIVACY_GATE_BLOCK] reason=${blkReason} attemptId=${_attemptId} targetUrl=${targetUrl}`, 'error');
+        console.error(`[PRIVACY_GATE_BLOCK] reason=${blkReason} attemptId=${_attemptId} targetUrl=${targetUrl}`);
         if (_attemptId) {
             try {
                 const hs = await _getHistoryStore();
+                const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
                 await hs.updateAttemptContact(_attemptId, {
-                    ...pg.getAttemptPrivacyMetadata(),
+                    ...(pg ? pg.getAttemptPrivacyMetadata() : {}),
                     submissionStatus: 'PRIVACY_GATEWAY_BLOCKED',
                     formDetectionStatus: 'NOT_FOUND'
                 });
@@ -5205,7 +5317,7 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
         return {
             success: false,
             reasonCode: 'PRIVACY_GATEWAY_BLOCKED',
-            error: pg.failureReason || 'PRIVACY_GATE_NOT_READY'
+            error: blkReason
         };
     }
 
@@ -5219,6 +5331,19 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
         campaignOwnedTabIds.add(tabId);
     }
     campaignState.currentTabId = tabId;
+
+    // [R6.9G.10.3.5 A.1] Update canonical execution identity with canonical tabId
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+        chrome.storage.local.get(['xpider_exec_identity'], res => {
+            const curIdent = res && res.xpider_exec_identity ? res.xpider_exec_identity : {};
+            chrome.storage.local.set({
+                xpider_exec_identity: {
+                    ...curIdent,
+                    tabId: tabId
+                }
+            }).catch(() => {});
+        });
+    }
 
     // [Issue #6 R6.9B Section 3] POST-CREATE CONFIRM KILL
     await closeAllCampaignTabsExcept(tabId, 'POST_NEW_TARGET_CREATE');
@@ -5792,6 +5917,12 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
         } 
 
         logBg(tabId, `Connecting to [${fullUrl}]...`, "visit");
+        const privCheck = await assertPrivacyTransportReady('CANDIDATE_NAVIGATION');
+        if (!privCheck.ready) {
+            logBg(tabId, `🚫 [CandidateNav] Blocked by privacy transport assertion: ${privCheck.reason}`, 'error');
+            finish({ success: false, error: privCheck.reason, reasonCode: 'PRIVACY_GATEWAY_BLOCKED' });
+            return;
+        }
         const tabCheck = await ensureCampaignTab(tabId, fullUrl);
         if (tabCheck.recreated) {
             tabId = tabCheck.tabId;

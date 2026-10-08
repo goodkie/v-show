@@ -22,7 +22,8 @@
 }(typeof self !== 'undefined' ? self : this, function () {
 
     const PRIVACY_MODES = {
-        SYSTEM_VPN: 'SYSTEM_VPN',
+        EXTERNAL_VPN_MONITOR: 'EXTERNAL_VPN_MONITOR',
+        SYSTEM_VPN: 'EXTERNAL_VPN_MONITOR', // backward compat alias
         SOCKS5: 'SOCKS5',
         HTTPS_PROXY: 'HTTPS_PROXY',
         PRIVACY_RELAY: 'PRIVACY_RELAY',
@@ -31,7 +32,7 @@
 
     const DEFAULT_CONFIG = {
         enabled: true,
-        transportMode: PRIVACY_MODES.SYSTEM_VPN,
+        transportMode: PRIVACY_MODES.PRIVACY_RELAY,
         failClosed: true,
         proxyHost: '',
         proxyPort: 1080,
@@ -840,9 +841,12 @@
                 return { pass: true };
             }
 
-            if (this.config.transportMode !== PRIVACY_MODES.SYSTEM_VPN) return { pass: true };
+            if (this.config.transportMode !== PRIVACY_MODES.EXTERNAL_VPN_MONITOR && this.config.transportMode !== 'SYSTEM_VPN') return { pass: true };
+            if (this.config.failClosed) {
+                return { pass: false, reason: 'EXTERNAL_VPN_NOT_ENFORCEABLE_IN_STRICT_MODE' };
+            }
             if (!this.config.systemVpnConfirmed) {
-                return { pass: false, reason: 'SYSTEM_VPN_UNCONFIRMED_PREFLIGHT_BLOCKED' };
+                return { pass: false, reason: 'EXTERNAL_VPN_UNCONFIRMED_PREFLIGHT_BLOCKED' };
             }
 
             try {
@@ -1048,11 +1052,28 @@
                 chrome.proxy.settings.set({
                     value: proxyConfig,
                     scope: 'regular'
-                }, () => {
+                }, async () => {
                     if (chrome.runtime && chrome.runtime.lastError) {
                         return reject(chrome.runtime.lastError);
                     }
-                    resolve({ success: true, mode, host, port: parsedPort, bypassList: resolvedBypass });
+                    try {
+                        // [R6.9G.10.3.5 Verification] Read back proxy settings to prove actual enforcement
+                        const readback = await new Promise((resGet) => {
+                            chrome.proxy.settings.get({ incognito: false }, (details) => {
+                                resGet(details ? details.value : null);
+                            });
+                        });
+                        if (!readback || readback.mode !== 'fixed_servers' || !readback.rules || !readback.rules.singleProxy) {
+                            return reject(new Error('PROXY_SETTINGS_VERIFICATION_FAILED: mode is not fixed_servers'));
+                        }
+                        const sp = readback.rules.singleProxy;
+                        if (sp.host !== host || Number(sp.port) !== Number(parsedPort)) {
+                            return reject(new Error(`PROXY_SETTINGS_VERIFICATION_FAILED: host/port mismatch (expected ${host}:${parsedPort}, got ${sp.host}:${sp.port})`));
+                        }
+                        resolve({ success: true, mode, host, port: parsedPort, bypassList: resolvedBypass, verified: true });
+                    } catch (vErr) {
+                        reject(vErr);
+                    }
                 });
             });
         }
@@ -1068,6 +1089,8 @@
             if (!this.hasCapturedOriginals) {
                 this.isGateActive = false;
                 this.isGateReady = false;
+                this.failureReason = 'PRIVACY_GATE_RESTORED_TO_DEFAULT';
+                console.log('[PRIVACY_SETTINGS_RESTORED] gateReady=false transportEnforced=false');
                 return;
             }
 
@@ -1122,6 +1145,8 @@
 
             this.isGateActive = false;
             this.isGateReady = false;
+            this.failureReason = 'PRIVACY_GATE_RESTORED_TO_DEFAULT';
+            console.log('[PRIVACY_SETTINGS_RESTORED] gateReady=false transportEnforced=false');
         }
 
         /**
@@ -1191,10 +1216,10 @@
                     ready = true;
                     failureReason = null;
                 }
-            } else if (mode === PRIVACY_MODES.SYSTEM_VPN) {
-                directFallbackBlocked = 'BLOCKED';
-                dnsPrivacy = 'PASS';
-                ipv6Protection = 'PROTECTED';
+            } else if (mode === PRIVACY_MODES.EXTERNAL_VPN_MONITOR || mode === 'SYSTEM_VPN') {
+                directFallbackBlocked = 'UNVERIFIED';
+                dnsPrivacy = 'UNKNOWN';
+                ipv6Protection = 'UNKNOWN';
 
                 const isVpnConfirmed = options.systemVpnConfirmed !== undefined
                     ? options.systemVpnConfirmed
@@ -1208,33 +1233,34 @@
                     this.ephemeralEgressFingerprint = null;
                     if (failClosed) {
                         ready = false;
-                        failureReason = 'SYSTEM_VPN_UNCONFIRMED_PREFLIGHT_BLOCKED';
+                        failureReason = 'EXTERNAL_VPN_UNCONFIRMED_PREFLIGHT_BLOCKED';
                     } else {
                         ready = true;
                         dnsPrivacy = 'DEGRADED';
                     }
                 } else {
-                    // Owner confirmed VPN. Now verify actual external egress via probe.
+                    // Owner confirmed VPN monitor. Now verify actual external egress via probe.
                     const fpResult = await this.computeEgressFingerprint();
                     if (fpResult && fpResult.verified) {
                         egressVerified = true;
                         egressCheck = 'PASS';
                         this.ephemeralEgressFingerprint = fpResult.fingerprint;
-                        ready = true;
-                        failureReason = null;
+                        // [R6.9G.10.3.5 B.2] Without independent route/kill-switch attestation,
+                        // EXTERNAL_VPN_MONITOR alone must not satisfy strict transport readiness.
+                        if (failClosed) {
+                            ready = false;
+                            failureReason = 'EXTERNAL_VPN_NOT_ENFORCEABLE_IN_STRICT_MODE';
+                        } else {
+                            ready = true;
+                            failureReason = null;
+                        }
                     } else {
                         egressVerified = false;
                         egressCheck = 'FAIL';
                         this.ephemeralEgressFingerprint = null;
                         const probeReason = (fpResult && fpResult.reason) || 'EGRESS_PROBE_UNVERIFIED';
-                        if (failClosed) {
-                            ready = false;
-                            failureReason = probeReason;
-                        } else {
-                            ready = true;
-                            dnsPrivacy = 'DEGRADED';
-                            failureReason = null;
-                        }
+                        ready = false;
+                        failureReason = probeReason;
                     }
                 }
 
@@ -1243,13 +1269,15 @@
 
                 return this._recordPreflightResult({
                     ready,
-                    mode,
+                    mode: PRIVACY_MODES.EXTERNAL_VPN_MONITOR,
                     failClosed,
                     ownerVpnConfirmed,
                     egressVerified,
+                    transportEnforced: false,
                     webrtcGuard,
                     directFallbackBlocked,
                     egressCheck,
+                    egressContinuity: egressVerified ? 'PASS' : 'FAIL',
                     egressFingerprint: this.ephemeralEgressFingerprint,
                     dnsPrivacy,
                     ipv6Protection,
@@ -1303,6 +1331,7 @@
                             ready = true;
                             failureReason = null;
                             this.isGateActive = true;
+                            this.ephemeralEgressFingerprint = await this._hashString(`${host}:${port}:${canaryRes.endpoint || 'proxy'}`);
                         }
                     } catch (proxyErr) {
                         ready = false;
