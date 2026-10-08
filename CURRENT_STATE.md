@@ -4,7 +4,7 @@
 - Protocol: OCA-DEV-1.4
 - Project ID: xpider-autoform-sender-pro
 - Workspace: E:\vivpr\ai\extension-form-sender
-- Authority: goodkie/v-show Issue #6 (Directive #6063304914)
+- Authority: goodkie/v-show Issue #6 (Directive #6063304914 / Receipt #6064353814)
 - Branch: upgrade/phase-0-1
 - State Rev: 2026-10-08.10
 
