@@ -15,21 +15,21 @@
 
     const BUILD_INFO = {
         branch: 'upgrade/phase-0-1',
-        // [R6.9G.10.3.5] implementationHead = functional commit containing CAPTCHA Loop Termination,
-        //                Live Identity Query, and Enforced Privacy Transport
-        implementationHead: 'bc7cf341509abed93bcb6c85bcc375b3a28b3c1e',
-        implementationHeadShort: 'bc7cf341',
-        head: 'bc7cf341509abed93bcb6c85bcc375b3a28b3c1e',
-        headShort: 'bc7cf341',
+        // [R6.9G.10.3.5.1] implementationHead = functional commit containing Fail-Closed Submit Privacy Barrier
+        //                  and End-to-End Call-Site Verification
+        implementationHead: 'b8d1fab8190bb991c69d67c44a3ab1c1a5b766dd',
+        implementationHeadShort: 'b8d1fab8',
+        head: 'b8d1fab8190bb991c69d67c44a3ab1c1a5b766dd',
+        headShort: 'b8d1fab8',
         rollbackBase: 'dc0740a0c69e2f7fa96b6989841acf0831b3619e',
         previousFunctionalRestorePoint: '4ef7def9689cdf4c508651e2f6bee6b320e7ab8e',
         manifestVersion: 3,
-        buildId: 'R6.9G.10.3.5-20261008-CAPTCHA-LOOP-TERM-ENFORCED-PRIVACY',
-        builtAt: '2026-10-08T15:45:00.000Z',
+        buildId: 'R6.9G.10.3.5.1-20261008-SUBMIT-PRIVACY-BARRIER-END-TO-END',
+        builtAt: '2026-10-08T17:12:00.000Z',
         provenanceSchema: 2,
         modules: {
-            backgroundSha: 'fd99ca3512d37ed42f9ca0d79c77ef250d1587aced725cfccff24676ae3311c3',
-            contentScriptSha: 'db15cc0900d9171bb79b31a0aeaae09a16712f1d06413db7230e75633cf5b257',
+            backgroundSha: '08491093b1a6e829445559352db0779178963b5e6b01ac3de209b76bba700fd4',
+            contentScriptSha: '5c2ebd277a9020a4434fc68cd46c6ec974dbf180290ba368b33273aee67ccf9e',
             popupSha: '120f1b43e3d74e0db2256f59c810d8ab6145461fceed1ec2db9b9a65c45c2afa',
             solverContentSha: 'd7de969d29df29799537b11380f0f82967bb93da227c91e7dc8c6af0d128f457',
             solverCoreSha: '01b3d96048ea933403e4599854dcdca28027e7f676aa5077eb6c5eb0582ac1e7',
