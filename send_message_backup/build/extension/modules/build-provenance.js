@@ -18,14 +18,15 @@
         // [R6.9G.10.3] implementationHead = functional commit containing Fail-Closed DPAPI Secrets,
         //              Transactional Companion Installer with Rollback, Owner Egress Node Management UI/API,
         //              and SOCKS5 Upstream Protocol Boundary Enforcement
-        implementationHead: 'b5509d25d3cddd3815690ce3d5a04bc5e6c4e192',
-        implementationHeadShort: 'b5509d25',
-        head: 'b5509d25d3cddd3815690ce3d5a04bc5e6c4e192',
-        headShort: 'b5509d25',
-        rollbackBase: 'd346fecf7f9b75eebe69ea1e16d769e6546bf8a2',
+        implementationHead: '78d13d2663e6437531fcddc286c3fb4cb59bcbfd',
+        implementationHeadShort: '78d13d26',
+        head: '78d13d2663e6437531fcddc286c3fb4cb59bcbfd',
+        headShort: '78d13d26',
+        rollbackBase: 'dc0740a0c69e2f7fa96b6989841acf0831b3619e',
+        previousFunctionalRestorePoint: 'b5509d25d3cddd3815690ce3d5a04bc5e6c4e192',
         manifestVersion: 3,
-        buildId: 'R6.9G.10.3-20261008-FAILCLOSED-WINSEC-TRANSACTIONAL-INSTALL-OWNER-EGRESS',
-        builtAt: '2026-10-08T07:15:00.000Z',
+        buildId: 'R6.9G.10.3.1-20261008-EXACT-BUNDLE-TRANSACTIONAL-INSTALL',
+        builtAt: '2026-10-08T07:45:00.000Z',
         provenanceSchema: 2,
         modules: {
             backgroundSha: '40fd21d8f0166005d37acebd13d0f8ad578518a3f1cd8d03f9e0526d859617ec',
@@ -37,7 +38,7 @@
             historyStoreSha: 'ef148329c5c019877fef3708ac63472ce86d5f7f06da467a557a74e038eab6b4',
             contactGateSha: '0d01acb2d0a9448d154353fac5b527c17afa42fed56c68d6a49b39053629bd7d',
             visionSubmitSha: '25cf18a4834bb476edff5e8f19a78dd2723bd556ede649ada69bc801543c83f3',
-            privacyGatewaySha: '8e1f08686401ff5c6759e1d05678299115476549c642b82bd35b06a4a6543538'
+            privacyGatewaySha: '81b74d7234b027d91b0cb672895cdc229ee3b0848ed10876e8b63c10d1402b91'
         }
     };
 
