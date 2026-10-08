@@ -8,17 +8,25 @@
 ---
 
 ## 1. Package Inventory & Verification
-- **Build ID:** `R6.9G.10.1-20261007-AUTHENTICATED-RELAY-VERIFIED-EGRESS`
-- **Implementation HEAD:** `36fc8d5cafa505314aa8ca1733cbb373ad3d7bf8`
-- **Visible Badge in UI:** `TEST-ONLY R6.9G.10.1 [36fc8d5c]`
+- **Build ID:** `R6.9G.10.3-20261008-FAILCLOSED-WINSEC-TRANSACTIONAL-INSTALL-OWNER-EGRESS`
+- **Visible Badge in UI:** `TEST-ONLY R6.9G.10.3`
 - **Unpacked Extension Path:** `send_message_backup/build/extension`
-- **ZIP Package:** `XPIDER_R6.9G.10.2_OWNER_DIAGNOSTIC_TEST_ONLY.zip`
-- **ZIP SHA-256:** `PENDING`
-- **File Manifest:** See [PACKAGE_INVENTORY_SHA256.txt](file:///E:/vivpr\ai\extension-form-sender\PACKAGE_INVENTORY_SHA256.txt)
+- **ZIP Package:** `XPIDER_R6.9G.10.3_OWNER_DIAGNOSTIC_TEST_ONLY.zip`
+- **File Manifest:** See [PACKAGE_INVENTORY_SHA256.txt](file:///E:/vivpr/ai/extension-form-sender/PACKAGE_INVENTORY_SHA256.txt)
 
 ---
 
-## 2. Recommended 3–5 URL Diagnostic Scope
+## 2. Companion Setup & Egress Configuration (Zero-Manual-Launch UX)
+1. Run `install_companion.bat` from the companion folder.
+2. The installer will register logon autostart, configure Native Messaging for Chrome and Edge, and launch the Privacy Relay service.
+3. Open Microsoft Edge or Google Chrome with the unpacked XPIDER extension.
+4. Navigate to **Settings -> 🛡️ Privacy Gateway -> Mode D: XPIDER Privacy Relay**.
+5. Click **➕ Add Egress Node** to add your upstream HTTP/HTTPS proxy with DPAPI secure credential protection.
+   *(Note: SOCKS5 is supported separately via Mode B: Managed SOCKS5 Proxy).*
+
+---
+
+## 3. Recommended 3–5 URL Diagnostic Scope
 Run a small test of **3 to 5 URLs only**. If testing locally or against live endpoints:
 1. `Target 1`: Simple Contact Form (verify form detection, field fill, and serialization).
 2. `Target 2`: Form with CAPTCHA (verify Owner decision modal, responsiveness, and safe accounting).
@@ -26,7 +34,7 @@ Run a small test of **3 to 5 URLs only**. If testing locally or against live end
 
 ---
 
-## 3. What to Observe During the Test
+## 4. What to Observe During the Test
 1. **Target Serialization:**
    - Exactly **one** active target tab at a time (`maxConcurrent === 1`).
    - No next target starts before the prior target finishes its final cleanup.
@@ -49,9 +57,9 @@ Run a small test of **3 to 5 URLs only**. If testing locally or against live end
 
 ---
 
-## 4. One-Click Diagnostic Log Export Instructions
+## 5. One-Click Diagnostic Log Export Instructions
 1. Open the XPIDER Extension Popup.
-2. Ensure the top badge displays: `TEST-ONLY R6.9G.10.1 [36fc8d5c]`.
+2. Ensure the top badge displays: `TEST-ONLY R6.9G.10.3`.
 3. In the diagnostic action bar at the top or bottom of the popup, click either:
    - **📋 Copy Diagnostic Report**: Copies the complete sanitized diagnostic JSON/text to clipboard.
    - **💾 Download Diagnostic TXT**: Downloads `xpider-diagnostic-report-<timestamp>.txt` directly.
