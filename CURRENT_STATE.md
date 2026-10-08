@@ -52,4 +52,4 @@
 - Evidence SHA-256: `0f4b875f335fe6c633a95a1524deae37fefd1b5b2aa4ceab8cf50d525787c8f4`
 - Evidence Bytes: 12,896
 - GitHub Release URL: https://github.com/goodkie/v-show/releases/tag/v6.9g.10.3-audit.1
-- Authority Cursor: `6054863753` (Progress ACK Comment)
+- Authority Cursor: `6055405529` (R6.9G.10.3.1 Receipt Comment)
