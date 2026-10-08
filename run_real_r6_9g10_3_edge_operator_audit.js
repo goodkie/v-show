@@ -263,6 +263,9 @@ async function runRealEdgeAudit() {
 
   let companionService = null;
   let edgeProcess = null;
+  let bundleEdgeProcess = null;
+  let bundleProfileDir = null;
+  let edgeBinary = null;
   let swWs = null;
   const tempProfileDir = fs.mkdtempSync(path.join(os.tmpdir(), 'xpider_edge_r6_9g10_2_'));
   const tempConfigFile = path.join(tempProfileDir, 'test_egress_pool_config.json');
@@ -590,7 +593,7 @@ async function runRealEdgeAudit() {
       'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
       path.join(process.env.LOCALAPPDATA || '', 'Microsoft\\Edge\\Application\\msedge.exe')
     ];
-    let edgeBinary = edgePaths.find(p => fs.existsSync(p));
+    edgeBinary = edgePaths.find(p => fs.existsSync(p));
     if (!edgeBinary) throw new Error('Microsoft Edge executable not found');
 
     const extPath = path.resolve('send_message_backup/build/extension');
@@ -917,7 +920,17 @@ async function runRealEdgeAudit() {
     }
     const zipBuffer = fs.readFileSync(exactBundleZipPath);
     const releaseZipSha = crypto.createHash('sha256').update(zipBuffer).digest('hex');
-    rec(`[GATE_I_RELEASE_ZIP] Path=${exactBundleZipPath} Size=${zipBuffer.length} bytes SHA256=${releaseZipSha}`);
+    const pkgInvText = fs.readFileSync('PACKAGE_INVENTORY_SHA256.txt', 'utf8');
+    const matchInv = pkgInvText.match(/XPIDER_R6\.9G\.10\.3_OWNER_DIAGNOSTIC_TEST_ONLY\.zip.*?([a-f0-9]{64})/i);
+    const expectedReleaseSha = matchInv ? matchInv[1] : 'b440455bb5966a659461f0382aa0fa50fd802e9a6ff6bda74672d2fad549d650';
+    const expectedZipBytes = 4338025;
+    rec(`[GATE_I_RELEASE_ZIP] Path=${exactBundleZipPath} Size=${zipBuffer.length} (Expected=${expectedZipBytes}) SHA256=${releaseZipSha} (Expected=${expectedReleaseSha}) Match=${releaseZipSha === expectedReleaseSha && zipBuffer.length === expectedZipBytes}`);
+    if (releaseZipSha !== expectedReleaseSha) {
+      throw new Error(`Gate I Blocker 5: ZIP digest mismatch! Expected ${expectedReleaseSha}, got ${releaseZipSha}`);
+    }
+    if (zipBuffer.length !== expectedZipBytes) {
+      throw new Error(`Gate I Blocker 5: ZIP byte size mismatch! Expected ${expectedZipBytes}, got ${zipBuffer.length}`);
+    }
 
     const extractedDir = path.join(os.tmpdir(), 'xpider_extracted_bundle_' + Date.now());
     fs.mkdirSync(extractedDir, { recursive: true });
@@ -1034,7 +1047,247 @@ async function runRealEdgeAudit() {
       throw new Error('Gate I Blocker 3: Background Privacy Relay service failed to start or is not listening on 18989');
     }
 
-    // 4. Uninstall Test: Run real uninstall_companion.bat from extracted bundle
+    // 4. Exact-Bundle Real Edge Launch & Native Messaging Acceptance (Blockers 3 & 4)
+    rec('\n[GATE_I_BUNDLE_EDGE_LAUNCH] Launching real Microsoft Edge loading delivered extension from release ZIP...');
+    const extractedExtDir = path.join(extractedDir, 'extension');
+    bundleProfileDir = fs.mkdtempSync(path.join(os.tmpdir(), 'xpider_bundle_edge_prof_'));
+    const BUNDLE_CDP_PORT = 9246;
+
+    // Recreate upstream mock proxies for Gate I tests
+    try { egressNode1.close(); } catch (_) {}
+    try { egressNode2.close(); } catch (_) {}
+    egressTraffic.node1.length = 0;
+    egressTraffic.node2.length = 0;
+    egressNode1 = createMockEgressProxy('node1', NODE1_PORT, '198.51.100.101', egressTraffic.node1);
+    egressNode2 = createMockEgressProxy('node2', NODE2_PORT, '198.51.100.202', egressTraffic.node2);
+    await new Promise(r => egressNode1.listen(NODE1_PORT, '127.0.0.1', r));
+    await new Promise(r => egressNode2.listen(NODE2_PORT, '127.0.0.1', r));
+    rec(`[GATE_I_UPSTREAMS_READY] Upstreams re-armed on ${NODE1_PORT} and ${NODE2_PORT}`);
+
+    const bundleEdgeArgs = [
+      `--remote-debugging-port=${BUNDLE_CDP_PORT}`,
+      `--user-data-dir=${bundleProfileDir}`,
+      `--load-extension=${extractedExtDir}`,
+      `--disable-extensions-except=${extractedExtDir}`,
+      '--no-first-run',
+      '--no-default-browser-check',
+      'about:blank'
+    ];
+
+    bundleEdgeProcess = spawn(edgeBinary, bundleEdgeArgs, { stdio: 'ignore' });
+    rec(`[GATE_I_EDGE_SPAWNED] PID=${bundleEdgeProcess.pid} CDP=${BUNDLE_CDP_PORT} ExtPath=${extractedExtDir}`);
+
+    // Connect to Service Worker via CDP
+    let bundleBgTarget = null;
+    for (let i = 0; i < 40; i++) {
+      await new Promise(r => setTimeout(r, 500));
+      try {
+        const resp = await fetch(`http://127.0.0.1:${BUNDLE_CDP_PORT}/json`);
+        if (resp.ok) {
+          const targets = await resp.json();
+          bundleBgTarget = targets.find(t => t.type === 'service_worker' && (t.url.includes('background.js') || t.title.includes('XPIDER')));
+          if (bundleBgTarget) break;
+        }
+      } catch (_) {}
+    }
+    if (!bundleBgTarget) throw new Error('Gate I Blocker 3: Service worker not found in Edge CDP for extracted extension');
+    rec(`[GATE_I_BG_TARGET_FOUND] ws=${bundleBgTarget.webSocketDebuggerUrl}`);
+
+    let bundleWs = await openWs(bundleBgTarget.webSocketDebuggerUrl);
+    bundleWs.addEventListener('message', (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        if (data.method === 'Runtime.consoleAPICalled') {
+          const text = (data.params.args || []).map(a => a.value || a.description || '').join(' ');
+          rec(`[GATE_I_SW_CONSOLE] ${text}`);
+        }
+      } catch (_) {}
+    });
+    bundleWs.send(JSON.stringify({ id: 999, method: 'Runtime.enable' }));
+    let evalBundleSw = mkEval(bundleWs, 15000);
+
+    const bundleExtId = (new URL(bundleBgTarget.url)).hostname;
+    rec(`[GATE_I_EXT_ID_VERIFIED] ${bundleExtId} (Expected=${stableExtId})`);
+    if (bundleExtId !== stableExtId) {
+      throw new Error(`Gate I Blocker 3: Extracted extension ID (${bundleExtId}) != expected stable ID (${stableExtId})`);
+    }
+
+    // Wait until Service Worker runtime is ready
+    for (let i = 0; i < 20; i++) {
+      try {
+        const ready = await evalBundleSw(`Boolean(typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendNativeMessage)`);
+        if (ready) break;
+      } catch (_) {}
+      await new Promise(r => setTimeout(r, 400));
+    }
+
+    // Execute real Native Messaging IPC PING against installed companion host (Blocker 3)
+    const bundlePingRes = await evalBundleSw(`new Promise((resolve) => {
+      chrome.runtime.sendNativeMessage('com.xpider.privacy_relay', { action: 'PING' }, (resp) => {
+        resolve({ lastError: chrome.runtime.lastError?.message, resp });
+      });
+    })`);
+    rec(`[GATE_I_BUNDLE_NATIVE_PING] response=${JSON.stringify(bundlePingRes)}`);
+    if (bundlePingRes.lastError || !bundlePingRes.resp || bundlePingRes.resp.action !== 'PONG') {
+      throw new Error(`Gate I Blocker 3: Native Messaging PING failed against installed companion host: ${JSON.stringify(bundlePingRes)}`);
+    }
+
+    // Handshake token via ensureRelayActive (Blocker 4)
+    const bundleAutoStart = await evalBundleSw(`(async () => {
+      const pg = PrivacyGateway.getInstance();
+      await pg.init();
+      return await pg.ensureRelayActive(true);
+    })()`);
+    rec(`[GATE_I_BUNDLE_HANDSHAKE] active=${bundleAutoStart.active}`);
+    if (!bundleAutoStart.active) {
+      throw new Error(`Gate I Blocker 4: ensureRelayActive handshake failed on installed bundle: ${JSON.stringify(bundleAutoStart)}`);
+    }
+
+    // Add egress node through Owner Control API using companion's token (Blocker 4)
+    let compToken = '';
+    try {
+      compToken = fs.readFileSync(path.join(extractedCompanionDir, '.control_token'), 'utf8').trim();
+    } catch (_) {}
+
+    const addNodeRes1 = await fetch(`http://127.0.0.1:${CONTROL_PORT}/add-node`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${compToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: 'egress-node-1', name: 'Delivered Node 1', type: 'HTTP_PROXY', host: '127.0.0.1', port: NODE1_PORT, password: 'SecretDeliveredPass1' })
+    });
+    const addNodeRes2 = await fetch(`http://127.0.0.1:${CONTROL_PORT}/add-node`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${compToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: 'egress-node-2', name: 'Delivered Node 2', type: 'HTTP_PROXY', host: '127.0.0.1', port: NODE2_PORT, password: 'SecretDeliveredPass2' })
+    });
+    rec(`[GATE_I_BUNDLE_ADD_NODES] Node1Status=${addNodeRes1.status} Node2Status=${addNodeRes2.status}`);
+
+    // Verify DPAPI persistence in extracted companion config file
+    const extCompConfig = JSON.parse(fs.readFileSync(path.join(extractedCompanionDir, 'egress_pool_config.json'), 'utf8'));
+    const savedNode1 = extCompConfig.nodes.find(n => n.id === 'egress-node-1');
+    const dpapiPersisted = savedNode1 && savedNode1.credentialRef && savedNode1.credentialRef.startsWith('dpapi:') && savedNode1.password === '';
+    rec(`[GATE_I_BUNDLE_DPAPI_PERSISTED] Count=${extCompConfig.nodes.length} DPAPI=${dpapiPersisted}`);
+    if (!dpapiPersisted) {
+      throw new Error('Gate I Blocker 4: Egress node was not persisted with DPAPI encryption in installed companion config');
+    }
+
+    // Configure Privacy Gateway in delivered extension (Blocker 4)
+    await evalBundleSw(`(async () => {
+      const pg = PrivacyGateway.getInstance();
+      await pg.saveConfig({
+        enabled: true,
+        transportMode: 'PRIVACY_RELAY',
+        relayHost: '127.0.0.1',
+        relayControlPort: ${CONTROL_PORT},
+        relayRotationMode: 'HEALTH_FAILOVER',
+        healthFailover: true,
+        canaryUrl: 'http://127.0.0.1:${TARGET_PORT}/privacy-canary'
+      });
+      await pg.setRelayMode('HEALTH_FAILOVER');
+    })()`);
+
+    // Privacy Preflight (Blocker 4)
+    const bundlePreflight = await evalBundleSw(`(async () => {
+      const pg = PrivacyGateway.getInstance();
+      return await pg.runPreflight({ canaryUrl: 'http://127.0.0.1:${TARGET_PORT}/privacy-canary' });
+    })()`);
+    rec(`[GATE_I_BUNDLE_PREFLIGHT] ready=${bundlePreflight.ready} fp=${bundlePreflight.egressFingerprint}`);
+    if (!bundlePreflight.ready) {
+      throw new Error(`Gate I Blocker 4: Privacy Preflight failed on installed bundle: ${JSON.stringify(bundlePreflight)}`);
+    }
+
+    // Fetch Target 1 through Node 1 (Blocker 4)
+    egressTraffic.node1.length = 0;
+    egressTraffic.node2.length = 0;
+    const bundleT1 = await evalBundleSw(`(async () => {
+      const resp = await fetch('http://127.0.0.1:${TARGET_PORT}/privacy-canary');
+      return { ok: resp.ok, text: (await resp.text()).trim() };
+    })()`);
+    rec(`[GATE_I_BUNDLE_TARGET1] ok=${bundleT1.ok} text="${bundleT1.text}" node1_reqs=${egressTraffic.node1.length}`);
+    if (egressTraffic.node1.length === 0 || !bundleT1.text.includes('198.51.100.101')) {
+      throw new Error('Gate I Blocker 4: Target 1 did not route through Node 1 on installed bundle');
+    }
+
+    // Live A->B Failover: Kill Node 1, fetch Target 2 through Node 2 with 0 DIRECT fallback (Blocker 4)
+    rec('[GATE_I_KILL_NODE1] Stopping Node 1 to trigger installed bundle failover...');
+    await new Promise(r => egressNode1.close(r));
+    const bundleT2 = await evalBundleSw(`(async () => {
+      const pg = PrivacyGateway.getInstance();
+      const contRes = await pg.checkEgressContinuity();
+      const fetchRes = await fetch('http://127.0.0.1:${TARGET_PORT}/privacy-canary');
+      const text = await fetchRes.text();
+      return { contRes, ok: fetchRes.ok, text: text.trim() };
+    })()`);
+    rec(`[GATE_I_BUNDLE_FAILOVER] recovered=${bundleT2.contRes?.recovered} newEgressId=${bundleT2.contRes?.newEgressId} fetchOk=${bundleT2.ok} node2_reqs=${egressTraffic.node2.length}`);
+    if (!bundleT2.contRes?.recovered || bundleT2.contRes?.newEgressId !== 'egress-node-2' || egressTraffic.node2.length === 0) {
+      throw new Error(`Gate I Blocker 4: Live failover failed on installed bundle: ${JSON.stringify(bundleT2)}`);
+    }
+    rec('  -> PROVEN: Installed bundle successfully failed over from Node 1 to Node 2 without dropping to DIRECT!');
+
+    // Browser Restart Auto-Recovery (Blocker 4)
+    rec('\n[GATE_I_BUNDLE_BROWSER_RESTART] Testing Edge browser restart auto-recovery...');
+    bundleEdgeProcess.kill();
+    bundleEdgeProcess = null;
+    await new Promise(r => setTimeout(r, 1200));
+
+    bundleEdgeProcess = spawn(edgeBinary, bundleEdgeArgs, { stdio: 'ignore' });
+    rec(`[GATE_I_EDGE_RESTARTED] PID=${bundleEdgeProcess.pid}`);
+
+    let restartBgTarget = null;
+    for (let i = 0; i < 40; i++) {
+      await new Promise(r => setTimeout(r, 500));
+      try {
+        const resp = await fetch(`http://127.0.0.1:${BUNDLE_CDP_PORT}/json`);
+        if (resp.ok) {
+          const targets = await resp.json();
+          restartBgTarget = targets.find(t => t.type === 'service_worker' && (t.url.includes('background.js') || t.title.includes('XPIDER')));
+          if (restartBgTarget) break;
+        }
+      } catch (_) {}
+    }
+    if (!restartBgTarget) throw new Error('Gate I Blocker 4: Background service worker not found after browser restart');
+
+    const restartWs = await openWs(restartBgTarget.webSocketDebuggerUrl);
+    restartWs.send(JSON.stringify({ id: 999, method: 'Runtime.enable' }));
+    const evalRestartSw = mkEval(restartWs, 15000);
+
+    for (let i = 0; i < 20; i++) {
+      try {
+        const ready = await evalRestartSw(`Boolean(typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendNativeMessage)`);
+        if (ready) break;
+      } catch (_) {}
+      await new Promise(r => setTimeout(r, 400));
+    }
+
+    // Reconnect Native Messaging after restart
+    const restartPingRes = await evalRestartSw(`new Promise((resolve) => {
+      chrome.runtime.sendNativeMessage('com.xpider.privacy_relay', { action: 'PING' }, (resp) => {
+        resolve({ lastError: chrome.runtime.lastError?.message, resp });
+      });
+    })`);
+    rec(`[GATE_I_RESTART_NATIVE_PING] response=${JSON.stringify(restartPingRes)}`);
+    if (restartPingRes.lastError || !restartPingRes.resp || restartPingRes.resp.action !== 'PONG') {
+      throw new Error(`Gate I Blocker 4: Native Messaging reconnect failed after Edge restart: ${JSON.stringify(restartPingRes)}`);
+    }
+
+    // Preflight after restart
+    const restartPreflight = await evalRestartSw(`(async () => {
+      const pg = PrivacyGateway.getInstance();
+      await pg.init();
+      const activeRes = await pg.ensureRelayActive(true);
+      const preflight = await pg.runPreflight({ canaryUrl: 'http://127.0.0.1:${TARGET_PORT}/privacy-canary' });
+      return { activeRes, preflight };
+    })()`);
+    rec(`[GATE_I_RESTART_PREFLIGHT] active=${restartPreflight.activeRes?.active} ready=${restartPreflight.preflight?.ready} fp=${restartPreflight.preflight?.egressFingerprint}`);
+    if (!restartPreflight.preflight?.ready) {
+      throw new Error(`Gate I Blocker 4: Preflight failed after Edge restart on installed bundle: ${JSON.stringify(restartPreflight)}`);
+    }
+
+    // Terminate restarted Edge process before uninstall
+    bundleEdgeProcess.kill();
+    bundleEdgeProcess = null;
+    await new Promise(r => setTimeout(r, 800));
+
+    // 5. Enforced Uninstall Test: Run real uninstall_companion.bat --silent from extracted bundle (Blocker 6)
     rec('\n[GATE_I_UNINSTALL] Executing real uninstall_companion.bat --silent from extracted bundle...');
     let uninstExitCode = 0;
     let uninstOutput = '';
@@ -1048,6 +1301,12 @@ async function runRealEdgeAudit() {
       uninstOutput = (err.stdout || '') + (err.stderr || '');
     }
     rec(`[GATE_I_UNINSTALL_RESULT] ExitCode=${uninstExitCode} CompletedReported=${uninstOutput.includes('Uninstallation Complete')}`);
+    if (uninstExitCode !== 0) {
+      throw new Error(`Gate I Blocker 6: uninstall_companion.bat exited with non-zero code ${uninstExitCode}! Output:\n${uninstOutput}`);
+    }
+    if (!uninstOutput.includes('Uninstallation Complete')) {
+      throw new Error(`Gate I Blocker 6: uninstall_companion.bat did not output "Uninstallation Complete"! Output:\n${uninstOutput}`);
+    }
 
     // Assert Startup VBS removed
     const startupExistsAfterUninst = fs.existsSync(startupTarget);
@@ -1089,6 +1348,12 @@ async function runRealEdgeAudit() {
     // Teardown processes
     if (edgeProcess) {
       try { edgeProcess.kill(); } catch (_) {}
+    }
+    if (bundleEdgeProcess) {
+      try { bundleEdgeProcess.kill(); } catch (_) {}
+    }
+    if (bundleProfileDir) {
+      try { fs.rmSync(bundleProfileDir, { recursive: true, force: true }); } catch (_) {}
     }
     if (companionService) {
       try { await companionService.stop(); } catch (_) {}
