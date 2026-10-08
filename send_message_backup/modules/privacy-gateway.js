@@ -589,6 +589,99 @@
         }
 
         /**
+         * [R6.9G.10.3 Blocker 4] Retrieve list of configured relay egress nodes (/nodes)
+         */
+        async getRelayEgressNodes() {
+            const host = this.config.relayHost || '127.0.0.1';
+            const port = this.config.relayControlPort || 18989;
+            try {
+                const fetchFn = this._mockFetch !== undefined ? this._mockFetch : (typeof fetch !== 'undefined' ? fetch : null);
+                if (!fetchFn) return { success: false, reason: 'FETCH_UNAVAILABLE' };
+                const headers = this.getRelayAuthHeaders();
+                const res = await fetchFn(`http://${host}:${port}/nodes`, {
+                    cache: 'no-store',
+                    headers
+                });
+                if (res.ok) {
+                    return await res.json();
+                }
+                return { success: false, reason: `HTTP_${res.status}` };
+            } catch (e) {
+                return { success: false, reason: e.message };
+            }
+        }
+
+        /**
+         * [R6.9G.10.3 Blocker 4] Add / Configure new egress node in Companion Relay pool (/add-node)
+         * Strictly rejects SOCKS5 in Relay mode; requires HTTP_PROXY or HTTPS_PROXY.
+         * Passwords are sent over localhost authenticated channel and encrypted into DPAPI.
+         */
+        async addRelayEgressNode(nodeData) {
+            if (!nodeData) return { success: false, reason: 'NO_DATA' };
+
+            // Explicit client-side protocol check
+            if (nodeData.type === 'SOCKS5') {
+                return {
+                    success: false,
+                    reason: 'UNSUPPORTED_RELAY_NODE_TYPE: Privacy Relay pool supports HTTP_PROXY and HTTPS_PROXY only. For direct SOCKS5 proxies, use Mode B: Managed SOCKS5 Proxy.'
+                };
+            }
+            if (nodeData.type !== 'HTTP_PROXY' && nodeData.type !== 'HTTPS_PROXY') {
+                return {
+                    success: false,
+                    reason: 'INVALID_NODE_TYPE: Must be HTTP_PROXY or HTTPS_PROXY.'
+                };
+            }
+
+            const host = this.config.relayHost || '127.0.0.1';
+            const port = this.config.relayControlPort || 18989;
+            try {
+                const fetchFn = this._mockFetch !== undefined ? this._mockFetch : (typeof fetch !== 'undefined' ? fetch : null);
+                if (!fetchFn) return { success: false, reason: 'FETCH_UNAVAILABLE' };
+                const headers = this.getRelayAuthHeaders();
+                const res = await fetchFn(`http://${host}:${port}/add-node`, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify(nodeData)
+                });
+                if (res.ok) {
+                    return await res.json();
+                }
+                const errData = await res.json().catch(() => ({}));
+                return { success: false, reason: errData.reason || `HTTP_${res.status}` };
+            } catch (e) {
+                return { success: false, reason: e.message };
+            }
+        }
+
+        /**
+         * [R6.9G.10.3 Blocker 4] Remove egress node from Companion Relay pool (/remove-node)
+         */
+        async removeRelayEgressNode(nodeId) {
+            if (!nodeId) return { success: false, reason: 'NO_NODE_ID' };
+            const host = this.config.relayHost || '127.0.0.1';
+            const port = this.config.relayControlPort || 18989;
+            try {
+                const fetchFn = this._mockFetch !== undefined ? this._mockFetch : (typeof fetch !== 'undefined' ? fetch : null);
+                if (!fetchFn) return { success: false, reason: 'FETCH_UNAVAILABLE' };
+                const headers = this.getRelayAuthHeaders();
+                const res = await fetchFn(`http://${host}:${port}/remove-node`, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify({ id: nodeId })
+                });
+                if (res.ok) {
+                    return await res.json();
+                }
+                const errData = await res.json().catch(() => ({}));
+                return { success: false, reason: errData.reason || `HTTP_${res.status}` };
+            } catch (e) {
+                return { success: false, reason: e.message };
+            }
+        }
+
+
+        /**
          * Verify continuity of the egress tunnel during campaign run
          */
         async checkEgressContinuity() {
@@ -608,6 +701,7 @@
                             const canaryRes = await this.probeProxyCanary(this.config.canaryUrl || null, 3000);
                             if (canaryRes.success) {
                                 this.ephemeralEgressFingerprint = rotRes.egressFingerprint;
+                                this.config.selectedEgressId = rotRes.selectedEgressId;
                                 return { pass: true, recovered: true, newEgressId: rotRes.selectedEgressId };
                             }
                         }
@@ -617,7 +711,24 @@
                     return { pass: false, reason: this.failureReason };
                 }
 
+                // If companion auto-rotated to another node asynchronously
+                const currentEgressId = statusRes.status.selectedEgressId;
                 const currentFp = statusRes.status.egressFingerprint;
+                if (this.config.healthFailover && this.config.selectedEgressId && currentEgressId && currentEgressId !== this.config.selectedEgressId) {
+                    console.log(`[PRIVACY_RELAY] Asynchronous failover detected: ${this.config.selectedEgressId} -> ${currentEgressId}`);
+                    const canaryRes = await this.probeProxyCanary(this.config.canaryUrl || null, 3000);
+                    if (canaryRes.success) {
+                        this.ephemeralEgressFingerprint = currentFp;
+                        this.config.selectedEgressId = currentEgressId;
+                        return {
+                            pass: true,
+                            recovered: true,
+                            newEgressId: currentEgressId,
+                            fingerprint: currentFp
+                        };
+                    }
+                }
+
                 const rotMode = this.config.relayRotationMode || 'FIXED';
                 if ((rotMode === 'FIXED' || rotMode === 'CAMPAIGN_BOUNDARY') && this.ephemeralEgressFingerprint) {
                     if (currentFp !== this.ephemeralEgressFingerprint) {
@@ -632,8 +743,43 @@
                     }
                 }
 
-                const canaryRes = await this.probeProxyCanary(null, 2500);
+                const canaryRes = await this.probeProxyCanary(this.config.canaryUrl || null, 2500);
                 if (!canaryRes.success) {
+                    if (this.config.healthFailover) {
+                        console.log('[PRIVACY_RELAY] Canary probe failed. Checking companion failover status or rotating...');
+                        // 1. Check if companion already completed automatic failover during probe failure
+                        let postFailStatus = await this.queryRelayStatus();
+                        if (postFailStatus.success && postFailStatus.status && postFailStatus.status.relayReady && postFailStatus.status.selectedEgressId !== this.config.selectedEgressId) {
+                            const retryCanary = await this.probeProxyCanary(this.config.canaryUrl || null, 3000);
+                            if (retryCanary.success) {
+                                this.ephemeralEgressFingerprint = postFailStatus.status.egressFingerprint;
+                                this.config.selectedEgressId = postFailStatus.status.selectedEgressId;
+                                return {
+                                    pass: true,
+                                    recovered: true,
+                                    newEgressId: postFailStatus.status.selectedEgressId,
+                                    fingerprint: this.ephemeralEgressFingerprint
+                                };
+                            }
+                        }
+
+                        // 2. If companion hasn't rotated yet, explicitly request HEALTH_FAILOVER rotation
+                        const rotRes = await this.rotateRelayEgress('HEALTH_FAILOVER', this.config.canaryUrl || null);
+                        if (rotRes.success) {
+                            const retryCanary = await this.probeProxyCanary(this.config.canaryUrl || null, 3000);
+                            if (retryCanary.success) {
+                                this.ephemeralEgressFingerprint = rotRes.egressFingerprint;
+                                this.config.selectedEgressId = rotRes.selectedEgressId;
+                                return {
+                                    pass: true,
+                                    recovered: true,
+                                    newEgressId: rotRes.selectedEgressId,
+                                    fingerprint: rotRes.egressFingerprint
+                                };
+                            }
+                        }
+                    }
+
                     this.isGateReady = false;
                     this.failureReason = `PRIVACY_RELAY_DROPPED: ${canaryRes.reason}`;
                     return { pass: false, reason: this.failureReason };
@@ -837,9 +983,16 @@
             // [R6.9G.9.3] If bypassList is explicitly provided or configured, use it.
             // If proxy host is loopback (127.0.0.1/localhost) for testing, use ['<-loopback>']
             // so requests to 127.0.0.1 (such as local fixtures or test canary) actually traverse the proxy.
-            const resolvedBypass = (bypassList !== null && bypassList !== undefined)
-                ? bypassList
-                : (this.config.proxyBypassList || ((host === '127.0.0.1' || host === 'localhost') ? ['<-loopback>'] : ['<local>']));
+            let resolvedBypass = (bypassList !== null && bypassList !== undefined)
+                ? (Array.isArray(bypassList) ? [...bypassList] : [bypassList])
+                : (this.config.proxyBypassList ? [...this.config.proxyBypassList] : ((host === '127.0.0.1' || host === 'localhost') ? ['<-loopback>'] : ['<local>']));
+
+            // Control port on localhost must NEVER be proxied through the upstream tunnel
+            const ctrlPort = this.config.relayControlPort || 18989;
+            const ctrlBypass = `127.0.0.1:${ctrlPort}`;
+            if (!resolvedBypass.includes(ctrlBypass)) {
+                resolvedBypass = [ctrlBypass, ...resolvedBypass];
+            }
 
             const proxyConfig = {
                 mode: 'fixed_servers',

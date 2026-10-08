@@ -1052,6 +1052,150 @@ async function hydrateSettings() {
             });
         }
 
+        // [R6.9G.10.3 Blocker 4] Owner Egress Node Management Handlers
+        const relayNodeCountEl = document.getElementById('priv-relay-node-count');
+        const relayToggleAddBtn = document.getElementById('priv-relay-toggle-add-btn');
+        const relayAddForm = document.getElementById('priv-relay-add-form');
+        const relayNodeListContainer = document.getElementById('priv-relay-node-list-container');
+        const nodeTypeEl = document.getElementById('priv-node-type');
+        const nodeNameEl = document.getElementById('priv-node-name');
+        const nodeHostEl = document.getElementById('priv-node-host');
+        const nodePortEl = document.getElementById('priv-node-port');
+        const nodeUserEl = document.getElementById('priv-node-user');
+        const nodePassEl = document.getElementById('priv-node-pass');
+        const nodeSaveBtn = document.getElementById('priv-node-save-btn');
+        const nodeCancelBtn = document.getElementById('priv-node-cancel-btn');
+        const nodeStatusMsgEl = document.getElementById('priv-node-status-msg');
+
+        const showNodeStatus = (msg, isError = false) => {
+            if (!nodeStatusMsgEl) return;
+            nodeStatusMsgEl.style.display = 'block';
+            nodeStatusMsgEl.textContent = msg;
+            nodeStatusMsgEl.style.color = isError ? '#f87171' : '#34d399';
+            nodeStatusMsgEl.style.background = isError ? 'rgba(239, 68, 68, 0.2)' : 'rgba(16, 185, 129, 0.2)';
+            nodeStatusMsgEl.style.border = isError ? '1px solid #ef4444' : '1px solid #10b981';
+        };
+
+        const renderRelayNodesList = (nodes = [], activeNodeId = null) => {
+            if (!relayNodeListContainer) return;
+            if (relayNodeCountEl) relayNodeCountEl.textContent = String(nodes.length);
+            if (!nodes || nodes.length === 0) {
+                relayNodeListContainer.innerHTML = '<div style="color: #64748b; text-align: center; padding: 6px;">No egress nodes configured. Add an HTTP/HTTPS proxy below to enable Relay privacy.</div>';
+                return;
+            }
+            let html = '';
+            nodes.forEach(n => {
+                const isActive = n.id === activeNodeId;
+                const activeBadge = isActive ? '<span style="color: #34d399; font-weight: 700; margin-right: 4px;">● ACTIVE</span>' : '';
+                html += `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 3px 4px; border-bottom: 1px solid #1e293b; background: ${isActive ? 'rgba(56, 189, 248, 0.1)' : 'transparent'};">
+                    <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px;">
+                        ${activeBadge}
+                        <span style="color: #38bdf8; font-weight: 600;">${n.id}</span>
+                        <span style="color: #94a3b8; font-size: 9px;">[${n.type}] ${n.host}:${n.port}</span>
+                    </div>
+                    <button type="button" class="priv-remove-node-btn" data-node-id="${n.id}" style="background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; color: #f87171; border-radius: 3px; font-size: 8px; padding: 1px 4px; cursor: pointer;">Delete</button>
+                </div>`;
+            });
+            relayNodeListContainer.innerHTML = html;
+
+            relayNodeListContainer.querySelectorAll('.priv-remove-node-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const idToRemove = e.target.getAttribute('data-node-id');
+                    if (!idToRemove) return;
+                    chrome.runtime.sendMessage({ action: 'REMOVE_PRIVACY_RELAY_NODE', nodeId: idToRemove }, (res) => {
+                        if (res && res.success) {
+                            addLog(`🗑️ [Privacy Relay] Removed egress node ${idToRemove}`, 'info');
+                            refreshRelayNodes();
+                            refreshRelayStatus();
+                        }
+                    });
+                });
+            });
+        };
+
+        const refreshRelayNodes = () => {
+            chrome.runtime.sendMessage({ action: 'GET_PRIVACY_RELAY_NODES' }, (res) => {
+                if (res && res.success && res.result && res.result.nodes) {
+                    renderRelayNodesList(res.result.nodes, res.result.activeNodeId);
+                }
+            });
+        };
+        refreshRelayNodes();
+
+        if (relayToggleAddBtn && relayAddForm) {
+            relayToggleAddBtn.addEventListener('click', () => {
+                const isHidden = relayAddForm.style.display === 'none';
+                relayAddForm.style.display = isHidden ? 'block' : 'none';
+                relayToggleAddBtn.textContent = isHidden ? '✖ Close Form' : '➕ Add Egress Node';
+                if (nodeStatusMsgEl) nodeStatusMsgEl.style.display = 'none';
+            });
+        }
+
+        if (nodeCancelBtn && relayAddForm) {
+            nodeCancelBtn.addEventListener('click', () => {
+                relayAddForm.style.display = 'none';
+                if (relayToggleAddBtn) relayToggleAddBtn.textContent = '➕ Add Egress Node';
+                if (nodeStatusMsgEl) nodeStatusMsgEl.style.display = 'none';
+            });
+        }
+
+        if (nodeSaveBtn) {
+            nodeSaveBtn.addEventListener('click', () => {
+                const pType = nodeTypeEl ? nodeTypeEl.value : 'HTTP_PROXY';
+                if (pType === 'SOCKS5') {
+                    showNodeStatus('❌ SOCKS5 is not supported for Relay upstreams. Please select HTTP_PROXY or HTTPS_PROXY, or use Mode B (Managed SOCKS5 Proxy).', true);
+                    return;
+                }
+                const pHost = nodeHostEl ? nodeHostEl.value.trim() : '';
+                if (!pHost) {
+                    showNodeStatus('❌ Please enter a proxy host.', true);
+                    return;
+                }
+                const pPort = nodePortEl ? parseInt(nodePortEl.value.trim(), 10) : 0;
+                if (!pPort || pPort < 1 || pPort > 65535) {
+                    showNodeStatus('❌ Please enter a valid port (1-65535).', true);
+                    return;
+                }
+
+                const nodePayload = {
+                    type: pType,
+                    host: pHost,
+                    port: pPort,
+                    name: nodeNameEl ? nodeNameEl.value.trim() : '',
+                    username: nodeUserEl ? nodeUserEl.value.trim() : '',
+                    password: nodePassEl ? nodePassEl.value : '',
+                    enabled: true
+                };
+
+                nodeSaveBtn.disabled = true;
+                nodeSaveBtn.textContent = '⏳ Saving...';
+
+                chrome.runtime.sendMessage({ action: 'ADD_PRIVACY_RELAY_NODE', nodeData: nodePayload }, (res) => {
+                    nodeSaveBtn.disabled = false;
+                    nodeSaveBtn.textContent = '💾 Save Node to Pool';
+                    if (res && res.success && res.result && res.result.success) {
+                        showNodeStatus('✓ Node saved with Windows DPAPI encryption!', false);
+                        if (nodeHostEl) nodeHostEl.value = '';
+                        if (nodePortEl) nodePortEl.value = '';
+                        if (nodeUserEl) nodeUserEl.value = '';
+                        if (nodePassEl) nodePassEl.value = '';
+                        if (nodeNameEl) nodeNameEl.value = '';
+                        addLog(`🌐 [Privacy Relay] Added node ${res.result.node.id} (${res.result.node.type} ${res.result.node.host}:${res.result.node.port})`, 'success');
+                        refreshRelayNodes();
+                        refreshRelayStatus();
+                        setTimeout(() => {
+                            if (relayAddForm) relayAddForm.style.display = 'none';
+                            if (relayToggleAddBtn) relayToggleAddBtn.textContent = '➕ Add Egress Node';
+                        }, 1200);
+                    } else {
+                        const errMsg = (res && res.result && res.result.reason) || (res && res.error) || 'Failed to save node';
+                        showNodeStatus(`❌ ${errMsg}`, true);
+                    }
+                });
+            });
+        }
+
         const isVpnConfirmed = !!privCfg.systemVpnConfirmed;
         updateVpnStatusBadge(isVpnConfirmed);
 

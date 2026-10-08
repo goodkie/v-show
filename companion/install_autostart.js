@@ -52,9 +52,11 @@ function uninstallAutostart() {
 if (require.main === module) {
   const arg = process.argv[2];
   if (arg === '--uninstall') {
-    uninstallAutostart();
+    const ok = uninstallAutostart();
+    if (!ok) process.exit(1);
   } else {
-    installAutostart();
+    const ok = installAutostart();
+    if (!ok) process.exit(1);
   }
 }
 

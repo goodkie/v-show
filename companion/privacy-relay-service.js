@@ -151,7 +151,7 @@ class PrivacyRelayService {
     try {
       const sanitizedNodes = (this.pool.nodes || []).map(n => winsec.sanitizeNodeForSave(n));
       const toSave = {
-        version: this.pool.version || '1.0.2',
+        version: this.pool.version || '1.0.3',
         rotationMode: this.pool.rotationMode || 'HEALTH_FAILOVER',
         healthCheckTimeoutMs: this.pool.healthCheckTimeoutMs || 5000,
         healthTtlMs: this.pool.healthTtlMs || 60000,
@@ -159,8 +159,10 @@ class PrivacyRelayService {
         nodes: sanitizedNodes
       };
       fs.writeFileSync(this.configFile, JSON.stringify(toSave, null, 2), 'utf8');
+      return true;
     } catch (e) {
       this.log(`Failed to save config: ${e.message}`);
+      throw e;
     }
   }
 
@@ -200,6 +202,15 @@ class PrivacyRelayService {
    */
   async verifyNodeEgress(node, timeoutMs = 5000, overrideCanaryUrl = null) {
     if (!node) return { verified: false, reason: 'NO_NODE' };
+
+    // Explicit protocol boundary check (Issue #6 R6.9G.10.3 Blocker 4):
+    // Relay pool supports HTTP_PROXY and HTTPS_PROXY upstream only. SOCKS5 is not supported in Relay mode.
+    if (node.type !== 'HTTP_PROXY' && node.type !== 'HTTPS_PROXY') {
+      return {
+        verified: false,
+        reason: `UNSUPPORTED_RELAY_NODE_TYPE: Node type "${node.type}" is not supported for Privacy Relay pool. Privacy Relay supports HTTP_PROXY and HTTPS_PROXY only. For direct SOCKS5 proxies, use Direct Managed Proxy mode.`
+      };
+    }
 
     const creds = PrivacyRelayService.resolveNodeCredentials(node);
     const targetUrl = overrideCanaryUrl || this.canaryUrl || (this.pool && this.pool.canaryUrl) || 'https://cloudflare.com/cdn-cgi/trace';
@@ -683,6 +694,148 @@ class PrivacyRelayService {
         return;
       }
 
+      // GET /nodes (Authenticated) - Retrieve sanitized egress pool nodes
+      if (pathname === '/nodes' && req.method === 'GET') {
+        const sanitized = (this.pool.nodes || []).map(n => ({
+          id: n.id,
+          type: n.type,
+          host: n.host,
+          port: n.port,
+          username: n.username || '',
+          enabled: n.enabled !== false && n.active !== false,
+          region: n.region || '',
+          lastHealth: n.lastHealth || 'UNKNOWN'
+        }));
+        res.writeHead(200);
+        res.end(JSON.stringify({
+          success: true,
+          nodes: sanitized,
+          activeNodeId: this.getActiveNode()?.id || null
+        }));
+        return;
+      }
+
+      // POST /add-node (Authenticated) - Add/Update egress node with DPAPI secret storage
+      if (pathname === '/add-node' && req.method === 'POST') {
+        let body = '';
+        req.on('data', chunk => body += chunk);
+        req.on('end', () => {
+          try {
+            const data = JSON.parse(body);
+            // Protocol validation:
+            if (!data.type || (data.type !== 'HTTP_PROXY' && data.type !== 'HTTPS_PROXY')) {
+              if (data.type === 'SOCKS5') {
+                res.writeHead(400);
+                res.end(JSON.stringify({
+                  success: false,
+                  reason: 'UNSUPPORTED_RELAY_NODE_TYPE: Privacy Relay pool supports HTTP_PROXY and HTTPS_PROXY only. For direct SOCKS5 proxies, use Direct Managed Proxy mode.'
+                }));
+                return;
+              }
+              res.writeHead(400);
+              res.end(JSON.stringify({
+                success: false,
+                reason: 'INVALID_NODE_TYPE: Must be HTTP_PROXY or HTTPS_PROXY.'
+              }));
+              return;
+            }
+            if (!data.host || typeof data.host !== 'string' || data.host.trim().length === 0) {
+              res.writeHead(400);
+              res.end(JSON.stringify({ success: false, reason: 'INVALID_HOST' }));
+              return;
+            }
+            const port = parseInt(data.port, 10);
+            if (isNaN(port) || port < 1 || port > 65535) {
+              res.writeHead(400);
+              res.end(JSON.stringify({ success: false, reason: 'INVALID_PORT' }));
+              return;
+            }
+
+            const newNode = {
+              id: (data.id || data.name || `egress-node-${Date.now()}`).trim(),
+              type: data.type,
+              host: data.host.trim(),
+              port: port,
+              username: (data.username || '').trim(),
+              password: (data.password || '').trim(),
+              credentialRef: (data.credentialRef || '').trim(),
+              active: data.enabled !== false,
+              region: (data.region || '').trim()
+            };
+
+            // Sanitize and securely encrypt credentials via winsec (fails closed if DPAPI fails)
+            const sanitized = winsec.sanitizeNodeForSave(newNode);
+
+            if (!this.pool.nodes) this.pool.nodes = [];
+            const existingIdx = this.pool.nodes.findIndex(n => n.id === sanitized.id);
+            if (existingIdx !== -1) {
+              this.pool.nodes[existingIdx] = sanitized;
+            } else {
+              this.pool.nodes.push(sanitized);
+            }
+
+            if (data.persist !== false) {
+              this.saveConfig();
+            }
+
+            this.log(`[PRIVACY_RELAY] Added/Updated egress node: id=${sanitized.id} type=${sanitized.type} host=${sanitized.host}:${sanitized.port}`);
+
+            res.writeHead(200);
+            res.end(JSON.stringify({
+              success: true,
+              node: {
+                id: sanitized.id,
+                type: sanitized.type,
+                host: sanitized.host,
+                port: sanitized.port,
+                username: sanitized.username,
+                region: sanitized.region,
+                enabled: sanitized.active !== false
+              },
+              totalNodes: this.pool.nodes.length
+            }));
+          } catch (e) {
+            res.writeHead(500);
+            res.end(JSON.stringify({ success: false, reason: e.message }));
+          }
+        });
+        return;
+      }
+
+      // POST /remove-node (Authenticated) - Remove egress node from pool
+      if (pathname === '/remove-node' && req.method === 'POST') {
+        let body = '';
+        req.on('data', chunk => body += chunk);
+        req.on('end', () => {
+          try {
+            const data = JSON.parse(body);
+            if (!data.id) {
+              res.writeHead(400);
+              res.end(JSON.stringify({ success: false, reason: 'MISSING_NODE_ID' }));
+              return;
+            }
+            const beforeCount = (this.pool.nodes || []).length;
+            this.pool.nodes = (this.pool.nodes || []).filter(n => n.id !== data.id);
+            if (this.activeNodeIndex >= this.pool.nodes.length) {
+              this.activeNodeIndex = 0;
+            }
+            if (this.pool.nodes.length === 0) {
+              this.relayReady = false;
+            }
+            if (data.persist !== false) {
+              this.saveConfig();
+            }
+            this.log(`[PRIVACY_RELAY] Removed egress node: id=${data.id} remaining=${this.pool.nodes.length}`);
+            res.writeHead(200);
+            res.end(JSON.stringify({ success: true, count: this.pool.nodes.length, removed: beforeCount !== this.pool.nodes.length }));
+          } catch (e) {
+            res.writeHead(500);
+            res.end(JSON.stringify({ success: false, reason: e.message }));
+          }
+        });
+        return;
+      }
+
       // POST /set-pool (Authenticated)
       if (pathname === '/set-pool' && req.method === 'POST') {
         let body = '';
@@ -691,6 +844,18 @@ class PrivacyRelayService {
           try {
             const data = JSON.parse(body);
             if (Array.isArray(data.nodes) && data.nodes.length > 0) {
+              // Explicit check for unsupported node types
+              for (const n of data.nodes) {
+                if (n.type === 'SOCKS5') {
+                  res.writeHead(400);
+                  res.end(JSON.stringify({
+                    success: false,
+                    reason: 'UNSUPPORTED_RELAY_NODE_TYPE: Privacy Relay pool supports HTTP_PROXY and HTTPS_PROXY only. For direct SOCKS5 proxies, use Direct Managed Proxy mode.'
+                  }));
+                  return;
+                }
+              }
+
               this.pool.nodes = data.nodes;
               if (data.canaryUrl) {
                 this.pool.canaryUrl = data.canaryUrl;

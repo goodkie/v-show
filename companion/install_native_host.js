@@ -148,14 +148,16 @@ function unregisterFromRegistry() {
 if (require.main === module) {
   const args = process.argv.slice(2);
   if (args.includes('--uninstall')) {
-    unregisterFromRegistry();
+    const ok = unregisterFromRegistry();
+    if (!ok) process.exit(1);
   } else {
     let customExtIds = [];
     const extIdIdx = args.indexOf('--ext-id');
     if (extIdIdx !== -1 && args[extIdIdx + 1]) {
       customExtIds = [args[extIdIdx + 1].trim()];
     }
-    registerInRegistry(__dirname, customExtIds);
+    const ok = registerInRegistry(__dirname, customExtIds);
+    if (!ok) process.exit(1);
   }
 }
 
