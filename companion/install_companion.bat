@@ -19,8 +19,8 @@ if %ERRORLEVEL% NEQ 0 (
 echo [2/3] Registering Native Messaging Host for Chrome and Edge...
 node install_native_host.js %*
 if %ERRORLEVEL% NEQ 0 (
-    echo [FATAL] Step 2 Failed: Native Messaging Host registration failed!
-    echo [ROLLBACK] Reverting Step 1 (uninstalling autostart)...
+    echo [FATAL] Step 2 Failed: Native Messaging Host registration failed.
+    echo [ROLLBACK] Reverting Step 1: uninstalling autostart...
     node install_autostart.js --uninstall
     echo [ABORT] Installation failed and rolled back. Companion Relay was NOT started.
     exit /b 1

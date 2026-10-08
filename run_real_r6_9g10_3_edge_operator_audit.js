@@ -25,6 +25,7 @@ const tls = require('tls');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
+const crypto = require('crypto');
 const { spawn, execSync } = require('child_process');
 const WebSocket = globalThis.WebSocket;
 
@@ -423,8 +424,8 @@ async function runRealEdgeAudit() {
     const secretPass = 'SuperSecretProxyPassword!@#456';
     const encrypted = winsec.encrypt(secretPass);
     rec(`[GATE_C_DPAPI_ENCRYPT] Output="${encrypted.substring(0, 32)}..."`);
-    if (!encrypted.startsWith('dpapi:') && !encrypted.startsWith('aesgcm:')) {
-      throw new Error(`Gate C Blocker 10: Encryption did not produce secure ciphertext ref: ${encrypted}`);
+    if (!encrypted.startsWith('dpapi:')) {
+      throw new Error(`Gate C Blocker 10: Encryption did not produce DPAPI ciphertext ref: ${encrypted}`);
     }
 
     const decrypted = winsec.decrypt(encrypted);
@@ -817,108 +818,8 @@ async function runRealEdgeAudit() {
     rec('✅ GATE H: LIVE CAMPAIGN A->B HEALTH_FAILOVER & FAIL-CLOSED VERIFIED PASS');
 
     // -------------------------------------------------------------
-    // GATE I: Complete Lifecycle & Clean Uninstallation (Blocker 11)
-    // -------------------------------------------------------------
-    rec('\n>>> GATE I: FULL LIFECYCLE CLEAN INSTALLATION & UNINSTALL (BLOCKER 11) <<<');
-    
-    // Terminate Edge browser process
-    if (edgeProcess) {
-      edgeProcess.kill();
-      edgeProcess = null;
-      await new Promise(r => setTimeout(r, 800));
-    }
-
-    // 1. Setup clean non-dev temporary installation path
-    const cleanInstallDir = path.join(os.tmpdir(), 'xpider_clean_install_' + Date.now());
-    fs.mkdirSync(cleanInstallDir, { recursive: true });
-
-    // Copy companion folder to clean install directory
-    fs.cpSync(path.resolve('companion'), cleanInstallDir, { recursive: true });
-    rec(`[GATE_I_CLEAN_DIR] ${cleanInstallDir}`);
-
-    // 2. Run install_autostart.js in clean directory
-    const autostartModule = require(path.join(cleanInstallDir, 'install_autostart.js'));
-    const autostartInstalled = autostartModule.installAutostart();
-    rec(`[GATE_I_AUTOSTART_INSTALL] success=${autostartInstalled}`);
-
-    const startupDir = path.join(
-      process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming'),
-      'Microsoft', 'Windows', 'Start Menu', 'Programs', 'Startup'
-    );
-    const startupTarget = path.join(startupDir, 'XPIDER_Privacy_Relay.vbs');
-    const startupExists = fs.existsSync(startupTarget);
-    rec(`[GATE_I_STARTUP_VERIFY] file="${startupTarget}" exists=${startupExists}`);
-    if (!startupExists) {
-      throw new Error('Gate I Blocker 11: Windows Startup VBS was not created by installer');
-    }
-
-    // 3. Run install_native_host.js in clean directory
-    const nativeHostModule = require(path.join(cleanInstallDir, 'install_native_host.js'));
-    const nativeRegistered = nativeHostModule.registerInRegistry(cleanInstallDir, [stableExtId]);
-    rec(`[GATE_I_REGISTRY_INSTALL] success=${nativeRegistered}`);
-
-    // Verify registry entry exists in HKCU
-    let regQueryOut = '';
-    try {
-      regQueryOut = execSync('reg query "HKCU\\Software\\Microsoft\\Edge\\NativeMessagingHosts\\com.xpider.privacy_relay"', { encoding: 'utf8' });
-    } catch (_) {}
-    rec(`[GATE_I_REGISTRY_VERIFY] keyExists=${regQueryOut.includes('com.xpider.privacy_relay')}`);
-    if (!regQueryOut.includes('com.xpider.privacy_relay')) {
-      throw new Error('Gate I Blocker 11: Native host registry key not found in HKCU');
-    }
-
-    // 4. Test Native Host execution from clean directory
-    const nativeHostBat = path.join(cleanInstallDir, 'native_host', 'xpider_native_host.bat');
-    rec(`[GATE_I_NATIVE_BAT_EXISTS] ${fs.existsSync(nativeHostBat)}`);
-
-    // 5. Run full uninstall
-    rec('\n[GATE_I_UNINSTALL] Executing full uninstallation...');
-    const autostartUninstalled = autostartModule.uninstallAutostart();
-    const nativeUnregistered = nativeHostModule.unregisterFromRegistry();
-    rec(`[GATE_I_UNINSTALL_STEPS] autostartRemoved=${autostartUninstalled} nativeUnregistered=${nativeUnregistered}`);
-
-    const startupExistsAfter = fs.existsSync(startupTarget);
-    rec(`[GATE_I_STARTUP_REMOVED] exists=${startupExistsAfter} (Expected false)`);
-    if (startupExistsAfter) {
-      throw new Error('Gate I Blocker 11: Startup VBS not removed after uninstallation');
-    }
-
-    let regQueryAfter = '';
-    try {
-      regQueryAfter = execSync('reg query "HKCU\\Software\\Microsoft\\Edge\\NativeMessagingHosts\\com.xpider.privacy_relay"', { encoding: 'utf8' });
-    } catch (_) {}
-    rec(`[GATE_I_REGISTRY_REMOVED] exists=${regQueryAfter.includes('com.xpider.privacy_relay')} (Expected false)`);
-    if (regQueryAfter.includes('com.xpider.privacy_relay')) {
-      throw new Error('Gate I Blocker 11: Registry keys still exist after uninstallation');
-    }
-
-    // Verify production config remains completely pristine after all audit activities
-    const finalProdConfig = JSON.parse(fs.readFileSync('companion/egress_pool_config.json', 'utf8'));
-    rec(`[GATE_I_PROD_CONFIG_PRISTINE] nodesCount=${finalProdConfig.nodes.length} canary=${finalProdConfig.canaryUrl}`);
-    if (finalProdConfig.nodes.length !== 0 || finalProdConfig.canaryUrl.includes('127.0.0.1')) {
-      throw new Error(`Gate I Blocker 1: Production config was modified during audit! nodes=${finalProdConfig.nodes.length} canary=${finalProdConfig.canaryUrl}`);
-    }
-
-    
-    // Gate I Blocker 3: Transactional Installer with Fail-Closed Rollback
-    rec('[GATE_I_INSTALLER_CHECKS] Verifying errorlevel checks and rollback in install_companion.bat...');
-    const batText = fs.readFileSync('companion/install_companion.bat', 'utf8');
-    if (!batText.includes('%ERRORLEVEL% NEQ 0') || !batText.includes('install_autostart.js --uninstall')) {
-      throw new Error('Gate I Blocker 3: install_companion.bat missing errorlevel or rollback logic');
-    }
-    rec('[GATE_I_NATIVE_HOST_NEG_TEST] Testing invalid extension ID exit code...');
-    let nativeNegExitedNonZero = false;
-    try {
-      execSync('node companion/install_native_host.js --ext-id invalid-id', { stdio: 'pipe' });
-    } catch (err) {
-      nativeNegExitedNonZero = (err.status !== 0);
-    }
-    rec(`[GATE_I_NATIVE_HOST_NEG_TEST] ExitedNonZero=${nativeNegExitedNonZero}`);
-    if (!nativeNegExitedNonZero) throw new Error('Gate I Blocker 3: install_native_host.js did not exit non-zero on failure');
-
-    rec('✅ GATE I: FULL LIFECYCLE CLEAN INSTALL & UNINSTALL VERIFIED PASS');
-
     // GATE J: Owner Egress Node Management & Protocol Boundary (Blocker 4)
+    // -------------------------------------------------------------
     rec('\n>>> GATE J: OWNER EGRESS NODE MANAGEMENT & SOCKS5 PROTOCOL BOUNDARY <<<');
 
     const fetchWithAuth = async (url, authToken, opts = {}) => {
@@ -988,6 +889,196 @@ async function runRealEdgeAudit() {
     rec(`[GATE_J_REMOVE_NODE] Status=${removeDemoRes.status} Remaining=${removeDemoRes.data?.count}`);
 
     rec('✅ GATE J: OWNER EGRESS NODE MANAGEMENT & SOCKS5 PROTOCOL BOUNDARY VERIFIED PASS');
+
+    // -------------------------------------------------------------
+    // GATE I: Exact Delivered Bundle Transactional Installer & Rollback (R6.9G.10.3.1 Blocker 3)
+    // -------------------------------------------------------------
+    rec('\n>>> GATE I: EXACT DELIVERED BUNDLE TRANSACTIONAL INSTALLER & ROLLBACK ACCEPTANCE <<<');
+    
+    // Terminate Edge browser process and previous test relay instances before clean install test
+    if (edgeProcess) {
+      edgeProcess.kill();
+      edgeProcess = null;
+    }
+    if (companionService) {
+      try { await companionService.stop(); } catch (_) {}
+      companionService = null;
+    }
+    try {
+      execSync('powershell -NoProfile -Command "Get-NetTCPConnection -LocalPort 18989 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }"', { stdio: 'ignore' });
+      execSync('powershell -NoProfile -Command "Get-CimInstance Win32_Process -Filter \\"CommandLine LIKE \'%privacy-relay-service.js%\'\\" -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }"', { stdio: 'ignore' });
+    } catch (_) {}
+    await new Promise(r => setTimeout(r, 1000));
+
+    // 1. Verify and extract exact delivered release ZIP
+    const exactBundleZipPath = path.resolve('XPIDER_R6.9G.10.3_OWNER_DIAGNOSTIC_TEST_ONLY.zip');
+    if (!fs.existsSync(exactBundleZipPath)) {
+      throw new Error(`Gate I Blocker 3: Unified diagnostic ZIP not found: ${exactBundleZipPath}`);
+    }
+    const zipBuffer = fs.readFileSync(exactBundleZipPath);
+    const releaseZipSha = crypto.createHash('sha256').update(zipBuffer).digest('hex');
+    rec(`[GATE_I_RELEASE_ZIP] Path=${exactBundleZipPath} Size=${zipBuffer.length} bytes SHA256=${releaseZipSha}`);
+
+    const extractedDir = path.join(os.tmpdir(), 'xpider_extracted_bundle_' + Date.now());
+    fs.mkdirSync(extractedDir, { recursive: true });
+    execSync(`powershell -NoProfile -Command "Expand-Archive -Path '${exactBundleZipPath}' -DestinationPath '${extractedDir}' -Force"`);
+    rec(`[GATE_I_ZIP_EXTRACTED] TargetDir=${extractedDir}`);
+
+    const extractedCompanionDir = path.join(extractedDir, 'companion');
+    const installBatPath = path.join(extractedCompanionDir, 'install_companion.bat');
+    const uninstallBatPath = path.join(extractedCompanionDir, 'uninstall_companion.bat');
+    if (!fs.existsSync(installBatPath) || !fs.existsSync(uninstallBatPath)) {
+      throw new Error('Gate I Blocker 3: install_companion.bat or uninstall_companion.bat missing from extracted release ZIP');
+    }
+
+    const startupDir = path.join(
+      process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming'),
+      'Microsoft', 'Windows', 'Start Menu', 'Programs', 'Startup'
+    );
+    const startupTarget = path.join(startupDir, 'XPIDER_Privacy_Relay.vbs');
+
+    // 2. Negative Rollback Test: Run real install_companion.bat from extracted bundle under forced failure
+    rec('\n[GATE_I_NEGATIVE_TEST] Executing real install_companion.bat with forced invalid extension ID failure...');
+    let negExitCode = 0;
+    let negOutput = '';
+    try {
+      negOutput = execSync(`cmd.exe /c "call "${installBatPath}" --ext-id invalid-ext-id-fail-test"`, {
+        cwd: extractedCompanionDir,
+        encoding: 'utf8',
+        stdio: 'pipe'
+      });
+    } catch (err) {
+      negExitCode = err.status || 1;
+      negOutput = (err.stdout || '') + (err.stderr || '');
+    }
+    rec(`[GATE_I_NEG_RESULT] ExitCode=${negExitCode} (Expected != 0) OutputIncludedRollback=${negOutput.includes('[ROLLBACK]')}`);
+    if (negExitCode === 0) {
+      throw new Error(`Gate I Blocker 3: install_companion.bat with forced failure exited 0! Output:\n${negOutput}`);
+    }
+    if (!negOutput.includes('[ROLLBACK]')) {
+      throw new Error(`Gate I Blocker 3: install_companion.bat did not output [ROLLBACK]! Output:\n${negOutput}`);
+    }
+    if (negOutput.includes('Installation Complete')) {
+      throw new Error('Gate I Blocker 3: install_companion.bat output false-positive "Installation Complete" on failure');
+    }
+
+    // Assert Startup entry was rolled back
+    const startupExistsAfterNeg = fs.existsSync(startupTarget);
+    rec(`[GATE_I_NEG_STARTUP_ROLLED_BACK] Exists=${startupExistsAfterNeg} (Expected false)`);
+    if (startupExistsAfterNeg) {
+      throw new Error('Gate I Blocker 3: Startup VBS was NOT rolled back after installation failure!');
+    }
+
+    // Assert no relay process is running from that failed install
+    let relayProcRunningNeg = false;
+    try {
+      const chk = await fetch('http://127.0.0.1:18989/status', { cache: 'no-store' });
+      relayProcRunningNeg = (chk.status === 200 || chk.status === 401);
+    } catch (_) {
+      relayProcRunningNeg = false;
+    }
+    rec(`[GATE_I_NEG_NO_RELAY_PROC] RelayRunning=${relayProcRunningNeg} (Expected false)`);
+    if (relayProcRunningNeg) {
+      throw new Error('Gate I Blocker 3: Privacy relay process was started despite installation failure!');
+    }
+
+    // 3. Positive Test: Run real install_companion.bat from extracted bundle
+    rec('\n[GATE_I_POSITIVE_TEST] Executing real install_companion.bat from extracted bundle...');
+    let posExitCode = 0;
+    let posOutput = '';
+    try {
+      posOutput = execSync(`cmd.exe /c "call "${installBatPath}""`, {
+        cwd: extractedCompanionDir,
+        encoding: 'utf8'
+      });
+    } catch (err) {
+      posExitCode = err.status || 1;
+      posOutput = (err.stdout || '') + (err.stderr || '');
+    }
+    rec(`[GATE_I_POS_RESULT] ExitCode=${posExitCode} (Expected 0) SuccessReported=${posOutput.includes('Installation Complete')}`);
+    if (posExitCode !== 0 || !posOutput.includes('Installation Complete')) {
+      throw new Error(`Gate I Blocker 3: install_companion.bat positive install failed! ExitCode=${posExitCode}\nOutput:\n${posOutput}`);
+    }
+
+    // Assert Startup VBS was created
+    const startupExistsPos = fs.existsSync(startupTarget);
+    rec(`[GATE_I_POS_STARTUP_VERIFY] file="${startupTarget}" exists=${startupExistsPos}`);
+    if (!startupExistsPos) {
+      throw new Error('Gate I Blocker 3: Windows Startup VBS was not created by real install_companion.bat');
+    }
+
+    // Assert Edge registry key exists in HKCU
+    let edgeRegQuery = '';
+    try {
+      edgeRegQuery = execSync('reg query "HKCU\\Software\\Microsoft\\Edge\\NativeMessagingHosts\\com.xpider.privacy_relay"', { encoding: 'utf8' });
+    } catch (_) {}
+    rec(`[GATE_I_POS_REGISTRY_VERIFY] EdgeKeyExists=${edgeRegQuery.includes('com.xpider.privacy_relay')}`);
+    if (!edgeRegQuery.includes('com.xpider.privacy_relay')) {
+      throw new Error('Gate I Blocker 3: Edge Native Messaging host registry key not found after real install');
+    }
+
+    // Assert real background relay service is running and responsive
+    let relayOnline = false;
+    for (let i = 0; i < 20; i++) {
+      await new Promise(r => setTimeout(r, 400));
+      try {
+        const res = await fetch('http://127.0.0.1:18989/status');
+        if (res.status === 401 || res.status === 200) {
+          relayOnline = true;
+          break;
+        }
+      } catch (_) {}
+    }
+    rec(`[GATE_I_POS_RELAY_ONLINE] Online=${relayOnline}`);
+    if (!relayOnline) {
+      throw new Error('Gate I Blocker 3: Background Privacy Relay service failed to start or is not listening on 18989');
+    }
+
+    // 4. Uninstall Test: Run real uninstall_companion.bat from extracted bundle
+    rec('\n[GATE_I_UNINSTALL] Executing real uninstall_companion.bat --silent from extracted bundle...');
+    let uninstExitCode = 0;
+    let uninstOutput = '';
+    try {
+      uninstOutput = execSync(`cmd.exe /c "call "${uninstallBatPath}" --silent"`, {
+        cwd: extractedCompanionDir,
+        encoding: 'utf8'
+      });
+    } catch (err) {
+      uninstExitCode = err.status || 1;
+      uninstOutput = (err.stdout || '') + (err.stderr || '');
+    }
+    rec(`[GATE_I_UNINSTALL_RESULT] ExitCode=${uninstExitCode} CompletedReported=${uninstOutput.includes('Uninstallation Complete')}`);
+
+    // Assert Startup VBS removed
+    const startupExistsAfterUninst = fs.existsSync(startupTarget);
+    rec(`[GATE_I_STARTUP_REMOVED] Exists=${startupExistsAfterUninst} (Expected false)`);
+    if (startupExistsAfterUninst) {
+      throw new Error('Gate I Blocker 3: Startup VBS not removed after real uninstall_companion.bat');
+    }
+
+    // Assert HKCU registry key removed
+    let regQueryAfterUninst = '';
+    try {
+      regQueryAfterUninst = execSync('reg query "HKCU\\Software\\Microsoft\\Edge\\NativeMessagingHosts\\com.xpider.privacy_relay"', { encoding: 'utf8' });
+    } catch (_) {}
+    rec(`[GATE_I_REGISTRY_REMOVED] Exists=${regQueryAfterUninst.includes('com.xpider.privacy_relay')} (Expected false)`);
+    if (regQueryAfterUninst.includes('com.xpider.privacy_relay')) {
+      throw new Error('Gate I Blocker 3: Registry keys still exist after real uninstall_companion.bat');
+    }
+
+    // Verify production config remains completely pristine
+    const finalProdConfig = JSON.parse(fs.readFileSync('companion/egress_pool_config.json', 'utf8'));
+    rec(`[GATE_I_PROD_CONFIG_PRISTINE] nodesCount=${finalProdConfig.nodes.length} canary=${finalProdConfig.canaryUrl}`);
+    if (finalProdConfig.nodes.length !== 0 || finalProdConfig.canaryUrl.includes('127.0.0.1')) {
+      throw new Error(`Gate I Blocker 1: Production config was modified during audit! nodes=${finalProdConfig.nodes.length} canary=${finalProdConfig.canaryUrl}`);
+    }
+
+    // Cleanup extracted temp directory
+    try {
+      fs.rmSync(extractedDir, { recursive: true, force: true });
+    } catch (_) {}
+
+    rec('✅ GATE I: EXACT-BUNDLE BATCH INSTALLATION & ROLLBACK VERIFIED PASS');
 
 
     rec('\n========================================================================');

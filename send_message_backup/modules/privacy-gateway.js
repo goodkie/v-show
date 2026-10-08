@@ -695,14 +695,40 @@
                 const statusRes = await this.queryRelayStatus();
                 if (!statusRes.success || !statusRes.status || !statusRes.status.relayReady || statusRes.status.health === 'EXPIRED') {
                     if (this.config.healthFailover) {
-                        console.log('[PRIVACY_RELAY] Current egress failed or expired, executing HEALTH_FAILOVER...');
+                        console.log('[PRIVACY_RELAY] Current egress failed or expired, settling and executing HEALTH_FAILOVER...');
+                        // 1. Check if companion is currently completing automatic failover
+                        for (let retry = 0; retry < 10; retry++) {
+                            await new Promise(r => setTimeout(r, 100));
+                            const readyStatus = await this.queryRelayStatus();
+                            if (readyStatus.success && readyStatus.status && readyStatus.status.relayReady && readyStatus.status.selectedEgressId !== this.config.selectedEgressId) {
+                                const canaryRes = await this.probeProxyCanary(this.config.canaryUrl || null, 3000);
+                                if (canaryRes.success) {
+                                    this.ephemeralEgressFingerprint = readyStatus.status.egressFingerprint;
+                                    this.config.selectedEgressId = readyStatus.status.selectedEgressId;
+                                    return {
+                                        pass: true,
+                                        recovered: true,
+                                        newEgressId: readyStatus.status.selectedEgressId,
+                                        fingerprint: this.ephemeralEgressFingerprint
+                                    };
+                                }
+                            }
+                        }
+
+                        // 2. Explicitly request HEALTH_FAILOVER rotation
                         const rotRes = await this.rotateRelayEgress('HEALTH_FAILOVER', this.config.canaryUrl || null);
                         if (rotRes.success) {
-                            const canaryRes = await this.probeProxyCanary(this.config.canaryUrl || null, 3000);
-                            if (canaryRes.success) {
-                                this.ephemeralEgressFingerprint = rotRes.egressFingerprint;
-                                this.config.selectedEgressId = rotRes.selectedEgressId;
-                                return { pass: true, recovered: true, newEgressId: rotRes.selectedEgressId };
+                            for (let retry = 0; retry < 10; retry++) {
+                                await new Promise(r => setTimeout(r, 100));
+                                const readyStatus = await this.queryRelayStatus();
+                                if (readyStatus.success && readyStatus.status && readyStatus.status.relayReady) {
+                                    const canaryRes = await this.probeProxyCanary(this.config.canaryUrl || null, 3000);
+                                    if (canaryRes.success) {
+                                        this.ephemeralEgressFingerprint = readyStatus.status.egressFingerprint || rotRes.egressFingerprint;
+                                        this.config.selectedEgressId = readyStatus.status.selectedEgressId || rotRes.selectedEgressId;
+                                        return { pass: true, recovered: true, newEgressId: this.config.selectedEgressId };
+                                    }
+                                }
                             }
                         }
                     }
@@ -716,16 +742,19 @@
                 const currentFp = statusRes.status.egressFingerprint;
                 if (this.config.healthFailover && this.config.selectedEgressId && currentEgressId && currentEgressId !== this.config.selectedEgressId) {
                     console.log(`[PRIVACY_RELAY] Asynchronous failover detected: ${this.config.selectedEgressId} -> ${currentEgressId}`);
-                    const canaryRes = await this.probeProxyCanary(this.config.canaryUrl || null, 3000);
-                    if (canaryRes.success) {
-                        this.ephemeralEgressFingerprint = currentFp;
-                        this.config.selectedEgressId = currentEgressId;
-                        return {
-                            pass: true,
-                            recovered: true,
-                            newEgressId: currentEgressId,
-                            fingerprint: currentFp
-                        };
+                    for (let retry = 0; retry < 10; retry++) {
+                        const canaryRes = await this.probeProxyCanary(this.config.canaryUrl || null, 3000);
+                        if (canaryRes.success) {
+                            this.ephemeralEgressFingerprint = currentFp;
+                            this.config.selectedEgressId = currentEgressId;
+                            return {
+                                pass: true,
+                                recovered: true,
+                                newEgressId: currentEgressId,
+                                fingerprint: currentFp
+                            };
+                        }
+                        await new Promise(r => setTimeout(r, 100));
                     }
                 }
 
@@ -748,34 +777,43 @@
                     if (this.config.healthFailover) {
                         console.log('[PRIVACY_RELAY] Canary probe failed. Checking companion failover status or rotating...');
                         // 1. Check if companion already completed automatic failover during probe failure
-                        let postFailStatus = await this.queryRelayStatus();
-                        if (postFailStatus.success && postFailStatus.status && postFailStatus.status.relayReady && postFailStatus.status.selectedEgressId !== this.config.selectedEgressId) {
-                            const retryCanary = await this.probeProxyCanary(this.config.canaryUrl || null, 3000);
-                            if (retryCanary.success) {
-                                this.ephemeralEgressFingerprint = postFailStatus.status.egressFingerprint;
-                                this.config.selectedEgressId = postFailStatus.status.selectedEgressId;
-                                return {
-                                    pass: true,
-                                    recovered: true,
-                                    newEgressId: postFailStatus.status.selectedEgressId,
-                                    fingerprint: this.ephemeralEgressFingerprint
-                                };
+                        for (let retry = 0; retry < 10; retry++) {
+                            await new Promise(r => setTimeout(r, 100));
+                            let postFailStatus = await this.queryRelayStatus();
+                            if (postFailStatus.success && postFailStatus.status && postFailStatus.status.relayReady && postFailStatus.status.selectedEgressId !== this.config.selectedEgressId) {
+                                const retryCanary = await this.probeProxyCanary(this.config.canaryUrl || null, 3000);
+                                if (retryCanary.success) {
+                                    this.ephemeralEgressFingerprint = postFailStatus.status.egressFingerprint;
+                                    this.config.selectedEgressId = postFailStatus.status.selectedEgressId;
+                                    return {
+                                        pass: true,
+                                        recovered: true,
+                                        newEgressId: postFailStatus.status.selectedEgressId,
+                                        fingerprint: this.ephemeralEgressFingerprint
+                                    };
+                                }
                             }
                         }
 
                         // 2. If companion hasn't rotated yet, explicitly request HEALTH_FAILOVER rotation
                         const rotRes = await this.rotateRelayEgress('HEALTH_FAILOVER', this.config.canaryUrl || null);
                         if (rotRes.success) {
-                            const retryCanary = await this.probeProxyCanary(this.config.canaryUrl || null, 3000);
-                            if (retryCanary.success) {
-                                this.ephemeralEgressFingerprint = rotRes.egressFingerprint;
-                                this.config.selectedEgressId = rotRes.selectedEgressId;
-                                return {
-                                    pass: true,
-                                    recovered: true,
-                                    newEgressId: rotRes.selectedEgressId,
-                                    fingerprint: rotRes.egressFingerprint
-                                };
+                            for (let retry = 0; retry < 10; retry++) {
+                                await new Promise(r => setTimeout(r, 100));
+                                const readyStatus = await this.queryRelayStatus();
+                                if (readyStatus.success && readyStatus.status && readyStatus.status.relayReady) {
+                                    const retryCanary = await this.probeProxyCanary(this.config.canaryUrl || null, 3000);
+                                    if (retryCanary.success) {
+                                        this.ephemeralEgressFingerprint = readyStatus.status.egressFingerprint || rotRes.egressFingerprint;
+                                        this.config.selectedEgressId = readyStatus.status.selectedEgressId || rotRes.selectedEgressId;
+                                        return {
+                                            pass: true,
+                                            recovered: true,
+                                            newEgressId: this.config.selectedEgressId,
+                                            fingerprint: this.ephemeralEgressFingerprint
+                                        };
+                                    }
+                                }
                             }
                         }
                     }

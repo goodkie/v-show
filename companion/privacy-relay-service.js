@@ -350,6 +350,16 @@ class PrivacyRelayService {
       return { success: false, reason: 'NO_NODES_IN_POOL' };
     }
     const prev = this.getActiveNode();
+    if (reason === 'HEALTH_FAILOVER' && this.relayReady && this.isNodeHealthValid(prev)) {
+      return {
+        success: true,
+        selectedEgressId: prev.id,
+        egressFingerprint: prev.observedFingerprint,
+        rotationCount: this.rotationCount,
+        transport: prev.type,
+        health: 'HEALTHY'
+      };
+    }
     const total = this.pool.nodes.length;
     let candidateIndex = (this.activeNodeIndex + 1) % total;
     let attempts = 0;
