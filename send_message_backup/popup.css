@@ -532,9 +532,19 @@ h1 {
     transition: all 0.2s;
 }
 
-.primary-btn:hover {
+.primary-btn:hover:not(:disabled) {
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(59, 130, 246, 0.6);
+}
+
+.primary-btn:disabled,
+#start-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed !important;
+    transform: none !important;
+    box-shadow: none !important;
+    animation: none !important;
+    filter: grayscale(0.6);
 }
 
 .pulse {

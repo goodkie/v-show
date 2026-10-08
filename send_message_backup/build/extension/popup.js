@@ -723,6 +723,10 @@ function bindCriticalControls() {
         if (!startBtn.dataset.bound) {
             startBtn.dataset.bound = 'true';
             startBtn.addEventListener('click', () => {
+                if (startBtn.hasAttribute('data-build-locked')) {
+                    console.warn('[START_CLICK_IGNORED] button has data-build-locked attribute');
+                    return;
+                }
                 startCampaign().catch(err => {
                     console.error('[START_EXCEPTION]', err);
                 });
@@ -994,6 +998,7 @@ async function hydrateSettings() {
             chrome.runtime.sendMessage({ action: 'QUERY_PRIVACY_RELAY_STATUS' }, (res) => {
                 if (res && res.success && res.result && res.result.status) {
                     updateRelayStatusUI(res.result.status);
+                    onBackgroundMessageSuccess();
                 } else if (relayDaemonBadge) {
                     const isUnauth = res && res.result && res.result.reason === 'HTTP_401';
                     relayDaemonBadge.textContent = isUnauth ? 'UNAUTH' : 'OFFLINE';
@@ -1215,6 +1220,7 @@ async function hydrateSettings() {
                     const isPreflightReady = !!(res && res.success && res.preflight && res.preflight.ready === true);
                     if (isPreflightReady) {
                         updateVpnStatusBadge(true);
+                        onBackgroundMessageSuccess();
                         const curData = await chrome.storage.local.get(['xpider_privacy_config']);
                         const curCfg = curData.xpider_privacy_config || {};
                         curCfg.transportMode = 'SYSTEM_VPN';
@@ -1372,6 +1378,7 @@ async function hydrateCampaignState() {
             }
 
             if (response && response.success) {
+                onBackgroundMessageSuccess();
                 totalTargets = response.totalTargets || 0;
                 successCount = response.successCount || 0;
                 failedCount = response.failedCount || 0;
@@ -2682,80 +2689,149 @@ function bindEvents() {
     try { initBuildProvenanceBadge(); } catch (_) {}
 }
 
-async function verifyBuildHandshake() {
+// ── [R6.9G.10.3.3] Centralized Start Gate & Build Handshake Control Plane ──
+var currentStartGateState = 'READY';
+
+function setStartGateState(state, reason = '') {
+    currentStartGateState = state;
+    try { (typeof window !== 'undefined' ? window : globalThis).currentStartGateState = state; } catch (_) {}
+    if (typeof document === 'undefined') return;
+    const mismatchBanner = document.getElementById('build-mismatch-banner');
+    const startBtn = document.getElementById('start-btn');
+
+    if (state === 'READY') {
+        if (mismatchBanner) mismatchBanner.style.display = 'none';
+        if (startBtn) {
+            startBtn.removeAttribute('data-build-locked');
+            if (typeof campaignActive === 'undefined' || !campaignActive) {
+                startBtn.disabled = false;
+                startBtn.title = '';
+                if (startBtn.textContent === '⏳ Starting...' || startBtn.textContent === '⏳ Waking...') {
+                    startBtn.textContent = '🚀 START SENDING';
+                }
+            }
+        }
+    } else if (state === 'LOCKED_MISMATCH') {
+        // Confirmed build mismatch: strictly FAIL-CLOSED
+        if (mismatchBanner) {
+            mismatchBanner.style.display = 'block';
+            mismatchBanner.title = reason;
+        }
+        if (startBtn) {
+            startBtn.setAttribute('data-build-locked', 'true');
+            startBtn.disabled = true;
+            startBtn.title = `⚠️ ${reason}`;
+        }
+    } else if (state === 'TRANSIENT_WAIT') {
+        // Background temporarily unreachable during boot:
+        // NEVER permanently lock start button!
+        if (mismatchBanner) mismatchBanner.style.display = 'none';
+        if (startBtn) {
+            startBtn.removeAttribute('data-build-locked');
+            if (typeof campaignActive === 'undefined' || !campaignActive) {
+                startBtn.disabled = false;
+                startBtn.title = reason ? `Background waking: ${reason}` : '';
+            }
+        }
+    } else if (state === 'CAMPAIGN_ACTIVE') {
+        if (startBtn) {
+            startBtn.classList.add('hidden');
+        }
+    }
+}
+
+function onBackgroundMessageSuccess() {
+    if (currentStartGateState !== 'LOCKED_MISMATCH') {
+        setStartGateState('READY');
+    }
+}
+
+function _applyHandshakeUiState(isPassedOrState, errorReason = '') {
+    if (typeof isPassedOrState === 'string') {
+        setStartGateState(isPassedOrState, errorReason);
+    } else if (isPassedOrState) {
+        setStartGateState('READY');
+    } else {
+        // Legacy boolean false: determine whether confirmed mismatch or transient
+        if (errorReason && (errorReason.includes('mismatch') || errorReason.includes('MISMATCH'))) {
+            setStartGateState('LOCKED_MISMATCH', errorReason);
+        } else {
+            setStartGateState('TRANSIENT_WAIT', errorReason);
+        }
+    }
+}
+
+async function verifyBuildHandshake(options = {}) {
+    const { retryOnTransient = false, maxRetries = 2, retryDelayMs = 250 } = options;
     const localInfo = (typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO)
         ? BuildProvenance.BUILD_INFO
         : {
-            implementationHead: '48c23c7f8b0e81099d45aeb584e65d8713db7b37',
-            headShort: '48c23c7',
-            buildId: 'R6.9F.1-20261005-RUNTIME-SUBMIT-COUNTERS',
+            implementationHead: '78d13d2663e6437531fcddc286c3fb4cb59bcbfd',
+            headShort: '78d13d26',
+            buildId: 'R6.9G.10.3.3-20261008-START-CONTROL-PLANE-RECOVERY',
             manifestVersion: 3
         };
 
     const localHead = localInfo.implementationHead;
     const localBuild = localInfo.buildId;
 
-    return new Promise((resolve) => {
-        if (typeof chrome === 'undefined' || !chrome.runtime || !chrome.runtime.sendMessage) {
-            console.warn('[BUILD_HANDSHAKE] chrome.runtime.sendMessage not available');
-            resolve({ ok: true, localInfo, bgInfo: localInfo });
-            return;
-        }
-
-        chrome.runtime.sendMessage({ action: 'GET_BUILD_PROVENANCE' }, (res) => {
-            const lastErr = chrome.runtime.lastError;
-            if (lastErr || !res || !res.success) {
-                const err = (lastErr && lastErr.message) || (res && res.error) || 'Failed to contact background';
-                console.error(`[BUILD_HANDSHAKE] localHead=${localHead} backgroundHead=UNREACHABLE result=REJECT error=${err}`);
-                _applyHandshakeUiState(false, `Background service worker unreachable: ${err}`);
-                resolve({ ok: false, error: err, localInfo, bgInfo: null });
+    const performSingleCheck = () => {
+        return new Promise((resolve) => {
+            if (typeof chrome === 'undefined' || !chrome.runtime || !chrome.runtime.sendMessage) {
+                console.warn('[BUILD_HANDSHAKE] chrome.runtime.sendMessage not available');
+                resolve({ ok: true, state: 'MATCH', localInfo, bgInfo: localInfo });
                 return;
             }
 
-            const bgInfo = res.provenance || res;
-            const bgHead = bgInfo.implementationHead;
-            const bgBuild = bgInfo.buildId;
+            chrome.runtime.sendMessage({ action: 'GET_BUILD_PROVENANCE' }, (res) => {
+                const lastErr = chrome.runtime.lastError;
+                if (lastErr || !res || !res.success) {
+                    const err = (lastErr && lastErr.message) || (res && res.error) || 'Failed to contact background';
+                    console.warn(`[BUILD_HANDSHAKE] localHead=${localHead} backgroundHead=UNREACHABLE result=TRANSIENT error=${err}`);
+                    resolve({ ok: false, state: 'UNREACHABLE_TRANSIENT', error: err, localInfo, bgInfo: null });
+                    return;
+                }
 
-            const localManifest = localInfo.manifestVersion || 3;
-            const bgManifest = bgInfo.manifestVersion;
-            const isMatch = (localHead === bgHead && localBuild === bgBuild && Number(localManifest) === Number(bgManifest));
-            if (isMatch) {
-                console.log(`[BUILD_HANDSHAKE] localHead=${localHead} backgroundHead=${bgHead} result=PASS`);
-                _applyHandshakeUiState(true);
-                resolve({ ok: true, localInfo, bgInfo });
-            } else {
-                console.error(`[BUILD_HANDSHAKE] localHead=${localHead} backgroundHead=${bgHead} result=REJECT mismatch`);
-                const reason = `Runtime build mismatch! Popup is ${localBuild} [${localHead ? localHead.substring(0, 7) : ''}], but background worker is ${bgBuild} [${bgHead ? bgHead.substring(0, 7) : ''}]. Please reload the extension.`;
-                _applyHandshakeUiState(false, reason);
-                resolve({ ok: false, error: reason, localInfo, bgInfo });
-            }
+                const bgInfo = res.provenance || res;
+                const bgHead = bgInfo.implementationHead;
+                const bgBuild = bgInfo.buildId;
+
+                const localManifest = localInfo.manifestVersion || 3;
+                const bgManifest = bgInfo.manifestVersion;
+                const isMatch = (localHead === bgHead && localBuild === bgBuild && Number(localManifest) === Number(bgManifest));
+                if (isMatch) {
+                    console.log(`[BUILD_HANDSHAKE] localHead=${localHead} backgroundHead=${bgHead} result=PASS`);
+                    resolve({ ok: true, state: 'MATCH', localInfo, bgInfo });
+                } else {
+                    console.error(`[BUILD_HANDSHAKE] localHead=${localHead} backgroundHead=${bgHead} result=REJECT mismatch`);
+                    const reason = `Runtime build mismatch! Popup is ${localBuild} [${localHead ? localHead.substring(0, 7) : ''}], but background worker is ${bgBuild} [${bgHead ? bgHead.substring(0, 7) : ''}]. Please reload the extension.`;
+                    resolve({ ok: false, state: 'CONFIRMED_MISMATCH', error: reason, localInfo, bgInfo });
+                }
+            });
         });
-    });
-}
+    };
 
-function _applyHandshakeUiState(isPassed, errorReason = '') {
-    if (typeof document === 'undefined') return;
-    const mismatchBanner = document.getElementById('build-mismatch-banner');
-    const startBtn = document.getElementById('start-btn');
+    let result = await performSingleCheck();
 
-    if (isPassed) {
-        if (mismatchBanner) mismatchBanner.style.display = 'none';
-        if (startBtn && startBtn.hasAttribute('data-build-locked')) {
-            startBtn.removeAttribute('data-build-locked');
-            startBtn.disabled = false;
-            startBtn.title = '';
-        }
-    } else {
-        if (mismatchBanner) {
-            mismatchBanner.style.display = 'block';
-            mismatchBanner.title = errorReason;
-        }
-        if (startBtn) {
-            startBtn.setAttribute('data-build-locked', 'true');
-            startBtn.disabled = true;
-            startBtn.title = `⚠️ ${errorReason}`;
+    if (result.state === 'UNREACHABLE_TRANSIENT' && retryOnTransient) {
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            await new Promise(r => setTimeout(r, retryDelayMs * attempt));
+            result = await performSingleCheck();
+            if (result.state !== 'UNREACHABLE_TRANSIENT') break;
         }
     }
+
+    // Apply UI state through centralized gate
+    if (result.state === 'MATCH') {
+        setStartGateState('READY');
+    } else if (result.state === 'CONFIRMED_MISMATCH') {
+        setStartGateState('LOCKED_MISMATCH', result.error);
+    } else {
+        // UNREACHABLE_TRANSIENT: DO NOT lock start button!
+        setStartGateState('TRANSIENT_WAIT', result.error);
+    }
+
+    return result;
 }
 
 function getBadgeTextFromBuildInfo(info) {
@@ -2779,7 +2855,9 @@ function initBuildProvenanceBadge() {
         badge.style.color = '#eab308';
         badge.style.borderColor = 'rgba(234, 179, 8, 0.5)';
     }
-    verifyBuildHandshake().then((res) => {
+
+    // [R6.9G.10.3.3] Non-fatal, bounded retry on transient boot race
+    verifyBuildHandshake({ retryOnTransient: true, maxRetries: 3, retryDelayMs: 250 }).then((res) => {
         if (badge && res && res.bgInfo) {
             const b = res.bgInfo;
             badge.textContent = getBadgeTextFromBuildInfo(b);
@@ -2789,7 +2867,7 @@ function initBuildProvenanceBadge() {
             badge.style.borderColor = 'rgba(234, 179, 8, 0.5)';
         }
     }).catch((err) => {
-        console.error('[BUILD_HANDSHAKE_INIT_ERR]', err);
+        console.warn('[BUILD_HANDSHAKE_INIT_WARN]', err);
     });
 }
 
@@ -3230,13 +3308,43 @@ async function addSingleUrl() {
 }
 
 async function startCampaign() {
+    // ── [R6.9G.10.3.3] Immediate Start Diagnostics & State Guards ──
     console.log('[START_UI] click');
+    const queueLen = (campaignQueue && Array.isArray(campaignQueue)) ? campaignQueue.length : 0;
+    const msgInput = document.getElementById('tpl-message');
+    const hasMsg = !!(msgInput && msgInput.value && msgInput.value.trim().length > 0);
+    const startBtn = document.getElementById('start-btn');
+    const buildLockState = startBtn ? (startBtn.getAttribute('data-build-locked') || 'unlocked') : 'unknown';
+    console.log(`[START_GUARD] queue=${queueLen} messagePresent=${hasMsg} buildLock=${buildLockState}`);
+    addLog(`[START_UI] click (queue=${queueLen}, msgPresent=${hasMsg}, buildLock=${buildLockState})`, 'info');
+
+    function _restoreStartButton() {
+        campaignActive = false;
+        const btn = document.getElementById('start-btn');
+        if (btn) {
+            btn.classList.remove('hidden');
+            btn.disabled = false;
+            btn.removeAttribute('data-build-locked');
+            btn.textContent = "🚀 START SENDING";
+            btn.title = "";
+        }
+        const multiActions = document.getElementById('multi-actions');
+        if (multiActions) multiActions.classList.add('hidden');
+    }
+
     const manualInput = document.getElementById('manual-url-input');
     if (manualInput && manualInput.value.trim() && campaignQueue.length === 0) {
         await addSingleUrl();
     }
 
-    if (campaignQueue.length === 0) return alert("Please upload a file or enter a URL first.");
+    // Explicit diagnostic on empty queue (No silent returns!)
+    if (campaignQueue.length === 0) {
+        console.warn('[START_BLOCKED_EMPTY_QUEUE]');
+        addLog('⚠️ [START_BLOCKED_EMPTY_QUEUE] Target URL queue is empty. Load URLs before starting.', 'warn');
+        addDiagnosticLog('[Engine][GUARD_FAIL] reason=START_BLOCKED_EMPTY_QUEUE', 'WARN');
+        _restoreStartButton();
+        return alert("Please upload a file or enter a URL first.");
+    }
 
     currentTpl = {
         firstName: document.getElementById('tpl-first-name')?.value || '',
@@ -3248,7 +3356,14 @@ async function startCampaign() {
         message: document.getElementById('tpl-message')?.value || ''
     };
 
-    if (!currentTpl.message) return alert("Please enter a message body.");
+    // Explicit diagnostic on empty message (No silent returns!)
+    if (!currentTpl.message || !currentTpl.message.trim()) {
+        console.warn('[START_BLOCKED_EMPTY_MESSAGE]');
+        addLog('⚠️ [START_BLOCKED_EMPTY_MESSAGE] Message body is empty. Enter message content before starting.', 'warn');
+        addDiagnosticLog('[Engine][GUARD_FAIL] reason=START_BLOCKED_EMPTY_MESSAGE', 'WARN');
+        _restoreStartButton();
+        return alert("Please enter a message body.");
+    }
 
     // [Phase 2B Component D / R1] Authoritatively bind template metadata to execution state & payload
     try {
@@ -3257,10 +3372,26 @@ async function startCampaign() {
         currentTpl.version = currentTpl.templateVersion;
     } catch (_) {}
 
+    // [R6.9G.10.3.3 Fail-Closed Build Handshake with Self-Healing Recovery]
+    const handshake = await verifyBuildHandshake({ retryOnTransient: true, maxRetries: 2, retryDelayMs: 250 });
+    if (!handshake.ok) {
+        if (handshake.state === 'CONFIRMED_MISMATCH') {
+            console.error(`[START_BLOCKED] RUNTIME_BUILD_MISMATCH reason=${handshake.error}`);
+            addLog(`❌ [START_BLOCKED] Runtime build mismatch: ${handshake.error}`, 'error');
+            alert(`❌ CANNOT START CAMPAIGN: RUNTIME BUILD MISMATCH\n\n${handshake.error || 'Extension components are running different builds.'}\n\nPlease reload the extension.`);
+            _restoreStartButton();
+            return Promise.reject(new Error(handshake.error || 'RUNTIME_BUILD_MISMATCH'));
+        } else {
+            console.error(`[START_BLOCKED] BACKGROUND_UNREACHABLE error=${handshake.error}`);
+            addLog(`⚠️ [START_BLOCKED] BACKGROUND_UNREACHABLE: Background service worker did not respond (${handshake.error}). Please click Start again to wake it.`, 'warn');
+            _restoreStartButton();
+            return Promise.reject(new Error(`BACKGROUND_UNREACHABLE: ${handshake.error}`));
+        }
+    }
+
     // UI state: STARTING (Do NOT set campaignActive=true yet!)
     campaignPaused = false;
     successCount = 0;
-    const startBtn = document.getElementById('start-btn');
     if (startBtn) {
         startBtn.disabled = true;
         startBtn.textContent = "⏳ Starting...";
@@ -3316,25 +3447,6 @@ async function startCampaign() {
     addLog("[Engine] START_CAMPAIGN request sent", "info");
     const sendTime = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
     addDiagnosticLog(`[Engine][TX] action=START_CAMPAIGN queue=${startPayload.queue.length} templateId=${startPayload.templateId} v=${startPayload.templateVersion} skipAttempted=${skipPreviouslyAttempted}`);
-
-    function _restoreStartButton() {
-        campaignActive = false;
-        if (startBtn) {
-            startBtn.classList.remove('hidden');
-            startBtn.disabled = false;
-            startBtn.textContent = "🚀 START SENDING";
-        }
-        const multiActions = document.getElementById('multi-actions');
-        if (multiActions) multiActions.classList.add('hidden');
-    }
-
-    // [R6.9F Fail-Closed Build Handshake]
-    const handshake = await verifyBuildHandshake();
-    if (!handshake.ok) {
-        alert(`❌ CANNOT START CAMPAIGN: RUNTIME BUILD MISMATCH\n\n${handshake.error || 'Extension components are running different builds.'}\n\nPlease reload the extension.`);
-        _restoreStartButton();
-        return Promise.reject(new Error(handshake.error || 'RUNTIME_BUILD_MISMATCH'));
-    }
 
     return new Promise((resolve, reject) => {
         if (typeof chrome === 'undefined' || !chrome.runtime || !chrome.runtime.sendMessage) {
