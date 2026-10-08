@@ -15,12 +15,13 @@
 
     const BUILD_INFO = {
         branch: 'upgrade/phase-0-1',
-        // [R6.9G.10.1] implementationHead = functional commit containing Authenticated Relay,
-        //              Verified Egress, Real Native Auto-Recovery, and Fail-Closed Engine
-        implementationHead: '36fc8d5cafa505314aa8ca1733cbb373ad3d7bf8',
-        implementationHeadShort: '36fc8d5c',
-        head: '36fc8d5cafa505314aa8ca1733cbb373ad3d7bf8',
-        headShort: '36fc8d5c',
+        // [R6.9G.10.2] implementationHead = functional commit containing Clean Production Relay Config,
+        //              Exact-Origin CORS, Memory-Only Token Isolation, Health TTL, Verified Failover,
+        //              HTTPS Proxy TLS Transport, Windows DPAPI Secret Storage, and Unified Diagnostic Package
+        implementationHead: 'd346fecf7f9b75eebe69ea1e16d769e6546bf8a2',
+        implementationHeadShort: 'd346fecf',
+        head: 'd346fecf7f9b75eebe69ea1e16d769e6546bf8a2',
+        headShort: 'd346fecf',
         rollbackBase: 'dc0740a0c69e2f7fa96b6989841acf0831b3619e',
         manifestVersion: 3,
         buildId: 'R6.9G.10.2-20261008-PROD-RELAY-EXACT-CORS-FAILOVER-WINSEC',

@@ -12,7 +12,7 @@
 - **Implementation HEAD:** `36fc8d5cafa505314aa8ca1733cbb373ad3d7bf8`
 - **Visible Badge in UI:** `TEST-ONLY R6.9G.10.1 [36fc8d5c]`
 - **Unpacked Extension Path:** `send_message_backup/build/extension`
-- **ZIP Package:** `XPIDER_R6.9G.10.1_OWNER_DIAGNOSTIC_TEST_ONLY.zip`
+- **ZIP Package:** `XPIDER_R6.9G.10.2_OWNER_DIAGNOSTIC_TEST_ONLY.zip`
 - **ZIP SHA-256:** `PENDING`
 - **File Manifest:** See [PACKAGE_INVENTORY_SHA256.txt](file:///E:/vivpr\ai\extension-form-sender\PACKAGE_INVENTORY_SHA256.txt)
 
