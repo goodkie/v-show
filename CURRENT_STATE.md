@@ -4,18 +4,18 @@
 - Protocol: OCA-DEV-1.4
 - Project ID: xpider-autoform-sender-pro
 - Workspace: E:\vivpr\ai\extension-form-sender
-- Authority: goodkie/v-show Issue #6 (Directive #6064594150 / Receipt #6065278577)
+- Authority: goodkie/v-show Issue #6 (Directive #6065381739)
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-08.11
+- State Rev: 2026-10-08.12
 
 ## Current Gate
-- Formal Gate: R6.9G.10.3.5.1 TRUE SUBMIT PRIVACY BARRIER + END-TO-END CALL-SITE ACCEPTANCE.
-- Engineering Acceptance Status: **PASS** (Independently verified in Unit/VM 15/15 tests and Real Microsoft Edge Browser Operator Audit Gates 1-7 with fail-closed submit barrier, real protected operation halt on proxy drop, live child-frame solver execution, exact captchaEpoch matching, and 5 actual execution call-sites verified).
-- Release Tag: `v6.9g.10.3-audit.5`
-- Release URL: `https://github.com/goodkie/v-show/releases/tag/v6.9g.10.3-audit.5`
-- Owner Action: **HOLD** (Awaiting ChatGPT gate audit of R6.9G.10.3.5.1).
+- Formal Gate: R6.9G.10.3.5.2 EXACT-RELEASE CHILD-FRAME + ACTUAL CALL-SITE ACCEPTANCE.
+- Engineering Acceptance Status: **PASS** (Independently verified in Real Microsoft Edge Browser Operator Audit Gates 1-7 bound to exact release ZIP bytes, delivered child-frame solver execution, 1-request latch suppression, and 5 actual execution call-sites verified fail-closed).
+- Release Tag: `v6.9g.10.3-audit.5.1`
+- Release URL: `https://github.com/goodkie/v-show/releases/tag/v6.9g.10.3-audit.5.1`
+- Owner Action: **HOLD** (Awaiting ChatGPT gate audit of R6.9G.10.3.5.2).
 - Bulk Campaign: **HOLD** (Strict invariant until Owner smoke PASS and release evaluation).
-- Autonomous Engineering Loop: **RECEIPT POSTED (#6065278577) — CHATGPT AUDITS TO GATE**.
+- Autonomous Engineering Loop: **RECEIPT POSTED — CHATGPT AUDITS TO GATE**.
 - Rollback Anchor: `dc0740a0c69e2f7fa96b6989841acf0831b3619e` (immutable baseline rollback anchor).
 - Previous Functional Restore Point: `4ef7def9689cdf4c508651e2f6bee6b320e7ab8e` (`4ef7def9`)
 - Next Action: ChatGPT audits receipt to gate decision.
@@ -40,6 +40,8 @@
   15. `b8d1fab8190bb991c69d67c44a3ab1c1a5b766dd` (R6.9G.10.3.5.1 Functional HEAD)
   16. `273bb0ca1ba64b7fe3a41091ce56c8667e38dd8d` (R6.9G.10.3.5.1 Provenance HEAD)
   17. `6b325d26fd753df4f51194979551e99e61d8de97` (R6.9G.10.3.5.1 Release Metadata HEAD / Release Tag `v6.9g.10.3-audit.5`)
+  18. `04d1f5ccce2e2dca3d8441c1804ca0b95dfff62b` (R6.9G.10.3.5.1 State Capsule HEAD — Corrected Full SHA)
+  19. `b71bf03e4a752689e9eab9efddf526407084dfe8` (R6.9G.10.3.5.1 Receipt Cursor Record HEAD)
 
 ## Build Provenance
 - Build ID: `R6.9G.10.3.5.1-20261008-SUBMIT-PRIVACY-BARRIER-END-TO-END`
@@ -50,5 +52,5 @@
 - Visible UI Badge: `TEST-ONLY R6.9G.10.3.5.1 [b8d1fab8]`
 - Unified Diagnostic Archive: `XPIDER_R6.9G.10.3_OWNER_DIAGNOSTIC_TEST_ONLY.zip`
 - Package SHA-256: `06a5adfa522362ff3f64fbc25a436b9ada933ccacf90aa79ed1f369e6b378cac`
-- Evidence Log: `evidence_r6_9g10_3_5_1_real_runtime_traces.log`
-- Evidence Log SHA-256: `04084472f1e003454096c3f6ef4e60ac5310102b488140af77f6dddb367ffd70`
+- Evidence Log: `evidence_r6_9g10_3_5_2_real_runtime_traces.log`
+- Evidence Log SHA-256: `fa3db33f515e4a76163d39eb7d6482fb002b2e808d78a511cbee59c97e4fd638`
