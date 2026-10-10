@@ -1196,8 +1196,13 @@ async function hydrateSettings(overrideV2Store = null) {
                     relayRotateBtn.disabled = false;
                     relayRotateBtn.textContent = '🔄 Rotate Egress Now';
                     if (res && res.success && res.result) {
-                        updateRelayStatusUI(res.result);
+                        refreshRelayStatus();
+                        refreshRelayNodes();
                         addLog(`🔄 [Privacy Relay] Egress rotated to: ${res.result.selectedEgressId} (FP: ${res.result.egressFingerprint})`, 'info');
+                    } else {
+                        refreshRelayStatus();
+                        const err = (res && res.error) || (res && res.result && res.result.reason) || 'Rotation failed';
+                        addLog(`⚠️ [Privacy Relay] Rotation failed: ${err}`, 'warn');
                     }
                 });
             });
@@ -1215,6 +1220,20 @@ async function hydrateSettings(overrideV2Store = null) {
                 }
 
                 chrome.runtime.sendMessage({ action: 'START_PRIVACY_RELAY_NATIVE' }, (res) => {
+                    if (res && !res.success) {
+                        const errMsg = (res && res.error) ? res.error : 'NATIVE HOST NOT INSTALLED';
+                        if (relayDaemonBadge) {
+                            relayDaemonBadge.textContent = 'NO HOST';
+                            relayDaemonBadge.style.color = '#f87171';
+                            relayDaemonBadge.style.background = 'rgba(239, 68, 68, 0.2)';
+                            relayDaemonBadge.style.border = '1px solid #ef4444';
+                        }
+                        relayRepairBtn.disabled = false;
+                        relayRepairBtn.textContent = '⚡ Start / Repair';
+                        addLog(`⚠️ [Privacy Relay] Native host launch failed: ${errMsg}. Run install_companion.bat first.`, 'warn');
+                        return;
+                    }
+
                     if (res && res.success) {
                         addLog('⚡ [Privacy Relay] Native launch command dispatched. Polling daemon...', 'info');
                     }

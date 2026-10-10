@@ -45,11 +45,12 @@ const LOG_FILE = path.join(__dirname, 'privacy_relay.log');
 const TOKEN_FILE = path.join(__dirname, '.control_token');
 
 const DEFAULT_POOL = {
-  version: '1.0.2',
+  version: '1.0.3',
   rotationMode: 'HEALTH_FAILOVER', // FIXED | MANUAL | CAMPAIGN_BOUNDARY | HEALTH_FAILOVER
   healthCheckTimeoutMs: 5000,
   healthTtlMs: 60000,
   canaryUrl: 'https://cloudflare.com/cdn-cgi/trace',
+  selectedEgressId: null,
   nodes: []
 };
 
@@ -77,6 +78,14 @@ class PrivacyRelayService {
         n.observedFingerprint = null;
         n.lastVerifiedAt = 0;
       });
+    }
+
+    // Restore sticky active node index from persisted selectedEgressId (Issue #6 R6.9G.10.3.6.2.1 Blocker 4)
+    if (this.pool.selectedEgressId && Array.isArray(this.pool.nodes)) {
+      const savedIdx = this.pool.nodes.findIndex(n => n.id === this.pool.selectedEgressId);
+      if (savedIdx !== -1) {
+        this.activeNodeIndex = savedIdx;
+      }
     }
 
     this.controlServer = null;
@@ -150,12 +159,14 @@ class PrivacyRelayService {
   saveConfig() {
     try {
       const sanitizedNodes = (this.pool.nodes || []).map(n => winsec.sanitizeNodeForSave(n));
+      const active = this.getActiveNode();
       const toSave = {
         version: this.pool.version || '1.0.3',
         rotationMode: this.pool.rotationMode || 'HEALTH_FAILOVER',
         healthCheckTimeoutMs: this.pool.healthCheckTimeoutMs || 5000,
         healthTtlMs: this.pool.healthTtlMs || 60000,
         canaryUrl: this.pool.canaryUrl || 'https://cloudflare.com/cdn-cgi/trace',
+        selectedEgressId: active ? active.id : (this.pool.selectedEgressId || null),
         nodes: sanitizedNodes
       };
       fs.writeFileSync(this.configFile, JSON.stringify(toSave, null, 2), 'utf8');
@@ -373,6 +384,8 @@ class PrivacyRelayService {
           this.activeNodeIndex = candidateIndex;
           this.rotationCount++;
           this.relayReady = true;
+          this.pool.selectedEgressId = candidate.id;
+          try { this.saveConfig(); } catch (_) {}
           this.log(`[PRIVACY_RELAY_ROTATE] fromId=${prev ? prev.id : 'none'} toId=${candidate.id} reason=${reason} verified=true fingerprint=${candidate.observedFingerprint}`);
           return {
             success: true,
@@ -423,6 +436,8 @@ class PrivacyRelayService {
     this.activeNodeIndex = idx;
     this.rotationCount++;
     this.relayReady = true;
+    this.pool.selectedEgressId = candidate.id;
+    try { this.saveConfig(); } catch (_) {}
     this.log(`[PRIVACY_RELAY_ROTATE] fromId=${prev ? prev.id : 'none'} toId=${candidate.id} reason=EXPLICIT_SELECTION verified=true fingerprint=${candidate.observedFingerprint}`);
     return {
       success: true,
@@ -835,6 +850,8 @@ class PrivacyRelayService {
             if (this.activeNodeIndex >= this.pool.nodes.length) {
               this.activeNodeIndex = 0;
             }
+            const activeAfter = this.getActiveNode();
+            this.pool.selectedEgressId = activeAfter ? activeAfter.id : null;
             if (this.pool.nodes.length === 0) {
               this.relayReady = false;
             }
@@ -1075,13 +1092,26 @@ class PrivacyRelayService {
     this.startControlPlane();
     this.startProxyEngine();
 
-    // Verify initial active node before marking relay ready
+    // Verify initial sticky active node before marking relay ready (Fail-Closed)
     const active = this.getActiveNode();
     if (active && active.active !== false) {
+      this.log(`[PRIVACY_RELAY_STARTUP_PROBE] Checking sticky active node=${active.id}`);
       const vRes = await this.verifyNodeEgress(active, this.pool.healthCheckTimeoutMs || 5000);
       if (vRes.verified) {
         this.relayReady = true;
+        this.log(`[PRIVACY_RELAY_STARTUP_PROBE] Sticky active node=${active.id} verified HEALTHY`);
+      } else {
+        this.relayReady = false;
+        this.log(`[PRIVACY_RELAY_STARTUP_PROBE] Sticky active node=${active.id} probe FAILED: ${vRes.reason}`);
+        if (this.pool.rotationMode === 'FIXED' || this.pool.rotationMode === 'MANUAL') {
+          this.log(`[PRIVACY_RELAY_FAIL_CLOSED] rotationMode=${this.pool.rotationMode} sticky node failed, maintaining fail-closed without silent switching`);
+        } else if (this.pool.rotationMode === 'HEALTH_FAILOVER') {
+          this.log(`[PRIVACY_RELAY_STARTUP_FAILOVER] Attempting failover to another healthy node...`);
+          await this.rotateEgress('HEALTH_FAILOVER');
+        }
       }
+    } else {
+      this.relayReady = false;
     }
 
     const currentFp = this.computeFingerprint(this.getActiveNode());
