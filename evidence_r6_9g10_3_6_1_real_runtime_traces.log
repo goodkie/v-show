@@ -1,0 +1,325 @@
+[2026-10-10T08:43:11.280Z] ========================================================================
+[2026-10-10T08:43:11.282Z]   XPIDER AUTOFORM SENDER PRO - REAL MS EDGE OPERATOR AUDIT (R6.9G.10.3.6.1)
+[2026-10-10T08:43:11.282Z]   SINGLE-AUTHORITY PRIVACY PREP + TRUE START_ACK ACCEPTANCE
+[2026-10-10T08:43:11.282Z] ========================================================================
+[2026-10-10T08:43:11.283Z] 
+>>> BLOCKER 1: CRYPTOGRAPHIC VERIFICATION OF EXACT RELEASE ZIP <<<
+[2026-10-10T08:43:11.299Z] [EXACT_RELEASE_ZIP] expectedSha=e9f9e9bdfc55839621f0d4430461c9b48df9c7da0fb088a1f97c6e8934e4b5b7 observedSha=e9f9e9bdfc55839621f0d4430461c9b48df9c7da0fb088a1f97c6e8934e4b5b7 size=4350456
+[2026-10-10T08:43:11.300Z] [EXACT_RELEASE_EXTRACTION] Extracting to C:\Users\oPus\AppData\Local\Temp\xpider_exact_release_1791621791283...
+[2026-10-10T08:43:13.415Z] [EXACT_RELEASE_EXTENSION_PATH] C:\Users\oPus\AppData\Local\Temp\xpider_exact_release_1791621791283\extension
+[2026-10-10T08:43:13.437Z] [LOCAL_TARGET_SERVER] Running on http://127.0.0.1:8980
+[2026-10-10T08:43:13.441Z] [LOCAL_MOCK_PROXY] Running on http://127.0.0.1:8982
+[2026-10-10T08:43:13.442Z] [EDGE_BINARY] Found: C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe
+[2026-10-10T08:43:13.442Z] [EDGE_LAUNCH] Launching Edge with extracted extension: C:\Users\oPus\AppData\Local\Temp\xpider_exact_release_1791621791283\extension...
+[2026-10-10T08:43:14.682Z] [SW_TARGET_FOUND] title=Service Worker chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/background.js url=chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/background.js ws=ws://127.0.0.1:9252/devtools/page/2D0378284959B7C629615477DEF1724E
+[2026-10-10T08:43:14.703Z] 
+>>> GATE 1: BUILD PROVENANCE & MODULE PARITY IN REAL EDGE <<<
+[2026-10-10T08:43:14.745Z] [SW_CONSOLE] [PRIVACY_GATE] Proxy onAuthRequired asyncBlocking listener registered with bounded retries.
+[2026-10-10T08:43:14.746Z] [SW_CONSOLE] [BootStep] solver_instantiation
+[2026-10-10T08:43:14.746Z] [SW_CONSOLE] [X PIDER] Background script initializing (Unified Mode)...
+[2026-10-10T08:43:14.747Z] [SW_CONSOLE] [BootStep] side_panel_config
+[2026-10-10T08:43:14.747Z] [SW_CONSOLE] [BootStep] campaign_state_init
+[2026-10-10T08:43:14.748Z] [SW_CONSOLE] [BootStep] global_functions_defined
+[2026-10-10T08:43:14.748Z] [SW_CONSOLE] [BootStep] worker_online
+[2026-10-10T08:43:14.749Z] [GATE_1_BUILD_INFO] buildId=R6.9G.10.3.6.1-20261010-SINGLE-AUTHORITY-PRIVACY-PREP branch=upgrade/phase-0-1 head=65c3fd81
+[2026-10-10T08:43:14.749Z] ✅ GATE 1: BUILD PROVENANCE & MODULE PARITY IN REAL EDGE VERIFIED PASS
+[2026-10-10T08:43:14.749Z] 
+>>> GATE 2: TRUTHFUL RESTORE STATE & INVERTED LOG REMEDIATION <<<
+[2026-10-10T08:43:14.759Z] [SW_CONSOLE] [PRIVACY_SETTINGS_RESTORED] gateReady=false transportEnforced=false
+[2026-10-10T08:43:14.760Z] [GATE_2_RESTORE_RESULT] isGateReady=false isGateActive=false reason=PRIVACY_GATE_RESTORED_TO_DEFAULT
+[2026-10-10T08:43:14.760Z] ✅ GATE 2: TRUTHFUL RESTORE STATE & INVERTED LOG REMEDIATION VERIFIED PASS
+[2026-10-10T08:43:14.760Z] 
+>>> GATE 3: SCENARIO C IN REAL EDGE: ZERO NODES FAIL-CLOSED UX <<<
+[2026-10-10T08:43:14.772Z] [LIVE_RELAY_INIT] totalNodes=0 health=NO_NODES relayReady=false
+[2026-10-10T08:43:14.776Z] [SW_CONSOLE] [PRIVACY_START_PREP] currentMode=PRIVACY_RELAY failClosed=true
+[2026-10-10T08:43:14.781Z] [SW_CONSOLE] [PRIVACY_AUTO_RECOVERY] candidate=PRIVACY_RELAY daemon_check=starting
+[2026-10-10T08:43:14.951Z] [SW_CONSOLE] [PRIVACY_RELAY_ZERO_NODES] totalNodes=0 health=NO_NODES
+[2026-10-10T08:43:14.951Z] [SW_CONSOLE] [PRIVACY_START_BLOCKED] reason=NO_HEALTHY_EGRESS
+[2026-10-10T08:43:14.952Z] [GATE_3_SCENARIO_C_RESULT] ready=false reason=NO_HEALTHY_EGRESS actionSection=privacy-relay-add-form
+[2026-10-10T08:43:14.952Z] [GATE_3_SCENARIO_C_MSG] Strict Privacy needs an enforced relay/proxy. No healthy egress is configured. Please add an HTTP/HTTPS proxy node to Privacy Relay.
+[2026-10-10T08:43:14.952Z] ✅ GATE 3: REAL EDGE SCENARIO C (ZERO NODES FAIL-CLOSED UX) VERIFIED PASS
+[2026-10-10T08:43:14.952Z] 
+>>> GATE 4: SCENARIO D IN REAL EDGE: MANAGED PROXY AUTO-RECOVERY <<<
+[2026-10-10T08:43:14.956Z] [SW_CONSOLE] [PRIVACY_START_PREP] currentMode=EXTERNAL_VPN_MONITOR failClosed=true
+[2026-10-10T08:43:14.960Z] [SW_CONSOLE] [PRIVACY_RELAY_ZERO_NODES] totalNodes=0 health=NO_NODES
+[2026-10-10T08:43:14.961Z] [SW_CONSOLE] [PRIVACY_AUTO_RECOVERY] candidate=HTTPS_PROXY
+[2026-10-10T08:43:14.964Z] [SW_CONSOLE] [PRIVACY_TRANSPORT_APPLIED] mode=HTTPS_PROXY host=127.0.0.1:8982
+[2026-10-10T08:43:14.978Z] [TARGET_REQ] GET /privacy-canary Host=127.0.0.1:8980
+[2026-10-10T08:43:14.984Z] [SW_CONSOLE] [PRIVACY_CANARY] PASS endpoint=http://127.0.0.1:8980/privacy-canary
+[2026-10-10T08:43:14.988Z] [SW_CONSOLE] [PRIVACY_START_READY] mode=HTTPS_PROXY
+[2026-10-10T08:43:14.991Z] [GATE_4_SCENARIO_D_RESULT] ready=true mode=HTTPS_PROXY isGateReady=true
+[2026-10-10T08:43:14.991Z] [GATE_4_PROXY_READBACK] mode=fixed_servers host=127.0.0.1:8982
+[2026-10-10T08:43:14.991Z] ✅ GATE 4: REAL EDGE SCENARIO D (MANAGED PROXY AUTO-RECOVERY) VERIFIED PASS
+[2026-10-10T08:43:14.991Z] 
+>>> GATE 5: SCENARIO A IN REAL EDGE: OWNER EXACT SYSTEM_VPN SELF-HEALING <<<
+[2026-10-10T08:43:14.991Z] [LIVE_RELAY_ADD_NODE] Adding upstream node forwarder to port 8982...
+[2026-10-10T08:43:15.021Z] [LIVE_RELAY_ADD_RESULT] success=true activeNode=undefined
+[2026-10-10T08:43:15.021Z] [LIVE_RELAY_PROBE] Probing live relay node to establish verified HEALTHY status...
+[2026-10-10T08:43:15.031Z] [TARGET_REQ] GET /privacy-canary Host=127.0.0.1
+[2026-10-10T08:43:15.038Z] [LIVE_RELAY_PROBE_RESULT] verified=true activeNode=node-audit-edge-1
+[2026-10-10T08:43:15.043Z] [LIVE_RELAY_POST_ADD] totalNodes=1 health=HEALTHY ready=true
+[2026-10-10T08:43:15.080Z] [SW_CONSOLE] [PRIVACY_START_PREP] currentMode=SYSTEM_VPN failClosed=true
+[2026-10-10T08:43:15.093Z] [SW_CONSOLE] [PRIVACY_AUTO_RECOVERY] candidate=PRIVACY_RELAY
+[2026-10-10T08:43:15.095Z] [SW_CONSOLE] [PRIVACY_TRANSPORT_APPLIED] mode=PRIVACY_RELAY host=127.0.0.1:18988
+[2026-10-10T08:43:15.105Z] [TARGET_REQ] GET /privacy-canary Host=127.0.0.1:8980
+[2026-10-10T08:43:15.110Z] [SW_CONSOLE] [PRIVACY_CANARY] PASS endpoint=http://127.0.0.1:8980/privacy-canary
+[2026-10-10T08:43:15.111Z] [SW_CONSOLE] [PRIVACY_START_READY] mode=PRIVACY_RELAY
+[2026-10-10T08:43:15.112Z] [GATE_5_SCENARIO_A_RESULT] ready=true mode=PRIVACY_RELAY isGateReady=true
+[2026-10-10T08:43:15.112Z] [GATE_5_PROXY_READBACK] mode=fixed_servers host=127.0.0.1:18988
+[2026-10-10T08:43:15.112Z] [GATE_5_STORED_MODE] mode=PRIVACY_RELAY
+[2026-10-10T08:43:15.112Z] ✅ GATE 5: REAL EDGE SCENARIO A (OWNER EXACT SYSTEM_VPN SELF-HEALING) VERIFIED PASS
+[2026-10-10T08:43:15.112Z] 
+>>> GATE 6: DETERMINISTIC 1-CLICK START FLOW (SINGLE-AUTHORITY PRIVACY PREP) <<<
+[2026-10-10T08:43:15.151Z] [GATE_6_POPUP_TAB_OPENED] tabId=1676910831
+[2026-10-10T08:43:15.214Z] [SW_CONSOLE] [BootStep] restoring_campaign_state
+[2026-10-10T08:43:15.216Z] [SW_CONSOLE] [Boot] Initializing campaign state...
+[2026-10-10T08:43:15.218Z] [SW_CONSOLE] [COUNTER_RECONCILE] legacySuccess=0 ledgerSuccess=0 action=LEDGER_WINS
+[2026-10-10T08:43:15.225Z] [SW_CONSOLE] [BootStep] restore_complete
+[2026-10-10T08:43:15.226Z] [SW_CONSOLE] [Boot] Privacy Relay configured — checking status and auto-recovering if offline...
+[2026-10-10T08:43:15.470Z] [GATE_6_POPUP_ATTACHED] ws=ws://127.0.0.1:9252/devtools/page/9A5151F13B86D60DD17D7EF1E5DF8ECB
+[2026-10-10T08:43:15.490Z] [POPUP_CONSOLE] [XPIDER] Blacklist loaded with 3333 items.
+[2026-10-10T08:43:15.491Z] [POPUP_CONSOLE] [POPUP_BOOT] started
+[2026-10-10T08:43:15.491Z] [POPUP_CONSOLE] [POPUP_BOOT] startHandlerBound=true
+[2026-10-10T08:43:15.492Z] [SW_CONSOLE] [BG_LOG][tab=none] 📦 [Migration] Safely migrated to v2 (Backup: xpider_backup_v1_1791621795416)
+[2026-10-10T08:43:15.492Z] [POPUP_CONSOLE] [POPUP_BOOT] saveHandlerBound=true
+[2026-10-10T08:43:15.492Z] [POPUP_CONSOLE] [POPUP_BOOT] ensureSchemaReady starting...
+[2026-10-10T08:43:15.492Z] [POPUP_CONSOLE] [BUILD_HANDSHAKE] localHead=65c3fd81087216b71e825fd6641c2404016b9e61 backgroundHead=65c3fd81087216b71e825fd6641c2404016b9e61 result=PASS
+[2026-10-10T08:43:15.493Z] [POPUP_CONSOLE] [LEDGER_STATS] scope=currentGeneration success=0 failed=0 timeout=0 unknown=0
+[2026-10-10T08:43:15.533Z] [POPUP_CONSOLE] [XPIDER_DIAG] Manual URL saved: http://127.0.0.1:8980/audit-start-target
+[2026-10-10T08:43:15.536Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] 📦 [Migration] Safely migrated to v2 (Backup: xpider_backup_v1_[REDACTED_PHONE])
+[2026-10-10T08:43:15.541Z] [POPUP_CONSOLE] [TEMPLATE_MIGRATION] status=MIGRATED sourceCounts=0
+[2026-10-10T08:43:15.542Z] [POPUP_CONSOLE] [XPIDER_DIAG] [TEMPLATE_MIGRATION] status=MIGRATED sourceCounts=0
+[2026-10-10T08:43:15.543Z] [POPUP_CONSOLE] [POPUP_BOOT] schemaReady=true migrated=true repaired=false
+[2026-10-10T08:43:15.549Z] [POPUP_CONSOLE] [TEMPLATE_HYDRATE] templateId=none source=templates_v2 messagePresent=false
+[2026-10-10T08:43:15.559Z] [POPUP_CONSOLE] [XPIDER_DIAG] [TEMPLATE_HYDRATE] templateId=none source=templates_v2 messagePresent=false
+[2026-10-10T08:43:15.560Z] [POPUP_CONSOLE] [POPUP_BOOT] settingsHydrated=true
+[2026-10-10T08:43:15.565Z] [POPUP_CONSOLE] [XPIDER_DIAG] [Engine] Initial handshake synced: active=false, completed=0, success=0, failed=0
+[2026-10-10T08:43:15.566Z] [POPUP_CONSOLE] [POPUP_BOOT] getStateAck=true
+[2026-10-10T08:43:15.571Z] [POPUP_CONSOLE] [POPUP_BOOT] ready=true
+[2026-10-10T08:43:15.708Z] [GATE_6_PHYSICAL_CLICK] Clicking physical START button in popup UI...
+[2026-10-10T08:43:15.712Z] [POPUP_CONSOLE] [START_UI] click
+[2026-10-10T08:43:15.713Z] [POPUP_CONSOLE] [START_GUARD] queue=1 messagePresent=true buildLock=unlocked
+[2026-10-10T08:43:15.714Z] [POPUP_CONSOLE] [XPIDER_DIAG] [START_UI] click (queue=1, msgPresent=true, buildLock=unlocked)
+[2026-10-10T08:43:15.716Z] [POPUP_CONSOLE] [TEMPLATE_START_GUARD] templateId=unknown domMessage=true canonicalMessage=false dirty=false
+[2026-10-10T08:43:15.717Z] [POPUP_CONSOLE] [BUILD_HANDSHAKE] localHead=65c3fd81087216b71e825fd6641c2404016b9e61 backgroundHead=65c3fd81087216b71e825fd6641c2404016b9e61 result=PASS
+[2026-10-10T08:43:15.720Z] [SW_CONSOLE] [PRIVACY_START_PREP] currentMode=EXTERNAL_VPN_MONITOR failClosed=true
+[2026-10-10T08:43:15.728Z] [SW_CONSOLE] [PRIVACY_AUTO_RECOVERY] candidate=PRIVACY_RELAY
+[2026-10-10T08:43:15.731Z] [SW_CONSOLE] [PRIVACY_TRANSPORT_APPLIED] mode=PRIVACY_RELAY host=127.0.0.1:18988
+[2026-10-10T08:43:15.734Z] [TARGET_REQ] GET /privacy-canary Host=127.0.0.1:8980
+[2026-10-10T08:43:15.740Z] [SW_CONSOLE] [PRIVACY_CANARY] PASS endpoint=http://127.0.0.1:8980/privacy-canary
+[2026-10-10T08:43:15.741Z] [SW_CONSOLE] [PRIVACY_START_READY] mode=PRIVACY_RELAY
+[2026-10-10T08:43:15.742Z] [POPUP_CONSOLE] [PRIVACY_START_READY] mode=PRIVACY_RELAY
+[2026-10-10T08:43:15.747Z] [POPUP_CONSOLE] [XPIDER_DIAG] 🛡️ [PRIVACY_START_READY] mode=PRIVACY_RELAY
+[2026-10-10T08:43:15.748Z] [POPUP_CONSOLE] [START_IPC] sent queue=1
+[2026-10-10T08:43:15.748Z] [POPUP_CONSOLE] [XPIDER_DIAG] [Engine] START_CAMPAIGN request sent
+[2026-10-10T08:43:15.750Z] [POPUP_CONSOLE] [XPIDER_DIAG] [Engine][TX] action=START_CAMPAIGN queue=1 templateId=default v=1 skipAttempted=true
+[2026-10-10T08:43:15.751Z] [SW_CONSOLE] [BUILD_HANDSHAKE] popup=65c3fd81087216b71e825fd6641c2404016b9e61 background=65c3fd81087216b71e825fd6641c2404016b9e61 build=R6.9G.10.3.6.1-20261010-SINGLE-AUTHORITY-PRIVACY-PREP manifest=3 result=PASS
+[2026-10-10T08:43:15.752Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_HANDSHAKE] popup=65c3fd81087216b71e825fd6641c2404016b9e61 background=65c3fd81087216b71e825fd6641c2404016b9e61 build=R6.9G.10.3.6.1-20261010-SINGLE-AUTHORITY-PRIVACY-PREP manifest=3 result=PASS
+[2026-10-10T08:43:15.753Z] [SW_CONSOLE] [BUILD_ID] branch=upgrade/phase-0-1 implementationHead=65c3fd81087216b71e825fd6641c2404016b9e61 manifestVersion=3 buildId=R6.9G.10.3.6.1-20261010-SINGLE-AUTHORITY-PRIVACY-PREP builtAt=2026-10-10T08:40:00.000Z
+[2026-10-10T08:43:15.756Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_ID] branch=upgrade/phase-0-1 implementationHead=65c3fd81087216b71e825fd6641c2404016b9e61 manifestVersion=3 buildId=R6.9G.10.3.6.1-20261010-SINGLE-AUTHORITY-PRIVACY-PREP builtAt=2026-10-10T08:40:00.000Z
+[2026-10-10T08:43:15.765Z] [SW_CONSOLE] [BUILD_MODULE] contactGateSha=0d01acb2d0a9448d154353fac5b527c17afa42fed56c68d6a49b39053629bd7d
+[2026-10-10T08:43:15.766Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [BUILD_HANDSHAKE] popup=65c3fd81087216b71e825fd6641c2404016b9e61 background=65c3fd81087216b71e825fd6641c2404016b9e61 build=R6.9G.[REDACTED_IP]-20261010-SINGLE-AUTHORITY-PRIVACY-PREP manifest=3 result=PASS
+[2026-10-10T08:43:15.767Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] contactGateSha=0d01acb2d0a9448d154353fac5b527c17afa42fed56c68d6a49b39053629bd7d
+[2026-10-10T08:43:15.767Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [BUILD_ID] branch=upgrade/phase-0-1 implementationHead=65c3fd81087216b71e825fd6641c2404016b9e61 manifestVersion=3 buildId=R6.9G.[REDACTED_IP]-20261010-SINGLE-AUTHORITY-PRIVACY-PREP builtAt=2026-10-10T08:40:00.000Z
+[2026-10-10T08:43:15.770Z] [SW_CONSOLE] [BUILD_MODULE] visionSubmitSha=25cf18a4834bb476edff5e8f19a78dd2723bd556ede649ada69bc801543c83f3
+[2026-10-10T08:43:15.772Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [BUILD_MODULE] contactGateSha=[REDACTED_TOKEN_LEN_64]
+[2026-10-10T08:43:15.772Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] visionSubmitSha=25cf18a4834bb476edff5e8f19a78dd2723bd556ede649ada69bc801543c83f3
+[2026-10-10T08:43:15.772Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [BUILD_MODULE] visionSubmitSha=[REDACTED_TOKEN_LEN_64]
+[2026-10-10T08:43:15.773Z] [SW_CONSOLE] [BUILD_MODULE] historyStoreSha=ef148329c5c019877fef3708ac63472ce86d5f7f06da467a557a74e038eab6b4
+[2026-10-10T08:43:15.773Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] historyStoreSha=ef148329c5c019877fef3708ac63472ce86d5f7f06da467a557a74e038eab6b4
+[2026-10-10T08:43:15.773Z] [SW_CONSOLE] [BUILD_MODULE] emailCollectorSha=3f1147a379e159e7777158f2caa74cc8d40b2a0b0eb2c244f440af379cb5c9c9
+[2026-10-10T08:43:15.774Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] emailCollectorSha=3f1147a379e159e7777158f2caa74cc8d40b2a0b0eb2c244f440af379cb5c9c9
+[2026-10-10T08:43:15.774Z] [SW_CONSOLE] [BUILD_MODULE] contentScriptSha=5c2ebd277a9020a4434fc68cd46c6ec974dbf180290ba368b33273aee67ccf9e
+[2026-10-10T08:43:15.774Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [BUILD_MODULE] historyStoreSha=[REDACTED_TOKEN_LEN_64]
+[2026-10-10T08:43:15.775Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] contentScriptSha=5c2ebd277a9020a4434fc68cd46c6ec974dbf180290ba368b33273aee67ccf9e
+[2026-10-10T08:43:15.775Z] [SW_CONSOLE] [BUILD_MODULE] backgroundSha=2e17c641b7d43761b666b92166b6c80decc7143e988bc3f9648f7a2279c214e5
+[2026-10-10T08:43:15.776Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] backgroundSha=2e17c641b7d43761b666b92166b6c80decc7143e988bc3f9648f7a2279c214e5
+[2026-10-10T08:43:15.776Z] [SW_CONSOLE] [BUILD_MODULE] popupSha=9174f5eedb3e228417b8570ddc8e94cb29112653a49c8fb937a45f4cebbb2041
+[2026-10-10T08:43:15.777Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] popupSha=9174f5eedb3e228417b8570ddc8e94cb29112653a49c8fb937a45f4cebbb2041
+[2026-10-10T08:43:15.777Z] [SW_CONSOLE] [BUILD_MODULE] solverContentSha=d7de969d29df29799537b11380f0f82967bb93da227c91e7dc8c6af0d128f457
+[2026-10-10T08:43:15.777Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] solverContentSha=d7de969d29df29799537b11380f0f82967bb93da227c91e7dc8c6af0d128f457
+[2026-10-10T08:43:15.778Z] [SW_CONSOLE] [BUILD_MODULE] solverCoreSha=01b3d96048ea933403e4599854dcdca28027e7f676aa5077eb6c5eb0582ac1e7
+[2026-10-10T08:43:15.778Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [BUILD_MODULE] emailCollectorSha=[REDACTED_TOKEN_LEN_64]
+[2026-10-10T08:43:15.780Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [BUILD_MODULE] contentScriptSha=[REDACTED_TOKEN_LEN_64]
+[2026-10-10T08:43:15.781Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [BUILD_MODULE] backgroundSha=[REDACTED_TOKEN_LEN_64]
+[2026-10-10T08:43:15.782Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [BUILD_MODULE] popupSha=[REDACTED_TOKEN_LEN_64]
+[2026-10-10T08:43:15.785Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] solverCoreSha=01b3d96048ea933403e4599854dcdca28027e7f676aa5077eb6c5eb0582ac1e7
+[2026-10-10T08:43:15.785Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [BUILD_MODULE] solverContentSha=[REDACTED_TOKEN_LEN_64]
+[2026-10-10T08:43:15.785Z] [SW_CONSOLE] [BUILD_MODULE] privacyGatewaySha=976ece11de244b12fb3d306ce71c83174640a165177fee767823b0d9fe9972cb
+[2026-10-10T08:43:15.786Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] privacyGatewaySha=976ece11de244b12fb3d306ce71c83174640a165177fee767823b0d9fe9972cb
+[2026-10-10T08:43:15.787Z] [SW_CONSOLE] [START_BG] received queue=1
+[2026-10-10T08:43:15.789Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [BUILD_MODULE] solverCoreSha=[REDACTED_TOKEN_LEN_64]
+[2026-10-10T08:43:15.792Z] [SW_CONSOLE] [BG_LOG][tab=none] [START_BG] received queue=1
+[2026-10-10T08:43:15.792Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [BUILD_MODULE] privacyGatewaySha=[REDACTED_TOKEN_LEN_64]
+[2026-10-10T08:43:15.793Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [START_BG] received queue=1
+[2026-10-10T08:43:15.818Z] [TARGET_REQ] GET /privacy-canary Host=127.0.0.1:8980
+[2026-10-10T08:43:15.829Z] [SW_CONSOLE] [PRIVACY_GATE] mode=PRIVACY_RELAY transport=PRIVACY_RELAY failClosed=true webrtcGuard=PASS directFallbackBlocked=BLOCKED egressCheck=PASS dnsPrivacy=UNKNOWN ipv6Protection=UNKNOWN status=READY
+[2026-10-10T08:43:15.833Z] [SW_CONSOLE] [BG_LOG][tab=none] [PRIVACY_GATE] mode=PRIVACY_RELAY transport=PRIVACY_RELAY failClosed=true webrtcGuard=PASS directFallbackBlocked=BLOCKED egressCheck=PASS dnsPrivacy=UNKNOWN ipv6Protection=UNKNOWN status=READY
+[2026-10-10T08:43:15.834Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [PRIVACY_GATE] mode=PRIVACY_RELAY transport=PRIVACY_RELAY failClosed=true webrtcGuard=PASS directFallbackBlocked=BLOCKED egressCheck=PASS dnsPrivacy=UNKNOWN ipv6Protection=UNKNOWN status=READY
+[2026-10-10T08:43:15.834Z] [SW_CONSOLE] [START_BG_READY] privacyReady=true
+[2026-10-10T08:43:15.834Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [START_BG_READY] privacyReady=true
+[2026-10-10T08:43:15.835Z] [SW_CONSOLE] [BG_LOG][tab=none] [START_BG_READY] privacyReady=true
+[2026-10-10T08:43:15.836Z] [SW_CONSOLE] [BG_LOG][tab=none] [Boot] Orchestrator entered.
+[2026-10-10T08:43:15.839Z] [POPUP_CONSOLE] [START_ACK] ok=true latencyMs=83
+[2026-10-10T08:43:15.840Z] [SW_CONSOLE] [SESSION_BASELINE] Captured 2 pre-existing user tabs as protected baseline.
+[2026-10-10T08:43:15.840Z] [POPUP_CONSOLE] [START_STATE] active=true queue=1
+[2026-10-10T08:43:15.841Z] [POPUP_CONSOLE] [XPIDER_DIAG] [Engine][ACK][+83ms] status=acknowledged
+[2026-10-10T08:43:15.842Z] [POPUP_CONSOLE] [XPIDER_DIAG] [Engine] ACK received in 83 ms
+[2026-10-10T08:43:15.845Z] [POPUP_CONSOLE] [XPIDER_DIAG] ✅ [Background Engine] Campaign started!
+[2026-10-10T08:43:15.846Z] [SW_CONSOLE] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedBefore=0
+[2026-10-10T08:43:15.847Z] [SW_CONSOLE] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedAfter=0 result=PASS
+[2026-10-10T08:43:15.847Z] [SW_CONSOLE] [BG_LOG][tab=none] [Boot] Previous state cleared.
+[2026-10-10T08:43:15.848Z] [SW_CONSOLE] [BG_LOG][tab=none] [Boot] CAPTCHA solver state reset (attempts=0, identity=null).
+[2026-10-10T08:43:15.848Z] [SW_CONSOLE] [BG_LOG][tab=none] 📊 [Queue Filter] Input: 1 | Duplicates: 0 | Suppressed: 0 | History-Attempted: 0 | Executable: 1
+[2026-10-10T08:43:15.849Z] [SW_CONSOLE] [BG_LOG][tab=none] [Boot] Variables initialized.
+[2026-10-10T08:43:15.850Z] [SW_CONSOLE] [BG_LOG][tab=none] 🚀 Engine booting...
+[2026-10-10T08:43:15.858Z] [SW_CONSOLE] [BG_LOG][tab=none] [Boot] Storage sync initiated.
+[2026-10-10T08:43:15.860Z] [SW_CONSOLE] [BG_LOG][tab=none] [Boot] Target loop triggered.
+[2026-10-10T08:43:15.862Z] [SW_CONSOLE] [SERIALIZED_GATE] Slot acquired atomically. activeTargetInFlight=true activeTargetCount=1 maxConcurrent=1
+[2026-10-10T08:43:15.866Z] [SW_CONSOLE] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedBefore=0
+[2026-10-10T08:43:15.868Z] [SW_CONSOLE] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedAfter=0 result=PASS
+[2026-10-10T08:43:15.877Z] [TARGET_REQ] GET /privacy-canary Host=127.0.0.1:8980
+[2026-10-10T08:43:15.883Z] [SW_CONSOLE] [BG_LOG][tab=none] [TARGET 1/1][127.0.0.1] START
+[2026-10-10T08:43:15.890Z] [SW_CONSOLE] [BG_LOG][tab=none] [EXEC_IDENTITY_PRE_NAV] attemptId=att_1791621795881_ga4ci token=tok_1791621795881_hxu33k epoch=2
+[2026-10-10T08:43:15.900Z] [TARGET_REQ] GET /privacy-canary Host=127.0.0.1:8980
+[2026-10-10T08:43:15.920Z] [GATE_6_START_SEQUENCE_OBSERVED] ackFound=true
+[2026-10-10T08:43:15.951Z] [TARGET_REQ] GET /audit-start-target Host=127.0.0.1:8980
+[2026-10-10T08:43:15.962Z] [SW_CONSOLE] [TAB_BARRIER] phase=POST_NEW_TARGET_CREATE ownedBefore=0
+[2026-10-10T08:43:15.962Z] [SW_CONSOLE] [TAB_BARRIER] phase=POST_NEW_TARGET_CREATE ownedAfter=0 result=PASS
+[2026-10-10T08:43:15.962Z] [SW_CONSOLE] [TAB_KILL_SWITCH] keepTabId=1676910833 closedOthers=0 remainingOwned=1 result=PASS
+[2026-10-10T08:43:15.979Z] [SW_CONSOLE] [BG_LOG][tab=1676910833] [TAB_FOCUS] tabId=1676910833 windowId=1676910827 active=true focused=true
+[2026-10-10T08:43:16.016Z] [TARGET_REQ] GET /privacy-canary Host=127.0.0.1:8980
+[2026-10-10T08:43:16.029Z] [SW_CONSOLE] [BG_LOG][tab=1676910833] Step 1: Sniper Mode active. Searching for contact page...
+[2026-10-10T08:43:16.033Z] [SW_CONSOLE] [BG_LOG][tab=1676910833] 🔦 Scanning paths 1-10...
+[2026-10-10T08:43:16.044Z] [TARGET_REQ] GET /favicon.ico Host=127.0.0.1:8980
+[2026-10-10T08:43:16.052Z] [TARGET_REQ] GET / Host=127.0.0.1:8980
+[2026-10-10T08:43:16.056Z] [TARGET_REQ] GET /contact Host=127.0.0.1:8980
+[2026-10-10T08:43:16.072Z] [TARGET_REQ] GET /contact/ Host=127.0.0.1:8980
+[2026-10-10T08:43:16.076Z] [TARGET_REQ] GET /contact.html Host=127.0.0.1:8980
+[2026-10-10T08:43:16.084Z] [TARGET_REQ] GET /contact.php Host=127.0.0.1:8980
+[2026-10-10T08:43:16.090Z] [TARGET_REQ] GET /contact.asp Host=127.0.0.1:8980
+[2026-10-10T08:43:16.091Z] [TARGET_REQ] GET /contact-us Host=127.0.0.1:8980
+[2026-10-10T08:43:16.097Z] [TARGET_REQ] GET /contact-us/ Host=127.0.0.1:8980
+[2026-10-10T08:43:16.105Z] [TARGET_REQ] GET /contact-us.html Host=127.0.0.1:8980
+[2026-10-10T08:43:16.107Z] [TARGET_REQ] GET /contact-us.php Host=127.0.0.1:8980
+[2026-10-10T08:43:16.113Z] [SW_CONSOLE] [BG_LOG][tab=1676910833] Pre-scan complete. Identified 10 valid paths.
+[2026-10-10T08:43:16.115Z] [SW_CONSOLE] [BG_LOG][tab=1676910833] [SniperScan] Identified 10 candidate paths in background.
+[2026-10-10T08:43:16.119Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1676910833][attemptId=att_1791621795881_ga4ci][url=http://127.0.0.1:8980/audit-start-target] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
+[2026-10-10T08:43:16.125Z] [SW_CONSOLE] [BG_LOG][tab=1676910833] [CONTENT_EVENT][tabId=1676910833][attemptId=att_1791621795881_ga4ci][url=http://127.0.0.1:8980/audit-start-target] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
+[2026-10-10T08:43:16.132Z] [SW_CONSOLE] [BG_LOG][tab=1676910833] [TAB_FOCUS] tabId=1676910833 windowId=1676910827 active=true focused=true
+[2026-10-10T08:43:16.134Z] [SW_CONSOLE] [BG_LOG][tab=1676910833] [TAB_OWNERSHIP] VERIFIED_REDIRECT source=127.0.0.1 target=127.0.0.1 relation=SAME_HOST
+[2026-10-10T08:43:16.135Z] [SW_CONSOLE] [BG_LOG][tab=1676910833] [FOCUS_SECURED] formPageUrl=http://127.0.0.1:8980/audit-start-target
+[2026-10-10T08:43:16.140Z] [SW_CONSOLE] [BG_LOG][tab=1676910833] Extraction focus secured. Mapping template fields...
+[2026-10-10T08:43:16.147Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1676910833][attemptId=att_1791621795881_ga4ci][url=http://127.0.0.1:8980/audit-start-target] [TARGET_PAGE] url=http://127.0.0.1:8980/audit-start-target domGeneration=1791621796143 attemptId=att_1791621795881_ga4ci
+[2026-10-10T08:43:16.147Z] [SW_CONSOLE] [BG_LOG][tab=1676910833] [CONTENT_EVENT][tabId=1676910833][attemptId=att_1791621795881_ga4ci][url=http://127.0.0.1:8980/audit-start-target] [TARGET_PAGE] url=http://127.0.0.1:8980/audit-start-target domGeneration=1791621796143 attemptId=att_1791621795881_ga4ci
+[2026-10-10T08:43:16.149Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1676910833][attemptId=att_1791621795881_ga4ci][url=http://127.0.0.1:8980/audit-start-target] 🚀 [Engine] Ultra-Mode process started
+[2026-10-10T08:43:16.152Z] [SW_CONSOLE] [BG_LOG][tab=1676910833] [CONTENT_EVENT][tabId=1676910833][attemptId=att_1791621795881_ga4ci][url=http://127.0.0.1:8980/audit-start-target] 🚀 [Engine] Ultra-Mode process started
+[2026-10-10T08:43:16.157Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1676910833][attemptId=att_1791621795881_ga4ci][url=http://127.0.0.1:8980/audit-start-target] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[2026-10-10T08:43:16.157Z] [SW_CONSOLE] [BG_LOG][tab=1676910833] [CONTENT_EVENT][tabId=1676910833][attemptId=att_1791621795881_ga4ci][url=http://127.0.0.1:8980/audit-start-target] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[2026-10-10T08:43:16.157Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1676910833][attemptId=att_1791621795881_ga4ci][url=http://127.0.0.1:8980/audit-start-target] [TARGET_PAGE] url=http://127.0.0.1:8980/audit-start-target recursion=0
+[2026-10-10T08:43:16.162Z] [SW_CONSOLE] [BG_LOG][tab=1676910833] [CONTENT_EVENT][tabId=1676910833][attemptId=att_1791621795881_ga4ci][url=http://127.0.0.1:8980/audit-start-target] [TARGET_PAGE] url=http://127.0.0.1:8980/audit-start-target recursion=0
+[2026-10-10T08:43:16.163Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1676910833][attemptId=att_1791621795881_ga4ci][url=http://127.0.0.1:8980/audit-start-target] 🔍 [Discovery] URL: http://127.0.0.1:8980/audit-start-target | Recursion: 0
+[2026-10-10T08:43:16.163Z] [SW_CONSOLE] [BG_LOG][tab=1676910833] [CONTENT_EVENT][tabId=1676910833][attemptId=att_1791621795881_ga4ci][url=http://127.0.0.1:8980/audit-start-target] 🔍 [Discovery] URL: http://127.0.0.1:8980/audit-start-target | Recursion: 0
+[2026-10-10T08:43:16.167Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1676910833][attemptId=att_1791621795881_ga4ci][url=http://127.0.0.1:8980/audit-start-target] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[2026-10-10T08:43:16.168Z] [SW_CONSOLE] [BG_LOG][tab=1676910833] [CONTENT_EVENT][tabId=1676910833][attemptId=att_1791621795881_ga4ci][url=http://127.0.0.1:8980/audit-start-target] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[2026-10-10T08:43:16.168Z] [SW_CONSOLE] [CONTENT_EVENT][tabId=1676910833][attemptId=att_1791621795881_ga4ci][url=http://127.0.0.1:8980/audit-start-target] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1:8980/audit-start-target | Recursion: 0
+[2026-10-10T08:43:16.168Z] [SW_CONSOLE] [BG_LOG][tab=1676910833] [CONTENT_EVENT][tabId=1676910833][attemptId=att_1791621795881_ga4ci][url=http://127.0.0.1:8980/audit-start-target] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1:8980/audit-start-target | Recursion: 0
+[2026-10-10T08:43:16.228Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [Boot] Orchestrator entered.
+[2026-10-10T08:43:16.236Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [Boot] Previous state cleared.
+[2026-10-10T08:43:16.240Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [Boot] CAPTCHA solver state reset (attempts=0, identity=null).
+[2026-10-10T08:43:16.245Z] [POPUP_CONSOLE] [XPIDER_DIAG] [Engine] Background state: active=false, queue=0
+[2026-10-10T08:43:16.245Z] [POPUP_CONSOLE] [XPIDER_DIAG] [Engine][VERIFY] active=false queue=0
+[2026-10-10T08:43:16.245Z] [POPUP_CONSOLE] [START_STATE_NOT_ACTIVE] stateResp.isActive is false post-ACK
+[2026-10-10T08:43:16.249Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] 📊 [Queue Filter] Input: 1 | Duplicates: 0 | Suppressed: 0 | History-Attempted: 0 | Executable: 1
+[2026-10-10T08:43:16.252Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [Boot] Variables initialized.
+[2026-10-10T08:43:16.253Z] [POPUP_CONSOLE] [HISTORY_SCOPE_REFRESH] trigger=xpider_active_campaign_run_id
+[2026-10-10T08:43:16.260Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] 🚀 Engine booting...
+[2026-10-10T08:43:16.262Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [Boot] Storage sync initiated.
+[2026-10-10T08:43:16.263Z] [POPUP_CONSOLE] [HISTORY_SCOPE_REFRESH] trigger=xpider_isActive
+[2026-10-10T08:43:16.264Z] [POPUP_CONSOLE] [LEDGER_STATS] scope=currentGeneration campaignRunId=run_1791621795848_oy2ds success=0 failed=0 unknown=0
+[2026-10-10T08:43:16.266Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [Boot] Target loop triggered.
+[2026-10-10T08:43:16.269Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [TARGET 1/1][127.0.0.1] START
+[2026-10-10T08:43:16.273Z] [POPUP_CONSOLE] [LEDGER_STATS] scope=currentGeneration campaignRunId=run_1791621795848_oy2ds success=0 failed=0 unknown=0
+[2026-10-10T08:43:16.275Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [EXEC_IDENTITY_PRE_NAV] attemptId=att_[REDACTED_PHONE]_ga4ci token=tok_[REDACTED_PHONE]_hxu33k epoch=2
+[2026-10-10T08:43:16.277Z] [GATE_6_POPUP_STATE] isOpen=false
+[2026-10-10T08:43:16.280Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [TAB_FOCUS] tabId=[REDACTED_PHONE] windowId=[REDACTED_PHONE] active=true focused=true
+[2026-10-10T08:43:16.282Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] Step 1: Sniper Mode active. Searching for contact page...
+[2026-10-10T08:43:16.286Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] 🔦 Scanning paths 1-10...
+[2026-10-10T08:43:16.298Z] [POPUP_CONSOLE] [XPIDER_DIAG] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
+[2026-10-10T08:43:16.314Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] Pre-scan complete. Identified 10 valid paths.
+[2026-10-10T08:43:16.316Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [SniperScan] Identified 10 candidate paths in background.
+[2026-10-10T08:43:16.324Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_ga4ci][url=http://127.0.0.1:8980/audit-start-target] ⚠️ [Engine] Suppressing duplicate setup (Signals re-sent).
+[2026-10-10T08:43:16.327Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [TAB_FOCUS] tabId=[REDACTED_PHONE] windowId=[REDACTED_PHONE] active=true focused=true
+[2026-10-10T08:43:16.329Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [TAB_OWNERSHIP] VERIFIED_REDIRECT source=127.0.0.1 target=127.0.0.1 relation=SAME_HOST
+[2026-10-10T08:43:16.332Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [FOCUS_SECURED] formPageUrl=http://127.0.0.1:8980/audit-start-target
+[2026-10-10T08:43:16.336Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] Extraction focus secured. Mapping template fields...
+[2026-10-10T08:43:16.347Z] [POPUP_CONSOLE] [XPIDER_DIAG] [TARGET_PAGE] url=http://127.0.0.1:8980/audit-start-target domGeneration=[REDACTED_PHONE] attemptId=att_[REDACTED_PHONE]_ga4ci
+[2026-10-10T08:43:16.348Z] [POPUP_CONSOLE] [XPIDER_DIAG] 🚀 [Engine] Ultra-Mode process started
+[2026-10-10T08:43:16.359Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_ga4ci][url=http://127.0.0.1:8980/audit-start-target] [TARGET_PAGE] url=http://127.0.0.1:8980/audit-start-target domGeneration=[REDACTED_PHONE] attemptId=att_[REDACTED_PHONE]_ga4ci
+[2026-10-10T08:43:16.363Z] [POPUP_CONSOLE] [XPIDER_DIAG] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[2026-10-10T08:43:16.384Z] [POPUP_CONSOLE] [XPIDER_DIAG] [TARGET_PAGE] url=http://127.0.0.1:8980/audit-start-target recursion=0
+[2026-10-10T08:43:16.385Z] [POPUP_CONSOLE] [XPIDER_DIAG] 🔍 [Discovery] URL: http://127.0.0.1:8980/audit-start-target | Recursion: 0
+[2026-10-10T08:43:16.388Z] [POPUP_CONSOLE] [XPIDER_DIAG] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[2026-10-10T08:43:16.390Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_ga4ci][url=http://127.0.0.1:8980/audit-start-target] 🚀 [Engine] Ultra-Mode process started
+[2026-10-10T08:43:16.395Z] [POPUP_CONSOLE] [XPIDER_DIAG] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1:8980/audit-start-target | Recursion: 0
+[2026-10-10T08:43:16.397Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_ga4ci][url=http://127.0.0.1:8980/audit-start-target] 🧹 [Cleaner] Scanning for intrusive overlays/popups and cookie banners...
+[2026-10-10T08:43:16.401Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_ga4ci][url=http://127.0.0.1:8980/audit-start-target] [TARGET_PAGE] url=http://127.0.0.1:8980/audit-start-target recursion=0
+[2026-10-10T08:43:16.407Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_ga4ci][url=http://127.0.0.1:8980/audit-start-target] 🔍 [Discovery] URL: http://127.0.0.1:8980/audit-start-target | Recursion: 0
+[2026-10-10T08:43:16.409Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_ga4ci][url=http://127.0.0.1:8980/audit-start-target] 🧹 [Cleaner] Scanning for intrusive overlays/popups...
+[2026-10-10T08:43:16.415Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [CONTENT_EVENT][tabId=[REDACTED_PHONE]][attemptId=att_[REDACTED_PHONE]_ga4ci][url=http://127.0.0.1:8980/audit-start-target] 🧐 [Discovery] Polling attempt 1/3... | URL: http://127.0.0.1:8980/audit-start-target | Recursion: 0
+[2026-10-10T08:43:16.428Z] [GATE_6_CAMPAIGN_ACTIVE] active=true
+[2026-10-10T08:43:16.428Z] [GATE_6_SW_PREP_COUNT] swPrepCount=1
+[2026-10-10T08:43:16.428Z] [GATE_6_POPUP_PREP_COUNT] popupPrepCount=0
+[2026-10-10T08:43:16.428Z] ✅ GATE 6: DETERMINISTIC 1-CLICK START FLOW (SINGLE-AUTHORITY PRIVACY PREP) VERIFIED PASS
+[2026-10-10T08:43:16.431Z] [POPUP_CONSOLE] [LEDGER_STATS] scope=currentRun campaignRunId=run_1791621795848_oy2ds success=0 failed=0 timeout=0 unknown=0
+[2026-10-10T08:43:16.432Z] [POPUP_CONSOLE] [LEDGER_STATS] scope=currentRun campaignRunId=run_1791621795848_oy2ds success=0 failed=0 timeout=0 unknown=0
+[2026-10-10T08:43:16.433Z] [SW_CONSOLE] [BG_LOG][tab=none] ⏸️ [Engine] Campaign PAUSED / STOP & SAVE requested.
+[2026-10-10T08:43:16.446Z] [SW_CONSOLE] [BG_LOG][tab=1676910833] [ORCHESTRATION_ABORTED] abortSignal was triggered externally (PAUSE). Delegating terminal settlement to outer target lifecycle.
+[2026-10-10T08:43:16.451Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] ⏸️ [Engine] Campaign PAUSED / STOP & SAVE requested.
+[2026-10-10T08:43:16.455Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [ORCHESTRATION_ABORTED] abortSignal was triggered externally (PAUSE). Delegating terminal settlement to outer target lifecycle.
+[2026-10-10T08:43:16.653Z] [SW_CONSOLE] [TAB_CLOSE] tabId=1676910833 attempt=1 result=CLOSED
+[2026-10-10T08:43:16.657Z] [SW_CONSOLE] [SERIALIZED_GATE] Slot released. activeTargetInFlight=false activeTargetCount=0
+[2026-10-10T08:43:16.680Z] [SW_CONSOLE] [TAB_BARRIER] phase=PAUSE_CAMPAIGN ownedBefore=0
+[2026-10-10T08:43:16.684Z] [POPUP_CONSOLE] [LEDGER_STATS] scope=currentGeneration campaignRunId=run_1791621795848_oy2ds success=0 failed=0 unknown=0
+[2026-10-10T08:43:16.689Z] [SW_CONSOLE] [TAB_BARRIER] phase=PAUSE_CAMPAIGN ownedAfter=0 result=PASS
+[2026-10-10T08:43:16.696Z] [SW_CONSOLE] [PRIVACY_SETTINGS_RESTORED] gateReady=false transportEnforced=false
+[2026-10-10T08:43:16.697Z] [SW_CONSOLE] [PRIVACY_SETTINGS_RESTORED] gateReady=false transportEnforced=false
+[2026-10-10T08:43:16.697Z] [SW_CONSOLE] [BG_LOG][tab=none] [PRIVACY_SETTINGS_RESTORED] gateReady=false transportEnforced=false
+[2026-10-10T08:43:16.700Z] [SW_CONSOLE] [BG_LOG][tab=none] 💾 [Checkpoint] Campaign snapshot saved: 0 targets remaining.
+[2026-10-10T08:43:16.700Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [PRIVACY_SETTINGS_RESTORED] gateReady=false transportEnforced=false
+[2026-10-10T08:43:16.701Z] [POPUP_CONSOLE] [HISTORY_SCOPE_REFRESH] trigger=xpider_isActive,xpider_isPaused
+[2026-10-10T08:43:16.701Z] [SW_CONSOLE] [BG_LOG][tab=none] === CAMPAIGN OUTCOME SUMMARY (currentRun) ===
+[2026-10-10T08:43:16.707Z] [SW_CONSOLE] [BG_LOG][tab=none] CONFIRMED_SUCCESS:           0
+[2026-10-10T08:43:16.707Z] [SW_CONSOLE] [BG_LOG][tab=none] FAILURE:                     0
+[2026-10-10T08:43:16.717Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] 💾 [Checkpoint] Campaign snapshot saved: 0 targets remaining.
+[2026-10-10T08:43:16.719Z] [SW_CONSOLE] [BG_LOG][tab=none] TIMEOUT_LOCAL:               0
+[2026-10-10T08:43:16.719Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] === CAMPAIGN OUTCOME SUMMARY (currentRun) ===
+[2026-10-10T08:43:16.719Z] [SW_CONSOLE] [BG_LOG][tab=none] TIMEOUT_GLOBAL:              0
+[2026-10-10T08:43:16.720Z] [SW_CONSOLE] [BG_LOG][tab=none] DELIVERY_UNKNOWN:            0
+[2026-10-10T08:43:16.720Z] [SW_CONSOLE] [BG_LOG][tab=none] SKIPPED:                     0
+[2026-10-10T08:43:16.724Z] [SW_CONSOLE] [BG_LOG][tab=none] PAUSED_UNKNOWN:              0
+[2026-10-10T08:43:16.724Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] CONFIRMED_SUCCESS:           0
+[2026-10-10T08:43:16.725Z] [SW_CONSOLE] [BG_LOG][tab=none] ----------------------------------------
+[2026-10-10T08:43:16.726Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] FAILURE:                     0
+[2026-10-10T08:43:16.726Z] [SW_CONSOLE] [BG_LOG][tab=none] TOTAL TERMINAL / COMPLETED:  0
+[2026-10-10T08:43:16.726Z] [SW_CONSOLE] [CAMPAIGN_SUMMARY] success=0 failure=0 timeoutLocal=0 timeoutGlobal=0 unknown=0 skipped=0 paused=0 completed=0
+[2026-10-10T08:43:16.727Z] [SW_CONSOLE] [BG_LOG][tab=none] ========================================
+[2026-10-10T08:43:16.727Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] TIMEOUT_LOCAL:               0
+[2026-10-10T08:43:16.730Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] TIMEOUT_GLOBAL:              0
+[2026-10-10T08:43:16.731Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] DELIVERY_UNKNOWN:            0
+[2026-10-10T08:43:16.733Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] SKIPPED:                     0
+[2026-10-10T08:43:16.735Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] PAUSED_UNKNOWN:              0
+[2026-10-10T08:43:16.740Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] ----------------------------------------
+[2026-10-10T08:43:16.742Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] TOTAL TERMINAL / COMPLETED:  0
+[2026-10-10T08:43:16.745Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] ========================================
+[2026-10-10T08:43:16.746Z] [POPUP_CONSOLE] [LEDGER_STATS] scope=currentRun campaignRunId=run_1791621795848_oy2ds success=0 failed=0 timeout=0 unknown=0
+[2026-10-10T08:43:16.785Z] [GATE_6_POPUP_TAB_CLOSED] Closed popup tab.
+[2026-10-10T08:43:16.814Z] [LIVE_RELAY_CLEANUP] Removed test egress node successfully.
+[2026-10-10T08:43:16.814Z] 
+>>> GATE 7: CLEAN-UP AND ZERO DIRECT FALLBACK INVARIANT <<<
+[2026-10-10T08:43:16.818Z] [SW_CONSOLE] [PRIVACY_SETTINGS_RESTORED] gateReady=false transportEnforced=false
+[2026-10-10T08:43:16.821Z] ✅ GATE 7: CLEAN-UP AND ZERO DIRECT FALLBACK INVARIANT VERIFIED PASS
+[2026-10-10T08:43:16.822Z] 
+========================================================================
+[2026-10-10T08:43:16.822Z]   🎉 ALL R6.9G.10.3.6.1 REAL OPERATOR AUDIT GATES (1 - 7) VERIFIED 100% PASS
+[2026-10-10T08:43:16.822Z] ========================================================================
