@@ -16,18 +16,12 @@ const path = require('path');
 class WindowsNetworkAttestation {
   constructor(options = {}) {
     this.targetRouterIp = options.targetRouterIp || '192.168.8.1';
-    this.mockRouteTable = options.mockRouteTable || null; // For automated test fixtures
   }
 
   /**
    * Reads active IPv4 default routes (0.0.0.0/0) on Windows.
    */
   getDefaultRoutes() {
-    if (this.mockRouteTable) {
-      if (Array.isArray(this.mockRouteTable)) return this.mockRouteTable;
-      if (Array.isArray(this.mockRouteTable.routes)) return this.mockRouteTable.routes;
-    }
-
     if (process.platform !== 'win32') {
       return [
         { destination: '0.0.0.0/0', nextHop: this.targetRouterIp, metric: 25, interfaceAlias: 'eth0' }
@@ -54,10 +48,6 @@ class WindowsNetworkAttestation {
    * Reads active IPv6 default routes (::/0) on Windows.
    */
   getIPv6DefaultRoutes() {
-    if (this.mockRouteTable && this.mockRouteTable.ipv6Routes) {
-      return this.mockRouteTable.ipv6Routes;
-    }
-
     if (process.platform !== 'win32') return [];
 
     try {
@@ -80,10 +70,6 @@ class WindowsNetworkAttestation {
    * Checks IPv6 status on the system.
    */
   getIPv6State() {
-    if (this.mockRouteTable && this.mockRouteTable.ipv6State) {
-      return this.mockRouteTable.ipv6State;
-    }
-
     const ipv6Routes = this.getIPv6DefaultRoutes();
     if (ipv6Routes.length > 0) {
       return 'ACTIVE_DEFAULT_ROUTE';

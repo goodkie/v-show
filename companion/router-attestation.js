@@ -112,7 +112,7 @@ class RouterAttestationManager {
 
     const encryptedPrivKey = winsec.encrypt ? winsec.encrypt(privateKeyStr) : winsec.protectSecret(privateKeyStr);
 
-    const installCommand = `echo 'command="/usr/libexec/xpider-router-attest",no-port-forwarding,no-agent-forwarding,no-X11-forwarding,no-pty ${sshPub}' >> /etc/dropbear/authorized_keys`;
+    const installCommand = `mkdir -p /etc/dropbear /root/.ssh; echo 'command="/usr/libexec/xpider-router-attest",no-port-forwarding,no-agent-forwarding,no-X11-forwarding,no-pty ${sshPub}' | tee -a /etc/dropbear/authorized_keys /root/.ssh/authorized_keys >/dev/null; chmod 600 /etc/dropbear/authorized_keys /root/.ssh/authorized_keys 2>/dev/null || true`;
 
     this.saveConfig({
       sshKeyRef: encryptedPrivKey,
@@ -129,7 +129,7 @@ class RouterAttestationManager {
     if (this.config.sshPublicKey) {
       return {
         publicKey: this.config.sshPublicKey,
-        installCommand: `echo 'command="/usr/libexec/xpider-router-attest",no-port-forwarding,no-agent-forwarding,no-X11-forwarding,no-pty ${this.config.sshPublicKey}' >> /etc/dropbear/authorized_keys`
+        installCommand: `mkdir -p /etc/dropbear /root/.ssh; echo 'command="/usr/libexec/xpider-router-attest",no-port-forwarding,no-agent-forwarding,no-X11-forwarding,no-pty ${this.config.sshPublicKey}' | tee -a /etc/dropbear/authorized_keys /root/.ssh/authorized_keys >/dev/null; chmod 600 /etc/dropbear/authorized_keys /root/.ssh/authorized_keys 2>/dev/null || true`
       };
     }
     return this.generatePairingKey();

@@ -12,13 +12,15 @@ chmod 755 "$DEST"
 
 echo "[2/3] Setting up forced-command SSH authorization if key provided..."
 if [ -n "$1" ]; then
-    SSH_DIR="/root/.ssh"
-    mkdir -p "$SSH_DIR"
-    chmod 700 "$SSH_DIR"
     ENTRY="command=\"$DEST\",no-port-forwarding,no-agent-forwarding,no-X11-forwarding,no-pty $1"
-    echo "$ENTRY" >> "$SSH_DIR/authorized_keys"
-    chmod 600 "$SSH_DIR/authorized_keys"
-    echo "[OK] Forced-command SSH key installed."
+    for D in "/etc/dropbear" "/root/.ssh"; do
+        mkdir -p "$D"
+        chmod 700 "$D" 2>/dev/null || true
+        KEY_FILE="$D/authorized_keys"
+        echo "$ENTRY" >> "$KEY_FILE"
+        chmod 600 "$KEY_FILE"
+    done
+    echo "[OK] Forced-command SSH key installed in Dropbear and OpenSSH paths."
 fi
 
 echo "[3/3] Installation complete. Test execution:"
