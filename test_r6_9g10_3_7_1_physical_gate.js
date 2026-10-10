@@ -253,7 +253,7 @@ async function runTests() {
       routerAttestation: createMockRouterAttestation({ killSwitch: { state: 'DISABLED' } }),
       windowsAttestation: createMockWindowsAttestation()
     });
-    const resDisabled = await gateDisabled.evaluate({ host: '10.66.66.1', port: 3128, expectedEgressFingerprint: 'fp', observedFingerprint: 'fp', lastHealth: 'HEALTHY' });
+    const resDisabled = await gateDisabled.evaluate({ host: '10.66.66.1', port: 3128, transportBinding: 'OPAL_WG', expectedEgressFingerprint: 'fp', observedFingerprint: 'fp', lastHealth: 'HEALTHY' });
     assert.strictEqual(resDisabled.ready, false, 'Kill switch DISABLED must fail gate');
 
     const gateEnforced = new PhysicalGate({
@@ -261,7 +261,7 @@ async function runTests() {
       routerAttestation: createMockRouterAttestation({ killSwitch: { state: 'ENFORCED' } }),
       windowsAttestation: createMockWindowsAttestation()
     });
-    const resEnforced = await gateEnforced.evaluate({ host: '10.66.66.1', port: 3128, expectedEgressFingerprint: 'fp', observedFingerprint: 'fp', lastHealth: 'HEALTHY' });
+    const resEnforced = await gateEnforced.evaluate({ host: '10.66.66.1', port: 3128, transportBinding: 'OPAL_WG', expectedEgressFingerprint: 'fp', observedFingerprint: 'fp', lastHealth: 'HEALTHY' });
     assert.strictEqual(resEnforced.ready, true, 'Kill switch ENFORCED must pass gate');
   });
 
@@ -273,7 +273,7 @@ async function runTests() {
       routerAttestation: createMockRouterAttestation(),
       windowsAttestation: createMockWindowsAttestation()
     });
-    const activeNode = { host: '10.66.66.1', port: 3128, expectedEgressFingerprint: 'fp', observedFingerprint: 'fp', lastHealth: 'HEALTHY' };
+    const activeNode = { host: '10.66.66.1', port: 3128, transportBinding: 'OPAL_WG', expectedEgressFingerprint: 'fp', observedFingerprint: 'fp', lastHealth: 'HEALTHY' };
     const resInitial = await gate.evaluate(activeNode);
     assert.strictEqual(resInitial.ready, true, 'Gate initially READY');
     assert.strictEqual(gate.isFresh(), true, 'Gate initially fresh');
@@ -409,6 +409,7 @@ async function runTests() {
       port: 3128,
       type: 'HTTP_PROXY',
       active: true,
+      transportBinding: 'OPAL_WG',
       lastHealth: 'HEALTHY',
       observedFingerprint: 'fp',
       expectedEgressFingerprint: 'fp'

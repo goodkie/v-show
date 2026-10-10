@@ -76,7 +76,9 @@ class PrivacyRelayService {
 
     // Initialize Physical Router Security Gate (Issue #6 R6.9G.10.3.7)
     this.physicalGate = options.physicalGate || new PhysicalGate({
-      enabled: Boolean(this.pool.physicalGate && this.pool.physicalGate.enabled)
+      enabled: Boolean(this.pool.physicalGate && this.pool.physicalGate.enabled),
+      allowLoopbackProxy: Boolean(options.allowLoopbackProxy || (this.pool.physicalGate && this.pool.physicalGate.allowLoopbackProxy)),
+      physicalGateTtlMs: (this.pool.physicalGate && this.pool.physicalGate.physicalGateTtlMs) || 30000
     });
 
     // Reset all runtime health states on process start
@@ -178,7 +180,8 @@ class PrivacyRelayService {
         selectedEgressId: active ? active.id : (this.pool.selectedEgressId || null),
         nodes: sanitizedNodes,
         physicalGate: {
-          enabled: Boolean(this.physicalGate && this.physicalGate.enabled)
+          enabled: Boolean(this.physicalGate && this.physicalGate.enabled),
+          allowLoopbackProxy: Boolean(this.physicalGate && this.physicalGate.allowLoopbackProxy)
         }
       };
       fs.writeFileSync(this.configFile, JSON.stringify(toSave, null, 2), 'utf8');
@@ -236,7 +239,7 @@ class PrivacyRelayService {
     }
 
     const creds = PrivacyRelayService.resolveNodeCredentials(node);
-    const targetUrl = overrideCanaryUrl || this.canaryUrl || (this.pool && this.pool.canaryUrl) || 'https://cloudflare.com/cdn-cgi/trace';
+    const targetUrl = overrideCanaryUrl || (node && node.canaryUrl) || this.canaryUrl || (this.pool && this.pool.canaryUrl) || 'https://cloudflare.com/cdn-cgi/trace';
     const parsedTarget = new URL(targetUrl);
     const isHttps = parsedTarget.protocol === 'https:';
     const targetPort = parsedTarget.port ? parseInt(parsedTarget.port, 10) : (isHttps ? 443 : 80);
@@ -443,6 +446,10 @@ class PrivacyRelayService {
     }
 
     const prev = this.getActiveNode();
+    if (overrideCanaryUrl) {
+      this.pool.canaryUrl = overrideCanaryUrl;
+      candidate.canaryUrl = overrideCanaryUrl;
+    }
     const verifyRes = await this.verifyNodeEgress(candidate, this.pool.healthCheckTimeoutMs || 5000, overrideCanaryUrl);
     if (!verifyRes.verified) {
       return { success: false, reason: 'CANDIDATE_HEALTH_CHECK_FAILED', details: verifyRes.reason };
@@ -816,6 +823,9 @@ class PrivacyRelayService {
               password: (data.password || '').trim(),
               credentialRef: (data.credentialRef || '').trim(),
               privateOnly: Boolean(data.privateOnly),
+              transportBinding: data.transportBinding ? data.transportBinding.trim() : null,
+              expectedEgressFingerprint: data.expectedEgressFingerprint ? data.expectedEgressFingerprint.trim() : null,
+              egressIdentityGroup: data.egressIdentityGroup ? data.egressIdentityGroup.trim() : null,
               active: data.enabled !== false,
               region: (data.region || '').trim()
             };
@@ -958,8 +968,14 @@ class PrivacyRelayService {
           try {
             const data = body ? JSON.parse(body) : {};
             const enabled = data.enabled !== undefined ? Boolean(data.enabled) : true;
+            if (data.allowLoopbackProxy !== undefined) {
+              this.physicalGate.allowLoopbackProxy = Boolean(data.allowLoopbackProxy);
+            }
             this.physicalGate.setEnabled(enabled);
-            this.pool.physicalGate = { enabled };
+            this.pool.physicalGate = {
+              enabled,
+              allowLoopbackProxy: Boolean(this.physicalGate.allowLoopbackProxy)
+            };
             this.saveConfig();
             if (enabled) {
               await this.physicalGate.evaluate(this.getActiveNode(), (n) => this.verifyNodeEgress(n));
@@ -1004,6 +1020,92 @@ class PrivacyRelayService {
         return;
       }
 
+      // POST /enroll-egress (Authenticated) - Pins expected egress fingerprint & identity group after canary probe
+      if (pathname === '/enroll-egress' && req.method === 'POST') {
+        let body = '';
+        req.on('data', chunk => body += chunk);
+        req.on('end', async () => {
+          try {
+            const data = JSON.parse(body || '{}');
+            const nodeId = data.nodeId || this.pool.selectedEgressId;
+            const targetNode = (this.pool.nodes || []).find(n => n.id === nodeId);
+            if (!targetNode) {
+              res.writeHead(404);
+              res.end(JSON.stringify({ success: false, reason: 'NODE_NOT_FOUND' }));
+              return;
+            }
+            if (data.canaryUrl) {
+              this.pool.canaryUrl = data.canaryUrl;
+              targetNode.canaryUrl = data.canaryUrl;
+            }
+            const canaryRes = await this.verifyNodeEgress(targetNode, data.timeoutMs || 5000, data.canaryUrl);
+            if (!canaryRes.verified || !canaryRes.fingerprint) {
+              res.writeHead(502);
+              res.end(JSON.stringify({ success: false, reason: 'CANARY_PROBE_FAILED', details: canaryRes.reason }));
+              return;
+            }
+            targetNode.expectedEgressFingerprint = canaryRes.fingerprint;
+            if (data.egressIdentityGroup) {
+              targetNode.egressIdentityGroup = data.egressIdentityGroup.trim();
+            }
+            if (data.transportBinding) {
+              targetNode.transportBinding = data.transportBinding.trim();
+            }
+            this.physicalGate.pinnedEgressFingerprint = canaryRes.fingerprint;
+            if (targetNode.egressIdentityGroup) {
+              this.physicalGate.pinnedEgressIdentityGroup = targetNode.egressIdentityGroup;
+            }
+            this.saveConfig();
+            res.writeHead(200);
+            res.end(JSON.stringify({
+              success: true,
+              nodeId: targetNode.id,
+              pinnedFingerprint: canaryRes.fingerprint,
+              egressIdentityGroup: targetNode.egressIdentityGroup,
+              transportBinding: targetNode.transportBinding
+            }));
+          } catch (e) {
+            res.writeHead(500);
+            res.end(JSON.stringify({ success: false, reason: e.message }));
+          }
+        });
+        return;
+      }
+
+      // POST /physical-gate/generate-key (Authenticated) - Generates Ed25519 pairing keypair with DPAPI protection
+      if (pathname === '/physical-gate/generate-key' && req.method === 'POST') {
+        try {
+          const keyInfo = this.physicalGate.routerAttestation.generatePairingKey();
+          res.writeHead(200);
+          res.end(JSON.stringify({
+            success: true,
+            publicKey: keyInfo.publicKey,
+            installCommand: keyInfo.installCommand
+          }));
+        } catch (e) {
+          res.writeHead(500);
+          res.end(JSON.stringify({ success: false, reason: e.message }));
+        }
+        return;
+      }
+
+      // GET /physical-gate/public-key (Authenticated) - Retrieves public key and install instruction
+      if (pathname === '/physical-gate/public-key' && req.method === 'GET') {
+        try {
+          const keyInfo = this.physicalGate.routerAttestation.getPublicKey();
+          res.writeHead(200);
+          res.end(JSON.stringify({
+            success: true,
+            publicKey: keyInfo.publicKey,
+            installCommand: keyInfo.installCommand
+          }));
+        } catch (e) {
+          res.writeHead(500);
+          res.end(JSON.stringify({ success: false, reason: e.message }));
+        }
+        return;
+      }
+
       // POST /physical-gate/pair (Authenticated)
       if (pathname === '/physical-gate/pair' && req.method === 'POST') {
         let body = '';
@@ -1015,7 +1117,12 @@ class PrivacyRelayService {
               data.routerIp || '192.168.8.1',
               data.expectedFingerprint || null,
               data.agentToken || null,
-              data.routerPort || null
+              data.routerPort !== undefined ? data.routerPort : null,
+              {
+                transport: data.transport || null,
+                sshPort: data.sshPort || null,
+                sshUser: data.sshUser || null
+              }
             );
             const state = await this.physicalGate.evaluate(this.getActiveNode(), (n) => this.verifyNodeEgress(n));
             res.writeHead(200);

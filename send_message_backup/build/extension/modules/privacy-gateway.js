@@ -824,6 +824,92 @@
         }
 
         /**
+         * [Issue #6 R6.9G.10.3.7.1.1] Generate Ed25519 pairing keypair with DPAPI storage
+         */
+        async generatePhysicalRouterKey(algorithm = 'ed25519') {
+            const host = this.config.relayHost || '127.0.0.1';
+            const port = this.config.relayControlPort || 18989;
+            try {
+                if (!this.ephemeralRelayToken) {
+                    await this.fetchRelayControlToken();
+                }
+                const fetchFn = this._mockFetch !== undefined ? this._mockFetch : (typeof fetch !== 'undefined' ? fetch : null);
+                if (!fetchFn) return { success: false, reason: 'FETCH_UNAVAILABLE' };
+                const headers = this.getRelayAuthHeaders();
+                const res = await fetchFn(`http://${host}:${port}/physical-gate/generate-key`, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify({ algorithm })
+                });
+                if (res.ok) {
+                    return await res.json();
+                }
+                const errData = await res.json().catch(() => ({}));
+                return { success: false, reason: errData.reason || `HTTP_${res.status}`, details: errData };
+            } catch (e) {
+                return { success: false, reason: e.message };
+            }
+        }
+
+        /**
+         * [Issue #6 R6.9G.10.3.7.1.1] Retrieve public key and forced command instruction
+         */
+        async getPhysicalRouterPublicKey() {
+            const host = this.config.relayHost || '127.0.0.1';
+            const port = this.config.relayControlPort || 18989;
+            try {
+                if (!this.ephemeralRelayToken) {
+                    await this.fetchRelayControlToken();
+                }
+                const fetchFn = this._mockFetch !== undefined ? this._mockFetch : (typeof fetch !== 'undefined' ? fetch : null);
+                if (!fetchFn) return { success: false, reason: 'FETCH_UNAVAILABLE' };
+                const headers = this.getRelayAuthHeaders();
+                const res = await fetchFn(`http://${host}:${port}/physical-gate/public-key`, {
+                    headers
+                });
+                if (res.ok) {
+                    return await res.json();
+                }
+                const errData = await res.json().catch(() => ({}));
+                return { success: false, reason: errData.reason || `HTTP_${res.status}`, details: errData };
+            } catch (e) {
+                return { success: false, reason: e.message };
+            }
+        }
+
+        /**
+         * [Issue #6 R6.9G.10.3.7.1.1] Explicit Fixed-Egress Enrollment / Pinning
+         */
+        async enrollPhysicalEgress(data = {}) {
+            const host = this.config.relayHost || '127.0.0.1';
+            const port = this.config.relayControlPort || 18989;
+            try {
+                if (!this.ephemeralRelayToken) {
+                    await this.fetchRelayControlToken();
+                }
+                const fetchFn = this._mockFetch !== undefined ? this._mockFetch : (typeof fetch !== 'undefined' ? fetch : null);
+                if (!fetchFn) return { success: false, reason: 'FETCH_UNAVAILABLE' };
+                const headers = this.getRelayAuthHeaders();
+                const res = await fetchFn(`http://${host}:${port}/enroll-egress`, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify(data)
+                });
+                if (res.ok) {
+                    const resData = await res.json();
+                    if (resData && resData.pinnedFingerprint) {
+                        this.pinnedPhysicalEgressFingerprint = resData.pinnedFingerprint;
+                    }
+                    return resData;
+                }
+                const errData = await res.json().catch(() => ({}));
+                return { success: false, reason: errData.reason || `HTTP_${res.status}`, details: errData };
+            } catch (e) {
+                return { success: false, reason: e.message };
+            }
+        }
+
+        /**
          * Verify continuity of the egress tunnel during campaign run
          */
         async checkEgressContinuity() {

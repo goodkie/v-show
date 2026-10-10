@@ -622,6 +622,20 @@
                                                 <input type="password" id="priv-node-pass" class="premium-input" placeholder="••••••••" style="height: 24px; font-size: 10px; padding: 1px 4px;">
                                             </div>
                                         </div>
+                                        <div style="display: flex; gap: 4px; margin-bottom: 4px;">
+                                            <div style="flex: 1;">
+                                                <span style="font-size: 9px; color: #94a3b8; display: block;">Transport Binding (Physical Gate)</span>
+                                                <select id="priv-node-transport-binding" class="premium-select" style="height: 24px; font-size: 10px; padding: 1px 4px;">
+                                                    <option value="" selected>None (Standard Proxy)</option>
+                                                    <option value="OPAL_WG">OPAL_WG (WireGuard 10.66.66.1:3128)</option>
+                                                    <option value="OPAL_OVPN">OPAL_OVPN (OpenVPN 10.67.67.1:3128)</option>
+                                                </select>
+                                            </div>
+                                            <div style="flex: 1;">
+                                                <span style="font-size: 9px; color: #94a3b8; display: block;">Egress Identity Group</span>
+                                                <input type="text" id="priv-node-identity-group" class="premium-input" placeholder="e.g. VPS-PRIMARY-1" style="height: 24px; font-size: 10px; padding: 1px 4px;">
+                                            </div>
+                                        </div>
                                         <div style="font-size: 8px; color: #64748b; margin-bottom: 6px;">🔒 Passwords are encrypted with Windows DPAPI on the Companion service. Plaintext is never saved.</div>
                                         <div id="priv-node-status-msg" style="display: none; font-size: 9px; margin-bottom: 6px; padding: 3px 6px; border-radius: 3px;"></div>
                                         <div style="display: flex; gap: 4px;">
@@ -665,13 +679,17 @@
                                     <div>VPN TUNNEL: <span id="phys-vpn-tunnel" style="font-weight: 600; color: #94a3b8;">DOWN</span></div>
                                     <div>KILL SWITCH: <span id="phys-kill-switch" style="font-weight: 600; color: #94a3b8;">UNKNOWN</span></div>
                                     <div>PRIVATE PROXY: <span id="phys-private-proxy" style="font-weight: 600; color: #94a3b8;">UNKNOWN</span></div>
+                                    <div>TRANSPORT BINDING: <span id="phys-transport-bind" style="font-weight: 600; color: #94a3b8;">NONE</span></div>
+                                    <div>IDENTITY GROUP: <span id="phys-identity-group" style="font-weight: 600; color: #94a3b8;">NONE</span></div>
                                     <div>EGRESS FINGERPRINT: <span id="phys-egress-fp" style="font-weight: 600; color: #94a3b8;">NONE</span></div>
                                     <div>DIRECT BYPASS: <span id="phys-bypass-blocked" style="font-weight: 600; color: #94a3b8;">UNVERIFIED</span></div>
                                     <div id="phys-reasons-row" style="color: #f87171; word-break: break-all; margin-top: 2px;">REASONS: <span id="phys-gate-reasons">PHYSICAL_GATE_DISABLED</span></div>
                                 </div>
-                                <div style="display: flex; gap: 4px; margin-top: 8px;">
-                                    <button id="phys-gate-verify-btn" type="button" class="primary-btn-small" style="flex: 1; padding: 4px; font-size: 10px; background: #0284c7; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">✓ Re-Verify Gate</button>
-                                    <button id="phys-gate-pair-btn" type="button" class="secondary-btn-small" style="padding: 4px 8px; font-size: 10px; background: #1e293b; color: #38bdf8; border: 1px solid #38bdf8; border-radius: 4px; cursor: pointer;">Pair Opal</button>
+                                <div style="display: flex; gap: 4px; margin-top: 8px; flex-wrap: wrap;">
+                                    <button id="phys-gate-verify-btn" type="button" class="primary-btn-small" style="flex: 1; min-width: 70px; padding: 4px; font-size: 10px; background: #0284c7; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">✓ Re-Verify Gate</button>
+                                    <button id="phys-gate-pair-btn" type="button" class="secondary-btn-small" style="padding: 4px 6px; font-size: 10px; background: #1e293b; color: #38bdf8; border: 1px solid #38bdf8; border-radius: 4px; cursor: pointer;">Pair Opal</button>
+                                    <button id="phys-gate-key-btn" type="button" class="secondary-btn-small" style="padding: 4px 6px; font-size: 10px; background: #1e293b; color: #38bdf8; border: 1px solid #38bdf8; border-radius: 4px; cursor: pointer;">SSH Key</button>
+                                    <button id="phys-gate-enroll-btn" type="button" class="secondary-btn-small" style="padding: 4px 6px; font-size: 10px; background: #1e293b; color: #a78bfa; border: 1px solid #a78bfa; border-radius: 4px; cursor: pointer;">Enroll Egress</button>
                                 </div>
                             </div>
                         </div>

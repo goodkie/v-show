@@ -9,10 +9,11 @@
 
 const crypto = require('crypto');
 const http = require('http');
-const { execSync } = require('child_process');
+const { execSync, execFileSync } = require('child_process');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const net = require('net');
 
 class GLInetOpalDriver {
   constructor(options = {}) {
@@ -37,6 +38,18 @@ class GLInetOpalDriver {
     let keyPath = this.sshKeyPath;
     let tempKeyFile = null;
 
+    // Strict validation of SSH command parameters (Blocker 9)
+    if (!net.isIP(this.routerIp) && !/^[a-zA-Z0-9.-]+$/.test(this.routerIp)) {
+      throw new Error(`INVALID_ROUTER_IP: "${this.routerIp}" is not a valid IP or hostname`);
+    }
+    const portNum = parseInt(this.sshPort, 10);
+    if (isNaN(portNum) || portNum < 1 || portNum > 65535) {
+      throw new Error(`INVALID_SSH_PORT: "${this.sshPort}" must be between 1 and 65535`);
+    }
+    if (!/^[a-zA-Z0-9_-]{1,32}$/.test(this.sshUser)) {
+      throw new Error(`INVALID_SSH_USER: "${this.sshUser}" contains invalid characters`);
+    }
+
     try {
       if (!keyPath && this.agentToken && this.agentToken.includes('PRIVATE KEY')) {
         tempKeyFile = path.join(os.tmpdir(), `xpider_opal_${Date.now()}_${crypto.randomBytes(4).toString('hex')}.key`);
@@ -49,11 +62,27 @@ class GLInetOpalDriver {
         keyPath = tempKeyFile;
       }
 
-      const keyArgs = keyPath ? `-i "${keyPath}"` : '';
-      const portArg = this.sshPort && this.sshPort !== 22 ? `-p ${this.sshPort}` : '';
+      // Safe argument array passed to execFileSync avoiding shell injection
+      const args = [];
+      if (keyPath) {
+        args.push('-i', keyPath);
+      }
+      if (portNum !== 22) {
+        args.push('-p', String(portNum));
+      }
+      args.push(
+        '-o', 'StrictHostKeyChecking=accept-new',
+        '-o', 'BatchMode=yes',
+        '-o', 'ConnectTimeout=3',
+        `${this.sshUser}@${this.routerIp}`
+      );
+
       // Opal authorized_keys enforces: command="/usr/libexec/xpider-router-attest",no-port-forwarding,no-agent-forwarding,no-X11-forwarding,no-pty
-      const sshCmd = `ssh ${keyArgs} ${portArg} -o StrictHostKeyChecking=accept-new -o BatchMode=yes -o ConnectTimeout=3 ${this.sshUser}@${this.routerIp}`;
-      const stdout = execSync(sshCmd, { encoding: 'utf8', timeout: this.timeoutMs });
+      const stdout = execFileSync('ssh', args, {
+        encoding: 'utf8',
+        timeout: this.timeoutMs,
+        stdio: ['ignore', 'pipe', 'pipe']
+      });
       return JSON.parse(stdout.trim());
     } finally {
       if (tempKeyFile && fs.existsSync(tempKeyFile)) {
@@ -135,9 +164,9 @@ class GLInetOpalDriver {
     try {
       const data = await this.fetchJson('/api/xpider/attest');
 
-      const model = data.model || 'GL-SFT1200';
+      const model = data.model || (data.routerIdentity && data.routerIdentity.model) || 'GL-SFT1200';
       const boardId = data.boardId || 'sft1200';
-      const routerFp = GLInetOpalDriver.deriveRouterFingerprint(model, boardId, data.publicKey || data.boardId || data.deviceSerial);
+      const routerFp = data.routerFingerprint || (data.routerIdentity && data.routerIdentity.routerFingerprint) || GLInetOpalDriver.deriveRouterFingerprint(model, boardId, data.publicKey || data.boardId || data.deviceSerial);
 
       // Blocker 4: Expected fingerprint is MANDATORY. Null expected fingerprint NEVER passes!
       const identityVerified = Boolean(this.expectedFingerprint && this.expectedFingerprint === routerFp);

@@ -206,7 +206,7 @@ async function runTests() {
     });
 
     // In OpenVPN fallback, node is on 10.67.67.1 with matching expectedEgressFingerprint
-    const activeNode = { host: '10.67.67.1', port: 3128, lastHealth: 'HEALTHY', observedFingerprint: 'fp-egress-vps', expectedEgressFingerprint: 'fp-egress-vps' };
+    const activeNode = { host: '10.67.67.1', port: 3128, transportBinding: 'OPAL_OVPN', lastHealth: 'HEALTHY', observedFingerprint: 'fp-egress-vps', expectedEgressFingerprint: 'fp-egress-vps' };
     const res = await gate.evaluate(activeNode);
     assert.strictEqual(res.ready, true, 'Gate must be ready on healthy OpenVPN fallback');
     assert.strictEqual(res.tunnelPass, true, 'tunnelPass must be true');
@@ -260,7 +260,7 @@ async function runTests() {
       windowsAttestation: createMockWindowsAttestation()
     });
 
-    const activeNode = { host: '10.66.66.1', port: 3128, lastHealth: 'HEALTHY', observedFingerprint: 'fp-egress-vps', expectedEgressFingerprint: 'fp-egress-vps' };
+    const activeNode = { host: '10.66.66.1', port: 3128, transportBinding: 'OPAL_WG', lastHealth: 'HEALTHY', observedFingerprint: 'fp-egress-vps', expectedEgressFingerprint: 'fp-egress-vps' };
     const res = await gate.evaluate(activeNode);
     assert.strictEqual(res.ready, true, 'Gate must be ready when kill-switch is ENFORCED');
     assert.strictEqual(res.killSwitchPass, true, 'killSwitchPass must be true');
@@ -289,7 +289,7 @@ async function runTests() {
       windowsAttestation: createMockWindowsAttestation()
     });
 
-    const privateNode = { host: '10.66.66.1', port: 3128, lastHealth: 'HEALTHY', observedFingerprint: 'fp-vps-egress', expectedEgressFingerprint: 'fp-vps-egress' };
+    const privateNode = { host: '10.66.66.1', port: 3128, transportBinding: 'OPAL_WG', lastHealth: 'HEALTHY', observedFingerprint: 'fp-vps-egress', expectedEgressFingerprint: 'fp-vps-egress' };
     const res = await gate.evaluate(privateNode);
     assert.strictEqual(res.ready, true, 'Gate must be ready with private VPN-subnet proxy');
     assert.strictEqual(res.privateProxyPass, true, 'privateProxyPass must be true');

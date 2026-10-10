@@ -120,13 +120,17 @@ if command -v uci >/dev/null 2>&1; then
 fi
 
 if [ "$KS_STATE" = "UNKNOWN" ] && command -v iptables >/dev/null 2>&1; then
-    if iptables -S FORWARD 2>/dev/null | grep -q -E '(-j DROP|-j REJECT)' && iptables -S FORWARD 2>/dev/null | grep -q -E '(wg|tun|vpn)'; then
+    # Verify explicit zone forwarding or policy rule that drops non-VPN forwarding
+    if iptables -S zone_lan_forward 2>/dev/null | grep -q -E '(DROP|REJECT)' && iptables -S zone_lan_dest_ACCEPT 2>/dev/null | grep -q -E '(wg|tun)'; then
         KS_STATE="ENFORCED"
-        KS_EVIDENCE='["iptables:vpn_forwarding_drop_enforced"]'
+        KS_EVIDENCE='["iptables:zone_lan_vpn_forward_enforced"]'
+    elif iptables -S FORWARD 2>/dev/null | grep -E 'zone_lan_to_zone_wan.*-j (DROP|REJECT)' >/dev/null 2>&1; then
+        KS_STATE="ENFORCED"
+        KS_EVIDENCE='["iptables:zone_lan_to_zone_wan_dropped"]'
     fi
 fi
 
-# 5. Route / Direct WAN Bypass Detection (Blocker 5)
+# 5. Route / Direct WAN Bypass Detection (Blockers 4, 5)
 LAN_GW="192.168.8.1"
 if command -v uci >/dev/null 2>&1; then
     UCI_IP=$(uci get network.lan.ipaddr 2>/dev/null)
@@ -143,12 +147,28 @@ if command -v ip >/dev/null 2>&1; then
     fi
 fi
 
-# 6. DNS Verification (Blocker 5)
+# Real VPN default route inspection from routing tables (Blocker 4)
+VPN_DEF_ROUTE="false"
+if command -v ip >/dev/null 2>&1; then
+    if ip route show 2>/dev/null | grep -q -E '(default|0.0.0.0/1|128.0.0.0/1).*dev *(wg|tun)'; then
+        VPN_DEF_ROUTE="true"
+    fi
+elif command -v route >/dev/null 2>&1; then
+    if route -n 2>/dev/null | grep -q -E '0\.0\.0\.0.*(wg|tun)'; then
+        VPN_DEF_ROUTE="true"
+    fi
+fi
+
+# 6. DNS Verification strictly bound to verified VPN resolvers (Blocker 4)
 DNS_STATE="UNKNOWN"
 if [ -f /tmp/resolv.conf.auto ]; then
     if grep -q -E '(10.66.66.1|10.67.67.1)' /tmp/resolv.conf.auto 2>/dev/null; then
         DNS_STATE="VPN_BOUND"
-    elif [ "$VPN_STATE" = "UP" ]; then
+    fi
+fi
+if [ "$DNS_STATE" = "UNKNOWN" ] && command -v uci >/dev/null 2>&1; then
+    DNS_SRV=$(uci get dhcp.@dnsmasq[0].server 2>/dev/null)
+    if echo "$DNS_SRV" | grep -q -E '(10.66.66.1|10.67.67.1)'; then
         DNS_STATE="VPN_BOUND"
     fi
 fi
@@ -199,8 +219,7 @@ cat <<EOF
     "evidence": $KS_EVIDENCE
   },
   "route": {
-    "defaultGatewayViaOpal": true,
-    "vpnDefaultRoutePresent": $( [ "$VPN_STATE" = "UP" ] && echo true || echo false ),
+    "vpnDefaultRoutePresent": $VPN_DEF_ROUTE,
     "directWanBypassDetected": $DIRECT_WAN_BYPASS
   },
   "dns": {

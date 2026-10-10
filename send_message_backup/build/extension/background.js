@@ -2487,6 +2487,48 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
             return true;
         }
 
+        case 'GENERATE_PHYSICAL_ROUTER_KEY': {
+            (async () => {
+                try {
+                    const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+                    if (!pg) return sendResponse({ success: false, error: 'PrivacyGateway unavailable' });
+                    const res = await pg.generatePhysicalRouterKey(request.algorithm || 'ed25519');
+                    sendResponse({ success: true, result: res });
+                } catch (e) {
+                    sendResponse({ success: false, error: e.message });
+                }
+            })();
+            return true;
+        }
+
+        case 'GET_PHYSICAL_ROUTER_PUBLIC_KEY': {
+            (async () => {
+                try {
+                    const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+                    if (!pg) return sendResponse({ success: false, error: 'PrivacyGateway unavailable' });
+                    const res = await pg.getPhysicalRouterPublicKey();
+                    sendResponse({ success: true, result: res });
+                } catch (e) {
+                    sendResponse({ success: false, error: e.message });
+                }
+            })();
+            return true;
+        }
+
+        case 'ENROLL_PHYSICAL_EGRESS': {
+            (async () => {
+                try {
+                    const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+                    if (!pg) return sendResponse({ success: false, error: 'PrivacyGateway unavailable' });
+                    const res = await pg.enrollPhysicalEgress(request.data || {});
+                    sendResponse({ success: true, result: res });
+                } catch (e) {
+                    sendResponse({ success: false, error: e.message });
+                }
+            })();
+            return true;
+        }
+
         case 'START_PRIVACY_RELAY_NATIVE': {
             (async () => {
                 if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendNativeMessage) {

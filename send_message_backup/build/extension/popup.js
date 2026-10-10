@@ -1381,6 +1381,9 @@ async function hydrateSettings(overrideV2Store = null) {
                     return;
                 }
 
+                const transportBindingEl = document.getElementById('priv-node-transport-binding');
+                const identityGroupEl = document.getElementById('priv-node-identity-group');
+
                 const nodePayload = {
                     type: pType,
                     host: pHost,
@@ -1388,6 +1391,8 @@ async function hydrateSettings(overrideV2Store = null) {
                     name: nodeNameEl ? nodeNameEl.value.trim() : '',
                     username: nodeUserEl ? nodeUserEl.value.trim() : '',
                     password: nodePassEl ? nodePassEl.value : '',
+                    transportBinding: transportBindingEl && transportBindingEl.value ? transportBindingEl.value : null,
+                    egressIdentityGroup: identityGroupEl && identityGroupEl.value.trim() ? identityGroupEl.value.trim() : null,
                     enabled: true
                 };
 
@@ -1420,6 +1425,24 @@ async function hydrateSettings(overrideV2Store = null) {
                                 const fpSnippet = selData.egressFingerprint ? selData.egressFingerprint.substring(0, 8) : 'verified';
                                 showNodeStatus(`✅ Node saved, probed & ACTIVE! (FP: sha256:${fpSnippet}...)`, false);
                                 addLog(`🌐 [Privacy Relay] Added & activated node ${addedNode.id} (${addedNode.type} ${addedNode.host}:${addedNode.port}, FP: ${selData.egressFingerprint})`, 'success');
+
+                                if (nodePayload.transportBinding) {
+                                    chrome.runtime.sendMessage({
+                                        action: 'ENROLL_PHYSICAL_EGRESS',
+                                        data: {
+                                            nodeId: addedNode.id,
+                                            transportBinding: nodePayload.transportBinding,
+                                            egressIdentityGroup: nodePayload.egressIdentityGroup
+                                        }
+                                    }, () => {
+                                        chrome.runtime.sendMessage({ action: 'QUERY_PHYSICAL_GATE' }, (pgRes) => {
+                                            if (pgRes && pgRes.result && pgRes.result.status) {
+                                                _updatePhysicalGateUI(pgRes.result.status);
+                                            }
+                                        });
+                                    });
+                                }
+
                                 refreshRelayNodes();
                                 refreshRelayStatus();
                                 setTimeout(() => {
@@ -1602,21 +1625,99 @@ async function hydrateSettings(overrideV2Store = null) {
             physPairBtn.addEventListener('click', async () => {
                 const ip = prompt('Enter GL.iNet Opal IP address:', '192.168.8.1');
                 if (!ip) return;
+                const transport = prompt('Enter pairing transport ("ssh" or "http"):', 'ssh') || 'ssh';
+                const sshPortStr = prompt('Enter SSH port (1-65535):', '22') || '22';
+                const sshUser = prompt('Enter SSH username:', 'root') || 'root';
                 const token = prompt('Enter optional Router Attestation Token (leave empty if unconfigured):', '') || null;
                 physPairBtn.disabled = true;
                 physPairBtn.textContent = '⏳ Pairing...';
                 try {
                     const res = await new Promise(r => chrome.runtime.sendMessage({
                         action: 'PAIR_PHYSICAL_ROUTER',
-                        data: { routerIp: ip.trim(), agentToken: token }
+                        data: {
+                            routerIp: ip.trim(),
+                            transport: transport.trim(),
+                            sshPort: parseInt(sshPortStr, 10) || 22,
+                            sshUser: sshUser.trim(),
+                            agentToken: token
+                        }
                     }, r));
                     if (res && res.result && res.result.status) {
                         _updatePhysicalGateUI(res.result.status);
                     }
-                } catch (_) {}
+                    if (res && res.result && res.result.success) {
+                        alert('✅ Opal Router successfully paired and verified!');
+                    } else {
+                        const reason = (res && res.result && res.result.attestation && res.result.attestation.reason) || (res && res.error) || 'Pairing verification failed';
+                        alert('❌ Pairing failed: ' + reason);
+                    }
+                } catch (err) {
+                    alert('❌ Pairing error: ' + err.message);
+                }
                 finally {
                     physPairBtn.disabled = false;
                     physPairBtn.textContent = 'Pair Opal';
+                }
+            });
+        }
+
+        const physKeyBtn = document.getElementById('phys-gate-key-btn');
+        if (physKeyBtn) {
+            physKeyBtn.addEventListener('click', async () => {
+                physKeyBtn.disabled = true;
+                physKeyBtn.textContent = '⏳ Key...';
+                try {
+                    let keyRes = await new Promise(r => chrome.runtime.sendMessage({ action: 'GET_PHYSICAL_ROUTER_PUBLIC_KEY' }, r));
+                    if (!keyRes || !keyRes.result || !keyRes.result.success || !keyRes.result.publicKey) {
+                        keyRes = await new Promise(r => chrome.runtime.sendMessage({ action: 'GENERATE_PHYSICAL_ROUTER_KEY', algorithm: 'ed25519' }, r));
+                    }
+                    if (keyRes && keyRes.result && keyRes.result.publicKey) {
+                        const cmd = keyRes.result.installCommand || `echo "${keyRes.result.publicKey}" >> /etc/dropbear/authorized_keys`;
+                        prompt('Copy this one-line command and run on your GL.iNet Opal terminal:', cmd);
+                    } else {
+                        alert('❌ Failed to retrieve or generate SSH key: ' + ((keyRes && keyRes.error) || 'UNKNOWN'));
+                    }
+                } catch (err) {
+                    alert('❌ Key error: ' + err.message);
+                } finally {
+                    physKeyBtn.disabled = false;
+                    physKeyBtn.textContent = 'SSH Key';
+                }
+            });
+        }
+
+        const physEnrollBtn = document.getElementById('phys-gate-enroll-btn');
+        if (physEnrollBtn) {
+            physEnrollBtn.addEventListener('click', async () => {
+                const group = prompt('Enter Egress Identity Group (e.g. VPS-PRIMARY-1):', 'VPS-PRIMARY-1');
+                if (!group) return;
+                const binding = prompt('Enter Transport Binding (OPAL_WG or OPAL_OVPN):', 'OPAL_WG') || 'OPAL_WG';
+                physEnrollBtn.disabled = true;
+                physEnrollBtn.textContent = '⏳ Enrolling...';
+                try {
+                    const res = await new Promise(r => chrome.runtime.sendMessage({
+                        action: 'ENROLL_PHYSICAL_EGRESS',
+                        data: {
+                            egressIdentityGroup: group.trim(),
+                            transportBinding: binding.trim()
+                        }
+                    }, r));
+                    if (res && res.result && res.result.success) {
+                        alert(`✅ Fixed Egress Enrolled! Pinned FP: sha256:${res.result.pinnedFingerprint} (Group: ${res.result.egressIdentityGroup})`);
+                        chrome.runtime.sendMessage({ action: 'QUERY_PHYSICAL_GATE' }, (pgRes) => {
+                            if (pgRes && pgRes.result && pgRes.result.status) {
+                                _updatePhysicalGateUI(pgRes.result.status);
+                            }
+                        });
+                    } else {
+                        const reason = (res && res.result && res.result.reason) || (res && res.error) || 'Enrollment failed';
+                        alert('❌ Enrollment failed: ' + reason);
+                    }
+                } catch (err) {
+                    alert('❌ Enrollment error: ' + err.message);
+                } finally {
+                    physEnrollBtn.disabled = false;
+                    physEnrollBtn.textContent = 'Enroll Egress';
                 }
             });
         }
@@ -1686,6 +1787,16 @@ function _updatePhysicalGateUI(gateState) {
     if (elProxy) {
         elProxy.textContent = gateState.privateProxyPass ? 'PASS (PRIVATE RFC1918)' : 'FAIL';
         elProxy.style.color = gateState.privateProxyPass ? '#4ade80' : '#ef4444';
+    }
+    const elTransportBind = document.getElementById('phys-transport-bind');
+    if (elTransportBind) {
+        elTransportBind.textContent = gateState.transportBinding || 'NONE';
+        elTransportBind.style.color = gateState.transportBindingPass ? '#4ade80' : (gateState.transportBinding ? '#ef4444' : '#94a3b8');
+    }
+    const elIdentityGroup = document.getElementById('phys-identity-group');
+    if (elIdentityGroup) {
+        elIdentityGroup.textContent = gateState.egressIdentityGroup || 'NONE';
+        elIdentityGroup.style.color = gateState.egressIdentityGroup ? '#38bdf8' : '#94a3b8';
     }
     if (elEgress) {
         elEgress.textContent = gateState.egressFingerprintPass ? (gateState.observedEgressFingerprint || 'PASS') : 'FAIL';
