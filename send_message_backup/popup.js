@@ -1099,40 +1099,80 @@ async function hydrateSettings(overrideV2Store = null) {
         const relayRotateBtn = document.getElementById('priv-relay-rotate-btn');
         const relayRepairBtn = document.getElementById('priv-relay-repair-btn');
 
+        const escapeRelayHtml = (str) => {
+            if (str === null || str === undefined) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        };
+
         const updateRelayStatusUI = (statusData) => {
-            if (!statusData) return;
             if (relayDaemonBadge) {
-                const online = statusData.relayReady !== false;
-                relayDaemonBadge.textContent = online ? 'ONLINE' : 'OFFLINE';
-                relayDaemonBadge.style.color = online ? '#34d399' : '#f87171';
-                relayDaemonBadge.style.background = online ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)';
-                relayDaemonBadge.style.border = online ? '1px solid #10b981' : '1px solid #ef4444';
+                if (!statusData) {
+                    relayDaemonBadge.textContent = 'OFFLINE';
+                    relayDaemonBadge.style.color = '#f87171';
+                    relayDaemonBadge.style.background = 'rgba(239, 68, 68, 0.2)';
+                    relayDaemonBadge.style.border = '1px solid #ef4444';
+                } else if (statusData.relayReady) {
+                    relayDaemonBadge.textContent = 'ONLINE / READY';
+                    relayDaemonBadge.style.color = '#34d399';
+                    relayDaemonBadge.style.background = 'rgba(16, 185, 129, 0.2)';
+                    relayDaemonBadge.style.border = '1px solid #10b981';
+                } else if (statusData.totalNodes === 0 || !statusData.selectedEgressId) {
+                    relayDaemonBadge.textContent = 'ONLINE / NO NODES';
+                    relayDaemonBadge.style.color = '#fde047';
+                    relayDaemonBadge.style.background = 'rgba(234, 179, 8, 0.2)';
+                    relayDaemonBadge.style.border = '1px solid #eab308';
+                } else {
+                    relayDaemonBadge.textContent = 'ONLINE / UNVERIFIED';
+                    relayDaemonBadge.style.color = '#fde047';
+                    relayDaemonBadge.style.background = 'rgba(234, 179, 8, 0.2)';
+                    relayDaemonBadge.style.border = '1px solid #eab308';
+                }
             }
-            if (relayNodeDisplay && statusData.selectedEgressId) {
-                relayNodeDisplay.textContent = statusData.selectedEgressId;
+
+            if (relayNodeDisplay) {
+                relayNodeDisplay.textContent = (statusData && statusData.selectedEgressId) ? statusData.selectedEgressId : '—';
             }
-            if (relayFpDisplay && statusData.egressFingerprint) {
-                relayFpDisplay.textContent = 'sha256:' + statusData.egressFingerprint;
+
+            if (relayFpDisplay) {
+                if (statusData && statusData.egressFingerprint) {
+                    relayFpDisplay.textContent = 'sha256:' + statusData.egressFingerprint;
+                } else {
+                    relayFpDisplay.textContent = (statusData && statusData.totalNodes > 0) ? 'Not verified' : 'Offline';
+                }
             }
-            if (relayModeSelect && statusData.rotationMode) {
+
+            if (relayModeSelect && statusData && statusData.rotationMode) {
                 relayModeSelect.value = statusData.rotationMode;
+            }
+
+            if (relayRotateBtn) {
+                const canRotate = !!(statusData && statusData.relayReady && statusData.totalNodes > 0);
+                relayRotateBtn.disabled = !canRotate;
             }
         };
 
-        const refreshRelayStatus = () => {
+        const refreshRelayStatus = (cb) => {
             chrome.runtime.sendMessage({ action: 'QUERY_PRIVACY_RELAY_STATUS' }, (res) => {
                 if (res && res.success && res.result && res.result.status) {
                     updateRelayStatusUI(res.result.status);
                     onBackgroundMessageSuccess();
-                } else if (relayDaemonBadge) {
-                    const isUnauth = res && res.result && res.result.reason === 'HTTP_401';
-                    relayDaemonBadge.textContent = isUnauth ? 'UNAUTH' : 'OFFLINE';
-                    relayDaemonBadge.style.color = '#f87171';
-                    relayDaemonBadge.style.background = 'rgba(239, 68, 68, 0.2)';
-                    relayDaemonBadge.style.border = '1px solid #ef4444';
+                    if (typeof cb === 'function') cb(res.result.status);
+                } else {
+                    updateRelayStatusUI(null);
+                    if (relayDaemonBadge && res && res.result && res.result.reason === 'HTTP_401') {
+                        relayDaemonBadge.textContent = 'UNAUTH';
+                    }
+                    if (typeof cb === 'function') cb(null);
                 }
             });
         };
+        window.refreshRelayStatus = refreshRelayStatus;
+        window.updateRelayStatusUI = updateRelayStatusUI;
         refreshRelayStatus();
 
         if (relayModeSelect) {
@@ -1167,16 +1207,40 @@ async function hydrateSettings(overrideV2Store = null) {
             relayRepairBtn.addEventListener('click', () => {
                 relayRepairBtn.disabled = true;
                 relayRepairBtn.textContent = '⚡ Starting...';
+                if (relayDaemonBadge) {
+                    relayDaemonBadge.textContent = 'STARTING...';
+                    relayDaemonBadge.style.color = '#fde047';
+                    relayDaemonBadge.style.background = 'rgba(234, 179, 8, 0.2)';
+                    relayDaemonBadge.style.border = '1px solid #eab308';
+                }
+
                 chrome.runtime.sendMessage({ action: 'START_PRIVACY_RELAY_NATIVE' }, (res) => {
-                    setTimeout(() => {
-                        relayRepairBtn.disabled = false;
-                        relayRepairBtn.textContent = '⚡ Start / Repair';
-                        refreshRelayStatus();
-                        if (res && res.success) {
-                            addLog('⚡ [Privacy Relay] Native launch command dispatched.', 'success');
-                        } else {
-                            addLog('⚠️ [Privacy Relay] Could not start via Native Messaging. Run install_companion.bat if needed.', 'warn');
-                        }
+                    if (res && res.success) {
+                        addLog('⚡ [Privacy Relay] Native launch command dispatched. Polling daemon...', 'info');
+                    }
+
+                    // Bounded polling loop (up to 8 seconds, 1s interval)
+                    let attempts = 0;
+                    const maxAttempts = 8;
+                    const pollTimer = setInterval(() => {
+                        attempts++;
+                        chrome.runtime.sendMessage({ action: 'QUERY_PRIVACY_RELAY_STATUS' }, (pollRes) => {
+                            if (pollRes && pollRes.success && pollRes.result && pollRes.result.status) {
+                                clearInterval(pollTimer);
+                                const st = pollRes.result.status;
+                                updateRelayStatusUI(st);
+                                refreshRelayNodes();
+                                relayRepairBtn.disabled = false;
+                                relayRepairBtn.textContent = '⚡ Start / Repair';
+                                addLog(`⚡ [Privacy Relay] Daemon online (${st.relayReady ? 'READY' : (st.totalNodes === 0 ? 'ONLINE / NO NODES' : 'STANDBY')})`, 'success');
+                            } else if (attempts >= maxAttempts) {
+                                clearInterval(pollTimer);
+                                updateRelayStatusUI(null);
+                                relayRepairBtn.disabled = false;
+                                relayRepairBtn.textContent = '⚡ Start / Repair';
+                                addLog('⚠️ [Privacy Relay] Daemon not reachable after 8s bounded polling. Run install_companion.bat if needed.', 'warn');
+                            }
+                        });
                     }, 1000);
                 });
             });
@@ -1217,14 +1281,23 @@ async function hydrateSettings(overrideV2Store = null) {
             nodes.forEach(n => {
                 const isActive = n.id === activeNodeId;
                 const activeBadge = isActive ? '<span style="color: #34d399; font-weight: 700; margin-right: 4px;">● ACTIVE</span>' : '';
+                const safeId = escapeRelayHtml(n.id);
+                const safeType = escapeRelayHtml(n.type);
+                const safeHost = escapeRelayHtml(n.host);
+                const safePort = escapeRelayHtml(n.port);
+                const healthColor = n.lastHealth === 'HEALTHY' ? '#34d399' : (n.lastHealth === 'UNHEALTHY' ? '#f87171' : '#94a3b8');
+                const healthBadge = `<span style="color: ${healthColor}; font-size: 9px; font-weight: 600; margin-left: 3px;">[${escapeRelayHtml(n.lastHealth || 'UNKNOWN')}]</span>`;
+                const credBadge = n.username ? '<span style="color: #a78bfa; font-size: 9px; margin-left: 3px;" title="Secured via DPAPI">🔒 AUTH</span>' : '';
                 html += `
                 <div style="display: flex; justify-content: space-between; align-items: center; padding: 3px 4px; border-bottom: 1px solid #1e293b; background: ${isActive ? 'rgba(56, 189, 248, 0.1)' : 'transparent'};">
-                    <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px;">
+                    <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 220px;">
                         ${activeBadge}
-                        <span style="color: #38bdf8; font-weight: 600;">${n.id}</span>
-                        <span style="color: #94a3b8; font-size: 9px;">[${n.type}] ${n.host}:${n.port}</span>
+                        <span style="color: #38bdf8; font-weight: 600;">${safeId}</span>
+                        <span style="color: #94a3b8; font-size: 9px;">[${safeType}] ${safeHost}:${safePort}</span>
+                        ${healthBadge}
+                        ${credBadge}
                     </div>
-                    <button type="button" class="priv-remove-node-btn" data-node-id="${n.id}" style="background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; color: #f87171; border-radius: 3px; font-size: 8px; padding: 1px 4px; cursor: pointer;">Delete</button>
+                    <button type="button" class="priv-remove-node-btn" data-node-id="${safeId}" style="background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; color: #f87171; border-radius: 3px; font-size: 8px; padding: 1px 4px; cursor: pointer;">Delete</button>
                 </div>`;
             });
             relayNodeListContainer.innerHTML = html;
@@ -1251,6 +1324,7 @@ async function hydrateSettings(overrideV2Store = null) {
                 }
             });
         };
+        window.refreshRelayNodes = refreshRelayNodes;
         refreshRelayNodes();
 
         if (relayToggleAddBtn && relayAddForm) {
@@ -1299,26 +1373,51 @@ async function hydrateSettings(overrideV2Store = null) {
                 };
 
                 nodeSaveBtn.disabled = true;
-                nodeSaveBtn.textContent = '⏳ Saving...';
+                nodeSaveBtn.textContent = '⏳ Saving & Verifying...';
+                showNodeStatus('⏳ Step 1/2: Saving node to Companion pool...', false);
 
                 chrome.runtime.sendMessage({ action: 'ADD_PRIVACY_RELAY_NODE', nodeData: nodePayload }, (res) => {
-                    nodeSaveBtn.disabled = false;
-                    nodeSaveBtn.textContent = '💾 Save Node to Pool';
                     if (res && res.success && res.result && res.result.success) {
-                        showNodeStatus('✓ Node saved with Windows DPAPI encryption!', false);
-                        if (nodeHostEl) nodeHostEl.value = '';
-                        if (nodePortEl) nodePortEl.value = '';
-                        if (nodeUserEl) nodeUserEl.value = '';
-                        if (nodePassEl) nodePassEl.value = '';
-                        if (nodeNameEl) nodeNameEl.value = '';
-                        addLog(`🌐 [Privacy Relay] Added node ${res.result.node.id} (${res.result.node.type} ${res.result.node.host}:${res.result.node.port})`, 'success');
-                        refreshRelayNodes();
-                        refreshRelayStatus();
-                        setTimeout(() => {
-                            if (relayAddForm) relayAddForm.style.display = 'none';
-                            if (relayToggleAddBtn) relayToggleAddBtn.textContent = '➕ Add Egress Node';
-                        }, 1200);
+                        const addedNode = res.result.node;
+                        showNodeStatus('⏳ Step 2/2: Probing canary & activating node...', false);
+
+                        // Trigger 1-click select & canary verification
+                        chrome.runtime.sendMessage({
+                            action: 'SELECT_PRIVACY_RELAY_EGRESS',
+                            egressId: addedNode.id
+                        }, (selRes) => {
+                            nodeSaveBtn.disabled = false;
+                            nodeSaveBtn.textContent = '💾 Save Node to Pool';
+
+                            // Clear input fields for safety
+                            if (nodeHostEl) nodeHostEl.value = '';
+                            if (nodePortEl) nodePortEl.value = '';
+                            if (nodeUserEl) nodeUserEl.value = '';
+                            if (nodePassEl) nodePassEl.value = '';
+                            if (nodeNameEl) nodeNameEl.value = '';
+
+                            if (selRes && selRes.success && selRes.result && selRes.result.success) {
+                                const selData = selRes.result;
+                                const fpSnippet = selData.egressFingerprint ? selData.egressFingerprint.substring(0, 8) : 'verified';
+                                showNodeStatus(`✅ Node saved, probed & ACTIVE! (FP: sha256:${fpSnippet}...)`, false);
+                                addLog(`🌐 [Privacy Relay] Added & activated node ${addedNode.id} (${addedNode.type} ${addedNode.host}:${addedNode.port}, FP: ${selData.egressFingerprint})`, 'success');
+                                refreshRelayNodes();
+                                refreshRelayStatus();
+                                setTimeout(() => {
+                                    if (relayAddForm) relayAddForm.style.display = 'none';
+                                    if (relayToggleAddBtn) relayToggleAddBtn.textContent = '➕ Add Egress Node';
+                                }, 1500);
+                            } else {
+                                const probeErr = (selRes && selRes.result && selRes.result.details) || (selRes && selRes.result && selRes.result.reason) || (selRes && selRes.error) || 'Canary probe failed';
+                                showNodeStatus(`⚠️ Node saved, but canary probe failed: ${probeErr}`, true);
+                                addLog(`⚠️ [Privacy Relay] Node ${addedNode.id} saved but canary probe failed: ${probeErr}`, 'warn');
+                                refreshRelayNodes();
+                                refreshRelayStatus();
+                            }
+                        });
                     } else {
+                        nodeSaveBtn.disabled = false;
+                        nodeSaveBtn.textContent = '💾 Save Node to Pool';
                         const errMsg = (res && res.result && res.result.reason) || (res && res.error) || 'Failed to save node';
                         showNodeStatus(`❌ ${errMsg}`, true);
                     }

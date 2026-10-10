@@ -641,16 +641,22 @@ class PrivacyRelayService {
         req.on('end', () => {
           try {
             const data = JSON.parse(body);
-            if (data.rotationMode) {
+            const ALLOWED_MODES = ['FIXED', 'MANUAL', 'CAMPAIGN_BOUNDARY', 'HEALTH_FAILOVER'];
+            if (data.rotationMode && ALLOWED_MODES.includes(data.rotationMode)) {
               this.pool.rotationMode = data.rotationMode;
               this.saveConfig();
+              this.log(`[PRIVACY_RELAY] rotationMode changed to ${this.pool.rotationMode}`);
               res.writeHead(200);
               res.end(JSON.stringify({ success: true, rotationMode: this.pool.rotationMode }));
               return;
             }
           } catch (_) {}
           res.writeHead(400);
-          res.end(JSON.stringify({ success: false, reason: 'INVALID_ROTATION_MODE' }));
+          res.end(JSON.stringify({
+            success: false,
+            reason: 'INVALID_ROTATION_MODE',
+            message: 'Allowed modes are: FIXED, MANUAL, CAMPAIGN_BOUNDARY, HEALTH_FAILOVER'
+          }));
         });
         return;
       }

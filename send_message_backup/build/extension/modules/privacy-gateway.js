@@ -573,6 +573,10 @@
          * [R6.9G.10] Set relay rotation mode (/mode)
          */
         async setRelayMode(rotationMode) {
+            const ALLOWED_MODES = ['FIXED', 'MANUAL', 'CAMPAIGN_BOUNDARY', 'HEALTH_FAILOVER'];
+            if (!ALLOWED_MODES.includes(rotationMode)) {
+                return { success: false, reason: 'INVALID_ROTATION_MODE', message: `Allowed modes: ${ALLOWED_MODES.join(', ')}` };
+            }
             const host = this.config.relayHost || '127.0.0.1';
             const port = this.config.relayControlPort || 18989;
             try {
@@ -590,7 +594,8 @@
                     await this.saveConfig({ relayRotationMode: rotationMode });
                     return data;
                 }
-                return { success: false, reason: `HTTP_${res.status}` };
+                const errData = await res.json().catch(() => ({}));
+                return { success: false, reason: errData.reason || `HTTP_${res.status}`, message: errData.message };
             } catch (e) {
                 return { success: false, reason: e.message };
             }
