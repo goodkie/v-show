@@ -15,22 +15,22 @@
 
     const BUILD_INFO = {
         branch: 'upgrade/phase-0-1',
-        // [R6.9G.10.3.6] implementationHead = functional commit containing Auto-Enforced Privacy Start Prep
-        //                and Legacy VPN Self-Healing
-        implementationHead: 'b970eb5e695020e91ee9f376930e3f6233013cff',
-        implementationHeadShort: 'b970eb5e',
-        head: 'b970eb5e695020e91ee9f376930e3f6233013cff',
-        headShort: 'b970eb5e',
+        // [R6.9G.10.3.6.1] implementationHead = functional commit containing Single-Authority Privacy Start Prep
+        //                  and True START_ACK Acceptance
+        implementationHead: '65c3fd81087216b71e825fd6641c2404016b9e61',
+        implementationHeadShort: '65c3fd81',
+        head: '65c3fd81087216b71e825fd6641c2404016b9e61',
+        headShort: '65c3fd81',
         rollbackBase: 'dc0740a0c69e2f7fa96b6989841acf0831b3619e',
-        previousFunctionalRestorePoint: 'b8d1fab8190bb991c69d67c44a3ab1c1a5b766dd',
+        previousFunctionalRestorePoint: 'b970eb5e695020e91ee9f376930e3f6233013cff',
         manifestVersion: 3,
-        buildId: 'R6.9G.10.3.6-20261008-AUTO-ENFORCED-PRIVACY-START-PREP',
-        builtAt: '2026-10-08T18:25:00.000Z',
+        buildId: 'R6.9G.10.3.6.1-20261010-SINGLE-AUTHORITY-PRIVACY-PREP',
+        builtAt: '2026-10-10T08:40:00.000Z',
         provenanceSchema: 2,
         modules: {
-            backgroundSha: '2940562d2a8ebb23e15832e8500d170df81fb9b261f61594a9ac7e7fa20fb6ec',
+            backgroundSha: '2e17c641b7d43761b666b92166b6c80decc7143e988bc3f9648f7a2279c214e5',
             contentScriptSha: '5c2ebd277a9020a4434fc68cd46c6ec974dbf180290ba368b33273aee67ccf9e',
-            popupSha: 'a1b2cf1e780bdd891d8101a2460bd2a0169541d2fa675d7e53eea222c2cf26c0',
+            popupSha: '9174f5eedb3e228417b8570ddc8e94cb29112653a49c8fb937a45f4cebbb2041',
             solverContentSha: 'd7de969d29df29799537b11380f0f82967bb93da227c91e7dc8c6af0d128f457',
             solverCoreSha: '01b3d96048ea933403e4599854dcdca28027e7f676aa5077eb6c5eb0582ac1e7',
             emailCollectorSha: '3f1147a379e159e7777158f2caa74cc8d40b2a0b0eb2c244f440af379cb5c9c9',
