@@ -15,17 +15,17 @@
 
     const BUILD_INFO = {
         branch: 'upgrade/phase-0-1',
-        // [R6.9G.10.3.7.1.2] implementationHead = functional commit containing Clean Production Attestation,
-        //                     Real OpenSSH Fixture, and True Monitor Revocation
-        implementationHead: '24d689f6b97ea4a26b59079ecce2c023879a7731',
-        implementationHeadShort: '24d689f6',
-        head: '24d689f6b97ea4a26b59079ecce2c023879a7731',
-        headShort: '24d689f6',
+        // [R6.9G.10.3.7.1.3] implementationHead = functional commit containing Final Production Path Seal,
+        //                     Canonical Dropbear Keys, and Zero Route Seam
+        implementationHead: '2e049a7b529c47523d6cd9c1cea79d1d92e15d1c',
+        implementationHeadShort: '2e049a7b',
+        head: '2e049a7b529c47523d6cd9c1cea79d1d92e15d1c',
+        headShort: '2e049a7b',
         rollbackBase: 'dc0740a0c69e2f7fa96b6989841acf0831b3619e',
-        previousFunctionalRestorePoint: 'af8840866da098cb7fd1b45de724b41f128b794a',
+        previousFunctionalRestorePoint: '24d689f6b97ea4a26b59079ecce2c023879a7731',
         manifestVersion: 3,
-        buildId: 'R6.9G.10.3.7.1.2-20261010-CLEAN-ATTESTATION-REAL-SSH-SEALED',
-        builtAt: '2026-10-10T21:40:00.000Z',
+        buildId: 'R6.9G.10.3.7.1.3-20261010-FINAL-SEAL-REAL-RELAY-MONITOR',
+        builtAt: '2026-10-10T22:30:00.000Z',
         provenanceSchema: 2,
         modules: {
             backgroundSha: 'e1577de1b9a989e668ae1b819a74b408b658f78fc0b335ce3885dc82f423fc61',
