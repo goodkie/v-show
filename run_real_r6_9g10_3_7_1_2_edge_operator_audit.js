@@ -250,6 +250,10 @@ async function runEdgeAudit() {
   await new Promise(r => mockRouterServer.listen(MOCK_ROUTER_PORT, '127.0.0.1', r));
   rec(`[MOCK_ROUTER_HTTP] Listening on http://127.0.0.1:${MOCK_ROUTER_PORT}`);
 
+  try {
+    execSync('ssh-keygen -R "[127.0.0.1]:18922"', { stdio: 'ignore' });
+  } catch (_) {}
+
   // Start in-process OpenSSH Server fixture (ssh2.Server on port 18922)
   const sshHostKey = crypto.generateKeyPairSync('rsa', {
     modulusLength: 2048,
@@ -367,19 +371,18 @@ async function runEdgeAudit() {
     if (!versionData) throw new Error('Could not connect to Edge DevTools protocol');
     rec(`[EDGE_CONNECTED] User-Agent: ${versionData['User-Agent']}`);
 
-    // Discover Extension Targets (Service Worker + Extension ID)
-    let targets = [];
+    // Discover Background Service Worker target specifically (avoiding Edge built-in extensions)
+    let swTarget = null;
     for (let i = 0; i < 40; i++) {
-      const res = await fetch(`http://127.0.0.1:${CDP_PORT}/json/list`);
-      targets = await res.json();
-      if (targets.some(t => t.url && t.url.startsWith('chrome-extension://') && t.type === 'service_worker')) {
-        break;
-      }
+      try {
+        const res = await fetch(`http://127.0.0.1:${CDP_PORT}/json/list`);
+        const targets = await res.json();
+        swTarget = targets.find(t => t.type === 'service_worker' && t.url && t.url.includes('background.js'));
+        if (swTarget) break;
+      } catch (_) {}
       await new Promise(r => setTimeout(r, 250));
     }
-
-    const swTarget = targets.find(t => t.url && t.url.startsWith('chrome-extension://') && t.type === 'service_worker');
-    if (!swTarget) throw new Error('Could not find Extension Background Service Worker target in Edge');
+    if (!swTarget) throw new Error('Could not find XPIDER Extension Background Service Worker target in Edge');
     const extId = new URL(swTarget.url).hostname;
     rec(`[EXTENSION_TARGET] ID=${extId} SW=${swTarget.webSocketDebuggerUrl}`);
 
@@ -396,9 +399,39 @@ async function runEdgeAudit() {
       return res.result ? res.result.value : null;
     };
 
+    // Verify BuildProvenance in SW
+    let buildInfo = null;
+    for (let i = 0; i < 25; i++) {
+      try {
+        buildInfo = await evalSw('(typeof BuildProvenance !== "undefined" && BuildProvenance.BUILD_INFO) ? BuildProvenance.BUILD_INFO : (typeof self !== "undefined" && self.BuildProvenance ? self.BuildProvenance.BUILD_INFO : null)');
+        if (buildInfo) break;
+      } catch (_) {}
+      await new Promise(r => setTimeout(r, 400));
+    }
+    if (!buildInfo) throw new Error('BuildProvenance not defined in service worker after 10s');
+
+    rec(`[BUILD_PROVENANCE_CHECK] buildId=${buildInfo.buildId} headShort=${buildInfo.headShort} implementationHead=${buildInfo.implementationHead}`);
+
+    if (buildInfo.buildId !== 'R6.9G.10.3.7.1.2-20261010-CLEAN-ATTESTATION-REAL-SSH-SEALED') {
+      throw new Error(`BuildId mismatch: expected R6.9G.10.3.7.1.2-20261010-CLEAN-ATTESTATION-REAL-SSH-SEALED, got ${buildInfo.buildId}`);
+    }
+    if (buildInfo.headShort !== '24d689f6') {
+      throw new Error(`headShort mismatch: expected 24d689f6, got ${buildInfo.headShort}`);
+    }
+
+    // Configure PrivacyGateway in background
+    await evalSw(`(async () => {
+      const pg = PrivacyGateway.getInstance();
+      await pg.init();
+      pg.config.canaryUrl = 'http://127.0.0.1:${TARGET_PORT}/privacy-canary';
+      await pg.saveConfig({ canaryUrl: 'http://127.0.0.1:${TARGET_PORT}/privacy-canary' });
+      await pg.ensureRelayActive(true);
+    })()`);
+
     // Open and connect Popup UI
     const popupUrl = `chrome-extension://${extId}/popup.html`;
-    const newTargetRes = await fetch(`http://127.0.0.1:${CDP_PORT}/json/new?${popupUrl}`, { method: 'PUT' });
+    rec(`[POPUP_OPEN] Opening ${popupUrl} via CDP...`);
+    const newTargetRes = await fetch(`http://127.0.0.1:${CDP_PORT}/json/new?${encodeURIComponent(popupUrl)}`, { method: 'PUT' });
     const popupTarget = await newTargetRes.json();
     rec(`[POPUP_OPENED] Page Target=${popupTarget.id} WS=${popupTarget.webSocketDebuggerUrl}`);
 
@@ -424,8 +457,7 @@ async function runEdgeAudit() {
       await new Promise(r => setTimeout(r, 200));
     }
 
-    await evalPopup(`refreshRelayStatus()`);
-    await new Promise(r => setTimeout(r, 800));
+    await new Promise(r => setTimeout(r, 1200));
 
     // =========================================================================
     // SCENARIO 1: INITIAL STATE -> PHYSICAL GATE DISABLED
@@ -576,7 +608,7 @@ async function runEdgeAudit() {
       })
     });
     const pairData = await pairRes.json();
-    rec(`[SCENARIO_5_PAIR_RESULT] success=${pairData.success} routerIdentityPass=${pairData.status?.routerIdentityPass} command="${sshCommandExecuted}"`);
+    rec(`[SCENARIO_5_PAIR_RESULT] success=${pairData.success} routerIdentityPass=${pairData.status?.routerIdentityPass} command="${sshCommandExecuted}" raw=${JSON.stringify(pairData)}`);
 
     assert.strictEqual(pairData.success, true, 'Scenario 5 Failed: Pairing action must return success=true');
     assert.strictEqual(pairData.status?.routerIdentityPass, true, 'Scenario 5 Failed: Post-pair attestation must verify router identity');
@@ -599,15 +631,15 @@ async function runEdgeAudit() {
     // =========================================================================
     rec('\n>>> SCENARIO 6: PHYSICAL EGRESS ENROLLMENT & TRANSPORT BINDING <<<');
 
-    // Add WG proxy node with transportBinding
+    // Add WG proxy node with transportBinding pointing to mock proxy fixture
     await fetch('http://127.0.0.1:18989/add-node', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify({
         id: 'Private-Proxy-WG',
         type: 'HTTP_PROXY',
-        host: '10.66.66.1',
-        port: 3128,
+        host: '127.0.0.1',
+        port: PRIVATE_PROXY_PORT,
         transportBinding: 'OPAL_WG',
         egressIdentityGroup: 'VPS-PRIMARY-1',
         active: true
@@ -777,6 +809,7 @@ async function runEdgeAudit() {
     try { publicProxy.server.close(); } catch (_) {}
     try { mockRouterServer.close(); } catch (_) {}
     try { sshServer.close(); } catch (_) {}
+    try { execSync('ssh-keygen -R "[127.0.0.1]:18922"', { stdio: 'ignore' }); } catch (_) {}
 
     // Write trace log
     fs.writeFileSync(OUT, lines.join('\n') + '\n', 'utf8');
