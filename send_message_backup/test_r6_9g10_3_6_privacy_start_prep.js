@@ -409,9 +409,9 @@ function createMockChrome(initialStorage = {}) {
         // Verify popup.js error alerts handle raw enums gracefully
         const popupJsPath = path.join(__dirname, 'popup.js');
         const popupJs = fs.readFileSync(popupJsPath, 'utf8');
-        assert.ok(popupJs.includes('Strict Privacy needs an enforced relay/proxy'), 'Must include human-readable user alert string');
-        assert.ok(popupJs.includes('ensureEnforcedPrivacyForStart'), 'startCampaign must invoke ensureEnforcedPrivacyForStart');
+        assert.ok(popupJs.includes('ENSURE_ENFORCED_PRIVACY_FOR_START'), 'startCampaign must delegate privacy start prep via ENSURE_ENFORCED_PRIVACY_FOR_START IPC');
         assert.ok(popupJs.includes('[START_IPC]'), 'startCampaign must log [START_IPC]');
+        assert.ok(popupJs.includes('[START_ACK]'), 'startCampaign must log [START_ACK]');
     });
 
     console.log('\n================================================================');

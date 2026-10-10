@@ -2130,11 +2130,13 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
             logBg(null, `[START_BG] received queue=${queueLen}`, "info");
 
             (async () => {
-                // [R6.9G.9 Privacy Gateway Preflight & R6.9G.10.3.6 Auto-Enforced Start Prep]
+                // [R6.9G.9 Privacy Gateway Preflight & R6.9G.10.3.6.1 Single-Authority Start Prep]
                 const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
                 if (pg) {
                     await pg.init();
-                    if (!pg.isGateReady || pg.config.transportMode === 'EXTERNAL_VPN_MONITOR' || pg.config.transportMode === 'SYSTEM_VPN') {
+                    // Single authoritative privacy check:
+                    // If gate is not ready (e.g. direct call without prior prep), run ensureEnforcedPrivacyForStart as fallback
+                    if (!pg.isGateReady) {
                         const prep = await pg.ensureEnforcedPrivacyForStart();
                         if (!prep.ready && pg.config.failClosed) {
                             logBg(null, `[PRIVACY_GATE_BLOCK] reason=${prep.reason} attemptId=none targetUrl=none`, 'error');
@@ -2183,6 +2185,10 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                         return;
                     }
                 }
+
+                // [R6.9G.10.3.6.1] Blocker 3: START_BG_READY log before sendResponse
+                console.log('[START_BG_READY] privacyReady=true');
+                logBg(null, '[START_BG_READY] privacyReady=true', "info");
 
                 sendResponse({ success: true, status: 'acknowledged', queueCount: queueLen });
 

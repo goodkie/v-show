@@ -3644,50 +3644,69 @@ async function startCampaign() {
     const banner = document.getElementById('resumable-campaign-banner');
     if (banner) banner.style.display = 'none';
 
-    // [R6.9G.10.3.6 Auto-Enforced Privacy Start Prep]
-    const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
-    if (pg) {
-        await pg.init();
-        const prepResult = await pg.ensureEnforcedPrivacyForStart();
-        if (!prepResult.ready) {
-            _restoreStartButton();
-            console.error(`[START_BLOCKED] PRIVACY_START_BLOCKED reason=${prepResult.reason}`);
-            addLog(`🛡️ [START_BLOCKED] ${prepResult.userMessage || prepResult.reason}`, 'error');
-            
-            // Open settings overlay and focus actionable field
-            const settingsOverlay = document.getElementById('settings-overlay');
-            if (settingsOverlay) settingsOverlay.classList.remove('hidden');
-
-            const privGroup = document.getElementById('privacy-gateway-group');
-            if (privGroup) privGroup.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-
-            if (prepResult.actionSection === 'privacy-relay-add-form') {
-                const relayFields = document.getElementById('privacy-relay-config-fields');
-                if (relayFields) relayFields.style.display = 'block';
-                const addForm = document.getElementById('priv-relay-add-form');
-                if (addForm) addForm.style.display = 'block';
-                const nodeHost = document.getElementById('priv-node-host');
-                if (nodeHost) nodeHost.focus();
-            } else if (prepResult.actionSection === 'privacy-proxy-config-fields') {
-                const proxyFields = document.getElementById('privacy-proxy-config-fields');
-                if (proxyFields) proxyFields.style.display = 'block';
-                const proxyHost = document.getElementById('privacy-proxy-host');
-                if (proxyHost) proxyHost.focus();
+    // [R6.9G.10.3.6.1 Single-Authority Privacy Start Prep]
+    // Background service worker is the sole authoritative privacy-prep state owner.
+    // Popup delegates privacy preparation to background and does not directly mutate transport.
+    const prepResponse = await new Promise((resolve) => {
+        if (typeof chrome === 'undefined' || !chrome.runtime || !chrome.runtime.sendMessage) {
+            return resolve({ success: false, error: 'CHROME_RUNTIME_UNAVAILABLE' });
+        }
+        chrome.runtime.sendMessage({
+            action: 'ENSURE_ENFORCED_PRIVACY_FOR_START'
+        }, (res) => {
+            if (chrome.runtime.lastError) {
+                return resolve({ success: false, error: chrome.runtime.lastError.message });
             }
+            resolve(res || { success: false, error: 'NO_RESPONSE_FROM_BACKGROUND' });
+        });
+    });
 
-            alert(`🛡️ STRICT PRIVACY REQUIREMENT\n\n${prepResult.userMessage || 'Strict Privacy needs an enforced relay/proxy.'}`);
-            return Promise.reject(new Error(prepResult.reason || 'PRIVACY_START_BLOCKED'));
+    const prepResult = (prepResponse && prepResponse.success && prepResponse.result) ? prepResponse.result : null;
+
+    if (!prepResult || !prepResult.ready) {
+        _restoreStartButton();
+        const blockReason = prepResult ? prepResult.reason : (prepResponse ? prepResponse.error : 'PRIVACY_PREP_FAILED');
+        const userMsg = prepResult ? prepResult.userMessage : 'Privacy transport could not be prepared by background engine.';
+        console.error(`[START_BLOCKED] PRIVACY_START_BLOCKED reason=${blockReason}`);
+        addLog(`🛡️ [START_BLOCKED] ${userMsg || blockReason}`, 'error');
+        
+        // Open settings overlay and focus actionable field
+        const settingsOverlay = document.getElementById('settings-overlay');
+        if (settingsOverlay) settingsOverlay.classList.remove('hidden');
+
+        const privGroup = document.getElementById('privacy-gateway-group');
+        if (privGroup) privGroup.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+        if (prepResult && prepResult.actionSection === 'privacy-relay-add-form') {
+            const relayFields = document.getElementById('privacy-relay-config-fields');
+            if (relayFields) relayFields.style.display = 'block';
+            const addForm = document.getElementById('priv-relay-add-form');
+            if (addForm) addForm.style.display = 'block';
+            const nodeHost = document.getElementById('priv-node-host');
+            if (nodeHost) nodeHost.focus();
+        } else if (prepResult && prepResult.actionSection === 'privacy-proxy-config-fields') {
+            const proxyFields = document.getElementById('privacy-proxy-config-fields');
+            if (proxyFields) proxyFields.style.display = 'block';
+            const proxyHost = document.getElementById('privacy-proxy-host');
+            if (proxyHost) proxyHost.focus();
         }
 
-        // If self-healed, sync mode dropdown in UI
-        if (prepResult.mode) {
-            const privModeSelect = document.getElementById('privacy-transport-mode-select');
-            if (privModeSelect && privModeSelect.value !== prepResult.mode) {
-                privModeSelect.value = prepResult.mode;
-                try {
-                    privModeSelect.dispatchEvent(new Event('change'));
-                } catch (_) {}
-            }
+        alert(`🛡️ STRICT PRIVACY REQUIREMENT\n\n${userMsg || 'Strict Privacy needs an enforced relay/proxy.'}`);
+        return Promise.reject(new Error(blockReason || 'PRIVACY_START_BLOCKED'));
+    }
+
+    // [PRIVACY_START_READY] Logged after background confirms ready
+    console.log(`[PRIVACY_START_READY] mode=${prepResult.mode}`);
+    addLog(`🛡️ [PRIVACY_START_READY] mode=${prepResult.mode}`, 'info');
+
+    // If background self-healed mode, sync mode dropdown in UI
+    if (prepResult.mode) {
+        const privModeSelect = document.getElementById('privacy-transport-mode-select');
+        if (privModeSelect && privModeSelect.value !== prepResult.mode) {
+            privModeSelect.value = prepResult.mode;
+            try {
+                privModeSelect.dispatchEvent(new Event('change'));
+            } catch (_) {}
         }
     }
 
