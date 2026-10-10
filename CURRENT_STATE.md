@@ -4,20 +4,20 @@
 - Protocol: OCA-DEV-1.4
 - Project ID: xpider-autoform-sender-pro
 - Workspace: E:\vivpr\ai\extension-form-sender
-- Authority: goodkie/v-show Issue #6 (Receipt #6097235362)
+- Authority: goodkie/v-show Issue #6 (Directive Comment #6097508789)
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-10.15
+- State Rev: 2026-10-10.16
 
 ## Current Gate
-- Formal Gate: R6.9G.10.3.6.2 PRIVACY RELAY SETTINGS OPERATIONALIZATION + ONE-CLICK NODE VERIFY.
-- Engineering Acceptance Status: **PASS** (Independently verified in Real Microsoft Edge Browser Operator Audit Scenarios 1-10 bound to exact release ZIP bytes: Scenario 1 initial state truthfulness, Scenario 2 SOCKS5 removal, Scenario 3 mode allowlist enforcement on /mode, Scenario 4 Start/Repair bounded polling progression, Scenario 5 1-click node onboarding and verification flow, Scenario 6 fail-closed invariant and zero direct fallback, Scenario 7 credential safety and DPAPI storage, Scenario 8 egress node list display and HTML entity escaping, Scenario 9 node deletion and empty pool clearance, Scenario 10 multi-node rotation and live probe update).
-- Release Tag: `v6.9g.10.3-audit.6.2`
-- Release URL: `https://github.com/goodkie/v-show/releases/tag/v6.9g.10.3-audit.6.2`
-- Owner Action: **HOLD** (Awaiting ChatGPT gate audit of R6.9G.10.3.6.2).
+- Formal Gate: R6.9G.10.3.6.2.1 EXACT-RELEASE COMPANION LIFECYCLE + ROTATION READY + STICKY RESTART RESTORE.
+- Engineering Acceptance Status: **PASS** (Independently verified in Real Microsoft Edge Browser Operator Audit bound strictly to exact release ZIP bytes: Blocker 1 Companion lifecycle extracted/installed/uninstalled via BAT; Blocker 2 genuine OFFLINE state and Start/Repair recovery via Native Messaging; Blocker 3 rotation ends with authoritative ONLINE / READY badge and HEALTHY status; Blocker 4 sticky node restoration across Companion process restart under FIXED mode; Blocker 5 full 40-character SHA precision).
+- Release Tag: `v6.9g.10.3-audit.6.2.1`
+- Release URL: `https://github.com/goodkie/v-show/releases/tag/v6.9g.10.3-audit.6.2.1`
+- Owner Action: **HOLD** (Awaiting ChatGPT gate audit of R6.9G.10.3.6.2.1).
 - Bulk Campaign: **HOLD** (Strict invariant until Owner smoke PASS and release evaluation).
 - Autonomous Engineering Loop: **RECEIPT SUBMITTED — CHATGPT AUDITS TO GATE**.
 - Rollback Anchor: `dc0740a0c69e2f7fa96b6989841acf0831b3619e` (immutable baseline rollback anchor).
-- Previous Functional Restore Point: `65c3fd81087216b71e825fd6641c2404016b9e61` (`65c3fd81`)
+- Previous Functional Restore Point: `32e384d1f7ac0292308011f60bd6c1ef2bb86654` (`32e384d1`)
 - Next Action: ChatGPT audits receipt to gate decision.
 
 ## Lineage & Remote Git SHAs
@@ -37,25 +37,30 @@
   12. `a1a1ddc73e59a935cebbef590ba183878b1ee011` (R6.9G.10.3.6.1 State Advance HEAD)
   13. `32e384d1f7ac0292308011f60bd6c1ef2bb86654` (R6.9G.10.3.6.2 Functional HEAD)
   14. `67bbbd7dd34a7da840684ebc6337deda6a0e92b9` (R6.9G.10.3.6.2 Provenance HEAD / Release Tag `v6.9g.10.3-audit.6.2`)
-  15. `8fae8d05370d0696e9cb2b2f69460a8b9829424c` (R6.9G.10.3.6.2 Release Metadata HEAD)
+  15. `8fae8d055a1d7e1348a1d009c99d390505a7404e` (R6.9G.10.3.6.2 Release Metadata HEAD)
+  16. `63cfe936361a70df2fe27f2ce860c5bb023eccff` (R6.9G.10.3.6.2 State Advance HEAD)
+  17. `a07facde75c03372480c3bc05754e9a7e30cefb2` (R6.9G.10.3.6.2 Cursor Update HEAD)
+  18. `47ee3ba29f055f86a889bac11ecad82db1558725` (R6.9G.10.3.6.2.1 Functional HEAD)
+  19. `5fad5c3f980fce303b2e7d8ecc4232fb4d21e91b` (R6.9G.10.3.6.2.1 Provenance HEAD / Release Tag `v6.9g.10.3-audit.6.2.1`)
+  20. `68085f5f72ab3070e4903648aa2e7490b94b43c9` (R6.9G.10.3.6.2.1 Release Docs HEAD)
 
 ## Build Provenance
-- Build ID: `R6.9G.10.3.6.2-20261010-PRIVACY-RELAY-SETTINGS-OPERATIONALIZATION`
-- Functional HEAD: `32e384d1f7ac0292308011f60bd6c1ef2bb86654` (`32e384d1`)
-- Provenance HEAD: `67bbbd7dd34a7da840684ebc6337deda6a0e92b9` (`67bbbd7d`)
+- Build ID: `R6.9G.10.3.6.2.1-20261010-EXACT-RELEASE-COMPANION-LIFECYCLE`
+- Functional HEAD: `47ee3ba29f055f86a889bac11ecad82db1558725` (`47ee3ba2`)
+- Provenance HEAD: `5fad5c3f980fce303b2e7d8ecc4232fb4d21e91b` (`5fad5c3f`)
 - Manifest Version: 3
 - Branch: `upgrade/phase-0-1`
-- Built At: 2026-10-10T11:25:00.000Z
+- Built At: 2026-10-10T13:30:00.000Z
 - SHA-256 Digest Inventory:
   - `background.js`: `2e17c641b7d43761b666b92166b6c80decc7143e988bc3f9648f7a2279c214e5`
-  - `popup.js`: `8b2b8a6f0fd18599560515c8a752267a893289ec1d014017e12b051dfe79bf1d`
+  - `popup.js`: `18d2968ad2587e79c43c3aef7b2ca99eeca48eb690dd238e3de90d7e0998e73f`
   - `modules/privacy-gateway.js`: `178ca80ec05320be78ba1cab2aa5a08ac6d9b7a8a4c1d299b55d657f3baef313`
   - `popup.html`: `4834f589e733d53edd05ca60d4981f937cb7e6b4cdbccc2d020bfa814daf47a6`
 
 ## Diagnostic Package Assets
 - Exact Bundle ZIP: `XPIDER_R6.9G.10.3_OWNER_DIAGNOSTIC_TEST_ONLY.zip`
-  - Size: 4,351,712 bytes
-  - SHA-256: `7bbd1954255e249d23ba9cc8f5e01b43308dcb925d0e44f5f5ead96dfcca8119`
-- Real Edge Audit Traces: `evidence_r6_9g10_3_6_2_real_runtime_traces.log`
-  - Size: 7,375 bytes
-  - SHA-256: `d10615beaf13c21efaf07a0284f108a0b75ab6fc62ec1d0401b627fddf2ef66e`
+  - Size: 4,352,177 bytes
+  - SHA-256: `6bff4a9ebd540bf1d8ea8874f9a53b3f3d69bce305d74247af1d8b69320482fa`
+- Real Edge Audit Traces: `evidence_r6_9g10_3_6_2_1_real_runtime_traces.log`
+  - Size: 9,772 bytes
+  - SHA-256: `27179d840ac532569105df1a4eca09d3390f5465866474f584f025f59f944bee`
