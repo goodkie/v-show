@@ -15,17 +15,17 @@
 
     const BUILD_INFO = {
         branch: 'upgrade/phase-0-1',
-        // [R6.9G.10.3.7.1.1] implementationHead = functional commit containing Real Pair Success,
-        //                     Physical Egress Enrollment, and Mid-Run Revocation
-        implementationHead: 'af884086055d7f1d46f53416e91f0a2ba1a5e182',
-        implementationHeadShort: 'af884086',
-        head: 'af884086055d7f1d46f53416e91f0a2ba1a5e182',
-        headShort: 'af884086',
+        // [R6.9G.10.3.7.1.2] implementationHead = functional commit containing Clean Production Attestation,
+        //                     Real OpenSSH Fixture, and True Monitor Revocation
+        implementationHead: '24d689f6b97ea4a26b59079ecce2c023879a7731',
+        implementationHeadShort: '24d689f6',
+        head: '24d689f6b97ea4a26b59079ecce2c023879a7731',
+        headShort: '24d689f6',
         rollbackBase: 'dc0740a0c69e2f7fa96b6989841acf0831b3619e',
-        previousFunctionalRestorePoint: '9e5f7ca8365abb3930d30994cb64994a370fcf7c',
+        previousFunctionalRestorePoint: 'af8840866da098cb7fd1b45de724b41f128b794a',
         manifestVersion: 3,
-        buildId: 'R6.9G.10.3.7.1.1-20261010-REAL-PAIR-ENROLLMENT-REVOCATION-SEALED',
-        builtAt: '2026-10-10T20:30:00.000Z',
+        buildId: 'R6.9G.10.3.7.1.2-20261010-CLEAN-ATTESTATION-REAL-SSH-SEALED',
+        builtAt: '2026-10-10T21:40:00.000Z',
         provenanceSchema: 2,
         modules: {
             backgroundSha: 'e1577de1b9a989e668ae1b819a74b408b658f78fc0b335ce3885dc82f423fc61',
