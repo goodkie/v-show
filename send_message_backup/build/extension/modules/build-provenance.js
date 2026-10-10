@@ -15,22 +15,22 @@
 
     const BUILD_INFO = {
         branch: 'upgrade/phase-0-1',
-        // [R6.9G.10.3.6.2] implementationHead = functional commit containing Privacy Relay Settings Operationalization
-        //                  and One-Click Node Verify
-        implementationHead: '32e384d1f7ac0292308011f60bd6c1ef2bb86654',
-        implementationHeadShort: '32e384d1',
-        head: '32e384d1f7ac0292308011f60bd6c1ef2bb86654',
-        headShort: '32e384d1',
+        // [R6.9G.10.3.6.2.1] implementationHead = functional commit containing Exact-Release Companion Lifecycle,
+        //                    Rotation Ready state, and Sticky Node Restart recovery
+        implementationHead: '47ee3ba29f055f86a889bac11ecad82db1558725',
+        implementationHeadShort: '47ee3ba2',
+        head: '47ee3ba29f055f86a889bac11ecad82db1558725',
+        headShort: '47ee3ba2',
         rollbackBase: 'dc0740a0c69e2f7fa96b6989841acf0831b3619e',
-        previousFunctionalRestorePoint: '65c3fd81087216b71e825fd6641c2404016b9e61',
+        previousFunctionalRestorePoint: '32e384d1f7ac0292308011f60bd6c1ef2bb86654',
         manifestVersion: 3,
-        buildId: 'R6.9G.10.3.6.2-20261010-PRIVACY-RELAY-SETTINGS-OPERATIONALIZATION',
-        builtAt: '2026-10-10T11:25:00.000Z',
+        buildId: 'R6.9G.10.3.6.2.1-20261010-EXACT-RELEASE-COMPANION-LIFECYCLE',
+        builtAt: '2026-10-10T13:30:00.000Z',
         provenanceSchema: 2,
         modules: {
             backgroundSha: '2e17c641b7d43761b666b92166b6c80decc7143e988bc3f9648f7a2279c214e5',
             contentScriptSha: '5c2ebd277a9020a4434fc68cd46c6ec974dbf180290ba368b33273aee67ccf9e',
-            popupSha: 'c3ea3ba222bacbb762b95b5d4b3e35bdf62808342e4cfc8b01c789ad98cb3345',
+            popupSha: '18d2968ad2587e79c43c3aef7b2ca99eeca48eb690dd238e3de90d7e0998e73f',
             solverContentSha: 'd7de969d29df29799537b11380f0f82967bb93da227c91e7dc8c6af0d128f457',
             solverCoreSha: '01b3d96048ea933403e4599854dcdca28027e7f676aa5077eb6c5eb0582ac1e7',
             emailCollectorSha: '3f1147a379e159e7777158f2caa74cc8d40b2a0b0eb2c244f440af379cb5c9c9',
