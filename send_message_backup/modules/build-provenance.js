@@ -15,17 +15,17 @@
 
     const BUILD_INFO = {
         branch: 'upgrade/phase-0-1',
-        // [R6.9G.10.3.7] implementationHead = functional commit containing Physical Router Security Gate,
-        //                 WireGuard / OpenVPN fallback, and Private Squid CONNECT proxy
-        implementationHead: 'd9701fcf8121948dd163f1e56110e5f2a9f917c3',
-        implementationHeadShort: 'd9701fcf',
-        head: 'd9701fcf8121948dd163f1e56110e5f2a9f917c3',
-        headShort: 'd9701fcf',
+        // [R6.9G.10.3.7.1] implementationHead = functional commit containing Trusted Physical Attestation,
+        //                   Freshness Gate, and Real Opal Transport
+        implementationHead: '9e5f7ca8365abb3930d30994cb64994a370fcf7c',
+        implementationHeadShort: '9e5f7ca8',
+        head: '9e5f7ca8365abb3930d30994cb64994a370fcf7c',
+        headShort: '9e5f7ca8',
         rollbackBase: 'dc0740a0c69e2f7fa96b6989841acf0831b3619e',
-        previousFunctionalRestorePoint: '47ee3ba29f055f86a889bac11ecad82db1558725',
+        previousFunctionalRestorePoint: 'd9701fcf8121948dd163f1e56110e5f2a9f917c3',
         manifestVersion: 3,
-        buildId: 'R6.9G.10.3.7-20261010-PHYSICAL-GATE-WIREGUARD-FALLBACK-OPAL-READY',
-        builtAt: '2026-10-10T15:30:00.000Z',
+        buildId: 'R6.9G.10.3.7.1-20261010-TRUSTED-PHYSICAL-FRESHNESS-OPAL-SEALED',
+        builtAt: '2026-10-10T19:00:00.000Z',
         provenanceSchema: 2,
         modules: {
             backgroundSha: 'e3c5fb03e090b826b2195e5c6e36769c82fed6d80704e16237a09d8e41f15a5b',
@@ -37,7 +37,7 @@
             historyStoreSha: 'ef148329c5c019877fef3708ac63472ce86d5f7f06da467a557a74e038eab6b4',
             contactGateSha: '0d01acb2d0a9448d154353fac5b527c17afa42fed56c68d6a49b39053629bd7d',
             visionSubmitSha: '25cf18a4834bb476edff5e8f19a78dd2723bd556ede649ada69bc801543c83f3',
-            privacyGatewaySha: '5443189380b679bb06501d24cd71380d00b43683f9517e1bd69448ae3b56aa26'
+            privacyGatewaySha: 'e6c75ebc2868db69db20c784917084f39466ec28b3151d7ffe5b963c9d021993'
         }
     };
 
