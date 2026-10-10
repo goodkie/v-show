@@ -1,0 +1,18 @@
+# WireGuard Server Configuration Template
+# Primary Transport for GL.iNet Opal (Issue #6 R6.9G.10.3.7)
+# Subnet: 10.66.66.0/24, VPS IP: 10.66.66.1
+
+[Interface]
+Address = 10.66.66.1/24
+ListenPort = 51820
+PrivateKey = {{SERVER_PRIVATE_KEY}}
+
+# Firewall NAT rules for VPN egress
+PostUp = nft add table ip wg-nat ; nft add chain ip wg-nat postrouting { type nat hook postrouting priority srcnat \; } ; nft add rule ip wg-nat postrouting oifname "{{WAN_INTERFACE}}" masquerade
+PostDown = nft delete table ip wg-nat
+
+# Peer: Paired GL.iNet Opal Travel Router
+[Peer]
+PublicKey = {{OPAL_ROUTER_PUBLIC_KEY}}
+AllowedIPs = 10.66.66.2/32
+PersistentKeepalive = 25

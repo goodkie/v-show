@@ -1,0 +1,71 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "RouterAttestationSchema",
+  "type": "object",
+  "required": [
+    "reachable",
+    "identityVerified",
+    "vendor",
+    "model",
+    "vpn",
+    "killSwitch",
+    "route",
+    "dns",
+    "ipv6",
+    "observedAt"
+  ],
+  "properties": {
+    "reachable": { "type": "boolean" },
+    "identityVerified": { "type": "boolean" },
+    "vendor": { "type": "string", "enum": ["GL.iNet", "OpenWrt", "UNKNOWN"] },
+    "model": { "type": "string" },
+    "firmwareVersion": { "type": ["string", "null"] },
+    "lanGateway": { "type": ["string", "null"] },
+    "lanInterface": { "type": ["string", "null"] },
+    "routerFingerprint": { "type": ["string", "null"] },
+    "vpn": {
+      "type": "object",
+      "required": ["protocol", "state"],
+      "properties": {
+        "protocol": { "type": "string", "enum": ["WIREGUARD", "OPENVPN", "NONE", "UNKNOWN"] },
+        "state": { "type": "string", "enum": ["UP", "DOWN", "UNKNOWN"] },
+        "interfaceName": { "type": ["string", "null"] },
+        "endpointFingerprint": { "type": ["string", "null"] },
+        "lastHandshakeAgeSec": { "type": ["number", "null"] },
+        "tunnelPrivateAddress": { "type": ["string", "null"] }
+      }
+    },
+    "killSwitch": {
+      "type": "object",
+      "required": ["state", "evidence"],
+      "properties": {
+        "state": { "type": "string", "enum": ["ENFORCED", "NOT_ENFORCED", "UNKNOWN"] },
+        "evidence": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "route": {
+      "type": "object",
+      "required": ["defaultGatewayViaOpal"],
+      "properties": {
+        "defaultGatewayViaOpal": { "type": "boolean" },
+        "vpnDefaultRoutePresent": { "type": ["boolean", "null"] },
+        "directWanBypassDetected": { "type": ["boolean", "null"] }
+      }
+    },
+    "dns": {
+      "type": "object",
+      "required": ["state"],
+      "properties": {
+        "state": { "type": "string", "enum": ["VPN_BOUND", "NOT_BOUND", "UNKNOWN"] }
+      }
+    },
+    "ipv6": {
+      "type": "object",
+      "required": ["state"],
+      "properties": {
+        "state": { "type": "string", "enum": ["VPN_BOUND", "DISABLED", "UNVERIFIED", "LEAK_RISK"] }
+      }
+    },
+    "observedAt": { "type": "number" }
+  }
+}

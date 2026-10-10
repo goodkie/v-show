@@ -1,0 +1,45 @@
+# Squid Private Proxy Configuration Template
+# Private HTTP CONNECT Proxy Bound ONLY to VPN Subnets (Issue #6 R6.9G.10.3.7)
+
+# Strictly listen ONLY on private VPN interfaces (NEVER on 0.0.0.0 or public WAN)
+http_port 10.66.66.1:3128
+http_port 10.67.67.1:3128
+
+# Access Control Lists (ACLs)
+acl wireguard_net src 10.66.66.0/24
+acl openvpn_net   src 10.67.67.0/24
+acl SSL_ports     port 443 8443
+acl Safe_ports    port 80 443 8443
+acl CONNECT       method CONNECT
+
+# Restrict CONNECT method to safe SSL/TLS destination ports only
+http_access deny !Safe_ports
+http_access deny CONNECT !SSL_ports
+
+# Allow access strictly from approved VPN subnets
+http_access allow wireguard_net
+http_access allow openvpn_net
+
+# Strict Fail-Closed Default Deny
+http_access deny all
+
+# Privacy & Secret Sanitization:
+# Zero TLS interception/MITM. Forward encrypted tunnels directly.
+# Strip upstream identification headers.
+forwarded_for delete
+via off
+request_header_access From deny all
+request_header_access Server deny all
+request_header_access User-Agent allow all
+request_header_access Authorization allow all
+request_header_access Proxy-Authorization deny all
+
+# Minimal access logging (redacts sensitive form paths and never logs secrets)
+logformat xpider_privacy %>a %[ui %[un [%tl] "%rm %ru HTTP/%rv" %>Hs %<st "%{Referer}>h"
+access_log /var/log/squid/access.log xpider_privacy
+logfile_rotate 10
+
+# Zero disk cache for privacy
+cache deny all
+cache_mem 64 MB
+shutdown_lifetime 3 seconds

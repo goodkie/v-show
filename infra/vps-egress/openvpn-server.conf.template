@@ -1,0 +1,35 @@
+# OpenVPN Server Configuration Template
+# Fallback Transport on TCP/443 (Issue #6 R6.9G.10.3.7)
+# Subnet: 10.67.67.0/24, VPS IP: 10.67.67.1
+
+port 443
+proto tcp-server
+dev tun-ovpn
+topology subnet
+
+server 10.67.67.0 255.255.255.0
+
+ca /etc/openvpn/server/ca.crt
+cert /etc/openvpn/server/server.crt
+key /etc/openvpn/server/server.key
+dh /etc/openvpn/server/dh.pem
+
+# Security & cipher configuration
+cipher AES-256-GCM
+data-ciphers AES-256-GCM:AES-128-GCM
+auth SHA256
+tls-version-min 1.2
+tls-crypt /etc/openvpn/server/tc.key
+
+# Network options
+push "redirect-gateway def1 bypass-dhcp"
+push "dhcp-option DNS 10.67.67.1"
+
+keepalive 10 120
+persist-key
+persist-tun
+status /var/log/openvpn/openvpn-status.log
+verb 3
+mute 10
+user nobody
+group nogroup

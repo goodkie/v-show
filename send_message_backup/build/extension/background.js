@@ -1576,7 +1576,50 @@ if (typeof global !== 'undefined') {
  * - redirects/retries/child tab navigation
  * - submit-time navigation if any
  */
+/**
+ * [R6.9G.10.3.7] Physical Router Security Gate Pre-Flight Assert
+ * Strictly precedes assertPrivacyTransportReady.
+ */
+async function assertPhysicalGateReady(context = 'GENERAL') {
+    const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+    if (!pg) return { ready: true };
+
+    if (!pg.config || !pg.config.physicalGateEnabled) {
+        return { ready: true };
+    }
+
+    try {
+        const res = await pg.queryPhysicalGateStatus();
+        if (!res || !res.success || !res.status) {
+            const blkReason = 'PHYSICAL_GATE_UNAVAILABLE';
+            logBg(null, `[PHYSICAL_GATE_BLOCK] context=${context} reason=${blkReason}`, 'error');
+            return { ready: false, reason: blkReason };
+        }
+
+        const gate = res.status;
+        if (!gate.enabled) return { ready: true };
+
+        if (!gate.ready) {
+            const blkReason = 'PHYSICAL_GATE_FAIL_CLOSED';
+            const reasons = Array.isArray(gate.reasons) ? gate.reasons.join(', ') : 'GATE_NOT_READY';
+            logBg(null, `[PHYSICAL_GATE_BLOCK] context=${context} reason=${blkReason} details=${reasons}`, 'error');
+            return { ready: false, reason: blkReason, reasons: gate.reasons };
+        }
+
+        return { ready: true, physicalGate: gate };
+    } catch (err) {
+        logBg(null, `[PHYSICAL_GATE_BLOCK] context=${context} reason=PHYSICAL_GATE_EXCEPTION error=${err.message}`, 'error');
+        return { ready: false, reason: 'PHYSICAL_GATE_EXCEPTION', error: err.message };
+    }
+}
+
 async function assertPrivacyTransportReady(context = 'GENERAL') {
+    // [R6.9G.10.3.7] Physical Router Security Gate Pre-Flight
+    const physCheck = await assertPhysicalGateReady(context);
+    if (physCheck && !physCheck.ready) {
+        return physCheck;
+    }
+
     const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
     if (!pg) return { ready: true };
 
@@ -1607,9 +1650,11 @@ async function assertPrivacyTransportReady(context = 'GENERAL') {
 }
 
 if (typeof globalThis !== 'undefined') {
+    globalThis.assertPhysicalGateReady = assertPhysicalGateReady;
     globalThis.assertPrivacyTransportReady = assertPrivacyTransportReady;
 }
 if (typeof global !== 'undefined') {
+    global.assertPhysicalGateReady = assertPhysicalGateReady;
     global.assertPrivacyTransportReady = assertPrivacyTransportReady;
 }
 
@@ -2378,6 +2423,62 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                     const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
                     if (!pg) return sendResponse({ success: false, error: 'PrivacyGateway unavailable' });
                     const res = await pg.queryRelayStatus();
+                    sendResponse({ success: true, result: res });
+                } catch (e) {
+                    sendResponse({ success: false, error: e.message });
+                }
+            })();
+            return true;
+        }
+
+        case 'QUERY_PHYSICAL_GATE': {
+            (async () => {
+                try {
+                    const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+                    if (!pg) return sendResponse({ success: false, error: 'PrivacyGateway unavailable' });
+                    const res = await pg.queryPhysicalGateStatus();
+                    sendResponse({ success: true, result: res });
+                } catch (e) {
+                    sendResponse({ success: false, error: e.message });
+                }
+            })();
+            return true;
+        }
+
+        case 'SET_PHYSICAL_GATE_ENABLED': {
+            (async () => {
+                try {
+                    const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+                    if (!pg) return sendResponse({ success: false, error: 'PrivacyGateway unavailable' });
+                    const res = await pg.setPhysicalGateEnabled(request.enabled);
+                    sendResponse({ success: true, result: res });
+                } catch (e) {
+                    sendResponse({ success: false, error: e.message });
+                }
+            })();
+            return true;
+        }
+
+        case 'VERIFY_PHYSICAL_GATE': {
+            (async () => {
+                try {
+                    const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+                    if (!pg) return sendResponse({ success: false, error: 'PrivacyGateway unavailable' });
+                    const res = await pg.verifyPhysicalGate();
+                    sendResponse({ success: true, result: res });
+                } catch (e) {
+                    sendResponse({ success: false, error: e.message });
+                }
+            })();
+            return true;
+        }
+
+        case 'PAIR_PHYSICAL_ROUTER': {
+            (async () => {
+                try {
+                    const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+                    if (!pg) return sendResponse({ success: false, error: 'PrivacyGateway unavailable' });
+                    const res = await pg.pairRouter(request.data || {});
                     sendResponse({ success: true, result: res });
                 } catch (e) {
                     sendResponse({ success: false, error: e.message });

@@ -648,6 +648,32 @@
                                 </div>
                                 <button id="priv-run-preflight-btn" type="button" class="secondary-btn" style="margin-top: 8px; width: 100%; font-size: 10px; padding: 4px; border-radius: 4px; background: #1e293b; color: #38bdf8; border: 1px solid #38bdf8; cursor: pointer;">🔍 Run Privacy Preflight</button>
                             </div>
+
+                            <!-- [R6.9G.10.3.7] Physical Router Security Gate Card -->
+                            <div id="physical-gate-card" style="background: rgba(15, 23, 42, 0.7); border: 1px solid #334155; border-radius: 6px; padding: 8px; margin-top: 10px; font-family: monospace; font-size: 10px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                    <span style="font-weight: 700; color: #38bdf8; font-size: 11px;">🛡️ PHYSICAL ROUTER GATE</span>
+                                    <label class="switch-small" style="display: flex; align-items: center; gap: 4px; cursor: pointer;">
+                                        <input type="checkbox" id="physical-gate-toggle">
+                                        <span style="font-size: 10px; color: #94a3b8;">ENABLE</span>
+                                    </label>
+                                </div>
+                                <div id="physical-gate-details" style="display: flex; flex-direction: column; gap: 3px;">
+                                    <div>GATE READY: <span id="phys-gate-ready" style="font-weight: 700; color: #94a3b8;">DISABLED</span></div>
+                                    <div>ROUTER IDENTITY: <span id="phys-router-id" style="font-weight: 600; color: #94a3b8;">UNVERIFIED</span></div>
+                                    <div>OPAL PATH: <span id="phys-opal-path" style="font-weight: 600; color: #94a3b8;">UNKNOWN</span></div>
+                                    <div>VPN TUNNEL: <span id="phys-vpn-tunnel" style="font-weight: 600; color: #94a3b8;">DOWN</span></div>
+                                    <div>KILL SWITCH: <span id="phys-kill-switch" style="font-weight: 600; color: #94a3b8;">UNKNOWN</span></div>
+                                    <div>PRIVATE PROXY: <span id="phys-private-proxy" style="font-weight: 600; color: #94a3b8;">UNKNOWN</span></div>
+                                    <div>EGRESS FINGERPRINT: <span id="phys-egress-fp" style="font-weight: 600; color: #94a3b8;">NONE</span></div>
+                                    <div>DIRECT BYPASS: <span id="phys-bypass-blocked" style="font-weight: 600; color: #94a3b8;">UNVERIFIED</span></div>
+                                    <div id="phys-reasons-row" style="color: #f87171; word-break: break-all; margin-top: 2px;">REASONS: <span id="phys-gate-reasons">PHYSICAL_GATE_DISABLED</span></div>
+                                </div>
+                                <div style="display: flex; gap: 4px; margin-top: 8px;">
+                                    <button id="phys-gate-verify-btn" type="button" class="primary-btn-small" style="flex: 1; padding: 4px; font-size: 10px; background: #0284c7; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">✓ Re-Verify Gate</button>
+                                    <button id="phys-gate-pair-btn" type="button" class="secondary-btn-small" style="padding: 4px 8px; font-size: 10px; background: #1e293b; color: #38bdf8; border: 1px solid #38bdf8; border-radius: 4px; cursor: pointer;">Pair Opal</button>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- [v18.23.0] Emergency Recovery Tools -->

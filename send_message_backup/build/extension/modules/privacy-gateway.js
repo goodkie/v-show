@@ -57,7 +57,9 @@
         relayRotationMode: 'FIXED', // FIXED | MANUAL | CAMPAIGN_BOUNDARY | HEALTH_FAILOVER
         rotateAtCampaignStart: false,
         healthFailover: true,
-        selectedEgressId: null
+        selectedEgressId: null,
+        // [Issue #6 R6.9G.10.3.7 Physical Router Security Gate Settings]
+        physicalGateEnabled: false
     };
 
     class PrivacyGatewayEngine {
@@ -67,6 +69,7 @@
             this.isGateActive = false;
             this.failureReason = null;
             this.lastPreflightResult = null;
+            this.lastPhysicalGateStatus = null;
             this.originalSettings = {
                 proxy: null,
                 webrtc: null,
@@ -693,6 +696,120 @@
             }
         }
 
+        /**
+         * [Issue #6 R6.9G.10.3.7] Query Companion Physical Router Security Gate Status (/physical-gate/status)
+         */
+        async queryPhysicalGateStatus() {
+            const host = this.config.relayHost || '127.0.0.1';
+            const port = this.config.relayControlPort || 18989;
+            try {
+                const fetchFn = this._mockFetch !== undefined ? this._mockFetch : (typeof fetch !== 'undefined' ? fetch : null);
+                if (!fetchFn) return { success: false, reason: 'FETCH_UNAVAILABLE' };
+                const headers = this.getRelayAuthHeaders();
+                const res = await fetchFn(`http://${host}:${port}/physical-gate/status`, {
+                    cache: 'no-store',
+                    headers
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data && data.status) {
+                        this.lastPhysicalGateStatus = data.status;
+                    }
+                    return data;
+                }
+                return { success: false, reason: `HTTP_${res.status}` };
+            } catch (e) {
+                return { success: false, reason: e.message };
+            }
+        }
+
+        /**
+         * [Issue #6 R6.9G.10.3.7] Enable/Disable Physical Router Security Gate (/physical-gate/enable)
+         */
+        async setPhysicalGateEnabled(enabled) {
+            const host = this.config.relayHost || '127.0.0.1';
+            const port = this.config.relayControlPort || 18989;
+            try {
+                const fetchFn = this._mockFetch !== undefined ? this._mockFetch : (typeof fetch !== 'undefined' ? fetch : null);
+                if (!fetchFn) return { success: false, reason: 'FETCH_UNAVAILABLE' };
+                const headers = this.getRelayAuthHeaders();
+                const res = await fetchFn(`http://${host}:${port}/physical-gate/enable`, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify({ enabled: Boolean(enabled) })
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    this.config.physicalGateEnabled = Boolean(enabled);
+                    await this.saveConfig({ physicalGateEnabled: Boolean(enabled) });
+                    if (data && data.status) {
+                        this.lastPhysicalGateStatus = data.status;
+                    }
+                    return data;
+                }
+                const errData = await res.json().catch(() => ({}));
+                return { success: false, reason: errData.reason || `HTTP_${res.status}` };
+            } catch (e) {
+                return { success: false, reason: e.message };
+            }
+        }
+
+        /**
+         * [Issue #6 R6.9G.10.3.7] Trigger Full Physical Router Security Gate Evaluation (/physical-gate/verify)
+         */
+        async verifyPhysicalGate() {
+            const host = this.config.relayHost || '127.0.0.1';
+            const port = this.config.relayControlPort || 18989;
+            try {
+                const fetchFn = this._mockFetch !== undefined ? this._mockFetch : (typeof fetch !== 'undefined' ? fetch : null);
+                if (!fetchFn) return { success: false, reason: 'FETCH_UNAVAILABLE' };
+                const headers = this.getRelayAuthHeaders();
+                const res = await fetchFn(`http://${host}:${port}/physical-gate/verify`, {
+                    method: 'POST',
+                    headers
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data && data.status) {
+                        this.lastPhysicalGateStatus = data.status;
+                    }
+                    return data;
+                }
+                const errData = await res.json().catch(() => ({}));
+                return { success: false, reason: errData.reason || `HTTP_${res.status}`, details: errData };
+            } catch (e) {
+                return { success: false, reason: e.message };
+            }
+        }
+
+        /**
+         * [Issue #6 R6.9G.10.3.7] Pair GL-SFT1200 Opal Travel Router (/physical-gate/pair)
+         */
+        async pairRouter(data = {}) {
+            const host = this.config.relayHost || '127.0.0.1';
+            const port = this.config.relayControlPort || 18989;
+            try {
+                const fetchFn = this._mockFetch !== undefined ? this._mockFetch : (typeof fetch !== 'undefined' ? fetch : null);
+                if (!fetchFn) return { success: false, reason: 'FETCH_UNAVAILABLE' };
+                const headers = this.getRelayAuthHeaders();
+                const res = await fetchFn(`http://${host}:${port}/physical-gate/pair`, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify(data)
+                });
+                if (res.ok) {
+                    const resData = await res.json();
+                    if (resData && resData.status) {
+                        this.lastPhysicalGateStatus = resData.status;
+                    }
+                    return resData;
+                }
+                const errData = await res.json().catch(() => ({}));
+                return { success: false, reason: errData.reason || `HTTP_${res.status}`, details: errData };
+            } catch (e) {
+                return { success: false, reason: e.message };
+            }
+        }
 
         /**
          * Verify continuity of the egress tunnel during campaign run
@@ -706,6 +823,16 @@
                     return { pass: false, reason: this.failureReason || 'PRIVACY_RELAY_NOT_READY' };
                 }
                 const statusRes = await this.queryRelayStatus();
+                if (statusRes.status && statusRes.status.physicalGate) {
+                    this.lastPhysicalGateStatus = statusRes.status.physicalGate;
+                    if (this.config.physicalGateEnabled && !statusRes.status.physicalGate.ready) {
+                        return {
+                            pass: false,
+                            reason: 'PHYSICAL_GATE_FAIL_CLOSED',
+                            details: (statusRes.status.physicalGate.reasons || []).join(', ')
+                        };
+                    }
+                }
                 if (!statusRes.success || !statusRes.status || !statusRes.status.relayReady || statusRes.status.health === 'EXPIRED') {
                     if (this.config.healthFailover) {
                         console.log('[PRIVACY_RELAY] Current egress failed or expired, settling and executing HEALTH_FAILOVER...');
@@ -1381,11 +1508,20 @@
                         }
                     }
 
-                    if (!statusRes.status || !statusRes.status.relayReady || statusRes.status.health === 'NO_NODES') {
+                    if (statusRes.status && statusRes.status.physicalGate) {
+                        this.lastPhysicalGateStatus = statusRes.status.physicalGate;
+                    }
+
+                    if (this.config.physicalGateEnabled && statusRes.status && statusRes.status.physicalGate && !statusRes.status.physicalGate.ready) {
                         ready = false;
                         directFallbackBlocked = 'BLOCKED';
                         egressCheck = 'FAIL';
-                        failureReason = 'PRIVACY_RELAY_NO_HEALTHY_EGRESS';
+                        failureReason = 'PHYSICAL_GATE_FAIL_CLOSED';
+                    } else if (!statusRes.status || !statusRes.status.relayReady || statusRes.status.health === 'NO_NODES') {
+                        ready = false;
+                        directFallbackBlocked = 'BLOCKED';
+                        egressCheck = 'FAIL';
+                        failureReason = (statusRes.status && statusRes.status.physicalGate && !statusRes.status.physicalGate.ready) ? 'PHYSICAL_GATE_FAIL_CLOSED' : 'PRIVACY_RELAY_NO_HEALTHY_EGRESS';
                     } else {
                     try {
                         // 2. Configure Chrome Proxy to loopback proxy on 18988
@@ -1666,6 +1802,9 @@
         isPrivacyGateReady() {
             if (!this.config.enabled) {
                 return !this.config.failClosed;
+            }
+            if (this.config.physicalGateEnabled && this.lastPhysicalGateStatus && !this.lastPhysicalGateStatus.ready) {
+                return false;
             }
             return this.isGateReady === true;
         }

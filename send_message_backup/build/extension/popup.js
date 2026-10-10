@@ -1564,6 +1564,69 @@ async function hydrateSettings(overrideV2Store = null) {
             });
         }
 
+        const physGateToggle = document.getElementById('physical-gate-toggle');
+        if (physGateToggle) {
+            if (privCfg && privCfg.physicalGateEnabled !== undefined) {
+                physGateToggle.checked = Boolean(privCfg.physicalGateEnabled);
+            }
+            physGateToggle.addEventListener('change', async (e) => {
+                const enabled = e.target.checked;
+                chrome.runtime.sendMessage({ action: 'SET_PHYSICAL_GATE_ENABLED', enabled }, (res) => {
+                    if (res && res.result && res.result.status) {
+                        _updatePhysicalGateUI(res.result.status);
+                    }
+                });
+            });
+        }
+
+        const physVerifyBtn = document.getElementById('phys-gate-verify-btn');
+        if (physVerifyBtn) {
+            physVerifyBtn.addEventListener('click', async () => {
+                physVerifyBtn.disabled = true;
+                physVerifyBtn.textContent = '⏳ Verifying...';
+                try {
+                    const res = await new Promise(r => chrome.runtime.sendMessage({ action: 'VERIFY_PHYSICAL_GATE' }, r));
+                    if (res && res.result && res.result.status) {
+                        _updatePhysicalGateUI(res.result.status);
+                    }
+                } catch (_) {}
+                finally {
+                    physVerifyBtn.disabled = false;
+                    physVerifyBtn.textContent = '✓ Re-Verify Gate';
+                }
+            });
+        }
+
+        const physPairBtn = document.getElementById('phys-gate-pair-btn');
+        if (physPairBtn) {
+            physPairBtn.addEventListener('click', async () => {
+                const ip = prompt('Enter GL.iNet Opal IP address:', '192.168.8.1');
+                if (!ip) return;
+                const token = prompt('Enter optional Router Attestation Token (leave empty if unconfigured):', '') || null;
+                physPairBtn.disabled = true;
+                physPairBtn.textContent = '⏳ Pairing...';
+                try {
+                    const res = await new Promise(r => chrome.runtime.sendMessage({
+                        action: 'PAIR_PHYSICAL_ROUTER',
+                        data: { routerIp: ip.trim(), agentToken: token }
+                    }, r));
+                    if (res && res.result && res.result.status) {
+                        _updatePhysicalGateUI(res.result.status);
+                    }
+                } catch (_) {}
+                finally {
+                    physPairBtn.disabled = false;
+                    physPairBtn.textContent = 'Pair Opal';
+                }
+            });
+        }
+
+        chrome.runtime.sendMessage({ action: 'QUERY_PHYSICAL_GATE' }, (res) => {
+            if (res && res.result && res.result.status) {
+                _updatePhysicalGateUI(res.result.status);
+            }
+        });
+
         chrome.runtime.sendMessage({ action: 'GET_PRIVACY_CONFIG' }, (res) => {
             if (res && res.lastPreflight) {
                 _updatePrivacyCardUI(res.lastPreflight);
@@ -1572,6 +1635,71 @@ async function hydrateSettings(overrideV2Store = null) {
     } catch (_) {}
 
     return true;
+}
+
+function _updatePhysicalGateUI(gateState) {
+    if (!gateState) return;
+    const elToggle = document.getElementById('physical-gate-toggle');
+    const elReady = document.getElementById('phys-gate-ready');
+    const elRouter = document.getElementById('phys-router-id');
+    const elOpal = document.getElementById('phys-opal-path');
+    const elVpn = document.getElementById('phys-vpn-tunnel');
+    const elKill = document.getElementById('phys-kill-switch');
+    const elProxy = document.getElementById('phys-private-proxy');
+    const elEgress = document.getElementById('phys-egress-fp');
+    const elBypass = document.getElementById('phys-bypass-blocked');
+    const elReasons = document.getElementById('phys-gate-reasons');
+
+    if (elToggle && typeof gateState.enabled === 'boolean') {
+        elToggle.checked = gateState.enabled;
+    }
+
+    if (elReady) {
+        if (!gateState.enabled) {
+            elReady.textContent = 'DISABLED';
+            elReady.style.color = '#94a3b8';
+        } else if (gateState.ready) {
+            elReady.textContent = 'READY (ENFORCED)';
+            elReady.style.color = '#4ade80';
+        } else {
+            elReady.textContent = 'FAIL-CLOSED (BLOCKED)';
+            elReady.style.color = '#ef4444';
+        }
+    }
+
+    if (elRouter) {
+        elRouter.textContent = gateState.routerIdentityPass ? 'PASS (VERIFIED)' : 'FAIL';
+        elRouter.style.color = gateState.routerIdentityPass ? '#4ade80' : '#ef4444';
+    }
+    if (elOpal) {
+        elOpal.textContent = gateState.opalPathPass ? 'PASS (DEFAULT GW)' : 'FAIL';
+        elOpal.style.color = gateState.opalPathPass ? '#4ade80' : '#ef4444';
+    }
+    if (elVpn) {
+        elVpn.textContent = gateState.tunnelPass ? `UP (${gateState.vpnProtocol || 'VPN'})` : 'DOWN';
+        elVpn.style.color = gateState.tunnelPass ? '#4ade80' : '#ef4444';
+    }
+    if (elKill) {
+        elKill.textContent = gateState.killSwitchPass ? 'ENFORCED' : 'NOT ENFORCED';
+        elKill.style.color = gateState.killSwitchPass ? '#4ade80' : '#ef4444';
+    }
+    if (elProxy) {
+        elProxy.textContent = gateState.privateProxyPass ? 'PASS (PRIVATE RFC1918)' : 'FAIL';
+        elProxy.style.color = gateState.privateProxyPass ? '#4ade80' : '#ef4444';
+    }
+    if (elEgress) {
+        elEgress.textContent = gateState.egressFingerprintPass ? (gateState.observedEgressFingerprint || 'PASS') : 'FAIL';
+        elEgress.style.color = gateState.egressFingerprintPass ? '#4ade80' : '#ef4444';
+    }
+    if (elBypass) {
+        elBypass.textContent = gateState.directBypassBlocked ? 'BLOCKED' : 'LEAK_DETECTED';
+        elBypass.style.color = gateState.directBypassBlocked ? '#4ade80' : '#ef4444';
+    }
+    if (elReasons) {
+        const reasons = (gateState.reasons && gateState.reasons.length > 0) ? gateState.reasons.join(', ') : 'NONE';
+        elReasons.textContent = reasons;
+        elReasons.style.color = (reasons === 'NONE' || gateState.ready) ? '#4ade80' : '#ef4444';
+    }
 }
 
 function _updatePrivacyCardUI(pf) {
@@ -5284,6 +5412,7 @@ async function saveSettings() {
         const privVpnCheckbox = document.getElementById('privacy-vpn-confirm-checkbox');
         const privVpnBadge = document.getElementById('privacy-vpn-status-badge');
         const privRelayModeEl = document.getElementById('privacy-relay-mode-select');
+        const privPhysGateToggle = document.getElementById('physical-gate-toggle');
         const isVpnConfirmed = (privVpnBadge && privVpnBadge.textContent === 'CONFIRMED') || (privVpnCheckbox && privVpnCheckbox.checked);
 
         const privacyConfig = {
@@ -5299,7 +5428,8 @@ async function saveSettings() {
             relayHost: '127.0.0.1',
             relayProxyPort: 18988,
             relayControlPort: 18989,
-            relayRotationMode: privRelayModeEl ? privRelayModeEl.value : 'FIXED'
+            relayRotationMode: privRelayModeEl ? privRelayModeEl.value : 'FIXED',
+            physicalGateEnabled: privPhysGateToggle ? privPhysGateToggle.checked : false
         };
 
     let settings;
@@ -6003,6 +6133,8 @@ if (typeof module !== 'undefined' && module.exports) {
         ensureSchemaReady,
         rehydrateTemplateUI,
         ensureTemplateReadyForStart,
-        switchToTemplateTabAndFocusMessage
+        switchToTemplateTabAndFocusMessage,
+        // R6.9G.10.3.7 Physical Gate UI Export
+        _updatePhysicalGateUI
     };
 }

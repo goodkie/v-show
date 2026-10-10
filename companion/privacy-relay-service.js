@@ -37,6 +37,7 @@ const path = require('path');
 const crypto = require('crypto');
 const winsec = require('./winsec');
 const { discoverExtensionId } = require('./install_native_host');
+const { PhysicalGate } = require('./physical-gate');
 
 const CONTROL_PORT = 18989;
 const PROXY_PORT = 18988;
@@ -51,7 +52,10 @@ const DEFAULT_POOL = {
   healthTtlMs: 60000,
   canaryUrl: 'https://cloudflare.com/cdn-cgi/trace',
   selectedEgressId: null,
-  nodes: []
+  nodes: [],
+  physicalGate: {
+    enabled: false
+  }
 };
 
 class PrivacyRelayService {
@@ -69,6 +73,11 @@ class PrivacyRelayService {
     this.relayReady = false; // Block forwarding until active node is verified
     this.controlToken = this.loadOrGenerateControlToken(options.controlToken);
     this.pool = this.loadConfig();
+
+    // Initialize Physical Router Security Gate (Issue #6 R6.9G.10.3.7)
+    this.physicalGate = options.physicalGate || new PhysicalGate({
+      enabled: Boolean(this.pool.physicalGate && this.pool.physicalGate.enabled)
+    });
 
     // Reset all runtime health states on process start
     if (this.pool.nodes && Array.isArray(this.pool.nodes)) {
@@ -167,7 +176,10 @@ class PrivacyRelayService {
         healthTtlMs: this.pool.healthTtlMs || 60000,
         canaryUrl: this.pool.canaryUrl || 'https://cloudflare.com/cdn-cgi/trace',
         selectedEgressId: active ? active.id : (this.pool.selectedEgressId || null),
-        nodes: sanitizedNodes
+        nodes: sanitizedNodes,
+        physicalGate: {
+          enabled: Boolean(this.physicalGate && this.physicalGate.enabled)
+        }
       };
       fs.writeFileSync(this.configFile, JSON.stringify(toSave, null, 2), 'utf8');
       return true;
@@ -386,6 +398,9 @@ class PrivacyRelayService {
           this.relayReady = true;
           this.pool.selectedEgressId = candidate.id;
           try { this.saveConfig(); } catch (_) {}
+          if (this.physicalGate && this.physicalGate.enabled) {
+            await this.physicalGate.evaluate(candidate, (n) => this.verifyNodeEgress(n));
+          }
           this.log(`[PRIVACY_RELAY_ROTATE] fromId=${prev ? prev.id : 'none'} toId=${candidate.id} reason=${reason} verified=true fingerprint=${candidate.observedFingerprint}`);
           return {
             success: true,
@@ -438,6 +453,9 @@ class PrivacyRelayService {
     this.relayReady = true;
     this.pool.selectedEgressId = candidate.id;
     try { this.saveConfig(); } catch (_) {}
+    if (this.physicalGate && this.physicalGate.enabled) {
+      await this.physicalGate.evaluate(candidate, (n) => this.verifyNodeEgress(n));
+    }
     this.log(`[PRIVACY_RELAY_ROTATE] fromId=${prev ? prev.id : 'none'} toId=${candidate.id} reason=EXPLICIT_SELECTION verified=true fingerprint=${candidate.observedFingerprint}`);
     return {
       success: true,
@@ -485,7 +503,8 @@ class PrivacyRelayService {
     const ttl = this.healthTtlMs || (this.pool && this.pool.healthTtlMs) || 60000;
     const isHealthValid = this.isNodeHealthValid(active);
     const isExpired = active && active.lastVerifiedAt > 0 && (Date.now() - active.lastVerifiedAt > ttl);
-    const ready = !this.isPaused && this.relayReady && isHealthValid;
+    const physicalGateReady = !this.physicalGate.enabled || Boolean(this.physicalGate.state && this.physicalGate.state.ready);
+    const ready = !this.isPaused && this.relayReady && isHealthValid && physicalGateReady;
 
     // Redact nodes
     const redactedNodes = (this.pool.nodes || []).map(n => {
@@ -508,7 +527,7 @@ class PrivacyRelayService {
 
     return {
       service: 'XPIDER Privacy Relay',
-      version: this.pool.version || '1.0.2',
+      version: this.pool.version || '1.0.3',
       relayReady: ready,
       paused: this.isPaused,
       controlPort: this.controlPort,
@@ -524,7 +543,8 @@ class PrivacyRelayService {
       rotationCount: this.rotationCount,
       lastCheck: new Date().toISOString(),
       nodes: redactedNodes,
-      trafficStats: { ...this.trafficStats }
+      trafficStats: { ...this.trafficStats },
+      physicalGate: this.physicalGate.state
     };
   }
 
@@ -566,12 +586,15 @@ class PrivacyRelayService {
       if (pathname === '/health' && req.method === 'GET') {
         const active = this.getActiveNode();
         const isHealthValid = this.isNodeHealthValid(active);
+        const physicalGateReady = !this.physicalGate.enabled || Boolean(this.physicalGate.state && this.physicalGate.state.ready);
         res.writeHead(200);
         res.end(JSON.stringify({
           status: 'OK',
-          relayReady: !this.isPaused && this.relayReady && isHealthValid,
+          relayReady: !this.isPaused && this.relayReady && isHealthValid && physicalGateReady,
+          physicalGateEnabled: this.physicalGate.enabled,
+          physicalGateReady: Boolean(this.physicalGate.state && this.physicalGate.state.ready),
           service: 'XPIDER Privacy Relay',
-          version: this.pool.version || '1.0.2',
+          version: this.pool.version || '1.0.3',
           controlPort: this.controlPort,
           proxyPort: this.proxyPort,
           selectedEgressId: active ? active.id : null,
@@ -912,6 +935,91 @@ class PrivacyRelayService {
         return;
       }
 
+      // GET /physical-gate/status (Authenticated)
+      if (pathname === '/physical-gate/status' && req.method === 'GET') {
+        res.writeHead(200);
+        res.end(JSON.stringify({
+          success: true,
+          status: this.physicalGate.state
+        }));
+        return;
+      }
+
+      // POST /physical-gate/enable (Authenticated)
+      if (pathname === '/physical-gate/enable' && req.method === 'POST') {
+        let body = '';
+        req.on('data', chunk => body += chunk);
+        req.on('end', async () => {
+          try {
+            const data = body ? JSON.parse(body) : {};
+            const enabled = data.enabled !== undefined ? Boolean(data.enabled) : true;
+            this.physicalGate.setEnabled(enabled);
+            this.pool.physicalGate = { enabled };
+            this.saveConfig();
+            if (enabled) {
+              await this.physicalGate.evaluate(this.getActiveNode(), (n) => this.verifyNodeEgress(n));
+            }
+            res.writeHead(200);
+            res.end(JSON.stringify({
+              success: true,
+              enabled: this.physicalGate.enabled,
+              status: this.physicalGate.state
+            }));
+          } catch (e) {
+            res.writeHead(500);
+            res.end(JSON.stringify({ success: false, reason: e.message }));
+          }
+        });
+        return;
+      }
+
+      // POST /physical-gate/verify (Authenticated)
+      if (pathname === '/physical-gate/verify' && req.method === 'POST') {
+        let body = '';
+        req.on('data', chunk => body += chunk);
+        req.on('end', async () => {
+          try {
+            const state = await this.physicalGate.evaluate(this.getActiveNode(), (n) => this.verifyNodeEgress(n));
+            res.writeHead(state.ready ? 200 : 503);
+            res.end(JSON.stringify({
+              success: state.ready,
+              status: state
+            }));
+          } catch (e) {
+            res.writeHead(500);
+            res.end(JSON.stringify({ success: false, reason: e.message }));
+          }
+        });
+        return;
+      }
+
+      // POST /physical-gate/pair (Authenticated)
+      if (pathname === '/physical-gate/pair' && req.method === 'POST') {
+        let body = '';
+        req.on('data', chunk => body += chunk);
+        req.on('end', async () => {
+          try {
+            const data = body ? JSON.parse(body) : {};
+            const pairRes = await this.physicalGate.routerAttestation.pairRouter(
+              data.routerIp || '192.168.8.1',
+              data.expectedFingerprint || null,
+              data.agentToken || null
+            );
+            const state = await this.physicalGate.evaluate(this.getActiveNode(), (n) => this.verifyNodeEgress(n));
+            res.writeHead(200);
+            res.end(JSON.stringify({
+              success: Boolean(state.routerIdentityPass),
+              attestation: pairRes,
+              status: state
+            }));
+          } catch (e) {
+            res.writeHead(500);
+            res.end(JSON.stringify({ success: false, reason: e.message }));
+          }
+        });
+        return;
+      }
+
       // POST /stop (Authenticated)
       if (pathname === '/stop' && req.method === 'POST') {
         res.writeHead(200);
@@ -940,6 +1048,15 @@ class PrivacyRelayService {
         this.log(`[PRIVACY_RELAY_BLOCK] reason=${this.isPaused ? 'RELAY_PAUSED' : 'RELAY_NOT_VERIFIED'}`);
         res.writeHead(502, { 'Content-Type': 'text/plain' });
         res.end('PRIVACY_RELAY_FAIL_CLOSED: Relay paused or not verified');
+        return;
+      }
+
+      if (this.physicalGate && this.physicalGate.enabled && !this.physicalGate.state.ready) {
+        this.trafficStats.failClosedDrops++;
+        const reasons = (this.physicalGate.state.reasons || []).join(', ');
+        this.log(`[PHYSICAL_GATE_BLOCK] reason=PHYSICAL_GATE_FAIL_CLOSED details=${reasons}`);
+        res.writeHead(502, { 'Content-Type': 'text/plain' });
+        res.end(`PHYSICAL_GATE_FAIL_CLOSED: Physical router gate not ready (${reasons})`);
         return;
       }
 
@@ -1005,6 +1122,15 @@ class PrivacyRelayService {
       if (this.isPaused || !this.relayReady) {
         this.trafficStats.failClosedDrops++;
         this.log(`[PRIVACY_RELAY_BLOCK] reason=${this.isPaused ? 'RELAY_PAUSED_CONNECT' : 'RELAY_NOT_VERIFIED_CONNECT'}`);
+        clientSocket.write('HTTP/1.1 502 Bad Gateway\r\n\r\n');
+        clientSocket.destroy();
+        return;
+      }
+
+      if (this.physicalGate && this.physicalGate.enabled && !this.physicalGate.state.ready) {
+        this.trafficStats.failClosedDrops++;
+        const reasons = (this.physicalGate.state.reasons || []).join(', ');
+        this.log(`[PHYSICAL_GATE_BLOCK] reason=PHYSICAL_GATE_FAIL_CLOSED details=${reasons}`);
         clientSocket.write('HTTP/1.1 502 Bad Gateway\r\n\r\n');
         clientSocket.destroy();
         return;
@@ -1112,6 +1238,13 @@ class PrivacyRelayService {
       }
     } else {
       this.relayReady = false;
+    }
+
+    // Evaluate Physical Router Security Gate if enabled (Issue #6 R6.9G.10.3.7)
+    if (this.physicalGate && this.physicalGate.enabled) {
+      this.log(`[PRIVACY_RELAY_STARTUP_PHYSICAL_GATE] Evaluating physical router security gate...`);
+      await this.physicalGate.evaluate(this.getActiveNode(), (n) => this.verifyNodeEgress(n));
+      this.log(`[PRIVACY_RELAY_STARTUP_PHYSICAL_GATE] ready=${this.physicalGate.state.ready} reasons=${(this.physicalGate.state.reasons || []).join(',')}`);
     }
 
     const currentFp = this.computeFingerprint(this.getActiveNode());

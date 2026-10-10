@@ -1,0 +1,59 @@
+#!/usr/sbin/nft -f
+# nftables Firewall Configuration Template
+# Strict Inbound Filtering for XPIDER VPS (Issue #6 R6.9G.10.3.7)
+
+flush ruleset
+
+table inet filter {
+    chain input {
+        type filter hook input priority 0; policy drop;
+
+        # Established & related traffic
+        ct state established,related accept
+
+        # Loopback interface
+        iif "lo" accept
+
+        # VPN tunnels: accept traffic from WireGuard and OpenVPN
+        iifname "wg0" accept
+        iifname "tun-ovpn" accept
+
+        # Allow SSH administration (rate-limited)
+        tcp dport 22 ct state new limit rate 10/minute accept
+
+        # Allow WireGuard UDP
+        udp dport 51820 accept
+
+        # Allow OpenVPN TCP/443 fallback
+        tcp dport 443 accept
+
+        # EXPLICIT BLOCK: Port 3128 from public WAN is strictly dropped
+        tcp dport 3128 drop
+
+        # ICMP echo requests
+        ip protocol icmp icmp type echo-request limit rate 5/second accept
+    }
+
+    chain forward {
+        type filter hook forward priority 0; policy drop;
+
+        # Allow forwarding from VPN tunnels to WAN
+        iifname "wg0" oifname "{{WAN_INTERFACE}}" accept
+        iifname "tun-ovpn" oifname "{{WAN_INTERFACE}}" accept
+        iifname "{{WAN_INTERFACE}}" oifname "wg0" ct state established,related accept
+        iifname "{{WAN_INTERFACE}}" oifname "tun-ovpn" ct state established,related accept
+    }
+
+    chain output {
+        type filter hook output priority 0; policy accept;
+    }
+}
+
+table ip nat {
+    chain postrouting {
+        type nat hook postrouting priority srcnat; policy accept;
+
+        # Masquerade VPN egress traffic exiting WAN
+        oifname "{{WAN_INTERFACE}}" masquerade
+    }
+}
