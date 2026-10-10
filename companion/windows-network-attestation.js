@@ -28,15 +28,6 @@ class WindowsNetworkAttestation {
       if (Array.isArray(this.mockRouteTable.routes)) return this.mockRouteTable.routes;
     }
 
-    const mockFile = path.join(__dirname, 'mock_routes.json');
-    if (fs.existsSync(mockFile)) {
-      try {
-        const data = JSON.parse(fs.readFileSync(mockFile, 'utf8'));
-        if (Array.isArray(data)) return data;
-        if (Array.isArray(data.routes)) return data.routes;
-      } catch (_) {}
-    }
-
     if (process.platform !== 'win32') {
       return [
         { destination: '0.0.0.0/0', nextHop: this.targetRouterIp, metric: 25, interfaceAlias: 'eth0' }
@@ -67,15 +58,6 @@ class WindowsNetworkAttestation {
       return this.mockRouteTable.ipv6Routes;
     }
 
-    const mockFile = path.join(__dirname, 'mock_routes.json');
-    if (fs.existsSync(mockFile)) {
-      try {
-        const data = JSON.parse(fs.readFileSync(mockFile, 'utf8'));
-        if (data && Array.isArray(data.ipv6Routes)) return data.ipv6Routes;
-        return [];
-      } catch (_) {}
-    }
-
     if (process.platform !== 'win32') return [];
 
     try {
@@ -100,15 +82,6 @@ class WindowsNetworkAttestation {
   getIPv6State() {
     if (this.mockRouteTable && this.mockRouteTable.ipv6State) {
       return this.mockRouteTable.ipv6State;
-    }
-
-    const mockFile = path.join(__dirname, 'mock_routes.json');
-    if (fs.existsSync(mockFile)) {
-      try {
-        const data = JSON.parse(fs.readFileSync(mockFile, 'utf8'));
-        if (data && data.ipv6State) return data.ipv6State;
-        return 'DISABLED';
-      } catch (_) {}
     }
 
     const ipv6Routes = this.getIPv6DefaultRoutes();

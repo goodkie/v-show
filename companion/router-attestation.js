@@ -9,7 +9,9 @@
 
 const crypto = require('crypto');
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
+const { execSync } = require('child_process');
 const winsec = require('./winsec');
 const { GLInetOpalDriver } = require('./router-drivers/glinet-opal');
 const { OpenWrtReadOnlyDriver } = require('./router-drivers/openwrt-readonly');
@@ -89,15 +91,28 @@ class RouterAttestationManager {
    * Public key is formatted for OpenSSH authorized_keys with forced command.
    */
   generatePairingKey() {
-    const { publicKey, privateKey } = crypto.generateKeyPairSync('ed25519', {
-      publicKeyEncoding: { type: 'spki', format: 'der' },
-      privateKeyEncoding: { type: 'pkcs8', format: 'pem' }
-    });
+    let privateKeyStr = null;
+    let sshPub = null;
 
-    const sshPub = formatEd25519OpenSsh(publicKey);
-    const encryptedPrivKey = winsec.encrypt ? winsec.encrypt(privateKey) : winsec.protectSecret(privateKey);
+    try {
+      const f = path.join(os.tmpdir(), `xpider_pair_gen_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`);
+      execSync(`ssh-keygen -t ed25519 -N "" -f "${f}" -C "xpider-attest-companion"`, { stdio: 'pipe' });
+      privateKeyStr = fs.readFileSync(f, 'utf8');
+      sshPub = fs.readFileSync(f + '.pub', 'utf8').trim();
+      try { fs.unlinkSync(f); } catch (_) {}
+      try { fs.unlinkSync(f + '.pub'); } catch (_) {}
+    } catch (_) {
+      const { publicKey, privateKey } = crypto.generateKeyPairSync('ed25519', {
+        publicKeyEncoding: { type: 'spki', format: 'der' },
+        privateKeyEncoding: { type: 'pkcs8', format: 'pem' }
+      });
+      sshPub = formatEd25519OpenSsh(publicKey);
+      privateKeyStr = privateKey;
+    }
 
-    const installCommand = `echo 'command="/usr/bin/xpider-router-attest.sh",no-port-forwarding,no-agent-forwarding,no-X11-forwarding,no-pty ${sshPub}' >> /etc/dropbear/authorized_keys`;
+    const encryptedPrivKey = winsec.encrypt ? winsec.encrypt(privateKeyStr) : winsec.protectSecret(privateKeyStr);
+
+    const installCommand = `echo 'command="/usr/libexec/xpider-router-attest",no-port-forwarding,no-agent-forwarding,no-X11-forwarding,no-pty ${sshPub}' >> /etc/dropbear/authorized_keys`;
 
     this.saveConfig({
       sshKeyRef: encryptedPrivKey,
@@ -114,7 +129,7 @@ class RouterAttestationManager {
     if (this.config.sshPublicKey) {
       return {
         publicKey: this.config.sshPublicKey,
-        installCommand: `echo 'command="/usr/bin/xpider-router-attest.sh",no-port-forwarding,no-agent-forwarding,no-X11-forwarding,no-pty ${this.config.sshPublicKey}' >> /etc/dropbear/authorized_keys`
+        installCommand: `echo 'command="/usr/libexec/xpider-router-attest",no-port-forwarding,no-agent-forwarding,no-X11-forwarding,no-pty ${this.config.sshPublicKey}' >> /etc/dropbear/authorized_keys`
       };
     }
     return this.generatePairingKey();
@@ -150,7 +165,10 @@ class RouterAttestationManager {
       sshUser: this.config.sshUser || 'root',
       transport: this.config.transport || 'ssh',
       expectedFingerprint: this.config.expectedFingerprint,
-      agentToken: tokenOrKey
+      agentToken: tokenOrKey,
+      strictHostKeyChecking: this.config.strictHostKeyChecking,
+      userKnownHostsFile: this.config.userKnownHostsFile,
+      timeoutMs: this.config.timeoutMs
     });
   }
 
@@ -193,7 +211,10 @@ class RouterAttestationManager {
       sshUser,
       expectedFingerprint: null,
       agentToken: tokenOrKey,
-      transport
+      transport,
+      strictHostKeyChecking: options.strictHostKeyChecking !== undefined ? options.strictHostKeyChecking : this.config.strictHostKeyChecking,
+      userKnownHostsFile: options.userKnownHostsFile !== undefined ? options.userKnownHostsFile : this.config.userKnownHostsFile,
+      timeoutMs: options.timeoutMs || 8000
     });
 
     const probeRes = await probeDriver.attest();
@@ -223,7 +244,10 @@ class RouterAttestationManager {
       sshUser,
       expectedFingerprint: pinnedFingerprint,
       agentToken: tokenOrKey,
-      transport: chosenTransport
+      transport: chosenTransport,
+      strictHostKeyChecking: options.strictHostKeyChecking !== undefined ? options.strictHostKeyChecking : this.config.strictHostKeyChecking,
+      userKnownHostsFile: options.userKnownHostsFile !== undefined ? options.userKnownHostsFile : this.config.userKnownHostsFile,
+      timeoutMs: options.timeoutMs || 8000
     });
 
     const verifyRes = await verifyDriver.attest();
@@ -232,7 +256,7 @@ class RouterAttestationManager {
     }
 
     // 3. Persist valid pairing configuration ONLY after successful verification
-    this.saveConfig({
+    const configUpdates = {
       enabled: true,
       routerIp: targetIp,
       routerPort: targetPort,
@@ -241,7 +265,17 @@ class RouterAttestationManager {
       sshUser,
       expectedFingerprint: pinnedFingerprint,
       agentTokenRef: tokenRef
-    });
+    };
+    if (options.strictHostKeyChecking !== undefined) {
+      configUpdates.strictHostKeyChecking = options.strictHostKeyChecking;
+    }
+    if (options.userKnownHostsFile !== undefined) {
+      configUpdates.userKnownHostsFile = options.userKnownHostsFile;
+    }
+    if (rawToken && rawToken.includes('PRIVATE KEY')) {
+      configUpdates.sshKeyRef = tokenRef;
+    }
+    this.saveConfig(configUpdates);
 
     verifyRes.success = Boolean(verifyRes.reachable && verifyRes.identityVerified);
     this.lastAttestation = verifyRes;

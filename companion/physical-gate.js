@@ -13,8 +13,6 @@
  * No best-effort READY. No "mostly protected" READY. No stale READY.
  */
 
-const fs = require('fs');
-const path = require('path');
 const net = require('net');
 const { RouterAttestationManager } = require('./router-attestation');
 const { WindowsNetworkAttestation } = require('./windows-network-attestation');
@@ -49,7 +47,6 @@ class PhysicalGate {
     this.windowsAttestation = options.windowsAttestation || new WindowsNetworkAttestation();
     this.enabled = Boolean(options.enabled);
     this.physicalGateTtlMs = options.physicalGateTtlMs || 30000; // 30s bounded freshness TTL
-    this.allowLoopbackProxy = Boolean(options.allowLoopbackProxy || fs.existsSync(path.join(__dirname, 'mock_routes.json'))); // Explicit test fixture flag only
     this.pinnedEgressFingerprint = options.pinnedEgressFingerprint || null;
     this.pinnedEgressIdentityGroup = options.pinnedEgressIdentityGroup || null;
     this.isRevalidating = false;
@@ -214,11 +211,7 @@ class PhysicalGate {
       const vpnProto = routerData.vpn ? routerData.vpn.protocol : 'UNKNOWN';
 
       if (isLoopback) {
-        if (this.allowLoopbackProxy) {
-          privateProxyPass = true;
-        } else {
-          reasons.push('LOOPBACK_PROXY_FORBIDDEN_IN_PRODUCTION_PHYSICAL_GATE');
-        }
+        reasons.push('LOOPBACK_PROXY_FORBIDDEN_IN_PRODUCTION_PHYSICAL_GATE');
       } else if (isRfc) {
         // Enforce mandatory transportBinding in Physical Gate mode (Blocker 7)
         const binding = activeNode.transportBinding;
@@ -235,7 +228,7 @@ class PhysicalGate {
           const isWgApproved = (binding === 'OPAL_WG' && hostIp === '10.66.66.1' && portNum === 3128);
           const isOvpnApproved = (binding === 'OPAL_OVPN' && hostIp === '10.67.67.1' && portNum === 3128);
 
-          if (!isWgApproved && !isOvpnApproved && !this.allowLoopbackProxy) {
+          if (!isWgApproved && !isOvpnApproved) {
             reasons.push(`UNAPPROVED_VPN_PROXY_ENDPOINT: ${hostIp}:${portNum} (Expected 10.66.66.1:3128 or 10.67.67.1:3128)`);
           } else {
             privateProxyPass = true;
@@ -247,19 +240,26 @@ class PhysicalGate {
       }
 
       // 8. Egress Canary & Mandatory Pinned Egress Fingerprint (Blockers 6, 8)
-      const expectedFp = activeNode.expectedEgressFingerprint || this.pinnedEgressFingerprint;
+      const expectedFp = activeNode.expectedEgressFingerprint;
       const idGroup = activeNode.egressIdentityGroup;
 
+      if (!idGroup) {
+        reasons.push('EGRESS_IDENTITY_GROUP_MANDATORY');
+        egressFingerprintPass = false;
+      } else if (this.pinnedEgressIdentityGroup && idGroup !== this.pinnedEgressIdentityGroup) {
+        reasons.push(`EGRESS_IDENTITY_GROUP_MISMATCH: Node group "${idGroup}" does not match pinned "${this.pinnedEgressIdentityGroup}"`);
+        egressFingerprintPass = false;
+      }
+
       if (!expectedFp) {
-        reasons.push('PINNED_EGRESS_FINGERPRINT_MANDATORY_IN_PHYSICAL_GATE_MODE');
+        reasons.push('NODE_EXPECTED_EGRESS_FINGERPRINT_MANDATORY');
         egressFingerprintPass = false;
       } else if (this.pinnedEgressFingerprint && expectedFp !== this.pinnedEgressFingerprint) {
         reasons.push(`EGRESS_IDENTITY_MISMATCH: Node expected ${expectedFp} does not match pinned ${this.pinnedEgressFingerprint}`);
         egressFingerprintPass = false;
-      } else if (this.pinnedEgressIdentityGroup && idGroup && idGroup !== this.pinnedEgressIdentityGroup) {
-        reasons.push(`EGRESS_IDENTITY_GROUP_MISMATCH: Node group "${idGroup}" does not match pinned "${this.pinnedEgressIdentityGroup}"`);
-        egressFingerprintPass = false;
-      } else {
+      }
+
+      if (idGroup && expectedFp && (!this.pinnedEgressIdentityGroup || idGroup === this.pinnedEgressIdentityGroup) && (!this.pinnedEgressFingerprint || expectedFp === this.pinnedEgressFingerprint)) {
         if (typeof verifyCanaryFn === 'function') {
           try {
             const canaryRes = await verifyCanaryFn(activeNode);

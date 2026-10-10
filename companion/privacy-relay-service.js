@@ -77,7 +77,6 @@ class PrivacyRelayService {
     // Initialize Physical Router Security Gate (Issue #6 R6.9G.10.3.7)
     this.physicalGate = options.physicalGate || new PhysicalGate({
       enabled: Boolean(this.pool.physicalGate && this.pool.physicalGate.enabled),
-      allowLoopbackProxy: Boolean(options.allowLoopbackProxy || (this.pool.physicalGate && this.pool.physicalGate.allowLoopbackProxy)),
       physicalGateTtlMs: (this.pool.physicalGate && this.pool.physicalGate.physicalGateTtlMs) || 30000
     });
 
@@ -180,8 +179,7 @@ class PrivacyRelayService {
         selectedEgressId: active ? active.id : (this.pool.selectedEgressId || null),
         nodes: sanitizedNodes,
         physicalGate: {
-          enabled: Boolean(this.physicalGate && this.physicalGate.enabled),
-          allowLoopbackProxy: Boolean(this.physicalGate && this.physicalGate.allowLoopbackProxy)
+          enabled: Boolean(this.physicalGate && this.physicalGate.enabled)
         }
       };
       fs.writeFileSync(this.configFile, JSON.stringify(toSave, null, 2), 'utf8');
@@ -968,14 +966,8 @@ class PrivacyRelayService {
           try {
             const data = body ? JSON.parse(body) : {};
             const enabled = data.enabled !== undefined ? Boolean(data.enabled) : true;
-            if (data.allowLoopbackProxy !== undefined) {
-              this.physicalGate.allowLoopbackProxy = Boolean(data.allowLoopbackProxy);
-            }
             this.physicalGate.setEnabled(enabled);
-            this.pool.physicalGate = {
-              enabled,
-              allowLoopbackProxy: Boolean(this.physicalGate.allowLoopbackProxy)
-            };
+            this.pool.physicalGate = { enabled };
             this.saveConfig();
             if (enabled) {
               await this.physicalGate.evaluate(this.getActiveNode(), (n) => this.verifyNodeEgress(n));

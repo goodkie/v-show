@@ -35,7 +35,7 @@ fs.mkdirSync(stagingCompDir, { recursive: true });
 function copyCompanionFiles(src, dest) {
   const entries = fs.readdirSync(src, { withFileTypes: true });
   for (const entry of entries) {
-    if (entry.name === '.control_token' || entry.name === 'privacy_relay.log' || entry.name === 'node_modules' || entry.name === 'router_pairing_config.json') {
+    if (entry.name === '.control_token' || entry.name === 'privacy_relay.log' || entry.name === 'node_modules' || entry.name === 'router_pairing_config.json' || entry.name.startsWith('test') || entry.name.startsWith('mock') || entry.name === 'tls_test_certs.js') {
       continue;
     }
     const srcPath = path.join(src, entry.name);

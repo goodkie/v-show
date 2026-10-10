@@ -35,10 +35,11 @@ function encrypt(plaintext) {
 
   if (process.platform === 'win32') {
     try {
+      const plainB64 = Buffer.from(plaintext, 'utf8').toString('base64');
       const script = `
         $ProgressPreference = 'SilentlyContinue'
         Add-Type -AssemblyName System.Security
-        $bytes = [System.Text.Encoding]::UTF8.GetBytes('${plaintext.replace(/'/g, "''")}')
+        $bytes = [Convert]::FromBase64String('${plainB64}')
         $enc = [System.Security.Cryptography.ProtectedData]::Protect($bytes, $null, [System.Security.Cryptography.DataProtectionScope]::CurrentUser)
         [Convert]::ToBase64String($enc)
       `;
@@ -92,11 +93,12 @@ function decrypt(cipherRef) {
           Add-Type -AssemblyName System.Security
           $raw = [Convert]::FromBase64String('${rawCipher.replace(/'/g, "''")}')
           $dec = [System.Security.Cryptography.ProtectedData]::Unprotect($raw, $null, [System.Security.Cryptography.DataProtectionScope]::CurrentUser)
-          [System.Text.Encoding]::UTF8.GetString($dec)
+          [Convert]::ToBase64String($dec)
         `;
         const b64 = Buffer.from(script, 'utf16le').toString('base64');
         const out = execFileSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-EncodedCommand', b64], { encoding: 'utf8' });
-        const plain = out.trim().split(/\r?\n/).pop().trim();
+        const decB64 = out.trim().split(/\r?\n/).pop().trim();
+        const plain = Buffer.from(decB64, 'base64').toString('utf8');
         memoryCache.set(cipherRef, plain);
         return plain;
       } catch (err) {

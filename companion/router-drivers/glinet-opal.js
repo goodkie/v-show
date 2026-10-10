@@ -9,7 +9,9 @@
 
 const crypto = require('crypto');
 const http = require('http');
-const { execSync, execFileSync } = require('child_process');
+const { execSync, execFile } = require('child_process');
+const util = require('util');
+const execFileAsync = util.promisify(execFile);
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
@@ -23,7 +25,9 @@ class GLInetOpalDriver {
     this.sshUser = options.sshUser || 'root';
     this.sshKeyPath = options.sshKeyPath || null;
     this.transport = options.transport || 'ssh'; // 'ssh' (primary), 'http', or 'auto'
-    this.timeoutMs = options.timeoutMs || 3000;
+    this.timeoutMs = options.timeoutMs || 8000;
+    this.strictHostKeyChecking = options.strictHostKeyChecking !== undefined ? options.strictHostKeyChecking : 'accept-new';
+    this.userKnownHostsFile = options.userKnownHostsFile || null;
     this.expectedFingerprint = options.expectedFingerprint || null;
     this.agentToken = options.agentToken || null;
     this.customFetcher = options.customFetcher || null;
@@ -71,17 +75,22 @@ class GLInetOpalDriver {
         args.push('-p', String(portNum));
       }
       args.push(
-        '-o', 'StrictHostKeyChecking=accept-new',
+        '-o', `StrictHostKeyChecking=${this.strictHostKeyChecking || 'accept-new'}`,
         '-o', 'BatchMode=yes',
-        '-o', 'ConnectTimeout=3',
-        `${this.sshUser}@${this.routerIp}`
+        '-o', 'ConnectTimeout=5'
+      );
+      if (this.userKnownHostsFile) {
+        args.push('-o', `UserKnownHostsFile=${this.userKnownHostsFile}`);
+      }
+      args.push(
+        `${this.sshUser}@${this.routerIp}`,
+        '/usr/libexec/xpider-router-attest'
       );
 
       // Opal authorized_keys enforces: command="/usr/libexec/xpider-router-attest",no-port-forwarding,no-agent-forwarding,no-X11-forwarding,no-pty
-      const stdout = execFileSync('ssh', args, {
+      const { stdout } = await execFileAsync('ssh', args, {
         encoding: 'utf8',
-        timeout: this.timeoutMs,
-        stdio: ['ignore', 'pipe', 'pipe']
+        timeout: this.timeoutMs
       });
       return JSON.parse(stdout.trim());
     } finally {
@@ -224,7 +233,7 @@ class GLInetOpalDriver {
       }
 
       // Route state
-      const defaultGatewayViaOpal = Boolean(data.route && data.route.defaultGatewayViaOpal !== false);
+      const defaultGatewayViaOpal = Boolean(data.route && data.route.defaultGatewayViaOpal === true);
       const vpnDefaultRoutePresent = Boolean(data.route && data.route.vpnDefaultRoutePresent === true);
       const directWanBypassDetected = Boolean(data.route && data.route.directWanBypassDetected === true);
 

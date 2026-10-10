@@ -145,7 +145,7 @@ async function runTests() {
 
     const keyInfo = mgr.generatePairingKey();
     assert.ok(keyInfo.publicKey.startsWith('ssh-ed25519 '), 'Public key must be in OpenSSH ssh-ed25519 format');
-    assert.ok(keyInfo.installCommand.includes('command="/usr/bin/xpider-router-attest.sh"'), 'Install command must have forced-command');
+    assert.ok(keyInfo.installCommand.includes('command="/usr/libexec/xpider-router-attest"'), 'Install command must have forced-command');
     assert.ok(keyInfo.installCommand.includes('no-pty'), 'Install command must include no-pty');
     assert.ok(keyInfo.installCommand.includes('no-port-forwarding'), 'Install command must include no-port-forwarding');
     assert.ok(keyInfo.installCommand.includes('no-agent-forwarding'), 'Install command must include no-agent-forwarding');
