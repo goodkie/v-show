@@ -197,7 +197,7 @@ async function runTests() {
   // --- Scenario E: WireGuard DOWN, OpenVPN TCP/443 UP -> PASS ---
   await testAsync('E: WireGuard DOWN, OpenVPN Fallback UP -> PASS', async () => {
     const routerAttestation = createMockRouterAttestation({
-      vpn: { protocol: 'OpenVPN', state: 'UP', ip: '10.67.67.2', port: 443, transport: 'TCP' }
+      vpn: { protocol: 'OPENVPN', state: 'UP', ip: '10.67.67.2', port: 443, transport: 'TCP' }
     });
     const gate = new PhysicalGate({
       enabled: true,
@@ -205,12 +205,12 @@ async function runTests() {
       windowsAttestation: createMockWindowsAttestation()
     });
 
-    // In OpenVPN fallback, node is on 10.67.67.1
-    const activeNode = { host: '10.67.67.1', port: 3128, lastHealth: 'HEALTHY', observedFingerprint: 'fp-egress-vps' };
+    // In OpenVPN fallback, node is on 10.67.67.1 with matching expectedEgressFingerprint
+    const activeNode = { host: '10.67.67.1', port: 3128, lastHealth: 'HEALTHY', observedFingerprint: 'fp-egress-vps', expectedEgressFingerprint: 'fp-egress-vps' };
     const res = await gate.evaluate(activeNode);
     assert.strictEqual(res.ready, true, 'Gate must be ready on healthy OpenVPN fallback');
     assert.strictEqual(res.tunnelPass, true, 'tunnelPass must be true');
-    assert.strictEqual(res.vpnProtocol, 'OpenVPN', 'vpnProtocol must be OpenVPN');
+    assert.strictEqual(res.vpnProtocol, 'OPENVPN', 'vpnProtocol must be OPENVPN');
   });
 
   // --- Scenario F: Opal Kill-Switch DISABLED -> fail-closed ---
@@ -260,7 +260,7 @@ async function runTests() {
       windowsAttestation: createMockWindowsAttestation()
     });
 
-    const activeNode = { host: '10.66.66.1', port: 3128, lastHealth: 'HEALTHY', observedFingerprint: 'fp-egress-vps' };
+    const activeNode = { host: '10.66.66.1', port: 3128, lastHealth: 'HEALTHY', observedFingerprint: 'fp-egress-vps', expectedEgressFingerprint: 'fp-egress-vps' };
     const res = await gate.evaluate(activeNode);
     assert.strictEqual(res.ready, true, 'Gate must be ready when kill-switch is ENFORCED');
     assert.strictEqual(res.killSwitchPass, true, 'killSwitchPass must be true');
@@ -289,7 +289,7 @@ async function runTests() {
       windowsAttestation: createMockWindowsAttestation()
     });
 
-    const privateNode = { host: '10.66.66.1', port: 3128, lastHealth: 'HEALTHY', observedFingerprint: 'fp-vps-egress' };
+    const privateNode = { host: '10.66.66.1', port: 3128, lastHealth: 'HEALTHY', observedFingerprint: 'fp-vps-egress', expectedEgressFingerprint: 'fp-vps-egress' };
     const res = await gate.evaluate(privateNode);
     assert.strictEqual(res.ready, true, 'Gate must be ready with private VPN-subnet proxy');
     assert.strictEqual(res.privateProxyPass, true, 'privateProxyPass must be true');

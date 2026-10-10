@@ -1815,10 +1815,42 @@
             if (!this.config.enabled) {
                 return !this.config.failClosed;
             }
-            if (this.config.physicalGateEnabled && this.lastPhysicalGateStatus && !this.lastPhysicalGateStatus.ready) {
-                return false;
+            if (this.config.physicalGateEnabled) {
+                if (!this.lastPhysicalGateStatus || !this.lastPhysicalGateStatus.ready) {
+                    return false;
+                }
+                const age = Date.now() - (this.lastPhysicalGateStatus.lastEvaluatedAt || 0);
+                if (age > 30000) {
+                    return false; // Stale attestation (Blocker 6)
+                }
             }
             return this.isGateReady === true;
+        }
+
+        /**
+         * [Issue #6 R6.9G.10.3.7.1] Assert Physical Router Security Gate Ready & Fresh
+         */
+        async assertPhysicalGateReady() {
+            if (!this.config.enabled || !this.config.physicalGateEnabled) {
+                return { ready: true };
+            }
+            const age = Date.now() - (this.lastPhysicalGateStatus ? (this.lastPhysicalGateStatus.lastEvaluatedAt || 0) : 0);
+            if (!this.lastPhysicalGateStatus || age > 15000) {
+                const vRes = await this.verifyPhysicalGate();
+                if (!vRes.success || !vRes.status || !vRes.status.ready) {
+                    return {
+                        ready: false,
+                        reason: 'PHYSICAL_GATE_FAIL_CLOSED',
+                        details: (vRes.status && vRes.status.reasons) ? vRes.status.reasons.join(', ') : (vRes.reason || 'UNKNOWN')
+                    };
+                }
+            }
+            const isReady = Boolean(this.lastPhysicalGateStatus && this.lastPhysicalGateStatus.ready);
+            return {
+                ready: isReady,
+                reason: isReady ? null : 'PHYSICAL_GATE_NOT_READY',
+                details: isReady ? null : ((this.lastPhysicalGateStatus && this.lastPhysicalGateStatus.reasons) ? this.lastPhysicalGateStatus.reasons.join(', ') : 'FAIL_CLOSED')
+            };
         }
 
         /**

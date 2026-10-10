@@ -24,22 +24,8 @@ class WindowsNetworkAttestation {
    */
   getDefaultRoutes() {
     if (this.mockRouteTable) {
-      return this.mockRouteTable;
-    }
-
-    if (process.env.XPIDER_MOCK_ROUTES_JSON) {
-      try {
-        const parsed = JSON.parse(process.env.XPIDER_MOCK_ROUTES_JSON);
-        return Array.isArray(parsed) ? parsed : (parsed.routes || []);
-      } catch (_) {}
-    }
-
-    const mockFile = path.join(__dirname, 'mock_routes.json');
-    if (fs.existsSync(mockFile)) {
-      try {
-        const parsed = JSON.parse(fs.readFileSync(mockFile, 'utf8'));
-        return Array.isArray(parsed) ? parsed : (parsed.routes || []);
-      } catch (_) {}
+      if (Array.isArray(this.mockRouteTable)) return this.mockRouteTable;
+      if (Array.isArray(this.mockRouteTable.routes)) return this.mockRouteTable.routes;
     }
 
     if (process.platform !== 'win32') {
@@ -65,6 +51,32 @@ class WindowsNetworkAttestation {
   }
 
   /**
+   * Reads active IPv6 default routes (::/0) on Windows.
+   */
+  getIPv6DefaultRoutes() {
+    if (this.mockRouteTable && this.mockRouteTable.ipv6Routes) {
+      return this.mockRouteTable.ipv6Routes;
+    }
+
+    if (process.platform !== 'win32') return [];
+
+    try {
+      const psCmd = 'Get-NetRoute -DestinationPrefix "::/0" -AddressFamily IPv6 -ErrorAction SilentlyContinue | Select-Object -Property NextHop, RouteMetric, InterfaceMetric, InterfaceAlias | ConvertTo-Json -Compress';
+      const output = execSync(`powershell -NoProfile -Command "${psCmd}"`, { encoding: 'utf8', timeout: 3000 }).trim();
+      if (!output) return [];
+      const parsed = JSON.parse(output);
+      const items = Array.isArray(parsed) ? parsed : [parsed];
+      return items.map(i => ({
+        nextHop: i.NextHop,
+        metric: (i.RouteMetric || 0) + (i.InterfaceMetric || 0),
+        interfaceAlias: i.InterfaceAlias
+      }));
+    } catch (_) {
+      return [];
+    }
+  }
+
+  /**
    * Checks IPv6 status on the system.
    */
   getIPv6State() {
@@ -72,22 +84,11 @@ class WindowsNetworkAttestation {
       return this.mockRouteTable.ipv6State;
     }
 
-    if (process.env.XPIDER_MOCK_ROUTES_JSON) {
-      try {
-        const parsed = JSON.parse(process.env.XPIDER_MOCK_ROUTES_JSON);
-        if (parsed && parsed.ipv6State) return parsed.ipv6State;
-      } catch (_) {}
+    const ipv6Routes = this.getIPv6DefaultRoutes();
+    if (ipv6Routes.length > 0) {
+      return 'ACTIVE_DEFAULT_ROUTE';
     }
 
-    const mockFile = path.join(__dirname, 'mock_routes.json');
-    if (fs.existsSync(mockFile)) {
-      try {
-        const parsed = JSON.parse(fs.readFileSync(mockFile, 'utf8'));
-        if (parsed && parsed.ipv6State) return parsed.ipv6State;
-      } catch (_) {}
-    }
-
-    // Check if IPv6 default route exists or if IPv6 has non-link-local addresses
     const interfaces = os.networkInterfaces();
     let hasGlobalIPv6 = false;
     for (const [name, addrs] of Object.entries(interfaces)) {
@@ -145,13 +146,14 @@ class WindowsNetworkAttestation {
       };
     }
 
-    // Check for alternate direct Internet bypass route with equal or close metric
-    const alternateRoutes = defaultRoutes.slice(1);
-    const bypassRoute = alternateRoutes.find(r => r.nextHop !== pairedRouterGateway && r.metric <= primaryRoute.metric);
-    if (bypassRoute) {
+    // Strict Physical Gate (Blocker 9):
+    // ANY active non-Opal default route is a bypass risk, even with higher metric!
+    const nonOpalRoutes = defaultRoutes.filter(r => r.nextHop !== pairedRouterGateway);
+    if (nonOpalRoutes.length > 0) {
+      const bypassRoute = nonOpalRoutes[0];
       return {
         pass: false,
-        reason: 'WINDOWS_DIRECT_BYPASS_ROUTE_PRESENT',
+        reason: `WINDOWS_DIRECT_BYPASS_ROUTE_PRESENT: Active non-Opal default route detected on interface ${bypassRoute.interfaceAlias} (gateway: ${bypassRoute.nextHop}, metric: ${bypassRoute.metric})`,
         opalPathPass: true,
         directBypassBlocked: false,
         bypassNextHop: bypassRoute.nextHop,
@@ -159,6 +161,21 @@ class WindowsNetworkAttestation {
         defaultGateway: primaryRoute.nextHop,
         routes: defaultRoutes,
         ipv6State: this.getIPv6State(),
+        observedAt
+      };
+    }
+
+    // Check IPv6 default routes (Blocker 9)
+    const ipv6DefaultRoutes = this.getIPv6DefaultRoutes();
+    if (ipv6DefaultRoutes.length > 0) {
+      return {
+        pass: false,
+        reason: `WINDOWS_IPV6_BYPASS_ROUTE_PRESENT: IPv6 default route detected (${ipv6DefaultRoutes[0].nextHop || 'direct'})`,
+        opalPathPass: true,
+        directBypassBlocked: false,
+        defaultGateway: primaryRoute.nextHop,
+        routes: defaultRoutes,
+        ipv6State: 'ACTIVE_DEFAULT_ROUTE',
         observedAt
       };
     }

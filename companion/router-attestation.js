@@ -60,7 +60,12 @@ class RouterAttestationManager {
   }
 
   getDriver() {
-    if (this.customDriver) return this.customDriver;
+    if (this.customDriver) {
+      if (this.config.expectedFingerprint) {
+        this.customDriver.expectedFingerprint = this.config.expectedFingerprint;
+      }
+      return this.customDriver;
+    }
     let token = null;
     if (this.config.agentTokenRef) {
       token = winsec.decrypt ? winsec.decrypt(this.config.agentTokenRef) : winsec.unprotectSecret(this.config.agentTokenRef);
@@ -89,21 +94,46 @@ class RouterAttestationManager {
     return result;
   }
 
-  async pairRouter(routerIp, expectedFingerprint = null, rawToken = null, routerPort = null) {
+  async pairRouter(routerIp, expectedFingerprint = null, rawToken = null, routerPort = null, options = {}) {
     let tokenRef = this.config.agentTokenRef;
     if (rawToken) {
       tokenRef = winsec.encrypt ? winsec.encrypt(rawToken) : winsec.protectSecret(rawToken);
     }
 
+    const targetIp = routerIp || this.config.routerIp || '192.168.8.1';
+    const targetPort = routerPort !== null ? parseInt(routerPort, 10) : (this.config.routerPort || 80);
+
+    let pinnedFingerprint = expectedFingerprint || this.config.expectedFingerprint || null;
+
+    // Trust-On-First-Use (TOFU) (Blocker 4):
+    // If no expected fingerprint is provided, explicitly query the router to observe and pin its identity
+    if (!pinnedFingerprint) {
+      const probeDriver = this.customDriver || new GLInetOpalDriver({
+        routerIp: targetIp,
+        port: targetPort,
+        expectedFingerprint: null,
+        agentToken: rawToken,
+        transport: options.transport || 'auto'
+      });
+      const probeRes = await probeDriver.attest();
+      if (probeRes && probeRes.routerFingerprint) {
+        pinnedFingerprint = probeRes.routerFingerprint;
+      }
+    }
+
+    if (!pinnedFingerprint) {
+      throw new Error('PAIRING_FAILED: Could not retrieve or pin router fingerprint. Router must be reachable.');
+    }
+
     this.saveConfig({
       enabled: true,
-      routerIp: routerIp || this.config.routerIp,
-      routerPort: routerPort !== null ? parseInt(routerPort, 10) : (this.config.routerPort || 80),
-      expectedFingerprint: expectedFingerprint || this.config.expectedFingerprint,
+      routerIp: targetIp,
+      routerPort: targetPort,
+      expectedFingerprint: pinnedFingerprint,
       agentTokenRef: tokenRef
     });
 
-    // Re-verify immediately
+    // Re-verify immediately with pinned fingerprint enforced
     return await this.attestRouter();
   }
 }

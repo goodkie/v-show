@@ -586,13 +586,15 @@ class PrivacyRelayService {
       if (pathname === '/health' && req.method === 'GET') {
         const active = this.getActiveNode();
         const isHealthValid = this.isNodeHealthValid(active);
-        const physicalGateReady = !this.physicalGate.enabled || Boolean(this.physicalGate.state && this.physicalGate.state.ready);
+        const physicalGateFresh = !this.physicalGate.enabled || this.physicalGate.isFresh();
+        const physicalGateReady = !this.physicalGate.enabled || Boolean(this.physicalGate.state && this.physicalGate.state.ready && physicalGateFresh);
         res.writeHead(200);
         res.end(JSON.stringify({
           status: 'OK',
           relayReady: !this.isPaused && this.relayReady && isHealthValid && physicalGateReady,
           physicalGateEnabled: this.physicalGate.enabled,
-          physicalGateReady: Boolean(this.physicalGate.state && this.physicalGate.state.ready),
+          physicalGateReady,
+          physicalGateFresh: this.physicalGate.enabled ? this.physicalGate.isFresh() : true,
           service: 'XPIDER Privacy Relay',
           version: this.pool.version || '1.0.3',
           controlPort: this.controlPort,
@@ -941,7 +943,9 @@ class PrivacyRelayService {
         res.writeHead(200);
         res.end(JSON.stringify({
           success: true,
-          status: this.physicalGate.state
+          status: this.physicalGate.state,
+          isFresh: this.physicalGate.isFresh(),
+          ttlMs: this.physicalGate.physicalGateTtlMs
         }));
         return;
       }
@@ -959,12 +963,16 @@ class PrivacyRelayService {
             this.saveConfig();
             if (enabled) {
               await this.physicalGate.evaluate(this.getActiveNode(), (n) => this.verifyNodeEgress(n));
+              this.physicalGate.startMonitor(15000, () => this.getActiveNode(), (n) => this.verifyNodeEgress(n));
+            } else {
+              this.physicalGate.stopMonitor();
             }
             res.writeHead(200);
             res.end(JSON.stringify({
               success: true,
               enabled: this.physicalGate.enabled,
-              status: this.physicalGate.state
+              status: this.physicalGate.state,
+              isFresh: this.physicalGate.isFresh()
             }));
           } catch (e) {
             res.writeHead(500);
@@ -984,7 +992,9 @@ class PrivacyRelayService {
             res.writeHead(200);
             res.end(JSON.stringify({
               success: true,
-              status: state
+              status: state,
+              isFresh: this.physicalGate.isFresh(),
+              ttlMs: this.physicalGate.physicalGateTtlMs
             }));
           } catch (e) {
             res.writeHead(500);
@@ -1046,14 +1056,19 @@ class PrivacyRelayService {
     this.proxyServer = http.createServer((req, res) => {
       this.trafficStats.requestsProxied++;
 
-      // [R6.9G.10.3.7] Physical Router Security Gate Precedence
-      if (this.physicalGate && this.physicalGate.enabled && !this.physicalGate.state.ready) {
-        this.trafficStats.failClosedDrops++;
-        const reasons = (this.physicalGate.state.reasons || []).join(', ');
-        this.log(`[PHYSICAL_GATE_BLOCK] reason=PHYSICAL_GATE_FAIL_CLOSED details=${reasons}`);
-        res.writeHead(502, { 'Content-Type': 'text/plain' });
-        res.end(`PHYSICAL_GATE_FAIL_CLOSED: Physical router gate not ready (${reasons})`);
-        return;
+      // [R6.9G.10.3.7.1] Physical Router Security Gate Precedence & Freshness (Blocker 6)
+      if (this.physicalGate && this.physicalGate.enabled) {
+        const isReady = this.physicalGate.state.ready;
+        const isFresh = this.physicalGate.isFresh();
+        if (!isReady || !isFresh) {
+          this.trafficStats.failClosedDrops++;
+          const reason = !isReady ? 'PHYSICAL_GATE_FAIL_CLOSED' : 'PHYSICAL_GATE_STALE';
+          const details = !isReady ? (this.physicalGate.state.reasons || []).join(', ') : `Attestation expired (> ${this.physicalGate.physicalGateTtlMs}ms)`;
+          this.log(`[PHYSICAL_GATE_BLOCK] reason=${reason} details=${details}`);
+          res.writeHead(502, { 'Content-Type': 'text/plain' });
+          res.end(`PHYSICAL_GATE_FAIL_CLOSED: ${reason} (${details})`);
+          return;
+        }
       }
 
       if (this.isPaused || !this.relayReady) {
@@ -1124,14 +1139,19 @@ class PrivacyRelayService {
     this.proxyServer.on('connect', (req, clientSocket, head) => {
       this.trafficStats.connectTunnels++;
 
-      // [R6.9G.10.3.7] Physical Router Security Gate Precedence
-      if (this.physicalGate && this.physicalGate.enabled && !this.physicalGate.state.ready) {
-        this.trafficStats.failClosedDrops++;
-        const reasons = (this.physicalGate.state.reasons || []).join(', ');
-        this.log(`[PHYSICAL_GATE_BLOCK] reason=PHYSICAL_GATE_FAIL_CLOSED details=${reasons}`);
-        clientSocket.write('HTTP/1.1 502 Bad Gateway\r\n\r\n');
-        clientSocket.destroy();
-        return;
+      // [R6.9G.10.3.7.1] Physical Router Security Gate Precedence & Freshness (Blocker 6)
+      if (this.physicalGate && this.physicalGate.enabled) {
+        const isReady = this.physicalGate.state.ready;
+        const isFresh = this.physicalGate.isFresh();
+        if (!isReady || !isFresh) {
+          this.trafficStats.failClosedDrops++;
+          const reason = !isReady ? 'PHYSICAL_GATE_FAIL_CLOSED' : 'PHYSICAL_GATE_STALE';
+          const details = !isReady ? (this.physicalGate.state.reasons || []).join(', ') : `Attestation expired (> ${this.physicalGate.physicalGateTtlMs}ms)`;
+          this.log(`[PHYSICAL_GATE_BLOCK] reason=${reason} details=${details}`);
+          clientSocket.write('HTTP/1.1 502 Bad Gateway\r\n\r\n');
+          clientSocket.destroy();
+          return;
+        }
       }
 
       if (this.isPaused || !this.relayReady) {
@@ -1246,10 +1266,11 @@ class PrivacyRelayService {
       this.relayReady = false;
     }
 
-    // Evaluate Physical Router Security Gate if enabled (Issue #6 R6.9G.10.3.7)
+    // Evaluate Physical Router Security Gate if enabled (Issue #6 R6.9G.10.3.7.1)
     if (this.physicalGate && this.physicalGate.enabled) {
       this.log(`[PRIVACY_RELAY_STARTUP_PHYSICAL_GATE] Evaluating physical router security gate...`);
       await this.physicalGate.evaluate(this.getActiveNode(), (n) => this.verifyNodeEgress(n));
+      this.physicalGate.startMonitor(15000, () => this.getActiveNode(), (n) => this.verifyNodeEgress(n));
       this.log(`[PRIVACY_RELAY_STARTUP_PHYSICAL_GATE] ready=${this.physicalGate.state.ready} reasons=${(this.physicalGate.state.reasons || []).join(',')}`);
     }
 
@@ -1261,6 +1282,9 @@ class PrivacyRelayService {
   }
 
   async stop() {
+    if (this.physicalGate) {
+      this.physicalGate.stopMonitor();
+    }
     const promises = [];
     if (this.controlServer) {
       promises.push(new Promise(r => {
