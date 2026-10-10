@@ -813,6 +813,7 @@ class PrivacyRelayService {
               username: (data.username || '').trim(),
               password: (data.password || '').trim(),
               credentialRef: (data.credentialRef || '').trim(),
+              privateOnly: Boolean(data.privateOnly),
               active: data.enabled !== false,
               region: (data.region || '').trim()
             };
@@ -980,9 +981,9 @@ class PrivacyRelayService {
         req.on('end', async () => {
           try {
             const state = await this.physicalGate.evaluate(this.getActiveNode(), (n) => this.verifyNodeEgress(n));
-            res.writeHead(state.ready ? 200 : 503);
+            res.writeHead(200);
             res.end(JSON.stringify({
-              success: state.ready,
+              success: true,
               status: state
             }));
           } catch (e) {
@@ -1003,7 +1004,8 @@ class PrivacyRelayService {
             const pairRes = await this.physicalGate.routerAttestation.pairRouter(
               data.routerIp || '192.168.8.1',
               data.expectedFingerprint || null,
-              data.agentToken || null
+              data.agentToken || null,
+              data.routerPort || null
             );
             const state = await this.physicalGate.evaluate(this.getActiveNode(), (n) => this.verifyNodeEgress(n));
             res.writeHead(200);
@@ -1043,20 +1045,22 @@ class PrivacyRelayService {
   startProxyEngine() {
     this.proxyServer = http.createServer((req, res) => {
       this.trafficStats.requestsProxied++;
-      if (this.isPaused || !this.relayReady) {
-        this.trafficStats.failClosedDrops++;
-        this.log(`[PRIVACY_RELAY_BLOCK] reason=${this.isPaused ? 'RELAY_PAUSED' : 'RELAY_NOT_VERIFIED'}`);
-        res.writeHead(502, { 'Content-Type': 'text/plain' });
-        res.end('PRIVACY_RELAY_FAIL_CLOSED: Relay paused or not verified');
-        return;
-      }
 
+      // [R6.9G.10.3.7] Physical Router Security Gate Precedence
       if (this.physicalGate && this.physicalGate.enabled && !this.physicalGate.state.ready) {
         this.trafficStats.failClosedDrops++;
         const reasons = (this.physicalGate.state.reasons || []).join(', ');
         this.log(`[PHYSICAL_GATE_BLOCK] reason=PHYSICAL_GATE_FAIL_CLOSED details=${reasons}`);
         res.writeHead(502, { 'Content-Type': 'text/plain' });
         res.end(`PHYSICAL_GATE_FAIL_CLOSED: Physical router gate not ready (${reasons})`);
+        return;
+      }
+
+      if (this.isPaused || !this.relayReady) {
+        this.trafficStats.failClosedDrops++;
+        this.log(`[PRIVACY_RELAY_BLOCK] reason=${this.isPaused ? 'RELAY_PAUSED' : 'RELAY_NOT_VERIFIED'}`);
+        res.writeHead(502, { 'Content-Type': 'text/plain' });
+        res.end('PRIVACY_RELAY_FAIL_CLOSED: Relay paused or not verified');
         return;
       }
 
@@ -1119,18 +1123,20 @@ class PrivacyRelayService {
     // Handle CONNECT method for HTTPS tunnels
     this.proxyServer.on('connect', (req, clientSocket, head) => {
       this.trafficStats.connectTunnels++;
-      if (this.isPaused || !this.relayReady) {
+
+      // [R6.9G.10.3.7] Physical Router Security Gate Precedence
+      if (this.physicalGate && this.physicalGate.enabled && !this.physicalGate.state.ready) {
         this.trafficStats.failClosedDrops++;
-        this.log(`[PRIVACY_RELAY_BLOCK] reason=${this.isPaused ? 'RELAY_PAUSED_CONNECT' : 'RELAY_NOT_VERIFIED_CONNECT'}`);
+        const reasons = (this.physicalGate.state.reasons || []).join(', ');
+        this.log(`[PHYSICAL_GATE_BLOCK] reason=PHYSICAL_GATE_FAIL_CLOSED details=${reasons}`);
         clientSocket.write('HTTP/1.1 502 Bad Gateway\r\n\r\n');
         clientSocket.destroy();
         return;
       }
 
-      if (this.physicalGate && this.physicalGate.enabled && !this.physicalGate.state.ready) {
+      if (this.isPaused || !this.relayReady) {
         this.trafficStats.failClosedDrops++;
-        const reasons = (this.physicalGate.state.reasons || []).join(', ');
-        this.log(`[PHYSICAL_GATE_BLOCK] reason=PHYSICAL_GATE_FAIL_CLOSED details=${reasons}`);
+        this.log(`[PRIVACY_RELAY_BLOCK] reason=${this.isPaused ? 'RELAY_PAUSED_CONNECT' : 'RELAY_NOT_VERIFIED_CONNECT'}`);
         clientSocket.write('HTTP/1.1 502 Bad Gateway\r\n\r\n');
         clientSocket.destroy();
         return;

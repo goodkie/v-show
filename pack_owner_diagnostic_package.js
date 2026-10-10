@@ -50,6 +50,18 @@ function copyCompanionFiles(src, dest) {
 }
 copyCompanionFiles(compDir, stagingCompDir);
 
+// Copy infra to staging/infra
+const stagingInfraDir = path.join(stagingDir, 'infra');
+if (fs.existsSync('infra')) {
+  fs.cpSync('infra', stagingInfraDir, { recursive: true });
+}
+
+// Copy router to staging/router
+const stagingRouterDir = path.join(stagingDir, 'router');
+if (fs.existsSync('router')) {
+  fs.cpSync('router', stagingRouterDir, { recursive: true });
+}
+
 function getAllFiles(dir, base = dir) {
   let results = [];
   const list = fs.readdirSync(dir);

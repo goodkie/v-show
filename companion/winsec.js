@@ -190,6 +190,8 @@ function clearMemoryCache() {
 module.exports = {
   encrypt,
   decrypt,
+  protectSecret: encrypt,
+  unprotectSecret: decrypt,
   resolveNodeCredentials,
   sanitizeNodeForSave,
   clearMemoryCache

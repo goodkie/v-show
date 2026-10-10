@@ -37,7 +37,7 @@
             historyStoreSha: 'ef148329c5c019877fef3708ac63472ce86d5f7f06da467a557a74e038eab6b4',
             contactGateSha: '0d01acb2d0a9448d154353fac5b527c17afa42fed56c68d6a49b39053629bd7d',
             visionSubmitSha: '25cf18a4834bb476edff5e8f19a78dd2723bd556ede649ada69bc801543c83f3',
-            privacyGatewaySha: '86ae0a92405d743cbc4809b9523c6e942cce722b1dabd475a44ea3ef0cdba6b8'
+            privacyGatewaySha: '5443189380b679bb06501d24cd71380d00b43683f9517e1bd69448ae3b56aa26'
         }
     };
 

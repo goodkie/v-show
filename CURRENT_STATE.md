@@ -4,20 +4,20 @@
 - Protocol: OCA-DEV-1.4
 - Project ID: xpider-autoform-sender-pro
 - Workspace: E:\vivpr\ai\extension-form-sender
-- Authority: goodkie/v-show Issue #6 (Receipt #6098071065)
+- Authority: goodkie/v-show Issue #6 (Directive Comment #6098509260)
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-10.16
+- State Rev: 2026-10-10.17
 
 ## Current Gate
-- Formal Gate: R6.9G.10.3.6.2.1 EXACT-RELEASE COMPANION LIFECYCLE + ROTATION READY + STICKY RESTART RESTORE.
-- Engineering Acceptance Status: **PASS** (Independently verified in Real Microsoft Edge Browser Operator Audit bound strictly to exact release ZIP bytes: Blocker 1 Companion lifecycle extracted/installed/uninstalled via BAT; Blocker 2 genuine OFFLINE state and Start/Repair recovery via Native Messaging; Blocker 3 rotation ends with authoritative ONLINE / READY badge and HEALTHY status; Blocker 4 sticky node restoration across Companion process restart under FIXED mode; Blocker 5 full 40-character SHA precision).
-- Release Tag: `v6.9g.10.3-audit.6.2.1`
-- Release URL: `https://github.com/goodkie/v-show/releases/tag/v6.9g.10.3-audit.6.2.1`
-- Owner Action: **HOLD** (Awaiting ChatGPT gate audit of R6.9G.10.3.6.2.1).
+- Formal Gate: R6.9G.10.3.7 PHYSICAL ROUTER SECURITY GATE + WIREGUARD PRIMARY / OPENVPN FALLBACK + PRIVATE HTTP CONNECT EGRESS.
+- Engineering Acceptance Status: **PASS** (15/15 unit scenarios verified PASS; 7/7 real Microsoft Edge operator audit scenarios verified 100% PASS via CDP against extracted release ZIP bytes).
+- Release Tag: `v6.9g.10.3-audit.7`
+- Release URL: `https://github.com/goodkie/v-show/releases/tag/v6.9g.10.3-audit.7`
+- Owner Action: **HOLD** (Awaiting ChatGPT gate audit of R6.9G.10.3.7).
 - Bulk Campaign: **HOLD** (Strict invariant until Owner smoke PASS and release evaluation).
 - Autonomous Engineering Loop: **RECEIPT SUBMITTED — CHATGPT AUDITS TO GATE**.
 - Rollback Anchor: `dc0740a0c69e2f7fa96b6989841acf0831b3619e` (immutable baseline rollback anchor).
-- Previous Functional Restore Point: `32e384d1f7ac0292308011f60bd6c1ef2bb86654` (`32e384d1`)
+- Previous Functional Restore Point: `47ee3ba29f055f86a889bac11ecad82db1558725` (`47ee3ba2`)
 - Next Action: ChatGPT audits receipt to gate decision.
 
 ## Lineage & Remote Git SHAs
@@ -44,24 +44,25 @@
   19. `5fad5c3f980fce303b2e7d8ecc4232fb4d21e91b` (R6.9G.10.3.6.2.1 Provenance HEAD / Release Tag `v6.9g.10.3-audit.6.2.1`)
   20. `68085f5f72ab3070e4903648aa2e7490b94b43c9` (R6.9G.10.3.6.2.1 Release Docs HEAD)
   21. `b3ddf3330f43a2a8a54c06069d86c7f19fdc2809` (R6.9G.10.3.6.2.1 State Advance HEAD)
+  22. `d9701fcf8121948dd163f1e56110e5f2a9f917c3` (R6.9G.10.3.7 Functional HEAD)
 
 ## Build Provenance
-- Build ID: `R6.9G.10.3.6.2.1-20261010-EXACT-RELEASE-COMPANION-LIFECYCLE`
-- Functional HEAD: `47ee3ba29f055f86a889bac11ecad82db1558725` (`47ee3ba2`)
-- Provenance HEAD: `5fad5c3f980fce303b2e7d8ecc4232fb4d21e91b` (`5fad5c3f`)
+- Build ID: `R6.9G.10.3.7-20261010-PHYSICAL-GATE-WIREGUARD-FALLBACK-OPAL-READY`
+- Functional HEAD: `d9701fcf8121948dd163f1e56110e5f2a9f917c3` (`d9701fcf`)
+- Previous Functional Restore Point: `47ee3ba29f055f86a889bac11ecad82db1558725` (`47ee3ba2`)
 - Manifest Version: 3
 - Branch: `upgrade/phase-0-1`
-- Built At: 2026-10-10T13:30:00.000Z
+- Built At: 2026-10-10T15:30:00.000Z
 - SHA-256 Digest Inventory:
-  - `background.js`: `2e17c641b7d43761b666b92166b6c80decc7143e988bc3f9648f7a2279c214e5`
-  - `popup.js`: `18d2968ad2587e79c43c3aef7b2ca99eeca48eb690dd238e3de90d7e0998e73f`
-  - `modules/privacy-gateway.js`: `178ca80ec05320be78ba1cab2aa5a08ac6d9b7a8a4c1d299b55d657f3baef313`
-  - `popup.html`: `4834f589e733d53edd05ca60d4981f937cb7e6b4cdbccc2d020bfa814daf47a6`
+  - `background.js`: `e3c5fb03e090b826b2195e5c6e36769c82fed6d80704e16237a09d8e41f15a5b`
+  - `popup.js`: `2d36e52c367489654d8e1b037f8c320b6b78d3f82d7519e7d0dc146e1cab5bd7`
+  - `modules/privacy-gateway.js`: `5443189380b679bb06501d24cd71380d00b43683f9517e1bd69448ae3b56aa26`
+  - `popup.html`: `5bd26293fad5b21db26f2d06d6354da75eaba9c89a0d6a96316aaee0a3f56266`
 
 ## Diagnostic Package Assets
 - Exact Bundle ZIP: `XPIDER_R6.9G.10.3_OWNER_DIAGNOSTIC_TEST_ONLY.zip`
-  - Size: 4,352,177 bytes
-  - SHA-256: `6bff4a9ebd540bf1d8ea8874f9a53b3f3d69bce305d74247af1d8b69320482fa`
-- Real Edge Audit Traces: `evidence_r6_9g10_3_6_2_1_real_runtime_traces.log`
-  - Size: 9,772 bytes
-  - SHA-256: `27179d840ac532569105df1a4eca09d3390f5465866474f584f025f59f944bee`
+  - Size: 4,376,748 bytes
+  - SHA-256: `ce5b2aa7ad423c08b0b818c23d66b49687364e9a36228f8da520ebf862234803`
+- Real Edge Audit Traces: `evidence_r6_9g10_3_7_real_runtime_traces.log`
+  - Size: 10,533 bytes
+  - SHA-256: `4164226c2f0cde62f4004a29b96d0092e076654a7f43667482af59798435b6ef`

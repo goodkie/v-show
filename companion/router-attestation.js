@@ -63,7 +63,7 @@ class RouterAttestationManager {
     if (this.customDriver) return this.customDriver;
     let token = null;
     if (this.config.agentTokenRef) {
-      token = winsec.unprotectSecret(this.config.agentTokenRef);
+      token = winsec.decrypt ? winsec.decrypt(this.config.agentTokenRef) : winsec.unprotectSecret(this.config.agentTokenRef);
     }
 
     if (this.config.routerType === 'OpenWrt Generic') {
@@ -89,14 +89,16 @@ class RouterAttestationManager {
     return result;
   }
 
-  async pairRouter(routerIp, expectedFingerprint = null, rawToken = null) {
+  async pairRouter(routerIp, expectedFingerprint = null, rawToken = null, routerPort = null) {
     let tokenRef = this.config.agentTokenRef;
     if (rawToken) {
-      tokenRef = winsec.protectSecret(rawToken);
+      tokenRef = winsec.encrypt ? winsec.encrypt(rawToken) : winsec.protectSecret(rawToken);
     }
 
     this.saveConfig({
+      enabled: true,
       routerIp: routerIp || this.config.routerIp,
+      routerPort: routerPort !== null ? parseInt(routerPort, 10) : (this.config.routerPort || 80),
       expectedFingerprint: expectedFingerprint || this.config.expectedFingerprint,
       agentTokenRef: tokenRef
     });

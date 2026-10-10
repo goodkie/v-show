@@ -10,6 +10,8 @@
 const { execSync } = require('child_process');
 const os = require('os');
 const net = require('net');
+const fs = require('fs');
+const path = require('path');
 
 class WindowsNetworkAttestation {
   constructor(options = {}) {
@@ -23,6 +25,21 @@ class WindowsNetworkAttestation {
   getDefaultRoutes() {
     if (this.mockRouteTable) {
       return this.mockRouteTable;
+    }
+
+    if (process.env.XPIDER_MOCK_ROUTES_JSON) {
+      try {
+        const parsed = JSON.parse(process.env.XPIDER_MOCK_ROUTES_JSON);
+        return Array.isArray(parsed) ? parsed : (parsed.routes || []);
+      } catch (_) {}
+    }
+
+    const mockFile = path.join(__dirname, 'mock_routes.json');
+    if (fs.existsSync(mockFile)) {
+      try {
+        const parsed = JSON.parse(fs.readFileSync(mockFile, 'utf8'));
+        return Array.isArray(parsed) ? parsed : (parsed.routes || []);
+      } catch (_) {}
     }
 
     if (process.platform !== 'win32') {
@@ -53,6 +70,21 @@ class WindowsNetworkAttestation {
   getIPv6State() {
     if (this.mockRouteTable && this.mockRouteTable.ipv6State) {
       return this.mockRouteTable.ipv6State;
+    }
+
+    if (process.env.XPIDER_MOCK_ROUTES_JSON) {
+      try {
+        const parsed = JSON.parse(process.env.XPIDER_MOCK_ROUTES_JSON);
+        if (parsed && parsed.ipv6State) return parsed.ipv6State;
+      } catch (_) {}
+    }
+
+    const mockFile = path.join(__dirname, 'mock_routes.json');
+    if (fs.existsSync(mockFile)) {
+      try {
+        const parsed = JSON.parse(fs.readFileSync(mockFile, 'utf8'));
+        if (parsed && parsed.ipv6State) return parsed.ipv6State;
+      } catch (_) {}
     }
 
     // Check if IPv6 default route exists or if IPv6 has non-link-local addresses

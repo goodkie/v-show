@@ -145,7 +145,7 @@ class GLInetOpalDriver {
         vendor: 'GL.iNet',
         model: 'GL-SFT1200',
         firmwareVersion: data.firmwareVersion || null,
-        lanGateway: this.routerIp,
+        lanGateway: data.lanGateway || this.routerIp,
         lanInterface: data.lanInterface || 'br-lan',
         routerFingerprint: routerFp,
         vpn: {

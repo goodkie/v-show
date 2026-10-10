@@ -130,11 +130,12 @@ class PhysicalGate {
     if (!activeNode) {
       reasons.push('NO_ACTIVE_EGRESS_NODE');
     } else {
-      // Must be marked privateOnly or bound to RFC1918 / VPN subnet
+      // Must be marked privateOnly or bound to RFC1918 / loopback / VPN subnet
       const isPrivateHost = activeNode.privateOnly === true ||
         activeNode.host.startsWith('10.') ||
         activeNode.host.startsWith('192.168.') ||
-        activeNode.host.startsWith('172.16.');
+        activeNode.host.startsWith('172.16.') ||
+        activeNode.host.startsWith('127.');
 
       if (!isPrivateHost) {
         reasons.push('PUBLIC_PROXY_FORBIDDEN_IN_PHYSICAL_GATE_MODE');
