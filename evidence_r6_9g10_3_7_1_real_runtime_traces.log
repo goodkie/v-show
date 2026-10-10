@@ -1,0 +1,64 @@
+[2026-10-10T19:19:33.582Z] ========================================================================
+[2026-10-10T19:19:33.584Z]   XPIDER R6.9G.10.3.7.1 REAL MICROSOFT EDGE OPERATOR AUDIT
+[2026-10-10T19:19:33.584Z]   TRUSTED PHYSICAL ATTESTATION + FRESHNESS GATE + REAL OPAL TRANSPORT
+[2026-10-10T19:19:33.584Z] ========================================================================
+[2026-10-10T19:19:33.604Z] [MOCK_TARGET] Running on http://127.0.0.1:8980
+[2026-10-10T19:19:33.607Z] [MOCK_PRIVATE_PROXY] Running on http://127.0.0.1:8982
+[2026-10-10T19:19:33.608Z] [MOCK_PUBLIC_PROXY] Running on http://127.0.0.1:8983
+[2026-10-10T19:19:33.609Z] [MOCK_ROUTER] Running on http://127.0.0.1:8985
+[2026-10-10T19:19:33.623Z] [ZIP_VERIFY] Path: E:\vivpr\ai\extension-form-sender\XPIDER_R6.9G.10.3_OWNER_DIAGNOSTIC_TEST_ONLY.zip
+[2026-10-10T19:19:33.624Z] [ZIP_VERIFY] Size: 4381271 bytes
+[2026-10-10T19:19:33.624Z] [ZIP_VERIFY] SHA-256: af2cc4cf064ee99e34d00320ba6197bf0b11a7f9f900d95845191992efddab15
+[2026-10-10T19:19:33.625Z] [EXTRACTION] Unpacking ZIP to C:\Users\oPus\AppData\Local\Temp\xpider_audit_7_1_1791659973624...
+[2026-10-10T19:19:35.806Z] [EXTRACTION] Verified both extension and companion exist in release payload.
+[2026-10-10T19:19:35.806Z] [CLEAN_AUDIT] Verified ZERO mock_routes.json backdoor in extracted release payload.
+[2026-10-10T19:19:35.806Z] [COMPANION_INSTALL] Executing C:\Users\oPus\AppData\Local\Temp\xpider_audit_7_1_1791659973624\companion\install_companion.bat --silent
+[2026-10-10T19:19:36.543Z] [COMPANION_RUNNING] Companion service verified listening on port 18989.
+[2026-10-10T19:19:36.544Z] [CONTROL_TOKEN] Retrieved token from companion: 79c9f470...
+[2026-10-10T19:19:36.545Z] [EDGE_LAUNCH] Launching: C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe (CDP Port: 9255)
+[2026-10-10T19:19:36.971Z] [EDGE_CDP_READY] Connected to Edge CDP on port 9255
+[2026-10-10T19:19:37.832Z] [EXT_ID_DISCOVERED] ID: ldlijlaccfeelfdhgnjbibniocefckjj
+[2026-10-10T19:19:37.864Z] [CDP_SW_CONNECTED] Connected to Background Service Worker.
+[2026-10-10T19:19:37.872Z] [BUILD_PROVENANCE_CHECK] buildId=R6.9G.10.3.7.1-20261010-TRUSTED-PHYSICAL-FRESHNESS-OPAL-SEALED headShort=9e5f7ca8 implementationHead=9e5f7ca8365abb3930d30994cb64994a370fcf7c
+[2026-10-10T19:19:38.039Z] [POPUP_OPEN] Opening chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/popup.html via CDP...
+[2026-10-10T19:19:38.081Z] [POPUP_TARGET_CREATED] ws=ws://127.0.0.1:9255/devtools/page/321033E336D7008863400F9DFA665B84
+[2026-10-10T19:19:38.089Z] [CDP_POPUP_CONNECTED] Connected to Popup UI page.
+[2026-10-10T19:19:39.904Z] 
+>>> SCENARIO 1: INITIAL STATE -> PHYSICAL GATE DISABLED <<<
+[2026-10-10T19:19:39.906Z] [SCENARIO_1_POPUP] toggleChecked=false readyText="DISABLED"
+[2026-10-10T19:19:39.908Z] [SCENARIO_1_PREFLIGHT] ready=true
+[2026-10-10T19:19:39.908Z] ✅ SCENARIO 1: INITIAL DISABLED STATE VERIFIED PASS
+[2026-10-10T19:19:39.908Z] 
+>>> SCENARIO 2: ENABLE PHYSICAL GATE -> FAIL-CLOSED (REAL WINDOWS ROUTE) <<<
+[2026-10-10T19:19:45.411Z] [SCENARIO_2_POPUP_STATE] checked=true gateReady="FAIL-CLOSED (BLOCKED)" reasons="ROUTER_UNREACHABLE, PRIMARY_ROUTE_NOT_VIA_OPAL: Default gateway 0.0.0.0 is not paired Opal 192.168.8.1, PRIMARY_ROUTE_NOT_VIA_OPAL: Default gateway 0.0.0.0 is not paired Opal 192.168.8.1, VPN_TUNNEL_DOWN (UNKNOWN), KILL_SWITCH_UNKNOWN, DNS_NOT_VPN_BOUND, IPV6_LEAK_RISK (UNVERIFIED), NO_ACTIVE_EGRESS_NODE"
+[2026-10-10T19:19:45.417Z] [SCENARIO_2_PREFLIGHT] ready=false reason=PHYSICAL_GATE_FAIL_CLOSED
+[2026-10-10T19:19:45.417Z] ✅ SCENARIO 2: FAIL-CLOSED ON REAL WINDOWS ROUTE VERIFIED PASS
+[2026-10-10T19:19:45.417Z] 
+>>> SCENARIO 3: COMPANION PROXY TRAFFIC DROP <<<
+[2026-10-10T19:19:45.422Z] [SCENARIO_3_DROP_RES] statusCode=502 body="PHYSICAL_GATE_FAIL_CLOSED: PHYSICAL_GATE_FAIL_CLOSED (ROUTER_UNREACHABLE, PRIMARY_ROUTE_NOT_VIA_OPAL: Default gateway 0.0.0.0 is not paired Opal 192.168.8.1, PRIMARY_ROUTE_NOT_VIA_OPAL: Default gateway 0.0.0.0 is not paired Opal 192.168.8.1, VPN_TUNNEL_DOWN (UNKNOWN), KILL_SWITCH_UNKNOWN, DNS_NOT_VPN_BOUND, IPV6_LEAK_RISK (UNVERIFIED), NO_ACTIVE_EGRESS_NODE)"
+[2026-10-10T19:19:45.422Z] ✅ SCENARIO 3: REAL COMPANION PROXY 502 DROP VERIFIED PASS
+[2026-10-10T19:19:45.422Z] 
+>>> SCENARIO 4: PUBLIC PROXY REJECTION IN PHYSICAL GATE MODE <<<
+[2026-10-10T19:19:55.684Z] [SCENARIO_4_PUBLIC_PROXY_REJECTED] ready=false reasons=["ROUTER_UNREACHABLE","PRIMARY_ROUTE_NOT_VIA_OPAL: Default gateway 0.0.0.0 is not paired Opal 192.168.8.1","PRIMARY_ROUTE_NOT_VIA_OPAL: Default gateway 0.0.0.0 is not paired Opal 192.168.8.1","VPN_TUNNEL_DOWN (UNKNOWN)","KILL_SWITCH_UNKNOWN","DNS_NOT_VPN_BOUND","IPV6_LEAK_RISK (UNVERIFIED)","PUBLIC_PROXY_FORBIDDEN_IN_PHYSICAL_GATE_MODE","PINNED_EGRESS_FINGERPRINT_MANDATORY_IN_PHYSICAL_GATE_MODE"]
+[2026-10-10T19:19:55.684Z] ✅ SCENARIO 4: PUBLIC PROXY ANTI-BYPASS VERIFIED PASS
+[2026-10-10T19:19:55.684Z] 
+>>> SCENARIO 5: ROUTER PAIRING & TOFU PINNING <<<
+[2026-10-10T19:19:58.293Z] [ROUTER_TELEMETRY_REQ] GET /api/xpider/attest
+[2026-10-10T19:20:04.474Z] [SCENARIO_5_PAIR_RESULT] {"success":false,"attestation":{"reachable":false,"identityVerified":false,"vendor":"GL.iNet","model":"GL-SFT1200","firmwareVersion":null,"lanGateway":"127.0.0.1","lanInterface":null,"routerFingerprint":null,"vpn":{"protocol":"UNKNOWN","state":"UNKNOWN","interfaceName":null,"endpointFingerprint":null,"lastHandshakeAgeSec":null,"tunnelPrivateAddress":null},"killSwitch":{"state":"UNKNOWN","evidence":["UNREACHABLE: Command failed: ssh   -o StrictHostKeyChecking=accept-new -o BatchMode=yes -o ConnectTimeout=3 root@127.0.0.1\nPseudo-terminal will not be allocated because stdin is not a terminal.\r\nbanner exchange: Connection to UNKNOWN port -1: Connection refused\r\n"]},"route":{"defaultGatewayViaOpal":false,"vpnDefaultRoutePresent":null,"directWanBypassDetected":null},"dns":{"state":"UNKNOWN"},"ipv6":{"state":"UNVERIFIED"},"observedAt":1791659998298,"error":"Command failed: ssh   -o StrictHostKeyChecking=accept-new -o BatchMode=yes -o ConnectTimeout=3 root@127.0.0.1\nPseudo-terminal will not be allocated because stdin is not a terminal.\r\nbanner exchange: Connection to UNKNOWN port -1: Connection refused\r\n"},"status":{"enabled":true,"routerIdentityPass":false,"opalPathPass":false,"tunnelPass":false,"killSwitchPass":false,"privateProxyPass":false,"egressCanaryPass":false,"egressFingerprintPass":false,"dnsPass":false,"ipv6PassOrDisabled":false,"directBypassBlocked":false,"ready":false,"vpnProtocol":"UNKNOWN","observedRouterFingerprint":null,"observedEgressFingerprint":null,"reasons":["ROUTER_UNREACHABLE","PRIMARY_ROUTE_NOT_VIA_OPAL: Default gateway 0.0.0.0 is not paired Opal 127.0.0.1","PRIMARY_ROUTE_NOT_VIA_OPAL: Default gateway 0.0.0.0 is not paired Opal 127.0.0.1","VPN_TUNNEL_DOWN (UNKNOWN)","KILL_SWITCH_UNKNOWN","DNS_NOT_VPN_BOUND","IPV6_LEAK_RISK (UNVERIFIED)","PUBLIC_PROXY_FORBIDDEN_IN_PHYSICAL_GATE_MODE","PINNED_EGRESS_FINGERPRINT_MANDATORY_IN_PHYSICAL_GATE_MODE"],"lastEvaluatedAt":1791660000382}}
+[2026-10-10T19:20:04.476Z] [SCENARIO_5_PINNED_CONFIG] pinned=sha256:c8bb80332b7adc74
+[2026-10-10T19:20:04.476Z] ✅ SCENARIO 5: ROUTER TOFU FINGERPRINT PINNING VERIFIED PASS
+[2026-10-10T19:20:04.476Z] 
+>>> SCENARIO 6: FRESHNESS TTL & STALE ATTESTATION BLOCK <<<
+[2026-10-10T19:20:08.484Z] [SCENARIO_6_STATUS] isFresh=false ttlMs=30000
+[2026-10-10T19:20:08.484Z] ✅ SCENARIO 6: FRESHNESS TTL ATTESTATION VERIFIED PASS
+[2026-10-10T19:20:08.484Z] 
+>>> SCENARIO 7: CLEAN UNINSTALL VIA EXTRACTED uninstall_companion.bat <<<
+[2026-10-10T19:20:08.484Z] [UNINSTALL_BAT] Executing: C:\Users\oPus\AppData\Local\Temp\xpider_audit_7_1_1791659973624\companion\uninstall_companion.bat --silent
+[2026-10-10T19:20:11.255Z] [UNINSTALL_CONFIRMATION] Port 18989 unreachable (STOPPED)=true
+[2026-10-10T19:20:11.313Z] [UNINSTALL_REGISTRY_REMOVED] Host key removed=true
+[2026-10-10T19:20:11.313Z] ✅ SCENARIO 7: CLEAN UNINSTALL VERIFIED PASS
+[2026-10-10T19:20:11.313Z] 
+========================================================================
+[2026-10-10T19:20:11.313Z]   ALL SCENARIOS VERIFIED 100% PASS IN REAL MICROSOFT EDGE BROWSER
+[2026-10-10T19:20:11.313Z] ========================================================================
+[2026-10-10T19:20:11.314Z] [EDGE_CLEANUP] Terminating Edge browser process...

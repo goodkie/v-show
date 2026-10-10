@@ -17,6 +17,7 @@
  *    - Scenario 7: Full uninstall via extracted uninstall_companion.bat --silent -> registry cleaned, daemon stopped.
  */
 
+const assert = require('assert');
 const http = require('http');
 const net = require('net');
 const path = require('path');
@@ -301,11 +302,20 @@ async function runRealEdgeAudit() {
   let popupWs = null;
 
   try {
-    // Locate extension service worker
-    const targets = await getJson(`http://127.0.0.1:${CDP_PORT}/json`);
-    const swTarget = targets.find(t => t.type === 'service_worker' && t.url.includes('background.js'));
+    // Locate extension service worker with retry loop
+    let targets = null;
+    let swTarget = null;
+    for (let i = 0; i < 40; i++) {
+      await new Promise((r) => setTimeout(r, 400));
+      try {
+        const tList = await getJson(`http://127.0.0.1:${CDP_PORT}/json`);
+        targets = tList;
+        swTarget = targets.find(t => t.type === 'service_worker' && t.url && t.url.includes('background.js'));
+        if (swTarget) break;
+      } catch (_) {}
+    }
     if (!swTarget) {
-      throw new Error('Extension background service worker not found in CDP targets');
+      throw new Error('Extension background service worker not found in CDP targets after 40 attempts');
     }
     const extId = new URL(swTarget.url).hostname;
     rec(`[EXT_ID_DISCOVERED] ID: ${extId}`);
@@ -319,8 +329,42 @@ async function runRealEdgeAudit() {
       return res.result.value;
     };
 
-    // Open popup UI
-    const popupTargetRes = await getJson(`http://127.0.0.1:${CDP_PORT}/json/new?chrome-extension://${extId}/popup.html`);
+    // Wait for SW boot and verify BuildProvenance in real Edge
+    let buildInfo = null;
+    for (let i = 0; i < 25; i++) {
+      try {
+        buildInfo = await evalSw('(typeof BuildProvenance !== "undefined" && BuildProvenance.BUILD_INFO) ? BuildProvenance.BUILD_INFO : (typeof self !== "undefined" && self.BuildProvenance ? self.BuildProvenance.BUILD_INFO : null)');
+        if (buildInfo) break;
+      } catch (_) {}
+      await new Promise(r => setTimeout(r, 400));
+    }
+    if (!buildInfo) throw new Error('BuildProvenance not defined in service worker after 10s');
+
+    rec(`[BUILD_PROVENANCE_CHECK] buildId=${buildInfo.buildId} headShort=${buildInfo.headShort} implementationHead=${buildInfo.implementationHead}`);
+
+    if (buildInfo.buildId !== 'R6.9G.10.3.7.1-20261010-TRUSTED-PHYSICAL-FRESHNESS-OPAL-SEALED') {
+      throw new Error(`BuildId mismatch: expected R6.9G.10.3.7.1-20261010-TRUSTED-PHYSICAL-FRESHNESS-OPAL-SEALED, got ${buildInfo.buildId}`);
+    }
+    if (buildInfo.headShort !== '9e5f7ca8') {
+      throw new Error(`headShort mismatch: expected 9e5f7ca8, got ${buildInfo.headShort}`);
+    }
+
+    // Configure PrivacyGateway in background to use local canary URL and authenticate with Companion
+    await evalSw(`(async () => {
+      const pg = PrivacyGateway.getInstance();
+      await pg.init();
+      pg.config.canaryUrl = 'http://127.0.0.1:${TARGET_PORT}/privacy-canary';
+      await pg.saveConfig({ canaryUrl: 'http://127.0.0.1:${TARGET_PORT}/privacy-canary' });
+      await pg.ensureRelayActive(true);
+    })()`);
+
+    // Open popup UI via PUT
+    const popupUrl = `chrome-extension://${extId}/popup.html`;
+    rec(`[POPUP_OPEN] Opening ${popupUrl} via CDP...`);
+    const newTabRes = await fetch(`http://127.0.0.1:${CDP_PORT}/json/new?${encodeURIComponent(popupUrl)}`, { method: 'PUT' });
+    const popupTargetRes = await newTabRes.json();
+    rec(`[POPUP_TARGET_CREATED] ws=${popupTargetRes.webSocketDebuggerUrl}`);
+
     popupWs = new WebSocket(popupTargetRes.webSocketDebuggerUrl);
     await new Promise(r => popupWs.addEventListener('open', r, { once: true }));
     rec('[CDP_POPUP_CONNECTED] Connected to Popup UI page.');
@@ -330,7 +374,10 @@ async function runRealEdgeAudit() {
       return res.result.value;
     };
 
+    // Wait for popup DOM hydration
     await new Promise(r => setTimeout(r, 1000));
+    await evalPopup(`refreshRelayStatus()`);
+    await new Promise(r => setTimeout(r, 800));
 
     // =========================================================================
     // SCENARIO 1: INITIAL STATE -> PHYSICAL GATE DISABLED
@@ -364,8 +411,8 @@ async function runRealEdgeAudit() {
     const s2Toggle = await evalPopup(`(async () => {
       const toggle = document.getElementById('physical-gate-toggle');
       toggle.click();
-      for (let i = 0; i < 25; i++) {
-        await new Promise(r => setTimeout(r, 200));
+      for (let i = 0; i < 45; i++) {
+        await new Promise(r => setTimeout(r, 300));
         const readyText = document.getElementById('phys-gate-ready')?.textContent?.trim();
         if (readyText === 'FAIL-CLOSED (BLOCKED)') break;
       }
