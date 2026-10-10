@@ -15,17 +15,17 @@
 
     const BUILD_INFO = {
         branch: 'upgrade/phase-0-1',
-        // [R6.9G.10.3.6.2.1] implementationHead = functional commit containing Exact-Release Companion Lifecycle,
-        //                    Rotation Ready state, and Sticky Node Restart recovery
-        implementationHead: '47ee3ba29f055f86a889bac11ecad82db1558725',
-        implementationHeadShort: '47ee3ba2',
-        head: '47ee3ba29f055f86a889bac11ecad82db1558725',
-        headShort: '47ee3ba2',
+        // [R6.9G.10.3.7] implementationHead = functional commit containing Physical Router Security Gate,
+        //                 WireGuard / OpenVPN fallback, and Private Squid CONNECT proxy
+        implementationHead: 'd9701fcf8121948dd163f1e56110e5f2a9f917c3',
+        implementationHeadShort: 'd9701fcf',
+        head: 'd9701fcf8121948dd163f1e56110e5f2a9f917c3',
+        headShort: 'd9701fcf',
         rollbackBase: 'dc0740a0c69e2f7fa96b6989841acf0831b3619e',
-        previousFunctionalRestorePoint: '32e384d1f7ac0292308011f60bd6c1ef2bb86654',
+        previousFunctionalRestorePoint: '47ee3ba29f055f86a889bac11ecad82db1558725',
         manifestVersion: 3,
-        buildId: 'R6.9G.10.3.6.2.1-20261010-EXACT-RELEASE-COMPANION-LIFECYCLE',
-        builtAt: '2026-10-10T13:30:00.000Z',
+        buildId: 'R6.9G.10.3.7-20261010-PHYSICAL-GATE-WIREGUARD-FALLBACK-OPAL-READY',
+        builtAt: '2026-10-10T15:30:00.000Z',
         provenanceSchema: 2,
         modules: {
             backgroundSha: 'e3c5fb03e090b826b2195e5c6e36769c82fed6d80704e16237a09d8e41f15a5b',
