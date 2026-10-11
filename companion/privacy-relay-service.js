@@ -54,7 +54,9 @@ const DEFAULT_POOL = {
   selectedEgressId: null,
   nodes: [],
   physicalGate: {
-    enabled: false
+    enabled: false,
+    pinnedEgressFingerprint: null,
+    pinnedEgressIdentityGroup: null
   }
 };
 
@@ -74,11 +76,36 @@ class PrivacyRelayService {
     this.controlToken = this.loadOrGenerateControlToken(options.controlToken);
     this.pool = this.loadConfig();
 
+    // Deterministic trust anchor restoration (Issue #6 R6.9G.10.3.7.1.4)
+    let initialPinnedFp = this.pool.physicalGate?.pinnedEgressFingerprint || null;
+    let initialPinnedGroup = this.pool.physicalGate?.pinnedEgressIdentityGroup || null;
+
+    // If not explicitly stored in physicalGate metadata, deterministically reconstruct from enrolled nodes
+    if (!initialPinnedFp && this.pool.nodes && Array.isArray(this.pool.nodes)) {
+      const enrolledNodes = this.pool.nodes.filter(n => n.expectedEgressFingerprint && n.egressIdentityGroup);
+      if (enrolledNodes.length > 0) {
+        const firstFp = enrolledNodes[0].expectedEgressFingerprint;
+        const firstGroup = enrolledNodes[0].egressIdentityGroup;
+        const allAgree = enrolledNodes.every(n => n.expectedEgressFingerprint === firstFp && n.egressIdentityGroup === firstGroup);
+        if (allAgree) {
+          initialPinnedFp = firstFp;
+          initialPinnedGroup = firstGroup;
+        }
+      }
+    }
+
     // Initialize Physical Router Security Gate (Issue #6 R6.9G.10.3.7)
     this.physicalGate = options.physicalGate || new PhysicalGate({
       enabled: Boolean(this.pool.physicalGate && this.pool.physicalGate.enabled),
-      physicalGateTtlMs: (this.pool.physicalGate && this.pool.physicalGate.physicalGateTtlMs) || 30000
+      physicalGateTtlMs: (this.pool.physicalGate && this.pool.physicalGate.physicalGateTtlMs) || 30000,
+      pinnedEgressFingerprint: initialPinnedFp,
+      pinnedEgressIdentityGroup: initialPinnedGroup
     });
+
+    if (this.physicalGate && !this.physicalGate.pinnedEgressFingerprint && initialPinnedFp) {
+      this.physicalGate.pinnedEgressFingerprint = initialPinnedFp;
+      this.physicalGate.pinnedEgressIdentityGroup = initialPinnedGroup;
+    }
 
     // Reset all runtime health states on process start
     if (this.pool.nodes && Array.isArray(this.pool.nodes)) {
@@ -158,12 +185,23 @@ class PrivacyRelayService {
     try {
       if (fs.existsSync(this.configFile)) {
         const data = fs.readFileSync(this.configFile, 'utf8');
-        return { ...DEFAULT_POOL, ...JSON.parse(data) };
+        const parsed = JSON.parse(data);
+        return {
+          ...DEFAULT_POOL,
+          ...parsed,
+          physicalGate: {
+            ...DEFAULT_POOL.physicalGate,
+            ...(parsed.physicalGate || {})
+          }
+        };
       }
     } catch (e) {
       this.log(`Failed to load config: ${e.message}`);
     }
-    return { ...DEFAULT_POOL };
+    return {
+      ...DEFAULT_POOL,
+      physicalGate: { ...DEFAULT_POOL.physicalGate }
+    };
   }
 
   saveConfig() {
@@ -179,7 +217,9 @@ class PrivacyRelayService {
         selectedEgressId: active ? active.id : (this.pool.selectedEgressId || null),
         nodes: sanitizedNodes,
         physicalGate: {
-          enabled: Boolean(this.physicalGate && this.physicalGate.enabled)
+          enabled: Boolean(this.physicalGate && this.physicalGate.enabled),
+          pinnedEgressFingerprint: this.physicalGate?.pinnedEgressFingerprint || this.pool.physicalGate?.pinnedEgressFingerprint || null,
+          pinnedEgressIdentityGroup: this.physicalGate?.pinnedEgressIdentityGroup || this.pool.physicalGate?.pinnedEgressIdentityGroup || null
         }
       };
       fs.writeFileSync(this.configFile, JSON.stringify(toSave, null, 2), 'utf8');
@@ -967,7 +1007,12 @@ class PrivacyRelayService {
             const data = body ? JSON.parse(body) : {};
             const enabled = data.enabled !== undefined ? Boolean(data.enabled) : true;
             this.physicalGate.setEnabled(enabled);
-            this.pool.physicalGate = { enabled };
+            this.pool.physicalGate = {
+              ...this.pool.physicalGate,
+              enabled,
+              pinnedEgressFingerprint: this.physicalGate.pinnedEgressFingerprint || this.pool.physicalGate?.pinnedEgressFingerprint || null,
+              pinnedEgressIdentityGroup: this.physicalGate.pinnedEgressIdentityGroup || this.pool.physicalGate?.pinnedEgressIdentityGroup || null
+            };
             this.saveConfig();
             if (enabled) {
               await this.physicalGate.evaluate(this.getActiveNode(), (n) => this.verifyNodeEgress(n));
@@ -1036,17 +1081,75 @@ class PrivacyRelayService {
               res.end(JSON.stringify({ success: false, reason: 'CANARY_PROBE_FAILED', details: canaryRes.reason }));
               return;
             }
+            const requestedGroup = (data.egressIdentityGroup || targetNode.egressIdentityGroup || '').trim();
+            if (!requestedGroup) {
+              res.writeHead(400);
+              res.end(JSON.stringify({ success: false, reason: 'EGRESS_IDENTITY_GROUP_MANDATORY' }));
+              return;
+            }
+
+            const requestedBinding = (data.transportBinding || targetNode.transportBinding || '').trim();
+
+            const existingPinnedFp = this.physicalGate.pinnedEgressFingerprint;
+            const existingPinnedGroup = this.physicalGate.pinnedEgressIdentityGroup;
+
+            // Rule B & D: If trust anchor already exists, reject group mismatch (Issue #6 R6.9G.10.3.7.1.4)
+            if (existingPinnedGroup && existingPinnedGroup !== requestedGroup) {
+              res.writeHead(409);
+              res.end(JSON.stringify({
+                success: false,
+                reason: 'EGRESS_IDENTITY_GROUP_MISMATCH',
+                message: `Requested identity group "${requestedGroup}" does not match established trust anchor "${existingPinnedGroup}"`
+              }));
+              return;
+            }
+
+            // Rule B & D: If trust anchor already exists, reject fingerprint mismatch (Issue #6 R6.9G.10.3.7.1.4)
+            if (existingPinnedFp && existingPinnedFp !== canaryRes.fingerprint) {
+              res.writeHead(409);
+              res.end(JSON.stringify({
+                success: false,
+                reason: 'EGRESS_PIN_MISMATCH',
+                message: `Observed egress fingerprint "${canaryRes.fingerprint}" does not match established trust anchor "${existingPinnedFp}"`
+              }));
+              return;
+            }
+
+            // Rule C: Fallback node (OPAL_OVPN) enrollment check
+            if (requestedBinding === 'OPAL_OVPN') {
+              const hasWgAnchor = (this.pool.nodes || []).some(n =>
+                n.transportBinding === 'OPAL_WG' &&
+                n.expectedEgressFingerprint &&
+                n.egressIdentityGroup === requestedGroup
+              );
+              if (!hasWgAnchor && !existingPinnedFp) {
+                res.writeHead(400);
+                res.end(JSON.stringify({
+                  success: false,
+                  reason: 'PRIMARY_WG_ANCHOR_REQUIRED',
+                  message: 'Cannot enroll OPAL_OVPN fallback node before primary OPAL_WG anchor is enrolled'
+                }));
+                return;
+              }
+            }
+
+            // Trust anchor creation (First enrollment for new group)
+            if (!this.physicalGate.pinnedEgressFingerprint) {
+              this.physicalGate.pinnedEgressFingerprint = canaryRes.fingerprint;
+              this.physicalGate.pinnedEgressIdentityGroup = requestedGroup;
+            }
+
             targetNode.expectedEgressFingerprint = canaryRes.fingerprint;
-            if (data.egressIdentityGroup) {
-              targetNode.egressIdentityGroup = data.egressIdentityGroup.trim();
+            targetNode.egressIdentityGroup = requestedGroup;
+            if (requestedBinding) {
+              targetNode.transportBinding = requestedBinding;
             }
-            if (data.transportBinding) {
-              targetNode.transportBinding = data.transportBinding.trim();
-            }
-            this.physicalGate.pinnedEgressFingerprint = canaryRes.fingerprint;
-            if (targetNode.egressIdentityGroup) {
-              this.physicalGate.pinnedEgressIdentityGroup = targetNode.egressIdentityGroup;
-            }
+
+            // Persist to pool config
+            if (!this.pool.physicalGate) this.pool.physicalGate = {};
+            this.pool.physicalGate.pinnedEgressFingerprint = this.physicalGate.pinnedEgressFingerprint;
+            this.pool.physicalGate.pinnedEgressIdentityGroup = this.physicalGate.pinnedEgressIdentityGroup;
+
             this.saveConfig();
             res.writeHead(200);
             res.end(JSON.stringify({
@@ -1061,6 +1164,34 @@ class PrivacyRelayService {
             res.end(JSON.stringify({ success: false, reason: e.message }));
           }
         });
+        return;
+      }
+
+      // POST /physical-gate/reset-trust (Authenticated) - Explicit destructive reset of physical egress trust anchor (Rule E)
+      if (pathname === '/physical-gate/reset-trust' && req.method === 'POST') {
+        this.isPaused = true;
+        this.relayReady = false;
+        this.physicalGate.pinnedEgressFingerprint = null;
+        this.physicalGate.pinnedEgressIdentityGroup = null;
+        if (this.pool.physicalGate) {
+          this.pool.physicalGate.pinnedEgressFingerprint = null;
+          this.pool.physicalGate.pinnedEgressIdentityGroup = null;
+        }
+        if (this.pool.nodes && Array.isArray(this.pool.nodes)) {
+          this.pool.nodes.forEach(n => {
+            n.expectedEgressFingerprint = null;
+            n.observedFingerprint = null;
+            n.lastHealth = 'UNKNOWN';
+          });
+        }
+        this.saveConfig();
+        this.physicalGate.evaluate(this.getActiveNode(), (n) => this.verifyNodeEgress(n));
+        res.writeHead(200);
+        res.end(JSON.stringify({
+          success: true,
+          action: 'PHYSICAL_EGRESS_TRUST_RESET',
+          message: 'Physical egress trust anchor reset. All physical nodes unverified.'
+        }));
         return;
       }
 
