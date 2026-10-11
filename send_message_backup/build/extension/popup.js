@@ -1722,6 +1722,55 @@ async function hydrateSettings(overrideV2Store = null) {
             });
         }
 
+        const physResetTrustBtn = document.getElementById('phys-gate-reset-trust-btn');
+        if (physResetTrustBtn) {
+            physResetTrustBtn.addEventListener('click', async () => {
+                if (typeof campaignActive !== 'undefined' && campaignActive) {
+                    alert('⚠️ Cannot reset egress trust during an active campaign or submit side effect. Please pause or stop the campaign first.');
+                    return;
+                }
+                const confirm1 = confirm("This will pause XPIDER and invalidate all enrolled physical egress nodes. Are you sure?");
+                if (!confirm1) return;
+
+                const confirm2 = prompt('Type "RESET" to confirm destructive trust reset:');
+                if (confirm2 !== 'RESET') {
+                    alert('Reset cancelled. You must type "RESET" to confirm.');
+                    return;
+                }
+
+                physResetTrustBtn.disabled = true;
+                physResetTrustBtn.textContent = '⏳ Resetting...';
+                try {
+                    const res = await new Promise(r => chrome.runtime.sendMessage({
+                        action: 'RESET_PHYSICAL_EGRESS_TRUST'
+                    }, r));
+
+                    if (res && res.result && res.result.success) {
+                        alert('✅ Physical egress trust anchor successfully reset.');
+                        chrome.runtime.sendMessage({ action: 'QUERY_PHYSICAL_GATE' }, (pgRes) => {
+                            if (pgRes && pgRes.result && pgRes.result.status) {
+                                _updatePhysicalGateUI(pgRes.result.status);
+                            }
+                        });
+                        chrome.runtime.sendMessage({ action: 'QUERY_PRIVACY_RELAY_STATUS' }, (pollRes) => {
+                            if (pollRes && pollRes.success && pollRes.result && pollRes.result.status) {
+                                if (typeof updateRelayStatusUI === 'function') updateRelayStatusUI(pollRes.result.status);
+                            }
+                        });
+                        if (typeof refreshRelayNodes === 'function') refreshRelayNodes();
+                    } else {
+                        const reason = (res && res.result && res.result.reason) || (res && res.error) || 'Reset failed';
+                        alert('❌ Reset failed: ' + reason);
+                    }
+                } catch (err) {
+                    alert('❌ Reset error: ' + err.message);
+                } finally {
+                    physResetTrustBtn.disabled = false;
+                    physResetTrustBtn.textContent = 'Reset Egress Trust';
+                }
+            });
+        }
+
         chrome.runtime.sendMessage({ action: 'QUERY_PHYSICAL_GATE' }, (res) => {
             if (res && res.result && res.result.status) {
                 _updatePhysicalGateUI(res.result.status);
@@ -1763,7 +1812,7 @@ function _updatePhysicalGateUI(gateState) {
             elReady.textContent = 'READY (ENFORCED)';
             elReady.style.color = '#4ade80';
         } else {
-            elReady.textContent = 'FAIL-CLOSED (BLOCKED)';
+            elReady.textContent = 'BLOCKED (FAIL-CLOSED)';
             elReady.style.color = '#ef4444';
         }
     }
@@ -1795,12 +1844,21 @@ function _updatePhysicalGateUI(gateState) {
     }
     const elIdentityGroup = document.getElementById('phys-identity-group');
     if (elIdentityGroup) {
-        elIdentityGroup.textContent = gateState.egressIdentityGroup || 'NONE';
-        elIdentityGroup.style.color = gateState.egressIdentityGroup ? '#38bdf8' : '#94a3b8';
+        const groupVal = gateState.egressIdentityGroup || gateState.pinnedEgressIdentityGroup || 'NONE';
+        elIdentityGroup.textContent = groupVal;
+        elIdentityGroup.style.color = (groupVal !== 'NONE') ? '#38bdf8' : '#94a3b8';
     }
     if (elEgress) {
-        elEgress.textContent = gateState.egressFingerprintPass ? (gateState.observedEgressFingerprint || 'PASS') : 'FAIL';
-        elEgress.style.color = gateState.egressFingerprintPass ? '#4ade80' : '#ef4444';
+        if (!gateState.expectedEgressFingerprint && !gateState.pinnedEgressFingerprint) {
+            elEgress.textContent = 'UNVERIFIED';
+            elEgress.style.color = '#94a3b8';
+        } else if (gateState.egressFingerprintPass) {
+            elEgress.textContent = gateState.observedEgressFingerprint || 'PASS';
+            elEgress.style.color = '#4ade80';
+        } else {
+            elEgress.textContent = 'FAIL';
+            elEgress.style.color = '#ef4444';
+        }
     }
     if (elBypass) {
         elBypass.textContent = gateState.directBypassBlocked ? 'BLOCKED' : 'LEAK_DETECTED';

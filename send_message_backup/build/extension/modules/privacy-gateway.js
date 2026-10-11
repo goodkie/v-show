@@ -910,6 +910,37 @@
         }
 
         /**
+         * [Issue #6 R6.9G.10.3.7.1.4.1] Owner-Operated Destructive Reset of Physical Egress Trust
+         */
+        async resetPhysicalEgressTrust() {
+            const host = this.config.relayHost || '127.0.0.1';
+            const port = this.config.relayControlPort || 18989;
+            try {
+                if (!this.ephemeralRelayToken && !this.config.relayControlToken) {
+                    await this.fetchRelayControlToken();
+                }
+                const fetchFn = this._mockFetch !== undefined ? this._mockFetch : (typeof fetch !== 'undefined' ? fetch : null);
+                if (!fetchFn) return { success: false, reason: 'FETCH_UNAVAILABLE' };
+                const headers = this.getRelayAuthHeaders();
+                const res = await fetchFn(`http://${host}:${port}/physical-gate/reset-trust`, {
+                    method: 'POST',
+                    headers
+                });
+                if (res.ok) {
+                    const resData = await res.json();
+                    this.pinnedPhysicalEgressFingerprint = null;
+                    this.isGateReady = false;
+                    this.failureReason = 'PHYSICAL_EGRESS_TRUST_RESET';
+                    return resData;
+                }
+                const errData = await res.json().catch(() => ({}));
+                return { success: false, reason: errData.reason || `HTTP_${res.status}`, details: errData };
+            } catch (e) {
+                return { success: false, reason: e.message };
+            }
+        }
+
+        /**
          * Verify continuity of the egress tunnel during campaign run
          */
         async checkEgressContinuity() {

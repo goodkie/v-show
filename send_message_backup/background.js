@@ -2529,6 +2529,20 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
             return true;
         }
 
+        case 'RESET_PHYSICAL_EGRESS_TRUST': {
+            (async () => {
+                try {
+                    const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+                    if (!pg) return sendResponse({ success: false, error: 'PrivacyGateway unavailable' });
+                    const res = await pg.resetPhysicalEgressTrust();
+                    sendResponse({ success: true, result: res });
+                } catch (e) {
+                    sendResponse({ success: false, error: e.message });
+                }
+            })();
+            return true;
+        }
+
         case 'START_PRIVACY_RELAY_NATIVE': {
             (async () => {
                 if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendNativeMessage) {

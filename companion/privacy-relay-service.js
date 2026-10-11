@@ -1071,16 +1071,34 @@ class PrivacyRelayService {
               res.end(JSON.stringify({ success: false, reason: 'NODE_NOT_FOUND' }));
               return;
             }
-            if (data.canaryUrl) {
-              this.pool.canaryUrl = data.canaryUrl;
-              targetNode.canaryUrl = data.canaryUrl;
-            }
-            const canaryRes = await this.verifyNodeEgress(targetNode, data.timeoutMs || 5000, data.canaryUrl);
-            if (!canaryRes.verified || !canaryRes.fingerprint) {
-              res.writeHead(502);
-              res.end(JSON.stringify({ success: false, reason: 'CANARY_PROBE_FAILED', details: canaryRes.reason }));
+
+            // 1. Mandatory transport binding check (OPAL_WG or OPAL_OVPN only)
+            const requestedBinding = (data.transportBinding || targetNode.transportBinding || '').trim();
+            if (requestedBinding !== 'OPAL_WG' && requestedBinding !== 'OPAL_OVPN') {
+              res.writeHead(400);
+              res.end(JSON.stringify({
+                success: false,
+                reason: 'INVALID_TRANSPORT_BINDING',
+                message: `transportBinding must be either OPAL_WG or OPAL_OVPN, got "${requestedBinding}"`
+              }));
               return;
             }
+
+            // 2. Strict endpoint check at enrollment:
+            // OPAL_WG -> 10.66.66.1:3128, OPAL_OVPN -> 10.67.67.1:3128
+            const expectedHost = requestedBinding === 'OPAL_WG' ? '10.66.66.1' : '10.67.67.1';
+            const expectedPort = 3128;
+            if (targetNode.host !== expectedHost || Number(targetNode.port) !== expectedPort) {
+              res.writeHead(400);
+              res.end(JSON.stringify({
+                success: false,
+                reason: 'UNAPPROVED_VPN_PROXY_ENDPOINT',
+                message: `Endpoint for ${requestedBinding} must be ${expectedHost}:${expectedPort}, got ${targetNode.host}:${targetNode.port}`
+              }));
+              return;
+            }
+
+            // 3. Mandatory identity group
             const requestedGroup = (data.egressIdentityGroup || targetNode.egressIdentityGroup || '').trim();
             if (!requestedGroup) {
               res.writeHead(400);
@@ -1088,12 +1106,10 @@ class PrivacyRelayService {
               return;
             }
 
-            const requestedBinding = (data.transportBinding || targetNode.transportBinding || '').trim();
-
             const existingPinnedFp = this.physicalGate.pinnedEgressFingerprint;
             const existingPinnedGroup = this.physicalGate.pinnedEgressIdentityGroup;
 
-            // Rule B & D: If trust anchor already exists, reject group mismatch (Issue #6 R6.9G.10.3.7.1.4)
+            // 4. Rule B & D: If trust anchor already exists, reject group mismatch (Issue #6 R6.9G.10.3.7.1.4)
             if (existingPinnedGroup && existingPinnedGroup !== requestedGroup) {
               res.writeHead(409);
               res.end(JSON.stringify({
@@ -1104,7 +1120,41 @@ class PrivacyRelayService {
               return;
             }
 
-            // Rule B & D: If trust anchor already exists, reject fingerprint mismatch (Issue #6 R6.9G.10.3.7.1.4)
+            // 5. Rule C: Fallback OPAL_OVPN requires existing enrolled OPAL_WG anchor in same group
+            if (requestedBinding === 'OPAL_OVPN') {
+              const hasWgAnchor = (this.pool.nodes || []).some(n =>
+                n.transportBinding === 'OPAL_WG' &&
+                n.egressIdentityGroup === requestedGroup &&
+                Boolean(n.expectedEgressFingerprint) &&
+                (existingPinnedFp ? n.expectedEgressFingerprint === existingPinnedFp : true) &&
+                n.host === '10.66.66.1' &&
+                Number(n.port) === 3128 &&
+                n.active !== false
+              );
+              if (!hasWgAnchor) {
+                res.writeHead(400);
+                res.end(JSON.stringify({
+                  success: false,
+                  reason: 'PRIMARY_WG_ANCHOR_REQUIRED',
+                  message: `Cannot enroll OPAL_OVPN fallback node before primary OPAL_WG anchor is enrolled in group "${requestedGroup}"`
+                }));
+                return;
+              }
+            }
+
+            // 6. Canary probe
+            if (data.canaryUrl) {
+              this.pool.canaryUrl = data.canaryUrl;
+              targetNode.canaryUrl = data.canaryUrl;
+            }
+            const canaryRes = await this.verifyNodeEgress(targetNode, data.timeoutMs || 5000, data.canaryUrl);
+            if (!canaryRes.verified || !canaryRes.fingerprint) {
+              res.writeHead(502);
+              res.end(JSON.stringify({ success: false, reason: 'CANARY_PROBE_FAILED', details: canaryRes.reason }));
+              return;
+            }
+
+            // 7. Rule B & D: If trust anchor already exists, reject fingerprint mismatch (Issue #6 R6.9G.10.3.7.1.4)
             if (existingPinnedFp && existingPinnedFp !== canaryRes.fingerprint) {
               res.writeHead(409);
               res.end(JSON.stringify({
@@ -1115,24 +1165,6 @@ class PrivacyRelayService {
               return;
             }
 
-            // Rule C: Fallback node (OPAL_OVPN) enrollment check
-            if (requestedBinding === 'OPAL_OVPN') {
-              const hasWgAnchor = (this.pool.nodes || []).some(n =>
-                n.transportBinding === 'OPAL_WG' &&
-                n.expectedEgressFingerprint &&
-                n.egressIdentityGroup === requestedGroup
-              );
-              if (!hasWgAnchor && !existingPinnedFp) {
-                res.writeHead(400);
-                res.end(JSON.stringify({
-                  success: false,
-                  reason: 'PRIMARY_WG_ANCHOR_REQUIRED',
-                  message: 'Cannot enroll OPAL_OVPN fallback node before primary OPAL_WG anchor is enrolled'
-                }));
-                return;
-              }
-            }
-
             // Trust anchor creation (First enrollment for new group)
             if (!this.physicalGate.pinnedEgressFingerprint) {
               this.physicalGate.pinnedEgressFingerprint = canaryRes.fingerprint;
@@ -1141,9 +1173,7 @@ class PrivacyRelayService {
 
             targetNode.expectedEgressFingerprint = canaryRes.fingerprint;
             targetNode.egressIdentityGroup = requestedGroup;
-            if (requestedBinding) {
-              targetNode.transportBinding = requestedBinding;
-            }
+            targetNode.transportBinding = requestedBinding;
 
             // Persist to pool config
             if (!this.pool.physicalGate) this.pool.physicalGate = {};
@@ -1181,17 +1211,32 @@ class PrivacyRelayService {
           this.pool.nodes.forEach(n => {
             n.expectedEgressFingerprint = null;
             n.observedFingerprint = null;
+            n.egressIdentityGroup = null;
             n.lastHealth = 'UNKNOWN';
           });
         }
         this.saveConfig();
-        this.physicalGate.evaluate(this.getActiveNode(), (n) => this.verifyNodeEgress(n));
+        this.physicalGate.state.ready = false;
+        this.physicalGate.state.egressIdentityGroup = null;
+        this.physicalGate.state.observedEgressFingerprint = null;
+        this.physicalGate.state.reasons = ['PHYSICAL_EGRESS_TRUST_RESET'];
+
+        const resetStatus = {
+          ready: false,
+          reasons: ['PHYSICAL_EGRESS_TRUST_RESET']
+        };
+
         res.writeHead(200);
         res.end(JSON.stringify({
           success: true,
           action: 'PHYSICAL_EGRESS_TRUST_RESET',
-          message: 'Physical egress trust anchor reset. All physical nodes unverified.'
+          message: 'Physical egress trust anchor reset. All physical nodes unverified.',
+          status: resetStatus
         }));
+
+        setImmediate(() => {
+          this.physicalGate.evaluate(this.getActiveNode(), (n) => this.verifyNodeEgress(n)).catch(() => {});
+        });
         return;
       }
 
