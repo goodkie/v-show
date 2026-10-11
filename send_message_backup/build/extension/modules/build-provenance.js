@@ -15,17 +15,17 @@
 
     const BUILD_INFO = {
         branch: 'upgrade/phase-0-1',
-        // [R6.9G.10.3.7.1.3] implementationHead = functional commit containing Final Production Path Seal,
-        //                     Canonical Dropbear Keys, and Zero Route Seam
-        implementationHead: '2e049a7b529c47523d6cd9c1cea79d1d92e15d1c',
-        implementationHeadShort: '2e049a7b',
-        head: '2e049a7b529c47523d6cd9c1cea79d1d92e15d1c',
-        headShort: '2e049a7b',
+        // [R6.9G.10.3.7.1.4] implementationHead = functional commit containing Immutable Same-Egress
+        //                     Enrollment Seal and Reset Trust Endpoint
+        implementationHead: 'c4a97e39509e5e791620a42e676782a82259f472',
+        implementationHeadShort: 'c4a97e39',
+        head: 'c4a97e39509e5e791620a42e676782a82259f472',
+        headShort: 'c4a97e39',
         rollbackBase: 'dc0740a0c69e2f7fa96b6989841acf0831b3619e',
-        previousFunctionalRestorePoint: '24d689f6b97ea4a26b59079ecce2c023879a7731',
+        previousFunctionalRestorePoint: '2e049a7b529c47523d6cd9c1cea79d1d92e15d1c',
         manifestVersion: 3,
-        buildId: 'R6.9G.10.3.7.1.3-20261010-FINAL-SEAL-REAL-RELAY-MONITOR',
-        builtAt: '2026-10-10T22:30:00.000Z',
+        buildId: 'R6.9G.10.3.7.1.4-20261011-IMMUTABLE-SAME-EGRESS-SEAL',
+        builtAt: '2026-10-11T01:00:00.000Z',
         provenanceSchema: 2,
         modules: {
             backgroundSha: 'e1577de1b9a989e668ae1b819a74b408b658f78fc0b335ce3885dc82f423fc61',
