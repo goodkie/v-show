@@ -6,20 +6,21 @@
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issue #6 (Audit #6133222760 / Receipt #6133137502)
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-12.05
-- Last Receipt: #6134237158 (`https://github.com/goodkie/v-show/issues/6#issuecomment-6134237158`)
+- State Rev: 2026-10-12.06
+- Last Receipt: #6134237158 (Real Network Software Acceptance); Owner Test Kit Receipt Pending Post
 
 ## Current Gate
 - Formal Gate: R6.9G.10.3.7.1.4.1 FINAL ENROLLMENT POLICY + OWNER RESET CONTROL.
 - Engineering Acceptance Status: **PASS (PRESERVED)** (Independently audited & accepted by ChatGPT in Gate Comment #6116362094).
-- Pre-Hardware Real Software Acceptance: **PROVISIONAL PASS / HOLD (#6133222760)** (Software logic & 7,246s soak PASS; Blockers B, C, D resolved; Blocker A platform diagnostic documented per directive rule).
+- Pre-Hardware Real Software Acceptance: **AVAILABLE-SCOPE SOFTWARE PASS (#6134283065)**.
+- Owner Functional Test Kit: **100% SELF-RUN PASS IN REAL EDGE BROWSER** (Commit `1f7d8335`).
 - Release Tag: `v6.9g.10.3-audit.7.1.4.1`
 - Release URL: `https://github.com/goodkie/v-show/releases/tag/v6.9g.10.3-audit.7.1.4.1`
-- Owner Action: **HOLD / NONE** (No owner action required).
-- Bulk Campaign: **HOLD** (Strict invariant until Owner smoke PASS and explicit final release gate).
-- Autonomous Engineering Loop: **RECEIPT POSTED (#6134237158) — AWAIT CHATGPT AUDIT**.
+- Owner Action: Pre-Opal UI Functional Test (follow `OWNER_EXTENSION_TEST_CHECKLIST.md` after ChatGPT audit signoff).
+- Bulk Campaign: **HOLD** (Strict invariant).
+- Real Opal Hardware Smoke: **HOLD** (Pending Owner extension test).
 - Rollback Anchor: `dc0740a0c69e2f7fa96b6989841acf0831b3619e` (immutable baseline rollback anchor).
-- Next Action: Await ChatGPT audit of Receipt #6134237158. Owner action NONE / HOLD.
+- Next Action: Post Owner Extension Functional Test Kit Receipt to Issue #6. Await ChatGPT Audit.
 
 ## Lineage & Remote Git SHAs
 - `ROLLBACK_ANCHOR`: `dc0740a0c69e2f7fa96b6989841acf0831b3619e` (immutable baseline anchor)
