@@ -104,14 +104,15 @@ function runSecretScan() {
     scanFile(path.resolve(f), 'EXTENSION_PROD');
   }
 
-  // 4. Scan evidence and audit log files
-  console.log('[4] Scanning evidence trace logs...');
-  const logs = [
-    'evidence_r6_9g10_3_7_1_4_1_real_runtime_traces.log',
-    'test/prehardware-digital-twin/logs/prehardware_digital_twin_evidence.log'
-  ];
-  for (const l of logs) {
-    scanFile(path.resolve(l), 'EVIDENCE_LOGS');
+  // 4. Scan all evidence and audit log files
+  console.log('[4] Scanning entire prehardware test logs directory...');
+  scanDir(path.resolve('test/prehardware-digital-twin/logs'), 'TEST_LOGS_DIR');
+  scanFile(path.resolve('evidence_r6_9g10_3_7_1_4_1_real_runtime_traces.log'), 'EVIDENCE_LOGS');
+
+  // 5. Scan temporary scratch directory
+  console.log('[5] Scanning scratch temporary directory...');
+  if (fs.existsSync(path.resolve('scratch'))) {
+    scanDir(path.resolve('scratch'), 'SCRATCH_TEMP');
   }
 
   console.log(`\nScan complete: ${filesScanned} files scanned.`);

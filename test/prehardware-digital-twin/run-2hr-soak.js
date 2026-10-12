@@ -81,44 +81,71 @@ async function runSoak() {
         break;
       }
 
-      // Injections scheduled across the 2-hour window:
+      // Injections scheduled across the 2-hour window (Directive #6116387233 full set):
       let faultStatus = 'HEALTHY';
-      if (cycle === 15) {
-        // Drop WG (15 min)
-        faultStatus = 'INJECT_WG_DROP';
+      if (cycle === 12) {
+        // 1. WG drop 1
+        faultStatus = 'INJECT_WG_DROP_1';
         injectFailure(1);
         await sleep(2000);
         resetHealthy();
         opal.resetState();
-      } else if (cycle === 30) {
-        // OpenVPN fallback switch (30 min)
-        faultStatus = 'INJECT_OVPN_FALLBACK';
+      } else if (cycle === 24) {
+        // 2. OpenVPN fallback cycle 1
+        faultStatus = 'INJECT_OVPN_FALLBACK_1';
         opal.state.wgState = 'DOWN';
         opal.state.openvpnState = 'UP';
         opal._persistState();
         await sleep(2000);
         resetHealthy();
         opal.resetState();
-      } else if (cycle === 55) {
-        // Drop WG 2nd time (55 min)
+      } else if (cycle === 36) {
+        // 3. Squid restart 1
+        faultStatus = 'INJECT_SQUID_RESTART_1';
+        await vps.restartWg();
+      } else if (cycle === 48) {
+        // 4. Egress mismatch attempt 1
+        faultStatus = 'INJECT_EGRESS_MISMATCH_ATTEMPT';
+        canary.setEgressFingerprint('c0ffee1122334455');
+        await sleep(2000);
+        canary.resetEgressFingerprint();
+      } else if (cycle === 60) {
+        // 5. WG drop 2
         faultStatus = 'INJECT_WG_DROP_2';
         injectFailure(1);
         await sleep(2000);
         resetHealthy();
         opal.resetState();
-      } else if (cycle === 75) {
-        // Restart Squid proxy (75 min)
-        faultStatus = 'INJECT_SQUID_RESTART';
-        await vps.restartWg();
-      } else if (cycle === 90) {
-        // Direct WAN bypass attempt (90 min)
+      } else if (cycle === 72) {
+        // 6. Direct WAN bypass route attempt 1
         faultStatus = 'INJECT_WAN_BYPASS_ATTEMPT';
         injectFailure(7);
         await sleep(2000);
         resetHealthy();
         opal.resetState();
-      } else if (cycle === 105) {
-        // Drop WG 3rd time (105 min)
+      } else if (cycle === 84) {
+        // 7. Squid restart 2
+        faultStatus = 'INJECT_SQUID_RESTART_2';
+        await vps.restartWg();
+      } else if (cycle === 96) {
+        // 8. OpenVPN fallback cycle 2
+        faultStatus = 'INJECT_OVPN_FALLBACK_2';
+        opal.state.wgState = 'DOWN';
+        opal.state.openvpnState = 'UP';
+        opal._persistState();
+        await sleep(2000);
+        resetHealthy();
+        opal.resetState();
+      } else if (cycle === 104) {
+        // 9. Companion restart 1
+        faultStatus = 'INJECT_COMPANION_RESTART';
+        // Virtual companion state reset/revalidation
+        opal.state.wgHandshakeAgeSec = 1;
+        opal._persistState();
+        await sleep(2000);
+        opal.resetState();
+      } else if (cycle === 112) {
+        // 10. WG drop 3
         faultStatus = 'INJECT_WG_DROP_3';
         injectFailure(1);
         await sleep(2000);
