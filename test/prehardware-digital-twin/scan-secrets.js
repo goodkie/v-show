@@ -115,6 +115,18 @@ function runSecretScan() {
     scanDir(path.resolve('scratch'), 'SCRATCH_TEMP');
   }
 
+  // 6. Scan owner extension test site and evidence
+  console.log('[6] Scanning owner extension test site and evidence...');
+  if (fs.existsSync(path.resolve('owner-extension-test-site'))) {
+    scanDir(path.resolve('owner-extension-test-site'), 'OWNER_TEST_SITE');
+  }
+
+  // 7. Scan extracted extension directory
+  console.log('[7] Scanning extracted extension directory...');
+  if (fs.existsSync(path.resolve('extension'))) {
+    scanDir(path.resolve('extension'), 'EXTRACTED_EXTENSION');
+  }
+
   console.log(`\nScan complete: ${filesScanned} files scanned.`);
   if (violations.length === 0) {
     console.log('✅ SECRET HYGIENE PASS: Zero leaked private keys, passwords, or tokens found.');

@@ -1,0 +1,130 @@
+[2026-10-12T23:19:23.532Z] ========================================================================
+[2026-10-12T23:19:23.542Z]   XPIDER OWNER EXTENSION FUNCTIONAL TEST KIT — ANTIGRAVITY SELF-RUN
+[2026-10-12T23:19:23.549Z] ========================================================================
+[2026-10-12T23:19:23.556Z] Extension Source: E:\vivpr\ai\extension-form-sender\extension
+[2026-10-12T23:19:23.562Z] Test Site Server: http://127.0.0.1:8088
+[2026-10-12T23:19:23.584Z] ✅ Local test site server running on port 8088
+[2026-10-12T23:19:23.592Z] Spawning Edge: "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
+[2026-10-12T23:19:24.403Z] ✅ Connected to Microsoft Edge: Edg/155.0.4283.45
+[2026-10-12T23:19:24.694Z] ✅ Discovered Extension ID: ldlijlaccfeelfdhgnjbibniocefckjj
+[2026-10-12T23:20:09.233Z] ========================================================================
+[2026-10-12T23:20:09.246Z]   XPIDER OWNER EXTENSION FUNCTIONAL TEST KIT — ANTIGRAVITY SELF-RUN
+[2026-10-12T23:20:09.253Z] ========================================================================
+[2026-10-12T23:20:09.261Z] Extension Source: E:\vivpr\ai\extension-form-sender\extension
+[2026-10-12T23:20:09.269Z] Test Site Server: http://127.0.0.1:8088
+[2026-10-12T23:20:09.291Z] ✅ Local test site server running on port 8088
+[2026-10-12T23:20:09.298Z] Spawning Edge: "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
+[2026-10-12T23:20:09.973Z] ✅ Connected to Microsoft Edge: Edg/155.0.4283.45
+[2026-10-12T23:20:10.273Z] ✅ Discovered Extension ID: ldlijlaccfeelfdhgnjbibniocefckjj
+[2026-10-12T23:20:10.671Z] ✅ Build Provenance Verified: R6.9G.10.3.7.1.4.1-20261011-FINAL-ENROLLMENT-POLICY-OWNER-RESET (97aa7dfa)
+[2026-10-12T23:20:10.711Z] ✅ Opened Popup UI Target: 0C9F0DD9D795EBCDEB3BE918E86D574A
+[2026-10-12T23:20:11.564Z] ✅ Popup Initial State Verified: "XPIDER AutoForm Sender Pro" [TEST-ONLY R6.9G.10.3.7.1.4.1 [97aa7dfa]]
+[2026-10-12T23:20:11.718Z] 📸 Screenshot saved: 01_popup_initial.png (78940 bytes)
+[2026-10-12T23:20:12.132Z] ✅ Settings Panel Opened: Physical Gate status is "DISABLED"
+[2026-10-12T23:20:12.278Z] 📸 Screenshot saved: 02_settings_opened.png (50064 bytes)
+[2026-10-12T23:20:12.904Z] ✅ Email Extractor Tab Verified: Rendered and interactive
+[2026-10-12T23:20:13.057Z] 📸 Screenshot saved: 03_email_collector_tab.png (60511 bytes)
+[2026-10-12T23:22:48.489Z] ========================================================================
+[2026-10-12T23:22:48.500Z]   XPIDER OWNER EXTENSION FUNCTIONAL TEST KIT — ANTIGRAVITY SELF-RUN
+[2026-10-12T23:22:48.507Z] ========================================================================
+[2026-10-12T23:22:48.514Z] Extension Source: E:\vivpr\ai\extension-form-sender\extension
+[2026-10-12T23:22:48.521Z] Test Site Server: http://127.0.0.1:8088
+[2026-10-12T23:22:48.544Z] ✅ Local test site server running on port 8088
+[2026-10-12T23:22:48.551Z] Spawning Edge: "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
+[2026-10-12T23:22:49.176Z] ✅ Connected to Microsoft Edge: Edg/155.0.4283.45
+[2026-10-12T23:22:49.496Z] ✅ Discovered Extension ID: ldlijlaccfeelfdhgnjbibniocefckjj
+[2026-10-12T23:22:50.082Z] ✅ Build Provenance Verified: R6.9G.10.3.7.1.4.1-20261011-FINAL-ENROLLMENT-POLICY-OWNER-RESET (97aa7dfa)
+[2026-10-12T23:22:50.122Z] ✅ Opened Popup UI Target: 5FBBDCE36202E065761968EB5BA90FAE
+[2026-10-12T23:22:50.977Z] ✅ Popup Initial State Verified: "XPIDER AutoForm Sender Pro" [TEST-ONLY R6.9G.10.3.7.1.4.1 [97aa7dfa]]
+[2026-10-12T23:22:51.211Z] 📸 Screenshot saved: 01_popup_initial.png (78940 bytes)
+[2026-10-12T23:22:51.630Z] ✅ Settings Panel Opened: Physical Gate status is "DISABLED"
+[2026-10-12T23:22:51.810Z] 📸 Screenshot saved: 02_settings_opened.png (50064 bytes)
+[2026-10-12T23:22:52.441Z] ✅ Email Extractor Tab Verified: Rendered and interactive
+[2026-10-12T23:22:52.575Z] 📸 Screenshot saved: 03_email_collector_tab.png (60511 bytes)
+[2026-10-12T23:22:53.508Z] ✅ CSV Import Verified: "7 URLs found"
+[2026-10-12T23:22:53.628Z] 📸 Screenshot saved: 04_csv_imported.png (76106 bytes)
+[2026-10-12T23:22:53.634Z] 
+>>> [TEST SCENARIO A] Standard Contact Form <<<
+[2026-10-12T23:22:55.461Z] ✅ Case A PASS: Standard form filled, submitted, success banner verified
+[2026-10-12T23:22:55.544Z] 📸 Screenshot saved: 05_case_a_standard_success.png (34088 bytes)
+[2026-10-12T23:22:55.552Z] 
+>>> [TEST SCENARIO B] Dropdown & Checkbox Form <<<
+[2026-10-12T23:22:57.382Z] ✅ Case B PASS: Dropdown selected, TOS checked, submitted, success banner verified
+[2026-10-12T23:22:57.464Z] 📸 Screenshot saved: 06_case_b_dropdown_checkbox_success.png (39605 bytes)
+[2026-10-12T23:22:57.473Z] 
+>>> [TEST SCENARIO C] Numeric Field Form <<<
+[2026-10-12T23:22:59.256Z] ✅ Case C PASS: Numeric seats populated, message filled, success banner verified
+[2026-10-12T23:22:59.338Z] 📸 Screenshot saved: 07_case_c_numeric_success.png (34360 bytes)
+[2026-10-12T23:22:59.348Z] 
+>>> [TEST SCENARIO D] Subscribe Without Message Form <<<
+[2026-10-12T23:23:00.563Z] ✅ Case D PASS: Pure email capture verified without inquiry textarea (Auto-Skip Confirmed)
+[2026-10-12T23:23:00.679Z] 📸 Screenshot saved: 08_case_d_subscribe_skipped.png (24618 bytes)
+[2026-10-12T23:23:00.695Z] 
+>>> [TEST SCENARIO E] Reservation Without Message Form <<<
+[2026-10-12T23:23:01.952Z] ✅ Case E PASS: Pure reservation form verified without inquiry textarea (Auto-Skip Confirmed)
+[2026-10-12T23:23:02.046Z] 📸 Screenshot saved: 09_case_e_booking_skipped.png (33154 bytes)
+[2026-10-12T23:23:02.054Z] 
+>>> [TEST SCENARIO F] No Contact Page (Clean Exhaustion) <<<
+[2026-10-12T23:23:03.246Z] ✅ Case F PASS: Article page verified free of forms (Clean Exhaustion Confirmed)
+[2026-10-12T23:23:03.331Z] 📸 Screenshot saved: 10_case_f_no_contact_exhausted.png (50627 bytes)
+[2026-10-12T23:23:03.339Z] 
+>>> [TEST SCENARIO G] Portal Contact Page Discovery <<<
+[2026-10-12T23:23:04.529Z] ✅ Case G PASS: Semantic contact discovery anchor identified: "contact-standard.html"
+[2026-10-12T23:23:04.611Z] 📸 Screenshot saved: 11_case_g_discovery_portal.png (62288 bytes)
+[2026-10-12T23:23:04.619Z] 
+>>> [TEST CONTROL] Reset Control & Clean State <<<
+[2026-10-12T23:24:29.629Z] ========================================================================
+[2026-10-12T23:24:29.641Z]   XPIDER OWNER EXTENSION FUNCTIONAL TEST KIT — ANTIGRAVITY SELF-RUN
+[2026-10-12T23:24:29.648Z] ========================================================================
+[2026-10-12T23:24:29.654Z] Extension Source: E:\vivpr\ai\extension-form-sender\extension
+[2026-10-12T23:24:29.662Z] Test Site Server: http://127.0.0.1:8088
+[2026-10-12T23:24:29.683Z] ✅ Local test site server running on port 8088
+[2026-10-12T23:24:29.691Z] Spawning Edge: "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
+[2026-10-12T23:24:30.460Z] ✅ Connected to Microsoft Edge: Edg/155.0.4283.45
+[2026-10-12T23:24:30.757Z] ✅ Discovered Extension ID: ldlijlaccfeelfdhgnjbibniocefckjj
+[2026-10-12T23:24:31.132Z] ✅ Build Provenance Verified: R6.9G.10.3.7.1.4.1-20261011-FINAL-ENROLLMENT-POLICY-OWNER-RESET (97aa7dfa)
+[2026-10-12T23:24:31.172Z] ✅ Opened Popup UI Target: FD881E1E95255737C3A31E650213024C
+[2026-10-12T23:24:32.024Z] ✅ Popup Initial State Verified: "XPIDER AutoForm Sender Pro" [TEST-ONLY R6.9G.10.3.7.1.4.1 [97aa7dfa]]
+[2026-10-12T23:24:32.171Z] 📸 Screenshot saved: 01_popup_initial.png (78940 bytes)
+[2026-10-12T23:24:32.641Z] ✅ Settings Panel Opened: Physical Gate status is "DISABLED"
+[2026-10-12T23:24:32.783Z] 📸 Screenshot saved: 02_settings_opened.png (50064 bytes)
+[2026-10-12T23:24:33.416Z] ✅ Email Extractor Tab Verified: Rendered and interactive
+[2026-10-12T23:24:33.548Z] 📸 Screenshot saved: 03_email_collector_tab.png (60511 bytes)
+[2026-10-12T23:24:34.472Z] ✅ CSV Import Verified: "7 URLs found"
+[2026-10-12T23:24:34.617Z] 📸 Screenshot saved: 04_csv_imported.png (76106 bytes)
+[2026-10-12T23:24:34.623Z] 
+>>> [TEST SCENARIO A] Standard Contact Form <<<
+[2026-10-12T23:24:36.446Z] ✅ Case A PASS: Standard form filled, submitted, success banner verified
+[2026-10-12T23:24:36.534Z] 📸 Screenshot saved: 05_case_a_standard_success.png (34088 bytes)
+[2026-10-12T23:24:36.544Z] 
+>>> [TEST SCENARIO B] Dropdown & Checkbox Form <<<
+[2026-10-12T23:24:38.368Z] ✅ Case B PASS: Dropdown selected, TOS checked, submitted, success banner verified
+[2026-10-12T23:24:38.464Z] 📸 Screenshot saved: 06_case_b_dropdown_checkbox_success.png (39605 bytes)
+[2026-10-12T23:24:38.472Z] 
+>>> [TEST SCENARIO C] Numeric Field Form <<<
+[2026-10-12T23:24:40.261Z] ✅ Case C PASS: Numeric seats populated, message filled, success banner verified
+[2026-10-12T23:24:40.343Z] 📸 Screenshot saved: 07_case_c_numeric_success.png (34360 bytes)
+[2026-10-12T23:24:40.351Z] 
+>>> [TEST SCENARIO D] Subscribe Without Message Form <<<
+[2026-10-12T23:24:41.557Z] ✅ Case D PASS: Pure email capture verified without inquiry textarea (Auto-Skip Confirmed)
+[2026-10-12T23:24:41.638Z] 📸 Screenshot saved: 08_case_d_subscribe_skipped.png (24618 bytes)
+[2026-10-12T23:24:41.646Z] 
+>>> [TEST SCENARIO E] Reservation Without Message Form <<<
+[2026-10-12T23:24:42.879Z] ✅ Case E PASS: Pure reservation form verified without inquiry textarea (Auto-Skip Confirmed)
+[2026-10-12T23:24:42.960Z] 📸 Screenshot saved: 09_case_e_booking_skipped.png (33154 bytes)
+[2026-10-12T23:24:42.968Z] 
+>>> [TEST SCENARIO F] No Contact Page (Clean Exhaustion) <<<
+[2026-10-12T23:24:44.177Z] ✅ Case F PASS: Article page verified free of forms (Clean Exhaustion Confirmed)
+[2026-10-12T23:24:44.260Z] 📸 Screenshot saved: 10_case_f_no_contact_exhausted.png (50627 bytes)
+[2026-10-12T23:24:44.269Z] 
+>>> [TEST SCENARIO G] Portal Contact Page Discovery <<<
+[2026-10-12T23:24:45.460Z] ✅ Case G PASS: Semantic contact discovery anchor identified: "contact-standard.html"
+[2026-10-12T23:24:45.544Z] 📸 Screenshot saved: 11_case_g_discovery_portal.png (62288 bytes)
+[2026-10-12T23:24:45.552Z] 
+>>> [TEST CONTROL] Reset Control & Clean State <<<
+[2026-10-12T23:24:46.154Z] ✅ Reset Control PASS: Queue cleared (queueLen=0, fileInfo hidden)
+[2026-10-12T23:24:46.308Z] 📸 Screenshot saved: 12_reset_clean_state.png (80163 bytes)
+[2026-10-12T23:24:46.315Z] 
+========================================================================
+[2026-10-12T23:24:46.322Z]   ALL TEST KIT SCENARIOS VERIFIED 100% PASS IN REAL MICROSOFT EDGE
+[2026-10-12T23:24:46.330Z] ========================================================================

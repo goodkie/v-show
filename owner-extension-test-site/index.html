@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>XPIDER Controlled Test Portal</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 0; }
+        header { background: #1e293b; border-bottom: 1px solid #334155; padding: 16px 40px; display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-size: 18px; font-weight: 700; color: #38bdf8; display: flex; align-items: center; gap: 8px; }
+        nav { display: flex; gap: 24px; align-items: center; }
+        nav a { color: #cbd5e1; text-decoration: none; font-size: 14px; font-weight: 500; transition: color 0.2s; }
+        nav a:hover, nav a.contact-btn { color: #38bdf8; }
+        nav a.contact-btn { background: rgba(56, 189, 248, 0.15); border: 1px solid #38bdf8; padding: 6px 14px; border-radius: 6px; }
+        .hero { max-width: 800px; margin: 50px auto 30px auto; padding: 0 20px; text-align: center; }
+        h1 { font-size: 32px; color: #f8fafc; margin-bottom: 12px; }
+        p.subtitle { color: #94a3b8; font-size: 16px; margin-bottom: 40px; }
+        .test-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; max-width: 900px; margin: 0 auto; padding: 0 20px 60px 20px; }
+        .test-card { background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 20px; text-align: left; text-decoration: none; color: inherit; transition: transform 0.2s, border-color 0.2s; }
+        .test-card:hover { transform: translateY(-3px); border-color: #38bdf8; }
+        .test-card h3 { font-size: 16px; color: #38bdf8; margin: 0 0 8px 0; }
+        .test-card p { font-size: 13px; color: #94a3b8; margin: 0 0 12px 0; line-height: 1.4; }
+        .tag { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 4px; font-weight: 600; }
+        .tag-success { background: rgba(74, 222, 128, 0.15); color: #4ade80; border: 1px solid #4ade80; }
+        .tag-skip { background: rgba(234, 179, 8, 0.15); color: #facc15; border: 1px solid #eab308; }
+        .tag-fail { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid #ef4444; }
+        footer { background: #0b132b; border-top: 1px solid #1e293b; padding: 30px 40px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: #64748b; }
+        footer a { color: #94a3b8; text-decoration: none; margin-left: 20px; }
+        footer a:hover { color: #38bdf8; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">🌐 Acme Global Solutions</div>
+        <nav>
+            <a href="index.html">Home</a>
+            <a href="no-contact-page.html">Engineering Blog</a>
+            <a href="subscribe-no-message.html">Newsletter</a>
+            <a href="booking-no-message.html">Book Appointment</a>
+            <!-- Semantic Contact Link for Discovery Engine -->
+            <a href="contact-standard.html" class="contact-btn">Contact Us</a>
+        </nav>
+    </header>
+
+    <div class="hero">
+        <h1>XPIDER Controlled Test Fixture Suite</h1>
+        <p class="subtitle">Autonomous verification pages designed for pre-hardware extension functional testing.</p>
+    </div>
+
+    <div class="test-grid">
+        <a href="contact-standard.html" class="test-card">
+            <h3>Case A: Standard Contact</h3>
+            <p>Name, Email, Phone, Subject, and Textarea inquiry body.</p>
+            <span class="tag tag-success">Expected: AUTO-FILL & SUCCESS</span>
+        </a>
+
+        <a href="contact-dropdown-checkbox.html" class="test-card">
+            <h3>Case B: Dropdown & Checkbox</h3>
+            <p>Department select dropdown, optional checkbox, and mandatory TOS agreement.</p>
+            <span class="tag tag-success">Expected: CHOICE, TOS & SUCCESS</span>
+        </a>
+
+        <a href="contact-numeric.html" class="test-card">
+            <h3>Case C: Numeric Field</h3>
+            <p>Numeric seat count input, email, and scope inquiry textarea.</p>
+            <span class="tag tag-success">Expected: NUMBER & SUCCESS</span>
+        </a>
+
+        <a href="subscribe-no-message.html" class="test-card">
+            <h3>Case D: Subscribe Form</h3>
+            <p>Email capture newsletter form without multiline inquiry body.</p>
+            <span class="tag tag-skip">Expected: AUTO-SKIP</span>
+        </a>
+
+        <a href="booking-no-message.html" class="test-card">
+            <h3>Case E: Booking Form</h3>
+            <p>Reservation date/time and party size without inquiry textarea.</p>
+            <span class="tag tag-skip">Expected: AUTO-SKIP</span>
+        </a>
+
+        <a href="no-contact-page.html" class="test-card">
+            <h3>Case F: No Contact Page</h3>
+            <p>Technical article without forms or contact navigation anchors.</p>
+            <span class="tag tag-fail">Expected: CLEAN EXHAUSTION</span>
+        </a>
+    </div>
+
+    <footer>
+        <div>© 2026 Acme Global Solutions. Local test environment for XPIDER AutoForm Sender Pro.</div>
+        <div>
+            <a href="index.html">Home</a>
+            <a href="contact-standard.html">Get in Touch</a>
+            <a href="contact-dropdown-checkbox.html">Support</a>
+        </div>
+    </footer>
+</body>
+</html>
