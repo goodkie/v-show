@@ -1,0 +1,10 @@
+#!/bin/sh
+STATE_FILE="E:/vivpr/ai/extension-form-sender/test/prehardware-digital-twin/topology/virtual_opal_env/router_state.json"
+KS=$(grep -o '"killSwitch": *[^,}]*' "$STATE_FILE" | awk '{print $2}')
+if [ "$KS" = "true" ]; then
+  if [ "$2" = "zone_lan_forward" ]; then
+    echo "-A zone_lan_forward -j DROP"
+  elif [ "$2" = "zone_lan_dest_ACCEPT" ]; then
+    echo "-A zone_lan_dest_ACCEPT -o wgclient -j ACCEPT"
+  fi
+fi

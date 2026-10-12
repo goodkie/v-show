@@ -1,0 +1,8 @@
+#!/bin/sh
+STATE_FILE="E:/vivpr/ai/extension-form-sender/test/prehardware-digital-twin/topology/virtual_opal_env/router_state.json"
+OVPN_UP=$(grep -o '"openvpnState": *"[^"]*"' "$STATE_FILE" | cut -d'"' -f4)
+if [ "$1" = "openvpn" ] && [ "$OVPN_UP" = "UP" ]; then
+  echo "12345"
+  exit 0
+fi
+exit 1

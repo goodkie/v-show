@@ -1,0 +1,43 @@
+#!/bin/sh
+STATE_FILE="E:/vivpr/ai/extension-form-sender/test/prehardware-digital-twin/topology/virtual_opal_env/router_state.json"
+WG_UP=$(grep -o '"wgState": *"[^"]*"' "$STATE_FILE" | cut -d'"' -f4)
+OVPN_UP=$(grep -o '"openvpnState": *"[^"]*"' "$STATE_FILE" | cut -d'"' -f4)
+BYPASS=$(grep -o '"directWanBypass": *[^,}]*' "$STATE_FILE" | awk '{print $2}')
+
+if [ "$1" = "link" ]; then
+  if echo "$*" | grep -q "wgclient" && [ "$WG_UP" = "UP" ]; then
+    echo "3: wgclient: <POINTOPOINT,NOARP,UP,LOWER_UP> mtu 1420 qdisc noqueue state UP"
+  elif echo "$*" | grep -q "tun0" && [ "$OVPN_UP" = "UP" ]; then
+    echo "4: tun0: <POINTOPOINT,MULTICAST,NOARP,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP"
+  elif [ "$2" = "show" ] && [ -z "$3" ]; then
+    if [ "$OVPN_UP" = "UP" ]; then echo "4: tun0: <POINTOPOINT,UP>"; fi
+    if [ "$WG_UP" = "UP" ]; then echo "3: wgclient: <POINTOPOINT,UP>"; fi
+  fi
+elif [ "$1" = "-4" ] && [ "$2" = "addr" ]; then
+  if echo "$*" | grep -q "wgclient" && [ "$WG_UP" = "UP" ]; then
+    echo "    inet 10.66.66.2/24 scope global wgclient"
+  elif echo "$*" | grep -q "tun0" && [ "$OVPN_UP" = "UP" ]; then
+    echo "    inet 10.67.67.2/24 scope global tun0"
+  fi
+elif [ "$1" = "route" ]; then
+  if echo "$*" | grep -q "default"; then
+    if [ "$BYPASS" = "true" ]; then
+      echo "default via 192.168.1.1 dev eth0"
+    else
+      if [ "$WG_UP" = "UP" ]; then echo "default via 10.66.66.1 dev wgclient";
+      elif [ "$OVPN_UP" = "UP" ]; then echo "default via 10.67.67.1 dev tun0"; fi
+    fi
+  elif echo "$*" | grep -q "tun0" && [ "$OVPN_UP" = "UP" ]; then
+    echo "10.67.67.0/24 dev tun0 proto kernel scope link src 10.67.67.2"
+    echo "0.0.0.0/1 dev tun0"
+    echo "128.0.0.0/1 dev tun0"
+  elif [ "$2" = "show" ]; then
+    if [ "$WG_UP" = "UP" ]; then
+      echo "0.0.0.0/1 dev wgclient"
+      echo "128.0.0.0/1 dev wgclient"
+    elif [ "$OVPN_UP" = "UP" ]; then
+      echo "0.0.0.0/1 dev tun0"
+      echo "128.0.0.0/1 dev tun0"
+    fi
+  fi
+fi

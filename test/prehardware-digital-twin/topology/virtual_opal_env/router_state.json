@@ -1,0 +1,15 @@
+{
+  "wgState": "UP",
+  "wgHandshakeAgeSec": 25,
+  "wgPrivIp": "10.66.66.2/24",
+  "openvpnState": "DOWN",
+  "openvpnIf": "tun0",
+  "killSwitch": true,
+  "directWanBypass": false,
+  "vpnDefaultRoute": true,
+  "dnsBound": true,
+  "ipv6Disabled": true,
+  "model": "GL-SFT1200",
+  "boardId": "opal",
+  "pubKeyPrefix": "sha256:c69abb1d284a24cc"
+}

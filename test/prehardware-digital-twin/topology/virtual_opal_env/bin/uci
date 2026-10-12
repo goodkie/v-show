@@ -1,0 +1,15 @@
+#!/bin/sh
+STATE_FILE="E:/vivpr/ai/extension-form-sender/test/prehardware-digital-twin/topology/virtual_opal_env/router_state.json"
+KS=$(grep -o '"killSwitch": *[^,}]*' "$STATE_FILE" | awk '{print $2}')
+DNS_BOUND=$(grep -o '"dnsBound": *[^,}]*' "$STATE_FILE" | awk '{print $2}')
+IPV6_DIS=$(grep -o '"ipv6Disabled": *[^,}]*' "$STATE_FILE" | awk '{print $2}')
+
+if [ "$2" = "glconfig.general.block_non_vpn" ]; then
+  if [ "$KS" = "true" ]; then echo "1"; else echo "0"; fi
+elif [ "$2" = "dhcp.@dnsmasq[0].server" ]; then
+  if [ "$DNS_BOUND" = "true" ]; then echo "10.66.66.1"; else echo "8.8.8.8"; fi
+elif [ "$2" = "glipv6.wan.disabled" ]; then
+  if [ "$IPV6_DIS" = "true" ]; then echo "1"; else echo "0"; fi
+elif [ "$2" = "network.lan.ipaddr" ]; then
+  echo "192.168.8.1"
+fi

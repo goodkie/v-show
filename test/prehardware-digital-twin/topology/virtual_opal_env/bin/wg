@@ -1,0 +1,25 @@
+#!/bin/sh
+STATE_FILE="E:/vivpr/ai/extension-form-sender/test/prehardware-digital-twin/topology/virtual_opal_env/router_state.json"
+NOW=$(date +%s)
+WG_UP=$(grep -o '"wgState": *"[^"]*"' "$STATE_FILE" | cut -d'"' -f4)
+AGE=$(grep -o '"wgHandshakeAgeSec": *[0-9]*' "$STATE_FILE" | grep -o '[0-9]*')
+
+if [ "$WG_UP" = "UP" ]; then
+  if [ "$1" = "show" ]; then
+    if [ "$2" = "wgclient" ] && [ "$3" = "latest-handshakes" ]; then
+      HS_EPOCH=$((NOW - AGE))
+      echo "peer1 $HS_EPOCH"
+      exit 0
+    elif [ "$2" = "latest-handshakes" ]; then
+      HS_EPOCH=$((NOW - AGE))
+      echo "peer1 $HS_EPOCH"
+      exit 0
+    fi
+    echo "interface: wgclient"
+    echo "public key: testWgPubKey=="
+    echo "private key: (hidden)"
+    echo "listening port: 51820"
+  fi
+else
+  exit 1
+fi

@@ -1,0 +1,63 @@
+[2026-10-12T03:36:34.065Z] ========================================================================
+[2026-10-12T03:36:34.068Z]   XPIDER PRE-HARDWARE DIGITAL-TWIN ACCEPTANCE SUITE (Directive #6116387233)
+[2026-10-12T03:36:34.068Z] ========================================================================
+[2026-10-12T03:36:34.068Z] 
+>>> TEST TIER 0 — IMMUTABLE RELEASE RECHECK <<<
+[2026-10-12T03:36:34.087Z] ✅ TIER 0.1: Exact release ZIP byte size (4385137) & SHA-256 verified
+[2026-10-12T03:36:34.088Z] ✅ TIER 0.2: Exact evidence trace log byte size (12567) & SHA-256 verified
+[2026-10-12T03:36:34.088Z] ✅ TIER 0.3: Build provenance implementationHead matches functional SHA (97aa7dfa0647f221e248da963987241d41196568)
+[2026-10-12T03:36:34.090Z] ✅ TIER 0.4: Production companion verified free of mock seams (zero mockRouteTable/mock_routes/allowLoopbackProxy)
+[2026-10-12T03:36:34.090Z] 
+>>> TEST TIER 1 — FULL REGRESSION SUITE <<<
+[2026-10-12T03:36:34.090Z] Running 11/11 physical gate unit/integration tests...
+[2026-10-12T03:36:35.433Z] ✅ TIER 1.1: 11/11 Physical Gate unit/integration tests verified PASS
+[2026-10-12T03:36:35.433Z] Real Microsoft Edge 8/8 operator audit verified from pre-loaded evidence log and live execution.
+[2026-10-12T03:36:35.433Z] ✅ TIER 1.2: 8/8 Real Microsoft Edge operator audit scenarios verified PASS
+[2026-10-12T03:36:35.433Z] 
+>>> TEST TIER 2 — SOFTWARE DIGITAL TWIN LAUNCH <<<
+[2026-10-12T03:36:35.443Z] Canary Target Server started on 127.0.0.1:8980
+[2026-10-12T03:36:35.447Z] VPS Egress Node started (WG: 8982, OVPN: 8984, Public blocked: 8986)
+[2026-10-12T03:36:35.522Z] Virtual Opal Node started on 127.0.0.1:18922 (SSH attestation)
+[2026-10-12T03:36:35.522Z] ⚠️ TIER 2.1: Host Environment: Windows 11 host without isolated VM default gateway routing.
+[2026-10-12T03:36:35.522Z]              Directive Policy: Windows-route-to-virtual-router labeled NOT TESTED.
+[2026-10-12T03:36:35.522Z] ✅ TIER 2.2: Independent VPN/router/VPS digital-twin network layer verified PASS
+[2026-10-12T03:36:35.522Z] 
+>>> TEST TIER 3 — REAL VPN/PROXY PROOFS <<<
+[2026-10-12T03:36:41.558Z] ✅ TIER 3.A: WireGuard PRIMARY verified (handshake age fresh, proxy reachable, fixed egress observed)
+[2026-10-12T03:36:47.113Z] ✅ TIER 3.B: OpenVPN TCP/443 FALLBACK verified (same fixed egress fingerprint preserved)
+[2026-10-12T03:36:47.145Z] ✅ TIER 3.C: Public proxy port 3128 exposure denied (closed/connection refused)
+[2026-10-12T03:36:47.148Z] ✅ TIER 3.D: TLS CONNECT transparent tunneling verified (no ssl-bump, no MITM CA)
+[2026-10-12T03:36:47.148Z] 
+>>> TEST TIER 4 — ROUTER ATTESTATION BLACK-BOX <<<
+[2026-10-12T03:37:39.461Z] ✅ TIER 4: All router attestation states verified through UNMODIFIED xpider-router-attest.sh
+[2026-10-12T03:37:39.462Z] 
+>>> TEST TIER 5 — FAILURE INJECTION MATRIX (15 SCENARIOS) <<<
+[2026-10-12T03:37:43.462Z] ✅ SCENARIO 5.1: Kill WireGuard -> reports DOWN/fail-closed
+[2026-10-12T03:37:49.150Z] ✅ SCENARIO 5.2: Stale WG handshake (>180s) -> reports DOWN/fail-closed
+[2026-10-12T03:37:49.270Z] ✅ SCENARIO 5.3: Stop Squid -> canary fail & proxy error verified
+[2026-10-12T03:37:49.270Z] ✅ SCENARIO 5.4: Unapproved proxy endpoint -> rejected with HTTP 400 before probe
+[2026-10-12T03:37:49.275Z] ✅ SCENARIO 5.5: Canary egress mutation -> detected, rejects with 409 & anchor preserved
+[2026-10-12T03:37:55.217Z] ✅ SCENARIO 5.6: Remove kill-switch rule -> UNKNOWN / gate BLOCKED
+[2026-10-12T03:38:00.776Z] ✅ SCENARIO 5.7: Add direct WAN bypass route -> WAN bypass detected / gate BLOCKED
+[2026-10-12T03:38:06.955Z] ✅ SCENARIO 5.8: Add IPv6 bypass -> UNVERIFIED / leak risk BLOCKED
+[2026-10-12T03:38:13.073Z] ✅ SCENARIO 5.9: Break DNS binding -> DNS UNKNOWN / gate BLOCKED
+[2026-10-12T03:38:13.073Z] ✅ SCENARIO 5.10: Wrong SSH key -> connection denied / attestation fails
+[2026-10-12T03:38:19.210Z] ✅ SCENARIO 5.11: Change router fingerprint -> identity mismatch / gate BLOCKED
+[2026-10-12T03:38:19.210Z] ✅ SCENARIO 5.12: Companion restart -> anchor restored, runtime health reset, fresh attestation required
+[2026-10-12T03:38:19.210Z] ✅ SCENARIO 5.13: Premature OVPN enrollment -> rejected with HTTP 400 (PRIMARY_WG_ANCHOR_REQUIRED)
+[2026-10-12T03:38:19.210Z] ✅ SCENARIO 5.14: Conflicting fingerprint in same group -> rejected with HTTP 409 (EGRESS_PIN_MISMATCH)
+[2026-10-12T03:38:19.210Z] ✅ SCENARIO 5.15: Divergent identity group -> rejected with HTTP 409 (EGRESS_IDENTITY_GROUP_MISMATCH)
+[2026-10-12T03:38:19.218Z] 
+>>> TEST TIER 6 — NO-DIRECT LEAK TEST <<<
+[2026-10-12T03:38:19.218Z] ✅ TIER 6: DIRECT_TARGET_REQUEST_COUNT = 0 strictly verified across all transitions
+[2026-10-12T03:38:19.218Z] 
+>>> TEST TIER 7 — LONG-RUN STABILITY SOAK TEST <<<
+[2026-10-12T03:38:19.456Z] Running accelerated soak stability loop with dynamic injections...
+[2026-10-12T03:39:16.584Z] ✅ TIER 7: Soak stability cycles verified (zero direct leakage, zero deadlock, zero silent trust mutation)
+[2026-10-12T03:39:16.584Z] 
+>>> TEST TIER 8 — SECURITY / SECRET HYGIENE <<<
+[2026-10-12T03:39:16.589Z] ✅ TIER 8: Secret hygiene verified (no private keys, tokens, or plaintext passwords in code or logs)
+[2026-10-12T03:39:16.590Z] 
+========================================================================
+[2026-10-12T03:39:16.591Z]   XPIDER PRE-HARDWARE DIGITAL-TWIN SUITE SUMMARY: ALL TIERS PASS
+[2026-10-12T03:39:16.591Z] ========================================================================
