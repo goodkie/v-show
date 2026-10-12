@@ -7,7 +7,7 @@
 - Authority: goodkie/v-show Issue #6 (Audit #6133222760 / Receipt #6133137502)
 - Branch: upgrade/phase-0-1
 - State Rev: 2026-10-12.06
-- Last Receipt: #6134237158 (Real Network Software Acceptance); Owner Test Kit Receipt Pending Post
+- Last Receipt: #6134627780 (`https://github.com/goodkie/v-show/issues/6#issuecomment-6134627780`)
 
 ## Current Gate
 - Formal Gate: R6.9G.10.3.7.1.4.1 FINAL ENROLLMENT POLICY + OWNER RESET CONTROL.
