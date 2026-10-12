@@ -236,7 +236,7 @@ sed -e 's|/tmp/resolv.conf.auto|${this.resolvFile.replace(/\\/g, '/')}|g' \
   }
 
   setAuthorizedKey(pubKeyStr) {
-    this.authorizedPubKey = pubKeyStr.trim();
+    this.authorizedPubKey = pubKeyStr ? pubKeyStr.trim() : null;
   }
 
   setRejectAuth(reject) {

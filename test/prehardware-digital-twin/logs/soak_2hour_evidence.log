@@ -1,0 +1,124 @@
+[2026-10-12T19:39:44.736Z] ========================================================================
+[2026-10-12T19:39:44.748Z]   XPIDER TIER 7 REAL 2-HOUR SOAK TEST (TARGET: >= 7200 SECONDS)
+[2026-10-12T19:39:44.755Z] ========================================================================
+[2026-10-12T19:39:44.772Z] Canary Target Server running on 127.0.0.1:8980
+[2026-10-12T19:39:44.783Z] VPS Egress Node running (WG: 8982, OVPN: 8984)
+[2026-10-12T19:39:44.860Z] Virtual Opal Node running on 127.0.0.1:18922
+[2026-10-12T19:39:50.522Z] [SOAK_HEARTBEAT] cycle=1/120 elapsed=0s/7200s memRss=60.5MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T19:40:56.061Z] [SOAK_HEARTBEAT] cycle=2/120 elapsed=65s/7200s memRss=59.5MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T19:42:01.564Z] [SOAK_HEARTBEAT] cycle=3/120 elapsed=131s/7200s memRss=59.9MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T19:43:06.959Z] [SOAK_HEARTBEAT] cycle=4/120 elapsed=196s/7200s memRss=60.1MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T19:44:12.582Z] [SOAK_HEARTBEAT] cycle=5/120 elapsed=262s/7200s memRss=60.4MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T19:45:18.173Z] [SOAK_HEARTBEAT] cycle=6/120 elapsed=327s/7200s memRss=60.9MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T19:46:23.978Z] [SOAK_HEARTBEAT] cycle=7/120 elapsed=393s/7200s memRss=61.0MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T19:47:29.448Z] [SOAK_HEARTBEAT] cycle=8/120 elapsed=459s/7200s memRss=61.2MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T19:48:34.939Z] [SOAK_HEARTBEAT] cycle=9/120 elapsed=524s/7200s memRss=61.6MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T19:49:40.326Z] [SOAK_HEARTBEAT] cycle=10/120 elapsed=590s/7200s memRss=61.7MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T19:50:45.840Z] [SOAK_HEARTBEAT] cycle=11/120 elapsed=655s/7200s memRss=61.8MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T19:51:51.408Z] [SOAK_HEARTBEAT] cycle=12/120 elapsed=720s/7200s memRss=61.8MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T19:52:57.072Z] [SOAK_HEARTBEAT] cycle=13/120 elapsed=786s/7200s memRss=61.8MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T19:54:02.512Z] [SOAK_HEARTBEAT] cycle=14/120 elapsed=852s/7200s memRss=61.8MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T19:55:09.968Z] [SOAK_HEARTBEAT] cycle=15/120 elapsed=917s/7200s memRss=61.0MB fault=INJECT_WG_DROP wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T19:56:15.539Z] [SOAK_HEARTBEAT] cycle=16/120 elapsed=985s/7200s memRss=61.1MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T19:57:21.385Z] [SOAK_HEARTBEAT] cycle=17/120 elapsed=1050s/7200s memRss=61.1MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T19:58:27.318Z] [SOAK_HEARTBEAT] cycle=18/120 elapsed=1116s/7200s memRss=61.1MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T19:59:32.861Z] [SOAK_HEARTBEAT] cycle=19/120 elapsed=1182s/7200s memRss=61.2MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T20:00:38.454Z] [SOAK_HEARTBEAT] cycle=20/120 elapsed=1248s/7200s memRss=61.2MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T20:01:44.503Z] [SOAK_HEARTBEAT] cycle=21/120 elapsed=1313s/7200s memRss=61.2MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T20:02:51.349Z] [SOAK_HEARTBEAT] cycle=22/120 elapsed=1379s/7200s memRss=61.3MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T20:03:57.598Z] [SOAK_HEARTBEAT] cycle=23/120 elapsed=1446s/7200s memRss=61.3MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T20:05:04.009Z] [SOAK_HEARTBEAT] cycle=24/120 elapsed=1512s/7200s memRss=61.3MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T20:06:10.256Z] [SOAK_HEARTBEAT] cycle=25/120 elapsed=1579s/7200s memRss=61.3MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T20:07:16.488Z] [SOAK_HEARTBEAT] cycle=26/120 elapsed=1645s/7200s memRss=61.3MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T20:08:22.820Z] [SOAK_HEARTBEAT] cycle=27/120 elapsed=1711s/7200s memRss=61.2MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T20:09:29.567Z] [SOAK_HEARTBEAT] cycle=28/120 elapsed=1777s/7200s memRss=61.2MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T20:10:35.948Z] [SOAK_HEARTBEAT] cycle=29/120 elapsed=1844s/7200s memRss=61.2MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T20:11:44.483Z] [SOAK_HEARTBEAT] cycle=30/120 elapsed=1911s/7200s memRss=61.2MB fault=INJECT_OVPN_FALLBACK wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T20:12:50.796Z] [SOAK_HEARTBEAT] cycle=31/120 elapsed=1979s/7200s memRss=61.2MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T20:13:57.015Z] [SOAK_HEARTBEAT] cycle=32/120 elapsed=2045s/7200s memRss=61.2MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T20:15:03.520Z] [SOAK_HEARTBEAT] cycle=33/120 elapsed=2112s/7200s memRss=61.2MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T20:16:10.171Z] [SOAK_HEARTBEAT] cycle=34/120 elapsed=2178s/7200s memRss=61.3MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T20:17:17.368Z] [SOAK_HEARTBEAT] cycle=35/120 elapsed=2245s/7200s memRss=61.3MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T20:18:23.878Z] [SOAK_HEARTBEAT] cycle=36/120 elapsed=2312s/7200s memRss=61.3MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T20:19:30.406Z] [SOAK_HEARTBEAT] cycle=37/120 elapsed=2379s/7200s memRss=61.3MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T20:20:36.622Z] [SOAK_HEARTBEAT] cycle=38/120 elapsed=2445s/7200s memRss=60.7MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T20:21:43.521Z] [SOAK_HEARTBEAT] cycle=39/120 elapsed=2511s/7200s memRss=60.8MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T20:22:49.995Z] [SOAK_HEARTBEAT] cycle=40/120 elapsed=2578s/7200s memRss=60.9MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T20:23:56.303Z] [SOAK_HEARTBEAT] cycle=41/120 elapsed=2645s/7200s memRss=60.9MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T20:25:02.414Z] [SOAK_HEARTBEAT] cycle=42/120 elapsed=2711s/7200s memRss=60.9MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T20:26:09.072Z] [SOAK_HEARTBEAT] cycle=43/120 elapsed=2777s/7200s memRss=60.9MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T20:27:15.992Z] [SOAK_HEARTBEAT] cycle=44/120 elapsed=2844s/7200s memRss=60.9MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T20:28:22.903Z] [SOAK_HEARTBEAT] cycle=45/120 elapsed=2911s/7200s memRss=60.9MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T20:29:28.856Z] [SOAK_HEARTBEAT] cycle=46/120 elapsed=2978s/7200s memRss=60.9MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T20:30:34.445Z] [SOAK_HEARTBEAT] cycle=47/120 elapsed=3044s/7200s memRss=60.8MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T20:31:39.837Z] [SOAK_HEARTBEAT] cycle=48/120 elapsed=3109s/7200s memRss=60.9MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T20:32:45.426Z] [SOAK_HEARTBEAT] cycle=49/120 elapsed=3174s/7200s memRss=60.9MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T20:33:51.213Z] [SOAK_HEARTBEAT] cycle=50/120 elapsed=3240s/7200s memRss=60.9MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T20:34:56.611Z] [SOAK_HEARTBEAT] cycle=51/120 elapsed=3306s/7200s memRss=60.9MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T20:36:02.301Z] [SOAK_HEARTBEAT] cycle=52/120 elapsed=3371s/7200s memRss=60.9MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T20:37:07.721Z] [SOAK_HEARTBEAT] cycle=53/120 elapsed=3437s/7200s memRss=60.9MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T20:38:13.236Z] [SOAK_HEARTBEAT] cycle=54/120 elapsed=3502s/7200s memRss=60.9MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T20:39:20.554Z] [SOAK_HEARTBEAT] cycle=55/120 elapsed=3568s/7200s memRss=60.8MB fault=INJECT_WG_DROP_2 wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T20:40:26.041Z] [SOAK_HEARTBEAT] cycle=56/120 elapsed=3635s/7200s memRss=60.9MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T20:41:31.466Z] [SOAK_HEARTBEAT] cycle=57/120 elapsed=3701s/7200s memRss=60.9MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T20:42:37.014Z] [SOAK_HEARTBEAT] cycle=58/120 elapsed=3766s/7200s memRss=60.9MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T20:43:42.603Z] [SOAK_HEARTBEAT] cycle=59/120 elapsed=3832s/7200s memRss=60.9MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T20:44:48.051Z] [SOAK_HEARTBEAT] cycle=60/120 elapsed=3897s/7200s memRss=60.9MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T20:45:53.422Z] [SOAK_HEARTBEAT] cycle=61/120 elapsed=3963s/7200s memRss=60.9MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T20:46:59.013Z] [SOAK_HEARTBEAT] cycle=62/120 elapsed=4028s/7200s memRss=60.9MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T20:48:04.592Z] [SOAK_HEARTBEAT] cycle=63/120 elapsed=4094s/7200s memRss=60.9MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T20:49:10.050Z] [SOAK_HEARTBEAT] cycle=64/120 elapsed=4159s/7200s memRss=60.9MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T20:50:15.623Z] [SOAK_HEARTBEAT] cycle=65/120 elapsed=4225s/7200s memRss=60.9MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T20:51:21.232Z] [SOAK_HEARTBEAT] cycle=66/120 elapsed=4290s/7200s memRss=60.9MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T20:52:26.861Z] [SOAK_HEARTBEAT] cycle=67/120 elapsed=4356s/7200s memRss=60.9MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T20:53:32.456Z] [SOAK_HEARTBEAT] cycle=68/120 elapsed=4422s/7200s memRss=60.9MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T20:54:37.905Z] [SOAK_HEARTBEAT] cycle=69/120 elapsed=4487s/7200s memRss=60.9MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T20:55:43.354Z] [SOAK_HEARTBEAT] cycle=70/120 elapsed=4553s/7200s memRss=60.9MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T20:56:48.550Z] [SOAK_HEARTBEAT] cycle=71/120 elapsed=4618s/7200s memRss=60.9MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T20:57:54.234Z] [SOAK_HEARTBEAT] cycle=72/120 elapsed=4683s/7200s memRss=60.9MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T20:58:59.620Z] [SOAK_HEARTBEAT] cycle=73/120 elapsed=4749s/7200s memRss=61.0MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T21:00:05.183Z] [SOAK_HEARTBEAT] cycle=74/120 elapsed=4814s/7200s memRss=61.0MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T21:01:10.678Z] [SOAK_HEARTBEAT] cycle=75/120 elapsed=4880s/7200s memRss=61.0MB fault=INJECT_SQUID_RESTART wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T21:02:16.142Z] [SOAK_HEARTBEAT] cycle=76/120 elapsed=4945s/7200s memRss=61.0MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T21:03:21.975Z] [SOAK_HEARTBEAT] cycle=77/120 elapsed=5011s/7200s memRss=61.0MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T21:04:27.407Z] [SOAK_HEARTBEAT] cycle=78/120 elapsed=5077s/7200s memRss=61.1MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T21:05:32.853Z] [SOAK_HEARTBEAT] cycle=79/120 elapsed=5142s/7200s memRss=61.1MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T21:06:38.459Z] [SOAK_HEARTBEAT] cycle=80/120 elapsed=5207s/7200s memRss=61.1MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T21:07:44.010Z] [SOAK_HEARTBEAT] cycle=81/120 elapsed=5273s/7200s memRss=61.1MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T21:08:49.431Z] [SOAK_HEARTBEAT] cycle=82/120 elapsed=5339s/7200s memRss=61.0MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T21:09:54.813Z] [SOAK_HEARTBEAT] cycle=83/120 elapsed=5404s/7200s memRss=61.1MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T21:11:00.262Z] [SOAK_HEARTBEAT] cycle=84/120 elapsed=5469s/7200s memRss=61.1MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T21:12:05.804Z] [SOAK_HEARTBEAT] cycle=85/120 elapsed=5535s/7200s memRss=61.1MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T21:13:11.111Z] [SOAK_HEARTBEAT] cycle=86/120 elapsed=5600s/7200s memRss=61.1MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T21:14:16.692Z] [SOAK_HEARTBEAT] cycle=87/120 elapsed=5666s/7200s memRss=61.3MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T21:15:22.219Z] [SOAK_HEARTBEAT] cycle=88/120 elapsed=5731s/7200s memRss=61.3MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T21:16:27.652Z] [SOAK_HEARTBEAT] cycle=89/120 elapsed=5797s/7200s memRss=61.3MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T21:17:35.204Z] [SOAK_HEARTBEAT] cycle=90/120 elapsed=5862s/7200s memRss=61.3MB fault=INJECT_WAN_BYPASS_ATTEMPT wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T21:18:40.577Z] [SOAK_HEARTBEAT] cycle=91/120 elapsed=5930s/7200s memRss=61.3MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T21:19:46.289Z] [SOAK_HEARTBEAT] cycle=92/120 elapsed=5995s/7200s memRss=61.3MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T21:20:51.842Z] [SOAK_HEARTBEAT] cycle=93/120 elapsed=6061s/7200s memRss=61.3MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T21:21:57.422Z] [SOAK_HEARTBEAT] cycle=94/120 elapsed=6126s/7200s memRss=61.3MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T21:23:02.950Z] [SOAK_HEARTBEAT] cycle=95/120 elapsed=6192s/7200s memRss=61.3MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T21:24:08.537Z] [SOAK_HEARTBEAT] cycle=96/120 elapsed=6258s/7200s memRss=61.2MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T21:25:13.964Z] [SOAK_HEARTBEAT] cycle=97/120 elapsed=6323s/7200s memRss=61.3MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T21:26:19.735Z] [SOAK_HEARTBEAT] cycle=98/120 elapsed=6389s/7200s memRss=61.3MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T21:27:25.488Z] [SOAK_HEARTBEAT] cycle=99/120 elapsed=6454s/7200s memRss=61.3MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T21:28:31.048Z] [SOAK_HEARTBEAT] cycle=100/120 elapsed=6520s/7200s memRss=61.3MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T21:29:36.968Z] [SOAK_HEARTBEAT] cycle=101/120 elapsed=6586s/7200s memRss=61.3MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T21:30:43.410Z] [SOAK_HEARTBEAT] cycle=102/120 elapsed=6652s/7200s memRss=61.3MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T21:31:49.807Z] [SOAK_HEARTBEAT] cycle=103/120 elapsed=6718s/7200s memRss=61.4MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T21:32:56.177Z] [SOAK_HEARTBEAT] cycle=104/120 elapsed=6784s/7200s memRss=61.4MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T21:34:03.677Z] [SOAK_HEARTBEAT] cycle=105/120 elapsed=6851s/7200s memRss=61.4MB fault=INJECT_WG_DROP_3 wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T21:35:09.253Z] [SOAK_HEARTBEAT] cycle=106/120 elapsed=6918s/7200s memRss=61.2MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T21:36:14.948Z] [SOAK_HEARTBEAT] cycle=107/120 elapsed=6984s/7200s memRss=61.2MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T21:37:20.336Z] [SOAK_HEARTBEAT] cycle=108/120 elapsed=7050s/7200s memRss=61.2MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T21:38:25.821Z] [SOAK_HEARTBEAT] cycle=109/120 elapsed=7115s/7200s memRss=61.2MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T21:39:31.152Z] [SOAK_HEARTBEAT] cycle=110/120 elapsed=7180s/7200s memRss=61.3MB fault=HEALTHY wgUp=true canaryOk=true directLeaks=0
+[2026-10-12T21:40:31.159Z] 
+🎉 TARGET REACHED! Elapsed: 7246s >= 7200s. Total cycles: 111
+[2026-10-12T21:40:31.169Z] ========================================================================
+[2026-10-12T21:40:31.177Z]   SOAK TEST COMPLETED SUCCESSFULLY IN 7246 SECONDS
+[2026-10-12T21:40:31.183Z]   - Wall-clock >= 7200s verified: true
+[2026-10-12T21:40:31.190Z]   - Direct target leak count: 0
+[2026-10-12T21:40:31.197Z]   - Evidence log: E:\vivpr\ai\extension-form-sender\test\prehardware-digital-twin\logs\soak_2hour_evidence.log
+[2026-10-12T21:40:31.204Z] ========================================================================
