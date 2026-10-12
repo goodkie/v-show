@@ -1,66 +1,68 @@
-[2026-10-12T19:37:44.857Z] ========================================================================
-[2026-10-12T19:37:44.859Z]   XPIDER PRE-HARDWARE REAL SOFTWARE ACCEPTANCE SUITE (Audit #6129583212)
-[2026-10-12T19:37:44.859Z] ========================================================================
-[2026-10-12T19:37:44.859Z] Host Environment: Windows 11 (Non-elevated, No WSL, No Docker, No Kernel WG/Tun/Squid)
-[2026-10-12T19:37:44.859Z] 
+[2026-10-12T22:52:53.785Z] ========================================================================
+[2026-10-12T22:52:53.788Z]   XPIDER PRE-HARDWARE REAL SOFTWARE ACCEPTANCE SUITE (Audit #6129583212)
+[2026-10-12T22:52:53.788Z] ========================================================================
+[2026-10-12T22:52:53.788Z] Host Environment: Windows 11 (Non-elevated, No WSL, No Docker, No Kernel WG/Tun/Squid)
+[2026-10-12T22:52:53.788Z] 
 >>> TEST TIER 0 — IMMUTABLE RELEASE RECHECK <<<
-[2026-10-12T19:37:44.874Z] ✅ TIER 0.1: Exact release ZIP byte size (4385137) & SHA-256 verified
-[2026-10-12T19:37:44.876Z] ✅ TIER 0.2: Build provenance implementationHead matches functional SHA (97aa7dfa0647f221e248da963987241d41196568)
-[2026-10-12T19:37:44.876Z] ✅ TIER 0.3: Production companion verified free of mock seams (zero mockRouteTable/mock_routes/allowLoopbackProxy)
-[2026-10-12T19:37:44.877Z] 
+[2026-10-12T22:52:53.802Z] ✅ TIER 0.1: Exact release ZIP byte size (4385137) & SHA-256 verified
+[2026-10-12T22:52:53.802Z] ✅ TIER 0.2: Build provenance implementationHead matches functional SHA (97aa7dfa0647f221e248da963987241d41196568)
+[2026-10-12T22:52:53.803Z] ✅ TIER 0.3: Production companion verified free of mock seams (zero mockRouteTable/mock_routes/allowLoopbackProxy)
+[2026-10-12T22:52:53.803Z] 
 >>> TEST TIER 1 — FULL REGRESSION SUITE (FRESH EXECUTION) <<<
-[2026-10-12T19:37:44.877Z] Spawning 11/11 Physical Gate unit tests fresh...
-[2026-10-12T19:37:46.162Z] ✅ TIER 1.1: 11/11 Physical Gate unit/integration tests freshly verified PASS
-[2026-10-12T19:37:46.162Z] Spawning Real Microsoft Edge 8/8 operator audit freshly in real browser...
-[2026-10-12T19:38:33.691Z] ✅ TIER 1.2: 8/8 Real Microsoft Edge operator audit freshly verified PASS
-[2026-10-12T19:38:33.691Z] 
+[2026-10-12T22:52:53.803Z] Spawning 11/11 Physical Gate unit tests fresh...
+[2026-10-12T22:52:55.165Z] ✅ TIER 1.1: 11/11 Physical Gate unit/integration tests freshly verified PASS
+[2026-10-12T22:52:55.165Z] Spawning Real Microsoft Edge 8/8 operator audit freshly in real browser...
+[2026-10-12T22:53:43.909Z] ✅ TIER 1.2: 8/8 Real Microsoft Edge operator audit freshly verified PASS
+[2026-10-12T22:53:43.909Z] 
 >>> TEST TIER 2 — DIGITAL TWIN & NETWORK ENVIRONMENT CLASSIFICATION <<<
-[2026-10-12T19:38:33.692Z] ⚠️ Host Environment: Windows 11 host without isolated Linux VM or kernel namespaces.
-[2026-10-12T19:38:33.692Z]    - Windows-route-to-virtual-router: NOT TESTED (Honest classification per directive)
-[2026-10-12T19:38:33.692Z]    - Digital-twin node logic & IPC: SIMULATION PASS
-[2026-10-12T19:38:33.692Z] 
+[2026-10-12T22:53:43.909Z] ⚠️ Host Environment: Windows 11 host without isolated Linux VM or kernel namespaces.
+[2026-10-12T22:53:43.909Z]    - Windows-route-to-virtual-router: NOT TESTED (Honest classification per directive)
+[2026-10-12T22:53:43.909Z]    - Digital-twin node logic & IPC: SIMULATION PASS
+[2026-10-12T22:53:43.909Z] 
 >>> TEST TIER 3 — REAL VPN/PROXY PROOFS CLASSIFICATION <<<
-[2026-10-12T19:38:33.692Z] Classification per Blocker 1-5 requirements:
-[2026-10-12T19:38:33.692Z]    - REAL Linux kernel WireGuard tunnel: NOT TESTED
-[2026-10-12T19:38:33.692Z]    - REAL Linux kernel OpenVPN TUN interface: NOT TESTED
-[2026-10-12T19:38:33.692Z]    - REAL Linux Squid daemon binary: NOT TESTED
-[2026-10-12T19:38:33.692Z]    - REAL Linux nftables/iptables kernel packet filter: NOT TESTED
-[2026-10-12T19:38:33.692Z]    - WireGuard / OpenVPN attestation script parsing: SIMULATION PASS
-[2026-10-12T19:38:33.692Z]    - Transparent HTTP CONNECT proxy logic: SIMULATION PASS
-[2026-10-12T19:38:33.692Z] 
+[2026-10-12T22:53:43.909Z] Classification per Blocker 1-5 requirements:
+[2026-10-12T22:53:43.909Z]    - REAL Linux kernel WireGuard tunnel: NOT TESTED
+[2026-10-12T22:53:43.909Z]    - REAL Linux kernel OpenVPN TUN interface: NOT TESTED
+[2026-10-12T22:53:43.909Z]    - REAL Linux Squid daemon binary: NOT TESTED
+[2026-10-12T22:53:43.909Z]    - REAL Linux nftables/iptables kernel packet filter: NOT TESTED
+[2026-10-12T22:53:43.909Z]    - WireGuard / OpenVPN attestation script parsing: SIMULATION PASS
+[2026-10-12T22:53:43.909Z]    - Transparent HTTP CONNECT proxy logic: SIMULATION PASS
+[2026-10-12T22:53:43.909Z] 
 >>> TEST TIER 4 — ROUTER ATTESTATION BLACK-BOX CLASSIFICATION <<<
-[2026-10-12T19:38:33.692Z]    - Attestation against physical OpenWrt kernel: NOT TESTED
-[2026-10-12T19:38:33.692Z]    - Unmodified xpider-router-attest.sh parsing against synthetic shell: SIMULATION PASS
-[2026-10-12T19:38:33.692Z] 
+[2026-10-12T22:53:43.909Z]    - Attestation against physical OpenWrt kernel: NOT TESTED
+[2026-10-12T22:53:43.909Z]    - Unmodified xpider-router-attest.sh parsing against synthetic shell: SIMULATION PASS
+[2026-10-12T22:53:43.909Z] 
 >>> TEST TIER 5 — ACTUAL FAILURE INJECTION MATRIX (15/15 ACTUAL CALLS) <<<
-[2026-10-12T19:38:33.693Z] ========================================================================
-[2026-10-12T19:38:33.693Z]   TIER 5 — REAL FAILURE INJECTION MATRIX (15/15 ACTUAL HTTP & ATTEST CALLS)
-[2026-10-12T19:38:33.693Z] ========================================================================
-[2026-10-12T19:38:37.878Z] ✅ 5.1: Kill WireGuard -> attest reports DOWN (asserted)
-[2026-10-12T19:38:43.405Z] ✅ 5.2: Stale handshake (>180s) -> attest reports DOWN (asserted)
-[2026-10-12T19:38:43.618Z] ✅ 5.3: Stop Squid -> connection refused / proxy fail asserted
-[2026-10-12T19:38:43.628Z] ✅ 5.4: Unapproved proxy endpoint -> HTTP 400 UNAPPROVED_VPN_PROXY_ENDPOINT asserted
-[2026-10-12T19:38:43.633Z] ✅ 5.5: Canary egress mutation -> HTTP 409 EGRESS_PIN_MISMATCH & anchor preserved asserted
-[2026-10-12T19:38:49.561Z] ✅ 5.6: Remove kill-switch rule -> attest reports UNKNOWN asserted
-[2026-10-12T19:38:55.655Z] ✅ 5.7: Add direct WAN bypass route -> WAN bypass detected asserted
-[2026-10-12T19:39:02.077Z] ✅ 5.8: Add IPv6 bypass -> reports UNVERIFIED asserted
-[2026-10-12T19:39:08.654Z] ✅ 5.9: Break DNS binding -> reports UNKNOWN asserted
-[2026-10-12T19:39:08.706Z] ✅ 5.10: Wrong SSH key -> connection denied asserted
-[2026-10-12T19:39:14.620Z] ✅ 5.11: Changed router fingerprint -> mismatched key reported asserted
-[2026-10-12T19:39:14.714Z] ✅ 5.12: Companion restart -> anchor restored, ready=false until fresh attestation asserted
-[2026-10-12T19:39:14.736Z] ✅ 5.13: Premature OVPN enrollment -> HTTP 400 PRIMARY_WG_ANCHOR_REQUIRED asserted
-[2026-10-12T19:39:14.739Z] ✅ 5.14: Conflicting fingerprint in same group -> HTTP 409 EGRESS_PIN_MISMATCH asserted
-[2026-10-12T19:39:14.741Z] ✅ 5.15: Divergent identity group -> HTTP 409 EGRESS_IDENTITY_GROUP_MISMATCH asserted
-[2026-10-12T19:39:14.816Z] ========================================================================
-[2026-10-12T19:39:14.816Z]   TIER 5 RESULTS: 15/15 ACTUAL SCENARIOS EXECUTED & PASSED (100%)
-[2026-10-12T19:39:14.816Z] ========================================================================
-[2026-10-12T19:39:14.816Z] 
+[2026-10-12T22:53:43.910Z] ========================================================================
+[2026-10-12T22:53:43.910Z]   TIER 5 — REAL FAILURE INJECTION MATRIX (15/15 ACTUAL HTTP & ATTEST CALLS)
+[2026-10-12T22:53:43.910Z] ========================================================================
+[2026-10-12T22:53:48.074Z] ✅ 5.1: Kill WireGuard -> attest reports DOWN (asserted)
+[2026-10-12T22:53:53.597Z] ✅ 5.2: Stale handshake (>180s) -> attest reports DOWN (asserted)
+[2026-10-12T22:53:53.759Z] ✅ 5.3: Stop Squid -> connection refused / proxy fail asserted
+[2026-10-12T22:53:53.769Z] ✅ 5.4: Unapproved proxy endpoint -> HTTP 400 UNAPPROVED_VPN_PROXY_ENDPOINT asserted
+[2026-10-12T22:53:53.775Z] ✅ 5.5: Canary egress mutation -> HTTP 409 EGRESS_PIN_MISMATCH & anchor preserved asserted
+[2026-10-12T22:53:59.764Z] ✅ 5.6: Remove kill-switch rule -> attest reports UNKNOWN asserted
+[2026-10-12T22:54:05.781Z] ✅ 5.7: Add direct WAN bypass route -> WAN bypass detected asserted
+[2026-10-12T22:54:12.194Z] ✅ 5.8: Add IPv6 bypass -> reports UNVERIFIED asserted
+[2026-10-12T22:54:19.170Z] ✅ 5.9: Break DNS binding -> reports UNKNOWN asserted
+[2026-10-12T22:54:19.220Z] ✅ 5.10: Wrong SSH key -> connection denied asserted
+[2026-10-12T22:54:24.679Z] ✅ 5.11: Changed router fingerprint -> mismatched key reported asserted
+[2026-10-12T22:54:24.776Z] ✅ 5.12: Companion restart -> anchor restored, ready=false until fresh attestation asserted
+[2026-10-12T22:54:24.799Z] ✅ 5.13: Premature OVPN enrollment -> HTTP 400 PRIMARY_WG_ANCHOR_REQUIRED asserted
+[2026-10-12T22:54:24.803Z] ✅ 5.14: Conflicting fingerprint in same group -> HTTP 409 EGRESS_PIN_MISMATCH asserted
+[2026-10-12T22:54:24.804Z] ✅ 5.15: Divergent identity group -> HTTP 409 EGRESS_IDENTITY_GROUP_MISMATCH asserted
+[2026-10-12T22:54:24.876Z] ========================================================================
+[2026-10-12T22:54:24.876Z]   TIER 5 RESULTS: 15/15 ACTUAL SCENARIOS EXECUTED & PASSED (100%)
+[2026-10-12T22:54:24.876Z] ========================================================================
+[2026-10-12T22:54:24.876Z] 
 >>> TEST TIER 6 — NO-DIRECT LEAK TEST <<<
-[2026-10-12T19:39:14.816Z]    - Linux kernel packet capture / tcpdump NIC counter: NOT TESTED
-[2026-10-12T19:39:14.816Z]    - Application-layer relay fail-closed enforcement (502 / socket drop): PASS
-[2026-10-12T19:39:14.816Z] 
+[2026-10-12T22:54:24.876Z]    - Linux kernel packet capture / tcpdump NIC counter: NOT TESTED
+[2026-10-12T22:54:24.876Z]    - Application-layer relay fail-closed enforcement (502 / socket drop): PASS
+[2026-10-12T22:54:24.876Z] 
+>>> TEST TIER 7 — FULL 10/10 REQUIRED DISTURBANCE SET VERIFICATION <<<
+[2026-10-12T22:55:27.268Z] 
 >>> TEST TIER 8 — COMPREHENSIVE SECRET HYGIENE SCAN <<<
-[2026-10-12T19:39:19.727Z] 
+[2026-10-12T22:55:32.445Z] 
 ========================================================================
-[2026-10-12T19:39:19.727Z]   PRE-HARDWARE REAL SOFTWARE ACCEPTANCE SUITE MATRIX SUMMARY
-[2026-10-12T19:39:19.727Z] ========================================================================
+[2026-10-12T22:55:32.445Z]   PRE-HARDWARE REAL SOFTWARE ACCEPTANCE SUITE MATRIX SUMMARY
+[2026-10-12T22:55:32.445Z] ========================================================================

@@ -6,7 +6,7 @@ PROJECT_NAME: XPIDER AutoForm Sender Pro
 WORKSPACE_ROOT: E:\vivpr\ai\extension-form-sender
 AUTHORITY_SOURCE: goodkie/v-show Issue #6
 ACTIVE_BRANCH: upgrade/phase-0-1
-STATE_REV: 2026-10-12.04
+STATE_REV: 2026-10-12.05
 AUTHORITY_CURSOR: 6133222760
 LAST_ACCEPTED_GATE: R6.9G.10.3.7.1.4.1 ENGINEERING PASS PRESERVED (#6116362094); PROVISIONAL PASS / HOLD (#6133222760)
 FUNCTIONAL_SHA: 97aa7dfa0647f221e248da963987241d41196568
@@ -16,10 +16,10 @@ SOLVER_CORE_SHA: 01b3d96048ea933403e4599854dcdca28027e7f676aa5077eb6c5eb0582ac1e
 ROLLBACK_ANCHOR: dc0740a0c69e2f7fa96b6989841acf0831b3619e
 PREVIOUS_FUNCTIONAL_RESTORE_POINT: c4a97e39509e5e791620a42e676782a82259f472
 HISTORICAL_LINEAGE: b8d1fab8190bb991c69d67c44a3ab1c1a5b766dd -> 273bb0ca1ba64b7fe3a41091ce56c8667e38dd8d -> 5b56c5388a544baa4f61136b89b2c918649714f4 -> a63590f0c50b873de444f5bf8cfe6e45163ba7b4 -> b970eb5e695020e91ee9f376930e3f6233013cff -> 6aeb81e5fa79e83b5b2a49dc8c818416467c3bac -> dc314ebcd76e86ef7ceb006ac6a127fa76f9b8c9 -> ef26bf19e54529df8ab6a5148c0baa622433e217 -> 65c3fd81087216b71e825fd6641c2404016b9e61 -> 5e725a1231a90cf63f6ae325e7523f2db611d836 -> 10107beedb3056aa1461e72d2aba09eb7d3cd395 -> a1a1ddc73e59a935cebbef590ba183878b1ee011 -> 32e384d1f7ac0292308011f60bd6c1ef2bb86654 -> 67bbbd7dd34a7da840684ebc6337deda6a0e92b9 -> 8fae8d055a1d7e1348a1d009c99d390505a7404e -> 63cfe936361a70df2fe27f2ce860c5bb023eccff -> a07facde75c03372480c3bc05754e9a7e30cefb2 -> 47ee3ba29f055f86a889bac11ecad82db1558725 -> 5fad5c3f980fce303b2e7d8ecc4232fb4d21e91b -> 68085f5f72ab3070e4903648aa2e7490b94b43c9 -> b3ddf3330f43a2a8a54c06069d86c7f19fdc2809 -> d9701fcf8121948dd163f1e56110e5f2a9f917c3 -> 9e5f7ca8365abb3930d30994cb64994a370fcf7c -> af8840866da098cb7fd1b45de724b41f128b794a -> 24d689f6b97ea4a26b59079ecce2c023879a7731 -> 2e049a7b529c47523d6cd9c1cea79d1d92e15d1c -> c4a97e39509e5e791620a42e676782a82259f472 -> 97aa7dfa0647f221e248da963987241d41196568
-NEXT_ACTION: Address Blockers B (full disturbance soak set), C (commit fresh edge trace), D (logs secret scan), and A (Linux test lab setup for real network acceptance).
-BLOCKERS: Blocker A (Real network tiers on Linux CI/lab), Blocker B (Full disturbance set in soak), Blocker C (Trace commit), Blocker D (Secret scan logs).
-OWNER_ACTION: NONE (HOLD - No owner action required; autonomous CI/software lab execution). Bulk on HOLD.
-EVIDENCE_REF: test/prehardware-digital-twin/logs/soak_2hour_evidence.log (16926 bytes, SHA256: 88c9173887cb5649ebb073cd596204cb8d4e5b75ee581a731e64d487b043b385)
+NEXT_ACTION: Post Pre-Hardware Real Software Acceptance Receipt addressing Blockers B (10-disturbance set verified), C (trace committed), D (222-file log secret scan passed), and A (platform diagnostics on Windows host / OAuth workflow scope limits).
+BLOCKERS: Blocker A (Linux kernel tiers reported honestly as NOT TESTED per directive rule due to host/OAuth platform limitations). Blockers B, C, D RESOLVED.
+OWNER_ACTION: NONE (HOLD - No owner action required). Bulk and Real Opal Smoke on HOLD.
+EVIDENCE_REF: test/prehardware-digital-twin/logs/prehardware_real_software_acceptance.log (5691 bytes, SHA256: 565efe8cab5f8eba62aa5f6b651a4badc06e43c9d4a13444fb3bfb9060c55563)
 RELEASE_ASSET_ZIP: XPIDER_R6.9G.10.3_OWNER_DIAGNOSTIC_TEST_ONLY.zip (4385137 bytes, SHA-256: c2ab9f049b9784e023db10811043c496548c2741d0b3424911bcf7d336b3a44d)
 RELEASE_URL: https://github.com/goodkie/v-show/releases/tag/v6.9g.10.3-audit.7.1.4.1
 
