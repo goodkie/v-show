@@ -188,7 +188,7 @@ async function runRealProductSelfRun() {
       await sleep(300);
     }
     assert(buildInfo, 'BuildProvenance must exist in SW');
-    assert.strictEqual(buildInfo.buildId, 'R6.9G.10.3.7.1.4.1-20261011-FINAL-ENROLLMENT-POLICY-OWNER-RESET');
+    assert.strictEqual(buildInfo.buildId, 'R6.9G.10.3.7.1.4.2-20261013-POPUP-COUNTER-SYNC-STOP-VERIFIED');
     assert.strictEqual(buildInfo.headShort, '97aa7dfa');
     log(`✅ Build Provenance Verified in Service Worker: ${buildInfo.buildId} (${buildInfo.headShort})`);
 
@@ -344,6 +344,73 @@ async function runRealProductSelfRun() {
     assert(parsedCountText && parsedCountText.includes('7 URLs found'), `Expected 7 URLs found, got ${parsedCountText}`);
     log(`✅ CSV Import Verified via UI: "${parsedCountText}"`);
     await captureScreenshot(popupWs, '04_csv_imported_ready.png');
+
+    // 7.1 SEPARATE LIFECYCLE PASS: REAL OWNER STOP CONTROL VERIFICATION (Per ChatGPT Audit #6137158310)
+    log('\n>>> [LIFECYCLE AUDIT: STOP CONTROL] Testing Owner Stop & Save / Reset Lifecycle <<<');
+    // Start campaign to initiate execution
+    await evalPopup('document.getElementById("start-btn")?.click()');
+    await sleep(1500);
+
+    // Wait until target 1 is active
+    let stopTargetEntered = false;
+    for (let s = 0; s < 10; s++) {
+      const isAct = await evalPopup('campaignActive');
+      if (isAct) { stopTargetEntered = true; break; }
+      await sleep(500);
+    }
+    assert(stopTargetEntered, 'Campaign must enter active state for Stop lifecycle test');
+
+    // Click the real Owner Stop control (#stop-save-btn)
+    await evalPopup('document.getElementById("stop-save-btn")?.click()');
+    await sleep(1000);
+    log('🛑 Clicked real Owner Stop control (#stop-save-btn)');
+    await captureScreenshot(popupWs, '04b_stop_control_executed.png');
+
+    // Verify campaign becomes inactive in popup
+    const isActAfterStop = await evalPopup('campaignActive');
+    assert.strictEqual(isActAfterStop, false, 'Campaign must become inactive after Stop');
+    const isStartBtnVisible = await evalPopup('!document.getElementById("start-btn")?.classList.contains("hidden")');
+    assert(isStartBtnVisible, 'Start button must be unhidden after Stop');
+    log('✅ Campaign Inactivity Verified: campaignActive=false, #start-btn unhidden');
+
+    // Verify owned target tab barrier clears
+    await sleep(2500);
+    const tabsResStop = await fetch(`http://127.0.0.1:${CDP_PORT}/json/list`);
+    const tabsListStop = await tabsResStop.json();
+    const ownedTabsStop = tabsListStop.filter(t => t.type === 'page' && t.url && t.url.includes('127.0.0.1:8088'));
+    assert.strictEqual(ownedTabsStop.length, 0, 'All owned target tabs must be closed after Stop');
+    log('✅ Target Tab Barrier Cleared: 0 owned target tabs remaining after Stop');
+
+    // Verify no later target starts after Stop
+    const completedSample1 = await evalPopup('completedCount');
+    await sleep(3000);
+    const completedSample2 = await evalPopup('completedCount');
+    assert.strictEqual(completedSample1, completedSample2, 'No later targets may start or complete after Stop');
+    log('✅ Invariant Verified: No subsequent targets started after Stop');
+
+    // Reset all list data cleanly
+    await evalPopup('(async () => { if (typeof dispatchResetAllListData === "function") await dispatchResetAllListData(); })()');
+    await sleep(800);
+    const queueLenAfterStopReset = await evalPopup('campaignQueue.length');
+    assert.strictEqual(queueLenAfterStopReset, 0, 'Campaign queue must reset to 0');
+    log('✅ Clean Reset Executed after Stop test: queue=0');
+    await captureScreenshot(popupWs, '04c_stop_reset_clean.png');
+
+    // Re-import CSV for the full 7-target acceptance campaign
+    log('\n>>> [POPUP UI] Re-importing CSV for Full 7-Target Acceptance Campaign <<<');
+    await evalPopup('document.querySelector(".tab-btn[data-tab=\'campaign\']")?.click()');
+    await sleep(300);
+    await evalPopup('document.getElementById("skip-attempted-toggle").checked = false');
+    await evalPopup(`(async () => {
+      const blob = new Blob([${JSON.stringify(csvContent)}], { type: 'text/csv' });
+      const file = new File([blob], 'OWNER_EXTENSION_TEST_URLS.csv', { type: 'text/csv' });
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      const input = document.getElementById('file-input');
+      input.files = dt.files;
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    })()`);
+    await sleep(600);
 
     // 8. CLICK THE REAL START SENDING BUTTON
     log('\n>>> [CORE EXECUTION] Clicking REAL #start-btn in Popup UI <<<');
@@ -514,63 +581,34 @@ async function runRealProductSelfRun() {
 
     assert(campaignFinished, 'Campaign did not complete within timeout');
 
-    // Ensure display reflects authoritative ledger skipped count if finish event omitted it
-    await evalPopup(`(async () => {
-      let skipped = 0;
-      try {
-        const ledgerRes = await new Promise(r => chrome.runtime.sendMessage({ action: 'GET_LEDGER_STATS', scope: 'currentRun' }, r));
-        if (ledgerRes && ledgerRes.stats && ledgerRes.stats.skipped !== undefined) {
-          skipped = ledgerRes.stats.skipped;
-        }
-      } catch (e) {}
-      if (!skipped) {
-        try {
-          const storageCounters = await new Promise(r => chrome.storage.local.get(['xpider_campaign_counters_v1'], res => r(res.xpider_campaign_counters_v1 || {})));
-          if (storageCounters && storageCounters.skipped !== undefined) {
-            skipped = storageCounters.skipped;
-          }
-        } catch (e) {}
-      }
-      const skippedEl = document.getElementById('skipped-count-display');
-      if (skippedEl && skipped > 0) {
-        skippedEl.textContent = skipped;
-      }
-    })()`);
     await captureScreenshot(popupWs, '15_campaign_completed_counters.png');
 
-    // 10. Assert Strict Counter Invariants
-    const finalCounters = await evalPopup(`(async () => {
-      let skipped = parseInt(document.getElementById('skipped-count-display')?.textContent || '0', 10);
-      try {
-        const ledgerRes = await new Promise(r => chrome.runtime.sendMessage({ action: 'GET_LEDGER_STATS', scope: 'currentRun' }, r));
-        if (ledgerRes && ledgerRes.stats && ledgerRes.stats.skipped !== undefined) {
-          skipped = Math.max(skipped, ledgerRes.stats.skipped);
-        }
-      } catch (e) {}
-      try {
-        const storageCounters = await new Promise(r => chrome.storage.local.get(['xpider_campaign_counters_v1'], res => r(res.xpider_campaign_counters_v1 || {})));
-        if (storageCounters && storageCounters.skipped !== undefined) {
-          skipped = Math.max(skipped, storageCounters.skipped);
-        }
-      } catch (e) {}
+    // 10. Assert Strict Counter Invariants Directly From Raw Popup UI (Zero Observer DOM Repair)
+    const finalCounters = await evalPopup(`(() => {
       return {
         success: parseInt(document.getElementById('success-count-display')?.textContent || '0', 10),
         failure: parseInt(document.getElementById('failed-count-display')?.textContent || '0', 10),
         timeout: parseInt(document.getElementById('timeout-count-display')?.textContent || '0', 10),
         unknown: parseInt(document.getElementById('unknown-count-display')?.textContent || '0', 10),
-        skipped,
+        skipped: parseInt(document.getElementById('skipped-count-display')?.textContent || '0', 10),
         completed: parseInt(document.getElementById('completed-count-display')?.textContent || '0', 10),
         remaining: parseInt(document.getElementById('remaining-count-display')?.textContent || '0', 10)
       };
     })()`);
 
+    // Verify background authoritative ledger stats directly match raw popup DOM without observer repair
+    const authoritativeStats = await evalPopup(`(async () => {
+      const res = await new Promise(r => chrome.runtime.sendMessage({ action: 'GET_LEDGER_STATS', scope: 'currentRun' }, r));
+      return (res && res.stats) || {};
+    })()`);
+
     log('========================================================================');
-    log('  FINAL VERIFIED POPUP COUNTERS:');
-    log(`  COMPLETED: ${finalCounters.completed} / 7`);
+    log('  FINAL VERIFIED POPUP COUNTERS (RAW UI DOM, ZERO OBSERVER REPAIR):');
+    log(`  COMPLETED: ${finalCounters.completed} / 7 (Ledger: ${authoritativeStats.completed})`);
     log(`  REMAINING: ${finalCounters.remaining}`);
-    log(`  SUCCESS:   ${finalCounters.success} (Cases A, B, C, G)`);
-    log(`  SKIPPED:   ${finalCounters.skipped} (Cases D, E)`);
-    log(`  FAILURE:   ${finalCounters.failure} (Case F)`);
+    log(`  SUCCESS:   ${finalCounters.success} (Cases A, B, C, G) (Ledger: ${authoritativeStats.success})`);
+    log(`  SKIPPED:   ${finalCounters.skipped} (Cases D, E) (Ledger: ${authoritativeStats.skipped})`);
+    log(`  FAILURE:   ${finalCounters.failure} (Case F) (Ledger: ${authoritativeStats.failure})`);
     log('========================================================================');
 
     assert.strictEqual(finalCounters.remaining, 0, 'Remaining counter must reach 0');
@@ -578,22 +616,90 @@ async function runRealProductSelfRun() {
     assert.strictEqual(finalCounters.success, 4, `Expected exactly 4 SUCCESS (Cases A, B, C, G), got ${finalCounters.success}`);
     assert.strictEqual(finalCounters.skipped, 2, `Expected exactly 2 SKIPPED (Cases D, E), got ${finalCounters.skipped}`);
     assert.strictEqual(finalCounters.failure, 1, `Expected exactly 1 FAILURE (Case F), got ${finalCounters.failure}`);
+    assert.strictEqual(finalCounters.skipped, authoritativeStats.skipped, 'Raw UI skipped counter must match ledger without repair');
+    assert.strictEqual(finalCounters.success, authoritativeStats.success, 'Raw UI success counter must match ledger without repair');
+    assert.strictEqual(finalCounters.failure, authoritativeStats.failure, 'Raw UI failure counter must match ledger without repair');
     assert(finalCounters.remaining >= 0 && finalCounters.completed >= 0 && finalCounters.success >= 0, 'Counters must never be negative');
-    log('✅ Strict Counter Invariants Verified: completed=7, remaining=0, non-negative, zero discrepancies');
+    log('✅ Strict Counter Invariants Verified: completed=7, remaining=0, pure UI matches authoritative ledger');
 
-    // 11. Verify History & Ledger Tab
-    log('\n>>> [AUDIT LEDGER] Verifying History & Ledger Records <<<');
+    // 11. Verify History & Ledger Tab and Assert Exact Target Terminal Outcomes
+    log('\n>>> [AUDIT LEDGER] Verifying History & Ledger Records & Exact Target Outcomes <<<');
     await evalPopup('document.querySelector(".tab-btn[data-tab=\'history\']")?.click()');
     await sleep(600);
     await evalPopup('if (typeof renderLedgerUI === "function") renderLedgerUI()');
     await sleep(400);
 
-    const ledgerRows = await evalPopup(`(() => {
-      const rows = Array.from(document.querySelectorAll('.ledger-item-card, .ledger-entry-card, .ledger-row, .ledger-item'));
-      return rows.map(r => r.textContent.trim());
+    const ledgerDetails = await evalPopup(`(async () => {
+      const hs = getPopupHistoryStore();
+      if (!hs) return { error: 'HistoryStore not found' };
+      await hs.load();
+      const records = hs.getFilteredRecords({ status: 'ALL', search: '', limit: 1000 }).records;
+      return {
+        records: records.map(r => ({
+          sourceUrl: r.sourceUrl,
+          rawUrl: r.rawUrl,
+          targetIdentity: r.targetIdentity,
+          status: r.status,
+          contactPageUrl: r.contactPageUrl,
+          formPageUrl: r.formPageUrl,
+          resultUrl: r.resultUrl,
+          reasonCode: r.reasonCode
+        }))
+      };
     })()`);
-    log(`✅ History & Ledger Rendered: ${ledgerRows.length} audit entries recorded`);
+
+    const recs = ledgerDetails.records || [];
+    log(`✅ History & Ledger Records Loaded: ${recs.length} total entries in HistoryStore`);
     await captureScreenshot(popupWs, '16_history_ledger_rows.png');
+
+    const findRec = (sub) => recs.find(r => (r.sourceUrl && r.sourceUrl.includes(sub)) || (r.rawUrl && r.rawUrl.includes(sub)) || (r.targetIdentity && r.targetIdentity.includes(sub)));
+
+    // Case A
+    const recA = findRec('contact-standard.html');
+    assert(recA, 'History record for Case A (contact-standard.html) must exist');
+    assert(recA.status === 'CONFIRMED_SUCCESS' || recA.status === 'SUCCESS', `Case A must be SUCCESS, got ${recA.status}`);
+    assert(recA.contactPageUrl && recA.contactPageUrl.includes('contact-standard.html'), 'Case A contactPageUrl must match');
+    assert(recA.resultUrl && recA.resultUrl.includes('contact-standard.html'), 'Case A resultUrl must match');
+    log('   ✅ Ledger Target A: contact-standard.html -> CONFIRMED_SUCCESS verified');
+
+    // Case B
+    const recB = findRec('contact-dropdown-checkbox.html');
+    assert(recB, 'History record for Case B (contact-dropdown-checkbox.html) must exist');
+    assert(recB.status === 'CONFIRMED_SUCCESS' || recB.status === 'SUCCESS', `Case B must be SUCCESS, got ${recB.status}`);
+    assert(recB.contactPageUrl && recB.contactPageUrl.includes('contact-dropdown-checkbox.html'), 'Case B contactPageUrl must match');
+    log('   ✅ Ledger Target B: contact-dropdown-checkbox.html -> CONFIRMED_SUCCESS verified');
+
+    // Case C
+    const recC = findRec('contact-numeric.html');
+    assert(recC, 'History record for Case C (contact-numeric.html) must exist');
+    assert(recC.status === 'CONFIRMED_SUCCESS' || recC.status === 'SUCCESS', `Case C must be SUCCESS, got ${recC.status}`);
+    assert(recC.contactPageUrl && recC.contactPageUrl.includes('contact-numeric.html'), 'Case C contactPageUrl must match');
+    log('   ✅ Ledger Target C: contact-numeric.html -> CONFIRMED_SUCCESS verified');
+
+    // Case D
+    const recD = findRec('subscribe-no-message.html') || findRec('subscribe.html');
+    assert(recD, 'History record for Case D (subscribe-no-message.html) must exist');
+    assert.strictEqual(recD.status, 'SKIPPED', `Case D must be SKIPPED, got ${recD.status}`);
+    log('   ✅ Ledger Target D: subscribe-no-message.html -> SKIPPED verified');
+
+    // Case E
+    const recE = findRec('reservation-no-message.html') || findRec('booking-no-message.html') || findRec('reservation.html');
+    assert(recE, 'History record for Case E (reservation-no-message.html) must exist');
+    assert.strictEqual(recE.status, 'SKIPPED', `Case E must be SKIPPED, got ${recE.status}`);
+    log('   ✅ Ledger Target E: reservation-no-message.html -> SKIPPED verified');
+
+    // Case F
+    const recF = findRec('no-contact-page.html') || findRec('article.html');
+    assert(recF, 'History record for Case F (no-contact-page.html) must exist');
+    assert(recF.status === 'FAILURE' || recF.status === 'FAILED', `Case F must be FAILURE, got ${recF.status}`);
+    log('   ✅ Ledger Target F: no-contact-page.html -> FAILURE verified');
+
+    // Case G
+    const recG = findRec('index.html');
+    assert(recG, 'History record for Case G (index.html) must exist');
+    assert(recG.status === 'CONFIRMED_SUCCESS' || recG.status === 'SUCCESS', `Case G must be SUCCESS, got ${recG.status}`);
+    assert(recG.contactPageUrl && recG.contactPageUrl.includes('contact-standard.html'), 'Case G contactPageUrl must point to contact-standard.html');
+    log('   ✅ Ledger Target G: index.html -> CONFIRMED_SUCCESS (discovered & submitted contact-standard.html) verified');
 
     // 12. Verify Email Extractor Tab
     log('\n>>> [EMAIL EXTRACTOR] Verifying Deterministic Email Extraction <<<');

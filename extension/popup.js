@@ -111,6 +111,9 @@ let successCount = 0;
 let failedCount = 0;
 let completedCount = 0;
 let totalTargets = 0;
+let skippedCount = 0;
+let timeoutCount = 0;
+let deliveryUnknownCount = 0;
 let i18nData = null;
 let lastLogMessage = "Ready...";
 let remainingTargets = 0;
@@ -2093,6 +2096,9 @@ async function renderAuxiliaryUI() {
                         failedCount: c.failed,
                         completedCount: c.completed,
                         remainingCount: c.remaining,
+                        skippedCount: c.skipped,
+                        timeoutCount: c.timeout,
+                        deliveryUnknownCount: c.deliveryUnknown,
                         failureBreakdown: c.failureBreakdown
                     });
                 }
@@ -2107,6 +2113,9 @@ async function renderAuxiliaryUI() {
                         failedCount: c.failed,
                         completedCount: c.completed,
                         remainingCount: c.remaining,
+                        skippedCount: c.skipped,
+                        timeoutCount: c.timeout,
+                        deliveryUnknownCount: c.deliveryUnknown,
                         failureBreakdown: c.failureBreakdown
                     });
                 }
@@ -2165,6 +2174,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                             failedCount: request.counters.failed,
                             completedCount: request.counters.completed,
                             remainingCount: 0,
+                            skippedCount: request.counters.skipped,
+                            timeoutCount: request.counters.timeout,
+                            deliveryUnknownCount: request.counters.deliveryUnknown,
                             failureBreakdown: request.counters.failureBreakdown
                         });
                     }
@@ -2666,23 +2678,31 @@ function updateRealTimeStatus(data) {
     if (failedDisplay) failedDisplay.textContent = failedCount;
 
     // 3. Timeout Count
-    const timeoutCount = (data.timeoutCount !== undefined) 
-        ? data.timeoutCount 
-        : (data.counters && data.counters.timeout !== undefined ? data.counters.timeout : 0);
+    if (data.timeoutCount !== undefined) {
+        timeoutCount = data.timeoutCount;
+    } else if (data.counters && data.counters.timeout !== undefined) {
+        timeoutCount = data.counters.timeout;
+    }
     const timeoutDisplay = document.getElementById('timeout-count-display');
     if (timeoutDisplay) timeoutDisplay.textContent = timeoutCount;
 
     // 4. Delivery Unknown Count
-    const unknownCount = (data.deliveryUnknownCount !== undefined)
-        ? data.deliveryUnknownCount
-        : (data.counters && data.counters.deliveryUnknown !== undefined ? data.counters.deliveryUnknown : (data.unknownCount || 0));
+    if (data.deliveryUnknownCount !== undefined) {
+        deliveryUnknownCount = data.deliveryUnknownCount;
+    } else if (data.counters && data.counters.deliveryUnknown !== undefined) {
+        deliveryUnknownCount = data.counters.deliveryUnknown;
+    } else if (data.unknownCount !== undefined) {
+        deliveryUnknownCount = data.unknownCount;
+    }
     const unknownDisplay = document.getElementById('unknown-count-display');
-    if (unknownDisplay) unknownDisplay.textContent = unknownCount;
+    if (unknownDisplay) unknownDisplay.textContent = deliveryUnknownCount;
 
     // 5. Skipped Count
-    const skippedCount = (data.skippedCount !== undefined)
-        ? data.skippedCount
-        : (data.counters && data.counters.skipped !== undefined ? data.counters.skipped : 0);
+    if (data.skippedCount !== undefined) {
+        skippedCount = data.skippedCount;
+    } else if (data.counters && data.counters.skipped !== undefined) {
+        skippedCount = data.counters.skipped;
+    }
     const skippedDisplay = document.getElementById('skipped-count-display');
     if (skippedDisplay) skippedDisplay.textContent = skippedCount;
 
@@ -5329,10 +5349,11 @@ async function dispatchResetAllListData() {
         await chrome.storage.local.remove(allKeys);
     }
 
-    updateRealTimeStatus({ successCount: 0, remainingCount: 0, totalTargets: 0 });
+    updateRealTimeStatus({ successCount: 0, failedCount: 0, completedCount: 0, remainingCount: 0, totalTargets: 0, skippedCount: 0, timeoutCount: 0, deliveryUnknownCount: 0 });
     updateProgress(0);
     ['stat-success-count', 'stat-failed-count', 'stat-completed-count', 'stat-remaining-count',
      'success-count-display', 'failed-count-display', 'completed-count-display', 'remaining-count-display',
+     'skipped-count-display', 'timeout-count-display', 'unknown-count-display',
      'captcha-solved-display', 'captcha-failed-display'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.textContent = '0';

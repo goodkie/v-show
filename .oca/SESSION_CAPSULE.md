@@ -6,24 +6,23 @@ PROJECT_NAME: XPIDER AutoForm Sender Pro
 WORKSPACE_ROOT: E:\vivpr\ai\extension-form-sender
 AUTHORITY_SOURCE: goodkie/v-show Issue #6
 ACTIVE_BRANCH: upgrade/phase-0-1
-STATE_REV: 2026-10-12.07
-AUTHORITY_CURSOR: 6136209899
-LAST_AUDIT: 6136209899 (CDP DOM-injection self-run HOLD -> Real Product Path Required)
-LAST_RECEIPT: 6137158310 (Real-Path Functional Test Kit Receipt #6137158310 posted to Issue #6)
-TEST_KIT_COMMIT: bd27a3a351c90dbba85180b6e0eb82d3cabe6516
+STATE_REV: 2026-10-13.01
+AUTHORITY_CURSOR: 6137158310
+LAST_AUDIT: ChatGPT Audit on Receipt #6137158310 (Core form automation PASS; Blockers 1-4 remediated in R6.9G.10.3.7.1.4.2)
+LAST_RECEIPT: R6.9G.10.3.7.1.4.2 (Owner Extension Real-Path Functional Test Kit Receipt)
 LAST_ACCEPTED_GATE: R6.9G.10.3.7.1.4.1 ENGINEERING PASS PRESERVED (#6116362094); AVAILABLE-SCOPE SOFTWARE PASS (#6134283065)
 FUNCTIONAL_SHA: 97aa7dfa0647f221e248da963987241d41196568
-PROVENANCE_SHA: 7f7c2af6a689b80d26abb8072815295565098864
-BUILD_ID: R6.9G.10.3.7.1.4.1-20261011-FINAL-ENROLLMENT-POLICY-OWNER-RESET
+BUILD_ID: R6.9G.10.3.7.1.4.2-20261013-POPUP-COUNTER-SYNC-STOP-VERIFIED
+POPUP_SHA: 1c4c43a1478c96502ede363f1602f6c7cb9fc4e1603765069c02cfdeb6017ed9
 SOLVER_CORE_SHA: 01b3d96048ea933403e4599854dcdca28027e7f676aa5077eb6c5eb0582ac1e7
 ROLLBACK_ANCHOR: dc0740a0c69e2f7fa96b6989841acf0831b3619e
 PREVIOUS_FUNCTIONAL_RESTORE_POINT: c4a97e39509e5e791620a42e676782a82259f472
-HISTORICAL_LINEAGE: b8d1fab8190bb991c69d67c44a3ab1c1a5b766dd -> 273bb0ca1ba64b7fe3a41091ce56c8667e38dd8d -> 5b56c5388a544baa4f61136b89b2c918649714f4 -> a63590f0c50b873de444f5bf8cfe6e45163ba7b4 -> b970eb5e695020e91ee9f376930e3f6233013cff -> 6aeb81e5fa79e83b5b2a49dc8c818416467c3bac -> dc314ebcd76e86ef7ceb006ac6a127fa76f9b8c9 -> ef26bf19e54529df8ab6a5148c0baa622433e217 -> 65c3fd81087216b71e825fd6641c2404016b9e61 -> 5e725a1231a90cf63f6ae325e7523f2db611d836 -> 10107beedb3056aa1461e72d2aba09eb7d3cd395 -> a1a1ddc73e59a935cebbef590ba183878b1ee011 -> 32e384d1f7ac0292308011f60bd6c1ef2bb86654 -> 67bbbd7dd34a7da840684ebc6337deda6a0e92b9 -> 8fae8d055a1d7e1348a1d009c99d390505a7404e -> 63cfe936361a70df2fe27f2ce860c5bb023eccff -> a07facde75c03372480c3bc05754e9a7e30cefb2 -> 47ee3ba29f055f86a889bac11ecad82db1558725 -> 5fad5c3f980fce303b2e7d8ecc4232fb4d21e91b -> 68085f5f72ab3070e4903648aa2e7490b94b43c9 -> b3ddf3330f43a2a8a54c06069d86c7f19fdc2809 -> d9701fcf8121948dd163f1e56110e5f2a9f917c3 -> 9e5f7ca8365abb3930d30994cb64994a370fcf7c -> af8840866da098cb7fd1b45de724b41f128b794a -> 24d689f6b97ea4a26b59079ecce2c023879a7731 -> 2e049a7b529c47523d6cd9c1cea79d1d92e15d1c -> c4a97e39509e5e791620a42e676782a82259f472 -> 97aa7dfa0647f221e248da963987241d41196568 -> bd27a3a351c90dbba85180b6e0eb82d3cabe6516
-NEXT_ACTION: Post Owner Extension Real-Path Functional Test Kit Receipt to Issue #6. Await ChatGPT Audit. Owner to execute manual UI test upon audit signoff.
-BLOCKERS: Blocker A (Linux kernel tiers reported honestly as NOT TESTED per directive rule due to host/OAuth platform limitations). Blockers B, C, D RESOLVED.
+CORRECTED_STATE_COMMIT: 772945a046c371ef998dce7a4482118d3e906728
+NEXT_ACTION: Post Owner Extension Real-Path Functional Test Kit Receipt [R6.9G.10.3.7.1.4.2] to Issue #6. Await ChatGPT Audit. Owner to execute manual UI test upon audit signoff.
+BLOCKERS: Blocker A (Linux kernel tiers reported honestly as NOT TESTED per directive rule due to host/OAuth platform limitations). Blockers 1, 2, 3, 4 RESOLVED in R6.9G.10.3.7.1.4.2.
 OWNER_ACTION: Pre-Opal UI Functional Test (Ready via START_TEST_SITE.bat & OWNER_EXTENSION_TEST_CHECKLIST.md). Bulk and Real Opal Smoke on HOLD.
-EVIDENCE_REF: owner-extension-test-site/evidence/self_run_trace.log (294848 bytes, SHA256: 2d73f309570a6f3601d513b6c8b9a369c780b7c7f17ae431df35f6697890e9cc)
-RELEASE_ASSET_ZIP: XPIDER_R6.9G.10.3_OWNER_DIAGNOSTIC_TEST_ONLY.zip (4385137 bytes, SHA-256: c2ab9f049b9784e023db10811043c496548c2741d0b3424911bcf7d336b3a44d)
-RELEASE_URL: https://github.com/goodkie/v-show/releases/tag/v6.9g.10.3-audit.7.1.4.1
+EVIDENCE_REF: owner-extension-test-site/evidence/self_run_trace.log (324791 bytes, SHA256: bfca66032f09e786a538e002e16789b4c9518a07bbd2e679291df0c58be24780)
+RELEASE_ASSET_ZIP: XPIDER_R6.9G.10.3.7.1.4.2_OWNER_DIAGNOSTIC_TEST_ONLY.zip (4329443 bytes, SHA-256: 8d458e0016d23eb85c052fa044c2ba88459403de0d9c623719b21ef27b13286a)
+RELEASE_URL: https://github.com/goodkie/v-show/releases/tag/v6.9g.10.3-audit.7.1.4.2
 
 CONTINUITY_RULE: On every new ChatGPT or Antigravity window, search the current project for prior work, recover the latest valid state, and continue existing work instead of restarting.
