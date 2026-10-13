@@ -8,7 +8,7 @@
 - Branch: upgrade/phase-0-1
 - State Rev: 2026-10-13.02
 - Last Audit: ChatGPT Audit on Receipt #6144615881 (Core automation PASS; Provenance & ReferenceError remediated in R6.9G.10.3.7.1.4.2.1)
-- Last Receipt: R6.9G.10.3.7.1.4.2.1
+- Last Receipt: #6145614021 (`https://github.com/goodkie/v-show/issues/6#issuecomment-6145614021`)
 - Current Release Tag: `v6.9g.10.3-audit.7.1.4.2.1`
 
 ## Current Gate
