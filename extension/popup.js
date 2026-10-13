@@ -2714,7 +2714,7 @@ function updateRealTimeStatus(data) {
     } else if (data.remainingCount !== undefined && totalTargets > 0) {
         completedCount = Math.max(0, totalTargets - data.remainingCount);
     } else if (data.successCount !== undefined || data.failedCount !== undefined) {
-        completedCount = Math.max(completedCount, successCount + failedCount + timeoutCount + unknownCount + skippedCount);
+        completedCount = Math.max(completedCount, successCount + failedCount + timeoutCount + deliveryUnknownCount + skippedCount);
     }
     const completedDisplay = document.getElementById('completed-count-display');
     if (completedDisplay) completedDisplay.textContent = completedCount;
