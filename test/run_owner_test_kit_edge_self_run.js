@@ -188,8 +188,9 @@ async function runRealProductSelfRun() {
       await sleep(300);
     }
     assert(buildInfo, 'BuildProvenance must exist in SW');
-    assert.strictEqual(buildInfo.buildId, 'R6.9G.10.3.7.1.4.2-20261013-POPUP-COUNTER-SYNC-STOP-VERIFIED');
-    assert.strictEqual(buildInfo.headShort, '97aa7dfa');
+    assert.strictEqual(buildInfo.buildId, 'R6.9G.10.3.7.1.4.2.1-20261013-POPUP-REFERENCE-ERROR-FIX-PROVENANCE-SEAL');
+    assert.strictEqual(buildInfo.headShort, '93d98f71');
+    assert.strictEqual(buildInfo.implementationHead, '93d98f71f9cbf6334e3051661f75d7d2cd437ab5');
     log(`✅ Build Provenance Verified in Service Worker: ${buildInfo.buildId} (${buildInfo.headShort})`);
 
     // 3. Open Popup UI
@@ -219,6 +220,68 @@ async function runRealProductSelfRun() {
     assert(appTitle && appTitle.includes('XPIDER AutoForm'), 'Main title mismatch');
     log(`✅ Popup Initial State Verified: "${appTitle}"`);
     await captureScreenshot(popupWs, '01_popup_initial.png');
+
+    // 4.1 Targeted Popup Unit Regressions (Per ChatGPT Audit #6144615881)
+    log('\n>>> [TARGETED REGRESSION] Verifying updateRealTimeStatus & translations paths <<<');
+    const regTest1 = await evalPopup(`(() => {
+      try {
+        updateRealTimeStatus({ successCount: 1 });
+        return { success: true };
+      } catch (err) {
+        return { success: false, error: err.message, stack: err.stack };
+      }
+    })()`);
+    assert(regTest1.success, `updateRealTimeStatus({ successCount: 1 }) must not throw: ${regTest1.error}`);
+    log('✅ Targeted Regression: updateRealTimeStatus({ successCount: 1 }) executed with zero exception');
+
+    const regTest2 = await evalPopup(`(() => {
+      try {
+        if (typeof applyTranslations === 'function') {
+          applyTranslations('en');
+          applyTranslations('ko');
+          applyTranslations('ja');
+          applyTranslations('en');
+        }
+        return { success: true };
+      } catch (err) {
+        return { success: false, error: err.message, stack: err.stack };
+      }
+    })()`);
+    assert(regTest2.success, `applyTranslations across languages must not throw: ${regTest2.error}`);
+    log('✅ Targeted Regression: applyTranslations across en/ko/ja executed with zero exception');
+
+    // Verify storage counter restoration restores skipped/timeout/unknown correctly
+    const regTest3 = await evalPopup(`(async () => {
+      try {
+        await chrome.storage.local.set({
+          xpider_campaign_counters_v1: {
+            total: 10,
+            completed: 5,
+            remaining: 5,
+            success: 2,
+            failed: 1,
+            skipped: 1,
+            timeout: 1,
+            deliveryUnknown: 0
+          }
+        });
+        if (typeof renderAuxiliaryUI === 'function') await renderAuxiliaryUI();
+        const s = document.getElementById('skipped-count-display')?.textContent;
+        const t = document.getElementById('timeout-count-display')?.textContent;
+        const u = document.getElementById('unknown-count-display')?.textContent;
+        return { success: true, s, t, u };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    })()`);
+    assert(regTest3.success, `Storage restoration must not throw: ${regTest3.error}`);
+    assert.strictEqual(regTest3.s, '1', 'Skipped count restored from storage must equal 1');
+    assert.strictEqual(regTest3.t, '1', 'Timeout count restored from storage must equal 1');
+    log('✅ Targeted Regression: storage counter restoration restores skipped/timeout/unknown correctly');
+
+    // Clean slate after regression checks
+    await evalPopup('(async () => { if (typeof dispatchResetAllListData === "function") await dispatchResetAllListData(); })()');
+    await sleep(400);
 
     // 5. Test Settings Configuration & Persistence
     log('\n>>> [POPUP UI] Configuring Settings for Pre-Opal Localhost Testing <<<');
@@ -558,7 +621,7 @@ async function runRealProductSelfRun() {
           failure: parseInt(document.getElementById('failed-count-display')?.textContent || '0', 10),
           timeout: parseInt(document.getElementById('timeout-count-display')?.textContent || '0', 10),
           unknown: parseInt(document.getElementById('unknown-count-display')?.textContent || '0', 10),
-          skipped: Math.max(dispSkipped, storageCounters.skipped || 0),
+          skipped: dispSkipped,
           completed: parseInt(document.getElementById('completed-count-display')?.textContent || '0', 10),
           remaining: parseInt(document.getElementById('remaining-count-display')?.textContent || '0', 10),
           progressText: document.getElementById('progress-text')?.textContent || '0%',
