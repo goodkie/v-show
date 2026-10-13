@@ -39,7 +39,25 @@ const server = http.createServer((req, res) => {
 
   let reqPath = decodeURI(req.url.split('?')[0]);
   if (reqPath === '/' || reqPath === '') {
-    reqPath = '/index.html';
+    reqPath = '/no-contact-page.html';
+  } else if (reqPath === '/subscribe-no-message.html') {
+    res.writeHead(302, { 'Location': '/subscribe.html' });
+    res.end();
+    return;
+  } else if (reqPath === '/reservation-no-message.html' || reqPath === '/booking-no-message.html') {
+    res.writeHead(302, { 'Location': '/reservation.html' });
+    res.end();
+    return;
+  } else if (reqPath === '/no-contact-page.html') {
+    res.writeHead(302, { 'Location': '/article.html' });
+    res.end();
+    return;
+  } else if (reqPath === '/subscribe.html') {
+    reqPath = '/subscribe-no-message.html';
+  } else if (reqPath === '/reservation.html') {
+    reqPath = '/reservation-no-message.html';
+  } else if (reqPath === '/article.html') {
+    reqPath = '/no-contact-page.html';
   }
 
   const safePath = path.normalize(reqPath).replace(/^(\.\.[\/\\])+/, '');
