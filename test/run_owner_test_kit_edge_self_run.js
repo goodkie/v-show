@@ -188,9 +188,9 @@ async function runRealProductSelfRun() {
       await sleep(300);
     }
     assert(buildInfo, 'BuildProvenance must exist in SW');
-    assert.strictEqual(buildInfo.buildId, 'R6.9G.10.3.7.1.4.2.1-20261013-POPUP-REFERENCE-ERROR-FIX-PROVENANCE-SEAL');
-    assert.strictEqual(buildInfo.headShort, '93d98f71');
-    assert.strictEqual(buildInfo.implementationHead, '93d98f71f9cbf6334e3051661f75d7d2cd437ab5');
+    assert.strictEqual(buildInfo.buildId, 'R6.9G.10.3.7.1.4.3-20261013-OWNER-FUNCTION-TEST-MODE-PRIVACY-UX');
+    assert.strictEqual(buildInfo.headShort, 'a6f0b76c');
+    assert.strictEqual(buildInfo.implementationHead, 'a6f0b76c82b1d7b95676de2173abc5c6ac5cd2ee');
     log(`✅ Build Provenance Verified in Service Worker: ${buildInfo.buildId} (${buildInfo.headShort})`);
 
     // 3. Open Popup UI
@@ -283,19 +283,56 @@ async function runRealProductSelfRun() {
     await evalPopup('(async () => { if (typeof dispatchResetAllListData === "function") await dispatchResetAllListData(); })()');
     await sleep(400);
 
-    // 5. Test Settings Configuration & Persistence
-    log('\n>>> [POPUP UI] Configuring Settings for Pre-Opal Localhost Testing <<<');
+    // 5. Test Settings Configuration & Persistence (Fix 1 & Fix 2 Verification)
+    log('\n>>> [POPUP UI] Configuring Settings for Pre-Opal Localhost Testing with Owner Functional Test Mode <<<');
     await evalPopup('document.getElementById("settings-toggle")?.click()');
     await sleep(400);
 
-    // In settings: configure direct loopback transport & responsive Level 9 execution speeds
-    await evalPopup(`(() => {
+    // Verify Privacy Gateway failClosed=true with External VPN Monitor exhibits honest BLOCKED — TRANSPORT NOT ENFORCED
+    const preflightCheck = await evalPopup(`(async () => {
       const privToggle = document.getElementById('privacy-gateway-toggle');
-      if (privToggle) privToggle.checked = false;
+      if (privToggle) privToggle.checked = true;
       const privFailClosed = document.getElementById('privacy-fail-closed-toggle');
-      if (privFailClosed) privFailClosed.checked = false;
+      if (privFailClosed) privFailClosed.checked = true;
       const privMode = document.getElementById('privacy-transport-mode-select');
-      if (privMode) privMode.value = 'DIRECT';
+      if (privMode) {
+        privMode.value = 'EXTERNAL_VPN_MONITOR';
+        privMode.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      const vpnChk = document.getElementById('privacy-vpn-confirm-checkbox');
+      if (vpnChk) {
+        vpnChk.checked = true;
+        vpnChk.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      if (typeof updateVpnStatusBadge === 'function') {
+        updateVpnStatusBadge(true);
+      }
+      if (typeof _updatePrivacyCardUI === 'function') {
+        const pfRes = await new Promise(r => chrome.runtime.sendMessage({
+          action: 'RUN_PRIVACY_PREFLIGHT',
+          options: { transportMode: 'EXTERNAL_VPN_MONITOR', failClosed: true, systemVpnConfirmed: true }
+        }, r));
+        if (pfRes && pfRes.preflight) _updatePrivacyCardUI(pfRes.preflight);
+      }
+
+      const vpnBadgeText = document.getElementById('privacy-vpn-status-badge')?.textContent;
+      const cardStatus = document.getElementById('priv-card-enabled')?.textContent;
+      return { vpnBadgeText, cardStatus };
+    })()`);
+
+    log(`   VPN Badge Text: "${preflightCheck.vpnBadgeText}"`);
+    log(`   Card Status: "${preflightCheck.cardStatus}"`);
+    assert(preflightCheck.vpnBadgeText && preflightCheck.vpnBadgeText.includes('MONITOR ONLY'), 'VPN Badge must indicate MONITOR ONLY');
+    assert(preflightCheck.cardStatus && (preflightCheck.cardStatus.includes('BLOCKED') || preflightCheck.cardStatus.includes('TRANSPORT NOT ENFORCED')), 'Card status must show BLOCKED / TRANSPORT NOT ENFORCED');
+    log('✅ Fix 1 Verified: Honest distinction between VPN observation and strict transport readiness');
+
+    // Enable Owner Functional Test Mode (Local Controlled Pages Only) & responsive Level 9 speeds
+    await evalPopup(`(() => {
+      const ownerTestToggle = document.getElementById('owner-function-test-toggle');
+      if (ownerTestToggle) {
+        ownerTestToggle.checked = true;
+        ownerTestToggle.dispatchEvent(new Event('change', { bubbles: true }));
+      }
       
       const speedCollect = document.getElementById('delay-input-collect');
       if (speedCollect) {
@@ -324,7 +361,7 @@ async function runRealProductSelfRun() {
     await captureScreenshot(popupWs, '02_settings_configured.png');
     await evalPopup('document.getElementById("save-settings-btn")?.click()');
     await sleep(500);
-    log('✅ Clicked [Save Settings] in Popup UI');
+    log('✅ Clicked [Save Settings] in Popup UI with Owner Functional Test Mode ENABLED');
 
     // Verify Physical Gate shows BLOCKED / DISABLED in absence of Opal
     const physGateText = await evalPopup('document.getElementById("phys-gate-ready")?.textContent');
@@ -332,6 +369,13 @@ async function runRealProductSelfRun() {
 
     await evalPopup('document.getElementById("settings-close")?.click()');
     await sleep(300);
+
+    // Verify banner is visible on campaign tab
+    const bannerDisplay = await evalPopup('document.getElementById("owner-function-test-banner")?.style.display');
+    const bannerText = await evalPopup('document.getElementById("owner-function-test-banner")?.textContent');
+    assert.strictEqual(bannerDisplay, 'block', 'Owner Functional Test Mode banner must be displayed');
+    assert(bannerText && bannerText.includes('LOCAL FUNCTION TEST — PUBLIC NETWORK TARGETS BLOCKED'), 'Banner text must match specification');
+    log(`✅ Fix 2 Verified: Large Banner Visible on Campaign Tab ("${bannerText.trim()}")`);
 
     // 6. Test Message Template Tab
     log('\n>>> [POPUP UI] Populating Message Template <<<');
