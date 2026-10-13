@@ -4,23 +4,31 @@
 - Protocol: OCA-DEV-1.4
 - Project ID: xpider-autoform-sender-pro
 - Workspace: E:\vivpr\ai\extension-form-sender
-- Authority: goodkie/v-show Issue #6 (Audit #6133222760 / Receipt #6133137502)
+- Authority: goodkie/v-show Issue #6 (Audit #6136209899 / Directives)
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-12.06
-- Last Receipt: #6134627780 (`https://github.com/goodkie/v-show/issues/6#issuecomment-6134627780`)
+- State Rev: 2026-10-12.07
+- Last Audit: #6136209899 (CDP DOM-injection self-run HOLD -> Real Product Automation Path Required)
+- Current Test Kit Commit: `bd27a3a351c90dbba85180b6e0eb82d3cabe6516`
 
 ## Current Gate
 - Formal Gate: R6.9G.10.3.7.1.4.1 FINAL ENROLLMENT POLICY + OWNER RESET CONTROL.
 - Engineering Acceptance Status: **PASS (PRESERVED)** (Independently audited & accepted by ChatGPT in Gate Comment #6116362094).
 - Pre-Hardware Real Software Acceptance: **AVAILABLE-SCOPE SOFTWARE PASS (#6134283065)**.
-- Owner Functional Test Kit: **100% SELF-RUN PASS IN REAL EDGE BROWSER** (Commit `1f7d8335`).
+- Owner Functional Test Kit: **100% REAL PRODUCT-PATH SELF-RUN PASS IN REAL EDGE BROWSER** (Commit `bd27a3a3`).
+  - Zero CDP target DOM injection; real `#start-btn` popup control used.
+  - Final Counters: COMPLETED=7, REMAINING=0, SUCCESS=4, SKIPPED=2, FAILURE=1.
+  - Settings & Template Persistence across popup close/reopen verified.
+  - Pause & Resume checkpoint synchronization verified.
+  - History & Ledger rendered with 8 audit records.
+  - Deterministic Email Extractor verified with 5 collected addresses.
+  - Clean Reset Control verified with queue resetting to 0.
 - Release Tag: `v6.9g.10.3-audit.7.1.4.1`
 - Release URL: `https://github.com/goodkie/v-show/releases/tag/v6.9g.10.3-audit.7.1.4.1`
 - Owner Action: Pre-Opal UI Functional Test (follow `OWNER_EXTENSION_TEST_CHECKLIST.md` after ChatGPT audit signoff).
 - Bulk Campaign: **HOLD** (Strict invariant).
 - Real Opal Hardware Smoke: **HOLD** (Pending Owner extension test).
 - Rollback Anchor: `dc0740a0c69e2f7fa96b6989841acf0831b3619e` (immutable baseline rollback anchor).
-- Next Action: Post Owner Extension Functional Test Kit Receipt to Issue #6. Await ChatGPT Audit.
+- Next Action: Post Owner Extension Real-Path Functional Test Kit Receipt to Issue #6. Await ChatGPT Audit.
 
 ## Lineage & Remote Git SHAs
 - `ROLLBACK_ANCHOR`: `dc0740a0c69e2f7fa96b6989841acf0831b3619e` (immutable baseline anchor)
