@@ -8,7 +8,7 @@
 - Branch: upgrade/phase-0-1
 - State Rev: 2026-10-13.01
 - Last Audit: ChatGPT Audit on Receipt #6137158310 (Core product automation PASS; Blockers 1–4 remediated in R6.9G.10.3.7.1.4.2)
-- Last Receipt: R6.9G.10.3.7.1.4.2
+- Last Receipt: #6144615881 (`https://github.com/goodkie/v-show/issues/6#issuecomment-6144615881`)
 - Current Release Tag: `v6.9g.10.3-audit.7.1.4.2`
 
 ## Current Gate
