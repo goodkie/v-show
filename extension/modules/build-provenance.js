@@ -15,21 +15,21 @@
 
     const BUILD_INFO = {
         branch: 'upgrade/phase-0-1',
-        // [R6.9G.10.3.7.1.4.2] buildId = minimal counter synchronization patch + Stop control verified
-        implementationHead: '97aa7dfa0647f221e248da963987241d41196568',
-        implementationHeadShort: '97aa7dfa',
-        head: '97aa7dfa0647f221e248da963987241d41196568',
-        headShort: '97aa7dfa',
+        // [R6.9G.10.3.7.1.4.2.1] implementationHead = functional commit fixing popup unknownCount ReferenceError
+        implementationHead: '93d98f71f9cbf6334e3051661f75d7d2cd437ab5',
+        implementationHeadShort: '93d98f71',
+        head: '93d98f71f9cbf6334e3051661f75d7d2cd437ab5',
+        headShort: '93d98f71',
         rollbackBase: 'dc0740a0c69e2f7fa96b6989841acf0831b3619e',
         previousFunctionalRestorePoint: 'c4a97e39509e5e791620a42e676782a82259f472',
         manifestVersion: 3,
-        buildId: 'R6.9G.10.3.7.1.4.2-20261013-POPUP-COUNTER-SYNC-STOP-VERIFIED',
-        builtAt: '2026-10-13T10:00:00.000Z',
+        buildId: 'R6.9G.10.3.7.1.4.2.1-20261013-POPUP-REFERENCE-ERROR-FIX-PROVENANCE-SEAL',
+        builtAt: '2026-10-13T12:00:00.000Z',
         provenanceSchema: 2,
         modules: {
             backgroundSha: '6e17776ea0605d188891c091850127f6bd22e2531c48380878f13ef7b929ec16',
             contentScriptSha: '5c2ebd277a9020a4434fc68cd46c6ec974dbf180290ba368b33273aee67ccf9e',
-            popupSha: '1c4c43a1478c96502ede363f1602f6c7cb9fc4e1603765069c02cfdeb6017ed9',
+            popupSha: '8bf90136f436629c24bcde80d9b89240b729a2eb8108d24ae632e6a324d63125',
             solverContentSha: 'd7de969d29df29799537b11380f0f82967bb93da227c91e7dc8c6af0d128f457',
             solverCoreSha: '01b3d96048ea933403e4599854dcdca28027e7f676aa5077eb6c5eb0582ac1e7',
             emailCollectorSha: '3f1147a379e159e7777158f2caa74cc8d40b2a0b0eb2c244f440af379cb5c9c9',
