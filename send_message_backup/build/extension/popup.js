@@ -1062,26 +1062,46 @@ async function hydrateSettings(overrideV2Store = null) {
         // [Fix 2 Hydrate Owner Functional Test Mode]
         const ownerTestToggle = document.getElementById('owner-function-test-toggle');
         const ownerTestBanner = document.getElementById('owner-function-test-banner');
+        const ownerTestGroup = document.getElementById('owner-function-test-group');
         try {
-            const testModeData = await chrome.storage.local.get(['xpider_owner_function_test_mode']);
-            const isOwnerTestMode = !!testModeData.xpider_owner_function_test_mode;
-            if (ownerTestToggle) {
-                ownerTestToggle.checked = isOwnerTestMode;
-                if (ownerTestBanner) {
-                    ownerTestBanner.style.display = isOwnerTestMode ? 'block' : 'none';
+            const isTestAuthorized = (typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.isTestOnlyBuild === 'function')
+                ? BuildProvenance.isTestOnlyBuild()
+                : Boolean(typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO && BuildProvenance.BUILD_INFO.testOnly === true && BuildProvenance.BUILD_INFO.channel === 'TEST_ONLY');
+
+            if (!isTestAuthorized) {
+                if (ownerTestGroup) ownerTestGroup.style.display = 'none';
+                if (ownerTestBanner) ownerTestBanner.style.display = 'none';
+                if (ownerTestToggle) {
+                    ownerTestToggle.checked = false;
+                    ownerTestToggle.disabled = true;
                 }
-                ownerTestToggle.addEventListener('change', async () => {
-                    const checked = ownerTestToggle.checked;
-                    await chrome.storage.local.set({ xpider_owner_function_test_mode: checked });
+                await chrome.storage.local.set({ xpider_owner_function_test_mode: false });
+            } else {
+                if (ownerTestGroup) ownerTestGroup.style.display = 'block';
+                const testModeData = await chrome.storage.local.get(['xpider_owner_function_test_mode']);
+                const isOwnerTestMode = !!testModeData.xpider_owner_function_test_mode;
+                if (ownerTestToggle) {
+                    ownerTestToggle.disabled = false;
+                    ownerTestToggle.checked = isOwnerTestMode;
                     if (ownerTestBanner) {
-                        ownerTestBanner.style.display = checked ? 'block' : 'none';
+                        ownerTestBanner.style.display = isOwnerTestMode ? 'block' : 'none';
                     }
-                    console.log(`[OWNER_FUNCTION_TEST] loopbackOnly=true strictPublicBypass=false toggled=${checked}`);
-                    addLog(`🧪 [Owner Functional Test Mode] ${checked ? 'ENABLED (Local Controlled Pages Only: 127.0.0.1/localhost)' : 'DISABLED'}`, checked ? 'warning' : 'info');
-                    chrome.runtime.sendMessage({ action: 'GET_PRIVACY_CONFIG' }, (res) => {
-                        if (res && res.preflight) _updatePrivacyCardUI(res.preflight);
+                    ownerTestToggle.addEventListener('change', async () => {
+                        const checked = ownerTestToggle.checked;
+                        await chrome.storage.local.set({ xpider_owner_function_test_mode: checked });
+                        if (ownerTestBanner) {
+                            ownerTestBanner.style.display = checked ? 'block' : 'none';
+                        }
+                        if (!checked) {
+                            chrome.runtime.sendMessage({ action: 'REMOVE_OWNER_TEST_NETWORK_GUARD' }).catch(() => {});
+                        }
+                        console.log(`[OWNER_FUNCTION_TEST] loopbackOnly=true strictPublicBypass=false toggled=${checked}`);
+                        addLog(`🧪 [Owner Functional Test Mode] ${checked ? 'ENABLED (Local Controlled Pages Only: 127.0.0.1/localhost)' : 'DISABLED'}`, checked ? 'warning' : 'info');
+                        chrome.runtime.sendMessage({ action: 'GET_PRIVACY_CONFIG' }, (res) => {
+                            if (res && res.preflight) _updatePrivacyCardUI(res.preflight);
+                        });
                     });
-                });
+                }
             }
         } catch (_) {}
 
@@ -4178,6 +4198,17 @@ async function startCampaign() {
     } catch (_) {}
 
     if (isOwnerTestModeActive) {
+        const isTestAuthorized = (typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.isTestOnlyBuild === 'function')
+            ? BuildProvenance.isTestOnlyBuild()
+            : Boolean(typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO && BuildProvenance.BUILD_INFO.testOnly === true && BuildProvenance.BUILD_INFO.channel === 'TEST_ONLY');
+
+        if (!isTestAuthorized) {
+            console.error('[OWNER_FUNCTION_TEST_BLOCKED] Runtime build is not authorized for TEST_ONLY channel.');
+            alert('🧪 OWNER FUNCTIONAL TEST MODE REJECTION\n\nOwner Functional Test Mode is strictly forbidden: runtime build does not declare TEST_ONLY.');
+            _restoreStartButton();
+            return Promise.reject(new Error('OWNER_FUNCTION_TEST_UNAUTHORIZED_BUILD'));
+        }
+
         if (campaignQueue.length > 10) {
             console.error(`[OWNER_FUNCTION_TEST_BLOCKED] Queue length ${campaignQueue.length} exceeds maximum 10 allowed targets.`);
             alert(`🧪 OWNER FUNCTIONAL TEST MODE LIMITATION\n\nOwner Functional Test Mode allows a maximum of 10 targets.\nCurrently queued: ${campaignQueue.length} targets.\n\nPlease reduce the test list or use OWNER_EXTENSION_TEST_URLS.csv.`);
@@ -6409,6 +6440,20 @@ function _triggerBrowserDownload(blob, filename) {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
     }, 1000);
+}
+
+function setCampaignQueue(q) {
+    campaignQueue = Array.isArray(q) ? [...q] : [];
+    if (typeof updateQueueUI === 'function') updateQueueUI();
+}
+function getCampaignQueue() {
+    return campaignQueue;
+}
+
+if (typeof window !== 'undefined') {
+    window.startCampaign = startCampaign;
+    window.setCampaignQueue = setCampaignQueue;
+    window.getCampaignQueue = getCampaignQueue;
 }
 
 if (typeof module !== 'undefined' && module.exports) {

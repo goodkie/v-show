@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Controlled Local Network Guard Leak Verification</title>
+</head>
+<body>
+  <h1>Controlled Local Page — Network Guard Leak Test</h1>
+  <p>Attempts external subresource and fetch requests to TEST-NET-1 (192.0.2.1) and example.com to verify DeclarativeNetRequest session rule blocking.</p>
+  <div id="results">Running...</div>
+  <script>
+    async function attemptLeaks() {
+      const results = {};
+      // 1. Fetch external TEST-NET IP
+      try {
+        await fetch('http://192.0.2.1/leak-probe-1', { method: 'GET', mode: 'no-cors' });
+        results.testNetFetch = 'ALLOWED_LEAK';
+      } catch (e) {
+        results.testNetFetch = 'BLOCKED: ' + e.message;
+      }
+
+      // 2. Fetch external domain
+      try {
+        await fetch('http://example.com/leak-probe-2', { method: 'GET', mode: 'no-cors' });
+        results.externalDomainFetch = 'ALLOWED_LEAK';
+      } catch (e) {
+        results.externalDomainFetch = 'BLOCKED: ' + e.message;
+      }
+
+      // 3. Localhost fetch (MUST SUCCEED)
+      try {
+        const res = await fetch('http://127.0.0.1:8088/contact-standard.html');
+        results.loopbackFetch = res.ok ? 'ALLOWED_LOOPBACK' : ('HTTP_' + res.status);
+      } catch (e) {
+        results.loopbackFetch = 'BLOCKED: ' + e.message;
+      }
+
+      window.__leakResults = results;
+      document.getElementById('results').textContent = JSON.stringify(results);
+    }
+    attemptLeaks();
+  </script>
+  <!-- External subresources: must be blocked by DNR session rule -->
+  <img src="http://192.0.2.1/leak-image.png" style="display:none;" id="leak-img">
+</body>
+</html>

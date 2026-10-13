@@ -49,7 +49,9 @@ global.chrome = {
     }
 };
 
-// Load PrivacyGateway
+// Load BuildProvenance and PrivacyGateway
+const BuildProvenance = require('../extension/modules/build-provenance.js');
+global.BuildProvenance = BuildProvenance;
 const PrivacyGateway = require('../extension/modules/privacy-gateway.js');
 
 async function runTestSuite() {
@@ -58,7 +60,7 @@ async function runTestSuite() {
     console.log('========================================================================\n');
 
     let passedCount = 0;
-    const totalCount = 8;
+    const totalCount = 11;
 
     // Helper to get fresh gateway instance
     function createGateway(config = {}) {
@@ -233,6 +235,70 @@ async function runTestSuite() {
         assert(popupJs.includes('xpider_owner_function_test_mode'), 'popup.js must persist xpider_owner_function_test_mode');
 
         console.log('    ✅ PASS: Popup UI and JavaScript strictly distinguish VPN observation from Strict enforcement.');
+        passedCount++;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // SCENARIO I: BuildProvenance.isTestOnlyBuild() capability and authorization gate
+    // ─────────────────────────────────────────────────────────────────────────────
+    console.log('\n>>> [SCENARIO I] BuildProvenance.isTestOnlyBuild() capability and authorization gate');
+    {
+        const BuildProvenance = require('../extension/modules/build-provenance.js');
+        assert.strictEqual(typeof BuildProvenance.isTestOnlyBuild, 'function', 'isTestOnlyBuild must be exported as a function');
+        assert.strictEqual(BuildProvenance.BUILD_INFO.channel, 'TEST_ONLY', 'Build channel must be TEST_ONLY');
+        assert.strictEqual(BuildProvenance.BUILD_INFO.testOnly, true, 'testOnly flag must be true');
+        assert.strictEqual(BuildProvenance.isTestOnlyBuild(), true, 'Current build must be authorized as TEST_ONLY');
+
+        // Test non-test build behavior
+        const savedChannel = BuildProvenance.BUILD_INFO.channel;
+        const savedTestOnly = BuildProvenance.BUILD_INFO.testOnly;
+        try {
+            BuildProvenance.BUILD_INFO.channel = 'PRODUCTION';
+            BuildProvenance.BUILD_INFO.testOnly = false;
+            assert.strictEqual(BuildProvenance.isTestOnlyBuild(), false, 'Production build must not pass isTestOnlyBuild');
+
+            // Verify PrivacyGateway rejects test mode on production build
+            const gw = createGateway();
+            const res = await gw.ensureEnforcedPrivacyForStart({ ownerFunctionTestMode: true });
+            assert.strictEqual(res.ready, false, 'Start must be blocked in production build even if test mode requested');
+            assert.strictEqual(res.reason, 'OWNER_FUNCTION_TEST_UNAUTHORIZED_BUILD', 'Reason must be OWNER_FUNCTION_TEST_UNAUTHORIZED_BUILD');
+        } finally {
+            BuildProvenance.BUILD_INFO.channel = savedChannel;
+            BuildProvenance.BUILD_INFO.testOnly = savedTestOnly;
+        }
+        console.log('    ✅ PASS: BuildProvenance runtime authorization gate strictly verified.');
+        passedCount++;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // SCENARIO J: DeclarativeNetRequest session rules specification & network guard
+    // ─────────────────────────────────────────────────────────────────────────────
+    console.log('\n>>> [SCENARIO J] DeclarativeNetRequest session rules specification & network guard');
+    {
+        const bgJs = fs.readFileSync(path.resolve(__dirname, '../extension/background.js'), 'utf8');
+        assert(bgJs.includes('OWNER_TEST_GUARD_RULE_IDS = [990001, 990002, 990003, 990004, 990005]'), 'Rule IDs must match specification');
+        assert(bgJs.includes("installOwnerTestNetworkGuard"), 'installOwnerTestNetworkGuard must be present');
+        assert(bgJs.includes("removeOwnerTestNetworkGuard"), 'removeOwnerTestNetworkGuard must be present');
+        assert(bgJs.includes("urlFilter: '|http*'"), 'Priority 1 block all HTTP must be configured');
+        assert(bgJs.includes("urlFilter: '|ws*'"), 'Priority 1 block all WS must be configured');
+        assert(bgJs.includes("urlFilter: '||localhost^'"), 'Priority 2 allow localhost must be configured');
+        assert(bgJs.includes("urlFilter: '||127.0.0.1^'"), 'Priority 2 allow 127.0.0.1 must be configured');
+        assert(bgJs.includes("urlFilter: '||[::1]^'"), 'Priority 2 allow [::1] must be configured');
+        assert(bgJs.includes("await installOwnerTestNetworkGuard()"), 'Network guard must be installed before START is acknowledged');
+        assert(bgJs.includes("OWNER_FUNCTION_TEST_GUARD_FAILED"), 'Fail-closed rejection must trigger if rule installation fails');
+        console.log('    ✅ PASS: DeclarativeNetRequest network guard structure and fail-closed handling verified.');
+        passedCount++;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // SCENARIO K: manifest.json permissions include declarativeNetRequest
+    // ─────────────────────────────────────────────────────────────────────────────
+    console.log('\n>>> [SCENARIO K] manifest.json permissions include declarativeNetRequest');
+    {
+        const manifest = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../extension/manifest.json'), 'utf8'));
+        assert(Array.isArray(manifest.permissions), 'Manifest permissions must be an array');
+        assert(manifest.permissions.includes('declarativeNetRequest'), 'Manifest must declare declarativeNetRequest permission');
+        console.log('    ✅ PASS: manifest.json correctly includes declarativeNetRequest permission.');
         passedCount++;
     }
 

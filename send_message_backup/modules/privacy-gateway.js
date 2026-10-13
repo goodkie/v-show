@@ -1733,6 +1733,19 @@
 
             // [R6.9G.10.3.8 Owner Functional Test Mode - Local Controlled Pages Only]
             if (options.ownerFunctionTestMode) {
+                const isTestAuthorized = (typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.isTestOnlyBuild === 'function')
+                    ? BuildProvenance.isTestOnlyBuild()
+                    : Boolean(typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO && BuildProvenance.BUILD_INFO.testOnly === true && BuildProvenance.BUILD_INFO.channel === 'TEST_ONLY');
+
+                if (!isTestAuthorized) {
+                    console.error('[OWNER_FUNCTION_TEST_BLOCKED] Runtime build is not authorized for TEST_ONLY channel.');
+                    return {
+                        ready: false,
+                        reason: 'OWNER_FUNCTION_TEST_UNAUTHORIZED_BUILD',
+                        userMessage: 'Owner Functional Test Mode is strictly forbidden: runtime build does not declare TEST_ONLY.'
+                    };
+                }
+
                 console.log('[OWNER_FUNCTION_TEST] loopbackOnly=true strictPublicBypass=false');
                 this.isGateReady = true;
                 this.isGateActive = true;

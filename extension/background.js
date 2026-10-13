@@ -146,6 +146,111 @@ if (typeof globalThis !== 'undefined') {
     globalThis.isProxyAuthHandlerRegistered = isProxyAuthHandlerRegistered;
 }
 
+// ── [R6.9G.10.3.7.1.4.4] DECLARATIVENETREQUEST OWNER TEST NETWORK GUARD ─────────────
+const OWNER_TEST_GUARD_RULE_IDS = [990001, 990002, 990003, 990004, 990005];
+
+async function installOwnerTestNetworkGuard() {
+    if (typeof chrome === 'undefined' || !chrome.declarativeNetRequest || !chrome.declarativeNetRequest.updateSessionRules) {
+        throw new Error('DECLARATIVE_NET_REQUEST_UNAVAILABLE');
+    }
+    const allResourceTypes = [
+        'main_frame', 'sub_frame', 'stylesheet', 'script', 'image', 'font',
+        'object', 'xmlhttprequest', 'ping', 'media', 'websocket', 'other'
+    ];
+    const rules = [
+        // Rule 990001: Priority 1 - Block all HTTP / HTTPS
+        {
+            id: 990001,
+            priority: 1,
+            action: { type: 'block' },
+            condition: {
+                urlFilter: '|http*',
+                resourceTypes: allResourceTypes
+            }
+        },
+        // Rule 990002: Priority 1 - Block all WebSockets
+        {
+            id: 990002,
+            priority: 1,
+            action: { type: 'block' },
+            condition: {
+                urlFilter: '|ws*',
+                resourceTypes: ['websocket']
+            }
+        },
+        // Rule 990003: Priority 2 (Higher) - Allow localhost loopback
+        {
+            id: 990003,
+            priority: 2,
+            action: { type: 'allow' },
+            condition: {
+                urlFilter: '||localhost^',
+                resourceTypes: allResourceTypes
+            }
+        },
+        // Rule 990004: Priority 2 (Higher) - Allow 127.0.0.1 loopback
+        {
+            id: 990004,
+            priority: 2,
+            action: { type: 'allow' },
+            condition: {
+                urlFilter: '||127.0.0.1^',
+                resourceTypes: allResourceTypes
+            }
+        },
+        // Rule 990005: Priority 2 (Higher) - Allow [::1] IPv6 loopback
+        {
+            id: 990005,
+            priority: 2,
+            action: { type: 'allow' },
+            condition: {
+                urlFilter: '||[::1]^',
+                resourceTypes: allResourceTypes
+            }
+        }
+    ];
+
+    await chrome.declarativeNetRequest.updateSessionRules({
+        removeRuleIds: OWNER_TEST_GUARD_RULE_IDS,
+        addRules: rules
+    });
+
+    // Verification / Readback
+    const sessionRules = await chrome.declarativeNetRequest.getSessionRules();
+    const installedIds = new Set(sessionRules.map(r => r.id));
+    const allPresent = OWNER_TEST_GUARD_RULE_IDS.every(id => installedIds.has(id));
+    if (!allPresent) {
+        throw new Error('OWNER_TEST_GUARD_READBACK_INCOMPLETE: failed to verify session rules');
+    }
+    console.log('[OWNER_TEST_GUARD] declarativeNetRequest session rules installed & verified: loopback HTTP only, all public blocked');
+    if (typeof logBg === 'function') {
+        logBg(null, '[OWNER_TEST_GUARD] declarativeNetRequest session rules installed & verified: loopback HTTP only, all public blocked', 'info');
+    }
+    return true;
+}
+
+async function removeOwnerTestNetworkGuard() {
+    try {
+        if (typeof chrome !== 'undefined' && chrome.declarativeNetRequest && chrome.declarativeNetRequest.updateSessionRules) {
+            await chrome.declarativeNetRequest.updateSessionRules({
+                removeRuleIds: OWNER_TEST_GUARD_RULE_IDS
+            });
+            console.log('[OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly');
+            if (typeof logBg === 'function') {
+                logBg(null, '[OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly', 'info');
+            }
+        }
+    } catch (e) {
+        console.warn('[OWNER_TEST_GUARD] Failed to remove session rules:', e.message);
+    }
+}
+
+// Clean up any leftover session rules on SW boot
+if (typeof chrome !== 'undefined' && chrome.declarativeNetRequest && chrome.declarativeNetRequest.updateSessionRules) {
+    removeOwnerTestNetworkGuard().catch(() => {});
+}
+// ── END DECLARATIVENETREQUEST GUARD ──────────────────────────────────────────
+
 // [v18.25.0] Boot Diagnostic Telemetry: Track SW startup steps in real-time
 function markBoot(step) {
     console.log(`[BootStep] ${step}`);
@@ -2190,6 +2295,21 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                 }
 
                 if (isTestMode) {
+                    const isTestAuthorized = (typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.isTestOnlyBuild === 'function')
+                        ? BuildProvenance.isTestOnlyBuild()
+                        : Boolean(typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO && BuildProvenance.BUILD_INFO.testOnly === true && BuildProvenance.BUILD_INFO.channel === 'TEST_ONLY');
+
+                    if (!isTestAuthorized) {
+                        console.error('[OWNER_FUNCTION_TEST_BLOCKED] Runtime build is not authorized for TEST_ONLY channel.');
+                        logBg(null, '[OWNER_FUNCTION_TEST_BLOCKED] Runtime build is not authorized for TEST_ONLY channel.', 'error');
+                        sendResponse({
+                            success: false,
+                            error: 'OWNER_FUNCTION_TEST_UNAUTHORIZED_BUILD',
+                            message: 'Owner Functional Test Mode is strictly forbidden: runtime build does not declare TEST_ONLY.'
+                        });
+                        return;
+                    }
+
                     if (queueLen > 10) {
                         console.error(`[OWNER_FUNCTION_TEST_BLOCKED] Queue length ${queueLen} exceeds maximum 10 allowed targets.`);
                         logBg(null, `[OWNER_FUNCTION_TEST_BLOCKED] Queue length ${queueLen} exceeds maximum 10 allowed targets.`, 'error');
@@ -2221,11 +2341,26 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                         }
                     }
 
-                    console.log('[OWNER_FUNCTION_TEST] loopbackOnly=true strictPublicBypass=false');
-                    logBg(null, '[OWNER_FUNCTION_TEST] loopbackOnly=true strictPublicBypass=false', 'info');
+                    // [Blocker 1 Hardening] Install & verify DeclarativeNetRequest session rules BEFORE START is acknowledged
+                    try {
+                        await installOwnerTestNetworkGuard();
+                    } catch (guardErr) {
+                        console.error(`[OWNER_FUNCTION_TEST_GUARD_FAIL] Failed to install/verify network guard: ${guardErr.message}`);
+                        logBg(null, `[OWNER_FUNCTION_TEST_GUARD_FAIL] Failed to install/verify network guard: ${guardErr.message}`, 'error');
+                        sendResponse({
+                            success: false,
+                            error: 'OWNER_FUNCTION_TEST_GUARD_FAILED',
+                            message: `Fail-Closed: Could not install declarativeNetRequest network guard: ${guardErr.message}`
+                        });
+                        return;
+                    }
+
+                    console.log('[OWNER_FUNCTION_TEST] loopbackOnly=true strictPublicBypass=false networkGuard=VERIFIED');
+                    logBg(null, '[OWNER_FUNCTION_TEST] loopbackOnly=true strictPublicBypass=false networkGuard=VERIFIED', 'info');
                     campaignState.ownerFunctionTestMode = true;
                 } else {
                     campaignState.ownerFunctionTestMode = false;
+                    await removeOwnerTestNetworkGuard();
                 }
 
                 // [R6.9G.9 Privacy Gateway Preflight & R6.9G.10.3.6.1 Single-Authority Start Prep]
@@ -2542,6 +2677,14 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                 } catch (e) {
                     sendResponse({ success: false, error: e.message });
                 }
+            })();
+            return true;
+        }
+
+        case 'REMOVE_OWNER_TEST_NETWORK_GUARD': {
+            (async () => {
+                await removeOwnerTestNetworkGuard();
+                sendResponse({ success: true });
             })();
             return true;
         }
@@ -4267,6 +4410,9 @@ async function pauseCampaignOrchestrator(saveCheckpoint = true) {
         console.log('[PRIVACY_SETTINGS_RESTORED] gateReady=false transportEnforced=false');
         logBg(null, '[PRIVACY_SETTINGS_RESTORED] gateReady=false transportEnforced=false', 'info');
     }
+    if (campaignState.ownerFunctionTestMode) {
+        await removeOwnerTestNetworkGuard();
+    }
 
     // Save checkpoint snapshot
     if (saveCheckpoint) {
@@ -4389,6 +4535,9 @@ async function endCampaignOrchestrator() {
     campaignState.currentTabId = null;
     campaignState.targetTabId = null;
     await chrome.storage.local.remove(['xpider_paused_checkpoint', 'xpider_currentAttempt', 'xpider_isActive', 'xpider_isPaused']);
+    if (campaignState.ownerFunctionTestMode) {
+        await removeOwnerTestNetworkGuard();
+    }
     printCampaignOutcomeSummary();
     return { success: true };
 }
@@ -4573,6 +4722,9 @@ async function processNextCampaignTarget(loopSessionId, loopGeneration) {
                     await pg.restoreOriginalSettings();
                     console.log('[PRIVACY_SETTINGS_RESTORED] gateReady=false transportEnforced=false');
                     logBg(null, '[PRIVACY_SETTINGS_RESTORED] gateReady=false transportEnforced=false', 'info');
+                }
+                if (campaignState.ownerFunctionTestMode) {
+                    await removeOwnerTestNetworkGuard();
                 }
             }
             campaignState.isLoopRunning = false;

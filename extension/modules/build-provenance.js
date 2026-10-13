@@ -15,16 +15,18 @@
 
     const BUILD_INFO = {
         branch: 'upgrade/phase-0-1',
-        // [R6.9G.10.3.7.1.4.3] implementationHead = functional commit for Owner Functional Test Mode & Privacy UX Differentiation
+        channel: 'TEST_ONLY',
+        testOnly: true,
+        // [R6.9G.10.3.7.1.4.4] implementationHead = functional commit for DeclarativeNetRequest Network Guard & TEST_ONLY Runtime Gate
         implementationHead: 'a6f0b76c82b1d7b95676de2173abc5c6ac5cd2ee',
         implementationHeadShort: 'a6f0b76c',
         head: 'a6f0b76c82b1d7b95676de2173abc5c6ac5cd2ee',
         headShort: 'a6f0b76c',
         rollbackBase: 'dc0740a0c69e2f7fa96b6989841acf0831b3619e',
-        previousFunctionalRestorePoint: '93d98f71f9cbf6334e3051661f75d7d2cd437ab5',
+        previousFunctionalRestorePoint: 'a6f0b76c82b1d7b95676de2173abc5c6ac5cd2ee',
         manifestVersion: 3,
-        buildId: 'R6.9G.10.3.7.1.4.3-20261013-OWNER-FUNCTION-TEST-MODE-PRIVACY-UX',
-        builtAt: '2026-10-13T14:30:00.000Z',
+        buildId: 'R6.9G.10.3.7.1.4.4-20261013-OWNER-TEST-MODE-DNR-GUARD',
+        builtAt: '2026-10-13T15:15:00.000Z',
         provenanceSchema: 2,
         modules: {
             backgroundSha: 'd29fdbb905542489bae66b376ae30538d54b32b8b9dfc1d14e7fba1a4bf33fbf',
@@ -40,9 +42,13 @@
         }
     };
 
+    function isTestOnlyBuild() {
+        return Boolean(BUILD_INFO.testOnly === true && BUILD_INFO.channel === 'TEST_ONLY');
+    }
+
     function getBuildProvenanceLogs() {
         return [
-            `[BUILD_ID] branch=${BUILD_INFO.branch} implementationHead=${BUILD_INFO.implementationHead} manifestVersion=${BUILD_INFO.manifestVersion} buildId=${BUILD_INFO.buildId} builtAt=${BUILD_INFO.builtAt}`,
+            `[BUILD_ID] branch=${BUILD_INFO.branch} channel=${BUILD_INFO.channel} testOnly=${BUILD_INFO.testOnly} implementationHead=${BUILD_INFO.implementationHead} manifestVersion=${BUILD_INFO.manifestVersion} buildId=${BUILD_INFO.buildId} builtAt=${BUILD_INFO.builtAt}`,
             `[BUILD_MODULE] contactGateSha=${BUILD_INFO.modules.contactGateSha}`,
             `[BUILD_MODULE] visionSubmitSha=${BUILD_INFO.modules.visionSubmitSha}`,
             `[BUILD_MODULE] historyStoreSha=${BUILD_INFO.modules.historyStoreSha}`,
@@ -72,13 +78,16 @@
             implementationHead: BUILD_INFO.implementationHead,
             implementationHeadShort: BUILD_INFO.implementationHeadShort,
             head: BUILD_INFO.head,
-            headShort: BUILD_INFO.headShort
+            headShort: BUILD_INFO.headShort,
+            channel: BUILD_INFO.channel,
+            testOnly: BUILD_INFO.testOnly
         };
     }
 
     return {
         BUILD_INFO,
         getBuildProvenanceLogs,
-        verifyBuildProvenance
+        verifyBuildProvenance,
+        isTestOnlyBuild
     };
 }));

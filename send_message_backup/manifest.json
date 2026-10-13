@@ -17,7 +17,8 @@
     "proxy",
     "webRequest",
     "webRequestAuthProvider",
-    "nativeMessaging"
+    "nativeMessaging",
+    "declarativeNetRequest"
   ],
   "host_permissions": [
     "<all_urls>"
