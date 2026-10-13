@@ -1731,6 +1731,19 @@
             const failClosed = this.config.failClosed !== false;
             console.log(`[PRIVACY_START_PREP] currentMode=${currentMode} failClosed=${failClosed}`);
 
+            // [R6.9G.10.3.8 Owner Functional Test Mode - Local Controlled Pages Only]
+            if (options.ownerFunctionTestMode) {
+                console.log('[OWNER_FUNCTION_TEST] loopbackOnly=true strictPublicBypass=false');
+                this.isGateReady = true;
+                this.isGateActive = true;
+                this.failureReason = null;
+                return {
+                    ready: true,
+                    mode: PRIVACY_MODES.DIRECT,
+                    ownerFunctionTestMode: true
+                };
+            }
+
             // If Privacy Gateway is disabled:
             if (!this.config.enabled) {
                 if (failClosed) {
@@ -1898,7 +1911,11 @@
             let userMsg = 'Strict Privacy needs an enforced relay/proxy. No healthy egress is configured.';
             let actionSection = 'privacy-relay-config-fields';
 
-            if (relayStatus && (relayStatus.totalNodes === 0 || relayStatus.health === 'NO_NODES')) {
+            if (currentMode === PRIVACY_MODES.EXTERNAL_VPN_MONITOR || currentMode === PRIVACY_MODES.SYSTEM_VPN) {
+                blockReason = 'EXTERNAL_VPN_NOT_ENFORCEABLE_IN_STRICT_MODE';
+                userMsg = 'Strict Privacy is ON. External VPN Monitor is monitor-only and cannot enforce campaign routing. For public-site campaigns, use Privacy Relay Companion or a Managed HTTPS/SOCKS5 Proxy.';
+                actionSection = 'privacy-system-vpn-fields';
+            } else if (relayStatus && (relayStatus.totalNodes === 0 || relayStatus.health === 'NO_NODES')) {
                 blockReason = 'NO_HEALTHY_EGRESS';
                 userMsg = 'Strict Privacy needs an enforced relay/proxy. No healthy egress is configured. Please add an HTTP/HTTPS proxy node to Privacy Relay.';
                 actionSection = 'privacy-relay-add-form';
@@ -2007,6 +2024,23 @@
                 })
                 .replace(/proxy\s+user:[^\s@,]+/gi, 'proxy user:[REDACTED_SECRET]');
         }
+
+        static isLoopbackTestUrl(url) {
+            if (!url || typeof url !== 'string') return false;
+            try {
+                let u = url.trim();
+                if (!/^https?:\/\//i.test(u)) u = 'http://' + u;
+                const parsed = new URL(u);
+                const host = parsed.hostname.toLowerCase();
+                return host === '127.0.0.1' || host === 'localhost' || host === '[::1]';
+            } catch (_) {
+                return false;
+            }
+        }
+
+        isLoopbackTestUrl(url) {
+            return PrivacyGatewayEngine.isLoopbackTestUrl(url);
+        }
     }
 
     const instance = new PrivacyGatewayEngine();
@@ -2016,6 +2050,7 @@
         PRIVACY_MODES,
         getInstance: () => instance,
         ensureEnforcedPrivacyForStart: (options) => instance.ensureEnforcedPrivacyForStart(options),
-        redactSensitivePrivacyInfo: PrivacyGatewayEngine.redactSensitivePrivacyInfo
+        redactSensitivePrivacyInfo: PrivacyGatewayEngine.redactSensitivePrivacyInfo,
+        isLoopbackTestUrl: PrivacyGatewayEngine.isLoopbackTestUrl
     };
 }));

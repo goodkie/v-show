@@ -1614,6 +1614,11 @@ async function assertPhysicalGateReady(context = 'GENERAL') {
 }
 
 async function assertPrivacyTransportReady(context = 'GENERAL') {
+    // [Fix 2 Owner Functional Test Mode Loopback Direct Bypass]
+    if (campaignState && campaignState.ownerFunctionTestMode) {
+        return { ready: true, ownerFunctionTestMode: true };
+    }
+
     // [R6.9G.10.3.7] Physical Router Security Gate Pre-Flight
     const physCheck = await assertPhysicalGateReady(context);
     if (physCheck && !physCheck.ready) {
@@ -2170,65 +2175,118 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                 logBg(null, plog, "info");
             }
 
-            const queueLen = (request && Array.isArray(request.queue)) ? request.queue.length : 0;
-            console.log(`[START_BG] received queue=${queueLen}`);
-            logBg(null, `[START_BG] received queue=${queueLen}`, "info");
-
             (async () => {
-                // [R6.9G.9 Privacy Gateway Preflight & R6.9G.10.3.6.1 Single-Authority Start Prep]
-                const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
-                if (pg) {
-                    await pg.init();
-                    // Single authoritative privacy check:
-                    // If gate is not ready (e.g. direct call without prior prep), run ensureEnforcedPrivacyForStart as fallback
-                    if (!pg.isGateReady) {
-                        const prep = await pg.ensureEnforcedPrivacyForStart();
-                        if (!prep.ready && pg.config.failClosed) {
-                            logBg(null, `[PRIVACY_GATE_BLOCK] reason=${prep.reason} attemptId=none targetUrl=none`, 'error');
-                            chrome.runtime.sendMessage({
-                                action: 'PRIVACY_GATEWAY_BLOCKED',
-                                reason: prep.reason,
-                                userMessage: prep.userMessage
-                            }).catch(() => {});
+                const queueLen = (request && Array.isArray(request.queue)) ? request.queue.length : 0;
+                console.log(`[START_BG] received queue=${queueLen}`);
+                logBg(null, `[START_BG] received queue=${queueLen}`, "info");
+
+                // [Fix 2 Owner Functional Test Mode Validation in Background]
+                let isTestMode = Boolean(request.ownerFunctionTestMode);
+                if (!isTestMode) {
+                    try {
+                        const st = await chrome.storage.local.get(['xpider_owner_function_test_mode']);
+                        isTestMode = Boolean(st.xpider_owner_function_test_mode);
+                    } catch (_) {}
+                }
+
+                if (isTestMode) {
+                    if (queueLen > 10) {
+                        console.error(`[OWNER_FUNCTION_TEST_BLOCKED] Queue length ${queueLen} exceeds maximum 10 allowed targets.`);
+                        logBg(null, `[OWNER_FUNCTION_TEST_BLOCKED] Queue length ${queueLen} exceeds maximum 10 allowed targets.`, 'error');
+                        sendResponse({
+                            success: false,
+                            error: 'OWNER_FUNCTION_TEST_EXCEEDED_MAX_TARGETS',
+                            message: `Owner Functional Test Mode allows maximum 10 targets (got ${queueLen}).`
+                        });
+                        return;
+                    }
+
+                    const isLoopbackFn = (typeof PrivacyGateway !== 'undefined' && typeof PrivacyGateway.isLoopbackTestUrl === 'function')
+                        ? PrivacyGateway.isLoopbackTestUrl
+                        : (u) => /^https?:\/\/(?:127\.0\.0\.1|localhost)(?::\d+)?(?:\/|$)/i.test(u);
+
+                    const queueArr = Array.isArray(request.queue) ? request.queue : [];
+                    for (let i = 0; i < queueArr.length; i++) {
+                        const raw = queueArr[i];
+                        const urlStr = typeof raw === 'string' ? raw : (raw?.url || '');
+                        if (!isLoopbackFn(urlStr)) {
+                            console.error(`[OWNER_FUNCTION_TEST_BLOCKED] Non-loopback target rejected in test mode: ${urlStr} at index ${i}`);
+                            logBg(null, `[OWNER_FUNCTION_TEST_BLOCKED] Non-loopback target rejected: ${urlStr} at index ${i}`, 'error');
                             sendResponse({
                                 success: false,
-                                status: 'PRIVACY_GATEWAY_BLOCKED',
-                                error: 'PRIVACY_GATEWAY_BLOCKED',
-                                reason: prep.reason,
-                                userMessage: prep.userMessage
+                                error: 'OWNER_FUNCTION_TEST_NON_LOOPBACK_TARGET',
+                                message: `Owner Functional Test Mode requires ALL targets to be local loopback. Non-loopback target rejected: ${urlStr}`
                             });
                             return;
                         }
                     }
 
-                    if (pg.config.transportMode === 'PRIVACY_RELAY') {
-                        await pg.ensureRelayActive(true);
-                        if (pg.config.relayRotationMode === 'CAMPAIGN_BOUNDARY' || pg.config.rotateAtCampaignStart) {
-                            logBg(null, '[PRIVACY_RELAY] Campaign boundary reached: rotating egress before campaign start...', 'info');
-                            await pg.rotateRelayEgress('CAMPAIGN_BOUNDARY');
+                    console.log('[OWNER_FUNCTION_TEST] loopbackOnly=true strictPublicBypass=false');
+                    logBg(null, '[OWNER_FUNCTION_TEST] loopbackOnly=true strictPublicBypass=false', 'info');
+                    campaignState.ownerFunctionTestMode = true;
+                } else {
+                    campaignState.ownerFunctionTestMode = false;
+                }
+
+                // [R6.9G.9 Privacy Gateway Preflight & R6.9G.10.3.6.1 Single-Authority Start Prep]
+                if (!isTestMode) {
+                    const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+                    if (pg) {
+                        await pg.init();
+                        // Single authoritative privacy check:
+                        // If gate is not ready (e.g. direct call without prior prep), run ensureEnforcedPrivacyForStart as fallback
+                        if (!pg.isGateReady) {
+                            const prep = await pg.ensureEnforcedPrivacyForStart();
+                            if (!prep.ready && pg.config.failClosed) {
+                                logBg(null, `[PRIVACY_GATE_BLOCK] reason=${prep.reason} attemptId=none targetUrl=none`, 'error');
+                                chrome.runtime.sendMessage({
+                                    action: 'PRIVACY_GATEWAY_BLOCKED',
+                                    reason: prep.reason,
+                                    userMessage: prep.userMessage
+                                }).catch(() => {});
+                                sendResponse({
+                                    success: false,
+                                    status: 'PRIVACY_GATEWAY_BLOCKED',
+                                    error: 'PRIVACY_GATEWAY_BLOCKED',
+                                    reason: prep.reason,
+                                    userMessage: prep.userMessage
+                                });
+                                return;
+                            }
+                        }
+
+                        if (pg.config.transportMode === 'PRIVACY_RELAY') {
+                            await pg.ensureRelayActive(true);
+                            if (pg.config.relayRotationMode === 'CAMPAIGN_BOUNDARY' || pg.config.rotateAtCampaignStart) {
+                                logBg(null, '[PRIVACY_RELAY] Campaign boundary reached: rotating egress before campaign start...', 'info');
+                                await pg.rotateRelayEgress('CAMPAIGN_BOUNDARY');
+                            }
+                        }
+                        const preflight = await pg.runPreflight();
+                        const pLog = `[PRIVACY_GATE] mode=${preflight.mode} transport=${preflight.mode} failClosed=${preflight.failClosed} webrtcGuard=${preflight.webrtcGuard} directFallbackBlocked=${preflight.directFallbackBlocked} egressCheck=${preflight.egressCheck} dnsPrivacy=${preflight.dnsPrivacy} ipv6Protection=${preflight.ipv6Protection} status=${preflight.ready ? 'READY' : 'BLOCKED'}`;
+                        console.log(pLog);
+                        logBg(null, pLog, preflight.ready ? "info" : "error");
+
+                        if (!preflight.ready && preflight.failClosed) {
+                            logBg(null, `[PRIVACY_GATE_BLOCK] reason=${preflight.failureReason} attemptId=none targetUrl=none`, 'error');
+                            chrome.runtime.sendMessage({
+                                action: 'PRIVACY_GATEWAY_BLOCKED',
+                                reason: preflight.failureReason,
+                                userMessage: preflight.userMessage || 'Strict Privacy transport could not be enforced.'
+                            }).catch(() => {});
+                            sendResponse({
+                                success: false,
+                                status: 'PRIVACY_GATEWAY_BLOCKED',
+                                error: 'PRIVACY_GATEWAY_BLOCKED',
+                                reason: preflight.failureReason,
+                                userMessage: preflight.userMessage || 'Strict Privacy transport could not be enforced.'
+                            });
+                            return;
                         }
                     }
-                    const preflight = await pg.runPreflight();
-                    const pLog = `[PRIVACY_GATE] mode=${preflight.mode} transport=${preflight.mode} failClosed=${preflight.failClosed} webrtcGuard=${preflight.webrtcGuard} directFallbackBlocked=${preflight.directFallbackBlocked} egressCheck=${preflight.egressCheck} dnsPrivacy=${preflight.dnsPrivacy} ipv6Protection=${preflight.ipv6Protection} status=${preflight.ready ? 'READY' : 'BLOCKED'}`;
-                    console.log(pLog);
-                    logBg(null, pLog, preflight.ready ? "info" : "error");
-
-                    if (!preflight.ready && preflight.failClosed) {
-                        logBg(null, `[PRIVACY_GATE_BLOCK] reason=${preflight.failureReason} attemptId=none targetUrl=none`, 'error');
-                        chrome.runtime.sendMessage({
-                            action: 'PRIVACY_GATEWAY_BLOCKED',
-                            reason: preflight.failureReason,
-                            userMessage: preflight.userMessage || 'Strict Privacy transport could not be enforced.'
-                        }).catch(() => {});
-                        sendResponse({
-                            success: false,
-                            status: 'PRIVACY_GATEWAY_BLOCKED',
-                            error: 'PRIVACY_GATEWAY_BLOCKED',
-                            reason: preflight.failureReason,
-                            userMessage: preflight.userMessage || 'Strict Privacy transport could not be enforced.'
-                        });
-                        return;
-                    }
+                } else {
+                    console.log('[PRIVACY_GATE] mode=DIRECT transport=DIRECT failClosed=false (OWNER_FUNCTION_TEST_MODE) status=READY');
+                    logBg(null, '[PRIVACY_GATE] mode=DIRECT transport=DIRECT failClosed=false (OWNER_FUNCTION_TEST_MODE) status=READY', 'info');
                 }
 
                 // [R6.9G.10.3.6.1] Blocker 3: START_BG_READY log before sendResponse
@@ -2247,7 +2305,8 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                     }
                     await startCampaignOrchestrator(request.queue, request.template, request.delayMs, request.fillDelayMs, request.submitDelayMs, {
                         skipPreviouslyAttempted: request.skipPreviouslyAttempted,
-                        overrideSkipAttempted: request.overrideSkipAttempted
+                        overrideSkipAttempted: request.overrideSkipAttempted,
+                        ownerFunctionTestMode: isTestMode
                     });
                 } catch (e) {
                     console.error("[StartError]", e);
@@ -2576,7 +2635,11 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                 const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
                 if (!pg) return sendResponse({ success: false, error: 'PrivacyGateway unavailable' });
                 await pg.init();
-                const res = await pg.ensureEnforcedPrivacyForStart(request.options || {});
+                const options = Object.assign({}, request.options || {});
+                if (request.ownerFunctionTestMode || (request.options && request.options.ownerFunctionTestMode)) {
+                    options.ownerFunctionTestMode = true;
+                }
+                const res = await pg.ensureEnforcedPrivacyForStart(options);
                 sendResponse({ success: true, result: res });
             })();
             return true;
@@ -4038,6 +4101,7 @@ async function startCampaignOrchestrator(queue, template, delayMs, fillDelayMs =
         campaignState.delayMs = delayMs || 6000;
         campaignState.fillDelayMs = fillDelayMs || 300;
         campaignState.submitDelayMs = submitDelayMs || 1500;
+        campaignState.ownerFunctionTestMode = !!options.ownerFunctionTestMode;
         campaignState.isActive = true;
         campaignState.isPaused = false; // [v18.7] Reset pause on new start
         campaignState.sessionId++; 
@@ -4605,6 +4669,28 @@ async function processNextCampaignTarget(loopSessionId, loopGeneration) {
                 targetHost = new URL(targetUrl).hostname;
             } catch (_) {
                 targetHost = normalized || currentUrl;
+            }
+
+            // [Fix 2 Owner Functional Test Mode Defense-in-Depth Leak Prevention]
+            if (campaignState.ownerFunctionTestMode) {
+                const isLoopbackFn = (typeof PrivacyGateway !== 'undefined' && typeof PrivacyGateway.isLoopbackTestUrl === 'function')
+                    ? PrivacyGateway.isLoopbackTestUrl
+                    : (u) => /^https?:\/\/(?:127\.0\.0\.1|localhost)(?::\d+)?(?:\/|$)/i.test(u);
+                if (!isLoopbackFn(targetUrl)) {
+                    logBg(null, `🛑 [OWNER_FUNCTION_TEST_LEAK_PREVENTION] Non-loopback target blocked in test mode: ${targetUrl}`, 'error');
+                    console.error(`[OWNER_FUNCTION_TEST_LEAK_PREVENTION] Non-loopback target blocked: ${targetUrl}`);
+                    orchestrationSettled = true;
+                    releaseLease();
+                    await pauseCampaignOrchestrator(true);
+                    campaignState.isFaulted = true;
+                    campaignState.faultReason = 'NON_LOOPBACK_TARGET_BLOCKED_IN_TEST_MODE';
+                    chrome.runtime.sendMessage({
+                        action: 'PRIVACY_GATEWAY_BLOCKED',
+                        reason: 'NON_LOOPBACK_TARGET_BLOCKED_IN_TEST_MODE',
+                        userMessage: `Public or non-loopback URL blocked in Owner Functional Test Mode: ${targetUrl}`
+                    }).catch(() => {});
+                    return;
+                }
             }
 
             // [Filter Guard] Skip government/military/academic and major portal/platform/shopping mall targets

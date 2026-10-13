@@ -59,6 +59,21 @@
                 </div>
             </div>
 
+            <!-- [Fix 3 Actionable Privacy Block Modal] -->
+            <div id="privacy-block-modal-overlay" class="modal-overlay hidden" style="display: none;">
+                <div class="captcha-friendly-modal" style="max-width: 420px; text-align: left; padding: 20px;">
+                    <h2 style="color: #f87171; font-size: 13px; font-weight: 700; margin-bottom: 8px;">🛡️ STRICT PRIVACY REQUIREMENT</h2>
+                    <p id="privacy-block-modal-msg" style="font-size: 11px; line-height: 1.4; color: #cbd5e1; margin-bottom: 14px;">
+                        Strict Privacy is ON. External VPN Monitor is monitor-only and cannot enforce campaign routing. For public-site campaigns, use Privacy Relay Companion or a Managed HTTPS/SOCKS5 Proxy.
+                    </p>
+                    <div style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
+                        <button type="button" id="privacy-block-action-companion" class="primary-btn" style="background: #0284c7; font-size: 11px; padding: 7px 10px; text-align: left;">1. 🔄 Install/Start Privacy Relay Companion</button>
+                        <button type="button" id="privacy-block-action-proxy" class="secondary-btn" style="background: rgba(56, 189, 248, 0.15); border: 1px solid #38bdf8; color: #38bdf8; font-size: 11px; padding: 7px 10px; text-align: left;">2. 🛡️ Configure Managed Proxy (HTTPS / SOCKS5)</button>
+                        <button type="button" id="privacy-block-action-cancel" class="secondary-btn" style="background: rgba(255, 255, 255, 0.1); color: #94a3b8; font-size: 11px; padding: 7px 10px; text-align: center;">✕ Cancel</button>
+                    </div>
+                </div>
+            </div>
+
             <div class="tabs" id="main-tabs">
                 <button class="tab-btn active" data-tab="campaign" data-i18n="tab_campaign">Campaign</button>
                 <button class="tab-btn" data-tab="template" data-i18n="tab_template">Message Template</button>
@@ -494,21 +509,21 @@
                             </div>
                             <p class="settings-subtip" style="color: #fca5a5;">When active, campaign START is strictly blocked if protected transport fails.</p>
 
-                            <!-- [R6.9G.9.1] System VPN Owner Confirmation Section -->
+                            <!-- [R6.9G.10.3.8] External VPN Monitor (Observe Only) Section -->
                             <div id="privacy-system-vpn-fields" style="display: block; margin-top: 8px; background: rgba(30, 41, 59, 0.6); padding: 8px; border-radius: 6px; border: 1px solid #334155;">
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                                    <span style="font-size: 11px; color: #38bdf8; font-weight: 700;">🌐 SYSTEM VPN STATUS</span>
-                                    <span id="privacy-vpn-status-badge" style="font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid #ef4444;">NOT CONFIRMED</span>
+                                    <span style="font-size: 11px; color: #38bdf8; font-weight: 700;">🌐 EXTERNAL VPN MONITOR (OBSERVE ONLY)</span>
+                                    <span id="privacy-vpn-status-badge" style="font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid #ef4444;">VPN OBSERVED: NOT CONFIRMED (MONITOR ONLY)</span>
                                 </div>
                                 <p class="settings-subtip" style="margin-bottom: 6px; font-size: 10px; line-height: 1.3; color: #94a3b8;">
-                                    Browser extensions cannot reliably determine whether an OS-level VPN is active. Connect Proton VPN / Mullvad / another trusted VPN first, then confirm here.
+                                    External VPN is monitor-only and cannot enforce browser routing. Connect your VPN client first, then confirm observation here. For Fail-Closed campaigns, Privacy Relay or Managed Proxy is required.
                                 </p>
                                 <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 8px;">
                                     <input type="checkbox" id="privacy-vpn-confirm-checkbox" style="cursor: pointer;">
-                                    <label for="privacy-vpn-confirm-checkbox" style="font-size: 10px; color: #e2e8f0; cursor: pointer; font-weight: 600;">I confirm my system VPN is connected and active</label>
+                                    <label for="privacy-vpn-confirm-checkbox" style="font-size: 10px; color: #e2e8f0; cursor: pointer; font-weight: 600;">I confirm my external VPN is connected and observed active</label>
                                 </div>
                                 <div style="display: flex; gap: 6px;">
-                                    <button type="button" id="privacy-vpn-verify-btn" class="primary-btn-small" style="flex: 1; padding: 4px 8px; font-size: 10px; background: #0284c7; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">✓ Verify & Use System VPN</button>
+                                    <button type="button" id="privacy-vpn-verify-btn" class="primary-btn-small" style="flex: 1; padding: 4px 8px; font-size: 10px; background: #0284c7; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">Verify External VPN (Monitor Only)</button>
                                     <button type="button" id="privacy-vpn-revoke-btn" class="secondary-btn-small" style="padding: 4px 8px; font-size: 10px; background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid #ef4444; border-radius: 4px; cursor: pointer;">Revoke</button>
                                 </div>
                             </div>
@@ -695,6 +710,20 @@
                             </div>
                         </div>
 
+                        <!-- [R6.9G.10.3.8 Owner Functional Test Mode - Local Controlled Pages Only] -->
+                        <div class="settings-group" id="owner-function-test-group" style="background: rgba(234, 179, 8, 0.08); border: 1px dashed #eab308; border-radius: 6px; padding: 10px; margin-top: 10px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <label style="font-size: 11px; font-weight: 700; color: #fde047; margin: 0;">🧪 Owner Functional Test Mode</label>
+                                <label class="switch-small" style="margin: 0;">
+                                    <input type="checkbox" id="owner-function-test-toggle">
+                                    <span class="slider-small round"></span>
+                                </label>
+                            </div>
+                            <p class="settings-subtip" style="color: #fef08a; margin-top: 4px; font-size: 10px; line-height: 1.3;">
+                                TEST-ONLY: Bypasses relay/proxy requirement for local test fixtures ONLY (http://127.0.0.1/* and http://localhost/*, max 10 targets). All public targets remain strictly blocked.
+                            </p>
+                        </div>
+
                         <!-- [v18.23.0] Emergency Recovery Tools -->
                         <div class="settings-group emergency-group">
                             <label data-i18n="label_emergency_tools">Emergency Recovery</label>
@@ -718,8 +747,14 @@
                 </div>
             </div>
 
+            <!-- [Fix 2 Large Banner: LOCAL FUNCTION TEST — PUBLIC NETWORK TARGETS BLOCKED] -->
+            <div id="owner-function-test-banner" style="display: none; background: rgba(234, 179, 8, 0.2); border: 2px solid #eab308; border-radius: 6px; padding: 8px 12px; margin-bottom: 10px; text-align: center; color: #fde047; font-weight: 800; font-size: 11px; letter-spacing: 0.5px; box-shadow: 0 0 10px rgba(234, 179, 8, 0.3);">
+                🧪 LOCAL FUNCTION TEST — PUBLIC NETWORK TARGETS BLOCKED
+            </div>
+
             <div class="action-buttons">
                 <button id="start-btn" class="primary-btn pulse" data-i18n="btn_start">Start Sending</button>
+                <div id="start-btn-helper-text" style="display: none; font-size: 10px; color: #fca5a5; margin-top: 4px; text-align: center; line-height: 1.3;">Strict mode requires Privacy Relay or Managed Proxy. External VPN Monitor alone cannot satisfy Fail-Closed.</div>
                 <div class="multi-actions hidden" id="multi-actions">
                     <button id="pause-btn" class="secondary-btn" data-i18n="btn_pause">Pause</button>
                     <button id="stop-save-btn" class="secondary-btn" style="background: rgba(255, 165, 0, 0.2); border: 1px solid #ffa500; color: #ffa500;" title="Pause and save checkpoint for resuming later">Stop & Save</button>

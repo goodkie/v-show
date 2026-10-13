@@ -1045,19 +1045,99 @@ async function hydrateSettings(overrideV2Store = null) {
         const updateVpnStatusBadge = (confirmed) => {
             if (!vpnBadge) return;
             if (confirmed) {
-                vpnBadge.textContent = 'CONFIRMED';
+                vpnBadge.textContent = 'VPN OBSERVED: CONFIRMED (MONITOR ONLY)';
                 vpnBadge.style.color = '#34d399';
                 vpnBadge.style.background = 'rgba(16, 185, 129, 0.2)';
                 vpnBadge.style.border = '1px solid #10b981';
                 if (vpnCheckbox) vpnCheckbox.checked = true;
             } else {
-                vpnBadge.textContent = 'NOT CONFIRMED';
+                vpnBadge.textContent = 'VPN OBSERVED: NOT CONFIRMED (MONITOR ONLY)';
                 vpnBadge.style.color = '#f87171';
                 vpnBadge.style.background = 'rgba(239, 68, 68, 0.2)';
                 vpnBadge.style.border = '1px solid #ef4444';
                 if (vpnCheckbox) vpnCheckbox.checked = false;
             }
         };
+
+        // [Fix 2 Hydrate Owner Functional Test Mode]
+        const ownerTestToggle = document.getElementById('owner-function-test-toggle');
+        const ownerTestBanner = document.getElementById('owner-function-test-banner');
+        try {
+            const testModeData = await chrome.storage.local.get(['xpider_owner_function_test_mode']);
+            const isOwnerTestMode = !!testModeData.xpider_owner_function_test_mode;
+            if (ownerTestToggle) {
+                ownerTestToggle.checked = isOwnerTestMode;
+                if (ownerTestBanner) {
+                    ownerTestBanner.style.display = isOwnerTestMode ? 'block' : 'none';
+                }
+                ownerTestToggle.addEventListener('change', async () => {
+                    const checked = ownerTestToggle.checked;
+                    await chrome.storage.local.set({ xpider_owner_function_test_mode: checked });
+                    if (ownerTestBanner) {
+                        ownerTestBanner.style.display = checked ? 'block' : 'none';
+                    }
+                    console.log(`[OWNER_FUNCTION_TEST] loopbackOnly=true strictPublicBypass=false toggled=${checked}`);
+                    addLog(`🧪 [Owner Functional Test Mode] ${checked ? 'ENABLED (Local Controlled Pages Only: 127.0.0.1/localhost)' : 'DISABLED'}`, checked ? 'warning' : 'info');
+                    chrome.runtime.sendMessage({ action: 'GET_PRIVACY_CONFIG' }, (res) => {
+                        if (res && res.preflight) _updatePrivacyCardUI(res.preflight);
+                    });
+                });
+            }
+        } catch (_) {}
+
+        // [Fix 3 Actionable Privacy Block Modal Button Handlers]
+        const privacyBlockModal = document.getElementById('privacy-block-modal-overlay');
+        const btnActCompanion = document.getElementById('privacy-block-action-companion');
+        const btnActProxy = document.getElementById('privacy-block-action-proxy');
+        const btnActCancel = document.getElementById('privacy-block-action-cancel');
+        if (btnActCompanion) {
+            btnActCompanion.addEventListener('click', () => {
+                if (privacyBlockModal) {
+                    privacyBlockModal.style.display = 'none';
+                    privacyBlockModal.classList.add('hidden');
+                }
+                const settingsOverlay = document.getElementById('settings-overlay');
+                if (settingsOverlay) settingsOverlay.classList.remove('hidden');
+                if (privModeSelect) {
+                    privModeSelect.value = 'PRIVACY_RELAY';
+                    privModeSelect.dispatchEvent(new Event('change'));
+                }
+                const relayFields = document.getElementById('privacy-relay-config-fields');
+                if (relayFields) {
+                    relayFields.style.display = 'block';
+                    relayFields.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+            });
+        }
+        if (btnActProxy) {
+            btnActProxy.addEventListener('click', () => {
+                if (privacyBlockModal) {
+                    privacyBlockModal.style.display = 'none';
+                    privacyBlockModal.classList.add('hidden');
+                }
+                const settingsOverlay = document.getElementById('settings-overlay');
+                if (settingsOverlay) settingsOverlay.classList.remove('hidden');
+                if (privModeSelect) {
+                    privModeSelect.value = 'HTTPS_PROXY';
+                    privModeSelect.dispatchEvent(new Event('change'));
+                }
+                const proxyFields = document.getElementById('privacy-proxy-config-fields');
+                if (proxyFields) {
+                    proxyFields.style.display = 'block';
+                    proxyFields.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+                const proxyHost = document.getElementById('privacy-proxy-host');
+                if (proxyHost) proxyHost.focus();
+            });
+        }
+        if (btnActCancel) {
+            btnActCancel.addEventListener('click', () => {
+                if (privacyBlockModal) {
+                    privacyBlockModal.style.display = 'none';
+                    privacyBlockModal.classList.add('hidden');
+                }
+            });
+        }
 
         if (privModeSelect) {
             const rawMode = privCfg.transportMode || 'PRIVACY_RELAY';
@@ -1498,7 +1578,7 @@ async function hydrateSettings(overrideV2Store = null) {
                         if (res.preflight) {
                             _updatePrivacyCardUI(res.preflight);
                         }
-                        addLog('✅ [Privacy Gateway] System VPN confirmed and verified ready.', 'success');
+                        addLog('✅ [Privacy Gateway] External VPN observed active (Monitor Only). Strict mode requires Privacy Relay or Managed Proxy.', 'info');
                     } else {
                         updateVpnStatusBadge(false);
                         const failureReason = (res && res.preflight && res.preflight.failureReason) || (res && res.error) || 'PREFLIGHT_VERIFICATION_FAILED';
@@ -1518,7 +1598,7 @@ async function hydrateSettings(overrideV2Store = null) {
                     addLog(`❌ [Privacy Gateway] System VPN verify error: ${e.message}`, 'error');
                 } finally {
                     vpnVerifyBtn.disabled = false;
-                    vpnVerifyBtn.textContent = '✓ Verify & Use System VPN';
+                    vpnVerifyBtn.textContent = 'Verify External VPN (Monitor Only)';
                 }
             });
         }
@@ -1915,7 +1995,7 @@ function _updatePrivacyCardUI(pf) {
             elEn.textContent = 'ON (READY)';
             elEn.style.color = '#4ade80';
         } else if (mode === 'EXTERNAL_VPN_MONITOR' || mode === 'SYSTEM_VPN') {
-            elEn.textContent = pf.failClosed ? 'BLOCKED (UNENFORCED)' : 'MONITORED ONLY';
+            elEn.textContent = pf.failClosed ? 'BLOCKED — TRANSPORT NOT ENFORCED' : 'MONITORED ONLY';
             elEn.style.color = pf.failClosed ? '#f87171' : '#fde047';
         } else {
             elEn.textContent = pf.failureReason ? `BLOCKED (${pf.failureReason})` : 'NOT READY';
@@ -1942,6 +2022,17 @@ function _updatePrivacyCardUI(pf) {
         elIp.style.color = pf.ipv6Protection === 'PROTECTED' ? '#4ade80' : '#94a3b8';
     }
     if (elLc) elLc.textContent = pf.lastCheck ? new Date(pf.lastCheck).toLocaleTimeString() : 'Never';
+
+    // [Fix 1 Start Button Helper Text]
+    const startHelper = document.getElementById('start-btn-helper-text');
+    if (startHelper) {
+        const isMonitorOnly = (mode === 'EXTERNAL_VPN_MONITOR' || mode === 'SYSTEM_VPN');
+        if (pf.failClosed && isMonitorOnly) {
+            startHelper.style.display = 'block';
+        } else {
+            startHelper.style.display = 'none';
+        }
+    }
 }
 
 async function hydrateCampaignState() {
@@ -2207,7 +2298,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     if (reason === 'SYSTEM_VPN_EGRESS_CHANGED') {
                         const vpnBadge = document.getElementById('privacy-vpn-status-badge');
                         if (vpnBadge) {
-                            vpnBadge.textContent = 'NOT CONFIRMED';
+                            vpnBadge.textContent = 'VPN OBSERVED: NOT CONFIRMED (MONITOR ONLY)';
                             vpnBadge.style.color = '#f87171';
                             vpnBadge.style.background = 'rgba(239, 68, 68, 0.2)';
                             vpnBadge.style.border = '1px solid #ef4444';
@@ -4079,6 +4170,39 @@ async function startCampaign() {
     const banner = document.getElementById('resumable-campaign-banner');
     if (banner) banner.style.display = 'none';
 
+    // [Fix 2 Owner Functional Test Mode Queue Validation]
+    let isOwnerTestModeActive = false;
+    try {
+        const testModeStorage = await chrome.storage.local.get(['xpider_owner_function_test_mode']);
+        isOwnerTestModeActive = !!testModeStorage.xpider_owner_function_test_mode;
+    } catch (_) {}
+
+    if (isOwnerTestModeActive) {
+        if (campaignQueue.length > 10) {
+            console.error(`[OWNER_FUNCTION_TEST_BLOCKED] Queue length ${campaignQueue.length} exceeds maximum 10 allowed targets.`);
+            alert(`🧪 OWNER FUNCTIONAL TEST MODE LIMITATION\n\nOwner Functional Test Mode allows a maximum of 10 targets.\nCurrently queued: ${campaignQueue.length} targets.\n\nPlease reduce the test list or use OWNER_EXTENSION_TEST_URLS.csv.`);
+            _restoreStartButton();
+            return Promise.reject(new Error('OWNER_FUNCTION_TEST_EXCEEDED_MAX_TARGETS'));
+        }
+
+        const isLoopbackFn = (typeof PrivacyGateway !== 'undefined' && typeof PrivacyGateway.isLoopbackTestUrl === 'function')
+            ? PrivacyGateway.isLoopbackTestUrl
+            : (u) => /^https?:\/\/(?:127\.0\.0\.1|localhost)(?::\d+)?(?:\/|$)/i.test(u);
+
+        for (let i = 0; i < campaignQueue.length; i++) {
+            const raw = campaignQueue[i];
+            const targetUrlStr = typeof raw === 'string' ? raw : (raw?.url || '');
+            if (!isLoopbackFn(targetUrlStr)) {
+                console.error(`[OWNER_FUNCTION_TEST_BLOCKED] Non-loopback target rejected: ${targetUrlStr} at index ${i}`);
+                alert(`🧪 OWNER FUNCTIONAL TEST MODE REJECTION\n\nOwner Functional Test Mode requires ALL targets to be local loopback (http://127.0.0.1 or http://localhost).\n\nNon-loopback target rejected at item #${i + 1}:\n${targetUrlStr}\n\nOperation blocked to prevent public network leakage.`);
+                _restoreStartButton();
+                return Promise.reject(new Error(`OWNER_FUNCTION_TEST_NON_LOOPBACK_TARGET: ${targetUrlStr}`));
+            }
+        }
+        console.log('[OWNER_FUNCTION_TEST] loopbackOnly=true strictPublicBypass=false (Popup Validation Pass)');
+        startPayload.ownerFunctionTestMode = true;
+    }
+
     // [R6.9G.10.3.6.1 Single-Authority Privacy Start Prep]
     // Background service worker is the sole authoritative privacy-prep state owner.
     // Popup delegates privacy preparation to background and does not directly mutate transport.
@@ -4087,7 +4211,10 @@ async function startCampaign() {
             return resolve({ success: false, error: 'CHROME_RUNTIME_UNAVAILABLE' });
         }
         chrome.runtime.sendMessage({
-            action: 'ENSURE_ENFORCED_PRIVACY_FOR_START'
+            action: 'ENSURE_ENFORCED_PRIVACY_FOR_START',
+            options: {
+                ownerFunctionTestMode: isOwnerTestModeActive
+            }
         }, (res) => {
             if (chrome.runtime.lastError) {
                 return resolve({ success: false, error: chrome.runtime.lastError.message });
@@ -4126,7 +4253,20 @@ async function startCampaign() {
             if (proxyHost) proxyHost.focus();
         }
 
-        alert(`🛡️ STRICT PRIVACY REQUIREMENT\n\n${userMsg || 'Strict Privacy needs an enforced relay/proxy.'}`);
+        // [Fix 3 Actionable Public Block Message / Modal Presentation]
+        if (blockReason === 'EXTERNAL_VPN_NOT_ENFORCEABLE_IN_STRICT_MODE') {
+            const blockModal = document.getElementById('privacy-block-modal-overlay');
+            const blockModalMsg = document.getElementById('privacy-block-modal-msg');
+            if (blockModal && blockModalMsg) {
+                blockModalMsg.textContent = userMsg;
+                blockModal.style.display = 'flex';
+                blockModal.classList.remove('hidden');
+            } else {
+                alert(`🛡️ STRICT PRIVACY REQUIREMENT\n\n${userMsg}\n\nOptions:\n1. Install/Start Privacy Relay Companion\n2. Configure Managed Proxy\n3. Cancel`);
+            }
+        } else {
+            alert(`🛡️ STRICT PRIVACY REQUIREMENT\n\n${userMsg || 'Strict Privacy needs an enforced relay/proxy.'}`);
+        }
         return Promise.reject(new Error(blockReason || 'PRIVACY_START_BLOCKED'));
     }
 
@@ -4134,8 +4274,8 @@ async function startCampaign() {
     console.log(`[PRIVACY_START_READY] mode=${prepResult.mode}`);
     addLog(`🛡️ [PRIVACY_START_READY] mode=${prepResult.mode}`, 'info');
 
-    // If background self-healed mode, sync mode dropdown in UI
-    if (prepResult.mode) {
+    // If background self-healed mode, sync mode dropdown in UI (skip if in ownerFunctionTestMode)
+    if (prepResult.mode && !isOwnerTestModeActive) {
         const privModeSelect = document.getElementById('privacy-transport-mode-select');
         if (privModeSelect && privModeSelect.value !== prepResult.mode) {
             privModeSelect.value = prepResult.mode;
@@ -4177,7 +4317,8 @@ async function startCampaign() {
             fillMode: startPayload.fillMode,
             templateId: startPayload.templateId,
             templateVersion: startPayload.templateVersion,
-            skipPreviouslyAttempted: startPayload.skipPreviouslyAttempted
+            skipPreviouslyAttempted: startPayload.skipPreviouslyAttempted,
+            ownerFunctionTestMode: !!isOwnerTestModeActive
         }, (response) => {
             const ackTime = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
             const elapsedAckMs = Math.round(ackTime - sendTime);
@@ -5603,13 +5744,13 @@ async function saveSettings() {
         const privVpnBadge = document.getElementById('privacy-vpn-status-badge');
         const privRelayModeEl = document.getElementById('privacy-relay-mode-select');
         const privPhysGateToggle = document.getElementById('physical-gate-toggle');
-        const isVpnConfirmed = (privVpnBadge && privVpnBadge.textContent === 'CONFIRMED') || (privVpnCheckbox && privVpnCheckbox.checked);
+        const isVpnConfirmed = (privVpnBadge && privVpnBadge.textContent && privVpnBadge.textContent.includes('CONFIRMED')) || (privVpnCheckbox && privVpnCheckbox.checked);
 
         const privacyConfig = {
             enabled: privToggle ? privToggle.checked : true,
             transportMode: privModeSelect ? privModeSelect.value : 'SYSTEM_VPN',
             failClosed: privFailClosedToggle ? privFailClosedToggle.checked : true,
-            systemVpnConfirmed: (privModeSelect && privModeSelect.value === 'SYSTEM_VPN') ? !!isVpnConfirmed : false,
+            systemVpnConfirmed: (privModeSelect && (privModeSelect.value === 'SYSTEM_VPN' || privModeSelect.value === 'EXTERNAL_VPN_MONITOR')) ? !!isVpnConfirmed : false,
             proxyHost: privHostEl ? privHostEl.value.trim() : '',
             proxyPort: privPortEl ? (parseInt(privPortEl.value, 10) || 1080) : 1080,
             proxyUsername: privUserEl ? privUserEl.value.trim() : '',
@@ -5621,6 +5762,11 @@ async function saveSettings() {
             relayRotationMode: privRelayModeEl ? privRelayModeEl.value : 'FIXED',
             physicalGateEnabled: privPhysGateToggle ? privPhysGateToggle.checked : false
         };
+
+        const ownerTestToggle = document.getElementById('owner-function-test-toggle');
+        if (ownerTestToggle) {
+            await chrome.storage.local.set({ xpider_owner_function_test_mode: ownerTestToggle.checked });
+        }
 
     let settings;
     try {
