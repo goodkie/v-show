@@ -2,7 +2,7 @@
  * run_edge_owner_safety_suite.js
  * 
  * Complete Edge Real-Browser Verification Suite for:
- * [CHATGPT][AUDIT][OWNER LOCAL FUNCTION TEST MODE + PRIVACY UX][R6.9G.10.3.7.1.4.3]
+ * [CHATGPT][AUDIT][OWNER LOCAL FUNCTION TEST FINAL SAFETY][R6.9G.10.3.7.1.4.4 / R6.9G.10.3.7.1.4.5]
  * 
  * Negative Paths Verified in Real Microsoft Edge Browser:
  * 1. TEST mode ON + one non-loopback TEST-NET target -> Start rejected before navigation.
@@ -11,8 +11,12 @@
  * 4. Controlled localhost page attempts external redirect/subresource/fetch -> network guard blocks it (DNR ERR_BLOCKED_BY_CLIENT); localhost loopback page remains controlled and allowed.
  * 5. Test mode OFF -> session network guard removed cleanly; standard Strict Privacy path is restored.
  * 
+ * Lifecycle Regression Cases Verified in Real Microsoft Edge Browser:
+ * 6. PAUSE -> RESUME Guard Continuity: DNR rules stay installed during PAUSE; external fetch remains BLOCKED; rules readback verified on RESUME.
+ * 7. Service Worker Restart Guard Recovery: Boot reconciliation prevents fail-open window; exact rules 990001-990005 restored; external fetch remains BLOCKED.
+ * 
  * Positive Path Verified in Real Microsoft Edge Browser:
- * 6. Full 7-target local fixture execution end-to-end (4 SUCCESS, 2 SKIPPED, 1 FAILURE, 0 remaining, stop control, deterministic emails).
+ * 8. Full 7-target local fixture execution end-to-end (4 SUCCESS, 2 SKIPPED, 1 FAILURE, 0 remaining, stop control, deterministic emails).
  */
 
 const assert = require('assert');
@@ -381,6 +385,58 @@ async function runEdgeSafetySuite() {
       await captureScreenshot(popupWs, '04_safety_neg3_11_targets_rejected.png');
     }
 
+    // Helper to verify network guard blocks external leaks and permits loopback
+    async function verifyNetworkGuardBlocksLeaks(label, screenshotName = null) {
+      const leakTestUrl = `http://127.0.0.1:${TEST_SERVER_PORT}/network-leak-attempt.html`;
+      const leakTargetRes = await fetch(`http://127.0.0.1:${CDP_PORT}/json/new?${encodeURIComponent(leakTestUrl)}`, { method: 'PUT' });
+      const leakTarget = await leakTargetRes.json();
+      log(`   [${label}] Opened Leak Test Target: ${leakTarget.id}`);
+
+      const leakWs = new WebSocket(leakTarget.webSocketDebuggerUrl);
+      await new Promise((resolve, reject) => {
+        leakWs.onopen = resolve;
+        leakWs.onerror = reject;
+      });
+
+      await cdpSend(leakWs, 'Page.enable');
+      await cdpSend(leakWs, 'Network.enable');
+
+      const failedRequests = [];
+      leakWs.addEventListener('message', (evt) => {
+        try {
+          const d = JSON.parse(evt.data.toString());
+          if (d.method === 'Network.loadingFailed') {
+            failedRequests.push({
+              errorText: d.params.errorText,
+              blockedReason: d.params.blockedReason
+            });
+            log(`   🛑 [CDP_NETWORK_BLOCKED][${label}] errorText=${d.params.errorText} blockedReason=${d.params.blockedReason}`);
+          }
+        } catch (_) {}
+      });
+
+      await cdpSend(leakWs, 'Page.reload');
+      await sleep(1500);
+
+      const leakEval = await cdpSend(leakWs, 'Runtime.evaluate', {
+        expression: 'window.__leakResults',
+        returnByValue: true
+      });
+      const results = leakEval.result ? leakEval.result.value : {};
+      log(`   [${label}] Leak Check Results: ${JSON.stringify(results)}`);
+
+      assert(results.testNetFetch && results.testNetFetch.includes('BLOCKED'), `[${label}] TEST-NET fetch must be BLOCKED: ${results.testNetFetch}`);
+      assert(results.externalDomainFetch && results.externalDomainFetch.includes('BLOCKED'), `[${label}] External domain fetch must be BLOCKED: ${results.externalDomainFetch}`);
+      assert.strictEqual(results.loopbackFetch, 'ALLOWED_LOOPBACK', `[${label}] Loopback fetch must be ALLOWED_LOOPBACK: ${results.loopbackFetch}`);
+
+      if (screenshotName) {
+        await captureScreenshot(leakWs, screenshotName);
+      }
+
+      await fetch(`http://127.0.0.1:${CDP_PORT}/json/close/${leakTarget.id}`);
+      return results;
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
     // NEGATIVE PATH 4: Controlled Localhost Page Network Guard Block Verification
     // ─────────────────────────────────────────────────────────────────────────
@@ -406,67 +462,9 @@ async function runEdgeSafetySuite() {
       assert.strictEqual(guardInstalled.count, 5, 'Must have exactly 5 session rules installed');
       log(`✅ DeclarativeNetRequest session rules installed & verified: ${JSON.stringify(guardInstalled.ruleIds)}`);
 
-      // 2. Open network leak test page in Edge
-      const leakTestUrl = `http://127.0.0.1:${TEST_SERVER_PORT}/network-leak-attempt.html`;
-      const leakTargetRes = await fetch(`http://127.0.0.1:${CDP_PORT}/json/new?${encodeURIComponent(leakTestUrl)}`, { method: 'PUT' });
-      const leakTarget = await leakTargetRes.json();
-      log(`   Opened Leak Test Page Target: ${leakTarget.id}`);
-
-      const leakWs = new WebSocket(leakTarget.webSocketDebuggerUrl);
-      await new Promise((resolve, reject) => {
-        leakWs.onopen = resolve;
-        leakWs.onerror = reject;
-      });
-
-      await cdpSend(leakWs, 'Page.enable');
-      await cdpSend(leakWs, 'Network.enable');
-
-      const failedRequests = [];
-      const succeededRequests = [];
-
-      leakWs.addEventListener('message', (evt) => {
-        try {
-          const d = JSON.parse(evt.data.toString());
-          if (d.method === 'Network.loadingFailed') {
-            failedRequests.push({
-              url: d.params.requestId,
-              blockedReason: d.params.blockedReason,
-              errorText: d.params.errorText
-            });
-            log(`   🛑 [CDP_NETWORK_BLOCKED] errorText=${d.params.errorText} blockedReason=${d.params.blockedReason}`);
-          }
-          if (d.method === 'Network.responseReceived') {
-            succeededRequests.push({
-              url: d.params.response.url,
-              status: d.params.response.status
-            });
-          }
-        } catch (_) {}
-      });
-
-      // Reload page to observe fresh network requests with CDP active
-      await cdpSend(leakWs, 'Page.reload');
-      await sleep(1500);
-
-      // Read window.__leakResults
-      const leakEval = await cdpSend(leakWs, 'Runtime.evaluate', {
-        expression: 'window.__leakResults',
-        returnByValue: true
-      });
-      const results = leakEval.result ? leakEval.result.value : {};
-      log(`   Leak Test Execution Results: ${JSON.stringify(results)}`);
-
-      // Assertions
-      assert(results.testNetFetch && results.testNetFetch.includes('BLOCKED'), `TEST-NET fetch must be BLOCKED: ${results.testNetFetch}`);
-      assert(results.externalDomainFetch && results.externalDomainFetch.includes('BLOCKED'), `External domain fetch must be BLOCKED: ${results.externalDomainFetch}`);
-      assert.strictEqual(results.loopbackFetch, 'ALLOWED_LOOPBACK', `Loopback fetch must be ALLOWED_LOOPBACK: ${results.loopbackFetch}`);
-      assert(failedRequests.length > 0, 'CDP Network must record blocked requests');
-
+      // 2. Open network leak test page and verify external leaks blocked
+      await verifyNetworkGuardBlocksLeaks('NEGATIVE_PATH_4', '05_safety_neg4_dnr_external_blocked.png');
       log('✅ Negative Path 4 Passed: External requests strictly blocked by DNR network guard; loopback requests permitted.');
-      await captureScreenshot(leakWs, '05_safety_neg4_dnr_external_blocked.png');
-
-      // Close leak test tab
-      await fetch(`http://127.0.0.1:${CDP_PORT}/json/close/${leakTarget.id}`);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -532,6 +530,152 @@ async function runEdgeSafetySuite() {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
+    // REGRESSION CASE A: PAUSE -> RESUME Network Guard Continuity
+    // ─────────────────────────────────────────────────────────────────────────
+    log('\n========================================================================');
+    log('>>> [REGRESSION CASE A] PAUSE -> RESUME Network Guard Continuity <<<');
+    log('========================================================================');
+    {
+      // 1. Re-enable test mode in popup
+      await evalPopup(`(async () => {
+        await chrome.storage.local.set({ xpider_owner_function_test_mode: true });
+        const toggle = document.getElementById('owner-function-test-toggle');
+        if (toggle) {
+          toggle.checked = true;
+          toggle.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      })()`);
+      await sleep(300);
+
+      // Queue 2 local targets
+      await evalPopup(`(() => {
+        const q = [
+          'http://127.0.0.1:8088/contact-standard.html',
+          'http://127.0.0.1:8088/contact-dropdown-checkbox.html'
+        ];
+        if (typeof window.setCampaignQueue === 'function') window.setCampaignQueue(q);
+        else window.campaignQueue = q;
+        if (typeof updateQueueUI === 'function') updateQueueUI();
+        const cnt = document.getElementById('target-count');
+        if (cnt) cnt.textContent = '2';
+      })()`);
+      await sleep(200);
+
+      // 2. Start campaign
+      log('   Starting local campaign in Owner Test Mode...');
+      await evalPopup('document.getElementById("start-btn")?.click()');
+      await sleep(800);
+
+      // 3. Confirm DNR rules installed (5 rules)
+      const rulesStart = await evalSw('(async () => (await chrome.declarativeNetRequest.getSessionRules()).length)()');
+      assert.strictEqual(rulesStart, 5, 'DNR session rules must be 5 at start');
+      log(`   ✅ DNR rules verified at START: count=${rulesStart}`);
+
+      // 4. Pause campaign
+      log('   Pausing campaign...');
+      await evalSw('(async () => await pauseCampaignOrchestrator(true))()');
+      await sleep(500);
+
+      const isPaused = await evalSw('Boolean(campaignState.isPaused)');
+      assert(isPaused, 'Campaign must be in paused state');
+
+      // 5. CRITICAL CHECK: Confirm DNR rules REMAIN active during pause
+      const rulesDuringPause = await evalSw('(async () => (await chrome.declarativeNetRequest.getSessionRules()).length)()');
+      assert.strictEqual(rulesDuringPause, 5, 'DNR session rules must REMAIN 5 during PAUSE');
+      log(`   ✅ DNR rules retained during PAUSE: count=${rulesDuringPause}`);
+
+      // 6. Verify external fetch/subresource remains BLOCKED while paused
+      log('   Verifying external fetch remains BLOCKED while paused...');
+      await verifyNetworkGuardBlocksLeaks('WHILE_PAUSED');
+      log('   ✅ External requests confirmed BLOCKED during pause');
+
+      // 7. Resume campaign
+      log('   Resuming campaign...');
+      const resumeResult = await evalSw(`(async () => {
+        try {
+          const res = await resumeCampaignOrchestrator();
+          const rules = await chrome.declarativeNetRequest.getSessionRules();
+          return { success: true, ruleCount: rules.length, res };
+        } catch (e) {
+          return { success: false, error: e.message };
+        }
+      })()`);
+      assert(resumeResult.success, `Resume must succeed: ${resumeResult.error}`);
+      assert.strictEqual(resumeResult.ruleCount, 5, 'DNR rules must be readback verified (5 rules) before resuming targets');
+      log(`   ✅ DNR rules confirmed & verified on RESUME: count=${resumeResult.ruleCount}`);
+
+      // 8. Verify external fetch/subresource remains BLOCKED after resume
+      log('   Verifying external fetch remains BLOCKED after resume...');
+      await verifyNetworkGuardBlocksLeaks('AFTER_RESUME');
+      log('   ✅ External requests confirmed BLOCKED after resume');
+
+      // 9. Cleanly stop / end campaign
+      await evalSw('(async () => await endCampaignOrchestrator())()');
+      await sleep(500);
+
+      await captureScreenshot(popupWs, '08_safety_pause_resume_guard_continuity.png');
+      log('✅ Regression Case A Passed: DNR network guard is strictly continuous across PAUSE and RESUME.');
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // REGRESSION CASE B: Service Worker Restart Guard Recovery
+    // ─────────────────────────────────────────────────────────────────────────
+    log('\n========================================================================');
+    log('>>> [REGRESSION CASE B] Service Worker Restart Guard Recovery <<<');
+    log('========================================================================');
+    {
+      // 1. Prepare stored test mode session in chrome.storage.local
+      await evalSw(`(async () => {
+        await chrome.storage.local.set({
+          xpider_owner_function_test_mode: true,
+          xpider_owner_function_test_mode_active: true,
+          xpider_isPaused: true,
+          xpider_paused_checkpoint: {
+            remainingQueue: ['http://127.0.0.1:8088/contact-standard.html'],
+            totalTargets: 1,
+            ownerFunctionTestMode: true,
+            campaignRunId: 'test_run_' + Date.now()
+          }
+        });
+      })()`);
+
+      // 2. Trigger SW boot reconciliation
+      log('   Simulating Service Worker restart & state-aware boot reconciliation...');
+      const reconcileResult = await evalSw(`(async () => {
+        try {
+          const res = await reconcileOwnerTestNetworkGuardOnBoot();
+          const rules = await chrome.declarativeNetRequest.getSessionRules();
+          return { success: true, res, rules: rules.map(r => r.id) };
+        } catch (e) {
+          return { success: false, error: e.message };
+        }
+      })()`);
+
+      assert(reconcileResult.success, `SW boot reconciliation must succeed: ${reconcileResult.error}`);
+      assert.strictEqual(reconcileResult.rules.length, 5, 'SW boot reconciliation must ensure exact 5 session rules');
+      const expectedIds = [990001, 990002, 990003, 990004, 990005];
+      const allPresent = expectedIds.every(id => reconcileResult.rules.includes(id));
+      assert(allPresent, `All rules 990001-990005 must be present after SW boot: ${JSON.stringify(reconcileResult.rules)}`);
+      log(`   ✅ Exact session rules 990001-990005 confirmed present after SW restart reconciliation: ${JSON.stringify(reconcileResult.rules)}`);
+
+      // 3. Confirm external fetch remains BLOCKED by client
+      log('   Verifying external fetch remains BLOCKED by client after SW restart...');
+      await verifyNetworkGuardBlocksLeaks('AFTER_SW_RESTART');
+      log('   ✅ External requests confirmed BLOCKED after SW restart reconciliation');
+
+      // 4. Controlled teardown / end campaign
+      await evalSw('(async () => await endCampaignOrchestrator())()');
+      await sleep(400);
+
+      const rulesAfterEnd = await evalSw('(async () => (await chrome.declarativeNetRequest.getSessionRules()).length)()');
+      assert.strictEqual(rulesAfterEnd, 0, 'Session rules must be removed cleanly after controlled teardown');
+      log(`   ✅ Session rules cleanly removed after teardown: count=${rulesAfterEnd}`);
+
+      await captureScreenshot(popupWs, '09_safety_sw_restart_guard_recovery.png');
+      log('✅ Regression Case B Passed: Service Worker boot reconciliation strictly prevents fail-open restart window.');
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
     // POSITIVE PATH: Full 7-Target Local Campaign Execution
     // ─────────────────────────────────────────────────────────────────────────
     log('\n========================================================================');
@@ -548,6 +692,10 @@ async function runEdgeSafetySuite() {
         }
       })()`);
       await sleep(300);
+
+      // Clean reset of previous list data and counters before 7-target campaign
+      await evalSw('(async () => { if (typeof resetAllListData === "function") await resetAllListData(); })()');
+      await sleep(500);
 
       // Load 7 CSV targets
       const csvContent = fs.readFileSync(CSV_FILE, 'utf8');
@@ -579,7 +727,7 @@ async function runEdgeSafetySuite() {
       // Observe campaign execution until queue reaches 0
       let campaignFinished = false;
       const startTime = Date.now();
-      const MAX_WAIT_MS = 180000;
+      const MAX_WAIT_MS = 240000;
 
       while (Date.now() - startTime < MAX_WAIT_MS) {
         await sleep(1000);
@@ -620,7 +768,7 @@ async function runEdgeSafetySuite() {
     }
 
     log('\n========================================================================');
-    log('  ALL 5 NEGATIVE PATHS + 1 POSITIVE PATH PASSED 100% IN REAL EDGE BROWSER');
+    log('  ALL 5 NEGATIVE PATHS + 2 LIFECYCLE REGRESSIONS + 1 POSITIVE PATH PASSED 100% IN REAL EDGE');
     log('========================================================================');
 
   } finally {

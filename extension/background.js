@@ -245,9 +245,77 @@ async function removeOwnerTestNetworkGuard() {
     }
 }
 
-// Clean up any leftover session rules on SW boot
+// [R6.9G.10.3.7.1.4.5] State-Aware SW Boot Reconciliation for Owner Test Network Guard
+async function reconcileOwnerTestNetworkGuardOnBoot() {
+    try {
+        if (typeof chrome === 'undefined' || !chrome.declarativeNetRequest || !chrome.declarativeNetRequest.updateSessionRules) {
+            return { reconciled: false, reason: 'DNR_UNAVAILABLE' };
+        }
+        if (!chrome.storage || !chrome.storage.local) {
+            return { reconciled: false, reason: 'STORAGE_UNAVAILABLE' };
+        }
+
+        const data = await chrome.storage.local.get([
+            'xpider_owner_function_test_mode',
+            'xpider_isActive',
+            'xpider_isPaused',
+            'xpider_paused_checkpoint',
+            'xpider_queue',
+            'xpider_owner_function_test_mode_active'
+        ]);
+
+        const isTestBuild = (typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.isTestOnlyBuild === 'function')
+            ? BuildProvenance.isTestOnlyBuild()
+            : false;
+
+        const isOwnerTestModeEnabled = isTestBuild && Boolean(
+            data.xpider_owner_function_test_mode ||
+            data.xpider_owner_function_test_mode_active ||
+            data.xpider_paused_checkpoint?.ownerFunctionTestMode
+        );
+
+        const hasActiveOrPausedSession = Boolean(
+            (data.xpider_isActive && Array.isArray(data.xpider_queue) && data.xpider_queue.length > 0) ||
+            data.xpider_isPaused ||
+            (data.xpider_paused_checkpoint && Array.isArray(data.xpider_paused_checkpoint.remainingQueue) && data.xpider_paused_checkpoint.remainingQueue.length > 0)
+        );
+
+        if (isTestBuild && isOwnerTestModeEnabled && hasActiveOrPausedSession) {
+            campaignState.ownerFunctionTestMode = true;
+            try {
+                await installOwnerTestNetworkGuard();
+                console.log('[SW_BOOT_RECONCILE] Owner Test Network Guard active & verified on SW restart.');
+                if (typeof logBg === 'function') {
+                    logBg(null, '[SW_BOOT_RECONCILE] Owner Test Network Guard active & verified on SW restart.', 'info');
+                }
+                return { reconciled: true, guardActive: true };
+            } catch (err) {
+                console.error('[SW_BOOT_RECONCILE_FAIL] Guard verification failed on boot — fail-closed blocking campaign:', err.message);
+                campaignState.isFaulted = true;
+                campaignState.faultReason = 'BOOT_GUARD_RECONCILIATION_FAILED';
+                campaignState.isActive = false;
+                campaignState.isPaused = true;
+                await chrome.storage.local.set({ xpider_isActive: false, xpider_isPaused: true, xpider_fault: 'BOOT_GUARD_RECONCILIATION_FAILED' });
+                if (typeof logBg === 'function') {
+                    logBg(null, `🛑 [SW_BOOT_FAIL_CLOSED] Network guard failed to reconcile: ${err.message}`, 'error');
+                }
+                return { reconciled: true, guardActive: false, error: err.message };
+            }
+        } else if (!isOwnerTestModeEnabled || !hasActiveOrPausedSession) {
+            // Only remove rules when Owner Test Mode is OFF or clean teardown has completed
+            await removeOwnerTestNetworkGuard();
+            return { reconciled: true, guardActive: false };
+        }
+        return { reconciled: true, guardActive: false };
+    } catch (e) {
+        console.warn('[SW_BOOT_RECONCILE] Error during boot guard reconciliation:', e.message);
+        return { reconciled: false, error: e.message };
+    }
+}
+
+// Initial state-aware reconciliation on service worker boot
 if (typeof chrome !== 'undefined' && chrome.declarativeNetRequest && chrome.declarativeNetRequest.updateSessionRules) {
-    removeOwnerTestNetworkGuard().catch(() => {});
+    reconcileOwnerTestNetworkGuardOnBoot().catch(() => {});
 }
 // ── END DECLARATIVENETREQUEST GUARD ──────────────────────────────────────────
 
@@ -1721,6 +1789,19 @@ async function assertPhysicalGateReady(context = 'GENERAL') {
 async function assertPrivacyTransportReady(context = 'GENERAL') {
     // [Fix 2 Owner Functional Test Mode Loopback Direct Bypass]
     if (campaignState && campaignState.ownerFunctionTestMode) {
+        // [R6.9G.10.3.7.1.4.5 Hardening] In Owner Test Mode, verify declarativeNetRequest session rules are actually active before target!
+        if (typeof chrome !== 'undefined' && chrome.declarativeNetRequest && chrome.declarativeNetRequest.getSessionRules) {
+            try {
+                const sessionRules = await chrome.declarativeNetRequest.getSessionRules();
+                const installedIds = new Set(sessionRules.map(r => r.id));
+                const allPresent = OWNER_TEST_GUARD_RULE_IDS.every(id => installedIds.has(id));
+                if (!allPresent) {
+                    return { ready: false, reason: 'OWNER_TEST_GUARD_MISSING_BEFORE_TARGET' };
+                }
+            } catch (e) {
+                return { ready: false, reason: 'OWNER_TEST_GUARD_CHECK_EXCEPTION', error: e.message };
+            }
+        }
         return { ready: true, ownerFunctionTestMode: true };
     }
 
@@ -4410,9 +4491,10 @@ async function pauseCampaignOrchestrator(saveCheckpoint = true) {
         console.log('[PRIVACY_SETTINGS_RESTORED] gateReady=false transportEnforced=false');
         logBg(null, '[PRIVACY_SETTINGS_RESTORED] gateReady=false transportEnforced=false', 'info');
     }
-    if (campaignState.ownerFunctionTestMode) {
-        await removeOwnerTestNetworkGuard();
-    }
+    // [R6.9G.10.3.7.1.4.5 Blocker 1 Lifecycle Fix]:
+    // Do NOT remove Owner Test DNR rules merely because campaign is PAUSED.
+    // Keep the guard installed while Owner Functional Test Mode remains ON and a test campaign or paused checkpoint is live.
+    // (Rules are only removed on END_CAMPAIGN or when test mode is turned OFF).
 
     // Save checkpoint snapshot
     if (saveCheckpoint) {
@@ -4433,7 +4515,8 @@ async function pauseCampaignOrchestrator(saveCheckpoint = true) {
             pausedAt: Date.now(),
             outcomeHistogram: { ...(campaignState.outcomeHistogram || {}) },
             counters: { ...(campaignState.counters || {}) },
-            restorationLogged: false
+            restorationLogged: false,
+            ownerFunctionTestMode: Boolean(campaignState.ownerFunctionTestMode)
         };
         campaignState.checkpointHydratedForGeneration = false;
         campaignState.pausedCheckpoint = checkpoint;
@@ -4461,6 +4544,38 @@ async function resumeCampaignOrchestrator() {
 
     if (!checkpoint || !Array.isArray(checkpoint.remainingQueue) || checkpoint.remainingQueue.length === 0) {
         throw new Error("NO_RESUMABLE_CHECKPOINT: No paused campaign snapshot found.");
+    }
+
+    // [R6.9G.10.3.7.1.4.5 Blocker 1 Lifecycle Fix]:
+    // Before RESUME is acknowledged, independently call installOwnerTestNetworkGuard(), verify getSessionRules() readback, and FAIL-CLOSED if verification fails.
+    const isOwnerTest = Boolean(checkpoint.ownerFunctionTestMode || campaignState.ownerFunctionTestMode);
+    if (isOwnerTest) {
+        const isTestBuild = (typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.isTestOnlyBuild === 'function')
+            ? BuildProvenance.isTestOnlyBuild()
+            : false;
+        if (!isTestBuild) {
+            throw new Error("FAIL_CLOSED: Cannot resume Owner Test Mode campaign in non-test build.");
+        }
+        campaignState.ownerFunctionTestMode = true;
+        try {
+            await installOwnerTestNetworkGuard();
+            const sessionRules = await chrome.declarativeNetRequest.getSessionRules();
+            const installedIds = new Set(sessionRules.map(r => r.id));
+            const allPresent = OWNER_TEST_GUARD_RULE_IDS.every(id => installedIds.has(id));
+            if (!allPresent) {
+                throw new Error("OWNER_TEST_GUARD_READBACK_INCOMPLETE: Not all rules present after resume install");
+            }
+            console.log('[OWNER_TEST_GUARD] declarativeNetRequest session rules confirmed & verified on RESUME');
+            if (typeof logBg === 'function') {
+                logBg(null, '[OWNER_TEST_GUARD] declarativeNetRequest session rules confirmed & verified on RESUME', 'info');
+            }
+        } catch (guardErr) {
+            console.error(`[OWNER_FUNCTION_TEST_GUARD_FAIL] Failed to reinstall/verify network guard on RESUME: ${guardErr.message}`);
+            if (typeof logBg === 'function') {
+                logBg(null, `[OWNER_FUNCTION_TEST_GUARD_FAIL] Failed to reinstall/verify network guard on RESUME: ${guardErr.message}`, 'error');
+            }
+            throw new Error(`FAIL_CLOSED_GUARD_ERROR_ON_RESUME: ${guardErr.message}`);
+        }
     }
 
     // Restore exact snapshot without full queue reload!
@@ -4527,6 +4642,12 @@ async function endCampaignOrchestrator() {
     campaignState.isPaused = false;
     campaignState.queue = [];
     campaignState.pausedCheckpoint = null;
+    if (campaignState.currentTargetAbortController) {
+        try { campaignState.currentTargetAbortController.abort('END_CAMPAIGN'); } catch (_) {}
+        campaignState.currentTargetAbortController = null;
+    }
+    campaignState.activeTargetInFlight = false;
+    campaignState.activeTargetCount = 0;
     if (campaignState.activeTimeoutId) {
         clearTimeout(campaignState.activeTimeoutId);
         campaignState.activeTimeoutId = null;
@@ -4739,9 +4860,9 @@ async function processNextCampaignTarget(loopSessionId, loopGeneration) {
             return;
         }
 
-        // Guard against pause during slot acquisition
-        if (!campaignState.isActive || campaignState.isPaused) {
-            console.log('[SERIALIZED_GATE] Campaign paused/inactive at slot entry — releasing lease and aborting start.');
+        // Guard against pause/fault during slot acquisition
+        if (!campaignState.isActive || campaignState.isPaused || campaignState.isFaulted) {
+            console.log('[SERIALIZED_GATE] Campaign paused/inactive/faulted at slot entry — releasing lease and aborting start.');
             campaignState.activeTargetInFlight = false;
             campaignState.activeTargetCount = Math.max(0, (campaignState.activeTargetCount || 1) - 1);
             campaignState.isLoopRunning = false;
@@ -6501,7 +6622,8 @@ async function saveCampaignState() {
                 xpider_visited: campaignState.visitedUrls,
                 xpider_successful: campaignState.successfulUrls,
                 xpider_currentAttempt: campaignState.currentAttempt,
-                xpider_active_campaign_run_id: campaignState.campaignRunId
+                xpider_active_campaign_run_id: campaignState.campaignRunId,
+                xpider_owner_function_test_mode_active: Boolean(campaignState.ownerFunctionTestMode)
             }, () => {
                 if (chrome.runtime.lastError) console.error("Save error:", chrome.runtime.lastError);
                 resolve();
@@ -6519,6 +6641,17 @@ async function restoreCampaignState() {
     campaignState.isInitialized = true;
     console.log("[Boot] Initializing campaign state...");
 
+    // [R6.9G.10.3.7.1.4.5 Blocker 2 Fix] State-aware SW boot reconciliation
+    try {
+        await reconcileOwnerTestNetworkGuardOnBoot();
+    } catch (e) {
+        console.warn("[Boot] reconcileOwnerTestNetworkGuardOnBoot error:", e.message);
+    }
+    if (campaignState.isFaulted) {
+        console.warn("[Boot] Campaign faulted during boot reconciliation — halting restore.");
+        return;
+    }
+
     return new Promise((resolve) => {
         try {
             if (typeof chrome.storage === 'undefined' || !chrome.storage.local) {
@@ -6530,7 +6663,8 @@ async function restoreCampaignState() {
             chrome.storage.local.get([
                 'xpider_isActive', 'xpider_queue', 'xpider_tpl', 'xpider_delayMs', 'xpider_fillDelayMs', 'xpider_submitDelayMs',
                 'xpider_sessionId', 'xpider_success', 'xpider_total', 'xpider_visited', 'xpider_successful', 'xpider_currentAttempt',
-                'xpider_paused_checkpoint', 'xpider_isPaused', 'xpider_active_campaign_run_id'
+                'xpider_paused_checkpoint', 'xpider_isPaused', 'xpider_active_campaign_run_id',
+                'xpider_owner_function_test_mode', 'xpider_owner_function_test_mode_active'
             ], async (data) => {
                 try {
                     const hs = await getHistoryStoreInstance();
@@ -6619,6 +6753,9 @@ async function restoreCampaignState() {
                         campaignState.successCount = data.xpider_paused_checkpoint.successCount || 0;
                         campaignState.template = data.xpider_paused_checkpoint.template || null;
                         campaignState.outcomeHistogram = { ...(data.xpider_paused_checkpoint.outcomeHistogram || {}) };
+                        if (data.xpider_paused_checkpoint.ownerFunctionTestMode || data.xpider_owner_function_test_mode || data.xpider_owner_function_test_mode_active) {
+                            campaignState.ownerFunctionTestMode = true;
+                        }
                         // [Issue #6 R4.1] Checkpoint Restore Spam Fix: Log at most ONCE per checkpoint hydration
                         if (!data.xpider_paused_checkpoint.restorationLogged && !campaignState.checkpointHydratedForGeneration) {
                             data.xpider_paused_checkpoint.restorationLogged = true;
@@ -6641,6 +6778,9 @@ async function restoreCampaignState() {
                         campaignState.visitedUrls = visited;
                         campaignState.successfulUrls = data.xpider_successful || [];
                         campaignState.currentAttempt = null;
+                        if (data.xpider_owner_function_test_mode || data.xpider_owner_function_test_mode_active) {
+                            campaignState.ownerFunctionTestMode = true;
+                        }
                         
                         logBg(null, `Restored previous active campaign: ${campaignState.queue.length} targets remaining.`, "info");
                         
@@ -6776,7 +6916,12 @@ if (typeof module !== 'undefined' && module.exports) {
         processNextCampaignTarget,
         STRICT_SINGLE_TARGET_TAB,
         KEEP_DELIVERY_UNKNOWN_TABS,
-        MAX_RETAINED_UNCERTAIN_TABS
+        MAX_RETAINED_UNCERTAIN_TABS,
+        installOwnerTestNetworkGuard,
+        removeOwnerTestNetworkGuard,
+        reconcileOwnerTestNetworkGuardOnBoot,
+        OWNER_TEST_GUARD_RULE_IDS,
+        assertPrivacyTransportReady
     };
 }
 
@@ -6784,5 +6929,10 @@ if (typeof self !== 'undefined') {
     self.processNextCampaignTarget = processNextCampaignTarget;
     self.pauseCampaignOrchestrator = pauseCampaignOrchestrator;
     self.startCampaignOrchestrator = startCampaignOrchestrator;
+    self.resumeCampaignOrchestrator = resumeCampaignOrchestrator;
+    self.installOwnerTestNetworkGuard = installOwnerTestNetworkGuard;
+    self.removeOwnerTestNetworkGuard = removeOwnerTestNetworkGuard;
+    self.reconcileOwnerTestNetworkGuardOnBoot = reconcileOwnerTestNetworkGuardOnBoot;
+    self.OWNER_TEST_GUARD_RULE_IDS = OWNER_TEST_GUARD_RULE_IDS;
     self.campaignState = campaignState;
 }

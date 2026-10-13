@@ -60,7 +60,7 @@ async function runTestSuite() {
     console.log('========================================================================\n');
 
     let passedCount = 0;
-    const totalCount = 11;
+    const totalCount = 14;
 
     // Helper to get fresh gateway instance
     function createGateway(config = {}) {
@@ -299,6 +299,49 @@ async function runTestSuite() {
         assert(Array.isArray(manifest.permissions), 'Manifest permissions must be an array');
         assert(manifest.permissions.includes('declarativeNetRequest'), 'Manifest must declare declarativeNetRequest permission');
         console.log('    ✅ PASS: manifest.json correctly includes declarativeNetRequest permission.');
+        passedCount++;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // SCENARIO L: PAUSE retains DNR network guard and records test mode in checkpoint
+    // ─────────────────────────────────────────────────────────────────────────────
+    console.log('\n>>> [SCENARIO L] PAUSE retains DNR network guard and records test mode in checkpoint');
+    {
+        const bgJs = fs.readFileSync(path.resolve(__dirname, '../extension/background.js'), 'utf8');
+        assert(bgJs.includes("Do NOT remove Owner Test DNR rules merely because campaign is PAUSED"), 'Pause must NOT remove DNR rules');
+        assert(bgJs.includes("ownerFunctionTestMode: Boolean(campaignState.ownerFunctionTestMode)"), 'Checkpoint snapshot must persist ownerFunctionTestMode');
+        // Ensure pauseCampaignOrchestrator does NOT unconditionally call removeOwnerTestNetworkGuard
+        const pauseFnMatch = bgJs.match(/async function pauseCampaignOrchestrator[\s\S]*?return \{ success: true/);
+        assert(pauseFnMatch, 'pauseCampaignOrchestrator must exist');
+        assert(!pauseFnMatch[0].includes('await removeOwnerTestNetworkGuard()'), 'pauseCampaignOrchestrator must NOT remove network guard');
+        console.log('    ✅ PASS: PAUSE preserves DNR network guard and records ownerFunctionTestMode in checkpoint.');
+        passedCount++;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // SCENARIO M: RESUME reinstalls & readback-verifies DNR network guard fail-closed
+    // ─────────────────────────────────────────────────────────────────────────────
+    console.log('\n>>> [SCENARIO M] RESUME reinstalls & readback-verifies DNR network guard fail-closed');
+    {
+        const bgJs = fs.readFileSync(path.resolve(__dirname, '../extension/background.js'), 'utf8');
+        assert(bgJs.includes("Before RESUME is acknowledged, independently call installOwnerTestNetworkGuard()"), 'Resume must reinstall network guard');
+        assert(bgJs.includes("FAIL_CLOSED_GUARD_ERROR_ON_RESUME"), 'Resume must fail-closed if guard installation fails');
+        assert(bgJs.includes("OWNER_TEST_GUARD_READBACK_INCOMPLETE"), 'Resume must verify readback of all 5 session rules');
+        console.log('    ✅ PASS: RESUME independently verifies & reinstalls DNR network guard before continuing.');
+        passedCount++;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // SCENARIO N: State-aware SW boot reconciliation: restores guard when test session exists
+    // ─────────────────────────────────────────────────────────────────────────────
+    console.log('\n>>> [SCENARIO N] State-aware SW boot reconciliation: restores guard when test session exists');
+    {
+        const bgJs = fs.readFileSync(path.resolve(__dirname, '../extension/background.js'), 'utf8');
+        assert(bgJs.includes("async function reconcileOwnerTestNetworkGuardOnBoot()"), 'reconcileOwnerTestNetworkGuardOnBoot must exist');
+        assert(bgJs.includes("BOOT_GUARD_RECONCILIATION_FAILED"), 'SW boot must fail-closed if guard reconciliation fails');
+        assert(bgJs.includes("reconcileOwnerTestNetworkGuardOnBoot().catch"), 'SW boot must invoke state-aware reconciliation');
+        assert(!bgJs.includes("removeOwnerTestNetworkGuard().catch(() => {});\n// ── END"), 'SW boot must NOT unconditionally remove network guard');
+        console.log('    ✅ PASS: State-aware SW boot reconciliation verified.');
         passedCount++;
     }
 
