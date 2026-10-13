@@ -18,27 +18,27 @@
         channel: 'TEST_ONLY',
         testOnly: true,
         // [R6.9G.10.3.7.1.4.4] implementationHead = functional commit for DeclarativeNetRequest Network Guard & TEST_ONLY Runtime Gate
-        implementationHead: 'a6f0b76c82b1d7b95676de2173abc5c6ac5cd2ee',
-        implementationHeadShort: 'a6f0b76c',
-        head: 'a6f0b76c82b1d7b95676de2173abc5c6ac5cd2ee',
-        headShort: 'a6f0b76c',
+        implementationHead: 'b837700ca4394620cf7747c209c53e0d16c41030',
+        implementationHeadShort: 'b837700c',
+        head: 'b837700ca4394620cf7747c209c53e0d16c41030',
+        headShort: 'b837700c',
         rollbackBase: 'dc0740a0c69e2f7fa96b6989841acf0831b3619e',
         previousFunctionalRestorePoint: 'a6f0b76c82b1d7b95676de2173abc5c6ac5cd2ee',
         manifestVersion: 3,
         buildId: 'R6.9G.10.3.7.1.4.4-20261013-OWNER-TEST-MODE-DNR-GUARD',
-        builtAt: '2026-10-13T15:15:00.000Z',
+        builtAt: '2026-10-13T18:15:00.000Z',
         provenanceSchema: 2,
         modules: {
-            backgroundSha: 'd29fdbb905542489bae66b376ae30538d54b32b8b9dfc1d14e7fba1a4bf33fbf',
+            backgroundSha: '193f6de644db0a2f4ca4a96a881efc6340bf96ba89b1bc11e82a28a356dc851a',
             contentScriptSha: '5c2ebd277a9020a4434fc68cd46c6ec974dbf180290ba368b33273aee67ccf9e',
-            popupSha: '34f752bf95a3980a92bab55283a3dcfbe83abb6a5dfc67b794d33e9dee750658',
+            popupSha: 'b6e5b82029afedb25e7e9dc701b42d06ccd1bc85be8927af165034c388b5f04e',
             solverContentSha: 'd7de969d29df29799537b11380f0f82967bb93da227c91e7dc8c6af0d128f457',
             solverCoreSha: '01b3d96048ea933403e4599854dcdca28027e7f676aa5077eb6c5eb0582ac1e7',
             emailCollectorSha: '3f1147a379e159e7777158f2caa74cc8d40b2a0b0eb2c244f440af379cb5c9c9',
             historyStoreSha: 'ef148329c5c019877fef3708ac63472ce86d5f7f06da467a557a74e038eab6b4',
             contactGateSha: '0d01acb2d0a9448d154353fac5b527c17afa42fed56c68d6a49b39053629bd7d',
             visionSubmitSha: '25cf18a4834bb476edff5e8f19a78dd2723bd556ede649ada69bc801543c83f3',
-            privacyGatewaySha: 'fde78cfaed1e9858f12718fc1ada952bd43183439b0a2742ffcf3141701b18d1'
+            privacyGatewaySha: '2662f12eb26290a8334e9de4727cd0ceb039d966c4ec05d2c321ede7715a43a9'
         }
     };
 
