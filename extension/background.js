@@ -2407,6 +2407,23 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
             return true;
         }
 
+        case 'ENSURE_OWNER_TEST_SERVER': {
+            bgOperationQueue.enqueue(async () => {
+                try {
+                    chrome.runtime.sendNativeMessage('com.xpider.privacy_relay', { action: 'START_OWNER_TEST_SERVER' }, (resp) => {
+                        if (chrome.runtime.lastError) {
+                            sendResponse({ success: false, error: 'NATIVE_HOST_ERROR', details: chrome.runtime.lastError.message });
+                        } else {
+                            sendResponse(resp || { success: false, error: 'EMPTY_RESPONSE' });
+                        }
+                    });
+                } catch (err) {
+                    sendResponse({ success: false, error: 'EXCEPTION', details: err.message });
+                }
+            });
+            return true;
+        }
+
         case 'START_CAMPAIGN': {
             // [Issue #6 R6.9F] Fail-Closed Build Handshake Verification
             const liveBp = (typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO) ? BuildProvenance.BUILD_INFO : null;
@@ -4511,6 +4528,10 @@ async function startCampaignOrchestrator(queue, template, delayMs, fillDelayMs =
         // [R6.9A & Directive D] Persistent campaignRunId for ledger scoping
         if (options.campaignRunId) {
             campaignState.campaignRunId = options.campaignRunId;
+        } else if (isOwnerTestMode && hs && hs.activeCampaignRunId && hs.activeCampaignRunId.startsWith('owner_test_run_')) {
+            campaignState.campaignRunId = hs.activeCampaignRunId;
+        } else if (isOwnerTestMode && campaignState.campaignRunId && campaignState.campaignRunId.startsWith('owner_test_run_')) {
+            // Keep current owner_test_run_
         } else if (!options.isResume || !campaignState.campaignRunId) {
             campaignState.campaignRunId = (isOwnerTestMode ? 'owner_test_run_' : 'run_') + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
         }

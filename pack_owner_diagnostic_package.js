@@ -69,6 +69,12 @@ if (fs.existsSync('XPIDER_AUTO_SETUP.bat')) {
   fs.copyFileSync('XPIDER_AUTO_SETUP.bat', path.join(stagingDir, 'XPIDER_AUTO_SETUP.bat'));
 }
 
+// Copy owner-extension-test-site to staging/owner-extension-test-site (Issue #6 Directive Handoff Fix)
+const stagingTestSiteDir = path.join(stagingDir, 'owner-extension-test-site');
+if (fs.existsSync('owner-extension-test-site')) {
+  fs.cpSync('owner-extension-test-site', stagingTestSiteDir, { recursive: true });
+}
+
 function getAllFiles(dir, base = dir) {
   let results = [];
   const list = fs.readdirSync(dir);

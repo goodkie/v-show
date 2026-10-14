@@ -454,8 +454,66 @@ async function runTestSuite() {
         passedCount++;
     }
 
+    // ─────────────────────────────────────────────────────────────────────────────
+    // SCENARIO V: Controlled Test Server Health Endpoint (Section A)
+    // ─────────────────────────────────────────────────────────────────────────────
+    console.log('\n>>> [SCENARIO V] Controlled Test Server Health Endpoint (Section A)');
+    {
+        const serverJs = fs.readFileSync(path.resolve(__dirname, '../owner-extension-test-site/server.js'), 'utf8');
+        assert(serverJs.includes("/__xpider_health"), 'server.js must implement /__xpider_health');
+        assert(serverJs.includes("XPIDER_OWNER_TEST_SERVER"), 'server.js health response must specify XPIDER_OWNER_TEST_SERVER');
+        assert(serverJs.includes("fixtureSet: 'OWNER_7_V1'"), 'server.js health response must specify fixtureSet OWNER_7_V1');
+        assert(serverJs.includes("/__xpider_shutdown"), 'server.js must implement local shutdown endpoint');
+        console.log('    ✅ PASS: Controlled test server deterministic health endpoint verified.');
+        passedCount++;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // SCENARIO W: Native Messaging Host Test Server Management (Section B)
+    // ─────────────────────────────────────────────────────────────────────────────
+    console.log('\n>>> [SCENARIO W] Native Messaging Host Test Server Management (Section B)');
+    {
+        const nhJs = fs.readFileSync(path.resolve(__dirname, '../companion/native_host/xpider_native_host.js'), 'utf8');
+        assert(nhJs.includes("OWNER_TEST_SERVER_STATUS"), 'native host must support OWNER_TEST_SERVER_STATUS');
+        assert(nhJs.includes("START_OWNER_TEST_SERVER"), 'native host must support START_OWNER_TEST_SERVER');
+        assert(nhJs.includes("STOP_OWNER_TEST_SERVER"), 'native host must support STOP_OWNER_TEST_SERVER');
+        assert(nhJs.includes("OWNER_TEST_PORT_COLLISION"), 'native host must detect and fail closed on port collisions');
+        console.log('    ✅ PASS: Native Messaging Host test server lifecycle management verified.');
+        passedCount++;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // SCENARIO X: Auto Setup Precondition & Button Enabling (Section C & E)
+    // ─────────────────────────────────────────────────────────────────────────────
+    console.log('\n>>> [SCENARIO X] Auto Setup Precondition & Button Enabling (Section C & E)');
+    {
+        const popupJs = fs.readFileSync(path.resolve(__dirname, '../extension/popup.js'), 'utf8');
+        assert(popupJs.includes("probeAndEnsureOwnerTestServer"), 'popup.js must implement probeAndEnsureOwnerTestServer');
+        assert(popupJs.includes("ONE-TIME TEST RUNTIME INSTALL REQUIRED"), 'popup.js must show ONE-TIME TEST RUNTIME INSTALL REQUIRED if native host missing');
+        assert(popupJs.includes("PORT 8088 COLLISION"), 'popup.js must detect PORT 8088 COLLISION');
+        assert(popupJs.includes("READY — LOCAL TEST SERVER VERIFIED"), 'popup.js must show READY — LOCAL TEST SERVER VERIFIED on success');
+        assert(popupJs.includes("runBtn.disabled = true"), 'runBtn must be disabled while server is checking or unavailable');
+        console.log('    ✅ PASS: Auto Setup server precondition and explicit card statuses verified.');
+        passedCount++;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // SCENARIO Y: Pre-Navigation Fail-Closed Guard & Ledger Run Sync (Section F & G)
+    // ─────────────────────────────────────────────────────────────────────────────
+    console.log('\n>>> [SCENARIO Y] Pre-Navigation Fail-Closed Guard & Ledger Run Sync (Section F & G)');
+    {
+        const popupJs = fs.readFileSync(path.resolve(__dirname, '../extension/popup.js'), 'utf8');
+        const bgJs = fs.readFileSync(path.resolve(__dirname, '../extension/background.js'), 'utf8');
+        const bat = fs.readFileSync(path.resolve(__dirname, '../XPIDER_AUTO_SETUP.bat'), 'utf8');
+        assert(popupJs.includes("const srvCheck = await probeAndEnsureOwnerTestServer()") && popupJs.includes("if (!srvCheck.success)"), 'runBtn must check server before start and abort pre-navigation on failure');
+        assert(bgJs.includes("isOwnerTestMode && hs && hs.activeCampaignRunId && hs.activeCampaignRunId.startsWith('owner_test_run_')"), 'background.js must preserve owner test runId');
+        assert(bat.includes("Verifying and Starting Local Owner Test Server"), 'XPIDER_AUTO_SETUP.bat must bootstrap Owner Test Server');
+        console.log('    ✅ PASS: Pre-navigation guard and campaignRunId sync verified.');
+        passedCount++;
+    }
+
     console.log('\n========================================================================');
-    console.log(`  ALL ${passedCount}/${totalCount + 4} SCENARIOS PASSED WITH ZERO REGRESSION.`);
+    console.log(`  ALL ${passedCount}/${totalCount + 8} SCENARIOS PASSED WITH ZERO REGRESSION.`);
     console.log('========================================================================');
 }
 

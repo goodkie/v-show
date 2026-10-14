@@ -816,8 +816,9 @@
             }
 
             // Update linked import rows
+            const targetIdentity = attempt.targetIdentity || (target ? target.targetIdentity : null);
             for (const row of this.importRows) {
-                if (row.attemptId === attemptId) {
+                if (row.attemptId === attemptId || (targetIdentity && row.targetIdentity === targetIdentity && (row.campaignRunId === attempt.campaignRunId || (attempt.campaignRunId && attempt.campaignRunId.startsWith('owner_test_') && row.campaignRunId && row.campaignRunId.startsWith('owner_test_'))))) {
                     row.status = canonicalStatus;
                 }
             }
@@ -948,6 +949,9 @@
             if (scope === 'currentRun') {
                 if (targetRunId) {
                     scopedRows = this.importRows.filter(r => r.importId === targetRunId || r.campaignRunId === targetRunId);
+                    if (scopedRows.length === 0 && targetRunId.startsWith('owner_test_run_')) {
+                        scopedRows = this.importRows.filter(r => r.campaignRunId && r.campaignRunId.startsWith('owner_test_run_'));
+                    }
                 } else {
                     scopedRows = [];
                 }

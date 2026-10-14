@@ -88,9 +88,15 @@ async function runEdgeSafetySuite() {
   log(`Extension Source: ${EXT_DIR}`);
   log(`Test Site Server: http://127.0.0.1:${TEST_SERVER_PORT}`);
 
-  // 1. Start Controlled Local Test Server
-  const server = require('../owner-extension-test-site/server.js');
-  log('✅ Local test site server running on port 8088');
+  // 1. Ensure port 8088 has NO XPIDER test server running initially (Directive H Requirement 1 & 3)
+  log('1. Ensuring port 8088 has NO test server running initially (Section H)...');
+  try {
+    await fetch(`http://127.0.0.1:${TEST_SERVER_PORT}/__xpider_shutdown`, { method: 'POST' }).catch(() => {});
+    await sleep(600);
+  } catch (_) {}
+  const initialPortCheck = await fetch(`http://127.0.0.1:${TEST_SERVER_PORT}/__xpider_health`).then(() => true).catch(() => false);
+  assert(!initialPortCheck, 'Port 8088 must be confirmed DOWN before starting test');
+  log('✅ Port 8088 confirmed DOWN (No test server running)');
 
   let edgeProcess = null;
   const userDataDir = path.join(os.tmpdir(), `edge_safety_suite_${Date.now()}`);
@@ -217,6 +223,9 @@ async function runEdgeSafetySuite() {
         if (d.method === 'Page.javascriptDialogOpening') {
           log(`   [JS_DIALOG_DISMISSED] ${d.params.message ? d.params.message.replace(/\n/g, ' ') : ''}`);
           await cdpSend(popupWs, 'Page.handleJavaScriptDialog', { accept: true });
+        } else if (d.method === 'Runtime.consoleAPICalled') {
+          const args = (d.params.args || []).map(a => a.value !== undefined ? a.value : (a.description || '')).join(' ');
+          log(`[POPUP_CONSOLE] ${args}`);
         }
       } catch (_) {}
     });
@@ -367,18 +376,24 @@ async function runEdgeSafetySuite() {
       // 3. Click ✨ AUTO SETUP
       log('   3. Clicking #auto-setup-btn (✨ AUTO SETUP)...');
       await evalPopup(`document.getElementById('auto-setup-btn')?.click()`);
-      await sleep(1500);
 
-      // Verify Auto Setup results
-      const autoSetupState = await evalPopup(`(async () => {
-        const st = await chrome.storage.local.get(['xpider_owner_backup_snapshot', 'xpider_owner_function_test_mode', 'xpider_delayMs', 'xpider_fillDelayMs', 'xpider_submitDelayMs']);
-        const pill = document.getElementById('auto-setup-status-pill')?.textContent;
-        const feedback = document.getElementById('auto-setup-feedback')?.textContent;
-        const runBtnVisible = document.getElementById('run-function-test-btn')?.style.display !== 'none';
-        const restoreBtnVisible = document.getElementById('restore-user-settings-btn')?.style.display !== 'none';
-        const q = (typeof window.getCampaignQueue === 'function' ? window.getCampaignQueue() : window.campaignQueue) || [];
-        return { st, pill, feedback, runBtnVisible, restoreBtnVisible, queue: q };
-      })()`);
+      // Poll until Auto Setup completes cold boot via Native Host and reaches READY
+      let autoSetupState = null;
+      for (let i = 0; i < 30; i++) {
+        await sleep(500);
+        autoSetupState = await evalPopup(`(async () => {
+          const st = await chrome.storage.local.get(['xpider_owner_backup_snapshot', 'xpider_owner_function_test_mode', 'xpider_delayMs', 'xpider_fillDelayMs', 'xpider_submitDelayMs']);
+          const pill = document.getElementById('auto-setup-status-pill')?.textContent || '';
+          const feedback = document.getElementById('auto-setup-feedback')?.textContent || '';
+          const runBtnVisible = document.getElementById('run-function-test-btn')?.style.display !== 'none';
+          const restoreBtnVisible = document.getElementById('restore-user-settings-btn')?.style.display !== 'none';
+          const q = (typeof window.getCampaignQueue === 'function' ? window.getCampaignQueue() : window.campaignQueue) || [];
+          return { st, pill, feedback, runBtnVisible, restoreBtnVisible, queue: q };
+        })()`);
+        if (autoSetupState && autoSetupState.pill && autoSetupState.pill.includes('READY')) {
+          break;
+        }
+      }
 
       assert(autoSetupState.st.xpider_owner_backup_snapshot, 'Snapshot must be created in storage');
       assert.strictEqual(autoSetupState.st.xpider_owner_backup_snapshot.queue.length, 100, 'Snapshot must preserve exact 100 public URLs');
@@ -386,10 +401,15 @@ async function runEdgeSafetySuite() {
       assert.strictEqual(autoSetupState.st.xpider_delayMs, 10000, 'Collect delay must be Level 6 (10000ms)');
       assert.strictEqual(autoSetupState.st.xpider_fillDelayMs, 300, 'Fill delay must be Level 6 (300ms)');
       assert.strictEqual(autoSetupState.st.xpider_submitDelayMs, 4000, 'Submit delay must be Level 6 (4000ms)');
-      assert.strictEqual(autoSetupState.pill, 'READY', 'Status pill must show READY');
+      assert(autoSetupState.pill.includes('READY'), 'Status pill must show READY');
       assert(autoSetupState.runBtnVisible, '#run-function-test-btn must be visible');
       assert(autoSetupState.restoreBtnVisible, '#restore-user-settings-btn must be visible');
       assert.strictEqual(autoSetupState.queue.length, 7, 'Queue must be atomically switched to 7 local fixtures');
+
+      // Verify Auto Setup auto-started the test server on port 8088!
+      const autoStartedHealth = await fetch(`http://127.0.0.1:${TEST_SERVER_PORT}/__xpider_health`).then(r => r.json()).catch(() => null);
+      assert(autoStartedHealth && autoStartedHealth.ok && autoStartedHealth.service === 'XPIDER_OWNER_TEST_SERVER', 'Auto Setup must auto-start test server via Native Host');
+      log(`   ✅ Test server auto-started and verified healthy on port 8088 by Auto Setup (service=${autoStartedHealth.service})`);
 
       // Verify DNR rules 990001-990005 are installed
       const dnrRulesCount = await evalSw(`(async () => (await chrome.declarativeNetRequest.getSessionRules()).length)()`);
@@ -1046,13 +1066,27 @@ async function runEdgeSafetySuite() {
       assert.strictEqual(dirtyAudit.skipStorage, true, 'Storage skip_attempted must initially be true');
       assert.strictEqual(dirtyAudit.queueLen, 100, 'Queue must initially have 100 public URLs');
 
+      // Stop server to prove AUTO SETUP automatically starts it on a dirty profile (Section H Requirement 5)
+      log('   Shutting down local test server to prove Auto Setup starts it...');
+      try {
+        await fetch(`http://127.0.0.1:${TEST_SERVER_PORT}/__xpider_shutdown`, { method: 'POST' }).catch(() => {});
+        await sleep(800);
+      } catch (_) {}
+      const srvDown1 = await fetch(`http://127.0.0.1:${TEST_SERVER_PORT}/__xpider_health`).then(() => true).catch(() => false);
+      assert(!srvDown1, 'Server must be confirmed down before Auto Setup');
+      log('   ✅ Port 8088 confirmed DOWN before Auto Setup');
+
       // Step 2: Click AUTO SETUP only
-      log('   2. Clicking ✨ AUTO SETUP on dirty profile...');
+      log('   2. Clicking ✨ AUTO SETUP on dirty profile (with server DOWN)...');
       await evalPopup(`(async () => {
         const btn = document.getElementById('auto-setup-btn');
         if (btn) btn.click();
       })()`);
-      await sleep(1500);
+      await sleep(2500);
+
+      const srvUp1 = await fetch(`http://127.0.0.1:${TEST_SERVER_PORT}/__xpider_health`).then(r => r.json()).catch(() => null);
+      assert(srvUp1 && srvUp1.ok && srvUp1.service === 'XPIDER_OWNER_TEST_SERVER', 'Auto Setup must auto-start test server on dirty profile');
+      log(`   ✅ Test server auto-started and verified healthy on port 8088: service=${srvUp1.service}`);
 
       // Verify UI + Storage + Ledger state after Auto Setup
       const afterSetupState = await evalPopup(`(() => {
@@ -1156,9 +1190,34 @@ async function runEdgeSafetySuite() {
       assert.strictEqual(firstOutcomes.fail, '1', '1st Run must produce 1 FAILURE');
       assert(firstOutcomes.feedback.includes('PASS (100% EXPECTED OUTCOME)'), '1st Run verdict must be PASS (100% EXPECTED OUTCOME)');
 
-      // Step 4: Click RUN FUNCTION TEST a SECOND time WITHOUT ANY MANUAL RESET (Directive D & Mandatory Edge Regression Step 11)
-      log('\n   4. 🚀 Clicking #run-function-test-btn a SECOND time (Idempotency Proof without manual reset)...');
-      await evalPopup('(() => { document.getElementById("run-function-test-btn")?.click(); })()');
+      // Step 4: Deliberately stop server to prove Pre-Navigation Guard auto-repairs it before 2nd run (Section H Requirements 10-12)
+      log('\n   4. 🛑 Shutting down local test server before 2nd run to prove Pre-Navigation Auto-Repair...');
+      try {
+        await fetch(`http://127.0.0.1:${TEST_SERVER_PORT}/__xpider_shutdown`, { method: 'POST' }).catch(() => {});
+        await sleep(800);
+      } catch (_) {}
+      const srvDown2 = await fetch(`http://127.0.0.1:${TEST_SERVER_PORT}/__xpider_health`).then(() => true).catch(() => false);
+      assert(!srvDown2, 'Server must be down before 2nd run');
+      log('   ✅ Port 8088 confirmed DOWN before 2nd run');
+
+      log('\n   🚀 Clicking #run-function-test-btn a SECOND time (Pre-Navigation Auto-Repair & Idempotency Proof)...');
+      await evalPopup(`(async () => {
+        const btn = document.getElementById("run-function-test-btn");
+        if (btn) btn.click();
+      })()`);
+
+      // Wait for pre-navigation health check, auto-repair, and campaign start
+      let secondRunStarted = false;
+      for (let i = 0; i < 30; i++) {
+        await sleep(500);
+        const st = await evalPopup('document.getElementById("status-title")?.textContent || ""');
+        if (st.includes('Running')) {
+          secondRunStarted = true;
+          break;
+        }
+      }
+      assert(secondRunStarted, '2nd run must start and enter Running state after pre-navigation auto-repair');
+      log('   ✅ Pre-navigation auto-repair confirmed: 2nd run started (Running)');
 
       let secondRunFinished = false;
       const startSecond = Date.now();
@@ -1267,7 +1326,9 @@ async function runEdgeSafetySuite() {
       log('Terminating Microsoft Edge...');
       edgeProcess.kill();
     }
-    server.close();
+    try {
+      await fetch(`http://127.0.0.1:${TEST_SERVER_PORT}/__xpider_shutdown`, { method: 'POST' }).catch(() => {});
+    } catch (_) {}
   }
 }
 

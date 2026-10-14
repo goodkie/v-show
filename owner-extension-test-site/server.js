@@ -38,6 +38,44 @@ const server = http.createServer((req, res) => {
   }
 
   let reqPath = decodeURI(req.url.split('?')[0]);
+
+  // Deterministic Health Identity endpoint (Issue #6 Section A)
+  if (reqPath === '/__xpider_health') {
+    res.writeHead(200, {
+      'Content-Type': 'application/json; charset=UTF-8',
+      'Cache-Control': 'no-cache, no-store, must-revalidate'
+    });
+    res.end(JSON.stringify({
+      ok: true,
+      service: 'XPIDER_OWNER_TEST_SERVER',
+      channel: 'TEST_ONLY',
+      port: 8088,
+      fixtureSet: 'OWNER_7_V1',
+      version: 'R6.9G.10.3.7.1.4.5',
+      pid: process.pid,
+      timestamp: Date.now()
+    }));
+    return;
+  }
+
+  // Graceful shutdown endpoint (local only)
+  if (reqPath === '/__xpider_shutdown' && req.method === 'POST') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true, message: 'SHUTTING_DOWN' }));
+    setTimeout(() => {
+      try {
+        if (typeof server.closeAllConnections === 'function') {
+          server.closeAllConnections();
+        }
+      } catch (_) {}
+      try {
+        server.close();
+      } catch (_) {}
+      process.exit(0);
+    }, 50);
+    return;
+  }
+
   if (reqPath === '/' || reqPath === '') {
     reqPath = '/no-contact-page.html';
   } else if (reqPath === '/subscribe-no-message.html') {
@@ -84,6 +122,14 @@ const server = http.createServer((req, res) => {
     const stream = fs.createReadStream(filePath);
     stream.pipe(res);
   });
+});
+
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`[XPIDER_TEST_SERVER] Port ${PORT} already in use. Exiting.`);
+    process.exit(1);
+  }
+  console.error('[XPIDER_TEST_SERVER_ERROR]', err);
 });
 
 server.listen(PORT, HOST, () => {

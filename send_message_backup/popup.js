@@ -3594,12 +3594,39 @@ function updateAutoSetupUI(state) {
 
     if (state === 'READY') {
         if (statusPill) {
-            statusPill.textContent = 'READY';
+            statusPill.textContent = 'READY — LOCAL TEST SERVER VERIFIED';
             statusPill.style.background = 'rgba(16, 185, 129, 0.2)';
             statusPill.style.color = '#34d399';
             statusPill.style.borderColor = 'rgba(16, 185, 129, 0.5)';
         }
-        if (runBtn) runBtn.style.display = 'inline-flex';
+        if (runBtn) {
+            runBtn.style.display = 'inline-flex';
+            runBtn.disabled = false;
+        }
+        if (restoreBtn) restoreBtn.style.display = 'inline-flex';
+    } else if (state === 'CHECKING' || state === 'STARTING' || state === 'VERIFYING') {
+        if (statusPill) {
+            statusPill.textContent = state === 'CHECKING' ? 'CHECKING TEST RUNTIME...' : (state === 'STARTING' ? 'STARTING LOCAL TEST SERVER...' : 'VERIFYING 127.0.0.1:8088...');
+            statusPill.style.background = 'rgba(234, 179, 8, 0.2)';
+            statusPill.style.color = '#fde047';
+            statusPill.style.borderColor = 'rgba(234, 179, 8, 0.5)';
+        }
+        if (runBtn) {
+            runBtn.style.display = 'inline-flex';
+            runBtn.disabled = true;
+        }
+        if (restoreBtn) restoreBtn.style.display = 'inline-flex';
+    } else if (state === 'COLLISION' || state === 'INSTALL_REQUIRED' || state === 'UNAVAILABLE' || state === 'ERROR') {
+        if (statusPill) {
+            statusPill.textContent = state === 'COLLISION' ? 'PORT 8088 COLLISION' : (state === 'INSTALL_REQUIRED' ? 'ONE-TIME TEST RUNTIME INSTALL REQUIRED' : 'LOCAL TEST SERVER NOT AVAILABLE');
+            statusPill.style.background = 'rgba(239, 68, 68, 0.2)';
+            statusPill.style.color = '#fca5a5';
+            statusPill.style.borderColor = 'rgba(239, 68, 68, 0.5)';
+        }
+        if (runBtn) {
+            runBtn.style.display = 'inline-flex';
+            runBtn.disabled = true;
+        }
         if (restoreBtn) restoreBtn.style.display = 'inline-flex';
     } else if (state === 'RUNNING') {
         if (statusPill) {
@@ -3617,7 +3644,10 @@ function updateAutoSetupUI(state) {
             statusPill.style.color = '#34d399';
             statusPill.style.borderColor = 'rgba(16, 185, 129, 0.6)';
         }
-        if (runBtn) runBtn.style.display = 'inline-flex';
+        if (runBtn) {
+            runBtn.style.display = 'inline-flex';
+            runBtn.disabled = false;
+        }
         if (restoreBtn) restoreBtn.style.display = 'inline-flex';
     } else {
         if (statusPill) {
@@ -3629,6 +3659,119 @@ function updateAutoSetupUI(state) {
         if (runBtn) runBtn.style.display = 'none';
         if (restoreBtn) restoreBtn.style.display = 'none';
     }
+}
+
+async function probeAndEnsureOwnerTestServer() {
+    const probeHealth = async (timeoutMs = 1500) => {
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+            const resp = await fetch('http://127.0.0.1:8088/__xpider_health', {
+                signal: controller.signal,
+                cache: 'no-store'
+            });
+            clearTimeout(timeoutId);
+            if (resp.ok) {
+                const data = await resp.json();
+                if (data && data.ok === true && data.service === 'XPIDER_OWNER_TEST_SERVER') {
+                    return { ok: true, health: data };
+                }
+                return { ok: false, error: 'PORT_COLLISION', details: data };
+            }
+            return { ok: false, error: 'NON_200', status: resp.status };
+        } catch (e) {
+            return { ok: false, error: 'UNAVAILABLE', details: e.message };
+        }
+    };
+
+    updateAutoSetupUI('CHECKING');
+    showAutoSetupFeedback('🔍 Checking local test fixture runtime (127.0.0.1:8088)...', 'info');
+    let health = await probeHealth(1200);
+    if (health.ok) {
+        return { success: true, health: health.health };
+    }
+    if (health.error === 'PORT_COLLISION') {
+        updateAutoSetupUI('COLLISION');
+        showAutoSetupFeedback(
+            '🛑 PORT 8088 COLLISION\n' +
+            'Port 8088 is occupied by a foreign process. Please terminate the conflicting process on port 8088.',
+            'error'
+        );
+        return { success: false, error: 'OWNER_TEST_PORT_COLLISION' };
+    }
+
+    // 2. Try starting via Native Messaging Host
+    updateAutoSetupUI('STARTING');
+    showAutoSetupFeedback('🚀 Starting local test server automatically via Native Host...', 'info');
+
+    let nativeResp = null;
+    try {
+        nativeResp = await new Promise((resolve) => {
+            chrome.runtime.sendNativeMessage('com.xpider.privacy_relay', { action: 'START_OWNER_TEST_SERVER' }, (resp) => {
+                if (chrome.runtime.lastError) {
+                    resolve({ success: false, error: 'NATIVE_HOST_ERROR', details: chrome.runtime.lastError.message });
+                } else {
+                    resolve(resp || { success: false, error: 'EMPTY_RESPONSE' });
+                }
+            });
+        });
+    } catch (e) {
+        nativeResp = { success: false, error: 'NATIVE_HOST_EXCEPTION', details: e.message };
+    }
+
+    // Fallback: If popup call failed, try asking background service worker
+    if (!nativeResp || !nativeResp.success) {
+        try {
+            const bgResp = await chrome.runtime.sendMessage({ action: 'ENSURE_OWNER_TEST_SERVER' });
+            if (bgResp && bgResp.success) {
+                nativeResp = bgResp;
+            }
+        } catch (_) {}
+    }
+
+    if (!nativeResp || !nativeResp.success) {
+        updateAutoSetupUI('INSTALL_REQUIRED');
+        showAutoSetupFeedback(
+            '⚠️ ONE-TIME TEST RUNTIME INSTALL REQUIRED\n' +
+            'Local test server could not be started automatically because the native host is not installed.\n' +
+            'Please run XPIDER_AUTO_SETUP.bat once in the extension directory to register the native host.',
+            'error'
+        );
+        return { success: false, error: 'ONE_TIME_INSTALL_REQUIRED', details: nativeResp };
+    }
+
+    if (nativeResp.error === 'OWNER_TEST_PORT_COLLISION') {
+        updateAutoSetupUI('COLLISION');
+        showAutoSetupFeedback('🛑 PORT 8088 COLLISION\n' + (nativeResp.message || 'Port 8088 collided with foreign service.'), 'error');
+        return { success: false, error: 'OWNER_TEST_PORT_COLLISION' };
+    }
+
+    // 3. Verify health bounded
+    updateAutoSetupUI('VERIFYING');
+    showAutoSetupFeedback('⏳ Verifying test server health identity on 127.0.0.1:8088...', 'info');
+    for (let i = 0; i < 12; i++) {
+        await new Promise(r => setTimeout(r, 250));
+        health = await probeHealth(800);
+        if (health.ok) break;
+    }
+
+    if (!health.ok) {
+        updateAutoSetupUI('ERROR');
+        showAutoSetupFeedback('🛑 LOCAL TEST SERVER NOT AVAILABLE\nServer failed to respond with verified identity.', 'error');
+        return { success: false, error: 'SERVER_VERIFICATION_FAILED' };
+    }
+
+    // 4. Verify /contact-standard.html fixture returns 200
+    try {
+        const fixtureCheck = await fetch('http://127.0.0.1:8088/contact-standard.html', { method: 'HEAD', cache: 'no-store' });
+        if (!fixtureCheck.ok) {
+            updateAutoSetupUI('ERROR');
+            showAutoSetupFeedback('🛑 LOCAL TEST SERVER INCOMPLETE\nFixture /contact-standard.html returned ' + fixtureCheck.status, 'error');
+            return { success: false, error: 'FIXTURE_NOT_FOUND' };
+        }
+    } catch (_) {}
+
+    return { success: true, health: health.health };
 }
 
 function showAutoSetupFeedback(msg, type = 'info') {
@@ -3706,11 +3849,14 @@ function initOwnerAutoSetup() {
 
     // Check existing snapshot state
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-        chrome.storage.local.get(['xpider_owner_backup_snapshot', 'xpider_owner_function_test_mode']).then((st) => {
+        chrome.storage.local.get(['xpider_owner_backup_snapshot', 'xpider_owner_function_test_mode']).then(async (st) => {
             if (st && st.xpider_owner_function_test_mode) {
-                updateAutoSetupUI('READY');
-                if (st.xpider_owner_backup_snapshot) {
-                    showAutoSetupFeedback('READY FOR LOCAL FUNCTION TEST (Active)\nPrevious list & settings are backed up and safe.', 'success');
+                const srv = await probeAndEnsureOwnerTestServer();
+                if (srv.success) {
+                    updateAutoSetupUI('READY');
+                    if (st.xpider_owner_backup_snapshot) {
+                        showAutoSetupFeedback('READY FOR LOCAL FUNCTION TEST (Active)\nLocal test server verified (127.0.0.1:8088). Previous list & settings backed up.', 'success');
+                    }
                 }
             } else if (st && st.xpider_owner_backup_snapshot) {
                 // Snapshot exists but test mode off - offer restore
@@ -3879,15 +4025,21 @@ function initOwnerAutoSetup() {
                     await _renderHistoryPanel();
                 }
 
+                // Precondition: Ensure Local Test Server is running and healthy (Issue #6 Sections B & C)
+                const srvRes = await probeAndEnsureOwnerTestServer();
+                if (!srvRes.success) {
+                    return;
+                }
+
                 // 9. Update UI to READY
                 updateAutoSetupUI('READY');
                 const backedUpCount = existingSnapshot.queue ? existingSnapshot.queue.length : 0;
                 showAutoSetupFeedback(
                     `READY FOR LOCAL FUNCTION TEST\n` +
-                    `7 local fixtures loaded | DNR rules 990001-990005 verified | Public Strict Privacy preserved fail-closed | Preserved ${backedUpCount} public URLs in restore point`,
+                    `7 local fixtures loaded | Local test server verified (127.0.0.1:8088) | DNR rules 990001-990005 verified | Preserved ${backedUpCount} public URLs in restore point`,
                     'success'
                 );
-                addLog('✨ [AUTO_SETUP] Local software functional test profile ready (7 fixtures, DNR guard verified).', 'info');
+                addLog('✨ [AUTO_SETUP] Local software functional test profile ready (7 fixtures, test server active, DNR guard verified).', 'info');
             } catch (err) {
                 console.error('[AUTO_SETUP_EXCEPTION]', err);
                 showAutoSetupFeedback('AUTO SETUP FAILED — ' + err.message, 'error');
@@ -3898,6 +4050,12 @@ function initOwnerAutoSetup() {
     if (runBtn && !runBtn.dataset.bound) {
         runBtn.dataset.bound = 'true';
         runBtn.addEventListener('click', async () => {
+            // Section F: Pre-navigation fail-closed guard
+            const srvCheck = await probeAndEnsureOwnerTestServer();
+            if (!srvCheck.success) {
+                return;
+            }
+
             updateAutoSetupUI('RUNNING');
             showAutoSetupFeedback('🚀 Launching 7-target local functional test kit through real extension path...', 'info');
             const statusTitle = document.getElementById('status-title');
@@ -4642,6 +4800,10 @@ async function startCampaign() {
     const skipAttemptedEl = document.getElementById('skip-attempted-toggle');
     const skipPreviouslyAttempted = isTestModeActive ? false : (skipAttemptedEl ? skipAttemptedEl.checked : true);
 
+    const activeRunStorage = (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local)
+        ? await chrome.storage.local.get(['xpider_active_campaign_run_id'])
+        : {};
+
     const startPayload = {
         queue: campaignQueue,
         template: currentTpl,
@@ -4653,7 +4815,8 @@ async function startCampaign() {
         templateVersion: currentTpl.templateVersion || 1,
         skipPreviouslyAttempted,
         overrideSkipAttempted: isTestModeActive ? true : false,
-        ownerFunctionTestMode: isTestModeActive ? true : false
+        ownerFunctionTestMode: isTestModeActive ? true : false,
+        campaignRunId: isTestModeActive ? activeRunStorage.xpider_active_campaign_run_id : undefined
     };
     try {
         bindCampaignTemplateMetadata(startPayload, currentTpl);

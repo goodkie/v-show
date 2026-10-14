@@ -227,9 +227,211 @@ async function handleMessage(msg) {
       };
     }
 
+    case 'OWNER_TEST_SERVER_STATUS': {
+      const probe = await probeOwnerTestServerHealth(1500);
+      return {
+        action: 'OWNER_TEST_SERVER_STATUS_RESPONSE',
+        ...probe,
+        timestamp: Date.now()
+      };
+    }
+
+    case 'START_OWNER_TEST_SERVER': {
+      const startRes = await startOwnerTestServer();
+      return {
+        action: 'START_OWNER_TEST_SERVER_RESPONSE',
+        ...startRes,
+        timestamp: Date.now()
+      };
+    }
+
+    case 'STOP_OWNER_TEST_SERVER': {
+      const stopRes = await stopOwnerTestServer();
+      return {
+        action: 'STOP_OWNER_TEST_SERVER_RESPONSE',
+        ...stopRes,
+        timestamp: Date.now()
+      };
+    }
+
     default:
       return { error: 'UNKNOWN_ACTION', action };
   }
+}
+
+const TEST_SERVER_PORT = 8088;
+let spawnedOwnerTestServerPid = null;
+
+function resolveTestServerScript() {
+  const candidates = [
+    path.resolve(__dirname, '..', '..', 'owner-extension-test-site', 'server.js'),
+    path.resolve(__dirname, '..', 'owner-extension-test-site', 'server.js'),
+    path.resolve(process.cwd(), 'owner-extension-test-site', 'server.js')
+  ];
+  for (const c of candidates) {
+    if (fs.existsSync(c)) return c;
+  }
+  return null;
+}
+
+function probeOwnerTestServerHealth(timeoutMs = 1500) {
+  return new Promise((resolve) => {
+    const req = http.get({
+      hostname: '127.0.0.1',
+      port: TEST_SERVER_PORT,
+      path: '/__xpider_health',
+      headers: { 'Cache-Control': 'no-cache' }
+    }, (res) => {
+      let body = '';
+      res.on('data', d => body += d);
+      res.on('end', () => {
+        try {
+          const parsed = JSON.parse(body);
+          if (parsed && parsed.service === 'XPIDER_OWNER_TEST_SERVER' && parsed.ok === true) {
+            resolve({ ok: true, running: true, health: parsed, port: TEST_SERVER_PORT });
+          } else {
+            resolve({ ok: false, running: true, error: 'OWNER_TEST_PORT_COLLISION', details: parsed });
+          }
+        } catch (_) {
+          resolve({ ok: false, running: true, error: 'OWNER_TEST_PORT_COLLISION', raw: body });
+        }
+      });
+    });
+    req.on('error', () => {
+      resolve({ ok: false, running: false, error: 'NOT_RUNNING' });
+    });
+    req.setTimeout(timeoutMs, () => {
+      req.destroy();
+      resolve({ ok: false, running: false, error: 'TIMEOUT' });
+    });
+  });
+}
+
+async function startOwnerTestServer() {
+  // 1. Check if already running
+  const currentHealth = await probeOwnerTestServerHealth(1000);
+  if (currentHealth.ok) {
+    return {
+      success: true,
+      message: 'ALREADY_RUNNING',
+      serverReady: true,
+      port: TEST_SERVER_PORT,
+      fixtureSet: 'OWNER_7_V1',
+      health: currentHealth.health
+    };
+  }
+  if (currentHealth.running && currentHealth.error === 'OWNER_TEST_PORT_COLLISION') {
+    return {
+      success: false,
+      error: 'OWNER_TEST_PORT_COLLISION',
+      message: 'Port 8088 is occupied by a foreign process.'
+    };
+  }
+
+  // 2. Resolve server.js
+  const scriptPath = resolveTestServerScript();
+  if (!scriptPath) {
+    return {
+      success: false,
+      error: 'SERVER_SCRIPT_NOT_FOUND',
+      message: 'owner-extension-test-site/server.js could not be found.'
+    };
+  }
+
+  // 3. Spawn detached server (prefer VBS runner on Windows to break out of Chromium Job Object)
+  const vbsPath = path.join(path.dirname(scriptPath), 'start_test_server_silent.vbs');
+  if (process.platform === 'win32' && fs.existsSync(vbsPath)) {
+    try {
+      exec(`wscript.exe "${vbsPath}"`, (err) => {
+        if (err) console.error('[NATIVE_HOST_TEST_SERVER_VBS_ERR]', err);
+      });
+    } catch (_) {}
+  } else {
+    try {
+      const child = spawn(process.execPath, [scriptPath], {
+        detached: true,
+        stdio: 'ignore',
+        windowsHide: true,
+        env: { ...process.env, PORT: String(TEST_SERVER_PORT) }
+      });
+      child.unref();
+      spawnedOwnerTestServerPid = child.pid;
+    } catch (err) {
+      return { success: false, error: 'SPAWN_ERROR', details: err.message };
+    }
+  }
+
+  // 4. Poll /__xpider_health until verified
+  for (let i = 0; i < 20; i++) {
+    await new Promise(r => setTimeout(r, 200));
+    const h = await probeOwnerTestServerHealth(800);
+    if (h.ok) {
+      if (h.health && h.health.pid) {
+        spawnedOwnerTestServerPid = h.health.pid;
+      }
+      return {
+        success: true,
+        serverReady: true,
+        pid: spawnedOwnerTestServerPid,
+        port: TEST_SERVER_PORT,
+        fixtureSet: 'OWNER_7_V1',
+        health: h.health
+      };
+    }
+    if (h.running && h.error === 'OWNER_TEST_PORT_COLLISION') {
+      return {
+        success: false,
+        error: 'OWNER_TEST_PORT_COLLISION',
+        message: 'Port 8088 collided with foreign service.'
+      };
+    }
+  }
+
+  return {
+    success: false,
+    error: 'START_TIMEOUT',
+    message: 'Test server failed to respond on 127.0.0.1:8088 within 3s.'
+  };
+}
+
+async function stopOwnerTestServer() {
+  const currentHealth = await probeOwnerTestServerHealth(800);
+  if (!currentHealth.running) {
+    spawnedOwnerTestServerPid = null;
+    return { success: true, message: 'ALREADY_STOPPED' };
+  }
+  // Only stop if verified as XPIDER_OWNER_TEST_SERVER
+  if (!currentHealth.ok) {
+    return { success: false, error: 'REFUSED_FOREIGN_KILL', message: 'Will not kill foreign process on port 8088.' };
+  }
+
+  return new Promise((resolve) => {
+    const req = http.request({
+      hostname: '127.0.0.1',
+      port: TEST_SERVER_PORT,
+      path: '/__xpider_shutdown',
+      method: 'POST'
+    }, (res) => {
+      spawnedOwnerTestServerPid = null;
+      resolve({ success: true, message: 'SHUTDOWN_REQUESTED' });
+    });
+    req.on('error', () => {
+      if (spawnedOwnerTestServerPid) {
+        try { process.kill(spawnedOwnerTestServerPid); } catch (_) {}
+      }
+      spawnedOwnerTestServerPid = null;
+      resolve({ success: true, message: 'STOPPED' });
+    });
+    req.setTimeout(1500, () => {
+      req.destroy();
+      if (spawnedOwnerTestServerPid) {
+        try { process.kill(spawnedOwnerTestServerPid); } catch (_) {}
+      }
+      spawnedOwnerTestServerPid = null;
+      resolve({ success: true, message: 'TERMINATED' });
+    });
+    req.end();
+  });
 }
 
 // Native messaging stdio frame parser
