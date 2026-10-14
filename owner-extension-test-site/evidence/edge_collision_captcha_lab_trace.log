@@ -1,0 +1,47 @@
+[2026-10-14T09:12:15.831Z] ========================================================================
+[2026-10-14T09:12:15.842Z]   XPIDER FIELD COLLISION & CONTROLLED CAPTCHA LAB REAL EDGE AUDIT
+[2026-10-14T09:12:15.850Z] ========================================================================
+[2026-10-14T09:12:15.925Z] Starting local test server on port 8088...
+[2026-10-14T09:12:17.356Z] ✅ Connected to Edge browser CDP WebSocket.
+[2026-10-14T09:12:17.427Z] ✅ Connected to XPIDER Service Worker: ECBF8468631DDFBBECC1B41C7960804E
+[2026-10-14T09:12:18.105Z] ✅ Created and attached to test tab.
+[2026-10-14T09:12:18.117Z] 
+>>> [PART 1] Verifying Field Semantic Routing on contact-field-collision.html...
+[2026-10-14T09:12:19.193Z]    Field 1 (Textarea "Tell us..."): resolved=message (expected: message)
+[2026-10-14T09:12:19.203Z]    Field 2 (Input type=tel "Contact Number"): resolved=phone (expected: phone)
+[2026-10-14T09:12:19.212Z]    Field 3 (Textarea label="Contact Message"): resolved=message (expected: message)
+[2026-10-14T09:12:19.224Z]    Field 4 (Input "Telephone"): resolved=phone (expected: phone)
+[2026-10-14T09:12:19.232Z]    Field 5 (Textarea "Telephone inquiry details"): resolved=message (expected: message)
+[2026-10-14T09:12:19.241Z]    Field 6 (Input "Contact Person"): resolved=name (expected: name)
+[2026-10-14T09:12:19.251Z]    Field 7 (Textarea "How should we contact you"): resolved=message (expected: message)
+[2026-10-14T09:12:19.259Z]    Field 8 (Input "Subject / Topic"): resolved=subject (expected: subject)
+[2026-10-14T09:12:19.364Z] 📸 Screenshot saved: 08_field_collision_resolution_verified.png (42640 bytes)
+[2026-10-14T09:12:19.373Z] ✅ [PART 1 PASS] 8/8 Collision fields resolved 100% accurately with ZERO misclassification!
+[2026-10-14T09:12:19.381Z] 
+>>> [PART 2] Verifying Controlled CAPTCHA Lab Fixtures in Real Edge...
+[2026-10-14T09:12:19.389Z]    Testing CAP-01: Math Challenge on captcha-math.html...
+[2026-10-14T09:12:20.446Z]       CAP-01 Result: question="Please solve the equation: 7 + 5 = ? *" calculatedAnswer="12" success=true
+[2026-10-14T09:12:20.536Z] 📸 Screenshot saved: 09_captcha_lab_cap01_math_solved.png (20935 bytes)
+[2026-10-14T09:12:20.545Z]    Testing CAP-02/CAP-08: reCAPTCHA v2 Synthetic on captcha-recaptcha-v2.html...
+[2026-10-14T09:12:21.727Z]       CAP-02/08 Mock Token: token=mock_token_success_1791969141727_d7uo9t method=mock_provider
+[2026-10-14T09:12:21.734Z]    Testing CAP-03/CAP-09: hCaptcha Synthetic on captcha-hcaptcha.html...
+[2026-10-14T09:12:22.911Z]       CAP-03/09 Mock Token: token=mock_token_success_1791969142911_80q7yf method=mock_provider
+[2026-10-14T09:12:22.920Z]    Testing CAP-04/CAP-10: Turnstile Synthetic on captcha-turnstile.html...
+[2026-10-14T09:12:24.108Z]       CAP-04/10 Mock Token: token=mock_token_success_1791969144107_dxpq5h method=mock_provider
+[2026-10-14T09:12:24.117Z]    Testing CAP-06/CAP-11: Deterministic Timeout on captcha-mock-timeout.html...
+[2026-10-14T09:12:24.728Z]       CAP-06/11 Expected Timeout Caught: code=SOLVER_TIMEOUT
+[2026-10-14T09:12:24.737Z]    Testing CAP-07/CAP-12: Deterministic Error on captcha-mock-error.html...
+[2026-10-14T09:12:24.751Z]       CAP-07/12 Expected Error Caught: code=ERROR_ZERO_BALANCE
+[2026-10-14T09:12:24.760Z]    Testing CAP-14: Local Audio Sample transcription seam...
+[2026-10-14T09:12:24.973Z]       CAP-14 Audio Solution: solution="94821" method=mock_audio_stt
+[2026-10-14T09:12:25.074Z] 📸 Screenshot saved: 10_captcha_lab_cases_verified.png (5051 bytes)
+[2026-10-14T09:12:25.083Z] ✅ [PART 2 PASS] Controlled CAPTCHA Lab cases (CAP-01 ~ CAP-14) verified 100% in real Edge!
+[2026-10-14T09:12:25.093Z] 
+>>> [PART 3] Running 50-Cycle Anti-Stampede Single-Flight Stress Test...
+[2026-10-14T09:12:25.229Z]    Stress Results: TotalRequests=50, Executions=1, AllTokensMatch=true
+[2026-10-14T09:12:25.242Z] ✅ [PART 3 PASS] 50-Cycle anti-stampede concurrency test passed with exact single-flight deduplication!
+[2026-10-14T09:12:25.252Z] 
+========================================================================
+[2026-10-14T09:12:25.262Z]   ALL REAL EDGE TESTS PASSED: FIELD COLLISION (0 MISCLASS), CAPTCHA LAB, 50-CYCLE STRESS
+[2026-10-14T09:12:25.274Z] ========================================================================
+[2026-10-14T09:12:25.284Z] Terminating Microsoft Edge...

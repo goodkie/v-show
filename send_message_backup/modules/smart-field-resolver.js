@@ -664,6 +664,98 @@
 
             return summary;
         }
+
+        /**
+         * [Issue #6 R6.9G.10.3.7.1.4.5 Section B] Authoritative Field Semantic Resolver
+         * Structural Precedence: Multi-line containers (TEXTAREA, aria-multiline, contenteditable)
+         * ALWAYS default to 'message', overriding naive substring patterns like 'Tell us...'.
+         */
+        static resolveFieldSemantic(el, formCtx = {}) {
+            if (!el) return { semantic: 'unknown', confidence: 0, reason: 'NO_ELEMENT' };
+
+            const tag = (el.tagName || '').toUpperCase();
+            const type = (el.type || 'text').toLowerCase();
+            const id = (el.id || '').toLowerCase();
+            const name = (el.name || '').toLowerCase();
+            const placeholder = (el.placeholder || '').toLowerCase();
+            const ariaLabel = (el.getAttribute ? (el.getAttribute('aria-label') || '') : '').toLowerCase();
+            const ariaMultiline = (el.getAttribute ? (el.getAttribute('aria-multiline') === 'true') : false);
+            const isContentEditable = Boolean(el.isContentEditable);
+            const isMultiLine = (tag === 'TEXTAREA') || ariaMultiline || isContentEditable;
+
+            const allText = `${id} ${name} ${placeholder} ${ariaLabel}`;
+
+            // Structural Precedence 1: Multi-line containers default to message
+            if (isMultiLine) {
+                // If it explicitly asks for address, keep address
+                if (/address|street|zip|postal/i.test(allText) && !/message|inquiry|comment|body|requirement|assist/i.test(allText)) {
+                    return { semantic: 'address', confidence: 0.85, reason: 'MULTILINE_ADDRESS' };
+                }
+                return { semantic: 'message', confidence: 0.95, reason: 'MULTILINE_STRUCTURAL_PRECEDENCE' };
+            }
+
+            // Single line inputs:
+            // Explicit type checks
+            if (type === 'email') return { semantic: 'email', confidence: 1.0, reason: 'INPUT_TYPE_EMAIL' };
+            if (type === 'tel') return { semantic: 'phone', confidence: 1.0, reason: 'INPUT_TYPE_TEL' };
+
+            // Word-bounded phone check (prevent 'Tell us' matching phone!)
+            const phoneBoundedRegex = /(?:\bphone(?:_number|\d)?\b|\btel(?:ephone)?\b|\bmobile(?:_number)?\b|\bcell(?:_phone)?\b|\bfax\b|전화|핸드폰|휴대폰|연락처)/i;
+            const messageRegex = /(?:message|inquiry|inquiries|comment|comments|body|feedback|question|questions|requirement|requirements|description|details|보낼\s*내용|문의\s*내용|남기실\s*말씀)/i;
+            const nameRegex = /(?:\b(?:full_?)?name\b|\bfirst_?name\b|\blast_?name\b|\bcontact_?person\b|\byour_?name\b|성함|이름|담당자)/i;
+            const emailRegex = /(?:\bemail\b|\be-mail\b|이메일)/i;
+            const companyRegex = /(?:\bcompany\b|\borg(?:anization)?\b|\bbusiness\b|회사|상호|소속)/i;
+            const subjectRegex = /(?:\bsubject\b|\btitle\b|\btopic\b|제목)/i;
+
+            if (subjectRegex.test(allText)) {
+                return { semantic: 'subject', confidence: 0.9, reason: 'SUBJECT_PATTERN' };
+            }
+
+            if (phoneBoundedRegex.test(allText)) {
+                return { semantic: 'phone', confidence: 0.9, reason: 'PHONE_BOUNDED_PATTERN' };
+            }
+
+            if (emailRegex.test(allText)) {
+                return { semantic: 'email', confidence: 0.9, reason: 'EMAIL_PATTERN' };
+            }
+
+            if (nameRegex.test(allText)) {
+                return { semantic: 'name', confidence: 0.85, reason: 'NAME_PATTERN' };
+            }
+
+            if (companyRegex.test(allText)) {
+                return { semantic: 'company', confidence: 0.85, reason: 'COMPANY_PATTERN' };
+            }
+
+            if (messageRegex.test(allText)) {
+                return { semantic: 'message', confidence: 0.85, reason: 'MESSAGE_PATTERN' };
+            }
+
+            return { semantic: 'unknown', confidence: 0.1, reason: 'UNMATCHED' };
+        }
+
+        static verifySentinelIntegrity(values = {}) {
+            const { textareaValue, phoneValue } = values;
+            const phoneStrictRegex = /^\+?[\d\s\-\(\)\.]{7,25}$/;
+
+            if (textareaValue && phoneStrictRegex.test(textareaValue.trim())) {
+                return {
+                    valid: false,
+                    reason: 'FIELD_SEMANTIC_MISMATCH',
+                    detail: 'Textarea received phone number format instead of message text.'
+                };
+            }
+
+            if (phoneValue && phoneValue.length > 30 && !phoneStrictRegex.test(phoneValue.trim())) {
+                return {
+                    valid: false,
+                    reason: 'FIELD_SEMANTIC_MISMATCH',
+                    detail: 'Phone field received long paragraph text instead of telephone digits.'
+                };
+            }
+
+            return { valid: true };
+        }
     }
 
     return SmartFieldResolver;

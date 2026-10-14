@@ -3590,7 +3590,20 @@ function updateAutoSetupUI(state) {
     if (typeof document === 'undefined') return;
     const statusPill = document.getElementById('auto-setup-status-pill');
     const runBtn = document.getElementById('run-function-test-btn');
+    const runLabBtn = document.getElementById('run-captcha-lab-btn');
+    const runFullBtn = document.getElementById('run-full-test-btn');
+    const labPanel = document.getElementById('captcha-lab-panel');
     const restoreBtn = document.getElementById('restore-user-settings-btn');
+
+    const setButtonsDisplay = (disp, disabled = false) => {
+        if (runBtn) { 
+            runBtn.style.display = disp; 
+            runBtn.disabled = disabled;
+            if (disabled) runBtn.disabled = true;
+        }
+        if (runLabBtn) { runLabBtn.style.display = disp; runLabBtn.disabled = disabled; }
+        if (runFullBtn) { runFullBtn.style.display = disp; runFullBtn.disabled = disabled; }
+    };
 
     if (state === 'READY') {
         if (statusPill) {
@@ -3599,10 +3612,8 @@ function updateAutoSetupUI(state) {
             statusPill.style.color = '#34d399';
             statusPill.style.borderColor = 'rgba(16, 185, 129, 0.5)';
         }
-        if (runBtn) {
-            runBtn.style.display = 'inline-flex';
-            runBtn.disabled = false;
-        }
+        setButtonsDisplay('inline-flex', false);
+        if (labPanel) labPanel.style.display = 'block';
         if (restoreBtn) restoreBtn.style.display = 'inline-flex';
     } else if (state === 'CHECKING' || state === 'STARTING' || state === 'VERIFYING') {
         if (statusPill) {
@@ -3611,10 +3622,7 @@ function updateAutoSetupUI(state) {
             statusPill.style.color = '#fde047';
             statusPill.style.borderColor = 'rgba(234, 179, 8, 0.5)';
         }
-        if (runBtn) {
-            runBtn.style.display = 'inline-flex';
-            runBtn.disabled = true;
-        }
+        setButtonsDisplay('inline-flex', true);
         if (restoreBtn) restoreBtn.style.display = 'inline-flex';
     } else if (state === 'COLLISION' || state === 'INSTALL_REQUIRED' || state === 'UNAVAILABLE' || state === 'ERROR') {
         if (statusPill) {
@@ -3623,10 +3631,7 @@ function updateAutoSetupUI(state) {
             statusPill.style.color = '#fca5a5';
             statusPill.style.borderColor = 'rgba(239, 68, 68, 0.5)';
         }
-        if (runBtn) {
-            runBtn.style.display = 'inline-flex';
-            runBtn.disabled = true;
-        }
+        setButtonsDisplay('inline-flex', true);
         if (restoreBtn) restoreBtn.style.display = 'inline-flex';
     } else if (state === 'RUNNING') {
         if (statusPill) {
@@ -3635,7 +3640,7 @@ function updateAutoSetupUI(state) {
             statusPill.style.color = '#60a5fa';
             statusPill.style.borderColor = 'rgba(59, 130, 246, 0.5)';
         }
-        if (runBtn) runBtn.style.display = 'none';
+        setButtonsDisplay('none');
         if (restoreBtn) restoreBtn.style.display = 'inline-flex';
     } else if (state === 'COMPLETED') {
         if (statusPill) {
@@ -3644,10 +3649,7 @@ function updateAutoSetupUI(state) {
             statusPill.style.color = '#34d399';
             statusPill.style.borderColor = 'rgba(16, 185, 129, 0.6)';
         }
-        if (runBtn) {
-            runBtn.style.display = 'inline-flex';
-            runBtn.disabled = false;
-        }
+        setButtonsDisplay('inline-flex', false);
         if (restoreBtn) restoreBtn.style.display = 'inline-flex';
     } else {
         if (statusPill) {
@@ -4073,6 +4075,61 @@ function initOwnerAutoSetup() {
             if (startBtn) {
                 startBtn.click();
             }
+        });
+    }
+
+    const runLabBtn = document.getElementById('run-captcha-lab-btn');
+    if (runLabBtn && !runLabBtn.dataset.bound) {
+        runLabBtn.dataset.bound = 'true';
+        runLabBtn.addEventListener('click', async () => {
+            const srvCheck = await probeAndEnsureOwnerTestServer();
+            if (!srvCheck.success) return;
+
+            updateAutoSetupUI('RUNNING');
+            showAutoSetupFeedback('🧩 Launching CAPTCHA LAB on controlled localhost...', 'info');
+            campaignQueue = [...CAPTCHA_LAB_FIXTURES];
+            totalTargets = campaignQueue.length;
+            renderUrlsPreview(campaignQueue);
+            const countDisplay = document.getElementById('url-count-display');
+            if (countDisplay) countDisplay.textContent = `${totalTargets} URLs loaded (CAPTCHA Lab)`;
+            try {
+                await chrome.runtime.sendMessage({
+                    action: 'PREPARE_OWNER_FUNCTIONAL_TEST_RUN',
+                    fixtures: CAPTCHA_LAB_FIXTURES
+                });
+            } catch (_) {}
+            const startBtn = document.getElementById('start-btn');
+            if (startBtn) startBtn.click();
+        });
+    }
+
+    const runFullBtn = document.getElementById('run-full-test-btn');
+    if (runFullBtn && !runFullBtn.dataset.bound) {
+        runFullBtn.dataset.bound = 'true';
+        runFullBtn.addEventListener('click', async () => {
+            const srvCheck = await probeAndEnsureOwnerTestServer();
+            if (!srvCheck.success) return;
+
+            updateAutoSetupUI('RUNNING');
+            showAutoSetupFeedback('🚀 Launching FULL TEST (Core 7 + Field Collision + CAPTCHA Lab)...', 'info');
+            const allFixtures = [
+                ...LOCALHOST_FIXTURES,
+                'http://127.0.0.1:8088/contact-field-collision.html',
+                ...CAPTCHA_LAB_FIXTURES
+            ];
+            campaignQueue = [...allFixtures];
+            totalTargets = campaignQueue.length;
+            renderUrlsPreview(campaignQueue);
+            const countDisplay = document.getElementById('url-count-display');
+            if (countDisplay) countDisplay.textContent = `${totalTargets} URLs loaded (Full Test Suite)`;
+            try {
+                await chrome.runtime.sendMessage({
+                    action: 'PREPARE_OWNER_FUNCTIONAL_TEST_RUN',
+                    fixtures: allFixtures
+                });
+            } catch (_) {}
+            const startBtn = document.getElementById('start-btn');
+            if (startBtn) startBtn.click();
         });
     }
 

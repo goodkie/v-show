@@ -512,8 +512,179 @@ async function runTestSuite() {
         passedCount++;
     }
 
+    // ─────────────────────────────────────────────────────────────────────────────
+    // SCENARIO Z1: Field Semantic Routing & Precedence (Directive Section B & C)
+    // ─────────────────────────────────────────────────────────────────────────────
+    console.log('\n>>> [SCENARIO Z1] Field Semantic Routing & Precedence (Directive Section B & C)');
+    {
+        const SmartFieldResolver = require('../extension/modules/smart-field-resolver.js');
+
+        // Test 1: Substring "Tell us how we can assist you..." in TEXTAREA MUST be 'message', NEVER 'phone'
+        const c1 = SmartFieldResolver.resolveFieldSemantic({
+            tagName: 'TEXTAREA',
+            id: 'inquiry-body',
+            name: 'client_inquiry',
+            placeholder: 'Tell us how we can assist you with your business needs...'
+        });
+        assert.strictEqual(c1.semantic, 'message', 'Textarea with "Tell us..." placeholder must resolve to message');
+
+        // Test 2: Input tel MUST be 'phone'
+        const c2 = SmartFieldResolver.resolveFieldSemantic({
+            tagName: 'INPUT',
+            type: 'tel',
+            id: 'client-phone',
+            name: 'phone_number',
+            placeholder: '+1 (555) 000-0000'
+        });
+        assert.strictEqual(c2.semantic, 'phone', 'Input tel must resolve to phone');
+
+        // Test 3: Input with "Tell us your phone number" (contains bounded phone) MUST be 'phone'
+        const c3 = SmartFieldResolver.resolveFieldSemantic({
+            tagName: 'INPUT',
+            type: 'text',
+            id: 'tel-input',
+            name: 'tel',
+            placeholder: 'Tell us your phone number'
+        });
+        assert.strictEqual(c3.semantic, 'phone', 'Input tel with "Tell us your phone" must resolve to phone');
+
+        // Test 4: contact_person input MUST be 'name', NOT 'phone' (unbounded contact removed from phone patterns)
+        const c4 = SmartFieldResolver.resolveFieldSemantic({
+            tagName: 'INPUT',
+            type: 'text',
+            id: 'contact_person',
+            name: 'contact_person',
+            placeholder: 'Primary contact person'
+        });
+        assert.strictEqual(c4.semantic, 'name', 'contact_person input must resolve to name, NOT phone');
+
+        // Test 5: Structural precedence: TEXTAREA even with name="tel" or phone in placeholder MUST default to message
+        const c5 = SmartFieldResolver.resolveFieldSemantic({
+            tagName: 'TEXTAREA',
+            id: 'notes',
+            name: 'tel_notes',
+            placeholder: 'Telephone discussion notes'
+        });
+        assert.strictEqual(c5.semantic, 'message', 'TEXTAREA with telephone discussion notes must resolve to message');
+
+        // Test 6: Verify pre-submit sentinel check
+        const sentinelFail = SmartFieldResolver.verifySentinelIntegrity({
+            textareaValue: '010-1234-5678', // Phone number placed in textarea!
+            phoneValue: '010-1234-5678'
+        });
+        assert.strictEqual(sentinelFail.valid, false, 'Sentinel check must fail when textarea receives phone');
+        assert.strictEqual(sentinelFail.reason, 'FIELD_SEMANTIC_MISMATCH', 'Reason must be FIELD_SEMANTIC_MISMATCH');
+
+        const sentinelPass = SmartFieldResolver.verifySentinelIntegrity({
+            textareaValue: 'Hello, this is a test inquiry regarding your automation software.',
+            phoneValue: '010-1234-5678'
+        });
+        assert.strictEqual(sentinelPass.valid, true, 'Sentinel check must pass when fields are properly separated');
+
+        // Test 7: Verify contact-field-collision.html exists
+        const collisionHtml = path.resolve(__dirname, '../owner-extension-test-site/contact-field-collision.html');
+        assert(fs.existsSync(collisionHtml), 'contact-field-collision.html fixture must exist');
+
+        console.log('    ✅ PASS: Field semantic resolver, structural precedence, and pre-submit sentinel check verified.');
+        passedCount++;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // SCENARIO Z2: Controlled CAPTCHA Lab (Directive Section D, F, G, H)
+    // ─────────────────────────────────────────────────────────────────────────────
+    console.log('\n>>> [SCENARIO Z2] Controlled CAPTCHA Lab (Directive Section D, F, G, H)');
+    {
+        const MockCaptchaProviderAdapter = require('../extension/modules/mock-captcha-provider-adapter.js');
+
+        // Test 1: Eligibility gate: FAIL CLOSED on public URLs
+        const publicEligible = MockCaptchaProviderAdapter.isEligible({ captchaType: 'recaptcha_v2' }, {
+            ownerFunctionTestMode: true,
+            isTestOnlyBuild: true,
+            targetUrl: 'https://martialarts-academy.com/contact'
+        });
+        assert.strictEqual(publicEligible, false, 'Mock provider MUST be ineligible on public URLs');
+
+        // Test 2: Eligibility gate: FAIL CLOSED if not test-only build
+        const prodEligible = MockCaptchaProviderAdapter.isEligible({ captchaType: 'recaptcha_v2' }, {
+            ownerFunctionTestMode: true,
+            isTestOnlyBuild: false,
+            targetUrl: 'http://127.0.0.1:8088/captcha-mock-solve.html'
+        });
+        assert.strictEqual(prodEligible, false, 'Mock provider MUST be ineligible in non-test builds');
+
+        // Test 3: Eligibility gate: PASS on localhost under test-only build
+        const localEligible = MockCaptchaProviderAdapter.isEligible({ captchaType: 'recaptcha_v2' }, {
+            ownerFunctionTestMode: true,
+            isTestOnlyBuild: true,
+            targetUrl: 'http://127.0.0.1:8088/captcha-mock-solve.html'
+        });
+        assert.strictEqual(localEligible, true, 'Mock provider MUST be eligible on localhost in test mode');
+
+        // Test 4: Mock Provider Solve Success (CAP-06)
+        const adapter = new MockCaptchaProviderAdapter();
+        const solveRes = await adapter.solve({
+            captchaType: 'recaptcha_v2',
+            pageUrl: 'http://127.0.0.1:8088/captcha-mock-solve.html'
+        }, { runId: 'test_run', tabId: 1, attemptId: 'att_1' });
+        assert(solveRes.token && solveRes.token.startsWith('mock_token_success_'), 'Solve must return valid mock token');
+
+        // Test 5: Mock Provider Timeout (CAP-07)
+        let caughtTimeout = false;
+        try {
+            await adapter.solve({
+                captchaType: 'recaptcha_v2',
+                pageUrl: 'http://127.0.0.1:8088/captcha-mock-timeout.html'
+            }, { runId: 'test_run', tabId: 1, attemptId: 'att_2' });
+        } catch (tErr) {
+            caughtTimeout = true;
+            assert(tErr.message.includes('MOCK_TIMEOUT'), 'Timeout error must be thrown');
+        }
+        assert.strictEqual(caughtTimeout, true, 'Mock timeout must throw MOCK_TIMEOUT');
+
+        // Test 6: Mock Provider Zero Balance / Config Error (CAP-08)
+        let caughtConfigErr = false;
+        try {
+            await adapter.solve({
+                captchaType: 'recaptcha_v2',
+                pageUrl: 'http://127.0.0.1:8088/captcha-mock-config-error.html'
+            }, { runId: 'test_run', tabId: 1, attemptId: 'att_3' });
+        } catch (cErr) {
+            caughtConfigErr = true;
+            assert(cErr.message.includes('ERROR_ZERO_BALANCE'), 'Zero balance error must be thrown');
+        }
+        assert.strictEqual(caughtConfigErr, true, 'Mock config error must throw ERROR_ZERO_BALANCE');
+
+        // Test 7: Local Audio STT Pipeline (CAP-14)
+        const audioRes = await adapter.solve({
+            captchaType: 'audio',
+            audioUrl: 'http://127.0.0.1:8088/audio/sample-captcha-audio.wav',
+            pageUrl: 'http://127.0.0.1:8088/captcha-audio.html'
+        }, { runId: 'test_run', tabId: 1, attemptId: 'att_4' });
+        assert.strictEqual(audioRes.token, '94821', 'Local audio STT pipeline must transcribe deterministic code');
+
+        // Test 8: All 9 CAPTCHA Lab fixtures exist on disk
+        const requiredFixtures = [
+            'captcha-none.html',
+            'captcha-math.html',
+            'captcha-recaptcha-dom.html',
+            'captcha-hcaptcha-dom.html',
+            'captcha-turnstile-dom.html',
+            'captcha-mock-solve.html',
+            'captcha-mock-timeout.html',
+            'captcha-mock-config-error.html',
+            'audio/sample-captcha-audio.wav'
+        ];
+        requiredFixtures.forEach(f => {
+            const p = path.resolve(__dirname, '../owner-extension-test-site', f);
+            assert(fs.existsSync(p), `Fixture ${f} must exist`);
+        });
+
+        console.log('    ✅ PASS: CAPTCHA Lab eligibility gates, mock adapter cases (CAP-01~14), and fixture availability verified.');
+        passedCount++;
+    }
+
     console.log('\n========================================================================');
-    console.log(`  ALL ${passedCount}/${totalCount + 8} SCENARIOS PASSED WITH ZERO REGRESSION.`);
+    console.log(`  ALL ${passedCount}/${totalCount + 10} SCENARIOS PASSED WITH ZERO REGRESSION.`);
     console.log('========================================================================');
 }
 

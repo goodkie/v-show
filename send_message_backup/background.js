@@ -45,6 +45,8 @@ try {
         importScripts('modules/vision-submit-executor.js');
         importScripts('modules/build-provenance.js');
         importScripts('modules/privacy-gateway.js');
+        importScripts('modules/smart-field-resolver.js');
+        importScripts('modules/mock-captcha-provider-adapter.js');
     }
 } catch (e) {
     console.warn('[SW Boot] importScripts modules fallback or handled inline:', e);
@@ -2212,6 +2214,45 @@ if (typeof global !== 'undefined') {
                         return { success: false, error: errMsg, remainingPaused: true };
                     }
 
+                    // [Issue #6 R6.9G.10.3.7.1.4.5 Section F] Controlled Local Mock Provider Gate
+                    if (campaignState.ownerFunctionTestMode && typeof MockCaptchaProviderAdapter !== 'undefined') {
+                        const isEligible = MockCaptchaProviderAdapter.isEligible({
+                            url: targetPageUrl,
+                            pageUrl: targetPageUrl,
+                            captchaType: request.type || request.captchaType || 'recaptcha',
+                            sitekey: request.sitekey,
+                            ownerFunctionTestMode: campaignState.ownerFunctionTestMode
+                        }, {
+                            ownerFunctionTestMode: campaignState.ownerFunctionTestMode,
+                            targetUrl: targetPageUrl
+                        });
+
+                        if (isEligible) {
+                            try {
+                                const mockAdapter = new MockCaptchaProviderAdapter();
+                                const mockRes = await mockAdapter.solve({
+                                    url: targetPageUrl,
+                                    pageUrl: targetPageUrl,
+                                    captchaType: request.type || request.captchaType || 'recaptcha',
+                                    sitekey: request.sitekey,
+                                    audioUrl: request.audioUrl,
+                                    audioData: request.audioData
+                                }, {
+                                    runId: campaignState.activeCampaignRunId,
+                                    tabId: activeTabId,
+                                    attemptId: solveIdentity?.attemptId
+                                });
+                                if (mockRes && mockRes.token) {
+                                    return await verifyAndRecordCaptchaSuccess(mockRes.token, 'mock_provider');
+                                }
+                                return mockRes;
+                            } catch (mockErr) {
+                                recordTerminalCaptchaFailure(solveIdentity?.attemptId, mockErr.message);
+                                return { success: false, error: mockErr.code || 'MOCK_PROVIDER_FAILURE', details: mockErr.message };
+                            }
+                        }
+                    }
+
                     // [Priority 3] Autonomous Multi-Tier Fallback Chain
                     if (method === 'audio' || method === 'native' || witKey) {
                         if (typeof solver.solveSmartFallbackChain === 'function') {
@@ -3245,6 +3286,14 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                 }
                 sendResponse({ success: true });
             })();
+            return true;
+
+        case 'CAPTCHA_MATH_SOLVED':
+            logBg(null, `[CAPTCHA_MATH_SOLVED] Math challenge solved: "${request.question || ''}" => ${request.answer}`, 'success');
+            campaignState.counters.captchaSolved = (campaignState.counters.captchaSolved || 0) + 1;
+            campaignState.captchaLedger.autoSuccess++;
+            broadcastCounters();
+            sendResponse({ success: true });
             return true;
 
         case 'STAGE_PROGRESSION':

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>CAPTCHA Lab CAP-01: No Captcha</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #f8fafc; padding: 40px; margin: 0; }
+        .container { max-width: 540px; margin: 0 auto; background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 28px; }
+        h1 { font-size: 18px; color: #38bdf8; margin: 0 0 8px 0; }
+        p { color: #94a3b8; font-size: 13px; margin-bottom: 20px; }
+        input, textarea { width: 100%; box-sizing: border-box; background: #0f172a; border: 1px solid #475569; border-radius: 6px; padding: 10px; color: #f8fafc; font-size: 13px; margin-bottom: 14px; }
+        button { background: #0284c7; color: white; border: none; border-radius: 6px; padding: 10px; font-weight: 600; width: 100%; cursor: pointer; }
+        .success-box { display: none; background: rgba(74, 222, 128, 0.15); border: 1px solid #4ade80; color: #4ade80; padding: 12px; border-radius: 6px; margin-top: 14px; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>CAPTCHA Lab CAP-01: No CAPTCHA</h1>
+        <p>Controlled standard form without any CAPTCHA challenge.</p>
+        <form id="form-cap-01" action="contact-success.html" method="POST">
+            <input type="text" name="name" placeholder="Full Name" required>
+            <input type="email" name="email" placeholder="Email Address" required>
+            <textarea name="message" placeholder="Your inquiry details..." rows="3" required></textarea>
+            <button type="submit" id="submit-btn">Send Message</button>
+            <div id="success-banner" class="success-box wpcf7-mail-sent-ok gform_confirmation_message">Submitted successfully without CAPTCHA.</div>
+        </form>
+    </div>
+    <script>
+        document.getElementById('form-cap-01').addEventListener('submit', function(e) {
+            e.preventDefault();
+            document.getElementById('success-banner').style.display = 'block';
+            window.dispatchEvent(new CustomEvent('form-submitted', { detail: { status: 'SUCCESS' } }));
+        });
+    </script>
+</body>
+</html>

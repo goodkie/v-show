@@ -300,9 +300,49 @@
         name: [/\bname\b/i,/\bfull.?name\b/i,/\byour.*name\b/i,/\bcontact.*name\b/i,/\bcustomer.*name\b/i,/\bsender.*name\b/i,/성함/i,/氏名/i,/姓名/i,/성명/i,/이름/i,/user/i,/fullname/i,/\bcontact.*person\b/i,/\bclient.*name\b/i],
         email: [/email/i, /e-mail/i, /이메일/i, /メール/i, /邮箱/i, /correo/i, /courriel/i, /correo.*electrónico/i],
         subject: [/subject/i, /title/i, /제목/i, /件名/i, /主题/i, /topic/i, /asunto/i, /betreff/i, /objet/i],
-        phone: [/phone/i, /tel/i, /mobile/i, /contact/i, /전화/i, /연락처/i, /電話/i, /手机/i, /电话/i, /teléfono/i, /telefon/i, /téléphone/i],
+        phone: [/\bphone(?:_number|\d)?\b/i, /\btel(?:ephone)?\b/i, /\bmobile(?:_number)?\b/i, /\bcell(?:_phone)?\b/i, /전화/i, /연락처/i, /電話/i, /手机/i, /电话/i, /\bteléfono\b/i, /\btelefon\b/i, /\btéléphone\b/i],
         message: [/message/i, /content/i, /body/i, /내용/i, /本文/i, /内容/i, /comment/i, /description/i, /inquiry/i, /mensaje/i, /nachricht/i, /\bmessage.*text\b/i, /\bbody.*text\b/i]
     };
+
+    /**
+     * [Issue #6 R6.9G.10.3.7.1.4.5 Section B] Authoritative Field Semantic Resolver
+     * Structural Precedence: Multi-line containers (TEXTAREA, aria-multiline, contenteditable)
+     * ALWAYS default to 'message', overriding naive substring patterns like 'Tell us...'.
+     */
+    function resolveFieldSemantic(el) {
+        if (!el) return { semantic: 'unknown', confidence: 0, reason: 'NO_ELEMENT' };
+        if (typeof SmartFieldResolver !== 'undefined' && typeof SmartFieldResolver.resolveFieldSemantic === 'function') {
+            return SmartFieldResolver.resolveFieldSemantic(el);
+        }
+        const tag = (el.tagName || '').toUpperCase();
+        const type = (el.type || 'text').toLowerCase();
+        const id = (el.id || '').toLowerCase();
+        const name = (el.name || '').toLowerCase();
+        const placeholder = (el.placeholder || '').toLowerCase();
+        const ariaLabel = (el.getAttribute ? (el.getAttribute('aria-label') || '') : '').toLowerCase();
+        const ariaMultiline = (el.getAttribute ? (el.getAttribute('aria-multiline') === 'true') : false);
+        const isContentEditable = Boolean(el.isContentEditable);
+        const isMultiLine = (tag === 'TEXTAREA') || ariaMultiline || isContentEditable;
+
+        const allText = `${id} ${name} ${placeholder} ${ariaLabel}`;
+
+        // Structural Precedence: Multi-line containers ALWAYS default to message
+        if (isMultiLine) {
+            return { semantic: 'message', confidence: 0.95, reason: 'MULTILINE_STRUCTURAL_PRECEDENCE' };
+        }
+
+        if (type === 'email') return { semantic: 'email', confidence: 1.0, reason: 'INPUT_TYPE_EMAIL' };
+        if (type === 'tel') return { semantic: 'phone', confidence: 1.0, reason: 'INPUT_TYPE_TEL' };
+
+        for (const [field, patterns] of Object.entries(FIELD_PATTERNS)) {
+            for (const pat of patterns) {
+                if (pat.test(allText)) {
+                    return { semantic: field, confidence: 0.85, reason: `PATTERN_${field.toUpperCase()}` };
+                }
+            }
+        }
+        return { semantic: 'unknown', confidence: 0.1, reason: 'UNMATCHED' };
+    }
 
     const DOMAIN_BLACKLIST = [
         'facebook.com', 'instagram.com', 'twitter.com', 'x.com', 'linkedin.com', 'youtube.com', 
@@ -1457,6 +1497,25 @@
                 }
             }
 
+            // [Issue #6 R6.9G.10.3.7.1.4.5 Section B.6] Pre-Submit Semantic Integrity Hard Gate
+            const textareas = Array.from(form.querySelectorAll('textarea, [contenteditable="true"], [aria-multiline="true"]'));
+            const phoneInputs = Array.from(form.querySelectorAll('input[type="tel"], input[name*="tel" i], input[name*="phone" i], input[id*="phone" i]'));
+            
+            const textareaSample = textareas.map(t => (t.value || t.textContent || '')).join(' ');
+            const phoneSample = phoneInputs.map(p => (p.value || '')).join(' ');
+
+            if (typeof SmartFieldResolver !== 'undefined' && typeof SmartFieldResolver.verifySentinelIntegrity === 'function') {
+                const sentinelCheck = SmartFieldResolver.verifySentinelIntegrity({
+                    textareaValue: textareaSample,
+                    phoneValue: phoneSample
+                });
+                if (!sentinelCheck.valid) {
+                    logDev(`❌ [FinalAudit] Submission blocked by Field Semantic Sentinel: ${sentinelCheck.reason} - ${sentinelCheck.detail}`, "error");
+                    finishCampaign(false, "FIELD_SEMANTIC_MISMATCH", sentinelCheck.detail, { sentinelCheck });
+                    return false;
+                }
+            }
+
             // [Section B] FREEZE_VALUES: Stop sweeper, snapshot field values, freeze further mutations
             stopActiveEmptyFieldSweeper();
             const frozenSnapshot = freezeFieldValues(form, template);
@@ -1636,30 +1695,37 @@
     }
 
     async function solveMathCaptcha(form) {
-        const questionEl = form.querySelector('.et_pb_contact_captcha_question, .captcha-question, #captcha_text');
-        const inputEl = form.querySelector('input.et_pb_contact_captcha, input[name*="captcha"], #captcha_input');
+        const questionEl = form.querySelector('.et_pb_contact_captcha_question, .captcha-question, #captcha_text, label[for*="captcha"], .math-question, [data-captcha-math]');
+        const inputEl = form.querySelector('input.et_pb_contact_captcha, input[name*="captcha"], #captcha_input, input[id*="captcha"], input[placeholder*="captcha" i]');
         
         if (questionEl && inputEl) {
-            const text = (questionEl.textContent || '').trim();
-            logDev("🧩 [Action] Math Captcha detected");
+            const text = (questionEl.textContent || questionEl.innerText || '').trim();
+            logDev("🧩 [Action] Math Captcha detected: " + text, "info");
             
-            // Extract numbers and operator (e.g. "2 + 10 =")
-            const match = text.match(/(\d+)\s*([\+\-\*])\s*(\d+)/);
+            // Extract numbers and operator (e.g. "2 + 10 =", "3 x 5")
+            const match = text.match(/(\d+)\s*([\+\-\*xX])\s*(\d+)/);
             if (match) {
                 const n1 = parseInt(match[1]);
-                const op = match[2];
+                const op = match[2].toLowerCase();
                 const n2 = parseInt(match[3]);
                 let answer = 0;
                 
                 if (op === '+') answer = n1 + n2;
                 else if (op === '-') answer = n1 - n2;
-                else if (op === '*') answer = n1 * n2;
+                else if (op === '*' || op === 'x') answer = n1 * n2;
                 
-                logDev(`💡 [Action] Calculated answer: ${n1} ${op} ${n2} = ${answer}`);
+                logDev(`💡 [Action] Calculated answer: ${n1} ${op} ${n2} = ${answer}`, "success");
                 inputEl.value = answer.toString();
                 inputEl.dispatchEvent(new Event('input', { bubbles: true }));
                 inputEl.dispatchEvent(new Event('change', { bubbles: true }));
                 _isCaptchaSolved = true;
+                try {
+                    (window.__xpider_sendExecutionMessage || chrome.runtime.sendMessage)({
+                        action: 'CAPTCHA_MATH_SOLVED',
+                        question: text,
+                        answer: answer
+                    });
+                } catch (_) {}
             }
         }
     }
@@ -2745,25 +2811,27 @@
             // 초지능 인간 타이핑 시뮬레이터 실행!
             await typeHumanlike(el, val);
 
-            // [Issue #6 R6.5 Section 10] Privacy Logging: Sanitize raw PII values
-            let category = 'text';
-            const attrStr = `${matchedAttr || ''} ${el.name || ''} ${el.id || ''} ${el.type || ''}`.toLowerCase();
-            if (/email|mail/i.test(attrStr)) category = 'email';
-            else if (/phone|tel|mobile|cell/i.test(attrStr)) category = 'phone';
-            else if (/first.?name|given.?name/i.test(attrStr)) category = 'name';
-            else if (/last.?name|family.?name|surname/i.test(attrStr)) category = 'name';
-            else if (/name|성함|이름/i.test(attrStr)) category = 'name';
-            else if (/message|body|comment|inquiry|content/i.test(attrStr) || el.tagName === 'TEXTAREA') category = 'message';
-            else if (/subject|title/i.test(attrStr)) category = 'subject';
+            // [Issue #6 R6.9G.10.3.7.1.4.5 Section B] Structural Precedence Semantic Determination
+            const semanticRes = resolveFieldSemantic(el);
+            let category = semanticRes.semantic;
+            if (category === 'unknown') {
+                const attrStr = `${matchedAttr || ''} ${el.name || ''} ${el.id || ''} ${el.type || ''}`.toLowerCase();
+                if (el.tagName === 'TEXTAREA' || /message|body|comment|inquiry|content/i.test(attrStr)) category = 'message';
+                else if (/email|mail/i.test(attrStr)) category = 'email';
+                else if (/\bphone\b|\btel\b|\bmobile\b|\bcell\b/i.test(attrStr)) category = 'phone';
+                else if (/name|성함|이름/i.test(attrStr)) category = 'name';
+                else if (/subject|title/i.test(attrStr)) category = 'subject';
+                else category = 'text';
+            }
 
             if (category === 'email') {
-                logDev(`   - [Input✅] category=email filled=true length=${(val || '').length}`);
+                logDev(`   - [FIELD_ASSIGN✅] category=email field=${el.id || el.name || 'unnamed'} len=${(val || '').length}`);
             } else if (category === 'phone') {
-                logDev(`   - [Input✅] category=phone filled=true`);
-            } else if (category === 'name') {
-                logDev(`   - [Input✅] category=name filled=true`);
+                logDev(`   - [FIELD_ASSIGN✅] category=phone field=${el.id || el.name || 'unnamed'}`);
+            } else if (category === 'message') {
+                logDev(`   - [FIELD_ASSIGN✅] category=message field=${el.id || el.name || 'unnamed'} tag=${el.tagName} len=${(val || '').length}`);
             } else {
-                logDev(`   - [Input✅] category=${category} filled=true length=${(val || '').length}`);
+                logDev(`   - [FIELD_ASSIGN✅] category=${category} field=${el.id || el.name || 'unnamed'} len=${(val || '').length}`);
             }
             filledFields++;
         };
@@ -3059,13 +3127,48 @@
             const isLastExclusive = cText.includes('first') || cText.includes('given') || cText.includes('fname');
             const isFirstExclusive = cText.includes('last') || cText.includes('surname') || cText.includes('family') || cText.includes('lname');
 
+            // [Issue #6 R6.9G.10.3.7.1.4.5 Section B] Structural Precedence Semantic Resolver
+            const resolved = resolveFieldSemantic(el);
+            logDev(`   - [FIELD_CLASSIFY] id=${el.id || 'none'} name=${el.name || 'none'} tag=${el.tagName} resolved=${resolved.semantic} confidence=${resolved.confidence} reason=${resolved.reason}`);
+
+            if (resolved.semantic === 'message') {
+                if (await matchField(FIELD_PATTERNS.message, tpl.message, el)) continue;
+                await applyVal(el, tpl.message || getRandomTemplateVal(), 'Resolved-Message');
+                continue;
+            } else if (resolved.semantic === 'phone') {
+                if (await matchField(FIELD_PATTERNS.phone, tpl.phone, el)) continue;
+                await applyVal(el, tpl.phone, 'Resolved-Phone');
+                continue;
+            } else if (resolved.semantic === 'email') {
+                if (await matchField(FIELD_PATTERNS.email, tpl.email, el)) continue;
+                await applyVal(el, tpl.email, 'Resolved-Email');
+                continue;
+            } else if (resolved.semantic === 'name') {
+                if (!isFirstExclusive && !isLastExclusive && await matchField(FIELD_PATTERNS.name, tpl.name, el)) continue;
+                await applyVal(el, tpl.name, 'Resolved-Name');
+                continue;
+            } else if (resolved.semantic === 'firstName') {
+                if (!isFirstExclusive && await matchField(FIELD_PATTERNS.firstName, fNameVal, el)) continue;
+                await applyVal(el, fNameVal, 'Resolved-FirstName');
+                continue;
+            } else if (resolved.semantic === 'lastName') {
+                if (!isLastExclusive && await matchField(FIELD_PATTERNS.lastName, lNameVal, el)) continue;
+                await applyVal(el, lNameVal, 'Resolved-LastName');
+                continue;
+            } else if (resolved.semantic === 'subject') {
+                if (await matchField(FIELD_PATTERNS.subject, tpl.subject, el)) continue;
+                await applyVal(el, tpl.subject, 'Resolved-Subject');
+                continue;
+            }
+
+            // Fallback matching if unresolved
             if (!isFirstExclusive && await matchField(FIELD_PATTERNS.firstName, fNameVal, el)) continue;
             if (!isLastExclusive && await matchField(FIELD_PATTERNS.lastName, lNameVal, el)) continue;
             if (!isFirstExclusive && !isLastExclusive && await matchField(FIELD_PATTERNS.name, tpl.name, el)) continue;
             if (await matchField(FIELD_PATTERNS.email, tpl.email, el)) continue;
-            if (await matchField(FIELD_PATTERNS.phone, tpl.phone, el)) continue;
             if (await matchField(FIELD_PATTERNS.subject, tpl.subject, el)) continue;
             if (await matchField(FIELD_PATTERNS.message, tpl.message, el)) continue;
+            if (await matchField(FIELD_PATTERNS.phone, tpl.phone, el)) continue;
         }
 
         // ── 6단계: 텍스트 폴백 - 여전히 빈 필드 강제 채우기 ──
@@ -3284,10 +3387,28 @@
                     logDev(`   [v4.0] 2단계 폼에서 ${emptyNewInputs.length}개 빈 필드 발견. 추가 입력 진행...`);
                     for (const el of emptyNewInputs) {
                         if (el.type === 'hidden' || el.type === 'submit' || el.type === 'button') continue;
+                        const step2Resolved = resolveFieldSemantic(el);
+                        if (step2Resolved.semantic === 'message') {
+                            if (await matchField(FIELD_PATTERNS.message, tpl.message, el)) continue;
+                            await applyVal(el, tpl.message || getRandomTemplateVal(), 'Step2-Resolved-Message');
+                            continue;
+                        } else if (step2Resolved.semantic === 'phone') {
+                            if (await matchField(FIELD_PATTERNS.phone, tpl.phone, el)) continue;
+                            await applyVal(el, tpl.phone, 'Step2-Resolved-Phone');
+                            continue;
+                        } else if (step2Resolved.semantic === 'email') {
+                            if (await matchField(FIELD_PATTERNS.email, tpl.email, el)) continue;
+                            await applyVal(el, tpl.email, 'Step2-Resolved-Email');
+                            continue;
+                        } else if (step2Resolved.semantic === 'name') {
+                            if (await matchField(FIELD_PATTERNS.name, tpl.name, el)) continue;
+                            await applyVal(el, tpl.name, 'Step2-Resolved-Name');
+                            continue;
+                        }
                         if (await matchField(FIELD_PATTERNS.email, tpl.email, el)) continue;
                         if (await matchField(FIELD_PATTERNS.name, tpl.name, el)) continue;
-                        if (await matchField(FIELD_PATTERNS.phone, tpl.phone, el)) continue;
                         if (await matchField(FIELD_PATTERNS.message, tpl.message, el)) continue;
+                        if (await matchField(FIELD_PATTERNS.phone, tpl.phone, el)) continue;
 
                         // 폴백
                         if (el.tagName === 'TEXTAREA' || el.contentEditable === 'true') {

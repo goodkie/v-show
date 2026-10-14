@@ -60,7 +60,8 @@ const filesToMirror = [
     'modules/form-discovery-engine-r2.js',
     'modules/vision-submit-executor.js',
     'modules/math-captcha-solver.js',
-    'modules/privacy-gateway.js'
+    'modules/privacy-gateway.js',
+    'modules/mock-captcha-provider-adapter.js'
 ];
 
 const EXT = path.join(__dirname, 'extension');

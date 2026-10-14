@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>CAPTCHA Lab CAP-02: Math Captcha</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #f8fafc; padding: 40px; margin: 0; }
+        .container { max-width: 540px; margin: 0 auto; background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 28px; }
+        h1 { font-size: 18px; color: #38bdf8; margin: 0 0 8px 0; }
+        p { color: #94a3b8; font-size: 13px; margin-bottom: 20px; }
+        label { display: block; font-size: 13px; font-weight: 600; color: #cbd5e1; margin-bottom: 6px; }
+        input, textarea { width: 100%; box-sizing: border-box; background: #0f172a; border: 1px solid #475569; border-radius: 6px; padding: 10px; color: #f8fafc; font-size: 13px; margin-bottom: 14px; }
+        button { background: #0284c7; color: white; border: none; border-radius: 6px; padding: 10px; font-weight: 600; width: 100%; cursor: pointer; }
+        .success-box { display: none; background: rgba(74, 222, 128, 0.15); border: 1px solid #4ade80; color: #4ade80; padding: 12px; border-radius: 6px; margin-top: 14px; text-align: center; }
+        .error-box { display: none; background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #f87171; padding: 12px; border-radius: 6px; margin-top: 14px; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>CAPTCHA Lab CAP-02: Math CAPTCHA</h1>
+        <p>Exercises MathCaptchaSolver with deterministic question: 7 + 5 = ?</p>
+        <form id="form-cap-02" action="contact-success.html" method="POST">
+            <div>
+                <label for="name">Name *</label>
+                <input type="text" id="name" name="name" required placeholder="John Doe">
+            </div>
+            <div>
+                <label for="email">Email *</label>
+                <input type="email" id="email" name="email" required placeholder="john@example.com">
+            </div>
+            <div>
+                <label for="message">Message *</label>
+                <textarea id="message" name="message" rows="3" required placeholder="Tell us how we can assist you..."></textarea>
+            </div>
+            <div>
+                <label for="math-captcha-field" id="math-quiz-label">Please solve the equation: 7 + 5 = ? *</label>
+                <input type="text" id="math-captcha-field" name="captcha_solution" required placeholder="Your answer">
+            </div>
+            <button type="submit" id="submit-btn">Submit Math Form</button>
+            <div id="success-banner" class="success-box wpcf7-mail-sent-ok gform_confirmation_message">Math CAPTCHA correctly solved (12) and verified!</div>
+            <div id="error-banner" class="error-box">Math answer incorrect!</div>
+        </form>
+    </div>
+    <script>
+        document.getElementById('form-cap-02').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const ans = document.getElementById('math-captcha-field').value.trim();
+            if (ans === '12') {
+                document.getElementById('success-banner').style.display = 'block';
+                document.getElementById('error-banner').style.display = 'none';
+                window.__xpider_math_status = { pass: true, answer: '12' };
+                window.dispatchEvent(new CustomEvent('form-submitted', { detail: { status: 'SUCCESS' } }));
+            } else {
+                document.getElementById('error-banner').textContent = 'Expected 12, got: ' + ans;
+                document.getElementById('error-banner').style.display = 'block';
+                document.getElementById('success-banner').style.display = 'none';
+                window.__xpider_math_status = { pass: false, answer: ans };
+            }
+        });
+    </script>
+</body>
+</html>
