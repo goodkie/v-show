@@ -2297,6 +2297,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const statusDetail = document.getElementById('status-detail');
                     if (statusDetail) statusDetail.textContent = "Campaign Complete: All targets finished.";
                     try { onCampaignFinishedOwnerTestCheck(request.counters); } catch (_) {}
+                } else if (request.action === 'OWNER_TEST_PRECONDITION_FAILED_ALL_FILTERED') {
+                    if (typeof _restoreStartButton === 'function') _restoreStartButton();
+                    updateAutoSetupUI('READY');
+                    showAutoSetupFeedback(
+                        `🛑 TEST NOT RUN — 0 OF 7 EXECUTED\n` +
+                        `All targets were filtered out (history or suppression). Click '✨ AUTO SETUP' to re-arm test fixtures.`,
+                        'error'
+                    );
+                    addLog('🛑 [OWNER_TEST_PRECONDITION_FAILED_ALL_FILTERED] All targets filtered out. Test not executed.', 'error');
                 } else if (request.action === 'CORE_RUNTIME_BROKEN_ALERT') {
                     addLog(`\uD83D\uDEA8 [CIRCUIT BREAKER] Core runtime broken: ${request.symbol} is not defined. Campaign paused.`, 'error');
                 } else if (request.action === 'EMAIL_COLLECTOR_CLEARED') {
@@ -3651,18 +3660,39 @@ function onCampaignFinishedOwnerTestCheck(counters) {
     if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.local) return;
     chrome.storage.local.get(['xpider_owner_function_test_mode', 'xpider_owner_backup_snapshot']).then((st) => {
         if (st && st.xpider_owner_function_test_mode) {
-            updateAutoSetupUI('COMPLETED');
-            const sc = counters ? counters.success : 0;
-            const sk = counters ? counters.skipped : 0;
-            const fl = counters ? counters.failed : 0;
-            const isTargetResult = (sc === 4 && sk === 2 && fl === 1);
-            const verdict = isTargetResult ? 'PASS (100% EXPECTED OUTCOME)' : 'COMPLETED';
-            showAutoSetupFeedback(
-                `🏁 LOCAL FUNCTION TEST ${verdict}\n` +
-                `Outcomes: ${sc} SUCCESS / ${sk} SKIPPED / ${fl} FAILURE\n` +
-                `Click '↩ RESTORE' to restore your previous settings and URL list.`,
-                isTargetResult ? 'success' : 'info'
-            );
+            const sc = counters ? (counters.success || 0) : 0;
+            const sk = counters ? (counters.skipped || 0) : 0;
+            const fl = counters ? (counters.failed || 0) : 0;
+            const total = sc + sk + fl;
+
+            if (total === 0) {
+                updateAutoSetupUI('READY');
+                showAutoSetupFeedback(
+                    `🛑 TEST NOT RUN — 0 OF 7 EXECUTED\n` +
+                    `All targets were filtered out (history or suppression). Click '✨ AUTO SETUP' to re-arm test fixtures.`,
+                    'error'
+                );
+                return;
+            }
+
+            const isTargetResult = (total === 7 && sc === 4 && sk === 2 && fl === 1);
+            if (isTargetResult) {
+                updateAutoSetupUI('COMPLETED');
+                showAutoSetupFeedback(
+                    `🏁 LOCAL FUNCTION TEST PASS (100% EXPECTED OUTCOME)\n` +
+                    `Outcomes: 4 SUCCESS / 2 SKIPPED / 1 FAILURE (7/7 executed)\n` +
+                    `Click '↩ RESTORE' to restore your previous settings and URL list.`,
+                    'success'
+                );
+            } else {
+                updateAutoSetupUI('COMPLETED');
+                showAutoSetupFeedback(
+                    `⚠️ LOCAL FUNCTION TEST INCOMPLETE (Expected 4/2/1 across 7 fixtures)\n` +
+                    `Observed: ${sc} SUCCESS / ${sk} SKIPPED / ${fl} FAILURE (Total: ${total}/7)\n` +
+                    `Click '✨ AUTO SETUP' to re-arm test fixtures or '↩ RESTORE' to restore.`,
+                    'warn'
+                );
+            }
         }
     }).catch(() => {});
 }
@@ -3690,6 +3720,16 @@ function initOwnerAutoSetup() {
         }).catch(() => {});
     }
 
+    const LOCALHOST_FIXTURES = [
+        'http://127.0.0.1:8088/contact-standard.html',
+        'http://127.0.0.1:8088/contact-dropdown-checkbox.html',
+        'http://127.0.0.1:8088/contact-numeric.html',
+        'http://127.0.0.1:8088/subscribe-no-message.html',
+        'http://127.0.0.1:8088/reservation-no-message.html',
+        'http://127.0.0.1:8088/no-contact-page.html',
+        'http://127.0.0.1:8088/index.html'
+    ];
+
     if (!autoSetupBtn.dataset.bound) {
         autoSetupBtn.dataset.bound = 'true';
         autoSetupBtn.addEventListener('click', async () => {
@@ -3712,6 +3752,9 @@ function initOwnerAutoSetup() {
                         ? [...campaignQueue]
                         : (Array.isArray(currentStorage.xpider_queue) ? [...currentStorage.xpider_queue] : []);
 
+                    const liveSkipEl = document.getElementById('skip-attempted-toggle');
+                    const liveDoubleEl = document.getElementById('double-submit-toggle');
+
                     existingSnapshot = {
                         timestamp: Date.now(),
                         queue: qToSave,
@@ -3722,27 +3765,18 @@ function initOwnerAutoSetup() {
                             xpider_fillDelayMs: currentStorage.xpider_fillDelayMs,
                             xpider_submitDelayMs: currentStorage.xpider_submitDelayMs,
                             xpider_fill_mode: currentStorage.xpider_fill_mode,
-                            xpider_skip_attempted: currentStorage.xpider_skip_attempted,
-                            xpider_double_submit: currentStorage.xpider_double_submit,
+                            xpider_skip_attempted: liveSkipEl ? liveSkipEl.checked : (currentStorage.xpider_skip_attempted !== undefined ? currentStorage.xpider_skip_attempted : true),
+                            xpider_double_submit: liveDoubleEl ? liveDoubleEl.checked : Boolean(currentStorage.xpider_double_submit),
                             xpider_strict_privacy: currentStorage.xpider_strict_privacy,
                             xpider_privacy_transport: currentStorage.xpider_privacy_transport,
-                            xpider_captcha_method: currentStorage.xpider_captcha_method
+                            xpider_captcha_method: currentStorage.xpider_captcha_method,
+                            xpider_active_campaign_run_id: currentStorage.xpider_active_campaign_run_id
                         }
                     };
                     await chrome.storage.local.set({ xpider_owner_backup_snapshot: existingSnapshot });
                 }
 
                 // 3. Prepare the local Owner Functional Test profile (7 verified local fixtures)
-                const LOCALHOST_FIXTURES = [
-                    'http://127.0.0.1:8088/contact-standard.html',
-                    'http://127.0.0.1:8088/contact-dropdown-checkbox.html',
-                    'http://127.0.0.1:8088/contact-numeric.html',
-                    'http://127.0.0.1:8088/subscribe-no-message.html',
-                    'http://127.0.0.1:8088/reservation-no-message.html',
-                    'http://127.0.0.1:8088/no-contact-page.html',
-                    'http://127.0.0.1:8088/index.html'
-                ];
-
                 campaignQueue = [...LOCALHOST_FIXTURES];
                 totalTargets = campaignQueue.length;
 
@@ -3782,7 +3816,7 @@ function initOwnerAutoSetup() {
 
                 await chrome.storage.local.set(testSettings);
 
-                // 6. Synchronize in-memory and UI controls
+                // 6. Synchronize in-memory and UI controls (Live DOM + Storage synchronization)
                 const oftToggle = document.getElementById('owner-function-test-toggle');
                 if (oftToggle) oftToggle.checked = true;
 
@@ -3801,23 +3835,26 @@ function initOwnerAutoSetup() {
                 if (submitSlider) submitSlider.value = 6;
                 if (submitVal) submitVal.textContent = '4.0s (Level 6)';
 
-                const doubleSubmitToggle = document.getElementById('double-submit-toggle');
-                if (doubleSubmitToggle) doubleSubmitToggle.checked = false;
+                const skipToggle = document.getElementById('skip-attempted-toggle');
+                if (skipToggle) {
+                    skipToggle.checked = false;
+                    skipToggle.dispatchEvent(new Event('change', { bubbles: true }));
+                }
 
-                // 7. Register 7 source rows into persistent Ledger (1:1 traceability)
+                const doubleSubmitToggle = document.getElementById('double-submit-toggle');
+                if (doubleSubmitToggle) {
+                    doubleSubmitToggle.checked = false;
+                    doubleSubmitToggle.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+
+                // 7. Prepare dedicated isolated Owner Test Run scope (Directive D)
                 try {
-                    const rowsForLedger = campaignQueue.map((url, idx) => ({
-                        sourceRowNumber: idx + 1,
-                        rawInput: url,
-                        targetIdentity: url
-                    }));
                     await chrome.runtime.sendMessage({
-                        action: 'RECORD_IMPORT_ROWS',
-                        rows: rowsForLedger,
-                        importId: 'auto_setup_' + Date.now()
+                        action: 'PREPARE_OWNER_FUNCTIONAL_TEST_RUN',
+                        fixtures: LOCALHOST_FIXTURES
                     });
                 } catch (ledgerErr) {
-                    console.warn('[AUTO_SETUP_LEDGER_WARN]', ledgerErr);
+                    console.warn('[AUTO_SETUP_PREPARE_RUN_WARN]', ledgerErr);
                 }
 
                 // 8. Render URLs and counters
@@ -3837,6 +3874,10 @@ function initOwnerAutoSetup() {
                     skippedCount: 0,
                     failedCount: 0
                 });
+
+                if (typeof _renderHistoryPanel === 'function') {
+                    await _renderHistoryPanel();
+                }
 
                 // 9. Update UI to READY
                 updateAutoSetupUI('READY');
@@ -3859,6 +3900,17 @@ function initOwnerAutoSetup() {
         runBtn.addEventListener('click', async () => {
             updateAutoSetupUI('RUNNING');
             showAutoSetupFeedback('🚀 Launching 7-target local functional test kit through real extension path...', 'info');
+            const statusTitle = document.getElementById('status-title');
+            if (statusTitle) statusTitle.textContent = "Live Progress (Running)";
+            const statusDetail = document.getElementById('status-detail');
+            if (statusDetail) statusDetail.textContent = "Campaign started...";
+            // Ensure fresh isolated test run scope on every run (idempotent 1st run, 2nd run, etc.)
+            try {
+                await chrome.runtime.sendMessage({
+                    action: 'PREPARE_OWNER_FUNCTIONAL_TEST_RUN',
+                    fixtures: LOCALHOST_FIXTURES
+                });
+            } catch (_) {}
             const startBtn = document.getElementById('start-btn');
             if (startBtn) {
                 startBtn.click();
@@ -3899,6 +3951,9 @@ function initOwnerAutoSetup() {
                 if (snapshot.settings?.xpider_privacy_transport !== undefined) {
                     restoredSettings.xpider_privacy_transport = snapshot.settings.xpider_privacy_transport;
                 }
+                if (snapshot.settings?.xpider_active_campaign_run_id !== undefined) {
+                    restoredSettings.xpider_active_campaign_run_id = snapshot.settings.xpider_active_campaign_run_id;
+                }
 
                 // If test mode was turned off, remove DNR network guard
                 if (!restoredSettings.xpider_owner_function_test_mode) {
@@ -3907,8 +3962,28 @@ function initOwnerAutoSetup() {
                     } catch (_) {}
                 }
 
+                try {
+                    await chrome.runtime.sendMessage({
+                        action: 'CLEANUP_OWNER_FUNCTIONAL_TEST_RUN',
+                        previousRunId: snapshot.settings?.xpider_active_campaign_run_id
+                    });
+                } catch (_) {}
+
                 await chrome.storage.local.set(restoredSettings);
                 await chrome.storage.local.remove(['xpider_owner_backup_snapshot']);
+
+                // Synchronize live DOM controls
+                const skipToggle = document.getElementById('skip-attempted-toggle');
+                if (skipToggle && snapshot.settings?.xpider_skip_attempted !== undefined) {
+                    skipToggle.checked = Boolean(snapshot.settings.xpider_skip_attempted);
+                    skipToggle.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+
+                const doubleSubmitToggle = document.getElementById('double-submit-toggle');
+                if (doubleSubmitToggle && snapshot.settings?.xpider_double_submit !== undefined) {
+                    doubleSubmitToggle.checked = Boolean(snapshot.settings.xpider_double_submit);
+                    doubleSubmitToggle.dispatchEvent(new Event('change', { bubbles: true }));
+                }
 
                 // Re-render UI
                 renderUrlsPreview(campaignQueue);
@@ -3918,7 +3993,10 @@ function initOwnerAutoSetup() {
                 if (filenameDisplay) filenameDisplay.textContent = totalTargets > 0 ? 'Restored Public List' : 'No file selected';
 
                 const oftToggle = document.getElementById('owner-function-test-toggle');
-                if (oftToggle) oftToggle.checked = restoredSettings.xpider_owner_function_test_mode;
+                if (oftToggle) {
+                    oftToggle.checked = Boolean(restoredSettings.xpider_owner_function_test_mode);
+                    oftToggle.dispatchEvent(new Event('change', { bubbles: true }));
+                }
 
                 updateRealTimeStatus({
                     totalTargets,
@@ -3928,6 +4006,10 @@ function initOwnerAutoSetup() {
                     skippedCount: 0,
                     failedCount: 0
                 });
+
+                if (typeof _renderHistoryPanel === 'function') {
+                    await _renderHistoryPanel();
+                }
 
                 updateAutoSetupUI('STANDBY');
                 showAutoSetupFeedback(`↩ Restored previous list (${campaignQueue.length} URLs) and settings successfully.`, 'info');
@@ -4558,7 +4640,7 @@ async function startCampaign() {
     }
 
     const skipAttemptedEl = document.getElementById('skip-attempted-toggle');
-    const skipPreviouslyAttempted = skipAttemptedEl ? skipAttemptedEl.checked : true;
+    const skipPreviouslyAttempted = isTestModeActive ? false : (skipAttemptedEl ? skipAttemptedEl.checked : true);
 
     const startPayload = {
         queue: campaignQueue,
@@ -4569,7 +4651,9 @@ async function startCampaign() {
         fillMode,
         templateId: currentTpl.templateId || 'default',
         templateVersion: currentTpl.templateVersion || 1,
-        skipPreviouslyAttempted
+        skipPreviouslyAttempted,
+        overrideSkipAttempted: isTestModeActive ? true : false,
+        ownerFunctionTestMode: isTestModeActive ? true : false
     };
     try {
         bindCampaignTemplateMetadata(startPayload, currentTpl);
@@ -4797,6 +4881,10 @@ async function startCampaign() {
             // Show active controls
             const statusBox = document.getElementById('status-box');
             if (statusBox) statusBox.classList.remove('hidden');
+            const statusTitle = document.getElementById('status-title');
+            if (statusTitle) statusTitle.textContent = "Live Progress (Running)";
+            const statusDetail = document.getElementById('status-detail');
+            if (statusDetail) statusDetail.textContent = "Campaign started...";
             const multiActions = document.getElementById('multi-actions');
             if (multiActions) multiActions.classList.remove('hidden');
             if (startBtn) {
@@ -6528,8 +6616,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const attempts = storedState.xpider_history_attempts || [];
             const gen = storedState.xpider_history_generation || 1;
 
-            const pending = rows.filter(r => r.status === 'PENDING').length;
-            const invalid = rows.filter(r => r.status === 'INVALID_INPUT').length;
+            const totalImportRows = (stats && scopePref === 'currentRun' && stats.totalImportRows !== undefined) ? stats.totalImportRows : rows.length;
+            const pending = (stats && scopePref === 'currentRun' && stats.pending !== undefined) ? stats.pending : rows.filter(r => r.status === 'PENDING').length;
+            const invalid = (stats && scopePref === 'currentRun' && stats.invalid !== undefined) ? stats.invalid : rows.filter(r => r.status === 'INVALID_INPUT').length;
             const succeeded = stats ? stats.success : attempts.filter(a => a.status === 'CONFIRMED_SUCCESS').length;
             const failed = stats ? stats.failure : attempts.filter(a => a.status === 'FAILURE').length;
             const timeout = stats ? (stats.timeout || 0) : attempts.filter(a => a.status === 'TIMEOUT_LOCAL' || a.status === 'TIMEOUT_GLOBAL').length;
@@ -6552,7 +6641,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <span>Generation:</span><span><b>${gen}</b></span>
                 </div>
                 <div class="history-stat-row">
-                    <span>Total Import Rows:</span><span><b>${rows.length}</b></span>
+                    <span>Total Import Rows:</span><span><b>${totalImportRows}</b></span>
                 </div>
                 <div class="history-stat-row">
                     <span>Pending:</span><span><b>${pending}</b></span>

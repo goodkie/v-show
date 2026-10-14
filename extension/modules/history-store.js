@@ -287,6 +287,82 @@
         }
 
         /**
+         * [Issue #6 R6.9G.10.3.7.1.4.5 P0 IDEMPOTENCY FIX]
+         * Prepare a clean, isolated Owner Functional Test Run.
+         * 1. Preserves public history and targets.
+         * 2. Unsuppresses the approved test fixtures.
+         * 3. Clears any prior test attempts on those test fixtures from this test run scope.
+         * 4. Cleans up prior owner_test_ rows from importRows so tests don't accumulate.
+         * 5. Ingests exactly the test fixtures under ownerTestRunId.
+         */
+        async prepareOwnerTestRun(fixtures = [], runId = null) {
+            const ownerTestRunId = runId || `owner_test_run_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+            this.activeCampaignRunId = ownerTestRunId;
+
+            const fixtureList = Array.isArray(fixtures) && fixtures.length > 0 ? fixtures : [
+                'http://127.0.0.1:8088/contact-standard.html',
+                'http://127.0.0.1:8088/contact-dropdown-checkbox.html',
+                'http://127.0.0.1:8088/contact-numeric.html',
+                'http://127.0.0.1:8088/subscribe-no-message.html',
+                'http://127.0.0.1:8088/reservation-no-message.html',
+                'http://127.0.0.1:8088/no-contact-page.html',
+                'http://127.0.0.1:8088/index.html'
+            ];
+
+            const fixtureIdentities = new Set(fixtureList.map(f => this.normalizeTargetIdentity(f) || f));
+
+            // 1. Unsuppress approved loopback test fixtures
+            for (const fixUrl of fixtureList) {
+                const norm = this.normalizeTargetIdentity(fixUrl) || fixUrl;
+                const target = this.targets.get(norm);
+                if (target) {
+                    target.isSuppressed = false;
+                    target.suppressionReason = null;
+                    target.lastAttemptId = null;
+                    target.effectiveGeneration = this.currentGeneration;
+                }
+            }
+
+            // 2. Remove prior attempts that belong to owner_test_ runs OR match the test fixtures
+            this.attempts = this.attempts.filter(a => {
+                if (a.campaignRunId && a.campaignRunId.startsWith('owner_test_')) return false;
+                const aNorm = this.normalizeTargetIdentity(a.targetIdentity) || a.targetIdentity;
+                if (fixtureIdentities.has(aNorm) || fixtureIdentities.has(a.targetIdentity)) return false;
+                return true;
+            });
+
+            // 3. Remove prior owner_test_ import rows and rows matching test fixtures so they don't accumulate
+            this.importRows = this.importRows.filter(r => {
+                if (r.importId && r.importId.startsWith('owner_test_')) return false;
+                if (r.campaignRunId && r.campaignRunId.startsWith('owner_test_')) return false;
+                const rNorm = this.normalizeTargetIdentity(r.targetIdentity || r.rawInputUrl) || r.rawInputUrl;
+                if (fixtureIdentities.has(rNorm)) return false;
+                return true;
+            });
+
+            // 4. Ingest the test fixtures cleanly into importRows
+            const sourceRowNumbers = fixtureList.map((_, i) => i + 1);
+            await this.ingestImportRows(fixtureList, ownerTestRunId, sourceRowNumbers, fixtureList);
+
+            await this.persist();
+            return {
+                campaignRunId: ownerTestRunId,
+                fixturesCount: fixtureList.length
+            };
+        }
+
+        /**
+         * Clean up test run scope on restore
+         */
+        async cleanupOwnerTestRun(previousRunId = null) {
+            this.activeCampaignRunId = previousRunId || null;
+            this.attempts = this.attempts.filter(a => !(a.campaignRunId && a.campaignRunId.startsWith('owner_test_')));
+            this.importRows = this.importRows.filter(r => !(r.importId && r.importId.startsWith('owner_test_')) && !(r.campaignRunId && r.campaignRunId.startsWith('owner_test_')));
+            await this.persist();
+            return { success: true };
+        }
+
+        /**
          * P2A-3: Check if a target identity is suppressed for the active generation
          */
         isSuppressed(targetIdentity) {
@@ -447,10 +523,23 @@
             }
 
             // Link attempt back to corresponding ImportRows
+            let linked = false;
             for (const row of this.importRows) {
-                if (row.targetIdentity === targetIdentity && !row.attemptId) {
+                const matchesRun = descriptor.campaignRunId ? (row.importId === descriptor.campaignRunId || row.campaignRunId === descriptor.campaignRunId) : true;
+                if (matchesRun && row.targetIdentity === targetIdentity && !row.attemptId) {
                     row.attemptId = attemptId;
                     row.status = status;
+                    linked = true;
+                    break;
+                }
+            }
+            if (!linked) {
+                for (const row of this.importRows) {
+                    if (row.targetIdentity === targetIdentity && !row.attemptId) {
+                        row.attemptId = attemptId;
+                        row.status = status;
+                        break;
+                    }
                 }
             }
 
@@ -853,12 +942,32 @@
             const timeout = timeoutLocal + timeoutGlobal;
             const completed = success + failure + unknown + timeout + skipped + paused;
             const totalStarted = scopedAttempts.length;
+
+            // Scoped ImportRow counts
+            let scopedRows = this.importRows;
+            if (scope === 'currentRun') {
+                if (targetRunId) {
+                    scopedRows = this.importRows.filter(r => r.importId === targetRunId || r.campaignRunId === targetRunId);
+                } else {
+                    scopedRows = [];
+                }
+            } else if (scope === 'currentGeneration') {
+                scopedRows = this.importRows.filter(r => (r.generation === this.currentGeneration || r.generationId === this.currentGeneration || (!r.generation && !r.generationId)));
+            }
+
+            const totalImportRows = scopedRows.length;
+            const pending = scopedRows.filter(r => r.status === 'PENDING').length;
+            const invalid = scopedRows.filter(r => r.status === 'INVALID_INPUT').length;
+
             const logStr = `[LEDGER_STATS] scope=${scope} success=${success} failure=${failure} unknown=${unknown} timeout=${timeout} skipped=${skipped}`;
 
             return {
                 scope,
                 campaignRunId: targetRunId,
                 totalStarted,
+                totalImportRows,
+                pending,
+                invalid,
                 success,
                 failure,
                 unknown,

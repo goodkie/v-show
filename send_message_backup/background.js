@@ -2349,6 +2349,64 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
             return true;
         }
 
+        case 'PREPARE_OWNER_FUNCTIONAL_TEST_RUN': {
+            bgOperationQueue.enqueue(async () => {
+                try {
+                    const isTestOnly = self.BuildProvenance &&
+                        typeof self.BuildProvenance.isTestOnlyBuild === 'function' &&
+                        self.BuildProvenance.isTestOnlyBuild();
+                    if (!isTestOnly) {
+                        return sendResponse({ success: false, error: 'NOT_AUTHORIZED_TEST_ONLY_BUILD' });
+                    }
+
+                    if (!self.__xpiderHistoryStore) {
+                        self.__xpiderHistoryStore = new self.HistoryStore(chrome.storage.local);
+                        await self.__xpiderHistoryStore.load();
+                    }
+                    const hs = self.__xpiderHistoryStore;
+                    const fixtures = Array.isArray(request.fixtures) && request.fixtures.length > 0
+                        ? request.fixtures
+                        : [
+                            'http://127.0.0.1:8088/contact-standard.html',
+                            'http://127.0.0.1:8088/contact-dropdown-checkbox.html',
+                            'http://127.0.0.1:8088/contact-numeric.html',
+                            'http://127.0.0.1:8088/subscribe-no-message.html',
+                            'http://127.0.0.1:8088/reservation-no-message.html',
+                            'http://127.0.0.1:8088/no-contact-page.html',
+                            'http://127.0.0.1:8088/index.html'
+                        ];
+
+                    const res = await hs.prepareOwnerTestRun(fixtures);
+                    campaignState.campaignRunId = res.campaignRunId;
+                    await chrome.storage.local.set({
+                        xpider_active_campaign_run_id: res.campaignRunId,
+                        xpider_history_scope_preference: 'currentRun'
+                    });
+
+                    sendResponse({ success: true, ...res });
+                } catch (err) {
+                    console.error('[PREPARE_OWNER_FUNCTIONAL_TEST_RUN_FAIL]', err);
+                    sendResponse({ success: false, error: err.message });
+                }
+            });
+            return true;
+        }
+
+        case 'CLEANUP_OWNER_FUNCTIONAL_TEST_RUN': {
+            bgOperationQueue.enqueue(async () => {
+                try {
+                    if (self.__xpiderHistoryStore) {
+                        await self.__xpiderHistoryStore.cleanupOwnerTestRun(request.previousRunId);
+                    }
+                    sendResponse({ success: true });
+                } catch (err) {
+                    console.error('[CLEANUP_OWNER_FUNCTIONAL_TEST_RUN_FAIL]', err);
+                    sendResponse({ success: false, error: err.message });
+                }
+            });
+            return true;
+        }
+
         case 'START_CAMPAIGN': {
             // [Issue #6 R6.9F] Fail-Closed Build Handshake Verification
             const liveBp = (typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO) ? BuildProvenance.BUILD_INFO : null;
@@ -4349,7 +4407,24 @@ async function startCampaignOrchestrator(queue, template, delayMs, fillDelayMs =
             hs = self.__xpiderHistoryStore;
         } catch (_) {}
 
-        const shouldSkipAttempted = (options.skipPreviouslyAttempted !== false) && (!options.overrideSkipAttempted);
+        const isTestOnlyBuild = self.BuildProvenance &&
+            typeof self.BuildProvenance.isTestOnlyBuild === 'function' &&
+            self.BuildProvenance.isTestOnlyBuild();
+
+        const isOwnerTestMode = !!options.ownerFunctionTestMode;
+        const allLoopback = Array.isArray(queue) && queue.length > 0 && queue.length <= 10 && queue.every(url => {
+            try {
+                const u = new URL(url);
+                return (u.hostname === '127.0.0.1' || u.hostname === 'localhost') && (u.port === '8088' || u.port === '9262');
+            } catch (_) {
+                return false;
+            }
+        });
+
+        // [Directive B & C Authoritative Owner Test Override]
+        const allowOwnerTestBypass = isTestOnlyBuild && isOwnerTestMode && allLoopback && Boolean(options.overrideSkipAttempted);
+
+        const shouldSkipAttempted = allowOwnerTestBypass ? false : ((options.skipPreviouslyAttempted !== false) && (!options.overrideSkipAttempted));
 
         for (const rawUrl of (Array.isArray(queue) ? queue : [])) {
             if (!rawUrl || typeof rawUrl !== 'string') continue;
@@ -4360,7 +4435,8 @@ async function startCampaignOrchestrator(queue, template, delayMs, fillDelayMs =
             }
             seenInBatch.add(norm);
 
-            if (hs && typeof hs.isSuppressed === 'function' && hs.isSuppressed(norm)) {
+            // Bypass suppression only for authorized Owner Functional Test mode on loopback fixtures
+            if (!allowOwnerTestBypass && hs && typeof hs.isSuppressed === 'function' && hs.isSuppressed(norm)) {
                 suppressedCount++;
                 continue;
             }
@@ -4377,6 +4453,25 @@ async function startCampaignOrchestrator(queue, template, delayMs, fillDelayMs =
         logBg(null, `📊 [Queue Filter] Input: ${originalInputCount} | Duplicates: ${dupCount} | Suppressed: ${suppressedCount} | History-Attempted: ${historySkippedCount} | Executable: ${executableQueue.length}`, "info");
         if (executableQueue.length === 0 && originalInputCount > 0) {
             logBg(null, `⚠️ [Queue Filter] All ${originalInputCount} targets were skipped (historySkipped=${historySkippedCount}, suppressed=${suppressedCount}). If re-testing, disable 'Skip Previously Attempted' or reset history suppression.`, "warning");
+            
+            // [Directive E: NO FALSE FINISHED STATE]
+            campaignState.isActive = false;
+            campaignState.isLoopRunning = false;
+            if (isOwnerTestMode) {
+                chrome.runtime.sendMessage({
+                    action: 'OWNER_TEST_PRECONDITION_FAILED_ALL_FILTERED',
+                    originalInputCount,
+                    historySkippedCount,
+                    suppressedCount,
+                    reason: 'All targets filtered out by history or suppression'
+                }).catch(() => {});
+                await removeOwnerTestNetworkGuard();
+            }
+            return {
+                success: false,
+                error: 'OWNER_TEST_PRECONDITION_FAILED_ALL_FILTERED',
+                reason: `All ${originalInputCount} targets were filtered out (historySkipped=${historySkippedCount}, suppressed=${suppressedCount})`
+            };
         }
 
         // [v18.15.5 & R6.9A] Restore Campaign Variables
@@ -4413,12 +4508,14 @@ async function startCampaignOrchestrator(queue, template, delayMs, fillDelayMs =
         campaignState.captchaEpochBlockedErrors = {};
         for (const k of Object.keys(coreRuntimeRefErrors)) delete coreRuntimeRefErrors[k];
 
-        // [R6.9A] Persistent campaignRunId for ledger scoping
-        if (!options.isResume || !campaignState.campaignRunId) {
-            campaignState.campaignRunId = 'run_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
-            if (hs) hs.activeCampaignRunId = campaignState.campaignRunId;
-            chrome.storage.local.set({ xpider_active_campaign_run_id: campaignState.campaignRunId }).catch(() => {});
+        // [R6.9A & Directive D] Persistent campaignRunId for ledger scoping
+        if (options.campaignRunId) {
+            campaignState.campaignRunId = options.campaignRunId;
+        } else if (!options.isResume || !campaignState.campaignRunId) {
+            campaignState.campaignRunId = (isOwnerTestMode ? 'owner_test_run_' : 'run_') + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
         }
+        if (hs) hs.activeCampaignRunId = campaignState.campaignRunId;
+        chrome.storage.local.set({ xpider_active_campaign_run_id: campaignState.campaignRunId }).catch(() => {});
         
         logBg(null, "[Boot] Variables initialized.", "debug");
         logBg(null, "🚀 Engine booting...", "start");
@@ -4864,6 +4961,16 @@ async function processNextCampaignTarget(loopSessionId, loopGeneration) {
         // Check if queue is empty before acquiring slot
         if (!campaignState.isActive || campaignState.queue.length === 0) {
             if (campaignState.isActive) {
+                if (campaignState.totalTargets === 0) {
+                    console.warn('[CAMPAIGN_EMPTY_QUEUE_ABORT] totalTargets === 0. Aborting without CAMPAIGN_FINISHED.');
+                    campaignState.isActive = false;
+                    campaignState.isLoopRunning = false;
+                    chrome.runtime.sendMessage({
+                        action: 'OWNER_TEST_PRECONDITION_FAILED_ALL_FILTERED',
+                        reason: 'No executable targets'
+                    }).catch(() => {});
+                    return;
+                }
                 const FINISH_BARRIER_POLL_MS = 100;
                 const FINISH_BARRIER_FAULT_MS = 120000; // 2 minutes hard limit before FAULT
                 const barrierStart = Date.now();

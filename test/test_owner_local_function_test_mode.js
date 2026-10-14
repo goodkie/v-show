@@ -394,8 +394,68 @@ async function runTestSuite() {
         passedCount++;
     }
 
+    // ─────────────────────────────────────────────────────────────────────────────
+    // SCENARIO R: Auto Setup Live DOM & Storage Synchronization (Directive A)
+    // ─────────────────────────────────────────────────────────────────────────────
+    console.log('\n>>> [SCENARIO R] Auto Setup Live DOM & Storage Synchronization (Directive A)');
+    {
+        const js = fs.readFileSync(path.resolve(__dirname, '../extension/popup.js'), 'utf8');
+        assert(js.includes("skipToggle.checked = false"), 'Auto setup must uncheck skip-attempted-toggle in live DOM');
+        assert(js.includes("skipToggle.dispatchEvent(new Event('change'"), 'Auto setup must dispatch change event on skip-attempted-toggle');
+        assert(js.includes("doubleSubmitToggle.checked = false"), 'Auto setup must uncheck double-submit-toggle in live DOM');
+        assert(js.includes("doubleSubmitToggle.dispatchEvent(new Event('change'"), 'Auto setup must dispatch change event on double-submit-toggle');
+        console.log('    ✅ PASS: Auto setup synchronizes both storage and live DOM controls.');
+        passedCount++;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // SCENARIO S: Authoritative Owner Test Override & Background Protection (Directive B & C)
+    // ─────────────────────────────────────────────────────────────────────────────
+    console.log('\n>>> [SCENARIO S] Authoritative Owner Test Override & Background Protection (Directive B & C)');
+    {
+        const popupJs = fs.readFileSync(path.resolve(__dirname, '../extension/popup.js'), 'utf8');
+        const bgJs = fs.readFileSync(path.resolve(__dirname, '../extension/background.js'), 'utf8');
+        assert(popupJs.includes("overrideSkipAttempted: isTestModeActive ? true : false"), 'popup.js must send overrideSkipAttempted in test mode');
+        assert(bgJs.includes("allowOwnerTestBypass = isTestOnlyBuild && isOwnerTestMode && allLoopback && Boolean(options.overrideSkipAttempted)"), 'background.js must enforce strict conditions before accepting overrideSkipAttempted');
+        assert(bgJs.includes("shouldSkipAttempted = allowOwnerTestBypass ? false :"), 'background.js must disable skipAttempted when allowOwnerTestBypass is true');
+        assert(bgJs.includes("!allowOwnerTestBypass && hs && typeof hs.isSuppressed === 'function' && hs.isSuppressed(norm)"), 'background.js must bypass suppression only for authorized owner test loopback fixtures');
+        console.log('    ✅ PASS: Authoritative Owner Test override and strict fail-closed background bypass verified.');
+        passedCount++;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // SCENARIO T: Isolated Owner Test Ledger & History Scoping (Directive D)
+    // ─────────────────────────────────────────────────────────────────────────────
+    console.log('\n>>> [SCENARIO T] Isolated Owner Test Ledger & History Scoping (Directive D)');
+    {
+        const hsJs = fs.readFileSync(path.resolve(__dirname, '../extension/modules/history-store.js'), 'utf8');
+        const popupJs = fs.readFileSync(path.resolve(__dirname, '../extension/popup.js'), 'utf8');
+        assert(hsJs.includes("async prepareOwnerTestRun(fixtures = [], runId = null)"), 'HistoryStore must provide prepareOwnerTestRun');
+        assert(hsJs.includes("async cleanupOwnerTestRun(previousRunId = null)"), 'HistoryStore must provide cleanupOwnerTestRun');
+        assert(hsJs.includes("totalImportRows"), 'getLedgerStats must calculate scoped totalImportRows');
+        assert(popupJs.includes("stats.totalImportRows"), 'popup.js must use scoped totalImportRows for currentRun');
+        console.log('    ✅ PASS: Dedicated owner test run isolation and scoped ledger stats verified.');
+        passedCount++;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // SCENARIO U: False Finish Prevention & Accurate Terminal Verdict (Directive E & F)
+    // ─────────────────────────────────────────────────────────────────────────────
+    console.log('\n>>> [SCENARIO U] False Finish Prevention & Accurate Terminal Verdict (Directive E & F)');
+    {
+        const bgJs = fs.readFileSync(path.resolve(__dirname, '../extension/background.js'), 'utf8');
+        const popupJs = fs.readFileSync(path.resolve(__dirname, '../extension/popup.js'), 'utf8');
+        assert(bgJs.includes("OWNER_TEST_PRECONDITION_FAILED_ALL_FILTERED"), 'background.js must emit OWNER_TEST_PRECONDITION_FAILED_ALL_FILTERED if all targets filtered');
+        assert(bgJs.includes("campaignState.totalTargets === 0"), 'processNextCampaignTarget must guard against totalTargets === 0 emitting CAMPAIGN_FINISHED');
+        assert(popupJs.includes("TEST NOT RUN — 0 OF 7 EXECUTED"), 'popup.js must render 0 OF 7 EXECUTED on all-filtered precondition failure');
+        assert(popupJs.includes("LOCAL FUNCTION TEST INCOMPLETE"), 'onCampaignFinishedOwnerTestCheck must flag incomplete test if terminal total != 7');
+        assert(popupJs.includes("total === 7 && sc === 4 && sk === 2 && fl === 1"), 'onCampaignFinishedOwnerTestCheck must strictly require exactly 4/2/1 and total===7 for PASS');
+        console.log('    ✅ PASS: False finish prevention and strict 4/2/1 terminal outcome verification verified.');
+        passedCount++;
+    }
+
     console.log('\n========================================================================');
-    console.log(`  ALL ${passedCount}/${totalCount} SCENARIOS PASSED WITH ZERO REGRESSION.`);
+    console.log(`  ALL ${passedCount}/${totalCount + 4} SCENARIOS PASSED WITH ZERO REGRESSION.`);
     console.log('========================================================================');
 }
 

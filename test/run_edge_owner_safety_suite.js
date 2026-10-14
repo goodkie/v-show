@@ -935,42 +935,174 @@ async function runEdgeSafetySuite() {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // POSITIVE PATH: Full 7-Target Local Campaign Execution
+    // POSITIVE PATH: Owner Auto Setup Dirty-History Idempotency & Reversible Restore
     // ─────────────────────────────────────────────────────────────────────────
     log('\n========================================================================');
-    log('>>> [POSITIVE PATH] Full 7-Target Local Campaign Execution in Edge <<<');
+    log('>>> [MANDATORY REAL EDGE REGRESSION] Dirty-State Auto Setup & Idempotent Re-Run <<<');
     log('========================================================================');
     {
-      // Re-enable test mode
-      await evalPopup(`(async () => {
-        await chrome.storage.local.set({ xpider_owner_function_test_mode: true });
-        const toggle = document.getElementById('owner-function-test-toggle');
-        if (toggle) {
-          toggle.checked = true;
-          toggle.dispatchEvent(new Event('change', { bubbles: true }));
-        }
-      })()`);
-      await sleep(300);
+      const LOCALHOST_FIXTURES = [
+        'http://127.0.0.1:8088/contact-standard.html',
+        'http://127.0.0.1:8088/contact-dropdown-checkbox.html',
+        'http://127.0.0.1:8088/contact-numeric.html',
+        'http://127.0.0.1:8088/subscribe-no-message.html',
+        'http://127.0.0.1:8088/reservation-no-message.html',
+        'http://127.0.0.1:8088/no-contact-page.html',
+        'http://127.0.0.1:8088/index.html'
+      ];
 
-      // Clean reset of previous list data and counters before 7-target campaign
-      await evalSw('(async () => { if (typeof resetAllListData === "function") await resetAllListData(); })()');
-      await sleep(500);
-
-      // Load 7 CSV targets
-      const csvContent = fs.readFileSync(CSV_FILE, 'utf8');
-      const csvUrls = csvContent.split('\n').map(l => l.trim()).filter(l => l.startsWith('http'));
-      assert.strictEqual(csvUrls.length, 7, 'Must have 7 test URLs in CSV');
+      // Step 1: Seed EXACT dirty-state conditions in live browser:
+      // - 100 public URLs in queue
+      // - #skip-attempted-toggle CHECKED
+      // - storage xpider_skip_attempted = true
+      // - 120 unrelated public history rows in HistoryStore
+      // - all 7 localhost fixtures seeded as prior attempted in HistoryStore
+      // - 1 localhost fixture seeded as suppressed
+      log('   1. Seeding EXACT dirty profile state (100 public URLs, 120 public rows, all 7 fixtures attempted, 1 suppressed, skip=true)...');
+      
+      const public100Urls = Array.from({ length: 100 }, (_, i) => `https://public-firm-${i + 1}.example.com/contact`);
 
       await evalPopup(`((urls) => {
         if (typeof window.setCampaignQueue === 'function') window.setCampaignQueue(urls);
         else window.campaignQueue = urls;
         if (typeof updateQueueUI === 'function') updateQueueUI();
-        const cnt = document.getElementById('target-count');
-        if (cnt) cnt.textContent = urls.length;
-      })(${JSON.stringify(csvUrls)})`);
-      await sleep(300);
+        const skipEl = document.getElementById('skip-attempted-toggle');
+        if (skipEl) {
+          skipEl.checked = true;
+          skipEl.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        const doubleEl = document.getElementById('double-submit-toggle');
+        if (doubleEl) {
+          doubleEl.checked = true;
+          doubleEl.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        const oftEl = document.getElementById('owner-function-test-toggle');
+        if (oftEl) {
+          oftEl.checked = false;
+          oftEl.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      })(${JSON.stringify(public100Urls)})`);
 
-      // Fast speeds for deterministic test execution
+      await evalSw(`(async () => {
+        const publicUrls = ${JSON.stringify(public100Urls)};
+        await chrome.storage.local.remove(['xpider_owner_backup_snapshot']);
+        await chrome.storage.local.set({
+          xpider_queue: publicUrls,
+          xpider_total: 100,
+          xpider_skip_attempted: true,
+          xpider_double_submit: true,
+          xpider_owner_function_test_mode: false
+        });
+
+        // Seed HistoryStore with dirty state
+        if (!self.__xpiderHistoryStore) {
+          self.__xpiderHistoryStore = new self.HistoryStore(chrome.storage.local);
+        }
+        const hs = self.__xpiderHistoryStore;
+        await hs.load();
+
+        // 120 unrelated public import rows
+        const dirtyPublicRows = Array.from({ length: 120 }, (_, i) => \`https://historical-client-\${i + 1}.org/inquiry\`);
+        await hs.ingestImportRows(dirtyPublicRows, 'dirty_public_import_batch', null, dirtyPublicRows);
+
+        // Pre-attempt all 7 localhost fixtures with CONFIRMED_SUCCESS
+        const fixtures = ${JSON.stringify(LOCALHOST_FIXTURES)};
+        for (const fix of fixtures) {
+          await hs.recordAttempt(fix, {
+            status: 'CONFIRMED_SUCCESS',
+            reason: 'PRIOR_DIRTY_RUN_ATTEMPT',
+            campaignRunId: 'prior_dirty_run_999'
+          });
+        }
+
+        // Suppress 1 fixture
+        const targetToSuppress = hs.targets.get(hs.normalizeTargetIdentity(fixtures[0]));
+        if (targetToSuppress) {
+          targetToSuppress.isSuppressed = true;
+          targetToSuppress.suppressionReason = 'PRIOR_DIRTY_SUPPRESSION';
+        }
+
+        await hs.persist();
+      })()`);
+      await sleep(500);
+
+      // Verify dirty pre-conditions
+      const dirtyAudit = await evalSw(`(async () => {
+        const hs = self.__xpiderHistoryStore;
+        await hs.load();
+        const st = await chrome.storage.local.get(['xpider_skip_attempted', 'xpider_queue']);
+        const fixtures = ${JSON.stringify(LOCALHOST_FIXTURES)};
+        const attemptedCount = fixtures.filter(f => hs.hasPriorAttempt(f)).length;
+        return {
+          totalRows: hs.importRows.length,
+          attemptedCount,
+          skipStorage: st.xpider_skip_attempted,
+          queueLen: st.xpider_queue.length
+        };
+      })()`);
+      log(`   ✅ Dirty state confirmed: TotalRows=${dirtyAudit.totalRows} (>=120), PreAttempted=${dirtyAudit.attemptedCount}/7, SkipStorage=${dirtyAudit.skipStorage}, QueueLen=${dirtyAudit.queueLen}`);
+      assert(dirtyAudit.totalRows >= 120, 'HistoryStore must have >= 120 dirty rows');
+      assert.strictEqual(dirtyAudit.attemptedCount, 7, 'All 7 fixtures must be pre-attempted');
+      assert.strictEqual(dirtyAudit.skipStorage, true, 'Storage skip_attempted must initially be true');
+      assert.strictEqual(dirtyAudit.queueLen, 100, 'Queue must initially have 100 public URLs');
+
+      // Step 2: Click AUTO SETUP only
+      log('   2. Clicking ✨ AUTO SETUP on dirty profile...');
+      await evalPopup(`(async () => {
+        const btn = document.getElementById('auto-setup-btn');
+        if (btn) btn.click();
+      })()`);
+      await sleep(1500);
+
+      // Verify UI + Storage + Ledger state after Auto Setup
+      const afterSetupState = await evalPopup(`(() => {
+        const skipEl = document.getElementById('skip-attempted-toggle');
+        const doubleEl = document.getElementById('double-submit-toggle');
+        const feedback = document.getElementById('auto-setup-feedback')?.textContent || '';
+        const countTxt = document.getElementById('url-count-display')?.textContent || '';
+        return {
+          skipChecked: skipEl ? skipEl.checked : null,
+          doubleChecked: doubleEl ? doubleEl.checked : null,
+          feedback,
+          countTxt
+        };
+      })()`);
+
+      const afterSetupSw = await evalSw(`(async () => {
+        const st = await chrome.storage.local.get(['xpider_skip_attempted', 'xpider_double_submit', 'xpider_owner_backup_snapshot', 'xpider_queue', 'xpider_active_campaign_run_id']);
+        const hs = self.__xpiderHistoryStore;
+        await hs.load();
+        const stats = hs.getLedgerStats('currentRun', st.xpider_active_campaign_run_id);
+        return {
+          skipStorage: st.xpider_skip_attempted,
+          doubleStorage: st.xpider_double_submit,
+          hasSnapshot: !!st.xpider_owner_backup_snapshot,
+          snapshotQueueLen: st.xpider_owner_backup_snapshot ? st.xpider_owner_backup_snapshot.queue.length : 0,
+          snapshotSkipSetting: st.xpider_owner_backup_snapshot ? st.xpider_owner_backup_snapshot.settings.xpider_skip_attempted : null,
+          queueLen: st.xpider_queue.length,
+          runId: st.xpider_active_campaign_run_id,
+          ledgerTotalImportRows: stats.totalImportRows,
+          ledgerPending: stats.pending
+        };
+      })()`);
+
+      log(`   ✅ After Auto Setup verification:`);
+      log(`      - Live DOM Checkbox: skipAttempted=${afterSetupState.skipChecked} (expected false), doubleSubmit=${afterSetupState.doubleChecked} (expected false)`);
+      log(`      - Storage: skipAttempted=${afterSetupSw.skipStorage} (expected false), doubleSubmit=${afterSetupSw.doubleStorage} (expected false)`);
+      log(`      - Snapshot: preserved ${afterSetupSw.snapshotQueueLen} public URLs, preserved original skip=${afterSetupSw.snapshotSkipSetting}`);
+      log(`      - Armed Queue: ${afterSetupSw.queueLen} local fixtures`);
+      log(`      - Isolated Test Ledger: Total Import Rows=${afterSetupSw.ledgerTotalImportRows} (expected 7, NOT 150!), Pending=${afterSetupSw.ledgerPending}`);
+
+      assert.strictEqual(afterSetupState.skipChecked, false, 'Auto Setup must uncheck #skip-attempted-toggle in live DOM');
+      assert.strictEqual(afterSetupSw.skipStorage, false, 'Auto Setup must set xpider_skip_attempted=false in storage');
+      assert.strictEqual(afterSetupSw.hasSnapshot, true, 'Snapshot must be preserved');
+      assert.strictEqual(afterSetupSw.snapshotQueueLen, 100, 'Snapshot must preserve 100 public URLs');
+      assert.strictEqual(afterSetupSw.snapshotSkipSetting, true, 'Snapshot must preserve original skip_attempted=true');
+      assert.strictEqual(afterSetupSw.queueLen, 7, 'Queue must have 7 local fixtures');
+      assert.strictEqual(afterSetupSw.ledgerTotalImportRows, 7, 'Test run ledger must show exactly 7 Total Import Rows');
+      assert.strictEqual(afterSetupSw.ledgerPending, 7, 'Test run ledger must show 7 Pending rows');
+
+      // Set fast speeds for deterministic Edge execution
       await evalPopup(`(() => {
         const sC = document.getElementById('delay-input-collect');
         if (sC) { sC.value = '9'; sC.dispatchEvent(new Event('change')); }
@@ -980,53 +1112,148 @@ async function runEdgeSafetySuite() {
         if (sS) { sS.value = '9'; sS.dispatchEvent(new Event('change')); }
       })()`);
 
-      log('🚀 Clicking #run-function-test-btn for 7-target campaign...');
-      await evalPopup('(() => { const b = document.getElementById("run-function-test-btn"); if (b && b.style.display !== "none") b.click(); else document.getElementById("start-btn")?.click(); })()');
+      // Step 3: Run Function Test (1st Execution)
+      log('\n   3. 🚀 Clicking #run-function-test-btn (1st Run on Dirty State)...');
+      await evalPopup('(() => { document.getElementById("run-function-test-btn")?.click(); })()');
 
-      // Observe campaign execution until queue reaches 0
-      let campaignFinished = false;
-      const startTime = Date.now();
-      const MAX_WAIT_MS = 240000;
-
-      while (Date.now() - startTime < MAX_WAIT_MS) {
+      // Wait for 1st execution to finish
+      let firstRunFinished = false;
+      const startFirst = Date.now();
+      while (Date.now() - startFirst < 180000) {
         await sleep(1000);
         const state = await evalPopup(`(() => {
           const succ = document.getElementById('success-count-display')?.textContent || '0';
           const fail = document.getElementById('failed-count-display')?.textContent || '0';
           const skip = document.getElementById('skipped-count-display')?.textContent || '0';
           const prog = document.getElementById('progress-text')?.textContent || '0%';
-          const remEl = document.getElementById('remaining-count-display');
-          const rem = remEl ? parseInt(remEl.textContent) : 0;
+          const rem = parseInt(document.getElementById('remaining-count-display')?.textContent || '0');
           const statusTitle = document.getElementById('status-title')?.textContent || '';
-          return { succ, fail, skip, prog, rem, statusTitle };
+          const feedback = document.getElementById('auto-setup-feedback')?.textContent || '';
+          return { succ, fail, skip, prog, rem, statusTitle, feedback };
         })()`);
-
-        log(`   Progress: ${state.prog} | SUCCESS: ${state.succ} | SKIPPED: ${state.skip} | FAILURE: ${state.fail} | Remaining: ${state.rem}`);
-
         const totalCompleted = parseInt(state.succ) + parseInt(state.fail) + parseInt(state.skip);
-        if (totalCompleted >= 7 || state.statusTitle.includes('Finished') || (state.prog === '100%' && totalCompleted > 0)) {
-          campaignFinished = true;
+        log(`      [1st Run] Progress: ${state.prog} | SUCCESS: ${state.succ} | SKIPPED: ${state.skip} | FAILURE: ${state.fail} | Completed: ${totalCompleted}/7 | Status: ${state.statusTitle}`);
+        if (totalCompleted >= 7 && (state.statusTitle.includes('Finished') || state.feedback.includes('PASS'))) {
+          firstRunFinished = true;
           break;
         }
       }
-
-      assert(campaignFinished, 'Campaign must finish within timeout');
+      assert(firstRunFinished, '1st run must finish within timeout');
       await sleep(2000);
 
-      const finalState = await evalPopup(`(() => {
+      const firstOutcomes = await evalPopup(`(() => {
         const succ = document.getElementById('success-count-display')?.textContent || '0';
         const fail = document.getElementById('failed-count-display')?.textContent || '0';
         const skip = document.getElementById('skipped-count-display')?.textContent || '0';
-        return { succ, fail, skip };
+        const feedback = document.getElementById('auto-setup-feedback')?.textContent || '';
+        return { succ, fail, skip, feedback };
       })()`);
 
-      log(`\n🏆 Final Campaign Counters: SUCCESS=${finalState.succ}, SKIPPED=${finalState.skip}, FAILURE=${finalState.fail}`);
-      assert.strictEqual(finalState.succ, '4', 'Must have 4 successful targets');
-      assert.strictEqual(finalState.skip, '2', 'Must have 2 skipped targets');
-      assert.strictEqual(finalState.fail, '1', 'Must have 1 failed target');
+      log(`   🏆 1st Run Outcomes: SUCCESS=${firstOutcomes.succ}, SKIPPED=${firstOutcomes.skip}, FAILURE=${firstOutcomes.fail}`);
+      log(`   Verdict Feedback: ${firstOutcomes.feedback}`);
+      assert.strictEqual(firstOutcomes.succ, '4', '1st Run must produce 4 SUCCESS');
+      assert.strictEqual(firstOutcomes.skip, '2', '1st Run must produce 2 SKIPPED');
+      assert.strictEqual(firstOutcomes.fail, '1', '1st Run must produce 1 FAILURE');
+      assert(firstOutcomes.feedback.includes('PASS (100% EXPECTED OUTCOME)'), '1st Run verdict must be PASS (100% EXPECTED OUTCOME)');
+
+      // Step 4: Click RUN FUNCTION TEST a SECOND time WITHOUT ANY MANUAL RESET (Directive D & Mandatory Edge Regression Step 11)
+      log('\n   4. 🚀 Clicking #run-function-test-btn a SECOND time (Idempotency Proof without manual reset)...');
+      await evalPopup('(() => { document.getElementById("run-function-test-btn")?.click(); })()');
+
+      let secondRunFinished = false;
+      const startSecond = Date.now();
+      while (Date.now() - startSecond < 180000) {
+        await sleep(1000);
+        const state = await evalPopup(`(() => {
+          const succ = document.getElementById('success-count-display')?.textContent || '0';
+          const fail = document.getElementById('failed-count-display')?.textContent || '0';
+          const skip = document.getElementById('skipped-count-display')?.textContent || '0';
+          const prog = document.getElementById('progress-text')?.textContent || '0%';
+          const rem = parseInt(document.getElementById('remaining-count-display')?.textContent || '0');
+          const statusTitle = document.getElementById('status-title')?.textContent || '';
+          const feedback = document.getElementById('auto-setup-feedback')?.textContent || '';
+          return { succ, fail, skip, prog, rem, statusTitle, feedback };
+        })()`);
+        const totalCompleted = parseInt(state.succ) + parseInt(state.fail) + parseInt(state.skip);
+        log(`      [2nd Run] Progress: ${state.prog} | SUCCESS: ${state.succ} | SKIPPED: ${state.skip} | FAILURE: ${state.fail} | Completed: ${totalCompleted}/7 | Status: ${state.statusTitle}`);
+        if (totalCompleted >= 7 && (state.statusTitle.includes('Finished') || state.feedback.includes('PASS'))) {
+          secondRunFinished = true;
+          break;
+        }
+      }
+      assert(secondRunFinished, '2nd run must finish within timeout');
+      await sleep(2000);
+
+      const secondOutcomes = await evalPopup(`(() => {
+        const succ = document.getElementById('success-count-display')?.textContent || '0';
+        const fail = document.getElementById('failed-count-display')?.textContent || '0';
+        const skip = document.getElementById('skipped-count-display')?.textContent || '0';
+        const feedback = document.getElementById('auto-setup-feedback')?.textContent || '';
+        return { succ, fail, skip, feedback };
+      })()`);
+
+      log(`   🏆 2nd Run Outcomes: SUCCESS=${secondOutcomes.succ}, SKIPPED=${secondOutcomes.skip}, FAILURE=${secondOutcomes.fail}`);
+      log(`   Verdict Feedback: ${secondOutcomes.feedback}`);
+      assert.strictEqual(secondOutcomes.succ, '4', '2nd Run must also produce 4 SUCCESS');
+      assert.strictEqual(secondOutcomes.skip, '2', '2nd Run must also produce 2 SKIPPED');
+      assert.strictEqual(secondOutcomes.fail, '1', '2nd Run must also produce 1 FAILURE');
+      assert(secondOutcomes.feedback.includes('PASS (100% EXPECTED OUTCOME)'), '2nd Run verdict must be PASS (100% EXPECTED OUTCOME)');
+
+      // Step 5: Restore previous settings/list
+      log('\n   5. ↩ Clicking #restore-user-settings-btn to restore original settings and 100 public URLs...');
+      await evalPopup('(() => { document.getElementById("restore-user-settings-btn")?.click(); })()');
+      await sleep(1000);
+
+      const restoredState = await evalPopup(`(() => {
+        const countTxt = document.getElementById('url-count-display')?.textContent || '';
+        const skipEl = document.getElementById('skip-attempted-toggle');
+        const doubleEl = document.getElementById('double-submit-toggle');
+        const oftEl = document.getElementById('owner-function-test-toggle');
+        const feedback = document.getElementById('auto-setup-feedback')?.textContent || '';
+        return {
+          countTxt,
+          skipChecked: skipEl ? skipEl.checked : null,
+          doubleChecked: doubleEl ? doubleEl.checked : null,
+          oftChecked: oftEl ? oftEl.checked : null,
+          feedback
+        };
+      })()`);
+
+      const restoredSw = await evalSw(`(async () => {
+        const st = await chrome.storage.local.get(['xpider_queue', 'xpider_skip_attempted', 'xpider_double_submit', 'xpider_owner_function_test_mode', 'xpider_owner_backup_snapshot']);
+        const hs = self.__xpiderHistoryStore;
+        await hs.load();
+        const dnrRules = await chrome.declarativeNetRequest.getSessionRules();
+        return {
+          queueLen: st.xpider_queue.length,
+          skipStorage: st.xpider_skip_attempted,
+          doubleStorage: st.xpider_double_submit,
+          oftStorage: st.xpider_owner_function_test_mode,
+          hasSnapshot: !!st.xpider_owner_backup_snapshot,
+          dnrRuleCount: dnrRules.length,
+          historicalPublicRows: hs.importRows.filter(r => r.rawInputUrl && r.rawInputUrl.includes('historical-client')).length
+        };
+      })()`);
+
+      log(`   ✅ Restore verification:`);
+      log(`      - Queue Restored: ${restoredSw.queueLen} URLs (expected 100)`);
+      log(`      - Skip Previously Attempted Restored: DOM=${restoredState.skipChecked}, Storage=${restoredSw.skipStorage} (expected true)`);
+      log(`      - Double Submit Restored: DOM=${restoredState.doubleChecked}, Storage=${restoredSw.doubleStorage} (expected true)`);
+      log(`      - Owner Functional Test Mode: DOM=${restoredState.oftChecked}, Storage=${restoredSw.oftStorage} (expected false)`);
+      log(`      - DNR Guard Rules Count: ${restoredSw.dnrRuleCount} (expected 0)`);
+      log(`      - Historical Public Rows Preserved: ${restoredSw.historicalPublicRows} (expected 120)`);
+      log(`      - Snapshot removed: ${!restoredSw.hasSnapshot}`);
+
+      assert.strictEqual(restoredSw.queueLen, 100, 'Restore must recover exact 100 public URLs');
+      assert.strictEqual(restoredState.skipChecked, true, 'Restore must restore #skip-attempted-toggle.checked = true in live DOM');
+      assert.strictEqual(restoredSw.skipStorage, true, 'Restore must restore xpider_skip_attempted = true in storage');
+      assert.strictEqual(restoredSw.oftStorage, false, 'Restore must disable test mode');
+      assert.strictEqual(restoredSw.dnrRuleCount, 0, 'Restore must remove DNR rules cleanly');
+      assert.strictEqual(restoredSw.historicalPublicRows, 120, 'Restore must preserve 120 historical public rows');
+      assert.strictEqual(restoredSw.hasSnapshot, false, 'Snapshot must be removed after restore');
 
       await captureScreenshot(popupWs, '07_safety_positive_campaign_finished.png');
-      log('✅ Positive Path Passed: Full 7-target local campaign executed autonomously with 100% expected outcome!');
+      log('✅ Mandatory Real Edge Regression Passed: Dirty profile handled idempotently across 1st and 2nd runs (4/2/1), with 100% accurate public restore!');
     }
 
     log('\n========================================================================');
