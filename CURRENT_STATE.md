@@ -12,7 +12,7 @@
 - Current Release Tag: `v6.9g.10.3-audit.7.1.4.6`
 
 ## Current Gate
-- Formal Gate: R6.9G.10.3.7.1.4.6 MESSAGE FIELD PRECEDENCE & CONTROLLED CAPTCHA LAB COMPLETE.
+- Formal Gate: R6.9G.10.3.7.1.4.7 MESSAGE FIELD PRECEDENCE & CONTROLLED CAPTCHA LAB COMPLETE.
 - Engineering Acceptance Status: **PASS (100% PRESERVED & ENHANCED)**.
 - Pre-Hardware Real Software Acceptance: **AVAILABLE-SCOPE SOFTWARE PASS (#6134283065)**.
 - **Defect 1: Message Field Phone Misclassification (P0 Remediation)**:
@@ -39,5 +39,5 @@
 ## Lineage & Remote Git SHAs
 - `ROLLBACK_ANCHOR`: `dc0740a0c69e2f7fa96b6989841acf0831b3619e` (immutable baseline anchor)
 - Previous Head: `2fcebcfc`
-- Diagnostic Package: `XPIDER_R6.9G.10.3.7.1.4.6_OWNER_DIAGNOSTIC_TEST_ONLY.zip`
+- Diagnostic Package: `XPIDER_R6.9G.10.3.7.1.4.7_OWNER_DIAGNOSTIC_TEST_ONLY.zip`
 - Package SHA-256: `427f11ba612456693fa88f55ed8b5a1d4ff0c38f863aa991260effad5bd36271`
