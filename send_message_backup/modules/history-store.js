@@ -309,12 +309,17 @@
                 'http://127.0.0.1:8088/index.html'
             ];
 
-            const fixtureIdentities = new Set(fixtureList.map(f => this.normalizeTargetIdentity(f) || f));
+            const fixtureIdentities = new Set();
+            for (const f of fixtureList) {
+                fixtureIdentities.add(f);
+                const norm = this.normalizeTargetIdentity(f);
+                if (norm) fixtureIdentities.add(norm);
+            }
 
             // 1. Unsuppress approved loopback test fixtures
             for (const fixUrl of fixtureList) {
                 const norm = this.normalizeTargetIdentity(fixUrl) || fixUrl;
-                const target = this.targets.get(norm);
+                const target = this.targets.get(norm) || this.targets.get(fixUrl);
                 if (target) {
                     target.isSuppressed = false;
                     target.suppressionReason = null;
@@ -336,7 +341,7 @@
                 if (r.importId && r.importId.startsWith('owner_test_')) return false;
                 if (r.campaignRunId && r.campaignRunId.startsWith('owner_test_')) return false;
                 const rNorm = this.normalizeTargetIdentity(r.targetIdentity || r.rawInputUrl) || r.rawInputUrl;
-                if (fixtureIdentities.has(rNorm)) return false;
+                if (fixtureIdentities.has(rNorm) || fixtureIdentities.has(r.rawInputUrl)) return false;
                 return true;
             });
 
@@ -345,9 +350,27 @@
             await this.ingestImportRows(fixtureList, ownerTestRunId, sourceRowNumbers, fixtureList);
 
             await this.persist();
+
+            // 5. Invariant check: ensure zero suppression / prior attempt intersection
+            let staleCount = 0;
+            const staleIdentities = [];
+            for (const fixUrl of fixtureList) {
+                const norm = this.normalizeTargetIdentity(fixUrl) || fixUrl;
+                const isSupp = this.isSuppressed(norm);
+                const hasPrior = this.hasPriorAttempt(norm);
+                if (isSupp || hasPrior) {
+                    staleCount++;
+                    staleIdentities.push(norm);
+                }
+            }
+
             return {
                 campaignRunId: ownerTestRunId,
-                fixturesCount: fixtureList.length
+                fixturesCount: fixtureList.length,
+                requestedCount: fixtureList.length,
+                executableCount: fixtureList.length - staleCount,
+                staleCount,
+                staleIdentities
             };
         }
 

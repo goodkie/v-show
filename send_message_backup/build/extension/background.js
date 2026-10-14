@@ -2310,14 +2310,14 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                 ? BuildProvenance.BUILD_INFO
                 : {
                     branch: 'upgrade/phase-0-1',
-                    implementationHead: '48c23c7f8b0e81099d45aeb584e65d8713db7b37',
-                    implementationHeadShort: '48c23c7',
-                    head: '48c23c7f8b0e81099d45aeb584e65d8713db7b37',
-                    headShort: '48c23c7',
-                    rollbackBase: 'b8e1d0362946cd6ca8c77c1aa990998da62c2c91',
+                    implementationHead: '55dc6d69a25b4ea27283d3b40ba1c5fea730914b',
+                    implementationHeadShort: '55dc6d69',
+                    head: '55dc6d69a25b4ea27283d3b40ba1c5fea730914b',
+                    headShort: '55dc6d69',
+                    rollbackBase: 'dc0740a0c69e2f7fa96b6989841acf0831b3619e',
                     manifestVersion: 3,
-                    buildId: 'R6.9F.1-20261005-RUNTIME-SUBMIT-COUNTERS',
-                    builtAt: '2026-10-05T14:30:00.000Z',
+                    buildId: 'R6.9G.10.3.7.1.4.7-20261014-START-CONTROL-PLANE-RECOVERY',
+                    builtAt: '2026-10-14T15:45:00.000Z',
                     provenanceSchema: 2,
                     modules: {}
                 };
@@ -2417,14 +2417,100 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                             'http://127.0.0.1:8088/index.html'
                         ];
 
+                    const fixtureNorms = new Set();
+                    for (const f of fixtures) {
+                        fixtureNorms.add(f);
+                        const n = normalizeUrl(f);
+                        if (n) fixtureNorms.add(n);
+                        if (hs && typeof hs.normalizeTargetIdentity === 'function') {
+                            const hn = hs.normalizeTargetIdentity(f);
+                            if (hn) fixtureNorms.add(hn);
+                        }
+                    }
+
                     const res = await hs.prepareOwnerTestRun(fixtures);
                     campaignState.campaignRunId = res.campaignRunId;
+
+                    // 1. Atomically clear in-memory campaign visited/successful/queue state for all fixtures
+                    campaignState.visitedUrls = [];
+                    campaignState.successfulUrls = [];
+                    campaignState.queue = [];
+
+                    // 2. Clear transient execution flags and stale paused checkpoints
+                    campaignState.isActive = false;
+                    campaignState.isPaused = false;
+                    campaignState.isLoopRunning = false;
+                    campaignState.pausedCheckpoint = null;
+                    campaignState.currentTargetAbortController = null;
+
+                    // 3. Atomically filter storage visited state strictly for loopback fixtures (preserve Owner public history!)
+                    const storageData = await new Promise(r => chrome.storage.local.get([
+                        'xpider_visited', 'xpider_visited_urls', 'xpider_paused_checkpoint'
+                    ], r));
+
+                    let cleanedVisited = Array.isArray(storageData.xpider_visited)
+                        ? storageData.xpider_visited.filter(u => !fixtureNorms.has(u) && !fixtureNorms.has(normalizeUrl(u)))
+                        : [];
+
+                    let cleanedVisitedUrls = storageData.xpider_visited_urls;
+                    if (Array.isArray(cleanedVisitedUrls)) {
+                        cleanedVisitedUrls = cleanedVisitedUrls.filter(u => !fixtureNorms.has(u) && !fixtureNorms.has(normalizeUrl(u)));
+                    } else if (cleanedVisitedUrls && typeof cleanedVisitedUrls === 'object') {
+                        cleanedVisitedUrls = { ...cleanedVisitedUrls };
+                        for (const k of Object.keys(cleanedVisitedUrls)) {
+                            if (fixtureNorms.has(k) || fixtureNorms.has(normalizeUrl(k))) {
+                                delete cleanedVisitedUrls[k];
+                            }
+                        }
+                    }
+
                     await chrome.storage.local.set({
+                        xpider_visited: cleanedVisited,
+                        xpider_visited_urls: cleanedVisitedUrls,
+                        xpider_paused_checkpoint: null,
+                        xpider_isActive: false,
+                        xpider_isPaused: false,
+                        xpider_queue: [],
+                        xpider_currentAttempt: null,
                         xpider_active_campaign_run_id: res.campaignRunId,
                         xpider_history_scope_preference: 'currentRun'
                     });
 
-                    sendResponse({ success: true, ...res });
+                    // 4. Strict Precondition Invariant Check
+                    const staleItems = [];
+                    for (const f of fixtures) {
+                        const norm = normalizeUrl(f);
+                        const hsNorm = (hs && typeof hs.normalizeTargetIdentity === 'function') ? hs.normalizeTargetIdentity(f) : norm;
+                        const isHsSuppressed = (hs && typeof hs.isSuppressed === 'function') ? (hs.isSuppressed(norm) || hs.isSuppressed(hsNorm)) : false;
+                        const inVisited = campaignState.visitedUrls.includes(norm) || campaignState.visitedUrls.includes(f) || campaignState.visitedUrls.includes(hsNorm);
+                        if (isHsSuppressed || inVisited) {
+                            staleItems.push(norm);
+                        }
+                    }
+
+                    if (staleItems.length > 0 || res.staleCount > 0) {
+                        const totalStale = Math.max(staleItems.length, res.staleCount || 0);
+                        console.error(`[OWNER_TEST_PRECONDITION_STALE_SUPPRESSION] requested=${fixtures.length} stale=${totalStale}`);
+                        logBg(null, `🛑 [OWNER_TEST_PRECONDITION_STALE_SUPPRESSION] requested=${fixtures.length} stale=${totalStale}`, 'error');
+                        sendResponse({
+                            success: false,
+                            error: 'OWNER_TEST_PRECONDITION_STALE_SUPPRESSION',
+                            requestedCount: fixtures.length,
+                            executableCount: fixtures.length - totalStale,
+                            staleCount: totalStale,
+                            staleItems
+                        });
+                        return;
+                    }
+
+                    logBg(null, `✨ [OWNER_TEST_PREP] Fresh test scope ready: requested=${fixtures.length} executable=${fixtures.length} stale=0 runId=${res.campaignRunId}`, 'info');
+                    sendResponse({
+                        success: true,
+                        ...res,
+                        requestedCount: fixtures.length,
+                        executableCount: fixtures.length,
+                        staleCount: 0
+                    });
                 } catch (err) {
                     console.error('[PREPARE_OWNER_FUNCTIONAL_TEST_RUN_FAIL]', err);
                     sendResponse({ success: false, error: err.message });
@@ -2466,10 +2552,10 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
         }
 
         case 'START_CAMPAIGN': {
-            // [Issue #6 R6.9F] Fail-Closed Build Handshake Verification
+            // [Issue #6 R6.9F & R6.9G.10.3.7.1.4.7] Fail-Closed Build Handshake Verification
             const liveBp = (typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO) ? BuildProvenance.BUILD_INFO : null;
-            const liveHead = liveBp ? liveBp.implementationHead : '48c23c7f8b0e81099d45aeb584e65d8713db7b37';
-            const liveBuild = liveBp ? liveBp.buildId : 'R6.9F.1-20261005-RUNTIME-SUBMIT-COUNTERS';
+            const liveHead = liveBp ? (liveBp.implementationHead || liveBp.head) : '55dc6d69a25b4ea27283d3b40ba1c5fea730914b';
+            const liveBuild = liveBp ? liveBp.buildId : 'R6.9G.10.3.7.1.4.7-20261014-START-CONTROL-PLANE-RECOVERY';
             const reqHead = request.expectedImplementationHead;
             const reqBuild = request.expectedBuildId;
             const reqManifest = request.expectedManifestVersion;
@@ -4478,7 +4564,7 @@ async function startCampaignOrchestrator(queue, template, delayMs, fillDelayMs =
             self.BuildProvenance.isTestOnlyBuild();
 
         const isOwnerTestMode = !!options.ownerFunctionTestMode;
-        const allLoopback = Array.isArray(queue) && queue.length > 0 && queue.length <= 10 && queue.every(url => {
+        const allLoopback = Array.isArray(queue) && queue.length > 0 && queue.length <= 30 && queue.every(url => {
             try {
                 const u = new URL(url);
                 return (u.hostname === '127.0.0.1' || u.hostname === 'localhost') && (u.port === '8088' || u.port === '9262');
@@ -4488,6 +4574,7 @@ async function startCampaignOrchestrator(queue, template, delayMs, fillDelayMs =
         });
 
         // [Directive B & C Authoritative Owner Test Override]
+        // In Owner Test Mode on test-only builds with loopback fixtures, always bypass prior attempts!
         const allowOwnerTestBypass = isTestOnlyBuild && isOwnerTestMode && allLoopback && Boolean(options.overrideSkipAttempted);
 
         const shouldSkipAttempted = allowOwnerTestBypass ? false : ((options.skipPreviouslyAttempted !== false) && (!options.overrideSkipAttempted));
@@ -4809,7 +4896,8 @@ async function resumeCampaignOrchestrator() {
 
     // Restore exact snapshot without full queue reload!
     campaignState.queue = [...checkpoint.remainingQueue];
-    campaignState.visitedUrls = [...(checkpoint.visitedUrls || [])];
+    const requeuedNorms = new Set(campaignState.queue.map(u => normalizeUrl(typeof u === 'string' ? u : (u?.url || ''))));
+    campaignState.visitedUrls = [...(checkpoint.visitedUrls || [])].filter(u => !requeuedNorms.has(normalizeUrl(u)));
     campaignState.successfulUrls = [...(checkpoint.successfulUrls || [])];
     campaignState.successCount = checkpoint.successCount || 0;
     campaignState.totalTargets = checkpoint.totalTargets || campaignState.queue.length;

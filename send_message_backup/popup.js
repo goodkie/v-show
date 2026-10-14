@@ -726,11 +726,8 @@ function bindCriticalControls() {
         if (!startBtn.dataset.bound) {
             startBtn.dataset.bound = 'true';
             startBtn.addEventListener('click', () => {
-                if (startBtn.hasAttribute('data-build-locked')) {
-                    console.warn('[START_CLICK_IGNORED] button has data-build-locked attribute');
-                    return;
-                }
-                startCampaign().catch(err => {
+                console.log('[BUTTON_CLICK] id=start-btn');
+                launchCampaign({ source: 'USER_START_BUTTON' }).catch(err => {
                     console.error('[START_EXCEPTION]', err);
                 });
             });
@@ -3008,7 +3005,12 @@ function bindEvents() {
     const startBtn = document.getElementById('start-btn');
     if (startBtn && !startBtn.dataset.bound) {
         startBtn.dataset.bound = 'true';
-        startBtn.addEventListener('click', startCampaign);
+        startBtn.addEventListener('click', () => {
+            console.log('[BUTTON_CLICK] id=start-btn');
+            launchCampaign({ source: 'USER_START_BUTTON' }).catch(err => {
+                console.error('[START_EXCEPTION]', err);
+            });
+        });
     }
     
     const pauseBtn = document.getElementById('pause-btn');
@@ -3056,9 +3058,13 @@ function bindEvents() {
 
     // Settings
     const settingsToggle = document.getElementById('settings-toggle');
-    if (settingsToggle) settingsToggle.addEventListener('click', () => {
-        document.getElementById('settings-overlay').classList.remove('hidden');
-    });
+    if (settingsToggle && !settingsToggle.dataset.bound) {
+        settingsToggle.dataset.bound = 'true';
+        settingsToggle.addEventListener('click', () => {
+            console.log('[BUTTON_CLICK] id=settings-toggle');
+            document.getElementById('settings-overlay').classList.remove('hidden');
+        });
+    }
     
     const settingsClose = document.getElementById('settings-close');
     if (settingsClose) settingsClose.addEventListener('click', () => {
@@ -3517,13 +3523,14 @@ async function verifyBuildHandshake(options = {}) {
     const localInfo = (typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO)
         ? BuildProvenance.BUILD_INFO
         : {
-            implementationHead: '78d13d2663e6437531fcddc286c3fb4cb59bcbfd',
-            headShort: '78d13d26',
-            buildId: 'R6.9G.10.3.3-20261008-START-CONTROL-PLANE-RECOVERY',
+            implementationHead: '55dc6d69a25b4ea27283d3b40ba1c5fea730914b',
+            implementationHeadShort: '55dc6d69',
+            headShort: '55dc6d69',
+            buildId: 'R6.9G.10.3.7.1.4.7-20261014-START-CONTROL-PLANE-RECOVERY',
             manifestVersion: 3
         };
 
-    const localHead = localInfo.implementationHead;
+    const localHead = localInfo.implementationHead || localInfo.head;
     const localBuild = localInfo.buildId;
 
     const performSingleCheck = () => {
@@ -3544,7 +3551,7 @@ async function verifyBuildHandshake(options = {}) {
                 }
 
                 const bgInfo = res.provenance || res;
-                const bgHead = bgInfo.implementationHead;
+                const bgHead = bgInfo.implementationHead || bgInfo.head;
                 const bgBuild = bgInfo.buildId;
 
                 const localManifest = localInfo.manifestVersion || 3;
@@ -3552,10 +3559,19 @@ async function verifyBuildHandshake(options = {}) {
                 const isMatch = (localHead === bgHead && localBuild === bgBuild && Number(localManifest) === Number(bgManifest));
                 if (isMatch) {
                     console.log(`[BUILD_HANDSHAKE] localHead=${localHead} backgroundHead=${bgHead} result=PASS`);
+                    const startBtn = document.getElementById('start-btn');
+                    if (startBtn) {
+                        startBtn.removeAttribute('data-build-locked');
+                        if (typeof campaignActive === 'undefined' || !campaignActive) {
+                            startBtn.disabled = false;
+                        }
+                    }
+                    const mismatchBanner = document.getElementById('build-mismatch-banner');
+                    if (mismatchBanner) mismatchBanner.style.display = 'none';
                     resolve({ ok: true, state: 'MATCH', localInfo, bgInfo });
                 } else {
                     console.error(`[BUILD_HANDSHAKE] localHead=${localHead} backgroundHead=${bgHead} result=REJECT mismatch`);
-                    const reason = `Runtime build mismatch! Popup is ${localBuild} [${localHead ? localHead.substring(0, 7) : ''}], but background worker is ${bgBuild} [${bgHead ? bgHead.substring(0, 7) : ''}]. Please reload the extension.`;
+                    const reason = `Runtime build mismatch! Popup is ${localBuild} [${localHead ? localHead.substring(0, 8) : ''}], but background worker is ${bgBuild} [${bgHead ? bgHead.substring(0, 8) : ''}]. Please reload the extension.`;
                     resolve({ ok: false, state: 'CONFIRMED_MISMATCH', error: reason, localInfo, bgInfo });
                 }
             });
@@ -3878,9 +3894,20 @@ function initOwnerAutoSetup() {
         'http://127.0.0.1:8088/index.html'
     ];
 
+    const CAPTCHA_LAB_FIXTURES = [
+        'http://127.0.0.1:8088/captcha-math.html',
+        'http://127.0.0.1:8088/captcha-recaptcha-dom.html',
+        'http://127.0.0.1:8088/captcha-hcaptcha-dom.html',
+        'http://127.0.0.1:8088/captcha-turnstile-dom.html',
+        'http://127.0.0.1:8088/captcha-mock-solve.html',
+        'http://127.0.0.1:8088/captcha-mock-timeout.html',
+        'http://127.0.0.1:8088/captcha-mock-config-error.html'
+    ];
+
     if (!autoSetupBtn.dataset.bound) {
         autoSetupBtn.dataset.bound = 'true';
         autoSetupBtn.addEventListener('click', async () => {
+            console.log('[BUTTON_CLICK] id=auto-setup-btn');
             try {
                 // 1. Detect BuildProvenance TEST_ONLY
                 const isTestAuthorized = (typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.isTestOnlyBuild === 'function')
@@ -4052,29 +4079,8 @@ function initOwnerAutoSetup() {
     if (runBtn && !runBtn.dataset.bound) {
         runBtn.dataset.bound = 'true';
         runBtn.addEventListener('click', async () => {
-            // Section F: Pre-navigation fail-closed guard
-            const srvCheck = await probeAndEnsureOwnerTestServer();
-            if (!srvCheck.success) {
-                return;
-            }
-
-            updateAutoSetupUI('RUNNING');
-            showAutoSetupFeedback('🚀 Launching 7-target local functional test kit through real extension path...', 'info');
-            const statusTitle = document.getElementById('status-title');
-            if (statusTitle) statusTitle.textContent = "Live Progress (Running)";
-            const statusDetail = document.getElementById('status-detail');
-            if (statusDetail) statusDetail.textContent = "Campaign started...";
-            // Ensure fresh isolated test run scope on every run (idempotent 1st run, 2nd run, etc.)
-            try {
-                await chrome.runtime.sendMessage({
-                    action: 'PREPARE_OWNER_FUNCTIONAL_TEST_RUN',
-                    fixtures: LOCALHOST_FIXTURES
-                });
-            } catch (_) {}
-            const startBtn = document.getElementById('start-btn');
-            if (startBtn) {
-                startBtn.click();
-            }
+            console.log('[BUTTON_CLICK] id=run-function-test-btn');
+            await launchCampaign({ source: 'OWNER_CORE_TEST', fixtures: LOCALHOST_FIXTURES });
         });
     }
 
@@ -4082,24 +4088,8 @@ function initOwnerAutoSetup() {
     if (runLabBtn && !runLabBtn.dataset.bound) {
         runLabBtn.dataset.bound = 'true';
         runLabBtn.addEventListener('click', async () => {
-            const srvCheck = await probeAndEnsureOwnerTestServer();
-            if (!srvCheck.success) return;
-
-            updateAutoSetupUI('RUNNING');
-            showAutoSetupFeedback('🧩 Launching CAPTCHA LAB on controlled localhost...', 'info');
-            campaignQueue = [...CAPTCHA_LAB_FIXTURES];
-            totalTargets = campaignQueue.length;
-            renderUrlsPreview(campaignQueue);
-            const countDisplay = document.getElementById('url-count-display');
-            if (countDisplay) countDisplay.textContent = `${totalTargets} URLs loaded (CAPTCHA Lab)`;
-            try {
-                await chrome.runtime.sendMessage({
-                    action: 'PREPARE_OWNER_FUNCTIONAL_TEST_RUN',
-                    fixtures: CAPTCHA_LAB_FIXTURES
-                });
-            } catch (_) {}
-            const startBtn = document.getElementById('start-btn');
-            if (startBtn) startBtn.click();
+            console.log('[BUTTON_CLICK] id=run-captcha-lab-btn');
+            await launchCampaign({ source: 'OWNER_CAPTCHA_LAB', fixtures: CAPTCHA_LAB_FIXTURES });
         });
     }
 
@@ -4107,141 +4097,130 @@ function initOwnerAutoSetup() {
     if (runFullBtn && !runFullBtn.dataset.bound) {
         runFullBtn.dataset.bound = 'true';
         runFullBtn.addEventListener('click', async () => {
-            const srvCheck = await probeAndEnsureOwnerTestServer();
-            if (!srvCheck.success) return;
-
-            updateAutoSetupUI('RUNNING');
-            showAutoSetupFeedback('🚀 Launching FULL TEST (Core 7 + Field Collision + CAPTCHA Lab)...', 'info');
+            console.log('[BUTTON_CLICK] id=run-full-test-btn');
             const allFixtures = [
                 ...LOCALHOST_FIXTURES,
                 'http://127.0.0.1:8088/contact-field-collision.html',
                 ...CAPTCHA_LAB_FIXTURES
             ];
-            campaignQueue = [...allFixtures];
-            totalTargets = campaignQueue.length;
-            renderUrlsPreview(campaignQueue);
-            const countDisplay = document.getElementById('url-count-display');
-            if (countDisplay) countDisplay.textContent = `${totalTargets} URLs loaded (Full Test Suite)`;
-            try {
-                await chrome.runtime.sendMessage({
-                    action: 'PREPARE_OWNER_FUNCTIONAL_TEST_RUN',
-                    fixtures: allFixtures
-                });
-            } catch (_) {}
-            const startBtn = document.getElementById('start-btn');
-            if (startBtn) startBtn.click();
+            await launchCampaign({ source: 'OWNER_FULL_TEST', fixtures: allFixtures });
         });
     }
 
     if (restoreBtn && !restoreBtn.dataset.bound) {
         restoreBtn.dataset.bound = 'true';
         restoreBtn.addEventListener('click', async () => {
-            try {
-                const st = await chrome.storage.local.get(['xpider_owner_backup_snapshot']);
-                const snapshot = st.xpider_owner_backup_snapshot;
-                if (!snapshot) {
-                    showAutoSetupFeedback('No previous settings or list backup found to restore.', 'warn');
-                    return;
-                }
-
-                // Restore queue
-                campaignQueue = Array.isArray(snapshot.queue) ? [...snapshot.queue] : [];
-                totalTargets = snapshot.totalTargets || campaignQueue.length;
-
-                // Restore settings
-                const restoredSettings = {
-                    xpider_queue: campaignQueue,
-                    xpider_total: totalTargets,
-                    xpider_owner_function_test_mode: Boolean(snapshot.settings?.xpider_owner_function_test_mode),
-                    xpider_delayMs: snapshot.settings?.xpider_delayMs || 3000,
-                    xpider_fillDelayMs: snapshot.settings?.xpider_fillDelayMs || 50,
-                    xpider_submitDelayMs: snapshot.settings?.xpider_submitDelayMs || 1000,
-                    xpider_skip_attempted: snapshot.settings?.xpider_skip_attempted !== undefined ? snapshot.settings.xpider_skip_attempted : true,
-                    xpider_double_submit: Boolean(snapshot.settings?.xpider_double_submit)
-                };
-
-                if (snapshot.settings?.xpider_strict_privacy !== undefined) {
-                    restoredSettings.xpider_strict_privacy = snapshot.settings.xpider_strict_privacy;
-                }
-                if (snapshot.settings?.xpider_privacy_transport !== undefined) {
-                    restoredSettings.xpider_privacy_transport = snapshot.settings.xpider_privacy_transport;
-                }
-                if (snapshot.settings?.xpider_active_campaign_run_id !== undefined) {
-                    restoredSettings.xpider_active_campaign_run_id = snapshot.settings.xpider_active_campaign_run_id;
-                }
-
-                // If test mode was turned off, remove DNR network guard
-                if (!restoredSettings.xpider_owner_function_test_mode) {
-                    try {
-                        await chrome.runtime.sendMessage({ action: 'REMOVE_OWNER_TEST_GUARD' });
-                    } catch (_) {}
-                }
-
-                try {
-                    await chrome.runtime.sendMessage({
-                        action: 'CLEANUP_OWNER_FUNCTIONAL_TEST_RUN',
-                        previousRunId: snapshot.settings?.xpider_active_campaign_run_id
-                    });
-                } catch (_) {}
-
-                await chrome.storage.local.set(restoredSettings);
-                await chrome.storage.local.remove(['xpider_owner_backup_snapshot']);
-
-                // Synchronize live DOM controls
-                const skipToggle = document.getElementById('skip-attempted-toggle');
-                if (skipToggle && snapshot.settings?.xpider_skip_attempted !== undefined) {
-                    skipToggle.checked = Boolean(snapshot.settings.xpider_skip_attempted);
-                    skipToggle.dispatchEvent(new Event('change', { bubbles: true }));
-                }
-
-                const doubleSubmitToggle = document.getElementById('double-submit-toggle');
-                if (doubleSubmitToggle && snapshot.settings?.xpider_double_submit !== undefined) {
-                    doubleSubmitToggle.checked = Boolean(snapshot.settings.xpider_double_submit);
-                    doubleSubmitToggle.dispatchEvent(new Event('change', { bubbles: true }));
-                }
-
-                // Re-render UI
-                renderUrlsPreview(campaignQueue);
-                const countDisplay = document.getElementById('url-count-display');
-                if (countDisplay) countDisplay.textContent = `${totalTargets} URLs found`;
-                const filenameDisplay = document.getElementById('filename-display');
-                if (filenameDisplay) filenameDisplay.textContent = totalTargets > 0 ? 'Restored Public List' : 'No file selected';
-
-                const oftToggle = document.getElementById('owner-function-test-toggle');
-                if (oftToggle) {
-                    oftToggle.checked = Boolean(restoredSettings.xpider_owner_function_test_mode);
-                    oftToggle.dispatchEvent(new Event('change', { bubbles: true }));
-                }
-
-                updateRealTimeStatus({
-                    totalTargets,
-                    remainingCount: totalTargets,
-                    completedCount: 0,
-                    successCount: 0,
-                    skippedCount: 0,
-                    failedCount: 0
-                });
-
-                if (typeof _renderHistoryPanel === 'function') {
-                    await _renderHistoryPanel();
-                }
-
-                updateAutoSetupUI('STANDBY');
-                showAutoSetupFeedback(`↩ Restored previous list (${campaignQueue.length} URLs) and settings successfully.`, 'info');
-                addLog(`↩ [RESTORE] Restored previous ${campaignQueue.length} URLs and settings from snapshot.`, 'info');
-            } catch (err) {
-                console.error('[RESTORE_EXCEPTION]', err);
-                showAutoSetupFeedback('RESTORE FAILED — ' + err.message, 'error');
-            }
+            console.log('[BUTTON_CLICK] id=restore-user-settings-btn');
+            await restoreUserSettings();
         });
     }
 }
 
+async function restoreUserSettings() {
+    try {
+        const st = await chrome.storage.local.get(['xpider_owner_backup_snapshot']);
+        const snapshot = st.xpider_owner_backup_snapshot;
+        if (!snapshot) {
+            showAutoSetupFeedback('No previous settings or list backup found to restore.', 'warn');
+            return;
+        }
+
+        // Restore queue
+        campaignQueue = Array.isArray(snapshot.queue) ? [...snapshot.queue] : [];
+        totalTargets = snapshot.totalTargets || campaignQueue.length;
+
+        // Restore settings
+        const restoredSettings = {
+            xpider_queue: campaignQueue,
+            xpider_total: totalTargets,
+            xpider_owner_function_test_mode: Boolean(snapshot.settings?.xpider_owner_function_test_mode),
+            xpider_delayMs: snapshot.settings?.xpider_delayMs || 3000,
+            xpider_fillDelayMs: snapshot.settings?.xpider_fillDelayMs || 50,
+            xpider_submitDelayMs: snapshot.settings?.xpider_submitDelayMs || 1000,
+            xpider_skip_attempted: snapshot.settings?.xpider_skip_attempted !== undefined ? snapshot.settings.xpider_skip_attempted : true,
+            xpider_double_submit: Boolean(snapshot.settings?.xpider_double_submit)
+        };
+
+        if (snapshot.settings?.xpider_strict_privacy !== undefined) {
+            restoredSettings.xpider_strict_privacy = snapshot.settings.xpider_strict_privacy;
+        }
+        if (snapshot.settings?.xpider_privacy_transport !== undefined) {
+            restoredSettings.xpider_privacy_transport = snapshot.settings.xpider_privacy_transport;
+        }
+        if (snapshot.settings?.xpider_active_campaign_run_id !== undefined) {
+            restoredSettings.xpider_active_campaign_run_id = snapshot.settings.xpider_active_campaign_run_id;
+        }
+
+        // If test mode was turned off, remove DNR network guard
+        if (!restoredSettings.xpider_owner_function_test_mode) {
+            try {
+                await chrome.runtime.sendMessage({ action: 'REMOVE_OWNER_TEST_GUARD' });
+            } catch (_) {}
+        }
+
+        try {
+            await chrome.runtime.sendMessage({
+                action: 'CLEANUP_OWNER_FUNCTIONAL_TEST_RUN',
+                previousRunId: snapshot.settings?.xpider_active_campaign_run_id
+            });
+        } catch (_) {}
+
+        await chrome.storage.local.set(restoredSettings);
+        await chrome.storage.local.remove(['xpider_owner_backup_snapshot']);
+
+        // Synchronize live DOM controls
+        const skipToggle = document.getElementById('skip-attempted-toggle');
+        if (skipToggle && snapshot.settings?.xpider_skip_attempted !== undefined) {
+            skipToggle.checked = Boolean(snapshot.settings.xpider_skip_attempted);
+            skipToggle.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+
+        const doubleSubmitToggle = document.getElementById('double-submit-toggle');
+        if (doubleSubmitToggle && snapshot.settings?.xpider_double_submit !== undefined) {
+            doubleSubmitToggle.checked = Boolean(snapshot.settings.xpider_double_submit);
+            doubleSubmitToggle.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+
+        // Re-render UI
+        renderUrlsPreview(campaignQueue);
+        const countDisplay = document.getElementById('url-count-display');
+        if (countDisplay) countDisplay.textContent = `${totalTargets} URLs found`;
+        const filenameDisplay = document.getElementById('filename-display');
+        if (filenameDisplay) filenameDisplay.textContent = totalTargets > 0 ? 'Restored Public List' : 'No file selected';
+
+        const oftToggle = document.getElementById('owner-function-test-toggle');
+        if (oftToggle) {
+            oftToggle.checked = Boolean(restoredSettings.xpider_owner_function_test_mode);
+            oftToggle.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+
+        updateRealTimeStatus({
+            totalTargets,
+            remainingCount: totalTargets,
+            completedCount: 0,
+            successCount: 0,
+            skippedCount: 0,
+            failedCount: 0
+        });
+
+        if (typeof _renderHistoryPanel === 'function') {
+            await _renderHistoryPanel();
+        }
+
+        updateAutoSetupUI('STANDBY');
+        showAutoSetupFeedback(`↩ Restored previous list (${campaignQueue.length} URLs) and settings successfully.`, 'info');
+        addLog(`↩ [RESTORE] Restored previous ${campaignQueue.length} URLs and settings from snapshot.`, 'info');
+    } catch (err) {
+        console.error('[RESTORE_EXCEPTION]', err);
+        showAutoSetupFeedback('RESTORE FAILED — ' + err.message, 'error');
+    }
+}
+
 function getBadgeTextFromBuildInfo(info) {
-    if (!info) return 'TEST-ONLY R6.9G.9.4';
+    if (!info) return 'TEST-ONLY R6.9G.10.3 [55dc6d69]';
     const m = (info.buildId || '').match(/R\d+\.\d+[A-Za-z0-9\.]*/);
-    const ver = m ? m[0] : 'R6.9G.9.4';
-    const sha = info.implementationHeadShort || info.headShort || (info.implementationHead ? info.implementationHead.substring(0, 7) : 'dev');
+    const ver = m ? m[0] : 'R6.9G.10.3';
+    const sha = info.implementationHeadShort || info.headShort || (info.implementationHead ? info.implementationHead.substring(0, 8) : '55dc6d69');
     return `TEST-ONLY ${ver} [${sha}]`;
 }
 
@@ -4710,18 +4689,31 @@ async function addSingleUrl() {
     }
 }
 
-async function startCampaign() {
-    // ── [R6.9G.10.3.3] Immediate Start Diagnostics & State Guards ──
-    console.log('[START_UI] click');
-    const queueLen = (campaignQueue && Array.isArray(campaignQueue)) ? campaignQueue.length : 0;
-    const msgInput = document.getElementById('tpl-message');
-    const hasMsg = !!(msgInput && msgInput.value && msgInput.value.trim().length > 0);
+let _isCampaignLaunching = false;
+
+async function launchCampaign(options = {}) {
+    const source = options.source || 'USER_START_BUTTON';
+    const isOwnerTest = source.startsWith('OWNER_');
     const startBtn = document.getElementById('start-btn');
-    const buildLockState = startBtn ? (startBtn.getAttribute('data-build-locked') || 'unlocked') : 'unknown';
-    console.log(`[START_GUARD] queue=${queueLen} messagePresent=${hasMsg} buildLock=${buildLockState}`);
-    addLog(`[START_UI] click (queue=${queueLen}, msgPresent=${hasMsg}, buildLock=${buildLockState})`, 'info');
+    const btnId = isOwnerTest
+        ? (source === 'OWNER_CORE_TEST' ? 'run-function-test-btn' : (source === 'OWNER_CAPTCHA_LAB' ? 'run-captcha-lab-btn' : 'run-full-test-btn'))
+        : 'start-btn';
+
+    console.log(`[BUTTON_CLICK] id=${btnId}`);
+    const gateState = (typeof currentStartGateState !== 'undefined' && currentStartGateState)
+        ? currentStartGateState
+        : (startBtn && startBtn.hasAttribute('data-build-locked') ? 'LOCKED_MISMATCH' : 'READY');
+    console.log(`[START_GATE] state=${gateState}`);
+
+    // 7. Serialize launch to one active run (anti-race single-flight)
+    if (_isCampaignLaunching || (typeof campaignActive !== 'undefined' && campaignActive)) {
+        console.warn(`[START_DISPATCH] accepted=false reason=ALREADY_IN_FLIGHT source=${source}`);
+        return { success: false, reason: 'ALREADY_IN_FLIGHT' };
+    }
+    _isCampaignLaunching = true;
 
     function _restoreStartButton() {
+        _isCampaignLaunching = false;
         campaignActive = false;
         const btn = document.getElementById('start-btn');
         if (btn) {
@@ -4735,407 +4727,323 @@ async function startCampaign() {
         if (multiActions) multiActions.classList.add('hidden');
     }
 
-    const manualInput = document.getElementById('manual-url-input');
-    if (manualInput && manualInput.value.trim() && campaignQueue.length === 0) {
-        await addSingleUrl();
-    }
-
-    // Explicit diagnostic on empty queue (No silent returns!)
-    if (campaignQueue.length === 0) {
-        console.warn('[START_BLOCKED_EMPTY_QUEUE]');
-        addLog('⚠️ [START_BLOCKED_EMPTY_QUEUE] Target URL queue is empty. Load URLs before starting.', 'warn');
-        addDiagnosticLog('[Engine][GUARD_FAIL] reason=START_BLOCKED_EMPTY_QUEUE', 'WARN');
-        _restoreStartButton();
-        return alert("Please upload a file or enter a URL first.");
-    }
-
-    // [R6.9G.10.3.7.1.4.5] Owner Functional Test Mode Guard: Prevent launching public URLs in test mode
-    let isTestModeActive = false;
     try {
-        const oftToggle = document.getElementById('owner-function-test-toggle');
-        if (oftToggle && oftToggle.checked) isTestModeActive = true;
-        else {
-            const stTest = await chrome.storage.local.get(['xpider_owner_function_test_mode']);
-            isTestModeActive = Boolean(stTest.xpider_owner_function_test_mode);
-        }
-    } catch (_) {}
-
-    if (isTestModeActive) {
-        const isLoopback = (u) => /^https?:\/\/(?:127\.0\.0\.1|localhost)(?::\d+)?(?:\/|$)/i.test(typeof u === 'string' ? u : (u?.url || ''));
-        const nonLoopbackTargets = campaignQueue.filter(u => !isLoopback(u));
-        if (nonLoopbackTargets.length > 0) {
-            console.warn('[START_BLOCKED_TEST_MODE_PUBLIC_QUEUE]', nonLoopbackTargets.length);
-            addLog(`🛑 [START_BLOCKED] Owner Functional Test Mode is ON: ${nonLoopbackTargets.length} public non-loopback URLs cannot be started. Click '✨ AUTO SETUP' or '↩ RESTORE'.`, 'error');
+        // 1. Verify button/control plane boot & lock state
+        if (startBtn && startBtn.hasAttribute('data-build-locked')) {
+            const lockReason = startBtn.title || 'data-build-locked present';
+            console.warn(`[START_DISPATCH] accepted=false reason=LOCKED_MISMATCH detail=${lockReason}`);
+            addLog(`⚠️ [START_DISPATCH] Launch blocked: build locked (${lockReason}). Please reload extension.`, 'warn');
             _restoreStartButton();
-            alert('🛑 [OWNER FUNCTIONAL TEST MODE ACTIVE]\n\nOnly local loopback URLs (127.0.0.1 or localhost) are allowed in Test Mode.\nFound ' + nonLoopbackTargets.length + ' public targets in queue.\n\nPlease click "✨ AUTO SETUP" to switch to the 7 test fixtures, or "↩ RESTORE" to turn off test mode.');
-            return Promise.reject(new Error(`OWNER_FUNCTION_TEST_NON_LOOPBACK_TARGET: ${nonLoopbackTargets[0]}`));
-        }
-    }
-
-    // [R6.9G.10.3.4] Start-time template readiness guard
-    const tplReady = await ensureTemplateReadyForStart();
-    if (tplReady && tplReady.ready && tplReady.message) {
-        const msgEl = document.getElementById('tpl-message');
-        if (msgEl && !msgEl.value) msgEl.value = tplReady.message;
-    }
-
-    currentTpl = {
-        firstName: document.getElementById('tpl-first-name')?.value || '',
-        lastName: document.getElementById('tpl-last-name')?.value || '',
-        name: document.getElementById('tpl-name')?.value || '',
-        email: document.getElementById('tpl-email')?.value || '',
-        phone: document.getElementById('tpl-phone')?.value || '',
-        subject: document.getElementById('tpl-subject')?.value || '',
-        message: document.getElementById('tpl-message')?.value || (tplReady?.message || '')
-    };
-
-    // Explicit diagnostic on empty message (No silent returns!)
-    if (!currentTpl.message || !currentTpl.message.trim()) {
-        console.warn('[START_BLOCKED_EMPTY_MESSAGE]');
-        addLog('⚠️ [START_BLOCKED_EMPTY_MESSAGE] Message body is empty. Enter message content before starting.', 'warn');
-        addDiagnosticLog('[Engine][GUARD_FAIL] reason=START_BLOCKED_EMPTY_MESSAGE', 'WARN');
-        _restoreStartButton();
-        switchToTemplateTabAndFocusMessage();
-        return;
-    }
-
-    // [Phase 2B Component D / R1] Authoritatively bind template metadata to execution state & payload
-    try {
-        bindCampaignTemplateMetadata(currentTpl);
-        currentTpl.id = currentTpl.templateId;
-        currentTpl.version = currentTpl.templateVersion;
-    } catch (_) {}
-
-    // [R6.9G.10.3.3 Fail-Closed Build Handshake with Self-Healing Recovery]
-    const handshake = await verifyBuildHandshake({ retryOnTransient: true, maxRetries: 2, retryDelayMs: 250 });
-    if (!handshake.ok) {
-        if (handshake.state === 'CONFIRMED_MISMATCH') {
-            console.error(`[START_BLOCKED] RUNTIME_BUILD_MISMATCH reason=${handshake.error}`);
-            addLog(`❌ [START_BLOCKED] Runtime build mismatch: ${handshake.error}`, 'error');
-            alert(`❌ CANNOT START CAMPAIGN: RUNTIME BUILD MISMATCH\n\n${handshake.error || 'Extension components are running different builds.'}\n\nPlease reload the extension.`);
-            _restoreStartButton();
-            return Promise.reject(new Error(handshake.error || 'RUNTIME_BUILD_MISMATCH'));
-        } else {
-            console.error(`[START_BLOCKED] BACKGROUND_UNREACHABLE error=${handshake.error}`);
-            addLog(`⚠️ [START_BLOCKED] BACKGROUND_UNREACHABLE: Background service worker did not respond (${handshake.error}). Please click Start again to wake it.`, 'warn');
-            _restoreStartButton();
-            return Promise.reject(new Error(`BACKGROUND_UNREACHABLE: ${handshake.error}`));
-        }
-    }
-
-    // UI state: STARTING (Do NOT set campaignActive=true yet!)
-    campaignPaused = false;
-    successCount = 0;
-    if (startBtn) {
-        startBtn.disabled = true;
-        startBtn.textContent = "⏳ Starting...";
-    }
-
-    const delayCollectInput = document.getElementById('delay-input-collect');
-    const delayFillInput = document.getElementById('delay-input-fill');
-    const delaySubmitInput = document.getElementById('delay-input-submit');
-    
-    const levelCollect = parseInt(delayCollectInput ? delayCollectInput.value : 6);
-    const levelFill = parseInt(delayFillInput ? delayFillInput.value : 6);
-    const levelSubmit = parseInt(delaySubmitInput ? delaySubmitInput.value : 6);
-    
-    const levelToCollectMs = [60000, 45000, 30000, 25000, 20000, 15000, 10000, 7000, 5000, 3000];
-    const levelToFillMs = [2000, 1500, 1000, 800, 500, 400, 300, 200, 150, 100];
-    const levelToSubmitMs = [15000, 12000, 10000, 8000, 6000, 5000, 4000, 3000, 2000, 1000];
-    
-    const delayMs = levelToCollectMs[levelCollect] || 10000;
-    const fillDelayMs = levelToFillMs[levelFill] || 300;
-    const submitDelayMs = levelToSubmitMs[levelSubmit] || 4000;
-
-    // [v4.15.0] 폼 자동 입력 방식 획득 및 동기화 저장
-    const fillModeEl = document.querySelector('input[name="fill-mode"]:checked');
-    const fillMode = fillModeEl ? fillModeEl.value : 'instant';
-    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-        chrome.storage.local.set({ xpider_fill_mode: fillMode }).catch(() => {});
-    }
-
-    const skipAttemptedEl = document.getElementById('skip-attempted-toggle');
-    const skipPreviouslyAttempted = isTestModeActive ? false : (skipAttemptedEl ? skipAttemptedEl.checked : true);
-
-    const activeRunStorage = (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local)
-        ? await chrome.storage.local.get(['xpider_active_campaign_run_id'])
-        : {};
-
-    const startPayload = {
-        queue: campaignQueue,
-        template: currentTpl,
-        delayMs,
-        fillDelayMs,
-        submitDelayMs,
-        fillMode,
-        templateId: currentTpl.templateId || 'default',
-        templateVersion: currentTpl.templateVersion || 1,
-        skipPreviouslyAttempted,
-        overrideSkipAttempted: isTestModeActive ? true : false,
-        ownerFunctionTestMode: isTestModeActive ? true : false,
-        campaignRunId: isTestModeActive ? activeRunStorage.xpider_active_campaign_run_id : undefined
-    };
-    try {
-        bindCampaignTemplateMetadata(startPayload, currentTpl);
-    } catch (_) {}
-
-    // Hide resumable banner if starting a fresh campaign
-    const banner = document.getElementById('resumable-campaign-banner');
-    if (banner) banner.style.display = 'none';
-
-    // [Fix 2 Owner Functional Test Mode Queue Validation]
-    let isOwnerTestModeActive = false;
-    try {
-        const testModeStorage = await chrome.storage.local.get(['xpider_owner_function_test_mode']);
-        isOwnerTestModeActive = !!testModeStorage.xpider_owner_function_test_mode;
-    } catch (_) {}
-
-    if (isOwnerTestModeActive) {
-        const isTestAuthorized = (typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.isTestOnlyBuild === 'function')
-            ? BuildProvenance.isTestOnlyBuild()
-            : Boolean(typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO && BuildProvenance.BUILD_INFO.testOnly === true && BuildProvenance.BUILD_INFO.channel === 'TEST_ONLY');
-
-        if (!isTestAuthorized) {
-            console.error('[OWNER_FUNCTION_TEST_BLOCKED] Runtime build is not authorized for TEST_ONLY channel.');
-            alert('🧪 OWNER FUNCTIONAL TEST MODE REJECTION\n\nOwner Functional Test Mode is strictly forbidden: runtime build does not declare TEST_ONLY.');
-            _restoreStartButton();
-            return Promise.reject(new Error('OWNER_FUNCTION_TEST_UNAUTHORIZED_BUILD'));
+            return { success: false, reason: 'LOCKED_MISMATCH', detail: lockReason };
         }
 
-        if (campaignQueue.length > 10) {
-            console.error(`[OWNER_FUNCTION_TEST_BLOCKED] Queue length ${campaignQueue.length} exceeds maximum 10 allowed targets.`);
-            alert(`🧪 OWNER FUNCTIONAL TEST MODE LIMITATION\n\nOwner Functional Test Mode allows a maximum of 10 targets.\nCurrently queued: ${campaignQueue.length} targets.\n\nPlease reduce the test list or use OWNER_EXTENSION_TEST_URLS.csv.`);
-            _restoreStartButton();
-            return Promise.reject(new Error('OWNER_FUNCTION_TEST_EXCEEDED_MAX_TARGETS'));
-        }
-
-        const isLoopbackFn = (typeof PrivacyGateway !== 'undefined' && typeof PrivacyGateway.isLoopbackTestUrl === 'function')
-            ? PrivacyGateway.isLoopbackTestUrl
-            : (u) => /^https?:\/\/(?:127\.0\.0\.1|localhost)(?::\d+)?(?:\/|$)/i.test(u);
-
-        for (let i = 0; i < campaignQueue.length; i++) {
-            const raw = campaignQueue[i];
-            const targetUrlStr = typeof raw === 'string' ? raw : (raw?.url || '');
-            if (!isLoopbackFn(targetUrlStr)) {
-                console.error(`[OWNER_FUNCTION_TEST_BLOCKED] Non-loopback target rejected: ${targetUrlStr} at index ${i}`);
-                alert(`🧪 OWNER FUNCTIONAL TEST MODE REJECTION\n\nOwner Functional Test Mode requires ALL targets to be local loopback (http://127.0.0.1 or http://localhost).\n\nNon-loopback target rejected at item #${i + 1}:\n${targetUrlStr}\n\nOperation blocked to prevent public network leakage.`);
+        // 2. Verify build handshake fail-closed
+        const handshake = await verifyBuildHandshake({ retryOnTransient: true, maxRetries: 2, retryDelayMs: 250 });
+        if (!handshake.ok) {
+            if (handshake.state === 'CONFIRMED_MISMATCH') {
+                console.error(`[START_DISPATCH] accepted=false reason=RUNTIME_BUILD_MISMATCH error=${handshake.error}`);
+                addLog(`❌ [START_DISPATCH] Runtime build mismatch: ${handshake.error}`, 'error');
+                alert(`❌ CANNOT START CAMPAIGN: RUNTIME BUILD MISMATCH\n\n${handshake.error || 'Extension components are running different builds.'}\n\nPlease reload the extension.`);
                 _restoreStartButton();
-                return Promise.reject(new Error(`OWNER_FUNCTION_TEST_NON_LOOPBACK_TARGET: ${targetUrlStr}`));
-            }
-        }
-        console.log('[OWNER_FUNCTION_TEST] loopbackOnly=true strictPublicBypass=false (Popup Validation Pass)');
-        startPayload.ownerFunctionTestMode = true;
-    }
-
-    // [R6.9G.10.3.6.1 Single-Authority Privacy Start Prep]
-    // Background service worker is the sole authoritative privacy-prep state owner.
-    // Popup delegates privacy preparation to background and does not directly mutate transport.
-    const prepResponse = await new Promise((resolve) => {
-        if (typeof chrome === 'undefined' || !chrome.runtime || !chrome.runtime.sendMessage) {
-            return resolve({ success: false, error: 'CHROME_RUNTIME_UNAVAILABLE' });
-        }
-        chrome.runtime.sendMessage({
-            action: 'ENSURE_ENFORCED_PRIVACY_FOR_START',
-            options: {
-                ownerFunctionTestMode: isOwnerTestModeActive
-            }
-        }, (res) => {
-            if (chrome.runtime.lastError) {
-                return resolve({ success: false, error: chrome.runtime.lastError.message });
-            }
-            resolve(res || { success: false, error: 'NO_RESPONSE_FROM_BACKGROUND' });
-        });
-    });
-
-    const prepResult = (prepResponse && prepResponse.success && prepResponse.result) ? prepResponse.result : null;
-
-    if (!prepResult || !prepResult.ready) {
-        _restoreStartButton();
-        const blockReason = prepResult ? prepResult.reason : (prepResponse ? prepResponse.error : 'PRIVACY_PREP_FAILED');
-        const userMsg = prepResult ? prepResult.userMessage : 'Privacy transport could not be prepared by background engine.';
-        console.error(`[START_BLOCKED] PRIVACY_START_BLOCKED reason=${blockReason}`);
-        addLog(`🛡️ [START_BLOCKED] ${userMsg || blockReason}`, 'error');
-        
-        // Open settings overlay and focus actionable field
-        const settingsOverlay = document.getElementById('settings-overlay');
-        if (settingsOverlay) settingsOverlay.classList.remove('hidden');
-
-        const privGroup = document.getElementById('privacy-gateway-group');
-        if (privGroup) privGroup.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-
-        if (prepResult && prepResult.actionSection === 'privacy-relay-add-form') {
-            const relayFields = document.getElementById('privacy-relay-config-fields');
-            if (relayFields) relayFields.style.display = 'block';
-            const addForm = document.getElementById('priv-relay-add-form');
-            if (addForm) addForm.style.display = 'block';
-            const nodeHost = document.getElementById('priv-node-host');
-            if (nodeHost) nodeHost.focus();
-        } else if (prepResult && prepResult.actionSection === 'privacy-proxy-config-fields') {
-            const proxyFields = document.getElementById('privacy-proxy-config-fields');
-            if (proxyFields) proxyFields.style.display = 'block';
-            const proxyHost = document.getElementById('privacy-proxy-host');
-            if (proxyHost) proxyHost.focus();
-        }
-
-        // [Fix 3 Actionable Public Block Message / Modal Presentation]
-        if (blockReason === 'EXTERNAL_VPN_NOT_ENFORCEABLE_IN_STRICT_MODE') {
-            const blockModal = document.getElementById('privacy-block-modal-overlay');
-            const blockModalMsg = document.getElementById('privacy-block-modal-msg');
-            if (blockModal && blockModalMsg) {
-                blockModalMsg.textContent = userMsg;
-                blockModal.style.display = 'flex';
-                blockModal.classList.remove('hidden');
+                return { success: false, reason: 'RUNTIME_BUILD_MISMATCH', error: handshake.error };
             } else {
-                alert(`🛡️ STRICT PRIVACY REQUIREMENT\n\n${userMsg}\n\nOptions:\n1. Install/Start Privacy Relay Companion\n2. Configure Managed Proxy\n3. Cancel`);
+                console.error(`[START_DISPATCH] accepted=false reason=BACKGROUND_UNREACHABLE error=${handshake.error}`);
+                addLog(`⚠️ [START_DISPATCH] Background service worker did not respond. Click Start again to wake it.`, 'warn');
+                _restoreStartButton();
+                return { success: false, reason: 'BACKGROUND_UNREACHABLE', error: handshake.error };
             }
-        } else {
-            alert(`🛡️ STRICT PRIVACY REQUIREMENT\n\n${userMsg || 'Strict Privacy needs an enforced relay/proxy.'}`);
         }
-        return Promise.reject(new Error(blockReason || 'PRIVACY_START_BLOCKED'));
-    }
 
-    // [PRIVACY_START_READY] Logged after background confirms ready
-    console.log(`[PRIVACY_START_READY] mode=${prepResult.mode}`);
-    addLog(`🛡️ [PRIVACY_START_READY] mode=${prepResult.mode}`, 'info');
-
-    // If background self-healed mode, sync mode dropdown in UI (skip if in ownerFunctionTestMode)
-    if (prepResult.mode && !isOwnerTestModeActive) {
-        const privModeSelect = document.getElementById('privacy-transport-mode-select');
-        if (privModeSelect && privModeSelect.value !== prepResult.mode) {
-            privModeSelect.value = prepResult.mode;
+        // 3. Verify Owner test server if test mode
+        let isTestModeActive = isOwnerTest;
+        if (!isTestModeActive) {
             try {
-                privModeSelect.dispatchEvent(new Event('change'));
+                const oftToggle = document.getElementById('owner-function-test-toggle');
+                if (oftToggle && oftToggle.checked) isTestModeActive = true;
+                else {
+                    const stTest = await chrome.storage.local.get(['xpider_owner_function_test_mode']);
+                    isTestModeActive = Boolean(stTest.xpider_owner_function_test_mode);
+                }
             } catch (_) {}
         }
-    }
 
-    // [v20.0 Chrome Runtime Transport] Dispatch START_CAMPAIGN directly to background service worker
-    console.log(`[START_IPC] sent queue=${startPayload.queue.length}`);
-    addLog("[Engine] START_CAMPAIGN request sent", "info");
-    const sendTime = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
-    addDiagnosticLog(`[Engine][TX] action=START_CAMPAIGN queue=${startPayload.queue.length} templateId=${startPayload.templateId} v=${startPayload.templateVersion} skipAttempted=${skipPreviouslyAttempted}`);
+        if (isTestModeActive) {
+            const srvCheck = await probeAndEnsureOwnerTestServer();
+            if (!srvCheck.success) {
+                console.error('[START_DISPATCH] accepted=false reason=TEST_SERVER_UNAVAILABLE');
+                showAutoSetupFeedback('LAUNCH FAILED — Local test server (127.0.0.1:8088) is unavailable.', 'error');
+                _restoreStartButton();
+                return { success: false, reason: 'TEST_SERVER_UNAVAILABLE' };
+            }
 
-    return new Promise((resolve, reject) => {
-        if (typeof chrome === 'undefined' || !chrome.runtime || !chrome.runtime.sendMessage) {
-            const err = new Error("Chrome runtime messaging is not available");
-            console.error('[START_IPC_SEND_FAILED]', err);
-            _restoreStartButton();
-            addLog(`❌ [Fatal Error] ${err.message}`, "error");
-            return reject(err);
+            // 4. Verify DNR network guard
+            let guardOk = false;
+            try {
+                const guardRes = await chrome.runtime.sendMessage({ action: 'INSTALL_OWNER_TEST_GUARD' });
+                if (guardRes && guardRes.success) guardOk = true;
+            } catch (gErr) {
+                console.warn('[START_GUARD_WARN]', gErr);
+            }
+            if (!guardOk) {
+                console.error('[START_DISPATCH] accepted=false reason=DNR_GUARD_FAILED');
+                showAutoSetupFeedback('LAUNCH FAILED — Could not verify DeclarativeNetRequest network guard.', 'error');
+                _restoreStartButton();
+                return { success: false, reason: 'DNR_GUARD_FAILED' };
+            }
+
+            // If fixtures specified in options, set campaignQueue
+            if (Array.isArray(options.fixtures) && options.fixtures.length > 0) {
+                campaignQueue = [...options.fixtures];
+                totalTargets = campaignQueue.length;
+                renderUrlsPreview(campaignQueue);
+                const countDisplay = document.getElementById('url-count-display');
+                if (countDisplay) {
+                    const label = source === 'OWNER_CAPTCHA_LAB' ? 'CAPTCHA Lab' : (source === 'OWNER_FULL_TEST' ? 'Full Test Suite' : 'Local Fixtures');
+                    countDisplay.textContent = `${totalTargets} URLs loaded (${label})`;
+                }
+            }
+
+            // [R6.9G.10.3.7.1.4.5] Owner Functional Test Mode Guard: Prevent launching public URLs in test mode
+            const isLoopback = (u) => /^https?:\/\/(?:127\.0\.0\.1|localhost)(?::\d+)?(?:\/|$)/i.test(typeof u === 'string' ? u : (u?.url || ''));
+            const nonLoopbackTargets = campaignQueue.filter(u => !isLoopback(u));
+            if (nonLoopbackTargets.length > 0) {
+                console.warn('[START_BLOCKED_TEST_MODE_PUBLIC_QUEUE]', nonLoopbackTargets.length);
+                addLog(`🛡️ [START_BLOCKED] Owner Functional Test Mode is ON: ${nonLoopbackTargets.length} public non-loopback URLs cannot be started. Click '⚙️ AUTO SETUP' or '⏮️ RESTORE'.`, 'error');
+                _restoreStartButton();
+                alert('🛡️ [OWNER FUNCTIONAL TEST MODE ACTIVE]\n\nOnly local loopback URLs (127.0.0.1 or localhost) are allowed in Test Mode.\nFound ' + nonLoopbackTargets.length + ' public targets in queue.\n\nPlease click "⚙️ AUTO SETUP" to switch to the 7 test fixtures, or "⏮️ RESTORE" to turn off test mode.');
+                return Promise.reject(new Error(`OWNER_FUNCTION_TEST_NON_LOOPBACK_TARGET: ${nonLoopbackTargets[0]}`));
+            }
+
+            // 6. Atomically prepare fresh test run scope and verify zero stale suppression
+            const prepRes = await chrome.runtime.sendMessage({
+                action: 'PREPARE_OWNER_FUNCTIONAL_TEST_RUN',
+                fixtures: campaignQueue
+            });
+
+            if (!prepRes || !prepRes.success) {
+                const errCode = prepRes?.error || 'PREPARE_OWNER_TEST_FAILED';
+                console.error(`[START_DISPATCH] accepted=false reason=${errCode}`);
+                if (errCode === 'OWNER_TEST_PRECONDITION_STALE_SUPPRESSION') {
+                    showAutoSetupFeedback(`FAIL-CLOSED: OWNER_TEST_PRECONDITION_STALE_SUPPRESSION (stale=${prepRes.staleCount || 0})`, 'error');
+                    alert(`🛑 [OWNER_TEST_PRECONDITION_STALE_SUPPRESSION]\n\nControlled test fixtures encountered stale visited/suppression state (${prepRes.staleCount || 0} items). Launch aborted fail-closed.`);
+                } else {
+                    showAutoSetupFeedback(`LAUNCH FAILED — ${errCode}`, 'error');
+                }
+                _restoreStartButton();
+                return { success: false, reason: errCode, detail: prepRes };
+            }
+
+            // Verify invariant: executable fixture count == requested fixture count
+            if (prepRes.executableCount !== campaignQueue.length || prepRes.staleCount > 0) {
+                console.error(`[START_DISPATCH] accepted=false reason=OWNER_TEST_PRECONDITION_STALE_SUPPRESSION requested=${campaignQueue.length} executable=${prepRes.executableCount} stale=${prepRes.staleCount}`);
+                alert(`🛑 [OWNER_TEST_PRECONDITION_STALE_SUPPRESSION]\n\nExecutable fixture count (${prepRes.executableCount}) does not match requested (${campaignQueue.length}). Launch aborted fail-closed.`);
+                _restoreStartButton();
+                return { success: false, reason: 'OWNER_TEST_PRECONDITION_STALE_SUPPRESSION' };
+            }
         }
+
+        // 5. Verify executable queue > 0
+        const manualInput = document.getElementById('manual-url-input');
+        if (manualInput && manualInput.value.trim() && (!campaignQueue || campaignQueue.length === 0)) {
+            await addSingleUrl();
+        }
+        if (!campaignQueue || campaignQueue.length === 0) {
+            console.warn('[START_DISPATCH] accepted=false reason=EMPTY_QUEUE');
+            addLog('⚠️ [START_BLOCKED_EMPTY_QUEUE] Target URL queue is empty. Load URLs before starting.', 'warn');
+            alert('Please upload a file or enter a URL first.');
+            _restoreStartButton();
+            return { success: false, reason: 'EMPTY_QUEUE' };
+        }
+
+        // Test Mode Public URL Block & Max Target Limit
+        if (isTestModeActive) {
+            const isLoopback = (u) => /^https?:\/\/(?:127\.0\.0\.1|localhost)(?::\d+)?(?:\/|$)/i.test(typeof u === 'string' ? u : (u?.url || ''));
+            const nonLoopbackTargets = campaignQueue.filter(u => !isLoopback(u));
+            if (nonLoopbackTargets.length > 0) {
+                console.warn('[START_DISPATCH] accepted=false reason=OWNER_FUNCTION_TEST_NON_LOOPBACK_TARGET');
+                addLog(`🛑 [START_BLOCKED] Owner Functional Test Mode is ON: ${nonLoopbackTargets.length} public non-loopback URLs cannot be started.`, 'error');
+                alert(`🛑 [OWNER FUNCTIONAL TEST MODE ACTIVE]\n\nOnly local loopback URLs (127.0.0.1 or localhost) are allowed in Test Mode.\nFound ${nonLoopbackTargets.length} public targets in queue.`);
+                _restoreStartButton();
+                return { success: false, reason: 'OWNER_FUNCTION_TEST_NON_LOOPBACK_TARGET' };
+            }
+
+            const maxAllowed = source === 'OWNER_FULL_TEST' ? 30 : 10;
+            if (campaignQueue.length > maxAllowed) {
+                console.error(`[START_DISPATCH] accepted=false reason=OWNER_FUNCTION_TEST_EXCEEDED_MAX_TARGETS (${campaignQueue.length} > ${maxAllowed})`);
+                alert(`🧪 OWNER FUNCTIONAL TEST MODE LIMITATION\n\nOwner Functional Test Mode allows a maximum of ${maxAllowed} targets.\nCurrently queued: ${campaignQueue.length} targets.`);
+                _restoreStartButton();
+                return { success: false, reason: 'OWNER_FUNCTION_TEST_EXCEEDED_MAX_TARGETS' };
+            }
+        }
+
+        // Template message check
+        const tplReady = await ensureTemplateReadyForStart();
+        if (tplReady && tplReady.ready && tplReady.message) {
+            const msgEl = document.getElementById('tpl-message');
+            if (msgEl && !msgEl.value) msgEl.value = tplReady.message;
+        }
+
+        currentTpl = {
+            firstName: document.getElementById('tpl-first-name')?.value || '',
+            lastName: document.getElementById('tpl-last-name')?.value || '',
+            name: document.getElementById('tpl-name')?.value || '',
+            email: document.getElementById('tpl-email')?.value || '',
+            phone: document.getElementById('tpl-phone')?.value || '',
+            subject: document.getElementById('tpl-subject')?.value || '',
+            message: document.getElementById('tpl-message')?.value || (tplReady?.message || '')
+        };
+
+        if (!currentTpl.message || !currentTpl.message.trim()) {
+            console.warn('[START_DISPATCH] accepted=false reason=EMPTY_MESSAGE');
+            addLog('⚠️ [START_BLOCKED_EMPTY_MESSAGE] Message body is empty. Enter message content before starting.', 'warn');
+            _restoreStartButton();
+            switchToTemplateTabAndFocusMessage();
+            return { success: false, reason: 'EMPTY_MESSAGE' };
+        }
+
+        try {
+            bindCampaignTemplateMetadata(currentTpl);
+            currentTpl.id = currentTpl.templateId;
+            currentTpl.version = currentTpl.templateVersion;
+        } catch (_) {}
+
+        // UI state: STARTING
+        campaignPaused = false;
+        successCount = 0;
+        if (startBtn) {
+            startBtn.disabled = true;
+            startBtn.textContent = "⏳ Starting...";
+        }
+
+        // Delay settings
+        const delayCollectInput = document.getElementById('delay-input-collect');
+        const delayFillInput = document.getElementById('delay-input-fill');
+        const delaySubmitInput = document.getElementById('delay-input-submit');
+        const levelCollect = parseInt(delayCollectInput ? delayCollectInput.value : 6);
+        const levelFill = parseInt(delayFillInput ? delayFillInput.value : 6);
+        const levelSubmit = parseInt(delaySubmitInput ? delaySubmitInput.value : 6);
+        const levelToCollectMs = [60000, 45000, 30000, 25000, 20000, 15000, 10000, 7000, 5000, 3000];
+        const levelToFillMs = [2000, 1500, 1000, 800, 500, 400, 300, 200, 150, 100];
+        const levelToSubmitMs = [15000, 12000, 10000, 8000, 6000, 5000, 4000, 3000, 2000, 1000];
+        const delayMs = levelToCollectMs[levelCollect] || 10000;
+        const fillDelayMs = levelToFillMs[levelFill] || 300;
+        const submitDelayMs = levelToSubmitMs[levelSubmit] || 4000;
+
+        const fillModeEl = document.querySelector('input[name="fill-mode"]:checked');
+        const fillMode = fillModeEl ? fillModeEl.value : 'instant';
+
+        const skipAttemptedEl = document.getElementById('skip-attempted-toggle');
+        const skipPreviouslyAttempted = isTestModeActive ? false : (skipAttemptedEl ? skipAttemptedEl.checked : true);
+
+        const activeRunStorage = await chrome.storage.local.get(['xpider_active_campaign_run_id']);
+
+        const startPayload = {
+            queue: campaignQueue,
+            template: currentTpl,
+            delayMs,
+            fillDelayMs,
+            submitDelayMs,
+            fillMode,
+            templateId: currentTpl.templateId || 'default',
+            templateVersion: currentTpl.templateVersion || 1,
+            skipPreviouslyAttempted,
+            overrideSkipAttempted: isTestModeActive ? true : false,
+            ownerFunctionTestMode: isTestModeActive ? true : false,
+            campaignRunId: isTestModeActive ? activeRunStorage.xpider_active_campaign_run_id : undefined
+        };
+        try {
+            bindCampaignTemplateMetadata(startPayload, currentTpl);
+        } catch (_) {}
+
+        // Privacy gate check for public URLs
+        if (!isTestModeActive) {
+            const prepResponse = await new Promise((resolve) => {
+                chrome.runtime.sendMessage({
+                    action: 'ENSURE_ENFORCED_PRIVACY_FOR_START',
+                    options: { ownerFunctionTestMode: false }
+                }, (res) => {
+                    if (chrome.runtime.lastError) return resolve({ success: false, error: chrome.runtime.lastError.message });
+                    resolve(res || { success: false, error: 'NO_RESPONSE_FROM_BACKGROUND' });
+                });
+            });
+            const prepResult = (prepResponse && prepResponse.success && prepResponse.result) ? prepResponse.result : null;
+            if (!prepResult || !prepResult.ready) {
+                console.error('[START_DISPATCH] accepted=false reason=PRIVACY_START_BLOCKED');
+                _restoreStartButton();
+                return { success: false, reason: 'PRIVACY_START_BLOCKED' };
+            }
+        }
+
+        // 8. Dispatch to background service worker
+        console.log(`[START_DISPATCH] accepted=true source=${source} targetCount=${campaignQueue.length}`);
+        addLog(`🚀 [START_DISPATCH] accepted=true source=${source} targetCount=${campaignQueue.length}`, 'info');
 
         const localInfo = (typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO)
             ? BuildProvenance.BUILD_INFO
-            : { implementationHead: '48c23c7f8b0e81099d45aeb584e65d8713db7b37', buildId: 'R6.9F.1-20261005-RUNTIME-SUBMIT-COUNTERS', manifestVersion: 3 };
+            : { implementationHead: '55dc6d69a25b4ea27283d3b40ba1c5fea730914b', buildId: 'R6.9G.10.3.7.1.4.7-20261014-START-CONTROL-PLANE-RECOVERY', manifestVersion: 3 };
 
-        chrome.runtime.sendMessage({
-            action: 'START_CAMPAIGN',
-            expectedImplementationHead: localInfo.implementationHead,
-            expectedBuildId: localInfo.buildId,
-            expectedManifestVersion: localInfo.manifestVersion || 3,
-            queue: startPayload.queue,
-            template: startPayload.template,
-            delayMs: startPayload.delayMs,
-            fillDelayMs: startPayload.fillDelayMs,
-            submitDelayMs: startPayload.submitDelayMs,
-            fillMode: startPayload.fillMode,
-            templateId: startPayload.templateId,
-            templateVersion: startPayload.templateVersion,
-            skipPreviouslyAttempted: startPayload.skipPreviouslyAttempted,
-            ownerFunctionTestMode: !!isOwnerTestModeActive
-        }, (response) => {
-            const ackTime = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
-            const elapsedAckMs = Math.round(ackTime - sendTime);
-
-            if (chrome.runtime.lastError) {
-                const err = new Error(chrome.runtime.lastError.message || "Failed to contact background engine");
-                console.error('[START_BG_HANDLER_NOT_REACHED]', err);
-                _restoreStartButton();
-                addDiagnosticLog(`[Engine][RX_FAIL][+${elapsedAckMs}ms] error=${err.message}`, "ERROR");
-                addLog(`❌ [Background Engine] Start failed: ${err.message}`, "error");
-                return reject(err);
-            }
-
-            if (!response || response.success === false) {
-                const errMsg = (response && (response.reason || response.error)) || "Start rejected by background engine";
-                const err = new Error(errMsg);
-                console.error('[START_BG_HANDLER_NOT_REACHED]', err);
-                _restoreStartButton();
-                if (response && response.status === 'PRIVACY_GATEWAY_BLOCKED') {
-                    const blkMsg = `🛡️ [PRIVACY_GATEWAY_BLOCKED] ${response.userMessage || response.reason || 'Protected transport unconfirmed'}`;
-                    addLog(blkMsg, "error");
-                    let detailMsg = response.userMessage;
-                    if (!detailMsg) {
-                        if (response.reason === 'EXTERNAL_VPN_NOT_ENFORCEABLE_IN_STRICT_MODE') {
-                            detailMsg = "Strict Privacy needs an enforced relay/proxy. External VPN Monitor is not enforceable in Strict mode.";
-                        } else if (response.reason === 'NO_HEALTHY_EGRESS' || response.reason === 'PRIVACY_RELAY_NO_HEALTHY_EGRESS') {
-                            detailMsg = "Strict Privacy needs an enforced relay/proxy. No healthy egress is configured. Please add an HTTP/HTTPS proxy node.";
-                        } else if (response.reason === 'RELAY_OFFLINE' || response.reason === 'PRIVACY_RELAY_OFFLINE') {
-                            detailMsg = "Privacy Relay companion is offline. Run companion/install_companion.bat or start the service.";
-                        } else if (response.reason === 'SYSTEM_VPN_UNCONFIRMED_PREFLIGHT_BLOCKED') {
-                            detailMsg = "System VPN mode is selected, but VPN confirmation has not been completed.\n\nOpen Settings > Privacy Gateway, connect your VPN, then click 'Verify & Use System VPN'.";
-                        } else {
-                            detailMsg = response.reason || 'Privacy transport is not ready.';
-                        }
-                    }
-                    alert(`🛡️ PRIVACY GATEWAY FAIL-CLOSED\n\nCampaign START blocked:\n${detailMsg}`);
-                    const settingsOverlay = document.getElementById('settings-overlay');
-                    if (settingsOverlay) settingsOverlay.classList.remove('hidden');
-                } else if (errMsg === 'RUNTIME_BUILD_MISMATCH') {
-                    _applyHandshakeUiState(false, response.detail || errMsg);
-                    alert(`❌ RUNTIME BUILD MISMATCH DETECTED BY BACKGROUND\n\n${response.detail || errMsg}\n\nPlease reload extension.`);
+        const startRes = await new Promise((resolve, reject) => {
+            chrome.runtime.sendMessage({
+                action: 'START_CAMPAIGN',
+                expectedImplementationHead: localInfo.implementationHead,
+                expectedBuildId: localInfo.buildId,
+                expectedManifestVersion: localInfo.manifestVersion || 3,
+                queue: startPayload.queue,
+                template: startPayload.template,
+                delayMs: startPayload.delayMs,
+                fillDelayMs: startPayload.fillDelayMs,
+                submitDelayMs: startPayload.submitDelayMs,
+                fillMode: startPayload.fillMode,
+                templateId: startPayload.templateId,
+                templateVersion: startPayload.templateVersion,
+                skipPreviouslyAttempted: startPayload.skipPreviouslyAttempted,
+                overrideSkipAttempted: startPayload.overrideSkipAttempted,
+                ownerFunctionTestMode: startPayload.ownerFunctionTestMode,
+                campaignRunId: startPayload.campaignRunId
+            }, (res) => {
+                if (chrome.runtime.lastError) {
+                    return reject(new Error(chrome.runtime.lastError.message));
                 }
-                addDiagnosticLog(`[Engine][RX_REJECT][+${elapsedAckMs}ms] error=${errMsg}`, "ERROR");
-                addLog(`❌ [Background Engine] Start failed: ${errMsg}`, "error");
-                return reject(err);
-            }
+                resolve(res);
+            });
+        });
 
-            // SUCCESS ACK: Now transition UI state to active
-            console.log(`[START_ACK] ok=true latencyMs=${elapsedAckMs}`);
-            console.log(`[START_STATE] active=true queue=${campaignQueue.length}`);
-            campaignActive = true;
-            addDiagnosticLog(`[Engine][ACK][+${elapsedAckMs}ms] status=${response.status || 'acknowledged'}`);
-            addLog(`[Engine] ACK received in ${elapsedAckMs} ms`, "success");
-            addLog("✅ [Background Engine] Campaign started!", "success");
+        if (!startRes || startRes.success === false) {
+            const reason = startRes?.reason || startRes?.error || 'REJECTED_BY_BACKGROUND';
+            console.error(`[START_BG_REJECT] reason=${reason}`);
+            alert(`Start rejected by background engine: ${reason}`);
+            _restoreStartButton();
+            return { success: false, reason };
+        }
 
-            // Show active controls
-            const statusBox = document.getElementById('status-box');
-            if (statusBox) statusBox.classList.remove('hidden');
+        // Update UI to running state
+        campaignActive = true;
+        campaignPaused = false;
+        if (startBtn) startBtn.classList.add('hidden');
+        const multiActions = document.getElementById('multi-actions');
+        if (multiActions) multiActions.classList.remove('hidden');
+
+        if (isOwnerTest) {
+            updateAutoSetupUI('RUNNING');
             const statusTitle = document.getElementById('status-title');
             if (statusTitle) statusTitle.textContent = "Live Progress (Running)";
             const statusDetail = document.getElementById('status-detail');
-            if (statusDetail) statusDetail.textContent = "Campaign started...";
-            const multiActions = document.getElementById('multi-actions');
-            if (multiActions) multiActions.classList.remove('hidden');
-            if (startBtn) {
-                startBtn.classList.add('hidden');
-                startBtn.disabled = false;
-                startBtn.textContent = "🚀 START SENDING";
-            }
-            updateRealTimeStatus({
-                successCount: 0,
-                failedCount: 0,
-                completedCount: 0,
-                remainingCount: campaignQueue.length,
-                totalTargets: campaignQueue.length
-            });
-            updateProgress(0);
+            if (statusDetail) statusDetail.textContent = `Campaign started (${source})...`;
+        }
 
-            // Post-ACK GET_STATE verification
-            chrome.runtime.sendMessage({ action: 'GET_STATE' }, (stateResp) => {
-                if (stateResp && stateResp.success) {
-                    const qCount = stateResp.remainingCount !== undefined ? stateResp.remainingCount : campaignQueue.length;
-                    addLog(`[Engine] Background state: active=${stateResp.isActive}, queue=${qCount}`, "info");
-                    addDiagnosticLog(`[Engine][VERIFY] active=${stateResp.isActive} queue=${qCount}`);
-                    if (!stateResp.isActive) {
-                        console.warn('[START_STATE_NOT_ACTIVE] stateResp.isActive is false post-ACK');
-                    }
-                }
-            });
+        return {
+            success: true,
+            source,
+            targetCount: campaignQueue.length,
+            campaignRunId: startRes.campaignRunId
+        };
+    } finally {
+        _isCampaignLaunching = false;
+    }
+}
 
-            resolve(response);
-        });
-    });
+async function startCampaign() {
+    return launchCampaign({ source: 'USER_START_BUTTON' });
 }
 
 function togglePause() {
@@ -7160,7 +7068,9 @@ if (typeof window !== 'undefined') {
     } catch (_) {
         window.campaignQueue = campaignQueue;
     }
+    window.launchCampaign = launchCampaign;
     window.startCampaign = startCampaign;
+    window.restoreUserSettings = restoreUserSettings;
     window.setCampaignQueue = setCampaignQueue;
     window.getCampaignQueue = getCampaignQueue;
 }
