@@ -1,7 +1,7 @@
 PACKAGE INVENTORY SHA256 (XPIDER R6.9G.10.3.7.1.4.5 UNIFIED OWNER DIAGNOSTIC BUNDLE)
-Generated: 2026-10-14T03:36:11.535Z
+Generated: 2026-10-14T03:39:41.465Z
 Archive: XPIDER_R6.9G.10.3.7.1.4.5_OWNER_DIAGNOSTIC_TEST_ONLY.zip
-SHA256: 394091642d5dddcc10ffb8d1ae4b85281ea3525ce2a605b9136b8536fd36b547
+SHA256: 70653c642731a6ad04173e00015bd06f3dffbb55506ce6b984da013a4d0e0f02
 
 INVENTORY (Root: /):
 68b5c25738af278d5ba009463856918d06e5f5703e8adfc19708c1f96376eb95  companion/docker-compose.yml
@@ -47,7 +47,7 @@ d1932153fca475d92cc5095c81edff6528189046b1f1aa8c43e3b08969522cff  extension/icon
 29cdfc5fa1a890c2df8f7c5b3e86152794f0814f1b00aee47192923b37f1800e  extension/imgi_1_spider-man-logo-png_seeklogo-385417.png
 56554ccaa2cb752fd4da06f3232c6c0b755b856aad36e521f61cb2e32f00f837  extension/LOCAL_GIT_PROVENANCE.txt
 021812732c5d29191537909757b937bef8159f4a7bdd0b6805a445de1d37f651  extension/manifest.json
-ca0a7cb4a2bbc72dbb46826355e5d5e56bd51b6816261e10d00cf4a9f1546a66  extension/modules/build-provenance.js
+010d7c96ac047e26357c89aab4c895615f983dbe3eb8d07d9f427e6c62e460c6  extension/modules/build-provenance.js
 6435fc2b61b43fe46e31afd7798dfadde4f3b6280f078d795e40edcfce8d6cb4  extension/modules/checkbox-resolver-r2.js
 68d2bd6672369aabc1eab43f4c950f6b4669fb05058a32ed1a0f0e102901f7d6  extension/modules/contact-discovery-engine.js
 0d01acb2d0a9448d154353fac5b527c17afa42fed56c68d6a49b39053629bd7d  extension/modules/contact-gate.js
@@ -62,7 +62,7 @@ ad572dee7701340ad46e818795ec003c14ba42486e733320c73e0ba4ad81179c  extension/modu
 b81b8f76d5d622f3ee8062212ce28a2770e18e5cc6ad0c944af76f9f6b7e7dcf  extension/modules/smart-field-resolver.js
 5fb1dd2be93c08afd333a1d44c31765889ef1effe5be6a5525ecd519d72c7a62  extension/modules/template-store.js
 25cf18a4834bb476edff5e8f19a78dd2723bd556ede649ada69bc801543c83f3  extension/modules/vision-submit-executor.js
-095b78f546cac98148e5c203342f8c044cf8d127074cb01d97e3b4837b989de9  extension/PACKAGE_INVENTORY_SHA256.txt
+bd6524ccdc84970d323641cb27db7252656088300feafbb369c3cdf2ee5b0ea5  extension/PACKAGE_INVENTORY_SHA256.txt
 d47c771ad5de68760560c4d747c1a8993126d32a4201903b81d9abc998176c55  extension/PNG.PNG
 cbaf5a43ccb3a98e950dbceee38573919e89f0a29ec58c8bf7f225219f38ddff  extension/popup.css
 2da4b33c60e4325fde74861deba5ecc66ffdfa81d63aa9ce9bdb61309d6f27dc  extension/popup.html
@@ -92,4 +92,4 @@ bcc929047b8c7e1aca2cf571b5a73f512aa26ea7939e5536ed0c3927118f24f9  infra/vps-egre
 97e266652d3e99cc05ccab9e45454c77f24ae3bf402110f034cf73b619c17e9a  XPIDER_AUTO_SETUP.bat
 
 ZIP ARTIFACT SHA256:
-394091642d5dddcc10ffb8d1ae4b85281ea3525ce2a605b9136b8536fd36b547  XPIDER_R6.9G.10.3.7.1.4.5_OWNER_DIAGNOSTIC_TEST_ONLY.zip
+70653c642731a6ad04173e00015bd06f3dffbb55506ce6b984da013a4d0e0f02  XPIDER_R6.9G.10.3.7.1.4.5_OWNER_DIAGNOSTIC_TEST_ONLY.zip
