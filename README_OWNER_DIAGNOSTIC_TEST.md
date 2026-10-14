@@ -11,7 +11,7 @@
 - **Build ID:** `R6.9G.10.3.7.1.4.5-20261013-OWNER-TEST-NETWORK-GUARD-LIFECYCLE`
 - **Visible Badge in UI:** `TEST-ONLY R6.9G.10.3.7.1.4.5`
 - **Unpacked Extension Path:** `send_message_backup/build/extension`
-- **ZIP Package:** `XPIDER_R6.9G.10.3.7.1.4.6_OWNER_DIAGNOSTIC_TEST_ONLY.zip`
+- **ZIP Package:** `XPIDER_R6.9G.10.3.7.1.4.7_OWNER_DIAGNOSTIC_TEST_ONLY.zip`
 - **File Manifest:** See [PACKAGE_INVENTORY_SHA256.txt](file:///E:/vivpr/ai/extension-form-sender/PACKAGE_INVENTORY_SHA256.txt)
 
 ---

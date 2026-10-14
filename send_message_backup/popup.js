@@ -4883,14 +4883,21 @@ async function launchCampaign(options = {}) {
             if (msgEl && !msgEl.value) msgEl.value = tplReady.message;
         }
 
+        let activeMsg = document.getElementById('tpl-message')?.value || (tplReady?.message || '');
+        if (isOwnerTest && (!activeMsg || !activeMsg.trim())) {
+            activeMsg = "Automated test inquiry from XPIDER AutoForm Sender Pro (Local Functional Test Suite).";
+            const msgEl = document.getElementById('tpl-message');
+            if (msgEl) msgEl.value = activeMsg;
+        }
+
         currentTpl = {
-            firstName: document.getElementById('tpl-first-name')?.value || '',
-            lastName: document.getElementById('tpl-last-name')?.value || '',
-            name: document.getElementById('tpl-name')?.value || '',
-            email: document.getElementById('tpl-email')?.value || '',
-            phone: document.getElementById('tpl-phone')?.value || '',
-            subject: document.getElementById('tpl-subject')?.value || '',
-            message: document.getElementById('tpl-message')?.value || (tplReady?.message || '')
+            firstName: document.getElementById('tpl-first-name')?.value || (isOwnerTest ? 'John' : ''),
+            lastName: document.getElementById('tpl-last-name')?.value || (isOwnerTest ? 'Doe' : ''),
+            name: document.getElementById('tpl-name')?.value || (isOwnerTest ? 'John Doe' : ''),
+            email: document.getElementById('tpl-email')?.value || (isOwnerTest ? 'test.operator@example.com' : ''),
+            phone: document.getElementById('tpl-phone')?.value || (isOwnerTest ? '555-0199' : ''),
+            subject: document.getElementById('tpl-subject')?.value || (isOwnerTest ? 'Software Functional Test' : ''),
+            message: activeMsg
         };
 
         if (!currentTpl.message || !currentTpl.message.trim()) {
@@ -4985,6 +4992,7 @@ async function launchCampaign(options = {}) {
         const startRes = await new Promise((resolve, reject) => {
             chrome.runtime.sendMessage({
                 action: 'START_CAMPAIGN',
+                source: source,
                 expectedImplementationHead: localInfo.implementationHead,
                 expectedBuildId: localInfo.buildId,
                 expectedManifestVersion: localInfo.manifestVersion || 3,

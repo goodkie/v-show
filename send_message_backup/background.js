@@ -2655,13 +2655,15 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                         return;
                     }
 
-                    if (queueLen > 10) {
-                        console.error(`[OWNER_FUNCTION_TEST_BLOCKED] Queue length ${queueLen} exceeds maximum 10 allowed targets.`);
-                        logBg(null, `[OWNER_FUNCTION_TEST_BLOCKED] Queue length ${queueLen} exceeds maximum 10 allowed targets.`, 'error');
+                    const isFullTest = (request.source === 'OWNER_FULL_TEST' || request.options?.source === 'OWNER_FULL_TEST');
+                    const maxAllowed = isFullTest ? 30 : 10;
+                    if (queueLen > maxAllowed) {
+                        console.error(`[OWNER_FUNCTION_TEST_BLOCKED] Queue length ${queueLen} exceeds maximum ${maxAllowed} allowed targets.`);
+                        logBg(null, `[OWNER_FUNCTION_TEST_BLOCKED] Queue length ${queueLen} exceeds maximum ${maxAllowed} allowed targets.`, 'error');
                         sendResponse({
                             success: false,
                             error: 'OWNER_FUNCTION_TEST_EXCEEDED_MAX_TARGETS',
-                            message: `Owner Functional Test Mode allows maximum 10 targets (got ${queueLen}).`
+                            message: `Owner Functional Test Mode allows maximum ${maxAllowed} targets (got ${queueLen}).`
                         });
                         return;
                     }
@@ -6936,24 +6938,33 @@ async function saveCampaignState() {
         try {
             if (typeof chrome.storage === 'undefined' || !chrome.storage.local) return resolve();
             
-            chrome.storage.local.set({ 
-                xpider_isActive: campaignState.isActive,
-                xpider_queue: campaignState.queue,
-                xpider_tpl: campaignState.template,
-                xpider_delayMs: campaignState.delayMs,
-                xpider_fillDelayMs: campaignState.fillDelayMs,
-                xpider_submitDelayMs: campaignState.submitDelayMs,
-                xpider_sessionId: campaignState.sessionId,
-                xpider_success: campaignState.successCount,
-                xpider_total: campaignState.totalTargets,
-                xpider_visited: campaignState.visitedUrls,
-                xpider_successful: campaignState.successfulUrls,
-                xpider_currentAttempt: campaignState.currentAttempt,
-                xpider_active_campaign_run_id: campaignState.campaignRunId,
-                xpider_owner_function_test_mode_active: Boolean(campaignState.ownerFunctionTestMode)
-            }, () => {
-                if (chrome.runtime.lastError) console.error("Save error:", chrome.runtime.lastError);
-                resolve();
+            chrome.storage.local.get(['xpider_visited'], (existing) => {
+                let mergedVisited = Array.isArray(existing?.xpider_visited) ? [...existing.xpider_visited] : [];
+                if (!campaignState.ownerFunctionTestMode && Array.isArray(campaignState.visitedUrls)) {
+                    for (const u of campaignState.visitedUrls) {
+                        if (u && !mergedVisited.includes(u)) mergedVisited.push(u);
+                    }
+                }
+
+                chrome.storage.local.set({ 
+                    xpider_isActive: campaignState.isActive,
+                    xpider_queue: campaignState.queue,
+                    xpider_tpl: campaignState.template,
+                    xpider_delayMs: campaignState.delayMs,
+                    xpider_fillDelayMs: campaignState.fillDelayMs,
+                    xpider_submitDelayMs: campaignState.submitDelayMs,
+                    xpider_sessionId: campaignState.sessionId,
+                    xpider_success: campaignState.successCount,
+                    xpider_total: campaignState.totalTargets,
+                    xpider_visited: mergedVisited,
+                    xpider_successful: campaignState.successfulUrls,
+                    xpider_currentAttempt: campaignState.currentAttempt,
+                    xpider_active_campaign_run_id: campaignState.campaignRunId,
+                    xpider_owner_function_test_mode_active: Boolean(campaignState.ownerFunctionTestMode)
+                }, () => {
+                    if (chrome.runtime.lastError) console.error("Save error:", chrome.runtime.lastError);
+                    resolve();
+                });
             });
         } catch (e) {
             console.error("Failed to save campaign state:", e);
