@@ -60,7 +60,7 @@ async function runTestSuite() {
     console.log('========================================================================\n');
 
     let passedCount = 0;
-    const totalCount = 14;
+    const totalCount = 17;
 
     // Helper to get fresh gateway instance
     function createGateway(config = {}) {
@@ -342,6 +342,55 @@ async function runTestSuite() {
         assert(bgJs.includes("reconcileOwnerTestNetworkGuardOnBoot().catch"), 'SW boot must invoke state-aware reconciliation');
         assert(!bgJs.includes("removeOwnerTestNetworkGuard().catch(() => {});\n// ── END"), 'SW boot must NOT unconditionally remove network guard');
         console.log('    ✅ PASS: State-aware SW boot reconciliation verified.');
+        passedCount++;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // SCENARIO O: Top Utility Bar, Settings Visibility & Auto Setup DOM Structure
+    // ─────────────────────────────────────────────────────────────────────────────
+    console.log('\n>>> [SCENARIO O] Top Utility Bar, Settings Visibility & Auto Setup DOM Structure');
+    {
+        const html = fs.readFileSync(path.resolve(__dirname, '../extension/popup.html'), 'utf8');
+        const css = fs.readFileSync(path.resolve(__dirname, '../extension/popup.css'), 'utf8');
+        assert(html.includes('id="top-nav-bar"'), 'top-nav-bar must exist in popup.html');
+        assert(html.includes('id="settings-toggle"'), '#settings-toggle must exist');
+        assert(html.includes('id="reset-all-lists-btn"'), '#reset-all-lists-btn must exist');
+        assert(html.includes('id="owner-functional-test-card"'), 'owner-functional-test-card must exist');
+        assert(html.includes('id="auto-setup-btn"'), '#auto-setup-btn must exist');
+        assert(html.includes('id="run-function-test-btn"'), '#run-function-test-btn must exist');
+        assert(html.includes('id="restore-user-settings-btn"'), '#restore-user-settings-btn must exist');
+        assert(html.includes('id="advanced-settings-disclosure"'), 'advanced-settings-disclosure details must exist');
+        assert(css.includes('.top-nav-bar'), 'top-nav-bar CSS must be defined');
+        assert(css.includes('.settings-nav-btn'), 'settings-nav-btn CSS must be defined');
+        console.log('    ✅ PASS: Top utility bar, always-visible settings control, and auto setup DOM elements verified.');
+        passedCount++;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // SCENARIO P: One-Click Auto Setup Profile & Reversible Restore Point Logic
+    // ─────────────────────────────────────────────────────────────────────────────
+    console.log('\n>>> [SCENARIO P] One-Click Auto Setup Profile & Reversible Restore Point Logic');
+    {
+        const js = fs.readFileSync(path.resolve(__dirname, '../extension/popup.js'), 'utf8');
+        assert(js.includes('function initOwnerAutoSetup()'), 'initOwnerAutoSetup function must exist');
+        assert(js.includes('xpider_owner_backup_snapshot'), 'Must persist reversible restore snapshot');
+        assert(js.includes('http://127.0.0.1:8088/contact-standard.html'), 'Must configure the verified 7 local fixtures');
+        assert(js.includes("INSTALL_OWNER_TEST_GUARD"), 'Auto setup must trigger DNR guard installation');
+        assert(js.includes("REMOVE_OWNER_TEST_GUARD"), 'Restore must trigger DNR guard removal if test mode deactivated');
+        assert(js.includes("updateAutoSetupUI('READY')"), 'Must update status to READY when auto setup succeeds');
+        console.log('    ✅ PASS: One-click auto setup profile, fixture loading, and reversible restore logic verified.');
+        passedCount++;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // SCENARIO Q: Start Campaign Blocks Public Targets when Owner Test Mode is ON
+    // ─────────────────────────────────────────────────────────────────────────────
+    console.log('\n>>> [SCENARIO Q] Start Campaign Blocks Public Targets when Owner Test Mode is ON');
+    {
+        const js = fs.readFileSync(path.resolve(__dirname, '../extension/popup.js'), 'utf8');
+        assert(js.includes("START_BLOCKED_TEST_MODE_PUBLIC_QUEUE"), 'popup.js must explicitly guard against public queue in test mode');
+        assert(js.includes("OWNER FUNCTIONAL TEST MODE ACTIVE"), 'User must be presented clear actionable warning');
+        console.log('    ✅ PASS: Start campaign strictly blocks public targets when Owner Test Mode is ON.');
         passedCount++;
     }
 

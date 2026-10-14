@@ -63,23 +63,29 @@ const filesToMirror = [
     'modules/privacy-gateway.js'
 ];
 
+const EXT = path.join(__dirname, 'extension');
+
 let allMatch = true;
 for (const rel of filesToMirror) {
     const srcFile = path.join(SRC, rel);
     const bldFile = path.join(BLD, rel);
+    const extFile = path.join(EXT, rel);
     fs.mkdirSync(path.dirname(bldFile), { recursive: true });
+    fs.mkdirSync(path.dirname(extFile), { recursive: true });
     fs.copyFileSync(srcFile, bldFile);
+    fs.copyFileSync(srcFile, extFile);
 
     const srcSha = getSha(srcFile);
     const bldSha = getSha(bldFile);
-    if (srcSha !== bldSha) {
-        console.error(`Mismatch for ${rel}: src=${srcSha} bld=${bldSha}`);
+    const extSha = getSha(extFile);
+    if (srcSha !== bldSha || srcSha !== extSha) {
+        console.error(`Mismatch for ${rel}: src=${srcSha} bld=${bldSha} ext=${extSha}`);
         allMatch = false;
     }
 }
 
 if (allMatch) {
-    console.log(`[MIRROR_PARITY] All ${filesToMirror.length} files match 100% SHA256 parity.`);
+    console.log(`[MIRROR_PARITY] All ${filesToMirror.length} files match 100% SHA256 parity across SRC, BLD, and EXT.`);
 } else {
     process.exit(1);
 }

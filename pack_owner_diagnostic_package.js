@@ -64,6 +64,11 @@ if (fs.existsSync('router')) {
   fs.cpSync('router', stagingRouterDir, { recursive: true });
 }
 
+// Copy XPIDER_AUTO_SETUP.bat to staging root
+if (fs.existsSync('XPIDER_AUTO_SETUP.bat')) {
+  fs.copyFileSync('XPIDER_AUTO_SETUP.bat', path.join(stagingDir, 'XPIDER_AUTO_SETUP.bat'));
+}
+
 function getAllFiles(dir, base = dir) {
   let results = [];
   const list = fs.readdirSync(dir);

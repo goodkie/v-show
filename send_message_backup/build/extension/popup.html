@@ -8,6 +8,20 @@
 </head>
 <body class="side-panel-mode">
     <div class="app-container">
+        <!-- Dedicated Top Utility Bar: Always visible, never clipped at >=320px -->
+        <div class="top-nav-bar" id="top-nav-bar">
+            <div class="top-nav-left">
+                <span class="nav-channel-badge" title="Diagnostic Test Channel">● TEST-ONLY CHANNEL</span>
+            </div>
+            <div class="top-nav-right">
+                <button id="reset-all-lists-btn" class="nav-btn danger-nav-btn" type="button" title="Reset all accumulated list data across all tabs">⚠️ Reset Lists</button>
+                <button id="settings-toggle" class="nav-btn settings-nav-btn" type="button" title="Settings" aria-label="Settings">
+                    <span class="gear-icon">⚙️</span>
+                    <span class="settings-btn-text">Settings</span>
+                </button>
+            </div>
+        </div>
+
         <header class="premium-header">
             <div class="header-main">
                 <div class="title-container">
@@ -16,10 +30,6 @@
                         <h1 class="main-title" data-i18n="app_title">XPIDER AutoForm</h1>
                         <h2 class="sub-title">Sender Pro <span class="version-tag">v1.2.0</span> <span id="build-provenance-badge" class="build-provenance-tag" style="font-size: 10px; background: rgba(234, 179, 8, 0.2); color: #eab308; border: 1px solid rgba(234, 179, 8, 0.5); border-radius: 4px; padding: 2px 6px; margin-left: 6px; font-family: monospace; font-weight: bold;" title="TEST-ONLY: R6.9G.10.3">TEST-ONLY R6.9G.10.3</span></h2>
                     </div>
-                </div>
-                <div class="header-actions">
-                    <button id="reset-all-lists-btn" class="danger-btn-small" style="background: rgba(255, 51, 51, 0.18); border: 1px solid #ff3333; color: #ff6666; font-size: 11px; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-weight: bold; margin-right: 6px;" title="Reset all accumulated list data across all tabs">⚠️ Reset All Lists</button>
-                    <button id="settings-toggle" class="gear-btn icon-only" title="Settings">⚙️</button>
                 </div>
             </div>
             <p class="subtitle" data-i18n="app_subtitle">The Next-Gen AI Form Submission Engine</p>
@@ -82,6 +92,32 @@
             </div>
 
             <div class="tab-content active" id="campaign-tab">
+                <!-- [R6.9G.10.3.7.1.4.5] Owner Software Functional Test Suite Card -->
+                <div id="owner-functional-test-card" class="owner-test-card" style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.95)); border: 1px solid rgba(234, 179, 8, 0.4); border-radius: 10px; padding: 12px; margin-bottom: 12px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <span style="font-size: 12px; font-weight: 700; color: #fde047; display: flex; align-items: center; gap: 6px;">
+                            🧪 Owner Software Functional Test
+                        </span>
+                        <span id="auto-setup-status-pill" style="font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 4px; background: rgba(148, 163, 184, 0.2); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3); font-family: monospace;">STANDBY</span>
+                    </div>
+                    <p id="auto-setup-desc-text" style="font-size: 11px; line-height: 1.4; color: #cbd5e1; margin-bottom: 10px;">
+                        One-click automated setup for local software-only testing. Automatically isolates 7 verified local fixtures, preserves public list, configures delays, and verifies network guard fail-closed.
+                    </p>
+                    <div id="auto-setup-actions-bar" style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <button type="button" id="auto-setup-btn" class="primary-btn" style="background: linear-gradient(135deg, #eab308, #ca8a04); color: #000; font-weight: 700; font-size: 11px; padding: 7px 14px; border-radius: 6px; border: none; cursor: pointer; display: flex; align-items: center; gap: 4px; box-shadow: 0 0 10px rgba(234, 179, 8, 0.3);">
+                            ✨ AUTO SETUP
+                        </button>
+                        <button type="button" id="run-function-test-btn" class="primary-btn" style="display: none; background: linear-gradient(135deg, #10b981, #059669); color: #fff; font-weight: 700; font-size: 11px; padding: 7px 14px; border-radius: 6px; border: none; cursor: pointer; align-items: center; gap: 4px; box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);">
+                            🚀 RUN FUNCTION TEST
+                        </button>
+                        <button type="button" id="restore-user-settings-btn" class="secondary-btn" style="display: none; background: rgba(255, 255, 255, 0.1); color: #e2e8f0; font-size: 11px; padding: 7px 12px; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.2); cursor: pointer; align-items: center; gap: 4px;">
+                            ↩ RESTORE PREVIOUS SETTINGS/LIST
+                        </button>
+                    </div>
+                    <div id="auto-setup-feedback" style="display: none; margin-top: 10px; font-size: 11px; padding: 8px 10px; border-radius: 6px; font-family: monospace; line-height: 1.4;">
+                    </div>
+                </div>
+
                 <!-- Wit.ai Audio Solver Quick Status Bar -->
                 <div id="wit-status-bar" style="display: flex; justify-content: space-between; align-items: center; background: rgba(0, 255, 204, 0.06); border: 1px solid rgba(0, 255, 204, 0.25); border-radius: 6px; padding: 6px 12px; margin-bottom: 10px; font-size: 11px;">
                     <span>🎧 AI Audio Solver (Wit.ai): <span id="wit-status-text" style="color: #00ffcc; font-weight: bold;">Configured</span></span>
@@ -430,22 +466,6 @@
                             <p class="settings-subtip" id="api-link-tip"><a href="https://2captcha.com" target="_blank" style="color:#00ffcc;text-decoration:underline;font-size:11px;">Get your 2Captcha API Key here ↗</a></p>
                         </div>
 
-                        <!-- CAPTCHA Request Waiting / Polling Settings (Dynamic) -->
-                        <div class="settings-group" id="captcha-timing-group" style="display: block;">
-                            <label data-i18n="label_captcha_waiting_time">Request Waiting Time & Polling</label>
-                            <div style="display: flex; gap: 8px; align-items: center; margin-top: 4px;">
-                                <div style="flex: 1;">
-                                    <span style="font-size: 11px; color: var(--text-muted, #888); display: block; margin-bottom: 3px;" data-i18n="label_poll_interval">Poll Interval (sec)</span>
-                                    <input type="number" id="captcha-poll-interval" class="premium-input" placeholder="3" min="1" max="30" step="1" style="height: 32px; font-size: 12px;">
-                                </div>
-                                <div style="flex: 1;">
-                                    <span style="font-size: 11px; color: var(--text-muted, #888); display: block; margin-bottom: 3px;" data-i18n="label_max_wait">Max Wait (sec)</span>
-                                    <input type="number" id="captcha-max-wait" class="premium-input" placeholder="120" min="10" max="600" step="5" style="height: 32px; font-size: 12px;">
-                                </div>
-                            </div>
-                            <p class="settings-subtip" data-i18n="captcha_timing_tip">Time to wait between polling requests and maximum wait time for CAPTCHA solving.</p>
-                        </div>
-
                         <!-- Wit.ai Key Input (Dynamic) -->
                         <div class="settings-group" id="audio-stt-group" style="display: none;">
                             <label data-i18n="label_stt_api_key">Audio STT Key (Wit.ai)</label>
@@ -454,26 +474,6 @@
                                 <a href="https://wit.ai" target="_blank" id="wit-settings-link" style="color: #00ffcc; font-size: 11px; text-decoration: underline; font-weight: 500;">Get your free Wit.ai Server Access Token here ↗</a>
                             </div>
                             <p class="settings-subtip" data-i18n="stt_service_tip"></p>
-                        </div>
-
-                        <!-- Stealth Mode -->
-                        <div class="settings-group">
-                            <label data-i18n="label_stealth_mode">Stealth Mode (Mimic Human)</label>
-                            <label class="switch">
-                                <input type="checkbox" id="stealth-mode-toggle">
-                                <span class="slider round"></span>
-                            </label>
-                            <p class="settings-subtip" data-i18n="stealth_tip">Mimics human behavior to avoid detection.</p>
-                        </div>
-
-                        <!-- Double Submit -->
-                        <div class="settings-group">
-                            <label data-i18n="label_double_submit">Double Submit (Submit twice)</label>
-                            <label class="switch">
-                                <input type="checkbox" id="double-submit-toggle">
-                                <span class="slider round"></span>
-                            </label>
-                            <p class="settings-subtip" data-i18n="double_submit_tip">Automatically submits the form one more time after a successful submission.</p>
                         </div>
 
                         <!-- [R6.9G.9] Privacy Gateway Group -->
@@ -509,7 +509,63 @@
                             </div>
                             <p class="settings-subtip" style="color: #fca5a5;">When active, campaign START is strictly blocked if protected transport fails.</p>
 
-                            <!-- [R6.9G.10.3.8] External VPN Monitor (Observe Only) Section -->
+                            </div>
+
+                        <!-- [R6.9G.10.3.8 Owner Functional Test Mode - Local Controlled Pages Only] -->
+                        <div class="settings-group" id="owner-function-test-group" style="background: rgba(234, 179, 8, 0.08); border: 1px dashed #eab308; border-radius: 6px; padding: 10px; margin-top: 10px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <label style="font-size: 11px; font-weight: 700; color: #fde047; margin: 0;">🧪 Owner Functional Test Mode</label>
+                                <label class="switch-small" style="margin: 0;">
+                                    <input type="checkbox" id="owner-function-test-toggle">
+                                    <span class="slider-small round"></span>
+                                </label>
+                            </div>
+                            <p class="settings-subtip" style="color: #fef08a; margin-top: 4px; font-size: 10px; line-height: 1.3;">
+                                TEST-ONLY: Bypasses relay/proxy requirement for local test fixtures ONLY (http://127.0.0.1/* and http://localhost/*, max 10 targets). All public targets remain strictly blocked.
+                            </p>
+                        </div>
+
+                        <!-- Advanced Settings Disclosure -->
+                        <details id="advanced-settings-disclosure" class="settings-advanced-details">
+                            <summary>⚙️ Advanced Network, Routing & Diagnostics (Click to Expand)</summary>
+                            <div class="advanced-settings-content">
+                                <!-- CAPTCHA Request Waiting / Polling Settings (Dynamic) -->
+                        <div class="settings-group" id="captcha-timing-group" style="display: block;">
+                            <label data-i18n="label_captcha_waiting_time">Request Waiting Time & Polling</label>
+                            <div style="display: flex; gap: 8px; align-items: center; margin-top: 4px;">
+                                <div style="flex: 1;">
+                                    <span style="font-size: 11px; color: var(--text-muted, #888); display: block; margin-bottom: 3px;" data-i18n="label_poll_interval">Poll Interval (sec)</span>
+                                    <input type="number" id="captcha-poll-interval" class="premium-input" placeholder="3" min="1" max="30" step="1" style="height: 32px; font-size: 12px;">
+                                </div>
+                                <div style="flex: 1;">
+                                    <span style="font-size: 11px; color: var(--text-muted, #888); display: block; margin-bottom: 3px;" data-i18n="label_max_wait">Max Wait (sec)</span>
+                                    <input type="number" id="captcha-max-wait" class="premium-input" placeholder="120" min="10" max="600" step="5" style="height: 32px; font-size: 12px;">
+                                </div>
+                            </div>
+                            <p class="settings-subtip" data-i18n="captcha_timing_tip">Time to wait between polling requests and maximum wait time for CAPTCHA solving.</p>
+                        </div>
+
+                        <!-- Stealth Mode -->
+                        <div class="settings-group">
+                            <label data-i18n="label_stealth_mode">Stealth Mode (Mimic Human)</label>
+                            <label class="switch">
+                                <input type="checkbox" id="stealth-mode-toggle">
+                                <span class="slider round"></span>
+                            </label>
+                            <p class="settings-subtip" data-i18n="stealth_tip">Mimics human behavior to avoid detection.</p>
+                        </div>
+
+                        <!-- Double Submit -->
+                        <div class="settings-group">
+                            <label data-i18n="label_double_submit">Double Submit (Submit twice)</label>
+                            <label class="switch">
+                                <input type="checkbox" id="double-submit-toggle">
+                                <span class="slider round"></span>
+                            </label>
+                            <p class="settings-subtip" data-i18n="double_submit_tip">Automatically submits the form one more time after a successful submission.</p>
+                        </div>
+
+                                <!-- [R6.9G.10.3.8] External VPN Monitor (Observe Only) Section -->
                             <div id="privacy-system-vpn-fields" style="display: block; margin-top: 8px; background: rgba(30, 41, 59, 0.6); padding: 8px; border-radius: 6px; border: 1px solid #334155;">
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
                                     <span style="font-size: 11px; color: #38bdf8; font-weight: 700;">🌐 EXTERNAL VPN MONITOR (OBSERVE ONLY)</span>
@@ -710,19 +766,7 @@
                             </div>
                         </div>
 
-                        <!-- [R6.9G.10.3.8 Owner Functional Test Mode - Local Controlled Pages Only] -->
-                        <div class="settings-group" id="owner-function-test-group" style="background: rgba(234, 179, 8, 0.08); border: 1px dashed #eab308; border-radius: 6px; padding: 10px; margin-top: 10px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <label style="font-size: 11px; font-weight: 700; color: #fde047; margin: 0;">🧪 Owner Functional Test Mode</label>
-                                <label class="switch-small" style="margin: 0;">
-                                    <input type="checkbox" id="owner-function-test-toggle">
-                                    <span class="slider-small round"></span>
-                                </label>
-                            </div>
-                            <p class="settings-subtip" style="color: #fef08a; margin-top: 4px; font-size: 10px; line-height: 1.3;">
-                                TEST-ONLY: Bypasses relay/proxy requirement for local test fixtures ONLY (http://127.0.0.1/* and http://localhost/*, max 10 targets). All public targets remain strictly blocked.
-                            </p>
-                        </div>
+                        
 
                         <!-- [v18.23.0] Emergency Recovery Tools -->
                         <div class="settings-group emergency-group">
@@ -731,6 +775,8 @@
                             <button id="settings-reset-all-lists-btn" class="danger-btn-small" style="margin-top: 8px; width: 100%; background: rgba(255, 51, 51, 0.2); border: 1px solid #ff3333; color: #ff9999;">⚠️ RESET ALL LIST DATA</button>
                             <p class="settings-subtip" data-i18n="reset_tip">Click if the engine stalls for more than 6 seconds.</p>
                         </div>
+                            </div>
+                        </details>
 
                         <button id="save-settings-btn" class="primary-btn" data-i18n="btn_save_settings">Save Settings</button>
                     </div>

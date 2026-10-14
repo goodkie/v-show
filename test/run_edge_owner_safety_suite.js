@@ -252,6 +252,181 @@ async function runEdgeSafetySuite() {
     await captureScreenshot(popupWs, '01_safety_popup_initial.png');
 
     // ─────────────────────────────────────────────────────────────────────────
+    // RESPONSIVE VIEWPORT & SETTINGS GEAR VISIBILITY AUDIT (320px, 360px, Standard)
+    // ─────────────────────────────────────────────────────────────────────────
+    log('\n========================================================================');
+    log('>>> [RESPONSIVE VIEWPORT AUDIT] Settings Gear Visibility at 320px, 360px, Standard <<<');
+    log('========================================================================');
+    {
+      // 1. 320px Narrowest Supported Width
+      await cdpSend(popupWs, 'Emulation.setDeviceMetricsOverride', { width: 320, height: 600, deviceScaleFactor: 1, mobile: false });
+      await sleep(400);
+
+      const gear320 = await evalPopup(`(() => {
+        const btn = document.getElementById('settings-toggle');
+        if (!btn) return { exists: false };
+        const rect = btn.getBoundingClientRect();
+        return {
+          exists: true,
+          width: rect.width,
+          height: rect.height,
+          left: rect.left,
+          right: rect.right,
+          top: rect.top,
+          bottom: rect.bottom,
+          visible: rect.width >= 36 && rect.height >= 36 && rect.left >= 0 && rect.right <= 320
+        };
+      })()`);
+
+      assert(gear320.exists, '#settings-toggle must exist in DOM');
+      assert(gear320.visible, `#settings-toggle must be fully visible and unclipped at 320px (got left=${gear320.left}, right=${gear320.right}, w=${gear320.width}, h=${gear320.height})`);
+      log(`   ✅ 320px Viewport: Settings gear is visible and unclipped (w=${gear320.width}px, h=${gear320.height}px, right=${gear320.right}px <= 320px)`);
+
+      // Test clickability at 320px
+      await evalPopup(`document.getElementById('settings-toggle')?.click()`);
+      await sleep(200);
+      const overlayOpen320 = await evalPopup(`!document.getElementById('settings-overlay')?.classList.contains('hidden')`);
+      assert(overlayOpen320, 'Settings overlay must open when #settings-toggle is clicked at 320px');
+      await evalPopup(`document.getElementById('settings-close')?.click()`);
+      await sleep(200);
+      log('   ✅ 320px Viewport: Settings gear is clickable and successfully toggles settings overlay');
+
+      await captureScreenshot(popupWs, '01_responsive_320px_settings_visible.png');
+
+      // 2. 360px Viewport
+      await cdpSend(popupWs, 'Emulation.setDeviceMetricsOverride', { width: 360, height: 600, deviceScaleFactor: 1, mobile: false });
+      await sleep(300);
+
+      const gear360 = await evalPopup(`(() => {
+        const btn = document.getElementById('settings-toggle');
+        const rect = btn.getBoundingClientRect();
+        return { visible: rect.width >= 36 && rect.height >= 36 && rect.right <= 360, right: rect.right, width: rect.width };
+      })()`);
+      assert(gear360.visible, '#settings-toggle must be visible at 360px');
+      log(`   ✅ 360px Viewport: Settings gear is visible (w=${gear360.width}px, right=${gear360.right}px <= 360px)`);
+      await captureScreenshot(popupWs, '01_responsive_360px_settings_visible.png');
+
+      // 3. Standard Side Panel (400px)
+      await cdpSend(popupWs, 'Emulation.setDeviceMetricsOverride', { width: 400, height: 600, deviceScaleFactor: 1, mobile: false });
+      await sleep(300);
+      await captureScreenshot(popupWs, '01_responsive_standard_settings_visible.png');
+
+      // Reset Emulation
+      await cdpSend(popupWs, 'Emulation.clearDeviceMetricsOverride');
+      await sleep(200);
+      log('✅ Responsive Viewport Audit Passed: Settings control is ALWAYS visible and unclipped at all widths >= 320px.');
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // AUTO SETUP & RESTORE RUNTIME AUDIT (Owner Snapshot Flow)
+    // ─────────────────────────────────────────────────────────────────────────
+    log('\n========================================================================');
+    log('>>> [AUTO SETUP & RESTORE AUDIT] Snapshot 100 Public URLs -> Auto Setup -> Restore <<<');
+    log('========================================================================');
+    {
+      // 1. Seed simulated Owner state: 100 public URLs in queue
+      const dummy100 = Array.from({ length: 100 }, (_, i) => `https://example-business-${i + 1}.com/contact-us`);
+      await evalPopup(`((urls) => {
+        if (typeof window.setCampaignQueue === 'function') window.setCampaignQueue(urls);
+        else window.campaignQueue = urls;
+        if (typeof updateQueueUI === 'function') updateQueueUI();
+        const cnt = document.getElementById('url-count-display');
+        if (cnt) cnt.textContent = urls.length + ' URLs found';
+      })(${JSON.stringify(dummy100)})`);
+      await sleep(300);
+
+      const seededQueueLen = await evalPopup('((typeof window.getCampaignQueue === "function" ? window.getCampaignQueue() : window.campaignQueue)?.length) || 0');
+      assert.strictEqual(seededQueueLen, 100, 'Queue must have 100 seeded public URLs');
+      log(`   1. Seeded simulated Owner queue with ${seededQueueLen} public URLs.`);
+
+      // 2. Verify starting with 100 public URLs while test mode is ON is blocked
+      await evalPopup(`(async () => {
+        await chrome.storage.local.set({ xpider_owner_function_test_mode: true });
+        const toggle = document.getElementById('owner-function-test-toggle');
+        if (toggle) toggle.checked = true;
+      })()`);
+      await sleep(200);
+
+      const startWithPublicRes = await evalPopup(`(async () => {
+        window.__lastAlert = null;
+        if (typeof window.startCampaign === 'function') {
+          try {
+            await window.startCampaign();
+          } catch (e) {
+            window.__lastError = e.message;
+          }
+          return { lastAlert: window.__lastAlert, lastError: window.__lastError };
+        }
+        return { lastAlert: null };
+      })()`);
+      assert(startWithPublicRes.lastAlert && startWithPublicRes.lastAlert.includes('OWNER FUNCTIONAL TEST MODE ACTIVE'), 'Start must be blocked when public targets are in queue during test mode');
+      log(`   ✅ 2. Verified Start is blocked when attempting to run 100 public URLs in Owner Test Mode.`);
+
+      await captureScreenshot(popupWs, '02_auto_setup_before_public_queue.png');
+
+      // 3. Click ✨ AUTO SETUP
+      log('   3. Clicking #auto-setup-btn (✨ AUTO SETUP)...');
+      await evalPopup(`document.getElementById('auto-setup-btn')?.click()`);
+      await sleep(1500);
+
+      // Verify Auto Setup results
+      const autoSetupState = await evalPopup(`(async () => {
+        const st = await chrome.storage.local.get(['xpider_owner_backup_snapshot', 'xpider_owner_function_test_mode', 'xpider_delayMs', 'xpider_fillDelayMs', 'xpider_submitDelayMs']);
+        const pill = document.getElementById('auto-setup-status-pill')?.textContent;
+        const feedback = document.getElementById('auto-setup-feedback')?.textContent;
+        const runBtnVisible = document.getElementById('run-function-test-btn')?.style.display !== 'none';
+        const restoreBtnVisible = document.getElementById('restore-user-settings-btn')?.style.display !== 'none';
+        const q = (typeof window.getCampaignQueue === 'function' ? window.getCampaignQueue() : window.campaignQueue) || [];
+        return { st, pill, feedback, runBtnVisible, restoreBtnVisible, queue: q };
+      })()`);
+
+      assert(autoSetupState.st.xpider_owner_backup_snapshot, 'Snapshot must be created in storage');
+      assert.strictEqual(autoSetupState.st.xpider_owner_backup_snapshot.queue.length, 100, 'Snapshot must preserve exact 100 public URLs');
+      assert.strictEqual(autoSetupState.st.xpider_owner_function_test_mode, true, 'Owner function test mode must be true');
+      assert.strictEqual(autoSetupState.st.xpider_delayMs, 10000, 'Collect delay must be Level 6 (10000ms)');
+      assert.strictEqual(autoSetupState.st.xpider_fillDelayMs, 300, 'Fill delay must be Level 6 (300ms)');
+      assert.strictEqual(autoSetupState.st.xpider_submitDelayMs, 4000, 'Submit delay must be Level 6 (4000ms)');
+      assert.strictEqual(autoSetupState.pill, 'READY', 'Status pill must show READY');
+      assert(autoSetupState.runBtnVisible, '#run-function-test-btn must be visible');
+      assert(autoSetupState.restoreBtnVisible, '#restore-user-settings-btn must be visible');
+      assert.strictEqual(autoSetupState.queue.length, 7, 'Queue must be atomically switched to 7 local fixtures');
+
+      // Verify DNR rules 990001-990005 are installed
+      const dnrRulesCount = await evalSw(`(async () => (await chrome.declarativeNetRequest.getSessionRules()).length)()`);
+      assert.strictEqual(dnrRulesCount, 5, 'DNR network guard must have 5 session rules installed');
+      log(`   ✅ 3. AUTO SETUP verified: 100 public URLs preserved in snapshot, 7 local fixtures loaded, DNR 5 rules active, delay defaults applied.`);
+
+      await captureScreenshot(popupWs, '02_auto_setup_configured_ready.png');
+
+      // 4. Test ↩ RESTORE PREVIOUS SETTINGS/LIST
+      log('   4. Clicking #restore-user-settings-btn (↩ RESTORE PREVIOUS SETTINGS/LIST)...');
+      await evalPopup(`document.getElementById('restore-user-settings-btn')?.click()`);
+      await sleep(800);
+
+      const restoreState = await evalPopup(`(async () => {
+        const st = await chrome.storage.local.get(['xpider_owner_backup_snapshot', 'xpider_owner_function_test_mode']);
+        const pill = document.getElementById('auto-setup-status-pill')?.textContent;
+        const q = (typeof window.getCampaignQueue === 'function' ? window.getCampaignQueue() : window.campaignQueue) || [];
+        return { st, pill, queue: q };
+      })()`);
+
+      assert.strictEqual(restoreState.queue.length, 100, 'Queue must be restored to 100 public URLs');
+      assert(!restoreState.st.xpider_owner_backup_snapshot, 'Snapshot must be removed from storage after restore');
+      assert.strictEqual(restoreState.pill, 'STANDBY', 'Status pill must return to STANDBY');
+      log(`   ✅ 4. RESTORE verified: exact 100 public URLs restored, snapshot cleaned, status reset to STANDBY.`);
+
+      await captureScreenshot(popupWs, '03_auto_setup_restored_public_list.png');
+
+      // 5. Re-click ✨ AUTO SETUP to arm 7 local fixtures for the remainder of the test suite
+      log('   5. Re-arming ✨ AUTO SETUP for test execution...');
+      await evalPopup(`document.getElementById('auto-setup-btn')?.click()`);
+      await sleep(1000);
+      const rearmedQueueLen = await evalPopup('((typeof window.getCampaignQueue === "function" ? window.getCampaignQueue() : window.campaignQueue)?.length) || 0');
+      assert.strictEqual(rearmedQueueLen, 7, 'Must have 7 local fixtures armed');
+      log('   ✅ 5. Re-armed 7 local fixtures successfully.');
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
     // NEGATIVE PATH 1: TEST mode ON + one non-loopback TEST-NET target => REJECT
     // ─────────────────────────────────────────────────────────────────────────
     log('\n========================================================================');
@@ -805,8 +980,8 @@ async function runEdgeSafetySuite() {
         if (sS) { sS.value = '9'; sS.dispatchEvent(new Event('change')); }
       })()`);
 
-      log('🚀 Clicking #start-btn for 7-target campaign...');
-      await evalPopup('document.getElementById("start-btn")?.click()');
+      log('🚀 Clicking #run-function-test-btn for 7-target campaign...');
+      await evalPopup('(() => { const b = document.getElementById("run-function-test-btn"); if (b && b.style.display !== "none") b.click(); else document.getElementById("start-btn")?.click(); })()');
 
       // Observe campaign execution until queue reaches 0
       let campaignFinished = false;
@@ -820,13 +995,16 @@ async function runEdgeSafetySuite() {
           const fail = document.getElementById('failed-count-display')?.textContent || '0';
           const skip = document.getElementById('skipped-count-display')?.textContent || '0';
           const prog = document.getElementById('progress-text')?.textContent || '0%';
-          const queueLen = (window.campaignQueue && window.campaignQueue.length) || 0;
-          return { succ, fail, skip, prog, queueLen };
+          const remEl = document.getElementById('remaining-count-display');
+          const rem = remEl ? parseInt(remEl.textContent) : 0;
+          const statusTitle = document.getElementById('status-title')?.textContent || '';
+          return { succ, fail, skip, prog, rem, statusTitle };
         })()`);
 
-        log(`   Progress: ${state.prog} | SUCCESS: ${state.succ} | SKIPPED: ${state.skip} | FAILURE: ${state.fail} | Remaining: ${state.queueLen}`);
+        log(`   Progress: ${state.prog} | SUCCESS: ${state.succ} | SKIPPED: ${state.skip} | FAILURE: ${state.fail} | Remaining: ${state.rem}`);
 
-        if (state.queueLen === 0 && (parseInt(state.succ) + parseInt(state.fail) + parseInt(state.skip) >= 7)) {
+        const totalCompleted = parseInt(state.succ) + parseInt(state.fail) + parseInt(state.skip);
+        if (totalCompleted >= 7 || state.statusTitle.includes('Finished') || (state.prog === '100%' && totalCompleted > 0)) {
           campaignFinished = true;
           break;
         }

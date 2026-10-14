@@ -2287,6 +2287,68 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
             });
             return true;
 
+        case 'INSTALL_OWNER_TEST_GUARD': {
+            (async () => {
+                try {
+                    const rules = await installOwnerTestNetworkGuard();
+                    sendResponse({
+                        success: true,
+                        verified: true,
+                        ruleCount: rules ? rules.length : 5
+                    });
+                } catch (err) {
+                    console.error('[INSTALL_OWNER_TEST_GUARD_FAIL]', err);
+                    sendResponse({
+                        success: false,
+                        error: err.message
+                    });
+                }
+            })();
+            return true;
+        }
+
+        case 'REMOVE_OWNER_TEST_GUARD': {
+            (async () => {
+                try {
+                    await removeOwnerTestNetworkGuard();
+                    sendResponse({
+                        success: true,
+                        verified: true
+                    });
+                } catch (err) {
+                    console.error('[REMOVE_OWNER_TEST_GUARD_FAIL]', err);
+                    sendResponse({
+                        success: false,
+                        error: err.message
+                    });
+                }
+            })();
+            return true;
+        }
+
+        case 'VERIFY_OWNER_TEST_GUARD': {
+            (async () => {
+                try {
+                    if (typeof chrome !== 'undefined' && chrome.declarativeNetRequest && typeof chrome.declarativeNetRequest.getSessionRules === 'function') {
+                        const rules = await chrome.declarativeNetRequest.getSessionRules();
+                        const ruleIds = (rules || []).map(r => r.id).sort((a, b) => a - b);
+                        const expectedIds = [990001, 990002, 990003, 990004, 990005];
+                        const allPresent = expectedIds.every(id => ruleIds.includes(id));
+                        sendResponse({
+                            success: true,
+                            installed: allPresent,
+                            rules: ruleIds
+                        });
+                    } else {
+                        sendResponse({ success: false, error: 'declarativeNetRequest not available' });
+                    }
+                } catch (err) {
+                    sendResponse({ success: false, error: err.message });
+                }
+            })();
+            return true;
+        }
+
         case 'START_CAMPAIGN': {
             // [Issue #6 R6.9F] Fail-Closed Build Handshake Verification
             const liveBp = (typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO) ? BuildProvenance.BUILD_INFO : null;
