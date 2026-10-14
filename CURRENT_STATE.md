@@ -8,7 +8,7 @@
 - Branch: upgrade/phase-0-1
 - State Rev: 2026-10-14.01
 - Last Directive: Owner Directive Comment #6159120580 (`[R6.9G.10.3.7.1.4.5 — ONE-CLICK AUTO SETUP + ALWAYS-VISIBLE SETTINGS]`)
-- Last Receipt: R6.9G.10.3.7.1.4.5 One-Click Auto Setup + Always-Visible Settings Receipt (pending post)
+- Last Receipt: #6160443452 (`https://github.com/goodkie/v-show/issues/6#issuecomment-6160443452`)
 - Current Release Tag: `v6.9g.10.3-audit.7.1.4.5`
 
 ## Current Gate
@@ -43,7 +43,7 @@
   - **Positive Path**: Full 7-target campaign executed with exact expected outcome (4 SUCCESS, 2 SKIPPED, 1 FAILURE).
   - **Secret Hygiene**: Zero secrets or credentials leaked across 337 files.
 - Rollback Anchor: `dc0740a0c69e2f7fa96b6989841acf0831b3619e` (immutable baseline rollback anchor).
-- Next Action: Post final receipt to Issue #6.
+- Next Action: Receipt #6160443452 posted to Issue #6. Await ChatGPT Final Gate / Owner Functional Verification.
 
 ## Lineage & Remote Git SHAs
 - `ROLLBACK_ANCHOR`: `dc0740a0c69e2f7fa96b6989841acf0831b3619e` (immutable baseline anchor)
