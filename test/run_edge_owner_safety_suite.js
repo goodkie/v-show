@@ -130,6 +130,13 @@ async function runEdgeSafetySuite() {
     assert(versionData, 'Could not connect to Edge DevTools');
     log(`✅ Connected to Microsoft Edge: ${versionData['Browser']}`);
 
+    // Connect to Browser Target (for lifecycle control like Target.closeTarget)
+    const browserWs = new WebSocket(versionData.webSocketDebuggerUrl);
+    await new Promise((resolve, reject) => {
+      browserWs.onopen = resolve;
+      browserWs.onerror = reject;
+    });
+
     // Discover Service Worker Target
     let swTarget = null;
     for (let i = 0; i < 40; i++) {
@@ -145,25 +152,30 @@ async function runEdgeSafetySuite() {
     const extId = new URL(swTarget.url).hostname;
     log(`✅ Discovered Extension ID: ${extId}`);
 
-    const swWs = new WebSocket(swTarget.webSocketDebuggerUrl);
+    let currentSwTarget = swTarget;
+    let currentSwWs = new WebSocket(currentSwTarget.webSocketDebuggerUrl);
     await new Promise((resolve, reject) => {
-      swWs.onopen = resolve;
-      swWs.onerror = reject;
+      currentSwWs.onopen = resolve;
+      currentSwWs.onerror = reject;
     });
 
-    await cdpSend(swWs, 'Runtime.enable');
-    swWs.addEventListener('message', (evt) => {
-      try {
-        const d = JSON.parse(evt.data.toString());
-        if (d.method === 'Runtime.consoleAPICalled') {
-          const args = (d.params.args || []).map(a => a.value !== undefined ? a.value : (a.description || '')).join(' ');
-          log(`[SW_CONSOLE] ${args}`);
-        }
-      } catch (_) {}
-    });
+    function setupSwWsListeners(ws) {
+      ws.addEventListener('message', (evt) => {
+        try {
+          const d = JSON.parse(evt.data.toString());
+          if (d.method === 'Runtime.consoleAPICalled') {
+            const args = (d.params.args || []).map(a => a.value !== undefined ? a.value : (a.description || '')).join(' ');
+            log(`[SW_CONSOLE] ${args}`);
+          }
+        } catch (_) {}
+      });
+    }
+
+    await cdpSend(currentSwWs, 'Runtime.enable');
+    setupSwWsListeners(currentSwWs);
 
     const evalSw = async (expression) => {
-      const res = await cdpSend(swWs, 'Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true });
+      const res = await cdpSend(currentSwWs, 'Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true });
       if (res.exceptionDetails) return null;
       return res.result ? res.result.value : null;
     };
@@ -618,14 +630,16 @@ async function runEdgeSafetySuite() {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // REGRESSION CASE B: Service Worker Restart Guard Recovery
+    // REGRESSION CASE B: Service Worker Termination & Automatic Restart Guard Recovery
     // ─────────────────────────────────────────────────────────────────────────
     log('\n========================================================================');
-    log('>>> [REGRESSION CASE B] Service Worker Restart Guard Recovery <<<');
+    log('>>> [REGRESSION CASE B] Actual MV3 Service Worker Restart & Automatic Guard Recovery <<<');
     log('========================================================================');
     {
-      // 1. Prepare stored test mode session in chrome.storage.local
+      // 1. Prepare stored test mode session and install initial DNR rules
+      log('   1. Preparing paused Owner Test session and installing initial DNR rules...');
       await evalSw(`(async () => {
+        await installOwnerTestNetworkGuard();
         await chrome.storage.local.set({
           xpider_owner_function_test_mode: true,
           xpider_owner_function_test_mode_active: true,
@@ -639,40 +653,110 @@ async function runEdgeSafetySuite() {
         });
       })()`);
 
-      // 2. Trigger SW boot reconciliation
-      log('   Simulating Service Worker restart & state-aware boot reconciliation...');
-      const reconcileResult = await evalSw(`(async () => {
+      const rulesBeforeRestart = await evalSw('(async () => (await chrome.declarativeNetRequest.getSessionRules()).length)()');
+      assert.strictEqual(rulesBeforeRestart, 5, 'Initial DNR rules count must be 5');
+      log(`   ✅ Initial DNR rules confirmed active before termination: count=${rulesBeforeRestart}`);
+
+      // 2. Capture old Service Worker target identity
+      const oldSwId = currentSwTarget.id;
+      log(`   2. Old Service Worker Target Identity: ${oldSwId} (url=${currentSwTarget.url})`);
+
+      // 3. Terminate old Service Worker instance via CDP Target.closeTarget
+      log(`   3. Terminating old Service Worker instance via CDP Target.closeTarget...`);
+      const closeResult = await cdpSend(browserWs, 'Target.closeTarget', { targetId: oldSwId });
+      assert(closeResult && closeResult.success, `Target.closeTarget must succeed: ${JSON.stringify(closeResult)}`);
+      currentSwWs.close();
+      await sleep(600);
+
+      // Verify old SW target is closed
+      const targetsAfterClose = await (await fetch(`http://127.0.0.1:${CDP_PORT}/json/list`)).json();
+      const oldStillAlive = targetsAfterClose.find(t => t.id === oldSwId);
+      assert(!oldStillAlive, `Old Service Worker target ${oldSwId} must be terminated and gone from target list`);
+      log(`   ✅ Old Service Worker target successfully terminated and confirmed gone`);
+
+      // 4. Trigger natural wake-up of extension service worker (via popup page reload, no manual reconcile function call)
+      log('   4. Triggering genuine new service worker boot via popup reload...');
+      await cdpSend(popupWs, 'Page.reload');
+
+      // 5. Discover NEW service worker instance and prove different target ID
+      let newSwTarget = null;
+      for (let i = 0; i < 40; i++) {
+        await sleep(250);
+        const list = await (await fetch(`http://127.0.0.1:${CDP_PORT}/json/list`)).json();
+        newSwTarget = list.find(t => t.type === 'service_worker' && t.url && t.url.includes('background.js'));
+        if (newSwTarget && newSwTarget.id !== oldSwId) break;
+      }
+      assert(newSwTarget, 'New Service Worker target must boot and appear in target list');
+      assert.notStrictEqual(newSwTarget.id, oldSwId, `New Service Worker target ID (${newSwTarget.id}) must be DIFFERENT from old ID (${oldSwId})`);
+      log(`   ✅ NEW Service Worker Instance Booted: oldId=${oldSwId} -> newId=${newSwTarget.id}`);
+
+      // Reconnect currentSwWs to NEW Service Worker
+      currentSwTarget = newSwTarget;
+      currentSwWs = new WebSocket(newSwTarget.webSocketDebuggerUrl);
+      await new Promise((resolve, reject) => {
+        currentSwWs.onopen = resolve;
+        currentSwWs.onerror = reject;
+      });
+      await cdpSend(currentSwWs, 'Runtime.enable');
+      setupSwWsListeners(currentSwWs);
+
+      // Wait 1200ms for delayed boot restore (setTimeout 500ms in background.js)
+      await sleep(1200);
+
+      // 6. Inspect automatic boot reconciliation from NEW worker (ZERO manual function call!)
+      log('   6. Inspecting automatic boot reconciliation in NEW Service Worker...');
+      const newSwState = await evalSw(`(async () => {
+        const rules = await chrome.declarativeNetRequest.getSessionRules();
+        return {
+          rulesCount: rules.length,
+          ruleIds: rules.map(r => r.id),
+          isPaused: Boolean(campaignState.isPaused),
+          isActive: Boolean(campaignState.isActive),
+          isFaulted: Boolean(campaignState.isFaulted),
+          ownerFunctionTestMode: Boolean(campaignState.ownerFunctionTestMode)
+        };
+      })()`);
+
+      assert.strictEqual(newSwState.rulesCount, 5, `Automatic boot reconciliation must restore exact 5 session rules in new worker: ${newSwState.rulesCount}`);
+      const expectedIds = [990001, 990002, 990003, 990004, 990005];
+      const allPresent = expectedIds.every(id => newSwState.ruleIds.includes(id));
+      assert(allPresent, `All rules 990001-990005 must be present after SW boot: ${JSON.stringify(newSwState.ruleIds)}`);
+      assert.strictEqual(newSwState.isPaused, true, 'Campaign state must remain paused after SW boot');
+      assert.strictEqual(newSwState.ownerFunctionTestMode, true, 'ownerFunctionTestMode must be active in new worker');
+      assert.strictEqual(newSwState.isFaulted, false, 'Campaign must not be faulted');
+      log(`   ✅ Exact session rules 990001-990005 confirmed present after automatic SW boot reconciliation: ${JSON.stringify(newSwState.ruleIds)}`);
+
+      // 7. Confirm external fetch remains BLOCKED by client after genuine SW restart
+      log('   7. Verifying external fetch remains BLOCKED by client after genuine SW restart...');
+      await verifyNetworkGuardBlocksLeaks('AFTER_REAL_SW_RESTART');
+      log('   ✅ External requests confirmed BLOCKED after genuine SW restart reconciliation');
+
+      // 8. Resume campaign in NEW service worker with readback verified
+      log('   8. Resuming campaign in NEW Service Worker...');
+      const resumeResult = await evalSw(`(async () => {
         try {
-          const res = await reconcileOwnerTestNetworkGuardOnBoot();
+          const res = await resumeCampaignOrchestrator();
           const rules = await chrome.declarativeNetRequest.getSessionRules();
-          return { success: true, res, rules: rules.map(r => r.id) };
+          return { success: true, ruleCount: rules.length };
         } catch (e) {
           return { success: false, error: e.message };
         }
       })()`);
+      assert(resumeResult.success, `Resume must succeed in new SW: ${resumeResult.error}`);
+      assert.strictEqual(resumeResult.ruleCount, 5, 'DNR rules must be readback verified (5 rules) on resume in new SW');
+      log(`   ✅ Resume in NEW SW verified: rulesCount=${resumeResult.ruleCount}`);
 
-      assert(reconcileResult.success, `SW boot reconciliation must succeed: ${reconcileResult.error}`);
-      assert.strictEqual(reconcileResult.rules.length, 5, 'SW boot reconciliation must ensure exact 5 session rules');
-      const expectedIds = [990001, 990002, 990003, 990004, 990005];
-      const allPresent = expectedIds.every(id => reconcileResult.rules.includes(id));
-      assert(allPresent, `All rules 990001-990005 must be present after SW boot: ${JSON.stringify(reconcileResult.rules)}`);
-      log(`   ✅ Exact session rules 990001-990005 confirmed present after SW restart reconciliation: ${JSON.stringify(reconcileResult.rules)}`);
-
-      // 3. Confirm external fetch remains BLOCKED by client
-      log('   Verifying external fetch remains BLOCKED by client after SW restart...');
-      await verifyNetworkGuardBlocksLeaks('AFTER_SW_RESTART');
-      log('   ✅ External requests confirmed BLOCKED after SW restart reconciliation');
-
-      // 4. Controlled teardown / end campaign
+      // 9. Controlled teardown / end campaign removes the rules
+      log('   9. Controlled teardown in NEW Service Worker...');
       await evalSw('(async () => await endCampaignOrchestrator())()');
       await sleep(400);
 
       const rulesAfterEnd = await evalSw('(async () => (await chrome.declarativeNetRequest.getSessionRules()).length)()');
       assert.strictEqual(rulesAfterEnd, 0, 'Session rules must be removed cleanly after controlled teardown');
-      log(`   ✅ Session rules cleanly removed after teardown: count=${rulesAfterEnd}`);
+      log(`   ✅ Session rules cleanly removed after teardown in NEW SW: count=${rulesAfterEnd}`);
 
       await captureScreenshot(popupWs, '09_safety_sw_restart_guard_recovery.png');
-      log('✅ Regression Case B Passed: Service Worker boot reconciliation strictly prevents fail-open restart window.');
+      log('✅ Regression Case B Passed: Actual MV3 Service Worker termination and genuine automatic boot reconciliation verified.');
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -772,6 +856,8 @@ async function runEdgeSafetySuite() {
     log('========================================================================');
 
   } finally {
+    try { if (browserWs) browserWs.close(); } catch (_) {}
+    try { if (currentSwWs) currentSwWs.close(); } catch (_) {}
     if (edgeProcess) {
       log('Terminating Microsoft Edge...');
       edgeProcess.kill();
