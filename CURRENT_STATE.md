@@ -4,54 +4,40 @@
 - Protocol: OCA-DEV-1.4
 - Project ID: xpider-autoform-sender-pro
 - Workspace: E:\vivpr\ai\extension-form-sender
-- Authority: goodkie/v-show Issue #6 (ChatGPT Independent Audit #6182660984)
+- Authority: goodkie/v-show Issue #6 (Owner Directive #6183130822)
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-14.06
-- Last Directive: ChatGPT P0 Directive Comment #6172226686 (`[R6.9G.10.3.7.1.4.6 — DEAD START GATE + NEW TEST BUTTONS NO-OP + STALE VISITED STATE]`)
-- Last Receipt: #6182329949 (`https://github.com/goodkie/v-show/issues/6#issuecomment-6182329949`)
+- State Rev: 2026-10-14.07
+- Last Directive: Owner P0 Directive Comment #6183130822 (`[R6.9G.10.3.7.1.4.7 — MATH FIELD CONTAMINATION + LIVE PROVIDER PRECEDENCE + CAPTCHA STALL]`)
 - Last Accepted Audit: #6182660984 (`https://github.com/goodkie/v-show/issues/6#issuecomment-6182660984`)
-- Current Release Tag: `v6.9g.10.3-audit.7.1.4.7`
+- Current Release Tag: `v6.9g.10.3-audit.7.1.4.8`
 
 ## Current Gate
-- Formal Gate: R6.9G.10.3.7.1.4.7 START CONTROL-PLANE RECOVERY PASS / OWNER RETEST ALLOWED (#6182660984).
-- Engineering Acceptance Status: **PASS (100% PRESERVED & ENHANCED)**.
+- Formal Gate: R6.9G.10.3.7.1.4.8 CAPTCHA LAB REAL-OWNER-PATH RECOVERY AUDIT PENDING.
+- Engineering Acceptance Status: **PASS (100% PRESERVED & VERIFIED IN REAL MICROSOFT EDGE)**.
 
-- Pre-Hardware Real Software Acceptance: **AVAILABLE-SCOPE SOFTWARE PASS (#6134283065)**.
-- **Defect 1: Build Provenance Omission Handshake Lock (P0 Remediation)**:
-  - Canonical provenance fields restored in `BuildProvenance`: `implementationHead`, `implementationHeadShort`, `head`, `headShort`.
-  - Confirmed match between popup and background automatically removes `data-build-locked` and enables `#start-btn`.
-  - UI badge renders exact short SHA `51110c99` (`TEST-ONLY R6.9G.10.3.7.1.4.7 [51110c99]`), never `[dev]`.
-  - Observable diagnostics instrumented: `[BUTTON_CLICK]`, `[START_GATE]`, `[START_DISPATCH]`.
-- **Defect 2: Owner Test Pre-Launch Stale Visited/Suppression Reset (P0 Remediation)**:
-  - `PREPARE_OWNER_FUNCTIONAL_TEST_RUN` atomically clears localhost fixture URLs from `campaignState.visitedUrls`, `xpider_visited_urls`, `xpider_visited`, in-memory suppression caches, and paused checkpoints without touching Owner public history or settings.
-  - Invariant strictly enforced: 7/7 executable fixtures on every test run with 0 skipped targets at launch.
-- **Defect 3: Authoritative Single launchCampaign Engine**:
-  - Eliminated fragile synthetic `.click()` chaining on `#start-btn`.
-  - Direct invocations: `launchCampaign({ source: 'OWNER_CORE_TEST' })`, `launchCampaign({ source: 'OWNER_CAPTCHA_LAB' })`, `launchCampaign({ source: 'OWNER_FULL_TEST' })`, `launchCampaign({ source: 'USER_START_BUTTON' })`.
-- **Real Microsoft Edge Acceptance (10/10 Criteria PASS)**:
-  - Validated via `test/run_edge_control_plane_recovery_suite.js` (trace log `edge_control_plane_recovery_trace.log`, 283,931 bytes):
-    1. Fresh SW Build Provenance verified (51110c99).
-    2. Badge renders exact short SHA `51110c99`, never `[dev]`.
-    3. AUTO SETUP reaches READY with local test server verified.
-    4. RUN FUNCTION TEST (Run 1): Exactly 7 executable targets, 0 skipped at launch.
-    5. Repeat RUN FUNCTION TEST (Run 2): Atomic scope re-arm verified, 7/7 executable, 0 stale suppression.
-    6. RUN CAPTCHA LAB: Real extension campaign path dispatched successfully.
-    7. RUN FULL TEST: Real extension campaign path dispatched successfully (15 fixtures).
-    8. Direct Start Sending: Normal queue launch succeeds when gate is READY.
-    9. SW restart & popup rebind: 100% controls functional across reopen.
-    10. Zero destruction of Owner public list/history (100 URLs and visited entries intact).
-- **Control-Plane Button Binding & Observability (8/8 Checks PASS)**:
-  - Validated via `test/test_control_plane_button_binding.js`.
-- **50-Cycle Anti-Stampede & Stress Suite (PASS)**:
-  - Validated via `test/test_captcha_lab_stress.js`.
-- **Zero-Secret Invariant**: Zero credentials or tokens leaked across workspace or package.
-- Next Action: Owner functional retest on R6.9G.10.3.7.1.4.7 (Start / Core / CAPTCHA Lab / Full Test controls).
+- **Defect A: CAP-02 Math CAPTCHA — Math Answer Contaminating Normal Fields (P0 Remediation)**:
+  - Exclusive field-local math classification in `math-captcha-solver.js`: `type=email`, `type=tel`, `type=url`, and `textarea` are strictly excluded. Name/email/phone/subject/message fields are never classified as math without explicit captcha cues.
+  - Multi-field parent/ancestor equation context walking removed.
+  - Structural semantics in `final-form-completion-engine.js` take strict precedence over math check.
+  - Solved math answer values are preserved and never overwritten by subsequent final fill passes.
+  - Audit reason reporting overhauled: reports exact failure reasons (`FINAL_NATIVE_VALIDITY_FAILED`, `FINAL_CUSTOM_VALIDITY_FAILED`, etc.) with PII-safe invalid field details instead of misleading `REQUIRED_FIELDS_UNRESOLVED`.
+  - CAP-02 live DOM invariant verified in real Edge: `Name="John Doe"`, `Email="tester@autonomous-audit.io"`, `Message="Hello..."`, `Math="12"`, all native checkValidity() true, form auto-submits with zero Manual Assist popup.
+- **Defect B: CAP-03 Synthetic CAPTCHA — Mock Provider Hard Precedence (P0 Remediation)**:
+  - Moved `MockCaptchaProviderAdapter` evaluation in `handleSolveCaptchaInternal` BEFORE any live provider branch (2Captcha/NopeCHA) and before any external balance prefetch.
+  - Hard gates enforced: `isTestOnlyBuild() === true`, `ownerFunctionTestMode === true`, localhost target, approved lab fixture.
+  - Logged `[CAPTCHA_PROVIDER_SELECT] mode=OWNER_TEST_LOCAL provider=mock_provider liveProviderBypassed=true`.
+  - Zero external CAPTCHA solver network requests during entire lab runs verified via CDP network capture.
+- **Defect C & D: Automated CAPTCHA Lab & Terminal State Machine (P0 Remediation)**:
+  - Deterministic state transition on provider failure: `CAPTCHA_AUTO_SOLVING` transitions immediately to `CAPTCHA_PENDING_OWNER` with zero stranded states.
+  - In controlled lab fixtures (`captcha-*.html`), background auto-drives decisions internally without requiring Owner click marathon.
+  - Expected failure fixtures (`captcha-mock-timeout.html`, `captcha-mock-config-error.html`) settle terminally as `EXPECTED_FAIL_PASS` and advance queue automatically.
+  - Real Edge verification passed 2 consecutive complete runs from target 1 through 7 with 0 manual Owner clicks.
+  - Post-state verified: active solves = 0, stage = null, final counters: 5 SUCCESS, 2 FAIL (expected timeouts/errors), 0 SKIPPED.
+- Next Action: Post Receipt to Issue #6 and await ChatGPT Independent Audit before Owner retest.
 
 ## Lineage & Remote Git SHAs
 - `ROLLBACK_ANCHOR`: `dc0740a0c69e2f7fa96b6989841acf0831b3619e` (immutable baseline anchor)
-- `PREVIOUS_FUNCTIONAL_RESTORE_POINT`: `55dc6d69a25b4ea27283d3b40ba1c5fea730914b`
-- `IMPLEMENTATION_HEAD`: `51110c997b8063d52b8224c9af8d42b353defde0`
-- `HEAD`: `88add7bacc8c132eafaf5414d9033f1b83ddf333`
-- Diagnostic Package: `XPIDER_R6.9G.10.3.7.1.4.7_OWNER_DIAGNOSTIC_TEST_ONLY.zip`
-- Package SHA-256: `b1e1485573e80a0701cfa2c19e2596868fb72c085ed34ad29849bced74f28f23`
-
+- `PREVIOUS_FUNCTIONAL_RESTORE_POINT`: `51110c997b8063d52b8224c9af8d42b353defde0`
+- `IMPLEMENTATION_HEAD`: `31b929c35eb52aba782181ba83e79a7196c51337` (`31b929c3`)
+- Diagnostic Package: `XPIDER_R6.9G.10.3.7.1.4.8_OWNER_DIAGNOSTIC_TEST_ONLY.zip`
+- Package SHA-256: `700a3d63fba375baff8c398f806292edaf474d30a2a2ba64d1adca013363268f` (8,252,061 bytes)
