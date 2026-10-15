@@ -4,16 +4,18 @@
 - Protocol: OCA-DEV-1.4
 - Project ID: xpider-autoform-sender-pro
 - Workspace: E:\vivpr\ai\extension-form-sender
-- Authority: goodkie/v-show Issue #6 (ChatGPT P0 Directive Comment #6172226686)
+- Authority: goodkie/v-show Issue #6 (ChatGPT Independent Audit #6182660984)
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-14.05
+- State Rev: 2026-10-14.06
 - Last Directive: ChatGPT P0 Directive Comment #6172226686 (`[R6.9G.10.3.7.1.4.6 — DEAD START GATE + NEW TEST BUTTONS NO-OP + STALE VISITED STATE]`)
 - Last Receipt: #6182329949 (`https://github.com/goodkie/v-show/issues/6#issuecomment-6182329949`)
+- Last Accepted Audit: #6182660984 (`https://github.com/goodkie/v-show/issues/6#issuecomment-6182660984`)
 - Current Release Tag: `v6.9g.10.3-audit.7.1.4.7`
 
 ## Current Gate
-- Formal Gate: R6.9G.10.3.7.1.4.7 START CONTROL-PLANE RECOVERY & OWNER TEST BUTTON REARM COMPLETE.
+- Formal Gate: R6.9G.10.3.7.1.4.7 START CONTROL-PLANE RECOVERY PASS / OWNER RETEST ALLOWED (#6182660984).
 - Engineering Acceptance Status: **PASS (100% PRESERVED & ENHANCED)**.
+
 - Pre-Hardware Real Software Acceptance: **AVAILABLE-SCOPE SOFTWARE PASS (#6134283065)**.
 - **Defect 1: Build Provenance Omission Handshake Lock (P0 Remediation)**:
   - Canonical provenance fields restored in `BuildProvenance`: `implementationHead`, `implementationHeadShort`, `head`, `headShort`.
@@ -43,7 +45,7 @@
 - **50-Cycle Anti-Stampede & Stress Suite (PASS)**:
   - Validated via `test/test_captcha_lab_stress.js`.
 - **Zero-Secret Invariant**: Zero credentials or tokens leaked across workspace or package.
-- Next Action: Await ChatGPT Independent Audit to Gate / Owner Functional Verification.
+- Next Action: Owner functional retest on R6.9G.10.3.7.1.4.7 (Start / Core / CAPTCHA Lab / Full Test controls).
 
 ## Lineage & Remote Git SHAs
 - `ROLLBACK_ANCHOR`: `dc0740a0c69e2f7fa96b6989841acf0831b3619e` (immutable baseline anchor)
