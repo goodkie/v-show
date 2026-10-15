@@ -1484,7 +1484,8 @@
                     if (!auditResult.pass) {
                         logDev(`❌ [FinalAudit] Submission blocked by Hard Gate: ${auditResult.reason}`, "error");
                         const unres = auditResult.unresolvedFields || [auditResult.reason];
-                        const assistHandled = await requestManualFormAssist('REQUIRED_FIELDS_UNRESOLVED', '', unres);
+                        const assistReason = (auditResult.unresolvedRequired > 0 || auditResult.reason === 'REQUIRED_FIELDS_UNRESOLVED' || !auditResult.reason) ? 'REQUIRED_FIELDS_UNRESOLVED' : auditResult.reason;
+                        const assistHandled = await requestManualFormAssist(assistReason, '', unres);
                         if (assistHandled) {
                             return fillAndSubmit(form, template, speed);
                         }
@@ -3616,7 +3617,7 @@
             if (hDiv && hDiv.dataset.sitekey) return { type: 'hcaptcha', sitekey: hDiv.dataset.sitekey };
         }
 
-        const gContainer = document.querySelector('.g-recaptcha[data-sitekey], [data-sitekey]');
+        const gContainer = document.querySelector('.g-recaptcha[data-sitekey]');
         if (gContainer) {
             const sitekey = gContainer.getAttribute?.('data-sitekey') || gContainer.dataset?.sitekey;
             if (sitekey) return { type: 'recaptcha', sitekey };
@@ -3632,6 +3633,12 @@
         if (tContainer) {
             const sitekey = tContainer.getAttribute?.('data-sitekey') || tContainer.dataset?.sitekey;
             if (sitekey) return { type: 'turnstile', sitekey };
+        }
+
+        const anyContainer = document.querySelector('[data-sitekey]');
+        if (anyContainer) {
+            const sitekey = anyContainer.getAttribute?.('data-sitekey') || anyContainer.dataset?.sitekey;
+            if (sitekey) return { type: 'recaptcha', sitekey };
         }
 
         // Inline script scan for grecaptcha.render('...', { 'sitekey': '...' })

@@ -183,13 +183,31 @@
         if (el.tagName === 'TEXTAREA' || el.tagName === 'SELECT') {
             return null;
         }
+        // Structural semantics are exclusive: email/tel/url/number never math captcha.
+        if (type === 'email' || type === 'tel' || type === 'url' || type === 'password') {
+            return null;
+        }
 
-        // 1. Custom context function if provided (e.g. getLabelFor / getElementContextText)
+        const idNameStr = ((el.id || '') + ' ' + (el.getAttribute ? (el.getAttribute('name') || '') : '') + ' ' + (el.getAttribute ? (el.getAttribute('autocomplete') || '') : '')).toLowerCase();
+        const hasCaptchaCue = /captcha|math|verif|answer|solution|quiz|human|security/.test(idNameStr);
+        if (!hasCaptchaCue && /(^|[^a-z])(name|fname|lname|first|last|full|email|e-mail|mail|phone|tel|mobile|subject|message|msg|comment|company)([^a-z]|$)/.test(idNameStr)) {
+            return null;
+        }
+
+        // 1. Custom context function: only for controls with explicit captcha cue,
+        //    or controls that are alone in their immediate container (never multi-field ancestor text).
         if (typeof getContextFn === 'function') {
-            const ctxText = getContextFn(el);
-            if (ctxText && typeof ctxText === 'string') {
-                const ans = solveMathCaptcha(ctxText);
-                if (ans !== null) return ans;
+            let soloContainer = false;
+            const p0 = el.parentElement;
+            if (p0 && typeof p0.querySelectorAll === 'function') {
+                soloContainer = p0.querySelectorAll('input:not([type="hidden"]), textarea, select').length <= 1;
+            }
+            if (hasCaptchaCue || soloContainer) {
+                const ctxText = getContextFn(el);
+                if (ctxText && typeof ctxText === 'string' && ctxText.length < 400) {
+                    const ans = solveMathCaptcha(ctxText);
+                    if (ans !== null) return ans;
+                }
             }
         }
 

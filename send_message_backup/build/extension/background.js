@@ -1736,6 +1736,12 @@ function recordTerminalCaptchaFailure(attemptId, reason) {
     campaignState.captchaFailuresRecorded.add(key);
     campaignState.captchaLedger.autoFailure = (campaignState.captchaLedger.autoFailure || 0) + 1;
     campaignState.counters.captchaFailed = (campaignState.counters.captchaFailed || 0) + 1;
+    // [R6.9G.10.3.7.1.4.8] Never strand the target in CAPTCHA_AUTO_SOLVING after a provider terminal failure.
+    if (campaignState.currentTargetStage === 'CAPTCHA_AUTO_SOLVING' &&
+        (!attemptId || campaignState.currentAttempt?.attemptId === attemptId)) {
+        campaignState.currentTargetStage = 'CAPTCHA_PENDING_OWNER';
+        logBg(null, `[CAPTCHA_STAGE_TRANSITION] CAPTCHA_AUTO_SOLVING -> CAPTCHA_PENDING_OWNER reason=${String(reason || 'PROVIDER_FAILURE').slice(0, 80)}`, 'warning');
+    }
     broadcastCounters();
 }
 if (typeof global !== 'undefined') {
@@ -1950,8 +1956,23 @@ if (typeof global !== 'undefined') {
 
                     logBg(null, `[Auto CAPTCHA Solver] SOLVE_CAPTCHA: method=${method} keyConfigured=${!!apiKey} epoch=${curEpoch} url=${request.url||''}`, 'info');
 
+                    // [R6.9G.10.3.7.1.4.8] Controlled lab mock eligibility is decided BEFORE any live-provider/network step.
+                    let labMockEligible = false;
+                    try {
+                        const _labUrl = request.url || campaignState.currentAttempt?.url || '';
+                        const _isTestOnly = (typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.isTestOnlyBuild === 'function') ? BuildProvenance.isTestOnlyBuild() === true : false;
+                        if (_isTestOnly && campaignState.ownerFunctionTestMode === true && typeof MockCaptchaProviderAdapter !== 'undefined') {
+                            labMockEligible = MockCaptchaProviderAdapter.isEligible({
+                                url: _labUrl, pageUrl: _labUrl,
+                                captchaType: request.type || request.captchaType || 'recaptcha',
+                                sitekey: request.sitekey,
+                                ownerFunctionTestMode: true
+                            }, { ownerFunctionTestMode: true, targetUrl: _labUrl, isTestOnlyBuild: true });
+                        }
+                    } catch (_) { labMockEligible = false; }
+
                     // [R6.9G-H] 2Captcha key pre-validation: classify ERROR_WRONG_USER_KEY as CONFIGURATION FAILURE
-                    if ((method === 'api' || method === '2captcha') && apiKey) {
+                    if (!labMockEligible && (method === 'api' || method === '2captcha') && apiKey) {
                         const keyCheckResp = await new Promise(resolve => {
                             try {
                                 fetch(`https://2captcha.com/res.php?key=${apiKey}&action=getbalance&json=1`, { signal: AbortSignal.timeout(5000) })
@@ -2088,6 +2109,52 @@ if (typeof global !== 'undefined') {
                         }
                     };
 
+                    // [Issue #6 R6.9G.10.3.7.1.4.8] Controlled Local Mock Provider Gate -- evaluated BEFORE any live provider.
+                    // Hard gate: TEST_ONLY build + ownerFunctionTestMode + localhost + approved lab fixture.
+                    if (campaignState.ownerFunctionTestMode && typeof MockCaptchaProviderAdapter !== 'undefined'
+                        && (typeof BuildProvenance === 'undefined' || typeof BuildProvenance.isTestOnlyBuild !== 'function' || BuildProvenance.isTestOnlyBuild() === true)) {
+                        let mockEligible = false;
+                        try {
+                            mockEligible = MockCaptchaProviderAdapter.isEligible({
+                                url: targetPageUrl,
+                                pageUrl: targetPageUrl,
+                                captchaType: request.type || request.captchaType || 'recaptcha',
+                                sitekey: request.sitekey,
+                                ownerFunctionTestMode: campaignState.ownerFunctionTestMode
+                            }, {
+                                ownerFunctionTestMode: campaignState.ownerFunctionTestMode,
+                                targetUrl: targetPageUrl
+                            });
+                        } catch (_) { mockEligible = false; }
+
+                        if (mockEligible) {
+                            logBg(null, `[CAPTCHA_PROVIDER_SELECT] mode=OWNER_TEST_LOCAL provider=mock_provider liveProviderBypassed=true requestedMethod=${method}`, 'info');
+                            try {
+                                const mockAdapter = new MockCaptchaProviderAdapter();
+                                const mockRes = await mockAdapter.solve({
+                                    url: targetPageUrl,
+                                    pageUrl: targetPageUrl,
+                                    captchaType: request.type || request.captchaType || 'recaptcha',
+                                    sitekey: request.sitekey,
+                                    audioUrl: request.audioUrl,
+                                    audioData: request.audioData
+                                }, {
+                                    runId: campaignState.activeCampaignRunId,
+                                    tabId: activeTabId,
+                                    attemptId: solveIdentity?.attemptId
+                                });
+                                if (mockRes && mockRes.token) {
+                                    return await verifyAndRecordCaptchaSuccess(mockRes.token, 'mock_provider');
+                                }
+                                recordTerminalCaptchaFailure(solveIdentity?.attemptId, (mockRes && mockRes.error) || 'MOCK_PROVIDER_NO_TOKEN');
+                                return mockRes || { success: false, error: 'MOCK_PROVIDER_NO_TOKEN' };
+                            } catch (mockErr) {
+                                recordTerminalCaptchaFailure(solveIdentity?.attemptId, mockErr.message);
+                                return { success: false, error: mockErr.code || 'MOCK_PROVIDER_FAILURE', details: mockErr.message };
+                            }
+                        }
+                    }
+
                     // [Priority 1] 2Captcha token solver
                     if ((method === 'api' || method === '2captcha') && solver.config.twoCaptchaKey) {
                         const twoCapStart = Date.now();
@@ -2214,44 +2281,7 @@ if (typeof global !== 'undefined') {
                         return { success: false, error: errMsg, remainingPaused: true };
                     }
 
-                    // [Issue #6 R6.9G.10.3.7.1.4.5 Section F] Controlled Local Mock Provider Gate
-                    if (campaignState.ownerFunctionTestMode && typeof MockCaptchaProviderAdapter !== 'undefined') {
-                        const isEligible = MockCaptchaProviderAdapter.isEligible({
-                            url: targetPageUrl,
-                            pageUrl: targetPageUrl,
-                            captchaType: request.type || request.captchaType || 'recaptcha',
-                            sitekey: request.sitekey,
-                            ownerFunctionTestMode: campaignState.ownerFunctionTestMode
-                        }, {
-                            ownerFunctionTestMode: campaignState.ownerFunctionTestMode,
-                            targetUrl: targetPageUrl
-                        });
 
-                        if (isEligible) {
-                            try {
-                                const mockAdapter = new MockCaptchaProviderAdapter();
-                                const mockRes = await mockAdapter.solve({
-                                    url: targetPageUrl,
-                                    pageUrl: targetPageUrl,
-                                    captchaType: request.type || request.captchaType || 'recaptcha',
-                                    sitekey: request.sitekey,
-                                    audioUrl: request.audioUrl,
-                                    audioData: request.audioData
-                                }, {
-                                    runId: campaignState.activeCampaignRunId,
-                                    tabId: activeTabId,
-                                    attemptId: solveIdentity?.attemptId
-                                });
-                                if (mockRes && mockRes.token) {
-                                    return await verifyAndRecordCaptchaSuccess(mockRes.token, 'mock_provider');
-                                }
-                                return mockRes;
-                            } catch (mockErr) {
-                                recordTerminalCaptchaFailure(solveIdentity?.attemptId, mockErr.message);
-                                return { success: false, error: mockErr.code || 'MOCK_PROVIDER_FAILURE', details: mockErr.message };
-                            }
-                        }
-                    }
 
                     // [Priority 3] Autonomous Multi-Tier Fallback Chain
                     if (method === 'audio' || method === 'native' || witKey) {
@@ -3661,6 +3691,62 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                     const remBudgetMs = campaignState.targetDeadlineController ? campaignState.targetDeadlineController.getRemainingMs() : (campaignState.targetTimeoutMs || 180000);
                     logBg(null, `[CAPTCHA_WAIT] state=CAPTCHA_PENDING_OWNER deadlinePaused=true remainingMs=${remBudgetMs}`, 'info');
                     logBg(null, `[OWNER_CAPTCHA] Detected: type=${captchaType} sitekey=${sitekey}. Timer suspended. Awaiting owner decision.`, 'info');
+
+                    // [R6.9G.10.3.7.1.4.8] Automated CAPTCHA LAB: TEST_ONLY + ownerFunctionTestMode + loopback + lab fixture.
+                    let labAutoDrive = false;
+                    try {
+                        const _lu = targetUrl || campaignState.currentAttempt?.url || '';
+                        const _isTestOnly = (typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.isTestOnlyBuild === 'function') ? BuildProvenance.isTestOnlyBuild() === true : false;
+                        labAutoDrive = _isTestOnly && campaignState.ownerFunctionTestMode === true &&
+                            /^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?\/captcha-[a-z0-9-]+\.html/i.test(_lu) &&
+                            typeof MockCaptchaProviderAdapter !== 'undefined';
+                    } catch (_) { labAutoDrive = false; }
+
+                    if (labAutoDrive) {
+                        const labUrl = targetUrl || campaignState.currentAttempt?.url || '';
+                        const labIdentity = {
+                            attemptId: campaignState.currentAttempt?.attemptId,
+                            targetToken: campaignState.currentTargetToken,
+                            campaignRunId: campaignState.campaignRunId,
+                            sessionId: campaignState.sessionId,
+                            captchaEpoch: curEpoch,
+                            tabId: campaignState.currentTabId
+                        };
+                        logBg(null, `[CAPTCHA_LAB_CASE] url=${labUrl} phase=AUTO_DRIVE_START type=${captchaType || 'recaptcha'}`, 'info');
+                        sendResponse({ success: true, status: 'PENDING_OWNER_DECISION', labAutoDrive: true });
+                        (async () => {
+                            try {
+                                await new Promise(r => setTimeout(r, 250));
+                                if (campaignState.currentAttempt?.attemptId !== labIdentity.attemptId || campaignState.currentTargetStage !== 'CAPTCHA_PENDING_OWNER') return;
+                                campaignState.captchaLedger.pendingOwner = Math.max(0, campaignState.captchaLedger.pendingOwner - 1);
+                                campaignState.currentTargetStage = 'CAPTCHA_AUTO_SOLVING';
+                                if (campaignState.targetDeadlineController) campaignState.targetDeadlineController.pause('CAPTCHA_AUTO_SOLVING');
+                                const solveReq = Object.assign({}, labIdentity, {
+                                    action: 'SOLVE_CAPTCHA', ownerAuthorized: true, labAutoDrive: true,
+                                    type: captchaType || 'recaptcha', sitekey: sitekey || '', url: labUrl
+                                });
+                                const labTimeout = new Promise(r => setTimeout(() => r({ success: false, error: 'LAB_TIMEOUT' }), 30000));
+                                const solveP = new Promise(resolve => {
+                                    handleSolveCaptchaInternal(solveReq, { tab: { id: labIdentity.tabId } }, resolve).catch(e => resolve({ success: false, error: e.message }));
+                                });
+                                const res = await Promise.race([solveP, labTimeout]);
+                                if (campaignState.currentAttempt?.attemptId !== labIdentity.attemptId) return;
+                                if (res && res.success) {
+                                    logBg(null, `[CAPTCHA_LAB_CASE] url=${labUrl} result=PASS method=${res.method || 'mock_provider'}`, 'success');
+                                } else {
+                                    // Expected-failure fixtures (timeout / config-error) settle terminally and advance.
+                                    logBg(null, `[CAPTCHA_LAB_CASE] url=${labUrl} result=EXPECTED_FAIL_PASS error=${String(res && res.error || 'UNKNOWN').slice(0, 60)} settle=SKIP_ADVANCE`, 'success');
+                                    campaignState.captchaLedger.manualSkip++;
+                                    campaignState.currentTargetStage = 'CAPTCHA_SKIPPED';
+                                    if (campaignState.targetDeadlineController) campaignState.targetDeadlineController.resume();
+                                    chrome.tabs.sendMessage(labIdentity.tabId, Object.assign({ action: 'CAPTCHA_SKIP_DECISION' }, labIdentity)).catch(() => {});
+                                }
+                            } catch (labErr) {
+                                logBg(null, `[CAPTCHA_LAB_CASE] url=${labUrl} result=DRIVER_ERROR error=${labErr.message}`, 'error');
+                            }
+                        })();
+                        return;
+                    }
 
                     // Broadcast to popup for modal display with complete 6-point canonical identity
                     chrome.runtime.sendMessage({

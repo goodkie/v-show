@@ -1,0 +1,119 @@
+{
+  "matrix": [
+    {
+      "run": "LAB RUN 1",
+      "counters": {
+        "succ": 5,
+        "fail": 2,
+        "skip": 0,
+        "rem": 0,
+        "title": "Live Progress (Finished)",
+        "capOk": "",
+        "capFail": "",
+        "modal": false,
+        "manualAssist": false
+      },
+      "post": {
+        "stage": null,
+        "activeSolves": 0,
+        "isActive": false,
+        "captcha": {
+          "solved": 5,
+          "failed": 2
+        },
+        "ledger": {
+          "detected": 6,
+          "pendingOwner": 0,
+          "autoSuccess": 5,
+          "autoFailure": 2,
+          "manualSuccess": 0,
+          "manualSkip": 4
+        }
+      }
+    },
+    {
+      "run": "LAB RUN 2",
+      "counters": {
+        "succ": 5,
+        "fail": 2,
+        "skip": 0,
+        "rem": 0,
+        "title": "Live Progress (Finished)",
+        "capOk": "",
+        "capFail": "",
+        "modal": false,
+        "manualAssist": false
+      },
+      "post": {
+        "stage": null,
+        "activeSolves": 0,
+        "isActive": false,
+        "captcha": {
+          "solved": 5,
+          "failed": 2
+        },
+        "ledger": {
+          "detected": 6,
+          "pendingOwner": 0,
+          "autoSuccess": 5,
+          "autoFailure": 2,
+          "manualSuccess": 0,
+          "manualSkip": 4
+        }
+      }
+    }
+  ],
+  "cap02Sample": {
+    "name": "John Doe",
+    "email": "tester@autonomous-audit.io",
+    "message": "Hello, this is an automated inquiry message submitted by XPIDER AutoForm Sender Pro.",
+    "math": "12",
+    "nameValid": true,
+    "emailValid": true,
+    "messageValid": true,
+    "mathValid": true,
+    "status": {
+      "pass": true,
+      "answer": "12"
+    },
+    "banner": "block"
+  },
+  "providerSelectLogs": [
+    "[BG_LOG][tab=none] [CAPTCHA_PROVIDER_SELECT] mode=OWNER_TEST_LOCAL provider=mock_provider liveProviderBypassed=true requestedMethod=nopecha",
+    "[BG_LOG][tab=none] [CAPTCHA_PROVIDER_SELECT] mode=OWNER_TEST_LOCAL provider=mock_provider liveProviderBypassed=true requestedMethod=nopecha",
+    "[BG_LOG][tab=none] [CAPTCHA_PROVIDER_SELECT] mode=OWNER_TEST_LOCAL provider=mock_provider liveProviderBypassed=true requestedMethod=nopecha",
+    "[BG_LOG][tab=none] [CAPTCHA_PROVIDER_SELECT] mode=OWNER_TEST_LOCAL provider=mock_provider liveProviderBypassed=true requestedMethod=nopecha",
+    "[BG_LOG][tab=none] [CAPTCHA_PROVIDER_SELECT] mode=OWNER_TEST_LOCAL provider=mock_provider liveProviderBypassed=true requestedMethod=nopecha",
+    "[BG_LOG][tab=none] [CAPTCHA_PROVIDER_SELECT] mode=OWNER_TEST_LOCAL provider=mock_provider liveProviderBypassed=true requestedMethod=nopecha",
+    "[BG_LOG][tab=none] [CAPTCHA_PROVIDER_SELECT] mode=OWNER_TEST_LOCAL provider=mock_provider liveProviderBypassed=true requestedMethod=nopecha",
+    "[BG_LOG][tab=none] [CAPTCHA_PROVIDER_SELECT] mode=OWNER_TEST_LOCAL provider=mock_provider liveProviderBypassed=true requestedMethod=nopecha"
+  ],
+  "labCaseLogs": [
+    "[BG_LOG][tab=none] [CAPTCHA_LAB_CASE] url=http://127.0.0.1:8088/captcha-recaptcha-dom.html phase=AUTO_DRIVE_START type=recaptcha",
+    "[BG_LOG][tab=none] [CAPTCHA_LAB_CASE] url=http://127.0.0.1:8088/captcha-recaptcha-dom.html result=PASS method=mock_provider",
+    "[BG_LOG][tab=none] [CAPTCHA_LAB_CASE] url=http://127.0.0.1:8088/captcha-hcaptcha-dom.html phase=AUTO_DRIVE_START type=hcaptcha",
+    "[BG_LOG][tab=none] [CAPTCHA_LAB_CASE] url=http://127.0.0.1:8088/captcha-hcaptcha-dom.html result=PASS method=mock_provider",
+    "[BG_LOG][tab=none] [CAPTCHA_LAB_CASE] url=http://127.0.0.1:8088/captcha-turnstile-dom.html phase=AUTO_DRIVE_START type=turnstile",
+    "[BG_LOG][tab=none] [CAPTCHA_LAB_CASE] url=http://127.0.0.1:8088/captcha-turnstile-dom.html result=PASS method=mock_provider",
+    "[BG_LOG][tab=none] [CAPTCHA_LAB_CASE] url=http://127.0.0.1:8088/captcha-mock-solve.html phase=AUTO_DRIVE_START type=recaptcha",
+    "[BG_LOG][tab=none] [CAPTCHA_LAB_CASE] url=http://127.0.0.1:8088/captcha-mock-solve.html result=PASS method=mock_provider",
+    "[BG_LOG][tab=none] [CAPTCHA_LAB_CASE] url=http://127.0.0.1:8088/captcha-mock-timeout.html phase=AUTO_DRIVE_START type=recaptcha",
+    "[BG_LOG][tab=none] [CAPTCHA_LAB_CASE] url=http://127.0.0.1:8088/captcha-mock-timeout.html result=EXPECTED_FAIL_PASS error=SOLVER_TIMEOUT settle=SKIP_ADVANCE",
+    "[BG_LOG][tab=none] [CAPTCHA_LAB_CASE] url=http://127.0.0.1:8088/captcha-mock-timeout.html phase=AUTO_DRIVE_START type=recaptcha",
+    "[BG_LOG][tab=none] [CAPTCHA_LAB_CASE] url=http://127.0.0.1:8088/captcha-mock-timeout.html result=EXPECTED_FAIL_PASS error=SOLVER_TIMEOUT settle=SKIP_ADVANCE",
+    "[BG_LOG][tab=none] [CAPTCHA_LAB_CASE] url=http://127.0.0.1:8088/captcha-mock-config-error.html phase=AUTO_DRIVE_START type=recaptcha",
+    "[BG_LOG][tab=none] [CAPTCHA_LAB_CASE] url=http://127.0.0.1:8088/captcha-mock-config-error.html result=EXPECTED_FAIL_PASS error=ERROR_ZERO_BALANCE settle=SKIP_ADVANCE",
+    "[BG_LOG][tab=none] [CAPTCHA_LAB_CASE] url=http://127.0.0.1:8088/captcha-mock-config-error.html phase=AUTO_DRIVE_START type=recaptcha",
+    "[BG_LOG][tab=none] [CAPTCHA_LAB_CASE] url=http://127.0.0.1:8088/captcha-mock-config-error.html result=EXPECTED_FAIL_PASS error=ERROR_ZERO_BALANCE settle=SKIP_ADVANCE"
+  ],
+  "fixtures": [
+    "captcha-math.html",
+    "captcha-recaptcha-dom.html",
+    "captcha-hcaptcha-dom.html",
+    "captcha-turnstile-dom.html",
+    "captcha-mock-solve.html",
+    "captcha-mock-timeout.html",
+    "captcha-mock-config-error.html"
+  ],
+  "externalRequests": []
+}

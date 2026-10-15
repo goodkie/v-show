@@ -32,8 +32,28 @@
                 <input type="hidden" name="cf-turnstile-response" id="cf-turnstile-response">
             </div>
 
-            <button type="button" id="submit-btn">Validate Presence</button>
+            <button type="submit" id="submit-btn">Send With Verified Token</button>
+            <div id="success-banner" class="success-box wpcf7-mail-sent-ok gform_confirmation_message" style="display:none;background:rgba(74,222,128,.15);border:1px solid #4ade80;color:#4ade80;padding:12px;border-radius:6px;margin-top:14px;text-align:center;">Challenge verified and form submitted successfully!</div>
         </form>
     </div>
+    <script>
+    /* Synthetic lab widget: flags resolved state when a mock token lands in its response field (no third-party code). */
+    (function () {
+        function mark() {
+            var f = document.querySelector('[name="g-recaptcha-response"],[name="h-captcha-response"],[name="cf-turnstile-response"]');
+            var w = document.querySelector('.g-recaptcha,.h-captcha,.cf-turnstile');
+            if (f && w && f.value && f.value.indexOf('mock_token_') === 0) { w.setAttribute('data-challenge-state', 'resolved'); window.__captcha_challenge_resolved = true; }
+        }
+        ['input','change'].forEach(function (e) { document.addEventListener(e, mark, true); });
+        window.addEventListener('message', function () { setTimeout(mark, 0); });
+        setInterval(mark, 200);
+        var frm = document.querySelector('form');
+        if (frm) frm.addEventListener('submit', function (e) {
+            e.preventDefault(); mark();
+            if (window.__captcha_challenge_resolved === true) { document.getElementById('success-banner').style.display = 'block'; window.dispatchEvent(new CustomEvent('form-submitted', { detail: { status: 'SUCCESS' } })); }
+            else { alert('CAPTCHA Token required before submission!'); }
+        });
+    })();
+    </script>
 </body>
 </html>

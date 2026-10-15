@@ -78,5 +78,18 @@
             }
         });
     </script>
+    <script>
+    /* Synthetic lab widget: flags resolved state when a mock token lands in its response field (no third-party code). */
+    (function () {
+        function mark() {
+            var f = document.querySelector('[name="g-recaptcha-response"],[name="h-captcha-response"],[name="cf-turnstile-response"]');
+            var w = document.querySelector('.g-recaptcha,.h-captcha,.cf-turnstile');
+            if (f && w && f.value && f.value.indexOf('mock_token_') === 0) { w.setAttribute('data-challenge-state', 'resolved'); window.__captcha_challenge_resolved = true; }
+        }
+        ['input','change'].forEach(function (e) { document.addEventListener(e, mark, true); });
+        window.addEventListener('message', function () { setTimeout(mark, 0); });
+        setInterval(mark, 200);
+    })();
+    </script>
 </body>
 </html>

@@ -244,7 +244,12 @@
                 return { category: 'honeypot', isSensitive: false, isHoneypot: true };
             }
 
-            // Math Captcha / Human Verification Equation Guard
+            // Structural semantics take precedence over math captcha (CAP-02 contamination fix)
+            if (tag === 'input' && type === 'email') return { category: 'email', isSensitive: false, isHoneypot: false };
+            if (tag === 'input' && type === 'tel') return { category: 'phone', isSensitive: false, isHoneypot: false };
+            if (tag === 'textarea') return { category: 'message', isSensitive: false, isHoneypot: false };
+
+            // Math Captcha / Human Verification Equation Guard (field-local, exclusive)
             if (_MathCaptchaSolver && typeof _MathCaptchaSolver.solveField === 'function') {
                 const mathVal = _MathCaptchaSolver.solveField(el, getElementContextText);
                 if (mathVal !== null) {
@@ -501,6 +506,10 @@
 
                         // Low-stakes required short-answer text
                         else if (tag === 'input' || tag === 'textarea') {
+                            // Preserve any already-populated value (e.g. solved math captcha answer)
+                            if ((el.value || '').trim().length > 0 && (type !== 'number')) {
+                                continue;
+                            }
                             let answer = 'General Inquiry';
                             for (const [k, v] of Object.entries(SAFE_GENERIC_ANSWERS)) {
                                 if (ctx.includes(k)) {
@@ -556,6 +565,7 @@
             let messageFieldFilled = false;
 
             const unresolvedList = [];
+            const invalidFields = [];
 
             for (const el of controls) {
                 const required = isElementRequired(el);
@@ -609,11 +619,15 @@
                 // Check native invalidity
                 if (typeof el.checkValidity === 'function') {
                     try {
-                        if (!el.checkValidity()) nativeInvalidCount++;
+                        if (!el.checkValidity()) {
+                            nativeInvalidCount++;
+                            invalidFields.push({ tag, type: type || 'text', category: classification.category, kind: 'native' });
+                        }
                     } catch (_) {}
                 }
                 if (el.getAttribute && el.getAttribute('aria-invalid') === 'true') {
                     customInvalidCount++;
+                    invalidFields.push({ tag, type: type || 'text', category: classification.category, kind: 'custom' });
                 }
             }
 
@@ -647,9 +661,22 @@
             console.log(logMsg);
             if (typeof this.logger === 'function') this.logger(logMsg);
 
+            let failReason = 'AUDIT_PASSED';
+            if (!pass) {
+                if (unresolvedRequired > 0 || unstableCheckboxes + unstableRadios + unstableSelects + unstableText > 0) failReason = 'REQUIRED_FIELDS_UNRESOLVED';
+                else if (nativeInvalidCount > 0) failReason = 'FINAL_NATIVE_VALIDITY_FAILED';
+                else if (customInvalidCount > 0) failReason = 'FINAL_CUSTOM_VALIDITY_FAILED';
+                else if (!messageFieldFilled) failReason = 'FINAL_MESSAGE_FIELD_EMPTY';
+                else failReason = 'FINAL_FORM_COMPLETION_FAILED';
+                if (typeof this.logger === 'function') {
+                    this.logger(`[FINAL_AUDIT_DETAIL] reason=${failReason} unresolvedRequired=${unresolvedRequired} nativeInvalidCount=${nativeInvalidCount} customInvalidCount=${customInvalidCount} invalid=${JSON.stringify(invalidFields.slice(0, 8))}`);
+                }
+            }
+
             return {
                 pass,
-                reason: pass ? 'AUDIT_PASSED' : 'FINAL_FORM_COMPLETION_FAILED',
+                reason: failReason,
+                invalidFields,
                 emptySafeAfter,
                 requiredTotal,
                 requiredResolved,

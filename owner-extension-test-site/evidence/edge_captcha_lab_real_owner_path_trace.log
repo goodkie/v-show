@@ -1,0 +1,246 @@
+[2026-10-15T03:09:37.801Z] ================ CAPTCHA LAB REAL-OWNER-PATH RECOVERY (REAL EDGE) ================
+[2026-10-15T03:09:37.872Z] ✅ test server healthy: XPIDER_OWNER_TEST_SERVER
+[2026-10-15T03:09:38.966Z] ✅ extension id ldlijlaccfeelfdhgnjbibniocefckjj
+[2026-10-15T03:09:39.325Z] ✅ SW build R6.9G.10.3.7.1.4.7-20261014-START-CONTROL-PLANE-RECOVERY [51110c99]
+[2026-10-15T03:09:40.643Z] ✅ Live provider=nopecha + key configured (placeholder) to prove mock precedence; template populated
+[2026-10-15T03:09:40.660Z] [POPUP] [BUTTON_CLICK] id=auto-setup-btn
+[2026-10-15T03:09:40.984Z] ✅ AUTO SETUP -> READY — LOCAL TEST SERVER VERIFIED
+[2026-10-15T03:09:40.996Z] 
+>>> LAB RUN 1: clicking #run-captcha-lab-btn (zero Owner intervention afterwards)
+[2026-10-15T03:09:41.017Z] [POPUP] [BUTTON_CLICK] id=run-captcha-lab-btn
+[2026-10-15T03:09:41.029Z] [POPUP] [BUTTON_CLICK] id=run-captcha-lab-btn
+[2026-10-15T03:09:41.062Z] [POPUP] [START_DISPATCH] accepted=true source=OWNER_CAPTCHA_LAB targetCount=7
+[2026-10-15T03:09:41.073Z] [POPUP] [XPIDER_DIAG] 🚀 [START_DISPATCH] accepted=true source=OWNER_CAPTCHA_LAB targetCount=7
+[2026-10-15T03:09:42.557Z]    [LAB RUN 1] done=0/7 succ=0 fail=0 skip=0 rem=7 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:09:44.084Z]    [LAB RUN 1] done=0/7 succ=0 fail=0 skip=0 rem=7 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:09:45.608Z]    [LAB RUN 1] done=0/7 succ=0 fail=0 skip=0 rem=7 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:09:47.120Z]    [LAB RUN 1] done=0/7 succ=0 fail=0 skip=0 rem=7 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:09:48.637Z]    [LAB RUN 1] done=0/7 succ=0 fail=0 skip=0 rem=7 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:09:50.164Z]    [LAB RUN 1] done=0/7 succ=0 fail=0 skip=0 rem=7 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:09:51.511Z] [SW] [CONTENT_EVENT][tabId=2113014084][attemptId=att_1792033781191_1zm2z][url=http://127.0.0.1:8088/captcha-math.html] [FINAL_AUDIT] PASS
+[2026-10-15T03:09:51.522Z] [SW] [BG_LOG][tab=2113014084] [CONTENT_EVENT][tabId=2113014084][attemptId=att_1792033781191_1zm2z][url=http://127.0.0.1:8088/captcha-math.html] [FINAL_AUDIT] PASS
+[2026-10-15T03:09:51.805Z]    [LAB RUN 1] done=0/7 succ=0 fail=0 skip=0 rem=7 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:09:51.828Z] 📋 CAP-02 live DOM: {"name":"John Doe","email":"tester@autonomous-audit.io","message":"Hello, this is an automated inquiry message submitted by XPIDER AutoForm Sender Pro.","math":"12","nameValid":true,"emailValid":true,"messageValid":true,"mathValid":true,"status":{"pass":true,"answer":"12"},"banner":"block"}
+[2026-10-15T03:09:51.915Z] 📸 11_cap02_math_live_dom.png
+[2026-10-15T03:09:53.334Z]    [LAB RUN 1] done=1/7 succ=1 fail=0 skip=0 rem=7 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:09:54.852Z]    [LAB RUN 1] done=1/7 succ=1 fail=0 skip=0 rem=7 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:09:56.366Z]    [LAB RUN 1] done=1/7 succ=1 fail=0 skip=0 rem=7 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:09:57.882Z]    [LAB RUN 1] done=1/7 succ=1 fail=0 skip=0 rem=7 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:09:59.457Z]    [LAB RUN 1] done=1/7 succ=1 fail=0 skip=0 rem=6 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:09:59.785Z] [SW] [BG_LOG][tab=none] [CAPTCHA_LAB_CASE] url=http://127.0.0.1:8088/captcha-recaptcha-dom.html phase=AUTO_DRIVE_START type=recaptcha
+[2026-10-15T03:09:59.985Z] [SW] [BG_LOG][tab=none] [CAPTCHA_PROVIDER_SELECT] mode=OWNER_TEST_LOCAL provider=mock_provider liveProviderBypassed=true requestedMethod=nopecha
+[2026-10-15T03:10:00.164Z] [SW] [BG_LOG][tab=none] [CAPTCHA_AUTO_SUCCESS] Transitioned to CAPTCHA_AUTO_SUCCESS.
+[2026-10-15T03:10:00.175Z] [SW] [BG_LOG][tab=none] [CAPTCHA_AUTO_SUCCESS] Stage already advanced by CAPTCHA_CHALLENGE_VERIFIED event (stage=CAPTCHA_AUTO_SUCCESS). Skipping duplicate counter increment.
+[2026-10-15T03:10:00.186Z] [SW] [BG_LOG][tab=none] [CAPTCHA_LAB_CASE] url=http://127.0.0.1:8088/captcha-recaptcha-dom.html result=PASS method=mock_provider
+[2026-10-15T03:10:00.985Z]    [LAB RUN 1] done=1/7 succ=1 fail=0 skip=0 rem=6 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:10:02.498Z]    [LAB RUN 1] done=1/7 succ=1 fail=0 skip=0 rem=6 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:10:04.018Z]    [LAB RUN 1] done=1/7 succ=1 fail=0 skip=0 rem=6 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:10:05.527Z]    [LAB RUN 1] done=1/7 succ=1 fail=0 skip=0 rem=6 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:10:07.047Z]    [LAB RUN 1] done=1/7 succ=1 fail=0 skip=0 rem=6 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:10:08.560Z]    [LAB RUN 1] done=1/7 succ=1 fail=0 skip=0 rem=6 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:10:08.948Z] [SW] [CONTENT_EVENT][tabId=2113014621][attemptId=att_1792033799369_624dy][url=http://127.0.0.1:8088/captcha-recaptcha-dom.html] [FINAL_AUDIT] PASS
+[2026-10-15T03:10:08.957Z] [SW] [BG_LOG][tab=2113014621] [CONTENT_EVENT][tabId=2113014621][attemptId=att_1792033799369_624dy][url=http://127.0.0.1:8088/captcha-recaptcha-dom.html] [FINAL_AUDIT] PASS
+[2026-10-15T03:10:10.074Z]    [LAB RUN 1] done=2/7 succ=2 fail=0 skip=0 rem=6 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:10:11.587Z]    [LAB RUN 1] done=2/7 succ=2 fail=0 skip=0 rem=6 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:10:13.101Z]    [LAB RUN 1] done=2/7 succ=2 fail=0 skip=0 rem=6 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:10:14.613Z]    [LAB RUN 1] done=2/7 succ=2 fail=0 skip=0 rem=6 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:10:16.125Z]    [LAB RUN 1] done=2/7 succ=2 fail=0 skip=0 rem=6 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:10:17.233Z] [SW] [BG_LOG][tab=none] [CAPTCHA_LAB_CASE] url=http://127.0.0.1:8088/captcha-hcaptcha-dom.html phase=AUTO_DRIVE_START type=hcaptcha
+[2026-10-15T03:10:17.479Z] [SW] [BG_LOG][tab=none] [CAPTCHA_PROVIDER_SELECT] mode=OWNER_TEST_LOCAL provider=mock_provider liveProviderBypassed=true requestedMethod=nopecha
+[2026-10-15T03:10:17.642Z]    [LAB RUN 1] done=2/7 succ=2 fail=0 skip=0 rem=5 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:10:17.655Z] [SW] [BG_LOG][tab=none] [CAPTCHA_AUTO_SUCCESS] Transitioned to CAPTCHA_AUTO_SUCCESS.
+[2026-10-15T03:10:17.665Z] [SW] [BG_LOG][tab=none] [CAPTCHA_AUTO_SUCCESS] Stage already advanced by CAPTCHA_CHALLENGE_VERIFIED event (stage=CAPTCHA_AUTO_SUCCESS). Skipping duplicate counter increment.
+[2026-10-15T03:10:17.673Z] [SW] [BG_LOG][tab=none] [CAPTCHA_LAB_CASE] url=http://127.0.0.1:8088/captcha-hcaptcha-dom.html result=PASS method=mock_provider
+[2026-10-15T03:10:19.158Z]    [LAB RUN 1] done=2/7 succ=2 fail=0 skip=0 rem=5 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:10:20.679Z]    [LAB RUN 1] done=2/7 succ=2 fail=0 skip=0 rem=5 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:10:22.198Z]    [LAB RUN 1] done=2/7 succ=2 fail=0 skip=0 rem=5 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:10:23.717Z]    [LAB RUN 1] done=2/7 succ=2 fail=0 skip=0 rem=5 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:10:25.226Z]    [LAB RUN 1] done=2/7 succ=2 fail=0 skip=0 rem=5 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:10:25.924Z] [SW] [CONTENT_EVENT][tabId=2113014625][attemptId=att_1792033816771_5jj98][url=http://127.0.0.1:8088/captcha-hcaptcha-dom.html] [FINAL_AUDIT] PASS
+[2026-10-15T03:10:25.933Z] [SW] [BG_LOG][tab=2113014625] [CONTENT_EVENT][tabId=2113014625][attemptId=att_1792033816771_5jj98][url=http://127.0.0.1:8088/captcha-hcaptcha-dom.html] [FINAL_AUDIT] PASS
+[2026-10-15T03:10:26.740Z]    [LAB RUN 1] done=2/7 succ=2 fail=0 skip=0 rem=5 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:10:28.262Z]    [LAB RUN 1] done=3/7 succ=3 fail=0 skip=0 rem=5 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:10:29.781Z]    [LAB RUN 1] done=3/7 succ=3 fail=0 skip=0 rem=5 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:10:31.293Z]    [LAB RUN 1] done=3/7 succ=3 fail=0 skip=0 rem=5 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:10:32.806Z]    [LAB RUN 1] done=3/7 succ=3 fail=0 skip=0 rem=5 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:10:34.086Z] [SW] [BG_LOG][tab=none] [CAPTCHA_LAB_CASE] url=http://127.0.0.1:8088/captcha-turnstile-dom.html phase=AUTO_DRIVE_START type=turnstile
+[2026-10-15T03:10:34.324Z] [SW] [BG_LOG][tab=none] [CAPTCHA_PROVIDER_SELECT] mode=OWNER_TEST_LOCAL provider=mock_provider liveProviderBypassed=true requestedMethod=nopecha
+[2026-10-15T03:10:34.447Z]    [LAB RUN 1] done=3/7 succ=3 fail=0 skip=0 rem=4 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:10:34.492Z] [SW] [BG_LOG][tab=none] [CAPTCHA_AUTO_SUCCESS] Transitioned to CAPTCHA_AUTO_SUCCESS.
+[2026-10-15T03:10:34.503Z] [SW] [BG_LOG][tab=none] [CAPTCHA_AUTO_SUCCESS] Stage already advanced by CAPTCHA_CHALLENGE_VERIFIED event (stage=CAPTCHA_AUTO_SUCCESS). Skipping duplicate counter increment.
+[2026-10-15T03:10:34.513Z] [SW] [BG_LOG][tab=none] [CAPTCHA_LAB_CASE] url=http://127.0.0.1:8088/captcha-turnstile-dom.html result=PASS method=mock_provider
+[2026-10-15T03:10:35.969Z]    [LAB RUN 1] done=3/7 succ=3 fail=0 skip=0 rem=4 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:10:37.477Z]    [LAB RUN 1] done=3/7 succ=3 fail=0 skip=0 rem=4 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:10:39.000Z]    [LAB RUN 1] done=3/7 succ=3 fail=0 skip=0 rem=4 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:10:40.512Z]    [LAB RUN 1] done=3/7 succ=3 fail=0 skip=0 rem=4 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:10:42.118Z]    [LAB RUN 1] done=3/7 succ=3 fail=0 skip=0 rem=4 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:10:43.237Z] [SW] [CONTENT_EVENT][tabId=2113014629][attemptId=att_1792033833720_rv900][url=http://127.0.0.1:8088/captcha-turnstile-dom.html] [FINAL_AUDIT] PASS
+[2026-10-15T03:10:43.246Z] [SW] [BG_LOG][tab=2113014629] [CONTENT_EVENT][tabId=2113014629][attemptId=att_1792033833720_rv900][url=http://127.0.0.1:8088/captcha-turnstile-dom.html] [FINAL_AUDIT] PASS
+[2026-10-15T03:10:43.635Z]    [LAB RUN 1] done=3/7 succ=3 fail=0 skip=0 rem=4 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:10:45.146Z]    [LAB RUN 1] done=4/7 succ=4 fail=0 skip=0 rem=4 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:10:46.664Z]    [LAB RUN 1] done=4/7 succ=4 fail=0 skip=0 rem=4 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:10:48.179Z]    [LAB RUN 1] done=4/7 succ=4 fail=0 skip=0 rem=4 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:10:49.701Z]    [LAB RUN 1] done=4/7 succ=4 fail=0 skip=0 rem=4 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:10:51.246Z]    [LAB RUN 1] done=4/7 succ=4 fail=0 skip=0 rem=3 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:10:51.387Z] [SW] [BG_LOG][tab=none] [CAPTCHA_LAB_CASE] url=http://127.0.0.1:8088/captcha-mock-solve.html phase=AUTO_DRIVE_START type=recaptcha
+[2026-10-15T03:10:51.614Z] [SW] [BG_LOG][tab=none] [CAPTCHA_PROVIDER_SELECT] mode=OWNER_TEST_LOCAL provider=mock_provider liveProviderBypassed=true requestedMethod=nopecha
+[2026-10-15T03:10:51.786Z] [SW] [BG_LOG][tab=none] [CAPTCHA_AUTO_SUCCESS] Transitioned to CAPTCHA_AUTO_SUCCESS.
+[2026-10-15T03:10:51.797Z] [SW] [BG_LOG][tab=none] [CAPTCHA_AUTO_SUCCESS] Stage already advanced by CAPTCHA_CHALLENGE_VERIFIED event (stage=CAPTCHA_AUTO_SUCCESS). Skipping duplicate counter increment.
+[2026-10-15T03:10:51.806Z] [SW] [BG_LOG][tab=none] [CAPTCHA_LAB_CASE] url=http://127.0.0.1:8088/captcha-mock-solve.html result=PASS method=mock_provider
+[2026-10-15T03:10:52.773Z]    [LAB RUN 1] done=4/7 succ=4 fail=0 skip=0 rem=3 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:10:54.290Z]    [LAB RUN 1] done=4/7 succ=4 fail=0 skip=0 rem=3 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:10:55.802Z]    [LAB RUN 1] done=4/7 succ=4 fail=0 skip=0 rem=3 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:10:57.318Z]    [LAB RUN 1] done=4/7 succ=4 fail=0 skip=0 rem=3 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:10:58.829Z]    [LAB RUN 1] done=4/7 succ=4 fail=0 skip=0 rem=3 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:11:00.175Z] [SW] [CONTENT_EVENT][tabId=2113014633][attemptId=att_1792033851016_3df4m][url=http://127.0.0.1:8088/captcha-mock-solve.html] [FINAL_AUDIT] PASS
+[2026-10-15T03:11:00.185Z] [SW] [BG_LOG][tab=2113014633] [CONTENT_EVENT][tabId=2113014633][attemptId=att_1792033851016_3df4m][url=http://127.0.0.1:8088/captcha-mock-solve.html] [FINAL_AUDIT] PASS
+[2026-10-15T03:11:00.571Z]    [LAB RUN 1] done=4/7 succ=4 fail=0 skip=0 rem=3 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:11:02.085Z]    [LAB RUN 1] done=5/7 succ=5 fail=0 skip=0 rem=3 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:11:03.608Z]    [LAB RUN 1] done=5/7 succ=5 fail=0 skip=0 rem=3 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:11:05.120Z]    [LAB RUN 1] done=5/7 succ=5 fail=0 skip=0 rem=3 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:11:06.639Z]    [LAB RUN 1] done=5/7 succ=5 fail=0 skip=0 rem=3 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:11:08.164Z]    [LAB RUN 1] done=5/7 succ=5 fail=0 skip=0 rem=2 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:11:08.252Z] [SW] [BG_LOG][tab=none] [CAPTCHA_LAB_CASE] url=http://127.0.0.1:8088/captcha-mock-timeout.html phase=AUTO_DRIVE_START type=recaptcha
+[2026-10-15T03:11:08.471Z] [SW] [BG_LOG][tab=none] [CAPTCHA_PROVIDER_SELECT] mode=OWNER_TEST_LOCAL provider=mock_provider liveProviderBypassed=true requestedMethod=nopecha
+[2026-10-15T03:11:09.076Z] [SW] [BG_LOG][tab=none] [CAPTCHA_LAB_CASE] url=http://127.0.0.1:8088/captcha-mock-timeout.html result=EXPECTED_FAIL_PASS error=SOLVER_TIMEOUT settle=SKIP_ADVANCE
+[2026-10-15T03:11:09.687Z]    [LAB RUN 1] done=5/7 succ=5 fail=0 skip=0 rem=2 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:11:11.200Z]    [LAB RUN 1] done=5/7 succ=5 fail=0 skip=0 rem=2 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:11:12.710Z]    [LAB RUN 1] done=5/7 succ=5 fail=0 skip=0 rem=2 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:11:14.221Z]    [LAB RUN 1] done=5/7 succ=5 fail=0 skip=0 rem=2 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:11:15.735Z]    [LAB RUN 1] done=5/7 succ=5 fail=0 skip=0 rem=2 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:11:16.439Z] [SW] [BG_LOG][tab=none] [CAPTCHA_LAB_CASE] url=http://127.0.0.1:8088/captcha-mock-timeout.html phase=AUTO_DRIVE_START type=recaptcha
+[2026-10-15T03:11:16.674Z] [SW] [BG_LOG][tab=none] [CAPTCHA_PROVIDER_SELECT] mode=OWNER_TEST_LOCAL provider=mock_provider liveProviderBypassed=true requestedMethod=nopecha
+[2026-10-15T03:11:17.270Z]    [LAB RUN 1] done=5/7 succ=5 fail=0 skip=0 rem=2 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:11:17.289Z] [SW] [BG_LOG][tab=none] [CAPTCHA_LAB_CASE] url=http://127.0.0.1:8088/captcha-mock-timeout.html result=EXPECTED_FAIL_PASS error=SOLVER_TIMEOUT settle=SKIP_ADVANCE
+[2026-10-15T03:11:18.785Z]    [LAB RUN 1] done=5/7 succ=5 fail=0 skip=0 rem=2 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:11:20.374Z]    [LAB RUN 1] done=5/7 succ=5 fail=0 skip=0 rem=2 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:11:21.889Z]    [LAB RUN 1] done=5/7 succ=5 fail=0 skip=0 rem=2 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:11:23.412Z]    [LAB RUN 1] done=5/7 succ=5 fail=0 skip=0 rem=2 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:11:24.924Z]    [LAB RUN 1] done=5/7 succ=5 fail=0 skip=0 rem=2 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:11:26.438Z]    [LAB RUN 1] done=5/7 succ=5 fail=0 skip=0 rem=2 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:11:27.948Z]    [LAB RUN 1] done=5/7 succ=5 fail=0 skip=0 rem=2 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:11:29.464Z]    [LAB RUN 1] done=5/7 succ=5 fail=0 skip=0 rem=2 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:11:30.983Z]    [LAB RUN 1] done=5/7 succ=5 fail=0 skip=0 rem=2 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:11:32.665Z]    [LAB RUN 1] done=5/7 succ=5 fail=0 skip=0 rem=2 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:11:34.185Z]    [LAB RUN 1] done=5/7 succ=5 fail=0 skip=0 rem=2 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:11:35.693Z]    [LAB RUN 1] done=5/7 succ=5 fail=0 skip=0 rem=2 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:11:37.402Z]    [LAB RUN 1] done=5/7 succ=5 fail=0 skip=0 rem=2 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:11:38.918Z]    [LAB RUN 1] done=5/7 succ=5 fail=0 skip=0 rem=2 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:11:40.442Z]    [LAB RUN 1] done=5/7 succ=5 fail=0 skip=0 rem=2 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:11:41.952Z]    [LAB RUN 1] done=6/7 succ=5 fail=1 skip=0 rem=2 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:11:43.472Z]    [LAB RUN 1] done=6/7 succ=5 fail=1 skip=0 rem=2 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:11:44.985Z]    [LAB RUN 1] done=6/7 succ=5 fail=1 skip=0 rem=2 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:11:46.272Z] [SW] [BG_LOG][tab=none] [CAPTCHA_LAB_CASE] url=http://127.0.0.1:8088/captcha-mock-config-error.html phase=AUTO_DRIVE_START type=recaptcha
+[2026-10-15T03:11:46.468Z] [SW] [BG_LOG][tab=none] [CAPTCHA_PROVIDER_SELECT] mode=OWNER_TEST_LOCAL provider=mock_provider liveProviderBypassed=true requestedMethod=nopecha
+[2026-10-15T03:11:46.476Z] [SW] [BG_LOG][tab=none] [CAPTCHA_LAB_CASE] url=http://127.0.0.1:8088/captcha-mock-config-error.html result=EXPECTED_FAIL_PASS error=ERROR_ZERO_BALANCE settle=SKIP_ADVANCE
+[2026-10-15T03:11:46.698Z]    [LAB RUN 1] done=6/7 succ=5 fail=1 skip=0 rem=1 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:11:48.208Z]    [LAB RUN 1] done=6/7 succ=5 fail=1 skip=0 rem=1 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:11:49.721Z]    [LAB RUN 1] done=6/7 succ=5 fail=1 skip=0 rem=1 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:11:51.241Z]    [LAB RUN 1] done=6/7 succ=5 fail=1 skip=0 rem=1 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:11:52.750Z]    [LAB RUN 1] done=6/7 succ=5 fail=1 skip=0 rem=1 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:11:54.217Z] [SW] [BG_LOG][tab=none] [CAPTCHA_LAB_CASE] url=http://127.0.0.1:8088/captcha-mock-config-error.html phase=AUTO_DRIVE_START type=recaptcha
+[2026-10-15T03:11:54.410Z]    [LAB RUN 1] done=6/7 succ=5 fail=1 skip=0 rem=1 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:11:54.451Z] [SW] [BG_LOG][tab=none] [CAPTCHA_PROVIDER_SELECT] mode=OWNER_TEST_LOCAL provider=mock_provider liveProviderBypassed=true requestedMethod=nopecha
+[2026-10-15T03:11:54.461Z] [SW] [BG_LOG][tab=none] [CAPTCHA_LAB_CASE] url=http://127.0.0.1:8088/captcha-mock-config-error.html result=EXPECTED_FAIL_PASS error=ERROR_ZERO_BALANCE settle=SKIP_ADVANCE
+[2026-10-15T03:11:55.937Z]    [LAB RUN 1] done=6/7 succ=5 fail=1 skip=0 rem=1 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:11:57.451Z]    [LAB RUN 1] done=6/7 succ=5 fail=1 skip=0 rem=1 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:11:58.961Z]    [LAB RUN 1] done=6/7 succ=5 fail=1 skip=0 rem=1 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:12:00.485Z]    [LAB RUN 1] done=6/7 succ=5 fail=1 skip=0 rem=1 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:12:01.995Z]    [LAB RUN 1] done=6/7 succ=5 fail=1 skip=0 rem=1 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:12:03.517Z]    [LAB RUN 1] done=6/7 succ=5 fail=1 skip=0 rem=1 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:12:05.026Z]    [LAB RUN 1] done=6/7 succ=5 fail=1 skip=0 rem=1 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:12:06.548Z]    [LAB RUN 1] done=6/7 succ=5 fail=1 skip=0 rem=1 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:12:08.056Z]    [LAB RUN 1] done=6/7 succ=5 fail=1 skip=0 rem=1 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:12:09.629Z]    [LAB RUN 1] done=6/7 succ=5 fail=1 skip=0 rem=1 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:12:11.148Z]    [LAB RUN 1] done=6/7 succ=5 fail=1 skip=0 rem=1 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:12:12.669Z]    [LAB RUN 1] done=6/7 succ=5 fail=1 skip=0 rem=1 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:12:14.188Z]    [LAB RUN 1] done=6/7 succ=5 fail=1 skip=0 rem=1 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:12:15.704Z]    [LAB RUN 1] done=6/7 succ=5 fail=1 skip=0 rem=1 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:12:17.219Z]    [LAB RUN 1] done=6/7 succ=5 fail=1 skip=0 rem=1 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:12:18.839Z]    [LAB RUN 1] done=7/7 succ=5 fail=2 skip=0 rem=1 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:12:20.367Z]    [LAB RUN 1] done=7/7 succ=5 fail=2 skip=0 rem=1 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:12:21.888Z]    [LAB RUN 1] done=7/7 succ=5 fail=2 skip=0 rem=1 captchaOK= captchaFail= status="Live Progress (Running)" modalOpen=false
+[2026-10-15T03:12:23.407Z]    [LAB RUN 1] done=7/7 succ=5 fail=2 skip=0 rem=0 captchaOK= captchaFail= status="Live Progress (Finished)" modalOpen=false
+[2026-10-15T03:12:23.417Z]    [LAB RUN 1] post-state: {"stage":null,"activeSolves":0,"isActive":false,"captcha":{"solved":5,"failed":2},"ledger":{"detected":6,"pendingOwner":0,"autoSuccess":5,"autoFailure":2,"manualSuccess":0,"manualSkip":4}}
+[2026-10-15T03:12:23.564Z] 📸 12_lab_run1_complete.png
+[2026-10-15T03:12:26.085Z] 
+>>> LAB RUN 2: clicking #run-captcha-lab-btn (zero Owner intervention afterwards)
+[2026-10-15T03:12:26.093Z] [POPUP] [BUTTON_CLICK] id=run-captcha-lab-btn
+[2026-10-15T03:12:26.101Z] [POPUP] [BUTTON_CLICK] id=run-captcha-lab-btn
+[2026-10-15T03:12:26.108Z] [POPUP] [START_DISPATCH] accepted=false reason=ALREADY_IN_FLIGHT source=OWNER_CAPTCHA_LAB
+[2026-10-15T03:12:27.631Z]    [LAB RUN 2] done=7/7 succ=5 fail=2 skip=0 rem=0 captchaOK= captchaFail= status="Live Progress (Finished)" modalOpen=false
+[2026-10-15T03:12:27.640Z]    [LAB RUN 2] post-state: {"stage":null,"activeSolves":0,"isActive":false,"captcha":{"solved":5,"failed":2},"ledger":{"detected":6,"pendingOwner":0,"autoSuccess":5,"autoFailure":2,"manualSuccess":0,"manualSkip":4}}
+[2026-10-15T03:12:27.791Z] 📸 13_lab_run2_complete.png
+[2026-10-15T03:12:27.972Z] ✅ CAP-02: name/email/message preserved, math=12, native validity true, auto-submit success, no Manual Assist
+[2026-10-15T03:12:27.979Z] ✅ CAP-03+: mock_provider selected BEFORE live provider (8 selections, configured method=nopecha bypassed)
+[2026-10-15T03:12:27.986Z] ✅ ZERO external CAPTCHA solver network requests / provider calls during both lab runs
+[2026-10-15T03:12:27.993Z] ✅ Fixtures visited (captcha-*): captcha-hcaptcha-dom.html, captcha-math.html, captcha-mock-config-error.html, captcha-mock-solve.html, captcha-mock-timeout.html, captcha-recaptcha-dom.html, captcha-turnstile-dom.html
+[2026-10-15T03:12:28.000Z] ✅ Lab expected-failure cases settled: 16
+[2026-10-15T03:12:28.007Z] 
+=== PER-RUN MATRIX ===
+[
+  {
+    "run": "LAB RUN 1",
+    "counters": {
+      "succ": 5,
+      "fail": 2,
+      "skip": 0,
+      "rem": 0,
+      "title": "Live Progress (Finished)",
+      "capOk": "",
+      "capFail": "",
+      "modal": false,
+      "manualAssist": false
+    },
+    "post": {
+      "stage": null,
+      "activeSolves": 0,
+      "isActive": false,
+      "captcha": {
+        "solved": 5,
+        "failed": 2
+      },
+      "ledger": {
+        "detected": 6,
+        "pendingOwner": 0,
+        "autoSuccess": 5,
+        "autoFailure": 2,
+        "manualSuccess": 0,
+        "manualSkip": 4
+      }
+    }
+  },
+  {
+    "run": "LAB RUN 2",
+    "counters": {
+      "succ": 5,
+      "fail": 2,
+      "skip": 0,
+      "rem": 0,
+      "title": "Live Progress (Finished)",
+      "capOk": "",
+      "capFail": "",
+      "modal": false,
+      "manualAssist": false
+    },
+    "post": {
+      "stage": null,
+      "activeSolves": 0,
+      "isActive": false,
+      "captcha": {
+        "solved": 5,
+        "failed": 2
+      },
+      "ledger": {
+        "detected": 6,
+        "pendingOwner": 0,
+        "autoSuccess": 5,
+        "autoFailure": 2,
+        "manualSuccess": 0,
+        "manualSkip": 4
+      }
+    }
+  }
+]
+[2026-10-15T03:12:28.014Z] 
+================ ALL CAPTCHA LAB REAL-OWNER-PATH CHECKS PASSED (2 consecutive complete runs) ================
