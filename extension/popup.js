@@ -3523,9 +3523,9 @@ async function verifyBuildHandshake(options = {}) {
     const localInfo = (typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO)
         ? BuildProvenance.BUILD_INFO
         : {
-            implementationHead: '51110c997b8063d52b8224c9af8d42b353defde0',
-            implementationHeadShort: '51110c99',
-            headShort: '51110c99',
+            implementationHead: '31b929c37b8063d52b8224c9af8d42b353defde0',
+            implementationHeadShort: '31b929c3',
+            headShort: '31b929c3',
             buildId: 'R6.9G.10.3.7.1.4.7-20261014-START-CONTROL-PLANE-RECOVERY',
             manifestVersion: 3
         };
@@ -4217,10 +4217,10 @@ async function restoreUserSettings() {
 }
 
 function getBadgeTextFromBuildInfo(info) {
-    if (!info) return 'TEST-ONLY R6.9G.10.3 [55dc6d69]';
+    if (!info) return 'TEST-ONLY R6.9G.10.3 [31b929c3]';
     const m = (info.buildId || '').match(/R\d+\.\d+[A-Za-z0-9\.]*/);
     const ver = m ? m[0] : 'R6.9G.10.3';
-    const sha = info.implementationHeadShort || info.headShort || (info.implementationHead ? info.implementationHead.substring(0, 8) : '51110c99');
+    const sha = info.implementationHeadShort || info.headShort || (info.implementationHead ? info.implementationHead.substring(0, 8) : '31b929c3');
     return `TEST-ONLY ${ver} [${sha}]`;
 }
 
@@ -4987,7 +4987,7 @@ async function launchCampaign(options = {}) {
 
         const localInfo = (typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO)
             ? BuildProvenance.BUILD_INFO
-            : { implementationHead: '51110c997b8063d52b8224c9af8d42b353defde0', buildId: 'R6.9G.10.3.7.1.4.7-20261014-START-CONTROL-PLANE-RECOVERY', manifestVersion: 3 };
+            : { implementationHead: '31b929c37b8063d52b8224c9af8d42b353defde0', buildId: 'R6.9G.10.3.7.1.4.7-20261014-START-CONTROL-PLANE-RECOVERY', manifestVersion: 3 };
 
         const startRes = await new Promise((resolve, reject) => {
             chrome.runtime.sendMessage({
