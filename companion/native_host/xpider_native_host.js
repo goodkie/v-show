@@ -255,6 +255,29 @@ async function handleMessage(msg) {
       };
     }
 
+    case 'VERIFY_PRIVATE_EGRESS_PLAN': {
+      const payload = msg.payload || {};
+      const token = payload.token;
+      if (!token) {
+        return { action: 'VERIFY_PRIVATE_EGRESS_PLAN_RESPONSE', success: false, error: 'MISSING_API_TOKEN' };
+      }
+      const provisioner = new PrivateEgressProvisioner({
+        token,
+        controlPort: CONTROL_PORT,
+        controlToken: getControlToken(),
+        mockMode: Boolean(payload.mockMode)
+      });
+      try {
+        const result = await provisioner.verifyPlanAndPrice({
+          tier: payload.tier || 'ULTRA_ECONOMY',
+          region: payload.region || 'nyc3'
+        });
+        return { action: 'VERIFY_PRIVATE_EGRESS_PLAN_RESPONSE', success: true, result };
+      } catch (err) {
+        return { action: 'VERIFY_PRIVATE_EGRESS_PLAN_RESPONSE', success: false, error: err.message };
+      }
+    }
+
     case 'PROVISION_PRIVATE_EGRESS': {
       const payload = msg.payload || {};
       const token = payload.token;

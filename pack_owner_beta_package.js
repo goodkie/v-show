@@ -14,8 +14,8 @@ const { execSync } = require('child_process');
 console.log('1. Verifying parity with sync_build_parity.js...');
 execSync('node sync_build_parity.js', { stdio: 'inherit' });
 
-const versionStr = 'R6.9G.10.3.7.1.4.11';
-const zipName = `XPIDER_${versionStr}_OWNER_BETA.zip`;
+const versionStr = 'R6.9G.10.3.7.1.4.12';
+const zipName = `XPIDER_${versionStr}_PRIVATE_EGRESS_RC1.zip`;
 const zipOut = path.resolve(zipName);
 const extDir = path.resolve('send_message_backup/build/extension');
 const compDir = path.resolve('companion');
@@ -69,6 +69,34 @@ if (fs.existsSync('owner-extension-test-site')) {
     fs.cpSync('owner-extension-test-site', path.join(stagingDir, 'owner-extension-test-site'), { recursive: true });
 }
 
+// 5b. Copy private-egress server package (Blocker H)
+if (fs.existsSync('private-egress')) {
+    fs.cpSync('private-egress', path.join(stagingDir, 'private-egress'), { recursive: true });
+}
+
+// 5c. Bundle locked runtime dependencies (ssh2) (Blocker G)
+if (fs.existsSync('node_modules')) {
+    const stagingNmDir = path.join(stagingDir, 'node_modules');
+    fs.mkdirSync(stagingNmDir, { recursive: true });
+    function copyNodeModulesClean(src, dest) {
+        const entries = fs.readdirSync(src, { withFileTypes: true });
+        for (const entry of entries) {
+            if (entry.name === 'test' || entry.name === 'tests' || entry.name === 'examples' || entry.name === '.github' || entry.name === '.git') {
+                continue;
+            }
+            const srcPath = path.join(src, entry.name);
+            const destPath = path.join(dest, entry.name);
+            if (entry.isDirectory()) {
+                fs.mkdirSync(destPath, { recursive: true });
+                copyNodeModulesClean(srcPath, destPath);
+            } else {
+                fs.copyFileSync(srcPath, destPath);
+            }
+        }
+    }
+    copyNodeModulesClean('node_modules', stagingNmDir);
+}
+
 // 6. Copy Root Batch & Docs & Package manifests
 const rootFiles = ['XPIDER_AUTO_SETUP.bat', 'package.json', 'package-lock.json', 'OWNER_BETA_README.md', 'KNOWN_ISSUES.md', 'CHANGELOG.md'];
 for (const rf of rootFiles) {
@@ -77,7 +105,7 @@ for (const rf of rootFiles) {
     }
 }
 
-// 7. Security & Secret Scan
+// 7. Security & Secret Scan (Strict scan on all project code, skipping third-party libraries)
 function scanDirectoryForSecrets(dir) {
     const forbiddenPatterns = [
         /(?:ghp_[a-zA-Z0-9]{30,}|gho_[a-zA-Z0-9]{30,}|github_pat_[a-zA-Z0-9_]{50,})/,
@@ -86,6 +114,7 @@ function scanDirectoryForSecrets(dir) {
     ];
     const entries = fs.readdirSync(dir, { withFileTypes: true });
     for (const ent of entries) {
+        if (ent.name === 'node_modules') continue; // Skip 3rd party bundled libraries
         const full = path.join(dir, ent.name);
         if (ent.isDirectory()) {
             scanDirectoryForSecrets(full);

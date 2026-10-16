@@ -1039,6 +1039,39 @@ class PrivacyRelayService {
         return;
       }
 
+      // POST /verify-plan (Authenticated) - Beginner 2-step verification: validate DO token & derive verified catalog pricing with zero cloud creation
+      if (pathname === '/verify-plan' && req.method === 'POST') {
+        let body = '';
+        req.on('data', chunk => body += chunk);
+        req.on('end', async () => {
+          try {
+            const data = JSON.parse(body);
+            if (!data.token) {
+              res.writeHead(400);
+              res.end(JSON.stringify({ success: false, reason: 'MISSING_API_TOKEN' }));
+              return;
+            }
+            const provisioner = new PrivateEgressProvisioner({
+              token: data.token,
+              controlPort: this.controlPort,
+              controlToken: this.controlToken,
+              mockMode: Boolean(data.mockMode)
+            });
+            const planInfo = await provisioner.verifyPlanAndPrice({
+              tier: data.tier || 'ULTRA_ECONOMY',
+              region: data.region || 'nyc3'
+            });
+            res.writeHead(200);
+            res.end(JSON.stringify({ success: true, ...planInfo }));
+          } catch (e) {
+            const scrubbedErr = redactSecrets(e.message, [data.token]);
+            res.writeHead(400);
+            res.end(JSON.stringify({ success: false, reason: scrubbedErr }));
+          }
+        });
+        return;
+      }
+
       // POST /provision-egress (Authenticated) - Full auto DigitalOcean private egress deployment
       if (pathname === '/provision-egress' && req.method === 'POST') {
         let body = '';

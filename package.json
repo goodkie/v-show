@@ -1,5 +1,8 @@
 {
-  "devDependencies": {
+  "name": "xpider-autoform-sender-pro",
+  "version": "6.9.10",
+  "dependencies": {
     "ssh2": "^1.17.0"
   }
 }
+

@@ -1942,7 +1942,10 @@ async function hydrateSettings(overrideV2Store = null) {
             const tierSelect = document.getElementById('wizard-tier-select');
             const regionSelect = document.getElementById('wizard-region-select');
             const tokenInput = document.getElementById('wizard-do-token');
+            const verifyBtn = document.getElementById('wizard-verify-btn');
+            const stepBContainer = document.getElementById('wizard-step-b-container');
             const authCheck = document.getElementById('wizard-auth-check');
+            const authLabel = document.getElementById('wizard-auth-label');
             const createBtn = document.getElementById('wizard-create-btn');
             const destroyBtn = document.getElementById('wizard-destroy-btn');
             const progressHud = document.getElementById('wizard-progress-hud');
@@ -1956,34 +1959,37 @@ async function hydrateSettings(overrideV2Store = null) {
 
             if (!modal) return;
 
+            let verifiedPlan = null;
+            let verifiedPriceStr = '$6.00/MO';
+
             const TIERS_META = {
                 ULTRA_ECONOMY: {
                     badge: 'ULTRA ECONOMY — RECOMMENDED FOR SINGLE OWNER',
                     price: '~$6 / month',
                     title: '1 Dedicated Private Egress Server (NYC3)',
                     desc: 'Basic 1 vCPU / 1 GiB RAM • Authenticated TLS Proxy • Cloud Firewall • Strict Fail-Closed • Pinned CA',
-                    btnText: '⚡ CREATE PRIVATE EGRESS — ULTRA ECONOMY'
+                    btnText: '⚡ STEP B: CREATE PRIVATE EGRESS — $6.00/MO'
                 },
                 ECONOMY: {
                     badge: 'TIER 2: ECONOMY (HIGH RAM)',
                     price: '~$12 / month',
                     title: '1 Dedicated Private Egress Server (NYC3)',
                     desc: 'Basic 1 vCPU / 2 GiB RAM • Upgrade only if measured resource pressure exists',
-                    btnText: '⚡ CREATE PRIVATE EGRESS — ECONOMY'
+                    btnText: '⚡ STEP B: CREATE PRIVATE EGRESS — $12.00/MO'
                 },
                 PERFORMANCE: {
                     badge: 'TIER 3: PERFORMANCE',
                     price: '~$24 / month',
                     title: '1 Dedicated Performance Server (NYC3)',
                     desc: 'Basic 2 vCPU / 4 GiB RAM • High concurrent tunnel capacity for heavy usage',
-                    btnText: '⚡ CREATE PRIVATE EGRESS — PERFORMANCE'
+                    btnText: '⚡ STEP B: CREATE PRIVATE EGRESS — $24.00/MO'
                 },
                 HA_DUAL: {
                     badge: 'TIER 4: HIGH AVAILABILITY (DUAL NODE)',
                     price: '~$12 / month',
                     title: '2 Independent Servers (NYC3 Primary + TOR1 Standby)',
                     desc: '2x 1 vCPU / 1 GiB RAM • Automatic Health Failover • Zero single point of failure',
-                    btnText: '⚡ CREATE PRIVATE EGRESS — HIGH AVAILABILITY'
+                    btnText: '⚡ STEP B: CREATE PRIVATE EGRESS — $12.00/MO'
                 }
             };
 
@@ -2030,7 +2036,7 @@ async function hydrateSettings(overrideV2Store = null) {
 
             const updatePlanUi = (tierId) => {
                 const t = TIERS_META[tierId] || TIERS_META.ULTRA_ECONOMY;
-                if (planCard) {
+                if (planCard && !verifiedPlan) {
                     planCard.innerHTML = `
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
                             <span style="font-size: 10px; font-weight: 700; color: #38bdf8; background: rgba(56, 189, 248, 0.15); padding: 2px 6px; border-radius: 4px;">${t.badge}</span>
@@ -2040,7 +2046,7 @@ async function hydrateSettings(overrideV2Store = null) {
                         <div style="font-size: 10px; color: #94a3b8; line-height: 1.3;">${t.desc}</div>
                     `;
                 }
-                if (createBtn) {
+                if (createBtn && !verifiedPlan) {
                     createBtn.textContent = t.btnText;
                 }
             };
@@ -2050,11 +2056,24 @@ async function hydrateSettings(overrideV2Store = null) {
                 modal.classList.remove('hidden');
                 if (progressHud) progressHud.style.display = 'none';
                 if (tokenInput) tokenInput.value = '';
-                if (authCheck) authCheck.checked = false;
-                if (createBtn) {
-                    createBtn.disabled = false;
-                    updatePlanUi(tierSelect ? tierSelect.value : 'ULTRA_ECONOMY');
+                verifiedPlan = null;
+                if (stepBContainer) {
+                    stepBContainer.style.opacity = '0.5';
+                    stepBContainer.style.pointerEvents = 'none';
                 }
+                if (authCheck) {
+                    authCheck.checked = false;
+                    authCheck.disabled = true;
+                }
+                if (createBtn) {
+                    createBtn.disabled = true;
+                    createBtn.textContent = '⚡ STEP B: CREATE PRIVATE EGRESS — $6.00/MO';
+                }
+                if (verifyBtn) {
+                    verifyBtn.disabled = false;
+                    verifyBtn.textContent = '🔍 STEP A: VERIFY PLAN & PRICE (Zero Cloud Creation)';
+                }
+                updatePlanUi(tierSelect ? tierSelect.value : 'ULTRA_ECONOMY');
                 pollTelemetry();
             };
 
@@ -2077,7 +2096,29 @@ async function hydrateSettings(overrideV2Store = null) {
 
             if (tierSelect) {
                 tierSelect.onchange = (e) => {
+                    verifiedPlan = null;
+                    if (stepBContainer) { stepBContainer.style.opacity = '0.5'; stepBContainer.style.pointerEvents = 'none'; }
+                    if (authCheck) { authCheck.checked = false; authCheck.disabled = true; }
+                    if (createBtn) { createBtn.disabled = true; }
                     updatePlanUi(e.target.value);
+                };
+            }
+
+            if (regionSelect) {
+                regionSelect.onchange = () => {
+                    verifiedPlan = null;
+                    if (stepBContainer) { stepBContainer.style.opacity = '0.5'; stepBContainer.style.pointerEvents = 'none'; }
+                    if (authCheck) { authCheck.checked = false; authCheck.disabled = true; }
+                    if (createBtn) { createBtn.disabled = true; }
+                    updatePlanUi(tierSelect ? tierSelect.value : 'ULTRA_ECONOMY');
+                };
+            }
+
+            if (authCheck) {
+                authCheck.onchange = () => {
+                    if (createBtn) {
+                        createBtn.disabled = !authCheck.checked || !verifiedPlan;
+                    }
                 };
             }
 
@@ -2108,12 +2149,84 @@ async function hydrateSettings(overrideV2Store = null) {
                 });
             };
 
+            // [Blocker I Hardening] STEP A: Verify Plan & Price (Zero Cloud Resources Created)
+            if (verifyBtn) {
+                verifyBtn.onclick = async () => {
+                    const token = tokenInput ? tokenInput.value.trim() : '';
+                    if (!token) {
+                        alert('Please enter your DigitalOcean API token to verify plan and price.');
+                        if (tokenInput) tokenInput.focus();
+                        return;
+                    }
+
+                    const tier = tierSelect ? tierSelect.value : 'ULTRA_ECONOMY';
+                    const region = regionSelect ? regionSelect.value : 'nyc3';
+
+                    verifyBtn.disabled = true;
+                    verifyBtn.textContent = '⏳ Verifying provider catalog (Zero cloud creation)...';
+
+                    chrome.runtime.sendMessage({
+                        action: 'VERIFY_PRIVATE_EGRESS_PLAN',
+                        payload: { token, tier, region }
+                    }, (res) => {
+                        verifyBtn.disabled = false;
+                        verifyBtn.textContent = '🔍 STEP A: VERIFY PLAN & PRICE (Zero Cloud Creation)';
+
+                        if (res && res.success && res.result && res.result.valid) {
+                            verifiedPlan = res.result;
+                            const priceMonthly = verifiedPlan.monthlyCostUsd || 6;
+                            const priceHourly = verifiedPlan.hourlyCostUsd || 0.00893;
+                            verifiedPriceStr = `$${priceMonthly.toFixed(2)}/MO`;
+                            const formatted = verifiedPlan.formattedPrice || `$${priceMonthly.toFixed(2)} / month ($${priceHourly} / hr)`;
+
+                            if (planCard) {
+                                planCard.innerHTML = `
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                        <span style="font-size: 10px; font-weight: 700; color: #4ade80; background: rgba(74, 222, 128, 0.15); padding: 2px 6px; border-radius: 4px; border: 1px solid #4ade80;">✅ PLAN & PRICE CONFIRMED (LIVE CATALOG)</span>
+                                        <span style="font-size: 12px; font-weight: 700; color: #4ade80;">${formatted}</span>
+                                    </div>
+                                    <div style="font-size: 11px; font-weight: 600; color: #f8fafc; margin-bottom: 2px;">1 Dedicated Private Egress Server (${region.toUpperCase()}) — ${verifiedPlan.tierName || 'Ultra Economy'}</div>
+                                    <div style="font-size: 10px; color: #94a3b8; line-height: 1.3;">Size: ${verifiedPlan.size} • Account: ${verifiedPlan.accountEmail} • Zero cloud resources created so far.</div>
+                                `;
+                            }
+
+                            if (authLabel) {
+                                authLabel.textContent = `I authorize creating 1 DigitalOcean server at $${priceMonthly.toFixed(2)}/mo ($${priceHourly}/hr) and cloud firewall in ${region.toUpperCase()}.`;
+                            }
+                            if (authCheck) {
+                                authCheck.disabled = false;
+                                authCheck.checked = false;
+                            }
+                            if (createBtn) {
+                                createBtn.disabled = true;
+                                createBtn.textContent = `⚡ STEP B: CREATE PRIVATE EGRESS — ${verifiedPriceStr}`;
+                            }
+                            if (stepBContainer) {
+                                stepBContainer.style.opacity = '1';
+                                stepBContainer.style.pointerEvents = 'auto';
+                            }
+                            addLog(`✅ [PLAN_VERIFIED] DigitalOcean plan verified: ${verifiedPlan.size} in ${region.toUpperCase()} at ${formatted} (Zero cloud resources created)`, 'success');
+                        } else {
+                            verifiedPlan = null;
+                            const err = (res && res.result && res.result.reason) || (res && res.error) || 'Failed to verify plan and price with provider';
+                            addLog(`❌ [PLAN_VERIFY_FAIL] ${err}`, 'error');
+                            alert(`Plan verification failed:\n${err}`);
+                        }
+                    });
+                };
+            }
+
+            // [Blocker I Hardening] STEP B: Create Private Egress after seeing verified provider price
             if (createBtn) {
                 createBtn.onclick = async () => {
                     const token = tokenInput ? tokenInput.value.trim() : '';
                     if (!token) {
                         alert('Please enter your DigitalOcean API token.');
                         if (tokenInput) tokenInput.focus();
+                        return;
+                    }
+                    if (!verifiedPlan) {
+                        alert('Please complete Step A: Verify Plan & Price first.');
                         return;
                     }
                     if (!authCheck || !authCheck.checked) {
@@ -2156,7 +2269,7 @@ async function hydrateSettings(overrideV2Store = null) {
                     }, async (res) => {
                         clearInterval(pollTimer);
                         createBtn.disabled = false;
-                        createBtn.textContent = '⚡ CREATE PRIVATE EGRESS — ULTRA ECONOMY';
+                        createBtn.textContent = `⚡ STEP B: CREATE PRIVATE EGRESS — ${verifiedPriceStr}`;
 
                         if (tokenInput) tokenInput.value = ''; // Discard from memory
 

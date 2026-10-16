@@ -140,17 +140,27 @@
                             </p>
                         </div>
 
-                        <div style="display: flex; align-items: flex-start; gap: 6px; margin-bottom: 12px;">
-                            <input type="checkbox" id="wizard-auth-check" style="margin-top: 2px; cursor: pointer;">
-                            <label for="wizard-auth-check" style="font-size: 10px; color: #cbd5e1; cursor: pointer; line-height: 1.3;">
-                                I authorize creating 1 DigitalOcean server (~$6/mo) and firewall. Nothing is created until confirmed.
-                            </label>
+                        <!-- Step A: Query Catalog & Validate Token (Zero Cloud Resources Created) -->
+                        <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px;">
+                            <button type="button" id="wizard-verify-btn" class="primary-btn" style="background: linear-gradient(135deg, #0284c7, #0369a1); color: #fff; font-weight: 700; font-size: 11px; padding: 9px 12px; border-radius: 6px; cursor: pointer; border: none; text-align: center;">
+                                🔍 STEP A: VERIFY PLAN & PRICE (Zero Cloud Creation)
+                            </button>
                         </div>
 
-                        <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px;">
-                            <button type="button" id="wizard-create-btn" class="primary-btn" style="background: linear-gradient(135deg, #0ea5e9, #0284c7); color: #fff; font-weight: 700; font-size: 12px; padding: 10px 14px; border-radius: 6px; cursor: pointer; border: none; text-align: center;">
-                                ⚡ CREATE PRIVATE EGRESS — ULTRA ECONOMY
-                            </button>
+                        <!-- Step B: Review Provider Price & Authorize Cloud Creation -->
+                        <div id="wizard-step-b-container" style="opacity: 0.5; pointer-events: none; border-top: 1px dashed rgba(255,255,255,0.12); padding-top: 10px; margin-bottom: 10px;">
+                            <div style="display: flex; align-items: flex-start; gap: 6px; margin-bottom: 12px;">
+                                <input type="checkbox" id="wizard-auth-check" style="margin-top: 2px; cursor: pointer;" disabled>
+                                <label for="wizard-auth-check" id="wizard-auth-label" style="font-size: 10px; color: #cbd5e1; cursor: pointer; line-height: 1.3;">
+                                    I authorize creating 1 DigitalOcean server (~$6/mo) and firewall. Nothing is created until confirmed.
+                                </label>
+                            </div>
+
+                            <div style="display: flex; flex-direction: column; gap: 6px;">
+                                <button type="button" id="wizard-create-btn" class="primary-btn" style="background: linear-gradient(135deg, #0ea5e9, #0284c7); color: #fff; font-weight: 700; font-size: 12px; padding: 10px 14px; border-radius: 6px; cursor: pointer; border: none; text-align: center;" disabled>
+                                    ⚡ STEP B: CREATE PRIVATE EGRESS — $6.00/MO
+                                </button>
+                            </div>
                         </div>
 
                         <!-- Advanced Accordion Toggle -->

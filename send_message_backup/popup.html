@@ -84,6 +84,10 @@
                         <div id="privacy-block-reason-code" style="font-size: 10px; color: #fca5a5; font-family: monospace;"></div>
                     </div>
                     <div style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
+                        <button type="button" id="privacy-block-action-setup-egress" class="primary-btn" style="background: linear-gradient(135deg, #0284c7, #0369a1); color: #fff; font-weight: 700; font-size: 11px; padding: 9px 12px; text-align: left; border-radius: 6px; cursor: pointer; border: none; display: flex; align-items: center; justify-content: space-between;">
+                            <span>🚀 SET UP PRIVATE EGRESS (ULTRA ECONOMY ~$6/mo)</span>
+                            <span style="font-size: 9px; background: rgba(255,255,255,0.25); padding: 2px 6px; border-radius: 4px;">RECOMMENDED</span>
+                        </button>
                         <button type="button" id="privacy-block-action-override" class="primary-btn" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: #000; font-weight: 700; font-size: 11px; padding: 8px 12px; text-align: left; border-radius: 6px; cursor: pointer; border: none;">
                             ⚡ START WITHOUT PRIVACY THIS RUN (Direct Mode, Current Run Only)
                         </button>
@@ -99,6 +103,118 @@
                         </div>
                         <button type="button" id="privacy-block-action-cancel" class="secondary-btn" style="background: rgba(255, 255, 255, 0.05); color: #94a3b8; font-size: 11px; padding: 6px 12px; text-align: center; border-radius: 6px; cursor: pointer; border: none;">
                             ✕ Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- [R6.9G.10.3] One-Click Private Egress Provisioning Modal -->
+            <div id="private-egress-modal-overlay" class="modal-overlay hidden" style="display: none;">
+                <div class="captcha-friendly-modal" style="max-width: 460px; text-align: left; padding: 20px; border: 1px solid rgba(56, 189, 248, 0.4); box-shadow: 0 10px 30px rgba(0,0,0,0.6);">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                        <h2 style="color: #38bdf8; font-size: 13px; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 6px;">
+                            🛡️ PRIVATE EGRESS SETUP (DIGITALOCEAN)
+                        </h2>
+                        <span style="font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid #38bdf8; font-family: monospace;">FAIL-CLOSED TLS</span>
+                    </div>
+
+                    <!-- Recommended Default Tier Card -->
+                    <div id="wizard-plan-card" style="background: linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.9)); border: 1px solid #0284c7; border-radius: 6px; padding: 12px; margin-bottom: 12px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                            <span style="font-size: 10px; font-weight: 700; color: #38bdf8; background: rgba(56, 189, 248, 0.15); padding: 2px 6px; border-radius: 4px;">ULTRA ECONOMY — RECOMMENDED FOR SINGLE OWNER</span>
+                            <span id="wizard-plan-price" style="font-size: 12px; font-weight: 700; color: #4ade80;">~$6 / month</span>
+                        </div>
+                        <div style="font-size: 11px; font-weight: 600; color: #f8fafc; margin-bottom: 2px;">1 Dedicated Private Egress Server (NYC3)</div>
+                        <div style="font-size: 10px; color: #94a3b8; line-height: 1.3;">Basic 1 vCPU / 1 GiB RAM • Authenticated TLS Proxy • Cloud Firewall • Strict Fail-Closed • Pinned CA</div>
+                    </div>
+
+                    <!-- Setup Input Container -->
+                    <div id="wizard-input-container">
+                        <div style="margin-bottom: 10px;">
+                            <label for="wizard-do-token" style="font-size: 10px; font-weight: 700; color: #cbd5e1; display: block; margin-bottom: 4px;">
+                                DIGITALOCEAN API TOKEN <span style="font-weight: 400; color: #94a3b8;">(Password field, memory-only, never persisted)</span>
+                            </label>
+                            <input type="password" id="wizard-do-token" class="premium-input" placeholder="Paste DigitalOcean token here (dop_v1_...)" style="width: 100%; height: 30px; font-size: 11px; font-family: monospace; padding: 4px 8px; box-sizing: border-box;" autocomplete="off">
+                            <p style="font-size: 9px; color: #64748b; margin: 4px 0 0 0;">
+                                XPIDER uses this token strictly in memory to create the server and deletes its SSH key after setup. You can revoke this token in DigitalOcean after setup.
+                            </p>
+                        </div>
+
+                        <!-- Step A: Query Catalog & Validate Token (Zero Cloud Resources Created) -->
+                        <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px;">
+                            <button type="button" id="wizard-verify-btn" class="primary-btn" style="background: linear-gradient(135deg, #0284c7, #0369a1); color: #fff; font-weight: 700; font-size: 11px; padding: 9px 12px; border-radius: 6px; cursor: pointer; border: none; text-align: center;">
+                                🔍 STEP A: VERIFY PLAN & PRICE (Zero Cloud Creation)
+                            </button>
+                        </div>
+
+                        <!-- Step B: Review Provider Price & Authorize Cloud Creation -->
+                        <div id="wizard-step-b-container" style="opacity: 0.5; pointer-events: none; border-top: 1px dashed rgba(255,255,255,0.12); padding-top: 10px; margin-bottom: 10px;">
+                            <div style="display: flex; align-items: flex-start; gap: 6px; margin-bottom: 12px;">
+                                <input type="checkbox" id="wizard-auth-check" style="margin-top: 2px; cursor: pointer;" disabled>
+                                <label for="wizard-auth-check" id="wizard-auth-label" style="font-size: 10px; color: #cbd5e1; cursor: pointer; line-height: 1.3;">
+                                    I authorize creating 1 DigitalOcean server (~$6/mo) and firewall. Nothing is created until confirmed.
+                                </label>
+                            </div>
+
+                            <div style="display: flex; flex-direction: column; gap: 6px;">
+                                <button type="button" id="wizard-create-btn" class="primary-btn" style="background: linear-gradient(135deg, #0ea5e9, #0284c7); color: #fff; font-weight: 700; font-size: 12px; padding: 10px 14px; border-radius: 6px; cursor: pointer; border: none; text-align: center;" disabled>
+                                    ⚡ STEP B: CREATE PRIVATE EGRESS — $6.00/MO
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Advanced Accordion Toggle -->
+                        <div style="border-top: 1px solid rgba(255,255,255,0.08); padding-top: 8px;">
+                            <button type="button" id="wizard-toggle-advanced-btn" style="background: none; border: none; color: #38bdf8; font-size: 10px; cursor: pointer; padding: 0; text-decoration: underline;">
+                                ⚙️ Advanced Options (Upgrade Ladder, Teardown, Telemetry)
+                            </button>
+                            <div id="wizard-advanced-pane" style="display: none; margin-top: 8px; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.06); border-radius: 4px; padding: 8px;">
+                                <div style="margin-bottom: 6px;">
+                                    <span style="font-size: 9px; color: #94a3b8; display: block; margin-bottom: 2px;">Plan Selection (Upgrade Ladder):</span>
+                                    <select id="wizard-tier-select" class="premium-select" style="width: 100%; height: 24px; font-size: 10px;">
+                                        <option value="ULTRA_ECONOMY" selected>Tier 1: Ultra Economy — 1 vCPU / 1 GiB (~$6/mo) [Default]</option>
+                                        <option value="ECONOMY">Tier 2: Economy — 1 vCPU / 2 GiB (~$12/mo)</option>
+                                        <option value="PERFORMANCE">Tier 3: Performance — 2 vCPU / 4 GiB (~$24/mo)</option>
+                                        <option value="HA_DUAL">Tier 4: High Availability Dual — 2 Nodes NYC3+TOR1 (~$12/mo)</option>
+                                    </select>
+                                </div>
+                                <div style="margin-bottom: 8px;">
+                                    <span style="font-size: 9px; color: #94a3b8; display: block; margin-bottom: 2px;">Primary Region:</span>
+                                    <select id="wizard-region-select" class="premium-select" style="width: 100%; height: 24px; font-size: 10px;">
+                                        <option value="nyc3" selected>New York (NYC3) — Recommended</option>
+                                        <option value="tor1">Toronto (TOR1)</option>
+                                        <option value="sfo3">San Francisco (SFO3)</option>
+                                        <option value="fra1">Frankfurt (FRA1)</option>
+                                        <option value="sgp1">Singapore (SGP1)</option>
+                                    </select>
+                                </div>
+                                <div style="border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 6px; display: flex; justify-content: space-between; align-items: center;">
+                                    <span style="font-size: 9px; color: #f87171;">Teardown:</span>
+                                    <button type="button" id="wizard-destroy-btn" style="background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; color: #fca5a5; font-size: 9px; padding: 3px 8px; border-radius: 4px; cursor: pointer; font-weight: 600;">
+                                        🗑️ Destroy Private Egress
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Progress HUD (Shown during execution) -->
+                    <div id="wizard-progress-hud" style="display: none; background: #070d19; border: 1px solid #1e293b; border-radius: 6px; padding: 12px; margin-bottom: 12px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <span id="wizard-progress-title" style="font-size: 11px; font-weight: 700; color: #38bdf8;">1/8 VPS CONNECTION</span>
+                            <span id="wizard-progress-percent" style="font-size: 10px; font-family: monospace; color: #4ade80;">12%</span>
+                        </div>
+                        <div style="width: 100%; height: 6px; background: #1e293b; border-radius: 3px; overflow: hidden; margin-bottom: 8px;">
+                            <div id="wizard-progress-bar" style="width: 12%; height: 100%; background: linear-gradient(90deg, #38bdf8, #4ade80); transition: width 0.3s ease;"></div>
+                        </div>
+                        <div id="wizard-stage-list" style="display: flex; flex-direction: column; gap: 4px; font-size: 9px; font-family: monospace;">
+                            <!-- Dynamically populated -->
+                        </div>
+                    </div>
+
+                    <div style="display: flex; justify-content: flex-end; margin-top: 10px;">
+                        <button type="button" id="wizard-close-btn" class="secondary-btn" style="background: rgba(255, 255, 255, 0.05); color: #94a3b8; font-size: 11px; padding: 6px 14px; border-radius: 6px; cursor: pointer; border: none;">
+                            ✕ Close
                         </button>
                     </div>
                 </div>
@@ -740,12 +856,20 @@
 
                                 <!-- [R6.9G.10.3 Blocker 4] Owner Egress Node Management Section -->
                                 <div style="margin-top: 8px; border-top: 1px solid #334155; padding-top: 8px;">
+                                    <div style="margin-bottom: 6px;">
+                                        <button type="button" id="priv-relay-open-wizard-btn" class="primary-btn-small" style="width: 100%; padding: 6px 10px; font-size: 11px; font-weight: 700; background: linear-gradient(135deg, #0ea5e9, #0284c7); color: #fff; border: none; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                                            <span>🚀 One-Click Private Egress Wizard (Ultra Economy ~$6/mo)</span>
+                                        </button>
+                                    </div>
                                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
                                         <span style="font-size: 11px; color: #38bdf8; font-weight: 700;">🌐 EGRESS NODES POOL (<span id="priv-relay-node-count">0</span>)</span>
-                                        <button type="button" id="priv-relay-toggle-add-btn" style="background: rgba(56, 189, 248, 0.15); border: 1px solid #38bdf8; color: #38bdf8; font-size: 9px; padding: 2px 6px; border-radius: 4px; cursor: pointer; font-weight: 600;">➕ Add Egress Node</button>
+                                        <div style="display: flex; align-items: center; gap: 4px;">
+                                            <span id="priv-telemetry-badge" style="font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 4px; background: rgba(74, 222, 128, 0.15); color: #4ade80; border: 1px solid #4ade80; display: none;">VPS: GOOD</span>
+                                            <button type="button" id="priv-relay-toggle-add-btn" style="background: rgba(56, 189, 248, 0.15); border: 1px solid #38bdf8; color: #38bdf8; font-size: 9px; padding: 2px 6px; border-radius: 4px; cursor: pointer; font-weight: 600;">➕ Add Manual Node</button>
+                                        </div>
                                     </div>
                                     <div id="priv-relay-node-list-container" style="max-height: 80px; overflow-y: auto; background: #0b132b; border: 1px solid #1e293b; border-radius: 4px; padding: 4px; margin-bottom: 6px; font-size: 10px; font-family: monospace;">
-                                        <div id="priv-relay-empty-nodes-msg" style="color: #64748b; text-align: center; padding: 6px;">No egress nodes configured. Add an HTTP/HTTPS proxy below to enable Relay privacy.</div>
+                                        <div id="priv-relay-empty-nodes-msg" style="color: #64748b; text-align: center; padding: 6px;">No egress nodes configured. Launch the wizard above or add a manual proxy below.</div>
                                     </div>
 
                                     <!-- Add Node Form Container -->

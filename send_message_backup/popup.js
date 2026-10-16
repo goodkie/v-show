@@ -1399,12 +1399,23 @@ async function hydrateSettings(overrideV2Store = null) {
             const codeEl = document.getElementById('privacy-block-reason-code');
             if (codeEl) codeEl.textContent = `Reason Code: ${reason || 'PRIVACY_START_BLOCKED'}`;
 
+            const btnSetupEgress = document.getElementById('privacy-block-action-setup-egress');
             const btnOverride = document.getElementById('privacy-block-action-override');
             const btnRetry = document.getElementById('privacy-block-action-retry');
             const btnSettings = document.getElementById('privacy-block-action-settings');
             const btnCancel = document.getElementById('privacy-block-action-cancel');
             const btnCompanion = document.getElementById('privacy-block-action-companion');
             const btnProxy = document.getElementById('privacy-block-action-proxy');
+
+            if (btnSetupEgress) {
+                btnSetupEgress.onclick = () => {
+                    privacyBlockModal.style.display = 'none';
+                    privacyBlockModal.classList.add('hidden');
+                    if (typeof window.openPrivateEgressWizard === 'function') {
+                        window.openPrivateEgressWizard();
+                    }
+                };
+            }
 
             if (btnOverride) {
                 btnOverride.onclick = async () => {
@@ -1919,6 +1930,467 @@ async function hydrateSettings(overrideV2Store = null) {
                 });
             });
         }
+
+        // ==============================================================================
+        // [Issue #6 R6.9G.10.3] One-Click Automated Private Egress Setup Wizard
+        // ==============================================================================
+        const initPrivateEgressWizard = () => {
+            const modal = document.getElementById('private-egress-modal-overlay');
+            const closeBtn = document.getElementById('wizard-close-btn');
+            const toggleAdvBtn = document.getElementById('wizard-toggle-advanced-btn');
+            const advPane = document.getElementById('wizard-advanced-pane');
+            const tierSelect = document.getElementById('wizard-tier-select');
+            const regionSelect = document.getElementById('wizard-region-select');
+            const tokenInput = document.getElementById('wizard-do-token');
+            const verifyBtn = document.getElementById('wizard-verify-btn');
+            const stepBContainer = document.getElementById('wizard-step-b-container');
+            const authCheck = document.getElementById('wizard-auth-check');
+            const authLabel = document.getElementById('wizard-auth-label');
+            const createBtn = document.getElementById('wizard-create-btn');
+            const destroyBtn = document.getElementById('wizard-destroy-btn');
+            const progressHud = document.getElementById('wizard-progress-hud');
+            const progressTitle = document.getElementById('wizard-progress-title');
+            const progressPercent = document.getElementById('wizard-progress-percent');
+            const progressBar = document.getElementById('wizard-progress-bar');
+            const stageList = document.getElementById('wizard-stage-list');
+            const planCard = document.getElementById('wizard-plan-card');
+            const openWizardBtn = document.getElementById('priv-relay-open-wizard-btn');
+            const telemetryBadge = document.getElementById('priv-telemetry-badge');
+
+            if (!modal) return;
+
+            let verifiedPlan = null;
+            let verifiedPriceStr = '$6.00/MO';
+
+            const TIERS_META = {
+                ULTRA_ECONOMY: {
+                    badge: 'ULTRA ECONOMY — RECOMMENDED FOR SINGLE OWNER',
+                    price: '~$6 / month',
+                    title: '1 Dedicated Private Egress Server (NYC3)',
+                    desc: 'Basic 1 vCPU / 1 GiB RAM • Authenticated TLS Proxy • Cloud Firewall • Strict Fail-Closed • Pinned CA',
+                    btnText: '⚡ STEP B: CREATE PRIVATE EGRESS — $6.00/MO'
+                },
+                ECONOMY: {
+                    badge: 'TIER 2: ECONOMY (HIGH RAM)',
+                    price: '~$12 / month',
+                    title: '1 Dedicated Private Egress Server (NYC3)',
+                    desc: 'Basic 1 vCPU / 2 GiB RAM • Upgrade only if measured resource pressure exists',
+                    btnText: '⚡ STEP B: CREATE PRIVATE EGRESS — $12.00/MO'
+                },
+                PERFORMANCE: {
+                    badge: 'TIER 3: PERFORMANCE',
+                    price: '~$24 / month',
+                    title: '1 Dedicated Performance Server (NYC3)',
+                    desc: 'Basic 2 vCPU / 4 GiB RAM • High concurrent tunnel capacity for heavy usage',
+                    btnText: '⚡ STEP B: CREATE PRIVATE EGRESS — $24.00/MO'
+                },
+                HA_DUAL: {
+                    badge: 'TIER 4: HIGH AVAILABILITY (DUAL NODE)',
+                    price: '~$12 / month',
+                    title: '2 Independent Servers (NYC3 Primary + TOR1 Standby)',
+                    desc: '2x 1 vCPU / 1 GiB RAM • Automatic Health Failover • Zero single point of failure',
+                    btnText: '⚡ STEP B: CREATE PRIVATE EGRESS — $12.00/MO'
+                }
+            };
+
+            const STAGES_META = [
+                '1/8 VPS CONNECTION',
+                '2/8 SERVER PREP',
+                '3/8 TLS',
+                '4/8 PRIVATE PROXY',
+                '5/8 FIREWALL',
+                '6/8 LOCAL RELAY REGISTRATION',
+                '7/8 EGRESS VERIFICATION',
+                '8/8 STRICT PRIVACY READY'
+            ];
+
+            const renderInitialStages = () => {
+                if (!stageList) return;
+                stageList.innerHTML = STAGES_META.map((stg, i) => {
+                    const statusText = i === 0 ? 'WORKING' : 'PENDING';
+                    const color = i === 0 ? '#38bdf8' : '#64748b';
+                    return `<div style="display: flex; justify-content: space-between; color: ${color};">
+                        <span>${stg}</span>
+                        <span id="stg-badge-${i+1}">${statusText}</span>
+                    </div>`;
+                }).join('');
+            };
+
+            const updateStageStatus = (step, status) => {
+                const badge = document.getElementById(`stg-badge-${step}`);
+                if (badge) {
+                    badge.textContent = status;
+                    const parent = badge.parentElement;
+                    if (status === 'PASS') {
+                        badge.style.color = '#4ade80';
+                        if (parent) parent.style.color = '#4ade80';
+                    } else if (status === 'WORKING') {
+                        badge.style.color = '#38bdf8';
+                        if (parent) parent.style.color = '#38bdf8';
+                    } else if (status === 'FAIL') {
+                        badge.style.color = '#f87171';
+                        if (parent) parent.style.color = '#f87171';
+                    }
+                }
+            };
+
+            const updatePlanUi = (tierId) => {
+                const t = TIERS_META[tierId] || TIERS_META.ULTRA_ECONOMY;
+                if (planCard && !verifiedPlan) {
+                    planCard.innerHTML = `
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                            <span style="font-size: 10px; font-weight: 700; color: #38bdf8; background: rgba(56, 189, 248, 0.15); padding: 2px 6px; border-radius: 4px;">${t.badge}</span>
+                            <span style="font-size: 12px; font-weight: 700; color: #4ade80;">${t.price}</span>
+                        </div>
+                        <div style="font-size: 11px; font-weight: 600; color: #f8fafc; margin-bottom: 2px;">${t.title}</div>
+                        <div style="font-size: 10px; color: #94a3b8; line-height: 1.3;">${t.desc}</div>
+                    `;
+                }
+                if (createBtn && !verifiedPlan) {
+                    createBtn.textContent = t.btnText;
+                }
+            };
+
+            window.openPrivateEgressWizard = () => {
+                modal.style.display = 'flex';
+                modal.classList.remove('hidden');
+                if (progressHud) progressHud.style.display = 'none';
+                if (tokenInput) tokenInput.value = '';
+                verifiedPlan = null;
+                if (stepBContainer) {
+                    stepBContainer.style.opacity = '0.5';
+                    stepBContainer.style.pointerEvents = 'none';
+                }
+                if (authCheck) {
+                    authCheck.checked = false;
+                    authCheck.disabled = true;
+                }
+                if (createBtn) {
+                    createBtn.disabled = true;
+                    createBtn.textContent = '⚡ STEP B: CREATE PRIVATE EGRESS — $6.00/MO';
+                }
+                if (verifyBtn) {
+                    verifyBtn.disabled = false;
+                    verifyBtn.textContent = '🔍 STEP A: VERIFY PLAN & PRICE (Zero Cloud Creation)';
+                }
+                updatePlanUi(tierSelect ? tierSelect.value : 'ULTRA_ECONOMY');
+                pollTelemetry();
+            };
+
+            if (openWizardBtn) {
+                openWizardBtn.onclick = () => window.openPrivateEgressWizard();
+            }
+
+            if (closeBtn) {
+                closeBtn.onclick = () => {
+                    modal.style.display = 'none';
+                    modal.classList.add('hidden');
+                };
+            }
+
+            if (toggleAdvBtn && advPane) {
+                toggleAdvBtn.onclick = () => {
+                    advPane.style.display = advPane.style.display === 'none' ? 'block' : 'none';
+                };
+            }
+
+            if (tierSelect) {
+                tierSelect.onchange = (e) => {
+                    verifiedPlan = null;
+                    if (stepBContainer) { stepBContainer.style.opacity = '0.5'; stepBContainer.style.pointerEvents = 'none'; }
+                    if (authCheck) { authCheck.checked = false; authCheck.disabled = true; }
+                    if (createBtn) { createBtn.disabled = true; }
+                    updatePlanUi(e.target.value);
+                };
+            }
+
+            if (regionSelect) {
+                regionSelect.onchange = () => {
+                    verifiedPlan = null;
+                    if (stepBContainer) { stepBContainer.style.opacity = '0.5'; stepBContainer.style.pointerEvents = 'none'; }
+                    if (authCheck) { authCheck.checked = false; authCheck.disabled = true; }
+                    if (createBtn) { createBtn.disabled = true; }
+                    updatePlanUi(tierSelect ? tierSelect.value : 'ULTRA_ECONOMY');
+                };
+            }
+
+            if (authCheck) {
+                authCheck.onchange = () => {
+                    if (createBtn) {
+                        createBtn.disabled = !authCheck.checked || !verifiedPlan;
+                    }
+                };
+            }
+
+            const pollTelemetry = () => {
+                chrome.runtime.sendMessage({ action: 'GET_EGRESS_TELEMETRY' }, (res) => {
+                    if (res && res.success && res.telemetry) {
+                        const t = res.telemetry;
+                        if (telemetryBadge) {
+                            telemetryBadge.style.display = 'inline-block';
+                            if (t.status === 'GOOD') {
+                                telemetryBadge.style.color = '#4ade80';
+                                telemetryBadge.style.borderColor = '#4ade80';
+                                telemetryBadge.style.background = 'rgba(74, 222, 128, 0.15)';
+                                telemetryBadge.textContent = 'VPS: GOOD';
+                            } else if (t.status === 'WATCH') {
+                                telemetryBadge.style.color = '#facc15';
+                                telemetryBadge.style.borderColor = '#facc15';
+                                telemetryBadge.style.background = 'rgba(250, 204, 21, 0.15)';
+                                telemetryBadge.textContent = 'VPS: WATCH';
+                            } else if (t.status === 'UPGRADE_RECOMMENDED') {
+                                telemetryBadge.style.color = '#f87171';
+                                telemetryBadge.style.borderColor = '#f87171';
+                                telemetryBadge.style.background = 'rgba(248, 113, 113, 0.2)';
+                                telemetryBadge.textContent = 'VPS: UPGRADE REC';
+                            }
+                        }
+                    }
+                });
+            };
+
+            // [Blocker I Hardening] STEP A: Verify Plan & Price (Zero Cloud Resources Created)
+            if (verifyBtn) {
+                verifyBtn.onclick = async () => {
+                    const token = tokenInput ? tokenInput.value.trim() : '';
+                    if (!token) {
+                        alert('Please enter your DigitalOcean API token to verify plan and price.');
+                        if (tokenInput) tokenInput.focus();
+                        return;
+                    }
+
+                    const tier = tierSelect ? tierSelect.value : 'ULTRA_ECONOMY';
+                    const region = regionSelect ? regionSelect.value : 'nyc3';
+
+                    verifyBtn.disabled = true;
+                    verifyBtn.textContent = '⏳ Verifying provider catalog (Zero cloud creation)...';
+
+                    chrome.runtime.sendMessage({
+                        action: 'VERIFY_PRIVATE_EGRESS_PLAN',
+                        payload: { token, tier, region }
+                    }, (res) => {
+                        verifyBtn.disabled = false;
+                        verifyBtn.textContent = '🔍 STEP A: VERIFY PLAN & PRICE (Zero Cloud Creation)';
+
+                        if (res && res.success && res.result && res.result.valid) {
+                            verifiedPlan = res.result;
+                            const priceMonthly = verifiedPlan.monthlyCostUsd || 6;
+                            const priceHourly = verifiedPlan.hourlyCostUsd || 0.00893;
+                            verifiedPriceStr = `$${priceMonthly.toFixed(2)}/MO`;
+                            const formatted = verifiedPlan.formattedPrice || `$${priceMonthly.toFixed(2)} / month ($${priceHourly} / hr)`;
+
+                            if (planCard) {
+                                planCard.innerHTML = `
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                        <span style="font-size: 10px; font-weight: 700; color: #4ade80; background: rgba(74, 222, 128, 0.15); padding: 2px 6px; border-radius: 4px; border: 1px solid #4ade80;">✅ PLAN & PRICE CONFIRMED (LIVE CATALOG)</span>
+                                        <span style="font-size: 12px; font-weight: 700; color: #4ade80;">${formatted}</span>
+                                    </div>
+                                    <div style="font-size: 11px; font-weight: 600; color: #f8fafc; margin-bottom: 2px;">1 Dedicated Private Egress Server (${region.toUpperCase()}) — ${verifiedPlan.tierName || 'Ultra Economy'}</div>
+                                    <div style="font-size: 10px; color: #94a3b8; line-height: 1.3;">Size: ${verifiedPlan.size} • Account: ${verifiedPlan.accountEmail} • Zero cloud resources created so far.</div>
+                                `;
+                            }
+
+                            if (authLabel) {
+                                authLabel.textContent = `I authorize creating 1 DigitalOcean server at $${priceMonthly.toFixed(2)}/mo ($${priceHourly}/hr) and cloud firewall in ${region.toUpperCase()}.`;
+                            }
+                            if (authCheck) {
+                                authCheck.disabled = false;
+                                authCheck.checked = false;
+                            }
+                            if (createBtn) {
+                                createBtn.disabled = true;
+                                createBtn.textContent = `⚡ STEP B: CREATE PRIVATE EGRESS — ${verifiedPriceStr}`;
+                            }
+                            if (stepBContainer) {
+                                stepBContainer.style.opacity = '1';
+                                stepBContainer.style.pointerEvents = 'auto';
+                            }
+                            addLog(`✅ [PLAN_VERIFIED] DigitalOcean plan verified: ${verifiedPlan.size} in ${region.toUpperCase()} at ${formatted} (Zero cloud resources created)`, 'success');
+                        } else {
+                            verifiedPlan = null;
+                            const err = (res && res.result && res.result.reason) || (res && res.error) || 'Failed to verify plan and price with provider';
+                            addLog(`❌ [PLAN_VERIFY_FAIL] ${err}`, 'error');
+                            alert(`Plan verification failed:\n${err}`);
+                        }
+                    });
+                };
+            }
+
+            // [Blocker I Hardening] STEP B: Create Private Egress after seeing verified provider price
+            if (createBtn) {
+                createBtn.onclick = async () => {
+                    const token = tokenInput ? tokenInput.value.trim() : '';
+                    if (!token) {
+                        alert('Please enter your DigitalOcean API token.');
+                        if (tokenInput) tokenInput.focus();
+                        return;
+                    }
+                    if (!verifiedPlan) {
+                        alert('Please complete Step A: Verify Plan & Price first.');
+                        return;
+                    }
+                    if (!authCheck || !authCheck.checked) {
+                        alert('Please check the authorization box to confirm server creation.');
+                        return;
+                    }
+
+                    createBtn.disabled = true;
+                    createBtn.textContent = '⏳ Provisioning in progress...';
+                    if (progressHud) progressHud.style.display = 'block';
+                    renderInitialStages();
+
+                    if (progressBar) progressBar.style.width = '12%';
+                    if (progressPercent) progressPercent.textContent = '12%';
+                    if (progressTitle) progressTitle.textContent = '1/8 VPS CONNECTION';
+
+                    const tier = tierSelect ? tierSelect.value : 'ULTRA_ECONOMY';
+                    const region = regionSelect ? regionSelect.value : 'nyc3';
+
+                    let pollTimer = setInterval(() => {
+                        chrome.runtime.sendMessage({ action: 'GET_PROVISION_PROGRESS' }, (pRes) => {
+                            if (pRes && pRes.success && pRes.result && pRes.result.provisioning) {
+                                const prov = pRes.result.provisioning;
+                                if (prov.events && prov.events.length > 0) {
+                                    prov.events.forEach(ev => {
+                                        updateStageStatus(ev.step, ev.status);
+                                        const pct = Math.round((ev.step / 8) * 100);
+                                        if (progressBar) progressBar.style.width = `${pct}%`;
+                                        if (progressPercent) progressPercent.textContent = `${pct}%`;
+                                        if (progressTitle) progressTitle.textContent = ev.title;
+                                    });
+                                }
+                            }
+                        });
+                    }, 800);
+
+                    chrome.runtime.sendMessage({
+                        action: 'PROVISION_PRIVATE_EGRESS',
+                        payload: { token, tier, region }
+                    }, async (res) => {
+                        clearInterval(pollTimer);
+                        createBtn.disabled = false;
+                        createBtn.textContent = `⚡ STEP B: CREATE PRIVATE EGRESS — ${verifiedPriceStr}`;
+
+                        if (tokenInput) tokenInput.value = ''; // Discard from memory
+
+                        // [Blocker C Hardening] Two-Layer Authoritative Privacy Gate
+                        // Layer 1: Check Companion-level provisioning and loopback relay CONNECT preflight
+                        if (!res || !res.success || !res.result || !res.result.success || !res.result.preflight || !res.result.preflight.ready) {
+                            updateStageStatus(8, 'FAIL');
+                            const err = (res && res.result && ((res.result.preflight && !res.result.preflight.ready ? `COMPANION_PREFLIGHT_FAIL: ${res.result.preflight.reason}` : res.result.reason))) || (res && res.error) || 'Companion provisioning failed';
+                            addLog(`❌ [PRIVATE_EGRESS_FAIL] ${err}`, 'error');
+                            alert(`Provisioning failed: ${err}`);
+                            return;
+                        }
+
+                        // Refresh relay status & node pool in extension first so PrivacyGateway recognizes new node
+                        if (typeof refreshRelayNodes === 'function') refreshRelayNodes();
+                        if (typeof refreshRelayStatus === 'function') refreshRelayStatus();
+
+                        // Layer 2: Authoritative Extension Background PrivacyGateway Verification
+                        addLog('🛡️ [LAYER 2] Executing authoritative Extension Background PrivacyGateway preflight...', 'info');
+
+                        let prepResult = null;
+                        try {
+                            const prepResponse = await new Promise((resolve) => {
+                                chrome.runtime.sendMessage({
+                                    action: 'ENSURE_ENFORCED_PRIVACY_FOR_START',
+                                    options: { ownerFunctionTestMode: false }
+                                }, (prepRes) => {
+                                    if (chrome.runtime.lastError) return resolve({ success: false, error: chrome.runtime.lastError.message });
+                                    resolve(prepRes || { success: false, error: 'NO_RESPONSE_FROM_BACKGROUND' });
+                                });
+                            });
+                            prepResult = (prepResponse && prepResponse.success && prepResponse.result) ? prepResponse.result : null;
+                        } catch (prepErr) {
+                            prepResult = { ready: false, reason: prepErr.message };
+                        }
+
+                        if (!prepResult || !prepResult.ready) {
+                            updateStageStatus(8, 'FAIL');
+                            const reason = prepResult?.reason || 'ENSURE_ENFORCED_PRIVACY_BLOCKED';
+                            addLog(`❌ [AUTHORITATIVE_PREFLIGHT_FAIL] Layer 2 PrivacyGateway blocked start: ${reason}`, 'error');
+                            alert(`🛑 [AUTHORITATIVE PRIVACY GATE BLOCKED]\n\nCompanion node active, but Extension PrivacyGateway blocked strict privacy.\n\nReason: ${reason}`);
+                            return;
+                        }
+
+                        let pfResult = null;
+                        try {
+                            const preflightResponse = await new Promise((resolve) => {
+                                chrome.runtime.sendMessage({
+                                    action: 'RUN_PRIVACY_PREFLIGHT',
+                                    options: {}
+                                }, (pfRes) => {
+                                    if (chrome.runtime.lastError) return resolve({ success: false, error: chrome.runtime.lastError.message });
+                                    resolve(pfRes || { success: false, error: 'NO_RESPONSE_FROM_BACKGROUND' });
+                                });
+                            });
+                            pfResult = (preflightResponse && preflightResponse.success && preflightResponse.preflight) ? preflightResponse.preflight : null;
+                        } catch (pfErr) {
+                            pfResult = { ready: false, reason: pfErr.message };
+                        }
+
+                        if (!pfResult || !pfResult.ready || pfResult.directFallbackBlocked === false) {
+                            updateStageStatus(8, 'FAIL');
+                            const reason = pfResult?.reason || 'DIRECT_FALLBACK_NOT_BLOCKED';
+                            addLog(`❌ [AUTHORITATIVE_PREFLIGHT_FAIL] Layer 2 Preflight failed or direct fallback unblocked: ${reason}`, 'error');
+                            alert(`🛑 [AUTHORITATIVE PREFLIGHT BLOCKED]\n\nPrivacyGateway check failed:\nReason: ${reason}\nDirect Fallback Blocked: ${pfResult?.directFallbackBlocked}`);
+                            return;
+                        }
+
+                        // BOTH Layer 1 (Companion) and Layer 2 (PrivacyGateway) PASSED!
+                        for (let s = 1; s <= 8; s++) updateStageStatus(s, 'PASS');
+                        if (progressBar) progressBar.style.width = '100%';
+                        if (progressPercent) progressPercent.textContent = '100%';
+                        if (progressTitle) progressTitle.textContent = '8/8 STRICT PRIVACY READY';
+
+                        addLog(`🛡️ [PRIVATE_EGRESS_SUCCESS] Droplet ${res.result.dropletId} deployed at ${res.result.publicIp} ($${res.result.monthlyCostUsd}/mo) — Both Companion & Extension PrivacyGateway preflights VERIFIED READY`, 'success');
+                        if (typeof updatePrivacyHud === 'function') updatePrivacyHud();
+
+                        alert(`✅ Private Egress successfully deployed & authoritative preflight VERIFIED!\nIP: ${res.result.publicIp}\nTier: ${res.result.tier} (~$${res.result.monthlyCostUsd}/mo)\n\nBoth Companion & Extension PrivacyGateway gates verified: Strict Privacy is READY.`);
+                        pollTelemetry();
+                    });
+                };
+            }
+
+            if (destroyBtn) {
+                destroyBtn.onclick = () => {
+                    const token = tokenInput ? tokenInput.value.trim() : '';
+                    const proceed = confirm('⚠️ WARNING: This will permanently delete all XPIDER droplets, firewalls, and keys in DigitalOcean tagged xpider-private-egress.\n\nAre you sure you want to proceed?');
+                    if (!proceed) return;
+
+                    const tokenToUse = token || prompt('Enter DigitalOcean API token to authorize teardown:');
+                    if (!tokenToUse) return;
+
+                    destroyBtn.disabled = true;
+                    destroyBtn.textContent = '⏳ Destroying...';
+
+                    chrome.runtime.sendMessage({
+                        action: 'DESTROY_PRIVATE_EGRESS',
+                        payload: { token: tokenToUse }
+                    }, (res) => {
+                        destroyBtn.disabled = false;
+                        destroyBtn.textContent = '🗑️ Destroy Private Egress';
+                        if (tokenInput) tokenInput.value = '';
+
+                        if (res && res.success && res.result && res.result.success) {
+                            addLog(`🗑️ [DESTROY_EGRESS] Cleaned up ${res.result.destroyedDroplets} Droplets and ${res.result.destroyedFirewalls} Firewalls`, 'info');
+                            alert(`Teardown complete: ${res.result.destroyedDroplets} Droplets and ${res.result.destroyedFirewalls} Firewalls destroyed.`);
+                            if (typeof refreshRelayNodes === 'function') refreshRelayNodes();
+                            if (typeof refreshRelayStatus === 'function') refreshRelayStatus();
+                            if (typeof updatePrivacyHud === 'function') updatePrivacyHud();
+                        } else {
+                            const err = (res && res.result && res.result.reason) || (res && res.error) || 'Teardown failed';
+                            alert(`Destroy failed: ${err}`);
+                        }
+                    });
+                };
+            }
+
+            // Initial telemetry poll
+            pollTelemetry();
+        };
+        initPrivateEgressWizard();
 
         const isVpnConfirmed = !!privCfg.systemVpnConfirmed;
         updateVpnStatusBadge(isVpnConfirmed);

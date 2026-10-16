@@ -160,6 +160,7 @@ class PrivateEgressProvisioner {
     this.testSftpDownload = Boolean(options.testSftpDownload);
     this.mockOwnerIp = options.mockOwnerIp || null;
     this.simulateStageFailure = options.simulateStageFailure || null;
+    this.simulateRollbackVerificationFailure = options.simulateRollbackVerificationFailure || null;
     this.mockDeletedResources = {
       droplets: [],
       firewalls: [],
@@ -286,6 +287,7 @@ class PrivateEgressProvisioner {
         region,
         sizeSlug,
         monthlyCostUsd: 6,
+        hourlyCostUsd: 0.00893,
         sameCostRegions: ['nyc1', 'nyc3', 'sfo3', 'ams3']
       };
     }
@@ -317,14 +319,55 @@ class PrivateEgressProvisioner {
       region,
       sizeSlug,
       monthlyCostUsd: matchedSize.price_monthly || 6,
+      hourlyCostUsd: matchedSize.price_hourly || 0.00893,
       sameCostRegions: availableRegions
     };
   }
 
-  // [Blocker D Hardening] Automatic bounded rollback for transaction resources
+  // [Blocker I Hardening] Beginner 2-step verification: Step A queries provider catalog & token validity with ZERO cloud resources created
+  async verifyPlanAndPrice(params = {}) {
+    const tierId = params.tier || 'ULTRA_ECONOMY';
+    const tier = TIERS[tierId] || TIERS.ULTRA_ECONOMY;
+    const region = params.region || tier.defaultRegion || 'nyc3';
+
+    // 1. Validate Token against /account
+    const tokenCheck = await this.validateToken();
+    if (!tokenCheck.valid) {
+      throw new Error(`Invalid DigitalOcean API token: ${tokenCheck.error}`);
+    }
+
+    // 2. Query provider catalog sizes
+    const catalogInfo = await this.verifyRegionAndSizeAvailability(region, tier.size);
+    const monthlyCost = catalogInfo.monthlyCostUsd || tier.monthlyCostUsd || 6;
+    const hourlyCost = catalogInfo.hourlyCostUsd || 0.00893;
+
+    return {
+      valid: true,
+      tier: tierId,
+      tierName: tier.name,
+      size: tier.size,
+      region,
+      available: true,
+      monthlyCostUsd: monthlyCost,
+      hourlyCostUsd: hourlyCost,
+      formattedPrice: `$${monthlyCost.toFixed(2)} / month ($${hourlyCost} / hr)`,
+      sameCostRegions: catalogInfo.sameCostRegions || [region],
+      accountEmail: (tokenCheck.account && tokenCheck.account.email) || 'verified@digitalocean.com',
+      dropletLimit: (tokenCheck.account && tokenCheck.account.droplet_limit) || 10
+    };
+  }
+
+  // [Blocker D & J Hardening] Automatic bounded rollback with authoritative verification across all resources
   async rollbackProvisioning(tracked) {
     const { ephemeralKeyId, dropletId, firewallId, registeredNodeId } = tracked;
     const errors = [];
+    const verifications = {
+      dropletAbsent: false,
+      firewallAbsent: false,
+      sshKeyAbsent: false,
+      companionNodeAbsent: false
+    };
+
     console.log('[PROVISIONER_ROLLBACK] Initiating bounded automatic rollback for transaction...', tracked);
 
     // 1. Remove local Companion node if registered
@@ -333,7 +376,7 @@ class PrivateEgressProvisioner {
         await this.removeNodeFromCompanion(registeredNodeId);
         console.log(`[PROVISIONER_ROLLBACK] Removed Companion node: ${registeredNodeId}`);
       } catch (e) {
-        errors.push(`node:${registeredNodeId} (${e.message})`);
+        errors.push(`node_delete_error:${registeredNodeId} (${e.message})`);
       }
     }
 
@@ -343,7 +386,7 @@ class PrivateEgressProvisioner {
         await this.doRequest(`/firewalls/${firewallId}`, 'DELETE');
         console.log(`[PROVISIONER_ROLLBACK] Deleted Cloud Firewall: ${firewallId}`);
       } catch (e) {
-        errors.push(`firewall:${firewallId} (${e.message})`);
+        errors.push(`firewall_delete_error:${firewallId} (${e.message})`);
       }
     }
 
@@ -353,7 +396,7 @@ class PrivateEgressProvisioner {
         await this.doRequest(`/droplets/${dropletId}`, 'DELETE');
         console.log(`[PROVISIONER_ROLLBACK] Deleted Droplet: ${dropletId}`);
       } catch (e) {
-        errors.push(`droplet:${dropletId} (${e.message})`);
+        errors.push(`droplet_delete_error:${dropletId} (${e.message})`);
       }
     }
 
@@ -363,32 +406,91 @@ class PrivateEgressProvisioner {
         await this.doRequest(`/account/keys/${ephemeralKeyId}`, 'DELETE');
         console.log(`[PROVISIONER_ROLLBACK] Deleted Cloud SSH Key: ${ephemeralKeyId}`);
       } catch (e) {
-        errors.push(`sshKey:${ephemeralKeyId} (${e.message})`);
+        errors.push(`sshKey_delete_error:${ephemeralKeyId} (${e.message})`);
       }
     }
 
-    // 5. Verification step: verify zero orphaned droplets remain for this transaction
-    let remainingTaggedDroplets = 0;
-    try {
-      if (this.mockMode) {
-        remainingTaggedDroplets = 0;
-      } else {
-        const verifyRes = await this.doRequest(`/droplets?tag_name=${DEFAULT_TAG}`);
-        if (verifyRes && verifyRes.droplets) {
-          const matching = verifyRes.droplets.filter(d => d.id === dropletId);
-          remainingTaggedDroplets = matching.length;
+    // --- AUTHORITATIVE VERIFICATION STEP (BLOCKER J) ---
+    // Zero billable or workflow resources remain. Verify absence of each tracked resource.
+
+    // A. Verify Droplet absence (GET /droplets/:id must return 404)
+    if (dropletId) {
+      try {
+        await this.doRequest(`/droplets/${dropletId}`, 'GET');
+        // If request succeeded, Droplet still exists!
+        errors.push(`unverified_droplet_removal:${dropletId} (Droplet still exists on provider)`);
+      } catch (checkErr) {
+        if (checkErr.statusCode === 404 || (checkErr.message && checkErr.message.includes('404')) || (checkErr.message && checkErr.message.includes('not found'))) {
+          verifications.dropletAbsent = true;
+        } else {
+          errors.push(`unverified_droplet_removal:${dropletId} (verification API failed: ${checkErr.message})`);
         }
       }
-    } catch (_) {}
-
-    if (remainingTaggedDroplets > 0) {
-      errors.push(`unverified_droplet_removal:${dropletId}`);
+    } else {
+      verifications.dropletAbsent = true;
     }
 
+    // B. Verify Firewall absence (GET /firewalls/:id must return 404)
+    if (firewallId) {
+      try {
+        await this.doRequest(`/firewalls/${firewallId}`, 'GET');
+        errors.push(`unverified_firewall_removal:${firewallId} (Firewall still exists on provider)`);
+      } catch (checkErr) {
+        if (checkErr.statusCode === 404 || (checkErr.message && checkErr.message.includes('404')) || (checkErr.message && checkErr.message.includes('not found'))) {
+          verifications.firewallAbsent = true;
+        } else {
+          errors.push(`unverified_firewall_removal:${firewallId} (verification API failed: ${checkErr.message})`);
+        }
+      }
+    } else {
+      verifications.firewallAbsent = true;
+    }
+
+    // C. Verify Ephemeral SSH Key absence (GET /account/keys/:id must return 404)
+    if (ephemeralKeyId) {
+      try {
+        await this.doRequest(`/account/keys/${ephemeralKeyId}`, 'GET');
+        errors.push(`unverified_ssh_key_removal:${ephemeralKeyId} (SSH Key still exists on provider)`);
+      } catch (checkErr) {
+        if (checkErr.statusCode === 404 || (checkErr.message && checkErr.message.includes('404')) || (checkErr.message && checkErr.message.includes('not found'))) {
+          verifications.sshKeyAbsent = true;
+        } else {
+          errors.push(`unverified_ssh_key_removal:${ephemeralKeyId} (verification API failed: ${checkErr.message})`);
+        }
+      }
+    } else {
+      verifications.sshKeyAbsent = true;
+    }
+
+    // D. Verify Companion Node absence (query local Companion node pool)
+    if (registeredNodeId) {
+      try {
+        const nodesRes = await this.getNodesFromCompanion();
+        const exists = (nodesRes && nodesRes.nodes) ? nodesRes.nodes.some(n => n.id === registeredNodeId) : false;
+        if (exists) {
+          errors.push(`unverified_companion_node_removal:${registeredNodeId} (Node still present in companion pool)`);
+        } else {
+          verifications.companionNodeAbsent = true;
+        }
+      } catch (nodeCheckErr) {
+        errors.push(`unverified_companion_node_removal:${registeredNodeId} (${nodeCheckErr.message})`);
+      }
+    } else {
+      verifications.companionNodeAbsent = true;
+    }
+
+    const allVerified = verifications.dropletAbsent &&
+                        verifications.firewallAbsent &&
+                        verifications.sshKeyAbsent &&
+                        verifications.companionNodeAbsent &&
+                        errors.length === 0;
+
     return {
-      success: errors.length === 0,
+      success: allVerified,
+      status: allVerified ? 'ROLLBACK_VERIFIED_CLEAN' : 'CLEANUP_REQUIRED',
+      verifications,
       errors,
-      remainingBillableResources: remainingTaggedDroplets
+      remainingBillableResources: allVerified ? 0 : errors.length
     };
   }
 
@@ -1001,7 +1103,11 @@ class PrivateEgressProvisioner {
   // --- COMPANION INTEGRATION HELPERS ---
 
   async registerNodeInCompanion(nodePayload) {
-    if (this.mockMode) return { success: true };
+    if (this.mockMode) {
+      if (!this.mockCompanionNodes) this.mockCompanionNodes = [];
+      this.mockCompanionNodes.push(nodePayload);
+      return { success: true };
+    }
 
     const token = this.controlToken || this.loadLocalControlToken();
     return new Promise((resolve, reject) => {
@@ -1070,6 +1176,9 @@ class PrivateEgressProvisioner {
     if (this.mockMode) {
       if (!this.mockDeletedResources) this.mockDeletedResources = { droplets: [], firewalls: [], keys: [], nodes: [] };
       this.mockDeletedResources.nodes.push(nodeId);
+      if (this.mockCompanionNodes) {
+        this.mockCompanionNodes = this.mockCompanionNodes.filter(n => n.id !== nodeId);
+      }
       return { success: true };
     }
 
@@ -1092,6 +1201,43 @@ class PrivateEgressProvisioner {
       req.on('error', () => resolve({ success: false }));
       req.write(postData);
       req.end();
+    });
+  }
+
+  // [Blocker J Hardening] Authoritative Companion Node presence query for rollback verification
+  async getNodesFromCompanion() {
+    if (this.mockMode) {
+      if (this.simulateRollbackVerificationFailure === 'node') {
+        return { success: true, nodes: [{ id: 'mock-lingering-node' }] };
+      }
+      const nodes = (this.mockCompanionNodes || []).filter(n => !(this.mockDeletedResources?.nodes || []).includes(n.id));
+      return { success: true, nodes };
+    }
+
+    const token = this.controlToken || this.loadLocalControlToken();
+    return new Promise((resolve, reject) => {
+      const req = http.get({
+        hostname: '127.0.0.1',
+        port: this.controlPort,
+        path: '/nodes',
+        headers: { 'Authorization': `Bearer ${token}` }
+      }, (res) => {
+        let body = '';
+        res.on('data', d => body += d);
+        res.on('end', () => {
+          try {
+            const parsed = JSON.parse(body);
+            if (res.statusCode === 200 && parsed.nodes) {
+              resolve(parsed);
+            } else {
+              reject(new Error(`Failed to query companion nodes: HTTP ${res.statusCode}`));
+            }
+          } catch (e) {
+            reject(e);
+          }
+        });
+      });
+      req.on('error', reject);
     });
   }
 
@@ -1235,6 +1381,18 @@ class PrivateEgressProvisioner {
         ssh_key: { id: 12345678, name: body.name, fingerprint: 'mock:fingerprint' }
       });
     }
+    if (endpoint.startsWith('/account/keys/') && method === 'GET') {
+      const keyId = endpoint.split('/').pop();
+      if (this.simulateRollbackVerificationFailure === 'sshKey') {
+        return Promise.resolve({ ssh_key: { id: keyId } });
+      }
+      if (this.mockDeletedResources.keys.includes(keyId) || this.mockDeletedResources.keys.includes(Number(keyId))) {
+        const err = new Error(`Resource ${keyId} not found`);
+        err.statusCode = 404;
+        return Promise.reject(err);
+      }
+      return Promise.resolve({ ssh_key: { id: keyId } });
+    }
     if (endpoint.startsWith('/account/keys/') && method === 'DELETE') {
       const keyId = endpoint.split('/').pop();
       this.mockDeletedResources.keys.push(keyId);
@@ -1279,10 +1437,21 @@ class PrivateEgressProvisioner {
         }
       });
     }
-    if (endpoint.startsWith('/droplets/99887766') && method === 'GET') {
+    if (endpoint.startsWith('/droplets/') && !endpoint.includes('?') && method === 'GET') {
+      const dropId = endpoint.split('/').pop();
+      if (this.simulateRollbackVerificationFailure === 'droplet') {
+        return Promise.resolve({
+          droplet: { id: dropId, status: 'active', networks: { v4: [{ type: 'public', ip_address: '198.51.100.12' }] } }
+        });
+      }
+      if (this.mockDeletedResources.droplets.includes(dropId) || this.mockDeletedResources.droplets.includes(Number(dropId))) {
+        const err = new Error(`Droplet ${dropId} not found`);
+        err.statusCode = 404;
+        return Promise.reject(err);
+      }
       return Promise.resolve({
         droplet: {
-          id: 99887766,
+          id: dropId,
           status: 'active',
           networks: {
             v4: [{ type: 'public', ip_address: '198.51.100.12' }]
@@ -1293,13 +1462,28 @@ class PrivateEgressProvisioner {
     if (endpoint === '/firewalls' && method === 'POST') {
       return Promise.resolve({ firewall: { id: 'fw-1234', name: body.name } });
     }
+    if (endpoint.startsWith('/firewalls/') && method === 'GET') {
+      const fwId = endpoint.split('/').pop();
+      if (this.simulateRollbackVerificationFailure === 'firewall') {
+        return Promise.resolve({ firewall: { id: fwId } });
+      }
+      if (this.mockDeletedResources.firewalls.includes(fwId)) {
+        const err = new Error(`Firewall ${fwId} not found`);
+        err.statusCode = 404;
+        return Promise.reject(err);
+      }
+      return Promise.resolve({ firewall: { id: fwId } });
+    }
     if (endpoint.startsWith('/firewalls/') && method === 'DELETE') {
       const fwId = endpoint.split('/').pop();
       this.mockDeletedResources.firewalls.push(fwId);
       return Promise.resolve({});
     }
     if (endpoint.includes('/droplets?tag_name=') && method === 'GET') {
-      return Promise.resolve({ droplets: [{ id: 99887766 }] });
+      const remaining = (this.mockDeletedResources.droplets.includes('99887766') || this.mockDeletedResources.droplets.includes(99887766))
+        ? []
+        : [{ id: 99887766 }];
+      return Promise.resolve({ droplets: remaining });
     }
     if (endpoint.startsWith('/droplets/') && method === 'DELETE') {
       const dropId = endpoint.split('/').pop();

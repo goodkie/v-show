@@ -697,6 +697,65 @@
         }
 
         /**
+         * [Issue #6 R6.9G.10.3.7] Query Companion Physical Router Security Gate Status (/physical-gate/status)
+         */
+        async queryPhysicalGateStatus() {
+            const host = this.config.relayHost || '127.0.0.1';
+            const port = this.config.relayControlPort || 18989;
+            try {
+                if (!this.ephemeralRelayToken) {
+                    await this.fetchRelayControlToken();
+                }
+                const fetchFn = this._mockFetch !== undefined ? this._mockFetch : (typeof fetch !== 'undefined' ? fetch : null);
+                if (!fetchFn) return { success: false, reason: 'FETCH_UNAVAILABLE' };
+                const headers = this.getRelayAuthHeaders();
+                const res = await fetchFn(`http://${host}:${port}/physical-gate/status`, {
+                    cache: 'no-store',
+                    headers
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data && data.status) {
+                        this.lastPhysicalGateStatus = data.status;
+                    }
+                    return data;
+                }
+                return { success: false, reason: `HTTP_${res.status}` };
+            } catch (e) {
+                return { success: false, reason: e.message };
+            }
+        }
+
+        /**
+         * [Issue #6 R6.9G.10.3.7.1.4.12] Step A: Verify DO token & live catalog pricing with zero cloud creation (/verify-plan)
+         */
+        async verifyPrivateEgressPlan(data) {
+            if (!data || !data.token) return { success: false, reason: 'MISSING_API_TOKEN' };
+            const host = this.config.relayHost || '127.0.0.1';
+            const port = this.config.relayControlPort || 18989;
+            try {
+                if (!this.ephemeralRelayToken) {
+                    await this.fetchRelayControlToken();
+                }
+                const fetchFn = this._mockFetch !== undefined ? this._mockFetch : (typeof fetch !== 'undefined' ? fetch : null);
+                if (!fetchFn) return { success: false, reason: 'FETCH_UNAVAILABLE' };
+                const headers = this.getRelayAuthHeaders();
+                const res = await fetchFn(`http://${host}:${port}/verify-plan`, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify(data)
+                });
+                if (res.ok) {
+                    return await res.json();
+                }
+                const errData = await res.json().catch(() => ({}));
+                return { success: false, reason: errData.reason || `HTTP_${res.status}` };
+            } catch (e) {
+                return { success: false, reason: e.message };
+            }
+        }
+
+        /**
          * [Issue #6 R6.9G.10.3] Automated DigitalOcean Private Egress Provisioning (/provision-egress)
          */
         async provisionPrivateEgress(data) {
@@ -802,36 +861,6 @@
                 }
                 const errData = await res.json().catch(() => ({}));
                 return { success: false, reason: errData.reason || `HTTP_${res.status}` };
-            } catch (e) {
-                return { success: false, reason: e.message };
-            }
-        }
-
-        /**
-         * [Issue #6 R6.9G.10.3.7] Query Companion Physical Router Security Gate Status (/physical-gate/status)
-         */
-        async queryPhysicalGateStatus() {
-            const host = this.config.relayHost || '127.0.0.1';
-            const port = this.config.relayControlPort || 18989;
-            try {
-                if (!this.ephemeralRelayToken) {
-                    await this.fetchRelayControlToken();
-                }
-                const fetchFn = this._mockFetch !== undefined ? this._mockFetch : (typeof fetch !== 'undefined' ? fetch : null);
-                if (!fetchFn) return { success: false, reason: 'FETCH_UNAVAILABLE' };
-                const headers = this.getRelayAuthHeaders();
-                const res = await fetchFn(`http://${host}:${port}/physical-gate/status`, {
-                    cache: 'no-store',
-                    headers
-                });
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data && data.status) {
-                        this.lastPhysicalGateStatus = data.status;
-                    }
-                    return data;
-                }
-                return { success: false, reason: `HTTP_${res.status}` };
             } catch (e) {
                 return { success: false, reason: e.message };
             }

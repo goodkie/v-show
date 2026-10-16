@@ -21,10 +21,14 @@ echo [0/4] Verifying and installing locked runtime dependencies (ssh2)...
 node -e "try { require('ssh2'); console.log('   [OK] Runtime dependency (ssh2) verified.'); process.exit(0); } catch (_) { process.exit(1); }"
 if !ERRORLEVEL! NEQ 0 (
     echo   Installing locked runtime dependencies non-interactively...
-    call npm install --omit=dev --no-audit --no-fund --silent
+    if exist "package-lock.json" (
+        call npm ci --omit=dev --no-audit --no-fund --silent
+    ) else (
+        call npm install --omit=dev --no-audit --no-fund --silent
+    )
     node -e "try { require('ssh2'); console.log('   [OK] Runtime dependency (ssh2) installed successfully.'); process.exit(0); } catch (e) { console.error('   [ERROR] Failed to load ssh2:', e.message); process.exit(1); }"
     if !ERRORLEVEL! NEQ 0 (
-        echo [FATAL] Failed to install runtime dependency ssh2!
+        echo [FATAL] Failed to verify or install runtime dependency ssh2!
         pause
         exit /b 1
     )

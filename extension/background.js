@@ -3420,6 +3420,20 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
             return true;
         }
 
+        case 'VERIFY_PRIVATE_EGRESS_PLAN': {
+            (async () => {
+                try {
+                    const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+                    if (!pg) return sendResponse({ success: false, error: 'PrivacyGateway unavailable' });
+                    const res = await pg.verifyPrivateEgressPlan(request.payload || request.data || {});
+                    sendResponse({ success: true, result: res });
+                } catch (e) {
+                    sendResponse({ success: false, error: e.message });
+                }
+            })();
+            return true;
+        }
+
         case 'PROVISION_PRIVATE_EGRESS': {
             (async () => {
                 try {
