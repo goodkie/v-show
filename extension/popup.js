@@ -2160,23 +2160,24 @@ async function hydrateSettings(overrideV2Store = null) {
 
                         if (tokenInput) tokenInput.value = ''; // Discard from memory
 
-                        if (res && res.success && res.result && res.result.success) {
+                        if (res && res.success && res.result && res.result.success && res.result.preflight && res.result.preflight.ready) {
                             for (let s = 1; s <= 8; s++) updateStageStatus(s, 'PASS');
                             if (progressBar) progressBar.style.width = '100%';
                             if (progressPercent) progressPercent.textContent = '100%';
                             if (progressTitle) progressTitle.textContent = '8/8 STRICT PRIVACY READY';
 
-                            addLog(`🛡️ [PRIVATE_EGRESS_SUCCESS] Droplet ${res.result.dropletId} deployed at ${res.result.publicIp} ($${res.result.monthlyCostUsd}/mo)`, 'success');
+                            addLog(`🛡️ [PRIVATE_EGRESS_SUCCESS] Droplet ${res.result.dropletId} deployed at ${res.result.publicIp} ($${res.result.monthlyCostUsd}/mo) — Strict Privacy Preflight READY`, 'success');
 
                             // Refresh relay status & node pool
                             if (typeof refreshRelayNodes === 'function') refreshRelayNodes();
                             if (typeof refreshRelayStatus === 'function') refreshRelayStatus();
                             if (typeof updatePrivacyHud === 'function') updatePrivacyHud();
 
-                            alert(`✅ Private Egress successfully deployed & verified!\nIP: ${res.result.publicIp}\nTier: ${res.result.tier} (~$${res.result.monthlyCostUsd}/mo)\n\nStrict Privacy is now READY.`);
+                            alert(`✅ Private Egress successfully deployed & authoritative preflight VERIFIED!\nIP: ${res.result.publicIp}\nTier: ${res.result.tier} (~$${res.result.monthlyCostUsd}/mo)\n\nStrict Privacy is now READY.`);
                             pollTelemetry();
                         } else {
-                            const err = (res && res.result && res.result.reason) || (res && res.error) || 'Provisioning failed';
+                            updateStageStatus(8, 'FAIL');
+                            const err = (res && res.result && ((res.result.preflight && !res.result.preflight.ready ? `PREFLIGHT_FAIL: ${res.result.preflight.reason}` : res.result.reason))) || (res && res.error) || 'Provisioning or preflight verification failed';
                             addLog(`❌ [PRIVATE_EGRESS_FAIL] ${err}`, 'error');
                             alert(`Provisioning failed: ${err}`);
                         }

@@ -46,6 +46,29 @@ const CONFIG_FILE = process.env.XPIDER_RELAY_CONFIG_FILE || path.join(__dirname,
 const LOG_FILE = path.join(__dirname, 'privacy_relay.log');
 const TOKEN_FILE = path.join(__dirname, '.control_token');
 
+/**
+ * [P0-2 Hardening] Redact credentials, API tokens, and passwords from logs and messages
+ */
+function redactSecrets(text, extraTokens = []) {
+  if (typeof text !== 'string') {
+    try { text = JSON.stringify(text); } catch (_) { text = String(text); }
+  }
+  let scrubbed = text;
+  scrubbed = scrubbed.replace(/dop_v1_[a-f0-9]{64}/gi, '[REDACTED_DO_TOKEN]');
+  scrubbed = scrubbed.replace(/Bearer\s+([a-zA-Z0-9_\-\.]{20,})/gi, 'Bearer [REDACTED_TOKEN]');
+  scrubbed = scrubbed.replace(/Basic\s+([a-zA-Z0-9+\/=]{10,})/gi, 'Basic [REDACTED_BASIC_AUTH]');
+  scrubbed = scrubbed.replace(/"password"\s*:\s*"[^"]+"/gi, '"password":"[REDACTED_PASSWORD]"');
+  scrubbed = scrubbed.replace(/"token"\s*:\s*"[^"]+"/gi, '"token":"[REDACTED_TOKEN]"');
+  scrubbed = scrubbed.replace(/--token[=\s]+[^\s]+/gi, '--token [REDACTED_TOKEN]');
+  scrubbed = scrubbed.replace(/password\s*=\s*[^\s]+/gi, 'password=[REDACTED]');
+  for (const t of extraTokens) {
+    if (t && typeof t === 'string' && t.length >= 6) {
+      scrubbed = scrubbed.split(t).join('[REDACTED_SECRET]');
+    }
+  }
+  return scrubbed;
+}
+
 const DEFAULT_POOL = {
   version: '1.0.3',
   rotationMode: 'HEALTH_FAILOVER', // FIXED | MANUAL | CAMPAIGN_BOUNDARY | HEALTH_FAILOVER
@@ -362,6 +385,28 @@ class PrivacyRelayService {
 
             if (observed) {
               const fp = crypto.createHash('sha256').update(observed).digest('hex').substring(0, 16);
+
+              // [P0-6 Hardening] Verify observed egress identity against expectedEgressFingerprint
+              if (node.expectedEgressFingerprint && node.expectedEgressFingerprint !== fp) {
+                node.lastHealth = 'UNHEALTHY';
+                node.observedFingerprint = null;
+                done({
+                  verified: false,
+                  reason: `EGRESS_IDENTITY_MISMATCH: observed fingerprint ${fp} does not match expected ${node.expectedEgressFingerprint}`
+                });
+                return;
+              }
+
+              if (node.expectedEgressIp && node.expectedEgressIp !== observed) {
+                node.lastHealth = 'UNHEALTHY';
+                node.observedFingerprint = null;
+                done({
+                  verified: false,
+                  reason: `EGRESS_IP_MISMATCH: observed IP ${observed} does not match expected ${node.expectedEgressIp}`
+                });
+                return;
+              }
+
               node.observedEgressIp = observed;
               node.observedFingerprint = fp;
               node.lastHealth = 'HEALTHY';
@@ -1021,9 +1066,13 @@ class PrivacyRelayService {
               controlToken: this.controlToken,
               mockMode: Boolean(data.mockMode),
               onProgress: (ev) => {
-                this.provisioningState.events.push(ev);
-                this.provisioningState.lastEvent = ev;
-                this.log(`[PROVISION_PROGRESS] Step ${ev.step}/8 ${ev.title}: ${ev.status} — ${ev.details}`);
+                const scrubbedEv = {
+                  ...ev,
+                  details: redactSecrets(ev.details, [data.token])
+                };
+                this.provisioningState.events.push(scrubbedEv);
+                this.provisioningState.lastEvent = scrubbedEv;
+                this.log(`[PROVISION_PROGRESS] Step ${ev.step}/8 ${ev.title}: ${ev.status} — ${scrubbedEv.details}`);
               }
             });
 
@@ -1038,10 +1087,11 @@ class PrivacyRelayService {
               res.writeHead(200);
               res.end(JSON.stringify({ success: true, ...result }));
             } catch (pErr) {
+              const scrubbedErr = redactSecrets(pErr.message, [data.token]);
               this.provisioningState.running = false;
-              this.provisioningState.error = pErr.message;
+              this.provisioningState.error = scrubbedErr;
               res.writeHead(500);
-              res.end(JSON.stringify({ success: false, reason: pErr.message }));
+              res.end(JSON.stringify({ success: false, reason: scrubbedErr }));
             }
           } catch (e) {
             res.writeHead(400);

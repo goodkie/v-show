@@ -69,7 +69,7 @@ SRV_KEY="$CONFIG_DIR/server.key"
 SRV_CSR="$CONFIG_DIR/server.csr"
 SRV_CRT="$CONFIG_DIR/server.crt"
 
-if [[ ! -f "$CA_KEY" || ! -f "$CA_CRT" ]]; then
+if [[ ! -f "$CA_CRT" ]]; then
   openssl genrsa -out "$CA_KEY" 4096 2>/dev/null
   openssl req -x509 -new -nodes -key "$CA_KEY" -sha256 -days 3650 \
     -subj "/C=US/O=XPIDER/CN=XPIDER Private Egress Root CA" \
@@ -105,7 +105,10 @@ openssl genrsa -out "$SRV_KEY" 2048 2>/dev/null
 openssl req -new -key "$SRV_KEY" -out "$SRV_CSR" -config "$OPENSSL_CNF" 2>/dev/null
 openssl x509 -req -in "$SRV_CSR" -CA "$CA_CRT" -CAkey "$CA_KEY" -CAcreateserial \
   -out "$SRV_CRT" -days 1825 -sha256 -extensions v3_req -extfile "$OPENSSL_CNF" 2>/dev/null
-rm -f "$SRV_CSR"
+
+# [P0-3 Hardening] Delete CA private signing key and CSR/configs immediately after server cert issuance.
+# The CA signing key is never needed at runtime and must NOT remain accessible to the proxy service user.
+rm -f "$CA_KEY" "$SRV_CSR" "$OPENSSL_CNF" "${CONFIG_DIR}"/*.srl 2>/dev/null || true
 
 echo "[5/7] Managing proxy credentials..."
 CREDS_FILE="$CONFIG_DIR/credentials.json"
@@ -130,8 +133,12 @@ cat > "$CREDS_FILE" <<EOF
 }
 EOF
 
-chmod 600 "$CONFIG_DIR"/*
-chown -R xpider:xpider "$CONFIG_DIR"
+# [P0-3 Hardening] Restrict directory permissions: root owns config dir, xpider only reads server cert/key/creds
+chmod 755 "$CONFIG_DIR"
+chown -R root:root "$CONFIG_DIR"
+chown xpider:xpider "$SRV_CRT" "$SRV_KEY" "$CREDS_FILE"
+chmod 600 "$SRV_KEY" "$CREDS_FILE"
+chmod 644 "$SRV_CRT" "$CA_CRT"
 chown -R xpider:xpider "$INSTALL_DIR"
 
 echo "[6/7] Creating systemd service unit..."
@@ -174,14 +181,18 @@ ufw --force enable > /dev/null 2>&1 || true
 # Verification probe
 sleep 1
 HEALTH_CHECK=$(curl -k -s --max-time 3 "https://127.0.0.1:${PORT}/_health" || echo "FAIL")
-if [[ "$HEALTH_CHECK" != *"OK"* ]]; then
-  echo "[WARNING] Healthcheck probe did not return OK immediately: $HEALTH_CHECK"
+if [[ "$HEALTH_CHECK" != *"healthy"* && "$HEALTH_CHECK" != *"OK"* ]]; then
+  echo "[WARNING] Healthcheck probe did not return healthy status immediately: $HEALTH_CHECK"
 fi
 
-CA_PEM=$(cat "$CA_CRT")
-CA_FINGERPRINT=$(openssl x509 -in "$CA_CRT" -noout -sha256 -fingerprint | cut -d'=' -f2 | tr -d ':')
+# [P0-6 Hardening] Separate TLS Certificate Fingerprint from Egress Identity Fingerprint
+TLS_CA_FINGERPRINT=$(openssl x509 -in "$CA_CRT" -noout -sha256 -fingerprint | cut -d'=' -f2 | tr -d ':' | tr '[:upper:]' '[:lower:]')
+TLS_SPKI_FINGERPRINT=$(openssl x509 -in "$SRV_CRT" -noout -pubkey 2>/dev/null | openssl pkey -pubin -outform der 2>/dev/null | openssl dgst -sha256 | cut -d'=' -f2 | tr -d ' ' | tr '[:upper:]' '[:lower:]' || echo "$TLS_CA_FINGERPRINT")
+EXPECTED_EGRESS_FINGERPRINT=$(node -e "const crypto = require('crypto'); console.log(crypto.createHash('sha256').update('${PUBLIC_IP}').digest('hex').substring(0, 16));")
 
-DESCRIPTOR_FILE="/tmp/xpider-egress-descriptor.json"
+# [P0-2 Hardening] Secure descriptor in root-only /etc/xpider-egress/descriptor.json (0600)
+# Never write to /tmp and NEVER print password/credentials to stdout!
+DESCRIPTOR_FILE="$CONFIG_DIR/descriptor.json"
 node -e "
 const fs = require('fs');
 const desc = {
@@ -191,15 +202,24 @@ const desc = {
   username: '${USERNAME}',
   password: '${PASSWORD}',
   caCertPem: fs.readFileSync('${CA_CRT}', 'utf8'),
-  fingerprint: '${CA_FINGERPRINT}',
+  tlsCaFingerprint: '${TLS_CA_FINGERPRINT}',
+  tlsSpkiFingerprint: '${TLS_SPKI_FINGERPRINT}',
+  observedEgressIp: '${PUBLIC_IP}',
+  expectedEgressFingerprint: '${EXPECTED_EGRESS_FINGERPRINT}',
+  egressIdentityGroup: 'do-${PUBLIC_IP}',
   protocol: 'HTTPS_PROXY',
   createdAt: Date.now()
 };
 fs.writeFileSync('${DESCRIPTOR_FILE}', JSON.stringify(desc, null, 2));
 "
+chmod 600 "$DESCRIPTOR_FILE"
+chown root:root "$DESCRIPTOR_FILE"
 
 echo "=== [XPIDER_BOOTSTRAP_SUCCESS] ==="
-cat "$DESCRIPTOR_FILE"
-echo ""
+echo "DESCRIPTOR_LOCATION: $DESCRIPTOR_FILE"
+echo "OBSERVED_IP: $PUBLIC_IP"
+echo "PORT: $PORT"
+echo "TLS_CA_FINGERPRINT: $TLS_CA_FINGERPRINT"
+echo "EXPECTED_EGRESS_FINGERPRINT: $EXPECTED_EGRESS_FINGERPRINT"
 echo "=== [XPIDER_BOOTSTRAP_END] ==="
 exit 0

@@ -58,7 +58,9 @@ async function run() {
   const proxyServer = createProxyServer({
     certFile: certPath,
     keyFile: keyPath,
-    credsFile: credsPath
+    credsFile: credsPath,
+    allowLoopbackForTesting: true,
+    allowedPorts: [80, 443, echoPort]
   });
 
   const proxyPort = await new Promise(resolve => {
@@ -87,8 +89,9 @@ async function run() {
       req.on('error', reject);
     });
     assert.strictEqual(healthRes.status, 200, 'Healthcheck status must be 200');
-    assert.strictEqual(healthRes.body.status, 'OK', 'Healthcheck body status must be OK');
-    console.log('  -> PASS: Healthcheck verified with pinned CA');
+    assert.strictEqual(healthRes.body.status, 'healthy', 'Healthcheck body status must be healthy');
+    assert.strictEqual(healthRes.body.activeTunnels, undefined, 'activeTunnels must NOT be exposed unauthenticated');
+    console.log('  -> PASS: Minimal healthcheck verified with pinned CA (activeTunnels unexposed)');
 
     // TEST 2: GET /_telemetry without auth -> 401
     console.log('[TEST 2] Verifying GET /_telemetry 401 without auth...');

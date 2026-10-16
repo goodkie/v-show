@@ -17,10 +17,77 @@
 
 const https = require('https');
 const net = require('net');
+const dns = require('dns');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
+
+/**
+ * [P0-7] IP range validation to prevent SSRF and proxying to non-public/internal endpoints.
+ * Blocks:
+ *   - 0.0.0.0/8 (Current network)
+ *   - 127.0.0.0/8 (IPv4 Loopback)
+ *   - 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16 (RFC 1918 Private)
+ *   - 169.254.0.0/16 (Link-Local & Cloud Metadata 169.254.169.254)
+ *   - 100.64.0.0/10 (Carrier-grade NAT)
+ *   - 224.0.0.0/4 (Multicast)
+ *   - 240.0.0.0/4 (Reserved / Broadcast)
+ *   - ::, ::1 (IPv6 Unspecified & Loopback)
+ *   - fe80::/10 (IPv6 Link-Local)
+ *   - fc00::/7 (IPv6 Unique Local / Private)
+ *   - ff00::/8 (IPv6 Multicast)
+ */
+function isIpBlocked(ipStr) {
+  if (!ipStr || typeof ipStr !== 'string') {
+    return { blocked: true, reason: 'INVALID_IP' };
+  }
+
+  let cleanIp = ipStr.trim();
+  if (cleanIp.startsWith('::ffff:')) {
+    cleanIp = cleanIp.substring(7);
+  }
+
+  if (net.isIPv4(cleanIp)) {
+    const parts = cleanIp.split('.').map(Number);
+    if (parts.length !== 4 || parts.some(isNaN)) {
+      return { blocked: true, reason: 'MALFORMED_IPV4' };
+    }
+    const [b0, b1] = parts;
+
+    if (b0 === 0) return { blocked: true, reason: 'UNSPECIFIED_0_0_0_0' };
+    if (b0 === 127) return { blocked: true, reason: 'LOOPBACK_127_0_0_0' };
+    if (b0 === 10) return { blocked: true, reason: 'RFC1918_PRIVATE_10_0_0_0' };
+    if (b0 === 172 && b1 >= 16 && b1 <= 31) return { blocked: true, reason: 'RFC1918_PRIVATE_172_16_0_0' };
+    if (b0 === 192 && b1 === 168) return { blocked: true, reason: 'RFC1918_PRIVATE_192_168_0_0' };
+    if (b0 === 169 && b1 === 254) return { blocked: true, reason: 'LINK_LOCAL_METADATA_169_254_0_0' };
+    if (b0 === 100 && b1 >= 64 && b1 <= 127) return { blocked: true, reason: 'SHARED_ADDRESS_SPACE_100_64_0_0' };
+    if (b0 >= 224 && b0 <= 239) return { blocked: true, reason: 'MULTICAST' };
+    if (b0 >= 240) return { blocked: true, reason: 'RESERVED_OR_BROADCAST' };
+
+    return { blocked: false };
+  }
+
+  if (net.isIPv6(cleanIp)) {
+    const lower = cleanIp.toLowerCase();
+    if (lower === '::' || lower === '::1' || lower === '0000:0000:0000:0000:0000:0000:0000:0001') {
+      return { blocked: true, reason: 'IPV6_LOOPBACK' };
+    }
+    if (lower.startsWith('fe8') || lower.startsWith('fe9') || lower.startsWith('fea') || lower.startsWith('feb')) {
+      return { blocked: true, reason: 'IPV6_LINK_LOCAL' };
+    }
+    if (lower.startsWith('fc') || lower.startsWith('fd')) {
+      return { blocked: true, reason: 'IPV6_UNIQUE_LOCAL' };
+    }
+    if (lower.startsWith('ff')) {
+      return { blocked: true, reason: 'IPV6_MULTICAST' };
+    }
+    return { blocked: false };
+  }
+
+  return { blocked: true, reason: 'NON_IP_ADDRESS' };
+}
+
 
 const PORT = parseInt(process.env.XPIDER_EGRESS_PORT || '8443', 10);
 const CONFIG_DIR = process.env.XPIDER_CONFIG_DIR || '/etc/xpider-egress';
@@ -158,19 +225,17 @@ function createProxyServer(options = {}) {
   // Initial credentials load
   loadCredentials(currentCredsFile);
 
+  const allowLoopback = Boolean(options.allowLoopbackForTesting || process.env.XPIDER_ALLOW_LOOPBACK === '1');
+  const allowedPorts = options.allowedPorts || [80, 443];
+
   // Handle standard HTTP requests (health & telemetry)
   server.on('request', (req, res) => {
     const urlPath = req.url.split('?')[0];
 
-    // Unauthenticated health ping
+    // [P1-1] Minimal opaque health ping (no activeTunnels or internals exposed unauthenticated)
     if (urlPath === '/_health' && req.method === 'GET') {
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({
-        status: 'OK',
-        service: 'xpider-private-egress',
-        activeTunnels,
-        timestamp: Date.now()
-      }));
+      res.end(JSON.stringify({ status: 'healthy' }));
       return;
     }
 
@@ -224,37 +289,94 @@ function createProxyServer(options = {}) {
       }
     }
 
-    // Establish TCP connection to upstream target
-    const targetSocket = net.connect(targetPort, targetHost, () => {
-      activeTunnels++;
-      clientSocket.write('HTTP/1.1 200 Connection Established\r\n' +
-        'Proxy-Agent: XPIDER-Egress/1.0\r\n\r\n');
+    // Strip square brackets if IPv6 literal
+    if (targetHost.startsWith('[') && targetHost.endsWith(']')) {
+      targetHost = targetHost.substring(1, targetHost.length - 1);
+    }
 
-      if (head && head.length > 0) {
-        targetSocket.write(head);
+    // [P0-7] Destination Port Safety Check (Default: 80 and 443 only)
+    if (!allowedPorts.includes(targetPort)) {
+      clientSocket.write('HTTP/1.1 403 Forbidden\r\n' +
+        'X-Blocked-Reason: RESTRICTED_PORT_ONLY_80_443_ALLOWED\r\n' +
+        'Connection: close\r\n\r\n');
+      clientSocket.destroy();
+      return;
+    }
+
+    // [P0-7] Check for explicit forbidden hostnames (localhost, metadata, etc.)
+    const lowerHost = targetHost.toLowerCase();
+    if (!allowLoopback && (lowerHost === 'localhost' || lowerHost.endsWith('.localhost') || lowerHost === 'metadata.google.internal' || lowerHost === 'instance-data')) {
+      clientSocket.write('HTTP/1.1 403 Forbidden\r\n' +
+        'X-Blocked-Reason: BLOCKED_INTERNAL_HOSTNAME\r\n' +
+        'Connection: close\r\n\r\n');
+      clientSocket.destroy();
+      return;
+    }
+
+    // [P0-7] Safe DNS resolution & IP range validation before TCP connect
+    const dnsLookup = (host, cb) => {
+      if (net.isIP(host)) {
+        return cb(null, [{ address: host, family: net.isIPv4(host) ? 4 : 6 }]);
       }
-
-      clientSocket.pipe(targetSocket);
-      targetSocket.pipe(clientSocket);
-    });
-
-    let closed = false;
-    const cleanup = () => {
-      if (!closed) {
-        closed = true;
-        if (activeTunnels > 0) activeTunnels--;
-      }
-      try { clientSocket.destroy(); } catch (_) {}
-      try { targetSocket.destroy(); } catch (_) {}
+      dns.lookup(host, { all: true }, cb);
     };
 
-    targetSocket.on('error', () => cleanup());
-    targetSocket.on('close', () => cleanup());
-    targetSocket.on('end', () => cleanup());
+    dnsLookup(targetHost, (dnsErr, addresses) => {
+      if (dnsErr || !addresses || addresses.length === 0) {
+        clientSocket.write('HTTP/1.1 504 Gateway Timeout\r\n' +
+          'X-Blocked-Reason: DNS_RESOLUTION_FAILED\r\n' +
+          'Connection: close\r\n\r\n');
+        clientSocket.destroy();
+        return;
+      }
 
-    clientSocket.on('error', () => cleanup());
-    clientSocket.on('close', () => cleanup());
-    clientSocket.on('end', () => cleanup());
+      // Check all resolved addresses against blocked ranges
+      if (!allowLoopback) {
+        for (const addr of addresses) {
+          const check = isIpBlocked(addr.address);
+          if (check.blocked) {
+            clientSocket.write(`HTTP/1.1 403 Forbidden\r\n` +
+              `X-Blocked-Reason: ${check.reason}\r\n` +
+              `Connection: close\r\n\r\n`);
+            clientSocket.destroy();
+            return;
+          }
+        }
+      }
+
+      // Connect to the verified IP address to prevent DNS rebinding
+      const targetIp = addresses[0].address;
+      const targetSocket = net.connect(targetPort, targetIp, () => {
+        activeTunnels++;
+        clientSocket.write('HTTP/1.1 200 Connection Established\r\n' +
+          'Proxy-Agent: XPIDER-Egress/1.0\r\n\r\n');
+
+        if (head && head.length > 0) {
+          targetSocket.write(head);
+        }
+
+        clientSocket.pipe(targetSocket);
+        targetSocket.pipe(clientSocket);
+      });
+
+      let closed = false;
+      const cleanup = () => {
+        if (!closed) {
+          closed = true;
+          if (activeTunnels > 0) activeTunnels--;
+        }
+        try { clientSocket.destroy(); } catch (_) {}
+        try { targetSocket.destroy(); } catch (_) {}
+      };
+
+      targetSocket.on('error', () => cleanup());
+      targetSocket.on('close', () => cleanup());
+      targetSocket.on('end', () => cleanup());
+
+      clientSocket.on('error', () => cleanup());
+      clientSocket.on('close', () => cleanup());
+      clientSocket.on('end', () => cleanup());
+    });
   });
 
   return server;
@@ -288,5 +410,6 @@ module.exports = {
   createProxyServer,
   verifyAuth,
   getSystemTelemetry,
-  loadCredentials
+  loadCredentials,
+  isIpBlocked
 };
