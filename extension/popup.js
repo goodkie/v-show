@@ -1399,12 +1399,23 @@ async function hydrateSettings(overrideV2Store = null) {
             const codeEl = document.getElementById('privacy-block-reason-code');
             if (codeEl) codeEl.textContent = `Reason Code: ${reason || 'PRIVACY_START_BLOCKED'}`;
 
+            const btnSetupEgress = document.getElementById('privacy-block-action-setup-egress');
             const btnOverride = document.getElementById('privacy-block-action-override');
             const btnRetry = document.getElementById('privacy-block-action-retry');
             const btnSettings = document.getElementById('privacy-block-action-settings');
             const btnCancel = document.getElementById('privacy-block-action-cancel');
             const btnCompanion = document.getElementById('privacy-block-action-companion');
             const btnProxy = document.getElementById('privacy-block-action-proxy');
+
+            if (btnSetupEgress) {
+                btnSetupEgress.onclick = () => {
+                    privacyBlockModal.style.display = 'none';
+                    privacyBlockModal.classList.add('hidden');
+                    if (typeof window.openPrivateEgressWizard === 'function') {
+                        window.openPrivateEgressWizard();
+                    }
+                };
+            }
 
             if (btnOverride) {
                 btnOverride.onclick = async () => {
@@ -1919,6 +1930,298 @@ async function hydrateSettings(overrideV2Store = null) {
                 });
             });
         }
+
+        // ==============================================================================
+        // [Issue #6 R6.9G.10.3] One-Click Automated Private Egress Setup Wizard
+        // ==============================================================================
+        const initPrivateEgressWizard = () => {
+            const modal = document.getElementById('private-egress-modal-overlay');
+            const closeBtn = document.getElementById('wizard-close-btn');
+            const toggleAdvBtn = document.getElementById('wizard-toggle-advanced-btn');
+            const advPane = document.getElementById('wizard-advanced-pane');
+            const tierSelect = document.getElementById('wizard-tier-select');
+            const regionSelect = document.getElementById('wizard-region-select');
+            const tokenInput = document.getElementById('wizard-do-token');
+            const authCheck = document.getElementById('wizard-auth-check');
+            const createBtn = document.getElementById('wizard-create-btn');
+            const destroyBtn = document.getElementById('wizard-destroy-btn');
+            const progressHud = document.getElementById('wizard-progress-hud');
+            const progressTitle = document.getElementById('wizard-progress-title');
+            const progressPercent = document.getElementById('wizard-progress-percent');
+            const progressBar = document.getElementById('wizard-progress-bar');
+            const stageList = document.getElementById('wizard-stage-list');
+            const planCard = document.getElementById('wizard-plan-card');
+            const openWizardBtn = document.getElementById('priv-relay-open-wizard-btn');
+            const telemetryBadge = document.getElementById('priv-telemetry-badge');
+
+            if (!modal) return;
+
+            const TIERS_META = {
+                ULTRA_ECONOMY: {
+                    badge: 'ULTRA ECONOMY — RECOMMENDED FOR SINGLE OWNER',
+                    price: '~$6 / month',
+                    title: '1 Dedicated Private Egress Server (NYC3)',
+                    desc: 'Basic 1 vCPU / 1 GiB RAM • Authenticated TLS Proxy • Cloud Firewall • Strict Fail-Closed • Pinned CA',
+                    btnText: '⚡ CREATE PRIVATE EGRESS — ULTRA ECONOMY'
+                },
+                ECONOMY: {
+                    badge: 'TIER 2: ECONOMY (HIGH RAM)',
+                    price: '~$12 / month',
+                    title: '1 Dedicated Private Egress Server (NYC3)',
+                    desc: 'Basic 1 vCPU / 2 GiB RAM • Upgrade only if measured resource pressure exists',
+                    btnText: '⚡ CREATE PRIVATE EGRESS — ECONOMY'
+                },
+                PERFORMANCE: {
+                    badge: 'TIER 3: PERFORMANCE',
+                    price: '~$24 / month',
+                    title: '1 Dedicated Performance Server (NYC3)',
+                    desc: 'Basic 2 vCPU / 4 GiB RAM • High concurrent tunnel capacity for heavy usage',
+                    btnText: '⚡ CREATE PRIVATE EGRESS — PERFORMANCE'
+                },
+                HA_DUAL: {
+                    badge: 'TIER 4: HIGH AVAILABILITY (DUAL NODE)',
+                    price: '~$12 / month',
+                    title: '2 Independent Servers (NYC3 Primary + TOR1 Standby)',
+                    desc: '2x 1 vCPU / 1 GiB RAM • Automatic Health Failover • Zero single point of failure',
+                    btnText: '⚡ CREATE PRIVATE EGRESS — HIGH AVAILABILITY'
+                }
+            };
+
+            const STAGES_META = [
+                '1/8 VPS CONNECTION',
+                '2/8 SERVER PREP',
+                '3/8 TLS',
+                '4/8 PRIVATE PROXY',
+                '5/8 FIREWALL',
+                '6/8 LOCAL RELAY REGISTRATION',
+                '7/8 EGRESS VERIFICATION',
+                '8/8 STRICT PRIVACY READY'
+            ];
+
+            const renderInitialStages = () => {
+                if (!stageList) return;
+                stageList.innerHTML = STAGES_META.map((stg, i) => {
+                    const statusText = i === 0 ? 'WORKING' : 'PENDING';
+                    const color = i === 0 ? '#38bdf8' : '#64748b';
+                    return `<div style="display: flex; justify-content: space-between; color: ${color};">
+                        <span>${stg}</span>
+                        <span id="stg-badge-${i+1}">${statusText}</span>
+                    </div>`;
+                }).join('');
+            };
+
+            const updateStageStatus = (step, status) => {
+                const badge = document.getElementById(`stg-badge-${step}`);
+                if (badge) {
+                    badge.textContent = status;
+                    const parent = badge.parentElement;
+                    if (status === 'PASS') {
+                        badge.style.color = '#4ade80';
+                        if (parent) parent.style.color = '#4ade80';
+                    } else if (status === 'WORKING') {
+                        badge.style.color = '#38bdf8';
+                        if (parent) parent.style.color = '#38bdf8';
+                    } else if (status === 'FAIL') {
+                        badge.style.color = '#f87171';
+                        if (parent) parent.style.color = '#f87171';
+                    }
+                }
+            };
+
+            const updatePlanUi = (tierId) => {
+                const t = TIERS_META[tierId] || TIERS_META.ULTRA_ECONOMY;
+                if (planCard) {
+                    planCard.innerHTML = `
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                            <span style="font-size: 10px; font-weight: 700; color: #38bdf8; background: rgba(56, 189, 248, 0.15); padding: 2px 6px; border-radius: 4px;">${t.badge}</span>
+                            <span style="font-size: 12px; font-weight: 700; color: #4ade80;">${t.price}</span>
+                        </div>
+                        <div style="font-size: 11px; font-weight: 600; color: #f8fafc; margin-bottom: 2px;">${t.title}</div>
+                        <div style="font-size: 10px; color: #94a3b8; line-height: 1.3;">${t.desc}</div>
+                    `;
+                }
+                if (createBtn) {
+                    createBtn.textContent = t.btnText;
+                }
+            };
+
+            window.openPrivateEgressWizard = () => {
+                modal.style.display = 'flex';
+                modal.classList.remove('hidden');
+                if (progressHud) progressHud.style.display = 'none';
+                if (tokenInput) tokenInput.value = '';
+                if (authCheck) authCheck.checked = false;
+                if (createBtn) {
+                    createBtn.disabled = false;
+                    updatePlanUi(tierSelect ? tierSelect.value : 'ULTRA_ECONOMY');
+                }
+                pollTelemetry();
+            };
+
+            if (openWizardBtn) {
+                openWizardBtn.onclick = () => window.openPrivateEgressWizard();
+            }
+
+            if (closeBtn) {
+                closeBtn.onclick = () => {
+                    modal.style.display = 'none';
+                    modal.classList.add('hidden');
+                };
+            }
+
+            if (toggleAdvBtn && advPane) {
+                toggleAdvBtn.onclick = () => {
+                    advPane.style.display = advPane.style.display === 'none' ? 'block' : 'none';
+                };
+            }
+
+            if (tierSelect) {
+                tierSelect.onchange = (e) => {
+                    updatePlanUi(e.target.value);
+                };
+            }
+
+            const pollTelemetry = () => {
+                chrome.runtime.sendMessage({ action: 'GET_EGRESS_TELEMETRY' }, (res) => {
+                    if (res && res.success && res.telemetry) {
+                        const t = res.telemetry;
+                        if (telemetryBadge) {
+                            telemetryBadge.style.display = 'inline-block';
+                            if (t.status === 'GOOD') {
+                                telemetryBadge.style.color = '#4ade80';
+                                telemetryBadge.style.borderColor = '#4ade80';
+                                telemetryBadge.style.background = 'rgba(74, 222, 128, 0.15)';
+                                telemetryBadge.textContent = 'VPS: GOOD';
+                            } else if (t.status === 'WATCH') {
+                                telemetryBadge.style.color = '#facc15';
+                                telemetryBadge.style.borderColor = '#facc15';
+                                telemetryBadge.style.background = 'rgba(250, 204, 21, 0.15)';
+                                telemetryBadge.textContent = 'VPS: WATCH';
+                            } else if (t.status === 'UPGRADE_RECOMMENDED') {
+                                telemetryBadge.style.color = '#f87171';
+                                telemetryBadge.style.borderColor = '#f87171';
+                                telemetryBadge.style.background = 'rgba(248, 113, 113, 0.2)';
+                                telemetryBadge.textContent = 'VPS: UPGRADE REC';
+                            }
+                        }
+                    }
+                });
+            };
+
+            if (createBtn) {
+                createBtn.onclick = async () => {
+                    const token = tokenInput ? tokenInput.value.trim() : '';
+                    if (!token) {
+                        alert('Please enter your DigitalOcean API token.');
+                        if (tokenInput) tokenInput.focus();
+                        return;
+                    }
+                    if (!authCheck || !authCheck.checked) {
+                        alert('Please check the authorization box to confirm server creation.');
+                        return;
+                    }
+
+                    createBtn.disabled = true;
+                    createBtn.textContent = '⏳ Provisioning in progress...';
+                    if (progressHud) progressHud.style.display = 'block';
+                    renderInitialStages();
+
+                    if (progressBar) progressBar.style.width = '12%';
+                    if (progressPercent) progressPercent.textContent = '12%';
+                    if (progressTitle) progressTitle.textContent = '1/8 VPS CONNECTION';
+
+                    const tier = tierSelect ? tierSelect.value : 'ULTRA_ECONOMY';
+                    const region = regionSelect ? regionSelect.value : 'nyc3';
+
+                    let pollTimer = setInterval(() => {
+                        chrome.runtime.sendMessage({ action: 'GET_PROVISION_PROGRESS' }, (pRes) => {
+                            if (pRes && pRes.success && pRes.result && pRes.result.provisioning) {
+                                const prov = pRes.result.provisioning;
+                                if (prov.events && prov.events.length > 0) {
+                                    prov.events.forEach(ev => {
+                                        updateStageStatus(ev.step, ev.status);
+                                        const pct = Math.round((ev.step / 8) * 100);
+                                        if (progressBar) progressBar.style.width = `${pct}%`;
+                                        if (progressPercent) progressPercent.textContent = `${pct}%`;
+                                        if (progressTitle) progressTitle.textContent = ev.title;
+                                    });
+                                }
+                            }
+                        });
+                    }, 800);
+
+                    chrome.runtime.sendMessage({
+                        action: 'PROVISION_PRIVATE_EGRESS',
+                        payload: { token, tier, region }
+                    }, async (res) => {
+                        clearInterval(pollTimer);
+                        createBtn.disabled = false;
+                        createBtn.textContent = '⚡ CREATE PRIVATE EGRESS — ULTRA ECONOMY';
+
+                        if (tokenInput) tokenInput.value = ''; // Discard from memory
+
+                        if (res && res.success && res.result && res.result.success) {
+                            for (let s = 1; s <= 8; s++) updateStageStatus(s, 'PASS');
+                            if (progressBar) progressBar.style.width = '100%';
+                            if (progressPercent) progressPercent.textContent = '100%';
+                            if (progressTitle) progressTitle.textContent = '8/8 STRICT PRIVACY READY';
+
+                            addLog(`🛡️ [PRIVATE_EGRESS_SUCCESS] Droplet ${res.result.dropletId} deployed at ${res.result.publicIp} ($${res.result.monthlyCostUsd}/mo)`, 'success');
+
+                            // Refresh relay status & node pool
+                            if (typeof refreshRelayNodes === 'function') refreshRelayNodes();
+                            if (typeof refreshRelayStatus === 'function') refreshRelayStatus();
+                            if (typeof updatePrivacyHud === 'function') updatePrivacyHud();
+
+                            alert(`✅ Private Egress successfully deployed & verified!\nIP: ${res.result.publicIp}\nTier: ${res.result.tier} (~$${res.result.monthlyCostUsd}/mo)\n\nStrict Privacy is now READY.`);
+                            pollTelemetry();
+                        } else {
+                            const err = (res && res.result && res.result.reason) || (res && res.error) || 'Provisioning failed';
+                            addLog(`❌ [PRIVATE_EGRESS_FAIL] ${err}`, 'error');
+                            alert(`Provisioning failed: ${err}`);
+                        }
+                    });
+                };
+            }
+
+            if (destroyBtn) {
+                destroyBtn.onclick = () => {
+                    const token = tokenInput ? tokenInput.value.trim() : '';
+                    const proceed = confirm('⚠️ WARNING: This will permanently delete all XPIDER droplets, firewalls, and keys in DigitalOcean tagged xpider-private-egress.\n\nAre you sure you want to proceed?');
+                    if (!proceed) return;
+
+                    const tokenToUse = token || prompt('Enter DigitalOcean API token to authorize teardown:');
+                    if (!tokenToUse) return;
+
+                    destroyBtn.disabled = true;
+                    destroyBtn.textContent = '⏳ Destroying...';
+
+                    chrome.runtime.sendMessage({
+                        action: 'DESTROY_PRIVATE_EGRESS',
+                        payload: { token: tokenToUse }
+                    }, (res) => {
+                        destroyBtn.disabled = false;
+                        destroyBtn.textContent = '🗑️ Destroy Private Egress';
+                        if (tokenInput) tokenInput.value = '';
+
+                        if (res && res.success && res.result && res.result.success) {
+                            addLog(`🗑️ [DESTROY_EGRESS] Cleaned up ${res.result.destroyedDroplets} Droplets and ${res.result.destroyedFirewalls} Firewalls`, 'info');
+                            alert(`Teardown complete: ${res.result.destroyedDroplets} Droplets and ${res.result.destroyedFirewalls} Firewalls destroyed.`);
+                            if (typeof refreshRelayNodes === 'function') refreshRelayNodes();
+                            if (typeof refreshRelayStatus === 'function') refreshRelayStatus();
+                            if (typeof updatePrivacyHud === 'function') updatePrivacyHud();
+                        } else {
+                            const err = (res && res.result && res.result.reason) || (res && res.error) || 'Teardown failed';
+                            alert(`Destroy failed: ${err}`);
+                        }
+                    });
+                };
+            }
+
+            // Initial telemetry poll
+            pollTelemetry();
+        };
+        initPrivateEgressWizard();
 
         const isVpnConfirmed = !!privCfg.systemVpnConfirmed;
         updateVpnStatusBadge(isVpnConfirmed);

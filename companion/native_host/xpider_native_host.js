@@ -13,6 +13,7 @@ const path = require('path');
 const fs = require('fs');
 
 const RELAY_DIR = path.resolve(__dirname, '..');
+const { PrivateEgressProvisioner, TIERS } = require(path.join(RELAY_DIR, 'private-egress-provisioner'));
 const SILENT_RUNNER_VBS = path.join(RELAY_DIR, 'start_relay_silent.vbs');
 const RELAY_SCRIPT = path.join(RELAY_DIR, 'privacy-relay-service.js');
 const TOKEN_FILE = path.join(RELAY_DIR, '.control_token');
@@ -252,6 +253,70 @@ async function handleMessage(msg) {
         ...stopRes,
         timestamp: Date.now()
       };
+    }
+
+    case 'PROVISION_PRIVATE_EGRESS': {
+      const payload = msg.payload || {};
+      const token = payload.token;
+      if (!token) {
+        return { action: 'PROVISION_PRIVATE_EGRESS_RESPONSE', success: false, error: 'MISSING_API_TOKEN' };
+      }
+      const provisioner = new PrivateEgressProvisioner({
+        token,
+        controlPort: CONTROL_PORT,
+        controlToken: getControlToken(),
+        mockMode: Boolean(payload.mockMode),
+        onProgress: (ev) => {
+          sendNativeMessage({ action: 'PROVISION_PROGRESS', ...ev });
+        }
+      });
+      try {
+        const result = await provisioner.provisionPrivateEgress({
+          tier: payload.tier || 'ULTRA_ECONOMY',
+          region: payload.region || 'nyc3'
+        });
+        return { action: 'PROVISION_PRIVATE_EGRESS_RESPONSE', success: true, result };
+      } catch (err) {
+        return { action: 'PROVISION_PRIVATE_EGRESS_RESPONSE', success: false, error: err.message };
+      }
+    }
+
+    case 'DESTROY_PRIVATE_EGRESS': {
+      const payload = msg.payload || {};
+      const token = payload.token;
+      if (!token) {
+        return { action: 'DESTROY_PRIVATE_EGRESS_RESPONSE', success: false, error: 'MISSING_API_TOKEN' };
+      }
+      const provisioner = new PrivateEgressProvisioner({
+        token,
+        controlPort: CONTROL_PORT,
+        controlToken: getControlToken(),
+        mockMode: Boolean(payload.mockMode)
+      });
+      try {
+        const result = await provisioner.destroyPrivateEgress();
+        return { action: 'DESTROY_PRIVATE_EGRESS_RESPONSE', success: true, result };
+      } catch (err) {
+        return { action: 'DESTROY_PRIVATE_EGRESS_RESPONSE', success: false, error: err.message };
+      }
+    }
+
+    case 'GET_EGRESS_TELEMETRY': {
+      const payload = msg.payload || {};
+      const provisioner = new PrivateEgressProvisioner({
+        mockMode: Boolean(payload.mockMode)
+      });
+      try {
+        const statusRes = await checkRelayStatus();
+        const activeNode = statusRes.status?.nodes?.find(n => n.id === statusRes.status.selectedEgressId) || statusRes.status?.nodes?.[0];
+        if (!activeNode) {
+          return { action: 'GET_EGRESS_TELEMETRY_RESPONSE', success: false, error: 'NO_ACTIVE_NODE' };
+        }
+        const telemetry = await provisioner.fetchNodeTelemetry(activeNode);
+        return { action: 'GET_EGRESS_TELEMETRY_RESPONSE', success: true, telemetry };
+      } catch (err) {
+        return { action: 'GET_EGRESS_TELEMETRY_RESPONSE', success: false, error: err.message };
+      }
     }
 
     default:

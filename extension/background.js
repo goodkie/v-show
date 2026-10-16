@@ -3420,6 +3420,62 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
             return true;
         }
 
+        case 'PROVISION_PRIVATE_EGRESS': {
+            (async () => {
+                try {
+                    const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+                    if (!pg) return sendResponse({ success: false, error: 'PrivacyGateway unavailable' });
+                    const res = await pg.provisionPrivateEgress(request.payload || request.data || {});
+                    sendResponse({ success: true, result: res });
+                } catch (e) {
+                    sendResponse({ success: false, error: e.message });
+                }
+            })();
+            return true;
+        }
+
+        case 'GET_PROVISION_PROGRESS': {
+            (async () => {
+                try {
+                    const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+                    if (!pg) return sendResponse({ success: false, error: 'PrivacyGateway unavailable' });
+                    const res = await pg.getProvisionProgress();
+                    sendResponse({ success: true, result: res });
+                } catch (e) {
+                    sendResponse({ success: false, error: e.message });
+                }
+            })();
+            return true;
+        }
+
+        case 'DESTROY_PRIVATE_EGRESS': {
+            (async () => {
+                try {
+                    const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+                    if (!pg) return sendResponse({ success: false, error: 'PrivacyGateway unavailable' });
+                    const res = await pg.destroyPrivateEgress(request.payload || request.data || {});
+                    sendResponse({ success: true, result: res });
+                } catch (e) {
+                    sendResponse({ success: false, error: e.message });
+                }
+            })();
+            return true;
+        }
+
+        case 'GET_EGRESS_TELEMETRY': {
+            (async () => {
+                try {
+                    const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+                    if (!pg) return sendResponse({ success: false, error: 'PrivacyGateway unavailable' });
+                    const res = await pg.getEgressTelemetry(Boolean(request.mock));
+                    sendResponse({ success: true, result: res });
+                } catch (e) {
+                    sendResponse({ success: false, error: e.message });
+                }
+            })();
+            return true;
+        }
+
         case 'PING':
             sendResponse({ success: true, timestamp: Date.now() });
             return true;

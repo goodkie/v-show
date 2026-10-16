@@ -38,6 +38,7 @@ const crypto = require('crypto');
 const winsec = require('./winsec');
 const { discoverExtensionId } = require('./install_native_host');
 const { PhysicalGate } = require('./physical-gate');
+const { PrivateEgressProvisioner, TIERS } = require('./private-egress-provisioner');
 
 const CONTROL_PORT = 18989;
 const PROXY_PORT = 18988;
@@ -131,6 +132,13 @@ class PrivacyRelayService {
       requestsProxied: 0,
       connectTunnels: 0,
       failClosedDrops: 0
+    };
+    this.provisioningState = {
+      running: false,
+      events: [],
+      lastEvent: null,
+      result: null,
+      error: null
     };
   }
 
@@ -983,6 +991,140 @@ class PrivacyRelayService {
             res.end(JSON.stringify({ success: false, reason: e.message }));
           }
         });
+        return;
+      }
+
+      // POST /provision-egress (Authenticated) - Full auto DigitalOcean private egress deployment
+      if (pathname === '/provision-egress' && req.method === 'POST') {
+        let body = '';
+        req.on('data', chunk => body += chunk);
+        req.on('end', async () => {
+          try {
+            const data = JSON.parse(body);
+            if (!data.token) {
+              res.writeHead(400);
+              res.end(JSON.stringify({ success: false, reason: 'MISSING_API_TOKEN' }));
+              return;
+            }
+
+            this.provisioningState = {
+              running: true,
+              events: [],
+              lastEvent: null,
+              result: null,
+              error: null
+            };
+
+            const provisioner = new PrivateEgressProvisioner({
+              token: data.token,
+              controlPort: this.controlPort,
+              controlToken: this.controlToken,
+              mockMode: Boolean(data.mockMode),
+              onProgress: (ev) => {
+                this.provisioningState.events.push(ev);
+                this.provisioningState.lastEvent = ev;
+                this.log(`[PROVISION_PROGRESS] Step ${ev.step}/8 ${ev.title}: ${ev.status} — ${ev.details}`);
+              }
+            });
+
+            // Start provisioning
+            try {
+              const result = await provisioner.provisionPrivateEgress({
+                tier: data.tier || 'ULTRA_ECONOMY',
+                region: data.region || 'nyc3'
+              });
+              this.provisioningState.running = false;
+              this.provisioningState.result = result;
+              res.writeHead(200);
+              res.end(JSON.stringify({ success: true, ...result }));
+            } catch (pErr) {
+              this.provisioningState.running = false;
+              this.provisioningState.error = pErr.message;
+              res.writeHead(500);
+              res.end(JSON.stringify({ success: false, reason: pErr.message }));
+            }
+          } catch (e) {
+            res.writeHead(400);
+            res.end(JSON.stringify({ success: false, reason: e.message }));
+          }
+        });
+        return;
+      }
+
+      // GET /provision-progress (Authenticated)
+      if (pathname === '/provision-progress' && req.method === 'GET') {
+        res.writeHead(200);
+        res.end(JSON.stringify({
+          success: true,
+          provisioning: this.provisioningState
+        }));
+        return;
+      }
+
+      // POST /destroy-egress (Authenticated) - One-click destroy of all tagged private egress VPS & firewalls
+      if (pathname === '/destroy-egress' && req.method === 'POST') {
+        let body = '';
+        req.on('data', chunk => body += chunk);
+        req.on('end', async () => {
+          try {
+            const data = JSON.parse(body);
+            if (!data.token) {
+              res.writeHead(400);
+              res.end(JSON.stringify({ success: false, reason: 'MISSING_API_TOKEN' }));
+              return;
+            }
+
+            const provisioner = new PrivateEgressProvisioner({
+              token: data.token,
+              controlPort: this.controlPort,
+              controlToken: this.controlToken,
+              mockMode: Boolean(data.mockMode)
+            });
+
+            const destroyRes = await provisioner.destroyPrivateEgress();
+            this.log(`[DESTROY_EGRESS] Cleaned up droplets=${destroyRes.destroyedDroplets} firewalls=${destroyRes.destroyedFirewalls}`);
+            res.writeHead(200);
+            res.end(JSON.stringify({ success: true, ...destroyRes }));
+          } catch (e) {
+            res.writeHead(500);
+            res.end(JSON.stringify({ success: false, reason: e.message }));
+          }
+        });
+        return;
+      }
+
+      // GET /egress-telemetry (Authenticated) - Query live node resource telemetry
+      if (pathname === '/egress-telemetry' && req.method === 'GET') {
+        const active = this.getActiveNode();
+        if (!active) {
+          res.writeHead(503);
+          res.end(JSON.stringify({ success: false, reason: 'NO_ACTIVE_NODE' }));
+          return;
+        }
+
+        const creds = PrivacyRelayService.resolveNodeCredentials(active);
+        const provisioner = new PrivateEgressProvisioner({ mockMode: Boolean(parsed.searchParams.get('mock')) });
+
+        try {
+          const telemetry = await provisioner.fetchNodeTelemetry({
+            ...active,
+            ...creds
+          });
+          res.writeHead(200);
+          res.end(JSON.stringify({
+            success: true,
+            nodeId: active.id,
+            region: active.region,
+            telemetry
+          }));
+        } catch (tErr) {
+          res.writeHead(502);
+          res.end(JSON.stringify({
+            success: false,
+            nodeId: active.id,
+            reason: tErr.message
+          }));
+        }
         return;
       }
 
