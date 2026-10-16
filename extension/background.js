@@ -52,6 +52,11 @@ try {
     console.warn('[SW Boot] importScripts modules fallback or handled inline:', e);
 }
 
+const _swBootBuildInfo = (typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO) ? BuildProvenance.BUILD_INFO : null;
+const _swBootId = _swBootBuildInfo ? _swBootBuildInfo.buildId : 'UNKNOWN';
+const _swBootChannel = _swBootBuildInfo ? _swBootBuildInfo.channel : 'UNKNOWN';
+console.log(`[BOOT] [SW_RESTART] XPIDER Service Worker initialized buildId=${_swBootId} channel=${_swBootChannel} timestamp=${new Date().toISOString()}`);
+
 // [R6.9G.9.4] Proxy Authentication Handler with Bounded Retries (MV3 asyncBlocking onAuthRequired)
 const proxyAuthAttempts = new Map(); // reqKey -> { count: number, timestamp: number }
 
@@ -4922,6 +4927,7 @@ async function startCampaignOrchestrator(queue, template, delayMs, fillDelayMs =
         
         logBg(null, "[Boot] Variables initialized.", "debug");
         logBg(null, "🚀 Engine booting...", "start");
+        logBg(null, `[CAMPAIGN_START] buildId=${_swBootId} campaignRunId=${campaignState.campaignRunId} totalTargets=${campaignState.totalTargets} mode=${campaignState.ownerFunctionTestMode ? 'OWNER_TEST' : 'NORMAL'} delayMs=${campaignState.delayMs} fillDelayMs=${campaignState.fillDelayMs} submitDelayMs=${campaignState.submitDelayMs}`, "start");
         
         // Clear old paused checkpoint on fresh campaign start
         chrome.storage.local.remove(['xpider_paused_checkpoint']).catch(() => {});
@@ -4946,6 +4952,7 @@ async function pauseCampaignOrchestrator(saveCheckpoint = true) {
     campaignState.schedulerGeneration = (campaignState.schedulerGeneration || 0) + 1;
     campaignState.isPaused = true;
     campaignState.captchaEpoch = (campaignState.captchaEpoch || 0) + 1;
+    logBg(null, `[PAUSE] campaignRunId=${campaignState.campaignRunId} remaining=${campaignState.queue ? campaignState.queue.length : 0} inProgress=${campaignState.counters ? campaignState.counters.inProgress : 0}`, "info");
     logBg(null, "⏸️ [Engine] Campaign PAUSED / STOP & SAVE requested.", "info");
 
     // 2. Abort active target orchestration and content script
@@ -5096,6 +5103,7 @@ async function pauseCampaignOrchestrator(saveCheckpoint = true) {
 }
 
 async function resumeCampaignOrchestrator() {
+    logBg(null, `[RESUME] campaignRunId=${campaignState.campaignRunId} remaining=${campaignState.queue ? campaignState.queue.length : 0}`, "start");
     logBg(null, "▶️ [Engine] RESUME_CAMPAIGN requested.", "info");
 
     let checkpoint = campaignState.pausedCheckpoint;
@@ -5227,6 +5235,7 @@ async function endCampaignOrchestrator() {
 }
 
 function stopCampaignOrchestrator() {
+    logBg(null, `[CAMPAIGN_STOP] campaignRunId=${campaignState.campaignRunId} total=${campaignState.counters ? campaignState.counters.total : 0} completed=${campaignState.counters ? campaignState.counters.completed : 0} success=${campaignState.counters ? campaignState.counters.success : 0} failed=${campaignState.counters ? campaignState.counters.failed : 0} skipped=${campaignState.counters ? campaignState.counters.skipped : 0}`, "warning");
     return pauseCampaignOrchestrator(true);
 }
 
@@ -5579,6 +5588,7 @@ async function processNextCampaignTarget(loopSessionId, loopGeneration) {
 
             const targetIdx = campaignState.totalTargets - campaignState.queue.length;
             logBg(null, `[TARGET ${targetIdx}/${campaignState.totalTargets}][${targetHost}] START`, "info");
+            logBg(null, `[TARGET_START] buildId=${_swBootId} campaignRunId=${campaignState.campaignRunId} attemptId=${campaignState.currentAttempt?.attemptId || 'att_init'} targetIndex=${targetIdx}/${campaignState.totalTargets} targetUrl=${targetUrl}`, "info");
             if (chrome.alarms) chrome.alarms.create(`xpider_timeout_${currentSession}`, { delayInMinutes: 3 });
 
             // [R6.9G.7 P0-2] Target AbortController & Inner Orchestration Promise (bound to current lease)
@@ -6766,6 +6776,7 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
                 });
                 const rec = hs.attempts.find(a => a.attemptId === _attemptId);
                 logBg(tabId, `[HISTORY_FINAL] sourceUrl=${rec?.sourceUrl || targetUrl} contactPageUrl=${rec?.contactPageUrl || ''} formPageUrl=${rec?.formPageUrl || ''} resultUrl=${rec?.resultUrl || ''}`, "info");
+                logBg(tabId, `[TARGET_END] campaignRunId=${campaignState.campaignRunId} attemptId=${_attemptId} status=${terminalStatus} reason=${settleReason}`, "info");
             }
             await hs.persist();
 
@@ -7207,6 +7218,7 @@ async function saveCampaignState() {
                     xpider_owner_function_test_mode_active: Boolean(campaignState.ownerFunctionTestMode)
                 }, () => {
                     if (chrome.runtime.lastError) console.error("Save error:", chrome.runtime.lastError);
+                    recordCurrentRunDiagEvent(`[CHECKPOINT] saved session checkpoint remaining=${campaignState.queue ? campaignState.queue.length : 0} isActive=${campaignState.isActive}`);
                     resolve();
                 });
             });

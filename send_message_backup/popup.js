@@ -478,6 +478,244 @@ function downloadDiagnosticTxt() {
     return false;
 }
 
+// ── [OWNER DEBUG BUNDLE ZIP & SANITIZATION ENGINE] ──────────────────────────
+function deepSanitizeDiagnosticObject(obj) {
+    if (obj === null || obj === undefined) return obj;
+    if (typeof obj === 'string') {
+        return redactSensitiveText(obj);
+    }
+    if (typeof obj === 'number' || typeof obj === 'boolean') {
+        return obj;
+    }
+    if (Array.isArray(obj)) {
+        return obj.map(item => deepSanitizeDiagnosticObject(item));
+    }
+    if (typeof obj === 'object') {
+        const result = {};
+        for (const [key, val] of Object.entries(obj)) {
+            if (/secret|token|password|key|auth|credential|cookie|bearer|stt|turnstile/i.test(key)) {
+                result[key] = '[REDACTED_SECRET]';
+            } else {
+                result[key] = deepSanitizeDiagnosticObject(val);
+            }
+        }
+        return result;
+    }
+    return String(obj);
+}
+
+function _makeZipCrcTable() {
+    let c;
+    const table = [];
+    for (let n = 0; n < 256; n++) {
+        c = n;
+        for (let k = 0; k < 8; k++) {
+            c = ((c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1));
+        }
+        table[n] = c;
+    }
+    return table;
+}
+const _zipCrc32Table = _makeZipCrcTable();
+function _calcZipCrc32(buf) {
+    let crc = 0 ^ (-1);
+    for (let i = 0; i < buf.length; i++) {
+        crc = (crc >>> 8) ^ _zipCrc32Table[(crc ^ buf[i]) & 0xFF];
+    }
+    return (crc ^ (-1)) >>> 0;
+}
+
+function createZipArchive(files) {
+    const localHeaders = [];
+    const centralHeaders = [];
+    let offset = 0;
+    const te = new TextEncoder();
+
+    files.forEach(f => {
+        const nameBytes = te.encode(f.name);
+        const dataBytes = typeof f.content === 'string' ? te.encode(f.content) : new Uint8Array(f.content);
+        const crc = _calcZipCrc32(dataBytes);
+        const size = dataBytes.length;
+
+        const lh = new Uint8Array(30 + nameBytes.length + size);
+        const dvLh = new DataView(lh.buffer);
+        dvLh.setUint32(0, 0x04034b50, true); // PK\x03\x04
+        dvLh.setUint16(4, 20, true); // version
+        dvLh.setUint16(6, 0x0800, true); // UTF-8 filename flag
+        dvLh.setUint16(8, 0, true); // Method 0: STORE
+        dvLh.setUint16(10, 0, true);
+        dvLh.setUint16(12, 0, true);
+        dvLh.setUint32(14, crc, true);
+        dvLh.setUint32(18, size, true);
+        dvLh.setUint32(22, size, true);
+        dvLh.setUint16(26, nameBytes.length, true);
+        dvLh.setUint16(28, 0, true);
+        lh.set(nameBytes, 30);
+        lh.set(dataBytes, 30 + nameBytes.length);
+        localHeaders.push(lh);
+
+        const ch = new Uint8Array(46 + nameBytes.length);
+        const dvCh = new DataView(ch.buffer);
+        dvCh.setUint32(0, 0x02014b50, true); // PK\x01\x02
+        dvCh.setUint16(4, 20, true);
+        dvCh.setUint16(6, 20, true);
+        dvCh.setUint16(8, 0x0800, true);
+        dvCh.setUint16(10, 0, true);
+        dvCh.setUint16(12, 0, true);
+        dvCh.setUint16(14, 0, true);
+        dvCh.setUint32(16, crc, true);
+        dvCh.setUint32(20, size, true);
+        dvCh.setUint32(24, size, true);
+        dvCh.setUint16(28, nameBytes.length, true);
+        dvCh.setUint16(30, 0, true);
+        dvCh.setUint16(32, 0, true);
+        dvCh.setUint16(34, 0, true);
+        dvCh.setUint16(36, 0, true);
+        dvCh.setUint32(38, 0, true);
+        dvCh.setUint32(42, offset, true);
+        ch.set(nameBytes, 46);
+        centralHeaders.push(ch);
+
+        offset += lh.length;
+    });
+
+    const centralDirOffset = offset;
+    let centralDirSize = 0;
+    centralHeaders.forEach(ch => centralDirSize += ch.length);
+
+    const eocd = new Uint8Array(22);
+    const dvEocd = new DataView(eocd.buffer);
+    dvEocd.setUint32(0, 0x06054b50, true); // PK\x05\x06
+    dvEocd.setUint16(4, 0, true);
+    dvEocd.setUint16(6, 0, true);
+    dvEocd.setUint16(8, files.length, true);
+    dvEocd.setUint16(10, files.length, true);
+    dvEocd.setUint32(12, centralDirSize, true);
+    dvEocd.setUint32(16, centralDirOffset, true);
+    dvEocd.setUint16(20, 0, true);
+
+    const totalLen = centralDirOffset + centralDirSize + 22;
+    const result = new Uint8Array(totalLen);
+    let cur = 0;
+    localHeaders.forEach(lh => {
+        result.set(lh, cur);
+        cur += lh.length;
+    });
+    centralHeaders.forEach(ch => {
+        result.set(ch, cur);
+        cur += ch.length;
+    });
+    result.set(eocd, cur);
+    return result;
+}
+
+async function exportOwnerDebugBundle() {
+    try {
+        const buildInfo = (typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO)
+            ? BuildProvenance.BUILD_INFO
+            : { buildId: 'R6.9G.10.3.7.1.4.11-OWNER-BETA', head: 'UNKNOWN' };
+        const buildId = buildInfo.buildId || 'R6.9G.10.3.7.1.4.11-OWNER-BETA';
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const filename = `XPIDER_DEBUG_${buildId}_${timestamp}.zip`;
+
+        if (typeof addLog === 'function') addLog(`📦 Compiling Owner Debug Bundle...`, "info");
+
+        // 1. Gather all runtime data
+        const reportText = getDiagnosticReport(false);
+        const runtimeLogs = [...diagnosticLogBuffer];
+
+        let storageAll = {};
+        try {
+            if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+                storageAll = await chrome.storage.local.get(null);
+            }
+        } catch (_) {}
+
+        // Redact settings
+        const sanitizedSettings = deepSanitizeDiagnosticObject(storageAll);
+        delete sanitizedSettings.xpider_current_run_diagnostics;
+        delete sanitizedSettings.xpider_blackbox_logs;
+
+        // 2. Campaign & target state
+        const campaignSummary = {
+            active: Boolean(campaignActive),
+            counters: (typeof lastStatsData !== 'undefined' && lastStatsData) ? lastStatsData : {},
+            targetCount: (typeof totalTargets !== 'undefined') ? totalTargets : 0,
+            captchaLedger: storageAll.xpider_captcha_ledger || {},
+            timestamp: new Date().toISOString()
+        };
+
+        // 3. Error and retry summary
+        const errorEvents = runtimeLogs.filter(e => e.includes('[ERROR]') || e.includes('fail') || e.includes('timeout'));
+        const retryEvents = runtimeLogs.filter(e => e.includes('retry') || e.includes('RETRY') || e.includes('attempt'));
+        const errorSummary = {
+            totalErrorsRecorded: errorEvents.length,
+            recentErrors: errorEvents.slice(-25),
+            totalRetryEvents: retryEvents.length,
+            recentRetries: retryEvents.slice(-25)
+        };
+
+        // 4. History & Ledger records
+        let historyRecords = [];
+        try {
+            if (storageAll.xpider_history_ledger && Array.isArray(storageAll.xpider_history_ledger)) {
+                historyRecords = storageAll.xpider_history_ledger;
+            } else if (storageAll.xpider_history_store && Array.isArray(storageAll.xpider_history_store.records)) {
+                historyRecords = storageAll.xpider_history_store.records;
+            }
+        } catch (_) {}
+        const sanitizedHistory = deepSanitizeDiagnosticObject(historyRecords);
+
+        // 5. Consolidated Master Debug JSON
+        const masterBundle = {
+            bundleVersion: '1.0',
+            exportedAt: new Date().toISOString(),
+            buildProvenance: buildInfo,
+            campaignSummary,
+            errorSummary,
+            sanitizedSettings,
+            historyLedger: sanitizedHistory,
+            runtimeLogsSample: runtimeLogs.slice(-100)
+        };
+
+        // 6. Build ZIP files array
+        const files = [
+            { name: 'XPIDER_DEBUG_REPORT.txt', content: reportText },
+            { name: 'runtime_logs.json', content: JSON.stringify(runtimeLogs, null, 2) },
+            { name: 'sanitized_settings.json', content: JSON.stringify(sanitizedSettings, null, 2) },
+            { name: 'campaign_state.json', content: JSON.stringify(campaignSummary, null, 2) },
+            { name: 'error_and_retry_summary.json', content: JSON.stringify(errorSummary, null, 2) },
+            { name: 'history_ledger.json', content: JSON.stringify(sanitizedHistory, null, 2) },
+            { name: 'build_provenance.json', content: JSON.stringify(buildInfo, null, 2) },
+            { name: 'owner_debug_bundle.json', content: JSON.stringify(masterBundle, null, 2) }
+        ];
+
+        const zipBytes = createZipArchive(files);
+        if (typeof Blob !== 'undefined' && typeof document !== 'undefined') {
+            const blob = new Blob([zipBytes], { type: 'application/zip' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        if (typeof addLog === 'function') addLog(`✅ Exported Owner Debug Bundle: ${filename}`, "success");
+        return { success: true, filename, filesCount: files.length, bundleBytes: zipBytes.length };
+    } catch (err) {
+        console.error('[EXPORT_DEBUG_BUNDLE_ERROR]', err);
+        if (typeof addLog === 'function') addLog(`❌ Failed to export debug bundle: ${err.message}`, "error");
+        return { success: false, error: err.message };
+    }
+}
+if (typeof window !== 'undefined') {
+    window.exportOwnerDebugBundle = exportOwnerDebugBundle;
+    window.deepSanitizeDiagnosticObject = deepSanitizeDiagnosticObject;
+}
+
 function calculatePayloadBytes(args) {
     if (!args) return 0;
     try {
@@ -3043,6 +3281,9 @@ function bindEvents() {
     if (discardBtn) discardBtn.addEventListener('click', discardCheckpoint);
 
     // Diagnostic Action Buttons
+    const exportBundleBtn = document.getElementById('export-debug-bundle-btn');
+    if (exportBundleBtn) exportBundleBtn.addEventListener('click', exportOwnerDebugBundle);
+
     const copyDiagBtn = document.getElementById('copy-diagnostic-btn');
     if (copyDiagBtn) copyDiagBtn.addEventListener('click', copyDiagnosticReport);
 
@@ -4557,11 +4798,12 @@ async function restoreUserSettings() {
 }
 
 function getBadgeTextFromBuildInfo(info) {
-    if (!info) return 'TEST-ONLY R6.9G.10.3 [31b929c3]';
+    if (!info) return 'OWNER BETA R6.9G.10.3.7.1.4.11 [5a0e9830]';
     const m = (info.buildId || '').match(/R\d+\.\d+[A-Za-z0-9\.]*/);
-    const ver = m ? m[0] : 'R6.9G.10.3';
-    const sha = info.implementationHeadShort || info.headShort || (info.implementationHead ? info.implementationHead.substring(0, 8) : '31b929c3');
-    return `TEST-ONLY ${ver} [${sha}]`;
+    const ver = m ? m[0] : 'R6.9G.10.3.7.1.4.11';
+    const sha = info.implementationHeadShort || info.headShort || (info.implementationHead ? info.implementationHead.substring(0, 8) : '5a0e9830');
+    const label = (info.channel === 'OWNER_BETA') ? 'OWNER BETA' : (info.channel === 'TEST_ONLY' ? 'TEST-ONLY' : (info.channel || 'OWNER BETA'));
+    return `${label} ${ver} [${sha}]`;
 }
 
 function initBuildProvenanceBadge() {
@@ -4572,10 +4814,16 @@ function initBuildProvenanceBadge() {
         : null;
     if (badge && localInfo) {
         badge.textContent = getBadgeTextFromBuildInfo(localInfo);
-        badge.title = `TEST-ONLY DIAGNOSTIC BUILD: ${localInfo.buildId} | SHA: ${localInfo.head} | Branch: ${localInfo.branch}`;
-        badge.style.background = 'rgba(234, 179, 8, 0.2)';
-        badge.style.color = '#eab308';
-        badge.style.borderColor = 'rgba(234, 179, 8, 0.5)';
+        badge.title = `PRIVATE OWNER BETA — DEBUG TELEMETRY ENABLED: ${localInfo.buildId} | SHA: ${localInfo.head} | Branch: ${localInfo.branch}`;
+        badge.style.background = 'rgba(168, 85, 247, 0.2)';
+        badge.style.color = '#c084fc';
+        badge.style.borderColor = 'rgba(168, 85, 247, 0.5)';
+    }
+
+    const navChannel = document.querySelector('.nav-channel-badge');
+    if (navChannel) {
+        navChannel.textContent = '● PRIVATE OWNER BETA — DEBUG TELEMETRY ENABLED';
+        navChannel.title = 'Private Owner Beta — Debug Telemetry Enabled';
     }
 
     // [R6.9G.10.3.3] Non-fatal, bounded retry on transient boot race
@@ -4583,10 +4831,10 @@ function initBuildProvenanceBadge() {
         if (badge && res && res.bgInfo) {
             const b = res.bgInfo;
             badge.textContent = getBadgeTextFromBuildInfo(b);
-            badge.title = `TEST-ONLY DIAGNOSTIC BUILD: ${b.buildId} | SHA: ${b.implementationHead || b.head} | Branch: ${b.branch}`;
-            badge.style.background = 'rgba(234, 179, 8, 0.2)';
-            badge.style.color = '#eab308';
-            badge.style.borderColor = 'rgba(234, 179, 8, 0.5)';
+            badge.title = `PRIVATE OWNER BETA — DEBUG TELEMETRY ENABLED: ${b.buildId} | SHA: ${b.implementationHead || b.head} | Branch: ${b.branch}`;
+            badge.style.background = 'rgba(168, 85, 247, 0.2)';
+            badge.style.color = '#c084fc';
+            badge.style.borderColor = 'rgba(168, 85, 247, 0.5)';
         }
     }).catch((err) => {
         console.warn('[BUILD_HANDSHAKE_INIT_WARN]', err);

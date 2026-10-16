@@ -1524,6 +1524,7 @@
                     textareaValue: textareaSample,
                     phoneValue: phoneSample
                 });
+                logDev(`[FIELD_VALIDITY] valid=${sentinelCheck.valid} reason=${sentinelCheck.reason || 'OK'}`);
                 if (!sentinelCheck.valid) {
                     logDev(`❌ [FinalAudit] Submission blocked by Field Semantic Sentinel: ${sentinelCheck.reason} - ${sentinelCheck.detail}`, "error");
                     finishCampaign(false, "FIELD_SEMANTIC_MISMATCH", sentinelCheck.detail, { sentinelCheck });
@@ -2819,7 +2820,10 @@
 
             // 이미 값이 있으면 스킵
             const currentVal = el.contentEditable === 'true' ? (el.textContent || '') : (el.value || '');
-            if (currentVal.trim() !== '') return;
+            if (currentVal.trim() !== '') {
+                logDev(`   - [FIELD_SKIP] field=${el.id || el.name || 'unnamed'} tag=${el.tagName} reason=ALREADY_FILLED`);
+                return;
+            }
 
             await new Promise(r => setTimeout(r, speed.field));
 
@@ -5374,6 +5378,7 @@
 
                 // [Issue #6 R6.5 Section 5: SUBMIT FAILURE RECOVERY ORDER]
                 // 1. requestSubmit(submitter) — visual overlay is irrelevant to requestSubmit
+                logDev(`[SUBMIT_TRIGGERED] strategy=requestSubmit candidate=${primary?.tagName || 'form'} id=${primary?.id || ''} name=${primary?.name || ''}`);
                 if (!this.isDisabled(primary) && form && form.tagName === 'FORM' && typeof form.requestSubmit === 'function') {
                     try {
                         form.requestSubmit(primary);

@@ -15,23 +15,23 @@
 
     const BUILD_INFO = {
         branch: 'upgrade/phase-0-1',
-        channel: 'TEST_ONLY',
+        channel: 'OWNER_BETA',
         testOnly: true,
-        // [R6.9G.10.3.7.1.4.10] Real Cloudflare Turnstile Owner Validation & Official Test-Key Suite
-        implementationHead: 'b4568828717d5467454a60ea6d4584c0afc9ea43',
-        implementationHeadShort: 'b4568828',
-        head: 'b4568828717d5467454a60ea6d4584c0afc9ea43',
-        headShort: 'b4568828',
+        // [R6.9G.10.3.7.1.4.11] XPIDER AutoForm Sender Pro — Owner Beta Cut (Comment #6208890551)
+        implementationHead: '5a0e9830956c3ee7c07b461875e6d6d84fbb7393',
+        implementationHeadShort: '5a0e9830',
+        head: '5a0e9830956c3ee7c07b461875e6d6d84fbb7393',
+        headShort: '5a0e9830',
         rollbackBase: 'dc0740a0c69e2f7fa96b6989841acf0831b3619e',
         previousFunctionalRestorePoint: '31b929c35eb52aba782181ba83e79a7196c51337',
         manifestVersion: 3,
-        buildId: 'R6.9G.10.3.7.1.4.10-20261016-REAL-CLOUDFLARE-TURNSTILE-VALIDATION',
-        builtAt: '2026-10-16T05:15:57.594Z',
+        buildId: 'R6.9G.10.3.7.1.4.11-20261016-OWNER-BETA',
+        builtAt: '2026-10-16T05:55:00.000Z',
         provenanceSchema: 2,
         modules: {
-            backgroundSha: 'e12f41ad1651aa59011507d9e032abb48d5c14de30f2c19739e21939cfa875bd',
-            contentScriptSha: 'd2628afcc71e1f1fe2bee642b18724c4bd7afccf2d11b17e15feeb85aba9b7ba',
-            popupSha: 'cdec11b0f14919c9a8842d3b7d00fbf8e74b077fb4a1e5833166bbd5ec04011f',
+            backgroundSha: '09eaa394b2e3922a27480c6c42863ed0e90b3790739eefa5087f8109738ec8ec',
+            contentScriptSha: 'b59b6398f08bbaefd31dc32358138f15e2092dec667860ff99b4b36cde40570b',
+            popupSha: '8e1a78e317e268e6b0e977c73577f2aade2ae37d9eaab7fae37acdc6b1f72944',
             solverContentSha: 'd7de969d29df29799537b11380f0f82967bb93da227c91e7dc8c6af0d128f457',
             solverCoreSha: '01b3d96048ea933403e4599854dcdca28027e7f676aa5077eb6c5eb0582ac1e7',
             emailCollectorSha: '3f1147a379e159e7777158f2caa74cc8d40b2a0b0eb2c244f440af379cb5c9c9',
@@ -43,7 +43,7 @@
     };
 
     function isTestOnlyBuild() {
-        return Boolean(BUILD_INFO.testOnly === true && BUILD_INFO.channel === 'TEST_ONLY');
+        return Boolean(BUILD_INFO.testOnly === true && (BUILD_INFO.channel === 'TEST_ONLY' || BUILD_INFO.channel === 'OWNER_BETA'));
     }
 
     function getBuildProvenanceLogs() {

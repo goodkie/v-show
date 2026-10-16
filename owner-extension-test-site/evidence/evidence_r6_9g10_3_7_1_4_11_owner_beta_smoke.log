@@ -1,0 +1,34 @@
+[2026-10-16T05:59:24.777Z] ================ XPIDER AUTOFORM SENDER PRO — OWNER BETA SMOKE SUITE (EDGE) ================
+[2026-10-16T05:59:24.845Z] Test server verified: PID=3852 uptime=undefined
+[2026-10-16T05:59:24.854Z] Launching Edge using profile: C:\Users\oPus\AppData\Local\Temp\edge-owner-beta-XykLnb
+[2026-10-16T05:59:26.109Z] Extension Service Worker active: ID=ldlijlaccfeelfdhgnjbibniocefckjj Title="Service Worker chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/background.js"
+[2026-10-16T05:59:26.130Z] Service Worker Provenance: buildId=R6.9G.10.3.7.1.4.11-20261016-OWNER-BETA channel=OWNER_BETA testOnly=true isTestOnly=true
+[2026-10-16T05:59:28.694Z] --- Verifying UI Branding ---
+[2026-10-16T05:59:28.704Z] Branding: channelBadge="● PRIVATE OWNER BETA — DEBUG TELEMETRY ENABLED"
+[2026-10-16T05:59:28.711Z] Branding: provenanceBadge="OWNER BETA R6.9G.10.3.7.1.4.11 [5a0e9830]"
+[2026-10-16T05:59:28.719Z] Branding: exportBundleBtn=true
+[2026-10-16T05:59:28.878Z] 📸 Captured screenshot: shot_owner_beta_01_branding.png
+[2026-10-16T05:59:28.886Z] --- Verifying Settings Save & Load ---
+[2026-10-16T05:59:28.897Z] Settings test: before=undefined after=4444
+[2026-10-16T05:59:28.904Z] --- Verifying Campaign Lifecycle (Start / Pause / Resume / Stop) ---
+[2026-10-16T05:59:30.395Z] Lifecycle results: start=true pause=true isPaused=true hasCheckpoint=true resume=true stop=true
+[2026-10-16T05:59:30.541Z] 📸 Captured screenshot: shot_owner_beta_02_lifecycle.png
+[2026-10-16T05:59:30.549Z] --- Verifying One-Click Owner Debug Bundle Export ---
+[2026-10-16T05:59:30.567Z] Debug bundle export result: {"success":true,"filename":"XPIDER_DEBUG_R6.9G.10.3.7.1.4.11-20261016-OWNER-BETA_2026-10-16T05-59-30-557Z.zip","filesCount":8,"bundleBytes":23352}
+[2026-10-16T05:59:30.578Z] --- Verifying Zero Secrets in Settings & Telemetry ---
+[2026-10-16T05:59:30.615Z] Sanitization results: secretKey=[REDACTED_SECRET] sttKey=[REDACTED_SECRET] password=[REDACTED_SECRET]
+[2026-10-16T05:59:30.625Z] --- Verifying Ultra-Diagnostic Telemetry Log Traces ---
+[2026-10-16T05:59:30.646Z] Total diagnostic buffer entries in sample: 36
+[2026-10-16T05:59:30.656Z] Diagnostic sample tail:
+[2026-10-16T05:59:30.384Z][INFO] [System] DELIVERY_UNKNOWN:            0
+[2026-10-16T05:59:30.385Z][INFO] [System] SKIPPED:                     0
+[2026-10-16T05:59:30.385Z][INFO] [System] PAUSED_UNKNOWN:              0
+[2026-10-16T05:59:30.387Z][INFO] [System] ----------------------------------------
+[2026-10-16T05:59:30.388Z][INFO] [System] TOTAL TERMINAL / COMPLETED:  0
+[2026-10-16T05:59:30.388Z][INFO] [System] ========================================
+[2026-10-16T05:59:30.557Z][INFO] 📦 Compiling Owner Debug Bundle...
+[2026-10-16T05:59:30.565Z][SUCCESS] ✅ Exported Owner Debug Bundle: XPIDER_DEBUG_R6.9G.[REDACTED_IP].[REDACTED_PHONE]-OWNER-BETA_2026-10-16T05-59-30-557Z.zip
+[2026-10-16T05:59:30.664Z] Trace domain checks: hasBoot=false hasCampaign=true
+[2026-10-16T05:59:30.857Z] 📸 Captured screenshot: shot_owner_beta_03_final.png
+[2026-10-16T05:59:30.865Z] ================ ALL MUST-HAVE OWNER BETA SMOKE CHECKS PASSED (100%) ================
+[2026-10-16T05:59:32.007Z] SMOKE SUITE COMPLETE — SUCCESS.
