@@ -585,6 +585,7 @@ let campaignState = {
     lastFinalTs: 0,              // Timestamp of last TARGET FINAL — CAMPAIGN_FINISHED must follow it
     isFaulted: false,            // [R6.9G.7.1] Set to true if orchestration fails to quiesce
     faultReason: null,
+    runScopedDirectPrivacy: false, // [R6.9G.10.3.7.1.4.11 P0] Run-scoped direct privacy override when Owner consents
     captchaFailuresRecorded: new Set(), // [R6.9G.7.1] Idempotent attempt-bound CAPTCHA failure recorder
     // [R6.9G-G] CAPTCHA Attempt-Bound Ledger
     captchaLedger: {
@@ -1882,6 +1883,10 @@ async function assertPrivacyTransportReady(context = 'GENERAL') {
         return physCheck;
     }
 
+    if (campaignState.runScopedDirectPrivacy) {
+        return { ready: true, mode: 'DIRECT', override: true };
+    }
+
     const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
     if (!pg) return { ready: true };
 
@@ -2753,6 +2758,15 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                 console.log(`[START_BG] received queue=${queueLen}`);
                 logBg(null, `[START_BG] received queue=${queueLen}`, "info");
 
+                // [R6.9G.10.3.7.1.4.11 P0] Run-Scoped Direct Privacy Override
+                if (request.runScopedDirectPrivacy) {
+                    campaignState.runScopedDirectPrivacy = true;
+                    console.log('[PRIVACY_OWNER_OVERRIDE] scope=currentRun mode=DIRECT acknowledged=true');
+                    logBg(null, '[PRIVACY_OWNER_OVERRIDE] scope=currentRun mode=DIRECT acknowledged=true', 'warn');
+                } else {
+                    campaignState.runScopedDirectPrivacy = false;
+                }
+
                 // [R6.9G.10.3.7.1.4.10] Cloudflare Live & Testkey State Resolution
                 const isLiveCf = (request.source === 'CLOUDFLARE_LIVE_OWNER' || request.options?.source === 'CLOUDFLARE_LIVE_OWNER');
                 const isTestKeyLab = (request.source === 'CLOUDFLARE_TESTKEY_LAB' || request.options?.source === 'CLOUDFLARE_TESTKEY_LAB');
@@ -2914,7 +2928,7 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                 }
 
                 // [R6.9G.9 Privacy Gateway Preflight & R6.9G.10.3.6.1 Single-Authority Start Prep]
-                if (!isTestMode) {
+                if (!isTestMode && !campaignState.runScopedDirectPrivacy) {
                     const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
                     if (pg) {
                         await pg.init();
@@ -2978,7 +2992,8 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                 console.log('[START_BG_READY] privacyReady=true');
                 logBg(null, '[START_BG_READY] privacyReady=true', "info");
 
-                sendResponse({ success: true, status: 'acknowledged', queueCount: queueLen });
+                const assignedRunId = request.campaignRunId || campaignState.campaignRunId || ((isTestMode ? 'owner_test_run_' : 'run_') + Date.now() + '_' + Math.random().toString(36).substring(2, 7));
+                sendResponse({ success: true, status: 'acknowledged', queueCount: queueLen, campaignRunId: assignedRunId });
 
                 campaignState.ownerTestSource = request.source || null;
                 if (request.source === 'OWNER_CAPTCHA_LAB') {
@@ -3008,7 +3023,8 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                         skipPreviouslyAttempted: request.skipPreviouslyAttempted,
                         overrideSkipAttempted: request.overrideSkipAttempted,
                         ownerFunctionTestMode: isTestMode,
-                        ownerTestSource: request.source || null
+                        ownerTestSource: request.source || null,
+                        campaignRunId: assignedRunId
                     });
                 } catch (e) {
                     console.error("[StartError]", e);
@@ -3461,6 +3477,7 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
         case 'STOP_CAMPAIGN':
         case 'STOP_AND_SAVE_CAMPAIGN':
             (async () => {
+                campaignState.runScopedDirectPrivacy = false;
                 const res = await pauseCampaignOrchestrator(true);
                 sendResponse({ success: true, ...res });
             })();
@@ -3469,6 +3486,7 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
         case 'END_CAMPAIGN':
         case 'CLEAR_CAMPAIGN':
             (async () => {
+                campaignState.runScopedDirectPrivacy = false;
                 await endCampaignOrchestrator();
                 sendResponse({ success: true });
             })();

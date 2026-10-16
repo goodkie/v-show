@@ -1,0 +1,379 @@
+[2026-10-16T09:03:54.387Z] ================ XPIDER OWNER BETA P0 PRIVACY START RECOVERY TEST (EDGE) ================
+[2026-10-16T09:03:54.450Z] Test server verified: PID=3852 uptime=undefined
+[2026-10-16T09:03:54.459Z] Launching Edge using profile: C:\Users\oPus\AppData\Local\Temp\edge-p0-privacy-3duFm1
+[2026-10-16T09:03:55.763Z] Extension Service Worker active: ID=ldlijlaccfeelfdhgnjbibniocefckjj
+[2026-10-16T09:03:55.825Z] [SW_CONSOLE] [BOOT] [SW_RESTART] XPIDER Service Worker initialized buildId=R6.9G.10.3.7.1.4.11-20261016-OWNER-BETA channel=OWNER_BETA timestamp=2026-10-16T09:03:55.817Z
+[2026-10-16T09:03:55.864Z] [SW_CONSOLE] [PRIVACY_GATE] Proxy onAuthRequired asyncBlocking listener registered with bounded retries.
+[2026-10-16T09:03:55.877Z] [SW_CONSOLE] [BootStep] solver_instantiation
+[2026-10-16T09:03:55.891Z] [SW_CONSOLE] [X PIDER] Background script initializing (Unified Mode)...
+[2026-10-16T09:03:55.905Z] [SW_CONSOLE] [BootStep] side_panel_config
+[2026-10-16T09:03:55.917Z] [SW_CONSOLE] [BootStep] campaign_state_init
+[2026-10-16T09:03:55.931Z] [SW_CONSOLE] [BootStep] global_functions_defined
+[2026-10-16T09:03:55.960Z] [SW_CONSOLE] [BootStep] worker_online
+[2026-10-16T09:03:55.975Z] [SW_CONSOLE] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
+[2026-10-16T09:03:55.989Z] [SW_CONSOLE] [BG_LOG][tab=none] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
+[2026-10-16T09:03:56.287Z] [SW_CONSOLE] [BG_LOG][tab=none] 📦 [Migration] Safely migrated to v2 (Backup: xpider_backup_v1_1792141436228)
+[2026-10-16T09:03:56.355Z] [SW_CONSOLE] [BootStep] restoring_campaign_state
+[2026-10-16T09:03:56.365Z] [SW_CONSOLE] [Boot] Initializing campaign state...
+[2026-10-16T09:03:56.376Z] [SW_CONSOLE] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
+[2026-10-16T09:03:56.386Z] [SW_CONSOLE] [BG_LOG][tab=none] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
+[2026-10-16T09:03:56.396Z] [SW_CONSOLE] [COUNTER_RECONCILE] legacySuccess=0 ledgerSuccess=0 action=LEDGER_WINS
+[2026-10-16T09:03:56.407Z] [SW_CONSOLE] [BootStep] restore_complete
+[2026-10-16T09:03:56.418Z] [SW_CONSOLE] [Boot] Privacy Relay configured — checking status and auto-recovering if offline...
+[2026-10-16T09:03:58.400Z] --- STEP 1: Setting up prior test state & loading 100 public URLs ---
+[2026-10-16T09:03:58.411Z] [POPUP_CONSOLE] [HISTORY_SCOPE_REFRESH] trigger=xpider_active_campaign_run_id
+[2026-10-16T09:03:58.420Z] [POPUP_CONSOLE] [LEDGER_STATS] scope=currentRun campaignRunId=owner_test_run_prior_session success=0 failed=0 timeout=0 unknown=0
+[2026-10-16T09:03:58.428Z] Step 1 Setup result: {"queueCount":100,"completedUI":"7","remainingUI":"0"}
+[2026-10-16T09:03:58.671Z] 📸 Captured screenshot: shot_p0_01_stale_counters_loaded.png
+[2026-10-16T09:03:58.686Z] --- STEP 2: Pressing Normal Start with Privacy Relay Offline ---
+[2026-10-16T09:03:58.745Z] [POPUP_CONSOLE] [BUTTON_CLICK] id=start-btn
+[2026-10-16T09:03:58.791Z] [POPUP_CONSOLE] [BUTTON_CLICK] id=start-btn
+[2026-10-16T09:03:58.800Z] [SW_CONSOLE] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
+[2026-10-16T09:03:58.810Z] [POPUP_CONSOLE] [START_GATE] state=READY
+[2026-10-16T09:03:58.819Z] [SW_CONSOLE] [BG_LOG][tab=none] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
+[2026-10-16T09:03:58.828Z] [POPUP_CONSOLE] [START_STEP] 01 BUTTON_ACCEPTED id=start-btn source=USER_START_BUTTON
+[2026-10-16T09:03:58.840Z] [SW_CONSOLE] [OWNER_TEST_GUARD] removed=true verified=true remainingRules=0
+[2026-10-16T09:03:58.852Z] [POPUP_CONSOLE] [XPIDER_DIAG] [START_STEP] 01 BUTTON_ACCEPTED source=USER_START_BUTTON
+[2026-10-16T09:03:58.906Z] [SW_CONSOLE] [PRIVACY_START_PREP] currentMode=PRIVACY_RELAY failClosed=true
+[2026-10-16T09:03:58.920Z] [POPUP_CONSOLE] [BUILD_HANDSHAKE] localHead=44f62c1922ae658b4e719dd5fc3b7e54a42732e4 backgroundHead=44f62c1922ae658b4e719dd5fc3b7e54a42732e4 result=PASS
+[2026-10-16T09:03:58.929Z] [SW_CONSOLE] [PRIVACY_RELAY_ZERO_NODES] totalNodes=0 health=NO_NODES
+[2026-10-16T09:03:58.938Z] [POPUP_CONSOLE] [START_STEP] 02 BUILD_HANDSHAKE_PASS
+[2026-10-16T09:03:58.945Z] [SW_CONSOLE] [PRIVACY_START_BLOCKED] reason=NO_HEALTHY_EGRESS
+[2026-10-16T09:03:58.953Z] [POPUP_CONSOLE] [XPIDER_DIAG] [START_STEP] 02 BUILD_HANDSHAKE_PASS
+[2026-10-16T09:03:58.961Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
+[2026-10-16T09:03:58.969Z] [POPUP_CONSOLE] [OWNER_TEST_GUARD] removed=true
+[2026-10-16T09:03:58.976Z] [POPUP_CONSOLE] [MODE_RECONCILE] source=USER_START_BUTTON staleOwnerTestMode=true action=AUTO_EXIT_TEST_MODE
+[2026-10-16T09:03:58.985Z] [POPUP_CONSOLE] [OWNER_TEST_GUARD] removed=true
+[2026-10-16T09:03:58.993Z] [POPUP_CONSOLE] [XPIDER_DIAG] [MODE_RECONCILE] source=USER_START_BUTTON staleOwnerTestMode=true action=AUTO_EXIT_TEST_MODE
+[2026-10-16T09:03:59.001Z] [POPUP_CONSOLE] [XPIDER_DIAG] [OWNER_TEST_GUARD] removed=true
+[2026-10-16T09:03:59.009Z] [POPUP_CONSOLE] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=100 testMode=false result=PASS
+[2026-10-16T09:03:59.017Z] [POPUP_CONSOLE] [XPIDER_DIAG] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=100 testMode=false result=PASS
+[2026-10-16T09:03:59.038Z] [POPUP_CONSOLE] [HISTORY_SCOPE_REFRESH] trigger=xpider_active_campaign_run_id
+[2026-10-16T09:03:59.056Z] [POPUP_CONSOLE] [NORMAL_RUN_STATE_REBASE] oldRunId=owner_test_run_prior_session newRunId=normal_run_1792141438767_h4ou47 total=100 historyPreserved=true
+[2026-10-16T09:03:59.065Z] [POPUP_CONSOLE] [XPIDER_DIAG] [NORMAL_RUN_STATE_REBASE] oldRunId=owner_test_run_prior_session newRunId=normal_run_[REDACTED_PHONE]_h4ou47 total=100 historyPreserved=true
+[2026-10-16T09:03:59.086Z] [POPUP_CONSOLE] [START_STEP] 03 MODE_RECONCILE_PASS
+[2026-10-16T09:03:59.093Z] [POPUP_CONSOLE] [XPIDER_DIAG] [START_STEP] 03 MODE_RECONCILE_PASS
+[2026-10-16T09:03:59.101Z] [POPUP_CONSOLE] [START_STEP] 04 QUEUE_VALID count=100
+[2026-10-16T09:03:59.109Z] [POPUP_CONSOLE] [XPIDER_DIAG] [START_STEP] 04 QUEUE_VALID count=100
+[2026-10-16T09:03:59.119Z] [POPUP_CONSOLE] [TEMPLATE_START_GUARD] templateId=unknown domMessage=true canonicalMessage=false dirty=false
+[2026-10-16T09:03:59.129Z] [POPUP_CONSOLE] [START_STEP] 05 TEMPLATE_VALID
+[2026-10-16T09:03:59.141Z] [POPUP_CONSOLE] [XPIDER_DIAG] [START_STEP] 05 TEMPLATE_VALID
+[2026-10-16T09:03:59.152Z] [POPUP_CONSOLE] [LEDGER_STATS] scope=currentRun campaignRunId=normal_run_1792141438767_h4ou47 success=0 failed=0 timeout=0 unknown=0
+[2026-10-16T09:03:59.161Z] [POPUP_CONSOLE] [START_STEP] 06 PRIVACY_PREP_BEGIN runScopedDirect=false testMode=false
+[2026-10-16T09:03:59.171Z] [POPUP_CONSOLE] [XPIDER_DIAG] [START_STEP] 06 PRIVACY_PREP_BEGIN runScopedDirect=false testMode=false
+[2026-10-16T09:03:59.180Z] [POPUP_CONSOLE] [START_STEP] 07 PRIVACY_PREP_BLOCK reason=NO_HEALTHY_EGRESS
+[2026-10-16T09:03:59.189Z] [POPUP_CONSOLE] [XPIDER_DIAG] [START_STEP] 07 PRIVACY_PREP_BLOCK reason=NO_HEALTHY_EGRESS
+[2026-10-16T09:03:59.198Z] [POPUP_CONSOLE] [PRIVACY_START_BLOCKED] reason=NO_HEALTHY_EGRESS mode=PRIVACY_RELAY failClosed=true
+[2026-10-16T09:03:59.210Z] [POPUP_CONSOLE] [XPIDER_DIAG] 🛑 [PRIVACY_START_BLOCKED] reason=NO_HEALTHY_EGRESS mode=PRIVACY_RELAY failClosed=true
+[2026-10-16T09:03:59.951Z] Step 2 Start Blocked Evaluation: {"modalVisible":true,"msgText":"Strict Privacy needs an enforced relay/proxy. No healthy egress is configured. Please add an HTTP/HTTPS proxy node to Privacy Relay.","codeText":"Reason Code: NO_HEALTHY_EGRESS","hasOverrideBtn":true,"hasRetryBtn":true,"hasSettingsBtn":true,"hasCancelBtn":true,"btnDisabled":false,"btnText":"🚀 START SENDING","rebasedCompleted":"0","rebasedRemaining":"100","runScopeText":null}
+[2026-10-16T09:03:59.960Z] Log checks:
+      hasStep01=true
+      hasStep02=true
+      hasStep03=true
+      hasRebaseLog=true
+      hasStep04=true
+      hasStep05=true
+      hasStep06=true
+      hasStep07Block=true
+      hasPrivacyStartBlocked=true
+[2026-10-16T09:04:00.098Z] 📸 Captured screenshot: shot_p0_02_privacy_decision_modal.png
+[2026-10-16T09:04:00.105Z] --- STEP 3: Owner clicks "START WITHOUT PRIVACY THIS RUN" ---
+[2026-10-16T09:04:00.114Z] [POPUP_CONSOLE] [PRIVACY_OWNER_OVERRIDE] scope=currentRun mode=DIRECT acknowledged=true
+[2026-10-16T09:04:00.123Z] [POPUP_CONSOLE] [XPIDER_DIAG] ⚡ [PRIVACY_OWNER_OVERRIDE] scope=currentRun mode=DIRECT acknowledged=true
+[2026-10-16T09:04:00.135Z] [POPUP_CONSOLE] [BUTTON_CLICK] id=start-btn
+[2026-10-16T09:04:00.144Z] [SW_CONSOLE] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
+[2026-10-16T09:04:00.154Z] [POPUP_CONSOLE] [START_GATE] state=READY
+[2026-10-16T09:04:00.163Z] [SW_CONSOLE] [BG_LOG][tab=none] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
+[2026-10-16T09:04:00.176Z] [POPUP_CONSOLE] [START_STEP] 01 BUTTON_ACCEPTED id=start-btn source=USER_START_BUTTON
+[2026-10-16T09:04:00.185Z] [SW_CONSOLE] [OWNER_TEST_GUARD] removed=true verified=true remainingRules=0
+[2026-10-16T09:04:00.195Z] [POPUP_CONSOLE] [XPIDER_DIAG] [START_STEP] 01 BUTTON_ACCEPTED source=USER_START_BUTTON
+[2026-10-16T09:04:00.205Z] [SW_CONSOLE] [BUILD_HANDSHAKE] popup=44f62c1922ae658b4e719dd5fc3b7e54a42732e4 background=44f62c1922ae658b4e719dd5fc3b7e54a42732e4 build=R6.9G.10.3.7.1.4.11-20261016-OWNER-BETA manifest=3 result=PASS
+[2026-10-16T09:04:00.215Z] [POPUP_CONSOLE] [BUILD_HANDSHAKE] localHead=44f62c1922ae658b4e719dd5fc3b7e54a42732e4 backgroundHead=44f62c1922ae658b4e719dd5fc3b7e54a42732e4 result=PASS
+[2026-10-16T09:04:00.228Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_HANDSHAKE] popup=44f62c1922ae658b4e719dd5fc3b7e54a42732e4 background=44f62c1922ae658b4e719dd5fc3b7e54a42732e4 build=R6.9G.10.3.7.1.4.11-20261016-OWNER-BETA manifest=3 result=PASS
+[2026-10-16T09:04:00.243Z] [POPUP_CONSOLE] [START_STEP] 02 BUILD_HANDSHAKE_PASS
+[2026-10-16T09:04:00.255Z] [SW_CONSOLE] [BUILD_ID] branch=upgrade/phase-0-1 channel=OWNER_BETA testOnly=true implementationHead=44f62c1922ae658b4e719dd5fc3b7e54a42732e4 manifestVersion=3 buildId=R6.9G.10.3.7.1.4.11-20261016-OWNER-BETA builtAt=2026-10-16T05:55:00.000Z
+[2026-10-16T09:04:00.270Z] [POPUP_CONSOLE] [XPIDER_DIAG] [START_STEP] 02 BUILD_HANDSHAKE_PASS
+[2026-10-16T09:04:00.291Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_ID] branch=upgrade/phase-0-1 channel=OWNER_BETA testOnly=true implementationHead=44f62c1922ae658b4e719dd5fc3b7e54a42732e4 manifestVersion=3 buildId=R6.9G.10.3.7.1.4.11-20261016-OWNER-BETA builtAt=2026-10-16T05:55:00.000Z
+[2026-10-16T09:04:00.305Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
+[2026-10-16T09:04:00.378Z] [SW_CONSOLE] [BUILD_MODULE] contactGateSha=0d01acb2d0a9448d154353fac5b527c17afa42fed56c68d6a49b39053629bd7d
+[2026-10-16T09:04:00.389Z] [POPUP_CONSOLE] [OWNER_TEST_GUARD] removed=true
+[2026-10-16T09:04:00.400Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] contactGateSha=0d01acb2d0a9448d154353fac5b527c17afa42fed56c68d6a49b39053629bd7d
+[2026-10-16T09:04:00.409Z] [POPUP_CONSOLE] [MODE_RECONCILE] source=USER_START_BUTTON staleOwnerTestMode=false action=AUTO_EXIT_TEST_MODE
+[2026-10-16T09:04:00.417Z] [SW_CONSOLE] [BUILD_MODULE] visionSubmitSha=25cf18a4834bb476edff5e8f19a78dd2723bd556ede649ada69bc801543c83f3
+[2026-10-16T09:04:00.427Z] [POPUP_CONSOLE] [OWNER_TEST_GUARD] removed=true
+[2026-10-16T09:04:00.436Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] visionSubmitSha=25cf18a4834bb476edff5e8f19a78dd2723bd556ede649ada69bc801543c83f3
+[2026-10-16T09:04:00.444Z] [POPUP_CONSOLE] [XPIDER_DIAG] [MODE_RECONCILE] source=USER_START_BUTTON staleOwnerTestMode=false action=AUTO_EXIT_TEST_MODE
+[2026-10-16T09:04:00.453Z] [SW_CONSOLE] [BUILD_MODULE] historyStoreSha=e3e8f6f769a4abb5e8beaff261ac7496d82b70d51b5e2e96324f3581adb4188e
+[2026-10-16T09:04:00.460Z] [POPUP_CONSOLE] [XPIDER_DIAG] [OWNER_TEST_GUARD] removed=true
+[2026-10-16T09:04:00.468Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] historyStoreSha=e3e8f6f769a4abb5e8beaff261ac7496d82b70d51b5e2e96324f3581adb4188e
+[2026-10-16T09:04:00.476Z] [POPUP_CONSOLE] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=100 testMode=false result=PASS
+[2026-10-16T09:04:00.487Z] [SW_CONSOLE] [BUILD_MODULE] emailCollectorSha=3f1147a379e159e7777158f2caa74cc8d40b2a0b0eb2c244f440af379cb5c9c9
+[2026-10-16T09:04:00.497Z] [POPUP_CONSOLE] [XPIDER_DIAG] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=100 testMode=false result=PASS
+[2026-10-16T09:04:00.506Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] emailCollectorSha=3f1147a379e159e7777158f2caa74cc8d40b2a0b0eb2c244f440af379cb5c9c9
+[2026-10-16T09:04:00.520Z] [POPUP_CONSOLE] [HISTORY_SCOPE_REFRESH] trigger=xpider_active_campaign_run_id
+[2026-10-16T09:04:00.530Z] [SW_CONSOLE] [BUILD_MODULE] contentScriptSha=b59b6398f08bbaefd31dc32358138f15e2092dec667860ff99b4b36cde40570b
+[2026-10-16T09:04:00.541Z] [POPUP_CONSOLE] [NORMAL_RUN_STATE_REBASE] oldRunId=normal_run_1792141438767_h4ou47 newRunId=normal_run_1792141440138_571x1d total=100 historyPreserved=true
+[2026-10-16T09:04:00.551Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] contentScriptSha=b59b6398f08bbaefd31dc32358138f15e2092dec667860ff99b4b36cde40570b
+[2026-10-16T09:04:00.563Z] [POPUP_CONSOLE] [XPIDER_DIAG] [NORMAL_RUN_STATE_REBASE] oldRunId=normal_run_[REDACTED_PHONE]_h4ou47 newRunId=normal_run_[REDACTED_PHONE]_571x1d total=100 historyPreserved=true
+[2026-10-16T09:04:00.572Z] [SW_CONSOLE] [BUILD_MODULE] backgroundSha=2cdd271a4e8689d25ea6fc1b00aa0ce86921785d507857c86af85a34c4a93bb2
+[2026-10-16T09:04:00.580Z] [POPUP_CONSOLE] [START_STEP] 03 MODE_RECONCILE_PASS
+[2026-10-16T09:04:00.587Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] backgroundSha=2cdd271a4e8689d25ea6fc1b00aa0ce86921785d507857c86af85a34c4a93bb2
+[2026-10-16T09:04:00.599Z] [POPUP_CONSOLE] [XPIDER_DIAG] [START_STEP] 03 MODE_RECONCILE_PASS
+[2026-10-16T09:04:00.609Z] [SW_CONSOLE] [BUILD_MODULE] popupSha=f547ce2f6159c3008cb8a09eaa159eb393744411b9b3bc684081b552071080f9
+[2026-10-16T09:04:00.619Z] [POPUP_CONSOLE] [START_STEP] 04 QUEUE_VALID count=100
+[2026-10-16T09:04:00.627Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] popupSha=f547ce2f6159c3008cb8a09eaa159eb393744411b9b3bc684081b552071080f9
+[2026-10-16T09:04:00.642Z] [POPUP_CONSOLE] [XPIDER_DIAG] [START_STEP] 04 QUEUE_VALID count=100
+[2026-10-16T09:04:00.651Z] [SW_CONSOLE] [BUILD_MODULE] solverContentSha=d7de969d29df29799537b11380f0f82967bb93da227c91e7dc8c6af0d128f457
+[2026-10-16T09:04:00.660Z] [POPUP_CONSOLE] [TEMPLATE_START_GUARD] templateId=unknown domMessage=true canonicalMessage=false dirty=false
+[2026-10-16T09:04:00.669Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] solverContentSha=d7de969d29df29799537b11380f0f82967bb93da227c91e7dc8c6af0d128f457
+[2026-10-16T09:04:00.677Z] [POPUP_CONSOLE] [START_STEP] 05 TEMPLATE_VALID
+[2026-10-16T09:04:00.687Z] [SW_CONSOLE] [BUILD_MODULE] solverCoreSha=01b3d96048ea933403e4599854dcdca28027e7f676aa5077eb6c5eb0582ac1e7
+[2026-10-16T09:04:00.694Z] [POPUP_CONSOLE] [XPIDER_DIAG] [START_STEP] 05 TEMPLATE_VALID
+[2026-10-16T09:04:00.706Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] solverCoreSha=01b3d96048ea933403e4599854dcdca28027e7f676aa5077eb6c5eb0582ac1e7
+[2026-10-16T09:04:00.713Z] [POPUP_CONSOLE] [LEDGER_STATS] scope=currentRun campaignRunId=normal_run_1792141440138_571x1d success=0 failed=0 timeout=0 unknown=0
+[2026-10-16T09:04:00.722Z] [SW_CONSOLE] [BUILD_MODULE] privacyGatewaySha=2662f12eb26290a8334e9de4727cd0ceb039d966c4ec05d2c321ede7715a43a9
+[2026-10-16T09:04:00.730Z] [POPUP_CONSOLE] [START_STEP] 06 PRIVACY_PREP_BEGIN runScopedDirect=true testMode=false
+[2026-10-16T09:04:00.741Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] privacyGatewaySha=2662f12eb26290a8334e9de4727cd0ceb039d966c4ec05d2c321ede7715a43a9
+[2026-10-16T09:04:00.751Z] [POPUP_CONSOLE] [XPIDER_DIAG] [START_STEP] 06 PRIVACY_PREP_BEGIN runScopedDirect=true testMode=false
+[2026-10-16T09:04:00.761Z] [SW_CONSOLE] [START_BG] received queue=100
+[2026-10-16T09:04:00.771Z] [POPUP_CONSOLE] [PRIVACY_OWNER_OVERRIDE] scope=currentRun mode=DIRECT acknowledged=true
+[2026-10-16T09:04:00.795Z] [SW_CONSOLE] [BG_LOG][tab=none] [START_BG] received queue=100
+[2026-10-16T09:04:00.803Z] [POPUP_CONSOLE] [XPIDER_DIAG] ⚡ [PRIVACY_OWNER_OVERRIDE] scope=currentRun mode=DIRECT acknowledged=true
+[2026-10-16T09:04:00.811Z] [SW_CONSOLE] [PRIVACY_OWNER_OVERRIDE] scope=currentRun mode=DIRECT acknowledged=true
+[2026-10-16T09:04:00.820Z] [POPUP_CONSOLE] [START_STEP] 07 PRIVACY_PREP_PASS mode=DIRECT (OVERRIDE)
+[2026-10-16T09:04:00.827Z] [SW_CONSOLE] [BG_LOG][tab=none] [PRIVACY_OWNER_OVERRIDE] scope=currentRun mode=DIRECT acknowledged=true
+[2026-10-16T09:04:00.836Z] [POPUP_CONSOLE] [XPIDER_DIAG] [START_STEP] 07 PRIVACY_PREP_PASS mode=DIRECT (OVERRIDE)
+[2026-10-16T09:04:00.843Z] [SW_CONSOLE] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
+[2026-10-16T09:04:00.851Z] [POPUP_CONSOLE] [START_STEP] 08 DISPATCH_BEGIN targetCount=100
+[2026-10-16T09:04:00.859Z] [SW_CONSOLE] [BG_LOG][tab=none] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
+[2026-10-16T09:04:00.866Z] [POPUP_CONSOLE] [XPIDER_DIAG] [START_STEP] 08 DISPATCH_BEGIN targetCount=100
+[2026-10-16T09:04:00.874Z] [SW_CONSOLE] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=100 testMode=false result=PASS
+[2026-10-16T09:04:00.882Z] [POPUP_CONSOLE] [START_DISPATCH] accepted=true source=USER_START_BUTTON targetCount=100
+[2026-10-16T09:04:00.891Z] [SW_CONSOLE] [BG_LOG][tab=none] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=100 testMode=false result=PASS
+[2026-10-16T09:04:00.899Z] [POPUP_CONSOLE] [XPIDER_DIAG] 🚀 [START_DISPATCH] accepted=true source=USER_START_BUTTON targetCount=100
+[2026-10-16T09:04:00.908Z] [SW_CONSOLE] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
+[2026-10-16T09:04:00.916Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [BUILD_HANDSHAKE] popup=44f62c1922ae658b4e719dd5fc3b7e54a42732e4 background=44f62c1922ae658b4e719dd5fc3b7e54a42732e4 build=R6.9G.[REDACTED_IP].[REDACTED_PHONE]-OWNER-BETA manifest=3 result=PASS
+[2026-10-16T09:04:00.923Z] [SW_CONSOLE] [BG_LOG][tab=none] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
+[2026-10-16T09:04:00.930Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [BUILD_ID] branch=upgrade/phase-0-1 channel=OWNER_BETA testOnly=true implementationHead=44f62c1922ae658b4e719dd5fc3b7e54a42732e4 manifestVersion=3 buildId=R6.9G.[REDACTED_IP].[REDACTED_PHONE]-OWNER-BETA builtAt=2026-10-16T05:55:00.000Z
+[2026-10-16T09:04:00.939Z] [SW_CONSOLE] [PRIVACY_GATE] mode=DIRECT transport=DIRECT failClosed=false (OWNER_FUNCTION_TEST_MODE) status=READY
+[2026-10-16T09:04:00.946Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [BUILD_MODULE] contactGateSha=[REDACTED_TOKEN_LEN_64]
+[2026-10-16T09:04:00.954Z] [SW_CONSOLE] [BG_LOG][tab=none] [PRIVACY_GATE] mode=DIRECT transport=DIRECT failClosed=false (OWNER_FUNCTION_TEST_MODE) status=READY
+[2026-10-16T09:04:00.969Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [BUILD_MODULE] visionSubmitSha=[REDACTED_TOKEN_LEN_64]
+[2026-10-16T09:04:00.976Z] [SW_CONSOLE] [START_BG_READY] privacyReady=true
+[2026-10-16T09:04:00.984Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [BUILD_MODULE] historyStoreSha=[REDACTED_TOKEN_LEN_64]
+[2026-10-16T09:04:00.991Z] [SW_CONSOLE] [BG_LOG][tab=none] [START_BG_READY] privacyReady=true
+[2026-10-16T09:04:01.000Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [BUILD_MODULE] emailCollectorSha=[REDACTED_TOKEN_LEN_64]
+[2026-10-16T09:04:01.009Z] [SW_CONSOLE] [BG_LOG][tab=none] [Boot] Orchestrator entered.
+[2026-10-16T09:04:01.016Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [BUILD_MODULE] contentScriptSha=[REDACTED_TOKEN_LEN_64]
+[2026-10-16T09:04:01.025Z] [SW_CONSOLE] [SESSION_BASELINE] Captured 2 pre-existing user tabs as protected baseline.
+[2026-10-16T09:04:01.032Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [BUILD_MODULE] backgroundSha=[REDACTED_TOKEN_LEN_64]
+[2026-10-16T09:04:01.040Z] [SW_CONSOLE] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedBefore=0
+[2026-10-16T09:04:01.048Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [BUILD_MODULE] popupSha=f547ce2f6159c3008cb8a09eaa159eb[REDACTED_PHONE]b9b3bc684081b[REDACTED_PHONE]f9
+[2026-10-16T09:04:01.055Z] [SW_CONSOLE] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedAfter=0 result=PASS
+[2026-10-16T09:04:01.062Z] [SW_CONSOLE] [BG_LOG][tab=none] [Boot] Previous state cleared.
+[2026-10-16T09:04:01.070Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [BUILD_MODULE] solverContentSha=[REDACTED_TOKEN_LEN_64]
+[2026-10-16T09:04:01.079Z] [SW_CONSOLE] [BG_LOG][tab=none] [Boot] CAPTCHA solver state reset (attempts=0, identity=null).
+[2026-10-16T09:04:01.088Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [BUILD_MODULE] solverCoreSha=[REDACTED_TOKEN_LEN_64]
+[2026-10-16T09:04:01.095Z] [SW_CONSOLE] [BG_LOG][tab=none] 📊 [Queue Filter] Input: 100 | Duplicates: 0 | Suppressed: 0 | History-Attempted: 0 | Executable: 100
+[2026-10-16T09:04:01.102Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [BUILD_MODULE] privacyGatewaySha=[REDACTED_TOKEN_LEN_64]
+[2026-10-16T09:04:01.111Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [START_BG] received queue=100
+[2026-10-16T09:04:01.119Z] [SW_CONSOLE] [BG_LOG][tab=none] [Boot] Variables initialized.
+[2026-10-16T09:04:01.127Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [PRIVACY_OWNER_OVERRIDE] scope=currentRun mode=DIRECT acknowledged=true
+[2026-10-16T09:04:01.139Z] [SW_CONSOLE] [BG_LOG][tab=none] 🚀 Engine booting...
+[2026-10-16T09:04:01.149Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
+[2026-10-16T09:04:01.159Z] [SW_CONSOLE] [BG_LOG][tab=none] [CAMPAIGN_START] buildId=R6.9G.10.3.7.1.4.11-20261016-OWNER-BETA campaignRunId=normal_run_1792141440138_571x1d totalTargets=100 mode=NORMAL delayMs=10000 fillDelayMs=300 submitDelayMs=4000
+[2026-10-16T09:04:01.168Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=100 testMode=false result=PASS
+[2026-10-16T09:04:01.177Z] [SW_CONSOLE] [BG_LOG][tab=none] [Boot] Storage sync initiated.
+[2026-10-16T09:04:01.187Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
+[2026-10-16T09:04:01.198Z] [SW_CONSOLE] [BG_LOG][tab=none] [Boot] Target loop triggered.
+[2026-10-16T09:04:01.209Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [PRIVACY_GATE] mode=DIRECT transport=DIRECT failClosed=false (OWNER_FUNCTION_TEST_MODE) status=READY
+[2026-10-16T09:04:01.219Z] [SW_CONSOLE] [SERIALIZED_GATE] Slot acquired atomically. activeTargetInFlight=true activeTargetCount=1 maxConcurrent=1
+[2026-10-16T09:04:01.228Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [START_BG_READY] privacyReady=true
+[2026-10-16T09:04:01.237Z] [SW_CONSOLE] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedBefore=0
+[2026-10-16T09:04:01.244Z] [POPUP_CONSOLE] [START_STEP] 09 START_BG_ACK campaignRunId=normal_run_1792141440138_571x1d
+[2026-10-16T09:04:01.253Z] [SW_CONSOLE] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedAfter=0 result=PASS
+[2026-10-16T09:04:01.262Z] [POPUP_CONSOLE] [XPIDER_DIAG] [START_STEP] 09 START_BG_ACK campaignRunId=normal_run_[REDACTED_PHONE]_571x1d
+[2026-10-16T09:04:01.271Z] [SW_CONSOLE] [BG_LOG][tab=none] [TARGET 1/100][public-corp-1.example.com] START
+[2026-10-16T09:04:01.279Z] [POPUP_CONSOLE] [START_STEP] 10 CAMPAIGN_RUNNING
+[2026-10-16T09:04:01.289Z] [SW_CONSOLE] [BG_LOG][tab=none] [TARGET_START] buildId=R6.9G.10.3.7.1.4.11-20261016-OWNER-BETA campaignRunId=normal_run_1792141440138_571x1d attemptId=att_init targetIndex=1/100 targetUrl=https://public-corp-1.example.com/contact
+[2026-10-16T09:04:01.301Z] [POPUP_CONSOLE] [XPIDER_DIAG] [START_STEP] 10 CAMPAIGN_RUNNING
+[2026-10-16T09:04:01.312Z] [SW_CONSOLE] [BG_LOG][tab=none] [EXEC_IDENTITY_PRE_NAV] attemptId=att_1792141440283_rbrq2 token=tok_1792141440282_4d97uo epoch=2
+[2026-10-16T09:04:01.322Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [Boot] Orchestrator entered.
+[2026-10-16T09:04:01.331Z] [SW_CONSOLE] [TAB_BARRIER] phase=POST_NEW_TARGET_CREATE ownedBefore=0
+[2026-10-16T09:04:01.346Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [Boot] Previous state cleared.
+[2026-10-16T09:04:01.363Z] [SW_CONSOLE] [TAB_BARRIER] phase=POST_NEW_TARGET_CREATE ownedAfter=0 result=PASS
+[2026-10-16T09:04:01.371Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [Boot] CAPTCHA solver state reset (attempts=0, identity=null).
+[2026-10-16T09:04:01.383Z] [SW_CONSOLE] [TAB_KILL_SWITCH] keepTabId=1981644829 closedOthers=0 remainingOwned=1 result=PASS
+[2026-10-16T09:04:01.394Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] 📊 [Queue Filter] Input: 100 | Duplicates: 0 | Suppressed: 0 | History-Attempted: 0 | Executable: 100
+[2026-10-16T09:04:01.404Z] [SW_CONSOLE] [BG_LOG][tab=1981644829] [TAB_FOCUS] tabId=1981644829 windowId=1981644823 active=true focused=true
+[2026-10-16T09:04:01.415Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [Boot] Variables initialized.
+[2026-10-16T09:04:01.425Z] [SW_CONSOLE] [BG_LOG][tab=1981644829] Step 1: Sniper Mode active. Searching for contact page...
+[2026-10-16T09:04:01.434Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] 🚀 Engine booting...
+[2026-10-16T09:04:01.442Z] [SW_CONSOLE] [BG_LOG][tab=1981644829] 🔦 Scanning paths 1-10...
+[2026-10-16T09:04:01.452Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [CAMPAIGN_START] buildId=R6.9G.[REDACTED_IP].[REDACTED_PHONE]-OWNER-BETA campaignRunId=normal_run_[REDACTED_PHONE]_571x1d totalTargets=100 mode=NORMAL delayMs=10000 fillDelayMs=300 submitDelayMs=4000
+[2026-10-16T09:04:01.460Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [Boot] Storage sync initiated.
+[2026-10-16T09:04:01.469Z] [POPUP_CONSOLE] [LEDGER_STATS] scope=currentGeneration campaignRunId=normal_run_1792141440138_571x1d success=0 failed=0 unknown=0
+[2026-10-16T09:04:01.478Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [Boot] Target loop triggered.
+[2026-10-16T09:04:01.486Z] [POPUP_CONSOLE] [HISTORY_SCOPE_REFRESH] trigger=xpider_isActive
+[2026-10-16T09:04:01.494Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [TARGET 1/100][public-corp-1.example.com] START
+[2026-10-16T09:04:01.501Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [TARGET_START] buildId=R6.9G.[REDACTED_IP].[REDACTED_PHONE]-OWNER-BETA campaignRunId=normal_run_[REDACTED_PHONE]_571x1d attemptId=att_init targetIndex=1/100 targetUrl=https://public-corp-1.example.com/contact
+[2026-10-16T09:04:01.508Z] [POPUP_CONSOLE] [LEDGER_STATS] scope=currentGeneration campaignRunId=normal_run_1792141440138_571x1d success=0 failed=0 unknown=0
+[2026-10-16T09:04:01.517Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [EXEC_IDENTITY_PRE_NAV] attemptId=att_[REDACTED_PHONE]_rbrq2 token=tok_[REDACTED_PHONE]_4d97uo epoch=2
+[2026-10-16T09:04:01.524Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [TAB_FOCUS] tabId=[REDACTED_PHONE] windowId=[REDACTED_PHONE] active=true focused=true
+[2026-10-16T09:04:01.535Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] Step 1: Sniper Mode active. Searching for contact page...
+[2026-10-16T09:04:01.545Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] 🔦 Scanning paths 1-10...
+[2026-10-16T09:04:01.554Z] [POPUP_CONSOLE] [LEDGER_STATS] scope=currentRun campaignRunId=normal_run_1792141440138_571x1d success=0 failed=0 timeout=0 unknown=0
+[2026-10-16T09:04:01.635Z] Step 3 Override Execution: {"modalClosed":true,"indicatorVisible":true,"indicatorText":"\n                ⚡ PRIVACY: DIRECT (CURRENT RUN OVERRIDE)\n                Fail-closed bypassed for this run\n            ","startBtnHidden":true,"multiActionsVisible":true}
+[2026-10-16T09:04:01.643Z] SW runtime state: {"runScopedDirectPrivacy":true,"isActive":true,"totalTargets":100,"campaignRunId":"normal_run_1792141440138_571x1d"}
+[2026-10-16T09:04:01.651Z] Override pipeline logs:
+      hasOverrideLog=true
+      hasStep07Pass=true
+      hasStep08=true
+      hasStep09=true
+      hasStep10=true
+      hasSwStartBg=true
+[2026-10-16T09:04:01.822Z] [SW_CONSOLE] [BG_LOG][tab=1981644829] 🔦 Scanning paths 11-20...
+[2026-10-16T09:04:01.835Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] 🔦 Scanning paths 11-20...
+[2026-10-16T09:04:01.844Z] [SW_CONSOLE] [BG_LOG][tab=1981644829] 🔄 [Engine] Internal navigation detected (SPA). Preparing re-injection...
+[2026-10-16T09:04:01.924Z] [SW_CONSOLE] [BG_LOG][tab=1981644829] 🔦 Scanning paths 21-30...
+[2026-10-16T09:04:01.946Z] 📸 Captured screenshot: shot_p0_03_campaign_running_with_override.png
+[2026-10-16T09:04:01.955Z] --- STEP 4: Stopping campaign and verifying override reset & storage preservation ---
+[2026-10-16T09:04:01.965Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] 🔄 [Engine] Internal navigation detected (SPA). Preparing re-injection...
+[2026-10-16T09:04:01.982Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] 🔦 Scanning paths 21-30...
+[2026-10-16T09:04:01.993Z] [POPUP_CONSOLE] [XPIDER_DIAG] [Engine][TX] action=STOP_CAMPAIGN
+[2026-10-16T09:04:02.002Z] [SW_CONSOLE] [BG_LOG][tab=1981644829] 🔦 Scanning paths 31-40...
+[2026-10-16T09:04:02.019Z] [POPUP_CONSOLE] [XPIDER_DIAG] Campaign stopped by user.
+[2026-10-16T09:04:02.032Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] 🔦 Scanning paths 31-40...
+[2026-10-16T09:04:02.043Z] [SW_CONSOLE] [BG_LOG][tab=1981644829] 🔦 Scanning paths 41-50...
+[2026-10-16T09:04:02.052Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] 🔦 Scanning paths 41-50...
+[2026-10-16T09:04:02.061Z] [SW_CONSOLE] [BG_LOG][tab=1981644829] Pre-scan complete. Identified 2 valid paths.
+[2026-10-16T09:04:02.072Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] Pre-scan complete. Identified 2 valid paths.
+[2026-10-16T09:04:02.083Z] [SW_CONSOLE] [BG_LOG][tab=1981644829] [SniperScan] Identified 2 candidate paths in background.
+[2026-10-16T09:04:02.093Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [SniperScan] Identified 2 candidate paths in background.
+[2026-10-16T09:04:02.103Z] [SW_CONSOLE] [BG_LOG][tab=none] [PAUSE] campaignRunId=normal_run_1792141440138_571x1d remaining=99 inProgress=1
+[2026-10-16T09:04:02.113Z] [SW_CONSOLE] [BG_LOG][tab=none] ⏸️ [Engine] Campaign PAUSED / STOP & SAVE requested.
+[2026-10-16T09:04:02.122Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [PAUSE] campaignRunId=normal_run_[REDACTED_PHONE]_571x1d remaining=99 inProgress=1
+[2026-10-16T09:04:02.132Z] [SW_CONSOLE] [BG_LOG][tab=1981644829] [ORCHESTRATION_ABORTED] abortSignal was triggered externally (PAUSE). Delegating terminal settlement to outer target lifecycle.
+[2026-10-16T09:04:02.146Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] ⏸️ [Engine] Campaign PAUSED / STOP & SAVE requested.
+[2026-10-16T09:04:02.160Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [ORCHESTRATION_ABORTED] abortSignal was triggered externally (PAUSE). Delegating terminal settlement to outer target lifecycle.
+[2026-10-16T09:04:02.169Z] [SW_CONSOLE] [BG_LOG][tab=1981644829] ❌ [InfectError] Frame with ID 0 is showing error page
+[2026-10-16T09:04:02.181Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] ❌ [InfectError] Frame with ID 0 is showing error page
+[2026-10-16T09:04:02.316Z] [SW_CONSOLE] [TAB_CLOSE] tabId=1981644829 attempt=1 result=CLOSED
+[2026-10-16T09:04:02.325Z] [SW_CONSOLE] [SERIALIZED_GATE] Slot released. activeTargetInFlight=false activeTargetCount=0
+[2026-10-16T09:04:02.363Z] [SW_CONSOLE] [TAB_BARRIER] phase=PAUSE_CAMPAIGN ownedBefore=0
+[2026-10-16T09:04:02.372Z] [SW_CONSOLE] [TAB_BARRIER] phase=PAUSE_CAMPAIGN ownedAfter=0 result=PASS
+[2026-10-16T09:04:02.382Z] [POPUP_CONSOLE] [LEDGER_STATS] scope=currentGeneration campaignRunId=normal_run_1792141440138_571x1d success=0 failed=0 unknown=0
+[2026-10-16T09:04:02.392Z] [SW_CONSOLE] [PRIVACY_SETTINGS_RESTORED] gateReady=false transportEnforced=false
+[2026-10-16T09:04:02.401Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] [PRIVACY_SETTINGS_RESTORED] gateReady=false transportEnforced=false
+[2026-10-16T09:04:02.409Z] [SW_CONSOLE] [PRIVACY_SETTINGS_RESTORED] gateReady=false transportEnforced=false
+[2026-10-16T09:04:02.417Z] [POPUP_CONSOLE] [HISTORY_SCOPE_REFRESH] trigger=xpider_isActive,xpider_isPaused
+[2026-10-16T09:04:02.425Z] [SW_CONSOLE] [BG_LOG][tab=none] [PRIVACY_SETTINGS_RESTORED] gateReady=false transportEnforced=false
+[2026-10-16T09:04:02.432Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] 💾 [Checkpoint] Campaign snapshot saved: 99 targets remaining.
+[2026-10-16T09:04:02.443Z] [SW_CONSOLE] [BG_LOG][tab=none] 💾 [Checkpoint] Campaign snapshot saved: 99 targets remaining.
+[2026-10-16T09:04:02.450Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] === CAMPAIGN OUTCOME SUMMARY (currentRun) ===
+[2026-10-16T09:04:02.459Z] [SW_CONSOLE] [BG_LOG][tab=none] === CAMPAIGN OUTCOME SUMMARY (currentRun) ===
+[2026-10-16T09:04:02.466Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] CONFIRMED_SUCCESS:           0
+[2026-10-16T09:04:02.474Z] [SW_CONSOLE] [BG_LOG][tab=none] CONFIRMED_SUCCESS:           0
+[2026-10-16T09:04:02.481Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] FAILURE:                     0
+[2026-10-16T09:04:02.488Z] [SW_CONSOLE] [BG_LOG][tab=none] FAILURE:                     0
+[2026-10-16T09:04:02.495Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] TIMEOUT_LOCAL:               0
+[2026-10-16T09:04:02.503Z] [SW_CONSOLE] [BG_LOG][tab=none] TIMEOUT_LOCAL:               0
+[2026-10-16T09:04:02.510Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] TIMEOUT_GLOBAL:              0
+[2026-10-16T09:04:02.518Z] [SW_CONSOLE] [BG_LOG][tab=none] TIMEOUT_GLOBAL:              0
+[2026-10-16T09:04:02.525Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] DELIVERY_UNKNOWN:            0
+[2026-10-16T09:04:02.533Z] [SW_CONSOLE] [BG_LOG][tab=none] DELIVERY_UNKNOWN:            0
+[2026-10-16T09:04:02.540Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] SKIPPED:                     0
+[2026-10-16T09:04:02.551Z] [SW_CONSOLE] [BG_LOG][tab=none] SKIPPED:                     0
+[2026-10-16T09:04:02.559Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] PAUSED_UNKNOWN:              0
+[2026-10-16T09:04:02.567Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] ----------------------------------------
+[2026-10-16T09:04:02.574Z] [SW_CONSOLE] [BG_LOG][tab=none] PAUSED_UNKNOWN:              0
+[2026-10-16T09:04:02.582Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] TOTAL TERMINAL / COMPLETED:  0
+[2026-10-16T09:04:02.590Z] [SW_CONSOLE] [BG_LOG][tab=none] ----------------------------------------
+[2026-10-16T09:04:02.598Z] [POPUP_CONSOLE] [XPIDER_DIAG] [System] ========================================
+[2026-10-16T09:04:02.606Z] [SW_CONSOLE] [BG_LOG][tab=none] TOTAL TERMINAL / COMPLETED:  0
+[2026-10-16T09:04:02.613Z] [POPUP_CONSOLE] [LEDGER_STATS] scope=currentRun campaignRunId=normal_run_1792141440138_571x1d success=0 failed=0 timeout=0 unknown=0
+[2026-10-16T09:04:02.624Z] [SW_CONSOLE] [CAMPAIGN_SUMMARY] success=0 failure=0 timeoutLocal=0 timeoutGlobal=0 unknown=0 skipped=0 paused=0 completed=0
+[2026-10-16T09:04:02.632Z] [SW_CONSOLE] [BG_LOG][tab=none] ========================================
+[2026-10-16T09:04:03.002Z] Step 4 Stop cleanup result: {"indicatorHidden":true,"storageStrictPrivacy":true,"storagePrivacyConfigFailClosed":true,"storagePrivacyMode":"PRIVACY_RELAY"}
+[2026-10-16T09:04:03.010Z] SW after stop: {"runScopedDirectPrivacy":false,"isActive":false}
+[2026-10-16T09:04:03.017Z] --- STEP 5: Popup close & reopen verification ---
+[2026-10-16T09:04:03.333Z] [SW_CONSOLE] [BG_LOG][tab=none] Waiting 10000ms before next target...
+[2026-10-16T09:04:04.216Z] [SW_CONSOLE] [TEMPLATE_REPAIR] repaired=true source=xpider_tpl reason=CANONICAL_DEFAULT_MESSAGE_EMPTY
+[2026-10-16T09:04:04.262Z] [SW_CONSOLE] [BG_LOG][tab=none] 📦 [Migration] Repaired templates_v2 from source=xpider_tpl
+[2026-10-16T09:04:06.600Z] Step 5 Reopened HUD result: {"campPillText":"CAMPAIGN: READY (99 URLs)","privPillText":"PRIVACY: BLOCKED — RELAY_OFFLINE","queueLen":99}
+[2026-10-16T09:04:06.762Z] 📸 Captured screenshot: shot_p0_04_reopened_hud_readiness.png
+[2026-10-16T09:04:06.770Z] --- STEP 6: Testing Healthy Privacy Mode (Direct / Non-strict) ---
+[2026-10-16T09:04:06.791Z] [SW_CONSOLE] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
+[2026-10-16T09:04:06.800Z] [SW_CONSOLE] [BG_LOG][tab=none] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
+[2026-10-16T09:04:06.809Z] [SW_CONSOLE] [OWNER_TEST_GUARD] removed=true verified=true remainingRules=0
+[2026-10-16T09:04:06.823Z] [SW_CONSOLE] [PRIVACY_START_PREP] currentMode=DIRECT failClosed=false
+[2026-10-16T09:04:06.869Z] [SW_CONSOLE] [PRIVACY_START_READY] mode=DIRECT
+[2026-10-16T09:04:06.886Z] [SW_CONSOLE] [BUILD_HANDSHAKE] popup=44f62c1922ae658b4e719dd5fc3b7e54a42732e4 background=44f62c1922ae658b4e719dd5fc3b7e54a42732e4 build=R6.9G.10.3.7.1.4.11-20261016-OWNER-BETA manifest=3 result=PASS
+[2026-10-16T09:04:06.929Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_HANDSHAKE] popup=44f62c1922ae658b4e719dd5fc3b7e54a42732e4 background=44f62c1922ae658b4e719dd5fc3b7e54a42732e4 build=R6.9G.10.3.7.1.4.11-20261016-OWNER-BETA manifest=3 result=PASS
+[2026-10-16T09:04:07.025Z] [SW_CONSOLE] [BUILD_ID] branch=upgrade/phase-0-1 channel=OWNER_BETA testOnly=true implementationHead=44f62c1922ae658b4e719dd5fc3b7e54a42732e4 manifestVersion=3 buildId=R6.9G.10.3.7.1.4.11-20261016-OWNER-BETA builtAt=2026-10-16T05:55:00.000Z
+[2026-10-16T09:04:07.043Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_ID] branch=upgrade/phase-0-1 channel=OWNER_BETA testOnly=true implementationHead=44f62c1922ae658b4e719dd5fc3b7e54a42732e4 manifestVersion=3 buildId=R6.9G.10.3.7.1.4.11-20261016-OWNER-BETA builtAt=2026-10-16T05:55:00.000Z
+[2026-10-16T09:04:07.088Z] [SW_CONSOLE] [BUILD_MODULE] contactGateSha=0d01acb2d0a9448d154353fac5b527c17afa42fed56c68d6a49b39053629bd7d
+[2026-10-16T09:04:07.098Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] contactGateSha=0d01acb2d0a9448d154353fac5b527c17afa42fed56c68d6a49b39053629bd7d
+[2026-10-16T09:04:07.111Z] [SW_CONSOLE] [BUILD_MODULE] visionSubmitSha=25cf18a4834bb476edff5e8f19a78dd2723bd556ede649ada69bc801543c83f3
+[2026-10-16T09:04:07.121Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] visionSubmitSha=25cf18a4834bb476edff5e8f19a78dd2723bd556ede649ada69bc801543c83f3
+[2026-10-16T09:04:07.132Z] [SW_CONSOLE] [BUILD_MODULE] historyStoreSha=e3e8f6f769a4abb5e8beaff261ac7496d82b70d51b5e2e96324f3581adb4188e
+[2026-10-16T09:04:07.145Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] historyStoreSha=e3e8f6f769a4abb5e8beaff261ac7496d82b70d51b5e2e96324f3581adb4188e
+[2026-10-16T09:04:07.154Z] [SW_CONSOLE] [BUILD_MODULE] emailCollectorSha=3f1147a379e159e7777158f2caa74cc8d40b2a0b0eb2c244f440af379cb5c9c9
+[2026-10-16T09:04:07.166Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] emailCollectorSha=3f1147a379e159e7777158f2caa74cc8d40b2a0b0eb2c244f440af379cb5c9c9
+[2026-10-16T09:04:07.176Z] [SW_CONSOLE] [BUILD_MODULE] contentScriptSha=b59b6398f08bbaefd31dc32358138f15e2092dec667860ff99b4b36cde40570b
+[2026-10-16T09:04:07.185Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] contentScriptSha=b59b6398f08bbaefd31dc32358138f15e2092dec667860ff99b4b36cde40570b
+[2026-10-16T09:04:07.195Z] [SW_CONSOLE] [BUILD_MODULE] backgroundSha=2cdd271a4e8689d25ea6fc1b00aa0ce86921785d507857c86af85a34c4a93bb2
+[2026-10-16T09:04:07.204Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] backgroundSha=2cdd271a4e8689d25ea6fc1b00aa0ce86921785d507857c86af85a34c4a93bb2
+[2026-10-16T09:04:07.213Z] [SW_CONSOLE] [BUILD_MODULE] popupSha=f547ce2f6159c3008cb8a09eaa159eb393744411b9b3bc684081b552071080f9
+[2026-10-16T09:04:07.225Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] popupSha=f547ce2f6159c3008cb8a09eaa159eb393744411b9b3bc684081b552071080f9
+[2026-10-16T09:04:07.232Z] [SW_CONSOLE] [BUILD_MODULE] solverContentSha=d7de969d29df29799537b11380f0f82967bb93da227c91e7dc8c6af0d128f457
+[2026-10-16T09:04:07.241Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] solverContentSha=d7de969d29df29799537b11380f0f82967bb93da227c91e7dc8c6af0d128f457
+[2026-10-16T09:04:07.248Z] [SW_CONSOLE] [BUILD_MODULE] solverCoreSha=01b3d96048ea933403e4599854dcdca28027e7f676aa5077eb6c5eb0582ac1e7
+[2026-10-16T09:04:07.260Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] solverCoreSha=01b3d96048ea933403e4599854dcdca28027e7f676aa5077eb6c5eb0582ac1e7
+[2026-10-16T09:04:07.270Z] [SW_CONSOLE] [BUILD_MODULE] privacyGatewaySha=2662f12eb26290a8334e9de4727cd0ceb039d966c4ec05d2c321ede7715a43a9
+[2026-10-16T09:04:07.278Z] [SW_CONSOLE] [BG_LOG][tab=none] [BUILD_MODULE] privacyGatewaySha=2662f12eb26290a8334e9de4727cd0ceb039d966c4ec05d2c321ede7715a43a9
+[2026-10-16T09:04:07.287Z] [SW_CONSOLE] [START_BG] received queue=99
+[2026-10-16T09:04:07.297Z] [SW_CONSOLE] [BG_LOG][tab=none] [START_BG] received queue=99
+[2026-10-16T09:04:07.355Z] [SW_CONSOLE] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
+[2026-10-16T09:04:07.363Z] [SW_CONSOLE] [BG_LOG][tab=none] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
+[2026-10-16T09:04:07.394Z] [SW_CONSOLE] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=99 testMode=false result=PASS
+[2026-10-16T09:04:07.408Z] [SW_CONSOLE] [BG_LOG][tab=none] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=99 testMode=false result=PASS
+[2026-10-16T09:04:07.420Z] [SW_CONSOLE] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
+[2026-10-16T09:04:07.437Z] [SW_CONSOLE] [BG_LOG][tab=none] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
+[2026-10-16T09:04:07.445Z] [SW_CONSOLE] [PRIVACY_START_PREP] currentMode=DIRECT failClosed=false
+[2026-10-16T09:04:07.456Z] [SW_CONSOLE] [PRIVACY_START_READY] mode=DIRECT
+[2026-10-16T09:04:07.466Z] [SW_CONSOLE] [PRIVACY_GATE] mode=DIRECT transport=DIRECT failClosed=false webrtcGuard=FAIL directFallbackBlocked=ALLOWED egressCheck=UNKNOWN dnsPrivacy=DEGRADED ipv6Protection=UNKNOWN status=READY
+[2026-10-16T09:04:07.476Z] [SW_CONSOLE] [BG_LOG][tab=none] [PRIVACY_GATE] mode=DIRECT transport=DIRECT failClosed=false webrtcGuard=FAIL directFallbackBlocked=ALLOWED egressCheck=UNKNOWN dnsPrivacy=DEGRADED ipv6Protection=UNKNOWN status=READY
+[2026-10-16T09:04:07.487Z] [SW_CONSOLE] [START_BG_READY] privacyReady=true
+[2026-10-16T09:04:07.498Z] [SW_CONSOLE] [BG_LOG][tab=none] [START_BG_READY] privacyReady=true
+[2026-10-16T09:04:07.522Z] [SW_CONSOLE] [BG_LOG][tab=none] [Boot] Orchestrator entered.
+[2026-10-16T09:04:07.532Z] [SW_CONSOLE] [SESSION_BASELINE] Captured 2 pre-existing user tabs as protected baseline.
+[2026-10-16T09:04:07.541Z] [SW_CONSOLE] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedBefore=0
+[2026-10-16T09:04:07.550Z] [SW_CONSOLE] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedAfter=0 result=PASS
+[2026-10-16T09:04:07.558Z] [SW_CONSOLE] [BG_LOG][tab=none] [Boot] Previous state cleared.
+[2026-10-16T09:04:07.565Z] [SW_CONSOLE] [BG_LOG][tab=none] [Boot] CAPTCHA solver state reset (attempts=0, identity=null).
+[2026-10-16T09:04:07.574Z] [SW_CONSOLE] [BG_LOG][tab=none] 📊 [Queue Filter] Input: 99 | Duplicates: 0 | Suppressed: 0 | History-Attempted: 0 | Executable: 99
+[2026-10-16T09:04:07.582Z] [SW_CONSOLE] [BG_LOG][tab=none] [Boot] Variables initialized.
+[2026-10-16T09:04:07.591Z] [SW_CONSOLE] [BG_LOG][tab=none] 🚀 Engine booting...
+[2026-10-16T09:04:07.599Z] [SW_CONSOLE] [BG_LOG][tab=none] [CAMPAIGN_START] buildId=R6.9G.10.3.7.1.4.11-20261016-OWNER-BETA campaignRunId=normal_run_1792141446798_hr94n6 totalTargets=99 mode=NORMAL delayMs=10000 fillDelayMs=300 submitDelayMs=4000
+[2026-10-16T09:04:07.608Z] [SW_CONSOLE] [BG_LOG][tab=none] [Boot] Storage sync initiated.
+[2026-10-16T09:04:07.615Z] [SW_CONSOLE] [BG_LOG][tab=none] [Boot] Target loop triggered.
+[2026-10-16T09:04:07.626Z] [SW_CONSOLE] [SERIALIZED_GATE] Slot acquired atomically. activeTargetInFlight=true activeTargetCount=1 maxConcurrent=1
+[2026-10-16T09:04:07.634Z] [SW_CONSOLE] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedBefore=0
+[2026-10-16T09:04:07.647Z] [SW_CONSOLE] [TAB_BARRIER] phase=PRE_NEXT_TARGET ownedAfter=0 result=PASS
+[2026-10-16T09:04:07.659Z] [SW_CONSOLE] [BG_LOG][tab=none] [TARGET 1/99][public-corp-2.example.com] START
+[2026-10-16T09:04:07.668Z] [SW_CONSOLE] [BG_LOG][tab=none] [TARGET_START] buildId=R6.9G.10.3.7.1.4.11-20261016-OWNER-BETA campaignRunId=normal_run_1792141446798_hr94n6 attemptId=att_init targetIndex=1/99 targetUrl=https://public-corp-2.example.com/contact
+[2026-10-16T09:04:07.675Z] [SW_CONSOLE] [BG_LOG][tab=none] [EXEC_IDENTITY_PRE_NAV] attemptId=att_1792141447004_6xqdw token=tok_1792141447004_t28ijz epoch=4
+[2026-10-16T09:04:07.684Z] [SW_CONSOLE] [TAB_BARRIER] phase=POST_NEW_TARGET_CREATE ownedBefore=0
+[2026-10-16T09:04:07.692Z] [SW_CONSOLE] [TAB_BARRIER] phase=POST_NEW_TARGET_CREATE ownedAfter=0 result=PASS
+[2026-10-16T09:04:07.700Z] [SW_CONSOLE] [TAB_KILL_SWITCH] keepTabId=1981644833 closedOthers=0 remainingOwned=1 result=PASS
+[2026-10-16T09:04:07.712Z] [SW_CONSOLE] [BG_LOG][tab=1981644833] [TAB_FOCUS] tabId=1981644833 windowId=1981644823 active=true focused=true
+[2026-10-16T09:04:07.725Z] [SW_CONSOLE] [BG_LOG][tab=1981644833] Step 1: Sniper Mode active. Searching for contact page...
+[2026-10-16T09:04:07.733Z] [SW_CONSOLE] [BG_LOG][tab=1981644833] 🔦 Scanning paths 1-10...
+[2026-10-16T09:04:07.988Z] [SW_CONSOLE] [BG_LOG][tab=none] [PAUSE] campaignRunId=normal_run_1792141446798_hr94n6 remaining=98 inProgress=1
+[2026-10-16T09:04:07.997Z] [SW_CONSOLE] [BG_LOG][tab=none] ⏸️ [Engine] Campaign PAUSED / STOP & SAVE requested.
+[2026-10-16T09:04:08.011Z] [SW_CONSOLE] [BG_LOG][tab=1981644833] [ORCHESTRATION_ABORTED] abortSignal was triggered externally (PAUSE). Delegating terminal settlement to outer target lifecycle.
+[2026-10-16T09:04:08.024Z] Step 6 Healthy Launch result: {"launchSuccess":true,"campaignWasActive":true}
+[2026-10-16T09:04:08.033Z] ================================================================================
+[2026-10-16T09:04:08.044Z] ✅ ALL 8 ACCEPTANCE REQUIREMENTS VERIFIED IN REAL MICROSOFT EDGE
+[2026-10-16T09:04:08.053Z] ================================================================================

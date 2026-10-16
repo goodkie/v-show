@@ -1384,59 +1384,130 @@ async function hydrateSettings(overrideV2Store = null) {
             }
         } catch (_) {}
 
-        // [Fix 3 Actionable Privacy Block Modal Button Handlers]
-        const privacyBlockModal = document.getElementById('privacy-block-modal-overlay');
-        const btnActCompanion = document.getElementById('privacy-block-action-companion');
-        const btnActProxy = document.getElementById('privacy-block-action-proxy');
-        const btnActCancel = document.getElementById('privacy-block-action-cancel');
-        if (btnActCompanion) {
-            btnActCompanion.addEventListener('click', () => {
-                if (privacyBlockModal) {
+        // [P0 Actionable Privacy Block Decision Modal & Handlers]
+        window.showPrivacyBlockDecisionModal = function(data = {}) {
+            const { reason, userMessage, actionSection, source } = data;
+            const privacyBlockModal = document.getElementById('privacy-block-modal-overlay');
+            if (!privacyBlockModal) {
+                alert(`🛡️ PRIVACY GATE BLOCKED START\n\n${userMessage || reason}\n\nReason: ${reason}`);
+                return;
+            }
+
+            const msgEl = document.getElementById('privacy-block-modal-msg');
+            if (msgEl) msgEl.textContent = userMessage || 'Strict Privacy is ON, but no healthy enforced transport was verified.';
+
+            const codeEl = document.getElementById('privacy-block-reason-code');
+            if (codeEl) codeEl.textContent = `Reason Code: ${reason || 'PRIVACY_START_BLOCKED'}`;
+
+            const btnOverride = document.getElementById('privacy-block-action-override');
+            const btnRetry = document.getElementById('privacy-block-action-retry');
+            const btnSettings = document.getElementById('privacy-block-action-settings');
+            const btnCancel = document.getElementById('privacy-block-action-cancel');
+            const btnCompanion = document.getElementById('privacy-block-action-companion');
+            const btnProxy = document.getElementById('privacy-block-action-proxy');
+
+            if (btnOverride) {
+                btnOverride.onclick = async () => {
                     privacyBlockModal.style.display = 'none';
                     privacyBlockModal.classList.add('hidden');
-                }
+                    console.log('[PRIVACY_OWNER_OVERRIDE] scope=currentRun mode=DIRECT acknowledged=true');
+                    addLog('⚡ [PRIVACY_OWNER_OVERRIDE] scope=currentRun mode=DIRECT acknowledged=true', 'warn');
+                    const ind = document.getElementById('privacy-override-indicator');
+                    if (ind) {
+                        ind.style.display = 'flex';
+                        ind.classList.remove('hidden');
+                    }
+                    await launchCampaign({ source: source || 'USER_START_BUTTON', runScopedDirectPrivacy: true });
+                };
+            }
+
+            if (btnRetry) {
+                btnRetry.onclick = async () => {
+                    privacyBlockModal.style.display = 'none';
+                    privacyBlockModal.classList.add('hidden');
+                    addLog('🔄 [PRIVACY_PREFLIGHT_RETRY] Retrying privacy preflight...', 'info');
+                    await launchCampaign({ source: source || 'USER_START_BUTTON' });
+                };
+            }
+
+            const openSettingsHandler = () => {
+                privacyBlockModal.style.display = 'none';
+                privacyBlockModal.classList.add('hidden');
                 const settingsOverlay = document.getElementById('settings-overlay');
                 if (settingsOverlay) settingsOverlay.classList.remove('hidden');
-                if (privModeSelect) {
-                    privModeSelect.value = 'PRIVACY_RELAY';
-                    privModeSelect.dispatchEvent(new Event('change'));
+                const targetId = actionSection || 'privacy-gateway-group';
+                const targetSection = document.getElementById(targetId) || document.getElementById('privacy-gateway-group');
+                if (targetSection) {
+                    targetSection.style.display = 'block';
+                    targetSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                 }
-                const relayFields = document.getElementById('privacy-relay-config-fields');
-                if (relayFields) {
-                    relayFields.style.display = 'block';
-                    relayFields.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                }
-            });
-        }
-        if (btnActProxy) {
-            btnActProxy.addEventListener('click', () => {
-                if (privacyBlockModal) {
+            };
+
+            if (btnSettings) btnSettings.onclick = openSettingsHandler;
+            if (btnCompanion) btnCompanion.onclick = openSettingsHandler;
+            if (btnProxy) btnProxy.onclick = openSettingsHandler;
+
+            if (btnCancel) {
+                btnCancel.onclick = () => {
                     privacyBlockModal.style.display = 'none';
                     privacyBlockModal.classList.add('hidden');
+                    const btn = document.getElementById('start-btn');
+                    if (btn) {
+                        btn.classList.remove('hidden');
+                        btn.disabled = false;
+                        btn.textContent = "🚀 START SENDING";
+                    }
+                };
+            }
+
+            privacyBlockModal.classList.remove('hidden');
+            privacyBlockModal.style.display = 'flex';
+        };
+
+        window.checkAndRefreshPrivacyReadinessHUD = async function() {
+            try {
+                const campPill = document.getElementById('campaign-ready-pill');
+                const privPill = document.getElementById('privacy-ready-pill');
+                const qLen = Array.isArray(campaignQueue) ? campaignQueue.length : 0;
+                if (campPill) {
+                    if (qLen > 0) {
+                        campPill.textContent = `CAMPAIGN: READY (${qLen} URLs)`;
+                        campPill.style.color = '#22c55e';
+                    } else {
+                        campPill.textContent = 'CAMPAIGN: QUEUE EMPTY';
+                        campPill.style.color = '#94a3b8';
+                    }
                 }
-                const settingsOverlay = document.getElementById('settings-overlay');
-                if (settingsOverlay) settingsOverlay.classList.remove('hidden');
-                if (privModeSelect) {
-                    privModeSelect.value = 'HTTPS_PROXY';
-                    privModeSelect.dispatchEvent(new Event('change'));
+
+                if (privPill) {
+                    const st = await chrome.storage.local.get(['xpider_privacy_config', 'xpider_strict_privacy']);
+                    const privCfg = st.xpider_privacy_config || {};
+                    const isStrict = st.xpider_strict_privacy !== undefined ? st.xpider_strict_privacy : (privCfg.failClosed !== false);
+                    
+                    if (!isStrict || privCfg.enabled === false) {
+                        privPill.textContent = 'PRIVACY: DIRECT (NORMAL)';
+                        privPill.style.color = '#38bdf8';
+                    } else {
+                        chrome.runtime.sendMessage({ action: 'GET_PRIVACY_GATEWAY_STATE' }, (res) => {
+                            if (chrome.runtime.lastError || !res || !res.success) {
+                                privPill.textContent = 'PRIVACY: BLOCKED — RELAY_OFFLINE';
+                                privPill.style.color = '#f87171';
+                                return;
+                            }
+                            if (res.state?.isGateReady) {
+                                privPill.textContent = `PRIVACY: READY (${res.state.mode || 'ENFORCED'})`;
+                                privPill.style.color = '#22c55e';
+                            } else {
+                                const reason = res.state?.failureReason || 'RELAY_OFFLINE';
+                                privPill.textContent = `PRIVACY: BLOCKED — ${reason}`;
+                                privPill.style.color = '#f87171';
+                            }
+                        });
+                    }
                 }
-                const proxyFields = document.getElementById('privacy-proxy-config-fields');
-                if (proxyFields) {
-                    proxyFields.style.display = 'block';
-                    proxyFields.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                }
-                const proxyHost = document.getElementById('privacy-proxy-host');
-                if (proxyHost) proxyHost.focus();
-            });
-        }
-        if (btnActCancel) {
-            btnActCancel.addEventListener('click', () => {
-                if (privacyBlockModal) {
-                    privacyBlockModal.style.display = 'none';
-                    privacyBlockModal.classList.add('hidden');
-                }
-            });
-        }
+            } catch (_) {}
+        };
+        setTimeout(window.checkAndRefreshPrivacyReadinessHUD, 300);
 
         if (privModeSelect) {
             const rawMode = privCfg.transportMode || 'PRIVACY_RELAY';
@@ -2595,6 +2666,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                     if (startBtn) startBtn.classList.remove('hidden');
                     const multiActions = document.getElementById('multi-actions');
                     if (multiActions) multiActions.classList.add('hidden');
+                    const ind = document.getElementById('privacy-override-indicator');
+                    if (ind) {
+                        ind.style.display = 'none';
+                        ind.classList.add('hidden');
+                    }
+                    if (typeof window.checkAndRefreshPrivacyReadinessHUD === 'function') {
+                        window.checkAndRefreshPrivacyReadinessHUD();
+                    }
                     try { onCampaignFinishedOwnerTestCheck(request.counters); } catch (_) {}
                 } else if (request.action === 'OWNER_TEST_PRECONDITION_FAILED_ALL_FILTERED') {
                     if (typeof _restoreStartButton === 'function') _restoreStartButton();
@@ -5393,6 +5472,7 @@ async function addSingleUrl() {
 let _isCampaignLaunching = false;
 
 async function launchCampaign(options = {}) {
+    let currentStartStep = '01';
     const source = options.source || 'USER_START_BUTTON';
     const isOwnerTest = source.startsWith('OWNER_') || source.startsWith('CLOUDFLARE_');
     if (source === 'OWNER_CAPTCHA_LAB') {
@@ -5413,7 +5493,7 @@ async function launchCampaign(options = {}) {
         : (startBtn && startBtn.hasAttribute('data-build-locked') ? 'LOCKED_MISMATCH' : 'READY');
     console.log(`[START_GATE] state=${gateState}`);
 
-    // 7. Serialize launch to one active run (anti-race single-flight)
+    // Serialize launch to one active run (anti-race single-flight)
     if (_isCampaignLaunching || (typeof campaignActive !== 'undefined' && campaignActive)) {
         console.warn(`[START_DISPATCH] accepted=false reason=ALREADY_IN_FLIGHT source=${source}`);
         return { success: false, reason: 'ALREADY_IN_FLIGHT' };
@@ -5433,10 +5513,16 @@ async function launchCampaign(options = {}) {
         }
         const multiActions = document.getElementById('multi-actions');
         if (multiActions) multiActions.classList.add('hidden');
+        if (typeof window.checkAndRefreshPrivacyReadinessHUD === 'function') {
+            window.checkAndRefreshPrivacyReadinessHUD();
+        }
     }
 
     try {
-        // 1. Verify button/control plane boot & lock state
+        // [START_STEP 01] BUTTON_ACCEPTED
+        console.log(`[START_STEP] 01 BUTTON_ACCEPTED id=${btnId} source=${source}`);
+        addLog(`[START_STEP] 01 BUTTON_ACCEPTED source=${source}`, 'info');
+
         if (startBtn && startBtn.hasAttribute('data-build-locked')) {
             const lockReason = startBtn.title || 'data-build-locked present';
             console.warn(`[START_DISPATCH] accepted=false reason=LOCKED_MISMATCH detail=${lockReason}`);
@@ -5445,7 +5531,8 @@ async function launchCampaign(options = {}) {
             return { success: false, reason: 'LOCKED_MISMATCH', detail: lockReason };
         }
 
-        // 2. Verify build handshake fail-closed
+        // [START_STEP 02] BUILD_HANDSHAKE_PASS
+        currentStartStep = '02';
         const handshake = await verifyBuildHandshake({ retryOnTransient: true, maxRetries: 2, retryDelayMs: 250 });
         if (!handshake.ok) {
             if (handshake.state === 'CONFIRMED_MISMATCH') {
@@ -5461,12 +5548,16 @@ async function launchCampaign(options = {}) {
                 return { success: false, reason: 'BACKGROUND_UNREACHABLE', error: handshake.error };
             }
         }
+        console.log('[START_STEP] 02 BUILD_HANDSHAKE_PASS');
+        addLog('[START_STEP] 02 BUILD_HANDSHAKE_PASS', 'info');
 
-        // 3. Mode Resolution: Source-Scoped, Not Sticky (Directive #6210215006)
+        // [START_STEP 03] MODE_RECONCILE_PASS
+        currentStartStep = '03';
         const EXPLICIT_TEST_SOURCES = ['OWNER_CORE_TEST', 'OWNER_CAPTCHA_LAB', 'OWNER_FULL_TEST', 'CLOUDFLARE_TESTKEY_LAB'];
         const isExplicitTest = EXPLICIT_TEST_SOURCES.includes(source);
         const isLiveOwnerCf = (source === 'CLOUDFLARE_LIVE_OWNER');
         const isTestKeyLab = (source === 'CLOUDFLARE_TESTKEY_LAB');
+        const isNormalRun = (source === 'USER_START_BUTTON' || (!isExplicitTest && !isLiveOwnerCf));
 
         if ((!campaignQueue || campaignQueue.length === 0) && (!options.fixtures || options.fixtures.length === 0)) {
             try {
@@ -5482,13 +5573,16 @@ async function launchCampaign(options = {}) {
         const queueToCheck = (Array.isArray(options.fixtures) && options.fixtures.length > 0) ? options.fixtures : campaignQueue;
         const publicTargetsCount = (Array.isArray(queueToCheck) ? queueToCheck : []).filter(u => !isLoopbackCheck(u)).length;
 
-        // [R6.9G.10.3.7.1.4.11 Normal Start Auto-Exit]
-        if (source === 'USER_START_BUTTON' || (!isExplicitTest && !isLiveOwnerCf)) {
+        let assignedNormalRunId = null;
+
+        // [R6.9G.10.3.7.1.4.11 Normal Start Auto-Exit & Mode Reconcile]
+        if (isNormalRun) {
             const curSt = await chrome.storage.local.get([
                 'xpider_owner_function_test_mode',
                 'xpider_active_test_source',
                 'xpider_cloudflare_live_test',
-                'xpider_paused_checkpoint'
+                'xpider_paused_checkpoint',
+                'xpider_active_campaign_run_id'
             ]);
             const staleOwnerTestMode = Boolean(
                 curSt.xpider_owner_function_test_mode ||
@@ -5534,7 +5628,54 @@ async function launchCampaign(options = {}) {
 
             console.log(`[NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=${publicTargetsCount} testMode=false result=PASS`);
             addLog(`[NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=${publicTargetsCount} testMode=false result=PASS`, 'info');
+
+            // [Directive E] Rebase current-run counters & generate fresh normal campaignRunId
+            const oldRunId = curSt.xpider_active_campaign_run_id || 'none';
+            assignedNormalRunId = `normal_run_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+            
+            await chrome.storage.local.set({
+                xpider_active_campaign_run_id: assignedNormalRunId,
+                xpider_active_test_source: null
+            });
+
+            const qCount = Array.isArray(campaignQueue) ? campaignQueue.length : 0;
+            totalTargets = qCount;
+            successCount = 0;
+
+            const countCompleted = document.getElementById('completed-count-display') || document.getElementById('completed-count');
+            const countRemaining = document.getElementById('remaining-count-display') || document.getElementById('remaining-count');
+            const countSuccess = document.getElementById('success-count-display') || document.getElementById('success-count');
+            const countFail = document.getElementById('failed-count-display') || document.getElementById('fail-count');
+            const countTimeout = document.getElementById('timeout-count-display') || document.getElementById('timeout-count');
+            const countUnknown = document.getElementById('unknown-count-display') || document.getElementById('unknown-count');
+            const countSkipped = document.getElementById('skipped-count-display') || document.getElementById('skipped-count');
+            const countCaptchaFail = document.getElementById('captcha-failed-display') || document.getElementById('captcha-failures-count');
+            const progressBar = document.getElementById('progress-bar');
+            const progressPct = document.getElementById('progress-text') || document.getElementById('progress-pct');
+            const runScopeBadge = document.getElementById('run-scope-badge');
+            const statusTitle = document.getElementById('status-title');
+            const statusDetail = document.getElementById('status-detail');
+
+            if (countCompleted) countCompleted.textContent = '0';
+            if (countRemaining) countRemaining.textContent = String(qCount);
+            if (countSuccess) countSuccess.textContent = '0';
+            if (countFail) countFail.textContent = '0';
+            if (countTimeout) countTimeout.textContent = '0';
+            if (countUnknown) countUnknown.textContent = '0';
+            if (countSkipped) countSkipped.textContent = '0';
+            if (countCaptchaFail) countCaptchaFail.textContent = '0';
+            if (progressBar) progressBar.style.width = '0%';
+            if (progressPct) progressPct.textContent = '0%';
+            if (runScopeBadge) runScopeBadge.textContent = 'PUBLIC RUN';
+            if (statusTitle) statusTitle.textContent = "Live Progress (Ready)";
+            if (statusDetail) statusDetail.textContent = `Queued ${qCount} targets for normal campaign dispatch.`;
+
+            console.log(`[NORMAL_RUN_STATE_REBASE] oldRunId=${oldRunId} newRunId=${assignedNormalRunId} total=${qCount} historyPreserved=true`);
+            addLog(`[NORMAL_RUN_STATE_REBASE] oldRunId=${oldRunId} newRunId=${assignedNormalRunId} total=${qCount} historyPreserved=true`, 'info');
         }
+
+        console.log('[START_STEP] 03 MODE_RECONCILE_PASS');
+        addLog('[START_STEP] 03 MODE_RECONCILE_PASS', 'info');
 
         // Test mode is active ONLY for explicit test sources
         const isTestModeActive = isExplicitTest;
@@ -5565,7 +5706,7 @@ async function launchCampaign(options = {}) {
                 return { success: false, reason: 'TEST_SERVER_UNAVAILABLE' };
             }
 
-            // 4. Verify DNR network guard
+            // Verify DNR network guard
             let guardOk = false;
             try {
                 const guardRes = await chrome.runtime.sendMessage({
@@ -5595,7 +5736,7 @@ async function launchCampaign(options = {}) {
                 }
             }
 
-            // [R6.9G.10.3.7.1.4.5] Owner Functional Test Mode Guard: Prevent launching public URLs in test mode
+            // Prevent launching public URLs in test mode
             const isLoopback = (u) => /^https?:\/\/(?:127\.0\.0\.1|localhost)(?::\d+)?(?:\/|$)/i.test(typeof u === 'string' ? u : (u?.url || ''));
             const nonLoopbackTargets = campaignQueue.filter(u => !isLoopback(u));
             if (nonLoopbackTargets.length > 0) {
@@ -5603,10 +5744,10 @@ async function launchCampaign(options = {}) {
                 addLog(`🛡️ [START_BLOCKED] Owner Functional Test Mode is ON: ${nonLoopbackTargets.length} public non-loopback URLs cannot be started. Click '⚙️ AUTO SETUP' or '⏮️ RESTORE'.`, 'error');
                 _restoreStartButton();
                 alert('🛡️ [OWNER FUNCTIONAL TEST MODE ACTIVE]\n\nOnly local loopback URLs (127.0.0.1 or localhost) are allowed in Test Mode.\nFound ' + nonLoopbackTargets.length + ' public targets in queue.\n\nPlease click "⚙️ AUTO SETUP" to switch to the 7 test fixtures, or "⏮️ RESTORE" to turn off test mode.');
-                return Promise.reject(new Error(`OWNER_FUNCTION_TEST_NON_LOOPBACK_TARGET: ${nonLoopbackTargets[0]}`));
+                return { success: false, reason: 'OWNER_FUNCTION_TEST_NON_LOOPBACK_TARGET' };
             }
 
-            // 6. Atomically prepare fresh test run scope and verify zero stale suppression
+            // Atomically prepare fresh test run scope and verify zero stale suppression
             const prepRes = await chrome.runtime.sendMessage({
                 action: 'PREPARE_OWNER_FUNCTIONAL_TEST_RUN',
                 fixtures: campaignQueue
@@ -5634,7 +5775,8 @@ async function launchCampaign(options = {}) {
             }
         }
 
-        // 5. Verify executable queue > 0
+        // [START_STEP 04] QUEUE_VALID
+        currentStartStep = '04';
         const manualInput = document.getElementById('manual-url-input');
         if (manualInput && manualInput.value.trim() && (!campaignQueue || campaignQueue.length === 0)) {
             await addSingleUrl();
@@ -5668,7 +5810,11 @@ async function launchCampaign(options = {}) {
             }
         }
 
-        // Template message check
+        console.log(`[START_STEP] 04 QUEUE_VALID count=${campaignQueue.length}`);
+        addLog(`[START_STEP] 04 QUEUE_VALID count=${campaignQueue.length}`, 'info');
+
+        // [START_STEP 05] TEMPLATE_VALID
+        currentStartStep = '05';
         const tplReady = await ensureTemplateReadyForStart();
         if (tplReady && tplReady.ready && tplReady.message) {
             const msgEl = document.getElementById('tpl-message');
@@ -5706,6 +5852,9 @@ async function launchCampaign(options = {}) {
             currentTpl.version = currentTpl.templateVersion;
         } catch (_) {}
 
+        console.log('[START_STEP] 05 TEMPLATE_VALID');
+        addLog('[START_STEP] 05 TEMPLATE_VALID', 'info');
+
         // UI state: STARTING
         campaignPaused = false;
         successCount = 0;
@@ -5735,6 +5884,7 @@ async function launchCampaign(options = {}) {
         const skipPreviouslyAttempted = isTestModeActive ? false : (skipAttemptedEl ? skipAttemptedEl.checked : true);
 
         const activeRunStorage = await chrome.storage.local.get(['xpider_active_campaign_run_id']);
+        const resolvedRunId = isTestModeActive ? activeRunStorage.xpider_active_campaign_run_id : (assignedNormalRunId || activeRunStorage.xpider_active_campaign_run_id);
 
         const startPayload = {
             queue: campaignQueue,
@@ -5748,14 +5898,31 @@ async function launchCampaign(options = {}) {
             skipPreviouslyAttempted,
             overrideSkipAttempted: isTestModeActive ? true : false,
             ownerFunctionTestMode: isTestModeActive ? true : false,
-            campaignRunId: isTestModeActive ? activeRunStorage.xpider_active_campaign_run_id : undefined
+            campaignRunId: resolvedRunId
         };
         try {
             bindCampaignTemplateMetadata(startPayload, currentTpl);
         } catch (_) {}
 
-        // Privacy gate check for public URLs
-        if (!isTestModeActive) {
+        // [START_STEP 06] PRIVACY_PREP_BEGIN
+        currentStartStep = '06';
+        const runScopedDirect = Boolean(options.runScopedDirectPrivacy);
+        console.log(`[START_STEP] 06 PRIVACY_PREP_BEGIN runScopedDirect=${runScopedDirect} testMode=${isTestModeActive}`);
+        addLog(`[START_STEP] 06 PRIVACY_PREP_BEGIN runScopedDirect=${runScopedDirect} testMode=${isTestModeActive}`, 'info');
+
+        // [START_STEP 07] PRIVACY_PREP_PASS / BLOCK
+        currentStartStep = '07';
+        if (runScopedDirect) {
+            console.log('[PRIVACY_OWNER_OVERRIDE] scope=currentRun mode=DIRECT acknowledged=true');
+            addLog('⚡ [PRIVACY_OWNER_OVERRIDE] scope=currentRun mode=DIRECT acknowledged=true', 'warn');
+            const ind = document.getElementById('privacy-override-indicator');
+            if (ind) {
+                ind.style.display = 'flex';
+                ind.classList.remove('hidden');
+            }
+            console.log('[START_STEP] 07 PRIVACY_PREP_PASS mode=DIRECT (OVERRIDE)');
+            addLog('[START_STEP] 07 PRIVACY_PREP_PASS mode=DIRECT (OVERRIDE)', 'info');
+        } else if (!isTestModeActive) {
             const prepResponse = await new Promise((resolve) => {
                 chrome.runtime.sendMessage({
                     action: 'ENSURE_ENFORCED_PRIVACY_FOR_START',
@@ -5767,13 +5934,43 @@ async function launchCampaign(options = {}) {
             });
             const prepResult = (prepResponse && prepResponse.success && prepResponse.result) ? prepResponse.result : null;
             if (!prepResult || !prepResult.ready) {
-                console.error('[START_DISPATCH] accepted=false reason=PRIVACY_START_BLOCKED');
+                const reason = prepResult?.reason || prepResponse?.error || 'PRIVACY_START_BLOCKED';
+                const mode = prepResult?.mode || 'PRIVACY_RELAY';
+                const failClosed = prepResult?.failClosed !== false;
+                const userMsg = prepResult?.userMessage || 'Strict Privacy is ON, but no healthy enforced transport was verified.';
+
+                console.error(`[START_STEP] 07 PRIVACY_PREP_BLOCK reason=${reason}`);
+                addLog(`[START_STEP] 07 PRIVACY_PREP_BLOCK reason=${reason}`, 'error');
+                console.error(`[PRIVACY_START_BLOCKED] reason=${reason} mode=${mode} failClosed=${failClosed}`);
+                addLog(`🛑 [PRIVACY_START_BLOCKED] reason=${reason} mode=${mode} failClosed=${failClosed}`, 'error');
+
                 _restoreStartButton();
-                return { success: false, reason: 'PRIVACY_START_BLOCKED' };
+                if (typeof window.showPrivacyBlockDecisionModal === 'function') {
+                    window.showPrivacyBlockDecisionModal({
+                        reason,
+                        userMessage: userMsg,
+                        actionSection: prepResult?.actionSection,
+                        mode,
+                        failClosed,
+                        source
+                    });
+                } else {
+                    alert(`🛑 [PRIVACY GATE BLOCKED START]\n\nCampaign is ready, but Privacy Gate blocked network start.\n\nReason: ${reason}\n${userMsg}`);
+                }
+                return { success: false, reason: 'PRIVACY_START_BLOCKED', detail: prepResult };
             }
+            console.log(`[START_STEP] 07 PRIVACY_PREP_PASS mode=${prepResult.mode || 'ENFORCED'}`);
+            addLog(`[START_STEP] 07 PRIVACY_PREP_PASS mode=${prepResult.mode || 'ENFORCED'}`, 'info');
+        } else {
+            console.log('[START_STEP] 07 PRIVACY_PREP_PASS mode=TEST_LOOPBACK');
+            addLog('[START_STEP] 07 PRIVACY_PREP_PASS mode=TEST_LOOPBACK', 'info');
         }
 
-        // 8. Dispatch to background service worker
+        // [START_STEP 08] DISPATCH_BEGIN
+        currentStartStep = '08';
+        console.log(`[START_STEP] 08 DISPATCH_BEGIN targetCount=${campaignQueue.length}`);
+        addLog(`[START_STEP] 08 DISPATCH_BEGIN targetCount=${campaignQueue.length}`, 'info');
+
         console.log(`[START_DISPATCH] accepted=true source=${source} targetCount=${campaignQueue.length}`);
         addLog(`🚀 [START_DISPATCH] accepted=true source=${source} targetCount=${campaignQueue.length}`, 'info');
 
@@ -5781,10 +5978,13 @@ async function launchCampaign(options = {}) {
             ? BuildProvenance.BUILD_INFO
             : { implementationHead: '31b929c37b8063d52b8224c9af8d42b353defde0', buildId: 'R6.9G.10.3.7.1.4.7-20261014-START-CONTROL-PLANE-RECOVERY', manifestVersion: 3 };
 
+        // [START_STEP 09] START_BG_ACK
+        currentStartStep = '09';
         const startRes = await new Promise((resolve, reject) => {
             chrome.runtime.sendMessage({
                 action: 'START_CAMPAIGN',
                 source: source,
+                runScopedDirectPrivacy: runScopedDirect,
                 expectedImplementationHead: localInfo.implementationHead,
                 expectedBuildId: localInfo.buildId,
                 expectedManifestVersion: localInfo.manifestVersion || 3,
@@ -5811,12 +6011,17 @@ async function launchCampaign(options = {}) {
         if (!startRes || startRes.success === false) {
             const reason = startRes?.reason || startRes?.error || 'REJECTED_BY_BACKGROUND';
             console.error(`[START_BG_REJECT] reason=${reason}`);
+            addLog(`❌ [START_BG_REJECT] reason=${reason}`, 'error');
             alert(`Start rejected by background engine: ${reason}`);
             _restoreStartButton();
             return { success: false, reason };
         }
 
-        // Update UI to running state
+        console.log(`[START_STEP] 09 START_BG_ACK campaignRunId=${startRes.campaignRunId || 'unknown'}`);
+        addLog(`[START_STEP] 09 START_BG_ACK campaignRunId=${startRes.campaignRunId || 'unknown'}`, 'info');
+
+        // [START_STEP 10] CAMPAIGN_RUNNING
+        currentStartStep = '10';
         campaignActive = true;
         campaignPaused = false;
         if (startBtn) startBtn.classList.add('hidden');
@@ -5831,12 +6036,24 @@ async function launchCampaign(options = {}) {
             if (statusDetail) statusDetail.textContent = `Campaign started (${source})...`;
         }
 
+        console.log(`[START_STEP] 10 CAMPAIGN_RUNNING`);
+        addLog(`[START_STEP] 10 CAMPAIGN_RUNNING`, 'info');
+
         return {
             success: true,
             source,
             targetCount: campaignQueue.length,
             campaignRunId: startRes.campaignRunId
         };
+    } catch (err) {
+        const stepNum = currentStartStep || '00';
+        const errName = err?.name || 'Error';
+        const errMsg = (err?.message || String(err)).replace(/[\r\n]+/g, ' ');
+        console.error(`[START_EXCEPTION] step=${stepNum} name=${errName} message=${errMsg}`);
+        addLog(`❌ [START_EXCEPTION] step=${stepNum} name=${errName} message=${errMsg}`, 'error');
+        alert(`❌ CAMPAIGN START FAILED [Step ${stepNum}]\n\n${errMsg}\n\nPlease check logs and try again.`);
+        _restoreStartButton();
+        return { success: false, reason: 'START_EXCEPTION', step: stepNum, error: errMsg };
     } finally {
         _isCampaignLaunching = false;
     }
@@ -5872,6 +6089,14 @@ function stopCampaign() {
     if (startBtn) startBtn.classList.remove('hidden');
     const multiActions = document.getElementById('multi-actions');
     if (multiActions) multiActions.classList.add('hidden');
+    const ind = document.getElementById('privacy-override-indicator');
+    if (ind) {
+        ind.style.display = 'none';
+        ind.classList.add('hidden');
+    }
+    if (typeof window.checkAndRefreshPrivacyReadinessHUD === 'function') {
+        window.checkAndRefreshPrivacyReadinessHUD();
+    }
     addDiagnosticLog(`[Engine][TX] action=STOP_CAMPAIGN`);
     if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
         chrome.runtime.sendMessage({ action: 'STOP_CAMPAIGN' }, () => {
@@ -5894,6 +6119,14 @@ function endCampaign() {
     if (multiActions) multiActions.classList.add('hidden');
     const banner = document.getElementById('resumable-campaign-banner');
     if (banner) banner.style.display = 'none';
+    const ind = document.getElementById('privacy-override-indicator');
+    if (ind) {
+        ind.style.display = 'none';
+        ind.classList.add('hidden');
+    }
+    if (typeof window.checkAndRefreshPrivacyReadinessHUD === 'function') {
+        window.checkAndRefreshPrivacyReadinessHUD();
+    }
     addDiagnosticLog(`[Engine][TX] action=END_CAMPAIGN`);
     if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
         chrome.runtime.sendMessage({ action: 'END_CAMPAIGN' }, () => {

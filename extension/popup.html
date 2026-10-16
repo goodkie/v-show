@@ -69,17 +69,37 @@
                 </div>
             </div>
 
-            <!-- [Fix 3 Actionable Privacy Block Modal] -->
+            <!-- [P0 Actionable Privacy Block Modal] -->
             <div id="privacy-block-modal-overlay" class="modal-overlay hidden" style="display: none;">
-                <div class="captcha-friendly-modal" style="max-width: 420px; text-align: left; padding: 20px;">
-                    <h2 style="color: #f87171; font-size: 13px; font-weight: 700; margin-bottom: 8px;">🛡️ STRICT PRIVACY REQUIREMENT</h2>
-                    <p id="privacy-block-modal-msg" style="font-size: 11px; line-height: 1.4; color: #cbd5e1; margin-bottom: 14px;">
-                        Strict Privacy is ON. External VPN Monitor is monitor-only and cannot enforce campaign routing. For public-site campaigns, use Privacy Relay Companion or a Managed HTTPS/SOCKS5 Proxy.
-                    </p>
+                <div class="captcha-friendly-modal" style="max-width: 440px; text-align: left; padding: 20px; border: 1px solid rgba(248, 113, 113, 0.5); box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                        <h2 style="color: #f87171; font-size: 13px; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 6px;">
+                            🛡️ PRIVACY GATE BLOCKED START
+                        </h2>
+                        <span id="privacy-block-badge" style="font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: rgba(248, 113, 113, 0.2); color: #f87171; border: 1px solid #f87171; font-family: monospace;">STRICT FAIL-CLOSED</span>
+                    </div>
+                    <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 10px; margin-bottom: 12px;">
+                        <div style="font-size: 11px; font-weight: 600; color: #38bdf8; margin-bottom: 4px;">Campaign is ready, but Privacy Gate blocked network start:</div>
+                        <p id="privacy-block-modal-msg" style="font-size: 11px; line-height: 1.4; color: #cbd5e1; margin: 0 0 6px 0;"></p>
+                        <div id="privacy-block-reason-code" style="font-size: 10px; color: #fca5a5; font-family: monospace;"></div>
+                    </div>
                     <div style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
-                        <button type="button" id="privacy-block-action-companion" class="primary-btn" style="background: #0284c7; font-size: 11px; padding: 7px 10px; text-align: left;">1. 🔄 Install/Start Privacy Relay Companion</button>
-                        <button type="button" id="privacy-block-action-proxy" class="secondary-btn" style="background: rgba(56, 189, 248, 0.15); border: 1px solid #38bdf8; color: #38bdf8; font-size: 11px; padding: 7px 10px; text-align: left;">2. 🛡️ Configure Managed Proxy (HTTPS / SOCKS5)</button>
-                        <button type="button" id="privacy-block-action-cancel" class="secondary-btn" style="background: rgba(255, 255, 255, 0.1); color: #94a3b8; font-size: 11px; padding: 7px 10px; text-align: center;">✕ Cancel</button>
+                        <button type="button" id="privacy-block-action-override" class="primary-btn" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: #000; font-weight: 700; font-size: 11px; padding: 8px 12px; text-align: left; border-radius: 6px; cursor: pointer; border: none;">
+                            ⚡ START WITHOUT PRIVACY THIS RUN (Direct Mode, Current Run Only)
+                        </button>
+                        <button type="button" id="privacy-block-action-retry" class="secondary-btn" style="background: rgba(56, 189, 248, 0.15); border: 1px solid #38bdf8; color: #38bdf8; font-size: 11px; padding: 8px 12px; text-align: left; border-radius: 6px; cursor: pointer;">
+                            🔄 RETRY PRIVACY PREFLIGHT
+                        </button>
+                        <button type="button" id="privacy-block-action-settings" class="secondary-btn" style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.2); color: #cbd5e1; font-size: 11px; padding: 8px 12px; text-align: left; border-radius: 6px; cursor: pointer;">
+                            ⚙️ OPEN PRIVACY SETTINGS
+                        </button>
+                        <div style="display: none;">
+                            <button type="button" id="privacy-block-action-companion"></button>
+                            <button type="button" id="privacy-block-action-proxy"></button>
+                        </div>
+                        <button type="button" id="privacy-block-action-cancel" class="secondary-btn" style="background: rgba(255, 255, 255, 0.05); color: #94a3b8; font-size: 11px; padding: 6px 12px; text-align: center; border-radius: 6px; cursor: pointer; border: none;">
+                            ✕ Cancel
+                        </button>
                     </div>
                 </div>
             </div>
@@ -867,6 +887,16 @@
             <!-- [Fix 2 Large Banner: LOCAL FUNCTION TEST — PUBLIC NETWORK TARGETS BLOCKED] -->
             <div id="owner-function-test-banner" style="display: none; background: rgba(234, 179, 8, 0.2); border: 2px solid #eab308; border-radius: 6px; padding: 8px 12px; margin-bottom: 10px; text-align: center; color: #fde047; font-weight: 800; font-size: 11px; letter-spacing: 0.5px; box-shadow: 0 0 10px rgba(234, 179, 8, 0.3);">
                 🧪 LOCAL FUNCTION TEST — PUBLIC NETWORK TARGETS BLOCKED
+            </div>
+
+            <!-- [P0 Privacy Override Indicator & Readiness HUD] -->
+            <div id="privacy-override-indicator" class="hidden" style="margin-bottom: 8px; padding: 6px 10px; border-radius: 6px; background: rgba(245, 158, 11, 0.2); border: 1px solid #f59e0b; color: #fde047; font-size: 11px; font-weight: 700; display: none; align-items: center; justify-content: space-between;">
+                <span>⚡ PRIVACY: DIRECT (CURRENT RUN OVERRIDE)</span>
+                <span style="font-size: 9px; opacity: 0.8; font-weight: normal;">Fail-closed bypassed for this run</span>
+            </div>
+            <div id="start-readiness-hud" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 10px; font-family: monospace; padding: 4px 8px; background: rgba(15, 23, 42, 0.4); border-radius: 4px; border: 1px solid rgba(255,255,255,0.06);">
+                <span id="campaign-ready-pill" style="color: #22c55e; font-weight: 600;">CAMPAIGN: READY</span>
+                <span id="privacy-ready-pill" style="color: #94a3b8; font-weight: 600;">PRIVACY: CHECKING...</span>
             </div>
 
             <div class="action-buttons">

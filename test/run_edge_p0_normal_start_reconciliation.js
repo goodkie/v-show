@@ -380,7 +380,8 @@ async function main() {
             window.alert = function(msg) { alertMsg = msg; };
             try {
                 // Try to launch with explicit test source while queue has public non-loopback URLs
-                await launchCampaign({ source: 'OWNER_CORE_TEST' });
+                const res = await launchCampaign({ source: 'OWNER_CORE_TEST' });
+                if (res && !res.success) capturedError = res.reason;
             } catch (err) {
                 capturedError = err.message;
             }
