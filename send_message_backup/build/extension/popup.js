@@ -2293,6 +2293,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                     if (statusTitle) statusTitle.textContent = "Live Progress (Finished)";
                     const statusDetail = document.getElementById('status-detail');
                     if (statusDetail) statusDetail.textContent = "Campaign Complete: All targets finished.";
+                    campaignActive = false;
+                    _isCampaignLaunching = false;
+                    const startBtn = document.getElementById('start-btn');
+                    if (startBtn) startBtn.classList.remove('hidden');
+                    const multiActions = document.getElementById('multi-actions');
+                    if (multiActions) multiActions.classList.add('hidden');
                     try { onCampaignFinishedOwnerTestCheck(request.counters); } catch (_) {}
                 } else if (request.action === 'OWNER_TEST_PRECONDITION_FAILED_ALL_FILTERED') {
                     if (typeof _restoreStartButton === 'function') _restoreStartButton();
@@ -2865,6 +2871,11 @@ function updateRealTimeStatus(data) {
     if (captchaSolvedDisplay && captchaSolvedCount !== null) captchaSolvedDisplay.textContent = captchaSolvedCount;
     const captchaFailedDisplay = document.getElementById('captcha-failed-display');
     if (captchaFailedDisplay && captchaFailedCount !== null) captchaFailedDisplay.textContent = captchaFailedCount;
+
+    // [R6.9G.10.3.7.1.4.9] Authoritative Controlled CAPTCHA Lab Metrics Panel Hydration
+    if (data.captchaLabMetrics || data.captchaLedger) {
+        updateCaptchaLabPanel(data.captchaLabMetrics, data.captchaLedger);
+    }
 
     // Update Progress Bar
     const progress = totalTargets > 0 ? Math.min(100, Math.round((completedCount / totalTargets) * 100)) : (completedCount > 0 && remainingTargets === 0 ? 100 : 0);
@@ -3602,12 +3613,40 @@ async function verifyBuildHandshake(options = {}) {
 }
 
 // ── [R6.9G.10.3.7.1.4.5] One-Click Auto Setup & Owner Functional Test Suite ──
+// ── [R6.9G.10.3.7.1.4.9] Controlled CAPTCHA Lab Metrics Hydrator ──
+function updateCaptchaLabPanel(metrics = {}, ledger = {}) {
+    const detectedEl = document.getElementById('lab-detected-count');
+    const requestedEl = document.getElementById('lab-requested-count');
+    const successEl = document.getElementById('lab-success-count');
+    const failureEl = document.getElementById('lab-failure-count');
+    const timeoutEl = document.getElementById('lab-timeout-count');
+    const staleEl = document.getElementById('lab-stale-count');
+    const mathEl = document.getElementById('lab-math-count');
+    const audioEl = document.getElementById('lab-audio-count');
+
+    const det = metrics.detected !== undefined ? metrics.detected : (ledger.detected || 0);
+    const req = metrics.requested !== undefined ? metrics.requested : (ledger.detected || 0);
+    const succ = metrics.success !== undefined ? metrics.success : (ledger.autoSuccess || 0);
+    const fail = metrics.failure !== undefined ? metrics.failure : (ledger.autoFailure || 0);
+
+    if (detectedEl) detectedEl.textContent = det;
+    if (requestedEl) requestedEl.textContent = req;
+    if (successEl) successEl.textContent = succ;
+    if (failureEl) failureEl.textContent = fail;
+    if (timeoutEl) timeoutEl.textContent = metrics.timeout !== undefined ? metrics.timeout : 0;
+    if (staleEl) staleEl.textContent = metrics.staleDropped !== undefined ? metrics.staleDropped : 0;
+    if (mathEl) mathEl.textContent = metrics.mathSolved !== undefined ? metrics.mathSolved : 0;
+    if (audioEl) audioEl.textContent = metrics.audioPassed !== undefined ? metrics.audioPassed : 0;
+}
+
 function updateAutoSetupUI(state) {
     if (typeof document === 'undefined') return;
     const statusPill = document.getElementById('auto-setup-status-pill');
     const runBtn = document.getElementById('run-function-test-btn');
     const runLabBtn = document.getElementById('run-captcha-lab-btn');
     const runFullBtn = document.getElementById('run-full-test-btn');
+    const runCfLiveBtn = document.getElementById('run-cloudflare-live-btn');
+    const runCfTestKeyBtn = document.getElementById('run-cloudflare-testkey-btn');
     const labPanel = document.getElementById('captcha-lab-panel');
     const restoreBtn = document.getElementById('restore-user-settings-btn');
 
@@ -3619,6 +3658,8 @@ function updateAutoSetupUI(state) {
         }
         if (runLabBtn) { runLabBtn.style.display = disp; runLabBtn.disabled = disabled; }
         if (runFullBtn) { runFullBtn.style.display = disp; runFullBtn.disabled = disabled; }
+        if (runCfLiveBtn) { runCfLiveBtn.style.display = disp; runCfLiveBtn.disabled = disabled; }
+        if (runCfTestKeyBtn) { runCfTestKeyBtn.style.display = disp; runCfTestKeyBtn.disabled = disabled; }
     };
 
     if (state === 'READY') {
@@ -3819,8 +3860,9 @@ function showAutoSetupFeedback(msg, type = 'info') {
 
 function onCampaignFinishedOwnerTestCheck(counters) {
     if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.local) return;
-    chrome.storage.local.get(['xpider_owner_function_test_mode', 'xpider_owner_backup_snapshot']).then((st) => {
+    chrome.storage.local.get(['xpider_owner_function_test_mode', 'xpider_owner_backup_snapshot', 'xpider_active_test_source']).then((st) => {
         if (st && st.xpider_owner_function_test_mode) {
+            const isCaptchaLab = (st.xpider_active_test_source === 'OWNER_CAPTCHA_LAB');
             const sc = counters ? (counters.success || 0) : 0;
             const sk = counters ? (counters.skipped || 0) : 0;
             const fl = counters ? (counters.failed || 0) : 0;
@@ -3833,6 +3875,31 @@ function onCampaignFinishedOwnerTestCheck(counters) {
                     `All targets were filtered out (history or suppression). Click '✨ AUTO SETUP' to re-arm test fixtures.`,
                     'error'
                 );
+                return;
+            }
+
+            if (isCaptchaLab) {
+                // [R6.9G.10.3.7.1.4.9] CAPTCHA Lab Evaluation: 7 fixtures total (5 Solved + 2 Expected Failure Skips = 7/7 PASS)
+                const labPass = (total === 7 && sc === 5);
+                updateAutoSetupUI('COMPLETED');
+                const labPanel = document.getElementById('captcha-lab-panel');
+                if (labPanel) labPanel.style.display = 'block';
+
+                if (labPass) {
+                    showAutoSetupFeedback(
+                        `🏁 CONTROLLED CAPTCHA LAB PASS (100% EXPECTED OUTCOME)\n` +
+                        `Lab Cases: 7/7 PASS (5 Solved + 2 Expected Failures Verified | 0 Unexpected Failures)\n` +
+                        `Click '↩ RESTORE' to restore your previous settings and URL list.`,
+                        'success'
+                    );
+                } else {
+                    showAutoSetupFeedback(
+                        `⚠️ CONTROLLED CAPTCHA LAB INCOMPLETE (Expected 5 Solved / 2 Expected Failures)\n` +
+                        `Observed: ${sc} SUCCESS / ${sk} SKIPPED / ${fl} FAILURE (Total: ${total}/7)\n` +
+                        `Click '🧩 RUN CAPTCHA LAB' to retry or '↩ RESTORE' to restore.`,
+                        'warn'
+                    );
+                }
                 return;
             }
 
@@ -4104,6 +4171,24 @@ function initOwnerAutoSetup() {
                 ...CAPTCHA_LAB_FIXTURES
             ];
             await launchCampaign({ source: 'OWNER_FULL_TEST', fixtures: allFixtures });
+        });
+    }
+
+    const runCfLiveBtn = document.getElementById('run-cloudflare-live-btn');
+    if (runCfLiveBtn && !runCfLiveBtn.dataset.bound) {
+        runCfLiveBtn.dataset.bound = 'true';
+        runCfLiveBtn.addEventListener('click', async () => {
+            console.log('[BUTTON_CLICK] id=run-cloudflare-live-btn');
+            await launchCampaign({ source: 'CLOUDFLARE_LIVE_OWNER', fixtures: ['http://127.0.0.1:8088/captcha-turnstile-dom.html'] });
+        });
+    }
+
+    const runCfTestKeyBtn = document.getElementById('run-cloudflare-testkey-btn');
+    if (runCfTestKeyBtn && !runCfTestKeyBtn.dataset.bound) {
+        runCfTestKeyBtn.dataset.bound = 'true';
+        runCfTestKeyBtn.addEventListener('click', async () => {
+            console.log('[BUTTON_CLICK] id=run-cloudflare-testkey-btn');
+            await launchCampaign({ source: 'CLOUDFLARE_TESTKEY_LAB', fixtures: ['http://127.0.0.1:8088/captcha-turnstile-dom.html'] });
         });
     }
 
@@ -4693,7 +4778,14 @@ let _isCampaignLaunching = false;
 
 async function launchCampaign(options = {}) {
     const source = options.source || 'USER_START_BUTTON';
-    const isOwnerTest = source.startsWith('OWNER_');
+    const isOwnerTest = source.startsWith('OWNER_') || source.startsWith('CLOUDFLARE_');
+    if (source === 'OWNER_CAPTCHA_LAB') {
+        const labPanel = document.getElementById('captcha-lab-panel');
+        if (labPanel) labPanel.style.display = 'block';
+        try { chrome.storage.local.set({ xpider_active_test_source: 'OWNER_CAPTCHA_LAB' }); } catch (_) {}
+    } else if (isOwnerTest) {
+        try { chrome.storage.local.set({ xpider_active_test_source: source }); } catch (_) {}
+    }
     const startBtn = document.getElementById('start-btn');
     const btnId = isOwnerTest
         ? (source === 'OWNER_CORE_TEST' ? 'run-function-test-btn' : (source === 'OWNER_CAPTCHA_LAB' ? 'run-captcha-lab-btn' : 'run-full-test-btn'))

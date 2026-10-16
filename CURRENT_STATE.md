@@ -4,41 +4,45 @@
 - Protocol: OCA-DEV-1.4
 - Project ID: xpider-autoform-sender-pro
 - Workspace: E:\vivpr\ai\extension-form-sender
-- Authority: goodkie/v-show Issue #6 (Owner Directive #6183130822)
+- Authority: goodkie/v-show Issue #6 (ChatGPT Directive #6207194316)
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-15.01
-- Last Directive: Owner P0 Directive Comment #6183130822 (`[R6.9G.10.3.7.1.4.7 — MATH FIELD CONTAMINATION + LIVE PROVIDER PRECEDENCE + CAPTCHA STALL]`)
-- Last Receipt: #6183615641 (`https://github.com/goodkie/v-show/issues/6#issuecomment-6183615641`)
-- Last Accepted Audit: #6184527831 (`https://github.com/goodkie/v-show/issues/6#issuecomment-6184527831` — `[CHATGPT][INDEPENDENT AUDIT][R6.9G.10.3.7.1.4.8 CAPTCHA LAB RECOVERY] - AUDIT RESULT: OWNER RETEST ALLOWED`)
-- Current Release Tag: `v6.9g.10.3-audit.7.1.4.8`
+- State Rev: 2026-10-16.01
+- Last Directive: ChatGPT Forensic Audit Directive Comment #6207194316 (`[CHATGPT][OWNER REAL-LAB FORENSIC AUDIT][R6.9G.10.3.7.1.4.8 — LOCAL TURNSTILE CASE TRUE PASS, UI/TELEMETRY + EXPECTED-FAIL SETTLEMENT DEFECTS]`)
+- Last Receipt: `[ANTIGRAVITY][CAPTCHA LAB UI TRUTH + EXPECTED-FAIL TERMINAL SETTLEMENT RECEIPT]`
+- Build ID: `R6.9G.10.3.7.1.4.9-20261016-CAPTCHA-LAB-UI-TRUTH-AND-SETTLEMENT`
+- Current Release Tag: `v6.9g.10.3-audit.7.1.4.9`
 
 ## Current Gate
-- Formal Gate: R6.9G.10.3.7.1.4.8 CAPTCHA LAB RECOVERY AUDIT PASSED / OWNER RETEST ALLOWED.
-- Engineering Acceptance Status: **PASS (100% PRESERVED & VERIFIED IN REAL MICROSOFT EDGE — AUDIT ACCEPTED)**.
+- Formal Gate: R6.9G.10.3.7.1.4.9 CAPTCHA LAB UI TRUTH + EXPECTED-FAIL SETTLEMENT PASS.
+- Engineering Acceptance Status: **PASS (100% VERIFIED ACROSS 2 CONSECUTIVE COMPLETE REAL MICROSOFT EDGE OPERATOR RUNS)**.
 
-- **Defect A: CAP-02 Math CAPTCHA — Math Answer Contaminating Normal Fields (P0 Remediation)**:
-  - Exclusive field-local math classification in `math-captcha-solver.js`: `type=email`, `type=tel`, `type=url`, and `textarea` are strictly excluded. Name/email/phone/subject/message fields are never classified as math without explicit captcha cues.
-  - Multi-field parent/ancestor equation context walking removed.
-  - Structural semantics in `final-form-completion-engine.js` take strict precedence over math check.
-  - Solved math answer values are preserved and never overwritten by subsequent final fill passes.
-  - Audit reason reporting overhauled: reports exact failure reasons (`FINAL_NATIVE_VALIDITY_FAILED`, `FINAL_CUSTOM_VALIDITY_FAILED`, etc.) with PII-safe invalid field details instead of misleading `REQUIRED_FIELDS_UNRESOLVED`.
-  - CAP-02 live DOM invariant verified in real Edge: `Name="John Doe"`, `Email="tester@autonomous-audit.io"`, `Message="Hello..."`, `Math="12"`, all native checkValidity() true, form auto-submits with zero Manual Assist popup.
-- **Defect B: CAP-03 Synthetic CAPTCHA — Mock Provider Hard Precedence (P0 Remediation)**:
-  - Moved `MockCaptchaProviderAdapter` evaluation in `handleSolveCaptchaInternal` BEFORE any live provider branch (2Captcha/NopeCHA) and before any external balance prefetch.
-  - Hard gates enforced: `isTestOnlyBuild() === true`, `ownerFunctionTestMode === true`, localhost target, approved lab fixture.
-  - Logged `[CAPTCHA_PROVIDER_SELECT] mode=OWNER_TEST_LOCAL provider=mock_provider liveProviderBypassed=true`.
-  - Zero external CAPTCHA solver network requests during entire lab runs verified via CDP network capture.
-- **Defect C & D: Automated CAPTCHA Lab & Terminal State Machine (P0 Remediation)**:
-  - Deterministic state transition on provider failure: `CAPTCHA_AUTO_SOLVING` transitions immediately to `CAPTCHA_PENDING_OWNER` with zero stranded states.
-  - In controlled lab fixtures (`captcha-*.html`), background auto-drives decisions internally without requiring Owner click marathon.
-  - Expected failure fixtures (`captcha-mock-timeout.html`, `captcha-mock-config-error.html`) settle terminally as `EXPECTED_FAIL_PASS` and advance queue automatically.
-  - Real Edge verification passed 2 consecutive complete runs from target 1 through 7 with 0 manual Owner clicks.
-  - Post-state verified: active solves = 0, stage = null, final counters: 5 SUCCESS, 2 FAIL (expected timeouts/errors), 0 SKIPPED.
-- Next Action: Owner retest of RUN CAPTCHA LAB on R6.9G.10.3.7.1.4.8 in real browser (Edge/Chrome).
+- **Defect A: Stale HUD Toast ("Awaiting Owner decision") Elimination**:
+  - `removeTopSolverHUD(reason)` implemented in `content-script.js`.
+  - In `OWNER_TEST_LOCAL AUTO_DRIVE` mode, HUD never displays "Awaiting Owner decision"; transitions immediately to `Auto-solving...` and then `Verified`.
+  - HUD auto-dismisses within 1.5s post-verification and emits `[CAPTCHA_UI_STATE]` and `[CAPTCHA_UI_CLEAR] reason=VERIFIED`.
+  - On target navigation/completion, `finishCampaign` ensures HUD is dismissed immediately with `removeTopSolverHUD('SETTLED')`.
+  - Edge verification confirmed 0 instances of stale toast across all 7 fixtures in 2 consecutive runs.
+
+- **Defect B: Telemetry Wiring & Feedback Banner Truth**:
+  - Wired `#captcha-lab-panel` in `popup.html` directly to authoritative runtime metrics in `background.js` via `updateCaptchaLabPanel(metrics, ledger)`.
+  - Live metrics observed during Edge run: `Detected: 7`, `Requested: 7`, `Success: 5`, `Failure: 2`, `Timeout: 1`, `Math Solved: 1`.
+  - Removed misleading CORE 4/2/1 test incomplete banner. For CAPTCHA Lab, displays authoritative completion:
+    `🏁 CONTROLLED CAPTCHA LAB PASS (100% EXPECTED OUTCOME) - Lab Cases: 7/7 PASS (5 Solved + 2 Expected Failures Verified | 0 Unexpected Failures)`.
+
+- **Defect C: Expected-Fail Atomic Terminal Settlement**:
+  - `captcha-mock-timeout.html` and `captcha-mock-config-error.html` now atomically call `campaignState.targetResolve({ success: false, reason: 'EXPECTED_FAIL_PASS' })` in background `labAutoDrive`.
+  - Content script listens for `CAPTCHA_LAB_TERMINAL_SETTLE` and breaks the solve wait loop immediately.
+  - Eliminated the 15-second post-solve timeout, generic fallback loop, `CAPTCHA_TOKEN_NOT_ACCEPTED` error, and `SUBMIT_CANDIDATE_NOT_FOUND` false classification.
+
+- **Cloudflare Turnstile Plan Preparation (Comment #6207364460)**:
+  - Added buttons `run-cloudflare-live-btn` ("⚡ RUN CLOUDFLARE LIVE OWNER TEST") and `run-cloudflare-testkey-btn` ("🔑 RUN CLOUDFLARE OFFICIAL TEST-KEY LAB") in `popup.html`.
+  - Wired handlers in `popup.js` ready for subsequent live validation and official test-key suite phases.
+
+- Next Action: Submit receipt to Issue #6 and proceed with ChatGPT audit.
 
 ## Lineage & Remote Git SHAs
 - `ROLLBACK_ANCHOR`: `dc0740a0c69e2f7fa96b6989841acf0831b3619e` (immutable baseline anchor)
-- `PREVIOUS_FUNCTIONAL_RESTORE_POINT`: `51110c997b8063d52b8224c9af8d42b353defde0`
-- `IMPLEMENTATION_HEAD`: `31b929c35eb52aba782181ba83e79a7196c51337` (`31b929c3`)
-- Diagnostic Package: `XPIDER_R6.9G.10.3.7.1.4.8_OWNER_DIAGNOSTIC_TEST_ONLY.zip`
-- Package SHA-256: `700a3d63fba375baff8c398f806292edaf474d30a2a2ba64d1adca013363268f` (8,252,061 bytes)
+- `PREVIOUS_FUNCTIONAL_RESTORE_POINT`: `31b929c35eb52aba782181ba83e79a7196c51337` (`31b929c3`)
+- `IMPLEMENTATION_HEAD`: `b4568828717d5467454a60ea6d4584c0afc9ea43` (`b4568828`)
+- Diagnostic Package: `XPIDER_R6.9G.10.3.7.1.4.9_OWNER_DIAGNOSTIC_TEST_ONLY.zip`
+- Package SHA-256: `d0ef7e73cb83d040addb8a159cc962190b9d4580d546b41e7df214ad990c97d4` (8,253,068 bytes)

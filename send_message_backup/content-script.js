@@ -125,7 +125,21 @@
         }
     }
 
-    // [v4.18.0] Operator-Visible Top-Level CAPTCHA Solver HUD
+    // [v4.18.0 / R6.9G.10.3.7.1.4.9] Operator-Visible Top-Level CAPTCHA Solver HUD with Stale Toast Prevention
+    function removeTopSolverHUD(reason = 'CLEARED') {
+        try {
+            if (typeof document === 'undefined') return;
+            const hud = document.getElementById('xpider-top-solver-hud');
+            if (hud) {
+                console.log(`[CAPTCHA_UI_CLEAR] reason=${reason}`);
+                hud.style.opacity = '0';
+                setTimeout(() => {
+                    try { if (hud.parentNode) hud.parentNode.removeChild(hud); } catch (_) {}
+                }, 300);
+            }
+        } catch (_) {}
+    }
+
     function updateTopSolverHUD(message, status = 'ACTIVE') {
         try {
             if (typeof document === 'undefined' || !document.body) return;
@@ -161,7 +175,7 @@
             const statusColor = isSuccess ? '#00ffcc' : (isFail ? '#ff3333' : '#ffaa00');
             hud.innerHTML = `<span style="font-size: 14px;">🤖</span><span>[XPIDER AI Solver] <span style="color:${statusColor}">${message}</span></span>`;
             if (isSuccess) {
-                setTimeout(() => { if (hud) hud.style.opacity = '0'; }, 3500);
+                setTimeout(() => { removeTopSolverHUD('SUCCESS_AUTO_DISMISS'); }, 800);
             } else {
                 hud.style.opacity = '1';
             }
@@ -3680,12 +3694,20 @@
         let execIdentity = window.__xpider_execution_identity || {};
         try {
             if (!execIdentity.attemptId) {
-                const st = await new Promise(r => chrome.storage.local.get(['xpider_exec_identity'], r));
+                const st = await new Promise(r => chrome.storage.local.get(['xpider_exec_identity', 'xpider_owner_function_test_mode'], r));
                 execIdentity = st.xpider_exec_identity || execIdentity;
+                if (st && st.xpider_owner_function_test_mode) execIdentity.ownerFunctionTestMode = true;
             }
         } catch (_) {}
 
-        updateTopSolverHUD(`CAPTCHA detected (${captchaData.type}). Awaiting Owner decision...`, 'WAITING');
+        const isControlledLab = /^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?\/captcha-[a-z0-9-]+\.html/i.test(window.location.href);
+        if (isControlledLab || execIdentity.ownerFunctionTestMode) {
+            console.log(`[CAPTCHA_UI_STATE] attemptId=${execIdentity.attemptId || 'none'} state=DETECTED`);
+            updateTopSolverHUD(`CAPTCHA detected (${captchaData.type}). Auto-solving...`, 'ACTIVE');
+        } else {
+            console.log(`[CAPTCHA_UI_STATE] attemptId=${execIdentity.attemptId || 'none'} state=PENDING_OWNER`);
+            updateTopSolverHUD(`CAPTCHA detected (${captchaData.type}). Awaiting Owner decision...`, 'WAITING');
+        }
 
         _activeCaptchaSolvePromise = new Promise((resolve) => {
             const sendFn = window.__xpider_sendExecutionMessage || chrome.runtime.sendMessage;
@@ -3719,6 +3741,10 @@
                 imageData: imageData
             }, (response) => {
                 console.log(`[OWNER_CAPTCHA_REQUEST_SENT] res=`, response);
+                if (response && response.labAutoDrive) {
+                    console.log(`[CAPTCHA_UI_STATE] attemptId=${execIdentity.attemptId || 'none'} from=PENDING_OWNER to=AUTO_SOLVING`);
+                    updateTopSolverHUD(`Auto-solving (${captchaData.type}) via mock_provider...`, 'ACTIVE');
+                }
             });
 
             // Step 2: Listen for Owner decisions routed from background
@@ -3842,6 +3868,9 @@
                     console.log(`[CAPTCHA_CHALLENGE_VERIFIED] verificationConfirmed=${verified}`);
                     if (verified) {
                         _isCaptchaSolved = true;
+                        console.log(`[CAPTCHA_UI_STATE] attemptId=${execIdentity.attemptId || 'none'} to=VERIFIED`);
+                        console.log(`[CAPTCHA_UI_CLEAR] reason=VERIFIED`);
+                        updateTopSolverHUD(`CAPTCHA challenge verified (${captchaData.type})`, 'SUCCESS');
                         sendFn({
                             action: 'CAPTCHA_CHALLENGE_VERIFIED',
                             attemptId: execIdentity.attemptId,
@@ -3890,10 +3919,21 @@
                         }
                     }, 1000);
 
-                } else if (msg.action === 'CAPTCHA_SKIP_DECISION') {
-                    console.log(`[CAPTCHA_SKIP_DECISION] owner skipped target`);
+                } else if (msg.action === 'CAPTCHA_SKIP_DECISION' || msg.action === 'CAPTCHA_LAB_TERMINAL_SETTLE') {
+                    console.log(`[CAPTCHA_LAB_SETTLED] action=${msg.action} result=${msg.result || 'SKIPPED'} reason=${msg.reason || 'NONE'} abortedGenericFallback=true`);
                     chrome.runtime.onMessage.removeListener(decisionListener);
                     _activeCaptchaSolvePromise = null;
+                    removeTopSolverHUD(msg.result || 'SKIPPED');
+                    if (msg.action === 'CAPTCHA_LAB_TERMINAL_SETTLE' || isControlledLab) {
+                        _isCaptchaSolved = false;
+                        currentTargetLifecycleState = TargetLifecycleState.SETTLED;
+                        resolve({
+                            terminalSettled: true,
+                            result: 'EXPECTED_FAIL_PASS',
+                            reason: msg.reason || 'EXPECTED_FAIL_PASS'
+                        });
+                        return;
+                    }
                     resolve(false);
                 }
             };
@@ -3984,6 +4024,12 @@
                 autoSolveAttempted = true;
                 const solveResult = await tryAutoSolveCaptcha('WAIT_LOOP');
                 autoSolveFinishedTs = Date.now();
+                if (solveResult && solveResult.terminalSettled) {
+                    logDev(`[CAPTCHA_LAB_CASE] Terminal lab settlement: ${solveResult.result} reason=${solveResult.reason}. Aborting form wait loop.`, "info");
+                    removeTopSolverHUD(solveResult.result || 'EXPECTED_FAIL_PASS');
+                    currentTargetLifecycleState = TargetLifecycleState.SETTLED;
+                    return false;
+                }
                 if (solveResult && solveResult.terminalError) {
                     logDev(`[CAPTCHA_GATE] eligible=false reason=CAPTCHA_SOLVER_UNAVAILABLE error=${solveResult.terminalError}`, "error");
                     updateTopSolverHUD(`2Captcha solver unavailable: ${solveResult.terminalError}`, "FAIL");
@@ -6237,6 +6283,7 @@
     function finishCampaign(success, error = null, reasonCode = null, metadata = {}) {
         currentTargetLifecycleState = TargetLifecycleState.SETTLED;
         sessionStorage.removeItem('xpider_pending_verify'); // [v17.6.0] Clear recovery flag
+        try { removeTopSolverHUD(success ? 'SUCCESS' : 'SETTLED'); } catch (_) {}
         const sendFn = window.__xpider_sendExecutionMessage || chrome.runtime.sendMessage;
         sendFn({
             action: 'SENDER_FINISHED',

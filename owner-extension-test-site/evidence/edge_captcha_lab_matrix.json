@@ -11,7 +11,15 @@
         "capOk": "",
         "capFail": "",
         "modal": false,
-        "manualAssist": false
+        "manualAssist": false,
+        "labPanelDisplay": "block",
+        "labDetected": 7,
+        "labRequested": 7,
+        "labSuccess": 5,
+        "labFailure": 2,
+        "labTimeout": 1,
+        "labMath": 1,
+        "feedbackText": "🏁 CONTROLLED CAPTCHA LAB PASS (100% EXPECTED OUTCOME) Lab Cases: 7/7 PASS (5 Solved + 2 Expected Failures Verified | 0 Unexpected Failures) Click '↩ RESTORE' to restore your previous settings and URL list."
       },
       "post": {
         "stage": null,
@@ -27,7 +35,19 @@
           "autoSuccess": 5,
           "autoFailure": 2,
           "manualSuccess": 0,
-          "manualSkip": 4
+          "manualSkip": 2
+        },
+        "metrics": {
+          "detected": 7,
+          "requested": 7,
+          "success": 5,
+          "failure": 2,
+          "timeout": 1,
+          "staleDropped": 0,
+          "mathSolved": 1,
+          "audioPassed": 0,
+          "expectedFailPass": 2,
+          "unexpectedFailures": 0
         }
       }
     },
@@ -42,15 +62,23 @@
         "capOk": "",
         "capFail": "",
         "modal": false,
-        "manualAssist": false
+        "manualAssist": false,
+        "labPanelDisplay": "block",
+        "labDetected": 7,
+        "labRequested": 7,
+        "labSuccess": 5,
+        "labFailure": 2,
+        "labTimeout": 1,
+        "labMath": 1,
+        "feedbackText": "🏁 CONTROLLED CAPTCHA LAB PASS (100% EXPECTED OUTCOME) Lab Cases: 7/7 PASS (5 Solved + 2 Expected Failures Verified | 0 Unexpected Failures) Click '↩ RESTORE' to restore your previous settings and URL list."
       },
       "post": {
         "stage": null,
         "activeSolves": 0,
         "isActive": false,
         "captcha": {
-          "solved": 5,
-          "failed": 2
+          "solved": 10,
+          "failed": 4
         },
         "ledger": {
           "detected": 6,
@@ -58,7 +86,19 @@
           "autoSuccess": 5,
           "autoFailure": 2,
           "manualSuccess": 0,
-          "manualSkip": 4
+          "manualSkip": 2
+        },
+        "metrics": {
+          "detected": 7,
+          "requested": 7,
+          "success": 5,
+          "failure": 2,
+          "timeout": 1,
+          "staleDropped": 0,
+          "mathSolved": 1,
+          "audioPassed": 0,
+          "expectedFailPass": 2,
+          "unexpectedFailures": 0
         }
       }
     }
@@ -86,6 +126,10 @@
     "[BG_LOG][tab=none] [CAPTCHA_PROVIDER_SELECT] mode=OWNER_TEST_LOCAL provider=mock_provider liveProviderBypassed=true requestedMethod=nopecha",
     "[BG_LOG][tab=none] [CAPTCHA_PROVIDER_SELECT] mode=OWNER_TEST_LOCAL provider=mock_provider liveProviderBypassed=true requestedMethod=nopecha",
     "[BG_LOG][tab=none] [CAPTCHA_PROVIDER_SELECT] mode=OWNER_TEST_LOCAL provider=mock_provider liveProviderBypassed=true requestedMethod=nopecha",
+    "[BG_LOG][tab=none] [CAPTCHA_PROVIDER_SELECT] mode=OWNER_TEST_LOCAL provider=mock_provider liveProviderBypassed=true requestedMethod=nopecha",
+    "[BG_LOG][tab=none] [CAPTCHA_PROVIDER_SELECT] mode=OWNER_TEST_LOCAL provider=mock_provider liveProviderBypassed=true requestedMethod=nopecha",
+    "[BG_LOG][tab=none] [CAPTCHA_PROVIDER_SELECT] mode=OWNER_TEST_LOCAL provider=mock_provider liveProviderBypassed=true requestedMethod=nopecha",
+    "[BG_LOG][tab=none] [CAPTCHA_PROVIDER_SELECT] mode=OWNER_TEST_LOCAL provider=mock_provider liveProviderBypassed=true requestedMethod=nopecha",
     "[BG_LOG][tab=none] [CAPTCHA_PROVIDER_SELECT] mode=OWNER_TEST_LOCAL provider=mock_provider liveProviderBypassed=true requestedMethod=nopecha"
   ],
   "labCaseLogs": [
@@ -99,12 +143,58 @@
     "[BG_LOG][tab=none] [CAPTCHA_LAB_CASE] url=http://127.0.0.1:8088/captcha-mock-solve.html result=PASS method=mock_provider",
     "[BG_LOG][tab=none] [CAPTCHA_LAB_CASE] url=http://127.0.0.1:8088/captcha-mock-timeout.html phase=AUTO_DRIVE_START type=recaptcha",
     "[BG_LOG][tab=none] [CAPTCHA_LAB_CASE] url=http://127.0.0.1:8088/captcha-mock-timeout.html result=EXPECTED_FAIL_PASS error=SOLVER_TIMEOUT settle=SKIP_ADVANCE",
+    "[BG_LOG][tab=none] [CAPTCHA_LAB_CASE] url=http://127.0.0.1:8088/captcha-mock-config-error.html phase=AUTO_DRIVE_START type=recaptcha",
+    "[BG_LOG][tab=none] [CAPTCHA_LAB_CASE] url=http://127.0.0.1:8088/captcha-mock-config-error.html result=EXPECTED_FAIL_PASS error=ERROR_ZERO_BALANCE settle=SKIP_ADVANCE",
+    "[BG_LOG][tab=none] [CAPTCHA_LAB_CASE] url=http://127.0.0.1:8088/captcha-recaptcha-dom.html phase=AUTO_DRIVE_START type=recaptcha",
+    "[BG_LOG][tab=none] [CAPTCHA_LAB_CASE] url=http://127.0.0.1:8088/captcha-recaptcha-dom.html result=PASS method=mock_provider",
+    "[BG_LOG][tab=none] [CAPTCHA_LAB_CASE] url=http://127.0.0.1:8088/captcha-hcaptcha-dom.html phase=AUTO_DRIVE_START type=hcaptcha",
+    "[BG_LOG][tab=none] [CAPTCHA_LAB_CASE] url=http://127.0.0.1:8088/captcha-hcaptcha-dom.html result=PASS method=mock_provider",
+    "[BG_LOG][tab=none] [CAPTCHA_LAB_CASE] url=http://127.0.0.1:8088/captcha-turnstile-dom.html phase=AUTO_DRIVE_START type=turnstile",
+    "[BG_LOG][tab=none] [CAPTCHA_LAB_CASE] url=http://127.0.0.1:8088/captcha-turnstile-dom.html result=PASS method=mock_provider",
+    "[BG_LOG][tab=none] [CAPTCHA_LAB_CASE] url=http://127.0.0.1:8088/captcha-mock-solve.html phase=AUTO_DRIVE_START type=recaptcha",
+    "[BG_LOG][tab=none] [CAPTCHA_LAB_CASE] url=http://127.0.0.1:8088/captcha-mock-solve.html result=PASS method=mock_provider",
     "[BG_LOG][tab=none] [CAPTCHA_LAB_CASE] url=http://127.0.0.1:8088/captcha-mock-timeout.html phase=AUTO_DRIVE_START type=recaptcha",
     "[BG_LOG][tab=none] [CAPTCHA_LAB_CASE] url=http://127.0.0.1:8088/captcha-mock-timeout.html result=EXPECTED_FAIL_PASS error=SOLVER_TIMEOUT settle=SKIP_ADVANCE",
     "[BG_LOG][tab=none] [CAPTCHA_LAB_CASE] url=http://127.0.0.1:8088/captcha-mock-config-error.html phase=AUTO_DRIVE_START type=recaptcha",
-    "[BG_LOG][tab=none] [CAPTCHA_LAB_CASE] url=http://127.0.0.1:8088/captcha-mock-config-error.html result=EXPECTED_FAIL_PASS error=ERROR_ZERO_BALANCE settle=SKIP_ADVANCE",
-    "[BG_LOG][tab=none] [CAPTCHA_LAB_CASE] url=http://127.0.0.1:8088/captcha-mock-config-error.html phase=AUTO_DRIVE_START type=recaptcha",
     "[BG_LOG][tab=none] [CAPTCHA_LAB_CASE] url=http://127.0.0.1:8088/captcha-mock-config-error.html result=EXPECTED_FAIL_PASS error=ERROR_ZERO_BALANCE settle=SKIP_ADVANCE"
+  ],
+  "captchaUiStateLogs": [
+    "[BG_LOG][tab=none] [CAPTCHA_UI_STATE] attemptId=att_1792122774385_y44jm from=PENDING_OWNER to=AUTO_SOLVING",
+    "[BG_LOG][tab=none] [CAPTCHA_UI_STATE] attemptId=att_1792122774385_y44jm to=VERIFIED",
+    "[BG_LOG][tab=none] [CAPTCHA_UI_CLEAR] reason=VERIFIED attemptId=att_1792122774385_y44jm",
+    "[BG_LOG][tab=none] [CAPTCHA_UI_STATE] attemptId=att_1792122791449_45ebf from=PENDING_OWNER to=AUTO_SOLVING",
+    "[BG_LOG][tab=none] [CAPTCHA_UI_STATE] attemptId=att_1792122791449_45ebf to=VERIFIED",
+    "[BG_LOG][tab=none] [CAPTCHA_UI_CLEAR] reason=VERIFIED attemptId=att_1792122791449_45ebf",
+    "[BG_LOG][tab=none] [CAPTCHA_UI_STATE] attemptId=att_1792122809098_0mgiq from=PENDING_OWNER to=AUTO_SOLVING",
+    "[BG_LOG][tab=none] [CAPTCHA_UI_STATE] attemptId=att_1792122809098_0mgiq to=VERIFIED",
+    "[BG_LOG][tab=none] [CAPTCHA_UI_CLEAR] reason=VERIFIED attemptId=att_1792122809098_0mgiq",
+    "[BG_LOG][tab=none] [CAPTCHA_UI_STATE] attemptId=att_1792122825921_xibm4 from=PENDING_OWNER to=AUTO_SOLVING",
+    "[BG_LOG][tab=none] [CAPTCHA_UI_STATE] attemptId=att_1792122825921_xibm4 to=VERIFIED",
+    "[BG_LOG][tab=none] [CAPTCHA_UI_CLEAR] reason=VERIFIED attemptId=att_1792122825921_xibm4",
+    "[BG_LOG][tab=none] [CAPTCHA_UI_STATE] attemptId=att_1792122843931_tr5s0 from=PENDING_OWNER to=AUTO_SOLVING",
+    "[BG_LOG][tab=none] [CAPTCHA_UI_STATE] attemptId=att_1792122843931_tr5s0 to=EXPECTED_FAIL_PASS",
+    "[BG_LOG][tab=none] [CAPTCHA_UI_CLEAR] reason=EXPECTED_FAIL_PASS attemptId=att_1792122843931_tr5s0",
+    "[BG_LOG][tab=none] [CAPTCHA_UI_STATE] attemptId=att_1792122849263_7r1zi from=PENDING_OWNER to=AUTO_SOLVING",
+    "[BG_LOG][tab=none] [CAPTCHA_UI_STATE] attemptId=att_1792122849263_7r1zi to=EXPECTED_FAIL_PASS",
+    "[BG_LOG][tab=none] [CAPTCHA_UI_CLEAR] reason=EXPECTED_FAIL_PASS attemptId=att_1792122849263_7r1zi",
+    "[BG_LOG][tab=none] [CAPTCHA_UI_STATE] attemptId=att_1792122876946_v38wl from=PENDING_OWNER to=AUTO_SOLVING",
+    "[BG_LOG][tab=none] [CAPTCHA_UI_STATE] attemptId=att_1792122876946_v38wl to=VERIFIED",
+    "[BG_LOG][tab=none] [CAPTCHA_UI_CLEAR] reason=VERIFIED attemptId=att_1792122876946_v38wl",
+    "[BG_LOG][tab=none] [CAPTCHA_UI_STATE] attemptId=att_1792122893536_3s4k8 from=PENDING_OWNER to=AUTO_SOLVING",
+    "[BG_LOG][tab=none] [CAPTCHA_UI_STATE] attemptId=att_1792122893536_3s4k8 to=VERIFIED",
+    "[BG_LOG][tab=none] [CAPTCHA_UI_CLEAR] reason=VERIFIED attemptId=att_1792122893536_3s4k8",
+    "[BG_LOG][tab=none] [CAPTCHA_UI_STATE] attemptId=att_1792122910803_dqg53 from=PENDING_OWNER to=AUTO_SOLVING",
+    "[BG_LOG][tab=none] [CAPTCHA_UI_STATE] attemptId=att_1792122910803_dqg53 to=VERIFIED",
+    "[BG_LOG][tab=none] [CAPTCHA_UI_CLEAR] reason=VERIFIED attemptId=att_1792122910803_dqg53",
+    "[BG_LOG][tab=none] [CAPTCHA_UI_STATE] attemptId=att_1792122928312_nw5p8 from=PENDING_OWNER to=AUTO_SOLVING",
+    "[BG_LOG][tab=none] [CAPTCHA_UI_STATE] attemptId=att_1792122928312_nw5p8 to=VERIFIED",
+    "[BG_LOG][tab=none] [CAPTCHA_UI_CLEAR] reason=VERIFIED attemptId=att_1792122928312_nw5p8",
+    "[BG_LOG][tab=none] [CAPTCHA_UI_STATE] attemptId=att_1792122945943_cu990 from=PENDING_OWNER to=AUTO_SOLVING",
+    "[BG_LOG][tab=none] [CAPTCHA_UI_STATE] attemptId=att_1792122945943_cu990 to=EXPECTED_FAIL_PASS",
+    "[BG_LOG][tab=none] [CAPTCHA_UI_CLEAR] reason=EXPECTED_FAIL_PASS attemptId=att_1792122945943_cu990",
+    "[BG_LOG][tab=none] [CAPTCHA_UI_STATE] attemptId=att_1792122951427_3jkey from=PENDING_OWNER to=AUTO_SOLVING",
+    "[BG_LOG][tab=none] [CAPTCHA_UI_STATE] attemptId=att_1792122951427_3jkey to=EXPECTED_FAIL_PASS",
+    "[BG_LOG][tab=none] [CAPTCHA_UI_CLEAR] reason=EXPECTED_FAIL_PASS attemptId=att_1792122951427_3jkey"
   ],
   "fixtures": [
     "captcha-math.html",

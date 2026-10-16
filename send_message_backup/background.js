@@ -548,6 +548,20 @@ let campaignState = {
         manualSuccess: 0,  // CAPTCHA_MANUAL_SUCCESS: owner solved manually
         manualSkip: 0      // CAPTCHA_MANUAL_SKIP: owner chose to skip
     },
+    // [R6.9G.10.3.7.1.4.9] Authoritative Controlled CAPTCHA Lab Metrics
+    captchaLabMetrics: {
+        detected: 0,
+        requested: 0,
+        success: 0,
+        failure: 0,
+        timeout: 0,
+        staleDropped: 0,
+        mathSolved: 0,
+        audioPassed: 0,
+        expectedFailPass: 0,
+        unexpectedFailures: 0
+    },
+    ownerTestSource: null,
     // [R6.9A Authoritative Real-Time Campaign Counters (Ledger-Derived)]
     counters: {
         success: 0,
@@ -625,6 +639,8 @@ function broadcastCounters() {
             captchaFailedCount: campaignState.counters.captchaFailed,
             // [R6.9G-G] Full CAPTCHA attempt-bound ledger metrics
             captchaLedger: { ...campaignState.captchaLedger },
+            captchaLabMetrics: { ...campaignState.captchaLabMetrics },
+            ownerTestSource: campaignState.ownerTestSource || null,
             counters: campaignState.counters
         }
     }).catch(() => {});
@@ -2807,6 +2823,22 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
 
                 sendResponse({ success: true, status: 'acknowledged', queueCount: queueLen });
 
+                campaignState.ownerTestSource = request.source || null;
+                if (request.source === 'OWNER_CAPTCHA_LAB') {
+                    campaignState.captchaLabMetrics = {
+                        detected: 0,
+                        requested: 0,
+                        success: 0,
+                        failure: 0,
+                        timeout: 0,
+                        staleDropped: 0,
+                        mathSolved: 0,
+                        audioPassed: 0,
+                        expectedFailPass: 0,
+                        unexpectedFailures: 0
+                    };
+                }
+
                 try {
                     if (bootPromise) {
                         // Wait max 1s for boot to finish during a fresh start message
@@ -2818,7 +2850,8 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                     await startCampaignOrchestrator(request.queue, request.template, request.delayMs, request.fillDelayMs, request.submitDelayMs, {
                         skipPreviouslyAttempted: request.skipPreviouslyAttempted,
                         overrideSkipAttempted: request.overrideSkipAttempted,
-                        ownerFunctionTestMode: isTestMode
+                        ownerFunctionTestMode: isTestMode,
+                        ownerTestSource: request.source || null
                     });
                 } catch (e) {
                     console.error("[StartError]", e);
@@ -3410,6 +3443,10 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
             logBg(null, `[CAPTCHA_MATH_SOLVED] Math challenge solved: "${request.question || ''}" => ${request.answer}`, 'success');
             campaignState.counters.captchaSolved = (campaignState.counters.captchaSolved || 0) + 1;
             campaignState.captchaLedger.autoSuccess++;
+            campaignState.captchaLabMetrics.mathSolved = (campaignState.captchaLabMetrics.mathSolved || 0) + 1;
+            campaignState.captchaLabMetrics.detected = (campaignState.captchaLabMetrics.detected || 0) + 1;
+            campaignState.captchaLabMetrics.requested = (campaignState.captchaLabMetrics.requested || 0) + 1;
+            campaignState.captchaLabMetrics.success = (campaignState.captchaLabMetrics.success || 0) + 1;
             broadcastCounters();
             sendResponse({ success: true });
             return true;
@@ -3712,7 +3749,10 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                             captchaEpoch: curEpoch,
                             tabId: campaignState.currentTabId
                         };
+                        campaignState.captchaLabMetrics.detected = (campaignState.captchaLabMetrics.detected || 0) + 1;
+                        campaignState.captchaLabMetrics.requested = (campaignState.captchaLabMetrics.requested || 0) + 1;
                         logBg(null, `[CAPTCHA_LAB_CASE] url=${labUrl} phase=AUTO_DRIVE_START type=${captchaType || 'recaptcha'}`, 'info');
+                        logBg(null, `[CAPTCHA_UI_STATE] attemptId=${labIdentity.attemptId} from=PENDING_OWNER to=AUTO_SOLVING`, 'info');
                         sendResponse({ success: true, status: 'PENDING_OWNER_DECISION', labAutoDrive: true });
                         (async () => {
                             try {
@@ -3732,14 +3772,47 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                                 const res = await Promise.race([solveP, labTimeout]);
                                 if (campaignState.currentAttempt?.attemptId !== labIdentity.attemptId) return;
                                 if (res && res.success) {
+                                    campaignState.captchaLabMetrics.success = (campaignState.captchaLabMetrics.success || 0) + 1;
+                                    logBg(null, `[CAPTCHA_UI_STATE] attemptId=${labIdentity.attemptId} to=VERIFIED`, 'success');
+                                    logBg(null, `[CAPTCHA_UI_CLEAR] reason=VERIFIED attemptId=${labIdentity.attemptId}`, 'info');
                                     logBg(null, `[CAPTCHA_LAB_CASE] url=${labUrl} result=PASS method=${res.method || 'mock_provider'}`, 'success');
+                                    broadcastCounters();
                                 } else {
                                     // Expected-failure fixtures (timeout / config-error) settle terminally and advance.
+                                    logBg(null, `[CAPTCHA_UI_STATE] attemptId=${labIdentity.attemptId} to=EXPECTED_FAIL_PASS`, 'warning');
+                                    logBg(null, `[CAPTCHA_UI_CLEAR] reason=EXPECTED_FAIL_PASS attemptId=${labIdentity.attemptId}`, 'info');
                                     logBg(null, `[CAPTCHA_LAB_CASE] url=${labUrl} result=EXPECTED_FAIL_PASS error=${String(res && res.error || 'UNKNOWN').slice(0, 60)} settle=SKIP_ADVANCE`, 'success');
                                     campaignState.captchaLedger.manualSkip++;
+                                    campaignState.captchaLabMetrics.failure = (campaignState.captchaLabMetrics.failure || 0) + 1;
+                                    campaignState.captchaLabMetrics.expectedFailPass = (campaignState.captchaLabMetrics.expectedFailPass || 0) + 1;
+                                    if (res && res.error === 'SOLVER_TIMEOUT') {
+                                        campaignState.captchaLabMetrics.timeout = (campaignState.captchaLabMetrics.timeout || 0) + 1;
+                                    }
                                     campaignState.currentTargetStage = 'CAPTCHA_SKIPPED';
                                     if (campaignState.targetDeadlineController) campaignState.targetDeadlineController.resume();
-                                    chrome.tabs.sendMessage(labIdentity.tabId, Object.assign({ action: 'CAPTCHA_SKIP_DECISION' }, labIdentity)).catch(() => {});
+                                    chrome.tabs.sendMessage(labIdentity.tabId, Object.assign({
+                                        action: 'CAPTCHA_LAB_TERMINAL_SETTLE',
+                                        result: 'EXPECTED_FAIL_PASS',
+                                        reason: res && res.error
+                                    }, labIdentity)).catch(() => {});
+
+                                    // [R6.9G.10.3.7.1.4.9] Atomically resolve target in orchestrator to prevent generic fallback
+                                    if (typeof campaignState.targetResolve === 'function') {
+                                        const resolve = campaignState.targetResolve;
+                                        campaignState.targetResolve = null;
+                                        resolve({
+                                            success: false,
+                                            isExpectedFailPass: true,
+                                            reasonCode: `EXPECTED_FAIL_PASS_${res?.error || 'UNKNOWN'}`,
+                                            error: res?.error || 'EXPECTED_FAIL_PASS',
+                                            metadata: {
+                                                captchaLabCase: true,
+                                                expectedFailPass: true,
+                                                reason: res?.error
+                                            }
+                                        });
+                                    }
+                                    broadcastCounters();
                                 }
                             } catch (labErr) {
                                 logBg(null, `[CAPTCHA_LAB_CASE] url=${labUrl} result=DRIVER_ERROR error=${labErr.message}`, 'error');
