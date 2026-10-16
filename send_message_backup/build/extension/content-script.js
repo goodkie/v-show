@@ -768,12 +768,33 @@
     }
 
     async function checkAndRecoverPage() {
-        const bodyText = document.body.textContent.toLowerCase();
-        const errorKeywords = ['404 not found', 'page not found', 'forbidden', 'error 403', 'connection refused'];
+        const bodyText = (document.body ? document.body.textContent : '').toLowerCase();
+        const errorKeywords = ['404 not found', 'page not found', 'forbidden', 'error 403', 'connection refused', 'not found on this server'];
         
-        if (errorKeywords.some(k => bodyText.includes(k) && bodyText.length < 500)) {
-            logDev("⚠️ [Recovery] Error page detected. Aborting path.", "error");
-            finishCampaign(false, "Server Error / 404");
+        const isErrorPage = errorKeywords.some(k => bodyText.includes(k) && bodyText.length < 1000);
+        if (isErrorPage) {
+            logDev(`⚠️ [Recovery] Error page detected on candidate: ${window.location.href}`, "warning");
+
+            // Directive B #7 & Directive F: Automatic candidate advance on 404/dead page
+            const visited = JSON.parse(sessionStorage.getItem('xpider_guessed_paths') || '[]');
+            const currentNorm = normalizeUrl(window.location.href);
+            if (currentNorm && !visited.includes(currentNorm)) visited.push(currentNorm);
+            sessionStorage.setItem('xpider_guessed_paths', JSON.stringify(visited));
+
+            const COMMON_CONTACT_ALIASES = ['/contact', '/contact-us', '/contactus', '/get-in-touch', '/inquiry', '/about/contact'];
+            const unvisitedAlias = COMMON_CONTACT_ALIASES
+                .map(a => `${window.location.origin}${a}`)
+                .find(u => !visited.includes(normalizeUrl(u)));
+
+            if (unvisitedAlias) {
+                logDev(`[CANDIDATE_ADVANCE] Dead candidate=${window.location.href} -> advancing to next alias=${unvisitedAlias}`, "info");
+                window.location.href = unvisitedAlias;
+                return true;
+            }
+
+            // If candidates exhausted, settle explicitly as CONTACT_CANDIDATE_ERROR_PAGE / NO_ACCESSIBLE_INQUIRY_FORM
+            logDev("⚠️ [Recovery] All candidate paths exhausted after error page. Settling CONTACT_CANDIDATE_ERROR_PAGE / NO_ACCESSIBLE_INQUIRY_FORM.", "warning");
+            finishCampaign(false, "CONTACT_CANDIDATE_ERROR_PAGE", "NO_ACCESSIBLE_INQUIRY_FORM");
             return true;
         }
         return false;
@@ -963,18 +984,44 @@
             logDev(`[FORM_SCAN] forms=${formScanForms} logicalContainers=${formScanLogical} crossOriginFrames=${crossOriginFramesCount} externalFormCandidates=${externalFormCandidatesCount}`, "info");
             logDev(`[PAGE_CLASS] ${pageClass}`, "info");
 
-            // [R6.9G.8] If no accessible native form is found, check for external widget or contact page boundary -> trigger Manual Assist!
-            if (!currentForm && (detectedExternalFormUrl || isContactPageUrl)) {
-                const assistReason = detectedExternalFormUrl ? 'EXTERNAL_CROSS_ORIGIN_FORM' : 'FORM_NOT_ACCESSIBLE';
-                logDev(`[FORM_BOUNDARY] type=${detectedExternalFormUrl ? 'CROSS_ORIGIN_IFRAME' : 'CONTACT_PAGE_NO_DOM_FORM'} formPageUrl=${window.location.href} externalFormUrl=${detectedExternalFormUrl || 'none'}`, "info");
-                logDev(`[FORM_GATE] eligible=false reason=${assistReason}`, "info");
-                if (window.__xpider_releaseProcessingLock) window.__xpider_releaseProcessingLock(currentUrl);
+            // [Directive B & C: Bounded Auto-Recovery & Manual Assist Escalation]
+            // MANUAL ASSIST = LAST RESORT, not first fallback.
+            // Do NOT show manual assist for normal no-form pages, 404s, or transient states.
+            if (!currentForm) {
+                if (detectedExternalFormUrl) {
+                    // Plausible external inquiry form provider detected (cross-origin iframe like PushPress, HubSpot, etc.)
+                    const assistReason = 'EXTERNAL_CROSS_ORIGIN_FORM';
+                    logDev(`[FORM_BOUNDARY] type=CROSS_ORIGIN_IFRAME formPageUrl=${window.location.href} externalFormUrl=${detectedExternalFormUrl}`, "info");
+                    logDev(`[FORM_GATE] eligible=false reason=${assistReason}`, "info");
+                    if (window.__xpider_releaseProcessingLock) window.__xpider_releaseProcessingLock(currentUrl);
 
-                const assistHandled = await requestManualFormAssist(assistReason, detectedExternalFormUrl || '', []);
-                if (assistHandled) {
-                    return analyzePageAndExecute(template, speed, recursionDebt);
+                    const dedupeKey = getManualAssistDedupeKey(assistReason);
+                    if (!hasManualAssistBeenShown(dedupeKey)) {
+                        logDev(`[MANUAL_ASSIST_ESCALATE] reason=${assistReason} attempts=1 evidence=${detectedExternalFormUrl}`, "info");
+                        const assistHandled = await requestManualFormAssist(assistReason, detectedExternalFormUrl, []);
+                        if (assistHandled) {
+                            return await retryCurrentPageDetection({
+                                template,
+                                delayMs,
+                                triedUrl,
+                                fillDelayMs,
+                                submitDelayMs,
+                                retryCount: 1,
+                                reason: assistReason
+                            });
+                        }
+                        return;
+                    } else {
+                        logDev(`[MANUAL_ASSIST_DEDUPE_SUPPRESSED] Key=${dedupeKey} already requested. Bypassing repeated popup.`, "info");
+                    }
+                } else if (isContactPageUrl) {
+                    // Contact URL without DOM form: execute auto-recovery before any escalation
+                    logDev(`[FORM_BOUNDARY] type=CONTACT_PAGE_NO_DOM_FORM formPageUrl=${window.location.href} externalFormUrl=none`, "info");
+                    logDev(`[FORM_GATE] eligible=false reason=FORM_NOT_ACCESSIBLE`, "info");
+                    logDev(`[AUTO_RECOVERY] reason=FORM_NOT_ACCESSIBLE action=SEARCH_ALTERNATE_CANDIDATES`, "info");
+                    if (window.__xpider_releaseProcessingLock) window.__xpider_releaseProcessingLock(currentUrl);
+                    // Do NOT show Manual Assist! Fall through to Track A DOM link discovery and aliases!
                 }
-                return;
             }
 
             // [R6.3 A3] CONTACT_INFO_ONLY: do NOT acquire submit lock; continue discovery
@@ -1099,11 +1146,21 @@
                 return;
             }
 
-            // 3. Direct Path Guessing (Only if DOM links not found)
+            // 3. Direct Path Guessing & Known Contact Aliases (Directive B #6)
             if (recursionDebt === 0) {
-                logDev("⚡ [Discovery] No form or links on current page. Trying common paths...");
-                const directPath = await guessDirectContactPaths(template);
-                if (directPath) return; // Navigation handled inside
+                logDev("⚡ [Discovery] No form or links on current page. Trying common contact aliases...");
+                const COMMON_CONTACT_ALIASES = ['/contact', '/contact-us', '/contactus', '/get-in-touch', '/inquiry', '/about/contact'];
+                const visited = JSON.parse(sessionStorage.getItem('xpider_guessed_paths') || '[]');
+                const unvisitedAlias = COMMON_CONTACT_ALIASES
+                    .map(a => `${window.location.origin}${a}`)
+                    .find(u => !visited.includes(normalizeUrl(u)));
+                if (unvisitedAlias && normalizeUrl(unvisitedAlias) !== normalizeUrl(currentUrl)) {
+                    logDev(`⚡ [Discovery] Navigating to contact alias: ${unvisitedAlias}`, "info");
+                    visited.push(normalizeUrl(unvisitedAlias));
+                    sessionStorage.setItem('xpider_guessed_paths', JSON.stringify(visited));
+                    await safeNavigate(unvisitedAlias, template);
+                    return;
+                }
             }
 
             // 4. Recursive Search (Deep Form Hunting)
@@ -1127,7 +1184,7 @@
             sessionStorage.removeItem('xpider_recursion_debt');
             sessionStorage.removeItem('xpider_guessed_paths');
             currentTargetLifecycleState = TargetLifecycleState.SETTLING;
-            finishCampaign(false, "NO_FORM_ON_PAGE", "CONTACT_DISCOVERY_EXHAUSTED");
+            finishCampaign(false, "NO_FORM_ON_PAGE", "NO_ACCESSIBLE_INQUIRY_FORM");
         } catch (e) {
             logDev(`🚨 [Engine] Fatal runtime error: ${e.message}`, "error");
             const isRef = (e instanceof ReferenceError) || /is not defined/i.test(e.message);
@@ -1362,8 +1419,44 @@
         });
     }
 
-    // [R6.9G.8] Manual Form Assist: Sticky Owner-Gated Pause
+    function getManualAssistDedupeKey(reason) {
+        const attemptId = (window.__xpider_exec_identity && window.__xpider_exec_identity.attemptId) ||
+            sessionStorage.getItem('xpider_current_attempt_id') || 'attempt_current';
+        const targetToken = (window.__xpider_exec_identity && window.__xpider_exec_identity.targetToken) ||
+            sessionStorage.getItem('xpider_current_target_token') || window.location.hostname;
+        return `${attemptId}:${targetToken}:${reason}`;
+    }
+
+    function hasManualAssistBeenShown(dedupeKey) {
+        try {
+            const raw = sessionStorage.getItem('xpider_manual_assist_shown_keys') || '[]';
+            const arr = JSON.parse(raw);
+            return arr.includes(dedupeKey);
+        } catch (_) {
+            return false;
+        }
+    }
+
+    function markManualAssistShown(dedupeKey) {
+        try {
+            const raw = sessionStorage.getItem('xpider_manual_assist_shown_keys') || '[]';
+            const arr = JSON.parse(raw);
+            if (!arr.includes(dedupeKey)) {
+                arr.push(dedupeKey);
+                sessionStorage.setItem('xpider_manual_assist_shown_keys', JSON.stringify(arr));
+            }
+        } catch (_) {}
+    }
+
+    // [R6.9G.8 & Directive B, C] Manual Form Assist: Sticky Owner-Gated Pause
     async function requestManualFormAssist(reason, externalFormUrl = '', unresolvedFields = []) {
+        const dedupeKey = getManualAssistDedupeKey(reason);
+        if (hasManualAssistBeenShown(dedupeKey)) {
+            logDev(`[MANUAL_ASSIST_DEDUPE_SUPPRESSED] Key=${dedupeKey} already requested assist. Suppressing popup.`, "info");
+            return false;
+        }
+        markManualAssistShown(dedupeKey);
+
         logDev(`[MANUAL_ASSIST] state=FORM_MANUAL_ASSIST_PENDING_OWNER reason=${reason} contactPageUrl=${window.location.href} formPageUrl=${window.location.href} externalFormUrl=${externalFormUrl || 'none'}`, "warning");
         logDev(`⚠️ [ManualAssist] Pausing automation for Owner assist: ${reason}`, "info");
 
@@ -1397,6 +1490,104 @@
             };
             chrome.runtime.onMessage.addListener(messageHandler);
         });
+    }
+
+    // [Directive A: Authoritative Retry Entry Point]
+    async function retryCurrentPageDetection(context = {}) {
+        const {
+            template = (typeof _currentCampaignTemplate !== 'undefined' ? _currentCampaignTemplate : (window.__xpider_current_template || null)),
+            delayMs = 10000,
+            triedUrl = '',
+            fillDelayMs = 300,
+            submitDelayMs = 1500,
+            retryCount = 1,
+            reason = 'FORM_NOT_ACCESSIBLE'
+        } = context;
+
+        logDev(`[AUTO_RECOVERY] attempt=${retryCount}/3 reason=${reason} result=STARTING url=${window.location.href}`, "info");
+
+        if (retryCount > 3) {
+            logDev(`[AUTO_RECOVERY] attempt=${retryCount}/3 reason=${reason} result=EXHAUSTED`, "warning");
+            finishCampaign(false, "NO_ACCESSIBLE_INQUIRY_FORM", "NO_ACCESSIBLE_INQUIRY_FORM");
+            return false;
+        }
+
+        // Bounded Auto-Recovery Steps:
+        // 1. DOM idle / SPA settle wait
+        await new Promise(r => setTimeout(r, 1200));
+
+        // 2. Scroll and lazy reveal
+        try {
+            window.scrollBy({ top: 400, behavior: 'smooth' });
+            await new Promise(r => setTimeout(r, 600));
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+            await triggerContactInteraction();
+        } catch (_) {}
+
+        // 3. Re-run form discovery for current attempt
+        let currentForm = await findOptimalForm();
+        if (currentForm) {
+            logDev(`[AUTO_RECOVERY] attempt=${retryCount}/3 reason=${reason} result=FORM_FOUND`, "success");
+            const speed = getSpeedProfile(delayMs, fillDelayMs, submitDelayMs);
+            return await fillAndSubmit(currentForm, template, speed);
+        }
+
+        // 4. Check for external form candidate (e.g. cross-origin iframe like PushPress, HubSpot)
+        let detectedExternalFormUrl = null;
+        try {
+            const iframes = Array.from(document.querySelectorAll('iframe'));
+            const WIDGET_KEYWORDS = [
+                'contact', 'form', 'hubspot', 'jotform', 'typeform', 'wufoo', 'inquiry',
+                'message', 'pushpress', 'grow', 'lead', 'cognito', 'forms.gle', 'tally',
+                'google.com/forms', 'activecampaign', 'marketo', 'pardot', 'calendly', 'chilipiper'
+            ];
+            for (const ifr of iframes) {
+                const rawSrc = (ifr.src || ifr.getAttribute('src') || '').trim();
+                const srcLower = rawSrc.toLowerCase();
+                const title = (ifr.title || ifr.getAttribute('title') || '').toLowerCase();
+                const idCls = `${ifr.id || ''} ${ifr.className || ''}`.toLowerCase();
+                const isWidget = WIDGET_KEYWORDS.some(k => srcLower.includes(k) || title.includes(k) || idCls.includes(k));
+                if (isWidget) {
+                    detectedExternalFormUrl = rawSrc;
+                    break;
+                }
+            }
+        } catch (_) {}
+
+        // 5. If no native form and no external form, try next discovered contact candidate or alias
+        const bestLink = typeof findBestContactLink === 'function' ? findBestContactLink() : null;
+        if (bestLink && normalizeUrl(bestLink) !== normalizeUrl(window.location.href)) {
+            const visited = JSON.parse(sessionStorage.getItem('xpider_guessed_paths') || '[]');
+            if (!visited.includes(normalizeUrl(bestLink))) {
+                logDev(`[AUTO_RECOVERY] attempt=${retryCount}/3 reason=${reason} result=NAVIGATING_NEXT_CANDIDATE url=${bestLink}`, "info");
+                await safeNavigate(bestLink, template);
+                return true;
+            }
+        }
+
+        // 6. If external form exists and we haven't exhausted manual assist for this target
+        if (detectedExternalFormUrl) {
+            logDev(`[AUTO_RECOVERY] attempt=${retryCount}/3 reason=${reason} result=EXTERNAL_FORM_FOUND externalUrl=${detectedExternalFormUrl}`, "info");
+            const dedupeKey = getManualAssistDedupeKey('EXTERNAL_CROSS_ORIGIN_FORM');
+            if (!hasManualAssistBeenShown(dedupeKey)) {
+                logDev(`[MANUAL_ASSIST_ESCALATE] reason=EXTERNAL_CROSS_ORIGIN_FORM attempts=${retryCount} evidence=${detectedExternalFormUrl}`, "info");
+                const assistHandled = await requestManualFormAssist('EXTERNAL_CROSS_ORIGIN_FORM', detectedExternalFormUrl, []);
+                if (assistHandled) {
+                    return await retryCurrentPageDetection({
+                        template, delayMs, triedUrl, fillDelayMs, submitDelayMs,
+                        retryCount: retryCount + 1,
+                        reason: 'EXTERNAL_CROSS_ORIGIN_FORM'
+                    });
+                }
+            } else {
+                logDev(`[AUTO_RECOVERY] Dedupe suppressed manual assist for ${dedupeKey}. Settling SKIPPED.`, "info");
+            }
+        }
+
+        // 7. Exhausted: Settle as SKIPPED / NO_ACCESSIBLE_INQUIRY_FORM
+        logDev(`[AUTO_RECOVERY] attempt=${retryCount}/3 reason=${reason} result=EXHAUSTED`, "info");
+        finishCampaign(false, "NO_ACCESSIBLE_INQUIRY_FORM", "NO_ACCESSIBLE_INQUIRY_FORM");
+        return false;
     }
 
     async function fillAndSubmit(form, template, speed) {

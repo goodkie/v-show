@@ -4179,14 +4179,26 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
             (async () => {
                 try {
                     const { attemptId, sourceUrl, contactPageUrl, formPageUrl, externalFormUrl, reason, unresolvedFields } = request;
+                    const curAttemptId = attemptId || campaignState.currentAttempt?.attemptId || 'no_attempt';
+                    const curToken = campaignState.currentTargetToken || 'no_token';
+                    const curReason = reason || 'MANUAL_ASSIST_REQUIRED';
+                    const dedupeKey = `${curAttemptId}:${curToken}:${curReason}`;
+                    if (!campaignState.manualAssistDedupeSet) campaignState.manualAssistDedupeSet = new Set();
+                    if (campaignState.manualAssistDedupeSet.has(dedupeKey)) {
+                        logBg(null, `[MANUAL_ASSIST_DEDUPE_SUPPRESSED] Already requested assist for key=${dedupeKey}. Suppressing duplicate popup.`, 'info');
+                        sendResponse({ success: true, status: 'SUPPRESSED_DUPLICATE' });
+                        return;
+                    }
+                    campaignState.manualAssistDedupeSet.add(dedupeKey);
+
                     campaignState.currentTargetStage = 'FORM_MANUAL_ASSIST_PENDING_OWNER';
                     campaignState.manualAssistDetails = {
-                        attemptId: attemptId || campaignState.currentAttempt?.attemptId,
+                        attemptId: curAttemptId,
                         sourceUrl: sourceUrl || campaignState.currentAttempt?.url || '',
                         contactPageUrl: contactPageUrl || '',
                         formPageUrl: formPageUrl || '',
                         externalFormUrl: externalFormUrl || '',
-                        reason: reason || 'MANUAL_ASSIST_REQUIRED',
+                        reason: curReason,
                         unresolvedFields: unresolvedFields || []
                     };
 
@@ -5002,6 +5014,16 @@ async function startCampaignOrchestrator(queue, template, delayMs, fillDelayMs =
         }
         if (hs) hs.activeCampaignRunId = campaignState.campaignRunId;
         chrome.storage.local.set({ xpider_active_campaign_run_id: campaignState.campaignRunId }).catch(() => {});
+
+        // [F. Ledger Metadata Initialization] Ingest importRows for currentRun if not already present
+        if (hs && typeof hs.ingestImportRows === 'function') {
+            const existingRowsForRun = hs.importRows.filter(r => r.importId === campaignState.campaignRunId || r.campaignRunId === campaignState.campaignRunId);
+            if (existingRowsForRun.length === 0 && executableQueue.length > 0) {
+                await hs.ingestImportRows(executableQueue, campaignState.campaignRunId);
+                console.log(`[LEDGER_INIT] campaignRunId=${campaignState.campaignRunId} totalImportRows=${executableQueue.length} pending=${executableQueue.length}`);
+                logBg(null, `[LEDGER_INIT] campaignRunId=${campaignState.campaignRunId} totalImportRows=${executableQueue.length} pending=${executableQueue.length}`, "info");
+            }
+        }
         
         logBg(null, "[Boot] Variables initialized.", "debug");
         logBg(null, "🚀 Engine booting...", "start");
@@ -6762,14 +6784,20 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
             pauseCampaignOrchestrator(true).catch(() => {});
         }
 
-        // [Circuit Breaker] Core runtime ReferenceError tracking
+        // [Directive E: Circuit Breaker Classification] Distinguish CORE_CODE vs SITE_SPECIFIC
         const errStr = String(res?.error || res?.reasonCode || '');
-        if (/ReferenceError|is not defined|CORE_RUNTIME_ERROR/i.test(errStr)) {
+        const isCoreCodeError = /ReferenceError|TypeError|SyntaxError|is not defined|CORE_RUNTIME_ERROR/i.test(errStr) &&
+            !/FORM_NOT_ACCESSIBLE|NO_ACCESSIBLE_INQUIRY_FORM|CONTACT_PAGE_NO_DOM_FORM|CONTACT_CANDIDATE_ERROR_PAGE|TIMEOUT|CAPTCHA|SERVER ERROR|404|DEAD_PAGE/i.test(errStr);
+        const errorClass = isCoreCodeError ? 'CORE_CODE' : 'SITE_SPECIFIC';
+        console.log(`[CIRCUIT_BREAKER_CLASSIFY] errorClass=${errorClass} reason=${finalReason} error=${errStr}`);
+        logBg(tabId, `[CIRCUIT_BREAKER_CLASSIFY] errorClass=${errorClass} reason=${finalReason}`, isCoreCodeError ? 'warning' : 'info');
+
+        if (isCoreCodeError) {
             const m = errStr.match(/([a-zA-Z0-9_$]+)\s+is not defined/i);
             const symbol = m ? m[1] : (errStr.split(':')[1] || errStr).trim();
             coreRuntimeRefErrors[symbol] = (coreRuntimeRefErrors[symbol] || 0) + 1;
             if (coreRuntimeRefErrors[symbol] >= 2) {
-                logBg(tabId, `🚨 [CIRCUIT_BREAKER] Identical ReferenceError repeated (${coreRuntimeRefErrors[symbol]}x): ${symbol}. Tripping CORE_RUNTIME_BROKEN: ${symbol} and auto-pausing campaign.`, 'error');
+                logBg(tabId, `🚨 [CIRCUIT_BREAKER] Identical CORE_CODE error repeated (${coreRuntimeRefErrors[symbol]}x): ${symbol}. Tripping CORE_RUNTIME_BROKEN: ${symbol} and auto-pausing campaign.`, 'error');
                 finalReason = `CORE_RUNTIME_BROKEN: ${symbol}`;
                 pauseCampaignOrchestrator(true).catch(() => {});
                 chrome.runtime.sendMessage({

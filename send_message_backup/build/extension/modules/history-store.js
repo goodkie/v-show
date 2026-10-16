@@ -259,6 +259,7 @@
                     rowId,
                     sourceRowId: actualRowNumber,   // [F7] actual file line number / logical record number
                     importId: batchImportId,
+                    campaignRunId: batchImportId,
                     rawInputUrl: raw,
                     targetIdentity: isValid ? identity : null, // [F7] link preserved source row to extracted target identity
                     status: isValid ? 'PENDING' : 'INVALID_INPUT',
@@ -841,8 +842,9 @@
             // Update linked import rows
             const targetIdentity = attempt.targetIdentity || (target ? target.targetIdentity : null);
             for (const row of this.importRows) {
-                if (row.attemptId === attemptId || (targetIdentity && row.targetIdentity === targetIdentity && (row.campaignRunId === attempt.campaignRunId || (attempt.campaignRunId && attempt.campaignRunId.startsWith('owner_test_') && row.campaignRunId && row.campaignRunId.startsWith('owner_test_'))))) {
+                if (row.attemptId === attemptId || (targetIdentity && row.targetIdentity === targetIdentity && (row.campaignRunId === attempt.campaignRunId || row.importId === attempt.campaignRunId || (attempt.campaignRunId && attempt.campaignRunId.startsWith('owner_test_') && ((row.campaignRunId && row.campaignRunId.startsWith('owner_test_')) || (row.importId && row.importId.startsWith('owner_test_'))))))) {
                     row.status = canonicalStatus;
+                    if (!row.attemptId) row.attemptId = attemptId;
                 }
             }
 
