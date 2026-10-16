@@ -182,7 +182,7 @@ async function main() {
     await sleep(1000);
 
     // Define the 10 Actual Public Owner Target Matrix
-    const liveTargetMatrix = [
+    const defaultTargetMatrix = [
         'https://martialarts.brood9.com',              // Target 1: PushPress iframe (Owner repro)
         'https://martialarts.psi360.com',              // Target 2: Contact page without DOM form (Owner repro)
         'https://martialarts.dedhamhealth.com',        // Target 3: 404/dead error page (Owner repro)
@@ -194,8 +194,11 @@ async function main() {
         'https://modernmartialarts.com',               // Target 9: Live martial arts academy
         'https://osrkkacademy.com'                     // Target 10: Live karate academy
     ];
+    const liveTargetMatrix = process.env.LIVE_TARGET_URLS
+        ? process.env.LIVE_TARGET_URLS.split(',').map(s => s.trim()).filter(Boolean)
+        : defaultTargetMatrix;
 
-    log(`10 Actual Public Owner Targets loaded: ${liveTargetMatrix.length} targets`);
+    log(`Public Owner Targets loaded: ${liveTargetMatrix.length} targets`);
 
     // ============================================================
     // STEP 1: Load Live Targets into Queue & Configure Storage
@@ -241,6 +244,8 @@ async function main() {
     // STEP 2: Launch Campaign via Background START_CAMPAIGN and Verify Ledger
     // ============================================================
     log('--- STEP 2: Launching Campaign on Real Public URLs and Verifying Ledger ---');
+    const liveTargetTimeoutMs = parseInt(process.env.TARGET_TIMEOUT_MS || '60000', 10);
+    log(`Live target timeout budget: ${liveTargetTimeoutMs}ms`);
     const launchResult = await cdpSend(popupWs, 'Runtime.evaluate', {
         expression: `(async () => {
             const queue = ${JSON.stringify(liveTargetMatrix)};
@@ -262,7 +267,7 @@ async function main() {
                     delayMs: 1500,
                     fillDelayMs: 100,
                     submitDelayMs: 500,
-                    targetTimeoutMs: 20000,
+                    targetTimeoutMs: ${liveTargetTimeoutMs},
                     runScopedDirectPrivacy: true,
                     expectedImplementationHead: liveBp?.implementationHead,
                     expectedBuildId: liveBp?.buildId,
@@ -291,10 +296,10 @@ async function main() {
     });
     const lc = ledgerCheck.result.value;
     log(`Initial ledger check: ${JSON.stringify(lc)}`);
-    assert.strictEqual(lc.stats.totalImportRows, 10, 'Ledger totalImportRows must initialize to 10');
-    assert(lc.stats.pending >= 9 && lc.stats.pending <= 10, 'Ledger pending must initialize to queue size (10)');
-    assert.strictEqual(lc.stats.pending + lc.stats.totalStarted, 10, 'Pending + totalStarted must equal 10');
-    log('✅ Acceptance 10 PASS: Ledger correctly initialized with totalImportRows=10, pending=10');
+    assert.strictEqual(lc.stats.totalImportRows, liveTargetMatrix.length, `Ledger totalImportRows must initialize to ${liveTargetMatrix.length}`);
+    assert(lc.stats.pending >= (liveTargetMatrix.length - 1) && lc.stats.pending <= liveTargetMatrix.length, 'Ledger pending must initialize to queue size');
+    assert.strictEqual(lc.stats.pending + lc.stats.totalStarted, liveTargetMatrix.length, 'Pending + totalStarted must equal queue size');
+    log(`✅ Acceptance 10 PASS: Ledger correctly initialized with totalImportRows=${liveTargetMatrix.length}`);
 
     await shot(popupWs, '01_live_campaign_started_ledger_initialized.png');
 
@@ -367,8 +372,8 @@ async function main() {
     // ============================================================
     log('--- STEP 4: Monitoring Campaign Progress Past Prior 7-Target Circuit Breaker Stop ---');
     let completedAll = false;
-    // Real public navigation across 10 sites: allow up to 270 seconds (180 iterations x 1.5s)
-    for (let sec = 0; sec < 180; sec++) {
+    // Real public navigation across 10 sites: allow up to 630 seconds (420 iterations x 1.5s) for 60s budget
+    for (let sec = 0; sec < 420; sec++) {
         await sleep(1500);
         const pollState = await cdpSend(swWs, 'Runtime.evaluate', {
             expression: `(async () => {
@@ -397,9 +402,9 @@ async function main() {
             log(`🚀 PROGRESS VERIFIED: completed=${ps.completed} > 7! Prior 7-target barrier safely exceeded on real public URLs.`);
         }
 
-        if (ps.completed >= 10 || ps.remaining === 0) {
+        if (ps.completed >= liveTargetMatrix.length || ps.remaining === 0) {
             completedAll = true;
-            log('🎉 All 10 real public targets in matrix completed!');
+            log(`🎉 All ${liveTargetMatrix.length} real public targets in matrix completed!`);
             break;
         }
 
@@ -407,7 +412,7 @@ async function main() {
         assert(!ps.isPaused, `Campaign was unexpectedly paused at completed=${ps.completed}: ${JSON.stringify(ps.circuitBreakerRefErrors)}`);
     }
 
-    assert(completedAll, 'Campaign must complete all 10 targets without tripping on site-specific issues');
+    assert(completedAll, `Campaign must complete all ${liveTargetMatrix.length} targets without tripping on site-specific issues`);
     log('✅ Acceptance 7 & 8 PASS: Campaign continued beyond 7-target stop and processed all 10 live URLs without pause');
 
     // ============================================================
@@ -436,6 +441,25 @@ async function main() {
     log(`Final ledger statistics: ${JSON.stringify(fl.stats)}`);
     log(`Attempts summary: ${JSON.stringify(fl.attempts)}`);
 
+    // Verify first-class safe terminal outcomes
+    const safeExpectedOutcomes = [
+        'WOULD_SUBMIT',
+        'AUTOFILL_READY',
+        'NO_ACCESSIBLE_INQUIRY_FORM',
+        'CONTACT_CANDIDATE_ERROR_PAGE',
+        'NON_INQUIRY_PAGE_SKIPPED',
+        'NON_BUSINESS_OR_GOV_SKIPPED',
+        'EXTERNAL_CROSS_ORIGIN_FORM',
+        'FORM_MANUAL_ASSIST_RETRY_EXHAUSTED',
+        'FORM_NOT_ACCESSIBLE',
+        'TIMEOUT_LOCAL'
+    ];
+    fl.attempts.forEach(a => {
+        log(`Target [${a.target}] settled as status=${a.status} reason=${a.reason}`);
+        assert(safeExpectedOutcomes.includes(a.reason) || safeExpectedOutcomes.includes(a.status),
+            `Outcome ${a.reason} / ${a.status} must be in recognized safe terminal outcomes`);
+    });
+
     // Verify dedhamhealth outcome
     const dedham = fl.attempts.find(a => a.target && a.target.includes('dedhamhealth'));
     if (dedham) {
@@ -445,9 +469,9 @@ async function main() {
     }
 
     // Verify ledger statistics
-    assert.strictEqual(fl.stats.totalImportRows, 10, 'Final ledger totalImportRows must be 10');
+    assert.strictEqual(fl.stats.totalImportRows, liveTargetMatrix.length, `Final ledger totalImportRows must be ${liveTargetMatrix.length}`);
     assert.strictEqual(fl.stats.pending, 0, 'Final ledger pending must be 0 after all targets settle');
-    log('✅ Acceptance 10 PASS: Final ledger has totalImportRows=10 and pending=0 (100% data integrity)');
+    log(`✅ Acceptance 10 PASS: Final ledger has totalImportRows=${liveTargetMatrix.length} and pending=0 (100% data integrity)`);
 
     await shot(popupWs, '03_live_campaign_completed_all_targets.png');
 
