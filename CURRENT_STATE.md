@@ -4,45 +4,53 @@
 - Protocol: OCA-DEV-1.4
 - Project ID: xpider-autoform-sender-pro
 - Workspace: E:\vivpr\ai\extension-form-sender
-- Authority: goodkie/v-show Issue #6 (ChatGPT Directive #6207194316)
+- Authority: goodkie/v-show Issue #6 (ChatGPT Directive #6207792447)
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-16.01
-- Last Directive: ChatGPT Forensic Audit Directive Comment #6207194316 (`[CHATGPT][OWNER REAL-LAB FORENSIC AUDIT][R6.9G.10.3.7.1.4.8 — LOCAL TURNSTILE CASE TRUE PASS, UI/TELEMETRY + EXPECTED-FAIL SETTLEMENT DEFECTS]`)
-- Last Receipt: #6207762071 (`https://github.com/goodkie/v-show/issues/6#issuecomment-6207762071` — `[ANTIGRAVITY][CAPTCHA LAB UI TRUTH + EXPECTED-FAIL TERMINAL SETTLEMENT RECEIPT]`)
-- Build ID: `R6.9G.10.3.7.1.4.9-20261016-CAPTCHA-LAB-UI-TRUTH-AND-SETTLEMENT`
-- Current Release Tag: `v6.9g.10.3-audit.7.1.4.9`
+- State Rev: 2026-10-16.02
+- Last Directive: ChatGPT Independent Audit & Directive Comment #6207792447 (`[CHATGPT][INDEPENDENT AUDIT + NEXT PHASE DIRECTIVE][R6.9G.10.3.7.1.4.9 -> REAL CLOUDFLARE IMPLEMENTATION]`)
+- Last Receipt: #6208673611 (`https://github.com/goodkie/v-show/issues/6#issuecomment-6208673611` — `[ANTIGRAVITY][REAL CLOUDFLARE TURNSTILE OWNER VALIDATION IMPLEMENTATION RECEIPT]`)
+- Build ID: `R6.9G.10.3.7.1.4.10-20261016-REAL-CLOUDFLARE-TURNSTILE-VALIDATION`
+- Current Release Tag: `v6.9g.10.3-audit.7.1.4.10`
 
 ## Current Gate
-- Formal Gate: R6.9G.10.3.7.1.4.9 CAPTCHA LAB UI TRUTH + EXPECTED-FAIL SETTLEMENT PASS.
-- Engineering Acceptance Status: **PASS (100% VERIFIED ACROSS 2 CONSECUTIVE COMPLETE REAL MICROSOFT EDGE OPERATOR RUNS)**.
+- Formal Gate: R6.9G.10.3.7.1.4.10 REAL CLOUDFLARE TURNSTILE OWNER VALIDATION PASS.
+- Engineering Acceptance Status: **PASS (100% VERIFIED IN REAL MICROSOFT EDGE BROWSER)**.
 
-- **Defect A: Stale HUD Toast ("Awaiting Owner decision") Elimination**:
-  - `removeTopSolverHUD(reason)` implemented in `content-script.js`.
-  - In `OWNER_TEST_LOCAL AUTO_DRIVE` mode, HUD never displays "Awaiting Owner decision"; transitions immediately to `Auto-solving...` and then `Verified`.
-  - HUD auto-dismisses within 1.5s post-verification and emits `[CAPTCHA_UI_STATE]` and `[CAPTCHA_UI_CLEAR] reason=VERIFIED`.
-  - On target navigation/completion, `finishCampaign` ensures HUD is dismissed immediately with `removeTopSolverHUD('SETTLED')`.
-  - Edge verification confirmed 0 instances of stale toast across all 7 fixtures in 2 consecutive runs.
+### Verified Architecture & Implementation Details:
+1. **Separation of Modes & Synthetic Reuse Elimination**:
+   - Both Cloudflare buttons previously reusing localhost `captcha-turnstile-dom.html` eliminated.
+   - Distinct **Mode A (`CLOUDFLARE_LIVE_OWNER`)** for public HTTPS Owner domain and **Mode B (`CLOUDFLARE_TESTKEY_LAB`)** for 5 official fixtures.
 
-- **Defect B: Telemetry Wiring & Feedback Banner Truth**:
-  - Wired `#captcha-lab-panel` in `popup.html` directly to authoritative runtime metrics in `background.js` via `updateCaptchaLabPanel(metrics, ledger)`.
-  - Live metrics observed during Edge run: `Detected: 7`, `Requested: 7`, `Success: 5`, `Failure: 2`, `Timeout: 1`, `Math Solved: 1`.
-  - Removed misleading CORE 4/2/1 test incomplete banner. For CAPTCHA Lab, displays authoritative completion:
-    `🏁 CONTROLLED CAPTCHA LAB PASS (100% EXPECTED OUTCOME) - Lab Cases: 7/7 PASS (5 Solved + 2 Expected Failures Verified | 0 Unexpected Failures)`.
+2. **Preflight Enforcements & Settings UI**:
+   - Added Settings fields for Cloudflare Live URL, Sitekey, and Verification Endpoint.
+   - Preflight enforcement strictly rejects missing config (`CLOUDFLARE_LIVE_CONFIG_REQUIRED`) and loopback/non-HTTPS targets (`CLOUDFLARE_LIVE_LOOPBACK_REFUSED`).
+   - Contract verified: `[CLOUDFLARE_LIVE_PREFLIGHT] https=true loopback=false mockEligible=false verificationEndpointConfigured=true`.
 
-- **Defect C: Expected-Fail Atomic Terminal Settlement**:
-  - `captcha-mock-timeout.html` and `captcha-mock-config-error.html` now atomically call `campaignState.targetResolve({ success: false, reason: 'EXPECTED_FAIL_PASS' })` in background `labAutoDrive`.
-  - Content script listens for `CAPTCHA_LAB_TERMINAL_SETTLE` and breaks the solve wait loop immediately.
-  - Eliminated the 15-second post-solve timeout, generic fallback loop, `CAPTCHA_TOKEN_NOT_ACCEPTED` error, and `SUBMIT_CANDIDATE_NOT_FOUND` false classification.
+3. **Complete Solver Lockout**:
+   - `mock_provider`, NopeCHA, and 2Captcha are strictly bypassed when in Cloudflare mode.
+   - Real Edge audit confirmed: `mock_provider calls = 0`, `NopeCHA calls = 0`, `2Captcha calls = 0`.
 
-- **Cloudflare Turnstile Plan Preparation (Comment #6207364460)**:
-  - Added buttons `run-cloudflare-live-btn` ("⚡ RUN CLOUDFLARE LIVE OWNER TEST") and `run-cloudflare-testkey-btn` ("🔑 RUN CLOUDFLARE OFFICIAL TEST-KEY LAB") in `popup.html`.
-  - Wired handlers in `popup.js` ready for subsequent live validation and official test-key suite phases.
+4. **Authoritative Server-Side Siteverify Gate**:
+   - Client DOM success text alone is rejected on Turnstile forms.
+   - Enforces structured server response derived from Cloudflare Siteverify API (`https://challenges.cloudflare.com/turnstile/v0/siteverify`): `{ verified: true, provider: "cloudflare-turnstile", ... }`.
+   - Secret keys remain strictly on the server (never exposed to browser extension).
 
-- Next Action: Submit receipt to Issue #6 and proceed with ChatGPT audit.
+5. **Official Test-Key Suite Verification (5/5 PASS)**:
+   - `visible-pass` (`1x00000000000000000000AA`): Token issued, Siteverify verified -> **CONFIRMED_SUCCESS**
+   - `visible-fail` (`2x00000000000000000000AB`): Token blocked, Siteverify rejected -> **EXPECTED_FAIL_PASS**
+   - `invisible-pass` (`1x00000000000000000000BB`): Token issued, Siteverify verified -> **CONFIRMED_SUCCESS**
+   - `invisible-fail` (`2x00000000000000000000BB`): Token blocked, Siteverify rejected -> **EXPECTED_FAIL_PASS**
+   - `interactive` (`3x00000000000000000000FF`): HUD paused with `"Real Cloudflare Turnstile — Owner verification required"`, token issued on completion, Siteverify verified -> **CONFIRMED_SUCCESS**
+   - Final results: 3 SUCCESS, 2 SKIPPED (Expected Failures), 0 UNEXPECTED FAILURES (Total: 5/5).
+   - Feedback banner displays `🏁 CLOUDFLARE OFFICIAL TEST-KEY LAB PASS (100% EXPECTED OUTCOME) 5/5 Cases Verified`.
+
+- Next Action: Await ChatGPT gate audit on Receipt #6208673611.
 
 ## Lineage & Remote Git SHAs
 - `ROLLBACK_ANCHOR`: `dc0740a0c69e2f7fa96b6989841acf0831b3619e` (immutable baseline anchor)
 - `PREVIOUS_FUNCTIONAL_RESTORE_POINT`: `31b929c35eb52aba782181ba83e79a7196c51337` (`31b929c3`)
-- `IMPLEMENTATION_HEAD`: `b4568828717d5467454a60ea6d4584c0afc9ea43` (`b4568828`)
-- Diagnostic Package: `XPIDER_R6.9G.10.3.7.1.4.9_OWNER_DIAGNOSTIC_TEST_ONLY.zip`
-- Package SHA-256: `d0ef7e73cb83d040addb8a159cc962190b9d4580d546b41e7df214ad990c97d4` (8,253,068 bytes)
+- `IMPLEMENTATION_HEAD`: `2bf099168348f9090ca57b50b18e60b1af8fbc25` (`2bf09916`)
+- Diagnostic Package: `XPIDER_R6.9G.10.3.7.1.4.10_OWNER_DIAGNOSTIC_TEST_ONLY.zip`
+- Package SHA-256: `9e976c50a00142db9702b60fbfa5ef7a43700563f6c4a27c67fa386895bfaa81` (8,525,232 bytes)
+- Evidence Log: `owner-extension-test-site/evidence/evidence_r6_9g10_3_7_1_4_10_cloudflare_turnstile.log`
+- Evidence Log SHA-256: `8c54eec5aca35879ffcd533ccf62e30812fc4dd1b40fd85bc772670995e96f29` (26,007 bytes)
