@@ -1,160 +1,158 @@
-[2026-10-16T10:14:12.785Z] ================ XPIDER P0 CORE RETRY + MANUAL ASSIST RECOVERY ACCEPTANCE TEST (EDGE) ================
-[2026-10-16T10:14:12.831Z] --- ACCEPTANCE 1: Static Assertion for analyzePageAndExecute ---
-[2026-10-16T10:14:12.840Z] ✅ Verified send_message_backup/content-script.js: 0 references to analyzePageAndExecute
-[2026-10-16T10:14:12.851Z] ✅ Verified send_message_backup/background.js: 0 references to analyzePageAndExecute
-[2026-10-16T10:14:12.860Z] ✅ Verified send_message_backup/popup.js: 0 references to analyzePageAndExecute
-[2026-10-16T10:14:12.869Z] ✅ Verified send_message_backup/build/extension/content-script.js: 0 references to analyzePageAndExecute
-[2026-10-16T10:14:12.878Z] ✅ Verified extension/content-script.js: 0 references to analyzePageAndExecute
-[2026-10-16T10:14:12.934Z] Test server verified: PID=3852 uptime=undefined
-[2026-10-16T10:14:12.941Z] Launching Edge using profile: C:\Users\oPus\AppData\Local\Temp\edge-p0-core-retry-JpifR7
-[2026-10-16T10:14:14.122Z] Extension Service Worker active: ID=ldlijlaccfeelfdhgnjbibniocefckjj
-[2026-10-16T10:14:16.705Z] 10-Target Matrix loaded: 10 targets
-[2026-10-16T10:14:16.714Z] --- STEP 1: Setting up Queue & Template in Extension Storage & UI ---
-[2026-10-16T10:14:17.733Z] --- STEP 2: Launching Campaign and Verifying Ledger Initialization ---
-[2026-10-16T10:14:18.989Z] Campaign launch response: {"res":{"success":true,"status":"acknowledged","queueCount":10,"campaignRunId":"run_1792145657772_ed8wv"}}
-[2026-10-16T10:14:18.998Z] Initial ledger check: {"stats":{"scope":"currentRun","campaignRunId":"run_1792145657772_ed8wv","totalStarted":1,"totalImportRows":10,"pending":9,"invalid":0,"success":0,"failure":0,"unknown":0,"timeout":0,"timeoutLocal":0,"timeoutGlobal":0,"skipped":0,"paused":0,"completed":0,"failureBreakdown":{},"logStr":"[LEDGER_STATS] scope=currentRun success=0 failure=0 unknown=0 timeout=0 skipped=0"},"campaignRunId":"run_1792145657772_ed8wv"}
-[2026-10-16T10:14:19.006Z] ✅ Acceptance 8 PASS: Ledger metadata initialized with totalImportRows=10, pending=10 (9 pending + 1 started)
-[2026-10-16T10:14:19.178Z] 📸 Captured screenshot: 01_campaign_started_ledger_initialized.png
-[2026-10-16T10:14:19.184Z] --- STEP 3: Verifying Manual Assist & Retry for Target 1 (PushPress Widget) ---
-[2026-10-16T10:14:27.363Z] Target 1 entered manual assist: reason=EXTERNAL_CROSS_ORIGIN_FORM dedupeKeys=["att_1792145657794_wyqop:tok_1792145657794_dntf75:EXTERNAL_CROSS_ORIGIN_FORM"]
-[2026-10-16T10:14:27.590Z] 📸 Captured screenshot: 02_target1_manual_assist_opened.png
-[2026-10-16T10:14:27.597Z] Clicking Retry on Manual Assist for Target 1...
-[2026-10-16T10:14:27.610Z] Retry decision acknowledged: {"clicked":true,"method":"sendMessage","res":{"success":true,"status":"RETRYING"}}
-[2026-10-16T10:14:31.121Z] Post-Retry state: {"refErrors":[],"circuitBreakerCount":[],"stage":"IN_FLIGHT","outcomes":{"NO_ACCESSIBLE_INQUIRY_FORM":1},"counters":{"success":0,"failed":1,"completed":1,"remaining":10,"deliveryUnknown":0,"timeout":0,"skipped":0,"paused":0,"skippedHistory":0,"inProgress":1,"total":11,"failureBreakdown":{"NO_ACCESSIBLE_INQUIRY_FORM":1},"captchaSolved":0,"captchaFailed":0}}
-[2026-10-16T10:14:31.128Z] ✅ Acceptance 1 & 2 PASS: retryCurrentPageDetection executed without ReferenceError; dedupe prevented repeated popup
-[2026-10-16T10:14:31.135Z] --- STEP 4: Verifying Target 2 (psi360 Contact Page with No DOM Form) ---
-[2026-10-16T10:14:35.149Z] Target 2 & progressive state: {"stage":null,"outcomes":{"NO_ACCESSIBLE_INQUIRY_FORM":1},"counters":{"success":0,"failed":1,"completed":1,"remaining":9,"deliveryUnknown":0,"timeout":0,"skipped":0,"paused":0,"skippedHistory":0,"inProgress":1,"total":11,"failureBreakdown":{"NO_ACCESSIBLE_INQUIRY_FORM":1},"captchaSolved":0,"captchaFailed":0},"dedupeSet":["att_1792145657794_wyqop:tok_1792145657794_dntf75:EXTERNAL_CROSS_ORIGIN_FORM"]}
-[2026-10-16T10:14:35.351Z] ✅ Acceptance 3 PASS: psi360 auto-recovery executed before Owner escalation; zero premature manual modal
-[2026-10-16T10:14:35.359Z] --- STEP 5: Monitoring Campaign Progress Past Prior 7-Target Circuit Breaker Stop ---
-[2026-10-16T10:14:36.871Z] Progress [0s]: completed=1/11 remaining=9 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":1}
-[2026-10-16T10:14:38.384Z] Progress [1.5s]: completed=1/11 remaining=9 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":1}
-[2026-10-16T10:14:39.898Z] Progress [3s]: completed=1/11 remaining=9 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":1}
-[2026-10-16T10:14:41.587Z] Progress [4.5s]: completed=1/11 remaining=9 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":1}
-[2026-10-16T10:14:43.108Z] Progress [6s]: completed=2/11 remaining=9 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":2}
-[2026-10-16T10:14:44.633Z] Progress [7.5s]: completed=2/11 remaining=9 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":2}
-[2026-10-16T10:14:46.142Z] Progress [9s]: completed=3/11 remaining=8 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3}
-[2026-10-16T10:14:47.666Z] Progress [10.5s]: completed=3/11 remaining=8 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3}
-[2026-10-16T10:14:49.174Z] Progress [12s]: completed=3/11 remaining=7 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3}
-[2026-10-16T10:14:50.693Z] Progress [13.5s]: completed=3/11 remaining=7 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3}
-[2026-10-16T10:14:52.214Z] Progress [15s]: completed=3/11 remaining=7 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3}
-[2026-10-16T10:14:53.731Z] Progress [16.5s]: completed=3/11 remaining=7 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3}
-[2026-10-16T10:14:55.245Z] Progress [18s]: completed=3/11 remaining=7 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3}
-[2026-10-16T10:14:56.765Z] Progress [19.5s]: completed=3/11 remaining=7 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3}
-[2026-10-16T10:14:58.288Z] Progress [21s]: completed=3/11 remaining=7 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3}
-[2026-10-16T10:14:59.800Z] Progress [22.5s]: completed=3/11 remaining=7 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3}
-[2026-10-16T10:15:01.308Z] Progress [24s]: completed=3/11 remaining=7 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3}
-[2026-10-16T10:15:02.819Z] Progress [25.5s]: completed=3/11 remaining=7 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3}
-[2026-10-16T10:15:04.342Z] Progress [27s]: completed=4/11 remaining=7 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":1}
-[2026-10-16T10:15:05.853Z] Progress [28.5s]: completed=4/11 remaining=7 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":1}
-[2026-10-16T10:15:07.364Z] Progress [30s]: completed=4/11 remaining=7 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":1}
-[2026-10-16T10:15:08.887Z] Progress [31.5s]: completed=4/11 remaining=6 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":1}
-[2026-10-16T10:15:10.399Z] Progress [33s]: completed=4/11 remaining=6 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":1}
-[2026-10-16T10:15:11.917Z] Progress [34.5s]: completed=4/11 remaining=6 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":1}
-[2026-10-16T10:15:13.440Z] Progress [36s]: completed=4/11 remaining=6 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":1}
-[2026-10-16T10:15:14.963Z] Progress [37.5s]: completed=4/11 remaining=6 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":1}
-[2026-10-16T10:15:16.478Z] Progress [39s]: completed=4/11 remaining=6 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":1}
-[2026-10-16T10:15:17.991Z] Progress [40.5s]: completed=5/11 remaining=6 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":1,"NON_INQUIRY_RESERVATION_FORM":1}
-[2026-10-16T10:15:19.512Z] Progress [42s]: completed=5/11 remaining=6 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":1,"NON_INQUIRY_RESERVATION_FORM":1}
-[2026-10-16T10:15:21.027Z] Progress [43.5s]: completed=5/11 remaining=5 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":1,"NON_INQUIRY_RESERVATION_FORM":1}
-[2026-10-16T10:15:22.543Z] Progress [45s]: completed=5/11 remaining=5 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":1,"NON_INQUIRY_RESERVATION_FORM":1}
-[2026-10-16T10:15:24.057Z] Progress [46.5s]: completed=5/11 remaining=5 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":1,"NON_INQUIRY_RESERVATION_FORM":1}
-[2026-10-16T10:15:25.602Z] Progress [48s]: completed=5/11 remaining=5 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":1,"NON_INQUIRY_RESERVATION_FORM":1}
-[2026-10-16T10:15:27.115Z] Progress [49.5s]: completed=5/11 remaining=5 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":1,"NON_INQUIRY_RESERVATION_FORM":1}
-[2026-10-16T10:15:28.628Z] Progress [51s]: completed=5/11 remaining=5 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":1,"NON_INQUIRY_RESERVATION_FORM":1}
-[2026-10-16T10:15:30.142Z] Progress [52.5s]: completed=6/11 remaining=5 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":1,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
-[2026-10-16T10:15:31.659Z] Progress [54s]: completed=6/11 remaining=4 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":1,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
-[2026-10-16T10:15:33.169Z] Progress [55.5s]: completed=6/11 remaining=4 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":1,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
-[2026-10-16T10:15:34.685Z] Progress [57s]: completed=6/11 remaining=4 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":1,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
-[2026-10-16T10:15:36.199Z] Progress [58.5s]: completed=6/11 remaining=4 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":1,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
-[2026-10-16T10:15:37.711Z] Progress [60s]: completed=6/11 remaining=4 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":1,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
-[2026-10-16T10:15:39.230Z] Progress [61.5s]: completed=6/11 remaining=4 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":1,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
-[2026-10-16T10:15:40.740Z] Progress [63s]: completed=6/11 remaining=4 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":1,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
-[2026-10-16T10:15:42.253Z] Progress [64.5s]: completed=7/11 remaining=4 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":2,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
-[2026-10-16T10:15:43.766Z] Progress [66s]: completed=7/11 remaining=4 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":2,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
-[2026-10-16T10:15:45.277Z] Progress [67.5s]: completed=7/11 remaining=4 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":2,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
-[2026-10-16T10:15:46.786Z] Progress [69s]: completed=7/11 remaining=3 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":2,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
-[2026-10-16T10:15:48.307Z] Progress [70.5s]: completed=7/11 remaining=3 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":2,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
-[2026-10-16T10:15:49.822Z] Progress [72s]: completed=7/11 remaining=3 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":2,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
-[2026-10-16T10:15:51.345Z] Progress [73.5s]: completed=7/11 remaining=3 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":2,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
-[2026-10-16T10:15:52.867Z] Progress [75s]: completed=7/11 remaining=3 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":2,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
-[2026-10-16T10:15:54.382Z] Progress [76.5s]: completed=7/11 remaining=3 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":2,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
-[2026-10-16T10:15:55.909Z] Progress [78s]: completed=7/11 remaining=3 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":2,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
-[2026-10-16T10:15:57.428Z] Progress [79.5s]: completed=8/11 remaining=3 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":2,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
-[2026-10-16T10:15:57.435Z] 🚀 PROGRESS VERIFIED: completed=8 > 7! Prior 7-target barrier safely exceeded.
-[2026-10-16T10:15:58.950Z] Progress [81s]: completed=8/11 remaining=2 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":2,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
-[2026-10-16T10:15:58.961Z] 🚀 PROGRESS VERIFIED: completed=8 > 7! Prior 7-target barrier safely exceeded.
-[2026-10-16T10:16:00.490Z] Progress [82.5s]: completed=8/11 remaining=2 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":2,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
-[2026-10-16T10:16:00.497Z] 🚀 PROGRESS VERIFIED: completed=8 > 7! Prior 7-target barrier safely exceeded.
-[2026-10-16T10:16:02.009Z] Progress [84s]: completed=8/11 remaining=2 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":2,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
-[2026-10-16T10:16:02.017Z] 🚀 PROGRESS VERIFIED: completed=8 > 7! Prior 7-target barrier safely exceeded.
-[2026-10-16T10:16:03.528Z] Progress [85.5s]: completed=8/11 remaining=2 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":2,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
-[2026-10-16T10:16:03.535Z] 🚀 PROGRESS VERIFIED: completed=8 > 7! Prior 7-target barrier safely exceeded.
-[2026-10-16T10:16:05.045Z] Progress [87s]: completed=8/11 remaining=2 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":2,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
-[2026-10-16T10:16:05.053Z] 🚀 PROGRESS VERIFIED: completed=8 > 7! Prior 7-target barrier safely exceeded.
-[2026-10-16T10:16:06.567Z] Progress [88.5s]: completed=8/11 remaining=2 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":2,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
-[2026-10-16T10:16:06.574Z] 🚀 PROGRESS VERIFIED: completed=8 > 7! Prior 7-target barrier safely exceeded.
-[2026-10-16T10:16:08.093Z] Progress [90s]: completed=8/11 remaining=2 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":2,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
-[2026-10-16T10:16:08.101Z] 🚀 PROGRESS VERIFIED: completed=8 > 7! Prior 7-target barrier safely exceeded.
-[2026-10-16T10:16:09.616Z] Progress [91.5s]: completed=8/11 remaining=2 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":2,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
-[2026-10-16T10:16:09.623Z] 🚀 PROGRESS VERIFIED: completed=8 > 7! Prior 7-target barrier safely exceeded.
-[2026-10-16T10:16:11.143Z] Progress [93s]: completed=8/11 remaining=2 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":2,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
-[2026-10-16T10:16:11.150Z] 🚀 PROGRESS VERIFIED: completed=8 > 7! Prior 7-target barrier safely exceeded.
-[2026-10-16T10:16:12.673Z] Progress [94.5s]: completed=8/11 remaining=2 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":2,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
-[2026-10-16T10:16:12.680Z] 🚀 PROGRESS VERIFIED: completed=8 > 7! Prior 7-target barrier safely exceeded.
-[2026-10-16T10:16:14.204Z] Progress [96s]: completed=8/11 remaining=2 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":2,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
-[2026-10-16T10:16:14.211Z] 🚀 PROGRESS VERIFIED: completed=8 > 7! Prior 7-target barrier safely exceeded.
-[2026-10-16T10:16:15.734Z] Progress [97.5s]: completed=8/11 remaining=2 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":2,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
-[2026-10-16T10:16:15.741Z] 🚀 PROGRESS VERIFIED: completed=8 > 7! Prior 7-target barrier safely exceeded.
-[2026-10-16T10:16:17.251Z] Progress [99s]: completed=9/11 remaining=2 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":3,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
-[2026-10-16T10:16:17.258Z] 🚀 PROGRESS VERIFIED: completed=9 > 7! Prior 7-target barrier safely exceeded.
-[2026-10-16T10:16:18.781Z] Progress [100.5s]: completed=9/11 remaining=2 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":3,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
-[2026-10-16T10:16:18.788Z] 🚀 PROGRESS VERIFIED: completed=9 > 7! Prior 7-target barrier safely exceeded.
-[2026-10-16T10:16:20.298Z] Progress [102s]: completed=9/11 remaining=2 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":3,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
-[2026-10-16T10:16:20.305Z] 🚀 PROGRESS VERIFIED: completed=9 > 7! Prior 7-target barrier safely exceeded.
-[2026-10-16T10:16:21.824Z] Progress [103.5s]: completed=9/11 remaining=1 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":3,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
-[2026-10-16T10:16:21.831Z] 🚀 PROGRESS VERIFIED: completed=9 > 7! Prior 7-target barrier safely exceeded.
-[2026-10-16T10:16:23.347Z] Progress [105s]: completed=9/11 remaining=1 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":3,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
-[2026-10-16T10:16:23.355Z] 🚀 PROGRESS VERIFIED: completed=9 > 7! Prior 7-target barrier safely exceeded.
-[2026-10-16T10:16:24.866Z] Progress [106.5s]: completed=9/11 remaining=1 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":3,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
-[2026-10-16T10:16:24.873Z] 🚀 PROGRESS VERIFIED: completed=9 > 7! Prior 7-target barrier safely exceeded.
-[2026-10-16T10:16:26.394Z] Progress [108s]: completed=9/11 remaining=1 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":3,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
-[2026-10-16T10:16:26.405Z] 🚀 PROGRESS VERIFIED: completed=9 > 7! Prior 7-target barrier safely exceeded.
-[2026-10-16T10:16:27.921Z] Progress [109.5s]: completed=9/11 remaining=1 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":3,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
-[2026-10-16T10:16:27.932Z] 🚀 PROGRESS VERIFIED: completed=9 > 7! Prior 7-target barrier safely exceeded.
-[2026-10-16T10:16:29.452Z] Progress [111s]: completed=9/11 remaining=1 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":3,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
-[2026-10-16T10:16:29.459Z] 🚀 PROGRESS VERIFIED: completed=9 > 7! Prior 7-target barrier safely exceeded.
-[2026-10-16T10:16:30.978Z] Progress [112.5s]: completed=9/11 remaining=1 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":3,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
-[2026-10-16T10:16:30.986Z] 🚀 PROGRESS VERIFIED: completed=9 > 7! Prior 7-target barrier safely exceeded.
-[2026-10-16T10:16:32.505Z] Progress [114s]: completed=9/11 remaining=1 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":3,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
-[2026-10-16T10:16:32.512Z] 🚀 PROGRESS VERIFIED: completed=9 > 7! Prior 7-target barrier safely exceeded.
-[2026-10-16T10:16:34.031Z] Progress [115.5s]: completed=9/11 remaining=1 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":3,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
-[2026-10-16T10:16:34.037Z] 🚀 PROGRESS VERIFIED: completed=9 > 7! Prior 7-target barrier safely exceeded.
-[2026-10-16T10:16:35.546Z] Progress [117s]: completed=9/11 remaining=1 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":3,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
-[2026-10-16T10:16:35.553Z] 🚀 PROGRESS VERIFIED: completed=9 > 7! Prior 7-target barrier safely exceeded.
-[2026-10-16T10:16:37.066Z] Progress [118.5s]: completed=9/11 remaining=1 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":3,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
-[2026-10-16T10:16:37.073Z] 🚀 PROGRESS VERIFIED: completed=9 > 7! Prior 7-target barrier safely exceeded.
-[2026-10-16T10:16:38.595Z] Progress [120s]: completed=9/11 remaining=1 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":3,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
-[2026-10-16T10:16:38.602Z] 🚀 PROGRESS VERIFIED: completed=9 > 7! Prior 7-target barrier safely exceeded.
-[2026-10-16T10:16:40.116Z] Progress [121.5s]: completed=9/11 remaining=1 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":3,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
-[2026-10-16T10:16:40.123Z] 🚀 PROGRESS VERIFIED: completed=9 > 7! Prior 7-target barrier safely exceeded.
-[2026-10-16T10:16:41.644Z] Progress [123s]: completed=9/11 remaining=1 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":3,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
-[2026-10-16T10:16:41.650Z] 🚀 PROGRESS VERIFIED: completed=9 > 7! Prior 7-target barrier safely exceeded.
-[2026-10-16T10:16:43.166Z] Progress [124.5s]: completed=9/11 remaining=1 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":3,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
-[2026-10-16T10:16:43.174Z] 🚀 PROGRESS VERIFIED: completed=9 > 7! Prior 7-target barrier safely exceeded.
-[2026-10-16T10:16:44.688Z] Progress [126s]: completed=9/11 remaining=1 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":3,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
-[2026-10-16T10:16:44.695Z] 🚀 PROGRESS VERIFIED: completed=9 > 7! Prior 7-target barrier safely exceeded.
-[2026-10-16T10:16:46.208Z] Progress [127.5s]: completed=10/11 remaining=1 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":4,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
-[2026-10-16T10:16:46.215Z] 🚀 PROGRESS VERIFIED: completed=10 > 7! Prior 7-target barrier safely exceeded.
-[2026-10-16T10:16:46.222Z] 🎉 All 10 targets in matrix completed!
-[2026-10-16T10:16:46.228Z] ✅ Acceptance 5 & 7 PASS: Campaign continued beyond 7-target stop and processed all 10 targets without site-specific pause
-[2026-10-16T10:16:46.235Z] --- STEP 6: Verifying Final Ledger State & Quality ---
-[2026-10-16T10:16:46.243Z] Final ledger statistics: {"scope":"currentRun","campaignRunId":"run_1792145657772_ed8wv","totalStarted":10,"totalImportRows":10,"pending":0,"invalid":0,"success":4,"failure":4,"unknown":0,"timeout":0,"timeoutLocal":0,"timeoutGlobal":0,"skipped":2,"paused":0,"completed":10,"failureBreakdown":{"NO_ACCESSIBLE_INQUIRY_FORM":4},"logStr":"[LEDGER_STATS] scope=currentRun success=4 failure=4 unknown=0 timeout=0 skipped=2"}
-[2026-10-16T10:16:46.250Z] Attempts summary: [{"target":"https://127.0.0.1/brood9-repro.html","status":"FAILURE","reason":"NO_ACCESSIBLE_INQUIRY_FORM"},{"target":"https://127.0.0.1/psi360-contact.html","status":"FAILURE","reason":"NO_ACCESSIBLE_INQUIRY_FORM"},{"target":"https://127.0.0.1/dedhamhealth-contact.html","status":"FAILURE","reason":"NO_ACCESSIBLE_INQUIRY_FORM"},{"target":"https://127.0.0.1/contact-standard.html","status":"CONFIRMED_SUCCESS","reason":"SUCCESS_CONFIRMED"},{"target":"https://127.0.0.1/booking-no-message.html","status":"SKIPPED","reason":"NON_INQUIRY_RESERVATION_FORM"},{"target":"https://127.0.0.1/subscribe-no-message.html","status":"SKIPPED","reason":"NON_INQUIRY_SUBSCRIBE_FORM"},{"target":"https://127.0.0.1/contact-dropdown-checkbox.html","status":"CONFIRMED_SUCCESS","reason":"SUCCESS_CONFIRMED"},{"target":"https://127.0.0.1/no-contact-page.html","status":"FAILURE","reason":"NO_ACCESSIBLE_INQUIRY_FORM"},{"target":"https://127.0.0.1/contact-numeric.html","status":"CONFIRMED_SUCCESS","reason":"SUCCESS_CONFIRMED"},{"target":"https://127.0.0.1/contact-field-collision.html","status":"CONFIRMED_SUCCESS","reason":"SUCCESS_CONFIRMED"}]
-[2026-10-16T10:16:46.257Z] ✅ Acceptance 4 PASS: dedhamhealth error page settled with explicit reason: NO_ACCESSIBLE_INQUIRY_FORM
-[2026-10-16T10:16:46.264Z] ✅ Acceptance 8 PASS: Final ledger has totalImportRows=10 and pending=0
-[2026-10-16T10:16:49.305Z] 📸 Captured screenshot: 03_campaign_completed_all_targets.png
-[2026-10-16T10:16:49.531Z] --- STEP 7: Verifying Circuit Breaker Classification for CORE_CODE ReferenceErrors ---
-[2026-10-16T10:16:49.543Z] Circuit Breaker test result: {"symbol":"testCoreFunction","count":2,"tripped":true,"isPaused":true}
-[2026-10-16T10:16:49.552Z] ✅ Acceptance 6 PASS: Core ReferenceError trips circuit breaker and auto-pauses campaign
-[2026-10-16T10:16:49.735Z] 📸 Captured screenshot: 04_circuit_breaker_tripped_on_core_code.png
-[2026-10-16T10:16:49.744Z] ================ ALL 10 ACCEPTANCE REQUIREMENTS VERIFIED (PASS) ================
+[2026-10-16T15:17:02.642Z] ================ XPIDER P0 CORE RETRY + MANUAL ASSIST RECOVERY ACCEPTANCE TEST (EDGE) ================
+[2026-10-16T15:17:02.652Z] --- ACCEPTANCE 1: Static Assertion for analyzePageAndExecute ---
+[2026-10-16T15:17:02.660Z] ✅ Verified send_message_backup/content-script.js: 0 references to analyzePageAndExecute
+[2026-10-16T15:17:02.671Z] ✅ Verified send_message_backup/background.js: 0 references to analyzePageAndExecute
+[2026-10-16T15:17:02.681Z] ✅ Verified send_message_backup/popup.js: 0 references to analyzePageAndExecute
+[2026-10-16T15:17:02.690Z] ✅ Verified send_message_backup/build/extension/content-script.js: 0 references to analyzePageAndExecute
+[2026-10-16T15:17:02.700Z] ✅ Verified extension/content-script.js: 0 references to analyzePageAndExecute
+[2026-10-16T15:17:02.767Z] Test server verified: PID=3852 uptime=undefined
+[2026-10-16T15:17:02.775Z] Launching Edge using profile: C:\Users\oPus\AppData\Local\Temp\edge-p0-core-retry-B1Vxmt
+[2026-10-16T15:17:04.111Z] Extension Service Worker active: ID=ldlijlaccfeelfdhgnjbibniocefckjj
+[2026-10-16T15:17:06.764Z] 10-Target Matrix loaded: 10 targets
+[2026-10-16T15:17:06.773Z] --- STEP 1: Setting up Queue & Template in Extension Storage & UI ---
+[2026-10-16T15:17:07.793Z] --- STEP 2: Launching Campaign and Verifying Ledger Initialization ---
+[2026-10-16T15:17:09.069Z] Campaign launch response: {"res":{"success":true,"status":"acknowledged","queueCount":10,"campaignRunId":"run_1792163827852_kzrvi"}}
+[2026-10-16T15:17:09.077Z] Initial ledger check: {"stats":{"scope":"currentRun","campaignRunId":"run_1792163827852_kzrvi","totalStarted":1,"totalImportRows":10,"pending":9,"invalid":0,"success":0,"failure":0,"unknown":0,"timeout":0,"timeoutLocal":0,"timeoutGlobal":0,"skipped":0,"paused":0,"completed":0,"failureBreakdown":{},"logStr":"[LEDGER_STATS] scope=currentRun success=0 failure=0 unknown=0 timeout=0 skipped=0"},"campaignRunId":"run_1792163827852_kzrvi"}
+[2026-10-16T15:17:09.087Z] ✅ Acceptance 8 PASS: Ledger metadata initialized with totalImportRows=10, pending=10 (9 pending + 1 started)
+[2026-10-16T15:17:09.263Z] 📸 Captured screenshot: 01_campaign_started_ledger_initialized.png
+[2026-10-16T15:17:09.271Z] --- STEP 3: Verifying Manual Assist & Retry for Target 1 (PushPress Widget) ---
+[2026-10-16T15:17:17.470Z] Target 1 entered manual assist: reason=EXTERNAL_CROSS_ORIGIN_FORM dedupeKeys=["att_1792163827890_acdxd:tok_1792163827890_yifiri:EXTERNAL_CROSS_ORIGIN_FORM"]
+[2026-10-16T15:17:17.710Z] 📸 Captured screenshot: 02_target1_manual_assist_opened.png
+[2026-10-16T15:17:17.718Z] Clicking Retry on Manual Assist for Target 1...
+[2026-10-16T15:17:17.735Z] Retry decision acknowledged: {"clicked":true,"method":"sendMessage","res":{"success":true,"status":"RETRYING"}}
+[2026-10-16T15:17:21.250Z] Post-Retry state: {"refErrors":[],"circuitBreakerCount":[],"stage":"IN_FLIGHT","outcomes":{"NO_ACCESSIBLE_INQUIRY_FORM":1},"counters":{"success":0,"failed":1,"completed":1,"remaining":10,"deliveryUnknown":0,"timeout":0,"skipped":0,"paused":0,"skippedHistory":0,"inProgress":1,"total":11,"failureBreakdown":{"NO_ACCESSIBLE_INQUIRY_FORM":1},"captchaSolved":0,"captchaFailed":0}}
+[2026-10-16T15:17:21.270Z] ✅ Acceptance 1 & 2 PASS: retryCurrentPageDetection executed without ReferenceError; dedupe prevented repeated popup
+[2026-10-16T15:17:21.278Z] --- STEP 4: Verifying Target 2 (psi360 Contact Page with No DOM Form) ---
+[2026-10-16T15:17:25.293Z] Target 2 & progressive state: {"stage":null,"outcomes":{"NO_ACCESSIBLE_INQUIRY_FORM":1},"counters":{"success":0,"failed":1,"completed":1,"remaining":9,"deliveryUnknown":0,"timeout":0,"skipped":0,"paused":0,"skippedHistory":0,"inProgress":1,"total":11,"failureBreakdown":{"NO_ACCESSIBLE_INQUIRY_FORM":1},"captchaSolved":0,"captchaFailed":0},"dedupeSet":["att_1792163827890_acdxd:tok_1792163827890_yifiri:EXTERNAL_CROSS_ORIGIN_FORM"]}
+[2026-10-16T15:17:25.301Z] ✅ Acceptance 3 PASS: psi360 auto-recovery executed before Owner escalation; zero premature manual modal
+[2026-10-16T15:17:25.309Z] --- STEP 5: Monitoring Campaign Progress Past Prior 7-Target Circuit Breaker Stop ---
+[2026-10-16T15:17:26.830Z] Progress [0s]: completed=1/11 remaining=9 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":1}
+[2026-10-16T15:17:28.354Z] Progress [1.5s]: completed=1/11 remaining=9 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":1}
+[2026-10-16T15:17:29.866Z] Progress [3s]: completed=1/11 remaining=9 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":1}
+[2026-10-16T15:17:31.386Z] Progress [4.5s]: completed=1/11 remaining=9 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":1}
+[2026-10-16T15:17:33.241Z] Progress [6s]: completed=1/11 remaining=9 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":1}
+[2026-10-16T15:17:34.756Z] Progress [7.5s]: completed=2/11 remaining=9 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":2}
+[2026-10-16T15:17:36.282Z] Progress [9s]: completed=2/11 remaining=8 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":2}
+[2026-10-16T15:17:37.794Z] Progress [10.5s]: completed=3/11 remaining=8 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3}
+[2026-10-16T15:17:39.349Z] Progress [12s]: completed=3/11 remaining=7 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3}
+[2026-10-16T15:17:40.868Z] Progress [13.5s]: completed=3/11 remaining=7 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3}
+[2026-10-16T15:17:42.384Z] Progress [15s]: completed=3/11 remaining=7 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3}
+[2026-10-16T15:17:43.894Z] Progress [16.5s]: completed=3/11 remaining=7 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3}
+[2026-10-16T15:17:45.417Z] Progress [18s]: completed=3/11 remaining=7 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3}
+[2026-10-16T15:17:46.936Z] Progress [19.5s]: completed=3/11 remaining=7 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3}
+[2026-10-16T15:17:48.449Z] Progress [21s]: completed=3/11 remaining=7 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3}
+[2026-10-16T15:17:49.965Z] Progress [22.5s]: completed=3/11 remaining=7 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3}
+[2026-10-16T15:17:51.474Z] Progress [24s]: completed=3/11 remaining=7 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3}
+[2026-10-16T15:17:53.003Z] Progress [25.5s]: completed=3/11 remaining=7 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3}
+[2026-10-16T15:17:54.521Z] Progress [27s]: completed=4/11 remaining=7 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":1}
+[2026-10-16T15:17:56.045Z] Progress [28.5s]: completed=4/11 remaining=7 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":1}
+[2026-10-16T15:17:57.558Z] Progress [30s]: completed=4/11 remaining=7 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":1}
+[2026-10-16T15:17:59.165Z] Progress [31.5s]: completed=4/11 remaining=6 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":1}
+[2026-10-16T15:18:00.688Z] Progress [33s]: completed=4/11 remaining=6 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":1}
+[2026-10-16T15:18:02.204Z] Progress [34.5s]: completed=4/11 remaining=6 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":1}
+[2026-10-16T15:18:03.727Z] Progress [36s]: completed=4/11 remaining=6 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":1}
+[2026-10-16T15:18:05.239Z] Progress [37.5s]: completed=4/11 remaining=6 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":1}
+[2026-10-16T15:18:06.754Z] Progress [39s]: completed=4/11 remaining=6 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":1}
+[2026-10-16T15:18:08.270Z] Progress [40.5s]: completed=5/11 remaining=6 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":1,"NON_INQUIRY_RESERVATION_FORM":1}
+[2026-10-16T15:18:09.785Z] Progress [42s]: completed=5/11 remaining=6 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":1,"NON_INQUIRY_RESERVATION_FORM":1}
+[2026-10-16T15:18:11.299Z] Progress [43.5s]: completed=5/11 remaining=5 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":1,"NON_INQUIRY_RESERVATION_FORM":1}
+[2026-10-16T15:18:12.823Z] Progress [45s]: completed=5/11 remaining=5 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":1,"NON_INQUIRY_RESERVATION_FORM":1}
+[2026-10-16T15:18:14.343Z] Progress [46.5s]: completed=5/11 remaining=5 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":1,"NON_INQUIRY_RESERVATION_FORM":1}
+[2026-10-16T15:18:15.856Z] Progress [48s]: completed=5/11 remaining=5 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":1,"NON_INQUIRY_RESERVATION_FORM":1}
+[2026-10-16T15:18:17.380Z] Progress [49.5s]: completed=5/11 remaining=5 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":1,"NON_INQUIRY_RESERVATION_FORM":1}
+[2026-10-16T15:18:18.894Z] Progress [51s]: completed=5/11 remaining=5 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":1,"NON_INQUIRY_RESERVATION_FORM":1}
+[2026-10-16T15:18:20.474Z] Progress [52.5s]: completed=6/11 remaining=5 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":1,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
+[2026-10-16T15:18:22.005Z] Progress [54s]: completed=6/11 remaining=4 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":1,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
+[2026-10-16T15:18:23.535Z] Progress [55.5s]: completed=6/11 remaining=4 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":1,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
+[2026-10-16T15:18:25.051Z] Progress [57s]: completed=6/11 remaining=4 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":1,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
+[2026-10-16T15:18:26.574Z] Progress [58.5s]: completed=6/11 remaining=4 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":1,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
+[2026-10-16T15:18:28.093Z] Progress [60s]: completed=6/11 remaining=4 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":1,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
+[2026-10-16T15:18:29.607Z] Progress [61.5s]: completed=6/11 remaining=4 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":1,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
+[2026-10-16T15:18:31.130Z] Progress [63s]: completed=6/11 remaining=4 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":1,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
+[2026-10-16T15:18:32.648Z] Progress [64.5s]: completed=7/11 remaining=4 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":2,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
+[2026-10-16T15:18:34.166Z] Progress [66s]: completed=7/11 remaining=4 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":2,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
+[2026-10-16T15:18:35.679Z] Progress [67.5s]: completed=7/11 remaining=4 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":2,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
+[2026-10-16T15:18:37.218Z] Progress [69s]: completed=7/11 remaining=3 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":2,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
+[2026-10-16T15:18:38.789Z] Progress [70.5s]: completed=7/11 remaining=3 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":2,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
+[2026-10-16T15:18:40.370Z] Progress [72s]: completed=7/11 remaining=3 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":2,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
+[2026-10-16T15:18:41.888Z] Progress [73.5s]: completed=7/11 remaining=3 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":2,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
+[2026-10-16T15:18:43.413Z] Progress [75s]: completed=7/11 remaining=3 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":2,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
+[2026-10-16T15:18:44.932Z] Progress [76.5s]: completed=7/11 remaining=3 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":2,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
+[2026-10-16T15:18:46.473Z] Progress [78s]: completed=7/11 remaining=3 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":3,"SUCCESS_CONFIRMED":2,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
+[2026-10-16T15:18:48.004Z] Progress [79.5s]: completed=8/11 remaining=3 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":2,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
+[2026-10-16T15:18:48.012Z] 🚀 PROGRESS VERIFIED: completed=8 > 7! Prior 7-target barrier safely exceeded.
+[2026-10-16T15:18:49.548Z] Progress [81s]: completed=8/11 remaining=2 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":2,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
+[2026-10-16T15:18:49.559Z] 🚀 PROGRESS VERIFIED: completed=8 > 7! Prior 7-target barrier safely exceeded.
+[2026-10-16T15:18:51.088Z] Progress [82.5s]: completed=8/11 remaining=2 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":2,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
+[2026-10-16T15:18:51.094Z] 🚀 PROGRESS VERIFIED: completed=8 > 7! Prior 7-target barrier safely exceeded.
+[2026-10-16T15:18:52.610Z] Progress [84s]: completed=8/11 remaining=2 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":2,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
+[2026-10-16T15:18:52.619Z] 🚀 PROGRESS VERIFIED: completed=8 > 7! Prior 7-target barrier safely exceeded.
+[2026-10-16T15:18:54.135Z] Progress [85.5s]: completed=8/11 remaining=2 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":2,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
+[2026-10-16T15:18:54.143Z] 🚀 PROGRESS VERIFIED: completed=8 > 7! Prior 7-target barrier safely exceeded.
+[2026-10-16T15:18:55.666Z] Progress [87s]: completed=8/11 remaining=2 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":2,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
+[2026-10-16T15:18:55.673Z] 🚀 PROGRESS VERIFIED: completed=8 > 7! Prior 7-target barrier safely exceeded.
+[2026-10-16T15:18:57.186Z] Progress [88.5s]: completed=8/11 remaining=2 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":2,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
+[2026-10-16T15:18:57.193Z] 🚀 PROGRESS VERIFIED: completed=8 > 7! Prior 7-target barrier safely exceeded.
+[2026-10-16T15:18:58.708Z] Progress [90s]: completed=8/11 remaining=2 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":2,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
+[2026-10-16T15:18:58.717Z] 🚀 PROGRESS VERIFIED: completed=8 > 7! Prior 7-target barrier safely exceeded.
+[2026-10-16T15:19:00.239Z] Progress [91.5s]: completed=8/11 remaining=2 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":2,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
+[2026-10-16T15:19:00.247Z] 🚀 PROGRESS VERIFIED: completed=8 > 7! Prior 7-target barrier safely exceeded.
+[2026-10-16T15:19:01.759Z] Progress [93s]: completed=8/11 remaining=2 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":2,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
+[2026-10-16T15:19:01.768Z] 🚀 PROGRESS VERIFIED: completed=8 > 7! Prior 7-target barrier safely exceeded.
+[2026-10-16T15:19:03.285Z] Progress [94.5s]: completed=8/11 remaining=2 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":2,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
+[2026-10-16T15:19:03.293Z] 🚀 PROGRESS VERIFIED: completed=8 > 7! Prior 7-target barrier safely exceeded.
+[2026-10-16T15:19:04.814Z] Progress [96s]: completed=8/11 remaining=2 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":2,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
+[2026-10-16T15:19:04.822Z] 🚀 PROGRESS VERIFIED: completed=8 > 7! Prior 7-target barrier safely exceeded.
+[2026-10-16T15:19:06.343Z] Progress [97.5s]: completed=9/11 remaining=2 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":3,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
+[2026-10-16T15:19:06.352Z] 🚀 PROGRESS VERIFIED: completed=9 > 7! Prior 7-target barrier safely exceeded.
+[2026-10-16T15:19:07.861Z] Progress [99s]: completed=9/11 remaining=2 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":3,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
+[2026-10-16T15:19:07.871Z] 🚀 PROGRESS VERIFIED: completed=9 > 7! Prior 7-target barrier safely exceeded.
+[2026-10-16T15:19:09.390Z] Progress [100.5s]: completed=9/11 remaining=2 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":3,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
+[2026-10-16T15:19:09.398Z] 🚀 PROGRESS VERIFIED: completed=9 > 7! Prior 7-target barrier safely exceeded.
+[2026-10-16T15:19:10.939Z] Progress [102s]: completed=9/11 remaining=1 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":3,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
+[2026-10-16T15:19:10.952Z] 🚀 PROGRESS VERIFIED: completed=9 > 7! Prior 7-target barrier safely exceeded.
+[2026-10-16T15:19:12.472Z] Progress [103.5s]: completed=9/11 remaining=1 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":3,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
+[2026-10-16T15:19:12.480Z] 🚀 PROGRESS VERIFIED: completed=9 > 7! Prior 7-target barrier safely exceeded.
+[2026-10-16T15:19:13.996Z] Progress [105s]: completed=9/11 remaining=1 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":3,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
+[2026-10-16T15:19:14.004Z] 🚀 PROGRESS VERIFIED: completed=9 > 7! Prior 7-target barrier safely exceeded.
+[2026-10-16T15:19:15.521Z] Progress [106.5s]: completed=9/11 remaining=1 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":3,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
+[2026-10-16T15:19:15.528Z] 🚀 PROGRESS VERIFIED: completed=9 > 7! Prior 7-target barrier safely exceeded.
+[2026-10-16T15:19:17.057Z] Progress [108s]: completed=9/11 remaining=1 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":3,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
+[2026-10-16T15:19:17.066Z] 🚀 PROGRESS VERIFIED: completed=9 > 7! Prior 7-target barrier safely exceeded.
+[2026-10-16T15:19:18.582Z] Progress [109.5s]: completed=9/11 remaining=1 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":3,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
+[2026-10-16T15:19:18.589Z] 🚀 PROGRESS VERIFIED: completed=9 > 7! Prior 7-target barrier safely exceeded.
+[2026-10-16T15:19:20.101Z] Progress [111s]: completed=9/11 remaining=1 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":3,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
+[2026-10-16T15:19:20.108Z] 🚀 PROGRESS VERIFIED: completed=9 > 7! Prior 7-target barrier safely exceeded.
+[2026-10-16T15:19:21.623Z] Progress [112.5s]: completed=9/11 remaining=1 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":3,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
+[2026-10-16T15:19:21.630Z] 🚀 PROGRESS VERIFIED: completed=9 > 7! Prior 7-target barrier safely exceeded.
+[2026-10-16T15:19:23.149Z] Progress [114s]: completed=9/11 remaining=1 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":3,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
+[2026-10-16T15:19:23.155Z] 🚀 PROGRESS VERIFIED: completed=9 > 7! Prior 7-target barrier safely exceeded.
+[2026-10-16T15:19:24.672Z] Progress [115.5s]: completed=9/11 remaining=1 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":3,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
+[2026-10-16T15:19:24.680Z] 🚀 PROGRESS VERIFIED: completed=9 > 7! Prior 7-target barrier safely exceeded.
+[2026-10-16T15:19:26.198Z] Progress [117s]: completed=9/11 remaining=1 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":3,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
+[2026-10-16T15:19:26.206Z] 🚀 PROGRESS VERIFIED: completed=9 > 7! Prior 7-target barrier safely exceeded.
+[2026-10-16T15:19:27.731Z] Progress [118.5s]: completed=9/11 remaining=1 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":3,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
+[2026-10-16T15:19:27.738Z] 🚀 PROGRESS VERIFIED: completed=9 > 7! Prior 7-target barrier safely exceeded.
+[2026-10-16T15:19:29.251Z] Progress [120s]: completed=9/11 remaining=1 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":3,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
+[2026-10-16T15:19:29.258Z] 🚀 PROGRESS VERIFIED: completed=9 > 7! Prior 7-target barrier safely exceeded.
+[2026-10-16T15:19:30.783Z] Progress [121.5s]: completed=9/11 remaining=1 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":3,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
+[2026-10-16T15:19:30.790Z] 🚀 PROGRESS VERIFIED: completed=9 > 7! Prior 7-target barrier safely exceeded.
+[2026-10-16T15:19:32.307Z] Progress [123s]: completed=9/11 remaining=1 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":3,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
+[2026-10-16T15:19:32.316Z] 🚀 PROGRESS VERIFIED: completed=9 > 7! Prior 7-target barrier safely exceeded.
+[2026-10-16T15:19:33.832Z] Progress [124.5s]: completed=9/11 remaining=1 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":3,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
+[2026-10-16T15:19:33.839Z] 🚀 PROGRESS VERIFIED: completed=9 > 7! Prior 7-target barrier safely exceeded.
+[2026-10-16T15:19:35.352Z] Progress [126s]: completed=10/11 remaining=1 isPaused=false outcomes={"NO_ACCESSIBLE_INQUIRY_FORM":4,"SUCCESS_CONFIRMED":4,"NON_INQUIRY_RESERVATION_FORM":1,"NON_INQUIRY_SUBSCRIBE_FORM":1}
+[2026-10-16T15:19:35.359Z] 🚀 PROGRESS VERIFIED: completed=10 > 7! Prior 7-target barrier safely exceeded.
+[2026-10-16T15:19:35.367Z] 🎉 All 10 targets in matrix completed!
+[2026-10-16T15:19:35.374Z] ✅ Acceptance 5 & 7 PASS: Campaign continued beyond 7-target stop and processed all 10 targets without site-specific pause
+[2026-10-16T15:19:35.381Z] --- STEP 6: Verifying Final Ledger State & Quality ---
+[2026-10-16T15:19:35.390Z] Final ledger statistics: {"scope":"currentRun","campaignRunId":"run_1792163827852_kzrvi","totalStarted":10,"totalImportRows":10,"pending":0,"invalid":0,"success":4,"failure":4,"unknown":0,"timeout":0,"timeoutLocal":0,"timeoutGlobal":0,"skipped":2,"paused":0,"completed":10,"failureBreakdown":{"NO_ACCESSIBLE_INQUIRY_FORM":4},"logStr":"[LEDGER_STATS] scope=currentRun success=4 failure=4 unknown=0 timeout=0 skipped=2"}
+[2026-10-16T15:19:35.399Z] Attempts summary: [{"target":"https://127.0.0.1/brood9-repro.html","status":"FAILURE","reason":"NO_ACCESSIBLE_INQUIRY_FORM"},{"target":"https://127.0.0.1/psi360-contact.html","status":"FAILURE","reason":"NO_ACCESSIBLE_INQUIRY_FORM"},{"target":"https://127.0.0.1/dedhamhealth-contact.html","status":"FAILURE","reason":"NO_ACCESSIBLE_INQUIRY_FORM"},{"target":"https://127.0.0.1/contact-standard.html","status":"CONFIRMED_SUCCESS","reason":"SUCCESS_CONFIRMED"},{"target":"https://127.0.0.1/booking-no-message.html","status":"SKIPPED","reason":"NON_INQUIRY_RESERVATION_FORM"},{"target":"https://127.0.0.1/subscribe-no-message.html","status":"SKIPPED","reason":"NON_INQUIRY_SUBSCRIBE_FORM"},{"target":"https://127.0.0.1/contact-dropdown-checkbox.html","status":"CONFIRMED_SUCCESS","reason":"SUCCESS_CONFIRMED"},{"target":"https://127.0.0.1/no-contact-page.html","status":"FAILURE","reason":"NO_ACCESSIBLE_INQUIRY_FORM"},{"target":"https://127.0.0.1/contact-numeric.html","status":"CONFIRMED_SUCCESS","reason":"SUCCESS_CONFIRMED"},{"target":"https://127.0.0.1/contact-field-collision.html","status":"CONFIRMED_SUCCESS","reason":"SUCCESS_CONFIRMED"}]
+[2026-10-16T15:19:35.406Z] ✅ Acceptance 4 PASS: dedhamhealth error page settled with explicit reason: NO_ACCESSIBLE_INQUIRY_FORM
+[2026-10-16T15:19:35.414Z] ✅ Acceptance 8 PASS: Final ledger has totalImportRows=10 and pending=0
+[2026-10-16T15:19:38.530Z] 📸 Captured screenshot: 03_campaign_completed_all_targets.png
+[2026-10-16T15:19:38.538Z] --- STEP 7: Verifying Circuit Breaker Classification for CORE_CODE ReferenceErrors ---
+[2026-10-16T15:19:38.555Z] Circuit Breaker test result: {"symbol":"testCoreFunction","count":2,"tripped":true,"isPaused":true}
+[2026-10-16T15:19:38.570Z] ✅ Acceptance 6 PASS: Core ReferenceError trips circuit breaker and auto-pauses campaign
+[2026-10-16T15:19:38.805Z] 📸 Captured screenshot: 04_circuit_breaker_tripped_on_core_code.png
+[2026-10-16T15:19:38.813Z] ================ ALL 10 ACCEPTANCE REQUIREMENTS VERIFIED (PASS) ================

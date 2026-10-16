@@ -1850,7 +1850,26 @@
             sessionStorage.setItem('xpider_initial_url', window.location.href);
             sessionStorage.setItem('xpider_submitted_from_url', window.location.href);
             sessionStorage.setItem('xpider_initial_form_present', 'true');
-            sessionStorage.setItem('xpider_pending_verify', 'true'); // [v17.6.0]
+            // [CHATGPT AUDIT #6217708566 SAFE LIVE VALIDATION MODE]
+            // If live validation mode is active, STOP immediately before actual submission:
+            // log [LIVE_VALIDATION_SAFE_STOP] and settle cleanly as WOULD_SUBMIT / AUTOFILL_READY.
+            const isLiveValidation = Boolean(
+                window.__xpider_live_validation_mode ||
+                sessionStorage.getItem('xpider_live_validation_mode') === 'true' ||
+                (await new Promise(r => {
+                    try {
+                        chrome.storage.local.get(['xpider_live_validation_mode'], (res) => r(res && res.xpider_live_validation_mode));
+                    } catch (_) { r(false); }
+                }))
+            );
+            if (isLiveValidation) {
+                verifier.cleanup();
+                logDev("[LIVE_VALIDATION_SAFE_STOP] eligible=true wouldSubmit=true status=WOULD_SUBMIT / AUTOFILL_READY", "info");
+                console.log("[LIVE_VALIDATION_SAFE_STOP] eligible=true wouldSubmit=true status=WOULD_SUBMIT / AUTOFILL_READY");
+                currentTargetLifecycleState = TargetLifecycleState.SETTLING;
+                finishCampaign(false, "WOULD_SUBMIT", "WOULD_SUBMIT");
+                return true;
+            }
 
             let submitOutcome = await executeSubmitStateMachine(form, template, { expectedSnapshot: frozenSnapshot, allowVisionSubmit: true });
             if (submitOutcome.reasonCode === 'PRIVACY_GATEWAY_BLOCKED_BEFORE_SUBMIT') {

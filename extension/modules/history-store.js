@@ -673,7 +673,7 @@
             const r = String(reason || '').toUpperCase();
             // [R6.9A Acceptance Directive] Non-inquiry forms (login, newsletter, booking, search, etc.)
             // are NOT delivery failures. They are canonically classified as SKIPPED.
-            if (s.startsWith('NON_INQUIRY') || s.includes('NON_INQUIRY') || r.startsWith('NON_INQUIRY') || r.includes('NON_INQUIRY') || s === 'SKIPPED' || s === 'HISTORY_SKIPPED' || r === 'SKIPPED' || r.includes('SKIPPED') || s === 'EXPECTED_FAIL_PASS' || r.includes('EXPECTED_FAIL_PASS')) {
+            if (s.startsWith('NON_INQUIRY') || s.includes('NON_INQUIRY') || r.startsWith('NON_INQUIRY') || r.includes('NON_INQUIRY') || s === 'SKIPPED' || s === 'HISTORY_SKIPPED' || r === 'SKIPPED' || r.includes('SKIPPED') || s === 'EXPECTED_FAIL_PASS' || r.includes('EXPECTED_FAIL_PASS') || s === 'WOULD_SUBMIT' || r === 'WOULD_SUBMIT' || r.includes('WOULD_SUBMIT')) {
                 return 'SKIPPED';
             }
             if (s === 'CONFIRMED_SUCCESS' || s === 'SUCCESS' || s === 'CONFIRMED_SUCCESS_COMPOSITE') return 'CONFIRMED_SUCCESS';
@@ -693,7 +693,7 @@
                 'DELIVERY_UNKNOWN', 'UNKNOWN',
                 'TIMEOUT_LOCAL', 'TIMEOUT_GLOBAL', 'TIMEOUT',
                 'FAILURE', 'FAILED',
-                'SKIPPED', 'HISTORY_SKIPPED',
+                'SKIPPED', 'HISTORY_SKIPPED', 'WOULD_SUBMIT',
                 'PAUSED_UNKNOWN', 'INTERRUPTED', 'PAUSED'
             ].includes(s);
         }

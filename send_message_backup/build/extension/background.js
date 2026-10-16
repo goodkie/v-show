@@ -3024,7 +3024,8 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                         overrideSkipAttempted: request.overrideSkipAttempted,
                         ownerFunctionTestMode: isTestMode,
                         ownerTestSource: request.source || null,
-                        campaignRunId: assignedRunId
+                        campaignRunId: assignedRunId,
+                        targetTimeoutMs: request.targetTimeoutMs || request.options?.targetTimeoutMs
                     });
                 } catch (e) {
                     console.error("[StartError]", e);
@@ -5001,6 +5002,7 @@ async function startCampaignOrchestrator(queue, template, delayMs, fillDelayMs =
         campaignState.captchaEpoch = (campaignState.captchaEpoch || 0) + 1; // [Issue #6 R6.9E B4] New epoch on start
         campaignState.captchaEpochBlockedErrors = {};
         for (const k of Object.keys(coreRuntimeRefErrors)) delete coreRuntimeRefErrors[k];
+        campaignState.targetTimeoutMs = options.targetTimeoutMs || 180000;
 
         // [R6.9A & Directive D] Persistent campaignRunId for ledger scoping
         if (options.campaignRunId) {
@@ -6836,7 +6838,7 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
             terminalStatus = 'DELIVERY_UNKNOWN';
         } else if (finalReason === 'TIMEOUT_LOCAL' || finalReason === 'TIMEOUT_GLOBAL') {
             terminalStatus = finalReason;
-        } else if (finalReason === 'SKIPPED' || finalReason?.includes('SKIPPED') || finalReason?.includes('NON_INQUIRY') || finalReason?.startsWith('NON_INQUIRY') || finalReason === 'EXPECTED_FAIL_PASS' || finalReason?.includes('EXPECTED_FAIL_PASS') || res?.isExpectedFailPass) {
+        } else if (finalReason === 'SKIPPED' || finalReason === 'WOULD_SUBMIT' || finalReason?.includes('SKIPPED') || finalReason?.includes('NON_INQUIRY') || finalReason?.startsWith('NON_INQUIRY') || finalReason === 'EXPECTED_FAIL_PASS' || finalReason?.includes('EXPECTED_FAIL_PASS') || res?.isExpectedFailPass) {
             terminalStatus = 'SKIPPED';
         } else {
             terminalStatus = 'FAILURE';
