@@ -672,7 +672,7 @@
             const r = String(reason || '').toUpperCase();
             // [R6.9A Acceptance Directive] Non-inquiry forms (login, newsletter, booking, search, etc.)
             // are NOT delivery failures. They are canonically classified as SKIPPED.
-            if (s.startsWith('NON_INQUIRY') || s.includes('NON_INQUIRY') || r.startsWith('NON_INQUIRY') || r.includes('NON_INQUIRY') || s === 'SKIPPED' || s === 'HISTORY_SKIPPED' || r === 'SKIPPED' || r.includes('SKIPPED')) {
+            if (s.startsWith('NON_INQUIRY') || s.includes('NON_INQUIRY') || r.startsWith('NON_INQUIRY') || r.includes('NON_INQUIRY') || s === 'SKIPPED' || s === 'HISTORY_SKIPPED' || r === 'SKIPPED' || r.includes('SKIPPED') || s === 'EXPECTED_FAIL_PASS' || r.includes('EXPECTED_FAIL_PASS')) {
                 return 'SKIPPED';
             }
             if (s === 'CONFIRMED_SUCCESS' || s === 'SUCCESS' || s === 'CONFIRMED_SUCCESS_COMPOSITE') return 'CONFIRMED_SUCCESS';

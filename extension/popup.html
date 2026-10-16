@@ -116,6 +116,9 @@
                         <button type="button" id="run-full-test-btn" class="primary-btn" style="display: none; background: linear-gradient(135deg, #ec4899, #db2777); color: #fff; font-weight: 700; font-size: 11px; padding: 7px 14px; border-radius: 6px; border: none; cursor: pointer; align-items: center; gap: 4px; box-shadow: 0 0 10px rgba(236, 72, 153, 0.3);">
                             🚀 RUN FULL TEST
                         </button>
+                        <div id="cf-live-status-pill-container" style="display: none; width: 100%; margin-bottom: 4px;">
+                            <span id="cf-live-status-pill" style="font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: rgba(234, 179, 8, 0.2); color: #fbbf24; border: 1px solid #eab308;">LIVE: CONFIG REQUIRED</span>
+                        </div>
                         <button type="button" id="run-cloudflare-live-btn" class="primary-btn" style="display: none; background: linear-gradient(135deg, #f97316, #ea580c); color: #fff; font-weight: 700; font-size: 11px; padding: 7px 14px; border-radius: 6px; border: none; cursor: pointer; align-items: center; gap: 4px; box-shadow: 0 0 10px rgba(249, 115, 22, 0.3);">
                             ⚡ RUN CLOUDFLARE LIVE OWNER TEST
                         </button>
@@ -125,6 +128,22 @@
                         <button type="button" id="restore-user-settings-btn" class="secondary-btn" style="display: none; background: rgba(255, 255, 255, 0.1); color: #e2e8f0; font-size: 11px; padding: 7px 12px; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.2); cursor: pointer; align-items: center; gap: 4px;">
                             ↩ RESTORE PREVIOUS SETTINGS/LIST
                         </button>
+                    </div>
+                    <div id="cloudflare-test-panel" style="display: none; margin-top: 10px; background: rgba(15, 23, 42, 0.85); border: 1px solid #0284c7; border-radius: 6px; padding: 8px 10px; font-size: 11px; font-family: monospace;">
+                        <div style="font-weight: 700; color: #38bdf8; margin-bottom: 4px; display: flex; justify-content: space-between;">
+                            <span>⚡ CLOUDFLARE TURNSTILE VALIDATION</span>
+                            <span id="cf-panel-stage-badge" style="color: #fbbf24; font-size: 10px;">STANDBY</span>
+                        </div>
+                        <div style="font-size: 10px; color: #94a3b8; margin-bottom: 2px;">Mode: <span id="cf-panel-mode" style="color: #e2e8f0;">—</span></div>
+                        <div style="font-size: 10px; color: #94a3b8; margin-bottom: 4px;">Target: <span id="cf-panel-target" style="color: #38bdf8; word-break: break-all;">—</span></div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; color: #cbd5e1; font-size: 10px;">
+                            <div>Widget: <span id="cf-panel-widget" style="color: #67e8f9;">—</span></div>
+                            <div>Sitekey FP: <span id="cf-panel-sitekey-fp" style="color: #67e8f9;">—</span></div>
+                            <div>Owner Action: <span id="cf-panel-owner-action" style="color: #fbbf24;">—</span></div>
+                            <div>Token: <span id="cf-panel-token" style="color: #a78bfa;">—</span></div>
+                            <div>Siteverify: <span id="cf-panel-siteverify" style="color: #94a3b8;">—</span></div>
+                            <div>Outcome: <span id="cf-panel-final" style="color: #94a3b8; font-weight: bold;">—</span></div>
+                        </div>
                     </div>
                     <div id="captcha-lab-panel" style="display: none; margin-top: 10px; background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 6px; padding: 8px 10px; font-size: 11px; font-family: monospace;">
                         <div style="font-weight: 700; color: #a5b4fc; margin-bottom: 4px;">🧩 CONTROLLED CAPTCHA LAB METRICS</div>
@@ -537,6 +556,33 @@
                             </div>
 
                         <!-- [R6.9G.10.3.8 Owner Functional Test Mode - Local Controlled Pages Only] -->
+                        <!-- [R6.9G.10.3.7.1.4.10] Cloudflare Turnstile Live Validation Configuration -->
+                        <div class="settings-group" id="cloudflare-live-config-group" style="background: rgba(14, 165, 233, 0.08); border: 1px dashed #0284c7; border-radius: 6px; padding: 10px; margin-top: 10px;">
+                            <div style="font-size: 11px; font-weight: 700; color: #38bdf8; margin-bottom: 4px;">
+                                ⚡ CLOUDFLARE TURNSTILE LIVE OWNER VALIDATION
+                            </div>
+                            <p class="settings-subtip" style="color: #94a3b8; font-size: 10px; line-height: 1.3; margin-bottom: 8px;">
+                                Configure your Owner-controlled HTTPS form and server-side Siteverify verification endpoint. Secrets must reside on your server only; never input secrets into the browser extension.
+                            </p>
+                            <div style="margin-bottom: 6px;">
+                                <label style="font-size: 10px; color: #cbd5e1; display: block; margin-bottom: 2px;">Cloudflare Live Test URL (Public HTTPS only)</label>
+                                <input type="text" id="cf-live-url" class="premium-input" placeholder="https://example.com/contact-form" style="height: 28px; font-size: 11px;">
+                            </div>
+                            <div style="margin-bottom: 6px;">
+                                <label style="font-size: 10px; color: #cbd5e1; display: block; margin-bottom: 2px;">Cloudflare Turnstile Sitekey</label>
+                                <input type="text" id="cf-live-sitekey" class="premium-input" placeholder="0x4AAAAAA..." style="height: 28px; font-size: 11px;">
+                            </div>
+                            <div style="margin-bottom: 6px;">
+                                <label style="font-size: 10px; color: #cbd5e1; display: block; margin-bottom: 2px;">Server Verification Endpoint</label>
+                                <input type="text" id="cf-live-verify-endpoint" class="premium-input" placeholder="https://example.com/api/verify-turnstile" style="height: 28px; font-size: 11px;">
+                            </div>
+                            <div style="display: flex; gap: 6px; margin-top: 8px;">
+                                <button type="button" id="cf-live-save-btn" class="primary-btn-small" style="flex: 1; padding: 5px; font-size: 10px; background: #0284c7; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">💾 Save Cloudflare Live Settings</button>
+                                <button type="button" id="cf-live-clear-btn" class="secondary-btn-small" style="padding: 5px 8px; font-size: 10px; background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid #ef4444; border-radius: 4px; cursor: pointer;">Clear</button>
+                            </div>
+                            <div id="cf-live-settings-msg" style="display: none; margin-top: 6px; font-size: 10px; padding: 4px 6px; border-radius: 4px;"></div>
+                        </div>
+
                         <div class="settings-group" id="owner-function-test-group" style="background: rgba(234, 179, 8, 0.08); border: 1px dashed #eab308; border-radius: 6px; padding: 10px; margin-top: 10px;">
                             <div style="display: flex; justify-content: space-between; align-items: center;">
                                 <label style="font-size: 11px; font-weight: 700; color: #fde047; margin: 0;">🧪 Owner Functional Test Mode</label>

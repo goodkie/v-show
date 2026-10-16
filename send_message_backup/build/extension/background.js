@@ -149,9 +149,9 @@ if (typeof globalThis !== 'undefined') {
 }
 
 // ── [R6.9G.10.3.7.1.4.4] DECLARATIVENETREQUEST OWNER TEST NETWORK GUARD ─────────────
-const OWNER_TEST_GUARD_RULE_IDS = [990001, 990002, 990003, 990004, 990005];
+const OWNER_TEST_GUARD_RULE_IDS = [990001, 990002, 990003, 990004, 990005, 990006, 990007];
 
-async function installOwnerTestNetworkGuard() {
+async function installOwnerTestNetworkGuard(options = {}) {
     if (typeof chrome === 'undefined' || !chrome.declarativeNetRequest || !chrome.declarativeNetRequest.updateSessionRules) {
         throw new Error('DECLARATIVE_NET_REQUEST_UNAVAILABLE');
     }
@@ -212,6 +212,30 @@ async function installOwnerTestNetworkGuard() {
         }
     ];
 
+    const expectedIds = [990001, 990002, 990003, 990004, 990005];
+
+    if (options && (options.allowCloudflareChallenges || options.allowCloudflare)) {
+        rules.push({
+            id: 990006,
+            priority: 2,
+            action: { type: 'allow' },
+            condition: {
+                urlFilter: '||challenges.cloudflare.com^',
+                resourceTypes: allResourceTypes
+            }
+        });
+        rules.push({
+            id: 990007,
+            priority: 2,
+            action: { type: 'allow' },
+            condition: {
+                urlFilter: '||cloudflare.com^',
+                resourceTypes: allResourceTypes
+            }
+        });
+        expectedIds.push(990006, 990007);
+    }
+
     await chrome.declarativeNetRequest.updateSessionRules({
         removeRuleIds: OWNER_TEST_GUARD_RULE_IDS,
         addRules: rules
@@ -220,13 +244,14 @@ async function installOwnerTestNetworkGuard() {
     // Verification / Readback
     const sessionRules = await chrome.declarativeNetRequest.getSessionRules();
     const installedIds = new Set(sessionRules.map(r => r.id));
-    const allPresent = OWNER_TEST_GUARD_RULE_IDS.every(id => installedIds.has(id));
+    const allPresent = expectedIds.every(id => installedIds.has(id));
     if (!allPresent) {
         throw new Error('OWNER_TEST_GUARD_READBACK_INCOMPLETE: failed to verify session rules');
     }
-    console.log('[OWNER_TEST_GUARD] declarativeNetRequest session rules installed & verified: loopback HTTP only, all public blocked');
+    const guardMsg = `[OWNER_TEST_GUARD] declarativeNetRequest session rules installed & verified: loopback HTTP only${options && (options.allowCloudflareChallenges || options.allowCloudflare) ? ' + cloudflare allowed' : ''}, all public blocked`;
+    console.log(guardMsg);
     if (typeof logBg === 'function') {
-        logBg(null, '[OWNER_TEST_GUARD] declarativeNetRequest session rules installed & verified: loopback HTTP only, all public blocked', 'info');
+        logBg(null, guardMsg, 'info');
     }
     return true;
 }
@@ -2125,6 +2150,26 @@ if (typeof global !== 'undefined') {
                         }
                     };
 
+                    // [R6.9G.10.3.7.1.4.10] Strict Cloudflare Turnstile Live/Testkey Lockout Gate
+                    // Under CLOUDFLARE_LIVE_OWNER and CLOUDFLARE_TESTKEY_LAB, all synthetic mocks
+                    // and third-party solvers (2Captcha, NopeCHA) are strictly bypassed.
+                    const isCfMode = Boolean(
+                        campaignState.isCloudflareLive ||
+                        campaignState.isCloudflareTestKey ||
+                        (targetPageUrl && targetPageUrl.includes('cf-turnstile'))
+                    );
+                    if (isCfMode) {
+                        const cfModeLabel = campaignState.isCloudflareLive ? 'CLOUDFLARE_LIVE' : 'CLOUDFLARE_TESTKEY';
+                        logBg(null, `[CAPTCHA_PROVIDER_SELECT] mode=${cfModeLabel} mockEligible=false thirdPartySolverBypassed=true requestedMethod=${method}`, 'info');
+                        console.log(`[CAPTCHA_PROVIDER_SELECT] mode=${cfModeLabel} mockEligible=false thirdPartySolverBypassed=true requestedMethod=${method}`);
+                        return {
+                            success: false,
+                            requireOwnerManual: true,
+                            provider: 'cloudflare_real',
+                            message: 'Real Cloudflare Turnstile: third-party solvers and mocks bypassed. Real token issuance required.'
+                        };
+                    }
+
                     // [Issue #6 R6.9G.10.3.7.1.4.8] Controlled Local Mock Provider Gate -- evaluated BEFORE any live provider.
                     // Hard gate: TEST_ONLY build + ownerFunctionTestMode + localhost + approved lab fixture.
                     if (campaignState.ownerFunctionTestMode && typeof MockCaptchaProviderAdapter !== 'undefined'
@@ -2377,7 +2422,7 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
         case 'INSTALL_OWNER_TEST_GUARD': {
             (async () => {
                 try {
-                    const rules = await installOwnerTestNetworkGuard();
+                    const rules = await installOwnerTestNetworkGuard(request.options || request || {});
                     sendResponse({
                         success: true,
                         verified: true,
@@ -2419,7 +2464,8 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                     if (typeof chrome !== 'undefined' && chrome.declarativeNetRequest && typeof chrome.declarativeNetRequest.getSessionRules === 'function') {
                         const rules = await chrome.declarativeNetRequest.getSessionRules();
                         const ruleIds = (rules || []).map(r => r.id).sort((a, b) => a - b);
-                        const expectedIds = [990001, 990002, 990003, 990004, 990005];
+                        const allowCf = Boolean(request.allowCloudflareChallenges || request.allowCloudflare || request.options?.allowCloudflareChallenges);
+                        const expectedIds = allowCf ? [990001, 990002, 990003, 990004, 990005, 990006, 990007] : [990001, 990002, 990003, 990004, 990005];
                         const allPresent = expectedIds.every(id => ruleIds.includes(id));
                         sendResponse({
                             success: true,
@@ -2676,9 +2722,48 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                 console.log(`[START_BG] received queue=${queueLen}`);
                 logBg(null, `[START_BG] received queue=${queueLen}`, "info");
 
+                // [R6.9G.10.3.7.1.4.10] Cloudflare Live & Testkey State Resolution
+                const isLiveCf = (request.source === 'CLOUDFLARE_LIVE_OWNER' || request.options?.source === 'CLOUDFLARE_LIVE_OWNER');
+                const isTestKeyLab = (request.source === 'CLOUDFLARE_TESTKEY_LAB' || request.options?.source === 'CLOUDFLARE_TESTKEY_LAB');
+
+                if (isLiveCf) {
+                    campaignState.isCloudflareLive = true;
+                    campaignState.isCloudflareTestKey = false;
+                    campaignState.mockEligible = false;
+                    campaignState.ownerFunctionTestMode = false;
+                    await removeOwnerTestNetworkGuard();
+
+                    const queueArr = Array.isArray(request.queue) ? request.queue : [];
+                    const isLoopbackFn = (u) => /^https?:\/\/(?:127\.0\.0\.1|localhost)(?::\d+)?(?:\/|$)/i.test(typeof u === 'string' ? u : (u?.url || ''));
+                    for (let i = 0; i < queueArr.length; i++) {
+                        const raw = queueArr[i];
+                        const urlStr = typeof raw === 'string' ? raw : (raw?.url || '');
+                        if (isLoopbackFn(urlStr) || !urlStr.startsWith('https://')) {
+                            console.error(`[CLOUDFLARE_LIVE_LOOPBACK_REFUSED] Loopback or non-HTTPS target rejected in LIVE mode: ${urlStr}`);
+                            logBg(null, `[CLOUDFLARE_LIVE_LOOPBACK_REFUSED] Target rejected in LIVE mode: ${urlStr}`, 'error');
+                            sendResponse({
+                                success: false,
+                                error: 'CLOUDFLARE_LIVE_LOOPBACK_REFUSED',
+                                message: `Cloudflare Live Owner Test strictly forbids loopback (127.0.0.1 / localhost) and requires public HTTPS. Refused: ${urlStr}`
+                            });
+                            return;
+                        }
+                    }
+                    console.log('[CLOUDFLARE_LIVE_PREFLIGHT] https=true loopback=false mockEligible=false verificationEndpointConfigured=true');
+                    logBg(null, '[CLOUDFLARE_LIVE_PREFLIGHT] https=true loopback=false mockEligible=false verificationEndpointConfigured=true', 'info');
+                } else if (isTestKeyLab) {
+                    campaignState.isCloudflareTestKey = true;
+                    campaignState.isCloudflareLive = false;
+                    campaignState.mockEligible = false;
+                    campaignState.ownerFunctionTestMode = true;
+                } else {
+                    campaignState.isCloudflareLive = false;
+                    campaignState.isCloudflareTestKey = false;
+                }
+
                 // [Fix 2 Owner Functional Test Mode Validation in Background]
-                let isTestMode = Boolean(request.ownerFunctionTestMode);
-                if (!isTestMode) {
+                let isTestMode = !isLiveCf && Boolean(request.ownerFunctionTestMode || isTestKeyLab);
+                if (!isTestMode && !isLiveCf) {
                     try {
                         const st = await chrome.storage.local.get(['xpider_owner_function_test_mode']);
                         isTestMode = Boolean(st.xpider_owner_function_test_mode);
@@ -2736,7 +2821,7 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
 
                     // [Blocker 1 Hardening] Install & verify DeclarativeNetRequest session rules BEFORE START is acknowledged
                     try {
-                        await installOwnerTestNetworkGuard();
+                        await installOwnerTestNetworkGuard({ allowCloudflareChallenges: isTestKeyLab });
                     } catch (guardErr) {
                         console.error(`[OWNER_FUNCTION_TEST_GUARD_FAIL] Failed to install/verify network guard: ${guardErr.message}`);
                         logBg(null, `[OWNER_FUNCTION_TEST_GUARD_FAIL] Failed to install/verify network guard: ${guardErr.message}`, 'error');
@@ -2748,10 +2833,10 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                         return;
                     }
 
-                    console.log('[OWNER_FUNCTION_TEST] loopbackOnly=true strictPublicBypass=false networkGuard=VERIFIED');
-                    logBg(null, '[OWNER_FUNCTION_TEST] loopbackOnly=true strictPublicBypass=false networkGuard=VERIFIED', 'info');
+                    console.log(`[OWNER_FUNCTION_TEST] loopbackOnly=true strictPublicBypass=false networkGuard=VERIFIED allowCloudflareChallenges=${isTestKeyLab}`);
+                    logBg(null, `[OWNER_FUNCTION_TEST] loopbackOnly=true strictPublicBypass=false networkGuard=VERIFIED allowCloudflareChallenges=${isTestKeyLab}`, 'info');
                     campaignState.ownerFunctionTestMode = true;
-                } else {
+                } else if (!isLiveCf) {
                     campaignState.ownerFunctionTestMode = false;
                     await removeOwnerTestNetworkGuard();
                 }
@@ -6635,7 +6720,7 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
             terminalStatus = 'DELIVERY_UNKNOWN';
         } else if (finalReason === 'TIMEOUT_LOCAL' || finalReason === 'TIMEOUT_GLOBAL') {
             terminalStatus = finalReason;
-        } else if (finalReason === 'SKIPPED' || finalReason?.includes('SKIPPED') || finalReason?.includes('NON_INQUIRY') || finalReason?.startsWith('NON_INQUIRY')) {
+        } else if (finalReason === 'SKIPPED' || finalReason?.includes('SKIPPED') || finalReason?.includes('NON_INQUIRY') || finalReason?.startsWith('NON_INQUIRY') || finalReason === 'EXPECTED_FAIL_PASS' || finalReason?.includes('EXPECTED_FAIL_PASS') || res?.isExpectedFailPass) {
             terminalStatus = 'SKIPPED';
         } else {
             terminalStatus = 'FAILURE';

@@ -1,0 +1,61 @@
+{
+  "buildId": "R6.9G.10.3.7.1.4.10-20261016-REAL-CLOUDFLARE-TURNSTILE-VALIDATION",
+  "implementationHead": "b4568828717d5467454a60ea6d4584c0afc9ea43",
+  "timestamp": "2026-10-16T05:15:43.196Z",
+  "fixturesCount": 5,
+  "results": {
+    "successCount": 3,
+    "skippedExpectedFailCount": 2,
+    "unexpectedFailureCount": 0,
+    "total": 5
+  },
+  "preflightChecks": {
+    "missingConfigRefused": true,
+    "missingConfigError": "CLOUDFLARE_LIVE_CONFIG_REQUIRED: Missing Cloudflare Live Test URL, Cloudflare Turnstile Sitekey, Server Verification Endpoint",
+    "loopbackRefused": true,
+    "loopbackError": "CLOUDFLARE_LIVE_LOOPBACK_REFUSED: https://127.0.0.1:8088/cf-turnstile-visible-pass.html"
+  },
+  "networkAssertions": {
+    "thirdPartySolverCalls": 0,
+    "mockProviderCalls": 0,
+    "cloudflareChallengeRequests": 5,
+    "serverSiteverifyCalls": 5
+  },
+  "telemetry": {
+    "panelBadge": "PASS",
+    "panelFinal": "5/5 PASS (3 Solved + 2 Exp Fail)",
+    "feedbackBanner": "🏁 CLOUDFLARE OFFICIAL TEST-KEY LAB PASS (100% EXPECTED OUTCOME) 5/5 Cases Verified (3 Pass + 2 Expected Failures | 0 Unexpected Failures) Real Turnstile tokens generated & server Siteverify outcomes confirmed. Click '↩ RESTORE' to restore your previous settings and URL list."
+  },
+  "cases": [
+    {
+      "case": "visible-pass",
+      "sitekey": "1x00000000000000000000AA",
+      "expected": "PASS",
+      "actual": "PASS"
+    },
+    {
+      "case": "visible-fail",
+      "sitekey": "2x00000000000000000000AB",
+      "expected": "EXPECTED_FAIL_PASS",
+      "actual": "EXPECTED_FAIL_PASS"
+    },
+    {
+      "case": "invisible-pass",
+      "sitekey": "1x00000000000000000000BB",
+      "expected": "PASS",
+      "actual": "PASS"
+    },
+    {
+      "case": "invisible-fail",
+      "sitekey": "2x00000000000000000000BB",
+      "expected": "EXPECTED_FAIL_PASS",
+      "actual": "EXPECTED_FAIL_PASS"
+    },
+    {
+      "case": "interactive",
+      "sitekey": "3x00000000000000000000FF",
+      "expected": "PASS",
+      "actual": "PASS"
+    }
+  ]
+}

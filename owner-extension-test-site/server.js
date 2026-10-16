@@ -76,6 +76,82 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // [R6.9G.10.3.7.1.4.10] Cloudflare Turnstile Server-Side Siteverify Endpoint
+  if (reqPath === '/cf-turnstile/verify' && req.method === 'POST') {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', async () => {
+      try {
+        let token = '';
+        let caseKey = '';
+        if (req.headers['content-type'] && req.headers['content-type'].includes('application/json')) {
+          const parsed = JSON.parse(body);
+          token = parsed.token || parsed['cf-turnstile-response'] || '';
+          caseKey = parsed.caseKey || '';
+        } else {
+          const params = new URLSearchParams(body);
+          token = params.get('cf-turnstile-response') || params.get('token') || '';
+          caseKey = params.get('caseKey') || '';
+        }
+
+        const queryParams = new URL(req.url, `http://${req.headers.host}`).searchParams;
+        if (!caseKey) caseKey = queryParams.get('case') || 'visible-pass';
+
+        // Select secret key based on official Cloudflare test credentials or environment
+        let secretKey = process.env.CLOUDFLARE_TURNSTILE_SECRET_KEY;
+        if (!secretKey) {
+          if (caseKey.includes('fail')) {
+            // Always fails validation
+            secretKey = '2x0000000000000000000000000000000AA';
+          } else {
+            // Always passes validation
+            secretKey = '1x0000000000000000000000000000000AA';
+          }
+        }
+
+        let cfRes = { success: false, 'error-codes': ['missing-input-response'] };
+        if (token) {
+          for (let attempt = 0; attempt < 3; attempt++) {
+            try {
+              const apiRes = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({
+                  secret: secretKey,
+                  response: token
+                })
+              });
+              cfRes = await apiRes.json();
+              if (cfRes) break;
+            } catch (netErr) {
+              if (attempt === 2) {
+                cfRes = { success: false, 'error-codes': ['siteverify-network-error', netErr.message] };
+              } else {
+                await new Promise(r => setTimeout(r, 600));
+              }
+            }
+          }
+        }
+
+        const responsePayload = {
+          verified: Boolean(cfRes && cfRes.success === true),
+          provider: 'cloudflare-turnstile',
+          hostname: (cfRes && cfRes.hostname) || req.headers.host || '127.0.0.1',
+          action: (cfRes && cfRes.action) || '',
+          cdata: (cfRes && cfRes.cdata) || '',
+          error_codes: (cfRes && cfRes['error-codes']) || []
+        };
+
+        res.writeHead(200, { 'Content-Type': 'application/json; charset=UTF-8' });
+        res.end(JSON.stringify(responsePayload));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json; charset=UTF-8' });
+        res.end(JSON.stringify({ verified: false, error: err.message, error_codes: ['INTERNAL_SERVER_ERROR'] }));
+      }
+    });
+    return;
+  }
+
   if (reqPath === '/' || reqPath === '') {
     reqPath = '/no-contact-page.html';
   } else if (reqPath === '/subscribe-no-message.html') {

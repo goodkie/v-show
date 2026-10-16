@@ -17,7 +17,7 @@
         branch: 'upgrade/phase-0-1',
         channel: 'TEST_ONLY',
         testOnly: true,
-        // [R6.9G.10.3.7.1.4.9] CAPTCHA Lab UI Truth, Metrics Panel Hydration and Expected-Fail Settle
+        // [R6.9G.10.3.7.1.4.10] Real Cloudflare Turnstile Owner Validation & Official Test-Key Suite
         implementationHead: 'b4568828717d5467454a60ea6d4584c0afc9ea43',
         implementationHeadShort: 'b4568828',
         head: 'b4568828717d5467454a60ea6d4584c0afc9ea43',
@@ -25,17 +25,17 @@
         rollbackBase: 'dc0740a0c69e2f7fa96b6989841acf0831b3619e',
         previousFunctionalRestorePoint: '31b929c35eb52aba782181ba83e79a7196c51337',
         manifestVersion: 3,
-        buildId: 'R6.9G.10.3.7.1.4.9-20261016-CAPTCHA-LAB-UI-TRUTH-AND-SETTLEMENT',
-        builtAt: '2026-10-16T03:40:00.000Z',
+        buildId: 'R6.9G.10.3.7.1.4.10-20261016-REAL-CLOUDFLARE-TURNSTILE-VALIDATION',
+        builtAt: '2026-10-16T05:15:57.594Z',
         provenanceSchema: 2,
         modules: {
-            backgroundSha: '16c91ccfdc760147ec315d8bef7730fe285086030cb72f4684d48268d6735332',
-            contentScriptSha: 'ca357052c178090e8ff784808c556bb1d582caabc6f54704b30222f4ee65a6b4',
-            popupSha: '0854e4e3dbf3721460af758fc1fa7efb3dfe2c3d5f639f8135ec51b63fc44bf3',
+            backgroundSha: 'e12f41ad1651aa59011507d9e032abb48d5c14de30f2c19739e21939cfa875bd',
+            contentScriptSha: 'd2628afcc71e1f1fe2bee642b18724c4bd7afccf2d11b17e15feeb85aba9b7ba',
+            popupSha: 'cdec11b0f14919c9a8842d3b7d00fbf8e74b077fb4a1e5833166bbd5ec04011f',
             solverContentSha: 'd7de969d29df29799537b11380f0f82967bb93da227c91e7dc8c6af0d128f457',
             solverCoreSha: '01b3d96048ea933403e4599854dcdca28027e7f676aa5077eb6c5eb0582ac1e7',
             emailCollectorSha: '3f1147a379e159e7777158f2caa74cc8d40b2a0b0eb2c244f440af379cb5c9c9',
-            historyStoreSha: 'd05fe114a6f8b639bc5a9fbb7acd41b26f6123ee56326a6ab6184fd5299999ea',
+            historyStoreSha: 'e3e8f6f769a4abb5e8beaff261ac7496d82b70d51b5e2e96324f3581adb4188e',
             contactGateSha: '0d01acb2d0a9448d154353fac5b527c17afa42fed56c68d6a49b39053629bd7d',
             visionSubmitSha: '25cf18a4834bb476edff5e8f19a78dd2723bd556ede649ada69bc801543c83f3',
             privacyGatewaySha: '2662f12eb26290a8334e9de4727cd0ceb039d966c4ec05d2c321ede7715a43a9'

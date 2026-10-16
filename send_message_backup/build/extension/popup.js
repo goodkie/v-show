@@ -3650,6 +3650,7 @@ function updateAutoSetupUI(state) {
     const labPanel = document.getElementById('captcha-lab-panel');
     const restoreBtn = document.getElementById('restore-user-settings-btn');
 
+    const cfPillContainer = document.getElementById('cf-live-status-pill-container');
     const setButtonsDisplay = (disp, disabled = false) => {
         if (runBtn) { 
             runBtn.style.display = disp; 
@@ -3660,6 +3661,7 @@ function updateAutoSetupUI(state) {
         if (runFullBtn) { runFullBtn.style.display = disp; runFullBtn.disabled = disabled; }
         if (runCfLiveBtn) { runCfLiveBtn.style.display = disp; runCfLiveBtn.disabled = disabled; }
         if (runCfTestKeyBtn) { runCfTestKeyBtn.style.display = disp; runCfTestKeyBtn.disabled = disabled; }
+        if (cfPillContainer) { cfPillContainer.style.display = (disp === 'none' ? 'none' : 'block'); }
     };
 
     if (state === 'READY') {
@@ -3717,6 +3719,124 @@ function updateAutoSetupUI(state) {
         }
         if (runBtn) runBtn.style.display = 'none';
         if (restoreBtn) restoreBtn.style.display = 'none';
+    }
+}
+
+async function refreshCloudflareLiveStatusPill() {
+    if (typeof document === 'undefined') return;
+    const pill = document.getElementById('cf-live-status-pill');
+    if (!pill) return;
+    try {
+        const st = await chrome.storage.local.get(['xpider_cf_live_config']);
+        const cfg = st.xpider_cf_live_config;
+        const isLoop = cfg?.liveUrl ? (/^https?:\/\/(?:127\.0\.0\.1|localhost)(?::\d+)?(?:\/|$)/i.test(cfg.liveUrl) || !cfg.liveUrl.startsWith('https://')) : true;
+        const isConfigured = Boolean(cfg && cfg.liveUrl && cfg.sitekey && cfg.verifyEndpoint && !isLoop);
+        if (isConfigured) {
+            pill.textContent = 'LIVE: READY';
+            pill.style.background = 'rgba(16, 185, 129, 0.2)';
+            pill.style.color = '#34d399';
+            pill.style.border = '1px solid rgba(16, 185, 129, 0.5)';
+        } else {
+            pill.textContent = 'LIVE: CONFIG REQUIRED';
+            pill.style.background = 'rgba(234, 179, 8, 0.2)';
+            pill.style.color = '#fbbf24';
+            pill.style.border = '1px solid #eab308';
+        }
+    } catch (_) {}
+}
+
+function initCloudflareLiveSettings() {
+    if (typeof document === 'undefined') return;
+    const saveBtn = document.getElementById('cf-live-save-btn');
+    const clearBtn = document.getElementById('cf-live-clear-btn');
+    const urlInput = document.getElementById('cf-live-url');
+    const sitekeyInput = document.getElementById('cf-live-sitekey');
+    const verifyInput = document.getElementById('cf-live-verify-endpoint');
+    const msgDiv = document.getElementById('cf-live-settings-msg');
+
+    chrome.storage.local.get(['xpider_cf_live_config']).then((st) => {
+        const cfg = st.xpider_cf_live_config;
+        if (cfg) {
+            if (urlInput && cfg.liveUrl) urlInput.value = cfg.liveUrl;
+            if (sitekeyInput && cfg.sitekey) sitekeyInput.value = cfg.sitekey;
+            if (verifyInput && cfg.verifyEndpoint) verifyInput.value = cfg.verifyEndpoint;
+        }
+        refreshCloudflareLiveStatusPill();
+    }).catch(() => {});
+
+    if (saveBtn && !saveBtn.dataset.bound) {
+        saveBtn.dataset.bound = 'true';
+        saveBtn.addEventListener('click', async () => {
+            const liveUrl = (urlInput?.value || '').trim();
+            const sitekey = (sitekeyInput?.value || '').trim();
+            const verifyEndpoint = (verifyInput?.value || '').trim();
+
+            if (!liveUrl || !sitekey || !verifyEndpoint) {
+                if (msgDiv) {
+                    msgDiv.style.display = 'block';
+                    msgDiv.style.background = 'rgba(239, 68, 68, 0.2)';
+                    msgDiv.style.color = '#f87171';
+                    msgDiv.style.border = '1px solid #ef4444';
+                    msgDiv.textContent = 'All fields (URL, Sitekey, Verification Endpoint) are required.';
+                }
+                return;
+            }
+
+            if (!liveUrl.startsWith('https://')) {
+                if (msgDiv) {
+                    msgDiv.style.display = 'block';
+                    msgDiv.style.background = 'rgba(239, 68, 68, 0.2)';
+                    msgDiv.style.color = '#f87171';
+                    msgDiv.style.border = '1px solid #ef4444';
+                    msgDiv.textContent = 'Live URL must start with https:// (public HTTPS only).';
+                }
+                return;
+            }
+
+            if (/^https?:\/\/(?:127\.0\.0\.1|localhost)(?::\d+)?(?:\/|$)/i.test(liveUrl)) {
+                if (msgDiv) {
+                    msgDiv.style.display = 'block';
+                    msgDiv.style.background = 'rgba(239, 68, 68, 0.2)';
+                    msgDiv.style.color = '#f87171';
+                    msgDiv.style.border = '1px solid #ef4444';
+                    msgDiv.textContent = 'Loopback (127.0.0.1 / localhost) is forbidden for LIVE mode.';
+                }
+                return;
+            }
+
+            await chrome.storage.local.set({
+                xpider_cf_live_config: { liveUrl, sitekey, verifyEndpoint }
+            });
+
+            if (msgDiv) {
+                msgDiv.style.display = 'block';
+                msgDiv.style.background = 'rgba(16, 185, 129, 0.2)';
+                msgDiv.style.color = '#34d399';
+                msgDiv.style.border = '1px solid rgba(16, 185, 129, 0.5)';
+                msgDiv.textContent = '✅ Cloudflare Live Settings saved successfully!';
+                setTimeout(() => { if (msgDiv) msgDiv.style.display = 'none'; }, 4000);
+            }
+            await refreshCloudflareLiveStatusPill();
+        });
+    }
+
+    if (clearBtn && !clearBtn.dataset.bound) {
+        clearBtn.dataset.bound = 'true';
+        clearBtn.addEventListener('click', async () => {
+            if (urlInput) urlInput.value = '';
+            if (sitekeyInput) sitekeyInput.value = '';
+            if (verifyInput) verifyInput.value = '';
+            await chrome.storage.local.remove(['xpider_cf_live_config']);
+            if (msgDiv) {
+                msgDiv.style.display = 'block';
+                msgDiv.style.background = 'rgba(234, 179, 8, 0.2)';
+                msgDiv.style.color = '#fbbf24';
+                msgDiv.style.border = '1px solid #eab308';
+                msgDiv.textContent = 'Settings cleared.';
+                setTimeout(() => { if (msgDiv) msgDiv.style.display = 'none'; }, 3000);
+            }
+            await refreshCloudflareLiveStatusPill();
+        });
     }
 }
 
@@ -3860,13 +3980,74 @@ function showAutoSetupFeedback(msg, type = 'info') {
 
 function onCampaignFinishedOwnerTestCheck(counters) {
     if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.local) return;
-    chrome.storage.local.get(['xpider_owner_function_test_mode', 'xpider_owner_backup_snapshot', 'xpider_active_test_source']).then((st) => {
+    chrome.storage.local.get(['xpider_owner_function_test_mode', 'xpider_owner_backup_snapshot', 'xpider_active_test_source', 'xpider_cloudflare_live_test']).then((st) => {
+        const sc = counters ? (counters.success || 0) : 0;
+        const sk = counters ? (counters.skipped || 0) : 0;
+        const fl = counters ? (counters.failed || 0) : 0;
+        const total = sc + sk + fl;
+
+        // [R6.9G.10.3.7.1.4.10] Cloudflare Live Owner Validation Evaluation
+        if (st && st.xpider_active_test_source === 'CLOUDFLARE_LIVE_OWNER') {
+            updateAutoSetupUI('COMPLETED');
+            const cfPanel = document.getElementById('cloudflare-test-panel');
+            if (cfPanel) cfPanel.style.display = 'block';
+
+            if (sc === 1) {
+                const elBadge = document.getElementById('cf-panel-stage-badge'); if (elBadge) { elBadge.textContent = 'PASS'; elBadge.style.color = '#4ade80'; }
+                const elFinal = document.getElementById('cf-panel-final'); if (elFinal) { elFinal.textContent = 'PASS (Siteverify Verified)'; elFinal.style.color = '#4ade80'; }
+                const elVerify = document.getElementById('cf-panel-siteverify'); if (elVerify) { elVerify.textContent = 'Verified: true'; elVerify.style.color = '#4ade80'; }
+                showAutoSetupFeedback(
+                    `🏁 CLOUDFLARE LIVE OWNER VALIDATION PASS (100% EXPECTED OUTCOME)\n` +
+                    `Genuine Cloudflare Turnstile token verified via server Siteverify (success=true).\n` +
+                    `Zero mock/third-party solver calls. Owner challenge completion verified.\n` +
+                    `Click '↩ RESTORE' to restore your previous settings and URL list.`,
+                    'success'
+                );
+            } else {
+                const elBadge = document.getElementById('cf-panel-stage-badge'); if (elBadge) { elBadge.textContent = 'FAIL'; elBadge.style.color = '#f87171'; }
+                const elFinal = document.getElementById('cf-panel-final'); if (elFinal) { elFinal.textContent = 'FAIL (Siteverify Failed)'; elFinal.style.color = '#f87171'; }
+                showAutoSetupFeedback(
+                    `❌ CLOUDFLARE LIVE OWNER VALIDATION FAILED\n` +
+                    `Siteverify verification failed or form submission did not succeed.\n` +
+                    `Click '⚡ RUN CLOUDFLARE LIVE OWNER TEST' to retry or '↩ RESTORE' to restore.`,
+                    'error'
+                );
+            }
+            return;
+        }
+
+        // [R6.9G.10.3.7.1.4.10] Cloudflare Official Test-Key Lab Evaluation (5 cases)
+        if (st && st.xpider_active_test_source === 'CLOUDFLARE_TESTKEY_LAB') {
+            updateAutoSetupUI('COMPLETED');
+            const cfPanel = document.getElementById('cloudflare-test-panel');
+            if (cfPanel) cfPanel.style.display = 'block';
+
+            const testKeyPass = (total === 5 && sc === 3 && sk === 2);
+            if (testKeyPass) {
+                const elBadge = document.getElementById('cf-panel-stage-badge'); if (elBadge) { elBadge.textContent = 'PASS'; elBadge.style.color = '#4ade80'; }
+                const elFinal = document.getElementById('cf-panel-final'); if (elFinal) { elFinal.textContent = '5/5 PASS (3 Solved + 2 Exp Fail)'; elFinal.style.color = '#4ade80'; }
+                showAutoSetupFeedback(
+                    `🏁 CLOUDFLARE OFFICIAL TEST-KEY LAB PASS (100% EXPECTED OUTCOME)\n` +
+                    `5/5 Cases Verified (3 Pass + 2 Expected Failures | 0 Unexpected Failures)\n` +
+                    `Real Turnstile tokens generated & server Siteverify outcomes confirmed.\n` +
+                    `Click '↩ RESTORE' to restore your previous settings and URL list.`,
+                    'success'
+                );
+            } else {
+                const elBadge = document.getElementById('cf-panel-stage-badge'); if (elBadge) { elBadge.textContent = 'INCOMPLETE'; elBadge.style.color = '#fbbf24'; }
+                const elFinal = document.getElementById('cf-panel-final'); if (elFinal) { elFinal.textContent = `${sc}/3 Solved, ${sk}/2 Exp Fail`; elFinal.style.color = '#fbbf24'; }
+                showAutoSetupFeedback(
+                    `⚠️ CLOUDFLARE TEST-KEY LAB INCOMPLETE (Expected 3 Pass / 2 Expected Failures)\n` +
+                    `Observed: ${sc} SUCCESS / ${sk} SKIPPED / ${fl} FAILURE (Total: ${total}/5)\n` +
+                    `Click '🔑 RUN CLOUDFLARE OFFICIAL TEST-KEY LAB' to retry or '↩ RESTORE' to restore.`,
+                    'warn'
+                );
+            }
+            return;
+        }
+
         if (st && st.xpider_owner_function_test_mode) {
             const isCaptchaLab = (st.xpider_active_test_source === 'OWNER_CAPTCHA_LAB');
-            const sc = counters ? (counters.success || 0) : 0;
-            const sk = counters ? (counters.skipped || 0) : 0;
-            const fl = counters ? (counters.failed || 0) : 0;
-            const total = sc + sk + fl;
 
             if (total === 0) {
                 updateAutoSetupUI('READY');
@@ -4179,7 +4360,51 @@ function initOwnerAutoSetup() {
         runCfLiveBtn.dataset.bound = 'true';
         runCfLiveBtn.addEventListener('click', async () => {
             console.log('[BUTTON_CLICK] id=run-cloudflare-live-btn');
-            await launchCampaign({ source: 'CLOUDFLARE_LIVE_OWNER', fixtures: ['http://127.0.0.1:8088/captcha-turnstile-dom.html'] });
+            const st = await chrome.storage.local.get(['xpider_cf_live_config']);
+            const cfg = st.xpider_cf_live_config;
+
+            const missing = [];
+            if (!cfg?.liveUrl) missing.push('Cloudflare Live Test URL');
+            if (!cfg?.sitekey) missing.push('Cloudflare Turnstile Sitekey');
+            if (!cfg?.verifyEndpoint) missing.push('Server Verification Endpoint');
+
+            if (missing.length > 0) {
+                console.warn(`[CLOUDFLARE_LIVE_PREFLIGHT] valid=false reason=CLOUDFLARE_LIVE_CONFIG_REQUIRED missing=${missing.join(',')}`);
+                alert(`🛑 CLOUDFLARE_LIVE_CONFIG_REQUIRED\n\nPlease configure required settings in Settings -> Cloudflare Turnstile Live Owner Validation:\n- ${missing.join('\n- ')}`);
+                showAutoSetupFeedback(`CLOUDFLARE_LIVE_CONFIG_REQUIRED: Missing ${missing.join(', ')}`, 'error');
+                return;
+            }
+
+            const isLoopback = /^https?:\/\/(?:127\.0\.0\.1|localhost)(?::\d+)?(?:\/|$)/i.test(cfg.liveUrl) || !cfg.liveUrl.startsWith('https://');
+            if (isLoopback) {
+                console.warn(`[CLOUDFLARE_LIVE_PREFLIGHT] valid=false reason=CLOUDFLARE_LIVE_LOOPBACK_REFUSED url=${cfg.liveUrl}`);
+                alert(`🛑 CLOUDFLARE_LIVE_LOOPBACK_REFUSED\n\nCloudflare Live Owner Test strictly forbids loopback (127.0.0.1 / localhost) and requires a public HTTPS domain.`);
+                showAutoSetupFeedback(`CLOUDFLARE_LIVE_LOOPBACK_REFUSED: ${cfg.liveUrl}`, 'error');
+                return;
+            }
+
+            console.log('[CLOUDFLARE_LIVE_PREFLIGHT] https=true loopback=false mockEligible=false verificationEndpointConfigured=true');
+            addLog('[CLOUDFLARE_LIVE_PREFLIGHT] https=true loopback=false mockEligible=false verificationEndpointConfigured=true', 'info');
+
+            const cfPanel = document.getElementById('cloudflare-test-panel');
+            if (cfPanel) {
+                cfPanel.style.display = 'block';
+                const elBadge = document.getElementById('cf-panel-stage-badge'); if (elBadge) elBadge.textContent = 'LAUNCHING';
+                const elMode = document.getElementById('cf-panel-mode'); if (elMode) elMode.textContent = 'LIVE OWNER VALIDATION';
+                const elTarget = document.getElementById('cf-panel-target'); if (elTarget) elTarget.textContent = cfg.liveUrl;
+                const elWidget = document.getElementById('cf-panel-widget'); if (elWidget) elWidget.textContent = 'DETECTING...';
+                const elSitekey = document.getElementById('cf-panel-sitekey-fp'); if (elSitekey) elSitekey.textContent = cfg.sitekey.length > 8 ? (cfg.sitekey.substring(0, 4) + '...' + cfg.sitekey.slice(-4)) : cfg.sitekey;
+                const elAction = document.getElementById('cf-panel-owner-action'); if (elAction) elAction.textContent = 'PENDING';
+                const elToken = document.getElementById('cf-panel-token'); if (elToken) elToken.textContent = 'PENDING';
+                const elVerify = document.getElementById('cf-panel-siteverify'); if (elVerify) elVerify.textContent = 'PENDING';
+                const elFinal = document.getElementById('cf-panel-final'); if (elFinal) elFinal.textContent = 'IN_FLIGHT';
+            }
+
+            await launchCampaign({
+                source: 'CLOUDFLARE_LIVE_OWNER',
+                fixtures: [cfg.liveUrl],
+                liveConfig: cfg
+            });
         });
     }
 
@@ -4188,9 +4413,39 @@ function initOwnerAutoSetup() {
         runCfTestKeyBtn.dataset.bound = 'true';
         runCfTestKeyBtn.addEventListener('click', async () => {
             console.log('[BUTTON_CLICK] id=run-cloudflare-testkey-btn');
-            await launchCampaign({ source: 'CLOUDFLARE_TESTKEY_LAB', fixtures: ['http://127.0.0.1:8088/captcha-turnstile-dom.html'] });
+            const srv = await probeAndEnsureOwnerTestServer();
+            if (!srv.success) return;
+
+            const CF_OFFICIAL_TESTKEY_FIXTURES = [
+                'http://127.0.0.1:8088/cf-turnstile-visible-pass.html',
+                'http://127.0.0.1:8088/cf-turnstile-visible-fail.html',
+                'http://127.0.0.1:8088/cf-turnstile-invisible-pass.html',
+                'http://127.0.0.1:8088/cf-turnstile-invisible-fail.html',
+                'http://127.0.0.1:8088/cf-turnstile-interactive.html'
+            ];
+
+            const cfPanel = document.getElementById('cloudflare-test-panel');
+            if (cfPanel) {
+                cfPanel.style.display = 'block';
+                const elBadge = document.getElementById('cf-panel-stage-badge'); if (elBadge) elBadge.textContent = 'RUNNING';
+                const elMode = document.getElementById('cf-panel-mode'); if (elMode) elMode.textContent = 'OFFICIAL TEST-KEY SUITE (5 cases)';
+                const elTarget = document.getElementById('cf-panel-target'); if (elTarget) elTarget.textContent = '5 Fixtures (127.0.0.1:8088)';
+                const elWidget = document.getElementById('cf-panel-widget'); if (elWidget) elWidget.textContent = 'Turnstile Official Widgets';
+                const elSitekey = document.getElementById('cf-panel-sitekey-fp'); if (elSitekey) elSitekey.textContent = 'Official Keys (1x.., 2x.., 3x..)';
+                const elAction = document.getElementById('cf-panel-owner-action'); if (elAction) elAction.textContent = 'Automated / Interactive';
+                const elToken = document.getElementById('cf-panel-token'); if (elToken) elToken.textContent = 'Official Tokens';
+                const elVerify = document.getElementById('cf-panel-siteverify'); if (elVerify) elVerify.textContent = 'Cloudflare Siteverify';
+                const elFinal = document.getElementById('cf-panel-final'); if (elFinal) elFinal.textContent = 'IN_FLIGHT';
+            }
+
+            await launchCampaign({
+                source: 'CLOUDFLARE_TESTKEY_LAB',
+                fixtures: CF_OFFICIAL_TESTKEY_FIXTURES
+            });
         });
     }
+
+    initCloudflareLiveSettings();
 
     if (restoreBtn && !restoreBtn.dataset.bound) {
         restoreBtn.dataset.bound = 'true';
@@ -4847,8 +5102,11 @@ async function launchCampaign(options = {}) {
         }
 
         // 3. Verify Owner test server if test mode
-        let isTestModeActive = isOwnerTest;
-        if (!isTestModeActive) {
+        // 3. Verify Owner test server if test mode
+        const isLiveOwnerCf = (source === 'CLOUDFLARE_LIVE_OWNER');
+        const isTestKeyLab = (source === 'CLOUDFLARE_TESTKEY_LAB');
+        let isTestModeActive = !isLiveOwnerCf && (isOwnerTest || isTestKeyLab);
+        if (!isTestModeActive && !isLiveOwnerCf) {
             try {
                 const oftToggle = document.getElementById('owner-function-test-toggle');
                 if (oftToggle && oftToggle.checked) isTestModeActive = true;
@@ -4857,6 +5115,23 @@ async function launchCampaign(options = {}) {
                     isTestModeActive = Boolean(stTest.xpider_owner_function_test_mode);
                 }
             } catch (_) {}
+        }
+
+        if (isLiveOwnerCf) {
+            // Live Owner Test Mode: public HTTPS target, mock provider locked out, loopback strictly refused
+            await chrome.storage.local.set({
+                xpider_owner_function_test_mode: false,
+                xpider_cloudflare_live_test: true,
+                xpider_active_test_source: 'CLOUDFLARE_LIVE_OWNER'
+            });
+            if (Array.isArray(options.fixtures) && options.fixtures.length > 0) {
+                campaignQueue = [...options.fixtures];
+                totalTargets = campaignQueue.length;
+                renderUrlsPreview(campaignQueue);
+                const countDisplay = document.getElementById('url-count-display');
+                if (countDisplay) countDisplay.textContent = `${totalTargets} URLs loaded (Cloudflare Live)`;
+                await chrome.storage.local.set({ xpider_queue: campaignQueue, xpider_total: totalTargets });
+            }
         }
 
         if (isTestModeActive) {
@@ -4871,7 +5146,10 @@ async function launchCampaign(options = {}) {
             // 4. Verify DNR network guard
             let guardOk = false;
             try {
-                const guardRes = await chrome.runtime.sendMessage({ action: 'INSTALL_OWNER_TEST_GUARD' });
+                const guardRes = await chrome.runtime.sendMessage({
+                    action: 'INSTALL_OWNER_TEST_GUARD',
+                    options: { allowCloudflareChallenges: isTestKeyLab }
+                });
                 if (guardRes && guardRes.success) guardOk = true;
             } catch (gErr) {
                 console.warn('[START_GUARD_WARN]', gErr);
@@ -4890,7 +5168,7 @@ async function launchCampaign(options = {}) {
                 renderUrlsPreview(campaignQueue);
                 const countDisplay = document.getElementById('url-count-display');
                 if (countDisplay) {
-                    const label = source === 'OWNER_CAPTCHA_LAB' ? 'CAPTCHA Lab' : (source === 'OWNER_FULL_TEST' ? 'Full Test Suite' : 'Local Fixtures');
+                    const label = source === 'OWNER_CAPTCHA_LAB' ? 'CAPTCHA Lab' : (source === 'CLOUDFLARE_TESTKEY_LAB' ? 'Cloudflare Test-Key Lab' : (source === 'OWNER_FULL_TEST' ? 'Full Test Suite' : 'Local Fixtures'));
                     countDisplay.textContent = `${totalTargets} URLs loaded (${label})`;
                 }
             }

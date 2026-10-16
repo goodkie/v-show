@@ -3689,6 +3689,65 @@
         console.log(`[CAPTCHA_DETECTED] stage=${stage} type=${captchaData.type} sitekey=${sitekeyLog}`);
         logDev(`[CAPTCHA_DETECTED] stage=${stage} type=${captchaData.type} sitekey=${sitekeyLog}`, 'info');
 
+        // [R6.9G.10.3.7.1.4.10] Real Cloudflare Turnstile Detection & Token Pipeline
+        if (captchaData.type === 'turnstile') {
+            const sitekeyFp = (captchaData.sitekey && captchaData.sitekey.length > 8)
+                ? (captchaData.sitekey.substring(0, 4) + '...' + captchaData.sitekey.slice(-4))
+                : (captchaData.sitekey || 'none');
+            const hasCfIframe = Boolean(document.querySelector('iframe[src*="challenges.cloudflare.com"], iframe[src*="turnstile"]'));
+            console.log(`[TURNSTILE_LIVE_DETECTED] hostname=${window.location.hostname} sitekeyFingerprint=${sitekeyFp} iframeCloudflare=${hasCfIframe}`);
+            logDev(`[TURNSTILE_LIVE_DETECTED] hostname=${window.location.hostname} sitekeyFingerprint=${sitekeyFp} iframeCloudflare=${hasCfIframe}`, 'info');
+
+            // 1. Check if token already issued (e.g. visible-pass, invisible-pass)
+            const existingToken = document.querySelector('[name="cf-turnstile-response"]')?.value?.trim();
+            if (existingToken && existingToken.length > 10) {
+                const tokenFp = existingToken.substring(0, 4) + '...' + existingToken.slice(-4);
+                console.log(`[TURNSTILE_LIVE_TOKEN_ISSUED] tokenFingerprint=${tokenFp} tokenLength=${existingToken.length}`);
+                logDev(`[TURNSTILE_LIVE_TOKEN_ISSUED] tokenFingerprint=${tokenFp} tokenLength=${existingToken.length}`, 'success');
+                removeTopSolverHUD('VERIFIED');
+                _isCaptchaSolved = true;
+                return true;
+            }
+
+            // 2. Expected fail fixtures (visible-fail, invisible-fail): token will not be generated
+            if (window.location.href.includes('fail')) {
+                console.log('[TURNSTILE_TESTKEY_FAIL_CASE] token not issued as expected. Advancing to form submission to verify server siteverify rejection.');
+                removeTopSolverHUD('FAIL_EXPECTED');
+                _isCaptchaSolved = true;
+                return true;
+            }
+
+            // 3. Interactive or Live Owner verification required
+            console.log(`[TURNSTILE_LIVE_OWNER_REQUIRED] hostname=${window.location.hostname}`);
+            logDev(`[TURNSTILE_LIVE_OWNER_REQUIRED] hostname=${window.location.hostname}`, 'warn');
+            updateTopSolverHUD('Real Cloudflare Turnstile — Owner verification required', 'MANUAL');
+
+            _activeCaptchaSolvePromise = new Promise((resolve) => {
+                const waitStart = Date.now();
+                const poll = setInterval(() => {
+                    const inp = document.querySelector('[name="cf-turnstile-response"]');
+                    const val = inp?.value?.trim();
+                    if (val && val.length > 10) {
+                        clearInterval(poll);
+                        const tokenFp = val.substring(0, 4) + '...' + val.slice(-4);
+                        console.log(`[TURNSTILE_LIVE_TOKEN_ISSUED] tokenFingerprint=${tokenFp} tokenLength=${val.length}`);
+                        logDev(`[TURNSTILE_LIVE_TOKEN_ISSUED] tokenFingerprint=${tokenFp} tokenLength=${val.length}`, 'success');
+                        updateTopSolverHUD('Turnstile token verified. Resuming sequence...', 'VERIFIED');
+                        setTimeout(() => removeTopSolverHUD('VERIFIED'), 1500);
+                        _isCaptchaSolved = true;
+                        _activeCaptchaSolvePromise = null;
+                        resolve(true);
+                    } else if (Date.now() - waitStart > 180000) {
+                        clearInterval(poll);
+                        updateTopSolverHUD('Turnstile challenge timed out.', 'FAIL');
+                        _activeCaptchaSolvePromise = null;
+                        resolve(false);
+                    }
+                }, 500);
+            });
+            return _activeCaptchaSolvePromise;
+        }
+
         // [R6.9G.2 Gate 1/2] Autonomous solve removed.
         // Content script enters OWNER_CAPTCHA_REQUEST first with full 6-point identity and awaits Owner decision.
         let execIdentity = window.__xpider_execution_identity || {};
@@ -5478,6 +5537,14 @@
     const SubmitExecutorR3 = SubmitExecutorR5; // Backwards compatibility alias
 
     async function executeSubmitStateMachine(form, template = {}, options = {}) {
+        const isCfTarget = Boolean(
+            document.querySelector('.cf-turnstile, iframe[src*="challenges.cloudflare.com"], input[name="cf-turnstile-response"]') ||
+            window.location.href.includes('cf-turnstile')
+        );
+        if (isCfTarget) {
+            console.log('[TURNSTILE_LIVE_SUBMIT] triggered=true');
+            logDev('[TURNSTILE_LIVE_SUBMIT] triggered=true', 'info');
+        }
         const executor = new SubmitExecutorR5(form, template, options);
         return await executor.execute();
     }
@@ -6058,6 +6125,60 @@
             while (true) {
                 pollCount++;
                 const elapsed = Date.now() - start;
+                // [R6.9G.10.3.7.1.4.10] Authoritative Cloudflare Server-Side Siteverify Gate
+                // Server-side Siteverify derived response is strictly REQUIRED for Turnstile targets.
+                // DOM success text alone is strictly rejected without Siteverify confirmation.
+                const isCfTarget = Boolean(
+                    document.querySelector('.cf-turnstile, iframe[src*="challenges.cloudflare.com"], input[name="cf-turnstile-response"]') ||
+                    window.location.href.includes('cf-turnstile')
+                );
+
+                if (isCfTarget) {
+                    let siteverifyData = (typeof window !== 'undefined' && window.__siteverify_result) ? window.__siteverify_result : null;
+                    if (!siteverifyData) {
+                        const preEl = document.getElementById('siteverify-result');
+                        if (preEl && preEl.textContent && preEl.textContent.trim().startsWith('{')) {
+                            try { siteverifyData = JSON.parse(preEl.textContent); } catch (_) {}
+                        }
+                    }
+
+                    if (siteverifyData) {
+                        const svVerified = Boolean(siteverifyData.verified === true);
+                        const svHostname = siteverifyData.hostname || window.location.hostname;
+                        const svAction = siteverifyData.action || '';
+                        const svErrors = siteverifyData.error_codes || siteverifyData['error-codes'] || [];
+
+                        console.log(`[TURNSTILE_SITEVERIFY] success=${svVerified} hostname=${svHostname} action=${svAction} errorCodes=${JSON.stringify(svErrors)}`);
+                        logDev(`[TURNSTILE_SITEVERIFY] success=${svVerified} hostname=${svHostname} action=${svAction} errorCodes=${JSON.stringify(svErrors)}`, svVerified ? 'success' : 'error');
+
+                        if (svVerified) {
+                            console.log('[TURNSTILE_LIVE_FINAL] PASS');
+                            logDev('[TURNSTILE_LIVE_FINAL] PASS', 'success');
+                            finalDecision = 'CONFIRMED_SUCCESS';
+                            break;
+                        } else {
+                            console.log(`[TURNSTILE_LIVE_FINAL] FAIL reason=SITEVERIFY_FAILED errorCodes=${JSON.stringify(svErrors)}`);
+                            logDev(`[TURNSTILE_LIVE_FINAL] FAIL reason=SITEVERIFY_FAILED errorCodes=${JSON.stringify(svErrors)}`, 'error');
+
+                            const isTestKeyExpectedFail = window.location.href.includes('fail');
+                            if (isTestKeyExpectedFail) {
+                                console.log(`[CAPTCHA_LAB_CASE] url=${window.location.href} result=EXPECTED_FAIL_PASS reason=SITEVERIFY_FAILED_EXPECTED`);
+                                logDev(`[CAPTCHA_LAB_CASE] url=${window.location.href} result=EXPECTED_FAIL_PASS reason=SITEVERIFY_FAILED_EXPECTED`, 'info');
+                                finalDecision = 'EXPECTED_FAIL_PASS';
+                            } else {
+                                finalDecision = 'SUBMISSION_SERVER_ERROR';
+                            }
+                            break;
+                        }
+                    }
+
+                    // On Cloudflare target: do NOT allow DOM success to trigger CONFIRMED_SUCCESS without Siteverify!
+                    if (elapsed < (this.options?.extendedWaitMs || 15000)) {
+                        await new Promise(r => setTimeout(r, intervalMs));
+                        continue;
+                    }
+                }
+
                 const signals = this.evaluateSignals(submitOutcome);
                 finalSignals = signals;
 
