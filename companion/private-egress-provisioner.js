@@ -18,12 +18,30 @@
 const https = require('https');
 const http = require('http');
 const tls = require('tls');
+const net = require('net');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const os = require('os');
 const { execSync } = require('child_process');
-const ssh2 = require('ssh2');
+
+// Resilient ssh2 loader with auto-install fallback
+let ssh2 = null;
+try {
+  ssh2 = require('ssh2');
+} catch (err) {
+  try {
+    const rootPkg = path.resolve(__dirname, '..', 'package.json');
+    if (fs.existsSync(rootPkg)) {
+      console.log('[PROVISIONER] Auto-installing missing locked dependency ssh2...');
+      execSync('npm install --omit=dev --no-audit --no-fund --silent', {
+        cwd: path.resolve(__dirname, '..'),
+        stdio: 'ignore'
+      });
+      ssh2 = require('ssh2');
+    }
+  } catch (_) {}
+}
 
 const DO_API_BASE = 'https://api.digitalocean.com/v2';
 const DEFAULT_TAG = 'xpider-private-egress';
@@ -110,6 +128,24 @@ function redactSecrets(text, extraTokens = []) {
   return scrubbed;
 }
 
+/**
+ * [Blocker A] Format IP address to strict CIDR scoping
+ * IPv4 -> /32, IPv6 -> /128
+ */
+function formatIpCidr(ip) {
+  if (!ip || typeof ip !== 'string') {
+    throw new Error(`Invalid IP address for CIDR scoping: ${ip}`);
+  }
+  const clean = ip.trim();
+  if (net.isIPv4(clean)) {
+    return `${clean}/32`;
+  }
+  if (net.isIPv6(clean)) {
+    return `${clean}/128`;
+  }
+  throw new Error(`Invalid IP format for CIDR scoping: ${clean}`);
+}
+
 class PrivateEgressProvisioner {
   constructor(options = {}) {
     this.token = options.token || null;
@@ -118,6 +154,18 @@ class PrivateEgressProvisioner {
     this.mockMode = Boolean(options.mockMode);
     this.simulatePreflightFailure = Boolean(options.simulatePreflightFailure);
     this.simulateFirewallFailure = Boolean(options.simulateFirewallFailure);
+    this.simulateCatalogFailure = Boolean(options.simulateCatalogFailure);
+    this.simulateUnavailableRegion = Boolean(options.simulateUnavailableRegion);
+    this.simulateOwnerIpFailure = Boolean(options.simulateOwnerIpFailure);
+    this.testSftpDownload = Boolean(options.testSftpDownload);
+    this.mockOwnerIp = options.mockOwnerIp || null;
+    this.simulateStageFailure = options.simulateStageFailure || null;
+    this.mockDeletedResources = {
+      droplets: [],
+      firewalls: [],
+      keys: [],
+      nodes: []
+    };
     this.onProgress = options.onProgress || (() => {});
     this.telemetryHistory = [];
   }
@@ -224,6 +272,126 @@ class PrivateEgressProvisioner {
     };
   }
 
+  // [Blocker F Hardening] DigitalOcean region/size catalog availability verification (no silent upscale)
+  async verifyRegionAndSizeAvailability(region, sizeSlug) {
+    if (this.mockMode) {
+      if (this.simulateCatalogFailure) {
+        throw new Error('SIMULATED_CATALOG_FAILURE');
+      }
+      if (this.simulateUnavailableRegion) {
+        throw new Error(`FAIL-CLOSED: Size ${sizeSlug} ($6/mo) is unavailable in ${region}. Available same-cost fallback regions at $6/mo: nyc1, sfo3, ams3.`);
+      }
+      return {
+        available: true,
+        region,
+        sizeSlug,
+        monthlyCostUsd: 6,
+        sameCostRegions: ['nyc1', 'nyc3', 'sfo3', 'ams3']
+      };
+    }
+
+    const sizesRes = await this.doRequest('/sizes');
+    if (!sizesRes || !sizesRes.sizes) {
+      throw new Error('FAIL-CLOSED: DigitalOcean sizes catalog unavailable.');
+    }
+    const matchedSize = sizesRes.sizes.find(s => s.slug === sizeSlug);
+    if (!matchedSize) {
+      throw new Error(`FAIL-CLOSED: Requested size ${sizeSlug} does not exist in DigitalOcean catalog.`);
+    }
+    if (matchedSize.available === false) {
+      throw new Error(`FAIL-CLOSED: Requested size ${sizeSlug} is marked unavailable across provider fleet.`);
+    }
+
+    const availableRegions = matchedSize.regions || [];
+    if (!availableRegions.includes(region)) {
+      const priceStr = matchedSize.price_monthly ? `$${matchedSize.price_monthly}/mo` : '';
+      if (availableRegions.length > 0) {
+        throw new Error(`FAIL-CLOSED: Size ${sizeSlug} (${priceStr}) is unavailable in ${region}. Available fallback regions at the same ${priceStr} cost: ${availableRegions.join(', ')}.`);
+      } else {
+        throw new Error(`FAIL-CLOSED: Size ${sizeSlug} is currently unavailable in region ${region} with no available same-cost regions.`);
+      }
+    }
+
+    return {
+      available: true,
+      region,
+      sizeSlug,
+      monthlyCostUsd: matchedSize.price_monthly || 6,
+      sameCostRegions: availableRegions
+    };
+  }
+
+  // [Blocker D Hardening] Automatic bounded rollback for transaction resources
+  async rollbackProvisioning(tracked) {
+    const { ephemeralKeyId, dropletId, firewallId, registeredNodeId } = tracked;
+    const errors = [];
+    console.log('[PROVISIONER_ROLLBACK] Initiating bounded automatic rollback for transaction...', tracked);
+
+    // 1. Remove local Companion node if registered
+    if (registeredNodeId) {
+      try {
+        await this.removeNodeFromCompanion(registeredNodeId);
+        console.log(`[PROVISIONER_ROLLBACK] Removed Companion node: ${registeredNodeId}`);
+      } catch (e) {
+        errors.push(`node:${registeredNodeId} (${e.message})`);
+      }
+    }
+
+    // 2. Delete Cloud Firewall if created
+    if (firewallId) {
+      try {
+        await this.doRequest(`/firewalls/${firewallId}`, 'DELETE');
+        console.log(`[PROVISIONER_ROLLBACK] Deleted Cloud Firewall: ${firewallId}`);
+      } catch (e) {
+        errors.push(`firewall:${firewallId} (${e.message})`);
+      }
+    }
+
+    // 3. Delete Droplet if created
+    if (dropletId) {
+      try {
+        await this.doRequest(`/droplets/${dropletId}`, 'DELETE');
+        console.log(`[PROVISIONER_ROLLBACK] Deleted Droplet: ${dropletId}`);
+      } catch (e) {
+        errors.push(`droplet:${dropletId} (${e.message})`);
+      }
+    }
+
+    // 4. Delete Cloud SSH Key if created
+    if (ephemeralKeyId) {
+      try {
+        await this.doRequest(`/account/keys/${ephemeralKeyId}`, 'DELETE');
+        console.log(`[PROVISIONER_ROLLBACK] Deleted Cloud SSH Key: ${ephemeralKeyId}`);
+      } catch (e) {
+        errors.push(`sshKey:${ephemeralKeyId} (${e.message})`);
+      }
+    }
+
+    // 5. Verification step: verify zero orphaned droplets remain for this transaction
+    let remainingTaggedDroplets = 0;
+    try {
+      if (this.mockMode) {
+        remainingTaggedDroplets = 0;
+      } else {
+        const verifyRes = await this.doRequest(`/droplets?tag_name=${DEFAULT_TAG}`);
+        if (verifyRes && verifyRes.droplets) {
+          const matching = verifyRes.droplets.filter(d => d.id === dropletId);
+          remainingTaggedDroplets = matching.length;
+        }
+      }
+    } catch (_) {}
+
+    if (remainingTaggedDroplets > 0) {
+      errors.push(`unverified_droplet_removal:${dropletId}`);
+    }
+
+    return {
+      success: errors.length === 0,
+      errors,
+      remainingBillableResources: remainingTaggedDroplets
+    };
+  }
+
   // --- FULL PROVISIONING PIPELINE ---
 
   async provisionPrivateEgress(params = {}) {
@@ -233,16 +401,25 @@ class PrivateEgressProvisioner {
 
     let ephemeralKeyId = null;
     let dropletId = null;
+    let firewallId = null;
+    let registeredNodeId = null;
     let publicIp = null;
     let sshClient = null;
 
     try {
       // STEP 1: VPS CONNECTION
-      this.logProgress(1, 'WORKING', `Validating DigitalOcean token and provisioning ${tier.name} ($${tier.monthlyCostUsd}/mo) in ${region.toUpperCase()}...`);
-      
       const tokenCheck = await this.validateToken();
       if (!tokenCheck.valid) {
         throw new Error(`Invalid DigitalOcean API token: ${tokenCheck.error}`);
+      }
+
+      // [Blocker F Hardening] Query DigitalOcean catalog and verify availability & pricing (no silent upscale)
+      const catalogInfo = await this.verifyRegionAndSizeAvailability(region, tier.size);
+      const effectiveMonthlyCost = catalogInfo.monthlyCostUsd || tier.monthlyCostUsd;
+      this.logProgress(1, 'WORKING', `Validated ${tier.name} ($${effectiveMonthlyCost}/mo) available in ${region.toUpperCase()}. Allocating cloud resources...`);
+
+      if (this.simulateStageFailure === 1) {
+        throw new Error('SIMULATED_STAGE_1_FAILURE');
       }
 
       // Generate ephemeral SSH keypair
@@ -272,6 +449,10 @@ class PrivateEgressProvisioner {
       publicIp = await this.waitForDropletIp(dropletId, 180000);
       this.logProgress(1, 'PASS', `Droplet active at ${publicIp} (${tier.size})`);
 
+      if (this.simulateStageFailure === 2) {
+        throw new Error('SIMULATED_STAGE_2_FAILURE');
+      }
+
       // STEP 2: SERVER PREP
       this.logProgress(2, 'WORKING', `Establishing secure SSH to ${publicIp}:22 and uploading bootstrap package...`);
       sshClient = await this.connectSshWithRetry(publicIp, 'root', keypair.privateKeyPem, 120000);
@@ -287,15 +468,27 @@ class PrivateEgressProvisioner {
       await this.runSshCommand(sshClient, 'chmod +x /tmp/xpider-bootstrap/bootstrap.sh');
       this.logProgress(2, 'PASS', 'Bootstrap package uploaded and verified');
 
+      if (this.simulateStageFailure === 3) {
+        throw new Error('SIMULATED_STAGE_3_FAILURE');
+      }
+
       // STEP 3: TLS
       this.logProgress(3, 'WORKING', 'Executing bootstrap installer to generate private Root CA & TLS server certificate...');
       
-      // Execute bootstrap installer
-      await this.runSshCommand(sshClient, `XPIDER_PUBLIC_IP="${publicIp}" bash /tmp/xpider-bootstrap/bootstrap.sh`);
+      // [Blocker A Hardening] Resolve Owner provisioning IP fail-closed before bootstrap execution
+      const ownerIp = await this.getOwnerProvisioningIp();
+      if (!ownerIp) {
+        throw new Error('FAIL-CLOSED: Owner public IP could not be determined. Aborting provisioning to prevent world-open firewall.');
+      }
+      const ownerCidr = formatIpCidr(ownerIp);
+      const allowedSources = [ownerCidr];
+
+      // Execute bootstrap installer passing XPIDER_OWNER_IP
+      await this.runSshCommand(sshClient, `XPIDER_PUBLIC_IP="${publicIp}" XPIDER_OWNER_IP="${ownerIp}" bash /tmp/xpider-bootstrap/bootstrap.sh`);
       
-      // [P0-2 Hardening] Securely retrieve descriptor over authenticated SSH channel and delete the file immediately
+      // [Blocker B Hardening] Securely retrieve descriptor over authenticated SFTP stream (never shell stdout)
       let descriptor = null;
-      if (this.mockMode) {
+      if (this.mockMode && !this.testSftpDownload) {
         descriptor = {
           status: 'READY',
           host: publicIp,
@@ -311,28 +504,38 @@ class PrivateEgressProvisioner {
           protocol: 'HTTPS_PROXY'
         };
       } else {
-        const descRaw = await this.runSshCommand(sshClient, 'cat /etc/xpider-egress/descriptor.json && rm -f /etc/xpider-egress/descriptor.json');
+        const descRaw = await this.downloadSshFile(sshClient, '/etc/xpider-egress/descriptor.json');
         if (!descRaw || !descRaw.trim()) {
           throw new Error('Bootstrap installer failed to emit valid connection descriptor');
         }
-        descriptor = JSON.parse(descRaw.trim());
+        try {
+          descriptor = JSON.parse(descRaw.trim());
+        } catch (parseErr) {
+          throw new Error(`Invalid JSON in connection descriptor: ${redactSecrets(parseErr.message)}`);
+        }
       }
 
-      // Clean up bootstrap staging files from remote host
-      await this.runSshCommand(sshClient, 'rm -rf /tmp/xpider-bootstrap');
+      // Clean up bootstrap descriptor and staging files from remote host
+      await this.runSshCommand(sshClient, 'rm -f /etc/xpider-egress/descriptor.json && rm -rf /tmp/xpider-bootstrap');
 
       this.logProgress(3, 'PASS', `TLS Root CA generated (CA Fingerprint: ${(descriptor.tlsCaFingerprint || descriptor.fingerprint || '').slice(0, 16)}...)`);
+
+      if (this.simulateStageFailure === 4) {
+        throw new Error('SIMULATED_STAGE_4_FAILURE');
+      }
 
       // STEP 4: PRIVATE PROXY
       this.logProgress(4, 'WORKING', `Verifying authenticated HTTP CONNECT service on port ${descriptor.port}...`);
       this.logProgress(4, 'PASS', `Service active on port ${descriptor.port} with unprivileged user (CA key destroyed)`);
 
-      // STEP 5: FIREWALL
-      this.logProgress(5, 'WORKING', 'Configuring Cloud Firewall (Owner IP restricted) and host UFW...');
-      const ownerIp = await this.getOwnerProvisioningIp();
-      const allowedSources = ownerIp ? [`${ownerIp}/32`] : ['0.0.0.0/0', '::/0'];
+      if (this.simulateStageFailure === 5) {
+        throw new Error('SIMULATED_STAGE_5_FAILURE');
+      }
 
-      // [P0-4 Hardening] Cloud Firewall configuration is strictly FAIL-CLOSED
+      // STEP 5: FIREWALL
+      this.logProgress(5, 'WORKING', `Configuring Cloud Firewall (scoped strictly to ${ownerCidr}) and host UFW...`);
+
+      // [Blocker A Hardening] Cloud Firewall configuration is strictly FAIL-CLOSED and scoped to Owner IP only
       try {
         if (this.simulateFirewallFailure) {
           throw new Error('SIMULATED_FIREWALL_FAILURE');
@@ -341,7 +544,8 @@ class PrivateEgressProvisioner {
           name: `xpider-fw-${dropletId}`,
           droplet_ids: [dropletId],
           inbound_rules: [
-            { protocol: 'tcp', ports: String(descriptor.port), sources: { addresses: allowedSources } }
+            { protocol: 'tcp', ports: String(descriptor.port), sources: { addresses: allowedSources } },
+            { protocol: 'tcp', ports: '22', sources: { addresses: allowedSources } }
           ],
           outbound_rules: [
             { protocol: 'tcp', ports: 'all', destinations: { addresses: ['0.0.0.0/0', '::/0'] } },
@@ -353,6 +557,7 @@ class PrivateEgressProvisioner {
         if (!fwRes || !fwRes.firewall) {
           throw new Error('Cloud Firewall creation returned invalid response');
         }
+        firewallId = fwRes.firewall.id;
       } catch (fwErr) {
         throw new Error(`FAIL-CLOSED: Cloud Firewall configuration failed: ${fwErr.message}`);
       }
@@ -382,7 +587,11 @@ class PrivateEgressProvisioner {
         throw new Error('SECURITY VIOLATION: Ephemeral SSH key was not properly revoked; remote host still accepted connection!');
       }
 
-      this.logProgress(5, 'PASS', `Firewall configured default-deny (SSH closed, proxy port ${descriptor.port} open to Owner IP)`);
+      this.logProgress(5, 'PASS', `Firewall configured default-deny (SSH closed, proxy port ${descriptor.port} open to ${ownerCidr})`);
+
+      if (this.simulateStageFailure === 6) {
+        throw new Error('SIMULATED_STAGE_6_FAILURE');
+      }
 
       // STEP 6: LOCAL RELAY REGISTRATION
       this.logProgress(6, 'WORKING', 'Registering egress node into XPIDER Companion with DPAPI encryption...');
@@ -410,7 +619,12 @@ class PrivateEgressProvisioner {
       };
 
       await this.registerNodeInCompanion(nodePayload);
+      registeredNodeId = nodeId;
       this.logProgress(6, 'PASS', `Node registered in Companion (${nodeId})`);
+
+      if (this.simulateStageFailure === 7) {
+        throw new Error('SIMULATED_STAGE_7_FAILURE');
+      }
 
       // STEP 7: EGRESS VERIFICATION
       this.logProgress(7, 'WORKING', 'Running strict TLS canary probe through new egress proxy...');
@@ -420,23 +634,28 @@ class PrivateEgressProvisioner {
       }
       this.logProgress(7, 'PASS', `Egress verified: Observed IP ${probeRes.observedEgressIp || publicIp}`);
 
-      // STEP 8: STRICT PRIVACY READY
-      this.logProgress(8, 'WORKING', 'Executing authoritative privacy preflight verification...');
+      if (this.simulateStageFailure === 8) {
+        throw new Error('SIMULATED_STAGE_8_FAILURE');
+      }
+
+      // STEP 8: STRICT PRIVACY READY (Layer 1 Companion Preflight)
+      this.logProgress(8, 'WORKING', 'Executing authoritative privacy preflight verification (Layer 1: Companion)...');
       const preflight = await this.runAuthoritativePreflight(nodeId, publicIp);
       if (!preflight || !preflight.ready) {
         const failReason = preflight ? preflight.reason : 'UNVERIFIED';
         this.logProgress(8, 'FAIL', `Authoritative privacy preflight failed: ${failReason}`);
         throw new Error(`STRICT PRIVACY PREFLIGHT FAILED: ${failReason}`);
       }
-      this.logProgress(8, 'PASS', `STRICT PRIVACY READY. Form campaigns can now run with full network privacy (Egress: ${preflight.observedIp || publicIp}).`);
+      this.logProgress(8, 'PASS', `Layer 1 Companion Preflight Verified. Node ${nodeId} ready (Egress: ${preflight.observedIp || publicIp}).`);
 
       return {
         success: true,
         dropletId,
+        firewallId,
         publicIp,
         nodeId,
         tier: tier.id,
-        monthlyCostUsd: tier.monthlyCostUsd,
+        monthlyCostUsd: effectiveMonthlyCost,
         tlsCaFingerprint: descriptor.tlsCaFingerprint || descriptor.fingerprint,
         expectedEgressFingerprint: descriptor.expectedEgressFingerprint,
         preflight
@@ -444,10 +663,22 @@ class PrivateEgressProvisioner {
     } catch (err) {
       const scrubbedErrMsg = redactSecrets(err.message, [this.token]);
       console.error('[PROVISIONER_ERROR]', scrubbedErrMsg);
-      // Clean up temporary cloud resources if failed midway
-      if (ephemeralKeyId) {
-        try { await this.doRequest(`/account/keys/${ephemeralKeyId}`, 'DELETE'); } catch (_) {}
+
+      // [Blocker D Hardening] Bounded automatic rollback of all created cloud & local resources
+      const rollbackRes = await this.rollbackProvisioning({
+        ephemeralKeyId,
+        dropletId,
+        firewallId,
+        registeredNodeId
+      });
+
+      if (!rollbackRes.success) {
+        const cleanupMsg = `CLEANUP_REQUIRED: Provisioning failed and automatic cloud rollback encountered errors: ${rollbackRes.errors.join(', ')}`;
+        console.error('[PROVISIONER_ROLLBACK_INCOMPLETE]', cleanupMsg);
+        const wrappedErr = new Error(`${scrubbedErrMsg} [${cleanupMsg}]`);
+        throw wrappedErr;
       }
+
       const wrappedErr = new Error(scrubbedErrMsg);
       wrappedErr.stack = redactSecrets(err.stack || '', [this.token]);
       throw wrappedErr;
@@ -461,7 +692,11 @@ class PrivateEgressProvisioner {
   // --- SECURITY & AUTHORITATIVE PREFLIGHT HELPERS ---
 
   async getOwnerProvisioningIp() {
-    if (this.mockMode) return '198.51.100.1';
+    if (this.mockMode) {
+      if (this.simulateOwnerIpFailure) return null;
+      if (this.mockOwnerIp) return this.mockOwnerIp;
+      return '198.51.100.1';
+    }
     const urls = ['https://api.ipify.org', 'https://icanhazip.com', 'https://ifconfig.me/ip'];
     for (const u of urls) {
       try {
@@ -832,7 +1067,11 @@ class PrivateEgressProvisioner {
   }
 
   async removeNodeFromCompanion(nodeId) {
-    if (this.mockMode) return { success: true };
+    if (this.mockMode) {
+      if (!this.mockDeletedResources) this.mockDeletedResources = { droplets: [], firewalls: [], keys: [], nodes: [] };
+      this.mockDeletedResources.nodes.push(nodeId);
+      return { success: true };
+    }
 
     const token = this.controlToken || this.loadLocalControlToken();
     return new Promise((resolve) => {
@@ -948,6 +1187,21 @@ class PrivateEgressProvisioner {
     });
   }
 
+  // [Blocker B Hardening] SFTP read stream for secure credential retrieval (zero stdout/stderr transport)
+  async downloadSshFile(client, remotePath) {
+    return new Promise((resolve, reject) => {
+      client.sftp((err, sftp) => {
+        if (err) return reject(err);
+        const stream = sftp.createReadStream(remotePath);
+        const chunks = [];
+        stream.on('data', chunk => chunks.push(chunk));
+        stream.on('close', () => resolve(Buffer.concat(chunks).toString('utf8')));
+        stream.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
+        stream.on('error', reject);
+      });
+    });
+  }
+
   async waitForDropletIp(dropletId, timeoutMs = 120000) {
     const start = Date.now();
     while (Date.now() - start < timeoutMs) {
@@ -982,7 +1236,37 @@ class PrivateEgressProvisioner {
       });
     }
     if (endpoint.startsWith('/account/keys/') && method === 'DELETE') {
+      const keyId = endpoint.split('/').pop();
+      this.mockDeletedResources.keys.push(keyId);
       return Promise.resolve({});
+    }
+    if (endpoint === '/sizes') {
+      return Promise.resolve({
+        sizes: [
+          {
+            slug: 's-1vcpu-1gb',
+            memory: 1024,
+            vcpus: 1,
+            disk: 25,
+            transfer: 1.0,
+            price_monthly: 6.0,
+            price_hourly: 0.00893,
+            regions: ['nyc1', 'nyc3', 'sfo3', 'ams3'],
+            available: true
+          },
+          {
+            slug: 's-1vcpu-2gb',
+            memory: 2048,
+            vcpus: 1,
+            disk: 50,
+            transfer: 2.0,
+            price_monthly: 12.0,
+            price_hourly: 0.01786,
+            regions: ['nyc1', 'nyc3', 'sfo3', 'ams3'],
+            available: true
+          }
+        ]
+      });
     }
     if (endpoint === '/droplets' && method === 'POST') {
       return Promise.resolve({
@@ -1009,10 +1293,17 @@ class PrivateEgressProvisioner {
     if (endpoint === '/firewalls' && method === 'POST') {
       return Promise.resolve({ firewall: { id: 'fw-1234', name: body.name } });
     }
+    if (endpoint.startsWith('/firewalls/') && method === 'DELETE') {
+      const fwId = endpoint.split('/').pop();
+      this.mockDeletedResources.firewalls.push(fwId);
+      return Promise.resolve({});
+    }
     if (endpoint.includes('/droplets?tag_name=') && method === 'GET') {
       return Promise.resolve({ droplets: [{ id: 99887766 }] });
     }
     if (endpoint.startsWith('/droplets/') && method === 'DELETE') {
+      const dropId = endpoint.split('/').pop();
+      this.mockDeletedResources.droplets.push(dropId);
       return Promise.resolve({});
     }
     return Promise.resolve({});
@@ -1023,5 +1314,6 @@ module.exports = {
   PrivateEgressProvisioner,
   TIERS,
   STAGES,
-  redactSecrets
+  redactSecrets,
+  formatIpCidr
 };

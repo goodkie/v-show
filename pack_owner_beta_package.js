@@ -69,8 +69,8 @@ if (fs.existsSync('owner-extension-test-site')) {
     fs.cpSync('owner-extension-test-site', path.join(stagingDir, 'owner-extension-test-site'), { recursive: true });
 }
 
-// 6. Copy Root Batch & Docs
-const rootFiles = ['XPIDER_AUTO_SETUP.bat', 'OWNER_BETA_README.md', 'KNOWN_ISSUES.md', 'CHANGELOG.md'];
+// 6. Copy Root Batch & Docs & Package manifests
+const rootFiles = ['XPIDER_AUTO_SETUP.bat', 'package.json', 'package-lock.json', 'OWNER_BETA_README.md', 'KNOWN_ISSUES.md', 'CHANGELOG.md'];
 for (const rf of rootFiles) {
     if (fs.existsSync(rf)) {
         fs.copyFileSync(rf, path.join(stagingDir, rf));

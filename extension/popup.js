@@ -2160,27 +2160,82 @@ async function hydrateSettings(overrideV2Store = null) {
 
                         if (tokenInput) tokenInput.value = ''; // Discard from memory
 
-                        if (res && res.success && res.result && res.result.success && res.result.preflight && res.result.preflight.ready) {
-                            for (let s = 1; s <= 8; s++) updateStageStatus(s, 'PASS');
-                            if (progressBar) progressBar.style.width = '100%';
-                            if (progressPercent) progressPercent.textContent = '100%';
-                            if (progressTitle) progressTitle.textContent = '8/8 STRICT PRIVACY READY';
-
-                            addLog(`🛡️ [PRIVATE_EGRESS_SUCCESS] Droplet ${res.result.dropletId} deployed at ${res.result.publicIp} ($${res.result.monthlyCostUsd}/mo) — Strict Privacy Preflight READY`, 'success');
-
-                            // Refresh relay status & node pool
-                            if (typeof refreshRelayNodes === 'function') refreshRelayNodes();
-                            if (typeof refreshRelayStatus === 'function') refreshRelayStatus();
-                            if (typeof updatePrivacyHud === 'function') updatePrivacyHud();
-
-                            alert(`✅ Private Egress successfully deployed & authoritative preflight VERIFIED!\nIP: ${res.result.publicIp}\nTier: ${res.result.tier} (~$${res.result.monthlyCostUsd}/mo)\n\nStrict Privacy is now READY.`);
-                            pollTelemetry();
-                        } else {
+                        // [Blocker C Hardening] Two-Layer Authoritative Privacy Gate
+                        // Layer 1: Check Companion-level provisioning and loopback relay CONNECT preflight
+                        if (!res || !res.success || !res.result || !res.result.success || !res.result.preflight || !res.result.preflight.ready) {
                             updateStageStatus(8, 'FAIL');
-                            const err = (res && res.result && ((res.result.preflight && !res.result.preflight.ready ? `PREFLIGHT_FAIL: ${res.result.preflight.reason}` : res.result.reason))) || (res && res.error) || 'Provisioning or preflight verification failed';
+                            const err = (res && res.result && ((res.result.preflight && !res.result.preflight.ready ? `COMPANION_PREFLIGHT_FAIL: ${res.result.preflight.reason}` : res.result.reason))) || (res && res.error) || 'Companion provisioning failed';
                             addLog(`❌ [PRIVATE_EGRESS_FAIL] ${err}`, 'error');
                             alert(`Provisioning failed: ${err}`);
+                            return;
                         }
+
+                        // Refresh relay status & node pool in extension first so PrivacyGateway recognizes new node
+                        if (typeof refreshRelayNodes === 'function') refreshRelayNodes();
+                        if (typeof refreshRelayStatus === 'function') refreshRelayStatus();
+
+                        // Layer 2: Authoritative Extension Background PrivacyGateway Verification
+                        addLog('🛡️ [LAYER 2] Executing authoritative Extension Background PrivacyGateway preflight...', 'info');
+
+                        let prepResult = null;
+                        try {
+                            const prepResponse = await new Promise((resolve) => {
+                                chrome.runtime.sendMessage({
+                                    action: 'ENSURE_ENFORCED_PRIVACY_FOR_START',
+                                    options: { ownerFunctionTestMode: false }
+                                }, (prepRes) => {
+                                    if (chrome.runtime.lastError) return resolve({ success: false, error: chrome.runtime.lastError.message });
+                                    resolve(prepRes || { success: false, error: 'NO_RESPONSE_FROM_BACKGROUND' });
+                                });
+                            });
+                            prepResult = (prepResponse && prepResponse.success && prepResponse.result) ? prepResponse.result : null;
+                        } catch (prepErr) {
+                            prepResult = { ready: false, reason: prepErr.message };
+                        }
+
+                        if (!prepResult || !prepResult.ready) {
+                            updateStageStatus(8, 'FAIL');
+                            const reason = prepResult?.reason || 'ENSURE_ENFORCED_PRIVACY_BLOCKED';
+                            addLog(`❌ [AUTHORITATIVE_PREFLIGHT_FAIL] Layer 2 PrivacyGateway blocked start: ${reason}`, 'error');
+                            alert(`🛑 [AUTHORITATIVE PRIVACY GATE BLOCKED]\n\nCompanion node active, but Extension PrivacyGateway blocked strict privacy.\n\nReason: ${reason}`);
+                            return;
+                        }
+
+                        let pfResult = null;
+                        try {
+                            const preflightResponse = await new Promise((resolve) => {
+                                chrome.runtime.sendMessage({
+                                    action: 'RUN_PRIVACY_PREFLIGHT',
+                                    options: {}
+                                }, (pfRes) => {
+                                    if (chrome.runtime.lastError) return resolve({ success: false, error: chrome.runtime.lastError.message });
+                                    resolve(pfRes || { success: false, error: 'NO_RESPONSE_FROM_BACKGROUND' });
+                                });
+                            });
+                            pfResult = (preflightResponse && preflightResponse.success && preflightResponse.preflight) ? preflightResponse.preflight : null;
+                        } catch (pfErr) {
+                            pfResult = { ready: false, reason: pfErr.message };
+                        }
+
+                        if (!pfResult || !pfResult.ready || pfResult.directFallbackBlocked === false) {
+                            updateStageStatus(8, 'FAIL');
+                            const reason = pfResult?.reason || 'DIRECT_FALLBACK_NOT_BLOCKED';
+                            addLog(`❌ [AUTHORITATIVE_PREFLIGHT_FAIL] Layer 2 Preflight failed or direct fallback unblocked: ${reason}`, 'error');
+                            alert(`🛑 [AUTHORITATIVE PREFLIGHT BLOCKED]\n\nPrivacyGateway check failed:\nReason: ${reason}\nDirect Fallback Blocked: ${pfResult?.directFallbackBlocked}`);
+                            return;
+                        }
+
+                        // BOTH Layer 1 (Companion) and Layer 2 (PrivacyGateway) PASSED!
+                        for (let s = 1; s <= 8; s++) updateStageStatus(s, 'PASS');
+                        if (progressBar) progressBar.style.width = '100%';
+                        if (progressPercent) progressPercent.textContent = '100%';
+                        if (progressTitle) progressTitle.textContent = '8/8 STRICT PRIVACY READY';
+
+                        addLog(`🛡️ [PRIVATE_EGRESS_SUCCESS] Droplet ${res.result.dropletId} deployed at ${res.result.publicIp} ($${res.result.monthlyCostUsd}/mo) — Both Companion & Extension PrivacyGateway preflights VERIFIED READY`, 'success');
+                        if (typeof updatePrivacyHud === 'function') updatePrivacyHud();
+
+                        alert(`✅ Private Egress successfully deployed & authoritative preflight VERIFIED!\nIP: ${res.result.publicIp}\nTier: ${res.result.tier} (~$${res.result.monthlyCostUsd}/mo)\n\nBoth Companion & Extension PrivacyGateway gates verified: Strict Privacy is READY.`);
+                        pollTelemetry();
                     });
                 };
             }

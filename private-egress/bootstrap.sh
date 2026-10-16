@@ -174,8 +174,16 @@ systemctl enable "$SERVICE_NAME"
 systemctl restart "$SERVICE_NAME"
 
 echo "[7/7] Configuring firewall (UFW)..."
+ufw default deny incoming > /dev/null 2>&1 || true
+ufw default allow outgoing > /dev/null 2>&1 || true
 ufw allow 22/tcp comment 'SSH' > /dev/null 2>&1 || true
-ufw allow "${PORT}/tcp" comment 'XPIDER Private Egress Proxy' > /dev/null 2>&1 || true
+if [[ -n "${XPIDER_OWNER_IP}" ]]; then
+  echo "Scoping UFW proxy port ${PORT} to Owner IP: ${XPIDER_OWNER_IP}"
+  ufw allow from "${XPIDER_OWNER_IP}" to any port "${PORT}" proto tcp comment 'XPIDER Private Egress Proxy (Owner IP)' > /dev/null 2>&1 || true
+else
+  echo "WARNING: XPIDER_OWNER_IP not provided to bootstrap; opening ${PORT}/tcp"
+  ufw allow "${PORT}/tcp" comment 'XPIDER Private Egress Proxy' > /dev/null 2>&1 || true
+fi
 ufw --force enable > /dev/null 2>&1 || true
 
 # Verification probe
