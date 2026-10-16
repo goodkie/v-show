@@ -701,6 +701,8 @@ async function runSecuritySuite() {
   assert.strictEqual(provVerif.valid, true);
   assert.strictEqual(bp.BUILD_INFO.channel, 'OWNER_BETA_PRIVATE_EGRESS_RC1');
   assert.strictEqual(bp.BUILD_INFO.buildId, 'R6.9G.10.3.7.1.4.12-20261016-PRIVATE-EGRESS-RC1');
+  assert.strictEqual(bp.BUILD_INFO.implementationHead, '46385e9596292cf779e21f6f19ed2558e64f75a8');
+  assert.strictEqual(bp.BUILD_INFO.head, '46385e9596292cf779e21f6f19ed2558e64f75a8');
   assert.strictEqual(bp.BUILD_INFO.rollbackBase, '50aee3538806d7b5227fcd929e27979d1e5a3419');
 
   // Smoke test isolated directory extraction

@@ -1,7 +1,7 @@
 PACKAGE INVENTORY SHA256 (XPIDER R6.9G.10.3.7.1.4.12 OWNER BETA CUT)
-Generated: 2026-10-16T23:03:21.908Z
+Generated: 2026-10-16T23:51:58.892Z
 Archive: XPIDER_R6.9G.10.3.7.1.4.12_PRIVATE_EGRESS_RC1.zip
-SHA256: 346879506cbbb4f7a32da62ba08d68296b99160dac3a574f497b20df6cadea4f
+SHA256: fc223b17a70eb27d3a1e33d05ac9558cf7f313e2b9d0603d6b1df615fb2a2e29
 
 INVENTORY (Root: /):
 e7312e66f23e8702d8525393a846429a3165499db4f98fc8362415c876a0df78  CHANGELOG.md
@@ -49,7 +49,7 @@ d1932153fca475d92cc5095c81edff6528189046b1f1aa8c43e3b08969522cff  extension/icon
 29cdfc5fa1a890c2df8f7c5b3e86152794f0814f1b00aee47192923b37f1800e  extension/imgi_1_spider-man-logo-png_seeklogo-385417.png
 56554ccaa2cb752fd4da06f3232c6c0b755b856aad36e521f61cb2e32f00f837  extension/LOCAL_GIT_PROVENANCE.txt
 021812732c5d29191537909757b937bef8159f4a7bdd0b6805a445de1d37f651  extension/manifest.json
-47d9da7e2be9cc218c26734e89f37ad4572bfe096c061612e674815f184a6b70  extension/modules/build-provenance.js
+b7b97d6656fac09e2ae0fc1c4fa86c88224ac87686c9acea86bd428056fa7489  extension/modules/build-provenance.js
 6435fc2b61b43fe46e31afd7798dfadde4f3b6280f078d795e40edcfce8d6cb4  extension/modules/checkbox-resolver-r2.js
 68d2bd6672369aabc1eab43f4c950f6b4669fb05058a32ed1a0f0e102901f7d6  extension/modules/contact-discovery-engine.js
 0d01acb2d0a9448d154353fac5b527c17afa42fed56c68d6a49b39053629bd7d  extension/modules/contact-gate.js
@@ -65,7 +65,7 @@ ad572dee7701340ad46e818795ec003c14ba42486e733320c73e0ba4ad81179c  extension/modu
 069ea5fa7ad81680d56bb02c759c7ff6cd4ba0789bf5b2d07577170708defdcc  extension/modules/smart-field-resolver.js
 5fb1dd2be93c08afd333a1d44c31765889ef1effe5be6a5525ecd519d72c7a62  extension/modules/template-store.js
 25cf18a4834bb476edff5e8f19a78dd2723bd556ede649ada69bc801543c83f3  extension/modules/vision-submit-executor.js
-b40aa20c9ca985ff4ea28384ff9c93db6f95fe6495b570f12fbed0e7b066abd4  extension/PACKAGE_INVENTORY_SHA256.txt
+56f9595a2f69da4e5f461089bf3bc14580a6cfe86641ae07549619bbce8426a9  extension/PACKAGE_INVENTORY_SHA256.txt
 d47c771ad5de68760560c4d747c1a8993126d32a4201903b81d9abc998176c55  extension/PNG.PNG
 cbaf5a43ccb3a98e950dbceee38573919e89f0a29ec58c8bf7f225219f38ddff  extension/popup.css
 0ea77baa7f6ef25e62d16e65ba01db9a87950ee32304ac7641142e8f09cbeeae  extension/popup.html
@@ -347,4 +347,4 @@ c333ceb56c36b75816ee91fe2a87e79eb87543ea6e42489df77a6dab904eafec  package.json
 2d5da082a1b50c67064b7dd886474aac9ea648fcad34b1aff2e128c3b8ce40b4  XPIDER_AUTO_SETUP.bat
 
 ZIP ARTIFACT SHA256:
-346879506cbbb4f7a32da62ba08d68296b99160dac3a574f497b20df6cadea4f  XPIDER_R6.9G.10.3.7.1.4.12_PRIVATE_EGRESS_RC1.zip
+fc223b17a70eb27d3a1e33d05ac9558cf7f313e2b9d0603d6b1df615fb2a2e29  XPIDER_R6.9G.10.3.7.1.4.12_PRIVATE_EGRESS_RC1.zip
