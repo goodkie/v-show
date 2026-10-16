@@ -6,15 +6,15 @@
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issue #6 (Owner Directive #6183130822)
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-14.07
+- State Rev: 2026-10-15.01
 - Last Directive: Owner P0 Directive Comment #6183130822 (`[R6.9G.10.3.7.1.4.7 — MATH FIELD CONTAMINATION + LIVE PROVIDER PRECEDENCE + CAPTCHA STALL]`)
 - Last Receipt: #6183615641 (`https://github.com/goodkie/v-show/issues/6#issuecomment-6183615641`)
-- Last Accepted Audit: #6182660984 (`https://github.com/goodkie/v-show/issues/6#issuecomment-6182660984`)
+- Last Accepted Audit: #6184527831 (`https://github.com/goodkie/v-show/issues/6#issuecomment-6184527831` — `[CHATGPT][INDEPENDENT AUDIT][R6.9G.10.3.7.1.4.8 CAPTCHA LAB RECOVERY] - AUDIT RESULT: OWNER RETEST ALLOWED`)
 - Current Release Tag: `v6.9g.10.3-audit.7.1.4.8`
 
 ## Current Gate
-- Formal Gate: R6.9G.10.3.7.1.4.8 CAPTCHA LAB REAL-OWNER-PATH RECOVERY AUDIT PENDING.
-- Engineering Acceptance Status: **PASS (100% PRESERVED & VERIFIED IN REAL MICROSOFT EDGE)**.
+- Formal Gate: R6.9G.10.3.7.1.4.8 CAPTCHA LAB RECOVERY AUDIT PASSED / OWNER RETEST ALLOWED.
+- Engineering Acceptance Status: **PASS (100% PRESERVED & VERIFIED IN REAL MICROSOFT EDGE — AUDIT ACCEPTED)**.
 
 - **Defect A: CAP-02 Math CAPTCHA — Math Answer Contaminating Normal Fields (P0 Remediation)**:
   - Exclusive field-local math classification in `math-captcha-solver.js`: `type=email`, `type=tel`, `type=url`, and `textarea` are strictly excluded. Name/email/phone/subject/message fields are never classified as math without explicit captcha cues.
@@ -34,7 +34,7 @@
   - Expected failure fixtures (`captcha-mock-timeout.html`, `captcha-mock-config-error.html`) settle terminally as `EXPECTED_FAIL_PASS` and advance queue automatically.
   - Real Edge verification passed 2 consecutive complete runs from target 1 through 7 with 0 manual Owner clicks.
   - Post-state verified: active solves = 0, stage = null, final counters: 5 SUCCESS, 2 FAIL (expected timeouts/errors), 0 SKIPPED.
-- Next Action: Post Receipt to Issue #6 and await ChatGPT Independent Audit before Owner retest.
+- Next Action: Owner retest of RUN CAPTCHA LAB on R6.9G.10.3.7.1.4.8 in real browser (Edge/Chrome).
 
 ## Lineage & Remote Git SHAs
 - `ROLLBACK_ANCHOR`: `dc0740a0c69e2f7fa96b6989841acf0831b3619e` (immutable baseline anchor)
