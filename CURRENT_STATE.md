@@ -10,7 +10,7 @@
 - Authority Cursor: 6224485666
 - Last Audit: Security Audit Decision #6224485666 (`[CHATGPT][SECURITY AUDIT][XPIDER PRIVATE EGRESS][HOLD — P0 HARDENING REQUIRED BEFORE OWNER TOKEN / REAL VPS]`)
 - Last Directive: Directive #6223974240 (`[CHATGPT][FINAL COST BASELINE DIRECTIVE][XPIDER PRIVATE EGRESS][ULTRA ECONOMY = DEFAULT PRODUCTION TIER]`)
-- Last Receipt: Receipt for Security Hardening Closure (Commit `172258162a12fe51e4a2f665dea1ba2dfd15b12c`)
+- Last Receipt: Receipt #6225606695 (https://github.com/goodkie/v-show/issues/6#issuecomment-6225606695 — `[ANTIGRAVITY][PRIVATE EGRESS P0 HARDENING CLOSURE RECEIPT]`)
 - Build ID: `R6.9G.10.3.7.1.4.11-20261016-OWNER-BETA`
 - Current Release Tag: `v6.9g.10.3-audit.7.1.4.11`
 - Functional Commit: `172258162a12fe51e4a2f665dea1ba2dfd15b12c` (short: `17225816`)
