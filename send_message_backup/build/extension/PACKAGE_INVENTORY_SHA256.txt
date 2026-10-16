@@ -1,7 +1,7 @@
 PACKAGE INVENTORY SHA256 (XPIDER R6.9G.10.3.7.1.4.11 OWNER BETA CUT)
-Generated: 2026-10-16T07:43:53.425Z
+Generated: 2026-10-16T07:47:00.887Z
 Archive: XPIDER_R6.9G.10.3.7.1.4.11_OWNER_BETA.zip
-SHA256: 347ce487bb38e083c99ebb3ad0df99bb95d0b6256f81478e030d0d76330f76d9
+SHA256: 993c039288f4a1a43400b704f724fd6f66fa6f707ba965055e95688adc74a38e
 
 INVENTORY (Root: /):
 e7312e66f23e8702d8525393a846429a3165499db4f98fc8362415c876a0df78  CHANGELOG.md
@@ -48,7 +48,7 @@ d1932153fca475d92cc5095c81edff6528189046b1f1aa8c43e3b08969522cff  extension/icon
 29cdfc5fa1a890c2df8f7c5b3e86152794f0814f1b00aee47192923b37f1800e  extension/imgi_1_spider-man-logo-png_seeklogo-385417.png
 56554ccaa2cb752fd4da06f3232c6c0b755b856aad36e521f61cb2e32f00f837  extension/LOCAL_GIT_PROVENANCE.txt
 021812732c5d29191537909757b937bef8159f4a7bdd0b6805a445de1d37f651  extension/manifest.json
-95ff5b7fe53a2359048f4d3e4aebb6ca2dccde3f131e02736720e0ca2b40e254  extension/modules/build-provenance.js
+46a86decc4f675f7c65b42cb6ce9ea42352bce562144974be01631fbf4ae4d2c  extension/modules/build-provenance.js
 6435fc2b61b43fe46e31afd7798dfadde4f3b6280f078d795e40edcfce8d6cb4  extension/modules/checkbox-resolver-r2.js
 68d2bd6672369aabc1eab43f4c950f6b4669fb05058a32ed1a0f0e102901f7d6  extension/modules/contact-discovery-engine.js
 0d01acb2d0a9448d154353fac5b527c17afa42fed56c68d6a49b39053629bd7d  extension/modules/contact-gate.js
@@ -64,7 +64,7 @@ ad572dee7701340ad46e818795ec003c14ba42486e733320c73e0ba4ad81179c  extension/modu
 069ea5fa7ad81680d56bb02c759c7ff6cd4ba0789bf5b2d07577170708defdcc  extension/modules/smart-field-resolver.js
 5fb1dd2be93c08afd333a1d44c31765889ef1effe5be6a5525ecd519d72c7a62  extension/modules/template-store.js
 25cf18a4834bb476edff5e8f19a78dd2723bd556ede649ada69bc801543c83f3  extension/modules/vision-submit-executor.js
-00e6e8a120bcd0a5bfccee04bb31a435d4bc723b1c3fa07a8728e74738636d87  extension/PACKAGE_INVENTORY_SHA256.txt
+89b42269ae8688a5c5754879ba66d1cf124ca5125ce6cc98201c58d287189708  extension/PACKAGE_INVENTORY_SHA256.txt
 d47c771ad5de68760560c4d747c1a8993126d32a4201903b81d9abc998176c55  extension/PNG.PNG
 cbaf5a43ccb3a98e950dbceee38573919e89f0a29ec58c8bf7f225219f38ddff  extension/popup.css
 0a398ccc61fd1384578f412d97228414c6844dd5ab9b566d17e9b46e0556f340  extension/popup.html
@@ -204,4 +204,4 @@ c58c136e85d31daf2ff2e72e5539369563be72a94bce0fdf07fa13e48f6e6436  owner-extensio
 d2f26d7f6529574c4ebd9836be2e271c554e2124159ed54558bd16d730406e58  XPIDER_AUTO_SETUP.bat
 
 ZIP ARTIFACT SHA256:
-347ce487bb38e083c99ebb3ad0df99bb95d0b6256f81478e030d0d76330f76d9  XPIDER_R6.9G.10.3.7.1.4.11_OWNER_BETA.zip
+993c039288f4a1a43400b704f724fd6f66fa6f707ba965055e95688adc74a38e  XPIDER_R6.9G.10.3.7.1.4.11_OWNER_BETA.zip
