@@ -17,16 +17,16 @@
         branch: 'upgrade/phase-0-1',
         channel: 'OWNER_BETA',
         testOnly: true,
-        // [R6.9G.10.3.7.1.4.11] XPIDER AutoForm Sender Pro — Owner Beta Cut (Comment #6208890551)
-        implementationHead: '44f62c1922ae658b4e719dd5fc3b7e54a42732e4',
-        implementationHeadShort: '44f62c19',
-        head: '44f62c1922ae658b4e719dd5fc3b7e54a42732e4',
-        headShort: '44f62c19',
+        // [R6.9G.10.3.7.1.4.11] XPIDER AutoForm Sender Pro — Owner Beta Cut (Comment #6208890551 & #6217708566)
+        implementationHead: '50aee3538806d7b5227fcd929e27979d1e5a3419',
+        implementationHeadShort: '50aee353',
+        head: '50aee3538806d7b5227fcd929e27979d1e5a3419',
+        headShort: '50aee353',
         rollbackBase: 'dc0740a0c69e2f7fa96b6989841acf0831b3619e',
-        previousFunctionalRestorePoint: '31b929c35eb52aba782181ba83e79a7196c51337',
+        previousFunctionalRestorePoint: 'd5abf71e8aee1cba0ba1718e807beabce69eb8b8',
         manifestVersion: 3,
         buildId: 'R6.9G.10.3.7.1.4.11-20261016-OWNER-BETA',
-        builtAt: '2026-10-16T05:55:00.000Z',
+        builtAt: '2026-10-16T15:28:00.000Z',
         provenanceSchema: 2,
         modules: {
             backgroundSha: '2013b3dfc21b26ea0e6696d265bdd56a55b3ef9c5752a1e3ec8c69f8c3fe9d82',
