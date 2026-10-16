@@ -4,53 +4,65 @@
 - Protocol: OCA-DEV-1.4
 - Project ID: xpider-autoform-sender-pro
 - Workspace: E:\vivpr\ai\extension-form-sender
-- Authority: goodkie/v-show Issue #6 (ChatGPT Directive #6207792447)
+- Authority: goodkie/v-show Issue #6 (Owner Decision Comment #6208890551)
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-16.02
-- Last Directive: ChatGPT Independent Audit & Directive Comment #6207792447 (`[CHATGPT][INDEPENDENT AUDIT + NEXT PHASE DIRECTIVE][R6.9G.10.3.7.1.4.9 -> REAL CLOUDFLARE IMPLEMENTATION]`)
-- Last Receipt: #6208673611 (`https://github.com/goodkie/v-show/issues/6#issuecomment-6208673611` — `[ANTIGRAVITY][REAL CLOUDFLARE TURNSTILE OWNER VALIDATION IMPLEMENTATION RECEIPT]`)
-- Build ID: `R6.9G.10.3.7.1.4.10-20261016-REAL-CLOUDFLARE-TURNSTILE-VALIDATION`
-- Current Release Tag: `v6.9g.10.3-audit.7.1.4.10`
+- State Rev: 2026-10-16.03
+- Last Directive: Owner Decision Comment #6208890551 (`[OWNER DECISION][RELEASE NOW][XPIDER AUTOFORM SENDER PRO — OWNER BETA CUT]`)
+- Last Receipt: #6209235338 (`https://github.com/goodkie/v-show/issues/6#issuecomment-6209235338` — `[ANTIGRAVITY][XPIDER OWNER BETA RELEASE RECEIPT]`)
+- Build ID: `R6.9G.10.3.7.1.4.11-20261016-OWNER-BETA`
+- Current Release Tag: `v6.9g.10.3-audit.7.1.4.11`
 
 ## Current Gate
-- Formal Gate: R6.9G.10.3.7.1.4.10 REAL CLOUDFLARE TURNSTILE OWNER VALIDATION PASS.
-- Engineering Acceptance Status: **PASS (100% VERIFIED IN REAL MICROSOFT EDGE BROWSER)**.
+- Formal Gate: R6.9G.10.3.7.1.4.11 XPIDER AUTOFORM SENDER PRO — OWNER BETA CUT PASS.
+- Engineering Acceptance Status: **PASS (100% VERIFIED IN REAL MICROSOFT EDGE BROWSER & PACKAGED)**.
 
 ### Verified Architecture & Implementation Details:
-1. **Separation of Modes & Synthetic Reuse Elimination**:
-   - Both Cloudflare buttons previously reusing localhost `captcha-turnstile-dom.html` eliminated.
-   - Distinct **Mode A (`CLOUDFLARE_LIVE_OWNER`)** for public HTTPS Owner domain and **Mode B (`CLOUDFLARE_TESTKEY_LAB`)** for 5 official fixtures.
+1. **Owner Beta Branding & Badging**:
+   - Top-bar nav header branded with `● PRIVATE OWNER BETA — DEBUG TELEMETRY ENABLED`.
+   - Build provenance badge prominently set to `OWNER BETA R6.9G.10.3.7.1.4.11 [5a0e9830]`.
 
-2. **Preflight Enforcements & Settings UI**:
-   - Added Settings fields for Cloudflare Live URL, Sitekey, and Verification Endpoint.
-   - Preflight enforcement strictly rejects missing config (`CLOUDFLARE_LIVE_CONFIG_REQUIRED`) and loopback/non-HTTPS targets (`CLOUDFLARE_LIVE_LOOPBACK_REFUSED`).
-   - Contract verified: `[CLOUDFLARE_LIVE_PREFLIGHT] https=true loopback=false mockEligible=false verificationEndpointConfigured=true`.
+2. **One-Click Owner Debug Bundle (`📦 EXPORT OWNER DEBUG BUNDLE`)**:
+   - Zero-dependency in-memory ZIP packaging engine (`createZipArchive` with CRC-32) built into `popup.js`.
+   - Bundles 8 diagnostic files into `XPIDER_DEBUG_<buildId>_<timestamp>.zip` (>23KB):
+     * `XPIDER_DEBUG_REPORT.txt` (readable timeline)
+     * `runtime_logs.json` (all diagnostic telemetry events)
+     * `sanitized_settings.json` (zero secrets/tokens/keys)
+     * `campaign_state.json` (counters, status, target progress)
+     * `error_and_retry_summary.json` (structured failure breakdown)
+     * `history_ledger.json` (canonical execution records)
+     * `build_provenance.json` (module hashes & commit stamp)
+     * `owner_debug_bundle.json` (complete raw bundle)
 
-3. **Complete Solver Lockout**:
-   - `mock_provider`, NopeCHA, and 2Captcha are strictly bypassed when in Cloudflare mode.
-   - Real Edge audit confirmed: `mock_provider calls = 0`, `NopeCHA calls = 0`, `2Captcha calls = 0`.
+3. **Ultra-Diagnostic Telemetry (DEFAULT-ON)**:
+   - 35+ trace domains active by default across service worker, content scripts, solver, and popup.
+   - Comprehensive sanitization prevents sensitive credentials/tokens from entering traces.
 
-4. **Authoritative Server-Side Siteverify Gate**:
-   - Client DOM success text alone is rejected on Turnstile forms.
-   - Enforces structured server response derived from Cloudflare Siteverify API (`https://challenges.cloudflare.com/turnstile/v0/siteverify`): `{ verified: true, provider: "cloudflare-turnstile", ... }`.
-   - Secret keys remain strictly on the server (never exposed to browser extension).
+4. **10/10 Must-Have Release Blockers Verified in Real Edge**:
+   - Campaign Launch (Start button)
+   - Settings Save & Load (`xpider_delayMs: 4444`)
+   - URL List Preserved (`xpider_owner_backup_snapshot`)
+   - No Extension Crash / Reload Loops
+   - Safe Pause / Resume / Stop Quiescent Barrier
+   - Semantic Autofill Protection (multi-line textarea, phone segmentation)
+   - Submission Loop Barrier (Single Submit Lock)
+   - History / Ledger Settlement & Real-time HUD Sync
+   - One-Click Debug Export Button Functional
+   - Zero Secrets / API Keys Exposed in Logs or Artifacts
 
-5. **Official Test-Key Suite Verification (5/5 PASS)**:
-   - `visible-pass` (`1x00000000000000000000AA`): Token issued, Siteverify verified -> **CONFIRMED_SUCCESS**
-   - `visible-fail` (`2x00000000000000000000AB`): Token blocked, Siteverify rejected -> **EXPECTED_FAIL_PASS**
-   - `invisible-pass` (`1x00000000000000000000BB`): Token issued, Siteverify verified -> **CONFIRMED_SUCCESS**
-   - `invisible-fail` (`2x00000000000000000000BB`): Token blocked, Siteverify rejected -> **EXPECTED_FAIL_PASS**
-   - `interactive` (`3x00000000000000000000FF`): HUD paused with `"Real Cloudflare Turnstile — Owner verification required"`, token issued on completion, Siteverify verified -> **CONFIRMED_SUCCESS**
-   - Final results: 3 SUCCESS, 2 SKIPPED (Expected Failures), 0 UNEXPECTED FAILURES (Total: 5/5).
-   - Feedback banner displays `🏁 CLOUDFLARE OFFICIAL TEST-KEY LAB PASS (100% EXPECTED OUTCOME) 5/5 Cases Verified`.
+5. **Tracked Post-Beta Hardening (Non-blocking)**:
+   - Cloudflare official test-key matrix UI semantics refinement.
+   - Dedicated Cloudflare metrics panel UI hydration.
+   - 50-suite long stress completion.
+   - Non-critical narrow side-panel styling adjustments.
 
-- Next Action: Await ChatGPT gate audit on Receipt #6208673611.
+- Next Action: Real Owner beta testing and rapid iterative triage via One-Click Debug Bundles.
 
 ## Lineage & Remote Git SHAs
 - `ROLLBACK_ANCHOR`: `dc0740a0c69e2f7fa96b6989841acf0831b3619e` (immutable baseline anchor)
 - `PREVIOUS_FUNCTIONAL_RESTORE_POINT`: `31b929c35eb52aba782181ba83e79a7196c51337` (`31b929c3`)
-- `IMPLEMENTATION_HEAD`: `2bf099168348f9090ca57b50b18e60b1af8fbc25` (`2bf09916`)
-- Diagnostic Package: `XPIDER_R6.9G.10.3.7.1.4.10_OWNER_DIAGNOSTIC_TEST_ONLY.zip`
-- Package SHA-256: `9e976c50a00142db9702b60fbfa5ef7a43700563f6c4a27c67fa386895bfaa81` (8,525,232 bytes)
-- Evidence Log: `owner-extension-test-site/evidence/evidence_r6_9g10_3_7_1_4_10_cloudflare_turnstile.log`
-- Evidence Log SHA-256: `8c54eec5aca35879ffcd533ccf62e30812fc4dd1b40fd85bc772670995e96f29` (26,007 bytes)
+- `IMPLEMENTATION_HEAD`: `2dac6b29e34de230c549661dcf447dd1b5fc502a` (`2dac6b29`)
+- Release Package: `XPIDER_R6.9G.10.3.7.1.4.11_OWNER_BETA.zip`
+- Package SHA-256: `f0fa60beeb6520748152432f64d1e45ecd75f25c4d5ee0a80ff2b699937119f5` (8,788,165 bytes)
+- Evidence Log: `evidence_r6_9g10_3_7_1_4_11_owner_beta_smoke.log`
+- Evidence Log SHA-256: `ef31acd07efc7a2a0afe4114352cb4e2bf3f5334a011991f31d24e5a8916a444` (25,050 bytes)
+- GitHub Release URL: https://github.com/goodkie/v-show/releases/tag/v6.9g.10.3-audit.7.1.4.11
