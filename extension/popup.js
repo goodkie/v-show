@@ -1313,8 +1313,42 @@ async function hydrateSettings(overrideV2Store = null) {
                 await chrome.storage.local.set({ xpider_owner_function_test_mode: false });
             } else {
                 if (ownerTestGroup) ownerTestGroup.style.display = 'block';
-                const testModeData = await chrome.storage.local.get(['xpider_owner_function_test_mode']);
-                const isOwnerTestMode = !!testModeData.xpider_owner_function_test_mode;
+                // [R6.9G.10.3.7.1.4.11 OWNER BETA BOOT RECONCILE]
+                // If channel=OWNER_BETA and xpider_owner_function_test_mode=true but no active explicit test run:
+                // auto-clear stale flag and remove test guard.
+                const bootSt = await chrome.storage.local.get([
+                    'xpider_owner_function_test_mode',
+                    'xpider_active_test_source',
+                    'xpider_isActive',
+                    'xpider_queue'
+                ]);
+                const EXPLICIT_TEST_SOURCES = ['OWNER_CORE_TEST', 'OWNER_CAPTCHA_LAB', 'OWNER_FULL_TEST', 'CLOUDFLARE_TESTKEY_LAB'];
+                const isExplicitRunning = Boolean(
+                    bootSt.xpider_isActive &&
+                    EXPLICIT_TEST_SOURCES.includes(bootSt.xpider_active_test_source)
+                );
+                
+                let isOwnerTestMode = false;
+                if (bootSt.xpider_owner_function_test_mode && !isExplicitRunning) {
+                    await chrome.storage.local.set({ xpider_owner_function_test_mode: false });
+                    await chrome.storage.local.remove([
+                        'xpider_active_test_source',
+                        'xpider_owner_function_test_mode_active',
+                        'xpider_test_mode_state'
+                    ]);
+                    try {
+                        const gRes = await chrome.runtime.sendMessage({ action: 'REMOVE_OWNER_TEST_GUARD' });
+                        if (gRes && gRes.success) {
+                            console.log('[OWNER_TEST_GUARD] removed=true');
+                        }
+                    } catch (_) {}
+                    console.log('[BOOT_RECONCILE] channel=OWNER_BETA staleTestMode=true action=AUTO_CLEAR');
+                    addLog('🧹 [BOOT_RECONCILE] Stale test mode auto-cleared on boot. Normal mode active.', 'info');
+                    isOwnerTestMode = false;
+                } else {
+                    isOwnerTestMode = Boolean(bootSt.xpider_owner_function_test_mode);
+                }
+
                 if (ownerTestToggle) {
                     ownerTestToggle.disabled = false;
                     ownerTestToggle.checked = isOwnerTestMode;
@@ -1328,7 +1362,17 @@ async function hydrateSettings(overrideV2Store = null) {
                             ownerTestBanner.style.display = checked ? 'block' : 'none';
                         }
                         if (!checked) {
-                            chrome.runtime.sendMessage({ action: 'REMOVE_OWNER_TEST_NETWORK_GUARD' }).catch(() => {});
+                            try {
+                                const gRes = await chrome.runtime.sendMessage({ action: 'REMOVE_OWNER_TEST_GUARD' });
+                                if (gRes && gRes.success) {
+                                    console.log('[OWNER_TEST_GUARD] removed=true verified=true');
+                                    addLog('[OWNER_TEST_GUARD] removed=true verified=true', 'info');
+                                } else {
+                                    console.warn('[OWNER_TEST_GUARD_REMOVE_WARN]', gRes?.error);
+                                }
+                            } catch (err) {
+                                console.warn('[OWNER_TEST_GUARD_REMOVE_ERROR]', err);
+                            }
                         }
                         console.log(`[OWNER_FUNCTION_TEST] loopbackOnly=true strictPublicBypass=false toggled=${checked}`);
                         addLog(`🧪 [Owner Functional Test Mode] ${checked ? 'ENABLED (Local Controlled Pages Only: 127.0.0.1/localhost)' : 'DISABLED'}`, checked ? 'warning' : 'info');
@@ -2332,6 +2376,20 @@ async function hydrateCampaignState() {
                         failureBreakdown: response.failureBreakdown || {}
                     });
                 }
+
+                try {
+                    const st = await chrome.storage.local.get(['xpider_queue', 'xpider_total', 'xpider_success']);
+                    if (Array.isArray(st.xpider_queue) && st.xpider_queue.length > 0) {
+                        campaignQueue = [...st.xpider_queue];
+                        if (!totalTargets) totalTargets = st.xpider_total || campaignQueue.length;
+                        if (!successCount) successCount = st.xpider_success || 0;
+                        renderUrlsPreview(campaignQueue);
+                        const countDisplay = document.getElementById('url-count-display');
+                        if (countDisplay && !response.isActive) {
+                            countDisplay.textContent = `${campaignQueue.length} (remaining) / ${totalTargets} URLs`;
+                        }
+                    }
+                } catch (_) {}
 
                 if (response.isActive) {
                     campaignActive = true;
@@ -4227,6 +4285,39 @@ function onCampaignFinishedOwnerTestCheck(counters) {
         const fl = counters ? (counters.failed || 0) : 0;
         const total = sc + sk + fl;
 
+        // [R6.9G.10.3.7.1.4.11 Terminal Test Session Auto-Cleanup]
+        const isAnyTestSession = Boolean(
+            st && (
+                st.xpider_owner_function_test_mode ||
+                st.xpider_active_test_source ||
+                st.xpider_cloudflare_live_test
+            )
+        );
+        if (isAnyTestSession) {
+            (async () => {
+                try {
+                    await chrome.runtime.sendMessage({ action: 'REMOVE_OWNER_TEST_GUARD' });
+                    await chrome.storage.local.set({
+                        xpider_owner_function_test_mode: false,
+                        xpider_test_mode_state: 'TEST_RESULT_VIEW'
+                    });
+                    await chrome.storage.local.remove([
+                        'xpider_active_test_source',
+                        'xpider_cloudflare_live_test',
+                        'xpider_owner_function_test_mode_active'
+                    ]);
+                    const oftToggle = document.getElementById('owner-function-test-toggle');
+                    if (oftToggle) oftToggle.checked = false;
+                    const oftBanner = document.getElementById('owner-function-test-banner');
+                    if (oftBanner) oftBanner.style.display = 'none';
+                    console.log('[TEST_TERMINAL_CLEANUP] testGuardRemoved=true testModeReset=true resultViewActive=true');
+                    addLog('[TEST_TERMINAL_CLEANUP] testGuardRemoved=true testModeReset=true resultViewActive=true', 'info');
+                } catch (cleanupErr) {
+                    console.warn('[TEST_TERMINAL_CLEANUP_WARN]', cleanupErr);
+                }
+            })();
+        }
+
         // [R6.9G.10.3.7.1.4.10] Cloudflare Live Owner Validation Evaluation
         if (st && st.xpider_active_test_source === 'CLOUDFLARE_LIVE_OWNER') {
             updateAutoSetupUI('COMPLETED');
@@ -4711,10 +4802,17 @@ async function restoreUserSettings() {
         totalTargets = snapshot.totalTargets || campaignQueue.length;
 
         // Restore settings
+        const snapshotHadTestMode = Boolean(snapshot.settings?.xpider_owner_function_test_mode);
+        if (snapshotHadTestMode) {
+            console.log('[RESTORE_SANITIZE] staleTestModeInSnapshot=true forcedNormalMode=true');
+            addLog('🧹 [RESTORE_SANITIZE] staleTestModeInSnapshot=true forcedNormalMode=true', 'info');
+        }
+
         const restoredSettings = {
             xpider_queue: campaignQueue,
             xpider_total: totalTargets,
-            xpider_owner_function_test_mode: Boolean(snapshot.settings?.xpider_owner_function_test_mode),
+            xpider_owner_function_test_mode: false,
+            xpider_cloudflare_live_test: false,
             xpider_delayMs: snapshot.settings?.xpider_delayMs || 3000,
             xpider_fillDelayMs: snapshot.settings?.xpider_fillDelayMs || 50,
             xpider_submitDelayMs: snapshot.settings?.xpider_submitDelayMs || 1000,
@@ -4732,11 +4830,17 @@ async function restoreUserSettings() {
             restoredSettings.xpider_active_campaign_run_id = snapshot.settings.xpider_active_campaign_run_id;
         }
 
-        // If test mode was turned off, remove DNR network guard
-        if (!restoredSettings.xpider_owner_function_test_mode) {
-            try {
-                await chrome.runtime.sendMessage({ action: 'REMOVE_OWNER_TEST_GUARD' });
-            } catch (_) {}
+        // [R6.9G.10.3.7.1.4.11 Restore Semantics] Remove DNR network guard and verify response
+        try {
+            const guardRes = await chrome.runtime.sendMessage({ action: 'REMOVE_OWNER_TEST_GUARD' });
+            if (guardRes && guardRes.success) {
+                console.log('[OWNER_TEST_GUARD] removed=true verified=true');
+                addLog('[OWNER_TEST_GUARD] removed=true verified=true', 'info');
+            } else {
+                console.warn('[OWNER_TEST_GUARD_REMOVE_WARN]', guardRes?.error);
+            }
+        } catch (gErr) {
+            console.warn('[RESTORE_GUARD_REMOVE_ERROR]', gErr);
         }
 
         try {
@@ -4747,7 +4851,13 @@ async function restoreUserSettings() {
         } catch (_) {}
 
         await chrome.storage.local.set(restoredSettings);
-        await chrome.storage.local.remove(['xpider_owner_backup_snapshot']);
+        await chrome.storage.local.remove([
+            'xpider_owner_backup_snapshot',
+            'xpider_active_test_source',
+            'xpider_cloudflare_live_test',
+            'xpider_owner_function_test_mode_active',
+            'xpider_test_mode_state'
+        ]);
 
         // Synchronize live DOM controls
         const skipToggle = document.getElementById('skip-attempted-toggle');
@@ -4771,8 +4881,11 @@ async function restoreUserSettings() {
 
         const oftToggle = document.getElementById('owner-function-test-toggle');
         if (oftToggle) {
-            oftToggle.checked = Boolean(restoredSettings.xpider_owner_function_test_mode);
-            oftToggle.dispatchEvent(new Event('change', { bubbles: true }));
+            oftToggle.checked = false;
+        }
+        const oftBanner = document.getElementById('owner-function-test-banner');
+        if (oftBanner) {
+            oftBanner.style.display = 'none';
         }
 
         updateRealTimeStatus({
@@ -5349,21 +5462,82 @@ async function launchCampaign(options = {}) {
             }
         }
 
-        // 3. Verify Owner test server if test mode
-        // 3. Verify Owner test server if test mode
+        // 3. Mode Resolution: Source-Scoped, Not Sticky (Directive #6210215006)
+        const EXPLICIT_TEST_SOURCES = ['OWNER_CORE_TEST', 'OWNER_CAPTCHA_LAB', 'OWNER_FULL_TEST', 'CLOUDFLARE_TESTKEY_LAB'];
+        const isExplicitTest = EXPLICIT_TEST_SOURCES.includes(source);
         const isLiveOwnerCf = (source === 'CLOUDFLARE_LIVE_OWNER');
         const isTestKeyLab = (source === 'CLOUDFLARE_TESTKEY_LAB');
-        let isTestModeActive = !isLiveOwnerCf && (isOwnerTest || isTestKeyLab);
-        if (!isTestModeActive && !isLiveOwnerCf) {
+
+        if ((!campaignQueue || campaignQueue.length === 0) && (!options.fixtures || options.fixtures.length === 0)) {
             try {
-                const oftToggle = document.getElementById('owner-function-test-toggle');
-                if (oftToggle && oftToggle.checked) isTestModeActive = true;
-                else {
-                    const stTest = await chrome.storage.local.get(['xpider_owner_function_test_mode']);
-                    isTestModeActive = Boolean(stTest.xpider_owner_function_test_mode);
+                const qSt = await chrome.storage.local.get(['xpider_queue', 'xpider_total']);
+                if (Array.isArray(qSt.xpider_queue) && qSt.xpider_queue.length > 0) {
+                    campaignQueue = [...qSt.xpider_queue];
+                    if (!totalTargets) totalTargets = qSt.xpider_total || campaignQueue.length;
                 }
             } catch (_) {}
         }
+
+        const isLoopbackCheck = (u) => /^https?:\/\/(?:127\.0\.0\.1|localhost)(?::\d+)?(?:\/|$)/i.test(typeof u === 'string' ? u : (u?.url || ''));
+        const queueToCheck = (Array.isArray(options.fixtures) && options.fixtures.length > 0) ? options.fixtures : campaignQueue;
+        const publicTargetsCount = (Array.isArray(queueToCheck) ? queueToCheck : []).filter(u => !isLoopbackCheck(u)).length;
+
+        // [R6.9G.10.3.7.1.4.11 Normal Start Auto-Exit]
+        if (source === 'USER_START_BUTTON' || (!isExplicitTest && !isLiveOwnerCf)) {
+            const curSt = await chrome.storage.local.get([
+                'xpider_owner_function_test_mode',
+                'xpider_active_test_source',
+                'xpider_cloudflare_live_test',
+                'xpider_paused_checkpoint'
+            ]);
+            const staleOwnerTestMode = Boolean(
+                curSt.xpider_owner_function_test_mode ||
+                curSt.xpider_active_test_source ||
+                curSt.xpider_cloudflare_live_test
+            );
+
+            if (staleOwnerTestMode || publicTargetsCount > 0) {
+                // Atomically exit all Owner test modes BEFORE validation
+                await chrome.storage.local.set({
+                    xpider_owner_function_test_mode: false,
+                    xpider_cloudflare_live_test: false
+                });
+                await chrome.storage.local.remove([
+                    'xpider_active_test_source',
+                    'xpider_owner_function_test_mode_active',
+                    'xpider_test_mode_state'
+                ]);
+
+                // Clear only test-run transient state/checkpoint, never public queue/history
+                if (curSt.xpider_paused_checkpoint && (curSt.xpider_paused_checkpoint.ownerFunctionTestMode || curSt.xpider_paused_checkpoint.isTestMode)) {
+                    await chrome.storage.local.remove(['xpider_paused_checkpoint']);
+                }
+
+                // Remove Owner Test DNR/session guard
+                try {
+                    const gRes = await chrome.runtime.sendMessage({ action: 'REMOVE_OWNER_TEST_GUARD' });
+                    if (gRes && gRes.success) {
+                        console.log('[OWNER_TEST_GUARD] removed=true');
+                    }
+                } catch (_) {}
+
+                const oftToggle = document.getElementById('owner-function-test-toggle');
+                if (oftToggle) oftToggle.checked = false;
+                const oftBanner = document.getElementById('owner-function-test-banner');
+                if (oftBanner) oftBanner.style.display = 'none';
+
+                console.log(`[MODE_RECONCILE] source=USER_START_BUTTON staleOwnerTestMode=${staleOwnerTestMode} action=AUTO_EXIT_TEST_MODE`);
+                console.log('[OWNER_TEST_GUARD] removed=true');
+                addLog(`[MODE_RECONCILE] source=USER_START_BUTTON staleOwnerTestMode=${staleOwnerTestMode} action=AUTO_EXIT_TEST_MODE`, 'info');
+                addLog('[OWNER_TEST_GUARD] removed=true', 'info');
+            }
+
+            console.log(`[NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=${publicTargetsCount} testMode=false result=PASS`);
+            addLog(`[NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=${publicTargetsCount} testMode=false result=PASS`, 'info');
+        }
+
+        // Test mode is active ONLY for explicit test sources
+        const isTestModeActive = isExplicitTest;
 
         if (isLiveOwnerCf) {
             // Live Owner Test Mode: public HTTPS target, mock provider locked out, loopback strictly refused

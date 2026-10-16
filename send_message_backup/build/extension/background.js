@@ -277,7 +277,7 @@ async function removeOwnerTestNetworkGuard() {
     }
 }
 
-// [R6.9G.10.3.7.1.4.5] State-Aware SW Boot Reconciliation for Owner Test Network Guard
+// [R6.9G.10.3.7.1.4.11] State-Aware SW Boot Reconciliation for Owner Test Network Guard
 async function reconcileOwnerTestNetworkGuardOnBoot() {
     try {
         if (typeof chrome === 'undefined' || !chrome.declarativeNetRequest || !chrome.declarativeNetRequest.updateSessionRules) {
@@ -293,18 +293,16 @@ async function reconcileOwnerTestNetworkGuardOnBoot() {
             'xpider_isPaused',
             'xpider_paused_checkpoint',
             'xpider_queue',
-            'xpider_owner_function_test_mode_active'
+            'xpider_owner_function_test_mode_active',
+            'xpider_active_test_source'
         ]);
+
+        const EXPLICIT_TEST_SOURCES = ['OWNER_CORE_TEST', 'OWNER_CAPTCHA_LAB', 'OWNER_FULL_TEST', 'CLOUDFLARE_TESTKEY_LAB'];
+        const isExplicitTestSource = Boolean(data.xpider_active_test_source && EXPLICIT_TEST_SOURCES.includes(data.xpider_active_test_source));
 
         const isTestBuild = (typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.isTestOnlyBuild === 'function')
             ? BuildProvenance.isTestOnlyBuild()
             : false;
-
-        const isOwnerTestModeEnabled = isTestBuild && Boolean(
-            data.xpider_owner_function_test_mode ||
-            data.xpider_owner_function_test_mode_active ||
-            data.xpider_paused_checkpoint?.ownerFunctionTestMode
-        );
 
         const hasActiveOrPausedSession = Boolean(
             (data.xpider_isActive && Array.isArray(data.xpider_queue) && data.xpider_queue.length > 0) ||
@@ -312,7 +310,13 @@ async function reconcileOwnerTestNetworkGuardOnBoot() {
             (data.xpider_paused_checkpoint && Array.isArray(data.xpider_paused_checkpoint.remainingQueue) && data.xpider_paused_checkpoint.remainingQueue.length > 0)
         );
 
-        if (isTestBuild && isOwnerTestModeEnabled && hasActiveOrPausedSession) {
+        // A legitimate Owner Test session is active on boot ONLY IF:
+        // 1. It is a test build
+        // 2. An explicit test source is active or paused
+        // 3. hasActiveOrPausedSession is true
+        const isLegitimateTestSession = isTestBuild && isExplicitTestSource && hasActiveOrPausedSession;
+
+        if (isLegitimateTestSession) {
             campaignState.ownerFunctionTestMode = true;
             try {
                 await installOwnerTestNetworkGuard();
@@ -333,12 +337,25 @@ async function reconcileOwnerTestNetworkGuardOnBoot() {
                 }
                 return { reconciled: true, guardActive: false, error: err.message };
             }
-        } else if (!isOwnerTestModeEnabled || !hasActiveOrPausedSession) {
-            // Only remove rules when Owner Test Mode is OFF or clean teardown has completed
+        } else {
+            // Not a legitimate active test session.
+            // If stale test mode flags exist in storage, auto-clear them!
+            campaignState.ownerFunctionTestMode = false;
+            if (data.xpider_owner_function_test_mode || data.xpider_owner_function_test_mode_active || data.xpider_active_test_source) {
+                await chrome.storage.local.set({ xpider_owner_function_test_mode: false });
+                await chrome.storage.local.remove([
+                    'xpider_active_test_source',
+                    'xpider_owner_function_test_mode_active',
+                    'xpider_test_mode_state'
+                ]);
+                console.log('[SW_BOOT_RECONCILE] channel=OWNER_BETA staleTestMode=true action=AUTO_CLEAR');
+                if (typeof logBg === 'function') {
+                    logBg(null, '[SW_BOOT_RECONCILE] channel=OWNER_BETA staleTestMode=true action=AUTO_CLEAR', 'info');
+                }
+            }
             await removeOwnerTestNetworkGuard();
             return { reconciled: true, guardActive: false };
         }
-        return { reconciled: true, guardActive: false };
     } catch (e) {
         console.warn('[SW_BOOT_RECONCILE] Error during boot guard reconciliation:', e.message);
         return { reconciled: false, error: e.message };
@@ -2444,13 +2461,22 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
             return true;
         }
 
-        case 'REMOVE_OWNER_TEST_GUARD': {
+        case 'REMOVE_OWNER_TEST_GUARD':
+        case 'REMOVE_OWNER_TEST_NETWORK_GUARD': {
             (async () => {
                 try {
                     await removeOwnerTestNetworkGuard();
+                    let remainingCount = 0;
+                    if (typeof chrome !== 'undefined' && chrome.declarativeNetRequest && chrome.declarativeNetRequest.getSessionRules) {
+                        const rules = await chrome.declarativeNetRequest.getSessionRules();
+                        const guardRules = rules.filter(r => OWNER_TEST_GUARD_RULE_IDS.includes(r.id));
+                        remainingCount = guardRules.length;
+                    }
+                    console.log(`[OWNER_TEST_GUARD] removed=true verified=${remainingCount === 0} remainingRules=${remainingCount}`);
                     sendResponse({
-                        success: true,
-                        verified: true
+                        success: remainingCount === 0,
+                        verified: remainingCount === 0,
+                        remainingRules: remainingCount
                     });
                 } catch (err) {
                     console.error('[REMOVE_OWNER_TEST_GUARD_FAIL]', err);
@@ -2766,14 +2792,55 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                     campaignState.isCloudflareTestKey = false;
                 }
 
-                // [Fix 2 Owner Functional Test Mode Validation in Background]
-                let isTestMode = !isLiveCf && Boolean(request.ownerFunctionTestMode || isTestKeyLab);
-                if (!isTestMode && !isLiveCf) {
-                    try {
-                        const st = await chrome.storage.local.get(['xpider_owner_function_test_mode']);
-                        isTestMode = Boolean(st.xpider_owner_function_test_mode);
-                    } catch (_) {}
+                // [R6.9G.10.3.7.1.4.11 Mode Resolution: Source-Scoped, Not Sticky]
+                const EXPLICIT_TEST_SOURCES = ['OWNER_CORE_TEST', 'OWNER_CAPTCHA_LAB', 'OWNER_FULL_TEST', 'CLOUDFLARE_TESTKEY_LAB'];
+                const reqSource = request.source || request.options?.source || 'USER_START_BUTTON';
+                const isExplicitTestSource = EXPLICIT_TEST_SOURCES.includes(reqSource);
+
+                if (reqSource === 'USER_START_BUTTON' || (!isExplicitTestSource && !isLiveCf)) {
+                    campaignState.ownerFunctionTestMode = false;
+                    campaignState.isCloudflareTestKey = false;
+                    campaignState.isCloudflareLive = false;
+
+                    const curSt = await chrome.storage.local.get([
+                        'xpider_owner_function_test_mode',
+                        'xpider_active_test_source',
+                        'xpider_cloudflare_live_test'
+                    ]);
+                    const staleTestMode = Boolean(
+                        curSt.xpider_owner_function_test_mode ||
+                        curSt.xpider_active_test_source ||
+                        curSt.xpider_cloudflare_live_test
+                    );
+                    if (staleTestMode) {
+                        await chrome.storage.local.set({
+                            xpider_owner_function_test_mode: false,
+                            xpider_cloudflare_live_test: false
+                        });
+                        await chrome.storage.local.remove([
+                            'xpider_active_test_source',
+                            'xpider_owner_function_test_mode_active',
+                            'xpider_test_mode_state'
+                        ]);
+                        await removeOwnerTestNetworkGuard();
+                        console.log('[MODE_RECONCILE] source=USER_START_BUTTON staleOwnerTestMode=true action=AUTO_EXIT_TEST_MODE');
+                        console.log('[OWNER_TEST_GUARD] removed=true');
+                        logBg(null, '[MODE_RECONCILE] source=USER_START_BUTTON staleOwnerTestMode=true action=AUTO_EXIT_TEST_MODE', 'info');
+                        logBg(null, '[OWNER_TEST_GUARD] removed=true', 'info');
+                    } else {
+                        await removeOwnerTestNetworkGuard();
+                    }
+
+                    const isLoopbackFn = (typeof PrivacyGateway !== 'undefined' && typeof PrivacyGateway.isLoopbackTestUrl === 'function')
+                        ? PrivacyGateway.isLoopbackTestUrl
+                        : (u) => /^https?:\/\/(?:127\.0\.0\.1|localhost)(?::\d+)?(?:\/|$)/i.test(u);
+                    const queueArr = Array.isArray(request.queue) ? request.queue : [];
+                    const publicTargets = queueArr.filter(u => !isLoopbackFn(typeof u === 'string' ? u : (u?.url || '')));
+                    console.log(`[NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=${publicTargets.length} testMode=false result=PASS`);
+                    logBg(null, `[NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=${publicTargets.length} testMode=false result=PASS`, 'info');
                 }
+
+                let isTestMode = isExplicitTestSource;
 
                 if (isTestMode) {
                     const isTestAuthorized = (typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.isTestOnlyBuild === 'function')
@@ -3181,13 +3248,6 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
             return true;
         }
 
-        case 'REMOVE_OWNER_TEST_NETWORK_GUARD': {
-            (async () => {
-                await removeOwnerTestNetworkGuard();
-                sendResponse({ success: true });
-            })();
-            return true;
-        }
 
         case 'GENERATE_PHYSICAL_ROUTER_KEY': {
             (async () => {
@@ -7346,10 +7406,9 @@ async function restoreCampaignState() {
                         campaignState.totalTargets = data.xpider_paused_checkpoint.totalTargets || campaignState.queue.length;
                         campaignState.successCount = data.xpider_paused_checkpoint.successCount || 0;
                         campaignState.template = data.xpider_paused_checkpoint.template || null;
-                        campaignState.outcomeHistogram = { ...(data.xpider_paused_checkpoint.outcomeHistogram || {}) };
-                        if (data.xpider_paused_checkpoint.ownerFunctionTestMode || data.xpider_owner_function_test_mode || data.xpider_owner_function_test_mode_active) {
-                            campaignState.ownerFunctionTestMode = true;
-                        }
+                        const EXPLICIT_TEST_SOURCES = ['OWNER_CORE_TEST', 'OWNER_CAPTCHA_LAB', 'OWNER_FULL_TEST', 'CLOUDFLARE_TESTKEY_LAB'];
+                        const isCheckpointTest = Boolean(data.xpider_active_test_source && EXPLICIT_TEST_SOURCES.includes(data.xpider_active_test_source) && data.xpider_paused_checkpoint.ownerFunctionTestMode);
+                        campaignState.ownerFunctionTestMode = isCheckpointTest;
                         // [Issue #6 R4.1] Checkpoint Restore Spam Fix: Log at most ONCE per checkpoint hydration
                         if (!data.xpider_paused_checkpoint.restorationLogged && !campaignState.checkpointHydratedForGeneration) {
                             data.xpider_paused_checkpoint.restorationLogged = true;
@@ -7372,9 +7431,8 @@ async function restoreCampaignState() {
                         campaignState.visitedUrls = visited;
                         campaignState.successfulUrls = data.xpider_successful || [];
                         campaignState.currentAttempt = null;
-                        if (data.xpider_owner_function_test_mode || data.xpider_owner_function_test_mode_active) {
-                            campaignState.ownerFunctionTestMode = true;
-                        }
+                        const isRestoredTest = Boolean(data.xpider_active_test_source && EXPLICIT_TEST_SOURCES.includes(data.xpider_active_test_source));
+                        campaignState.ownerFunctionTestMode = isRestoredTest;
                         
                         logBg(null, `Restored previous active campaign: ${campaignState.queue.length} targets remaining.`, "info");
                         

@@ -1,0 +1,28 @@
+[2026-10-16T07:42:46.326Z] ================ XPIDER OWNER BETA P0 TEST-MODE RECONCILIATION TEST (EDGE) ================
+[2026-10-16T07:42:46.406Z] Test server verified: PID=3852 uptime=undefined
+[2026-10-16T07:42:46.414Z] Launching Edge using profile: C:\Users\oPus\AppData\Local\Temp\edge-p0-reconcile-Irk4xh
+[2026-10-16T07:42:47.814Z] Extension Service Worker active: ID=ldlijlaccfeelfdhgnjbibniocefckjj
+[2026-10-16T07:42:50.400Z] --- STEP 1: Executing AUTO SETUP ---
+[2026-10-16T07:42:55.702Z] Step 1 full result: {"success":true,"testMode":true,"queueLen":0,"hasSnapshot":true,"feedback":"READY FOR LOCAL FUNCTION TEST\n7 local fixtures loaded | Local test server verified (127.0.0.1:8088) | DNR rules 990001-990005 verified | Preserved 0 public URLs in restore point","btnDisabled":false,"campaignQueueVarLen":7,"allStorageKeys":["savedUrlLists","savedUrlLists_v2","templates_v2","xpider_active_campaign_run_id","xpider_backup_v1_1792136568211","xpider_blackbox_logs","xpider_boot_step","xpider_boot_ts","xpider_campaign_counters_v1","xpider_currentAttempt","xpider_current_run_diagnostics","xpider_delayMs","xpider_double_submit","xpider_fillDelayMs","xpider_history_attempts","xpider_history_generation","xpider_history_resets","xpider_history_rows","xpider_history_saved_at","xpider_history_scope_preference","xpider_history_targets","xpider_isActive","xpider_isPaused","xpider_migration_phase","xpider_migration_ts","xpider_owner_backup_snapshot","xpider_owner_function_test_mode","xpider_paused_checkpoint","xpider_queue","xpider_schema_version","xpider_skip_attempted","xpider_submitDelayMs","xpider_success","xpider_total","xpider_visited"],"allStorageQueue":[]}
+[2026-10-16T07:42:55.883Z] 📸 Captured screenshot: shot_p0_01_auto_setup.png
+[2026-10-16T07:42:55.891Z] --- STEP 2 & 3: Simulating test suite terminal completion & auto-cleanup ---
+[2026-10-16T07:42:56.713Z] Step 2/3 terminal cleanup: testModeInStorage=false testModeState=TEST_RESULT_VIEW activeTestSource=null toggleChecked=false
+[2026-10-16T07:42:56.723Z] --- STEP 4 & 5: Loading 100 public URLs and starting normal campaign without clicking RESTORE ---
+[2026-10-16T07:42:57.768Z] Step 4/5 Normal Start result: alertTriggered=null testModeAfter=false isActive=false queueCount=100
+[2026-10-16T07:42:57.942Z] 📸 Captured screenshot: shot_p0_02_normal_start_100_targets.png
+[2026-10-16T07:42:57.950Z] --- STEP 6: Repeating verification after popup close & reopen ---
+[2026-10-16T07:43:01.528Z] Step 6 Reopen check: testModeInStorage=false toggleChecked=false queueLen=100
+[2026-10-16T07:43:01.535Z] --- STEP 7: Repeating verification after SW boot reconciliation ---
+[2026-10-16T07:43:01.552Z] Step 7 SW reconcile check: reconciled=true guardActive=false testModeCleared=true
+[2026-10-16T07:43:01.561Z] --- STEP 8: Verifying public list & history preserved (Zero Data Loss) ---
+[2026-10-16T07:43:01.572Z] Step 8 Data preservation: queueLength=100 totalTargets=100 hasSnapshot=true
+[2026-10-16T07:43:01.580Z] --- STEP 9: Verifying explicit test buttons still reject public targets fail-closed ---
+[2026-10-16T07:43:01.617Z] Step 9 Explicit test rejection: error="OWNER_FUNCTION_TEST_NON_LOOPBACK_TARGET: https://public-corp-1.example.com/contact" alert="🛡️ [OWNER FUNCTIONAL TEST MODE ACTIVE]
+
+Only local loopback"
+[2026-10-16T07:43:01.629Z] --- STEP 10: Verifying restoreUserSettings never restores test mode to true ---
+[2026-10-16T07:43:01.670Z] Step 10 Restore sanitize: testMode=false queueCount=2 delayMs=5000
+[2026-10-16T07:43:01.812Z] 📸 Captured screenshot: shot_p0_03_final_reconciled.png
+[2026-10-16T07:43:01.820Z] ================================================================================
+[2026-10-16T07:43:01.827Z] ✅ ALL 10 ACCEPTANCE VERIFICATIONS PASSED IN REAL MICROSOFT EDGE
+[2026-10-16T07:43:01.837Z] ================================================================================
