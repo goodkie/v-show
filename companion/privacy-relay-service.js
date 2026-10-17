@@ -46,6 +46,13 @@ const CONFIG_FILE = process.env.XPIDER_RELAY_CONFIG_FILE || path.join(__dirname,
 const LOG_FILE = path.join(__dirname, 'privacy_relay.log');
 const TOKEN_FILE = path.join(__dirname, '.control_token');
 
+// [Blocker N] Verify supported Node LTS runtime (v22+ or v24 LTS; reject EOL versions < 22)
+const nodeMajor = parseInt(process.versions.node.split('.')[0], 10);
+if (nodeMajor < 22) {
+  console.error(`[FATAL] EOL Node.js runtime detected (${process.version}). XPIDER Privacy Relay requires an official supported LTS runtime (v22+ or v24 LTS).`);
+  process.exit(1);
+}
+
 /**
  * [P0-2 Hardening] Redact credentials, API tokens, and passwords from logs and messages
  */

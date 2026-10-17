@@ -38,6 +38,13 @@ function sendNativeMessage(msg) {
   process.stdout.write(jsonStr, 'utf8');
 }
 
+// [Blocker N] Verify supported Node LTS runtime (v22+ or v24 LTS; reject EOL versions < 22)
+const nodeMajor = parseInt(process.versions.node.split('.')[0], 10);
+if (nodeMajor < 22) {
+  sendNativeMessage({ success: false, error: `EOL Node.js runtime detected (${process.version}). Official supported LTS (v22+ or v24 LTS) is required.` });
+  process.exit(1);
+}
+
 async function checkRelayStatus() {
   const token = getControlToken();
   return new Promise((resolve) => {

@@ -34,6 +34,13 @@ if not exist "%XPIDER_NODE%" (
     exit /b 1
 )
 
+:: [Blocker N] Verify that selected Node runtime is supported LTS (>= v22) and not EOL
+"%XPIDER_NODE%" -e "const v = parseInt(process.versions.node.split('.')[0], 10); if (v < 22) { console.error('[ERROR] Selected Node.js (' + process.version + ') is end-of-life (EOL < v22). Official supported LTS (v24 or v22 LTS) is required.'); process.exit(1); }"
+if !ERRORLEVEL! NEQ 0 (
+    pause
+    exit /b 1
+)
+
 echo [0/4] Verifying locked runtime dependencies (ssh2)...
 "%XPIDER_NODE%" -e "try { require('./node_modules/ssh2'); console.log('   [OK] Runtime dependency (ssh2) verified.'); process.exit(0); } catch (_) { try { require('ssh2'); console.log('   [OK] Runtime dependency (ssh2) verified.'); process.exit(0); } catch (e) { process.exit(1); } }"
 if !ERRORLEVEL! NEQ 0 (
