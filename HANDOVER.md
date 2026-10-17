@@ -6,9 +6,9 @@
 - **Protocol**: OCA-DEV-1.4
 - **Authority**: GitHub Issue `goodkie/v-show#6`
 - **Active Branch**: `upgrade/phase-0-1`
-- **State Revision**: `2026-10-17.17`
-- **Authority Cursor**: `6229391413`
-- **Current Gate**: **OWNER PRIVATE BETA DAILY USE OPEN (APPROVED — AUDIT GATE #6220825890)**. Real VPS Provisioning on **HOLD** pending ChatGPT audit of RC2 Release-Asset Closure Receipt.
+- **State Revision**: `2026-10-17.18`
+- **Authority Cursor**: `6229814606`
+- **Current Gate**: **OWNER PRIVATE BETA DAILY USE OPEN (APPROVED — AUDIT GATE #6220825890)**. Real VPS Provisioning on **HOLD** pending ChatGPT audit of RC2 Release-Asset Closure Receipt [#6229814606](https://github.com/goodkie/v-show/issues/6#issuecomment-6229814606).
 
 ---
 
