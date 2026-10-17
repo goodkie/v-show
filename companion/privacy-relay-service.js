@@ -46,10 +46,11 @@ const CONFIG_FILE = process.env.XPIDER_RELAY_CONFIG_FILE || path.join(__dirname,
 const LOG_FILE = path.join(__dirname, 'privacy_relay.log');
 const TOKEN_FILE = path.join(__dirname, '.control_token');
 
-// [Blocker N] Verify supported Node LTS runtime (v22+ or v24 LTS; reject EOL versions < 22)
+// [Defect P Fix] Strict Node.js supported LTS allowlist (explicitly 22 or 24 only; rejects odd/EOL/non-LTS majors)
+const SUPPORTED_LTS_MAJORS = [22, 24];
 const nodeMajor = parseInt(process.versions.node.split('.')[0], 10);
-if (nodeMajor < 22) {
-  console.error(`[FATAL] EOL Node.js runtime detected (${process.version}). XPIDER Privacy Relay requires an official supported LTS runtime (v22+ or v24 LTS).`);
+if (!SUPPORTED_LTS_MAJORS.includes(nodeMajor)) {
+  console.error(`[FATAL] Unsupported Node.js runtime detected (${process.version}). XPIDER Privacy Relay requires an official supported LTS runtime (explicitly v24 or v22 LTS). Non-LTS/EOL majors (${nodeMajor}) are strictly rejected.`);
   process.exit(1);
 }
 

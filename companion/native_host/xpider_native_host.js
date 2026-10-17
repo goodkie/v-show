@@ -38,10 +38,11 @@ function sendNativeMessage(msg) {
   process.stdout.write(jsonStr, 'utf8');
 }
 
-// [Blocker N] Verify supported Node LTS runtime (v22+ or v24 LTS; reject EOL versions < 22)
+// [Defect P Fix] Strict Node.js supported LTS allowlist (explicitly 22 or 24 only; rejects odd/EOL/non-LTS majors)
+const SUPPORTED_LTS_MAJORS = [22, 24];
 const nodeMajor = parseInt(process.versions.node.split('.')[0], 10);
-if (nodeMajor < 22) {
-  sendNativeMessage({ success: false, error: `EOL Node.js runtime detected (${process.version}). Official supported LTS (v22+ or v24 LTS) is required.` });
+if (!SUPPORTED_LTS_MAJORS.includes(nodeMajor)) {
+  sendNativeMessage({ success: false, error: `Unsupported Node.js runtime detected (${process.version}). XPIDER requires an official supported LTS runtime (explicitly v24 or v22 LTS). Major ${nodeMajor} is strictly rejected.` });
   process.exit(1);
 }
 

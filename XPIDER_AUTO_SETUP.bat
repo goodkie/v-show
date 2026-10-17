@@ -34,8 +34,8 @@ if not exist "%XPIDER_NODE%" (
     exit /b 1
 )
 
-:: [Blocker N] Verify that selected Node runtime is supported LTS (>= v22) and not EOL
-"%XPIDER_NODE%" -e "const v = parseInt(process.versions.node.split('.')[0], 10); if (v < 22) { console.error('[ERROR] Selected Node.js (' + process.version + ') is end-of-life (EOL < v22). Official supported LTS (v24 or v22 LTS) is required.'); process.exit(1); }"
+:: [Defect P Fix] Strict Node.js supported LTS allowlist (explicitly 22 or 24 only; rejects odd/EOL/non-LTS majors)
+"%XPIDER_NODE%" -e "const v = parseInt(process.versions.node.split('.')[0], 10); const allowed = [22, 24]; if (allowed.indexOf(v) === -1) { console.error('[ERROR] Selected Node.js (' + process.version + ') is not an allowed LTS release. Explicitly supported LTS lines are v24 and v22. Major ' + v + ' is strictly rejected.'); process.exit(1); }"
 if !ERRORLEVEL! NEQ 0 (
     pause
     exit /b 1
