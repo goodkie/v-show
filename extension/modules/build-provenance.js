@@ -15,18 +15,18 @@
 
     const BUILD_INFO = {
         branch: 'upgrade/phase-0-1',
-        channel: 'OWNER_BETA_PRIVATE_EGRESS_RC2',
+        channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3',
         testOnly: true,
-        // [R6.9G.10.3.7.1.4.13] XPIDER AutoForm Sender Pro — Private Egress Release Candidate 2 (Audit #6227651132 / #6229391413)
-        implementationHead: 'd117048a1d7c34d3d865c3bb83b0eb6896e06b99',
-        implementationHeadShort: 'd117048a',
-        head: 'd117048a1d7c34d3d865c3bb83b0eb6896e06b99',
-        headShort: 'd117048a',
+        // [R6.9G.10.3.7.1.4.14] XPIDER AutoForm Sender Pro — Private Egress Release Candidate 3 (Audit #6229842884)
+        implementationHead: '920f69c16c3b09649b3da5044fbf3edc4153755f',
+        implementationHeadShort: '920f69c1',
+        head: '920f69c16c3b09649b3da5044fbf3edc4153755f',
+        headShort: '920f69c1',
         rollbackBase: '50aee3538806d7b5227fcd929e27979d1e5a3419',
         previousFunctionalRestorePoint: '50aee3538806d7b5227fcd929e27979d1e5a3419',
         manifestVersion: 3,
-        buildId: 'R6.9G.10.3.7.1.4.13-20261017-PRIVATE-EGRESS-RC2',
-        builtAt: '2026-10-17T04:30:00.000Z',
+        buildId: 'R6.9G.10.3.7.1.4.14-20261017-PRIVATE-EGRESS-RC3',
+        builtAt: '2026-10-17T05:00:00.000Z',
         provenanceSchema: 2,
         modules: {
             backgroundSha: '23df7668effedf5cf7e5e54a1b1d68c8b5379d10367916af19d05d6beb631644',
