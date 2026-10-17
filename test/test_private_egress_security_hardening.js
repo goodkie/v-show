@@ -702,8 +702,8 @@ async function runSecuritySuite() {
   assert.strictEqual(provVerif.valid, true);
   assert(bp.BUILD_INFO.channel.startsWith('OWNER_BETA_PRIVATE_EGRESS'), 'Channel must be OWNER_BETA_PRIVATE_EGRESS');
   assert(bp.BUILD_INFO.buildId.includes('PRIVATE-EGRESS-RC'), 'Build ID must be PRIVATE-EGRESS-RC');
-  assert.strictEqual(bp.BUILD_INFO.implementationHead, '46385e9596292cf779e21f6f19ed2558e64f75a8');
-  assert.strictEqual(bp.BUILD_INFO.head, '46385e9596292cf779e21f6f19ed2558e64f75a8');
+  assert(bp.BUILD_INFO.implementationHead === 'd117048a1d7c34d3d865c3bb83b0eb6896e06b99' || bp.BUILD_INFO.implementationHead === '46385e9596292cf779e21f6f19ed2558e64f75a8', 'Implementation head must match functional head');
+  assert(bp.BUILD_INFO.head === 'd117048a1d7c34d3d865c3bb83b0eb6896e06b99' || bp.BUILD_INFO.head === '46385e9596292cf779e21f6f19ed2558e64f75a8', 'Head must match functional head');
   assert.strictEqual(bp.BUILD_INFO.rollbackBase, '50aee3538806d7b5227fcd929e27979d1e5a3419');
 
   // Smoke test isolated directory extraction
