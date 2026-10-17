@@ -14,8 +14,8 @@ const { execSync } = require('child_process');
 console.log('1. Verifying parity with sync_build_parity.js...');
 execSync('node sync_build_parity.js', { stdio: 'inherit' });
 
-const versionStr = 'R6.9G.10.3.7.1.4.12';
-const zipName = `XPIDER_${versionStr}_PRIVATE_EGRESS_RC1.zip`;
+const versionStr = 'R6.9G.10.3.7.1.4.13';
+const zipName = `XPIDER_${versionStr}_PRIVATE_EGRESS_RC2.zip`;
 const zipOut = path.resolve(zipName);
 const extDir = path.resolve('send_message_backup/build/extension');
 const compDir = path.resolve('companion');
@@ -97,15 +97,20 @@ if (fs.existsSync('node_modules')) {
     copyNodeModulesClean('node_modules', stagingNmDir);
 }
 
+// 5d. Bundle official Node.js runtime (P0 Fix for Zero-Prerequisite Windows Setup)
+if (fs.existsSync('runtime')) {
+    fs.cpSync('runtime', path.join(stagingDir, 'runtime'), { recursive: true });
+}
+
 // 6. Copy Root Batch & Docs & Package manifests
-const rootFiles = ['XPIDER_AUTO_SETUP.bat', 'package.json', 'package-lock.json', 'OWNER_BETA_README.md', 'KNOWN_ISSUES.md', 'CHANGELOG.md'];
+const rootFiles = ['XPIDER_AUTO_SETUP.bat', 'START_TEST_SITE.bat', 'RELOAD_EXTENSION_UNPACKED.bat', '.gitattributes', 'package.json', 'package-lock.json', 'OWNER_BETA_README.md', 'KNOWN_ISSUES.md', 'CHANGELOG.md'];
 for (const rf of rootFiles) {
     if (fs.existsSync(rf)) {
         fs.copyFileSync(rf, path.join(stagingDir, rf));
     }
 }
 
-// 7. Security & Secret Scan (Strict scan on all project code, skipping third-party libraries)
+// 7. Security & Secret Scan (Strict scan on all project code, skipping third-party libraries & runtime)
 function scanDirectoryForSecrets(dir) {
     const forbiddenPatterns = [
         /(?:ghp_[a-zA-Z0-9]{30,}|gho_[a-zA-Z0-9]{30,}|github_pat_[a-zA-Z0-9_]{50,})/,
@@ -114,11 +119,11 @@ function scanDirectoryForSecrets(dir) {
     ];
     const entries = fs.readdirSync(dir, { withFileTypes: true });
     for (const ent of entries) {
-        if (ent.name === 'node_modules') continue; // Skip 3rd party bundled libraries
+        if (ent.name === 'node_modules' || ent.name === 'runtime') continue; // Skip 3rd party bundled libraries and binary runtimes
         const full = path.join(dir, ent.name);
         if (ent.isDirectory()) {
             scanDirectoryForSecrets(full);
-        } else if (ent.isFile() && !full.endsWith('.png') && !full.endsWith('.jpg') && !full.endsWith('.zip')) {
+        } else if (ent.isFile() && !full.endsWith('.png') && !full.endsWith('.jpg') && !full.endsWith('.zip') && !full.endsWith('.exe')) {
             const content = fs.readFileSync(full, 'utf8');
             for (const pat of forbiddenPatterns) {
                 if (pat.test(content)) {
@@ -132,7 +137,7 @@ console.log('2. Running security & secrets scan on staging files...');
 scanDirectoryForSecrets(stagingDir);
 console.log('✅ Secrets scan PASSED (zero credentials/private keys detected).');
 
-// 8. Inventory & Hashes
+// Helper to get all files
 function getAllFiles(dir, base = dir) {
     let results = [];
     const list = fs.readdirSync(dir);
@@ -151,6 +156,57 @@ function getAllFiles(dir, base = dir) {
     return results;
 }
 
+// 7b. Strict Line-Ending & Character-Set Verification for Windows Batch/Cmd Files
+console.log('2b. Byte-verifying line endings and ASCII in shipped batch/cmd files...');
+const allStagingFiles = getAllFiles(stagingDir);
+const batCmdFiles = allStagingFiles.filter(f => f.relPath.endsWith('.bat') || f.relPath.endsWith('.cmd'));
+for (const bf of batCmdFiles) {
+    let content = fs.readFileSync(bf.fullPath, 'utf8');
+    if (content.charCodeAt(0) === 0xFEFF) content = content.slice(1);
+    content = content.replace(/\r?\n/g, '\r\n');
+    fs.writeFileSync(bf.fullPath, content, { encoding: 'ascii' });
+
+    const buf = fs.readFileSync(bf.fullPath);
+    // Check UTF-8 BOM
+    if (buf[0] === 0xEF && buf[1] === 0xBB && buf[2] === 0xBF) {
+        throw new Error(`BATCH BYTE VERIFY FAILED: UTF-8 BOM found in ${bf.relPath}`);
+    }
+    // Check pure ASCII (0..127)
+    for (let i = 0; i < buf.length; i++) {
+        if (buf[i] > 127) {
+            throw new Error(`BATCH BYTE VERIFY FAILED: Non-ASCII byte (${buf[i]}) found at offset ${i} in ${bf.relPath}`);
+        }
+    }
+    // Check CRLF vs bare LF
+    const binStr = buf.toString('binary');
+    const bareLf = binStr.match(/(?<!\r)\n/g);
+    if (bareLf && bareLf.length > 0) {
+        throw new Error(`BATCH BYTE VERIFY FAILED: Found ${bareLf.length} bare LF newline(s) without CR in ${bf.relPath}`);
+    }
+    console.log(`    [OK] ${bf.relPath} (ASCII-only, CRLF line-endings, BOM-free)`);
+}
+
+// 7c. Clean-environment cmd.exe test (Verify zero command-parser corruption and exit code 0)
+console.log('2c. Running clean-environment cmd.exe test on staging XPIDER_AUTO_SETUP.bat (NO Node in PATH)...');
+const cmdTestOut = execSync('cmd.exe /d /c "set PATH=%SystemRoot%\\System32;%SystemRoot% && XPIDER_AUTO_SETUP.bat"', {
+    cwd: stagingDir,
+    encoding: 'utf-8',
+    env: {
+        SystemRoot: process.env.SystemRoot || 'C:\\Windows',
+        APPDATA: process.env.APPDATA,
+        USERPROFILE: process.env.USERPROFILE,
+        PATH: 'C:\\Windows\\System32;C:\\Windows'
+    }
+});
+const forbiddenParserErrors = ['tlocal', 'cho', "'ho'", "'ho.'", "'d'", '9009', 'is not recognized'];
+for (const errText of forbiddenParserErrors) {
+    if (cmdTestOut.includes(errText)) {
+        throw new Error(`CMD PARSER ERROR DETECTED IN AUTO SETUP OUTPUT: contains "${errText}"\nOutput:\n${cmdTestOut}`);
+    }
+}
+console.log('    [OK] Staging XPIDER_AUTO_SETUP.bat executed successfully with zero command parser errors.');
+
+// 8. Inventory & Hashes
 const files = getAllFiles(stagingDir);
 files.sort((a, b) => a.relPath.localeCompare(b.relPath));
 

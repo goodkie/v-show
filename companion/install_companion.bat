@@ -8,8 +8,28 @@ echo ========================================================
 
 cd /d "%~dp0"
 
+set "XPIDER_NODE="
+if exist "%~dp0..\runtime\node\node.exe" (
+    set "XPIDER_NODE=%~dp0..\runtime\node\node.exe"
+) else if exist "%~dp0runtime\node\node.exe" (
+    set "XPIDER_NODE=%~dp0runtime\node\node.exe"
+) else (
+    where node >nul 2>nul
+    if !ERRORLEVEL! EQU 0 (
+        for /f "delims=" %%I in ('where node') do (
+            if not defined XPIDER_NODE set "XPIDER_NODE=%%I"
+        )
+    )
+)
+
+if not defined XPIDER_NODE (
+    echo [ERROR] Bundled Node.js runtime not found and Node.js is not in PATH!
+    pause
+    exit /b 1
+)
+
 echo [1/3] Registering autostart on user logon...
-node install_autostart.js
+"%XPIDER_NODE%" install_autostart.js
 if %ERRORLEVEL% NEQ 0 (
     echo [FATAL] Step 1 Failed: Could not register Windows autostart.
     echo [ABORT] Installation aborted with exit code %ERRORLEVEL%.
@@ -17,11 +37,11 @@ if %ERRORLEVEL% NEQ 0 (
 )
 
 echo [2/3] Registering Native Messaging Host for Chrome and Edge...
-node install_native_host.js %*
+"%XPIDER_NODE%" install_native_host.js %*
 if %ERRORLEVEL% NEQ 0 (
     echo [FATAL] Step 2 Failed: Native Messaging Host registration failed.
     echo [ROLLBACK] Reverting Step 1: uninstalling autostart...
-    node install_autostart.js --uninstall
+    "%XPIDER_NODE%" install_autostart.js --uninstall
     echo [ABORT] Installation failed and rolled back. Companion Relay was NOT started.
     exit /b 1
 )
@@ -31,8 +51,8 @@ wscript.exe start_relay_silent.vbs
 if %ERRORLEVEL% NEQ 0 (
     echo [FATAL] Step 3 Failed: Could not launch Privacy Relay background process.
     echo [ROLLBACK] Reverting all installation steps...
-    node install_native_host.js --uninstall
-    node install_autostart.js --uninstall
+    "%XPIDER_NODE%" install_native_host.js --uninstall
+    "%XPIDER_NODE%" install_autostart.js --uninstall
     echo [ABORT] Installation failed and rolled back.
     exit /b %ERRORLEVEL%
 )
