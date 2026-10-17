@@ -6,21 +6,23 @@ PROJECT_NAME: XPIDER AutoForm Sender Pro
 WORKSPACE_ROOT: E:\vivpr\ai\extension-form-sender
 AUTHORITY_SOURCE: goodkie/v-show Issue #6
 ACTIVE_BRANCH: upgrade/phase-0-1
-STATE_REV: 2026-10-16.15
-AUTHORITY_CURSOR: 6225958811
-LAST_AUDIT: [CHATGPT][FINAL PRE-LIVE AUDIT][XPIDER PRIVATE EGRESS][HOLD — PACKAGED-RUNTIME BLOCKERS FOUND] #6225958811
+STATE_REV: 2026-10-16.16
+AUTHORITY_CURSOR: 6227489580
+LAST_AUDIT: [CHATGPT][PACKAGED-RUNTIME AUDIT][XPIDER PRIVATE EGRESS][CORE G-J ACCEPTED — FINAL PROVENANCE/ASSET HOLD] #6226660648 & NUDGE #6226801621
 LAST_DIRECTIVE: [CHATGPT][FINAL COST BASELINE DIRECTIVE][XPIDER PRIVATE EGRESS][ULTRA ECONOMY = DEFAULT PRODUCTION TIER] #6223974240
-LAST_RECEIPT: 6226379792 ([ANTIGRAVITY][PRIVATE EGRESS PACKAGED-RUNTIME CLOSURE RECEIPT] #6226379792)
+LAST_RECEIPT: 6227489580 ([ANTIGRAVITY][PRIVATE EGRESS RC1 RELEASE-ASSET CLOSURE RECEIPT] #6227489580)
 LAST_ACCEPTED_GATE: OWNER PRIVATE BETA DAILY USE OPEN (APPROVED — AUDIT GATE #6220825890)
 BUILD_ID: R6.9G.10.3.7.1.4.12-20261016-PRIVATE-EGRESS-RC1
-FUNCTIONAL_COMMIT: 46385e9575e921b712395d85207c427382218961
+FUNCTIONAL_COMMIT: 46385e9596292cf779e21f6f19ed2558e64f75a8
+PROVENANCE_COMMIT: ff95aa5c317ad4ea993f3f5a0439e0839e5b0cb5
 ROLLBACK_ANCHOR: 50aee3538806d7b5227fcd929e27979d1e5a3419
 PREVIOUS_FUNCTIONAL_RESTORE_POINT: 50aee3538806d7b5227fcd929e27979d1e5a3419
-NEXT_ACTION: Post Receipt to Issue #6. Awaiting ChatGPT audit and acceptance of Packaged-Runtime Closure Receipt. Real VPS provisioning remains on HOLD.
-BLOCKERS: NONE. Blockers G through K fully resolved, verified in 20/20 automated tests, packaged into RC1 zip, and pushed remotely.
-OWNER_ACTION: 1) Daily use continues on approved build 50aee353. 2) Do NOT paste DigitalOcean API token into Private Egress Wizard until ChatGPT audits and accepts Packaged-Runtime Closure Receipt.
+NEXT_ACTION: Awaiting ChatGPT Final Pre-Live Audit and Gate decision on RC1 Release Asset (Receipt #6227489580). Real VPS provisioning remains on strict HOLD.
+BLOCKERS: NONE. Blockers L & M resolved; GitHub pre-release published; downloaded asset SHA-256 verified 100% identical; isolated clean-room smoke passed 100%.
+OWNER_ACTION: 1) Daily use continues on approved build 50aee353. 2) Do NOT paste DigitalOcean API token into Private Egress Wizard until ChatGPT audits and accepts RC1 Release Asset Closure Receipt.
+RELEASE_ASSET_TAG: v6.9g.10.3-rc1.7.1.4.12
 RELEASE_ASSET_ZIP: XPIDER_R6.9G.10.3.7.1.4.12_PRIVATE_EGRESS_RC1.zip
-RELEASE_ASSET_SHA256: 346879506cbbb4f7a32da62ba08d68296b99160dac3a574f497b20df6cadea4f
+RELEASE_ASSET_SHA256: fc223b17a70eb27d3a1e33d05ac9558cf7f313e2b9d0603d6b1df615fb2a2e29
 IMMUTABLE_DAILY_USE_BASELINE: XPIDER_R6.9G.10.3.7.1.4.11_OWNER_BETA.zip (commit 50aee353)
 
 CONTINUITY_RULE: On every new ChatGPT or Antigravity window, search the current project for prior work, recover the latest valid state, and continue existing work instead of restarting.
