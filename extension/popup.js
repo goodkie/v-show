@@ -2327,7 +2327,7 @@ async function hydrateSettings(overrideV2Store = null) {
 
                     chrome.runtime.sendMessage({
                         action: 'PROVISION_PRIVATE_EGRESS',
-                        payload: { token, tier, region }
+                        payload: { token, tier, region, verifiedQuote: verifiedPlan }
                     }, async (res) => {
                         clearInterval(pollTimer);
                         createBtn.disabled = false;
@@ -2341,7 +2341,21 @@ async function hydrateSettings(overrideV2Store = null) {
                             updateStageStatus(8, 'FAIL');
                             const err = (res && res.result && ((res.result.preflight && !res.result.preflight.ready ? `COMPANION_PREFLIGHT_FAIL: ${res.result.preflight.reason}` : res.result.reason))) || (res && res.error) || 'Companion provisioning failed';
                             addLog(`❌ [PRIVATE_EGRESS_FAIL] ${err}`, 'error');
-                            alert(`Provisioning failed: ${err}`);
+                            if (err.includes('PRICE_QUOTE') || err.includes('PROVIDER_PRICE')) {
+                                verifiedPlan = null;
+                                if (stepBContainer) {
+                                    stepBContainer.style.opacity = '0.5';
+                                    stepBContainer.style.pointerEvents = 'none';
+                                }
+                                if (authCheck) {
+                                    authCheck.disabled = true;
+                                    authCheck.checked = false;
+                                }
+                                if (createBtn) createBtn.disabled = true;
+                                alert(`Provisioning aborted due to price quote change:\n\n${err}\n\nPlease re-run Step A to confirm current live pricing.`);
+                            } else {
+                                alert(`Provisioning failed: ${err}`);
+                            }
                             return;
                         }
 

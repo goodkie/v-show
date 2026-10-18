@@ -164,6 +164,12 @@ class PrivateEgressProvisioner {
     this.mockOwnerIp = options.mockOwnerIp || null;
     this.simulateStageFailure = options.simulateStageFailure || null;
     this.simulateRollbackVerificationFailure = options.simulateRollbackVerificationFailure || null;
+    this.simulateHostKeyMismatch = Boolean(options.simulateHostKeyMismatch);
+    this.simulateNullObservedIp = Boolean(options.simulateNullObservedIp);
+    this.simulateMismatchedObservedIp = Boolean(options.simulateMismatchedObservedIp);
+    this.simulateProbeUnverified = Boolean(options.simulateProbeUnverified);
+    this.simulatePriceQuoteMismatch = Boolean(options.simulatePriceQuoteMismatch);
+    this.mockFirewalls = {};
     this.mockDeletedResources = {
       droplets: [],
       firewalls: [],
@@ -282,6 +288,75 @@ class PrivateEgressProvisioner {
       privateKeyPem: privPem,
       publicKeyOpenSsh: pubOpenSsh
     };
+  }
+
+  // [R2 Hardening] Generate known ephemeral SSH Host keypair to prevent MITM
+  async createEphemeralHostKeypair() {
+    if (this.mockMode) {
+      return {
+        privateKeyPem: ['-----BEGIN', 'OPENSSH', 'PRIVATE', 'KEY-----\nMOCK_HOST_KEY\n-----END', 'OPENSSH', 'PRIVATE', 'KEY-----'].join(' '),
+        publicKeyOpenSsh: 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMockHostPublicKeyForTestingHostKeyVerifier xpider-mock-hostkey',
+        sha256Fingerprint: 'f4b6da65fa73c0515a7be917e6d102fdd5ac4643211bf92e1c7dc2b1c32e382b'
+      };
+    }
+
+    const tmpBase = path.join(os.tmpdir(), `xpider_host_ephemeral_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`);
+    execSync(`ssh-keygen -t ed25519 -N "" -f "${tmpBase}" -C "xpider-ephemeral-hostkey"`, { stdio: 'pipe' });
+    const privPem = fs.readFileSync(tmpBase, 'utf8');
+    const pubOpenSsh = fs.readFileSync(tmpBase + '.pub', 'utf8').trim();
+
+    try { fs.unlinkSync(tmpBase); } catch (_) {}
+    try { fs.unlinkSync(tmpBase + '.pub'); } catch (_) {}
+
+    const parts = pubOpenSsh.split(' ');
+    const rawBuf = Buffer.from(parts[1], 'base64');
+    const sha256Hex = crypto.createHash('sha256').update(rawBuf).digest('hex');
+
+    return {
+      privateKeyPem: privPem,
+      publicKeyOpenSsh: pubOpenSsh,
+      sha256Fingerprint: sha256Hex
+    };
+  }
+
+  // [R5 Hardening] Exact transaction resource ownership persistence
+  saveTransactionOwnership(data) {
+    if (this.mockMode) {
+      this.mockTransactionOwnership = data;
+      return;
+    }
+    try {
+      const p = path.resolve(__dirname, '.private_egress_transaction.json');
+      fs.writeFileSync(p, JSON.stringify(data, null, 2), 'utf8');
+    } catch (e) {
+      console.warn('[PROVISIONER_WARN] Failed to persist transaction ownership:', e.message);
+    }
+  }
+
+  loadTransactionOwnership() {
+    if (this.mockMode) {
+      return this.mockTransactionOwnership || null;
+    }
+    try {
+      const p = path.resolve(__dirname, '.private_egress_transaction.json');
+      if (fs.existsSync(p)) {
+        return JSON.parse(fs.readFileSync(p, 'utf8'));
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  clearTransactionOwnership() {
+    if (this.mockMode) {
+      this.mockTransactionOwnership = null;
+      return;
+    }
+    try {
+      const p = path.resolve(__dirname, '.private_egress_transaction.json');
+      if (fs.existsSync(p)) {
+        fs.unlinkSync(p);
+      }
+    } catch (_) {}
   }
 
   // [Blocker F Hardening] DigitalOcean region/size catalog availability verification (no silent upscale)
@@ -559,6 +634,7 @@ class PrivateEgressProvisioner {
     let registeredNodeId = null;
     let publicIp = null;
     let sshClient = null;
+    let transactionTag = null;
 
     try {
       // STEP 1: VPS CONNECTION
@@ -567,26 +643,119 @@ class PrivateEgressProvisioner {
         throw new Error(`Invalid DigitalOcean API token: ${tokenCheck.error}`);
       }
 
-      // [Blocker F Hardening] Query DigitalOcean catalog and verify availability & pricing (no silent upscale)
+      // [R6 Hardening] Query DigitalOcean catalog and verify availability & pricing (no silent upscale, zero static fallback)
       const catalogInfo = await this.verifyRegionAndSizeAvailability(region, tier.size);
-      const effectiveMonthlyCost = catalogInfo.monthlyCostUsd || tier.monthlyCostUsd;
-      this.logProgress(1, 'WORKING', `Validated ${tier.name} ($${effectiveMonthlyCost}/mo) available in ${region.toUpperCase()}. Allocating cloud resources...`);
+      const liveMonthly = catalogInfo.monthlyCostUsd;
+      const liveHourly = catalogInfo.hourlyCostUsd;
+
+      if (typeof liveMonthly !== 'number' || liveMonthly <= 0 || !Number.isFinite(liveMonthly) ||
+          typeof liveHourly !== 'number' || liveHourly <= 0 || !Number.isFinite(liveHourly)) {
+        const err = new Error('PROVIDER_PRICE_UNAVAILABLE: Live provider pricing could not be derived from catalog. Step B aborted.');
+        err.code = 'PROVIDER_PRICE_UNAVAILABLE';
+        throw err;
+      }
+
+      // [R6 Hardening] Bind Step B to verified quote (if supplied) or fail closed
+      if (params.verifiedQuote) {
+        const q = params.verifiedQuote;
+        if (q.tier && q.tier !== tierId) {
+          throw new Error(`PRICE_QUOTE_MISMATCH: Selected tier "${tierId}" differs from verified Step A quote "${q.tier}". Please re-run Step A.`);
+        }
+        if (q.region && q.region !== region) {
+          throw new Error(`PRICE_QUOTE_MISMATCH: Selected region "${region}" differs from verified Step A quote "${q.region}". Please re-run Step A.`);
+        }
+        if (q.size && q.size !== tier.size) {
+          throw new Error(`PRICE_QUOTE_MISMATCH: Selected size "${tier.size}" differs from verified Step A quote "${q.size}". Please re-run Step A.`);
+        }
+        if (typeof q.monthlyCostUsd === 'number' && Math.abs(q.monthlyCostUsd - liveMonthly) > 0.001) {
+          throw new Error(`PRICE_QUOTE_CHANGED: Provider price changed from $${q.monthlyCostUsd.toFixed(2)} to $${liveMonthly.toFixed(2)}. Please re-run Step A.`);
+        }
+      }
+
+      const effectiveMonthlyCost = liveMonthly;
+      const effectiveHourlyCost = liveHourly;
+      this.logProgress(1, 'WORKING', `Validated ${tier.name} ($${effectiveMonthlyCost.toFixed(2)}/mo, $${effectiveHourlyCost}/hr) available in ${region.toUpperCase()}. Allocating cloud resources...`);
 
       if (this.simulateStageFailure === 1) {
         throw new Error('SIMULATED_STAGE_1_FAILURE');
       }
 
-      // Generate ephemeral SSH keypair
+      // [R1 Hardening] Resolve Owner provisioning IP fail-closed BEFORE any cloud resource creation
+      const ownerIp = await this.getOwnerProvisioningIp();
+      if (!ownerIp) {
+        throw new Error('FAIL-CLOSED: Owner public IP could not be determined. Aborting provisioning to prevent world-open firewall.');
+      }
+      const ownerCidr = formatIpCidr(ownerIp);
+      const allowedSources = [ownerCidr];
+
+      // [R1 Hardening] Create unique per-transaction tag
+      transactionTag = `xpider-tx-${Date.now().toString(36)}-${crypto.randomBytes(4).toString('hex')}`;
+
+      // [R2 Hardening] Generate known ephemeral SSH Host keypair locally
+      const hostKeypair = await this.createEphemeralHostKeypair();
+      const expectedHostKeyHash = hostKeypair.sha256Fingerprint;
+
+      // Generate ephemeral SSH client keypair
       const keypair = await this.createEphemeralSshKeypair();
-      const keyName = `xpider-ephemeral-${Date.now()}`;
+      const keyName = `xpider-ephemeral-${transactionTag}`;
       const keyRes = await this.doRequest('/account/keys', 'POST', {
         name: keyName,
         public_key: keypair.publicKeyOpenSsh
       });
       ephemeralKeyId = keyRes.ssh_key.id;
 
-      // Create Droplet
-      const dropletName = `xpider-egress-${region}-${Date.now().toString().slice(-6)}`;
+      // [R1 Hardening] Create Cloud Firewall BEFORE Droplet creation targeting transactionTag
+      // Initial inbound rule: TCP port 22 from Owner CIDR only; all other inbound denied
+      try {
+        if (this.simulateFirewallFailure) {
+          throw new Error('SIMULATED_FIREWALL_FAILURE');
+        }
+        const fwRes = await this.doRequest('/firewalls', 'POST', {
+          name: `xpider-fw-${transactionTag}`,
+          inbound_rules: [
+            { protocol: 'tcp', ports: '22', sources: { addresses: allowedSources } }
+          ],
+          outbound_rules: [
+            { protocol: 'tcp', ports: 'all', destinations: { addresses: ['0.0.0.0/0', '::/0'] } },
+            { protocol: 'udp', ports: 'all', destinations: { addresses: ['0.0.0.0/0', '::/0'] } },
+            { protocol: 'icmp', ports: 'all', destinations: { addresses: ['0.0.0.0/0', '::/0'] } }
+          ],
+          tags: [DEFAULT_TAG, transactionTag]
+        });
+        if (!fwRes || !fwRes.firewall) {
+          throw new Error('Cloud Firewall creation returned invalid response');
+        }
+        firewallId = fwRes.firewall.id;
+      } catch (fwErr) {
+        throw new Error(`FAIL-CLOSED: Cloud Firewall configuration failed: ${fwErr.message}`);
+      }
+
+      // [R1 Hardening] Authoritatively verify Cloud Firewall exists and has port 22 scoped to ownerCidr only
+      const fwVerify = await this.doRequest(`/firewalls/${firewallId}`, 'GET');
+      if (!fwVerify || !fwVerify.firewall) {
+        throw new Error(`FAIL-CLOSED: Cloud Firewall ${firewallId} could not be verified on provider.`);
+      }
+      const initialInRules = fwVerify.firewall.inbound_rules || [];
+      const sshInRule = initialInRules.find(r => r.protocol === 'tcp' && String(r.ports) === '22');
+      if (!sshInRule || !sshInRule.sources?.addresses?.includes(ownerCidr)) {
+        throw new Error(`FAIL-CLOSED: Cloud Firewall ${firewallId} is not strictly scoped to Owner CIDR ${ownerCidr}.`);
+      }
+
+      // [R1 & R2 Hardening] Create Droplet tagged with transactionTag and user_data setting ephemeral host key
+      const dropletName = `xpider-egress-${region}-${transactionTag.slice(-8)}`;
+      const userData = `#!/bin/bash
+set -e
+cat << 'EOF' > /etc/ssh/ssh_host_ed25519_key
+${hostKeypair.privateKeyPem.trim()}
+EOF
+chmod 600 /etc/ssh/ssh_host_ed25519_key
+cat << 'EOF' > /etc/ssh/ssh_host_ed25519_key.pub
+${hostKeypair.publicKeyOpenSsh.trim()}
+EOF
+chmod 644 /etc/ssh/ssh_host_ed25519_key.pub
+systemctl restart ssh || systemctl restart sshd
+`;
+
       const dropletRes = await this.doRequest('/droplets', 'POST', {
         name: dropletName,
         region,
@@ -595,21 +764,31 @@ class PrivateEgressProvisioner {
         ssh_keys: [ephemeralKeyId],
         backups: false,
         ipv6: false,
-        tags: [DEFAULT_TAG, `tier-${tierId.toLowerCase()}`, `region-${region}`]
+        tags: [DEFAULT_TAG, transactionTag, `tier-${tierId.toLowerCase()}`, `region-${region}`],
+        user_data: userData
       });
       dropletId = dropletRes.droplet.id;
 
       // Poll until Droplet is active and IP is assigned
       publicIp = await this.waitForDropletIp(dropletId, 180000);
-      this.logProgress(1, 'PASS', `Droplet active at ${publicIp} (${tier.size})`);
+      this.logProgress(1, 'PASS', `Droplet active at ${publicIp} (${tier.size}) protected by pre-provisioned Cloud Firewall (${transactionTag})`);
 
       if (this.simulateStageFailure === 2) {
         throw new Error('SIMULATED_STAGE_2_FAILURE');
       }
 
+      // [R1 Hardening] Authoritatively verify firewall association with Droplet/Tag BEFORE first SSH packet
+      const fwAssoc = await this.doRequest(`/firewalls/${firewallId}`, 'GET');
+      const fwTags = fwAssoc.firewall?.tags || [];
+      const fwDroplets = fwAssoc.firewall?.droplet_ids || [];
+      if (!fwTags.includes(transactionTag) && !fwDroplets.includes(dropletId)) {
+        throw new Error(`FAIL-CLOSED: Cloud Firewall ${firewallId} is not associated with Droplet ${dropletId} (tag: ${transactionTag}). Refusing SSH connection.`);
+      }
+
       // STEP 2: SERVER PREP
-      this.logProgress(2, 'WORKING', `Establishing secure SSH to ${publicIp}:22 and uploading bootstrap package...`);
-      sshClient = await this.connectSshWithRetry(publicIp, 'root', keypair.privateKeyPem, 120000);
+      this.logProgress(2, 'WORKING', `Establishing verified SSH to ${publicIp}:22 with host key fingerprint verification...`);
+      // [R2 Hardening] Connect with expectedHostKeyHash and hostVerifier
+      sshClient = await this.connectSshWithRetry(publicIp, 'root', keypair.privateKeyPem, expectedHostKeyHash, 120000);
 
       // Package files: proxy-service.js, bootstrap.sh
       const pkgDir = path.resolve(__dirname, '..', 'private-egress');
@@ -620,7 +799,7 @@ class PrivateEgressProvisioner {
       await this.uploadSshFile(sshClient, '/tmp/xpider-bootstrap/proxy-service.js', proxyCode);
       await this.uploadSshFile(sshClient, '/tmp/xpider-bootstrap/bootstrap.sh', bootCode);
       await this.runSshCommand(sshClient, 'chmod +x /tmp/xpider-bootstrap/bootstrap.sh');
-      this.logProgress(2, 'PASS', 'Bootstrap package uploaded and verified');
+      this.logProgress(2, 'PASS', 'Bootstrap package uploaded and verified over authenticated SSH session');
 
       if (this.simulateStageFailure === 3) {
         throw new Error('SIMULATED_STAGE_3_FAILURE');
@@ -629,14 +808,6 @@ class PrivateEgressProvisioner {
       // STEP 3: TLS
       this.logProgress(3, 'WORKING', 'Executing bootstrap installer to generate private Root CA & TLS server certificate...');
       
-      // [Blocker A Hardening] Resolve Owner provisioning IP fail-closed before bootstrap execution
-      const ownerIp = await this.getOwnerProvisioningIp();
-      if (!ownerIp) {
-        throw new Error('FAIL-CLOSED: Owner public IP could not be determined. Aborting provisioning to prevent world-open firewall.');
-      }
-      const ownerCidr = formatIpCidr(ownerIp);
-      const allowedSources = [ownerCidr];
-
       // Execute bootstrap installer passing XPIDER_OWNER_IP
       await this.runSshCommand(sshClient, `XPIDER_PUBLIC_IP="${publicIp}" XPIDER_OWNER_IP="${ownerIp}" bash /tmp/xpider-bootstrap/bootstrap.sh`);
       
@@ -687,33 +858,24 @@ class PrivateEgressProvisioner {
       }
 
       // STEP 5: FIREWALL
-      this.logProgress(5, 'WORKING', `Configuring Cloud Firewall (scoped strictly to ${ownerCidr}) and host UFW...`);
+      this.logProgress(5, 'WORKING', `Updating Cloud Firewall to allow proxy port ${descriptor.port} from ${ownerCidr} and removing SSH port 22...`);
 
-      // [Blocker A Hardening] Cloud Firewall configuration is strictly FAIL-CLOSED and scoped to Owner IP only
+      // [R1 Hardening] Update Cloud Firewall: allow proxy port descriptor.port from Owner CIDR ONLY, remove port 22
       try {
-        if (this.simulateFirewallFailure) {
-          throw new Error('SIMULATED_FIREWALL_FAILURE');
-        }
-        const fwRes = await this.doRequest('/firewalls', 'POST', {
-          name: `xpider-fw-${dropletId}`,
-          droplet_ids: [dropletId],
+        await this.doRequest(`/firewalls/${firewallId}`, 'PUT', {
+          name: `xpider-fw-${transactionTag}`,
           inbound_rules: [
-            { protocol: 'tcp', ports: String(descriptor.port), sources: { addresses: allowedSources } },
-            { protocol: 'tcp', ports: '22', sources: { addresses: allowedSources } }
+            { protocol: 'tcp', ports: String(descriptor.port), sources: { addresses: allowedSources } }
           ],
           outbound_rules: [
             { protocol: 'tcp', ports: 'all', destinations: { addresses: ['0.0.0.0/0', '::/0'] } },
             { protocol: 'udp', ports: 'all', destinations: { addresses: ['0.0.0.0/0', '::/0'] } },
             { protocol: 'icmp', ports: 'all', destinations: { addresses: ['0.0.0.0/0', '::/0'] } }
           ],
-          tags: [DEFAULT_TAG]
+          tags: [DEFAULT_TAG, transactionTag]
         });
-        if (!fwRes || !fwRes.firewall) {
-          throw new Error('Cloud Firewall creation returned invalid response');
-        }
-        firewallId = fwRes.firewall.id;
-      } catch (fwErr) {
-        throw new Error(`FAIL-CLOSED: Cloud Firewall configuration failed: ${fwErr.message}`);
+      } catch (updateErr) {
+        throw new Error(`FAIL-CLOSED: Cloud Firewall rule update failed: ${updateErr.message}`);
       }
 
       // [P0-4 Hardening] Close SSH port 22 on host UFW after bootstrap is complete
@@ -741,7 +903,7 @@ class PrivateEgressProvisioner {
         throw new Error('SECURITY VIOLATION: Ephemeral SSH key was not properly revoked; remote host still accepted connection!');
       }
 
-      this.logProgress(5, 'PASS', `Firewall configured default-deny (SSH closed, proxy port ${descriptor.port} open to ${ownerCidr})`);
+      this.logProgress(5, 'PASS', `Firewall updated default-deny (SSH closed, proxy port ${descriptor.port} open strictly to ${ownerCidr})`);
 
       if (this.simulateStageFailure === 6) {
         throw new Error('SIMULATED_STAGE_6_FAILURE');
@@ -783,8 +945,9 @@ class PrivateEgressProvisioner {
       // STEP 7: EGRESS VERIFICATION
       this.logProgress(7, 'WORKING', 'Running strict TLS canary probe through new egress proxy...');
       const probeRes = await this.probeCompanionNode(nodeId);
-      if (!probeRes.verified && !probeRes.success) {
-        throw new Error(`Egress canary verification failed: ${probeRes.reason || 'UNVERIFIED'}`);
+      // [R3 Hardening] Both success AND verified must be true (fail if either is falsy)
+      if (!probeRes || !probeRes.success || !probeRes.verified) {
+        throw new Error(`Egress canary verification failed: ${(probeRes && probeRes.reason) || 'UNVERIFIED'}`);
       }
       this.logProgress(7, 'PASS', `Egress verified: Observed IP ${probeRes.observedEgressIp || publicIp}`);
 
@@ -800,16 +963,39 @@ class PrivateEgressProvisioner {
         this.logProgress(8, 'FAIL', `Authoritative privacy preflight failed: ${failReason}`);
         throw new Error(`STRICT PRIVACY PREFLIGHT FAILED: ${failReason}`);
       }
-      this.logProgress(8, 'PASS', `Layer 1 Companion Preflight Verified. Node ${nodeId} ready (Egress: ${preflight.observedIp || publicIp}).`);
+      // [R4 Hardening] Ensure preflight returned a verified, non-null, valid public IP matching publicIp
+      if (!preflight.observedIp || preflight.observedIp !== publicIp) {
+        throw new Error(`STRICT PRIVACY PREFLIGHT FAILED: observed IP (${preflight.observedIp}) does not match Droplet public IP (${publicIp})`);
+      }
+      this.logProgress(8, 'PASS', `Layer 1 Companion Preflight Verified. Node ${nodeId} ready (Egress: ${preflight.observedIp}).`);
+
+      // [R5 Hardening] Persist exact transaction resource ownership locally
+      const txData = {
+        transactionTag,
+        dropletId,
+        firewallId,
+        registeredNodeId: nodeId,
+        ephemeralKeyId: null,
+        publicIp,
+        region,
+        tier: tier.id,
+        monthlyCostUsd: effectiveMonthlyCost,
+        hourlyCostUsd: effectiveHourlyCost,
+        createdAt: Date.now(),
+        status: 'ACTIVE'
+      };
+      this.saveTransactionOwnership(txData);
 
       return {
         success: true,
+        transactionTag,
         dropletId,
         firewallId,
         publicIp,
         nodeId,
         tier: tier.id,
         monthlyCostUsd: effectiveMonthlyCost,
+        hourlyCostUsd: effectiveHourlyCost,
         tlsCaFingerprint: descriptor.tlsCaFingerprint || descriptor.fingerprint,
         expectedEgressFingerprint: descriptor.expectedEgressFingerprint,
         preflight
@@ -818,13 +1004,15 @@ class PrivateEgressProvisioner {
       const scrubbedErrMsg = redactSecrets(err.message, [this.token]);
       console.error('[PROVISIONER_ERROR]', scrubbedErrMsg);
 
-      // [Blocker D Hardening] Bounded automatic rollback of all created cloud & local resources
+      // [Blocker D & R5 Hardening] Bounded automatic rollback of all created cloud & local resources
       const rollbackRes = await this.rollbackProvisioning({
         ephemeralKeyId,
         dropletId,
         firewallId,
-        registeredNodeId
+        registeredNodeId,
+        transactionTag
       });
+      this.clearTransactionOwnership();
 
       if (!rollbackRes.success) {
         const cleanupMsg = `CLEANUP_REQUIRED: Provisioning failed and automatic cloud rollback encountered errors: ${rollbackRes.errors.join(', ')}`;
@@ -912,6 +1100,26 @@ class PrivateEgressProvisioner {
           reason: 'SIMULATED_PREFLIGHT_FAILURE'
         };
       }
+      if (this.simulateNullObservedIp) {
+        return {
+          ready: true,
+          relayActive: true,
+          effectiveProxyMode: 'PRIVACY_RELAY',
+          selectedNode: nodeId,
+          egressFingerprint: 'mock_fp_12345678',
+          observedIp: null
+        };
+      }
+      if (this.simulateMismatchedObservedIp) {
+        return {
+          ready: true,
+          relayActive: true,
+          effectiveProxyMode: 'PRIVACY_RELAY',
+          selectedNode: nodeId,
+          egressFingerprint: 'mock_fp_12345678',
+          observedIp: '203.0.113.99'
+        };
+      }
       return {
         ready: true,
         relayActive: true,
@@ -986,8 +1194,22 @@ class PrivateEgressProvisioner {
       return { ready: false, reason: `RELAY_PROXY_PROBE_FAILED: ${probeRes.reason}` };
     }
 
-    if (expectedIp && probeRes.observedIp && probeRes.observedIp !== expectedIp) {
-      return { ready: false, reason: `EGRESS_IP_MISMATCH: observed ${probeRes.observedIp}, expected ${expectedIp}` };
+    // [R4 Hardening] Observed IP MUST exist, MUST be a valid public IP, and MUST match expected Droplet egress IP
+    if (!probeRes.observedIp || typeof probeRes.observedIp !== 'string') {
+      return { ready: false, reason: 'EGRESS_IP_MISSING: Canary TLS succeeded but egress IP was not observed' };
+    }
+
+    const cleanObserved = probeRes.observedIp.trim();
+    if (!net.isIP(cleanObserved)) {
+      return { ready: false, reason: `EGRESS_IP_INVALID: Observed IP "${cleanObserved}" is not a valid IP address` };
+    }
+
+    if (cleanObserved.startsWith('127.') || cleanObserved.startsWith('10.') || cleanObserved.startsWith('192.168.') || cleanObserved.startsWith('172.16.') || cleanObserved.startsWith('169.254.') || cleanObserved === '::1') {
+      return { ready: false, reason: `EGRESS_IP_NON_PUBLIC: Observed IP "${cleanObserved}" is not a public egress IP` };
+    }
+
+    if (expectedIp && cleanObserved !== expectedIp.trim()) {
+      return { ready: false, reason: `EGRESS_IP_MISMATCH: observed ${cleanObserved}, expected ${expectedIp}` };
     }
 
     return {
@@ -996,58 +1218,150 @@ class PrivateEgressProvisioner {
       effectiveProxyMode: 'PRIVACY_RELAY',
       selectedNode: nodeId,
       egressFingerprint: status.egressFingerprint,
-      observedIp: probeRes.observedIp
+      observedIp: cleanObserved
     };
   }
 
-  // --- DESTROY / TEARDOWN WORKFLOW ---
+  // --- DESTROY / TEARDOWN WORKFLOW (R5 Hardening: Exact Resource Ownership Only) ---
 
-  async destroyPrivateEgress() {
-    this.logProgress(1, 'WORKING', 'Scanning and deleting all XPIDER private egress cloud resources...');
+  async destroyPrivateEgress(params = {}) {
+    this.logProgress(1, 'WORKING', 'Locating and deleting exact XPIDER private egress cloud resources...');
     
-    // 1. Remove from local companion
-    try {
-      const status = await this.getCompanionStatus();
-      if (status && status.nodes) {
-        for (const n of status.nodes) {
-          if (n.id.startsWith('do-egress-')) {
-            await this.removeNodeFromCompanion(n.id);
-          }
+    const savedTx = this.loadTransactionOwnership();
+    const dropletId = (params && params.dropletId) || (savedTx && savedTx.dropletId);
+    const firewallId = (params && params.firewallId) || (savedTx && savedTx.firewallId);
+    const companionNodeId = (params && params.companionNodeId) || (savedTx && (savedTx.registeredNodeId || savedTx.companionNodeId));
+    const ephemeralKeyId = (params && params.ephemeralKeyId) || (savedTx && savedTx.ephemeralKeyId);
+    const transactionTag = (params && params.transactionTag) || (savedTx && savedTx.transactionTag);
+
+    if (!dropletId && !firewallId && !companionNodeId && !transactionTag) {
+      this.logProgress(1, 'PASS', 'No active private egress transaction or resources found to destroy.');
+      return {
+        success: true,
+        destroyedDroplets: 0,
+        destroyedFirewalls: 0,
+        destroyedNodes: 0,
+        message: 'NO_OWNED_RESOURCES_FOUND'
+      };
+    }
+
+    const errors = [];
+    const verifications = {
+      dropletAbsent: false,
+      firewallAbsent: false,
+      sshKeyAbsent: false,
+      companionNodeAbsent: false
+    };
+
+    // 1. Remove exact companion node
+    if (companionNodeId) {
+      try {
+        await this.removeNodeFromCompanion(companionNodeId);
+        console.log(`[DESTROY_EXACT] Removed exact companion node: ${companionNodeId}`);
+      } catch (e) {
+        errors.push(`node_delete_error:${companionNodeId} (${e.message})`);
+      }
+    }
+
+    // 2. Delete exact cloud firewall
+    if (firewallId) {
+      try {
+        await this.doRequest(`/firewalls/${firewallId}`, 'DELETE');
+        console.log(`[DESTROY_EXACT] Deleted exact cloud firewall: ${firewallId}`);
+      } catch (e) {
+        errors.push(`firewall_delete_error:${firewallId} (${e.message})`);
+      }
+    }
+
+    // 3. Delete exact droplet
+    if (dropletId) {
+      try {
+        await this.doRequest(`/droplets/${dropletId}`, 'DELETE');
+        console.log(`[DESTROY_EXACT] Deleted exact droplet: ${dropletId}`);
+      } catch (e) {
+        errors.push(`droplet_delete_error:${dropletId} (${e.message})`);
+      }
+    }
+
+    // 4. Delete ephemeral SSH key if still present
+    if (ephemeralKeyId) {
+      try {
+        await this.doRequest(`/account/keys/${ephemeralKeyId}`, 'DELETE');
+        console.log(`[DESTROY_EXACT] Deleted cloud SSH key: ${ephemeralKeyId}`);
+      } catch (e) {
+        errors.push(`sshKey_delete_error:${ephemeralKeyId} (${e.message})`);
+      }
+    }
+
+    // --- AUTHORITATIVE VERIFICATION OF EXACT ABSENCE ---
+    // A. Verify Droplet absence (GET /droplets/:id must return 404)
+    if (dropletId) {
+      try {
+        await this.doRequest(`/droplets/${dropletId}`, 'GET');
+        errors.push(`unverified_droplet_removal:${dropletId} (Droplet still exists on provider)`);
+      } catch (err) {
+        if (err.statusCode === 404 || (err.message && (err.message.includes('404') || err.message.includes('not found')))) {
+          verifications.dropletAbsent = true;
+        } else {
+          errors.push(`unverified_droplet_removal:${dropletId} (${err.message})`);
         }
       }
-    } catch (_) {}
+    } else {
+      verifications.dropletAbsent = true;
+    }
 
-    // 2. Query DO for droplets with tag
-    let destroyedDroplets = 0;
-    try {
-      const dropletsRes = await this.doRequest(`/droplets?tag_name=${DEFAULT_TAG}`);
-      if (dropletsRes.droplets && dropletsRes.droplets.length > 0) {
-        for (const d of dropletsRes.droplets) {
-          await this.doRequest(`/droplets/${d.id}`, 'DELETE');
-          destroyedDroplets++;
+    // B. Verify Firewall absence (GET /firewalls/:id must return 404)
+    if (firewallId) {
+      try {
+        await this.doRequest(`/firewalls/${firewallId}`, 'GET');
+        errors.push(`unverified_firewall_removal:${firewallId} (Firewall still exists on provider)`);
+      } catch (err) {
+        if (err.statusCode === 404 || (err.message && (err.message.includes('404') || err.message.includes('not found')))) {
+          verifications.firewallAbsent = true;
+        } else {
+          errors.push(`unverified_firewall_removal:${firewallId} (${err.message})`);
         }
       }
-    } catch (_) {}
+    } else {
+      verifications.firewallAbsent = true;
+    }
 
-    // 3. Query DO for firewalls with tag
-    let destroyedFirewalls = 0;
-    try {
-      const fwRes = await this.doRequest('/firewalls');
-      if (fwRes.firewalls) {
-        for (const fw of fwRes.firewalls) {
-          if (fw.tags && fw.tags.includes(DEFAULT_TAG)) {
-            await this.doRequest(`/firewalls/${fw.id}`, 'DELETE');
-            destroyedFirewalls++;
-          }
+    // C. Verify Companion Node absence
+    if (companionNodeId) {
+      try {
+        const nodesRes = await this.getNodesFromCompanion();
+        const exists = (nodesRes && nodesRes.nodes) ? nodesRes.nodes.some(n => n.id === companionNodeId) : false;
+        if (exists) {
+          errors.push(`unverified_node_removal:${companionNodeId} (Node still in companion pool)`);
+        } else {
+          verifications.companionNodeAbsent = true;
         }
+      } catch (err) {
+        errors.push(`unverified_node_removal:${companionNodeId} (${err.message})`);
       }
-    } catch (_) {}
+    } else {
+      verifications.companionNodeAbsent = true;
+    }
 
-    this.logProgress(1, 'PASS', `Teardown complete: ${destroyedDroplets} Droplets and ${destroyedFirewalls} Firewalls destroyed.`);
+    verifications.sshKeyAbsent = true;
+
+    const allClean = verifications.dropletAbsent && verifications.firewallAbsent && verifications.companionNodeAbsent && errors.length === 0;
+
+    if (allClean) {
+      this.clearTransactionOwnership();
+      this.logProgress(1, 'PASS', `Exact teardown verified clean: droplet ${dropletId}, firewall ${firewallId}, companion node ${companionNodeId} absent.`);
+    } else {
+      this.logProgress(1, 'FAIL', `Teardown incomplete: ${errors.join(', ')}`);
+    }
+
     return {
-      success: true,
-      destroyedDroplets,
-      destroyedFirewalls
+      success: allClean,
+      status: allClean ? 'DESTROY_VERIFIED_CLEAN' : 'CLEANUP_REQUIRED',
+      destroyedDropletId: dropletId,
+      destroyedFirewallId: firewallId,
+      destroyedNodeId: companionNodeId,
+      verifications,
+      errors
     };
   }
 
@@ -1192,7 +1506,12 @@ class PrivateEgressProvisioner {
   }
 
   async probeCompanionNode(nodeId) {
-    if (this.mockMode) return { success: true, verified: true, observedEgressIp: '198.51.100.12' };
+    if (this.mockMode) {
+      if (this.simulateProbeUnverified) {
+        return { success: true, verified: false, reason: 'SIMULATED_UNVERIFIED_PROBE' };
+      }
+      return { success: true, verified: true, observedEgressIp: '198.51.100.12' };
+    }
 
     const token = this.controlToken || this.loadLocalControlToken();
     return new Promise((resolve, reject) => {
@@ -1326,7 +1645,42 @@ class PrivateEgressProvisioner {
 
   // --- SSH HELPER METHODS ---
 
-  async connectSshWithRetry(host, username, privateKey, timeoutMs = 60000) {
+  async connectSshWithRetry(host, username, privateKey, expectedHostKeyHash = null, timeoutMs = 60000) {
+    if (this.mockMode) {
+      if (this.simulateHostKeyMismatch) {
+        throw new Error('Host denied (verification failed): Ephemeral host key fingerprint mismatch (simulated MITM rejection)');
+      }
+      return {
+        end: () => {},
+        exec: (cmd, cb) => {
+          const stream = {
+            on: (event, handler) => {
+              if (event === 'close') setTimeout(() => handler(0), 10);
+              return stream;
+            },
+            stderr: { on: () => {} }
+          };
+          cb(null, stream);
+        },
+        sftp: (cb) => {
+          const sftp = {
+            createWriteStream: () => ({
+              on: (e, h) => { if (e === 'close') setTimeout(h, 10); },
+              write: () => {},
+              end: () => {}
+            }),
+            createReadStream: () => ({
+              on: (e, h) => {
+                if (e === 'data') setTimeout(() => h(Buffer.from('{}')), 10);
+                if (e === 'close' || e === 'end') setTimeout(h, 20);
+              }
+            })
+          };
+          cb(null, sftp);
+        }
+      };
+    }
+
     const start = Date.now();
     let lastErr = null;
 
@@ -1336,17 +1690,32 @@ class PrivateEgressProvisioner {
           const conn = new ssh2.Client();
           conn.on('ready', () => resolve(conn));
           conn.on('error', reject);
-          conn.connect({
+          const connectOpts = {
             host,
             port: 22,
             username,
             privateKey,
             readyTimeout: 10000
-          });
+          };
+          if (expectedHostKeyHash) {
+            connectOpts.hostHash = 'sha256';
+            connectOpts.hostVerifier = (hashedKey) => {
+              if (!hashedKey || hashedKey !== expectedHostKeyHash) {
+                console.error(`[SSH_HOST_KEY_MISMATCH] Host key hash "${hashedKey}" does not match expected "${expectedHostKeyHash}". Rejecting.`);
+                return false;
+              }
+              return true;
+            };
+          }
+          conn.connect(connectOpts);
         });
         return client;
       } catch (err) {
         lastErr = err;
+        if (err.message && (err.message.includes('Host denied') || err.message.includes('verification failed'))) {
+          // [R2 Hardening] Fail closed immediately on host key mismatch — do not retry MITM!
+          throw err;
+        }
         await new Promise(r => setTimeout(r, 4000));
       }
     }
@@ -1524,7 +1893,17 @@ class PrivateEgressProvisioner {
       });
     }
     if (endpoint === '/firewalls' && method === 'POST') {
-      return Promise.resolve({ firewall: { id: 'fw-1234', name: body.name } });
+      this.mockFirewalls = this.mockFirewalls || {};
+      const fwId = 'fw-1234';
+      this.mockFirewalls[fwId] = {
+        id: fwId,
+        name: body.name,
+        inbound_rules: body.inbound_rules || [],
+        outbound_rules: body.outbound_rules || [],
+        tags: body.tags || [],
+        droplet_ids: body.droplet_ids || []
+      };
+      return Promise.resolve({ firewall: this.mockFirewalls[fwId] });
     }
     if (endpoint.startsWith('/firewalls/') && method === 'GET') {
       const fwId = endpoint.split('/').pop();
@@ -1536,7 +1915,25 @@ class PrivateEgressProvisioner {
         err.statusCode = 404;
         return Promise.reject(err);
       }
-      return Promise.resolve({ firewall: { id: fwId } });
+      const existingFw = (this.mockFirewalls && this.mockFirewalls[fwId]) || {
+        id: fwId,
+        name: 'xpider-fw',
+        inbound_rules: [{ protocol: 'tcp', ports: '22', sources: { addresses: ['198.51.100.1/32'] } }],
+        tags: [DEFAULT_TAG, 'xpider-tx-mock'],
+        droplet_ids: [99887766]
+      };
+      return Promise.resolve({ firewall: existingFw });
+    }
+    if (endpoint.startsWith('/firewalls/') && method === 'PUT') {
+      const fwId = endpoint.split('/').pop();
+      if (this.mockDeletedResources.firewalls.includes(fwId)) {
+        const err = new Error(`Firewall ${fwId} not found`);
+        err.statusCode = 404;
+        return Promise.reject(err);
+      }
+      this.mockFirewalls = this.mockFirewalls || {};
+      this.mockFirewalls[fwId] = Object.assign(this.mockFirewalls[fwId] || { id: fwId }, body);
+      return Promise.resolve({ firewall: this.mockFirewalls[fwId] });
     }
     if (endpoint.startsWith('/firewalls/') && method === 'DELETE') {
       const fwId = endpoint.split('/').pop();

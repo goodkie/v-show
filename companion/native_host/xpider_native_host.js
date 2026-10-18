@@ -319,10 +319,7 @@ async function handleMessage(msg) {
         }
       });
       try {
-        const result = await provisioner.provisionPrivateEgress({
-          tier: payload.tier || 'ULTRA_ECONOMY',
-          region: payload.region || 'nyc3'
-        });
+        const result = await provisioner.provisionPrivateEgress(payload);
         return { action: 'PROVISION_PRIVATE_EGRESS_RESPONSE', success: true, result };
       } catch (err) {
         return { action: 'PROVISION_PRIVATE_EGRESS_RESPONSE', success: false, error: err.message };
@@ -342,7 +339,7 @@ async function handleMessage(msg) {
         mockMode: Boolean(payload.mockMode)
       });
       try {
-        const result = await provisioner.destroyPrivateEgress();
+        const result = await provisioner.destroyPrivateEgress(payload);
         return { action: 'DESTROY_PRIVATE_EGRESS_RESPONSE', success: true, result };
       } catch (err) {
         return { action: 'DESTROY_PRIVATE_EGRESS_RESPONSE', success: false, error: err.message };

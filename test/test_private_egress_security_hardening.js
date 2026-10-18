@@ -388,8 +388,9 @@ async function runSecuritySuite() {
     assert(err.message.includes('FAIL-CLOSED: Owner public IP could not be determined'), 'Must fail closed with Owner IP error');
   }
   assert(ownerIpFailedClosed, 'Provisioning must abort fail-closed when Owner IP lookup fails (no 0.0.0.0/0 fallback allowed)');
-  assert(provOwnerIpFail.mockDeletedResources.droplets.length >= 1, 'Failed provisioning must roll back and delete Droplet');
-  console.log('    ✅ Fail-closed verified: Owner IP lookup failure aborts provisioning; zero 0.0.0.0/0 fallback rule created.');
+  // Under R1, Owner IP is resolved BEFORE Droplet creation, ensuring zero cloud Droplets are ever allocated if Owner IP fails
+  assert.strictEqual(provOwnerIpFail.mockDeletedResources.droplets.length, 0, 'Under R1, zero droplets are created when Owner IP lookup fails');
+  console.log('    ✅ Fail-closed verified: Owner IP lookup failure aborts provisioning before cloud resource creation; zero Droplets allocated.');
   console.log('    ✅ CIDR formatting verified: IPv4 -> /32, IPv6 -> /128.');
 
   // ---------------------------------------------------------------------------
@@ -426,7 +427,7 @@ async function runSecuritySuite() {
   provSftp.uploadSshFile = async () => {};
   provSftp.verifySshDenied = async () => true;
   provSftp.registerNodeInCompanion = async () => ({ success: true });
-  provSftp.probeCompanionNode = async () => ({ verified: true, observedEgressIp: '198.51.100.12' });
+  provSftp.probeCompanionNode = async () => ({ success: true, verified: true, observedEgressIp: '198.51.100.12' });
   provSftp.runAuthoritativePreflight = async () => ({ ready: true, observedIp: '198.51.100.12' });
 
   await provSftp.provisionPrivateEgress({ tier: 'ULTRA_ECONOMY', region: 'nyc3' });
@@ -514,7 +515,7 @@ async function runSecuritySuite() {
     });
     provRollback.verifySshDenied = async () => true;
     provRollback.registerNodeInCompanion = async () => ({ success: true });
-    provRollback.probeCompanionNode = async () => ({ verified: true, observedEgressIp: '198.51.100.12' });
+    provRollback.probeCompanionNode = async () => ({ success: true, verified: true, observedEgressIp: '198.51.100.12' });
     provRollback.runAuthoritativePreflight = async () => ({ ready: true, observedIp: '198.51.100.12' });
 
     let threw = false;

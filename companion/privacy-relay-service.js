@@ -1200,7 +1200,8 @@ class PrivacyRelayService {
           try {
             const result = await provisioner.provisionPrivateEgress({
               tier: reqData.tier || 'ULTRA_ECONOMY',
-              region: reqData.region || 'nyc3'
+              region: reqData.region || 'nyc3',
+              verifiedQuote: reqData.verifiedQuote || null
             });
             this.provisioningState.running = false;
             this.provisioningState.result = result;
@@ -1227,7 +1228,7 @@ class PrivacyRelayService {
         return;
       }
 
-      // POST /destroy-egress (Authenticated) - One-click destroy of all tagged private egress VPS & firewalls
+      // POST /destroy-egress (Authenticated) - One-click destroy of exact owned private egress VPS & firewall
       if (pathname === '/destroy-egress' && req.method === 'POST') {
         let body = '';
         req.on('data', chunk => body += chunk);
@@ -1247,10 +1248,10 @@ class PrivacyRelayService {
               mockMode: Boolean(data.mockMode)
             });
 
-            const destroyRes = await provisioner.destroyPrivateEgress();
-            this.log(`[DESTROY_EGRESS] Cleaned up droplets=${destroyRes.destroyedDroplets} firewalls=${destroyRes.destroyedFirewalls}`);
-            res.writeHead(200);
-            res.end(JSON.stringify({ success: true, ...destroyRes }));
+            const destroyRes = await provisioner.destroyPrivateEgress(data);
+            this.log(`[DESTROY_EGRESS] Cleaned up status=${destroyRes.status} droplet=${destroyRes.destroyedDropletId} firewall=${destroyRes.destroyedFirewallId}`);
+            res.writeHead(destroyRes.success ? 200 : 500);
+            res.end(JSON.stringify(destroyRes));
           } catch (e) {
             res.writeHead(500);
             res.end(JSON.stringify({ success: false, reason: e.message }));
