@@ -2611,9 +2611,11 @@ async function hydrateSettings(overrideV2Store = null) {
                                 if (typeof refreshRelayStatus === 'function') refreshRelayStatus();
                                 if (typeof updatePrivacyHud === 'function') updatePrivacyHud();
                             } else {
-                                const err = (res && res.result && res.result.reason) || (res && res.error) || 'Cleanup failed';
-                                addLog(`❌ [RECOVERY_CLEANUP_FAIL] ${err}`, 'error');
-                                alert(`Recovery cleanup failed: ${err}`);
+                                const resultObj = res && (res.result || res);
+                                const statusStr = (resultObj && resultObj.status) ? `[${resultObj.status}] ` : '';
+                                const err = (resultObj && (resultObj.reason || (Array.isArray(resultObj.errors) && resultObj.errors.length > 0 ? resultObj.errors.join('; ') : null))) || (res && res.error) || 'Cleanup failed';
+                                addLog(`❌ [RECOVERY_CLEANUP_FAIL] ${statusStr}${err}`, 'error');
+                                alert(`Recovery cleanup failed: ${statusStr}${err}`);
                             }
                         });
                     });
@@ -2663,8 +2665,11 @@ async function hydrateSettings(overrideV2Store = null) {
                             if (typeof updatePrivacyHud === 'function') updatePrivacyHud();
                             checkWizardRecoveryState();
                         } else {
-                            const err = (res && res.result && res.result.reason) || (res && res.error) || 'Teardown failed';
-                            alert(`Destroy failed: ${err}`);
+                            const resultObj = res && (res.result || res);
+                            const statusStr = (resultObj && resultObj.status) ? `[${resultObj.status}] ` : '';
+                            const err = (resultObj && (resultObj.reason || (Array.isArray(resultObj.errors) && resultObj.errors.join('; ') : null))) || (res && res.error) || 'Teardown failed';
+                            addLog(`❌ [DESTROY_EGRESS] ${statusStr}${err}`, 'error');
+                            alert(`Destroy failed: ${statusStr}${err}`);
                         }
                     });
                 };
