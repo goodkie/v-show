@@ -146,6 +146,110 @@ function formatIpCidr(ip) {
   throw new Error(`Invalid IP format for CIDR scoping: ${clean}`);
 }
 
+/**
+ * [S4 Hardening] Robust Public IP Classifier (IPv4, IPv6, IPv4-mapped IPv6)
+ * Rejects all private, loopback, link-local, carrier-grade NAT, multicast, reserved,
+ * unspecified, and documentation ranges.
+ */
+function isPublicIp(rawIp, allowTestNet = false) {
+  if (!rawIp || typeof rawIp !== 'string') return false;
+  let ip = rawIp.trim();
+
+  // Strip IPv4-mapped IPv6 prefix (e.g. ::ffff:192.0.2.1)
+  if (ip.toLowerCase().startsWith('::ffff:')) {
+    ip = ip.slice(7);
+  }
+
+  // IPv4 Evaluation
+  if (net.isIPv4(ip)) {
+    const parts = ip.split('.').map(p => parseInt(p, 10));
+    if (parts.length !== 4 || parts.some(n => isNaN(n) || n < 0 || n > 255)) {
+      return false;
+    }
+    const [a, b, c, d] = parts;
+
+    // 0.0.0.0/8 (Current network / this host)
+    if (a === 0) return false;
+
+    // 127.0.0.0/8 (Loopback)
+    if (a === 127) return false;
+
+    // 10.0.0.0/8 (RFC 1918 Private)
+    if (a === 10) return false;
+
+    // 172.16.0.0/12 (RFC 1918 Private: 172.16.0.0 - 172.31.255.255)
+    if (a === 172 && b >= 16 && b <= 31) return false;
+
+    // 192.168.0.0/16 (RFC 1918 Private)
+    if (a === 192 && b === 168) return false;
+
+    // 100.64.0.0/10 (RFC 6598 Shared Address Space / CGNAT: 100.64.0.0 - 100.127.255.255)
+    if (a === 100 && b >= 64 && b <= 127) return false;
+
+    // 169.254.0.0/16 (RFC 3927 Link-Local / Cloud Metadata)
+    if (a === 169 && b === 254) return false;
+
+    // 192.0.0.0/24 (IETF Protocol Assignments)
+    if (a === 192 && b === 0 && c === 0) return false;
+
+    // 192.0.2.0/24 (TEST-NET-1)
+    if (a === 192 && b === 0 && c === 2) return Boolean(allowTestNet);
+
+    // 198.51.100.0/24 (TEST-NET-2)
+    if (a === 198 && b === 51 && c === 100) return Boolean(allowTestNet);
+
+    // 203.0.113.0/24 (TEST-NET-3)
+    if (a === 203 && b === 0 && c === 113) return Boolean(allowTestNet);
+
+    // 198.18.0.0/15 (Benchmarking)
+    if (a === 198 && (b === 18 || b === 19)) return false;
+
+    // 224.0.0.0/4 (Multicast: 224.0.0.0 - 239.255.255.255)
+    if (a >= 224 && a <= 239) return false;
+
+    // 240.0.0.0/4 (Reserved / Future Use)
+    if (a >= 240) return false;
+
+    // 255.255.255.255 (Limited Broadcast)
+    if (a === 255 && b === 255 && c === 255 && d === 255) return false;
+
+    return true;
+  }
+
+  // IPv6 Evaluation
+  if (net.isIPv6(ip)) {
+    const lower = ip.toLowerCase();
+
+    // :: (Unspecified)
+    if (lower === '::') return false;
+
+    // ::1 (Loopback)
+    if (lower === '::1') return false;
+
+    // fc00::/7 (Unique Local Address - ULA: fc00:: through fdff::)
+    if (lower.startsWith('fc') || lower.startsWith('fd')) return false;
+
+    // fe80::/10 (Link-Local: fe8, fe9, fea, feb)
+    if (/^fe[89ab]/i.test(lower)) return false;
+
+    // ff00::/8 (Multicast)
+    if (lower.startsWith('ff')) return false;
+
+    // 2001:db8::/32 (Documentation)
+    if (lower.startsWith('2001:db8:') || lower.startsWith('2001:0db8:')) return Boolean(allowTestNet);
+
+    // 100::/64 (Discard-only)
+    if (lower.startsWith('100::') || lower.startsWith('0100::')) return false;
+
+    // 2001:20::/28 (Benchmarking)
+    if (lower.startsWith('2001:20:') || lower.startsWith('2001:0020:')) return false;
+
+    return true;
+  }
+
+  return false;
+}
+
 class PrivateEgressProvisioner {
   constructor(options = {}) {
     this.token = options.token || null;
@@ -169,12 +273,17 @@ class PrivateEgressProvisioner {
     this.simulateMismatchedObservedIp = Boolean(options.simulateMismatchedObservedIp);
     this.simulateProbeUnverified = Boolean(options.simulateProbeUnverified);
     this.simulatePriceQuoteMismatch = Boolean(options.simulatePriceQuoteMismatch);
+    this.simulateFirewallPending = Boolean(options.simulateFirewallPending);
+    this.simulateUnexpectedFirewall = Boolean(options.simulateUnexpectedFirewall);
+    this.simulateOwnershipSaveFailure = Boolean(options.simulateOwnershipSaveFailure);
+    this.mockTags = options.mockTags ? [...options.mockTags] : [];
     this.mockFirewalls = {};
     this.mockDeletedResources = {
       droplets: [],
       firewalls: [],
       keys: [],
-      nodes: []
+      nodes: [],
+      tags: []
     };
     this.onProgress = options.onProgress || (() => {});
     this.telemetryHistory = [];
@@ -319,17 +428,150 @@ class PrivateEgressProvisioner {
     };
   }
 
-  // [R5 Hardening] Exact transaction resource ownership persistence
+  // [S3 Hardening] Explicit DigitalOcean tag lifecycle management
+  async createTransactionTag(tagName) {
+    if (!tagName || typeof tagName !== 'string') {
+      throw new Error(`Invalid transaction tag name: ${tagName}`);
+    }
+    if (this.mockMode) {
+      this.mockTags = this.mockTags || [];
+      if (!this.mockTags.includes(tagName)) {
+        this.mockTags.push(tagName);
+      }
+      return { name: tagName };
+    }
+
+    try {
+      await this.doRequest('/tags', 'POST', { name: tagName });
+    } catch (err) {
+      if (err.statusCode === 422 || (err.message && err.message.includes('already exists'))) {
+        // Tag already exists; valid idempotent behavior
+      } else if (err.statusCode === 403) {
+        throw new Error(`TOKEN_SCOPE_MISSING: API token lacks required tag:create scope to create tag "${tagName}".`);
+      } else {
+        throw new Error(`FAIL-CLOSED: Failed to create transaction tag "${tagName}": ${err.message}`);
+      }
+    }
+
+    // Verify tag canonical existence
+    try {
+      const tagRes = await this.doRequest(`/tags/${encodeURIComponent(tagName)}`, 'GET');
+      if (!tagRes || !tagRes.tag) {
+        throw new Error(`Tag verification failed on provider for "${tagName}".`);
+      }
+    } catch (verifErr) {
+      throw new Error(`FAIL-CLOSED: Transaction tag "${tagName}" could not be verified on provider: ${verifErr.message}`);
+    }
+
+    return { name: tagName };
+  }
+
+  async deleteTransactionTag(tagName) {
+    if (!tagName) return;
+    if (this.mockMode) {
+      if (this.mockTags) {
+        this.mockTags = this.mockTags.filter(t => t !== tagName);
+      }
+      if (this.mockDeletedResources) {
+        this.mockDeletedResources.tags = this.mockDeletedResources.tags || [];
+        this.mockDeletedResources.tags.push(tagName);
+      }
+      return;
+    }
+    try {
+      await this.doRequest(`/tags/${encodeURIComponent(tagName)}`, 'DELETE');
+    } catch (err) {
+      if (err.statusCode !== 404) {
+        console.warn(`[PROVISIONER_WARN] Failed to delete transaction tag "${tagName}":`, err.message);
+      }
+    }
+  }
+
+  // [S1 & S2 Hardening] Authoritative applied-state verification on GET /v2/droplets/{id}/firewalls
+  async verifyDropletFirewallAppliedState(dropletId, expectedFirewallId, expectedPort, ownerCidr, timeoutMs = 60000) {
+    const start = Date.now();
+    let lastStatus = null;
+    let lastPending = null;
+    let lastInbound = null;
+    let pollInterval = this.mockMode ? 10 : 3000;
+
+    while (Date.now() - start < timeoutMs) {
+      const res = await this.doRequest(`/droplets/${dropletId}/firewalls`, 'GET');
+      const firewalls = res?.firewalls || [];
+
+      // [S2 Hardening] Reject unexpected additional firewalls (prevent rule expansion via union)
+      if (firewalls.length > 1) {
+        const extraIds = firewalls.map(f => f.id).filter(id => id !== expectedFirewallId);
+        throw new Error(`SECURITY VIOLATION: Droplet ${dropletId} has unexpected additional firewall(s) attached: ${extraIds.join(', ')}. Multiple firewalls combine by union, compromising isolation. Refusing connection.`);
+      }
+
+      const fw = firewalls.find(f => f.id === expectedFirewallId);
+      if (fw) {
+        lastStatus = fw.status;
+        lastPending = fw.pending_changes || [];
+        lastInbound = fw.inbound_rules || [];
+
+        const isTerminalSuccess = (fw.status === 'succeeded' || fw.status === 'active');
+        const hasNoPendingForDroplet = !lastPending.some(p => String(p.droplet_id) === String(dropletId));
+
+        if (isTerminalSuccess && hasNoPendingForDroplet) {
+          // Verify effective inbound rule
+          const matchedRule = lastInbound.find(r => (
+            r.protocol === 'tcp' &&
+            String(r.ports) === String(expectedPort) &&
+            r.sources?.addresses?.includes(ownerCidr)
+          ));
+
+          if (!matchedRule) {
+            throw new Error(`FAIL-CLOSED: Firewall ${expectedFirewallId} applied state lacks expected inbound rule: TCP port ${expectedPort} from ${ownerCidr}.`);
+          }
+
+          // If expectedPort is not 22, ensure port 22 is completely absent
+          if (String(expectedPort) !== '22') {
+            const hasSsh = lastInbound.some(r => r.protocol === 'tcp' && String(r.ports) === '22');
+            if (hasSsh) {
+              throw new Error(`FAIL-CLOSED: Firewall ${expectedFirewallId} still permits SSH port 22 after bootstrap update.`);
+            }
+          }
+
+          return {
+            verified: true,
+            status: fw.status,
+            firewallId: expectedFirewallId,
+            effectivePort: expectedPort,
+            ownerCidr
+          };
+        }
+      }
+
+      await new Promise(r => setTimeout(r, pollInterval));
+    }
+
+    throw new Error(`FAIL-CLOSED: Cloud Firewall ${expectedFirewallId} applied state on droplet ${dropletId} timed out after ${timeoutMs}ms (last status: "${lastStatus}", pending: ${JSON.stringify(lastPending)}). Refusing SSH/traffic.`);
+  }
+
+  // [S5 Hardening] Fail-closed transaction resource ownership persistence
   saveTransactionOwnership(data) {
+    if (this.simulateOwnershipSaveFailure) {
+      throw new Error('SIMULATED_OWNERSHIP_SAVE_FAILURE: Atomic write failed to persist ownership');
+    }
     if (this.mockMode) {
       this.mockTransactionOwnership = data;
       return;
     }
+    const targetPath = path.resolve(__dirname, '.private_egress_transaction.json');
+    const tmpPath = path.resolve(__dirname, `.private_egress_transaction.${Date.now()}.tmp`);
     try {
-      const p = path.resolve(__dirname, '.private_egress_transaction.json');
-      fs.writeFileSync(p, JSON.stringify(data, null, 2), 'utf8');
+      const serialized = JSON.stringify(data, null, 2);
+      fs.writeFileSync(tmpPath, serialized, 'utf8');
+      fs.renameSync(tmpPath, targetPath);
+      const readBack = JSON.parse(fs.readFileSync(targetPath, 'utf8'));
+      if (readBack.transactionTag !== data.transactionTag || readBack.dropletId !== data.dropletId) {
+        throw new Error('Persisted transaction verification mismatch');
+      }
     } catch (e) {
-      console.warn('[PROVISIONER_WARN] Failed to persist transaction ownership:', e.message);
+      try { if (fs.existsSync(tmpPath)) fs.unlinkSync(tmpPath); } catch (_) {}
+      throw new Error(`FAIL-CLOSED: Failed to persist transaction ownership record: ${e.message}`);
     }
   }
 
@@ -486,13 +728,14 @@ class PrivateEgressProvisioner {
 
   // [Blocker D & J Hardening] Automatic bounded rollback with authoritative verification across all resources
   async rollbackProvisioning(tracked) {
-    const { ephemeralKeyId, dropletId, firewallId, registeredNodeId } = tracked;
+    const { ephemeralKeyId, dropletId, firewallId, registeredNodeId, transactionTag } = tracked;
     const errors = [];
     const verifications = {
       dropletAbsent: false,
       firewallAbsent: false,
       sshKeyAbsent: false,
-      companionNodeAbsent: false
+      companionNodeAbsent: false,
+      tagAbsent: false
     };
 
     console.log('[PROVISIONER_ROLLBACK] Initiating bounded automatic rollback for transaction...', tracked);
@@ -535,6 +778,19 @@ class PrivateEgressProvisioner {
       } catch (e) {
         errors.push(`sshKey_delete_error:${ephemeralKeyId} (${e.message})`);
       }
+    }
+
+    // 5. Delete transaction tag if created (S3 Hardening)
+    if (transactionTag) {
+      try {
+        await this.deleteTransactionTag(transactionTag);
+        console.log(`[PROVISIONER_ROLLBACK] Deleted transaction tag: ${transactionTag}`);
+        verifications.tagAbsent = true;
+      } catch (e) {
+        errors.push(`tag_delete_error:${transactionTag} (${e.message})`);
+      }
+    } else {
+      verifications.tagAbsent = true;
     }
 
     // --- AUTHORITATIVE VERIFICATION STEP (BLOCKER J) ---
@@ -610,6 +866,7 @@ class PrivateEgressProvisioner {
                         verifications.firewallAbsent &&
                         verifications.sshKeyAbsent &&
                         verifications.companionNodeAbsent &&
+                        verifications.tagAbsent &&
                         errors.length === 0;
 
     return {
@@ -655,7 +912,13 @@ class PrivateEgressProvisioner {
         throw err;
       }
 
-      // [R6 Hardening] Bind Step B to verified quote (if supplied) or fail closed
+      // [R6 & S6 Hardening] Bind Step B to verified quote: mandatory for real mode, validate monthly and hourly
+      if (!this.mockMode && !params.verifiedQuote) {
+        throw new Error('MANDATORY_QUOTE_REQUIRED: Step B requires a verified quote from Step A. Please run Step A first.');
+      }
+      if (this.simulateMissingQuote && !params.verifiedQuote) {
+        throw new Error('MANDATORY_QUOTE_REQUIRED: Step B requires a verified quote from Step A. Please run Step A first.');
+      }
       if (params.verifiedQuote) {
         const q = params.verifiedQuote;
         if (q.tier && q.tier !== tierId) {
@@ -668,7 +931,10 @@ class PrivateEgressProvisioner {
           throw new Error(`PRICE_QUOTE_MISMATCH: Selected size "${tier.size}" differs from verified Step A quote "${q.size}". Please re-run Step A.`);
         }
         if (typeof q.monthlyCostUsd === 'number' && Math.abs(q.monthlyCostUsd - liveMonthly) > 0.001) {
-          throw new Error(`PRICE_QUOTE_CHANGED: Provider price changed from $${q.monthlyCostUsd.toFixed(2)} to $${liveMonthly.toFixed(2)}. Please re-run Step A.`);
+          throw new Error(`PRICE_QUOTE_CHANGED: Provider monthly price changed from $${Number(q.monthlyCostUsd).toFixed(2)} to $${liveMonthly.toFixed(2)}. Please re-run Step A.`);
+        }
+        if (typeof q.hourlyCostUsd === 'number' && Math.abs(q.hourlyCostUsd - liveHourly) > 0.00001) {
+          throw new Error(`PRICE_QUOTE_CHANGED: Provider hourly price changed from $${q.hourlyCostUsd} to $${liveHourly}. Please re-run Step A.`);
         }
       }
 
@@ -688,8 +954,9 @@ class PrivateEgressProvisioner {
       const ownerCidr = formatIpCidr(ownerIp);
       const allowedSources = [ownerCidr];
 
-      // [R1 Hardening] Create unique per-transaction tag
+      // [R1 & S3 Hardening] Create unique per-transaction tag and register on provider
       transactionTag = `xpider-tx-${Date.now().toString(36)}-${crypto.randomBytes(4).toString('hex')}`;
+      await this.createTransactionTag(transactionTag);
 
       // [R2 Hardening] Generate known ephemeral SSH Host keypair locally
       const hostKeypair = await this.createEphemeralHostKeypair();
@@ -704,7 +971,7 @@ class PrivateEgressProvisioner {
       });
       ephemeralKeyId = keyRes.ssh_key.id;
 
-      // [R1 Hardening] Create Cloud Firewall BEFORE Droplet creation targeting transactionTag
+      // [R1 & S2 Hardening] Create Cloud Firewall BEFORE Droplet creation targeting transactionTag ONLY
       // Initial inbound rule: TCP port 22 from Owner CIDR only; all other inbound denied
       try {
         if (this.simulateFirewallFailure) {
@@ -720,7 +987,7 @@ class PrivateEgressProvisioner {
             { protocol: 'udp', ports: 'all', destinations: { addresses: ['0.0.0.0/0', '::/0'] } },
             { protocol: 'icmp', ports: 'all', destinations: { addresses: ['0.0.0.0/0', '::/0'] } }
           ],
-          tags: [DEFAULT_TAG, transactionTag]
+          tags: [transactionTag]
         });
         if (!fwRes || !fwRes.firewall) {
           throw new Error('Cloud Firewall creation returned invalid response');
@@ -741,7 +1008,7 @@ class PrivateEgressProvisioner {
         throw new Error(`FAIL-CLOSED: Cloud Firewall ${firewallId} is not strictly scoped to Owner CIDR ${ownerCidr}.`);
       }
 
-      // [R1 & R2 Hardening] Create Droplet tagged with transactionTag and user_data setting ephemeral host key
+      // [R1 & R2 & S2 Hardening] Create Droplet tagged with transactionTag ONLY and user_data setting ephemeral host key
       const dropletName = `xpider-egress-${region}-${transactionTag.slice(-8)}`;
       const userData = `#!/bin/bash
 set -e
@@ -764,7 +1031,7 @@ systemctl restart ssh || systemctl restart sshd
         ssh_keys: [ephemeralKeyId],
         backups: false,
         ipv6: false,
-        tags: [DEFAULT_TAG, transactionTag, `tier-${tierId.toLowerCase()}`, `region-${region}`],
+        tags: [transactionTag],
         user_data: userData
       });
       dropletId = dropletRes.droplet.id;
@@ -777,13 +1044,12 @@ systemctl restart ssh || systemctl restart sshd
         throw new Error('SIMULATED_STAGE_2_FAILURE');
       }
 
-      // [R1 Hardening] Authoritatively verify firewall association with Droplet/Tag BEFORE first SSH packet
-      const fwAssoc = await this.doRequest(`/firewalls/${firewallId}`, 'GET');
-      const fwTags = fwAssoc.firewall?.tags || [];
-      const fwDroplets = fwAssoc.firewall?.droplet_ids || [];
-      if (!fwTags.includes(transactionTag) && !fwDroplets.includes(dropletId)) {
-        throw new Error(`FAIL-CLOSED: Cloud Firewall ${firewallId} is not associated with Droplet ${dropletId} (tag: ${transactionTag}). Refusing SSH connection.`);
-      }
+      // [S1 & S2 Hardening] Authoritatively verify firewall applied state on Droplet BEFORE first SSH packet
+      // Polling GET /v2/droplets/{droplet_id}/firewalls:
+      // - rejects unexpected additional firewalls (S2)
+      // - verifies status === 'succeeded' and no pending changes for this droplet (S1)
+      // - verifies effective inbound rules contain port 22 from ownerCidr (S1)
+      await this.verifyDropletFirewallAppliedState(dropletId, firewallId, '22', ownerCidr, this.mockMode ? 150 : 60000);
 
       // STEP 2: SERVER PREP
       this.logProgress(2, 'WORKING', `Establishing verified SSH to ${publicIp}:22 with host key fingerprint verification...`);
@@ -860,7 +1126,7 @@ systemctl restart ssh || systemctl restart sshd
       // STEP 5: FIREWALL
       this.logProgress(5, 'WORKING', `Updating Cloud Firewall to allow proxy port ${descriptor.port} from ${ownerCidr} and removing SSH port 22...`);
 
-      // [R1 Hardening] Update Cloud Firewall: allow proxy port descriptor.port from Owner CIDR ONLY, remove port 22
+      // [R1 & S2 Hardening] Update Cloud Firewall: allow proxy port descriptor.port from Owner CIDR ONLY, remove port 22, transactionTag ONLY
       try {
         await this.doRequest(`/firewalls/${firewallId}`, 'PUT', {
           name: `xpider-fw-${transactionTag}`,
@@ -872,7 +1138,7 @@ systemctl restart ssh || systemctl restart sshd
             { protocol: 'udp', ports: 'all', destinations: { addresses: ['0.0.0.0/0', '::/0'] } },
             { protocol: 'icmp', ports: 'all', destinations: { addresses: ['0.0.0.0/0', '::/0'] } }
           ],
-          tags: [DEFAULT_TAG, transactionTag]
+          tags: [transactionTag]
         });
       } catch (updateErr) {
         throw new Error(`FAIL-CLOSED: Cloud Firewall rule update failed: ${updateErr.message}`);
@@ -903,7 +1169,12 @@ systemctl restart ssh || systemctl restart sshd
         throw new Error('SECURITY VIOLATION: Ephemeral SSH key was not properly revoked; remote host still accepted connection!');
       }
 
-      this.logProgress(5, 'PASS', `Firewall updated default-deny (SSH closed, proxy port ${descriptor.port} open strictly to ${ownerCidr})`);
+      // [S1 & S2 Hardening] Authoritatively verify applied state after firewall update
+      // Verifies status === 'succeeded', no pending changes, port descriptor.port is allowed from ownerCidr,
+      // and port 22 is completely absent from inbound rules!
+      await this.verifyDropletFirewallAppliedState(dropletId, firewallId, String(descriptor.port), ownerCidr, this.mockMode ? 150 : 60000);
+
+      this.logProgress(5, 'PASS', `Firewall updated default-deny (SSH closed, proxy port ${descriptor.port} verified active strictly to ${ownerCidr})`);
 
       if (this.simulateStageFailure === 6) {
         throw new Error('SIMULATED_STAGE_6_FAILURE');
@@ -1194,7 +1465,7 @@ systemctl restart ssh || systemctl restart sshd
       return { ready: false, reason: `RELAY_PROXY_PROBE_FAILED: ${probeRes.reason}` };
     }
 
-    // [R4 Hardening] Observed IP MUST exist, MUST be a valid public IP, and MUST match expected Droplet egress IP
+    // [R4 & S4 Hardening] Observed IP MUST exist, MUST be a valid public IP, and MUST match expected Droplet egress IP
     if (!probeRes.observedIp || typeof probeRes.observedIp !== 'string') {
       return { ready: false, reason: 'EGRESS_IP_MISSING: Canary TLS succeeded but egress IP was not observed' };
     }
@@ -1204,7 +1475,7 @@ systemctl restart ssh || systemctl restart sshd
       return { ready: false, reason: `EGRESS_IP_INVALID: Observed IP "${cleanObserved}" is not a valid IP address` };
     }
 
-    if (cleanObserved.startsWith('127.') || cleanObserved.startsWith('10.') || cleanObserved.startsWith('192.168.') || cleanObserved.startsWith('172.16.') || cleanObserved.startsWith('169.254.') || cleanObserved === '::1') {
+    if (!isPublicIp(cleanObserved, this.mockMode)) {
       return { ready: false, reason: `EGRESS_IP_NON_PUBLIC: Observed IP "${cleanObserved}" is not a public egress IP` };
     }
 
@@ -1222,19 +1493,14 @@ systemctl restart ssh || systemctl restart sshd
     };
   }
 
-  // --- DESTROY / TEARDOWN WORKFLOW (R5 Hardening: Exact Resource Ownership Only) ---
+  // --- DESTROY / TEARDOWN WORKFLOW (R5 & S5 Hardening: Exact Resource Ownership Only) ---
 
   async destroyPrivateEgress(params = {}) {
     this.logProgress(1, 'WORKING', 'Locating and deleting exact XPIDER private egress cloud resources...');
     
     const savedTx = this.loadTransactionOwnership();
-    const dropletId = (params && params.dropletId) || (savedTx && savedTx.dropletId);
-    const firewallId = (params && params.firewallId) || (savedTx && savedTx.firewallId);
-    const companionNodeId = (params && params.companionNodeId) || (savedTx && (savedTx.registeredNodeId || savedTx.companionNodeId));
-    const ephemeralKeyId = (params && params.ephemeralKeyId) || (savedTx && savedTx.ephemeralKeyId);
-    const transactionTag = (params && params.transactionTag) || (savedTx && savedTx.transactionTag);
 
-    if (!dropletId && !firewallId && !companionNodeId && !transactionTag) {
+    if (!savedTx && !params?.dropletId && !params?.firewallId && !params?.companionNodeId && !params?.transactionTag) {
       this.logProgress(1, 'PASS', 'No active private egress transaction or resources found to destroy.');
       return {
         success: true,
@@ -1245,12 +1511,35 @@ systemctl restart ssh || systemctl restart sshd
       };
     }
 
+    // [S5 Hardening] Reject caller ID override mismatch
+    if (savedTx) {
+      if (params?.dropletId && String(params.dropletId) !== String(savedTx.dropletId)) {
+        throw new Error(`CALLER_OVERRIDE_REJECTED: Supplied dropletId "${params.dropletId}" does not match persisted ownership record "${savedTx.dropletId}".`);
+      }
+      if (params?.firewallId && String(params.firewallId) !== String(savedTx.firewallId)) {
+        throw new Error(`CALLER_OVERRIDE_REJECTED: Supplied firewallId "${params.firewallId}" does not match persisted ownership record "${savedTx.firewallId}".`);
+      }
+      if (params?.companionNodeId && String(params.companionNodeId) !== String(savedTx.registeredNodeId || savedTx.companionNodeId)) {
+        throw new Error(`CALLER_OVERRIDE_REJECTED: Supplied companionNodeId "${params.companionNodeId}" does not match persisted ownership record "${savedTx.registeredNodeId || savedTx.companionNodeId}".`);
+      }
+      if (params?.transactionTag && String(params.transactionTag) !== String(savedTx.transactionTag)) {
+        throw new Error(`CALLER_OVERRIDE_REJECTED: Supplied transactionTag "${params.transactionTag}" does not match persisted ownership record "${savedTx.transactionTag}".`);
+      }
+    }
+
+    const dropletId = savedTx ? savedTx.dropletId : params.dropletId;
+    const firewallId = savedTx ? savedTx.firewallId : params.firewallId;
+    const companionNodeId = savedTx ? (savedTx.registeredNodeId || savedTx.companionNodeId) : params.companionNodeId;
+    const ephemeralKeyId = savedTx ? savedTx.ephemeralKeyId : params.ephemeralKeyId;
+    const transactionTag = savedTx ? savedTx.transactionTag : params.transactionTag;
+
     const errors = [];
     const verifications = {
       dropletAbsent: false,
       firewallAbsent: false,
       sshKeyAbsent: false,
-      companionNodeAbsent: false
+      companionNodeAbsent: false,
+      tagAbsent: false
     };
 
     // 1. Remove exact companion node
@@ -1291,6 +1580,19 @@ systemctl restart ssh || systemctl restart sshd
       } catch (e) {
         errors.push(`sshKey_delete_error:${ephemeralKeyId} (${e.message})`);
       }
+    }
+
+    // 5. Delete transaction tag (S3 Hardening)
+    if (transactionTag) {
+      try {
+        await this.deleteTransactionTag(transactionTag);
+        console.log(`[DESTROY_EXACT] Deleted transaction tag: ${transactionTag}`);
+        verifications.tagAbsent = true;
+      } catch (e) {
+        errors.push(`tag_delete_error:${transactionTag} (${e.message})`);
+      }
+    } else {
+      verifications.tagAbsent = true;
     }
 
     // --- AUTHORITATIVE VERIFICATION OF EXACT ABSENCE ---
@@ -1345,12 +1647,17 @@ systemctl restart ssh || systemctl restart sshd
 
     verifications.sshKeyAbsent = true;
 
-    const allClean = verifications.dropletAbsent && verifications.firewallAbsent && verifications.companionNodeAbsent && errors.length === 0;
+    const allClean = verifications.dropletAbsent &&
+                     verifications.firewallAbsent &&
+                     verifications.companionNodeAbsent &&
+                     verifications.tagAbsent &&
+                     errors.length === 0;
 
     if (allClean) {
       this.clearTransactionOwnership();
       this.logProgress(1, 'PASS', `Exact teardown verified clean: droplet ${dropletId}, firewall ${firewallId}, companion node ${companionNodeId} absent.`);
     } else {
+      // [S5 Hardening] Incomplete cleanup: preserve ownership record for later remediation!
       this.logProgress(1, 'FAIL', `Teardown incomplete: ${errors.join(', ')}`);
     }
 
@@ -1870,6 +2177,58 @@ systemctl restart ssh || systemctl restart sshd
         }
       });
     }
+    // [S1 & S2 Hardening] Droplet firewalls applied-state endpoint
+    if (endpoint.includes('/firewalls') && endpoint.startsWith('/droplets/') && method === 'GET') {
+      const parts = endpoint.split('/');
+      const dropletId = parts[2];
+      if (this.simulateUnexpectedFirewall) {
+        return Promise.resolve({
+          firewalls: [
+            {
+              id: 'fw-1234',
+              status: 'succeeded',
+              pending_changes: [],
+              inbound_rules: [{ protocol: 'tcp', ports: '22', sources: { addresses: ['198.51.100.1/32'] } }]
+            },
+            {
+              id: 'fw-rogue-second-firewall',
+              status: 'succeeded',
+              pending_changes: [],
+              inbound_rules: [{ protocol: 'tcp', ports: '0', sources: { addresses: ['0.0.0.0/0'] } }]
+            }
+          ]
+        });
+      }
+      if (this.simulateFirewallPending) {
+        return Promise.resolve({
+          firewalls: [
+            {
+              id: 'fw-1234',
+              status: 'pending',
+              pending_changes: [{ droplet_id: Number(dropletId) || dropletId, removing: false }],
+              inbound_rules: [{ protocol: 'tcp', ports: '22', sources: { addresses: ['198.51.100.1/32'] } }]
+            }
+          ]
+        });
+      }
+      const fwId = Object.keys(this.mockFirewalls || {})[0] || 'fw-1234';
+      const activeFw = (this.mockFirewalls && this.mockFirewalls[fwId]) || {
+        id: fwId,
+        status: 'succeeded',
+        pending_changes: [],
+        inbound_rules: [{ protocol: 'tcp', ports: '22', sources: { addresses: ['198.51.100.1/32'] } }]
+      };
+      return Promise.resolve({
+        firewalls: [
+          {
+            id: activeFw.id || fwId,
+            status: activeFw.status || 'succeeded',
+            pending_changes: activeFw.pending_changes || [],
+            inbound_rules: activeFw.inbound_rules || [{ protocol: 'tcp', ports: '22', sources: { addresses: ['198.51.100.1/32'] } }]
+          }
+        ]
+      });
+    }
     if (endpoint.startsWith('/droplets/') && !endpoint.includes('?') && method === 'GET') {
       const dropId = endpoint.split('/').pop();
       if (this.simulateRollbackVerificationFailure === 'droplet') {
@@ -1919,7 +2278,7 @@ systemctl restart ssh || systemctl restart sshd
         id: fwId,
         name: 'xpider-fw',
         inbound_rules: [{ protocol: 'tcp', ports: '22', sources: { addresses: ['198.51.100.1/32'] } }],
-        tags: [DEFAULT_TAG, 'xpider-tx-mock'],
+        tags: ['xpider-tx-mock'],
         droplet_ids: [99887766]
       };
       return Promise.resolve({ firewall: existingFw });
@@ -1938,6 +2297,35 @@ systemctl restart ssh || systemctl restart sshd
     if (endpoint.startsWith('/firewalls/') && method === 'DELETE') {
       const fwId = endpoint.split('/').pop();
       this.mockDeletedResources.firewalls.push(fwId);
+      return Promise.resolve({});
+    }
+    // [S3 Hardening] DigitalOcean Tags API
+    if (endpoint === '/tags' && method === 'POST') {
+      if (this.simulateTagCreateScopeMissing) {
+        const err = new Error('Forbidden: token missing tag:create scope');
+        err.statusCode = 403;
+        return Promise.reject(err);
+      }
+      this.mockTags = this.mockTags || [];
+      if (!this.mockTags.includes(body.name)) {
+        this.mockTags.push(body.name);
+      }
+      return Promise.resolve({ tag: { name: body.name } });
+    }
+    if (endpoint.startsWith('/tags/') && method === 'GET') {
+      const tagName = decodeURIComponent(endpoint.split('/').pop());
+      if (this.mockDeletedResources.tags && this.mockDeletedResources.tags.includes(tagName)) {
+        const err = new Error(`Tag ${tagName} not found`);
+        err.statusCode = 404;
+        return Promise.reject(err);
+      }
+      return Promise.resolve({ tag: { name: tagName } });
+    }
+    if (endpoint.startsWith('/tags/') && method === 'DELETE') {
+      const tagName = decodeURIComponent(endpoint.split('/').pop());
+      this.mockTags = (this.mockTags || []).filter(t => t !== tagName);
+      this.mockDeletedResources.tags = this.mockDeletedResources.tags || [];
+      this.mockDeletedResources.tags.push(tagName);
       return Promise.resolve({});
     }
     if (endpoint.includes('/droplets?tag_name=') && method === 'GET') {
@@ -1960,5 +2348,6 @@ module.exports = {
   TIERS,
   STAGES,
   redactSecrets,
-  formatIpCidr
+  formatIpCidr,
+  isPublicIp
 };
