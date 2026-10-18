@@ -15,30 +15,30 @@
 
     const BUILD_INFO = {
         branch: 'upgrade/phase-0-1',
-        channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.7',
+        channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.8',
         testOnly: true,
-        // [R6.9G.10.3.7.1.4.21] XPIDER AutoForm Sender Pro — Private Egress Release Candidate 3.7 (Package Secret Hygiene + Token Rotation Closure)
-        implementationHead: '9b389a5f227684383124be1e076ce10222471b8d',
-        implementationHeadShort: '9b389a5f',
-        head: '9b389a5f227684383124be1e076ce10222471b8d',
-        headShort: '9b389a5f',
+        // [R6.9G.10.3.7.1.4.22] XPIDER AutoForm Sender Pro — Private Egress Release Candidate 3.8 (DigitalOcean Firewall Port-Schema Contract Closure)
+        implementationHead: '6491dd93b7fe8eb848b7f5591675aa1e7a203a80',
+        implementationHeadShort: '6491dd93',
+        head: '6491dd93b7fe8eb848b7f5591675aa1e7a203a80',
+        headShort: '6491dd93',
         rollbackBase: '50aee3538806d7b5227fcd929e27979d1e5a3419',
         previousFunctionalRestorePoint: '50aee3538806d7b5227fcd929e27979d1e5a3419',
         manifestVersion: 3,
-        buildId: 'R6.9G.10.3.7.1.4.21-20261018-PRIVATE-EGRESS-RC3.7',
-        builtAt: '2026-10-18T14:10:27.587Z',
+        buildId: 'R6.9G.10.3.7.1.4.22-20261018-PRIVATE-EGRESS-RC3.8',
+        builtAt: '2026-10-18T18:58:11.262Z',
         provenanceSchema: 2,
         modules: {
-            backgroundSha: 'ede9f78952432b20789767fa9f0ebb980e1e7477d6121c30c81e999303bf899f',
+            backgroundSha: '46ae6ebbc5e3df9311e92135a18ddc983bdb983ca71ecb16bb027a2944dd32dc',
             contentScriptSha: 'a6a34d79c4da791a245b16709f8976fb88418ef4f8398cd3b19df1c52bced270',
-            popupSha: '63f3c98327db2a9cc111cd383763064087ec3dc14dc6b68d78769ef985a7e636',
+            popupSha: '851ad69bd93d271f382994affbb4028985055dd6e923e66da1d911c9f76d29e9',
             solverContentSha: 'd7de969d29df29799537b11380f0f82967bb93da227c91e7dc8c6af0d128f457',
             solverCoreSha: '01b3d96048ea933403e4599854dcdca28027e7f676aa5077eb6c5eb0582ac1e7',
             emailCollectorSha: '3f1147a379e159e7777158f2caa74cc8d40b2a0b0eb2c244f440af379cb5c9c9',
             historyStoreSha: '0dc2fbda1b1506de9394f87a965ff2ebd5721ea1c47d7bda07c9411193890d8c',
             contactGateSha: '0d01acb2d0a9448d154353fac5b527c17afa42fed56c68d6a49b39053629bd7d',
             visionSubmitSha: '25cf18a4834bb476edff5e8f19a78dd2723bd556ede649ada69bc801543c83f3',
-            privacyGatewaySha: 'b444734dd0bbfc457c19a4defec4dd98e7a39967432567976c0ffb8510cb4bc6'
+            privacyGatewaySha: 'c7a319d2e6ac44e046ff655cc86834cd684d92cf1a2ad22bf337b6a1e9a36515'
         }
     };
 
