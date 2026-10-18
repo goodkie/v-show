@@ -170,7 +170,7 @@ async function runTests() {
 
   check('/health returns 200 OK', healthRes.statusCode === 200);
   check('/health includes process PID', typeof healthRes.data.pid === 'number' && healthRes.data.pid > 0);
-  check('/health includes companionBuildId', typeof healthRes.data.companionBuildId === 'string' && healthRes.data.companionBuildId.includes('RC3.2'));
+  check('/health includes companionBuildId', typeof healthRes.data.companionBuildId === 'string' && (healthRes.data.companionBuildId.includes('RC3.2') || healthRes.data.companionBuildId.includes('RC3.3')));
   check('/health includes apiCapabilities array', Array.isArray(healthRes.data.apiCapabilities));
   check('apiCapabilities contains verify-plan', healthRes.data.apiCapabilities.includes('verify-plan'));
   check('apiCapabilities contains provision-egress', healthRes.data.apiCapabilities.includes('provision-egress'));

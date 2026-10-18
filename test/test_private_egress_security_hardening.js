@@ -703,6 +703,7 @@ async function runSecuritySuite() {
   assert.strictEqual(provVerif.valid, true);
   assert(bp.BUILD_INFO.channel.startsWith('OWNER_BETA_PRIVATE_EGRESS'), 'Channel must be OWNER_BETA_PRIVATE_EGRESS');
   const allowedFunctionalHeads = [
+    'a61c08ea2f0070ce47c315ba67cf8f4a8acdbb76',
     '4919d0c4c8bf180fb967f8125f186350b3c5edf3',
     '3cad7043a0077e77bb2981669d4a584da08cde1b',
     '920f69c16c3b09649b3da5044fbf3edc4153755f',
