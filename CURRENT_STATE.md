@@ -7,8 +7,9 @@
 - Authority: goodkie/v-show Issue #6 (Responding to Defect Directives #6231022137 and #6244711545)
 - Branch: upgrade/phase-0-1
 - State Rev: 2026-10-18.21
-- Authority Cursor: 6244711545
+- Authority Cursor: 6245191948
 - Last Defect Directives: Owner Defect Directives #6231022137 (P0 UI Fix: Modal Stack & Z-Index) and #6244711545 (Defects Q1, Q2, Q3)
+- Last Receipt: Receipt #6245191948 (https://github.com/goodkie/v-show/issues/6#issuecomment-6245191948 — `[ANTIGRAVITY][STEP-A FAILED-TO-FETCH + COMPANION UPGRADE CLOSURE RECEIPT]`)
 - Build ID: `R6.9G.10.3.7.1.4.16-20261017-PRIVATE-EGRESS-RC3.2`
 - Current Candidate Release Tag: `v6.9g.10.3-rc3.2.7.1.4.16`
 - Functional Head Commit: `4919d0c4c8bf180fb967f8125f186350b3c5edf3` (short: `4919d0c4`)
