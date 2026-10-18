@@ -2,20 +2,33 @@
  * pack_owner_beta_package.js
  *
  * Packages XPIDER AutoForm Sender Pro — OWNER BETA
- * Version: R6.9G.10.3.7.1.4.11-OWNER-BETA
- * Per Issue #6 Owner Decision (Comment #6208890551).
+ * Version: R6.9G.10.3.7.1.4.21-20261018-PRIVATE-EGRESS-RC3.7
+ * Per Issue #6 Owner Decision & ChatGPT Final Pre-Live Audit Directive (Comment #6250701581).
+ *
+ * Enforces V1, V2, V3 Secret and Packaging Hygiene:
+ * 1. Clean Staging
+ * 2. Copy Release Assets
+ * 3. Verify Batch Line Endings (CRLF / ASCII)
+ * 4. Staging Smoke Test in ISOLATED temporary scratch directory (leaves staging untouched)
+ * 5. Mandatory Post-Smoke Staging Purge (removes any accidental runtime files)
+ * 6. Mandatory Pre-Zip Denylist Scan (fail-closed if .control_token, *.log, *.tmp, etc. found)
+ * 7. Mandatory Pre-Zip Secret Scan (zero credentials, private keys, exposed tokens)
+ * 8. Inventory & SHA-256 Hashing
+ * 9. Compression to ZIP Archive
+ * 10. Post-Zip Archive Entry Denylist Verification (inspects zip entries using tar -tf)
  */
 
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const http = require('http');
 const { execSync } = require('child_process');
 
 console.log('1. Verifying parity with sync_build_parity.js...');
 execSync('node sync_build_parity.js', { stdio: 'inherit' });
 
-const versionStr = 'R6.9G.10.3.7.1.4.20';
-const zipName = `XPIDER_${versionStr}_PRIVATE_EGRESS_RC3.6.zip`;
+const versionStr = 'R6.9G.10.3.7.1.4.21';
+const zipName = `XPIDER_${versionStr}_PRIVATE_EGRESS_RC3.7.zip`;
 const zipOut = path.resolve(zipName);
 const extDir = path.resolve('send_message_backup/build/extension');
 const compDir = path.resolve('companion');
@@ -37,7 +50,7 @@ fs.mkdirSync(stagingCompDir, { recursive: true });
 function copyCompanionFiles(src, dest) {
     const entries = fs.readdirSync(src, { withFileTypes: true });
     for (const entry of entries) {
-        if (entry.name === '.control_token' || entry.name === 'privacy_relay.log' || entry.name === 'node_modules' || entry.name === 'router_pairing_config.json' || entry.name.startsWith('test') || entry.name.startsWith('mock') || entry.name === 'tls_test_certs.js') {
+        if (entry.name === '.control_token' || entry.name === 'privacy_relay.log' || entry.name === 'node_modules' || entry.name === 'router_pairing_config.json' || entry.name.startsWith('test') || entry.name.startsWith('mock') || entry.name === 'tls_test_certs.js' || entry.name.endsWith('.tmp') || entry.name.endsWith('.log')) {
             continue;
         }
         const srcPath = path.join(src, entry.name);
@@ -69,12 +82,12 @@ if (fs.existsSync('owner-extension-test-site')) {
     fs.cpSync('owner-extension-test-site', path.join(stagingDir, 'owner-extension-test-site'), { recursive: true });
 }
 
-// 5b. Copy private-egress server package (Blocker H)
+// 5b. Copy private-egress server package
 if (fs.existsSync('private-egress')) {
     fs.cpSync('private-egress', path.join(stagingDir, 'private-egress'), { recursive: true });
 }
 
-// 5c. Bundle locked runtime dependencies (ssh2) (Blocker G)
+// 5c. Bundle locked runtime dependencies (ssh2)
 if (fs.existsSync('node_modules')) {
     const stagingNmDir = path.join(stagingDir, 'node_modules');
     fs.mkdirSync(stagingNmDir, { recursive: true });
@@ -97,7 +110,7 @@ if (fs.existsSync('node_modules')) {
     copyNodeModulesClean('node_modules', stagingNmDir);
 }
 
-// 5d. Bundle official Node.js runtime (P0 Fix for Zero-Prerequisite Windows Setup)
+// 5d. Bundle official Node.js runtime
 if (fs.existsSync('runtime')) {
     fs.cpSync('runtime', path.join(stagingDir, 'runtime'), { recursive: true });
 }
@@ -109,33 +122,6 @@ for (const rf of rootFiles) {
         fs.copyFileSync(rf, path.join(stagingDir, rf));
     }
 }
-
-// 7. Security & Secret Scan (Strict scan on all project code, skipping third-party libraries & runtime)
-function scanDirectoryForSecrets(dir) {
-    const forbiddenPatterns = [
-        /(?:ghp_[a-zA-Z0-9]{30,}|gho_[a-zA-Z0-9]{30,}|github_pat_[a-zA-Z0-9_]{50,})/,
-        /-----BEGIN\s+OPENSSH\s+PRIVATE\s+KEY-----/,
-        /-----BEGIN\s+RSA\s+PRIVATE\s+KEY-----/
-    ];
-    const entries = fs.readdirSync(dir, { withFileTypes: true });
-    for (const ent of entries) {
-        if (ent.name === 'node_modules' || ent.name === 'runtime') continue; // Skip 3rd party bundled libraries and binary runtimes
-        const full = path.join(dir, ent.name);
-        if (ent.isDirectory()) {
-            scanDirectoryForSecrets(full);
-        } else if (ent.isFile() && !full.endsWith('.png') && !full.endsWith('.jpg') && !full.endsWith('.zip') && !full.endsWith('.exe')) {
-            const content = fs.readFileSync(full, 'utf8');
-            for (const pat of forbiddenPatterns) {
-                if (pat.test(content)) {
-                    throw new Error(`SECURITY SCAN FAILED: Potential secret pattern found in ${full}`);
-                }
-            }
-        }
-    }
-}
-console.log('2. Running security & secrets scan on staging files...');
-scanDirectoryForSecrets(stagingDir);
-console.log('✅ Secrets scan PASSED (zero credentials/private keys detected).');
 
 // Helper to get all files
 function getAllFiles(dir, base = dir) {
@@ -167,17 +153,14 @@ for (const bf of batCmdFiles) {
     fs.writeFileSync(bf.fullPath, content, { encoding: 'ascii' });
 
     const buf = fs.readFileSync(bf.fullPath);
-    // Check UTF-8 BOM
     if (buf[0] === 0xEF && buf[1] === 0xBB && buf[2] === 0xBF) {
         throw new Error(`BATCH BYTE VERIFY FAILED: UTF-8 BOM found in ${bf.relPath}`);
     }
-    // Check pure ASCII (0..127)
     for (let i = 0; i < buf.length; i++) {
         if (buf[i] > 127) {
             throw new Error(`BATCH BYTE VERIFY FAILED: Non-ASCII byte (${buf[i]}) found at offset ${i} in ${bf.relPath}`);
         }
     }
-    // Check CRLF vs bare LF
     const binStr = buf.toString('binary');
     const bareLf = binStr.match(/(?<!\r)\n/g);
     if (bareLf && bareLf.length > 0) {
@@ -186,25 +169,142 @@ for (const bf of batCmdFiles) {
     console.log(`    [OK] ${bf.relPath} (ASCII-only, CRLF line-endings, BOM-free)`);
 }
 
-// 7c. Clean-environment cmd.exe test (Verify zero command-parser corruption and exit code 0)
-console.log('2c. Running clean-environment cmd.exe test on staging XPIDER_AUTO_SETUP.bat (NO Node in PATH)...');
-const cmdTestOut = execSync('cmd.exe /d /c "set PATH=%SystemRoot%\\System32;%SystemRoot% && XPIDER_AUTO_SETUP.bat"', {
-    cwd: stagingDir,
-    encoding: 'utf-8',
-    env: {
-        SystemRoot: process.env.SystemRoot || 'C:\\Windows',
-        APPDATA: process.env.APPDATA,
-        USERPROFILE: process.env.USERPROFILE,
-        PATH: 'C:\\Windows\\System32;C:\\Windows'
+// 7c. Clean-environment cmd.exe test in ISOLATED scratch directory (V3 Hardening)
+console.log('2c. Running clean-environment cmd.exe test in ISOLATED scratch directory (NO Node in PATH)...');
+const scratchSmokeDir = path.resolve('scratch', 'smoke_pack_test_' + Date.now());
+if (fs.existsSync(scratchSmokeDir)) {
+    fs.rmSync(scratchSmokeDir, { recursive: true, force: true });
+}
+fs.mkdirSync(scratchSmokeDir, { recursive: true });
+fs.cpSync(stagingDir, scratchSmokeDir, { recursive: true });
+
+try {
+    const cmdTestOut = execSync('cmd.exe /d /c "set PATH=%SystemRoot%\\System32;%SystemRoot% && XPIDER_AUTO_SETUP.bat"', {
+        cwd: scratchSmokeDir,
+        encoding: 'utf-8',
+        env: {
+            SystemRoot: process.env.SystemRoot || 'C:\\Windows',
+            APPDATA: process.env.APPDATA,
+            USERPROFILE: process.env.USERPROFILE,
+            PATH: 'C:\\Windows\\System32;C:\\Windows'
+        }
+    });
+    const forbiddenParserErrors = ['tlocal', 'cho', "'ho'", "'ho.'", "'d'", '9009', 'is not recognized'];
+    for (const errText of forbiddenParserErrors) {
+        if (cmdTestOut.includes(errText)) {
+            throw new Error(`CMD PARSER ERROR DETECTED IN AUTO SETUP OUTPUT: contains "${errText}"\nOutput:\n${cmdTestOut}`);
+        }
     }
-});
-const forbiddenParserErrors = ['tlocal', 'cho', "'ho'", "'ho.'", "'d'", '9009', 'is not recognized'];
-for (const errText of forbiddenParserErrors) {
-    if (cmdTestOut.includes(errText)) {
-        throw new Error(`CMD PARSER ERROR DETECTED IN AUTO SETUP OUTPUT: contains "${errText}"\nOutput:\n${cmdTestOut}`);
+    console.log('    [OK] Isolated XPIDER_AUTO_SETUP.bat executed successfully with zero command parser errors.');
+} finally {
+    // Attempt graceful shutdown of any relay started during smoke
+    try {
+        const tokenFile = path.join(scratchSmokeDir, 'companion', '.control_token');
+        let smokeToken = '';
+        if (fs.existsSync(tokenFile)) smokeToken = fs.readFileSync(tokenFile, 'utf8').trim();
+        const headers = smokeToken ? { 'Authorization': `Bearer ${smokeToken}` } : {};
+        const req = http.request({
+            hostname: '127.0.0.1',
+            port: 18989,
+            path: '/stop',
+            method: 'POST',
+            headers
+        });
+        req.on('error', () => {});
+        req.setTimeout(800, () => req.destroy());
+        req.end();
+    } catch (_) {}
+    // Clean up isolated scratch smoke dir
+    try {
+        fs.rmSync(scratchSmokeDir, { recursive: true, force: true });
+    } catch (_) {}
+}
+
+// 7d. Mandatory Post-Smoke Staging Purge (V3 Invariant)
+console.log('2d. Running mandatory post-smoke runtime purge on staging directory...');
+function purgeRuntimeArtifacts(dir) {
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    for (const ent of entries) {
+        const full = path.join(dir, ent.name);
+        if (ent.isDirectory()) {
+            purgeRuntimeArtifacts(full);
+        } else {
+            if (ent.name === '.control_token' ||
+                ent.name === 'privacy_relay.log' ||
+                ent.name.endsWith('.log') ||
+                ent.name.endsWith('.tmp') ||
+                ent.name.startsWith('.private_egress_transaction') ||
+                ent.name.startsWith('winsec_blob')) {
+                console.log(`    [PURGE] Removing runtime artifact from staging: ${full}`);
+                fs.unlinkSync(full);
+            }
+        }
     }
 }
-console.log('    [OK] Staging XPIDER_AUTO_SETUP.bat executed successfully with zero command parser errors.');
+purgeRuntimeArtifacts(stagingDir);
+
+// 7e. Mandatory Fail-Closed Denylist Scan (V2 & V3 Invariant)
+console.log('2e. Running fail-closed denylist scan on staging directory...');
+const FORBIDDEN_DENYLIST_NAMES = [
+    '.control_token',
+    'privacy_relay.log',
+    '.private_egress_transaction.json'
+];
+const FORBIDDEN_DENYLIST_EXTENSIONS = ['.tmp'];
+const stagingFilesForDenylist = getAllFiles(stagingDir);
+for (const file of stagingFilesForDenylist) {
+    const baseName = path.basename(file.fullPath);
+    if (FORBIDDEN_DENYLIST_NAMES.includes(baseName)) {
+        throw new Error(`DENYLIST SCAN FAILED: Forbidden runtime artifact found in staging: ${file.relPath}`);
+    }
+    for (const ext of FORBIDDEN_DENYLIST_EXTENSIONS) {
+        if (baseName.endsWith(ext)) {
+            throw new Error(`DENYLIST SCAN FAILED: Forbidden extension (${ext}) found in staging: ${file.relPath}`);
+        }
+    }
+    if (baseName.startsWith('.private_egress_transaction')) {
+        throw new Error(`DENYLIST SCAN FAILED: Transaction journal found in staging: ${file.relPath}`);
+    }
+    if (baseName.startsWith('winsec_blob')) {
+        throw new Error(`DENYLIST SCAN FAILED: Windows security blob found in staging: ${file.relPath}`);
+    }
+    // Deny any .log file except test site fixtures or evidence explicitly intended for site docs
+    if (baseName.endsWith('.log') && !file.relPath.startsWith('owner-extension-test-site/')) {
+        throw new Error(`DENYLIST SCAN FAILED: Stale runtime log found in staging: ${file.relPath}`);
+    }
+}
+console.log('    [OK] Staging denylist scan passed (zero runtime artifacts, zero tokens, zero logs).');
+
+// 7f. Security & Secret Scan (Strict scan on all project code, skipping third-party libraries & runtime)
+console.log('2f. Running security & secrets scan on staging files...');
+const EXPOSED_RC3_6_TOKEN_SHA256 = '597a70b99c11c7f4d13a075204ac240bb08a7a1d6c08c78268328e0bb59daeda';
+function scanDirectoryForSecrets(dir) {
+    const forbiddenPatterns = [
+        /(?:ghp_[a-zA-Z0-9]{30,}|gho_[a-zA-Z0-9]{30,}|github_pat_[a-zA-Z0-9_]{50,})/,
+        /-----BEGIN\s+OPENSSH\s+PRIVATE\s+KEY-----/,
+        /-----BEGIN\s+RSA\s+PRIVATE\s+KEY-----/
+    ];
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    for (const ent of entries) {
+        if (ent.name === 'node_modules' || ent.name === 'runtime') continue;
+        const full = path.join(dir, ent.name);
+        if (ent.isDirectory()) {
+            scanDirectoryForSecrets(full);
+        } else if (ent.isFile() && !full.endsWith('.png') && !full.endsWith('.jpg') && !full.endsWith('.zip') && !full.endsWith('.exe') && !full.endsWith('.wav')) {
+            const content = fs.readFileSync(full, 'utf8');
+            for (const pat of forbiddenPatterns) {
+                if (pat.test(content)) {
+                    throw new Error(`SECURITY SCAN FAILED: Potential secret pattern found in ${full}`);
+                }
+            }
+            if (ent.name === '.control_token') {
+                throw new Error(`SECURITY SCAN FAILED: .control_token file present in ${full}`);
+            }
+        }
+    }
+}
+scanDirectoryForSecrets(stagingDir);
+console.log('    [OK] Secrets scan PASSED (zero credentials/private keys detected).');
 
 // 8. Inventory & Hashes
 const files = getAllFiles(stagingDir);
@@ -228,7 +328,37 @@ const zipBuf = fs.readFileSync(zipOut);
 const zipSha = crypto.createHash('sha256').update(zipBuf).digest('hex');
 console.log(`✅ Zip created: ${zipOut} (${zipBuf.length} bytes, SHA-256: ${zipSha})`);
 
-// 10. Update PACKAGE_INVENTORY_SHA256.txt
+// 10. Mandatory Post-Zip Archive Entry Scan (V1, V2, V3 Verification)
+console.log('4. Verifying ZIP archive entries via tar -tf...');
+const zipEntriesRaw = execSync(`tar -tf "${zipOut}"`, { encoding: 'utf-8' });
+const zipEntries = zipEntriesRaw.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+
+for (const entry of zipEntries) {
+    const base = path.basename(entry);
+    if (base === '.control_token') {
+        fs.unlinkSync(zipOut);
+        throw new Error(`ARCHIVE VERIFICATION FAILED: .control_token is present in release archive entry: ${entry}`);
+    }
+    if (base === 'privacy_relay.log') {
+        fs.unlinkSync(zipOut);
+        throw new Error(`ARCHIVE VERIFICATION FAILED: privacy_relay.log is present in release archive entry: ${entry}`);
+    }
+    if (base.endsWith('.tmp')) {
+        fs.unlinkSync(zipOut);
+        throw new Error(`ARCHIVE VERIFICATION FAILED: Temporary file present in release archive entry: ${entry}`);
+    }
+    if (base.startsWith('.private_egress_transaction')) {
+        fs.unlinkSync(zipOut);
+        throw new Error(`ARCHIVE VERIFICATION FAILED: Transaction file present in release archive entry: ${entry}`);
+    }
+    if (base.endsWith('.log') && !entry.startsWith('owner-extension-test-site/')) {
+        fs.unlinkSync(zipOut);
+        throw new Error(`ARCHIVE VERIFICATION FAILED: Stale runtime log present in release archive entry: ${entry}`);
+    }
+}
+console.log(`    [OK] Archive entry scan passed (${zipEntries.length} entries inspected; strictly zero runtime/token files).`);
+
+// 11. Update PACKAGE_INVENTORY_SHA256.txt
 const nowIso = new Date().toISOString();
 let inventoryContent = `PACKAGE INVENTORY SHA256 (XPIDER ${versionStr} OWNER BETA CUT)\n`;
 inventoryContent += `Generated: ${nowIso}\n`;

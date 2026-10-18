@@ -860,21 +860,27 @@
         }
 
         /**
-         * [Issue #6 Comment #6250195133 U1] Query Companion Recovery Journal Status (/recovery-status)
+         * [Issue #6 Comment #6250195133 U1 & Comment #6250701581 V5] Query Companion Recovery Journal Status (/recovery-status)
+         * Authenticated endpoint passes Bearer token; falls back to coarse unauthenticated /health
          */
         async getRecoveryStatus() {
             const host = this.config.relayHost || '127.0.0.1';
             const port = this.config.relayControlPort || 18989;
             try {
+                if (!this.ephemeralRelayToken) {
+                    await this.fetchRelayControlToken();
+                }
                 const fetchFn = this._mockFetch !== undefined ? this._mockFetch : (typeof fetch !== 'undefined' ? fetch : null);
                 if (!fetchFn) return { success: false, reason: 'FETCH_UNAVAILABLE' };
+                const headers = this.getRelayAuthHeaders();
                 const res = await fetchFn(`http://${host}:${port}/recovery-status`, {
-                    cache: 'no-store'
+                    cache: 'no-store',
+                    headers
                 });
                 if (res.ok) {
                     return await res.json();
                 }
-                // Fallback check /health
+                // Fallback check /health (unauthenticated coarse recovery status)
                 const healthRes = await fetchFn(`http://${host}:${port}/health`, { cache: 'no-store' });
                 if (healthRes.ok) {
                     const healthData = await healthRes.json();

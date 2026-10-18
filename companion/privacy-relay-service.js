@@ -45,6 +45,8 @@ const PROXY_PORT = 18988;
 const CONFIG_FILE = process.env.XPIDER_RELAY_CONFIG_FILE || path.join(__dirname, 'egress_pool_config.json');
 const LOG_FILE = path.join(__dirname, 'privacy_relay.log');
 const TOKEN_FILE = path.join(__dirname, '.control_token');
+// [Defect V4 Invariant] Exposed RC3.6 control token hash - strictly revoked and rotated if detected
+const EXPOSED_RC3_6_TOKEN_SHA256 = '597a70b99c11c7f4d13a075204ac240bb08a7a1d6c08c78268328e0bb59daeda';
 
 // [Defect Q2 Hardening - Issue #6 Comment #6244711545] Authoritative companion build identity & capabilities
 const COMPANION_BUILD_ID = 'R6.9G.10.3.7.1.4.20-20261018-PRIVATE-EGRESS-RC3.6';
@@ -191,15 +193,35 @@ class PrivacyRelayService {
 
   loadOrGenerateControlToken(explicitToken) {
     if (explicitToken && typeof explicitToken === 'string') {
-      return explicitToken.trim();
+      const trimmed = explicitToken.trim();
+      const hash = crypto.createHash('sha256').update(trimmed).digest('hex');
+      if (hash === EXPOSED_RC3_6_TOKEN_SHA256) {
+        this.log('[SECURITY_ROTATION] Explicit control token matches exposed RC3.6 token hash; rotating to fresh token');
+      } else {
+        return trimmed;
+      }
     }
     if (process.env.XPIDER_RELAY_CONTROL_TOKEN) {
-      return process.env.XPIDER_RELAY_CONTROL_TOKEN.trim();
+      const envToken = process.env.XPIDER_RELAY_CONTROL_TOKEN.trim();
+      const hash = crypto.createHash('sha256').update(envToken).digest('hex');
+      if (hash === EXPOSED_RC3_6_TOKEN_SHA256) {
+        this.log('[SECURITY_ROTATION] XPIDER_RELAY_CONTROL_TOKEN matches exposed RC3.6 token hash; rotating to fresh token');
+      } else {
+        return envToken;
+      }
     }
     try {
       if (fs.existsSync(TOKEN_FILE)) {
         const token = fs.readFileSync(TOKEN_FILE, 'utf8').trim();
-        if (token && token.length >= 32) return token;
+        const hash = crypto.createHash('sha256').update(token).digest('hex');
+        if (hash === EXPOSED_RC3_6_TOKEN_SHA256) {
+          this.log('[SECURITY_ROTATION] Detected exposed RC3.6 control token in .control_token file; purging and rotating to fresh token');
+          try {
+            fs.unlinkSync(TOKEN_FILE);
+          } catch (_) {}
+        } else if (token && token.length >= 32) {
+          return token;
+        }
       }
     } catch (_) {}
 
@@ -208,6 +230,23 @@ class PrivacyRelayService {
       fs.writeFileSync(TOKEN_FILE, newToken, { encoding: 'utf8', mode: 0o600 });
     } catch (_) {}
     return newToken;
+  }
+
+  static rotateExposedTokenIfPresent(baseDir = __dirname) {
+    const tokenPath = path.join(baseDir, '.control_token');
+    try {
+      if (fs.existsSync(tokenPath)) {
+        const content = fs.readFileSync(tokenPath, 'utf8').trim();
+        const hash = crypto.createHash('sha256').update(content).digest('hex');
+        if (hash === EXPOSED_RC3_6_TOKEN_SHA256) {
+          try { fs.unlinkSync(tokenPath); } catch (_) {}
+          const newToken = crypto.randomBytes(32).toString('hex');
+          fs.writeFileSync(tokenPath, newToken, { encoding: 'utf8', mode: 0o600 });
+          return { rotated: true, newTokenSha256: crypto.createHash('sha256').update(newToken).digest('hex') };
+        }
+      }
+    } catch (_) {}
+    return { rotated: false };
   }
 
   log(msg) {
@@ -714,12 +753,18 @@ class PrivacyRelayService {
         return;
       }
 
-      // GET /health: Public unauthenticated ping (does not disclose fingerprints or secrets)
+      // GET /health: Public unauthenticated ping (does not disclose fingerprints or secrets or detailed resource IDs)
       if (pathname === '/health' && req.method === 'GET') {
         const active = this.getActiveNode();
         const isHealthValid = this.isNodeHealthValid(active);
         const physicalGateFresh = !this.physicalGate.enabled || this.physicalGate.isFresh();
         const physicalGateReady = !this.physicalGate.enabled || Boolean(this.physicalGate.state && this.physicalGate.state.ready && physicalGateFresh);
+        const fullRec = this.getRecoveryStatus();
+        const coarseRec = {
+          recoveryRequired: Boolean(fullRec && fullRec.recoveryRequired),
+          status: (fullRec && fullRec.status) || 'NONE',
+          stage: (fullRec && fullRec.stage) || null
+        };
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({
           status: 'OK',
@@ -737,29 +782,37 @@ class PrivacyRelayService {
           proxyPort: this.proxyPort,
           selectedEgressId: active ? active.id : null,
           uptimeSeconds: Math.floor((Date.now() - this.startTime) / 1000),
-          recovery: this.getRecoveryStatus()
+          recovery: coarseRec
         }));
         return;
       }
 
-      // GET /recovery-status: Public unauthenticated endpoint exposing sanitized recovery state (Blocker U1)
+      // Check Bearer Token Authorization for all control endpoints
+      const authHeader = req.headers['authorization'] || '';
+      let isAuthorized = authHeader === `Bearer ${this.controlToken}`;
+      if (isAuthorized && authHeader.startsWith('Bearer ')) {
+        const presentedToken = authHeader.substring(7).trim();
+        const presentedHash = crypto.createHash('sha256').update(presentedToken).digest('hex');
+        if (presentedHash === EXPOSED_RC3_6_TOKEN_SHA256) {
+          this.log('[SECURITY_ALERT] Request presented revoked/exposed RC3.6 token. Rejected with 401.');
+          isAuthorized = false;
+        }
+      }
+      if (!isAuthorized) {
+        res.writeHead(401, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          error: 'UNAUTHORIZED',
+          message: 'Valid Bearer control token required for relay control API'
+        }));
+        return;
+      }
+
+      // GET /recovery-status: Authenticated endpoint exposing full recovery state (V5 Data Minimization)
       if (pathname === '/recovery-status' && req.method === 'GET') {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({
           success: true,
           recovery: this.getRecoveryStatus()
-        }));
-        return;
-      }
-
-      // Check Bearer Token Authorization for all other endpoints
-      const authHeader = req.headers['authorization'] || '';
-      const isAuthorized = authHeader === `Bearer ${this.controlToken}`;
-      if (!isAuthorized) {
-        res.writeHead(401);
-        res.end(JSON.stringify({
-          error: 'UNAUTHORIZED',
-          message: 'Valid Bearer control token required for relay control API'
         }));
         return;
       }

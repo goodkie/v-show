@@ -11,19 +11,27 @@ const { exec, spawn } = require('child_process');
 const http = require('http');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 
 const RELAY_DIR = path.resolve(__dirname, '..');
 const { PrivateEgressProvisioner, TIERS } = require(path.join(RELAY_DIR, 'private-egress-provisioner'));
 const SILENT_RUNNER_VBS = path.join(RELAY_DIR, 'start_relay_silent.vbs');
 const RELAY_SCRIPT = path.join(RELAY_DIR, 'privacy-relay-service.js');
 const TOKEN_FILE = path.join(RELAY_DIR, '.control_token');
+const EXPOSED_RC3_6_TOKEN_SHA256 = '597a70b99c11c7f4d13a075204ac240bb08a7a1d6c08c78268328e0bb59daeda';
 const CONTROL_PORT = 18989;
 const PROXY_PORT = 18988;
 
 function getControlToken() {
   try {
     if (fs.existsSync(TOKEN_FILE)) {
-      return fs.readFileSync(TOKEN_FILE, 'utf8').trim();
+      const token = fs.readFileSync(TOKEN_FILE, 'utf8').trim();
+      const hash = crypto.createHash('sha256').update(token).digest('hex');
+      if (hash === EXPOSED_RC3_6_TOKEN_SHA256) {
+        try { fs.unlinkSync(TOKEN_FILE); } catch (_) {}
+        return null;
+      }
+      return token;
     }
   } catch (_) {}
   return null;

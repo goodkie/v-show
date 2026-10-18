@@ -329,8 +329,8 @@ async function runU1toU3Suite() {
   await companion.start();
 
   try {
-    // 7a. Query /recovery-status directly (public unauthenticated endpoint)
-    const recStatusRes = await new Promise((resolve, reject) => {
+    // 7a. Query /recovery-status directly WITHOUT auth (must return 401 UNAUTHORIZED per V5)
+    const unauthRecRes = await new Promise((resolve, reject) => {
       http.get(`http://127.0.0.1:${testPort}/recovery-status`, (res) => {
         let body = '';
         res.on('data', chunk => body += chunk);
@@ -344,12 +344,40 @@ async function runU1toU3Suite() {
       }).on('error', reject);
     });
 
-    assert.strictEqual(recStatusRes.statusCode, 200, '/recovery-status must return 200');
-    assert.strictEqual(recStatusRes.data.success, true);
-    assert(recStatusRes.data.recovery, 'recovery object must be present in response');
-    assert.strictEqual(recStatusRes.data.recovery.recoveryRequired, false, 'No recovery required on clean start');
+    assert.strictEqual(unauthRecRes.statusCode, 401, 'Unauthenticated /recovery-status must return 401');
+    assert.strictEqual(unauthRecRes.data.error, 'UNAUTHORIZED');
 
-    // 7b. Query /health and verify capabilities and recovery object
+    // 7b. Query /recovery-status WITH Bearer token (must return 200 per V5)
+    const authRecRes = await new Promise((resolve, reject) => {
+      const req = http.request({
+        hostname: '127.0.0.1',
+        port: testPort,
+        path: '/recovery-status',
+        method: 'GET',
+        headers: {
+          'Authorization': 'Bearer test-token-rc3-6'
+        }
+      }, (res) => {
+        let body = '';
+        res.on('data', chunk => body += chunk);
+        res.on('end', () => {
+          try {
+            resolve({ statusCode: res.statusCode, data: JSON.parse(body) });
+          } catch (e) {
+            reject(e);
+          }
+        });
+      });
+      req.on('error', reject);
+      req.end();
+    });
+
+    assert.strictEqual(authRecRes.statusCode, 200, 'Authenticated /recovery-status must return 200');
+    assert.strictEqual(authRecRes.data.success, true);
+    assert(authRecRes.data.recovery, 'recovery object must be present in response');
+    assert.strictEqual(authRecRes.data.recovery.recoveryRequired, false, 'No recovery required on clean start');
+
+    // 7c. Query /health and verify capabilities and coarse recovery object (data minimization)
     const healthRes = await new Promise((resolve, reject) => {
       http.get(`http://127.0.0.1:${testPort}/health`, (res) => {
         let body = '';
@@ -366,10 +394,13 @@ async function runU1toU3Suite() {
 
     assert.strictEqual(healthRes.statusCode, 200, '/health must return 200');
     assert(healthRes.data.apiCapabilities.includes('recovery-status'), 'apiCapabilities must include "recovery-status"');
-    assert(healthRes.data.recovery, 'health response must include sanitized recovery object');
+    assert(healthRes.data.recovery, 'health response must include coarse recovery object');
     assert.strictEqual(healthRes.data.recovery.recoveryRequired, false);
+    assert.strictEqual(healthRes.data.recovery.dropletId, undefined, 'Coarse recovery must not expose dropletId');
+    assert.strictEqual(healthRes.data.recovery.firewallId, undefined, 'Coarse recovery must not expose firewallId');
+    assert.strictEqual(healthRes.data.recovery.transactionTag, undefined, 'Coarse recovery must not expose transactionTag');
 
-    console.log('  [PASS] Test 7: Companion /health and /recovery-status endpoints expose recovery state and capability.\n');
+    console.log('  [PASS] Test 7: Companion /health (coarse) and authenticated /recovery-status endpoints pass data minimization.\n');
   } finally {
     await companion.stop();
   }

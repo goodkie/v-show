@@ -19,6 +19,7 @@ const net = require('net');
 const fs = require('fs');
 const path = require('path');
 const { spawn, execSync } = require('child_process');
+const crypto = require('crypto');
 
 const EXPECTED_BUILD_ID = 'R6.9G.10.3.7.1.4.20-20261018-PRIVATE-EGRESS-RC3.6';
 const REQUIRED_CAPABILITIES = ['verify-plan', 'provision-egress', 'provision-progress', 'recovery-status'];
@@ -29,13 +30,22 @@ const RELAY_SCRIPT = path.join(COMPANION_DIR, 'privacy-relay-service.js');
 const TOKEN_FILE = path.join(COMPANION_DIR, '.control_token');
 const VBS_SCRIPT = path.join(COMPANION_DIR, 'start_relay_silent.vbs');
 
+const EXPOSED_RC3_6_TOKEN_SHA256 = '597a70b99c11c7f4d13a075204ac240bb08a7a1d6c08c78268328e0bb59daeda';
+
 const CONTROL_PORT = 18989;
 const PROXY_PORT = 18988;
 
 function getControlToken() {
   try {
     if (fs.existsSync(TOKEN_FILE)) {
-      return fs.readFileSync(TOKEN_FILE, 'utf8').trim();
+      const token = fs.readFileSync(TOKEN_FILE, 'utf8').trim();
+      const hash = crypto.createHash('sha256').update(token).digest('hex');
+      if (hash === EXPOSED_RC3_6_TOKEN_SHA256) {
+        console.log('[SECURITY_ROTATION] ensure_companion_service detected exposed RC3.6 token; removing stale token file.');
+        try { fs.unlinkSync(TOKEN_FILE); } catch (_) {}
+        return null;
+      }
+      return token;
     }
   } catch (_) {}
   return null;
