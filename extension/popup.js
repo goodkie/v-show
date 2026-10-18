@@ -2061,6 +2061,46 @@ async function hydrateSettings(overrideV2Store = null) {
 
             // [U1 & U3 Hardening] Check and display recovery or active node status
             const checkWizardRecoveryState = (onDone) => {
+                // [Build Parity Check - Issue #6 Comment #6251236140] Check Extension & Companion builds
+                chrome.runtime.sendMessage({ action: 'GET_COMPANION_BUILD_STATUS' }, (bRes) => {
+                    const extBuildSpan = document.getElementById('wizard-ext-build-id');
+                    const compBuildSpan = document.getElementById('wizard-companion-build-id');
+                    const parityCard = document.getElementById('wizard-build-parity-card');
+                    const extBuild = (typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO) ? BuildProvenance.BUILD_INFO.buildId : (bRes && bRes.extensionBuildId) || 'UNKNOWN';
+                    if (extBuildSpan) {
+                        extBuildSpan.textContent = extBuild.includes('RC') ? (extBuild.split('PRIVATE-EGRESS-')[1] || extBuild) : extBuild;
+                    }
+                    if (bRes && bRes.success && bRes.companionBuildId) {
+                        const compBuild = bRes.companionBuildId;
+                        if (compBuildSpan) {
+                            compBuildSpan.textContent = compBuild.includes('RC') ? (compBuild.split('PRIVATE-EGRESS-')[1] || compBuild) : compBuild;
+                        }
+                        const extPrefix = extBuild.split('-')[0];
+                        const compPrefix = compBuild.split('-')[0];
+                        if (extPrefix !== compPrefix) {
+                            if (parityCard) {
+                                parityCard.style.border = '1px solid #ef4444';
+                                parityCard.style.background = 'rgba(239, 68, 68, 0.2)';
+                            }
+                            if (compBuildSpan) {
+                                compBuildSpan.style.color = '#f87171';
+                                compBuildSpan.textContent += ' ⚠️ MISMATCH';
+                            }
+                        } else {
+                            if (parityCard) {
+                                parityCard.style.border = '1px solid rgba(34, 197, 94, 0.4)';
+                                parityCard.style.background = 'rgba(34, 197, 94, 0.1)';
+                            }
+                            if (compBuildSpan) compBuildSpan.style.color = '#4ade80';
+                        }
+                    } else {
+                        if (compBuildSpan) {
+                            compBuildSpan.textContent = 'NOT RUNNING';
+                            compBuildSpan.style.color = '#f87171';
+                        }
+                    }
+                });
+
                 chrome.runtime.sendMessage({ action: 'GET_RECOVERY_STATUS' }, (res) => {
                     const recovery = (res && res.success && res.recovery) ? res.recovery : null;
                     if (!recovery) {
@@ -2266,7 +2306,13 @@ async function hydrateSettings(overrideV2Store = null) {
 
                     chrome.runtime.sendMessage({
                         action: 'VERIFY_PRIVATE_EGRESS_PLAN',
-                        payload: { token, tier, region }
+                        payload: {
+                            token,
+                            tier,
+                            region,
+                            extensionBuildId: (typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO ? BuildProvenance.BUILD_INFO.buildId : null),
+                            extensionFunctionalHead: (typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO ? BuildProvenance.BUILD_INFO.implementationHead : null)
+                        }
                     }, (res) => {
                         verifyBtn.disabled = false;
                         verifyBtn.textContent = '🔍 STEP A: VERIFY PLAN & PRICE (Zero Cloud Creation)';
@@ -2415,7 +2461,14 @@ async function hydrateSettings(overrideV2Store = null) {
 
                     chrome.runtime.sendMessage({
                         action: 'PROVISION_PRIVATE_EGRESS',
-                        payload: { token, tier, region, verifiedQuote: verifiedPlan }
+                        payload: {
+                            token,
+                            tier,
+                            region,
+                            verifiedQuote: verifiedPlan,
+                            extensionBuildId: (typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO ? BuildProvenance.BUILD_INFO.buildId : null),
+                            extensionFunctionalHead: (typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO ? BuildProvenance.BUILD_INFO.implementationHead : null)
+                        }
                     }, async (res) => {
                         clearInterval(pollTimer);
                         createBtn.disabled = false;

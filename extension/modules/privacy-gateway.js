@@ -740,10 +740,15 @@
                 const fetchFn = this._mockFetch !== undefined ? this._mockFetch : (typeof fetch !== 'undefined' ? fetch : null);
                 if (!fetchFn) return { success: false, reason: 'FETCH_UNAVAILABLE' };
                 const headers = this.getRelayAuthHeaders();
+                const payload = {
+                    ...data,
+                    extensionBuildId: data.extensionBuildId || ((typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO) ? BuildProvenance.BUILD_INFO.buildId : null),
+                    extensionFunctionalHead: data.extensionFunctionalHead || ((typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO) ? BuildProvenance.BUILD_INFO.implementationHead : null)
+                };
                 const res = await fetchFn(`http://${host}:${port}/verify-plan`, {
                     method: 'POST',
                     headers,
-                    body: JSON.stringify(data)
+                    body: JSON.stringify(payload)
                 });
                 if (res.ok) {
                     return await res.json();
@@ -781,10 +786,15 @@
                 const fetchFn = this._mockFetch !== undefined ? this._mockFetch : (typeof fetch !== 'undefined' ? fetch : null);
                 if (!fetchFn) return { success: false, reason: 'FETCH_UNAVAILABLE' };
                 const headers = this.getRelayAuthHeaders();
+                const payload = {
+                    ...data,
+                    extensionBuildId: data.extensionBuildId || ((typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO) ? BuildProvenance.BUILD_INFO.buildId : null),
+                    extensionFunctionalHead: data.extensionFunctionalHead || ((typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO) ? BuildProvenance.BUILD_INFO.implementationHead : null)
+                };
                 const res = await fetchFn(`http://${host}:${port}/provision-egress`, {
                     method: 'POST',
                     headers,
-                    body: JSON.stringify(data)
+                    body: JSON.stringify(payload)
                 });
                 if (res.ok) {
                     return await res.json();

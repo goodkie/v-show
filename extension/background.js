@@ -3504,6 +3504,31 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
             return true;
         }
 
+        case 'GET_COMPANION_BUILD_STATUS': {
+            (async () => {
+                try {
+                    const host = '127.0.0.1';
+                    const port = 18989;
+                    const res = await fetch(`http://${host}:${port}/health`, { cache: 'no-store' });
+                    if (res.ok) {
+                        const data = await res.json();
+                        sendResponse({
+                            success: true,
+                            companionBuildId: data.companionBuildId || null,
+                            companionImplementationHead: data.companionImplementationHead || null,
+                            extensionBuildId: (typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO) ? BuildProvenance.BUILD_INFO.buildId : null,
+                            extensionImplementationHead: (typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO) ? BuildProvenance.BUILD_INFO.implementationHead : null
+                        });
+                    } else {
+                        sendResponse({ success: false, error: `HTTP_${res.status}` });
+                    }
+                } catch (e) {
+                    sendResponse({ success: false, error: e.message });
+                }
+            })();
+            return true;
+        }
+
         case 'PING':
             sendResponse({ success: true, timestamp: Date.now() });
             return true;

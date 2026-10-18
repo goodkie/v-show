@@ -19,8 +19,15 @@ const SILENT_RUNNER_VBS = path.join(RELAY_DIR, 'start_relay_silent.vbs');
 const RELAY_SCRIPT = path.join(RELAY_DIR, 'privacy-relay-service.js');
 const TOKEN_FILE = path.join(RELAY_DIR, '.control_token');
 const EXPOSED_RC3_6_TOKEN_SHA256 = '597a70b99c11c7f4d13a075204ac240bb08a7a1d6c08c78268328e0bb59daeda';
+const COMPANION_BUILD_ID = 'R6.9G.10.3.7.1.4.21-20261018-PRIVATE-EGRESS-RC3.7';
 const CONTROL_PORT = 18989;
 const PROXY_PORT = 18988;
+
+function isCompatibleExtensionBuild(extBuildId, companionBuildId) {
+  if (!extBuildId || typeof extBuildId !== 'string') return false;
+  if (!companionBuildId || typeof companionBuildId !== 'string') return false;
+  return extBuildId.split('-')[0] === companionBuildId.split('-')[0];
+}
 
 function getControlToken() {
   try {
@@ -294,6 +301,15 @@ async function handleMessage(msg) {
       if (!token) {
         return { action: 'VERIFY_PRIVATE_EGRESS_PLAN_RESPONSE', success: false, error: 'MISSING_API_TOKEN' };
       }
+      if (payload.extensionBuildId && typeof payload.extensionBuildId === 'string') {
+        if (!isCompatibleExtensionBuild(payload.extensionBuildId, COMPANION_BUILD_ID)) {
+          return {
+            action: 'VERIFY_PRIVATE_EGRESS_PLAN_RESPONSE',
+            success: false,
+            error: `EXTENSION_COMPANION_VERSION_MISMATCH: Extension build (${payload.extensionBuildId}) does not match Companion service build (${COMPANION_BUILD_ID}). Please reload the extension at chrome://extensions or edge://extensions.`
+          };
+        }
+      }
       const provisioner = new PrivateEgressProvisioner({
         token,
         controlPort: CONTROL_PORT,
@@ -316,6 +332,15 @@ async function handleMessage(msg) {
       const token = payload.token;
       if (!token) {
         return { action: 'PROVISION_PRIVATE_EGRESS_RESPONSE', success: false, error: 'MISSING_API_TOKEN' };
+      }
+      if (payload.extensionBuildId && typeof payload.extensionBuildId === 'string') {
+        if (!isCompatibleExtensionBuild(payload.extensionBuildId, COMPANION_BUILD_ID)) {
+          return {
+            action: 'PROVISION_PRIVATE_EGRESS_RESPONSE',
+            success: false,
+            error: `EXTENSION_COMPANION_VERSION_MISMATCH: Extension build (${payload.extensionBuildId}) does not match Companion service build (${COMPANION_BUILD_ID}). Please reload the extension at chrome://extensions or edge://extensions.`
+          };
+        }
       }
       const provisioner = new PrivateEgressProvisioner({
         token,
@@ -576,3 +601,12 @@ process.stdin.on('data', async (chunk) => {
     }
   }
 });
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    handleMessage,
+    COMPANION_BUILD_ID,
+    isCompatibleExtensionBuild,
+    getControlToken
+  };
+}

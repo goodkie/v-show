@@ -250,6 +250,99 @@ function isPublicIp(rawIp, allowTestNet = false) {
   return false;
 }
 
+// [RC3.8 W1 Hardening] Deterministic DigitalOcean Cloud Firewall Outbound Rules
+// Per DigitalOcean Firewall API contract:
+// - TCP and UDP: all ports must be '0' (literal 'all' is strictly rejected with 422 "you must specify a valid range for ports")
+// - ICMP: ports must be '0'
+const DIGITALOCEAN_FIREWALL_DEFAULT_OUTBOUND_RULES = Object.freeze([
+  { protocol: 'tcp', ports: '0', destinations: { addresses: ['0.0.0.0/0', '::/0'] } },
+  { protocol: 'udp', ports: '0', destinations: { addresses: ['0.0.0.0/0', '::/0'] } },
+  { protocol: 'icmp', ports: '0', destinations: { addresses: ['0.0.0.0/0', '::/0'] } }
+]);
+
+function getDigitalOceanDefaultOutboundRules() {
+  return DIGITALOCEAN_FIREWALL_DEFAULT_OUTBOUND_RULES.map(r => ({
+    protocol: r.protocol,
+    ports: r.ports,
+    destinations: { addresses: [...r.destinations.addresses] }
+  }));
+}
+
+/**
+ * [RC3.8 W2 Hardening] Validate a single DigitalOcean Cloud Firewall rule against real provider contract.
+ * Rejects ports: 'all' with 422 "you must specify a valid range for ports".
+ */
+function validateDigitalOceanFirewallRule(rule, direction = 'rule') {
+  if (!rule || typeof rule !== 'object') {
+    const err = new Error(`Invalid firewall ${direction}: must be an object`);
+    err.statusCode = 422;
+    throw err;
+  }
+  const protocol = (rule.protocol || '').toLowerCase();
+  if (!['tcp', 'udp', 'icmp'].includes(protocol)) {
+    const err = new Error(`Invalid firewall ${direction} protocol: "${rule.protocol}"`);
+    err.statusCode = 422;
+    throw err;
+  }
+  const ports = String(rule.ports !== undefined ? rule.ports : '');
+  if (ports === 'all') {
+    const err = new Error('you must specify a valid range for ports');
+    err.statusCode = 422;
+    throw err;
+  }
+  if (protocol === 'icmp') {
+    if (ports !== '0') {
+      const err = new Error('you must specify a valid range for ports');
+      err.statusCode = 422;
+      throw err;
+    }
+  } else if (protocol === 'tcp' || protocol === 'udp') {
+    const singlePortRegex = /^([0-9]{1,5})$/;
+    const portRangeRegex = /^([0-9]{1,5})-([0-9]{1,5})$/;
+    if (ports === '0') {
+      // valid: represents all ports for tcp/udp
+    } else if (singlePortRegex.test(ports)) {
+      const p = parseInt(ports, 10);
+      if (p < 1 || p > 65535) {
+        const err = new Error('you must specify a valid range for ports');
+        err.statusCode = 422;
+        throw err;
+      }
+    } else if (portRangeRegex.test(ports)) {
+      const m = ports.match(portRangeRegex);
+      const start = parseInt(m[1], 10);
+      const end = parseInt(m[2], 10);
+      if (start < 1 || start > 65535 || end < 1 || end > 65535 || start > end) {
+        const err = new Error('you must specify a valid range for ports');
+        err.statusCode = 422;
+        throw err;
+      }
+    } else {
+      const err = new Error('you must specify a valid range for ports');
+      err.statusCode = 422;
+      throw err;
+    }
+  }
+  return true;
+}
+
+/**
+ * [RC3.8 W2 Hardening] Validate complete DigitalOcean Cloud Firewall payload before submission or in mock provider.
+ */
+function validateDigitalOceanFirewallPayload(payload) {
+  if (!payload || typeof payload !== 'object') return;
+  if (Array.isArray(payload.inbound_rules)) {
+    for (const r of payload.inbound_rules) {
+      validateDigitalOceanFirewallRule(r, 'inbound_rule');
+    }
+  }
+  if (Array.isArray(payload.outbound_rules)) {
+    for (const r of payload.outbound_rules) {
+      validateDigitalOceanFirewallRule(r, 'outbound_rule');
+    }
+  }
+}
+
 class PrivateEgressProvisioner {
   constructor(options = {}) {
     this.token = options.token || null;
@@ -258,6 +351,7 @@ class PrivateEgressProvisioner {
     this.mockMode = Boolean(options.mockMode);
     this.simulatePreflightFailure = Boolean(options.simulatePreflightFailure);
     this.simulateFirewallFailure = Boolean(options.simulateFirewallFailure);
+    this.simulateFirewallSchema422 = Boolean(options.simulateFirewallSchema422);
     this.simulateCatalogFailure = Boolean(options.simulateCatalogFailure);
     this.simulateInvalidToken = Boolean(options.simulateInvalidToken);
     this.simulateMissingScope = Boolean(options.simulateMissingScope);
@@ -1291,18 +1385,16 @@ class PrivateEgressProvisioner {
         if (this.simulateFirewallFailure) {
           throw new Error('SIMULATED_FIREWALL_FAILURE');
         }
-        const fwRes = await this.doRequest('/firewalls', 'POST', {
+        const fwPayload = {
           name: `xpider-fw-${transactionTag}`,
           inbound_rules: [
             { protocol: 'tcp', ports: '22', sources: { addresses: allowedSources } }
           ],
-          outbound_rules: [
-            { protocol: 'tcp', ports: 'all', destinations: { addresses: ['0.0.0.0/0', '::/0'] } },
-            { protocol: 'udp', ports: 'all', destinations: { addresses: ['0.0.0.0/0', '::/0'] } },
-            { protocol: 'icmp', ports: 'all', destinations: { addresses: ['0.0.0.0/0', '::/0'] } }
-          ],
+          outbound_rules: getDigitalOceanDefaultOutboundRules(),
           tags: [transactionTag]
-        });
+        };
+        validateDigitalOceanFirewallPayload(fwPayload);
+        const fwRes = await this.doRequest('/firewalls', 'POST', fwPayload);
         if (!fwRes || !fwRes.firewall) {
           throw new Error('Cloud Firewall creation returned invalid response');
         }
@@ -1336,16 +1428,16 @@ class PrivateEgressProvisioner {
           scopeErr.statusCode = 403;
           throw scopeErr;
         }
-        await this.doRequest(`/firewalls/${firewallId}`, 'PUT', {
+        const testPutPayload = {
           name: `xpider-fw-${transactionTag}`,
           inbound_rules: [
             { protocol: 'tcp', ports: '22', sources: { addresses: allowedSources } }
           ],
-          outbound_rules: [
-            { protocol: 'tcp', ports: 'all', destinations: { addresses: ['0.0.0.0/0', '::/0'] } }
-          ],
+          outbound_rules: getDigitalOceanDefaultOutboundRules(),
           tags: [transactionTag]
-        });
+        };
+        validateDigitalOceanFirewallPayload(testPutPayload);
+        await this.doRequest(`/firewalls/${firewallId}`, 'PUT', testPutPayload);
       } catch (putErr) {
         if (putErr.statusCode === 403 || (putErr.message && putErr.message.includes('403'))) {
           const scopeErr = new Error('TOKEN_SCOPE_MISSING: DigitalOcean token lacks "firewall:update" permission. Cloud creation aborted before droplet allocation.');
@@ -1504,18 +1596,16 @@ systemctl restart ssh || systemctl restart sshd
 
       // [R1 & S2 Hardening] Update Cloud Firewall: allow proxy port descriptor.port from Owner CIDR ONLY, remove port 22, transactionTag ONLY
       try {
-        await this.doRequest(`/firewalls/${firewallId}`, 'PUT', {
+        const updateFwPayload = {
           name: `xpider-fw-${transactionTag}`,
           inbound_rules: [
             { protocol: 'tcp', ports: String(descriptor.port), sources: { addresses: allowedSources } }
           ],
-          outbound_rules: [
-            { protocol: 'tcp', ports: 'all', destinations: { addresses: ['0.0.0.0/0', '::/0'] } },
-            { protocol: 'udp', ports: 'all', destinations: { addresses: ['0.0.0.0/0', '::/0'] } },
-            { protocol: 'icmp', ports: 'all', destinations: { addresses: ['0.0.0.0/0', '::/0'] } }
-          ],
+          outbound_rules: getDigitalOceanDefaultOutboundRules(),
           tags: [transactionTag]
-        });
+        };
+        validateDigitalOceanFirewallPayload(updateFwPayload);
+        await this.doRequest(`/firewalls/${firewallId}`, 'PUT', updateFwPayload);
       } catch (updateErr) {
         throw new Error(`FAIL-CLOSED: Cloud Firewall rule update failed: ${updateErr.message}`);
       }
@@ -2661,6 +2751,16 @@ systemctl restart ssh || systemctl restart sshd
       });
     }
     if (endpoint === '/firewalls' && method === 'POST') {
+      if (this.simulateFirewallSchema422) {
+        const err = new Error('you must specify a valid range for ports');
+        err.statusCode = 422;
+        return Promise.reject(err);
+      }
+      try {
+        validateDigitalOceanFirewallPayload(body);
+      } catch (schemaErr) {
+        return Promise.reject(schemaErr);
+      }
       this.mockFirewalls = this.mockFirewalls || {};
       const fwId = 'fw-1234';
       this.mockFirewalls[fwId] = {
@@ -2698,6 +2798,11 @@ systemctl restart ssh || systemctl restart sshd
         err.statusCode = 403;
         err.code = 'TOKEN_SCOPE_MISSING';
         return Promise.reject(err);
+      }
+      try {
+        validateDigitalOceanFirewallPayload(body);
+      } catch (schemaErr) {
+        return Promise.reject(schemaErr);
       }
       const fwId = endpoint.split('/').pop();
       if (this.mockDeletedResources.firewalls.includes(fwId)) {
@@ -2778,5 +2883,9 @@ module.exports = {
   STAGES,
   redactSecrets,
   formatIpCidr,
-  isPublicIp
+  isPublicIp,
+  DIGITALOCEAN_FIREWALL_DEFAULT_OUTBOUND_RULES,
+  getDigitalOceanDefaultOutboundRules,
+  validateDigitalOceanFirewallRule,
+  validateDigitalOceanFirewallPayload
 };
