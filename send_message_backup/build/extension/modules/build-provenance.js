@@ -15,23 +15,23 @@
 
     const BUILD_INFO = {
         branch: 'upgrade/phase-0-1',
-        channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.4',
+        channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.5',
         testOnly: true,
-        // [R6.9G.10.3.7.1.4.18] XPIDER AutoForm Sender Pro — Private Egress Release Candidate 3.4 (S1-S6 Security Hardening)
-        implementationHead: 'b2b29def9bb87c34781653d796c3c217ea2264fc',
-        implementationHeadShort: 'b2b29def',
-        head: 'b2b29def9bb87c34781653d796c3c217ea2264fc',
-        headShort: 'b2b29def',
+        // [R6.9G.10.3.7.1.4.19] XPIDER AutoForm Sender Pro — Private Egress Release Candidate 3.5 (T1-T7 Zero-Prereq + Crash-Safe Pre-Live Closure)
+        implementationHead: 'b50400d322ab3dba402ce45b829aef875800ae75',
+        implementationHeadShort: 'b50400d3',
+        head: 'b50400d322ab3dba402ce45b829aef875800ae75',
+        headShort: 'b50400d3',
         rollbackBase: '50aee3538806d7b5227fcd929e27979d1e5a3419',
         previousFunctionalRestorePoint: '50aee3538806d7b5227fcd929e27979d1e5a3419',
         manifestVersion: 3,
-        buildId: 'R6.9G.10.3.7.1.4.18-20261018-PRIVATE-EGRESS-RC3.4',
-        builtAt: '2026-10-18T07:21:22.297Z',
+        buildId: 'R6.9G.10.3.7.1.4.19-20261018-PRIVATE-EGRESS-RC3.5',
+        builtAt: '2026-10-18T12:45:43.424Z',
         provenanceSchema: 2,
         modules: {
             backgroundSha: '23df7668effedf5cf7e5e54a1b1d68c8b5379d10367916af19d05d6beb631644',
             contentScriptSha: 'a6a34d79c4da791a245b16709f8976fb88418ef4f8398cd3b19df1c52bced270',
-            popupSha: 'a3044e3682676829ff84678f0a4e812cd3d5f49c23233babc8937be77c9a68f6',
+            popupSha: '0720f6e5a3800b9f3653cd2fa9dff7e143818b7abcd90361211eff557b0f7e98',
             solverContentSha: 'd7de969d29df29799537b11380f0f82967bb93da227c91e7dc8c6af0d128f457',
             solverCoreSha: '01b3d96048ea933403e4599854dcdca28027e7f676aa5077eb6c5eb0582ac1e7',
             emailCollectorSha: '3f1147a379e159e7777158f2caa74cc8d40b2a0b0eb2c244f440af379cb5c9c9',

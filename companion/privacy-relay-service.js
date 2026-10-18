@@ -47,8 +47,8 @@ const LOG_FILE = path.join(__dirname, 'privacy_relay.log');
 const TOKEN_FILE = path.join(__dirname, '.control_token');
 
 // [Defect Q2 Hardening - Issue #6 Comment #6244711545] Authoritative companion build identity & capabilities
-const COMPANION_BUILD_ID = 'R6.9G.10.3.7.1.4.18-20261018-PRIVATE-EGRESS-RC3.4';
-const COMPANION_IMPLEMENTATION_HEAD = 'b2b29def9bb87c34781653d796c3c217ea2264fc';
+const COMPANION_BUILD_ID = 'R6.9G.10.3.7.1.4.19-20261018-PRIVATE-EGRESS-RC3.5';
+const COMPANION_IMPLEMENTATION_HEAD = 'b50400d322ab3dba402ce45b829aef875800ae75';
 const COMPANION_API_CAPABILITIES = [
   'verify-plan',
   'provision-egress',

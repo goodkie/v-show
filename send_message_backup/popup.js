@@ -2258,7 +2258,7 @@ async function hydrateSettings(overrideV2Store = null) {
                             if (errCode === 'TOKEN_INVALID' || rawErr.includes('401') || rawErr.includes('Unauthorized') || rawErr.includes('Invalid DigitalOcean API token')) {
                                 displayMsg = `[TOKEN_INVALID / 401]\nYour DigitalOcean API token is invalid or expired.\nPlease generate a new personal access token in DigitalOcean Control Panel with read+write permissions.`;
                             } else if (errCode === 'TOKEN_SCOPE_MISSING' || rawErr.includes('403') || rawErr.includes('Forbidden') || rawErr.includes('scope')) {
-                                displayMsg = `[TOKEN_SCOPE_MISSING / 403]\nYour DigitalOcean API token lacks required read/write permissions.\nPlease ensure the token has both 'Read' and 'Write' scopes.`;
+                                displayMsg = `[TOKEN_SCOPE_MISSING / 403]\nYour DigitalOcean API token lacks required scopes.\nPlease ensure the token includes all required operations:\n- Droplet: Create, Read, Delete\n- Firewall: Create, Read, Update, Delete (specifically firewall:update)\n- Tag: Create, Read, Delete (specifically tag:delete)\n- SSH Key: Create, Read, Delete\n- Account: Read\n\nDetails: ${rawErr}`;
                             } else if (errCode === 'PROVIDER_NETWORK_ERROR' || rawErr.includes('ENOTFOUND') || rawErr.includes('ECONNREFUSED') || rawErr.includes('ETIMEDOUT') || rawErr.includes('Failed to connect to local companion')) {
                                 displayMsg = `[PROVIDER_NETWORK_ERROR]\nCould not establish connection to provider API or local companion.\nDetails: ${rawErr}`;
                             } else if (errCode === 'PROVIDER_CATALOG_ERROR' || rawErr.includes('unavailable') || rawErr.includes('catalog')) {
@@ -2353,6 +2353,8 @@ async function hydrateSettings(overrideV2Store = null) {
                                 }
                                 if (createBtn) createBtn.disabled = true;
                                 alert(`Provisioning aborted due to price quote change:\n\n${err}\n\nPlease re-run Step A to confirm current live pricing.`);
+                            } else if (err.includes('TOKEN_SCOPE_MISSING') || err.includes('403') || err.includes('scope')) {
+                                alert(`Provisioning aborted due to missing token scopes:\n\n${err}\n\nPlease verify that your DigitalOcean token has all required scopes:\n- Droplet: Create, Read, Delete\n- Firewall: Create, Read, Update, Delete (specifically firewall:update)\n- Tag: Create, Read, Delete (specifically tag:delete)\n- SSH Key: Create, Read, Delete\n- Account: Read`);
                             } else {
                                 alert(`Provisioning failed: ${err}`);
                             }

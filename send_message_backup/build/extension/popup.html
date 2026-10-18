@@ -135,8 +135,8 @@
                                 DIGITALOCEAN API TOKEN <span style="font-weight: 400; color: #94a3b8;">(Password field, memory-only, never persisted)</span>
                             </label>
                             <input type="password" id="wizard-do-token" class="premium-input" placeholder="Paste DigitalOcean token here (dop_v1_...)" style="width: 100%; height: 30px; font-size: 11px; font-family: monospace; padding: 4px 8px; box-sizing: border-box;" autocomplete="off">
-                            <p style="font-size: 9px; color: #64748b; margin: 4px 0 0 0;">
-                                XPIDER uses this token strictly in memory to create the server and deletes its SSH key after setup. You can revoke this token in DigitalOcean after setup.
+                            <p style="font-size: 9px; color: #94a3b8; margin: 4px 0 0 0; line-height: 1.4;">
+                                XPIDER uses this token strictly in memory. Required scopes: <b>Droplet</b> (Create, Read, Delete), <b>Firewall</b> (Create, Read, Update, Delete — specifically <code style="color: #38bdf8;">firewall:update</code>), <b>Tag</b> (Create, Read, Delete — specifically <code style="color: #38bdf8;">tag:delete</code>), <b>SSH Key</b> (Create, Read, Delete), <b>Account</b> (Read). You can revoke this token after setup.
                             </p>
                         </div>
 
