@@ -6,24 +6,24 @@ PROJECT_NAME: XPIDER AutoForm Sender Pro
 WORKSPACE_ROOT: E:\vivpr\ai\extension-form-sender
 AUTHORITY_SOURCE: goodkie/v-show Issue #6
 ACTIVE_BRANCH: upgrade/phase-0-1
-STATE_REV: 2026-10-18.21
-AUTHORITY_CURSOR: 6245191948
-LAST_AUDIT: [CHATGPT][RC3.1 PRE-LIVE AUDIT & ULTRA ECONOMY AUTHORIZATION] #6230135785
-LAST_DIRECTIVE: [OWNER REAL-USE DEFECT][RC3.1 STEP-A][PLAN VERIFY = FAILED TO FETCH — ERROR-HANDLER CRASH + STALE COMPANION UPGRADE GAP] #6244711545
-LAST_RECEIPT: 6245191948 ([ANTIGRAVITY][STEP-A FAILED-TO-FETCH + COMPANION UPGRADE CLOSURE RECEIPT] #6245191948)
+STATE_REV: 2026-10-18.22
+AUTHORITY_CURSOR: 6245480605
+LAST_AUDIT: [CHATGPT][FINAL PRE-STEP-B SECURITY AUDIT][RC3.2][STEP A PASS — STEP B HOLD FOR CONFIRMED LIVE-PROVISIONING BLOCKERS] #6245480605
+LAST_DIRECTIVE: [CHATGPT][FINAL PRE-STEP-B SECURITY AUDIT][RC3.2][STEP A PASS — STEP B HOLD FOR CONFIRMED LIVE-PROVISIONING BLOCKERS] #6245480605
+LAST_RECEIPT: (Pending Posting: [ANTIGRAVITY][PRE-STEP-B SECURITY CLOSURE RECEIPT])
 LAST_ACCEPTED_GATE: OWNER PRIVATE BETA DAILY USE OPEN (APPROVED — AUDIT GATE #6220825890)
-BUILD_ID: R6.9G.10.3.7.1.4.16-20261017-PRIVATE-EGRESS-RC3.2
-FUNCTIONAL_COMMIT: 4919d0c4c8bf180fb967f8125f186350b3c5edf3
-PROVENANCE_COMMIT: 82d2d567a04720fa94b93a5be5ef9aedb95049e9
-HANDOVER_COMMIT: 82d2d567a04720fa94b93a5be5ef9aedb95049e9
+BUILD_ID: R6.9G.10.3.7.1.4.17-20261018-PRIVATE-EGRESS-RC3.3
+FUNCTIONAL_COMMIT: a61c08ea2f0070ce47c315ba67cf8f4a8acdbb76
+PROVENANCE_COMMIT: 0b5cdb386407ae68d1825c345b1424bf89345717
+HANDOVER_COMMIT: 0b5cdb386407ae68d1825c345b1424bf89345717
 ROLLBACK_ANCHOR: 50aee3538806d7b5227fcd929e27979d1e5a3419
 PREVIOUS_FUNCTIONAL_RESTORE_POINT: 50aee3538806d7b5227fcd929e27979d1e5a3419
-NEXT_ACTION: Post RC3.2 closure receipt to Issue #6. Real VPS provisioning Step B remains on strict HOLD.
-BLOCKERS: NONE. P0 UI modal stack fixed; Defect Q1 error scoping & secret redaction resolved; Defect Q2 companion auto-upgrade & port conflict handling resolved; Defect Q3 zero price fallback enforced. Unit tests 33/33 PASS; allowlist tests 6/6 PASS; security tests 20/20 PASS; downloaded asset verified 10/10 in clean PATH.
-OWNER_ACTION: 1) Daily use continues on approved build 50aee353. 2) Real VPS Step B on HOLD until Owner verifies Step A locally.
-RELEASE_ASSET_TAG: v6.9g.10.3-rc3.2.7.1.4.16
-RELEASE_ASSET_ZIP: XPIDER_R6.9G.10.3.7.1.4.16_PRIVATE_EGRESS_RC3.2.zip
-RELEASE_ASSET_SHA256: f5e561c5c28a88c778deab12158d96958207f9d7f7aec1c0bc7d12028f14e764
+NEXT_ACTION: Post RC3.3 pre-Step-B security closure receipt to Issue #6. Step B real cloud creation remains on strict HOLD pending ChatGPT gate audit.
+BLOCKERS: NONE. Blockers R1-R6 completely resolved: R1 Cloud firewall pre-Droplet creation + pre-SSH verification; R2 SSH host key verification + MITM fail-closed; R3 probe boolean logic AND; R4 authoritative preflight null/mismatch canary IP fail-closed; R5 exact-resource ownership persistence & targeted destroy; R6 zero price fallback and verified quote binding. Unit tests: R1-R6 suite 6/6 PASS; security hardening suite 20/20 PASS; defect suite 33/33 PASS; allowlist suite 6/6 PASS; clean-room downloaded asset smoke test 100% PASS.
+OWNER_ACTION: 1) Daily use continues on approved build 50aee353. 2) Real VPS Step B on HOLD until ChatGPT audits RC3.3 and authorizes next step.
+RELEASE_ASSET_TAG: v6.9g.10.3-rc3.3.7.1.4.17
+RELEASE_ASSET_ZIP: XPIDER_R6.9G.10.3.7.1.4.17_PRIVATE_EGRESS_RC3.3.zip
+RELEASE_ASSET_SHA256: 3e1343d99ff2d8d586a904ce3f6d584e46b0a27df0d8c14a706e092d7e8aa07b
 IMMUTABLE_DAILY_USE_BASELINE: XPIDER_R6.9G.10.3.7.1.4.11_OWNER_BETA.zip (commit 50aee353)
 
 CONTINUITY_RULE: On every new ChatGPT or Antigravity window, search the current project for prior work, recover the latest valid state, and continue existing work instead of restarting.

@@ -4,32 +4,34 @@
 - Protocol: OCA-DEV-1.4
 - Project ID: xpider-autoform-sender-pro
 - Workspace: E:\vivpr\ai\extension-form-sender
-- Authority: goodkie/v-show Issue #6 (Responding to Defect Directives #6231022137 and #6244711545)
+- Authority: goodkie/v-show Issue #6 (Responding to ChatGPT Pre-Step-B Audit Directive #6245480605)
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-18.21
-- Authority Cursor: 6245191948
-- Last Defect Directives: Owner Defect Directives #6231022137 (P0 UI Fix: Modal Stack & Z-Index) and #6244711545 (Defects Q1, Q2, Q3)
-- Last Receipt: Receipt #6245191948 (https://github.com/goodkie/v-show/issues/6#issuecomment-6245191948 — `[ANTIGRAVITY][STEP-A FAILED-TO-FETCH + COMPANION UPGRADE CLOSURE RECEIPT]`)
-- Build ID: `R6.9G.10.3.7.1.4.16-20261017-PRIVATE-EGRESS-RC3.2`
-- Current Candidate Release Tag: `v6.9g.10.3-rc3.2.7.1.4.16`
-- Functional Head Commit: `4919d0c4c8bf180fb967f8125f186350b3c5edf3` (short: `4919d0c4`)
-- Provenance/Packaging Head Commit: `82d2d567a04720fa94b93a5be5ef9aedb95049e9` (short: `82d2d567`)
+- State Rev: 2026-10-18.22
+- Authority Cursor: 6245480605
+- Last Directive / Audit: ChatGPT Pre-Step-B Security Audit & Gate Decision #6245480605 (`[CHATGPT][FINAL PRE-STEP-B SECURITY AUDIT][RC3.2][STEP A PASS — STEP B HOLD FOR CONFIRMED LIVE-PROVISIONING BLOCKERS]`)
+- Last Receipt: (Pending Posting: `[ANTIGRAVITY][PRE-STEP-B SECURITY CLOSURE RECEIPT]`)
+- Build ID: `R6.9G.10.3.7.1.4.17-20261018-PRIVATE-EGRESS-RC3.3`
+- Current Candidate Release Tag: `v6.9g.10.3-rc3.3.7.1.4.17`
+- Functional Head Commit: `a61c08ea2f0070ce47c315ba67cf8f4a8acdbb76` (short: `a61c08ea`)
+- Provenance/Packaging Head Commit: `0b5cdb386407ae68d1825c345b1424bf89345717` (short: `0b5cdb38`)
 - Rollback Anchor: `50aee3538806d7b5227fcd929e27979d1e5a3419`
 
 ## Current Gate
 - Formal Gate: **OWNER PRIVATE BETA DAILY USE OPEN (APPROVED — AUDIT GATE #6220825890)**.
-- Release Status: **APPROVED FOR OWNER DAILY USE; PRIVATE EGRESS RC3.2 CLOSURE COMPLETE (TAG v6.9g.10.3-rc3.2.7.1.4.16); ALL DEFECTS Q1, Q2, Q3 & UI MODAL STACK DEFECT RESOLVED; REAL CLOUD VPS STEP B ON STRICT HOLD**.
-- Defect Q1, Q2, Q3 & UI Fix Status:
-  * **P0 UI Fix (Modal Stack & Z-Index)**: **PASS** (Settings overlay automatically closed before wizard open; explicit z-index hierarchy `#settings-overlay` 1000, `.modal-overlay` 1100, `#private-egress-modal-overlay` 1200 !important, `#privacy-block-modal-overlay` 1200 !important)
-  * **Defect Q1 (/verify-plan Scoping Crash & Secret Redaction)**: **PASS** (Request variables safely scoped outside try block; zero ReferenceError crash; safe secret token redaction; deterministic HTTP status codes and error classifications: `TOKEN_INVALID` 401, `TOKEN_SCOPE_MISSING` 403, `MALFORMED_JSON` 400, `MISSING_API_TOKEN` 400, `PROVIDER_CATALOG_ERROR`, `PROVIDER_PRICE_UNAVAILABLE`, `COMPANION_VERSION_MISMATCH`)
-  * **Defect Q2 (Authoritative Companion Auto-Upgrade & Port Conflict Handlers)**: **PASS** (`/health` advertises `companionBuildId`, `companionImplementationHead`, and `apiCapabilities`; graceful `/shutdown` endpoint implemented; `companion/ensure_companion_service.js` automatically probes, detects stale companions, terminates stale Node PIDs on Windows, launches bundled companion, and verifies capabilities before declaring setup complete; `XPIDER_AUTO_SETUP.bat` fails closed on upgrade failure; explicit `EADDRINUSE` listeners prevent silent hangs)
-  * **Defect Q3 (Strict Provider Live Price Validation)**: **PASS** (Completely removed all hardcoded `$6` and `0.00893` fallbacks across `popup.js` and `private-egress-provisioner.js`; strictly requires finite positive numbers derived live from provider catalog; unavailable or non-positive price fails closed with `PROVIDER_PRICE_UNAVAILABLE`)
-  * Defect P (Strict Supported LTS Allowlist): **PASS** (Explicit allowlist `[22, 24]` enforced across batch, relay, and native host)
-  * Blocker N (Supported Node.js LTS Runtime): **PASS** (`runtime/node/node.exe` official Node.js v24.22.0 LTS Windows x64 binary)
+- Release Status: **APPROVED FOR OWNER DAILY USE; PRE-STEP-B SECURITY HARDENING CLOSURE COMPLETE (TAG v6.9g.10.3-rc3.3.7.1.4.17); ALL BLOCKERS R1 - R6 RESOLVED; REAL CLOUD VPS STEP B ON STRICT HOLD PENDING CHATGPT GATE AUDIT**.
+- Security Hardening (R1 - R6) Status:
+  * **R1 (Cloud Firewall Before Droplet & Pre-SSH Gate)**: **PASS** (`ownerIp` resolved fail-closed before Droplet allocation; unique transaction tag `xpider-tx-...` generated; Cloud Firewall created with initial inbound rule TCP 22 strictly from `ownerCidr` (/32 or /128); firewall rules verified authoritatively before Droplet creation; Droplet tagged with transaction tag; firewall association verified authoritatively before first SSH packet; in Step 5, Cloud Firewall updated to allow only proxy port from `ownerCidr`; host UFW denies port 22; authorized_keys cleaned; client SSH key revoked from DO account; SSH verified denied)
+  * **R2 (SSH Host Key Verification)**: **PASS** (Ephemeral host key generated locally via `createEphemeralHostKeypair()`; provisioned via cloud-init `user_data`; `ssh2` configured with `hostVerifier` and `hostHash: 'sha256'`; MITM / fingerprint mismatch strictly rejected fail-closed without retry)
+  * **R3 (Egress Probe Boolean Logic)**: **PASS** (Boolean logic corrected to `if (!probeRes || !probeRes.success || !probeRes.verified) { throw ... }`; both `success` AND `verified` strictly required)
+  * **R4 (Authoritative Preflight Canary IP)**: **PASS** (`runAuthoritativePreflight` verifies `observedIp` exists, parses as valid non-private IP, and equals the expected Droplet public IP; null, missing, or mismatched canary IP fails closed)
+  * **R5 (Exact-Resource Ownership Persistence & Targeted Destroy)**: **PASS** (Transaction resource ownership persisted locally with exact IDs: `transactionTag`, `dropletId`, `firewallId`, `companionNodeId`; targeted destroy removes ONLY the exact owned droplet, firewall, and companion node with 404 absence verification; never deletes unrelated resources merely because they share a generic prefix)
+  * **R6 (Step B Live Price Revalidation & Quote Binding)**: **PASS** (Static tier fallbacks removed; requires finite positive provider catalog pricing immediately before creation; binds Step B to `verifiedQuote` from Step A; if tier, region, size, or price differs > $0.001, aborts back to Step A)
+  * Dedicated R1 - R6 Security Suite: `test/test_rc3_3_step_b_security_r1_r6.js` — **6/6 (100%) PASS**.
+  * Full Security Hardening Suite: `test/test_private_egress_security_hardening.js` — **20/20 (100%) PASS**.
   * Full Defect Q1, Q2, Q3 & UI Suite: `test/test_rc3_2_defects_q1_q2_q3_ui.js` — **33/33 (100%) PASS**.
   * Full Allowlist Suite: `test/test_runtime_lts_allowlist.js` — **6/6 (100%) PASS**.
-  * Full Security Hardening Suite: `test/test_private_egress_security_hardening.js` — **20/20 (100%) PASS**.
-  * Downloaded RC3.2 Asset Clean-Room Smoke Suite (Clean PATH, zero system Node/npm): `scratch/verify_downloaded_rc3_2.js` — **10/10 (100%) PASS**.
+  * Local Asset Clean-Room Smoke Suite: `scratch/verify_local_rc3_3.js` — **PASS (100%)**.
+  * GitHub-Downloaded RC3.3 Asset Smoke Suite: `scratch/verify_downloaded_rc3_3.js` — **PASS (100%)**.
 
 ### Operating Guidelines & Invariants:
 1. **Ultra Economy Production Tier**:
@@ -38,14 +40,14 @@
    - Approved package `XPIDER_R6.9G.10.3.7.1.4.11_OWNER_BETA.zip` on functional commit `50aee353` remains immutable.
    - Owner daily use continues without disruption.
 3. **Hold Invariant**:
-   - Do NOT ask Owner to input DigitalOcean API token until Step A plan verification is confirmed working.
-   - Zero real cloud VPS billable resources created; real cloud VPS provisioning (Step B) remains on strict HOLD.
+   - Step B real cloud VPS creation remains on strict HOLD pending ChatGPT audit of RC3.3.
+   - Zero billable resources remain.
 
 ## Lineage & Verification Anchors
 - Rollback Anchor: `50aee3538806d7b5227fcd929e27979d1e5a3419`
 - Previous Functional Restore Point: `50aee3538806d7b5227fcd929e27979d1e5a3419`
-- Functional Head: `4919d0c4c8bf180fb967f8125f186350b3c5edf3` (short: `4919d0c4`)
-- Provenance/Packaging Head: `82d2d567a04720fa94b93a5be5ef9aedb95049e9` (short: `82d2d567`)
-- Release Candidate Tag: `v6.9g.10.3-rc3.2.7.1.4.16`
-- Release Candidate Asset: `XPIDER_R6.9G.10.3.7.1.4.16_PRIVATE_EGRESS_RC3.2.zip` (45,509,583 bytes, SHA-256: `f5e561c5c28a88c778deab12158d96958207f9d7f7aec1c0bc7d12028f14e764`)
-- GitHub Release URL: `https://github.com/goodkie/v-show/releases/tag/v6.9g.10.3-rc3.2.7.1.4.16`
+- Functional Head: `a61c08ea2f0070ce47c315ba67cf8f4a8acdbb76` (short: `a61c08ea`)
+- Provenance/Packaging Head: `0b5cdb386407ae68d1825c345b1424bf89345717` (short: `0b5cdb38`)
+- Release Candidate Tag: `v6.9g.10.3-rc3.3.7.1.4.17`
+- Release Candidate Asset: `XPIDER_R6.9G.10.3.7.1.4.17_PRIVATE_EGRESS_RC3.3.zip` (45,497,113 bytes, SHA-256: `3e1343d99ff2d8d586a904ce3f6d584e46b0a27df0d8c14a706e092d7e8aa07b`)
+- GitHub Release URL: `https://github.com/goodkie/v-show/releases/tag/v6.9g.10.3-rc3.3.7.1.4.17`
