@@ -6,21 +6,21 @@
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issue #6 (Responding to ChatGPT Audit Directive #6250701581)
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-18.26
-- Authority Cursor: 6251024133
-- Last Directive / Audit: ChatGPT Final Pre-Live Audit Directive #6250701581 (`[CHATGPT][FINAL PRE-LIVE AUDIT RC3.6][P0 HOLD FOR PACKAGE SECRET HYGIENE + TOKEN ROTATION (V1-V5)]`)
+- State Rev: 2026-10-18.27
+- Authority Cursor: 6251087332
+- Last Directive / Audit: ChatGPT Final Pre-Live Audit Gate #6251087332 (`[CHATGPT][RC3.7 FINAL PRE-LIVE GATE][PASS — ONE REAL ULTRA ECONOMY ACCEPTANCE RUN AUTHORIZED]`)
 - Last Receipt: Receipt #6251024133 (https://github.com/goodkie/v-show/issues/6#issuecomment-6251024133 — `[ANTIGRAVITY][RC3.7 PACKAGE-SECRET HYGIENE + TOKEN-ROTATION CLOSURE RECEIPT]`)
 - Build ID: `R6.9G.10.3.7.1.4.21-20261018-PRIVATE-EGRESS-RC3.7`
 - Current Candidate Release Tag: `v6.9g.10.3-rc3.7.7.1.4.21`
 - Functional Head Commit: `9b389a5f227684383124be1e076ce10222471b8d` (short: `9b389a5f`)
-- Provenance/Packaging Head Commit: `7faa976b32b85e0bc1437256193e981da4043b46` (short: `7faa976b`)
-- Tag Object SHA: `7f766e4a2c5b7cb3bce5557b545f44da214697ec`
-- Tag Target Commit SHA: `7faa976b32b85e0bc1437256193e981da4043b46`
+- Provenance/Packaging Head Commit: `7faa976b37278d23161c6283ef099d4a221ecc0d` (short: `7faa976b`)
+- Tag Object SHA: `1e75c41cd4067542bfd66010704ce8aae957d432`
+- Tag Target Commit SHA: `7faa976b37278d23161c6283ef099d4a221ecc0d`
 - Rollback Anchor: `50aee3538806d7b5227fcd929e27979d1e5a3419`
 
 ## Current Gate
-- Formal Gate: **OWNER PRIVATE BETA DAILY USE OPEN (APPROVED — AUDIT GATE #6220825890)**.
-- Release Status: **APPROVED FOR OWNER DAILY USE; PACKAGE SECRET HYGIENE & TOKEN ROTATION V1 - V5 CLOSURE COMPLETE (TAG v6.9g.10.3-rc3.7.7.1.4.21); REAL CLOUD VPS STEP B ON STRICT HOLD PENDING CHATGPT GATE AUDIT**.
+- Formal Gate: **RC3.7 PRE-LIVE GATE PASS — ONE REAL ULTRA ECONOMY ACCEPTANCE RUN AUTHORIZED (AUDIT GATE #6251087332)**.
+- Release Status: **RC3.7 AUDITED AND PASSED; EXACTLY ONE REAL ULTRA ECONOMY PRIVATE-EGRESS ACCEPTANCE RUN AUTHORIZED BY CHATGPT; PRODUCTION CAMPAIGN/TARGET-PUMP ON HOLD UNTIL SINGLE REAL ACCEPTANCE RUN COMPLETES**.
 - Security & Packaging Hygiene (V1 - V5) Status:
   * **V1 (Packaged `.control_token` Elimination & Independent Generation)**: **PASS** (Zero `.control_token` in archive; two fresh extractions independently generate distinct 32-byte tokens on first run)
   * **V2 (Packaged `privacy_relay.log` & Runtime State Elimination)**: **PASS** (Zero `.log`, `.tmp`, or transaction files in archive; fail-closed denylist enforced)
