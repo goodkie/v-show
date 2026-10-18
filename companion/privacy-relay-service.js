@@ -505,7 +505,15 @@ class PrivacyRelayService {
       };
 
       if (isUpstreamTls) {
-        // [X1 Fix] Layer A: Local Companion -> Upstream HTTPS Proxy
+        // [Z2 Fix] HTTPS_PROXY must NEVER fall back to public/system CA if privateOnly
+        if (node.privateOnly && (!node.ca || typeof node.ca !== 'string' || !node.ca.trim())) {
+          return done({
+            verified: false,
+            reason: 'MISSING_PINNED_PROXY_CA: Managed private HTTPS proxy must have pinned private CA certificate; fallback to system CA is strictly prohibited.'
+          });
+        }
+
+        // [X1 & Z1 Fix] Layer A: Local Companion -> Upstream HTTPS Proxy
         // Must validate proxy server using pinned private proxy CA (node.ca).
         const proxyTlsCa = node.ca;
         const proxyConnectOptions = {
@@ -519,7 +527,37 @@ class PrivacyRelayService {
         if (!net.isIP(node.host)) {
           proxyConnectOptions.servername = node.host;
         }
-        const tlsSock = tls.connect(proxyConnectOptions, () => onSocketConnected(tlsSock));
+
+        const tlsSock = tls.connect(proxyConnectOptions, () => {
+          // [Z3 Fix] Verify peer server certificate SPKI fingerprint against node.tlsSpkiFingerprint
+          if (node.tlsSpkiFingerprint) {
+            try {
+              const peerCert = tlsSock.getPeerX509Certificate();
+              if (!peerCert || !peerCert.publicKey) {
+                tlsSock.destroy();
+                clearTimeout(timer);
+                return done({ verified: false, reason: 'PEER_CERTIFICATE_MISSING: Upstream proxy did not present X509 certificate' });
+              }
+              const spkiDer = peerCert.publicKey.export({ type: 'spki', format: 'der' });
+              const actualSpkiFp = crypto.createHash('sha256').update(spkiDer).digest('hex').toLowerCase();
+              const expectedSpkiFp = node.tlsSpkiFingerprint.replace(/:/g, '').toLowerCase();
+              if (actualSpkiFp !== expectedSpkiFp) {
+                tlsSock.destroy();
+                clearTimeout(timer);
+                return done({
+                  verified: false,
+                  reason: `PEER_SPKI_PIN_MISMATCH: Peer server certificate SPKI fingerprint ${actualSpkiFp} does not match expected pin ${expectedSpkiFp}`
+                });
+              }
+            } catch (spkiErr) {
+              tlsSock.destroy();
+              clearTimeout(timer);
+              return done({ verified: false, reason: `SPKI_VERIFICATION_ERROR: ${spkiErr.message}` });
+            }
+          }
+          onSocketConnected(tlsSock);
+        });
+
         tlsSock.on('error', (err) => {
           clearTimeout(timer);
           done({ verified: false, reason: `UPSTREAM_TLS_CONNECT_ERROR: ${err.message}` });
@@ -979,6 +1017,10 @@ class PrivacyRelayService {
           username: n.username || '',
           enabled: n.enabled !== false && n.active !== false,
           region: n.region || '',
+          hasCa: Boolean(n.ca),
+          tlsCaFingerprint: n.tlsCaFingerprint || null,
+          tlsSpkiFingerprint: n.tlsSpkiFingerprint || null,
+          expectedEgressIp: n.expectedEgressIp || null,
           lastHealth: n.lastHealth || 'UNKNOWN'
         }));
         res.writeHead(200);
@@ -1026,6 +1068,65 @@ class PrivacyRelayService {
               return;
             }
 
+            const isPrivateOnly = Boolean(data.privateOnly);
+            let caPem = (data.ca || data.caCertPem || '').trim();
+            let parsedCaCert = null;
+
+            // [Z1 & Z2] Strict Validation for HTTPS_PROXY Private Egress Trust Material
+            if (data.type === 'HTTPS_PROXY' && isPrivateOnly) {
+              if (!caPem) {
+                res.writeHead(400);
+                res.end(JSON.stringify({
+                  success: false,
+                  reason: 'MISSING_PINNED_PROXY_CA: HTTPS_PROXY private node requires non-empty pinned PEM CA certificate.'
+                }));
+                return;
+              }
+            }
+
+            if (caPem) {
+              try {
+                parsedCaCert = new crypto.X509Certificate(caPem);
+              } catch (caErr) {
+                res.writeHead(400);
+                res.end(JSON.stringify({
+                  success: false,
+                  reason: `INVALID_CA_CERTIFICATE: Failed to parse CA PEM: ${caErr.message}`
+                }));
+                return;
+              }
+
+              // Check certificate validity window
+              const now = Date.now();
+              const validFromMs = new Date(parsedCaCert.validFrom).getTime();
+              const validToMs = new Date(parsedCaCert.validTo).getTime();
+              if (now < validFromMs - 60000 || now > validToMs) {
+                res.writeHead(400);
+                res.end(JSON.stringify({
+                  success: false,
+                  reason: `EXPIRED_OR_NOT_YET_VALID_CA: CA validity window [${parsedCaCert.validFrom} to ${parsedCaCert.validTo}] invalid for current time.`
+                }));
+                return;
+              }
+
+              // Verify CA fingerprint match if provided
+              const actualCaFp = parsedCaCert.fingerprint256.replace(/:/g, '').toLowerCase();
+              const rawExpectedCaFp = (data.tlsCaFingerprint || data.fingerprint || '').trim();
+              if (rawExpectedCaFp) {
+                const expectedCaFp = rawExpectedCaFp.replace(/:/g, '').toLowerCase();
+                if (actualCaFp !== expectedCaFp) {
+                  res.writeHead(400);
+                  res.end(JSON.stringify({
+                    success: false,
+                    reason: `CA_FINGERPRINT_MISMATCH: Provided CA fingerprint ${expectedCaFp} does not match certificate fingerprint ${actualCaFp}`
+                  }));
+                  return;
+                }
+              }
+            }
+
+            const actualCaFingerprint = parsedCaCert ? parsedCaCert.fingerprint256.replace(/:/g, '').toLowerCase() : null;
+
             const newNode = {
               id: (data.id || data.name || `egress-node-${Date.now()}`).trim(),
               type: data.type,
@@ -1034,8 +1135,12 @@ class PrivacyRelayService {
               username: (data.username || '').trim(),
               password: (data.password || '').trim(),
               credentialRef: (data.credentialRef || '').trim(),
-              privateOnly: Boolean(data.privateOnly),
+              privateOnly: isPrivateOnly,
               transportBinding: data.transportBinding ? data.transportBinding.trim() : null,
+              ca: caPem || null,
+              tlsCaFingerprint: actualCaFingerprint || (data.tlsCaFingerprint ? data.tlsCaFingerprint.trim().toLowerCase() : null),
+              tlsSpkiFingerprint: data.tlsSpkiFingerprint && typeof data.tlsSpkiFingerprint === 'string' ? data.tlsSpkiFingerprint.trim().toLowerCase() : null,
+              expectedEgressIp: data.expectedEgressIp && typeof data.expectedEgressIp === 'string' ? data.expectedEgressIp.trim() : (data.observedEgressIp && typeof data.observedEgressIp === 'string' ? data.observedEgressIp.trim() : null),
               expectedEgressFingerprint: data.expectedEgressFingerprint ? data.expectedEgressFingerprint.trim() : null,
               egressIdentityGroup: data.egressIdentityGroup ? data.egressIdentityGroup.trim() : null,
               active: data.enabled !== false,
@@ -1057,7 +1162,7 @@ class PrivacyRelayService {
               this.saveConfig();
             }
 
-            this.log(`[PRIVACY_RELAY] Added/Updated egress node: id=${sanitized.id} type=${sanitized.type} host=${sanitized.host}:${sanitized.port}`);
+            this.log(`[PRIVACY_RELAY] Added/Updated egress node: id=${sanitized.id} type=${sanitized.type} host=${sanitized.host}:${sanitized.port} hasCa=${Boolean(sanitized.ca)} spkiPinned=${Boolean(sanitized.tlsSpkiFingerprint)} expectedIp=${sanitized.expectedEgressIp || 'none'}`);
 
             res.writeHead(200);
             res.end(JSON.stringify({
@@ -1069,7 +1174,11 @@ class PrivacyRelayService {
                 port: sanitized.port,
                 username: sanitized.username,
                 region: sanitized.region,
-                enabled: sanitized.active !== false
+                enabled: sanitized.active !== false,
+                hasCa: Boolean(sanitized.ca),
+                tlsCaFingerprint: sanitized.tlsCaFingerprint || null,
+                tlsSpkiFingerprint: sanitized.tlsSpkiFingerprint || null,
+                expectedEgressIp: sanitized.expectedEgressIp || null
               },
               totalNodes: this.pool.nodes.length
             }));
@@ -1932,6 +2041,14 @@ class PrivacyRelayService {
       };
 
       if (isUpstreamTls) {
+        // [Z2 Fix] Fail-closed if private proxy lacks pinned CA
+        if (active.privateOnly && (!active.ca || typeof active.ca !== 'string' || !active.ca.trim())) {
+          this.handleActiveFailure('MISSING_PINNED_PROXY_CA: Managed private proxy lacks pinned CA');
+          clientSocket.write('HTTP/1.1 502 Bad Gateway\r\n\r\n');
+          clientSocket.destroy();
+          return;
+        }
+
         const tlsOptions = {
           host: active.host,
           port: active.port,
@@ -1941,7 +2058,38 @@ class PrivacyRelayService {
         if (active.ca) {
           tlsOptions.ca = active.ca;
         }
-        const tlsSocket = tls.connect(tlsOptions, () => setupTunnel(tlsSocket));
+        const tlsSocket = tls.connect(tlsOptions, () => {
+          // [Z3 Fix] Enforce SPKI pin if present on live proxying
+          if (active.tlsSpkiFingerprint) {
+            try {
+              const peerCert = tlsSocket.getPeerX509Certificate();
+              if (!peerCert || !peerCert.publicKey) {
+                this.handleActiveFailure('PEER_CERTIFICATE_MISSING: Upstream proxy did not present X509 certificate');
+                tlsSocket.destroy();
+                clientSocket.write('HTTP/1.1 502 Bad Gateway\r\n\r\n');
+                clientSocket.destroy();
+                return;
+              }
+              const spkiDer = peerCert.publicKey.export({ type: 'spki', format: 'der' });
+              const actualSpkiFp = crypto.createHash('sha256').update(spkiDer).digest('hex').toLowerCase();
+              const expectedSpkiFp = active.tlsSpkiFingerprint.replace(/:/g, '').toLowerCase();
+              if (actualSpkiFp !== expectedSpkiFp) {
+                this.handleActiveFailure(`PEER_SPKI_PIN_MISMATCH: ${actualSpkiFp} does not match expected ${expectedSpkiFp}`);
+                tlsSocket.destroy();
+                clientSocket.write('HTTP/1.1 502 Bad Gateway\r\n\r\n');
+                clientSocket.destroy();
+                return;
+              }
+            } catch (spkiErr) {
+              this.handleActiveFailure(`SPKI_VERIFICATION_ERROR: ${spkiErr.message}`);
+              tlsSocket.destroy();
+              clientSocket.write('HTTP/1.1 502 Bad Gateway\r\n\r\n');
+              clientSocket.destroy();
+              return;
+            }
+          }
+          setupTunnel(tlsSocket);
+        });
 
         tlsSocket.on('error', (err) => {
           this.handleActiveFailure(`UPSTREAM_TLS_CONNECT_ERROR: ${err.message}`);
