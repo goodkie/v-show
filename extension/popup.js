@@ -934,7 +934,10 @@ window.__xpider_boot = {
     settingsHydrated: false,
     startHandlerBound: false,
     saveHandlerBound: false,
+    tabsBound: false,
+    settingsBound: false,
     getStateAck: false,
+    clickInterception: null,
     ready: false
 };
 
@@ -951,6 +954,131 @@ function displayControlPlaneError(code, detail) {
         if (errBanner) {
             errBanner.textContent = `🚨 CONTROL_PLANE_ERROR: ${code} (${detail})`;
         }
+    } catch (_) {}
+}
+
+// [Y3] Modal Overlay State Helpers (Pointer-events and visibility fail-safe)
+function openModalOverlay(el) {
+    if (!el) return;
+    el.classList.remove('hidden');
+    el.style.display = 'flex';
+    el.style.pointerEvents = 'auto';
+    el.style.visibility = 'visible';
+}
+
+function closeModalOverlay(el) {
+    if (!el) return;
+    el.classList.add('hidden');
+    el.style.display = 'none';
+    el.style.pointerEvents = 'none';
+    el.style.visibility = 'hidden';
+}
+
+function sanitizeAllStaticOverlays() {
+    if (typeof document === 'undefined') return;
+    try {
+        const overlays = document.querySelectorAll('.overlay, .modal-overlay, [id$="-overlay"]');
+        overlays.forEach(el => {
+            if (el.classList.contains('hidden') || el.style.display === 'none') {
+                closeModalOverlay(el);
+            } else {
+                el.style.pointerEvents = 'auto';
+                el.style.visibility = 'visible';
+            }
+        });
+    } catch (e) {
+        console.warn('[POPUP_BOOT] sanitizeAllStaticOverlays error:', e);
+    }
+}
+
+// [Y2] Stale Dynamic Modal Sanitization on Boot
+function purgeStaleDynamicModals() {
+    if (typeof document === 'undefined') return;
+    try {
+        const staleCaptcha = document.getElementById('xpider-captcha-decision-modal');
+        if (staleCaptcha) {
+            console.warn('[POPUP_BOOT] Purged stale dynamic modal: #xpider-captcha-decision-modal');
+            staleCaptcha.remove();
+        }
+        const staleManual = document.getElementById('xpider-manual-assist-modal');
+        if (staleManual) {
+            console.warn('[POPUP_BOOT] Purged stale dynamic modal: #xpider-manual-assist-modal');
+            staleManual.remove();
+        }
+    } catch (e) {
+        console.warn('[POPUP_BOOT] purgeStaleDynamicModals error:', e);
+    }
+}
+
+// [Y1] Side-Panel Click-Interception Diagnostic
+function checkClickInterceptionDiagnostic() {
+    if (typeof document === 'undefined' || !document.elementsFromPoint) return;
+    try {
+        const probeTargets = [
+            { id: 'settings-toggle', label: '#settings-toggle' },
+            { id: 'start-btn', label: '#start-btn' },
+            { selector: '.tab-btn[data-tab="targets"]', label: '.tab-btn[data-tab="targets"]' }
+        ];
+
+        let intercepted = null;
+
+        for (const target of probeTargets) {
+            const el = target.id ? document.getElementById(target.id) : document.querySelector(target.selector);
+            if (!el) continue;
+            const rect = el.getBoundingClientRect();
+            if (rect.width <= 0 || rect.height <= 0) continue;
+
+            const cx = Math.floor(rect.left + rect.width / 2);
+            const cy = Math.floor(rect.top + rect.height / 2);
+            if (cx < 0 || cy < 0 || cx > (window.innerWidth || 1000) || cy > (window.innerHeight || 1000)) continue;
+
+            const stack = document.elementsFromPoint(cx, cy);
+            if (!stack || stack.length === 0) continue;
+
+            const topEl = stack[0];
+            if (topEl !== el && !el.contains(topEl)) {
+                // Check if top element is inside an open overlay/modal
+                const openOverlay = topEl.closest('#settings-overlay:not(.hidden), #private-egress-modal-overlay:not(.hidden), #captcha-modal-overlay:not(.hidden), #privacy-block-modal-overlay:not(.hidden), #stt-setup-modal-overlay:not(.hidden), #reset-all-modal-overlay:not(.hidden), #reset-all-lists-modal-overlay:not(.hidden)');
+                if (!openOverlay) {
+                    const tagInfo = topEl.tagName.toLowerCase() + 
+                        (topEl.id ? '#' + topEl.id : '') + 
+                        (topEl.className && typeof topEl.className === 'string' ? '.' + topEl.className.trim().split(/\s+/).join('.') : '');
+                    const zIndex = window.getComputedStyle ? window.getComputedStyle(topEl).zIndex : 'unknown';
+                    intercepted = {
+                        target: target.label,
+                        coveringElement: tagInfo,
+                        zIndex: zIndex
+                    };
+                    break;
+                }
+            }
+        }
+
+        if (intercepted) {
+            console.error(`[CLICK_INTERCEPTION_DETECTED] Element "${intercepted.coveringElement}" (z-index: ${intercepted.zIndex}) covers "${intercepted.target}"!`);
+            displayClickInterceptionBanner(intercepted);
+            window.__xpider_boot.clickInterception = intercepted;
+        } else {
+            window.__xpider_boot.clickInterception = null;
+            const banner = document.getElementById('xpider-click-interception-banner');
+            if (banner) banner.remove();
+        }
+    } catch (err) {
+        console.warn('[POPUP_BOOT] checkClickInterceptionDiagnostic error:', err);
+    }
+}
+
+function displayClickInterceptionBanner(interception) {
+    if (typeof document === 'undefined' || !document.body) return;
+    try {
+        let banner = document.getElementById('xpider-click-interception-banner');
+        if (!banner) {
+            banner = document.createElement('div');
+            banner.id = 'xpider-click-interception-banner';
+            banner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#dc2626;color:#fff;padding:8px 12px;font-size:12px;font-weight:700;z-index:999999;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.4);';
+            document.body.prepend(banner);
+        }
+        banner.textContent = `🚨 CLICK_INTERCEPTION_DETECTED: [${interception.coveringElement}] covers [${interception.target}].`;
     } catch (_) {}
 }
 
@@ -2179,19 +2307,17 @@ async function hydrateSettings(overrideV2Store = null) {
             };
 
             window.openPrivateEgressWizard = () => {
-                // [P0 UI Fix - Issue #6 Comment #6231022137] Close settings overlay before opening wizard
+                // [P0 UI Fix - Issue #6 Comment #6231022137 & Y3] Close settings overlay before opening wizard
                 const settingsOverlay = document.getElementById('settings-overlay');
                 if (settingsOverlay) {
-                    settingsOverlay.classList.add('hidden');
+                    closeModalOverlay(settingsOverlay);
                 }
                 const privacyBlockModal = document.getElementById('privacy-block-modal-overlay');
                 if (privacyBlockModal) {
-                    privacyBlockModal.style.display = 'none';
-                    privacyBlockModal.classList.add('hidden');
+                    closeModalOverlay(privacyBlockModal);
                 }
 
-                modal.style.display = 'flex';
-                modal.classList.remove('hidden');
+                openModalOverlay(modal);
                 if (progressHud) progressHud.style.display = 'none';
                 if (tokenInput) tokenInput.value = '';
                 verifiedPlan = null;
@@ -2222,8 +2348,7 @@ async function hydrateSettings(overrideV2Store = null) {
 
             if (closeBtn) {
                 closeBtn.onclick = () => {
-                    modal.style.display = 'none';
-                    modal.classList.add('hidden');
+                    closeModalOverlay(modal);
                 };
             }
 
@@ -2667,7 +2792,7 @@ async function hydrateSettings(overrideV2Store = null) {
                         } else {
                             const resultObj = res && (res.result || res);
                             const statusStr = (resultObj && resultObj.status) ? `[${resultObj.status}] ` : '';
-                            const err = (resultObj && (resultObj.reason || (Array.isArray(resultObj.errors) && resultObj.errors.join('; ') : null))) || (res && res.error) || 'Teardown failed';
+                            const err = (resultObj && (resultObj.reason || (Array.isArray(resultObj.errors) ? resultObj.errors.join('; ') : null))) || (res && res.error) || 'Teardown failed';
                             addLog(`❌ [DESTROY_EGRESS] ${statusStr}${err}`, 'error');
                             alert(`Destroy failed: ${statusStr}${err}`);
                         }
@@ -3392,6 +3517,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('[POPUP_BOOT] started');
     window.__xpider_boot.started = true;
 
+    // [Y2] Purge stale dynamic modals on boot before any layout/binding
+    purgeStaleDynamicModals();
+
+    // [Y3] Enforce static overlay fail-safe (pointer-events: none, display: none when hidden)
+    sanitizeAllStaticOverlays();
+
     try {
         // 0. Synchronous messaging listeners
         try {
@@ -3822,6 +3953,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.warn('[POPUP_BOOT] renderAuxiliaryUI non-fatal error:', e);
         }
 
+        // [Y1] Side-Panel Click-Interception Diagnostic probe
+        try {
+            checkClickInterceptionDiagnostic();
+        } catch (e) {
+            console.warn('[POPUP_BOOT] checkClickInterceptionDiagnostic error:', e);
+        }
+
         window.__xpider_boot.ready = true;
         console.log('[POPUP_BOOT] ready=true');
     } catch (fatalBootErr) {
@@ -3830,6 +3968,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         displayControlPlaneError('POPUP_BOOT_FATAL', fatalBootErr.message);
     }
 });
+
+if (typeof window !== 'undefined') {
+    window.addEventListener('focus', () => {
+        try { checkClickInterceptionDiagnostic(); } catch (_) {}
+    });
+    window.addEventListener('resize', () => {
+        try { checkClickInterceptionDiagnostic(); } catch (_) {}
+    });
+}
 
 async function initLocalizer() {
     // Wait a bit to ensure translations.js is parsed if needed
@@ -4119,477 +4266,630 @@ function updateSpeedLabel() {
 }
 
 function bindEvents() {
-    // Tabs
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            btn.classList.add('active');
-            const target = document.getElementById(`${btn.dataset.tab}-tab`);
-            if (target) target.classList.add('active');
-            
-            // [v2.3.0] Hide status/log areas when in Template, History, or Email Collector Tab
-            if (btn.dataset.tab === 'template' || btn.dataset.tab === 'history' || btn.dataset.tab === 'email-collector') {
-                document.body.classList.add('template-active');
-            } else {
-                document.body.classList.remove('template-active');
-            }
+    let tabsBound = false;
+    let settingsBound = false;
 
-            if (btn.dataset.tab === 'history') {
-                renderLedgerUI();
-            } else if (btn.dataset.tab === 'email-collector') {
-                renderEmailCollectorUI();
-            }
-        });
-    });
+    // 1. Tab Navigation (Isolated)
+    try {
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        tabBtns.forEach(btn => {
+            if (!btn.dataset.bound) {
+                btn.dataset.bound = 'true';
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                    btn.classList.add('active');
+                    const target = document.getElementById(`${btn.dataset.tab}-tab`);
+                    if (target) target.classList.add('active');
+                    
+                    // [v2.3.0] Hide status/log areas when in Template, History, or Email Collector Tab
+                    if (btn.dataset.tab === 'template' || btn.dataset.tab === 'history' || btn.dataset.tab === 'email-collector') {
+                        document.body.classList.add('template-active');
+                    } else {
+                        document.body.classList.remove('template-active');
+                    }
 
-    // File Upload
-    const fileInput = document.getElementById('file-input');
-    if (fileInput) fileInput.addEventListener('change', handleFileUpload);
-
-    // Campaign Buttons
-    const startBtn = document.getElementById('start-btn');
-    if (startBtn && !startBtn.dataset.bound) {
-        startBtn.dataset.bound = 'true';
-        startBtn.addEventListener('click', () => {
-            console.log('[BUTTON_CLICK] id=start-btn');
-            launchCampaign({ source: 'USER_START_BUTTON' }).catch(err => {
-                console.error('[START_EXCEPTION]', err);
-            });
-        });
-    }
-    
-    const pauseBtn = document.getElementById('pause-btn');
-    if (pauseBtn) pauseBtn.addEventListener('click', togglePause);
-    
-    const stopBtn = document.getElementById('stop-btn');
-    if (stopBtn) stopBtn.addEventListener('click', stopCampaign);
-
-    const stopSaveBtn = document.getElementById('stop-save-btn');
-    if (stopSaveBtn) stopSaveBtn.addEventListener('click', stopAndSaveCampaign);
-
-    const endCampaignBtn = document.getElementById('end-campaign-btn');
-    if (endCampaignBtn) endCampaignBtn.addEventListener('click', endCampaign);
-
-    const resumeBtn = document.getElementById('resume-campaign-btn');
-    if (resumeBtn) resumeBtn.addEventListener('click', resumeCampaign);
-
-    const discardBtn = document.getElementById('discard-checkpoint-btn');
-    if (discardBtn) discardBtn.addEventListener('click', discardCheckpoint);
-
-    // Diagnostic Action Buttons
-    const exportBundleBtn = document.getElementById('export-debug-bundle-btn');
-    if (exportBundleBtn) exportBundleBtn.addEventListener('click', exportOwnerDebugBundle);
-
-    const copyDiagBtn = document.getElementById('copy-diagnostic-btn');
-    if (copyDiagBtn) copyDiagBtn.addEventListener('click', copyDiagnosticReport);
-
-    const dlDiagBtn = document.getElementById('download-diagnostic-btn');
-    if (dlDiagBtn) dlDiagBtn.addEventListener('click', downloadDiagnosticTxt);
-
-    const clearDiagBtn = document.getElementById('clear-diagnostic-btn');
-    if (clearDiagBtn) clearDiagBtn.addEventListener('click', clearDiagnosticLog);
-
-    // FAILED Breakdown Card Toggle
-    const failedCardBtn = document.getElementById('failed-card-btn');
-    const breakdownContainer = document.getElementById('failure-breakdown-container');
-    const breakdownToggle = document.getElementById('failure-breakdown-toggle');
-    if (failedCardBtn && breakdownContainer) {
-        failedCardBtn.addEventListener('click', () => {
-            breakdownContainer.classList.toggle('hidden');
-        });
-    }
-    if (breakdownToggle && breakdownContainer) {
-        breakdownToggle.addEventListener('click', () => {
-            breakdownContainer.classList.add('hidden');
-        });
-    }
-
-    // Settings
-    const settingsToggle = document.getElementById('settings-toggle');
-    if (settingsToggle && !settingsToggle.dataset.bound) {
-        settingsToggle.dataset.bound = 'true';
-        settingsToggle.addEventListener('click', () => {
-            console.log('[BUTTON_CLICK] id=settings-toggle');
-            document.getElementById('settings-overlay').classList.remove('hidden');
-        });
-    }
-    
-    const settingsClose = document.getElementById('settings-close');
-    if (settingsClose) settingsClose.addEventListener('click', () => {
-        document.getElementById('settings-overlay').classList.add('hidden');
-    });
-    
-    const saveSettingsBtn = document.getElementById('save-settings-btn');
-    if (saveSettingsBtn && !saveSettingsBtn.dataset.bound) {
-        saveSettingsBtn.dataset.bound = 'true';
-        saveSettingsBtn.addEventListener('click', saveSettings);
-    }
-
-    // [WitKey-Sync v2] #audio-stt-key 실시간 입력 → debounce 후 즉시 스토리지 동기화
-    // Crawler의 onChanged 리스너가 감지하여 Crawler UI도 자동 업데이트됨
-    (function bindSttKeyRealTimeSync() {
-        let _sttDebounceTimer = null;
-        const sttKeyEl = document.getElementById('audio-stt-key');
-        if (!sttKeyEl) return;
-        sttKeyEl.addEventListener('input', () => {
-            clearTimeout(_sttDebounceTimer);
-            _sttDebounceTimer = setTimeout(() => {
-                const key = sttKeyEl.value.trim();
-                chrome.storage.local.set({ xpider_stt_api_key: key, audioSttKey: key, witKey: key }, () => {
-                    console.log(`[WitKey-Sync v2] Sender 실시간 입력 동기화: keyConfigured=${!!key}`);
+                    if (btn.dataset.tab === 'history') {
+                        renderLedgerUI();
+                    } else if (btn.dataset.tab === 'email-collector') {
+                        renderEmailCollectorUI();
+                    }
                 });
-            }, 600); // 600ms 타이핑 중지 후 저장
-        });
-    })();
-
-    // [v18.46.0] Wit.ai STT Key Setup Modal Save Button
-    const saveSetupSttBtn = document.getElementById('save-setup-stt-btn');
-    if (saveSetupSttBtn) {
-        saveSetupSttBtn.addEventListener('click', async () => {
-            const input = document.getElementById('setup-stt-key-input');
-            const key = input ? input.value.trim() : '';
-            if (key === '') {
-                alert("Please enter a valid Wit.ai Key.");
-                return;
             }
-            
-            // [WitKey-Sync v2] 3개 키 모두 저장하여 Crawler와 실시간 동기화 및 캡챠 모드를 audio로 전환
-            await chrome.storage.local.set({ 
-                xpider_stt_api_key: key, 
-                audioSttKey: key, 
-                witKey: key,
-                xpider_captcha_method: 'audio'
+        });
+        if (tabBtns.length > 0) tabsBound = true;
+    } catch (e) {
+        console.error('[POPUP_BOOT] Tab navigation binding error:', e);
+    }
+
+    // 2. Settings Toggle & Close (Isolated)
+    try {
+        const settingsToggle = document.getElementById('settings-toggle');
+        const settingsOverlay = document.getElementById('settings-overlay');
+        if (settingsToggle && !settingsToggle.dataset.bound) {
+            settingsToggle.dataset.bound = 'true';
+            settingsToggle.addEventListener('click', () => {
+                console.log('[BUTTON_CLICK] id=settings-toggle');
+                openModalOverlay(settingsOverlay);
             });
-            const settingsInput = document.getElementById('audio-stt-key');
-            if (settingsInput) settingsInput.value = key;
-            const methodSelect = document.getElementById('captcha-method-select');
-            if (methodSelect) methodSelect.value = 'audio';
-            
-            // [WitKey] Sync to background service worker via UPDATE_WIT_KEY
-            if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
-                chrome.runtime.sendMessage({ action: 'UPDATE_WIT_KEY', key }).catch(() => {});
-            }
-            
-            const setupModal = document.getElementById('stt-setup-modal-overlay');
-            if (setupModal) setupModal.classList.add('hidden');
-            
-            const langSelect = document.getElementById('language-select');
-            const lang = langSelect ? langSelect.value : 'en';
-            const dict = i18nData ? (i18nData[lang] || i18nData['en'] || {}) : {};
-            alert(dict.msg_saved || "Saved!");
-        });
-    }
-
-    const quickWitBtn = document.getElementById('quick-wit-setup-btn');
-    if (quickWitBtn) {
-        quickWitBtn.addEventListener('click', () => {
-            const setupModal = document.getElementById('stt-setup-modal-overlay');
-            if (setupModal) setupModal.classList.remove('hidden');
-        });
-    }
-
-    // [v19.1.0] Wit.ai Link - Open via Chrome Tabs API or window.open
-    const witAiLink = document.getElementById('wit-ai-link');
-    if (witAiLink) {
-        witAiLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            const url = witAiLink.href || 'https://wit.ai';
-            if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.create) {
-                chrome.tabs.create({ url });
-            } else {
-                window.open(url, '_blank');
-            }
-        });
-    }
-    // [v19.1.0] 모든 premium-link 클래스의 외부 링크도 동일한 방식으로 처리
-    document.querySelectorAll('a.premium-link, a[target="_blank"]').forEach(link => {
-        if (link.id === 'wit-ai-link') return; // 이미 위에서 처리
-        link.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            const url = link.href;
-            if (!url || url === '#') return;
-            try {
-                window.postMessage({ type: 'XPIDER_SEND', channel: 'auth-open-external', data: url }, '*');
-            } catch (err) {}
-            try { window.open(url, '_blank'); } catch (err) {}
-        });
-    });
-
-    // [v2.4.0] Template Save Buttons - Combined
-    ['save-tpl-btn', 'save-tpl-changes-btn', 'save-tpl-bottom-btn'].forEach(id => {
-        const btn = document.getElementById(id);
-        if (btn) btn.addEventListener('click', saveTemplateChanges);
-    });
-    
-    // [v2.2.0] Drop area styled as button label
-    const dropArea = document.getElementById('drop-area');
-    if (dropArea) {
-        dropArea.addEventListener('dragover', (e) => { e.preventDefault(); dropArea.classList.add('drag-active'); });
-        dropArea.addEventListener('dragleave', () => { dropArea.classList.remove('drag-active'); });
-        dropArea.addEventListener('drop', handleFileUpload);
-    }
-    
-    const loadFileBtn = document.getElementById('load-tpl-file-btn');
-    const tplFileInput = document.getElementById('tpl-file-input');
-    if (loadFileBtn && tplFileInput) {
-        loadFileBtn.addEventListener('click', () => tplFileInput.click());
-        tplFileInput.addEventListener('change', importMessageFromFile);
-    }
-    
-    const closeAppBtn = document.getElementById('close-app-btn');
-    if (closeAppBtn) closeAppBtn.addEventListener('click', () => window.close());
-
-    // Captcha Logic Toggles
-    const captchaToggle = document.getElementById('captcha-solve-toggle');
-    if (captchaToggle) {
-        captchaToggle.addEventListener('change', (e) => {
-            const enabled = e.target.checked;
-            const methodGroup = document.getElementById('captcha-method-group');
-            if (methodGroup) methodGroup.style.display = enabled ? 'block' : 'none';
-            toggleCaptchaApiVisibility();
-        });
-    }
-
-    const methodSelect = document.getElementById('captcha-method-select');
-    if (methodSelect) {
-        methodSelect.addEventListener('change', () => {
-            toggleCaptchaApiVisibility();
-            const langSelect = document.getElementById('language-select');
-            if (langSelect) applyTranslations(langSelect.value);
-        });
-    }
-
-    const langSelect = document.getElementById('language-select');
-    if (langSelect) {
-        langSelect.addEventListener('change', (e) => {
-            applyTranslations(e.target.value);
-        });
-    }
-
-    // Persistence for Template with Dirty Tracking
-    ['tpl-first-name', 'tpl-last-name', 'tpl-name', 'tpl-email', 'tpl-phone', 'tpl-subject', 'tpl-message'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) {
-            el.addEventListener('input', () => {
-                if (id === 'tpl-message') isMessageDirty = true;
-                isTemplateDirty = true;
-                saveTemplate();
-            });
-            el.addEventListener('change', () => {
-                if (id === 'tpl-message') isMessageDirty = true;
-                isTemplateDirty = true;
-                saveTemplate();
+            settingsBound = true;
+        }
+        
+        const settingsClose = document.getElementById('settings-close');
+        if (settingsClose && !settingsClose.dataset.bound) {
+            settingsClose.dataset.bound = 'true';
+            settingsClose.addEventListener('click', () => {
+                closeModalOverlay(settingsOverlay);
             });
         }
-    });
-
-    // Single URL & List Management
-    // Single URL & List Management
-    const addUrlBtn = document.getElementById('add-url-btn');
-    if (addUrlBtn) {
-        addUrlBtn.classList.add('plus-btn-circle');
-        addUrlBtn.addEventListener('click', addSingleUrl);
-    }
-    
-    const manualUrlInput = document.getElementById('manual-url-input');
-    if (manualUrlInput) {
-        manualUrlInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') addSingleUrl();
-        });
-    }
-
-    // Clear List Button
-    const clearListBtn = document.getElementById('clear-list-btn');
-    if (clearListBtn) {
-        clearListBtn.addEventListener('click', clearCampaignQueue);
-    }
-
-    // [Phase 2B] Template CRUD Action Toolbar
-    const newTplBtn = document.getElementById('new-tpl-btn');
-    if (newTplBtn) newTplBtn.addEventListener('click', () => handleCreateNewTemplate());
-
-    const dupTplBtn = document.getElementById('dup-tpl-btn');
-    if (dupTplBtn) dupTplBtn.addEventListener('click', () => handleDuplicateTemplate());
-
-    const defTplBtn = document.getElementById('default-tpl-btn');
-    if (defTplBtn) defTplBtn.addEventListener('click', () => handleSetDefaultTemplate());
-
-    const delTplBtn = document.getElementById('del-tpl-btn');
-    if (delTplBtn) {
-        delTplBtn.addEventListener('click', () => {
-            if (confirm("Are you sure you want to delete this template?")) {
-                handleDeleteTemplate().catch(e => alert(e.message));
-            }
-        });
-    }
-
-    const tplSelect = document.getElementById('tpl-library-select');
-    if (tplSelect) tplSelect.addEventListener('change', loadTemplateFromLibrary);
-
-    // [Phase 2B] History Ledger Action Toolbar & Filtering
-    document.querySelectorAll('.ledger-chip').forEach(chip => {
-        chip.addEventListener('click', () => {
-            document.querySelectorAll('.ledger-chip').forEach(c => c.classList.remove('active'));
-            chip.classList.add('active');
-            ledgerState.filter = chip.dataset.filter || 'ALL';
-            ledgerState.page = 1;
-            renderLedgerUI();
-        });
-    });
-
-    const ledgerSearchInput = document.getElementById('ledger-search-input');
-    if (ledgerSearchInput) {
-        let searchTimer = null;
-        ledgerSearchInput.addEventListener('input', () => {
-            clearTimeout(searchTimer);
-            searchTimer = setTimeout(() => {
-                ledgerState.search = ledgerSearchInput.value.trim();
-                ledgerState.page = 1;
-                renderLedgerUI();
-            }, 300);
-        });
-    }
-
-    const ledgerSelectAllCb = document.getElementById('ledger-select-all-cb');
-    if (ledgerSelectAllCb) {
-        ledgerSelectAllCb.addEventListener('change', () => {
-            const cbs = document.querySelectorAll('.ledger-item-cb');
-            cbs.forEach(cb => {
-                cb.checked = ledgerSelectAllCb.checked;
-                const tgt = cb.dataset.target;
-                if (ledgerSelectAllCb.checked) ledgerState.selectedTargets.add(tgt);
-                else ledgerState.selectedTargets.delete(tgt);
-                cb.closest('.ledger-item-card')?.classList.toggle('is-selected', ledgerSelectAllCb.checked);
-            });
-            updateSelectionCountUI();
-        });
-    }
-
-    const ledgerExportAllGSheetsBtn = document.getElementById('ledger-export-all-gsheets-btn');
-    if (ledgerExportAllGSheetsBtn) ledgerExportAllGSheetsBtn.addEventListener('click', () => triggerGoogleSheetsCsvExport({ exportCurrentFilter: false }));
-
-    const ledgerExportFilterGSheetsBtn = document.getElementById('ledger-export-filter-gsheets-btn');
-    if (ledgerExportFilterGSheetsBtn) ledgerExportFilterGSheetsBtn.addEventListener('click', () => triggerGoogleSheetsCsvExport({ exportCurrentFilter: true }));
-
-    const ledgerExportBtn = document.getElementById('ledger-export-csv-btn');
-    if (ledgerExportBtn) ledgerExportBtn.addEventListener('click', () => triggerGoogleSheetsCsvExport({ exportCurrentFilter: false }));
-
-    const ledgerResetSelBtn = document.getElementById('ledger-reset-selected-btn');
-    if (ledgerResetSelBtn) {
-        ledgerResetSelBtn.addEventListener('click', async () => {
-            try {
-                await dispatchSelectiveReset();
-            } catch (err) {
-                alert(err.message);
-            }
-        });
-    }
-
-    const ledgerRetryFailedBtn = document.getElementById('ledger-retry-failed-btn');
-    if (ledgerRetryFailedBtn) {
-        ledgerRetryFailedBtn.addEventListener('click', async () => {
-            try {
-                await dispatchRetryFailed();
-            } catch (err) {
-                alert(err.message);
-            }
-        });
-    }
-
-    const ledgerClearBtn = document.getElementById('ledger-clear-btn');
-    const ledgerResetAllBtn = document.getElementById('ledger-reset-all-btn');
-    const resetAllModal = document.getElementById('reset-all-modal-overlay');
-    const cancelResetAllBtn = document.getElementById('cancel-reset-all-btn');
-    const confirmResetAllBtn = document.getElementById('confirm-reset-all-btn');
-
-    if (ledgerClearBtn && resetAllModal) {
-        ledgerClearBtn.addEventListener('click', () => {
-            if (campaignActive) {
-                alert("Cannot clear history while campaign is actively running!");
-                return;
-            }
-            resetAllModal.classList.remove('hidden');
-        });
-    }
-    if (ledgerResetAllBtn && resetAllModal) {
-        ledgerResetAllBtn.addEventListener('click', () => {
-            if (campaignActive) {
-                alert("Cannot clear history while campaign is actively running!");
-                return;
-            }
-            resetAllModal.classList.remove('hidden');
-        });
-    }
-    if (cancelResetAllBtn && resetAllModal) {
-        cancelResetAllBtn.addEventListener('click', () => {
-            resetAllModal.classList.add('hidden');
-        });
-    }
-    if (confirmResetAllBtn && resetAllModal) {
-        confirmResetAllBtn.addEventListener('click', async () => {
-            resetAllModal.classList.add('hidden');
-            try {
-                await dispatchClearHistoryLedger();
-            } catch (err) {
-                alert(err.message);
-            }
-        });
-    }
-
-    // [Issue #6 R4.1] RESET ALL LIST DATA Modal & Event Listeners
-    const resetAllListsBtn = document.getElementById('reset-all-lists-btn');
-    const settingsResetAllListsBtn = document.getElementById('settings-reset-all-lists-btn');
-    const resetAllListsModal = document.getElementById('reset-all-lists-modal-overlay');
-    const cancelResetAllListsBtn = document.getElementById('cancel-reset-all-lists-btn');
-    const confirmResetAllListsBtn = document.getElementById('confirm-reset-all-lists-btn');
-
-    const openResetAllListsModal = () => {
-        if (campaignActive) {
-            alert("Cannot reset list data while campaign is actively running!");
-            return;
+        
+        const saveSettingsBtn = document.getElementById('save-settings-btn');
+        if (saveSettingsBtn && !saveSettingsBtn.dataset.bound) {
+            saveSettingsBtn.dataset.bound = 'true';
+            saveSettingsBtn.addEventListener('click', saveSettings);
         }
-        if (resetAllListsModal) resetAllListsModal.classList.remove('hidden');
-    };
-
-    if (resetAllListsBtn) resetAllListsBtn.addEventListener('click', openResetAllListsModal);
-    if (settingsResetAllListsBtn) settingsResetAllListsBtn.addEventListener('click', openResetAllListsModal);
-    if (cancelResetAllListsBtn && resetAllListsModal) {
-        cancelResetAllListsBtn.addEventListener('click', () => {
-            resetAllListsModal.classList.add('hidden');
-        });
+    } catch (e) {
+        console.error('[POPUP_BOOT] Settings binding error:', e);
     }
-    if (confirmResetAllListsBtn && resetAllListsModal) {
-        confirmResetAllListsBtn.addEventListener('click', async () => {
-            resetAllListsModal.classList.add('hidden');
-            try {
-                await dispatchResetAllListData();
-            } catch (err) {
-                alert(err.message);
+
+    // 3. Campaign Action Buttons (Isolated)
+    try {
+        const startBtn = document.getElementById('start-btn');
+        if (startBtn && !startBtn.dataset.bound) {
+            startBtn.dataset.bound = 'true';
+            startBtn.addEventListener('click', () => {
+                console.log('[BUTTON_CLICK] id=start-btn');
+                launchCampaign({ source: 'USER_START_BUTTON' }).catch(err => {
+                    console.error('[START_EXCEPTION]', err);
+                });
+            });
+        }
+        
+        const pauseBtn = document.getElementById('pause-btn');
+        if (pauseBtn && !pauseBtn.dataset.bound) {
+            pauseBtn.dataset.bound = 'true';
+            pauseBtn.addEventListener('click', togglePause);
+        }
+        
+        const stopBtn = document.getElementById('stop-btn');
+        if (stopBtn && !stopBtn.dataset.bound) {
+            stopBtn.dataset.bound = 'true';
+            stopBtn.addEventListener('click', stopCampaign);
+        }
+
+        const stopSaveBtn = document.getElementById('stop-save-btn');
+        if (stopSaveBtn && !stopSaveBtn.dataset.bound) {
+            stopSaveBtn.dataset.bound = 'true';
+            stopSaveBtn.addEventListener('click', stopAndSaveCampaign);
+        }
+
+        const endCampaignBtn = document.getElementById('end-campaign-btn');
+        if (endCampaignBtn && !endCampaignBtn.dataset.bound) {
+            endCampaignBtn.dataset.bound = 'true';
+            endCampaignBtn.addEventListener('click', endCampaign);
+        }
+
+        const resumeBtn = document.getElementById('resume-campaign-btn');
+        if (resumeBtn && !resumeBtn.dataset.bound) {
+            resumeBtn.dataset.bound = 'true';
+            resumeBtn.addEventListener('click', resumeCampaign);
+        }
+
+        const discardBtn = document.getElementById('discard-checkpoint-btn');
+        if (discardBtn && !discardBtn.dataset.bound) {
+            discardBtn.dataset.bound = 'true';
+            discardBtn.addEventListener('click', discardCheckpoint);
+        }
+    } catch (e) {
+        console.error('[POPUP_BOOT] Campaign buttons binding error:', e);
+    }
+
+    // 4. File Upload (Isolated)
+    try {
+        const fileInput = document.getElementById('file-input');
+        if (fileInput && !fileInput.dataset.bound) {
+            fileInput.dataset.bound = 'true';
+            fileInput.addEventListener('change', handleFileUpload);
+        }
+
+        const dropArea = document.getElementById('drop-area');
+        if (dropArea && !dropArea.dataset.bound) {
+            dropArea.dataset.bound = 'true';
+            dropArea.addEventListener('dragover', (e) => { e.preventDefault(); dropArea.classList.add('drag-active'); });
+            dropArea.addEventListener('dragleave', () => { dropArea.classList.remove('drag-active'); });
+            dropArea.addEventListener('drop', handleFileUpload);
+        }
+
+        const loadFileBtn = document.getElementById('load-tpl-file-btn');
+        const tplFileInput = document.getElementById('tpl-file-input');
+        if (loadFileBtn && tplFileInput && !loadFileBtn.dataset.bound) {
+            loadFileBtn.dataset.bound = 'true';
+            loadFileBtn.addEventListener('click', () => tplFileInput.click());
+            tplFileInput.addEventListener('change', importMessageFromFile);
+        }
+
+        const closeAppBtn = document.getElementById('close-app-btn');
+        if (closeAppBtn && !closeAppBtn.dataset.bound) {
+            closeAppBtn.dataset.bound = 'true';
+            closeAppBtn.addEventListener('click', () => window.close());
+        }
+    } catch (e) {
+        console.error('[POPUP_BOOT] File upload binding error:', e);
+    }
+
+    // 5. Diagnostic Action Buttons (Isolated)
+    try {
+        const exportBundleBtn = document.getElementById('export-debug-bundle-btn');
+        if (exportBundleBtn && !exportBundleBtn.dataset.bound) {
+            exportBundleBtn.dataset.bound = 'true';
+            exportBundleBtn.addEventListener('click', exportOwnerDebugBundle);
+        }
+
+        const copyDiagBtn = document.getElementById('copy-diagnostic-btn');
+        if (copyDiagBtn && !copyDiagBtn.dataset.bound) {
+            copyDiagBtn.dataset.bound = 'true';
+            copyDiagBtn.addEventListener('click', copyDiagnosticReport);
+        }
+
+        const dlDiagBtn = document.getElementById('download-diagnostic-btn');
+        if (dlDiagBtn && !dlDiagBtn.dataset.bound) {
+            dlDiagBtn.dataset.bound = 'true';
+            dlDiagBtn.addEventListener('click', downloadDiagnosticTxt);
+        }
+
+        const clearDiagBtn = document.getElementById('clear-diagnostic-btn');
+        if (clearDiagBtn && !clearDiagBtn.dataset.bound) {
+            clearDiagBtn.dataset.bound = 'true';
+            clearDiagBtn.addEventListener('click', clearDiagnosticLog);
+        }
+    } catch (e) {
+        console.error('[POPUP_BOOT] Diagnostic buttons binding error:', e);
+    }
+
+    // 6. FAILED Breakdown Card Toggle (Isolated)
+    try {
+        const failedCardBtn = document.getElementById('failed-card-btn');
+        const breakdownContainer = document.getElementById('failure-breakdown-container');
+        const breakdownToggle = document.getElementById('failure-breakdown-toggle');
+        if (failedCardBtn && breakdownContainer && !failedCardBtn.dataset.bound) {
+            failedCardBtn.dataset.bound = 'true';
+            failedCardBtn.addEventListener('click', () => {
+                breakdownContainer.classList.toggle('hidden');
+            });
+        }
+        if (breakdownToggle && breakdownContainer && !breakdownToggle.dataset.bound) {
+            breakdownToggle.dataset.bound = 'true';
+            breakdownToggle.addEventListener('click', () => {
+                breakdownContainer.classList.add('hidden');
+            });
+        }
+    } catch (e) {
+        console.error('[POPUP_BOOT] Breakdown card toggle error:', e);
+    }
+
+    // 7. Wit.ai / STT Key Setup Modal (Isolated)
+    try {
+        (function bindSttKeyRealTimeSync() {
+            let _sttDebounceTimer = null;
+            const sttKeyEl = document.getElementById('audio-stt-key');
+            if (!sttKeyEl || sttKeyEl.dataset.bound) return;
+            sttKeyEl.dataset.bound = 'true';
+            sttKeyEl.addEventListener('input', () => {
+                clearTimeout(_sttDebounceTimer);
+                _sttDebounceTimer = setTimeout(() => {
+                    const key = sttKeyEl.value.trim();
+                    chrome.storage.local.set({ xpider_stt_api_key: key, audioSttKey: key, witKey: key }, () => {
+                        console.log(`[WitKey-Sync v2] Sender 실시간 입력 동기화: keyConfigured=${!!key}`);
+                    });
+                }, 600);
+            });
+        })();
+
+        const saveSetupSttBtn = document.getElementById('save-setup-stt-btn');
+        if (saveSetupSttBtn && !saveSetupSttBtn.dataset.bound) {
+            saveSetupSttBtn.dataset.bound = 'true';
+            saveSetupSttBtn.addEventListener('click', async () => {
+                const input = document.getElementById('setup-stt-key-input');
+                const key = input ? input.value.trim() : '';
+                if (key === '') {
+                    alert("Please enter a valid Wit.ai Key.");
+                    return;
+                }
+                
+                await chrome.storage.local.set({ 
+                    xpider_stt_api_key: key, 
+                    audioSttKey: key, 
+                    witKey: key,
+                    xpider_captcha_method: 'audio'
+                });
+                const settingsInput = document.getElementById('audio-stt-key');
+                if (settingsInput) settingsInput.value = key;
+                const methodSelect = document.getElementById('captcha-method-select');
+                if (methodSelect) methodSelect.value = 'audio';
+                
+                if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
+                    chrome.runtime.sendMessage({ action: 'UPDATE_WIT_KEY', key }).catch(() => {});
+                }
+                
+                const setupModal = document.getElementById('stt-setup-modal-overlay');
+                if (setupModal) closeModalOverlay(setupModal);
+                
+                const langSelect = document.getElementById('language-select');
+                const lang = langSelect ? langSelect.value : 'en';
+                const dict = i18nData ? (i18nData[lang] || i18nData['en'] || {}) : {};
+                alert(dict.msg_saved || "Saved!");
+            });
+        }
+
+        const quickWitBtn = document.getElementById('quick-wit-setup-btn');
+        if (quickWitBtn && !quickWitBtn.dataset.bound) {
+            quickWitBtn.dataset.bound = 'true';
+            quickWitBtn.addEventListener('click', () => {
+                const setupModal = document.getElementById('stt-setup-modal-overlay');
+                if (setupModal) openModalOverlay(setupModal);
+            });
+        }
+
+        const witAiLink = document.getElementById('wit-ai-link');
+        if (witAiLink && !witAiLink.dataset.bound) {
+            witAiLink.dataset.bound = 'true';
+            witAiLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const url = witAiLink.href || 'https://wit.ai';
+                if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.create) {
+                    chrome.tabs.create({ url });
+                } else {
+                    window.open(url, '_blank');
+                }
+            });
+        }
+
+        document.querySelectorAll('a.premium-link, a[target="_blank"]').forEach(link => {
+            if (link.id === 'wit-ai-link' || link.dataset.bound) return;
+            link.dataset.bound = 'true';
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const url = link.href;
+                if (!url || url === '#') return;
+                try {
+                    window.postMessage({ type: 'XPIDER_SEND', channel: 'auth-open-external', data: url }, '*');
+                } catch (err) {}
+                try { window.open(url, '_blank'); } catch (err) {}
+            });
+        });
+    } catch (e) {
+        console.error('[POPUP_BOOT] Wit.ai setup binding error:', e);
+    }
+
+    // 8. Template & Captcha Options (Isolated)
+    try {
+        ['save-tpl-btn', 'save-tpl-changes-btn', 'save-tpl-bottom-btn'].forEach(id => {
+            const btn = document.getElementById(id);
+            if (btn && !btn.dataset.bound) {
+                btn.dataset.bound = 'true';
+                btn.addEventListener('click', saveTemplateChanges);
             }
         });
+
+        const captchaToggle = document.getElementById('captcha-solve-toggle');
+        if (captchaToggle && !captchaToggle.dataset.bound) {
+            captchaToggle.dataset.bound = 'true';
+            captchaToggle.addEventListener('change', (e) => {
+                const enabled = e.target.checked;
+                const methodGroup = document.getElementById('captcha-method-group');
+                if (methodGroup) methodGroup.style.display = enabled ? 'block' : 'none';
+                toggleCaptchaApiVisibility();
+            });
+        }
+
+        const methodSelect = document.getElementById('captcha-method-select');
+        if (methodSelect && !methodSelect.dataset.bound) {
+            methodSelect.dataset.bound = 'true';
+            methodSelect.addEventListener('change', () => {
+                toggleCaptchaApiVisibility();
+                const langSelect = document.getElementById('language-select');
+                if (langSelect) applyTranslations(langSelect.value);
+            });
+        }
+
+        const langSelect = document.getElementById('language-select');
+        if (langSelect && !langSelect.dataset.bound) {
+            langSelect.dataset.bound = 'true';
+            langSelect.addEventListener('change', (e) => {
+                applyTranslations(e.target.value);
+            });
+        }
+
+        ['tpl-first-name', 'tpl-last-name', 'tpl-name', 'tpl-email', 'tpl-phone', 'tpl-subject', 'tpl-message'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el && !el.dataset.bound) {
+                el.dataset.bound = 'true';
+                el.addEventListener('input', () => {
+                    if (id === 'tpl-message') isMessageDirty = true;
+                    isTemplateDirty = true;
+                    saveTemplate();
+                });
+                el.addEventListener('change', () => {
+                    if (id === 'tpl-message') isMessageDirty = true;
+                    isTemplateDirty = true;
+                    saveTemplate();
+                });
+            }
+        });
+    } catch (e) {
+        console.error('[POPUP_BOOT] Template & captcha options binding error:', e);
     }
 
-    const ledgerPrevBtn = document.getElementById('ledger-prev-btn');
-    if (ledgerPrevBtn) {
-        ledgerPrevBtn.addEventListener('click', () => {
-            if (ledgerState.page > 1) {
-                ledgerState.page--;
+    // 9. Single URL & Template Library (Isolated)
+    try {
+        const addUrlBtn = document.getElementById('add-url-btn');
+        if (addUrlBtn && !addUrlBtn.dataset.bound) {
+            addUrlBtn.dataset.bound = 'true';
+            addUrlBtn.classList.add('plus-btn-circle');
+            addUrlBtn.addEventListener('click', addSingleUrl);
+        }
+        
+        const manualUrlInput = document.getElementById('manual-url-input');
+        if (manualUrlInput && !manualUrlInput.dataset.bound) {
+            manualUrlInput.dataset.bound = 'true';
+            manualUrlInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') addSingleUrl();
+            });
+        }
+
+        const clearListBtn = document.getElementById('clear-list-btn');
+        if (clearListBtn && !clearListBtn.dataset.bound) {
+            clearListBtn.dataset.bound = 'true';
+            clearListBtn.addEventListener('click', clearCampaignQueue);
+        }
+
+        const newTplBtn = document.getElementById('new-tpl-btn');
+        if (newTplBtn && !newTplBtn.dataset.bound) {
+            newTplBtn.dataset.bound = 'true';
+            newTplBtn.addEventListener('click', () => handleCreateNewTemplate());
+        }
+
+        const dupTplBtn = document.getElementById('dup-tpl-btn');
+        if (dupTplBtn && !dupTplBtn.dataset.bound) {
+            dupTplBtn.dataset.bound = 'true';
+            dupTplBtn.addEventListener('click', () => handleDuplicateTemplate());
+        }
+
+        const defTplBtn = document.getElementById('default-tpl-btn');
+        if (defTplBtn && !defTplBtn.dataset.bound) {
+            defTplBtn.dataset.bound = 'true';
+            defTplBtn.addEventListener('click', () => handleSetDefaultTemplate());
+        }
+
+        const delTplBtn = document.getElementById('del-tpl-btn');
+        if (delTplBtn && !delTplBtn.dataset.bound) {
+            delTplBtn.dataset.bound = 'true';
+            delTplBtn.addEventListener('click', () => {
+                if (confirm("Are you sure you want to delete this template?")) {
+                    handleDeleteTemplate().catch(e => alert(e.message));
+                }
+            });
+        }
+
+        const tplSelect = document.getElementById('tpl-library-select');
+        if (tplSelect && !tplSelect.dataset.bound) {
+            tplSelect.dataset.bound = 'true';
+            tplSelect.addEventListener('change', loadTemplateFromLibrary);
+        }
+    } catch (e) {
+        console.error('[POPUP_BOOT] Single URL and template library binding error:', e);
+    }
+
+    // 10. Ledger & Reset Lists Controls (Isolated)
+    try {
+        document.querySelectorAll('.ledger-chip').forEach(chip => {
+            if (!chip.dataset.bound) {
+                chip.dataset.bound = 'true';
+                chip.addEventListener('click', () => {
+                    document.querySelectorAll('.ledger-chip').forEach(c => c.classList.remove('active'));
+                    chip.classList.add('active');
+                    ledgerState.filter = chip.dataset.filter || 'ALL';
+                    ledgerState.page = 1;
+                    renderLedgerUI();
+                });
+            }
+        });
+
+        const ledgerSearchInput = document.getElementById('ledger-search-input');
+        if (ledgerSearchInput && !ledgerSearchInput.dataset.bound) {
+            ledgerSearchInput.dataset.bound = 'true';
+            let searchTimer = null;
+            ledgerSearchInput.addEventListener('input', () => {
+                clearTimeout(searchTimer);
+                searchTimer = setTimeout(() => {
+                    ledgerState.search = ledgerSearchInput.value.trim();
+                    ledgerState.page = 1;
+                    renderLedgerUI();
+                }, 300);
+            });
+        }
+
+        const ledgerSelectAllCb = document.getElementById('ledger-select-all-cb');
+        if (ledgerSelectAllCb && !ledgerSelectAllCb.dataset.bound) {
+            ledgerSelectAllCb.dataset.bound = 'true';
+            ledgerSelectAllCb.addEventListener('change', () => {
+                const cbs = document.querySelectorAll('.ledger-item-cb');
+                cbs.forEach(cb => {
+                    cb.checked = ledgerSelectAllCb.checked;
+                    const tgt = cb.dataset.target;
+                    if (ledgerSelectAllCb.checked) ledgerState.selectedTargets.add(tgt);
+                    else ledgerState.selectedTargets.delete(tgt);
+                    cb.closest('.ledger-item-card')?.classList.toggle('is-selected', ledgerSelectAllCb.checked);
+                });
+                updateSelectionCountUI();
+            });
+        }
+
+        const ledgerExportAllGSheetsBtn = document.getElementById('ledger-export-all-gsheets-btn');
+        if (ledgerExportAllGSheetsBtn && !ledgerExportAllGSheetsBtn.dataset.bound) {
+            ledgerExportAllGSheetsBtn.dataset.bound = 'true';
+            ledgerExportAllGSheetsBtn.addEventListener('click', () => triggerGoogleSheetsCsvExport({ exportCurrentFilter: false }));
+        }
+
+        const ledgerExportFilterGSheetsBtn = document.getElementById('ledger-export-filter-gsheets-btn');
+        if (ledgerExportFilterGSheetsBtn && !ledgerExportFilterGSheetsBtn.dataset.bound) {
+            ledgerExportFilterGSheetsBtn.dataset.bound = 'true';
+            ledgerExportFilterGSheetsBtn.addEventListener('click', () => triggerGoogleSheetsCsvExport({ exportCurrentFilter: true }));
+        }
+
+        const ledgerExportBtn = document.getElementById('ledger-export-csv-btn');
+        if (ledgerExportBtn && !ledgerExportBtn.dataset.bound) {
+            ledgerExportBtn.dataset.bound = 'true';
+            ledgerExportBtn.addEventListener('click', () => triggerGoogleSheetsCsvExport({ exportCurrentFilter: false }));
+        }
+
+        const ledgerResetSelBtn = document.getElementById('ledger-reset-selected-btn');
+        if (ledgerResetSelBtn && !ledgerResetSelBtn.dataset.bound) {
+            ledgerResetSelBtn.dataset.bound = 'true';
+            ledgerResetSelBtn.addEventListener('click', async () => {
+                try {
+                    await dispatchSelectiveReset();
+                } catch (err) {
+                    alert(err.message);
+                }
+            });
+        }
+
+        const ledgerRetryFailedBtn = document.getElementById('ledger-retry-failed-btn');
+        if (ledgerRetryFailedBtn && !ledgerRetryFailedBtn.dataset.bound) {
+            ledgerRetryFailedBtn.dataset.bound = 'true';
+            ledgerRetryFailedBtn.addEventListener('click', async () => {
+                try {
+                    await dispatchRetryFailed();
+                } catch (err) {
+                    alert(err.message);
+                }
+            });
+        }
+
+        const ledgerClearBtn = document.getElementById('ledger-clear-btn');
+        const ledgerResetAllBtn = document.getElementById('ledger-reset-all-btn');
+        const resetAllModal = document.getElementById('reset-all-modal-overlay');
+        const cancelResetAllBtn = document.getElementById('cancel-reset-all-btn');
+        const confirmResetAllBtn = document.getElementById('confirm-reset-all-btn');
+
+        if (ledgerClearBtn && resetAllModal && !ledgerClearBtn.dataset.bound) {
+            ledgerClearBtn.dataset.bound = 'true';
+            ledgerClearBtn.addEventListener('click', () => {
+                if (campaignActive) {
+                    alert("Cannot clear history while campaign is actively running!");
+                    return;
+                }
+                openModalOverlay(resetAllModal);
+            });
+        }
+        if (ledgerResetAllBtn && resetAllModal && !ledgerResetAllBtn.dataset.bound) {
+            ledgerResetAllBtn.dataset.bound = 'true';
+            ledgerResetAllBtn.addEventListener('click', () => {
+                if (campaignActive) {
+                    alert("Cannot clear history while campaign is actively running!");
+                    return;
+                }
+                openModalOverlay(resetAllModal);
+            });
+        }
+        if (cancelResetAllBtn && resetAllModal && !cancelResetAllBtn.dataset.bound) {
+            cancelResetAllBtn.dataset.bound = 'true';
+            cancelResetAllBtn.addEventListener('click', () => {
+                closeModalOverlay(resetAllModal);
+            });
+        }
+        if (confirmResetAllBtn && resetAllModal && !confirmResetAllBtn.dataset.bound) {
+            confirmResetAllBtn.dataset.bound = 'true';
+            confirmResetAllBtn.addEventListener('click', async () => {
+                closeModalOverlay(resetAllModal);
+                try {
+                    await dispatchClearHistoryLedger();
+                } catch (err) {
+                    alert(err.message);
+                }
+            });
+        }
+
+        // [Issue #6 R4.1] RESET ALL LIST DATA Modal & Event Listeners
+        const resetAllListsBtn = document.getElementById('reset-all-lists-btn');
+        const settingsResetAllListsBtn = document.getElementById('settings-reset-all-lists-btn');
+        const resetAllListsModal = document.getElementById('reset-all-lists-modal-overlay');
+        const cancelResetAllListsBtn = document.getElementById('cancel-reset-all-lists-btn');
+        const confirmResetAllListsBtn = document.getElementById('confirm-reset-all-lists-btn');
+
+        const openResetAllListsModal = () => {
+            if (campaignActive) {
+                alert("Cannot reset list data while campaign is actively running!");
+                return;
+            }
+            if (resetAllListsModal) openModalOverlay(resetAllListsModal);
+        };
+
+        if (resetAllListsBtn && !resetAllListsBtn.dataset.bound) {
+            resetAllListsBtn.dataset.bound = 'true';
+            resetAllListsBtn.addEventListener('click', openResetAllListsModal);
+        }
+        if (settingsResetAllListsBtn && !settingsResetAllListsBtn.dataset.bound) {
+            settingsResetAllListsBtn.dataset.bound = 'true';
+            settingsResetAllListsBtn.addEventListener('click', openResetAllListsModal);
+        }
+        if (cancelResetAllListsBtn && resetAllListsModal && !cancelResetAllListsBtn.dataset.bound) {
+            cancelResetAllListsBtn.dataset.bound = 'true';
+            cancelResetAllListsBtn.addEventListener('click', () => {
+                closeModalOverlay(resetAllListsModal);
+            });
+        }
+        if (confirmResetAllListsBtn && resetAllListsModal && !confirmResetAllListsBtn.dataset.bound) {
+            confirmResetAllListsBtn.dataset.bound = 'true';
+            confirmResetAllListsBtn.addEventListener('click', async () => {
+                closeModalOverlay(resetAllListsModal);
+                try {
+                    await dispatchResetAllListData();
+                } catch (err) {
+                    alert(err.message);
+                }
+            });
+        }
+
+        const ledgerPrevBtn = document.getElementById('ledger-prev-btn');
+        if (ledgerPrevBtn && !ledgerPrevBtn.dataset.bound) {
+            ledgerPrevBtn.dataset.bound = 'true';
+            ledgerPrevBtn.addEventListener('click', () => {
+                if (ledgerState.page > 1) {
+                    ledgerState.page--;
+                    renderLedgerUI();
+                }
+            });
+        }
+
+        const ledgerNextBtn = document.getElementById('ledger-next-btn');
+        if (ledgerNextBtn && !ledgerNextBtn.dataset.bound) {
+            ledgerNextBtn.dataset.bound = 'true';
+            ledgerNextBtn.addEventListener('click', () => {
+                ledgerState.page++;
                 renderLedgerUI();
-            }
-        });
+            });
+        }
+    } catch (e) {
+        console.error('[POPUP_BOOT] Ledger & reset lists binding error:', e);
     }
 
-    const ledgerNextBtn = document.getElementById('ledger-next-btn');
-    if (ledgerNextBtn) {
-        ledgerNextBtn.addEventListener('click', () => {
-            ledgerState.page++;
-            renderLedgerUI();
-        });
+    // 11. Navigation Verification & State Tracking
+    window.__xpider_boot.tabsBound = tabsBound;
+    window.__xpider_boot.settingsBound = settingsBound;
+    console.log(`[POPUP_BOOT] tabsBound=${tabsBound} settingsBound=${settingsBound}`);
+
+    if (!tabsBound) {
+        displayControlPlaneError('TABS_NOT_BOUND', 'No .tab-btn elements successfully bound');
+    }
+    if (!settingsBound) {
+        displayControlPlaneError('SETTINGS_NOT_BOUND', '#settings-toggle not successfully bound');
     }
 
+    // 12. Auxiliary initializers
     try { bindEmailCollectorEvents(); } catch (_) {}
     try { initBuildProvenanceBadge(); } catch (_) {}
     try { initOwnerAutoSetup(); } catch (err) { console.warn('[INIT_OWNER_AUTO_SETUP_ERR]', err); }

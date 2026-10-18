@@ -761,8 +761,12 @@ h1 {
 input:checked + .slider { background-color: var(--accent-color); }
 input:checked + .slider:before { transform: translateX(20px); }
 
-/* Hidden */
-.hidden { display: none !important; }
+/* Hidden (Y3 Fail-Safe) */
+.hidden {
+    display: none !important;
+    pointer-events: none !important;
+    visibility: hidden !important;
+}
 
 /* Overlays & Modals */
 .overlay, .modal-overlay {
@@ -774,6 +778,15 @@ input:checked + .slider:before { transform: translateX(20px); }
     display: flex;
     align-items: center;
     justify-content: center;
+    pointer-events: auto;
+}
+
+.overlay.hidden,
+.modal-overlay.hidden,
+[id$="-overlay"].hidden {
+    display: none !important;
+    pointer-events: none !important;
+    visibility: hidden !important;
 }
 
 /* [P0 UI Fix - Issue #6 Comment #6231022137] Explicit Modal Stacking Hierarchy */
