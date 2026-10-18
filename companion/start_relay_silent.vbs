@@ -5,10 +5,11 @@ rootDir = fso.GetParentFolderName(scriptDir)
 WshShell.CurrentDirectory = rootDir
 bundledNode = fso.GetAbsolutePathName(fso.BuildPath(rootDir, "runtime\node\node.exe"))
 If fso.FileExists(bundledNode) Then
-    cmd = """" & bundledNode & """ """ & scriptDir & "\privacy-relay-service.js"""
+    nodeBin = bundledNode
 Else
-    cmd = "node """ & scriptDir & "\privacy-relay-service.js"""
+    nodeBin = "node"
 End If
+cmd = Chr(34) & nodeBin & Chr(34) & " " & Chr(34) & scriptDir & "\privacy-relay-service.js" & Chr(34)
 WshShell.Run cmd, 0, False
 Set WshShell = Nothing
 Set fso = Nothing

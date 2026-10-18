@@ -749,9 +749,21 @@
                     return await res.json();
                 }
                 const errData = await res.json().catch(() => ({}));
-                return { success: false, reason: errData.reason || `HTTP_${res.status}` };
+                const status = res.status;
+                const errorCode = errData.error || (status === 401 ? 'TOKEN_INVALID' : status === 403 ? 'TOKEN_SCOPE_MISSING' : status === 404 ? 'COMPANION_VERSION_MISMATCH' : `HTTP_${status}`);
+                const reason = errData.reason || (status === 404 ? 'Running companion does not support /verify-plan (COMPANION_VERSION_MISMATCH). Please run XPIDER_AUTO_SETUP.bat.' : `HTTP_${status}`);
+                return {
+                    success: false,
+                    error: errorCode,
+                    reason,
+                    statusCode: status
+                };
             } catch (e) {
-                return { success: false, reason: e.message };
+                return {
+                    success: false,
+                    error: 'PROVIDER_NETWORK_ERROR',
+                    reason: `Failed to connect to local companion on ${host}:${port}: ${e.message}`
+                };
             }
         }
 
@@ -778,9 +790,17 @@
                     return await res.json();
                 }
                 const errData = await res.json().catch(() => ({}));
-                return { success: false, reason: errData.reason || `HTTP_${res.status}` };
+                return {
+                    success: false,
+                    error: errData.error || `HTTP_${res.status}`,
+                    reason: errData.reason || `HTTP_${res.status}`
+                };
             } catch (e) {
-                return { success: false, reason: e.message };
+                return {
+                    success: false,
+                    error: 'PROVIDER_NETWORK_ERROR',
+                    reason: `Failed to connect to local companion on ${host}:${port}: ${e.message}`
+                };
             }
         }
 

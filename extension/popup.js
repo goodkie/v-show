@@ -2052,6 +2052,17 @@ async function hydrateSettings(overrideV2Store = null) {
             };
 
             window.openPrivateEgressWizard = () => {
+                // [P0 UI Fix - Issue #6 Comment #6231022137] Close settings overlay before opening wizard
+                const settingsOverlay = document.getElementById('settings-overlay');
+                if (settingsOverlay) {
+                    settingsOverlay.classList.add('hidden');
+                }
+                const privacyBlockModal = document.getElementById('privacy-block-modal-overlay');
+                if (privacyBlockModal) {
+                    privacyBlockModal.style.display = 'none';
+                    privacyBlockModal.classList.add('hidden');
+                }
+
                 modal.style.display = 'flex';
                 modal.classList.remove('hidden');
                 if (progressHud) progressHud.style.display = 'none';
@@ -2067,7 +2078,7 @@ async function hydrateSettings(overrideV2Store = null) {
                 }
                 if (createBtn) {
                     createBtn.disabled = true;
-                    createBtn.textContent = '⚡ STEP B: CREATE PRIVATE EGRESS — $6.00/MO';
+                    createBtn.textContent = '⚡ STEP B: CREATE PRIVATE EGRESS';
                 }
                 if (verifyBtn) {
                     verifyBtn.disabled = false;
@@ -2174,8 +2185,28 @@ async function hydrateSettings(overrideV2Store = null) {
 
                         if (res && res.success && res.result && res.result.valid) {
                             verifiedPlan = res.result;
-                            const priceMonthly = verifiedPlan.monthlyCostUsd || 6;
-                            const priceHourly = verifiedPlan.hourlyCostUsd || 0.00893;
+                            const priceMonthly = verifiedPlan.monthlyCostUsd;
+                            const priceHourly = verifiedPlan.hourlyCostUsd;
+                            if (typeof priceMonthly !== 'number' || priceMonthly <= 0 || !Number.isFinite(priceMonthly) ||
+                                typeof priceHourly !== 'number' || priceHourly <= 0 || !Number.isFinite(priceHourly)) {
+                                verifiedPlan = null;
+                                if (stepBContainer) {
+                                    stepBContainer.style.opacity = '0.5';
+                                    stepBContainer.style.pointerEvents = 'none';
+                                }
+                                if (authCheck) {
+                                    authCheck.disabled = true;
+                                    authCheck.checked = false;
+                                }
+                                if (createBtn) {
+                                    createBtn.disabled = true;
+                                }
+                                const err = 'PROVIDER_PRICE_UNAVAILABLE: Provider catalog did not return a valid positive monthly and hourly price.';
+                                addLog(`❌ [PLAN_VERIFY_FAIL] ${err}`, 'error');
+                                alert(`Plan verification failed:\n\n[PROVIDER_PRICE_UNAVAILABLE]\n${err}`);
+                                return;
+                            }
+
                             verifiedPriceStr = `$${priceMonthly.toFixed(2)}/MO`;
                             const formatted = verifiedPlan.formattedPrice || `$${priceMonthly.toFixed(2)} / month ($${priceHourly} / hr)`;
 
@@ -2208,9 +2239,40 @@ async function hydrateSettings(overrideV2Store = null) {
                             addLog(`✅ [PLAN_VERIFIED] DigitalOcean plan verified: ${verifiedPlan.size} in ${region.toUpperCase()} at ${formatted} (Zero cloud resources created)`, 'success');
                         } else {
                             verifiedPlan = null;
-                            const err = (res && res.result && res.result.reason) || (res && res.error) || 'Failed to verify plan and price with provider';
-                            addLog(`❌ [PLAN_VERIFY_FAIL] ${err}`, 'error');
-                            alert(`Plan verification failed:\n${err}`);
+                            if (stepBContainer) {
+                                stepBContainer.style.opacity = '0.5';
+                                stepBContainer.style.pointerEvents = 'none';
+                            }
+                            if (authCheck) {
+                                authCheck.disabled = true;
+                                authCheck.checked = false;
+                            }
+                            if (createBtn) {
+                                createBtn.disabled = true;
+                            }
+                            const rawErr = (res && res.result && (res.result.reason || res.result.error)) || (res && res.error) || 'Failed to verify plan and price with provider';
+                            const errCode = (res && res.result && res.result.error) || (res && res.error) || 'VERIFY_FAILED';
+
+                            // [Issue #6 Comment #6244711545] Categorize into clean Owner UX error classes
+                            let displayMsg = '';
+                            if (errCode === 'TOKEN_INVALID' || rawErr.includes('401') || rawErr.includes('Unauthorized') || rawErr.includes('Invalid DigitalOcean API token')) {
+                                displayMsg = `[TOKEN_INVALID / 401]\nYour DigitalOcean API token is invalid or expired.\nPlease generate a new personal access token in DigitalOcean Control Panel with read+write permissions.`;
+                            } else if (errCode === 'TOKEN_SCOPE_MISSING' || rawErr.includes('403') || rawErr.includes('Forbidden') || rawErr.includes('scope')) {
+                                displayMsg = `[TOKEN_SCOPE_MISSING / 403]\nYour DigitalOcean API token lacks required read/write permissions.\nPlease ensure the token has both 'Read' and 'Write' scopes.`;
+                            } else if (errCode === 'PROVIDER_NETWORK_ERROR' || rawErr.includes('ENOTFOUND') || rawErr.includes('ECONNREFUSED') || rawErr.includes('ETIMEDOUT') || rawErr.includes('Failed to connect to local companion')) {
+                                displayMsg = `[PROVIDER_NETWORK_ERROR]\nCould not establish connection to provider API or local companion.\nDetails: ${rawErr}`;
+                            } else if (errCode === 'PROVIDER_CATALOG_ERROR' || rawErr.includes('unavailable') || rawErr.includes('catalog')) {
+                                displayMsg = `[PROVIDER_CATALOG_ERROR]\n${rawErr}`;
+                            } else if (errCode === 'PROVIDER_PRICE_UNAVAILABLE' || rawErr.includes('PRICE_UNAVAILABLE')) {
+                                displayMsg = `[PROVIDER_PRICE_UNAVAILABLE]\nLive pricing could not be derived from provider catalog.\nStep B remains disabled to prevent unconfirmed charges.`;
+                            } else if (errCode === 'COMPANION_VERSION_MISMATCH' || rawErr.includes('COMPANION_VERSION_MISMATCH') || rawErr.includes('HTTP_404')) {
+                                displayMsg = `[COMPANION_VERSION_MISMATCH]\nRunning Privacy Relay Companion does not match the active extension.\nPlease run XPIDER_AUTO_SETUP.bat to authoritatively upgrade the companion.`;
+                            } else {
+                                displayMsg = `[PLAN_VERIFY_ERROR]\n${rawErr}`;
+                            }
+
+                            addLog(`❌ [PLAN_VERIFY_FAIL] ${rawErr}`, 'error');
+                            alert(`Plan verification failed:\n\n${displayMsg}`);
                         }
                     });
                 };

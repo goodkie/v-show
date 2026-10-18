@@ -46,6 +46,20 @@ const CONFIG_FILE = process.env.XPIDER_RELAY_CONFIG_FILE || path.join(__dirname,
 const LOG_FILE = path.join(__dirname, 'privacy_relay.log');
 const TOKEN_FILE = path.join(__dirname, '.control_token');
 
+// [Defect Q2 Hardening - Issue #6 Comment #6244711545] Authoritative companion build identity & capabilities
+const COMPANION_BUILD_ID = 'R6.9G.10.3.7.1.4.16-20261017-PRIVATE-EGRESS-RC3.2';
+const COMPANION_IMPLEMENTATION_HEAD = '3cad7043a0077e77bb2981669d4a584da08cde1b';
+const COMPANION_API_CAPABILITIES = [
+  'verify-plan',
+  'provision-egress',
+  'provision-progress',
+  'destroy-egress',
+  'egress-telemetry',
+  'shutdown',
+  'stop',
+  'physical-gate'
+];
+
 // [Defect P Fix] Strict Node.js supported LTS allowlist (explicitly 22 or 24 only; rejects odd/EOL/non-LTS majors)
 const SUPPORTED_LTS_MAJORS = [22, 24];
 const nodeMajor = parseInt(process.versions.node.split('.')[0], 10);
@@ -94,6 +108,7 @@ const DEFAULT_POOL = {
 
 class PrivacyRelayService {
   constructor(options = {}) {
+    this.options = options;
     this.controlPort = options.controlPort || CONTROL_PORT;
     this.proxyPort = options.proxyPort || PROXY_PORT;
     this.canaryUrl = options.canaryUrl || null;
@@ -694,7 +709,7 @@ class PrivacyRelayService {
         const isHealthValid = this.isNodeHealthValid(active);
         const physicalGateFresh = !this.physicalGate.enabled || this.physicalGate.isFresh();
         const physicalGateReady = !this.physicalGate.enabled || Boolean(this.physicalGate.state && this.physicalGate.state.ready && physicalGateFresh);
-        res.writeHead(200);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({
           status: 'OK',
           relayReady: !this.isPaused && this.relayReady && isHealthValid && physicalGateReady,
@@ -703,6 +718,10 @@ class PrivacyRelayService {
           physicalGateFresh: this.physicalGate.enabled ? this.physicalGate.isFresh() : true,
           service: 'XPIDER Privacy Relay',
           version: this.pool.version || '1.0.3',
+          pid: process.pid,
+          companionBuildId: COMPANION_BUILD_ID,
+          companionImplementationHead: COMPANION_IMPLEMENTATION_HEAD,
+          apiCapabilities: COMPANION_API_CAPABILITIES,
           controlPort: this.controlPort,
           proxyPort: this.proxyPort,
           selectedEgressId: active ? active.id : null,
@@ -1052,29 +1071,69 @@ class PrivacyRelayService {
         let body = '';
         req.on('data', chunk => body += chunk);
         req.on('end', async () => {
+          let reqData = null;
+          let reqToken = null;
+
           try {
-            const data = JSON.parse(body);
-            if (!data.token) {
-              res.writeHead(400);
-              res.end(JSON.stringify({ success: false, reason: 'MISSING_API_TOKEN' }));
-              return;
+            reqData = JSON.parse(body);
+            if (reqData && typeof reqData.token === 'string') {
+              reqToken = reqData.token.trim();
             }
+          } catch (jsonErr) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({
+              success: false,
+              error: 'MALFORMED_JSON',
+              reason: 'Malformed JSON payload in request body'
+            }));
+            return;
+          }
+
+          if (!reqToken) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({
+              success: false,
+              error: 'MISSING_API_TOKEN',
+              reason: 'DigitalOcean API token is required'
+            }));
+            return;
+          }
+
+          try {
             const provisioner = new PrivateEgressProvisioner({
-              token: data.token,
+              token: reqToken,
               controlPort: this.controlPort,
               controlToken: this.controlToken,
-              mockMode: Boolean(data.mockMode)
+              mockMode: Boolean(reqData.mockMode),
+              simulatePreflightFailure: Boolean(reqData.simulatePreflightFailure),
+              simulateFirewallFailure: Boolean(reqData.simulateFirewallFailure),
+              simulateCatalogFailure: Boolean(reqData.simulateCatalogFailure),
+              simulateInvalidToken: Boolean(reqData.simulateInvalidToken),
+              simulateMissingScope: Boolean(reqData.simulateMissingScope),
+              simulateUnavailableRegion: Boolean(reqData.simulateUnavailableRegion),
+              simulateMissingPrice: Boolean(reqData.simulateMissingPrice),
+              simulateOwnerIpFailure: Boolean(reqData.simulateOwnerIpFailure)
             });
+
             const planInfo = await provisioner.verifyPlanAndPrice({
-              tier: data.tier || 'ULTRA_ECONOMY',
-              region: data.region || 'nyc3'
+              tier: reqData.tier || 'ULTRA_ECONOMY',
+              region: reqData.region || 'nyc3'
             });
-            res.writeHead(200);
+
+            res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ success: true, ...planInfo }));
           } catch (e) {
-            const scrubbedErr = redactSecrets(e.message, [data.token]);
-            res.writeHead(400);
-            res.end(JSON.stringify({ success: false, reason: scrubbedErr }));
+            const safeTokens = reqToken ? [reqToken] : [];
+            const scrubbedErr = redactSecrets(e.message || String(e), safeTokens);
+            const statusCode = e.statusCode || (e.code === 'TOKEN_INVALID' ? 401 : e.code === 'TOKEN_SCOPE_MISSING' ? 403 : 400);
+            const errorCode = e.code || (statusCode === 401 ? 'TOKEN_INVALID' : statusCode === 403 ? 'TOKEN_SCOPE_MISSING' : 'PROVIDER_ERROR');
+            res.writeHead(statusCode, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({
+              success: false,
+              error: errorCode,
+              reason: scrubbedErr,
+              statusCode
+            }));
           }
         });
         return;
@@ -1085,58 +1144,74 @@ class PrivacyRelayService {
         let body = '';
         req.on('data', chunk => body += chunk);
         req.on('end', async () => {
+          let reqData = null;
+          let reqToken = null;
+
           try {
-            const data = JSON.parse(body);
-            if (!data.token) {
-              res.writeHead(400);
-              res.end(JSON.stringify({ success: false, reason: 'MISSING_API_TOKEN' }));
-              return;
+            reqData = JSON.parse(body);
+            if (reqData && typeof reqData.token === 'string') {
+              reqToken = reqData.token.trim();
             }
+          } catch (jsonErr) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({
+              success: false,
+              error: 'MALFORMED_JSON',
+              reason: 'Malformed JSON payload in request body'
+            }));
+            return;
+          }
 
-            this.provisioningState = {
-              running: true,
-              events: [],
-              lastEvent: null,
-              result: null,
-              error: null
-            };
+          if (!reqToken) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({
+              success: false,
+              error: 'MISSING_API_TOKEN',
+              reason: 'DigitalOcean API token is required'
+            }));
+            return;
+          }
 
-            const provisioner = new PrivateEgressProvisioner({
-              token: data.token,
-              controlPort: this.controlPort,
-              controlToken: this.controlToken,
-              mockMode: Boolean(data.mockMode),
-              onProgress: (ev) => {
-                const scrubbedEv = {
-                  ...ev,
-                  details: redactSecrets(ev.details, [data.token])
-                };
-                this.provisioningState.events.push(scrubbedEv);
-                this.provisioningState.lastEvent = scrubbedEv;
-                this.log(`[PROVISION_PROGRESS] Step ${ev.step}/8 ${ev.title}: ${ev.status} — ${scrubbedEv.details}`);
-              }
+          this.provisioningState = {
+            running: true,
+            events: [],
+            lastEvent: null,
+            result: null,
+            error: null
+          };
+
+          const provisioner = new PrivateEgressProvisioner({
+            token: reqToken,
+            controlPort: this.controlPort,
+            controlToken: this.controlToken,
+            mockMode: Boolean(reqData.mockMode),
+            onProgress: (ev) => {
+              const scrubbedEv = {
+                ...ev,
+                details: redactSecrets(ev.details, [reqToken])
+              };
+              this.provisioningState.events.push(scrubbedEv);
+              this.provisioningState.lastEvent = scrubbedEv;
+              this.log(`[PROVISION_PROGRESS] Step ${ev.step}/8 ${ev.title}: ${ev.status} — ${scrubbedEv.details}`);
+            }
+          });
+
+          // Start provisioning
+          try {
+            const result = await provisioner.provisionPrivateEgress({
+              tier: reqData.tier || 'ULTRA_ECONOMY',
+              region: reqData.region || 'nyc3'
             });
-
-            // Start provisioning
-            try {
-              const result = await provisioner.provisionPrivateEgress({
-                tier: data.tier || 'ULTRA_ECONOMY',
-                region: data.region || 'nyc3'
-              });
-              this.provisioningState.running = false;
-              this.provisioningState.result = result;
-              res.writeHead(200);
-              res.end(JSON.stringify({ success: true, ...result }));
-            } catch (pErr) {
-              const scrubbedErr = redactSecrets(pErr.message, [data.token]);
-              this.provisioningState.running = false;
-              this.provisioningState.error = scrubbedErr;
-              res.writeHead(500);
-              res.end(JSON.stringify({ success: false, reason: scrubbedErr }));
-            }
-          } catch (e) {
-            res.writeHead(400);
-            res.end(JSON.stringify({ success: false, reason: e.message }));
+            this.provisioningState.running = false;
+            this.provisioningState.result = result;
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: true, ...result }));
+          } catch (pErr) {
+            const scrubbedErr = redactSecrets(pErr.message || String(pErr), [reqToken]);
+            this.provisioningState.running = false;
+            this.provisioningState.error = scrubbedErr;
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: false, reason: scrubbedErr }));
           }
         });
         return;
@@ -1540,19 +1615,35 @@ class PrivacyRelayService {
         return;
       }
 
-      // POST /stop (Authenticated)
-      if (pathname === '/stop' && req.method === 'POST') {
-        res.writeHead(200);
-        res.end(JSON.stringify({ success: true, message: 'SHUTTING_DOWN' }));
+      // POST /shutdown or POST /stop (Authenticated) - Graceful shutdown of companion
+      if ((pathname === '/shutdown' || pathname === '/stop') && req.method === 'POST') {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true, message: 'SHUTTING_DOWN', pid: process.pid }));
         setImmediate(async () => {
-          await this.stop();
+          this.log(`[COMPANION_SHUTDOWN] Received authorized shutdown request. Terminating companion server...`);
+          try {
+            await this.stop();
+          } catch (_) {}
+          if (this.options && this.options.exitOnShutdown === false) {
+            return;
+          }
           process.exit(0);
         });
         return;
       }
 
-      res.writeHead(404);
+      res.writeHead(404, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'ENDPOINT_NOT_FOUND' }));
+    });
+
+    this.controlServer.on('error', (err) => {
+      if (err.code === 'EADDRINUSE') {
+        this.log(`[FATAL_PORT_CONFLICT] Control port ${this.controlPort} is already bound by another process (EADDRINUSE).`);
+        console.error(`[FATAL_PORT_CONFLICT] Control port ${this.controlPort} is already in use by another process.`);
+        process.exit(1);
+      } else {
+        this.log(`[CONTROL_SERVER_ERROR] ${err.message}`);
+      }
     });
 
     this.controlServer.listen(this.controlPort, '127.0.0.1', () => {
@@ -1740,6 +1831,16 @@ class PrivacyRelayService {
           clientSocket.write('HTTP/1.1 502 Bad Gateway\r\n\r\n');
           clientSocket.destroy();
         });
+      }
+    });
+
+    this.proxyServer.on('error', (err) => {
+      if (err.code === 'EADDRINUSE') {
+        this.log(`[FATAL_PORT_CONFLICT] Proxy port ${this.proxyPort} is already bound by another process (EADDRINUSE).`);
+        console.error(`[FATAL_PORT_CONFLICT] Proxy port ${this.proxyPort} is already in use by another process.`);
+        process.exit(1);
+      } else {
+        this.log(`[PROXY_SERVER_ERROR] ${err.message}`);
       }
     });
 

@@ -776,6 +776,23 @@ input:checked + .slider:before { transform: translateX(20px); }
     justify-content: center;
 }
 
+/* [P0 UI Fix - Issue #6 Comment #6231022137] Explicit Modal Stacking Hierarchy */
+#settings-overlay {
+    z-index: 1000;
+}
+
+.modal-overlay {
+    z-index: 1100;
+}
+
+#private-egress-modal-overlay {
+    z-index: 1200 !important;
+}
+
+#privacy-block-modal-overlay {
+    z-index: 1200 !important;
+}
+
 .settings-panel, .captcha-friendly-modal {
     background: var(--card-bg);
     width: 90%;

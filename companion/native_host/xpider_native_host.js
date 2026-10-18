@@ -103,7 +103,24 @@ async function checkRelayHealth() {
 async function startRelay() {
   const health = await checkRelayHealth();
   if (health.running) {
-    return { success: true, message: 'ALREADY_RUNNING', controlToken: getControlToken() };
+    const d = health.health || {};
+    const caps = Array.isArray(d.apiCapabilities) ? d.apiCapabilities : [];
+    if (caps.includes('verify-plan')) {
+      return { success: true, message: 'ALREADY_RUNNING', controlToken: getControlToken() };
+    }
+  }
+
+  const ensureScript = path.join(RELAY_DIR, 'ensure_companion_service.js');
+  if (fs.existsSync(ensureScript)) {
+    return new Promise((resolve) => {
+      exec(`"${process.execPath}" "${ensureScript}"`, { cwd: path.resolve(RELAY_DIR, '..') }, (err, stdout, stderr) => {
+        if (err) {
+          resolve({ success: false, error: (stderr || err.message).trim() });
+        } else {
+          resolve({ success: true, message: 'UPGRADED_AND_STARTED', controlToken: getControlToken() });
+        }
+      });
+    });
   }
 
   return new Promise((resolve) => {

@@ -89,13 +89,18 @@ if exist "companion\install_native_host.js" (
 )
 
 echo.
-echo [3/4] Starting Privacy Relay Companion in background...
-if exist "companion\start_relay_silent.vbs" (
+echo [3/4] Verifying, Upgrading, and Starting Privacy Relay Companion (Ports 18988 / 18989)...
+if exist "companion\ensure_companion_service.js" (
+    "%XPIDER_NODE%" companion\ensure_companion_service.js
+    if !ERRORLEVEL! NEQ 0 (
+        echo [FATAL] Privacy Relay Companion failed to start and verify capabilities!
+        pause
+        exit /b 1
+    )
+) else if exist "companion\start_relay_silent.vbs" (
     wscript.exe companion\start_relay_silent.vbs
-) else if exist "companion\privacy_relay.js" (
-    start "" /b "%XPIDER_NODE%" companion\privacy_relay.js
+    ping 127.0.0.1 -n 3 >nul
 )
-ping 127.0.0.1 -n 3 >nul
 
 echo.
 echo [4/4] Verifying and Starting Local Owner Test Server (127.0.0.1:8088)...
@@ -121,7 +126,7 @@ echo.
 echo ========================================================
 echo   Auto Setup Completed Successfully!
 echo   - Native Messaging Host: REGISTERED (Chrome and Edge)
-echo   - Privacy Relay Service: RUNNING on 127.0.0.1:18988 / 18989
+echo   - Privacy Relay Service: RUNNING and VERIFIED on 127.0.0.1:18988 / 18989
 echo   - Owner Test Server: READY on 127.0.0.1:8088
 echo ========================================================
 echo You may now open Chrome / Edge, reload XPIDER, and click AUTO SETUP.

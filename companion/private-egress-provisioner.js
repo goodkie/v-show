@@ -155,7 +155,10 @@ class PrivateEgressProvisioner {
     this.simulatePreflightFailure = Boolean(options.simulatePreflightFailure);
     this.simulateFirewallFailure = Boolean(options.simulateFirewallFailure);
     this.simulateCatalogFailure = Boolean(options.simulateCatalogFailure);
+    this.simulateInvalidToken = Boolean(options.simulateInvalidToken);
+    this.simulateMissingScope = Boolean(options.simulateMissingScope);
     this.simulateUnavailableRegion = Boolean(options.simulateUnavailableRegion);
+    this.simulateMissingPrice = Boolean(options.simulateMissingPrice);
     this.simulateOwnerIpFailure = Boolean(options.simulateOwnerIpFailure);
     this.testSftpDownload = Boolean(options.testSftpDownload);
     this.mockOwnerIp = options.mockOwnerIp || null;
@@ -194,7 +197,9 @@ class PrivateEgressProvisioner {
     }
 
     if (!this.token) {
-      throw new Error('DigitalOcean API token is required');
+      const err = new Error('DigitalOcean API token is required');
+      err.code = 'MISSING_API_TOKEN';
+      throw err;
     }
 
     const url = `${DO_API_BASE}${endpoint}`;
@@ -228,12 +233,18 @@ class PrivateEgressProvisioner {
             const msg = (parsed && parsed.message) || `HTTP ${res.statusCode}: ${raw}`;
             const err = new Error(msg);
             err.statusCode = res.statusCode;
+            if (res.statusCode === 401) err.code = 'TOKEN_INVALID';
+            else if (res.statusCode === 403) err.code = 'TOKEN_SCOPE_MISSING';
+            else err.code = 'PROVIDER_ERROR';
             reject(err);
           }
         });
       });
 
-      req.on('error', reject);
+      req.on('error', (netErr) => {
+        netErr.code = netErr.code || 'PROVIDER_NETWORK_ERROR';
+        reject(netErr);
+      });
       if (body) {
         req.write(JSON.stringify(body));
       }
@@ -246,7 +257,7 @@ class PrivateEgressProvisioner {
       const res = await this.doRequest('/account');
       return { valid: true, account: res.account };
     } catch (err) {
-      return { valid: false, error: err.message };
+      return { valid: false, error: err.message, statusCode: err.statusCode, code: err.code };
     }
   }
 
@@ -277,10 +288,19 @@ class PrivateEgressProvisioner {
   async verifyRegionAndSizeAvailability(region, sizeSlug) {
     if (this.mockMode) {
       if (this.simulateCatalogFailure) {
-        throw new Error('SIMULATED_CATALOG_FAILURE');
+        const err = new Error('SIMULATED_CATALOG_FAILURE: DigitalOcean sizes catalog request failed');
+        err.code = 'PROVIDER_CATALOG_ERROR';
+        throw err;
       }
       if (this.simulateUnavailableRegion) {
-        throw new Error(`FAIL-CLOSED: Size ${sizeSlug} ($6/mo) is unavailable in ${region}. Available same-cost fallback regions at $6/mo: nyc1, sfo3, ams3.`);
+        const err = new Error(`FAIL-CLOSED: Size ${sizeSlug} ($6/mo) is unavailable in ${region}. Available same-cost fallback regions at $6/mo: nyc1, sfo3, ams3.`);
+        err.code = 'PROVIDER_CATALOG_ERROR';
+        throw err;
+      }
+      if (this.simulateMissingPrice) {
+        const err = new Error(`PROVIDER_PRICE_UNAVAILABLE: Catalog size ${sizeSlug} did not provide valid positive monthly/hourly pricing.`);
+        err.code = 'PROVIDER_PRICE_UNAVAILABLE';
+        throw err;
       }
       return {
         available: true,
@@ -292,34 +312,56 @@ class PrivateEgressProvisioner {
       };
     }
 
-    const sizesRes = await this.doRequest('/sizes');
+    let sizesRes;
+    try {
+      sizesRes = await this.doRequest('/sizes');
+    } catch (reqErr) {
+      reqErr.code = reqErr.code || 'PROVIDER_CATALOG_ERROR';
+      throw reqErr;
+    }
+
     if (!sizesRes || !sizesRes.sizes) {
-      throw new Error('FAIL-CLOSED: DigitalOcean sizes catalog unavailable.');
+      const err = new Error('FAIL-CLOSED: DigitalOcean sizes catalog unavailable.');
+      err.code = 'PROVIDER_CATALOG_ERROR';
+      throw err;
     }
     const matchedSize = sizesRes.sizes.find(s => s.slug === sizeSlug);
     if (!matchedSize) {
-      throw new Error(`FAIL-CLOSED: Requested size ${sizeSlug} does not exist in DigitalOcean catalog.`);
+      const err = new Error(`FAIL-CLOSED: Requested size ${sizeSlug} does not exist in DigitalOcean catalog.`);
+      err.code = 'PROVIDER_CATALOG_ERROR';
+      throw err;
     }
     if (matchedSize.available === false) {
-      throw new Error(`FAIL-CLOSED: Requested size ${sizeSlug} is marked unavailable across provider fleet.`);
+      const err = new Error(`FAIL-CLOSED: Requested size ${sizeSlug} is marked unavailable across provider fleet.`);
+      err.code = 'PROVIDER_CATALOG_ERROR';
+      throw err;
     }
 
     const availableRegions = matchedSize.regions || [];
     if (!availableRegions.includes(region)) {
       const priceStr = matchedSize.price_monthly ? `$${matchedSize.price_monthly}/mo` : '';
-      if (availableRegions.length > 0) {
-        throw new Error(`FAIL-CLOSED: Size ${sizeSlug} (${priceStr}) is unavailable in ${region}. Available fallback regions at the same ${priceStr} cost: ${availableRegions.join(', ')}.`);
-      } else {
-        throw new Error(`FAIL-CLOSED: Size ${sizeSlug} is currently unavailable in region ${region} with no available same-cost regions.`);
-      }
+      const err = (availableRegions.length > 0)
+        ? new Error(`FAIL-CLOSED: Size ${sizeSlug} (${priceStr}) is unavailable in ${region}. Available fallback regions at the same ${priceStr} cost: ${availableRegions.join(', ')}.`)
+        : new Error(`FAIL-CLOSED: Size ${sizeSlug} is currently unavailable in region ${region} with no available same-cost regions.`);
+      err.code = 'PROVIDER_CATALOG_ERROR';
+      throw err;
+    }
+
+    const monthlyPrice = matchedSize.price_monthly;
+    const hourlyPrice = matchedSize.price_hourly;
+    if (typeof monthlyPrice !== 'number' || monthlyPrice <= 0 || !Number.isFinite(monthlyPrice) ||
+        typeof hourlyPrice !== 'number' || hourlyPrice <= 0 || !Number.isFinite(hourlyPrice)) {
+      const err = new Error(`PROVIDER_PRICE_UNAVAILABLE: DigitalOcean catalog size ${sizeSlug} did not provide valid positive monthly/hourly pricing.`);
+      err.code = 'PROVIDER_PRICE_UNAVAILABLE';
+      throw err;
     }
 
     return {
       available: true,
       region,
       sizeSlug,
-      monthlyCostUsd: matchedSize.price_monthly || 6,
-      hourlyCostUsd: matchedSize.price_hourly || 0.00893,
+      monthlyCostUsd: monthlyPrice,
+      hourlyCostUsd: hourlyPrice,
       sameCostRegions: availableRegions
     };
   }
@@ -333,13 +375,23 @@ class PrivateEgressProvisioner {
     // 1. Validate Token against /account
     const tokenCheck = await this.validateToken();
     if (!tokenCheck.valid) {
-      throw new Error(`Invalid DigitalOcean API token: ${tokenCheck.error}`);
+      const err = new Error(`Invalid DigitalOcean API token: ${tokenCheck.error}`);
+      err.statusCode = tokenCheck.statusCode || 401;
+      err.code = tokenCheck.code || (err.statusCode === 401 ? 'TOKEN_INVALID' : err.statusCode === 403 ? 'TOKEN_SCOPE_MISSING' : 'PROVIDER_ERROR');
+      throw err;
     }
 
     // 2. Query provider catalog sizes
     const catalogInfo = await this.verifyRegionAndSizeAvailability(region, tier.size);
-    const monthlyCost = catalogInfo.monthlyCostUsd || tier.monthlyCostUsd || 6;
-    const hourlyCost = catalogInfo.hourlyCostUsd || 0.00893;
+    const monthlyCost = catalogInfo.monthlyCostUsd;
+    const hourlyCost = catalogInfo.hourlyCostUsd;
+
+    if (typeof monthlyCost !== 'number' || monthlyCost <= 0 || !Number.isFinite(monthlyCost) ||
+        typeof hourlyCost !== 'number' || hourlyCost <= 0 || !Number.isFinite(hourlyCost)) {
+      const err = new Error('PROVIDER_PRICE_UNAVAILABLE: Provider pricing could not be determined.');
+      err.code = 'PROVIDER_PRICE_UNAVAILABLE';
+      throw err;
+    }
 
     return {
       valid: true,
@@ -1368,6 +1420,18 @@ class PrivateEgressProvisioner {
 
   mockDoRequest(endpoint, method, body) {
     if (endpoint === '/account') {
+      if (this.simulateInvalidToken) {
+        const err = new Error('Unable to authenticate you.');
+        err.statusCode = 401;
+        err.code = 'TOKEN_INVALID';
+        return Promise.reject(err);
+      }
+      if (this.simulateMissingScope) {
+        const err = new Error('Forbidden: token missing required scopes');
+        err.statusCode = 403;
+        err.code = 'TOKEN_SCOPE_MISSING';
+        return Promise.reject(err);
+      }
       return Promise.resolve({
         account: {
           email: 'owner@example.com',
