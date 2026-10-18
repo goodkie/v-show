@@ -6,11 +6,11 @@
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issue #6 (Responding to Owner Directives #6254193526, #6254254711, #6254474554)
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-18.29
-- Authority Cursor: 6254474554
-- Last Directive / Audit: Owner Directives & Cloud Console Check #6254193526, #6254254711, #6254474554 (`[OWNER MANUAL CLOUD CONSOLE CHECK][RC3.8]` — Droplets = 0, Firewalls = 0; Keep Step B on HOLD; implement RC3.9 closing X1 - X6)
+- State Rev: 2026-10-18.30
+- Authority Cursor: 6254926219
+- Last Directive / Audit: [CHATGPT][RC3.9 INDEPENDENT AUDIT][PASS — ONE REAL ACCEPTANCE RETRY AUTHORIZED] #6254926219
 - Last Receipt: Receipt #6254860182 (https://github.com/goodkie/v-show/issues/6#issuecomment-6254860182 — `[ANTIGRAVITY][RC3.9 CANARY TLS-LAYER + EVENTUAL-DELETE CLOSURE RECEIPT]`)
-- Current Target Receipt: `[ANTIGRAVITY][RC3.9 CANARY TLS-LAYER + EVENTUAL-DELETE CLOSURE RECEIPT]` (Posted #6254860182)
+- Current Target Receipt: `[ANTIGRAVITY][REAL RC3.9 ULTRA ECONOMY ACCEPTANCE RECEIPT]` (Pending Step B execution)
 - Build ID: `R6.9G.10.3.7.1.4.23-20261018-PRIVATE-EGRESS-RC3.9`
 - Current Candidate Release Tag: `v6.9g.10.3-rc3.9.7.1.4.23`
 - Functional Head Commit: `d45e1bc12994607185bd40638ff600edfe6d1955` (short: `d45e1bc1`)
@@ -20,8 +20,8 @@
 - Rollback Anchor: `50aee3538806d7b5227fcd929e27979d1e5a3419`
 
 ## Current Gate
-- Formal Gate: **RC3.9 CANDIDATE RELEASED — CANARY TLS-LAYER SEPARATION & EVENTUAL-DELETE CONTRACT CLOSURE (X1 - X6)**.
-- Release Status: **RC3.9 PUBLISHED ON GITHUB; ALL X1 - X6 CLOSURES VERIFIED (100% SUITE PASS + CLEAN HOSTED ASSET DOWNLOAD); STEP B KEPT ON STRICT HOLD AWAITING CHATGPT AUDIT AND OWNER AUTHORIZATION; ZERO BILLABLE RESOURCES CONFIRMED IN CLOUD CONSOLE**.
+- Formal Gate: **RC3.9 INDEPENDENT AUDIT PASS — ONE REAL OWNER ACCEPTANCE RETRY AUTHORIZED**.
+- Release Status: **RC3.9 AUDITED AND APPROVED BY CHATGPT (#6254926219); ALL X1 - X6 CLOSURES VERIFIED; ONE REAL STEP B ACCEPTANCE RUN OFFICIALLY AUTHORIZED FOR OWNER; RC3.8 STRICTLY DEPRECATED; ZERO BILLABLE RESOURCES CONFIRMED IN CLOUD CONSOLE**.
 - Canary TLS-Layer & Eventual Teardown Hardening Status:
   * **X1 (Canary TLS Layer Separation)**: **PASS** (Separated Layer A proxy TLS connect pinning `proxyTlsCa = node.ca` from Layer B tunneled request to public canary target validating against system WebPKI roots with `rejectUnauthorized: true`. Propagates candidate error reason upward without losing details)
   * **X2 (Bounded Eventual Deletion Polling)**: **PASS** (Added `waitForExactResourceAbsence` polling exact GET until 404 with bounded timeout and backoff instead of single immediate GET)
