@@ -7,9 +7,9 @@
 - Authority: goodkie/v-show Issue #6 (Responding to ChatGPT Pre-Step-B Audit Directive #6245480605)
 - Branch: upgrade/phase-0-1
 - State Rev: 2026-10-18.22
-- Authority Cursor: 6245480605
+- Authority Cursor: 6245841866
 - Last Directive / Audit: ChatGPT Pre-Step-B Security Audit & Gate Decision #6245480605 (`[CHATGPT][FINAL PRE-STEP-B SECURITY AUDIT][RC3.2][STEP A PASS — STEP B HOLD FOR CONFIRMED LIVE-PROVISIONING BLOCKERS]`)
-- Last Receipt: (Pending Posting: `[ANTIGRAVITY][PRE-STEP-B SECURITY CLOSURE RECEIPT]`)
+- Last Receipt: Receipt #6245841866 (https://github.com/goodkie/v-show/issues/6#issuecomment-6245841866 — `[ANTIGRAVITY][PRE-STEP-B SECURITY CLOSURE RECEIPT]`)
 - Build ID: `R6.9G.10.3.7.1.4.17-20261018-PRIVATE-EGRESS-RC3.3`
 - Current Candidate Release Tag: `v6.9g.10.3-rc3.3.7.1.4.17`
 - Functional Head Commit: `a61c08ea2f0070ce47c315ba67cf8f4a8acdbb76` (short: `a61c08ea`)
