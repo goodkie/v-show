@@ -414,20 +414,24 @@ class PrivacyRelayService {
           // Tunnel established. Now make HTTP/HTTPS request over tunnel.
           let clientSock = sock;
           if (isHttps) {
-            const tlsOptions = {
+            // [X1 Fix] Layer B: Tunneled request to public canary target (e.g. cloudflare.com).
+            // MUST validate public target certificate against system/public WebPKI trust roots.
+            // DO NOT inject proxyTlsCa (node.ca, which is private proxy CA for Layer A only).
+            const targetTlsOptions = {
               socket: sock,
               rejectUnauthorized: true // Strictly hardcoded (Blocker 9)
             };
-            if (node.ca) {
-              tlsOptions.ca = node.ca;
-            }
             if (!net.isIP(parsedTarget.hostname)) {
-              tlsOptions.servername = parsedTarget.hostname;
+              targetTlsOptions.servername = parsedTarget.hostname;
             }
-            clientSock = tls.connect(tlsOptions);
+            clientSock = tls.connect(targetTlsOptions);
             clientSock.on('error', (tlsErr) => {
               clearTimeout(timer);
-              done({ verified: false, reason: `TLS_HANDSHAKE_ERROR: ${tlsErr.message}` });
+              done({
+                verified: false,
+                reason: `TARGET_TLS_HANDSHAKE_ERROR: ${tlsErr.message}`,
+                details: tlsErr.message
+              });
             });
           }
 
@@ -501,18 +505,21 @@ class PrivacyRelayService {
       };
 
       if (isUpstreamTls) {
-        const tlsConnectOptions = {
+        // [X1 Fix] Layer A: Local Companion -> Upstream HTTPS Proxy
+        // Must validate proxy server using pinned private proxy CA (node.ca).
+        const proxyTlsCa = node.ca;
+        const proxyConnectOptions = {
           host: node.host,
           port: node.port,
           rejectUnauthorized: true // Strictly hardcoded (Blocker 9)
         };
-        if (node.ca) {
-          tlsConnectOptions.ca = node.ca;
+        if (proxyTlsCa) {
+          proxyConnectOptions.ca = proxyTlsCa;
         }
         if (!net.isIP(node.host)) {
-          tlsConnectOptions.servername = node.host;
+          proxyConnectOptions.servername = node.host;
         }
-        const tlsSock = tls.connect(tlsConnectOptions, () => onSocketConnected(tlsSock));
+        const tlsSock = tls.connect(proxyConnectOptions, () => onSocketConnected(tlsSock));
         tlsSock.on('error', (err) => {
           clearTimeout(timer);
           done({ verified: false, reason: `UPSTREAM_TLS_CONNECT_ERROR: ${err.message}` });
@@ -612,7 +619,13 @@ class PrivacyRelayService {
     }
     const verifyRes = await this.verifyNodeEgress(candidate, this.pool.healthCheckTimeoutMs || 5000, overrideCanaryUrl);
     if (!verifyRes.verified) {
-      return { success: false, reason: 'CANDIDATE_HEALTH_CHECK_FAILED', details: verifyRes.reason };
+      const detailedReason = verifyRes.reason ? `CANDIDATE_HEALTH_CHECK_FAILED: ${verifyRes.reason}` : 'CANDIDATE_HEALTH_CHECK_FAILED';
+      return {
+        success: false,
+        reason: detailedReason,
+        details: verifyRes.reason || 'UNVERIFIED',
+        verifyResult: verifyRes
+      };
     }
 
     this.activeNodeIndex = idx;
@@ -1357,11 +1370,14 @@ class PrivacyRelayService {
 
             const destroyRes = await provisioner.destroyPrivateEgress(data);
             this.log(`[DESTROY_EGRESS] Cleaned up status=${destroyRes.status} droplet=${destroyRes.destroyedDropletId} firewall=${destroyRes.destroyedFirewallId}`);
-            res.writeHead(destroyRes.success ? 200 : 500);
+            if (!destroyRes.reason && Array.isArray(destroyRes.errors) && destroyRes.errors.length > 0) {
+              destroyRes.reason = destroyRes.errors.join('; ');
+            }
+            res.writeHead(destroyRes.success ? 200 : 500, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify(destroyRes));
           } catch (e) {
-            res.writeHead(500);
-            res.end(JSON.stringify({ success: false, reason: e.message }));
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: false, reason: e.message, status: 'HTTP_500' }));
           }
         });
         return;

@@ -862,8 +862,15 @@
                 if (res.ok) {
                     return await res.json();
                 }
+                // [X5 Closure] Preserve structured destroy response end-to-end without collapsing to HTTP_500
                 const errData = await res.json().catch(() => ({}));
-                return { success: false, reason: errData.reason || `HTTP_${res.status}` };
+                return Object.assign({
+                    success: false,
+                    reason: errData.reason || (Array.isArray(errData.errors) && errData.errors.length > 0 ? errData.errors.join('; ') : `HTTP_${res.status}`),
+                    status: errData.status || `HTTP_${res.status}`,
+                    errors: errData.errors || [],
+                    verifications: errData.verifications || {}
+                }, errData);
             } catch (e) {
                 return { success: false, reason: e.message };
             }

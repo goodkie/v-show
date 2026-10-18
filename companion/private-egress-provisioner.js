@@ -650,6 +650,89 @@ class PrivateEgressProvisioner {
     }
   }
 
+  /**
+   * [X4 Hardening] Idempotent exact resource deletion
+   * 2xx/204 => deletion requested
+   * 404 / not found => ALREADY_ABSENT (treated as clean success)
+   * Other status codes / network errors => rethrown as error
+   */
+  async deleteExactResource(resourcePath) {
+    try {
+      await this.doRequest(resourcePath, 'DELETE');
+      return { success: true, alreadyAbsent: false };
+    } catch (err) {
+      const is404 = err.statusCode === 404 ||
+                    (err.message && (err.message.includes('404') || err.message.toLowerCase().includes('not found')));
+      if (is404) {
+        console.log(`[IDEMPOTENT_DELETE] Resource ${resourcePath} already absent (404), treating as clean.`);
+        return { success: true, alreadyAbsent: true };
+      }
+      throw err;
+    }
+  }
+
+  /**
+   * [X6 Hardening] Reconcile provider state for exact resource
+   * Returns:
+   *   - { status: 'PRESENT', data: ... } if GET succeeds (200)
+   *   - { status: 'ABSENT' } if GET returns 404 / not found
+   *   - { status: 'UNKNOWN', error: err.message, statusCode: err.statusCode } if other error
+   */
+  async reconcileResourceStatus(resourcePath) {
+    try {
+      const res = await this.doRequest(resourcePath, 'GET');
+      return { status: 'PRESENT', data: res };
+    } catch (err) {
+      const is404 = err.statusCode === 404 ||
+                    (err.message && (err.message.includes('404') || err.message.toLowerCase().includes('not found')));
+      if (is404) {
+        return { status: 'ABSENT' };
+      }
+      return { status: 'UNKNOWN', error: err.message, statusCode: err.statusCode };
+    }
+  }
+
+  /**
+   * [X2 Hardening] Bounded eventual deletion polling until authoritative 404
+   * DigitalOcean resource deletion (especially Droplets) is asynchronous and eventual.
+   * Polls GET until 404 or maxWaitMs exceeded.
+   */
+  async waitForExactResourceAbsence(resourcePath, maxWaitMs = 60000, pollIntervalMs = 2000) {
+    const effectiveTimeout = this.mockMode ? Math.min(maxWaitMs, 3000) : maxWaitMs;
+    const effectiveInterval = this.mockMode ? Math.min(pollIntervalMs, 20) : pollIntervalMs;
+    const startTime = Date.now();
+    let attempt = 0;
+
+    while (Date.now() - startTime < effectiveTimeout) {
+      attempt++;
+      try {
+        await this.doRequest(resourcePath, 'GET');
+        // Resource still present/transitioning on provider
+        const elapsed = Date.now() - startTime;
+        console.log(`[POLL_ABSENCE] Resource ${resourcePath} still present (attempt ${attempt}, elapsed ${elapsed}ms). Waiting for convergence...`);
+      } catch (err) {
+        const is404 = err.statusCode === 404 ||
+                      (err.message && (err.message.includes('404') || err.message.toLowerCase().includes('not found')));
+        if (is404) {
+          console.log(`[POLL_ABSENCE] Authoritative 404 confirmed absent for ${resourcePath} after ${attempt} checks.`);
+          return { absent: true, attempts: attempt, durationMs: Date.now() - startTime };
+        }
+        // Non-404 error during check (e.g. network blip)
+        console.warn(`[POLL_ABSENCE] Non-404 error while checking ${resourcePath}: ${err.message}`);
+      }
+
+      await new Promise(r => setTimeout(r, effectiveInterval));
+    }
+
+    return {
+      absent: false,
+      timeout: true,
+      attempts: attempt,
+      durationMs: Date.now() - startTime,
+      reason: `TIMEOUT_CONVERGING: Resource ${resourcePath} still present after ${effectiveTimeout}ms`
+    };
+  }
+
   // [S1, S2 & T3 Hardening] Authoritative applied-state verification on GET /v2/droplets/{id}/firewalls
   async verifyDropletFirewallAppliedState(dropletId, expectedFirewallId, expectedPort, ownerCidr, timeoutMs = 60000) {
     this._activeMockFirewallId = expectedFirewallId;
@@ -1090,7 +1173,7 @@ class PrivateEgressProvisioner {
     };
   }
 
-  // [Blocker D & J Hardening] Automatic bounded rollback with authoritative verification across all resources
+  // [Blocker D & J Hardening, X2 & X4 Closures] Automatic bounded rollback with idempotent delete and eventual 404 verification
   async rollbackProvisioning(tracked) {
     const { ephemeralKeyId, dropletId, firewallId, registeredNodeId, transactionTag } = tracked;
     const errors = [];
@@ -1114,30 +1197,30 @@ class PrivateEgressProvisioner {
       }
     }
 
-    // 2. Delete Cloud Firewall if created
+    // 2. Delete Cloud Firewall if created (X4: idempotent delete)
     if (firewallId) {
       try {
-        await this.doRequest(`/firewalls/${firewallId}`, 'DELETE');
+        await this.deleteExactResource(`/firewalls/${firewallId}`);
         console.log(`[PROVISIONER_ROLLBACK] Deleted Cloud Firewall: ${firewallId}`);
       } catch (e) {
         errors.push(`firewall_delete_error:${firewallId} (${e.message})`);
       }
     }
 
-    // 3. Delete Droplet if created
+    // 3. Delete Droplet if created (X4: idempotent delete)
     if (dropletId) {
       try {
-        await this.doRequest(`/droplets/${dropletId}`, 'DELETE');
+        await this.deleteExactResource(`/droplets/${dropletId}`);
         console.log(`[PROVISIONER_ROLLBACK] Deleted Droplet: ${dropletId}`);
       } catch (e) {
         errors.push(`droplet_delete_error:${dropletId} (${e.message})`);
       }
     }
 
-    // 4. Delete Cloud SSH Key if created
+    // 4. Delete Cloud SSH Key if created (X4: idempotent delete)
     if (ephemeralKeyId) {
       try {
-        await this.doRequest(`/account/keys/${ephemeralKeyId}`, 'DELETE');
+        await this.deleteExactResource(`/account/keys/${ephemeralKeyId}`);
         console.log(`[PROVISIONER_ROLLBACK] Deleted Cloud SSH Key: ${ephemeralKeyId}`);
       } catch (e) {
         errors.push(`sshKey_delete_error:${ephemeralKeyId} (${e.message})`);
@@ -1154,60 +1237,52 @@ class PrivateEgressProvisioner {
         console.log(`[PROVISIONER_ROLLBACK] Deleted and verified absence of transaction tag: ${transactionTag}`);
         verifications.tagAbsent = true;
       } catch (e) {
-        errors.push(`tag_delete_error:${transactionTag} (${e.message})`);
-        verifications.tagAbsent = false;
+        const is404 = e.statusCode === 404 || (e.message && (e.message.includes('404') || e.message.toLowerCase().includes('not found')));
+        if (is404) {
+          verifications.tagAbsent = true;
+        } else {
+          errors.push(`tag_delete_error:${transactionTag} (${e.message})`);
+          verifications.tagAbsent = false;
+        }
       }
     } else {
       verifications.tagAbsent = true;
     }
 
-    // --- AUTHORITATIVE VERIFICATION STEP (BLOCKER J) ---
-    // Zero billable or workflow resources remain. Verify absence of each tracked resource.
+    // --- AUTHORITATIVE VERIFICATION STEP (X2: Bounded Eventual Polling) ---
+    // Zero billable or workflow resources remain. Verify absence of each tracked resource until authoritative 404.
 
-    // A. Verify Droplet absence (GET /droplets/:id must return 404)
+    // A. Verify Droplet absence (poll until 404)
     if (dropletId) {
-      try {
-        await this.doRequest(`/droplets/${dropletId}`, 'GET');
-        // If request succeeded, Droplet still exists!
-        errors.push(`unverified_droplet_removal:${dropletId} (Droplet still exists on provider)`);
-      } catch (checkErr) {
-        if (checkErr.statusCode === 404 || (checkErr.message && checkErr.message.includes('404')) || (checkErr.message && checkErr.message.includes('not found'))) {
-          verifications.dropletAbsent = true;
-        } else {
-          errors.push(`unverified_droplet_removal:${dropletId} (verification API failed: ${checkErr.message})`);
-        }
+      const dropRes = await this.waitForExactResourceAbsence(`/droplets/${dropletId}`, 60000, 2000);
+      if (dropRes.absent) {
+        verifications.dropletAbsent = true;
+      } else {
+        errors.push(`unverified_droplet_removal:${dropletId} (Droplet still exists on provider after polling: ${dropRes.reason || 'CONVERGENCE_TIMEOUT'})`);
       }
     } else {
       verifications.dropletAbsent = true;
     }
 
-    // B. Verify Firewall absence (GET /firewalls/:id must return 404)
+    // B. Verify Firewall absence (poll until 404)
     if (firewallId) {
-      try {
-        await this.doRequest(`/firewalls/${firewallId}`, 'GET');
-        errors.push(`unverified_firewall_removal:${firewallId} (Firewall still exists on provider)`);
-      } catch (checkErr) {
-        if (checkErr.statusCode === 404 || (checkErr.message && checkErr.message.includes('404')) || (checkErr.message && checkErr.message.includes('not found'))) {
-          verifications.firewallAbsent = true;
-        } else {
-          errors.push(`unverified_firewall_removal:${firewallId} (verification API failed: ${checkErr.message})`);
-        }
+      const fwRes = await this.waitForExactResourceAbsence(`/firewalls/${firewallId}`, 30000, 1000);
+      if (fwRes.absent) {
+        verifications.firewallAbsent = true;
+      } else {
+        errors.push(`unverified_firewall_removal:${firewallId} (Firewall still exists on provider: ${fwRes.reason || 'CONVERGENCE_TIMEOUT'})`);
       }
     } else {
       verifications.firewallAbsent = true;
     }
 
-    // C. Verify Ephemeral SSH Key absence (GET /account/keys/:id must return 404)
+    // C. Verify Ephemeral SSH Key absence (poll until 404)
     if (ephemeralKeyId) {
-      try {
-        await this.doRequest(`/account/keys/${ephemeralKeyId}`, 'GET');
-        errors.push(`unverified_ssh_key_removal:${ephemeralKeyId} (SSH Key still exists on provider)`);
-      } catch (checkErr) {
-        if (checkErr.statusCode === 404 || (checkErr.message && checkErr.message.includes('404')) || (checkErr.message && checkErr.message.includes('not found'))) {
-          verifications.sshKeyAbsent = true;
-        } else {
-          errors.push(`unverified_ssh_key_removal:${ephemeralKeyId} (verification API failed: ${checkErr.message})`);
-        }
+      const keyRes = await this.waitForExactResourceAbsence(`/account/keys/${ephemeralKeyId}`, 30000, 1000);
+      if (keyRes.absent) {
+        verifications.sshKeyAbsent = true;
+      } else {
+        errors.push(`unverified_ssh_key_removal:${ephemeralKeyId} (SSH Key still exists on provider: ${keyRes.reason || 'CONVERGENCE_TIMEOUT'})`);
       }
     } else {
       verifications.sshKeyAbsent = true;
@@ -1689,9 +1764,10 @@ systemctl restart ssh || systemctl restart sshd
       // STEP 7: EGRESS VERIFICATION
       this.logProgress(7, 'WORKING', 'Running strict TLS canary probe through new egress proxy...');
       const probeRes = await this.probeCompanionNode(nodeId);
-      // [R3 Hardening] Both success AND verified must be true (fail if either is falsy)
+      // [R3 Hardening & X1 Fix] Both success AND verified must be true (propagate detailed reason upward)
       if (!probeRes || !probeRes.success || !probeRes.verified) {
-        throw new Error(`Egress canary verification failed: ${(probeRes && probeRes.reason) || 'UNVERIFIED'}`);
+        const probeDetail = (probeRes && (probeRes.details || probeRes.reason)) || 'UNVERIFIED';
+        throw new Error(`Egress canary verification failed: ${probeDetail}`);
       }
       this.logProgress(7, 'PASS', `Egress verified: Observed IP ${probeRes.observedEgressIp || publicIp}`);
 
@@ -1971,7 +2047,7 @@ systemctl restart ssh || systemctl restart sshd
     };
   }
 
-  // --- DESTROY / TEARDOWN WORKFLOW (R5 & S5 Hardening: Exact Resource Ownership Only) ---
+  // --- DESTROY / TEARDOWN WORKFLOW (R5 & S5 Hardening, X2, X4, X5, X6 Closures) ---
 
   async destroyPrivateEgress(params = {}) {
     this.logProgress(1, 'WORKING', 'Locating and deleting exact XPIDER private egress cloud resources...');
@@ -1982,6 +2058,7 @@ systemctl restart ssh || systemctl restart sshd
       this.logProgress(1, 'PASS', 'No active private egress transaction or resources found to destroy.');
       return {
         success: true,
+        status: 'DESTROY_VERIFIED_CLEAN',
         destroyedDroplets: 0,
         destroyedFirewalls: 0,
         destroyedNodes: 0,
@@ -2020,7 +2097,77 @@ systemctl restart ssh || systemctl restart sshd
       tagAbsent: false
     };
 
-    // 1. Remove exact companion node
+    // [X6 Closure] Reconcile provider state first before issuing repeat DELETE calls.
+    // Classify exact tracked resources: ABSENT (404), PRESENT (200), or UNKNOWN (API error).
+    let dropletNeedsDelete = false;
+    if (dropletId) {
+      const dropRec = await this.reconcileResourceStatus(`/droplets/${dropletId}`);
+      if (dropRec.status === 'ABSENT') {
+        console.log(`[DESTROY_RECONCILE] Droplet ${dropletId} already ABSENT on provider.`);
+        verifications.dropletAbsent = true;
+      } else if (dropRec.status === 'PRESENT') {
+        console.log(`[DESTROY_RECONCILE] Droplet ${dropletId} is PRESENT on provider, deletion required.`);
+        dropletNeedsDelete = true;
+      } else {
+        console.warn(`[DESTROY_RECONCILE] Droplet ${dropletId} status UNKNOWN: ${dropRec.error}`);
+        errors.push(`droplet_reconcile_error:${dropletId} (${dropRec.error})`);
+      }
+    } else {
+      verifications.dropletAbsent = true;
+    }
+
+    let firewallNeedsDelete = false;
+    if (firewallId) {
+      const fwRec = await this.reconcileResourceStatus(`/firewalls/${firewallId}`);
+      if (fwRec.status === 'ABSENT') {
+        console.log(`[DESTROY_RECONCILE] Firewall ${firewallId} already ABSENT on provider.`);
+        verifications.firewallAbsent = true;
+      } else if (fwRec.status === 'PRESENT') {
+        console.log(`[DESTROY_RECONCILE] Firewall ${firewallId} is PRESENT on provider, deletion required.`);
+        firewallNeedsDelete = true;
+      } else {
+        console.warn(`[DESTROY_RECONCILE] Firewall ${firewallId} status UNKNOWN: ${fwRec.error}`);
+        errors.push(`firewall_reconcile_error:${firewallId} (${fwRec.error})`);
+      }
+    } else {
+      verifications.firewallAbsent = true;
+    }
+
+    let sshKeyNeedsDelete = false;
+    if (ephemeralKeyId) {
+      const keyRec = await this.reconcileResourceStatus(`/account/keys/${ephemeralKeyId}`);
+      if (keyRec.status === 'ABSENT') {
+        console.log(`[DESTROY_RECONCILE] Cloud SSH Key ${ephemeralKeyId} already ABSENT on provider.`);
+        verifications.sshKeyAbsent = true;
+      } else if (keyRec.status === 'PRESENT') {
+        console.log(`[DESTROY_RECONCILE] Cloud SSH Key ${ephemeralKeyId} is PRESENT on provider, deletion required.`);
+        sshKeyNeedsDelete = true;
+      } else {
+        console.warn(`[DESTROY_RECONCILE] Cloud SSH Key ${ephemeralKeyId} status UNKNOWN: ${keyRec.error}`);
+        errors.push(`sshKey_reconcile_error:${ephemeralKeyId} (${keyRec.error})`);
+      }
+    } else {
+      verifications.sshKeyAbsent = true;
+    }
+
+    let tagNeedsDelete = false;
+    if (transactionTag) {
+      const tagRec = await this.reconcileResourceStatus(`/tags/${encodeURIComponent(transactionTag)}`);
+      if (tagRec.status === 'ABSENT') {
+        console.log(`[DESTROY_RECONCILE] Transaction tag ${transactionTag} already ABSENT on provider.`);
+        verifications.tagAbsent = true;
+      } else if (tagRec.status === 'PRESENT') {
+        console.log(`[DESTROY_RECONCILE] Transaction tag ${transactionTag} is PRESENT on provider, deletion required.`);
+        tagNeedsDelete = true;
+      } else {
+        console.warn(`[DESTROY_RECONCILE] Transaction tag ${transactionTag} status UNKNOWN: ${tagRec.error}`);
+        errors.push(`tag_reconcile_error:${transactionTag} (${tagRec.error})`);
+      }
+    } else {
+      verifications.tagAbsent = true;
+    }
+
+    // 1. Remove exact companion node from local companion pool
     if (companionNodeId) {
       try {
         await this.removeNodeFromCompanion(companionNodeId);
@@ -2030,87 +2177,89 @@ systemctl restart ssh || systemctl restart sshd
       }
     }
 
-    // 2. Delete exact cloud firewall
-    if (firewallId) {
+    // 2. Delete exact cloud firewall if still present (X4: idempotent delete)
+    if (firewallNeedsDelete && firewallId) {
       try {
-        await this.doRequest(`/firewalls/${firewallId}`, 'DELETE');
+        await this.deleteExactResource(`/firewalls/${firewallId}`);
         console.log(`[DESTROY_EXACT] Deleted exact cloud firewall: ${firewallId}`);
       } catch (e) {
         errors.push(`firewall_delete_error:${firewallId} (${e.message})`);
       }
     }
 
-    // 3. Delete exact droplet
-    if (dropletId) {
+    // 3. Delete exact droplet if still present (X4: idempotent delete)
+    if (dropletNeedsDelete && dropletId) {
       try {
-        await this.doRequest(`/droplets/${dropletId}`, 'DELETE');
+        await this.deleteExactResource(`/droplets/${dropletId}`);
         console.log(`[DESTROY_EXACT] Deleted exact droplet: ${dropletId}`);
       } catch (e) {
         errors.push(`droplet_delete_error:${dropletId} (${e.message})`);
       }
     }
 
-    // 4. Delete ephemeral SSH key if still present
-    if (ephemeralKeyId) {
+    // 4. Delete ephemeral SSH key if still present (X4: idempotent delete)
+    if (sshKeyNeedsDelete && ephemeralKeyId) {
       try {
-        await this.doRequest(`/account/keys/${ephemeralKeyId}`, 'DELETE');
+        await this.deleteExactResource(`/account/keys/${ephemeralKeyId}`);
         console.log(`[DESTROY_EXACT] Deleted cloud SSH key: ${ephemeralKeyId}`);
       } catch (e) {
         errors.push(`sshKey_delete_error:${ephemeralKeyId} (${e.message})`);
       }
     }
 
-    // 5. Delete transaction tag (S3 & T5 Hardening)
-    if (transactionTag) {
+    // 5. Delete transaction tag if still present (S3 & T5 Hardening)
+    if (tagNeedsDelete && transactionTag) {
       try {
         await this.deleteTransactionTag(transactionTag);
         if (this.mockMode && this.simulateTagDeleteVerificationFailure) {
           throw new Error(`Tag "${transactionTag}" still exists on provider after delete.`);
         }
-        console.log(`[DESTROY_EXACT] Deleted and verified absence of transaction tag: ${transactionTag}`);
+        console.log(`[DESTROY_EXACT] Deleted transaction tag: ${transactionTag}`);
         verifications.tagAbsent = true;
       } catch (e) {
-        errors.push(`tag_delete_error:${transactionTag} (${e.message})`);
-        verifications.tagAbsent = false;
-      }
-    } else {
-      verifications.tagAbsent = true;
-    }
-
-    // --- AUTHORITATIVE VERIFICATION OF EXACT ABSENCE ---
-    // A. Verify Droplet absence (GET /droplets/:id must return 404)
-    if (dropletId) {
-      try {
-        await this.doRequest(`/droplets/${dropletId}`, 'GET');
-        errors.push(`unverified_droplet_removal:${dropletId} (Droplet still exists on provider)`);
-      } catch (err) {
-        if (err.statusCode === 404 || (err.message && (err.message.includes('404') || err.message.includes('not found')))) {
-          verifications.dropletAbsent = true;
+        const is404 = e.statusCode === 404 || (e.message && (e.message.includes('404') || e.message.toLowerCase().includes('not found')));
+        if (is404) {
+          verifications.tagAbsent = true;
         } else {
-          errors.push(`unverified_droplet_removal:${dropletId} (${err.message})`);
+          errors.push(`tag_delete_error:${transactionTag} (${e.message})`);
+          verifications.tagAbsent = false;
         }
       }
-    } else {
-      verifications.dropletAbsent = true;
     }
 
-    // B. Verify Firewall absence (GET /firewalls/:id must return 404)
-    if (firewallId) {
-      try {
-        await this.doRequest(`/firewalls/${firewallId}`, 'GET');
-        errors.push(`unverified_firewall_removal:${firewallId} (Firewall still exists on provider)`);
-      } catch (err) {
-        if (err.statusCode === 404 || (err.message && (err.message.includes('404') || err.message.includes('not found')))) {
-          verifications.firewallAbsent = true;
-        } else {
-          errors.push(`unverified_firewall_removal:${firewallId} (${err.message})`);
-        }
+    // --- AUTHORITATIVE VERIFICATION OF EXACT ABSENCE (X2: Bounded Eventual Polling) ---
+
+    // A. Verify Droplet absence
+    if (!verifications.dropletAbsent && dropletId) {
+      const dropRes = await this.waitForExactResourceAbsence(`/droplets/${dropletId}`, 60000, 2000);
+      if (dropRes.absent) {
+        verifications.dropletAbsent = true;
+      } else {
+        errors.push(`unverified_droplet_removal:${dropletId} (Droplet still exists on provider after polling: ${dropRes.reason || 'CONVERGENCE_TIMEOUT'})`);
       }
-    } else {
-      verifications.firewallAbsent = true;
     }
 
-    // C. Verify Companion Node absence
+    // B. Verify Firewall absence
+    if (!verifications.firewallAbsent && firewallId) {
+      const fwRes = await this.waitForExactResourceAbsence(`/firewalls/${firewallId}`, 30000, 1000);
+      if (fwRes.absent) {
+        verifications.firewallAbsent = true;
+      } else {
+        errors.push(`unverified_firewall_removal:${firewallId} (Firewall still exists on provider: ${fwRes.reason || 'CONVERGENCE_TIMEOUT'})`);
+      }
+    }
+
+    // C. Verify SSH Key absence
+    if (!verifications.sshKeyAbsent && ephemeralKeyId) {
+      const keyRes = await this.waitForExactResourceAbsence(`/account/keys/${ephemeralKeyId}`, 30000, 1000);
+      if (keyRes.absent) {
+        verifications.sshKeyAbsent = true;
+      } else {
+        errors.push(`unverified_ssh_key_removal:${ephemeralKeyId} (SSH Key still exists on provider: ${keyRes.reason || 'CONVERGENCE_TIMEOUT'})`);
+      }
+    }
+
+    // D. Verify Companion Node absence
     if (companionNodeId) {
       try {
         const nodesRes = await this.getNodesFromCompanion();
@@ -2127,28 +2276,55 @@ systemctl restart ssh || systemctl restart sshd
       verifications.companionNodeAbsent = true;
     }
 
-    verifications.sshKeyAbsent = true;
+    // E. Verify Tag absence
+    if (!verifications.tagAbsent && transactionTag) {
+      const tagCheck = await this.reconcileResourceStatus(`/tags/${encodeURIComponent(transactionTag)}`);
+      if (tagCheck.status === 'ABSENT') {
+        verifications.tagAbsent = true;
+      } else {
+        errors.push(`unverified_tag_removal:${transactionTag} (Tag still exists on provider)`);
+      }
+    }
 
     const allClean = verifications.dropletAbsent &&
                      verifications.firewallAbsent &&
+                     verifications.sshKeyAbsent &&
                      verifications.companionNodeAbsent &&
                      verifications.tagAbsent &&
                      errors.length === 0;
 
     if (allClean) {
       this.clearTransactionOwnership();
-      this.logProgress(1, 'PASS', `Exact teardown verified clean: droplet ${dropletId}, firewall ${firewallId}, companion node ${companionNodeId} absent.`);
+      this.logProgress(1, 'PASS', `Exact teardown verified clean: droplet ${dropletId || 'none'}, firewall ${firewallId || 'none'}, companion node ${companionNodeId || 'none'} absent.`);
     } else {
       // [S5 Hardening] Incomplete cleanup: preserve ownership record for later remediation!
+      if (savedTx) {
+        this.updateTransactionJournal({
+          transactionTag: savedTx.transactionTag,
+          status: 'RECOVERY_REQUIRED',
+          stage: 'RECOVERY_INCOMPLETE',
+          failedAt: Date.now(),
+          rollbackErrors: errors,
+          ephemeralKeyId: verifications.sshKeyAbsent ? null : ephemeralKeyId,
+          firewallId: verifications.firewallAbsent ? null : firewallId,
+          dropletId: verifications.dropletAbsent ? null : dropletId,
+          registeredNodeId: verifications.companionNodeAbsent ? null : companionNodeId
+        });
+      }
       this.logProgress(1, 'FAIL', `Teardown incomplete: ${errors.join(', ')}`);
     }
 
+    // [X5 Closure] Structured destroy response end-to-end
     return {
       success: allClean,
       status: allClean ? 'DESTROY_VERIFIED_CLEAN' : 'CLEANUP_REQUIRED',
+      reason: allClean ? undefined : (errors.join('; ') || 'CLEANUP_REQUIRED'),
       destroyedDropletId: dropletId,
       destroyedFirewallId: firewallId,
       destroyedNodeId: companionNodeId,
+      destroyedDroplets: (verifications.dropletAbsent && dropletId) ? 1 : 0,
+      destroyedFirewalls: (verifications.firewallAbsent && firewallId) ? 1 : 0,
+      destroyedNodes: (verifications.companionNodeAbsent && companionNodeId) ? 1 : 0,
       verifications,
       errors
     };
@@ -2620,6 +2796,11 @@ systemctl restart ssh || systemctl restart sshd
     }
     if (endpoint.startsWith('/account/keys/') && method === 'GET') {
       const keyId = endpoint.split('/').pop();
+      if (this.simulateReconcileError === 'sshKey') {
+        const err = new Error('SIMULATED_RECONCILE_ERROR: Internal server error querying SSH key');
+        err.statusCode = 500;
+        return Promise.reject(err);
+      }
       if (this.simulateRollbackVerificationFailure === 'sshKey') {
         return Promise.resolve({ ssh_key: { id: keyId } });
       }
@@ -2632,6 +2813,11 @@ systemctl restart ssh || systemctl restart sshd
     }
     if (endpoint.startsWith('/account/keys/') && method === 'DELETE') {
       const keyId = endpoint.split('/').pop();
+      if (this.simulateRepeatDelete404 && (this.mockDeletedResources.keys.includes(keyId) || this.mockDeletedResources.keys.includes(Number(keyId)))) {
+        const err = new Error(`Resource ${keyId} not found`);
+        err.statusCode = 404;
+        return Promise.reject(err);
+      }
       this.mockDeletedResources.keys.push(keyId);
       return Promise.resolve({});
     }
@@ -2730,10 +2916,27 @@ systemctl restart ssh || systemctl restart sshd
     }
     if (endpoint.startsWith('/droplets/') && !endpoint.includes('?') && method === 'GET') {
       const dropId = endpoint.split('/').pop();
+      if (this.simulateReconcileError === 'droplet') {
+        const err = new Error('SIMULATED_RECONCILE_ERROR: Internal server error querying droplet');
+        err.statusCode = 500;
+        return Promise.reject(err);
+      }
       if (this.simulateRollbackVerificationFailure === 'droplet') {
         return Promise.resolve({
           droplet: { id: dropId, status: 'active', networks: { v4: [{ type: 'public', ip_address: '198.51.100.12' }] } }
         });
+      }
+      if (this.simulateEventualDropletAttempts !== undefined && this.simulateEventualDropletAttempts !== null) {
+        if (this.simulateEventualDropletAttempts > 0) {
+          this.simulateEventualDropletAttempts--;
+          return Promise.resolve({
+            droplet: { id: dropId, status: 'active', networks: { v4: [{ type: 'public', ip_address: '198.51.100.12' }] } }
+          });
+        } else {
+          const err = new Error(`Droplet ${dropId} not found`);
+          err.statusCode = 404;
+          return Promise.reject(err);
+        }
       }
       if (this.mockDeletedResources.droplets.includes(dropId) || this.mockDeletedResources.droplets.includes(Number(dropId))) {
         const err = new Error(`Droplet ${dropId} not found`);
@@ -2775,6 +2978,11 @@ systemctl restart ssh || systemctl restart sshd
     }
     if (endpoint.startsWith('/firewalls/') && method === 'GET') {
       const fwId = endpoint.split('/').pop();
+      if (this.simulateReconcileError === 'firewall') {
+        const err = new Error('SIMULATED_RECONCILE_ERROR: Internal server error querying firewall');
+        err.statusCode = 500;
+        return Promise.reject(err);
+      }
       if (this.simulateRollbackVerificationFailure === 'firewall') {
         return Promise.resolve({ firewall: { id: fwId } });
       }
@@ -2816,6 +3024,11 @@ systemctl restart ssh || systemctl restart sshd
     }
     if (endpoint.startsWith('/firewalls/') && method === 'DELETE') {
       const fwId = endpoint.split('/').pop();
+      if (this.simulateRepeatDelete404 && this.mockDeletedResources.firewalls.includes(fwId)) {
+        const err = new Error(`Firewall ${fwId} not found`);
+        err.statusCode = 404;
+        return Promise.reject(err);
+      }
       this.mockDeletedResources.firewalls.push(fwId);
       return Promise.resolve({});
     }
@@ -2870,6 +3083,11 @@ systemctl restart ssh || systemctl restart sshd
     }
     if (endpoint.startsWith('/droplets/') && method === 'DELETE') {
       const dropId = endpoint.split('/').pop();
+      if (this.simulateRepeatDelete404 && (this.mockDeletedResources.droplets.includes(dropId) || this.mockDeletedResources.droplets.includes(Number(dropId)))) {
+        const err = new Error(`Droplet ${dropId} not found`);
+        err.statusCode = 404;
+        return Promise.reject(err);
+      }
       this.mockDeletedResources.droplets.push(dropId);
       return Promise.resolve({});
     }
