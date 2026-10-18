@@ -713,6 +713,7 @@ async function runSecuritySuite() {
     'd0544b0cf33e48203040920adff796db36b43c03',
     '9b389a5f227684383124be1e076ce10222471b8d',
     '6491dd93b7fe8eb848b7f5591675aa1e7a203a80',
+    '6d254410c1685f41830fe3e6d562042878830b4a',
     'd45e1bc12994607185bd40638ff600edfe6d1955'
   ];
   assert(allowedFunctionalHeads.includes(bp.BUILD_INFO.implementationHead), 'Implementation head must match functional head');
