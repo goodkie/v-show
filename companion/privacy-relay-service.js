@@ -57,7 +57,8 @@ const COMPANION_API_CAPABILITIES = [
   'egress-telemetry',
   'shutdown',
   'stop',
-  'physical-gate'
+  'physical-gate',
+  'recovery-status'
 ];
 
 // [Defect P Fix] Strict Node.js supported LTS allowlist (explicitly 22 or 24 only; rejects odd/EOL/non-LTS majors)
@@ -619,6 +620,15 @@ class PrivacyRelayService {
     return false;
   }
 
+  getRecoveryStatus() {
+    try {
+      const prov = new PrivateEgressProvisioner({ mockMode: Boolean(this.options.mockMode) });
+      return prov.checkRecoveryJournal();
+    } catch (e) {
+      return { recoveryRequired: false, status: 'ERROR', error: e.message };
+    }
+  }
+
   getStatus() {
     const active = this.getActiveNode();
     const ttl = this.healthTtlMs || (this.pool && this.pool.healthTtlMs) || 60000;
@@ -665,7 +675,8 @@ class PrivacyRelayService {
       lastCheck: new Date().toISOString(),
       nodes: redactedNodes,
       trafficStats: { ...this.trafficStats },
-      physicalGate: this.physicalGate.state
+      physicalGate: this.physicalGate.state,
+      recovery: this.getRecoveryStatus()
     };
   }
 
@@ -725,7 +736,18 @@ class PrivacyRelayService {
           controlPort: this.controlPort,
           proxyPort: this.proxyPort,
           selectedEgressId: active ? active.id : null,
-          uptimeSeconds: Math.floor((Date.now() - this.startTime) / 1000)
+          uptimeSeconds: Math.floor((Date.now() - this.startTime) / 1000),
+          recovery: this.getRecoveryStatus()
+        }));
+        return;
+      }
+
+      // GET /recovery-status: Public unauthenticated endpoint exposing sanitized recovery state (Blocker U1)
+      if (pathname === '/recovery-status' && req.method === 'GET') {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          success: true,
+          recovery: this.getRecoveryStatus()
         }));
         return;
       }
@@ -1853,6 +1875,15 @@ class PrivacyRelayService {
   async start() {
     this.startControlPlane();
     this.startProxyEngine();
+
+    // [U1 Hardening] Startup Recovery Journal Inspection
+    const recStatus = this.getRecoveryStatus();
+    if (recStatus && recStatus.recoveryRequired) {
+      this.log(`[PRIVACY_RELAY_RECOVERY_ALERT] Unrecovered transaction detected on startup: status=${recStatus.status} stage=${recStatus.stage} tag=${recStatus.transactionTag} droplet=${recStatus.dropletId} firewall=${recStatus.firewallId}`);
+      console.warn(`[RECOVERY_ALERT] Incomplete private-egress transaction detected (${recStatus.transactionTag}, stage: ${recStatus.stage}). Cleanup and recovery required.`);
+    } else if (recStatus && recStatus.status === 'ACTIVE') {
+      this.log(`[PRIVACY_RELAY_ACTIVE_NODE] Active private-egress node found: droplet=${recStatus.dropletId} ip=${recStatus.publicIp}`);
+    }
 
     // Verify initial sticky active node before marking relay ready (Fail-Closed)
     const active = this.getActiveNode();

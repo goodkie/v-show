@@ -644,43 +644,113 @@ class PrivateEgressProvisioner {
     throw new Error(`FAIL-CLOSED: Cloud Firewall ${expectedFirewallId} applied state on droplet ${dropletId} timed out after ${timeoutMs}ms (last status: "${lastStatus}", pending: ${JSON.stringify(lastPending)}). Refusing SSH/traffic.`);
   }
 
-  // [S5 & T4 Hardening] Progressive crash-safe transaction journal with atomic persistence
-  updateTransactionJournal(updates) {
-    if (this.simulateOwnershipSaveFailure && (updates.status === 'ACTIVE' || updates.simulateFailure)) {
+  // [U2 Hardening] Clean transaction journal schema with all resource IDs explicitly initialized to null
+  createCleanJournalSchema(params = {}) {
+    return {
+      version: '1.0.0',
+      status: params.status || 'PROVISIONING',
+      stage: params.stage || 'TAG_CREATED',
+      transactionTag: params.transactionTag || null,
+      region: params.region || null,
+      tier: params.tier || null,
+      monthlyCostUsd: params.monthlyCostUsd !== undefined ? params.monthlyCostUsd : null,
+      hourlyCostUsd: params.hourlyCostUsd !== undefined ? params.hourlyCostUsd : null,
+      dropletId: null,
+      firewallId: null,
+      ephemeralKeyId: null,
+      registeredNodeId: null,
+      publicIp: null,
+      createdAt: params.createdAt || Date.now(),
+      startedAt: params.startedAt || new Date().toISOString(),
+      updatedAt: Date.now(),
+      rollbackErrors: []
+    };
+  }
+
+  // [U2 Hardening] Atomically write sanitized journal record to disk or mock
+  writeJournalAtomic(record) {
+    if (this.simulateOwnershipSaveFailure && (record.status === 'ACTIVE' || record.simulateFailure)) {
       throw new Error('SIMULATED_OWNERSHIP_SAVE_FAILURE: Atomic write failed to persist ownership');
     }
+    const clean = Object.assign({}, record);
+    // NEVER persist tokens, passwords, or private keys
+    delete clean.token;
+    delete clean.password;
+    delete clean.privateKey;
+    delete clean.privateKeyPem;
+
     if (this.mockMode) {
-      this.mockTransactionOwnership = Object.assign(this.mockTransactionOwnership || {}, updates);
+      this.mockTransactionOwnership = clean;
       return;
     }
     const targetPath = path.resolve(__dirname, '.private_egress_transaction.json');
     const tmpPath = path.resolve(__dirname, `.private_egress_transaction.${Date.now()}.${crypto.randomBytes(3).toString('hex')}.tmp`);
     try {
-      let existing = {};
-      if (fs.existsSync(targetPath)) {
-        try {
-          existing = JSON.parse(fs.readFileSync(targetPath, 'utf8'));
-        } catch (_) {}
-      }
-      const merged = Object.assign(existing, updates);
-
-      // NEVER persist tokens, passwords, or private keys
-      delete merged.token;
-      delete merged.password;
-      delete merged.privateKey;
-      delete merged.privateKeyPem;
-
-      const serialized = JSON.stringify(merged, null, 2);
+      const serialized = JSON.stringify(clean, null, 2);
       fs.writeFileSync(tmpPath, serialized, 'utf8');
       fs.renameSync(tmpPath, targetPath);
       const readBack = JSON.parse(fs.readFileSync(targetPath, 'utf8'));
-      if (readBack.transactionTag && merged.transactionTag && readBack.transactionTag !== merged.transactionTag) {
+      if (readBack.transactionTag && clean.transactionTag && readBack.transactionTag !== clean.transactionTag) {
         throw new Error('Persisted transaction verification mismatch');
       }
     } catch (e) {
       try { if (fs.existsSync(tmpPath)) fs.unlinkSync(tmpPath); } catch (_) {}
       throw new Error(`FAIL-CLOSED: Failed to persist transaction ownership record: ${e.message}`);
     }
+  }
+
+  // [U2 & U3 Hardening] Begin new transaction journal with exclusive semantics and collision rejection
+  beginTransactionJournal(newTransaction = {}) {
+    if (!newTransaction || !newTransaction.transactionTag) {
+      throw new Error('FAIL-CLOSED: transactionTag is mandatory to begin a transaction journal');
+    }
+
+    const existing = this.loadTransactionOwnership();
+    if (existing) {
+      if (existing.status === 'ACTIVE') {
+        const err = new Error(`ACTIVE_NODE_EXISTS: Active private egress node already exists (Droplet ${existing.dropletId}, IP ${existing.publicIp}). Product scope is one node; destroy existing node before creating a new one.`);
+        err.code = 'ACTIVE_NODE_EXISTS';
+        err.journal = existing;
+        throw err;
+      }
+      if (existing.status === 'PROVISIONING' || existing.status === 'RECOVERY_REQUIRED') {
+        const err = new Error(`TRANSACTION_COLLISION: Unrecovered transaction found in journal (${existing.transactionTag}, status ${existing.status}, stage ${existing.stage}). Exact recovery or teardown required before starting new provisioning.`);
+        err.code = 'TRANSACTION_COLLISION';
+        err.journal = existing;
+        throw err;
+      }
+    }
+
+    const cleanRecord = this.createCleanJournalSchema(newTransaction);
+    this.writeJournalAtomic(cleanRecord);
+    return cleanRecord;
+  }
+
+  // [S5 & T4 & U2 Hardening] Progressive crash-safe transaction journal with immutable transaction tag enforcement
+  updateTransactionJournal(updates) {
+    const existing = this.loadTransactionOwnership();
+    if (!existing || !existing.transactionTag) {
+      // If no journal exists, initialize via clean schema if transactionTag is present
+      if (updates && updates.transactionTag) {
+        return this.beginTransactionJournal(updates);
+      }
+      throw new Error('FAIL-CLOSED: No active transaction journal to update. Call beginTransactionJournal first.');
+    }
+
+    // [U2 Hardening] Require matching immutable transactionTag if supplied
+    if (updates.transactionTag && updates.transactionTag !== existing.transactionTag) {
+      const err = new Error(`TRANSACTION_TAG_MISMATCH: Cannot update transaction ${existing.transactionTag} with updates for ${updates.transactionTag}`);
+      err.code = 'TRANSACTION_TAG_MISMATCH';
+      throw err;
+    }
+
+    // Merge updates into existing record, retaining immutable fields
+    const merged = Object.assign({}, existing, updates, {
+      transactionTag: existing.transactionTag, // Immutable
+      updatedAt: Date.now()
+    });
+
+    this.writeJournalAtomic(merged);
   }
 
   saveTransactionOwnership(data) {
@@ -700,6 +770,10 @@ class PrivateEgressProvisioner {
     return null;
   }
 
+  readJournalSafe() {
+    return this.loadTransactionOwnership();
+  }
+
   clearTransactionOwnership() {
     if (this.mockMode) {
       this.mockTransactionOwnership = null;
@@ -713,25 +787,88 @@ class PrivateEgressProvisioner {
     } catch (_) {}
   }
 
-  // [T4 Hardening] Check on startup for interrupted or recovery-required transaction
+  // [T4 & U1 Hardening] Check on startup or query for interrupted, recovery-required, or active transaction
   checkRecoveryJournal() {
     const journal = this.loadTransactionOwnership();
-    if (journal && (journal.status === 'PROVISIONING' || journal.status === 'RECOVERY_REQUIRED')) {
+    if (!journal || !journal.status) {
+      return {
+        recoveryRequired: false,
+        status: 'NONE',
+        stage: null,
+        transactionTag: null,
+        dropletId: null,
+        firewallId: null,
+        ephemeralKeyId: null,
+        registeredNodeId: null,
+        publicIp: null,
+        rollbackErrors: []
+      };
+    }
+
+    if (journal.status === 'PROVISIONING' || journal.status === 'RECOVERY_REQUIRED') {
       return {
         recoveryRequired: true,
-        status: journal.status,
+        status: journal.status === 'PROVISIONING' ? 'PROVISIONING_INTERRUPTED' : 'RECOVERY_REQUIRED',
+        rawStatus: journal.status,
         stage: journal.stage,
         transactionTag: journal.transactionTag,
+        region: journal.region || null,
+        tier: journal.tier || null,
         dropletId: journal.dropletId,
         firewallId: journal.firewallId,
         ephemeralKeyId: journal.ephemeralKeyId,
         registeredNodeId: journal.registeredNodeId,
         publicIp: journal.publicIp,
         createdAt: journal.createdAt,
+        updatedAt: journal.updatedAt,
         rollbackErrors: journal.rollbackErrors || []
       };
     }
-    return { recoveryRequired: false };
+
+    if (journal.status === 'ACTIVE') {
+      return {
+        recoveryRequired: false,
+        status: 'ACTIVE',
+        stage: journal.stage || 'COMPLETED',
+        transactionTag: journal.transactionTag,
+        region: journal.region || null,
+        tier: journal.tier || null,
+        dropletId: journal.dropletId,
+        firewallId: journal.firewallId,
+        ephemeralKeyId: null,
+        registeredNodeId: journal.registeredNodeId,
+        publicIp: journal.publicIp,
+        monthlyCostUsd: journal.monthlyCostUsd,
+        hourlyCostUsd: journal.hourlyCostUsd,
+        activeNode: {
+          transactionTag: journal.transactionTag,
+          region: journal.region || null,
+          tier: journal.tier || null,
+          dropletId: journal.dropletId,
+          firewallId: journal.firewallId,
+          registeredNodeId: journal.registeredNodeId,
+          publicIp: journal.publicIp,
+          monthlyCostUsd: journal.monthlyCostUsd,
+          hourlyCostUsd: journal.hourlyCostUsd
+        },
+        createdAt: journal.createdAt,
+        updatedAt: journal.updatedAt,
+        rollbackErrors: []
+      };
+    }
+
+    return {
+      recoveryRequired: false,
+      status: journal.status || 'UNKNOWN',
+      stage: journal.stage || null,
+      transactionTag: journal.transactionTag || null,
+      dropletId: journal.dropletId || null,
+      firewallId: journal.firewallId || null,
+      ephemeralKeyId: null,
+      registeredNodeId: journal.registeredNodeId || null,
+      publicIp: journal.publicIp || null,
+      rollbackErrors: []
+    };
   }
 
   // [Blocker F Hardening] DigitalOcean region/size catalog availability verification (no silent upscale)
@@ -1095,12 +1232,29 @@ class PrivateEgressProvisioner {
       const ownerCidr = formatIpCidr(ownerIp);
       const allowedSources = [ownerCidr];
 
+      // [U2 & U3 Hardening] Load existing journal; block second one-click node if ACTIVE; reject if collision
+      const existingJournal = this.loadTransactionOwnership();
+      if (existingJournal) {
+        if (existingJournal.status === 'ACTIVE') {
+          const err = new Error(`ACTIVE_NODE_EXISTS: Active private egress node already exists (Droplet ${existingJournal.dropletId}, IP ${existingJournal.publicIp}). Product scope is one node; destroy existing node before creating a new one.`);
+          err.code = 'ACTIVE_NODE_EXISTS';
+          err.journal = existingJournal;
+          throw err;
+        }
+        if (existingJournal.status === 'PROVISIONING' || existingJournal.status === 'RECOVERY_REQUIRED') {
+          const err = new Error(`TRANSACTION_COLLISION: Unrecovered transaction found in journal (${existingJournal.transactionTag}, status ${existingJournal.status}, stage ${existingJournal.stage}). Exact recovery or teardown required before starting new provisioning.`);
+          err.code = 'TRANSACTION_COLLISION';
+          err.journal = existingJournal;
+          throw err;
+        }
+      }
+
       // [R1 & S3 Hardening] Create unique per-transaction tag and register on provider
       transactionTag = `xpider-tx-${Date.now().toString(36)}-${crypto.randomBytes(4).toString('hex')}`;
       await this.createTransactionTag(transactionTag);
 
-      // [T4 Hardening] Atomically persist transaction tag to crash-safe journal immediately
-      this.updateTransactionJournal({
+      // [U2 & T4 Hardening] Exclusively begin brand-new clean journal (all resource IDs explicitly null)
+      this.beginTransactionJournal({
         status: 'PROVISIONING',
         stage: 'TAG_CREATED',
         transactionTag,
@@ -1126,6 +1280,7 @@ class PrivateEgressProvisioner {
 
       // [T4 Hardening] Update crash-safe journal with created SSH key ID
       this.updateTransactionJournal({
+        transactionTag,
         stage: 'SSH_KEY_CREATED',
         ephemeralKeyId
       });
@@ -1158,6 +1313,7 @@ class PrivateEgressProvisioner {
 
       // [T4 Hardening] Update crash-safe journal with created Firewall ID
       this.updateTransactionJournal({
+        transactionTag,
         stage: 'FIREWALL_CREATED',
         firewallId
       });
@@ -1243,6 +1399,7 @@ systemctl restart ssh || systemctl restart sshd
 
       // [T4 Hardening] Update crash-safe journal with created Droplet ID immediately
       this.updateTransactionJournal({
+        transactionTag,
         stage: 'DROPLET_CREATED',
         dropletId
       });
@@ -1252,6 +1409,7 @@ systemctl restart ssh || systemctl restart sshd
 
       // [T4 Hardening] Update crash-safe journal with assigned Public IP
       this.updateTransactionJournal({
+        transactionTag,
         stage: 'DROPLET_IP_ASSIGNED',
         dropletId,
         publicIp
@@ -1428,6 +1586,7 @@ systemctl restart ssh || systemctl restart sshd
 
       // [T4 Hardening] Update crash-safe journal with registered Companion Node ID
       this.updateTransactionJournal({
+        transactionTag,
         stage: 'COMPANION_NODE_REGISTERED',
         registeredNodeId: nodeId
       });
@@ -1466,6 +1625,7 @@ systemctl restart ssh || systemctl restart sshd
 
       // [R5 & T4 Hardening] Mark transaction journal ACTIVE and COMPLETED upon 100% verification
       this.updateTransactionJournal({
+        transactionTag,
         status: 'ACTIVE',
         stage: 'COMPLETED'
       });
@@ -1501,6 +1661,7 @@ systemctl restart ssh || systemctl restart sshd
         // [T4 Hardening] DO NOT clear ownership on incomplete rollback!
         // Preserve recovery journal with status: 'RECOVERY_REQUIRED' and remaining tracked resources.
         this.updateTransactionJournal({
+          transactionTag,
           status: 'RECOVERY_REQUIRED',
           stage: 'ROLLBACK_INCOMPLETE',
           failedAt: Date.now(),
@@ -1508,8 +1669,7 @@ systemctl restart ssh || systemctl restart sshd
           ephemeralKeyId: rollbackRes.verifications.sshKeyAbsent ? null : ephemeralKeyId,
           firewallId: rollbackRes.verifications.firewallAbsent ? null : firewallId,
           dropletId: rollbackRes.verifications.dropletAbsent ? null : dropletId,
-          registeredNodeId: rollbackRes.verifications.companionNodeAbsent ? null : registeredNodeId,
-          transactionTag: rollbackRes.verifications.tagAbsent ? null : transactionTag
+          registeredNodeId: rollbackRes.verifications.companionNodeAbsent ? null : registeredNodeId
         });
         const cleanupMsg = `CLEANUP_REQUIRED: Provisioning failed and automatic cloud rollback encountered errors: ${rollbackRes.errors.join(', ')}`;
         console.error('[PROVISIONER_ROLLBACK_INCOMPLETE]', cleanupMsg);

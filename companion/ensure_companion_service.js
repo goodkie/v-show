@@ -21,7 +21,7 @@ const path = require('path');
 const { spawn, execSync } = require('child_process');
 
 const EXPECTED_BUILD_ID = 'R6.9G.10.3.7.1.4.16-20261017-PRIVATE-EGRESS-RC3.2';
-const REQUIRED_CAPABILITIES = ['verify-plan', 'provision-egress', 'provision-progress'];
+const REQUIRED_CAPABILITIES = ['verify-plan', 'provision-egress', 'provision-progress', 'recovery-status'];
 
 const COMPANION_DIR = __dirname;
 const ROOT_DIR = path.resolve(COMPANION_DIR, '..');
@@ -214,6 +214,9 @@ async function main() {
 
     if (hasRequiredCaps && isCurrentBuild) {
       console.log(`   [OK] Privacy Relay Companion is ALREADY RUNNING and verified current (Build: ${d.companionBuildId}, PID: ${d.pid || 'unknown'}).`);
+      if (d.recovery && d.recovery.recoveryRequired) {
+        console.warn(`   [RECOVERY_ALERT] Incomplete private-egress transaction found in journal (${d.recovery.transactionTag}, stage: ${d.recovery.stage}). Cleanup/recovery required.`);
+      }
       process.exit(0);
     }
 
@@ -256,6 +259,9 @@ async function main() {
       if (hasCaps) {
         console.log(`   [OK] Privacy Relay Companion successfully bound ports and verified healthy (PID: ${d.pid || 'unknown'}, Build: ${d.companionBuildId || EXPECTED_BUILD_ID}).`);
         console.log(`   [OK] Verified API Capabilities: [${caps.join(', ')}]`);
+        if (d.recovery && d.recovery.recoveryRequired) {
+          console.warn(`   [RECOVERY_ALERT] Incomplete private-egress transaction found in journal (${d.recovery.transactionTag}, stage: ${d.recovery.stage}). Cleanup/recovery required.`);
+        }
         verified = true;
         break;
       }
