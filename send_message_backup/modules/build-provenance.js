@@ -15,18 +15,18 @@
 
     const BUILD_INFO = {
         branch: 'upgrade/phase-0-1',
-        channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.6',
+        channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.7',
         testOnly: true,
-        // [R6.9G.10.3.7.1.4.20] XPIDER AutoForm Sender Pro — Private Egress Release Candidate 3.6 (Recovery Gate + Single-Transaction Lock Closure)
-        implementationHead: 'd0544b0cf33e48203040920adff796db36b43c03',
-        implementationHeadShort: 'd0544b0c',
-        head: 'd0544b0cf33e48203040920adff796db36b43c03',
-        headShort: 'd0544b0c',
+        // [R6.9G.10.3.7.1.4.21] XPIDER AutoForm Sender Pro — Private Egress Release Candidate 3.7 (Package Secret Hygiene + Token Rotation Closure)
+        implementationHead: '9b389a5f227684383124be1e076ce10222471b8d',
+        implementationHeadShort: '9b389a5f',
+        head: '9b389a5f227684383124be1e076ce10222471b8d',
+        headShort: '9b389a5f',
         rollbackBase: '50aee3538806d7b5227fcd929e27979d1e5a3419',
         previousFunctionalRestorePoint: '50aee3538806d7b5227fcd929e27979d1e5a3419',
         manifestVersion: 3,
-        buildId: 'R6.9G.10.3.7.1.4.20-20261018-PRIVATE-EGRESS-RC3.6',
-        builtAt: '2026-10-18T13:38:30.308Z',
+        buildId: 'R6.9G.10.3.7.1.4.21-20261018-PRIVATE-EGRESS-RC3.7',
+        builtAt: '2026-10-18T14:10:27.587Z',
         provenanceSchema: 2,
         modules: {
             backgroundSha: 'ede9f78952432b20789767fa9f0ebb980e1e7477d6121c30c81e999303bf899f',
@@ -38,7 +38,7 @@
             historyStoreSha: '0dc2fbda1b1506de9394f87a965ff2ebd5721ea1c47d7bda07c9411193890d8c',
             contactGateSha: '0d01acb2d0a9448d154353fac5b527c17afa42fed56c68d6a49b39053629bd7d',
             visionSubmitSha: '25cf18a4834bb476edff5e8f19a78dd2723bd556ede649ada69bc801543c83f3',
-            privacyGatewaySha: '394301c4ad5b2112181019bc1d847d9b197dfbfaa138772fbd941a8207a53eb5'
+            privacyGatewaySha: 'b444734dd0bbfc457c19a4defec4dd98e7a39967432567976c0ffb8510cb4bc6'
         }
     };
 

@@ -34,9 +34,29 @@ const extDir = path.resolve('send_message_backup/build/extension');
 const compDir = path.resolve('companion');
 const stagingDir = path.resolve('staging_owner_beta');
 
+// Ensure ports 18988 and 18989 are released before touching staging
+try {
+    const netstatOut = execSync('netstat -ano | findstr "18989 18988"', { encoding: 'utf-8' });
+    const pids = new Set();
+    for (const line of netstatOut.split(/\r?\n/)) {
+        const parts = line.trim().split(/\s+/);
+        if (parts.length >= 5 && parts[1].includes('127.0.0.1:1898')) {
+            const pid = parseInt(parts[parts.length - 1], 10);
+            if (pid && pid > 0 && pid !== process.pid) pids.add(pid);
+        }
+    }
+    for (const pid of pids) {
+        try { execSync(`taskkill /F /PID ${pid}`); } catch (_) {}
+    }
+} catch (_) {}
+
 // Clean staging directory
 if (fs.existsSync(stagingDir)) {
-    fs.rmSync(stagingDir, { recursive: true, force: true });
+    try {
+        fs.rmSync(stagingDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 200 });
+    } catch (_) {
+        execSync(`powershell -NoProfile -Command "Remove-Item -Path '${stagingDir}' -Recurse -Force"`);
+    }
 }
 fs.mkdirSync(stagingDir, { recursive: true });
 
