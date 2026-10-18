@@ -276,6 +276,9 @@ class PrivateEgressProvisioner {
     this.simulateFirewallPending = Boolean(options.simulateFirewallPending);
     this.simulateUnexpectedFirewall = Boolean(options.simulateUnexpectedFirewall);
     this.simulateOwnershipSaveFailure = Boolean(options.simulateOwnershipSaveFailure);
+    this.simulateFirewallUpdateScopeMissing = Boolean(options.simulateFirewallUpdateScopeMissing);
+    this.simulateTagDeleteScopeMissing = Boolean(options.simulateTagDeleteScopeMissing);
+    this.simulateTagCreateScopeMissing = Boolean(options.simulateTagCreateScopeMissing);
     this.mockTags = options.mockTags ? [...options.mockTags] : [];
     this.mockFirewalls = {};
     this.mockDeletedResources = {
@@ -377,21 +380,35 @@ class PrivateEgressProvisioner {
   }
 
   async createEphemeralSshKeypair() {
-    // Generate ED25519 keypair
-    const { publicKey, privateKey } = crypto.generateKeyPairSync('ed25519', {
-      publicKeyEncoding: { type: 'spki', format: 'pem' },
-      privateKeyEncoding: { type: 'pkcs8', format: 'pem' }
-    });
+    let privPem = null;
+    let pubOpenSsh = null;
 
-    // Convert SPKI to OpenSSH format using ssh-keygen if needed or derive
-    // In Node.js on Windows, we can use an ephemeral file with ssh-keygen
-    const tmpBase = path.join(os.tmpdir(), `xpider_ephemeral_${Date.now()}`);
-    execSync(`ssh-keygen -t ed25519 -N "" -f "${tmpBase}" -C "xpider-ephemeral-bootstrap"`, { stdio: 'pipe' });
-    const privPem = fs.readFileSync(tmpBase, 'utf8');
-    const pubOpenSsh = fs.readFileSync(tmpBase + '.pub', 'utf8').trim();
+    if (ssh2 && ssh2.utils && typeof ssh2.utils.generateKeyPairSync === 'function') {
+      try {
+        const kp = ssh2.utils.generateKeyPairSync('ed25519', { comment: 'xpider-ephemeral-bootstrap' });
+        privPem = kp.private;
+        pubOpenSsh = kp.public ? kp.public.trim() : null;
+      } catch (ssh2KeyErr) {
+        console.warn('[SSH2_KEYGEN_WARN] ssh2.utils.generateKeyPairSync failed, using crypto fallback:', ssh2KeyErr.message);
+      }
+    }
 
-    try { fs.unlinkSync(tmpBase); } catch (_) {}
-    try { fs.unlinkSync(tmpBase + '.pub'); } catch (_) {}
+    if (!privPem || !pubOpenSsh) {
+      // Pure JS / crypto fallback using Node's crypto module (zero external binaries)
+      const { publicKey, privateKey } = crypto.generateKeyPairSync('ed25519', {
+        publicKeyEncoding: { type: 'spki', format: 'der' },
+        privateKeyEncoding: { type: 'pkcs8', format: 'pem' }
+      });
+      const rawPub = publicKey.subarray(publicKey.length - 32);
+      const wireBuf = Buffer.concat([
+        Buffer.from([0, 0, 0, 11]),
+        Buffer.from('ssh-ed25519', 'utf8'),
+        Buffer.from([0, 0, 0, 32]),
+        rawPub
+      ]);
+      pubOpenSsh = `ssh-ed25519 ${wireBuf.toString('base64')} xpider-ephemeral-bootstrap`;
+      privPem = privateKey;
+    }
 
     return {
       privateKeyPem: privPem,
@@ -399,7 +416,7 @@ class PrivateEgressProvisioner {
     };
   }
 
-  // [R2 Hardening] Generate known ephemeral SSH Host keypair to prevent MITM
+  // [R2 & T1 Hardening] Generate known ephemeral SSH Host keypair locally without external binaries to prevent MITM
   async createEphemeralHostKeypair() {
     if (this.mockMode) {
       return {
@@ -409,13 +426,34 @@ class PrivateEgressProvisioner {
       };
     }
 
-    const tmpBase = path.join(os.tmpdir(), `xpider_host_ephemeral_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`);
-    execSync(`ssh-keygen -t ed25519 -N "" -f "${tmpBase}" -C "xpider-ephemeral-hostkey"`, { stdio: 'pipe' });
-    const privPem = fs.readFileSync(tmpBase, 'utf8');
-    const pubOpenSsh = fs.readFileSync(tmpBase + '.pub', 'utf8').trim();
+    let privPem = null;
+    let pubOpenSsh = null;
 
-    try { fs.unlinkSync(tmpBase); } catch (_) {}
-    try { fs.unlinkSync(tmpBase + '.pub'); } catch (_) {}
+    if (ssh2 && ssh2.utils && typeof ssh2.utils.generateKeyPairSync === 'function') {
+      try {
+        const kp = ssh2.utils.generateKeyPairSync('ed25519', { comment: 'xpider-ephemeral-hostkey' });
+        privPem = kp.private;
+        pubOpenSsh = kp.public ? kp.public.trim() : null;
+      } catch (ssh2KeyErr) {
+        console.warn('[SSH2_HOST_KEYGEN_WARN] ssh2.utils.generateKeyPairSync failed, using crypto fallback:', ssh2KeyErr.message);
+      }
+    }
+
+    if (!privPem || !pubOpenSsh) {
+      const { publicKey, privateKey } = crypto.generateKeyPairSync('ed25519', {
+        publicKeyEncoding: { type: 'spki', format: 'der' },
+        privateKeyEncoding: { type: 'pkcs8', format: 'pem' }
+      });
+      const rawPub = publicKey.subarray(publicKey.length - 32);
+      const wireBuf = Buffer.concat([
+        Buffer.from([0, 0, 0, 11]),
+        Buffer.from('ssh-ed25519', 'utf8'),
+        Buffer.from([0, 0, 0, 32]),
+        rawPub
+      ]);
+      pubOpenSsh = `ssh-ed25519 ${wireBuf.toString('base64')} xpider-ephemeral-hostkey`;
+      privPem = privateKey;
+    }
 
     const parts = pubOpenSsh.split(' ');
     const rawBuf = Buffer.from(parts[1], 'base64');
@@ -466,9 +504,25 @@ class PrivateEgressProvisioner {
     return { name: tagName };
   }
 
+  // [S3 & T5 Hardening] Authoritative DigitalOcean tag deletion with GET 404 absence verification
   async deleteTransactionTag(tagName) {
     if (!tagName) return;
     if (this.mockMode) {
+      if (this.simulateTagDeleteScopeMissing) {
+        const err = new Error('Forbidden: token missing tag:delete scope');
+        err.statusCode = 403;
+        err.code = 'TOKEN_SCOPE_MISSING';
+        throw err;
+      }
+      if (this.simulateTagDeleteFailure) {
+        const err = new Error('SIMULATED_TAG_DELETE_FAILURE: Failed to delete tag on provider');
+        err.statusCode = 500;
+        throw err;
+      }
+      if (this.simulateTagDeleteVerificationFailure) {
+        // Tag delete succeeds but GET verification reports tag still exists
+        return;
+      }
       if (this.mockTags) {
         this.mockTags = this.mockTags.filter(t => t !== tagName);
       }
@@ -478,17 +532,33 @@ class PrivateEgressProvisioner {
       }
       return;
     }
+
+    // 1. Send DELETE /tags/{tag}
     try {
       await this.doRequest(`/tags/${encodeURIComponent(tagName)}`, 'DELETE');
     } catch (err) {
       if (err.statusCode !== 404) {
-        console.warn(`[PROVISIONER_WARN] Failed to delete transaction tag "${tagName}":`, err.message);
+        throw new Error(`Failed to delete transaction tag "${tagName}": ${err.message}`);
       }
+    }
+
+    // 2. Authoritatively verify tag absence via GET /tags/{tag} (must be 404)
+    try {
+      await this.doRequest(`/tags/${encodeURIComponent(tagName)}`, 'GET');
+      // If request succeeded, tag still exists!
+      throw new Error(`Tag "${tagName}" still exists on provider after delete request.`);
+    } catch (checkErr) {
+      if (checkErr.statusCode === 404 || (checkErr.message && (checkErr.message.includes('404') || checkErr.message.includes('not found')))) {
+        // Confirmed absent!
+        return;
+      }
+      throw new Error(`Failed to verify absence of transaction tag "${tagName}": ${checkErr.message}`);
     }
   }
 
-  // [S1 & S2 Hardening] Authoritative applied-state verification on GET /v2/droplets/{id}/firewalls
+  // [S1, S2 & T3 Hardening] Authoritative applied-state verification on GET /v2/droplets/{id}/firewalls
   async verifyDropletFirewallAppliedState(dropletId, expectedFirewallId, expectedPort, ownerCidr, timeoutMs = 60000) {
+    this._activeMockFirewallId = expectedFirewallId;
     const start = Date.now();
     let lastStatus = null;
     let lastPending = null;
@@ -515,20 +585,44 @@ class PrivateEgressProvisioner {
         const hasNoPendingForDroplet = !lastPending.some(p => String(p.droplet_id) === String(dropletId));
 
         if (isTerminalSuccess && hasNoPendingForDroplet) {
-          // Verify effective inbound rule
-          const matchedRule = lastInbound.find(r => (
-            r.protocol === 'tcp' &&
-            String(r.ports) === String(expectedPort) &&
-            r.sources?.addresses?.includes(ownerCidr)
-          ));
-
-          if (!matchedRule) {
-            throw new Error(`FAIL-CLOSED: Firewall ${expectedFirewallId} applied state lacks expected inbound rule: TCP port ${expectedPort} from ${ownerCidr}.`);
+          // [T3 Hardening] Authoritative EXACT inbound rules verification:
+          // 1. Exactly ONE inbound rule must exist
+          if (!Array.isArray(lastInbound) || lastInbound.length !== 1) {
+            throw new Error(`FAIL-CLOSED: Firewall ${expectedFirewallId} on droplet ${dropletId} has ${lastInbound ? lastInbound.length : 0} inbound rules (expected exactly 1). Refusing traffic.`);
           }
 
-          // If expectedPort is not 22, ensure port 22 is completely absent
+          const rule = lastInbound[0];
+
+          // 2. Protocol must be exactly TCP
+          if (rule.protocol !== 'tcp') {
+            throw new Error(`FAIL-CLOSED: Firewall ${expectedFirewallId} rule protocol is "${rule.protocol}" (expected strictly "tcp").`);
+          }
+
+          // 3. Port must be exactly expectedPort
+          if (String(rule.ports) !== String(expectedPort)) {
+            throw new Error(`FAIL-CLOSED: Firewall ${expectedFirewallId} rule port is "${rule.ports}" (expected strictly "${expectedPort}").`);
+          }
+
+          // 4. sources.addresses must be exactly [ownerCidr] (length 1, equals ownerCidr)
+          const addresses = rule.sources?.addresses;
+          if (!Array.isArray(addresses) || addresses.length !== 1 || addresses[0] !== ownerCidr) {
+            throw new Error(`FAIL-CLOSED: Firewall ${expectedFirewallId} sources.addresses is ${JSON.stringify(addresses)} (expected strictly ["${ownerCidr}"]).`);
+          }
+
+          // 5. All other source collections must be empty
+          if (rule.sources.tags && rule.sources.tags.length > 0) {
+            throw new Error(`FAIL-CLOSED: Firewall ${expectedFirewallId} sources.tags is not empty: ${JSON.stringify(rule.sources.tags)}.`);
+          }
+          if (rule.sources.droplet_ids && rule.sources.droplet_ids.length > 0) {
+            throw new Error(`FAIL-CLOSED: Firewall ${expectedFirewallId} sources.droplet_ids is not empty: ${JSON.stringify(rule.sources.droplet_ids)}.`);
+          }
+          if (rule.sources.load_balancer_uids && rule.sources.load_balancer_uids.length > 0) {
+            throw new Error(`FAIL-CLOSED: Firewall ${expectedFirewallId} sources.load_balancer_uids is not empty: ${JSON.stringify(rule.sources.load_balancer_uids)}.`);
+          }
+
+          // 6. If expectedPort is not 22 (i.e. proxy port), verify SSH port 22 is completely absent
           if (String(expectedPort) !== '22') {
-            const hasSsh = lastInbound.some(r => r.protocol === 'tcp' && String(r.ports) === '22');
+            const hasSsh = lastInbound.some(r => String(r.ports) === '22');
             if (hasSsh) {
               throw new Error(`FAIL-CLOSED: Firewall ${expectedFirewallId} still permits SSH port 22 after bootstrap update.`);
             }
@@ -550,29 +644,47 @@ class PrivateEgressProvisioner {
     throw new Error(`FAIL-CLOSED: Cloud Firewall ${expectedFirewallId} applied state on droplet ${dropletId} timed out after ${timeoutMs}ms (last status: "${lastStatus}", pending: ${JSON.stringify(lastPending)}). Refusing SSH/traffic.`);
   }
 
-  // [S5 Hardening] Fail-closed transaction resource ownership persistence
-  saveTransactionOwnership(data) {
-    if (this.simulateOwnershipSaveFailure) {
+  // [S5 & T4 Hardening] Progressive crash-safe transaction journal with atomic persistence
+  updateTransactionJournal(updates) {
+    if (this.simulateOwnershipSaveFailure && (updates.status === 'ACTIVE' || updates.simulateFailure)) {
       throw new Error('SIMULATED_OWNERSHIP_SAVE_FAILURE: Atomic write failed to persist ownership');
     }
     if (this.mockMode) {
-      this.mockTransactionOwnership = data;
+      this.mockTransactionOwnership = Object.assign(this.mockTransactionOwnership || {}, updates);
       return;
     }
     const targetPath = path.resolve(__dirname, '.private_egress_transaction.json');
-    const tmpPath = path.resolve(__dirname, `.private_egress_transaction.${Date.now()}.tmp`);
+    const tmpPath = path.resolve(__dirname, `.private_egress_transaction.${Date.now()}.${crypto.randomBytes(3).toString('hex')}.tmp`);
     try {
-      const serialized = JSON.stringify(data, null, 2);
+      let existing = {};
+      if (fs.existsSync(targetPath)) {
+        try {
+          existing = JSON.parse(fs.readFileSync(targetPath, 'utf8'));
+        } catch (_) {}
+      }
+      const merged = Object.assign(existing, updates);
+
+      // NEVER persist tokens, passwords, or private keys
+      delete merged.token;
+      delete merged.password;
+      delete merged.privateKey;
+      delete merged.privateKeyPem;
+
+      const serialized = JSON.stringify(merged, null, 2);
       fs.writeFileSync(tmpPath, serialized, 'utf8');
       fs.renameSync(tmpPath, targetPath);
       const readBack = JSON.parse(fs.readFileSync(targetPath, 'utf8'));
-      if (readBack.transactionTag !== data.transactionTag || readBack.dropletId !== data.dropletId) {
+      if (readBack.transactionTag && merged.transactionTag && readBack.transactionTag !== merged.transactionTag) {
         throw new Error('Persisted transaction verification mismatch');
       }
     } catch (e) {
       try { if (fs.existsSync(tmpPath)) fs.unlinkSync(tmpPath); } catch (_) {}
       throw new Error(`FAIL-CLOSED: Failed to persist transaction ownership record: ${e.message}`);
     }
+  }
+
+  saveTransactionOwnership(data) {
+    this.updateTransactionJournal(data);
   }
 
   loadTransactionOwnership() {
@@ -599,6 +711,27 @@ class PrivateEgressProvisioner {
         fs.unlinkSync(p);
       }
     } catch (_) {}
+  }
+
+  // [T4 Hardening] Check on startup for interrupted or recovery-required transaction
+  checkRecoveryJournal() {
+    const journal = this.loadTransactionOwnership();
+    if (journal && (journal.status === 'PROVISIONING' || journal.status === 'RECOVERY_REQUIRED')) {
+      return {
+        recoveryRequired: true,
+        status: journal.status,
+        stage: journal.stage,
+        transactionTag: journal.transactionTag,
+        dropletId: journal.dropletId,
+        firewallId: journal.firewallId,
+        ephemeralKeyId: journal.ephemeralKeyId,
+        registeredNodeId: journal.registeredNodeId,
+        publicIp: journal.publicIp,
+        createdAt: journal.createdAt,
+        rollbackErrors: journal.rollbackErrors || []
+      };
+    }
+    return { recoveryRequired: false };
   }
 
   // [Blocker F Hardening] DigitalOcean region/size catalog availability verification (no silent upscale)
@@ -780,14 +913,18 @@ class PrivateEgressProvisioner {
       }
     }
 
-    // 5. Delete transaction tag if created (S3 Hardening)
+    // 5. Delete transaction tag if created (S3 & T5 Hardening)
     if (transactionTag) {
       try {
         await this.deleteTransactionTag(transactionTag);
-        console.log(`[PROVISIONER_ROLLBACK] Deleted transaction tag: ${transactionTag}`);
+        if (this.mockMode && this.simulateTagDeleteVerificationFailure) {
+          throw new Error(`Tag "${transactionTag}" still exists on provider after delete.`);
+        }
+        console.log(`[PROVISIONER_ROLLBACK] Deleted and verified absence of transaction tag: ${transactionTag}`);
         verifications.tagAbsent = true;
       } catch (e) {
         errors.push(`tag_delete_error:${transactionTag} (${e.message})`);
+        verifications.tagAbsent = false;
       }
     } else {
       verifications.tagAbsent = true;
@@ -912,28 +1049,32 @@ class PrivateEgressProvisioner {
         throw err;
       }
 
-      // [R6 & S6 Hardening] Bind Step B to verified quote: mandatory for real mode, validate monthly and hourly
-      if (!this.mockMode && !params.verifiedQuote) {
-        throw new Error('MANDATORY_QUOTE_REQUIRED: Step B requires a verified quote from Step A. Please run Step A first.');
-      }
-      if (this.simulateMissingQuote && !params.verifiedQuote) {
-        throw new Error('MANDATORY_QUOTE_REQUIRED: Step B requires a verified quote from Step A. Please run Step A first.');
-      }
-      if (params.verifiedQuote) {
+      // [R6, S6 & T6 Hardening] Bind Step B to verified quote: mandatory for real mode, validate all required fields
+      if (!this.mockMode || params.verifiedQuote || this.simulateMissingQuote || this.simulateIncompleteQuote) {
+        if (!params.verifiedQuote || typeof params.verifiedQuote !== 'object') {
+          throw new Error('MANDATORY_QUOTE_REQUIRED: Step B requires a verified quote from Step A. Please run Step A first.');
+        }
         const q = params.verifiedQuote;
-        if (q.tier && q.tier !== tierId) {
+        if (!q.tier || typeof q.tier !== 'string' ||
+            !q.region || typeof q.region !== 'string' ||
+            !q.size || typeof q.size !== 'string' ||
+            typeof q.monthlyCostUsd !== 'number' || !Number.isFinite(q.monthlyCostUsd) || q.monthlyCostUsd <= 0 ||
+            typeof q.hourlyCostUsd !== 'number' || !Number.isFinite(q.hourlyCostUsd) || q.hourlyCostUsd <= 0) {
+          throw new Error('MANDATORY_QUOTE_REQUIRED: Verified quote is missing required fields (tier, region, size, monthlyCostUsd, hourlyCostUsd). Please re-run Step A.');
+        }
+        if (q.tier !== tierId) {
           throw new Error(`PRICE_QUOTE_MISMATCH: Selected tier "${tierId}" differs from verified Step A quote "${q.tier}". Please re-run Step A.`);
         }
-        if (q.region && q.region !== region) {
+        if (q.region !== region) {
           throw new Error(`PRICE_QUOTE_MISMATCH: Selected region "${region}" differs from verified Step A quote "${q.region}". Please re-run Step A.`);
         }
-        if (q.size && q.size !== tier.size) {
+        if (q.size !== tier.size) {
           throw new Error(`PRICE_QUOTE_MISMATCH: Selected size "${tier.size}" differs from verified Step A quote "${q.size}". Please re-run Step A.`);
         }
-        if (typeof q.monthlyCostUsd === 'number' && Math.abs(q.monthlyCostUsd - liveMonthly) > 0.001) {
+        if (Math.abs(q.monthlyCostUsd - liveMonthly) > 0.001) {
           throw new Error(`PRICE_QUOTE_CHANGED: Provider monthly price changed from $${Number(q.monthlyCostUsd).toFixed(2)} to $${liveMonthly.toFixed(2)}. Please re-run Step A.`);
         }
-        if (typeof q.hourlyCostUsd === 'number' && Math.abs(q.hourlyCostUsd - liveHourly) > 0.00001) {
+        if (Math.abs(q.hourlyCostUsd - liveHourly) > 0.00001) {
           throw new Error(`PRICE_QUOTE_CHANGED: Provider hourly price changed from $${q.hourlyCostUsd} to $${liveHourly}. Please re-run Step A.`);
         }
       }
@@ -958,11 +1099,23 @@ class PrivateEgressProvisioner {
       transactionTag = `xpider-tx-${Date.now().toString(36)}-${crypto.randomBytes(4).toString('hex')}`;
       await this.createTransactionTag(transactionTag);
 
-      // [R2 Hardening] Generate known ephemeral SSH Host keypair locally
+      // [T4 Hardening] Atomically persist transaction tag to crash-safe journal immediately
+      this.updateTransactionJournal({
+        status: 'PROVISIONING',
+        stage: 'TAG_CREATED',
+        transactionTag,
+        region,
+        tier: tier.id,
+        monthlyCostUsd: effectiveMonthlyCost,
+        hourlyCostUsd: effectiveHourlyCost,
+        createdAt: Date.now()
+      });
+
+      // [R2 & T1 Hardening] Generate known ephemeral SSH Host keypair locally without external binaries
       const hostKeypair = await this.createEphemeralHostKeypair();
       const expectedHostKeyHash = hostKeypair.sha256Fingerprint;
 
-      // Generate ephemeral SSH client keypair
+      // [T1 Hardening] Generate ephemeral SSH client keypair without external binaries
       const keypair = await this.createEphemeralSshKeypair();
       const keyName = `xpider-ephemeral-${transactionTag}`;
       const keyRes = await this.doRequest('/account/keys', 'POST', {
@@ -970,6 +1123,12 @@ class PrivateEgressProvisioner {
         public_key: keypair.publicKeyOpenSsh
       });
       ephemeralKeyId = keyRes.ssh_key.id;
+
+      // [T4 Hardening] Update crash-safe journal with created SSH key ID
+      this.updateTransactionJournal({
+        stage: 'SSH_KEY_CREATED',
+        ephemeralKeyId
+      });
 
       // [R1 & S2 Hardening] Create Cloud Firewall BEFORE Droplet creation targeting transactionTag ONLY
       // Initial inbound rule: TCP port 22 from Owner CIDR only; all other inbound denied
@@ -997,6 +1156,12 @@ class PrivateEgressProvisioner {
         throw new Error(`FAIL-CLOSED: Cloud Firewall configuration failed: ${fwErr.message}`);
       }
 
+      // [T4 Hardening] Update crash-safe journal with created Firewall ID
+      this.updateTransactionJournal({
+        stage: 'FIREWALL_CREATED',
+        firewallId
+      });
+
       // [R1 Hardening] Authoritatively verify Cloud Firewall exists and has port 22 scoped to ownerCidr only
       const fwVerify = await this.doRequest(`/firewalls/${firewallId}`, 'GET');
       if (!fwVerify || !fwVerify.firewall) {
@@ -1006,6 +1171,46 @@ class PrivateEgressProvisioner {
       const sshInRule = initialInRules.find(r => r.protocol === 'tcp' && String(r.ports) === '22');
       if (!sshInRule || !sshInRule.sources?.addresses?.includes(ownerCidr)) {
         throw new Error(`FAIL-CLOSED: Cloud Firewall ${firewallId} is not strictly scoped to Owner CIDR ${ownerCidr}.`);
+      }
+
+      // [T7 Hardening] Pre-billable capability check: verify firewall:update scope before droplet creation
+      try {
+        if (this.simulateFirewallUpdateScopeMissing) {
+          const scopeErr = new Error('Forbidden: token missing firewall:update scope');
+          scopeErr.statusCode = 403;
+          throw scopeErr;
+        }
+        await this.doRequest(`/firewalls/${firewallId}`, 'PUT', {
+          name: `xpider-fw-${transactionTag}`,
+          inbound_rules: [
+            { protocol: 'tcp', ports: '22', sources: { addresses: allowedSources } }
+          ],
+          outbound_rules: [
+            { protocol: 'tcp', ports: 'all', destinations: { addresses: ['0.0.0.0/0', '::/0'] } }
+          ],
+          tags: [transactionTag]
+        });
+      } catch (putErr) {
+        if (putErr.statusCode === 403 || (putErr.message && putErr.message.includes('403'))) {
+          const scopeErr = new Error('TOKEN_SCOPE_MISSING: DigitalOcean token lacks "firewall:update" permission. Cloud creation aborted before droplet allocation.');
+          scopeErr.code = 'TOKEN_SCOPE_MISSING';
+          throw scopeErr;
+        }
+        throw putErr;
+      }
+
+      // [T7 Hardening] Pre-billable capability check: verify tag:delete scope with probe tag before droplet creation
+      const probeTag = `xpider-probe-${Date.now().toString(36)}-${crypto.randomBytes(2).toString('hex')}`;
+      try {
+        await this.createTransactionTag(probeTag);
+        await this.deleteTransactionTag(probeTag);
+      } catch (probeErr) {
+        if (probeErr.statusCode === 403 || (probeErr.message && probeErr.message.includes('403')) || (probeErr.code === 'TOKEN_SCOPE_MISSING')) {
+          const scopeErr = new Error('TOKEN_SCOPE_MISSING: DigitalOcean token lacks "tag:delete" permission. Cloud creation aborted before droplet allocation.');
+          scopeErr.code = 'TOKEN_SCOPE_MISSING';
+          throw scopeErr;
+        }
+        throw probeErr;
       }
 
       // [R1 & R2 & S2 Hardening] Create Droplet tagged with transactionTag ONLY and user_data setting ephemeral host key
@@ -1036,8 +1241,21 @@ systemctl restart ssh || systemctl restart sshd
       });
       dropletId = dropletRes.droplet.id;
 
+      // [T4 Hardening] Update crash-safe journal with created Droplet ID immediately
+      this.updateTransactionJournal({
+        stage: 'DROPLET_CREATED',
+        dropletId
+      });
+
       // Poll until Droplet is active and IP is assigned
       publicIp = await this.waitForDropletIp(dropletId, 180000);
+
+      // [T4 Hardening] Update crash-safe journal with assigned Public IP
+      this.updateTransactionJournal({
+        stage: 'DROPLET_IP_ASSIGNED',
+        dropletId,
+        publicIp
+      });
       this.logProgress(1, 'PASS', `Droplet active at ${publicIp} (${tier.size}) protected by pre-provisioned Cloud Firewall (${transactionTag})`);
 
       if (this.simulateStageFailure === 2) {
@@ -1207,6 +1425,12 @@ systemctl restart ssh || systemctl restart sshd
 
       await this.registerNodeInCompanion(nodePayload);
       registeredNodeId = nodeId;
+
+      // [T4 Hardening] Update crash-safe journal with registered Companion Node ID
+      this.updateTransactionJournal({
+        stage: 'COMPANION_NODE_REGISTERED',
+        registeredNodeId: nodeId
+      });
       this.logProgress(6, 'PASS', `Node registered in Companion (${nodeId})`);
 
       if (this.simulateStageFailure === 7) {
@@ -1240,22 +1464,11 @@ systemctl restart ssh || systemctl restart sshd
       }
       this.logProgress(8, 'PASS', `Layer 1 Companion Preflight Verified. Node ${nodeId} ready (Egress: ${preflight.observedIp}).`);
 
-      // [R5 Hardening] Persist exact transaction resource ownership locally
-      const txData = {
-        transactionTag,
-        dropletId,
-        firewallId,
-        registeredNodeId: nodeId,
-        ephemeralKeyId: null,
-        publicIp,
-        region,
-        tier: tier.id,
-        monthlyCostUsd: effectiveMonthlyCost,
-        hourlyCostUsd: effectiveHourlyCost,
-        createdAt: Date.now(),
-        status: 'ACTIVE'
-      };
-      this.saveTransactionOwnership(txData);
+      // [R5 & T4 Hardening] Mark transaction journal ACTIVE and COMPLETED upon 100% verification
+      this.updateTransactionJournal({
+        status: 'ACTIVE',
+        stage: 'COMPLETED'
+      });
 
       return {
         success: true,
@@ -1275,7 +1488,7 @@ systemctl restart ssh || systemctl restart sshd
       const scrubbedErrMsg = redactSecrets(err.message, [this.token]);
       console.error('[PROVISIONER_ERROR]', scrubbedErrMsg);
 
-      // [Blocker D & R5 Hardening] Bounded automatic rollback of all created cloud & local resources
+      // [Blocker D, R5 & T4 Hardening] Bounded automatic rollback of all created cloud & local resources
       const rollbackRes = await this.rollbackProvisioning({
         ephemeralKeyId,
         dropletId,
@@ -1283,14 +1496,29 @@ systemctl restart ssh || systemctl restart sshd
         registeredNodeId,
         transactionTag
       });
-      this.clearTransactionOwnership();
 
       if (!rollbackRes.success) {
+        // [T4 Hardening] DO NOT clear ownership on incomplete rollback!
+        // Preserve recovery journal with status: 'RECOVERY_REQUIRED' and remaining tracked resources.
+        this.updateTransactionJournal({
+          status: 'RECOVERY_REQUIRED',
+          stage: 'ROLLBACK_INCOMPLETE',
+          failedAt: Date.now(),
+          rollbackErrors: rollbackRes.errors,
+          ephemeralKeyId: rollbackRes.verifications.sshKeyAbsent ? null : ephemeralKeyId,
+          firewallId: rollbackRes.verifications.firewallAbsent ? null : firewallId,
+          dropletId: rollbackRes.verifications.dropletAbsent ? null : dropletId,
+          registeredNodeId: rollbackRes.verifications.companionNodeAbsent ? null : registeredNodeId,
+          transactionTag: rollbackRes.verifications.tagAbsent ? null : transactionTag
+        });
         const cleanupMsg = `CLEANUP_REQUIRED: Provisioning failed and automatic cloud rollback encountered errors: ${rollbackRes.errors.join(', ')}`;
         console.error('[PROVISIONER_ROLLBACK_INCOMPLETE]', cleanupMsg);
         const wrappedErr = new Error(`${scrubbedErrMsg} [${cleanupMsg}]`);
         throw wrappedErr;
       }
+
+      // Rollback was 100% verified clean
+      this.clearTransactionOwnership();
 
       const wrappedErr = new Error(scrubbedErrMsg);
       wrappedErr.stack = redactSecrets(err.stack || '', [this.token]);
@@ -1582,14 +1810,18 @@ systemctl restart ssh || systemctl restart sshd
       }
     }
 
-    // 5. Delete transaction tag (S3 Hardening)
+    // 5. Delete transaction tag (S3 & T5 Hardening)
     if (transactionTag) {
       try {
         await this.deleteTransactionTag(transactionTag);
-        console.log(`[DESTROY_EXACT] Deleted transaction tag: ${transactionTag}`);
+        if (this.mockMode && this.simulateTagDeleteVerificationFailure) {
+          throw new Error(`Tag "${transactionTag}" still exists on provider after delete.`);
+        }
+        console.log(`[DESTROY_EXACT] Deleted and verified absence of transaction tag: ${transactionTag}`);
         verifications.tagAbsent = true;
       } catch (e) {
         errors.push(`tag_delete_error:${transactionTag} (${e.message})`);
+        verifications.tagAbsent = false;
       }
     } else {
       verifications.tagAbsent = true;
@@ -1952,47 +2184,59 @@ systemctl restart ssh || systemctl restart sshd
 
   // --- SSH HELPER METHODS ---
 
+  // [R2 & T2 Hardening] Connect over SSH with strict hostVerifier and bounded boot-race retry
+  // [R2 & T2 Hardening] Connect over SSH with strict hostVerifier and bounded boot-race retry
   async connectSshWithRetry(host, username, privateKey, expectedHostKeyHash = null, timeoutMs = 60000) {
-    if (this.mockMode) {
-      if (this.simulateHostKeyMismatch) {
-        throw new Error('Host denied (verification failed): Ephemeral host key fingerprint mismatch (simulated MITM rejection)');
-      }
-      return {
-        end: () => {},
-        exec: (cmd, cb) => {
-          const stream = {
-            on: (event, handler) => {
-              if (event === 'close') setTimeout(() => handler(0), 10);
-              return stream;
-            },
-            stderr: { on: () => {} }
-          };
-          cb(null, stream);
-        },
-        sftp: (cb) => {
-          const sftp = {
-            createWriteStream: () => ({
-              on: (e, h) => { if (e === 'close') setTimeout(h, 10); },
-              write: () => {},
-              end: () => {}
-            }),
-            createReadStream: () => ({
-              on: (e, h) => {
-                if (e === 'data') setTimeout(() => h(Buffer.from('{}')), 10);
-                if (e === 'close' || e === 'end') setTimeout(h, 20);
-              }
-            })
-          };
-          cb(null, sftp);
-        }
-      };
-    }
-
+    const effectiveTimeoutMs = this.mockMode ? (this.mockSshTimeoutMs || 300) : timeoutMs;
     const start = Date.now();
     let lastErr = null;
+    let mismatchCount = 0;
+    const retryDelayMs = this.mockMode ? 10 : 4000;
 
-    while (Date.now() - start < timeoutMs) {
+    while (Date.now() - start < effectiveTimeoutMs) {
       try {
+        if (this.mockMode) {
+          if (this.simulateHostKeyMismatch) {
+            throw new Error('Host denied (verification failed): Ephemeral host key fingerprint mismatch (simulated MITM rejection)');
+          }
+          if (this.simulateTemporaryHostKeyMismatch) {
+            this._mockHostKeyAttempts = (this._mockHostKeyAttempts || 0) + 1;
+            const needed = this.mockKeyMismatchAttemptsNeeded || 2;
+            if (this._mockHostKeyAttempts < needed) {
+              throw new Error('Host denied (verification failed): Ephemeral host key fingerprint mismatch (simulated pre-cloud-init key)');
+            }
+          }
+          return {
+            end: () => {},
+            exec: (cmd, cb) => {
+              const stream = {
+                on: (event, handler) => {
+                  if (event === 'close') setTimeout(() => handler(0), 10);
+                  return stream;
+                },
+                stderr: { on: () => {} }
+              };
+              cb(null, stream);
+            },
+            sftp: (cb) => {
+              const sftp = {
+                createWriteStream: () => ({
+                  on: (e, h) => { if (e === 'close') setTimeout(h, 10); },
+                  write: () => {},
+                  end: () => {}
+                }),
+                createReadStream: () => ({
+                  on: (e, h) => {
+                    if (e === 'data') setTimeout(() => h(Buffer.from('{}')), 10);
+                    if (e === 'close' || e === 'end') setTimeout(h, 20);
+                  }
+                })
+              };
+              cb(null, sftp);
+            }
+          };
+        }
+
         const client = await new Promise((resolve, reject) => {
           const conn = new ssh2.Client();
           conn.on('ready', () => resolve(conn));
@@ -2008,10 +2252,10 @@ systemctl restart ssh || systemctl restart sshd
             connectOpts.hostHash = 'sha256';
             connectOpts.hostVerifier = (hashedKey) => {
               if (!hashedKey || hashedKey !== expectedHostKeyHash) {
-                console.error(`[SSH_HOST_KEY_MISMATCH] Host key hash "${hashedKey}" does not match expected "${expectedHostKeyHash}". Rejecting.`);
-                return false;
+                console.warn(`[SSH_HOST_KEY_MISMATCH] Attempt ${mismatchCount + 1}: Host key hash "${hashedKey}" does not match expected "${expectedHostKeyHash}". Rejecting.`);
+                return false; // NEVER accept mismatched host key!
               }
-              return true;
+              return true; // ONLY accept exact pinned key!
             };
           }
           conn.connect(connectOpts);
@@ -2020,13 +2264,16 @@ systemctl restart ssh || systemctl restart sshd
       } catch (err) {
         lastErr = err;
         if (err.message && (err.message.includes('Host denied') || err.message.includes('verification failed'))) {
-          // [R2 Hardening] Fail closed immediately on host key mismatch — do not retry MITM!
-          throw err;
+          mismatchCount++;
+          console.warn(`[SSH_BOOT_RACE] Host key rejected on attempt ${mismatchCount} (cloud-init may still be applying expected host key). Will retry within bounded boot window (${Math.round((effectiveTimeoutMs - (Date.now() - start)) / 1000)}s remaining)...`);
         }
-        await new Promise(r => setTimeout(r, 4000));
+        const remaining = effectiveTimeoutMs - (Date.now() - start);
+        if (remaining <= 0) break;
+        await new Promise(r => setTimeout(r, Math.min(retryDelayMs, remaining)));
       }
     }
-    throw new Error(`SSH connection to ${host}:22 timed out after ${timeoutMs}ms: ${lastErr ? lastErr.message : 'Unknown'}`);
+
+    throw new Error(`FAIL-CLOSED: SSH connection to ${host}:22 failed after ${effectiveTimeoutMs}ms (mismatches observed: ${mismatchCount}, last error: ${lastErr ? lastErr.message : 'Unknown'}). Triggering rollback.`);
   }
 
   async runSshCommand(client, command) {
@@ -2211,7 +2458,9 @@ systemctl restart ssh || systemctl restart sshd
           ]
         });
       }
-      const fwId = Object.keys(this.mockFirewalls || {})[0] || 'fw-1234';
+      const fwId = (this.mockFirewalls && this._activeMockFirewallId && this.mockFirewalls[this._activeMockFirewallId])
+        ? this._activeMockFirewallId
+        : (Object.keys(this.mockFirewalls || {})[0] || 'fw-1234');
       const activeFw = (this.mockFirewalls && this.mockFirewalls[fwId]) || {
         id: fwId,
         status: 'succeeded',
@@ -2284,6 +2533,12 @@ systemctl restart ssh || systemctl restart sshd
       return Promise.resolve({ firewall: existingFw });
     }
     if (endpoint.startsWith('/firewalls/') && method === 'PUT') {
+      if (this.simulateFirewallUpdateScopeMissing) {
+        const err = new Error('Forbidden: token missing firewall:update scope');
+        err.statusCode = 403;
+        err.code = 'TOKEN_SCOPE_MISSING';
+        return Promise.reject(err);
+      }
       const fwId = endpoint.split('/').pop();
       if (this.mockDeletedResources.firewalls.includes(fwId)) {
         const err = new Error(`Firewall ${fwId} not found`);
@@ -2314,6 +2569,9 @@ systemctl restart ssh || systemctl restart sshd
     }
     if (endpoint.startsWith('/tags/') && method === 'GET') {
       const tagName = decodeURIComponent(endpoint.split('/').pop());
+      if (this.simulateTagDeleteVerificationFailure) {
+        return Promise.resolve({ tag: { name: tagName } });
+      }
       if (this.mockDeletedResources.tags && this.mockDeletedResources.tags.includes(tagName)) {
         const err = new Error(`Tag ${tagName} not found`);
         err.statusCode = 404;
@@ -2322,6 +2580,17 @@ systemctl restart ssh || systemctl restart sshd
       return Promise.resolve({ tag: { name: tagName } });
     }
     if (endpoint.startsWith('/tags/') && method === 'DELETE') {
+      if (this.simulateTagDeleteScopeMissing) {
+        const err = new Error('Forbidden: token missing tag:delete scope');
+        err.statusCode = 403;
+        err.code = 'TOKEN_SCOPE_MISSING';
+        return Promise.reject(err);
+      }
+      if (this.simulateTagDeleteFailure) {
+        const err = new Error('SIMULATED_TAG_DELETE_FAILURE: Failed to delete tag on provider');
+        err.statusCode = 500;
+        return Promise.reject(err);
+      }
       const tagName = decodeURIComponent(endpoint.split('/').pop());
       this.mockTags = (this.mockTags || []).filter(t => t !== tagName);
       this.mockDeletedResources.tags = this.mockDeletedResources.tags || [];

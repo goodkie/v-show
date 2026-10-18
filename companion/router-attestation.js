@@ -94,14 +94,15 @@ class RouterAttestationManager {
     let privateKeyStr = null;
     let sshPub = null;
 
-    try {
-      const f = path.join(os.tmpdir(), `xpider_pair_gen_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`);
-      execSync(`ssh-keygen -t ed25519 -N "" -f "${f}" -C "xpider-attest-companion"`, { stdio: 'pipe' });
-      privateKeyStr = fs.readFileSync(f, 'utf8');
-      sshPub = fs.readFileSync(f + '.pub', 'utf8').trim();
-      try { fs.unlinkSync(f); } catch (_) {}
-      try { fs.unlinkSync(f + '.pub'); } catch (_) {}
-    } catch (_) {
+    if (ssh2 && ssh2.utils && typeof ssh2.utils.generateKeyPairSync === 'function') {
+      try {
+        const kp = ssh2.utils.generateKeyPairSync('ed25519', { comment: 'xpider-attest-companion' });
+        privateKeyStr = kp.private;
+        sshPub = kp.public.trim();
+      } catch (_) {}
+    }
+
+    if (!privateKeyStr || !sshPub) {
       const { publicKey, privateKey } = crypto.generateKeyPairSync('ed25519', {
         publicKeyEncoding: { type: 'spki', format: 'der' },
         privateKeyEncoding: { type: 'pkcs8', format: 'pem' }

@@ -79,7 +79,7 @@ async function runTestSuite() {
   assert(fwGetIdx !== -1 && fwGetIdx < dropletPostIdx + 3, 'Firewall association must be authoritatively verified');
 
   // Verify in Step 5: Firewall was updated via PUT to allow ONLY proxy port (8443) and port 22 was removed
-  const fwPutIdx = callSequence.findIndex(c => c.endpoint.startsWith('/firewalls/') && c.method === 'PUT');
+  const fwPutIdx = callSequence.findLastIndex(c => c.endpoint.startsWith('/firewalls/') && c.method === 'PUT');
   assert(fwPutIdx !== -1, 'Must update firewall via PUT /firewalls/:id in Step 5');
   const fwPutReq = callSequence[fwPutIdx];
   assert(fwPutReq.body.inbound_rules.length === 1, 'Updated firewall must have 1 inbound rule');
@@ -288,7 +288,8 @@ async function runTestSuite() {
         tier: 'ECONOMY', // Mismatched tier!
         region: 'nyc3',
         size: 's-1vcpu-1gb',
-        monthlyCostUsd: 6.0
+        monthlyCostUsd: 6.0,
+        hourlyCostUsd: 0.00893
       }
     });
   } catch (e) {
