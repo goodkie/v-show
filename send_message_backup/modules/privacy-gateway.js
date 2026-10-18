@@ -860,6 +860,39 @@
         }
 
         /**
+         * [Issue #6 Comment #6250195133 U1] Query Companion Recovery Journal Status (/recovery-status)
+         */
+        async getRecoveryStatus() {
+            const host = this.config.relayHost || '127.0.0.1';
+            const port = this.config.relayControlPort || 18989;
+            try {
+                const fetchFn = this._mockFetch !== undefined ? this._mockFetch : (typeof fetch !== 'undefined' ? fetch : null);
+                if (!fetchFn) return { success: false, reason: 'FETCH_UNAVAILABLE' };
+                const res = await fetchFn(`http://${host}:${port}/recovery-status`, {
+                    cache: 'no-store'
+                });
+                if (res.ok) {
+                    return await res.json();
+                }
+                // Fallback check /health
+                const healthRes = await fetchFn(`http://${host}:${port}/health`, { cache: 'no-store' });
+                if (healthRes.ok) {
+                    const healthData = await healthRes.json();
+                    if (healthData && healthData.recovery) {
+                        return { success: true, recovery: healthData.recovery };
+                    }
+                }
+                return { success: false, reason: `HTTP_${res.status}` };
+            } catch (e) {
+                return {
+                    success: false,
+                    error: 'PROVIDER_NETWORK_ERROR',
+                    reason: `Failed to connect to local companion on ${host}:${port}: ${e.message}`
+                };
+            }
+        }
+
+        /**
          * [Issue #6 R6.9G.10.3] Query Egress Node Resource Telemetry (/egress-telemetry)
          */
         async getEgressTelemetry(mock = false) {

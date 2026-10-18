@@ -1948,6 +1948,14 @@ async function hydrateSettings(overrideV2Store = null) {
             const authLabel = document.getElementById('wizard-auth-label');
             const createBtn = document.getElementById('wizard-create-btn');
             const destroyBtn = document.getElementById('wizard-destroy-btn');
+            const recoveryBanner = document.getElementById('wizard-recovery-banner');
+            const recoveryBadge = document.getElementById('wizard-recovery-badge');
+            const recoveryDetails = document.getElementById('wizard-recovery-details');
+            const recoveryCleanupBtn = document.getElementById('wizard-recovery-cleanup-btn');
+            const activeBanner = document.getElementById('wizard-active-banner');
+            const activeDetails = document.getElementById('wizard-active-details');
+            const activeKeepBtn = document.getElementById('wizard-active-keep-btn');
+            const activeDestroyBtn = document.getElementById('wizard-active-destroy-btn');
             const progressHud = document.getElementById('wizard-progress-hud');
             const progressTitle = document.getElementById('wizard-progress-title');
             const progressPercent = document.getElementById('wizard-progress-percent');
@@ -2051,6 +2059,85 @@ async function hydrateSettings(overrideV2Store = null) {
                 }
             };
 
+            // [U1 & U3 Hardening] Check and display recovery or active node status
+            const checkWizardRecoveryState = (onDone) => {
+                chrome.runtime.sendMessage({ action: 'GET_RECOVERY_STATUS' }, (res) => {
+                    const recovery = (res && res.success && res.recovery) ? res.recovery : null;
+                    if (!recovery) {
+                        if (recoveryBanner) recoveryBanner.style.display = 'none';
+                        if (activeBanner) activeBanner.style.display = 'none';
+                        if (typeof onDone === 'function') onDone(null);
+                        return;
+                    }
+
+                    if (recovery.recoveryRequired) {
+                        if (recoveryBanner) recoveryBanner.style.display = 'block';
+                        if (activeBanner) activeBanner.style.display = 'none';
+                        if (recoveryBadge) recoveryBadge.textContent = recovery.stage || 'RECOVERY REQUIRED';
+                        if (recoveryDetails) {
+                            const parts = [
+                                `Tag: ${recovery.transactionTag || 'N/A'}`,
+                                `Stage: ${recovery.stage || 'INTERRUPTED'}`,
+                                recovery.dropletId ? `Droplet ID: ${recovery.dropletId}` : null,
+                                recovery.firewallId ? `Firewall ID: ${recovery.firewallId}` : null,
+                                recovery.error ? `Error: ${recovery.error}` : null
+                            ].filter(Boolean);
+                            recoveryDetails.innerHTML = parts.join('<br>');
+                        }
+                        if (verifyBtn) {
+                            verifyBtn.disabled = true;
+                            verifyBtn.textContent = '🔒 BLOCKED: Recovery Required';
+                        }
+                        if (createBtn) {
+                            createBtn.disabled = true;
+                            createBtn.textContent = '🔒 BLOCKED: Clean Up Cloud Resources First';
+                        }
+                        if (stepBContainer) {
+                            stepBContainer.style.opacity = '0.5';
+                            stepBContainer.style.pointerEvents = 'none';
+                        }
+                        if (authCheck) {
+                            authCheck.disabled = true;
+                            authCheck.checked = false;
+                        }
+                    } else if (recovery.status === 'ACTIVE' || recovery.activeNode) {
+                        if (recoveryBanner) recoveryBanner.style.display = 'none';
+                        if (activeBanner) activeBanner.style.display = 'block';
+                        const node = recovery.activeNode || recovery;
+                        if (activeDetails) {
+                            const parts = [
+                                `Droplet ID: ${node.dropletId || 'N/A'}`,
+                                `Public IP: ${node.publicIp || 'N/A'}`,
+                                `Tier: ${node.tier || 'N/A'} | Region: ${(node.region || 'NYC3').toUpperCase()}`,
+                                node.transactionTag ? `Tag: ${node.transactionTag}` : null
+                            ].filter(Boolean);
+                            activeDetails.innerHTML = parts.join('<br>');
+                        }
+                        if (createBtn) {
+                            createBtn.disabled = true;
+                            createBtn.textContent = '🔒 BLOCKED: Active Node Exists (Single-Owner Limit)';
+                        }
+                        if (stepBContainer) {
+                            stepBContainer.style.opacity = '0.5';
+                            stepBContainer.style.pointerEvents = 'none';
+                        }
+                        if (authCheck) {
+                            authCheck.disabled = true;
+                            authCheck.checked = false;
+                        }
+                    } else {
+                        if (recoveryBanner) recoveryBanner.style.display = 'none';
+                        if (activeBanner) activeBanner.style.display = 'none';
+                        if (verifyBtn && verifyBtn.textContent.includes('BLOCKED')) {
+                            verifyBtn.disabled = false;
+                            verifyBtn.textContent = '🔍 STEP A: VERIFY PLAN & PRICE (Zero Cloud Creation)';
+                        }
+                    }
+
+                    if (typeof onDone === 'function') onDone(recovery);
+                });
+            };
+
             window.openPrivateEgressWizard = () => {
                 // [P0 UI Fix - Issue #6 Comment #6231022137] Close settings overlay before opening wizard
                 const settingsOverlay = document.getElementById('settings-overlay');
@@ -2085,6 +2172,7 @@ async function hydrateSettings(overrideV2Store = null) {
                     verifyBtn.textContent = '🔍 STEP A: VERIFY PLAN & PRICE (Zero Cloud Creation)';
                 }
                 updatePlanUi(tierSelect ? tierSelect.value : 'ULTRA_ECONOMY');
+                checkWizardRecoveryState();
                 pollTelemetry();
             };
 
@@ -2353,11 +2441,16 @@ async function hydrateSettings(overrideV2Store = null) {
                                 }
                                 if (createBtn) createBtn.disabled = true;
                                 alert(`Provisioning aborted due to price quote change:\n\n${err}\n\nPlease re-run Step A to confirm current live pricing.`);
+                            } else if (err.includes('ACTIVE_NODE_EXISTS')) {
+                                alert(`Provisioning blocked: An active private egress node already exists.\n\nIn single-owner mode, you must destroy the existing node before creating a new one.`);
+                            } else if (err.includes('TRANSACTION_COLLISION')) {
+                                alert(`Provisioning blocked: An unrecovered transaction is in progress.\n\nPlease clean up unrecovered resources using the Recovery banner.`);
                             } else if (err.includes('TOKEN_SCOPE_MISSING') || err.includes('403') || err.includes('scope')) {
                                 alert(`Provisioning aborted due to missing token scopes:\n\n${err}\n\nPlease verify that your DigitalOcean token has all required scopes:\n- Droplet: Create, Read, Delete\n- Firewall: Create, Read, Update, Delete (specifically firewall:update)\n- Tag: Create, Read, Delete (specifically tag:delete)\n- SSH Key: Create, Read, Delete\n- Account: Read`);
                             } else {
                                 alert(`Provisioning failed: ${err}`);
                             }
+                            checkWizardRecoveryState();
                             return;
                         }
 
@@ -2389,6 +2482,7 @@ async function hydrateSettings(overrideV2Store = null) {
                             const reason = prepResult?.reason || 'ENSURE_ENFORCED_PRIVACY_BLOCKED';
                             addLog(`❌ [AUTHORITATIVE_PREFLIGHT_FAIL] Layer 2 PrivacyGateway blocked start: ${reason}`, 'error');
                             alert(`🛑 [AUTHORITATIVE PRIVACY GATE BLOCKED]\n\nCompanion node active, but Extension PrivacyGateway blocked strict privacy.\n\nReason: ${reason}`);
+                            checkWizardRecoveryState();
                             return;
                         }
 
@@ -2413,6 +2507,7 @@ async function hydrateSettings(overrideV2Store = null) {
                             const reason = pfResult?.reason || 'DIRECT_FALLBACK_NOT_BLOCKED';
                             addLog(`❌ [AUTHORITATIVE_PREFLIGHT_FAIL] Layer 2 Preflight failed or direct fallback unblocked: ${reason}`, 'error');
                             alert(`🛑 [AUTHORITATIVE PREFLIGHT BLOCKED]\n\nPrivacyGateway check failed:\nReason: ${reason}\nDirect Fallback Blocked: ${pfResult?.directFallbackBlocked}`);
+                            checkWizardRecoveryState();
                             return;
                         }
 
@@ -2426,8 +2521,64 @@ async function hydrateSettings(overrideV2Store = null) {
                         if (typeof updatePrivacyHud === 'function') updatePrivacyHud();
 
                         alert(`✅ Private Egress successfully deployed & authoritative preflight VERIFIED!\nIP: ${res.result.publicIp}\nTier: ${res.result.tier} (~$${res.result.monthlyCostUsd}/mo)\n\nBoth Companion & Extension PrivacyGateway gates verified: Strict Privacy is READY.`);
+                        checkWizardRecoveryState();
                         pollTelemetry();
                     });
+                };
+            }
+
+            if (recoveryCleanupBtn) {
+                recoveryCleanupBtn.onclick = () => {
+                    const token = tokenInput ? tokenInput.value.trim() : '';
+                    const tokenToUse = token || prompt('Enter DigitalOcean API token to clean up exact unrecovered resources:');
+                    if (!tokenToUse) return;
+
+                    recoveryCleanupBtn.disabled = true;
+                    recoveryCleanupBtn.textContent = '⏳ Cleaning up cloud resources...';
+
+                    chrome.runtime.sendMessage({ action: 'GET_RECOVERY_STATUS' }, (stRes) => {
+                        const curRec = stRes?.recovery;
+                        const payload = { token: tokenToUse };
+                        if (curRec && curRec.transactionTag) payload.transactionTag = curRec.transactionTag;
+                        if (curRec && curRec.dropletId) payload.dropletId = curRec.dropletId;
+                        if (curRec && curRec.firewallId) payload.firewallId = curRec.firewallId;
+
+                        chrome.runtime.sendMessage({
+                            action: 'DESTROY_PRIVATE_EGRESS',
+                            payload
+                        }, (res) => {
+                            recoveryCleanupBtn.disabled = false;
+                            recoveryCleanupBtn.textContent = '🗑️ RECOVER / CLEAN UP EXACT RESOURCES';
+
+                            if (res && res.success && res.result && res.result.success) {
+                                addLog(`🗑️ [RECOVERY_CLEANUP] Exact cloud resources cleaned up: Droplet ${res.result.destroyedDropletId || 'none'}, Firewall ${res.result.destroyedFirewallId || 'none'}`, 'success');
+                                alert('Recovery cleanup succeeded! Unrecovered cloud resources were destroyed and journal reset. You may now start a clean provisioning.');
+                                checkWizardRecoveryState();
+                                if (typeof refreshRelayNodes === 'function') refreshRelayNodes();
+                                if (typeof refreshRelayStatus === 'function') refreshRelayStatus();
+                                if (typeof updatePrivacyHud === 'function') updatePrivacyHud();
+                            } else {
+                                const err = (res && res.result && res.result.reason) || (res && res.error) || 'Cleanup failed';
+                                addLog(`❌ [RECOVERY_CLEANUP_FAIL] ${err}`, 'error');
+                                alert(`Recovery cleanup failed: ${err}`);
+                            }
+                        });
+                    });
+                };
+            }
+
+            if (activeKeepBtn) {
+                activeKeepBtn.onclick = () => {
+                    modal.style.display = 'none';
+                    modal.classList.add('hidden');
+                };
+            }
+
+            if (activeDestroyBtn) {
+                activeDestroyBtn.onclick = () => {
+                    if (destroyBtn) {
+                        destroyBtn.click();
+                    }
                 };
             }
 
@@ -2457,6 +2608,7 @@ async function hydrateSettings(overrideV2Store = null) {
                             if (typeof refreshRelayNodes === 'function') refreshRelayNodes();
                             if (typeof refreshRelayStatus === 'function') refreshRelayStatus();
                             if (typeof updatePrivacyHud === 'function') updatePrivacyHud();
+                            checkWizardRecoveryState();
                         } else {
                             const err = (res && res.result && res.result.reason) || (res && res.error) || 'Teardown failed';
                             alert(`Destroy failed: ${err}`);

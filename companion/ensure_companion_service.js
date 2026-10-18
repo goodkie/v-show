@@ -20,7 +20,7 @@ const fs = require('fs');
 const path = require('path');
 const { spawn, execSync } = require('child_process');
 
-const EXPECTED_BUILD_ID = 'R6.9G.10.3.7.1.4.16-20261017-PRIVATE-EGRESS-RC3.2';
+const EXPECTED_BUILD_ID = 'R6.9G.10.3.7.1.4.20-20261018-PRIVATE-EGRESS-RC3.6';
 const REQUIRED_CAPABILITIES = ['verify-plan', 'provision-egress', 'provision-progress', 'recovery-status'];
 
 const COMPANION_DIR = __dirname;
