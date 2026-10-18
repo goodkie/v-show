@@ -48,7 +48,7 @@ const TOKEN_FILE = path.join(__dirname, '.control_token');
 
 // [Defect Q2 Hardening - Issue #6 Comment #6244711545] Authoritative companion build identity & capabilities
 const COMPANION_BUILD_ID = 'R6.9G.10.3.7.1.4.16-20261017-PRIVATE-EGRESS-RC3.2';
-const COMPANION_IMPLEMENTATION_HEAD = '3cad7043a0077e77bb2981669d4a584da08cde1b';
+const COMPANION_IMPLEMENTATION_HEAD = '4919d0c4c8bf180fb967f8125f186350b3c5edf3';
 const COMPANION_API_CAPABILITIES = [
   'verify-plan',
   'provision-egress',
