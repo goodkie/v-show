@@ -9,8 +9,8 @@
 - State Rev: 2026-10-18.29
 - Authority Cursor: 6254474554
 - Last Directive / Audit: Owner Directives & Cloud Console Check #6254193526, #6254254711, #6254474554 (`[OWNER MANUAL CLOUD CONSOLE CHECK][RC3.8]` — Droplets = 0, Firewalls = 0; Keep Step B on HOLD; implement RC3.9 closing X1 - X6)
-- Last Receipt: Receipt #6254100968 (`[ANTIGRAVITY][RC3.8 DIGITALOCEAN FIREWALL PORT-SCHEMA CLOSURE RECEIPT]`)
-- Current Target Receipt: `[ANTIGRAVITY][RC3.9 CANARY TLS-LAYER + EVENTUAL-DELETE CLOSURE RECEIPT]`
+- Last Receipt: Receipt #6254860182 (https://github.com/goodkie/v-show/issues/6#issuecomment-6254860182 — `[ANTIGRAVITY][RC3.9 CANARY TLS-LAYER + EVENTUAL-DELETE CLOSURE RECEIPT]`)
+- Current Target Receipt: `[ANTIGRAVITY][RC3.9 CANARY TLS-LAYER + EVENTUAL-DELETE CLOSURE RECEIPT]` (Posted #6254860182)
 - Build ID: `R6.9G.10.3.7.1.4.23-20261018-PRIVATE-EGRESS-RC3.9`
 - Current Candidate Release Tag: `v6.9g.10.3-rc3.9.7.1.4.23`
 - Functional Head Commit: `d45e1bc12994607185bd40638ff600edfe6d1955` (short: `d45e1bc1`)
