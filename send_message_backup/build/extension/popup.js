@@ -2432,7 +2432,7 @@ async function hydrateSettings(overrideV2Store = null) {
             if (destroyBtn) {
                 destroyBtn.onclick = () => {
                     const token = tokenInput ? tokenInput.value.trim() : '';
-                    const proceed = confirm('⚠️ WARNING: This will permanently delete all XPIDER droplets, firewalls, and keys in DigitalOcean tagged xpider-private-egress.\n\nAre you sure you want to proceed?');
+                    const proceed = confirm('⚠️ WARNING: This will permanently destroy your dedicated XPIDER Private Egress server and Cloud Firewall.\n\nAre you sure you want to proceed?');
                     if (!proceed) return;
 
                     const tokenToUse = token || prompt('Enter DigitalOcean API token to authorize teardown:');
