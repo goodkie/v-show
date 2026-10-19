@@ -2,7 +2,7 @@
  * pack_owner_beta_package.js
  *
  * Packages XPIDER AutoForm Sender Pro — OWNER BETA
- * Version: R6.9G.10.3.7.1.4.28-20261019-PRIVATE-EGRESS-RC3.14
+ * Version: R6.9G.10.3.7.1.4.29-20261019-PRIVATE-EGRESS-RC3.15
  * Per Issue #6 Owner Decision & ChatGPT Final Pre-Live Audit Directive (Comment #6250701581).
  *
  * Enforces V1, V2, V3 Secret and Packaging Hygiene:
