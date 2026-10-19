@@ -19,7 +19,7 @@ const SILENT_RUNNER_VBS = path.join(RELAY_DIR, 'start_relay_silent.vbs');
 const RELAY_SCRIPT = path.join(RELAY_DIR, 'privacy-relay-service.js');
 const TOKEN_FILE = path.join(RELAY_DIR, '.control_token');
 const EXPOSED_RC3_6_TOKEN_SHA256 = '597a70b99c11c7f4d13a075204ac240bb08a7a1d6c08c78268328e0bb59daeda';
-const COMPANION_BUILD_ID = 'R6.9G.10.3.7.1.4.28-20261019-PRIVATE-EGRESS-RC3.14';
+const COMPANION_BUILD_ID = 'R6.9G.10.3.7.1.4.29-20261019-PRIVATE-EGRESS-RC3.15';
 const CONTROL_PORT = 18989;
 const PROXY_PORT = 18988;
 
@@ -116,12 +116,20 @@ async function checkRelayHealth() {
 }
 
 async function startRelay() {
+  // [Issue #6 Comment #6261136757 DD3] Migrate active egress state from previous installation if needed
+  try {
+    const { migrateActiveEgressState } = require(path.join(RELAY_DIR, 'state-migrator'));
+    migrateActiveEgressState(RELAY_DIR);
+  } catch (_) {}
+
   const health = await checkRelayHealth();
-  if (health.running) {
+  const token = getControlToken();
+  if (health.running && token) {
     const d = health.health || {};
     const caps = Array.isArray(d.apiCapabilities) ? d.apiCapabilities : [];
-    if (caps.includes('verify-plan')) {
-      return { success: true, message: 'ALREADY_RUNNING', controlToken: getControlToken() };
+    const isCurrentBuild = (d.companionBuildId === COMPANION_BUILD_ID);
+    if (caps.includes('verify-plan') && isCurrentBuild) {
+      return { success: true, message: 'ALREADY_RUNNING', controlToken: token };
     }
   }
 
@@ -130,9 +138,9 @@ async function startRelay() {
     return new Promise((resolve) => {
       exec(`"${process.execPath}" "${ensureScript}"`, { cwd: path.resolve(RELAY_DIR, '..') }, (err, stdout, stderr) => {
         if (err) {
-          resolve({ success: false, error: (stderr || err.message).trim() });
+          resolve({ success: false, error: (stderr || err.message).trim(), stdout: stdout ? stdout.trim() : '' });
         } else {
-          resolve({ success: true, message: 'UPGRADED_AND_STARTED', controlToken: getControlToken() });
+          resolve({ success: true, message: 'UPGRADED_AND_STARTED', controlToken: getControlToken(), stdout: stdout ? stdout.trim() : '' });
         }
       });
     });
@@ -150,12 +158,12 @@ async function startRelay() {
               env: process.env
             });
             child.unref();
-            resolve({ success: true, message: 'SPAWNED_DETACHED' });
+            resolve({ success: true, message: 'SPAWNED_DETACHED', controlToken: getControlToken() });
           } catch (e) {
             resolve({ success: false, error: e.message });
           }
         } else {
-          resolve({ success: true, message: 'STARTED_VIA_VBS' });
+          resolve({ success: true, message: 'STARTED_VIA_VBS', controlToken: getControlToken() });
         }
       });
     } else {
@@ -166,7 +174,7 @@ async function startRelay() {
           env: process.env
         });
         child.unref();
-        resolve({ success: true, message: 'SPAWNED_DETACHED' });
+        resolve({ success: true, message: 'SPAWNED_DETACHED', controlToken: getControlToken() });
       } catch (e) {
         resolve({ success: false, error: e.message });
       }
@@ -208,42 +216,133 @@ async function handleMessage(msg) {
 
     case 'GET_TOKEN': {
       const token = getControlToken();
+      const health = await checkRelayHealth();
       return {
         action: 'TOKEN_RESPONSE',
+        success: !!token,
         controlToken: token,
         controlPort: CONTROL_PORT,
-        proxyPort: PROXY_PORT
+        proxyPort: PROXY_PORT,
+        nativeHostPath: __filename,
+        isRunning: health.running,
+        companionBuildId: health.health ? health.health.companionBuildId : null,
+        failureReason: !token ? 'CONTROL_TOKEN_FILE_MISSING' : null
       };
     }
 
     case 'STATUS': {
       const st = await checkRelayStatus();
       const token = getControlToken();
+      const health = await checkRelayHealth();
       return {
         action: 'STATUS_RESPONSE',
         ...st,
         controlToken: token,
         controlPort: CONTROL_PORT,
-        proxyPort: PROXY_PORT
+        proxyPort: PROXY_PORT,
+        nativeHostPath: __filename,
+        companionBuildId: health.health ? health.health.companionBuildId : null,
+        expectedBuildId: COMPANION_BUILD_ID,
+        failureReason: !st.running ? (st.reason || (st.statusCode ? `HTTP_${st.statusCode}` : 'PORT_UNREACHABLE')) : (!token ? 'AUTH_TOKEN_MISSING' : null)
       };
     }
 
     case 'START': {
+      // 1. Ensure state is migrated first
+      try {
+        const { migrateActiveEgressState } = require(path.join(RELAY_DIR, 'state-migrator'));
+        migrateActiveEgressState(RELAY_DIR);
+      } catch (_) {}
+
       const res = await startRelay();
-      // Poll up to 5 times for relay to become responsive
+      // Poll up to 10 times (up to 4s) for relay to become responsive AND have a valid token
       let verify = await checkRelayHealth();
-      for (let i = 0; i < 6 && !verify.running; i++) {
+      let token = getControlToken();
+      for (let i = 0; i < 10 && (!verify.running || !token); i++) {
         await new Promise(r => setTimeout(r, 400));
         verify = await checkRelayHealth();
+        token = getControlToken();
       }
-      const token = getControlToken();
+
+      const isRunning = verify.running;
+      const isCurrentBuild = verify.health && verify.health.companionBuildId === COMPANION_BUILD_ID;
+      const hasToken = !!token;
+      const isReady = isRunning && isCurrentBuild && hasToken;
+
+      let failureReason = null;
+      if (!isRunning) failureReason = 'COMPANION_PORT_UNREACHABLE';
+      else if (!isCurrentBuild) failureReason = 'STALE_COMPANION_BUILD_NOT_UPGRADED';
+      else if (!hasToken) failureReason = 'AUTH_TOKEN_MISSING';
+
       return {
         action: 'START_RESPONSE',
+        success: isReady,
         result: res,
-        isRunningNow: verify.running,
+        isRunningNow: isRunning,
+        isCurrentBuild,
+        companionBuildId: verify.health ? verify.health.companionBuildId : null,
+        expectedBuildId: COMPANION_BUILD_ID,
         controlToken: token,
         controlPort: CONTROL_PORT,
-        proxyPort: PROXY_PORT
+        proxyPort: PROXY_PORT,
+        nativeHostPath: __filename,
+        failureReason
+      };
+    }
+
+    case 'DIAGNOSTICS': {
+      const health = await checkRelayHealth();
+      const token = getControlToken();
+      const poolConfigPath = path.join(RELAY_DIR, 'egress_pool_config.json');
+      const txPath = path.join(RELAY_DIR, '.private_egress_transaction.json');
+
+      let poolNodesCount = 0;
+      let selectedEgressId = null;
+      let poolConfigExists = false;
+      try {
+        if (fs.existsSync(poolConfigPath)) {
+          poolConfigExists = true;
+          const p = JSON.parse(fs.readFileSync(poolConfigPath, 'utf8'));
+          poolNodesCount = Array.isArray(p.nodes) ? p.nodes.length : 0;
+          selectedEgressId = p.selectedEgressId || null;
+        }
+      } catch (_) {}
+
+      let txExists = false;
+      let txStatus = null;
+      let txStage = null;
+      let txPublicIp = null;
+      try {
+        if (fs.existsSync(txPath)) {
+          txExists = true;
+          const t = JSON.parse(fs.readFileSync(txPath, 'utf8'));
+          txStatus = t.status || null;
+          txStage = t.stage || null;
+          txPublicIp = t.publicIp || null;
+        }
+      } catch (_) {}
+
+      return {
+        action: 'DIAGNOSTICS_RESPONSE',
+        success: true,
+        nativeHostPath: __filename,
+        relayDir: RELAY_DIR,
+        companionBuildId: health.health ? health.health.companionBuildId : null,
+        expectedBuildId: COMPANION_BUILD_ID,
+        isCurrentBuild: health.health ? (health.health.companionBuildId === COMPANION_BUILD_ID) : false,
+        controlPort: CONTROL_PORT,
+        proxyPort: PROXY_PORT,
+        port18989Health: health.running ? 'LISTENING_HTTP_200' : 'UNREACHABLE',
+        hasControlToken: !!token,
+        tokenLength: token ? token.length : 0,
+        poolConfigExists,
+        poolNodesCount,
+        selectedEgressId,
+        txExists,
+        txStatus,
+        txStage,
+        txPublicIp,
+        nodeVersion: process.version
       };
     }
 

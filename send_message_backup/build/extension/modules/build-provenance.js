@@ -29,16 +29,16 @@
         builtAt: '2026-10-19T05:40:12.789Z',
         provenanceSchema: 2,
         modules: {
-            backgroundSha: 'd8d82f209ca7429b38c911a98d5ce39be40891d2c534611cf5276eb9f238687f',
+            backgroundSha: 'cee8f6b8ab4496644128134f94ad1a534ef5fe462f31186d186549a1f2da34c8',
             contentScriptSha: 'a6a34d79c4da791a245b16709f8976fb88418ef4f8398cd3b19df1c52bced270',
-            popupSha: 'b8393c4b6b78b2b49270f90f592eba218a0bb59c315a7303fd0025f71cdb0625',
+            popupSha: '9b0e5e2a24a176b22f3d064675f59140d07619f12c62fa7150b1e4d81a00723f',
             solverContentSha: 'd7de969d29df29799537b11380f0f82967bb93da227c91e7dc8c6af0d128f457',
             solverCoreSha: '01b3d96048ea933403e4599854dcdca28027e7f676aa5077eb6c5eb0582ac1e7',
             emailCollectorSha: '3f1147a379e159e7777158f2caa74cc8d40b2a0b0eb2c244f440af379cb5c9c9',
             historyStoreSha: '0dc2fbda1b1506de9394f87a965ff2ebd5721ea1c47d7bda07c9411193890d8c',
             contactGateSha: '0d01acb2d0a9448d154353fac5b527c17afa42fed56c68d6a49b39053629bd7d',
             visionSubmitSha: '25cf18a4834bb476edff5e8f19a78dd2723bd556ede649ada69bc801543c83f3',
-            privacyGatewaySha: '9373629c8bfd788142eb646ab4ad0e0673db25222aab0109146e20768d723b41'
+            privacyGatewaySha: '81cef84aa7f93bff0d26c132330601e06b534157d0206410b8e20a27ac5ae6e8'
         }
     };
 

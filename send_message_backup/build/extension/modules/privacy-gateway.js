@@ -469,19 +469,33 @@
             const port = this.config.relayControlPort || 18989;
             try {
                 const fetchFn = this._mockFetch !== undefined ? this._mockFetch : (typeof fetch !== 'undefined' ? fetch : null);
-                if (!fetchFn) return { success: false, reason: 'FETCH_UNAVAILABLE' };
+                if (!fetchFn) return { success: false, reason: 'FETCH_UNAVAILABLE', failureReason: 'FETCH_UNAVAILABLE' };
                 const headers = this.getRelayAuthHeaders();
-                const res = await fetchFn(`http://${host}:${port}/status`, {
+                let res = await fetchFn(`http://${host}:${port}/status`, {
                     cache: 'no-store',
                     headers
                 });
+                if (res.status === 401) {
+                    // Try to retrieve token via Native Messaging and retry once
+                    const fetchedToken = await this.fetchRelayControlToken();
+                    if (fetchedToken) {
+                        res = await fetchFn(`http://${host}:${port}/status`, {
+                            cache: 'no-store',
+                            headers: this.getRelayAuthHeaders()
+                        });
+                    }
+                }
                 if (res.ok) {
                     const data = await res.json();
                     return { success: true, status: data };
                 }
-                return { success: false, reason: `HTTP_${res.status}` };
+                const reason = `HTTP_${res.status}`;
+                const failureReason = res.status === 401 ? 'HTTP_401_UNAUTHORIZED' : (res.status === 502 ? 'HTTP_502_BAD_GATEWAY' : reason);
+                return { success: false, reason, failureReason };
             } catch (e) {
-                return { success: false, reason: e.message };
+                const isConnErr = e.message && (e.message.includes('Failed to fetch') || e.message.includes('ECONNREFUSED') || e.message.includes('NetworkError'));
+                const failureReason = isConnErr ? 'PORT_18989_REFUSED_OR_OFFLINE' : (e.message || 'NETWORK_ERROR');
+                return { success: false, reason: e.message, failureReason };
             }
         }
 

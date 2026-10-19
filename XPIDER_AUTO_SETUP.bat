@@ -89,6 +89,12 @@ if exist "companion\install_native_host.js" (
 )
 
 echo.
+echo [2.5/4] Preserving and Migrating Active Private Egress State...
+if exist "companion\state-migrator.js" (
+    "%XPIDER_NODE%" companion\state-migrator.js
+)
+
+echo.
 echo [3/4] Verifying, Upgrading, and Starting Privacy Relay Companion (Ports 18988 / 18989)...
 if exist "companion\ensure_companion_service.js" (
     "%XPIDER_NODE%" companion\ensure_companion_service.js

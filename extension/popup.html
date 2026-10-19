@@ -916,6 +916,21 @@
                                 <div style="display: flex; gap: 6px; margin-bottom: 6px;">
                                     <button type="button" id="priv-relay-rotate-btn" class="primary-btn-small" style="flex: 1; padding: 4px 8px; font-size: 10px; background: #0284c7; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">🔄 Rotate Egress Now</button>
                                     <button type="button" id="priv-relay-repair-btn" class="secondary-btn-small" style="padding: 4px 8px; font-size: 10px; background: #1e293b; color: #38bdf8; border: 1px solid #38bdf8; border-radius: 4px; cursor: pointer;">⚡ Start / Repair</button>
+                                    <button type="button" id="priv-relay-diag-toggle-btn" class="secondary-btn-small" style="padding: 4px 6px; font-size: 10px; background: #0f172a; color: #94a3b8; border: 1px solid #475569; border-radius: 4px; cursor: pointer;" title="Toggle Diagnostics">🔍 Diag</button>
+                                </div>
+
+                                <!-- [Issue #6 DD4] Owner-Visible Diagnostics Box -->
+                                <div id="priv-relay-diagnostics-box" style="display: none; margin-bottom: 6px; padding: 6px 8px; font-size: 10px; background: rgba(15, 23, 42, 0.95); border: 1px solid #38bdf8; border-radius: 4px; font-family: monospace;">
+                                    <div style="font-weight: 700; color: #38bdf8; margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center;">
+                                        <span>🔍 COMPANION DIAGNOSTICS</span>
+                                        <button type="button" id="priv-relay-diag-refresh-btn" style="background: none; border: none; color: #38bdf8; font-size: 9px; cursor: pointer; text-decoration: underline;">Refresh</button>
+                                    </div>
+                                    <div style="color: #94a3b8; margin-bottom: 2px;">Native Host: <span id="priv-diag-native-host" style="color: #cbd5e1; word-break: break-all;">—</span></div>
+                                    <div style="color: #94a3b8; margin-bottom: 2px;">Companion Build: <span id="priv-diag-companion-build" style="color: #cbd5e1;">—</span></div>
+                                    <div style="color: #94a3b8; margin-bottom: 2px;">Port 18989 Health: <span id="priv-diag-port-health" style="color: #cbd5e1;">—</span></div>
+                                    <div style="color: #94a3b8; margin-bottom: 2px;">Auth Token: <span id="priv-diag-auth-token" style="color: #cbd5e1;">—</span></div>
+                                    <div style="color: #94a3b8; margin-bottom: 2px;">Pool Config: <span id="priv-diag-pool-state" style="color: #cbd5e1;">—</span></div>
+                                    <div style="color: #94a3b8;">Status / Fault: <span id="priv-diag-failure-reason" style="color: #f87171; font-weight: 700;">—</span></div>
                                 </div>
                                 <p class="settings-subtip" style="color: #94a3b8; font-size: 9px; line-height: 1.3; margin: 4px 0 0 0;">
                                     Changing egress IPs can reduce long-lived network linkability, but it does not make the browser anonymous by itself. Cookies, accounts, browser fingerprinting, and form content can still identify a session.

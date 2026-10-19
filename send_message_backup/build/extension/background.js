@@ -3199,12 +3199,59 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
             (async () => {
                 try {
                     const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
-                    if (!pg) return sendResponse({ success: false, error: 'PrivacyGateway unavailable' });
+                    if (!pg) return sendResponse({ success: false, error: 'PrivacyGateway unavailable', failureReason: 'GATEWAY_UNAVAILABLE' });
                     const res = await pg.queryRelayStatus();
-                    sendResponse({ success: true, result: res });
+                    sendResponse({
+                        success: res.success,
+                        result: res,
+                        error: res.reason,
+                        failureReason: res.failureReason || res.reason
+                    });
                 } catch (e) {
-                    sendResponse({ success: false, error: e.message });
+                    sendResponse({ success: false, error: e.message, failureReason: 'EXCEPTION' });
                 }
+            })();
+            return true;
+        }
+
+        case 'QUERY_PRIVACY_RELAY_DIAGNOSTICS': {
+            (async () => {
+                const report = {
+                    nativeHost: null,
+                    port18989Health: null,
+                    hasTokenInMemory: false,
+                    failureReason: null
+                };
+                const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+                if (pg) {
+                    report.hasTokenInMemory = Boolean(pg.ephemeralRelayToken);
+                }
+                if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendNativeMessage) {
+                    try {
+                        const nativeDiag = await new Promise((resolve) => {
+                            chrome.runtime.sendNativeMessage('com.xpider.privacy_relay', { action: 'DIAGNOSTICS' }, (res) => {
+                                if (chrome.runtime.lastError) {
+                                    return resolve({ success: false, error: chrome.runtime.lastError.message });
+                                }
+                                resolve(res || { success: false, error: 'EMPTY_RESPONSE' });
+                            });
+                        });
+                        report.nativeHost = nativeDiag;
+                    } catch (err) {
+                        report.nativeHost = { success: false, error: err.message };
+                    }
+                }
+                try {
+                    const healthResp = await fetch('http://127.0.0.1:18989/health', { cache: 'no-store' });
+                    if (healthResp.ok) {
+                        report.port18989Health = { ok: true, status: healthResp.status, data: await healthResp.json() };
+                    } else {
+                        report.port18989Health = { ok: false, status: healthResp.status };
+                    }
+                } catch (e) {
+                    report.port18989Health = { ok: false, error: e.message };
+                }
+                sendResponse({ success: true, report });
             })();
             return true;
         }
@@ -3328,9 +3375,12 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                     try {
                         chrome.runtime.sendNativeMessage('com.xpider.privacy_relay', { action: 'START' }, (response) => {
                             if (chrome.runtime.lastError) {
-                                return sendResponse({ success: false, error: chrome.runtime.lastError.message });
+                                return sendResponse({ success: false, error: chrome.runtime.lastError.message, failureReason: 'NATIVE_HOST_NOT_REGISTERED' });
                             }
-                            if (response && response.controlToken) {
+                            if (!response) {
+                                return sendResponse({ success: false, error: 'NO_RESPONSE_FROM_NATIVE_HOST', failureReason: 'NATIVE_HOST_EMPTY_RESPONSE' });
+                            }
+                            if (response.controlToken) {
                                 const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
                                 if (pg) {
                                     pg.ephemeralRelayToken = response.controlToken;
@@ -3338,14 +3388,22 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                                     pg.saveConfig({ relayControlToken: response.controlToken });
                                 }
                             }
+                            if (response.success === false || response.isRunningNow === false) {
+                                return sendResponse({
+                                    success: false,
+                                    error: response.failureReason || (response.result && response.result.error) || 'START_FAILED',
+                                    failureReason: response.failureReason || 'START_FAILED',
+                                    response
+                                });
+                            }
                             sendResponse({ success: true, response });
                         });
                         return;
                     } catch (err) {
-                        return sendResponse({ success: false, error: err.message });
+                        return sendResponse({ success: false, error: err.message, failureReason: 'NATIVE_EXCEPTION' });
                     }
                 }
-                sendResponse({ success: false, error: 'NATIVE_MESSAGING_UNSUPPORTED' });
+                sendResponse({ success: false, error: 'NATIVE_MESSAGING_UNSUPPORTED', failureReason: 'NATIVE_MESSAGING_UNSUPPORTED' });
             })();
             return true;
         }

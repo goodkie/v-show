@@ -21,7 +21,7 @@ const path = require('path');
 const { spawn, execSync } = require('child_process');
 const crypto = require('crypto');
 
-const EXPECTED_BUILD_ID = 'R6.9G.10.3.7.1.4.28-20261019-PRIVATE-EGRESS-RC3.14';
+const EXPECTED_BUILD_ID = 'R6.9G.10.3.7.1.4.29-20261019-PRIVATE-EGRESS-RC3.15';
 const REQUIRED_CAPABILITIES = ['verify-plan', 'provision-egress', 'provision-progress', 'recovery-status'];
 
 const COMPANION_DIR = __dirname;
@@ -214,6 +214,18 @@ async function terminateStaleCompanion(reportedPid) {
 async function main() {
   console.log('   [COMPANION_CHECK] Checking Privacy Relay Companion status on 127.0.0.1:18989...');
 
+  // [Issue #6 Comment #6261136757 DD3] Migrate active egress state from previous installation if needed
+  try {
+    const { migrateActiveEgressState } = require('./state-migrator');
+    const migResult = migrateActiveEgressState(COMPANION_DIR);
+    if (migResult && migResult.migrated) {
+      console.log(`   [STATE_MIGRATION] Migrated active private egress state from: ${migResult.sourceDir}`);
+      console.log(`                     Nodes: ${migResult.nodesMigrated}, Public IP: ${migResult.publicIp}, Tx: ${migResult.transactionTag}`);
+    }
+  } catch (migErr) {
+    console.warn(`   [STATE_MIGRATION] State migration notice: ${migErr.message}`);
+  }
+
   const health = await probeHealth(1500);
 
   if (health.ok && health.data && health.data.service === 'XPIDER Privacy Relay') {
@@ -221,8 +233,9 @@ async function main() {
     const caps = Array.isArray(d.apiCapabilities) ? d.apiCapabilities : [];
     const hasRequiredCaps = REQUIRED_CAPABILITIES.every(c => caps.includes(c));
     const isCurrentBuild = (d.companionBuildId === EXPECTED_BUILD_ID);
+    const currentToken = getControlToken();
 
-    if (hasRequiredCaps && isCurrentBuild) {
+    if (hasRequiredCaps && isCurrentBuild && currentToken) {
       console.log(`   [OK] Privacy Relay Companion is ALREADY RUNNING and verified current (Build: ${d.companionBuildId}, PID: ${d.pid || 'unknown'}).`);
       if (d.recovery && d.recovery.recoveryRequired) {
         console.warn(`   [RECOVERY_ALERT] Incomplete private-egress transaction found in journal (${d.recovery.transactionTag}, stage: ${d.recovery.stage}). Cleanup/recovery required.`);
@@ -230,9 +243,10 @@ async function main() {
       process.exit(0);
     }
 
-    console.log(`   [UPGRADE] Stale Companion detected on port 18989:`);
-    console.log(`             Current: ${d.companionBuildId || 'legacy-unversioned'} (Capabilities: ${caps.join(', ') || 'none'})`);
-    console.log(`             Expected: ${EXPECTED_BUILD_ID} (Capabilities: ${REQUIRED_CAPABILITIES.join(', ')})`);
+    console.log(`   [UPGRADE] Stale or unauthenticated Companion detected on port 18989:`);
+    console.log(`             Current: ${d.companionBuildId || 'legacy-unversioned'} (Expected: ${EXPECTED_BUILD_ID})`);
+    console.log(`             Capabilities: [${caps.join(', ') || 'none'}] (Required: [${REQUIRED_CAPABILITIES.join(', ')}])`);
+    console.log(`             Local Control Token: ${currentToken ? 'PRESENT' : 'MISSING (Unauthenticated)'}`);
     console.log(`   [UPGRADE] Upgrading to current build...`);
 
     const released = await terminateStaleCompanion(d.pid);
@@ -265,10 +279,13 @@ async function main() {
       const d = check.data;
       const caps = Array.isArray(d.apiCapabilities) ? d.apiCapabilities : [];
       const hasCaps = REQUIRED_CAPABILITIES.every(c => caps.includes(c));
+      const isCurrent = (d.companionBuildId === EXPECTED_BUILD_ID);
+      const token = getControlToken();
 
-      if (hasCaps) {
+      if (hasCaps && isCurrent && token) {
         console.log(`   [OK] Privacy Relay Companion successfully bound ports and verified healthy (PID: ${d.pid || 'unknown'}, Build: ${d.companionBuildId || EXPECTED_BUILD_ID}).`);
         console.log(`   [OK] Verified API Capabilities: [${caps.join(', ')}]`);
+        console.log(`   [OK] Local control token verified (${token.length} chars).`);
         if (d.recovery && d.recovery.recoveryRequired) {
           console.warn(`   [RECOVERY_ALERT] Incomplete private-egress transaction found in journal (${d.recovery.transactionTag}, stage: ${d.recovery.stage}). Cleanup/recovery required.`);
         }

@@ -49,7 +49,7 @@ const TOKEN_FILE = path.join(__dirname, '.control_token');
 const EXPOSED_RC3_6_TOKEN_SHA256 = '597a70b99c11c7f4d13a075204ac240bb08a7a1d6c08c78268328e0bb59daeda';
 
 // [Defect Q2 Hardening - Issue #6 Comment #6244711545] Authoritative companion build identity & capabilities
-const COMPANION_BUILD_ID = 'R6.9G.10.3.7.1.4.28-20261019-PRIVATE-EGRESS-RC3.14';
+const COMPANION_BUILD_ID = 'R6.9G.10.3.7.1.4.29-20261019-PRIVATE-EGRESS-RC3.15';
 const COMPANION_IMPLEMENTATION_HEAD = '0e0d6522c3f9093a1ae90eb36cca40f2cf4cf8e1';
 
 function isCompatibleExtensionBuild(extBuildId, companionBuildId) {
@@ -119,7 +119,7 @@ class PrivacyRelayService {
   constructor(options = {}) {
     this.options = options;
     this.controlPort = options.controlPort || CONTROL_PORT;
-    this.proxyPort = options.proxyPort || PROXY_PORT;
+    this.proxyPort = options.proxyPort || options.listenPort || PROXY_PORT;
     this.canaryUrl = options.canaryUrl || null;
     this.allowedExtensionId = options.allowedExtensionId || process.env.XPIDER_ALLOWED_EXT_ID || discoverExtensionId(__dirname) || null;
     this.healthTtlMs = options.healthTtlMs || 60000;
@@ -128,6 +128,7 @@ class PrivacyRelayService {
     this.healthRefreshTimer = null;
     this.isRefreshingHealth = false;
     this.configFile = options.configFile || CONFIG_FILE;
+    this.tokenFile = options.tokenFile || (options.configFile ? path.join(path.dirname(options.configFile), '.control_token') : TOKEN_FILE);
     this.startTime = Date.now();
     this.activeNodeIndex = 0;
     this.rotationCount = 0;
@@ -220,14 +221,15 @@ class PrivacyRelayService {
         return envToken;
       }
     }
+    const tokenFile = this.tokenFile || (this.configFile ? path.join(path.dirname(this.configFile), '.control_token') : TOKEN_FILE);
     try {
-      if (fs.existsSync(TOKEN_FILE)) {
-        const token = fs.readFileSync(TOKEN_FILE, 'utf8').trim();
+      if (fs.existsSync(tokenFile)) {
+        const token = fs.readFileSync(tokenFile, 'utf8').trim();
         const hash = crypto.createHash('sha256').update(token).digest('hex');
         if (hash === EXPOSED_RC3_6_TOKEN_SHA256) {
           this.log('[SECURITY_ROTATION] Detected exposed RC3.6 control token in .control_token file; purging and rotating to fresh token');
           try {
-            fs.unlinkSync(TOKEN_FILE);
+            fs.unlinkSync(tokenFile);
           } catch (_) {}
         } else if (token && token.length >= 32) {
           return token;
@@ -237,7 +239,7 @@ class PrivacyRelayService {
 
     const newToken = crypto.randomBytes(32).toString('hex');
     try {
-      fs.writeFileSync(TOKEN_FILE, newToken, { encoding: 'utf8', mode: 0o600 });
+      fs.writeFileSync(tokenFile, newToken, { encoding: 'utf8', mode: 0o600 });
     } catch (_) {}
     return newToken;
   }
@@ -287,9 +289,32 @@ class PrivacyRelayService {
 
   loadConfig() {
     try {
+      if (!fs.existsSync(this.configFile)) {
+        if (!this.disableAutoMigration) {
+          try {
+            const { migrateActiveEgressState } = require('./state-migrator');
+            migrateActiveEgressState(path.dirname(this.configFile));
+          } catch (_) {}
+        }
+      }
+
       if (fs.existsSync(this.configFile)) {
         const data = fs.readFileSync(this.configFile, 'utf8');
         const parsed = JSON.parse(data);
+        if ((!parsed.nodes || parsed.nodes.length === 0) && !this.disableAutoMigration) {
+          try {
+            const { migrateActiveEgressState } = require('./state-migrator');
+            const mig = migrateActiveEgressState(path.dirname(this.configFile));
+            if (mig && mig.migrated) {
+              const refreshedData = fs.readFileSync(this.configFile, 'utf8');
+              return {
+                ...DEFAULT_POOL,
+                ...JSON.parse(refreshedData),
+                physicalGate: { ...DEFAULT_POOL.physicalGate }
+              };
+            }
+          } catch (_) {}
+        }
         return {
           ...DEFAULT_POOL,
           ...parsed,
@@ -327,6 +352,10 @@ class PrivacyRelayService {
         }
       };
       fs.writeFileSync(this.configFile, JSON.stringify(toSave, null, 2), 'utf8');
+      try {
+        const { mirrorStateToGlobalBackup } = require('./state-migrator');
+        mirrorStateToGlobalBackup(path.dirname(this.configFile));
+      } catch (_) {}
       return true;
     } catch (e) {
       this.log(`Failed to save config: ${e.message}`);

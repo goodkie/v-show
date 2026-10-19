@@ -932,6 +932,10 @@ class PrivateEgressProvisioner {
 
   saveTransactionOwnership(data) {
     this.updateTransactionJournal(data);
+    try {
+      const { mirrorStateToGlobalBackup } = require('./state-migrator');
+      mirrorStateToGlobalBackup(__dirname);
+    } catch (_) {}
   }
 
   loadTransactionOwnership() {
@@ -940,6 +944,12 @@ class PrivateEgressProvisioner {
     }
     try {
       const p = path.resolve(__dirname, '.private_egress_transaction.json');
+      if (!fs.existsSync(p)) {
+        try {
+          const { migrateActiveEgressState } = require('./state-migrator');
+          migrateActiveEgressState(__dirname);
+        } catch (_) {}
+      }
       if (fs.existsSync(p)) {
         return JSON.parse(fs.readFileSync(p, 'utf8'));
       }

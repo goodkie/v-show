@@ -1691,6 +1691,74 @@ async function hydrateSettings(overrideV2Store = null) {
         const relayRotateBtn = document.getElementById('priv-relay-rotate-btn');
         const relayRepairBtn = document.getElementById('priv-relay-repair-btn');
 
+        // [Issue #6 DD4] Diagnostics Box Elements
+        const relayDiagToggleBtn = document.getElementById('priv-relay-diag-toggle-btn');
+        const relayDiagBox = document.getElementById('priv-relay-diagnostics-box');
+        const relayDiagRefreshBtn = document.getElementById('priv-relay-diag-refresh-btn');
+        const privDiagHost = document.getElementById('priv-diag-native-host');
+        const privDiagBuild = document.getElementById('priv-diag-companion-build');
+        const privDiagHealth = document.getElementById('priv-diag-port-health');
+        const privDiagToken = document.getElementById('priv-diag-auth-token');
+        const privDiagPool = document.getElementById('priv-diag-pool-state');
+        const privDiagFailure = document.getElementById('priv-diag-failure-reason');
+
+        const fetchAndRenderDiagnostics = (failureHint = null) => {
+            chrome.runtime.sendMessage({ action: 'QUERY_PRIVACY_RELAY_DIAGNOSTICS' }, (res) => {
+                if (!res || !res.report) return;
+                const r = res.report;
+                const nh = r.nativeHost || {};
+                const ph = r.port18989Health || {};
+
+                if (privDiagHost) {
+                    privDiagHost.textContent = nh.nativeHostPath || nh.error || 'Not registered / unavailable';
+                }
+                if (privDiagBuild) {
+                    const b = nh.companionBuildId || (ph.data && ph.data.companionBuildId) || 'Unknown';
+                    const exp = nh.expectedBuildId || 'R6.9G.10.3.7.1.4.29-20261019-PRIVATE-EGRESS-RC3.15';
+                    privDiagBuild.textContent = `${b} ${b === exp ? '✓' : `(Expected: ${exp})`}`;
+                }
+                if (privDiagHealth) {
+                    privDiagHealth.textContent = ph.ok ? `HTTP 200 OK (PID: ${ph.data?.pid || 'active'})` : (ph.error || `HTTP ${ph.status || 'UNREACHABLE'}`);
+                }
+                if (privDiagToken) {
+                    if (r.hasTokenInMemory) {
+                        privDiagToken.textContent = 'AUTHENTICATED (In Extension Memory)';
+                        privDiagToken.style.color = '#4ade80';
+                    } else if (nh.hasControlToken) {
+                        privDiagToken.textContent = `Present in package (${nh.tokenLength} chars) / Pending Extension load`;
+                        privDiagToken.style.color = '#fde047';
+                    } else {
+                        privDiagToken.textContent = 'MISSING (Unauthenticated)';
+                        privDiagToken.style.color = '#f87171';
+                    }
+                }
+                if (privDiagPool) {
+                    if (nh.poolConfigExists) {
+                        privDiagPool.textContent = `${nh.poolNodesCount} Node(s) [Active: ${nh.selectedEgressId || 'none'}]`;
+                    } else {
+                        privDiagPool.textContent = 'egress_pool_config.json missing';
+                    }
+                }
+                if (privDiagFailure) {
+                    const fail = failureHint || nh.failureReason || (!ph.ok ? 'PORT_18989_OFFLINE' : (!r.hasTokenInMemory && !nh.hasControlToken ? 'AUTH_TOKEN_MISSING' : 'HEALTHY'));
+                    privDiagFailure.textContent = fail;
+                    privDiagFailure.style.color = (fail === 'HEALTHY' || fail === 'OPERATIONAL') ? '#4ade80' : '#f87171';
+                }
+            });
+        };
+
+        if (relayDiagToggleBtn && relayDiagBox) {
+            relayDiagToggleBtn.addEventListener('click', () => {
+                const isHidden = relayDiagBox.style.display === 'none';
+                relayDiagBox.style.display = isHidden ? 'block' : 'none';
+                if (isHidden) fetchAndRenderDiagnostics();
+            });
+        }
+
+        if (relayDiagRefreshBtn) {
+            relayDiagRefreshBtn.addEventListener('click', () => fetchAndRenderDiagnostics());
+        }
+
         const escapeRelayHtml = (str) => {
             if (str === null || str === undefined) return '';
             return String(str)
@@ -1701,13 +1769,30 @@ async function hydrateSettings(overrideV2Store = null) {
                 .replace(/'/g, '&#039;');
         };
 
-        const updateRelayStatusUI = (statusData) => {
+        const updateRelayStatusUI = (statusData, failureReason = null) => {
             if (relayDaemonBadge) {
                 if (!statusData) {
-                    relayDaemonBadge.textContent = 'OFFLINE';
-                    relayDaemonBadge.style.color = '#f87171';
-                    relayDaemonBadge.style.background = 'rgba(239, 68, 68, 0.2)';
-                    relayDaemonBadge.style.border = '1px solid #ef4444';
+                    if (failureReason === 'HTTP_401' || failureReason === 'HTTP_401_UNAUTHORIZED' || failureReason === 'AUTH_TOKEN_MISSING') {
+                        relayDaemonBadge.textContent = 'UNAUTH (401)';
+                        relayDaemonBadge.style.color = '#fbbf24';
+                        relayDaemonBadge.style.background = 'rgba(245, 158, 11, 0.2)';
+                        relayDaemonBadge.style.border = '1px solid #f59e0b';
+                    } else if (failureReason === 'STALE_COMPANION_BUILD' || failureReason === 'STALE_COMPANION_BUILD_NOT_UPGRADED' || failureReason === 'STALE_BUILD') {
+                        relayDaemonBadge.textContent = 'STALE BUILD';
+                        relayDaemonBadge.style.color = '#fbbf24';
+                        relayDaemonBadge.style.background = 'rgba(245, 158, 11, 0.2)';
+                        relayDaemonBadge.style.border = '1px solid #f59e0b';
+                    } else if (failureReason === 'NATIVE_HOST_NOT_REGISTERED' || failureReason === 'NO_HOST') {
+                        relayDaemonBadge.textContent = 'NO HOST';
+                        relayDaemonBadge.style.color = '#f87171';
+                        relayDaemonBadge.style.background = 'rgba(239, 68, 68, 0.2)';
+                        relayDaemonBadge.style.border = '1px solid #ef4444';
+                    } else {
+                        relayDaemonBadge.textContent = 'OFFLINE';
+                        relayDaemonBadge.style.color = '#f87171';
+                        relayDaemonBadge.style.background = 'rgba(239, 68, 68, 0.2)';
+                        relayDaemonBadge.style.border = '1px solid #ef4444';
+                    }
                 } else if (statusData.relayReady) {
                     relayDaemonBadge.textContent = 'ONLINE / READY';
                     relayDaemonBadge.style.color = '#34d399';
@@ -1746,6 +1831,12 @@ async function hydrateSettings(overrideV2Store = null) {
                 const canRotate = !!(statusData && statusData.relayReady && statusData.totalNodes > 0);
                 relayRotateBtn.disabled = !canRotate;
             }
+
+            if (privDiagFailure) {
+                const fail = failureReason || (statusData ? (statusData.relayReady ? 'OPERATIONAL' : 'DEGRADED') : 'OFFLINE');
+                privDiagFailure.textContent = fail;
+                privDiagFailure.style.color = (fail === 'OPERATIONAL' || fail === 'HEALTHY') ? '#4ade80' : '#f87171';
+            }
         };
 
         const refreshRelayStatus = (cb) => {
@@ -1755,10 +1846,8 @@ async function hydrateSettings(overrideV2Store = null) {
                     onBackgroundMessageSuccess();
                     if (typeof cb === 'function') cb(res.result.status);
                 } else {
-                    updateRelayStatusUI(null);
-                    if (relayDaemonBadge && res && res.result && res.result.reason === 'HTTP_401') {
-                        relayDaemonBadge.textContent = 'UNAUTH';
-                    }
+                    const failReason = (res && (res.failureReason || (res.result && res.result.reason))) || 'OFFLINE';
+                    updateRelayStatusUI(null, failReason);
                     if (typeof cb === 'function') cb(null);
                 }
             });
@@ -1811,28 +1900,32 @@ async function hydrateSettings(overrideV2Store = null) {
                     relayDaemonBadge.style.border = '1px solid #eab308';
                 }
 
+                // Show diagnostics box automatically on Start / Repair click
+                if (relayDiagBox) {
+                    relayDiagBox.style.display = 'block';
+                    fetchAndRenderDiagnostics('STARTING...');
+                }
+
                 chrome.runtime.sendMessage({ action: 'START_PRIVACY_RELAY_NATIVE' }, (res) => {
                     if (res && !res.success) {
-                        const errMsg = (res && res.error) ? res.error : 'NATIVE HOST NOT INSTALLED';
-                        if (relayDaemonBadge) {
-                            relayDaemonBadge.textContent = 'NO HOST';
-                            relayDaemonBadge.style.color = '#f87171';
-                            relayDaemonBadge.style.background = 'rgba(239, 68, 68, 0.2)';
-                            relayDaemonBadge.style.border = '1px solid #ef4444';
-                        }
+                        const failReason = res.failureReason || res.error || 'NATIVE_HOST_NOT_INSTALLED';
+                        updateRelayStatusUI(null, failReason);
                         relayRepairBtn.disabled = false;
                         relayRepairBtn.textContent = '⚡ Start / Repair';
-                        addLog(`⚠️ [Privacy Relay] Native host launch failed: ${errMsg}. Run install_companion.bat first.`, 'warn');
+                        addLog(`⚠️ [Privacy Relay] Native host launch failed: ${failReason}. Check diagnostics below or run XPIDER_AUTO_SETUP.bat.`, 'warn');
+                        fetchAndRenderDiagnostics(failReason);
                         return;
                     }
 
                     if (res && res.success) {
                         addLog('⚡ [Privacy Relay] Native launch command dispatched. Polling daemon...', 'info');
+                        fetchAndRenderDiagnostics('POLLING_DAEMON...');
                     }
 
                     // Bounded polling loop (up to 8 seconds, 1s interval)
                     let attempts = 0;
                     const maxAttempts = 8;
+                    let lastPollError = null;
                     const pollTimer = setInterval(() => {
                         attempts++;
                         chrome.runtime.sendMessage({ action: 'QUERY_PRIVACY_RELAY_STATUS' }, (pollRes) => {
@@ -1844,12 +1937,17 @@ async function hydrateSettings(overrideV2Store = null) {
                                 relayRepairBtn.disabled = false;
                                 relayRepairBtn.textContent = '⚡ Start / Repair';
                                 addLog(`⚡ [Privacy Relay] Daemon online (${st.relayReady ? 'READY' : (st.totalNodes === 0 ? 'ONLINE / NO NODES' : 'STANDBY')})`, 'success');
-                            } else if (attempts >= maxAttempts) {
-                                clearInterval(pollTimer);
-                                updateRelayStatusUI(null);
-                                relayRepairBtn.disabled = false;
-                                relayRepairBtn.textContent = '⚡ Start / Repair';
-                                addLog('⚠️ [Privacy Relay] Daemon not reachable after 8s bounded polling. Run install_companion.bat if needed.', 'warn');
+                                fetchAndRenderDiagnostics(st.relayReady ? 'OPERATIONAL' : 'ONLINE_STANDBY');
+                            } else {
+                                lastPollError = (pollRes && (pollRes.failureReason || (pollRes.result && pollRes.result.reason))) || 'HTTP_401';
+                                if (attempts >= maxAttempts) {
+                                    clearInterval(pollTimer);
+                                    updateRelayStatusUI(null, lastPollError);
+                                    relayRepairBtn.disabled = false;
+                                    relayRepairBtn.textContent = '⚡ Start / Repair';
+                                    addLog(`⚠️ [Privacy Relay] Daemon not reachable/ready after 8s bounded polling: ${lastPollError}. Check diagnostics panel.`, 'warn');
+                                    fetchAndRenderDiagnostics(lastPollError);
+                                }
                             }
                         });
                     }, 1000);
