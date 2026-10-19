@@ -15,18 +15,18 @@
 
     const BUILD_INFO = {
         branch: 'upgrade/phase-0-1',
-        channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.11',
+        channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.12',
         testOnly: true,
-        // [R6.9G.10.3.7.1.4.25] XPIDER AutoForm Sender Pro — Private Egress Release Candidate 3.11 (Pinned Private-Proxy CA Registration & SPKI Resilience Closure)
-        implementationHead: 'a9b028ca7a9b89035b27886945f48182dcde899e',
-        implementationHeadShort: 'a9b028ca',
-        head: 'a9b028ca7a9b89035b27886945f48182dcde899e',
-        headShort: 'a9b028ca',
+        // [R6.9G.10.3.7.1.4.26] XPIDER AutoForm Sender Pro — Private Egress Release Candidate 3.12 (Unified Verified Contract & AA1-AA3 Closure)
+        implementationHead: '0a916ef1b7d36e6167b045d32e6bb0377b62e5b3',
+        implementationHeadShort: '0a916ef1',
+        head: '0a916ef1b7d36e6167b045d32e6bb0377b62e5b3',
+        headShort: '0a916ef1',
         rollbackBase: '50aee3538806d7b5227fcd929e27979d1e5a3419',
         previousFunctionalRestorePoint: '50aee3538806d7b5227fcd929e27979d1e5a3419',
         manifestVersion: 3,
-        buildId: 'R6.9G.10.3.7.1.4.25-20261018-PRIVATE-EGRESS-RC3.11',
-        builtAt: '2026-10-19T00:00:52.413Z',
+        buildId: 'R6.9G.10.3.7.1.4.26-20261018-PRIVATE-EGRESS-RC3.12',
+        builtAt: '2026-10-19T01:53:31.053Z',
         provenanceSchema: 2,
         modules: {
             backgroundSha: '46ae6ebbc5e3df9311e92135a18ddc983bdb983ca71ecb16bb027a2944dd32dc',
