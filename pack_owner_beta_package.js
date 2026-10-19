@@ -2,7 +2,7 @@
  * pack_owner_beta_package.js
  *
  * Packages XPIDER AutoForm Sender Pro — OWNER BETA
- * Version: R6.9G.10.3.7.1.4.31-20261019-PRIVATE-EGRESS-RC3.17
+ * Version: R6.9G.10.3.7.1.4.32-20261019-PRIVATE-EGRESS-RC3.18
  * Per Issue #6 Owner Decision & ChatGPT Final Pre-Live Audit Directive (Comment #6250701581).
  *
  * Enforces V1, V2, V3 Secret and Packaging Hygiene:
@@ -27,8 +27,8 @@ const { execSync } = require('child_process');
 console.log('1. Verifying parity with sync_build_parity.js...');
 execSync('node sync_build_parity.js', { stdio: 'inherit' });
 
-const versionStr = 'R6.9G.10.3.7.1.4.31';
-const zipName = `XPIDER_${versionStr}_PRIVATE_EGRESS_RC3.17.zip`;
+const versionStr = 'R6.9G.10.3.7.1.4.32';
+const zipName = `XPIDER_${versionStr}_PRIVATE_EGRESS_RC3.18.zip`;
 const zipOut = path.resolve(zipName);
 const extDir = path.resolve('send_message_backup/build/extension');
 const compDir = path.resolve('companion');
@@ -70,7 +70,7 @@ fs.mkdirSync(stagingCompDir, { recursive: true });
 function copyCompanionFiles(src, dest) {
     const entries = fs.readdirSync(src, { withFileTypes: true });
     for (const entry of entries) {
-        if (entry.name === '.control_token' || entry.name === 'privacy_relay.log' || entry.name === 'node_modules' || entry.name === 'router_pairing_config.json' || entry.name.startsWith('test') || entry.name.startsWith('mock') || entry.name === 'tls_test_certs.js' || entry.name.endsWith('.tmp') || entry.name.endsWith('.log') || entry.name.startsWith('.private_')) {
+        if (entry.name === '.control_token' || entry.name === 'privacy_relay.log' || entry.name === 'node_modules' || entry.name === 'router_pairing_config.json' || entry.name.startsWith('test') || entry.name.startsWith('mock') || entry.name === 'tls_test_certs.js' || entry.name.endsWith('.tmp') || entry.name.endsWith('.log') || entry.name.endsWith('.lock') || entry.name.startsWith('.private_')) {
             continue;
         }
         const srcPath = path.join(src, entry.name);
@@ -253,6 +253,7 @@ function purgeRuntimeArtifacts(dir) {
                 ent.name === 'privacy_relay.log' ||
                 ent.name.endsWith('.log') ||
                 ent.name.endsWith('.tmp') ||
+                ent.name.endsWith('.lock') ||
                 ent.name.startsWith('.private_egress_transaction') ||
                 ent.name.startsWith('winsec_blob')) {
                 console.log(`    [PURGE] Removing runtime artifact from staging: ${full}`);
@@ -270,7 +271,7 @@ const FORBIDDEN_DENYLIST_NAMES = [
     'privacy_relay.log',
     '.private_egress_transaction.json'
 ];
-const FORBIDDEN_DENYLIST_EXTENSIONS = ['.tmp'];
+const FORBIDDEN_DENYLIST_EXTENSIONS = ['.tmp', '.lock'];
 const stagingFilesForDenylist = getAllFiles(stagingDir);
 for (const file of stagingFilesForDenylist) {
     const baseName = path.basename(file.fullPath);

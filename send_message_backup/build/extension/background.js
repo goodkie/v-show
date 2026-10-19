@@ -585,6 +585,15 @@ let campaignState = {
     lastFinalTs: 0,              // Timestamp of last TARGET FINAL — CAMPAIGN_FINISHED must follow it
     isFaulted: false,            // [R6.9G.7.1] Set to true if orchestration fails to quiesce
     faultReason: null,
+    // [RC3.18 Campaign Continuity & Network Degradation Recovery]
+    isNetworkDegraded: false,
+    networkRecoveryPhase: null, // 'NONE' | 'CHECKPOINTED' | 'RELAY_RECONNECTING' | 'PRIVACY_REVERIFY' | 'JOB_RESTORE'
+    networkCheckpoint: null,
+    networkRecoveryRetryCount: 0,
+    currentFormIdentity: null,
+    currentFieldMapping: null,
+    currentFilledFields: [],
+    currentSubmitState: 'NOT_SUBMITTED', // 'NOT_SUBMITTED' | 'SUBMIT_TRIGGERED' | 'SUBMIT_CONFIRMED'
     runScopedDirectPrivacy: false, // [R6.9G.10.3.7.1.4.11 P0] Run-scoped direct privacy override when Owner consents
     captchaFailuresRecorded: new Set(), // [R6.9G.7.1] Idempotent attempt-bound CAPTCHA failure recorder
     // [R6.9G-G] CAPTCHA Attempt-Bound Ledger
@@ -1923,6 +1932,246 @@ if (typeof globalThis !== 'undefined') {
 if (typeof global !== 'undefined') {
     global.assertPhysicalGateReady = assertPhysicalGateReady;
     global.assertPrivacyTransportReady = assertPrivacyTransportReady;
+}
+
+/**
+ * [RC3.18 Campaign Continuity: Freeze on Relay Loss]
+ * Immediately freezes active form workflow upon Relay/Companion network degradation.
+ * Persists an atomic checkpoint to chrome.storage.local (xpider_active_network_checkpoint).
+ * UI/job state transitions to PAUSED_NETWORK_RECOVERY without dropping to direct ISP,
+ * without closing tab, without advancing queue or counters, and without recording false failure.
+ */
+async function freezeActiveCampaignJob(reason) {
+    if (campaignState.isNetworkDegraded) {
+        logBg(null, `[NETWORK_RECOVERY] Already in network degradation recovery (${campaignState.networkRecoveryPhase}). Additional reason=${reason}`, "info");
+        return;
+    }
+
+    logBg(null, `[NETWORK_RECOVERY] ❄️ Freezing active campaign job due to network/relay degradation: ${reason}`, "warning");
+    console.warn(`[NETWORK_RECOVERY] Freezing active job. reason=${reason} stage=${campaignState.currentTargetStage}`);
+
+    campaignState.isNetworkDegraded = true;
+    campaignState.networkRecoveryPhase = 'CHECKPOINTED';
+    campaignState.networkRecoveryRetryCount = (campaignState.networkRecoveryRetryCount || 0) + 1;
+
+    // Clear active timeout alarms so timeouts don't fire during network recovery
+    if (chrome.alarms) {
+        if (campaignState.currentTabId) {
+            chrome.alarms.clear(`xpider_watchdog_${campaignState.currentTabId}_${campaignState.sessionId}`);
+        }
+        chrome.alarms.clear(`xpider_timeout_${campaignState.sessionId}`);
+    }
+
+    // Capture atomic checkpoint
+    const currentUrl = campaignState.currentAttempt?.url || (campaignState.targetUrl || '');
+    const contactUrl = campaignState.currentDiscoveryCtx?.committedContactUrl || '';
+    const checkpoint = {
+        campaignRunId: campaignState.campaignRunId,
+        url: currentUrl,
+        contactUrl: contactUrl,
+        tabId: campaignState.currentTabId,
+        attemptId: campaignState.currentAttempt?.attemptId || ('att_rec_' + Date.now()),
+        workflowPhase: campaignState.currentTargetStage || 'NAVIGATION',
+        formIdentity: campaignState.currentFormIdentity || null,
+        fieldMapping: campaignState.currentFieldMapping || null,
+        filledFields: Array.isArray(campaignState.currentFilledFields) ? [...campaignState.currentFilledFields] : [],
+        submitState: campaignState.currentSubmitState || (campaignState.currentTargetStage?.includes('SUBMIT') ? 'SUBMIT_TRIGGERED' : 'NOT_SUBMITTED'),
+        terminalOutcome: null,
+        retryCount: campaignState.networkRecoveryRetryCount,
+        freezeReason: reason,
+        frozenAt: Date.now()
+    };
+
+    campaignState.networkCheckpoint = checkpoint;
+
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+        chrome.storage.local.set({
+            xpider_active_network_checkpoint: checkpoint,
+            xpider_isNetworkDegraded: true,
+            xpider_networkRecoveryPhase: 'CHECKPOINTED'
+        });
+    }
+
+    // Broadcast UI status update
+    chrome.runtime.sendMessage({
+        action: 'PAUSED_NETWORK_RECOVERY',
+        reason,
+        checkpoint,
+        phase: 'CHECKPOINTED'
+    }).catch(() => {});
+
+    // Trigger companion self-healing immediately in background
+    const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+    if (pg) {
+        pg.ensureRelayActive(true).catch(e => {
+            console.warn('[NETWORK_RECOVERY] ensureRelayActive background dispatch error:', e.message);
+        });
+    }
+}
+
+/**
+ * [RC3.18 Campaign Continuity: Resume from Safe Checkpoint]
+ * Triggered automatically when Privacy Relay returns to verified READY state.
+ * Re-runs privacy preflight, verifies egress path, and resumes the active job safely
+ * from the checkpointed phase with idempotency protection against duplicate submission.
+ */
+async function resumeActiveCampaignJobAfterRecovery() {
+    if (!campaignState.isNetworkDegraded) return;
+
+    logBg(null, `[NETWORK_RECOVERY] 🔄 Privacy Relay re-established. Initiating preflight and job restoration...`, "info");
+    console.log(`[NETWORK_RECOVERY] Reconnecting -> Privacy Reverify...`);
+
+    campaignState.networkRecoveryPhase = 'PRIVACY_REVERIFY';
+    chrome.runtime.sendMessage({
+        action: 'PAUSED_NETWORK_RECOVERY',
+        phase: 'PRIVACY_REVERIFY'
+    }).catch(() => {});
+
+    // 1. Re-verify Privacy Transport Preflight
+    const privCheck = await assertPrivacyTransportReady('NETWORK_RECOVERY_RESUME');
+    if (!privCheck.ready) {
+        logBg(null, `[NETWORK_RECOVERY] Privacy preflight re-verify failed (${privCheck.reason}). Remaining in network recovery...`, "warning");
+        campaignState.networkRecoveryPhase = 'RELAY_RECONNECTING';
+        return;
+    }
+
+    logBg(null, `[NETWORK_RECOVERY] Privacy transport verified READY. Restoring job from checkpoint...`, "info");
+    campaignState.networkRecoveryPhase = 'JOB_RESTORE';
+
+    const checkpoint = campaignState.networkCheckpoint;
+    if (!checkpoint || !checkpoint.url) {
+        // No in-flight target was active; cleanly resume queue loop
+        logBg(null, `[NETWORK_RECOVERY] No active in-flight target in checkpoint. Resuming queue loop...`, "info");
+        campaignState.isNetworkDegraded = false;
+        campaignState.networkRecoveryPhase = null;
+        campaignState.networkCheckpoint = null;
+        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+            chrome.storage.local.remove(['xpider_active_network_checkpoint', 'xpider_isNetworkDegraded', 'xpider_networkRecoveryPhase']);
+        }
+        chrome.runtime.sendMessage({ action: 'NETWORK_RECOVERY_COMPLETED' }).catch(() => {});
+        if (!campaignState.isLoopRunning && campaignState.isActive) {
+            processNextCampaignTarget(campaignState.sessionId, campaignState.schedulerGeneration);
+        }
+        return;
+    }
+
+    // 2. Idempotency Check & Active Job Restoration
+    const tabId = checkpoint.tabId;
+    const targetUrl = checkpoint.contactUrl || checkpoint.url;
+
+    // Idempotency: if submit was already triggered before outage, verify outcome FIRST!
+    if (checkpoint.submitState === 'SUBMIT_TRIGGERED' || checkpoint.workflowPhase?.includes('SUBMIT')) {
+        logBg(null, `[NETWORK_RECOVERY] Checkpoint had SUBMIT_TRIGGERED. Performing outcome verification before any resubmit...`, "info");
+        let isConfirmed = false;
+        if (tabId) {
+            try {
+                const tab = await chrome.tabs.get(tabId);
+                if (tab && tab.url) {
+                    const evalRes = await chrome.tabs.sendMessage(tabId, { action: 'CHECK_SUBMIT_SUCCESS' }).catch(() => null);
+                    if (evalRes && evalRes.confirmed) {
+                        isConfirmed = true;
+                    }
+                }
+            } catch (_) {}
+        }
+
+        if (isConfirmed) {
+            logBg(null, `[NETWORK_RECOVERY] Submission was confirmed successful during outage. Settle as SUCCESS without resubmit.`, "complete");
+            const hs = await getHistoryStoreInstance();
+            if (hs && checkpoint.attemptId) {
+                await hs.settleCanonicalAttempt(checkpoint.attemptId, 'SUCCESS', 'DELIVERY_SUCCESS', {}, { campaignRunId: checkpoint.campaignRunId });
+                await syncCampaignCountersFromLedger(hs);
+            }
+            campaignState.isNetworkDegraded = false;
+            campaignState.networkRecoveryPhase = null;
+            campaignState.networkCheckpoint = null;
+            if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+                chrome.storage.local.remove(['xpider_active_network_checkpoint', 'xpider_isNetworkDegraded', 'xpider_networkRecoveryPhase']);
+            }
+            chrome.runtime.sendMessage({ action: 'NETWORK_RECOVERY_COMPLETED' }).catch(() => {});
+            if (tabId) chrome.tabs.remove(tabId).catch(() => {});
+            processNextCampaignTarget(campaignState.sessionId, campaignState.schedulerGeneration);
+            return;
+        }
+    }
+
+    // Safe Replay: If tab exists, reload tab over private proxy; if tab was lost, create new tab for the target URL
+    logBg(null, `[NETWORK_RECOVERY] Resuming workflow for ${targetUrl} from safe checkpoint (phase=${checkpoint.workflowPhase})...`, "info");
+
+    campaignState.isNetworkDegraded = false;
+    campaignState.networkRecoveryPhase = null;
+    campaignState.networkCheckpoint = null;
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+        chrome.storage.local.remove(['xpider_active_network_checkpoint', 'xpider_isNetworkDegraded', 'xpider_networkRecoveryPhase']);
+    }
+    chrome.runtime.sendMessage({ action: 'NETWORK_RECOVERY_COMPLETED' }).catch(() => {});
+
+    // Ensure the interrupted URL is retried cleanly
+    if (tabId) {
+        try {
+            await chrome.tabs.reload(tabId);
+        } catch (_) {
+            if (checkpoint.url && !campaignState.queue.includes(checkpoint.url)) {
+                campaignState.queue.unshift(checkpoint.url);
+            }
+        }
+    } else if (checkpoint.url && !campaignState.queue.includes(checkpoint.url)) {
+        campaignState.queue.unshift(checkpoint.url);
+    }
+
+    if (!campaignState.isLoopRunning && campaignState.isActive) {
+        processNextCampaignTarget(campaignState.sessionId, campaignState.schedulerGeneration);
+    }
+}
+
+/**
+ * [RC3.18 Privacy Relay Watchdog for Background Service Worker]
+ * Periodically verifies Companion and local proxy health (Port 18989 / 18988).
+ * If Companion drops or desyncs, automatically initiates Native Messaging self-healing.
+ * Transitions between READY -> DEGRADED -> RECONNECTING -> READY without Owner intervention.
+ */
+let relayWatchdogInterval = null;
+function startPrivacyRelayWatchdog() {
+    if (relayWatchdogInterval) return;
+
+    const runWatchdogProbe = async () => {
+        try {
+            const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+            if (!pg || !pg.config.enabled) return;
+
+            const res = await pg.probeRelayLifecycle(true);
+
+            if (res.ok && res.lifecycleState === 'READY') {
+                if (campaignState.isNetworkDegraded) {
+                    logBg(null, `[WATCHDOG] Privacy Relay returned to READY. Resuming campaign...`, "info");
+                    await resumeActiveCampaignJobAfterRecovery();
+                }
+            } else {
+                if (campaignState.isActive && !campaignState.isNetworkDegraded) {
+                    logBg(null, `[WATCHDOG] Privacy Relay degraded (${res.lifecycleState || res.reason}). Freezing active campaign job...`, "warning");
+                    await freezeActiveCampaignJob(`WATCHDOG_RELAY_DEGRADED: ${res.reason || res.lifecycleState}`);
+                }
+            }
+        } catch (e) {
+            console.warn('[WATCHDOG_PROBE_ERROR]', e.message);
+        }
+    };
+
+    relayWatchdogInterval = setInterval(runWatchdogProbe, 10000);
+    // Initial probe
+    runWatchdogProbe();
+}
+
+if (typeof chrome !== 'undefined' && chrome.webNavigation && chrome.webNavigation.onErrorOccurred) {
+    chrome.webNavigation.onErrorOccurred.addListener(async (details) => {
+        if (details.frameId === 0 && campaignState.isActive && details.tabId === campaignState.currentTabId) {
+            const errStr = String(details.error || '');
+            if (errStr.includes('ERR_PROXY_CONNECTION_FAILED') || errStr.includes('ERR_TUNNEL_CONNECTION_FAILED')) {
+                logBg(details.tabId, `[NAV_PROXY_ERROR] ${errStr}. Triggering network recovery freeze...`, "warning");
+                await freezeActiveCampaignJob(`WEBNAV_PROXY_ERROR: ${errStr}`);
+            }
+        }
+    });
 }
 
 
@@ -5799,21 +6048,14 @@ async function processNextCampaignTarget(loopSessionId, loopGeneration) {
             campaignState.currentTabId = null;
             campaignState.targetTabId = null;
 
-            // [R6.9G.10.3.5 Central Privacy Barrier]
             const privCheck = await assertPrivacyTransportReady('PRE_TARGET_BARRIER');
             if (!privCheck.ready) {
                 const blkReason = privCheck.reason || 'PRIVACY_GATE_NOT_READY';
-                logBg(null, `[PRIVACY_GATE_BLOCK] reason=${blkReason} attemptId=none targetUrl=next_queue`, 'error');
-                console.error(`[PRIVACY_GATE_BLOCK] reason=${blkReason} attemptId=none targetUrl=next_queue`);
+                logBg(null, `[PRIVACY_GATE_BLOCK] reason=${blkReason} attemptId=none targetUrl=next_queue. Entering network recovery freeze...`, 'warning');
+                console.warn(`[PRIVACY_GATE_BLOCK] reason=${blkReason} attemptId=none targetUrl=next_queue`);
                 orchestrationSettled = true;
                 releaseLease();
-                await pauseCampaignOrchestrator(true);
-                campaignState.isFaulted = true;
-                campaignState.faultReason = 'PRIVACY_GATEWAY_BLOCKED';
-                chrome.runtime.sendMessage({
-                    action: 'PRIVACY_GATEWAY_BLOCKED',
-                    reason: blkReason
-                }).catch(() => {});
+                await freezeActiveCampaignJob(`PRE_TARGET_BARRIER_BLOCK: ${blkReason}`);
                 return;
             }
 
@@ -6101,6 +6343,12 @@ async function processNextCampaignTarget(loopSessionId, loopGeneration) {
 if (chrome.alarms) {
     chrome.alarms.onAlarm.addListener((alarm) => {
     if (campaignState.isActive) {
+        // [RC3.18 Network Recovery Guard] Suppress watchdog/timeouts while network recovery is in flight
+        if (campaignState.isNetworkDegraded) {
+            logBg(null, `[TIMEOUT_GUARD] Campaign paused for network recovery (${campaignState.networkRecoveryPhase}). Suppressing timeouts.`, "info");
+            return;
+        }
+
         // [Issue #6 R6.5 Section 9] Session timeout must not settle active submission
         const activeStages = ['ACTIVE_FORM', 'FILLING', 'CAPTCHA', 'FINAL_AUDIT', 'SUBMIT_ATTEMPT_STARTED', 'SUBMITTING', 'SUBMIT_TRIGGERED', 'VERIFYING'];
 
@@ -7765,6 +8013,8 @@ markBoot("worker_online");
 // [v18.26.0] Delayed Restore: Prevent boot-time message collisions
 setTimeout(() => {
     bootPromise = restoreCampaignState();
+    // [RC3.18 Privacy Relay Watchdog]
+    try { startPrivacyRelayWatchdog(); } catch (_) {}
 }, 500);
 
 async function handleTranscription(audioData, audioUrl, sendResponse) {

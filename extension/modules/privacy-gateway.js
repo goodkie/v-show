@@ -500,6 +500,58 @@
         }
 
         /**
+         * [RC3.18 Lifecycle Probe & Health Watchdog]
+         * Probes Companion process, port 18989, authenticated /status, and returns lifecycle info.
+         * If relay is degraded or offline, can trigger auto-healing.
+         */
+        async probeRelayLifecycle(autoHeal = false) {
+            const host = this.config.relayHost || '127.0.0.1';
+            const port = this.config.relayControlPort || 18989;
+            const fetchFn = this._mockFetch !== undefined ? this._mockFetch : (typeof fetch !== 'undefined' ? fetch : null);
+            if (!fetchFn) return { ok: false, lifecycleState: 'UNKNOWN', reason: 'FETCH_UNAVAILABLE' };
+
+            try {
+                // 1. Check coarse /health first
+                const hRes = await fetchFn(`http://${host}:${port}/health`, { cache: 'no-store' });
+                if (!hRes.ok) {
+                    if (autoHeal) await this.ensureRelayActive(true);
+                    return { ok: false, lifecycleState: 'DEGRADED', reason: `HEALTH_HTTP_${hRes.status}` };
+                }
+                const hData = await hRes.json();
+
+                // 2. Check authenticated /status
+                const sRes = await this.queryRelayStatus();
+                if (sRes.success && sRes.status) {
+                    const st = sRes.status;
+                    return {
+                        ok: Boolean(st.relayReady && st.isHealthValid),
+                        lifecycleState: st.lifecycleState || (st.relayReady ? 'READY' : 'DEGRADED'),
+                        relayReady: st.relayReady,
+                        isHealthValid: st.isHealthValid,
+                        reconnectAttempt: st.reconnectAttempt || 0,
+                        diagnostics: st.diagnostics || null,
+                        status: st
+                    };
+                }
+
+                // If authenticated /status failed but /health was OK:
+                if (sRes.reason === 'HTTP_401' || sRes.failureReason === 'HTTP_401_UNAUTHORIZED') {
+                    if (autoHeal) await this.ensureRelayActive(true);
+                    return { ok: false, lifecycleState: 'DEGRADED', reason: 'TOKEN_DESYNC_401' };
+                }
+
+                return {
+                    ok: false,
+                    lifecycleState: hData.lifecycleState || 'DEGRADED',
+                    reason: sRes.failureReason || sRes.reason || 'STATUS_UNAVAILABLE'
+                };
+            } catch (err) {
+                if (autoHeal) await this.ensureRelayActive(true);
+                return { ok: false, lifecycleState: 'OFFLINE', reason: err.message || 'PORT_OFFLINE' };
+            }
+        }
+
+        /**
          * [R6.9G.10.1] Trigger candidate egress health check and canary probe (/probe)
          */
         async probeRelayEgress(canaryUrl = null) {

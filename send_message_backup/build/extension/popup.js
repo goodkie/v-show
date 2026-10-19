@@ -1809,6 +1809,21 @@ async function hydrateSettings(overrideV2Store = null) {
                         relayDaemonBadge.style.background = 'rgba(239, 68, 68, 0.2)';
                         relayDaemonBadge.style.border = '1px solid #ef4444';
                     }
+                } else if (statusData.lifecycleState === 'RECONNECTING') {
+                    relayDaemonBadge.textContent = `RECONNECTING (${statusData.reconnectAttempt || 1}/10)`;
+                    relayDaemonBadge.style.color = '#38bdf8';
+                    relayDaemonBadge.style.background = 'rgba(56, 189, 248, 0.2)';
+                    relayDaemonBadge.style.border = '1px solid #38bdf8';
+                } else if (statusData.lifecycleState === 'DEGRADED') {
+                    relayDaemonBadge.textContent = 'DEGRADED / RECOVERING';
+                    relayDaemonBadge.style.color = '#fbbf24';
+                    relayDaemonBadge.style.background = 'rgba(245, 158, 11, 0.2)';
+                    relayDaemonBadge.style.border = '1px solid #f59e0b';
+                } else if (statusData.lifecycleState === 'FAILED') {
+                    relayDaemonBadge.textContent = 'RECOVERY EXHAUSTED';
+                    relayDaemonBadge.style.color = '#f87171';
+                    relayDaemonBadge.style.background = 'rgba(239, 68, 68, 0.2)';
+                    relayDaemonBadge.style.border = '1px solid #ef4444';
                 } else if (statusData.relayReady) {
                     relayDaemonBadge.textContent = 'ONLINE / READY';
                     relayDaemonBadge.style.color = '#34d399';
@@ -3808,6 +3823,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (!request) return;
                 if (request.action === 'SENDER_LOG') {
                     addLog(request.message, request.logType);
+                } else if (request.action === 'PAUSED_NETWORK_RECOVERY') {
+                    window.isNetworkRecovery = true;
+                    window.networkRecoveryPhase = request.phase || 'CHECKPOINTED';
+                    const statusDetail = document.getElementById('status-detail');
+                    if (statusDetail) {
+                        statusDetail.textContent = `🔄 NETWORK RECOVERY (${request.phase || 'RECONNECTING'})...`;
+                        statusDetail.style.color = '#38bdf8';
+                    }
+                } else if (request.action === 'NETWORK_RECOVERY_COMPLETED') {
+                    window.isNetworkRecovery = false;
+                    window.networkRecoveryPhase = null;
+                    refreshStatusDetailUI();
                 } else if (request.action === 'UPDATE_STATS') {
                     updateRealTimeStatus(request.data);
                 } else if (request.action === 'CAMPAIGN_FINISHED') {
@@ -4487,11 +4514,16 @@ function refreshStatusDetailUI() {
     const suffix = dict.remaining_suffix || 'remaining.';
     
     // [v2.8.9] Simplified UI: Only show remaining count, remove log noise
-    const statusText = campaignPaused ? `⏸️ PAUSED (${remainingTargets} ${suffix})` : `${remainingTargets} ${suffix}`;
+    let statusText = `${remainingTargets} ${suffix}`;
+    if (window.isNetworkRecovery) {
+        statusText = `🔄 NETWORK RECOVERY (${window.networkRecoveryPhase || 'PAUSED'}) (${remainingTargets} ${suffix})`;
+    } else if (campaignPaused) {
+        statusText = `⏸️ PAUSED (${remainingTargets} ${suffix})`;
+    }
     statusDetail.textContent = statusText;
     statusDetail.style.fontWeight = '700';
     statusDetail.style.fontSize = '0.85rem'; // Smaller font as requested
-    statusDetail.style.color = campaignPaused ? '#ff3366' : '#facc15'; 
+    statusDetail.style.color = window.isNetworkRecovery ? '#38bdf8' : (campaignPaused ? '#ff3366' : '#facc15'); 
 }
 
 function updateSpeedLabels() {

@@ -21,7 +21,7 @@ const path = require('path');
 const { spawn, execSync } = require('child_process');
 const crypto = require('crypto');
 
-const EXPECTED_BUILD_ID = 'R6.9G.10.3.7.1.4.31-20261019-PRIVATE-EGRESS-RC3.17';
+const EXPECTED_BUILD_ID = 'R6.9G.10.3.7.1.4.32-20261019-PRIVATE-EGRESS-RC3.18';
 const REQUIRED_CAPABILITIES = ['verify-plan', 'provision-egress', 'provision-progress', 'recovery-status'];
 
 const COMPANION_DIR = __dirname;
@@ -336,6 +336,34 @@ async function main() {
     console.error('   [FATAL] Privacy Relay Companion failed to start and verify capabilities and authenticated status within 9 seconds.');
     process.exit(1);
   }
+
+  // [RC3.18 Self-Healing Watchdog] Ensure background supervisor watchdog is active
+  try {
+    const watchdogLock = path.join(COMPANION_DIR, '.watchdog.lock');
+    let isRunning = false;
+    if (fs.existsSync(watchdogLock)) {
+      const pid = parseInt(fs.readFileSync(watchdogLock, 'utf8').trim(), 10);
+      if (pid) {
+        try {
+          process.kill(pid, 0);
+          isRunning = true;
+        } catch (_) {}
+      }
+    }
+    if (!isRunning) {
+      const watchdogScript = path.join(COMPANION_DIR, 'companion-watchdog.js');
+      const bundledNode = path.join(ROOT_DIR, 'runtime', 'node', 'node.exe');
+      const nodeBin = fs.existsSync(bundledNode) ? bundledNode : 'node';
+      const child = spawn(nodeBin, [watchdogScript], {
+        cwd: ROOT_DIR,
+        detached: true,
+        stdio: 'ignore',
+        windowsHide: true
+      });
+      child.unref();
+      console.log('   [OK] Companion Watchdog supervisor active in background.');
+    }
+  } catch (_) {}
 
   process.exit(0);
 }

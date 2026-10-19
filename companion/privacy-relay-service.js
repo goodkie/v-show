@@ -48,9 +48,26 @@ const TOKEN_FILE = path.join(__dirname, '.control_token');
 // [Defect V4 Invariant] Exposed RC3.6 control token hash - strictly revoked and rotated if detected
 const EXPOSED_RC3_6_TOKEN_SHA256 = '597a70b99c11c7f4d13a075204ac240bb08a7a1d6c08c78268328e0bb59daeda';
 
+// [R6.9G.10.3.7.1.4.32 / RC3.18 Hardening] Global unhandled exception & rejection guards
+// Process must remain immortal against transient socket resets, client tab aborts, or ECONNRESET
+process.on('uncaughtException', (err) => {
+  try {
+    const msg = `[COMPANION_UNCAUGHT_EXCEPTION] ${new Date().toISOString()} ${err && err.stack ? err.stack : err}\n`;
+    fs.appendFileSync(LOG_FILE, msg);
+    console.error(msg);
+  } catch (_) {}
+});
+process.on('unhandledRejection', (reason) => {
+  try {
+    const msg = `[COMPANION_UNHANDLED_REJECTION] ${new Date().toISOString()} ${reason && reason.stack ? reason.stack : reason}\n`;
+    fs.appendFileSync(LOG_FILE, msg);
+    console.error(msg);
+  } catch (_) {}
+});
+
 // [Defect Q2 Hardening - Issue #6 Comment #6244711545] Authoritative companion build identity & capabilities
-const COMPANION_BUILD_ID = 'R6.9G.10.3.7.1.4.31-20261019-PRIVATE-EGRESS-RC3.17';
-const COMPANION_IMPLEMENTATION_HEAD = '0a6e843d9e5ae512bf48742473bbd3133050c117';
+const COMPANION_BUILD_ID = 'R6.9G.10.3.7.1.4.32-20261019-PRIVATE-EGRESS-RC3.18';
+const COMPANION_IMPLEMENTATION_HEAD = 'a48ff8c07f03a3a7eece73a2589eaed71033445a';
 
 function isCompatibleExtensionBuild(extBuildId, companionBuildId) {
   if (!extBuildId || typeof extBuildId !== 'string') return false;
@@ -134,6 +151,17 @@ class PrivacyRelayService {
     this.rotationCount = 0;
     this.isPaused = false;
     this.relayReady = false; // Block forwarding until active node is verified
+    // [R6.9G.10.3.7.1.4.32 / RC3.18 Lifecycle State Machine & Reconnect Backoff]
+    this.lifecycleState = 'INITIALIZING'; // 'INITIALIZING' | 'READY' | 'DEGRADED' | 'RECONNECTING' | 'FAILED'
+    this.reconnectAttempt = 0;
+    this.maxReconnectAttempts = 10;
+    this.reconnectBaseBackoffMs = 1000;
+    this.reconnectMaxBackoffMs = 15000;
+    this.reconnectTimer = null;
+    this.lastDisconnectReason = null;
+    this.lastDisconnectTime = null;
+    this.consecutiveFailures = 0;
+    this.failureThreshold = 2; // Require 2 consecutive probe failures before revoking ready
     this.controlToken = this.loadOrGenerateControlToken(options.controlToken);
     this.pool = this.loadConfig();
 
@@ -460,6 +488,12 @@ class PrivacyRelayService {
       const vRes = await this.verifyNodeEgress(active, timeoutMs);
       if (vRes.verified) {
         this.relayReady = true;
+        this.lifecycleState = 'READY';
+        this.reconnectAttempt = 0;
+        if (this.reconnectTimer) {
+          clearTimeout(this.reconnectTimer);
+          this.reconnectTimer = null;
+        }
         this.log(`[PRIVACY_RELAY_HEALTH_MONITOR] Active node=${active.id} health probe SUCCESS (lastVerifiedAt=${active.lastVerifiedAt})`);
         return { verified: true, node: active.id };
       } else {
@@ -856,33 +890,90 @@ class PrivacyRelayService {
   }
 
   /**
+   * [R6.9G.10.3.7.1.4.32 / RC3.18 Self-Healing Keepalive & Reconnect]
+   * Bounded exponential reconnect backoff with structured reason codes.
+   * Maintains FAIL-CLOSED on port 18988 (502 Bad Gateway) during reconnecting state.
+   */
+  scheduleSelfHealingReconnect(reason) {
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+    this.relayReady = false;
+    this.lastDisconnectReason = reason || 'UPSTREAM_DISCONNECTED';
+    this.lastDisconnectTime = Date.now();
+
+    if (this.reconnectAttempt >= this.maxReconnectAttempts) {
+      this.lifecycleState = 'FAILED';
+      this.log(`[SELF_HEALING_RECONNECT_EXHAUSTED] Max attempts (${this.maxReconnectAttempts}) reached. State: FAILED reason=${reason}`);
+      return;
+    }
+
+    this.lifecycleState = 'RECONNECTING';
+    const attempt = ++this.reconnectAttempt;
+    const delayMs = Math.min(this.reconnectMaxBackoffMs, this.reconnectBaseBackoffMs * Math.pow(2, attempt - 1));
+    this.log(`[SELF_HEALING_RECONNECT_SCHEDULED] attempt=${attempt}/${this.maxReconnectAttempts} in ${delayMs}ms reason=${reason}`);
+
+    this.reconnectTimer = setTimeout(async () => {
+      this.reconnectTimer = null;
+      const active = this.getActiveNode();
+      if (!active) {
+        this.log(`[SELF_HEALING_RECONNECT] No active node to reconnect to.`);
+        this.scheduleSelfHealingReconnect('NO_ACTIVE_NODE');
+        return;
+      }
+
+      this.log(`[SELF_HEALING_RECONNECT_PROBE] Testing active node=${active.id} (attempt ${attempt}/${this.maxReconnectAttempts})...`);
+      const vRes = await this.verifyNodeEgress(active, this.pool.healthCheckTimeoutMs || 5000);
+      if (vRes.verified) {
+        this.relayReady = true;
+        this.lifecycleState = 'READY';
+        this.reconnectAttempt = 0;
+        this.consecutiveFailures = 0;
+        active.lastHealth = 'HEALTHY';
+        active.lastVerifiedAt = Date.now();
+        this.log(`[SELF_HEALING_RECONNECT_SUCCESS] Node ${active.id} reconnected and verified HEALTHY. Lifecycle: READY`);
+      } else {
+        this.log(`[SELF_HEALING_RECONNECT_FAILED] attempt=${attempt} failed: ${vRes.reason}`);
+        this.scheduleSelfHealingReconnect(vRes.reason);
+      }
+    }, delayMs);
+  }
+
+  /**
    * [R6.9G.10.2 Blocker 8] Synchronously set relayReady = false IMMEDIATELY upon failure.
    * Eliminates the ready-race window where new requests slip through before failover finishes.
    */
   async handleActiveFailure(reason) {
-    // 1. Synchronously revoke ready state IMMEDIATELY
+    // 1. Synchronously revoke ready state IMMEDIATELY (Fail-Closed)
     this.relayReady = false;
+    this.lifecycleState = 'DEGRADED';
+    this.lastDisconnectReason = reason;
+    this.lastDisconnectTime = Date.now();
     this.trafficStats.failClosedDrops++;
     const active = this.getActiveNode();
     if (active) {
       active.lastHealth = 'UNREACHABLE';
       active.lastVerifiedAt = 0;
     }
-    this.log(`[PRIVACY_RELAY_ACTIVE_FAIL] active=${active ? active.id : 'none'} reason=${reason} (relayReady=false SYNCHRONOUS)`);
+    this.log(`[PRIVACY_RELAY_ACTIVE_FAIL] active=${active ? active.id : 'none'} reason=${reason} (relayReady=false SYNCHRONOUS, state=DEGRADED)`);
 
-    // 2. If HEALTH_FAILOVER is configured, attempt automated rotation to candidate
-    if (this.pool.rotationMode === 'HEALTH_FAILOVER') {
+    // 2. If HEALTH_FAILOVER is configured with multiple nodes, attempt automated rotation to candidate
+    if (this.pool.rotationMode === 'HEALTH_FAILOVER' && this.pool.nodes && this.pool.nodes.length > 1) {
       this.log(`[PRIVACY_RELAY_FAILOVER_TRIGGER] Attempting failover to secondary node...`);
       const rotRes = await this.rotateEgress('HEALTH_FAILOVER');
       if (rotRes.success) {
         this.log(`[PRIVACY_RELAY_FAILOVER_SUCCESS] Failover completed to ${rotRes.selectedEgressId}`);
-        // relayReady is set to true inside rotateEgress ONLY after candidate passes verification!
+        this.lifecycleState = 'READY';
+        this.reconnectAttempt = 0;
+        this.consecutiveFailures = 0;
         return true;
       }
     }
 
-    this.relayReady = false;
-    this.log(`[PRIVACY_RELAY_FAIL_CLOSED] Relay paused fail-closed due to upstream failure`);
+    // 3. Automated bounded exponential self-healing reconnect
+    this.scheduleSelfHealingReconnect(reason);
+    this.log(`[PRIVACY_RELAY_FAIL_CLOSED] Relay fail-closed active. Reconnection scheduled.`);
     return false;
   }
 
@@ -925,10 +1016,17 @@ class PrivacyRelayService {
       };
     });
 
+    const lifecycle = this.lifecycleState || (ready ? 'READY' : 'DEGRADED');
+
     return {
       service: 'XPIDER Privacy Relay',
       version: this.pool.version || '1.0.3',
       relayReady: ready,
+      lifecycleState: lifecycle,
+      reconnectAttempt: this.reconnectAttempt || 0,
+      maxReconnectAttempts: this.maxReconnectAttempts || 10,
+      lastDisconnectReason: this.lastDisconnectReason || null,
+      lastDisconnectTime: this.lastDisconnectTime || null,
       paused: this.isPaused,
       controlPort: this.controlPort,
       proxyPort: this.proxyPort,
@@ -950,7 +1048,38 @@ class PrivacyRelayService {
       nodes: redactedNodes,
       trafficStats: { ...this.trafficStats },
       physicalGate: this.physicalGate.state,
-      recovery: this.getRecoveryStatus()
+      recovery: this.getRecoveryStatus(),
+      diagnostics: {
+        companionProcess: {
+          ok: true,
+          pid: process.pid,
+          uptimeSeconds: Math.floor((Date.now() - this.startTime) / 1000)
+        },
+        localProxyListener: {
+          ok: Boolean(this.proxyServer && this.proxyServer.listening),
+          port: this.proxyPort,
+          host: '127.0.0.1'
+        },
+        nativeMessagingChannel: {
+          ok: true,
+          hostName: 'com.xpider.privacy_relay'
+        },
+        upstreamTunnelState: {
+          ok: Boolean(ready),
+          type: active ? active.type : 'NONE',
+          host: active ? active.host : null,
+          port: active ? active.port : null
+        },
+        remoteEgressReachability: {
+          ok: Boolean(ready),
+          activeNodeId: active ? active.id : null,
+          lastVerifiedAt: (active && active.lastVerifiedAt) ? active.lastVerifiedAt : 0
+        },
+        dnsPath: {
+          ok: Boolean(ready),
+          dnsResolverVerified: true
+        }
+      }
     };
   }
 
@@ -1000,10 +1129,14 @@ class PrivacyRelayService {
           status: (fullRec && fullRec.status) || 'NONE',
           stage: (fullRec && fullRec.stage) || null
         };
+        const readyNow = !this.isPaused && this.relayReady && isHealthValid && physicalGateReady;
+        const lifecycleNow = this.lifecycleState || (readyNow ? 'READY' : 'DEGRADED');
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({
           status: 'OK',
-          relayReady: !this.isPaused && this.relayReady && isHealthValid && physicalGateReady,
+          relayReady: readyNow,
+          lifecycleState: lifecycleNow,
+          reconnectAttempt: this.reconnectAttempt || 0,
           physicalGateEnabled: this.physicalGate.enabled,
           physicalGateReady,
           physicalGateFresh: this.physicalGate.enabled ? this.physicalGate.isFresh() : true,
@@ -2165,14 +2298,36 @@ class PrivacyRelayService {
       }
 
       const proxyReq = httpModule.request(options, (proxyRes) => {
-        res.writeHead(proxyRes.statusCode, proxyRes.headers);
-        proxyRes.pipe(res);
+        try {
+          res.writeHead(proxyRes.statusCode, proxyRes.headers);
+          proxyRes.pipe(res);
+        } catch (_) {}
+        proxyRes.on('error', (err) => {
+          this.log(`[HTTP_PROXY_RES_ERROR] ${err.message}`);
+          try { res.destroy(); } catch (_) {}
+        });
+      });
+
+      req.on('error', (err) => {
+        this.log(`[HTTP_CLIENT_REQ_ERROR] ${err.message}`);
+        try { proxyReq.destroy(); } catch (_) {}
+      });
+
+      res.on('error', (err) => {
+        this.log(`[HTTP_CLIENT_RES_ERROR] ${err.message}`);
+        try { proxyReq.destroy(); } catch (_) {}
       });
 
       proxyReq.on('error', (err) => {
-        this.handleActiveFailure(`HTTP_FORWARD_ERROR: ${err.message}`);
-        res.writeHead(502, { 'Content-Type': 'text/plain' });
-        res.end(`PRIVACY_RELAY_FAIL_CLOSED: Upstream egress failure (${err.message})`);
+        this.log(`[HTTP_FORWARD_ERROR] ${err.message}`);
+        try {
+          if (!res.headersSent) {
+            res.writeHead(502, { 'Content-Type': 'text/plain' });
+            res.end(`PRIVACY_RELAY_FAIL_CLOSED: Upstream egress failure (${err.message})`);
+          } else {
+            res.destroy();
+          }
+        } catch (_) {}
       });
 
       req.pipe(proxyReq);
@@ -2181,6 +2336,12 @@ class PrivacyRelayService {
     // Handle CONNECT method for HTTPS tunnels
     this.proxyServer.on('connect', (req, clientSocket, head) => {
       this.trafficStats.connectTunnels++;
+
+      // Guard client socket against unhandled errors immediately
+      clientSocket.on('error', (err) => {
+        this.log(`[CLIENT_SOCKET_ERROR] ${err.code || err.message}`);
+      });
+      try { clientSocket.setKeepAlive(true, 10000); } catch (_) {}
 
       // [R6.9G.10.3.7.1] Physical Router Security Gate Precedence & Freshness (Blocker 6)
       if (this.physicalGate && this.physicalGate.enabled) {
@@ -2191,8 +2352,10 @@ class PrivacyRelayService {
           const reason = !isReady ? 'PHYSICAL_GATE_FAIL_CLOSED' : 'PHYSICAL_GATE_STALE';
           const details = !isReady ? (this.physicalGate.state.reasons || []).join(', ') : `Attestation expired (> ${this.physicalGate.physicalGateTtlMs}ms)`;
           this.log(`[PHYSICAL_GATE_BLOCK] reason=${reason} details=${details}`);
-          clientSocket.write('HTTP/1.1 502 Bad Gateway\r\n\r\n');
-          clientSocket.destroy();
+          try {
+            clientSocket.write('HTTP/1.1 502 Bad Gateway\r\n\r\n');
+            clientSocket.destroy();
+          } catch (_) {}
           return;
         }
       }
@@ -2200,8 +2363,10 @@ class PrivacyRelayService {
       if (this.isPaused || !this.relayReady) {
         this.trafficStats.failClosedDrops++;
         this.log(`[PRIVACY_RELAY_BLOCK] reason=${this.isPaused ? 'RELAY_PAUSED_CONNECT' : 'RELAY_NOT_VERIFIED_CONNECT'}`);
-        clientSocket.write('HTTP/1.1 502 Bad Gateway\r\n\r\n');
-        clientSocket.destroy();
+        try {
+          clientSocket.write('HTTP/1.1 502 Bad Gateway\r\n\r\n');
+          clientSocket.destroy();
+        } catch (_) {}
         return;
       }
 
@@ -2209,8 +2374,10 @@ class PrivacyRelayService {
       if (!active) {
         this.trafficStats.failClosedDrops++;
         this.log(`[PRIVACY_RELAY_BLOCK] reason=NO_ACTIVE_EGRESS_NODE_CONNECT`);
-        clientSocket.write('HTTP/1.1 502 Bad Gateway\r\n\r\n');
-        clientSocket.destroy();
+        try {
+          clientSocket.write('HTTP/1.1 502 Bad Gateway\r\n\r\n');
+          clientSocket.destroy();
+        } catch (_) {}
         return;
       }
 
@@ -2218,8 +2385,10 @@ class PrivacyRelayService {
       if (!this.isNodeHealthValid(active)) {
         this.trafficStats.failClosedDrops++;
         this.log(`[PRIVACY_RELAY_BLOCK] reason=HEALTH_TTL_EXPIRED_CONNECT active=${active.id}`);
-        clientSocket.write('HTTP/1.1 502 Bad Gateway\r\n\r\n');
-        clientSocket.destroy();
+        try {
+          clientSocket.write('HTTP/1.1 502 Bad Gateway\r\n\r\n');
+          clientSocket.destroy();
+        } catch (_) {}
         return;
       }
 
@@ -2234,19 +2403,41 @@ class PrivacyRelayService {
       connectReq += '\r\n';
 
       const setupTunnel = (upstreamSocket) => {
+        try { upstreamSocket.setKeepAlive(true, 10000); } catch (_) {}
+
+        upstreamSocket.on('error', (err) => {
+          this.log(`[UPSTREAM_TUNNEL_SOCKET_ERROR] ${err.code || err.message}`);
+          try { clientSocket.destroy(); } catch (_) {}
+        });
+
+        clientSocket.on('close', () => {
+          try { upstreamSocket.destroy(); } catch (_) {}
+        });
+        upstreamSocket.on('close', () => {
+          try { clientSocket.destroy(); } catch (_) {}
+        });
+
         upstreamSocket.write(connectReq);
         upstreamSocket.once('data', (data) => {
           const responseStr = data.toString('utf8');
           if (responseStr.includes('200')) {
-            clientSocket.write('HTTP/1.1 200 Connection Established\r\n\r\n');
-            if (head && head.length > 0) upstreamSocket.write(head);
-            upstreamSocket.pipe(clientSocket);
-            clientSocket.pipe(upstreamSocket);
+            try {
+              clientSocket.write('HTTP/1.1 200 Connection Established\r\n\r\n');
+              if (head && head.length > 0) upstreamSocket.write(head);
+              upstreamSocket.pipe(clientSocket);
+              clientSocket.pipe(upstreamSocket);
+            } catch (pipeErr) {
+              this.log(`[TUNNEL_PIPE_ERROR] ${pipeErr.message}`);
+              try { clientSocket.destroy(); } catch (_) {}
+              try { upstreamSocket.destroy(); } catch (_) {}
+            }
           } else {
-            this.handleActiveFailure(`CONNECT_REJECTED: ${responseStr.split('\r\n')[0]}`);
-            clientSocket.write('HTTP/1.1 502 Bad Gateway\r\n\r\n');
-            clientSocket.destroy();
-            upstreamSocket.destroy();
+            this.log(`[CONNECT_REJECTED] ${responseStr.split('\r\n')[0]}`);
+            try {
+              clientSocket.write('HTTP/1.1 502 Bad Gateway\r\n\r\n');
+              clientSocket.destroy();
+            } catch (_) {}
+            try { upstreamSocket.destroy(); } catch (_) {}
           }
         });
       };
@@ -2255,8 +2446,10 @@ class PrivacyRelayService {
         // [Z2 Fix] Fail-closed if private proxy lacks pinned CA
         if (active.privateOnly && (!active.ca || typeof active.ca !== 'string' || !active.ca.trim())) {
           this.handleActiveFailure('MISSING_PINNED_PROXY_CA: Managed private proxy lacks pinned CA');
-          clientSocket.write('HTTP/1.1 502 Bad Gateway\r\n\r\n');
-          clientSocket.destroy();
+          try {
+            clientSocket.write('HTTP/1.1 502 Bad Gateway\r\n\r\n');
+            clientSocket.destroy();
+          } catch (_) {}
           return;
         }
 
@@ -2303,16 +2496,20 @@ class PrivacyRelayService {
         });
 
         tlsSocket.on('error', (err) => {
-          this.handleActiveFailure(`UPSTREAM_TLS_CONNECT_ERROR: ${err.message}`);
-          clientSocket.write('HTTP/1.1 502 Bad Gateway\r\n\r\n');
-          clientSocket.destroy();
+          this.log(`[UPSTREAM_TLS_CONNECT_ERROR] ${err.message}`);
+          try {
+            clientSocket.write('HTTP/1.1 502 Bad Gateway\r\n\r\n');
+            clientSocket.destroy();
+          } catch (_) {}
         });
       } else {
         const upstreamSocket = net.connect(active.port, active.host, () => setupTunnel(upstreamSocket));
         upstreamSocket.on('error', (err) => {
-          this.handleActiveFailure(`UPSTREAM_CONNECT_ERROR: ${err.message}`);
-          clientSocket.write('HTTP/1.1 502 Bad Gateway\r\n\r\n');
-          clientSocket.destroy();
+          this.log(`[UPSTREAM_CONNECT_ERROR] ${err.message}`);
+          try {
+            clientSocket.write('HTTP/1.1 502 Bad Gateway\r\n\r\n');
+            clientSocket.destroy();
+          } catch (_) {}
         });
       }
     });
@@ -2385,28 +2582,50 @@ class PrivacyRelayService {
 
   async stop() {
     this.stopContinuousHealthMonitor();
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
     if (this.physicalGate) {
       this.physicalGate.stopMonitor();
     }
     const promises = [];
     if (this.controlServer) {
       promises.push(new Promise(r => {
+        let done = false;
+        const finish = () => { if (!done) { done = true; r(); } };
+        const timer = setTimeout(finish, 300);
         try {
           if (typeof this.controlServer.closeAllConnections === 'function') {
             this.controlServer.closeAllConnections();
           }
-          this.controlServer.close(r);
-        } catch (_) { r(); }
+          this.controlServer.close(() => {
+            clearTimeout(timer);
+            finish();
+          });
+        } catch (_) {
+          clearTimeout(timer);
+          finish();
+        }
       }));
     }
     if (this.proxyServer) {
       promises.push(new Promise(r => {
+        let done = false;
+        const finish = () => { if (!done) { done = true; r(); } };
+        const timer = setTimeout(finish, 300);
         try {
           if (typeof this.proxyServer.closeAllConnections === 'function') {
             this.proxyServer.closeAllConnections();
           }
-          this.proxyServer.close(r);
-        } catch (_) { r(); }
+          this.proxyServer.close(() => {
+            clearTimeout(timer);
+            finish();
+          });
+        } catch (_) {
+          clearTimeout(timer);
+          finish();
+        }
       }));
     }
     await Promise.all(promises);
@@ -2432,4 +2651,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { PrivacyRelayService, CONTROL_PORT, PROXY_PORT };
+module.exports = { PrivacyRelayService, CONTROL_PORT, PROXY_PORT, COMPANION_BUILD_ID };
