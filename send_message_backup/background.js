@@ -3050,7 +3050,33 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
             return true;
         }
 
+        // [Issue #6 Comment #6273652325 FF1] Authoritative live PrivacyGateway state contract for main HUD
+        case 'GET_PRIVACY_GATEWAY_STATE': {
+            (async () => {
+                try {
+                    const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+                    if (!pg) return sendResponse({ success: false, error: 'PrivacyGateway unavailable' });
+                    await pg.init();
+                    const isGateReady = typeof pg.isPrivacyGateReady === 'function' ? pg.isPrivacyGateReady() : Boolean(pg.isGateReady);
+                    sendResponse({
+                        success: true,
+                        state: {
+                            isGateReady,
+                            mode: pg.config ? pg.config.transportMode : 'PRIVACY_RELAY',
+                            failureReason: pg.failureReason || (pg.lastPreflightResult ? pg.lastPreflightResult.failureReason : null),
+                            isGateActive: Boolean(pg.isGateActive),
+                            lastPreflight: pg.lastPreflightResult
+                        }
+                    });
+                } catch (e) {
+                    sendResponse({ success: false, error: e.message });
+                }
+            })();
+            return true;
+        }
+
         case 'GET_PRIVACY_CONFIG': {
+
             (async () => {
                 try {
                     const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;

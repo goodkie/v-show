@@ -2026,6 +2026,20 @@
         }
 
         /**
+         * [Issue #6 Comment #6273652325 FF1] Authoritatively checks whether Privacy Gate is ready
+         */
+        isPrivacyGateReady() {
+            if (this.config && this.config.enabled === false) {
+                return false;
+            }
+            if (this.lastPreflightResult && typeof this.lastPreflightResult.ready === 'boolean') {
+                return this.lastPreflightResult.ready;
+            }
+            return Boolean(this.isGateReady);
+        }
+
+
+        /**
          * [R6.9G.10.3.6] Auto-Enforced Privacy Start Preparation & Legacy VPN Self-Healing
          * Orchestrates deterministic preparation sequence before campaign execution:
          * [PRIVACY_START_PREP] -> [PRIVACY_AUTO_RECOVERY] -> [PRIVACY_TRANSPORT_APPLIED] -> [PRIVACY_CANARY] PASS -> [PRIVACY_START_READY]
@@ -2367,6 +2381,7 @@
         PrivacyGatewayEngine,
         PRIVACY_MODES,
         getInstance: () => instance,
+        isPrivacyGateReady: () => instance.isPrivacyGateReady(),
         ensureEnforcedPrivacyForStart: (options) => instance.ensureEnforcedPrivacyForStart(options),
         redactSensitivePrivacyInfo: PrivacyGatewayEngine.redactSensitivePrivacyInfo,
         isLoopbackTestUrl: PrivacyGatewayEngine.isLoopbackTestUrl

@@ -1629,7 +1629,8 @@ async function hydrateSettings(overrideV2Store = null) {
                     } else {
                         chrome.runtime.sendMessage({ action: 'GET_PRIVACY_GATEWAY_STATE' }, (res) => {
                             if (chrome.runtime.lastError || !res || !res.success) {
-                                privPill.textContent = 'PRIVACY: BLOCKED — RELAY_OFFLINE';
+                                const err = (res && res.error) || (chrome.runtime.lastError && chrome.runtime.lastError.message) || 'RELAY_OFFLINE';
+                                privPill.textContent = `PRIVACY: BLOCKED — ${err}`;
                                 privPill.style.color = '#f87171';
                                 return;
                             }
@@ -1642,6 +1643,7 @@ async function hydrateSettings(overrideV2Store = null) {
                                 privPill.style.color = '#f87171';
                             }
                         });
+
                     }
                 }
             } catch (_) {}
@@ -1837,7 +1839,13 @@ async function hydrateSettings(overrideV2Store = null) {
                 privDiagFailure.textContent = fail;
                 privDiagFailure.style.color = (fail === 'OPERATIONAL' || fail === 'HEALTHY') ? '#4ade80' : '#f87171';
             }
+
+            // [Issue #6 Comment #6273652325 EE2] Refresh main campaign HUD on relay readiness transitions
+            if (typeof window.checkAndRefreshPrivacyReadinessHUD === 'function') {
+                window.checkAndRefreshPrivacyReadinessHUD();
+            }
         };
+
 
         const refreshRelayStatus = (cb) => {
             chrome.runtime.sendMessage({ action: 'QUERY_PRIVACY_RELAY_STATUS' }, (res) => {
@@ -3159,12 +3167,19 @@ async function hydrateSettings(overrideV2Store = null) {
                     });
                     if (res && res.preflight) {
                         _updatePrivacyCardUI(res.preflight);
+                        if (typeof window.checkAndRefreshPrivacyReadinessHUD === 'function') {
+                            window.checkAndRefreshPrivacyReadinessHUD();
+                        }
                     }
                 } catch (_) {}
                 finally {
                     preflightBtn.disabled = false;
                     preflightBtn.textContent = '🔍 Run Privacy Preflight';
+                    if (typeof window.checkAndRefreshPrivacyReadinessHUD === 'function') {
+                        window.checkAndRefreshPrivacyReadinessHUD();
+                    }
                 }
+
             });
         }
 
@@ -3531,7 +3546,13 @@ function _updatePrivacyCardUI(pf) {
             startHelper.style.display = 'none';
         }
     }
+
+    // [Issue #6 Comment #6273652325 EE1/FF3] Keep main campaign readiness HUD in sync with authoritative privacy state
+    if (typeof window.checkAndRefreshPrivacyReadinessHUD === 'function') {
+        window.checkAndRefreshPrivacyReadinessHUD();
+    }
 }
+
 
 async function hydrateCampaignState() {
     return new Promise((resolve) => {
@@ -8861,8 +8882,12 @@ async function saveSettings() {
                 if (res && res.preflight) {
                     _updatePrivacyCardUI(res.preflight);
                 }
+                if (typeof window.checkAndRefreshPrivacyReadinessHUD === 'function') {
+                    window.checkAndRefreshPrivacyReadinessHUD();
+                }
             });
         }).catch(() => {});
+
     }
     
     const saveBtn = document.getElementById('save-settings-btn');
