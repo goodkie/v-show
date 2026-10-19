@@ -50,7 +50,7 @@ const EXPOSED_RC3_6_TOKEN_SHA256 = '597a70b99c11c7f4d13a075204ac240bb08a7a1d6c08
 
 // [Defect Q2 Hardening - Issue #6 Comment #6244711545] Authoritative companion build identity & capabilities
 const COMPANION_BUILD_ID = 'R6.9G.10.3.7.1.4.31-20261019-PRIVATE-EGRESS-RC3.17';
-const COMPANION_IMPLEMENTATION_HEAD = '0aaa05d25243eb29e71ec9d58ca02c815255476c';
+const COMPANION_IMPLEMENTATION_HEAD = '0a6e843d9e5ae512bf48742473bbd3133050c117';
 
 function isCompatibleExtensionBuild(extBuildId, companionBuildId) {
   if (!extBuildId || typeof extBuildId !== 'string') return false;

@@ -3246,6 +3246,8 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                     nativeHost: null,
                     port18989Health: null,
                     hasTokenInMemory: false,
+                    statusAuth: null,
+                    tokenDesync: false,
                     failureReason: null
                 };
                 const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
@@ -3276,6 +3278,26 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                     }
                 } catch (e) {
                     report.port18989Health = { ok: false, error: e.message };
+                }
+
+                // Authenticated /status probe using memory token or token from native host
+                const tokenToProbe = (pg && pg.ephemeralRelayToken) || (report.nativeHost && report.nativeHost.controlToken);
+                if (tokenToProbe) {
+                    try {
+                        const statusResp = await fetch('http://127.0.0.1:18989/status', {
+                            cache: 'no-store',
+                            headers: { 'Authorization': `Bearer ${tokenToProbe}` }
+                        });
+                        report.statusAuth = { ok: statusResp.ok, status: statusResp.status };
+                        if (statusResp.status === 401) {
+                            report.tokenDesync = true;
+                            report.failureReason = 'TOKEN_DESYNC_401';
+                        }
+                    } catch (err) {
+                        report.statusAuth = { ok: false, error: err.message };
+                    }
+                } else if (report.port18989Health && report.port18989Health.ok) {
+                    report.failureReason = 'AUTH_TOKEN_MISSING';
                 }
                 sendResponse({ success: true, report });
             })();

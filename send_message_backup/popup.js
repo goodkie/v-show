@@ -1716,16 +1716,23 @@ async function hydrateSettings(overrideV2Store = null) {
                 }
                 if (privDiagBuild) {
                     const b = nh.companionBuildId || (ph.data && ph.data.companionBuildId) || 'Unknown';
-                    const exp = nh.expectedBuildId || 'R6.9G.10.3.7.1.4.29-20261019-PRIVATE-EGRESS-RC3.15';
+                    const exp = nh.expectedBuildId || 'R6.9G.10.3.7.1.4.31-20261019-PRIVATE-EGRESS-RC3.17';
                     privDiagBuild.textContent = `${b} ${b === exp ? '✓' : `(Expected: ${exp})`}`;
                 }
                 if (privDiagHealth) {
                     privDiagHealth.textContent = ph.ok ? `HTTP 200 OK (PID: ${ph.data?.pid || 'active'})` : (ph.error || `HTTP ${ph.status || 'UNREACHABLE'}`);
                 }
+                const isDesync = Boolean(r.tokenDesync || (r.statusAuth && r.statusAuth.status === 401) || nh.tokenDesync || nh.tokenValidity === 'TOKEN_PRESENT_REJECTED');
                 if (privDiagToken) {
-                    if (r.hasTokenInMemory) {
+                    if (isDesync) {
+                        privDiagToken.textContent = 'REJECTED (401 / TOKEN_DESYNC)';
+                        privDiagToken.style.color = '#f87171';
+                    } else if (r.hasTokenInMemory && r.statusAuth && r.statusAuth.ok) {
                         privDiagToken.textContent = 'AUTHENTICATED (In Extension Memory)';
                         privDiagToken.style.color = '#4ade80';
+                    } else if (r.hasTokenInMemory) {
+                        privDiagToken.textContent = 'In Extension Memory (Pending Verification)';
+                        privDiagToken.style.color = '#fde047';
                     } else if (nh.hasControlToken) {
                         privDiagToken.textContent = `Present in package (${nh.tokenLength} chars) / Pending Extension load`;
                         privDiagToken.style.color = '#fde047';
@@ -1742,7 +1749,14 @@ async function hydrateSettings(overrideV2Store = null) {
                     }
                 }
                 if (privDiagFailure) {
-                    const fail = failureHint || nh.failureReason || (!ph.ok ? 'PORT_18989_OFFLINE' : (!r.hasTokenInMemory && !nh.hasControlToken ? 'AUTH_TOKEN_MISSING' : 'HEALTHY'));
+                    let fail = failureHint;
+                    if (!fail) {
+                        if (isDesync) fail = 'TOKEN_DESYNC_401';
+                        else if (!ph.ok) fail = 'PORT_18989_OFFLINE';
+                        else if (!r.hasTokenInMemory && !nh.hasControlToken) fail = 'AUTH_TOKEN_MISSING';
+                        else if (nh.failureReason) fail = nh.failureReason;
+                        else fail = 'HEALTHY';
+                    }
                     privDiagFailure.textContent = fail;
                     privDiagFailure.style.color = (fail === 'HEALTHY' || fail === 'OPERATIONAL') ? '#4ade80' : '#f87171';
                 }
@@ -1774,7 +1788,7 @@ async function hydrateSettings(overrideV2Store = null) {
         const updateRelayStatusUI = (statusData, failureReason = null) => {
             if (relayDaemonBadge) {
                 if (!statusData) {
-                    if (failureReason === 'HTTP_401' || failureReason === 'HTTP_401_UNAUTHORIZED' || failureReason === 'AUTH_TOKEN_MISSING') {
+                    if (failureReason === 'HTTP_401' || failureReason === 'HTTP_401_UNAUTHORIZED' || failureReason === 'AUTH_TOKEN_MISSING' || failureReason === 'TOKEN_DESYNC_401') {
                         relayDaemonBadge.textContent = 'UNAUTH (401)';
                         relayDaemonBadge.style.color = '#fbbf24';
                         relayDaemonBadge.style.background = 'rgba(245, 158, 11, 0.2)';

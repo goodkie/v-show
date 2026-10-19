@@ -15,23 +15,23 @@
 
     const BUILD_INFO = {
         branch: 'upgrade/phase-0-1',
-        channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.16',
+        channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.17',
         testOnly: true,
-        // [R6.9G.10.3.7.1.4.30] XPIDER AutoForm Sender Pro — Private Egress Release Candidate 3.16 (GET_PRIVACY_GATEWAY_STATE and Main HUD Preflight Synchronization Closure)
-        implementationHead: '0aaa05d25243eb29e71ec9d58ca02c815255476c',
-        implementationHeadShort: '0aaa05d2',
-        head: '0aaa05d25243eb29e71ec9d58ca02c815255476c',
-        headShort: '0aaa05d2',
+        // [R6.9G.10.3.7.1.4.31] XPIDER AutoForm Sender Pro — Private Egress Release Candidate 3.17 (Authenticated Token Parity and TOKEN_DESYNC Recovery Closure)
+        implementationHead: '0a6e843d9e5ae512bf48742473bbd3133050c117',
+        implementationHeadShort: '0a6e843d',
+        head: '0a6e843d9e5ae512bf48742473bbd3133050c117',
+        headShort: '0a6e843d',
         rollbackBase: '50aee3538806d7b5227fcd929e27979d1e5a3419',
         previousFunctionalRestorePoint: '50aee3538806d7b5227fcd929e27979d1e5a3419',
         manifestVersion: 3,
-        buildId: 'R6.9G.10.3.7.1.4.30-20261019-PRIVATE-EGRESS-RC3.16',
-        builtAt: '2026-10-19T18:04:30.470Z',
+        buildId: 'R6.9G.10.3.7.1.4.31-20261019-PRIVATE-EGRESS-RC3.17',
+        builtAt: '2026-10-19T19:18:50.875Z',
         provenanceSchema: 2,
         modules: {
-            backgroundSha: '9623e6bd70fcdcdbbb9e3cf6fc0bec55dd1369f0cccdeb8fee28c7d4e8cb88e1',
+            backgroundSha: 'b8ef9b58683006d9692b9f789313be92d5ab3ce0f422fb80ae66db5aa9cdde97',
             contentScriptSha: 'a6a34d79c4da791a245b16709f8976fb88418ef4f8398cd3b19df1c52bced270',
-            popupSha: '991d1cb3a75a669be838902b331f087b1925ff85a31b566947605f50e3d5e33f',
+            popupSha: 'f49bb1e61032022a29da3585c3b2c5f73c444eeb94c97b3c5a6ee55b6b352278',
             solverContentSha: 'd7de969d29df29799537b11380f0f82967bb93da227c91e7dc8c6af0d128f457',
             solverCoreSha: '01b3d96048ea933403e4599854dcdca28027e7f676aa5077eb6c5eb0582ac1e7',
             emailCollectorSha: '3f1147a379e159e7777158f2caa74cc8d40b2a0b0eb2c244f440af379cb5c9c9',
