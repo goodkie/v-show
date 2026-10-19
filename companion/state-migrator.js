@@ -41,9 +41,16 @@ function isEgressPoolActive(poolData) {
   if (!poolData || !Array.isArray(poolData.nodes) || poolData.nodes.length === 0) {
     return false;
   }
-  // At least one node with a valid host and credentials/ca
-  return poolData.nodes.some(n => n && n.host && (n.credentialRef || n.password || n.ca));
+  // At least one node with a valid host and credentials/ca, rejecting mock test CAs
+  return poolData.nodes.some(n => {
+    if (!n || !n.host) return false;
+    if (n.ca && typeof n.ca === 'string' && (n.ca.includes('MOCK') || n.ca.length < 100)) {
+      return false;
+    }
+    return Boolean(n.credentialRef || n.password || n.ca);
+  });
 }
+
 
 function isTransactionActive(txData) {
   if (!txData) return false;
@@ -149,11 +156,14 @@ function findBestActiveCandidate(targetCompanionDir) {
         if (fs.existsSync(txPath)) mtime = Math.max(mtime, fs.statSync(txPath).mtimeMs);
       } catch (_) {}
 
-      // Priority score: both pool and tx active > pool active > tx active
+      // Priority score: genuine CA cert > both pool and tx active > pool active > tx active
       let score = 0;
-      if (hasPool && hasTx) score = 100;
-      else if (hasPool) score = 50;
-      else if (hasTx) score = 30;
+      const hasRealCa = pool && Array.isArray(pool.nodes) && pool.nodes.some(n => n && n.ca && typeof n.ca === 'string' && n.ca.length > 500 && !n.ca.includes('MOCK'));
+      if (hasRealCa) score += 200;
+      if (hasPool && hasTx) score += 100;
+      else if (hasPool) score += 50;
+      else if (hasTx) score += 30;
+
 
       scored.push({
         dir: c.dir,

@@ -28,8 +28,10 @@ async function main() {
     console.log('  TEST SUITE: RC3.15 UPGRADE MIGRATION & START/REPAIR RECOVERY (DD1 - DD5)');
     console.log('========================================================================\n');
 
+    const origLocalAppData = process.env.LOCALAPPDATA;
     const testRoot = path.resolve('scratch', 'test_dd1_dd5_' + Date.now());
     fs.mkdirSync(testRoot, { recursive: true });
+    process.env.LOCALAPPDATA = path.join(testRoot, 'mock_appdata');
 
     try {
         // -------------------------------------------------------------------------
@@ -63,7 +65,7 @@ async function main() {
                     credentialRef: testEncryptedPass,
                     privateOnly: true,
                     transportBinding: null,
-                    ca: '-----BEGIN CERTIFICATE-----\nMIIF_MOCK_ROOT_CA_CERTIFICATE\n-----END CERTIFICATE-----',
+                    ca: '-----BEGIN CERTIFICATE-----\nMIIF' + 'B'.repeat(600) + '\n-----END CERTIFICATE-----',
                     tlsCaFingerprint: '3fcb12e7a9a962f5abb4668352f513e5b1b6540357dbcd99cafcdafaf6dad167',
                     tlsSpkiFingerprint: 'eb673a745fe4786556c6d41972f4d9fce3a13c0f1af6a33c11e42a33cbc0e1b2',
                     expectedEgressIp: '159.203.28.198',
@@ -381,6 +383,7 @@ async function main() {
         console.log('    [PASS] Test 5: Droplet 610408684 / 159.203.28.198 100% preserved with ZERO cloud mutations.\n');
 
     } finally {
+        process.env.LOCALAPPDATA = origLocalAppData;
         try {
             fs.rmSync(testRoot, { recursive: true, force: true });
         } catch (_) {}
