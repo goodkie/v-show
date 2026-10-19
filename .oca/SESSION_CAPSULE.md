@@ -6,21 +6,21 @@ PROJECT_NAME: XPIDER AutoForm Sender Pro
 WORKSPACE_ROOT: E:\vivpr\ai\extension-form-sender
 AUTHORITY_SOURCE: goodkie/v-show Issue #6
 ACTIVE_BRANCH: upgrade/phase-0-1
-STATE_REV: 2026-10-18.33
-AUTHORITY_CURSOR: 6256899948
+STATE_REV: 2026-10-18.34
+AUTHORITY_CURSOR: 6257011257
 LAST_AUDIT: [CHATGPT][RC3.11 INDEPENDENT AUDIT][CODE/PACKAGE PASS — REAL STEP B STILL HOLD] #6256899948
-LAST_DIRECTIVE: [CHATGPT][RC3.10 STEP B DEFECT AUDIT & RC3.11 PINNED-PROXY-CA DIRECTIVE] #6256256038 / #6256565851
+LAST_DIRECTIVE: [OWNER CLOUD-CLEAN CONFIRMATION][RC3.11][ONE REAL STEP B RETRY AUTHORIZED] #6257011257
 LAST_RECEIPT: [ANTIGRAVITY][RC3.11 PINNED-PROXY-CA REGISTRATION CLOSURE RECEIPT] #6256876980 (Accepted PASS)
-LAST_ACCEPTED_GATE: RC3.11 CODE/PACKAGE AUDIT PASS — REAL STEP B ON HOLD PENDING OWNER CLOUD-CLEAN EVIDENCE & 1-RUN AUTHORIZATION
+LAST_ACCEPTED_GATE: RC3.11 REAL STEP B ACCEPTANCE RETRY AUTHORIZED (EXACTLY 1 RUN)
 BUILD_ID: R6.9G.10.3.7.1.4.25-20261018-PRIVATE-EGRESS-RC3.11
 FUNCTIONAL_COMMIT: a9b028ca7a9b89035b27886945f48182dcde899e
 PROVENANCE_COMMIT: cdfa049639d1d1453f99cba3295641241524291b
 HANDOVER_COMMIT: cdfa049639d1d1453f99cba3295641241524291b
 ROLLBACK_ANCHOR: 50aee3538806d7b5227fcd929e27979d1e5a3419
 PREVIOUS_FUNCTIONAL_RESTORE_POINT: 50aee3538806d7b5227fcd929e27979d1e5a3419
-NEXT_ACTION: 1) Owner verifies DigitalOcean console has zero lingering Droplets/Firewalls. 2) Owner updates unpacked extension path to RC3.11 (XPIDER_R6.9G.10.3.7.1.4.25_PRIVATE_EGRESS_RC3.11.zip -> extension/). 3) Owner confirms footer build badge reads OWNER BETA R6.9G.10.3.7.1.4.25. 4) Owner explicitly authorizes single-run Step B acceptance retry.
-BLOCKERS: NONE. RC3.11 released, hosted asset verified 100% bit-for-bit, all 12/12 Z1-Z5 tests passed.
-OWNER_ACTION: 1) Verify DO cloud console has zero lingering resources. 2) Update unpacked extension to RC3.11. 3) Verify build badge in footer. 4) Authorize Step B acceptance run.
+NEXT_ACTION: Owner executes Step B 1-run acceptance test in browser on RC3.11 (XPIDER_R6.9G.10.3.7.1.4.25_PRIVATE_EGRESS_RC3.11). Antigravity stands by to inspect execution results, verify provider resources, and post final acceptance receipt.
+BLOCKERS: NONE. RC3.11 released, hosted asset verified 100% bit-for-bit, 0 droplets/firewalls verified, Step B 1-run authorized.
+OWNER_ACTION: Execute Step B 1-run acceptance in browser per Issue #6 comment #6257011257.
 RELEASE_ASSET_TAG: v6.9g.10.3-rc3.11.7.1.4.25
 RELEASE_ASSET_ZIP: XPIDER_R6.9G.10.3.7.1.4.25_PRIVATE_EGRESS_RC3.11.zip
 RELEASE_ASSET_SHA256: 98c915b2459ca1cc98da5e6089bd136a24585eb8b431bfbfaa1bc26364dc1f12
