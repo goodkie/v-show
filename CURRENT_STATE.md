@@ -4,13 +4,13 @@
 - Protocol: OCA-DEV-1.4
 - Project ID: xpider-autoform-sender-pro
 - Workspace: E:\vivpr\ai\extension-form-sender
-- Authority: goodkie/v-show Issue #6 (Responding to ChatGPT Directives #6256256038, #6256565851 and Owner RC3.10 Acceptance Evidence)
+- Authority: goodkie/v-show Issue #6 (Responding to ChatGPT Independent Audit #6256899948)
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-18.32
-- Authority Cursor: 6256565851
-- Last Directive / Audit: [CHATGPT][RC3.10 STEP B DEFECT AUDIT & RC3.11 PINNED-PROXY-CA DIRECTIVE] #6256256038 / #6256565851
-- Last Receipt: Receipt #6256100756 (https://github.com/goodkie/v-show/issues/6#issuecomment-6256100756 — `[ANTIGRAVITY][SIDE-PANEL CLICKABILITY P0 CLOSURE RECEIPT][RC3.10 DELIVERED]`)
-- Current Target Receipt: `[ANTIGRAVITY][RC3.11 PINNED-PROXY-CA REGISTRATION CLOSURE RECEIPT]`
+- State Rev: 2026-10-18.33
+- Authority Cursor: 6256899948
+- Last Directive / Audit: [CHATGPT][RC3.11 INDEPENDENT AUDIT][CODE/PACKAGE PASS — REAL STEP B STILL HOLD] #6256899948
+- Last Receipt: Receipt #6256876980 (https://github.com/goodkie/v-show/issues/6#issuecomment-6256876980 — `[ANTIGRAVITY][RC3.11 PINNED-PROXY-CA REGISTRATION CLOSURE RECEIPT]`)
+- Current Target Receipt: `[ANTIGRAVITY][RC3.11 PINNED-PROXY-CA REGISTRATION CLOSURE RECEIPT]` (Posted & Audited: PASS)
 - Build ID: `R6.9G.10.3.7.1.4.25-20261018-PRIVATE-EGRESS-RC3.11`
 - Current Candidate Release Tag: `v6.9g.10.3-rc3.11.7.1.4.25`
 - Functional Head Commit: `a9b028ca7a9b89035b27886945f48182dcde899e` (short: `a9b028ca`)
@@ -20,7 +20,11 @@
 - Rollback Anchor: `50aee3538806d7b5227fcd929e27979d1e5a3419`
 
 ## Current Gate
-- Formal Gate: **RC3.11 PINNED PRIVATE-PROXY CA REGISTRATION & SPKI RESILIENCE DELIVERED — STEP B ON HOLD PENDING OWNER CLOUD-CLEANUP VERIFICATION & RETRY AUTHORIZATION**.
+- Formal Gate: **RC3.11 CODE/PACKAGE AUDIT PASS — REAL STEP B ON HOLD PENDING OWNER CLOUD-CLEAN EVIDENCE & RETRY AUTHORIZATION**.
+- Audit Decision Summary:
+  * ChatGPT completed independent audit: Release tag, hosted zip, SHA-256, tag object, functional commit, and Z1-Z5 diffs all verified and accepted (PASS).
+  * Invariant: Real Step B is authorized for exactly ONE run once Owner confirms DigitalOcean account has 0 lingering Droplets and 0 lingering Firewalls.
+  * Invariant: Do NOT use RC3.10 and do NOT use `--use-system-ca`.
 - Defect Root Cause & Code Remedy:
   1. **Owner RC3.10 Live Run Finding**: UI side-panel clickability was 100% operational; plan & price selection succeeded; VPS connect completed. Provisioning halted at step 2/8 (Server Prep -> Egress canary verification) with: `Provisioning failed: Egress canary verification failed: UPSTREAM_TLS_CONNECT_ERROR: unable to verify the first certificate; if the root CA is installed locally, try running Node.js with --use-system-ca`.
   2. **Codebase Root Cause Traced & Remediated**:
