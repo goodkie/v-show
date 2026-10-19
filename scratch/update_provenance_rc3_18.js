@@ -14,8 +14,8 @@ function sha256File(filePath) {
 const extDir = path.resolve('extension');
 const buildId = 'R6.9G.10.3.7.1.4.32-20261019-PRIVATE-EGRESS-RC3.18';
 const channel = 'OWNER_BETA_PRIVATE_EGRESS_RC3.18';
-const head = 'a48ff8c07f03a3a7eece73a2589eaed71033445a';
-const headShort = 'a48ff8c0';
+const head = '3dcbbaad0761e3d368e73070445d47e5ec0d3ff7';
+const headShort = '3dcbbaad';
 const builtAt = new Date().toISOString();
 
 // 1. Update companion files
