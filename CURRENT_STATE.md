@@ -4,38 +4,39 @@
 - Protocol: OCA-DEV-1.4
 - Project ID: xpider-autoform-sender-pro
 - Workspace: E:\vivpr\ai\extension-form-sender
-- Authority: goodkie/v-show Issue #6 (Responding to ChatGPT Independent Audit #6258156516)
+- Authority: goodkie/v-show Issue #6 (Responding to Owner Directives & Real Acceptance #6258545033, #6258610246, #6258668961)
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-18.36
-- Authority Cursor: 6258156516
-- Last Directive / Audit: [CHATGPT][RC3.12 INDEPENDENT AUDIT][CODE/PACKAGE PASS — REAL STEP B HOLD PENDING CLOUD-CLEAN CHECK] #6258156516
-- Last Receipt: Receipt #6258123575 (`[ANTIGRAVITY][RC3.12 SELECT-VERIFICATION-CONTRACT CLOSURE RECEIPT]`)
-- Current Target Receipt: `[ANTIGRAVITY][REAL RC3.12 ULTRA ECONOMY ACCEPTANCE RECEIPT]` (Or `[OWNER REAL RC3.12 ACCEPTANCE RESULT]`)
-- Build ID: `R6.9G.10.3.7.1.4.26-20261018-PRIVATE-EGRESS-RC3.12`
-- Current Candidate Release Tag: `v6.9g.10.3-rc3.12.7.1.4.26`
-- Functional Head Commit: `0a916ef1b7d36e6167b045d32e6bb0377b62e5b3` (short: `0a916ef1`)
-- Provenance/Packaging Head Commit: `59f89fd5f0697d89373a6ae0741c14a125e568a5` (short: `59f89fd5`)
-- Tag Object SHA: `a4a19b03c33c13bfb20d61bae0b65afcf5a452ff`
-- Tag Target Commit SHA: `59f89fd5f0697d89373a6ae0741c14a125e568a5`
+- State Rev: 2026-10-18.37
+- Authority Cursor: 6258668961
+- Last Directive / Audit: [OWNER REAL ACCEPTANCE][RC3.12][LAYER-2 PREFLIGHT BLOCKED] #6258545033, [OWNER CLEANUP FAILURE][RC3.12][HTTP_502] #6258610246, [OWNER MANUAL CLOUD CLEANUP][RC3.12] #6258668961
+- Last Receipt: `[ANTIGRAVITY][RC3.13 LAYER2-PREFLIGHT DIAGNOSTIC CLOSURE RECEIPT]`
+- Current Target Receipt: `[ANTIGRAVITY][REAL RC3.13 ULTRA ECONOMY ACCEPTANCE RECEIPT]` (Or `[OWNER REAL RC3.13 ACCEPTANCE RESULT]`)
+- Build ID: `R6.9G.10.3.7.1.4.27-20261018-PRIVATE-EGRESS-RC3.13`
+- Current Candidate Release Tag: `v6.9g.10.3-rc3.13.7.1.4.27`
+- Functional Head Commit: `5860689a07a7dce899d578edaba29503fa11ef9f` (short: `5860689a`)
+- Provenance/Packaging Head Commit: `aa5aed2b48aa9221124d770c0c6cbf7906d48259` (short: `aa5aed2b`)
+- Tag Object SHA: `6f2e0e11d037dab4f0e024e95de55076e92f0f58`
+- Tag Target Commit SHA: `aa5aed2b48aa9221124d770c0c6cbf7906d48259`
 - Rollback Anchor: `50aee3538806d7b5227fcd929e27979d1e5a3419`
 
 ## Current Gate
-- Formal Gate: **RC3.12 CODE/PACKAGE AUDIT PASS (REAL STEP B HOLD PENDING OWNER CLOUD-CLEAN CONFIRMATION)**.
+- Formal Gate: **RC3.13 CODE/PACKAGE AUDIT READY (REAL STEP B HOLD PENDING CHATGPT GATE AUDIT & CLOUD-CLEAN RE-VERIFICATION)**.
 - Audit & Gate Summary:
-  * ChatGPT completed independent audit of the RC3.12 receipt and live GitHub objects (Tag, release asset, sizes, digests, and commit SHAs 100% verified).
-  * **AA1 PASS**: `selectEgress()` explicitly returns `success: true, verified: true, selectedEgressId, observedEgressIp, egressFingerprint, health: 'HEALTHY', verifyResult`; failure branches return `verified: false`.
-  * **AA2 PASS**: `/select`, `/select/:id`, `/probe`, and `/rotate` enforce unified explicit verification fields; no endpoint relies on omission. `verifyNodeEgress()` carries `observedEgressIp`.
-  * **AA3 PASS**: Dedicated regression test covers production HTTP chain (`test_rc3_12_select_verification_contract_aa1_aa3.js` — 9/9 PASS); Step 7 gate passing without throw asserted; negative path preserves detailed failure reason; Step 7 strict gate unchanged.
-  * **Gate Decision**: RC3.12 code/package audit = **PASS**. Real Step B remains on **HOLD** until Owner confirms DigitalOcean cloud-clean check (Droplets = 0, Firewalls = 0).
-  * Invariant: Once cloud-clean is confirmed, exactly ONE RC3.12 real acceptance retry may be authorized. Do not retry RC3.11.
+  * In live Step B run for RC3.12, Companion Stages 1/8 to 7/8 all passed; Stage 8/8 halted at post-provision Extension Layer-2 Preflight with `DIRECT_FALLBACK_NOT_BLOCKED`.
+  * In teardown dispatch, Owner encountered `Destroy failed: [HTTP_502]` and popup showed `Companion: NOT RUNNING`.
+  * **Root Cause 1 Eliminated (BB1 - BB3)**: In `applyManagedProxy()`, placing explicit bypass rules before `<-loopback>` caused Chromium to route Companion control plane calls (`http://127.0.0.1:18989`) through the local relay proxy, which fail-closed with HTTP 502 (`LOOPBACK_127_0_0_0`). Fixed by guaranteeing `<-loopback>` is FIRST in `rules.bypassList`, followed by control-plane rules, verified via readback assertion (`ctrlIdx > loopbackIdx`) and live `/health` 502 check.
+  * **Root Cause 2 Eliminated (BB4 - BB6)**: Teardown transport independence: `destroyPrivateEgress()` clears proxy settings before dispatch; preserves structured error payloads without 502 collapse; `getRecoveryStatus()` auto-clears proxy on 502.
+  * **Root Cause 3 Eliminated (BB7)**: In `popup.js`, surfaces `pfResult.failureReason || pfResult.reason`; strictly enforces enum `directFallbackBlocked !== 'BLOCKED'`; logs sanitized fields for both Layer-2 steps.
+  * **BB8 PASS**: Dedicated regression test `test_rc3_13_layer2_preflight_and_control_bypass.js` passes 8/8 tests (100%).
 - Retained Guarantees:
+  * **AA1 - AA3**: Unified verified contract across /select, /select/:id, /probe, /rotate (`test_rc3_12_select_verification_contract_aa1_aa3.js` — 9/9 PASS).
   * **Z1 - Z5**: Pinned private CA registration, certificate validation, fail-closed missing CA, peer SPKI fingerprint pinning, expected egress IP verification (`test_rc3_11_pinned_proxy_ca_registration_z1_z5.js` — 12/12 PASS).
   * **Y1 - Y5**: Side-panel clickability resilience, static overlay triple fail-safe, click interception diagnostics (`test_rc3_10_side_panel_clickability_y1_y5.js` — 7/7 PASS).
   * **X1 - X6**: Two-layer TLS separation, eventual consistency bounded deletion, structured error propagation (`test_rc3_9_canary_tls_and_eventual_delete_x1_x6.js` — 7/7 PASS).
   * Control Plane Button Binding: `test_control_plane_button_binding.js` — 8/8 PASS.
   * Full Security Hardening: `test_private_egress_security_hardening.js` — 20/20 PASS.
-  * Local Archive Verification: `scratch/verify_local_rc3_12.js` — 13/13 PASS.
-  * Hosted Download Verification: `scratch/verify_downloaded_rc3_12.js` — 15/15 PASS.
+  * Local Archive Verification: `scratch/verify_local_rc3_13.js` — 13/13 PASS.
+  * Hosted Download Verification: `scratch/verify_downloaded_rc3_13.js` — 15/15 PASS.
 
 ### Operating Guidelines & Invariants:
 1. **Ultra Economy Production Tier**:
@@ -44,13 +45,13 @@
    - Approved package `XPIDER_R6.9G.10.3.7.1.4.11_OWNER_BETA.zip` on functional commit `50aee353` remains immutable.
    - Owner daily use continues without disruption.
 3. **Acceptance Invariant**:
-   - Step B real cloud VPS creation remains strictly on **HOLD** pending Owner confirmation that DigitalOcean console has zero lingering droplets and zero firewalls, followed by explicit authorization of the single RC3.12 retry.
+   - Step B real cloud VPS creation remains strictly on **HOLD** pending ChatGPT Independent Audit of RC3.13 and Owner confirmation that DigitalOcean console has zero lingering droplets and zero firewalls.
 
 ## Lineage & Verification Anchors
 - Rollback Anchor: `50aee3538806d7b5227fcd929e27979d1e5a3419`
-- Functional Head: `0a916ef1b7d36e6167b045d32e6bb0377b62e5b3` (short: `0a916ef1`)
-- Provenance/Packaging Head: `59f89fd5f0697d89373a6ae0741c14a125e568a5` (short: `59f89fd5`)
-- Release Candidate Tag: `v6.9g.10.3-rc3.12.7.1.4.26`
-- Hosted Release Asset: `XPIDER_R6.9G.10.3.7.1.4.26_PRIVATE_EGRESS_RC3.12.zip`
-- Asset SHA-256: `838fed8dd97419ca2e7fa75377a9bf1cde5100a0ab614ed2171edf7c076d9ec2`
-- Asset Byte Size: `45334439` bytes
+- Functional Head: `5860689a07a7dce899d578edaba29503fa11ef9f` (short: `5860689a`)
+- Provenance/Packaging Head: `aa5aed2b48aa9221124d770c0c6cbf7906d48259` (short: `aa5aed2b`)
+- Release Candidate Tag: `v6.9g.10.3-rc3.13.7.1.4.27`
+- Hosted Release Asset: `XPIDER_R6.9G.10.3.7.1.4.27_PRIVATE_EGRESS_RC3.13.zip`
+- Asset SHA-256: `fc85609f87a26ac6b917f2ed8e49e639c70296a78d2d8b31f8571433f8b6ed9e`
+- Asset Byte Size: `45335937` bytes
