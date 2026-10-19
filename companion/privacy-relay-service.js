@@ -484,7 +484,7 @@ class PrivacyRelayService {
               node.observedFingerprint = fp;
               node.lastHealth = 'HEALTHY';
               node.lastVerifiedAt = Date.now();
-              done({ verified: true, fingerprint: fp, observed });
+              done({ verified: true, fingerprint: fp, observed, ip: observed, observedEgressIp: observed });
             } else {
               node.lastHealth = 'UNHEALTHY';
               done({ verified: false, reason: 'NO_VALID_EGRESS_PAYLOAD' });
@@ -578,17 +578,28 @@ class PrivacyRelayService {
   async rotateEgress(reason = 'MANUAL', overrideCanaryUrl = null) {
     if (!this.pool.nodes || this.pool.nodes.length === 0) {
       this.relayReady = false;
-      return { success: false, reason: 'NO_NODES_IN_POOL' };
+      return {
+        success: false,
+        verified: false,
+        reason: 'NO_NODES_IN_POOL',
+        details: 'NO_NODES_IN_POOL',
+        selectedEgressId: null,
+        observedEgressIp: null,
+        egressFingerprint: null
+      };
     }
     const prev = this.getActiveNode();
     if (reason === 'HEALTH_FAILOVER' && this.relayReady && this.isNodeHealthValid(prev)) {
       return {
         success: true,
+        verified: true,
         selectedEgressId: prev.id,
-        egressFingerprint: prev.observedFingerprint,
+        observedEgressIp: prev.observedEgressIp || null,
+        egressFingerprint: prev.observedFingerprint || null,
         rotationCount: this.rotationCount,
         transport: prev.type,
-        health: 'HEALTHY'
+        health: 'HEALTHY',
+        details: 'HEALTH_VALID'
       };
     }
     const total = this.pool.nodes.length;
@@ -612,11 +623,15 @@ class PrivacyRelayService {
           this.log(`[PRIVACY_RELAY_ROTATE] fromId=${prev ? prev.id : 'none'} toId=${candidate.id} reason=${reason} verified=true fingerprint=${candidate.observedFingerprint}`);
           return {
             success: true,
+            verified: true,
             selectedEgressId: candidate.id,
-            egressFingerprint: candidate.observedFingerprint,
+            observedEgressIp: candidate.observedEgressIp || verifyRes.observedEgressIp || verifyRes.observed || verifyRes.ip || null,
+            egressFingerprint: candidate.observedFingerprint || verifyRes.fingerprint || null,
             rotationCount: this.rotationCount,
             transport: candidate.type,
-            health: 'HEALTHY'
+            health: 'HEALTHY',
+            details: 'VERIFIED',
+            verifyResult: verifyRes
           };
         } else {
           this.log(`[PRIVACY_RELAY_CANDIDATE_FAILED] candidate=${candidate.id} reason=${verifyRes.reason}`);
@@ -630,8 +645,11 @@ class PrivacyRelayService {
     this.log(`[PRIVACY_RELAY_FAIL_CLOSED] All candidate egress nodes failed health check during rotation`);
     return {
       success: false,
+      verified: false,
       reason: 'PRIVACY_RELAY_NO_HEALTHY_EGRESS',
+      details: 'All candidate egress nodes failed health check during rotation',
       selectedEgressId: null,
+      observedEgressIp: null,
       egressFingerprint: null
     };
   }
@@ -639,15 +657,39 @@ class PrivacyRelayService {
   async selectEgress(nodeId, overrideCanaryUrl = null) {
     if (!this.pool.nodes || this.pool.nodes.length === 0) {
       this.relayReady = false;
-      return { success: false, reason: 'NO_NODES_IN_POOL' };
+      return {
+        success: false,
+        verified: false,
+        reason: 'NO_NODES_IN_POOL',
+        details: 'NO_NODES_IN_POOL',
+        selectedEgressId: null,
+        observedEgressIp: null,
+        egressFingerprint: null
+      };
     }
     const idx = this.pool.nodes.findIndex(n => n.id === nodeId);
     if (idx === -1) {
-      return { success: false, reason: 'NODE_NOT_FOUND' };
+      return {
+        success: false,
+        verified: false,
+        reason: 'NODE_NOT_FOUND',
+        details: `Node "${nodeId}" was not found in pool`,
+        selectedEgressId: null,
+        observedEgressIp: null,
+        egressFingerprint: null
+      };
     }
     const candidate = this.pool.nodes[idx];
     if (candidate.active === false) {
-      return { success: false, reason: 'NODE_INACTIVE' };
+      return {
+        success: false,
+        verified: false,
+        reason: 'NODE_INACTIVE',
+        details: `Node "${nodeId}" is currently disabled/inactive`,
+        selectedEgressId: candidate.id,
+        observedEgressIp: candidate.observedEgressIp || null,
+        egressFingerprint: candidate.observedFingerprint || null
+      };
     }
 
     const prev = this.getActiveNode();
@@ -660,8 +702,12 @@ class PrivacyRelayService {
       const detailedReason = verifyRes.reason ? `CANDIDATE_HEALTH_CHECK_FAILED: ${verifyRes.reason}` : 'CANDIDATE_HEALTH_CHECK_FAILED';
       return {
         success: false,
+        verified: false,
         reason: detailedReason,
         details: verifyRes.reason || 'UNVERIFIED',
+        selectedEgressId: candidate.id,
+        observedEgressIp: null,
+        egressFingerprint: null,
         verifyResult: verifyRes
       };
     }
@@ -677,11 +723,15 @@ class PrivacyRelayService {
     this.log(`[PRIVACY_RELAY_ROTATE] fromId=${prev ? prev.id : 'none'} toId=${candidate.id} reason=EXPLICIT_SELECTION verified=true fingerprint=${candidate.observedFingerprint}`);
     return {
       success: true,
+      verified: true,
       selectedEgressId: candidate.id,
-      egressFingerprint: candidate.observedFingerprint,
+      observedEgressIp: candidate.observedEgressIp || verifyRes.observedEgressIp || verifyRes.observed || verifyRes.ip || null,
+      egressFingerprint: candidate.observedFingerprint || verifyRes.fingerprint || null,
       rotationCount: this.rotationCount,
       transport: candidate.type,
-      health: 'HEALTHY'
+      health: 'HEALTHY',
+      details: 'VERIFIED',
+      verifyResult: verifyRes
     };
   }
 
@@ -916,12 +966,21 @@ class PrivacyRelayService {
             if (body) {
               const data = JSON.parse(body);
               if (data.egressId) nodeId = data.egressId;
+              if (data.requestedNodeId) nodeId = data.requestedNodeId;
               if (data.canaryUrl) selCanaryUrl = data.canaryUrl;
             }
           } catch (_) {}
           if (!nodeId) {
             res.writeHead(400);
-            res.end(JSON.stringify({ success: false, reason: 'MISSING_EGRESS_ID' }));
+            res.end(JSON.stringify({
+              success: false,
+              verified: false,
+              reason: 'MISSING_EGRESS_ID',
+              details: 'MISSING_EGRESS_ID',
+              selectedEgressId: null,
+              observedEgressIp: null,
+              egressFingerprint: null
+            }));
             return;
           }
           const result = await this.selectEgress(nodeId, selCanaryUrl);
@@ -991,7 +1050,15 @@ class PrivacyRelayService {
           const active = this.getActiveNode();
           if (!active) {
             res.writeHead(503);
-            res.end(JSON.stringify({ success: false, reason: 'NO_ACTIVE_NODE' }));
+            res.end(JSON.stringify({
+              success: false,
+              verified: false,
+              reason: 'NO_ACTIVE_NODE',
+              details: 'NO_ACTIVE_NODE',
+              selectedEgressId: null,
+              observedEgressIp: null,
+              egressFingerprint: null
+            }));
             return;
           }
           const verifyRes = await this.verifyNodeEgress(active, this.pool.healthCheckTimeoutMs || 5000, probeCanaryUrl);
@@ -1000,8 +1067,18 @@ class PrivacyRelayService {
           }
           res.writeHead(verifyRes.verified ? 200 : 503);
           res.end(JSON.stringify({
+            success: Boolean(verifyRes.verified),
+            verified: Boolean(verifyRes.verified),
+            selectedEgressId: active.id,
             activeNode: active.id,
-            ...verifyRes
+            observedEgressIp: active.observedEgressIp || verifyRes.observedEgressIp || verifyRes.observed || verifyRes.ip || null,
+            egressFingerprint: active.observedFingerprint || verifyRes.fingerprint || null,
+            rotationCount: this.rotationCount,
+            transport: active.type,
+            health: verifyRes.verified ? 'HEALTHY' : 'UNHEALTHY',
+            reason: verifyRes.reason || null,
+            details: verifyRes.reason || (verifyRes.verified ? 'VERIFIED' : 'UNVERIFIED'),
+            verifyResult: verifyRes
           }));
         });
         return;

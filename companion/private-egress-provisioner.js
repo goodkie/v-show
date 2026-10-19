@@ -2473,9 +2473,27 @@ systemctl restart ssh || systemctl restart sshd
   async probeCompanionNode(nodeId) {
     if (this.mockMode) {
       if (this.simulateProbeUnverified) {
-        return { success: true, verified: false, reason: 'SIMULATED_UNVERIFIED_PROBE' };
+        return {
+          success: true,
+          verified: false,
+          reason: 'SIMULATED_UNVERIFIED_PROBE',
+          details: 'SIMULATED_UNVERIFIED_PROBE',
+          selectedEgressId: nodeId,
+          observedEgressIp: null,
+          egressFingerprint: null
+        };
       }
-      return { success: true, verified: true, observedEgressIp: '198.51.100.12' };
+      return {
+        success: true,
+        verified: true,
+        selectedEgressId: nodeId,
+        observedEgressIp: '198.51.100.12',
+        egressFingerprint: 'mock-egress-fp',
+        rotationCount: 1,
+        transport: 'HTTPS_PROXY',
+        health: 'HEALTHY',
+        details: 'VERIFIED'
+      };
     }
 
     const token = this.controlToken || this.loadLocalControlToken();
@@ -2496,9 +2514,16 @@ systemctl restart ssh || systemctl restart sshd
         res.on('data', d => body += d);
         res.on('end', () => {
           try {
-            resolve(JSON.parse(body));
-          } catch (_) {
-            resolve({ success: res.statusCode === 200, raw: body });
+            const parsed = JSON.parse(body);
+            resolve(parsed);
+          } catch (jsonErr) {
+            resolve({
+              success: false,
+              verified: false,
+              reason: `INVALID_JSON_RESPONSE: ${jsonErr.message}`,
+              details: body,
+              raw: body
+            });
           }
         });
       });
