@@ -6,13 +6,13 @@
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issue #6 (Responding to ChatGPT Directive #6260945430 & Owner Incident Report #6261136757)
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-18.40
-- Authority Cursor: 6261136757
+- State Rev: 2026-10-18.41
+- Authority Cursor: 6263121277
 - Last Directive / Audit: [CHATGPT AUDIT & GATE DECISION][RC3.14 APPROVED — RC3.15 UPGRADE/START DIRECTIVE] #6260945430 & Owner Report #6261136757
 - Last Receipt: `[ANTIGRAVITY][RC3.15 UPGRADE-STATE-MIGRATION AND START/REPAIR RECOVERY CLOSURE RECEIPT]` #6263121277
 - Build ID: `R6.9G.10.3.7.1.4.29-20261019-PRIVATE-EGRESS-RC3.15`
 - Current Candidate Release Tag: `v6.9g.10.3-rc3.15.7.1.4.29`
-- Functional Head Commit: `b7cc5981370796dbaebf7e78f3818d682b4d0bdd` (short: `b7cc5981`)
+- Functional Head Commit: `78959e21bc5c03cf443f11bc0eb9e3b9aa9b6579` (short: `78959e21`)
 - Provenance/Packaging Head Commit: `90bd40084ee955944a4132a0d17af0cc703df6d7` (short: `90bd4008`)
 - Tag Target Commit SHA: `90bd40084ee955944a4132a0d17af0cc703df6d7`
 - Rollback Anchor: `50aee3538806d7b5227fcd929e27979d1e5a3419`
