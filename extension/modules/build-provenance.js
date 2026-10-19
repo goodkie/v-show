@@ -15,30 +15,30 @@
 
     const BUILD_INFO = {
         branch: 'upgrade/phase-0-1',
-        channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.12',
+        channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.13',
         testOnly: true,
-        // [R6.9G.10.3.7.1.4.26] XPIDER AutoForm Sender Pro — Private Egress Release Candidate 3.12 (Unified Verified Contract & AA1-AA3 Closure)
-        implementationHead: '0a916ef1b7d36e6167b045d32e6bb0377b62e5b3',
-        implementationHeadShort: '0a916ef1',
-        head: '0a916ef1b7d36e6167b045d32e6bb0377b62e5b3',
-        headShort: '0a916ef1',
+        // [R6.9G.10.3.7.1.4.27] XPIDER AutoForm Sender Pro — Private Egress Release Candidate 3.13 (Layer-2 Preflight Diagnostic Contract & Control Bypass Closure)
+        implementationHead: '5860689a07a7dce899d578edaba29503fa11ef9f',
+        implementationHeadShort: '5860689a',
+        head: '5860689a07a7dce899d578edaba29503fa11ef9f',
+        headShort: '5860689a',
         rollbackBase: '50aee3538806d7b5227fcd929e27979d1e5a3419',
         previousFunctionalRestorePoint: '50aee3538806d7b5227fcd929e27979d1e5a3419',
         manifestVersion: 3,
-        buildId: 'R6.9G.10.3.7.1.4.26-20261018-PRIVATE-EGRESS-RC3.12',
-        builtAt: '2026-10-19T01:53:31.053Z',
+        buildId: 'R6.9G.10.3.7.1.4.27-20261018-PRIVATE-EGRESS-RC3.13',
+        builtAt: '2026-10-19T04:12:36.901Z',
         provenanceSchema: 2,
         modules: {
-            backgroundSha: '46ae6ebbc5e3df9311e92135a18ddc983bdb983ca71ecb16bb027a2944dd32dc',
+            backgroundSha: 'd8d82f209ca7429b38c911a98d5ce39be40891d2c534611cf5276eb9f238687f',
             contentScriptSha: 'a6a34d79c4da791a245b16709f8976fb88418ef4f8398cd3b19df1c52bced270',
-            popupSha: 'a068d18b71c958268769c13c18725a266f24066f276559f9792650ac9d95443d',
+            popupSha: '73aab9e23b6a0a92d743e7c06c85474cdf53818d9f6bf04c36fdded15c61aaf1',
             solverContentSha: 'd7de969d29df29799537b11380f0f82967bb93da227c91e7dc8c6af0d128f457',
             solverCoreSha: '01b3d96048ea933403e4599854dcdca28027e7f676aa5077eb6c5eb0582ac1e7',
             emailCollectorSha: '3f1147a379e159e7777158f2caa74cc8d40b2a0b0eb2c244f440af379cb5c9c9',
             historyStoreSha: '0dc2fbda1b1506de9394f87a965ff2ebd5721ea1c47d7bda07c9411193890d8c',
             contactGateSha: '0d01acb2d0a9448d154353fac5b527c17afa42fed56c68d6a49b39053629bd7d',
             visionSubmitSha: '25cf18a4834bb476edff5e8f19a78dd2723bd556ede649ada69bc801543c83f3',
-            privacyGatewaySha: '89e01e4809cab63ede9db3b5d116e3d4d0ead8581a89ec3c8fa2ca46e9ef2f1a'
+            privacyGatewaySha: '9373629c8bfd788142eb646ab4ad0e0673db25222aab0109146e20768d723b41'
         }
     };
 

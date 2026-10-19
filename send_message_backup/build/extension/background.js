@@ -3465,6 +3465,12 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
         case 'DESTROY_PRIVATE_EGRESS': {
             (async () => {
                 try {
+                    // [RC3.13 Teardown Proxy Clearing] Clear proxy before teardown to prevent proxy interception
+                    if (typeof chrome !== 'undefined' && chrome.proxy && chrome.proxy.settings) {
+                        try {
+                            await new Promise(r => chrome.proxy.settings.clear({ scope: 'regular' }, r));
+                        } catch (_) {}
+                    }
                     const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
                     if (!pg) return sendResponse({ success: false, error: 'PrivacyGateway unavailable' });
                     const res = await pg.destroyPrivateEgress(request.payload || request.data || {});

@@ -2652,14 +2652,16 @@ async function hydrateSettings(overrideV2Store = null) {
                             });
                             prepResult = (prepResponse && prepResponse.success && prepResponse.result) ? prepResponse.result : null;
                         } catch (prepErr) {
-                            prepResult = { ready: false, reason: prepErr.message };
+                            prepResult = { ready: false, failureReason: prepErr.message, reason: prepErr.message };
                         }
+
+                        const prepReason = prepResult?.failureReason || prepResult?.reason || 'ENSURE_ENFORCED_PRIVACY_BLOCKED';
+                        addLog(`🛡️ [LAYER 2] ENSURE_ENFORCED_PRIVACY_FOR_START: ready=${prepResult?.ready} mode=${prepResult?.mode || 'none'} reason=${prepReason}`, prepResult?.ready ? 'info' : 'warn');
 
                         if (!prepResult || !prepResult.ready) {
                             updateStageStatus(8, 'FAIL');
-                            const reason = prepResult?.reason || 'ENSURE_ENFORCED_PRIVACY_BLOCKED';
-                            addLog(`❌ [AUTHORITATIVE_PREFLIGHT_FAIL] Layer 2 PrivacyGateway blocked start: ${reason}`, 'error');
-                            alert(`🛑 [AUTHORITATIVE PRIVACY GATE BLOCKED]\n\nCompanion node active, but Extension PrivacyGateway blocked strict privacy.\n\nReason: ${reason}`);
+                            addLog(`❌ [AUTHORITATIVE_PREFLIGHT_FAIL] Layer 2 PrivacyGateway blocked start: ${prepReason}`, 'error');
+                            alert(`🛑 [AUTHORITATIVE PRIVACY GATE BLOCKED]\n\nCompanion node active, but Extension PrivacyGateway blocked strict privacy.\n\nReason: ${prepReason}`);
                             checkWizardRecoveryState();
                             return;
                         }
@@ -2677,14 +2679,16 @@ async function hydrateSettings(overrideV2Store = null) {
                             });
                             pfResult = (preflightResponse && preflightResponse.success && preflightResponse.preflight) ? preflightResponse.preflight : null;
                         } catch (pfErr) {
-                            pfResult = { ready: false, reason: pfErr.message };
+                            pfResult = { ready: false, failureReason: pfErr.message, reason: pfErr.message, directFallbackBlocked: 'UNKNOWN' };
                         }
 
-                        if (!pfResult || !pfResult.ready || pfResult.directFallbackBlocked === false) {
+                        const pfReason = pfResult?.failureReason || pfResult?.reason || (pfResult?.directFallbackBlocked !== 'BLOCKED' ? 'DIRECT_FALLBACK_NOT_BLOCKED' : 'PREFLIGHT_NOT_READY');
+                        addLog(`🛡️ [LAYER 2] RUN_PRIVACY_PREFLIGHT: ready=${pfResult?.ready} directFallbackBlocked=${pfResult?.directFallbackBlocked} egressCheck=${pfResult?.egressCheck || 'UNKNOWN'} selectedEgress=${pfResult?.selectedEgressId || 'none'} reason=${pfReason}`, pfResult?.ready ? 'info' : 'warn');
+
+                        if (!pfResult || !pfResult.ready || pfResult.directFallbackBlocked !== 'BLOCKED') {
                             updateStageStatus(8, 'FAIL');
-                            const reason = pfResult?.reason || 'DIRECT_FALLBACK_NOT_BLOCKED';
-                            addLog(`❌ [AUTHORITATIVE_PREFLIGHT_FAIL] Layer 2 Preflight failed or direct fallback unblocked: ${reason}`, 'error');
-                            alert(`🛑 [AUTHORITATIVE PREFLIGHT BLOCKED]\n\nPrivacyGateway check failed:\nReason: ${reason}\nDirect Fallback Blocked: ${pfResult?.directFallbackBlocked}`);
+                            addLog(`❌ [AUTHORITATIVE_PREFLIGHT_FAIL] Layer 2 Preflight failed or direct fallback unblocked: ${pfReason} (directFallbackBlocked=${pfResult?.directFallbackBlocked}, egressCheck=${pfResult?.egressCheck || 'UNKNOWN'})`, 'error');
+                            alert(`🛑 [AUTHORITATIVE PREFLIGHT BLOCKED]\n\nPrivacyGateway check failed:\nReason: ${pfReason}\nDirect Fallback Blocked: ${pfResult?.directFallbackBlocked}\nEgress Check: ${pfResult?.egressCheck || 'UNKNOWN'}\nSelected Egress: ${pfResult?.selectedEgressId || 'none'}`);
                             checkWizardRecoveryState();
                             return;
                         }
@@ -2720,6 +2724,11 @@ async function hydrateSettings(overrideV2Store = null) {
                         if (curRec && curRec.transactionTag) payload.transactionTag = curRec.transactionTag;
                         if (curRec && curRec.dropletId) payload.dropletId = curRec.dropletId;
                         if (curRec && curRec.firewallId) payload.firewallId = curRec.firewallId;
+
+                        // [RC3.13 Teardown Proxy Clearing] Clear proxy before recovery cleanup to prevent proxy interception
+                        if (typeof chrome !== 'undefined' && chrome.proxy && chrome.proxy.settings) {
+                            try { chrome.proxy.settings.clear({ scope: 'regular' }); } catch (_) {}
+                        }
 
                         chrome.runtime.sendMessage({
                             action: 'DESTROY_PRIVATE_EGRESS',
@@ -2773,6 +2782,11 @@ async function hydrateSettings(overrideV2Store = null) {
 
                     destroyBtn.disabled = true;
                     destroyBtn.textContent = '⏳ Destroying...';
+
+                    // [RC3.13 Teardown Proxy Clearing] Clear proxy before teardown to prevent proxy interception
+                    if (typeof chrome !== 'undefined' && chrome.proxy && chrome.proxy.settings) {
+                        try { chrome.proxy.settings.clear({ scope: 'regular' }); } catch (_) {}
+                    }
 
                     chrome.runtime.sendMessage({
                         action: 'DESTROY_PRIVATE_EGRESS',

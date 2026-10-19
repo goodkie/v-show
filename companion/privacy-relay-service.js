@@ -49,8 +49,8 @@ const TOKEN_FILE = path.join(__dirname, '.control_token');
 const EXPOSED_RC3_6_TOKEN_SHA256 = '597a70b99c11c7f4d13a075204ac240bb08a7a1d6c08c78268328e0bb59daeda';
 
 // [Defect Q2 Hardening - Issue #6 Comment #6244711545] Authoritative companion build identity & capabilities
-const COMPANION_BUILD_ID = 'R6.9G.10.3.7.1.4.26-20261018-PRIVATE-EGRESS-RC3.12';
-const COMPANION_IMPLEMENTATION_HEAD = '0a916ef1b7d36e6167b045d32e6bb0377b62e5b3';
+const COMPANION_BUILD_ID = 'R6.9G.10.3.7.1.4.27-20261018-PRIVATE-EGRESS-RC3.13';
+const COMPANION_IMPLEMENTATION_HEAD = '5860689a07a7dce899d578edaba29503fa11ef9f';
 
 function isCompatibleExtensionBuild(extBuildId, companionBuildId) {
   if (!extBuildId || typeof extBuildId !== 'string') return false;

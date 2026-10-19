@@ -845,6 +845,18 @@
          */
         async destroyPrivateEgress(data) {
             if (!data || !data.token) return { success: false, reason: 'MISSING_API_TOKEN' };
+
+            // [RC3.13 Teardown Resilience]
+            // Teardown must NEVER depend on or be disrupted by active browser proxy routing.
+            // Clear browser proxy settings prior to dispatching teardown to Companion control plane.
+            if (typeof chrome !== 'undefined' && chrome.proxy && chrome.proxy.settings) {
+                try {
+                    await new Promise(r => chrome.proxy.settings.clear({ scope: 'regular' }, r));
+                    this.isGateActive = false;
+                    this.isGateReady = false;
+                } catch (_) {}
+            }
+
             const host = this.config.relayHost || '127.0.0.1';
             const port = this.config.relayControlPort || 18989;
             try {
@@ -862,14 +874,32 @@
                 if (res.ok) {
                     return await res.json();
                 }
-                // [X5 Closure] Preserve structured destroy response end-to-end without collapsing to HTTP_500
-                const errData = await res.json().catch(() => ({}));
+                // [X5 & RC3.13 Closure] Preserve structured destroy response end-to-end without collapsing to generic HTTP_502
+                const resStatus = res.status;
+                let errData = {};
+                let rawText = '';
+                try {
+                    if (typeof res.text === 'function') {
+                        rawText = await res.text();
+                        try {
+                            errData = JSON.parse(rawText);
+                        } catch (_) {
+                            errData = { details: rawText };
+                        }
+                    } else if (typeof res.json === 'function') {
+                        errData = await res.json();
+                    }
+                } catch (_) {
+                    errData = {};
+                }
+
                 return Object.assign({
                     success: false,
-                    reason: errData.reason || (Array.isArray(errData.errors) && errData.errors.length > 0 ? errData.errors.join('; ') : `HTTP_${res.status}`),
-                    status: errData.status || `HTTP_${res.status}`,
-                    errors: errData.errors || [],
-                    verifications: errData.verifications || {}
+                    reason: errData.reason || (Array.isArray(errData.errors) && errData.errors.length > 0 ? errData.errors.join('; ') : (errData.details ? `HTTP_${resStatus}: ${errData.details}` : `HTTP_${resStatus}`)),
+                    status: errData.status || `HTTP_${resStatus}`,
+                    errors: errData.errors || (errData.details ? [errData.details] : []),
+                    verifications: errData.verifications || {},
+                    details: errData.details || rawText || null
                 }, errData);
             } catch (e) {
                 return { success: false, reason: e.message };
@@ -890,10 +920,17 @@
                 const fetchFn = this._mockFetch !== undefined ? this._mockFetch : (typeof fetch !== 'undefined' ? fetch : null);
                 if (!fetchFn) return { success: false, reason: 'FETCH_UNAVAILABLE' };
                 const headers = this.getRelayAuthHeaders();
-                const res = await fetchFn(`http://${host}:${port}/recovery-status`, {
+                let res = await fetchFn(`http://${host}:${port}/recovery-status`, {
                     cache: 'no-store',
                     headers
                 });
+                if (res.status === 502 && typeof chrome !== 'undefined' && chrome.proxy && chrome.proxy.settings) {
+                    // Possible proxy self-interception: clear proxy and retry once directly
+                    try {
+                        await new Promise(r => chrome.proxy.settings.clear({ scope: 'regular' }, r));
+                        res = await fetchFn(`http://${host}:${port}/recovery-status`, { cache: 'no-store', headers });
+                    } catch (_) {}
+                }
                 if (res.ok) {
                     return await res.json();
                 }
@@ -1513,12 +1550,25 @@
                 ? (Array.isArray(bypassList) ? [...bypassList] : [bypassList])
                 : (this.config.proxyBypassList ? [...this.config.proxyBypassList] : ((host === '127.0.0.1' || host === 'localhost') ? ['<-loopback>'] : ['<local>']));
 
-            // Control port on localhost must NEVER be proxied through the upstream tunnel
+            // [RC3.13 Bypass Ordering & Self-Interception Fix]
+            // Control port on localhost must NEVER be proxied through the upstream tunnel.
+            // In Chromium net::ProxyBypassRules, bypass rules are evaluated sequentially.
+            // When '<-loopback>' is present (used to subtract default localhost bypass so local fixtures/canary traverse proxy),
+            // '<-loopback>' MUST come FIRST, and explicit control-plane bypass rules MUST come AFTER it
+            // as exceptions. If placed before '<-loopback>', '<-loopback>' subtracts and intercepts control calls with HTTP 502.
             const ctrlPort = this.config.relayControlPort || 18989;
-            const ctrlBypass = `127.0.0.1:${ctrlPort}`;
-            if (!resolvedBypass.includes(ctrlBypass)) {
-                resolvedBypass = [ctrlBypass, ...resolvedBypass];
-            }
+            const ctrlEntries = [
+                `127.0.0.1:${ctrlPort}`,
+                `localhost:${ctrlPort}`,
+                `[::1]:${ctrlPort}`
+            ];
+
+            const hasSubtractLoopback = resolvedBypass.includes('<-loopback>');
+            const otherRules = resolvedBypass.filter(r => r !== '<-loopback>' && !ctrlEntries.includes(r));
+
+            resolvedBypass = hasSubtractLoopback
+                ? ['<-loopback>', ...ctrlEntries, ...otherRules]
+                : [...ctrlEntries, ...otherRules];
 
             const proxyConfig = {
                 mode: 'fixed_servers',
@@ -1554,6 +1604,31 @@
                         if (sp.host !== host || Number(sp.port) !== Number(parsedPort)) {
                             return reject(new Error(`PROXY_SETTINGS_VERIFICATION_FAILED: host/port mismatch (expected ${host}:${parsedPort}, got ${sp.host}:${sp.port})`));
                         }
+
+                        // [RC3.13 Verification] Read back bypass list to verify control plane bypass rule order
+                        const rbBypass = (readback.rules && readback.rules.bypassList) || [];
+                        if (rbBypass.includes('<-loopback>')) {
+                            const loopbackIdx = rbBypass.indexOf('<-loopback>');
+                            const ctrlIdx = rbBypass.indexOf(`127.0.0.1:${ctrlPort}`);
+                            if (ctrlIdx !== -1 && ctrlIdx < loopbackIdx) {
+                                return reject(new Error(`PROXY_SETTINGS_VERIFICATION_FAILED: control bypass index (${ctrlIdx}) is before <-loopback> (${loopbackIdx})`));
+                            }
+                        }
+
+                        // [RC3.13 Live Control-Plane Assertion]
+                        // Verify that Companion control plane (127.0.0.1:ctrlPort) is reachable directly and NOT intercepted by proxy with 502
+                        if (typeof fetch !== 'undefined') {
+                            try {
+                                const ctrlCheck = await fetch(`http://127.0.0.1:${ctrlPort}/health`, { cache: 'no-store' });
+                                if (ctrlCheck.status === 502) {
+                                    return reject(new Error(`CONTROL_PLANE_SELF_INTERCEPTION_DETECTED: 127.0.0.1:${ctrlPort} returned HTTP 502 from proxy`));
+                                }
+                            } catch (_) {
+                                // If companion is not currently running, connection refused is expected;
+                                // HTTP 502 bad gateway from proxy is what indicates interception.
+                            }
+                        }
+
                         resolve({ success: true, mode, host, port: parsedPort, bypassList: resolvedBypass, verified: true });
                     } catch (vErr) {
                         reject(vErr);
