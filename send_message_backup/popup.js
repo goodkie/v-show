@@ -2187,6 +2187,133 @@ async function hydrateSettings(overrideV2Store = null) {
                 }
             };
 
+            // [RC3.14 CC2] Continuous Live Relay Status Polling & Dynamic UI Reflection
+            let liveStatusPollTimer = null;
+
+            const updateLiveRelayStatusUi = (statusData) => {
+                const liveContainer = document.getElementById('wizard-live-status-container');
+                const liveBadge = document.getElementById('wizard-live-status-badge');
+                const liveAge = document.getElementById('wizard-live-health-age');
+                const liveDetails = document.getElementById('wizard-live-status-details');
+                const activeIndicator = document.getElementById('wizard-active-live-indicator');
+                const activeBannerTitle = document.getElementById('wizard-active-banner-title');
+                const activeBannerBadge = document.getElementById('wizard-active-banner-badge');
+
+                if (!statusData) {
+                    if (liveContainer) liveContainer.style.display = 'none';
+                    if (activeIndicator) activeIndicator.innerHTML = '<span style="color: #94a3b8;">Live Relay: Offline or unreachable</span>';
+                    return;
+                }
+
+                const isReady = Boolean(statusData.relayReady);
+                const isHealthValid = Boolean(statusData.isHealthValid);
+                const isExpired = Boolean(statusData.isExpired);
+                const healthStr = statusData.health || 'UNKNOWN';
+                const ttlSec = Math.round((statusData.healthTtlMs || 60000) / 1000);
+                const ageSec = statusData.healthAgeMs != null ? Math.max(0, Math.round(statusData.healthAgeMs / 1000)) : null;
+
+                // Show live container if progressHud is visible and at 100%
+                if (progressHud && progressHud.style.display !== 'none' && progressBar && progressBar.style.width === '100%') {
+                    if (liveContainer) liveContainer.style.display = 'block';
+                }
+
+                if (isReady && isHealthValid && !isExpired && healthStr === 'HEALTHY') {
+                    // HEALTHY / READY
+                    if (liveBadge) {
+                        liveBadge.textContent = '🟢 OPERATIONAL: READY (HEALTHY)';
+                        liveBadge.style.color = '#4ade80';
+                        liveBadge.style.background = 'rgba(74, 222, 128, 0.2)';
+                        liveBadge.style.border = '1px solid #4ade80';
+                    }
+                    if (liveAge) {
+                        liveAge.textContent = `Health Age: ${ageSec !== null ? ageSec + 's' : '0s'} / TTL: ${ttlSec}s`;
+                        liveAge.style.color = '#86efac';
+                    }
+                    if (liveDetails) {
+                        liveDetails.textContent = `Continuous health refresh active (cadence: ${Math.round((statusData.healthRefreshIntervalMs || 20000) / 1000)}s). Traffic forwarding enabled.`;
+                        liveDetails.style.color = '#cbd5e1';
+                    }
+                    if (activeIndicator) {
+                        activeIndicator.innerHTML = `🟢 <b>LIVE STATUS: HEALTHY</b> — Verified ${ageSec !== null ? ageSec + 's' : '0s'} ago (TTL: ${ttlSec}s). Forwarding active.`;
+                        activeIndicator.style.border = '1px solid #22c55e';
+                        activeIndicator.style.color = '#86efac';
+                    }
+                    if (activeBannerTitle) activeBannerTitle.textContent = '🟢 ACTIVE PRIVATE EGRESS NODE EXISTS';
+                    if (activeBannerBadge) {
+                        activeBannerBadge.textContent = 'HEALTHY';
+                        activeBannerBadge.style.color = '#4ade80';
+                        activeBannerBadge.style.background = 'rgba(34, 197, 94, 0.25)';
+                    }
+                    if (activeBanner) {
+                        activeBanner.style.border = '1px solid #22c55e';
+                        activeBanner.style.background = 'rgba(34, 197, 94, 0.12)';
+                    }
+                    if (progressTitle && progressBar && progressBar.style.width === '100%') {
+                        progressTitle.textContent = '8/8 STRICT PRIVACY READY';
+                    }
+                } else {
+                    // NOT READY / DEGRADED / EXPIRED
+                    const reason = isExpired ? 'HEALTH_TTL_EXPIRED' : (healthStr !== 'HEALTHY' ? healthStr : 'RELAY_NOT_READY');
+                    if (liveBadge) {
+                        liveBadge.textContent = `⚠️ OPERATIONAL: NOT READY / DEGRADED (${reason})`;
+                        liveBadge.style.color = '#f87171';
+                        liveBadge.style.background = 'rgba(239, 68, 68, 0.25)';
+                        liveBadge.style.border = '1px solid #ef4444';
+                    }
+                    if (liveAge) {
+                        liveAge.textContent = `Health Age: ${ageSec !== null ? ageSec + 's' : 'EXPIRED'} / TTL: ${ttlSec}s`;
+                        liveAge.style.color = '#fca5a5';
+                    }
+                    if (liveDetails) {
+                        liveDetails.textContent = `⚠️ Fail-Closed Active: Egress health TTL expired or probe failed. Proxy forwarding blocked until health check passes.`;
+                        liveDetails.style.color = '#fca5a5';
+                    }
+                    if (activeIndicator) {
+                        activeIndicator.innerHTML = `⚠️ <b>LIVE STATUS: DEGRADED / EXPIRED</b> (${reason}) — Health Age: ${ageSec !== null ? ageSec + 's' : 'N/A'}, TTL: ${ttlSec}s. Forwarding Blocked.`;
+                        activeIndicator.style.border = '1px solid #ef4444';
+                        activeIndicator.style.color = '#fca5a5';
+                    }
+                    if (activeBannerTitle) activeBannerTitle.textContent = '⚠️ ACTIVE NODE DEGRADED / EXPIRED';
+                    if (activeBannerBadge) {
+                        activeBannerBadge.textContent = 'DEGRADED';
+                        activeBannerBadge.style.color = '#fca5a5';
+                        activeBannerBadge.style.background = 'rgba(239, 68, 68, 0.3)';
+                    }
+                    if (activeBanner) {
+                        activeBanner.style.border = '2px solid #ef4444';
+                        activeBanner.style.background = 'rgba(239, 68, 68, 0.15)';
+                    }
+
+                    // If historical progress hud is at 100%, clearly distinguish historical provisioning from live status
+                    if (progressTitle && progressBar && progressBar.style.width === '100%') {
+                        progressTitle.textContent = `8/8 PROVISIONED — ⚠️ LIVE STATUS: DEGRADED`;
+                    }
+                }
+            };
+
+            const pollLiveRelayStatus = () => {
+                chrome.runtime.sendMessage({ action: 'QUERY_PRIVACY_RELAY_STATUS' }, (res) => {
+                    if (res && res.success && res.result && res.result.status) {
+                        updateLiveRelayStatusUi(res.result.status);
+                    } else {
+                        updateLiveRelayStatusUi(null);
+                    }
+                });
+            };
+
+            const startLiveRelayPolling = () => {
+                if (liveStatusPollTimer) clearInterval(liveStatusPollTimer);
+                pollLiveRelayStatus();
+                liveStatusPollTimer = setInterval(pollLiveRelayStatus, 5000);
+            };
+
+            const stopLiveRelayPolling = () => {
+                if (liveStatusPollTimer) {
+                    clearInterval(liveStatusPollTimer);
+                    liveStatusPollTimer = null;
+                }
+            };
+
             // [U1 & U3 Hardening] Check and display recovery or active node status
             const checkWizardRecoveryState = (onDone) => {
                 // [Build Parity Check - Issue #6 Comment #6251236140] Check Extension & Companion builds
@@ -2281,6 +2408,7 @@ async function hydrateSettings(overrideV2Store = null) {
                             ].filter(Boolean);
                             activeDetails.innerHTML = parts.join('<br>');
                         }
+                        pollLiveRelayStatus();
                         if (createBtn) {
                             createBtn.disabled = true;
                             createBtn.textContent = '🔒 BLOCKED: Active Node Exists (Single-Owner Limit)';
@@ -2704,6 +2832,7 @@ async function hydrateSettings(overrideV2Store = null) {
 
                         alert(`✅ Private Egress successfully deployed & authoritative preflight VERIFIED!\nIP: ${res.result.publicIp}\nTier: ${res.result.tier} (~$${res.result.monthlyCostUsd}/mo)\n\nBoth Companion & Extension PrivacyGateway gates verified: Strict Privacy is READY.`);
                         checkWizardRecoveryState();
+                        pollLiveRelayStatus();
                         pollTelemetry();
                     });
                 };
@@ -2814,8 +2943,10 @@ async function hydrateSettings(overrideV2Store = null) {
                 };
             }
 
-            // Initial telemetry poll
+            // Initial telemetry & live relay status poll
             pollTelemetry();
+            startLiveRelayPolling();
+            window.addEventListener('unload', stopLiveRelayPolling);
         };
         initPrivateEgressWizard();
 

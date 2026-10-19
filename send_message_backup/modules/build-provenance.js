@@ -15,23 +15,23 @@
 
     const BUILD_INFO = {
         branch: 'upgrade/phase-0-1',
-        channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.13',
+        channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.14',
         testOnly: true,
-        // [R6.9G.10.3.7.1.4.27] XPIDER AutoForm Sender Pro — Private Egress Release Candidate 3.13 (Layer-2 Preflight Diagnostic Contract & Control Bypass Closure)
-        implementationHead: '5860689a07a7dce899d578edaba29503fa11ef9f',
-        implementationHeadShort: '5860689a',
-        head: '5860689a07a7dce899d578edaba29503fa11ef9f',
-        headShort: '5860689a',
+        // [R6.9G.10.3.7.1.4.28] XPIDER AutoForm Sender Pro — Private Egress Release Candidate 3.14 (Continuous Health Refresh & Live Status UI Closure)
+        implementationHead: '0e0d6522c3f9093a1ae90eb36cca40f2cf4cf8e1',
+        implementationHeadShort: '0e0d6522',
+        head: '0e0d6522c3f9093a1ae90eb36cca40f2cf4cf8e1',
+        headShort: '0e0d6522',
         rollbackBase: '50aee3538806d7b5227fcd929e27979d1e5a3419',
         previousFunctionalRestorePoint: '50aee3538806d7b5227fcd929e27979d1e5a3419',
         manifestVersion: 3,
-        buildId: 'R6.9G.10.3.7.1.4.27-20261018-PRIVATE-EGRESS-RC3.13',
-        builtAt: '2026-10-19T04:12:36.901Z',
+        buildId: 'R6.9G.10.3.7.1.4.28-20261019-PRIVATE-EGRESS-RC3.14',
+        builtAt: '2026-10-19T05:40:12.789Z',
         provenanceSchema: 2,
         modules: {
             backgroundSha: 'd8d82f209ca7429b38c911a98d5ce39be40891d2c534611cf5276eb9f238687f',
             contentScriptSha: 'a6a34d79c4da791a245b16709f8976fb88418ef4f8398cd3b19df1c52bced270',
-            popupSha: '73aab9e23b6a0a92d743e7c06c85474cdf53818d9f6bf04c36fdded15c61aaf1',
+            popupSha: 'b8393c4b6b78b2b49270f90f592eba218a0bb59c315a7303fd0025f71cdb0625',
             solverContentSha: 'd7de969d29df29799537b11380f0f82967bb93da227c91e7dc8c6af0d128f457',
             solverCoreSha: '01b3d96048ea933403e4599854dcdca28027e7f676aa5077eb6c5eb0582ac1e7',
             emailCollectorSha: '3f1147a379e159e7777158f2caa74cc8d40b2a0b0eb2c244f440af379cb5c9c9',
