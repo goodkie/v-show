@@ -4,21 +4,22 @@
 - Protocol: OCA-DEV-1.4
 - Project ID: xpider-autoform-sender-pro
 - Workspace: E:\vivpr\ai\extension-form-sender
-- Authority: goodkie/v-show Issue #6 (Responding to Owner Incident Reports #6272814942, #6272895776, #6273581344 and ChatGPT Directive #6273652325)
+- Authority: goodkie/v-show Issue #6 (Responding to ChatGPT Audit #6274286920 & Directive #6273652325)
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-18.42
-- Authority Cursor: 6274115090
-- Last Directive / Audit: [CHATGPT][RC3.15 ROOT CAUSE CONFIRMED][MAIN HUD RELAY_OFFLINE IS A MISSING MESSAGE-HANDLER BUG] #6273652325
+- State Rev: 2026-10-18.43
+- Authority Cursor: 6274286920
+- Last Directive / Audit: [CHATGPT][RC3.16 INDEPENDENT AUDIT][CODE/PACKAGE PASS WITH PROVENANCE-TEXT CORRECTIONS — OWNER TEST AUTHORIZED] #6274286920
 - Last Receipt: `[ANTIGRAVITY][RC3.16 MAIN-HUD-MESSAGING-CONTRACT AND PREFLIGHT-SYNC CLOSURE RECEIPT]` #6274115090
 - Build ID: `R6.9G.10.3.7.1.4.30-20261019-PRIVATE-EGRESS-RC3.16`
 - Current Candidate Release Tag: `v6.9g.10.3-rc3.16.7.1.4.30`
-- Functional Head Commit: `0aaa05d25243eb29e71ec9d58ca02c815255476c` (short: `0aaa05d2`)
-- Provenance/Packaging Head Commit: `c0d93aa9592f754fc321d50c7fc017046b0a1d30` (short: `c0d93aa9`)
-- Tag Target Commit SHA: `d38b88b77d6ba2fdfae5b512c0a87679808381bb` (short: `d38b88b7`)
+- Annotated Tag Object: `4d95d87f23e35fead56d9a87c0a21d089d8e9b6b`
+- Functional Head Commit: `0aaa05d21b907b77a61a054f3e0e2a36bce16806` (short: `0aaa05d2`)
+- Provenance/Packaging Head Commit: `c0d93aa9c59f8ee9435b72a1f4c9eb4bae5662d5` (short: `c0d93aa9`)
+- Tag Target Commit SHA: `d38b88b7809ca390aec4a5a5fd76b528a84d6965` (short: `d38b88b7`)
 - Rollback Anchor: `50aee3538806d7b5227fcd929e27979d1e5a3419`
 
 ## Current Gate
-- Formal Gate: **RC3.16 LOCAL & REMOTE AUDIT PASS (AWAITING CHATGPT INDEPENDENT AUDIT)**.
+- Formal Gate: **RC3.16 CODE/PACKAGE PASS — OWNER TEST AUTHORIZED (ChatGPT Audit #6274286920)**.
 - Incident Context & Root Cause (Comments #6272814942, #6272895776, #6273581344, #6273652325):
   * Owner ran RC3.15 `XPIDER_AUTO_SETUP.bat`: Companion, state migration, and Privacy Preflight passed 100% (Companion ONLINE/READY, pool=1, Privacy Status Card: `PRIVACY GATEWAY: ON (READY)`, `EGRESS CHECK: PASS`).
   * **Failure Observed**: Main campaign HUD in `popup.html` remained stuck on `PRIVACY: BLOCKED — RELAY_OFFLINE`, even after popup close and reopen.
@@ -61,9 +62,10 @@
 
 ## Lineage & Verification Anchors
 - Rollback Anchor: `50aee3538806d7b5227fcd929e27979d1e5a3419`
-- Functional Head: `0aaa05d25243eb29e71ec9d58ca02c815255476c` (short: `0aaa05d2`)
-- Provenance/Packaging Head: `c0d93aa9592f754fc321d50c7fc017046b0a1d30` (short: `c0d93aa9`)
-- Tag Target Head: `d38b88b77d6ba2fdfae5b512c0a87679808381bb` (short: `d38b88b7`)
+- Functional Head: `0aaa05d21b907b77a61a054f3e0e2a36bce16806` (short: `0aaa05d2`)
+- Provenance/Packaging Head: `c0d93aa9c59f8ee9435b72a1f4c9eb4bae5662d5` (short: `c0d93aa9`)
+- Tag Target Head: `d38b88b7809ca390aec4a5a5fd76b528a84d6965` (short: `d38b88b7`)
+- Annotated Tag Object: `4d95d87f23e35fead56d9a87c0a21d089d8e9b6b`
 - Release Candidate Tag: `v6.9g.10.3-rc3.16.7.1.4.30`
 - Hosted Release Asset: `XPIDER_R6.9G.10.3.7.1.4.30_PRIVATE_EGRESS_RC3.16.zip`
 - Asset SHA-256: `726fb05adfabec6e82cce49cfb131f66bdc1d25a0b4d2a18d3f9ece15a9ace19`
