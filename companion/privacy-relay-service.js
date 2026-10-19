@@ -123,6 +123,10 @@ class PrivacyRelayService {
     this.canaryUrl = options.canaryUrl || null;
     this.allowedExtensionId = options.allowedExtensionId || process.env.XPIDER_ALLOWED_EXT_ID || discoverExtensionId(__dirname) || null;
     this.healthTtlMs = options.healthTtlMs || 60000;
+    this.healthRefreshIntervalMs = options.healthRefreshIntervalMs || null;
+    this.enableContinuousHealthMonitor = options.enableContinuousHealthMonitor !== false;
+    this.healthRefreshTimer = null;
+    this.isRefreshingHealth = false;
     this.configFile = options.configFile || CONFIG_FILE;
     this.startTime = Date.now();
     this.activeNodeIndex = 0;
@@ -356,6 +360,91 @@ class PrivacyRelayService {
       return false; // Stale verification expired
     }
     return true;
+  }
+
+  /**
+   * [RC3.14 CC1] Bounded cadence <= TTL / 3 (e.g. 15-20s for 60s TTL)
+   */
+  getHealthRefreshIntervalMs() {
+    if (this.healthRefreshIntervalMs && typeof this.healthRefreshIntervalMs === 'number' && this.healthRefreshIntervalMs > 0) {
+      return this.healthRefreshIntervalMs;
+    }
+    const ttl = this.healthTtlMs || (this.pool && this.pool.healthTtlMs) || 60000;
+    return Math.max(100, Math.min(20000, Math.floor(ttl / 3)));
+  }
+
+  /**
+   * [RC3.14 CC1] Start continuous proactive health monitor to renew verification before TTL expiry
+   */
+  startContinuousHealthMonitor() {
+    this.stopContinuousHealthMonitor();
+    if (!this.enableContinuousHealthMonitor) return;
+    if (this.isPaused) return;
+    const intervalMs = this.getHealthRefreshIntervalMs();
+    this.log(`[PRIVACY_RELAY_HEALTH_MONITOR] Starting continuous health monitor (cadence=${intervalMs}ms, ttl=${this.healthTtlMs}ms)`);
+    this.healthRefreshTimer = setInterval(async () => {
+      try {
+        await this.refreshActiveNodeHealth();
+      } catch (err) {
+        this.log(`[PRIVACY_RELAY_HEALTH_MONITOR_ERROR] Unexpected error in health refresh: ${err.message}`);
+      }
+    }, intervalMs);
+    if (this.healthRefreshTimer && typeof this.healthRefreshTimer.unref === 'function') {
+      this.healthRefreshTimer.unref();
+    }
+  }
+
+  /**
+   * [RC3.14 CC1] Stop continuous health monitor and release timer
+   */
+  stopContinuousHealthMonitor() {
+    if (this.healthRefreshTimer) {
+      clearInterval(this.healthRefreshTimer);
+      this.healthRefreshTimer = null;
+      this.log(`[PRIVACY_RELAY_HEALTH_MONITOR] Continuous health monitor stopped`);
+    }
+    this.isRefreshingHealth = false;
+  }
+
+  /**
+   * [RC3.14 CC1] Single-flight active node canary refresh probe
+   */
+  async refreshActiveNodeHealth() {
+    if (this.isRefreshingHealth) {
+      this.log(`[PRIVACY_RELAY_HEALTH_MONITOR] Health refresh probe already in flight, skipping overlapping probe`);
+      return { inFlight: true };
+    }
+
+    const active = this.getActiveNode();
+    if (!active || active.active === false) {
+      this.relayReady = false;
+      return { verified: false, reason: 'NO_ACTIVE_NODE' };
+    }
+
+    if (this.isPaused) {
+      return { verified: false, reason: 'RELAY_PAUSED' };
+    }
+
+    this.isRefreshingHealth = true;
+    try {
+      const timeoutMs = this.pool.healthCheckTimeoutMs || 5000;
+      const vRes = await this.verifyNodeEgress(active, timeoutMs);
+      if (vRes.verified) {
+        this.relayReady = true;
+        this.log(`[PRIVACY_RELAY_HEALTH_MONITOR] Active node=${active.id} health probe SUCCESS (lastVerifiedAt=${active.lastVerifiedAt})`);
+        return { verified: true, node: active.id };
+      } else {
+        this.log(`[PRIVACY_RELAY_HEALTH_MONITOR] Active node=${active.id} health probe FAILED: ${vRes.reason}`);
+        await this.handleActiveFailure(`CONTINUOUS_HEALTH_PROBE_FAILED: ${vRes.reason}`);
+        return { verified: false, reason: vRes.reason };
+      }
+    } catch (err) {
+      this.log(`[PRIVACY_RELAY_HEALTH_MONITOR] Active node probe exception: ${err.message}`);
+      await this.handleActiveFailure(`CONTINUOUS_HEALTH_PROBE_EXCEPTION: ${err.message}`);
+      return { verified: false, reason: err.message };
+    } finally {
+      this.isRefreshingHealth = false;
+    }
   }
 
   /**
@@ -620,6 +709,7 @@ class PrivacyRelayService {
           if (this.physicalGate && this.physicalGate.enabled) {
             await this.physicalGate.evaluate(candidate, (n) => this.verifyNodeEgress(n));
           }
+          this.startContinuousHealthMonitor();
           this.log(`[PRIVACY_RELAY_ROTATE] fromId=${prev ? prev.id : 'none'} toId=${candidate.id} reason=${reason} verified=true fingerprint=${candidate.observedFingerprint}`);
           return {
             success: true,
@@ -720,6 +810,7 @@ class PrivacyRelayService {
     if (this.physicalGate && this.physicalGate.enabled) {
       await this.physicalGate.evaluate(candidate, (n) => this.verifyNodeEgress(n));
     }
+    this.startContinuousHealthMonitor();
     this.log(`[PRIVACY_RELAY_ROTATE] fromId=${prev ? prev.id : 'none'} toId=${candidate.id} reason=EXPLICIT_SELECTION verified=true fingerprint=${candidate.observedFingerprint}`);
     return {
       success: true,
@@ -779,6 +870,7 @@ class PrivacyRelayService {
     const active = this.getActiveNode();
     const ttl = this.healthTtlMs || (this.pool && this.pool.healthTtlMs) || 60000;
     const isHealthValid = this.isNodeHealthValid(active);
+    const healthAgeMs = (active && active.lastVerifiedAt > 0) ? (Date.now() - active.lastVerifiedAt) : null;
     const isExpired = active && active.lastVerifiedAt > 0 && (Date.now() - active.lastVerifiedAt > ttl);
     const physicalGateReady = !this.physicalGate.enabled || Boolean(this.physicalGate.state && this.physicalGate.state.ready);
     const ready = !this.isPaused && this.relayReady && isHealthValid && physicalGateReady;
@@ -798,7 +890,9 @@ class PrivacyRelayService {
         lastHealth: healthStatus,
         hasCredentials: Boolean(n.username || n.credentialRef || n.password),
         fingerprint: n.observedFingerprint || null,
-        lastVerifiedAt: n.lastVerifiedAt || 0
+        lastVerifiedAt: n.lastVerifiedAt || 0,
+        healthAgeMs: n.lastVerifiedAt > 0 ? (Date.now() - n.lastVerifiedAt) : null,
+        isExpired: Boolean(nodeExpired)
       };
     });
 
@@ -815,6 +909,11 @@ class PrivacyRelayService {
       transport: active ? active.type : 'NONE',
       health: isExpired ? 'EXPIRED' : (active ? (active.lastHealth || 'UNKNOWN') : 'NO_NODES'),
       healthTtlMs: ttl,
+      healthAgeMs: healthAgeMs,
+      healthRefreshIntervalMs: this.getHealthRefreshIntervalMs(),
+      isHealthValid: Boolean(isHealthValid),
+      isExpired: Boolean(isExpired),
+      lastVerifiedAt: (active && active.lastVerifiedAt) ? active.lastVerifiedAt : 0,
       activeNodeIndex: this.activeNodeIndex,
       totalNodes: this.pool.nodes ? this.pool.nodes.length : 0,
       rotationCount: this.rotationCount,
@@ -1020,6 +1119,7 @@ class PrivacyRelayService {
       // POST /pause (Authenticated)
       if (pathname === '/pause' && req.method === 'POST') {
         this.isPaused = true;
+        this.stopContinuousHealthMonitor();
         this.log(`[PRIVACY_RELAY] state=PAUSED selectedEgressId=${this.getActiveNode()?.id || 'none'}`);
         res.writeHead(200);
         res.end(JSON.stringify({ success: true, paused: true }));
@@ -1029,6 +1129,9 @@ class PrivacyRelayService {
       // POST /resume (Authenticated)
       if (pathname === '/resume' && req.method === 'POST') {
         this.isPaused = false;
+        if (this.relayReady && this.getActiveNode()) {
+          this.startContinuousHealthMonitor();
+        }
         this.log(`[PRIVACY_RELAY] state=RESUMED selectedEgressId=${this.getActiveNode()?.id || 'none'}`);
         res.writeHead(200);
         res.end(JSON.stringify({ success: true, paused: false }));
@@ -1064,6 +1167,7 @@ class PrivacyRelayService {
           const verifyRes = await this.verifyNodeEgress(active, this.pool.healthCheckTimeoutMs || 5000, probeCanaryUrl);
           if (verifyRes.verified) {
             this.relayReady = true;
+            this.startContinuousHealthMonitor();
           }
           res.writeHead(verifyRes.verified ? 200 : 503);
           res.end(JSON.stringify({
@@ -1220,6 +1324,7 @@ class PrivacyRelayService {
               expectedEgressIp: data.expectedEgressIp && typeof data.expectedEgressIp === 'string' ? data.expectedEgressIp.trim() : (data.observedEgressIp && typeof data.observedEgressIp === 'string' ? data.observedEgressIp.trim() : null),
               expectedEgressFingerprint: data.expectedEgressFingerprint ? data.expectedEgressFingerprint.trim() : null,
               egressIdentityGroup: data.egressIdentityGroup ? data.egressIdentityGroup.trim() : null,
+              canaryUrl: data.canaryUrl ? data.canaryUrl.trim() : null,
               active: data.enabled !== false,
               region: (data.region || '').trim()
             };
@@ -2219,6 +2324,7 @@ class PrivacyRelayService {
       if (vRes.verified) {
         this.relayReady = true;
         this.log(`[PRIVACY_RELAY_STARTUP_PROBE] Sticky active node=${active.id} verified HEALTHY`);
+        this.startContinuousHealthMonitor();
       } else {
         this.relayReady = false;
         this.log(`[PRIVACY_RELAY_STARTUP_PROBE] Sticky active node=${active.id} probe FAILED: ${vRes.reason}`);
@@ -2249,6 +2355,7 @@ class PrivacyRelayService {
   }
 
   async stop() {
+    this.stopContinuousHealthMonitor();
     if (this.physicalGate) {
       this.physicalGate.stopMonitor();
     }

@@ -152,14 +152,18 @@
                     <!-- [U3 Active Banner] Single-owner active node banner -->
                     <div id="wizard-active-banner" style="display: none; background: rgba(34, 197, 94, 0.12); border: 1px solid #22c55e; border-radius: 6px; padding: 10px 12px; margin-bottom: 12px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                            <span style="font-size: 11px; font-weight: 800; color: #4ade80;">🟢 ACTIVE PRIVATE EGRESS NODE EXISTS</span>
-                            <span style="font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: rgba(34, 197, 94, 0.25); color: #4ade80; font-family: monospace;">ACTIVE NODE</span>
+                            <span id="wizard-active-banner-title" style="font-size: 11px; font-weight: 800; color: #4ade80;">🟢 ACTIVE PRIVATE EGRESS NODE EXISTS</span>
+                            <span id="wizard-active-banner-badge" style="font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: rgba(34, 197, 94, 0.25); color: #4ade80; font-family: monospace;">ACTIVE NODE</span>
                         </div>
                         <p style="font-size: 10px; color: #cbd5e1; line-height: 1.4; margin: 0 0 6px 0;">
                             Your single-owner private egress node is currently active. Creating a second node is blocked in single-owner mode:
                         </p>
                         <div id="wizard-active-details" style="font-family: monospace; font-size: 10px; color: #86efac; background: rgba(0,0,0,0.3); padding: 6px; border-radius: 4px; margin-bottom: 8px; line-height: 1.4;">
                             <!-- Droplet ID, IP, Tier, Region -->
+                        </div>
+                        <!-- [RC3.14 CC2] Live Operational Relay Status in Active Banner -->
+                        <div id="wizard-active-live-indicator" style="font-family: monospace; font-size: 10px; padding: 6px; border-radius: 4px; margin-bottom: 8px; line-height: 1.4; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.1);">
+                            Live Status: Checking...
                         </div>
                         <div style="display: flex; gap: 8px;">
                             <button type="button" id="wizard-active-keep-btn" class="secondary-btn" style="flex: 1; font-size: 10px; padding: 6px 10px; border-radius: 4px; cursor: pointer; background: rgba(255,255,255,0.08); color: #e2e8f0; border: 1px solid rgba(255,255,255,0.2);">
@@ -262,6 +266,16 @@
                         </div>
                         <div id="wizard-stage-list" style="display: flex; flex-direction: column; gap: 4px; font-size: 9px; font-family: monospace;">
                             <!-- Dynamically populated -->
+                        </div>
+                        <!-- [RC3.14 CC2] Distinct Live Operational Relay Status Banner -->
+                        <div id="wizard-live-status-container" style="display: none; margin-top: 10px; padding: 8px 10px; border-radius: 4px; border: 1px solid #1e293b; background: rgba(15, 23, 42, 0.75); font-family: monospace; font-size: 10px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                <span id="wizard-live-status-badge" style="font-weight: 700; padding: 2px 6px; border-radius: 3px; font-size: 9px; background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid #38bdf8;">LIVE STATUS: CHECKING...</span>
+                                <span id="wizard-live-health-age" style="color: #94a3b8; font-size: 9px;">Age: — / TTL: —</span>
+                            </div>
+                            <div id="wizard-live-status-details" style="color: #cbd5e1; font-size: 9px; line-height: 1.4;">
+                                Connecting to live companion relay monitor...
+                            </div>
                         </div>
                     </div>
 
