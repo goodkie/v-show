@@ -19,7 +19,7 @@ const SILENT_RUNNER_VBS = path.join(RELAY_DIR, 'start_relay_silent.vbs');
 const RELAY_SCRIPT = path.join(RELAY_DIR, 'privacy-relay-service.js');
 const TOKEN_FILE = path.join(RELAY_DIR, '.control_token');
 const EXPOSED_RC3_6_TOKEN_SHA256 = '597a70b99c11c7f4d13a075204ac240bb08a7a1d6c08c78268328e0bb59daeda';
-const COMPANION_BUILD_ID = 'R6.9G.10.3.7.1.4.30-20261019-PRIVATE-EGRESS-RC3.16';
+const COMPANION_BUILD_ID = 'R6.9G.10.3.7.1.4.31-20261019-PRIVATE-EGRESS-RC3.17';
 const CONTROL_PORT = 18989;
 const PROXY_PORT = 18988;
 
@@ -124,7 +124,8 @@ async function startRelay() {
 
   const health = await checkRelayHealth();
   const token = getControlToken();
-  if (health.running && token) {
+  const authStatus = await checkRelayStatus();
+  if (health.running && token && authStatus.running && authStatus.statusCode === 200) {
     const d = health.health || {};
     const caps = Array.isArray(d.apiCapabilities) ? d.apiCapabilities : [];
     const isCurrentBuild = (d.companionBuildId === COMPANION_BUILD_ID);
@@ -255,24 +256,28 @@ async function handleMessage(msg) {
       } catch (_) {}
 
       const res = await startRelay();
-      // Poll up to 10 times (up to 4s) for relay to become responsive AND have a valid token
+      // Poll up to 10 times (up to 4s) for relay to become responsive AND have a valid authenticated token
       let verify = await checkRelayHealth();
       let token = getControlToken();
-      for (let i = 0; i < 10 && (!verify.running || !token); i++) {
+      let authStatus = await checkRelayStatus();
+      for (let i = 0; i < 10 && (!verify.running || !token || !authStatus.running); i++) {
         await new Promise(r => setTimeout(r, 400));
         verify = await checkRelayHealth();
         token = getControlToken();
+        authStatus = await checkRelayStatus();
       }
 
       const isRunning = verify.running;
       const isCurrentBuild = verify.health && verify.health.companionBuildId === COMPANION_BUILD_ID;
       const hasToken = !!token;
-      const isReady = isRunning && isCurrentBuild && hasToken;
+      const isAuthenticated = authStatus.running && authStatus.statusCode === 200;
+      const isReady = isRunning && isCurrentBuild && hasToken && isAuthenticated;
 
       let failureReason = null;
       if (!isRunning) failureReason = 'COMPANION_PORT_UNREACHABLE';
       else if (!isCurrentBuild) failureReason = 'STALE_COMPANION_BUILD_NOT_UPGRADED';
       else if (!hasToken) failureReason = 'AUTH_TOKEN_MISSING';
+      else if (!isAuthenticated) failureReason = (authStatus.statusCode === 401 ? 'TOKEN_DESYNC_401' : (authStatus.reason || 'UNAUTHENTICATED'));
 
       return {
         action: 'START_RESPONSE',
@@ -280,6 +285,7 @@ async function handleMessage(msg) {
         result: res,
         isRunningNow: isRunning,
         isCurrentBuild,
+        isAuthenticated,
         companionBuildId: verify.health ? verify.health.companionBuildId : null,
         expectedBuildId: COMPANION_BUILD_ID,
         controlToken: token,
@@ -293,6 +299,7 @@ async function handleMessage(msg) {
     case 'DIAGNOSTICS': {
       const health = await checkRelayHealth();
       const token = getControlToken();
+      const authStatus = await checkRelayStatus();
       const poolConfigPath = path.join(RELAY_DIR, 'egress_pool_config.json');
       const txPath = path.join(RELAY_DIR, '.private_egress_transaction.json');
 
@@ -322,6 +329,25 @@ async function handleMessage(msg) {
         }
       } catch (_) {}
 
+      let tokenValidity = 'UNKNOWN';
+      let tokenDesync = false;
+      if (!token) {
+        tokenValidity = 'TOKEN_MISSING';
+      } else if (health.running && authStatus.running && authStatus.statusCode === 200) {
+        tokenValidity = 'TOKEN_PRESENT_VALID';
+      } else if (health.running && authStatus.statusCode === 401) {
+        tokenValidity = 'TOKEN_PRESENT_REJECTED';
+        tokenDesync = true;
+      } else if (!health.running) {
+        tokenValidity = 'PORT_OFFLINE';
+      }
+
+      let failureReason = null;
+      if (!health.running) failureReason = 'PORT_18989_OFFLINE';
+      else if (tokenDesync) failureReason = 'TOKEN_DESYNC_401';
+      else if (!token) failureReason = 'AUTH_TOKEN_MISSING';
+      else if (!authStatus.running) failureReason = (authStatus.reason || 'STATUS_ERROR');
+
       return {
         action: 'DIAGNOSTICS_RESPONSE',
         success: true,
@@ -335,6 +361,10 @@ async function handleMessage(msg) {
         port18989Health: health.running ? 'LISTENING_HTTP_200' : 'UNREACHABLE',
         hasControlToken: !!token,
         tokenLength: token ? token.length : 0,
+        tokenValidity,
+        tokenDesync,
+        authenticatedStatus: authStatus.running,
+        authenticatedStatusCode: authStatus.statusCode,
         poolConfigExists,
         poolNodesCount,
         selectedEgressId,
@@ -342,7 +372,8 @@ async function handleMessage(msg) {
         txStatus,
         txStage,
         txPublicIp,
-        nodeVersion: process.version
+        nodeVersion: process.version,
+        failureReason
       };
     }
 

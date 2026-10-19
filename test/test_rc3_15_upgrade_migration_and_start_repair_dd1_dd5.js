@@ -21,7 +21,8 @@ const { migrateActiveEgressState, mirrorStateToGlobalBackup, isEgressPoolActive,
 const { PrivacyRelayService } = require('../companion/privacy-relay-service');
 const winsec = require('../companion/winsec');
 
-const EXPECTED_BUILD_ID = 'R6.9G.10.3.7.1.4.29-20261019-PRIVATE-EGRESS-RC3.15';
+const { COMPANION_BUILD_ID } = require('../companion/privacy-relay-service');
+const EXPECTED_BUILD_ID = COMPANION_BUILD_ID || 'R6.9G.10.3.7.1.4.31-20261019-PRIVATE-EGRESS-RC3.17';
 
 async function main() {
     console.log('========================================================================');
