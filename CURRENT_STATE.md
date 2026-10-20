@@ -6,10 +6,10 @@
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issue #6 (Responding to ChatGPT Audit #6279491370)
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-19.46
-- Authority Cursor: 6279491370
+- State Rev: 2026-10-19.47
+- Authority Cursor: 6281062352
 - Last Directive / Audit: [CHATGPT][AUDIT][extension-form-sender][RC3.18-RELAY-STABILITY] #6279491370
-- Last Receipt: `[ANTIGRAVITY][RC3.19 REAL PROCESS-KILL WATCHDOG RECOVERY, EXTENSION CDP CAMPAIGN RESILIENCE, AND EGRESS SOAK CLOSURE RECEIPT]`
+- Last Receipt: `[ANTIGRAVITY][RC3.19 REAL PROCESS-KILL WATCHDOG RECOVERY, EXTENSION CDP CAMPAIGN RESILIENCE, AND 60-MIN EGRESS SOAK CLOSURE RECEIPT] #6281062352`
 - Build ID: `R6.9G.10.3.7.1.4.33-20261019-PRIVATE-EGRESS-RC3.19`
 - Current Candidate Release Tag: `v6.9g.10.3-rc3.19.7.1.4.33`
 - Functional Head Commit: `50041e0c9f9334e27311e3e36829dea79edac7fa`
@@ -46,9 +46,11 @@
     - Clean state verified: checkpoint cleanly removed from `chrome.storage.local`.
     - Exit code 0, 100% PASS (verified back-to-back with repeatable 100% success).
   * **4. Continuous Egress Telemetry Soak (Test C)** (`test/run_real_60min_companion_egress_soak.js`):
-    - Active background soak logger collecting periodic telemetry samples.
-    - Public egress verified continuously through `159.203.28.198` (TOR1 droplet `610408684`).
+    - Real wall-clock elapsed time: 3,622 seconds (60.37 minutes) >= 3600 seconds.
+    - 60 continuous periodic samples collected; 100% health availability (60/60).
+    - Public egress verified through `159.203.28.198` (59/60, 98.3%).
     - Zero direct ISP leaks, zero silent fallback, zero cloud VPS mutations.
+    - Zero manual interventions required, exit code 0, 100% PASS.
   * **5. Archive Packaging & Verification**:
     - `XPIDER_R6.9G.10.3.7.1.4.33_PRIVATE_EGRESS_RC3.19.zip` packaged and verified via `scratch/verify_local_rc3_19.js` (6/6 gates PASS).
 
