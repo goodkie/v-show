@@ -7,9 +7,9 @@
 - Authority: goodkie/v-show Issue #6 (Responding to Directive [RC3.23-CAPTCHA-SKIP-TERMINAL-SETTLEMENT-RACE] Comment #6300788298)
 - Branch: upgrade/phase-0-1
 - State Rev: 2026-10-20.59
-- Authority Cursor: 6300788298
+- Authority Cursor: 6301154147
 - Last Directive / Audit: `[CHATGPT][OWNER-SMOKE][extension-form-sender][RC3.23-CAPTCHA-SKIP-TERMINAL-SETTLEMENT-RACE] Comment #6300788298`
-- Last Receipt: `[ANTIGRAVITY][RECEIPT][extension-form-sender][RC3.24-CAPTCHA-SKIP-TERMINAL-SETTLEMENT-AND-LIFECYCLE-ATOMICITY]`
+- Last Receipt: `[ANTIGRAVITY][RECEIPT][extension-form-sender][RC3.24-CAPTCHA-SKIP-TERMINAL-SETTLEMENT-AND-LIFECYCLE-ATOMICITY] #6301154147`
 - Build ID: `R6.9G.10.3.7.1.4.38-20261020-PRIVATE-EGRESS-RC3.24`
 - Current Candidate Release Tag: `v6.9g.10.3-rc3.24.7.1.4.38`
 - Functional Head Commit: `63e97460c860464eb094c920d94a7ca6a97e7eb5` (short: `63e97460`)
