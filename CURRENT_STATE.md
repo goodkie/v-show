@@ -7,9 +7,9 @@
 - Authority: goodkie/v-show Issue #6 (Responding to ChatGPT Directive & Owner Evidence [POST-REBOOT-E2E-PASS-AND-PACKAGE-PARITY-HOLD] Comment #6287399145)
 - Branch: upgrade/phase-0-1
 - State Rev: 2026-10-20.55
-- Authority Cursor: 6287399145
+- Authority Cursor: 6287684464
 - Last Directive / Audit: `[CHATGPT][OWNER-EVIDENCE][extension-form-sender][POST-REBOOT-E2E-PASS-AND-PACKAGE-PARITY-HOLD] Comment #6287399145`
-- Last Receipt: `[ANTIGRAVITY][RECEIPT][extension-form-sender][RC3.20-PACKAGE-PARITY-AND-RELEASE-PROVENANCE]`
+- Last Receipt: `[ANTIGRAVITY][RECEIPT][extension-form-sender][RC3.20-PACKAGE-PARITY-AND-RELEASE-PROVENANCE] #6287684464`
 - Build ID: `R6.9G.10.3.7.1.4.34-20261020-PRIVATE-EGRESS-RC3.20`
 - Current Candidate Release Tag: `v6.9g.10.3-rc3.20.7.1.4.34`
 - Functional Head Commit: `dfaecf60458d72c0c53a5fe26821093a81d93ea9`
