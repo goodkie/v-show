@@ -1121,8 +1121,10 @@
                     logDev("✅ [Engine] Campaign step successfully executed.", "success");
                     return; // EXIT: Step complete
                 } else {
-                    if (currentTargetLifecycleState === TargetLifecycleState.SETTLED || currentTargetLifecycleState === TargetLifecycleState.SETTLING) {
-                        logDev("[LIFECYCLE] Target already settling/settled post-audit form submit recovery. Aborting fallback discovery.", "info");
+                    if (currentTargetLifecycleState === TargetLifecycleState.SETTLED || 
+                        currentTargetLifecycleState === TargetLifecycleState.SETTLING ||
+                        currentTargetLifecycleState === TargetLifecycleState.SUBMIT_RECOVERY) {
+                        logDev("[LIFECYCLE] Target in submit/settling recovery. Aborting fallback discovery.", "info");
                         return;
                     }
                     logDev("⚠️ [Engine] Mapping incomplete or form hidden. Retrying alternative discovery...", "warning");
@@ -1592,6 +1594,7 @@
 
     async function fillAndSubmit(form, template, speed) {
         try {
+            window.__xpider_last_template = template;
             _isCaptchaSolved = false;
             extractAndSendPageEmails('FORM_ENTRY');
 
@@ -1605,18 +1608,33 @@
                 }
                 logDev(`[CONTACT_GATE] PASS bodyField=${classification.bodyFieldType}`, "success");
                 logDev("[STAGE] stage=ELIGIBLE_FORM_FOUND", "success");
+                const liveFormIdentity = {
+                    action: form.getAttribute('action') || form.action || '',
+                    formId: form.id || form.name || 'contact_form',
+                    method: (form.method || 'POST').toUpperCase(),
+                    fieldsCount: (form.elements || []).length,
+                    tag: form.tagName || 'FORM'
+                };
+                window.__xpider_current_form_identity = liveFormIdentity;
+                window.__xpider_current_field_mapping = {};
+                window.__xpider_current_filled_fields = [];
+                window.__xpider_current_submit_state = 'NOT_SUBMITTED';
+
                 try {
                     const sendFn = window.__xpider_sendExecutionMessage || chrome.runtime.sendMessage;
                     sendFn({
                         action: 'FORM_GATE_PASSED',
                         contactPageUrl: window.location.href,
                         formPageUrl: window.location.href,
-                        bodyFieldType: classification.bodyFieldType
+                        bodyFieldType: classification.bodyFieldType,
+                        formIdentity: liveFormIdentity
                     });
                     sendFn({
                         action: 'STAGE_PROGRESSION',
                         stage: 'ELIGIBLE_FORM_FOUND',
-                        url: window.location.href
+                        url: window.location.href,
+                        formIdentity: liveFormIdentity,
+                        submitState: 'NOT_SUBMITTED'
                     });
                 } catch (_) {}
             }
@@ -1628,7 +1646,7 @@
             }
 
             logDev("🛠️ Step 3: Registering message template to form fields...", "info");
-            // [v4.1] 300ms 실시간 공란 자동 메꾸기 감시 크롤러 작동 개시
+            window.__xpider_last_template = template;
             startActiveEmptyFieldSweeper(form, template);
 
             const result = await fillFormIntelligent(form, template, speed);
@@ -1749,6 +1767,7 @@
 
             if (window.__xpider_submitBoundaryReached && window.__xpider_submitBoundaryReached[curAttemptId]) {
                 logDev(`[SUBMIT_DUPLICATE_BLOCK] attemptId=${curAttemptId} result=REJECT`, "warning");
+                currentTargetLifecycleState = TargetLifecycleState.SETTLING;
                 return false;
             }
 
@@ -1778,11 +1797,16 @@
                     const ackTimer = setTimeout(() => res({ success: false, reason: 'ack_timeout' }), 5000);
                     const sendFn = window.__xpider_sendExecutionMessage || chrome.runtime.sendMessage;
                     try {
+                        window.__xpider_current_submit_state = 'ATTEMPT_STARTED';
                         sendFn({
                             action: 'STAGE_PROGRESSION',
                             stage: 'SUBMIT_ATTEMPT_STARTED',
                             attemptId: curAttemptId,
-                            url: window.location.href
+                            url: window.location.href,
+                            formIdentity: window.__xpider_current_form_identity || null,
+                            fieldMapping: window.__xpider_current_field_mapping || {},
+                            filledFields: window.__xpider_current_filled_fields || [],
+                            submitState: 'ATTEMPT_STARTED'
                         }, (r) => { clearTimeout(ackTimer); res(r); });
                     } catch (sendErr) {
                         clearTimeout(ackTimer);
@@ -1906,12 +1930,19 @@
             logDev("[SUBMIT] triggered=true", "info");
             logDev("[STAGE] stage=SUBMIT_TRIGGERED", "info");
             try {
+                window.__xpider_current_submit_state = 'TRIGGERED';
                 (window.__xpider_sendExecutionMessage || chrome.runtime.sendMessage)({
                     action: 'STAGE_PROGRESSION',
                     stage: 'SUBMIT_TRIGGERED',
-                    url: window.location.href
+                    url: window.location.href,
+                    formIdentity: window.__xpider_current_form_identity || null,
+                    fieldMapping: window.__xpider_current_field_mapping || {},
+                    filledFields: window.__xpider_current_filled_fields || [],
+                    submitState: 'TRIGGERED'
                 });
             } catch (_) {}
+
+            try { sessionStorage.setItem('xpider_pending_verify', 'true'); } catch(_) {}
 
             return await verifier.verify(submitOutcome);
         } catch (e) {
@@ -3063,6 +3094,22 @@
                 logDev(`   - [FIELD_ASSIGN✅] category=${category} field=${el.id || el.name || 'unnamed'} len=${(val || '').length}`);
             }
             filledFields++;
+
+            try {
+                const fieldKey = el.id || el.name || el.getAttribute('name') || el.getAttribute('id') || `field_${filledFields}`;
+                if (!window.__xpider_current_field_mapping) window.__xpider_current_field_mapping = {};
+                if (!window.__xpider_current_filled_fields) window.__xpider_current_filled_fields = [];
+                window.__xpider_current_field_mapping[fieldKey] = {
+                    category: category,
+                    valLength: (val || '').length,
+                    tag: el.tagName || '',
+                    name: el.name || '',
+                    id: el.id || ''
+                };
+                if (!window.__xpider_current_filled_fields.includes(fieldKey)) {
+                    window.__xpider_current_filled_fields.push(fieldKey);
+                }
+            } catch (_) {}
         };
 
         // 패턴 매칭 함수
@@ -3696,12 +3743,20 @@
             sendFn({
                 action: 'STAGE_PROGRESSION',
                 stage: 'REQUIRED_FIELDS_RESOLVED',
-                url: window.location.href
+                url: window.location.href,
+                formIdentity: window.__xpider_current_form_identity || null,
+                fieldMapping: window.__xpider_current_field_mapping || {},
+                filledFields: window.__xpider_current_filled_fields || [],
+                submitState: window.__xpider_current_submit_state || 'NOT_SUBMITTED'
             });
             sendFn({
                 action: 'STAGE_PROGRESSION',
                 stage: 'FIELD_STATE_STABLE',
-                url: window.location.href
+                url: window.location.href,
+                formIdentity: window.__xpider_current_form_identity || null,
+                fieldMapping: window.__xpider_current_field_mapping || {},
+                filledFields: window.__xpider_current_filled_fields || [],
+                submitState: window.__xpider_current_submit_state || 'NOT_SUBMITTED'
             });
         } catch (_) {}
 
@@ -4259,6 +4314,61 @@
                     }).catch(err => {
                         if (sendResponse) sendResponse({ success: false, error: err.message });
                     });
+                    return true;
+                } else if (msg && msg.action === 'CHECK_SUBMIT_SUCCESS') {
+                    const bodyText = (document.body ? (document.body.innerText || document.body.textContent || '') : '').toLowerCase();
+                    const successKeywords = ['thank you', 'submitted', 'received', 'success', '문의가 정상적으로', '접수되었습니다', '완료되었습니다', '감사합니다', '성공'];
+                    const hasKeyword = successKeywords.some(kw => bodyText.includes(kw));
+                    const formStillPresent = !!document.querySelector('form, #contact_form, .contact-form, [action*="contact"]');
+                    const confirmed = hasKeyword || (window.__xpider_submit_success_confirmed === true);
+                    if (sendResponse) sendResponse({
+                        success: true,
+                        confirmed: confirmed,
+                        reason: hasKeyword ? 'KEYWORD_DETECTED' : (window.__xpider_submit_success_confirmed ? 'CONFIRMED_FLAG' : (formStillPresent ? 'FORM_STILL_PRESENT' : 'NO_CONFIRMATION'))
+                    });
+                    return true;
+                } else if (msg && msg.action === 'FREEZE_NETWORK_RECOVERY') {
+                    window.__xpider_isNetworkDegraded = true;
+                    logDev(`[NETWORK_RECOVERY] ❄️ Content script frozen for network recovery (phase=${msg.checkpoint?.workflowPhase})`, 'warning');
+                    if (sendResponse) sendResponse({ success: true, status: 'FROZEN' });
+                    return true;
+                } else if (msg && msg.action === 'RESUME_CHECKPOINT_REPLAY') {
+                    (async () => {
+                        try {
+                            window.__xpider_isNetworkDegraded = false;
+                            const cp = msg.checkpoint || {};
+                            logDev(`[REPLAY] Resuming checkpoint replay phase=${cp.workflowPhase} submitState=${cp.submitState}`, 'info');
+                            if (cp.attemptId) {
+                                window.__xpider_execution_identity = {
+                                    attemptId: cp.attemptId,
+                                    targetToken: cp.targetToken || window.__xpider_execution_identity?.targetToken || null,
+                                    campaignRunId: cp.campaignRunId || window.__xpider_execution_identity?.campaignRunId || null,
+                                    sessionId: (cp.sessionId !== undefined && cp.sessionId !== null) ? cp.sessionId : (window.__xpider_execution_identity?.sessionId ?? null),
+                                    captchaEpoch: cp.captchaEpoch || 1
+                                };
+                            }
+                            const form = document.querySelector('form, #contact_form, .contact-form, [action*="contact"]');
+                            if (!form) {
+                                if (sendResponse) sendResponse({ success: false, status: 'NO_FORM_FOUND' });
+                                return;
+                            }
+                            if (window.__xpider_current_submit_state === 'TRIGGERED' || cp.submitState === 'SUBMIT_TRIGGERED') {
+                                if (sendResponse) sendResponse({ success: true, status: 'ALREADY_TRIGGERED' });
+                                return;
+                            }
+                            if (window.__xpider_submitBoundaryReached && cp.attemptId) {
+                                delete window.__xpider_submitBoundaryReached[cp.attemptId];
+                            }
+                            const tpl = cp.template || window.__xpider_last_template;
+                            if (sendResponse) sendResponse({ success: true, status: 'RESUMING_PIPELINE' });
+                            if (tpl) {
+                                window.__xpider_last_template = tpl;
+                                await fillAndSubmit(form, tpl, { field: 10, hold: 50 });
+                            }
+                        } catch (err) {
+                            if (sendResponse) sendResponse({ success: false, error: err.message });
+                        }
+                    })();
                     return true;
                 }
             });

@@ -1942,7 +1942,7 @@ if (typeof global !== 'undefined') {
  * without closing tab, without advancing queue or counters, and without recording false failure.
  */
 async function freezeActiveCampaignJob(reason) {
-    if (campaignState.isNetworkDegraded) {
+    if (campaignState.isNetworkDegraded && !reason?.includes('FAULT_INJECTION')) {
         logBg(null, `[NETWORK_RECOVERY] Already in network degradation recovery (${campaignState.networkRecoveryPhase}). Additional reason=${reason}`, "info");
         return;
     }
@@ -1976,6 +1976,9 @@ async function freezeActiveCampaignJob(reason) {
         fieldMapping: campaignState.currentFieldMapping || null,
         filledFields: Array.isArray(campaignState.currentFilledFields) ? [...campaignState.currentFilledFields] : [],
         submitState: campaignState.currentSubmitState || (campaignState.currentTargetStage?.includes('SUBMIT') ? 'SUBMIT_TRIGGERED' : 'NOT_SUBMITTED'),
+        template: campaignState.template || campaignState.currentTemplate || null,
+        targetToken: campaignState.currentTargetToken || null,
+        sessionId: campaignState.sessionId,
         terminalOutcome: null,
         retryCount: campaignState.networkRecoveryRetryCount,
         freezeReason: reason,
@@ -2000,6 +2003,13 @@ async function freezeActiveCampaignJob(reason) {
         phase: 'CHECKPOINTED'
     }).catch(() => {});
 
+    if (campaignState.currentTabId) {
+        chrome.tabs.sendMessage(campaignState.currentTabId, {
+            action: 'FREEZE_NETWORK_RECOVERY',
+            checkpoint
+        }).catch(() => {});
+    }
+
     // Trigger companion self-healing immediately in background
     const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
     if (pg) {
@@ -2018,6 +2028,7 @@ async function freezeActiveCampaignJob(reason) {
 async function resumeActiveCampaignJobAfterRecovery() {
     if (!campaignState.isNetworkDegraded) return;
 
+    campaignState.isPaused = false;
     logBg(null, `[NETWORK_RECOVERY] 🔄 Privacy Relay re-established. Initiating preflight and job restoration...`, "info");
     console.log(`[NETWORK_RECOVERY] Reconnecting -> Privacy Reverify...`);
 
@@ -2079,8 +2090,13 @@ async function resumeActiveCampaignJobAfterRecovery() {
             logBg(null, `[NETWORK_RECOVERY] Submission was confirmed successful during outage. Settle as SUCCESS without resubmit.`, "complete");
             const hs = await getHistoryStoreInstance();
             if (hs && checkpoint.attemptId) {
-                await hs.settleCanonicalAttempt(checkpoint.attemptId, 'SUCCESS', 'DELIVERY_SUCCESS', {}, { campaignRunId: checkpoint.campaignRunId });
+                await hs.settleCanonicalAttempt(checkpoint.attemptId, 'CONFIRMED_SUCCESS', 'SUCCESS_CONFIRMED', {}, { campaignRunId: checkpoint.campaignRunId });
                 await syncCampaignCountersFromLedger(hs);
+            }
+            if (campaignState.targetResolve) {
+                const resolve = campaignState.targetResolve;
+                campaignState.targetResolve = null;
+                resolve({ success: true, reasonCode: 'SUCCESS_CONFIRMED' });
             }
             campaignState.isNetworkDegraded = false;
             campaignState.networkRecoveryPhase = null;
@@ -2106,17 +2122,49 @@ async function resumeActiveCampaignJobAfterRecovery() {
     }
     chrome.runtime.sendMessage({ action: 'NETWORK_RECOVERY_COMPLETED' }).catch(() => {});
 
-    // Ensure the interrupted URL is retried cleanly
-    if (tabId) {
+    let replayed = false;
+    if (tabId && checkpoint.submitState !== 'SUBMIT_TRIGGERED') {
         try {
-            await chrome.tabs.reload(tabId);
-        } catch (_) {
-            if (checkpoint.url && !campaignState.queue.includes(checkpoint.url)) {
-                campaignState.queue.unshift(checkpoint.url);
+            const rRes = await chrome.tabs.sendMessage(tabId, { action: 'RESUME_CHECKPOINT_REPLAY', checkpoint }).catch(() => null);
+            if (rRes && rRes.success) {
+                replayed = true;
+                logBg(null, `[NETWORK_RECOVERY] Checkpoint safely replayed on tab ${tabId} (status=${rRes.status}). Resuming pipeline...`, "info");
+                if (rRes.status === 'ALREADY_TRIGGERED') {
+                    const evalRes = await chrome.tabs.sendMessage(tabId, { action: 'CHECK_SUBMIT_SUCCESS' }).catch(() => null);
+                    if (evalRes && evalRes.confirmed) {
+                        logBg(null, `[NETWORK_RECOVERY] Checkpoint replay discovered ALREADY_TRIGGERED with CONFIRMED success. Settling as SUCCESS.`, "complete");
+                        const hs = await getHistoryStoreInstance();
+                        if (hs && checkpoint.attemptId) {
+                            await hs.settleCanonicalAttempt(checkpoint.attemptId, 'CONFIRMED_SUCCESS', 'SUCCESS_CONFIRMED', {}, { campaignRunId: checkpoint.campaignRunId });
+                            await syncCampaignCountersFromLedger(hs);
+                        }
+                        if (campaignState.targetResolve) {
+                            const resolve = campaignState.targetResolve;
+                            campaignState.targetResolve = null;
+                            resolve({ success: true, reasonCode: 'SUCCESS_CONFIRMED' });
+                        }
+                        if (tabId) chrome.tabs.remove(tabId).catch(() => {});
+                        processNextCampaignTarget(campaignState.sessionId, campaignState.schedulerGeneration);
+                        return;
+                    }
+                }
             }
+        } catch (_) {}
+    }
+
+    // Ensure the interrupted URL is retried cleanly if not replayed in place
+    if (!replayed) {
+        if (tabId) {
+            try {
+                await chrome.tabs.reload(tabId);
+            } catch (_) {
+                if (checkpoint.url && !campaignState.queue.includes(checkpoint.url)) {
+                    campaignState.queue.unshift(checkpoint.url);
+                }
+            }
+        } else if (checkpoint.url && !campaignState.queue.includes(checkpoint.url)) {
+            campaignState.queue.unshift(checkpoint.url);
         }
-    } else if (checkpoint.url && !campaignState.queue.includes(checkpoint.url)) {
-        campaignState.queue.unshift(checkpoint.url);
     }
 
     if (!campaignState.isLoopRunning && campaignState.isActive) {
@@ -4017,6 +4065,13 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                     return;
                 }
 
+                if (!request.result?.success && (campaignState.isNetworkDegraded || request.result?.reasonCode === 'PRIVACY_GATEWAY_BLOCKED_BEFORE_SUBMIT' || request.result?.error === 'PRIVACY_GATEWAY_BLOCKED_BEFORE_SUBMIT')) {
+                    logBg(null, `[NETWORK_RECOVERY] SENDER_FINISHED failure suppressed during network degradation or privacy block. Freezing checkpoint without false failure settlement.`, 'warning');
+                    freezeActiveCampaignJob(`SUBMIT_BARRIER_PRIVACY_BLOCKED: ${request.result?.error || 'DEGRADED'}`).catch(() => {});
+                    sendResponse({ success: true, status: 'FROZEN_FOR_RECOVERY' });
+                    return;
+                }
+
                 const curStage = campaignState.currentTargetStage;
                 // Stage authority: must be at allowed terminal stage or explicit failure/skip
                 const allowedTerminalStages = ['VERIFYING', 'CONFIRMED_SUCCESS', 'SUBMITTING', 'SUBMIT_TRIGGERED', 'SUBMIT_ATTEMPT_STARTED', 'POST_SUBMIT_CONFIRMING', 'SETTLED'];
@@ -4057,6 +4112,7 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                     campaignState.currentDiscoveryCtx.committedContactUrl = cUrl;
                     campaignState.currentDiscoveryCtx.committedFormUrl = fUrl;
                 }
+                if (request.formIdentity) campaignState.currentFormIdentity = request.formIdentity;
                 logBg(sTab.id, `[CONTACT_COMMIT] contactPageUrl=${cUrl}`, "info");
                 logBg(sTab.id, `[FORM_COMMIT] formPageUrl=${fUrl}`, "info");
 
@@ -4100,6 +4156,11 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                 }
 
                 const sTab = sender.tab;
+                if (request.formIdentity) campaignState.currentFormIdentity = request.formIdentity;
+                if (request.fieldMapping) campaignState.currentFieldMapping = request.fieldMapping;
+                if (request.filledFields) campaignState.currentFilledFields = request.filledFields;
+                if (request.submitState) campaignState.currentSubmitState = request.submitState;
+
                 if (request.stage) {
                     // [R6.9G.7 P0-3] Sticky CAPTCHA_PENDING_OWNER: generic stage updates must not overwrite it
                     if (campaignState.currentTargetStage !== 'CAPTCHA_PENDING_OWNER') {
@@ -4293,7 +4354,7 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
         case 'ASSERT_PRIVACY_TRANSPORT_READY':
             (async () => {
                 try {
-                    const validation = validateActiveExecution(request, sender, 'ASSERT_PRIVACY_TRANSPORT_READY', { checkEpoch: true, allowBodyTabId: true });
+                    const validation = validateActiveExecution(request, sender, 'ASSERT_PRIVACY_TRANSPORT_READY', { allowBodyTabId: true });
                     if (!validation.valid) {
                         logBg(null, `[ASSERT_PRIVACY_TRANSPORT_READY] REJECT: reason=${validation.reason}. Identity invalid or stale.`, 'warning');
                         sendResponse({ ready: false, reason: validation.reason, isIdentityValid: false });
@@ -5450,6 +5511,10 @@ async function startCampaignOrchestrator(queue, template, delayMs, fillDelayMs =
         campaignState.ownerFunctionTestMode = !!options.ownerFunctionTestMode;
         campaignState.isActive = true;
         campaignState.isPaused = false; // [v18.7] Reset pause on new start
+        campaignState.isNetworkDegraded = false;
+        campaignState.networkRecoveryPhase = null;
+        campaignState.networkCheckpoint = null;
+        campaignState.networkRecoveryRetryCount = 0;
         campaignState.sessionId++; 
         campaignState.schedulerGeneration = (campaignState.schedulerGeneration || 0) + 1;
         campaignState.currentTargetAbortController = null;
@@ -6150,6 +6215,11 @@ async function processNextCampaignTarget(loopSessionId, loopGeneration) {
                 releaseLease();
                 return;
             }
+
+            campaignState.currentFormIdentity = null;
+            campaignState.currentFieldMapping = {};
+            campaignState.currentFilledFields = [];
+            campaignState.currentSubmitState = 'NOT_SUBMITTED';
 
             const targetIdx = campaignState.totalTargets - campaignState.queue.length;
             logBg(null, `[TARGET ${targetIdx}/${campaignState.totalTargets}][${targetHost}] START`, "info");
@@ -7367,6 +7437,14 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
         } catch (hsErr) {
             logBg(tabId, `⚠️ [F8-HistoryStore] settleCanonicalAttempt failed: ${hsErr.message}`, 'warning');
         }
+
+        // [RC3.19 Resilient Settlement Cleanup] Cleanly remove active checkpoint once target is canonically settled
+        campaignState.isNetworkDegraded = false;
+        campaignState.networkRecoveryPhase = null;
+        campaignState.networkCheckpoint = null;
+        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+            await chrome.storage.local.remove(['xpider_active_network_checkpoint', 'xpider_isNetworkDegraded', 'xpider_networkRecoveryPhase']).catch(() => {});
+        }
         
         try {
             await resolveSubmissionIntent(targetUrl, finalReason, isSuccess);
@@ -7517,10 +7595,10 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
                 startInjection(1500); 
             }
 
-            if (norm && !isFocusSecured && statusInfo.status === 'complete') {
-                 if (campaignState.successfulUrls.includes(norm)) {
-                    logBg(tabId, "⏭️ [Engine] Redirected to success page. Skipping.", "success");
-                    finish({ success: true });
+            if (norm && statusInfo.status === 'complete') {
+                 if (campaignState.successfulUrls.includes(norm) || ((campaignState.currentTargetStage?.includes('SUBMIT') || campaignState.currentSubmitState === 'TRIGGERED') && (norm.includes('success') || norm.includes('thank')))) {
+                    logBg(tabId, `⏭️ [Engine] Redirected to success page (${norm}). Finishing with SUCCESS.`, "success");
+                    finish({ success: true, metadata: { resultUrl: norm } });
                     return;
                 }
             }

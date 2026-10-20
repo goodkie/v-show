@@ -15,22 +15,22 @@
 
     const BUILD_INFO = {
         branch: 'upgrade/phase-0-1',
-        channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.18',
+        channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.19',
         testOnly: true,
-        // [R6.9G.10.3.7.1.4.32] XPIDER AutoForm Sender Pro — Private Egress Release Candidate 3.18 (Persistent Relay Lifecycle & Campaign Pause/Resume Continuity Hotfix)
-        implementationHead: '3dcbbaad0761e3d368e73070445d47e5ec0d3ff7',
+        // [R6.9G.10.3.7.1.4.33] XPIDER AutoForm Sender Pro — Private Egress Release Candidate 3.19 (Live Form State Wiring, Deterministic Safe-Phase Replay & Process-Kill Resilience)
+        implementationHead: '3dcbbaad4af94fefe69c75e720389a3a7493c346',
         implementationHeadShort: '3dcbbaad',
-        head: '3dcbbaad0761e3d368e73070445d47e5ec0d3ff7',
+        head: '3dcbbaad4af94fefe69c75e720389a3a7493c346',
         headShort: '3dcbbaad',
-        rollbackBase: '50aee3538806d7b5227fcd929e27979d1e5a3419',
-        previousFunctionalRestorePoint: '50aee3538806d7b5227fcd929e27979d1e5a3419',
+        rollbackBase: '0a6e843d9e5ae512bf48742473bbd3133050c117',
+        previousFunctionalRestorePoint: '0a6e843d9e5ae512bf48742473bbd3133050c117',
         manifestVersion: 3,
-        buildId: 'R6.9G.10.3.7.1.4.32-20261019-PRIVATE-EGRESS-RC3.18',
-        builtAt: '2026-10-19T22:48:59.991Z',
+        buildId: 'R6.9G.10.3.7.1.4.33-20261019-PRIVATE-EGRESS-RC3.19',
+        builtAt: '2026-10-20T00:19:00.000Z',
         provenanceSchema: 2,
         modules: {
-            backgroundSha: 'a6649e8dd5941ae262eb233321fde68886ebf1880d42e4836b65865f538e7b3d',
-            contentScriptSha: 'a6a34d79c4da791a245b16709f8976fb88418ef4f8398cd3b19df1c52bced270',
+            backgroundSha: 'b0e8ce67a9605e971f9bff914c7c963efeb660c11e8459089debf9239aab4f04',
+            contentScriptSha: '9590675eb799a92b857d69ea8102639ce301e682568a17b1667aff0ba11211d4',
             popupSha: '026325282b0297d1c77fd7bedd172aaa54cf29f4236a2178060f374164db0958',
             solverContentSha: 'd7de969d29df29799537b11380f0f82967bb93da227c91e7dc8c6af0d128f457',
             solverCoreSha: '01b3d96048ea933403e4599854dcdca28027e7f676aa5077eb6c5eb0582ac1e7',
