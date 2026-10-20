@@ -4544,6 +4544,10 @@ function updateRealTimeStatus(data) {
     if (data.failureBreakdown && typeof data.failureBreakdown === 'object') {
         renderFailureBreakdown(data.failureBreakdown);
     }
+
+    if (typeof _renderHistoryPanel === 'function') {
+        _renderHistoryPanel();
+    }
 }
 
 function renderFailureBreakdown(breakdown) {
@@ -9287,8 +9291,8 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
         chrome.storage.onChanged.addListener((changes, area) => {
             if (area && area !== 'local') return;
-            if (changes.xpider_active_campaign_run_id || changes.xpider_isActive || changes.xpider_isPaused) {
-                console.log('[HISTORY_SCOPE_REFRESH] trigger=' + Object.keys(changes).filter(k => /^xpider_(active_campaign_run_id|isActive|isPaused)$/.test(k)).join(','));
+            if (changes.xpider_active_campaign_run_id || changes.xpider_isActive || changes.xpider_isPaused || changes.xpider_history_attempts || changes.xpider_history_rows) {
+                console.log('[HISTORY_SCOPE_REFRESH] trigger=' + Object.keys(changes).filter(k => /^xpider_(active_campaign_run_id|isActive|isPaused|history_attempts|history_rows)$/.test(k)).join(','));
                 _renderHistoryPanel();
             }
         });

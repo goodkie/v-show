@@ -15,8 +15,8 @@
 - Functional Head Commit: `63e97460c860464eb094c920d94a7ca6a97e7eb5` (short: `63e97460`)
 - Rollback Anchor: `0a6e843d9e5ae512bf48742473bbd3133050c117` (RC3.17)
 - Release Asset Zip: `XPIDER_R6.9G.10.3.7.1.4.38_PRIVATE_EGRESS_RC3.24.zip`
-- Release Asset Size: `45,370,232` bytes
-- Release Asset SHA-256: `72708aa5cd49bd48d8f3b5625656aea2fa0f07b6283f39d4eefec8e94615d0dd`
+- Release Asset Size: `45,370,346` bytes
+- Release Asset SHA-256: `572b02cc564984974623cd8c194eea2e61a4621f908016b822db1b7ce61dbd92`
 - Release Asset Hosted URL: `https://github.com/goodkie/v-show/releases/tag/v6.9g.10.3-rc3.24.7.1.4.38`
 
 ## Current Gate

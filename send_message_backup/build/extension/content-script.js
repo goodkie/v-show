@@ -1761,7 +1761,11 @@
                 } catch (_) {}
                 const solved = await waitForCaptchaSolved();
                 if (!solved) {
-                    logDev("❌ [Security] CAPTCHA unsolved or solver unavailable. Halting sequence.", "error");
+                    if (currentTargetLifecycleState === TargetLifecycleState.SETTLED) {
+                        logDev("ℹ️ [Security] CAPTCHA terminal decision settled. Halting sequence.", "info");
+                    } else {
+                        logDev("❌ [Security] CAPTCHA unsolved or solver unavailable. Halting sequence.", "error");
+                    }
                     return false;
                 }
                 logDev("🔑 [Security] Bypass verified", "success");

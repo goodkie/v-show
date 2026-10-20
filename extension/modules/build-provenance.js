@@ -30,8 +30,8 @@
         provenanceSchema: 2,
         modules: {
             backgroundSha: '84e626b965748d919e865532e8e7694ae065c03e258d3cad17e4b07824d9eed1',
-            contentScriptSha: '7aaa94174c85e3c968da48cd56ef510698c43f1dabb9deec014465c3f8919e60',
-            popupSha: '40068a20e7480383ae0c19e08b69966170b7a25f86dd0ee0c69266882b574fb3',
+            contentScriptSha: 'a223ea35cc923345b86270eeb472efd4596d6bcce595d5a5ba5f56e8e1a18936',
+            popupSha: 'c197e6f42bd9aad1d10973cf5f6c6c6b622d19e65a0f83d70e59ec831f431158',
             solverContentSha: 'd7de969d29df29799537b11380f0f82967bb93da227c91e7dc8c6af0d128f457',
             solverCoreSha: '01b3d96048ea933403e4599854dcdca28027e7f676aa5077eb6c5eb0582ac1e7',
             emailCollectorSha: '3f1147a379e159e7777158f2caa74cc8d40b2a0b0eb2c244f440af379cb5c9c9',
