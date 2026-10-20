@@ -3,3 +3,5 @@ companion/.local_credentials.json
 .local_credentials.json
 *.local_credentials.json
 .control_token
+.pending_credential_rotation.json
+companion/.pending_credential_rotation.json
