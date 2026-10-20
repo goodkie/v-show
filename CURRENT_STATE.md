@@ -4,17 +4,17 @@
 - Protocol: OCA-DEV-1.4
 - Project ID: xpider-autoform-sender-pro
 - Workspace: E:\vivpr\ai\extension-form-sender
-- Authority: goodkie/v-show Issue #6 (Responding to ChatGPT Audit [CREDENTIAL-ROTATION-UTILITY-PREEXECUTION] Comment IC_kwDOT53X288AAAABdoJaqQ)
+- Authority: goodkie/v-show Issue #6 (Responding to ChatGPT Audit [ROTATION-UTILITY-HARDENING-REVIEW] Comment IC_kwDOT53X288AAAABdoUg4A)
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-19.51
-- Authority Cursor: 6283329073
-- Last Directive / Audit: `[CHATGPT][AUDIT][extension-form-sender][CREDENTIAL-ROTATION-UTILITY-PREEXECUTION] Comment IC_kwDOT53X288AAAABdoJaqQ`
-- Last Receipt: `[ANTIGRAVITY][ROTATION UTILITY HARDENING & DRY-RUN RECEIPT: VALID REMOTE JSON, PERMISSION RESTORATION, DPAPI-ONLY PERSISTENCE, 4-PHASE PROOF SEQUENCE, STRICT WATCHDOG HEAL, AND POST-ROTATION PRIVACY] #6283329073`
+- State Rev: 2026-10-20.52
+- Authority Cursor: 6283403488
+- Last Directive / Audit: `[CHATGPT][AUDIT][extension-form-sender][ROTATION-UTILITY-HARDENING-REVIEW] Comment IC_kwDOT53X288AAAABdoUg4A`
+- Last Receipt: `[ANTIGRAVITY][ROTATION UTILITY TERMINAL HYGIENE & DRY-RUN RECEIPT: ZERO TERMINAL LEAKS, READ -S HIDDEN INPUT, OLD FINGERPRINT CHECK, AND DELINEATED ACCEPTANCE] #6283403488`
 - Build ID: `R6.9G.10.3.7.1.4.33-20261019-PRIVATE-EGRESS-RC3.19`
 - Current Candidate Release Tag: `v6.9g.10.3-rc3.19.7.1.4.33`
 - Functional Head Commit: `8a67632672d7df2f6ad66ab1ad77524afc51d2ee`
 - State Documentation Commit: `86522bbfc3a0bd4f83b5d063a7bf5f761b109da3`
-- Branch Head Commit: `0a782d74d1fd3d67d190b2b3902eb13f972f7d34`
+- Branch Head Commit: `303b84070cfa818d2d2c4a2483ebb3253e4a7199`
 - Provenance Commit: `8bbc905a6857915c5982513b878046907cc21f94`
 - Rollback Anchor: `0a6e843d9e5ae512bf48742473bbd3133050c117` (RC3.17)
 - Release Asset Zip: `XPIDER_R6.9G.10.3.7.1.4.33_PRIVATE_EGRESS_RC3.19.zip`
@@ -23,20 +23,18 @@
 - Release Asset Hosted URL: `https://github.com/goodkie/v-show/releases/tag/v6.9g.10.3-rc3.19.7.1.4.33`
 
 ## Current Gate
-- Formal Gates Evaluated by ChatGPT Audit (#6282907439 & #6283221673):
+- Formal Gates Evaluated by ChatGPT Audit (#6282907439, #6283221673 & #6283403488):
   * **1. Network Privacy Gate: PASS**
   * **2. Automatic Relay Recovery / Campaign Continuity Gate: PASS**
   * **3. Current Release Artifact Hygiene Gate: PASS**
   * **4. Owner Smoke Gate: AUTHORIZED (3–5 controlled/authorized URLs only)**
-  * **5. Historical Credential Exposure Remediation: IN PROGRESS (Utility Hardened & Dry-Run PASS)**
-- Credential Rotation Utility Hardening (Resolving all 6 P0 Blockers):
-  * Blocker 1 (Valid Remote JSON): Numeric `updatedAt` timestamp embedded directly as a number literal.
-  * Blocker 2 (Permission Restoration): Remote command explicitly includes `chmod 600`, `chown xpider:xpider`, and reload.
-  * Blocker 3 (DPAPI-only Persistence): Zero plaintext secrets persisted on disk. `.pending_credential_rotation.json` stores ONLY `newCipher` (`dpapi:...`).
-  * Blocker 4 (4-Phase Proof Sequence): Pre-check asserts OLD credential authenticates with HTTP 200 before rotation is allowed; post-check asserts OLD returns HTTP 407 and NEW returns HTTP 200.
-  * Blocker 5 (Strict Watchdog Heal): Autonomous watchdog supervisor must respawn replacement process (distinct PID, READY); zero manual fallback to `ensure_companion_service`.
-  * Blocker 6 (Post-rotation Privacy Acceptance): Post-rotation verifies Companion status (`relayReady=true`), remote reachability (`ok=true`), and DNS privacy path (`ok=true`).
-  * Non-destructive Dry-Run: 100% PASS (`node scripts/rotate_egress_proxy_credential.js --dry-run`).
+  * **5. Rotation Utility Code: PROVISIONAL PASS (pending terminal hygiene & old fingerprint check resolved)**
+  * **6. Historical Credential Exposure Remediation: OPEN (Awaiting utility execution)**
+- Credential Rotation Utility Terminal Hygiene & Hardening (Resolving Audit #6283403488):
+  * Item 1 (Terminal Secret Hygiene): High-entropy password copied silently to Windows clipboard via native `clip.exe`. Remote snippet uses `read -s` hidden input; `cat credentials.json` removed; prints only sanitized `ls -l` and `systemctl status`. Clipboard cleared after verification.
+  * Item 2 (Integrity Fingerprint Guard): Strict SHA-256 `oldCredentialFingerprint` assertion before Phase 3 invalidation, aborting with `OLD_CREDENTIAL_STATE_CHANGED` if local state shifted.
+  * Item 3 (Acceptance Scope Delineation): Automated utility acceptance covers Companion relay rotation + egress IP + watchdog self-heal; Operator acceptance covers real extension Privacy Preflight + BrowserLeaks IP/DNS + no-direct-fallback in Edge.
+  * Item 4 (Empirical Dry-Run Verification): 100% PASS across all 6 dry-run checks (`node scripts/rotate_egress_proxy_credential.js --dry-run`).
 - Remediation & Hygiene Verification Confirmed Clean:
   - Tracked `companion/egress_pool_config.json` and `companion/example_config.json` sanitized: `credentialRef: ""` and `password: ""`.
   - Live DPAPI encrypted credentials isolated strictly to unversioned local store (`companion/.local_credentials.json` and `%LOCALAPPDATA%\XPIDER_Privacy_Relay\.local_credentials.json`), excluded from git and release packages.
