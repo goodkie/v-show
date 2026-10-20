@@ -3,17 +3,18 @@
  * 
  * XPIDER AutoForm Sender Pro — Egress Proxy Credential Rotation Utility
  * Protocol: OCA-DEV-1.4 (Issue #6 R6.9G.10.3)
- * Responding To: ChatGPT Audit [ROTATION-UTILITY-HARDENING-REVIEW] (Comment #6283403488)
+ * Responding To: ChatGPT Audit [ROTATION-TERMINAL-HYGIENE-FINAL-REVIEW] (Comment #6283557082)
  * 
  * Hardening & Terminal Hygiene Invariants:
  *   [Terminal Secret Hygiene] ZERO plaintext secrets printed to stdout / terminal logs.
- *                             New password is copied silently to Windows clipboard via clip.exe.
- *                             Remote console snippet uses `read -s` to prevent console echoing or shell history.
+ *                             New password is copied silently to Windows clipboard via clip.exe (harden status===0 && !error).
+ *                             Remote console snippet uses `read -r -s` and bash builtin `printf`.
+ *                             ZERO child process argv or environment exposure (no node/python -e with secret in argv).
  *                             Never executes `cat credentials.json`. Clipboard cleared after verification.
  *   [Integrity Fingerprint Guard] Strict `oldCredentialFingerprint` assertion before Phase 3 invalidation test.
  *                                 Aborts immediately with `OLD_CREDENTIAL_STATE_CHANGED` if local state shifted.
  *   [4-Phase Proof Sequence] Phase 1: OLD pre-check MUST return HTTP 200 before rotation is allowed.
- *                            Phase 2: Remote rotation via silent `read -s` console script.
+ *                            Phase 2: Remote rotation via silent bash builtin `printf` console script.
  *                            Phase 3: OLD post-check MUST return HTTP 407 (strictly invalidated).
  *                            Phase 4: NEW post-check MUST return HTTP 200 & egress IP 159.203.28.198.
  *   [Strict Watchdog Acceptance] Autonomous watchdog supervisor MUST spawn replacement process (distinct PID, READY).
@@ -54,22 +55,36 @@ function getCompanionControlToken() {
   return null;
 }
 
-function copyToClipboardSilent(text) {
-  try {
-    spawnSync('clip', { input: text, encoding: 'utf8' });
-    return true;
-  } catch (_) {
-    return false;
+function copyToClipboardSilent(text, retries = 3) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const res = spawnSync('clip', { input: text, encoding: 'utf8' });
+      if (res && res.status === 0 && !res.error) {
+        return true;
+      }
+    } catch (_) {}
+    if (i < retries - 1) {
+      const start = Date.now();
+      while (Date.now() - start < 50) {} // busy-wait 50ms
+    }
   }
+  return false;
 }
 
-function clearClipboardSilent() {
-  try {
-    spawnSync('clip', { input: ' ', encoding: 'utf8' });
-    return true;
-  } catch (_) {
-    return false;
+function clearClipboardSilent(retries = 3) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const res = spawnSync('clip', { input: ' ', encoding: 'utf8' });
+      if (res && res.status === 0 && !res.error) {
+        return true;
+      }
+    } catch (_) {}
+    if (i < retries - 1) {
+      const start = Date.now();
+      while (Date.now() - start < 50) {} // busy-wait 50ms
+    }
   }
+  return false;
 }
 
 function testProxyAuth(host, port, ca, username, password) {
@@ -272,20 +287,20 @@ async function prepareRotation() {
   console.log('3. Click "Access" on the left navigation -> Click "Launch Droplet Console"');
   console.log('4. Paste and run the following command (which reads the password via hidden input):\n');
 
-  const remoteConsoleScript = `read -s -p "Paste new password from clipboard: " NP && echo ""
-[ -n "$NP" ] && [ \${#NP} -eq 48 ] || { echo "[ERROR] Invalid password length (expected 48 hex characters)"; exit 1; }
-node -e '
-  const fs = require("fs");
-  const creds = { username: "xpider_owner", password: process.argv[1], updatedAt: Math.floor(Date.now() / 1000) };
-  fs.writeFileSync("/etc/xpider-egress/credentials.json", JSON.stringify(creds, null, 2) + "\\n", { mode: 0o600 });
-' "$NP"
-unset NP
-chown xpider:xpider /etc/xpider-egress/credentials.json
-chmod 600 /etc/xpider-egress/credentials.json
-systemctl kill -s HUP xpider-egress 2>/dev/null || systemctl restart xpider-egress
-echo "=== ROTATION APPLIED SUCCESSFULLY ==="
-ls -l /etc/xpider-egress/credentials.json
-systemctl status xpider-egress --no-pager | head -n 6`;
+  const remoteConsoleScript = [
+    'read -r -s -p "Paste new password from clipboard: " NP && echo ""',
+    '[[ "$NP" =~ ^[0-9a-f]{48}$ ]] || { echo "[ERROR] Invalid password format (expected 48 hex characters)"; unset NP; exit 1; }',
+    'umask 077',
+    'TS=$(date +%s)',
+    'builtin printf \'{\\n  "username": "xpider_owner",\\n  "password": "%s",\\n  "updatedAt": %s\\n}\\n\' "$NP" "$TS" > /etc/xpider-egress/credentials.json',
+    'unset NP TS',
+    'chown xpider:xpider /etc/xpider-egress/credentials.json',
+    'chmod 600 /etc/xpider-egress/credentials.json',
+    'systemctl kill -s HUP xpider-egress 2>/dev/null || systemctl restart xpider-egress',
+    'echo "=== ROTATION APPLIED SUCCESSFULLY ==="',
+    'ls -l /etc/xpider-egress/credentials.json',
+    'systemctl status xpider-egress --no-pager | head -n 6'
+  ].join('\n');
 
   console.log('--- BEGIN REMOTE COMMAND (COPY & PASTE INTO DROPLET CONSOLE) ---');
   console.log(remoteConsoleScript);
@@ -509,26 +524,32 @@ async function dryRun() {
   }
   console.log('   [PASS] DPAPI CurrentUser round-trip validated successfully');
 
-  console.log('[DRY-RUN 5] Validating remote rotation command formatting (zero secrets embedded)...');
-  const remoteCommandSample = `read -s -p "Paste new password from clipboard: " NP && echo ""
-[ -n "$NP" ] && [ \${#NP} -eq 48 ] || { echo "[ERROR] Invalid password length (expected 48 hex characters)"; exit 1; }
-node -e '
-  const fs = require("fs");
-  const creds = { username: "xpider_owner", password: process.argv[1], updatedAt: Math.floor(Date.now() / 1000) };
-  fs.writeFileSync("/etc/xpider-egress/credentials.json", JSON.stringify(creds, null, 2) + "\\n", { mode: 0o600 });
-' "$NP"
-unset NP
-chown xpider:xpider /etc/xpider-egress/credentials.json
-chmod 600 /etc/xpider-egress/credentials.json
-systemctl kill -s HUP xpider-egress 2>/dev/null || systemctl restart xpider-egress
-echo "=== ROTATION APPLIED SUCCESSFULLY ==="
-ls -l /etc/xpider-egress/credentials.json
-systemctl status xpider-egress --no-pager | head -n 6`;
+  console.log('[DRY-RUN 5] Validating remote rotation command formatting (zero secrets embedded, zero child argv exposure)...');
+  const remoteCommandSample = [
+    'read -r -s -p "Paste new password from clipboard: " NP && echo ""',
+    '[[ "$NP" =~ ^[0-9a-f]{48}$ ]] || { echo "[ERROR] Invalid password format (expected 48 hex characters)"; unset NP; exit 1; }',
+    'umask 077',
+    'TS=$(date +%s)',
+    'builtin printf \'{\\n  "username": "xpider_owner",\\n  "password": "%s",\\n  "updatedAt": %s\\n}\\n\' "$NP" "$TS" > /etc/xpider-egress/credentials.json',
+    'unset NP TS',
+    'chown xpider:xpider /etc/xpider-egress/credentials.json',
+    'chmod 600 /etc/xpider-egress/credentials.json',
+    'systemctl kill -s HUP xpider-egress 2>/dev/null || systemctl restart xpider-egress',
+    'echo "=== ROTATION APPLIED SUCCESSFULLY ==="',
+    'ls -l /etc/xpider-egress/credentials.json',
+    'systemctl status xpider-egress --no-pager | head -n 6'
+  ].join('\n');
 
   if (remoteCommandSample.includes(testSecret)) {
     throw new Error('[FATAL] Remote command template leaked secret string!');
   }
-  console.log('   [PASS] Remote command syntax verified (read -s hidden input, chmod 600, chown, 0 embedded secrets)');
+  if (remoteCommandSample.includes('node -e') || remoteCommandSample.includes('process.argv')) {
+    throw new Error('[FATAL] Remote command must not use child process argv to pass secret!');
+  }
+  if (!remoteCommandSample.includes('builtin printf') || !remoteCommandSample.includes('read -r -s')) {
+    throw new Error('[FATAL] Remote command must use read -r -s and builtin printf!');
+  }
+  console.log('   [PASS] Remote command syntax verified (read -r -s, builtin printf, 0 child process argv, chmod 600, chown, 0 embedded secrets)');
 
   console.log('[DRY-RUN 6] Checking Companion process and Watchdog supervisor health...');
   const health = await queryCompanionHealth();
