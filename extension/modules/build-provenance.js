@@ -18,10 +18,10 @@
         channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.19',
         testOnly: true,
         // [R6.9G.10.3.7.1.4.33] XPIDER AutoForm Sender Pro — Private Egress Release Candidate 3.19 (Live Form State Wiring, Deterministic Safe-Phase Replay & Process-Kill Resilience)
-        implementationHead: '50041e0c9f9334e27311e3e36829dea79edac7fa',
-        implementationHeadShort: '50041e0c',
-        head: '50041e0c9f9334e27311e3e36829dea79edac7fa',
-        headShort: '50041e0c',
+        implementationHead: '08ef2fcf3e6398f5a6bfa9fca44a7f05c31049c0',
+        implementationHeadShort: '08ef2fcf',
+        head: '08ef2fcf3e6398f5a6bfa9fca44a7f05c31049c0',
+        headShort: '08ef2fcf',
         rollbackBase: '0a6e843d9e5ae512bf48742473bbd3133050c117',
         previousFunctionalRestorePoint: '0a6e843d9e5ae512bf48742473bbd3133050c117',
         manifestVersion: 3,
@@ -29,7 +29,7 @@
         builtAt: '2026-10-20T00:19:00.000Z',
         provenanceSchema: 2,
         modules: {
-            backgroundSha: 'b0e8ce67a9605e971f9bff914c7c963efeb660c11e8459089debf9239aab4f04',
+            backgroundSha: 'a90ecd8db64c8b61551f3f63d2edadaa65c9e3bbdafe0c4bd55ebc1c81f644c1',
             contentScriptSha: '9590675eb799a92b857d69ea8102639ce301e682568a17b1667aff0ba11211d4',
             popupSha: '026325282b0297d1c77fd7bedd172aaa54cf29f4236a2178060f374164db0958',
             solverContentSha: 'd7de969d29df29799537b11380f0f82967bb93da227c91e7dc8c6af0d128f457',
@@ -38,7 +38,7 @@
             historyStoreSha: '0dc2fbda1b1506de9394f87a965ff2ebd5721ea1c47d7bda07c9411193890d8c',
             contactGateSha: '0d01acb2d0a9448d154353fac5b527c17afa42fed56c68d6a49b39053629bd7d',
             visionSubmitSha: '25cf18a4834bb476edff5e8f19a78dd2723bd556ede649ada69bc801543c83f3',
-            privacyGatewaySha: '678d9d1f62f699d947eb666038237a01037700ea7317416134f725396342b01c'
+            privacyGatewaySha: 'd496d425374243b757320e53087e5e8154e141c3660b39d1a9b2d82762290a62'
         }
     };
 

@@ -22,8 +22,8 @@ const { execSync } = require('child_process');
 
 const ZIP_NAME = 'XPIDER_R6.9G.10.3.7.1.4.33_PRIVATE_EGRESS_RC3.19.zip';
 const EXPECTED_BUILD_ID = 'R6.9G.10.3.7.1.4.33-20261019-PRIVATE-EGRESS-RC3.19';
-const EXPECTED_SHA256 = '2d86cc34318214d85665b35ea7bbb391dda6e665cc5b79aaedb90129e71de320';
-const EXPECTED_IMPLEMENTATION_HEAD = '50041e0c9f9334e27311e3e36829dea79edac7fa';
+const EXPECTED_SHA256 = '8ab55f423054477f8a1e4b38b71212bb496f849950c75a92f21a5b11920d14c9';
+const EXPECTED_IMPLEMENTATION_HEAD = '08ef2fcf3e6398f5a6bfa9fca44a7f05c31049c0';
 
 async function main() {
     console.log('========================================================================');
