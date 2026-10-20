@@ -4,17 +4,17 @@
 - Protocol: OCA-DEV-1.4
 - Project ID: xpider-autoform-sender-pro
 - Workspace: E:\vivpr\ai\extension-form-sender
-- Authority: goodkie/v-show Issue #6 (Responding to ChatGPT Audit [RC3.19.2-SECURITY-HYGIENE] Comment IC_kwDOT53X288AAAABdn2PLw)
+- Authority: goodkie/v-show Issue #6 (Responding to ChatGPT Audit [CREDENTIAL-ROTATION-UTILITY-PREEXECUTION] Comment IC_kwDOT53X288AAAABdoJaqQ)
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-19.50
-- Authority Cursor: 6282907439
-- Last Directive / Audit: `[CHATGPT][AUDIT][extension-form-sender][RC3.19.2-SECURITY-HYGIENE] Comment IC_kwDOT53X288AAAABdn2PLw`
-- Last Receipt: `[ANTIGRAVITY][RC3.19.2 CLOSURE RECEIPT: PUBLIC RELEASE CREDENTIAL HYGIENE, UNVERSIONED LOCAL CREDENTIAL STORE, DEEP ARCHIVE CONTENT SCANNER, AND VERIFIED GITHUB RELEASE ASSET] #6282835051`
+- State Rev: 2026-10-19.51
+- Authority Cursor: 6283329073
+- Last Directive / Audit: `[CHATGPT][AUDIT][extension-form-sender][CREDENTIAL-ROTATION-UTILITY-PREEXECUTION] Comment IC_kwDOT53X288AAAABdoJaqQ`
+- Last Receipt: `[ANTIGRAVITY][ROTATION UTILITY HARDENING & DRY-RUN RECEIPT: VALID REMOTE JSON, PERMISSION RESTORATION, DPAPI-ONLY PERSISTENCE, 4-PHASE PROOF SEQUENCE, STRICT WATCHDOG HEAL, AND POST-ROTATION PRIVACY] #6283329073`
 - Build ID: `R6.9G.10.3.7.1.4.33-20261019-PRIVATE-EGRESS-RC3.19`
 - Current Candidate Release Tag: `v6.9g.10.3-rc3.19.7.1.4.33`
 - Functional Head Commit: `8a67632672d7df2f6ad66ab1ad77524afc51d2ee`
 - State Documentation Commit: `86522bbfc3a0bd4f83b5d063a7bf5f761b109da3`
-- Branch Head Commit: `09563f7d6848993288917be299c4d8b41edc8952`
+- Branch Head Commit: `0a782d74d1fd3d67d190b2b3902eb13f972f7d34`
 - Provenance Commit: `8bbc905a6857915c5982513b878046907cc21f94`
 - Rollback Anchor: `0a6e843d9e5ae512bf48742473bbd3133050c117` (RC3.17)
 - Release Asset Zip: `XPIDER_R6.9G.10.3.7.1.4.33_PRIVATE_EGRESS_RC3.19.zip`
@@ -23,12 +23,20 @@
 - Release Asset Hosted URL: `https://github.com/goodkie/v-show/releases/tag/v6.9g.10.3-rc3.19.7.1.4.33`
 
 ## Current Gate
-- Formal Gates Evaluated by ChatGPT Audit (#6282907439):
+- Formal Gates Evaluated by ChatGPT Audit (#6282907439 & #6283221673):
   * **1. Network Privacy Gate: PASS**
   * **2. Automatic Relay Recovery / Campaign Continuity Gate: PASS**
   * **3. Current Release Artifact Hygiene Gate: PASS**
   * **4. Owner Smoke Gate: AUTHORIZED (3–5 controlled/authorized URLs only)**
-  * **5. Historical Credential Exposure Remediation: OPEN (Proxy credential rotation alongside/after Owner smoke)**
+  * **5. Historical Credential Exposure Remediation: IN PROGRESS (Utility Hardened & Dry-Run PASS)**
+- Credential Rotation Utility Hardening (Resolving all 6 P0 Blockers):
+  * Blocker 1 (Valid Remote JSON): Numeric `updatedAt` timestamp embedded directly as a number literal.
+  * Blocker 2 (Permission Restoration): Remote command explicitly includes `chmod 600`, `chown xpider:xpider`, and reload.
+  * Blocker 3 (DPAPI-only Persistence): Zero plaintext secrets persisted on disk. `.pending_credential_rotation.json` stores ONLY `newCipher` (`dpapi:...`).
+  * Blocker 4 (4-Phase Proof Sequence): Pre-check asserts OLD credential authenticates with HTTP 200 before rotation is allowed; post-check asserts OLD returns HTTP 407 and NEW returns HTTP 200.
+  * Blocker 5 (Strict Watchdog Heal): Autonomous watchdog supervisor must respawn replacement process (distinct PID, READY); zero manual fallback to `ensure_companion_service`.
+  * Blocker 6 (Post-rotation Privacy Acceptance): Post-rotation verifies Companion status (`relayReady=true`), remote reachability (`ok=true`), and DNS privacy path (`ok=true`).
+  * Non-destructive Dry-Run: 100% PASS (`node scripts/rotate_egress_proxy_credential.js --dry-run`).
 - Remediation & Hygiene Verification Confirmed Clean:
   - Tracked `companion/egress_pool_config.json` and `companion/example_config.json` sanitized: `credentialRef: ""` and `password: ""`.
   - Live DPAPI encrypted credentials isolated strictly to unversioned local store (`companion/.local_credentials.json` and `%LOCALAPPDATA%\XPIDER_Privacy_Relay\.local_credentials.json`), excluded from git and release packages.
