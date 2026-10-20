@@ -7,9 +7,9 @@
 - Authority: goodkie/v-show Issue #6 (Responding to Directive [RC3.20-AUTOFILL-CAPTCHA-DECISION-RACE] Comment #6288456994)
 - Branch: upgrade/phase-0-1
 - State Rev: 2026-10-20.56
-- Authority Cursor: 6288456994
+- Authority Cursor: 6293089370
 - Last Directive / Audit: `[CHATGPT][OWNER-SMOKE][extension-form-sender][RC3.20-AUTOFILL-CAPTCHA-DECISION-RACE] Comment #6288456994`
-- Last Receipt: `[ANTIGRAVITY][RECEIPT][extension-form-sender][RC3.21-DECISION-SERIALIZATION-AND-AUTOFILL-DECOUPLING]`
+- Last Receipt: `[ANTIGRAVITY][RECEIPT][extension-form-sender][RC3.21-DECISION-SERIALIZATION-AND-AUTOFILL-DECOUPLING] #6293089370`
 - Build ID: `R6.9G.10.3.7.1.4.35-20261020-PRIVATE-EGRESS-RC3.21`
 - Current Candidate Release Tag: `v6.9g.10.3-rc3.21.7.1.4.35`
 - Functional Head Commit: `2e4999e71ec19cb1c23bdaf6a42f860f1d464181`
