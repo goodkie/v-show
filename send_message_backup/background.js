@@ -4585,12 +4585,23 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                             await handleSolveCaptchaInternal(solveReq, sender, sendResponse);
                             return;
                         } else {
+                            campaignState.captchaLedger.pendingOwner = Math.max(0, campaignState.captchaLedger.pendingOwner - 1);
                             campaignState.captchaLedger.manualSkip++;
                             campaignState.currentTargetStage = 'CAPTCHA_SKIPPED';
                             logBg(null, `[OWNER_CAPTCHA] Auto-first: no configured solver key and popup disabled. Advancing as SKIPPED.`, 'info');
-                            if (campaignState.targetDeadlineController) {
-                                campaignState.targetDeadlineController.resume();
+                            
+                            if (campaignState.currentAttempt?.attemptId) {
+                                campaignState.captchaFailuresRecorded.add(campaignState.currentAttempt.attemptId);
                             }
+
+                            if (campaignState.targetDeadlineController) {
+                                campaignState.targetDeadlineController.cancel('CAPTCHA_SKIPPED_NO_SOLVER');
+                            }
+
+                            if (campaignState.currentTabId && chrome.alarms) {
+                                chrome.alarms.clear(`xpider_watchdog_${campaignState.currentTabId}_${campaignState.sessionId}`);
+                            }
+
                             chrome.tabs.sendMessage(campaignState.currentTabId, {
                                 action: 'CAPTCHA_SKIP_DECISION',
                                 attemptId: campaignState.currentAttempt?.attemptId,
@@ -4598,8 +4609,25 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                                 campaignRunId: campaignState.campaignRunId,
                                 sessionId: campaignState.sessionId,
                                 captchaEpoch: curEpoch,
-                                tabId: campaignState.currentTabId
+                                tabId: campaignState.currentTabId,
+                                result: 'SKIPPED',
+                                reason: 'CAPTCHA_SKIPPED_NO_SOLVER'
                             }).catch(() => {});
+
+                            if (typeof campaignState.targetResolve === 'function') {
+                                const resolveTarget = campaignState.targetResolve;
+                                campaignState.targetResolve = null;
+                                resolveTarget({
+                                    success: false,
+                                    reasonCode: 'CAPTCHA_SKIPPED_NO_SOLVER',
+                                    metadata: {
+                                        captchaStatus: 'SKIPPED_NO_SOLVER',
+                                        autoFirst: true,
+                                        popupShown: false
+                                    }
+                                });
+                            }
+
                             sendResponse({ success: true, status: 'SKIPPED_NO_SOLVER' });
                             return;
                         }
@@ -4697,8 +4725,14 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                         campaignState.captchaLedger.manualSkip++;
                         campaignState.currentTargetStage = 'CAPTCHA_SKIPPED';
                         logBg(null, `[CAPTCHA_DECISION] Owner skipped CAPTCHA challenge.`, 'info');
+                        if (campaignState.currentAttempt?.attemptId) {
+                            campaignState.captchaFailuresRecorded.add(campaignState.currentAttempt.attemptId);
+                        }
                         if (campaignState.targetDeadlineController) {
-                            campaignState.targetDeadlineController.resume();
+                            campaignState.targetDeadlineController.cancel('CAPTCHA_SKIPPED_OWNER');
+                        }
+                        if (campaignState.currentTabId && chrome.alarms) {
+                            chrome.alarms.clear(`xpider_watchdog_${campaignState.currentTabId}_${campaignState.sessionId}`);
                         }
                         chrome.tabs.sendMessage(campaignState.currentTabId, {
                             action: 'CAPTCHA_SKIP_DECISION',
@@ -4707,8 +4741,24 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                             campaignRunId: campaignState.campaignRunId,
                             sessionId: campaignState.sessionId,
                             captchaEpoch: campaignState.captchaEpoch || 1,
-                            tabId: campaignState.currentTabId
+                            tabId: campaignState.currentTabId,
+                            result: 'SKIPPED',
+                            reason: 'CAPTCHA_SKIPPED_OWNER'
                         }).catch(() => {});
+
+                        if (typeof campaignState.targetResolve === 'function') {
+                            const resolveTarget = campaignState.targetResolve;
+                            campaignState.targetResolve = null;
+                            resolveTarget({
+                                success: false,
+                                reasonCode: 'CAPTCHA_SKIPPED_OWNER',
+                                metadata: {
+                                    captchaStatus: 'SKIPPED_OWNER',
+                                    autoFirst: false,
+                                    popupShown: true
+                                }
+                            });
+                        }
                         sendResponse({ success: true, status: 'SKIPPED' });
                     } else {
                         sendResponse({ success: false, error: `Unknown decision: ${decision}` });

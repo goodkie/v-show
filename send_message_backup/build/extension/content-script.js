@@ -4347,7 +4347,12 @@
                     if (sendResponse) sendResponse({ success: verified, verified: verified });
                     chrome.runtime.onMessage.removeListener(decisionListener);
                     _activeCaptchaSolvePromise = null;
-                    resolve(verified);
+                    resolve({
+                        success: verified,
+                        verified: verified,
+                        providerSolveAttempted: true,
+                        providerTokenInjected: applied
+                    });
 
                 } else if (msg.action === 'START_MANUAL_CAPTCHA_WAIT') {
                     console.log(`[CAPTCHA_MANUAL_WAIT] timer paused, waiting for manual solve`);
@@ -4381,21 +4386,18 @@
                     }, 1000);
 
                 } else if (msg.action === 'CAPTCHA_SKIP_DECISION' || msg.action === 'CAPTCHA_LAB_TERMINAL_SETTLE') {
-                    console.log(`[CAPTCHA_LAB_SETTLED] action=${msg.action} result=${msg.result || 'SKIPPED'} reason=${msg.reason || 'NONE'} abortedGenericFallback=true`);
+                    console.log(`[CAPTCHA_TERMINAL_SETTLED] action=${msg.action} result=${msg.result || 'SKIPPED'} reason=${msg.reason || 'NONE'} abortedGenericFallback=true`);
                     chrome.runtime.onMessage.removeListener(decisionListener);
                     _activeCaptchaSolvePromise = null;
                     removeTopSolverHUD(msg.result || 'SKIPPED');
-                    if (msg.action === 'CAPTCHA_LAB_TERMINAL_SETTLE' || isControlledLab) {
-                        _isCaptchaSolved = false;
-                        currentTargetLifecycleState = TargetLifecycleState.SETTLED;
-                        resolve({
-                            terminalSettled: true,
-                            result: 'EXPECTED_FAIL_PASS',
-                            reason: msg.reason || 'EXPECTED_FAIL_PASS'
-                        });
-                        return;
-                    }
-                    resolve(false);
+                    _isCaptchaSolved = false;
+                    currentTargetLifecycleState = TargetLifecycleState.SETTLED;
+                    resolve({
+                        terminalSettled: true,
+                        result: msg.result || 'SKIPPED',
+                        reason: msg.reason || (msg.action === 'CAPTCHA_LAB_TERMINAL_SETTLE' ? 'EXPECTED_FAIL_PASS' : 'CAPTCHA_SKIPPED_NO_SOLVER')
+                    });
+                    return;
                 }
             };
 
@@ -4513,6 +4515,9 @@
         const MAX_WAIT = 30; // Bounded wait (Issue #6 R6.8 P1-1)
         let autoSolveAttempted = false;
         let autoSolveFinishedTs = 0;
+        let providerSolveAttempted = false;
+        let providerTokenInjected = false;
+        let terminalCaptchaDecision = false;
 
         for (let i = 0; i < MAX_WAIT; i++) {
             if (_isCaptchaSolved) {
@@ -4539,22 +4544,30 @@
             if (stillHasCaptcha && !autoSolveAttempted && !_isCaptchaSolved) {
                 autoSolveAttempted = true;
                 const solveResult = await tryAutoSolveCaptcha('WAIT_LOOP');
-                autoSolveFinishedTs = Date.now();
                 if (solveResult && solveResult.terminalSettled) {
-                    logDev(`[CAPTCHA_LAB_CASE] Terminal lab settlement: ${solveResult.result} reason=${solveResult.reason}. Aborting form wait loop.`, "info");
-                    removeTopSolverHUD(solveResult.result || 'EXPECTED_FAIL_PASS');
+                    terminalCaptchaDecision = true;
+                    logDev(`[CAPTCHA_TERMINAL_SETTLED] Terminal decision settlement: ${solveResult.result} reason=${solveResult.reason}. Aborting form wait loop.`, "info");
+                    removeTopSolverHUD(solveResult.result || 'SKIPPED');
                     currentTargetLifecycleState = TargetLifecycleState.SETTLED;
                     return false;
                 }
+                if (solveResult && solveResult.providerSolveAttempted) {
+                    providerSolveAttempted = true;
+                    providerTokenInjected = Boolean(solveResult.providerTokenInjected);
+                    autoSolveFinishedTs = Date.now();
+                }
                 if (solveResult && solveResult.terminalError) {
+                    terminalCaptchaDecision = true;
                     logDev(`[CAPTCHA_GATE] eligible=false reason=CAPTCHA_SOLVER_UNAVAILABLE error=${solveResult.terminalError}`, "error");
                     updateTopSolverHUD(`2Captcha solver unavailable: ${solveResult.terminalError}`, "FAIL");
                     currentTargetLifecycleState = TargetLifecycleState.SETTLING;
                     finishCampaign(false, 'CAPTCHA_SOLVER_UNAVAILABLE', `2Captcha failed: ${solveResult.terminalError}`);
                     return false;
                 }
-                if (solveResult === true || (solveResult && solveResult.success)) {
+                if (solveResult === true || (solveResult && (solveResult.success || solveResult.verified))) {
                     _isCaptchaSolved = true;
+                    providerSolveAttempted = true;
+                    providerTokenInjected = true;
                     logDev("🔑 [Security] Auto-solve succeeded. Resuming sequence immediately.", "success");
                     await new Promise(r => setTimeout(r, 500));
                     return true;
@@ -4562,7 +4575,8 @@
             }
 
             // [P1-1 Fast-Fail] If token injected but challenge not accepted within 15s post-solve:
-            if (autoSolveFinishedTs > 0 && (Date.now() - autoSolveFinishedTs > 15000)) {
+            // Must ONLY apply if a real provider solve attempt occurred and injected a token
+            if (!terminalCaptchaDecision && providerSolveAttempted && providerTokenInjected && autoSolveFinishedTs > 0 && (Date.now() - autoSolveFinishedTs > 15000)) {
                 if (!_isCaptchaSolved && !hasToken && stillHasCaptcha && !document.querySelector('.recaptcha-checkbox-checked, [aria-checked="true"]')) {
                     logDev("[CAPTCHA_INTEGRATION_FAILURE] reason=CAPTCHA_TOKEN_NOT_ACCEPTED", "error");
                     throw new Error("CAPTCHA_TOKEN_NOT_ACCEPTED");

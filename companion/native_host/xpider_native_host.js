@@ -19,7 +19,7 @@ const SILENT_RUNNER_VBS = path.join(RELAY_DIR, 'start_relay_silent.vbs');
 const RELAY_SCRIPT = path.join(RELAY_DIR, 'privacy-relay-service.js');
 const TOKEN_FILE = path.join(RELAY_DIR, '.control_token');
 const EXPOSED_RC3_6_TOKEN_SHA256 = '597a70b99c11c7f4d13a075204ac240bb08a7a1d6c08c78268328e0bb59daeda';
-const COMPANION_BUILD_ID = 'R6.9G.10.3.7.1.4.37-20261020-PRIVATE-EGRESS-RC3.23';
+const COMPANION_BUILD_ID = 'R6.9G.10.3.7.1.4.38-20261020-PRIVATE-EGRESS-RC3.24';
 const CONTROL_PORT = 18989;
 const PROXY_PORT = 18988;
 

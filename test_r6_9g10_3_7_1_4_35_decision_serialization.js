@@ -97,20 +97,20 @@ runTest('1.7 form-discovery & vision-submit: link-based submit buttons recognize
     assert(vseSrc.includes('a[data-link-type="SUBMIT"]'), 'VisionSubmitExecutor must recognize a[data-link-type="SUBMIT"]');
 });
 
-runTest('1.8 build-provenance: channel, buildId, and implementationHead set to RC3.23', () => {
-    assert(bpSrc.includes("channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.23'"), 'Channel must be OWNER_BETA_PRIVATE_EGRESS_RC3.23');
-    assert(bpSrc.includes("buildId: 'R6.9G.10.3.7.1.4.37-20261020-PRIVATE-EGRESS-RC3.23'"), 'buildId must be RC3.23');
-    assert(bpSrc.includes("implementationHead: 'fdc4c0941df5d3604dcd0c140a25520eb5118856'"), 'implementationHead must be fdc4c094');
+runTest('1.8 build-provenance: channel, buildId, and implementationHead set to RC3.24', () => {
+    assert(bpSrc.includes("channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.24'"), 'Channel must be OWNER_BETA_PRIVATE_EGRESS_RC3.24');
+    assert(bpSrc.includes("buildId: 'R6.9G.10.3.7.1.4.38-20261020-PRIVATE-EGRESS-RC3.24'"), 'buildId must be RC3.24');
+    assert(bpSrc.includes("implementationHead: '63e97460c860464eb094c920d94a7ca6a97e7eb5'"), 'implementationHead must be 63e97460');
 });
 
 runTest('1.9 native host & companion: COMPANION_BUILD_ID stamped from authoritative buildId', () => {
     const nhSrc = fs.readFileSync(path.join(SRC_DIR, '..', 'companion', 'native_host', 'xpider_native_host.js'), 'utf8');
     const prsSrc = fs.readFileSync(path.join(SRC_DIR, '..', 'companion', 'privacy-relay-service.js'), 'utf8');
     const ecsSrc = fs.readFileSync(path.join(SRC_DIR, '..', 'companion', 'ensure_companion_service.js'), 'utf8');
-    assert(nhSrc.includes("const COMPANION_BUILD_ID = 'R6.9G.10.3.7.1.4.37-20261020-PRIVATE-EGRESS-RC3.23';"), 'Native host COMPANION_BUILD_ID must match RC3.23');
-    assert(prsSrc.includes("const COMPANION_BUILD_ID = 'R6.9G.10.3.7.1.4.37-20261020-PRIVATE-EGRESS-RC3.23';"), 'Privacy relay COMPANION_BUILD_ID must match RC3.23');
-    assert(prsSrc.includes("const COMPANION_IMPLEMENTATION_HEAD = 'fdc4c0941df5d3604dcd0c140a25520eb5118856';"), 'Privacy relay COMPANION_IMPLEMENTATION_HEAD must match fdc4c094');
-    assert(ecsSrc.includes("const EXPECTED_BUILD_ID = 'R6.9G.10.3.7.1.4.37-20261020-PRIVATE-EGRESS-RC3.23';"), 'Ensure companion EXPECTED_BUILD_ID must match RC3.23');
+    assert(nhSrc.includes("const COMPANION_BUILD_ID = 'R6.9G.10.3.7.1.4.38-20261020-PRIVATE-EGRESS-RC3.24';"), 'Native host COMPANION_BUILD_ID must match RC3.24');
+    assert(prsSrc.includes("const COMPANION_BUILD_ID = 'R6.9G.10.3.7.1.4.38-20261020-PRIVATE-EGRESS-RC3.24';"), 'Privacy relay COMPANION_BUILD_ID must match RC3.24');
+    assert(prsSrc.includes("const COMPANION_IMPLEMENTATION_HEAD = '63e97460c860464eb094c920d94a7ca6a97e7eb5';"), 'Privacy relay COMPANION_IMPLEMENTATION_HEAD must match 63e97460');
+    assert(ecsSrc.includes("const EXPECTED_BUILD_ID = 'R6.9G.10.3.7.1.4.38-20261020-PRIVATE-EGRESS-RC3.24';"), 'Ensure companion EXPECTED_BUILD_ID must match RC3.24');
 });
 
 runTest('1.10 OS isolation guards present in auto setup and installers', () => {
@@ -506,6 +506,41 @@ runTest('6.5 UX Settings: Automatic-first decision handling with configurable po
 });
 
 // -------------------------------------------------------------------------
+// SUITE 7: RC3.24 Defect Remediations (CAPTCHA Skip Terminal Settlement)
+// -------------------------------------------------------------------------
+console.log('\n--- SUITE 7: RC3.24 Defect Remediations (CAPTCHA Skip Terminal Settlement) ---');
+
+runTest('7.1 P0-A: Background atomically resolves target on AUTO_FIRST no-solver skip', () => {
+    // Assert background.js cancels deadline controller, clears alarms, and consumes targetResolve
+    assert(bgSrc.includes("campaignState.targetDeadlineController.cancel('CAPTCHA_SKIPPED_NO_SOLVER')"), 'Must cancel target deadline controller on no-solver skip');
+    assert(bgSrc.includes("chrome.alarms.clear(`xpider_watchdog_${campaignState.currentTabId}_${campaignState.sessionId}`)"), 'Must clear target watchdog alarm on skip');
+    assert(bgSrc.includes("reasonCode: 'CAPTCHA_SKIPPED_NO_SOLVER'"), 'Must resolve target with CAPTCHA_SKIPPED_NO_SOLVER');
+    assert(bgSrc.includes("campaignState.targetResolve = null;"), 'Must atomically consume and clear targetResolve');
+});
+
+runTest('7.2 P0-B: Content-script tryAutoSolveCaptcha returns structured terminalSettled on skip', () => {
+    // Assert content-script.js returns terminalSettled object, not plain false
+    assert(csSrc.includes("[CAPTCHA_TERMINAL_SETTLED]"), 'Must log CAPTCHA_TERMINAL_SETTLED');
+    assert(csSrc.includes("terminalSettled: true"), 'Must return terminalSettled: true on skip');
+    assert(csSrc.includes("result: msg.result || 'SKIPPED'"), 'Must return structured result on skip');
+    assert(csSrc.includes("currentTargetLifecycleState = TargetLifecycleState.SETTLED"), 'Must transition lifecycle to SETTLED');
+});
+
+runTest('7.3 P0-C: waitForCaptchaSolved isolates solver attempt state and gates token acceptance timeout', () => {
+    // Assert waitForCaptchaSolved differentiates real provider attempts from skip decisions
+    assert(csSrc.includes("let providerSolveAttempted = false;"), 'Must track providerSolveAttempted');
+    assert(csSrc.includes("let providerTokenInjected = false;"), 'Must track providerTokenInjected');
+    assert(csSrc.includes("let terminalCaptchaDecision = false;"), 'Must track terminalCaptchaDecision');
+    assert(csSrc.includes("!terminalCaptchaDecision && providerSolveAttempted && providerTokenInjected"), 'Token acceptance fast-fail must require real provider attempt and injected token');
+});
+
+runTest('7.4 P0-D: Privacy invariant preserved after CAPTCHA skip', () => {
+    // Verify privacy relay enforcement persists across skip decisions
+    assert(pgSrc.includes('keepPrivacyRelayEnforcedBetweenCampaigns: true'), 'Privacy relay must remain enforced between campaigns');
+    assert(bgSrc.includes("reasonCode: 'CAPTCHA_SKIPPED_NO_SOLVER'"), 'Target result is structured skip');
+});
+
+// -------------------------------------------------------------------------
 // Summary
 // -------------------------------------------------------------------------
 console.log('\n========================================================================');
@@ -515,5 +550,5 @@ console.log('===================================================================
 if (testsFailed > 0) {
     process.exit(1);
 } else {
-    console.log('🎉 ALL R6.9G.10.3.7.1.4.37 RC3.23 REGRESSION TESTS PASSED!');
+    console.log('🎉 ALL R6.9G.10.3.7.1.4.38 RC3.24 REGRESSION TESTS PASSED!');
 }

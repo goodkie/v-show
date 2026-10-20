@@ -15,22 +15,22 @@
 
     const BUILD_INFO = {
         branch: 'upgrade/phase-0-1',
-        channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.23',
+        channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.24',
         testOnly: true,
-        // [R6.9G.10.3.7.1.4.37] XPIDER AutoForm Sender Pro — Private Egress Release Candidate 3.23 (Autofill Accounting, Committed Form Guard, 404 Overlay Exclusion & Privacy Relay Persistence)
-        implementationHead: 'fdc4c0941df5d3604dcd0c140a25520eb5118856',
-        implementationHeadShort: 'fdc4c094',
-        head: 'fdc4c0941df5d3604dcd0c140a25520eb5118856',
-        headShort: 'fdc4c094',
+        // [R6.9G.10.3.7.1.4.38] XPIDER AutoForm Sender Pro — Private Egress Release Candidate 3.24 (CAPTCHA Skip Terminal Settlement & Target Lifecycle Atomic Resolution)
+        implementationHead: '63e97460c860464eb094c920d94a7ca6a97e7eb5',
+        implementationHeadShort: '63e97460',
+        head: '63e97460c860464eb094c920d94a7ca6a97e7eb5',
+        headShort: '63e97460',
         rollbackBase: '0a6e843d9e5ae512bf48742473bbd3133050c117',
         previousFunctionalRestorePoint: '0a6e843d9e5ae512bf48742473bbd3133050c117',
         manifestVersion: 3,
-        buildId: 'R6.9G.10.3.7.1.4.37-20261020-PRIVATE-EGRESS-RC3.23',
-        builtAt: '2026-10-20T20:10:00.000Z',
+        buildId: 'R6.9G.10.3.7.1.4.38-20261020-PRIVATE-EGRESS-RC3.24',
+        builtAt: '2026-10-20T20:35:00.000Z',
         provenanceSchema: 2,
         modules: {
-            backgroundSha: 'babcd71b57e874f259b3a80d00066d5e2e248d4663bc7f020949012ce9c384d2',
-            contentScriptSha: '99086a93b647a3a583b8e27d86b752624e91050aa7ac5ff931042684ab69c67e',
+            backgroundSha: '84e626b965748d919e865532e8e7694ae065c03e258d3cad17e4b07824d9eed1',
+            contentScriptSha: '7aaa94174c85e3c968da48cd56ef510698c43f1dabb9deec014465c3f8919e60',
             popupSha: '40068a20e7480383ae0c19e08b69966170b7a25f86dd0ee0c69266882b574fb3',
             solverContentSha: 'd7de969d29df29799537b11380f0f82967bb93da227c91e7dc8c6af0d128f457',
             solverCoreSha: '01b3d96048ea933403e4599854dcdca28027e7f676aa5077eb6c5eb0582ac1e7',
