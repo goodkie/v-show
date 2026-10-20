@@ -317,6 +317,8 @@
             const role = (curr.getAttribute?.('role') || '').toLowerCase();
             const combined = `${id} ${cls} ${role}`;
 
+            const inputCount = curr.querySelectorAll ? curr.querySelectorAll('input, select, textarea').length : 0;
+
             // Coherent container keywords
             if (
                 tag === 'FIELDSET' || role === 'form' ||
@@ -324,19 +326,22 @@
                 combined.includes('inquiry') || combined.includes('feedback') ||
                 tag === 'SECTION' || tag === 'ARTICLE' || tag === 'MAIN'
             ) {
-                bestNonForm = curr;
-                // If it explicitly mentions contact or form, stop here
-                if (combined.includes('contact') || combined.includes('form') || tag === 'FIELDSET' || role === 'form') {
-                    return curr;
+                // If it only has 1 input or less, it's just a single field wrapper (like preview-form, form-group, form-field, field-holder), NOT the whole form!
+                if (inputCount > 1) {
+                    bestNonForm = curr;
+                    if (combined.includes('contact') || (combined.includes('form') && !combined.includes('preview-form') && !combined.includes('form-group')) || tag === 'FIELDSET' || role === 'form') {
+                        return curr;
+                    }
                 }
             }
 
-            // Fallback: If container contains multiple inputs and a button, it's a strong candidate
-            if (!bestNonForm && curr.querySelectorAll) {
+            // Fallback: If container contains multiple inputs and a button/submit link, it's a strong candidate
+            if (curr.querySelectorAll) {
                 const inputs = curr.querySelectorAll('input, select, textarea');
-                const btns = curr.querySelectorAll('button, input[type="submit"], [role="button"]');
+                const btns = curr.querySelectorAll('button, input[type="submit"], [role="button"], a[data-link-type="SUBMIT"], a[data-link-type*="submit" i], a.item-link');
                 if (inputs.length >= 2 && btns.length >= 1) {
                     bestNonForm = curr;
+                    return curr;
                 }
             }
 
@@ -394,9 +399,9 @@
         }
 
         // Submits
-        const submitElements = Array.from(container.querySelectorAll('button, input[type="submit"], input[type="button"], [role="button"]')).filter(isVisible);
+        const submitElements = Array.from(container.querySelectorAll('button, input[type="submit"], input[type="button"], [role="button"], a[data-link-type="SUBMIT"], a[data-link-type*="submit" i], a.item-link, a[class*="submit"], a[class*="send"]')).filter(isVisible);
         for (const btn of submitElements) {
-            const txt = (btn.textContent || btn.value || btn.getAttribute?.('aria-label') || '').toLowerCase().trim();
+            const txt = (btn.textContent || btn.value || btn.getAttribute?.('aria-label') || btn.getAttribute?.('data-link-type') || '').toLowerCase().trim();
             // Negative submit filter: login, search, next, cancel
             if (txt.includes('login') || txt.includes('search') || txt.includes('검색') || txt.includes('로그인')) continue;
             submits.push(btn);

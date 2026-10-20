@@ -4411,6 +4411,14 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                         return;
                     }
 
+                    // [RC3.21 Remediation] Defer CAPTCHA request if target is currently paused in Manual Form Assist
+                    if (campaignState.currentTargetStage === 'FORM_MANUAL_ASSIST_PENDING_OWNER' || campaignState.currentTargetStage === 'FORM_MANUAL_WAIT') {
+                        logBg(null, `[OWNER_CAPTCHA] DEFERRED: Target currently in stage=${campaignState.currentTargetStage}. Deferring CAPTCHA request until manual assist resolves.`, 'info');
+                        campaignState.deferredCaptchaRequest = request;
+                        sendResponse({ success: true, status: 'CAPTCHA_DEFERRED_FOR_MANUAL_ASSIST' });
+                        return;
+                    }
+
                     campaignState.captchaRequestLatch[challengeKey] = 'PENDING_OWNER';
 
                     // Suspend target timer while waiting for owner decision
@@ -4807,6 +4815,8 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
 
                     if (decision === 'retry') {
                         campaignState.currentTargetStage = 'IN_FLIGHT';
+                        campaignState.deferredCaptchaRequest = null;
+                        if (campaignState.captchaRequestLatch) campaignState.captchaRequestLatch = {};
                         if (campaignState.targetDeadlineController) {
                             campaignState.targetDeadlineController.resume();
                         }
@@ -4826,6 +4836,7 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                         sendResponse({ success: true, status: 'MANUAL_WAIT' });
                     } else if (decision === 'submitted_manually') {
                         campaignState.currentTargetStage = 'SUBMISSION_CONFIRMED';
+                        campaignState.deferredCaptchaRequest = null;
                         if (campaignState.targetDeadlineController) {
                             campaignState.targetDeadlineController.cancel('OWNER_MANUAL_CONFIRMED');
                         }
@@ -4868,6 +4879,7 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                         sendResponse({ success: true, status: 'CONFIRMED_SUCCESS' });
                     } else if (decision === 'skip') {
                         campaignState.currentTargetStage = 'SKIPPED';
+                        campaignState.deferredCaptchaRequest = null;
                         if (campaignState.targetDeadlineController) {
                             campaignState.targetDeadlineController.cancel('FORM_MANUAL_ASSIST_SKIPPED');
                         }

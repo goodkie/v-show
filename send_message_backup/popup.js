@@ -1014,6 +1014,15 @@ function purgeStaleDynamicModals() {
 function checkClickInterceptionDiagnostic() {
     if (typeof document === 'undefined' || !document.elementsFromPoint) return;
     try {
+        // [RC3.21 Remediation] If an authorized modal is active, background controls are intentionally blocked.
+        const authorizedModal = document.querySelector('#xpider-manual-assist-modal, #xpider-captcha-decision-modal, #settings-overlay:not(.hidden), #private-egress-modal-overlay:not(.hidden), #captcha-modal-overlay:not(.hidden), #privacy-block-modal-overlay:not(.hidden), #stt-setup-modal-overlay:not(.hidden), #reset-all-modal-overlay:not(.hidden), #reset-all-lists-modal-overlay:not(.hidden)');
+        if (authorizedModal) {
+            window.__xpider_boot.clickInterception = null;
+            const banner = document.getElementById('xpider-click-interception-banner');
+            if (banner) banner.remove();
+            return;
+        }
+
         const probeTargets = [
             { id: 'settings-toggle', label: '#settings-toggle' },
             { id: 'start-btn', label: '#start-btn' },
@@ -1036,9 +1045,14 @@ function checkClickInterceptionDiagnostic() {
             if (!stack || stack.length === 0) continue;
 
             const topEl = stack[0];
+            // Explicitly ignore diagnostic banner itself and authorized modals
+            if (topEl && (topEl.id === 'xpider-click-interception-banner' || topEl.closest('#xpider-click-interception-banner, #xpider-manual-assist-modal, #xpider-captcha-decision-modal'))) {
+                continue;
+            }
+
             if (topEl !== el && !el.contains(topEl)) {
                 // Check if top element is inside an open overlay/modal
-                const openOverlay = topEl.closest('#settings-overlay:not(.hidden), #private-egress-modal-overlay:not(.hidden), #captcha-modal-overlay:not(.hidden), #privacy-block-modal-overlay:not(.hidden), #stt-setup-modal-overlay:not(.hidden), #reset-all-modal-overlay:not(.hidden), #reset-all-lists-modal-overlay:not(.hidden)');
+                const openOverlay = topEl.closest('#settings-overlay:not(.hidden), #private-egress-modal-overlay:not(.hidden), #captcha-modal-overlay:not(.hidden), #privacy-block-modal-overlay:not(.hidden), #stt-setup-modal-overlay:not(.hidden), #reset-all-modal-overlay:not(.hidden), #reset-all-lists-modal-overlay:not(.hidden), #xpider-manual-assist-modal, #xpider-captcha-decision-modal, #xpider-click-interception-banner');
                 if (!openOverlay) {
                     const tagInfo = topEl.tagName.toLowerCase() + 
                         (topEl.id ? '#' + topEl.id : '') + 
@@ -1075,7 +1089,7 @@ function displayClickInterceptionBanner(interception) {
         if (!banner) {
             banner = document.createElement('div');
             banner.id = 'xpider-click-interception-banner';
-            banner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#dc2626;color:#fff;padding:8px 12px;font-size:12px;font-weight:700;z-index:999999;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.4);';
+            banner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#dc2626;color:#fff;padding:8px 12px;font-size:12px;font-weight:700;z-index:999999;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.4);pointer-events:none;';
             document.body.prepend(banner);
         }
         banner.textContent = `🚨 CLICK_INTERCEPTION_DETECTED: [${interception.coveringElement}] covers [${interception.target}].`;
@@ -3922,95 +3936,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                     } catch (_) {}
 
                 } else if (request.action === 'SHOW_CAPTCHA_DECISION_MODAL') {
-                    // [R6.9G.1-1/2] Owner CAPTCHA Decision Modal with exact attempt-bound identity
-                    const _cReq = request;
-                    const _attemptId = _cReq.attemptId || '';
-                    const _targetToken = _cReq.targetToken || '';
-                    const _campaignRunId = _cReq.campaignRunId || '';
-                    const _sessionId = _cReq.sessionId;
-                    const _captchaEpoch = _cReq.captchaEpoch || 0;
-                    const _tabId = _cReq.tabId || 0;
-                    const _captchaType = _cReq.captchaType || 'recaptcha';
-                    const _sitekey = _cReq.sitekey || '';
-                    const _targetUrl = _cReq.targetUrl || '';
-
-                    // Remove any stale modal
-                    const _existingModal = document.getElementById('xpider-captcha-decision-modal');
-                    if (_existingModal) _existingModal.remove();
-
-                    const _modal = document.createElement('div');
-                    _modal.id = 'xpider-captcha-decision-modal';
-                    _modal.setAttribute('style', [
-                        'position:fixed', 'top:0', 'left:0', 'width:100%', 'height:100%',
-                        'background:rgba(10,10,20,0.88)', 'z-index:99999',
-                        'display:flex', 'align-items:center', 'justify-content:center',
-                        'font-family:Inter,sans-serif'
-                    ].join(';'));
-
-                    const _typeLabel = _captchaType === 'hcaptcha' ? 'hCaptcha' : (_captchaType === 'turnstile' ? 'Cloudflare Turnstile' : 'reCAPTCHA');
-                    let _shortUrl = '?';
-                    try { _shortUrl = _targetUrl ? new URL(_targetUrl).hostname : '?'; } catch(_) {}
-
-                    _modal.innerHTML = [
-                        '<div style="background:#1a1d2e;border:1.5px solid #7c3aed;border-radius:14px;padding:28px 32px;max-width:400px;width:92%;box-shadow:0 8px 48px #0008;">',
-                        '<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">',
-                        '<span style="font-size:24px;">\uD83D\uDD10</span>',
-                        '<div>',
-                        '<div style="font-size:15px;font-weight:700;color:#e2e8f0;">CAPTCHA Detected</div>',
-                        '<div style="font-size:11px;color:#a78bfa;margin-top:2px;">' + _typeLabel + ' \u00b7 ' + _shortUrl + '</div>',
-                        '</div></div>',
-                        '<div style="font-size:12px;color:#94a3b8;margin-bottom:4px;">Attempt: <code style="color:#7c3aed;">' + (_attemptId ? _attemptId.substring(0, 16) + '\u2026' : 'none') + '</code></div>',
-                        '<div style="font-size:12px;color:#94a3b8;margin-bottom:4px;">Token: <code style="color:#7c3aed;">' + (_targetToken ? _targetToken.substring(0, 12) + '\u2026' : 'none') + '</code></div>',
-                        '<div style="font-size:12px;color:#94a3b8;margin-bottom:16px;">Epoch: <code style="color:#7c3aed;">' + _captchaEpoch + '</code> | Tab: <code style="color:#7c3aed;">' + _tabId + '</code></div>',
-                        '<div style="font-size:13px;color:#e2e8f0;margin-bottom:20px;">Choose how to handle this CAPTCHA challenge:</div>',
-                        '<div style="display:flex;gap:10px;flex-direction:column;">',
-                        '<button id="xpider-captcha-auto-btn" style="background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;border:none;border-radius:8px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;">\u26a1 Auto-Solve (Selected Provider)</button>',
-                        '<button id="xpider-captcha-manual-btn" style="background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;border:none;border-radius:8px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;">\u270B Manual Solve (Timer Paused)</button>',
-                        '<button id="xpider-captcha-skip-btn" style="background:transparent;color:#64748b;border:1px solid #334155;border-radius:8px;padding:10px;font-size:13px;cursor:pointer;">Skip this target</button>',
-                        '</div>',
-                        '<div id="xpider-captcha-status" style="margin-top:14px;font-size:12px;color:#64748b;text-align:center;"></div>',
-                        '</div>'
-                    ].join('');
-
-                    document.body.appendChild(_modal);
-
-                    function _sendCaptchaDecision(decision) {
-                        const _statusEl = document.getElementById('xpider-captcha-status');
-                        if (_statusEl) _statusEl.textContent = 'Sending decision: ' + decision + '\u2026';
-                        chrome.runtime.sendMessage({
-                            action: 'CAPTCHA_OWNER_DECISION',
-                            decision: decision,
-                            attemptId: _attemptId,
-                            targetToken: _targetToken,
-                            campaignRunId: _campaignRunId,
-                            sessionId: _sessionId,
-                            captchaEpoch: _captchaEpoch,
-                            tabId: _tabId,
-                            captchaType: _captchaType,
-                            sitekey: _sitekey
-                        }, function(resp) {
-                            const _s = document.getElementById('xpider-captcha-status');
-                            if (_s) {
-                                if (decision === 'auto') {
-                                    _s.innerHTML = (resp && resp.success)
-                                        ? '<span style="color:#a78bfa;">⚡ Solving via provider... Modal remains open until verified.</span>'
-                                        : '<span style="color:#ef4444;">❌ Auto-solve request failed: ' + (resp?.error || 'no response') + '</span>';
-                                } else if (decision === 'manual') {
-                                    _s.innerHTML = '<span style="color:#38bdf8;">✋ Manual solve active. Timer paused until resolution or Skip.</span>';
-                                } else if (decision === 'skip') {
-                                    _s.innerHTML = '<span style="color:#94a3b8;">⏭️ Target skipped.</span>';
-                                    setTimeout(function() {
-                                        const _m = document.getElementById('xpider-captcha-decision-modal');
-                                        if (_m) _m.remove();
-                                    }, 800);
-                                }
-                            }
-                        });
+                    // [RC3.21 Remediation] Defer CAPTCHA modal if manual assist modal is active
+                    if (document.getElementById('xpider-manual-assist-modal')) {
+                        console.log('[DECISION_SURFACE_SERIALIZED] Manual assist modal active. Deferring CAPTCHA modal until manual assist resolved.');
+                        window.__xpider_pending_captcha_modal = request;
+                        return;
                     }
-
-                    document.getElementById('xpider-captcha-auto-btn')?.addEventListener('click', function() { _sendCaptchaDecision('auto'); });
-                    document.getElementById('xpider-captcha-manual-btn')?.addEventListener('click', function() { _sendCaptchaDecision('manual'); });
-                    document.getElementById('xpider-captcha-skip-btn')?.addEventListener('click', function() { _sendCaptchaDecision('skip'); });
+                    renderCaptchaDecisionModal(request);
 
                 } else if (request.action === 'CAPTCHA_PROVIDER_FAILED') {
                     // [R6.9G.8 Directive 5] Provider failure: modal remains open and paused, shows safe error, offers Retry/Manual/Skip
@@ -4040,8 +3972,106 @@ document.addEventListener('DOMContentLoaded', async () => {
                         }
                     }
 
+function renderCaptchaDecisionModal(request) {
+    // [R6.9G.1-1/2 & RC3.21] Owner CAPTCHA Decision Modal with exact attempt-bound identity
+    const _cReq = request;
+    const _attemptId = _cReq.attemptId || '';
+    const _targetToken = _cReq.targetToken || '';
+    const _campaignRunId = _cReq.campaignRunId || '';
+    const _sessionId = _cReq.sessionId;
+    const _captchaEpoch = _cReq.captchaEpoch || 0;
+    const _tabId = _cReq.tabId || 0;
+    const _captchaType = _cReq.captchaType || 'recaptcha';
+    const _sitekey = _cReq.sitekey || '';
+    const _targetUrl = _cReq.targetUrl || '';
+
+    // Remove any stale modal
+    const _existingModal = document.getElementById('xpider-captcha-decision-modal');
+    if (_existingModal) _existingModal.remove();
+
+    const _modal = document.createElement('div');
+    _modal.id = 'xpider-captcha-decision-modal';
+    _modal.setAttribute('style', [
+        'position:fixed', 'top:0', 'left:0', 'width:100%', 'height:100%',
+        'background:rgba(10,10,20,0.88)', 'z-index:99999',
+        'display:flex', 'align-items:center', 'justify-content:center',
+        'font-family:Inter,sans-serif'
+    ].join(';'));
+
+    const _typeLabel = _captchaType === 'hcaptcha' ? 'hCaptcha' : (_captchaType === 'turnstile' ? 'Cloudflare Turnstile' : 'reCAPTCHA');
+    let _shortUrl = '?';
+    try { _shortUrl = _targetUrl ? new URL(_targetUrl).hostname : '?'; } catch(_) {}
+
+    _modal.innerHTML = [
+        '<div style="background:#1a1d2e;border:1.5px solid #7c3aed;border-radius:14px;padding:28px 32px;max-width:400px;width:92%;box-shadow:0 8px 48px #0008;">',
+        '<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">',
+        '<span style="font-size:24px;">\uD83D\uDD10</span>',
+        '<div>',
+        '<div style="font-size:15px;font-weight:700;color:#e2e8f0;">CAPTCHA Detected</div>',
+        '<div style="font-size:11px;color:#a78bfa;margin-top:2px;">' + _typeLabel + ' \u00b7 ' + _shortUrl + '</div>',
+        '</div></div>',
+        '<div style="font-size:12px;color:#94a3b8;margin-bottom:4px;">Attempt: <code style="color:#7c3aed;">' + (_attemptId ? _attemptId.substring(0, 16) + '\u2026' : 'none') + '</code></div>',
+        '<div style="font-size:12px;color:#94a3b8;margin-bottom:4px;">Token: <code style="color:#7c3aed;">' + (_targetToken ? _targetToken.substring(0, 12) + '\u2026' : 'none') + '</code></div>',
+        '<div style="font-size:12px;color:#94a3b8;margin-bottom:16px;">Epoch: <code style="color:#7c3aed;">' + _captchaEpoch + '</code> | Tab: <code style="color:#7c3aed;">' + _tabId + '</code></div>',
+        '<div style="font-size:13px;color:#e2e8f0;margin-bottom:20px;">Choose how to handle this CAPTCHA challenge:</div>',
+        '<div style="display:flex;gap:10px;flex-direction:column;">',
+        '<button id="xpider-captcha-auto-btn" style="background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;border:none;border-radius:8px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;">\u26a1 Auto-Solve (Selected Provider)</button>',
+        '<button id="xpider-captcha-manual-btn" style="background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;border:none;border-radius:8px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;">\u270B Manual Solve (Timer Paused)</button>',
+        '<button id="xpider-captcha-skip-btn" style="background:transparent;color:#64748b;border:1px solid #334155;border-radius:8px;padding:10px;font-size:13px;cursor:pointer;">Skip this target</button>',
+        '</div>',
+        '<div id="xpider-captcha-status" style="margin-top:14px;font-size:12px;color:#64748b;text-align:center;"></div>',
+        '</div>'
+    ].join('');
+
+    document.body.appendChild(_modal);
+
+    function _sendCaptchaDecision(decision) {
+        const _statusEl = document.getElementById('xpider-captcha-status');
+        if (_statusEl) _statusEl.textContent = 'Sending decision: ' + decision + '\u2026';
+        chrome.runtime.sendMessage({
+            action: 'CAPTCHA_OWNER_DECISION',
+            decision: decision,
+            attemptId: _attemptId,
+            targetToken: _targetToken,
+            campaignRunId: _campaignRunId,
+            sessionId: _sessionId,
+            captchaEpoch: _captchaEpoch,
+            tabId: _tabId,
+            captchaType: _captchaType,
+            sitekey: _sitekey
+        }, function(resp) {
+            const _s = document.getElementById('xpider-captcha-status');
+            if (_s) {
+                if (decision === 'auto') {
+                    _s.innerHTML = (resp && resp.success)
+                        ? '<span style="color:#a78bfa;">⚡ Solving via provider... Modal remains open until verified.</span>'
+                        : '<span style="color:#ef4444;">❌ Auto-solve request failed: ' + (resp?.error || 'no response') + '</span>';
+                } else if (decision === 'manual') {
+                    _s.innerHTML = '<span style="color:#38bdf8;">✋ Manual solve active. Timer paused until resolution or Skip.</span>';
+                } else if (decision === 'skip') {
+                    _s.innerHTML = '<span style="color:#94a3b8;">⏭️ Target skipped.</span>';
+                    setTimeout(function() {
+                        const _m = document.getElementById('xpider-captcha-decision-modal');
+                        if (_m) _m.remove();
+                    }, 800);
+                }
+            }
+        });
+    }
+
+    document.getElementById('xpider-captcha-auto-btn')?.addEventListener('click', function() { _sendCaptchaDecision('auto'); });
+    document.getElementById('xpider-captcha-manual-btn')?.addEventListener('click', function() { _sendCaptchaDecision('manual'); });
+    document.getElementById('xpider-captcha-skip-btn')?.addEventListener('click', function() { _sendCaptchaDecision('skip'); });
+}
+
                 } else if (request.action === 'SHOW_MANUAL_FORM_ASSIST_MODAL') {
-                    // [R6.9G.8 Directive 2] Sticky Owner-Gated Manual Form Assist Modal
+                    // [R6.9G.8 Directive 2 & RC3.21] Sticky Owner-Gated Manual Form Assist Modal
+                    // Single exclusive decision surface: if CAPTCHA modal is open, stash and remove it
+                    const _existingCaptchaModal = document.getElementById('xpider-captcha-decision-modal');
+                    if (_existingCaptchaModal) {
+                        console.log('[DECISION_SURFACE_SERIALIZED] Manual assist requested while CAPTCHA modal open. Prioritizing manual assist.');
+                        _existingCaptchaModal.remove();
+                    }
                     const _mReq = request;
                     const _attemptId = _mReq.attemptId || '';
                     const _targetToken = _mReq.targetToken || '';
@@ -4171,7 +4201,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 setTimeout(() => {
                                     const m = document.getElementById('xpider-manual-assist-modal');
                                     if (m) m.remove();
-                                }, 1000);
+                                    // [RC3.21 Remediation] Single exclusive decision surface: render deferred CAPTCHA modal if pending
+                                    if (window.__xpider_pending_captcha_modal) {
+                                        const pending = window.__xpider_pending_captcha_modal;
+                                        window.__xpider_pending_captcha_modal = null;
+                                        if (pending.attemptId === _attemptId && (decision === 'retry' || decision === 'manual_fill')) {
+                                            console.log('[DECISION_SURFACE_SERIALIZED] Rendering deferred CAPTCHA modal after manual assist resolution.');
+                                            renderCaptchaDecisionModal(pending);
+                                        }
+                                    }
+                                }, 800);
                             }
                         });
                     }
@@ -4182,6 +4221,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     document.getElementById('manual-action-skip-btn')?.addEventListener('click', () => _sendManualDecision('skip'));
 
                 } else if (request.action === 'CLOSE_ALL_MODALS') {
+                    window.__xpider_pending_captcha_modal = null;
                     document.getElementById('xpider-captcha-decision-modal')?.remove();
                     document.getElementById('xpider-manual-assist-modal')?.remove();
                 }

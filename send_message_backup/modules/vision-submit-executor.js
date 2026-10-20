@@ -54,7 +54,7 @@
             if (!formEl) return [];
 
             const formRect = typeof formEl.getBoundingClientRect === 'function' ? formEl.getBoundingClientRect() : { left: 0, top: 0, right: 800, bottom: 600, width: 800, height: 600 };
-            const domButtons = Array.from(formEl.querySelectorAll('button, input[type="submit"], input[type="button"], [role="button"], a.submit-btn, a.btn'));
+            const domButtons = Array.from(formEl.querySelectorAll('button, input[type="submit"], input[type="button"], [role="button"], a[data-link-type="SUBMIT"], a[data-link-type*="submit" i], a.item-link, a.submit-btn, a.btn'));
 
             const candidates = [];
 

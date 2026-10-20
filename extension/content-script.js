@@ -1639,11 +1639,8 @@
                 } catch (_) {}
             }
 
-            // [Auto CAPTCHA Solver 2Captcha API] Proactive early detection upon form recognition
-            if (!_isCaptchaSolved && (await checkForCaptcha())) {
-                logDev("🤖 [Security] CAPTCHA detected on form recognition. Initiating proactive 2Captcha solver...", "info");
-                tryAutoSolveCaptcha('FORM_RECOGNITION').catch(() => {});
-            }
+            // [RC3.21 Remediation] Autofill and field resolution must occur BEFORE CAPTCHA handling.
+            // Early proactive CAPTCHA solver trigger removed to prevent race with Owner-assist pause.
 
             logDev("🛠️ Step 3: Registering message template to form fields...", "info");
             window.__xpider_last_template = template;
@@ -1652,7 +1649,10 @@
             const result = await fillFormIntelligent(form, template, speed);
             const detectedCount = result?.fieldsDetected || 0;
             const filledCount = result?.fieldsFilled || (result?.filledAny ? 1 : 0);
-            const unresolvedCount = Math.max(0, detectedCount - filledCount);
+            const unresolvedList = (result && result.unresolvedFields && result.unresolvedFields.length > 0)
+                ? result.unresolvedFields
+                : ['message_body', 'name', 'email'];
+            const unresolvedCount = result?.fieldsDetected !== undefined ? Math.max(0, detectedCount - filledCount) : (result?.filledAny ? 0 : unresolvedList.length);
             const isAutofillSuccess = !!(result && result.filledAny && unresolvedCount === 0);
             const autofillStatus = isAutofillSuccess ? 'SUCCESS' : (result?.filledAny ? 'PARTIAL' : 'FAILED');
             logDev(`[AUTOFILL_RESULT] status=${autofillStatus} fieldsDetected=${detectedCount} fieldsFilled=${filledCount} unresolved=${unresolvedCount} reason=${result?.reasonCode || 'ok'}`, "info");
@@ -1660,7 +1660,7 @@
             if (!result || !result.filledAny || autofillStatus === 'PARTIAL') {
                 const failReason = (result && result.reasonCode) || "Zero-mapping: No usable fields found.";
                 logDev(`⚠️ [Engine] Autofill ${autofillStatus}: requesting manual form assist.`, "warning");
-                const assistHandled = await requestManualFormAssist('AUTOFILL_PARTIAL', '', ['message_body', 'name', 'email']);
+                const assistHandled = await requestManualFormAssist('AUTOFILL_PARTIAL', '', unresolvedList);
                 if (assistHandled) {
                     return fillAndSubmit(form, template, speed);
                 }
@@ -3760,8 +3760,24 @@
             });
         } catch (_) {}
 
-        logDev(`✅ [HyperEngine v4.0] 폼 작성 완료 - 입력 필드 ${filledFields}개 처리됨`);
-        return { filledAny: filledFields > 0 };
+        const interactiveInputs = finalAllInputs.filter(el => !['hidden', 'submit', 'button', 'image', 'reset'].includes(el.type));
+        const totalInputsCount = interactiveInputs.length;
+        const unresolvedFields = [];
+        if (!messageFilled) unresolvedFields.push('message_body');
+        const hasNameField = interactiveInputs.some(el => /name|이름|성함/i.test(`${el.name || ''} ${el.id || ''} ${el.placeholder || ''}`));
+        const nameFilled = interactiveInputs.some(el => /name|이름|성함/i.test(`${el.name || ''} ${el.id || ''} ${el.placeholder || ''}`) && (el.value || '').trim().length > 0);
+        if (hasNameField && !nameFilled) unresolvedFields.push('name');
+        const hasEmailField = interactiveInputs.some(el => /email|mail/i.test(`${el.name || ''} ${el.id || ''} ${el.type || ''}`));
+        const emailFilled = interactiveInputs.some(el => /email|mail/i.test(`${el.name || ''} ${el.id || ''} ${el.type || ''}`) && (el.value || '').trim().length > 0);
+        if (hasEmailField && !emailFilled) unresolvedFields.push('email');
+
+        logDev(`✅ [HyperEngine v4.0] 폼 작성 완료 - 입력 필드 ${filledFields}개 처리됨 (총 ${totalInputsCount}개)`);
+        return {
+            filledAny: filledFields > 0,
+            fieldsDetected: totalInputsCount,
+            fieldsFilled: filledFields,
+            unresolvedFields: unresolvedFields.length > 0 ? unresolvedFields : (filledFields === 0 ? ['message_body', 'name', 'email'] : [])
+        };
     }
 
     function getLabelFor(el) {
