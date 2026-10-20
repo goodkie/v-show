@@ -1310,7 +1310,10 @@ async function hydrateSettings(overrideV2Store = null) {
         'xpider_captcha_poll_interval_ms',
         'xpider_captcha_max_wait_sec',
         'xpider_stt_api_key', 'xpider_stealth_mode', 'xpider_double_submit', 'xpider_fill_mode',
-        'xpider_random_delay'
+        'xpider_random_delay',
+        // [Issue #6 RC3.22/RC3.23 UX Settings]
+        'xpider_auto_recovery_first', 'xpider_show_manual_form_assist_popup',
+        'xpider_default_captcha_handling', 'xpider_show_captcha_choice_popup'
     ]);
 
     if (data.xpider_lang) {
@@ -1380,6 +1383,21 @@ async function hydrateSettings(overrideV2Store = null) {
     if (methodGroup) methodGroup.style.display = captchaEnabled ? 'block' : 'none';
     if (typeof toggleCaptchaApiVisibility === 'function') toggleCaptchaApiVisibility();
 
+    // [Issue #6 RC3.22/RC3.23 UX Settings Hydration]
+    const autoRecoveryToggle = document.getElementById('form-assist-auto-recovery-toggle');
+    if (autoRecoveryToggle) autoRecoveryToggle.checked = data.xpider_auto_recovery_first !== false;
+
+    const showAssistPopupToggle = document.getElementById('form-assist-show-popup-toggle');
+    if (showAssistPopupToggle) showAssistPopupToggle.checked = !!data.xpider_show_manual_form_assist_popup;
+
+    const captchaHandlingSelect = document.getElementById('captcha-default-handling-select');
+    if (captchaHandlingSelect && data.xpider_default_captcha_handling) {
+        captchaHandlingSelect.value = data.xpider_default_captcha_handling;
+    }
+
+    const showCaptchaPopupToggle = document.getElementById('captcha-show-choice-popup-toggle');
+    if (showCaptchaPopupToggle) showCaptchaPopupToggle.checked = !!data.xpider_show_captcha_choice_popup;
+
     // [R6.9G.10.3.4] Template Hydration & Dropdown Sync
     await rehydrateTemplateUI('boot', overrideV2Store || data.templates_v2);
 
@@ -1411,6 +1429,11 @@ async function hydrateSettings(overrideV2Store = null) {
         const privCfg = privData.xpider_privacy_config || {};
         const privToggle = document.getElementById('privacy-gateway-toggle');
         if (privToggle) privToggle.checked = privCfg.enabled !== undefined ? !!privCfg.enabled : true;
+
+        const privKeepRelayToggle = document.getElementById('privacy-keep-relay-enforced-toggle');
+        if (privKeepRelayToggle) {
+            privKeepRelayToggle.checked = privCfg.keepPrivacyRelayEnforcedBetweenCampaigns !== false;
+        }
 
         const privModeSelect = document.getElementById('privacy-transport-mode-select');
         const vpnSection = document.getElementById('privacy-system-vpn-fields');
@@ -8814,6 +8837,7 @@ async function saveSettings() {
         const privToggle = document.getElementById('privacy-gateway-toggle');
         const privModeSelect = document.getElementById('privacy-transport-mode-select');
         const privFailClosedToggle = document.getElementById('privacy-fail-closed-toggle');
+        const privKeepRelayToggle = document.getElementById('privacy-keep-relay-enforced-toggle');
         const privHostEl = document.getElementById('privacy-proxy-host');
         const privPortEl = document.getElementById('privacy-proxy-port');
         const privUserEl = document.getElementById('privacy-proxy-user');
@@ -8829,6 +8853,7 @@ async function saveSettings() {
             enabled: privToggle ? privToggle.checked : true,
             transportMode: privModeSelect ? privModeSelect.value : 'SYSTEM_VPN',
             failClosed: privFailClosedToggle ? privFailClosedToggle.checked : true,
+            keepPrivacyRelayEnforcedBetweenCampaigns: privKeepRelayToggle ? privKeepRelayToggle.checked : true,
             systemVpnConfirmed: (privModeSelect && (privModeSelect.value === 'SYSTEM_VPN' || privModeSelect.value === 'EXTERNAL_VPN_MONITOR')) ? !!isVpnConfirmed : false,
             proxyHost: privHostEl ? privHostEl.value.trim() : '',
             proxyPort: privPortEl ? (parseInt(privPortEl.value, 10) || 1080) : 1080,
@@ -8861,6 +8886,11 @@ async function saveSettings() {
         const maxWaitVal = maxWaitInput ? maxWaitInput.value.trim() : '';
         const pollSecNum = pollIntervalVal !== '' ? Math.max(1, Number(pollIntervalVal)) : null;
         const maxWaitNum = maxWaitVal !== '' ? Math.max(5, Number(maxWaitVal)) : null;
+
+        const autoRecoveryToggle = document.getElementById('form-assist-auto-recovery-toggle');
+        const showAssistPopupToggle = document.getElementById('form-assist-show-popup-toggle');
+        const captchaHandlingSelect = document.getElementById('captcha-default-handling-select');
+        const showCaptchaPopupToggle = document.getElementById('captcha-show-choice-popup-toggle');
 
         settings = {
             xpider_lang: lang,
@@ -8896,6 +8926,11 @@ async function saveSettings() {
             xpider_delay_submit: delaySubmitInput ? delaySubmitInput.value : 6,
             xpider_random_delay: randomToggle ? randomToggle.checked : false,
             xpider_fill_mode: fillMode,
+            // [Issue #6 RC3.22/RC3.23 UX Automation Settings]
+            xpider_auto_recovery_first: autoRecoveryToggle ? autoRecoveryToggle.checked : true,
+            xpider_show_manual_form_assist_popup: showAssistPopupToggle ? showAssistPopupToggle.checked : false,
+            xpider_default_captcha_handling: captchaHandlingSelect ? captchaHandlingSelect.value : 'AUTO_FIRST',
+            xpider_show_captcha_choice_popup: showCaptchaPopupToggle ? showCaptchaPopupToggle.checked : false,
             // [R6.9G.9] Persist Privacy Gateway Config
             xpider_privacy_config: privacyConfig
         };

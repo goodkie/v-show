@@ -4,46 +4,55 @@
 - Protocol: OCA-DEV-1.4
 - Project ID: xpider-autoform-sender-pro
 - Workspace: E:\vivpr\ai\extension-form-sender
-- Authority: goodkie/v-show Issue #6 (Responding to Directive [RC3.21-NATIVE-HOST-SCRATCH-RECONTAMINATION-AND-BUILD-ID-DRIFT] Comment #6298827174)
+- Authority: goodkie/v-show Issue #6 (Responding to Directive [RC3.22-AUTOFILL-STATE-ACCOUNTING-FALSE-FAILURE-404-OVERLAY-FORM-PRIVACY-RESTORE] Comment #6299638525)
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-20.57
-- Authority Cursor: 6299231384
-- Last Directive / Audit: `[CHATGPT][OWNER-EVIDENCE][extension-form-sender][RC3.21-NATIVE-HOST-SCRATCH-RECONTAMINATION-AND-BUILD-ID-DRIFT] Comment #6298827174`
-- Last Receipt: `[ANTIGRAVITY][RECEIPT][extension-form-sender][RC3.22-OS-ISOLATED-PACKAGING-AND-NATIVE-HOST-SYNC] #6299231384`
-- Build ID: `R6.9G.10.3.7.1.4.36-20261020-PRIVATE-EGRESS-RC3.22`
-- Current Candidate Release Tag: `v6.9g.10.3-rc3.22.7.1.4.36`
+- State Rev: 2026-10-20.58
+- Authority Cursor: 6299638525
+- Last Directive / Audit: `[CHATGPT][OWNER-SMOKE][extension-form-sender][RC3.22-AUTOFILL-STATE-ACCOUNTING-FALSE-FAILURE-404-OVERLAY-FORM-PRIVACY-RESTORE] Comment #6299638525`
+- Last Receipt: `[ANTIGRAVITY][RECEIPT][extension-form-sender][RC3.23-AUTOFILL-ACCOUNTING-COMMITTED-FORM-404-OVERLAY-AND-PRIVACY-RESTORE]`
+- Build ID: `R6.9G.10.3.7.1.4.37-20261020-PRIVATE-EGRESS-RC3.23`
+- Current Candidate Release Tag: `v6.9g.10.3-rc3.23.7.1.4.37`
 - Functional Head Commit: `fdc4c0941df5d3604dcd0c140a25520eb5118856`
 - Rollback Anchor: `0a6e843d9e5ae512bf48742473bbd3133050c117` (RC3.17)
-- Release Asset Zip: `XPIDER_R6.9G.10.3.7.1.4.36_PRIVATE_EGRESS_RC3.22.zip`
-- Release Asset Size: `45,364,874` bytes
-- Release Asset SHA-256: `8dd0137bd87f7e8ebfb42d487a098ba4708850b67f61322b8f6ffb051ad3b0a2`
-- Release Asset Hosted URL: `https://github.com/goodkie/v-show/releases/tag/v6.9g.10.3-rc3.22.7.1.4.36`
+- Release Asset Zip: `XPIDER_R6.9G.10.3.7.1.4.37_PRIVATE_EGRESS_RC3.23.zip`
+- Release Asset Size: `45,369,876` bytes
+- Release Asset SHA-256: `8bae59c34b476f88f70993caf2f02b8d4aaeacba822702d34a42a907cc613722`
+- Release Asset Hosted URL: `https://github.com/goodkie/v-show/releases/tag/v6.9g.10.3-rc3.23.7.1.4.37`
 
 ## Current Gate
-- Formal Gates Evaluated for RC3.22 Remediation (Resolving Directive #6298827174):
-  * **1. OS-Isolated Package Smoke Verification Gate: PASS**
-    - `XPIDER_AUTO_SETUP.bat`: Added `if defined XPIDER_ISOLATED_TEST` guard immediately following runtime/dependency validation, skipping registry modifications, Startup shortcuts, and background service spawning during packaging smoke tests.
-    - `companion/install_native_host.js`: Added dry-run guard `if (process.env.XPIDER_ISOLATED_TEST === '1' || process.argv.includes('--dry-run'))` returning `true` before executing `reg add` on HKCU Chrome/Edge NativeMessagingHosts.
-    - `companion/install_autostart.js`: Added dry-run guard `if (process.env.XPIDER_ISOLATED_TEST === '1' || process.argv.includes('--dry-run'))` returning `true` before writing `XPIDER_Privacy_Relay.vbs` to `%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup`.
-    - `companion/ensure_companion_service.js`: Added dry-run guard exiting `0` before starting processes or watchdog when isolated.
-    - `pack_owner_beta_package.js`: Removed proactive port 18988/18989 killing logic. Added snapshotting of Host OS Baseline (Chrome HKCU registry, Edge HKCU registry, Startup VBS, live companion PID) before packaging smoke test, and asserted bit-for-bit unchanged invariants post-test. Fails closed if any invariant is violated.
-  * **2. Native Host Expected-Build Parity Gate: PASS**
-    - `companion/native_host/xpider_native_host.js`: Updated and synchronized `COMPANION_BUILD_ID` to `R6.9G.10.3.7.1.4.36-20261020-PRIVATE-EGRESS-RC3.22`.
-    - Automated parity via `sync_build_parity.js`: reads authoritative build provenance and stamps `xpider_native_host.js`, `privacy-relay-service.js`, and `ensure_companion_service.js`.
-  * **3. Build Provenance Implementation Head Gate: PASS**
-    - `extension/modules/build-provenance.js` and `send_message_backup/modules/build-provenance.js`: Stamped `implementationHead` to actual functional release commit `fdc4c0941df5d3604dcd0c140a25520eb5118856` (short: `fdc4c094`).
-    - Stamped `buildId` to `R6.9G.10.3.7.1.4.36-20261020-PRIVATE-EGRESS-RC3.22` and channel `OWNER_BETA_PRIVATE_EGRESS_RC3.22`.
-  * **4. Automated Regression Suite (18/18 PASS)**:
-    - Executed `test_r6_9g10_3_7_1_4_35_decision_serialization.js`: 18 tests passed across static assertions, banner pointer-events isolation, decision surface serialization, background latch reset, Turbify container climb, Native Host build parity, and OS isolation guards.
-  * **5. Package Parity & Provenance Gate: PASS**
-    - Created `XPIDER_R6.9G.10.3.7.1.4.36_PRIVATE_EGRESS_RC3.22.zip` via `pack_owner_beta_package.js`.
-    - Executed `scratch/verify_local_rc3_22.js`: Passed all 7 gates including 100% SHA256 byte parity across all 11 critical files, zero secrets, zero denylist entries, and verified zero host registry mutations.
-    - Unpacked convenience folder `XPIDER_R6.9G.10.3.7.1.4.36_PRIVATE_EGRESS_RC3.22` for immediate Owner smoke testing.
-  * **6. Live Companion & Egress Status: PASS**
+- Formal Gates Evaluated for RC3.23 Remediation (Resolving Directive #6299638525):
+  * **1. P0-A: Autofill State Accounting Gate: PASS**
+    - Corrected accounting in `content-script.js`: Separated `fieldsNewlyFilled`, `fieldsAlreadyValid`, `fieldsResolvedTotal`, and `unresolvedFields`.
+    - `ALREADY_FILLED` fields with valid non-empty values are counted as RESOLVED.
+    - Removed arbitrary fallback injecting `['message_body','name','email']` when `filledCount === 0`.
+    - Autofill succeeds when all required detected fields are resolved (`unresolvedCount === 0 && resolvedCount > 0`).
+  * **2. P0-B: Committed Form Guard & 404 Prevention Gate: PASS**
+    - Bound retry attempts to the active committed form container/identity in `content-script.js`.
+    - Suppressed alternate alias discovery navigation while the committed form container remains valid in the DOM.
+    - Added HTTP/404 error page detection guard rejecting error pages from candidate evaluation.
+  * **3. P0-C: Overlay DOM & Provenance Isolation Gate: PASS**
+    - Filtered out browser/extension overlay controls (e.g. `...-translate-tab`, `...-inputText`) in `form-discovery-engine-r2.js` and `content-script.js`.
+    - Added negative keyword filters for `'translate'`, `'translation'`, `'번역'` in submit candidate evaluation across discovery and vision submit executor.
+    - Enforced form container visibility requirement (`formVisible !== false`) before activation.
+  * **4. P0-D: Persistent Privacy Relay Across Campaigns Gate: PASS**
+    - Added `keepPrivacyRelayEnforcedBetweenCampaigns: true` default setting in `privacy-gateway.js`.
+    - Maintained proxy enforcement and `isGateReady = true` across campaign pause and completion events unless explicit direct override is requested.
+  * **5. UX Settings Automation Gate: PASS**
+    - Implemented configurable controls in `popup.html`, `popup.js`, and `background.js`:
+      - Form Assist: `Automatic Recovery First` (default ON), `Show Manual Form Assist Popup` (default OFF).
+      - CAPTCHA: `Default CAPTCHA Handling: AUTO FIRST`, `Show Auto / Manual Choice Popup` (default OFF).
+    - Preserved single-surface decision serialization with non-blocking structured settlement when popups are disabled.
+  * **6. Automated Regression Suite (23/23 PASS)**:
+    - Executed `test_r6_9g10_3_7_1_4_35_decision_serialization.js`: 23 tests passed across static assertions, pointer-events isolation, decision surface serialization, background latch reset, Turbify container climb, Native Host build parity, OS isolation guards, and RC3.23 defect remediations (P0-A, P0-B, P0-C, P0-D, UX).
+  * **7. Local Package Parity & Provenance Gate: PASS**
+    - Built `XPIDER_R6.9G.10.3.7.1.4.37_PRIVATE_EGRESS_RC3.23.zip` (45,369,876 bytes, SHA-256: `8bae59c34b476f88f70993caf2f02b8d4aaeacba822702d34a42a907cc613722`).
+    - Verified via `scratch/verify_local_rc3_23.js`: Passed all 7 gates including 100% SHA256 byte parity across all 11 critical files, zero secrets, zero runtime files, and verified zero host registry mutations.
+    - Unpacked convenience folder `XPIDER_R6.9G.10.3.7.1.4.37_PRIVATE_EGRESS_RC3.23` for immediate Owner smoke testing.
+  * **8. Live Companion & Egress Status: PASS**
     - Companion service running on PID 7888 / 20904 from canonical workspace root `E:\vivpr\ai\extension-form-sender`.
     - Watchdog active on PID 18104 (`rootParity=true`).
-    - PowerShell proxy probe through `http://127.0.0.1:18988` verified returning `159.203.28.198` (HTTP 200).
-  * **7. Owner Smoke Gate: AUTHORIZED (3–5 controlled/authorized URLs)**
+    - Curl proxy probe through `http://127.0.0.1:18988` verified returning `159.203.28.198` (HTTP 200).
+  * **9. Owner Smoke Gate: AUTHORIZED (Target: https://www.kempomaa.com/contact-us.html)**
 
 ### Operating Guidelines & Invariants:
 1. **Existing Droplet Preservation**:

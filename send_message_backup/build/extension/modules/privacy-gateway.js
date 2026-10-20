@@ -58,6 +58,8 @@
         rotateAtCampaignStart: false,
         healthFailover: true,
         selectedEgressId: null,
+        // [Issue #6 RC3.22/RC3.23 Privacy Relay Persistence]
+        keepPrivacyRelayEnforcedBetweenCampaigns: true,
         // [Issue #6 R6.9G.10.3.7 Physical Router Security Gate Settings]
         physicalGateEnabled: false
     };
@@ -1710,7 +1712,19 @@
         /**
          * Restore original browser settings on campaign stop/pause/exit
          */
-        async restoreOriginalSettings() {
+        async restoreOriginalSettings(options = {}) {
+            const keepEnforced = this.config.keepPrivacyRelayEnforcedBetweenCampaigns !== false;
+            const isRelayMode = this.config.transportMode === PRIVACY_MODES.PRIVACY_RELAY;
+            const forceDirect = Boolean(options && options.forceDirect);
+
+            if (keepEnforced && isRelayMode && !forceDirect) {
+                this.isGateReady = true;
+                this.isGateActive = true;
+                this.failureReason = null;
+                console.log('[PRIVACY_SETTINGS_RESTORED] keepEnforced=true gateReady=true transportEnforced=true mode=PRIVACY_RELAY');
+                return;
+            }
+
             if (!this.config.rememberPassword) {
                 this.ephemeralProxyPassword = null;
             }

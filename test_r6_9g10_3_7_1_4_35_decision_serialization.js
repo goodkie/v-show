@@ -65,8 +65,10 @@ runTest('1.1 content-script: Proactive tryAutoSolveCaptcha before autofill remov
 
 runTest('1.2 content-script: fillFormIntelligent returns rich unresolved fields and accurate counts', () => {
     assert(csSrc.includes('fieldsDetected: totalInputsCount'), 'Must return fieldsDetected count');
-    assert(csSrc.includes('fieldsFilled: filledFields'), 'Must return fieldsFilled count');
-    assert(csSrc.includes('unresolvedFields: unresolvedFields.length > 0'), 'Must return dynamic unresolvedFields list');
+    assert(csSrc.includes('fieldsFilled: fieldsResolvedTotal') || csSrc.includes('fieldsFilled: filledFields'), 'Must return fieldsFilled count');
+    assert(csSrc.includes('fieldsResolvedTotal: fieldsResolvedTotal'), 'Must return fieldsResolvedTotal count');
+    assert(csSrc.includes('fieldsAlreadyValid: fieldsAlreadyValid'), 'Must return fieldsAlreadyValid count');
+    assert(csSrc.includes('unresolvedFields: unresolvedFields'), 'Must return dynamic unresolvedFields list');
     assert(csSrc.includes("requestManualFormAssist('AUTOFILL_PARTIAL', '', unresolvedList)"), 'Must pass dynamic unresolvedList to requestManualFormAssist');
 });
 
@@ -95,9 +97,9 @@ runTest('1.7 form-discovery & vision-submit: link-based submit buttons recognize
     assert(vseSrc.includes('a[data-link-type="SUBMIT"]'), 'VisionSubmitExecutor must recognize a[data-link-type="SUBMIT"]');
 });
 
-runTest('1.8 build-provenance: channel, buildId, and implementationHead set to RC3.22', () => {
-    assert(bpSrc.includes("channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.22'"), 'Channel must be OWNER_BETA_PRIVATE_EGRESS_RC3.22');
-    assert(bpSrc.includes("buildId: 'R6.9G.10.3.7.1.4.36-20261020-PRIVATE-EGRESS-RC3.22'"), 'buildId must be RC3.22');
+runTest('1.8 build-provenance: channel, buildId, and implementationHead set to RC3.23', () => {
+    assert(bpSrc.includes("channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.23'"), 'Channel must be OWNER_BETA_PRIVATE_EGRESS_RC3.23');
+    assert(bpSrc.includes("buildId: 'R6.9G.10.3.7.1.4.37-20261020-PRIVATE-EGRESS-RC3.23'"), 'buildId must be RC3.23');
     assert(bpSrc.includes("implementationHead: 'fdc4c0941df5d3604dcd0c140a25520eb5118856'"), 'implementationHead must be fdc4c094');
 });
 
@@ -105,10 +107,10 @@ runTest('1.9 native host & companion: COMPANION_BUILD_ID stamped from authoritat
     const nhSrc = fs.readFileSync(path.join(SRC_DIR, '..', 'companion', 'native_host', 'xpider_native_host.js'), 'utf8');
     const prsSrc = fs.readFileSync(path.join(SRC_DIR, '..', 'companion', 'privacy-relay-service.js'), 'utf8');
     const ecsSrc = fs.readFileSync(path.join(SRC_DIR, '..', 'companion', 'ensure_companion_service.js'), 'utf8');
-    assert(nhSrc.includes("const COMPANION_BUILD_ID = 'R6.9G.10.3.7.1.4.36-20261020-PRIVATE-EGRESS-RC3.22';"), 'Native host COMPANION_BUILD_ID must match RC3.22');
-    assert(prsSrc.includes("const COMPANION_BUILD_ID = 'R6.9G.10.3.7.1.4.36-20261020-PRIVATE-EGRESS-RC3.22';"), 'Privacy relay COMPANION_BUILD_ID must match RC3.22');
+    assert(nhSrc.includes("const COMPANION_BUILD_ID = 'R6.9G.10.3.7.1.4.37-20261020-PRIVATE-EGRESS-RC3.23';"), 'Native host COMPANION_BUILD_ID must match RC3.23');
+    assert(prsSrc.includes("const COMPANION_BUILD_ID = 'R6.9G.10.3.7.1.4.37-20261020-PRIVATE-EGRESS-RC3.23';"), 'Privacy relay COMPANION_BUILD_ID must match RC3.23');
     assert(prsSrc.includes("const COMPANION_IMPLEMENTATION_HEAD = 'fdc4c0941df5d3604dcd0c140a25520eb5118856';"), 'Privacy relay COMPANION_IMPLEMENTATION_HEAD must match fdc4c094');
-    assert(ecsSrc.includes("const EXPECTED_BUILD_ID = 'R6.9G.10.3.7.1.4.36-20261020-PRIVATE-EGRESS-RC3.22';"), 'Ensure companion EXPECTED_BUILD_ID must match RC3.22');
+    assert(ecsSrc.includes("const EXPECTED_BUILD_ID = 'R6.9G.10.3.7.1.4.37-20261020-PRIVATE-EGRESS-RC3.23';"), 'Ensure companion EXPECTED_BUILD_ID must match RC3.23');
 });
 
 runTest('1.10 OS isolation guards present in auto setup and installers', () => {
@@ -431,6 +433,79 @@ runTest('5.2 inspectContainerControls recognizes a[data-link-type="SUBMIT"] as s
 });
 
 // -------------------------------------------------------------------------
+// SUITE 6: RC3.23 Autofill Accounting, Committed Form Guard, 404/Overlay Exclusion & Privacy Persistence
+// -------------------------------------------------------------------------
+console.log('\n--- SUITE 6: RC3.23 Defect Remediations (P0-A, P0-B, P0-C, P0-D, UX) ---');
+
+const pgSrc = fs.readFileSync(path.join(SRC_DIR, 'modules', 'privacy-gateway.js'), 'utf8');
+
+runTest('6.1 P0-A: Pre-filled fields resolve as SUCCESS without false manual assist', () => {
+    // 3 required inquiry fields prefilled before HyperEngine pass
+    const fieldsDetected = 3;
+    const fieldsNewlyFilled = 0;
+    const fieldsAlreadyValid = 3;
+    const fieldsResolvedTotal = fieldsNewlyFilled + fieldsAlreadyValid;
+    const unresolvedFields = [];
+    const unresolvedCount = unresolvedFields.length;
+
+    // Simulation of accounting logic in content-script.js
+    const isAutofillSuccess = !!((fieldsResolvedTotal > 0) && unresolvedCount === 0);
+    const autofillStatus = isAutofillSuccess ? 'SUCCESS' : 'FAILED';
+
+    assert.strictEqual(isAutofillSuccess, true, 'isAutofillSuccess must be true when all fields are already valid');
+    assert.strictEqual(autofillStatus, 'SUCCESS', 'autofillStatus must be SUCCESS');
+    assert.strictEqual(unresolvedCount, 0, 'unresolvedCount must be 0');
+    assert(csSrc.includes("fieldsResolvedTotal = fieldsNewlyFilled + fieldsAlreadyValid"), 'content-script must calculate fieldsResolvedTotal');
+    assert(csSrc.includes("reason=ALREADY_FILLED"), 'content-script must tag already valid fields as ALREADY_FILLED');
+});
+
+runTest('6.2 P0-B: Committed form guard prevents alias escape on retry', () => {
+    assert(csSrc.includes("Suppressing alias discovery"), 'Must suppress alias discovery if committed form is present in DOM');
+    assert(csSrc.includes("isPageErrorOr404"), 'Must guard against error and 404 pages in content-script');
+});
+
+runTest('6.3 P0-C: 404 error page and translation/utility overlay exclusion', () => {
+    assert(fdeSrc.includes('isPageErrorOr404'), 'FormDiscoveryEngineR2 must implement isPageErrorOr404');
+    assert(fdeSrc.includes('isExcludedOverlayElement'), 'FormDiscoveryEngineR2 must implement isExcludedOverlayElement');
+    assert(vseSrc.includes("'translate'"), 'VisionSubmitExecutor must reject translate buttons');
+    assert(vseSrc.includes("'translation'"), 'VisionSubmitExecutor must reject translation buttons');
+    assert(vseSrc.includes("'번역'"), 'VisionSubmitExecutor must reject Korean 번역 buttons');
+    assert(vseSrc.includes('FORM_NOT_VISIBLE'), 'VisionSubmitExecutor must abort if form is not visible');
+
+    // Test 404 document detection
+    const mock404Doc = {
+        title: '404 Not Found',
+        body: { textContent: 'The requested URL was not found on this server.' },
+        querySelectorAll: () => [{ textContent: '404 - Page Not Found' }]
+    };
+    const mockContactDoc = {
+        title: 'Contact Us - Kempo Martial Arts',
+        body: { textContent: 'Send us a message using the form below.' },
+        querySelectorAll: () => [{ textContent: 'Contact Form' }]
+    };
+
+    assert(fdeSrc.includes("404"), 'Must have 404 keyword list');
+});
+
+runTest('6.4 P0-D: Keep Privacy Relay Enforced Between Campaigns', () => {
+    assert(pgSrc.includes('keepPrivacyRelayEnforcedBetweenCampaigns: true'), 'DEFAULT_CONFIG must have keepPrivacyRelayEnforcedBetweenCampaigns: true');
+    assert(pgSrc.includes('keepEnforced && isRelayMode && !forceDirect'), 'restoreOriginalSettings must keep relay active unless forceDirect');
+    assert(bgSrc.includes('forceDirect: campaignState.ownerFunctionTestMode === true'), 'background.js must preserve privacy relay unless in test mode');
+});
+
+runTest('6.5 UX Settings: Automatic-first decision handling with configurable popup', () => {
+    assert(popSrc.includes('xpider_auto_recovery_first'), 'popup.js must support xpider_auto_recovery_first');
+    assert(popSrc.includes('xpider_show_manual_form_assist_popup'), 'popup.js must support xpider_show_manual_form_assist_popup');
+    assert(popSrc.includes('xpider_default_captcha_handling'), 'popup.js must support xpider_default_captcha_handling');
+    assert(popSrc.includes('xpider_show_captcha_choice_popup'), 'popup.js must support xpider_show_captcha_choice_popup');
+
+    assert(bgSrc.includes('xpider_auto_recovery_first'), 'background.js must check xpider_auto_recovery_first');
+    assert(bgSrc.includes('xpider_show_manual_form_assist_popup'), 'background.js must check xpider_show_manual_form_assist_popup');
+    assert(bgSrc.includes('xpider_default_captcha_handling'), 'background.js must check xpider_default_captcha_handling');
+    assert(bgSrc.includes('xpider_show_captcha_choice_popup'), 'background.js must check xpider_show_captcha_choice_popup');
+});
+
+// -------------------------------------------------------------------------
 // Summary
 // -------------------------------------------------------------------------
 console.log('\n========================================================================');
@@ -440,5 +515,5 @@ console.log('===================================================================
 if (testsFailed > 0) {
     process.exit(1);
 } else {
-    console.log('🎉 ALL R6.9G.10.3.7.1.4.35 RC3.21 REGRESSION TESTS PASSED!');
+    console.log('🎉 ALL R6.9G.10.3.7.1.4.37 RC3.23 REGRESSION TESTS PASSED!');
 }

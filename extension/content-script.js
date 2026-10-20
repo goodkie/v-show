@@ -767,13 +767,88 @@
         }
     }
 
+    // [P0-B & P0-C Fix] Robust 404 and HTTP Error Page Detection
+    function isPageErrorOr404() {
+        try {
+            const title = (document.title || '').toLowerCase();
+            const body = document.body;
+            if (!body) return false;
+
+            const titleKeywords = [
+                '404', 'not found', 'page not found', 'error 404', '404 error',
+                'page doesn\'t exist', 'page does not exist', 'cannot be found', 'nothing found',
+                '찾을 수 없습니다', '오류 404', '페이지를 찾을 수 없습니다'
+            ];
+            if (titleKeywords.some(k => title.includes(k))) return true;
+
+            const headings = Array.from(document.querySelectorAll('h1, h2, h3, .error-title, .not-found'));
+            for (const h of headings) {
+                const txt = (h.textContent || '').trim().toLowerCase();
+                if (txt.length < 120 && (
+                    txt.includes('404') ||
+                    txt.includes('page not found') ||
+                    txt.includes('page cannot be found') ||
+                    txt.includes('not found') ||
+                    txt.includes('nothing found') ||
+                    txt.includes('we couldn\'t find that page') ||
+                    txt.includes('페이지를 찾을 수 없습니다')
+                )) {
+                    return true;
+                }
+            }
+
+            const bodyText = (body.textContent || '').toLowerCase();
+            const strongErrorSignals = [
+                '404 not found', '404 - not found', '404: not found', 'error 404',
+                'page not found', 'the requested url was not found on this server',
+                'the page you are looking for cannot be found',
+                'the page you requested could not be found',
+                'this page could not be found',
+                'sorry, we can\'t find that page',
+                'oops! that page can’t be found',
+                'oops! that page cannot be found',
+                '페이지를 찾을 수 없습니다'
+            ];
+            if (strongErrorSignals.some(s => bodyText.includes(s))) return true;
+        } catch (_) {}
+        return false;
+    }
+
+    // [P0-C Fix] Exclude Extension/Tool/Translation Overlays from Form Engine
+    function isExcludedOverlayElement(el) {
+        if (!el) return false;
+        try {
+            let cur = el;
+            while (cur && cur !== document.body && cur !== document.documentElement) {
+                const id = (cur.id || '').toLowerCase();
+                const cls = (typeof cur.className === 'string' ? cur.className : (cur.getAttribute?.('class') || '')).toLowerCase();
+                const role = (cur.getAttribute ? (cur.getAttribute('role') || '') : '').toLowerCase();
+
+                if (id.startsWith('xpider-') || cls.includes('xpider-')) return true;
+
+                if (id.includes('translate') || cls.includes('translate') || id.includes('goog-te') || cls.includes('goog-te')) {
+                    if (/translate-tab|translate-input|translate-output|goog-te|google-translate|trans-popup/i.test(`${id} ${cls}`)) {
+                        return true;
+                    }
+                    if (id.includes('translate') && (id.includes('input') || id.includes('output') || id.includes('tab') || id.includes('btn') || id.includes('button'))) {
+                        return true;
+                    }
+                }
+
+                if (role === 'search' || cls.includes('search-modal') || cls.includes('search-drawer') || id.includes('site-search')) {
+                    return true;
+                }
+                cur = cur.parentElement;
+            }
+        } catch (_) {}
+        return false;
+    }
+
     async function checkAndRecoverPage() {
-        const bodyText = (document.body ? document.body.textContent : '').toLowerCase();
-        const errorKeywords = ['404 not found', 'page not found', 'forbidden', 'error 403', 'connection refused', 'not found on this server'];
-        
-        const isErrorPage = errorKeywords.some(k => bodyText.includes(k) && bodyText.length < 1000);
+        const isErrorPage = isPageErrorOr404();
         if (isErrorPage) {
-            logDev(`⚠️ [Recovery] Error page detected on candidate: ${window.location.href}`, "warning");
+            logDev(`⚠️ [Recovery] Error/404 page detected on candidate: ${window.location.href}`, "warning");
+            logDev(`[PAGE_CLASS] ERROR_404_PAGE`, "info");
 
             // Directive B #7 & Directive F: Automatic candidate advance on 404/dead page
             const visited = JSON.parse(sessionStorage.getItem('xpider_guessed_paths') || '[]');
@@ -1125,6 +1200,12 @@
                         currentTargetLifecycleState === TargetLifecycleState.SETTLING ||
                         currentTargetLifecycleState === TargetLifecycleState.SUBMIT_RECOVERY) {
                         logDev("[LIFECYCLE] Target in submit/settling recovery. Aborting fallback discovery.", "info");
+                        return;
+                    }
+                    // [P0-B Fix] If current page already has a committed form or is confirmed contact page,
+                    // do NOT escape to 404 alias merely because autofill/assist was handled or paused!
+                    if (currentForm && document.contains(currentForm)) {
+                        logDev("🔒 [CommittedForm] Current page has committed form. Remaining bound to form identity. Suppressing alias discovery.", "info");
                         return;
                     }
                     logDev("⚠️ [Engine] Mapping incomplete or form hidden. Retrying alternative discovery...", "warning");
@@ -1648,16 +1729,16 @@
 
             const result = await fillFormIntelligent(form, template, speed);
             const detectedCount = result?.fieldsDetected || 0;
-            const filledCount = result?.fieldsFilled || (result?.filledAny ? 1 : 0);
-            const unresolvedList = (result && result.unresolvedFields && result.unresolvedFields.length > 0)
-                ? result.unresolvedFields
-                : ['message_body', 'name', 'email'];
-            const unresolvedCount = result?.fieldsDetected !== undefined ? Math.max(0, detectedCount - filledCount) : (result?.filledAny ? 0 : unresolvedList.length);
-            const isAutofillSuccess = !!(result && result.filledAny && unresolvedCount === 0);
-            const autofillStatus = isAutofillSuccess ? 'SUCCESS' : (result?.filledAny ? 'PARTIAL' : 'FAILED');
-            logDev(`[AUTOFILL_RESULT] status=${autofillStatus} fieldsDetected=${detectedCount} fieldsFilled=${filledCount} unresolved=${unresolvedCount} reason=${result?.reasonCode || 'ok'}`, "info");
+            const newlyFilledCount = result?.fieldsNewlyFilled || 0;
+            const alreadyValidCount = result?.fieldsAlreadyValid || 0;
+            const resolvedCount = result?.fieldsResolvedTotal !== undefined ? result.fieldsResolvedTotal : (result?.fieldsFilled || (result?.filledAny ? 1 : 0));
+            const unresolvedList = (result && Array.isArray(result.unresolvedFields)) ? result.unresolvedFields : [];
+            const unresolvedCount = unresolvedList.length;
+            const isAutofillSuccess = !!(result && (result.filledAny || resolvedCount > 0) && unresolvedCount === 0);
+            const autofillStatus = isAutofillSuccess ? 'SUCCESS' : ((resolvedCount > 0 || result?.filledAny) ? 'PARTIAL' : 'FAILED');
+            logDev(`[AUTOFILL_RESULT] status=${autofillStatus} fieldsDetected=${detectedCount} fieldsFilled=${resolvedCount} (new=${newlyFilledCount}, prefilled=${alreadyValidCount}) unresolved=${unresolvedCount} reason=${result?.reasonCode || 'ok'}`, "info");
 
-            if (!result || !result.filledAny || autofillStatus === 'PARTIAL') {
+            if (!isAutofillSuccess) {
                 const failReason = (result && result.reasonCode) || "Zero-mapping: No usable fields found.";
                 logDev(`⚠️ [Engine] Autofill ${autofillStatus}: requesting manual form assist.`, "warning");
                 const assistHandled = await requestManualFormAssist('AUTOFILL_PARTIAL', '', unresolvedList);
@@ -2057,7 +2138,8 @@
         // [Supreme-Scan 3.0] Standard + Non-Standard (div-based) inputs
         const standard = 'input:not([type="hidden"]):not([type="submit"]):not([type="button"]), textarea, select';
         const nonStandard = '[contenteditable="true"], [role="textbox"], [role="searchbox"], [role="combobox"]';
-        return queryAllDeep(`${standard}, ${nonStandard}`, container);
+        const all = queryAllDeep(`${standard}, ${nonStandard}`, container);
+        return all.filter(el => !isExcludedOverlayElement(el));
     }
 
     // ========================================================================
@@ -2471,6 +2553,8 @@
 
     async function fillFormIntelligent(form, tpl, speed) {
         logDev("🛠️ [Action][HyperEngine v4.0] 초강력 폼 자동 등록기 시작...");
+        let fieldsNewlyFilled = 0;
+        let fieldsAlreadyValid = 0;
         let filledFields = 0;
 
         // ============================================================
@@ -3059,10 +3143,38 @@
                 return;
             }
 
-            // 이미 값이 있으면 스킵
+            // [P0-A Fix] 이미 값이 있으면 스킵하되, 이미 유효하게 입력된 필드로 카운트 및 등록
             const currentVal = el.contentEditable === 'true' ? (el.textContent || '') : (el.value || '');
             if (currentVal.trim() !== '') {
                 logDev(`   - [FIELD_SKIP] field=${el.id || el.name || 'unnamed'} tag=${el.tagName} reason=ALREADY_FILLED`);
+                fieldsAlreadyValid++;
+                const semanticRes = resolveFieldSemantic(el);
+                let category = semanticRes.semantic;
+                if (category === 'unknown') {
+                    const attrStr = `${matchedAttr || ''} ${el.name || ''} ${el.id || ''} ${el.type || ''}`.toLowerCase();
+                    if (el.tagName === 'TEXTAREA' || /message|body|comment|inquiry|content/i.test(attrStr)) category = 'message';
+                    else if (/email|mail/i.test(attrStr)) category = 'email';
+                    else if (/\bphone\b|\btel\b|\bmobile\b|\bcell\b/i.test(attrStr)) category = 'phone';
+                    else if (/name|성함|이름/i.test(attrStr)) category = 'name';
+                    else if (/subject|title/i.test(attrStr)) category = 'subject';
+                    else category = 'text';
+                }
+                try {
+                    const fieldKey = el.id || el.name || el.getAttribute('name') || el.getAttribute('id') || `already_filled_${fieldsAlreadyValid}`;
+                    if (!window.__xpider_current_field_mapping) window.__xpider_current_field_mapping = {};
+                    if (!window.__xpider_current_filled_fields) window.__xpider_current_filled_fields = [];
+                    window.__xpider_current_field_mapping[fieldKey] = {
+                        category: category,
+                        valLength: currentVal.length,
+                        tag: el.tagName || '',
+                        name: el.name || '',
+                        id: el.id || '',
+                        alreadyFilled: true
+                    };
+                    if (!window.__xpider_current_filled_fields.includes(fieldKey)) {
+                        window.__xpider_current_filled_fields.push(fieldKey);
+                    }
+                } catch (_) {}
                 return;
             }
 
@@ -3093,6 +3205,7 @@
             } else {
                 logDev(`   - [FIELD_ASSIGN✅] category=${category} field=${el.id || el.name || 'unnamed'} len=${(val || '').length}`);
             }
+            fieldsNewlyFilled++;
             filledFields++;
 
             try {
@@ -3771,12 +3884,16 @@
         const emailFilled = interactiveInputs.some(el => /email|mail/i.test(`${el.name || ''} ${el.id || ''} ${el.type || ''}`) && (el.value || '').trim().length > 0);
         if (hasEmailField && !emailFilled) unresolvedFields.push('email');
 
-        logDev(`✅ [HyperEngine v4.0] 폼 작성 완료 - 입력 필드 ${filledFields}개 처리됨 (총 ${totalInputsCount}개)`);
+        const fieldsResolvedTotal = fieldsNewlyFilled + fieldsAlreadyValid;
+        logDev(`✅ [HyperEngine v4.0] 폼 작성 완료 - 입력 필드 신규 ${fieldsNewlyFilled}개, 기존유효 ${fieldsAlreadyValid}개, 총 해결 ${fieldsResolvedTotal}개 (총 ${totalInputsCount}개, 미해결: ${unresolvedFields.length}개)`);
         return {
-            filledAny: filledFields > 0,
+            filledAny: (fieldsResolvedTotal > 0 || messageFilled),
+            fieldsNewlyFilled: fieldsNewlyFilled,
+            fieldsAlreadyValid: fieldsAlreadyValid,
+            fieldsResolvedTotal: fieldsResolvedTotal,
             fieldsDetected: totalInputsCount,
-            fieldsFilled: filledFields,
-            unresolvedFields: unresolvedFields.length > 0 ? unresolvedFields : (filledFields === 0 ? ['message_body', 'name', 'email'] : [])
+            fieldsFilled: fieldsResolvedTotal,
+            unresolvedFields: unresolvedFields
         };
     }
 
@@ -5222,10 +5339,11 @@
 
             const submitKeywords = ['send', 'submit', 'send message', 'contact us', 'request info', 'inquiry', 'contact', 'register', 'inquire', '보내기', '제출', '전송', '문의하기', '등록', '접수', '送信', '确定', '提交', '입력'];
             const nextKeywords = ['next', 'continue', '다음', '계속', 'step', 'proceed'];
-            const rejectKeywords = ['prev', 'back', 'cancel', 'reset', 'clear', 'subscribe', 'newsletter', 'search', 'login', 'sign in', '이전', '취소', '초기화', '지우기', 'book', 'reserve'];
+            const rejectKeywords = ['prev', 'back', 'cancel', 'reset', 'clear', 'subscribe', 'newsletter', 'search', 'login', 'sign in', 'translate', 'translation', '이전', '취소', '초기화', '지우기', 'book', 'reserve', '번역', 'google-translate'];
 
             function isRejectedContext(el) {
                 if (!el) return true;
+                if (typeof isExcludedOverlayElement === 'function' && isExcludedOverlayElement(el)) return true;
                 // Reject navigation / header / footer / menu controls (Test Case 9)
                 if (typeof el.closest === 'function') {
                     if (el.closest('header, nav, footer, [role="navigation"], .header, .nav, .menu, .footer, #header, #nav, #footer')) {

@@ -4539,6 +4539,72 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                         return;
                     }
 
+                    // [Issue #6 RC3.22/RC3.23] Check UX settings for CAPTCHA handling
+                    const userSettings = await chrome.storage.local.get([
+                        'xpider_show_captcha_choice_popup',
+                        'xpider_default_captcha_handling',
+                        'xpider_captcha_api_key_2captcha',
+                        'xpider_captcha_api_key_nopecha',
+                        'xpider_captcha_api_key',
+                        'captchaApiKey',
+                        'xpider_stt_api_key',
+                        'witKey'
+                    ]);
+                    const showCaptchaPopup = userSettings.xpider_show_captcha_choice_popup === true; // default false
+                    const defaultHandling = userSettings.xpider_default_captcha_handling || 'AUTO_FIRST';
+
+                    const hasProviderKey = Boolean(
+                        userSettings.xpider_captcha_api_key_2captcha ||
+                        userSettings.xpider_captcha_api_key_nopecha ||
+                        userSettings.xpider_captcha_api_key ||
+                        userSettings.captchaApiKey ||
+                        userSettings.xpider_stt_api_key ||
+                        userSettings.witKey
+                    );
+
+                    if (!showCaptchaPopup && defaultHandling === 'AUTO_FIRST') {
+                        if (hasProviderKey) {
+                            campaignState.currentTargetStage = 'CAPTCHA_AUTO_SOLVING';
+                            if (campaignState.targetDeadlineController) {
+                                campaignState.targetDeadlineController.pause('CAPTCHA_AUTO_SOLVING');
+                            }
+                            logBg(null, `[OWNER_CAPTCHA] Auto-first: launching automatic solver without popup`, 'info');
+                            const solveReq = {
+                                action: 'SOLVE_CAPTCHA',
+                                ownerAuthorized: true,
+                                type: captchaType || 'recaptcha',
+                                sitekey: sitekey || '',
+                                url: targetUrl || campaignState.currentAttempt?.url || '',
+                                tabId: campaignState.currentTabId,
+                                attemptId: campaignState.currentAttempt?.attemptId,
+                                targetToken: campaignState.currentTargetToken,
+                                campaignRunId: campaignState.campaignRunId,
+                                sessionId: campaignState.sessionId,
+                                captchaEpoch: curEpoch
+                            };
+                            await handleSolveCaptchaInternal(solveReq, sender, sendResponse);
+                            return;
+                        } else {
+                            campaignState.captchaLedger.manualSkip++;
+                            campaignState.currentTargetStage = 'CAPTCHA_SKIPPED';
+                            logBg(null, `[OWNER_CAPTCHA] Auto-first: no configured solver key and popup disabled. Advancing as SKIPPED.`, 'info');
+                            if (campaignState.targetDeadlineController) {
+                                campaignState.targetDeadlineController.resume();
+                            }
+                            chrome.tabs.sendMessage(campaignState.currentTabId, {
+                                action: 'CAPTCHA_SKIP_DECISION',
+                                attemptId: campaignState.currentAttempt?.attemptId,
+                                targetToken: campaignState.currentTargetToken,
+                                campaignRunId: campaignState.campaignRunId,
+                                sessionId: campaignState.sessionId,
+                                captchaEpoch: curEpoch,
+                                tabId: campaignState.currentTabId
+                            }).catch(() => {});
+                            sendResponse({ success: true, status: 'SKIPPED_NO_SOLVER' });
+                            return;
+                        }
+                    }
+
                     // Broadcast to popup for modal display with complete 6-point canonical identity
                     chrome.runtime.sendMessage({
                         action: 'SHOW_CAPTCHA_DECISION_MODAL',
@@ -4780,6 +4846,70 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                             await hs.persist();
                         }
                     } catch (_) {}
+
+                    // [Issue #6 RC3.22/RC3.23] Check UX settings for Form Assist handling
+                    const assistSettings = await chrome.storage.local.get([
+                        'xpider_auto_recovery_first',
+                        'xpider_show_manual_form_assist_popup'
+                    ]);
+                    const showAssistPopup = assistSettings.xpider_show_manual_form_assist_popup === true; // default false
+                    const autoRecoveryFirst = assistSettings.xpider_auto_recovery_first !== false; // default true
+
+                    if (!campaignState.autoRecoveryAttempts) campaignState.autoRecoveryAttempts = {};
+                    const autoAttempts = campaignState.autoRecoveryAttempts[curAttemptId] || 0;
+                    if (autoRecoveryFirst && autoAttempts < 1) {
+                        campaignState.autoRecoveryAttempts[curAttemptId] = autoAttempts + 1;
+                        logBg(null, `[MANUAL_ASSIST] Automatic Recovery First: triggering auto retry attempt #${autoAttempts + 1} for attemptId=${curAttemptId}`, 'info');
+                        if (campaignState.currentTabId) {
+                            chrome.tabs.sendMessage(campaignState.currentTabId, {
+                                action: 'RETRY_DETECTION',
+                                attemptId: curAttemptId
+                            }).catch(() => {});
+                        }
+                        sendResponse({ success: true, status: 'AUTO_RETRYING' });
+                        return;
+                    }
+
+                    if (!showAssistPopup) {
+                        logBg(null, `[MANUAL_ASSIST] Popup disabled (showManualFormAssistPopup=false). Settling as SKIPPED. reason=${curReason}`, 'warning');
+                        campaignState.currentTargetStage = 'SKIPPED';
+                        if (campaignState.targetDeadlineController) {
+                            campaignState.targetDeadlineController.cancel('FORM_MANUAL_ASSIST_SKIPPED');
+                        }
+                        const extUrl = externalFormUrl || null;
+                        const isPartial = curReason === 'AUTOFILL_PARTIAL' || curReason === 'REQUIRED_FIELDS_UNRESOLVED';
+                        const formStatus = extUrl ? 'EXTERNAL_WIDGET' : (curReason === 'FORM_NOT_ACCESSIBLE' ? 'NOT_FOUND' : 'FOUND');
+                        const autoStatus = isPartial ? 'PARTIAL' : 'MANUAL_REQUIRED';
+                        const meta = {
+                            submissionStatus: 'SKIPPED',
+                            autofillStatus: autoStatus,
+                            formDetectionStatus: formStatus,
+                            externalFormUrl: extUrl
+                        };
+                        if (typeof campaignState.targetResolve === 'function') {
+                            const resolve = campaignState.targetResolve;
+                            campaignState.targetResolve = null;
+                            resolve({
+                                success: false,
+                                reasonCode: 'FORM_MANUAL_ASSIST_SKIPPED',
+                                metadata: meta
+                            });
+                        } else {
+                            try {
+                                const hs = await getHistoryStoreInstance();
+                                if (curAttemptId && hs) {
+                                    await hs.settleCanonicalAttempt(curAttemptId, 'SKIPPED', 'FORM_MANUAL_ASSIST_SKIPPED', {}, {
+                                        campaignRunId: campaignState.campaignRunId,
+                                        ...meta
+                                    });
+                                    await hs.persist();
+                                    await syncCampaignCountersFromLedger(hs);
+                                }
+                            } catch (_) {}
+                        }
+                        sendResponse({ success: false, status: 'FORM_MANUAL_ASSIST_SKIPPED_BY_CONFIG' });
+                        return;
+                    }
 
                     // Broadcast to popup
                     chrome.runtime.sendMessage({
@@ -5715,9 +5845,11 @@ async function pauseCampaignOrchestrator(saveCheckpoint = true) {
     // [R6.9G.9 Restore Privacy Settings on Pause/Stop]
     const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
     if (pg) {
-        await pg.restoreOriginalSettings();
-        console.log('[PRIVACY_SETTINGS_RESTORED] gateReady=false transportEnforced=false');
-        logBg(null, '[PRIVACY_SETTINGS_RESTORED] gateReady=false transportEnforced=false', 'info');
+        await pg.restoreOriginalSettings({ forceDirect: campaignState.ownerFunctionTestMode === true });
+        const isReady = typeof pg.isPrivacyGateReady === 'function' ? pg.isPrivacyGateReady() : Boolean(pg.isGateReady);
+        const msg = `[PRIVACY_SETTINGS_RESTORED] gateReady=${isReady} transportEnforced=${isReady}`;
+        console.log(msg);
+        logBg(null, msg, 'info');
     }
     // [R6.9G.10.3.7.1.4.5 Blocker 1 Lifecycle Fix]:
     // Do NOT remove Owner Test DNR rules merely because campaign is PAUSED.
@@ -6081,9 +6213,11 @@ async function processNextCampaignTarget(loopSessionId, loopGeneration) {
                 // [R6.9G.9 Restore Privacy Settings on Campaign Finished]
                 const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
                 if (pg) {
-                    await pg.restoreOriginalSettings();
-                    console.log('[PRIVACY_SETTINGS_RESTORED] gateReady=false transportEnforced=false');
-                    logBg(null, '[PRIVACY_SETTINGS_RESTORED] gateReady=false transportEnforced=false', 'info');
+                    await pg.restoreOriginalSettings({ forceDirect: campaignState.ownerFunctionTestMode === true });
+                    const isReady = typeof pg.isPrivacyGateReady === 'function' ? pg.isPrivacyGateReady() : Boolean(pg.isGateReady);
+                    const msg = `[PRIVACY_SETTINGS_RESTORED] gateReady=${isReady} transportEnforced=${isReady}`;
+                    console.log(msg);
+                    logBg(null, msg, 'info');
                 }
                 if (campaignState.ownerFunctionTestMode) {
                     await removeOwnerTestNetworkGuard();

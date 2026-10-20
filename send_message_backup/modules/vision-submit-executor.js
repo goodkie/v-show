@@ -33,7 +33,7 @@
 
     const NEGATIVE_VISUAL_LABELS = [
         'subscribe', 'book', 'reserve', 'schedule', 'login', 'sign in', 
-        'search', 'reset', 'cancel', '구독', '예약'
+        'search', 'reset', 'cancel', '구독', '예약', 'translate', 'translation', '번역'
     ];
 
     class VisionSubmitExecutor {
@@ -172,6 +172,19 @@
             if (previousPhysicalClick || this.physicalClickDispatched) {
                 console.log("[VISION_SUBMIT] Aborted: Single physical click limit reached for this attempt.");
                 return { success: false, reason: 'PHYSICAL_CLICK_LIMIT_REACHED' };
+            }
+
+            // Target form element visibility check
+            if (formEl) {
+                try {
+                    if (typeof window !== 'undefined' && window.getComputedStyle) {
+                        const style = window.getComputedStyle(formEl);
+                        if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
+                            console.log("[VISION_SUBMIT] Aborted: Target form container is not visible.");
+                            return { success: false, reason: 'FORM_NOT_VISIBLE' };
+                        }
+                    }
+                } catch (_) {}
             }
 
             console.log("[VISION_SUBMIT] screenshotCaptured=true");

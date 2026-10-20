@@ -92,6 +92,84 @@
         }
     }
 
+    // [P0-C Fix] Exclude Extension/Tool/Translation Overlays from Form Discovery
+    function isExcludedOverlayElement(el) {
+        if (!el) return false;
+        try {
+            let cur = el;
+            while (cur && cur.tagName !== 'BODY' && cur.tagName !== 'HTML') {
+                const id = (cur.id || '').toLowerCase();
+                const cls = (typeof cur.className === 'string' ? cur.className : (cur.getAttribute?.('class') || '')).toLowerCase();
+                const role = (cur.getAttribute ? (cur.getAttribute('role') || '') : '').toLowerCase();
+
+                if (id.startsWith('xpider-') || cls.includes('xpider-')) return true;
+
+                if (id.includes('translate') || cls.includes('translate') || id.includes('goog-te') || cls.includes('goog-te')) {
+                    if (/translate-tab|translate-input|translate-output|goog-te|google-translate|trans-popup/i.test(`${id} ${cls}`)) {
+                        return true;
+                    }
+                    if (id.includes('translate') && (id.includes('input') || id.includes('output') || id.includes('tab') || id.includes('btn') || id.includes('button'))) {
+                        return true;
+                    }
+                }
+
+                if (role === 'search' || cls.includes('search-modal') || cls.includes('search-drawer') || id.includes('site-search')) {
+                    return true;
+                }
+                cur = cur.parentElement;
+            }
+        } catch (_) {}
+        return false;
+    }
+
+    // [P0-B & P0-C Fix] Robust 404 / Error Page Guard for Form Discovery
+    function isPageErrorOr404(doc = (typeof document !== 'undefined' ? document : null)) {
+        if (!doc) return false;
+        try {
+            const title = (doc.title || '').toLowerCase();
+            const body = doc.body;
+            if (!body) return false;
+
+            const titleKeywords = [
+                '404', 'not found', 'page not found', 'error 404', '404 error',
+                'page doesn\'t exist', 'page does not exist', 'cannot be found', 'nothing found',
+                '찾을 수 없습니다', '오류 404', '페이지를 찾을 수 없습니다'
+            ];
+            if (titleKeywords.some(k => title.includes(k))) return true;
+
+            const headings = Array.from(doc.querySelectorAll('h1, h2, h3, .error-title, .not-found'));
+            for (const h of headings) {
+                const txt = (h.textContent || '').trim().toLowerCase();
+                if (txt.length < 120 && (
+                    txt.includes('404') ||
+                    txt.includes('page not found') ||
+                    txt.includes('page cannot be found') ||
+                    txt.includes('not found') ||
+                    txt.includes('nothing found') ||
+                    txt.includes('we couldn\'t find that page') ||
+                    txt.includes('페이지를 찾을 수 없습니다')
+                )) {
+                    return true;
+                }
+            }
+
+            const bodyText = (body.textContent || '').toLowerCase();
+            const strongErrorSignals = [
+                '404 not found', '404 - not found', '404: not found', 'error 404',
+                'page not found', 'the requested url was not found on this server',
+                'the page you are looking for cannot be found',
+                'the page you requested could not be found',
+                'this page could not be found',
+                'sorry, we can\'t find that page',
+                'oops! that page can’t be found',
+                'oops! that page cannot be found',
+                '페이지를 찾을 수 없습니다'
+            ];
+            if (strongErrorSignals.some(s => bodyText.includes(s))) return true;
+        } catch (_) {}
+        return false;
+    }
+
     function getControlContext(el) {
         if (!el) return '';
         const parts = [
@@ -211,7 +289,7 @@
                 const textareas = Array.from(root.querySelectorAll('textarea'));
                 for (const ta of textareas) {
                     if (seen.has(ta)) continue;
-                    if (!isVisible(ta) || isHoneypot(ta) || ta.disabled) continue;
+                    if (!isVisible(ta) || isHoneypot(ta) || ta.disabled || isExcludedOverlayElement(ta)) continue;
                     const ctx = getControlContext(ta);
                     // Check if strictly newsletter comment only
                     const isNewsletterOnly = NEWSLETTER_NEGATIVE_TOKENS.some(tok => ctx.includes(tok)) &&
@@ -234,7 +312,7 @@
                 const editables = Array.from(root.querySelectorAll('[contenteditable="true"], [contenteditable=""]'));
                 for (const ed of editables) {
                     if (seen.has(ed)) continue;
-                    if (!isVisible(ed) || isHoneypot(ed)) continue;
+                    if (!isVisible(ed) || isHoneypot(ed) || isExcludedOverlayElement(ed)) continue;
                     const ctx = getControlContext(ed);
                     seen.add(ed);
                     candidates.push({
@@ -252,7 +330,7 @@
                 const ariaTextboxes = Array.from(root.querySelectorAll('[role="textbox"][aria-multiline="true"], [role="textbox"]'));
                 for (const tb of ariaTextboxes) {
                     if (seen.has(tb)) continue;
-                    if (!isVisible(tb) || isHoneypot(tb) || tb.disabled) continue;
+                    if (!isVisible(tb) || isHoneypot(tb) || tb.disabled || isExcludedOverlayElement(tb)) continue;
                     const ctx = getControlContext(tb);
                     const isMulti = tb.getAttribute?.('aria-multiline') === 'true' || INQUIRY_BODY_TOKENS.some(k => ctx.includes(k));
                     if (isMulti) {
@@ -273,7 +351,7 @@
                 const textInputs = Array.from(root.querySelectorAll('input:not([type]), input[type="text"]'));
                 for (const inp of textInputs) {
                     if (seen.has(inp)) continue;
-                    if (!isVisible(inp) || isHoneypot(inp) || inp.disabled) continue;
+                    if (!isVisible(inp) || isHoneypot(inp) || inp.disabled || isExcludedOverlayElement(inp)) continue;
                     const ctx = getControlContext(inp);
                     const matchesKeyword = INQUIRY_BODY_TOKENS.some(k => ctx.includes(k));
                     if (matchesKeyword) {
@@ -361,7 +439,7 @@
             };
         }
 
-        const allInputs = Array.from(container.querySelectorAll('input, select, textarea, [contenteditable="true"], [role="textbox"], [role="combobox"], [role="checkbox"]')).filter(isVisible);
+        const allInputs = Array.from(container.querySelectorAll('input, select, textarea, [contenteditable="true"], [role="textbox"], [role="combobox"], [role="checkbox"]')).filter(el => isVisible(el) && !isExcludedOverlayElement(el));
 
         const names = [];
         const emails = [];
@@ -399,11 +477,11 @@
         }
 
         // Submits
-        const submitElements = Array.from(container.querySelectorAll('button, input[type="submit"], input[type="button"], [role="button"], a[data-link-type="SUBMIT"], a[data-link-type*="submit" i], a.item-link, a[class*="submit"], a[class*="send"]')).filter(isVisible);
+        const submitElements = Array.from(container.querySelectorAll('button, input[type="submit"], input[type="button"], [role="button"], a[data-link-type="SUBMIT"], a[data-link-type*="submit" i], a.item-link, a[class*="submit"], a[class*="send"]')).filter(el => isVisible(el) && !isExcludedOverlayElement(el));
         for (const btn of submitElements) {
             const txt = (btn.textContent || btn.value || btn.getAttribute?.('aria-label') || btn.getAttribute?.('data-link-type') || '').toLowerCase().trim();
-            // Negative submit filter: login, search, next, cancel
-            if (txt.includes('login') || txt.includes('search') || txt.includes('검색') || txt.includes('로그인')) continue;
+            // Negative submit filter: login, search, next, cancel, translate
+            if (txt.includes('login') || txt.includes('search') || txt.includes('검색') || txt.includes('로그인') || txt.includes('translate') || txt.includes('translation') || txt.includes('번역')) continue;
             submits.push(btn);
         }
 
@@ -467,7 +545,7 @@
             for (const bc of bodyControls) {
                 const el = bc.element;
                 const container = inferLogicalContainer(el);
-                if (!container || evaluatedContainers.has(container)) continue;
+                if (!container || evaluatedContainers.has(container) || isExcludedOverlayElement(container)) continue;
                 evaluatedContainers.add(container);
 
                 const isNativeForm = container.tagName === 'FORM';
@@ -482,11 +560,12 @@
                 // Eligible if:
                 // 1. Valid visible inquiry body exists (bc.element is present & visible)
                 // 2. AND (is a native <form> OR has contact/identity fields OR has submitters OR container/body context is inquiry)
-                const hasValidBody = isVisible(bc.element);
+                const isOverlay = isExcludedOverlayElement(container);
+                const hasValidBody = isVisible(bc.element) && !isExcludedOverlayElement(bc.element);
                 const containerContext = `${container.id || ''} ${container.className || ''}`.toLowerCase();
-                const hasInquiryContext = isNativeForm || (contactCount >= 1 || submitCount >= 1) ||
+                const hasInquiryContext = !isOverlay && (isNativeForm || (contactCount >= 1 || submitCount >= 1) ||
                     INQUIRY_BODY_TOKENS.some(k => bc.context.includes(k)) ||
-                    containerContext.includes('contact') || containerContext.includes('form') || containerContext.includes('inquiry');
+                    containerContext.includes('contact') || containerContext.includes('form') || containerContext.includes('inquiry'));
 
                 // Negative check: Reject newsletter-only forms
                 const isNewsletterOnly = NEWSLETTER_NEGATIVE_TOKENS.some(tok => containerContext.includes(tok)) &&
@@ -495,8 +574,9 @@
                     controls.names.length === 0 &&
                     controls.phones.length === 0;
 
-                const eligible = hasValidBody && hasInquiryContext && !isNewsletterOnly;
-                const reason = !hasValidBody ? 'NO_VISIBLE_BODY_FIELD'
+                const eligible = !isOverlay && hasValidBody && hasInquiryContext && !isNewsletterOnly;
+                const reason = isOverlay ? 'REJECTED_OVERLAY_CONTAINER'
+                    : !hasValidBody ? 'NO_VISIBLE_BODY_FIELD'
                     : !hasInquiryContext ? 'NO_CONTACT_OR_SUBMIT_ASSOCIATED'
                     : isNewsletterOnly ? 'REJECTED_NEWSLETTER_ONLY'
                     : 'ELIGIBLE_INQUIRY_FORM';
@@ -579,6 +659,12 @@
         async discoverForm(root = document) {
             const startTime = Date.now();
             const url = (typeof window !== 'undefined' && window.location ? window.location.href : 'current_page');
+            const doc = (root && root.nodeType === 9) ? root : (root && root.ownerDocument) ? root.ownerDocument : (typeof document !== 'undefined' ? document : null);
+            if (doc && isPageErrorOr404(doc)) {
+                console.warn(`[FORM_SCAN] Aborting discovery: 404/Error page detected url=${url}`);
+                this.lastDiscoveryResult = { success: false, reason: 'ERROR_404_PAGE', url };
+                return null;
+            }
 
             let totalBodySeen = 0;
             let totalContainersSeen = 0;

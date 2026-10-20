@@ -756,6 +756,16 @@
                             </div>
                             <p class="settings-subtip" style="color: #fca5a5;">When active, campaign START is strictly blocked if protected transport fails.</p>
 
+                            <!-- [Issue #6 RC3.22/RC3.23] Keep Privacy Relay Enforced Between Campaigns Toggle -->
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+                                <span style="font-size: 11px; color: #38bdf8; font-weight: 600;">Keep Privacy Relay Enforced Between Campaigns</span>
+                                <label class="switch" style="margin: 0;">
+                                    <input type="checkbox" id="privacy-keep-relay-enforced-toggle" checked>
+                                    <span class="slider round"></span>
+                                </label>
+                            </div>
+                            <p class="settings-subtip" style="color: #94a3b8;">Maintains protected Privacy Relay transport active between campaign executions.</p>
+
                             </div>
 
                         <!-- [R6.9G.10.3.8 Owner Functional Test Mode - Local Controlled Pages Only] -->
@@ -797,6 +807,53 @@
                             <p class="settings-subtip" style="color: #fef08a; margin-top: 4px; font-size: 10px; line-height: 1.3;">
                                 TEST-ONLY: Bypasses relay/proxy requirement for local test fixtures ONLY (http://127.0.0.1/* and http://localhost/*, max 10 targets). All public targets remain strictly blocked.
                             </p>
+                        </div>
+
+                        <!-- [Issue #6 RC3.22/RC3.23] Form Assist Automation Handling -->
+                        <div class="settings-group" style="background: rgba(16, 185, 129, 0.08); border: 1px solid #10b981; border-radius: 6px; padding: 10px; margin-top: 10px;">
+                            <div style="font-size: 11px; font-weight: 700; color: #34d399; margin-bottom: 6px;">
+                                📋 FORM ASSIST AUTOMATION
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                <span style="font-size: 11px; color: #e2e8f0; font-weight: 600;">Automatic Recovery First</span>
+                                <label class="switch" style="margin: 0;">
+                                    <input type="checkbox" id="form-assist-auto-recovery-toggle" checked>
+                                    <span class="slider round"></span>
+                                </label>
+                            </div>
+                            <p class="settings-subtip" style="color: #94a3b8; margin-bottom: 8px;">Attempts bounded automatic re-detection on unresolved fields before requesting assistance.</p>
+                            
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                <span style="font-size: 11px; color: #e2e8f0; font-weight: 600;">Show Manual Form Assist Popup</span>
+                                <label class="switch" style="margin: 0;">
+                                    <input type="checkbox" id="form-assist-show-popup-toggle">
+                                    <span class="slider round"></span>
+                                </label>
+                            </div>
+                            <p class="settings-subtip" style="color: #94a3b8;">Surfaces interactive assistance modal if automatic recovery is exhausted (Default: OFF).</p>
+                        </div>
+
+                        <!-- [Issue #6 RC3.22/RC3.23] CAPTCHA Decision Handling -->
+                        <div class="settings-group" style="background: rgba(139, 92, 246, 0.08); border: 1px solid #8b5cf6; border-radius: 6px; padding: 10px; margin-top: 10px;">
+                            <div style="font-size: 11px; font-weight: 700; color: #a78bfa; margin-bottom: 6px;">
+                                🧩 CAPTCHA DECISION HANDLING
+                            </div>
+                            <div style="margin-bottom: 6px;">
+                                <label style="font-size: 10px; color: #cbd5e1; display: block; margin-bottom: 2px;">Default CAPTCHA Handling</label>
+                                <select id="captcha-default-handling-select" class="premium-select" style="font-size: 11px; height: 32px;">
+                                    <option value="AUTO_FIRST" selected>AUTO FIRST — Auto solver path first</option>
+                                    <option value="MANUAL">MANUAL — Wait for Owner manual solve</option>
+                                    <option value="SKIP">SKIP — Skip challenge immediately</option>
+                                </select>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px; margin-bottom: 4px;">
+                                <span style="font-size: 11px; color: #e2e8f0; font-weight: 600;">Show Auto / Manual Choice Popup</span>
+                                <label class="switch" style="margin: 0;">
+                                    <input type="checkbox" id="captcha-show-choice-popup-toggle">
+                                    <span class="slider round"></span>
+                                </label>
+                            </div>
+                            <p class="settings-subtip" style="color: #94a3b8;">When OFF, executes selected default handling without blocking automation (Default: OFF).</p>
                         </div>
 
                         <!-- Advanced Settings Disclosure -->
