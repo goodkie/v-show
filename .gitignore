@@ -5,3 +5,8 @@ companion/.local_credentials.json
 .control_token
 .pending_credential_rotation.json
 companion/.pending_credential_rotation.json
+companion/privacy_relay.log
+companion/watchdog.log
+companion/.watchdog.lock
+companion/.private_egress_transaction.json
+

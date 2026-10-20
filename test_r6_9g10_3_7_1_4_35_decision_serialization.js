@@ -97,20 +97,20 @@ runTest('1.7 form-discovery & vision-submit: link-based submit buttons recognize
     assert(vseSrc.includes('a[data-link-type="SUBMIT"]'), 'VisionSubmitExecutor must recognize a[data-link-type="SUBMIT"]');
 });
 
-runTest('1.8 build-provenance: channel, buildId, and implementationHead set to RC3.25', () => {
-    assert(bpSrc.includes("channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.25'"), 'Channel must be OWNER_BETA_PRIVATE_EGRESS_RC3.25');
-    assert(bpSrc.includes("buildId: 'R6.9G.10.3.7.1.4.39-20261020-PRIVATE-EGRESS-RC3.25'"), 'buildId must be RC3.25');
-    assert(bpSrc.includes("implementationHead: '63e97460c860464eb094c920d94a7ca6a97e7eb5'"), 'implementationHead must be 63e97460');
+runTest('1.8 build-provenance: channel, buildId, and implementationHead set to RC3.26', () => {
+    assert(bpSrc.includes("channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.26'"), 'Channel must be OWNER_BETA_PRIVATE_EGRESS_RC3.26');
+    assert(bpSrc.includes("buildId: 'R6.9G.10.3.7.1.4.40-20261020-PRIVATE-EGRESS-RC3.26'"), 'buildId must be RC3.26');
+    assert(bpSrc.includes("implementationHead: 'b980891d676078a668d8e04cf9d2f4029dca25cf'"), 'implementationHead must be b980891d');
 });
 
 runTest('1.9 native host & companion: COMPANION_BUILD_ID stamped from authoritative buildId', () => {
     const nhSrc = fs.readFileSync(path.join(SRC_DIR, '..', 'companion', 'native_host', 'xpider_native_host.js'), 'utf8');
     const prsSrc = fs.readFileSync(path.join(SRC_DIR, '..', 'companion', 'privacy-relay-service.js'), 'utf8');
     const ecsSrc = fs.readFileSync(path.join(SRC_DIR, '..', 'companion', 'ensure_companion_service.js'), 'utf8');
-    assert(nhSrc.includes("const COMPANION_BUILD_ID = 'R6.9G.10.3.7.1.4.39-20261020-PRIVATE-EGRESS-RC3.25';"), 'Native host COMPANION_BUILD_ID must match RC3.25');
-    assert(prsSrc.includes("const COMPANION_BUILD_ID = 'R6.9G.10.3.7.1.4.39-20261020-PRIVATE-EGRESS-RC3.25';"), 'Privacy relay COMPANION_BUILD_ID must match RC3.25');
-    assert(prsSrc.includes("const COMPANION_IMPLEMENTATION_HEAD = '63e97460c860464eb094c920d94a7ca6a97e7eb5';"), 'Privacy relay COMPANION_IMPLEMENTATION_HEAD must match 63e97460');
-    assert(ecsSrc.includes("const EXPECTED_BUILD_ID = 'R6.9G.10.3.7.1.4.39-20261020-PRIVATE-EGRESS-RC3.25';"), 'Ensure companion EXPECTED_BUILD_ID must match RC3.25');
+    assert(nhSrc.includes("const COMPANION_BUILD_ID = 'R6.9G.10.3.7.1.4.40-20261020-PRIVATE-EGRESS-RC3.26';"), 'Native host COMPANION_BUILD_ID must match RC3.26');
+    assert(prsSrc.includes("const COMPANION_BUILD_ID = 'R6.9G.10.3.7.1.4.40-20261020-PRIVATE-EGRESS-RC3.26';"), 'Privacy relay COMPANION_BUILD_ID must match RC3.26');
+    assert(prsSrc.includes("const COMPANION_IMPLEMENTATION_HEAD = 'b980891d676078a668d8e04cf9d2f4029dca25cf';"), 'Privacy relay COMPANION_IMPLEMENTATION_HEAD must match b980891d');
+    assert(ecsSrc.includes("const EXPECTED_BUILD_ID = 'R6.9G.10.3.7.1.4.40-20261020-PRIVATE-EGRESS-RC3.26';"), 'Ensure companion EXPECTED_BUILD_ID must match RC3.26');
 });
 
 runTest('1.10 OS isolation guards present in auto setup and installers', () => {
