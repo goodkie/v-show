@@ -26,6 +26,10 @@ function installAutostart() {
 
   // Generate wrapper VBS that points to the exact repository location
   const wrapperContent = `Set WshShell = CreateObject("WScript.Shell")\r\ncmd = "wscript.exe """ & "${vbsSource.replace(/\\/g, '\\\\')}" & """"\r\nWshShell.Run cmd, 0, False\r\n`;
+  if (process.env.XPIDER_ISOLATED_TEST === '1' || (process.argv && process.argv.includes('--dry-run'))) {
+    console.log('[AUTOSTART_INSTALLED] Isolated dry-run mode active; skipping Windows Startup file creation.');
+    return true;
+  }
   try {
     fs.writeFileSync(startupTarget, wrapperContent, 'utf8');
     console.log('[AUTOSTART_INSTALLED] Successfully registered in Windows Startup:', startupTarget);

@@ -110,6 +110,11 @@ function registerInRegistry(baseDir = __dirname, extIds = []) {
     return true;
   }
 
+  if (process.env.XPIDER_ISOLATED_TEST === '1' || (process.argv && process.argv.includes('--dry-run'))) {
+    console.log('[NATIVE_HOST] Isolated dry-run mode active; skipping Windows Registry modification.');
+    return true;
+  }
+
   try {
     // 1. Google Chrome
     const chromeKey = 'HKCU\\Software\\Google\\Chrome\\NativeMessagingHosts\\com.xpider.privacy_relay';

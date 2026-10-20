@@ -21,7 +21,7 @@ const path = require('path');
 const { spawn, execSync } = require('child_process');
 const crypto = require('crypto');
 
-const EXPECTED_BUILD_ID = 'R6.9G.10.3.7.1.4.35-20261020-PRIVATE-EGRESS-RC3.21';
+const EXPECTED_BUILD_ID = 'R6.9G.10.3.7.1.4.36-20261020-PRIVATE-EGRESS-RC3.22';
 const REQUIRED_CAPABILITIES = ['verify-plan', 'provision-egress', 'provision-progress', 'recovery-status'];
 
 const COMPANION_DIR = __dirname;
@@ -298,6 +298,10 @@ function ensureWatchdogSupervisor() {
 }
 
 async function main() {
+  if (process.env.XPIDER_ISOLATED_TEST === '1' || (process.argv && process.argv.includes('--dry-run'))) {
+    console.log('   [ISOLATED_TEST] Dry run mode active: skipping Companion service and Watchdog start.');
+    process.exit(0);
+  }
   console.log('   [COMPANION_CHECK] Checking Privacy Relay Companion status on 127.0.0.1:18989...');
 
   // [Issue #6 Comment #6261136757 DD3] Migrate active egress state from previous installation if needed

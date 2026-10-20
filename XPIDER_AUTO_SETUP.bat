@@ -58,6 +58,14 @@ if !ERRORLEVEL! NEQ 0 (
     )
 )
 
+if defined XPIDER_ISOLATED_TEST (
+    echo.
+    echo [ISOLATED_TEST] Isolated dry-run mode active ^(XPIDER_ISOLATED_TEST=1^).
+    echo [ISOLATED_TEST] Zero host mutation: skipping Windows Startup, Registry, and background services.
+    echo [OK] Runtime dependencies and batch syntax verified cleanly.
+    exit /b 0
+)
+
 echo.
 echo [1/4] Registering Windows Autostart for Privacy Relay...
 if exist "companion\install_autostart.js" (

@@ -34,6 +34,42 @@ for (const [key, relPath] of Object.entries(modules)) {
 fs.writeFileSync(bpPath, bpContent, 'utf8');
 console.log('Updated build-provenance.js module hashes.');
 
+// 1b. Synchronize authoritative buildId & implementationHead across companion components
+const bIdMatch = bpContent.match(/buildId:\s*'([^']+)'/);
+const currentBuildId = bIdMatch ? bIdMatch[1] : null;
+const headMatch = bpContent.match(/implementationHead:\s*'([^']+)'/);
+const currentHead = headMatch ? headMatch[1] : null;
+
+if (currentBuildId && currentHead) {
+    // A. companion/native_host/xpider_native_host.js
+    const nhPath = path.join(__dirname, 'companion', 'native_host', 'xpider_native_host.js');
+    if (fs.existsSync(nhPath)) {
+        let nhContent = fs.readFileSync(nhPath, 'utf8');
+        nhContent = nhContent.replace(/const COMPANION_BUILD_ID = '[^']+';/, `const COMPANION_BUILD_ID = '${currentBuildId}';`);
+        fs.writeFileSync(nhPath, nhContent, 'utf8');
+        console.log(`[SYNC_BUILD] Synchronized companion/native_host/xpider_native_host.js -> ${currentBuildId}`);
+    }
+
+    // B. companion/privacy-relay-service.js
+    const prsPath = path.join(__dirname, 'companion', 'privacy-relay-service.js');
+    if (fs.existsSync(prsPath)) {
+        let prsContent = fs.readFileSync(prsPath, 'utf8');
+        prsContent = prsContent.replace(/const COMPANION_BUILD_ID = '[^']+';/, `const COMPANION_BUILD_ID = '${currentBuildId}';`);
+        prsContent = prsContent.replace(/const COMPANION_IMPLEMENTATION_HEAD = '[^']+';/, `const COMPANION_IMPLEMENTATION_HEAD = '${currentHead}';`);
+        fs.writeFileSync(prsPath, prsContent, 'utf8');
+        console.log(`[SYNC_BUILD] Synchronized companion/privacy-relay-service.js -> ${currentBuildId} (${currentHead.substring(0, 8)})`);
+    }
+
+    // C. companion/ensure_companion_service.js
+    const ecsPath = path.join(__dirname, 'companion', 'ensure_companion_service.js');
+    if (fs.existsSync(ecsPath)) {
+        let ecsContent = fs.readFileSync(ecsPath, 'utf8');
+        ecsContent = ecsContent.replace(/const EXPECTED_BUILD_ID = '[^']+';/, `const EXPECTED_BUILD_ID = '${currentBuildId}';`);
+        fs.writeFileSync(ecsPath, ecsContent, 'utf8');
+        console.log(`[SYNC_BUILD] Synchronized companion/ensure_companion_service.js -> ${currentBuildId}`);
+    }
+}
+
 // 2. Mirror all active files to build/extension
 const filesToMirror = [
     'background.js',

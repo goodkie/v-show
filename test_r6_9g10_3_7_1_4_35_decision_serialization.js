@@ -95,9 +95,31 @@ runTest('1.7 form-discovery & vision-submit: link-based submit buttons recognize
     assert(vseSrc.includes('a[data-link-type="SUBMIT"]'), 'VisionSubmitExecutor must recognize a[data-link-type="SUBMIT"]');
 });
 
-runTest('1.8 build-provenance: channel and buildId set to RC3.21', () => {
-    assert(bpSrc.includes("channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.21'"), 'Channel must be OWNER_BETA_PRIVATE_EGRESS_RC3.21');
-    assert(bpSrc.includes("buildId: 'R6.9G.10.3.7.1.4.35-20261020-PRIVATE-EGRESS-RC3.21'"), 'buildId must be RC3.21');
+runTest('1.8 build-provenance: channel, buildId, and implementationHead set to RC3.22', () => {
+    assert(bpSrc.includes("channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.22'"), 'Channel must be OWNER_BETA_PRIVATE_EGRESS_RC3.22');
+    assert(bpSrc.includes("buildId: 'R6.9G.10.3.7.1.4.36-20261020-PRIVATE-EGRESS-RC3.22'"), 'buildId must be RC3.22');
+    assert(bpSrc.includes("implementationHead: 'fdc4c0941df5d3604dcd0c140a25520eb5118856'"), 'implementationHead must be fdc4c094');
+});
+
+runTest('1.9 native host & companion: COMPANION_BUILD_ID stamped from authoritative buildId', () => {
+    const nhSrc = fs.readFileSync(path.join(SRC_DIR, '..', 'companion', 'native_host', 'xpider_native_host.js'), 'utf8');
+    const prsSrc = fs.readFileSync(path.join(SRC_DIR, '..', 'companion', 'privacy-relay-service.js'), 'utf8');
+    const ecsSrc = fs.readFileSync(path.join(SRC_DIR, '..', 'companion', 'ensure_companion_service.js'), 'utf8');
+    assert(nhSrc.includes("const COMPANION_BUILD_ID = 'R6.9G.10.3.7.1.4.36-20261020-PRIVATE-EGRESS-RC3.22';"), 'Native host COMPANION_BUILD_ID must match RC3.22');
+    assert(prsSrc.includes("const COMPANION_BUILD_ID = 'R6.9G.10.3.7.1.4.36-20261020-PRIVATE-EGRESS-RC3.22';"), 'Privacy relay COMPANION_BUILD_ID must match RC3.22');
+    assert(prsSrc.includes("const COMPANION_IMPLEMENTATION_HEAD = 'fdc4c0941df5d3604dcd0c140a25520eb5118856';"), 'Privacy relay COMPANION_IMPLEMENTATION_HEAD must match fdc4c094');
+    assert(ecsSrc.includes("const EXPECTED_BUILD_ID = 'R6.9G.10.3.7.1.4.36-20261020-PRIVATE-EGRESS-RC3.22';"), 'Ensure companion EXPECTED_BUILD_ID must match RC3.22');
+});
+
+runTest('1.10 OS isolation guards present in auto setup and installers', () => {
+    const setupBat = fs.readFileSync(path.join(SRC_DIR, '..', 'XPIDER_AUTO_SETUP.bat'), 'utf8');
+    const inhSrc = fs.readFileSync(path.join(SRC_DIR, '..', 'companion', 'install_native_host.js'), 'utf8');
+    const iasSrc = fs.readFileSync(path.join(SRC_DIR, '..', 'companion', 'install_autostart.js'), 'utf8');
+    const ecsSrc = fs.readFileSync(path.join(SRC_DIR, '..', 'companion', 'ensure_companion_service.js'), 'utf8');
+    assert(setupBat.includes('if defined XPIDER_ISOLATED_TEST'), 'XPIDER_AUTO_SETUP.bat must check XPIDER_ISOLATED_TEST');
+    assert(inhSrc.includes("process.env.XPIDER_ISOLATED_TEST === '1'"), 'install_native_host.js must check XPIDER_ISOLATED_TEST');
+    assert(iasSrc.includes("process.env.XPIDER_ISOLATED_TEST === '1'"), 'install_autostart.js must check XPIDER_ISOLATED_TEST');
+    assert(ecsSrc.includes("process.env.XPIDER_ISOLATED_TEST === '1'"), 'ensure_companion_service.js must check XPIDER_ISOLATED_TEST');
 });
 
 // -------------------------------------------------------------------------
