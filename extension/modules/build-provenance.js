@@ -15,9 +15,9 @@
 
     const BUILD_INFO = {
         branch: 'upgrade/phase-0-1',
-        channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.24',
+        channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.25',
         testOnly: true,
-        // [R6.9G.10.3.7.1.4.38] XPIDER AutoForm Sender Pro — Private Egress Release Candidate 3.24 (CAPTCHA Skip Terminal Settlement & Target Lifecycle Atomic Resolution)
+        // [R6.9G.10.3.7.1.4.39] XPIDER AutoForm Sender Pro — Private Egress Release Candidate 3.25 (Live Provider Gate & Fail Recovery)
         implementationHead: '63e97460c860464eb094c920d94a7ca6a97e7eb5',
         implementationHeadShort: '63e97460',
         head: '63e97460c860464eb094c920d94a7ca6a97e7eb5',
@@ -25,15 +25,15 @@
         rollbackBase: '0a6e843d9e5ae512bf48742473bbd3133050c117',
         previousFunctionalRestorePoint: '0a6e843d9e5ae512bf48742473bbd3133050c117',
         manifestVersion: 3,
-        buildId: 'R6.9G.10.3.7.1.4.38-20261020-PRIVATE-EGRESS-RC3.24',
-        builtAt: '2026-10-20T20:35:00.000Z',
+        buildId: 'R6.9G.10.3.7.1.4.39-20261020-PRIVATE-EGRESS-RC3.25',
+        builtAt: '2026-10-20T21:45:00.000Z',
         provenanceSchema: 2,
         modules: {
-            backgroundSha: '84e626b965748d919e865532e8e7694ae065c03e258d3cad17e4b07824d9eed1',
-            contentScriptSha: 'a223ea35cc923345b86270eeb472efd4596d6bcce595d5a5ba5f56e8e1a18936',
-            popupSha: 'c197e6f42bd9aad1d10973cf5f6c6c6b622d19e65a0f83d70e59ec831f431158',
+            backgroundSha: '70d734156594bb212a5eac6fbb6d11e72034186e5ff9d0c1c2299e02e50a6e0e',
+            contentScriptSha: '5ca1af365cf761124b496fb51664050630a7a1d496f8746e14d7f86bd66efc68',
+            popupSha: '763496c61263b595114ba7d611caed98162dd2c6b8368fdedbb4aafdebedbbbf',
             solverContentSha: 'd7de969d29df29799537b11380f0f82967bb93da227c91e7dc8c6af0d128f457',
-            solverCoreSha: '01b3d96048ea933403e4599854dcdca28027e7f676aa5077eb6c5eb0582ac1e7',
+            solverCoreSha: '347376565857e6b9dc9fa3e75bff5c04c51da1f3c5b3ad7ce7ae2eac627148e8',
             emailCollectorSha: '3f1147a379e159e7777158f2caa74cc8d40b2a0b0eb2c244f440af379cb5c9c9',
             historyStoreSha: '0dc2fbda1b1506de9394f87a965ff2ebd5721ea1c47d7bda07c9411193890d8c',
             contactGateSha: '0d01acb2d0a9448d154353fac5b527c17afa42fed56c68d6a49b39053629bd7d',

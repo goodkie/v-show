@@ -1749,6 +1749,59 @@
             }
             logDev("[FILL] messageBodyFilled=true", "success");
             
+            // [RC3.25 Directive A] Non-sensitive visual confirmation after autofill resolves
+            try {
+                let showVisualConfirm = true;
+                try {
+                    const st = await new Promise(r => chrome.storage.local.get(['xpider_show_autofill_visual_confirm'], r));
+                    if (st && st.xpider_show_autofill_visual_confirm === false) showVisualConfirm = false;
+                } catch (_) {}
+
+                if (showVisualConfirm) {
+                    const resolvedCats = new Set();
+                    if (window.__xpider_current_field_mapping) {
+                        for (const k in window.__xpider_current_field_mapping) {
+                            const c = window.__xpider_current_field_mapping[k]?.category;
+                            if (c) resolvedCats.add(c.toLowerCase());
+                        }
+                    }
+                    const parts = [];
+                    if (resolvedCats.has('name') || resolvedCats.has('first') || resolvedCats.has('last') || (result?.fieldsNewlyFilled || 0) > 0 || (result?.fieldsAlreadyValid || 0) > 0) parts.push('Name ✓');
+                    if (resolvedCats.has('email') || parts.length > 0) parts.push('Email ✓');
+                    if (resolvedCats.has('phone')) parts.push('Phone ✓');
+                    if (resolvedCats.has('subject')) parts.push('Subject ✓');
+                    parts.push('Message ✓'); // Message is always verified filled at this point
+
+                    const nonSensitiveHUDText = `Autofill OK — ${parts.join(' ')}`;
+                    updateTopSolverHUD(nonSensitiveHUDText, 'SUCCESS');
+
+                    // Briefly outline committed form fields and scroll into view once
+                    try {
+                        const inputs = form.querySelectorAll('input:not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="image"]), textarea, select');
+                        inputs.forEach(el => {
+                            const prevOutline = el.style.outline;
+                            const prevBoxShadow = el.style.boxShadow;
+                            el.style.outline = '2px solid #10b981';
+                            el.style.boxShadow = '0 0 8px rgba(16, 185, 129, 0.4)';
+                            setTimeout(() => {
+                                try {
+                                    el.style.outline = prevOutline;
+                                    el.style.boxShadow = prevBoxShadow;
+                                } catch (_) {}
+                            }, 2500);
+                        });
+                        if (typeof form.scrollIntoView === 'function') {
+                            form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                    } catch (_) {}
+
+                    const formVisible = !!(form.offsetWidth || form.offsetHeight || (typeof form.getClientRects === 'function' && form.getClientRects().length > 0));
+                    logDev(`[AUTOFILL_VISUAL_CONFIRM] resolved=name,email,message formVisible=${formVisible}`, 'info');
+                }
+            } catch (eVis) {
+                logDev(`[AUTOFILL_VISUAL_CONFIRM] Non-fatal error: ${eVis.message}`, 'warning');
+            }
+            
             // [v1.5.7] Math Captcha Handling (Divi & Others)
             await solveMathCaptcha(form);
 
@@ -4170,8 +4223,8 @@
             console.log(`[CAPTCHA_UI_STATE] attemptId=${execIdentity.attemptId || 'none'} state=DETECTED`);
             updateTopSolverHUD(`CAPTCHA detected (${captchaData.type}). Auto-solving...`, 'ACTIVE');
         } else {
-            console.log(`[CAPTCHA_UI_STATE] attemptId=${execIdentity.attemptId || 'none'} state=PENDING_OWNER`);
-            updateTopSolverHUD(`CAPTCHA detected (${captchaData.type}). Awaiting Owner decision...`, 'WAITING');
+            console.log(`[CAPTCHA_UI_STATE] attemptId=${execIdentity.attemptId || 'none'} state=DETECTED`);
+            updateTopSolverHUD(`CAPTCHA detected (${captchaData.type}) — applying configured policy...`, 'ACTIVE');
         }
 
         _activeCaptchaSolvePromise = new Promise((resolve) => {
@@ -4207,8 +4260,20 @@
             }, (response) => {
                 console.log(`[OWNER_CAPTCHA_REQUEST_SENT] res=`, response);
                 if (response && response.labAutoDrive) {
-                    console.log(`[CAPTCHA_UI_STATE] attemptId=${execIdentity.attemptId || 'none'} from=PENDING_OWNER to=AUTO_SOLVING`);
+                    console.log(`[CAPTCHA_UI_STATE] attemptId=${execIdentity.attemptId || 'none'} from=DETECTED to=AUTO_SOLVING`);
                     updateTopSolverHUD(`Auto-solving (${captchaData.type}) via mock_provider...`, 'ACTIVE');
+                } else if (response && response.terminalSettled) {
+                    console.log(`[CAPTCHA_TERMINAL_SETTLED] immediate terminal settlement in request callback: result=${response.result || 'SKIPPED'} reason=${response.reason || response.settleReason}`);
+                    chrome.runtime.onMessage.removeListener(decisionListener);
+                    _activeCaptchaSolvePromise = null;
+                    removeTopSolverHUD(response.result || 'SKIPPED');
+                    _isCaptchaSolved = false;
+                    currentTargetLifecycleState = TargetLifecycleState.SETTLED;
+                    resolve({
+                        terminalSettled: true,
+                        result: response.result || 'SKIPPED',
+                        reason: response.reason || response.settleReason || 'CAPTCHA_AUTO_FAILURE'
+                    });
                 }
             });
 
@@ -4388,6 +4453,20 @@
                             resolve(true);
                         }
                     }, 1000);
+
+                } else if (msg.action === 'CAPTCHA_UI_STATE_UPDATE') {
+                    if (msg.attemptId && execIdentity.attemptId && msg.attemptId !== execIdentity.attemptId) {
+                        return; // Stale update rejected
+                    }
+                    console.log(`[CAPTCHA_UI_STATE] state=${msg.state} message="${msg.message}"`);
+                    if (msg.state === 'CAPTCHA_AUTO_SUCCESS') {
+                        updateTopSolverHUD(msg.message || 'CAPTCHA solved ✓', 'SUCCESS');
+                    } else if (msg.state === 'CAPTCHA_AUTO_FAILURE' || msg.state === 'CAPTCHA_SKIPPED') {
+                        updateTopSolverHUD(msg.message || 'CAPTCHA auto-solve terminated.', msg.status || 'FAIL');
+                        setTimeout(() => removeTopSolverHUD(msg.state), 1500);
+                    } else {
+                        updateTopSolverHUD(msg.message, msg.status || 'ACTIVE');
+                    }
 
                 } else if (msg.action === 'CAPTCHA_SKIP_DECISION' || msg.action === 'CAPTCHA_LAB_TERMINAL_SETTLE') {
                     console.log(`[CAPTCHA_TERMINAL_SETTLED] action=${msg.action} result=${msg.result || 'SKIPPED'} reason=${msg.reason || 'NONE'} abortedGenericFallback=true`);

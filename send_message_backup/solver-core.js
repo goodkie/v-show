@@ -282,22 +282,27 @@ class XpiderSolverCore {
      * @param {number} [pollIntervalMs=3000]  Milliseconds between each poll request
      * @param {number} [maxWaitSec=120]       Maximum total wait time in seconds
      */
+    /**
+     * [RC3.25 Directive D] Solve via NopeCHA Token API with Hard Wall-Clock Cap & Sanitized Telemetry
+     */
     async solveNopeCha(siteKey, pageUrl, type = 'recaptcha', pollIntervalMs = 3000, maxWaitSec = 120) {
         if (!this.config.nopeChaKey) throw new Error("NopeCHA API Key missing.");
 
-        // Normalize CAPTCHA type for NopeCHA v1 endpoints
         let nopechaType = 'recaptcha2';
         if (type === 'turnstile') nopechaType = 'turnstile';
         else if (type === 'hcaptcha') nopechaType = 'hcaptcha';
         else if (type === 'recaptcha3' || type === 'recaptcha_v3' || type === 'v3') nopechaType = 'recaptcha3';
 
-        // Clamp to sane bounds
-        const interval = Math.min(Math.max(Number(pollIntervalMs) || 3000, 1000), 30000);
-        const maxSec = Math.min(Math.max(Number(maxWaitSec) || 120, 10), 600);
-        const maxPolls = Math.ceil((maxSec * 1000) / interval);
+        const interval = Math.min(Math.max(Number(pollIntervalMs) || 3000, 1000), 10000);
+        const maxSec = Math.min(Math.max(Number(maxWaitSec) || 120, 10), 300);
+        const hardCapMs = (maxSec * 1000) + 10000;
+        const abortCtrl = new AbortController();
+        const hardTimer = setTimeout(() => abortCtrl.abort('HARD_WALLCLOCK_TIMEOUT'), hardCapMs);
+        const startTs = Date.now();
+        let jobId = null;
+        let pollCount = 0;
+        let lastStatusCode = null;
 
-        // [NopeCHA Fix R2] Official SDK (nopecha@1.0.11) uses Bearer auth and the SAME
-        // endpoint (/token) for POST submit and GET poll (?id=JOB_ID).
         const authHeaders = {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${this.config.nopeChaKey}`
@@ -311,118 +316,90 @@ class XpiderSolverCore {
             url: pageUrl
         };
 
-        // Step 1: POST to submit the CAPTCHA job (with automatic rate-limit backoff retry)
-        let jobId = null;
-        let submitUrl = 'https://api.nopecha.com/token';
-        for (let submitAttempt = 0; submitAttempt < 3; submitAttempt++) {
+        try {
+            // Step 1: POST submit
+            let submitUrl = 'https://api.nopecha.com/token';
+            let postRes = null;
             try {
-                let postRes = await fetch(submitUrl, {
+                postRes = await fetch(submitUrl, {
                     method: 'POST',
                     headers: authHeaders,
-                    body: JSON.stringify(postBody)
+                    body: JSON.stringify(postBody),
+                    signal: abortCtrl.signal
                 });
-
-                // Fallback to v1 typed endpoint if /token route not found (404)
                 if (postRes.status === 404 && !submitUrl.includes('/v1/')) {
-                    console.log(`[NopeCHA] /token 404, falling back to /v1/token/${nopechaType}...`);
                     submitUrl = `https://api.nopecha.com/v1/token/${nopechaType}`;
                     postRes = await fetch(submitUrl, {
                         method: 'POST',
                         headers: authHeaders,
-                        body: JSON.stringify(postBody)
+                        body: JSON.stringify(postBody),
+                        signal: abortCtrl.signal
                     });
                 }
-
-                const postData = await postRes.json();
-                if (postData && postData.error) {
-                    // Error 11 = Rate limit reached -> back off and retry submit up to 2 times
-                    if (postData.error === 11 && submitAttempt < 2) {
-                        const backoffMs = (submitAttempt + 1) * 3500;
-                        console.warn(`[NopeCHA] Submit rate limited (11). Backing off ${backoffMs}ms before retry ${submitAttempt + 1}/2...`);
-                        await new Promise(r => setTimeout(r, backoffMs));
-                        continue;
-                    }
-                    throw new Error(`NopeCHA Submit Error (${postData.error}): ${postData.message || 'Unknown'}`);
-                }
-
-                jobId = typeof postData.data === 'string' ? postData.data : (postData.data?.id || postData.id || postData.job_id);
-                if (jobId) break;
             } catch (err) {
-                if (submitAttempt < 2 && (err.message.includes('11') || err.message.includes('Rate limit') || err.message.includes('network'))) {
-                    await new Promise(r => setTimeout(r, 3000));
-                    continue;
-                }
+                if (abortCtrl.signal.aborted) throw new Error(`NopeCHA Timeout: Token not resolved within ${maxSec} seconds.`);
                 throw err;
             }
+
+            const postData = await postRes.json();
+            if (postData && postData.error) {
+                throw new Error(`NopeCHA Submit Error (${postData.error}): ${postData.message || 'Unknown'}`);
+            }
+
+            jobId = typeof postData.data === 'string' ? postData.data : (postData.data?.id || postData.id || postData.job_id);
+            if (!jobId) throw new Error('NopeCHA: No valid job ID returned from submit.');
+            const jobTag = jobId ? '***' + String(jobId).slice(-6) : 'none';
+            console.log(`[NopeCHA] Job submitted tag=${jobTag} elapsedMs=${Date.now() - startTs}`);
+
+            // Step 2: GET polling until token ready or hardCap reached
+            let pollUrl = `${submitUrl}?id=${encodeURIComponent(jobId)}&key=${encodeURIComponent(this.config.nopeChaKey)}`;
+            while ((Date.now() - startTs < (maxSec * 1000)) && !abortCtrl.signal.aborted) {
+                await new Promise((res, rej) => {
+                    const t = setTimeout(res, interval);
+                    abortCtrl.signal.addEventListener('abort', () => {
+                        clearTimeout(t);
+                        rej(new Error(`NopeCHA Timeout: Token not resolved within ${maxSec} seconds.`));
+                    }, { once: true });
+                });
+
+                pollCount++;
+                let getRes = null;
+                try {
+                    getRes = await fetch(pollUrl, { headers: getHeaders, signal: abortCtrl.signal });
+                } catch (netErr) {
+                    if (abortCtrl.signal.aborted) break;
+                    continue;
+                }
+
+                let getData = null;
+                try {
+                    getData = await getRes.json();
+                } catch (_) {
+                    continue;
+                }
+
+                if (getData && getData.error) {
+                    lastStatusCode = getData.error;
+                    if (getData.error === 14 || getData.error === 100) continue;
+                    throw new Error(`NopeCHA Poll Error (${getData.error}): ${getData.message || 'Unknown'}`);
+                }
+
+                const token = getData?.data || getData?.token;
+                if (token && typeof token === 'string' && token.length > 20) {
+                    clearTimeout(hardTimer);
+                    console.log(`[NopeCHA] Token resolved after ${pollCount} polls (${Date.now() - startTs}ms)`);
+                    return token;
+                }
+            }
+            clearTimeout(hardTimer);
+            throw new Error(`NopeCHA Timeout: Token not resolved within ${maxSec} seconds.`);
+        } finally {
+            clearTimeout(hardTimer);
         }
-
-        if (!jobId) throw new Error('NopeCHA: No valid job ID returned from submit.');
-        console.log(`[NopeCHA] Job submitted successfully id=${jobId} pollInterval=${interval}ms maxWait=${maxSec}s polls=${maxPolls}`);
-
-        // Step 2: GET polling until token is ready (supports v1 & legacy fallback with rate-limit recovery)
-        let invalidRequestCount = 0;
-        // Poll the SAME endpoint the job was submitted to (job IDs are endpoint-scoped)
-        let pollUrl = `${submitUrl}?id=${encodeURIComponent(jobId)}&key=${encodeURIComponent(this.config.nopeChaKey)}`;
-
-        for (let i = 0; i < maxPolls; i++) {
-            await new Promise(r => setTimeout(r, interval));
-
-            let getRes;
-            try {
-                // GET must NOT carry Content-Type (some gateways reject GET+JSON content-type as invalid)
-                getRes = await fetch(pollUrl, { headers: getHeaders });
-            } catch (netErr) {
-                console.warn(`[NopeCHA] Transient poll network error: ${netErr.message}, continuing...`);
-                continue;
-            }
-
-            let getData;
-            try {
-                getData = await getRes.json();
-            } catch (_) {
-                continue;
-            }
-
-            if (getData && getData.error) {
-                // Error 14 = Incomplete job (still processing)
-                // Error 100 = Not ready yet (legacy)
-                if (getData.error === 14 || getData.error === 100) {
-                    continue;
-                }
-                // Error 11 = Rate limit reached on poll -> back off 3s and continue polling
-                if (getData.error === 11) {
-                    console.warn(`[NopeCHA] Poll rate limited (11). Backing off 3000ms...`);
-                    await new Promise(r => setTimeout(r, 3000));
-                    continue;
-                }
-                // Error 10 = Invalid request -> could be transient router/legacy path glitch; retry up to 3 times
-                if (getData.error === 10 && invalidRequestCount < 3) {
-                    invalidRequestCount++;
-                    console.warn(`[NopeCHA] Poll error 10 (Invalid request), retrying (${invalidRequestCount}/3)...`);
-                    await new Promise(r => setTimeout(r, 2000));
-                    continue;
-                }
-
-                throw new Error(`NopeCHA Poll Error (${getData.error}): ${getData.message || 'Unknown'}`);
-            }
-
-            const token = getData?.data || getData?.token;
-            if (token && typeof token === 'string' && token.length > 20) {
-                console.log(`[NopeCHA] Token resolved after ${i + 1} polls (${Math.round((i + 1) * interval / 1000)}s) tokenLen=${token.length}`);
-                return token;
-            }
-        }
-        throw new Error(`NopeCHA Timeout: Token not resolved within ${maxSec} seconds.`);
     }
 
     /**
-     * Solve via 2Captcha API
-     * @param {string} siteKey
-     * @param {string} pageUrl
-     * @param {string} [type='recaptcha']
-     * @param {Object} [extra={}]
-     * @param {number} [pollIntervalMs=5000]  Milliseconds between each poll request
-     * @param {number} [maxWaitSec=200]       Maximum total wait time in seconds
+     * [RC3.25 Directive D] Solve via 2Captcha API with Hard Wall-Clock Cap & Sanitized Telemetry
      */
     async solve2Captcha(siteKey, pageUrl, type = 'recaptcha', extra = {}, pollIntervalMs = 5000, maxWaitSec = 200) {
         if (!this.config.twoCaptchaKey) throw new Error("2Captcha API Key missing.");
@@ -430,36 +407,58 @@ class XpiderSolverCore {
             throw new Error("2Captcha Error: ERROR_ZERO_BALANCE");
         }
 
-        // Clamp to sane bounds
-        const interval = Math.min(Math.max(Number(pollIntervalMs) || 5000, 1000), 30000);
-        const maxSec = Math.min(Math.max(Number(maxWaitSec) || 200, 10), 600);
-        const maxPolls = Math.ceil((maxSec * 1000) / interval);
+        const interval = Math.min(Math.max(Number(pollIntervalMs) || 5000, 1000), 10000);
+        const maxSec = Math.min(Math.max(Number(maxWaitSec) || 200, 10), 300);
+        const hardCapMs = (maxSec * 1000) + 10000;
+        const abortCtrl = new AbortController();
+        const hardTimer = setTimeout(() => abortCtrl.abort('HARD_WALLCLOCK_TIMEOUT'), hardCapMs);
+        const startTs = Date.now();
+        let pollCount = 0;
 
-        let method = 'userrecaptcha';
-        let extraParams = '';
-        if (type === 'hcaptcha') {
-            method = 'hcaptcha';
-            extraParams = `&sitekey=${siteKey}`;
-        } else if (type === 'turnstile') {
-            method = 'turnstile';
-            extraParams = `&sitekey=${siteKey}`;
-        } else {
-            extraParams = `&googlekey=${siteKey}`;
+        try {
+            let method = 'userrecaptcha';
+            let extraParams = '';
+            if (type === 'hcaptcha') {
+                method = 'hcaptcha';
+                extraParams = `&sitekey=${siteKey}`;
+            } else if (type === 'turnstile') {
+                method = 'turnstile';
+                extraParams = `&sitekey=${siteKey}`;
+            } else {
+                extraParams = `&googlekey=${siteKey}`;
+            }
+            const res = await fetch(`https://2captcha.com/in.php?key=${this.config.twoCaptchaKey}&method=${method}${extraParams}&pageurl=${encodeURIComponent(pageUrl)}&json=1`, { signal: abortCtrl.signal });
+            const data = await res.json();
+            if (data.status !== 1) throw new Error(`2Captcha Error: ${data.request}`);
+            
+            const taskId = data.request;
+            const taskTag = taskId ? '***' + String(taskId).slice(-6) : 'none';
+            console.log(`[2Captcha] Task submitted tag=${taskTag} elapsedMs=${Date.now() - startTs}`);
+
+            while ((Date.now() - startTs < (maxSec * 1000)) && !abortCtrl.signal.aborted) {
+                await new Promise((res, rej) => {
+                    const t = setTimeout(res, interval);
+                    abortCtrl.signal.addEventListener('abort', () => {
+                        clearTimeout(t);
+                        rej(new Error(`2Captcha Timeout: Token not resolved within ${maxSec} seconds.`));
+                    }, { once: true });
+                });
+
+                pollCount++;
+                const checkRes = await fetch(`https://2captcha.com/res.php?key=${this.config.twoCaptchaKey}&action=get&id=${taskId}&json=1`, { signal: abortCtrl.signal });
+                const checkData = await checkRes.json();
+                if (checkData.status === 1) {
+                    clearTimeout(hardTimer);
+                    return checkData.request;
+                }
+                if (checkData.request !== "CAPCHA_NOT_READY") throw new Error(`2Captcha Error: ${checkData.request}`);
+            }
+            clearTimeout(hardTimer);
+            throw new Error(`2Captcha Timeout: Token not resolved within ${maxSec} seconds.`);
+        } finally {
+            clearTimeout(hardTimer);
         }
-        const res = await fetch(`https://2captcha.com/in.php?key=${this.config.twoCaptchaKey}&method=${method}${extraParams}&pageurl=${encodeURIComponent(pageUrl)}&json=1`);
-        const data = await res.json();
-        if (data.status !== 1) throw new Error(`2Captcha Error: ${data.request}`);
-        
-        const taskId = data.request;
-        console.log(`[2Captcha] Task submitted id=${taskId} pollInterval=${interval}ms maxWait=${maxSec}s`);
-        for (let i = 0; i < maxPolls; i++) {
-            await new Promise(r => setTimeout(r, interval));
-            const checkRes = await fetch(`https://2captcha.com/res.php?key=${this.config.twoCaptchaKey}&action=get&id=${taskId}&json=1`);
-            const checkData = await checkRes.json();
-            if (checkData.status === 1) return checkData.request;
-            if (checkData.request !== "CAPCHA_NOT_READY") throw new Error(`2Captcha Error: ${checkData.request}`);
-        }
-        throw new Error(`2Captcha Timeout: Token not resolved within ${maxSec} seconds.`);
+    }
     }
 
     _dataURLtoBlob(dataurl) {

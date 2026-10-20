@@ -1162,102 +1162,203 @@ if (typeof self.XpiderSolverCore === 'undefined') {
          * Solve via NopeCHA Token API (POST submit → GET polling)
          * Reference: https://developers.nopecha.com/recognition/token_api/
          */
-        async solveNopeCha(siteKey, pageUrl, type = 'recaptcha') {
+        /**
+         * [RC3.25 Directive D] Solve via NopeCHA Token API with Hard Wall-Clock Cap & Sanitized Telemetry
+         */
+        async solveNopeCha(siteKey, pageUrl, type = 'recaptcha', pollIntervalMs = 3000, maxWaitSec = 120) {
             if (!this.config.nopeChaKey) throw new Error("NopeCHA API Key missing.");
             const nopechaType = type === 'turnstile' ? 'turnstile' : (type === 'hcaptcha' ? 'hcaptcha' : 'recaptcha2');
 
-            // Step 1: POST to submit the CAPTCHA job
-            const postBody = {
-                key: this.config.nopeChaKey,
-                type: nopechaType,
-                sitekey: siteKey,
-                url: pageUrl
-            };
-            const postRes = await fetch('https://api.nopecha.com/token', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(postBody)
-            });
-            const postData = await postRes.json();
-            if (!postData || postData.error) throw new Error(`NopeCHA Submit Error (${postData?.error}): ${postData?.message || 'Unknown'}`);
-            const jobId = postData.data;
-            if (!jobId) throw new Error('NopeCHA: No job ID returned from submit.');
-            console.log(`[NopeCHA] Job submitted id=${jobId}`);
+            const waitSec = Math.min(Math.max(Number(maxWaitSec) || 120, 10), 300);
+            const hardCapMs = (waitSec * 1000) + 10000;
+            const abortCtrl = new AbortController();
+            const hardTimer = setTimeout(() => abortCtrl.abort('HARD_WALLCLOCK_TIMEOUT'), hardCapMs);
+            const startTs = Date.now();
+            let jobId = null;
+            let pollCount = 0;
+            let lastStatusCode = null;
 
-            // Step 2: GET polling until token is ready (up to 120s)
-            for (let i = 0; i < 40; i++) {
-                await new Promise(r => setTimeout(r, 3000));
-                const getRes = await fetch(`https://api.nopecha.com/token?key=${this.config.nopeChaKey}&id=${jobId}`);
-                const getData = await getRes.json();
-                if (getData.error) {
-                    // error 14 = Incomplete job (still processing)
-                    // error 100 = not ready yet (legacy)
-                    if (getData.error === 14 || getData.error === 100) continue;
-                    throw new Error(`NopeCHA Poll Error (${getData.error}): ${getData.message || 'Unknown'}`);
+            try {
+                // Step 1: POST to submit the CAPTCHA job
+                const authHeaders = {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.config.nopeChaKey}`
+                };
+                const postBody = {
+                    key: this.config.nopeChaKey,
+                    type: nopechaType,
+                    sitekey: siteKey,
+                    url: pageUrl
+                };
+
+                let submitUrl = 'https://api.nopecha.com/token';
+                let postRes = null;
+                try {
+                    postRes = await fetch(submitUrl, {
+                        method: 'POST',
+                        headers: authHeaders,
+                        body: JSON.stringify(postBody),
+                        signal: abortCtrl.signal
+                    });
+                    if (postRes.status === 404) {
+                        submitUrl = `https://api.nopecha.com/v1/token/${nopechaType}`;
+                        postRes = await fetch(submitUrl, {
+                            method: 'POST',
+                            headers: authHeaders,
+                            body: JSON.stringify(postBody),
+                            signal: abortCtrl.signal
+                        });
+                    }
+                } catch (eSubmit) {
+                    if (abortCtrl.signal.aborted) throw new Error(`NopeCHA Timeout: Token not resolved within ${waitSec} seconds.`);
+                    throw new Error(`NopeCHA Submit Network Error: ${eSubmit.message}`);
                 }
-                if (getData.data && typeof getData.data === 'string' && getData.data.length > 20) {
-                    console.log(`[NopeCHA] Token resolved after ${i + 1} polls`);
-                    return getData.data;
+
+                const postData = await postRes.json();
+                if (!postData || postData.error) throw new Error(`NopeCHA Submit Error (${postData?.error}): ${postData?.message || 'Unknown'}`);
+                jobId = postData.data;
+                if (!jobId) throw new Error('NopeCHA: No job ID returned from submit.');
+                const jobTag = jobId ? '***' + String(jobId).slice(-6) : 'none';
+                console.log(`[NopeCHA] Job submitted tag=${jobTag}`);
+                logBg(null, `[CAPTCHA_TELEMETRY] provider=nopecha step=SUBMIT status=${postRes.status} jobTag=${jobTag} elapsedMs=${Date.now() - startTs}`, 'info');
+
+                // Step 2: GET polling until token is ready or hardCap reached
+                const interval = Math.min(Math.max(Number(pollIntervalMs) || 3000, 1000), 10000);
+                while ((Date.now() - startTs < (waitSec * 1000)) && !abortCtrl.signal.aborted) {
+                    await new Promise((res, rej) => {
+                        const t = setTimeout(res, interval);
+                        abortCtrl.signal.addEventListener('abort', () => {
+                            clearTimeout(t);
+                            rej(new Error(`NopeCHA Timeout: Token not resolved within ${waitSec} seconds.`));
+                        }, { once: true });
+                    });
+
+                    pollCount++;
+                    let getRes = null;
+                    try {
+                        getRes = await fetch(`https://api.nopecha.com/token?key=${this.config.nopeChaKey}&id=${jobId}`, {
+                            headers: { 'Authorization': `Bearer ${this.config.nopeChaKey}` },
+                            signal: abortCtrl.signal
+                        });
+                    } catch (ePollNet) {
+                        if (abortCtrl.signal.aborted) break;
+                        continue; // Bounded network retry
+                    }
+
+                    const getData = await getRes.json();
+                    if (getData.error) {
+                        lastStatusCode = getData.error;
+                        // error 14 = Incomplete job (still processing)
+                        // error 100 = not ready yet (legacy)
+                        if (getData.error === 14 || getData.error === 100) continue;
+                        throw new Error(`NopeCHA Poll Error (${getData.error}): ${getData.message || 'Unknown'}`);
+                    }
+                    if (getData.data && typeof getData.data === 'string' && getData.data.length > 20) {
+                        clearTimeout(hardTimer);
+                        const elapsedMs = Date.now() - startTs;
+                        console.log(`[NopeCHA] Token resolved after ${pollCount} polls (${elapsedMs}ms)`);
+                        logBg(null, `[CAPTCHA_TELEMETRY] provider=nopecha outcome=SUCCESS polls=${pollCount} lastCode=${lastStatusCode || 'NONE'} elapsedMs=${elapsedMs} tokenReceived=true`, 'info');
+                        return getData.data;
+                    }
                 }
+
+                clearTimeout(hardTimer);
+                const elapsedTotal = Date.now() - startTs;
+                logBg(null, `[CAPTCHA_TELEMETRY] provider=nopecha outcome=TIMEOUT polls=${pollCount} lastCode=${lastStatusCode || 'NONE'} elapsedMs=${elapsedTotal} tokenReceived=false tokenInjected=false`, 'warning');
+                throw new Error(`NopeCHA Timeout: Token not resolved within ${waitSec} seconds.`);
+            } finally {
+                clearTimeout(hardTimer);
             }
-            throw new Error('NopeCHA Timeout: Token not resolved within 120 seconds.');
         }
     
         /**
-         * Solve via 2Captcha API
+         * [RC3.25 Directive D] Solve via 2Captcha API with Hard Wall-Clock Cap & Sanitized Telemetry
          */
-        async solve2Captcha(siteKey, pageUrl, type = 'recaptcha', extra = {}) {
+        async solve2Captcha(siteKey, pageUrl, type = 'recaptcha', extra = {}, pollIntervalMs = 5000, maxWaitSec = 200) {
             if (!this.config.twoCaptchaKey) throw new Error("2Captcha API Key missing.");
             if (this.config.twoCaptchaKey === 'TEST_ERROR_ZERO_BALANCE' && (pageUrl.includes('127.0.0.1') || pageUrl.includes('localhost'))) {
                 throw new Error("2Captcha Error: ERROR_ZERO_BALANCE");
             }
-            let method = 'userrecaptcha';
-            let extraParams = '';
-            if (type === 'hcaptcha') {
-                method = 'hcaptcha';
-                extraParams = `&sitekey=${siteKey}`;
-            } else if (type === 'turnstile') {
-                method = 'turnstile';
-                extraParams = `&sitekey=${siteKey}`;
-            } else if (type === 'image' || type === 'base64') {
-                method = 'base64';
-            } else {
-                extraParams = `&googlekey=${siteKey}`;
-                if (extra.version === 'v3' || type === 'recaptcha_v3') {
-                    extraParams += `&version=v3&action=${encodeURIComponent(extra.action || 'verify')}&min_score=0.3`;
-                }
-                if (extra.enterprise || type === 'recaptcha_enterprise') {
-                    extraParams += '&enterprise=1';
-                }
-                if (extra.invisible) {
-                    extraParams += '&invisible=1';
-                }
-            }
+            const waitSec = Math.min(Math.max(Number(maxWaitSec) || 200, 10), 300);
+            const hardCapMs = (waitSec * 1000) + 10000;
+            const abortCtrl = new AbortController();
+            const hardTimer = setTimeout(() => abortCtrl.abort('HARD_WALLCLOCK_TIMEOUT'), hardCapMs);
+            const startTs = Date.now();
+            let pollCount = 0;
+            let lastStatusCode = null;
 
-            let data;
-            if (method === 'base64') {
-                const formData = new URLSearchParams();
-                formData.append('key', this.config.twoCaptchaKey);
-                formData.append('method', 'base64');
-                formData.append('body', extra.body || siteKey);
-                formData.append('json', '1');
-                const res = await fetch('https://2captcha.com/in.php', { method: 'POST', body: formData });
-                data = await res.json();
-            } else {
-                const res = await fetch(`https://2captcha.com/in.php?key=${this.config.twoCaptchaKey}&method=${method}${extraParams}&pageurl=${encodeURIComponent(pageUrl)}&json=1`);
-                data = await res.json();
+            try {
+                let method = 'userrecaptcha';
+                let extraParams = '';
+                if (type === 'hcaptcha') {
+                    method = 'hcaptcha';
+                    extraParams = `&sitekey=${siteKey}`;
+                } else if (type === 'turnstile') {
+                    method = 'turnstile';
+                    extraParams = `&sitekey=${siteKey}`;
+                } else if (type === 'image' || type === 'base64') {
+                    method = 'base64';
+                } else {
+                    extraParams = `&googlekey=${siteKey}`;
+                    if (extra.version === 'v3' || type === 'recaptcha_v3') {
+                        extraParams += `&version=v3&action=${encodeURIComponent(extra.action || 'verify')}&min_score=0.3`;
+                    }
+                    if (extra.enterprise || type === 'recaptcha_enterprise') {
+                        extraParams += '&enterprise=1';
+                    }
+                    if (extra.invisible) {
+                        extraParams += '&invisible=1';
+                    }
+                }
+
+                let data;
+                if (method === 'base64') {
+                    const formData = new URLSearchParams();
+                    formData.append('key', this.config.twoCaptchaKey);
+                    formData.append('method', 'base64');
+                    formData.append('body', extra.body || siteKey);
+                    formData.append('json', '1');
+                    const res = await fetch('https://2captcha.com/in.php', { method: 'POST', body: formData, signal: abortCtrl.signal });
+                    data = await res.json();
+                } else {
+                    const res = await fetch(`https://2captcha.com/in.php?key=${this.config.twoCaptchaKey}&method=${method}${extraParams}&pageurl=${encodeURIComponent(pageUrl)}&json=1`, { signal: abortCtrl.signal });
+                    data = await res.json();
+                }
+                if (data.status !== 1) throw new Error(`2Captcha Error: ${data.request}`);
+                
+                const taskId = data.request;
+                const taskTag = taskId ? '***' + String(taskId).slice(-6) : 'none';
+                logBg(null, `[CAPTCHA_TELEMETRY] provider=2captcha step=SUBMIT status=1 taskTag=${taskTag} elapsedMs=${Date.now() - startTs}`, 'info');
+
+                const interval = Math.min(Math.max(Number(pollIntervalMs) || 5000, 2000), 10000);
+                while ((Date.now() - startTs < (waitSec * 1000)) && !abortCtrl.signal.aborted) {
+                    await new Promise((res, rej) => {
+                        const t = setTimeout(res, interval);
+                        abortCtrl.signal.addEventListener('abort', () => {
+                            clearTimeout(t);
+                            rej(new Error(`2Captcha Timeout: Token not resolved within ${waitSec} seconds.`));
+                        }, { once: true });
+                    });
+
+                    pollCount++;
+                    const checkRes = await fetch(`https://2captcha.com/res.php?key=${this.config.twoCaptchaKey}&action=get&id=${taskId}&json=1`, { signal: abortCtrl.signal });
+                    const checkData = await checkRes.json();
+                    if (checkData.status === 1) {
+                        clearTimeout(hardTimer);
+                        const elapsedMs = Date.now() - startTs;
+                        logBg(null, `[CAPTCHA_TELEMETRY] provider=2captcha outcome=SUCCESS polls=${pollCount} elapsedMs=${elapsedMs} tokenReceived=true`, 'info');
+                        return checkData.request;
+                    }
+                    lastStatusCode = checkData.request;
+                    if (checkData.request !== "CAPCHA_NOT_READY") throw new Error(`2Captcha Error: ${checkData.request}`);
+                }
+                clearTimeout(hardTimer);
+                const elapsedTotal = Date.now() - startTs;
+                logBg(null, `[CAPTCHA_TELEMETRY] provider=2captcha outcome=TIMEOUT polls=${pollCount} lastCode=${lastStatusCode || 'NONE'} elapsedMs=${elapsedTotal} tokenReceived=false tokenInjected=false`, 'warning');
+                throw new Error("2Captcha Timeout");
+            } finally {
+                clearTimeout(hardTimer);
             }
-            if (data.status !== 1) throw new Error(`2Captcha Error: ${data.request}`);
-            
-            const taskId = data.request;
-            for (let i = 0; i < 40; i++) {
-                await new Promise(r => setTimeout(r, 4000));
-                const checkRes = await fetch(`https://2captcha.com/res.php?key=${this.config.twoCaptchaKey}&action=get&id=${taskId}&json=1`);
-                const checkData = await checkRes.json();
-                if (checkData.status === 1) return checkData.request;
-                if (checkData.request !== "CAPCHA_NOT_READY") throw new Error(`2Captcha Error: ${checkData.request}`);
-            }
-            throw new Error("2Captcha Timeout");
         }
     
         _dataURLtoBlob(dataurl) {
@@ -1797,8 +1898,8 @@ if (typeof global !== 'undefined') {
     global.__validateActiveExecution = validateActiveExecution;
 }
 
-// [R6.9G.7.1] Centralized Idempotent CAPTCHA Failure Accounting
-function recordTerminalCaptchaFailure(attemptId, reason) {
+// [R6.9G.7.1 / RC3.25 Directive B] Centralized Idempotent CAPTCHA Failure Accounting & Terminal Settlement Policy
+async function recordTerminalCaptchaFailure(attemptId, reason, safeErrorClass) {
     if (!campaignState.captchaFailuresRecorded) {
         campaignState.captchaFailuresRecorded = new Set();
     }
@@ -1809,11 +1910,96 @@ function recordTerminalCaptchaFailure(attemptId, reason) {
     campaignState.captchaFailuresRecorded.add(key);
     campaignState.captchaLedger.autoFailure = (campaignState.captchaLedger.autoFailure || 0) + 1;
     campaignState.counters.captchaFailed = (campaignState.counters.captchaFailed || 0) + 1;
-    // [R6.9G.10.3.7.1.4.8] Never strand the target in CAPTCHA_AUTO_SOLVING after a provider terminal failure.
-    if (campaignState.currentTargetStage === 'CAPTCHA_AUTO_SOLVING' &&
-        (!attemptId || campaignState.currentAttempt?.attemptId === attemptId)) {
-        campaignState.currentTargetStage = 'CAPTCHA_PENDING_OWNER';
-        logBg(null, `[CAPTCHA_STAGE_TRANSITION] CAPTCHA_AUTO_SOLVING -> CAPTCHA_PENDING_OWNER reason=${String(reason || 'PROVIDER_FAILURE').slice(0, 80)}`, 'warning');
+
+    let showCaptchaPopup = false;
+    try {
+        const s = await chrome.storage.local.get(['xpider_show_captcha_choice_popup']);
+        showCaptchaPopup = s.xpider_show_captcha_choice_popup === true;
+    } catch (_) {}
+
+    const curAttemptMatches = !attemptId || campaignState.currentAttempt?.attemptId === attemptId;
+
+    if (!showCaptchaPopup) {
+        // [RC3.25 Directive B Case 1] popup OFF: never enter CAPTCHA_PENDING_OWNER!
+        campaignState.currentTargetStage = 'CAPTCHA_AUTO_FAILURE';
+        
+        let settleReason = 'CAPTCHA_SOLVER_PROVIDER_ERROR';
+        const reasonStr = String(reason || '');
+        const errClassStr = String(safeErrorClass || '');
+        if (/timeout/i.test(reasonStr) || /timeout/i.test(errClassStr)) {
+            settleReason = 'CAPTCHA_SOLVER_TIMEOUT';
+        } else if (/config|key|wrong_user_key|not_exist/i.test(reasonStr) || /config|key/i.test(errClassStr)) {
+            settleReason = 'CAPTCHA_SOLVER_CONFIG_ERROR';
+        } else if (/zero_balance/i.test(reasonStr) || /zero_balance/i.test(errClassStr)) {
+            settleReason = 'CAPTCHA_SOLVER_UNAVAILABLE';
+        }
+
+        logBg(null, `[CAPTCHA_STAGE_TRANSITION] CAPTCHA_AUTO_SOLVING -> CAPTCHA_AUTO_FAILURE -> SETTLED reason=${settleReason}`, 'warning');
+
+        if (campaignState.targetDeadlineController) {
+            campaignState.targetDeadlineController.cancel(settleReason);
+        }
+
+        if (campaignState.currentTabId && chrome.alarms) {
+            chrome.alarms.clear(`xpider_watchdog_${campaignState.currentTabId}_${campaignState.sessionId}`);
+        }
+
+        const activeTabId = campaignState.currentTabId;
+        if (activeTabId) {
+            chrome.tabs.sendMessage(activeTabId, {
+                action: 'CAPTCHA_UI_STATE_UPDATE',
+                state: 'CAPTCHA_AUTO_FAILURE',
+                message: `Auto-solve failed (${settleReason}). Skipping target.`,
+                status: 'FAIL',
+                attemptId: attemptId,
+                reason: settleReason
+            }).catch(() => {});
+
+            chrome.tabs.sendMessage(activeTabId, {
+                action: 'CAPTCHA_SKIP_DECISION',
+                attemptId: attemptId,
+                targetToken: campaignState.currentTargetToken,
+                campaignRunId: campaignState.campaignRunId,
+                sessionId: campaignState.sessionId,
+                captchaEpoch: campaignState.captchaEpoch || 1,
+                tabId: activeTabId,
+                result: 'SKIPPED',
+                reason: settleReason
+            }).catch(() => {});
+        }
+
+        if (typeof campaignState.targetResolve === 'function') {
+            const resolveTarget = campaignState.targetResolve;
+            campaignState.targetResolve = null;
+            resolveTarget({
+                success: false,
+                reasonCode: settleReason,
+                metadata: {
+                    captchaStatus: 'AUTO_FAILURE',
+                    settleReason: settleReason,
+                    autoFirst: true,
+                    popupShown: false
+                }
+            });
+        }
+        campaignState.captchaLedger.manualSkip = (campaignState.captchaLedger.manualSkip || 0) + 1;
+    } else {
+        // [RC3.25 Directive B Case 2] popup ON / manual fallback explicitly enabled
+        if (campaignState.currentTargetStage === 'CAPTCHA_AUTO_SOLVING' && curAttemptMatches) {
+            campaignState.currentTargetStage = 'CAPTCHA_PENDING_OWNER';
+            logBg(null, `[CAPTCHA_STAGE_TRANSITION] CAPTCHA_AUTO_SOLVING -> CAPTCHA_PENDING_OWNER reason=${String(reason || 'PROVIDER_FAILURE').slice(0, 80)}`, 'warning');
+            
+            const activeTabId = campaignState.currentTabId;
+            if (activeTabId) {
+                chrome.tabs.sendMessage(activeTabId, {
+                    action: 'CAPTCHA_UI_STATE_UPDATE',
+                    state: 'CAPTCHA_PENDING_OWNER',
+                    message: 'Automatic solver failed — manual action required',
+                    status: 'WAITING',
+                    attemptId: attemptId
+                }).catch(() => {});
+            }
+        }
     }
     broadcastCounters();
 }
@@ -2311,7 +2497,9 @@ if (typeof chrome !== 'undefined' && chrome.webNavigation && chrome.webNavigatio
                         'xpider_stt_api_key', 'audioSttKey', 'witKey',
                         'xpider_captcha_poll_interval_sec',
                         'xpider_captcha_poll_interval_ms',
-                        'xpider_captcha_max_wait_sec'
+                        'xpider_captcha_max_wait_sec',
+                        'xpider_show_captcha_choice_popup',
+                        'xpider_automatic_provider_fallback'
                     ], resolve));
                     
                     const method = request.method || storage.xpider_captcha_method || storage.captchaMethod || 'audio';
@@ -2330,6 +2518,17 @@ if (typeof chrome !== 'undefined' && chrome.webNavigation && chrome.webNavigatio
                     solver.config.twoCaptchaKey = storage.xpider_captcha_api_key_2captcha || storage.xpider_captcha_api_key || storage.captchaApiKey || (method !== 'nopecha' ? apiKey : '');
 
                     logBg(null, `[Auto CAPTCHA Solver] SOLVE_CAPTCHA: method=${method} keyConfigured=${!!apiKey} epoch=${curEpoch} url=${request.url||''}`, 'info');
+
+                    if (activeTabId) {
+                        const providerLabel = method === 'nopecha' ? 'NopeCHA' : (method === '2captcha' || method === 'api' ? '2Captcha' : method);
+                        chrome.tabs.sendMessage(activeTabId, {
+                            action: 'CAPTCHA_UI_STATE_UPDATE',
+                            state: 'CAPTCHA_AUTO_SOLVING',
+                            message: `Auto-solving (${request.type || request.captchaType || 'recaptcha'}) via ${providerLabel}...`,
+                            status: 'ACTIVE',
+                            attemptId: solveIdentity?.attemptId
+                        }).catch(() => {});
+                    }
 
                     // [R6.9G.10.3.7.1.4.8] Controlled lab mock eligibility is decided BEFORE any live-provider/network step.
                     let labMockEligible = false;
@@ -2466,6 +2665,16 @@ if (typeof chrome !== 'undefined' && chrome.webNavigation && chrome.webNavigatio
                                 campaignState.counters.captchaSolved = (campaignState.counters.captchaSolved || 0) + 1;
                                 broadcastCounters();
 
+                                if (activeTabId) {
+                                    chrome.tabs.sendMessage(activeTabId, {
+                                        action: 'CAPTCHA_UI_STATE_UPDATE',
+                                        state: 'CAPTCHA_AUTO_SUCCESS',
+                                        message: 'CAPTCHA solved ✓',
+                                        status: 'SUCCESS',
+                                        attemptId: solveIdentity?.attemptId
+                                    }).catch(() => {});
+                                }
+
                                 const remainingMs = campaignState.targetTimeoutMs || 180000;
                                 campaignState.activeTimeoutId = setTimeout(() => {
                                     if (campaignState.currentAttempt?.attemptId === solveIdentity.attemptId) {
@@ -2594,22 +2803,17 @@ if (typeof chrome !== 'undefined' && chrome.webNavigation && chrome.webNavigatio
                             if (isZeroBal) {
                                 campaignState.captchaEpochBlockedErrors[curEpoch] = 'ERROR_ZERO_BALANCE';
                             }
-                            const safeErrClass = isZeroBal ? 'ZERO_BALANCE' : 'PROVIDER_ERROR';
-                            logBg(null, `[CAPTCHA_PROVIDER] provider=2captcha status=FAILED errorClass=${safeErrClass} elapsedMs=${elapsedMs} error="${e2.message}"`, 'error');
-                            chrome.runtime.sendMessage({
-                                action: 'CAPTCHA_PROVIDER_FAILED',
-                                provider: '2captcha',
-                                error: `${safeErrClass}: ${e2.message}`,
-                                attemptId: solveIdentity?.attemptId
-                            }).catch(() => {});
-                            recordTerminalCaptchaFailure(solveIdentity?.attemptId, e2.message);
+                            const showChoicePopup = storage.xpider_show_captcha_choice_popup === true;
+                            await recordTerminalCaptchaFailure(solveIdentity?.attemptId, e2.message, safeErrClass);
                             return { 
                                 success: false, 
+                                terminalSettled: !showChoicePopup,
+                                result: 'SKIPPED',
+                                settleReason: isZeroBal ? 'CAPTCHA_SOLVER_UNAVAILABLE' : (isWrongKey ? 'CAPTCHA_SOLVER_CONFIG_ERROR' : 'CAPTCHA_SOLVER_PROVIDER_ERROR'),
                                 error: e2.message,
                                 safeErrorClass: safeErrClass,
-                                terminalError: isZeroBal ? 'ERROR_ZERO_BALANCE' : null,
-                                settleReason: isZeroBal ? 'CAPTCHA_SOLVER_UNAVAILABLE' : null,
-                                remainingPaused: true
+                                terminalError: isZeroBal ? 'ERROR_ZERO_BALANCE' : (isWrongKey ? 'ERROR_WRONG_USER_KEY' : null),
+                                remainingPaused: showChoicePopup
                             };
                         }
                     } else if (method === 'api' || method === '2captcha') {
@@ -2621,8 +2825,17 @@ if (typeof chrome !== 'undefined' && chrome.webNavigation && chrome.webNavigatio
                             error: errMsg,
                             attemptId: solveIdentity?.attemptId
                         }).catch(() => {});
-                        recordTerminalCaptchaFailure(solveIdentity?.attemptId, errMsg);
-                        return { success: false, error: errMsg, remainingPaused: true };
+                        const showChoicePopup = storage.xpider_show_captcha_choice_popup === true;
+                        await recordTerminalCaptchaFailure(solveIdentity?.attemptId, errMsg, 'CONFIG_ERROR');
+                        return { 
+                            success: false, 
+                            terminalSettled: !showChoicePopup,
+                            result: 'SKIPPED',
+                            settleReason: 'CAPTCHA_SOLVER_CONFIG_ERROR',
+                            error: errMsg, 
+                            safeErrorClass: 'CONFIG_ERROR',
+                            remainingPaused: showChoicePopup 
+                        };
                     }
 
                     // [Priority 2] NopeCHA fast token
@@ -2652,16 +2865,46 @@ if (typeof chrome !== 'undefined' && chrome.webNavigation && chrome.webNavigatio
                             logBg(null, `[CAPTCHA_PROVIDER] provider=nopecha status=FAILED errorClass=${safeErrClass} elapsedMs=${elapsedMs} error="${enp.message}"`, 'error');
                             logBg(null, `[Auto CAPTCHA Solver] NopeCHA FAILED: ${enp.message}`, 'error');
 
-                            // [R6.9G.8 Directive 5] Provider failure remains paused, show safe error in modal, offer Retry / Manual / Skip. Zero silent provider chaining!
-                            chrome.runtime.sendMessage({
-                                action: 'CAPTCHA_PROVIDER_FAILED',
-                                provider: 'nopecha',
-                                error: `${safeErrClass}: ${enp.message}`,
-                                attemptId: solveIdentity?.attemptId
-                            }).catch(() => {});
+                            // [RC3.25 Directive E] Optional automatic provider fallback
+                            const fallbackEnabled = storage.xpider_automatic_provider_fallback === true;
+                            const has2CaptchaKey = Boolean(solver.config.twoCaptchaKey || storage.xpider_captcha_api_key_2captcha);
+                            if (fallbackEnabled && has2CaptchaKey && !request._isFallbackAttempt) {
+                                logBg(null, `[CAPTCHA_PROVIDER_FALLBACK] primary=nopecha failed reason="${enp.message}" action=FALLBACK_TO_2CAPTCHA`, 'info');
+                                if (activeTabId) {
+                                    chrome.tabs.sendMessage(activeTabId, {
+                                        action: 'CAPTCHA_UI_STATE_UPDATE',
+                                        state: 'CAPTCHA_AUTO_SOLVING',
+                                        message: 'NopeCHA timed out. Falling back to 2Captcha...',
+                                        status: 'ACTIVE',
+                                        attemptId: solveIdentity?.attemptId
+                                    }).catch(() => {});
+                                }
+                                try {
+                                    const extra = request.extra || {
+                                        body: request.imageData,
+                                        version: request.version,
+                                        action: request.captchaAction,
+                                        enterprise: request.enterprise,
+                                        invisible: request.invisible
+                                    };
+                                    const fallbackToken = await solver.solve2Captcha(request.sitekey, targetPageUrl, request.type || request.captchaType || 'recaptcha', extra, 5000, 120);
+                                    return await verifyAndRecordCaptchaSuccess(fallbackToken, '2captcha_fallback');
+                                } catch (eFallback) {
+                                    logBg(null, `[CAPTCHA_PROVIDER_FALLBACK] fallback=2captcha failed: ${eFallback.message}`, 'error');
+                                }
+                            }
 
-                            recordTerminalCaptchaFailure(solveIdentity?.attemptId, enp.message);
-                            return { success: false, error: enp.message, safeErrorClass: safeErrClass, remainingPaused: true };
+                            const showChoicePopup = storage.xpider_show_captcha_choice_popup === true;
+                            await recordTerminalCaptchaFailure(solveIdentity?.attemptId, enp.message, safeErrClass);
+                            return { 
+                                success: false, 
+                                terminalSettled: !showChoicePopup,
+                                result: 'SKIPPED',
+                                settleReason: safeErrClass === 'TIMEOUT' ? 'CAPTCHA_SOLVER_TIMEOUT' : 'CAPTCHA_SOLVER_PROVIDER_ERROR',
+                                error: enp.message, 
+                                safeErrorClass: safeErrClass, 
+                                remainingPaused: showChoicePopup 
+                            };
                         }
                     } else if (method === 'nopecha') {
                         const errMsg = "NopeCHA API Key is missing in Settings.";
@@ -2672,8 +2915,17 @@ if (typeof chrome !== 'undefined' && chrome.webNavigation && chrome.webNavigatio
                             error: errMsg,
                             attemptId: solveIdentity?.attemptId
                         }).catch(() => {});
-                        recordTerminalCaptchaFailure(solveIdentity?.attemptId, errMsg);
-                        return { success: false, error: errMsg, remainingPaused: true };
+                        const showChoicePopup = storage.xpider_show_captcha_choice_popup === true;
+                        await recordTerminalCaptchaFailure(solveIdentity?.attemptId, errMsg, 'CONFIG_ERROR');
+                        return { 
+                            success: false, 
+                            terminalSettled: !showChoicePopup,
+                            result: 'SKIPPED',
+                            settleReason: 'CAPTCHA_SOLVER_CONFIG_ERROR',
+                            error: errMsg, 
+                            safeErrorClass: 'CONFIG_ERROR',
+                            remainingPaused: showChoicePopup 
+                        };
                     }
 
 

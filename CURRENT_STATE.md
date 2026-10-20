@@ -4,51 +4,46 @@
 - Protocol: OCA-DEV-1.4
 - Project ID: xpider-autoform-sender-pro
 - Workspace: E:\vivpr\ai\extension-form-sender
-- Authority: goodkie/v-show Issue #6 (Responding to Directive [RC3.23-CAPTCHA-SKIP-TERMINAL-SETTLEMENT-RACE] Comment #6300788298)
+- Authority: goodkie/v-show Issue #6 (Responding to Directive [RC3.25-LIVE-PROVIDER-GATE-FAIL-RECOVERY])
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-20.59
-- Authority Cursor: 6301154147
-- Last Directive / Audit: `[CHATGPT][OWNER-SMOKE][extension-form-sender][RC3.23-CAPTCHA-SKIP-TERMINAL-SETTLEMENT-RACE] Comment #6300788298`
-- Last Receipt: `[ANTIGRAVITY][RECEIPT][extension-form-sender][RC3.24-CAPTCHA-SKIP-TERMINAL-SETTLEMENT-AND-LIFECYCLE-ATOMICITY] #6301154147`
-- Build ID: `R6.9G.10.3.7.1.4.38-20261020-PRIVATE-EGRESS-RC3.24`
-- Current Candidate Release Tag: `v6.9g.10.3-rc3.24.7.1.4.38`
+- State Rev: 2026-10-20.61
+- Authority Cursor: 6301402996
+- Last Directive / Audit: `[CHATGPT][DIRECTIVE][extension-form-sender][RC3.25-LIVE-PROVIDER-GATE-FAIL-RECOVERY]`
+- Last Receipt: `[ANTIGRAVITY][RECEIPT][extension-form-sender][RC3.25-LIVE-PROVIDER-GATE-FAIL-RECOVERY]`
+- Build ID: `R6.9G.10.3.7.1.4.39-20261020-PRIVATE-EGRESS-RC3.25`
+- Current Candidate Release Tag: `v6.9g.10.3-rc3.25.7.1.4.39`
 - Functional Head Commit: `63e97460c860464eb094c920d94a7ca6a97e7eb5` (short: `63e97460`)
 - Rollback Anchor: `0a6e843d9e5ae512bf48742473bbd3133050c117` (RC3.17)
-- Release Asset Zip: `XPIDER_R6.9G.10.3.7.1.4.38_PRIVATE_EGRESS_RC3.24.zip`
-- Release Asset Size: `45,370,346` bytes
-- Release Asset SHA-256: `572b02cc564984974623cd8c194eea2e61a4621f908016b822db1b7ce61dbd92`
-- Release Asset Hosted URL: `https://github.com/goodkie/v-show/releases/tag/v6.9g.10.3-rc3.24.7.1.4.38`
+- Release Asset Zip: `XPIDER_R6.9G.10.3.7.1.4.39_PRIVATE_EGRESS_RC3.25.zip`
+- Release Asset Size: `45,373,531` bytes
+- Release Asset SHA-256: `a8cb89a88f36aa1b47b7317b5b3b7173282ce4dde15b3a05b3b69de4bc5e50b2`
+- Release Asset Hosted URL: `https://github.com/goodkie/v-show/releases/tag/v6.9g.10.3-rc3.25.7.1.4.39`
 
-## Current Gate
-- Formal Gates Evaluated for RC3.24 Remediation (Resolving Directive #6300788298):
-  * **1. CAPTCHA AUTO_FIRST Terminal Settlement Gate: PASS**
-    - `content-script.js`: `tryAutoSolveCaptcha` returns structured terminal object `{ terminalSettled: true, result: 'SKIPPED', reason: 'CAPTCHA_SKIPPED_NO_SOLVER' }` on `CAPTCHA_SKIP_DECISION` across all normal runs instead of plain `false`.
-    - Content script wait loop immediately removes HUD, sets lifecycle `SETTLED`, and terminates without triggering generic timeouts.
-  * **2. Background Atomic Target Lifecycle Resolution Gate: PASS**
-    - `background.js`: In no-key AUTO_FIRST and manual skip branches:
-      - Decrements `captchaLedger.pendingOwner`.
-      - Transitions stage to `CAPTCHA_SKIPPED` and latches terminal skip.
-      - Cancels `targetDeadlineController` (strictly avoids resuming).
-      - Clears watchdog alarm and timers for the target tab.
-      - Atomically consumes and clears `campaignState.targetResolve` with structured `CAPTCHA_SKIPPED_NO_SOLVER`.
-  * **3. Token-Acceptance Fast-Fail Isolation Gate: PASS**
-    - `content-script.js`: `waitForCaptchaSolved` isolates solver-attempt state (`providerSolveAttempted`, `providerTokenInjected`, `terminalCaptchaDecision`).
-    - Does not record `autoSolveFinishedTs` on skip decisions.
-    - 15-second `CAPTCHA_TOKEN_NOT_ACCEPTED` fast-fail applies strictly after a genuine provider attempt that injected a token into the DOM.
-  * **4. Persistent Privacy Relay Across Campaigns Gate: PASS**
-    - Maintained `keepPrivacyRelayEnforcedBetweenCampaigns: true` invariant.
-    - Post-campaign and post-skip state remains `gateReady=true`, `transportEnforced=true`, `PRIVACY_RELAY`.
-  * **5. Automated Regression Suite (27/27 PASS)**:
-    - Executed `test_r6_9g10_3_7_1_4_35_decision_serialization.js`: 27 tests passed across all 7 suites (including Suite 7 RC3.24 defect tests).
-  * **6. Local Package Parity & Provenance Gate: PASS**
-    - Built `XPIDER_R6.9G.10.3.7.1.4.38_PRIVATE_EGRESS_RC3.24.zip` (45,370,232 bytes, SHA-256: `72708aa5cd49bd48d8f3b5625656aea2fa0f07b6283f39d4eefec8e94615d0dd`).
-    - Verified via `scratch/verify_local_rc3_24.js`: Passed all 7 gates including 100% SHA256 byte parity across all 11 critical files, zero secrets, zero runtime files, and verified zero host registry mutations.
-    - Unpacked convenience folder `XPIDER_R6.9G.10.3.7.1.4.38_PRIVATE_EGRESS_RC3.24` for immediate Owner smoke testing.
-  * **7. Live Companion & Egress Status: PASS**
-    - Companion service running on PID 7888 / 20904 from canonical workspace root `E:\vivpr\ai\extension-form-sender`.
-    - Watchdog active on PID 18104 (`rootParity=true`).
-    - Curl proxy probe through `http://127.0.0.1:18988` verified returning `159.203.28.198` (HTTP 200).
-  * **8. Owner Smoke Gate: AUTHORIZED (Target: https://www.kempomaa.com/contact-us.html)**
+## Current Gate: [RC3.25-LIVE-PROVIDER-GATE-FAIL-RECOVERY]
+- **Directive A: Visual Confirmation Non-Sensitive & Toggle Governed: PASS**
+  * `Show Autofill Visual Confirmation` toggle added (`xpider_show_autofill_visual_confirm`, default: `true`).
+  * When ON: Outlines committed form fields with `#10b981` (2.5s) and displays generic category tokens in HUD (`Autofill OK — Name ✓ Email ✓ Message ✓`). Zero raw email, phone, or message body content exposed.
+  * When OFF: Silent DOM commit without banner or outlines.
+- **Directive B: Terminal Settlement without Deadlock on Provider Failure: PASS**
+  * `recordTerminalCaptchaFailure(attemptId, reason, safeErrorClass)` refactored to enforce popup policy.
+  * When popup OFF: Provider failure/timeout never enters `CAPTCHA_PENDING_OWNER`. Transitions to `CAPTCHA_AUTO_FAILURE`, cancels target deadline controller, clears alarms, dispatches `CAPTCHA_SKIP_DECISION`, and atomically consumes `campaignState.targetResolve` with structured `CAPTCHA_SOLVER_TIMEOUT` / `CAPTCHA_SOLVER_CONFIG_ERROR` / `CAPTCHA_SOLVER_PROVIDER_ERROR`.
+  * Increments `captchaLedger.autoFailure` and `captchaLedger.manualSkip`.
+  * When popup ON: Retains manual assist fallback modal path.
+- **Directive C: Content Script Top Solver HUD State Synchronization: PASS**
+  * Service worker dispatches `CAPTCHA_UI_STATE_UPDATE` runtime message to the active target tab:
+    - On solver start: `Auto-solving (recaptcha) via NopeCHA...` (ACTIVE)
+    - On solver success: `CAPTCHA solved ✓` (SUCCESS)
+    - On provider failure/skip: `Auto-solve failed (<reason>). Skipping target.` (FAIL) -> HUD cleanly auto-dismisses on skip decision.
+- **Directive D: Hard Wall-Clock Cap & Sanitized Telemetry: PASS**
+  * `solveNopeCha` and `solve2Captcha` enforce hard wall-clock bounds via `AbortController` (`(maxWaitSec * 1000) + 10000ms`).
+  * Eliminates indefinite polling drift from repeated backoff/network retries.
+  * Emits sanitized telemetry logs: `[CAPTCHA_TELEMETRY] provider=nopecha step=... elapsedMs=... jobTag=...` with zero credential or token leakage.
+- **Directive E: Optional Automatic Provider Fallback: PASS**
+  * Added `Automatic Provider Fallback` toggle (`xpider_automatic_provider_fallback`, default: `false`).
+  * When enabled and a secondary solver key is configured: If primary provider (NopeCHA) times out, automatically attempts bounded fallback to secondary provider (2Captcha) before terminal skip settlement.
+- **Automated Verification Suites (40/40 PASS)**:
+  * `test_rc3_25_live_provider_gate.js`: 13/13 tests passed across all 5 directives.
+  * `test_r6_9g10_3_7_1_4_35_decision_serialization.js`: 27/27 tests passed across all 7 suites.
 
 ### Operating Guidelines & Invariants:
 1. **Existing Droplet Preservation**:

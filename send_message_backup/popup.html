@@ -830,7 +830,16 @@
                                     <span class="slider round"></span>
                                 </label>
                             </div>
-                            <p class="settings-subtip" style="color: #94a3b8;">Surfaces interactive assistance modal if automatic recovery is exhausted (Default: OFF).</p>
+                            <p class="settings-subtip" style="color: #94a3b8; margin-bottom: 8px;">Surfaces interactive assistance modal if automatic recovery is exhausted (Default: OFF).</p>
+
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                <span style="font-size: 11px; color: #e2e8f0; font-weight: 600;">Show Autofill Visual Confirmation</span>
+                                <label class="switch" style="margin: 0;">
+                                    <input type="checkbox" id="form-assist-show-visual-confirm-toggle" checked>
+                                    <span class="slider round"></span>
+                                </label>
+                            </div>
+                            <p class="settings-subtip" style="color: #94a3b8;">Displays non-sensitive visual confirmation banner and outlines committed fields upon autofill completion (Default: ON).</p>
                         </div>
 
                         <!-- [Issue #6 RC3.22/RC3.23] CAPTCHA Decision Handling -->
@@ -853,7 +862,16 @@
                                     <span class="slider round"></span>
                                 </label>
                             </div>
-                            <p class="settings-subtip" style="color: #94a3b8;">When OFF, executes selected default handling without blocking automation (Default: OFF).</p>
+                            <p class="settings-subtip" style="color: #94a3b8; margin-bottom: 8px;">When OFF, executes selected default handling without blocking automation (Default: OFF).</p>
+
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px; margin-bottom: 4px;">
+                                <span style="font-size: 11px; color: #e2e8f0; font-weight: 600;">Automatic Provider Fallback</span>
+                                <label class="switch" style="margin: 0;">
+                                    <input type="checkbox" id="captcha-provider-fallback-toggle">
+                                    <span class="slider round"></span>
+                                </label>
+                            </div>
+                            <p class="settings-subtip" style="color: #94a3b8;">If primary solver times out, attempts secondary configured provider under bounded deadline (Default: OFF).</p>
                         </div>
 
                         <!-- Advanced Settings Disclosure -->

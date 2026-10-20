@@ -1311,9 +1311,10 @@ async function hydrateSettings(overrideV2Store = null) {
         'xpider_captcha_max_wait_sec',
         'xpider_stt_api_key', 'xpider_stealth_mode', 'xpider_double_submit', 'xpider_fill_mode',
         'xpider_random_delay',
-        // [Issue #6 RC3.22/RC3.23 UX Settings]
+        // [Issue #6 RC3.22/RC3.23/RC3.25 UX Settings]
         'xpider_auto_recovery_first', 'xpider_show_manual_form_assist_popup',
-        'xpider_default_captcha_handling', 'xpider_show_captcha_choice_popup'
+        'xpider_default_captcha_handling', 'xpider_show_captcha_choice_popup',
+        'xpider_show_autofill_visual_confirm', 'xpider_automatic_provider_fallback'
     ]);
 
     if (data.xpider_lang) {
@@ -1397,6 +1398,23 @@ async function hydrateSettings(overrideV2Store = null) {
 
     const showCaptchaPopupToggle = document.getElementById('captcha-show-choice-popup-toggle');
     if (showCaptchaPopupToggle) showCaptchaPopupToggle.checked = !!data.xpider_show_captcha_choice_popup;
+
+    const visualConfirmToggle = document.getElementById('form-assist-show-visual-confirm-toggle');
+    if (visualConfirmToggle) visualConfirmToggle.checked = data.xpider_show_autofill_visual_confirm !== false;
+
+    const providerFallbackToggle = document.getElementById('captcha-provider-fallback-toggle');
+    if (providerFallbackToggle) {
+        providerFallbackToggle.checked = !!data.xpider_automatic_provider_fallback;
+        providerFallbackToggle.onchange = () => {
+            chrome.storage.local.set({ xpider_automatic_provider_fallback: providerFallbackToggle.checked });
+        };
+    }
+
+    if (visualConfirmToggle) {
+        visualConfirmToggle.onchange = () => {
+            chrome.storage.local.set({ xpider_show_autofill_visual_confirm: visualConfirmToggle.checked });
+        };
+    }
 
     // [R6.9G.10.3.4] Template Hydration & Dropdown Sync
     await rehydrateTemplateUI('boot', overrideV2Store || data.templates_v2);
@@ -8935,6 +8953,8 @@ async function saveSettings() {
             xpider_show_manual_form_assist_popup: showAssistPopupToggle ? showAssistPopupToggle.checked : false,
             xpider_default_captcha_handling: captchaHandlingSelect ? captchaHandlingSelect.value : 'AUTO_FIRST',
             xpider_show_captcha_choice_popup: showCaptchaPopupToggle ? showCaptchaPopupToggle.checked : false,
+            xpider_show_autofill_visual_confirm: document.getElementById('form-assist-show-visual-confirm-toggle') ? document.getElementById('form-assist-show-visual-confirm-toggle').checked : true,
+            xpider_automatic_provider_fallback: document.getElementById('captcha-provider-fallback-toggle') ? document.getElementById('captcha-provider-fallback-toggle').checked : false,
             // [R6.9G.9] Persist Privacy Gateway Config
             xpider_privacy_config: privacyConfig
         };
