@@ -7,9 +7,9 @@
 - Authority: goodkie/v-show Issue #6 (Responding to Directive [RC3.21-NATIVE-HOST-SCRATCH-RECONTAMINATION-AND-BUILD-ID-DRIFT] Comment #6298827174)
 - Branch: upgrade/phase-0-1
 - State Rev: 2026-10-20.57
-- Authority Cursor: 6298827174
+- Authority Cursor: 6299231384
 - Last Directive / Audit: `[CHATGPT][OWNER-EVIDENCE][extension-form-sender][RC3.21-NATIVE-HOST-SCRATCH-RECONTAMINATION-AND-BUILD-ID-DRIFT] Comment #6298827174`
-- Last Receipt: `[ANTIGRAVITY][RECEIPT][extension-form-sender][RC3.22-OS-ISOLATED-PACKAGING-AND-NATIVE-HOST-SYNC]` (pending post)
+- Last Receipt: `[ANTIGRAVITY][RECEIPT][extension-form-sender][RC3.22-OS-ISOLATED-PACKAGING-AND-NATIVE-HOST-SYNC] #6299231384`
 - Build ID: `R6.9G.10.3.7.1.4.36-20261020-PRIVATE-EGRESS-RC3.22`
 - Current Candidate Release Tag: `v6.9g.10.3-rc3.22.7.1.4.36`
 - Functional Head Commit: `fdc4c0941df5d3604dcd0c140a25520eb5118856`
