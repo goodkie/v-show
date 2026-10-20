@@ -767,6 +767,8 @@ class PrivacyRelayService {
           this.activeNodeIndex = candidateIndex;
           this.rotationCount++;
           this.relayReady = true;
+          this.lifecycleState = 'READY';
+          this.reconnectAttempt = 0;
           this.pool.selectedEgressId = candidate.id;
           try { this.saveConfig(); } catch (_) {}
           if (this.physicalGate && this.physicalGate.enabled) {
@@ -1329,6 +1331,8 @@ class PrivacyRelayService {
           const verifyRes = await this.verifyNodeEgress(active, this.pool.healthCheckTimeoutMs || 5000, probeCanaryUrl);
           if (verifyRes.verified) {
             this.relayReady = true;
+            this.lifecycleState = 'READY';
+            this.reconnectAttempt = 0;
             this.startContinuousHealthMonitor();
           }
           res.writeHead(verifyRes.verified ? 200 : 503);
@@ -2549,10 +2553,13 @@ class PrivacyRelayService {
       const vRes = await this.verifyNodeEgress(active, this.pool.healthCheckTimeoutMs || 5000);
       if (vRes.verified) {
         this.relayReady = true;
+        this.lifecycleState = 'READY';
+        this.reconnectAttempt = 0;
         this.log(`[PRIVACY_RELAY_STARTUP_PROBE] Sticky active node=${active.id} verified HEALTHY`);
         this.startContinuousHealthMonitor();
       } else {
         this.relayReady = false;
+        this.lifecycleState = 'DEGRADED';
         this.log(`[PRIVACY_RELAY_STARTUP_PROBE] Sticky active node=${active.id} probe FAILED: ${vRes.reason}`);
         if (this.pool.rotationMode === 'FIXED' || this.pool.rotationMode === 'MANUAL') {
           this.log(`[PRIVACY_RELAY_FAIL_CLOSED] rotationMode=${this.pool.rotationMode} sticky node failed, maintaining fail-closed without silent switching`);

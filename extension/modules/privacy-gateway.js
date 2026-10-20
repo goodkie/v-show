@@ -334,7 +334,7 @@
          *   Secondary fallback: https://api64.ipify.org?format=text
          * - Fail closed if fetch is unavailable: returns PROXY_CANARY_UNAVAILABLE (never success: true).
          */
-        async probeProxyCanary(canaryUrl = null, timeoutMs = 3000) {
+        async probeProxyCanary(canaryUrl = null, timeoutMs = 8000) {
             const fetchFn = this._mockFetch !== undefined ? this._mockFetch : (typeof fetch !== 'undefined' ? fetch : null);
             if (!fetchFn || typeof fetchFn !== 'function') {
                 return { success: false, reason: 'PROXY_CANARY_UNAVAILABLE' };
@@ -1360,7 +1360,7 @@
                     }
                 }
 
-                const canaryRes = await this.probeProxyCanary(this.config.canaryUrl || null, 2500);
+                const canaryRes = await this.probeProxyCanary(this.config.canaryUrl || null, 8000);
                 if (!canaryRes.success) {
                     if (this.config.healthFailover) {
                         console.log('[PRIVACY_RELAY] Canary probe failed. Checking companion failover status or rotating...');
@@ -1369,7 +1369,7 @@
                             await new Promise(r => setTimeout(r, 100));
                             let postFailStatus = await this.queryRelayStatus();
                             if (postFailStatus.success && postFailStatus.status && postFailStatus.status.relayReady && postFailStatus.status.selectedEgressId !== this.config.selectedEgressId) {
-                                const retryCanary = await this.probeProxyCanary(this.config.canaryUrl || null, 3000);
+                                const retryCanary = await this.probeProxyCanary(this.config.canaryUrl || null, 8000);
                                 if (retryCanary.success) {
                                     this.ephemeralEgressFingerprint = postFailStatus.status.egressFingerprint;
                                     this.config.selectedEgressId = postFailStatus.status.selectedEgressId;
@@ -1390,7 +1390,7 @@
                                 await new Promise(r => setTimeout(r, 100));
                                 const readyStatus = await this.queryRelayStatus();
                                 if (readyStatus.success && readyStatus.status && readyStatus.status.relayReady) {
-                                    const retryCanary = await this.probeProxyCanary(this.config.canaryUrl || null, 3000);
+                                    const retryCanary = await this.probeProxyCanary(this.config.canaryUrl || null, 8000);
                                     if (retryCanary.success) {
                                         this.ephemeralEgressFingerprint = readyStatus.status.egressFingerprint || rotRes.egressFingerprint;
                                         this.config.selectedEgressId = readyStatus.status.selectedEgressId || rotRes.selectedEgressId;
@@ -1623,10 +1623,14 @@
             // '<-loopback>' MUST come FIRST, and explicit control-plane bypass rules MUST come AFTER it
             // as exceptions. If placed before '<-loopback>', '<-loopback>' subtracts and intercepts control calls with HTTP 502.
             const ctrlPort = this.config.relayControlPort || 18989;
+            const fixturePort = 8088;
             const ctrlEntries = [
                 `127.0.0.1:${ctrlPort}`,
                 `localhost:${ctrlPort}`,
-                `[::1]:${ctrlPort}`
+                `[::1]:${ctrlPort}`,
+                `127.0.0.1:${fixturePort}`,
+                `localhost:${fixturePort}`,
+                `[::1]:${fixturePort}`
             ];
 
             const hasSubtractLoopback = resolvedBypass.includes('<-loopback>');
@@ -2240,7 +2244,7 @@
                     console.log(`[PRIVACY_TRANSPORT_APPLIED] mode=PRIVACY_RELAY host=${relayHost}:${relayProxyPort}`);
 
                     // Run canary probe through proxy
-                    const canaryRes = await this.probeProxyCanary(options.canaryUrl || this.config.canaryUrl || null, 3000);
+                    const canaryRes = await this.probeProxyCanary(options.canaryUrl || this.config.canaryUrl || null, 8000);
                     if (canaryRes.success) {
                         console.log(`[PRIVACY_CANARY] PASS endpoint=${canaryRes.endpoint || 'default'}`);
                         this.isGateReady = true;

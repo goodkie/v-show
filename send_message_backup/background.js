@@ -2038,7 +2038,17 @@ async function resumeActiveCampaignJobAfterRecovery() {
         phase: 'PRIVACY_REVERIFY'
     }).catch(() => {});
 
-    // 1. Re-verify Privacy Transport Preflight
+    // 1. Re-apply proxy settings so Chromium clears any stale bad proxy cache for 127.0.0.1:18988
+    const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+    if (pg && pg.config && pg.config.transportMode === 'PRIVACY_RELAY') {
+        const relayHost = pg.config.relayHost || '127.0.0.1';
+        const relayProxyPort = pg.config.relayProxyPort || 18988;
+        try {
+            await pg.applyManagedProxy(pg.config.transportMode, relayHost, relayProxyPort, ['<-loopback>']);
+        } catch (_) {}
+    }
+
+    // 2. Re-verify Privacy Transport Preflight
     const privCheck = await assertPrivacyTransportReady('NETWORK_RECOVERY_RESUME');
     if (!privCheck.ready) {
         logBg(null, `[NETWORK_RECOVERY] Privacy preflight re-verify failed (${privCheck.reason}). Remaining in network recovery...`, "warning");
@@ -2205,7 +2215,7 @@ function startPrivacyRelayWatchdog() {
         }
     };
 
-    relayWatchdogInterval = setInterval(runWatchdogProbe, 10000);
+    relayWatchdogInterval = setInterval(runWatchdogProbe, 2000);
     // Initial probe
     runWatchdogProbe();
 }

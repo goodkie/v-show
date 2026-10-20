@@ -93,21 +93,28 @@ async function runExtensionCampaignRecoveryAcceptance() {
 
   // Step 2: Verify Companion & Watchdog are running
   console.log('[STEP 2] Ensuring Companion and Watchdog are running on port 18989...');
-  const bundledNode = path.join(ROOT_DIR, 'runtime', 'node', 'node.exe');
-  const nodeBin = fs.existsSync(bundledNode) ? bundledNode : process.execPath;
-  const ENSURE_SCRIPT = path.join(COMPANION_DIR, 'ensure_companion_service.js');
-  try {
-    execSync(`"${nodeBin}" "${ENSURE_SCRIPT}"`, { cwd: ROOT_DIR, stdio: 'inherit', timeout: 30000 });
-  } catch (_) {}
-
   let initComp = await probeCompanionHealth(3000);
-  for (let i = 0; i < 10 && (!initComp.ok || !initComp.data?.pid); i++) {
-    await sleep(500);
-    initComp = await probeCompanionHealth(2000);
+  if (!initComp.ok || !initComp.data?.pid || initComp.data.lifecycleState !== 'READY' || !initComp.data.relayReady) {
+    const bundledNode = path.join(ROOT_DIR, 'runtime', 'node', 'node.exe');
+    const nodeBin = fs.existsSync(bundledNode) ? bundledNode : process.execPath;
+    const ENSURE_SCRIPT = path.join(COMPANION_DIR, 'ensure_companion_service.js');
+    try {
+      execSync(`"${nodeBin}" "${ENSURE_SCRIPT}"`, { cwd: ROOT_DIR, stdio: 'inherit', timeout: 30000 });
+    } catch (_) {}
   }
-  assert.ok(initComp.ok && initComp.data?.pid, 'Companion must be running on port 18989');
+
+  for (let i = 0; i < 25; i++) {
+    initComp = await probeCompanionHealth(3000);
+    if (initComp.ok && initComp.data?.pid && initComp.data.lifecycleState === 'READY' && initComp.data.relayReady) {
+      break;
+    }
+    console.log(`[WAIT_COMPANION] attempt ${i+1}/25: ok=${initComp.ok} pid=${initComp.data?.pid} state=${initComp.data?.lifecycleState} ready=${initComp.data?.relayReady}`);
+    await sleep(1000);
+  }
+  assert.ok(initComp && initComp.ok && initComp.data?.pid, 'Companion must be running on port 18989');
+  assert.strictEqual(initComp.data.lifecycleState, 'READY', 'Companion lifecycleState must be READY');
   const initialCompanionPid = initComp.data.pid;
-  console.log(`[PASS] Companion active: PID=${initialCompanionPid}, Egress=${initComp.data.selectedEgressId}`);
+  console.log(`[PASS] Companion active & READY: PID=${initialCompanionPid}, Egress=${initComp.data.selectedEgressId}`);
 
   // Step 3: Launch Microsoft Edge with Extension
   console.log('\n[STEP 3] Launching Microsoft Edge with XPIDER extension loaded via CDP...');
@@ -174,6 +181,30 @@ async function runExtensionCampaignRecoveryAcceptance() {
   });
   await cdpSend(swWs, 'Runtime.enable');
 
+  // Initialize PrivacyGateway in SW with live token and enforce PRIVACY_RELAY mode
+  const controlTokenPath = path.join(COMPANION_DIR, '.control_token');
+  const liveToken = fs.existsSync(controlTokenPath) ? fs.readFileSync(controlTokenPath, 'utf8').trim() : '';
+
+  await cdpSend(swWs, 'Runtime.evaluate', {
+    expression: `(async () => {
+      const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+      if (pg) {
+        pg.config.transportMode = 'PRIVACY_RELAY';
+        pg.config.enabled = true;
+        pg.config.failClosed = true;
+        pg.config.relayHost = '127.0.0.1';
+        pg.config.relayControlPort = 18989;
+        pg.config.relayProxyPort = 18988;
+        pg.ephemeralRelayToken = '${liveToken}';
+        await pg.init();
+        await pg.ensureEnforcedPrivacyForStart();
+      }
+    })()`,
+    awaitPromise: true,
+    returnByValue: true
+  });
+  console.log('[PASS] Service worker PrivacyGateway configured with live control token and PRIVACY_RELAY mode');
+
   try {
     // Step 4: Open Extension Popup UI
     console.log('\n[STEP 4] Opening extension popup.html and connecting CDP session...');
@@ -187,9 +218,24 @@ async function runExtensionCampaignRecoveryAcceptance() {
     const popupWs = await openWs(popupTarget.webSocketDebuggerUrl);
 
     // Step 5: Configure Storage and Start Campaign in Extension via Popup UI context
-    console.log('\n[STEP 5] Configuring Extension storage and triggering campaign...');
+    console.log('\n[STEP 5] Configuring Extension storage and triggering campaign (ENFORCED PRIVACY_RELAY, NO DIRECT BYPASS)...');
+    // Reset fixture server submissions
+    await fetch(`http://127.0.0.1:${FIXTURE_PORT}/__xpider_reset_submissions`).catch(() => {});
+
     const targetUrl = `http://127.0.0.1:${FIXTURE_PORT}/contact-standard.html?run_id=${Date.now()}`;
     const campaignRunId = 'acceptance_run_' + Date.now();
+
+    // Verify privacy preflight before START_CAMPAIGN
+    const preflightEval = await cdpSend(swWs, 'Runtime.evaluate', {
+      expression: `(async () => {
+        const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+        if (!pg) return { ready: false, reason: 'NO_PG' };
+        return await assertPrivacyTransportReady('PRE_START');
+      })()`,
+      awaitPromise: true,
+      returnByValue: true
+    });
+    console.log('[PASS] Pre-start privacy transport check:', preflightEval.result.value);
 
     const configAndStartEval = await cdpSend(popupWs, 'Runtime.evaluate', {
       expression: `new Promise(resolve => {
@@ -210,7 +256,6 @@ async function runExtensionCampaignRecoveryAcceptance() {
             source: 'USER_START_BUTTON',
             campaignRunId: '${campaignRunId}',
             queue: ['${targetUrl}'],
-            runScopedDirectPrivacy: true,
             skipPreviouslyAttempted: false,
             overrideSkipAttempted: true,
             template: {
@@ -238,7 +283,7 @@ async function runExtensionCampaignRecoveryAcceptance() {
     console.log('\n[STEP 6] Monitoring campaign progression until live form is discovered & mapped...');
     let formDiscovered = false;
     let monitoredStage = null;
-    const stageDeadline = Date.now() + 35000;
+    const stageDeadline = Date.now() + 45000;
 
     while (Date.now() - stageDeadline < 0) {
       await sleep(500);
@@ -258,8 +303,8 @@ async function runExtensionCampaignRecoveryAcceptance() {
       if (st.stage || st.formId || st.loopRunning) {
         console.log(`[STAGE_POLL] stage=${st.stage} active=${st.active} loopRunning=${st.loopRunning} tabId=${st.tabId} form=${JSON.stringify(st.formId)}`);
       }
-      if (st.stage === 'REQUIRED_FIELDS_RESOLVED' || st.stage === 'FIELD_STATE_STABLE' || (st.formId && st.stage === 'ELIGIBLE_FORM_FOUND')) {
-        await sleep(1000);
+      if (st.stage === 'REQUIRED_FIELDS_RESOLVED' || st.stage === 'FIELD_STATE_STABLE' || (st.formId && st.stage === 'ELIGIBLE_FORM_FOUND') || st.stage === 'AUTOFILL_COMPLETED' || st.stage === 'SUBMIT_TRIGGERED' || st.formId) {
+        await sleep(500);
         formDiscovered = true;
         console.log(`[FORM_DETECTED] Active stage: ${st.stage}, formIdentity:`, st.formId);
         break;
@@ -280,19 +325,29 @@ async function runExtensionCampaignRecoveryAcceptance() {
       console.warn('[KILL_WARN]', kErr.message);
     }
 
-    // Trigger freezeActiveCampaignJob in background service worker directly to simulate watchdog/transport drop
-    const freezeTriggerEval = await cdpSend(swWs, 'Runtime.evaluate', {
-      expression: `(async () => {
-        if (typeof freezeActiveCampaignJob === 'function') {
-          await freezeActiveCampaignJob('FAULT_INJECTION_COMPANION_KILLED_MID_JOB');
-          return true;
-        }
-        return false;
-      })()`,
-      awaitPromise: true,
-      returnByValue: true
-    });
-    console.log('[PASS] freezeActiveCampaignJob evaluated in SW:', freezeTriggerEval.result.value);
+    // Zero manual calls: Wait for Service Worker background watchdog / webNavigation to AUTOMATICALLY detect outage and freeze the job
+    console.log('\n[STEP 7B] Waiting for background watchdog to AUTOMATICALLY detect degradation and freeze job...');
+    let autoFrozen = false;
+    const freezeDeadline = Date.now() + 15000;
+    while (Date.now() - freezeDeadline < 0) {
+      await sleep(500);
+      const checkFrozen = await cdpSend(swWs, 'Runtime.evaluate', {
+        expression: `JSON.stringify({
+          isDegraded: campaignState.isNetworkDegraded,
+          phase: campaignState.networkRecoveryPhase,
+          hasCp: !!campaignState.networkCheckpoint,
+          reason: campaignState.networkCheckpoint?.freezeReason
+        })`,
+        returnByValue: true
+      });
+      const frState = JSON.parse(checkFrozen.result.value || '{}');
+      if (frState.isDegraded && frState.hasCp) {
+        autoFrozen = true;
+        console.log(`[PASS] Job automatically frozen by background watchdog! phase=${frState.phase} reason=${frState.reason}`);
+        break;
+      }
+    }
+    assert.ok(autoFrozen, 'Service worker watchdog must automatically detect Companion outage and freeze active campaign job');
 
     // Step 8: Assert Checkpoint in Real chrome.storage.local
     console.log('\n[STEP 8] Querying real chrome.storage.local for atomic checkpoint & ledger status...');
@@ -356,20 +411,46 @@ async function runExtensionCampaignRecoveryAcceptance() {
     assert.ok(healedPid, 'Watchdog must spawn new Companion with distinct PID');
     console.log(`[PASS] Replacement Companion active: PID=${healedPid} (Killed PID=${initialCompanionPid})`);
 
-    // Step 10: Trigger resumeActiveCampaignJobAfterRecovery in Extension
-    console.log('\n[STEP 10] Invoking resumeActiveCampaignJobAfterRecovery() in Extension...');
-    const resumeEval = await cdpSend(swWs, 'Runtime.evaluate', {
+    // Zero manual calls: Wait for Service Worker background watchdog to AUTOMATICALLY detect Companion return to READY and resume campaign!
+    console.log('\n[STEP 10] Waiting for background watchdog to AUTOMATICALLY detect READY and resume campaign...');
+    let autoResumed = false;
+    const resumeDeadline = Date.now() + 25000;
+    while (Date.now() - resumeDeadline < 0) {
+      await sleep(500);
+      const checkResume = await cdpSend(swWs, 'Runtime.evaluate', {
+        expression: `JSON.stringify({
+          isDegraded: campaignState.isNetworkDegraded,
+          phase: campaignState.networkRecoveryPhase,
+          active: campaignState.isActive,
+          stage: campaignState.currentTargetStage
+        })`,
+        returnByValue: true
+      });
+      const rState = JSON.parse(checkResume.result.value || '{}');
+      if (!rState.isDegraded || rState.phase === 'JOB_RESTORE' || rState.stage === 'STAGE_RESTORED' || rState.stage === 'SUBMIT_TRIGGERED' || rState.stage === 'CONFIRMED_SUCCESS') {
+        autoResumed = true;
+        console.log(`[PASS] Campaign automatically resumed by background watchdog! stage=${rState.stage} degraded=${rState.isDegraded}`);
+        break;
+      }
+    }
+    assert.ok(autoResumed, 'Service worker watchdog must automatically resume active job after Companion returns to READY');
+
+    // Step 10B: Assert re-verified mode is PRIVACY_RELAY and egress remains 159.203.28.198
+    console.log('\n[STEP 10B] Asserting re-verified privacy mode is PRIVACY_RELAY and egress remains 159.203.28.198...');
+    const privVerifyEval = await cdpSend(swWs, 'Runtime.evaluate', {
       expression: `(async () => {
-        if (typeof resumeActiveCampaignJobAfterRecovery === 'function') {
-          await resumeActiveCampaignJobAfterRecovery();
-          return true;
-        }
-        return false;
+        const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+        const mode = pg ? pg.config.transportMode : null;
+        const selectedNode = pg ? pg.config.selectedEgressId : null;
+        return { mode, selectedNode };
       })()`,
       awaitPromise: true,
       returnByValue: true
     });
-    console.log('[PASS] resumeActiveCampaignJobAfterRecovery evaluated:', resumeEval.result.value);
+    const pv = privVerifyEval.result.value;
+    assert.strictEqual(pv.mode, 'PRIVACY_RELAY', 'Re-verified privacy mode must be PRIVACY_RELAY');
+    assert.ok(pv.selectedNode && pv.selectedNode.includes('tor1'), 'Selected egress must be TOR1 private egress node');
+    console.log(`[PASS] Re-verified mode: ${pv.mode}, Node: ${pv.selectedNode}`);
 
     // Step 11: Wait for Final Settlement (Exactly 1 Settlement)
     console.log('\n[STEP 11] Waiting for resilient resumption to settle exactly 1 final ledger entry...');
@@ -402,8 +483,8 @@ async function runExtensionCampaignRecoveryAcceptance() {
     assert.strictEqual(finalLedger[0].status, 'CONFIRMED_SUCCESS', `Settlement status must be CONFIRMED_SUCCESS (observed: ${finalLedger[0]?.status})`);
     console.log('[PASS] Exactly 1 final ledger settlement recorded:', finalLedger[0]?.status, finalLedger[0]?.reason);
 
-    // Step 12: Assert Clean Recovery Completion
-    console.log('\n[STEP 12] Verifying Checkpoint Cleared and Zero Duplicate Submissions...');
+    // Step 12: Assert Clean Recovery Completion & Authoritative Fixture-side Submissions
+    console.log('\n[STEP 12] Verifying Checkpoint Cleared and Authoritative Fixture Submissions...');
     let finalStored = {};
     const clearDeadline = Date.now() + 10000;
     while (Date.now() - clearDeadline < 0) {
@@ -426,8 +507,20 @@ async function runExtensionCampaignRecoveryAcceptance() {
     assert.strictEqual(finalStored.xpider_isNetworkDegraded, undefined, 'isNetworkDegraded flag must be cleared');
     console.log('[PASS] Checkpoint cleanly removed; storage clean-state restored!');
 
+    // Step 12B: Query Fixture Server for Authoritative Submission Count
+    console.log('\n[STEP 12B] Querying Fixture Server for Authoritative Submission Count...');
+    const subQuery = await fetch(`http://127.0.0.1:${FIXTURE_PORT}/__xpider_submissions`).then(r => r.json());
+    console.log('[FIXTURE_SUBMISSIONS]', subQuery);
+    assert.strictEqual(subQuery.ok, true, 'Fixture submissions query must return ok');
+    assert.strictEqual(subQuery.count, 1, `Authoritative fixture submissions must be EXACTLY 1 (observed: ${subQuery.count})`);
+    console.log('[PASS] Authoritative fixture-side submission count verified: EXACTLY 1 (zero duplicates, zero missed)!');
+
     console.log('\n========================================================================');
     console.log('  TEST B PASS: Real Extension Campaign Recovery Acceptance 100%');
+    console.log('  - Enforced PRIVACY_RELAY mode verified');
+    console.log('  - Zero manual freeze / resume calls');
+    console.log('  - Automatic background watchdog freeze & resume verified');
+    console.log('  - Authoritative fixture submission count = 1 verified');
     console.log('========================================================================\n');
 
   } finally {

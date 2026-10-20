@@ -24,6 +24,9 @@ const MIME_TYPES = {
   '.ico': 'image/x-icon'
 };
 
+// In-memory submission tracking for RC3.19 Acceptance Test B
+let submissionLog = [];
+
 const server = http.createServer((req, res) => {
   // CORS & No-Cache
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -39,6 +42,45 @@ const server = http.createServer((req, res) => {
 
   let reqPath = decodeURI(req.url.split('?')[0]);
 
+  // Authoritative form submission query endpoint (RC3.19 Test B)
+  if (reqPath === '/__xpider_submissions') {
+    res.writeHead(200, {
+      'Content-Type': 'application/json; charset=UTF-8',
+      'Cache-Control': 'no-cache, no-store, must-revalidate'
+    });
+    res.end(JSON.stringify({
+      ok: true,
+      count: submissionLog.length,
+      submissions: submissionLog
+    }));
+    return;
+  }
+
+  // Authoritative form submission reset endpoint (RC3.19 Test B)
+  if (reqPath === '/__xpider_reset_submissions') {
+    submissionLog = [];
+    res.writeHead(200, {
+      'Content-Type': 'application/json; charset=UTF-8',
+      'Cache-Control': 'no-cache, no-store, must-revalidate'
+    });
+    res.end(JSON.stringify({
+      ok: true,
+      count: 0
+    }));
+    return;
+  }
+
+  // Intercept form landing / submission target page
+  if (reqPath === '/contact-success.html') {
+    submissionLog.push({
+      timestamp: Date.now(),
+      method: req.method,
+      url: req.url,
+      ip: req.socket.remoteAddress
+    });
+    console.log(`[XPIDER_FIXTURE] Form submission recorded (#${submissionLog.length}): ${req.method} ${req.url}`);
+  }
+
   // Deterministic Health Identity endpoint (Issue #6 Section A)
   if (reqPath === '/__xpider_health') {
     res.writeHead(200, {
@@ -53,7 +95,8 @@ const server = http.createServer((req, res) => {
       fixtureSet: 'OWNER_7_V1',
       version: 'R6.9G.10.3.7.1.4.5',
       pid: process.pid,
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      submissionsCount: submissionLog.length
     }));
     return;
   }
