@@ -4,23 +4,23 @@
 - Protocol: OCA-DEV-1.4
 - Project ID: xpider-autoform-sender-pro
 - Workspace: E:\vivpr\ai\extension-form-sender
-- Authority: goodkie/v-show Issue #6 (Responding to ChatGPT Audit [POST-ROTATION-RUNTIME-ROOT-DIVERGENCE] Comment IC_kwDOT53X288AAAABdrY9-Q & [MIXED-RUNTIME-CONFIRMED] Comment IC_kwDOT53X288AAAABdrc5bA)
+- Authority: goodkie/v-show Issue #6 (Responding to ChatGPT Directive & Owner Evidence [POST-REBOOT-E2E-PASS-AND-PACKAGE-PARITY-HOLD] Comment #6287399145)
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-20.54
-- Authority Cursor: 6287030404
-- Last Directive / Audit: `[CHATGPT][AUDIT][extension-form-sender][POST-ROTATION-RUNTIME-ROOT-DIVERGENCE] Comment IC_kwDOT53X288AAAABdrY9-Q`
-- Last Receipt: `[ANTIGRAVITY][RECEIPT][extension-form-sender][CANONICAL-RUNTIME-PARITY-WATCHDOG-REMEDIATION] #6287030404`
-- Build ID: `R6.9G.10.3.7.1.4.33-20261019-PRIVATE-EGRESS-RC3.19`
-- Current Candidate Release Tag: `v6.9g.10.3-rc3.19.7.1.4.33`
-- Functional Head Commit: `8a67632672d7df2f6ad66ab1ad77524afc51d2ee`
-- State Documentation Commit: `feb4dce694b76db0a1ddac73dfa236a0f44775e7`
-- Branch Head Commit: `feb4dce694b76db0a1ddac73dfa236a0f44775e7`
-- Provenance Commit: `8bbc905a6857915c5982513b878046907cc21f94`
+- State Rev: 2026-10-20.55
+- Authority Cursor: 6287399145
+- Last Directive / Audit: `[CHATGPT][OWNER-EVIDENCE][extension-form-sender][POST-REBOOT-E2E-PASS-AND-PACKAGE-PARITY-HOLD] Comment #6287399145`
+- Last Receipt: `[ANTIGRAVITY][RECEIPT][extension-form-sender][RC3.20-PACKAGE-PARITY-AND-RELEASE-PROVENANCE]`
+- Build ID: `R6.9G.10.3.7.1.4.34-20261020-PRIVATE-EGRESS-RC3.20`
+- Current Candidate Release Tag: `v6.9g.10.3-rc3.20.7.1.4.34`
+- Functional Head Commit: `dfaecf60458d72c0c53a5fe26821093a81d93ea9`
+- State Documentation Commit: `aab832652f6c2cb2020fec2099a8cf5078d04c3d`
+- Branch Head Commit: `800eca67119ff3d85743dbce701620c5d6c5c701`
+- Provenance Commit: `800eca67119ff3d85743dbce701620c5d6c5c701`
 - Rollback Anchor: `0a6e843d9e5ae512bf48742473bbd3133050c117` (RC3.17)
-- Release Asset Zip: `XPIDER_R6.9G.10.3.7.1.4.33_PRIVATE_EGRESS_RC3.19.zip`
-- Release Asset Size: `45,361,779` bytes
-- Release Asset SHA-256: `eadeb5153f053da6914121e900f3c90877a0fdda3b5b620343cdf2868fd5841f`
-- Release Asset Hosted URL: `https://github.com/goodkie/v-show/releases/tag/v6.9g.10.3-rc3.19.7.1.4.33`
+- Release Asset Zip: `XPIDER_R6.9G.10.3.7.1.4.34_PRIVATE_EGRESS_RC3.20.zip`
+- Release Asset Size: `45,363,267` bytes
+- Release Asset SHA-256: `f490706fc8d5ed068914811d6bcd318a3f61b9624429cc03501b16ce1bdaa3f5`
+- Release Asset Hosted URL: `https://github.com/goodkie/v-show/releases/tag/v6.9g.10.3-rc3.20.7.1.4.34`
 
 ## Current Gate
 - Formal Gates Evaluated by ChatGPT Audit (#6282907439, #6283221673, #6283403488, #6283557082, #6286347737 & #6286622201):
@@ -51,7 +51,15 @@
   - Corrected State Documentation Commit SHA to exact `86522bbfc3a0bd4f83b5d063a7bf5f761b109da3`.
   - Corrected provenance commit hash to exact `8bbc905a6857915c5982513b878046907cc21f94`.
   - Cited authoritative harness soak duration accurately as `3622 seconds (60.37 minutes)`.
-  - Release tag `v6.9g.10.3-rc3.19.7.1.4.33` synchronized with sanitized release asset.
+  - Release tag `v6.9g.10.3-rc3.19.7.1.4.33` placed on HOLD / OBSOLETE SNAPSHOT per Audit #6287399145.
+- RC3.20 Release Packaging & Packaged-Source Parity Verification (Resolving Audit #6287399145):
+  * **1. Canonical Package Generation**: Produced clean `XPIDER_R6.9G.10.3.7.1.4.34_PRIVATE_EGRESS_RC3.20.zip` directly from verified canonical workspace.
+  * **2. Release Asset Metrics**: Size: `45,363,267` bytes, SHA-256: `f490706fc8d5ed068914811d6bcd318a3f61b9624429cc03501b16ce1bdaa3f5`.
+  * **3. Denylist & Zero-Leakage Scan**: 339 archive entries inspected; strictly 0 `.control_token`, 0 `*.log`, 0 `*.tmp`, 0 `*.lock`, 0 `.private_*`.
+  * **4. Deep Secret & Credential Scan (Gate 1B)**: 100% clean; zero DPAPI blobs, zero non-empty `credentialRef`, zero private keys, zero plaintext passwords, zero API tokens.
+  * **5. Packaged-Source SHA-256 Byte Parity (Gate 7)**: 100% byte-for-byte SHA256 match between canonical Workspace and extracted package across all 10 critical components (`privacy-relay-service.js`, `companion-watchdog.js`, `ensure_companion_service.js`, `winsec.js`, `start_relay_silent.vbs`, `background.js`, `content-script.js`, `popup.js`, `build-provenance.js`, `privacy-gateway.js`).
+  * **6. Live Companion Build Upgrade**: Live companion updated to `R6.9G.10.3.7.1.4.34-20261020-PRIVATE-EGRESS-RC3.20` (PID 11844, watchdog PID 18104, `relayReady=true`, `rootParity=true`).
+  * **7. E2E Egress Verification**: PowerShell proxy probe through `http://127.0.0.1:18988` verified returning `159.203.28.198` (HTTP 200).
 
 ### Operating Guidelines & Invariants:
 1. **Existing Droplet Preservation**:
