@@ -15,18 +15,18 @@
 
     const BUILD_INFO = {
         branch: 'upgrade/phase-0-1',
-        channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.19',
+        channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.20',
         testOnly: true,
-        // [R6.9G.10.3.7.1.4.33] XPIDER AutoForm Sender Pro — Private Egress Release Candidate 3.19 (Live Form State Wiring, Deterministic Safe-Phase Replay & Process-Kill Resilience)
-        implementationHead: '08ef2fcf3e6398f5a6bfa9fca44a7f05c31049c0',
-        implementationHeadShort: '08ef2fcf',
-        head: '08ef2fcf3e6398f5a6bfa9fca44a7f05c31049c0',
-        headShort: '08ef2fcf',
+        // [R6.9G.10.3.7.1.4.34] XPIDER AutoForm Sender Pro — Private Egress Release Candidate 3.20 (Canonical Runtime Root Parity & Watchdog Self-Heal Acceptance)
+        implementationHead: 'dfaecf60458d72c0c53a5fe26821093a81d93ea9',
+        implementationHeadShort: 'dfaecf60',
+        head: 'dfaecf60458d72c0c53a5fe26821093a81d93ea9',
+        headShort: 'dfaecf60',
         rollbackBase: '0a6e843d9e5ae512bf48742473bbd3133050c117',
         previousFunctionalRestorePoint: '0a6e843d9e5ae512bf48742473bbd3133050c117',
         manifestVersion: 3,
-        buildId: 'R6.9G.10.3.7.1.4.33-20261019-PRIVATE-EGRESS-RC3.19',
-        builtAt: '2026-10-20T00:19:00.000Z',
+        buildId: 'R6.9G.10.3.7.1.4.34-20261020-PRIVATE-EGRESS-RC3.20',
+        builtAt: '2026-10-20T09:15:00.000Z',
         provenanceSchema: 2,
         modules: {
             backgroundSha: 'a90ecd8db64c8b61551f3f63d2edadaa65c9e3bbdafe0c4bd55ebc1c81f644c1',
