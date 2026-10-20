@@ -14,6 +14,8 @@
  */
 
 const { execFileSync } = require('child_process');
+const fs = require('fs');
+const path = require('path');
 
 const memoryCache = new Map();
 
@@ -115,16 +117,114 @@ function decrypt(cipherRef) {
 }
 
 /**
+ * Discovers and reads the unversioned local credentials store (.local_credentials.json).
+ * Checks companion directory, workspace roots, and persistent %LOCALAPPDATA%.
+ */
+function getGlobalAppDataDir() {
+  const localAppData = process.env.LOCALAPPDATA || (process.env.USERPROFILE ? path.join(process.env.USERPROFILE, 'AppData', 'Local') : null);
+  if (!localAppData) return null;
+  return path.join(localAppData, 'XPIDER_Privacy_Relay');
+}
+
+function loadLocalCredentials(companionDir) {
+  const candidates = [
+    path.join(companionDir || __dirname, '.local_credentials.json'),
+    path.join(__dirname, '.local_credentials.json'),
+    path.join(process.cwd(), 'companion', '.local_credentials.json'),
+    path.join(process.cwd(), '.local_credentials.json')
+  ];
+  const appData = getGlobalAppDataDir();
+  if (appData) {
+    candidates.push(path.join(appData, '.local_credentials.json'));
+  }
+
+  for (const p of candidates) {
+    try {
+      if (fs.existsSync(p)) {
+        const raw = fs.readFileSync(p, 'utf8');
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object') {
+          return parsed;
+        }
+      }
+    } catch (_) {}
+  }
+  return null;
+}
+
+/**
+ * Persists an encrypted credential into the unversioned local store (.local_credentials.json).
+ * Automatically excluded from git and release packages.
+ */
+function saveLocalNodeCredential(nodeId, credentialRef, companionDir) {
+  if (!nodeId || !credentialRef) return false;
+  const targetDir = companionDir || __dirname;
+  const targetFile = path.join(targetDir, '.local_credentials.json');
+  let currentStore = {};
+  try {
+    if (fs.existsSync(targetFile)) {
+      currentStore = JSON.parse(fs.readFileSync(targetFile, 'utf8')) || {};
+    }
+  } catch (_) {}
+
+  if (!currentStore.nodes) currentStore.nodes = {};
+  currentStore.nodes[nodeId] = { credentialRef };
+  currentStore[nodeId] = credentialRef;
+
+  try {
+    fs.writeFileSync(targetFile, JSON.stringify(currentStore, null, 2), { encoding: 'utf8', mode: 0o600 });
+  } catch (_) {}
+
+  const appData = getGlobalAppDataDir();
+  if (appData) {
+    try {
+      if (!fs.existsSync(appData)) fs.mkdirSync(appData, { recursive: true });
+      fs.writeFileSync(path.join(appData, '.local_credentials.json'), JSON.stringify(currentStore, null, 2), { encoding: 'utf8', mode: 0o600 });
+    } catch (_) {}
+  }
+  return true;
+}
+
+/**
+ * Hydrates node.credentialRef in memory from .local_credentials.json if empty.
+ */
+function hydrateNode(node, companionDir) {
+  if (!node || typeof node !== 'object') return node;
+  const hydrated = { ...node };
+  if (!hydrated.credentialRef || hydrated.credentialRef === '') {
+    const store = loadLocalCredentials(companionDir);
+    if (store) {
+      if (typeof store[hydrated.id] === 'string') {
+        hydrated.credentialRef = store[hydrated.id];
+      } else if (store[hydrated.id] && store[hydrated.id].credentialRef) {
+        hydrated.credentialRef = store[hydrated.id].credentialRef;
+      } else if (store.nodes && store.nodes[hydrated.id]) {
+        const ent = store.nodes[hydrated.id];
+        hydrated.credentialRef = typeof ent === 'string' ? ent : ent.credentialRef;
+      }
+    }
+  }
+  return hydrated;
+}
+
+/**
  * Resolve node credentials safely.
  * If credentialRef is present, it is decrypted. Unprefixed credentialRef is strictly rejected.
+ * Hydrates from local protected store if credentialRef is blank in tracked config.
  */
-function resolveNodeCredentials(node) {
+function resolveNodeCredentials(node, companionDir) {
   if (!node) return { username: '', password: '' };
   const username = node.username || '';
   let password = '';
 
-  if (node.credentialRef !== undefined && node.credentialRef !== null && node.credentialRef !== '') {
-    password = decrypt(node.credentialRef);
+  let credRef = node.credentialRef;
+  if (!credRef && !node.password) {
+    const hydrated = hydrateNode(node, companionDir);
+    credRef = hydrated.credentialRef;
+  }
+
+  if (credRef !== undefined && credRef !== null && credRef !== '') {
+    password = decrypt(credRef);
   } else if (node.password) {
     // Only permitted for temporary in-memory node objects before persistence
     password = node.password;
@@ -196,5 +296,8 @@ module.exports = {
   unprotectSecret: decrypt,
   resolveNodeCredentials,
   sanitizeNodeForSave,
-  clearMemoryCache
+  clearMemoryCache,
+  loadLocalCredentials,
+  saveLocalNodeCredential,
+  hydrateNode
 };

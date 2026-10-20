@@ -10,7 +10,7 @@
       "host": "vps-us.example.com",
       "port": 8443,
       "username": "relay_user",
-      "credentialRef": "ENV:XPIDER_EGRESS_SECRET_US",
+      "credentialRef": "",
       "region": "US-EAST",
       "active": true
     },
@@ -21,7 +21,7 @@
       "host": "vps-eu.example.com",
       "port": 8443,
       "username": "relay_user",
-      "credentialRef": "ENV:XPIDER_EGRESS_SECRET_EU",
+      "credentialRef": "",
       "region": "EU-CENTRAL",
       "active": true
     }

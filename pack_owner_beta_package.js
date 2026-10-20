@@ -70,7 +70,7 @@ fs.mkdirSync(stagingCompDir, { recursive: true });
 function copyCompanionFiles(src, dest) {
     const entries = fs.readdirSync(src, { withFileTypes: true });
     for (const entry of entries) {
-        if (entry.name === '.control_token' || entry.name === 'privacy_relay.log' || entry.name === 'node_modules' || entry.name === 'router_pairing_config.json' || entry.name.startsWith('test') || entry.name.startsWith('mock') || entry.name === 'tls_test_certs.js' || entry.name.endsWith('.tmp') || entry.name.endsWith('.log') || entry.name.endsWith('.lock') || entry.name.startsWith('.private_')) {
+        if (entry.name === '.control_token' || entry.name === 'privacy_relay.log' || entry.name === 'node_modules' || entry.name === 'router_pairing_config.json' || entry.name.startsWith('test') || entry.name.startsWith('mock') || entry.name === 'tls_test_certs.js' || entry.name.endsWith('.tmp') || entry.name.endsWith('.log') || entry.name.endsWith('.lock') || entry.name.startsWith('.private_') || entry.name.includes('local_credentials') || entry.name.startsWith('.local_')) {
             continue;
         }
         const srcPath = path.join(src, entry.name);
@@ -255,7 +255,9 @@ function purgeRuntimeArtifacts(dir) {
                 ent.name.endsWith('.tmp') ||
                 ent.name.endsWith('.lock') ||
                 ent.name.startsWith('.private_egress_transaction') ||
-                ent.name.startsWith('winsec_blob')) {
+                ent.name.startsWith('winsec_blob') ||
+                ent.name.includes('local_credentials') ||
+                ent.name.startsWith('.local_')) {
                 console.log(`    [PURGE] Removing runtime artifact from staging: ${full}`);
                 fs.unlinkSync(full);
             }
@@ -269,7 +271,8 @@ console.log('2e. Running fail-closed denylist scan on staging directory...');
 const FORBIDDEN_DENYLIST_NAMES = [
     '.control_token',
     'privacy_relay.log',
-    '.private_egress_transaction.json'
+    '.private_egress_transaction.json',
+    '.local_credentials.json'
 ];
 const FORBIDDEN_DENYLIST_EXTENSIONS = ['.tmp', '.lock'];
 const stagingFilesForDenylist = getAllFiles(stagingDir);
@@ -289,6 +292,9 @@ for (const file of stagingFilesForDenylist) {
     if (baseName.startsWith('winsec_blob')) {
         throw new Error(`DENYLIST SCAN FAILED: Windows security blob found in staging: ${file.relPath}`);
     }
+    if (baseName.includes('local_credentials') || baseName.startsWith('.local_')) {
+        throw new Error(`DENYLIST SCAN FAILED: Local credential file found in staging: ${file.relPath}`);
+    }
     // Deny any .log file except test site fixtures or evidence explicitly intended for site docs
     if (baseName.endsWith('.log') && !file.relPath.startsWith('owner-extension-test-site/')) {
         throw new Error(`DENYLIST SCAN FAILED: Stale runtime log found in staging: ${file.relPath}`);
@@ -302,8 +308,9 @@ const EXPOSED_RC3_6_TOKEN_SHA256 = '597a70b99c11c7f4d13a075204ac240bb08a7a1d6c08
 function scanDirectoryForSecrets(dir) {
     const forbiddenPatterns = [
         /(?:ghp_[a-zA-Z0-9]{30,}|gho_[a-zA-Z0-9]{30,}|github_pat_[a-zA-Z0-9_]{50,})/,
-        /-----BEGIN\s+OPENSSH\s+PRIVATE\s+KEY-----/,
-        /-----BEGIN\s+RSA\s+PRIVATE\s+KEY-----/
+        /dop_v1_[a-f0-9]{64}/,
+        /-----BEGIN\s+(?:[A-Z\s]+)?PRIVATE\s+KEY-----/,
+        /dpapi:[A-Za-z0-9+/=]{20,}/
     ];
     const entries = fs.readdirSync(dir, { withFileTypes: true });
     for (const ent of entries) {
@@ -315,11 +322,32 @@ function scanDirectoryForSecrets(dir) {
             const content = fs.readFileSync(full, 'utf8');
             for (const pat of forbiddenPatterns) {
                 if (pat.test(content)) {
-                    throw new Error(`SECURITY SCAN FAILED: Potential secret pattern found in ${full}`);
+                    throw new Error(`SECURITY SCAN FAILED: Potential secret pattern (${pat}) found in ${full}`);
                 }
             }
             if (ent.name === '.control_token') {
                 throw new Error(`SECURITY SCAN FAILED: .control_token file present in ${full}`);
+            }
+            if (ent.name.includes('local_credentials') || ent.name.startsWith('.local_')) {
+                throw new Error(`SECURITY SCAN FAILED: Local credentials file present in ${full}`);
+            }
+            // Strict content hygiene on JSON configuration files
+            if (ent.name.endsWith('.json')) {
+                // credentialRef must be empty
+                const credMatch = content.match(/"credentialRef"\s*:\s*"([^"]+)"/);
+                if (credMatch && credMatch[1].trim() !== '') {
+                    throw new Error(`SECURITY SCAN FAILED: Non-empty credentialRef ("${credMatch[1]}") found in JSON: ${full}`);
+                }
+                // password must be empty
+                const passMatch = content.match(/"password"\s*:\s*"([^"]+)"/);
+                if (passMatch && passMatch[1].trim() !== '') {
+                    throw new Error(`SECURITY SCAN FAILED: Non-empty password found in JSON: ${full}`);
+                }
+            }
+            // Bearer token scan (excluding redactions)
+            const bearerMatch = content.match(/Bearer\s+([A-Za-z0-9_\-\.]{32,})/i);
+            if (bearerMatch && !bearerMatch[0].includes('REDACTED')) {
+                throw new Error(`SECURITY SCAN FAILED: Bearer token found in ${full}`);
             }
         }
     }
@@ -371,6 +399,10 @@ for (const entry of zipEntries) {
     if (base.startsWith('.private_egress_transaction')) {
         fs.unlinkSync(zipOut);
         throw new Error(`ARCHIVE VERIFICATION FAILED: Transaction file present in release archive entry: ${entry}`);
+    }
+    if (base.includes('local_credentials') || base.startsWith('.local_')) {
+        fs.unlinkSync(zipOut);
+        throw new Error(`ARCHIVE VERIFICATION FAILED: Local credential file present in release archive entry: ${entry}`);
     }
     if (base.endsWith('.log') && !entry.startsWith('owner-extension-test-site/')) {
         fs.unlinkSync(zipOut);

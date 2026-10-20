@@ -311,8 +311,8 @@ class PrivacyRelayService {
       .replace(/Bearer\s+[A-Za-z0-9_\-\.]+/gi, 'Bearer [REDACTED_TOKEN]');
   }
 
-  static resolveNodeCredentials(node) {
-    return winsec.resolveNodeCredentials(node);
+  static resolveNodeCredentials(node, dir) {
+    return winsec.resolveNodeCredentials(node, dir);
   }
 
   loadConfig() {
@@ -327,25 +327,31 @@ class PrivacyRelayService {
       }
 
       if (fs.existsSync(this.configFile)) {
+        const compDir = path.dirname(this.configFile);
         const data = fs.readFileSync(this.configFile, 'utf8');
         const parsed = JSON.parse(data);
         if ((!parsed.nodes || parsed.nodes.length === 0) && !this.disableAutoMigration) {
           try {
             const { migrateActiveEgressState } = require('./state-migrator');
-            const mig = migrateActiveEgressState(path.dirname(this.configFile));
+            const mig = migrateActiveEgressState(compDir);
             if (mig && mig.migrated) {
               const refreshedData = fs.readFileSync(this.configFile, 'utf8');
+              const refreshedParsed = JSON.parse(refreshedData);
+              const refreshedHydrated = (refreshedParsed.nodes || []).map(n => winsec.hydrateNode(n, compDir));
               return {
                 ...DEFAULT_POOL,
-                ...JSON.parse(refreshedData),
+                ...refreshedParsed,
+                nodes: refreshedHydrated,
                 physicalGate: { ...DEFAULT_POOL.physicalGate }
               };
             }
           } catch (_) {}
         }
+        const hydratedNodes = (parsed.nodes || []).map(n => winsec.hydrateNode(n, compDir));
         return {
           ...DEFAULT_POOL,
           ...parsed,
+          nodes: hydratedNodes,
           physicalGate: {
             ...DEFAULT_POOL.physicalGate,
             ...(parsed.physicalGate || {})
@@ -363,7 +369,18 @@ class PrivacyRelayService {
 
   saveConfig() {
     try {
+      const compDir = path.dirname(this.configFile);
       const sanitizedNodes = (this.pool.nodes || []).map(n => winsec.sanitizeNodeForSave(n));
+      const configNodes = sanitizedNodes.map(n => {
+        if (n.credentialRef) {
+          winsec.saveLocalNodeCredential(n.id, n.credentialRef, compDir);
+        }
+        return {
+          ...n,
+          credentialRef: '',
+          password: ''
+        };
+      });
       const active = this.getActiveNode();
       const toSave = {
         version: this.pool.version || '1.0.3',
@@ -372,7 +389,7 @@ class PrivacyRelayService {
         healthTtlMs: this.pool.healthTtlMs || 60000,
         canaryUrl: this.pool.canaryUrl || 'https://cloudflare.com/cdn-cgi/trace',
         selectedEgressId: active ? active.id : (this.pool.selectedEgressId || null),
-        nodes: sanitizedNodes,
+        nodes: configNodes,
         physicalGate: {
           enabled: Boolean(this.physicalGate && this.physicalGate.enabled),
           pinnedEgressFingerprint: this.physicalGate?.pinnedEgressFingerprint || this.pool.physicalGate?.pinnedEgressFingerprint || null,
@@ -382,14 +399,15 @@ class PrivacyRelayService {
       fs.writeFileSync(this.configFile, JSON.stringify(toSave, null, 2), 'utf8');
       try {
         const { mirrorStateToGlobalBackup } = require('./state-migrator');
-        mirrorStateToGlobalBackup(path.dirname(this.configFile));
+        mirrorStateToGlobalBackup(compDir);
       } catch (_) {}
       return true;
     } catch (e) {
       this.log(`Failed to save config: ${e.message}`);
-      throw e;
+      return false;
     }
   }
+
 
   computeFingerprint(node) {
     if (!node || !node.observedFingerprint) return null;
@@ -1160,7 +1178,20 @@ class PrivacyRelayService {
       // Check Bearer Token Authorization for all control endpoints
       const authHeader = req.headers['authorization'] || '';
       let isAuthorized = authHeader === `Bearer ${this.controlToken}`;
-      if (isAuthorized && authHeader.startsWith('Bearer ')) {
+      if (!isAuthorized && authHeader && authHeader.startsWith('Bearer ')) {
+        const presentedToken = authHeader.substring(7).trim();
+        const tokenFile = this.tokenFile || (this.configFile ? path.join(path.dirname(this.configFile), '.control_token') : TOKEN_FILE);
+        try {
+          if (fs.existsSync(tokenFile)) {
+            const diskToken = fs.readFileSync(tokenFile, 'utf8').trim();
+            if (diskToken && diskToken === presentedToken) {
+              this.controlToken = diskToken;
+              isAuthorized = true;
+            }
+          }
+        } catch (_) {}
+      }
+      if (isAuthorized && authHeader && authHeader.startsWith('Bearer ')) {
         const presentedToken = authHeader.substring(7).trim();
         const presentedHash = crypto.createHash('sha256').update(presentedToken).digest('hex');
         if (presentedHash === EXPOSED_RC3_6_TOKEN_SHA256) {

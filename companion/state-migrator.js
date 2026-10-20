@@ -199,7 +199,7 @@ function mirrorStateToGlobalBackup(companionDir) {
     const appDataDir = getGlobalAppDataDir();
     if (!appDataDir) return false;
 
-    const filesToMirror = ['egress_pool_config.json', '.private_egress_transaction.json'];
+    const filesToMirror = ['egress_pool_config.json', '.private_egress_transaction.json', '.local_credentials.json'];
     for (const f of filesToMirror) {
       const src = path.join(companionDir, f);
       if (fs.existsSync(src)) {
@@ -284,6 +284,16 @@ function migrateActiveEgressState(targetCompanionDir = path.resolve(__dirname)) 
         fs.writeFileSync(currentTokenPath, token, { encoding: 'utf8', mode: 0o600 });
         results.tokenMigrated = true;
       }
+    } catch (_) {}
+  }
+
+  // 4. Migrate .local_credentials.json if target has none
+  const currentCredsPath = path.join(targetCompanionDir, '.local_credentials.json');
+  const candidateCredsPath = path.join(best.dir, '.local_credentials.json');
+  if (!fs.existsSync(currentCredsPath) && fs.existsSync(candidateCredsPath)) {
+    try {
+      fs.copyFileSync(candidateCredsPath, currentCredsPath);
+      results.credentialsMigrated = true;
     } catch (_) {}
   }
 

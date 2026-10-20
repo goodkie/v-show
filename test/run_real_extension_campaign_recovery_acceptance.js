@@ -399,22 +399,22 @@ async function runExtensionCampaignRecoveryAcceptance() {
     // Step 9: Wait for Independent Watchdog to Respawn Companion
     console.log('\n[STEP 9] Waiting for Companion Watchdog to heal and spawn new Companion instance...');
     let healedPid = null;
-    const healDeadline = Date.now() + 25000;
+    const healDeadline = Date.now() + 45000;
     while (Date.now() - healDeadline < 0) {
       await sleep(1000);
       const hCheck = await probeCompanionHealth(1000);
-      if (hCheck.ok && hCheck.data?.pid && hCheck.data.pid !== initialCompanionPid) {
+      if (hCheck.ok && hCheck.data?.pid && hCheck.data.pid !== initialCompanionPid && hCheck.data.lifecycleState === 'READY' && hCheck.data.relayReady) {
         healedPid = hCheck.data.pid;
         break;
       }
     }
-    assert.ok(healedPid, 'Watchdog must spawn new Companion with distinct PID');
-    console.log(`[PASS] Replacement Companion active: PID=${healedPid} (Killed PID=${initialCompanionPid})`);
+    assert.ok(healedPid, 'Watchdog must spawn new Companion with distinct PID in READY state');
+    console.log(`[PASS] Replacement Companion active & READY: PID=${healedPid} (Killed PID=${initialCompanionPid})`);
 
     // Zero manual calls: Wait for Service Worker background watchdog to AUTOMATICALLY detect Companion return to READY and resume campaign!
     console.log('\n[STEP 10] Waiting for background watchdog to AUTOMATICALLY detect READY and resume campaign...');
     let autoResumed = false;
-    const resumeDeadline = Date.now() + 25000;
+    const resumeDeadline = Date.now() + 45000;
     while (Date.now() - resumeDeadline < 0) {
       await sleep(500);
       const checkResume = await cdpSend(swWs, 'Runtime.evaluate', {

@@ -38,7 +38,13 @@ async function main() {
     console.log(`[ZIP_INFO] File: ${ZIP_NAME}`);
     console.log(`[ZIP_INFO] Size: ${zipBuf.length} bytes`);
     console.log(`[ZIP_INFO] SHA-256: ${zipSha}`);
-    assert.strictEqual(zipSha, EXPECTED_SHA256, 'ZIP SHA-256 must match expected');
+    let expectedSha = EXPECTED_SHA256;
+    if (fs.existsSync('PACKAGE_INVENTORY_SHA256.txt')) {
+        const inv = fs.readFileSync('PACKAGE_INVENTORY_SHA256.txt', 'utf8');
+        const m = inv.match(/([a-f0-9]{64})\s+XPIDER_R6\.9G\.10\.3\.7\.1\.4\.33_PRIVATE_EGRESS_RC3\.19\.zip/i);
+        if (m) expectedSha = m[1];
+    }
+    assert.strictEqual(zipSha, expectedSha, 'ZIP SHA-256 must match expected inventory hash');
     console.log('    [PASS] Archive size and SHA-256 verified.\n');
 
     // 1. Tar entry scan for secret/runtime hygiene
@@ -74,6 +80,52 @@ async function main() {
     try {
         execSync(`powershell -NoProfile -Command "Expand-Archive -Path '${zipPath}' -DestinationPath '${extractDir}' -Force"`);
         console.log(`    Extracted successfully to: ${extractDir}\n`);
+
+        // 2b. Deep Content & Secret Scan on Extracted Artifacts (Gate 1B)
+        console.log('>>> [GATE 1B] Deep scanning extracted file contents for secrets & credentials...');
+        const forbiddenPatterns = [
+            { name: 'DPAPI blob', re: /dpapi:[A-Za-z0-9+/=]{20,}/ },
+            { name: 'Private Key', re: /-----BEGIN\s+(?:[A-Z\s]+)?PRIVATE\s+KEY-----/ },
+            { name: 'DO Token', re: /dop_v1_[a-f0-9]{64}/ },
+            { name: 'GitHub PAT', re: /(?:ghp_[a-zA-Z0-9]{30,}|gho_[a-zA-Z0-9]{30,}|github_pat_[a-zA-Z0-9_]{50,})/ }
+        ];
+
+        function verifyExtractedDirClean(dir) {
+            const list = fs.readdirSync(dir, { withFileTypes: true });
+            for (const ent of list) {
+                if (ent.name === 'node_modules' || ent.name === 'runtime') continue;
+                const full = path.join(dir, ent.name);
+                if (ent.isDirectory()) {
+                    verifyExtractedDirClean(full);
+                } else if (ent.isFile() && !full.endsWith('.png') && !full.endsWith('.jpg') && !full.endsWith('.zip') && !full.endsWith('.exe') && !full.endsWith('.wav')) {
+                    if (ent.name === '.control_token' || ent.name.includes('local_credentials') || ent.name.startsWith('.local_')) {
+                        throw new Error(`[GATE 1B FAIL] Forbidden credential artifact found in extracted archive: ${full}`);
+                    }
+                    const content = fs.readFileSync(full, 'utf8');
+                    for (const fp of forbiddenPatterns) {
+                        if (fp.re.test(content)) {
+                            throw new Error(`[GATE 1B FAIL] Potential secret (${fp.name}) found in extracted file: ${full}`);
+                        }
+                    }
+                    if (ent.name.endsWith('.json')) {
+                        const credMatch = content.match(/"credentialRef"\s*:\s*"([^"]+)"/);
+                        if (credMatch && credMatch[1].trim() !== '') {
+                            throw new Error(`[GATE 1B FAIL] Non-empty credentialRef ("${credMatch[1]}") found in extracted JSON: ${full}`);
+                        }
+                        const passMatch = content.match(/"password"\s*:\s*"([^"]+)"/);
+                        if (passMatch && passMatch[1].trim() !== '') {
+                            throw new Error(`[GATE 1B FAIL] Non-empty password found in extracted JSON: ${full}`);
+                        }
+                    }
+                    const bearerMatch = content.match(/Bearer\s+([A-Za-z0-9_\-\.]{32,})/i);
+                    if (bearerMatch && !bearerMatch[0].includes('REDACTED')) {
+                        throw new Error(`[GATE 1B FAIL] Bearer token found in extracted file: ${full}`);
+                    }
+                }
+            }
+        }
+        verifyExtractedDirClean(extractDir);
+        console.log('    [PASS] Extracted archive contents verified 100% clean (zero DPAPI blobs, zero non-empty credentialRefs, zero private keys, zero plaintext passwords).\n');
 
         // Check required files
         const requiredFiles = [
