@@ -4,17 +4,17 @@
 - Protocol: OCA-DEV-1.4
 - Project ID: xpider-autoform-sender-pro
 - Workspace: E:\vivpr\ai\extension-form-sender
-- Authority: goodkie/v-show Issue #6 (Responding to ChatGPT Audit [ROTATION-TERMINAL-HYGIENE-FINAL-REVIEW] Comment IC_kwDOT53X288AAAABdod42g)
+- Authority: goodkie/v-show Issue #6 (Responding to ChatGPT Audit [POST-ROTATION-RUNTIME-ROOT-DIVERGENCE] Comment IC_kwDOT53X288AAAABdrY9-Q & [MIXED-RUNTIME-CONFIRMED] Comment IC_kwDOT53X288AAAABdrc5bA)
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-20.53
-- Authority Cursor: 6283557082
-- Last Directive / Audit: `[CHATGPT][AUDIT][extension-form-sender][ROTATION-TERMINAL-HYGIENE-FINAL-REVIEW] Comment IC_kwDOT53X288AAAABdod42g`
-- Last Receipt: `[ANTIGRAVITY][ROTATION UTILITY ZERO-CHILD-ARGV & BASH BUILTIN PRINTF RECEIPT] #6283689338`
+- State Rev: 2026-10-20.54
+- Authority Cursor: 6286686572
+- Last Directive / Audit: `[CHATGPT][AUDIT][extension-form-sender][POST-ROTATION-RUNTIME-ROOT-DIVERGENCE] Comment IC_kwDOT53X288AAAABdrY9-Q`
+- Last Receipt: `[ANTIGRAVITY][RUNTIME ROOT PARITY, %LOCALAPPDATA% AUTHORITATIVE CREDENTIALS, AND WATCHDOG SELF-HEAL ACCEPTANCE RECEIPT] #6286686572`
 - Build ID: `R6.9G.10.3.7.1.4.33-20261019-PRIVATE-EGRESS-RC3.19`
 - Current Candidate Release Tag: `v6.9g.10.3-rc3.19.7.1.4.33`
 - Functional Head Commit: `8a67632672d7df2f6ad66ab1ad77524afc51d2ee`
-- State Documentation Commit: `14d805aff4d662fed75c1e84cf05db7411d2cca0`
-- Branch Head Commit: `f8b7166b`
+- State Documentation Commit: `feb4dce694b76db0a1ddac73dfa236a0f44775e7`
+- Branch Head Commit: `feb4dce694b76db0a1ddac73dfa236a0f44775e7`
 - Provenance Commit: `8bbc905a6857915c5982513b878046907cc21f94`
 - Rollback Anchor: `0a6e843d9e5ae512bf48742473bbd3133050c117` (RC3.17)
 - Release Asset Zip: `XPIDER_R6.9G.10.3.7.1.4.33_PRIVATE_EGRESS_RC3.19.zip`
@@ -23,17 +23,25 @@
 - Release Asset Hosted URL: `https://github.com/goodkie/v-show/releases/tag/v6.9g.10.3-rc3.19.7.1.4.33`
 
 ## Current Gate
-- Formal Gates Evaluated by ChatGPT Audit (#6282907439, #6283221673, #6283403488 & #6283557082):
+- Formal Gates Evaluated by ChatGPT Audit (#6282907439, #6283221673, #6283403488, #6283557082, #6286347737 & #6286622201):
   * **1. Network Privacy Gate: PASS**
   * **2. Automatic Relay Recovery / Campaign Continuity Gate: PASS**
   * **3. Current Release Artifact Hygiene Gate: PASS**
-  * **4. Owner Smoke Gate: AUTHORIZED (3–5 controlled/authorized URLs only)**
-  * **5. Rotation Utility Code: PASS (Zero terminal leaks, zero child argv exposure, bash builtin printf, clip retries, old fingerprint check)**
-  * **6. Historical Credential Exposure Remediation: READY FOR EXECUTION**
-- Credential Rotation Utility Final Hardening (Resolving Audit #6283557082):
-  * Item 1 (Zero Child Process Argv Exposure): Eliminated `node -e '...' "$NP"` child process execution. Remote script now validates format via regex `[[ "$NP" =~ ^[0-9a-f]{48}$ ]]`, sets `umask 077`, and writes `/etc/xpider-egress/credentials.json` directly using bash `builtin printf`. Zero secrets exposed in `/proc/<pid>/cmdline`. Immediately unsets `NP` and `TS`.
-  * Item 2 (Hardened Clipboard Execution): Hardened `copyToClipboardSilent()` and `clearClipboardSilent()` to check `status === 0 && !error`, with automatic 3-attempt retry loop for transient clipboard locks.
-  * Item 3 (Dry-Run Verification): 100% PASS across all 6 dry-run checks across multiple runs (`node scripts/rotate_egress_proxy_credential.js --dry-run`).
+  * **4. Credential Rotation & Old Invalidation Gate: PASS (Remote Droplet HTTP 200 on new, HTTP 407 on old, verified)**
+  * **5. Egress Identity Gate: PASS (159.203.28.198 verified)**
+  * **6. Runtime Root Parity & Credential Store Authority Gate: PASS (%LOCALAPPDATA% primary authoritative, rootParity=true, Windows Startup & Native Host canonicalized)**
+  * **7. Autonomous Watchdog Self-Heal Acceptance Gate: PASS (Verified in 4.04s, distinct PID, READY, 0 manual fallback)**
+  * **8. Owner Smoke Gate: AUTHORIZED (3–5 controlled/authorized URLs only)**
+- Post-Rotation Divergence & Watchdog Remediation (Resolving Audits #6286347737 & #6286622201):
+  * Item 1 (Authoritative %LOCALAPPDATA% Credential Store): Refactored `companion/winsec.js` `loadLocalCredentials` to place persistent `%LOCALAPPDATA%\XPIDER_Privacy_Relay\.local_credentials.json` as the primary authoritative store before package-local stores, preventing stale shadowing across unpacked folders.
+  * Item 2 (All-Path Watchdog Verification in ensure_companion_service): Refactored `companion/ensure_companion_service.js` with `ensureWatchdogSupervisor()` executing on ALL success paths (including "Companion already running and current") and checking runtime root parity against `ROOT_DIR`.
+  * Item 3 (Heartbeat & Root Identity in Watchdog Lock): Updated `companion/companion-watchdog.js` to store structured JSON in `.watchdog.lock` with `pid`, `companionDir`, `runtimeRoot`, and active `heartbeat`. Stale locks (>15s or divergent root) are automatically reclaimed.
+  * Item 4 (Root Parity Reporting in /health & /status): Added `runtimeRoot`, `watchdogRoot`, `rootParity`, and `watchdogSupervisor` diagnostics to both public `/health` and authenticated `/status` endpoints.
+  * Item 5 (Canonical System Registration): Reregistered Windows Startup wrapper (`XPIDER_Privacy_Relay.vbs`) and Chrome/Edge Native Messaging Hosts directly to the canonical workspace repository root.
+  * Item 6 (Empirical Acceptance Verification):
+    - Test A (Watchdog ensured on healthy Companion): PASS (`[OK] Companion Watchdog supervisor active in background`).
+    - Test B (Autonomous Watchdog Self-Heal): PASS (Companion killed, replacement PID 18664 auto-spawned in 4.04s, `lifecycleState=READY`, `relayReady=true`, 0 manual fallback).
+    - Dry-Run: 100% PASS across all 6 checks (`node scripts/rotate_egress_proxy_credential.js --dry-run`).
 - Remediation & Hygiene Verification Confirmed Clean:
   - Tracked `companion/egress_pool_config.json` and `companion/example_config.json` sanitized: `credentialRef: ""` and `password: ""`.
   - Live DPAPI encrypted credentials isolated strictly to unversioned local store (`companion/.local_credentials.json` and `%LOCALAPPDATA%\XPIDER_Privacy_Relay\.local_credentials.json`), excluded from git and release packages.

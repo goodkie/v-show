@@ -127,16 +127,19 @@ function getGlobalAppDataDir() {
 }
 
 function loadLocalCredentials(companionDir) {
-  const candidates = [
+  const candidates = [];
+  const appData = getGlobalAppDataDir();
+  if (appData) {
+    // 1. Authoritative persistent global store (%LOCALAPPDATA%\XPIDER_Privacy_Relay\.local_credentials.json)
+    candidates.push(path.join(appData, '.local_credentials.json'));
+  }
+  // 2. Package-local fallback stores
+  candidates.push(
     path.join(companionDir || __dirname, '.local_credentials.json'),
     path.join(__dirname, '.local_credentials.json'),
     path.join(process.cwd(), 'companion', '.local_credentials.json'),
     path.join(process.cwd(), '.local_credentials.json')
-  ];
-  const appData = getGlobalAppDataDir();
-  if (appData) {
-    candidates.push(path.join(appData, '.local_credentials.json'));
-  }
+  );
 
   for (const p of candidates) {
     try {
@@ -160,9 +163,15 @@ function saveLocalNodeCredential(nodeId, credentialRef, companionDir) {
   if (!nodeId || !credentialRef) return false;
   const targetDir = companionDir || __dirname;
   const targetFile = path.join(targetDir, '.local_credentials.json');
+  const appData = getGlobalAppDataDir();
+  const appDataFile = appData ? path.join(appData, '.local_credentials.json') : null;
+
   let currentStore = {};
+  // Load existing from appData first, then targetFile
   try {
-    if (fs.existsSync(targetFile)) {
+    if (appDataFile && fs.existsSync(appDataFile)) {
+      currentStore = JSON.parse(fs.readFileSync(appDataFile, 'utf8')) || {};
+    } else if (fs.existsSync(targetFile)) {
       currentStore = JSON.parse(fs.readFileSync(targetFile, 'utf8')) || {};
     }
   } catch (_) {}
@@ -171,15 +180,16 @@ function saveLocalNodeCredential(nodeId, credentialRef, companionDir) {
   currentStore.nodes[nodeId] = { credentialRef };
   currentStore[nodeId] = credentialRef;
 
+  // 1. Write to targetFile (package-local)
   try {
     fs.writeFileSync(targetFile, JSON.stringify(currentStore, null, 2), { encoding: 'utf8', mode: 0o600 });
   } catch (_) {}
 
-  const appData = getGlobalAppDataDir();
-  if (appData) {
+  // 2. Write to appData (authoritative persistent store)
+  if (appData && appDataFile) {
     try {
       if (!fs.existsSync(appData)) fs.mkdirSync(appData, { recursive: true });
-      fs.writeFileSync(path.join(appData, '.local_credentials.json'), JSON.stringify(currentStore, null, 2), { encoding: 'utf8', mode: 0o600 });
+      fs.writeFileSync(appDataFile, JSON.stringify(currentStore, null, 2), { encoding: 'utf8', mode: 0o600 });
     } catch (_) {}
   }
   return true;

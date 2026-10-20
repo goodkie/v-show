@@ -55,23 +55,63 @@ function probeHealth(timeoutMs = 1500) {
   });
 }
 
+let globalWatchdogStartTime = Date.now();
+
+function readLockInfo() {
+  try {
+    if (!fs.existsSync(LOCK_FILE)) return null;
+    const content = fs.readFileSync(LOCK_FILE, 'utf8').trim();
+    if (!content) return null;
+    try {
+      const parsed = JSON.parse(content);
+      if (parsed && typeof parsed === 'object') return parsed;
+    } catch (_) {}
+    const legacyPid = parseInt(content, 10);
+    if (!isNaN(legacyPid)) {
+      return { pid: legacyPid, companionDir: COMPANION_DIR, runtimeRoot: ROOT_DIR, heartbeat: 0 };
+    }
+  } catch (_) {}
+  return null;
+}
+
+function updateLockHeartbeat() {
+  try {
+    const lockData = {
+      pid: process.pid,
+      companionDir: COMPANION_DIR,
+      runtimeRoot: ROOT_DIR,
+      startedAt: globalWatchdogStartTime,
+      heartbeat: Date.now()
+    };
+    fs.writeFileSync(LOCK_FILE, JSON.stringify(lockData, null, 2), 'utf8');
+  } catch (_) {}
+}
+
 function acquireLock() {
   try {
-    if (fs.existsSync(LOCK_FILE)) {
-      const prevPid = parseInt(fs.readFileSync(LOCK_FILE, 'utf8').trim(), 10);
-      if (prevPid && prevPid !== process.pid) {
-        try {
-          // Check if previous PID is alive
-          process.kill(prevPid, 0);
-          log(`Existing watchdog PID ${prevPid} is already active. Exiting duplicate instance.`);
-          process.exit(0);
-        } catch (_) {
-          // Stale lock
-          log(`Cleaning up stale watchdog lock (PID ${prevPid}).`);
+    const prev = readLockInfo();
+    if (prev && prev.pid && prev.pid !== process.pid) {
+      let isAlive = false;
+      try {
+        process.kill(prev.pid, 0);
+        isAlive = true;
+      } catch (_) {}
+
+      const isHeartbeatFresh = Boolean(prev.heartbeat && (Date.now() - prev.heartbeat < 12000));
+      const isSameRoot = Boolean(prev.companionDir && path.resolve(prev.companionDir) === path.resolve(COMPANION_DIR));
+
+      if (isAlive && isHeartbeatFresh && isSameRoot) {
+        log(`Existing healthy watchdog PID ${prev.pid} is already active from canonical root. Exiting duplicate instance.`);
+        process.exit(0);
+      } else {
+        log(`Cleaning up stale/divergent watchdog (PID ${prev.pid}, alive=${isAlive}, fresh=${isHeartbeatFresh}, root=${prev.companionDir || 'unknown'}).`);
+        if (isAlive) {
+          try { process.kill(prev.pid, 'SIGKILL'); } catch (_) {}
         }
       }
     }
-    fs.writeFileSync(LOCK_FILE, String(process.pid), 'utf8');
+    globalWatchdogStartTime = Date.now();
+    updateLockHeartbeat();
   } catch (e) {
     log(`Failed to acquire lock: ${e.message}`);
   }
@@ -79,8 +119,11 @@ function acquireLock() {
 
 function releaseLock() {
   try {
-    if (fs.existsSync(LOCK_FILE)) {
-      fs.unlinkSync(LOCK_FILE);
+    const prev = readLockInfo();
+    if (prev && prev.pid === process.pid) {
+      if (fs.existsSync(LOCK_FILE)) {
+        fs.unlinkSync(LOCK_FILE);
+      }
     }
   } catch (_) {}
 }
@@ -125,6 +168,7 @@ async function runWatchdogLoop() {
   let isHealInProgress = false;
 
   while (true) {
+    updateLockHeartbeat();
     await new Promise(r => setTimeout(r, PROBE_INTERVAL_MS));
 
     if (isHealInProgress) continue;

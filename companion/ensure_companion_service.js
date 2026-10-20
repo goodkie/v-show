@@ -241,6 +241,62 @@ async function terminateStaleCompanion(reportedPid) {
   return !p1Final && !p2Final;
 }
 
+function isWatchdogActiveAndFresh() {
+  try {
+    const watchdogLock = path.join(COMPANION_DIR, '.watchdog.lock');
+    if (!fs.existsSync(watchdogLock)) return false;
+    const raw = fs.readFileSync(watchdogLock, 'utf8').trim();
+    if (!raw) return false;
+    let lockData = null;
+    try { lockData = JSON.parse(raw); } catch (_) {}
+    const pid = lockData && lockData.pid ? lockData.pid : parseInt(raw, 10);
+    if (!pid) return false;
+    try { process.kill(pid, 0); } catch (_) { return false; }
+    if (lockData && lockData.heartbeat) {
+      if (Date.now() - lockData.heartbeat > 15000) return false;
+    }
+    if (lockData && lockData.companionDir) {
+      if (path.resolve(lockData.companionDir) !== path.resolve(COMPANION_DIR)) return false;
+    }
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+function ensureWatchdogSupervisor() {
+  try {
+    if (!isWatchdogActiveAndFresh()) {
+      const watchdogLock = path.join(COMPANION_DIR, '.watchdog.lock');
+      try {
+        if (fs.existsSync(watchdogLock)) {
+          const raw = fs.readFileSync(watchdogLock, 'utf8').trim();
+          let pid = null;
+          try { pid = JSON.parse(raw).pid; } catch (_) { pid = parseInt(raw, 10); }
+          if (pid) { try { process.kill(pid, 'SIGKILL'); } catch (_) {} }
+          fs.unlinkSync(watchdogLock);
+        }
+      } catch (_) {}
+
+      const watchdogScript = path.join(COMPANION_DIR, 'companion-watchdog.js');
+      const bundledNode = path.join(ROOT_DIR, 'runtime', 'node', 'node.exe');
+      const nodeBin = fs.existsSync(bundledNode) ? bundledNode : (fs.existsSync(process.execPath) ? process.execPath : 'node');
+      const child = spawn(nodeBin, [watchdogScript], {
+        cwd: ROOT_DIR,
+        detached: true,
+        stdio: 'ignore',
+        windowsHide: true
+      });
+      child.unref();
+      console.log('   [OK] Companion Watchdog supervisor active in background.');
+    } else {
+      console.log('   [OK] Companion Watchdog supervisor verified active and fresh.');
+    }
+  } catch (e) {
+    console.warn('   [WATCHDOG_NOTICE] Watchdog verification notice:', e.message);
+  }
+}
+
 async function main() {
   console.log('   [COMPANION_CHECK] Checking Privacy Relay Companion status on 127.0.0.1:18989...');
 
@@ -263,26 +319,29 @@ async function main() {
     const caps = Array.isArray(d.apiCapabilities) ? d.apiCapabilities : [];
     const hasRequiredCaps = REQUIRED_CAPABILITIES.every(c => caps.includes(c));
     const isCurrentBuild = (d.companionBuildId === EXPECTED_BUILD_ID);
+    const isCurrentRoot = !d.runtimeRoot || (path.resolve(d.runtimeRoot) === path.resolve(ROOT_DIR));
     const currentToken = getControlToken();
     const authStatus = await probeAuthenticatedStatus(currentToken, 1500);
 
-    if (hasRequiredCaps && isCurrentBuild && currentToken && authStatus.ok) {
+    if (hasRequiredCaps && isCurrentBuild && isCurrentRoot && currentToken && authStatus.ok) {
       console.log(`   [OK] Privacy Relay Companion is ALREADY RUNNING and verified current and authenticated (Build: ${d.companionBuildId}, PID: ${d.pid || 'unknown'}).`);
       if (d.recovery && d.recovery.recoveryRequired) {
         console.warn(`   [RECOVERY_ALERT] Incomplete private-egress transaction found in journal (${d.recovery.transactionTag}, stage: ${d.recovery.stage}). Cleanup/recovery required.`);
       }
+      ensureWatchdogSupervisor();
       process.exit(0);
     }
 
-    if (isCurrentBuild && currentToken && authStatus.statusCode === 401) {
+    if (isCurrentBuild && isCurrentRoot && currentToken && authStatus.statusCode === 401) {
       console.log(`   [TOKEN_DESYNC] Running companion (PID ${d.pid || 'unknown'}) rejected package .control_token (HTTP 401).`);
       console.log(`   [TOKEN_DESYNC] Restarting local companion to synchronize in-memory control token with package state...`);
     } else {
-      console.log(`   [UPGRADE] Stale or unauthenticated Companion detected on port 18989:`);
+      console.log(`   [UPGRADE] Stale, divergent or unauthenticated Companion detected on port 18989:`);
       console.log(`             Current: ${d.companionBuildId || 'legacy-unversioned'} (Expected: ${EXPECTED_BUILD_ID})`);
+      console.log(`             Root Parity: ${isCurrentRoot ? 'CANONICAL' : `DIVERGENT (${d.runtimeRoot || 'unknown'})`}`);
       console.log(`             Capabilities: [${caps.join(', ') || 'none'}] (Required: [${REQUIRED_CAPABILITIES.join(', ')}])`);
       console.log(`             Local Control Token: ${currentToken ? (authStatus.ok ? 'AUTHENTICATED' : `REJECTED (${authStatus.statusCode || authStatus.error})`) : 'MISSING (Unauthenticated)'}`);
-      console.log(`   [UPGRADE] Upgrading to current build...`);
+      console.log(`   [UPGRADE] Upgrading to canonical current build...`);
     }
 
     const released = await terminateStaleCompanion(d.pid);
@@ -316,10 +375,11 @@ async function main() {
       const caps = Array.isArray(d.apiCapabilities) ? d.apiCapabilities : [];
       const hasCaps = REQUIRED_CAPABILITIES.every(c => caps.includes(c));
       const isCurrent = (d.companionBuildId === EXPECTED_BUILD_ID);
+      const isCurrentRoot = !d.runtimeRoot || (path.resolve(d.runtimeRoot) === path.resolve(ROOT_DIR));
       const token = getControlToken();
       const authStatus = token ? await probeAuthenticatedStatus(token, 800) : { ok: false };
 
-      if (hasCaps && isCurrent && token && authStatus.ok) {
+      if (hasCaps && isCurrent && isCurrentRoot && token && authStatus.ok) {
         console.log(`   [OK] Privacy Relay Companion successfully bound ports and verified healthy (PID: ${d.pid || 'unknown'}, Build: ${d.companionBuildId || EXPECTED_BUILD_ID}).`);
         console.log(`   [OK] Verified API Capabilities: [${caps.join(', ')}]`);
         console.log(`   [OK] Local control token verified (${token.length} chars, authenticated /status HTTP 200).`);
@@ -337,33 +397,8 @@ async function main() {
     process.exit(1);
   }
 
-  // [RC3.18 Self-Healing Watchdog] Ensure background supervisor watchdog is active
-  try {
-    const watchdogLock = path.join(COMPANION_DIR, '.watchdog.lock');
-    let isRunning = false;
-    if (fs.existsSync(watchdogLock)) {
-      const pid = parseInt(fs.readFileSync(watchdogLock, 'utf8').trim(), 10);
-      if (pid) {
-        try {
-          process.kill(pid, 0);
-          isRunning = true;
-        } catch (_) {}
-      }
-    }
-    if (!isRunning) {
-      const watchdogScript = path.join(COMPANION_DIR, 'companion-watchdog.js');
-      const bundledNode = path.join(ROOT_DIR, 'runtime', 'node', 'node.exe');
-      const nodeBin = fs.existsSync(bundledNode) ? bundledNode : 'node';
-      const child = spawn(nodeBin, [watchdogScript], {
-        cwd: ROOT_DIR,
-        detached: true,
-        stdio: 'ignore',
-        windowsHide: true
-      });
-      child.unref();
-      console.log('   [OK] Companion Watchdog supervisor active in background.');
-    }
-  } catch (_) {}
+  // [RC3.18 / Post-Rotation Hardening] Ensure background supervisor watchdog is active from canonical root
+  ensureWatchdogSupervisor();
 
   process.exit(0);
 }

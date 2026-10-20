@@ -1006,6 +1006,39 @@ class PrivacyRelayService {
     }
   }
 
+  getWatchdogInfo() {
+    try {
+      const lockPath = path.join(this.companionDir || __dirname, '.watchdog.lock');
+      if (!fs.existsSync(lockPath)) return null;
+      const raw = fs.readFileSync(lockPath, 'utf8').trim();
+      if (!raw) return null;
+      let data = null;
+      try { data = JSON.parse(raw); } catch (_) {}
+      if (!data || typeof data !== 'object') {
+        const pid = parseInt(raw, 10);
+        if (isNaN(pid)) return null;
+        data = { pid, companionDir: __dirname, runtimeRoot: path.resolve(__dirname, '..'), heartbeat: 0 };
+      }
+      let isAlive = false;
+      if (data.pid) {
+        try {
+          process.kill(data.pid, 0);
+          isAlive = true;
+        } catch (_) {}
+      }
+      const isFresh = Boolean(data.heartbeat && (Date.now() - data.heartbeat < 15000));
+      return {
+        pid: data.pid,
+        alive: isAlive,
+        fresh: isFresh,
+        companionDir: data.companionDir || null,
+        runtimeRoot: data.runtimeRoot || null
+      };
+    } catch (_) {
+      return null;
+    }
+  }
+
   getStatus() {
     const active = this.getActiveNode();
     const ttl = this.healthTtlMs || (this.pool && this.pool.healthTtlMs) || 60000;
@@ -1014,6 +1047,11 @@ class PrivacyRelayService {
     const isExpired = active && active.lastVerifiedAt > 0 && (Date.now() - active.lastVerifiedAt > ttl);
     const physicalGateReady = !this.physicalGate.enabled || Boolean(this.physicalGate.state && this.physicalGate.state.ready);
     const ready = !this.isPaused && this.relayReady && isHealthValid && physicalGateReady;
+
+    const watchdogInfo = this.getWatchdogInfo();
+    const runtimeRoot = path.resolve(__dirname, '..');
+    const watchdogRoot = watchdogInfo ? watchdogInfo.runtimeRoot : null;
+    const rootParity = Boolean(watchdogInfo && watchdogRoot && path.resolve(watchdogRoot) === runtimeRoot);
 
     // Redact nodes
     const redactedNodes = (this.pool.nodes || []).map(n => {
@@ -1069,6 +1107,16 @@ class PrivacyRelayService {
       trafficStats: { ...this.trafficStats },
       physicalGate: this.physicalGate.state,
       recovery: this.getRecoveryStatus(),
+      runtimeRoot,
+      companionDir: __dirname,
+      watchdogRoot,
+      rootParity,
+      watchdog: {
+        active: Boolean(watchdogInfo && watchdogInfo.alive && watchdogInfo.fresh),
+        pid: watchdogInfo ? watchdogInfo.pid : null,
+        root: watchdogRoot,
+        rootParity
+      },
       diagnostics: {
         companionProcess: {
           ok: true,
@@ -1083,6 +1131,11 @@ class PrivacyRelayService {
         nativeMessagingChannel: {
           ok: true,
           hostName: 'com.xpider.privacy_relay'
+        },
+        watchdogSupervisor: {
+          ok: Boolean(watchdogInfo && watchdogInfo.alive && watchdogInfo.fresh && rootParity),
+          pid: watchdogInfo ? watchdogInfo.pid : null,
+          rootParity
         },
         upstreamTunnelState: {
           ok: Boolean(ready),
@@ -1151,6 +1204,11 @@ class PrivacyRelayService {
         };
         const readyNow = !this.isPaused && this.relayReady && isHealthValid && physicalGateReady;
         const lifecycleNow = this.lifecycleState || (readyNow ? 'READY' : 'DEGRADED');
+        const watchdogInfo = this.getWatchdogInfo();
+        const runtimeRoot = path.resolve(__dirname, '..');
+        const watchdogRoot = watchdogInfo ? watchdogInfo.runtimeRoot : null;
+        const rootParity = Boolean(watchdogInfo && watchdogRoot && path.resolve(watchdogRoot) === runtimeRoot);
+
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({
           status: 'OK',
@@ -1170,6 +1228,16 @@ class PrivacyRelayService {
           proxyPort: this.proxyPort,
           selectedEgressId: active ? active.id : null,
           uptimeSeconds: Math.floor((Date.now() - this.startTime) / 1000),
+          runtimeRoot,
+          companionDir: __dirname,
+          watchdogRoot,
+          rootParity,
+          watchdog: {
+            active: Boolean(watchdogInfo && watchdogInfo.alive && watchdogInfo.fresh),
+            pid: watchdogInfo ? watchdogInfo.pid : null,
+            root: watchdogRoot,
+            rootParity
+          },
           recovery: coarseRec
         }));
         return;
