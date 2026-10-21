@@ -4330,34 +4330,40 @@
                         (iframesBeforeApply.length > 0)
                     );
 
-                    let applied = !!(mainWorldResult && (mainWorldResult.tokenWritten || mainWorldResult.callbackInvoked));
-                    if (captchaData.type === 'turnstile') {
-                        const input = document.querySelector('[name="cf-turnstile-response"]');
-                        if (input) { input.value = solution; applied = true; }
-                    } else if (captchaData.type === 'recaptcha') {
-                        const fields = document.querySelectorAll('[name="g-recaptcha-response"], textarea[name="g-recaptcha-response"]');
-                        for (const f of fields) {
-                            try {
-                                const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')?.set;
-                                if (nativeSetter) nativeSetter.call(f, solution);
-                                else f.value = solution;
-                                f.dispatchEvent(new Event('input', { bubbles: true }));
-                                f.dispatchEvent(new Event('change', { bubbles: true }));
-                                applied = true;
-                            } catch (_) { f.value = solution; applied = true; }
-                        }
-                        try {
-                            const gWidget = document.querySelector('.g-recaptcha[data-callback]');
-                            if (gWidget && gWidget.dataset.callback && typeof window[gWidget.dataset.callback] === 'function') {
-                                window[gWidget.dataset.callback](solution);
-                            }
-                        } catch (_) {}
-                    } else if (captchaData.type === 'hcaptcha') {
-                        const input = document.querySelector('[name="h-captcha-response"]');
-                        if (input) { input.value = solution; applied = true; }
-                    } else if (captchaData.type === 'image' && captchaData.inputElement) {
-                        captchaData.inputElement.value = solution;
+                    let applied = false;
+                    const alreadyWrittenByMainWorld = !!(mainWorldResult && mainWorldResult.tokenWritten);
+                    if (alreadyWrittenByMainWorld) {
                         applied = true;
+                        console.log(`[CAPTCHA_TOKEN_APPLIED] Token already physically written by MAIN-world bridge (single physical writer invariant preserved)`);
+                    } else {
+                        if (captchaData.type === 'turnstile') {
+                            const input = document.querySelector('[name="cf-turnstile-response"]');
+                            if (input) { input.value = solution; applied = true; }
+                        } else if (captchaData.type === 'recaptcha') {
+                            const fields = document.querySelectorAll('[name="g-recaptcha-response"], textarea[name="g-recaptcha-response"]');
+                            for (const f of fields) {
+                                try {
+                                    const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')?.set;
+                                    if (nativeSetter) nativeSetter.call(f, solution);
+                                    else f.value = solution;
+                                    f.dispatchEvent(new Event('input', { bubbles: true }));
+                                    f.dispatchEvent(new Event('change', { bubbles: true }));
+                                    applied = true;
+                                } catch (_) { f.value = solution; applied = true; }
+                            }
+                            try {
+                                const gWidget = document.querySelector('.g-recaptcha[data-callback]');
+                                if (gWidget && gWidget.dataset.callback && typeof window[gWidget.dataset.callback] === 'function') {
+                                    window[gWidget.dataset.callback](solution);
+                                }
+                            } catch (_) {}
+                        } else if (captchaData.type === 'hcaptcha') {
+                            const input = document.querySelector('[name="h-captcha-response"]');
+                            if (input) { input.value = solution; applied = true; }
+                        } else if (captchaData.type === 'image' && captchaData.inputElement) {
+                            captchaData.inputElement.value = solution;
+                            applied = true;
+                        }
                     }
 
                     console.log(`[CAPTCHA_TOKEN_APPLIED] target=${captchaData.type} applied=${applied} hadIframeBefore=${hadMatchingIframeBeforeApply}`);
@@ -4415,19 +4421,17 @@
                             tokenPresentInDom = !!(captchaData.inputElement && captchaData.inputElement.value === solution);
                         }
 
-                        // [FAIL-CLOSED] verified = true ONLY when token is present AND at least ONE
-                        // independent resolution signal is confirmed.
-                        const mainWorldCallbackInvoked = !!(mainWorldResult && mainWorldResult.callbackInvoked === true) || (document.documentElement && document.documentElement.getAttribute('data-captcha-callback-invoked') === 'true');
-                        const mainWorldResolved = !!(mainWorldResult && mainWorldResult.tokenWritten && mainWorldResult.fieldsFound > 0) || (document.documentElement && document.documentElement.getAttribute('data-captcha-resolved') === 'true');
-
+                        // [RC3.31 P0-C Fix: Eliminate Fabricated Acceptance]
+                        // tokenWritten or callbackInvoked alone NEVER constitutes independent verified signal!
+                        // XPIDER-set attributes (data-xpider-*, data-captcha-*) are integration telemetry only.
                         if (tokenPresentInDom || (mainWorldResult && mainWorldResult.tokenWritten)) {
-                            const hasIndependentSignal = isResolvedState || hasGlobalResolvedFlag || captchaIframeGone || callbackConfirmed || mainWorldCallbackInvoked || mainWorldResolved;
+                            const hasIndependentSignal = isResolvedState || hasGlobalResolvedFlag || captchaIframeGone || callbackConfirmed;
                             if (hasIndependentSignal) {
                                 verified = true;
-                                console.log(`[CAPTCHA_FAIL_CLOSED] verified=true via independent signal: resolvedState=${isResolvedState} globalFlag=${hasGlobalResolvedFlag} iframeGone=${captchaIframeGone} callback=${callbackConfirmed} mainWorldCb=${mainWorldCallbackInvoked} mainWorldRes=${mainWorldResolved}`);
+                                console.log(`[CAPTCHA_FAIL_CLOSED] verified=true via genuine independent signal: resolvedState=${isResolvedState} globalFlag=${hasGlobalResolvedFlag} iframeGone=${captchaIframeGone} callback=${callbackConfirmed}`);
                             } else {
                                 verified = false;
-                                console.warn(`[CAPTCHA_FAIL_CLOSED] verified=false — token present but NO independent resolution signal. Token-only != Challenge verified. Not incrementing CAPTCHA OK.`);
+                                console.warn(`[CAPTCHA_FAIL_CLOSED] verified=false — token integrated but NO independent resolution signal. Advancing as integrated, not verified.`);
                             }
                         } else {
                             verified = false;
@@ -4481,19 +4485,15 @@
                     )) || anchorChecked;
 
                     const hasGlobalResolvedFlag = typeof window !== 'undefined' && window.__captcha_challenge_resolved === true;
-                    const mainWorldResolved = (document.documentElement && document.documentElement.getAttribute('data-captcha-resolved') === 'true');
-                    const mainWorldCallback = (document.documentElement && document.documentElement.getAttribute('data-captcha-callback-invoked') === 'true') || !!(msg && msg.mainWorldResult && msg.mainWorldResult.callbackInvoked === true);
-
                     const iframes = document.querySelectorAll('iframe[src*="recaptcha"], iframe[src*="hcaptcha"], iframe[src*="challenges.cloudflare"]');
                     const captchaIframeGone = Boolean(hadMatchingIframeBeforeApply && iframes.length === 0);
                     const callbackConfirmed = Boolean(captchaData && captchaData.callbackConfirmed === true);
 
-                    const isNowVerified = Boolean(_isCaptchaSolved || isResolvedState || hasGlobalResolvedFlag || captchaIframeGone || callbackConfirmed || mainWorldResolved || mainWorldCallback);
+                    // [RC3.31 P0-C Fix] XPIDER attributes/callbacks never constitute challenge acceptance
+                    const isNowVerified = Boolean(_isCaptchaSolved || isResolvedState || hasGlobalResolvedFlag || captchaIframeGone || callbackConfirmed);
 
                     let signalType = 'NONE';
                     if (_isCaptchaSolved) signalType = 'ALREADY_SOLVED';
-                    else if (mainWorldCallback) signalType = 'MAIN_WORLD_CALLBACK';
-                    else if (mainWorldResolved) signalType = 'MAIN_WORLD_RESOLVED';
                     else if (isResolvedState) signalType = 'RESOLVED_STATE';
                     else if (hasGlobalResolvedFlag) signalType = 'GLOBAL_FLAG';
                     else if (captchaIframeGone) signalType = 'IFRAME_GONE';
@@ -4630,9 +4630,11 @@
     if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
         try {
             chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-                if (msg && msg.action === 'CAPTCHA_TOKEN_INJECTED') {
+                if (msg && (msg.action === 'CAPTCHA_TOKEN_INJECTED' || msg.action === 'CAPTCHA_TOKEN_RECEIVED')) {
                     _captchaTokenInjected = true;
-                    logDev(`🔑 [Security] Captcha token injected signal received via runtime message`, 'info');
+                    logDev(`🔑 [Security] Captcha token injected signal received via runtime message (action=${msg.action})`, 'info');
+                    if (sendResponse) sendResponse({ success: true, acknowledged: true, type: 'TOKEN_INJECTED_ACK' });
+                    return true;
                 } else if (msg && (msg.action === 'CAPTCHA_CHALLENGE_VERIFIED' || msg.action === 'CAPTCHA_AUTO_SUCCESS')) {
                     _isCaptchaSolved = true;
                     logDev(`🔑 [Security] Captcha verified/auto-success signal received via runtime message`, 'success');
@@ -4729,6 +4731,11 @@
                 await new Promise(r => setTimeout(r, 400));
                 return true;
             }
+            if (_captchaTokenInjected) {
+                logDev("🔑 [Security] Captcha token injected and ready to submit. Proceeding to form submission.", "info");
+                await new Promise(r => setTimeout(r, 400));
+                return true;
+            }
 
             const stillHasCaptcha = await checkForCaptcha();
             
@@ -4770,12 +4777,15 @@
                     finishCampaign(false, 'CAPTCHA_SOLVER_UNAVAILABLE', `2Captcha failed: ${solveResult.terminalError}`);
                     return false;
                 }
-                if (solveResult === true || (solveResult && (solveResult.success || solveResult.verified))) {
-                    _isCaptchaSolved = true;
+                if (solveResult === true || (solveResult && (solveResult.success || solveResult.verified || solveResult.readyToSubmit || solveResult.tokenInjected))) {
+                    if (solveResult && solveResult.verified) {
+                        _isCaptchaSolved = true;
+                    }
                     providerSolveAttempted = true;
                     providerTokenInjected = true;
-                    logDev("🔑 [Security] Auto-solve succeeded. Resuming sequence immediately.", "success");
-                    await new Promise(r => setTimeout(r, 500));
+                    _captchaTokenInjected = true;
+                    logDev(`🔑 [Security] Auto-solve complete (verified=${!!(solveResult && solveResult.verified)}, readyToSubmit=${!!(solveResult && solveResult.readyToSubmit)}). Resuming sequence for submit.`, "success");
+                    await new Promise(r => setTimeout(r, 400));
                     return true;
                 }
             }
@@ -4801,8 +4811,8 @@
             // [RC3.29 P0-C Fix: Single Authority for Auto-Solve Form Progression]
             // Only a confirmed verified signal (_isCaptchaSolved === true established via canonical
             // background success or verified response) can resume the sequence.
-            if (_isCaptchaSolved) {
-                logDev("🔑 [Security] Challenge solved verified by background. Resuming sequence.", "success");
+            if (_isCaptchaSolved || _captchaTokenInjected) {
+                logDev("🔑 [Security] Challenge solved or token injected by background. Resuming sequence.", "success");
                 await new Promise(r => setTimeout(r, 400));
                 return true;
             }

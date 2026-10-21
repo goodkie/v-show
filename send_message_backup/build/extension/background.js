@@ -2659,9 +2659,10 @@ if (typeof chrome !== 'undefined' && chrome.webNavigation && chrome.webNavigatio
                         }
                     };
  
-                    // [RC3.30 P0-C: Packaged Host Page MAIN-World Bridge Function]
+                    // [RC3.31 P0-C: Packaged Host Page MAIN-World Bridge Function]
                     // Dispatched via chrome.scripting.executeScript({ world: 'MAIN' }) into host page frame.
-                    // Accesses host page window globals, triggers callbacks, writes response fields, and sets DOM flags.
+                    // Accesses host page window globals, triggers callbacks, writes response fields, and sets telemetry attributes.
+                    // Invariant: NEVER fabricate acceptance flags (e.g. data-captcha-resolved).
                     function mainWorldCaptchaBridge(args) {
                         const token = (args && args.token) || '';
                         const captchaType = (args && args.captchaType) || 'recaptcha';
@@ -2782,14 +2783,16 @@ if (typeof chrome !== 'undefined' && chrome.webNavigation && chrome.webNavigatio
                                 }
                             }
 
-                            // 5. Shared DOM attribute marking for isolated world observation
-                            if (tokenWritten || callbackInvoked) {
+                            // 5. Shared DOM attribute marking for integration telemetry only (NEVER fabricate acceptance flags)
+                            if (tokenWritten) {
                                 try {
+                                    document.documentElement.setAttribute('data-xpider-token-written', 'true');
                                     document.documentElement.setAttribute('data-captcha-token-injected', 'true');
-                                    if (callbackInvoked) {
-                                        document.documentElement.setAttribute('data-captcha-resolved', 'true');
-                                        document.documentElement.setAttribute('data-captcha-callback-invoked', 'true');
-                                    }
+                                } catch (_) {}
+                            }
+                            if (callbackInvoked) {
+                                try {
+                                    document.documentElement.setAttribute('data-xpider-callback-invoked', 'true');
                                 } catch (_) {}
                             }
 
@@ -2813,44 +2816,128 @@ if (typeof chrome !== 'undefined' && chrome.webNavigation && chrome.webNavigatio
                         }
                     }
 
-                    // [RC3.28 Bounded Verification Window & Single Authority Serialization]:
-                    // TOKEN_RECEIVED -> TOKEN_INJECTED -> VERIFYING -> VERIFIED | ACCEPTANCE_TIMEOUT
+                    // [RC3.31 P0-A: Capability-Driven Dynamic Frame Enumeration & Selection]
+                    // Dispatched via chrome.scripting.executeScript({ allFrames: true })
+                    function inspectFrameCapabilities() {
+                        try {
+                            const fieldSelectors = [
+                                'textarea[name="g-recaptcha-response"]',
+                                '[name="g-recaptcha-response"]',
+                                '#g-recaptcha-response',
+                                'input[name="cf-turnstile-response"]',
+                                '[name="cf-turnstile-response"]',
+                                'textarea[name="h-captcha-response"]',
+                                '[name="h-captcha-response"]'
+                            ];
+                            const fields = document.querySelectorAll(fieldSelectors.join(', '));
+                            const widget = document.querySelector('.g-recaptcha, .h-captcha, [data-challenge-state], #cf-turnstile, #captcha-widget, [data-sitekey]');
+                            const cbAttr = widget ? widget.getAttribute('data-callback') : null;
+                            return {
+                                origin: (window.location && window.location.origin) || 'unknown',
+                                url: (window.location && window.location.href) || '',
+                                isTop: window === window.top,
+                                hasResponseField: fields.length > 0,
+                                fieldsCount: fields.length,
+                                hasWidgetContainer: !!widget,
+                                hasDataCallback: !!cbAttr
+                            };
+                        } catch (err) {
+                            return {
+                                origin: 'unknown',
+                                isTop: false,
+                                hasResponseField: false,
+                                fieldsCount: 0,
+                                hasWidgetContainer: false,
+                                hasDataCallback: false,
+                                error: err.message
+                            };
+                        }
+                    }
+
+                    // [RC3.31 State Machine: TOKEN_RETURNED -> TOKEN_APPLIED -> CALLBACK_INTEGRATED -> READY_TO_SUBMIT -> CAPTCHA_ACCEPTED | REJECTED]
                     const verifyAndRecordCaptchaSuccess = async (solToken, solMethod) => {
+                        if (!solToken || typeof solToken !== 'string' || solToken.trim().length < 16 || solToken.startsWith('token_override_success_') || solToken.startsWith('mock_token_')) {
+                            logBg(null, `[CAPTCHA_INVALID_TOKEN] Rejected invalid or synthetic provider token: len=${solToken ? solToken.length : 0}`, 'error');
+                            await recordTerminalCaptchaFailure(solveIdentity?.attemptId, 'NO_VALID_PROVIDER_TOKEN', 'INVALID_TOKEN');
+                            return { success: false, error: 'NO_VALID_PROVIDER_TOKEN' };
+                        }
+
                         logBg(null, `[CAPTCHA_TOKEN_RECEIVED] method=${solMethod} tokenLength=${solToken ? solToken.length : 0}`, 'info');
 
-                        // [RC3.28 Directive F / Regression Test 6] Provider-vs-integration metrics:
                         // Provider returned token => provider success metric recorded now.
                         if (campaignState.captchaLabMetrics) {
                             campaignState.captchaLabMetrics.providerTokenReturned = (campaignState.captchaLabMetrics.providerTokenReturned || 0) + 1;
                             campaignState.captchaLabMetrics.providerSuccess = (campaignState.captchaLabMetrics.providerSuccess || 0) + 1;
                         }
 
-                        // [RC3.30 P0-E: Frame-Aware Diagnostics & Exact Target Selection]
-                        const targetFrameId = 0; // Host page response field resides in top frame (frameId: 0)
-                        let frameOrigin = 'unknown';
-                        let hasField = false;
-                        let hasWidget = false;
-                        let hasCb = false;
-
+                        // 1. Dynamic Frame Enumeration across all frames in activeTabId
+                        let candidateFrames = [];
                         try {
-                            const frameInspect = await new Promise((resolve) => {
-                                chrome.tabs.sendMessage(activeTabId, {
-                                    action: 'INSPECT_CAPTCHA_FRAME'
-                                }, { frameId: targetFrameId }, (res) => resolve(res || null));
-                                setTimeout(() => resolve(null), 500);
-                            });
-                            if (frameInspect) {
-                                frameOrigin = frameInspect.origin || frameOrigin;
-                                hasField = !!frameInspect.hasResponseField;
-                                hasWidget = !!frameInspect.hasWidgetContainer;
-                                hasCb = !!frameInspect.hasDataCallback;
+                            if (typeof chrome !== 'undefined' && chrome.scripting && chrome.scripting.executeScript) {
+                                const inspectResults = await chrome.scripting.executeScript({
+                                    target: { tabId: activeTabId, allFrames: true },
+                                    func: inspectFrameCapabilities
+                                });
+                                if (Array.isArray(inspectResults)) {
+                                    candidateFrames = inspectResults.map(r => ({
+                                        frameId: r.frameId,
+                                        origin: (r.result && r.result.origin) || 'unknown',
+                                        isTop: !!(r.result && r.result.isTop),
+                                        hasResponseField: !!(r.result && r.result.hasResponseField),
+                                        hasWidgetContainer: !!(r.result && r.result.hasWidgetContainer),
+                                        hasDataCallback: !!(r.result && r.result.hasDataCallback)
+                                    }));
+                                }
                             }
-                        } catch (_) {}
+                        } catch (inspectErr) {
+                            logBg(null, `[CAPTCHA_FRAME_INSPECT_ERROR] ${inspectErr.message}`, 'warning');
+                        }
 
-                        logBg(null, `[CAPTCHA_FRAME_MAP] frameId=${targetFrameId} origin=${frameOrigin} role=HOST_PAGE_RESPONSE_FIELD hasResponseField=${hasField} hasWidgetContainer=${hasWidget} hasDataCallback=${hasCb}`, 'info');
-                        logBg(null, `[CAPTCHA_APPLY_TARGET] tabId=${activeTabId} frameId=${targetFrameId} role=HOST_PAGE_RESPONSE_FIELD responder=MAIN_WORLD_BRIDGE`, 'info');
+                        // Fallback if executeScript returned empty: query frame 0 via message
+                        if (candidateFrames.length === 0) {
+                            try {
+                                const frame0Inspect = await new Promise((resolve) => {
+                                    chrome.tabs.sendMessage(activeTabId, {
+                                        action: 'INSPECT_CAPTCHA_FRAME'
+                                    }, { frameId: 0 }, (res) => resolve(res || null));
+                                    setTimeout(() => resolve(null), 500);
+                                });
+                                if (frame0Inspect) {
+                                    candidateFrames.push({
+                                        frameId: 0,
+                                        origin: frame0Inspect.origin || 'unknown',
+                                        isTop: true,
+                                        hasResponseField: !!frame0Inspect.hasResponseField,
+                                        hasWidgetContainer: !!frame0Inspect.hasWidgetContainer,
+                                        hasDataCallback: !!frame0Inspect.hasDataCallback
+                                    });
+                                }
+                            } catch (_) {}
+                        }
 
-                        // [RC3.30 P0-C: MAIN-World Callback & Field Integration via chrome.scripting.executeScript]
+                        for (const f of candidateFrames) {
+                            logBg(null, `[CAPTCHA_FRAME_MAP] frameId=${f.frameId} origin=${f.origin} isTop=${f.isTop} hasResponseField=${f.hasResponseField} hasWidgetContainer=${f.hasWidgetContainer} hasDataCallback=${f.hasDataCallback}`, 'info');
+                        }
+
+                        // Dynamic selection of the authoritative integration frame
+                        let selectedFrame = candidateFrames.find(f => f.hasResponseField && (f.hasWidgetContainer || f.hasDataCallback));
+                        if (!selectedFrame) {
+                            selectedFrame = candidateFrames.find(f => f.hasResponseField);
+                        }
+                        if (!selectedFrame) {
+                            selectedFrame = candidateFrames.find(f => f.hasWidgetContainer);
+                        }
+
+                        if (!selectedFrame) {
+                            logBg(null, `[CAPTCHA_INTEGRATION_TARGET_ERROR] No eligible integration frame found in tab ${activeTabId} with response field or widget.`, 'error');
+                            await recordTerminalCaptchaFailure(solveIdentity?.attemptId, 'CAPTCHA_TOKEN_INTEGRATION_TARGET_NOT_FOUND', 'TARGET_NOT_FOUND');
+                            return { success: false, error: 'CAPTCHA_TOKEN_INTEGRATION_TARGET_NOT_FOUND', settleReason: 'CAPTCHA_TOKEN_INTEGRATION_TARGET_NOT_FOUND' };
+                        }
+
+                        const targetFrameId = selectedFrame.frameId;
+                        logBg(null, `[CAPTCHA_APPLY_TARGET] tabId=${activeTabId} frameId=${targetFrameId} origin=${selectedFrame.origin} role=HOST_PAGE_RESPONSE_FIELD responder=MAIN_WORLD_BRIDGE`, 'info');
+
+                        // 2. MAIN-World Bridge Execution (Physical Token Writer 1 of 1)
                         let mainWorldRes = { success: false, fieldsFound: 0, tokenWritten: false, callbackResolved: false, callbackInvoked: false };
                         try {
                             if (typeof chrome !== 'undefined' && chrome.scripting && chrome.scripting.executeScript) {
@@ -2873,8 +2960,8 @@ if (typeof chrome !== 'undefined' && chrome.webNavigation && chrome.webNavigatio
 
                         logBg(null, `[CAPTCHA_MAIN_WORLD_INTEGRATION] fieldsFound=${mainWorldRes.fieldsFound || 0} tokenWritten=${!!mainWorldRes.tokenWritten} callbackResolved=${!!mainWorldRes.callbackResolved} callbackInvoked=${!!mainWorldRes.callbackInvoked} widgetId=${mainWorldRes.widgetId || 'none'}`, 'info');
 
-                        // [RC3.30 P0-A: Targeted Message to Single Frame Writer with explicit frameId]
-                        logBg(null, `[CAPTCHA_TOKEN_APPLIED] dispatching token to active tab frame ${targetFrameId} via single authoritative transaction`, 'info');
+                        // 3. Notify Content Script via APPLY_CAPTCHA_TOKEN (Acknowledgement & Evaluation only, NOT re-writing token)
+                        logBg(null, `[CAPTCHA_TOKEN_APPLIED] notifying active tab frame ${targetFrameId} of token integration`, 'info');
                         let initialApplyRes = null;
                         try {
                             initialApplyRes = await new Promise((resolve) => {
@@ -2896,25 +2983,23 @@ if (typeof chrome !== 'undefined' && chrome.webNavigation && chrome.webNavigatio
                             initialApplyRes = { verified: false };
                         }
 
-                        // [RC3.30 P0-D: Distinguish TOKEN_INTEGRATED from CAPTCHA_ACCEPTED]
-                        let challengeVerified = !!(
-                            (initialApplyRes && initialApplyRes.verified === true) ||
-                            (mainWorldRes && mainWorldRes.callbackInvoked === true)
-                        );
+                        // [RC3.31 P0-C & P0-D: Strict Decoupling of Integration from Acceptance]
+                        // tokenWritten or callbackInvoked alone NEVER constitutes challengeVerified!
+                        let challengeAccepted = !!(initialApplyRes && initialApplyRes.verified === true);
+                        const isReadyToSubmit = !!(mainWorldRes.tokenWritten || (initialApplyRes && initialApplyRes.applied));
 
-                        if (challengeVerified) {
-                            logBg(null, `[CAPTCHA_VERIFY_SIGNAL] signalType=${mainWorldRes.callbackInvoked ? 'CALLBACK_CONFIRMED' : 'INITIAL_VERIFIED'} verified=true`, 'info');
+                        if (challengeAccepted) {
+                            logBg(null, `[CAPTCHA_VERIFY_SIGNAL] signalType=${initialApplyRes.signalType || 'WIDGET_ACCEPTED'} verified=true`, 'info');
                         } else {
-                            // [RC3.28 Directive C / Regression Test 1 & 3] Bounded verification window (7500ms):
-                            // First transient negative sample must NEVER trigger immediate failure!
+                            // Bounded window (7500ms) polling for genuine non-XPIDER widget transition
                             const VERIFY_WINDOW_MS = 7500;
                             const POLL_INTERVAL_MS = 400;
                             const verifyDeadline = Date.now() + VERIFY_WINDOW_MS;
                             logBg(null, `[CAPTCHA_VERIFY_PENDING] First sample pending verification. Entering bounded window (${VERIFY_WINDOW_MS}ms, interval=${POLL_INTERVAL_MS}ms)`, 'info');
 
-                            while (Date.now() < verifyDeadline && !challengeVerified) {
+                            while (Date.now() < verifyDeadline && !challengeAccepted) {
                                 if (campaignState.currentTargetStage === 'CAPTCHA_AUTO_SUCCESS') {
-                                    challengeVerified = true;
+                                    challengeAccepted = true;
                                     break;
                                 }
                                 if (!campaignState.isActive || campaignState.isPaused ||
@@ -2926,7 +3011,7 @@ if (typeof chrome !== 'undefined' && chrome.webNavigation && chrome.webNavigatio
                                 await new Promise(r => setTimeout(r, POLL_INTERVAL_MS));
 
                                 if (campaignState.currentTargetStage === 'CAPTCHA_AUTO_SUCCESS') {
-                                    challengeVerified = true;
+                                    challengeAccepted = true;
                                     break;
                                 }
 
@@ -2941,16 +3026,17 @@ if (typeof chrome !== 'undefined' && chrome.webNavigation && chrome.webNavigatio
                                         setTimeout(() => resolve({ verified: false }), 350);
                                     });
                                     if (pollRes && pollRes.verified === true) {
-                                        challengeVerified = true;
-                                        logBg(null, `[CAPTCHA_VERIFY_SIGNAL] signalType=${pollRes.signalType || 'POLL_VERIFIED'} verified=true`, 'info');
+                                        challengeAccepted = true;
+                                        logBg(null, `[CAPTCHA_VERIFY_SIGNAL] signalType=${pollRes.signalType || 'WIDGET_ACCEPTED'} verified=true`, 'info');
                                         break;
                                     }
                                 } catch (_) {}
                             }
                         }
 
-                        if (challengeVerified) {
-                            logBg(null, `[CAPTCHA_CHALLENGE_VERIFIED] Target challenge confirmed resolved.`, 'info');
+                        if (challengeAccepted) {
+                            // Genuine widget acceptance confirmed before submission
+                            logBg(null, `[CAPTCHA_CHALLENGE_VERIFIED] Target challenge confirmed resolved by widget.`, 'info');
                             if (campaignState.currentTargetStage === 'CAPTCHA_AUTO_SOLVING') {
                                 logBg(null, `[CAPTCHA_AUTO_SUCCESS] Challenge resolved via ${solMethod}.`, 'success');
                                 campaignState.currentTargetStage = 'CAPTCHA_AUTO_SUCCESS';
@@ -2967,25 +3053,39 @@ if (typeof chrome !== 'undefined' && chrome.webNavigation && chrome.webNavigatio
                                         attemptId: solveIdentity?.attemptId
                                     }).catch(() => {});
                                 }
+                            }
+                            return { success: true, method: solMethod, token: solToken, state: 'CAPTCHA_AUTO_SUCCESS' };
+                        } else if (isReadyToSubmit) {
+                            // [RC3.31 P0-D: Callback-Based Invisible Form Flow — READY_TO_SUBMIT]
+                            // Token is integrated into DOM & callbacks invoked, but site acceptance is downstream of form POST.
+                            // Do NOT increment captchaSolved yet! Defer until site submission confirmation.
+                            logBg(null, `[CAPTCHA_CALLBACK_INTEGRATED] Token written & callback invoked. Advancing to READY_TO_SUBMIT without premature CAPTCHA_AUTO_SUCCESS accounting.`, 'info');
+                            campaignState.currentTargetStage = 'READY_TO_SUBMIT';
+                            campaignState.captchaPendingAcceptance = {
+                                attemptId: solveIdentity.attemptId,
+                                solMethod,
+                                solToken,
+                                timestamp: Date.now()
+                            };
 
-                                const remainingMs = campaignState.targetTimeoutMs || 180000;
-                                campaignState.activeTimeoutId = setTimeout(() => {
-                                    if (campaignState.currentAttempt?.attemptId === solveIdentity.attemptId) {
-                                        logBg(null, `[CAPTCHA_DECISION] Target timeout after auto-solve.`, 'warning');
-                                    }
-                                }, remainingMs);
-                            } else {
-                                logBg(null, `[CAPTCHA_AUTO_SUCCESS] Stage already advanced by CAPTCHA_CHALLENGE_VERIFIED event (stage=${campaignState.currentTargetStage}). Skipping duplicate counter increment.`, 'info');
+                            if (activeTabId) {
+                                chrome.tabs.sendMessage(activeTabId, {
+                                    action: 'CAPTCHA_UI_STATE_UPDATE',
+                                    state: 'READY_TO_SUBMIT',
+                                    message: 'CAPTCHA integrated — ready to submit',
+                                    status: 'READY_TO_SUBMIT',
+                                    attemptId: solveIdentity?.attemptId
+                                }).catch(() => {});
                             }
 
-                            return { success: true, method: solMethod, token: solToken };
+                            return { success: true, method: solMethod, token: solToken, state: 'READY_TO_SUBMIT', readyToSubmit: true };
                         } else {
-                            // [RC3.30 P0-D: Failure Reason Discipline]
+                            // Neither widget accepted nor token written
                             const failReason = (mainWorldRes && !mainWorldRes.tokenWritten && mainWorldRes.fieldsFound === 0)
                                 ? 'CAPTCHA_TOKEN_INTEGRATION_FAILED'
                                 : 'CAPTCHA_TOKEN_ACCEPTANCE_TIMEOUT';
 
-                            logBg(null, `[CAPTCHA_VERIFICATION_FAILED] Challenge could not be verified on target page within timeout window (7500ms). reason=${failReason}`, 'error');
+                            logBg(null, `[CAPTCHA_VERIFICATION_FAILED] Challenge could not be integrated or verified within timeout window. reason=${failReason}`, 'error');
                             if (campaignState.captchaLabMetrics) {
                                 campaignState.captchaLabMetrics.acceptanceTimeout = (campaignState.captchaLabMetrics.acceptanceTimeout || 0) + 1;
                                 campaignState.captchaLabMetrics.integrationFailure = (campaignState.captchaLabMetrics.integrationFailure || 0) + 1;
@@ -4647,7 +4747,7 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
 
                 const curStage = campaignState.currentTargetStage;
                 // Stage authority: must be at allowed terminal stage or explicit failure/skip
-                const allowedTerminalStages = ['VERIFYING', 'CONFIRMED_SUCCESS', 'SUBMITTING', 'SUBMIT_TRIGGERED', 'SUBMIT_ATTEMPT_STARTED', 'POST_SUBMIT_CONFIRMING', 'SETTLED'];
+                const allowedTerminalStages = ['VERIFYING', 'CONFIRMED_SUCCESS', 'SUBMITTING', 'SUBMIT_TRIGGERED', 'SUBMIT_ATTEMPT_STARTED', 'POST_SUBMIT_CONFIRMING', 'SETTLED', 'READY_TO_SUBMIT', 'CAPTCHA_AUTO_SUCCESS'];
                 const isTerminalStageAllowed = allowedTerminalStages.includes(curStage) || 
                     (request.result && (!request.result.success || request.result.error || request.result.reasonCode === 'PREPARING_REQUEUE'));
 
@@ -4655,6 +4755,19 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                     logBg(null, `[STALE_TARGET_EVENT] action=SENDER_FINISHED stage=${curStage} result=REJECTED reason=non_terminal_stage`, 'warning');
                     sendResponse({ success: false, reason: 'INVALID_STAGE_FOR_FINISH' });
                     return;
+                }
+
+                // [RC3.31 P0-D: Downstream Site Acceptance Settlement]
+                if (campaignState.captchaPendingAcceptance) {
+                    if (request.result?.success) {
+                        logBg(null, `[CAPTCHA_ACCEPTED] Challenge accepted downstream by site submission confirmation. Transitioning to CAPTCHA_AUTO_SUCCESS.`, 'success');
+                        campaignState.captchaLedger.autoSuccess++;
+                        campaignState.counters.captchaSolved = (campaignState.counters.captchaSolved || 0) + 1;
+                        broadcastCounters();
+                    } else if (request.result?.reasonCode === 'CAPTCHA_TOKEN_REJECTED_BY_SITE' || (request.result?.error && /captcha/i.test(request.result.error))) {
+                        logBg(null, `[CAPTCHA_TOKEN_REJECTED_BY_SITE] Site rejected submitted token during form verification.`, 'error');
+                    }
+                    campaignState.captchaPendingAcceptance = null;
                 }
 
                 if (campaignState.targetResolve) {
@@ -4813,6 +4926,14 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                     };
                     const icon = stageMap[request.stage] || '📌';
                     logBg(sTab.id, `${icon} [PIPELINE][${request.stage}] url=${request.url || sTab.url}`, 'success');
+
+                    if (request.stage === 'CONFIRMED_SUCCESS' && campaignState.captchaPendingAcceptance) {
+                        logBg(null, `[CAPTCHA_ACCEPTED] Challenge accepted downstream by site submission confirmation. Transitioning to CAPTCHA_AUTO_SUCCESS.`, 'success');
+                        campaignState.captchaLedger.autoSuccess++;
+                        campaignState.counters.captchaSolved = (campaignState.counters.captchaSolved || 0) + 1;
+                        broadcastCounters();
+                        campaignState.captchaPendingAcceptance = null;
+                    }
                     if (campaignState.currentDiscoveryCtx) {
                         if (!campaignState.currentDiscoveryCtx.stageHistory) campaignState.currentDiscoveryCtx.stageHistory = [];
                         campaignState.currentDiscoveryCtx.stageHistory.push({ stage: request.stage, ts: Date.now(), url: request.url || sTab.url });
