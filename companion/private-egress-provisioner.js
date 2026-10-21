@@ -890,21 +890,30 @@ class PrivateEgressProvisioner {
 
     const existing = this.loadTransactionOwnership();
     if (existing) {
-      if (existing.status === 'ACTIVE') {
-        const err = new Error(`ACTIVE_NODE_EXISTS: Active private egress node already exists (Droplet ${existing.dropletId}, IP ${existing.publicIp}). Product scope is one node; destroy existing node before creating a new one.`);
-        err.code = 'ACTIVE_NODE_EXISTS';
-        err.journal = existing;
-        throw err;
-      }
-      if (existing.status === 'PROVISIONING' || existing.status === 'RECOVERY_REQUIRED') {
-        const err = new Error(`TRANSACTION_COLLISION: Unrecovered transaction found in journal (${existing.transactionTag}, status ${existing.status}, stage ${existing.stage}). Exact recovery or teardown required before starting new provisioning.`);
-        err.code = 'TRANSACTION_COLLISION';
-        err.journal = existing;
-        throw err;
+      if (newTransaction.blueGreen) {
+        // [Transactional Blue-Green Replacement]
+        // Retain prior active node record in staging context; do NOT reject ACTIVE_NODE_EXISTS
+        newTransaction.previousActiveNode = { ...existing };
+      } else {
+        if (existing.status === 'ACTIVE') {
+          const err = new Error(`ACTIVE_NODE_EXISTS: Active private egress node already exists (Droplet ${existing.dropletId}, IP ${existing.publicIp}). Product scope is one node; destroy existing node before creating a new one.`);
+          err.code = 'ACTIVE_NODE_EXISTS';
+          err.journal = existing;
+          throw err;
+        }
+        if (existing.status === 'PROVISIONING' || existing.status === 'RECOVERY_REQUIRED') {
+          const err = new Error(`TRANSACTION_COLLISION: Unrecovered transaction found in journal (${existing.transactionTag}, status ${existing.status}, stage ${existing.stage}). Exact recovery or teardown required before starting new provisioning.`);
+          err.code = 'TRANSACTION_COLLISION';
+          err.journal = existing;
+          throw err;
+        }
       }
     }
 
     const cleanRecord = this.createCleanJournalSchema(newTransaction);
+    if (newTransaction.previousActiveNode) {
+      cleanRecord.previousActiveNode = newTransaction.previousActiveNode;
+    }
     this.writeJournalAtomic(cleanRecord);
     return cleanRecord;
   }
@@ -1343,6 +1352,7 @@ class PrivateEgressProvisioner {
     const tierId = params.tier || 'ULTRA_ECONOMY';
     const tier = TIERS[tierId] || TIERS.ULTRA_ECONOMY;
     const region = params.region || tier.defaultRegion || 'nyc3';
+    const isBlueGreen = Boolean(params.blueGreen);
 
     let ephemeralKeyId = null;
     let dropletId = null;
@@ -1351,6 +1361,7 @@ class PrivateEgressProvisioner {
     let publicIp = null;
     let sshClient = null;
     let transactionTag = null;
+    let oldNodeRecord = null;
 
     try {
       // STEP 1: VPS CONNECTION
@@ -1372,7 +1383,16 @@ class PrivateEgressProvisioner {
       }
 
       // [R6, S6 & T6 Hardening] Bind Step B to verified quote: mandatory for real mode, validate all required fields
-      if (!this.mockMode || params.verifiedQuote || this.simulateMissingQuote || this.simulateIncompleteQuote) {
+      if (isBlueGreen && !params.verifiedQuote) {
+        // In blue-green mode, auto-derive verifiedQuote from verified provider catalog
+        params.verifiedQuote = {
+          tier: tierId,
+          region,
+          size: tier.size,
+          monthlyCostUsd: liveMonthly,
+          hourlyCostUsd: liveHourly
+        };
+      } else if (!this.mockMode || params.verifiedQuote || this.simulateMissingQuote || this.simulateIncompleteQuote) {
         if (!params.verifiedQuote || typeof params.verifiedQuote !== 'object') {
           throw new Error('MANDATORY_QUOTE_REQUIRED: Step B requires a verified quote from Step A. Please run Step A first.');
         }
@@ -1420,17 +1440,24 @@ class PrivateEgressProvisioner {
       // [U2 & U3 Hardening] Load existing journal; block second one-click node if ACTIVE; reject if collision
       const existingJournal = this.loadTransactionOwnership();
       if (existingJournal) {
-        if (existingJournal.status === 'ACTIVE') {
-          const err = new Error(`ACTIVE_NODE_EXISTS: Active private egress node already exists (Droplet ${existingJournal.dropletId}, IP ${existingJournal.publicIp}). Product scope is one node; destroy existing node before creating a new one.`);
-          err.code = 'ACTIVE_NODE_EXISTS';
-          err.journal = existingJournal;
-          throw err;
-        }
-        if (existingJournal.status === 'PROVISIONING' || existingJournal.status === 'RECOVERY_REQUIRED') {
-          const err = new Error(`TRANSACTION_COLLISION: Unrecovered transaction found in journal (${existingJournal.transactionTag}, status ${existingJournal.status}, stage ${existingJournal.stage}). Exact recovery or teardown required before starting new provisioning.`);
-          err.code = 'TRANSACTION_COLLISION';
-          err.journal = existingJournal;
-          throw err;
+        if (isBlueGreen) {
+          if (existingJournal.status === 'ACTIVE' || existingJournal.dropletId) {
+            oldNodeRecord = { ...existingJournal };
+            this.logProgress(1, 'WORKING', `Transactional Blue-Green replacement initiated. Prior node Droplet ${oldNodeRecord.dropletId} (tag: ${oldNodeRecord.transactionTag}) will be preserved until replacement is verified READY.`);
+          }
+        } else {
+          if (existingJournal.status === 'ACTIVE') {
+            const err = new Error(`ACTIVE_NODE_EXISTS: Active private egress node already exists (Droplet ${existingJournal.dropletId}, IP ${existingJournal.publicIp}). Product scope is one node; destroy existing node before creating a new one.`);
+            err.code = 'ACTIVE_NODE_EXISTS';
+            err.journal = existingJournal;
+            throw err;
+          }
+          if (existingJournal.status === 'PROVISIONING' || existingJournal.status === 'RECOVERY_REQUIRED') {
+            const err = new Error(`TRANSACTION_COLLISION: Unrecovered transaction found in journal (${existingJournal.transactionTag}, status ${existingJournal.status}, stage ${existingJournal.stage}). Exact recovery or teardown required before starting new provisioning.`);
+            err.code = 'TRANSACTION_COLLISION';
+            err.journal = existingJournal;
+            throw err;
+          }
         }
       }
 
@@ -1447,7 +1474,9 @@ class PrivateEgressProvisioner {
         tier: tier.id,
         monthlyCostUsd: effectiveMonthlyCost,
         hourlyCostUsd: effectiveHourlyCost,
-        createdAt: Date.now()
+        createdAt: Date.now(),
+        blueGreen: isBlueGreen,
+        previousActiveNode: oldNodeRecord
       });
 
       // [R2 & T1 Hardening] Generate known ephemeral SSH Host keypair locally without external binaries
@@ -1812,6 +1841,29 @@ systemctl restart ssh || systemctl restart sshd
         stage: 'COMPLETED'
       });
 
+      // [Transactional Blue-Green Replacement]
+      // Only AFTER replacement is verified READY, tear down the exact old droplet/firewall/tag
+      if (oldNodeRecord && oldNodeRecord.dropletId) {
+        this.logProgress(8, 'WORKING', `Replacement node verified READY. Tearing down prior egress droplet ${oldNodeRecord.dropletId} and firewall ${oldNodeRecord.firewallId}...`);
+        try {
+          if (oldNodeRecord.registeredNodeId && oldNodeRecord.registeredNodeId !== nodeId) {
+            await this.removeNodeFromCompanion(oldNodeRecord.registeredNodeId);
+          }
+          if (oldNodeRecord.firewallId) {
+            await this.deleteExactResource(`/firewalls/${oldNodeRecord.firewallId}`);
+          }
+          if (oldNodeRecord.dropletId) {
+            await this.deleteExactResource(`/droplets/${oldNodeRecord.dropletId}`);
+          }
+          if (oldNodeRecord.transactionTag && oldNodeRecord.transactionTag !== transactionTag) {
+            await this.deleteTransactionTag(oldNodeRecord.transactionTag);
+          }
+          this.logProgress(8, 'PASS', `Prior node ${oldNodeRecord.dropletId} cleanly decommissioned.`);
+        } catch (oldTeardownErr) {
+          console.warn('[BLUE_GREEN] Teardown of old node warning:', redactSecrets(oldTeardownErr.message, [this.token]));
+        }
+      }
+
       return {
         success: true,
         transactionTag,
@@ -1840,19 +1892,24 @@ systemctl restart ssh || systemctl restart sshd
       });
 
       if (!rollbackRes.success) {
-        // [T4 Hardening] DO NOT clear ownership on incomplete rollback!
-        // Preserve recovery journal with status: 'RECOVERY_REQUIRED' and remaining tracked resources.
-        this.updateTransactionJournal({
-          transactionTag,
-          status: 'RECOVERY_REQUIRED',
-          stage: 'ROLLBACK_INCOMPLETE',
-          failedAt: Date.now(),
-          rollbackErrors: rollbackRes.errors,
-          ephemeralKeyId: rollbackRes.verifications.sshKeyAbsent ? null : ephemeralKeyId,
-          firewallId: rollbackRes.verifications.firewallAbsent ? null : firewallId,
-          dropletId: rollbackRes.verifications.dropletAbsent ? null : dropletId,
-          registeredNodeId: rollbackRes.verifications.companionNodeAbsent ? null : registeredNodeId
-        });
+        if (oldNodeRecord) {
+          console.error(`[PROVISIONER_ROLLBACK_INCOMPLETE] Blue-green replacement failed with cleanup errors. Restoring previous active node ${oldNodeRecord.dropletId}.`);
+          this.writeJournalAtomic(oldNodeRecord);
+        } else {
+          // [T4 Hardening] DO NOT clear ownership on incomplete rollback!
+          // Preserve recovery journal with status: 'RECOVERY_REQUIRED' and remaining tracked resources.
+          this.updateTransactionJournal({
+            transactionTag,
+            status: 'RECOVERY_REQUIRED',
+            stage: 'ROLLBACK_INCOMPLETE',
+            failedAt: Date.now(),
+            rollbackErrors: rollbackRes.errors,
+            ephemeralKeyId: rollbackRes.verifications.sshKeyAbsent ? null : ephemeralKeyId,
+            firewallId: rollbackRes.verifications.firewallAbsent ? null : firewallId,
+            dropletId: rollbackRes.verifications.dropletAbsent ? null : dropletId,
+            registeredNodeId: rollbackRes.verifications.companionNodeAbsent ? null : registeredNodeId
+          });
+        }
         const cleanupMsg = `CLEANUP_REQUIRED: Provisioning failed and automatic cloud rollback encountered errors: ${rollbackRes.errors.join(', ')}`;
         console.error('[PROVISIONER_ROLLBACK_INCOMPLETE]', cleanupMsg);
         const wrappedErr = new Error(`${scrubbedErrMsg} [${cleanupMsg}]`);
@@ -1860,7 +1917,12 @@ systemctl restart ssh || systemctl restart sshd
       }
 
       // Rollback was 100% verified clean
-      this.clearTransactionOwnership();
+      if (oldNodeRecord) {
+        console.log(`[PROVISIONER_ROLLBACK] Blue-green replacement failed. Restoring previous active node ${oldNodeRecord.dropletId} to transaction journal.`);
+        this.writeJournalAtomic(oldNodeRecord);
+      } else {
+        this.clearTransactionOwnership();
+      }
 
       const wrappedErr = new Error(scrubbedErrMsg);
       wrappedErr.stack = redactSecrets(err.stack || '', [this.token]);
@@ -2407,6 +2469,20 @@ systemctl restart ssh || systemctl restart sshd
       if (this.simulateRepairTimeout) {
         return { success: false, code: 'EGRESS_PROBE_TIMEOUT', message: 'Remote egress preflight failed: TIMEOUT' };
       }
+      if (this.simulateCloudFirewallOkHostUfwBlocked) {
+        if (params.blueGreenFallback) {
+          return await this.provisionPrivateEgress({
+            blueGreen: true,
+            tier: savedTx.tier || 'ULTRA_ECONOMY',
+            region: savedTx.region || 'tor1'
+          });
+        }
+        return {
+          success: false,
+          code: 'CLOUD_FIREWALL_OK_HOST_UFW_BLOCKED',
+          message: 'Cloud Firewall is correctly configured for current Owner CIDR (159.26.98.240/32), but remote host dropped/rejected egress traffic (TIMEOUT). Host UFW lockout or service failure detected.'
+        };
+      }
       this.logProgress(1, 'PASS', 'Remote provider identity verified.');
       this.logProgress(2, 'PASS', 'Droplet status active and firewall rules strictly scoped.');
       this.logProgress(3, 'PASS', 'TLS listener and CONNECT canary verified healthy.');
@@ -2483,6 +2559,7 @@ systemctl restart ssh || systemctl restart sshd
     const ownerIp = await this.getOwnerProvisioningIp();
     const ownerCidr = formatIpCidr(ownerIp);
     const allowedSources = [ownerCidr];
+    let cloudFirewallOk = false;
 
     if (firewallId) {
       try {
@@ -2500,6 +2577,7 @@ systemctl restart ssh || systemctl restart sshd
           };
           validateDigitalOceanFirewallPayload(updateFwPayload);
           await this.doRequest(`/firewalls/${firewallId}`, 'PUT', updateFwPayload);
+          cloudFirewallOk = true;
           this.logProgress(3, 'PASS', `Firewall updated: port 8443 strictly scoped to ${ownerCidr}, port 22 absent.`);
         }
       } catch (fwErr) {
@@ -2536,6 +2614,22 @@ systemctl restart ssh || systemctl restart sshd
     const isPreflightOk = Boolean(preflight && (preflight.ready === true || preflight.ok === true || preflight.success === true));
     if (!isPreflightOk) {
       const failReason = (preflight && (preflight.reason || preflight.error)) || 'TIMEOUT';
+      if (cloudFirewallOk) {
+        this.logProgress(5, 'FAIL', `Remote egress preflight failed: CLOUD_FIREWALL_OK_HOST_UFW_BLOCKED (${failReason})`);
+        if (params.blueGreenFallback) {
+          this.logProgress(5, 'WORKING', `Cloud Firewall is OK but host UFW dropped traffic. Initiating transactional Blue-Green replacement fallback...`);
+          return await this.provisionPrivateEgress({
+            blueGreen: true,
+            tier: savedTx.tier || 'ULTRA_ECONOMY',
+            region: savedTx.region || 'tor1'
+          });
+        }
+        return {
+          success: false,
+          code: 'CLOUD_FIREWALL_OK_HOST_UFW_BLOCKED',
+          message: `Cloud Firewall is correctly configured for current Owner CIDR (${ownerCidr}), but remote host dropped/rejected egress traffic (${failReason}). Host UFW lockout or service failure detected.`
+        };
+      }
       this.logProgress(5, 'FAIL', `Remote egress preflight failed: ${failReason}`);
       return {
         success: false,

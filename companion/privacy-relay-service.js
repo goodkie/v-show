@@ -1881,7 +1881,8 @@ class PrivacyRelayService {
             const result = await provisioner.provisionPrivateEgress({
               tier: reqData.tier || 'ULTRA_ECONOMY',
               region: reqData.region || 'nyc3',
-              verifiedQuote: reqData.verifiedQuote || null
+              verifiedQuote: reqData.verifiedQuote || null,
+              blueGreen: Boolean(reqData.blueGreen)
             });
             this.provisioningState.running = false;
             this.provisioningState.result = result;
@@ -1959,10 +1960,13 @@ class PrivacyRelayService {
               mockMode: Boolean(data.mockMode)
             });
 
-            const repairRes = await provisioner.repairExistingEgress(data);
+            const repairRes = await provisioner.repairExistingEgress({
+              ...data,
+              blueGreenFallback: Boolean(data.blueGreenFallback)
+            });
             this.log(`[REPAIR_EGRESS] Repair result: success=${repairRes.success} code=${repairRes.code}`);
 
-            if (repairRes && repairRes.success && repairRes.code === 'REPAIRED_READY') {
+            if (repairRes && repairRes.success && (repairRes.code === 'REPAIRED_READY' || repairRes.status === 'READY' || repairRes.preflight?.ready)) {
               const activeNode = this.getActiveNode();
               if (activeNode) {
                 const vRes = await this.verifyNodeEgress(activeNode, this.pool.healthCheckTimeoutMs || 5000);
