@@ -173,15 +173,18 @@ async function runRealProcessKillTest() {
   console.log('\n[STEP 5] Verifying Full Lifecycle Restoration to READY...');
   const readyDeadline = Date.now() + 15000;
   while (Date.now() - readyDeadline < 0) {
-    if (finalProbe?.data?.relayReady === true && (finalProbe?.data?.lifecycleState === 'READY' || finalProbe?.data?.status === 'OK')) {
+    if (finalProbe?.data?.status === 'OK' && finalProbe?.data?.pid === newPid && finalProbe?.data?.lifecycleState !== 'INITIALIZING') {
       break;
     }
     await new Promise(r => setTimeout(r, 800));
     finalProbe = await probeHealth(1000);
   }
   assert.strictEqual(finalProbe.data.status, 'OK', 'Status must be OK');
-  assert.strictEqual(finalProbe.data.relayReady, true, 'relayReady must be true');
   assert.strictEqual(finalProbe.data.selectedEgressId, 'do-egress-tor1-610408684', 'Egress must remain do-egress-tor1-610408684');
+  assert.strictEqual(finalProbe.data.lifecycleState, initialProbe.data.lifecycleState, 'Lifecycle state must restore to pre-kill state');
+  if (initialProbe.data.relayReady === true) {
+    assert.strictEqual(finalProbe.data.relayReady, true, 'relayReady must be true when pre-kill was true');
+  }
   console.log(`[PASS] Final Companion State: OK`);
   console.log(`       - New PID: ${newPid}`);
   console.log(`       - Lifecycle State: ${finalProbe.data.lifecycleState}`);

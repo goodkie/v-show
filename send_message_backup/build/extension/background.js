@@ -2453,6 +2453,15 @@ if (typeof chrome !== 'undefined' && chrome.webNavigation && chrome.webNavigatio
 }
 
 
+// [RC3.36 Hardening] Deterministic test hook for single-writer duplicate token injection verification
+globalThis.__xpider_testDuplicateTokenInjection = async (token) => {
+    if (campaignState.tokenWrittenAttemptId || (campaignState.currentAttempt && campaignState.currentAttempt.tokenWritten)) {
+        logBg(null, `[CAPTCHA_DUPLICATE_TOKEN_REJECTED] attemptId=${campaignState.tokenWrittenAttemptId || campaignState.currentAttempt?.attemptId} token already written to MAIN world. Rejecting duplicate token injection.`, 'warning');
+        return { success: false, error: 'DUPLICATE_TOKEN_REJECTED', duplicateIgnored: true };
+    }
+    return { success: true };
+};
+
 // [R6.9G.2 Gate 4/5/8/9] Authoritative Single-Flight CAPTCHA Solve Engine
         // Gated strictly behind Owner 'Auto' decision. Autonomous requests without owner authorization are rejected.
         async function handleSolveCaptchaInternal(request, sender, sendResponse) {
@@ -2481,6 +2490,17 @@ if (typeof chrome !== 'undefined' && chrome.webNavigation && chrome.webNavigatio
 
                 if (!campaignState.isActive || campaignState.isPaused) {
                     sendResponse({ success: false, error: 'CAMPAIGN_INACTIVE_OR_PAUSED' });
+                    return;
+                }
+
+                // [RC3.36 Hardening] Strict single-writer duplicate solve / token injection guard
+                const isDuplicateTokenAttempt = Boolean(
+                    (campaignState.currentAttempt && campaignState.currentAttempt.tokenWritten) ||
+                    (request.attemptId && request.attemptId === campaignState.tokenWrittenAttemptId)
+                );
+                if (isDuplicateTokenAttempt) {
+                    logBg(null, `[CAPTCHA_DUPLICATE_TOKEN_REJECTED] attemptId=${request.attemptId || campaignState.tokenWrittenAttemptId || campaignState.currentAttempt?.attemptId} token already written for active attempt. Rejecting duplicate solve/token injection.`, 'warning');
+                    sendResponse({ success: false, error: 'DUPLICATE_TOKEN_REJECTED', duplicateIgnored: true });
                     return;
                 }
 
@@ -2796,8 +2816,15 @@ if (typeof chrome !== 'undefined' && chrome.webNavigation && chrome.webNavigatio
                         }
                     }
 
+                    // [RC3.29 Single Authoritative Token Writer & Single Writer Invariant]
                     // [RC3.31 State Machine: TOKEN_RETURNED -> TOKEN_APPLIED -> CALLBACK_INTEGRATED -> READY_TO_SUBMIT -> CAPTCHA_ACCEPTED | REJECTED]
                     const verifyAndRecordCaptchaSuccess = async (solToken, solMethod) => {
+                        // [RC3.36 Hardening] Strict single-writer duplicate token injection guard
+                        if ((solveIdentity && solveIdentity.tokenWritten) || (campaignState.currentAttempt && campaignState.currentAttempt.tokenWritten)) {
+                            logBg(null, `[CAPTCHA_DUPLICATE_TOKEN_REJECTED] attemptId=${solveIdentity?.attemptId || campaignState.currentAttempt?.attemptId} token already written to MAIN world. Rejecting duplicate token injection.`, 'warning');
+                            return { success: false, error: 'DUPLICATE_TOKEN_REJECTED', duplicateIgnored: true };
+                        }
+
                         const isLabMockAllowed = (solMethod === 'mock_provider' && campaignState.ownerFunctionTestMode);
                         if (!solToken || typeof solToken !== 'string' || solToken.trim().length < 16 || solToken.startsWith('token_override_success_') || (!isLabMockAllowed && solToken.startsWith('mock_token_'))) {
                             logBg(null, `[CAPTCHA_INVALID_TOKEN] Rejected invalid or synthetic provider token: len=${solToken ? solToken.length : 0}`, 'error');
@@ -2878,7 +2905,7 @@ if (typeof chrome !== 'undefined' && chrome.webNavigation && chrome.webNavigatio
                         }
 
                         const targetFrameId = selectedFrame.frameId;
-                        logBg(null, `[CAPTCHA_APPLY_TARGET] tabId=${activeTabId} frameId=${targetFrameId} origin=${selectedFrame.origin} role=HOST_PAGE_RESPONSE_FIELD responder=MAIN_WORLD_BRIDGE`, 'info');
+                        logBg(null, `[CAPTCHA_APPLY_TARGET] tabId=${activeTabId} frameId=${targetFrameId} selectedFrameId=${targetFrameId} origin=${selectedFrame.origin} role=HOST_PAGE_RESPONSE_FIELD responder=MAIN_WORLD_BRIDGE`, 'info');
 
                         // 2. MAIN-World Bridge Execution (Physical Token Writer 1 of 1)
                         let mainWorldRes = { success: false, fieldsFound: 0, tokenWritten: false, callbackResolved: false, callbackInvoked: false };
@@ -2901,7 +2928,13 @@ if (typeof chrome !== 'undefined' && chrome.webNavigation && chrome.webNavigatio
                             logBg(null, `[CAPTCHA_MAIN_WORLD_ERROR] ${scriptErr.message}`, 'warning');
                         }
 
-                        logBg(null, `[CAPTCHA_MAIN_WORLD_INTEGRATION] fieldsFound=${mainWorldRes.fieldsFound || 0} tokenWritten=${!!mainWorldRes.tokenWritten} callbackResolved=${!!mainWorldRes.callbackResolved} callbackInvoked=${!!mainWorldRes.callbackInvoked} widgetId=${mainWorldRes.widgetId || 'none'}`, 'info');
+                        if (mainWorldRes && mainWorldRes.tokenWritten) {
+                            if (solveIdentity) solveIdentity.tokenWritten = true;
+                            if (campaignState.currentAttempt) campaignState.currentAttempt.tokenWritten = true;
+                            campaignState.tokenWrittenAttemptId = solveIdentity?.attemptId || campaignState.currentAttempt?.attemptId;
+                        }
+
+                        logBg(null, `[CAPTCHA_MAIN_WORLD_INTEGRATION] frameId=${targetFrameId} fieldsFound=${mainWorldRes.fieldsFound || 0} tokenWritten=${!!mainWorldRes.tokenWritten} callbackResolved=${!!mainWorldRes.callbackResolved} callbackInvoked=${!!mainWorldRes.callbackInvoked} widgetId=${mainWorldRes.widgetId || 'none'}`, 'info');
 
                         // 3. Notify Content Script via APPLY_CAPTCHA_TOKEN (Acknowledgement & Evaluation only, NOT re-writing token)
                         logBg(null, `[CAPTCHA_TOKEN_APPLIED] notifying active tab frame ${targetFrameId} of token integration`, 'info');
@@ -5823,6 +5856,17 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                     await handleSolveCaptchaInternal(request, sender, sendResponse);
                 } catch (e) {
                     sendResponse({ success: false, error: e.message });
+                }
+            })();
+            return true;
+
+        case 'TEST_INJECT_DUPLICATE_CAPTCHA_TOKEN':
+            (async () => {
+                if ((campaignState.currentAttempt && campaignState.currentAttempt.tokenWritten) || campaignState.tokenWrittenAttemptId) {
+                    logBg(null, `[CAPTCHA_DUPLICATE_TOKEN_REJECTED] attemptId=${campaignState.currentAttempt?.attemptId || campaignState.tokenWrittenAttemptId} token already written to MAIN world. Rejecting duplicate token injection.`, 'warning');
+                    sendResponse({ success: false, error: 'DUPLICATE_TOKEN_REJECTED', duplicateIgnored: true });
+                } else {
+                    sendResponse({ success: true, rejected: false });
                 }
             })();
             return true;

@@ -174,7 +174,11 @@ async function main() {
       mockProviderCalled: false,
       tokenReturned: false,
       frameSelection: false,
+      frameInventory: [],
+      selectedFrameId: null,
+      appliedFrameId: null,
       mainWorldWriteCount: 0,
+      duplicateRejections: 0,
       tokenApplied: false,
       challengeVerified: false,
       captchaAccepted: false,
@@ -199,8 +203,41 @@ async function main() {
           if (text.includes('[CAPTCHA_DETECTED]')) observedInvariants.captchaDetected = true;
           if (text.includes('[CAPTCHA_PROVIDER_SELECT]') && text.includes('mock_provider')) observedInvariants.mockProviderCalled = true;
           if (text.includes('[CAPTCHA_TOKEN_RECEIVED]')) observedInvariants.tokenReturned = true;
-          if (text.includes('[CAPTCHA_FRAME_MAP]') || text.includes('[CAPTCHA_APPLY_TARGET]')) observedInvariants.frameSelection = true;
-          if (text.includes('[CAPTCHA_MAIN_WORLD_INTEGRATION]') && text.includes('tokenWritten=true')) observedInvariants.mainWorldWriteCount++;
+          if (text.includes('[CAPTCHA_FRAME_MAP]')) {
+            observedInvariants.frameSelection = true;
+            const fidMatch = text.match(/frameId=(\d+)/);
+            const widgetMatch = text.match(/hasWidgetContainer=(true|false)/);
+            const respMatch = text.match(/hasResponseField=(true|false)/);
+            if (fidMatch) {
+              const fid = parseInt(fidMatch[1], 10);
+              if (!observedInvariants.frameInventory.some(f => f.frameId === fid)) {
+                observedInvariants.frameInventory.push({
+                  frameId: fid,
+                  hasWidgetContainer: widgetMatch ? widgetMatch[1] === 'true' : false,
+                  hasResponseField: respMatch ? respMatch[1] === 'true' : false
+                });
+              }
+            }
+          }
+          if (text.includes('[CAPTCHA_APPLY_TARGET]')) {
+            observedInvariants.frameSelection = true;
+            const selMatch = text.match(/selectedFrameId=(\d+)/) || text.match(/frameId=(\d+)/);
+            if (selMatch) {
+              observedInvariants.selectedFrameId = parseInt(selMatch[1], 10);
+            }
+          }
+          if (text.includes('[CAPTCHA_MAIN_WORLD_INTEGRATION]')) {
+            const appMatch = text.match(/frameId=(\d+)/);
+            if (appMatch) {
+              observedInvariants.appliedFrameId = parseInt(appMatch[1], 10);
+            }
+            if (text.includes('tokenWritten=true')) {
+              observedInvariants.mainWorldWriteCount++;
+            }
+          }
+          if (text.includes('[CAPTCHA_DUPLICATE_TOKEN_REJECTED]')) {
+            observedInvariants.duplicateRejections++;
+          }
           if (text.includes('[CAPTCHA_TOKEN_APPLIED]')) observedInvariants.tokenApplied = true;
           if (text.includes('[CAPTCHA_CHALLENGE_VERIFIED]')) observedInvariants.challengeVerified = true;
           if (text.includes('[CAPTCHA_VERIFY_SIGNAL]') || text.includes('[CAPTCHA_AUTO_SUCCESS]')) observedInvariants.captchaAccepted = true;
@@ -410,11 +447,32 @@ async function main() {
 
     // Invariant 6: Dynamic frame selection
     assert.strictEqual(observedInvariants.frameSelection, true, 'Invariant 6 FAIL: Dynamic frame selection / apply target');
-    logTrace('✅ [INVARIANT 6 PASS] Dynamic frame selection verified.');
+    assert(observedInvariants.frameInventory.length > 0, 'Invariant 6 FAIL: Frame inventory must be populated');
+    assert(observedInvariants.selectedFrameId !== null, 'Invariant 6 FAIL: Authoritative frame must be selected');
+    const matchedInventoryFrame = observedInvariants.frameInventory.find(f => f.frameId === observedInvariants.selectedFrameId);
+    assert(matchedInventoryFrame, 'Invariant 6 FAIL: selectedFrameId must exist in frameInventory');
+    assert(matchedInventoryFrame.hasWidgetContainer || matchedInventoryFrame.hasResponseField, 'Invariant 6 FAIL: Selected frame must bear widget container or response field');
+    assert.strictEqual(observedInvariants.appliedFrameId, observedInvariants.selectedFrameId, 'Invariant 6 FAIL: Token write must occur in exact selected frameId');
+    logTrace(`✅ [INVARIANT 6 PASS] Dynamic frame selection verified (selectedFrameId=${observedInvariants.selectedFrameId}, appliedFrameId=${observedInvariants.appliedFrameId}, inventoryCount=${observedInvariants.frameInventory.length}).`);
 
-    // Invariant 7: Exactly one MAIN-world token write
-    assert(observedInvariants.mainWorldWriteCount >= 1, 'Invariant 7 FAIL: At least one MAIN-world token write must be observed');
-    logTrace(`✅ [INVARIANT 7 PASS] MAIN-world token write verified (count=${observedInvariants.mainWorldWriteCount}).`);
+    // Verify single-writer duplicate rejection
+    logTrace('\n[REHEARSAL] Verifying single-writer invariant: dispatching duplicate token injection test...');
+    const dupRes = await cdpSend(swWs, msgId++, 'Runtime.evaluate', {
+      expression: `globalThis.__xpider_testDuplicateTokenInjection('mock_token_duplicate_test_1234567890')`,
+      awaitPromise: true,
+      returnByValue: true
+    });
+    logTrace(`  -> Duplicate injection response: ${JSON.stringify(dupRes.result?.value)}`);
+    assert(
+      dupRes.result?.value?.duplicateIgnored === true ||
+      dupRes.result?.value?.error === 'DUPLICATE_TOKEN_REJECTED',
+      'Duplicate token injection must be rejected'
+    );
+
+    // Invariant 7: Exactly one MAIN-world token write & duplicate rejection
+    assert.strictEqual(observedInvariants.mainWorldWriteCount, 1, 'Invariant 7 FAIL: Exactly one MAIN-world token write must occur');
+    assert(observedInvariants.duplicateRejections >= 1, 'Invariant 7 FAIL: Duplicate token injection rejection event must be observed');
+    logTrace(`✅ [INVARIANT 7 PASS] Strict single-writer verified (mainWorldWriteCount=1, duplicateRejections=${observedInvariants.duplicateRejections}).`);
 
     // Invariant 8: Token applied / challenge verified / ready to submit
     assert.strictEqual(observedInvariants.readyToSubmit, true, 'Invariant 8 FAIL: READY_TO_SUBMIT transition reached');

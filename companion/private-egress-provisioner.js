@@ -377,6 +377,8 @@ class PrivateEgressProvisioner {
     this.simulateRecreateRequired = Boolean(options.simulateRecreateRequired);
     this.simulateSecurityBlocked = Boolean(options.simulateSecurityBlocked);
     this.simulateRepairTimeout = Boolean(options.simulateRepairTimeout);
+    this.runFullRepairWorkflowInMock = Boolean(options.runFullRepairWorkflowInMock);
+    this.dropletRebootTriggered = false;
     this.mockTags = options.mockTags ? [...options.mockTags] : [];
     this.mockFirewalls = {};
     this.mockDeletedResources = {
@@ -1936,12 +1938,17 @@ systemctl restart ssh || systemctl restart sshd
       if (this.simulatePreflightFailure) {
         return {
           ready: false,
-          reason: 'SIMULATED_PREFLIGHT_FAILURE'
+          ok: false,
+          success: false,
+          reason: 'SIMULATED_PREFLIGHT_FAILURE',
+          error: 'SIMULATED_PREFLIGHT_FAILURE'
         };
       }
       if (this.simulateNullObservedIp) {
         return {
           ready: true,
+          ok: true,
+          success: true,
           relayActive: true,
           effectiveProxyMode: 'PRIVACY_RELAY',
           selectedNode: nodeId,
@@ -1952,6 +1959,8 @@ systemctl restart ssh || systemctl restart sshd
       if (this.simulateMismatchedObservedIp) {
         return {
           ready: true,
+          ok: true,
+          success: true,
           relayActive: true,
           effectiveProxyMode: 'PRIVACY_RELAY',
           selectedNode: nodeId,
@@ -1961,6 +1970,8 @@ systemctl restart ssh || systemctl restart sshd
       }
       return {
         ready: true,
+        ok: true,
+        success: true,
         relayActive: true,
         effectiveProxyMode: 'PRIVACY_RELAY',
         selectedNode: nodeId,
@@ -1972,22 +1983,24 @@ systemctl restart ssh || systemctl restart sshd
     // 1. Query Companion Control Plane (/status)
     const status = await this.getCompanionStatus();
     if (!status) {
-      return { ready: false, reason: 'COMPANION_STATUS_UNAVAILABLE' };
+      return { ready: false, ok: false, success: false, reason: 'COMPANION_STATUS_UNAVAILABLE', error: 'COMPANION_STATUS_UNAVAILABLE' };
     }
     if (!status.relayReady) {
-      return { ready: false, reason: `RELAY_NOT_READY (health: ${status.health || 'UNKNOWN'})` };
+      const msg = `RELAY_NOT_READY (health: ${status.health || 'UNKNOWN'})`;
+      return { ready: false, ok: false, success: false, reason: msg, error: msg };
     }
     if (status.selectedEgressId !== nodeId) {
-      return { ready: false, reason: `EGRESS_NODE_NOT_SELECTED (current: ${status.selectedEgressId}, expected: ${nodeId})` };
+      const msg = `EGRESS_NODE_NOT_SELECTED (current: ${status.selectedEgressId}, expected: ${nodeId})`;
+      return { ready: false, ok: false, success: false, reason: msg, error: msg };
     }
 
     // 2. Verify selected node is in nodes list and is HEALTHY
     const activeNode = (status.nodes || []).find(n => n.id === nodeId);
     if (!activeNode) {
-      return { ready: false, reason: `NODE_NOT_FOUND_IN_POOL: ${nodeId}` };
+      return { ready: false, ok: false, success: false, reason: `NODE_NOT_FOUND_IN_POOL: ${nodeId}`, error: `NODE_NOT_FOUND_IN_POOL: ${nodeId}` };
     }
     if (activeNode.lastHealth !== 'HEALTHY') {
-      return { ready: false, reason: `NODE_HEALTH_NOT_HEALTHY: ${activeNode.lastHealth}` };
+      return { ready: false, ok: false, success: false, reason: `NODE_HEALTH_NOT_HEALTHY: ${activeNode.lastHealth}`, error: `NODE_HEALTH_NOT_HEALTHY: ${activeNode.lastHealth}` };
     }
 
     // 3. Canary probe verification through loopback relay proxy (port 18988)
@@ -2030,29 +2043,36 @@ systemctl restart ssh || systemctl restart sshd
     });
 
     if (!probeRes.success) {
-      return { ready: false, reason: `RELAY_PROXY_PROBE_FAILED: ${probeRes.reason}` };
+      const msg = `RELAY_PROXY_PROBE_FAILED: ${probeRes.reason}`;
+      return { ready: false, ok: false, success: false, reason: msg, error: msg };
     }
 
     // [R4 & S4 Hardening] Observed IP MUST exist, MUST be a valid public IP, and MUST match expected Droplet egress IP
     if (!probeRes.observedIp || typeof probeRes.observedIp !== 'string') {
-      return { ready: false, reason: 'EGRESS_IP_MISSING: Canary TLS succeeded but egress IP was not observed' };
+      const msg = 'EGRESS_IP_MISSING: Canary TLS succeeded but egress IP was not observed';
+      return { ready: false, ok: false, success: false, reason: msg, error: msg };
     }
 
     const cleanObserved = probeRes.observedIp.trim();
     if (!net.isIP(cleanObserved)) {
-      return { ready: false, reason: `EGRESS_IP_INVALID: Observed IP "${cleanObserved}" is not a valid IP address` };
+      const msg = `EGRESS_IP_INVALID: Observed IP "${cleanObserved}" is not a valid IP address`;
+      return { ready: false, ok: false, success: false, reason: msg, error: msg };
     }
 
     if (!isPublicIp(cleanObserved, this.mockMode)) {
-      return { ready: false, reason: `EGRESS_IP_NON_PUBLIC: Observed IP "${cleanObserved}" is not a public egress IP` };
+      const msg = `EGRESS_IP_NON_PUBLIC: Observed IP "${cleanObserved}" is not a public egress IP`;
+      return { ready: false, ok: false, success: false, reason: msg, error: msg };
     }
 
     if (expectedIp && cleanObserved !== expectedIp.trim()) {
-      return { ready: false, reason: `EGRESS_IP_MISMATCH: observed ${cleanObserved}, expected ${expectedIp}` };
+      const msg = `EGRESS_IP_MISMATCH: observed ${cleanObserved}, expected ${expectedIp}`;
+      return { ready: false, ok: false, success: false, reason: msg, error: msg };
     }
 
     return {
       ready: true,
+      ok: true,
+      success: true,
       relayActive: true,
       effectiveProxyMode: 'PRIVACY_RELAY',
       selectedNode: nodeId,
@@ -2347,6 +2367,7 @@ systemctl restart ssh || systemctl restart sshd
   // --- REPAIR EXISTING EGRESS WORKFLOW (P0-A, P0-C, P0-E, P0-F) ---
 
   async repairExistingEgress(params = {}) {
+    this.dropletRebootTriggered = false;
     this.logProgress(1, 'WORKING', 'Inspecting existing private egress ownership and provider identity...');
 
     const savedTx = this.loadTransactionOwnership();
@@ -2373,7 +2394,7 @@ systemctl restart ssh || systemctl restart sshd
       this.token = token;
     }
 
-    if (this.mockMode) {
+    if (this.mockMode && !this.runFullRepairWorkflowInMock) {
       if (this.simulateProviderAuthRequired) {
         return { success: false, code: 'REMOTE_PROVIDER_AUTH_REQUIRED', message: 'DigitalOcean API token required to inspect and repair remote cloud resources.' };
       }
@@ -2491,28 +2512,35 @@ systemctl restart ssh || systemctl restart sshd
     let tlsHealthy = false;
     try {
       const probeRes = await this.probeCompanionNode(nodeId);
-      tlsHealthy = Boolean(probeRes && probeRes.ok);
+      tlsHealthy = Boolean(probeRes && (probeRes.ok === true || probeRes.verified === true || probeRes.success === true));
     } catch (_) {}
 
     // If TLS is not responding, trigger droplet reboot
     if (!tlsHealthy) {
       this.logProgress(4, 'WORKING', `TLS proxy non-responsive. Triggering remote droplet reboot...`);
+      this.dropletRebootTriggered = true;
       try {
         await this.doRequest(`/droplets/${dropletId}/actions`, 'POST', { type: 'reboot' });
         // Wait for droplet reboot to settle
-        await new Promise(r => setTimeout(r, 14000));
+        if (!this.mockMode) {
+          await new Promise(r => setTimeout(r, 14000));
+        }
       } catch (_) {}
+    } else {
+      this.dropletRebootTriggered = false;
     }
 
     // Step 5: Authoritative preflight canary check
     this.logProgress(5, 'WORKING', `Verifying authenticated CONNECT tunnel to canary target...`);
     const preflight = await this.runAuthoritativePreflight(nodeId, publicIp);
-    if (!preflight || !preflight.ok) {
-      this.logProgress(5, 'FAIL', `Remote egress preflight failed: ${(preflight && preflight.error) || 'TIMEOUT'}`);
+    const isPreflightOk = Boolean(preflight && (preflight.ready === true || preflight.ok === true || preflight.success === true));
+    if (!isPreflightOk) {
+      const failReason = (preflight && (preflight.reason || preflight.error)) || 'TIMEOUT';
+      this.logProgress(5, 'FAIL', `Remote egress preflight failed: ${failReason}`);
       return {
         success: false,
         code: 'EGRESS_PROBE_TIMEOUT',
-        message: `Remote egress preflight failed: ${(preflight && preflight.error) || 'TIMEOUT'}`
+        message: `Remote egress preflight failed: ${failReason}`
       };
     }
     this.logProgress(5, 'PASS', `Canary CONNECT verified (egress IP matches ${publicIp}).`);
@@ -2672,7 +2700,8 @@ systemctl restart ssh || systemctl restart sshd
     if (this.mockMode) {
       if (this.simulateProbeUnverified) {
         return {
-          success: true,
+          success: false,
+          ok: false,
           verified: false,
           reason: 'SIMULATED_UNVERIFIED_PROBE',
           details: 'SIMULATED_UNVERIFIED_PROBE',
@@ -2683,6 +2712,7 @@ systemctl restart ssh || systemctl restart sshd
       }
       return {
         success: true,
+        ok: true,
         verified: true,
         selectedEgressId: nodeId,
         observedEgressIp: '198.51.100.12',
@@ -3166,10 +3196,12 @@ systemctl restart ssh || systemctl restart sshd
         err.statusCode = 404;
         return Promise.reject(err);
       }
+      const txTag = this.mockTransactionOwnership?.transactionTag || 'xpider-tx-test';
       return Promise.resolve({
         droplet: {
           id: dropId,
           status: 'active',
+          tags: [txTag],
           networks: {
             v4: [{ type: 'public', ip_address: '198.51.100.12' }]
           }

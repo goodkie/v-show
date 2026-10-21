@@ -151,13 +151,6 @@ async function requestShutdown(token) {
 }
 
 function launchCompanionProcess() {
-  if (process.platform === 'win32' && fs.existsSync(VBS_SCRIPT)) {
-    try {
-      execSync(`wscript.exe "${VBS_SCRIPT}"`, { cwd: ROOT_DIR, stdio: 'ignore' });
-      return;
-    } catch (_) {}
-  }
-
   const bundledNode = path.join(ROOT_DIR, 'runtime', 'node', 'node.exe');
   const nodeBinary = fs.existsSync(bundledNode) ? bundledNode : process.execPath;
 

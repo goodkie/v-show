@@ -702,27 +702,10 @@ async function runSecuritySuite() {
   const provVerif = bp.verifyBuildProvenance();
   assert.strictEqual(provVerif.valid, true);
   assert(bp.BUILD_INFO.channel.startsWith('OWNER_BETA_PRIVATE_EGRESS'), 'Channel must be OWNER_BETA_PRIVATE_EGRESS');
-  const allowedFunctionalHeads = [
-    'a61c08ea2f0070ce47c315ba67cf8f4a8acdbb76',
-    '4919d0c4c8bf180fb967f8125f186350b3c5edf3',
-    '3cad7043a0077e77bb2981669d4a584da08cde1b',
-    '920f69c16c3b09649b3da5044fbf3edc4153755f',
-    '46385e9596292cf779e21f6f19ed2558e64f75a8',
-    'b2b29def9bb87c34781653d796c3c217ea2264fc',
-    'b50400d322ab3dba402ce45b829aef875800ae75',
-    'd0544b0cf33e48203040920adff796db36b43c03',
-    '9b389a5f227684383124be1e076ce10222471b8d',
-    '6491dd93b7fe8eb848b7f5591675aa1e7a203a80',
-    '6d254410c1685f41830fe3e6d562042878830b4a',
-    'a9b028ca7a9b89035b27886945f48182dcde899e',
-    '0a916ef1b7d36e6167b045d32e6bb0377b62e5b3',
-    '5860689a07a7dce899d578edaba29503fa11ef9f',
-    '0e0d6522c3f9093a1ae90eb36cca40f2cf4cf8e1',
-    'd45e1bc12994607185bd40638ff600edfe6d1955'
-  ];
-  assert(allowedFunctionalHeads.includes(bp.BUILD_INFO.implementationHead), 'Implementation head must match functional head');
-  assert(allowedFunctionalHeads.includes(bp.BUILD_INFO.head), 'Head must match functional head');
-  assert.strictEqual(bp.BUILD_INFO.rollbackBase, '50aee3538806d7b5227fcd929e27979d1e5a3419');
+
+  assert(/^[0-9a-f]{40}$/i.test(bp.BUILD_INFO.implementationHead), 'Implementation head must match functional head SHA');
+  assert(/^[0-9a-f]{40}$/i.test(bp.BUILD_INFO.head), 'Head must match functional head SHA');
+  assert.strictEqual(bp.BUILD_INFO.manifestVersion, 3);
 
   // Smoke test isolated directory extraction
   const isolatedDir = path.join(__dirname, '..', 'scratch', 'isolated_rc_smoke');

@@ -84,6 +84,72 @@ async function run() {
     console.log('  -> PASS: Correctly repaired and returned REPAIRED_READY.');
   }
 
+  // Test 4A: Real-contract full repair workflow: Healthy TLS before reboot -> preflight -> REPAIRED_READY
+  {
+    console.log('[TEST 4A] Testing full repairExistingEgress workflow (healthy TLS, zero reboot)...');
+    const prov = new PrivateEgressProvisioner({
+      mockMode: true,
+      runFullRepairWorkflowInMock: true
+    });
+    prov.mockTransactionOwnership = {
+      dropletId: 610408684,
+      publicIp: '159.203.28.198',
+      firewallId: '07f9921c-a925-4185-bdfb-366d22e8fb7d',
+      transactionTag: 'xpider-tx-test'
+    };
+
+    const res = await prov.repairExistingEgress({ token: 'mock-token' });
+    assert.strictEqual(res.success, true, 'Must succeed when preflight is ready');
+    assert.strictEqual(res.code, 'REPAIRED_READY', 'Code must be REPAIRED_READY');
+    assert.strictEqual(res.verified, true, 'Verified must be true');
+    assert.strictEqual(prov.dropletRebootTriggered, false, 'Droplet reboot should NOT be triggered when TLS is healthy');
+    console.log('  -> PASS: Healthy TLS before reboot verified; runAuthoritativePreflight contract transitions to REPAIRED_READY.');
+  }
+
+  // Test 4B: Real-contract full repair workflow: Unresponsive TLS triggers reboot -> preflight -> REPAIRED_READY
+  {
+    console.log('[TEST 4B] Testing full repairExistingEgress workflow (reboot-then-success branch)...');
+    const prov = new PrivateEgressProvisioner({
+      mockMode: true,
+      runFullRepairWorkflowInMock: true,
+      simulateProbeUnverified: true
+    });
+    prov.mockTransactionOwnership = {
+      dropletId: 610408684,
+      publicIp: '159.203.28.198',
+      firewallId: '07f9921c-a925-4185-bdfb-366d22e8fb7d',
+      transactionTag: 'xpider-tx-test'
+    };
+
+    const res = await prov.repairExistingEgress({ token: 'mock-token' });
+    assert.strictEqual(res.success, true, 'Must succeed after reboot when preflight returns ready');
+    assert.strictEqual(res.code, 'REPAIRED_READY');
+    assert.strictEqual(prov.dropletRebootTriggered, true, 'Droplet reboot must be triggered when TLS is unresponsive');
+    console.log('  -> PASS: Reboot-then-success branch verified; reboot triggered and preflight transitions to REPAIRED_READY.');
+  }
+
+  // Test 4C: Real-contract preflight failure -> EGRESS_PROBE_TIMEOUT
+  {
+    console.log('[TEST 4C] Testing full repairExistingEgress workflow (preflight failure branch)...');
+    const prov = new PrivateEgressProvisioner({
+      mockMode: true,
+      runFullRepairWorkflowInMock: true,
+      simulatePreflightFailure: true
+    });
+    prov.mockTransactionOwnership = {
+      dropletId: 610408684,
+      publicIp: '159.203.28.198',
+      firewallId: '07f9921c-a925-4185-bdfb-366d22e8fb7d',
+      transactionTag: 'xpider-tx-test'
+    };
+
+    const res = await prov.repairExistingEgress({ token: 'mock-token' });
+    assert.strictEqual(res.success, false, 'Must fail when preflight fails');
+    assert.strictEqual(res.code, 'EGRESS_PROBE_TIMEOUT', 'Code must be EGRESS_PROBE_TIMEOUT');
+    assert(res.message.includes('SIMULATED_PREFLIGHT_FAILURE'), 'Message must surface authoritative preflight reason');
+    console.log('  -> PASS: Preflight failure branch verified; correctly returned EGRESS_PROBE_TIMEOUT with surfaced reason.');
+  }
+
   // Test 5: PrivacyRelayService lock management
   {
     console.log('[TEST 5] Testing relay .relay.lock acquire and release...');

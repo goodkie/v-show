@@ -79,6 +79,9 @@ const activeSuites = [
   'test/test_rc3_17_token_parity_and_desync_recovery_gg1_gg6.js',
   'test/test_control_plane_button_binding.js',
   'test/test_math_captcha_field_local.js',
+  'test/test_real_companion_kill_watchdog_recovery.js',
+  'test/test_private_egress_security_hardening.js',
+  'test_rc3_29_single_authority_and_writer.js',
   'companion/test_privacy_relay.js',
   'companion/native_host/test_native_host.js'
 ];
@@ -123,7 +126,7 @@ function getSkipReason(file) {
   }
   return {
     category: 'HISTORICAL_REGRESSION',
-    reason: 'Historical milestone regression test asserting obsolete pre-RC3.35 version string or deprecated schema snapshot'
+    reason: 'Historical milestone regression test asserting obsolete pre-RC3.36 version string or deprecated schema snapshot'
   };
 }
 

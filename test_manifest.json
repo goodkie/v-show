@@ -4,16 +4,16 @@
     "protocol": "OCA-DEV-1.4",
     "authoritySource": "goodkie/v-show Issue #6",
     "branch": "upgrade/phase-0-1",
-    "timestamp": "2026-10-21T11:07:50.114Z",
+    "timestamp": "2026-10-21T11:58:14.795Z",
     "platform": "win32 x64",
     "nodeVersion": "v24.11.1",
     "totalTests": 154,
-    "executedCount": 38,
-    "passedCount": 38,
+    "executedCount": 41,
+    "passedCount": 41,
     "failedCount": 0,
-    "skippedCount": 116,
+    "skippedCount": 113,
     "allExecutedPassed": true,
-    "totalExecutionDurationMs": 51933
+    "totalExecutionDurationMs": 94135
   },
   "layerBreakdown": {
     "Companion & Relay Infrastructure": 4,
@@ -35,12 +35,12 @@
       "status": "EXECUTED",
       "passed": true,
       "exitCode": 0,
-      "startTime": "2026-10-21T11:06:57.857Z",
-      "endTime": "2026-10-21T11:06:58.204Z",
-      "durationMs": 346,
+      "startTime": "2026-10-21T11:56:40.300Z",
+      "endTime": "2026-10-21T11:56:40.656Z",
+      "durationMs": 354,
       "command": "node companion/native_host/test_native_host.js",
       "logArtifactPath": "scratch/test_logs/companion_native_host_test_native_host_js.log",
-      "logSha256": "6b2cceaefa40e488c5b399d4ca8e6f80328110fce7f948278219dd5dc7828e4b",
+      "logSha256": "977b1239799dff9ad597b32fbaa62e704c0d3d2180e6fa84650906ee0756f398",
       "logSnippet": "✅ Native Host PING/PONG verified."
     },
     {
@@ -51,12 +51,12 @@
       "status": "EXECUTED",
       "passed": true,
       "exitCode": 0,
-      "startTime": "2026-10-21T11:06:58.213Z",
-      "endTime": "2026-10-21T11:06:58.421Z",
-      "durationMs": 208,
+      "startTime": "2026-10-21T11:56:40.666Z",
+      "endTime": "2026-10-21T11:56:40.865Z",
+      "durationMs": 199,
       "command": "node companion/test_privacy_relay.js",
       "logArtifactPath": "scratch/test_logs/companion_test_privacy_relay_js.log",
-      "logSha256": "c890b521fb312e149913f590b5d1823a14d064e2ae6e51454e256f9d8300c94e",
+      "logSha256": "00eae4a2711d9d2b8e329698236cc6ec83bda370c0fd5c67c5b018e2749da25b",
       "logSnippet": "[TEST] Initializing PrivacyRelayService..."
     },
     {
@@ -76,13 +76,13 @@
       "status": "EXECUTED",
       "passed": true,
       "exitCode": 0,
-      "startTime": "2026-10-21T11:06:58.429Z",
-      "endTime": "2026-10-21T11:07:29.541Z",
-      "durationMs": 31111,
+      "startTime": "2026-10-21T11:56:40.873Z",
+      "endTime": "2026-10-21T11:57:12.135Z",
+      "durationMs": 31262,
       "command": "node run_edge_sprint_full_captcha_e2e_rehearsal.js",
       "logArtifactPath": "scratch/test_logs/run_edge_sprint_full_captcha_e2e_rehearsal_js.log",
-      "logSha256": "5ae030653198e4a88fbbe087d338d269878c078d1216ab6b1d60aeb3af4e3963",
-      "logSnippet": "[2026-10-21T11:06:58.747Z] [PASS] Step 1: Local test fixture server active at http://127.0.0.1:8088"
+      "logSha256": "d6fa35fdded8c84871b395c7bf05a2323ebfad7589619be5d18ff5904ee39845",
+      "logSnippet": "[2026-10-21T11:56:41.186Z] [PASS] Step 1: Local test fixture server active at http://127.0.0.1:8088"
     },
     {
       "testIndex": 5,
@@ -91,7 +91,7 @@
       "layer": "Core Lifecycle & Form Pipeline",
       "status": "SKIPPED",
       "category": "HISTORICAL_REGRESSION",
-      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.35 version string or deprecated schema snapshot"
+      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.36 version string or deprecated schema snapshot"
     },
     {
       "testIndex": 6,
@@ -100,7 +100,7 @@
       "layer": "Core Lifecycle & Form Pipeline",
       "status": "SKIPPED",
       "category": "HISTORICAL_REGRESSION",
-      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.35 version string or deprecated schema snapshot"
+      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.36 version string or deprecated schema snapshot"
     },
     {
       "testIndex": 7,
@@ -109,7 +109,7 @@
       "layer": "Historical Milestone Regressions",
       "status": "SKIPPED",
       "category": "HISTORICAL_REGRESSION",
-      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.35 version string or deprecated schema snapshot"
+      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.36 version string or deprecated schema snapshot"
     },
     {
       "testIndex": 8,
@@ -118,7 +118,7 @@
       "layer": "Historical Milestone Regressions",
       "status": "SKIPPED",
       "category": "HISTORICAL_REGRESSION",
-      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.35 version string or deprecated schema snapshot"
+      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.36 version string or deprecated schema snapshot"
     },
     {
       "testIndex": 9,
@@ -127,7 +127,7 @@
       "layer": "Interactive Rehearsal Scripts",
       "status": "SKIPPED",
       "category": "HISTORICAL_REGRESSION",
-      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.35 version string or deprecated schema snapshot"
+      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.36 version string or deprecated schema snapshot"
     },
     {
       "testIndex": 10,
@@ -136,7 +136,7 @@
       "layer": "Interactive Rehearsal Scripts",
       "status": "SKIPPED",
       "category": "HISTORICAL_REGRESSION",
-      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.35 version string or deprecated schema snapshot"
+      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.36 version string or deprecated schema snapshot"
     },
     {
       "testIndex": 11,
@@ -145,7 +145,7 @@
       "layer": "Interactive Rehearsal Scripts",
       "status": "SKIPPED",
       "category": "HISTORICAL_REGRESSION",
-      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.35 version string or deprecated schema snapshot"
+      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.36 version string or deprecated schema snapshot"
     },
     {
       "testIndex": 12,
@@ -154,7 +154,7 @@
       "layer": "Interactive Rehearsal Scripts",
       "status": "SKIPPED",
       "category": "HISTORICAL_REGRESSION",
-      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.35 version string or deprecated schema snapshot"
+      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.36 version string or deprecated schema snapshot"
     },
     {
       "testIndex": 13,
@@ -163,7 +163,7 @@
       "layer": "Interactive Rehearsal Scripts",
       "status": "SKIPPED",
       "category": "HISTORICAL_REGRESSION",
-      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.35 version string or deprecated schema snapshot"
+      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.36 version string or deprecated schema snapshot"
     },
     {
       "testIndex": 14,
@@ -172,7 +172,7 @@
       "layer": "Interactive Rehearsal Scripts",
       "status": "SKIPPED",
       "category": "HISTORICAL_REGRESSION",
-      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.35 version string or deprecated schema snapshot"
+      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.36 version string or deprecated schema snapshot"
     },
     {
       "testIndex": 15,
@@ -181,7 +181,7 @@
       "layer": "Interactive Rehearsal Scripts",
       "status": "SKIPPED",
       "category": "HISTORICAL_REGRESSION",
-      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.35 version string or deprecated schema snapshot"
+      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.36 version string or deprecated schema snapshot"
     },
     {
       "testIndex": 16,
@@ -190,7 +190,7 @@
       "layer": "Interactive Rehearsal Scripts",
       "status": "SKIPPED",
       "category": "HISTORICAL_REGRESSION",
-      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.35 version string or deprecated schema snapshot"
+      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.36 version string or deprecated schema snapshot"
     },
     {
       "testIndex": 17,
@@ -199,7 +199,7 @@
       "layer": "Interactive Rehearsal Scripts",
       "status": "SKIPPED",
       "category": "HISTORICAL_REGRESSION",
-      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.35 version string or deprecated schema snapshot"
+      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.36 version string or deprecated schema snapshot"
     },
     {
       "testIndex": 18,
@@ -208,7 +208,7 @@
       "layer": "Interactive Rehearsal Scripts",
       "status": "SKIPPED",
       "category": "HISTORICAL_REGRESSION",
-      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.35 version string or deprecated schema snapshot"
+      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.36 version string or deprecated schema snapshot"
     },
     {
       "testIndex": 19,
@@ -217,7 +217,7 @@
       "layer": "Interactive Rehearsal Scripts",
       "status": "SKIPPED",
       "category": "HISTORICAL_REGRESSION",
-      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.35 version string or deprecated schema snapshot"
+      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.36 version string or deprecated schema snapshot"
     },
     {
       "testIndex": 20,
@@ -226,7 +226,7 @@
       "layer": "Interactive Rehearsal Scripts",
       "status": "SKIPPED",
       "category": "HISTORICAL_REGRESSION",
-      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.35 version string or deprecated schema snapshot"
+      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.36 version string or deprecated schema snapshot"
     },
     {
       "testIndex": 21,
@@ -235,7 +235,7 @@
       "layer": "Interactive Rehearsal Scripts",
       "status": "SKIPPED",
       "category": "HISTORICAL_REGRESSION",
-      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.35 version string or deprecated schema snapshot"
+      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.36 version string or deprecated schema snapshot"
     },
     {
       "testIndex": 22,
@@ -244,7 +244,7 @@
       "layer": "Interactive Rehearsal Scripts",
       "status": "SKIPPED",
       "category": "HISTORICAL_REGRESSION",
-      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.35 version string or deprecated schema snapshot"
+      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.36 version string or deprecated schema snapshot"
     },
     {
       "testIndex": 23,
@@ -253,7 +253,7 @@
       "layer": "Interactive Rehearsal Scripts",
       "status": "SKIPPED",
       "category": "HISTORICAL_REGRESSION",
-      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.35 version string or deprecated schema snapshot"
+      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.36 version string or deprecated schema snapshot"
     },
     {
       "testIndex": 24,
@@ -262,7 +262,7 @@
       "layer": "Interactive Rehearsal Scripts",
       "status": "SKIPPED",
       "category": "HISTORICAL_REGRESSION",
-      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.35 version string or deprecated schema snapshot"
+      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.36 version string or deprecated schema snapshot"
     },
     {
       "testIndex": 25,
@@ -271,7 +271,7 @@
       "layer": "Interactive Rehearsal Scripts",
       "status": "SKIPPED",
       "category": "HISTORICAL_REGRESSION",
-      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.35 version string or deprecated schema snapshot"
+      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.36 version string or deprecated schema snapshot"
     },
     {
       "testIndex": 26,
@@ -280,7 +280,7 @@
       "layer": "Interactive Rehearsal Scripts",
       "status": "SKIPPED",
       "category": "HISTORICAL_REGRESSION",
-      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.35 version string or deprecated schema snapshot"
+      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.36 version string or deprecated schema snapshot"
     },
     {
       "testIndex": 27,
@@ -289,7 +289,7 @@
       "layer": "Interactive Rehearsal Scripts",
       "status": "SKIPPED",
       "category": "HISTORICAL_REGRESSION",
-      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.35 version string or deprecated schema snapshot"
+      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.36 version string or deprecated schema snapshot"
     },
     {
       "testIndex": 28,
@@ -298,7 +298,7 @@
       "layer": "Interactive Rehearsal Scripts",
       "status": "SKIPPED",
       "category": "HISTORICAL_REGRESSION",
-      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.35 version string or deprecated schema snapshot"
+      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.36 version string or deprecated schema snapshot"
     },
     {
       "testIndex": 29,
@@ -307,7 +307,7 @@
       "layer": "Interactive Rehearsal Scripts",
       "status": "SKIPPED",
       "category": "HISTORICAL_REGRESSION",
-      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.35 version string or deprecated schema snapshot"
+      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.36 version string or deprecated schema snapshot"
     },
     {
       "testIndex": 30,
@@ -316,7 +316,7 @@
       "layer": "Interactive Rehearsal Scripts",
       "status": "SKIPPED",
       "category": "HISTORICAL_REGRESSION",
-      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.35 version string or deprecated schema snapshot"
+      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.36 version string or deprecated schema snapshot"
     },
     {
       "testIndex": 31,
@@ -325,7 +325,7 @@
       "layer": "Interactive Rehearsal Scripts",
       "status": "SKIPPED",
       "category": "HISTORICAL_REGRESSION",
-      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.35 version string or deprecated schema snapshot"
+      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.36 version string or deprecated schema snapshot"
     },
     {
       "testIndex": 32,
@@ -334,7 +334,7 @@
       "layer": "Interactive Rehearsal Scripts",
       "status": "SKIPPED",
       "category": "HISTORICAL_REGRESSION",
-      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.35 version string or deprecated schema snapshot"
+      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.36 version string or deprecated schema snapshot"
     },
     {
       "testIndex": 33,
@@ -343,7 +343,7 @@
       "layer": "Interactive Rehearsal Scripts",
       "status": "SKIPPED",
       "category": "HISTORICAL_REGRESSION",
-      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.35 version string or deprecated schema snapshot"
+      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.36 version string or deprecated schema snapshot"
     },
     {
       "testIndex": 34,
@@ -352,7 +352,7 @@
       "layer": "Interactive Rehearsal Scripts",
       "status": "SKIPPED",
       "category": "HISTORICAL_REGRESSION",
-      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.35 version string or deprecated schema snapshot"
+      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.36 version string or deprecated schema snapshot"
     },
     {
       "testIndex": 35,
@@ -361,7 +361,7 @@
       "layer": "Interactive Rehearsal Scripts",
       "status": "SKIPPED",
       "category": "HISTORICAL_REGRESSION",
-      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.35 version string or deprecated schema snapshot"
+      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.36 version string or deprecated schema snapshot"
     },
     {
       "testIndex": 36,
@@ -370,7 +370,7 @@
       "layer": "Interactive Rehearsal Scripts",
       "status": "SKIPPED",
       "category": "HISTORICAL_REGRESSION",
-      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.35 version string or deprecated schema snapshot"
+      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.36 version string or deprecated schema snapshot"
     },
     {
       "testIndex": 37,
@@ -379,7 +379,7 @@
       "layer": "Interactive Rehearsal Scripts",
       "status": "SKIPPED",
       "category": "HISTORICAL_REGRESSION",
-      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.35 version string or deprecated schema snapshot"
+      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.36 version string or deprecated schema snapshot"
     },
     {
       "testIndex": 38,
@@ -388,7 +388,7 @@
       "layer": "Interactive Rehearsal Scripts",
       "status": "SKIPPED",
       "category": "HISTORICAL_REGRESSION",
-      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.35 version string or deprecated schema snapshot"
+      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.36 version string or deprecated schema snapshot"
     },
     {
       "testIndex": 39,
@@ -397,7 +397,7 @@
       "layer": "Interactive Rehearsal Scripts",
       "status": "SKIPPED",
       "category": "HISTORICAL_REGRESSION",
-      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.35 version string or deprecated schema snapshot"
+      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.36 version string or deprecated schema snapshot"
     },
     {
       "testIndex": 40,
@@ -406,7 +406,7 @@
       "layer": "Interactive Rehearsal Scripts",
       "status": "SKIPPED",
       "category": "HISTORICAL_REGRESSION",
-      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.35 version string or deprecated schema snapshot"
+      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.36 version string or deprecated schema snapshot"
     },
     {
       "testIndex": 41,
@@ -415,7 +415,7 @@
       "layer": "Interactive Rehearsal Scripts",
       "status": "SKIPPED",
       "category": "HISTORICAL_REGRESSION",
-      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.35 version string or deprecated schema snapshot"
+      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.36 version string or deprecated schema snapshot"
     },
     {
       "testIndex": 42,
@@ -424,7 +424,7 @@
       "layer": "Core Lifecycle & Form Pipeline",
       "status": "SKIPPED",
       "category": "HISTORICAL_REGRESSION",
-      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.35 version string or deprecated schema snapshot"
+      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.36 version string or deprecated schema snapshot"
     },
     {
       "testIndex": 43,
@@ -892,7 +892,7 @@
       "layer": "Core Lifecycle & Form Pipeline",
       "status": "SKIPPED",
       "category": "HISTORICAL_REGRESSION",
-      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.35 version string or deprecated schema snapshot"
+      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.36 version string or deprecated schema snapshot"
     },
     {
       "testIndex": 95,
@@ -901,7 +901,7 @@
       "layer": "Historical Milestone Regressions",
       "status": "SKIPPED",
       "category": "HISTORICAL_REGRESSION",
-      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.35 version string or deprecated schema snapshot"
+      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.36 version string or deprecated schema snapshot"
     },
     {
       "testIndex": 96,
@@ -919,7 +919,7 @@
       "layer": "Core Lifecycle & Form Pipeline",
       "status": "SKIPPED",
       "category": "HISTORICAL_REGRESSION",
-      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.35 version string or deprecated schema snapshot"
+      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.36 version string or deprecated schema snapshot"
     },
     {
       "testIndex": 98,
@@ -938,12 +938,12 @@
       "status": "EXECUTED",
       "passed": true,
       "exitCode": 0,
-      "startTime": "2026-10-21T11:07:29.551Z",
-      "endTime": "2026-10-21T11:07:29.699Z",
-      "durationMs": 148,
+      "startTime": "2026-10-21T11:57:12.147Z",
+      "endTime": "2026-10-21T11:57:12.234Z",
+      "durationMs": 87,
       "command": "node test/test_control_plane_button_binding.js",
       "logArtifactPath": "scratch/test_logs/test_test_control_plane_button_binding_js.log",
-      "logSha256": "522d3a286c899084573d28c258a55f82c3dadd5f67348bc8a69910877fc5d16d",
+      "logSha256": "5c6247d989e16869b67ea58cc1827ecf31b69be66d08983c2bcad12bbd1c8c80",
       "logSnippet": "✅ Responsive button layout with flex-wrap verified across 320px/360px/400px/480px."
     },
     {
@@ -954,12 +954,12 @@
       "status": "EXECUTED",
       "passed": true,
       "exitCode": 0,
-      "startTime": "2026-10-21T11:07:29.713Z",
-      "endTime": "2026-10-21T11:07:29.790Z",
-      "durationMs": 77,
+      "startTime": "2026-10-21T11:57:12.242Z",
+      "endTime": "2026-10-21T11:57:12.321Z",
+      "durationMs": 79,
       "command": "node test/test_math_captcha_field_local.js",
       "logArtifactPath": "scratch/test_logs/test_test_math_captcha_field_local_js.log",
-      "logSha256": "5a1d54f2512d2ca2437046e17d7f672b7b5b9eb8e499af1fb9bb77034d279d4a",
+      "logSha256": "2b7d15fe941f9096209bb988ae03c253afc408051423f9131b48857da780611d",
       "logSnippet": "ALL 7 FIELD-LOCAL MATH CHECKS PASSED"
     },
     {
@@ -969,7 +969,7 @@
       "layer": "Core Lifecycle & Form Pipeline",
       "status": "SKIPPED",
       "category": "HISTORICAL_REGRESSION",
-      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.35 version string or deprecated schema snapshot"
+      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.36 version string or deprecated schema snapshot"
     },
     {
       "testIndex": 102,
@@ -979,12 +979,12 @@
       "status": "EXECUTED",
       "passed": true,
       "exitCode": 0,
-      "startTime": "2026-10-21T11:07:29.798Z",
-      "endTime": "2026-10-21T11:07:29.988Z",
-      "durationMs": 190,
+      "startTime": "2026-10-21T11:57:12.329Z",
+      "endTime": "2026-10-21T11:57:12.538Z",
+      "durationMs": 209,
       "command": "node test/test_private_egress_provisioner.js",
       "logArtifactPath": "scratch/test_logs/test_test_private_egress_provisioner_js.log",
-      "logSha256": "cf2c79e9e8b30ed8de136a1cb6a8a53b13e4ab4d2bf1d6af2d42f6c22f47198e",
+      "logSha256": "ffba89db8064723273b2914ff9ee2d76d42717fca56259be1f7fbf65866f6a80",
       "logSnippet": "-> PASS: Tiers and stages confirmed"
     },
     {
@@ -992,9 +992,16 @@
       "file": "test/test_private_egress_security_hardening.js",
       "name": "Test Private Egress Security Hardening",
       "layer": "Private Egress & Security Hardening",
-      "status": "SKIPPED",
-      "category": "HISTORICAL_REGRESSION",
-      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.35 version string or deprecated schema snapshot"
+      "status": "EXECUTED",
+      "passed": true,
+      "exitCode": 0,
+      "startTime": "2026-10-21T11:57:12.546Z",
+      "endTime": "2026-10-21T11:57:35.509Z",
+      "durationMs": 22963,
+      "command": "node test/test_private_egress_security_hardening.js",
+      "logArtifactPath": "scratch/test_logs/test_test_private_egress_security_hardening_js.log",
+      "logSha256": "cf6ef405e76d397963a12454c698863b122a891f3a6956f9659abe39ccbc8bc2",
+      "logSnippet": "✅ isIpBlocked successfully blocks all 18 private, link-local, loopback, and metadata ranges."
     },
     {
       "testIndex": 104,
@@ -1004,12 +1011,12 @@
       "status": "EXECUTED",
       "passed": true,
       "exitCode": 0,
-      "startTime": "2026-10-21T11:07:29.996Z",
-      "endTime": "2026-10-21T11:07:30.842Z",
-      "durationMs": 846,
+      "startTime": "2026-10-21T11:57:35.518Z",
+      "endTime": "2026-10-21T11:57:36.213Z",
+      "durationMs": 695,
       "command": "node test/test_private_egress_service.js",
       "logArtifactPath": "scratch/test_logs/test_test_private_egress_service_js.log",
-      "logSha256": "e9a5a75bcbeb6aa8e23ac658b4348a6e23e5b44f967acad4dbe25efa3f85d3da",
+      "logSha256": "b7c38655822e2fceb7e5a707a89322c97f47d13e745d80001fa1525e3444a795",
       "logSnippet": "-> PASS: Minimal healthcheck verified with pinned CA (activeTunnels unexposed)"
     },
     {
@@ -1020,12 +1027,12 @@
       "status": "EXECUTED",
       "passed": true,
       "exitCode": 0,
-      "startTime": "2026-10-21T11:07:30.850Z",
-      "endTime": "2026-10-21T11:07:30.935Z",
+      "startTime": "2026-10-21T11:57:36.222Z",
+      "endTime": "2026-10-21T11:57:36.307Z",
       "durationMs": 85,
       "command": "node test/test_rc3_10_side_panel_clickability_y1_y5.js",
       "logArtifactPath": "scratch/test_logs/test_test_rc3_10_side_panel_clickability_y1_y5_js.log",
-      "logSha256": "6dada5529b0a6e42151ce5fd6482662c28045dc6acbcfa7bedb5af8781d52c7e",
+      "logSha256": "81b25e625d2b445a33ea9829a0eb9e8d75145d4deb59ee827a0d8d084462072e",
       "logSnippet": "[PASS] Triple fail-safe (.hidden pointer-events: none !important) verified in CSS."
     },
     {
@@ -1036,13 +1043,13 @@
       "status": "EXECUTED",
       "passed": true,
       "exitCode": 0,
-      "startTime": "2026-10-21T11:07:30.943Z",
-      "endTime": "2026-10-21T11:07:32.478Z",
-      "durationMs": 1535,
+      "startTime": "2026-10-21T11:57:36.316Z",
+      "endTime": "2026-10-21T11:57:38.329Z",
+      "durationMs": 2013,
       "command": "node test/test_rc3_11_pinned_proxy_ca_registration_z1_z5.js",
       "logArtifactPath": "scratch/test_logs/test_test_rc3_11_pinned_proxy_ca_registration_z1_z5_js.log",
-      "logSha256": "721c707236f8346f0b7d371511b9af2fd998d451a0f5efb8628cd4197908663d",
-      "logSnippet": "Mock HTTPS Proxy listening on 127.0.0.1:51174"
+      "logSha256": "b98f752795b4f8ef450f92683c2717e4bd49313a55f204fa6eae62061f788977",
+      "logSnippet": "Mock HTTPS Proxy listening on 127.0.0.1:63187"
     },
     {
       "testIndex": 107,
@@ -1052,13 +1059,13 @@
       "status": "EXECUTED",
       "passed": true,
       "exitCode": 0,
-      "startTime": "2026-10-21T11:07:32.486Z",
-      "endTime": "2026-10-21T11:07:33.923Z",
-      "durationMs": 1437,
+      "startTime": "2026-10-21T11:57:38.338Z",
+      "endTime": "2026-10-21T11:57:40.531Z",
+      "durationMs": 2193,
       "command": "node test/test_rc3_12_select_verification_contract_aa1_aa3.js",
       "logArtifactPath": "scratch/test_logs/test_test_rc3_12_select_verification_contract_aa1_aa3_js.log",
-      "logSha256": "b8587b2efada0d89c9b9e61b91d2a5a507b32e0943be8228736940e6c3e243b2",
-      "logSnippet": "Mock HTTPS Proxy listening on 127.0.0.1:51175"
+      "logSha256": "e6b132890229f5f263d84be52672d4e1f4f44b50e915d8422d510932efb5da27",
+      "logSnippet": "Mock HTTPS Proxy listening on 127.0.0.1:63188"
     },
     {
       "testIndex": 108,
@@ -1068,12 +1075,12 @@
       "status": "EXECUTED",
       "passed": true,
       "exitCode": 0,
-      "startTime": "2026-10-21T11:07:33.931Z",
-      "endTime": "2026-10-21T11:07:34.315Z",
-      "durationMs": 384,
+      "startTime": "2026-10-21T11:57:40.540Z",
+      "endTime": "2026-10-21T11:57:40.936Z",
+      "durationMs": 396,
       "command": "node test/test_rc3_13_layer2_preflight_and_control_bypass.js",
       "logArtifactPath": "scratch/test_logs/test_test_rc3_13_layer2_preflight_and_control_bypass_js.log",
-      "logSha256": "4cd081b73ee85e42cdde6099a925d68cfbcd964e672b743acf4564d763b9e1f3",
+      "logSha256": "5d2d9d0b8c0478be325618d07fac5c53794506608105070931eb62b1ae0cf80d",
       "logSnippet": "TEST SUITE: RC3.13 LAYER-2 PREFLIGHT & CONTROL BYPASS (BB1 - BB8)"
     },
     {
@@ -1084,12 +1091,12 @@
       "status": "EXECUTED",
       "passed": true,
       "exitCode": 0,
-      "startTime": "2026-10-21T11:07:34.325Z",
-      "endTime": "2026-10-21T11:07:35.756Z",
-      "durationMs": 1431,
+      "startTime": "2026-10-21T11:57:40.944Z",
+      "endTime": "2026-10-21T11:57:42.352Z",
+      "durationMs": 1408,
       "command": "node test/test_rc3_14_health_ttl_continuous_refresh_cc1_cc3.js",
       "logArtifactPath": "scratch/test_logs/test_test_rc3_14_health_ttl_continuous_refresh_cc1_cc3_js.log",
-      "logSha256": "50cff6544e77188a0ee0b6b03a134d6add581b9b687a8407ad123c302cfb0147",
+      "logSha256": "c567fe1388c1eb2d280f8924a33336593cfaf5a510070f186820e7705e5b99fa",
       "logSnippet": ">>> [TEST 1] CC3 Defect Reproduction: TTL Expiration without Continuous Refresh causes ERR_TUNNEL_CONNECTION_FAILED"
     },
     {
@@ -1100,12 +1107,12 @@
       "status": "EXECUTED",
       "passed": true,
       "exitCode": 0,
-      "startTime": "2026-10-21T11:07:35.764Z",
-      "endTime": "2026-10-21T11:07:37.328Z",
-      "durationMs": 1564,
+      "startTime": "2026-10-21T11:57:42.360Z",
+      "endTime": "2026-10-21T11:57:44.095Z",
+      "durationMs": 1735,
       "command": "node test/test_rc3_15_upgrade_migration_and_start_repair_dd1_dd5.js",
       "logArtifactPath": "scratch/test_logs/test_test_rc3_15_upgrade_migration_and_start_repair_dd1_dd5_js.log",
-      "logSha256": "654ea11aac1b3c5462b992a0185728aff3ecc1a4539e325bea68c20735df6cbc",
+      "logSha256": "72d8005ae1942dee9dc54f3e3f207443ca53dfda9b1259805ea8572de7a44bc2",
       "logSnippet": "[PASS] Test 1: Full active egress state migrated with 100% fidelity."
     },
     {
@@ -1116,12 +1123,12 @@
       "status": "EXECUTED",
       "passed": true,
       "exitCode": 0,
-      "startTime": "2026-10-21T11:07:37.336Z",
-      "endTime": "2026-10-21T11:07:37.423Z",
-      "durationMs": 87,
+      "startTime": "2026-10-21T11:57:44.104Z",
+      "endTime": "2026-10-21T11:57:44.199Z",
+      "durationMs": 95,
       "command": "node test/test_rc3_16_main_hud_messaging_and_preflight_sync.js",
       "logArtifactPath": "scratch/test_logs/test_test_rc3_16_main_hud_messaging_and_preflight_sync_js.log",
-      "logSha256": "67d75353e0e45998c550149ed3d87152d73ca2cd58a48da4e68a3148d73bb71e",
+      "logSha256": "40503427ae697a6f3d007873b4bf184e88f1224c2a29e890e90a2c5e5524bb13",
       "logSnippet": "[PASS] FF1: background.js contains GET_PRIVACY_GATEWAY_STATE message handler."
     },
     {
@@ -1132,12 +1139,12 @@
       "status": "EXECUTED",
       "passed": true,
       "exitCode": 0,
-      "startTime": "2026-10-21T11:07:37.431Z",
-      "endTime": "2026-10-21T11:07:37.549Z",
-      "durationMs": 118,
+      "startTime": "2026-10-21T11:57:44.208Z",
+      "endTime": "2026-10-21T11:57:44.327Z",
+      "durationMs": 119,
       "command": "node test/test_rc3_17_token_parity_and_desync_recovery_gg1_gg6.js",
       "logArtifactPath": "scratch/test_logs/test_test_rc3_17_token_parity_and_desync_recovery_gg1_gg6_js.log",
-      "logSha256": "e0e452c0b54b76d8b9b6c93eeec0a733318d302c447a6555d437de869702c897",
+      "logSha256": "526f74cde8ad19ee4690f9115e89c102fd6007b79cba589af09e7e1f159ab666",
       "logSnippet": "✓ GG1 Verified: Token A authenticated (200), Token B rejected (401)"
     },
     {
@@ -1147,7 +1154,7 @@
       "layer": "Historical Milestone Regressions",
       "status": "SKIPPED",
       "category": "HISTORICAL_REGRESSION",
-      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.35 version string or deprecated schema snapshot"
+      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.36 version string or deprecated schema snapshot"
     },
     {
       "testIndex": 114,
@@ -1156,7 +1163,7 @@
       "layer": "Historical Milestone Regressions",
       "status": "SKIPPED",
       "category": "HISTORICAL_REGRESSION",
-      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.35 version string or deprecated schema snapshot"
+      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.36 version string or deprecated schema snapshot"
     },
     {
       "testIndex": 115,
@@ -1166,12 +1173,12 @@
       "status": "EXECUTED",
       "passed": true,
       "exitCode": 0,
-      "startTime": "2026-10-21T11:07:37.557Z",
-      "endTime": "2026-10-21T11:07:38.808Z",
-      "durationMs": 1251,
+      "startTime": "2026-10-21T11:57:44.336Z",
+      "endTime": "2026-10-21T11:57:45.666Z",
+      "durationMs": 1330,
       "command": "node test/test_rc3_3_step_b_security_r1_r6.js",
       "logArtifactPath": "scratch/test_logs/test_test_rc3_3_step_b_security_r1_r6_js.log",
-      "logSha256": "81e033fd72e42c8717118c998a4faa8e25b4f9ae4ae9d18b2de1ff87aaa476b6",
+      "logSha256": "0c58d0ea6ed759dfd60bb57e8dc65d5812fcc39eca60b1d6d9e898bff779598c",
       "logSnippet": "✅ R1 PASSED: Firewall created before Droplet, verified before SSH, and port 22 closed after bootstrap."
     },
     {
@@ -1182,13 +1189,13 @@
       "status": "EXECUTED",
       "passed": true,
       "exitCode": 0,
-      "startTime": "2026-10-21T11:07:38.816Z",
-      "endTime": "2026-10-21T11:07:39.714Z",
-      "durationMs": 898,
+      "startTime": "2026-10-21T11:57:45.675Z",
+      "endTime": "2026-10-21T11:57:46.571Z",
+      "durationMs": 896,
       "command": "node test/test_rc3_4_step_b_security_s1_s6.js",
       "logArtifactPath": "scratch/test_logs/test_test_rc3_4_step_b_security_s1_s6_js.log",
-      "logSha256": "f280bfb1ab897e8b5f5dab98066e33d2163525a78b84595936831667024ce837",
-      "logSnippet": "[PROVISIONER_ROLLBACK] Deleted and verified absence of transaction tag: xpider-tx-mvi0cz1i-0e175fdb"
+      "logSha256": "85761ba95340976f60b4555f7ee7940f68393c92c82eabc4a5156244037c3ed5",
+      "logSnippet": "[PROVISIONER_ROLLBACK] Deleted and verified absence of transaction tag: xpider-tx-mvi25f5g-295bada8"
     },
     {
       "testIndex": 117,
@@ -1197,7 +1204,7 @@
       "layer": "Private Egress & Security Hardening",
       "status": "SKIPPED",
       "category": "HISTORICAL_REGRESSION",
-      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.35 version string or deprecated schema snapshot"
+      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.36 version string or deprecated schema snapshot"
     },
     {
       "testIndex": 118,
@@ -1207,12 +1214,12 @@
       "status": "EXECUTED",
       "passed": true,
       "exitCode": 0,
-      "startTime": "2026-10-21T11:07:39.723Z",
-      "endTime": "2026-10-21T11:07:40.320Z",
-      "durationMs": 597,
+      "startTime": "2026-10-21T11:57:46.579Z",
+      "endTime": "2026-10-21T11:57:47.322Z",
+      "durationMs": 742,
       "command": "node test/test_rc3_6_recovery_gate_u1_u3.js",
       "logArtifactPath": "scratch/test_logs/test_test_rc3_6_recovery_gate_u1_u3_js.log",
-      "logSha256": "db35ffe95a609d88fdaf1952417534351ee82f44ddf561320cd3836f51fc4681",
+      "logSha256": "c7056246564f11892fd4d6aa169e67adbb9e8cc9a39c072a0bfa869224318b3c",
       "logSnippet": "[PASS] Test 1: Fresh journal schema guarantees all resource IDs start strictly null."
     },
     {
@@ -1223,12 +1230,12 @@
       "status": "EXECUTED",
       "passed": true,
       "exitCode": 0,
-      "startTime": "2026-10-21T11:07:40.328Z",
-      "endTime": "2026-10-21T11:07:41.193Z",
-      "durationMs": 865,
+      "startTime": "2026-10-21T11:57:47.331Z",
+      "endTime": "2026-10-21T11:57:48.484Z",
+      "durationMs": 1153,
       "command": "node test/test_rc3_7_package_secret_hygiene_v1_v5.js",
       "logArtifactPath": "scratch/test_logs/test_test_rc3_7_package_secret_hygiene_v1_v5_js.log",
-      "logSha256": "9f7b81f17be77479806a87336d633e0d29c3d58592523e418fcbc4184e683a59",
+      "logSha256": "87daf57a87dc4587717f0f7fb0a01459fc96ffa727acca3bb014780aa6576d61",
       "logSnippet": "[PASS] Test 1: Two fresh extractions independently generate distinct 32-byte tokens."
     },
     {
@@ -1239,12 +1246,12 @@
       "status": "EXECUTED",
       "passed": true,
       "exitCode": 0,
-      "startTime": "2026-10-21T11:07:41.201Z",
-      "endTime": "2026-10-21T11:07:41.783Z",
-      "durationMs": 582,
+      "startTime": "2026-10-21T11:57:48.494Z",
+      "endTime": "2026-10-21T11:57:49.110Z",
+      "durationMs": 616,
       "command": "node test/test_rc3_8_firewall_port_schema_w1_w3.js",
       "logArtifactPath": "scratch/test_logs/test_test_rc3_8_firewall_port_schema_w1_w3_js.log",
-      "logSha256": "b843646b6cbacab90ea9f484532bdd89436cc001dc66a69af31e66a59569b442",
+      "logSha256": "194f84a8f8d21f2eeef3cfd0426d768316ca51a992137c29b1134f7ec8a3e0cb",
       "logSnippet": "✅ W1 verified: Shared outbound rules constant uses ports \"0\" across tcp, udp, icmp with zero \"all\"."
     },
     {
@@ -1255,12 +1262,12 @@
       "status": "EXECUTED",
       "passed": true,
       "exitCode": 0,
-      "startTime": "2026-10-21T11:07:41.792Z",
-      "endTime": "2026-10-21T11:07:45.190Z",
+      "startTime": "2026-10-21T11:57:49.121Z",
+      "endTime": "2026-10-21T11:57:52.519Z",
       "durationMs": 3398,
       "command": "node test/test_rc3_9_canary_tls_and_eventual_delete_x1_x6.js",
       "logArtifactPath": "scratch/test_logs/test_test_rc3_9_canary_tls_and_eventual_delete_x1_x6_js.log",
-      "logSha256": "305b2523b65c7d1a057c06440ee72c27c4876bfb93d2a2922a11c74b75ee4f9a",
+      "logSha256": "5f26cc48191d1c323069806b03112289a3b1c486c6ab0ca3c42cbdda827257ee",
       "logSnippet": "✅ X1 verified: Layer A and Layer B TLS strictly separated; real candidate detail propagated."
     },
     {
@@ -1268,9 +1275,16 @@
       "file": "test/test_real_companion_kill_watchdog_recovery.js",
       "name": "Test Real Companion Kill Watchdog Recovery",
       "layer": "Companion & Relay Infrastructure",
-      "status": "SKIPPED",
-      "category": "HISTORICAL_REGRESSION",
-      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.35 version string or deprecated schema snapshot"
+      "status": "EXECUTED",
+      "passed": true,
+      "exitCode": 0,
+      "startTime": "2026-10-21T11:57:52.527Z",
+      "endTime": "2026-10-21T11:58:09.694Z",
+      "durationMs": 17167,
+      "command": "node test/test_real_companion_kill_watchdog_recovery.js",
+      "logArtifactPath": "scratch/test_logs/test_test_real_companion_kill_watchdog_recovery_js.log",
+      "logSha256": "424366f7430ceb3132a861f98c17133a431ec2e02c956b013da1e503a8d7ebcd",
+      "logSnippet": "[OK] Privacy Relay Companion is ALREADY RUNNING and verified current and authenticated (Build: R6.9G.10.3.7.1.4.49-20261021-FINAL-SPRINT-RC3.35, PID: 34664)."
     },
     {
       "testIndex": 123,
@@ -1279,7 +1293,7 @@
       "layer": "Private Egress & Security Hardening",
       "status": "SKIPPED",
       "category": "HISTORICAL_REGRESSION",
-      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.35 version string or deprecated schema snapshot"
+      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.36 version string or deprecated schema snapshot"
     },
     {
       "testIndex": 124,
@@ -1289,12 +1303,12 @@
       "status": "EXECUTED",
       "passed": true,
       "exitCode": 0,
-      "startTime": "2026-10-21T11:07:45.198Z",
-      "endTime": "2026-10-21T11:07:45.812Z",
-      "durationMs": 614,
+      "startTime": "2026-10-21T11:58:09.705Z",
+      "endTime": "2026-10-21T11:58:10.326Z",
+      "durationMs": 621,
       "command": "node test/test_runtime_lts_allowlist.js",
       "logArtifactPath": "scratch/test_logs/test_test_runtime_lts_allowlist_js.log",
-      "logSha256": "d2e91937641c64717a9f5ca81f92ca3dae18dae8d41b9f82ccee30fc679b32f1",
+      "logSha256": "25d63018dc3d166399f5ff5f7a2dfef8d442e64cdd314dffe1cb6be618bc22c2",
       "logSnippet": "[PASS] Major 24: Node.js v24 (Supported LTS - Krypton) => Allowed: true"
     },
     {
@@ -1305,12 +1319,12 @@
       "status": "EXECUTED",
       "passed": true,
       "exitCode": 0,
-      "startTime": "2026-10-21T11:07:45.820Z",
-      "endTime": "2026-10-21T11:07:45.903Z",
-      "durationMs": 83,
+      "startTime": "2026-10-21T11:58:10.335Z",
+      "endTime": "2026-10-21T11:58:10.502Z",
+      "durationMs": 167,
       "command": "node test_phase0_1.js",
       "logArtifactPath": "scratch/test_logs/test_phase0_1_js.log",
-      "logSha256": "19ca8ca422216c815a56b488d541e26964c6768337f518633613d5ac00266730",
+      "logSha256": "1295e66e9f76f5e4ccf41747cd059b608d68ecf75e82483857f5e3a2d20aee57",
       "logSnippet": "✅ PASS: Version consistency check (v1.2.0 across manifest, popup.html, popup.js)"
     },
     {
@@ -1321,12 +1335,12 @@
       "status": "EXECUTED",
       "passed": true,
       "exitCode": 0,
-      "startTime": "2026-10-21T11:07:45.912Z",
-      "endTime": "2026-10-21T11:07:45.980Z",
-      "durationMs": 68,
+      "startTime": "2026-10-21T11:58:10.510Z",
+      "endTime": "2026-10-21T11:58:10.596Z",
+      "durationMs": 86,
       "command": "node test_phase0_1_behavioral.js",
       "logArtifactPath": "scratch/test_logs/test_phase0_1_behavioral_js.log",
-      "logSha256": "96e12f306351362d514eb8662bad0e3e5e25dea682e9f6739b0936b2b5fea09b",
+      "logSha256": "c10b0e97743341e55b4f1b5dddc0e1713272b22080f5113e3851c848c4792f00",
       "logSnippet": "✅ PASS Test 1: Repeated completion events produce exactly 1 success increment (Idempotent)"
     },
     {
@@ -1336,7 +1350,7 @@
       "layer": "Core Lifecycle & Form Pipeline",
       "status": "SKIPPED",
       "category": "HISTORICAL_REGRESSION",
-      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.35 version string or deprecated schema snapshot"
+      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.36 version string or deprecated schema snapshot"
     },
     {
       "testIndex": 128,
@@ -1345,7 +1359,7 @@
       "layer": "Historical Milestone Regressions",
       "status": "SKIPPED",
       "category": "HISTORICAL_REGRESSION",
-      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.35 version string or deprecated schema snapshot"
+      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.36 version string or deprecated schema snapshot"
     },
     {
       "testIndex": 129,
@@ -1355,12 +1369,12 @@
       "status": "EXECUTED",
       "passed": true,
       "exitCode": 0,
-      "startTime": "2026-10-21T11:07:45.989Z",
-      "endTime": "2026-10-21T11:07:46.340Z",
-      "durationMs": 351,
+      "startTime": "2026-10-21T11:58:10.604Z",
+      "endTime": "2026-10-21T11:58:10.950Z",
+      "durationMs": 346,
       "command": "node test_r6_9g10_3_4_template_hydration.js",
       "logArtifactPath": "scratch/test_logs/test_r6_9g10_3_4_template_hydration_js.log",
-      "logSha256": "198b395ea6b4bc8d43896ba2258c4e3c1ce62e41813d27f1ba0b9eb1f69869ad",
+      "logSha256": "ba0b67295d8fa3e2fe11220e62d3cfd1e2eb3fbc84beb8ffffb357bd840c9b40",
       "logSnippet": "✓ Test A PASS: xpider_tpl only migrated with message preserved."
     },
     {
@@ -1371,12 +1385,12 @@
       "status": "EXECUTED",
       "passed": true,
       "exitCode": 0,
-      "startTime": "2026-10-21T11:07:46.348Z",
-      "endTime": "2026-10-21T11:07:47.173Z",
-      "durationMs": 825,
+      "startTime": "2026-10-21T11:58:10.959Z",
+      "endTime": "2026-10-21T11:58:11.758Z",
+      "durationMs": 799,
       "command": "node test_r6_9g10_3_5_captcha_and_privacy.js",
       "logArtifactPath": "scratch/test_logs/test_r6_9g10_3_5_captcha_and_privacy_js.log",
-      "logSha256": "d0b0099e2eb9ffad9510b39bb3a29ee53ed4a3d4d530f8e52411a843806e28f8",
+      "logSha256": "cb376927b42479aeb2e9845aca880ce301f0235b98befb7c66b5b0cb2311ef64",
       "logSnippet": "✅ [PASS] Privacy Test A: No VPN + stable ISP IP => strict READY is rejected"
     },
     {
@@ -1386,7 +1400,7 @@
       "layer": "Historical Milestone Regressions",
       "status": "SKIPPED",
       "category": "HISTORICAL_REGRESSION",
-      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.35 version string or deprecated schema snapshot"
+      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.36 version string or deprecated schema snapshot"
     },
     {
       "testIndex": 132,
@@ -1395,7 +1409,7 @@
       "layer": "Historical Milestone Regressions",
       "status": "SKIPPED",
       "category": "HISTORICAL_REGRESSION",
-      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.35 version string or deprecated schema snapshot"
+      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.36 version string or deprecated schema snapshot"
     },
     {
       "testIndex": 133,
@@ -1404,7 +1418,7 @@
       "layer": "Historical Milestone Regressions",
       "status": "SKIPPED",
       "category": "HISTORICAL_REGRESSION",
-      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.35 version string or deprecated schema snapshot"
+      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.36 version string or deprecated schema snapshot"
     },
     {
       "testIndex": 134,
@@ -1413,7 +1427,7 @@
       "layer": "Historical Milestone Regressions",
       "status": "SKIPPED",
       "category": "HISTORICAL_REGRESSION",
-      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.35 version string or deprecated schema snapshot"
+      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.36 version string or deprecated schema snapshot"
     },
     {
       "testIndex": 135,
@@ -1422,7 +1436,7 @@
       "layer": "Historical Milestone Regressions",
       "status": "SKIPPED",
       "category": "HISTORICAL_REGRESSION",
-      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.35 version string or deprecated schema snapshot"
+      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.36 version string or deprecated schema snapshot"
     },
     {
       "testIndex": 136,
@@ -1431,7 +1445,7 @@
       "layer": "Historical Milestone Regressions",
       "status": "SKIPPED",
       "category": "HISTORICAL_REGRESSION",
-      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.35 version string or deprecated schema snapshot"
+      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.36 version string or deprecated schema snapshot"
     },
     {
       "testIndex": 137,
@@ -1440,7 +1454,7 @@
       "layer": "Historical Milestone Regressions",
       "status": "SKIPPED",
       "category": "HISTORICAL_REGRESSION",
-      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.35 version string or deprecated schema snapshot"
+      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.36 version string or deprecated schema snapshot"
     },
     {
       "testIndex": 138,
@@ -1449,7 +1463,7 @@
       "layer": "Historical Milestone Regressions",
       "status": "SKIPPED",
       "category": "HISTORICAL_REGRESSION",
-      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.35 version string or deprecated schema snapshot"
+      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.36 version string or deprecated schema snapshot"
     },
     {
       "testIndex": 139,
@@ -1459,12 +1473,12 @@
       "status": "EXECUTED",
       "passed": true,
       "exitCode": 0,
-      "startTime": "2026-10-21T11:07:47.181Z",
-      "endTime": "2026-10-21T11:07:47.946Z",
-      "durationMs": 765,
+      "startTime": "2026-10-21T11:58:11.768Z",
+      "endTime": "2026-10-21T11:58:12.626Z",
+      "durationMs": 858,
       "command": "node test_r6_9g10_3_remediation.js",
       "logArtifactPath": "scratch/test_logs/test_r6_9g10_3_remediation_js.log",
-      "logSha256": "cf20667a01b888a6aa552b54de286a19b9eacb413218569cd91c41ccd679bccc",
+      "logSha256": "675e0b8f4e760d3515837c05968dce5fdfd1451b223de9f81a965020eff263f5",
       "logSnippet": "[PASS] Test 1A: DPAPI failure throws fail-closed error: [WINSEC_FATAL] DPAPI encryption failed (injected failure). Fail-closed: refusing insecure secret storage."
     },
     {
@@ -1475,12 +1489,12 @@
       "status": "EXECUTED",
       "passed": true,
       "exitCode": 0,
-      "startTime": "2026-10-21T11:07:47.954Z",
-      "endTime": "2026-10-21T11:07:48.325Z",
-      "durationMs": 371,
+      "startTime": "2026-10-21T11:58:12.634Z",
+      "endTime": "2026-10-21T11:58:13.001Z",
+      "durationMs": 367,
       "command": "node test_r6_9g7_atomicity_and_lifecycle.js",
       "logArtifactPath": "scratch/test_logs/test_r6_9g7_atomicity_and_lifecycle_js.log",
-      "logSha256": "e26fdfbd8d597925e22ece5e6a96323e4f3a10b9994af74d80a0febe89bcceb4",
+      "logSha256": "21cf584b6ddaec3189c33e377ceb77fe854e0aa5303f50fd875a6b2a521d7584",
       "logSnippet": "✅ PASS: Gate F: Safe DOM id normalization prevents TypeError on clobbered formEl.id"
     },
     {
@@ -1491,12 +1505,12 @@
       "status": "EXECUTED",
       "passed": true,
       "exitCode": 0,
-      "startTime": "2026-10-21T11:07:48.333Z",
-      "endTime": "2026-10-21T11:07:48.448Z",
-      "durationMs": 115,
+      "startTime": "2026-10-21T11:58:13.009Z",
+      "endTime": "2026-10-21T11:58:13.100Z",
+      "durationMs": 91,
       "command": "node test_rc3_25_live_provider_gate.js",
       "logArtifactPath": "scratch/test_logs/test_rc3_25_live_provider_gate_js.log",
-      "logSha256": "f839f1bab8a8474165d142945e526e040d71b0874d0a744675d47876d0ba1d0f",
+      "logSha256": "a1da30af50e0ee6f1fc111c01b0b6ee867d7654605b18cc85eeb3a539aa05694",
       "logSnippet": "✅ [PASS] 1.1 content-script respects xpider_show_autofill_visual_confirm toggle"
     },
     {
@@ -1507,12 +1521,12 @@
       "status": "EXECUTED",
       "passed": true,
       "exitCode": 0,
-      "startTime": "2026-10-21T11:07:48.457Z",
-      "endTime": "2026-10-21T11:07:48.630Z",
-      "durationMs": 173,
+      "startTime": "2026-10-21T11:58:13.108Z",
+      "endTime": "2026-10-21T11:58:13.186Z",
+      "durationMs": 78,
       "command": "node test_rc3_27_isolated_boot_chain.js",
       "logArtifactPath": "scratch/test_logs/test_rc3_27_isolated_boot_chain_js.log",
-      "logSha256": "1e64fe0eef2f77b2700f63bd6c117fef94740acb5c706998b9efdb62e1620599",
+      "logSha256": "5ccb352428b8256146a89a4feebbc6a48f2aca4948de0bdbcb5e08fd456a309e",
       "logSnippet": "✅ [PASS] 1.1 solver-core.js compiles without syntax errors (no misplaced closing braces)"
     },
     {
@@ -1522,16 +1536,23 @@
       "layer": "Historical Milestone Regressions",
       "status": "SKIPPED",
       "category": "HISTORICAL_REGRESSION",
-      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.35 version string or deprecated schema snapshot"
+      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.36 version string or deprecated schema snapshot"
     },
     {
       "testIndex": 144,
       "file": "test_rc3_29_single_authority_and_writer.js",
       "name": "Test Rc3 29 Single Authority And Writer",
       "layer": "Historical Milestone Regressions",
-      "status": "SKIPPED",
-      "category": "HISTORICAL_REGRESSION",
-      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.35 version string or deprecated schema snapshot"
+      "status": "EXECUTED",
+      "passed": true,
+      "exitCode": 0,
+      "startTime": "2026-10-21T11:58:13.194Z",
+      "endTime": "2026-10-21T11:58:13.281Z",
+      "durationMs": 87,
+      "command": "node test_rc3_29_single_authority_and_writer.js",
+      "logArtifactPath": "scratch/test_logs/test_rc3_29_single_authority_and_writer_js.log",
+      "logSha256": "75c7d2d4c5641a5bc68e6dc360872bca9595d0a6d00add8142ec534a6387980d",
+      "logSnippet": "[PASS] Test 1: Token writer invocation count == 1 (No duplicate injectSolvedToken call in verifyAndRecordCaptchaSuccess)"
     },
     {
       "testIndex": 145,
@@ -1540,7 +1561,7 @@
       "layer": "Core Lifecycle & Form Pipeline",
       "status": "SKIPPED",
       "category": "HISTORICAL_REGRESSION",
-      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.35 version string or deprecated schema snapshot"
+      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.36 version string or deprecated schema snapshot"
     },
     {
       "testIndex": 146,
@@ -1550,12 +1571,12 @@
       "status": "EXECUTED",
       "passed": true,
       "exitCode": 0,
-      "startTime": "2026-10-21T11:07:48.640Z",
-      "endTime": "2026-10-21T11:07:48.725Z",
-      "durationMs": 85,
+      "startTime": "2026-10-21T11:58:13.289Z",
+      "endTime": "2026-10-21T11:58:13.376Z",
+      "durationMs": 87,
       "command": "node test_rc3_31_acceptance.js",
       "logArtifactPath": "scratch/test_logs/test_rc3_31_acceptance_js.log",
-      "logSha256": "0860eb60875fd1ee3c7c738e916ef6f08c1fbef2b1ce194d4239f45d06515637",
+      "logSha256": "e4058113bbceec51bcfb8da45ab3a1d9b9bdc9bc935bb2e43547cf84d6c5db7b",
       "logSnippet": "[PASS] background.js does not contain hardcoded \"const targetFrameId = 0\""
     },
     {
@@ -1566,12 +1587,12 @@
       "status": "EXECUTED",
       "passed": true,
       "exitCode": 0,
-      "startTime": "2026-10-21T11:07:48.733Z",
-      "endTime": "2026-10-21T11:07:48.825Z",
-      "durationMs": 92,
+      "startTime": "2026-10-21T11:58:13.383Z",
+      "endTime": "2026-10-21T11:58:13.483Z",
+      "durationMs": 100,
       "command": "node test_rc3_31_captcha_rejection_detector.js",
       "logArtifactPath": "scratch/test_logs/test_rc3_31_captcha_rejection_detector_js.log",
-      "logSha256": "3cfa276a1f70974fffe807d6dfb4730579441a68ff27a504b7444e8707fa3791",
+      "logSha256": "819cc47497574d8a4511a80147c8a8db4069948e2e2af4e267c871bdd4fe4b19",
       "logSnippet": "PASS: Files read successfully"
     },
     {
@@ -1581,7 +1602,7 @@
       "layer": "Core Lifecycle & Form Pipeline",
       "status": "SKIPPED",
       "category": "HISTORICAL_REGRESSION",
-      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.35 version string or deprecated schema snapshot"
+      "skipReason": "Historical milestone regression test asserting obsolete pre-RC3.36 version string or deprecated schema snapshot"
     },
     {
       "testIndex": 149,
@@ -1591,12 +1612,12 @@
       "status": "EXECUTED",
       "passed": true,
       "exitCode": 0,
-      "startTime": "2026-10-21T11:07:48.833Z",
-      "endTime": "2026-10-21T11:07:48.925Z",
-      "durationMs": 92,
+      "startTime": "2026-10-21T11:58:13.491Z",
+      "endTime": "2026-10-21T11:58:13.590Z",
+      "durationMs": 99,
       "command": "node test_rc3_32_site_rejection_behavioral.js",
       "logArtifactPath": "scratch/test_logs/test_rc3_32_site_rejection_behavioral_js.log",
-      "logSha256": "e25a8c5175917562d6708095e88ef220965bfc07d1427e09ef8313c6f6732cb1",
+      "logSha256": "ad41f4a785bf96abb1fd02644569dfd67b60948b64353dd0696e53b9335fa635",
       "logSnippet": "PASS: Files read successfully"
     },
     {
@@ -1607,12 +1628,12 @@
       "status": "EXECUTED",
       "passed": true,
       "exitCode": 0,
-      "startTime": "2026-10-21T11:07:48.933Z",
-      "endTime": "2026-10-21T11:07:49.126Z",
-      "durationMs": 193,
+      "startTime": "2026-10-21T11:58:13.599Z",
+      "endTime": "2026-10-21T11:58:13.830Z",
+      "durationMs": 231,
       "command": "node test_rc3_33_captcha_flag_and_exception_containment.js",
       "logArtifactPath": "scratch/test_logs/test_rc3_33_captcha_flag_and_exception_containment_js.log",
-      "logSha256": "588e94eb252526824fe3606c9311f8a93d7fe3ec6462c478d0f35741a9edfa16",
+      "logSha256": "303eb9968f59f89849b9bdfae8c947dc4ea2356fe0e64f1aa85e4b5916e1c9e2",
       "logSnippet": "PASS: Lexical declaration and resetCaptchaRuntimeState present."
     },
     {
@@ -1623,12 +1644,12 @@
       "status": "EXECUTED",
       "passed": true,
       "exitCode": 0,
-      "startTime": "2026-10-21T11:07:49.134Z",
-      "endTime": "2026-10-21T11:07:49.207Z",
-      "durationMs": 73,
+      "startTime": "2026-10-21T11:58:13.838Z",
+      "endTime": "2026-10-21T11:58:13.912Z",
+      "durationMs": 74,
       "command": "node test_solver_autonomous.js",
       "logArtifactPath": "scratch/test_logs/test_solver_autonomous_js.log",
-      "logSha256": "f57e91c9f47f433e31a1b857a2277c589a0a14015229101e099fd7d2b611af59",
+      "logSha256": "1e65c4cb4ecfa8816122a1809e7377f065d2b12ff0d43da944e2da76c7a25167",
       "logSnippet": "✅ PASS: Tier 2 (NopeCHA) Smart Fallback Chain validated"
     },
     {
@@ -1639,12 +1660,12 @@
       "status": "EXECUTED",
       "passed": true,
       "exitCode": 0,
-      "startTime": "2026-10-21T11:07:49.215Z",
-      "endTime": "2026-10-21T11:07:49.294Z",
-      "durationMs": 79,
+      "startTime": "2026-10-21T11:58:13.920Z",
+      "endTime": "2026-10-21T11:58:13.993Z",
+      "durationMs": 73,
       "command": "node test_sprint_f1_f4_captcha_and_circuit_breaker.js",
       "logArtifactPath": "scratch/test_logs/test_sprint_f1_f4_captcha_and_circuit_breaker_js.log",
-      "logSha256": "2eae8c42f7a6872532aba1a802ee06aeacbc25a84d2eae773f2c268d257a5cd8",
+      "logSha256": "a520b042ddbffffad6712d3b49339f4e7ae289fe7f86ba5176431c85ac8d7f10",
       "logSnippet": "PASS: Stale target event correctly rejected without settling active target."
     },
     {
@@ -1655,12 +1676,12 @@
       "status": "EXECUTED",
       "passed": true,
       "exitCode": 0,
-      "startTime": "2026-10-21T11:07:49.302Z",
-      "endTime": "2026-10-21T11:07:49.593Z",
-      "durationMs": 291,
+      "startTime": "2026-10-21T11:58:14.001Z",
+      "endTime": "2026-10-21T11:58:14.250Z",
+      "durationMs": 249,
       "command": "node test_sprint_track_a_egress_repair.js",
       "logArtifactPath": "scratch/test_logs/test_sprint_track_a_egress_repair_js.log",
-      "logSha256": "269358ee54b0658c8f92aa9035548f4ba954e52253812d70b56a63465f71c5a0",
+      "logSha256": "ab5b93207ad7cb9a44413306a92dd4977ee2e2cc676da3ac155473735f74e451",
       "logSnippet": "-> PASS: Correctly rejected repair when no transaction file exists."
     },
     {
@@ -1671,12 +1692,12 @@
       "status": "EXECUTED",
       "passed": true,
       "exitCode": 0,
-      "startTime": "2026-10-21T11:07:49.601Z",
-      "endTime": "2026-10-21T11:07:50.106Z",
-      "durationMs": 505,
+      "startTime": "2026-10-21T11:58:14.258Z",
+      "endTime": "2026-10-21T11:58:14.786Z",
+      "durationMs": 528,
       "command": "node test_winsec_failclosed.js",
       "logArtifactPath": "scratch/test_logs/test_winsec_failclosed_js.log",
-      "logSha256": "355ce15d40667ddba9659be4b1fc7d070d99e0a324497547ea7ddbcb185b722a",
+      "logSha256": "73b6c1f689bc6180260e1ad24877aacc5448afc37674443527f9cb757ce4e315",
       "logSnippet": "[PASS] Caught expected fail-closed error: [WINSEC_FATAL] DPAPI encryption failed (injected failure). Fail-closed: refusing insecure secret storage."
     }
   ]
