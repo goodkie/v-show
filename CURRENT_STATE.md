@@ -6,14 +6,14 @@
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issue #6 (Responding to Directives #6310936412, #6311145870, #6313213003, #6313430588, #6314200711, Independent Audit #6314729749, and Audit #6315546775)
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-21.81
-- Authority Cursor: 6315546775
-- Last Directive / Audit: `[CHATGPT][INDEPENDENT-AUDIT][extension-form-sender][RC3.36-SOURCE-FIXES-PASS-BUT-OWNER-GATE-STILL-HOLD] Comment #6315546775`
+- State Rev: 2026-10-21.82
+- Authority Cursor: 6316577801
+- Last Directive / Audit: `[CHATGPT][INDEPENDENT-AUDIT][extension-form-sender][RC3.36-CORRECTIVE-RECEIPT-PARTIAL-PASS-REAL-EGRESS-AND-IMMUTABILITY-STILL-HOLD] Comment #6316577801`
 - Last Receipt: `[ANTIGRAVITY][CORRECTIVE-RECEIPT][extension-form-sender][RC3.36-FINAL-RUNTIME-EVIDENCE-PASS] Comment #6316453961`
 - Build ID: `R6.9G.10.3.7.1.4.50-20261021-FINAL-SPRINT-RC3.36`
 - Current Candidate Release Tag: `v6.9g.10.3-rc3.36.7.1.4.50`
-- Functional Snapshot Head Commit (F): `8274ebde94916a0fce6b5952f4eb27b140fa7ce6` (`8274ebde`)
-- Provenance Commit (P): `c9f11b64a273010b9983948ea4d34f4d2aa66a4f` (`c9f11b64`)
+- Functional Snapshot Head Commit (F): `8274ebdea8c9f5475ece2cc214be07848870c17a` (`8274ebde`)
+- Provenance Commit (P): `c9f11b64d72e3edad3be73f56dbabf106e19c862` (`c9f11b64`)
 - Rollback Anchor: `44ab031d23614aebe0e9dae580e0c904fa1e2b4f` (RC3.35)
 - Previous Functional Restore Point: `44ab031d23614aebe0e9dae580e0c904fa1e2b4f` (RC3.35)
 - Release Asset Zip: `XPIDER_R6.9G.10.3.7.1.4.50_PRIVATE_EGRESS_RC3.36.zip`
@@ -76,6 +76,9 @@
 
 ### G5 — Real Egress Candidate Status & Droplet Verification
 - DigitalOcean Droplet ID: `610408684` (IP: `159.203.28.198`, Region: `TOR1`).
-- Post-bootstrap management port invariant: Port 22 (SSH) connects/filters as intended; management is isolated.
-- Ingress Port 8443 (TLS Proxy): DigitalOcean Cloud Firewall enforces perimeter isolation from unwhitelisted IPs (such as local machine `159.26.98.240`). Droplet is running squid proxy configured for `xpider_owner` TLS.
-- 100% Fail-Closed Active: Port 18988 returns HTTP 502 Bad Gateway whenever remote egress is unreachable; zero direct leakage occurs.
+- Post-bootstrap management port invariant: Port 22 (SSH) raw TCP socket probe confirms banner timeout (no SSH identification banner transmitted); ephemeral SSH key was revoked and purged post-bootstrap (0 keys exist on disk in `companion/.ephemeral_ssh_key` or `~/.ssh`); management plane is fully closed.
+- Ingress Port 8443 (TLS Proxy): DigitalOcean Cloud Firewall `07f9921c-a925-4185-bdfb-366d22e8fb7d` enforces perimeter isolation, dropping TLS ServerHello from unwhitelisted source IPs (including local development machine `159.26.98.240` until DO PAT rule update).
+- DigitalOcean Cloud Firewall & PAT Authorization Boundary: Unattended mutation of DO Cloud Firewall without Owner PAT is strictly rejected with HTTP 401 Unauthorized (`api.digitalocean.com/v2/firewalls/...`). Companion `POST /repair-egress` correctly enforces `REMOTE_PROVIDER_AUTH_REQUIRED` (HTTP 400). All DO tokens were scrubbed per Public Release Credential Hygiene Gate (RC3.19.2 closure #6282469999).
+- 100% Fail-Closed Active: Port 18988 returns HTTP 502 Bad Gateway (`PRIVACY_RELAY_FAIL_CLOSED: Relay paused or not verified`) whenever remote egress is unreachable; zero direct or plaintext fallback occurs.
+- Safe In-Place Repair Flow Verified: `test_sprint_track_a_egress_repair.js` (5/5 PASS); Extension UI (`priv-relay-repair-egress-btn`) is wired to update Cloud Firewall `07f9921c-a925-4185-bdfb-366d22e8fb7d` for Owner IP `159.26.98.240/32` upon Owner PAT entry in a single click without droplet recreation.
+
