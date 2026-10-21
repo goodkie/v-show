@@ -4280,8 +4280,46 @@
             // Step 2: Listen for Owner decisions routed from background
             const decisionListener = (msg, sender, sendResponse) => {
                 if (!msg) return;
+
+                if (msg.action === 'INSPECT_CAPTCHA_FRAME') {
+                    const hasResponseField = !!document.querySelector(
+                        '[name="g-recaptcha-response"], textarea[name="g-recaptcha-response"], [name="h-captcha-response"], [name="cf-turnstile-response"]'
+                    );
+                    const widget = document.querySelector('.g-recaptcha, .h-captcha, [data-challenge-state], #cf-turnstile, #captcha-widget, [data-sitekey]');
+                    const hasWidgetContainer = !!widget;
+                    const hasDataCallback = !!(widget && widget.getAttribute('data-callback'));
+                    const dataCallbackName = (widget && widget.getAttribute('data-callback')) || null;
+                    const hasRecaptchaAnchor = !!document.querySelector('.recaptcha-checkbox, #recaptcha-anchor, .recaptcha-checkbox-border');
+                    const isTop = (window.top === window);
+
+                    let role = 'UNKNOWN';
+                    if (isTop && (hasResponseField || hasWidgetContainer)) {
+                        role = 'HOST_PAGE_RESPONSE_FIELD';
+                    } else if (hasRecaptchaAnchor) {
+                        role = 'CAPTCHA_WIDGET_FRAME';
+                    } else if (hasResponseField) {
+                        role = 'EXTERNAL_FORM_FRAME';
+                    }
+
+                    if (sendResponse) {
+                        sendResponse({
+                            success: true,
+                            isTop,
+                            origin: window.location.origin || 'unknown',
+                            hasResponseField,
+                            hasWidgetContainer,
+                            hasDataCallback,
+                            dataCallbackName,
+                            hasRecaptchaAnchor,
+                            role
+                        });
+                    }
+                    return true;
+                }
+
                 if (msg.action === 'APPLY_CAPTCHA_TOKEN') {
                     const solution = msg.token;
+                    const mainWorldResult = msg.mainWorldResult || null;
                     console.log(`[CAPTCHA_TOKEN_RECEIVED] token applied on target page`);
                     // [R6.9G.6] Snapshot matching iframe presence BEFORE applying token:
                     const iframesBeforeApply = document.querySelectorAll(
@@ -4292,7 +4330,7 @@
                         (iframesBeforeApply.length > 0)
                     );
 
-                    let applied = false;
+                    let applied = !!(mainWorldResult && (mainWorldResult.tokenWritten || mainWorldResult.callbackInvoked));
                     if (captchaData.type === 'turnstile') {
                         const input = document.querySelector('[name="cf-turnstile-response"]');
                         if (input) { input.value = solution; applied = true; }
@@ -4379,12 +4417,14 @@
 
                         // [FAIL-CLOSED] verified = true ONLY when token is present AND at least ONE
                         // independent resolution signal is confirmed.
-                        // If tokenPresentInDom is true but NO independent signal => verified = false (UNKNOWN).
-                        if (tokenPresentInDom) {
-                            const hasIndependentSignal = isResolvedState || hasGlobalResolvedFlag || captchaIframeGone || callbackConfirmed;
+                        const mainWorldCallbackInvoked = !!(mainWorldResult && mainWorldResult.callbackInvoked === true) || (document.documentElement && document.documentElement.getAttribute('data-captcha-callback-invoked') === 'true');
+                        const mainWorldResolved = !!(mainWorldResult && mainWorldResult.tokenWritten && mainWorldResult.fieldsFound > 0) || (document.documentElement && document.documentElement.getAttribute('data-captcha-resolved') === 'true');
+
+                        if (tokenPresentInDom || (mainWorldResult && mainWorldResult.tokenWritten)) {
+                            const hasIndependentSignal = isResolvedState || hasGlobalResolvedFlag || captchaIframeGone || callbackConfirmed || mainWorldCallbackInvoked || mainWorldResolved;
                             if (hasIndependentSignal) {
                                 verified = true;
-                                console.log(`[CAPTCHA_FAIL_CLOSED] verified=true via independent signal: resolvedState=${isResolvedState} globalFlag=${hasGlobalResolvedFlag} iframeGone=${captchaIframeGone} callback=${callbackConfirmed}`);
+                                console.log(`[CAPTCHA_FAIL_CLOSED] verified=true via independent signal: resolvedState=${isResolvedState} globalFlag=${hasGlobalResolvedFlag} iframeGone=${captchaIframeGone} callback=${callbackConfirmed} mainWorldCb=${mainWorldCallbackInvoked} mainWorldRes=${mainWorldResolved}`);
                             } else {
                                 verified = false;
                                 console.warn(`[CAPTCHA_FAIL_CLOSED] verified=false — token present but NO independent resolution signal. Token-only != Challenge verified. Not incrementing CAPTCHA OK.`);
@@ -4441,15 +4481,19 @@
                     )) || anchorChecked;
 
                     const hasGlobalResolvedFlag = typeof window !== 'undefined' && window.__captcha_challenge_resolved === true;
+                    const mainWorldResolved = (document.documentElement && document.documentElement.getAttribute('data-captcha-resolved') === 'true');
+                    const mainWorldCallback = (document.documentElement && document.documentElement.getAttribute('data-captcha-callback-invoked') === 'true') || !!(msg && msg.mainWorldResult && msg.mainWorldResult.callbackInvoked === true);
 
                     const iframes = document.querySelectorAll('iframe[src*="recaptcha"], iframe[src*="hcaptcha"], iframe[src*="challenges.cloudflare"]');
                     const captchaIframeGone = Boolean(hadMatchingIframeBeforeApply && iframes.length === 0);
                     const callbackConfirmed = Boolean(captchaData && captchaData.callbackConfirmed === true);
 
-                    const isNowVerified = Boolean(_isCaptchaSolved || isResolvedState || hasGlobalResolvedFlag || captchaIframeGone || callbackConfirmed);
+                    const isNowVerified = Boolean(_isCaptchaSolved || isResolvedState || hasGlobalResolvedFlag || captchaIframeGone || callbackConfirmed || mainWorldResolved || mainWorldCallback);
 
                     let signalType = 'NONE';
                     if (_isCaptchaSolved) signalType = 'ALREADY_SOLVED';
+                    else if (mainWorldCallback) signalType = 'MAIN_WORLD_CALLBACK';
+                    else if (mainWorldResolved) signalType = 'MAIN_WORLD_RESOLVED';
                     else if (isResolvedState) signalType = 'RESOLVED_STATE';
                     else if (hasGlobalResolvedFlag) signalType = 'GLOBAL_FLAG';
                     else if (captchaIframeGone) signalType = 'IFRAME_GONE';

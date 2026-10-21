@@ -102,14 +102,14 @@
             try {
                 if (typeof window !== 'undefined') {
                     if (window.parent && window.parent !== window) {
-                        window.parent.postMessage({ type: 'captchaToken', action: 'CAPTCHA_TOKEN_INJECTED', source: 'xpider_solver', token, captchaType: type }, '*');
+                        window.parent.postMessage({ type: 'captchaToken', action: 'CAPTCHA_TOKEN_APPLIED', source: 'xpider_solver', token, captchaType: type }, '*');
                     }
                     if (window.top && window.top !== window) {
-                        window.top.postMessage({ type: 'captchaToken', action: 'CAPTCHA_TOKEN_INJECTED', source: 'xpider_solver', token, captchaType: type }, '*');
+                        window.top.postMessage({ type: 'captchaToken', action: 'CAPTCHA_TOKEN_APPLIED', source: 'xpider_solver', token, captchaType: type }, '*');
                     }
                 }
                 if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
-                    chrome.runtime.sendMessage({ action: 'CAPTCHA_TOKEN_INJECTED', type, url: this._getHostPageUrl(), token }).catch(() => {});
+                    chrome.runtime.sendMessage({ action: 'CAPTCHA_TOKEN_APPLIED', type, url: this._getHostPageUrl(), token }).catch(() => {});
                 }
             } catch (_) {}
         }
@@ -137,22 +137,10 @@
                         }
                     }
                     if (msg && msg.action === 'APPLY_CAPTCHA_TOKEN') {
-                        this.log(`Applying token received from Owner Auto solve...`, "INJECT");
-                        const injected = this._injectToken(msg.token, msg.captchaType || this._detectCaptchaType());
-                        let verified = false;
-                        if (injected) {
-                            this.markSolved(msg.token, msg.captchaType || this._detectCaptchaType());
-                            const widget = document.querySelector('.g-recaptcha, .h-captcha, [data-challenge-state], #cf-turnstile, #captcha-widget');
-                            const anchor = document.querySelector('.recaptcha-checkbox-checked, [aria-checked="true"]');
-                            if (widget && widget.getAttribute('data-challenge-state')) {
-                                verified = widget.getAttribute('data-challenge-state') === 'resolved';
-                            } else if (anchor) {
-                                verified = true;
-                            } else {
-                                verified = false;
-                            }
-                        }
-                        sendResponse({ success: !!injected, applied: !!injected, verified: !!verified });
+                        // [RC3.30 P0-B Fix]: In provider-token mode, solver-content must NEVER synthesize
+                        // checkbox checked state, NEVER call markSolved(), and NEVER emit CAPTCHA_SOLVED.
+                        this.log(`Received APPLY_CAPTCHA_TOKEN in subframe — acknowledging without synthetic mutation`, "INFO");
+                        sendResponse({ success: true, applied: false, role: 'CAPTCHA_WIDGET_FRAME', note: 'MAIN_WORLD_AUTHORITATIVE' });
                     }
                 });
             }
@@ -701,7 +689,7 @@
                         'g-recaptcha-response': token,
                         'h-captcha-response': token,
                         type: 'captchaToken',
-                        action: 'CAPTCHA_SOLVED',
+                        action: 'CAPTCHA_TOKEN_APPLIED',
                         source: 'xpider_solver',
                         token: token
                     };

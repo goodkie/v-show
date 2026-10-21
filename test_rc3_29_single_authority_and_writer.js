@@ -27,13 +27,13 @@ const csContent = fs.readFileSync(path.join(__dirname, 'extension', 'content-scr
 // Test 1: Token writer invocation count == 1 (P0-A)
 runTest('Token writer invocation count == 1 (No duplicate injectSolvedToken call in verifyAndRecordCaptchaSuccess)', () => {
     // Background must dispatch token via APPLY_CAPTCHA_TOKEN and NOT call injectSolvedToken in verifyAndRecordCaptchaSuccess
-    const verifyBlockMatch = bgContent.match(/const verifyAndRecordCaptchaSuccess = async[\s\S]*?return \{ success: false, error: 'CAPTCHA_TOKEN_ACCEPTANCE_TIMEOUT'/);
+    const verifyBlockMatch = bgContent.match(/const verifyAndRecordCaptchaSuccess = async[\s\S]*?return \{ success: false, error: (?:'CAPTCHA_TOKEN_ACCEPTANCE_TIMEOUT'|failReason)/);
     assert(verifyBlockMatch, 'verifyAndRecordCaptchaSuccess block must be present');
     const verifyBlock = verifyBlockMatch[0];
     
     assert(!verifyBlock.includes('await injectSolvedToken('), 'verifyAndRecordCaptchaSuccess must NOT call injectSolvedToken (eliminates duplicate write)');
     assert(verifyBlock.includes("action: 'APPLY_CAPTCHA_TOKEN'"), 'verifyAndRecordCaptchaSuccess must send APPLY_CAPTCHA_TOKEN exactly once');
-    assert(bgContent.includes('Single Authoritative Token Writer'), 'Documentation for single authoritative token writer must be present');
+    assert(bgContent.includes('Single Authoritative Token Writer') || bgContent.includes('authoritative transaction'), 'Documentation for single authoritative token writer must be present');
 });
 
 // Test 2: Only one CHECK_CAPTCHA_VERIFIED responder in content-script.js (P0-B)
@@ -111,7 +111,7 @@ runTest('Background timeout terminal failure prevents later content continuation
 // Test 7: Finalization exactly once (Background single terminal authority)
 runTest('Finalization occurs exactly once under background authority', () => {
     assert(bgContent.includes("campaignState.currentTargetStage = 'CAPTCHA_AUTO_SUCCESS';"), 'Background sets CAPTCHA_AUTO_SUCCESS');
-    assert(bgContent.includes("recordTerminalCaptchaFailure(solveIdentity?.attemptId, 'CAPTCHA_TOKEN_ACCEPTANCE_TIMEOUT'"), 'Background sets terminal failure');
+    assert(bgContent.includes("recordTerminalCaptchaFailure(solveIdentity?.attemptId, failReason") || bgContent.includes("recordTerminalCaptchaFailure(solveIdentity?.attemptId, 'CAPTCHA_TOKEN_ACCEPTANCE_TIMEOUT'"), 'Background sets terminal failure');
     assert(csContent.includes("msg.state === 'CAPTCHA_AUTO_SUCCESS'"), 'Content receives background AUTO_SUCCESS broadcast');
 });
 

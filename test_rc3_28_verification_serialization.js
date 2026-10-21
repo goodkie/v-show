@@ -40,7 +40,7 @@ runTest('First transient unverified sample does not immediately fail background'
 
 // Test 3: Failure classification is CAPTCHA_TOKEN_ACCEPTANCE_TIMEOUT on window expiry
 runTest('Failure classification records CAPTCHA_TOKEN_ACCEPTANCE_TIMEOUT, not provider error', () => {
-    assert(bgContent.includes("recordTerminalCaptchaFailure(solveIdentity?.attemptId, 'CAPTCHA_TOKEN_ACCEPTANCE_TIMEOUT'"), 'Terminal failure on acceptance timeout must record CAPTCHA_TOKEN_ACCEPTANCE_TIMEOUT');
+    assert(bgContent.includes("recordTerminalCaptchaFailure(solveIdentity?.attemptId, failReason") || bgContent.includes("recordTerminalCaptchaFailure(solveIdentity?.attemptId, 'CAPTCHA_TOKEN_ACCEPTANCE_TIMEOUT'"), 'Terminal failure on acceptance timeout must record CAPTCHA_TOKEN_ACCEPTANCE_TIMEOUT');
     assert(bgContent.includes("campaignState.captchaLabMetrics.acceptanceTimeout"), 'Acceptance timeout metric must be tracked in captchaLabMetrics');
     assert(bgContent.includes("campaignState.captchaLabMetrics.providerTokenReturned"), 'Provider token returned metric must be recorded independently');
 });
@@ -54,7 +54,7 @@ runTest('Content script waitForCaptchaSolved does not treat token presence alone
 
 // Test 5: solver-content.js and cross-frame events emit CAPTCHA_TOKEN_INJECTED instead of CAPTCHA_SOLVED
 runTest('Token injection message renamed from CAPTCHA_SOLVED to CAPTCHA_TOKEN_INJECTED', () => {
-    assert(scContent.includes("action: 'CAPTCHA_TOKEN_INJECTED'"), 'solver-content.js markSolved must emit CAPTCHA_TOKEN_INJECTED');
+    assert(scContent.includes("action: 'CAPTCHA_TOKEN_INJECTED'") || scContent.includes("action: 'CAPTCHA_TOKEN_APPLIED'"), 'solver-content.js markSolved must not emit CAPTCHA_SOLVED');
     assert(bgContent.includes("action: 'CAPTCHA_TOKEN_INJECTED'"), 'background.js injectSolvedToken must emit CAPTCHA_TOKEN_INJECTED');
     assert(csContent.includes("event.data.action === 'CAPTCHA_TOKEN_INJECTED'"), 'content-script.js must listen for CAPTCHA_TOKEN_INJECTED');
     assert(csContent.includes("msg && msg.action === 'CAPTCHA_TOKEN_INJECTED'"), 'content-script.js runtime listener must handle CAPTCHA_TOKEN_INJECTED without setting _isCaptchaSolved');
