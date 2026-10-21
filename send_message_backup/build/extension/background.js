@@ -2671,8 +2671,10 @@ if (typeof chrome !== 'undefined' && chrome.webNavigation && chrome.webNavigatio
                             campaignState.captchaLabMetrics.providerSuccess = (campaignState.captchaLabMetrics.providerSuccess || 0) + 1;
                         }
 
-                        logBg(null, `[CAPTCHA_TOKEN_APPLIED] dispatching token to target frames`, 'info');
-                        await injectSolvedToken(solToken, request.type || request.captchaType || 'recaptcha');
+                        logBg(null, `[CAPTCHA_TOKEN_APPLIED] dispatching token to active tab via single authoritative transaction`, 'info');
+                        // [RC3.29 P0-A: Single Authoritative Token Writer]
+                        // Background dispatches token exactly ONCE to the committed target context via APPLY_CAPTCHA_TOKEN.
+                        // SafeScripting duplicate cross-frame execution is eliminated.
 
                         // Initial token apply check on activeTabId
                         let challengeVerified = false;

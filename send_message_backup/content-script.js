@@ -4431,7 +4431,7 @@
                     }
 
                 } else if (msg.action === 'CHECK_CAPTCHA_VERIFIED') {
-                    // [RC3.28 Directive C / Single Authority Verification Probe]
+                    // [RC3.29 P0-B Fix: Single Canonical Verification Evaluator]
                     const anchorChecked = !!document.querySelector('.recaptcha-checkbox-checked, #recaptcha-anchor[aria-checked="true"], .recaptcha-checkbox[aria-checked="true"]');
                     const widget = document.querySelector('.g-recaptcha, .h-captcha, [data-challenge-state], #cf-turnstile, #captcha-widget');
                     const isResolvedState = (widget && (
@@ -4444,13 +4444,20 @@
 
                     const iframes = document.querySelectorAll('iframe[src*="recaptcha"], iframe[src*="hcaptcha"], iframe[src*="challenges.cloudflare"]');
                     const captchaIframeGone = Boolean(hadMatchingIframeBeforeApply && iframes.length === 0);
-                    const callbackConfirmed = captchaData && captchaData.callbackConfirmed === true;
+                    const callbackConfirmed = Boolean(captchaData && captchaData.callbackConfirmed === true);
 
-                    const isNowVerified = Boolean(isResolvedState || hasGlobalResolvedFlag || captchaIframeGone || callbackConfirmed);
+                    const isNowVerified = Boolean(_isCaptchaSolved || isResolvedState || hasGlobalResolvedFlag || captchaIframeGone || callbackConfirmed);
+
+                    let signalType = 'NONE';
+                    if (_isCaptchaSolved) signalType = 'ALREADY_SOLVED';
+                    else if (isResolvedState) signalType = 'RESOLVED_STATE';
+                    else if (hasGlobalResolvedFlag) signalType = 'GLOBAL_FLAG';
+                    else if (captchaIframeGone) signalType = 'IFRAME_GONE';
+                    else if (callbackConfirmed) signalType = 'CALLBACK_CONFIRMED';
 
                     if (isNowVerified) {
                         _isCaptchaSolved = true;
-                        console.log(`[CAPTCHA_UI_STATE] attemptId=${execIdentity.attemptId || 'none'} to=VERIFIED`);
+                        console.log(`[CAPTCHA_UI_STATE] attemptId=${execIdentity.attemptId || 'none'} to=VERIFIED signalType=${signalType}`);
                         console.log(`[CAPTCHA_UI_CLEAR] reason=VERIFIED`);
                         updateTopSolverHUD(`CAPTCHA challenge verified (${captchaData.type})`, 'SUCCESS');
                         sendFn({
@@ -4461,7 +4468,8 @@
                             sessionId: execIdentity.sessionId,
                             captchaEpoch: execIdentity.captchaEpoch || 1,
                             tabId: execIdentity.tabId,
-                            verified: true
+                            verified: true,
+                            signalType: signalType
                         });
                         chrome.runtime.onMessage.removeListener(decisionListener);
                         _activeCaptchaSolvePromise = null;
@@ -4469,9 +4477,10 @@
                             success: true,
                             verified: true,
                             providerSolveAttempted: true,
-                            providerTokenInjected: true
+                            providerTokenInjected: true,
+                            signalType: signalType
                         });
-                        if (sendResponse) sendResponse({ success: true, verified: true });
+                        if (sendResponse) sendResponse({ success: true, verified: true, signalType: signalType });
                     } else {
                         if (sendResponse) sendResponse({ success: false, verified: false, status: 'VERIFY_PENDING' });
                     }
@@ -4514,8 +4523,12 @@
                     }
                     console.log(`[CAPTCHA_UI_STATE] state=${msg.state} message="${msg.message}"`);
                     if (msg.state === 'CAPTCHA_AUTO_SUCCESS') {
+                        // [RC3.29 P0-C Fix: Background is single terminal authority for success]
+                        _isCaptchaSolved = true;
                         updateTopSolverHUD(msg.message || 'CAPTCHA solved ✓', 'SUCCESS');
                     } else if (msg.state === 'CAPTCHA_AUTO_FAILURE' || msg.state === 'CAPTCHA_SKIPPED') {
+                        _isCaptchaSolved = false;
+                        currentTargetLifecycleState = TargetLifecycleState.SETTLED;
                         updateTopSolverHUD(msg.message || 'CAPTCHA auto-solve terminated.', msg.status || 'FAIL');
                         setTimeout(() => removeTopSolverHUD(msg.state), 1500);
                     } else {
@@ -4576,21 +4589,9 @@
                 if (msg && msg.action === 'CAPTCHA_TOKEN_INJECTED') {
                     _captchaTokenInjected = true;
                     logDev(`🔑 [Security] Captcha token injected signal received via runtime message`, 'info');
-                } else if (msg && msg.action === 'CAPTCHA_CHALLENGE_VERIFIED') {
+                } else if (msg && (msg.action === 'CAPTCHA_CHALLENGE_VERIFIED' || msg.action === 'CAPTCHA_AUTO_SUCCESS')) {
                     _isCaptchaSolved = true;
-                    logDev(`🔑 [Security] Captcha challenge verified signal received via runtime message`, 'success');
-                } else if (msg && msg.action === 'CHECK_CAPTCHA_VERIFIED') {
-                    const anchorChecked = !!document.querySelector('.recaptcha-checkbox-checked, #recaptcha-anchor[aria-checked="true"], .recaptcha-checkbox[aria-checked="true"]');
-                    const widget = document.querySelector('.g-recaptcha, .h-captcha, [data-challenge-state], #cf-turnstile, #captcha-widget');
-                    const isResolvedState = (widget && (
-                        widget.getAttribute('data-challenge-state') === 'resolved' ||
-                        widget.classList.contains('challenge-resolved') ||
-                        widget.getAttribute('data-status') === 'solved'
-                    )) || anchorChecked;
-                    const hasGlobalResolvedFlag = typeof window !== 'undefined' && window.__captcha_challenge_resolved === true;
-                    const isVerified = Boolean(_isCaptchaSolved || isResolvedState || hasGlobalResolvedFlag);
-                    if (sendResponse) sendResponse({ success: isVerified, verified: isVerified });
-                    return true;
+                    logDev(`🔑 [Security] Captcha verified/auto-success signal received via runtime message`, 'success');
                 } else if (msg && msg.action === 'TRIGGER_CAPTCHA_DETECTION') {
                     if (msg.executionIdentity) {
                         window.__xpider_execution_identity = msg.executionIdentity;
@@ -4753,19 +4754,25 @@
             // [RC3.28 Directive B / Regression Test 2 & 5]:
             // Token presence in DOM is INJECTED / PENDING_VERIFICATION only.
             // Never promote hasToken alone to solved. Success requires an independent verified signal.
+            // [RC3.29 P0-C Fix: Single Authority for Auto-Solve Form Progression]
+            // Only a confirmed verified signal (_isCaptchaSolved === true established via canonical
+            // background success or verified response) can resume the sequence.
             if (_isCaptchaSolved) {
-                logDev("🔑 [Security] Challenge solved verified. Resuming sequence immediately.", "success");
+                logDev("🔑 [Security] Challenge solved verified by background. Resuming sequence.", "success");
                 await new Promise(r => setTimeout(r, 400));
                 return true;
             }
 
             if (!stillHasCaptcha) {
-                if (!autoSolveAttempted || (autoSolveAttempted && (providerTokenInjected || _captchaTokenInjected))) {
-                    _isCaptchaSolved = true;
-                    logDev("🔑 [Security] Challenge solved or removed. Resuming sequence immediately.", "success");
-                    await new Promise(r => setTimeout(r, 500));
+                if (!autoSolveAttempted) {
+                    // No CAPTCHA detected initially on form
+                    logDev("🔑 [Security] No challenge detected on form. Resuming sequence.", "info");
                     return true;
                 }
+                // When auto-solve was attempted, disappearance is NOT an independent content bypass!
+                // Disappearance is an observation signal for background verification via CHECK_CAPTCHA_VERIFIED.
+                // Content only resumes when background establishes canonical AUTO_SUCCESS.
+                logDev("🔑 [Security] Challenge disappeared post-attempt. Awaiting background canonical verification.", "info");
             }
 
             await new Promise(r => setTimeout(r, 1000));
