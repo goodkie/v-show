@@ -1958,7 +1958,9 @@ async function recordTerminalCaptchaFailure(attemptId, reason, safeErrorClass) {
         let settleReason = 'CAPTCHA_SOLVER_PROVIDER_ERROR';
         const reasonStr = String(reason || '');
         const errClassStr = String(safeErrorClass || '');
-        if (/timeout/i.test(reasonStr) || /timeout/i.test(errClassStr)) {
+        if (/acceptance_timeout|verification_timeout|challenge_verification_failed|acceptance_failed|token_acceptance/i.test(reasonStr) || /acceptance_timeout|verification_timeout/i.test(errClassStr)) {
+            settleReason = 'CAPTCHA_TOKEN_ACCEPTANCE_TIMEOUT';
+        } else if (/timeout/i.test(reasonStr) || /timeout/i.test(errClassStr)) {
             settleReason = 'CAPTCHA_SOLVER_TIMEOUT';
         } else if (/config|key|wrong_user_key|not_exist/i.test(reasonStr) || /config|key/i.test(errClassStr)) {
             settleReason = 'CAPTCHA_SOLVER_CONFIG_ERROR';
@@ -2644,7 +2646,8 @@ if (typeof chrome !== 'undefined' && chrome.webNavigation && chrome.webNavigatio
                                         }
                                         const errLabel = document.querySelector("label[for='g-recaptcha-Reg'], .recaptcha-wrapper label");
                                         if (errLabel) errLabel.style.display = 'none';
-                                        window.postMessage({ type: 'captchaToken', 'g-recaptcha-response': tokenVal, token: tokenVal, action: 'CAPTCHA_SOLVED', source: 'xpider_solver' }, '*');
+                                        // [RC3.28 Directive A] Token injection is NOT verification. Mislabeled signal caused premature form progression.
+                                        window.postMessage({ type: 'captchaToken', 'g-recaptcha-response': tokenVal, token: tokenVal, action: 'CAPTCHA_TOKEN_INJECTED', source: 'xpider_solver' }, '*');
                                     } catch (e) {
                                         console.warn('[CrossFrameTokenInject] frame err:', e);
                                     }
@@ -2656,14 +2659,22 @@ if (typeof chrome !== 'undefined' && chrome.webNavigation && chrome.webNavigatio
                         }
                     };
 
-                    // [R6.9G.2 Gate 8/9] Verified Challenge Transition Helper:
-                    // [CAPTCHA_TOKEN_RECEIVED] -> [CAPTCHA_TOKEN_APPLIED] -> [CAPTCHA_CHALLENGE_VERIFIED] -> [CAPTCHA_AUTO_SUCCESS]
+                    // [RC3.28 Bounded Verification Window & Single Authority Serialization]:
+                    // TOKEN_RECEIVED -> TOKEN_INJECTED -> VERIFYING -> VERIFIED | ACCEPTANCE_TIMEOUT
                     const verifyAndRecordCaptchaSuccess = async (solToken, solMethod) => {
                         logBg(null, `[CAPTCHA_TOKEN_RECEIVED] method=${solMethod} tokenLength=${solToken ? solToken.length : 0}`, 'info');
+
+                        // [RC3.28 Directive F / Regression Test 6] Provider-vs-integration metrics:
+                        // Provider returned token => provider success metric recorded now.
+                        if (campaignState.captchaLabMetrics) {
+                            campaignState.captchaLabMetrics.providerTokenReturned = (campaignState.captchaLabMetrics.providerTokenReturned || 0) + 1;
+                            campaignState.captchaLabMetrics.providerSuccess = (campaignState.captchaLabMetrics.providerSuccess || 0) + 1;
+                        }
 
                         logBg(null, `[CAPTCHA_TOKEN_APPLIED] dispatching token to target frames`, 'info');
                         await injectSolvedToken(solToken, request.type || request.captchaType || 'recaptcha');
 
+                        // Initial token apply check on activeTabId
                         let challengeVerified = false;
                         try {
                             const vRes = await new Promise((resolve) => {
@@ -2678,18 +2689,58 @@ if (typeof chrome !== 'undefined' && chrome.webNavigation && chrome.webNavigatio
                                     captchaEpoch: solveIdentity.captchaEpoch,
                                     tabId: activeTabId
                                 }, (res) => resolve(res || { verified: false }));
-                                setTimeout(() => resolve({ verified: false }), 4000);
+                                setTimeout(() => resolve({ verified: false }), 3000);
                             });
                             challengeVerified = !!(vRes && vRes.verified === true);
                         } catch (_) {
                             challengeVerified = false;
                         }
 
+                        // [RC3.28 Directive C / Regression Test 1 & 3] Bounded verification window (7500ms):
+                        // First transient negative sample must NEVER trigger immediate failure!
+                        if (!challengeVerified) {
+                            const VERIFY_WINDOW_MS = 7500;
+                            const POLL_INTERVAL_MS = 400;
+                            const verifyDeadline = Date.now() + VERIFY_WINDOW_MS;
+                            logBg(null, `[CAPTCHA_VERIFY_PENDING] First sample pending verification. Entering bounded window (${VERIFY_WINDOW_MS}ms, interval=${POLL_INTERVAL_MS}ms)`, 'info');
+
+                            while (Date.now() < verifyDeadline && !challengeVerified) {
+                                if (campaignState.currentTargetStage === 'CAPTCHA_AUTO_SUCCESS') {
+                                    challengeVerified = true;
+                                    break;
+                                }
+                                if (!campaignState.isActive || campaignState.isPaused ||
+                                    (campaignState.currentAttempt?.attemptId && campaignState.currentAttempt.attemptId !== solveIdentity.attemptId)) {
+                                    logBg(null, `[CAPTCHA_VERIFY_ABORTED] Attempt inactive or changed during verification window.`, 'warning');
+                                    return { success: false, error: 'ATTEMPT_ABORTED' };
+                                }
+
+                                await new Promise(r => setTimeout(r, POLL_INTERVAL_MS));
+
+                                if (campaignState.currentTargetStage === 'CAPTCHA_AUTO_SUCCESS') {
+                                    challengeVerified = true;
+                                    break;
+                                }
+
+                                try {
+                                    const pollRes = await new Promise((resolve) => {
+                                        chrome.tabs.sendMessage(activeTabId, {
+                                            action: 'CHECK_CAPTCHA_VERIFIED',
+                                            captchaType: request.type || request.captchaType || 'recaptcha',
+                                            attemptId: solveIdentity.attemptId
+                                        }, (res) => resolve(res || { verified: false }));
+                                        setTimeout(() => resolve({ verified: false }), 350);
+                                    });
+                                    if (pollRes && pollRes.verified === true) {
+                                        challengeVerified = true;
+                                        break;
+                                    }
+                                } catch (_) {}
+                            }
+                        }
+
                         if (challengeVerified) {
                             logBg(null, `[CAPTCHA_CHALLENGE_VERIFIED] Target challenge confirmed resolved.`, 'info');
-                            // [R6.9G.3] Guard: CAPTCHA_CHALLENGE_VERIFIED runtime message (Path B) may have
-                            // already transitioned stage + incremented counters concurrently. Only record
-                            // success here (Path A) if Path B has NOT yet done so (stage still CAPTCHA_AUTO_SOLVING).
                             if (campaignState.currentTargetStage === 'CAPTCHA_AUTO_SOLVING') {
                                 logBg(null, `[CAPTCHA_AUTO_SUCCESS] Challenge resolved via ${solMethod}.`, 'success');
                                 campaignState.currentTargetStage = 'CAPTCHA_AUTO_SUCCESS';
@@ -2719,9 +2770,16 @@ if (typeof chrome !== 'undefined' && chrome.webNavigation && chrome.webNavigatio
 
                             return { success: true, method: solMethod, token: solToken };
                         } else {
-                            logBg(null, `[CAPTCHA_VERIFICATION_FAILED] Challenge could not be verified on target page.`, 'error');
-                            recordTerminalCaptchaFailure(solveIdentity?.attemptId, 'CHALLENGE_VERIFICATION_FAILED');
-                            return { success: false, error: 'CHALLENGE_VERIFICATION_FAILED' };
+                            // [RC3.28 Directive F / Regression Test 2 & 6] Proper failure classification:
+                            // Provider token succeeded, but site acceptance timed out.
+                            // Terminally fail as CAPTCHA_TOKEN_ACCEPTANCE_TIMEOUT, NOT CAPTCHA_SOLVER_PROVIDER_ERROR!
+                            logBg(null, `[CAPTCHA_VERIFICATION_FAILED] Challenge could not be verified on target page within timeout window (7500ms).`, 'error');
+                            if (campaignState.captchaLabMetrics) {
+                                campaignState.captchaLabMetrics.acceptanceTimeout = (campaignState.captchaLabMetrics.acceptanceTimeout || 0) + 1;
+                                campaignState.captchaLabMetrics.integrationFailure = (campaignState.captchaLabMetrics.integrationFailure || 0) + 1;
+                            }
+                            await recordTerminalCaptchaFailure(solveIdentity?.attemptId, 'CAPTCHA_TOKEN_ACCEPTANCE_TIMEOUT', 'ACCEPTANCE_TIMEOUT');
+                            return { success: false, error: 'CAPTCHA_TOKEN_ACCEPTANCE_TIMEOUT', settleReason: 'CAPTCHA_TOKEN_ACCEPTANCE_TIMEOUT' };
                         }
                     };
 
@@ -5111,6 +5169,12 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                     if (!validation.valid) {
                         logBg(null, `[CAPTCHA_CHALLENGE_VERIFIED] REJECT: reason=${validation.reason}`, 'warning');
                         sendResponse({ success: false, error: validation.reason });
+                        return;
+                    }
+                    // [RC3.28 Requirement 4]: Late success after terminal failure rejected
+                    if (campaignState.currentTargetStage === 'CAPTCHA_AUTO_FAILURE' || campaignState.currentTargetStage === 'SETTLED') {
+                        logBg(null, `[CAPTCHA_CHALLENGE_VERIFIED] REJECT: late/stale event received after terminal settlement (stage=${campaignState.currentTargetStage})`, 'warning');
+                        sendResponse({ success: false, error: 'SETTLED_AFTER_TERMINAL_FAILURE' });
                         return;
                     }
                     logBg(null, `[CAPTCHA_CHALLENGE_VERIFIED] Target challenge verified resolved. attemptId=${request.attemptId}`, 'info');

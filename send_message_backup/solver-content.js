@@ -102,14 +102,14 @@
             try {
                 if (typeof window !== 'undefined') {
                     if (window.parent && window.parent !== window) {
-                        window.parent.postMessage({ type: 'captchaToken', action: 'CAPTCHA_SOLVED', source: 'xpider_solver', token, captchaType: type }, '*');
+                        window.parent.postMessage({ type: 'captchaToken', action: 'CAPTCHA_TOKEN_INJECTED', source: 'xpider_solver', token, captchaType: type }, '*');
                     }
                     if (window.top && window.top !== window) {
-                        window.top.postMessage({ type: 'captchaToken', action: 'CAPTCHA_SOLVED', source: 'xpider_solver', token, captchaType: type }, '*');
+                        window.top.postMessage({ type: 'captchaToken', action: 'CAPTCHA_TOKEN_INJECTED', source: 'xpider_solver', token, captchaType: type }, '*');
                     }
                 }
                 if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
-                    chrome.runtime.sendMessage({ action: 'CAPTCHA_SOLVED', type, url: this._getHostPageUrl(), token }).catch(() => {});
+                    chrome.runtime.sendMessage({ action: 'CAPTCHA_TOKEN_INJECTED', type, url: this._getHostPageUrl(), token }).catch(() => {});
                 }
             } catch (_) {}
         }
@@ -143,10 +143,13 @@
                         if (injected) {
                             this.markSolved(msg.token, msg.captchaType || this._detectCaptchaType());
                             const widget = document.querySelector('.g-recaptcha, .h-captcha, [data-challenge-state], #cf-turnstile, #captcha-widget');
+                            const anchor = document.querySelector('.recaptcha-checkbox-checked, [aria-checked="true"]');
                             if (widget && widget.getAttribute('data-challenge-state')) {
                                 verified = widget.getAttribute('data-challenge-state') === 'resolved';
-                            } else {
+                            } else if (anchor) {
                                 verified = true;
+                            } else {
+                                verified = false;
                             }
                         }
                         sendResponse({ success: !!injected, applied: !!injected, verified: !!verified });

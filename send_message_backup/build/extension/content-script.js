@@ -4413,15 +4413,69 @@
                         });
                     }
 
-                    if (sendResponse) sendResponse({ success: verified, verified: verified });
-                    chrome.runtime.onMessage.removeListener(decisionListener);
-                    _activeCaptchaSolvePromise = null;
-                    resolve({
-                        success: verified,
-                        verified: verified,
-                        providerSolveAttempted: true,
-                        providerTokenInjected: applied
-                    });
+                    if (verified) {
+                        if (sendResponse) sendResponse({ success: true, verified: true });
+                        chrome.runtime.onMessage.removeListener(decisionListener);
+                        _activeCaptchaSolvePromise = null;
+                        resolve({
+                            success: true,
+                            verified: true,
+                            providerSolveAttempted: true,
+                            providerTokenInjected: applied
+                        });
+                    } else {
+                        // [RC3.28 Directive C & D] Do not fail or tear down listener on first sample.
+                        // Respond with verified: false (pending) and keep decisionListener attached
+                        // for CHECK_CAPTCHA_VERIFIED polling and CAPTCHA_SKIP_DECISION terminal settlement.
+                        if (sendResponse) sendResponse({ success: true, applied: applied, verified: false, status: 'VERIFY_PENDING' });
+                    }
+
+                } else if (msg.action === 'CHECK_CAPTCHA_VERIFIED') {
+                    // [RC3.28 Directive C / Single Authority Verification Probe]
+                    const anchorChecked = !!document.querySelector('.recaptcha-checkbox-checked, #recaptcha-anchor[aria-checked="true"], .recaptcha-checkbox[aria-checked="true"]');
+                    const widget = document.querySelector('.g-recaptcha, .h-captcha, [data-challenge-state], #cf-turnstile, #captcha-widget');
+                    const isResolvedState = (widget && (
+                        widget.getAttribute('data-challenge-state') === 'resolved' ||
+                        widget.classList.contains('challenge-resolved') ||
+                        widget.getAttribute('data-status') === 'solved'
+                    )) || anchorChecked;
+
+                    const hasGlobalResolvedFlag = typeof window !== 'undefined' && window.__captcha_challenge_resolved === true;
+
+                    const iframes = document.querySelectorAll('iframe[src*="recaptcha"], iframe[src*="hcaptcha"], iframe[src*="challenges.cloudflare"]');
+                    const captchaIframeGone = Boolean(hadMatchingIframeBeforeApply && iframes.length === 0);
+                    const callbackConfirmed = captchaData && captchaData.callbackConfirmed === true;
+
+                    const isNowVerified = Boolean(isResolvedState || hasGlobalResolvedFlag || captchaIframeGone || callbackConfirmed);
+
+                    if (isNowVerified) {
+                        _isCaptchaSolved = true;
+                        console.log(`[CAPTCHA_UI_STATE] attemptId=${execIdentity.attemptId || 'none'} to=VERIFIED`);
+                        console.log(`[CAPTCHA_UI_CLEAR] reason=VERIFIED`);
+                        updateTopSolverHUD(`CAPTCHA challenge verified (${captchaData.type})`, 'SUCCESS');
+                        sendFn({
+                            action: 'CAPTCHA_CHALLENGE_VERIFIED',
+                            attemptId: execIdentity.attemptId,
+                            targetToken: execIdentity.targetToken,
+                            campaignRunId: execIdentity.campaignRunId,
+                            sessionId: execIdentity.sessionId,
+                            captchaEpoch: execIdentity.captchaEpoch || 1,
+                            tabId: execIdentity.tabId,
+                            verified: true
+                        });
+                        chrome.runtime.onMessage.removeListener(decisionListener);
+                        _activeCaptchaSolvePromise = null;
+                        resolve({
+                            success: true,
+                            verified: true,
+                            providerSolveAttempted: true,
+                            providerTokenInjected: true
+                        });
+                        if (sendResponse) sendResponse({ success: true, verified: true });
+                    } else {
+                        if (sendResponse) sendResponse({ success: false, verified: false, status: 'VERIFY_PENDING' });
+                    }
+                    return true;
 
                 } else if (msg.action === 'START_MANUAL_CAPTCHA_WAIT') {
                     console.log(`[CAPTCHA_MANUAL_WAIT] timer paused, waiting for manual solve`);
@@ -4493,10 +4547,12 @@
     // [Cross-Frame Coordination] Listen for solved captcha tokens from other frames or background
     if (typeof window !== 'undefined' && window.addEventListener) {
         window.addEventListener('message', (event) => {
-            if (event.data && (event.data.type === 'captchaToken' || event.data.action === 'CAPTCHA_SOLVED')) {
-                _isCaptchaSolved = true;
+            if (event.data && (event.data.type === 'captchaToken' || event.data.action === 'CAPTCHA_TOKEN_INJECTED' || event.data.action === 'CAPTCHA_SOLVED')) {
+                // [RC3.28 Directive A & Regression Test 5]
+                // Token injected != Challenge verified! Never promote raw token to _isCaptchaSolved = true.
+                _captchaTokenInjected = true;
                 const solution = event.data.token || '';
-                logDev(`🔑 [Security] Captcha solved signal received from frame (${solution.substring(0, 10)}...)`, 'success');
+                logDev(`🔑 [Security] Captcha token injected signal received from frame (${solution.substring(0, 10)}...)`, 'info');
                 const fields = document.querySelectorAll('[name="g-recaptcha-response"], textarea[name="g-recaptcha-response"], [name="h-captcha-response"], textarea[name="h-captcha-response"], [name="cf-turnstile-response"]');
                 for (const f of fields) {
                     try {
@@ -4517,9 +4573,24 @@
     if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
         try {
             chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-                if (msg && msg.action === 'CAPTCHA_SOLVED') {
+                if (msg && msg.action === 'CAPTCHA_TOKEN_INJECTED') {
+                    _captchaTokenInjected = true;
+                    logDev(`🔑 [Security] Captcha token injected signal received via runtime message`, 'info');
+                } else if (msg && msg.action === 'CAPTCHA_CHALLENGE_VERIFIED') {
                     _isCaptchaSolved = true;
-                    logDev(`🔑 [Security] Captcha solved signal received via runtime message`, 'success');
+                    logDev(`🔑 [Security] Captcha challenge verified signal received via runtime message`, 'success');
+                } else if (msg && msg.action === 'CHECK_CAPTCHA_VERIFIED') {
+                    const anchorChecked = !!document.querySelector('.recaptcha-checkbox-checked, #recaptcha-anchor[aria-checked="true"], .recaptcha-checkbox[aria-checked="true"]');
+                    const widget = document.querySelector('.g-recaptcha, .h-captcha, [data-challenge-state], #cf-turnstile, #captcha-widget');
+                    const isResolvedState = (widget && (
+                        widget.getAttribute('data-challenge-state') === 'resolved' ||
+                        widget.classList.contains('challenge-resolved') ||
+                        widget.getAttribute('data-status') === 'solved'
+                    )) || anchorChecked;
+                    const hasGlobalResolvedFlag = typeof window !== 'undefined' && window.__captcha_challenge_resolved === true;
+                    const isVerified = Boolean(_isCaptchaSolved || isResolvedState || hasGlobalResolvedFlag);
+                    if (sendResponse) sendResponse({ success: isVerified, verified: isVerified });
+                    return true;
                 } else if (msg && msg.action === 'TRIGGER_CAPTCHA_DETECTION') {
                     if (msg.executionIdentity) {
                         window.__xpider_execution_identity = msg.executionIdentity;
@@ -4603,6 +4674,11 @@
         let terminalCaptchaDecision = false;
 
         for (let i = 0; i < MAX_WAIT; i++) {
+            if (terminalCaptchaDecision || currentTargetLifecycleState === TargetLifecycleState.SETTLED) {
+                logDev("🔑 [Security] Target terminal decision settled. Aborting wait loop.", "warning");
+                return false;
+            }
+
             if (_isCaptchaSolved) {
                 logDev("🔑 [Security] Challenge solved verified. Resuming sequence immediately.", "success");
                 await new Promise(r => setTimeout(r, 400));
@@ -4611,17 +4687,19 @@
 
             const stillHasCaptcha = await checkForCaptcha();
             
-            // Search all frames and forms for captcha token fields
+            // Search all frames and forms for captcha token fields (tracking injection state only)
             const gResponse = document.querySelector('[name="g-recaptcha-response"]') || document.querySelector('#g-recaptcha-response');
             const hResponse = document.querySelector('[name="h-captcha-response"]') || document.querySelector('#h-captcha-response');
             const tResponse = document.querySelector('[name="cf-turnstile-response"]') || document.querySelector('#cf-turnstile-response') || document.querySelector('[name="cf_challenge_response"]') || document.querySelector('input[name*="turnstile"]');
             const imgInput = document.querySelector('input[name*="captcha" i], input[id*="captcha" i], input[placeholder*="captcha" i]');
             
-            const hasToken = _isCaptchaSolved ||
-                             (gResponse && gResponse.value && gResponse.value.trim() !== '') || 
+            const hasToken = (gResponse && gResponse.value && gResponse.value.trim() !== '') || 
                              (hResponse && hResponse.value && hResponse.value.trim() !== '') || 
                              (tResponse && tResponse.value && tResponse.value.trim() !== '') ||
                              (imgInput && imgInput.value && imgInput.value.trim() !== '');
+            if (hasToken) {
+                _captchaTokenInjected = true;
+            }
 
             // Auto-solve injection trigger
             if (stillHasCaptcha && !autoSolveAttempted && !_isCaptchaSolved) {
@@ -4657,20 +4735,37 @@
                 }
             }
 
+            // If terminal decision settled during auto-solve, abort immediately
+            if (terminalCaptchaDecision || currentTargetLifecycleState === TargetLifecycleState.SETTLED) {
+                logDev("🔑 [Security] Target terminal decision settled after auto-solve. Aborting wait loop.", "warning");
+                return false;
+            }
+
             // [P1-1 Fast-Fail] If token injected but challenge not accepted within 15s post-solve:
             // Must ONLY apply if a real provider solve attempt occurred and injected a token
             if (!terminalCaptchaDecision && providerSolveAttempted && providerTokenInjected && autoSolveFinishedTs > 0 && (Date.now() - autoSolveFinishedTs > 15000)) {
-                if (!_isCaptchaSolved && !hasToken && stillHasCaptcha && !document.querySelector('.recaptcha-checkbox-checked, [aria-checked="true"]')) {
+                if (!_isCaptchaSolved && stillHasCaptcha && !document.querySelector('.recaptcha-checkbox-checked, [aria-checked="true"]')) {
                     logDev("[CAPTCHA_INTEGRATION_FAILURE] reason=CAPTCHA_TOKEN_NOT_ACCEPTED", "error");
                     throw new Error("CAPTCHA_TOKEN_NOT_ACCEPTED");
                 }
             }
 
-            if (!stillHasCaptcha || hasToken || _isCaptchaSolved) {
-                _isCaptchaSolved = true;
-                logDev("🔑 [Security] Challenge solved or removed. Resuming sequence immediately.", "success");
-                await new Promise(r => setTimeout(r, 500));
+            // [RC3.28 Directive B / Regression Test 2 & 5]:
+            // Token presence in DOM is INJECTED / PENDING_VERIFICATION only.
+            // Never promote hasToken alone to solved. Success requires an independent verified signal.
+            if (_isCaptchaSolved) {
+                logDev("🔑 [Security] Challenge solved verified. Resuming sequence immediately.", "success");
+                await new Promise(r => setTimeout(r, 400));
                 return true;
+            }
+
+            if (!stillHasCaptcha) {
+                if (!autoSolveAttempted || (autoSolveAttempted && (providerTokenInjected || _captchaTokenInjected))) {
+                    _isCaptchaSolved = true;
+                    logDev("🔑 [Security] Challenge solved or removed. Resuming sequence immediately.", "success");
+                    await new Promise(r => setTimeout(r, 500));
+                    return true;
+                }
             }
 
             await new Promise(r => setTimeout(r, 1000));
