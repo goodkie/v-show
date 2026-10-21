@@ -890,6 +890,8 @@ class PrivacyRelayService {
     this.activeNodeIndex = idx;
     this.rotationCount++;
     this.relayReady = true;
+    this.lifecycleState = 'READY';
+    this.reconnectAttempt = 0;
     this.pool.selectedEgressId = candidate.id;
     try { this.saveConfig(); } catch (_) {}
     if (this.physicalGate && this.physicalGate.enabled) {
