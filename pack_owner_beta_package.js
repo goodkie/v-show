@@ -2,7 +2,7 @@
  * pack_owner_beta_package.js
  *
  * Packages XPIDER AutoForm Sender Pro — OWNER BETA
- * Version: R6.9G.10.3.7.1.4.49-20261021-FINAL-SPRINT-RC3.35
+ * Version: R6.9G.10.3.7.1.4.50-20261021-FINAL-SPRINT-RC3.36
  * Per Issue #6 Owner Decision & ChatGPT Final Pre-Live Audit Directive (Comment #6250701581).
  *
  * Enforces V1, V2, V3 Secret and Packaging Hygiene:
@@ -69,8 +69,8 @@ async function runPackaging() {
     console.log('1. Verifying parity with sync_build_parity.js...');
     execSync('node sync_build_parity.js', { stdio: 'inherit' });
 
-    const versionStr = 'R6.9G.10.3.7.1.4.49';
-    const zipName = `XPIDER_${versionStr}_PRIVATE_EGRESS_RC3.35.zip`;
+    const versionStr = 'R6.9G.10.3.7.1.4.50';
+    const zipName = `XPIDER_${versionStr}_PRIVATE_EGRESS_RC3.36.zip`;
     const zipOut = path.resolve(zipName);
     const extDir = path.resolve('send_message_backup/build/extension');
     const compDir = path.resolve('companion');
