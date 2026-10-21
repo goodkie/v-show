@@ -7,9 +7,9 @@
 - Authority: goodkie/v-show Issue #6 (Responding to Smoke Report [RC3.27-LIVE-TOKEN-SUCCESS-BUT-VERIFICATION-RACE-DUAL-AUTHORITY] Comment #6305332142)
 - Branch: upgrade/phase-0-1
 - State Rev: 2026-10-21.67
-- Authority Cursor: 6305332142
+- Authority Cursor: 6306008878
 - Last Directive / Audit: `[CHATGPT][OWNER-SMOKE][extension-form-sender][RC3.27-LIVE-TOKEN-SUCCESS-BUT-VERIFICATION-RACE-DUAL-AUTHORITY] Comment #6305332142`
-- Last Receipt: `[ANTIGRAVITY][RECEIPT][extension-form-sender][RC3.28-CAPTCHA-VERIFICATION-SERIALIZATION-SINGLE-AUTHORITY]`
+- Last Receipt: `[ANTIGRAVITY][RECEIPT][extension-form-sender][RC3.28-CAPTCHA-VERIFICATION-SERIALIZATION-SINGLE-AUTHORITY] #6306008878`
 - Build ID: `R6.9G.10.3.7.1.4.42-20261021-PRIVATE-EGRESS-RC3.28`
 - Current Candidate Release Tag: `v6.9g.10.3-rc3.28.7.1.4.42`
 - Functional Snapshot Head Commit (F): `f23cb99d282c423162c8ef145f6d675e1e00439e` (short: `f23cb99d`)
