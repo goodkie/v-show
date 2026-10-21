@@ -1853,11 +1853,12 @@ async function hydrateSettings(overrideV2Store = null) {
                         relayDaemonBadge.style.color = '#fbbf24';
                         relayDaemonBadge.style.background = 'rgba(245, 158, 11, 0.2)';
                         relayDaemonBadge.style.border = '1px solid #f59e0b';
-                    } else if (failureReason === 'NATIVE_HOST_NOT_REGISTERED' || failureReason === 'NO_HOST') {
-                        relayDaemonBadge.textContent = 'NO HOST';
-                        relayDaemonBadge.style.color = '#f87171';
-                        relayDaemonBadge.style.background = 'rgba(239, 68, 68, 0.2)';
-                        relayDaemonBadge.style.border = '1px solid #ef4444';
+                    } else if (currentStartGateState === 'LOCKED_MISMATCH' || currentStartGateState === 'TRANSIENT_WAIT' || failureReason === 'BUILD_SYNC_REQUIRED' || failureReason === 'BUILD_UNRESOLVED') {
+                        // [RC3.27 Directive 7] Show non-destructive BUILD SYNC REQUIRED during unresolved boot
+                        relayDaemonBadge.textContent = 'BUILD SYNC REQUIRED';
+                        relayDaemonBadge.style.color = '#fbbf24';
+                        relayDaemonBadge.style.background = 'rgba(245, 158, 11, 0.2)';
+                        relayDaemonBadge.style.border = '1px solid #f59e0b';
                     } else {
                         relayDaemonBadge.textContent = 'OFFLINE';
                         relayDaemonBadge.style.color = '#f87171';
@@ -5366,13 +5367,12 @@ async function verifyBuildHandshake(options = {}) {
     const { retryOnTransient = false, maxRetries = 2, retryDelayMs = 250 } = options;
     const localInfo = (typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO)
         ? BuildProvenance.BUILD_INFO
-        : {
-            implementationHead: '31b929c37b8063d52b8224c9af8d42b353defde0',
-            implementationHeadShort: '31b929c3',
-            headShort: '31b929c3',
-            buildId: 'R6.9G.10.3.7.1.4.7-20261014-START-CONTROL-PLANE-RECOVERY',
-            manifestVersion: 3
-        };
+        : null;
+
+    if (!localInfo) {
+        console.warn('[BUILD_HANDSHAKE] BuildProvenance not loaded in popup scope yet');
+        return { ok: false, state: 'POPUP_BOOT_FAILURE', error: 'Popup BuildProvenance unavailable', localInfo: null, bgInfo: null };
+    }
 
     const localHead = localInfo.implementationHead || localInfo.head;
     const localBuild = localInfo.buildId;
@@ -5389,6 +5389,11 @@ async function verifyBuildHandshake(options = {}) {
                 const lastErr = chrome.runtime.lastError;
                 if (lastErr || !res || !res.success) {
                     const err = (lastErr && lastErr.message) || (res && res.error) || 'Failed to contact background';
+                    if (res && res.error === 'BUILD_PROVENANCE_UNAVAILABLE') {
+                        console.warn(`[BUILD_HANDSHAKE] Background service worker reports BUILD_PROVENANCE_UNAVAILABLE. Boot errors:`, res.bootErrors);
+                        resolve({ ok: false, state: 'SW_BOOT_FAILURE', error: 'Service worker BuildProvenance unavailable', localInfo, bgInfo: null, bootErrors: res.bootErrors });
+                        return;
+                    }
                     console.warn(`[BUILD_HANDSHAKE] localHead=${localHead} backgroundHead=UNREACHABLE result=TRANSIENT error=${err}`);
                     resolve({ ok: false, state: 'UNREACHABLE_TRANSIENT', error: err, localInfo, bgInfo: null });
                     return;
@@ -5437,8 +5442,10 @@ async function verifyBuildHandshake(options = {}) {
         setStartGateState('READY');
     } else if (result.state === 'CONFIRMED_MISMATCH') {
         setStartGateState('LOCKED_MISMATCH', result.error);
+    } else if (result.state === 'SW_BOOT_FAILURE') {
+        // [RC3.27 Directive 4] SW_BOOT_FAILURE is a boot/transient condition, NOT confirmed mismatch
+        setStartGateState('TRANSIENT_WAIT', 'Service worker initializing modules...');
     } else {
-        // UNREACHABLE_TRANSIENT: DO NOT lock start button!
         setStartGateState('TRANSIENT_WAIT', result.error);
     }
 
@@ -6473,9 +6480,10 @@ function initBuildProvenanceBadge() {
         navChannel.title = 'Private Owner Beta — Debug Telemetry Enabled';
     }
 
-    // [R6.9G.10.3.3] Non-fatal, bounded retry on transient boot race
+    // [R6.9G.10.3.3 & RC3.27 Directive 4] Non-fatal, bounded retry on transient boot race
+    // Never overwrite the local authoritative badge with synthetic/fallback data
     verifyBuildHandshake({ retryOnTransient: true, maxRetries: 3, retryDelayMs: 250 }).then((res) => {
-        if (badge && res && res.bgInfo) {
+        if (badge && res && res.ok && res.state === 'MATCH' && res.bgInfo) {
             const b = res.bgInfo;
             badge.textContent = getBadgeTextFromBuildInfo(b);
             badge.title = `PRIVATE OWNER BETA — DEBUG TELEMETRY ENABLED: ${b.buildId} | SHA: ${b.implementationHead || b.head} | Branch: ${b.branch}`;
@@ -7431,7 +7439,11 @@ async function launchCampaign(options = {}) {
 
         const localInfo = (typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO)
             ? BuildProvenance.BUILD_INFO
-            : { implementationHead: '31b929c37b8063d52b8224c9af8d42b353defde0', buildId: 'R6.9G.10.3.7.1.4.7-20261014-START-CONTROL-PLANE-RECOVERY', manifestVersion: 3 };
+            : null;
+        if (!localInfo) {
+            addLog('❌ Local BuildProvenance is missing. Cannot dispatch campaign.', 'error');
+            throw new Error('Local BuildProvenance is missing');
+        }
 
         // [START_STEP 09] START_BG_ACK
         currentStartStep = '09';

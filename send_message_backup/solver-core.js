@@ -459,7 +459,6 @@ class XpiderSolverCore {
             clearTimeout(hardTimer);
         }
     }
-    }
 
     _dataURLtoBlob(dataurl) {
         const arr = dataurl.split(',');

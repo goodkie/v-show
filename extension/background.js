@@ -34,28 +34,60 @@
 })();
 // ── END DEV LOG BRIDGE ───────────────────────────────────────────────────
 
-// [v1.2.0 Phase 2A] Connect external Foundation Modules
+// [RC3.27 Directive 1 & 2] Isolated Module Boot Chain with Fail-Safe Telemetry
+globalThis.__xpider_sw_boot_modules = {};
+globalThis.__xpider_sw_boot_errors = [];
+
+// 1. Build Provenance MUST be imported first in its own isolated block
 try {
     if (typeof importScripts === 'function') {
-        importScripts('solver-core.js');
-        importScripts('modules/operation-queue.js');
-        importScripts('modules/template-store.js');
-        importScripts('modules/history-store.js');
-        importScripts('modules/email-collector.js');
-        importScripts('modules/vision-submit-executor.js');
         importScripts('modules/build-provenance.js');
-        importScripts('modules/privacy-gateway.js');
-        importScripts('modules/smart-field-resolver.js');
-        importScripts('modules/mock-captcha-provider-adapter.js');
     }
-} catch (e) {
-    console.warn('[SW Boot] importScripts modules fallback or handled inline:', e);
+    const hasBp = typeof BuildProvenance !== 'undefined' && Boolean(BuildProvenance.BUILD_INFO);
+    globalThis.__xpider_sw_boot_modules['modules/build-provenance.js'] = { 
+        status: hasBp ? 'PASS' : 'FAIL',
+        buildId: hasBp ? BuildProvenance.BUILD_INFO.buildId : null,
+        implementationHead: hasBp ? BuildProvenance.BUILD_INFO.implementationHead : null
+    };
+    if (!hasBp) {
+        throw new Error('BuildProvenance object not defined after importScripts');
+    }
+} catch (eBp) {
+    console.error('[SW Boot] CRITICAL: Failed to import modules/build-provenance.js:', eBp);
+    globalThis.__xpider_sw_boot_modules['modules/build-provenance.js'] = { status: 'FAIL', error: eBp.message };
+    globalThis.__xpider_sw_boot_errors.push({ module: 'modules/build-provenance.js', error: eBp.message });
+}
+
+// 2. Foundation modules imported individually so a failure in one never halts provenance or subsequent modules
+const _swFoundationModules = [
+    'solver-core.js',
+    'modules/operation-queue.js',
+    'modules/template-store.js',
+    'modules/history-store.js',
+    'modules/email-collector.js',
+    'modules/vision-submit-executor.js',
+    'modules/privacy-gateway.js',
+    'modules/smart-field-resolver.js',
+    'modules/mock-captcha-provider-adapter.js'
+];
+
+for (const mod of _swFoundationModules) {
+    try {
+        if (typeof importScripts === 'function') {
+            importScripts(mod);
+        }
+        globalThis.__xpider_sw_boot_modules[mod] = { status: 'PASS' };
+    } catch (eMod) {
+        console.warn(`[SW Boot] Module import failed for ${mod}:`, eMod);
+        globalThis.__xpider_sw_boot_modules[mod] = { status: 'FAIL', error: eMod.message };
+        globalThis.__xpider_sw_boot_errors.push({ module: mod, error: eMod.message });
+    }
 }
 
 const _swBootBuildInfo = (typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO) ? BuildProvenance.BUILD_INFO : null;
 const _swBootId = _swBootBuildInfo ? _swBootBuildInfo.buildId : 'UNKNOWN';
 const _swBootChannel = _swBootBuildInfo ? _swBootBuildInfo.channel : 'UNKNOWN';
-console.log(`[BOOT] [SW_RESTART] XPIDER Service Worker initialized buildId=${_swBootId} channel=${_swBootChannel} timestamp=${new Date().toISOString()}`);
+console.log(`[BOOT] [SW_RESTART] XPIDER Service Worker initialized buildId=${_swBootId} channel=${_swBootChannel} timestamp=${new Date().toISOString()} modules=${JSON.stringify(globalThis.__xpider_sw_boot_modules)}`);
 
 // [R6.9G.9.4] Proxy Authentication Handler with Bounded Retries (MV3 asyncBlocking onAuthRequired)
 const proxyAuthAttempts = new Map(); // reqKey -> { count: number, timestamp: number }
@@ -2982,28 +3014,27 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
             });
             return true;
 
-        case 'GET_BUILD_PROVENANCE':
-            const bpData = (typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO)
-                ? BuildProvenance.BUILD_INFO
-                : {
-                    branch: 'upgrade/phase-0-1',
-                    implementationHead: '55dc6d69a25b4ea27283d3b40ba1c5fea730914b',
-                    implementationHeadShort: '55dc6d69',
-                    head: '55dc6d69a25b4ea27283d3b40ba1c5fea730914b',
-                    headShort: '55dc6d69',
-                    rollbackBase: 'dc0740a0c69e2f7fa96b6989841acf0831b3619e',
-                    manifestVersion: 3,
-                    buildId: 'R6.9G.10.3.7.1.4.7-20261014-START-CONTROL-PLANE-RECOVERY',
-                    builtAt: '2026-10-14T15:45:00.000Z',
-                    provenanceSchema: 2,
-                    modules: {}
-                };
-            sendResponse({
-                success: true,
-                provenance: bpData,
-                ...bpData
-            });
+        case 'GET_BUILD_PROVENANCE': {
+            if (typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO) {
+                const bpData = BuildProvenance.BUILD_INFO;
+                sendResponse({
+                    success: true,
+                    provenance: bpData,
+                    ...bpData,
+                    bootModules: globalThis.__xpider_sw_boot_modules || {}
+                });
+            } else {
+                console.error('[GET_BUILD_PROVENANCE] BuildProvenance unavailable in service worker');
+                sendResponse({
+                    success: false,
+                    error: 'BUILD_PROVENANCE_UNAVAILABLE',
+                    details: 'BuildProvenance module failed to load in service worker',
+                    bootErrors: globalThis.__xpider_sw_boot_errors || [],
+                    bootModules: globalThis.__xpider_sw_boot_modules || {}
+                });
+            }
             return true;
+        }
 
         case 'INSTALL_OWNER_TEST_GUARD': {
             (async () => {
@@ -3241,8 +3272,18 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
         case 'START_CAMPAIGN': {
             // [Issue #6 R6.9F & R6.9G.10.3.7.1.4.7] Fail-Closed Build Handshake Verification
             const liveBp = (typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO) ? BuildProvenance.BUILD_INFO : null;
-            const liveHead = liveBp ? (liveBp.implementationHead || liveBp.head) : '55dc6d69a25b4ea27283d3b40ba1c5fea730914b';
-            const liveBuild = liveBp ? liveBp.buildId : 'R6.9G.10.3.7.1.4.7-20261014-START-CONTROL-PLANE-RECOVERY';
+            if (!liveBp) {
+                console.error('[BUILD_HANDSHAKE] Service worker BuildProvenance is unavailable. Rejecting campaign start.');
+                sendResponse({
+                    success: false,
+                    error: 'BUILD_PROVENANCE_UNAVAILABLE',
+                    reason: 'Service worker BuildProvenance is unavailable',
+                    bootErrors: globalThis.__xpider_sw_boot_errors || []
+                });
+                return true;
+            }
+            const liveHead = liveBp.implementationHead || liveBp.head;
+            const liveBuild = liveBp.buildId;
             const reqHead = request.expectedImplementationHead;
             const reqBuild = request.expectedBuildId;
             const reqManifest = request.expectedManifestVersion;
