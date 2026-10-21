@@ -975,6 +975,48 @@
         }
 
         /**
+         * [Sprint P0-A/P0-C] Safe In-Place Repair of Existing DigitalOcean Private Egress (/repair-egress)
+         */
+        async repairPrivateEgress(data = {}) {
+            const host = this.config.relayHost || '127.0.0.1';
+            const port = this.config.relayControlPort || 18989;
+            try {
+                if (!this.ephemeralRelayToken) {
+                    await this.fetchRelayControlToken();
+                }
+                const fetchFn = this._mockFetch !== undefined ? this._mockFetch : (typeof fetch !== 'undefined' ? fetch : null);
+                if (!fetchFn) return { success: false, reason: 'FETCH_UNAVAILABLE' };
+                const headers = this.getRelayAuthHeaders();
+                const payload = {
+                    ...data,
+                    token: data.token || null
+                };
+                const res = await fetchFn(`http://${host}:${port}/repair-egress`, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify(payload)
+                });
+                const resData = await res.json().catch(() => ({}));
+                if (res.ok) {
+                    return resData;
+                }
+                return {
+                    success: false,
+                    error: resData.error || resData.code || `HTTP_${res.status}`,
+                    reason: resData.reason || `HTTP_${res.status}`,
+                    code: resData.code || `HTTP_${res.status}`,
+                    details: resData.details || null
+                };
+            } catch (e) {
+                return {
+                    success: false,
+                    error: 'PROVIDER_NETWORK_ERROR',
+                    reason: `Failed to connect to local companion on ${host}:${port}: ${e.message}`
+                };
+            }
+        }
+
+        /**
          * [Issue #6 Comment #6250195133 U1 & Comment #6250701581 V5] Query Companion Recovery Journal Status (/recovery-status)
          * Authenticated endpoint passes Bearer token; falls back to coarse unauthenticated /health
          */

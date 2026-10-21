@@ -2274,7 +2274,9 @@ async function hydrateSettings(overrideV2Store = null) {
             const activeBanner = document.getElementById('wizard-active-banner');
             const activeDetails = document.getElementById('wizard-active-details');
             const activeKeepBtn = document.getElementById('wizard-active-keep-btn');
+            const activeRepairBtn = document.getElementById('wizard-active-repair-btn');
             const activeDestroyBtn = document.getElementById('wizard-active-destroy-btn');
+            const settingsRepairBtn = document.getElementById('priv-relay-repair-egress-btn');
             const progressHud = document.getElementById('wizard-progress-hud');
             const progressTitle = document.getElementById('wizard-progress-title');
             const progressPercent = document.getElementById('wizard-progress-percent');
@@ -3132,6 +3134,71 @@ async function hydrateSettings(overrideV2Store = null) {
                         }
                     });
                 };
+            }
+
+            const executeEgressRepair = (tokenOverride = null, onComplete = null) => {
+                const token = tokenOverride || (tokenInput ? tokenInput.value.trim() : '');
+                const repairBtns = [settingsRepairBtn, activeRepairBtn].filter(Boolean);
+
+                repairBtns.forEach(b => {
+                    b.disabled = true;
+                    b.dataset.prevText = b.textContent;
+                    b.textContent = '⏳ Repairing...';
+                });
+
+                addLog('🛠️ [REPAIR_EGRESS] Dispatching in-place remote egress repair to companion...', 'info');
+
+                chrome.runtime.sendMessage({
+                    action: 'REPAIR_EXISTING_PRIVATE_EGRESS',
+                    payload: { token: token || null }
+                }, (res) => {
+                    const resetBtns = () => {
+                        repairBtns.forEach(b => {
+                            b.disabled = false;
+                            if (b.dataset.prevText) b.textContent = b.dataset.prevText;
+                        });
+                        if (typeof onComplete === 'function') onComplete(res);
+                    };
+
+                    const repairData = res?.result || res || {};
+
+                    // Handle REMOTE_PROVIDER_AUTH_REQUIRED
+                    if (repairData.code === 'REMOTE_PROVIDER_AUTH_REQUIRED' || repairData.error === 'MISSING_API_TOKEN' || repairData.code === 'MISSING_API_TOKEN') {
+                        addLog('🔑 [REPAIR_EGRESS] Provider API token required for cloud repair.', 'warn');
+                        const inputToken = prompt('DigitalOcean API token required to inspect & repair droplet / cloud firewall:');
+                        if (inputToken && inputToken.trim()) {
+                            if (tokenInput) tokenInput.value = inputToken.trim();
+                            return executeEgressRepair(inputToken.trim(), onComplete);
+                        } else {
+                            resetBtns();
+                            alert('Repair cancelled: DigitalOcean API token was not provided.');
+                            return;
+                        }
+                    }
+
+                    if (res && res.success && repairData.success && (repairData.code === 'REPAIRED_READY' || repairData.verified)) {
+                        addLog(`✅ [REPAIR_EGRESS] Remote Private Egress repaired & verified ready! (IP: ${repairData.publicIp || 'active'})`, 'success');
+                        alert(`✅ Private Egress Repaired Successfully!\n\nNode: ${repairData.publicIp || 'Active'}\nFirewall updated to current IP\nCanary probe passed.`);
+                        resetBtns();
+                        if (typeof checkWizardRecoveryState === 'function') checkWizardRecoveryState();
+                        if (typeof refreshRelayNodes === 'function') refreshRelayNodes();
+                        if (typeof refreshRelayStatus === 'function') refreshRelayStatus();
+                        if (typeof updatePrivacyHud === 'function') updatePrivacyHud();
+                    } else {
+                        const errMsg = repairData.reason || repairData.code || res?.error || 'Repair failed';
+                        addLog(`❌ [REPAIR_EGRESS_FAIL] ${errMsg}`, 'error');
+                        resetBtns();
+                        alert(`Remote Egress Repair Failed:\n\n${errMsg}\n\nCode: ${repairData.code || 'UNKNOWN'}`);
+                    }
+                });
+            };
+
+            if (settingsRepairBtn) {
+                settingsRepairBtn.onclick = () => executeEgressRepair();
+            }
+
+            if (activeRepairBtn) {
+                activeRepairBtn.onclick = () => executeEgressRepair();
             }
 
             // Initial telemetry & live relay status poll

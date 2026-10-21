@@ -9,9 +9,7 @@ If fso.FileExists(bundledNode) Then
 Else
     nodeBin = "node"
 End If
-cmd = Chr(34) & nodeBin & Chr(34) & " " & Chr(34) & scriptDir & "\privacy-relay-service.js" & Chr(34)
+cmd = Chr(34) & nodeBin & Chr(34) & " " & Chr(34) & scriptDir & "\ensure_companion_service.js" & Chr(34)
 WshShell.Run cmd, 0, False
-watchdogCmd = Chr(34) & nodeBin & Chr(34) & " " & Chr(34) & scriptDir & "\companion-watchdog.js" & Chr(34)
-WshShell.Run watchdogCmd, 0, False
 Set WshShell = Nothing
 Set fso = Nothing

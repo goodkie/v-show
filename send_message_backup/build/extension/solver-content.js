@@ -102,14 +102,14 @@
             try {
                 if (typeof window !== 'undefined') {
                     if (window.parent && window.parent !== window) {
-                        window.parent.postMessage({ action: 'CAPTCHA_TOKEN_INJECTED', type: 'captchaToken', source: 'xpider_solver', token, captchaType: type }, '*');
+                        window.parent.postMessage({ action: 'CAPTCHA_TOKEN_APPLIED', type: 'captchaToken', source: 'xpider_solver', token, captchaType: type }, '*');
                     }
                     if (window.top && window.top !== window) {
-                        window.top.postMessage({ action: 'CAPTCHA_TOKEN_INJECTED', type: 'captchaToken', source: 'xpider_solver', token, captchaType: type }, '*');
+                        window.top.postMessage({ action: 'CAPTCHA_TOKEN_APPLIED', type: 'captchaToken', source: 'xpider_solver', token, captchaType: type }, '*');
                     }
                 }
                 if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
-                    chrome.runtime.sendMessage({ action: 'CAPTCHA_TOKEN_INJECTED', type, url: this._getHostPageUrl(), token }).catch(() => {});
+                    chrome.runtime.sendMessage({ action: 'CAPTCHA_TOKEN_APPLIED', type, url: this._getHostPageUrl(), token }).catch(() => {});
                 }
             } catch (_) {}
         }
@@ -125,7 +125,7 @@
             }
             if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
                 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-                    if (msg && (msg.action === 'CAPTCHA_TOKEN_RECEIVED' || msg.action === 'CAPTCHA_TOKEN_INJECTED')) {
+                    if (msg && (msg.action === 'CAPTCHA_TOKEN_RECEIVED' || msg.action === 'APPLY_CAPTCHA_TOKEN')) {
                         sendResponse({ success: true, acknowledged: true, type: 'TOKEN_INJECTED_ACK', frame: 'SOLVER_CONTENT' });
                         return true;
                     }

@@ -4500,6 +4500,21 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
             return true;
         }
 
+        case 'REPAIR_EXISTING_PRIVATE_EGRESS':
+        case 'REPAIR_PRIVATE_EGRESS': {
+            (async () => {
+                try {
+                    const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+                    if (!pg) return sendResponse({ success: false, error: 'PrivacyGateway unavailable' });
+                    const res = await pg.repairPrivateEgress(request.payload || request.data || {});
+                    sendResponse({ success: true, result: res });
+                } catch (e) {
+                    sendResponse({ success: false, error: e.message });
+                }
+            })();
+            return true;
+        }
+
         case 'GET_EGRESS_TELEMETRY': {
             (async () => {
                 try {
@@ -4672,8 +4687,14 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
             return true;
 
         case 'CAPTCHA_RUNTIME_EXCEPTION':
-            // [RC3.33 P0-C] Immediate runtime exception containment & settlement
+            // [RC3.33 P0-C / Sprint Fix F1 / C1] Validate active execution identity before immediate settlement
             (() => {
+                const validation = validateActiveExecution(request, sender, 'CAPTCHA_RUNTIME_EXCEPTION', { checkEpoch: true });
+                if (!validation.valid) {
+                    logBg(sender.tab?.id, `[STALE_TARGET_EVENT] action=CAPTCHA_RUNTIME_EXCEPTION reason=${validation.reason} result=REJECTED`, 'warning');
+                    sendResponse({ success: false, reason: validation.reason, stale: true });
+                    return;
+                }
                 const errClass = request.errorClass || 'Error';
                 const safeMsg = request.safeMessage || 'unknown';
                 logBg(sender.tab?.id, `[CAPTCHA_RUNTIME_EXCEPTION] Immediate exception settlement: ${errClass}: ${safeMsg}`, 'error');
@@ -8214,16 +8235,26 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
             pauseCampaignOrchestrator(true).catch(() => {});
         }
 
-        // [Directive E: Circuit Breaker Classification] Distinguish CORE_CODE vs SITE_SPECIFIC
+        // [Directive E / Sprint Fix F2 / C2: Circuit Breaker Classification] Distinguish CORE_CODE vs SITE_SPECIFIC
+        const reasonCode = String(res?.reasonCode || '');
         const errStr = String(res?.error || res?.reasonCode || '');
-        const isCoreCodeError = /ReferenceError|TypeError|SyntaxError|is not defined|CORE_RUNTIME_ERROR/i.test(errStr) &&
-            !/FORM_NOT_ACCESSIBLE|NO_ACCESSIBLE_INQUIRY_FORM|CONTACT_PAGE_NO_DOM_FORM|CONTACT_CANDIDATE_ERROR_PAGE|TIMEOUT|CAPTCHA|SERVER ERROR|404|DEAD_PAGE/i.test(errStr);
+        const isCaptchaRuntimeException = reasonCode === 'CAPTCHA_RUNTIME_EXCEPTION' || errStr.startsWith('CAPTCHA_RUNTIME_EXCEPTION');
+        const isCaptchaSiteSpecific = /CAPTCHA_TOKEN_REJECTED_BY_SITE|CAPTCHA_WIDGET_REJECTED|CAPTCHA_TIMEOUT|CAPTCHA_UNSOLVED/i.test(reasonCode) ||
+            /CAPTCHA_TOKEN_REJECTED_BY_SITE/i.test(errStr);
+
+        let isCoreCodeError = false;
+        if (isCaptchaRuntimeException) {
+            isCoreCodeError = true;
+        } else if (!isCaptchaSiteSpecific) {
+            isCoreCodeError = /ReferenceError|TypeError|SyntaxError|is not defined|CORE_RUNTIME_ERROR/i.test(errStr) &&
+                !/FORM_NOT_ACCESSIBLE|NO_ACCESSIBLE_INQUIRY_FORM|CONTACT_PAGE_NO_DOM_FORM|CONTACT_CANDIDATE_ERROR_PAGE|TIMEOUT|CAPTCHA|SERVER ERROR|404|DEAD_PAGE/i.test(errStr);
+        }
         const errorClass = isCoreCodeError ? 'CORE_CODE' : 'SITE_SPECIFIC';
         console.log(`[CIRCUIT_BREAKER_CLASSIFY] errorClass=${errorClass} reason=${finalReason} error=${errStr}`);
         logBg(tabId, `[CIRCUIT_BREAKER_CLASSIFY] errorClass=${errorClass} reason=${finalReason}`, isCoreCodeError ? 'warning' : 'info');
 
         if (isCoreCodeError) {
-            const m = errStr.match(/([a-zA-Z0-9_$]+)\s+is not defined/i);
+            const m = errStr.match(/([a-zA-Z0-9_$]+)\s+is not defined/i) || errStr.match(/ReferenceError:\s*([a-zA-Z0-9_$]+)/i) || errStr.match(/TypeError:\s*([a-zA-Z0-9_$]+)/i);
             const symbol = m ? m[1] : (errStr.split(':')[1] || errStr).trim();
             coreRuntimeRefErrors[symbol] = (coreRuntimeRefErrors[symbol] || 0) + 1;
             if (coreRuntimeRefErrors[symbol] >= 2) {

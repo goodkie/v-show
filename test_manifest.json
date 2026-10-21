@@ -1,0 +1,238 @@
+{
+  "metadata": {
+    "project": "xpider-autoform-sender-pro",
+    "protocol": "OCA-DEV-1.4",
+    "authoritySource": "goodkie/v-show Issue #6",
+    "branch": "upgrade/phase-0-1",
+    "timestamp": "2026-10-21T09:16:15.109Z",
+    "platform": "win32 x64",
+    "nodeVersion": "v24.11.1",
+    "totalTests": 20,
+    "passed": 20,
+    "failed": 0,
+    "allPassed": true,
+    "durationMs": 9784
+  },
+  "tests": [
+    {
+      "testIndex": 1,
+      "layer": "Layer A: Syntax, Integrity & Parity",
+      "name": "Syntax Compilation: extension/background.js",
+      "type": "syntax",
+      "command": "C:\\Program Files\\nodejs\\node.exe --check extension/background.js",
+      "passed": true,
+      "exitCode": 0,
+      "durationMs": 78,
+      "logSnippet": ""
+    },
+    {
+      "testIndex": 2,
+      "layer": "Layer A: Syntax, Integrity & Parity",
+      "name": "Syntax Compilation: extension/content-script.js",
+      "type": "syntax",
+      "command": "C:\\Program Files\\nodejs\\node.exe --check extension/content-script.js",
+      "passed": true,
+      "exitCode": 0,
+      "durationMs": 75,
+      "logSnippet": ""
+    },
+    {
+      "testIndex": 3,
+      "layer": "Layer A: Syntax, Integrity & Parity",
+      "name": "Syntax Compilation: extension/modules/privacy-gateway.js",
+      "type": "syntax",
+      "command": "C:\\Program Files\\nodejs\\node.exe --check extension/modules/privacy-gateway.js",
+      "passed": true,
+      "exitCode": 0,
+      "durationMs": 69,
+      "logSnippet": ""
+    },
+    {
+      "testIndex": 4,
+      "layer": "Layer A: Syntax, Integrity & Parity",
+      "name": "Syntax Compilation: extension/popup.js",
+      "type": "syntax",
+      "command": "C:\\Program Files\\nodejs\\node.exe --check extension/popup.js",
+      "passed": true,
+      "exitCode": 0,
+      "durationMs": 76,
+      "logSnippet": ""
+    },
+    {
+      "testIndex": 5,
+      "layer": "Layer A: Syntax, Integrity & Parity",
+      "name": "Syntax Compilation: companion/privacy-relay-service.js",
+      "type": "syntax",
+      "command": "C:\\Program Files\\nodejs\\node.exe --check companion/privacy-relay-service.js",
+      "passed": true,
+      "exitCode": 0,
+      "durationMs": 65,
+      "logSnippet": ""
+    },
+    {
+      "testIndex": 6,
+      "layer": "Layer A: Syntax, Integrity & Parity",
+      "name": "Syntax Compilation: companion/private-egress-provisioner.js",
+      "type": "syntax",
+      "command": "C:\\Program Files\\nodejs\\node.exe --check companion/private-egress-provisioner.js",
+      "passed": true,
+      "exitCode": 0,
+      "durationMs": 66,
+      "logSnippet": ""
+    },
+    {
+      "testIndex": 7,
+      "layer": "Layer A: Syntax, Integrity & Parity",
+      "name": "Syntax Compilation: private-egress/proxy-service.js",
+      "type": "syntax",
+      "command": "C:\\Program Files\\nodejs\\node.exe --check private-egress/proxy-service.js",
+      "passed": true,
+      "exitCode": 0,
+      "durationMs": 67,
+      "logSnippet": ""
+    },
+    {
+      "testIndex": 8,
+      "layer": "Layer A: Syntax, Integrity & Parity",
+      "name": "100% SHA256 Byte Parity: extension vs backup directories",
+      "type": "parity",
+      "command": "C:\\Program Files\\nodejs\\node.exe -e \n      const fs = require('fs');\n      const crypto = require('crypto');\n      const files = ['background.js', 'content-script.js', 'solver-content.js', 'modules/privacy-gateway.js', 'popup.html', 'popup.js'];\n      for (const f of files) {\n        const h1 = crypto.createHash('sha256').update(fs.readFileSync('extension/' + f)).digest('hex');\n        const h2 = crypto.createHash('sha256').update(fs.readFileSync('send_message_backup/' + f)).digest('hex');\n        const h3 = crypto.createHash('sha256').update(fs.readFileSync('send_message_backup/build/extension/' + f)).digest('hex');\n        if (h1 !== h2 || h1 !== h3) {\n          console.error('PARITY_MISMATCH', f);\n          process.exit(1);\n        }\n      }\n      console.log('ALL_FILES_100_PERCENT_PARITY_VERIFIED');\n    ",
+      "passed": true,
+      "exitCode": 0,
+      "durationMs": 147,
+      "logSnippet": "ALL_FILES_100_PERCENT_PARITY_VERIFIED"
+    },
+    {
+      "testIndex": 9,
+      "layer": "Layer B: Sprint Core Hardening",
+      "name": "F1-F4 / C1-C8 CAPTCHA & Circuit Breaker Suite",
+      "type": "unit",
+      "command": "C:\\Program Files\\nodejs\\node.exe test_sprint_f1_f4_captcha_and_circuit_breaker.js",
+      "passed": true,
+      "exitCode": 0,
+      "durationMs": 77,
+      "logSnippet": "=== Sprint F1-F4 / C1-C8 Hardening Behavioral Suite ===\n\n[Test 1] F1 / C1: Execution identity on CAPTCHA_RUNTIME_EXCEPTION\n  PASS: Stale target event correctly rejected without settling active target.\n  PASS: Valid execution identity exception immediately settles target.\n\n[Test 2] F2 / C2: Circuit breaker error classification\n  PASS: CAPTCHA_RUNTIME_EXCEPTION classified as CORE_CODE with extracted symbol.\n  PASS: CAPTCHA_TOKEN_REJECTED_BY_SITE preserved as SITE_SPECIFIC.\n\n[Test 3] F3 / F4 / C7: "
+    },
+    {
+      "testIndex": 10,
+      "layer": "Layer B: Sprint Core Hardening",
+      "name": "P0-A to P0-F Private Egress Repair & Mutex Suite",
+      "type": "unit",
+      "command": "C:\\Program Files\\nodejs\\node.exe test_sprint_track_a_egress_repair.js",
+      "passed": true,
+      "exitCode": 0,
+      "durationMs": 689,
+      "logSnippet": "[TEST] Starting Sprint Track A: Private Egress Repair & Mutex Suite...\n[TEST 1] Testing missing transaction journal...\n  -> PASS: Correctly rejected repair when no transaction file exists.\n[TEST 2] Testing simulateProviderAuthRequired...\n  -> PASS: Correctly returned REMOTE_PROVIDER_AUTH_REQUIRED.\n[TEST 3] Testing simulateRecreateRequired...\n  -> PASS: Correctly returned REMOTE_REPAIR_NOT_POSSIBLE_RECREATE_REQUIRED.\n[TEST 4] Testing mock repairExistingEgress success...\n  -> PASS: Correctly repai"
+    },
+    {
+      "testIndex": 11,
+      "layer": "Layer C: CAPTCHA Flag & Exception Containment",
+      "name": "RC3.33 Lexical Scope, Token Reset & Exception Containment",
+      "type": "unit",
+      "command": "C:\\Program Files\\nodejs\\node.exe test_rc3_33_captcha_flag_and_exception_containment.js",
+      "passed": true,
+      "exitCode": 0,
+      "durationMs": 219,
+      "logSnippet": "=== RC3.33 CAPTCHA Flag Declaration & Exception Containment Suite ===\n\n[Test 0] File presence and lexical declaration checks\n  PASS: Lexical declaration and resetCaptchaRuntimeState present.\n\n[Test 1] Fresh attempt: _captchaTokenInjected starts false and waitForCaptchaSolved does not throw\n  PASS: Fresh attempt initializes _captchaTokenInjected=false without ReferenceError.\n\n[Test 2] READY_TO_SUBMIT flow: provider token injected sets _captchaTokenInjected=true and resumes sequence\n  PASS: READY_"
+    },
+    {
+      "testIndex": 12,
+      "layer": "Layer C: CAPTCHA Flag & Exception Containment",
+      "name": "RC3.32 Site Token Rejection Behavioral Classification",
+      "type": "unit",
+      "command": "C:\\Program Files\\nodejs\\node.exe test_rc3_32_site_rejection_behavioral.js",
+      "passed": true,
+      "exitCode": 0,
+      "durationMs": 89,
+      "logSnippet": "=== RC3.31 Post-Submit CAPTCHA Rejection Detector Test Suite ===\n\n[Test 1] Syntax checks on content-script.js and background.js\n  PASS: Files read successfully\n\n[Test 2] Static assertions on SubmissionOutcomeVerifier in content-script.js\n  PASS: Static hooks verified in content-script.js\n\n[Test 3] Unit test: CAPTCHA-specific error triggers CAPTCHA_TOKEN_REJECTED_BY_SITE\n  PASS: Scenario A (CAPTCHA-specific error text -> CAPTCHA_TOKEN_REJECTED_BY_SITE)\n  PASS: Scenario B (CAPTCHA widget error sta"
+    },
+    {
+      "testIndex": 13,
+      "layer": "Layer C: CAPTCHA Flag & Exception Containment",
+      "name": "RC3.31 Authoritative Acceptance Suite (23 Verification Points)",
+      "type": "unit",
+      "command": "C:\\Program Files\\nodejs\\node.exe test_rc3_31_acceptance.js",
+      "passed": true,
+      "exitCode": 0,
+      "durationMs": 78,
+      "logSnippet": "=== TEST SUITE: RC3.31 ACCEPTANCE VERIFICATION ===\n\nTest 1: Dynamic Frame Selection (No Hardcoded Frame 0)\n  [PASS] background.js does not contain hardcoded \"const targetFrameId = 0\"\n  [PASS] background.js inspects all frames with allFrames: true\n  [PASS] inspectFrameCapabilities captures capabilities per frame\n  [PASS] fails closed with CAPTCHA_TOKEN_INTEGRATION_TARGET_NOT_FOUND when no eligible frame exists\n  [PASS] logs [CAPTCHA_FRAME_MAP] and [CAPTCHA_APPLY_TARGET] with selected frameId\n\nTes"
+    },
+    {
+      "testIndex": 14,
+      "layer": "Layer C: CAPTCHA Flag & Exception Containment",
+      "name": "RC3.31 CAPTCHA Rejection Detector Sandbox Suite",
+      "type": "unit",
+      "command": "C:\\Program Files\\nodejs\\node.exe test_rc3_31_captcha_rejection_detector.js",
+      "passed": true,
+      "exitCode": 0,
+      "durationMs": 93,
+      "logSnippet": "=== RC3.31 Post-Submit CAPTCHA Rejection Detector Test Suite ===\n\n[Test 1] Syntax checks on content-script.js and background.js\n  PASS: Files read successfully\n\n[Test 2] Static assertions on SubmissionOutcomeVerifier in content-script.js\n  PASS: Static hooks verified in content-script.js\n\n[Test 3] Unit test: CAPTCHA-specific error triggers CAPTCHA_TOKEN_REJECTED_BY_SITE\n  PASS: Scenario A (CAPTCHA-specific error text -> CAPTCHA_TOKEN_REJECTED_BY_SITE)\n  PASS: Scenario B (CAPTCHA widget error sta"
+    },
+    {
+      "testIndex": 15,
+      "layer": "Layer D: Behavioral Lifecycle & Idempotency",
+      "name": "R6.9G.7 Target-Pump Atomicity & Slot Acquisition",
+      "type": "unit",
+      "command": "C:\\Program Files\\nodejs\\node.exe test_r6_9g7_atomicity_and_lifecycle.js",
+      "passed": true,
+      "exitCode": 0,
+      "durationMs": 374,
+      "logSnippet": "============================================================\nXPIDER R6.9G.7 ATOMICITY + CANCELLATION + CAPTCHA INTEGRITY SUITE\n============================================================\n\n✅ PASS: Gate F: Safe DOM id normalization prevents TypeError on clobbered formEl.id\n✅ PASS: Gate A: Target-Pump Atomic Slot Acquisition prevents concurrent starts (maxConcurrent === 1)\n✅ PASS: Gate B: Target A timeout signals cancellation and waits for quiescence before Target B starts\n✅ PASS: Gate C: Sticky C"
+    },
+    {
+      "testIndex": 16,
+      "layer": "Layer D: Behavioral Lifecycle & Idempotency",
+      "name": "Phase 0+1 Completion Idempotency & Stale Event Guard",
+      "type": "unit",
+      "command": "C:\\Program Files\\nodejs\\node.exe test_phase0_1_behavioral.js",
+      "passed": true,
+      "exitCode": 0,
+      "durationMs": 80,
+      "logSnippet": "=== [PHASE 0+1 BEHAVIORAL VERIFICATION SUITE] ===\n✅ PASS Test 1: Repeated completion events produce exactly 1 success increment (Idempotent)\n✅ PASS Test 2: Stale event from older session/attempt strictly rejected\n✅ PASS Test 3: Confirmed failure produces zero success increments\n✅ PASS Test 4: Parent-owned contact candidate traversal (2 fail, 1 succeed -> exactly 1 success, zero queue pollution)\n✅ PASS Test 5: Durable intent recovery to DELIVERY_UNKNOWN prevents blind resend across imports\n=== AL"
+    },
+    {
+      "testIndex": 17,
+      "layer": "Layer E: Isolated Boot Chain & Handshake",
+      "name": "RC3.27 Isolated Boot Chain & Build Provenance Handshake",
+      "type": "unit",
+      "command": "C:\\Program Files\\nodejs\\node.exe test_rc3_27_isolated_boot_chain.js",
+      "passed": true,
+      "exitCode": 0,
+      "durationMs": 86,
+      "logSnippet": "========================================================================\n R6.9G.10.3.7.1.4.41 RC3.27: ISOLATED BOOT CHAIN & PROVENANCE TESTS\n========================================================================\n\n--- SUITE 1: Syntax & Standalone Compilation ---\n✅ [PASS] 1.1 solver-core.js compiles without syntax errors (no misplaced closing braces)\n\n--- SUITE 2: Isolated SW Boot Chain (Directives 1, 2, 5) ---\n✅ [PASS] 2.1 background.js imports modules/build-provenance.js FIRST in its own isola"
+    },
+    {
+      "testIndex": 18,
+      "layer": "Layer F: Provider Gate & Telemetry",
+      "name": "RC3.25 Live Provider Gate & Failure Recovery",
+      "type": "unit",
+      "command": "C:\\Program Files\\nodejs\\node.exe test_rc3_25_live_provider_gate.js",
+      "passed": true,
+      "exitCode": 0,
+      "durationMs": 87,
+      "logSnippet": "========================================================================\n R6.9G.10.3.7.1.4.39 RC3.25: LIVE PROVIDER GATE & FAIL RECOVERY TESTS\n========================================================================\n\n--- SUITE 1: Directive A (Visual Confirmation) ---\n✅ [PASS] 1.1 content-script respects xpider_show_autofill_visual_confirm toggle\n✅ [PASS] 1.2 content-script visual confirmation never exposes sensitive inputs\n✅ [PASS] 1.3 popup UI exposes Show Autofill Visual Confirmation toggle\n\n-"
+    },
+    {
+      "testIndex": 19,
+      "layer": "Layer G: Credential Security & Invariants",
+      "name": "Windows DPAPI Fail-Closed Storage Security",
+      "type": "unit",
+      "command": "C:\\Program Files\\nodejs\\node.exe test_winsec_failclosed.js",
+      "passed": true,
+      "exitCode": 0,
+      "durationMs": 499,
+      "logSnippet": "--- Running Winsec Security Tests ---\nTest A: DPAPI unavailable -> credential save fails closed\n  [PASS] Caught expected fail-closed error: [WINSEC_FATAL] DPAPI encryption failed (injected failure). Fail-closed: refusing insecure secret storage.\n  [PASS] Caught expected fail-closed error on insecure credentialRef: [WINSEC_FATAL] DPAPI encryption failed (injected failure). Fail-closed: refusing insecure secret storage.\nTest B: credentialRef=\"plain-secret\" -> rejected, never returned as password\n "
+    },
+    {
+      "testIndex": 20,
+      "layer": "Layer H: Controlled Browser E2E Rehearsal",
+      "name": "Edge CDP Full Lifecycle Rehearsal (Form, Autofill, Submit, Turnstile)",
+      "type": "browser_e2e",
+      "command": "C:\\Program Files\\nodejs\\node.exe run_edge_sprint_controlled_e2e_rehearsal.js",
+      "passed": true,
+      "exitCode": 0,
+      "durationMs": 6769,
+      "logSnippet": "[TRACK_D] Starting Controlled Browser E2E Rehearsal Suite with Microsoft Edge...\n[TRACK_D] Starting local fixture server on 127.0.0.1:8088...\n  -> Fixture server online at http://127.0.0.1:8088\n  -> Edge binary located: C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe\n[TRACK_D] Launching Microsoft Edge (headless) on CDP port 9444...\n  -> CDP Connected successfully. Found 6 targets.\n  -> Service Worker attached: chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/background.js\n  -> Se"
+    }
+  ]
+}

@@ -83,7 +83,8 @@ const COMPANION_API_CAPABILITIES = [
   'shutdown',
   'stop',
   'physical-gate',
-  'recovery-status'
+  'recovery-status',
+  'repair-egress'
 ];
 
 // [Defect P Fix] Strict Node.js supported LTS allowlist (explicitly 22 or 24 only; rejects odd/EOL/non-LTS majors)
@@ -135,6 +136,7 @@ const DEFAULT_POOL = {
 class PrivacyRelayService {
   constructor(options = {}) {
     this.options = options;
+    this.companionDir = options.companionDir || __dirname;
     this.controlPort = options.controlPort || CONTROL_PORT;
     this.proxyPort = options.proxyPort || options.listenPort || PROXY_PORT;
     this.canaryUrl = options.canaryUrl || null;
@@ -924,8 +926,8 @@ class PrivacyRelayService {
     this.lastDisconnectTime = Date.now();
 
     if (this.reconnectAttempt >= this.maxReconnectAttempts) {
-      this.lifecycleState = 'FAILED';
-      this.log(`[SELF_HEALING_RECONNECT_EXHAUSTED] Max attempts (${this.maxReconnectAttempts}) reached. State: FAILED reason=${reason}`);
+      this.lifecycleState = 'REMOTE_EGRESS_REPAIR_REQUIRED';
+      this.log(`[SELF_HEALING_RECONNECT_EXHAUSTED] Max attempts (${this.maxReconnectAttempts}) reached. State: REMOTE_EGRESS_REPAIR_REQUIRED reason=${reason}`);
       return;
     }
 
@@ -1939,6 +1941,47 @@ class PrivacyRelayService {
         return;
       }
 
+      // POST /repair-egress (Authenticated) - Safe in-place repair of existing private egress node
+      if (pathname === '/repair-egress' && req.method === 'POST') {
+        let body = '';
+        req.on('data', chunk => body += chunk);
+        req.on('end', async () => {
+          try {
+            let data = {};
+            try { if (body) data = JSON.parse(body); } catch (_) {}
+
+            const provisioner = new PrivateEgressProvisioner({
+              token: data.token || null,
+              controlPort: this.controlPort,
+              controlToken: this.controlToken,
+              mockMode: Boolean(data.mockMode)
+            });
+
+            const repairRes = await provisioner.repairExistingEgress(data);
+            this.log(`[REPAIR_EGRESS] Repair result: success=${repairRes.success} code=${repairRes.code}`);
+
+            if (repairRes && repairRes.success && repairRes.code === 'REPAIRED_READY') {
+              const activeNode = this.getActiveNode();
+              if (activeNode) {
+                const vRes = await this.verifyNodeEgress(activeNode, this.pool.healthCheckTimeoutMs || 5000);
+                if (vRes.verified) {
+                  this.relayReady = true;
+                  this.lifecycleState = 'READY';
+                  this.reconnectAttempt = 0;
+                }
+              }
+            }
+
+            res.writeHead(repairRes.success ? 200 : 400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify(repairRes));
+          } catch (e) {
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: false, reason: e.message, code: 'HTTP_500' }));
+          }
+        });
+        return;
+      }
+
       // GET /egress-telemetry (Authenticated) - Query live node resource telemetry
       if (pathname === '/egress-telemetry' && req.method === 'GET') {
         const active = this.getActiveNode();
@@ -2632,7 +2675,63 @@ class PrivacyRelayService {
     });
   }
 
+  acquireRelayLock() {
+    try {
+      const lockFile = path.join(this.companionDir || __dirname, '.relay.lock');
+      if (fs.existsSync(lockFile)) {
+        try {
+          const raw = fs.readFileSync(lockFile, 'utf8').trim();
+          const parsed = JSON.parse(raw);
+          if (parsed && parsed.pid && parsed.pid !== process.pid) {
+            let isAlive = false;
+            try {
+              process.kill(parsed.pid, 0);
+              isAlive = true;
+            } catch (_) {}
+            const isFresh = parsed.heartbeat && (Date.now() - parsed.heartbeat < 15000);
+            const isSameRoot = !parsed.companionDir || (path.resolve(parsed.companionDir) === path.resolve(this.companionDir || __dirname));
+            if (isAlive && isFresh && isSameRoot) {
+              this.log(`[STARTUP_LOCK] Existing healthy relay PID ${parsed.pid} is already active from canonical root. Exiting duplicate instance.`);
+              process.exit(0);
+            }
+          }
+        } catch (_) {}
+      }
+      const data = {
+        pid: process.pid,
+        companionDir: this.companionDir || __dirname,
+        startedAt: Date.now(),
+        heartbeat: Date.now()
+      };
+      fs.writeFileSync(lockFile, JSON.stringify(data, null, 2), 'utf8');
+      this.relayLockHeartbeatTimer = setInterval(() => {
+        try {
+          const d = { ...data, heartbeat: Date.now() };
+          fs.writeFileSync(lockFile, JSON.stringify(d, null, 2), 'utf8');
+        } catch (_) {}
+      }, 5000);
+    } catch (_) {}
+  }
+
+  releaseRelayLock() {
+    if (this.relayLockHeartbeatTimer) {
+      clearInterval(this.relayLockHeartbeatTimer);
+      this.relayLockHeartbeatTimer = null;
+    }
+    try {
+      const lockFile = path.join(this.companionDir || __dirname, '.relay.lock');
+      if (fs.existsSync(lockFile)) {
+        const raw = fs.readFileSync(lockFile, 'utf8').trim();
+        const parsed = JSON.parse(raw);
+        if (parsed && parsed.pid === process.pid) {
+          fs.unlinkSync(lockFile);
+        }
+      }
+    } catch (_) {}
+  }
+
   async start() {
+    this.acquireRelayLock();
     this.startControlPlane();
     this.startProxyEngine();
 
@@ -2737,6 +2836,7 @@ class PrivacyRelayService {
     await Promise.all(promises);
     this.controlServer = null;
     this.proxyServer = null;
+    this.releaseRelayLock();
     this.relayReady = false;
     this.log('[PRIVACY_RELAY] state=STOPPED');
     await new Promise(r => setTimeout(r, 50));

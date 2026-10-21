@@ -222,6 +222,14 @@ function createProxyServer(options = {}) {
 
   const server = https.createServer(tlsOptions);
 
+  server.setTimeout(30000);
+  server.on('timeout', (socket) => {
+    try { socket.destroy(); } catch (_) {}
+  });
+  server.on('clientError', (err, socket) => {
+    try { socket.destroy(); } catch (_) {}
+  });
+
   // Initial credentials load
   loadCredentials(currentCredsFile);
 
@@ -346,8 +354,27 @@ function createProxyServer(options = {}) {
 
       // Connect to the verified IP address to prevent DNS rebinding
       const targetIp = addresses[0].address;
-      const targetSocket = net.connect(targetPort, targetIp, () => {
+      let closed = false;
+      let targetSocket = null;
+
+      const cleanup = () => {
+        if (!closed) {
+          closed = true;
+          if (activeTunnels > 0) activeTunnels--;
+        }
+        try { if (clientSocket) clientSocket.destroy(); } catch (_) {}
+        try { if (targetSocket) targetSocket.destroy(); } catch (_) {}
+      };
+
+      clientSocket.setTimeout(60000);
+      clientSocket.on('timeout', () => cleanup());
+      clientSocket.on('error', () => cleanup());
+      clientSocket.on('close', () => cleanup());
+      clientSocket.on('end', () => cleanup());
+
+      targetSocket = net.connect(targetPort, targetIp, () => {
         activeTunnels++;
+        targetSocket.setTimeout(60000);
         clientSocket.write('HTTP/1.1 200 Connection Established\r\n' +
           'Proxy-Agent: XPIDER-Egress/1.0\r\n\r\n');
 
@@ -359,27 +386,73 @@ function createProxyServer(options = {}) {
         targetSocket.pipe(clientSocket);
       });
 
-      let closed = false;
-      const cleanup = () => {
-        if (!closed) {
-          closed = true;
-          if (activeTunnels > 0) activeTunnels--;
-        }
-        try { clientSocket.destroy(); } catch (_) {}
-        try { targetSocket.destroy(); } catch (_) {}
-      };
+      // Target connect timeout (15s)
+      targetSocket.setTimeout(15000);
+      targetSocket.on('timeout', () => {
+        try {
+          if (!closed && targetSocket.connecting) {
+            clientSocket.write('HTTP/1.1 504 Gateway Timeout\r\n' +
+              'X-Blocked-Reason: TARGET_CONNECT_TIMEOUT\r\n' +
+              'Connection: close\r\n\r\n');
+          }
+        } catch (_) {}
+        cleanup();
+      });
 
       targetSocket.on('error', () => cleanup());
       targetSocket.on('close', () => cleanup());
       targetSocket.on('end', () => cleanup());
-
-      clientSocket.on('error', () => cleanup());
-      clientSocket.on('close', () => cleanup());
-      clientSocket.on('end', () => cleanup());
     });
   });
 
   return server;
+}
+
+function startServerWatchdog(server, port = PORT, healthIntervalMs = 10000) {
+  let consecutiveFailures = 0;
+  const timer = setInterval(() => {
+    const req = https.request({
+      hostname: '127.0.0.1',
+      port,
+      path: '/_health',
+      method: 'GET',
+      rejectUnauthorized: false,
+      timeout: 5000
+    }, (res) => {
+      if (res.statusCode === 200) {
+        consecutiveFailures = 0;
+      } else {
+        consecutiveFailures++;
+      }
+      res.resume();
+      checkFailures();
+    });
+
+    req.on('timeout', () => {
+      req.destroy();
+      consecutiveFailures++;
+      checkFailures();
+    });
+
+    req.on('error', () => {
+      consecutiveFailures++;
+      checkFailures();
+    });
+
+    req.end();
+
+    function checkFailures() {
+      if (consecutiveFailures >= 3) {
+        console.error(`[XPIDER_EGRESS_WATCHDOG] 3 consecutive health probe failures on 127.0.0.1:${port}. Restarting proxy service...`);
+        clearInterval(timer);
+        try { server.close(); } catch (_) {}
+        process.exit(1); // Systemd or outer runner will restart the service cleanly
+      }
+    }
+  }, healthIntervalMs);
+
+  if (timer.unref) timer.unref();
+  return timer;
 }
 
 if (require.main === module) {
@@ -387,6 +460,7 @@ if (require.main === module) {
     const server = createProxyServer();
     server.listen(PORT, '0.0.0.0', () => {
       console.log(`[XPIDER_EGRESS] TLS Proxy listening on 0.0.0.0:${PORT}`);
+      startServerWatchdog(server, PORT);
     });
 
     // Reload credentials on SIGHUP without dropping connections
@@ -411,5 +485,6 @@ module.exports = {
   verifyAuth,
   getSystemTelemetry,
   loadCredentials,
-  isIpBlocked
+  isIpBlocked,
+  startServerWatchdog
 };

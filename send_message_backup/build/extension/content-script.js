@@ -6568,12 +6568,29 @@
                 } catch (_) {}
             }
 
+            const preExistingWidgetErrors = new Set();
+            if (typeof document !== 'undefined' && document.querySelectorAll) {
+                try {
+                    const preWidgets = document.querySelectorAll('.g-recaptcha, .h-captcha, .cf-turnstile, [data-sitekey], iframe[src*="recaptcha"], iframe[src*="turnstile"], iframe[src*="hcaptcha"]');
+                    for (const pw of preWidgets) {
+                        const ds = pw.getAttribute && (pw.getAttribute('data-state') || pw.getAttribute('data-challenge-state') || '');
+                        const hasErrClass = pw.classList && (pw.classList.contains('error') || pw.classList.contains('recaptcha-error') || pw.classList.contains('turnstile-error'));
+                        const isAriaErr = pw.getAttribute && pw.getAttribute('aria-invalid') === 'true';
+                        if (ds === 'error' || ds === 'expired' || ds === 'failed' || hasErrClass || isAriaErr) {
+                            const sig = typeof getElementSignature === 'function' ? getElementSignature(pw) : (pw.id || pw.className || 'widget');
+                            preExistingWidgetErrors.add(sig);
+                        }
+                    }
+                } catch (_) {}
+            }
+
             const negativeSignals = {
                 visibleErrorSignatures: visibleValidationSignatures,
                 validationTexts,
                 validationNodes,
                 serverErrorPhrases,
                 serverErrorNodes,
+                preExistingWidgetErrors,
                 bodyText: preBodyText
             };
 
@@ -6773,16 +6790,22 @@
                     }
                 }
 
-                // 2d. Explicit CAPTCHA Widget Error States & Containers
+                // 2d. Explicit CAPTCHA Widget Error States & Containers (Delta-Gated against pre-existing widget state)
+                const preWidgetErrors = this.preSnapshot?.negativeSignals?.preExistingWidgetErrors;
                 const captchaWidgets = document.querySelectorAll('.g-recaptcha, .h-captcha, .cf-turnstile, [data-sitekey], iframe[src*="recaptcha"], iframe[src*="turnstile"], iframe[src*="hcaptcha"]');
                 for (const cw of captchaWidgets) {
                     const ds = cw.getAttribute && (cw.getAttribute('data-state') || cw.getAttribute('data-challenge-state') || '');
                     const hasErrClass = cw.classList && (cw.classList.contains('error') || cw.classList.contains('recaptcha-error') || cw.classList.contains('turnstile-error'));
                     const isAriaErr = cw.getAttribute && cw.getAttribute('aria-invalid') === 'true';
                     if (ds === 'error' || ds === 'expired' || ds === 'failed' || hasErrClass || isAriaErr) {
+                        const sig = typeof getElementSignature === 'function' ? getElementSignature(cw) : (cw.id || cw.className || 'widget');
+                        if (preWidgetErrors && preWidgetErrors.has(sig)) {
+                            // [C8: Pre-existing widget error state] Stale pre-submit widget error must not falsely classify new submission as rejection
+                            continue;
+                        }
                         captchaRejectionSignal = true;
                         captchaEvidenceClass = 'WIDGET_STATE_ERROR';
-                        logDev(`[CAPTCHA_REJECTION_DETECTED] source=WIDGET_STATE state="${ds || 'error_class'}"`, 'error');
+                        logDev(`[CAPTCHA_REJECTION_DETECTED] source=WIDGET_STATE state="${ds || 'error_class'}" transition=true`, 'error');
                         break;
                     }
                 }
@@ -7036,23 +7059,26 @@
                 finalSignals = signals;
 
                 // 1. Positive Success defeats stale/pre-existing negatives (R6.9D Point 5)
-                if (signals.hasStrongPositive && !signals.actualTransportFailure) {
+                if (signals.hasStrongPositive && !signals.actualTransportFailure && !signals.captchaRejected) {
                     finalDecision = 'CONFIRMED_SUCCESS';
                     break;
                 }
 
-                // 2. Actual Transport Failure (network >= 400 or transport rejection) => Immediate terminal
+                // 2. Explicit CAPTCHA Rejection (F3 / F4 / C7: Prioritized over generic transport errors when explicit CAPTCHA rejection evidence exists)
+                if (signals.captchaRejected || (submitOutcome && submitOutcome.captchaRejected)) {
+                    finalDecision = 'CAPTCHA_TOKEN_REJECTED_BY_SITE';
+                    if (submitOutcome) submitOutcome.captchaRejected = true;
+                    break;
+                }
+
+                // 3. Actual Transport Failure (network >= 400 or transport rejection without explicit CAPTCHA rejection)
                 if (signals.actualTransportFailure) {
                     finalDecision = 'SUBMISSION_SERVER_ERROR';
                     break;
                 }
 
-                // 3. CAPTCHA Rejection vs Generic Validation errors (Delta-based) => Immediate terminal
-                if (signals.captchaRejected || (submitOutcome && submitOutcome.captchaRejected)) {
-                    finalDecision = 'CAPTCHA_TOKEN_REJECTED_BY_SITE';
-                    if (submitOutcome) submitOutcome.captchaRejected = true;
-                    break;
-                } else if (signals.newErrorsFound && signals.validationErrorsCount > 0) {
+                // 4. Generic Validation errors (Delta-based) => Immediate terminal
+                if (signals.newErrorsFound && signals.validationErrorsCount > 0) {
                     finalDecision = 'SUBMIT_VALIDATION_BLOCKED';
                     break;
                 }
@@ -7280,7 +7306,11 @@
     function finishCampaign(success, error = null, reasonCode = null, metadata = {}) {
         currentTargetLifecycleState = TargetLifecycleState.SETTLED;
         // [RC3.33 P0-B] Attempt-scoped reset upon terminal settlement
-        resetCaptchaRuntimeState('finishCampaign');
+        if (typeof resetCaptchaRuntimeState === 'function') {
+            resetCaptchaRuntimeState('finishCampaign');
+        } else if (typeof window !== 'undefined' && typeof window.__xpider_resetCaptchaRuntimeState === 'function') {
+            window.__xpider_resetCaptchaRuntimeState('finishCampaign');
+        }
         sessionStorage.removeItem('xpider_pending_verify'); // [v17.6.0] Clear recovery flag
         try { removeTopSolverHUD(success ? 'SUCCESS' : 'SETTLED'); } catch (_) {}
         const sendFn = window.__xpider_sendExecutionMessage || chrome.runtime.sendMessage;

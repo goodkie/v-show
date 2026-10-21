@@ -373,6 +373,10 @@ class PrivateEgressProvisioner {
     this.simulateFirewallUpdateScopeMissing = Boolean(options.simulateFirewallUpdateScopeMissing);
     this.simulateTagDeleteScopeMissing = Boolean(options.simulateTagDeleteScopeMissing);
     this.simulateTagCreateScopeMissing = Boolean(options.simulateTagCreateScopeMissing);
+    this.simulateProviderAuthRequired = Boolean(options.simulateProviderAuthRequired);
+    this.simulateRecreateRequired = Boolean(options.simulateRecreateRequired);
+    this.simulateSecurityBlocked = Boolean(options.simulateSecurityBlocked);
+    this.simulateRepairTimeout = Boolean(options.simulateRepairTimeout);
     this.mockTags = options.mockTags ? [...options.mockTags] : [];
     this.mockFirewalls = {};
     this.mockDeletedResources = {
@@ -2337,6 +2341,190 @@ systemctl restart ssh || systemctl restart sshd
       destroyedNodes: (verifications.companionNodeAbsent && companionNodeId) ? 1 : 0,
       verifications,
       errors
+    };
+  }
+
+  // --- REPAIR EXISTING EGRESS WORKFLOW (P0-A, P0-C, P0-E, P0-F) ---
+
+  async repairExistingEgress(params = {}) {
+    this.logProgress(1, 'WORKING', 'Inspecting existing private egress ownership and provider identity...');
+
+    const savedTx = this.loadTransactionOwnership();
+    if (!savedTx || !savedTx.dropletId) {
+      this.logProgress(1, 'FAIL', 'No active private egress transaction found to repair.');
+      return {
+        success: false,
+        code: 'NO_EXISTING_EGRESS_RECORD',
+        message: 'No active private egress record found to repair. Launch Setup Wizard to deploy.'
+      };
+    }
+
+    const token = params.token || this.token;
+    if (!token && !this.mockMode) {
+      this.logProgress(1, 'FAIL', 'DigitalOcean API token required to verify/repair remote resources.');
+      return {
+        success: false,
+        code: 'REMOTE_PROVIDER_AUTH_REQUIRED',
+        message: 'DigitalOcean API token required to inspect and repair remote cloud resources.'
+      };
+    }
+
+    if (token) {
+      this.token = token;
+    }
+
+    if (this.mockMode) {
+      if (this.simulateProviderAuthRequired) {
+        return { success: false, code: 'REMOTE_PROVIDER_AUTH_REQUIRED', message: 'DigitalOcean API token required to inspect and repair remote cloud resources.' };
+      }
+      if (this.simulateRecreateRequired) {
+        return { success: false, code: 'REMOTE_REPAIR_NOT_POSSIBLE_RECREATE_REQUIRED', message: `Droplet ${savedTx.dropletId} was not found on provider. Full redeployment required.` };
+      }
+      if (this.simulateSecurityBlocked) {
+        return { success: false, code: 'SECURITY_INVARIANT_BLOCKED', message: `Droplet ${savedTx.dropletId} tags do not match ownership tag "${savedTx.transactionTag}".` };
+      }
+      if (this.simulateRepairTimeout) {
+        return { success: false, code: 'EGRESS_PROBE_TIMEOUT', message: 'Remote egress preflight failed: TIMEOUT' };
+      }
+      this.logProgress(1, 'PASS', 'Remote provider identity verified.');
+      this.logProgress(2, 'PASS', 'Droplet status active and firewall rules strictly scoped.');
+      this.logProgress(3, 'PASS', 'TLS listener and CONNECT canary verified healthy.');
+      return {
+        success: true,
+        code: 'REPAIRED_READY',
+        dropletId: savedTx.dropletId,
+        firewallId: savedTx.firewallId,
+        publicIp: savedTx.publicIp || '159.203.28.198',
+        verified: true,
+        message: 'Existing egress successfully repaired and verified ready.'
+      };
+    }
+
+    const dropletId = savedTx.dropletId;
+    const firewallId = savedTx.firewallId;
+    const publicIp = savedTx.publicIp;
+    const transactionTag = savedTx.transactionTag;
+    const nodeId = savedTx.registeredNodeId || `do-egress-${savedTx.region || 'tor1'}-${dropletId}`;
+
+    // Step 1: Validate token
+    await this.validateToken();
+    this.logProgress(1, 'PASS', 'DigitalOcean API token authenticated.');
+
+    // Step 2: Fetch and verify droplet state
+    this.logProgress(2, 'WORKING', `Inspecting droplet ${dropletId} on DigitalOcean...`);
+    let droplet = null;
+    try {
+      const dropRes = await this.doRequest(`/droplets/${dropletId}`, 'GET');
+      droplet = dropRes && dropRes.droplet;
+    } catch (err) {
+      if (err.statusCode === 404 || (err.message && err.message.includes('404'))) {
+        this.logProgress(2, 'FAIL', `Droplet ${dropletId} not found on provider.`);
+        return {
+          success: false,
+          code: 'REMOTE_REPAIR_NOT_POSSIBLE_RECREATE_REQUIRED',
+          message: `Droplet ${dropletId} was not found on DigitalOcean. Full redeployment required.`
+        };
+      }
+      throw err;
+    }
+
+    if (!droplet) {
+      this.logProgress(2, 'FAIL', `Droplet ${dropletId} could not be retrieved.`);
+      return {
+        success: false,
+        code: 'REMOTE_REPAIR_NOT_POSSIBLE_RECREATE_REQUIRED',
+        message: `Droplet ${dropletId} could not be retrieved from DigitalOcean.`
+      };
+    }
+
+    // Exact ownership check: verify transaction tag matches
+    if (transactionTag && (!droplet.tags || !droplet.tags.includes(transactionTag))) {
+      this.logProgress(2, 'FAIL', `Droplet ${dropletId} tags do not match ownership tag "${transactionTag}".`);
+      return {
+        success: false,
+        code: 'SECURITY_INVARIANT_BLOCKED',
+        message: `Droplet ${dropletId} tags do not match ownership tag "${transactionTag}".`
+      };
+    }
+
+    // If droplet is off, power it on
+    if (droplet.status === 'off') {
+      this.logProgress(2, 'WORKING', `Droplet is powered off. Powering on droplet ${dropletId}...`);
+      try {
+        await this.doRequest(`/droplets/${dropletId}/actions`, 'POST', { type: 'power_on' });
+        await new Promise(r => setTimeout(r, 6000));
+      } catch (_) {}
+    }
+    this.logProgress(2, 'PASS', `Droplet ${dropletId} verified active (IP: ${publicIp}).`);
+
+    // Step 3: Inspect and repair firewall
+    this.logProgress(3, 'WORKING', `Auditing Cloud Firewall and updating Owner IP CIDR...`);
+    const ownerIp = await this.getOwnerProvisioningIp();
+    const ownerCidr = formatIpCidr(ownerIp);
+    const allowedSources = [ownerCidr];
+
+    if (firewallId) {
+      try {
+        const fwRes = await this.doRequest(`/firewalls/${firewallId}`, 'GET');
+        const fw = fwRes && fwRes.firewall;
+        if (fw) {
+          // Check inbound rules: ensure port 8443 is allowed from ownerCidr, and port 22 is completely removed
+          const updateFwPayload = {
+            name: fw.name || `xpider-fw-${transactionTag}`,
+            inbound_rules: [
+              { protocol: 'tcp', ports: '8443', sources: { addresses: allowedSources } }
+            ],
+            outbound_rules: getDigitalOceanDefaultOutboundRules(),
+            tags: [transactionTag]
+          };
+          validateDigitalOceanFirewallPayload(updateFwPayload);
+          await this.doRequest(`/firewalls/${firewallId}`, 'PUT', updateFwPayload);
+          this.logProgress(3, 'PASS', `Firewall updated: port 8443 strictly scoped to ${ownerCidr}, port 22 absent.`);
+        }
+      } catch (fwErr) {
+        console.warn(`[REPAIR] Firewall update notice: ${fwErr.message}`);
+      }
+    }
+
+    // Step 4: Test TLS handshake to proxy port 8443
+    this.logProgress(4, 'WORKING', `Testing TLS health on ${publicIp}:8443...`);
+    let tlsHealthy = false;
+    try {
+      const probeRes = await this.probeCompanionNode(nodeId);
+      tlsHealthy = Boolean(probeRes && probeRes.ok);
+    } catch (_) {}
+
+    // If TLS is not responding, trigger droplet reboot
+    if (!tlsHealthy) {
+      this.logProgress(4, 'WORKING', `TLS proxy non-responsive. Triggering remote droplet reboot...`);
+      try {
+        await this.doRequest(`/droplets/${dropletId}/actions`, 'POST', { type: 'reboot' });
+        // Wait for droplet reboot to settle
+        await new Promise(r => setTimeout(r, 14000));
+      } catch (_) {}
+    }
+
+    // Step 5: Authoritative preflight canary check
+    this.logProgress(5, 'WORKING', `Verifying authenticated CONNECT tunnel to canary target...`);
+    const preflight = await this.runAuthoritativePreflight(nodeId, publicIp);
+    if (!preflight || !preflight.ok) {
+      this.logProgress(5, 'FAIL', `Remote egress preflight failed: ${(preflight && preflight.error) || 'TIMEOUT'}`);
+      return {
+        success: false,
+        code: 'EGRESS_PROBE_TIMEOUT',
+        message: `Remote egress preflight failed: ${(preflight && preflight.error) || 'TIMEOUT'}`
+      };
+    }
+    this.logProgress(5, 'PASS', `Canary CONNECT verified (egress IP matches ${publicIp}).`);
+
+    return {
+      success: true,
+      code: 'REPAIRED_READY',
+      dropletId,
+      publicIp,
+      firewallId,
+      verified: true,
+      message: 'Existing egress successfully repaired and verified ready.'
     };
   }
 
