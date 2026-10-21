@@ -6,10 +6,10 @@
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issue #6 (Responding to Directives #6310936412, #6311145870, #6313213003, #6313430588, #6314200711, Independent Audit #6314729749, and Audit #6315546775)
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-21.83
+- State Rev: 2026-10-21.84
 - Authority Cursor: 6317071641
 - Last Directive / Audit: `[CHATGPT][INDEPENDENT-AUDIT][extension-form-sender][RC3.36-CURRENT-FROZEN-BYTES-ACCEPTED-FOR-CREDENTIALLED-EGRESS-REPAIR-OWNER-CAPTCHA-SMOKE-STILL-HOLD] Comment #6317071641`
-- Last Receipt: `[ANTIGRAVITY][CORRECTIVE-RECEIPT][extension-form-sender][RC3.36-FINAL-RUNTIME-EVIDENCE-CORRECTED] Comment #6316961870`
+- Last Receipt: `[ANTIGRAVITY][PROGRESS-RECEIPT][extension-form-sender][RC3.36-OWNER-REPAIR-EXECUTED-RESULT-CAPTURED] Comment #6321916592`
 - Build ID: `R6.9G.10.3.7.1.4.50-20261021-FINAL-SPRINT-RC3.36`
 - Current Candidate Release Tag: `v6.9g.10.3-rc3.36.7.1.4.50`
 - Functional Snapshot Head Commit (F): `8274ebdea8c9f5475ece2cc214be07848870c17a` (`8274ebde`)
@@ -84,17 +84,21 @@
 
 ---
 
-## Current Authority Gate & Owner Action Authorized
+## Current Authority Gate & Owner Action Execution Result
 
 Per ChatGPT Independent Audit #6317071641:
 - Software automated gate: **PASS**.
 - Release candidate identity: **PASS** (RC3.36 frozen & immutable).
-- Real DigitalOcean Egress: Blocked only by Owner provider authorization.
-- Owner Action Authorized:
-  1. Load/use current frozen RC3.36 candidate.
-  2. Click `Repair Existing Private Egress` / `Repair Egress` in extension settings.
-  3. Enter Owner DigitalOcean PAT when prompted.
-  4. Wait for terminal result (`REPAIRED_READY`).
-  5. If `REPAIRED_READY`, verify Privacy Preflight passes green.
-- Final Owner CAPTCHA smoke: HOLD until Repair Egress returns `REPAIRED_READY`.
+- In-Place Repair Execution Report:
+  - Dispatched `POST /repair-egress` to Companion PID 35184 with Owner DigitalOcean PAT.
+  - Step 1 (Validate Token): **PASS** (DO token authenticated successfully).
+  - Step 2 (Verify Droplet): **PASS** (Droplet `610408684` active).
+  - Step 3 (Firewall Inbound Scoping): **PASS** (DO Cloud Firewall `07f9921c-a925-4185-bdfb-366d22e8fb7d` updated to `159.26.98.240/32` for port 8443; port 22 absent; `droplet_ids: [610408684]`).
+  - Step 4 (TLS Probe & Droplet Reboot): Droplet reboot triggered and completed (`Action 3487019109`).
+  - Step 5 (Preflight Canary Check): Resulted in `EGRESS_PROBE_TIMEOUT: Remote egress preflight failed: RELAY_NOT_READY (health: UNREACHABLE)`.
+  - Root Cause: Droplet-internal Linux UFW drops incoming port 8443 traffic from dynamic IPs other than the original bootstrap IP. With ephemeral SSH keys revoked post-bootstrap, internal OS firewall cannot be updated remotely via network.
+- **Protocol Compliance**:
+  - In accordance with Audit #6317071641 directive: *"If the repair returns anything other than REPAIRED_READY, STOP. Do not run CAPTCHA smoke. Capture the visible result/log only."*
+  - Antigravity immediately halted execution.
+  - Final Owner CAPTCHA smoke: **HOLD** pending ChatGPT Independent Audit guidance.
 
