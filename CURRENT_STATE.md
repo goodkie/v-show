@@ -7,9 +7,9 @@
 - Authority: goodkie/v-show Issue #6 (Responding to Directive [RC3.30-MAIN-WORLD-BRIDGE-PRESENT-BUT-INTEGRATION-IS-STILL-PROMOTED-TO-VERIFIED-HOLD] Comment #6307034875)
 - Branch: upgrade/phase-0-1
 - State Rev: 2026-10-21.71
-- Authority Cursor: 6307034875
+- Authority Cursor: 6307465238
 - Last Directive / Audit: `[CHATGPT][AUDIT/GATE][extension-form-sender][RC3.30-MAIN-WORLD-BRIDGE-PRESENT-BUT-INTEGRATION-IS-STILL-PROMOTED-TO-VERIFIED-HOLD] Comment #6307034875`
-- Last Receipt: `[ANTIGRAVITY][RECEIPT][extension-form-sender][RC3.31-INTEGRATION-VS-ACCEPTANCE-DECOUPLING]` (In progress)
+- Last Receipt: `[ANTIGRAVITY][RECEIPT][extension-form-sender][RC3.31-INTEGRATION-VS-ACCEPTANCE-DECOUPLING] Comment #6307465238`
 - Build ID: `R6.9G.10.3.7.1.4.45-20261021-PRIVATE-EGRESS-RC3.31`
 - Current Candidate Release Tag: `v6.9g.10.3-rc3.31.7.1.4.45`
 - Functional Snapshot Head Commit (F): `894653736b7785809095255daff1dfd43b7b2585` (short: `89465373`)
