@@ -4671,6 +4671,40 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
             }
             return true;
 
+        case 'CAPTCHA_RUNTIME_EXCEPTION':
+            // [RC3.33 P0-C] Immediate runtime exception containment & settlement
+            (() => {
+                const errClass = request.errorClass || 'Error';
+                const safeMsg = request.safeMessage || 'unknown';
+                logBg(sender.tab?.id, `[CAPTCHA_RUNTIME_EXCEPTION] Immediate exception settlement: ${errClass}: ${safeMsg}`, 'error');
+                if (campaignState.targetDeadlineController) {
+                    try { campaignState.targetDeadlineController.cancel(); } catch (_) {}
+                }
+                if (campaignState.sessionId && chrome.alarms) {
+                    const sId = campaignState.sessionId;
+                    const tId = sender.tab?.id || campaignState.currentTabId;
+                    if (tId) chrome.alarms.clear(`xpider_watchdog_${tId}_${sId}`);
+                    chrome.alarms.clear(`xpider_timeout_${sId}`);
+                }
+                campaignState.captchaPendingAcceptance = null;
+                campaignState.currentTargetStage = 'SETTLED';
+                if (campaignState.targetResolve) {
+                    const resolve = campaignState.targetResolve;
+                    campaignState.targetResolve = null;
+                    resolve({
+                        success: false,
+                        error: `CAPTCHA_RUNTIME_EXCEPTION: ${errClass}: ${safeMsg}`,
+                        reasonCode: 'CAPTCHA_RUNTIME_EXCEPTION',
+                        metadata: {
+                            errorClass: errClass,
+                            safeMessage: safeMsg
+                        }
+                    });
+                }
+                sendResponse({ success: true, acknowledged: true });
+            })();
+            return true;
+
         case 'SENDER_FINISHED':
             // [Issue #6 R6.9E.1 Section 8A/8B] Strict Terminal Barrier with Unified Execution Validator
             (() => {
@@ -4697,6 +4731,23 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                     logBg(null, `[STALE_TARGET_EVENT] action=SENDER_FINISHED stage=${curStage} result=REJECTED reason=non_terminal_stage`, 'warning');
                     sendResponse({ success: false, reason: 'INVALID_STAGE_FOR_FINISH' });
                     return;
+                }
+
+                // [RC3.33 P0-C: Immediate Runtime Exception Settlement]
+                if (request.result?.reasonCode === 'CAPTCHA_RUNTIME_EXCEPTION') {
+                    const errClass = request.result.metadata?.errorClass || 'Error';
+                    const safeMsg = request.result.metadata?.safeMessage || request.result.error || 'unknown';
+                    logBg(sender.tab?.id, `[CAPTCHA_RUNTIME_EXCEPTION] Content script encountered runtime exception: ${errClass}: ${safeMsg}`, 'error');
+                    if (campaignState.targetDeadlineController) {
+                        try { campaignState.targetDeadlineController.cancel(); } catch (_) {}
+                    }
+                    if (chrome.alarms && campaignState.sessionId) {
+                        const sId = campaignState.sessionId;
+                        const tId = sender.tab?.id || campaignState.currentTabId;
+                        if (tId) chrome.alarms.clear(`xpider_watchdog_${tId}_${sId}`);
+                        chrome.alarms.clear(`xpider_timeout_${sId}`);
+                    }
+                    campaignState.currentTargetStage = 'SETTLED';
                 }
 
                 // [RC3.31 P0-D: Downstream Site Acceptance Settlement]

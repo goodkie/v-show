@@ -119,8 +119,9 @@ function runVerifierSandbox(domSetupFn, submitOutcome = {}) {
 
     // Extract lines for SubmissionOutcomeVerifier and finishCampaign
     const lines = csSrc.split('\n');
-    // Line 6320 (index 6319) to line 7213 (index 7212)
-    const verifierCode = lines.slice(6319, 7213).join('\n');
+    const startIdx = lines.findIndex(l => l.includes('class SubmissionOutcomeVerifier'));
+    const endIdx = lines.findIndex(l => l.includes('const FormDiscoveryEngineR2 = FormDiscoveryEngine'));
+    const verifierCode = lines.slice(startIdx, endIdx).join('\n');
 
     const fullCode = `
         let currentTargetLifecycleState = 'ACTIVE_FORM';

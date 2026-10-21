@@ -80,7 +80,22 @@
         SETTLED: 'SETTLED'
     };
     let currentTargetLifecycleState = TargetLifecycleState.ACTIVE_FORM;
+    // [RC3.33 P0-A / Comment #6308024751] Declare CAPTCHA runtime state flags
     let _isCaptchaSolved = false;
+    let _captchaTokenInjected = false;
+
+    // [RC3.33 P0-B] Centralized attempt-scoped CAPTCHA runtime state reset
+    function resetCaptchaRuntimeState(attemptId = null, epoch = null) {
+        _isCaptchaSolved = false;
+        _captchaTokenInjected = false;
+        if (typeof window !== 'undefined') {
+            window.__xpider_captchaTokenInjected = false;
+            window.__xpider_isCaptchaSolved = false;
+            window.__xpider_resetCaptchaRuntimeState = resetCaptchaRuntimeState;
+            window.__xpiderResetCaptchaRuntimeState = resetCaptchaRuntimeState;
+        }
+        logDev(`[CAPTCHA_STATE_RESET] attemptId=${attemptId || 'current'} epoch=${epoch || 'current'} isCaptchaSolved=false captchaTokenInjected=false`, 'info');
+    }
 
     function getTargetLifecycleState() {
         return currentTargetLifecycleState;
@@ -877,6 +892,8 @@
 
     async function processCampaign(template, delayMs = 10000, triedUrl = '', fillDelayMs = 300, submitDelayMs = 1500) {
         try {
+            // [RC3.33 P0-B] Attempt-scoped reset at processCampaign entry
+            resetCaptchaRuntimeState('processCampaign');
             if (typeof document !== 'undefined' && document.readyState === 'loading') {
                 await new Promise(r => {
                     document.addEventListener('DOMContentLoaded', r, { once: true });
@@ -1676,7 +1693,8 @@
     async function fillAndSubmit(form, template, speed) {
         try {
             window.__xpider_last_template = template;
-            _isCaptchaSolved = false;
+            // [RC3.33 P0-B] Attempt-scoped reset at fillAndSubmit entry
+            resetCaptchaRuntimeState(window.__xpider_execution_identity?.attemptId, window.__xpider_execution_identity?.captchaEpoch);
             extractAndSendPageEmails('FORM_ENTRY');
 
             // [HARD ELIGIBILITY GATE] Verify form eligibility before any autofill or submit
@@ -1807,12 +1825,56 @@
 
             logDev(`✅ [FORM_PREP] COMPLETE`, "info");
             
-            if (!_isCaptchaSolved && (await checkForCaptcha())) {
+            let hasCaptcha = false;
+            try {
+                hasCaptcha = !_isCaptchaSolved && (await checkForCaptcha());
+            } catch (err) {
+                const errorClass = (err && err.name) || (err instanceof Error ? err.constructor.name : 'Error');
+                const safeMessage = (err && err.message) ? String(err.message).replace(/[\r\n\t]+/g, ' ').substring(0, 200) : 'Error checking captcha';
+                logDev(`❌ [Security] CAPTCHA check runtime exception: ${errorClass}: ${safeMessage}`, "error");
+                currentTargetLifecycleState = TargetLifecycleState.SETTLING;
+                try {
+                    (window.__xpider_sendExecutionMessage || chrome.runtime.sendMessage)({
+                        action: 'CAPTCHA_RUNTIME_EXCEPTION',
+                        errorClass: errorClass,
+                        safeMessage: safeMessage,
+                        attemptId: window.__xpider_execution_identity?.attemptId || null
+                    });
+                } catch (_) {}
+                finishCampaign(false, `CAPTCHA_RUNTIME_EXCEPTION: ${errorClass}: ${safeMessage}`, 'CAPTCHA_RUNTIME_EXCEPTION', {
+                    errorClass: errorClass,
+                    safeMessage: safeMessage
+                });
+                return false;
+            }
+
+            if (hasCaptcha) {
                 logDev("🤖 [Security] CAPTCHA detected. Engine paused for solver.", "info");
                 try {
                     (window.__xpider_sendExecutionMessage || chrome.runtime.sendMessage)({ action: 'STAGE_PROGRESSION', stage: 'CAPTCHA', url: window.location.href });
                 } catch (_) {}
-                const solved = await waitForCaptchaSolved();
+                let solved = false;
+                try {
+                    solved = await waitForCaptchaSolved();
+                } catch (err) {
+                    const errorClass = (err && err.name) || (err instanceof Error ? err.constructor.name : 'Error');
+                    const safeMessage = (err && err.message) ? String(err.message).replace(/[\r\n\t]+/g, ' ').substring(0, 200) : 'Unknown captcha exception';
+                    logDev(`❌ [Security] CAPTCHA runtime exception: ${errorClass}: ${safeMessage}`, "error");
+                    currentTargetLifecycleState = TargetLifecycleState.SETTLING;
+                    try {
+                        (window.__xpider_sendExecutionMessage || chrome.runtime.sendMessage)({
+                            action: 'CAPTCHA_RUNTIME_EXCEPTION',
+                            errorClass: errorClass,
+                            safeMessage: safeMessage,
+                            attemptId: window.__xpider_execution_identity?.attemptId || null
+                        });
+                    } catch (_) {}
+                    finishCampaign(false, `CAPTCHA_RUNTIME_EXCEPTION: ${errorClass}: ${safeMessage}`, 'CAPTCHA_RUNTIME_EXCEPTION', {
+                        errorClass: errorClass,
+                        safeMessage: safeMessage
+                    });
+                    return false;
+                }
                 if (!solved) {
                     if (currentTargetLifecycleState === TargetLifecycleState.SETTLED) {
                         logDev("ℹ️ [Security] CAPTCHA terminal decision settled. Halting sequence.", "info");
@@ -2085,6 +2147,27 @@
             return await verifier.verify(submitOutcome);
         } catch (e) {
             logDev(`❌ [Action] Sequence aborted: ${e.message}`, "error");
+            if (currentTargetLifecycleState !== TargetLifecycleState.SETTLED) {
+                const errorClass = (e && e.name) || (e instanceof Error ? e.constructor.name : 'Error');
+                const safeMessage = (e && e.message) ? String(e.message).replace(/[\r\n\t]+/g, ' ').substring(0, 200) : 'Sequence aborted';
+                currentTargetLifecycleState = TargetLifecycleState.SETTLING;
+                const isCaptchaErr = /captcha/i.test(safeMessage) || /captcha/i.test(errorClass) || /_captchaTokenInjected/i.test(safeMessage);
+                const reasonCode = isCaptchaErr ? 'CAPTCHA_RUNTIME_EXCEPTION' : 'SEQUENCE_ABORTED';
+                if (isCaptchaErr) {
+                    try {
+                        (window.__xpider_sendExecutionMessage || chrome.runtime.sendMessage)({
+                            action: 'CAPTCHA_RUNTIME_EXCEPTION',
+                            errorClass: errorClass,
+                            safeMessage: safeMessage,
+                            attemptId: window.__xpider_execution_identity?.attemptId || null
+                        });
+                    } catch (_) {}
+                }
+                finishCampaign(false, `${reasonCode}: ${errorClass}: ${safeMessage}`, reasonCode, {
+                    errorClass: errorClass,
+                    safeMessage: safeMessage
+                });
+            }
             return false;
         }
     }
@@ -4642,9 +4725,8 @@
                     if (msg.executionIdentity) {
                         window.__xpider_execution_identity = msg.executionIdentity;
                     }
-                    // [R6.9G.3] Reset solved flag on new detection so the manual interval
-                    // doesn't fire immediately due to a prior auto-solve setting _isCaptchaSolved=true.
-                    _isCaptchaSolved = false;
+                    // [RC3.33 P0-B] Centralized attempt-scoped CAPTCHA reset on detection trigger/epoch
+                    resetCaptchaRuntimeState(msg.executionIdentity?.attemptId || window.__xpider_execution_identity?.attemptId, msg.executionIdentity?.captchaEpoch || window.__xpider_execution_identity?.captchaEpoch);
                     tryAutoSolveCaptcha(msg.stage || 'MANUAL').then(res => {
                         if (sendResponse) sendResponse({ success: true, result: res });
                     }).catch(err => {
@@ -7197,6 +7279,8 @@
 
     function finishCampaign(success, error = null, reasonCode = null, metadata = {}) {
         currentTargetLifecycleState = TargetLifecycleState.SETTLED;
+        // [RC3.33 P0-B] Attempt-scoped reset upon terminal settlement
+        resetCaptchaRuntimeState('finishCampaign');
         sessionStorage.removeItem('xpider_pending_verify'); // [v17.6.0] Clear recovery flag
         try { removeTopSolverHUD(success ? 'SUCCESS' : 'SETTLED'); } catch (_) {}
         const sendFn = window.__xpider_sendExecutionMessage || chrome.runtime.sendMessage;
@@ -7238,6 +7322,8 @@
         window.__xpiderStartAutofillForEligibleForm = _FormDiscoveryEngineR2 ? _FormDiscoveryEngineR2.startAutofillForEligibleForm : null;
         window.__xpiderExtractAndSendPageEmails = extractAndSendPageEmails;
         window.__xpiderExtractEmailsFromCurrentDom = extractEmailsFromCurrentDom;
+        window.__xpiderResetCaptchaRuntimeState = resetCaptchaRuntimeState;
+        window.__xpider_resetCaptchaRuntimeState = resetCaptchaRuntimeState;
         window.__xpider_initialized = true;
     }
 
