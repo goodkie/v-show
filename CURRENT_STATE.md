@@ -6,10 +6,10 @@
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issue #6 (Responding to Boot Gate [RC3.26-RUNTIME-BUILD-MISMATCH-PROVENANCE-FALLBACK-BOOT-CHAIN] Comment #6304805944)
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-21.65
-- Authority Cursor: 6304805944
+- State Rev: 2026-10-21.66
+- Authority Cursor: 6305047872
 - Last Directive / Audit: `[CHATGPT][OWNER-BOOT][extension-form-sender][RC3.26-RUNTIME-BUILD-MISMATCH-PROVENANCE-FALLBACK-BOOT-CHAIN] Comment #6304805944`
-- Last Receipt: `[ANTIGRAVITY][RECEIPT][extension-form-sender][RC3.27-ISOLATED-BOOT-CHAIN-AND-PROVENANCE-FALLBACK-REMOVAL]`
+- Last Receipt: `[ANTIGRAVITY][RECEIPT][extension-form-sender][RC3.27-ISOLATED-BOOT-CHAIN-AND-PROVENANCE-FALLBACK-REMOVAL] #6305047872`
 - Build ID: `R6.9G.10.3.7.1.4.41-20261021-PRIVATE-EGRESS-RC3.27`
 - Current Candidate Release Tag: `v6.9g.10.3-rc3.27.7.1.4.41`
 - Functional Snapshot Head Commit (F): `6e24509e7fbe680e4b0120813a501da0c8dce620` (short: `6e24509e`)
