@@ -4,49 +4,52 @@
 - Protocol: OCA-DEV-1.4
 - Project ID: xpider-autoform-sender-pro
 - Workspace: E:\vivpr\ai\extension-form-sender
-- Authority: goodkie/v-show Issue #6 (Responding to Smoke Report [RC3.27-LIVE-TOKEN-SUCCESS-BUT-VERIFICATION-RACE-DUAL-AUTHORITY] Comment #6305332142)
+- Authority: goodkie/v-show Issue #6 (Responding to Directive [RC3.29-SINGLE-AUTHORITY-AND-SINGLE-TOKEN-WRITER] Comment #6306104308)
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-21.67
-- Authority Cursor: 6306008878
-- Last Directive / Audit: `[CHATGPT][OWNER-SMOKE][extension-form-sender][RC3.27-LIVE-TOKEN-SUCCESS-BUT-VERIFICATION-RACE-DUAL-AUTHORITY] Comment #6305332142`
-- Last Receipt: `[ANTIGRAVITY][RECEIPT][extension-form-sender][RC3.28-CAPTCHA-VERIFICATION-SERIALIZATION-SINGLE-AUTHORITY] #6306008878`
-- Build ID: `R6.9G.10.3.7.1.4.42-20261021-PRIVATE-EGRESS-RC3.28`
-- Current Candidate Release Tag: `v6.9g.10.3-rc3.28.7.1.4.42`
-- Functional Snapshot Head Commit (F): `f23cb99d282c423162c8ef145f6d675e1e00439e` (short: `f23cb99d`)
-- Provenance Commit (P): `d2c4a257c8900f224a1d92ddd062f6e9cac8e313` (short: `d2c4a257`)
-- Rollback Anchor: `6e24509e7fbe680e4b0120813a501da0c8dce620` (RC3.27)
-- Release Asset Zip: `XPIDER_R6.9G.10.3.7.1.4.42_PRIVATE_EGRESS_RC3.28.zip`
-- Release Asset Size: `45,375,672` bytes
-- Release Asset SHA-256: `0f544c5de38354cad6fdbd6230823cddd14dee89a0e07135f7a34c19e273a70f`
-- Release Asset Hosted URL: `https://github.com/goodkie/v-show/releases/tag/v6.9g.10.3-rc3.28.7.1.4.42`
+- State Rev: 2026-10-21.68
+- Authority Cursor: 6306104308
+- Last Directive / Audit: `[CHATGPT][DIRECTIVE][extension-form-sender][RC3.29-SINGLE-AUTHORITY-AND-SINGLE-TOKEN-WRITER] Comment #6306104308`
+- Last Receipt: `[ANTIGRAVITY][RECEIPT][extension-form-sender][RC3.29-SINGLE-AUTHORITY-AND-SINGLE-TOKEN-WRITER]`
+- Build ID: `R6.9G.10.3.7.1.4.43-20261021-PRIVATE-EGRESS-RC3.29`
+- Current Candidate Release Tag: `v6.9g.10.3-rc3.29.7.1.4.43`
+- Functional Snapshot Head Commit (F): `6451544d9059e369067f2a41ce145d293e1bc458` (short: `6451544d`)
+- Provenance Commit (P): `c05af6fc89c8a946e3e5714cb5da24ebaa025a1b` (short: `c05af6fc`)
+- Rollback Anchor: `d2c4a257c8900f224a1d92ddd062f6e9cac8e313` (RC3.28)
+- Release Asset Zip: `XPIDER_R6.9G.10.3.7.1.4.43_PRIVATE_EGRESS_RC3.29.zip`
+- Release Asset Size: `45,376,104` bytes
+- Release Asset SHA-256: `f43d86ecb602210e8facfa2acc59961e9fc272d9dcbf092c56e94f1c8c262f7b`
+- Release Asset Hosted URL: `https://github.com/goodkie/v-show/releases/tag/v6.9g.10.3-rc3.29.7.1.4.43`
+- Unpacked Convenience Folder: `XPIDER_R6.9G.10.3.7.1.4.43_PRIVATE_EGRESS_RC3.29`
 
-## Current Gate: [RC3.28-CAPTCHA-VERIFICATION-SERIALIZATION-SINGLE-AUTHORITY]
-- **Fix A (Rename Raw Token Injection Event to CAPTCHA_TOKEN_INJECTED): PASS**
-  * Raw token injection cross-frame event renamed from `CAPTCHA_SOLVED` to `CAPTCHA_TOKEN_INJECTED`.
-  * Content script message listener sets `_captchaTokenInjected = true`, but NEVER sets `_isCaptchaSolved = true`.
-- **Fix B (waitForCaptchaSolved() Removes hasToken from Completion Condition): PASS**
-  * Token presence in DOM is treated as `INJECTED / PENDING_VERIFICATION` only.
-  * Form sequence advancement requires independent verified signal (`_isCaptchaSolved === true`) or initial absence / true challenge disappearance.
-- **Fix C (Bounded 7.5s Verification Window & Independent Acceptance Polling): PASS**
-  * Background `verifyAndRecordCaptchaSuccess()` implements bounded 7500ms verification window polling `CHECK_CAPTCHA_VERIFIED` every 400ms.
-  * First transient unverified sample logs pending state without triggering immediate failure.
-- **Fix D (Sole Canonical Authority for Terminal CAPTCHA State): PASS**
-  * Background remains sole terminal authority. Late verification events arriving after terminal settlement are rejected fail-closed with `SETTLED_AFTER_TERMINAL_FAILURE`.
-- **Fix E (Eliminate Double Token Application Race): PASS**
-  * Atomic injection via `injectSolvedToken` and synchronized verification via `APPLY_CAPTCHA_TOKEN` / `CHECK_CAPTCHA_VERIFIED`.
-- **Fix F (Failure Classification & Metric Separation): PASS**
-  * If provider returns token but site acceptance times out, failure reason is recorded as `CAPTCHA_TOKEN_ACCEPTANCE_TIMEOUT` (integration metric), preserving provider health metrics (`providerTokenReturned` vs `acceptanceTimeout`).
+## Current Gate: [RC3.29-SINGLE-AUTHORITY-AND-SINGLE-TOKEN-WRITER]
+- **P0-A (Single Authoritative Token Writer): PASS**
+  * Eliminated duplicate `injectSolvedToken` call from `verifyAndRecordCaptchaSuccess()`.
+  * Background dispatches token application exactly once via `APPLY_CAPTCHA_TOKEN`.
+- **P0-B (Single Canonical Verification Evaluator & Eliminating Listener Race): PASS**
+  * Removed competing `CHECK_CAPTCHA_VERIFIED` from content script global message listener.
+  * Consolidated all challenge resolution signals into `decisionListener`:
+    - Checkbox/anchor checked (`.recaptcha-checkbox-checked`, `[aria-checked="true"]`).
+    - Widget state resolved (`data-challenge-state="resolved"`, `challenge-resolved`).
+    - Global flag (`window.__captcha_challenge_resolved`).
+    - Challenge iframe disappearance (`captchaIframeGone`).
+    - Callback confirmed (`callbackConfirmed`).
+  * Evaluator returns structured `signalType` (`RESOLVED_STATE`, `GLOBAL_FLAG`, `IFRAME_GONE`, `CALLBACK_CONFIRMED`).
+- **P0-C (Single Terminal Authority for Auto-Solve Form Progression): PASS**
+  * Content script `waitForCaptchaSolved()` never promotes challenge disappearance to solved or advances on disappearance alone when `autoSolveAttempted` is true.
+  * Form progression strictly awaits background canonical `CAPTCHA_AUTO_SUCCESS`.
+  * On background timeout or failure, content wait loop aborts immediately without submitting.
 - **Two-Commit Model Strict Conformance: PASS**
-  * Functional Commit F: `f23cb99d282c423162c8ef145f6d675e1e00439e`
-  * Provenance Commit P: `d2c4a257c8900f224a1d92ddd062f6e9cac8e313`
-- **Automated Verification Suites (59/59 PASS)**:
+  * Functional Commit F: `6451544d9059e369067f2a41ce145d293e1bc458`
+  * Provenance Commit P: `c05af6fc89c8a946e3e5714cb5da24ebaa025a1b`
+- **Automated Verification Suites (66/66 PASS)**:
+  * `test_rc3_29_single_authority_and_writer.js`: 7/7 PASS
   * `test_rc3_28_verification_serialization.js`: 9/9 PASS
   * `test_rc3_27_isolated_boot_chain.js`: 10/10 PASS
   * `test_rc3_25_live_provider_gate.js`: 13/13 PASS
   * `test_r6_9g10_3_7_1_4_35_decision_serialization.js`: 27/27 PASS
 - **Package Parity & Provenance: PASS**
   * 100% SHA256 byte parity across all 26 components in `extension/`, `send_message_backup/`, and `send_message_backup/build/extension/`.
-  * Unpacked convenience folder: `XPIDER_R6.9G.10.3.7.1.4.42_PRIVATE_EGRESS_RC3.28`.
+  * Unpacked convenience folder: `XPIDER_R6.9G.10.3.7.1.4.43_PRIVATE_EGRESS_RC3.29`.
   * Syntax compilation (`node --check`) verified across all JS files.
 
 ### Operating Guidelines & Invariants:
