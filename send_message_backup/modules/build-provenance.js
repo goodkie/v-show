@@ -15,22 +15,22 @@
 
     const BUILD_INFO = {
         branch: 'upgrade/phase-0-1',
-        channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.28',
+        channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.29',
         testOnly: true,
-        // [R6.9G.10.3.7.1.4.42] XPIDER AutoForm Sender Pro — Private Egress Release Candidate 3.28 (Serialized Captcha Verification & Single Authority)
-        implementationHead: 'f23cb99d282c423162c8ef145f6d675e1e00439e',
-        implementationHeadShort: 'f23cb99d',
-        head: 'f23cb99d282c423162c8ef145f6d675e1e00439e',
-        headShort: 'f23cb99d',
+        // [R6.9G.10.3.7.1.4.43] XPIDER AutoForm Sender Pro — Private Egress Release Candidate 3.29 (Single Token Writer and Terminal Authority Serialization)
+        implementationHead: '6451544d9059e369067f2a41ce145d293e1bc458',
+        implementationHeadShort: '6451544d',
+        head: '6451544d9059e369067f2a41ce145d293e1bc458',
+        headShort: '6451544d',
         rollbackBase: '6e24509e7fbe680e4b0120813a501da0c8dce620',
         previousFunctionalRestorePoint: '6e24509e7fbe680e4b0120813a501da0c8dce620',
         manifestVersion: 3,
-        buildId: 'R6.9G.10.3.7.1.4.42-20261021-PRIVATE-EGRESS-RC3.28',
-        builtAt: '2026-10-21T02:00:00.000Z',
+        buildId: 'R6.9G.10.3.7.1.4.43-20261021-PRIVATE-EGRESS-RC3.29',
+        builtAt: '2026-10-21T02:07:57.991Z',
         provenanceSchema: 2,
         modules: {
-            backgroundSha: '160febc2b7cec67c1f69a80fa98a3b0dfdcd58ccad32ff5ca8213d710e201a8b',
-            contentScriptSha: '6105ae13efed0faebf024abbb8f1efd89304e79334dd442b98bac8c9f36f1c2b',
+            backgroundSha: '8e44334db5a1c6d22a5b7e90c64c2fdb1f53d19fb0a76cc6823f18f692c2e27e',
+            contentScriptSha: '0caab425f9718fcb2cc4c4bb486f9e444e29451a7c39427a8bc11d650a4a4066',
             popupSha: '0f6b3375a55f2f0e46a668f2740814ba36bd77fd03eeb69eb47cec255c60769b',
             solverContentSha: 'a96a63bd295168ddacc4e7ba040c0ef8646483c40a2e955cadf02b36c5f93c38',
             solverCoreSha: 'f4977844acbd319f0cf6a0f49ed0f88c491293c8fd42ee53c0a06eef58dbefad',
