@@ -2601,64 +2601,6 @@ if (typeof chrome !== 'undefined' && chrome.webNavigation && chrome.webNavigatio
                         targetPageUrl = request.hostUrl || request.referrer || (sender && sender.tab && sender.tab.url) || '';
                     }
 
-                    const injectSolvedToken = async (solToken, capType) => {
-                        if (!activeTabId || !solToken) return;
-                        try {
-                            await safeScripting.executeScript({
-                                target: { tabId: activeTabId, allFrames: true },
-                                func: (tokenVal, type) => {
-                                    try {
-                                        const fields = type === 'hcaptcha'
-                                            ? document.querySelectorAll('[name="h-captcha-response"], textarea[name="h-captcha-response"]')
-                                            : document.querySelectorAll('[name="g-recaptcha-response"], textarea[name="g-recaptcha-response"]');
-                                        for (const f of fields) {
-                                            try {
-                                                const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')?.set;
-                                                if (nativeSetter) nativeSetter.call(f, tokenVal);
-                                                else f.value = tokenVal;
-                                                f.dispatchEvent(new Event('input', { bubbles: true }));
-                                                f.dispatchEvent(new Event('change', { bubbles: true }));
-                                            } catch (_) { f.value = tokenVal; }
-                                        }
-                                        if (window.___grecaptcha_cfg && window.___grecaptcha_cfg.clients) {
-                                            for (const cid in window.___grecaptcha_cfg.clients) {
-                                                const client = window.___grecaptcha_cfg.clients[cid];
-                                                for (const k in client) {
-                                                    const obj = client[k];
-                                                    if (obj) {
-                                                        if (typeof obj.callback === 'function') obj.callback(tokenVal);
-                                                        else if (typeof obj.callback === 'string' && typeof window[obj.callback] === 'function') window[obj.callback](tokenVal);
-                                                    }
-                                                }
-                                            }
-                                        }
-                                        if (typeof window.validateRecaptcha === 'function') {
-                                            try { window.validateRecaptcha(tokenVal); } catch (_) {}
-                                        }
-                                        const gWidget = document.querySelector('.g-recaptcha[data-callback]');
-                                        if (gWidget && gWidget.dataset.callback && typeof window[gWidget.dataset.callback] === 'function') {
-                                            try { window[gWidget.dataset.callback](tokenVal); } catch (_) {}
-                                        }
-                                        const anchor = document.querySelector('#recaptcha-anchor, .recaptcha-checkbox');
-                                        if (anchor) {
-                                            anchor.setAttribute('aria-checked', 'true');
-                                            anchor.classList.add('recaptcha-checkbox-checked');
-                                        }
-                                        const errLabel = document.querySelector("label[for='g-recaptcha-Reg'], .recaptcha-wrapper label");
-                                        if (errLabel) errLabel.style.display = 'none';
-                                        // [RC3.28 Directive A] Token injection is NOT verification. Mislabeled signal caused premature form progression.
-                                        window.postMessage({ type: 'captchaToken', 'g-recaptcha-response': tokenVal, token: tokenVal, action: 'CAPTCHA_TOKEN_INJECTED', source: 'xpider_solver' }, '*');
-                                    } catch (e) {
-                                        console.warn('[CrossFrameTokenInject] frame err:', e);
-                                    }
-                                },
-                                args: [solToken, capType || 'recaptcha']
-                            });
-                        } catch (eScript) {
-                            console.warn('[CrossFrameTokenInject] executeScript failed:', eScript);
-                        }
-                    };
- 
                     // [RC3.31 P0-C: Packaged Host Page MAIN-World Bridge Function]
                     // Dispatched via chrome.scripting.executeScript({ world: 'MAIN' }) into host page frame.
                     // Accesses host page window globals, triggers callbacks, writes response fields, and sets telemetry attributes.

@@ -6613,7 +6613,21 @@
                 }
             }
 
-            // 2c. Validation Errors (Delta based)
+            // 2c. Validation Errors (Delta based) & CAPTCHA Rejection Detector
+            let captchaRejectionSignal = false;
+            let captchaEvidenceClass = null;
+            const CAPTCHA_REJECTION_PATTERNS = [
+                /recaptcha/i,
+                /turnstile/i,
+                /hcaptcha/i,
+                /\bcaptcha\b/i,
+                /\brobot\b/i,
+                /verification failed/i,
+                /보안문자/i,
+                /자동등록방지/i,
+                /\bchallenge\b/i
+            ];
+
             if (typeof document !== 'undefined' && document.querySelectorAll) {
                 const preValidationNodes = (this.preSnapshot && this.preSnapshot.negativeSignals && this.preSnapshot.negativeSignals.validationNodes) || [];
 
@@ -6633,6 +6647,7 @@
                     const sig = getElementSignature(el);
                     const preMatch = preValidationNodes.find(pn => pn.node === el || pn.signature === sig);
 
+                    let isTransition = false;
                     if (preMatch && preMatch.wasVisible) {
                         const ariaTransition = (!preMatch.ariaInvalid && isAria);
                         const nativeTransition = (!preMatch.nativeInvalid && isNative);
@@ -6642,6 +6657,7 @@
                             validationErrorsCount++;
                             newErrorsFound = true;
                             validationErrorTransition = true;
+                            isTransition = true;
                             logDev(`[NEGATIVE_SIGNAL] type=VALIDATION selector="${sig}" preExisting=false transition=true`, 'warning');
                         } else {
                             logDev(`[NEGATIVE_SIGNAL] type=VALIDATION selector="${sig}" preExisting=true transition=false`, 'info');
@@ -6650,13 +6666,54 @@
                         validationErrorsCount++;
                         newErrorsFound = true;
                         validationErrorTransition = true;
+                        isTransition = true;
                         logDev(`[NEGATIVE_SIGNAL] type=VALIDATION selector="${sig}" preExisting=false transition=true`, 'warning');
                     } else {
                         validationErrorsCount++;
                         newErrorsFound = true;
                         validationErrorTransition = true;
+                        isTransition = true;
                         logDev(`[NEGATIVE_SIGNAL] type=VALIDATION selector="${sig}" preExisting=false transition=true`, 'warning');
                     }
+
+                    if (isTransition) {
+                        const isCaptchaText = CAPTCHA_REJECTION_PATTERNS.some(p => p.test(txt));
+                        const isCaptchaContainer = el.closest && Boolean(el.closest('.g-recaptcha, .h-captcha, .cf-turnstile, [data-sitekey], [class*="captcha" i], [id*="captcha" i]'));
+                        if (isCaptchaText) {
+                            captchaRejectionSignal = true;
+                            captchaEvidenceClass = 'DOM_CAPTCHA_ERROR_TEXT';
+                            logDev(`[CAPTCHA_REJECTION_DETECTED] source=DOM_TEXT text="${txt.substring(0, 80)}"`, 'error');
+                        } else if (isCaptchaContainer) {
+                            captchaRejectionSignal = true;
+                            captchaEvidenceClass = 'WIDGET_CONTAINER_ERROR';
+                            logDev(`[CAPTCHA_REJECTION_DETECTED] source=CONTAINER_SELECTOR text="${txt.substring(0, 80)}"`, 'error');
+                        }
+                    }
+                }
+
+                // 2d. Explicit CAPTCHA Widget Error States & Containers
+                const captchaWidgets = document.querySelectorAll('.g-recaptcha, .h-captcha, .cf-turnstile, [data-sitekey], iframe[src*="recaptcha"], iframe[src*="turnstile"], iframe[src*="hcaptcha"]');
+                for (const cw of captchaWidgets) {
+                    const ds = cw.getAttribute && (cw.getAttribute('data-state') || cw.getAttribute('data-challenge-state') || '');
+                    const hasErrClass = cw.classList && (cw.classList.contains('error') || cw.classList.contains('recaptcha-error') || cw.classList.contains('turnstile-error'));
+                    const isAriaErr = cw.getAttribute && cw.getAttribute('aria-invalid') === 'true';
+                    if (ds === 'error' || ds === 'expired' || ds === 'failed' || hasErrClass || isAriaErr) {
+                        captchaRejectionSignal = true;
+                        captchaEvidenceClass = 'WIDGET_STATE_ERROR';
+                        logDev(`[CAPTCHA_REJECTION_DETECTED] source=WIDGET_STATE state="${ds || 'error_class'}"`, 'error');
+                        break;
+                    }
+                }
+            }
+
+            // 2e. submitOutcome Rejection Metadata
+            if (submitOutcome) {
+                if (submitOutcome.captchaRejected) {
+                    captchaRejectionSignal = true;
+                    captchaEvidenceClass = submitOutcome.evidenceClass || 'SUBMIT_OUTCOME_CAPTCHA_REJECTED';
+                } else if (submitOutcome.error && CAPTCHA_REJECTION_PATTERNS.some(p => p.test(submitOutcome.error))) {
+                    captchaRejectionSignal = true;
+                    captchaEvidenceClass = 'SUBMIT_ERROR_METADATA';
                 }
             }
 
@@ -6796,6 +6853,8 @@
                 newErrorsFound,
                 validationErrorsCount,
                 validationErrorTransition,
+                captchaRejected: captchaRejectionSignal,
+                captchaEvidenceClass,
                 serverErrorFound,
                 serverErrorTransition,
                 actualTransportFailure,
@@ -6906,8 +6965,12 @@
                     break;
                 }
 
-                // 3. Validation errors (Delta-based) => Immediate terminal
-                if (signals.newErrorsFound && signals.validationErrorsCount > 0) {
+                // 3. CAPTCHA Rejection vs Generic Validation errors (Delta-based) => Immediate terminal
+                if (signals.captchaRejected || (submitOutcome && submitOutcome.captchaRejected)) {
+                    finalDecision = 'CAPTCHA_TOKEN_REJECTED_BY_SITE';
+                    if (submitOutcome) submitOutcome.captchaRejected = true;
+                    break;
+                } else if (signals.newErrorsFound && signals.validationErrorsCount > 0) {
                     finalDecision = 'SUBMIT_VALIDATION_BLOCKED';
                     break;
                 }
@@ -6980,7 +7043,9 @@
 
             const totalLatency = Date.now() - start;
             if (!finalDecision) {
-                if (finalSignals && finalSignals.actualTransportFailure) {
+                if (finalSignals && (finalSignals.captchaRejected || (submitOutcome && submitOutcome.captchaRejected))) {
+                    finalDecision = 'CAPTCHA_TOKEN_REJECTED_BY_SITE';
+                } else if (finalSignals && finalSignals.actualTransportFailure) {
                     finalDecision = 'SUBMISSION_SERVER_ERROR';
                 } else if (finalSignals && finalSignals.domServerErrorTransition && domServerErrorPolls >= 2 && totalLatency >= 750) {
                     finalDecision = 'SUBMISSION_SERVER_ERROR';
@@ -7014,6 +7079,9 @@
                 else confirmationStrength = 'STRONG_DOM';
             }
 
+            const isCaptchaRejection = (finalDecision === 'CAPTCHA_TOKEN_REJECTED_BY_SITE' || (finalSignals && finalSignals.captchaRejected) || (submitOutcome && submitOutcome.captchaRejected));
+            const captchaEvidenceClass = (finalSignals && finalSignals.captchaEvidenceClass) || (submitOutcome && submitOutcome.evidenceClass) || (isCaptchaRejection ? 'DOM_CAPTCHA_ERROR_TEXT' : null);
+
             const outcomeEvidence = {
                 submitAttempted: true,
                 submitEventSeen: !!this.submitEventSeen,
@@ -7031,7 +7099,8 @@
                 frameworkSuccessState: !!(finalSignals && finalSignals.newSuccessNodes > 0),
                 validationErrorTransition: !!(finalSignals && finalSignals.validationErrorTransition),
                 serverErrorTransition: !!(finalSignals && finalSignals.serverErrorTransition),
-                captchaRejected: !!(submitOutcome && submitOutcome.captchaRejected),
+                captchaRejected: !!isCaptchaRejection,
+                captchaEvidenceClass: captchaEvidenceClass,
                 confirmationStrength,
                 evidenceTimestamp: Date.now()
             };
@@ -7082,6 +7151,19 @@
                     confirmationStrength
                 });
                 return { success: true, reasonCode: 'SUBMISSION_CONFIRMED_SUCCESS', decision: finalDecision, latencyMs: totalLatency, outcomeEvidence };
+            } else if (finalDecision === 'CAPTCHA_TOKEN_REJECTED_BY_SITE') {
+                logDev(`[FINAL] status=CAPTCHA_TOKEN_REJECTED_BY_SITE`, "error");
+                sessionStorage.removeItem('xpider_submit_count');
+                finishCampaign(false, `Site rejected CAPTCHA token during form verification`, 'CAPTCHA_TOKEN_REJECTED_BY_SITE', {
+                    resultUrl: (typeof window !== 'undefined') ? window.location.href : '',
+                    decision: finalDecision,
+                    latencyMs: totalLatency,
+                    outcomeEvidence,
+                    confirmationStrength,
+                    captchaRejected: true,
+                    evidenceClass: captchaEvidenceClass || 'DOM_CAPTCHA_ERROR_TEXT'
+                });
+                return { success: false, reasonCode: 'CAPTCHA_TOKEN_REJECTED_BY_SITE', decision: finalDecision, latencyMs: totalLatency, outcomeEvidence };
             } else {
                 logDev(`[FINAL] status=${finalDecision}`, "warning");
                 sessionStorage.removeItem('xpider_submit_count');
