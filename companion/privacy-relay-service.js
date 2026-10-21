@@ -66,8 +66,8 @@ process.on('unhandledRejection', (reason) => {
 });
 
 // [Defect Q2 Hardening - Issue #6 Comment #6244711545] Authoritative companion build identity & capabilities
-const COMPANION_BUILD_ID = 'R6.9G.10.3.7.1.4.43-20261021-PRIVATE-EGRESS-RC3.29';
-const COMPANION_IMPLEMENTATION_HEAD = '6451544d9059e369067f2a41ce145d293e1bc458';
+const COMPANION_BUILD_ID = 'R6.9G.10.3.7.1.4.44-20261021-PRIVATE-EGRESS-RC3.30';
+const COMPANION_IMPLEMENTATION_HEAD = '74287ddf0e7eb3a3082a823d324c60e35cbb12c7';
 
 function isCompatibleExtensionBuild(extBuildId, companionBuildId) {
   if (!extBuildId || typeof extBuildId !== 'string') return false;
