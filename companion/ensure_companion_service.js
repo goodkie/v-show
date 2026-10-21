@@ -21,7 +21,7 @@ const path = require('path');
 const { spawn, execSync } = require('child_process');
 const crypto = require('crypto');
 
-const EXPECTED_BUILD_ID = 'R6.9G.10.3.7.1.4.46-20261021-PRIVATE-EGRESS-RC3.32';
+const EXPECTED_BUILD_ID = 'R6.9G.10.3.7.1.4.47-20261021-PRIVATE-EGRESS-RC3.33';
 const REQUIRED_CAPABILITIES = ['verify-plan', 'provision-egress', 'provision-progress', 'recovery-status'];
 
 const COMPANION_DIR = __dirname;

@@ -15,22 +15,22 @@
 
     const BUILD_INFO = {
         branch: 'upgrade/phase-0-1',
-        channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.32',
+        channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.33',
         testOnly: true,
-        // [R6.9G.10.3.7.1.4.46] XPIDER AutoForm Sender Pro — Private Egress Release Candidate 3.32 (Post-Submit CAPTCHA Rejection Detector & Integration Verification)
-        implementationHead: '14e73aec74721823d26417026c4a161397fefd32',
-        implementationHeadShort: '14e73aec',
-        head: '14e73aec74721823d26417026c4a161397fefd32',
-        headShort: '14e73aec',
+        // [R6.9G.10.3.7.1.4.47] XPIDER AutoForm Sender Pro — Private Egress Release Candidate 3.33 (Top-Level Flag Declaration, Attempt-Scoped State Reset, and Immediate Exception Containment)
+        implementationHead: '15ef47920555e4d0a506d007329d265dc78825c4',
+        implementationHeadShort: '15ef4792',
+        head: '15ef47920555e4d0a506d007329d265dc78825c4',
+        headShort: '15ef4792',
         rollbackBase: '980d16624780c1b30e310dc4fe45df5bd3e4d96e',
-        previousFunctionalRestorePoint: '894653736b7785809095255daff1dfd43b7b2585',
+        previousFunctionalRestorePoint: '14e73aec74721823d26417026c4a161397fefd32',
         manifestVersion: 3,
-        buildId: 'R6.9G.10.3.7.1.4.46-20261021-PRIVATE-EGRESS-RC3.32',
-        builtAt: '2026-10-21T04:05:00.000Z',
+        buildId: 'R6.9G.10.3.7.1.4.47-20261021-PRIVATE-EGRESS-RC3.33',
+        builtAt: '2026-10-21T04:45:00.000Z',
         provenanceSchema: 2,
         modules: {
-            backgroundSha: '6d15755cb3d680f47b19bbec4c6f1b6530681ef972aca2a936093c3ace379960',
-            contentScriptSha: '8a7c0e033b6edd5f4abe170962f50276e1a7da5c17215d845f3d3796ec2ebae2',
+            backgroundSha: '2af6da408d36d7f56010e26f4932cb8a5a9571df4a0f407aebd5d420bd57ae18',
+            contentScriptSha: '8e56cdf5f7208a1b4bc9365fac7d03724f91f314f989ef288513a9673d3a8d42',
             popupSha: '0f6b3375a55f2f0e46a668f2740814ba36bd77fd03eeb69eb47cec255c60769b',
             solverContentSha: '8d3324538a58e0845a71e838f00e6c656b1bfd4b6084feae4baf8ace2078e454',
             solverCoreSha: 'f4977844acbd319f0cf6a0f49ed0f88c491293c8fd42ee53c0a06eef58dbefad',
