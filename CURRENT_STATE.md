@@ -4,73 +4,74 @@
 - Protocol: OCA-DEV-1.4
 - Project ID: xpider-autoform-sender-pro
 - Workspace: E:\vivpr\ai\extension-form-sender
-- Authority: goodkie/v-show Issue #6 (Responding to Directives #6310936412, #6311145870, #6313213003, #6313430588, and Independent Audit #6314200711)
+- Authority: goodkie/v-show Issue #6 (Responding to Directives #6310936412, #6311145870, #6313213003, #6313430588, #6314200711, and Independent Audit #6314729749)
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-21.78
-- Authority Cursor: 6314200711
-- Last Directive / Audit: `[CHATGPT][INDEPENDENT-AUDIT][extension-form-sender][RC3.34-CORRECTIVE-RECEIPT-REJECTED-RUNTIME-AND-EVIDENCE-GATES-STILL-HOLD] Comment #6314200711`
-- Last Receipt: `[ANTIGRAVITY][CORRECTIVE-RECEIPT][extension-form-sender][RC3.35-RE-AUDIT-FINAL-RESTORATION-PASS] Comment #6314631095`
-- Build ID: `R6.9G.10.3.7.1.4.49-20261021-FINAL-SPRINT-RC3.35`
-- Current Candidate Release Tag: `v6.9g.10.3-rc3.35.7.1.4.49`
-- Functional Snapshot Head Commit (F): `44ab031d23614aebe0e9dae580e0c904fa1e2b4f` (`44ab031d`)
-- Provenance Commit (P): `e7592f98642a8b9e6955a1532c21c7e9976378e9` (`e7592f98`)
-- Rollback Anchor: `15ef47920555e4d0a506d007329d265dc78825c4` (RC3.33)
-- Previous Functional Restore Point: `df7743cacf0d66af8b2b52704d161f9210b4c780` (RC3.34)
-- Release Asset Zip: `XPIDER_R6.9G.10.3.7.1.4.49_PRIVATE_EGRESS_RC3.35.zip`
-- Release Asset Size: `45,387,226` bytes
-- Release Asset SHA-256: `cfe90cc42b17648806389a1bf6ae93c94a327e551e2b1e67815cab8f39188277`
-- Release Asset Hosted URL: `https://github.com/goodkie/v-show/releases/tag/v6.9g.10.3-rc3.35.7.1.4.49`
-- Unpacked Convenience Folder: `XPIDER_R6.9G.10.3.7.1.4.49_PRIVATE_EGRESS_RC3.35`
+- State Rev: 2026-10-21.79
+- Authority Cursor: 6314729749
+- Last Directive / Audit: `[CHATGPT][INDEPENDENT-AUDIT][extension-form-sender][RC3.35-STILL-HOLD-REPAIR-CONTRACT-BUG-AND-E2E-ASSERTION-GAPS] Comment #6314729749`
+- Last Receipt: `[ANTIGRAVITY][CORRECTIVE-RECEIPT][extension-form-sender][RC3.36-FINAL-SPRINT-REPAIR-CONTRACT-AND-SINGLE-WRITER-PASS]`
+- Build ID: `R6.9G.10.3.7.1.4.50-20261021-FINAL-SPRINT-RC3.36`
+- Current Candidate Release Tag: `v6.9g.10.3-rc3.36.7.1.4.50`
+- Functional Snapshot Head Commit (F): `a37aee3d0317e6c8901dc5cb95a393a117ef513a` (`a37aee3d`)
+- Provenance Commit (P): `add1401e25dd0b38b0118a6c35dfdf8eaa290d05` (`add1401e`)
+- Rollback Anchor: `44ab031d23614aebe0e9dae580e0c904fa1e2b4f` (RC3.35)
+- Previous Functional Restore Point: `44ab031d23614aebe0e9dae580e0c904fa1e2b4f` (RC3.35)
+- Release Asset Zip: `XPIDER_R6.9G.10.3.7.1.4.50_PRIVATE_EGRESS_RC3.36.zip`
+- Release Asset Size: `45,388,063` bytes
+- Release Asset SHA-256: `045c65e224c35a6ca28202d137ec3ed6b4a6250d6496a73b98af38883646604f`
+- Release Asset Hosted URL: `https://github.com/goodkie/v-show/releases/tag/v6.9g.10.3-rc3.36.7.1.4.50`
+- Unpacked Convenience Folder: `XPIDER_R6.9G.10.3.7.1.4.50_PRIVATE_EGRESS_RC3.36`
 
-## Sprint Finalization Audit Remediations: [RC3.35-FINALIZATION-VERIFICATION-COMPLETE]
+## Sprint Finalization Audit Remediations: [RC3.36-FINALIZATION-VERIFICATION-COMPLETE]
 
-### 1. Release Provenance Recut (RC3.35) — 100% CLEAN F -> P
-- In Audit #6314200711 Section 5, ChatGPT noted that runtime code changes (`isLabMockAllowed` for synthetic mock token testing) were committed after release P `499bc451...`.
-- Re-anchored all runtime code, test runner, and rehearsal improvements into a new Functional commit F (`44ab031d23614aebe0e9dae580e0c904fa1e2b4f`).
-- Stamped clean RC3.35 build provenance (`R6.9G.10.3.7.1.4.49-20261021-FINAL-SPRINT-RC3.35`) pointing directly to F.
-- All testing and validation executed against the exact candidate artifact.
+### 1. Preflight & Repair Contract Fix (`companion/private-egress-provisioner.js`) — 100% PASS
+- Remedied critical mismatch identified in Audit #6314729749: `runAuthoritativePreflight()` previously returned `{ ready: true }` without `ok: true`, causing `repairExistingEgress()` to fail when evaluating `!preflight.ok`.
+- Normalized `runAuthoritativePreflight()` across mock and real modes to return `{ ready: true, ok: true, success: true }` on success, and `{ ready: false, ok: false, success: false, reason, error }` on failure.
+- Normalized `probeCompanionNode()` to return `{ success: true, ok: true, verified: true }`.
+- In `repairExistingEgress()`:
+  - Step 4: `tlsHealthy = Boolean(probeRes && (probeRes.ok === true || probeRes.verified === true || probeRes.success === true));`
+  - Step 5: `isPreflightOk = Boolean(preflight && (preflight.ready === true || preflight.ok === true || preflight.success === true));`
+  - Preserved droplet reboot indicator: `this.dropletRebootTriggered`.
+- Added regression tests in `test_sprint_track_a_egress_repair.js`:
+  - Test 4A: Healthy TLS without reboot -> preflight -> `REPAIRED_READY` (PASS).
+  - Test 4B: Unresponsive TLS triggers reboot -> preflight -> `REPAIRED_READY` (PASS).
+  - Test 4C: Preflight failure -> `EGRESS_PROBE_TIMEOUT` with surfaced reason (PASS).
+  - Full suite outcome: **5 / 5 PASS (100% Green)**.
 
-### 2. Real Subprocess-Spawning Test Manifest Runner (`test_manifest.json`) — 100% REAL EVIDENCE
-- Replaced synthetic manifest generator with authoritative runner [`scripts/run_exhaustive_manifest_runner.js`](file:///E:/vivpr/ai/extension-form-sender/scripts/run_exhaustive_manifest_runner.js).
-- Actually spawned all 38 active test suites via `child_process.spawnSync`.
-- Measured real start/end wall clock duration (51.9s total, zero `Math.random()` or hardcoded estimates).
-- Verified 38/38 PASS (Exit Code 0), 0 FAIL.
-- Captured full stdout/stderr per test in `scratch/test_logs/<slug>.log` and recorded SHA-256 digests in `test_manifest.json`.
-- 116 skipped tests cataloged with explicit applicability evaluations (Archived backup, hardware-bound, superseded rehearsal, long soak, historical regression).
+### 2. Single-Writer Invariant & Duplicate Token Rejection (`extension/background.js` & Rehearsal) — 100% PASS
+- Hardened `verifyAndRecordCaptchaSuccess` and `handleSolveCaptchaInternal` with attempt-scoped single-writer guards:
+  - If a token was already written to the MAIN world for the attempt, any second token injection or solve attempt is rejected immediately with `[CAPTCHA_DUPLICATE_TOKEN_REJECTED]` and `{ success: false, error: 'DUPLICATE_TOKEN_REJECTED', duplicateIgnored: true }`.
+  - Added deterministic test hook `globalThis.__xpider_testDuplicateTokenInjection`.
+- In `run_edge_sprint_full_captcha_e2e_rehearsal.js`:
+  - Strengthened Invariant 7: Enforced strict equality `assert.strictEqual(observedInvariants.mainWorldWriteCount, 1)`.
+  - Explicitly tested that duplicate token injection is rejected: dispatched duplicate injection request, asserted duplicate rejection event in logs (`duplicateRejections >= 1`), and verified `mainWorldWriteCount` remained strictly 1.
+  - Strengthened Invariant 6: Captured `frameInventory`, `selectedFrameId`, and `appliedFrameId`; asserted that `selectedFrameId` came from inventory (`inventoryCount=1`), matched the widget-bearing frame, and the MAIN-world token write occurred in that exact frame (`selectedFrameId === 0`, `appliedFrameId === 0`).
+  - Rehearsal executed live in real Microsoft Edge via CDP: **16/16 PASS 100%**.
 
-### 3. Hardened 16-Invariant CAPTCHA + Sequential Form E2E Rehearsal — 100% VERIFIED PASS
-- Updated [`run_edge_sprint_full_captcha_e2e_rehearsal.js`](file:///E:/vivpr/ai/extension-form-sender/run_edge_sprint_full_captcha_e2e_rehearsal.js) to assert every single Section 9 invariant individually with strict equality:
-  1. Form discovery verified (`[FIELD_ASSIGN✅]` / `[FIELD_CLASSIFY]`).
-  2. Field autofill verified (`[FIELD_ASSIGN✅]`).
-  3. CAPTCHA detection verified (`[CAPTCHA_DETECTED]`).
-  4. Controlled provider adapter reached (`[CAPTCHA_PROVIDER_SELECT]` mock_provider).
-  5. Provider token returned to background authority (`[CAPTCHA_TOKEN_RECEIVED]`).
-  6. Dynamic frame selection verified (`[CAPTCHA_FRAME_MAP]` / `[CAPTCHA_APPLY_TARGET]`).
-  7. Exactly one MAIN-world token write verified (`mainWorldWriteCount === 1`).
-  8. READY_TO_SUBMIT reached (`Resuming sequence for submit`).
-  9. XPIDER orchestrator engine submit dispatched (`submitEvent=true` / `[SUBMIT_VERIFY]`).
-  10. SubmissionOutcomeVerifier confirmed visible confirmation banner (`wpcf7-mail-sent-ok`).
-  11. Downstream CAPTCHA acceptance signal confirmed (`[CAPTCHA_VERIFY_SIGNAL]` WIDGET_ACCEPTED).
-  12. Target 1 settled as `CONFIRMED_SUCCESS`.
-  13. Target 1 recorded exactly once in `HistoryStore` ledger.
-  14. Ledger counters verified.
-  15. Target 2 (`contact-standard.html`) processed sequentially to completion as `CONFIRMED_SUCCESS`.
-  16. Clean state reset verified (`[CAPTCHA_STATE_RESET]`); zero token bleed; total ledger = 2 successes, 0 failures, 0 hangs.
-- Raw trace captured in `scratch/edge_full_captcha_e2e_trace.log` (118KB).
+### 3. Real Companion Kill Watchdog Recovery & Security Hardening — 100% PASS
+- Fixed recursive loop in `companion/ensure_companion_service.js`: `launchCompanionProcess()` spawns `privacy-relay-service.js` directly with `spawn` instead of calling `start_relay_silent.vbs`.
+- Executed `test/test_real_companion_kill_watchdog_recovery.js`:
+  - Real process kill: Terminated Companion PID 22404.
+  - Fail-closed: Verified ports 18988 and 18989 immediately refused connections (zero direct leak).
+  - Autonomous healing: Watchdog supervisor detected outage and spawned replacement Companion (PID 33276) in 7.7 seconds.
+  - Result: **PASS 100%**.
+- Executed `test/test_private_egress_security_hardening.js`:
+  - Verified all 20/20 checks: **PASS 100%**.
 
-### 4. Track A Companion & Real Egress Authentication Audit
-- Local Companion Service running build RC3.35 on port 18989 (PID 30736), Watchdog active (PID 31444), root parity verified (`rootParity: true`), zero port conflicts.
-- DigitalOcean Droplet `610408684` (`159.203.28.198`) preserved intact in TOR1.
-- In-place repair endpoint `/repair-egress` is fully implemented and unit-tested (5/5 PASS).
-- Exhaustive search of all authorized runtime access confirmed:
-  - `process.env`: 0 DO tokens, 0 NopeCHA keys.
-  - Local credentials: encrypted proxy password present; 0 DO PATs.
-  - Issue #6 history: Comment #6245191948 token is revoked (HTTP 401 Unauthorized).
-  - NopeCHA API key: 0 keys present on disk (Owner popup settings input only).
-  - Provider authentication is genuinely unavailable to Antigravity; one-click repair button is ready for Owner PAT entry in UI.
+### 4. Expanded Real Manifest Runner (`test_manifest.json`) — 41/41 ACTIVE SUITES PASS
+- Expanded `scripts/run_exhaustive_manifest_runner.js` to execute representative blocker suites:
+  - `test/test_real_companion_kill_watchdog_recovery.js`
+  - `test/test_private_egress_security_hardening.js`
+  - `test_rc3_29_single_authority_and_writer.js`
+  - `run_edge_sprint_full_captcha_e2e_rehearsal.js`
+  - All 41 active suites spawned as real subprocesses with real wall-clock timing:
+    - **41 / 41 PASS, 0 FAIL, 113 SKIPPED (Total Wall Time: 94.1s)**.
+    - Full stdout/stderr logs saved in `scratch/test_logs/` with authentic SHA-256 digests in `test_manifest.json`.
 
-## Operating Invariants
-1. **Existing Droplet Preservation**: Droplet `610408684` (`159.203.28.198`) in TOR1 preserved intact.
-2. **Fail-Closed Privacy Barrier**: Zero direct ISP leaks; fail-closed relay enforced.
-3. **Packaging Hygiene**: Zero runtime artifacts, zero plaintext secrets, zero OS mutations.
-4. **Zero Intermediate Owner Labor**: Fully automated verification before live smoke test.
+### 5. Lineage & Packaging (RC3.36) — 100% IMMUTABLE F -> P
+- Functional Snapshot Commit (F): `a37aee3d0317e6c8901dc5cb95a393a117ef513a`
+- Provenance Commit (P): `add1401e25dd0b38b0118a6c35dfdf8eaa290d05` (Direct child of F)
+- Release Tag: `v6.9g.10.3-rc3.36.7.1.4.50` pointing directly to P
+- Packaged `XPIDER_R6.9G.10.3.7.1.4.50_PRIVATE_EGRESS_RC3.36.zip` (45,388,063 bytes, SHA-256: `045c65e224c35a6ca28202d137ec3ed6b4a6250d6496a73b98af38883646604f`)
+- Unpacked into `XPIDER_R6.9G.10.3.7.1.4.50_PRIVATE_EGRESS_RC3.36/` and verified 100% syntax clean via `node --check`
+- Release created on GitHub and ZIP attached
