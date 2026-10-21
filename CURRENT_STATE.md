@@ -4,49 +4,50 @@
 - Protocol: OCA-DEV-1.4
 - Project ID: xpider-autoform-sender-pro
 - Workspace: E:\vivpr\ai\extension-form-sender
-- Authority: goodkie/v-show Issue #6 (Responding to Boot Gate [RC3.26-RUNTIME-BUILD-MISMATCH-PROVENANCE-FALLBACK-BOOT-CHAIN] Comment #6304805944)
+- Authority: goodkie/v-show Issue #6 (Responding to Smoke Report [RC3.27-LIVE-TOKEN-SUCCESS-BUT-VERIFICATION-RACE-DUAL-AUTHORITY] Comment #6305332142)
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-21.66
-- Authority Cursor: 6305047872
-- Last Directive / Audit: `[CHATGPT][OWNER-BOOT][extension-form-sender][RC3.26-RUNTIME-BUILD-MISMATCH-PROVENANCE-FALLBACK-BOOT-CHAIN] Comment #6304805944`
-- Last Receipt: `[ANTIGRAVITY][RECEIPT][extension-form-sender][RC3.27-ISOLATED-BOOT-CHAIN-AND-PROVENANCE-FALLBACK-REMOVAL] #6305047872`
-- Build ID: `R6.9G.10.3.7.1.4.41-20261021-PRIVATE-EGRESS-RC3.27`
-- Current Candidate Release Tag: `v6.9g.10.3-rc3.27.7.1.4.41`
-- Functional Snapshot Head Commit (F): `6e24509e7fbe680e4b0120813a501da0c8dce620` (short: `6e24509e`)
-- Rollback Anchor: `0a6e843d9e5ae512bf48742473bbd3133050c117` (RC3.17)
-- Release Asset Zip: `XPIDER_R6.9G.10.3.7.1.4.41_PRIVATE_EGRESS_RC3.27.zip`
-- Release Asset Size: `45,374,008` bytes
-- Release Asset SHA-256: `6e2ed95f703000225ea5352089c4b8634df3cffcd16c5c128dab15d552d6b497`
-- Release Asset Hosted URL: `https://github.com/goodkie/v-show/releases/tag/v6.9g.10.3-rc3.27.7.1.4.41`
+- State Rev: 2026-10-21.67
+- Authority Cursor: 6305332142
+- Last Directive / Audit: `[CHATGPT][OWNER-SMOKE][extension-form-sender][RC3.27-LIVE-TOKEN-SUCCESS-BUT-VERIFICATION-RACE-DUAL-AUTHORITY] Comment #6305332142`
+- Last Receipt: `[ANTIGRAVITY][RECEIPT][extension-form-sender][RC3.28-CAPTCHA-VERIFICATION-SERIALIZATION-SINGLE-AUTHORITY]`
+- Build ID: `R6.9G.10.3.7.1.4.42-20261021-PRIVATE-EGRESS-RC3.28`
+- Current Candidate Release Tag: `v6.9g.10.3-rc3.28.7.1.4.42`
+- Functional Snapshot Head Commit (F): `f23cb99d282c423162c8ef145f6d675e1e00439e` (short: `f23cb99d`)
+- Provenance Commit (P): `d2c4a257c8900f224a1d92ddd062f6e9cac8e313` (short: `d2c4a257`)
+- Rollback Anchor: `6e24509e7fbe680e4b0120813a501da0c8dce620` (RC3.27)
+- Release Asset Zip: `XPIDER_R6.9G.10.3.7.1.4.42_PRIVATE_EGRESS_RC3.28.zip`
+- Release Asset Size: `45,375,672` bytes
+- Release Asset SHA-256: `0f544c5de38354cad6fdbd6230823cddd14dee89a0e07135f7a34c19e273a70f`
+- Release Asset Hosted URL: `https://github.com/goodkie/v-show/releases/tag/v6.9g.10.3-rc3.28.7.1.4.42`
 
-## Current Gate: [RC3.27-ISOLATED-BOOT-CHAIN-AND-PROVENANCE-FALLBACK-REMOVAL]
-- **Directives 1 & 2 (Isolated SW Boot Chain): PASS**
-  * `modules/build-provenance.js` is imported FIRST in its own isolated try/catch block.
-  * Foundation modules are imported individually in per-module try/catch blocks; a syntax or runtime failure in any module never halts provenance or subsequent modules.
-- **Directive 3 (Synthetic .7 Fallback Removal): PASS**
-  * Removed legacy fake `.7` fallback from `GET_BUILD_PROVENANCE` in `background.js`. If `BuildProvenance` is unavailable, returns explicit `BUILD_PROVENANCE_UNAVAILABLE` with sanitized boot errors.
-  * In `START_CAMPAIGN`, rejects fail-closed with `BUILD_PROVENANCE_UNAVAILABLE` if service worker provenance is missing.
-- **Directive 4 (Popup Handshake & Badge Protection): PASS**
-  * `verifyBuildHandshake()` treats `BUILD_PROVENANCE_UNAVAILABLE` as `SW_BOOT_FAILURE` / `TRANSIENT_WAIT`, never locking start button with a false `CONFIRMED_MISMATCH`.
-  * `initBuildProvenanceBadge()` only updates badge if handshake returns `state === 'MATCH'`, never overwriting local badge with synthetic/fallback data.
-- **Directive 5 (Per-Module Boot Telemetry): PASS**
-  * Recorded module import statuses in `globalThis.__xpider_sw_boot_modules` and sanitized errors in `globalThis.__xpider_sw_boot_errors`.
-- **Directive 6 (Fault Injection Regression Fixture): PASS**
-  * `test_rc3_27_isolated_boot_chain.js`: verified that a throwing foundation module leaves `BuildProvenance` intact and never returns fake `.7` provenance.
-- **Directive 7 (Non-Destructive Privacy UI during Handshake): PASS**
-  * `updateRelayStatusUI()` renders `BUILD SYNC REQUIRED` instead of destructive-looking `OFFLINE` while handshake is unresolved or in boot wait.
-- **Root Syntax Defect Remediated: PASS**
-  * Fixed misplaced closing brace in `solver-core.js` line 462 that was prematurely terminating `class XpiderSolverCore` and aborting `importScripts`.
+## Current Gate: [RC3.28-CAPTCHA-VERIFICATION-SERIALIZATION-SINGLE-AUTHORITY]
+- **Fix A (Rename Raw Token Injection Event to CAPTCHA_TOKEN_INJECTED): PASS**
+  * Raw token injection cross-frame event renamed from `CAPTCHA_SOLVED` to `CAPTCHA_TOKEN_INJECTED`.
+  * Content script message listener sets `_captchaTokenInjected = true`, but NEVER sets `_isCaptchaSolved = true`.
+- **Fix B (waitForCaptchaSolved() Removes hasToken from Completion Condition): PASS**
+  * Token presence in DOM is treated as `INJECTED / PENDING_VERIFICATION` only.
+  * Form sequence advancement requires independent verified signal (`_isCaptchaSolved === true`) or initial absence / true challenge disappearance.
+- **Fix C (Bounded 7.5s Verification Window & Independent Acceptance Polling): PASS**
+  * Background `verifyAndRecordCaptchaSuccess()` implements bounded 7500ms verification window polling `CHECK_CAPTCHA_VERIFIED` every 400ms.
+  * First transient unverified sample logs pending state without triggering immediate failure.
+- **Fix D (Sole Canonical Authority for Terminal CAPTCHA State): PASS**
+  * Background remains sole terminal authority. Late verification events arriving after terminal settlement are rejected fail-closed with `SETTLED_AFTER_TERMINAL_FAILURE`.
+- **Fix E (Eliminate Double Token Application Race): PASS**
+  * Atomic injection via `injectSolvedToken` and synchronized verification via `APPLY_CAPTCHA_TOKEN` / `CHECK_CAPTCHA_VERIFIED`.
+- **Fix F (Failure Classification & Metric Separation): PASS**
+  * If provider returns token but site acceptance times out, failure reason is recorded as `CAPTCHA_TOKEN_ACCEPTANCE_TIMEOUT` (integration metric), preserving provider health metrics (`providerTokenReturned` vs `acceptanceTimeout`).
 - **Two-Commit Model Strict Conformance: PASS**
-  * Functional Commit F: `6e24509e7fbe680e4b0120813a501da0c8dce620`
-  * Provenance Commit P: Stamped `implementationHead = 6e24509e7fbe680e4b0120813a501da0c8dce620` across extension and companion components.
-- **Automated Verification Suites (50/50 PASS)**:
+  * Functional Commit F: `f23cb99d282c423162c8ef145f6d675e1e00439e`
+  * Provenance Commit P: `d2c4a257c8900f224a1d92ddd062f6e9cac8e313`
+- **Automated Verification Suites (59/59 PASS)**:
+  * `test_rc3_28_verification_serialization.js`: 9/9 PASS
   * `test_rc3_27_isolated_boot_chain.js`: 10/10 PASS
   * `test_rc3_25_live_provider_gate.js`: 13/13 PASS
   * `test_r6_9g10_3_7_1_4_35_decision_serialization.js`: 27/27 PASS
 - **Package Parity & Provenance: PASS**
   * 100% SHA256 byte parity across all 26 components in `extension/`, `send_message_backup/`, and `send_message_backup/build/extension/`.
-  * Unpacked convenience folder: `XPIDER_R6.9G.10.3.7.1.4.41_PRIVATE_EGRESS_RC3.27`.
+  * Unpacked convenience folder: `XPIDER_R6.9G.10.3.7.1.4.42_PRIVATE_EGRESS_RC3.28`.
+  * Syntax compilation (`node --check`) verified across all JS files.
 
 ### Operating Guidelines & Invariants:
 1. **Existing Droplet Preservation**:
