@@ -12,10 +12,12 @@
 - Build ID: `R6.9G.10.3.7.1.4.49-20261021-FINAL-SPRINT-RC3.35`
 - Current Candidate Release Tag: `v6.9g.10.3-rc3.35.7.1.4.49`
 - Functional Snapshot Head Commit (F): `44ab031d23614aebe0e9dae580e0c904fa1e2b4f` (`44ab031d`)
-- Provenance Commit (P): PENDING_P_STAMP
+- Provenance Commit (P): `e7592f98642a8b9e6955a1532c21c7e9976378e9` (`e7592f98`)
 - Rollback Anchor: `15ef47920555e4d0a506d007329d265dc78825c4` (RC3.33)
 - Previous Functional Restore Point: `df7743cacf0d66af8b2b52704d161f9210b4c780` (RC3.34)
 - Release Asset Zip: `XPIDER_R6.9G.10.3.7.1.4.49_PRIVATE_EGRESS_RC3.35.zip`
+- Release Asset Size: `45,387,226` bytes
+- Release Asset SHA-256: `cfe90cc42b17648806389a1bf6ae93c94a327e551e2b1e67815cab8f39188277`
 - Release Asset Hosted URL: `https://github.com/goodkie/v-show/releases/tag/v6.9g.10.3-rc3.35.7.1.4.49`
 - Unpacked Convenience Folder: `XPIDER_R6.9G.10.3.7.1.4.49_PRIVATE_EGRESS_RC3.35`
 
