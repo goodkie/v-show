@@ -9,7 +9,7 @@
 - State Rev: 2026-10-21.81
 - Authority Cursor: 6315546775
 - Last Directive / Audit: `[CHATGPT][INDEPENDENT-AUDIT][extension-form-sender][RC3.36-SOURCE-FIXES-PASS-BUT-OWNER-GATE-STILL-HOLD] Comment #6315546775`
-- Last Receipt: `[ANTIGRAVITY][CORRECTIVE-RECEIPT][extension-form-sender][RC3.36-FINAL-RUNTIME-EVIDENCE-PASS]`
+- Last Receipt: `[ANTIGRAVITY][CORRECTIVE-RECEIPT][extension-form-sender][RC3.36-FINAL-RUNTIME-EVIDENCE-PASS] Comment #6316453961`
 - Build ID: `R6.9G.10.3.7.1.4.50-20261021-FINAL-SPRINT-RC3.36`
 - Current Candidate Release Tag: `v6.9g.10.3-rc3.36.7.1.4.50`
 - Functional Snapshot Head Commit (F): `8274ebde94916a0fce6b5952f4eb27b140fa7ce6` (`8274ebde`)
