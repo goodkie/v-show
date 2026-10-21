@@ -4,40 +4,49 @@
 - Protocol: OCA-DEV-1.4
 - Project ID: xpider-autoform-sender-pro
 - Workspace: E:\vivpr\ai\extension-form-sender
-- Authority: goodkie/v-show Issue #6 (Responding to Audit [RC3.25-FUNCTIONAL-REMEDIATION-PASS-PROVENANCE-HOLD] Comment #6302470982)
+- Authority: goodkie/v-show Issue #6 (Responding to Boot Gate [RC3.26-RUNTIME-BUILD-MISMATCH-PROVENANCE-FALLBACK-BOOT-CHAIN] Comment #6304805944)
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-20.64
-- Authority Cursor: 6302888496
-- Last Directive / Audit: `[CHATGPT][AUDIT][extension-form-sender][RC3.25-FUNCTIONAL-REMEDIATION-PASS-PROVENANCE-HOLD] Comment #6302470982`
-- Last Receipt: `[ANTIGRAVITY][RECEIPT][extension-form-sender][RC3.26-PROVENANCE-RECUT-TWO-COMMIT-RELEASE] #6302888496`
-- Build ID: `R6.9G.10.3.7.1.4.40-20261020-PRIVATE-EGRESS-RC3.26`
-- Current Candidate Release Tag: `v6.9g.10.3-rc3.26.7.1.4.40`
-- Functional Snapshot Head Commit: `b980891d676078a668d8e04cf9d2f4029dca25cf` (short: `b980891d`)
+- State Rev: 2026-10-21.65
+- Authority Cursor: 6304805944
+- Last Directive / Audit: `[CHATGPT][OWNER-BOOT][extension-form-sender][RC3.26-RUNTIME-BUILD-MISMATCH-PROVENANCE-FALLBACK-BOOT-CHAIN] Comment #6304805944`
+- Last Receipt: `[ANTIGRAVITY][RECEIPT][extension-form-sender][RC3.27-ISOLATED-BOOT-CHAIN-AND-PROVENANCE-FALLBACK-REMOVAL]`
+- Build ID: `R6.9G.10.3.7.1.4.41-20261021-PRIVATE-EGRESS-RC3.27`
+- Current Candidate Release Tag: `v6.9g.10.3-rc3.27.7.1.4.41`
+- Functional Snapshot Head Commit (F): `6e24509e7fbe680e4b0120813a501da0c8dce620` (short: `6e24509e`)
 - Rollback Anchor: `0a6e843d9e5ae512bf48742473bbd3133050c117` (RC3.17)
-- Release Asset Zip: `XPIDER_R6.9G.10.3.7.1.4.40_PRIVATE_EGRESS_RC3.26.zip`
-- Release Asset Size: `45,373,510` bytes
-- Release Asset SHA-256: `d034b060ac26f19a529e3b9c95d7bf3418855c334cd412353c42b9ed7d3a69ac`
-- Release Asset Hosted URL: `https://github.com/goodkie/v-show/releases/tag/v6.9g.10.3-rc3.26.7.1.4.40`
+- Release Asset Zip: `XPIDER_R6.9G.10.3.7.1.4.41_PRIVATE_EGRESS_RC3.27.zip`
+- Release Asset Size: `45,374,008` bytes
+- Release Asset SHA-256: `6e2ed95f703000225ea5352089c4b8634df3cffcd16c5c128dab15d552d6b497`
+- Release Asset Hosted URL: `https://github.com/goodkie/v-show/releases/tag/v6.9g.10.3-rc3.27.7.1.4.41`
 
-## Current Gate: [RC3.26-PROVENANCE-RECUT-TWO-COMMIT-RELEASE]
-- **Audit Reconciliation & Two-Commit Model Compliance: PASS**
-  * Functional code is strictly frozen at snapshot commit `b980891d676078a668d8e04cf9d2f4029dca25cf`.
-  * `implementationHead` explicitly stamped to `b980891d676078a668d8e04cf9d2f4029dca25cf` across extension and companion components.
-  * Zero functional changes to solver, autofill, or state machine in this provenance recut.
-  * Regression test assertion updated to rigorously assert `implementationHead === 'b980891d'`.
-  * Removed tracking of live runtime logs and lock files (`companion/privacy_relay.log`, `companion/watchdog.log`, `companion/.watchdog.lock`, `companion/.private_egress_transaction.json`) from repository history.
-- **Functional Provider Remediation (Verified in RC3.25 Audit #6302470982): PASS**
-  * Directive A: Autofill visual confirmation toggle (`xpider_show_autofill_visual_confirm`, default ON), green field outline, non-sensitive HUD status (`Autofill OK — Name ✓ Email ✓ Message ✓`).
-  * Directive B: Provider failure terminal settlement without deadlock when popup OFF (`CAPTCHA_AUTO_FAILURE`, deadline cancelled, structured skip reasons: `CAPTCHA_SOLVER_TIMEOUT`, `CAPTCHA_SOLVER_CONFIG_ERROR`, `CAPTCHA_SOLVER_PROVIDER_ERROR`).
-  * Directive C: Real-time Top Solver HUD state updates (`Auto-solving via NopeCHA...`, `CAPTCHA solved ✓`, auto-dismiss on skip).
-  * Directive D: Hard wall-clock limit bounded by `AbortController` (`maxWaitSec + 10s`), sanitized telemetry.
-  * Directive E: Optional automatic provider fallback (`xpider_automatic_provider_fallback`, default OFF).
-- **Automated Verification Suites (40/40 PASS)**:
-  * `test_rc3_25_live_provider_gate.js`: 13/13 tests passed.
-  * `test_r6_9g10_3_7_1_4_35_decision_serialization.js`: 27/27 tests passed.
-- **Local Package Parity & Provenance Gate: PASS**
+## Current Gate: [RC3.27-ISOLATED-BOOT-CHAIN-AND-PROVENANCE-FALLBACK-REMOVAL]
+- **Directives 1 & 2 (Isolated SW Boot Chain): PASS**
+  * `modules/build-provenance.js` is imported FIRST in its own isolated try/catch block.
+  * Foundation modules are imported individually in per-module try/catch blocks; a syntax or runtime failure in any module never halts provenance or subsequent modules.
+- **Directive 3 (Synthetic .7 Fallback Removal): PASS**
+  * Removed legacy fake `.7` fallback from `GET_BUILD_PROVENANCE` in `background.js`. If `BuildProvenance` is unavailable, returns explicit `BUILD_PROVENANCE_UNAVAILABLE` with sanitized boot errors.
+  * In `START_CAMPAIGN`, rejects fail-closed with `BUILD_PROVENANCE_UNAVAILABLE` if service worker provenance is missing.
+- **Directive 4 (Popup Handshake & Badge Protection): PASS**
+  * `verifyBuildHandshake()` treats `BUILD_PROVENANCE_UNAVAILABLE` as `SW_BOOT_FAILURE` / `TRANSIENT_WAIT`, never locking start button with a false `CONFIRMED_MISMATCH`.
+  * `initBuildProvenanceBadge()` only updates badge if handshake returns `state === 'MATCH'`, never overwriting local badge with synthetic/fallback data.
+- **Directive 5 (Per-Module Boot Telemetry): PASS**
+  * Recorded module import statuses in `globalThis.__xpider_sw_boot_modules` and sanitized errors in `globalThis.__xpider_sw_boot_errors`.
+- **Directive 6 (Fault Injection Regression Fixture): PASS**
+  * `test_rc3_27_isolated_boot_chain.js`: verified that a throwing foundation module leaves `BuildProvenance` intact and never returns fake `.7` provenance.
+- **Directive 7 (Non-Destructive Privacy UI during Handshake): PASS**
+  * `updateRelayStatusUI()` renders `BUILD SYNC REQUIRED` instead of destructive-looking `OFFLINE` while handshake is unresolved or in boot wait.
+- **Root Syntax Defect Remediated: PASS**
+  * Fixed misplaced closing brace in `solver-core.js` line 462 that was prematurely terminating `class XpiderSolverCore` and aborting `importScripts`.
+- **Two-Commit Model Strict Conformance: PASS**
+  * Functional Commit F: `6e24509e7fbe680e4b0120813a501da0c8dce620`
+  * Provenance Commit P: Stamped `implementationHead = 6e24509e7fbe680e4b0120813a501da0c8dce620` across extension and companion components.
+- **Automated Verification Suites (50/50 PASS)**:
+  * `test_rc3_27_isolated_boot_chain.js`: 10/10 PASS
+  * `test_rc3_25_live_provider_gate.js`: 13/13 PASS
+  * `test_r6_9g10_3_7_1_4_35_decision_serialization.js`: 27/27 PASS
+- **Package Parity & Provenance: PASS**
   * 100% SHA256 byte parity across all 26 components in `extension/`, `send_message_backup/`, and `send_message_backup/build/extension/`.
-  * Unpacked convenience directory: `XPIDER_R6.9G.10.3.7.1.4.40_PRIVATE_EGRESS_RC3.26`.
+  * Unpacked convenience folder: `XPIDER_R6.9G.10.3.7.1.4.41_PRIVATE_EGRESS_RC3.27`.
 
 ### Operating Guidelines & Invariants:
 1. **Existing Droplet Preservation**:
