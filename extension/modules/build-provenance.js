@@ -15,21 +15,21 @@
 
     const BUILD_INFO = {
         branch: 'upgrade/phase-0-1',
-        channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.34',
+        channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.35',
         testOnly: true,
-        // [R6.9G.10.3.7.1.4.48] XPIDER AutoForm Sender Pro — Private Egress Release Candidate 3.34 (Sprint Finalization: Egress In-Place Repair, Mutex Concurrency, F1-F4 Exception Containment, and Dynamic Verification)
-        implementationHead: 'df7743cacf0d66af8b2b52704d161f9210b4c780',
-        implementationHeadShort: 'df7743ca',
-        head: 'df7743cacf0d66af8b2b52704d161f9210b4c780',
-        headShort: 'df7743ca',
+        // [R6.9G.10.3.7.1.4.49] XPIDER AutoForm Sender Pro — Private Egress Release Candidate 3.35 (Real Manifest Runner & Hardened CAPTCHA E2E Invariants)
+        implementationHead: '44ab031d23614aebe0e9dae580e0c904fa1e2b4f',
+        implementationHeadShort: '44ab031d',
+        head: '44ab031d23614aebe0e9dae580e0c904fa1e2b4f',
+        headShort: '44ab031d',
         rollbackBase: '15ef47920555e4d0a506d007329d265dc78825c4',
         previousFunctionalRestorePoint: '15ef47920555e4d0a506d007329d265dc78825c4',
         manifestVersion: 3,
-        buildId: 'R6.9G.10.3.7.1.4.48-20261021-FINAL-SPRINT-RC3.34',
-        builtAt: '2026-10-21T09:18:43.135Z',
+        buildId: 'R6.9G.10.3.7.1.4.49-20261021-FINAL-SPRINT-RC3.35',
+        builtAt: '2026-10-21T11:09:02.290Z',
         provenanceSchema: 2,
         modules: {
-            backgroundSha: '85335902e44b35d867568b39afe9771c2747dcf486df2576c396615ebff4d2f9',
+            backgroundSha: '332a562c6bd4bb51a8ad619da344df517f9c2fb7e8755292cf7c240cd61e146a',
             contentScriptSha: 'f20f0d6c5f897edfa8790eae22357fb3cb3cf76feb1775c1442bdf5e91063eb7',
             popupSha: '350e92ba2e037acc2eae80ea6059c31b587beb71659fdf328346ca8cc92050a5',
             solverContentSha: '6a1ff7154efaeb6dbd5946ac4f9be1ce5b5ff43bce2db06d0dca32950edd3bdb',
