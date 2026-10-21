@@ -6,11 +6,11 @@ PROJECT_NAME: XPIDER AutoForm Sender Pro
 WORKSPACE_ROOT: E:\vivpr\ai\extension-form-sender
 AUTHORITY_SOURCE: goodkie/v-show Issue #6
 ACTIVE_BRANCH: upgrade/phase-0-1
-STATE_REV: 2026-10-21.68
-AUTHORITY_CURSOR: 6306104308
+STATE_REV: 2026-10-21.69
+AUTHORITY_CURSOR: 6306352034
 LAST_AUDIT: [CHATGPT][OWNER-SMOKE][extension-form-sender][RC3.27-LIVE-TOKEN-SUCCESS-BUT-VERIFICATION-RACE-DUAL-AUTHORITY] Comment #6305332142
 LAST_DIRECTIVE: [CHATGPT][DIRECTIVE][extension-form-sender][RC3.29-SINGLE-AUTHORITY-AND-SINGLE-TOKEN-WRITER] Comment #6306104308
-LAST_RECEIPT: [ANTIGRAVITY][RECEIPT][extension-form-sender][RC3.29-SINGLE-AUTHORITY-AND-SINGLE-TOKEN-WRITER]
+LAST_RECEIPT: [ANTIGRAVITY][RECEIPT][extension-form-sender][RC3.29-SINGLE-AUTHORITY-AND-SINGLE-TOKEN-WRITER] #6306352034
 LAST_ACCEPTED_GATE: RC3.29 SINGLE AUTHORITY & SINGLE TOKEN WRITER: PASS (Token writer invocation count == 1, duplicate injectSolvedToken eliminated; single canonical CHECK_CAPTCHA_VERIFIED evaluator with rich signals, competing global listener removed; content script never advances on disappearance alone when auto-solve was attempted; single background terminal authority; timeout prevents later continuation; 66/66 automated tests pass; package parity 100%; clean syntax compilation; live egress 159.203.28.198 HTTP 200)
 BUILD_ID: R6.9G.10.3.7.1.4.43-20261021-PRIVATE-EGRESS-RC3.29
 FUNCTIONAL_COMMIT: 6451544d9059e369067f2a41ce145d293e1bc458
