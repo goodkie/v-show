@@ -6,9 +6,9 @@
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issue #6 (Responding to Directives #6310936412, #6311145870, #6313213003, #6313430588, #6314200711, Independent Audit #6314729749, and Audit #6315546775)
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-21.82
-- Authority Cursor: 6316577801
-- Last Directive / Audit: `[CHATGPT][INDEPENDENT-AUDIT][extension-form-sender][RC3.36-CORRECTIVE-RECEIPT-PARTIAL-PASS-REAL-EGRESS-AND-IMMUTABILITY-STILL-HOLD] Comment #6316577801`
+- State Rev: 2026-10-21.83
+- Authority Cursor: 6317071641
+- Last Directive / Audit: `[CHATGPT][INDEPENDENT-AUDIT][extension-form-sender][RC3.36-CURRENT-FROZEN-BYTES-ACCEPTED-FOR-CREDENTIALLED-EGRESS-REPAIR-OWNER-CAPTCHA-SMOKE-STILL-HOLD] Comment #6317071641`
 - Last Receipt: `[ANTIGRAVITY][CORRECTIVE-RECEIPT][extension-form-sender][RC3.36-FINAL-RUNTIME-EVIDENCE-CORRECTED] Comment #6316961870`
 - Build ID: `R6.9G.10.3.7.1.4.50-20261021-FINAL-SPRINT-RC3.36`
 - Current Candidate Release Tag: `v6.9g.10.3-rc3.36.7.1.4.50`
@@ -81,4 +81,20 @@
 - DigitalOcean Cloud Firewall & PAT Authorization Boundary: Unattended mutation of DO Cloud Firewall without Owner PAT is strictly rejected with HTTP 401 Unauthorized (`api.digitalocean.com/v2/firewalls/...`). Companion `POST /repair-egress` correctly enforces `REMOTE_PROVIDER_AUTH_REQUIRED` (HTTP 400). All DO tokens were scrubbed per Public Release Credential Hygiene Gate (RC3.19.2 closure #6282469999).
 - 100% Fail-Closed Active: Port 18988 returns HTTP 502 Bad Gateway (`PRIVACY_RELAY_FAIL_CLOSED: Relay paused or not verified`) whenever remote egress is unreachable; zero direct or plaintext fallback occurs.
 - Safe In-Place Repair Flow Verified: `test_sprint_track_a_egress_repair.js` (5/5 PASS); Extension UI (`priv-relay-repair-egress-btn`) is wired to update Cloud Firewall `07f9921c-a925-4185-bdfb-366d22e8fb7d` for Owner IP `159.26.98.240/32` upon Owner PAT entry in a single click without droplet recreation.
+
+---
+
+## Current Authority Gate & Owner Action Authorized
+
+Per ChatGPT Independent Audit #6317071641:
+- Software automated gate: **PASS**.
+- Release candidate identity: **PASS** (RC3.36 frozen & immutable).
+- Real DigitalOcean Egress: Blocked only by Owner provider authorization.
+- Owner Action Authorized:
+  1. Load/use current frozen RC3.36 candidate.
+  2. Click `Repair Existing Private Egress` / `Repair Egress` in extension settings.
+  3. Enter Owner DigitalOcean PAT when prompted.
+  4. Wait for terminal result (`REPAIRED_READY`).
+  5. If `REPAIRED_READY`, verify Privacy Preflight passes green.
+- Final Owner CAPTCHA smoke: HOLD until Repair Egress returns `REPAIRED_READY`.
 
