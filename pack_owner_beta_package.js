@@ -69,8 +69,8 @@ async function runPackaging() {
     console.log('1. Verifying parity with sync_build_parity.js...');
     execSync('node sync_build_parity.js', { stdio: 'inherit' });
 
-    const versionStr = 'R6.9G.10.3.7.1.4.41';
-    const zipName = `XPIDER_${versionStr}_PRIVATE_EGRESS_RC3.27.zip`;
+    const versionStr = 'R6.9G.10.3.7.1.4.42';
+    const zipName = `XPIDER_${versionStr}_PRIVATE_EGRESS_RC3.28.zip`;
     const zipOut = path.resolve(zipName);
     const extDir = path.resolve('send_message_backup/build/extension');
     const compDir = path.resolve('companion');
