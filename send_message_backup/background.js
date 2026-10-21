@@ -2798,7 +2798,8 @@ if (typeof chrome !== 'undefined' && chrome.webNavigation && chrome.webNavigatio
 
                     // [RC3.31 State Machine: TOKEN_RETURNED -> TOKEN_APPLIED -> CALLBACK_INTEGRATED -> READY_TO_SUBMIT -> CAPTCHA_ACCEPTED | REJECTED]
                     const verifyAndRecordCaptchaSuccess = async (solToken, solMethod) => {
-                        if (!solToken || typeof solToken !== 'string' || solToken.trim().length < 16 || solToken.startsWith('token_override_success_') || solToken.startsWith('mock_token_')) {
+                        const isLabMockAllowed = (solMethod === 'mock_provider' && campaignState.ownerFunctionTestMode);
+                        if (!solToken || typeof solToken !== 'string' || solToken.trim().length < 16 || solToken.startsWith('token_override_success_') || (!isLabMockAllowed && solToken.startsWith('mock_token_'))) {
                             logBg(null, `[CAPTCHA_INVALID_TOKEN] Rejected invalid or synthetic provider token: len=${solToken ? solToken.length : 0}`, 'error');
                             await recordTerminalCaptchaFailure(solveIdentity?.attemptId, 'NO_VALID_PROVIDER_TOKEN', 'INVALID_TOKEN');
                             return { success: false, error: 'NO_VALID_PROVIDER_TOKEN' };

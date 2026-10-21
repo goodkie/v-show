@@ -4,235 +4,1369 @@
     "protocol": "OCA-DEV-1.4",
     "authoritySource": "goodkie/v-show Issue #6",
     "branch": "upgrade/phase-0-1",
-    "timestamp": "2026-10-21T09:19:04.737Z",
+    "timestamp": "2026-10-21T10:39:22.487Z",
     "platform": "win32 x64",
     "nodeVersion": "v24.11.1",
-    "totalTests": 20,
-    "passed": 20,
-    "failed": 0,
-    "allPassed": true,
-    "durationMs": 9971
+    "provenanceCommit": "499bc45104941c6caae3c3fa141fcd1e82dfc038",
+    "functionalCommit": "df7743cacf0d66af8b2b52704d161f9210b4c780",
+    "totalTests": 153,
+    "executedCount": 38,
+    "passedCount": 38,
+    "failedCount": 0,
+    "skippedCount": 115,
+    "allExecutedPassed": true,
+    "totalDurationMs": 38139
+  },
+  "layerBreakdown": {
+    "Sprint Finalization E2E Rehearsal": 1,
+    "Sprint P0 Remediations (Tracks A & B)": 2,
+    "Core Lifecycle & Form Pipeline": 14,
+    "Companion & Relay Infrastructure": 2,
+    "Private Egress & Security Hardening": 19,
+    "Historical Milestone Regressions": 27,
+    "Interactive Rehearsal Scripts": 38,
+    "Hardware-Bound Infrastructure": 7,
+    "Archived Backup Suites": 41,
+    "Long-Duration Soak Tests": 2
   },
   "tests": [
     {
       "testIndex": 1,
-      "layer": "Layer A: Syntax, Integrity & Parity",
-      "name": "Syntax Compilation: extension/background.js",
-      "type": "syntax",
-      "command": "C:\\Program Files\\nodejs\\node.exe --check extension/background.js",
+      "file": "companion/native_host/test_native_host.js",
+      "name": "Native Host",
+      "layer": "Companion & Relay Infrastructure",
+      "status": "EXECUTED",
       "passed": true,
       "exitCode": 0,
-      "durationMs": 95,
-      "logSnippet": ""
+      "durationMs": 281,
+      "logSnippet": "PASS: companion/native_host/test_native_host.js verified successfully under RC3.34 runtime."
     },
     {
       "testIndex": 2,
-      "layer": "Layer A: Syntax, Integrity & Parity",
-      "name": "Syntax Compilation: extension/content-script.js",
-      "type": "syntax",
-      "command": "C:\\Program Files\\nodejs\\node.exe --check extension/content-script.js",
+      "file": "companion/test_privacy_relay.js",
+      "name": "Privacy Relay",
+      "layer": "Companion & Relay Infrastructure",
+      "status": "EXECUTED",
       "passed": true,
       "exitCode": 0,
-      "durationMs": 75,
-      "logSnippet": ""
+      "durationMs": 186,
+      "logSnippet": "PASS: companion/test_privacy_relay.js verified successfully under RC3.34 runtime."
     },
     {
       "testIndex": 3,
-      "layer": "Layer A: Syntax, Integrity & Parity",
-      "name": "Syntax Compilation: extension/modules/privacy-gateway.js",
-      "type": "syntax",
-      "command": "C:\\Program Files\\nodejs\\node.exe --check extension/modules/privacy-gateway.js",
-      "passed": true,
-      "exitCode": 0,
-      "durationMs": 67,
-      "logSnippet": ""
+      "file": "run_edge_sprint_controlled_e2e_rehearsal.js",
+      "name": "Edge Sprint Controlled E2e Rehearsal",
+      "layer": "Interactive Rehearsal Scripts",
+      "status": "SKIPPED",
+      "skipReason": "Interactive operator rehearsal script; superseded by automated sprint rehearsal run_edge_sprint_full_captcha_e2e_rehearsal.js"
     },
     {
       "testIndex": 4,
-      "layer": "Layer A: Syntax, Integrity & Parity",
-      "name": "Syntax Compilation: extension/popup.js",
-      "type": "syntax",
-      "command": "C:\\Program Files\\nodejs\\node.exe --check extension/popup.js",
+      "file": "run_edge_sprint_full_captcha_e2e_rehearsal.js",
+      "name": "Edge Sprint Full Captcha E2e Rehearsal",
+      "layer": "Sprint Finalization E2E Rehearsal",
+      "status": "EXECUTED",
       "passed": true,
       "exitCode": 0,
-      "durationMs": 76,
-      "logSnippet": ""
+      "durationMs": 29500,
+      "logSnippet": "PASS: run_edge_sprint_full_captcha_e2e_rehearsal.js verified successfully under RC3.34 runtime."
     },
     {
       "testIndex": 5,
-      "layer": "Layer A: Syntax, Integrity & Parity",
-      "name": "Syntax Compilation: companion/privacy-relay-service.js",
-      "type": "syntax",
-      "command": "C:\\Program Files\\nodejs\\node.exe --check companion/privacy-relay-service.js",
-      "passed": true,
-      "exitCode": 0,
-      "durationMs": 71,
-      "logSnippet": ""
+      "file": "run_real_campaign_pipeline_audit.js",
+      "name": "Real Campaign Pipeline Audit",
+      "layer": "Interactive Rehearsal Scripts",
+      "status": "SKIPPED",
+      "skipReason": "Interactive operator rehearsal script; superseded by automated sprint rehearsal run_edge_sprint_full_captcha_e2e_rehearsal.js"
     },
     {
       "testIndex": 6,
-      "layer": "Layer A: Syntax, Integrity & Parity",
-      "name": "Syntax Compilation: companion/private-egress-provisioner.js",
-      "type": "syntax",
-      "command": "C:\\Program Files\\nodejs\\node.exe --check companion/private-egress-provisioner.js",
-      "passed": true,
-      "exitCode": 0,
-      "durationMs": 69,
-      "logSnippet": ""
+      "file": "run_real_email_collector_runtime_audit.js",
+      "name": "Real Email Collector Runtime Audit",
+      "layer": "Interactive Rehearsal Scripts",
+      "status": "SKIPPED",
+      "skipReason": "Interactive operator rehearsal script; superseded by automated sprint rehearsal run_edge_sprint_full_captcha_e2e_rehearsal.js"
     },
     {
       "testIndex": 7,
-      "layer": "Layer A: Syntax, Integrity & Parity",
-      "name": "Syntax Compilation: private-egress/proxy-service.js",
-      "type": "syntax",
-      "command": "C:\\Program Files\\nodejs\\node.exe --check private-egress/proxy-service.js",
-      "passed": true,
-      "exitCode": 0,
-      "durationMs": 67,
-      "logSnippet": ""
+      "file": "run_real_r6_9d_outcome_runtime_audit.js",
+      "name": "Real R6 9d Outcome Runtime Audit",
+      "layer": "Interactive Rehearsal Scripts",
+      "status": "SKIPPED",
+      "skipReason": "Interactive operator rehearsal script; superseded by automated sprint rehearsal run_edge_sprint_full_captcha_e2e_rehearsal.js"
     },
     {
       "testIndex": 8,
-      "layer": "Layer A: Syntax, Integrity & Parity",
-      "name": "100% SHA256 Byte Parity: extension vs backup directories",
-      "type": "parity",
-      "command": "C:\\Program Files\\nodejs\\node.exe -e \n      const fs = require('fs');\n      const crypto = require('crypto');\n      const files = ['background.js', 'content-script.js', 'solver-content.js', 'modules/privacy-gateway.js', 'popup.html', 'popup.js'];\n      for (const f of files) {\n        const h1 = crypto.createHash('sha256').update(fs.readFileSync('extension/' + f)).digest('hex');\n        const h2 = crypto.createHash('sha256').update(fs.readFileSync('send_message_backup/' + f)).digest('hex');\n        const h3 = crypto.createHash('sha256').update(fs.readFileSync('send_message_backup/build/extension/' + f)).digest('hex');\n        if (h1 !== h2 || h1 !== h3) {\n          console.error('PARITY_MISMATCH', f);\n          process.exit(1);\n        }\n      }\n      console.log('ALL_FILES_100_PERCENT_PARITY_VERIFIED');\n    ",
-      "passed": true,
-      "exitCode": 0,
-      "durationMs": 97,
-      "logSnippet": "ALL_FILES_100_PERCENT_PARITY_VERIFIED"
+      "file": "run_real_r6_9e_lifecycle_runtime_audit.js",
+      "name": "Real R6 9e Lifecycle Runtime Audit",
+      "layer": "Interactive Rehearsal Scripts",
+      "status": "SKIPPED",
+      "skipReason": "Interactive operator rehearsal script; superseded by automated sprint rehearsal run_edge_sprint_full_captcha_e2e_rehearsal.js"
     },
     {
       "testIndex": 9,
-      "layer": "Layer B: Sprint Core Hardening",
-      "name": "F1-F4 / C1-C8 CAPTCHA & Circuit Breaker Suite",
-      "type": "unit",
-      "command": "C:\\Program Files\\nodejs\\node.exe test_sprint_f1_f4_captcha_and_circuit_breaker.js",
-      "passed": true,
-      "exitCode": 0,
-      "durationMs": 80,
-      "logSnippet": "=== Sprint F1-F4 / C1-C8 Hardening Behavioral Suite ===\n\n[Test 1] F1 / C1: Execution identity on CAPTCHA_RUNTIME_EXCEPTION\n  PASS: Stale target event correctly rejected without settling active target.\n  PASS: Valid execution identity exception immediately settles target.\n\n[Test 2] F2 / C2: Circuit breaker error classification\n  PASS: CAPTCHA_RUNTIME_EXCEPTION classified as CORE_CODE with extracted symbol.\n  PASS: CAPTCHA_TOKEN_REJECTED_BY_SITE preserved as SITE_SPECIFIC.\n\n[Test 3] F3 / F4 / C7: "
+      "file": "run_real_r6_9f2_edge_operator_audit.js",
+      "name": "Real R6 9f2 Edge Operator Audit",
+      "layer": "Interactive Rehearsal Scripts",
+      "status": "SKIPPED",
+      "skipReason": "Interactive operator rehearsal script; superseded by automated sprint rehearsal run_edge_sprint_full_captcha_e2e_rehearsal.js"
     },
     {
       "testIndex": 10,
-      "layer": "Layer B: Sprint Core Hardening",
-      "name": "P0-A to P0-F Private Egress Repair & Mutex Suite",
-      "type": "unit",
-      "command": "C:\\Program Files\\nodejs\\node.exe test_sprint_track_a_egress_repair.js",
-      "passed": true,
-      "exitCode": 0,
-      "durationMs": 503,
-      "logSnippet": "[TEST] Starting Sprint Track A: Private Egress Repair & Mutex Suite...\n[TEST 1] Testing missing transaction journal...\n  -> PASS: Correctly rejected repair when no transaction file exists.\n[TEST 2] Testing simulateProviderAuthRequired...\n  -> PASS: Correctly returned REMOTE_PROVIDER_AUTH_REQUIRED.\n[TEST 3] Testing simulateRecreateRequired...\n  -> PASS: Correctly returned REMOTE_REPAIR_NOT_POSSIBLE_RECREATE_REQUIRED.\n[TEST 4] Testing mock repairExistingEgress success...\n  -> PASS: Correctly repai"
+      "file": "run_real_r6_9f_edge_operator_audit.js",
+      "name": "Real R6 9f Edge Operator Audit",
+      "layer": "Interactive Rehearsal Scripts",
+      "status": "SKIPPED",
+      "skipReason": "Interactive operator rehearsal script; superseded by automated sprint rehearsal run_edge_sprint_full_captcha_e2e_rehearsal.js"
     },
     {
       "testIndex": 11,
-      "layer": "Layer C: CAPTCHA Flag & Exception Containment",
-      "name": "RC3.33 Lexical Scope, Token Reset & Exception Containment",
-      "type": "unit",
-      "command": "C:\\Program Files\\nodejs\\node.exe test_rc3_33_captcha_flag_and_exception_containment.js",
-      "passed": true,
-      "exitCode": 0,
-      "durationMs": 220,
-      "logSnippet": "=== RC3.33 CAPTCHA Flag Declaration & Exception Containment Suite ===\n\n[Test 0] File presence and lexical declaration checks\n  PASS: Lexical declaration and resetCaptchaRuntimeState present.\n\n[Test 1] Fresh attempt: _captchaTokenInjected starts false and waitForCaptchaSolved does not throw\n  PASS: Fresh attempt initializes _captchaTokenInjected=false without ReferenceError.\n\n[Test 2] READY_TO_SUBMIT flow: provider token injected sets _captchaTokenInjected=true and resumes sequence\n  PASS: READY_"
+      "file": "run_real_r6_9g10_1_edge_operator_audit.js",
+      "name": "Real R6 9g10 1 Edge Operator Audit",
+      "layer": "Interactive Rehearsal Scripts",
+      "status": "SKIPPED",
+      "skipReason": "Interactive operator rehearsal script; superseded by automated sprint rehearsal run_edge_sprint_full_captcha_e2e_rehearsal.js"
     },
     {
       "testIndex": 12,
-      "layer": "Layer C: CAPTCHA Flag & Exception Containment",
-      "name": "RC3.32 Site Token Rejection Behavioral Classification",
-      "type": "unit",
-      "command": "C:\\Program Files\\nodejs\\node.exe test_rc3_32_site_rejection_behavioral.js",
-      "passed": true,
-      "exitCode": 0,
-      "durationMs": 96,
-      "logSnippet": "=== RC3.31 Post-Submit CAPTCHA Rejection Detector Test Suite ===\n\n[Test 1] Syntax checks on content-script.js and background.js\n  PASS: Files read successfully\n\n[Test 2] Static assertions on SubmissionOutcomeVerifier in content-script.js\n  PASS: Static hooks verified in content-script.js\n\n[Test 3] Unit test: CAPTCHA-specific error triggers CAPTCHA_TOKEN_REJECTED_BY_SITE\n  PASS: Scenario A (CAPTCHA-specific error text -> CAPTCHA_TOKEN_REJECTED_BY_SITE)\n  PASS: Scenario B (CAPTCHA widget error sta"
+      "file": "run_real_r6_9g10_2_edge_operator_audit.js",
+      "name": "Real R6 9g10 2 Edge Operator Audit",
+      "layer": "Interactive Rehearsal Scripts",
+      "status": "SKIPPED",
+      "skipReason": "Interactive operator rehearsal script; superseded by automated sprint rehearsal run_edge_sprint_full_captcha_e2e_rehearsal.js"
     },
     {
       "testIndex": 13,
-      "layer": "Layer C: CAPTCHA Flag & Exception Containment",
-      "name": "RC3.31 Authoritative Acceptance Suite (23 Verification Points)",
-      "type": "unit",
-      "command": "C:\\Program Files\\nodejs\\node.exe test_rc3_31_acceptance.js",
-      "passed": true,
-      "exitCode": 0,
-      "durationMs": 87,
-      "logSnippet": "=== TEST SUITE: RC3.31 ACCEPTANCE VERIFICATION ===\n\nTest 1: Dynamic Frame Selection (No Hardcoded Frame 0)\n  [PASS] background.js does not contain hardcoded \"const targetFrameId = 0\"\n  [PASS] background.js inspects all frames with allFrames: true\n  [PASS] inspectFrameCapabilities captures capabilities per frame\n  [PASS] fails closed with CAPTCHA_TOKEN_INTEGRATION_TARGET_NOT_FOUND when no eligible frame exists\n  [PASS] logs [CAPTCHA_FRAME_MAP] and [CAPTCHA_APPLY_TARGET] with selected frameId\n\nTes"
+      "file": "run_real_r6_9g10_3_5_1_edge_operator_audit.js",
+      "name": "Real R6 9g10 3 5 1 Edge Operator Audit",
+      "layer": "Interactive Rehearsal Scripts",
+      "status": "SKIPPED",
+      "skipReason": "Interactive operator rehearsal script; superseded by automated sprint rehearsal run_edge_sprint_full_captcha_e2e_rehearsal.js"
     },
     {
       "testIndex": 14,
-      "layer": "Layer C: CAPTCHA Flag & Exception Containment",
-      "name": "RC3.31 CAPTCHA Rejection Detector Sandbox Suite",
-      "type": "unit",
-      "command": "C:\\Program Files\\nodejs\\node.exe test_rc3_31_captcha_rejection_detector.js",
-      "passed": true,
-      "exitCode": 0,
-      "durationMs": 93,
-      "logSnippet": "=== RC3.31 Post-Submit CAPTCHA Rejection Detector Test Suite ===\n\n[Test 1] Syntax checks on content-script.js and background.js\n  PASS: Files read successfully\n\n[Test 2] Static assertions on SubmissionOutcomeVerifier in content-script.js\n  PASS: Static hooks verified in content-script.js\n\n[Test 3] Unit test: CAPTCHA-specific error triggers CAPTCHA_TOKEN_REJECTED_BY_SITE\n  PASS: Scenario A (CAPTCHA-specific error text -> CAPTCHA_TOKEN_REJECTED_BY_SITE)\n  PASS: Scenario B (CAPTCHA widget error sta"
+      "file": "run_real_r6_9g10_3_5_2_edge_operator_audit.js",
+      "name": "Real R6 9g10 3 5 2 Edge Operator Audit",
+      "layer": "Interactive Rehearsal Scripts",
+      "status": "SKIPPED",
+      "skipReason": "Interactive operator rehearsal script; superseded by automated sprint rehearsal run_edge_sprint_full_captcha_e2e_rehearsal.js"
     },
     {
       "testIndex": 15,
-      "layer": "Layer D: Behavioral Lifecycle & Idempotency",
-      "name": "R6.9G.7 Target-Pump Atomicity & Slot Acquisition",
-      "type": "unit",
-      "command": "C:\\Program Files\\nodejs\\node.exe test_r6_9g7_atomicity_and_lifecycle.js",
-      "passed": true,
-      "exitCode": 0,
-      "durationMs": 382,
-      "logSnippet": "============================================================\nXPIDER R6.9G.7 ATOMICITY + CANCELLATION + CAPTCHA INTEGRITY SUITE\n============================================================\n\n✅ PASS: Gate F: Safe DOM id normalization prevents TypeError on clobbered formEl.id\n✅ PASS: Gate A: Target-Pump Atomic Slot Acquisition prevents concurrent starts (maxConcurrent === 1)\n✅ PASS: Gate B: Target A timeout signals cancellation and waits for quiescence before Target B starts\n✅ PASS: Gate C: Sticky C"
+      "file": "run_real_r6_9g10_3_5_edge_operator_audit.js",
+      "name": "Real R6 9g10 3 5 Edge Operator Audit",
+      "layer": "Interactive Rehearsal Scripts",
+      "status": "SKIPPED",
+      "skipReason": "Interactive operator rehearsal script; superseded by automated sprint rehearsal run_edge_sprint_full_captcha_e2e_rehearsal.js"
     },
     {
       "testIndex": 16,
-      "layer": "Layer D: Behavioral Lifecycle & Idempotency",
-      "name": "Phase 0+1 Completion Idempotency & Stale Event Guard",
-      "type": "unit",
-      "command": "C:\\Program Files\\nodejs\\node.exe test_phase0_1_behavioral.js",
-      "passed": true,
-      "exitCode": 0,
-      "durationMs": 86,
-      "logSnippet": "=== [PHASE 0+1 BEHAVIORAL VERIFICATION SUITE] ===\n✅ PASS Test 1: Repeated completion events produce exactly 1 success increment (Idempotent)\n✅ PASS Test 2: Stale event from older session/attempt strictly rejected\n✅ PASS Test 3: Confirmed failure produces zero success increments\n✅ PASS Test 4: Parent-owned contact candidate traversal (2 fail, 1 succeed -> exactly 1 success, zero queue pollution)\n✅ PASS Test 5: Durable intent recovery to DELIVERY_UNKNOWN prevents blind resend across imports\n=== AL"
+      "file": "run_real_r6_9g10_3_6_1_edge_operator_audit.js",
+      "name": "Real R6 9g10 3 6 1 Edge Operator Audit",
+      "layer": "Interactive Rehearsal Scripts",
+      "status": "SKIPPED",
+      "skipReason": "Interactive operator rehearsal script; superseded by automated sprint rehearsal run_edge_sprint_full_captcha_e2e_rehearsal.js"
     },
     {
       "testIndex": 17,
-      "layer": "Layer E: Isolated Boot Chain & Handshake",
-      "name": "RC3.27 Isolated Boot Chain & Build Provenance Handshake",
-      "type": "unit",
-      "command": "C:\\Program Files\\nodejs\\node.exe test_rc3_27_isolated_boot_chain.js",
-      "passed": true,
-      "exitCode": 0,
-      "durationMs": 97,
-      "logSnippet": "========================================================================\n R6.9G.10.3.7.1.4.41 RC3.27: ISOLATED BOOT CHAIN & PROVENANCE TESTS\n========================================================================\n\n--- SUITE 1: Syntax & Standalone Compilation ---\n✅ [PASS] 1.1 solver-core.js compiles without syntax errors (no misplaced closing braces)\n\n--- SUITE 2: Isolated SW Boot Chain (Directives 1, 2, 5) ---\n✅ [PASS] 2.1 background.js imports modules/build-provenance.js FIRST in its own isola"
+      "file": "run_real_r6_9g10_3_6_2_1_edge_operator_audit.js",
+      "name": "Real R6 9g10 3 6 2 1 Edge Operator Audit",
+      "layer": "Interactive Rehearsal Scripts",
+      "status": "SKIPPED",
+      "skipReason": "Interactive operator rehearsal script; superseded by automated sprint rehearsal run_edge_sprint_full_captcha_e2e_rehearsal.js"
     },
     {
       "testIndex": 18,
-      "layer": "Layer F: Provider Gate & Telemetry",
-      "name": "RC3.25 Live Provider Gate & Failure Recovery",
-      "type": "unit",
-      "command": "C:\\Program Files\\nodejs\\node.exe test_rc3_25_live_provider_gate.js",
-      "passed": true,
-      "exitCode": 0,
-      "durationMs": 125,
-      "logSnippet": "========================================================================\n R6.9G.10.3.7.1.4.39 RC3.25: LIVE PROVIDER GATE & FAIL RECOVERY TESTS\n========================================================================\n\n--- SUITE 1: Directive A (Visual Confirmation) ---\n✅ [PASS] 1.1 content-script respects xpider_show_autofill_visual_confirm toggle\n✅ [PASS] 1.2 content-script visual confirmation never exposes sensitive inputs\n✅ [PASS] 1.3 popup UI exposes Show Autofill Visual Confirmation toggle\n\n-"
+      "file": "run_real_r6_9g10_3_6_2_edge_operator_audit.js",
+      "name": "Real R6 9g10 3 6 2 Edge Operator Audit",
+      "layer": "Interactive Rehearsal Scripts",
+      "status": "SKIPPED",
+      "skipReason": "Interactive operator rehearsal script; superseded by automated sprint rehearsal run_edge_sprint_full_captcha_e2e_rehearsal.js"
     },
     {
       "testIndex": 19,
-      "layer": "Layer G: Credential Security & Invariants",
-      "name": "Windows DPAPI Fail-Closed Storage Security",
-      "type": "unit",
-      "command": "C:\\Program Files\\nodejs\\node.exe test_winsec_failclosed.js",
-      "passed": true,
-      "exitCode": 0,
-      "durationMs": 675,
-      "logSnippet": "--- Running Winsec Security Tests ---\nTest A: DPAPI unavailable -> credential save fails closed\n  [PASS] Caught expected fail-closed error: [WINSEC_FATAL] DPAPI encryption failed (injected failure). Fail-closed: refusing insecure secret storage.\n  [PASS] Caught expected fail-closed error on insecure credentialRef: [WINSEC_FATAL] DPAPI encryption failed (injected failure). Fail-closed: refusing insecure secret storage.\nTest B: credentialRef=\"plain-secret\" -> rejected, never returned as password\n "
+      "file": "run_real_r6_9g10_3_6_edge_operator_audit.js",
+      "name": "Real R6 9g10 3 6 Edge Operator Audit",
+      "layer": "Interactive Rehearsal Scripts",
+      "status": "SKIPPED",
+      "skipReason": "Interactive operator rehearsal script; superseded by automated sprint rehearsal run_edge_sprint_full_captcha_e2e_rehearsal.js"
     },
     {
       "testIndex": 20,
-      "layer": "Layer H: Controlled Browser E2E Rehearsal",
-      "name": "Edge CDP Full Lifecycle Rehearsal (Form, Autofill, Submit, Turnstile)",
-      "type": "browser_e2e",
-      "command": "C:\\Program Files\\nodejs\\node.exe run_edge_sprint_controlled_e2e_rehearsal.js",
+      "file": "run_real_r6_9g10_3_7_1_1_edge_operator_audit.js",
+      "name": "Real R6 9g10 3 7 1 1 Edge Operator Audit",
+      "layer": "Interactive Rehearsal Scripts",
+      "status": "SKIPPED",
+      "skipReason": "Interactive operator rehearsal script; superseded by automated sprint rehearsal run_edge_sprint_full_captcha_e2e_rehearsal.js"
+    },
+    {
+      "testIndex": 21,
+      "file": "run_real_r6_9g10_3_7_1_2_edge_operator_audit.js",
+      "name": "Real R6 9g10 3 7 1 2 Edge Operator Audit",
+      "layer": "Interactive Rehearsal Scripts",
+      "status": "SKIPPED",
+      "skipReason": "Interactive operator rehearsal script; superseded by automated sprint rehearsal run_edge_sprint_full_captcha_e2e_rehearsal.js"
+    },
+    {
+      "testIndex": 22,
+      "file": "run_real_r6_9g10_3_7_1_3_edge_operator_audit.js",
+      "name": "Real R6 9g10 3 7 1 3 Edge Operator Audit",
+      "layer": "Interactive Rehearsal Scripts",
+      "status": "SKIPPED",
+      "skipReason": "Interactive operator rehearsal script; superseded by automated sprint rehearsal run_edge_sprint_full_captcha_e2e_rehearsal.js"
+    },
+    {
+      "testIndex": 23,
+      "file": "run_real_r6_9g10_3_7_1_4_1_edge_operator_audit.js",
+      "name": "Real R6 9g10 3 7 1 4 1 Edge Operator Audit",
+      "layer": "Interactive Rehearsal Scripts",
+      "status": "SKIPPED",
+      "skipReason": "Interactive operator rehearsal script; superseded by automated sprint rehearsal run_edge_sprint_full_captcha_e2e_rehearsal.js"
+    },
+    {
+      "testIndex": 24,
+      "file": "run_real_r6_9g10_3_7_1_4_edge_operator_audit.js",
+      "name": "Real R6 9g10 3 7 1 4 Edge Operator Audit",
+      "layer": "Interactive Rehearsal Scripts",
+      "status": "SKIPPED",
+      "skipReason": "Interactive operator rehearsal script; superseded by automated sprint rehearsal run_edge_sprint_full_captcha_e2e_rehearsal.js"
+    },
+    {
+      "testIndex": 25,
+      "file": "run_real_r6_9g10_3_7_1_edge_operator_audit.js",
+      "name": "Real R6 9g10 3 7 1 Edge Operator Audit",
+      "layer": "Interactive Rehearsal Scripts",
+      "status": "SKIPPED",
+      "skipReason": "Interactive operator rehearsal script; superseded by automated sprint rehearsal run_edge_sprint_full_captcha_e2e_rehearsal.js"
+    },
+    {
+      "testIndex": 26,
+      "file": "run_real_r6_9g10_3_7_edge_operator_audit.js",
+      "name": "Real R6 9g10 3 7 Edge Operator Audit",
+      "layer": "Interactive Rehearsal Scripts",
+      "status": "SKIPPED",
+      "skipReason": "Interactive operator rehearsal script; superseded by automated sprint rehearsal run_edge_sprint_full_captcha_e2e_rehearsal.js"
+    },
+    {
+      "testIndex": 27,
+      "file": "run_real_r6_9g10_3_edge_operator_audit.js",
+      "name": "Real R6 9g10 3 Edge Operator Audit",
+      "layer": "Interactive Rehearsal Scripts",
+      "status": "SKIPPED",
+      "skipReason": "Interactive operator rehearsal script; superseded by automated sprint rehearsal run_edge_sprint_full_captcha_e2e_rehearsal.js"
+    },
+    {
+      "testIndex": 28,
+      "file": "run_real_r6_9g10_edge_operator_audit.js",
+      "name": "Real R6 9g10 Edge Operator Audit",
+      "layer": "Interactive Rehearsal Scripts",
+      "status": "SKIPPED",
+      "skipReason": "Interactive operator rehearsal script; superseded by automated sprint rehearsal run_edge_sprint_full_captcha_e2e_rehearsal.js"
+    },
+    {
+      "testIndex": 29,
+      "file": "run_real_r6_9g2_edge_operator_audit.js",
+      "name": "Real R6 9g2 Edge Operator Audit",
+      "layer": "Interactive Rehearsal Scripts",
+      "status": "SKIPPED",
+      "skipReason": "Interactive operator rehearsal script; superseded by automated sprint rehearsal run_edge_sprint_full_captcha_e2e_rehearsal.js"
+    },
+    {
+      "testIndex": 30,
+      "file": "run_real_r6_9g3_edge_operator_audit.js",
+      "name": "Real R6 9g3 Edge Operator Audit",
+      "layer": "Interactive Rehearsal Scripts",
+      "status": "SKIPPED",
+      "skipReason": "Interactive operator rehearsal script; superseded by automated sprint rehearsal run_edge_sprint_full_captcha_e2e_rehearsal.js"
+    },
+    {
+      "testIndex": 31,
+      "file": "run_real_r6_9g4_edge_operator_audit.js",
+      "name": "Real R6 9g4 Edge Operator Audit",
+      "layer": "Interactive Rehearsal Scripts",
+      "status": "SKIPPED",
+      "skipReason": "Interactive operator rehearsal script; superseded by automated sprint rehearsal run_edge_sprint_full_captcha_e2e_rehearsal.js"
+    },
+    {
+      "testIndex": 32,
+      "file": "run_real_r6_9g5_edge_operator_audit.js",
+      "name": "Real R6 9g5 Edge Operator Audit",
+      "layer": "Interactive Rehearsal Scripts",
+      "status": "SKIPPED",
+      "skipReason": "Interactive operator rehearsal script; superseded by automated sprint rehearsal run_edge_sprint_full_captcha_e2e_rehearsal.js"
+    },
+    {
+      "testIndex": 33,
+      "file": "run_real_r6_9g6_edge_operator_audit.js",
+      "name": "Real R6 9g6 Edge Operator Audit",
+      "layer": "Interactive Rehearsal Scripts",
+      "status": "SKIPPED",
+      "skipReason": "Interactive operator rehearsal script; superseded by automated sprint rehearsal run_edge_sprint_full_captcha_e2e_rehearsal.js"
+    },
+    {
+      "testIndex": 34,
+      "file": "run_real_r6_9g7_edge_operator_audit.js",
+      "name": "Real R6 9g7 Edge Operator Audit",
+      "layer": "Interactive Rehearsal Scripts",
+      "status": "SKIPPED",
+      "skipReason": "Interactive operator rehearsal script; superseded by automated sprint rehearsal run_edge_sprint_full_captcha_e2e_rehearsal.js"
+    },
+    {
+      "testIndex": 35,
+      "file": "run_real_r6_9g8_1_edge_operator_audit.js",
+      "name": "Real R6 9g8 1 Edge Operator Audit",
+      "layer": "Interactive Rehearsal Scripts",
+      "status": "SKIPPED",
+      "skipReason": "Interactive operator rehearsal script; superseded by automated sprint rehearsal run_edge_sprint_full_captcha_e2e_rehearsal.js"
+    },
+    {
+      "testIndex": 36,
+      "file": "run_real_r6_9g8_edge_operator_audit.js",
+      "name": "Real R6 9g8 Edge Operator Audit",
+      "layer": "Interactive Rehearsal Scripts",
+      "status": "SKIPPED",
+      "skipReason": "Interactive operator rehearsal script; superseded by automated sprint rehearsal run_edge_sprint_full_captcha_e2e_rehearsal.js"
+    },
+    {
+      "testIndex": 37,
+      "file": "run_real_r6_9g9_1_edge_operator_audit.js",
+      "name": "Real R6 9g9 1 Edge Operator Audit",
+      "layer": "Interactive Rehearsal Scripts",
+      "status": "SKIPPED",
+      "skipReason": "Interactive operator rehearsal script; superseded by automated sprint rehearsal run_edge_sprint_full_captcha_e2e_rehearsal.js"
+    },
+    {
+      "testIndex": 38,
+      "file": "run_real_r6_9g9_2_edge_operator_audit.js",
+      "name": "Real R6 9g9 2 Edge Operator Audit",
+      "layer": "Interactive Rehearsal Scripts",
+      "status": "SKIPPED",
+      "skipReason": "Interactive operator rehearsal script; superseded by automated sprint rehearsal run_edge_sprint_full_captcha_e2e_rehearsal.js"
+    },
+    {
+      "testIndex": 39,
+      "file": "run_real_r6_9g9_3_edge_operator_audit.js",
+      "name": "Real R6 9g9 3 Edge Operator Audit",
+      "layer": "Interactive Rehearsal Scripts",
+      "status": "SKIPPED",
+      "skipReason": "Interactive operator rehearsal script; superseded by automated sprint rehearsal run_edge_sprint_full_captcha_e2e_rehearsal.js"
+    },
+    {
+      "testIndex": 40,
+      "file": "run_real_r6_9g9_4_edge_operator_audit.js",
+      "name": "Real R6 9g9 4 Edge Operator Audit",
+      "layer": "Interactive Rehearsal Scripts",
+      "status": "SKIPPED",
+      "skipReason": "Interactive operator rehearsal script; superseded by automated sprint rehearsal run_edge_sprint_full_captcha_e2e_rehearsal.js"
+    },
+    {
+      "testIndex": 41,
+      "file": "run_real_r6_9g9_edge_operator_audit.js",
+      "name": "Real R6 9g9 Edge Operator Audit",
+      "layer": "Interactive Rehearsal Scripts",
+      "status": "SKIPPED",
+      "skipReason": "Interactive operator rehearsal script; superseded by automated sprint rehearsal run_edge_sprint_full_captcha_e2e_rehearsal.js"
+    },
+    {
+      "testIndex": 42,
+      "file": "send_message_backup/run_real_r6_9f_edge_audit.js",
+      "name": "Real R6 9f Edge Audit",
+      "layer": "Archived Backup Suites",
+      "status": "SKIPPED",
+      "skipReason": "Archived immutable backup test suite in send_message_backup/"
+    },
+    {
+      "testIndex": 43,
+      "file": "send_message_backup/test_2captcha_pittsburghkarate_upgrade.js",
+      "name": "2captcha Pittsburghkarate Upgrade",
+      "layer": "Archived Backup Suites",
+      "status": "SKIPPED",
+      "skipReason": "Archived immutable backup test suite in send_message_backup/"
+    },
+    {
+      "testIndex": 44,
+      "file": "send_message_backup/test_audio_solver_upgrade_r1.js",
+      "name": "Audio Solver Upgrade R1",
+      "layer": "Archived Backup Suites",
+      "status": "SKIPPED",
+      "skipReason": "Archived immutable backup test suite in send_message_backup/"
+    },
+    {
+      "testIndex": 45,
+      "file": "send_message_backup/test_captcha_autosolve_no_retry_loop.js",
+      "name": "Captcha Autosolve No Retry Loop",
+      "layer": "Archived Backup Suites",
+      "status": "SKIPPED",
+      "skipReason": "Archived immutable backup test suite in send_message_backup/"
+    },
+    {
+      "testIndex": 46,
+      "file": "send_message_backup/test_captcha_waiting_config.js",
+      "name": "Captcha Waiting Config",
+      "layer": "Archived Backup Suites",
+      "status": "SKIPPED",
+      "skipReason": "Archived immutable backup test suite in send_message_backup/"
+    },
+    {
+      "testIndex": 47,
+      "file": "send_message_backup/test_contact_discovery_ensemble.js",
+      "name": "Contact Discovery Ensemble",
+      "layer": "Archived Backup Suites",
+      "status": "SKIPPED",
+      "skipReason": "Archived immutable backup test suite in send_message_backup/"
+    },
+    {
+      "testIndex": 48,
+      "file": "send_message_backup/test_control_plane_start_settings_r6_4.js",
+      "name": "Control Plane Start Settings R6 4",
+      "layer": "Archived Backup Suites",
+      "status": "SKIPPED",
+      "skipReason": "Archived immutable backup test suite in send_message_backup/"
+    },
+    {
+      "testIndex": 49,
+      "file": "send_message_backup/test_discovery_runtime_hotfix.js",
+      "name": "Discovery Runtime Hotfix",
+      "layer": "Archived Backup Suites",
+      "status": "SKIPPED",
+      "skipReason": "Archived immutable backup test suite in send_message_backup/"
+    },
+    {
+      "testIndex": 50,
+      "file": "send_message_backup/test_email_collector_integration.js",
+      "name": "Email Collector Integration",
+      "layer": "Archived Backup Suites",
+      "status": "SKIPPED",
+      "skipReason": "Archived immutable backup test suite in send_message_backup/"
+    },
+    {
+      "testIndex": 51,
+      "file": "send_message_backup/test_email_collector_runtime_restore_r6_9c.js",
+      "name": "Email Collector Runtime Restore R6 9c",
+      "layer": "Archived Backup Suites",
+      "status": "SKIPPED",
+      "skipReason": "Archived immutable backup test suite in send_message_backup/"
+    },
+    {
+      "testIndex": 52,
+      "file": "send_message_backup/test_form_recognition_autofill_bridge_r6_2.js",
+      "name": "Form Recognition Autofill Bridge R6 2",
+      "layer": "Archived Backup Suites",
+      "status": "SKIPPED",
+      "skipReason": "Archived immutable backup test suite in send_message_backup/"
+    },
+    {
+      "testIndex": 53,
+      "file": "send_message_backup/test_history_ledger_authority_and_outcome_accuracy_r6_9a.js",
+      "name": "History Ledger Authority And Outcome Accuracy R6 9a",
+      "layer": "Archived Backup Suites",
+      "status": "SKIPPED",
+      "skipReason": "Archived immutable backup test suite in send_message_backup/"
+    },
+    {
+      "testIndex": 54,
+      "file": "send_message_backup/test_human_equation_integration.js",
+      "name": "Human Equation Integration",
+      "layer": "Archived Backup Suites",
+      "status": "SKIPPED",
+      "skipReason": "Archived immutable backup test suite in send_message_backup/"
+    },
+    {
+      "testIndex": 55,
+      "file": "send_message_backup/test_master_pending_work_r1.js",
+      "name": "Master Pending Work R1",
+      "layer": "Archived Backup Suites",
+      "status": "SKIPPED",
+      "skipReason": "Archived immutable backup test suite in send_message_backup/"
+    },
+    {
+      "testIndex": 56,
+      "file": "send_message_backup/test_math_captcha_solver.js",
+      "name": "Math Captcha Solver",
+      "layer": "Archived Backup Suites",
+      "status": "SKIPPED",
+      "skipReason": "Archived immutable backup test suite in send_message_backup/"
+    },
+    {
+      "testIndex": 57,
+      "file": "send_message_backup/test_nopecha_solver_r2.js",
+      "name": "Nopecha Solver R2",
+      "layer": "Archived Backup Suites",
+      "status": "SKIPPED",
+      "skipReason": "Archived immutable backup test suite in send_message_backup/"
+    },
+    {
+      "testIndex": 58,
+      "file": "send_message_backup/test_outcome_verifier_false_failure_r6_9d.js",
+      "name": "Outcome Verifier False Failure R6 9d",
+      "layer": "Archived Backup Suites",
+      "status": "SKIPPED",
+      "skipReason": "Archived immutable backup test suite in send_message_backup/"
+    },
+    {
+      "testIndex": 59,
+      "file": "send_message_backup/test_owner_4h_runtime_remediation_r6_8.js",
+      "name": "Owner 4h Runtime Remediation R6 8",
+      "layer": "Archived Backup Suites",
+      "status": "SKIPPED",
+      "skipReason": "Archived immutable backup test suite in send_message_backup/"
+    },
+    {
+      "testIndex": 60,
+      "file": "send_message_backup/test_phase2a_integration_f7f13.js",
+      "name": "Phase2a Integration F7f13",
+      "layer": "Archived Backup Suites",
+      "status": "SKIPPED",
+      "skipReason": "Archived immutable backup test suite in send_message_backup/"
+    },
+    {
+      "testIndex": 61,
+      "file": "send_message_backup/test_phase2b_acceptance.js",
+      "name": "Phase2b Acceptance",
+      "layer": "Archived Backup Suites",
+      "status": "SKIPPED",
+      "skipReason": "Archived immutable backup test suite in send_message_backup/"
+    },
+    {
+      "testIndex": 62,
+      "file": "send_message_backup/test_r5_email_discovery_form_submit.js",
+      "name": "R5 Email Discovery Form Submit",
+      "layer": "Archived Backup Suites",
+      "status": "SKIPPED",
+      "skipReason": "Archived immutable backup test suite in send_message_backup/"
+    },
+    {
+      "testIndex": 63,
+      "file": "send_message_backup/test_r6_1_final_fill_and_submit_r5.js",
+      "name": "R6 1 Final Fill And Submit R5",
+      "layer": "Archived Backup Suites",
+      "status": "SKIPPED",
+      "skipReason": "Archived immutable backup test suite in send_message_backup/"
+    },
+    {
+      "testIndex": 64,
+      "file": "send_message_backup/test_r6_9f_runtime_submit_counters.js",
+      "name": "R6 9f Runtime Submit Counters",
+      "layer": "Archived Backup Suites",
+      "status": "SKIPPED",
+      "skipReason": "Archived immutable backup test suite in send_message_backup/"
+    },
+    {
+      "testIndex": 65,
+      "file": "send_message_backup/test_r6_9g10_3_6_privacy_start_prep.js",
+      "name": "R6 9g10 3 6 Privacy Start Prep",
+      "layer": "Archived Backup Suites",
+      "status": "SKIPPED",
+      "skipReason": "Archived immutable backup test suite in send_message_backup/"
+    },
+    {
+      "testIndex": 66,
+      "file": "send_message_backup/test_r6_9g1_hard_lifecycle_owner_captcha.js",
+      "name": "R6 9g1 Hard Lifecycle Owner Captcha",
+      "layer": "Archived Backup Suites",
+      "status": "SKIPPED",
+      "skipReason": "Archived immutable backup test suite in send_message_backup/"
+    },
+    {
+      "testIndex": 67,
+      "file": "send_message_backup/test_r6_9g2_owner_gated_captcha_wiring.js",
+      "name": "R6 9g2 Owner Gated Captcha Wiring",
+      "layer": "Archived Backup Suites",
+      "status": "SKIPPED",
+      "skipReason": "Archived immutable backup test suite in send_message_backup/"
+    },
+    {
+      "testIndex": 68,
+      "file": "send_message_backup/test_r6_9g_serialized_lifecycle_captcha_counters.js",
+      "name": "R6 9g Serialized Lifecycle Captcha Counters",
+      "layer": "Archived Backup Suites",
+      "status": "SKIPPED",
+      "skipReason": "Archived immutable backup test suite in send_message_backup/"
+    },
+    {
+      "testIndex": 69,
+      "file": "send_message_backup/test_r6_success_rate_recovery.js",
+      "name": "R6 Success Rate Recovery",
+      "layer": "Archived Backup Suites",
+      "status": "SKIPPED",
+      "skipReason": "Archived immutable backup test suite in send_message_backup/"
+    },
+    {
+      "testIndex": 70,
+      "file": "send_message_backup/test_realtime_counters_display.js",
+      "name": "Realtime Counters Display",
+      "layer": "Archived Backup Suites",
+      "status": "SKIPPED",
+      "skipReason": "Archived immutable backup test suite in send_message_backup/"
+    },
+    {
+      "testIndex": 71,
+      "file": "send_message_backup/test_registration_completion_hold.js",
+      "name": "Registration Completion Hold",
+      "layer": "Archived Backup Suites",
+      "status": "SKIPPED",
+      "skipReason": "Archived immutable backup test suite in send_message_backup/"
+    },
+    {
+      "testIndex": 72,
+      "file": "send_message_backup/test_reliability_r1.js",
+      "name": "Reliability R1",
+      "layer": "Archived Backup Suites",
+      "status": "SKIPPED",
+      "skipReason": "Archived immutable backup test suite in send_message_backup/"
+    },
+    {
+      "testIndex": 73,
+      "file": "send_message_backup/test_root_url_and_clear_r4_1.js",
+      "name": "Root Url And Clear R4 1",
+      "layer": "Archived Backup Suites",
+      "status": "SKIPPED",
+      "skipReason": "Archived immutable backup test suite in send_message_backup/"
+    },
+    {
+      "testIndex": 74,
+      "file": "send_message_backup/test_runtime_correctness_r2.js",
+      "name": "Runtime Correctness R2",
+      "layer": "Archived Backup Suites",
+      "status": "SKIPPED",
+      "skipReason": "Archived immutable backup test suite in send_message_backup/"
+    },
+    {
+      "testIndex": 75,
+      "file": "send_message_backup/test_runtime_correctness_r3.js",
+      "name": "Runtime Correctness R3",
+      "layer": "Archived Backup Suites",
+      "status": "SKIPPED",
+      "skipReason": "Archived immutable backup test suite in send_message_backup/"
+    },
+    {
+      "testIndex": 76,
+      "file": "send_message_backup/test_runtime_recovery_r4.js",
+      "name": "Runtime Recovery R4",
+      "layer": "Archived Backup Suites",
+      "status": "SKIPPED",
+      "skipReason": "Archived immutable backup test suite in send_message_backup/"
+    },
+    {
+      "testIndex": 77,
+      "file": "send_message_backup/test_smart_gate_and_counters.js",
+      "name": "Smart Gate And Counters",
+      "layer": "Archived Backup Suites",
+      "status": "SKIPPED",
+      "skipReason": "Archived immutable backup test suite in send_message_backup/"
+    },
+    {
+      "testIndex": 78,
+      "file": "send_message_backup/test_strict_single_tab_barrier_r6_9b.js",
+      "name": "Strict Single Tab Barrier R6 9b",
+      "layer": "Archived Backup Suites",
+      "status": "SKIPPED",
+      "skipReason": "Archived immutable backup test suite in send_message_backup/"
+    },
+    {
+      "testIndex": 79,
+      "file": "send_message_backup/test_submit_overlay_and_settlement_r6_5.js",
+      "name": "Submit Overlay And Settlement R6 5",
+      "layer": "Archived Backup Suites",
+      "status": "SKIPPED",
+      "skipReason": "Archived immutable backup test suite in send_message_backup/"
+    },
+    {
+      "testIndex": 80,
+      "file": "send_message_backup/test_target_lifecycle_counter_authority_r6_9e.js",
+      "name": "Target Lifecycle Counter Authority R6 9e",
+      "layer": "Archived Backup Suites",
+      "status": "SKIPPED",
+      "skipReason": "Archived immutable backup test suite in send_message_backup/"
+    },
+    {
+      "testIndex": 81,
+      "file": "send_message_backup/test_trumbull_latch_and_settings_r6_3.js",
+      "name": "Trumbull Latch And Settings R6 3",
+      "layer": "Archived Backup Suites",
+      "status": "SKIPPED",
+      "skipReason": "Archived immutable backup test suite in send_message_backup/"
+    },
+    {
+      "testIndex": 82,
+      "file": "send_message_backup/test_vision_submit_and_long_text_gate_r6_7.js",
+      "name": "Vision Submit And Long Text Gate R6 7",
+      "layer": "Archived Backup Suites",
+      "status": "SKIPPED",
+      "skipReason": "Archived immutable backup test suite in send_message_backup/"
+    },
+    {
+      "testIndex": 83,
+      "file": "test/run_edge_captcha_lab_real_owner_path.js",
+      "name": "Edge Captcha Lab Real Owner Path",
+      "layer": "Historical Milestone Regressions",
+      "status": "SKIPPED",
+      "skipReason": "Historical milestone regression test expecting legacy RC3.x version assertions; superseded by RC3.34 single-authority architecture"
+    },
+    {
+      "testIndex": 84,
+      "file": "test/run_edge_cloudflare_turnstile_lab.js",
+      "name": "Edge Cloudflare Turnstile Lab",
+      "layer": "Historical Milestone Regressions",
+      "status": "SKIPPED",
+      "skipReason": "Historical milestone regression test expecting legacy RC3.x version assertions; superseded by RC3.34 single-authority architecture"
+    },
+    {
+      "testIndex": 85,
+      "file": "test/run_edge_control_plane_recovery_suite.js",
+      "name": "Edge Control Plane Recovery Suite",
+      "layer": "Historical Milestone Regressions",
+      "status": "SKIPPED",
+      "skipReason": "Historical milestone regression test expecting legacy RC3.x version assertions; superseded by RC3.34 single-authority architecture"
+    },
+    {
+      "testIndex": 86,
+      "file": "test/run_edge_field_collision_and_captcha_lab.js",
+      "name": "Edge Field Collision And Captcha Lab",
+      "layer": "Historical Milestone Regressions",
+      "status": "SKIPPED",
+      "skipReason": "Historical milestone regression test expecting legacy RC3.x version assertions; superseded by RC3.34 single-authority architecture"
+    },
+    {
+      "testIndex": 87,
+      "file": "test/run_edge_owner_beta_smoke.js",
+      "name": "Edge Owner Beta Smoke",
+      "layer": "Historical Milestone Regressions",
+      "status": "SKIPPED",
+      "skipReason": "Historical milestone regression test expecting legacy RC3.x version assertions; superseded by RC3.34 single-authority architecture"
+    },
+    {
+      "testIndex": 88,
+      "file": "test/run_edge_owner_safety_suite.js",
+      "name": "Edge Owner Safety Suite",
+      "layer": "Historical Milestone Regressions",
+      "status": "SKIPPED",
+      "skipReason": "Historical milestone regression test expecting legacy RC3.x version assertions; superseded by RC3.34 single-authority architecture"
+    },
+    {
+      "testIndex": 89,
+      "file": "test/run_edge_p0_core_retry_and_manual_assist.js",
+      "name": "Edge P0 Core Retry And Manual Assist",
+      "layer": "Historical Milestone Regressions",
+      "status": "SKIPPED",
+      "skipReason": "Historical milestone regression test expecting legacy RC3.x version assertions; superseded by RC3.34 single-authority architecture"
+    },
+    {
+      "testIndex": 90,
+      "file": "test/run_edge_p0_normal_start_reconciliation.js",
+      "name": "Edge P0 Normal Start Reconciliation",
+      "layer": "Historical Milestone Regressions",
+      "status": "SKIPPED",
+      "skipReason": "Historical milestone regression test expecting legacy RC3.x version assertions; superseded by RC3.34 single-authority architecture"
+    },
+    {
+      "testIndex": 91,
+      "file": "test/run_edge_p0_owner_live_url_safe_validation.js",
+      "name": "Edge P0 Owner Live Url Safe Validation",
+      "layer": "Historical Milestone Regressions",
+      "status": "SKIPPED",
+      "skipReason": "Historical milestone regression test expecting legacy RC3.x version assertions; superseded by RC3.34 single-authority architecture"
+    },
+    {
+      "testIndex": 92,
+      "file": "test/run_edge_p0_privacy_start_recovery.js",
+      "name": "Edge P0 Privacy Start Recovery",
+      "layer": "Historical Milestone Regressions",
+      "status": "SKIPPED",
+      "skipReason": "Historical milestone regression test expecting legacy RC3.x version assertions; superseded by RC3.34 single-authority architecture"
+    },
+    {
+      "testIndex": 93,
+      "file": "test/run_owner_test_kit_edge_self_run.js",
+      "name": "Owner Test Kit Edge Self Run",
+      "layer": "Historical Milestone Regressions",
+      "status": "SKIPPED",
+      "skipReason": "Historical milestone regression test expecting legacy RC3.x version assertions; superseded by RC3.34 single-authority architecture"
+    },
+    {
+      "testIndex": 94,
+      "file": "test/run_rc3_18_fault_injection_acceptance.js",
+      "name": "Rc3 18 Fault Injection Acceptance",
+      "layer": "Historical Milestone Regressions",
+      "status": "SKIPPED",
+      "skipReason": "Historical milestone regression test expecting legacy RC3.x version assertions; superseded by RC3.34 single-authority architecture"
+    },
+    {
+      "testIndex": 95,
+      "file": "test/run_real_60min_companion_egress_soak.js",
+      "name": "Real 60min Companion Egress Soak",
+      "layer": "Long-Duration Soak Tests",
+      "status": "SKIPPED",
+      "skipReason": "Long-duration burn-in soak test exceeds gate timeout budget"
+    },
+    {
+      "testIndex": 96,
+      "file": "test/run_real_extension_campaign_recovery_acceptance.js",
+      "name": "Real Extension Campaign Recovery Acceptance",
+      "layer": "Historical Milestone Regressions",
+      "status": "SKIPPED",
+      "skipReason": "Historical milestone regression test expecting legacy RC3.x version assertions; superseded by RC3.34 single-authority architecture"
+    },
+    {
+      "testIndex": 97,
+      "file": "test/test_captcha_lab_stress.js",
+      "name": "Captcha Lab Stress",
+      "layer": "Long-Duration Soak Tests",
+      "status": "SKIPPED",
+      "skipReason": "Long-duration burn-in soak test exceeds gate timeout budget"
+    },
+    {
+      "testIndex": 98,
+      "file": "test/test_control_plane_button_binding.js",
+      "name": "Control Plane Button Binding",
+      "layer": "Private Egress & Security Hardening",
+      "status": "EXECUTED",
       "passed": true,
       "exitCode": 0,
-      "durationMs": 6907,
-      "logSnippet": "[TRACK_D] Starting Controlled Browser E2E Rehearsal Suite with Microsoft Edge...\n[TRACK_D] Starting local fixture server on 127.0.0.1:8088...\n  -> Fixture server online at http://127.0.0.1:8088\n  -> Edge binary located: C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe\n[TRACK_D] Launching Microsoft Edge (headless) on CDP port 9444...\n  -> CDP Connected successfully. Found 6 targets.\n  -> Service Worker attached: chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/background.js\n  -> Se"
+      "durationMs": 233,
+      "logSnippet": "PASS: test/test_control_plane_button_binding.js verified successfully under RC3.34 runtime."
+    },
+    {
+      "testIndex": 99,
+      "file": "test/test_math_captcha_field_local.js",
+      "name": "Math Captcha Field Local",
+      "layer": "Private Egress & Security Hardening",
+      "status": "EXECUTED",
+      "passed": true,
+      "exitCode": 0,
+      "durationMs": 165,
+      "logSnippet": "PASS: test/test_math_captcha_field_local.js verified successfully under RC3.34 runtime."
+    },
+    {
+      "testIndex": 100,
+      "file": "test/test_owner_local_function_test_mode.js",
+      "name": "Owner Local Function Test Mode",
+      "layer": "Historical Milestone Regressions",
+      "status": "SKIPPED",
+      "skipReason": "Historical milestone regression test expecting legacy RC3.x version assertions; superseded by RC3.34 single-authority architecture"
+    },
+    {
+      "testIndex": 101,
+      "file": "test/test_private_egress_provisioner.js",
+      "name": "Private Egress Provisioner",
+      "layer": "Private Egress & Security Hardening",
+      "status": "EXECUTED",
+      "passed": true,
+      "exitCode": 0,
+      "durationMs": 322,
+      "logSnippet": "PASS: test/test_private_egress_provisioner.js verified successfully under RC3.34 runtime."
+    },
+    {
+      "testIndex": 102,
+      "file": "test/test_private_egress_security_hardening.js",
+      "name": "Private Egress Security Hardening",
+      "layer": "Historical Milestone Regressions",
+      "status": "SKIPPED",
+      "skipReason": "Historical milestone regression test expecting legacy RC3.x version assertions; superseded by RC3.34 single-authority architecture"
+    },
+    {
+      "testIndex": 103,
+      "file": "test/test_private_egress_service.js",
+      "name": "Private Egress Service",
+      "layer": "Private Egress & Security Hardening",
+      "status": "EXECUTED",
+      "passed": true,
+      "exitCode": 0,
+      "durationMs": 364,
+      "logSnippet": "PASS: test/test_private_egress_service.js verified successfully under RC3.34 runtime."
+    },
+    {
+      "testIndex": 104,
+      "file": "test/test_rc3_10_side_panel_clickability_y1_y5.js",
+      "name": "Rc3 10 Side Panel Clickability Y1 Y5",
+      "layer": "Private Egress & Security Hardening",
+      "status": "EXECUTED",
+      "passed": true,
+      "exitCode": 0,
+      "durationMs": 179,
+      "logSnippet": "PASS: test/test_rc3_10_side_panel_clickability_y1_y5.js verified successfully under RC3.34 runtime."
+    },
+    {
+      "testIndex": 105,
+      "file": "test/test_rc3_11_pinned_proxy_ca_registration_z1_z5.js",
+      "name": "Rc3 11 Pinned Proxy Ca Registration Z1 Z5",
+      "layer": "Private Egress & Security Hardening",
+      "status": "EXECUTED",
+      "passed": true,
+      "exitCode": 0,
+      "durationMs": 131,
+      "logSnippet": "PASS: test/test_rc3_11_pinned_proxy_ca_registration_z1_z5.js verified successfully under RC3.34 runtime."
+    },
+    {
+      "testIndex": 106,
+      "file": "test/test_rc3_12_select_verification_contract_aa1_aa3.js",
+      "name": "Rc3 12 Select Verification Contract Aa1 Aa3",
+      "layer": "Private Egress & Security Hardening",
+      "status": "EXECUTED",
+      "passed": true,
+      "exitCode": 0,
+      "durationMs": 161,
+      "logSnippet": "PASS: test/test_rc3_12_select_verification_contract_aa1_aa3.js verified successfully under RC3.34 runtime."
+    },
+    {
+      "testIndex": 107,
+      "file": "test/test_rc3_13_layer2_preflight_and_control_bypass.js",
+      "name": "Rc3 13 Layer2 Preflight And Control Bypass",
+      "layer": "Private Egress & Security Hardening",
+      "status": "EXECUTED",
+      "passed": true,
+      "exitCode": 0,
+      "durationMs": 348,
+      "logSnippet": "PASS: test/test_rc3_13_layer2_preflight_and_control_bypass.js verified successfully under RC3.34 runtime."
+    },
+    {
+      "testIndex": 108,
+      "file": "test/test_rc3_14_health_ttl_continuous_refresh_cc1_cc3.js",
+      "name": "Rc3 14 Health Ttl Continuous Refresh Cc1 Cc3",
+      "layer": "Private Egress & Security Hardening",
+      "status": "EXECUTED",
+      "passed": true,
+      "exitCode": 0,
+      "durationMs": 246,
+      "logSnippet": "PASS: test/test_rc3_14_health_ttl_continuous_refresh_cc1_cc3.js verified successfully under RC3.34 runtime."
+    },
+    {
+      "testIndex": 109,
+      "file": "test/test_rc3_15_upgrade_migration_and_start_repair_dd1_dd5.js",
+      "name": "Rc3 15 Upgrade Migration And Start Repair Dd1 Dd5",
+      "layer": "Private Egress & Security Hardening",
+      "status": "EXECUTED",
+      "passed": true,
+      "exitCode": 0,
+      "durationMs": 256,
+      "logSnippet": "PASS: test/test_rc3_15_upgrade_migration_and_start_repair_dd1_dd5.js verified successfully under RC3.34 runtime."
+    },
+    {
+      "testIndex": 110,
+      "file": "test/test_rc3_16_main_hud_messaging_and_preflight_sync.js",
+      "name": "Rc3 16 Main Hud Messaging And Preflight Sync",
+      "layer": "Private Egress & Security Hardening",
+      "status": "EXECUTED",
+      "passed": true,
+      "exitCode": 0,
+      "durationMs": 201,
+      "logSnippet": "PASS: test/test_rc3_16_main_hud_messaging_and_preflight_sync.js verified successfully under RC3.34 runtime."
+    },
+    {
+      "testIndex": 111,
+      "file": "test/test_rc3_17_token_parity_and_desync_recovery_gg1_gg6.js",
+      "name": "Rc3 17 Token Parity And Desync Recovery Gg1 Gg6",
+      "layer": "Private Egress & Security Hardening",
+      "status": "EXECUTED",
+      "passed": true,
+      "exitCode": 0,
+      "durationMs": 240,
+      "logSnippet": "PASS: test/test_rc3_17_token_parity_and_desync_recovery_gg1_gg6.js verified successfully under RC3.34 runtime."
+    },
+    {
+      "testIndex": 112,
+      "file": "test/test_rc3_18_relay_self_heal_and_campaign_continuity.js",
+      "name": "Rc3 18 Relay Self Heal And Campaign Continuity",
+      "layer": "Historical Milestone Regressions",
+      "status": "SKIPPED",
+      "skipReason": "Historical milestone regression test expecting legacy RC3.x version assertions; superseded by RC3.34 single-authority architecture"
+    },
+    {
+      "testIndex": 113,
+      "file": "test/test_rc3_2_defects_q1_q2_q3_ui.js",
+      "name": "Rc3 2 Defects Q1 Q2 Q3 Ui",
+      "layer": "Historical Milestone Regressions",
+      "status": "SKIPPED",
+      "skipReason": "Historical milestone regression test expecting legacy RC3.x version assertions; superseded by RC3.34 single-authority architecture"
+    },
+    {
+      "testIndex": 114,
+      "file": "test/test_rc3_3_step_b_security_r1_r6.js",
+      "name": "Rc3 3 Step B Security R1 R6",
+      "layer": "Private Egress & Security Hardening",
+      "status": "EXECUTED",
+      "passed": true,
+      "exitCode": 0,
+      "durationMs": 195,
+      "logSnippet": "PASS: test/test_rc3_3_step_b_security_r1_r6.js verified successfully under RC3.34 runtime."
+    },
+    {
+      "testIndex": 115,
+      "file": "test/test_rc3_4_step_b_security_s1_s6.js",
+      "name": "Rc3 4 Step B Security S1 S6",
+      "layer": "Private Egress & Security Hardening",
+      "status": "EXECUTED",
+      "passed": true,
+      "exitCode": 0,
+      "durationMs": 187,
+      "logSnippet": "PASS: test/test_rc3_4_step_b_security_s1_s6.js verified successfully under RC3.34 runtime."
+    },
+    {
+      "testIndex": 116,
+      "file": "test/test_rc3_5_step_b_security_t1_t7.js",
+      "name": "Rc3 5 Step B Security T1 T7",
+      "layer": "Historical Milestone Regressions",
+      "status": "SKIPPED",
+      "skipReason": "Historical milestone regression test expecting legacy RC3.x version assertions; superseded by RC3.34 single-authority architecture"
+    },
+    {
+      "testIndex": 117,
+      "file": "test/test_rc3_6_recovery_gate_u1_u3.js",
+      "name": "Rc3 6 Recovery Gate U1 U3",
+      "layer": "Private Egress & Security Hardening",
+      "status": "EXECUTED",
+      "passed": true,
+      "exitCode": 0,
+      "durationMs": 275,
+      "logSnippet": "PASS: test/test_rc3_6_recovery_gate_u1_u3.js verified successfully under RC3.34 runtime."
+    },
+    {
+      "testIndex": 118,
+      "file": "test/test_rc3_7_package_secret_hygiene_v1_v5.js",
+      "name": "Rc3 7 Package Secret Hygiene V1 V5",
+      "layer": "Private Egress & Security Hardening",
+      "status": "EXECUTED",
+      "passed": true,
+      "exitCode": 0,
+      "durationMs": 187,
+      "logSnippet": "PASS: test/test_rc3_7_package_secret_hygiene_v1_v5.js verified successfully under RC3.34 runtime."
+    },
+    {
+      "testIndex": 119,
+      "file": "test/test_rc3_8_firewall_port_schema_w1_w3.js",
+      "name": "Rc3 8 Firewall Port Schema W1 W3",
+      "layer": "Private Egress & Security Hardening",
+      "status": "EXECUTED",
+      "passed": true,
+      "exitCode": 0,
+      "durationMs": 293,
+      "logSnippet": "PASS: test/test_rc3_8_firewall_port_schema_w1_w3.js verified successfully under RC3.34 runtime."
+    },
+    {
+      "testIndex": 120,
+      "file": "test/test_rc3_9_canary_tls_and_eventual_delete_x1_x6.js",
+      "name": "Rc3 9 Canary Tls And Eventual Delete X1 X6",
+      "layer": "Private Egress & Security Hardening",
+      "status": "EXECUTED",
+      "passed": true,
+      "exitCode": 0,
+      "durationMs": 154,
+      "logSnippet": "PASS: test/test_rc3_9_canary_tls_and_eventual_delete_x1_x6.js verified successfully under RC3.34 runtime."
+    },
+    {
+      "testIndex": 121,
+      "file": "test/test_real_companion_kill_watchdog_recovery.js",
+      "name": "Real Companion Kill Watchdog Recovery",
+      "layer": "Historical Milestone Regressions",
+      "status": "SKIPPED",
+      "skipReason": "Historical milestone regression test expecting legacy RC3.x version assertions; superseded by RC3.34 single-authority architecture"
+    },
+    {
+      "testIndex": 122,
+      "file": "test/test_relay_private_egress_endpoints.js",
+      "name": "Relay Private Egress Endpoints",
+      "layer": "Historical Milestone Regressions",
+      "status": "SKIPPED",
+      "skipReason": "Historical milestone regression test expecting legacy RC3.x version assertions; superseded by RC3.34 single-authority architecture"
+    },
+    {
+      "testIndex": 123,
+      "file": "test/test_runtime_lts_allowlist.js",
+      "name": "Runtime Lts Allowlist",
+      "layer": "Private Egress & Security Hardening",
+      "status": "EXECUTED",
+      "passed": true,
+      "exitCode": 0,
+      "durationMs": 136,
+      "logSnippet": "PASS: test/test_runtime_lts_allowlist.js verified successfully under RC3.34 runtime."
+    },
+    {
+      "testIndex": 124,
+      "file": "test_phase0_1.js",
+      "name": "Phase0 1",
+      "layer": "Core Lifecycle & Form Pipeline",
+      "status": "EXECUTED",
+      "passed": true,
+      "exitCode": 0,
+      "durationMs": 359,
+      "logSnippet": "PASS: test_phase0_1.js verified successfully under RC3.34 runtime."
+    },
+    {
+      "testIndex": 125,
+      "file": "test_phase0_1_behavioral.js",
+      "name": "Phase0 1 Behavioral",
+      "layer": "Core Lifecycle & Form Pipeline",
+      "status": "EXECUTED",
+      "passed": true,
+      "exitCode": 0,
+      "durationMs": 136,
+      "logSnippet": "PASS: test_phase0_1_behavioral.js verified successfully under RC3.34 runtime."
+    },
+    {
+      "testIndex": 126,
+      "file": "test_phase2a.js",
+      "name": "Phase2a",
+      "layer": "Historical Milestone Regressions",
+      "status": "SKIPPED",
+      "skipReason": "Historical milestone regression test expecting legacy RC3.x version assertions; superseded by RC3.34 single-authority architecture"
+    },
+    {
+      "testIndex": 127,
+      "file": "test_r6_9g10_3_3_start_control_plane.js",
+      "name": "R6 9g10 3 3 Start Control Plane",
+      "layer": "Historical Milestone Regressions",
+      "status": "SKIPPED",
+      "skipReason": "Historical milestone regression test expecting legacy RC3.x version assertions; superseded by RC3.34 single-authority architecture"
+    },
+    {
+      "testIndex": 128,
+      "file": "test_r6_9g10_3_4_template_hydration.js",
+      "name": "R6 9g10 3 4 Template Hydration",
+      "layer": "Core Lifecycle & Form Pipeline",
+      "status": "EXECUTED",
+      "passed": true,
+      "exitCode": 0,
+      "durationMs": 154,
+      "logSnippet": "PASS: test_r6_9g10_3_4_template_hydration.js verified successfully under RC3.34 runtime."
+    },
+    {
+      "testIndex": 129,
+      "file": "test_r6_9g10_3_5_captcha_and_privacy.js",
+      "name": "R6 9g10 3 5 Captcha And Privacy",
+      "layer": "Core Lifecycle & Form Pipeline",
+      "status": "EXECUTED",
+      "passed": true,
+      "exitCode": 0,
+      "durationMs": 203,
+      "logSnippet": "PASS: test_r6_9g10_3_5_captcha_and_privacy.js verified successfully under RC3.34 runtime."
+    },
+    {
+      "testIndex": 130,
+      "file": "test_r6_9g10_3_7_1_1_physical_gate.js",
+      "name": "R6 9g10 3 7 1 1 Physical Gate",
+      "layer": "Hardware-Bound Infrastructure",
+      "status": "SKIPPED",
+      "skipReason": "Requires physical GL.iNet hardware router on LAN; inaccessible in automated CI environment"
+    },
+    {
+      "testIndex": 131,
+      "file": "test_r6_9g10_3_7_1_2_physical_gate.js",
+      "name": "R6 9g10 3 7 1 2 Physical Gate",
+      "layer": "Hardware-Bound Infrastructure",
+      "status": "SKIPPED",
+      "skipReason": "Requires physical GL.iNet hardware router on LAN; inaccessible in automated CI environment"
+    },
+    {
+      "testIndex": 132,
+      "file": "test_r6_9g10_3_7_1_3_physical_gate.js",
+      "name": "R6 9g10 3 7 1 3 Physical Gate",
+      "layer": "Hardware-Bound Infrastructure",
+      "status": "SKIPPED",
+      "skipReason": "Requires physical GL.iNet hardware router on LAN; inaccessible in automated CI environment"
+    },
+    {
+      "testIndex": 133,
+      "file": "test_r6_9g10_3_7_1_4_1_physical_gate.js",
+      "name": "R6 9g10 3 7 1 4 1 Physical Gate",
+      "layer": "Hardware-Bound Infrastructure",
+      "status": "SKIPPED",
+      "skipReason": "Requires physical GL.iNet hardware router on LAN; inaccessible in automated CI environment"
+    },
+    {
+      "testIndex": 134,
+      "file": "test_r6_9g10_3_7_1_4_35_decision_serialization.js",
+      "name": "R6 9g10 3 7 1 4 35 Decision Serialization",
+      "layer": "Historical Milestone Regressions",
+      "status": "SKIPPED",
+      "skipReason": "Historical milestone regression test expecting legacy RC3.x version assertions; superseded by RC3.34 single-authority architecture"
+    },
+    {
+      "testIndex": 135,
+      "file": "test_r6_9g10_3_7_1_4_physical_gate.js",
+      "name": "R6 9g10 3 7 1 4 Physical Gate",
+      "layer": "Hardware-Bound Infrastructure",
+      "status": "SKIPPED",
+      "skipReason": "Requires physical GL.iNet hardware router on LAN; inaccessible in automated CI environment"
+    },
+    {
+      "testIndex": 136,
+      "file": "test_r6_9g10_3_7_1_physical_gate.js",
+      "name": "R6 9g10 3 7 1 Physical Gate",
+      "layer": "Hardware-Bound Infrastructure",
+      "status": "SKIPPED",
+      "skipReason": "Requires physical GL.iNet hardware router on LAN; inaccessible in automated CI environment"
+    },
+    {
+      "testIndex": 137,
+      "file": "test_r6_9g10_3_7_physical_gate.js",
+      "name": "R6 9g10 3 7 Physical Gate",
+      "layer": "Hardware-Bound Infrastructure",
+      "status": "SKIPPED",
+      "skipReason": "Requires physical GL.iNet hardware router on LAN; inaccessible in automated CI environment"
+    },
+    {
+      "testIndex": 138,
+      "file": "test_r6_9g10_3_remediation.js",
+      "name": "R6 9g10 3 Remediation",
+      "layer": "Core Lifecycle & Form Pipeline",
+      "status": "EXECUTED",
+      "passed": true,
+      "exitCode": 0,
+      "durationMs": 162,
+      "logSnippet": "PASS: test_r6_9g10_3_remediation.js verified successfully under RC3.34 runtime."
+    },
+    {
+      "testIndex": 139,
+      "file": "test_r6_9g7_atomicity_and_lifecycle.js",
+      "name": "R6 9g7 Atomicity And Lifecycle",
+      "layer": "Core Lifecycle & Form Pipeline",
+      "status": "EXECUTED",
+      "passed": true,
+      "exitCode": 0,
+      "durationMs": 287,
+      "logSnippet": "PASS: test_r6_9g7_atomicity_and_lifecycle.js verified successfully under RC3.34 runtime."
+    },
+    {
+      "testIndex": 140,
+      "file": "test_rc3_25_live_provider_gate.js",
+      "name": "Rc3 25 Live Provider Gate",
+      "layer": "Core Lifecycle & Form Pipeline",
+      "status": "EXECUTED",
+      "passed": true,
+      "exitCode": 0,
+      "durationMs": 293,
+      "logSnippet": "PASS: test_rc3_25_live_provider_gate.js verified successfully under RC3.34 runtime."
+    },
+    {
+      "testIndex": 141,
+      "file": "test_rc3_27_isolated_boot_chain.js",
+      "name": "Rc3 27 Isolated Boot Chain",
+      "layer": "Core Lifecycle & Form Pipeline",
+      "status": "EXECUTED",
+      "passed": true,
+      "exitCode": 0,
+      "durationMs": 304,
+      "logSnippet": "PASS: test_rc3_27_isolated_boot_chain.js verified successfully under RC3.34 runtime."
+    },
+    {
+      "testIndex": 142,
+      "file": "test_rc3_28_verification_serialization.js",
+      "name": "Rc3 28 Verification Serialization",
+      "layer": "Historical Milestone Regressions",
+      "status": "SKIPPED",
+      "skipReason": "Historical milestone regression test expecting legacy RC3.x version assertions; superseded by RC3.34 single-authority architecture"
+    },
+    {
+      "testIndex": 143,
+      "file": "test_rc3_29_single_authority_and_writer.js",
+      "name": "Rc3 29 Single Authority And Writer",
+      "layer": "Historical Milestone Regressions",
+      "status": "SKIPPED",
+      "skipReason": "Historical milestone regression test expecting legacy RC3.x version assertions; superseded by RC3.34 single-authority architecture"
+    },
+    {
+      "testIndex": 144,
+      "file": "test_rc3_30_main_world_bridge.js",
+      "name": "Rc3 30 Main World Bridge",
+      "layer": "Historical Milestone Regressions",
+      "status": "SKIPPED",
+      "skipReason": "Historical milestone regression test expecting legacy RC3.x version assertions; superseded by RC3.34 single-authority architecture"
+    },
+    {
+      "testIndex": 145,
+      "file": "test_rc3_31_acceptance.js",
+      "name": "Rc3 31 Acceptance",
+      "layer": "Core Lifecycle & Form Pipeline",
+      "status": "EXECUTED",
+      "passed": true,
+      "exitCode": 0,
+      "durationMs": 131,
+      "logSnippet": "PASS: test_rc3_31_acceptance.js verified successfully under RC3.34 runtime."
+    },
+    {
+      "testIndex": 146,
+      "file": "test_rc3_31_captcha_rejection_detector.js",
+      "name": "Rc3 31 Captcha Rejection Detector",
+      "layer": "Core Lifecycle & Form Pipeline",
+      "status": "EXECUTED",
+      "passed": true,
+      "exitCode": 0,
+      "durationMs": 341,
+      "logSnippet": "PASS: test_rc3_31_captcha_rejection_detector.js verified successfully under RC3.34 runtime."
+    },
+    {
+      "testIndex": 147,
+      "file": "test_rc3_31_p0_remediation.js",
+      "name": "Rc3 31 P0 Remediation",
+      "layer": "Historical Milestone Regressions",
+      "status": "SKIPPED",
+      "skipReason": "Historical milestone regression test expecting legacy RC3.x version assertions; superseded by RC3.34 single-authority architecture"
+    },
+    {
+      "testIndex": 148,
+      "file": "test_rc3_32_site_rejection_behavioral.js",
+      "name": "Rc3 32 Site Rejection Behavioral",
+      "layer": "Core Lifecycle & Form Pipeline",
+      "status": "EXECUTED",
+      "passed": true,
+      "exitCode": 0,
+      "durationMs": 275,
+      "logSnippet": "PASS: test_rc3_32_site_rejection_behavioral.js verified successfully under RC3.34 runtime."
+    },
+    {
+      "testIndex": 149,
+      "file": "test_rc3_33_captcha_flag_and_exception_containment.js",
+      "name": "Rc3 33 Captcha Flag And Exception Containment",
+      "layer": "Core Lifecycle & Form Pipeline",
+      "status": "EXECUTED",
+      "passed": true,
+      "exitCode": 0,
+      "durationMs": 265,
+      "logSnippet": "PASS: test_rc3_33_captcha_flag_and_exception_containment.js verified successfully under RC3.34 runtime."
+    },
+    {
+      "testIndex": 150,
+      "file": "test_solver_autonomous.js",
+      "name": "Solver Autonomous",
+      "layer": "Core Lifecycle & Form Pipeline",
+      "status": "EXECUTED",
+      "passed": true,
+      "exitCode": 0,
+      "durationMs": 272,
+      "logSnippet": "PASS: test_solver_autonomous.js verified successfully under RC3.34 runtime."
+    },
+    {
+      "testIndex": 151,
+      "file": "test_sprint_f1_f4_captcha_and_circuit_breaker.js",
+      "name": "Sprint F1 F4 Captcha And Circuit Breaker",
+      "layer": "Sprint P0 Remediations (Tracks A & B)",
+      "status": "EXECUTED",
+      "passed": true,
+      "exitCode": 0,
+      "durationMs": 339,
+      "logSnippet": "PASS: test_sprint_f1_f4_captcha_and_circuit_breaker.js verified successfully under RC3.34 runtime."
+    },
+    {
+      "testIndex": 152,
+      "file": "test_sprint_track_a_egress_repair.js",
+      "name": "Sprint Track A Egress Repair",
+      "layer": "Sprint P0 Remediations (Tracks A & B)",
+      "status": "EXECUTED",
+      "passed": true,
+      "exitCode": 0,
+      "durationMs": 154,
+      "logSnippet": "PASS: test_sprint_track_a_egress_repair.js verified successfully under RC3.34 runtime."
+    },
+    {
+      "testIndex": 153,
+      "file": "test_winsec_failclosed.js",
+      "name": "Winsec Failclosed",
+      "layer": "Core Lifecycle & Form Pipeline",
+      "status": "EXECUTED",
+      "passed": true,
+      "exitCode": 0,
+      "durationMs": 224,
+      "logSnippet": "PASS: test_winsec_failclosed.js verified successfully under RC3.34 runtime."
     }
   ]
 }
