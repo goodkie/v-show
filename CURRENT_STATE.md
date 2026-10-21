@@ -4,101 +4,92 @@
 - Protocol: OCA-DEV-1.4
 - Project ID: xpider-autoform-sender-pro
 - Workspace: E:\vivpr\ai\extension-form-sender
-- Authority: goodkie/v-show Issue #6 (Responding to Directives #6310936412, #6311145870, #6313213003, #6313430588, #6314200711, Independent Audit #6314729749, and Audit #6315546775)
+- Authority: goodkie/v-show Issue #6 (Responding to Architectural Decision #6321980169)
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-21.84
-- Authority Cursor: 6317071641
-- Last Directive / Audit: `[CHATGPT][INDEPENDENT-AUDIT][extension-form-sender][RC3.36-CURRENT-FROZEN-BYTES-ACCEPTED-FOR-CREDENTIALLED-EGRESS-REPAIR-OWNER-CAPTCHA-SMOKE-STILL-HOLD] Comment #6317071641`
-- Last Receipt: `[ANTIGRAVITY][PROGRESS-RECEIPT][extension-form-sender][RC3.36-OWNER-REPAIR-EXECUTED-RESULT-CAPTURED] Comment #6321916592`
-- Build ID: `R6.9G.10.3.7.1.4.50-20261021-FINAL-SPRINT-RC3.36`
-- Current Candidate Release Tag: `v6.9g.10.3-rc3.36.7.1.4.50`
-- Functional Snapshot Head Commit (F): `8274ebdea8c9f5475ece2cc214be07848870c17a` (`8274ebde`)
-- Provenance Commit (P): `c9f11b64d72e3edad3be73f56dbabf106e19c862` (`c9f11b64`)
-- Rollback Anchor: `44ab031d23614aebe0e9dae580e0c904fa1e2b4f` (RC3.35)
-- Previous Functional Restore Point: `44ab031d23614aebe0e9dae580e0c904fa1e2b4f` (RC3.35)
-- Release Asset Zip: `XPIDER_R6.9G.10.3.7.1.4.50_PRIVATE_EGRESS_RC3.36.zip`
-- Release Asset Size: `45,388,077` bytes
-- Release Asset SHA-256: `4c293693ac01c606bb2bbcb4dcd4d87c9d3f737e13156614c7e14a1ccd48a1f1`
-- Release Asset Hosted URL: `https://github.com/goodkie/v-show/releases/tag/v6.9g.10.3-rc3.36.7.1.4.50`
-- Unpacked Convenience Folder: `XPIDER_R6.9G.10.3.7.1.4.50_PRIVATE_EGRESS_RC3.36`
+- State Rev: 2026-10-21.85
+- Authority Cursor: 6321980169
+- Last Directive / Audit: `[CHATGPT][ARCHITECTURAL-DECISION][extension-form-sender][RC3.36-UFW-LOCKOUT-RECOVER-IN-PLACE-FIRST-BLUE-GREEN-FALLBACK-NO-OWNER-DEBUG] Comment #6321980169`
+- Last Receipt: `[ANTIGRAVITY][BLUE-GREEN-RECEIPT][extension-form-sender][RC3.37-REAL-EGRESS-READY-FOR-SMOKE]`
+- Build ID: `R6.9G.10.3.7.1.4.51-20261021-FINAL-SPRINT-RC3.37`
+- Current Candidate Release Tag: `v6.9g.10.3-rc3.37.7.1.4.51`
+- Functional Snapshot Head Commit (F): `5f2a60bcc8098670ff452bb1fa774900a0be3bfe` (`5f2a60bc`)
+- Provenance Commit (P): `090e35caa59154b4a1599352ef89d81f13bce37b` (`090e35ca`)
+- Rollback Anchor: `0180fd2199b0cbe888dafe6c4644a836894c25f4` (`0180fd21`)
+- Previous Functional Restore Point: `0180fd2199b0cbe888dafe6c4644a836894c25f4` (`0180fd21`)
+- Release Asset Zip: `XPIDER_R6.9G.10.3.7.1.4.51_PRIVATE_EGRESS_RC3.37.zip`
+- Release Asset Size: `45,389,541` bytes
+- Release Asset SHA-256: `9e004402966d4cff2b5b5f800568bf3a1f0cb39908caca7167e8289f9eee4b7a`
+- Release Asset Hosted URL: `https://github.com/goodkie/v-show/releases/tag/v6.9g.10.3-rc3.37.7.1.4.51`
+- Unpacked Convenience Folder: `XPIDER_R6.9G.10.3.7.1.4.51_PRIVATE_EGRESS_RC3.37`
 
 ---
 
-## Final Runtime Gates Audit Verification (G1 - G5)
+## Active Infrastructure & Real Egress Verification
 
-### G1 — Browser Rehearsal with Privacy Relay Enforcement: 100% PASS
-- Executed `test/run_edge_sprint_full_captcha_privacy_relay_rehearsal.js` in Microsoft Edge (CDP 9446).
-- Privacy Relay explicitly ENABLED and enforced:
-  - `enabled: true`, `failClosed: true`, `transportMode: 'PRIVACY_RELAY'`
-  - Managed proxy pointing to `127.0.0.1:18988` (Companion Proxy Gateway)
-- Full 16/16 Section 9 Invariants asserted and verified:
-  1. Form discovery by XPIDER engine (`[FIELD_CLASSIFY]`, `[STAGE] stage=ELIGIBLE_FORM_FOUND`) -> PASS
-  2. Smart field autofill by engine (`[FIELD_ASSIGN✅]`, `[AUTOFILL_RESULT] status=SUCCESS`) -> PASS
-  3. CAPTCHA detection by XPIDER (`[CAPTCHA_DETECTED] stage=WAIT_LOOP type=recaptcha`) -> PASS
-  4. Controlled provider adapter reached (`[CAPTCHA_PROVIDER_SELECT] mode=OWNER_TEST_LOCAL provider=mock_provider`) -> PASS
-  5. Provider token returned to background authority (`[CAPTCHA_TOKEN_RECEIVED] method=mock_provider`) -> PASS
-  6. Dynamic frame selection / apply target (`selectedFrameId=0`, `appliedFrameId=0`, `inventoryCount=1`, widget container verified) -> PASS
-  7. Strict single-writer verified (`mainWorldWriteCount === 1`, duplicate injection rejected with `{ duplicateIgnored: true }`, `duplicateRejections >= 1`) -> PASS
-  8. READY_TO_SUBMIT transition reached (`[READY_TO_SUBMIT]` / bypass verified) -> PASS
-  9. XPIDER orchestrator dispatched submission (`[SUBMIT_TRIGGERED] strategy=requestSubmit`) -> PASS
-  10. Submission outcome verified (`[SUBMIT_VERIFY] decision=CONFIRMED_SUCCESS`) -> PASS
-  11. Downstream CAPTCHA accepted signal confirmed (`[CAPTCHA_VERIFY_SIGNAL]` / `[CAPTCHA_AUTO_SUCCESS]`) -> PASS
-  12. Target 1 settled as CONFIRMED_SUCCESS in HistoryStore -> PASS
-  13. Exactly one settlement recorded in HistoryStore ledger (zero duplicates) -> PASS
-  14. Ledger counter verified (`success=2`, `failure=0`, `skipped=0`) -> PASS
-  15. Target 2 (`contact-standard.html`) processed sequentially and settled SUCCESS -> PASS
-  16. Clean state reset between targets (`[CAPTCHA_STATE_RESET]`) & zero token bleed -> PASS
-- Exit Code: 0 (Total Log: `scratch/test_logs/edge_privacy_relay_e2e_rehearsal.log`).
+### Replacement Droplet (Active Production Node)
+- Provider: DigitalOcean
+- Droplet ID: `611293905`
+- Public IP: `143.198.40.33`
+- Cloud Firewall ID: `d6fd3a95-d9d9-417d-9d27-c6b57e94240a`
+- Transaction Tag: `xpider-tx-mviey6au-2afbc2f1`
+- Region: `tor1` (Toronto, Canada)
+- Tier: `ULTRA_ECONOMY` ($6.00/mo, $0.00893/hr)
+- Pinned Root CA Fingerprint: `65aa0b21e265581e87e744a2f1763dd52a8536ee4be361c186b40cbc22204f70`
+- Pinned Expected Egress Fingerprint: `05b6b53daead49e7`
+- Inbound Security: Port 8443 open in host UFW; Cloud Firewall strictly scopes port 8443 to Owner CIDR `159.26.98.240/32`
+- Post-Bootstrap Invariant: Port 22 SSH completely closed, ephemeral key `60271041` deleted from account and host
+- Decommissioned Resources: Prior Droplet `610408684` and Cloud Firewall `07f9921c-a925-4185-bdfb-366d22e8fb7d` deleted only after replacement node was verified READY
 
-### G2 — NopeCHA Key Status Formalization: DOCUMENTED & DEFERRED TO OWNER SMOKE
-- Comprehensive filesystem grep across all `.json`, `.js`, `.env` files: zero NopeCHA API keys reside in workspace.
-- Per ChatGPT Audit Comment #6315546775 Section G2: Genuinely unavailable external provider credentials are formally documented and deferred *only* as a single check to Owner smoke; zero other engineering or debugging tasks delegated.
-
-### G3 — Fixture Breadth Coverage Matrix: 7/7 SCENARIOS VERIFIED
-1. Provider timeout / config error: `test_rc3_25_live_provider_gate.js` (13/13 PASS; verifies hard wall-clock bounds, AbortController, and terminal settlement without deadlock).
-2. Iframe targeting & frameId parity: `test/run_edge_sprint_full_captcha_privacy_relay_rehearsal.js` (`selectedFrameId === appliedFrameId === 0`, inventory matched).
-3. Turnstile / hCaptcha / reCAPTCHA DOM: `test_r6_9g10_3_5_captcha_and_privacy.js` (15/15 PASS) & `test/run_edge_cloudflare_turnstile_lab.js`.
-4. CAPTCHA rejection heuristics: `test_rc3_31_captcha_rejection_detector.js` (4/4 PASS) & `test_rc3_32_site_rejection_behavioral.js` (4/4 PASS; verifies `CAPTCHA_TOKEN_REJECTED_BY_SITE`).
-5. Generic form validation: `test_phase0_1.js` (PASS) & `test_phase0_1_behavioral.js` (verifies standard required fields, SelectResolver, CheckboxResolver).
-6. Stale / duplicate events & single-writer: `test_rc3_29_single_authority_and_writer.js` (7/7 PASS) & `test_r6_9g7_atomicity_and_lifecycle.js`.
-7. Manual assist fallback once-only: `test/run_edge_p0_core_retry_and_manual_assist.js` & `test_rc3_31_acceptance.js` (23/23 PASS).
-
-### G4 — Bounded Companion Soak & Fault-Injection Suite: 100% PASS
-- `test/test_rc3_18_relay_self_heal_and_campaign_continuity.js`: 5/5 assertions PASSED (100%).
-- `test/run_rc3_18_fault_injection_acceptance.js`: 9/9 assertions PASSED (100%):
-  - Test A: Relay self-healing under upstream disconnects, fail-closed enforcement (HTTP 502), zero DIRECT leak.
-  - Test B: Active form job recovery under companion crash during `CAPTCHA_AUTO_SOLVING`; atomic checkpoint serialization and idempotent resume with zero counter skew.
-  - Test C: Remote droplet zero-mutation invariants preserved.
-- `test/run_rc3_36_bounded_companion_soak.js`:
-  - 60 sustained telemetry cycles against running Companion PID 35184.
-  - 61/60 fail-closed enforcements; 0 direct unproxied leaks.
-  - Stable memory: 46.7MB -> 48.8MB; 0 process restarts; full log in `scratch/test_logs/rc3_36_bounded_soak.log`.
-
-### G5 — Real Egress Candidate Status & Droplet Verification
-- DigitalOcean Droplet ID: `610408684` (IP: `159.203.28.198`, Region: `TOR1`).
-- Post-bootstrap management port invariant: Port 22 (SSH) raw TCP socket probe confirms banner timeout (no SSH identification banner transmitted); ephemeral SSH key was revoked and purged post-bootstrap (0 keys exist on disk in `companion/.ephemeral_ssh_key` or `~/.ssh`); management plane is fully closed.
-- Ingress Port 8443 (TLS Proxy): DigitalOcean Cloud Firewall `07f9921c-a925-4185-bdfb-366d22e8fb7d` enforces perimeter isolation, dropping TLS ServerHello from unwhitelisted source IPs (including local development machine `159.26.98.240` until DO PAT rule update).
-- DigitalOcean Cloud Firewall & PAT Authorization Boundary: Unattended mutation of DO Cloud Firewall without Owner PAT is strictly rejected with HTTP 401 Unauthorized (`api.digitalocean.com/v2/firewalls/...`). Companion `POST /repair-egress` correctly enforces `REMOTE_PROVIDER_AUTH_REQUIRED` (HTTP 400). All DO tokens were scrubbed per Public Release Credential Hygiene Gate (RC3.19.2 closure #6282469999).
-- 100% Fail-Closed Active: Port 18988 returns HTTP 502 Bad Gateway (`PRIVACY_RELAY_FAIL_CLOSED: Relay paused or not verified`) whenever remote egress is unreachable; zero direct or plaintext fallback occurs.
-- Safe In-Place Repair Flow Verified: `test_sprint_track_a_egress_repair.js` (5/5 PASS); Extension UI (`priv-relay-repair-egress-btn`) is wired to update Cloud Firewall `07f9921c-a925-4185-bdfb-366d22e8fb7d` for Owner IP `159.26.98.240/32` upon Owner PAT entry in a single click without droplet recreation.
+### Companion Relay Service State
+- Local Control Plane: `http://127.0.0.1:18989` (authenticated via DPAPI control token)
+- Local Proxy Listener: `127.0.0.1:18988`
+- `relayReady`: `true`
+- `lifecycleState`: `READY`
+- `health`: `HEALTHY`
+- `selectedEgressId`: `do-egress-tor1-611293905`
+- `upstreamTunnelState`: `{"ok": true, "type": "HTTPS_PROXY", "host": "143.198.40.33", "port": 8443}`
+- `remoteEgressReachability`: `{"ok": true, "activeNodeId": "do-egress-tor1-611293905"}`
+- Live Egress Canary Probe (`cloudflare.com/cdn-cgi/trace` through `127.0.0.1:18988`):
+  - HTTP Status: `200 OK`
+  - Observed Egress IP: `143.198.40.33`
+  - Location: `CA` (Canada / Toronto YYZ)
 
 ---
 
-## Current Authority Gate & Owner Action Execution Result
+## Architectural Software Fixes Implemented in RC3.37
 
-Per ChatGPT Independent Audit #6317071641:
-- Software automated gate: **PASS**.
-- Release candidate identity: **PASS** (RC3.36 frozen & immutable).
-- In-Place Repair Execution Report:
-  - Dispatched `POST /repair-egress` to Companion PID 35184 with Owner DigitalOcean PAT.
-  - Step 1 (Validate Token): **PASS** (DO token authenticated successfully).
-  - Step 2 (Verify Droplet): **PASS** (Droplet `610408684` active).
-  - Step 3 (Firewall Inbound Scoping): **PASS** (DO Cloud Firewall `07f9921c-a925-4185-bdfb-366d22e8fb7d` updated to `159.26.98.240/32` for port 8443; port 22 absent; `droplet_ids: [610408684]`).
-  - Step 4 (TLS Probe & Droplet Reboot): Droplet reboot triggered and completed (`Action 3487019109`).
-  - Step 5 (Preflight Canary Check): Resulted in `EGRESS_PROBE_TIMEOUT: Remote egress preflight failed: RELAY_NOT_READY (health: UNREACHABLE)`.
-  - Root Cause: Droplet-internal Linux UFW drops incoming port 8443 traffic from dynamic IPs other than the original bootstrap IP. With ephemeral SSH keys revoked post-bootstrap, internal OS firewall cannot be updated remotely via network.
-- **Protocol Compliance**:
-  - In accordance with Audit #6317071641 directive: *"If the repair returns anything other than REPAIRED_READY, STOP. Do not run CAPTCHA smoke. Capture the visible result/log only."*
-  - Antigravity immediately halted execution.
-  - Final Owner CAPTCHA smoke: **HOLD** pending ChatGPT Independent Audit guidance.
+1. **Host UFW Bootstrap Lockout Architectural Resolution**:
+   - `bootstrap.sh`: Updated from transient Owner IP scoping (`ufw allow from ${XPIDER_OWNER_IP} to any port ${PORT}`) to `ufw allow "${PORT}/tcp"`.
+   - Security Boundary: DigitalOcean Cloud Firewall remains the authoritative dynamic source-CIDR gate for port 8443. Future Owner IP rotations will no longer cause host-level UFW lockouts.
+2. **Explicit Diagnostic Code for UFW Lockout**:
+   - `repairExistingEgress()`: Detects `CLOUD_FIREWALL_OK_HOST_UFW_BLOCKED` when Cloud Firewall is valid for Owner CIDR but host preflight canary fails.
+3. **Transactional Blue-Green Replacement Pipeline**:
+   - `provisionPrivateEgress({ blueGreen: true })`:
+     - Preserves existing active node in journal during staging.
+     - Rolls back only new resources if candidate fails verification.
+     - Atomically updates journal and selects new node upon 100% preflight pass.
+     - Decommissions old Droplet, Firewall, and tag only after replacement is verified READY.
+4. **Cloud Firewall Detach / Mutation Fail-Closed**:
+   - Authoritative applied-state check verifies exactly one firewall attached with expected port and owner CIDR; unexpected firewalls fail closed immediately.
+5. **Post-Bootstrap SSH Key Revocation Invariant**:
+   - Ephemeral SSH client key deleted from DigitalOcean account; host key verified denied.
 
+---
+
+## Antigravity Verification Suite Results
+
+| Test Suite | Description | Result |
+| :--- | :--- | :---: |
+| `test/test_rc3_37_blue_green_ufw_repair_regressions.js` | 6 RC3.37 architectural regressions (bootstrap rule, diagnostic code, blue-green staging/rollback/decommission, firewall detach fail-closed, SSH key revocation) | **6/6 PASS** |
+| `test/run_edge_sprint_full_captcha_privacy_relay_rehearsal.js` | Real Microsoft Edge rehearsal under `PRIVACY_RELAY` mode across all 16 Section 9 invariants (Target 1 reCAPTCHA + Target 2 non-CAPTCHA sequential) | **16/16 PASS** |
+| `test/test_rc3_13_layer2_preflight_and_control_bypass.js` | Layer 2 preflight ordering, readback verification, control bypass | **8/8 PASS** |
+| `test/test_rc3_16_main_hud_messaging_and_preflight_sync.js` | HUD messaging, preflight sync, singleton state preservation across popup lifecycle | **ALL PASS** |
+| `test/test_private_egress_security_hardening.js` | 20 P0 security and packaged-runtime audit acceptance checks | **20/20 PASS** |
+
+---
+
+## Acceptance Smoke Status
+- Antigravity autonomous remediation, blue-green replacement, and test suites: **100% COMPLETE**.
+- Real DigitalOcean private egress is **ACTIVE and READY** (`143.198.40.33:8443`).
+- Owner manual debugging: **ZERO commands delegated**.
+- Ready for Owner single-action kempomaa acceptance smoke testing on Candidate RC3.37.
