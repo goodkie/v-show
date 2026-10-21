@@ -15,30 +15,30 @@
 
     const BUILD_INFO = {
         branch: 'upgrade/phase-0-1',
-        channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.33',
+        channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.34',
         testOnly: true,
-        // [R6.9G.10.3.7.1.4.47] XPIDER AutoForm Sender Pro — Private Egress Release Candidate 3.33 (Top-Level Flag Declaration, Attempt-Scoped State Reset, and Immediate Exception Containment)
-        implementationHead: '15ef47920555e4d0a506d007329d265dc78825c4',
-        implementationHeadShort: '15ef4792',
-        head: '15ef47920555e4d0a506d007329d265dc78825c4',
-        headShort: '15ef4792',
-        rollbackBase: '980d16624780c1b30e310dc4fe45df5bd3e4d96e',
-        previousFunctionalRestorePoint: '14e73aec74721823d26417026c4a161397fefd32',
+        // [R6.9G.10.3.7.1.4.48] XPIDER AutoForm Sender Pro — Private Egress Release Candidate 3.34 (Sprint Finalization: Egress In-Place Repair, Mutex Concurrency, F1-F4 Exception Containment, and Dynamic Verification)
+        implementationHead: 'df7743cacf0d66af8b2b52704d161f9210b4c780',
+        implementationHeadShort: 'df7743ca',
+        head: 'df7743cacf0d66af8b2b52704d161f9210b4c780',
+        headShort: 'df7743ca',
+        rollbackBase: '15ef47920555e4d0a506d007329d265dc78825c4',
+        previousFunctionalRestorePoint: '15ef47920555e4d0a506d007329d265dc78825c4',
         manifestVersion: 3,
-        buildId: 'R6.9G.10.3.7.1.4.47-20261021-PRIVATE-EGRESS-RC3.33',
-        builtAt: '2026-10-21T04:45:00.000Z',
+        buildId: 'R6.9G.10.3.7.1.4.48-20261021-FINAL-SPRINT-RC3.34',
+        builtAt: '2026-10-21T09:18:43.135Z',
         provenanceSchema: 2,
         modules: {
-            backgroundSha: '2af6da408d36d7f56010e26f4932cb8a5a9571df4a0f407aebd5d420bd57ae18',
-            contentScriptSha: '8e56cdf5f7208a1b4bc9365fac7d03724f91f314f989ef288513a9673d3a8d42',
-            popupSha: '0f6b3375a55f2f0e46a668f2740814ba36bd77fd03eeb69eb47cec255c60769b',
-            solverContentSha: '8d3324538a58e0845a71e838f00e6c656b1bfd4b6084feae4baf8ace2078e454',
+            backgroundSha: '85335902e44b35d867568b39afe9771c2747dcf486df2576c396615ebff4d2f9',
+            contentScriptSha: 'f20f0d6c5f897edfa8790eae22357fb3cb3cf76feb1775c1442bdf5e91063eb7',
+            popupSha: '350e92ba2e037acc2eae80ea6059c31b587beb71659fdf328346ca8cc92050a5',
+            solverContentSha: '6a1ff7154efaeb6dbd5946ac4f9be1ce5b5ff43bce2db06d0dca32950edd3bdb',
             solverCoreSha: 'f4977844acbd319f0cf6a0f49ed0f88c491293c8fd42ee53c0a06eef58dbefad',
             emailCollectorSha: '3f1147a379e159e7777158f2caa74cc8d40b2a0b0eb2c244f440af379cb5c9c9',
             historyStoreSha: '0dc2fbda1b1506de9394f87a965ff2ebd5721ea1c47d7bda07c9411193890d8c',
             contactGateSha: '0d01acb2d0a9448d154353fac5b527c17afa42fed56c68d6a49b39053629bd7d',
             visionSubmitSha: '6b89eab8fd132798fbb157e179bdeee64da1aa9867222fdb656e3fcf4fcc9311',
-            privacyGatewaySha: '59bdaf23809a58a1b201d843279eb1a9455bc2a8bbbb8312ef5b47ddaa814a50'
+            privacyGatewaySha: 'cc5c8cc9c83adf3b985aa4bab74b04189c00fdba4f3ac3a555bd00e38fc79993'
         }
     };
 
