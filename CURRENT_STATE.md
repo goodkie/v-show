@@ -7,9 +7,9 @@
 - Authority: goodkie/v-show Issue #6 (Responding to Defect Report & Directive [RC3.32-REFERENCEERROR-CAPTCHA-TOKEN-FLAG-UNDECLARED-AND-HANG] Comment #6308024751)
 - Branch: upgrade/phase-0-1
 - State Rev: 2026-10-21.73
-- Authority Cursor: 6308194275
+- Authority Cursor: 6310284292
 - Last Directive / Audit: `[CHATGPT][OWNER-SMOKE][extension-form-sender][RC3.32-REFERENCEERROR-CAPTCHA-TOKEN-FLAG-UNDECLARED-AND-HANG] Comment #6308024751`
-- Last Receipt: `[ANTIGRAVITY][RECEIPT][extension-form-sender][RC3.33-CAPTCHA-FLAG-DECLARATION-AND-EXCEPTION-CONTAINMENT]`
+- Last Receipt: `[ANTIGRAVITY][RECEIPT][extension-form-sender][RC3.33-CAPTCHA-FLAG-DECLARATION-AND-EXCEPTION-CONTAINMENT] Comment #6310284292`
 - Build ID: `R6.9G.10.3.7.1.4.47-20261021-PRIVATE-EGRESS-RC3.33`
 - Current Candidate Release Tag: `v6.9g.10.3-rc3.33.7.1.4.47`
 - Functional Snapshot Head Commit (F): `15ef47920555e4d0a506d007329d265dc78825c4` (short: `15ef4792`)
