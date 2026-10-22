@@ -2,7 +2,7 @@
  * pack_owner_beta_package.js
  *
  * Packages XPIDER AutoForm Sender Pro — OWNER BETA
- * Version: R6.9G.10.3.7.1.4.53-20261022-FINAL-SPRINT-RC3.39
+ * Version: R6.9G.10.3.7.1.4.54-20261022-FINAL-SPRINT-RC3.40
  * Per Issue #6 Owner Decision & ChatGPT Final Pre-Live Audit Directive (Comment #6250701581).
  *
  * Enforces V1, V2, V3 Secret and Packaging Hygiene:
@@ -69,8 +69,8 @@ async function runPackaging() {
     console.log('1. Verifying parity with sync_build_parity.js...');
     execSync('node sync_build_parity.js', { stdio: 'inherit' });
 
-    const versionStr = 'R6.9G.10.3.7.1.4.53';
-    const zipName = `XPIDER_${versionStr}_PRIVATE_EGRESS_RC3.39.zip`;
+    const versionStr = 'R6.9G.10.3.7.1.4.54';
+    const zipName = `XPIDER_${versionStr}_PRIVATE_EGRESS_RC3.40.zip`;
     const zipOut = path.resolve(zipName);
     const extDir = path.resolve('send_message_backup/build/extension');
     const compDir = path.resolve('companion');
@@ -103,7 +103,25 @@ async function runPackaging() {
     function copyCompanionFiles(src, dest) {
         const entries = fs.readdirSync(src, { withFileTypes: true });
         for (const entry of entries) {
-            if (entry.name === '.control_token' || entry.name === 'privacy_relay.log' || entry.name === 'node_modules' || entry.name === 'router_pairing_config.json' || entry.name.startsWith('test') || entry.name.startsWith('mock') || entry.name === 'tls_test_certs.js' || entry.name.endsWith('.tmp') || entry.name.endsWith('.log') || entry.name.endsWith('.lock') || entry.name.startsWith('.private_') || entry.name.includes('local_credentials') || entry.name.startsWith('.local_')) {
+            const lowerName = entry.name.toLowerCase();
+            if (entry.name === '.control_token' || 
+                entry.name === 'privacy_relay.log' || 
+                entry.name === 'node_modules' || 
+                entry.name === 'router_pairing_config.json' || 
+                entry.name.startsWith('test') || 
+                entry.name.startsWith('mock') || 
+                entry.name === 'tls_test_certs.js' || 
+                entry.name.endsWith('.tmp') || 
+                entry.name.endsWith('.log') || 
+                entry.name.endsWith('.lock') || 
+                entry.name.startsWith('.private_') || 
+                entry.name.includes('local_credentials') || 
+                entry.name.startsWith('.local_') ||
+                lowerName.includes('scratch') ||
+                lowerName.includes('acceptance') ||
+                lowerName.includes('rc3_') ||
+                lowerName.endsWith('_token') ||
+                lowerName.startsWith('.scratch')) {
                 continue;
             }
             const srcPath = path.join(src, entry.name);
@@ -328,6 +346,7 @@ async function runPackaging() {
     const stagingFilesForDenylist = getAllFiles(stagingDir);
     for (const file of stagingFilesForDenylist) {
         const baseName = path.basename(file.fullPath);
+        const lowerBase = baseName.toLowerCase();
         if (FORBIDDEN_DENYLIST_NAMES.includes(baseName)) {
             throw new Error(`DENYLIST SCAN FAILED: Forbidden runtime artifact found in staging: ${file.relPath}`);
         }
@@ -335,6 +354,9 @@ async function runPackaging() {
             if (baseName.endsWith(ext)) {
                 throw new Error(`DENYLIST SCAN FAILED: Forbidden extension (${ext}) found in staging: ${file.relPath}`);
             }
+        }
+        if (lowerBase.includes('scratch') || lowerBase.includes('acceptance') || lowerBase.includes('rc3_') || lowerBase.endsWith('_token') || lowerBase.startsWith('.scratch')) {
+            throw new Error(`DENYLIST SCAN FAILED: Stale test/acceptance artifact found in staging: ${file.relPath}`);
         }
         if (baseName.startsWith('.private_egress_transaction')) {
             throw new Error(`DENYLIST SCAN FAILED: Transaction journal found in staging: ${file.relPath}`);
@@ -433,6 +455,7 @@ async function runPackaging() {
 
     for (const entry of zipEntries) {
         const base = path.basename(entry);
+        const lowerBase = base.toLowerCase();
         if (base === '.control_token') {
             fs.unlinkSync(zipOut);
             throw new Error(`ARCHIVE VERIFICATION FAILED: .control_token is present in release archive entry: ${entry}`);
@@ -448,6 +471,10 @@ async function runPackaging() {
         if (base.startsWith('.private_egress_transaction')) {
             fs.unlinkSync(zipOut);
             throw new Error(`ARCHIVE VERIFICATION FAILED: Transaction file present in release archive entry: ${entry}`);
+        }
+        if (lowerBase.includes('scratch') || lowerBase.includes('acceptance') || lowerBase.includes('rc3_') || lowerBase.endsWith('_token') || lowerBase.startsWith('.scratch')) {
+            fs.unlinkSync(zipOut);
+            throw new Error(`ARCHIVE VERIFICATION FAILED: Stale test/acceptance artifact present in release archive entry: ${entry}`);
         }
         if (base.includes('local_credentials') || base.startsWith('.local_')) {
             fs.unlinkSync(zipOut);
