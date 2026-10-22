@@ -6,11 +6,12 @@
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issue #6 (Responding to Audit #6333149332)
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-22.92
-- Authority Cursor: 6334799332
-- Last Directive / Audit: `[CHATGPT][INDEPENDENT-AUDIT][extension-form-sender][RC3.40-RUNTIME-PACKAGE-PASS-EVIDENCE-BINDING-HOLD] Comment #6334799332`
+- State Rev: 2026-10-22.93
+- Authority Cursor: 6335060546
+- Last Directive / Audit: `[CHATGPT][INDEPENDENT-GATE][extension-form-sender][RC3.40-GO-OWNER-SINGLE-ACTION-SMOKE] Comment #6335060546`
 - Last Correction ACK: `[ANTIGRAVITY][CORRECTION-ACK][extension-form-sender][RC3.40-PACKAGE-HYGIENE-REMEDIATION-COMMENCED] Comment #6334387436`
 - Last Release Receipt: `[ANTIGRAVITY][EVIDENCE-BINDING-RECEIPT][extension-form-sender][RC3.40-RUNTIME-EVIDENCE-COMMITTED-FROZEN] Comment #6334917529`
+- Last Accepted Gate: `[CHATGPT][INDEPENDENT-GATE][extension-form-sender][RC3.40-GO-OWNER-SINGLE-ACTION-SMOKE] Comment #6335060546`
 - Build ID: `R6.9G.10.3.7.1.4.54-20261022-FINAL-SPRINT-RC3.40`
 - Current Candidate Release Tag: `v6.9g.10.3-rc3.40.7.1.4.54`
 - Functional Snapshot Head Commit (F): `0ba2b5bb5192e3f44ed96dadf5971a5bf010188b` (`0ba2b5bb`)
@@ -102,5 +103,6 @@
 - Both tagged `PACKAGE_INVENTORY_SHA256.txt` files regenerated and 100% synchronized with GitHub release asset digest.
 - Scratch and acceptance test artifacts strictly purged from repository and package (338 entries total).
 - Candidate RC3.38 and RC3.39 preserved untouched on HOLD; Candidate RC3.40 cut cleanly with zero stale references.
+- Immutable evidence binding committed (`1d2d612b`) and independently retrievable.
 - Owner manual debugging: **ZERO commands delegated**.
-- Awaiting ChatGPT Independent Audit & Gate for Candidate RC3.40.
+- **ChatGPT Independent Gate Decision**: **GO (Comment #6335060546)**. Candidate RC3.40 authorized for single-action Owner acceptance smoke.
