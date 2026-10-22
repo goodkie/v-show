@@ -15,18 +15,18 @@
 
     const BUILD_INFO = {
         branch: 'upgrade/phase-0-1',
-        channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.41',
+        channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.42',
         testOnly: true,
-        // [R6.9G.10.3.7.1.4.55] XPIDER AutoForm Sender Pro — Private Egress Release Candidate 3.41 (Live Solver Lifecycle Timeout & WAF 1020 Fast-Fail Classification)
-        implementationHead: '478b719db519dbbef052aa0a8765f898140ccba4',
-        implementationHeadShort: '478b719d',
-        head: '478b719db519dbbef052aa0a8765f898140ccba4',
-        headShort: '478b719d',
+        // [R6.9G.10.3.7.1.4.56] XPIDER AutoForm Sender Pro — Private Egress Release Candidate 3.42 (Autofill, Scroll-Reveal Discovery, Gateway Recovery, Dead Domain Fast-Fail)
+        implementationHead: '3cc1be6b436b1d68f948927df88a2c73c1ae5011',
+        implementationHeadShort: '3cc1be6b',
+        head: '3cc1be6b436b1d68f948927df88a2c73c1ae5011',
+        headShort: '3cc1be6b',
         rollbackBase: 'd987bca65b0e5d0786e110efaa45ad91622bc85f',
         previousFunctionalRestorePoint: 'd987bca65b0e5d0786e110efaa45ad91622bc85f',
         manifestVersion: 3,
-        buildId: 'R6.9G.10.3.7.1.4.55-20261022-FINAL-SPRINT-RC3.41',
-        builtAt: '2026-10-22T09:34:31.216Z',
+        buildId: 'R6.9G.10.3.7.1.4.56-20261022-FINAL-SPRINT-RC3.42',
+        builtAt: '2026-10-22T10:41:25.097Z',
         provenanceSchema: 2,
         modules: {
             backgroundSha: 'f5979373e4ca71766818b5e33cc6d583bad190384e51036fdd80304996745e7f',
