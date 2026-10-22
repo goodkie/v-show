@@ -15,18 +15,18 @@
 
     const BUILD_INFO = {
         branch: 'upgrade/phase-0-1',
-        channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.37',
+        channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.38',
         testOnly: true,
-        // [R6.9G.10.3.7.1.4.51] XPIDER AutoForm Sender Pro — Private Egress Release Candidate 3.37 (Transactional Blue-Green Egress & UFW Lockout Architectural Resolution)
-        implementationHead: '5f2a60bcc8098670ff452bb1fa774900a0be3bfe',
-        implementationHeadShort: '5f2a60bc',
-        head: '5f2a60bcc8098670ff452bb1fa774900a0be3bfe',
-        headShort: '5f2a60bc',
-        rollbackBase: '0180fd2199b0cbe888dafe6c4644a836894c25f4',
-        previousFunctionalRestorePoint: '0180fd2199b0cbe888dafe6c4644a836894c25f4',
+        // [R6.9G.10.3.7.1.4.52] XPIDER AutoForm Sender Pro — Private Egress Release Candidate 3.38 (Exact 40-char SHA Provenance & Real Remote Egress E2E)
+        implementationHead: '2a0760eb8fa1725eb4e9e76baf49edb9c32ad19b',
+        implementationHeadShort: '2a0760eb',
+        head: '2a0760eb8fa1725eb4e9e76baf49edb9c32ad19b',
+        headShort: '2a0760eb',
+        rollbackBase: '6d7226d5f194ea94af88d4e35a2c32297fadb9c3',
+        previousFunctionalRestorePoint: '6d7226d5f194ea94af88d4e35a2c32297fadb9c3',
         manifestVersion: 3,
-        buildId: 'R6.9G.10.3.7.1.4.51-20261021-FINAL-SPRINT-RC3.37',
-        builtAt: '2026-10-21T18:04:35.403Z',
+        buildId: 'R6.9G.10.3.7.1.4.52-20261022-FINAL-SPRINT-RC3.38',
+        builtAt: '2026-10-22T04:18:06.711Z',
         provenanceSchema: 2,
         modules: {
             backgroundSha: '1783ea013f6c9b4334797358ebdba23e681f1b7ec89abc1dda218ece3c5e5f4e',
