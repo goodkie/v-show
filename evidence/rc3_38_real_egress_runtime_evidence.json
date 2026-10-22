@@ -1,0 +1,74 @@
+{
+  "timestamp": "2026-10-22T04:10:50.172Z",
+  "candidate": "RC3.38",
+  "targetEgress": {
+    "nodeId": "do-egress-tor1-611293905",
+    "host": "143.198.40.33",
+    "port": 8443,
+    "region": "tor1"
+  },
+  "checks": {
+    "companionControlPlane": {
+      "status": "PASS",
+      "relayReady": true,
+      "lifecycleState": "READY",
+      "health": "HEALTHY",
+      "selectedEgressId": "do-egress-tor1-611293905",
+      "totalNodes": 1,
+      "activeNode": {
+        "id": "do-egress-tor1-611293905",
+        "host": "143.198.40.33",
+        "port": 8443,
+        "health": "HEALTHY"
+      },
+      "rehearsalNodeIsolated": true
+    },
+    "directTlsHandshake": {
+      "status": "PASS",
+      "host": "143.198.40.33",
+      "port": 8443,
+      "tlsProtocol": "TLSv1.3",
+      "cipher": "TLS_AES_256_GCM_SHA384",
+      "serverSubject": {
+        "C": "US",
+        "O": "XPIDER",
+        "CN": "143.198.40.33"
+      },
+      "serverIssuer": {
+        "C": "US",
+        "O": "XPIDER",
+        "CN": "XPIDER Private Egress Root CA"
+      },
+      "serverSAN": "IP Address:143.198.40.33, IP Address:127.0.0.1, DNS:localhost",
+      "serverFingerprint256": "CD:DA:43:DB:EA:3C:05:2C:9E:D5:86:23:FB:44:6F:11:5C:C1:2D:D4:B3:3E:69:FF:27:87:99:96:5B:A3:F1:0D",
+      "pinnedCaMatch": true
+    },
+    "liveConnectTunnel": {
+      "status": "PASS",
+      "statusLine": "HTTP/1.1 200 OK",
+      "observedPublicIp": "143.198.40.33",
+      "expectedDropletIp": "143.198.40.33",
+      "location": "CA",
+      "colo": "YYZ",
+      "tlsVersion": "TLSv1.3",
+      "h": "cloudflare.com",
+      "directLeakCheck": "PASS - Zero Owner IP leak"
+    },
+    "port22SshClosedInvariant": {
+      "status": "PASS",
+      "port": 22,
+      "host": "143.198.40.33",
+      "accessible": false,
+      "reason": "TIMEOUT_FILTERED",
+      "invariant": "Port 22 SSH completely closed and dropped post-bootstrap"
+    },
+    "failClosedDirectFallback": {
+      "status": "PASS",
+      "unroutableProbeHandled": true,
+      "detail": {
+        "timeout": true
+      },
+      "invariant": "Companion never falls back to direct owner connection on upstream failure"
+    }
+  }
+}

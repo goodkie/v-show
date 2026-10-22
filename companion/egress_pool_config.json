@@ -26,27 +26,6 @@
       "active": true,
       "region": "TOR1",
       "lastHealth": "UNKNOWN"
-    },
-    {
-      "id": "node-rehearsal-local",
-      "type": "HTTP_PROXY",
-      "host": "127.0.0.1",
-      "port": 19780,
-      "username": "",
-      "password": "",
-      "credentialRef": "",
-      "privateOnly": false,
-      "transportBinding": null,
-      "ca": null,
-      "tlsCaFingerprint": null,
-      "tlsSpkiFingerprint": null,
-      "expectedEgressIp": "159.203.28.198",
-      "expectedEgressFingerprint": null,
-      "egressIdentityGroup": null,
-      "canaryUrl": "http://127.0.0.1:19780/trace",
-      "active": true,
-      "region": "",
-      "lastHealth": "UNKNOWN"
     }
   ],
   "physicalGate": {

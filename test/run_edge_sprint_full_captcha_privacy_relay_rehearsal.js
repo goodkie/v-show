@@ -110,22 +110,31 @@ async function main() {
     console.log(line);
   };
 
-  // Step 1A: Spin up mock upstream proxy on 19780 (healthy egress simulator)
-  logTrace(`[SETUP] Spawning healthy upstream proxy simulator on port ${UPSTREAM_PORT}...`);
-  const mockUpstreamServer = http.createServer((req, res) => {
-    res.writeHead(200, { 'Content-Type': 'text/plain' });
-    res.end('ip=159.203.28.198\nts=2026-10-21\n');
-  });
-  mockUpstreamServer.on('connect', (req, clientSocket, head) => {
-    clientSocket.write('HTTP/1.1 200 Connection Established\r\n\r\n');
-    clientSocket.once('data', () => {
-      clientSocket.end('HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nConnection: close\r\n\r\nip=159.203.28.198\n');
-    });
-  });
-  await new Promise(r => mockUpstreamServer.listen(UPSTREAM_PORT, '127.0.0.1', r));
-  logTrace(`[PASS] Step 1A: Upstream proxy simulator listening on 127.0.0.1:${UPSTREAM_PORT}`);
+  // Step 1A: Verify Companion is in READY state with REAL production egress node (143.198.40.33)
+  const tokenFile = path.resolve('companion', '.control_token');
+  assert(fs.existsSync(tokenFile), 'companion/.control_token must exist');
+  const controlToken = fs.readFileSync(tokenFile, 'utf8').trim();
 
-  // Step 1B: Ensure fixture server is running
+  logTrace('[SETUP] Checking Companion status on port 18989 (requiring real active node)...');
+  const companionStatus = await new Promise((resolve, reject) => {
+    http.get('http://127.0.0.1:18989/status', {
+      headers: { 'Authorization': 'Bearer ' + controlToken }
+    }, (res) => {
+      let b = '';
+      res.on('data', d => b += d);
+      res.on('end', () => resolve(JSON.parse(b)));
+    }).on('error', reject);
+  });
+
+  assert.strictEqual(companionStatus.relayReady, true, 'Companion relayReady must be true');
+  assert.strictEqual(companionStatus.lifecycleState, 'READY', 'Companion lifecycleState must be READY');
+  assert.strictEqual(companionStatus.selectedEgressId, 'do-egress-tor1-611293905', 'Companion must select real egress node');
+  assert.strictEqual(companionStatus.nodes[0].host, '143.198.40.33', 'Active node must be 143.198.40.33');
+  const hasRehearsal = companionStatus.nodes.some(n => n.id && n.id.includes('rehearsal'));
+  assert.strictEqual(hasRehearsal, false, 'No rehearsal node allowed in production pool');
+  logTrace(`[PASS] Step 1A: Companion verified in READY state with real remote node (${companionStatus.selectedEgressId} / ${companionStatus.nodes[0].host}:${companionStatus.nodes[0].port})`);
+
+  // Step 1B: Ensure local fixture server is running
   let spawnedServer = null;
   let isServerRunning = await new Promise((resolve) => {
     http.get(`http://127.0.0.1:${FIXTURE_PORT}/__xpider_health`, (res) => {
@@ -151,39 +160,6 @@ async function main() {
   }
   assert(isServerRunning, 'Local fixture server on port 8088 must be reachable');
   logTrace(`[PASS] Step 1B: Fixture server active on port ${FIXTURE_PORT}`);
-
-  // Step 1C: Configure Companion to READY state via node-rehearsal-local
-  const tokenFile = path.resolve('companion', '.control_token');
-  const controlToken = fs.readFileSync(tokenFile, 'utf8').trim();
-
-  logTrace('[SETUP] Registering node-rehearsal-local on Companion port 18989...');
-  await postCompanion('/add-node', {
-    id: 'node-rehearsal-local',
-    name: 'Local Rehearsal Egress',
-    type: 'HTTP_PROXY',
-    host: '127.0.0.1',
-    port: UPSTREAM_PORT,
-    canaryUrl: `http://127.0.0.1:${UPSTREAM_PORT}/trace`,
-    expectedEgressIp: '159.203.28.198',
-    active: true
-  }, controlToken);
-
-  logTrace('[SETUP] Selecting node-rehearsal-local to transition Companion to READY...');
-  const selectRes = await postCompanion('/select/node-rehearsal-local', {}, controlToken);
-  assert.strictEqual(selectRes.status, 200, 'select-node must return 200');
-  assert.strictEqual(selectRes.body.verified, true, 'select-node must verify candidate');
-
-  const companionStatus = await new Promise((resolve) => {
-    http.get('http://127.0.0.1:18989/status', {
-      headers: { 'Authorization': 'Bearer ' + controlToken }
-    }, (res) => {
-      let b = '';
-      res.on('data', d => b += d);
-      res.on('end', () => resolve(JSON.parse(b)));
-    });
-  });
-  assert.strictEqual(companionStatus.relayReady, true, 'Companion relayReady must be true');
-  logTrace(`[PASS] Step 1C: Companion verified in READY state (relayReady=true, node=${companionStatus.selectedEgressId})`);
 
   // Step 2: Launch Microsoft Edge with Extension loaded
   const extDir = path.resolve('extension');
@@ -352,7 +328,7 @@ async function main() {
             relayHost: '127.0.0.1',
             relayProxyPort: 18988,
             relayControlPort: 18989,
-            canaryUrl: 'http://127.0.0.1:${UPSTREAM_PORT}/trace'
+            canaryUrl: 'https://cloudflare.com/cdn-cgi/trace'
           },
           xpider_queue: [
             'http://127.0.0.1:${FIXTURE_PORT}/captcha-mock-solve.html',
@@ -386,7 +362,7 @@ async function main() {
           pg.config.relayHost = '127.0.0.1';
           pg.config.relayProxyPort = 18988;
           pg.config.relayControlPort = 18989;
-          pg.config.canaryUrl = 'http://127.0.0.1:${UPSTREAM_PORT}/trace';
+          pg.config.canaryUrl = 'https://cloudflare.com/cdn-cgi/trace';
           pg.isGateReady = true;
           pg.isGateActive = true;
           pg.lastPreflightResult = {
@@ -394,10 +370,10 @@ async function main() {
             mode: 'PRIVACY_RELAY',
             failClosed: true,
             egressContinuity: 'PASS',
-            egressFingerprint: '2cce62b1113e4231',
+            egressFingerprint: '05b6b53daead49e7',
             directFallbackBlocked: 'BLOCKED'
           };
-          pg.ephemeralEgressFingerprint = '2cce62b1113e4231';
+          pg.ephemeralEgressFingerprint = '05b6b53daead49e7';
           // Apply managed Chrome proxy to local relay port 18988 with loopback bypass
           await pg.applyManagedProxy('PRIVACY_RELAY', '127.0.0.1', 18988, ['<-loopback>']);
         }
@@ -433,6 +409,31 @@ async function main() {
     observedInvariants.privacyFailClosed = setupVal.pgFailClosed;
     logTrace('[PASS] Step 4: Storage & PrivacyGateway initialized with PRIVACY_RELAY (enabled=true, failClosed=true)');
 
+    // Step 4B: Live in-browser remote egress verification via Privacy Relay (127.0.0.1:18988 -> 143.198.40.33)
+    logTrace('[REAL_EGRESS] Executing live in-browser egress probe to https://cloudflare.com/cdn-cgi/trace via Privacy Relay...');
+    const traceEval = await cdpSend(swWs, msgId++, 'Runtime.evaluate', {
+      expression: `
+        (async () => {
+          try {
+            const resp = await fetch('https://cloudflare.com/cdn-cgi/trace');
+            const txt = await resp.text();
+            return { ok: true, status: resp.status, text: txt };
+          } catch (e) {
+            return { ok: false, error: e.message };
+          }
+        })()
+      `,
+      awaitPromise: true,
+      returnByValue: true
+    });
+
+    const traceData = traceEval.result?.value;
+    assert.strictEqual(traceData?.ok, true, 'In-browser trace fetch through proxy must succeed: ' + traceData?.error);
+    assert.ok(traceData.text.includes('ip=143.198.40.33'), 'In-browser trace MUST observe real DigitalOcean IP 143.198.40.33');
+    assert.ok(traceData.text.includes('loc=CA'), 'In-browser trace MUST observe location CA');
+    assert.ok(traceData.text.includes('colo=YYZ'), 'In-browser trace MUST observe colo YYZ (Toronto)');
+    logTrace('✅ [REAL REMOTE EGRESS PASS] Browser fetch through Privacy Relay observed IP 143.198.40.33 (Toronto YYZ)');
+
     // Step 5: Launch campaign through XPIDER's authoritative startCampaignOrchestrator
     logTrace('\n[REHEARSAL] Dispatching startCampaignOrchestrator under PRIVACY_RELAY...');
     const launchScript = `
@@ -442,6 +443,10 @@ async function main() {
           'xpider_template_v2',
           'xpider_active_campaign_run_id'
         ]);
+
+        if (typeof installOwnerTestNetworkGuard === 'function') {
+          await installOwnerTestNetworkGuard({ allowCloudflareChallenges: true });
+        }
 
         campaignState.ownerFunctionTestMode = true;
         campaignState.mockEligible = true;
@@ -549,7 +554,7 @@ async function main() {
     logTrace('✅ [INVARIANT 3 PASS] CAPTCHA detected by solver-content.js.');
 
     assert(observedInvariants.mockProviderCalled, 'Invariant 4: Controlled provider adapter must be selected');
-    logTrace('✅ [INVARIANT 4 PASS] Controlled provider adapter reached (MockCaptchaProviderAdapter).');
+    logTrace('✅ [INVARIANT 4 PASS] Controlled provider adapter reached (MockCaptchaProviderAdapter). [LIVE NOPECHA TRANSACTION: NOT PROVEN / OWNER DEFERRED — controlled adapter handling verified]');
 
     assert(observedInvariants.tokenReturned, 'Invariant 5: Token must return to background authority');
     logTrace('✅ [INVARIANT 5 PASS] Provider token returned to background authority.');
@@ -635,12 +640,6 @@ async function main() {
       try { spawnedServer.kill(); } catch (_) {}
     }
     try { fs.rmSync(userDir, { recursive: true, force: true }); } catch (_) {}
-
-    // Cleanup: Restore Companion node back to DO Droplet
-    try {
-      await postCompanion('/select/do-egress-tor1-610408684', {}, controlToken);
-    } catch (_) {}
-    try { mockUpstreamServer.close(); } catch (_) {}
   }
 }
 

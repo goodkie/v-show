@@ -373,7 +373,9 @@ class PrivacyRelayService {
     try {
       const compDir = path.dirname(this.configFile);
       const sanitizedNodes = (this.pool.nodes || []).map(n => winsec.sanitizeNodeForSave(n));
-      const configNodes = sanitizedNodes.map(n => {
+      // Invariant: Rehearsal and mock test nodes must never persist to production pool config
+      const productionNodes = sanitizedNodes.filter(n => !(n.id && n.id.startsWith('node-rehearsal')) && !n.rehearsal && !n.mock);
+      const configNodes = productionNodes.map(n => {
         if (n.credentialRef) {
           winsec.saveLocalNodeCredential(n.id, n.credentialRef, compDir);
         }
@@ -384,13 +386,14 @@ class PrivacyRelayService {
         };
       });
       const active = this.getActiveNode();
+      const prodActive = productionNodes.find(n => n.id === (active ? active.id : null)) || productionNodes[0] || null;
       const toSave = {
         version: this.pool.version || '1.0.3',
         rotationMode: this.pool.rotationMode || 'HEALTH_FAILOVER',
         healthCheckTimeoutMs: this.pool.healthCheckTimeoutMs || 5000,
         healthTtlMs: this.pool.healthTtlMs || 60000,
         canaryUrl: this.pool.canaryUrl || 'https://cloudflare.com/cdn-cgi/trace',
-        selectedEgressId: active ? active.id : (this.pool.selectedEgressId || null),
+        selectedEgressId: prodActive ? prodActive.id : null,
         nodes: configNodes,
         physicalGate: {
           enabled: Boolean(this.physicalGate && this.physicalGate.enabled),
