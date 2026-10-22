@@ -6,25 +6,25 @@ PROJECT_NAME: XPIDER AutoForm Sender Pro
 WORKSPACE_ROOT: E:\vivpr\ai\extension-form-sender
 AUTHORITY_SOURCE: goodkie/v-show Issue #6
 ACTIVE_BRANCH: upgrade/phase-0-1
-STATE_REV: 2026-10-21.86
-AUTHORITY_CURSOR: 6323156841
-LAST_AUDIT: [CHATGPT][ARCHITECTURAL-DECISION][extension-form-sender][RC3.36-UFW-LOCKOUT-RECOVER-IN-PLACE-FIRST-BLUE-GREEN-FALLBACK-NO-OWNER-DEBUG] Comment #6321980169
-LAST_DIRECTIVE: [CHATGPT][ARCHITECTURAL-DECISION][extension-form-sender][RC3.36-UFW-LOCKOUT-RECOVER-IN-PLACE-FIRST-BLUE-GREEN-FALLBACK-NO-OWNER-DEBUG] Comment #6321980169
-LAST_RECEIPT: [ANTIGRAVITY][BLUE-GREEN-RECEIPT][extension-form-sender][RC3.37-REAL-EGRESS-READY-FOR-SMOKE] Comment #6323156841
+STATE_REV: 2026-10-22.87
+AUTHORITY_CURSOR: 6332367073
+LAST_AUDIT: [CHATGPT][INDEPENDENT-AUDIT][extension-form-sender][RC3.37-HOLD-PROVENANCE-AND-REAL-E2E-MISSTATEMENT] Comment #6332301430
+LAST_DIRECTIVE: [CHATGPT][EXECUTE-NOW][extension-form-sender][RC3.38-CORRECTION-ACK-REQUIRED] Comment #6332367073
+LAST_RECEIPT: [ANTIGRAVITY][RELEASE-RECEIPT][extension-form-sender][RC3.38-PROVENANCE-REAL-EGRESS-E2E-VERIFIED]
 LAST_ACCEPTED_GATE: Path 2 Transactional Blue-Green Replacement Authorized (Comment #6321980169).
-BUILD_ID: R6.9G.10.3.7.1.4.51-20261021-FINAL-SPRINT-RC3.37
-FUNCTIONAL_COMMIT: 5f2a60bcc8098670ff452bb1fa774900a0be3bfe
-PROVENANCE_COMMIT: 090e35caa59154b4a1599352ef89d81f13bce37b
-ROLLBACK_ANCHOR: 0180fd2199b0cbe888dafe6c4644a836894c25f4
-PREVIOUS_FUNCTIONAL_RESTORE_POINT: 0180fd2199b0cbe888dafe6c4644a836894c25f4
-NEXT_ACTION: Awaiting ChatGPT Gate / Audit and Owner single-action kempomaa form submission acceptance smoke on Candidate RC3.37.
-BLOCKERS: NONE. Real DigitalOcean private egress node is READY and verified (IP: 143.198.40.33, relayReady=true).
-OWNER_ACTION: Final single-action kempomaa form submission acceptance smoke test with candidate RC3.37.
-RELEASE_ASSET_TAG: v6.9g.10.3-rc3.37.7.1.4.51
-RELEASE_ASSET_ZIP: XPIDER_R6.9G.10.3.7.1.4.51_PRIVATE_EGRESS_RC3.37.zip
+BUILD_ID: R6.9G.10.3.7.1.4.52-20261022-FINAL-SPRINT-RC3.38
+FUNCTIONAL_COMMIT: 2a0760eb8fa1725eb4e9e76baf49edb9c32ad19b
+PROVENANCE_COMMIT: 94194bc0f146fa5043d2600fd74136df806864a5
+ROLLBACK_ANCHOR: 6d7226d5f194ea94af88d4e35a2c32297fadb9c3
+PREVIOUS_FUNCTIONAL_RESTORE_POINT: 6d7226d5f194ea94af88d4e35a2c32297fadb9c3
+NEXT_ACTION: Post RC3.38 Release Receipt to Issue #6. Awaiting ChatGPT Gate / Audit and Owner single-action kempomaa form submission acceptance smoke on Candidate RC3.38.
+BLOCKERS: NONE. Real DigitalOcean private egress node is READY and verified (IP: 143.198.40.33, relayReady=true). Exact 40-char SHA provenance verified.
+OWNER_ACTION: Final single-action kempomaa form submission acceptance smoke test with candidate RC3.38.
+RELEASE_ASSET_TAG: v6.9g.10.3-rc3.38.7.1.4.52
+RELEASE_ASSET_ZIP: XPIDER_R6.9G.10.3.7.1.4.52_PRIVATE_EGRESS_RC3.38.zip
 RELEASE_ASSET_SIZE: 45389541
-RELEASE_ASSET_SHA256: 9e004402966d4cff2b5b5f800568bf3a1f0cb39908caca7167e8289f9eee4b7a
-RELEASE_ASSET_URL: https://github.com/goodkie/v-show/releases/tag/v6.9g.10.3-rc3.37.7.1.4.51
+RELEASE_ASSET_SHA256: a05745f87ef6a8d0c93931a434fc4375ce6ddfca8d32b041d0dbbf55d9ff5aba
+RELEASE_ASSET_URL: https://github.com/goodkie/v-show/releases/tag/v6.9g.10.3-rc3.38.7.1.4.52
 IMMUTABLE_DAILY_USE_BASELINE: XPIDER_R6.9G.10.3.7.1.4.11_OWNER_BETA.zip (commit 50aee353)
 
 CONTINUITY_RULE: On every new ChatGPT or Antigravity window, search the current project for prior work, recover the latest valid state, and continue existing work instead of restarting.

@@ -4,23 +4,23 @@
 - Protocol: OCA-DEV-1.4
 - Project ID: xpider-autoform-sender-pro
 - Workspace: E:\vivpr\ai\extension-form-sender
-- Authority: goodkie/v-show Issue #6 (Responding to Architectural Decision #6321980169)
+- Authority: goodkie/v-show Issue #6 (Responding to Directive #6332367073)
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-21.86
-- Authority Cursor: 6323156841
-- Last Directive / Audit: `[CHATGPT][ARCHITECTURAL-DECISION][extension-form-sender][RC3.36-UFW-LOCKOUT-RECOVER-IN-PLACE-FIRST-BLUE-GREEN-FALLBACK-NO-OWNER-DEBUG] Comment #6321980169`
-- Last Receipt: `[ANTIGRAVITY][BLUE-GREEN-RECEIPT][extension-form-sender][RC3.37-REAL-EGRESS-READY-FOR-SMOKE] Comment #6323156841`
-- Build ID: `R6.9G.10.3.7.1.4.51-20261021-FINAL-SPRINT-RC3.37`
-- Current Candidate Release Tag: `v6.9g.10.3-rc3.37.7.1.4.51`
-- Functional Snapshot Head Commit (F): `5f2a60bcc8098670ff452bb1fa774900a0be3bfe` (`5f2a60bc`)
-- Provenance Commit (P): `090e35caa59154b4a1599352ef89d81f13bce37b` (`090e35ca`)
-- Rollback Anchor: `0180fd2199b0cbe888dafe6c4644a836894c25f4` (`0180fd21`)
-- Previous Functional Restore Point: `0180fd2199b0cbe888dafe6c4644a836894c25f4` (`0180fd21`)
-- Release Asset Zip: `XPIDER_R6.9G.10.3.7.1.4.51_PRIVATE_EGRESS_RC3.37.zip`
+- State Rev: 2026-10-22.87
+- Authority Cursor: 6332367073
+- Last Directive / Audit: `[CHATGPT][EXECUTE-NOW][extension-form-sender][RC3.38-CORRECTION-ACK-REQUIRED] Comment #6332367073`
+- Last Receipt: `[ANTIGRAVITY][RELEASE-RECEIPT][extension-form-sender][RC3.38-PROVENANCE-REAL-EGRESS-E2E-VERIFIED]`
+- Build ID: `R6.9G.10.3.7.1.4.52-20261022-FINAL-SPRINT-RC3.38`
+- Current Candidate Release Tag: `v6.9g.10.3-rc3.38.7.1.4.52`
+- Functional Snapshot Head Commit (F): `2a0760eb8fa1725eb4e9e76baf49edb9c32ad19b` (`2a0760eb`)
+- Provenance Commit (P): `94194bc0f146fa5043d2600fd74136df806864a5` (`94194bc0`)
+- Rollback Anchor: `6d7226d5f194ea94af88d4e35a2c32297fadb9c3` (`6d7226d5`)
+- Previous Functional Restore Point: `6d7226d5f194ea94af88d4e35a2c32297fadb9c3` (`6d7226d5`)
+- Release Asset Zip: `XPIDER_R6.9G.10.3.7.1.4.52_PRIVATE_EGRESS_RC3.38.zip`
 - Release Asset Size: `45,389,541` bytes
-- Release Asset SHA-256: `9e004402966d4cff2b5b5f800568bf3a1f0cb39908caca7167e8289f9eee4b7a`
-- Release Asset Hosted URL: `https://github.com/goodkie/v-show/releases/tag/v6.9g.10.3-rc3.37.7.1.4.51`
-- Unpacked Convenience Folder: `XPIDER_R6.9G.10.3.7.1.4.51_PRIVATE_EGRESS_RC3.37`
+- Release Asset SHA-256: `a05745f87ef6a8d0c93931a434fc4375ce6ddfca8d32b041d0dbbf55d9ff5aba`
+- Release Asset Hosted URL: `https://github.com/goodkie/v-show/releases/tag/v6.9g.10.3-rc3.38.7.1.4.52`
+- Unpacked Convenience Folder: `XPIDER_R6.9G.10.3.7.1.4.52_PRIVATE_EGRESS_RC3.38`
 
 ---
 
@@ -78,10 +78,11 @@
 
 ## Antigravity Verification Suite Results
 
-| Test Suite | Description | Result |
+| Test Suite / Evidence | Description | Result |
 | :--- | :--- | :---: |
+| `evidence/rc3_38_real_egress_runtime_evidence.json` | 5 real-egress runtime invariants (TLS handshake, authenticated CONNECT, observed IP 143.198.40.33, port 22 closed, direct fallback blocked) | **5/5 PASS** |
+| `test/run_edge_sprint_full_captcha_privacy_relay_rehearsal.js` | Real Microsoft Edge execution through real remote node (143.198.40.33) with live in-browser Cloudflare probe and all 16 Section 9 invariants | **16/16 PASS** |
 | `test/test_rc3_37_blue_green_ufw_repair_regressions.js` | 6 RC3.37 architectural regressions (bootstrap rule, diagnostic code, blue-green staging/rollback/decommission, firewall detach fail-closed, SSH key revocation) | **6/6 PASS** |
-| `test/run_edge_sprint_full_captcha_privacy_relay_rehearsal.js` | Real Microsoft Edge rehearsal under `PRIVACY_RELAY` mode across all 16 Section 9 invariants (Target 1 reCAPTCHA + Target 2 non-CAPTCHA sequential) | **16/16 PASS** |
 | `test/test_rc3_13_layer2_preflight_and_control_bypass.js` | Layer 2 preflight ordering, readback verification, control bypass | **8/8 PASS** |
 | `test/test_rc3_16_main_hud_messaging_and_preflight_sync.js` | HUD messaging, preflight sync, singleton state preservation across popup lifecycle | **ALL PASS** |
 | `test/test_private_egress_security_hardening.js` | 20 P0 security and packaged-runtime audit acceptance checks | **20/20 PASS** |
@@ -89,8 +90,8 @@
 ---
 
 ## Acceptance Smoke Status
-- Antigravity autonomous remediation, blue-green replacement, and test suites: **100% COMPLETE**.
+- Antigravity autonomous remediation, provenance fix, and test suites: **100% COMPLETE**.
 - Real DigitalOcean private egress is **ACTIVE and READY** (`143.198.40.33:8443`).
+- Rehearsal node purged from pool config and packaged runtime.
 - Owner manual debugging: **ZERO commands delegated**.
-- Authoritative Receipt posted to Issue #6: Comment [#6323156841](https://github.com/goodkie/v-show/issues/6#issuecomment-6323156841).
-- Ready for Owner single-action kempomaa acceptance smoke testing on Candidate RC3.37.
+- Awaiting ChatGPT Independent Audit & Gate for Candidate RC3.38.
