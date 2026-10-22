@@ -6,22 +6,22 @@
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issue #6 (Responding to Audit #6333149332)
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-22.90
+- State Rev: 2026-10-22.91
 - Authority Cursor: 6333917171
 - Last Directive / Audit: `[CHATGPT][INDEPENDENT-AUDIT][extension-form-sender][RC3.39-PROVENANCE-PASS-PACKAGE-HYGIENE-FINAL-HOLD] Comment #6333917171`
 - Last Correction ACK: `[ANTIGRAVITY][CORRECTION-ACK][extension-form-sender][RC3.40-PACKAGE-HYGIENE-REMEDIATION-COMMENCED] Comment #6334387436`
-- Last Release Receipt: `[ANTIGRAVITY][RELEASE-RECEIPT][extension-form-sender][RC3.39-PACKAGE-INVENTORY-SYNCHRONIZED-PROVENANCE-PASS] Comment #6333816248 (https://github.com/goodkie/v-show/issues/6#issuecomment-6333816248)`
+- Last Release Receipt: `[ANTIGRAVITY][RELEASE-RECEIPT][extension-form-sender][RC3.40-PACKAGE-HYGIENE-PURGED-PROVENANCE-PASS] Comment #6334710561`
 - Build ID: `R6.9G.10.3.7.1.4.54-20261022-FINAL-SPRINT-RC3.40`
-- Current Candidate Release Tag: `v6.9g.10.3-rc3.39.7.1.4.53`
-- Functional Snapshot Head Commit (F): `955a9353f096ca056eacc1d99c8c85d5fe7f12ac` (`955a9353`)
-- Provenance Commit (P): `7d8be6b611020c0367816870c4d39394c09d5a46` (`7d8be6b6`)
+- Current Candidate Release Tag: `v6.9g.10.3-rc3.40.7.1.4.54`
+- Functional Snapshot Head Commit (F): `0ba2b5bb5192e3f44ed96dadf5971a5bf010188b` (`0ba2b5bb`)
+- Provenance Commit (P): `c25d673c0d3e2e01cca7602c68b68af1c2da6968` (`c25d673c`)
 - Rollback Anchor: `d987bca65b0e5d0786e110efaa45ad91622bc85f` (`d987bca6`)
 - Previous Functional Restore Point: `d987bca65b0e5d0786e110efaa45ad91622bc85f` (`d987bca6`)
-- Release Asset Zip: `XPIDER_R6.9G.10.3.7.1.4.53_PRIVATE_EGRESS_RC3.39.zip`
-- Release Asset Size: `45,372,395` bytes
-- Release Asset SHA-256: `2b83e311ea40209998102aa3b8be5cf214ddd415443ea523dcf80fc2f41e9e75`
-- Release Asset Hosted URL: `https://github.com/goodkie/v-show/releases/tag/v6.9g.10.3-rc3.39.7.1.4.53`
-- Unpacked Convenience Folder: `XPIDER_R6.9G.10.3.7.1.4.53_PRIVATE_EGRESS_RC3.39`
+- Release Asset Zip: `XPIDER_R6.9G.10.3.7.1.4.54_PRIVATE_EGRESS_RC3.40.zip`
+- Release Asset Size: `45,371,715` bytes
+- Release Asset SHA-256: `9e718a5319d62b8b33bb75b04227de584699bc9002a2b7c8a3f3185d2c3e2951`
+- Release Asset Hosted URL: `https://github.com/goodkie/v-show/releases/tag/v6.9g.10.3-rc3.40.7.1.4.54`
+- Unpacked Convenience Folder: `XPIDER_R6.9G.10.3.7.1.4.54_PRIVATE_EGRESS_RC3.40`
 
 ---
 
@@ -81,10 +81,13 @@
 
 | Test Suite / Evidence | Description | Result |
 | :--- | :--- | :---: |
-| `evidence/rc3_39_real_egress_runtime_evidence.json` | 5 real-egress runtime invariants (TLS handshake, authenticated CONNECT, observed IP 143.198.40.33, port 22 closed, direct fallback blocked) | **5/5 PASS** |
+| `test/test_rc3_40_package_hygiene_regression.js` | Copy filter exclusion of scratch/acceptance/token files; denylist fail-closed assertion | **ALL PASS** |
+| `scratch/verify_rc3_40_zip_hygiene.js` | Direct inspection of exact published archive: 0 scratch files, 0 token files, deep secret scan across 121 files (338 entries) | **ALL PASS** |
+| `evidence/rc3_40_real_egress_runtime_evidence.json` | 5 real-egress runtime invariants (TLS handshake, authenticated CONNECT, observed IP 143.198.40.33, port 22 closed, direct fallback blocked) | **5/5 PASS** |
 | `test/run_edge_sprint_full_captcha_privacy_relay_rehearsal.js` | Real Microsoft Edge execution through real remote node (143.198.40.33) with live in-browser Cloudflare probe and all 16 Section 9 invariants | **16/16 PASS** |
-| `scratch/verify_tagged_inventory_rc3_39.js` | Tagged inventory metadata verification: exact candidate match & digest parity against GitHub release | **PASS** |
-| `scratch/verify_git_graph_rc3_39.js` | Exact Git commit provenance graph (F -> P -> annotated tag -> rollback base) | **PASS** |
+| `scratch/verify_tagged_inventory_rc3_40.js` | Tagged inventory metadata verification: exact candidate match & digest parity against GitHub release | **PASS** |
+| `scratch/verify_git_graph_rc3_40.js` | Exact Git commit provenance graph (F -> P -> annotated tag -> rollback base) | **PASS** |
+| `scratch/unpack_rc3_40.js` | Archive extraction & `node --check` syntax scan across 39 JS files with zero stale references | **PASS** |
 | `test/test_rc3_37_blue_green_ufw_repair_regressions.js` | 6 RC3.37 architectural regressions (bootstrap rule, diagnostic code, blue-green staging/rollback/decommission, firewall detach fail-closed, SSH key revocation) | **6/6 PASS** |
 | `test/test_rc3_13_layer2_preflight_and_control_bypass.js` | Layer 2 preflight ordering, readback verification, control bypass | **8/8 PASS** |
 | `test/test_rc3_16_main_hud_messaging_and_preflight_sync.js` | HUD messaging, preflight sync, singleton state preservation across popup lifecycle | **ALL PASS** |
@@ -96,6 +99,7 @@
 - Antigravity autonomous remediation, provenance fix, and test suites: **100% COMPLETE**.
 - Real DigitalOcean private egress is **ACTIVE and READY** (`143.198.40.33:8443`).
 - Both tagged `PACKAGE_INVENTORY_SHA256.txt` files regenerated and 100% synchronized with GitHub release asset digest.
-- Candidate RC3.38 preserved untouched on HOLD; Candidate RC3.39 cut cleanly with zero stale references.
+- Scratch and acceptance test artifacts strictly purged from repository and package (338 entries total).
+- Candidate RC3.38 and RC3.39 preserved untouched on HOLD; Candidate RC3.40 cut cleanly with zero stale references.
 - Owner manual debugging: **ZERO commands delegated**.
-- Awaiting ChatGPT Independent Audit & Gate for Candidate RC3.39.
+- Awaiting ChatGPT Independent Audit & Gate for Candidate RC3.40.
