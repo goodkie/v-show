@@ -50,7 +50,7 @@
         classifyFailure(terminalStatus, reasonCode = '', evidence = {}) {
             if (terminalStatus !== 'FAILURE') return null;
             const r = String(reasonCode || '').toUpperCase();
-            if (r.includes('CAPTCHA') || (evidence && evidence.captchaRejected) || r.includes('SECURITY') || r.includes('CLOUDFLARE') || r.includes('BOT_DETECTED')) {
+            if (r.includes('CAPTCHA') || (evidence && evidence.captchaRejected) || r.includes('SECURITY') || r.includes('CLOUDFLARE') || r.includes('BOT_DETECTED') || r.includes('WAF') || (evidence && evidence.wafVendor)) {
                 return 'SECURITY_BLOCKED';
             }
             if (r.includes('VALIDATION') || (evidence && evidence.validationErrorTransition) || (evidence && evidence.validationErrorsCount > 0)) {

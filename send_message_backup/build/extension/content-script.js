@@ -155,7 +155,7 @@
         } catch (_) {}
     }
 
-    function updateTopSolverHUD(message, status = 'ACTIVE') {
+    function updateTopSolverHUD(message, status = 'ACTIVE', options = {}) {
         try {
             if (typeof document === 'undefined' || !document.body) return;
             let hud = document.getElementById('xpider-top-solver-hud');
@@ -188,7 +188,28 @@
             const isSuccess = status === 'DONE' || status === 'PASS' || status === 'SUCCESS';
             const isFail = status === 'FAIL' || status === 'ERROR';
             const statusColor = isSuccess ? '#00ffcc' : (isFail ? '#ff3333' : '#ffaa00');
-            hud.innerHTML = `<span style="font-size: 14px;">🤖</span><span>[XPIDER AI Solver] <span style="color:${statusColor}">${message}</span></span>`;
+
+            if (options && options.showButtons) {
+                hud.style.pointerEvents = 'auto';
+                hud.innerHTML = `
+                    <span style="font-size: 14px;">🤖</span>
+                    <span>[XPIDER AI Solver] <span style="color:#ffaa00">${message}</span></span>
+                    <button id="xpider-btn-manual-solved" style="background:#00ffcc;color:#000;border:none;border-radius:4px;padding:3px 9px;font-size:11px;font-weight:bold;cursor:pointer;margin-left:6px;pointer-events:auto;">✓ I Solved It</button>
+                    <button id="xpider-btn-manual-skip" style="background:#374151;color:#f3f4f6;border:1px solid #4b5563;border-radius:4px;padding:3px 9px;font-size:11px;font-weight:bold;cursor:pointer;margin-left:4px;pointer-events:auto;">⏭ Skip</button>
+                `;
+                const btnSolved = hud.querySelector('#xpider-btn-manual-solved');
+                const btnSkip = hud.querySelector('#xpider-btn-manual-skip');
+                if (btnSolved && typeof options.onSolved === 'function') {
+                    btnSolved.onclick = (e) => { e.preventDefault(); e.stopPropagation(); options.onSolved(); };
+                }
+                if (btnSkip && typeof options.onSkip === 'function') {
+                    btnSkip.onclick = (e) => { e.preventDefault(); e.stopPropagation(); options.onSkip(); };
+                }
+            } else {
+                hud.style.pointerEvents = 'none';
+                hud.innerHTML = `<span style="font-size: 14px;">🤖</span><span>[XPIDER AI Solver] <span style="color:${statusColor}">${message}</span></span>`;
+            }
+
             if (isSuccess) {
                 setTimeout(() => { removeTopSolverHUD('SUCCESS_AUTO_DISMISS'); }, 800);
             } else {
@@ -859,7 +880,105 @@
         return false;
     }
 
+    // [Cloudflare WAF / Access Denied Terminal Classifier - Directive #6336861540]
+    function classifyWafBlock(doc = document) {
+        try {
+            if (!doc) return { isBlocked: false };
+
+            // Guard 1: If interactive challenge widgets exist, this is an interactive challenge, NOT a hard WAF access block
+            const hasInteractiveCaptcha = !!doc.querySelector(
+                '#challenge-stage, iframe[src*="challenges.cloudflare"], .cf-turnstile, #cf-turnstile, ' +
+                '.g-recaptcha, .h-captcha, iframe[src*="recaptcha"], iframe[src*="hcaptcha"], [data-challenge-state]'
+            );
+            if (hasInteractiveCaptcha) {
+                return { isBlocked: false };
+            }
+
+            // Guard 2: If a real contact form with textarea or email exists, this is NOT a hard WAF block
+            const hasRealForm = !!doc.querySelector('form textarea, form input[type="email"], textarea[name*="message"]');
+            if (hasRealForm) {
+                return { isBlocked: false };
+            }
+
+            const title = (doc.title || '').trim().toLowerCase();
+            const body = doc.body;
+            if (!body) return { isBlocked: false };
+            const bodyText = (body.textContent || '').toLowerCase();
+
+            // 1. Cloudflare Dedicated Error Selectors
+            const cfErrorElement = doc.querySelector('#cf-error-details, .cf-error-overview, .cf-error-source, #cf-wrapper #cf-error-banner, #cf-error-wrapper');
+            const hasCfErrorSelector = !!cfErrorElement;
+
+            // 2. Cloudflare Specific Text Markers
+            const hasCfWhyBlocked = bodyText.includes('why have i been blocked');
+            const hasCfUnableAccess = bodyText.includes('you are unable to access') || bodyText.includes('unable to access this website');
+            const hasCfSecurityService = bodyText.includes('security service to protect itself from online attacks') || bodyText.includes('performance & security by cloudflare');
+            const hasRayId = /cloudflare ray id[:\s]*([0-9a-f]+)/i.test(bodyText) || /ray id[:\s]*([0-9a-f]+)/i.test(bodyText);
+            const rayIdMatch = bodyText.match(/ray id[:\s]*([0-9a-f]{16,})/i);
+            const rayId = rayIdMatch ? rayIdMatch[1] : (hasCfErrorSelector ? 'dom_detected' : null);
+
+            // Cloudflare Detection Confirmed
+            if (hasCfErrorSelector || (hasRayId && (hasCfWhyBlocked || hasCfUnableAccess || hasCfSecurityService || title.includes('access denied') || title.includes('attention required'))) || (hasCfWhyBlocked && hasCfUnableAccess)) {
+                return {
+                    isBlocked: true,
+                    vendor: 'cloudflare',
+                    reasonCode: 'ACCESS_BLOCKED_WAF',
+                    rayId: rayId || 'none',
+                    details: 'Cloudflare WAF Access Denied (Error 1020 / Datacenter IP block)'
+                };
+            }
+
+            // 3. Generic WAF / 403 Access Denied
+            const isTitle403 = title === '403 forbidden' || title.includes('403 forbidden') || title.includes('access denied') || title.includes('403 - forbidden');
+            const headings = Array.from(doc.querySelectorAll('h1, h2')).map(h => (h.textContent || '').trim().toLowerCase());
+            const isHeading403 = headings.some(h => 
+                h === '403 forbidden' || h === 'access denied' || h.includes('access denied') || 
+                h.includes('you don\'t have permission to access') || h.includes('why have i been blocked')
+            );
+            const isBody403 = bodyText.includes('you don\'t have permission to access') || 
+                              bodyText.includes('access to this resource on the server is denied') ||
+                              bodyText.includes('you are not authorized to access this page');
+
+            const allInputs = doc.querySelectorAll('input:not([type="hidden"]), textarea, select, button');
+            if ((isTitle403 || isHeading403) && (isBody403 || isHeading403) && allInputs.length <= 1) {
+                return {
+                    isBlocked: true,
+                    vendor: 'generic_waf',
+                    reasonCode: 'ACCESS_BLOCKED_WAF',
+                    rayId: 'none',
+                    details: 'Generic 403 Forbidden / Access Denied (WAF or Server Restriction)'
+                };
+            }
+
+            return { isBlocked: false };
+        } catch (_) {
+            return { isBlocked: false };
+        }
+    }
+
+    // Backward compatible alias
+    function isPageWafBlocked() {
+        return classifyWafBlock(document).isBlocked;
+    }
+
     async function checkAndRecoverPage() {
+        const wafCheck = classifyWafBlock(document);
+        if (wafCheck.isBlocked) {
+            logDev(`🚫 [WAF_BLOCKED] ${wafCheck.details} on ${window.location.hostname}. Entire domain is blocked for current egress IP.`, "error");
+            logDev(`[PAGE_CLASS] WAF_BLOCKED_PAGE`, "info");
+            currentTargetLifecycleState = TargetLifecycleState.SETTLING;
+            finishCampaign(false, wafCheck.details, "ACCESS_BLOCKED_WAF", {
+                wafVendor: wafCheck.vendor,
+                rayId: wafCheck.rayId,
+                pageEvidence: {
+                    title: document.title,
+                    url: window.location.href,
+                    details: wafCheck.details
+                }
+            });
+            return true;
+        }
+
         const isErrorPage = isPageErrorOr404();
         if (isErrorPage) {
             logDev(`⚠️ [Recovery] Error/404 page detected on candidate: ${window.location.href}`, "warning");
@@ -4423,7 +4542,21 @@
                             const input = document.querySelector('[name="cf-turnstile-response"]');
                             if (input) { input.value = solution; applied = true; }
                         } else if (captchaData.type === 'recaptcha') {
-                            const fields = document.querySelectorAll('[name="g-recaptcha-response"], textarea[name="g-recaptcha-response"]');
+                            let fields = Array.from(document.querySelectorAll('[name="g-recaptcha-response"], textarea[name="g-recaptcha-response"], #g-recaptcha-response, .g-recaptcha-response'));
+                            if (fields.length === 0 && solution) {
+                                try {
+                                    const ta = document.createElement('textarea');
+                                    ta.id = 'g-recaptcha-response';
+                                    ta.name = 'g-recaptcha-response';
+                                    ta.className = 'g-recaptcha-response';
+                                    ta.style.display = 'none';
+                                    ta.value = solution;
+                                    const targetParent = document.querySelector('.g-recaptcha, [data-sitekey], form, [role="form"], .shrinker-content, .preview-content-holder') || document.body;
+                                    targetParent.appendChild(ta);
+                                    fields.push(ta);
+                                    applied = true;
+                                } catch (_) {}
+                            }
                             for (const f of fields) {
                                 try {
                                     const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')?.set;
@@ -4493,7 +4626,7 @@
                             const inp = document.querySelector('[name="cf-turnstile-response"]');
                             tokenPresentInDom = !!(inp && inp.value === solution);
                         } else if (captchaData.type === 'recaptcha') {
-                            const fields = document.querySelectorAll('[name="g-recaptcha-response"], textarea[name="g-recaptcha-response"]');
+                            const fields = document.querySelectorAll('[name="g-recaptcha-response"], textarea[name="g-recaptcha-response"], #g-recaptcha-response, .g-recaptcha-response');
                             for (const f of fields) {
                                 if (f && f.value === solution) { tokenPresentInDom = true; break; }
                             }
@@ -4613,36 +4746,78 @@
                     }
                     return true;
 
-                } else if (msg.action === 'START_MANUAL_CAPTCHA_WAIT') {
+                } else if (msg.action === 'START_MANUAL_CAPTCHA_WAIT' || (msg.action === 'CAPTCHA_UI_STATE_UPDATE' && msg.state === 'CAPTCHA_PENDING_MANUAL')) {
                     console.log(`[CAPTCHA_MANUAL_WAIT] timer paused, waiting for manual solve`);
-                    updateTopSolverHUD(`Manual solve requested. Please solve CAPTCHA in browser.`, 'MANUAL');
-                    const manualCheck = setInterval(() => {
-                        const gResp = document.querySelector('[name="g-recaptcha-response"]');
-                        const hResp = document.querySelector('[name="h-captcha-response"]');
-                        const tResp = document.querySelector('[name="cf-turnstile-response"]');
+                    const fallbackPrompt = msg.fallbackFrom
+                        ? `Auto-solver (${msg.fallbackFrom}) timed out. Please solve CAPTCHA in browser.`
+                        : (msg.message || `Manual solve requested. Please solve CAPTCHA in browser.`);
+
+                    let manualCheckTimer = null;
+                    const triggerManualSolved = () => {
+                        if (manualCheckTimer) { clearInterval(manualCheckTimer); manualCheckTimer = null; }
+                        console.log(`[CAPTCHA_MANUAL_RESOLVED] challenge solved manually`);
+                        _isCaptchaSolved = true;
+                        updateTopSolverHUD('Manual CAPTCHA solved ✓', 'SUCCESS');
+                        sendFn({
+                            action: 'MANUAL_CAPTCHA_RESOLVED',
+                            attemptId: execIdentity.attemptId,
+                            targetToken: execIdentity.targetToken,
+                            campaignRunId: execIdentity.campaignRunId,
+                            sessionId: execIdentity.sessionId,
+                            captchaEpoch: execIdentity.captchaEpoch || 1,
+                            tabId: execIdentity.tabId,
+                            verified: true
+                        });
+                        chrome.runtime.onMessage.removeListener(decisionListener);
+                        _activeCaptchaSolvePromise = null;
+                        resolve({ success: true, verified: true, manual: true });
+                    };
+
+                    const triggerManualSkip = () => {
+                        if (manualCheckTimer) { clearInterval(manualCheckTimer); manualCheckTimer = null; }
+                        console.log(`[CAPTCHA_MANUAL_SKIPPED] Owner skipped manual CAPTCHA`);
+                        _isCaptchaSolved = false;
+                        removeTopSolverHUD('SKIPPED');
+                        sendFn({
+                            action: 'CAPTCHA_MANUAL_SKIPPED',
+                            attemptId: execIdentity.attemptId,
+                            targetToken: execIdentity.targetToken,
+                            campaignRunId: execIdentity.campaignRunId,
+                            sessionId: execIdentity.sessionId,
+                            captchaEpoch: execIdentity.captchaEpoch || 1,
+                            tabId: execIdentity.tabId
+                        });
+                        chrome.runtime.onMessage.removeListener(decisionListener);
+                        _activeCaptchaSolvePromise = null;
+                        resolve({ success: false, skipped: true, reason: 'CAPTCHA_MANUAL_SKIPPED' });
+                    };
+
+                    updateTopSolverHUD(fallbackPrompt, 'MANUAL', {
+                        showButtons: true,
+                        onSolved: triggerManualSolved,
+                        onSkip: triggerManualSkip
+                    });
+
+                    manualCheckTimer = setInterval(() => {
+                        const gResp = document.querySelector('[name="g-recaptcha-response"], #g-recaptcha-response, .g-recaptcha-response');
+                        const hResp = document.querySelector('[name="h-captcha-response"], #h-captcha-response');
+                        const tResp = document.querySelector('[name="cf-turnstile-response"], #cf-turnstile-response');
+                        let grecaptchaToken = '';
+                        try {
+                            if (window.grecaptcha && typeof window.grecaptcha.getResponse === 'function') {
+                                grecaptchaToken = window.grecaptcha.getResponse() || '';
+                            }
+                        } catch (_) {}
+
                         const isDone = _isCaptchaSolved ||
-                                       (gResp && gResp.value && gResp.value.length > 5) ||
-                                       (hResp && hResp.value && hResp.value.length > 5) ||
-                                       (tResp && tResp.value && tResp.value.length > 5);
+                                       (gResp && gResp.value && gResp.value.length > 10) ||
+                                       (hResp && hResp.value && hResp.value.length > 10) ||
+                                       (tResp && tResp.value && tResp.value.length > 10) ||
+                                       (grecaptchaToken && grecaptchaToken.length > 10);
                         if (isDone) {
-                            clearInterval(manualCheck);
-                            console.log(`[CAPTCHA_MANUAL_RESOLVED] challenge solved manually`);
-                            _isCaptchaSolved = true;
-                            sendFn({
-                                action: 'MANUAL_CAPTCHA_RESOLVED',
-                                attemptId: execIdentity.attemptId,
-                                targetToken: execIdentity.targetToken,
-                                campaignRunId: execIdentity.campaignRunId,
-                                sessionId: execIdentity.sessionId,
-                                captchaEpoch: execIdentity.captchaEpoch || 1,
-                                tabId: execIdentity.tabId,
-                                verified: true
-                            });
-                            chrome.runtime.onMessage.removeListener(decisionListener);
-                            _activeCaptchaSolvePromise = null;
-                            resolve(true);
+                            triggerManualSolved();
                         }
-                    }, 1000);
+                    }, 800);
 
                 } else if (msg.action === 'CAPTCHA_UI_STATE_UPDATE') {
                     if (msg.attemptId && execIdentity.attemptId && msg.attemptId !== execIdentity.attemptId) {
@@ -4653,6 +4828,15 @@
                         // [RC3.29 P0-C Fix: Background is single terminal authority for success]
                         _isCaptchaSolved = true;
                         updateTopSolverHUD(msg.message || 'CAPTCHA solved ✓', 'SUCCESS');
+                        chrome.runtime.onMessage.removeListener(decisionListener);
+                        _activeCaptchaSolvePromise = null;
+                        resolve({ success: true, verified: true, tokenInjected: true });
+                    } else if (msg.state === 'READY_TO_SUBMIT') {
+                        _captchaTokenInjected = true;
+                        updateTopSolverHUD(msg.message || 'CAPTCHA integrated — ready to submit', 'ACTIVE');
+                        chrome.runtime.onMessage.removeListener(decisionListener);
+                        _activeCaptchaSolvePromise = null;
+                        resolve({ success: true, readyToSubmit: true, tokenInjected: true });
                     } else if (msg.state === 'CAPTCHA_AUTO_FAILURE' || msg.state === 'CAPTCHA_SKIPPED') {
                         _isCaptchaSolved = false;
                         currentTargetLifecycleState = TargetLifecycleState.SETTLED;
@@ -7354,6 +7538,8 @@
         window.__xpiderExtractEmailsFromCurrentDom = extractEmailsFromCurrentDom;
         window.__xpiderResetCaptchaRuntimeState = resetCaptchaRuntimeState;
         window.__xpider_resetCaptchaRuntimeState = resetCaptchaRuntimeState;
+        window.__xpiderClassifyWafBlock = classifyWafBlock;
+        window.__xpiderIsPageWafBlocked = isPageWafBlocked;
         window.__xpider_initialized = true;
     }
 
@@ -7380,6 +7566,8 @@
             checkForCaptcha,
             tryAutoSolveCaptcha,
             extractCaptchaSitekey,
+            classifyWafBlock,
+            isPageWafBlocked,
             ContactGate: _ContactGate,
             SmartFieldResolver: _SmartFieldResolver,
             ContactDiscoveryEngine: _ContactDiscoveryEngine,

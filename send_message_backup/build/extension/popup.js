@@ -1336,27 +1336,54 @@ async function hydrateSettings(overrideV2Store = null) {
     if (captchaToggle) captchaToggle.checked = captchaEnabled;
 
     const methodSelect = document.getElementById('captcha-method-select');
+    const apiKeyInput = document.getElementById('captcha-api-key');
+    const apiLinkTip = document.getElementById('api-link-tip');
+
+    function updateCaptchaMethodUI(method) {
+        let warnEl = document.getElementById('nopecha-sub-warning');
+        if (warnEl) warnEl.remove();
+
+        if (apiKeyInput) {
+            apiKeyInput.placeholder = method === 'nopecha'
+                ? 'Enter NopeCHA API Key (e.g. sub_... or key from nopecha.com/manage)'
+                : 'Enter 2Captcha API Key';
+        }
+        if (apiLinkTip) {
+            if (method === 'nopecha') {
+                apiLinkTip.innerHTML = '<a href="https://nopecha.com/manage" target="_blank" style="color:#00ffcc;text-decoration:underline;font-size:11px;">NopeCHA Dashboard (Active Keys 확인) ↗</a>';
+            } else {
+                apiLinkTip.innerHTML = '<a href="https://2captcha.com" target="_blank" style="color:#00ffcc;text-decoration:underline;font-size:11px;">Get your 2Captcha API Key here ↗</a>';
+            }
+        }
+        const waitInput = document.getElementById('captcha-max-wait');
+        if (waitInput) {
+            waitInput.placeholder = method === 'nopecha' ? '180' : '200';
+        }
+        const pollInput = document.getElementById('captcha-poll-interval');
+        if (pollInput) {
+            pollInput.placeholder = method === 'nopecha' ? '3' : '5';
+        }
+    }
+
     if (methodSelect) {
         methodSelect.value = captchaMethod;
-        // [NopeCHA Fix] When method changes in UI, swap in the correct saved key & update timing placeholders
+        updateCaptchaMethodUI(captchaMethod);
+
         methodSelect.addEventListener('change', async () => {
             const newMethod = methodSelect.value;
             const stored = await chrome.storage.local.get(['xpider_captcha_api_key_nopecha', 'xpider_captcha_api_key_2captcha']);
-            const apiKeyEl = document.getElementById('captcha-api-key');
-            if (apiKeyEl) {
-                apiKeyEl.value = newMethod === 'nopecha'
+            if (apiKeyInput) {
+                apiKeyInput.value = newMethod === 'nopecha'
                     ? (stored.xpider_captcha_api_key_nopecha || '')
                     : (stored.xpider_captcha_api_key_2captcha || '');
             }
-            const pollInput = document.getElementById('captcha-poll-interval');
-            const waitInput = document.getElementById('captcha-max-wait');
-            if (pollInput) pollInput.placeholder = newMethod === 'nopecha' ? '3' : '5';
-            if (waitInput) waitInput.placeholder = newMethod === 'nopecha' ? '120' : '200';
+            updateCaptchaMethodUI(newMethod);
         });
     }
 
-    const apiKeyInput = document.getElementById('captcha-api-key');
-    if (apiKeyInput) apiKeyInput.value = captchaApiKey;
+    if (apiKeyInput) {
+        apiKeyInput.value = captchaApiKey;
+    }
 
     // Load Solver Waiting & Polling Time settings
     const pollIntervalInput = document.getElementById('captcha-poll-interval');

@@ -1962,7 +1962,7 @@ async function recordTerminalCaptchaFailure(attemptId, reason, safeErrorClass) {
             settleReason = 'CAPTCHA_TOKEN_ACCEPTANCE_TIMEOUT';
         } else if (/timeout/i.test(reasonStr) || /timeout/i.test(errClassStr)) {
             settleReason = 'CAPTCHA_SOLVER_TIMEOUT';
-        } else if (/config|key|wrong_user_key|not_exist/i.test(reasonStr) || /config|key/i.test(errClassStr)) {
+        } else if (/config|key|wrong_user_key|not_exist|sub_|subscription|feature unavailable|invalid_key|invalid key/i.test(reasonStr) || /config|key/i.test(errClassStr)) {
             settleReason = 'CAPTCHA_SOLVER_CONFIG_ERROR';
         } else if (/zero_balance/i.test(reasonStr) || /zero_balance/i.test(errClassStr)) {
             settleReason = 'CAPTCHA_SOLVER_UNAVAILABLE';
@@ -2565,7 +2565,7 @@ globalThis.__xpider_testDuplicateTokenInjection = async (token) => {
                     }
                     const witKey = storage.xpider_stt_api_key || storage.audioSttKey || storage.witKey || campaignState.witAiKey || request.witKey || null;
                     const pollIntervalMs = Number(storage.xpider_captcha_poll_interval_ms) || (Number(storage.xpider_captcha_poll_interval_sec) ? Number(storage.xpider_captcha_poll_interval_sec) * 1000 : null) || (method === 'nopecha' ? 3000 : 5000);
-                    const maxWaitSec = Number(storage.xpider_captcha_max_wait_sec) || (method === 'nopecha' ? 120 : 200);
+                    const maxWaitSec = Number(storage.xpider_captcha_max_wait_sec) || (method === 'nopecha' ? 180 : 200);
                     
                     solver.config.witAiKey = witKey;
                     solver.config.nopeChaKey = storage.xpider_captcha_api_key_nopecha || (method === 'nopecha' ? apiKey : '');
@@ -2615,6 +2615,31 @@ globalThis.__xpider_testDuplicateTokenInjection = async (token) => {
                             return { success: false, error: cfgErr, terminalError: keyCheckResp.request };
                         }
                     }
+
+                    // NopeCHA key pre-validation: verify active status and plan via official status API
+                    if (!labMockEligible && method === 'nopecha' && apiKey) {
+                        const keyCheckResp = await new Promise(resolve => {
+                            try {
+                                fetch(`https://api.nopecha.com/status?key=${encodeURIComponent(apiKey)}`, { signal: AbortSignal.timeout(5000) })
+                                    .then(r => r.json()).then(resolve).catch(() => resolve(null));
+                            } catch(_) { resolve(null); }
+                        });
+                        if (keyCheckResp && keyCheckResp.error) {
+                            let msg = keyCheckResp.message || 'Unknown error';
+                            if (keyCheckResp.error === 15) {
+                                msg = 'Invalid API key. Please check your API key in Settings.';
+                            } else if (keyCheckResp.error === 18) {
+                                msg = 'Feature unavailable for current plan. Token API requires a paid NopeCHA plan.';
+                            }
+                            const cfgErr = `NopeCHA CONFIGURATION FAILURE: Error ${keyCheckResp.error} (${msg}). Configure valid API key in Settings.`;
+                            logBg(null, `[Auto CAPTCHA Solver] ${cfgErr}`, 'error');
+                            campaignState.captchaEpochBlockedErrors[curEpoch] = `NOPECHA_ERROR_${keyCheckResp.error}`;
+                            await recordTerminalCaptchaFailure(solveIdentity?.attemptId, cfgErr, 'CONFIG_ERROR');
+                            return { success: false, error: cfgErr, terminalError: `NOPECHA_ERROR_${keyCheckResp.error}` };
+                        } else if (keyCheckResp && keyCheckResp.plan) {
+                            logBg(null, `[Auto CAPTCHA Solver] NopeCHA key verified: plan=${keyCheckResp.plan} credit=${keyCheckResp.credit}/${keyCheckResp.quota}`, 'info');
+                        }
+                    }
                     
                     let targetPageUrl = request.url || '';
                     if (!targetPageUrl || targetPageUrl.includes('google.com/recaptcha') || targetPageUrl.includes('recaptcha.net')) {
@@ -2640,13 +2665,55 @@ globalThis.__xpider_testDuplicateTokenInjection = async (token) => {
                                 'textarea[name="g-recaptcha-response"]',
                                 '[name="g-recaptcha-response"]',
                                 '#g-recaptcha-response',
+                                '.g-recaptcha-response',
                                 'input[name="cf-turnstile-response"]',
                                 '[name="cf-turnstile-response"]',
                                 'textarea[name="h-captcha-response"]',
                                 '[name="h-captcha-response"]'
                             ];
-                            const fields = document.querySelectorAll(fieldSelectors.join(', '));
+                            let fields = Array.from(document.querySelectorAll(fieldSelectors.join(', ')));
                             fieldsFound = fields.length;
+
+                            // If no response field is found in the DOM, synthesize and attach one dynamically
+                            if (fieldsFound === 0 && token) {
+                                try {
+                                    const widget = document.querySelector('.g-recaptcha, .h-captcha, [data-challenge-state], #cf-turnstile, #captcha-widget, [data-sitekey], iframe[src*="recaptcha"]');
+                                    const container = widget || document.querySelector('form, [role="form"], .shrinker-content, .preview-content-holder') || document.body;
+                                    if (!captchaType || captchaType.includes('recaptcha')) {
+                                        const ta = document.createElement('textarea');
+                                        ta.id = 'g-recaptcha-response';
+                                        ta.name = 'g-recaptcha-response';
+                                        ta.className = 'g-recaptcha-response';
+                                        ta.style.cssText = 'width: 250px; height: 40px; border: 1px solid rgb(193, 193, 193); margin: 10px 25px; padding: 0px; resize: none; display: none;';
+                                        ta.value = token;
+                                        container.appendChild(ta);
+                                        fields.push(ta);
+                                        fieldsFound = 1;
+                                        tokenWritten = true;
+                                    } else if (captchaType.includes('turnstile')) {
+                                        const inp = document.createElement('input');
+                                        inp.type = 'hidden';
+                                        inp.name = 'cf-turnstile-response';
+                                        inp.id = 'cf-turnstile-response';
+                                        inp.value = token;
+                                        container.appendChild(inp);
+                                        fields.push(inp);
+                                        fieldsFound = 1;
+                                        tokenWritten = true;
+                                    } else if (captchaType.includes('hcaptcha')) {
+                                        const ta = document.createElement('textarea');
+                                        ta.name = 'h-captcha-response';
+                                        ta.id = 'h-captcha-response';
+                                        ta.style.display = 'none';
+                                        ta.value = token;
+                                        container.appendChild(ta);
+                                        fields.push(ta);
+                                        fieldsFound = 1;
+                                        tokenWritten = true;
+                                    }
+                                } catch (_) {}
+                            }
+
                             for (const f of fields) {
                                 try {
                                     const isTextArea = f instanceof HTMLTextAreaElement;
@@ -2664,6 +2731,21 @@ globalThis.__xpider_testDuplicateTokenInjection = async (token) => {
                                 } catch (_) {
                                     try { f.value = token; tokenWritten = true; } catch (__) {}
                                 }
+                            }
+
+                            // Hook grecaptcha.getResponse in host window so any script calling grecaptcha.getResponse() receives the solved token
+                            if (typeof window.grecaptcha !== 'undefined') {
+                                try {
+                                    window.grecaptcha.getResponse = function(opt_widget_id) {
+                                        return token;
+                                    };
+                                } catch (_) {}
+                            }
+                            if (window.$ || window.jQuery) {
+                                try {
+                                    const $ = window.$ || window.jQuery;
+                                    $('#g-recaptcha-response, .g-recaptcha-response').val(token).trigger('input').trigger('change');
+                                } catch (_) {}
                             }
 
                             // 2. Discover and invoke callback from widget data-callback attribute
@@ -2786,13 +2868,14 @@ globalThis.__xpider_testDuplicateTokenInjection = async (token) => {
                                 'textarea[name="g-recaptcha-response"]',
                                 '[name="g-recaptcha-response"]',
                                 '#g-recaptcha-response',
+                                '.g-recaptcha-response',
                                 'input[name="cf-turnstile-response"]',
                                 '[name="cf-turnstile-response"]',
                                 'textarea[name="h-captcha-response"]',
                                 '[name="h-captcha-response"]'
                             ];
                             const fields = document.querySelectorAll(fieldSelectors.join(', '));
-                            const widget = document.querySelector('.g-recaptcha, .h-captcha, [data-challenge-state], #cf-turnstile, #captcha-widget, [data-sitekey]');
+                            const widget = document.querySelector('.g-recaptcha, .h-captcha, [data-challenge-state], #cf-turnstile, #captcha-widget, [data-sitekey], iframe[src*="recaptcha"]');
                             const cbAttr = widget ? widget.getAttribute('data-callback') : null;
                             return {
                                 origin: (window.location && window.location.origin) || 'unknown',
@@ -3149,7 +3232,10 @@ globalThis.__xpider_testDuplicateTokenInjection = async (token) => {
                                 enterprise: request.enterprise,
                                 invisible: request.invisible
                             };
-                            const token = await solver.solve2Captcha(request.sitekey, targetPageUrl, request.type || request.captchaType || 'recaptcha', extra, pollIntervalMs, maxWaitSec);
+                            const token = await solver.solve2Captcha(request.sitekey, targetPageUrl, request.type || request.captchaType || 'recaptcha', extra, pollIntervalMs, maxWaitSec, {
+                                attemptId: solveIdentity?.attemptId,
+                                telemetryCallback: (line, lvl) => logBg(null, line, lvl)
+                            });
 
                             const postValidation = validateActiveExecution(request, sender, 'SOLVE_CAPTCHA_POST', { expectedIdentity: solveIdentity, allowBodyTabId: true });
                             if (!postValidation.valid || !campaignState.isActive || campaignState.isPaused) {
@@ -3175,21 +3261,23 @@ globalThis.__xpider_testDuplicateTokenInjection = async (token) => {
                                     attemptId: solveIdentity?.attemptId
                                 }).catch(() => {});
                                 recordTerminalCaptchaFailure(solveIdentity?.attemptId, 'ERROR_WRONG_USER_KEY');
-                                return { success: false, error: e2.message, terminalError: 'ERROR_WRONG_USER_KEY', remainingPaused: true };
+                                return { success: false, error: e2.message, terminalState: 'AUTH_ERROR', terminalError: 'ERROR_WRONG_USER_KEY', remainingPaused: true };
                             }
                             const isZeroBal = e2.message && (e2.message.includes('ERROR_ZERO_BALANCE') || e2.message.includes('ZERO_BALANCE'));
                             if (isZeroBal) {
                                 campaignState.captchaEpochBlockedErrors[curEpoch] = 'ERROR_ZERO_BALANCE';
                             }
+                            const safeErrClass = e2.terminalState || (isWrongKey ? 'AUTH_ERROR' : (isZeroBal ? 'AUTH_ERROR' : 'PROVIDER_ERROR'));
                             const showChoicePopup = storage.xpider_show_captcha_choice_popup === true;
                             await recordTerminalCaptchaFailure(solveIdentity?.attemptId, e2.message, safeErrClass);
                             return { 
                                 success: false, 
                                 terminalSettled: !showChoicePopup,
                                 result: 'SKIPPED',
-                                settleReason: isZeroBal ? 'CAPTCHA_SOLVER_UNAVAILABLE' : (isWrongKey ? 'CAPTCHA_SOLVER_CONFIG_ERROR' : 'CAPTCHA_SOLVER_PROVIDER_ERROR'),
+                                settleReason: isZeroBal ? 'CAPTCHA_SOLVER_UNAVAILABLE' : (isWrongKey ? 'CAPTCHA_SOLVER_CONFIG_ERROR' : ('CAPTCHA_SOLVER_' + (e2.terminalState || 'PROVIDER_ERROR'))),
                                 error: e2.message,
                                 safeErrorClass: safeErrClass,
+                                terminalState: e2.terminalState || (isZeroBal ? 'AUTH_ERROR' : (isWrongKey ? 'AUTH_ERROR' : 'PROVIDER_ERROR')),
                                 terminalError: isZeroBal ? 'ERROR_ZERO_BALANCE' : (isWrongKey ? 'ERROR_WRONG_USER_KEY' : null),
                                 remainingPaused: showChoicePopup
                             };
@@ -3212,6 +3300,7 @@ globalThis.__xpider_testDuplicateTokenInjection = async (token) => {
                             settleReason: 'CAPTCHA_SOLVER_CONFIG_ERROR',
                             error: errMsg, 
                             safeErrorClass: 'CONFIG_ERROR',
+                            terminalState: 'AUTH_ERROR',
                             remainingPaused: showChoicePopup 
                         };
                     }
@@ -3221,7 +3310,10 @@ globalThis.__xpider_testDuplicateTokenInjection = async (token) => {
                         const nopechaStart = Date.now();
                         logBg(null, `[CAPTCHA_PROVIDER] provider=nopecha status=REQUEST_START keyConfigured=true epoch=${curEpoch}`, 'info');
                         try {
-                            const token = await solver.solveNopeCha(request.sitekey, targetPageUrl, request.type || request.captchaType || 'recaptcha', pollIntervalMs, maxWaitSec);
+                            const token = await solver.solveNopeCha(request.sitekey, targetPageUrl, request.type || request.captchaType || 'recaptcha', pollIntervalMs, maxWaitSec, {
+                                attemptId: solveIdentity?.attemptId,
+                                telemetryCallback: (line, lvl) => logBg(null, line, lvl)
+                            });
                             
                             const postValidation = validateActiveExecution(request, sender, 'SOLVE_CAPTCHA_POST', { expectedIdentity: solveIdentity, allowBodyTabId: true });
                             if (!postValidation.valid || !campaignState.isActive || campaignState.isPaused) {
@@ -3235,10 +3327,11 @@ globalThis.__xpider_testDuplicateTokenInjection = async (token) => {
                             return await verifyAndRecordCaptchaSuccess(token, 'nopecha');
                         } catch (enp) {
                             const elapsedMs = Date.now() - nopechaStart;
+                            const isNopeChaConfig = enp.message && (/Error \(15\)|Error \(18\)|Invalid key|Feature unavailable/i.test(enp.message));
                             const isNopeChaTimeout = enp.message && enp.message.includes('NopeCHA Timeout');
                             const isNopeChaInvalidReq = enp.message && enp.message.includes('Error (10)');
                             const isNopeChaRateLimit = enp.message && enp.message.includes('Error (11)');
-                            const safeErrClass = isNopeChaTimeout ? 'TIMEOUT' : (isNopeChaInvalidReq ? 'INVALID_REQUEST' : (isNopeChaRateLimit ? 'RATE_LIMIT' : 'PROVIDER_ERROR'));
+                            const safeErrClass = isNopeChaConfig ? 'CONFIG_ERROR' : (isNopeChaTimeout ? 'TIMEOUT' : (isNopeChaInvalidReq ? 'INVALID_REQUEST' : (isNopeChaRateLimit ? 'RATE_LIMIT' : 'PROVIDER_ERROR')));
 
                             logBg(null, `[CAPTCHA_PROVIDER] provider=nopecha status=FAILED errorClass=${safeErrClass} elapsedMs=${elapsedMs} error="${enp.message}"`, 'error');
                             logBg(null, `[Auto CAPTCHA Solver] NopeCHA FAILED: ${enp.message}`, 'error');
@@ -3265,7 +3358,10 @@ globalThis.__xpider_testDuplicateTokenInjection = async (token) => {
                                         enterprise: request.enterprise,
                                         invisible: request.invisible
                                     };
-                                    const fallbackToken = await solver.solve2Captcha(request.sitekey, targetPageUrl, request.type || request.captchaType || 'recaptcha', extra, 5000, 120);
+                                    const fallbackToken = await solver.solve2Captcha(request.sitekey, targetPageUrl, request.type || request.captchaType || 'recaptcha', extra, 5000, 120, {
+                                        attemptId: solveIdentity?.attemptId,
+                                        telemetryCallback: (line, lvl) => logBg(null, line, lvl)
+                                    });
                                     return await verifyAndRecordCaptchaSuccess(fallbackToken, '2captcha_fallback');
                                 } catch (eFallback) {
                                     logBg(null, `[CAPTCHA_PROVIDER_FALLBACK] fallback=2captcha failed: ${eFallback.message}`, 'error');
@@ -3278,9 +3374,10 @@ globalThis.__xpider_testDuplicateTokenInjection = async (token) => {
                                 success: false, 
                                 terminalSettled: !showChoicePopup,
                                 result: 'SKIPPED',
-                                settleReason: safeErrClass === 'TIMEOUT' ? 'CAPTCHA_SOLVER_TIMEOUT' : 'CAPTCHA_SOLVER_PROVIDER_ERROR',
+                                settleReason: 'CAPTCHA_SOLVER_' + (enp.terminalState || (safeErrClass === 'TIMEOUT' ? 'PROVIDER_TIMEOUT' : 'PROVIDER_ERROR')),
                                 error: enp.message, 
-                                safeErrorClass: safeErrClass, 
+                                safeErrorClass: safeErrClass,
+                                terminalState: enp.terminalState || (safeErrClass === 'TIMEOUT' ? 'PROVIDER_TIMEOUT' : (safeErrClass === 'CONFIG_ERROR' ? 'AUTH_ERROR' : 'REJECTED')),
                                 remainingPaused: showChoicePopup 
                             };
                         }
@@ -4805,6 +4902,23 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                     campaignState.currentTargetStage = 'SETTLED';
                 }
 
+                // [RC3.41 Hardening - Directive #6336861540: Cloudflare WAF Hard Block Settlement]
+                if (request.result?.reasonCode === 'ACCESS_BLOCKED_WAF') {
+                    const wafVendor = request.result.metadata?.wafVendor || 'CLOUDFLARE_WAF';
+                    const rayId = request.result.metadata?.rayId || 'none';
+                    logBg(sender.tab?.id, `[ACCESS_BLOCKED_WAF] Target blocked by upstream security policy / WAF (vendor=${wafVendor}, rayId=${rayId}). Settling immediately as SECURITY_BLOCKED.`, 'warning');
+                    if (campaignState.targetDeadlineController) {
+                        try { campaignState.targetDeadlineController.cancel('ACCESS_BLOCKED_WAF'); } catch (_) {}
+                    }
+                    if (chrome.alarms && campaignState.sessionId) {
+                        const sId = campaignState.sessionId;
+                        const tId = sender.tab?.id || campaignState.currentTabId;
+                        if (tId) chrome.alarms.clear(`xpider_watchdog_${tId}_${sId}`);
+                        chrome.alarms.clear(`xpider_timeout_${sId}`);
+                    }
+                    campaignState.currentTargetStage = 'SETTLED';
+                }
+
                 // [RC3.31 P0-D: Downstream Site Acceptance Settlement]
                 if (campaignState.captchaPendingAcceptance) {
                     if (request.result?.success) {
@@ -5301,6 +5415,7 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                                 campaignState.targetDeadlineController.pause('CAPTCHA_AUTO_SOLVING');
                             }
                             logBg(null, `[OWNER_CAPTCHA] Auto-first: launching automatic solver without popup`, 'info');
+                            const curAttemptId = campaignState.currentAttempt?.attemptId;
                             const solveReq = {
                                 action: 'SOLVE_CAPTCHA',
                                 ownerAuthorized: true,
@@ -5308,14 +5423,90 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                                 sitekey: sitekey || '',
                                 url: targetUrl || campaignState.currentAttempt?.url || '',
                                 tabId: campaignState.currentTabId,
-                                attemptId: campaignState.currentAttempt?.attemptId,
+                                attemptId: curAttemptId,
                                 targetToken: campaignState.currentTargetToken,
                                 campaignRunId: campaignState.campaignRunId,
                                 sessionId: campaignState.sessionId,
                                 captchaEpoch: curEpoch
                             };
-                            await handleSolveCaptchaInternal(solveReq, sender, sendResponse);
-                            return;
+                            let solveRes = null;
+                            try {
+                                solveRes = await handleSolveCaptchaInternal(solveReq, sender, sendResponse);
+                            } catch (eSolve) {
+                                solveRes = { success: false, error: eSolve.message };
+                            }
+
+                            if (solveRes && solveRes.success) {
+                                return;
+                            }
+
+                            // [RC3.41 Hardening - Directive #6335592395]
+                            // Auto-solver failed (timeout, config, or provider error).
+                            // Offer a single manual solve fallback without looping.
+                            if (curAttemptId && curAttemptId !== campaignState.manualFallbackAttemptId) {
+                                campaignState.manualFallbackAttemptId = curAttemptId;
+                                campaignState.currentTargetStage = 'CAPTCHA_PENDING_MANUAL';
+                                logBg(null, `[OWNER_CAPTCHA] Auto-solver failed (${solveRes?.error || 'unknown'}). Falling back to single manual solve prompt.`, 'warning');
+                                
+                                if (campaignState.targetDeadlineController) {
+                                    campaignState.targetDeadlineController.pause('CAPTCHA_PENDING_MANUAL');
+                                }
+
+                                if (campaignState.currentTabId) {
+                                    chrome.tabs.sendMessage(campaignState.currentTabId, {
+                                        action: 'START_MANUAL_CAPTCHA_WAIT',
+                                        attemptId: curAttemptId,
+                                        targetToken: campaignState.currentTargetToken,
+                                        campaignRunId: campaignState.campaignRunId,
+                                        sessionId: campaignState.sessionId,
+                                        captchaEpoch: curEpoch,
+                                        tabId: campaignState.currentTabId,
+                                        fallbackFrom: userSettings.xpider_captcha_method || 'provider',
+                                        message: `Auto-solver failed (${solveRes?.error || 'timeout'}). Please solve CAPTCHA in browser.`
+                                    }).catch(() => {});
+                                }
+                                return;
+                            } else {
+                                // Manual fallback already offered or skipped
+                                campaignState.captchaLedger.manualSkip++;
+                                campaignState.currentTargetStage = 'CAPTCHA_SKIPPED';
+                                logBg(null, `[OWNER_CAPTCHA] Auto-solver failed and manual fallback already attempted. Advancing as SKIPPED.`, 'info');
+                                
+                                if (curAttemptId) {
+                                    campaignState.captchaFailuresRecorded.add(curAttemptId);
+                                }
+                                if (campaignState.targetDeadlineController) {
+                                    campaignState.targetDeadlineController.cancel('CAPTCHA_SOLVER_PROVIDER_ERROR');
+                                }
+                                if (campaignState.currentTabId && chrome.alarms) {
+                                    chrome.alarms.clear(`xpider_watchdog_${campaignState.currentTabId}_${campaignState.sessionId}`);
+                                }
+                                chrome.tabs.sendMessage(campaignState.currentTabId, {
+                                    action: 'CAPTCHA_SKIP_DECISION',
+                                    attemptId: curAttemptId,
+                                    targetToken: campaignState.currentTargetToken,
+                                    campaignRunId: campaignState.campaignRunId,
+                                    sessionId: campaignState.sessionId,
+                                    captchaEpoch: curEpoch,
+                                    tabId: campaignState.currentTabId,
+                                    result: 'SKIPPED',
+                                    reason: 'CAPTCHA_SOLVER_PROVIDER_ERROR'
+                                }).catch(() => {});
+
+                                if (typeof campaignState.targetResolve === 'function') {
+                                    const resolveTarget = campaignState.targetResolve;
+                                    campaignState.targetResolve = null;
+                                    resolveTarget({
+                                        success: false,
+                                        reasonCode: 'CAPTCHA_SOLVER_PROVIDER_ERROR',
+                                        metadata: {
+                                            captchaStatus: 'FAILED_PROVIDER',
+                                            error: solveRes?.error || 'PROVIDER_FAILURE'
+                                        }
+                                    });
+                                }
+                                return;
+                            }
                         } else {
                             campaignState.captchaLedger.pendingOwner = Math.max(0, campaignState.captchaLedger.pendingOwner - 1);
                             campaignState.captchaLedger.manualSkip++;
@@ -5514,8 +5705,8 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                         return;
                     }
 
-                    if (campaignState.currentTargetStage !== 'CAPTCHA_MANUAL_WAIT') {
-                        logBg(null, `[CAPTCHA_MANUAL_RESULT] REJECT: stage is ${campaignState.currentTargetStage}, expected CAPTCHA_MANUAL_WAIT.`, 'warning');
+                    if (campaignState.currentTargetStage !== 'CAPTCHA_MANUAL_WAIT' && campaignState.currentTargetStage !== 'CAPTCHA_PENDING_MANUAL') {
+                        logBg(null, `[CAPTCHA_MANUAL_RESULT] REJECT: stage is ${campaignState.currentTargetStage}, expected CAPTCHA_MANUAL_WAIT or CAPTCHA_PENDING_MANUAL.`, 'warning');
                         sendResponse({ success: false, error: 'STALE_MANUAL_RESULT', reason: 'invalid_stage' });
                         return;
                     }
@@ -5538,6 +5729,55 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                         sendResponse({ success: false, error: 'NOT_VERIFIED' });
                     }
                 } catch(e) {
+                    sendResponse({ success: false, error: e.message });
+                }
+            })();
+            return true;
+
+        // [RC3.41 Hardening - Directive #6335592395] Manual CAPTCHA skipped by owner via HUD button
+        case 'CAPTCHA_MANUAL_SKIPPED':
+            (async () => {
+                try {
+                    const validation = validateActiveExecution(request, sender, 'CAPTCHA_MANUAL_SKIPPED', { checkEpoch: true, allowBodyTabId: true });
+                    if (!validation.valid) {
+                        logBg(null, `[CAPTCHA_MANUAL_SKIPPED] REJECT: reason=${validation.reason}`, 'warning');
+                        sendResponse({ success: false, error: validation.reason });
+                        return;
+                    }
+
+                    if (campaignState.currentTargetStage !== 'CAPTCHA_PENDING_MANUAL' && campaignState.currentTargetStage !== 'CAPTCHA_MANUAL_WAIT') {
+                        logBg(null, `[CAPTCHA_MANUAL_SKIPPED] REJECT: stage is ${campaignState.currentTargetStage}, expected CAPTCHA_PENDING_MANUAL or CAPTCHA_MANUAL_WAIT`, 'warning');
+                        sendResponse({ success: false, error: 'STALE_MANUAL_SKIP', reason: 'invalid_stage' });
+                        return;
+                    }
+
+                    logBg(null, `[CAPTCHA_MANUAL_SKIPPED] Manual CAPTCHA skipped by user. attemptId=${request.attemptId}`, 'info');
+                    campaignState.currentTargetStage = 'CAPTCHA_SKIPPED';
+                    campaignState.captchaLedger.manualSkip++;
+                    campaignState.counters.captchaFailed = (campaignState.counters.captchaFailed || 0) + 1;
+                    broadcastCounters();
+
+                    if (campaignState.targetDeadlineController) {
+                        try { campaignState.targetDeadlineController.cancel('CAPTCHA_MANUAL_SKIPPED'); } catch (_) {}
+                    }
+                    if (campaignState.currentTabId && chrome.alarms) {
+                        chrome.alarms.clear(`xpider_watchdog_${campaignState.currentTabId}_${campaignState.sessionId}`);
+                    }
+
+                    if (typeof campaignState.targetResolve === 'function') {
+                        const resolveTarget = campaignState.targetResolve;
+                        campaignState.targetResolve = null;
+                        resolveTarget({
+                            success: false,
+                            reasonCode: 'CAPTCHA_MANUAL_SKIPPED',
+                            metadata: {
+                                captchaStatus: 'SKIPPED_MANUAL'
+                            }
+                        });
+                    }
+
+                    sendResponse({ success: true, status: 'MANUAL_SKIP_RECORDED' });
+                } catch (e) {
                     sendResponse({ success: false, error: e.message });
                 }
             })();
@@ -8264,6 +8504,8 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
         let finalReason;
         if (isSuccess) {
             finalReason = REASON_CODES.SUCCESS_CONFIRMED;
+        } else if (res?.reasonCode === 'ACCESS_BLOCKED_WAF' || res?.error === 'ACCESS_BLOCKED_WAF') {
+            finalReason = 'ACCESS_BLOCKED_WAF';
         } else if (res?.reasonCode === 'PRIVACY_GATEWAY_BLOCKED_BEFORE_SUBMIT' || res?.error === 'PRIVACY_GATEWAY_BLOCKED_BEFORE_SUBMIT') {
             finalReason = 'PRIVACY_GATEWAY_BLOCKED_BEFORE_SUBMIT';
         } else if (isPreSubmitFailure) {
@@ -8352,6 +8594,11 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
         logBg(tabId, `[TARGET][${hostName}] FINAL status=${terminalStatus} reason=${finalReason}`, terminalStatus === 'CONFIRMED_SUCCESS' ? "success" : (terminalStatus === 'SKIPPED' ? "info" : "warning"));
 
         const evidence = res?.metadata?.outcomeEvidence || {};
+        if (res?.reasonCode === 'ACCESS_BLOCKED_WAF' && res?.metadata) {
+            evidence.wafVendor = res.metadata.wafVendor || 'CLOUDFLARE_WAF';
+            evidence.rayId = res.metadata.rayId || null;
+            if (res.metadata.pageEvidence) evidence.pageEvidence = res.metadata.pageEvidence;
+        }
 
         // [F8 & R6.9A] Settle the single canonical durable attempt in HistoryStore ledger
         try {

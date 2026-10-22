@@ -283,10 +283,95 @@ class XpiderSolverCore {
      * @param {number} [maxWaitSec=120]       Maximum total wait time in seconds
      */
     /**
-     * [RC3.25 Directive D] Solve via NopeCHA Token API with Hard Wall-Clock Cap & Sanitized Telemetry
+     * [RC3.41 Bounded Remediation - Directive #6335592395]
+     * Helper: Fetch with bounded per-request timeout linked to optional parent signal.
      */
-    async solveNopeCha(siteKey, pageUrl, type = 'recaptcha', pollIntervalMs = 3000, maxWaitSec = 120) {
-        if (!this.config.nopeChaKey) throw new Error("NopeCHA API Key missing.");
+    async _fetchWithTimeout(url, options = {}, timeoutMs = 10000, parentSignal = null) {
+        const ctrl = new AbortController();
+        let parentListener = null;
+        if (parentSignal) {
+            if (parentSignal.aborted) {
+                ctrl.abort(parentSignal.reason || 'PARENT_ABORTED');
+            } else {
+                parentListener = () => ctrl.abort(parentSignal.reason || 'PARENT_ABORTED');
+                parentSignal.addEventListener('abort', parentListener, { once: true });
+            }
+        }
+        const timer = setTimeout(() => ctrl.abort('REQUEST_TIMEOUT'), timeoutMs);
+        try {
+            const fetchOpts = Object.assign({}, options, { signal: ctrl.signal });
+            const res = await fetch(url, fetchOpts);
+            return res;
+        } finally {
+            clearTimeout(timer);
+            if (parentSignal && parentListener) {
+                try { parentSignal.removeEventListener('abort', parentListener); } catch (_) {}
+            }
+        }
+    }
+
+    /**
+     * Helper: Redact secret / token / key strings for telemetry logs
+     */
+    _redactTelemetry(str) {
+        if (!str || typeof str !== 'string') return 'none';
+        const s = str.trim();
+        if (s.length <= 8) return '***';
+        return s.slice(0, 3) + '***' + s.slice(-4);
+    }
+
+    /**
+     * Helper: Emit redacted lifecycle telemetry with request identity
+     */
+    _emitTelemetry(provider, status, details = {}, customCb = null) {
+        const sanitized = [];
+        for (const [k, v] of Object.entries(details)) {
+            if (v === undefined || v === null) continue;
+            if (/key|token|auth|password/i.test(k)) {
+                sanitized.push(`${k}=${this._redactTelemetry(String(v))}`);
+            } else if (/^(jobid|taskid|id)$/i.test(k) && typeof v === 'string' && v.length > 6) {
+                sanitized.push(`${k}=***${v.slice(-6)}`);
+            } else {
+                sanitized.push(`${k}=${v}`);
+            }
+        }
+        const line = `[CAPTCHA_PROVIDER] provider=${provider} status=${status} ${sanitized.join(' ')}`.trim();
+        if (typeof customCb === 'function') {
+            try { customCb(line, status === 'TERMINAL' && details.terminalState !== 'SOLVED' ? 'error' : 'info'); } catch (_) {}
+        } else {
+            console.log(line);
+        }
+    }
+
+    /**
+     * Helper: Create standardized terminal provider error
+     */
+    _createProviderError(message, terminalState, provider, elapsedMs, extra = {}) {
+        const err = new Error(`[${provider.toUpperCase()}_${terminalState}] ${message}`);
+        err.terminalState = terminalState;
+        err.provider = provider;
+        err.elapsedMs = elapsedMs;
+        Object.assign(err, extra);
+        return err;
+    }
+
+    /**
+     * [RC3.41 Bounded Remediation - Directive #6335592395]
+     * Solve via NopeCHA Token API with strict transaction deadline, per-request timeouts,
+     * explicit terminal state classification, and redacted lifecycle telemetry.
+     */
+    async solveNopeCha(siteKey, pageUrl, type = 'recaptcha', pollIntervalMs = 3000, maxWaitSec = 180, context = {}) {
+        const startTs = Date.now();
+        const provider = 'nopecha';
+        const attemptId = context.attemptId || 'none';
+        const telemetryCb = context.telemetryCallback || null;
+        const externalSignal = context.signal || null;
+
+        if (!this.config.nopeChaKey) {
+            const authErr = this._createProviderError("NopeCHA API Key missing.", "AUTH_ERROR", provider, 0);
+            this._emitTelemetry(provider, 'TERMINAL', { terminalState: 'AUTH_ERROR', elapsedMs: 0, reason: authErr.message }, telemetryCb);
+            throw authErr;
+        }
 
         let nopechaType = 'recaptcha2';
         if (type === 'turnstile') nopechaType = 'turnstile';
@@ -294,14 +379,25 @@ class XpiderSolverCore {
         else if (type === 'recaptcha3' || type === 'recaptcha_v3' || type === 'v3') nopechaType = 'recaptcha3';
 
         const interval = Math.min(Math.max(Number(pollIntervalMs) || 3000, 1000), 10000);
-        const maxSec = Math.min(Math.max(Number(maxWaitSec) || 120, 10), 300);
-        const hardCapMs = (maxSec * 1000) + 10000;
-        const abortCtrl = new AbortController();
-        const hardTimer = setTimeout(() => abortCtrl.abort('HARD_WALLCLOCK_TIMEOUT'), hardCapMs);
-        const startTs = Date.now();
+        const maxSec = Math.min(Math.max(Number(maxWaitSec) || 180, 10), 300);
+        const hardCapMs = maxSec * 1000;
+
+        const transactionCtrl = new AbortController();
+        const hardTimer = setTimeout(() => transactionCtrl.abort('TRANSACTION_DEADLINE_EXPIRED'), hardCapMs);
+
+        // Forward external signal abortion
+        if (externalSignal) {
+            if (externalSignal.aborted) {
+                clearTimeout(hardTimer);
+                const cancelErr = this._createProviderError("NopeCHA solve cancelled externally.", "CANCELLED", provider, 0);
+                this._emitTelemetry(provider, 'TERMINAL', { terminalState: 'CANCELLED', elapsedMs: 0 }, telemetryCb);
+                throw cancelErr;
+            }
+            externalSignal.addEventListener('abort', () => transactionCtrl.abort('EXTERNAL_CANCEL'), { once: true });
+        }
+
         let jobId = null;
         let pollCount = 0;
-        let lastStatusCode = null;
 
         const authHeaders = {
             'Content-Type': 'application/json',
@@ -316,58 +412,143 @@ class XpiderSolverCore {
             url: pageUrl
         };
 
+        this._emitTelemetry(provider, 'REQUEST_START', {
+            attemptId,
+            type: nopechaType,
+            maxWaitSec: maxSec,
+            keyConfigured: true
+        }, telemetryCb);
+
         try {
-            // Step 1: POST submit
+            // Step 1: POST submit with 10s per-request timeout
             let submitUrl = 'https://api.nopecha.com/token';
             let postRes = null;
             try {
-                postRes = await fetch(submitUrl, {
+                postRes = await this._fetchWithTimeout(submitUrl, {
                     method: 'POST',
                     headers: authHeaders,
-                    body: JSON.stringify(postBody),
-                    signal: abortCtrl.signal
-                });
+                    body: JSON.stringify(postBody)
+                }, 10000, transactionCtrl.signal);
+
                 if (postRes.status === 404 && !submitUrl.includes('/v1/')) {
                     submitUrl = `https://api.nopecha.com/v1/token/${nopechaType}`;
-                    postRes = await fetch(submitUrl, {
+                    postRes = await this._fetchWithTimeout(submitUrl, {
                         method: 'POST',
                         headers: authHeaders,
-                        body: JSON.stringify(postBody),
-                        signal: abortCtrl.signal
-                    });
+                        body: JSON.stringify(postBody)
+                    }, 10000, transactionCtrl.signal);
                 }
-            } catch (err) {
-                if (abortCtrl.signal.aborted) throw new Error(`NopeCHA Timeout: Token not resolved within ${maxSec} seconds.`);
-                throw err;
+            } catch (netErr) {
+                const elapsedMs = Date.now() - startTs;
+                if (transactionCtrl.signal.aborted) {
+                    const isCancel = transactionCtrl.signal.reason === 'EXTERNAL_CANCEL';
+                    const termState = isCancel ? 'CANCELLED' : 'PROVIDER_TIMEOUT';
+                    const err = this._createProviderError(
+                        isCancel ? "NopeCHA solve cancelled." : `NopeCHA Timeout: Submit not resolved within ${maxSec}s.`,
+                        termState, provider, elapsedMs
+                    );
+                    this._emitTelemetry(provider, 'TERMINAL', { terminalState: termState, elapsedMs }, telemetryCb);
+                    throw err;
+                }
+                const netEx = this._createProviderError(`NopeCHA Submit Network Error: ${netErr.message}`, 'NETWORK_ERROR', provider, elapsedMs);
+                this._emitTelemetry(provider, 'TERMINAL', { terminalState: 'NETWORK_ERROR', elapsedMs, error: netErr.message }, telemetryCb);
+                throw netEx;
             }
 
-            const postData = await postRes.json();
+            const elapsedPost = Date.now() - startTs;
+            this._emitTelemetry(provider, 'HTTP_RESPONSE', {
+                statusCode: postRes.status,
+                elapsedMs: elapsedPost
+            }, telemetryCb);
+
+            if (postRes.status === 401 || postRes.status === 403) {
+                const authErr = this._createProviderError(`NopeCHA HTTP ${postRes.status}: Authentication failed. Check API key.`, 'AUTH_ERROR', provider, elapsedPost);
+                this._emitTelemetry(provider, 'TERMINAL', { terminalState: 'AUTH_ERROR', elapsedMs: elapsedPost }, telemetryCb);
+                throw authErr;
+            } else if (postRes.status === 429) {
+                const rateErr = this._createProviderError(`NopeCHA HTTP 429: Rate limited or quota exhausted.`, 'PROVIDER_TIMEOUT', provider, elapsedPost);
+                this._emitTelemetry(provider, 'TERMINAL', { terminalState: 'PROVIDER_TIMEOUT', elapsedMs: elapsedPost }, telemetryCb);
+                throw rateErr;
+            } else if (postRes.status >= 500) {
+                const srvErr = this._createProviderError(`NopeCHA HTTP ${postRes.status}: Provider server error.`, 'NETWORK_ERROR', provider, elapsedPost);
+                this._emitTelemetry(provider, 'TERMINAL', { terminalState: 'NETWORK_ERROR', elapsedMs: elapsedPost }, telemetryCb);
+                throw srvErr;
+            }
+
+            let postData = null;
+            try {
+                postData = await postRes.json();
+            } catch (jsonErr) {
+                const parseErr = this._createProviderError(`NopeCHA Submit Malformed JSON: ${jsonErr.message}`, 'NETWORK_ERROR', provider, Date.now() - startTs);
+                this._emitTelemetry(provider, 'TERMINAL', { terminalState: 'NETWORK_ERROR', elapsedMs: Date.now() - startTs }, telemetryCb);
+                throw parseErr;
+            }
+
             if (postData && postData.error) {
-                throw new Error(`NopeCHA Submit Error (${postData.error}): ${postData.message || 'Unknown'}`);
+                const elapsedMs = Date.now() - startTs;
+                let errMsg = postData.message || 'Unknown';
+                let termState = 'REJECTED';
+                if (postData.error === 15 || postData.error === 18) {
+                    termState = 'AUTH_ERROR';
+                    errMsg = postData.error === 15 ? 'Invalid API key.' : 'Feature unavailable for current plan (Error 18).';
+                } else if (postData.error === 11) {
+                    termState = 'PROVIDER_TIMEOUT';
+                    errMsg = 'Rate limit / quota exceeded (Error 11).';
+                }
+                const apiErr = this._createProviderError(`NopeCHA Submit Error (${postData.error}): ${errMsg}`, termState, provider, elapsedMs);
+                this._emitTelemetry(provider, 'TERMINAL', { terminalState: termState, errorClass: termState, errorCode: postData.error, elapsedMs }, telemetryCb);
+                throw apiErr;
             }
 
             jobId = typeof postData.data === 'string' ? postData.data : (postData.data?.id || postData.id || postData.job_id);
-            if (!jobId) throw new Error('NopeCHA: No valid job ID returned from submit.');
-            const jobTag = jobId ? '***' + String(jobId).slice(-6) : 'none';
-            console.log(`[NopeCHA] Job submitted tag=${jobTag} elapsedMs=${Date.now() - startTs}`);
+            if (!jobId) {
+                const noIdErr = this._createProviderError('NopeCHA: No valid job ID returned from submit.', 'REJECTED', provider, Date.now() - startTs);
+                this._emitTelemetry(provider, 'TERMINAL', { terminalState: 'REJECTED', elapsedMs: Date.now() - startTs }, telemetryCb);
+                throw noIdErr;
+            }
 
-            // Step 2: GET polling until token ready or hardCap reached
+            this._emitTelemetry(provider, 'PROVIDER_JOB_CREATED', {
+                jobId: String(jobId),
+                elapsedMs: Date.now() - startTs
+            }, telemetryCb);
+
+            // Step 2: GET polling until token ready or deadline reached
             let pollUrl = `${submitUrl}?id=${encodeURIComponent(jobId)}&key=${encodeURIComponent(this.config.nopeChaKey)}`;
-            while ((Date.now() - startTs < (maxSec * 1000)) && !abortCtrl.signal.aborted) {
+            while ((Date.now() - startTs < hardCapMs) && !transactionCtrl.signal.aborted) {
                 await new Promise((res, rej) => {
                     const t = setTimeout(res, interval);
-                    abortCtrl.signal.addEventListener('abort', () => {
+                    transactionCtrl.signal.addEventListener('abort', () => {
                         clearTimeout(t);
-                        rej(new Error(`NopeCHA Timeout: Token not resolved within ${maxSec} seconds.`));
+                        const isCancel = transactionCtrl.signal.reason === 'EXTERNAL_CANCEL';
+                        rej(this._createProviderError(
+                            isCancel ? 'NopeCHA solve cancelled.' : `NopeCHA Timeout: Token not resolved within ${maxSec} seconds.`,
+                            isCancel ? 'CANCELLED' : 'PROVIDER_TIMEOUT',
+                            provider,
+                            Date.now() - startTs
+                        ));
                     }, { once: true });
                 });
 
                 pollCount++;
                 let getRes = null;
                 try {
-                    getRes = await fetch(pollUrl, { headers: getHeaders, signal: abortCtrl.signal });
+                    getRes = await this._fetchWithTimeout(pollUrl, { headers: getHeaders }, 10000, transactionCtrl.signal);
                 } catch (netErr) {
-                    if (abortCtrl.signal.aborted) break;
+                    if (transactionCtrl.signal.aborted) break;
+                    this._emitTelemetry(provider, 'POLLING', { pollCount, status: 'TRANSIENT_NET_ERROR', elapsedMs: Date.now() - startTs }, telemetryCb);
+                    continue;
+                }
+
+                if (getRes.status === 401 || getRes.status === 403) {
+                    const authErr = this._createProviderError(`NopeCHA Poll HTTP ${getRes.status}: Auth failed during polling.`, 'AUTH_ERROR', provider, Date.now() - startTs);
+                    this._emitTelemetry(provider, 'TERMINAL', { terminalState: 'AUTH_ERROR', elapsedMs: Date.now() - startTs }, telemetryCb);
+                    throw authErr;
+                } else if (getRes.status === 429) {
+                    const rateErr = this._createProviderError(`NopeCHA Poll HTTP 429: Rate limited during polling.`, 'PROVIDER_TIMEOUT', provider, Date.now() - startTs);
+                    this._emitTelemetry(provider, 'TERMINAL', { terminalState: 'PROVIDER_TIMEOUT', elapsedMs: Date.now() - startTs }, telemetryCb);
+                    throw rateErr;
+                } else if (getRes.status >= 500) {
+                    this._emitTelemetry(provider, 'POLLING', { pollCount, status: `HTTP_${getRes.status}`, elapsedMs: Date.now() - startTs }, telemetryCb);
                     continue;
                 }
 
@@ -375,45 +556,101 @@ class XpiderSolverCore {
                 try {
                     getData = await getRes.json();
                 } catch (_) {
+                    this._emitTelemetry(provider, 'POLLING', { pollCount, status: 'MALFORMED_JSON_RETRY', elapsedMs: Date.now() - startTs }, telemetryCb);
                     continue;
                 }
 
                 if (getData && getData.error) {
-                    lastStatusCode = getData.error;
-                    if (getData.error === 14 || getData.error === 100) continue;
-                    throw new Error(`NopeCHA Poll Error (${getData.error}): ${getData.message || 'Unknown'}`);
+                    if (getData.error === 14 || getData.error === 100) {
+                        // Job in progress / pending
+                        this._emitTelemetry(provider, 'POLLING', { pollCount, status: 'IN_PROGRESS', elapsedMs: Date.now() - startTs }, telemetryCb);
+                        continue;
+                    }
+                    const pollErrState = (getData.error === 15 || getData.error === 18) ? 'AUTH_ERROR' : (getData.error === 11 ? 'PROVIDER_TIMEOUT' : 'REJECTED');
+                    const pollErr = this._createProviderError(`NopeCHA Poll Error (${getData.error}): ${getData.message || 'Unknown'}`, pollErrState, provider, Date.now() - startTs);
+                    this._emitTelemetry(provider, 'TERMINAL', { terminalState: pollErrState, errorCode: getData.error, elapsedMs: Date.now() - startTs }, telemetryCb);
+                    throw pollErr;
                 }
 
                 const token = getData?.data || getData?.token;
                 if (token && typeof token === 'string' && token.length > 20) {
                     clearTimeout(hardTimer);
-                    console.log(`[NopeCHA] Token resolved after ${pollCount} polls (${Date.now() - startTs}ms)`);
+                    const elapsedMs = Date.now() - startTs;
+                    this._emitTelemetry(provider, 'TERMINAL', {
+                        terminalState: 'SOLVED',
+                        pollCount,
+                        elapsedMs,
+                        tokenLength: token.length
+                    }, telemetryCb);
                     return token;
                 }
             }
+
             clearTimeout(hardTimer);
-            throw new Error(`NopeCHA Timeout: Token not resolved within ${maxSec} seconds.`);
+            const elapsedMs = Date.now() - startTs;
+            const isCancel = transactionCtrl.signal.reason === 'EXTERNAL_CANCEL';
+            const termState = isCancel ? 'CANCELLED' : 'PROVIDER_TIMEOUT';
+            const timeoutErr = this._createProviderError(
+                isCancel ? 'NopeCHA solve cancelled.' : `NopeCHA Timeout: Token not resolved within ${maxSec} seconds.`,
+                termState,
+                provider,
+                elapsedMs
+            );
+            this._emitTelemetry(provider, 'TERMINAL', { terminalState: termState, elapsedMs, pollCount }, telemetryCb);
+            throw timeoutErr;
         } finally {
             clearTimeout(hardTimer);
         }
     }
 
     /**
-     * [RC3.25 Directive D] Solve via 2Captcha API with Hard Wall-Clock Cap & Sanitized Telemetry
+     * [RC3.41 Bounded Remediation - Directive #6335592395]
+     * Solve via 2Captcha API with strict transaction deadline, per-request timeouts,
+     * explicit terminal state classification, and redacted lifecycle telemetry.
      */
-    async solve2Captcha(siteKey, pageUrl, type = 'recaptcha', extra = {}, pollIntervalMs = 5000, maxWaitSec = 200) {
-        if (!this.config.twoCaptchaKey) throw new Error("2Captcha API Key missing.");
+    async solve2Captcha(siteKey, pageUrl, type = 'recaptcha', extra = {}, pollIntervalMs = 5000, maxWaitSec = 200, context = {}) {
+        const startTs = Date.now();
+        const provider = '2captcha';
+        const attemptId = context.attemptId || 'none';
+        const telemetryCb = context.telemetryCallback || null;
+        const externalSignal = context.signal || null;
+
+        if (!this.config.twoCaptchaKey) {
+            const authErr = this._createProviderError("2Captcha API Key missing.", "AUTH_ERROR", provider, 0);
+            this._emitTelemetry(provider, 'TERMINAL', { terminalState: 'AUTH_ERROR', elapsedMs: 0 }, telemetryCb);
+            throw authErr;
+        }
         if (this.config.twoCaptchaKey === 'TEST_ERROR_ZERO_BALANCE' && (pageUrl.includes('127.0.0.1') || pageUrl.includes('localhost'))) {
-            throw new Error("2Captcha Error: ERROR_ZERO_BALANCE");
+            const zeroErr = this._createProviderError("2Captcha Error: ERROR_ZERO_BALANCE", "AUTH_ERROR", provider, 0);
+            this._emitTelemetry(provider, 'TERMINAL', { terminalState: 'AUTH_ERROR', elapsedMs: 0 }, telemetryCb);
+            throw zeroErr;
         }
 
         const interval = Math.min(Math.max(Number(pollIntervalMs) || 5000, 1000), 10000);
         const maxSec = Math.min(Math.max(Number(maxWaitSec) || 200, 10), 300);
-        const hardCapMs = (maxSec * 1000) + 10000;
-        const abortCtrl = new AbortController();
-        const hardTimer = setTimeout(() => abortCtrl.abort('HARD_WALLCLOCK_TIMEOUT'), hardCapMs);
-        const startTs = Date.now();
+        const hardCapMs = maxSec * 1000;
+
+        const transactionCtrl = new AbortController();
+        const hardTimer = setTimeout(() => transactionCtrl.abort('TRANSACTION_DEADLINE_EXPIRED'), hardCapMs);
+
+        if (externalSignal) {
+            if (externalSignal.aborted) {
+                clearTimeout(hardTimer);
+                const cancelErr = this._createProviderError("2Captcha solve cancelled externally.", "CANCELLED", provider, 0);
+                this._emitTelemetry(provider, 'TERMINAL', { terminalState: 'CANCELLED', elapsedMs: 0 }, telemetryCb);
+                throw cancelErr;
+            }
+            externalSignal.addEventListener('abort', () => transactionCtrl.abort('EXTERNAL_CANCEL'), { once: true });
+        }
+
         let pollCount = 0;
+
+        this._emitTelemetry(provider, 'REQUEST_START', {
+            attemptId,
+            type,
+            maxWaitSec: maxSec,
+            keyConfigured: true
+        }, telemetryCb);
 
         try {
             let method = 'userrecaptcha';
@@ -427,34 +664,147 @@ class XpiderSolverCore {
             } else {
                 extraParams = `&googlekey=${siteKey}`;
             }
-            const res = await fetch(`https://2captcha.com/in.php?key=${this.config.twoCaptchaKey}&method=${method}${extraParams}&pageurl=${encodeURIComponent(pageUrl)}&json=1`, { signal: abortCtrl.signal });
-            const data = await res.json();
-            if (data.status !== 1) throw new Error(`2Captcha Error: ${data.request}`);
+
+            const inUrl = `https://2captcha.com/in.php?key=${encodeURIComponent(this.config.twoCaptchaKey)}&method=${method}${extraParams}&pageurl=${encodeURIComponent(pageUrl)}&json=1`;
+            let res = null;
+            try {
+                res = await this._fetchWithTimeout(inUrl, {}, 10000, transactionCtrl.signal);
+            } catch (netErr) {
+                const elapsedMs = Date.now() - startTs;
+                if (transactionCtrl.signal.aborted) {
+                    const isCancel = transactionCtrl.signal.reason === 'EXTERNAL_CANCEL';
+                    const termState = isCancel ? 'CANCELLED' : 'PROVIDER_TIMEOUT';
+                    const err = this._createProviderError(
+                        isCancel ? "2Captcha solve cancelled." : `2Captcha Timeout: Submit not resolved within ${maxSec}s.`,
+                        termState, provider, elapsedMs
+                    );
+                    this._emitTelemetry(provider, 'TERMINAL', { terminalState: termState, elapsedMs }, telemetryCb);
+                    throw err;
+                }
+                const netEx = this._createProviderError(`2Captcha Submit Network Error: ${netErr.message}`, 'NETWORK_ERROR', provider, elapsedMs);
+                this._emitTelemetry(provider, 'TERMINAL', { terminalState: 'NETWORK_ERROR', elapsedMs }, telemetryCb);
+                throw netEx;
+            }
+
+            const elapsedPost = Date.now() - startTs;
+            this._emitTelemetry(provider, 'HTTP_RESPONSE', {
+                statusCode: res.status,
+                elapsedMs: elapsedPost
+            }, telemetryCb);
+
+            if (res.status === 401 || res.status === 403) {
+                const authErr = this._createProviderError(`2Captcha HTTP ${res.status}: Auth failed.`, 'AUTH_ERROR', provider, elapsedPost);
+                this._emitTelemetry(provider, 'TERMINAL', { terminalState: 'AUTH_ERROR', elapsedMs: elapsedPost }, telemetryCb);
+                throw authErr;
+            } else if (res.status >= 500) {
+                const srvErr = this._createProviderError(`2Captcha HTTP ${res.status}: Server error.`, 'NETWORK_ERROR', provider, elapsedPost);
+                this._emitTelemetry(provider, 'TERMINAL', { terminalState: 'NETWORK_ERROR', elapsedMs: elapsedPost }, telemetryCb);
+                throw srvErr;
+            }
+
+            let data = null;
+            try {
+                data = await res.json();
+            } catch (jsonErr) {
+                const parseErr = this._createProviderError(`2Captcha Submit Malformed JSON: ${jsonErr.message}`, 'NETWORK_ERROR', provider, Date.now() - startTs);
+                this._emitTelemetry(provider, 'TERMINAL', { terminalState: 'NETWORK_ERROR', elapsedMs: Date.now() - startTs }, telemetryCb);
+                throw parseErr;
+            }
+
+            if (data.status !== 1) {
+                const reqStr = String(data.request || '');
+                let termState = 'REJECTED';
+                if (/WRONG_USER_KEY|KEY_DOES_NOT_EXIST|ZERO_BALANCE/i.test(reqStr)) {
+                    termState = 'AUTH_ERROR';
+                } else if (/NO_SLOT_AVAILABLE/i.test(reqStr)) {
+                    termState = 'PROVIDER_TIMEOUT';
+                }
+                const apiErr = this._createProviderError(`2Captcha Error: ${reqStr}`, termState, provider, Date.now() - startTs);
+                this._emitTelemetry(provider, 'TERMINAL', { terminalState: termState, error: reqStr, elapsedMs: Date.now() - startTs }, telemetryCb);
+                throw apiErr;
+            }
             
             const taskId = data.request;
-            const taskTag = taskId ? '***' + String(taskId).slice(-6) : 'none';
-            console.log(`[2Captcha] Task submitted tag=${taskTag} elapsedMs=${Date.now() - startTs}`);
+            this._emitTelemetry(provider, 'PROVIDER_JOB_CREATED', {
+                taskId: String(taskId),
+                elapsedMs: Date.now() - startTs
+            }, telemetryCb);
 
-            while ((Date.now() - startTs < (maxSec * 1000)) && !abortCtrl.signal.aborted) {
-                await new Promise((res, rej) => {
-                    const t = setTimeout(res, interval);
-                    abortCtrl.signal.addEventListener('abort', () => {
+            const resUrl = `https://2captcha.com/res.php?key=${encodeURIComponent(this.config.twoCaptchaKey)}&action=get&id=${encodeURIComponent(taskId)}&json=1`;
+            while ((Date.now() - startTs < hardCapMs) && !transactionCtrl.signal.aborted) {
+                await new Promise((resolve, reject) => {
+                    const t = setTimeout(resolve, interval);
+                    transactionCtrl.signal.addEventListener('abort', () => {
                         clearTimeout(t);
-                        rej(new Error(`2Captcha Timeout: Token not resolved within ${maxSec} seconds.`));
+                        const isCancel = transactionCtrl.signal.reason === 'EXTERNAL_CANCEL';
+                        reject(this._createProviderError(
+                            isCancel ? '2Captcha solve cancelled.' : `2Captcha Timeout: Token not resolved within ${maxSec} seconds.`,
+                            isCancel ? 'CANCELLED' : 'PROVIDER_TIMEOUT',
+                            provider,
+                            Date.now() - startTs
+                        ));
                     }, { once: true });
                 });
 
                 pollCount++;
-                const checkRes = await fetch(`https://2captcha.com/res.php?key=${this.config.twoCaptchaKey}&action=get&id=${taskId}&json=1`, { signal: abortCtrl.signal });
-                const checkData = await checkRes.json();
-                if (checkData.status === 1) {
+                let checkRes = null;
+                try {
+                    checkRes = await this._fetchWithTimeout(resUrl, {}, 10000, transactionCtrl.signal);
+                } catch (netErr) {
+                    if (transactionCtrl.signal.aborted) break;
+                    this._emitTelemetry(provider, 'POLLING', { pollCount, status: 'TRANSIENT_NET_ERROR', elapsedMs: Date.now() - startTs }, telemetryCb);
+                    continue;
+                }
+
+                if (checkRes.status >= 500) {
+                    this._emitTelemetry(provider, 'POLLING', { pollCount, status: `HTTP_${checkRes.status}`, elapsedMs: Date.now() - startTs }, telemetryCb);
+                    continue;
+                }
+
+                let checkData = null;
+                try {
+                    checkData = await checkRes.json();
+                } catch (_) {
+                    this._emitTelemetry(provider, 'POLLING', { pollCount, status: 'MALFORMED_JSON_RETRY', elapsedMs: Date.now() - startTs }, telemetryCb);
+                    continue;
+                }
+
+                if (checkData.status === 1 && typeof checkData.request === 'string') {
                     clearTimeout(hardTimer);
+                    const elapsedMs = Date.now() - startTs;
+                    this._emitTelemetry(provider, 'TERMINAL', {
+                        terminalState: 'SOLVED',
+                        pollCount,
+                        elapsedMs,
+                        tokenLength: checkData.request.length
+                    }, telemetryCb);
                     return checkData.request;
                 }
-                if (checkData.request !== "CAPCHA_NOT_READY") throw new Error(`2Captcha Error: ${checkData.request}`);
+
+                if (checkData.request === "CAPCHA_NOT_READY") {
+                    this._emitTelemetry(provider, 'POLLING', { pollCount, status: 'IN_PROGRESS', elapsedMs: Date.now() - startTs }, telemetryCb);
+                    continue;
+                }
+
+                const errStr = String(checkData.request || '');
+                const termState = /WRONG_USER_KEY|KEY_DOES_NOT_EXIST|ZERO_BALANCE/i.test(errStr) ? 'AUTH_ERROR' : 'REJECTED';
+                const pollErr = this._createProviderError(`2Captcha Error: ${errStr}`, termState, provider, Date.now() - startTs);
+                this._emitTelemetry(provider, 'TERMINAL', { terminalState: termState, error: errStr, elapsedMs: Date.now() - startTs }, telemetryCb);
+                throw pollErr;
             }
+
             clearTimeout(hardTimer);
-            throw new Error(`2Captcha Timeout: Token not resolved within ${maxSec} seconds.`);
+            const elapsedMs = Date.now() - startTs;
+            const isCancel = transactionCtrl.signal.reason === 'EXTERNAL_CANCEL';
+            const termState = isCancel ? 'CANCELLED' : 'PROVIDER_TIMEOUT';
+            const timeoutErr = this._createProviderError(
+                isCancel ? '2Captcha solve cancelled.' : `2Captcha Timeout: Token not resolved within ${maxSec} seconds.`,
+                termState,
+                provider,
+                elapsedMs
+            );
+            this._emitTelemetry(provider, 'TERMINAL', { terminalState: termState, elapsedMs, pollCount }, telemetryCb);
+            throw timeoutErr;
         } finally {
             clearTimeout(hardTimer);
         }
