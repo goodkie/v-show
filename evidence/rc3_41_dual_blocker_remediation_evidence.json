@@ -1,0 +1,95 @@
+{
+  "timestamp": "2026-10-22T09:44:00.000Z",
+  "evidenceScope": "RC3.41 Dual-Blocker Remediation & Regression Suite Immutable Runtime Evidence",
+  "releaseBinding": {
+    "releaseTag": "v6.9g.10.3-rc3.41.7.1.4.55",
+    "annotatedTagObject": "3700e9c78a3c7d5fe9c9362a220bed8fd7a1b2fb",
+    "provenanceCommitP": "908d37dde274bfb2ab0a45aebf7b709470e34e5c",
+    "functionalCommitF": "478b719db519dbbef052aa0a8765f898140ccba4",
+    "stateCommit": "96f9199723ec08365691c7847c13aa7dbd09a471",
+    "rollbackAnchor": "d987bca65b0e5d0786e110efaa45ad91622bc85f",
+    "buildId": "R6.9G.10.3.7.1.4.55-20261022-FINAL-SPRINT-RC3.41",
+    "releaseAssetZip": "XPIDER_R6.9G.10.3.7.1.4.55_PRIVATE_EGRESS_RC3.41.zip",
+    "releaseAssetSize": 45379257,
+    "releaseAssetSha256": "0efe82ad58f7d762445c26d14d60a7b1d8b701199e6205fb39c9b9b574bd7a7c",
+    "releaseAssetUrl": "https://github.com/goodkie/v-show/releases/tag/v6.9g.10.3-rc3.41.7.1.4.55"
+  },
+  "directivesAddressed": [
+    {
+      "commentId": 6335592395,
+      "title": "RC3.40-LIVE-CAPTCHA-PROVIDER-STALL-BOUNDED-REMEDIATION",
+      "status": "REMEDIATED",
+      "coreFixes": [
+        "Added _fetchWithTimeout 10s per-request socket abort controller",
+        "Enforced 30-60s overall transaction deadline",
+        "Strict terminal transitions: SOLVED, REJECTED, AUTH_ERROR, PROVIDER_TIMEOUT, CANCELLED",
+        "Structured lifecycle telemetry with credential redaction",
+        "Deterministic single manual fallback offer on auto-solver failure",
+        "Campaign target deadline paused during manual solve",
+        "Ledger records specific reason codes (PROVIDER_TIMEOUT / NO_RESPONSE / AUTH_FAILED)"
+      ]
+    },
+    {
+      "commentId": 6336861540,
+      "title": "RC3.40-WAF-BLOCK-MISCLASSIFICATION",
+      "status": "REMEDIATED",
+      "coreFixes": [
+        "Added classifyWafBlock(doc) multi-marker classifier in content-script.js (<100ms)",
+        "Early terminal fast-fail without waiting for full target timeout",
+        "Exact reason code ACCESS_BLOCKED_WAF classified as SECURITY_BLOCKED in HistoryStore",
+        "Ledger accounting: completed +1, failure +1, remaining -1, timeout untouched, captcha untouched",
+        "Fail-closed Privacy Relay preserved with zero evasion/bypass attempts"
+      ]
+    }
+  ],
+  "deterministicTestSuiteVerification": {
+    "test_live_captcha_provider_lifecycle_regressions": {
+      "path": "test/test_live_captcha_provider_lifecycle_regressions.js",
+      "total": 10,
+      "passed": 10,
+      "failed": 0,
+      "status": "PASS"
+    },
+    "test_waf_block_classification_regressions": {
+      "path": "test/test_waf_block_classification_regressions.js",
+      "total": 6,
+      "passed": 6,
+      "failed": 0,
+      "status": "PASS"
+    },
+    "test_rc3_40_package_hygiene_regression": {
+      "path": "test/test_rc3_40_package_hygiene_regression.js",
+      "status": "PASS",
+      "archiveEntries": 338,
+      "scratchArtifacts": 0
+    },
+    "test_private_egress_security_hardening": {
+      "path": "test/test_private_egress_security_hardening.js",
+      "total": 20,
+      "passed": 20,
+      "failed": 0,
+      "status": "PASS"
+    },
+    "nodeSyntaxCheck": {
+      "totalFilesChecked": 39,
+      "syntaxErrors": 0,
+      "status": "PASS"
+    }
+  },
+  "runtimeInfrastructure": {
+    "provider": "DigitalOcean",
+    "dropletId": 611293905,
+    "region": "tor1",
+    "host": "143.198.40.33",
+    "port": 8443,
+    "nodeId": "do-egress-tor1-611293905",
+    "companion": {
+      "pid": 31932,
+      "controlPort": 18989,
+      "proxyPort": 18988,
+      "relayReady": true,
+      "lifecycleState": "READY",
+      "health": "HEALTHY"
+    }
+  }
+}
