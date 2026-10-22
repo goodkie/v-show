@@ -89,6 +89,13 @@ async function runPackaging() {
     // 1. Copy extension
     const stagingExtDir = path.join(stagingDir, 'extension');
     fs.cpSync(extDir, stagingExtDir, { recursive: true });
+    // Explicitly exclude PACKAGE_INVENTORY_SHA256.txt from the extension staging directory.
+    // The release archive inventory is a root-level release manifest that records the ZIP hash;
+    // bundling it inside the archive would create a circular dependency and capture stale metadata.
+    const stagingInv = path.join(stagingExtDir, 'PACKAGE_INVENTORY_SHA256.txt');
+    if (fs.existsSync(stagingInv)) {
+        fs.unlinkSync(stagingInv);
+    }
 
     // 2. Copy companion (skipping runtime artifacts & node_modules)
     const stagingCompDir = path.join(stagingDir, 'companion');
