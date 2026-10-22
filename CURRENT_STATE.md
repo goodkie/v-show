@@ -4,28 +4,23 @@
 - Protocol: OCA-DEV-1.4
 - Project ID: xpider-autoform-sender-pro
 - Workspace: E:\vivpr\ai\extension-form-sender
-- Authority: goodkie/v-show Issue #6 (Responding to Directives #6335592395 & #6336861540)
+- Authority: goodkie/v-show Issue #6 (Responding to Directives #6349301734 & #6350061850)
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-22.97
-- Authority Cursor: 6337762873
+- State Rev: 2026-10-22.101
+- Authority Cursor: 6352489598
 - Last Directives / Audits:
-  - `[CHATGPT][INDEPENDENT-AUDIT-REJECT][extension-form-sender][RC3.40-SMOKE-REJECTED-DUAL-BLOCKERS] Comment #6336861540`
-  - `[CHATGPT][CONSOLIDATED-DIRECTIVE][extension-form-sender][WAF-1020-CLASSIFICATION-AND-LIFECYCLE-TIMEOUTS] Comments #6335592395 & #6336861540`
-- Last Gate ACK: `[ANTIGRAVITY][GATE-ACK][extension-form-sender][RC3.40-GO-ARMED-READY-FOR-OWNER-SMOKE] Comment #6335281359`
-- Last Release Receipt: `[ANTIGRAVITY][EVIDENCE-BINDING-RECEIPT][extension-form-sender][RC3.41-PACKAGE-FREEZE-AND-REGRESSION-SUITES-VERIFIED] Comment #6337762873`
-- Last Accepted Gate: Candidate RC3.41 Packaged for ChatGPT Independent Audit (Remediates Comments #6335592395 and #6336861540).
-- Build ID: `R6.9G.10.3.7.1.4.55-20261022-FINAL-SPRINT-RC3.41`
-- Current Candidate Release Tag: `v6.9g.10.3-rc3.41.7.1.4.55`
-- Functional Snapshot Head Commit (F): `478b719db519dbbef052aa0a8765f898140ccba4` (`478b719d`)
-- Provenance Commit (P): `908d37dd073c6bfa6ba89b4f2c969a572a15c898` (`908d37dd`)
-- Evidence-Only Commit: `396cdff0b57e6ae9fa08e75294e773229bbf7e62` (`396cdff0`)
-- Rollback Anchor: `d987bca65b0e5d0786e110efaa45ad91622bc85f` (`d987bca6`)
-- Previous Functional Restore Point: `d987bca65b0e5d0786e110efaa45ad91622bc85f` (`d987bca6`)
-- Release Asset Zip: `XPIDER_R6.9G.10.3.7.1.4.55_PRIVATE_EGRESS_RC3.41.zip`
-- Release Asset Size: `45,379,257` bytes
-- Release Asset SHA-256: `0efe82ad58f7d762445c26d14d60a7b1d8b701199e6205fb39c9b9b574bd7a7c`
-- Release Asset Hosted URL: `https://github.com/goodkie/v-show/releases/tag/v6.9g.10.3-rc3.41.7.1.4.55`
-- Unpacked Convenience Folder: `XPIDER_R6.9G.10.3.7.1.4.55_PRIVATE_EGRESS_RC3.41`
+  - `[CHATGPT][INDEPENDENT-AUDIT][extension-form-sender][RC3.43-RELEASE-BINDING-PASS-OWNER-SMOKE-GO-WITH-PROVENANCE-CORRECTION] Comment #6348980857`
+  - `[CHATGPT][OWNER-CRITICAL-P0][XPIDER-RECOVER-IN-PLACE][2026-10-22] Comment #6349301734`
+  - `[CHATGPT][P0-RECOVERY-DIRECTIVE-2][extension-form-sender][LIVE-STAGE-VALIDATION-NOW] Comment #6350061850`
+- Last Receipts:
+  - `[ANTIGRAVITY][P0-RECOVERY-RECEIPT-1][extension-form-sender][STAGE0-1] Comment #6349521575`
+  - `[ANTIGRAVITY][P0-RECOVERY-RECEIPT-2][extension-form-sender][LIVE-STAGE-MATRIX-AND-ROOT-CAUSE] Comment #6352489598`
+- Build ID: `R6.9G.10.3.7.1.4.58-20261022-P0-FIX-RC3.44`
+- Active Functional Commit (F): `06f951ba53b857b1d9748605be1114d79bc51a77` (`06f951ba`)
+- Active Provenance Commit (P): `71d744084f842a19f6028dc3eefa400e40d3dab0` (`71d74408`)
+- Rollback Anchor: `3cc1be6b436b1d68f948927df88a2c73c1ae5011` (`3cc1be6b`)
+- Previous Functional Restore Point: `3cc1be6b436b1d68f948927df88a2c73c1ae5011` (`3cc1be6b`)
+- Preserved Verified Release: `XPIDER_R6.9G.10.3.7.1.4.57_PRIVATE_EGRESS_RC3.43.zip` (Tag: `v6.9g.10.3-rc3.43.7.1.4.57`)
 
 ---
 
