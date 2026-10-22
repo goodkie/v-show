@@ -2128,6 +2128,21 @@ async function assertPrivacyTransportReady(context = 'GENERAL') {
         return { ready: true };
     }
 
+    if (!pg.isPrivacyGateReady() && !pg.failureReason) {
+        // Fresh service worker (flag reset, no concrete failure): re-run the fail-closed preflight
+        // instead of deadlocking. A genuine failure still sets failureReason and blocks below.
+        const nowTs = Date.now();
+        if (!assertPrivacyTransportReady._lastHeal || nowTs - assertPrivacyTransportReady._lastHeal > 5000) {
+            assertPrivacyTransportReady._lastHeal = nowTs;
+            try {
+                logBg(null, `[PRIVACY_GATE_SELF_HEAL] context=${context} gateFlag=false reason=NONE action=RUN_PREFLIGHT`, 'info');
+                await pg.runPreflight({});
+            } catch (healErr) {
+                logBg(null, `[PRIVACY_GATE_SELF_HEAL] preflight threw: ${healErr && healErr.message}`, 'warning');
+            }
+        }
+    }
+
     if (!pg.isPrivacyGateReady()) {
         const blkReason = pg.failureReason || 'PRIVACY_GATE_NOT_READY';
         logBg(null, `[PRIVACY_GATE_BLOCK] context=${context} reason=${blkReason}`, 'error');
@@ -8025,6 +8040,7 @@ function createDiscoveryContext(targetUrl) {
         sourceHost: host,
         sourceUrl: targetUrl,
         blankTabObservations: 0,
+        errorPageObservations: 0,
         startTime: Date.now()
     };
 }
@@ -8534,7 +8550,7 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
             isCoreCodeError = true;
         } else if (!isCaptchaSiteSpecific) {
             isCoreCodeError = /ReferenceError|TypeError|SyntaxError|is not defined|CORE_RUNTIME_ERROR/i.test(errStr) &&
-                !/FORM_NOT_ACCESSIBLE|NO_ACCESSIBLE_INQUIRY_FORM|CONTACT_PAGE_NO_DOM_FORM|CONTACT_CANDIDATE_ERROR_PAGE|TIMEOUT|CAPTCHA|SERVER ERROR|404|DEAD_PAGE/i.test(errStr);
+                !/FORM_NOT_ACCESSIBLE|NO_ACCESSIBLE_INQUIRY_FORM|CONTACT_PAGE_NO_DOM_FORM|CONTACT_CANDIDATE_ERROR_PAGE|TIMEOUT|CAPTCHA|SERVER ERROR|404|DEAD_PAGE|DOMAIN_UNREACHABLE|DNS_FAILED|BROWSER_ERROR_PAGE|chrome-error|chromewebdata/i.test(errStr);
         }
         const errorClass = isCoreCodeError ? 'CORE_CODE' : 'SITE_SPECIFIC';
         console.log(`[CIRCUIT_BREAKER_CLASSIFY] errorClass=${errorClass} reason=${finalReason} error=${errStr}`);
@@ -8860,6 +8876,28 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
                     }
                     return; 
                 }
+
+                // [RC3.42 Fast-Fail] Detect browser internal error pages (DNS ENOTFOUND, connection refused, dead domain)
+                const isErrorPage = targetTab.url && (
+                    targetTab.url.startsWith('chrome-error://') ||
+                    targetTab.url.includes('chromewebdata') ||
+                    targetTab.url.startsWith('edge-error://')
+                );
+                if (isErrorPage) {
+                    discoveryCtx.errorPageObservations = (discoveryCtx.errorPageObservations || 0) + 1;
+                    logBg(tabId, `🚨 [ErrorPageGuard] Browser error page detected (${targetTab.url}) count=${discoveryCtx.errorPageObservations}`, "warning");
+                    if (discoveryCtx.errorPageObservations >= 2 || currentAttemptUrl === targetUrl) {
+                        logBg(tabId, `🛑 [DOMAIN_UNREACHABLE] Host ${targetHost} cannot be reached by browser (${targetTab.url}). Failing fast.`, "error");
+                        finish({
+                            success: false,
+                            reasonCode: 'DOMAIN_UNREACHABLE',
+                            error: `Domain unreachable or DNS failed: ${targetTab.url}`
+                        });
+                        return;
+                    }
+                    tryNext();
+                    return;
+                }
                 
                 await safeScripting.executeScript({ target: { tabId }, files: [
                     'modules/contact-gate.js',
@@ -8877,7 +8915,22 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
                 safeScripting.executeScript({ target: { tabId, allFrames: true }, files: ['solver-content.js'] }).catch(() => {});
                 startPolling();
             } catch (e) {
-                logBg(tabId, `❌ [InfectError] ${e.message}`, "error");
+                const isErrorPageErr = /showing error page|chrome-error|chromewebdata|cannot access contents of url "chrome-error/i.test(e.message);
+                if (isErrorPageErr) {
+                    discoveryCtx.errorPageObservations = (discoveryCtx.errorPageObservations || 0) + 1;
+                    logBg(tabId, `🚨 [InfectError-ErrorPage] Browser error page detected during injection: ${e.message} (count=${discoveryCtx.errorPageObservations})`, "warning");
+                    if (discoveryCtx.errorPageObservations >= 2 || currentAttemptUrl === targetUrl) {
+                        logBg(tabId, `🛑 [DOMAIN_UNREACHABLE] Host ${targetHost} cannot be reached by browser (${e.message}). Failing fast.`, "error");
+                        finish({
+                            success: false,
+                            reasonCode: 'DOMAIN_UNREACHABLE',
+                            error: `Domain unreachable or DNS failed: ${e.message}`
+                        });
+                        return;
+                    }
+                } else {
+                    logBg(tabId, `❌ [InfectError] ${e.message}`, "error");
+                }
                 tryNext();
             }
         }, delay);

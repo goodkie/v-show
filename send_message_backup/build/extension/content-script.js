@@ -1095,6 +1095,12 @@
                 await new Promise(r => setTimeout(r, 1500)); 
             }
 
+            // [RC3.42] Promote inner field wrappers (UL/OL/TABLE/etc.) to their enclosing <form> before validation.
+            if (currentForm && currentForm.tagName && currentForm.closest && !['FORM', 'FIELDSET'].includes(currentForm.tagName.toUpperCase())) {
+                const enclosingForm = currentForm.closest('form');
+                if (enclosingForm) currentForm = enclosingForm;
+            }
+
             // [Issue #6 R6.8 P0-2] Strict Long-Text Gate & Container Assertion
             const validContainerTags = ['FORM', 'FIELDSET', 'DIV', 'SECTION', 'ARTICLE', 'MAIN', 'ASIDE'];
             if (currentForm && (!currentForm.tagName || !validContainerTags.includes(currentForm.tagName.toUpperCase()))) {
@@ -2351,10 +2357,11 @@
             if (DOMAIN_BLACKLIST.some(d => href.includes(d))) continue;
             if (href.length < window.location.origin.length + 2) continue; // Skip home links
 
-            // [Issue #6 R6.8 P0-3] Contact discovery defaults strictly to same-origin
+            // [Issue #6 R6.8 P0-3] Contact discovery defaults strictly to same-origin / same-root-host (allowing www vs non-www)
             try {
                 const linkObj = new URL(link.href);
-                if (linkObj.origin !== window.location.origin) {
+                const isSameHost = linkObj.hostname.toLowerCase().replace(/^www\./, '') === window.location.hostname.toLowerCase().replace(/^www\./, '');
+                if (!isSameHost || linkObj.protocol !== window.location.protocol) {
                     continue; // Prevent external link promotion (e.g. panzagear.com -> help.shopify.com)
                 }
                 const linkPath = linkObj.pathname.toLowerCase();
@@ -2372,7 +2379,8 @@
                 if (keywords.some(k => combined.includes(k))) score += weight;
             };
 
-            matchScore(CONTACT_KEYWORDS.high, 100);
+            const HIGH_KEYWORDS = [...CONTACT_KEYWORDS.high, 'contact us', 'contact-us', 'get in touch', 'get-in-touch', 'reach us', 'reach-us', 'send message', 'send a message'];
+            matchScore(HIGH_KEYWORDS, 100);
             matchScore(CONTACT_KEYWORDS.mid, 30);
             matchScore(CONTACT_KEYWORDS.low, 10);
 
@@ -2608,7 +2616,46 @@
         }
     }
 
+    // [RC3.42] Scroll-reveal support: many sites keep the contact form at visibility:hidden / opacity:0
+    // until it is scrolled into view (AOS / IntersectionObserver). Visibility-aware gates then see no body field.
+    async function revealLazyForms() {
+        try {
+            const isHiddenByReveal = (el) => {
+                try {
+                    if (getComputedStyle(el).visibility === 'hidden') return true;
+                    let e = el;
+                    for (let n = 0; e && e.tagName && n < 14; n++, e = e.parentElement) {
+                        const cs = getComputedStyle(e);
+                        if (cs.opacity === '0' || cs.visibility === 'hidden') return true;
+                    }
+                } catch (_) {}
+                return false;
+            };
+            const hidden = Array.from(document.querySelectorAll('textarea, input[type="email"]')).filter(el => {
+                if (el.type === 'hidden' || el.disabled) return false;
+                try { if (getComputedStyle(el).display === 'none') return false; } catch (_) {}
+                return isHiddenByReveal(el) && el.offsetWidth > 0;
+            });
+            if (!hidden.length) return false;
+            logDev(`🫥 [Reveal] ${hidden.length} form field(s) hidden by scroll-reveal. Scrolling into view...`, 'info');
+            const startX = window.scrollX, startY = window.scrollY;
+            for (const el of hidden.slice(0, 3)) {
+                try { el.scrollIntoView({ block: 'center', behavior: 'instant' }); } catch (_) { try { el.scrollIntoView(); } catch (__) {} }
+                const t0 = Date.now();
+                while (Date.now() - t0 < 2500 && isHiddenByReveal(el)) {
+                    await new Promise(r => setTimeout(r, 150));
+                }
+                if (!isHiddenByReveal(el)) {
+                    logDev(`✅ [Reveal] Form field revealed after ${Date.now() - t0}ms`, 'success');
+                    break;
+                }
+            }
+            return true;
+        } catch (_) { return false; }
+    }
+
     async function findOptimalForm() {
+        await revealLazyForms();
         // [Issue #6 R5] Multi-Root FormDiscoveryEngine priority
         try {
             const engine = new FormDiscoveryEngine();
@@ -2633,6 +2680,27 @@
             });
         }
 
+        // [RC3.42] Per-input nearest-label cache: computed once per input instead of once per ancestor container.
+        const nearestLabelCache = new WeakMap();
+        const nearestLabelFor = (inp, pageLabels) => {
+            if (nearestLabelCache.has(inp)) return nearestLabelCache.get(inp);
+            let nearestLabelText = "";
+            try {
+                const rect = inp.getBoundingClientRect();
+                let minDist = 150;
+                for (let li = 0; li < pageLabels.length; li++) {
+                    const lblObj = pageLabels[li];
+                    const dt = rect.top - lblObj.rect.top;
+                    if (dt > minDist || dt < -minDist) continue;
+                    const dl = rect.left - lblObj.rect.left;
+                    const dist = Math.sqrt(dt * dt + dl * dl);
+                    if (dist < minDist) { minDist = dist; nearestLabelText = lblObj.text; }
+                }
+            } catch (_) {}
+            nearestLabelCache.set(inp, nearestLabelText);
+            return nearestLabelText;
+        };
+
         const evaluateElement = (root, source = 'Main', pageLabels = []) => {
             const elements = [root];
             if (root.querySelectorAll) {
@@ -2644,6 +2712,9 @@
 
             elements.forEach((el) => {
                 if (!el || !el.tagName) return; // [v17.3.0] Element Safety: Skip document/shadowRoot headers
+
+                // [RC3.42] Containers without any input can never reach the threshold; skip before costly work.
+                if (queryAllInputs(el).length < 1) return;
 
                 // [HARD ELIGIBILITY GATE] Body-field gate comes BEFORE numeric form scoring
                 if (_ContactGate && typeof _ContactGate.classifyFormIntent === 'function') {
@@ -2718,21 +2789,9 @@
                 if (allInputs.length >= 6) score += 25;
 
                 // [v2.8.5] Optimized Visual Context: Use pre-scanned labels to avoid O(N^3) bottleneck
-                const inputsArray = Array.from(allInputs);
+                const inputsArray = Array.from(allInputs).slice(0, 60);
                 const contextText = inputsArray.map(inp => {
-                    const rect = inp.getBoundingClientRect();
-                    let nearestLabelText = "";
-                    let minDist = 150; // Max search distance
-                    
-                    // Use pageLabels cache instead of repeated queryAllDeep calls
-                    pageLabels.forEach(lblObj => {
-                        const dist = Math.sqrt(Math.pow(rect.top - lblObj.rect.top, 2) + Math.pow(rect.left - lblObj.rect.left, 2));
-                        if (dist < minDist) {
-                            minDist = dist;
-                            nearestLabelText = lblObj.text;
-                        }
-                    });
-                    
+                    const nearestLabelText = nearestLabelFor(inp, pageLabels);
                     if (nearestLabelText.length > 2) score += 5; // Bonus for paired inputs
                     return (inp.placeholder || '') + ' ' + (inp.name || '') + ' ' + nearestLabelText;
                 }).join(' ').toLowerCase();

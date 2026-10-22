@@ -7646,8 +7646,13 @@ function togglePause() {
 function stopCampaign() {
     campaignActive = false;
     campaignPaused = false;
+    _isCampaignLaunching = false;
     const startBtn = document.getElementById('start-btn');
-    if (startBtn) startBtn.classList.remove('hidden');
+    if (startBtn) {
+        startBtn.classList.remove('hidden');
+        startBtn.disabled = false;
+        startBtn.textContent = (typeof dict !== 'undefined' && dict.btn_start) || "🚀 START SENDING";
+    }
     const multiActions = document.getElementById('multi-actions');
     if (multiActions) multiActions.classList.add('hidden');
     const ind = document.getElementById('privacy-override-indicator');
@@ -7674,8 +7679,13 @@ function stopAndSaveCampaign() {
 function endCampaign() {
     campaignActive = false;
     campaignPaused = false;
+    _isCampaignLaunching = false;
     const startBtn = document.getElementById('start-btn');
-    if (startBtn) startBtn.classList.remove('hidden');
+    if (startBtn) {
+        startBtn.classList.remove('hidden');
+        startBtn.disabled = false;
+        startBtn.textContent = (typeof dict !== 'undefined' && dict.btn_start) || "🚀 START SENDING";
+    }
     const multiActions = document.getElementById('multi-actions');
     if (multiActions) multiActions.classList.add('hidden');
     const banner = document.getElementById('resumable-campaign-banner');
