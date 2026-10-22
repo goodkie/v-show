@@ -10,3 +10,5 @@ companion/watchdog.log
 companion/.watchdog.lock
 companion/.private_egress_transaction.json
 
+
+companion/.relay.lock

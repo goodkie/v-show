@@ -128,3 +128,6 @@
 
 ## RC3.42 (2026-10-22.98)
 Build R6.9G.10.3.7.1.4.56-20261022-FINAL-SPRINT-RC3.42; F=3cc1be6b P=1f3c412d. Fixes: privacy gate self-heal preflight, findOptimalForm freeze, lazy-form reveal, dead-domain fast-fail, www-normalized contact link, popup stop/end reset. Edge self-run PASS. Asset SHA256 0e8bc7533cb5cb1c7357cdcd1515aeef89ece57beacc6e0dc0a74c81f5270f63.
+
+## RC3.43 (2026-10-22.99)
+Re-cut of RC3.42 per audit #6343054381 HOLD. F=3cc1be6b436b1d68f948927df88a2c73c1ae5011 (unchanged), P=a6a3fdef8238a3d3da28e81c35e215902ea5b46d, tag v6.9g.10.3-rc3.43.7.1.4.57, release published; asset 46352305 bytes sha256 713e155a6ce9af64329c874853f2a5f6e6404537d69dedeed34b707f200ef1a1; tagged root inventory archive-bound. RC3.42 tag preserved. Rollback anchor d987bca6.
