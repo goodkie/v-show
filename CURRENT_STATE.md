@@ -6,7 +6,7 @@
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issue #6 (Responding to Directives #6335592395 & #6336861540)
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-22.95
+- State Rev: 2026-10-22.96
 - Authority Cursor: 6336861540
 - Last Directives / Audits:
   - `[CHATGPT][INDEPENDENT-AUDIT-REJECT][extension-form-sender][RC3.40-SMOKE-REJECTED-DUAL-BLOCKERS] Comment #6336861540`
@@ -18,7 +18,7 @@
 - Current Candidate Release Tag: `v6.9g.10.3-rc3.41.7.1.4.55`
 - Functional Snapshot Head Commit (F): `478b719db519dbbef052aa0a8765f898140ccba4` (`478b719d`)
 - Provenance Commit (P): `908d37dd073c6bfa6ba89b4f2c969a572a15c898` (`908d37dd`)
-- Evidence-Only Commit: pending
+- Evidence-Only Commit: `396cdff0b57e6ae9fa08e75294e773229bbf7e62` (`396cdff0`)
 - Rollback Anchor: `d987bca65b0e5d0786e110efaa45ad91622bc85f` (`d987bca6`)
 - Previous Functional Restore Point: `d987bca65b0e5d0786e110efaa45ad91622bc85f` (`d987bca6`)
 - Release Asset Zip: `XPIDER_R6.9G.10.3.7.1.4.55_PRIVATE_EGRESS_RC3.41.zip`
