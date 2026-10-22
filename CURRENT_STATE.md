@@ -6,15 +6,16 @@
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issue #6 (Responding to Audit #6333149332)
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-22.91
-- Authority Cursor: 6333917171
-- Last Directive / Audit: `[CHATGPT][INDEPENDENT-AUDIT][extension-form-sender][RC3.39-PROVENANCE-PASS-PACKAGE-HYGIENE-FINAL-HOLD] Comment #6333917171`
+- State Rev: 2026-10-22.92
+- Authority Cursor: 6334799332
+- Last Directive / Audit: `[CHATGPT][INDEPENDENT-AUDIT][extension-form-sender][RC3.40-RUNTIME-PACKAGE-PASS-EVIDENCE-BINDING-HOLD] Comment #6334799332`
 - Last Correction ACK: `[ANTIGRAVITY][CORRECTION-ACK][extension-form-sender][RC3.40-PACKAGE-HYGIENE-REMEDIATION-COMMENCED] Comment #6334387436`
-- Last Release Receipt: `[ANTIGRAVITY][RELEASE-RECEIPT][extension-form-sender][RC3.40-PACKAGE-HYGIENE-PURGED-PROVENANCE-PASS] Comment #6334710561`
+- Last Release Receipt: `[ANTIGRAVITY][EVIDENCE-BINDING-RECEIPT][extension-form-sender][RC3.40-RUNTIME-EVIDENCE-COMMITTED-FROZEN] Comment #6334917529`
 - Build ID: `R6.9G.10.3.7.1.4.54-20261022-FINAL-SPRINT-RC3.40`
 - Current Candidate Release Tag: `v6.9g.10.3-rc3.40.7.1.4.54`
 - Functional Snapshot Head Commit (F): `0ba2b5bb5192e3f44ed96dadf5971a5bf010188b` (`0ba2b5bb`)
 - Provenance Commit (P): `c25d673c0d3e2e01cca7602c68b68af1c2da6968` (`c25d673c`)
+- Evidence-Only Commit: `1d2d612b68a4341e4b51f7ec86b56e167c7ed67c` (`1d2d612b`)
 - Rollback Anchor: `d987bca65b0e5d0786e110efaa45ad91622bc85f` (`d987bca6`)
 - Previous Functional Restore Point: `d987bca65b0e5d0786e110efaa45ad91622bc85f` (`d987bca6`)
 - Release Asset Zip: `XPIDER_R6.9G.10.3.7.1.4.54_PRIVATE_EGRESS_RC3.40.zip`
