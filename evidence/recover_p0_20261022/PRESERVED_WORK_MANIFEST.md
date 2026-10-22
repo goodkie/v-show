@@ -1,0 +1,169 @@
+# PRESERVED-WORK MANIFEST (2026-10-22)
+HEAD: e3859225c8a91ed43df47067c2b2bdd633cebca2 branch upgrade/phase-0-1
+## Tags
+v6.9g.10.3-rc3.4.7.1.4.18 3089536c -> 66a92ebb
+v6.9g.10.3-rc3.40.7.1.4.54 7814fdde -> c25d673c
+v6.9g.10.3-rc3.41.7.1.4.55 3700e9c7 -> 908d37dd
+v6.9g.10.3-rc3.42.7.1.4.56 1f3c412d -> 
+v6.9g.10.3-rc3.43.7.1.4.57 2fc2586a -> a6a3fdef
+## Branches
+master 644d2e84
+upgrade/phase-0-1 e3859225
+origin 5218235b
+origin/backup/3d2r-pre-dark-minimal-ui-2026-09-15 ab7c13f6
+origin/backup/stable-8k-20260825 a97deb63
+origin/c12.9-p2r12-baseline-lock d88d22e2
+origin/c12.9-p2r13-auto-lock b9cf3d9f
+origin/experiment/c12.9-p2r16-8shot-hires ed398c85
+origin/experiment/c13-perfection-track 52c66caf
+origin/feature/3d2r-dark-minimal-flow d7b68eef
+origin/feature/3d2r-stage2-12point-capture 2f782fca
+origin/fix/panorama-capture-rotation-closure db84fa1a
+origin/fix/panorama-capture-rotation-recovery-round117 d908ed7f
+origin/fix/panorama-capture-rotation-repair-round119 b47ac035
+origin/fix/panorama-fast-track-interactive-preview 1f79df06
+origin/fix/panorama-fast-track-landing-flow f94f115f
+origin/fix/panorama-ri-live-diagnostics-round118 65659c6c
+origin/master 5218235b
+origin/noop-test-ignore 219f4637
+origin/phase10.7n-demo-fixtures 0a0b3ac3
+origin/phase10.7n-demo-fixtures-2 be5691db
+origin/release/3d2r-landing-integration ab7c13f6
+origin/release/3d2r-official-live ab7c13f6
+origin/restore/3d2-official-release-2026-09-15 5218235b
+origin/restore/3d2-panorama-fast-track-r114g-2026-10-01 1f79df06
+origin/restore/3d2r-official-release-live-2026-09-18 ab7c13f6
+origin/restore/c12.9-p2r15-before-8shot-hires-experiment 5218235b
+origin/restore/issue4-fast-track-20261001-r114g 1f79df06
+origin/restore/xpider-r6.9f2-owner-smoke-ready-2026-10-06 dc0740a0
+origin/upgrade/phase-0-1 e3859225
+## Release zips (sha256)
+455d3fbcf4dd0459ee8d177b7313fb78a12877fac02aca09784f9a36c02cee5c  evidence_phase2a_f7f13_remediation.zip  8142302
+e7e6e647c92f8c666c437e7daf1949aac7ed9a36dc89c2440c35a8205aafae4e  evidence_phase2a_integration_v2.zip  8145754
+a1a9f6b9a5b19e5d3acaaa12bfc70cc47b3f1a327ceeb3a4dfaf1557b99e950a  evidence_phase2a_integration_v3.zip  8148952
+abe33222ce32c7eace527e4b7e74d371e0fa42190ac6a80f18a43cd207c5ac2f  evidence_phase2a_integration_v4.zip  8161847
+97ba3d43e90ed05f493a65091ab4efd5bedfe8aa5589911890bbe5fbb48ff458  evidence_phase2a_integration_v5.zip  8170043
+a2a1387db3fe6031f0bd2f4e5ddcfbc4db77d4d5f42f227aee541ecbb4a9fecb  evidence_phase2a_integration_v6.zip  8180320
+26d7fd671b70d2b52d08b175d3b86f9de30f07e6723ecbf8af4f16e7122a9d89  evidence_phase2b_implementation.zip  8218915
+26d7fd671b70d2b52d08b175d3b86f9de30f07e6723ecbf8af4f16e7122a9d89  evidence_phase2b_r1.zip  8218915
+2f7342616691cca7a83c9622bd9bbf8d293e5115eda9d76b6e251d0367bf2d77  evidence_phase2b_ipc_diagnostic.zip  8231284
+930d05ec8398968119eedc74ac887ee8b550b83e5b7fd2d6cf4969b14e6a89e1  evidence_phase2b_chrome_runtime_hotfix.zip  32691570
+1acde395e78e55c29745dbebf1833b064022da1aa028b2c7f8ab4508c71c1579  evidence_form_execution_reliability_r1.zip  8320460
+62255f0a648752b10cbb7e706861d4d543aae8c972cc262b5e9d751d22c7b99e  Email_Extractor_Source.zip  2560915
+b0cf4a85c3ff9d447f00c8a92ff0c18ae225b2185529c8b9bc2c1116cf47cf6a  evidence_email_collector_integration_r1.zip  121010
+50d9d2cba542973619ce1f908356c4de8ab3e2f9b9708c59cb83f6a60c52b08e  evidence_strict_gate_and_counters_r1.zip  128566
+f131b920829d393d7517888f09975971d48e1e67d789c676aa3c0f253b54dfe9  evidence_contact_discovery_ensemble_r1.zip  94840
+a4e814f4d2601df6deb48b654ba1fbcb7acc59d8f68ae5a1fa6a228673833b13  evidence_discovery_runtime_hotfix_r1.zip  54163
+964d60afc0ee2e8ab80cf9c8954db487871234898610a474795d4fd5fae60f15  evidence_runtime_correctness_r2.zip  125285
+fd887f6306cfef4a898320ea626e0830c659430d25cd2e4b7ed5ba81b9a3c313  evidence_root_url_and_clear_r4_1.zip  158940
+ca8cc58411c4aefb86a3376ea02797e6f5a71afbdf1ba9c1a5bedf515563d33f  evidence_r5_email_discovery_form_submit.zip  283008
+25d9ead590bee9c63cd8a6411526e1dd6f1569c32c6542a0c5fd989d20c8c045  evidence_r6_success_rate_recovery.zip  116724
+84b13cffe0b268fb37b40710cb14679cd6f94ced4cca2d776595787a460dc3dd  evidence_r6_1_ai_final_fill_and_submit_r5.zip  123791
+ed6e7b484ba4e8e2abcb38bf2ce5d91deb22b828ff91e65bdccb49bc2c51c045  evidence_r6_r6_1_success_rate_recovery_complete.zip  217769
+c55c411d7c9125679994c5f9bc3152a20d2e3c1eac9b806c2acfafd5406fb787  evidence_r6_2_form_recognition_autofill_bridge.zip  133934
+cf69f5b1aa7a6555b8f1c43cf5cc6c86ddda6f42e6de23f8f6cb1121b40aabb3  evidence_r6_4_control_plane_recovery.zip  80028
+5404f3773555ef86f214a584140f5b6603ba0a198daabcf4812d5f8d202dbfb6  evidence_r6_5_submit_and_settlement_recovery.zip  138558
+12afe993bfb1a005dbe2eb0d32f05003d1a143c6ef9f57521a38ec0d126b8a1e  evidence_r6_7_vision_submit_and_long_text_gate.zip  4335781
+4c2027ad22d3ebf21c1d65bbc21fd7fdd950e9472444c7dafd68cbb9a1367778  evidence_master_work_complete_r1.zip  183222
+5c0f0e0db978e29da2fa3a18ede43338b0e1c3d28979a11fb9219c5956c05c70  evidence_r6_8_owner_4h_log_remediation.zip  204345
+063e693db65faa1f65f776dba2886e7225bff8173d21a7401b0fd5ecd74f679c  evidence_r6_9a_history_ledger_authority.zip  167192
+05108fc612c8459411ed00dc36119b11dbc3b976bb4e34a4b93f4d896f68abdd  evidence_r6_9a_ledger_scope_migration_and_real_count_reconciliation.zip  116949
+80bdd457a4af647a0bfb66f3396696cdcba2b64f1f449a4266bd4bd8bdd57013  evidence_r6_9a_durable_migration_and_terminal_immutability.zip  34701
+af43b612f82cb2581f0bce7b6a8884d83e6162975749347b151c27a916aa034e  evidence_r6_9a_actual_control_plane_pipeline.zip  132626
+55baa6f6dd9f87e7c5692a04c6ff87da9e683a186f01498f0050272ed531c918  evidence_r6_9a_clean_owner_ledger_and_content_trace.zip  143247
+ee9ee14afad7ec2733335160e068313825b1c00f030c41318c66af74df9a264a  evidence_r6_9a_true_audit_isolation.zip  144580
+fc678e8b29828ea27711f4cb18a7e3e33f660626ae07229c85532e16ba1721c6  evidence_r6_9b_strict_single_tab_barrier.zip  95830
+835214a7389f8f7d91e39554844936c95b2835549a5ca0062652b94aa56d413d  evidence_r6_9c_email_collector_runtime_restore.zip  226623
+0f0fe90517978414a1e6f39936376ffdb980a98717cbc96d3f7be837a4ff2f67  evidence_r6_9c_clear_reset_single_writer_and_real_runtime.zip  315406
+fe0baf465ce1d579f139a72e1599911b82f5d4e333cb3495eb201e6f8240bcb0  evidence_r6_9c_operator_path.zip  177689
+a8d8a980229bc4e7f0ce1e6b4f557e837b59073c2c847902aa9e5e187a58d585  evidence_r6_9d_outcome_verifier_false_failure.zip  143128
+0619f5f234f4f2487d08cd5eb1ed5db0e3a64665239d4436bc42c42b1eaed9f4  evidence_r6_9e_target_lifecycle_and_counter_authority.zip  219151
+2a4ab9bf2ad77d673b8b76884d775b58f79f88aa9295012677fed3e57241e805  evidence_r6_9f_runtime_submit_counters.zip  4477675
+39f272105a8e096d299375d0c0ed568343a5869e492c2cc3408ff0415cc86f97  XPIDER_R6.9G.7_OWNER_DIAGNOSTIC_TEST_ONLY.zip  4271177
+af320386b64b728193e1549f0b9dc4ee639c3deebb8ed1172af9671b4c06e387  XPIDER_R6.9G.8_OWNER_DIAGNOSTIC_TEST_ONLY.zip  4279969
+2c5e81933477e2fe52bc7d9590ccbf6d6818cb70470ec28794ad9e485b7dcad1  XPIDER_R6.9G.8.1_OWNER_DIAGNOSTIC_TEST_ONLY.zip  4281943
+0530202a3133e9d92bdea7a45b764d7c5e8744ed24b6a0591eeac11587771473  XPIDER_R6.9G.9_OWNER_DIAGNOSTIC_TEST_ONLY.zip  4291117
+83c6e0a4f323b43b420e5abba053300363c400f0931ae4468129bc5d0935dd8b  XPIDER_R6.9G.9.1_OWNER_DIAGNOSTIC_TEST_ONLY.zip  4294523
+56dae801d8154640b43b5b2be23729d67cfd09642ab007aecaae9c0c9d542cd2  XPIDER_R6.9G.9.2_OWNER_DIAGNOSTIC_TEST_ONLY.zip  4296372
+cf6f3f46110fe096bae7fdf952d0cdd9c93d71ac1af279f7bb25f24ee0673fad  XPIDER_R6.9G.9.3_OWNER_DIAGNOSTIC_TEST_ONLY.zip  4297369
+dd4118a53900b14f0bf4e5c645a9401233af05de7d55e6751388ad289d71120b  XPIDER_R6.9G.9.4_OWNER_DIAGNOSTIC_TEST_ONLY.zip  4298202
+1f5ee8f2bde3af5849f3265540ad714696633c0ca4edb0ca2ce352fe92997c9e  XPIDER_R6.9G.10_OWNER_DIAGNOSTIC_TEST_ONLY.zip  4301586
+ed739a85d644435449f157bfadb30eaf8bdd0cae8ea1b3eb9b74c10587e8882e  XPIDER_R6.9G.10.1_OWNER_DIAGNOSTIC_TEST_ONLY.zip  4303096
+8264ea2c61e05d0dc87b18296b118e03d600756d4a36f202f70d342cf24c67fa  XPIDER_R6.9G.10.2_OWNER_DIAGNOSTIC_TEST_ONLY.zip  4330484
+c2ab9f049b9784e023db10811043c496548c2741d0b3424911bcf7d336b3a44d  XPIDER_R6.9G.10.3_OWNER_DIAGNOSTIC_TEST_ONLY.zip  4385137
+8d458e0016d23eb85c052fa044c2ba88459403de0d9c623719b21ef27b13286a  XPIDER_R6.9G.10.3.7.1.4.2_OWNER_DIAGNOSTIC_TEST_ONLY.zip  4329443
+fcd9a14bcd2a9e5edbafb100a271a59be5353af4d271f5e9291652b9c43b6d70  XPIDER_R6.9G.10.3.7.1.4.2.1_OWNER_DIAGNOSTIC_TEST_ONLY.zip  4329447
+1669a643a1073ac6f5a069bd3b1e49bf38baa3fa50904810274ca87cf9c60ed7  XPIDER_R6.9G.10.3.7.1.4.3_OWNER_DIAGNOSTIC_TEST_ONLY.zip  4336702
+070d2d50448e5ac77a3408c658ab8ba0025e60f419752cb7871387f196ed0a63  XPIDER_R6.9G.10.3.7.1.4.4_OWNER_DIAGNOSTIC_TEST_ONLY.zip  4335846
+94b130620bdc70e2c394fe64dc327c4f361ef804f72e7d61459d60c7ccffb2f5  XPIDER_R6.9G.10.3.7.1.4.5_OWNER_DIAGNOSTIC_TEST_ONLY.zip  7271853
+427f11ba612456693fa88f55ed8b5a1d4ff0c38f863aa991260effad5bd36271  XPIDER_R6.9G.10.3.7.1.4.6_OWNER_DIAGNOSTIC_TEST_ONLY.zip  7361310
+b1e1485573e80a0701cfa2c19e2596868fb72c085ed34ad29849bced74f28f23  XPIDER_R6.9G.10.3.7.1.4.7_OWNER_DIAGNOSTIC_TEST_ONLY.zip  8056171
+700a3d63fba375baff8c398f806292edaf474d30a2a2ba64d1adca013363268f  XPIDER_R6.9G.10.3.7.1.4.8_OWNER_DIAGNOSTIC_TEST_ONLY.zip  8252061
+d0ef7e73cb83d040addb8a159cc962190b9d4580d546b41e7df214ad990c97d4  XPIDER_R6.9G.10.3.7.1.4.9_OWNER_DIAGNOSTIC_TEST_ONLY.zip  8253068
+9e976c50a00142db9702b60fbfa5ef7a43700563f6c4a27c67fa386895bfaa81  XPIDER_R6.9G.10.3.7.1.4.10_OWNER_DIAGNOSTIC_TEST_ONLY.zip  8525232
+2149a760fb614140b297d3c57abcf4aa396b376bfb9459682fc0d323fc7c3532  XPIDER_R6.9G.10.3.7.1.4.11_OWNER_BETA.zip  9906530
+fc223b17a70eb27d3a1e33d05ac9558cf7f313e2b9d0603d6b1df615fb2a2e29  XPIDER_R6.9G.10.3.7.1.4.12_PRIVATE_EGRESS_RC1.zip  10410860
+dbe9cc24fa0aadd42a60d2d143fefdf22838262148d0e4edef1fdd4f120720fd  XPIDER_HANDOVER_BUNDLE_20261016.zip  10417622
+0781ffb0461638a4c836572331adf881e66fff59c6ccfcada72b42eebed664e6  XPIDER_R6.9G.10.3.7.1.4.13_PRIVATE_EGRESS_RC2.zip  37526141
+12193a04c57ebb3dd0ab2543326410681f686a01f9032cf30d8dcd4394eec7b6  XPIDER_R6.9G.10.3.7.1.4.14_PRIVATE_EGRESS_RC3.zip  45502852
+7354b429551d046cdd1bc5b40a6d177649421b33b4caf694dcb3d0df921547cd  XPIDER_R6.9G.10.3.7.1.4.15_PRIVATE_EGRESS_RC3.1.zip  45503092
+f5e561c5c28a88c778deab12158d96958207f9d7f7aec1c0bc7d12028f14e764  XPIDER_R6.9G.10.3.7.1.4.16_PRIVATE_EGRESS_RC3.2.zip  45509583
+3e1343d99ff2d8d586a904ce3f6d584e46b0a27df0d8c14a706e092d7e8aa07b  XPIDER_R6.9G.10.3.7.1.4.17_PRIVATE_EGRESS_RC3.3.zip  45497113
+605d611499cb96e2fc94e971af4c085bf3f8940d106183a3b9bc3a3140b48e9b  XPIDER_R6.9G.10.3.7.1.4.18_PRIVATE_EGRESS_RC3.4.zip  45501041
+7bfcbf92365ebea73bb061efa4eb4563a1daf504fffd0c0fc8855235fed66a50  XPIDER_R6.9G.10.3.7.1.4.19_PRIVATE_EGRESS_RC3.5.zip  45519163
+66ac32f90361569fdad1aa0f69f2fa84e7b41ce9aa2f4748493874438d4cb760  XPIDER_R6.9G.10.3.7.1.4.20_PRIVATE_EGRESS_RC3.6.zip  45523754
+70a4aa7170ab5d0af661849bb25dfc63660a0a625fb303738bc9a16e50fd99ba  XPIDER_R6.9G.10.3.7.1.4.21_PRIVATE_EGRESS_RC3.7.zip  45324620
+c92d2a577100c55e5c05e566d6caba7c19e0a0e543c87111ec34d279009de629  XPIDER_R6.9G.10.3.7.1.4.22_PRIVATE_EGRESS_RC3.8.zip  45326546
+7bc9bf8abce31b7f52cebcc32f932bbb770828219081e22499c33b95e160dcbc  XPIDER_R6.9G.10.3.7.1.4.23_PRIVATE_EGRESS_RC3.9.zip  45329132
+c7734a2895a8d5c02893661f4cc8d87483be588881d9224be3f338b7926b6275  XPIDER_R6.9G.10.3.7.1.4.24_PRIVATE_EGRESS_RC3.10.zip  45331205
+98c915b2459ca1cc98da5e6089bd136a24585eb8b431bfbfaa1bc26364dc1f12  XPIDER_R6.9G.10.3.7.1.4.25_PRIVATE_EGRESS_RC3.11.zip  45333967
+838fed8dd97419ca2e7fa75377a9bf1cde5100a0ab614ed2171edf7c076d9ec2  XPIDER_R6.9G.10.3.7.1.4.26_PRIVATE_EGRESS_RC3.12.zip  45334439
+fc85609f87a26ac6b917f2ed8e49e639c70296a78d2d8b31f8571433f8b6ed9e  XPIDER_R6.9G.10.3.7.1.4.27_PRIVATE_EGRESS_RC3.13.zip  45335937
+9017d78aabf8031f189d50aa8440d505636cce98671a7c0c23a2ae1814c2b0dc  XPIDER_R6.9G.10.3.7.1.4.28_PRIVATE_EGRESS_RC3.14.zip  45338417
+acab018b863a420792dcbea1b71b7cab7429460bf0787d9d0766723487d64776  XPIDER_R6.9G.10.3.7.1.4.29_PRIVATE_EGRESS_RC3.15.zip  45345673
+726fb05adfabec6e82cce49cfb131f66bdc1d25a0b4d2a18d3f9ece15a9ace19  XPIDER_R6.9G.10.3.7.1.4.30_PRIVATE_EGRESS_RC3.16.zip  45346386
+2728512b8a0969350926a3ee3643902cc8efa624eac83f6f3b10278cf117c69b  XPIDER_R6.9G.10.3.7.1.4.31_PRIVATE_EGRESS_RC3.17.zip  45347376
+8dd5092d851e0d5f9f51d2ae46aab4258624151cc10fc415143dc6ae5206d65b  XPIDER_R6.9G.10.3.7.1.4.32_PRIVATE_EGRESS_RC3.18.zip  45355610
+eadeb5153f053da6914121e900f3c90877a0fdda3b5b620343cdf2868fd5841f  XPIDER_R6.9G.10.3.7.1.4.33_PRIVATE_EGRESS_RC3.19.zip  45361779
+f490706fc8d5ed068914811d6bcd318a3f61b9624429cc03501b16ce1bdaa3f5  XPIDER_R6.9G.10.3.7.1.4.34_PRIVATE_EGRESS_RC3.20.zip  45363267
+160b2ef08a352f4f12c09593c0294b9ed9bd8a75d2439a43c30c3ee2b8a87992  XPIDER_R6.9G.10.3.7.1.4.35_PRIVATE_EGRESS_RC3.21.zip  45364530
+8dd0137bd87f7e8ebfb42d487a098ba4708850b67f61322b8f6ffb051ad3b0a2  XPIDER_R6.9G.10.3.7.1.4.36_PRIVATE_EGRESS_RC3.22.zip  45364874
+8bae59c34b476f88f70993caf2f02b8d4aaeacba822702d34a42a907cc613722  XPIDER_R6.9G.10.3.7.1.4.37_PRIVATE_EGRESS_RC3.23.zip  45369876
+572b02cc564984974623cd8c194eea2e61a4621f908016b822db1b7ce61dbd92  XPIDER_R6.9G.10.3.7.1.4.38_PRIVATE_EGRESS_RC3.24.zip  45370346
+a8cb89a88f36aa1b47b7317b5b3b7173282ce4dde15b3a05b3b69de4bc5e50b2  XPIDER_R6.9G.10.3.7.1.4.39_PRIVATE_EGRESS_RC3.25.zip  45373531
+d034b060ac26f19a529e3b9c95d7bf3418855c334cd412353c42b9ed7d3a69ac  XPIDER_R6.9G.10.3.7.1.4.40_PRIVATE_EGRESS_RC3.26.zip  45373510
+6e2ed95f703000225ea5352089c4b8634df3cffcd16c5c128dab15d552d6b497  XPIDER_R6.9G.10.3.7.1.4.41_PRIVATE_EGRESS_RC3.27.zip  45374008
+0f544c5de38354cad6fdbd6230823cddd14dee89a0e07135f7a34c19e273a70f  XPIDER_R6.9G.10.3.7.1.4.42_PRIVATE_EGRESS_RC3.28.zip  45375672
+f43d86ecb602210e8facfa2acc59961e9fc272d9dcbf092c56e94f1c8c262f7b  XPIDER_R6.9G.10.3.7.1.4.43_PRIVATE_EGRESS_RC3.29.zip  45376104
+6ef45747f0770d939afabe50fb00c5b1bed910ec8fcab54ed3d08ecf632d9495  XPIDER_R6.9G.10.3.7.1.4.44_PRIVATE_EGRESS_RC3.30.zip  45378928
+b136e7763f1d46b6a63a6473076a30bc3b048515f360f82e03adf04a728a0049  XPIDER_R6.9G.10.3.7.1.4.45_PRIVATE_EGRESS_RC3.31.zip  45380410
+8393e389c9e43f4ecc6a2f4899e438c68ea14181c57aa7c623e8a18d10fe8ab6  XPIDER_R6.9G.10.3.7.1.4.46_PRIVATE_EGRESS_RC3.32.zip  45380553
+56a86cbbbd372dcee97f82f72339022155cc53e053327e19e3277057d7d8c085  XPIDER_R6.9G.10.3.7.1.4.47_PRIVATE_EGRESS_RC3.33.zip  45381976
+1e9fe907733c08a10d85695a5704dc1e97adc19ad3864979efdf6bca88b77136  XPIDER_R6.9G.10.3.7.1.4.48_PRIVATE_EGRESS_RC3.34.zip  45386538
+cfe90cc42b17648806389a1bf6ae93c94a327e551e2b1e67815cab8f39188277  XPIDER_R6.9G.10.3.7.1.4.49_PRIVATE_EGRESS_RC3.35.zip  45387226
+4c293693ac01c606bb2bbcb4dcd4d87c9d3f737e13156614c7e14a1ccd48a1f1  XPIDER_R6.9G.10.3.7.1.4.50_PRIVATE_EGRESS_RC3.36.zip  45388077
+9e004402966d4cff2b5b5f800568bf3a1f0cb39908caca7167e8289f9eee4b7a  XPIDER_R6.9G.10.3.7.1.4.51_PRIVATE_EGRESS_RC3.37.zip  45389541
+a05745f87ef6a8d0c93931a434fc4375ce6ddfca8d32b041d0dbbf55d9ff5aba  XPIDER_R6.9G.10.3.7.1.4.52_PRIVATE_EGRESS_RC3.38.zip  45389541
+2b83e311ea40209998102aa3b8be5cf214ddd415443ea523dcf80fc2f41e9e75  XPIDER_R6.9G.10.3.7.1.4.53_PRIVATE_EGRESS_RC3.39.zip  45372395
+9e718a5319d62b8b33bb75b04227de584699bc9002a2b7c8a3f3185d2c3e2951  XPIDER_R6.9G.10.3.7.1.4.54_PRIVATE_EGRESS_RC3.40.zip  45371715
+0efe82ad58f7d762445c26d14d60a7b1d8b701199e6205fb39c9b9b574bd7a7c  XPIDER_R6.9G.10.3.7.1.4.55_PRIVATE_EGRESS_RC3.41.zip  45379257
+0e8bc7533cb5cb1c7357cdcd1515aeef89ece57beacc6e0dc0a74c81f5270f63  XPIDER_R6.9G.10.3.7.1.4.56_PRIVATE_EGRESS_RC3.42.zip  46352284
+713e155a6ce9af64329c874853f2a5f6e6404537d69dedeed34b707f200ef1a1  XPIDER_R6.9G.10.3.7.1.4.57_PRIVATE_EGRESS_RC3.43.zip  46352305
+## Extension folder hashes (manifest+background+content-script+popup)
+021812732c5d  extension\manifest.json
+f5979373e4ca  extension\background.js
+7eb9532e135e  extension\content-script.js
+ef259ffabadd  extension\popup.js
+021812732c5d  E:\vivpr\ai\extensions\send_message_backup\manifest.json
+f5979373e4ca  E:\vivpr\ai\extensions\send_message_backup\background.js
+7eb9532e135e  E:\vivpr\ai\extensions\send_message_backup\content-script.js
+ef259ffabadd  E:\vivpr\ai\extensions\send_message_backup\popup.js
+021812732c5d  XPIDER_R6.9G.10.3.7.1.4.54_PRIVATE_EGRESS_RC3.40\extension\manifest.json
+c13b8c7305ae  XPIDER_R6.9G.10.3.7.1.4.54_PRIVATE_EGRESS_RC3.40\extension\background.js
+d500b0c7f7c8  XPIDER_R6.9G.10.3.7.1.4.54_PRIVATE_EGRESS_RC3.40\extension\content-script.js
+7ebeec026d4f  XPIDER_R6.9G.10.3.7.1.4.54_PRIVATE_EGRESS_RC3.40\extension\popup.js
+## Browser-loaded unpacked extensions (found)
+Google/Chrome | Default | Secure Preferences | iaghmfppinhjfkdjcpfaamafknbicepa | E:\vivpr\ai\AIU-Agent-Handoff-Dev-Package-v1.3\extension |  | state=undefined | dis=[1]
+Google/Chrome | Default | Secure Preferences | ldlijlaccfeelfdhgnjbibniocefckjj | E:\vivpr\ai\extension-form-sender\XPIDER_R6.9G.10.3.7.1.4.54_PRIVATE_EGRESS_RC3.40\extension |  | state=undefined | dis=undefined
+E:/vivpr/ai/extensions/send_message_backup buildId: 'R6.9G.10.3.7.1.4.56-20261022-FINAL-SPRINT-RC3.42'
+extension buildId: 'R6.9G.10.3.7.1.4.57-20261022-FINAL-SPRINT-RC3.43'
