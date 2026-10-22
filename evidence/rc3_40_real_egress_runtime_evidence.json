@@ -1,0 +1,123 @@
+{
+  "timestamp": "2026-10-22T07:05:00.000Z",
+  "evidenceScope": "RC3.40 Real Egress & Edge Rehearsal Immutable Runtime Evidence",
+  "releaseBinding": {
+    "releaseTag": "v6.9g.10.3-rc3.40.7.1.4.54",
+    "annotatedTagObject": "7814fddefbd827cd0b17f088079e843f4669ca38",
+    "provenanceCommitP": "c25d673c0d3e2e01cca7602c68b68af1c2da6968",
+    "functionalCommitF": "0ba2b5bb5192e3f44ed96dadf5971a5bf010188b",
+    "rollbackAnchor": "d987bca65b0e5d0786e110efaa45ad91622bc85f",
+    "buildId": "R6.9G.10.3.7.1.4.54-20261022-FINAL-SPRINT-RC3.40",
+    "releaseAssetZip": "XPIDER_R6.9G.10.3.7.1.4.54_PRIVATE_EGRESS_RC3.40.zip",
+    "releaseAssetSize": 45371715,
+    "releaseAssetSha256": "9e718a5319d62b8b33bb75b04227de584699bc9002a2b7c8a3f3185d2c3e2951",
+    "releaseAssetUrl": "https://github.com/goodkie/v-show/releases/tag/v6.9g.10.3-rc3.40.7.1.4.54"
+  },
+  "runtimeInfrastructure": {
+    "provider": "DigitalOcean",
+    "dropletId": 611293905,
+    "region": "tor1",
+    "host": "143.198.40.33",
+    "port": 8443,
+    "nodeId": "do-egress-tor1-611293905",
+    "cloudFirewallId": "d6fd3a95-d9d9-417d-9d27-c6b57e94240a"
+  },
+  "runtimeChecks": {
+    "companionControlPlane": {
+      "command": "GET http://127.0.0.1:18989/health",
+      "status": "PASS",
+      "httpStatus": 200,
+      "relayReady": true,
+      "lifecycleState": "READY",
+      "health": "HEALTHY",
+      "selectedEgressId": "do-egress-tor1-611293905",
+      "companionBuildId": "R6.9G.10.3.7.1.4.54-20261022-FINAL-SPRINT-RC3.40",
+      "companionImplementationHead": "0ba2b5bb5192e3f44ed96dadf5971a5bf010188b",
+      "controlPort": 18989,
+      "proxyPort": 18988
+    },
+    "egressPoolIsolation": {
+      "source": "companion/egress_pool_config.json",
+      "status": "PASS",
+      "productionNodesCount": 1,
+      "nodeId": "do-egress-tor1-611293905",
+      "host": "143.198.40.33",
+      "port": 8443,
+      "rehearsalNodesPresent": false
+    },
+    "directPinnedTlsHandshake": {
+      "command": "tls.connect({ host: '143.198.40.33', port: 8443, ca: rootCert, checkServerIdentity })",
+      "status": "PASS",
+      "authorized": true,
+      "protocol": "TLSv1.3",
+      "cipher": "TLS_AES_256_GCM_SHA384",
+      "subjectAltName": "IP Address:143.198.40.33, IP Address:127.0.0.1, DNS:localhost",
+      "serverFingerprint256": "CD:DA:43:DB:EA:3C:05:2C:9E:D5:86:23:FB:44:6F:11:5C:C1:2D:D4:B3:3E:69:FF:27:87:99:96:5B:A3:F1:0D",
+      "validTo": "Oct 20 17:58:15 2031 GMT"
+    },
+    "authenticatedConnectTunnel": {
+      "command": "CONNECT cloudflare.com:443 via http://127.0.0.1:18988",
+      "status": "PASS",
+      "statusLine": "HTTP/1.1 200 OK",
+      "observedPublicIp": "143.198.40.33",
+      "location": "CA",
+      "colo": "YYZ",
+      "tlsVersion": "TLSv1.3",
+      "destination": "cloudflare.com/cdn-cgi/trace",
+      "matchesActiveDroplet": true
+    },
+    "port22SshClosedInvariant": {
+      "command": "net.connect({ host: '143.198.40.33', port: 22 })",
+      "status": "PASS",
+      "accessible": false,
+      "bannerBytesReceived": 0,
+      "reason": "TIMEOUT_FILTERED",
+      "invariant": "Port 22 SSH completely closed and dropped post-bootstrap"
+    },
+    "failClosedDirectFallback": {
+      "command": "GET unroutable upstream through 127.0.0.1:18988",
+      "status": "PASS",
+      "unroutableProbeHandled": true,
+      "ipLeakBytes": 0,
+      "invariant": "Companion never falls back to direct owner connection on upstream failure"
+    }
+  },
+  "edgeInBrowserRehearsal": {
+    "command": "node test/run_edge_sprint_full_captcha_privacy_relay_rehearsal.js",
+    "browser": "Microsoft Edge (Headless CDP)",
+    "executionResult": "PASS",
+    "inBrowserTrace": {
+      "url": "https://cloudflare.com/cdn-cgi/trace",
+      "observedIp": "143.198.40.33",
+      "loc": "CA",
+      "colo": "YYZ",
+      "tls": "TLSv1.3"
+    },
+    "section9Invariants": {
+      "gateG1_privacyRelayEnforced": "PASS (enabled=true, failClosed=true, transportMode=PRIVACY_RELAY)",
+      "invariant1_formDiscovery": "PASS (Contact form discovered on target fixture)",
+      "invariant2_smartAutofill": "PASS (Fields filled via smart-field-resolver)",
+      "invariant3_captchaDetection": "PASS (CAPTCHA detected by solver-content.js)",
+      "invariant4_controlledAdapter": "PASS (MockCaptchaProviderAdapter reached)",
+      "invariant5_providerTokenReturned": "PASS (Provider token returned to background authority)",
+      "invariant6_dynamicFrameSelection": "PASS (selectedFrameId=0, appliedFrameId=0, inventoryCount=1)",
+      "invariant7_strictSingleWriter": "PASS (mainWorldWriteCount=1, duplicateRejections=1)",
+      "invariant8_readyToSubmit": "PASS (READY_TO_SUBMIT transition reached)",
+      "invariant9_orchestratorSubmit": "PASS (Form submission dispatched by orchestrator engine)",
+      "invariant10_submissionOutcomeVerifier": "PASS (SubmissionOutcomeVerifier confirmed success banner)",
+      "invariant11_downstreamCaptchaAccepted": "PASS (Downstream CAPTCHA accepted signal confirmed)",
+      "invariant12_target1ConfirmedSuccess": "PASS (Target 1 settled as CONFIRMED_SUCCESS)",
+      "invariant13_target1SingleLedgerSettlement": "PASS (Exactly one settlement recorded for Target 1)",
+      "invariant14_ledgerCountersVerified": "PASS (Ledger counters verified)",
+      "invariant15_target2SequentialSuccess": "PASS (Target 2 processed sequentially as SUCCESS)",
+      "invariant16_cleanResetZeroTokenBleed": "PASS (Clean reset before Target 2; total ledger: 2 successes, 0 failures, 0 hangs)"
+    },
+    "allInvariantsPassed": true,
+    "nopechaLiveTransactionBoundary": "NOT PROVEN / OWNER DEFERRED (Controlled token ingestion and dynamic frame single-writer verified via MockCaptchaProviderAdapter; real paid external transaction deferred for human Owner credential validation)"
+  },
+  "sanitization": {
+    "redactedSecrets": true,
+    "plaintextTokensDetected": 0,
+    "privateKeysDetected": 0
+  }
+}
