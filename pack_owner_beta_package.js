@@ -1,7 +1,7 @@
 /**
  * pack_owner_beta_package.js
  *
- * Packages XPIDER AutoForm Sender Pro — OWNER BETA
+ * Packages XPIDER AutoForm Sender Pro ??OWNER BETA
  * Version: R6.9G.10.3.7.1.4.54-20261022-FINAL-SPRINT-RC3.40
  * Per Issue #6 Owner Decision & ChatGPT Final Pre-Live Audit Directive (Comment #6250701581).
  *
@@ -69,8 +69,8 @@ async function runPackaging() {
     console.log('1. Verifying parity with sync_build_parity.js...');
     execSync('node sync_build_parity.js', { stdio: 'inherit' });
 
-    const versionStr = 'R6.9G.10.3.7.1.4.55';
-    const zipName = `XPIDER_${versionStr}_PRIVATE_EGRESS_RC3.41.zip`;
+    const versionStr = 'R6.9G.10.3.7.1.4.57';
+    const zipName = `XPIDER_${versionStr}_PRIVATE_EGRESS_RC3.43.zip`;
     const zipOut = path.resolve(zipName);
     const extDir = path.resolve('send_message_backup/build/extension');
     const compDir = path.resolve('companion');
@@ -446,7 +446,7 @@ async function runPackaging() {
 
     const zipBuf = fs.readFileSync(zipOut);
     const zipSha = crypto.createHash('sha256').update(zipBuf).digest('hex');
-    console.log(`✅ Zip created: ${zipOut} (${zipBuf.length} bytes, SHA-256: ${zipSha})`);
+    console.log(`??Zip created: ${zipOut} (${zipBuf.length} bytes, SHA-256: ${zipSha})`);
 
     // 10. Mandatory Post-Zip Archive Entry Scan (V1, V2, V3 Verification)
     console.log('4. Verifying ZIP archive entries via tar -tf...');
@@ -510,7 +510,7 @@ async function runPackaging() {
     // Mirror inventory into build
     execSync('node sync_build_parity.js', { stdio: 'inherit' });
 
-    console.log('✅ PACKAGE INVENTORY updated and mirrored across all trees.');
+    console.log('??PACKAGE INVENTORY updated and mirrored across all trees.');
     console.log(`\n================ OWNER BETA RELEASE ARTIFACT ================`);
     console.log(`File: ${zipName}`);
     console.log(`Size: ${zipBuf.length} bytes`);

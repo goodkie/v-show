@@ -15,9 +15,9 @@
 
     const BUILD_INFO = {
         branch: 'upgrade/phase-0-1',
-        channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.42',
+        channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.43',
         testOnly: true,
-        // [R6.9G.10.3.7.1.4.56] XPIDER AutoForm Sender Pro — Private Egress Release Candidate 3.42 (Autofill, Scroll-Reveal Discovery, Gateway Recovery, Dead Domain Fast-Fail)
+        // [R6.9G.10.3.7.1.4.57] XPIDER AutoForm Sender Pro ??Private Egress Release Candidate 3.43 (package-binding re-cut of RC3.42; no functional change) (Autofill, Scroll-Reveal Discovery, Gateway Recovery, Dead Domain Fast-Fail)
         implementationHead: '3cc1be6b436b1d68f948927df88a2c73c1ae5011',
         implementationHeadShort: '3cc1be6b',
         head: '3cc1be6b436b1d68f948927df88a2c73c1ae5011',
@@ -25,8 +25,8 @@
         rollbackBase: 'd987bca65b0e5d0786e110efaa45ad91622bc85f',
         previousFunctionalRestorePoint: 'd987bca65b0e5d0786e110efaa45ad91622bc85f',
         manifestVersion: 3,
-        buildId: 'R6.9G.10.3.7.1.4.56-20261022-FINAL-SPRINT-RC3.42',
-        builtAt: '2026-10-22T10:41:25.097Z',
+        buildId: 'R6.9G.10.3.7.1.4.57-20261022-FINAL-SPRINT-RC3.43',
+        builtAt: '2026-10-22T14:28:34.893Z',
         provenanceSchema: 2,
         modules: {
             backgroundSha: 'f5979373e4ca71766818b5e33cc6d583bad190384e51036fdd80304996745e7f',
