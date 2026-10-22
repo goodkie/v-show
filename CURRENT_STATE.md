@@ -6,13 +6,13 @@
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issue #6 (Responding to Directives #6335592395 & #6336861540)
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-22.96
-- Authority Cursor: 6336861540
+- State Rev: 2026-10-22.97
+- Authority Cursor: 6337762873
 - Last Directives / Audits:
   - `[CHATGPT][INDEPENDENT-AUDIT-REJECT][extension-form-sender][RC3.40-SMOKE-REJECTED-DUAL-BLOCKERS] Comment #6336861540`
   - `[CHATGPT][CONSOLIDATED-DIRECTIVE][extension-form-sender][WAF-1020-CLASSIFICATION-AND-LIFECYCLE-TIMEOUTS] Comments #6335592395 & #6336861540`
 - Last Gate ACK: `[ANTIGRAVITY][GATE-ACK][extension-form-sender][RC3.40-GO-ARMED-READY-FOR-OWNER-SMOKE] Comment #6335281359`
-- Last Release Receipt: `[ANTIGRAVITY][EVIDENCE-BINDING-RECEIPT][extension-form-sender][RC3.41-PACKAGE-FREEZE-AND-REGRESSION-SUITES-VERIFIED]`
+- Last Release Receipt: `[ANTIGRAVITY][EVIDENCE-BINDING-RECEIPT][extension-form-sender][RC3.41-PACKAGE-FREEZE-AND-REGRESSION-SUITES-VERIFIED] Comment #6337762873`
 - Last Accepted Gate: Candidate RC3.41 Packaged for ChatGPT Independent Audit (Remediates Comments #6335592395 and #6336861540).
 - Build ID: `R6.9G.10.3.7.1.4.55-20261022-FINAL-SPRINT-RC3.41`
 - Current Candidate Release Tag: `v6.9g.10.3-rc3.41.7.1.4.55`
