@@ -125,3 +125,6 @@
   1. `extension/content-script.js`: Added `isPageWafBlocked()` to detect Cloudflare WAF block pages (`#cf-error-details`, `"Why have I been blocked?"`, `"You are unable to access"`).
   2. Integrated `isPageWafBlocked()` into `checkAndRecoverPage()` to immediately settle with `CLOUDFLARE_WAF_BLOCKED` within <100ms, completely eliminating the 180s hang and advancing the 99-URL campaign seamlessly.
   3. Synchronized across all unpacked extension folders.
+
+## RC3.42 (2026-10-22.98)
+Build R6.9G.10.3.7.1.4.56-20261022-FINAL-SPRINT-RC3.42; F=3cc1be6b P=1f3c412d. Fixes: privacy gate self-heal preflight, findOptimalForm freeze, lazy-form reveal, dead-domain fast-fail, www-normalized contact link, popup stop/end reset. Edge self-run PASS. Asset SHA256 0e8bc7533cb5cb1c7357cdcd1515aeef89ece57beacc6e0dc0a74c81f5270f63.
