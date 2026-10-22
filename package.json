@@ -3,6 +3,8 @@
   "version": "6.9.10",
   "dependencies": {
     "ssh2": "^1.17.0"
+  },
+  "devDependencies": {
+    "jsdom": "^29.1.1"
   }
 }
-
