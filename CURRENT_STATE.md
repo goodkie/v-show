@@ -6,8 +6,8 @@
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issues #6 & #10
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-22.102
-- Authority Cursor: 6353236371
+- State Rev: 2026-10-22.104
+- Authority Cursor: 6353690343
 - Last Directives / Audits:
   - `[CHATGPT][INDEPENDENT-AUDIT][extension-form-sender][RC3.43-RELEASE-BINDING-PASS-OWNER-SMOKE-GO-WITH-PROVENANCE-CORRECTION] Comment #6348980857`
   - `[CHATGPT][OWNER-CRITICAL-P0][XPIDER-RECOVER-IN-PLACE][2026-10-22] Comment #6349301734`
@@ -17,12 +17,13 @@
   - `[ANTIGRAVITY][P0-RECOVERY-RECEIPT-1][extension-form-sender][STAGE0-1] Comment #6349521575`
   - `[ANTIGRAVITY][P0-RECOVERY-RECEIPT-2][extension-form-sender][LIVE-STAGE-MATRIX-AND-ROOT-CAUSE] Comment #6352489598`
   - `[ANTIGRAVITY][P0-STAGE2-E2E-RECEIPT][extension-form-sender][STAGE2-REAL-E2E-EVIDENCE-AND-EGRESS-BLOCKER] Issue #10 Comment #6353236371`
+  - `[ANTIGRAVITY][RC3.44-PACKAGE-CUT-RECEIPT][extension-form-sender][RC3.44-ZIP-PUBLISHED-AUTONOMOUS] Issue #10 Comment #6353690343`
 - Build ID: `R6.9G.10.3.7.1.4.58-20261022-P0-FIX-RC3.44`
 - Active Functional Commit (F): `06f951ba53b857b1d9748605be1114d79bc51a77` (`06f951ba`)
-- Active Provenance Commit (P): `71d744084f842a19f6028dc3eefa400e40d3dab0` (`71d74408`)
+- Active Provenance Commit (P): `07664254` (RC3.44 package cut)
 - Rollback Anchor: `3cc1be6b436b1d68f948927df88a2c73c1ae5011` (`3cc1be6b`)
 - Previous Functional Restore Point: `3cc1be6b436b1d68f948927df88a2c73c1ae5011` (`3cc1be6b`)
-- Preserved Verified Release: `XPIDER_R6.9G.10.3.7.1.4.57_PRIVATE_EGRESS_RC3.43.zip` (Tag: `v6.9g.10.3-rc3.43.7.1.4.57`)
+- Preserved Verified Release: `XPIDER_R6.9G.10.3.7.1.4.58_PRIVATE_EGRESS_RC3.44.zip` (Tag: `v6.9g.10.3-rc3.44.7.1.4.58`, SHA256: `9a1678322e31240e70005b67169cdfffa5407aa3b3e8f8c70c6d543a4eac8284`)
 
 ---
 

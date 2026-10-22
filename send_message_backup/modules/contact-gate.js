@@ -166,9 +166,42 @@
             return { el: re, type: 'rich-editor', name: re.id || 'rich-editor', semantic: 'message' };
         }
 
+        // 5. [RC3.44 P0-FIX] Soft fallback: input[type="text"] with strong inquiry semantic signals.
+        //    Handles modern SPA/React sites that render message/inquiry fields as styled text inputs
+        //    rather than native textareas (e.g. HubSpot, GoHighLevel, Kartra, custom React forms).
+        //    STRICT GUARD: Only triggers when form has BOTH:
+        //      (a) a text input with explicit inquiry semantics (name/placeholder/id/aria-label), AND
+        //      (b) contact-form structural evidence (email input OR name input present), AND
+        //      (c) no dominant search/newsletter/booking negatives on the input itself.
+        const SOFT_INQUIRY_TOKENS = [
+            'message', 'inquiry', 'enquiry', 'question', 'comments', 'comment',
+            'details', 'description', 'request', 'how can we help', 'tell us',
+            '\ubb38\uc758', '\uc9c8\ubb38', '\uba54\uc2dc\uc9c0', '\ub0b4\uc6a9', '\uc0c1\ub2f4', '\uc694\uccad'
+        ];
+        const SOFT_NEGATIVE_GUARD = ['search', 'subscribe', 'newsletter', 'password', 'login', 'username'];
+
+        const textInputs = Array.from(formEl.querySelectorAll('input[type="text"], input:not([type])')).filter(isElementVisible);
+        const hasEmailInput = formEl.querySelectorAll('input[type="email"], input[name*="email" i], input[id*="email" i]').length > 0;
+        const hasNameInput = formEl.querySelectorAll('input[name*="name" i], input[id*="name" i]').length > 0;
+        const hasContactStructure = hasEmailInput || hasNameInput;
+
+        if (hasContactStructure && textInputs.length > 0) {
+            for (const inp of textInputs) {
+                const ctx = getElementContextText(inp);
+                const hasSoftSemantic = SOFT_INQUIRY_TOKENS.some(tok => ctx.includes(tok));
+                const hasSoftNegative = SOFT_NEGATIVE_GUARD.some(tok => ctx.includes(tok));
+                if (hasSoftSemantic && !hasSoftNegative) {
+                    const semantic = SOFT_INQUIRY_TOKENS.find(tok => ctx.includes(tok)) || 'message';
+                    console.log(`[LONG_TEXT_GATE] found=true type=text-input-inquiry semantic=${semantic}`);
+                    return { el: inp, type: 'text-input-inquiry', name: inp.name || inp.id || 'text-input', semantic };
+                }
+            }
+        }
+
         console.log('[LONG_TEXT_GATE] found=false');
         return null;
     }
+
 
     /**
      * Authoritative Intent Classifier & Eligibility Gate (R6.7)

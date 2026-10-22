@@ -36,7 +36,7 @@
             solverCoreSha: 'ab4dee5c8213d7c2fd47942951a2bc40732c1c8c55a5742d493db617150bf95f',
             emailCollectorSha: '3f1147a379e159e7777158f2caa74cc8d40b2a0b0eb2c244f440af379cb5c9c9',
             historyStoreSha: '8e3eb9bd325f772704c4b84f9e7e872e260f10d47d86a134da5802d013f17db8',
-            contactGateSha: '0d01acb2d0a9448d154353fac5b527c17afa42fed56c68d6a49b39053629bd7d',
+            contactGateSha: '9be07119ce1d6e0e00090cf552cd57d470d5e85bf564080b75855b868e118247',
             visionSubmitSha: '6b89eab8fd132798fbb157e179bdeee64da1aa9867222fdb656e3fcf4fcc9311',
             privacyGatewaySha: 'cc5c8cc9c83adf3b985aa4bab74b04189c00fdba4f3ac3a555bd00e38fc79993'
         }
