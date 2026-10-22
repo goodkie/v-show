@@ -17,7 +17,7 @@
         branch: 'upgrade/phase-0-1',
         channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.44',
         testOnly: true,
-        // [R6.9G.10.3.7.1.4.58] XPIDER AutoForm Sender Pro — Private Egress Release Candidate 3.44 (P0-FIX: FORM_CLASSIFICATION for SPA/React forms without native textarea — contact-gate Path 5 soft fallback for inquiry-semantic text inputs)
+        // [R6.9G.10.3.7.1.4.58] XPIDER AutoForm Sender Pro — Private Egress Release Candidate 3.44 (P0-FIX: contact-gate Path 5 inquiry-semantic text-input soft fallback for SPA/React forms)
         implementationHead: '06f951ba53b857b1d9748605be1114d79bc51a77',
         implementationHeadShort: '06f951ba',
         head: '06f951ba53b857b1d9748605be1114d79bc51a77',
@@ -26,7 +26,7 @@
         previousFunctionalRestorePoint: '3cc1be6b436b1d68f948927df88a2c73c1ae5011',
         manifestVersion: 3,
         buildId: 'R6.9G.10.3.7.1.4.58-20261022-P0-FIX-RC3.44',
-        builtAt: '2026-10-22T21:14:00.000Z',
+        builtAt: '2026-10-22T23:20:00.000Z',
         provenanceSchema: 2,
         modules: {
             backgroundSha: 'f5979373e4ca71766818b5e33cc6d583bad190384e51036fdd80304996745e7f',
@@ -36,7 +36,7 @@
             solverCoreSha: 'ab4dee5c8213d7c2fd47942951a2bc40732c1c8c55a5742d493db617150bf95f',
             emailCollectorSha: '3f1147a379e159e7777158f2caa74cc8d40b2a0b0eb2c244f440af379cb5c9c9',
             historyStoreSha: '8e3eb9bd325f772704c4b84f9e7e872e260f10d47d86a134da5802d013f17db8',
-            contactGateSha: '9be07119ce1d6e0e00090cf552cd57d470d5e85bf564080b75855b868e118247',
+            contactGateSha: '0d01acb2d0a9448d154353fac5b527c17afa42fed56c68d6a49b39053629bd7d',
             visionSubmitSha: '6b89eab8fd132798fbb157e179bdeee64da1aa9867222fdb656e3fcf4fcc9311',
             privacyGatewaySha: 'cc5c8cc9c83adf3b985aa4bab74b04189c00fdba4f3ac3a555bd00e38fc79993'
         }
