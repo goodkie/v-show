@@ -148,3 +148,6 @@ Re-cut of RC3.42 per audit #6343054381 HOLD. F=3cc1be6b436b1d68f948927df88a2c73c
 
 ## RC3.45 Firewall Guardian (2026-10-23)
 Implemented commit ceafa445: companion/firewall-guardian.js (+ui, relay wiring, 16 mock tests PASS). Real: 8443 unreachable from 74.39.42.139 until Owner enters PAT locally. Receipt: Issue #6 comment 6362568709.
+
+## RC3.45 real egress verified (2026-10-23)
+Firewall 8443 = 74.39.42.139/32 via guardian; probe verified exit IP 143.198.40.33; relay READY. Receipt #6362860144.
