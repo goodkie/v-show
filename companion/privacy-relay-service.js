@@ -1293,6 +1293,23 @@ class PrivacyRelayService {
         return;
       }
 
+      // [RC3.45] Firewall Guardian status / on-demand reconcile (token is NEVER accepted or returned here; set via local UI only)
+      if (pathname === '/firewall-guardian/status' && req.method === 'GET') {
+        const { FirewallGuardian } = require('./firewall-guardian');
+        this.firewallGuardian = this.firewallGuardian || new FirewallGuardian({ dir: path.dirname(this.configFile || TOKEN_FILE) });
+        res.writeHead(200);
+        res.end(JSON.stringify({ success: true, guardian: this.firewallGuardian.getStatus() }));
+        return;
+      }
+      if (pathname === '/firewall-guardian/reconcile' && req.method === 'POST') {
+        const { FirewallGuardian } = require('./firewall-guardian');
+        this.firewallGuardian = this.firewallGuardian || new FirewallGuardian({ dir: path.dirname(this.configFile || TOKEN_FILE) });
+        const gr = await this.firewallGuardian.reconcile();
+        res.writeHead(gr.ok ? 200 : 409);
+        res.end(JSON.stringify({ success: gr.ok, status: gr.status, ip: gr.ip || null }));
+        return;
+      }
+
       // GET /status (Authenticated)
       if (pathname === '/status' && req.method === 'GET') {
         res.writeHead(200);
@@ -2753,6 +2770,21 @@ class PrivacyRelayService {
       this.log(`[PRIVACY_RELAY_ACTIVE_NODE] Active private-egress node found: droplet=${recStatus.dropletId} ip=${recStatus.publicIp}`);
     }
 
+    // [RC3.45] Firewall Guardian: repair 8443 /32 for current owner IP BEFORE startup egress probe (no-op without local PAT)
+    try {
+      const { FirewallGuardian } = require('./firewall-guardian');
+      this.firewallGuardian = this.firewallGuardian || new FirewallGuardian({ dir: path.dirname(this.configFile || TOKEN_FILE) });
+      if (this.firewallGuardian.hasToken()) {
+        const gr = await this.firewallGuardian.reconcile();
+        this.log(`[FIREWALL_GUARDIAN] startup reconcile status=${gr.status}${gr.ip ? ' ip=' + gr.ip : ''}`);
+        this.firewallGuardian.start(60000);
+      } else {
+        this.log('[FIREWALL_GUARDIAN] no local PAT stored; guardian idle (run companion/firewall-guardian-ui.js once)');
+      }
+    } catch (gErr) {
+      this.log(`[FIREWALL_GUARDIAN] init error: ${gErr.message}`);
+    }
+
     // Verify initial sticky active node before marking relay ready (Fail-Closed)
     const active = this.getActiveNode();
     if (active && active.active !== false) {
@@ -2796,6 +2828,7 @@ class PrivacyRelayService {
 
   async stop() {
     this.stopContinuousHealthMonitor();
+    if (this.firewallGuardian) { try { this.firewallGuardian.stop(); } catch (_) {} }
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;

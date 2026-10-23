@@ -12,3 +12,6 @@ companion/.private_egress_transaction.json
 
 
 companion/.relay.lock
+
+companion/.do_firewall_pat.dpapi
+companion/.firewall_guardian_state.json
