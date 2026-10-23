@@ -15,28 +15,28 @@
 
     const BUILD_INFO = {
         branch: 'upgrade/phase-0-1',
-        channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.44',
+        channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.44.2',
         testOnly: true,
-        // [R6.9G.10.3.7.1.4.58] XPIDER AutoForm Sender Pro — Private Egress Release Candidate 3.44 (P0-FIX: contact-gate Path 5 inquiry-semantic text-input soft fallback for SPA/React forms)
-        implementationHead: '06f951ba53b857b1d9748605be1114d79bc51a77',
-        implementationHeadShort: '06f951ba',
-        head: '06f951ba53b857b1d9748605be1114d79bc51a77',
-        headShort: '06f951ba',
+        // [R6.9G.10.3.7.1.4.60] XPIDER AutoForm Sender Pro — Private Egress Release Candidate 3.44.2 (P0-PATCH: Path 6 Booking Guard Hardening + Visible Field Count Fix)
+        implementationHead: '5cc89d9ee72fbfda03c20c02568771aa130fc2f1',
+        implementationHeadShort: '5cc89d9e',
+        head: '5cc89d9ee72fbfda03c20c02568771aa130fc2f1',
+        headShort: '5cc89d9e',
         rollbackBase: '3cc1be6b436b1d68f948927df88a2c73c1ae5011',
         previousFunctionalRestorePoint: '3cc1be6b436b1d68f948927df88a2c73c1ae5011',
         manifestVersion: 3,
-        buildId: 'R6.9G.10.3.7.1.4.58-20261022-P0-FIX-RC3.44',
-        builtAt: '2026-10-22T23:20:00.000Z',
+        buildId: 'R6.9G.10.3.7.1.4.60-20261023-P0-PATCH-RC3.44.2',
+        builtAt: '2026-10-23T08:45:00.000Z',
         provenanceSchema: 2,
         modules: {
-            backgroundSha: 'f5979373e4ca71766818b5e33cc6d583bad190384e51036fdd80304996745e7f',
+            backgroundSha: '26b1f824e3763ddef81d12eb07dcf86daac3e37ce0bb49d82879500958093f28',
             contentScriptSha: '7eb9532e135eb81c370b648911743327ff7c7884ca4ed77c333ad1f83cc028ff',
             popupSha: 'ef259ffabadd18fb2d4830918d3df8be0bbd6133ae2ad879b116ef5ddf678b29',
             solverContentSha: '6a1ff7154efaeb6dbd5946ac4f9be1ce5b5ff43bce2db06d0dca32950edd3bdb',
             solverCoreSha: 'ab4dee5c8213d7c2fd47942951a2bc40732c1c8c55a5742d493db617150bf95f',
             emailCollectorSha: '3f1147a379e159e7777158f2caa74cc8d40b2a0b0eb2c244f440af379cb5c9c9',
             historyStoreSha: '8e3eb9bd325f772704c4b84f9e7e872e260f10d47d86a134da5802d013f17db8',
-            contactGateSha: '9be07119ce1d6e0e00090cf552cd57d470d5e85bf564080b75855b868e118247',
+            contactGateSha: '9007adceec8b4e8ec7f7a14ee8a7d21af460a01ed043c578e1e3c2579cfae88e',
             visionSubmitSha: '6b89eab8fd132798fbb157e179bdeee64da1aa9867222fdb656e3fcf4fcc9311',
             privacyGatewaySha: 'cc5c8cc9c83adf3b985aa4bab74b04189c00fdba4f3ac3a555bd00e38fc79993'
         }
