@@ -198,6 +198,63 @@
             }
         }
 
+        // 6. [RC3.44 P0-FIX] Lead / Consultation Contact Form Soft Fallback:
+        //    Handles service/consultation inquiry forms that collect contact identity (Name + Email + Phone/Program)
+        //    without an optional long-text message box.
+        //    STRICT GUARDS:
+        //      (a) Form must have BOTH Name AND Email inputs.
+        //      (b) Form must have Phone input OR at least 3 distinct visible fields.
+        //      (c) Form submit text or context must contain inquiry/action/consultation keywords.
+        //      (d) Form must NOT contain login/password, search, or newsletter-only tokens.
+        const hasPhoneInput = formEl.querySelectorAll('input[type="tel"], input[name*="phone" i], input[id*="phone" i]').length > 0;
+        const allVisibleInputs = Array.from(formEl.querySelectorAll('input:not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="reset"]):not([type="image"]), select, textarea')).filter(isElementVisible);
+        const submitBtn = formEl.querySelector('input[type="submit"], button[type="submit"], button:not([type="button"]), [role="button"]');
+        const submitBtnText = ((submitBtn ? (submitBtn.textContent || submitBtn.value || '') : '')).toLowerCase();
+        const formHeader = Array.from(formEl.querySelectorAll('h1, h2, h3, h4, h5, legend, .title, .form-title'))
+            .map(h => (h.textContent || '').trim().toLowerCase())
+            .join(' ');
+        const formActionAttr = ((formEl.getAttribute?.('action') || '')).toLowerCase();
+        const formIdAttr = ((formEl.id || '')).toLowerCase();
+        const leadContext = `${submitBtnText} ${formHeader} ${formIdAttr} ${formActionAttr}`;
+
+        const LEAD_ACTION_TOKENS = [
+            'schedule', 'pricing', 'class', 'trial', 'info', 'learn', 'get started',
+            'consultation', 'visit', 'free', 'program', 'start', 'contact', 'inquiry',
+            'quote', 'request', 'demo', 'appointment', 'see class'
+        ];
+        const hasLeadAction = LEAD_ACTION_TOKENS.some(tok => leadContext.includes(tok));
+        const hasNegativeGuard = SOFT_NEGATIVE_GUARD.some(tok => leadContext.includes(tok) && !hasLeadAction);
+        const hasPasswordField = formEl.querySelectorAll('input[type="password"]').length > 0;
+
+        // Strict Booking & Scheduling Guard for Fallback 6:
+        // Pure booking/scheduling forms with date/time pickers or pure "book now/reserve" buttons
+        // MUST NOT trigger lead-inquiry-form fallback. They are booking forms, not contact inquiries.
+        // Extended selectors: also catches select[id*="date"], day/month/year fields, duration/time selects.
+        const hasDateOrTimePicker = formEl.querySelectorAll([
+            'input[type="date"]', 'input[type="time"]', 'input[type="datetime-local"]',
+            'input[name*="date" i]', 'input[id*="date" i]',
+            'input[name*="day" i]', 'input[id*="day" i]',
+            'input[name*="month" i]', 'input[id*="month" i]',
+            'input[name*="year" i]', 'input[id*="year" i]',
+            'input[name*="time" i]', 'input[id*="time" i]',
+            'select[name*="date" i]', 'select[id*="date" i]',
+            'select[name*="time" i]', 'select[id*="time" i]',
+            'select[name*="day" i]', 'select[id*="day" i]',
+            'select[name*="month" i]', 'select[id*="month" i]'
+        ].join(', ')).length > 0;
+
+        // isPureBookingSubmit: fires when submit text signals booking AND date/time fields present,
+        // OR when submit text is an explicit booking-only phrase without consultation context.
+        // 'book' alone + date/time = pure scheduling form (T6 scenario).
+        const submitHasBookToken = submitBtnText.includes('book') || submitBtnText.includes('reserve') || submitBtnText.includes('reservation');
+        const isPureBookingSubmit = submitHasBookToken && !leadContext.includes('consultation') && !leadContext.includes('appointment') &&
+                                    (hasDateOrTimePicker || submitBtnText.includes('book now') || submitBtnText.includes('book online'));
+
+        if (hasNameInput && hasEmailInput && (hasPhoneInput || allVisibleInputs.length >= 3) && hasLeadAction && !hasNegativeGuard && !hasPasswordField && !hasDateOrTimePicker && !isPureBookingSubmit) {
+            console.log('[LONG_TEXT_GATE] found=true type=lead-inquiry-form semantic=consultation');
+            return { el: textInputs[0] || formEl, type: 'lead-inquiry-form', name: 'lead_inquiry', semantic: 'consultation' };
+        }
+
         console.log('[LONG_TEXT_GATE] found=false');
         return null;
     }
