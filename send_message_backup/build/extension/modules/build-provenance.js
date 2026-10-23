@@ -15,18 +15,18 @@
 
     const BUILD_INFO = {
         branch: 'upgrade/phase-0-1',
-        channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.44.2',
-        testOnly: true,
-        // [R6.9G.10.3.7.1.4.60] XPIDER AutoForm Sender Pro — Private Egress Release Candidate 3.44.2 (P0-PATCH: Path 6 Booking Guard Hardening + Visible Field Count Fix)
-        implementationHead: '5cc89d9ee72fbfda03c20c02568771aa130fc2f1',
-        implementationHeadShort: '5cc89d9e',
-        head: '5cc89d9ee72fbfda03c20c02568771aa130fc2f1',
-        headShort: '5cc89d9e',
+        channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.45',
+        testOnly: false,
+        // [R6.9G.10.3.7.1.4.61] XPIDER AutoForm Sender Pro — Private Egress Release Candidate 3.45 (Firewall Guardian + Real Egress Verified + E2E Pass)
+        implementationHead: '27fb8444ea774f6d2b0b7779cb1d904489321d8b',
+        implementationHeadShort: '27fb8444',
+        head: '27fb8444ea774f6d2b0b7779cb1d904489321d8b',
+        headShort: '27fb8444',
         rollbackBase: '3cc1be6b436b1d68f948927df88a2c73c1ae5011',
         previousFunctionalRestorePoint: '3cc1be6b436b1d68f948927df88a2c73c1ae5011',
         manifestVersion: 3,
-        buildId: 'R6.9G.10.3.7.1.4.60-20261023-P0-PATCH-RC3.44.2',
-        builtAt: '2026-10-23T08:45:00.000Z',
+        buildId: 'R6.9G.10.3.7.1.4.61-20261023-P0-RC3.45',
+        builtAt: '2026-10-23T11:00:00.000Z',
         provenanceSchema: 2,
         modules: {
             backgroundSha: '26b1f824e3763ddef81d12eb07dcf86daac3e37ce0bb49d82879500958093f28',

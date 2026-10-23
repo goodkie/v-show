@@ -69,8 +69,8 @@ async function runPackaging() {
     console.log('1. Verifying parity with sync_build_parity.js...');
     execSync('node sync_build_parity.js', { stdio: 'inherit' });
 
-    const versionStr = 'R6.9G.10.3.7.1.4.60';
-    const zipName = `XPIDER_${versionStr}_PRIVATE_EGRESS_RC3.44.2.zip`;
+    const versionStr = 'R6.9G.10.3.7.1.4.61';
+    const zipName = `XPIDER_${versionStr}_PRIVATE_EGRESS_RC3.45.zip`;
     const zipOut = path.resolve(zipName);
     const extDir = path.resolve('send_message_backup/build/extension');
     const compDir = path.resolve('companion');
@@ -117,6 +117,8 @@ async function runPackaging() {
                 entry.name.startsWith('.private_') || 
                 entry.name.includes('local_credentials') || 
                 entry.name.startsWith('.local_') ||
+                entry.name.endsWith('.dpapi') ||
+                entry.name.startsWith('.do_') ||
                 lowerName.includes('scratch') ||
                 lowerName.includes('acceptance') ||
                 lowerName.includes('rc3_') ||
@@ -342,7 +344,7 @@ async function runPackaging() {
         '.private_egress_transaction.json',
         '.local_credentials.json'
     ];
-    const FORBIDDEN_DENYLIST_EXTENSIONS = ['.tmp', '.lock'];
+    const FORBIDDEN_DENYLIST_EXTENSIONS = ['.tmp', '.lock', '.dpapi'];
     const stagingFilesForDenylist = getAllFiles(stagingDir);
     for (const file of stagingFilesForDenylist) {
         const baseName = path.basename(file.fullPath);
@@ -464,9 +466,9 @@ async function runPackaging() {
             fs.unlinkSync(zipOut);
             throw new Error(`ARCHIVE VERIFICATION FAILED: privacy_relay.log is present in release archive entry: ${entry}`);
         }
-        if (base.endsWith('.tmp')) {
+        if (base.endsWith('.tmp') || base.endsWith('.dpapi') || base.startsWith('.do_')) {
             fs.unlinkSync(zipOut);
-            throw new Error(`ARCHIVE VERIFICATION FAILED: Temporary file present in release archive entry: ${entry}`);
+            throw new Error(`ARCHIVE VERIFICATION FAILED: Temporary or credential file present in release archive entry: ${entry}`);
         }
         if (base.startsWith('.private_egress_transaction')) {
             fs.unlinkSync(zipOut);
