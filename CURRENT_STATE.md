@@ -145,3 +145,6 @@ Build R6.9G.10.3.7.1.4.56-20261022-FINAL-SPRINT-RC3.42; F=3cc1be6b P=1f3c412d. F
 
 ## RC3.43 (2026-10-22.99)
 Re-cut of RC3.42 per audit #6343054381 HOLD. F=3cc1be6b436b1d68f948927df88a2c73c1ae5011 (unchanged), P=a6a3fdef8238a3d3da28e81c35e215902ea5b46d, tag v6.9g.10.3-rc3.43.7.1.4.57, release published; asset 46352305 bytes sha256 713e155a6ce9af64329c874853f2a5f6e6404537d69dedeed34b707f200ef1a1; tagged root inventory archive-bound. RC3.42 tag preserved. Rollback anchor d987bca6.
+
+## RC3.45 Firewall Guardian (2026-10-23)
+Implemented commit ceafa445: companion/firewall-guardian.js (+ui, relay wiring, 16 mock tests PASS). Real: 8443 unreachable from 74.39.42.139 until Owner enters PAT locally. Receipt: Issue #6 comment 6362568709.
