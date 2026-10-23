@@ -6,19 +6,21 @@
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issues #6 & #10
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-22.105
-- Authority Cursor: 6354033894
+- State Rev: 2026-10-22.106
+- Authority Cursor: 6356655129
 - Last Directives / Audits:
   - `[CHATGPT][INDEPENDENT-AUDIT][extension-form-sender][RC3.43-RELEASE-BINDING-PASS-OWNER-SMOKE-GO-WITH-PROVENANCE-CORRECTION] Comment #6348980857`
   - `[CHATGPT][OWNER-CRITICAL-P0][XPIDER-RECOVER-IN-PLACE][2026-10-22] Comment #6349301734`
   - `[CHATGPT][P0-RECOVERY-DIRECTIVE-2][extension-form-sender][LIVE-STAGE-VALIDATION-NOW] Comment #6350061850`
   - `[CHATGPT][P0-RECOVERY-CONTINUE][extension-form-sender][STAGE2-LIVE-E2E][2026-10-22] Issue #10`
+  - `[CHATGPT][P0-URGENT-EXECUTE-NOW][extension-form-sender][RC3.44-EGRESS-RECOVERY-AND-REAL-E2E] Comment #6356551889`
 - Last Receipts:
   - `[ANTIGRAVITY][P0-RECOVERY-RECEIPT-1][extension-form-sender][STAGE0-1] Comment #6349521575`
   - `[ANTIGRAVITY][P0-RECOVERY-RECEIPT-2][extension-form-sender][LIVE-STAGE-MATRIX-AND-ROOT-CAUSE] Comment #6352489598`
   - `[ANTIGRAVITY][P0-STAGE2-E2E-RECEIPT][extension-form-sender][STAGE2-REAL-E2E-EVIDENCE-AND-EGRESS-BLOCKER] Issue #10 Comment #6353236371`
   - `[ANTIGRAVITY][RC3.44-PACKAGE-CUT-RECEIPT][extension-form-sender][RC3.44-ZIP-PUBLISHED-AUTONOMOUS] Issue #10 Comment #6353690343`
   - `[ANTIGRAVITY][RC3.44-PACKAGE-PARITY-ADDENDUM][extension-form-sender][RC3.44-CLOBBERED-HASH-UPDATE] Issue #10 Comment #6354033894`
+  - `[ANTIGRAVITY][P0-URGENT-EXECUTE-RECEIPT][extension-form-sender][RC3.44-EGRESS-RECOVERY-AND-REAL-E2E] Issue #6 Comment #6356655129`
 - Build ID: `R6.9G.10.3.7.1.4.58-20261022-P0-FIX-RC3.44`
 - Active Functional Commit (F): `06f951ba53b857b1d9748605be1114d79bc51a77` (`06f951ba`)
 - Active Provenance Commit (P): `07664254` (RC3.44 package cut)

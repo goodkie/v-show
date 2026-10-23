@@ -6,19 +6,19 @@ PROJECT_NAME: XPIDER AutoForm Sender Pro
 WORKSPACE_ROOT: E:\vivpr\ai\extension-form-sender
 AUTHORITY_SOURCE: goodkie/v-show Issues #6 & #10
 ACTIVE_BRANCH: upgrade/phase-0-1
-STATE_REV: 2026-10-22.105
-AUTHORITY_CURSOR: 6354033894
+STATE_REV: 2026-10-22.106
+AUTHORITY_CURSOR: 6356655129
 LAST_AUDIT: [CHATGPT][INDEPENDENT-AUDIT][extension-form-sender][RC3.43-RELEASE-BINDING-PASS-OWNER-SMOKE-GO-WITH-PROVENANCE-CORRECTION] Comment #6348980857
-LAST_DIRECTIVE: [CHATGPT][P0-RECOVERY-CONTINUE][extension-form-sender][STAGE2-LIVE-E2E][2026-10-22] Issue #10
-LAST_RECEIPT: [ANTIGRAVITY][RC3.44-PACKAGE-PARITY-ADDENDUM][extension-form-sender][RC3.44-CLOBBERED-HASH-UPDATE] Issue #10 Comment #6354033894
+LAST_DIRECTIVE: [CHATGPT][P0-URGENT-EXECUTE-NOW][extension-form-sender][RC3.44-EGRESS-RECOVERY-AND-REAL-E2E] Comment #6356551889
+LAST_RECEIPT: [ANTIGRAVITY][P0-URGENT-EXECUTE-RECEIPT][extension-form-sender][RC3.44-EGRESS-RECOVERY-AND-REAL-E2E] Issue #6 Comment #6356655129
 BUILD_ID: R6.9G.10.3.7.1.4.58-20261022-P0-FIX-RC3.44
 FUNCTIONAL_COMMIT: 06f951ba53b857b1d9748605be1114d79bc51a77
 PROVENANCE_COMMIT: 07664254ee7fd9748605be1114d79bc51a77a000
 ROLLBACK_ANCHOR: 3cc1be6b436b1d68f948927df88a2c73c1ae5011
 PREVIOUS_FUNCTIONAL_RESTORE_POINT: 3cc1be6b436b1d68f948927df88a2c73c1ae5011
-NEXT_ACTION: Await ChatGPT audit on Issue #10 / Issue #6; maintain HOLD on Owner smoke until Cloud Firewall ingress CIDR updated for 72.251.220.4/32.
-BLOCKERS: Owner local machine public IP rotated (159.26.98.240 -> 72.251.220.4); remote Cloud Firewall port 8443 scopes to prior CIDR.
-OWNER_ACTION: Explicit HOLD on live smoke until Cloud Firewall ingress CIDR updated or local relay refreshed.
+NEXT_ACTION: Await ChatGPT audit on Issue #6; maintain HOLD on Owner smoke until Cloud Firewall ingress CIDR updated for 74.39.42.139/32.
+BLOCKERS: Owner local machine public IP rotated (159.26.98.240 -> 72.251.220.4 -> 74.39.42.139); remote Cloud Firewall port 8443 scopes to prior CIDR.
+OWNER_ACTION: Explicit HOLD on live smoke until Cloud Firewall ingress CIDR updated to 74.39.42.139/32.
 RELEASE_ASSET_TAG: v6.9g.10.3-rc3.44.7.1.4.58
 RELEASE_ASSET_ZIP: XPIDER_R6.9G.10.3.7.1.4.58_PRIVATE_EGRESS_RC3.44.zip
 RELEASE_ASSET_SIZE: 51405684
