@@ -39,6 +39,7 @@ const winsec = require('./winsec');
 const { discoverExtensionId } = require('./install_native_host');
 const { PhysicalGate } = require('./physical-gate');
 const { PrivateEgressProvisioner, TIERS } = require('./private-egress-provisioner');
+const residentialAdapter = require('./residential-proxy-adapter');
 
 const CONTROL_PORT = 18989;
 const PROXY_PORT = 18988;
@@ -1113,6 +1114,14 @@ class PrivacyRelayService {
       nodes: redactedNodes,
       trafficStats: { ...this.trafficStats },
       physicalGate: this.physicalGate.state,
+      residentialProxy: this.residentialProxyState || {
+        status: 'UNCONFIGURED',
+        detail: 'NO_CONFIG',
+        observedIpMasked: null,
+        residentialVerified: false,
+        sendAllowed: false,
+        checkedAt: null
+      },
       recovery: this.getRecoveryStatus(),
       runtimeRoot,
       companionDir: __dirname,
@@ -1307,6 +1316,50 @@ class PrivacyRelayService {
         const gr = await this.firewallGuardian.reconcile();
         res.writeHead(gr.ok ? 200 : 409);
         res.end(JSON.stringify({ success: gr.ok, status: gr.status, ip: gr.ip || null }));
+        return;
+      }
+
+      // [Lane B] GET /residential-proxy/status (Authenticated)
+      if (pathname === '/residential-proxy/status' && req.method === 'GET') {
+        const current = this.residentialProxyState || {
+          status: 'UNCONFIGURED',
+          detail: 'NO_CONFIG',
+          observedIpMasked: null,
+          residentialVerified: false,
+          sendAllowed: false,
+          checkedAt: null
+        };
+        res.writeHead(200);
+        res.end(JSON.stringify({ success: true, residentialProxy: current }));
+        return;
+      }
+
+      // [Lane B] POST /residential-proxy/probe (Authenticated)
+      if (pathname === '/residential-proxy/probe' && req.method === 'POST') {
+        let body = '';
+        req.on('data', c => body += c);
+        req.on('end', async () => {
+          try {
+            const data = JSON.parse(body || '{}');
+            const targetCfg = data.config || this.residentialProxyConfig;
+            if (!targetCfg) {
+              res.writeHead(400);
+              res.end(JSON.stringify({ success: false, reason: 'UNCONFIGURED' }));
+              return;
+            }
+            const probeResult = await residentialAdapter.probe(targetCfg, {
+              password: data.password || (this.residentialProxyPassword ? winsec.decrypt(this.residentialProxyPassword) : null),
+              directIp: data.directIp,
+              forbiddenIps: data.forbiddenIps || []
+            });
+            this.residentialProxyState = probeResult;
+            res.writeHead(200);
+            res.end(JSON.stringify({ success: true, result: probeResult }));
+          } catch (e) {
+            res.writeHead(500);
+            res.end(JSON.stringify({ success: false, error: e.message }));
+          }
+        });
         return;
       }
 
