@@ -70,6 +70,27 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // [RC3.45] Strict receipt: real form POST, field values recorded server-side as ground truth
+  if (reqPath === '/__rc345_payloads') {
+    res.writeHead(200, { 'Content-Type': 'application/json; charset=UTF-8' });
+    res.end(JSON.stringify({ count: (global.__rc345 || []).length, payloads: global.__rc345 || [] }));
+    return;
+  }
+  if (reqPath === '/__rc345_reset') { global.__rc345 = []; res.writeHead(200); res.end('ok'); return; }
+  if (reqPath === '/__rc345_receive' && req.method === 'POST') {
+    let body = '';
+    req.on('data', c => { body += c; if (body.length > 65536) req.destroy(); });
+    req.on('end', () => {
+      const fields = {};
+      for (const [k, v] of new URLSearchParams(body)) { (fields[k] = fields[k] || []).push(v); }
+      (global.__rc345 = global.__rc345 || []).push({ timestamp: Date.now(), fields, remoteAddress: req.socket.remoteAddress, referer: req.headers.referer || null });
+      console.log(`[XPIDER_FIXTURE] RC3.45 strict receipt #${global.__rc345.length}`);
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=UTF-8' });
+      res.end('<!doctype html><title>Thank you</title><h1>Thank you</h1><p>Your message has been received.</p>');
+    });
+    return;
+  }
+
   // Intercept form landing / submission target page
   if (reqPath === '/contact-success.html') {
     submissionLog.push({
