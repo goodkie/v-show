@@ -48,3 +48,7 @@ After meaningful state changes:
 1. Update `CURRENT_STATE.md`;
 2. Update `.oca/SESSION_CAPSULE.md`;
 3. Post to Issue #6 for Directive / Receipt / Audit / Gate / Decision / material Blocker / Progress / Test-Package.
+
+## Response Completion Marker Invariant
+- CRITICAL / MANDATORY: Whenever any task, work, briefing, or posting is completely finished, ALWAYS include and display the special character 🟪 in the final response.
+
