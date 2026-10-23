@@ -1,0 +1,24 @@
+﻿====================================================
+ XPIDER AutoForm Sender Pro ??RC3.45 Quick Health Check
+====================================================
+
+[1/4] Firewall Guardian:
+      PAT Stored (DPAPI): ??YES
+      Guardian Status:     ??IN_SYNC
+      Synced Public IP:    74.39.42.139
+
+[2/4] Network Port Security:
+      Port 8443 (Egress): ??OPEN (Reachable)
+      Port 22 (SSH):      ??BLOCKED (Secure)
+
+[3/4] Live Droplet Egress Probe:
+      Droplet Egress:     ??PASS (Exit IP: 143.198.40.33)
+      Fingerprint:        ??05b6b53daead49e7
+
+[4/4] Extension & Companion:
+      Release Version:    v6.9g.10.3-rc3.45.7.1.4.61 (RC3.45)
+      Package Ready:      XPIDER_R6.9G.10.3.7.1.4.61_PRIVATE_EGRESS_RC3.45.zip
+
+====================================================
+ Overall Status: ALL SYSTEMS OPERATIONAL ??====================================================
+
