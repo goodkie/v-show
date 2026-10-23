@@ -321,6 +321,9 @@ async function main() {
           xpider_active_test_source: 'OWNER_CAPTCHA_LAB',
           xpider_show_autofill_visual_confirm: false,
           xpider_function_test_mode: true,
+          xpider_captcha_method: 'nopecha',
+          captchaMethod: 'nopecha',
+          xpider_captcha_api_key_nopecha: 'LAB_PLACEHOLDER_KEY',
           xpider_privacy_config: {
             enabled: true,
             failClosed: true,
