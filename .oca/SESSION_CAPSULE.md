@@ -6,24 +6,24 @@ PROJECT_NAME: XPIDER AutoForm Sender Pro
 WORKSPACE_ROOT: E:\vivpr\ai\extension-form-sender
 AUTHORITY_SOURCE: goodkie/v-show Issues #6 & #10
 ACTIVE_BRANCH: upgrade/phase-0-1
-STATE_REV: 2026-10-23.108
-AUTHORITY_CURSOR: 6358220534
-LAST_AUDIT: [CHATGPT][INDEPENDENT-AUDIT][extension-form-sender][RC3.43-RELEASE-BINDING-PASS-OWNER-SMOKE-GO-WITH-PROVENANCE-CORRECTION] Comment #6348980857
-LAST_DIRECTIVE: [CHATGPT][OWNER-P0-URGENT-EXECUTION-REMAND][ISSUE-6][RC3.44] Comment #6357733534
-LAST_RECEIPT: [ANTIGRAVITY][P0-CORE-RECOVERY-RECEIPT][extension-form-sender][RC3.44][RECOVERY-EVIDENCE-AND-EGRESS-CANARY] Issue #6 Comment #6358220534
-BUILD_ID: R6.9G.10.3.7.1.4.58-20261022-P0-FIX-RC3.44
-FUNCTIONAL_COMMIT: 21af2adf3ca34662d15cd8e91913180e8f0a5278
-PROVENANCE_COMMIT: 07664254ee7fd9748605be1114d79bc51a77a000
+STATE_REV: 2026-10-23.110
+AUTHORITY_CURSOR: 6359466001
+LAST_AUDIT: [CHATGPT][P0-URGENT-REMAND][ISSUE-6][RC3.44.1][OWNER-ACCELERATION] Comment #6359466001
+LAST_DIRECTIVE: [CHATGPT][P0-URGENT-REMAND][ISSUE-6][RC3.44.1][OWNER-ACCELERATION] Comment #6359466001
+LAST_RECEIPT: [ANTIGRAVITY][P0-URGENT-REMAND-RECEIPT][RC3.44.1-REAL-BROWSER-AUDIT-AND-PATH6-FIX] Issue #6
+BUILD_ID: R6.9G.10.3.7.1.4.59-20261023-P0-PATCH-RC3.44.1
+FUNCTIONAL_COMMIT: 5cc89d9ee72fbfda03c20c02568771aa130fc2f1
+PROVENANCE_COMMIT: 5cc89d9ee72fbfda03c20c02568771aa130fc2f1
 ROLLBACK_ANCHOR: 3cc1be6b436b1d68f948927df88a2c73c1ae5011
 PREVIOUS_FUNCTIONAL_RESTORE_POINT: 3cc1be6b436b1d68f948927df88a2c73c1ae5011
-NEXT_ACTION: Await ChatGPT audit on Issue #6; maintain HOLD on Owner smoke until Cloud Firewall ingress CIDR updated for 74.39.42.139/32 via DO Web Console.
-BLOCKERS: Owner local machine public IP rotated to 74.39.42.139; remote Cloud Firewall port 8443 scopes to prior CIDR. DO PAT absent locally.
-OWNER_ACTION: Explicit HOLD on live smoke until Cloud Firewall ingress CIDR updated to 74.39.42.139/32 via DO Web Console.
-RELEASE_ASSET_TAG: v6.9g.10.3-rc3.44.7.1.4.58
-RELEASE_ASSET_ZIP: XPIDER_R6.9G.10.3.7.1.4.58_PRIVATE_EGRESS_RC3.44.zip
-RELEASE_ASSET_SIZE: 51405684
-RELEASE_ASSET_SHA256: 9a1678322e31240e70005b67169cdfffa5407aa3b3e8f8c70c6d543a4eac8284
-RELEASE_ASSET_URL: https://github.com/goodkie/v-show/releases/tag/v6.9g.10.3-rc3.44.7.1.4.58
+NEXT_ACTION: Await ChatGPT gate audit on P0 urgent remand receipt; maintain HOLD on owner live smoke until Cloud Firewall ingress CIDR updated via DO Web Console.
+BLOCKERS: Owner local machine public IP may rotate from 74.39.42.139; remote Cloud Firewall port 8443 scopes to prior CIDR. DO PAT absent locally.
+OWNER_ACTION: Explicit HOLD on live smoke until Cloud Firewall ingress CIDR updated via DO Web Console (verify current IP before setting).
+RELEASE_ASSET_TAG: v6.9g.10.3-rc3.44.1.7.1.4.59
+RELEASE_ASSET_ZIP: XPIDER_R6.9G.10.3.7.1.4.59_PRIVATE_EGRESS_RC3.44.1.zip
+RELEASE_ASSET_SIZE: 51406820
+RELEASE_ASSET_SHA256: cbc6dba042ce3764f41da9b09abd1a48952ce995865b98548f076d246c4c3a11
+RELEASE_ASSET_URL: https://github.com/goodkie/v-show/issues/6#issuecomment-6358638515
 IMMUTABLE_DAILY_USE_BASELINE: XPIDER_R6.9G.10.3.7.1.4.11_OWNER_BETA.zip (commit 50aee353)
 
 CONTINUITY_RULE: On every new ChatGPT or Antigravity window, search the current project for prior work, recover the latest valid state, and continue existing work instead of restarting.
