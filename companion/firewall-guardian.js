@@ -196,6 +196,9 @@ class FirewallGuardian {
     for (let i = 0; i <= MAX_RETRIES; i++) {
       try {
         const r = await fn();
+        if (r.status === 403 && r.json && /insufficient permissions/i.test(String(r.json.message))) {
+          const e = new Error('MISSING_SCOPE: ' + String(r.json.message).slice(0, 160)); e.code = 'MISSING_SCOPE'; throw e;
+        }
         if (r.status === 401 || r.status === 403) { const e = new Error('TOKEN_INVALID'); e.code = 'TOKEN_INVALID'; throw e; }
         if (r.status === 429 || r.status >= 500) { last = new Error(`PROVIDER_${r.status}`); }
         else return r;
@@ -243,7 +246,7 @@ class FirewallGuardian {
       return { ok: true, status: this.state.status, ip, changed: !already };
     } catch (e) {
       const code = e.code || 'ERROR';
-      this._saveState({ status: code === 'TOKEN_INVALID' ? 'TOKEN_INVALID' : 'FAIL_CLOSED_' + code, lastError: String(e.message).slice(0, 200) });
+      this._saveState({ status: (code === 'TOKEN_INVALID' || code === 'MISSING_SCOPE') ? code : 'FAIL_CLOSED_' + code, lastError: String(e.message).slice(0, 200) });
       return { ok: false, status: this.state.status, error: this.state.lastError };
     }
   }

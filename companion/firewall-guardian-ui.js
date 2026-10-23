@@ -20,7 +20,7 @@ button{margin-top:12px;padding:10px 18px;border:0;border-radius:8px;background:#
 <h1>XPIDER Firewall Guardian</h1>
 <div class="c"><b>상태:</b> <code>${st.status}</code> · 토큰 저장: <code>${st.hasToken ? 'YES' : 'NO'}</code> · 마지막 IP: <code>${st.lastIp || '-'}</code><br>방화벽: <code>${st.firewallId || '-'}</code></div>
 <div class="c"><b>DigitalOcean Personal Access Token (1회 입력)</b><br>
-<small>필요 권한(Custom scopes): <code>firewall:read</code>, <code>firewall:update</code>, <code>account:read</code> (그 외 불필요). 이 창은 이 PC에서만 열리며 토큰은 Windows DPAPI로 암호화 저장됩니다.</small>
+<small>필요 권한(Custom scopes): <code>firewall:read</code>, <code>firewall:update</code>, <code>account:read</code>, <code>tag:read</code> (그 외 불필요). 이 창은 이 PC에서만 열리며 토큰은 Windows DPAPI로 암호화 저장됩니다.</small>
 <form method="POST" action="/set?n=${nonce}"><input type="password" name="token" autocomplete="off" placeholder="dop_v1_..." required>
 <button>저장 및 검증</button></form></div>
 <div class="c"><form method="POST" action="/revoke?n=${nonce}"><button style="background:#a33">로컬 토큰 삭제</button></form></div></html>`;
