@@ -6,8 +6,8 @@
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issues #6 & #10
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-23.107
-- Authority Cursor: 6357426193
+- State Rev: 2026-10-23.108
+- Authority Cursor: 6358220534
 - Last Directives / Audits:
   - `[CHATGPT][INDEPENDENT-AUDIT][extension-form-sender][RC3.43-RELEASE-BINDING-PASS-OWNER-SMOKE-GO-WITH-PROVENANCE-CORRECTION] Comment #6348980857`
   - `[CHATGPT][OWNER-CRITICAL-P0][XPIDER-RECOVER-IN-PLACE][2026-10-22] Comment #6349301734`
@@ -16,6 +16,7 @@
   - `[CHATGPT][P0-URGENT-EXECUTE-NOW][extension-form-sender][RC3.44-EGRESS-RECOVERY-AND-REAL-E2E] Comment #6356551889`
   - `[CHATGPT][P0-ESCALATION-EXECUTE-AND-PROVE][extension-form-sender][RC3.44][2026-10-22] Comment #6356709395`
   - `[CHATGPT][P0-FINAL-ESCALATION][extension-form-sender][RC3.44-MISSING-RECEIPT-AND-RUNTIME-BLOCKER] Comment #6357287146`
+  - `[CHATGPT][OWNER-P0-URGENT-EXECUTION-REMAND][ISSUE-6][RC3.44] Comment #6357733534`
 - Last Receipts:
   - `[ANTIGRAVITY][P0-RECOVERY-RECEIPT-1][extension-form-sender][STAGE0-1] Comment #6349521575`
   - `[ANTIGRAVITY][P0-RECOVERY-RECEIPT-2][extension-form-sender][LIVE-STAGE-MATRIX-AND-ROOT-CAUSE] Comment #6352489598`
@@ -23,8 +24,9 @@
   - `[ANTIGRAVITY][RC3.44-PACKAGE-CUT-RECEIPT][extension-form-sender][RC3.44-ZIP-PUBLISHED-AUTONOMOUS] Issue #10 Comment #6353690343`
   - `[ANTIGRAVITY][RC3.44-PACKAGE-PARITY-ADDENDUM][extension-form-sender][RC3.44-CLOBBERED-HASH-UPDATE] Issue #10 Comment #6354033894`
   - `[ANTIGRAVITY][P0-FINAL-ESCALATION-RECEIPT][extension-form-sender][RC3.44-EGRESS-DIAG-AND-REAL-E2E] Issue #6 Comment #6357426193`
+  - `[ANTIGRAVITY][P0-CORE-RECOVERY-RECEIPT][extension-form-sender][RC3.44][RECOVERY-EVIDENCE-AND-EGRESS-CANARY] Issue #6 Comment #6358220534`
 - Build ID: `R6.9G.10.3.7.1.4.58-20261022-P0-FIX-RC3.44`
-- Active Functional Commit (F): `06f951ba53b857b1d9748605be1114d79bc51a77` (`06f951ba`)
+- Active Functional Commit (F): `21af2adf3ca34662d15cd8e91913180e8f0a5278` (`21af2adf`)
 - Active Provenance Commit (P): `07664254` (RC3.44 package cut)
 - Rollback Anchor: `3cc1be6b436b1d68f948927df88a2c73c1ae5011` (`3cc1be6b`)
 - Previous Functional Restore Point: `3cc1be6b436b1d68f948927df88a2c73c1ae5011` (`3cc1be6b`)
