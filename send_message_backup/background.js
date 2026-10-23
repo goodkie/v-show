@@ -5893,16 +5893,68 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                     // [Issue #6 RC3.22/RC3.23] Check UX settings for Form Assist handling
                     const assistSettings = await chrome.storage.local.get([
                         'xpider_auto_recovery_first',
-                        'xpider_show_manual_form_assist_popup'
+                        'xpider_show_manual_form_assist_popup',
+                        'xpider_manual_assist_timeout_ms'
                     ]);
                     const showAssistPopup = assistSettings.xpider_show_manual_form_assist_popup === true; // default false
                     const autoRecoveryFirst = assistSettings.xpider_auto_recovery_first !== false; // default true
+
+                    // [RC3.44 P0-FIX] Authoritative Bounded Manual Assist Fallback:
+                    // Prevents queue stall across all manual assist paths (auto-recovery, owner popup, or network delay).
+                    // Automatically settles target as SKIPPED after timeout (15s in test/validation mode, 35s normal) so queue advances!
+                    const isTestOrValidation = Boolean(campaignState.ownerFunctionTestMode || campaignState.liveValidationMode);
+                    const assistTimeoutMs = isTestOrValidation ? 15000 : (assistSettings.xpider_manual_assist_timeout_ms || 35000);
+                    if (campaignState.manualAssistTimer) {
+                        clearTimeout(campaignState.manualAssistTimer);
+                        campaignState.manualAssistTimer = null;
+                    }
+                    campaignState.manualAssistTimer = setTimeout(async () => {
+                        if (campaignState.currentTargetStage === 'FORM_MANUAL_ASSIST_PENDING_OWNER' || campaignState.currentTargetStage === 'FORM_MANUAL_WAIT') {
+                            logBg(null, `[MANUAL_ASSIST_BOUNDED_TIMEOUT] No manual intervention within ${assistTimeoutMs}ms. Auto-settling as SKIPPED to advance queue without blocking.`, 'warning');
+                            campaignState.currentTargetStage = 'SKIPPED';
+                            if (campaignState.targetDeadlineController) {
+                                campaignState.targetDeadlineController.cancel('FORM_MANUAL_ASSIST_SKIPPED');
+                            }
+                            const extUrl = externalFormUrl || null;
+                            const isPartial = curReason === 'AUTOFILL_PARTIAL' || curReason === 'REQUIRED_FIELDS_UNRESOLVED';
+                            const formStatus = extUrl ? 'EXTERNAL_WIDGET' : (curReason === 'FORM_NOT_ACCESSIBLE' ? 'NOT_FOUND' : 'FOUND');
+                            const autoStatus = isPartial ? 'PARTIAL' : 'MANUAL_REQUIRED';
+                            const meta = {
+                                submissionStatus: 'SKIPPED',
+                                autofillStatus: autoStatus,
+                                formDetectionStatus: formStatus,
+                                externalFormUrl: extUrl,
+                                boundedManualAssistTimeout: true
+                            };
+                            if (typeof campaignState.targetResolve === 'function') {
+                                const resolve = campaignState.targetResolve;
+                                campaignState.targetResolve = null;
+                                resolve({
+                                    success: false,
+                                    reasonCode: 'FORM_MANUAL_ASSIST_SKIPPED',
+                                    metadata: meta
+                                });
+                            } else {
+                                try {
+                                    const hs = await getHistoryStoreInstance();
+                                    if (curAttemptId && hs) {
+                                        await hs.settleCanonicalAttempt(curAttemptId, 'SKIPPED', 'FORM_MANUAL_ASSIST_SKIPPED', {}, {
+                                            campaignRunId: campaignState.campaignRunId,
+                                            ...meta
+                                        });
+                                        await hs.persist();
+                                        await syncCampaignCountersFromLedger(hs);
+                                    }
+                                } catch (_) {}
+                            }
+                        }
+                    }, assistTimeoutMs);
 
                     if (!campaignState.autoRecoveryAttempts) campaignState.autoRecoveryAttempts = {};
                     const autoAttempts = campaignState.autoRecoveryAttempts[curAttemptId] || 0;
                     if (autoRecoveryFirst && autoAttempts < 1) {
                         campaignState.autoRecoveryAttempts[curAttemptId] = autoAttempts + 1;
-                        logBg(null, `[MANUAL_ASSIST] Automatic Recovery First: triggering auto retry attempt #${autoAttempts + 1} for attemptId=${curAttemptId}`, 'info');
+                        logBg(null, `[MANUAL_ASSIST] Automatic Recovery First: triggering auto retry attempt #${autoAttempts + 1} for attemptId=${curAttemptId} (fallback timer: ${assistTimeoutMs}ms)`, 'info');
                         if (campaignState.currentTabId) {
                             chrome.tabs.sendMessage(campaignState.currentTabId, {
                                 action: 'RETRY_DETECTION',
@@ -5914,6 +5966,10 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                     }
 
                     if (!showAssistPopup) {
+                        if (campaignState.manualAssistTimer) {
+                            clearTimeout(campaignState.manualAssistTimer);
+                            campaignState.manualAssistTimer = null;
+                        }
                         logBg(null, `[MANUAL_ASSIST] Popup disabled (showManualFormAssistPopup=false). Settling as SKIPPED. reason=${curReason}`, 'warning');
                         campaignState.currentTargetStage = 'SKIPPED';
                         if (campaignState.targetDeadlineController) {
@@ -5982,6 +6038,10 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
         case 'FORM_MANUAL_ASSIST_DECISION':
             (async () => {
                 try {
+                    if (campaignState.manualAssistTimer) {
+                        clearTimeout(campaignState.manualAssistTimer);
+                        campaignState.manualAssistTimer = null;
+                    }
                     const { decision, attemptId, reason } = request;
                     const curAttemptId = attemptId || campaignState.currentAttempt?.attemptId;
                     logBg(null, `[MANUAL_ASSIST_DECISION] Owner chose: ${decision} for attemptId=${curAttemptId}`, 'info');
@@ -8481,6 +8541,10 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
         
         if (campaignState.currentTabId === tabId) {
             campaignState.currentTabId = null;
+        }
+        if (campaignState.manualAssistTimer) {
+            clearTimeout(campaignState.manualAssistTimer);
+            campaignState.manualAssistTimer = null;
         }
         campaignState.targetResolve = null;
         campaignState.targetReady = null;

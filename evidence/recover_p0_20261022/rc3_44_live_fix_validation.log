@@ -1,0 +1,85 @@
+[2026-10-23T05:30:06.686Z] ================ XPIDER RC3.44 P0-FIX LIVE VALIDATION (EDGE) ================
+[2026-10-23T05:30:06.696Z] Extension dir: E:\vivpr\ai\extension-form-sender\extension
+[2026-10-23T05:30:06.703Z] ✅ Static: RC3.44 P0-FIX present in contact-gate.js
+[2026-10-23T05:30:06.711Z] ✅ Static: Provenance stamped RC3.44 / 06f951ba
+[2026-10-23T05:30:06.718Z] ISOLATED clean profile (not Owner's): C:\Users\oPus\AppData\Local\Temp\xpider-p0-rc344-glWkuA
+[2026-10-23T05:30:06.726Z] Spawning Edge: C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe
+[2026-10-23T05:30:08.053Z] extensionId=ldlijlaccfeelfdhgnjbibniocefckjj
+[2026-10-23T05:30:08.084Z] buildId check: {"branch":"upgrade/phase-0-1","channel":"OWNER_BETA_PRIVATE_EGRESS_RC3.44","testOnly":true,"implementationHead":"06f951ba53b857b1d9748605be1114d79bc51a77","implementationHeadShort":"06f951ba","head":"06f951ba53b857b1d9748605be1114d79bc51a77","headShort":"06f951ba","rollbackBase":"3cc1be6b436b1d68f948927df88a2c73c1ae5011","previousFunctionalRestorePoint":"3cc1be6b436b1d68f948927df88a2c73c1ae5011","manifestVersion":3,"buildId":"R6.9G.10.3.7.1.4.58-20261022-P0-FIX-RC3.44","builtAt":"2026-10-22T23:20:00.000Z","provenanceSchema":2,"modules":{"backgroundSha":"f5979373e4ca71766818b5e33cc6d583bad190384e51036fdd80304996745e7f","contentScriptSha":"7eb9532e135eb81c370b648911743327ff7c7884ca4ed77c333ad1f83cc028ff","popupSha":"ef259ffabadd18fb2d4830918d3df8be0bbd6133ae2ad879b116ef5ddf678b29","solverContentSha":"6a1ff7154efaeb6dbd5946ac4f9be1ce5b5ff43bce2db06d0dca32950edd3bdb","solverCoreSha":"ab4dee5c8213d7c2fd47942951a2bc40732c1c8c55a5742d493db617150bf95f","emailCollectorSha":"3f1147a379e159e7777158f2caa74cc8d40b2a0b0eb2c244f440af379cb5c9c9","historyStoreSha":"8e3eb9bd325f772704c4b84f9e7e872e260f10d47d86a134da5802d013f17db8","contactGateSha":"9be07119ce1d6e0e00090cf552cd57d470d5e85bf564080b75855b868e118247","visionSubmitSha":"6b89eab8fd132798fbb157e179bdeee64da1aa9867222fdb656e3fcf4fcc9311","privacyGatewaySha":"cc5c8cc9c83adf3b985aa4bab74b04189c00fdba4f3ac3a555bd00e38fc79993"}}
+[2026-10-23T05:30:08.092Z] ✅ buildId=R6.9G.10.3.7.1.4.58-20261022-P0-FIX-RC3.44 swAlive=true
+[2026-10-23T05:30:10.647Z] targets(3): https://liveyourtoplife.com/ https://martialarts.dedhamhealth.com https://www.otmartialarts.com/contact
+[2026-10-23T05:30:10.701Z] START_CAMPAIGN response: {"success":true,"status":"acknowledged","queueCount":3,"campaignRunId":"run_1792733410692_q4fgf"}
+[2026-10-23T05:30:13.719Z] poll a=true p=false st=null c=0 t=3
+[2026-10-23T05:30:16.738Z] poll a=true p=false st=null c=0 t=3
+[2026-10-23T05:30:19.749Z] poll a=true p=false st=null c=0 t=3
+[2026-10-23T05:30:22.768Z] poll a=true p=false st=null c=0 t=3
+[2026-10-23T05:30:25.786Z] poll a=true p=false st=null c=0 t=3
+[2026-10-23T05:30:28.799Z] poll a=true p=false st=null c=0 t=3
+[2026-10-23T05:30:31.820Z] poll a=true p=false st=null c=0 t=3
+[2026-10-23T05:30:35.044Z] poll a=true p=false st=null c=0 t=3
+[2026-10-23T05:30:38.066Z] poll a=true p=false st=null c=0 t=3
+[2026-10-23T05:30:41.085Z] poll a=true p=false st=null c=0 t=3
+[2026-10-23T05:30:44.100Z] poll a=true p=false st=null c=0 t=3
+[2026-10-23T05:30:47.115Z] poll a=true p=false st=null c=0 t=3
+[2026-10-23T05:30:50.137Z] poll a=true p=false st=null c=0 t=3
+[2026-10-23T05:30:53.154Z] poll a=true p=false st=null c=0 t=3
+[2026-10-23T05:30:56.169Z] poll a=true p=false st=null c=0 t=3
+[2026-10-23T05:30:59.187Z] poll a=true p=false st=null c=0 t=3
+[2026-10-23T05:31:02.197Z] poll a=true p=false st=null c=0 t=3
+[2026-10-23T05:31:05.214Z] poll a=true p=false st=null c=0 t=3
+[2026-10-23T05:31:08.224Z] poll a=true p=false st=null c=0 t=3
+[2026-10-23T05:31:11.234Z] poll a=true p=false st=null c=1 t=4
+[2026-10-23T05:31:14.247Z] poll a=true p=false st=null c=1 t=4
+[2026-10-23T05:31:17.267Z] poll a=true p=false st=null c=1 t=4
+[2026-10-23T05:31:20.286Z] poll a=true p=false st=null c=1 t=4
+[2026-10-23T05:31:23.306Z] poll a=true p=false st=null c=1 t=4
+[2026-10-23T05:31:26.317Z] poll a=true p=false st=null c=1 t=4
+[2026-10-23T05:31:29.331Z] poll a=true p=false st=null c=1 t=4
+[2026-10-23T05:31:32.340Z] poll a=true p=false st=null c=1 t=4
+[2026-10-23T05:31:35.365Z] poll a=true p=false st=null c=1 t=4
+[2026-10-23T05:31:38.387Z] poll a=true p=false st=null c=1 t=4
+[2026-10-23T05:31:41.400Z] poll a=true p=false st=null c=1 t=4
+[2026-10-23T05:31:44.410Z] poll a=true p=false st=null c=1 t=4
+[2026-10-23T05:31:47.431Z] poll a=true p=false st=null c=1 t=4
+[2026-10-23T05:31:50.444Z] poll a=true p=false st=null c=1 t=4
+[2026-10-23T05:31:53.455Z] poll a=true p=false st=null c=1 t=4
+[2026-10-23T05:31:56.476Z] poll a=true p=false st=null c=1 t=4
+[2026-10-23T05:31:59.497Z] poll a=true p=false st=null c=1 t=4
+[2026-10-23T05:32:02.519Z] poll a=true p=false st=null c=1 t=4
+[2026-10-23T05:32:05.539Z] poll a=true p=false st=null c=1 t=4
+[2026-10-23T05:32:08.554Z] poll a=true p=false st=null c=1 t=4
+[2026-10-23T05:32:11.577Z] poll a=true p=false st=null c=1 t=4
+[2026-10-23T05:32:14.594Z] poll a=true p=false st=null c=2 t=4
+[2026-10-23T05:32:17.620Z] poll a=true p=false st=ELIGIBLE_FORM_FOUND c=2 t=4
+[2026-10-23T05:32:20.642Z] poll a=true p=false st=ELIGIBLE_FORM_FOUND c=2 t=4
+[2026-10-23T05:32:23.665Z] poll a=true p=false st=ELIGIBLE_FORM_FOUND c=2 t=4
+[2026-10-23T05:32:26.676Z] poll a=true p=false st=ELIGIBLE_FORM_FOUND c=2 t=4
+[2026-10-23T05:32:29.691Z] poll a=true p=false st=FIELD_STATE_STABLE c=2 t=4
+[2026-10-23T05:32:32.908Z] poll a=true p=false st=SUBMIT_ATTEMPT_STARTED c=2 t=4
+[2026-10-23T05:32:35.925Z] poll a=true p=false st=SUBMIT_ATTEMPT_STARTED c=2 t=4
+[2026-10-23T05:32:38.940Z] poll a=true p=false st=SUBMIT_ATTEMPT_STARTED c=2 t=4
+[2026-10-23T05:32:42.007Z] poll a=true p=false st=SUBMIT_ATTEMPT_STARTED c=2 t=4
+[2026-10-23T05:32:45.312Z] poll a=true p=false st=SUBMIT_ATTEMPT_STARTED c=2 t=4
+[2026-10-23T05:32:48.324Z] poll a=true p=false st=SUBMIT_ATTEMPT_STARTED c=2 t=4
+[2026-10-23T05:32:51.333Z] poll a=true p=false st=SUBMIT_ATTEMPT_STARTED c=2 t=4
+[2026-10-23T05:32:54.351Z] poll a=true p=false st=SUBMIT_ATTEMPT_STARTED c=2 t=4
+[2026-10-23T05:32:57.368Z] poll a=true p=false st=SUBMIT_ATTEMPT_STARTED c=2 t=4
+[2026-10-23T05:33:00.387Z] poll a=true p=false st=SUBMIT_ATTEMPT_STARTED c=2 t=4
+[2026-10-23T05:33:03.669Z] poll a=true p=false st=SUBMIT_ATTEMPT_STARTED c=2 t=4
+[2026-10-23T05:33:06.690Z] poll a=true p=false st=SUBMIT_ATTEMPT_STARTED c=2 t=4
+[2026-10-23T05:33:09.721Z] poll a=true p=false st=SUBMIT_ATTEMPT_STARTED c=2 t=4
+[2026-10-23T05:33:12.742Z] poll a=true p=false st=SUBMIT_ATTEMPT_STARTED c=2 t=4
+[2026-10-23T05:33:15.902Z] poll a=true p=false st=null c=3 t=4
+[2026-10-23T05:33:18.921Z] poll a=false p=false st=null c=3 t=4
+[2026-10-23T05:33:18.928Z] Campaign complete.
+[2026-10-23T05:33:18.936Z] ledger stats: {"scope":"currentRun","campaignRunId":"run_1792733410692_q4fgf","totalStarted":3,"totalImportRows":3,"pending":0,"invalid":0,"success":0,"failure":0,"unknown":0,"timeout":3,"timeoutLocal":3,"timeoutGlobal":0,"skipped":0,"paused":0,"completed":3,"failureBreakdown":{},"logStr":"[LEDGER_STATS] scope=currentRun success=0 failure=0 unknown=0 timeout=3 skipped=0"}
+[2026-10-23T05:33:18.953Z] Captured 450 diagnostic log entries.
+[2026-10-23T05:33:18.960Z] --- STAGE MATRIX ---
+[2026-10-23T05:33:18.969Z] {"target":"T1","host":"liveyourtoplife.com","status":"TIMEOUT_LOCAL","reason":"TIMEOUT_LOCAL","stagesSeen":["START/PREFLIGHT","EGRESS","CONTACT_DISCOVERY","FORM_CLASSIFICATION","FIELD_MAPPING","CAPTCHA_DETECT","OUTCOME","LEDGER"],"firstFailStage":"AUTOFILL","stageTimestamps":{"START/PREFLIGHT":"2026-10-23T05:30:10.657Z","EGRESS":"2026-10-23T05:30:23.779Z","CONTACT_DISCOVERY":"2026-10-23T05:30:23.839Z","FORM_CLASSIFICATION":"2026-10-23T05:30:25.782Z","FIELD_MAPPING":"2026-10-23T05:30:25.783Z","CAPTCHA_DETECT":"2026-10-23T05:30:23.795Z","OUTCOME":"2026-10-23T05:30:40.683Z","LEDGER":"2026-10-23T05:30:10.659Z"}}
+[2026-10-23T05:33:18.979Z] {"target":"T2","host":"martialarts.dedhamhealth.com","status":"TIMEOUT_LOCAL","reason":"TIMEOUT_LOCAL","stagesSeen":["START/PREFLIGHT","EGRESS","CONTACT_DISCOVERY","CAPTCHA_DETECT","LEDGER"],"firstFailStage":"FORM_CLASSIFICATION","stageTimestamps":{"START/PREFLIGHT":"2026-10-23T05:30:10.657Z","EGRESS":"2026-10-23T05:32:00.972Z","CONTACT_DISCOVERY":"2026-10-23T05:32:01.047Z","CAPTCHA_DETECT":"2026-10-23T05:32:00.998Z","LEDGER":"2026-10-23T05:30:10.659Z"}}
+[2026-10-23T05:33:18.986Z] {"target":"T3","host":"www.otmartialarts.com","status":"TIMEOUT_LOCAL","reason":"TIMEOUT_LOCAL","stagesSeen":["START/PREFLIGHT","EGRESS","CONTACT_DISCOVERY","FORM_CLASSIFICATION","FIELD_MAPPING","AUTOFILL","CAPTCHA_DETECT","PROVIDER_REQUEST/TERMINAL","SUBMIT","OUTCOME","LEDGER"],"firstFailStage":"MANUAL_FALLBACK","stageTimestamps":{"START/PREFLIGHT":"2026-10-23T05:32:30.234Z","EGRESS":"2026-10-23T05:32:16.000Z","CONTACT_DISCOVERY":"2026-10-23T05:32:14.252Z","FORM_CLASSIFICATION":"2026-10-23T05:32:16.106Z","FIELD_MAPPING":"2026-10-23T05:32:16.107Z","AUTOFILL":"2026-10-23T05:32:16.110Z","CAPTCHA_DETECT":"2026-10-23T05:32:16.042Z","PROVIDER_REQUEST/TERMINAL":"2026-10-23T05:32:16.135Z","SUBMIT":"2026-10-23T05:32:29.971Z","OUTCOME":"2026-10-23T05:32:29.406Z","LEDGER":"2026-10-23T05:30:10.659Z"}}
+[2026-10-23T05:33:19.010Z] liveyourtoplife: FORM_CLASSIFICATION=PASS status=TIMEOUT_LOCAL
+[2026-10-23T05:33:19.019Z] dedhamhealth: FORM_CLASSIFICATION=FAIL status=TIMEOUT_LOCAL
+[2026-10-23T05:33:19.027Z] otmartialarts: FORM_CLASSIFICATION=PASS status=TIMEOUT_LOCAL
+[2026-10-23T05:33:19.034Z] ================ RC3.44 LIVE FIX VALIDATION COMPLETE ================
+[2026-10-23T05:33:19.049Z] Matrix written to: E:\vivpr\ai\extension-form-sender\evidence\recover_p0_20261022\rc3_44_live_fix_matrix.json

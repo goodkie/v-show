@@ -1,0 +1,88 @@
+{
+  "started": "2026-10-23T05:33:19.042Z",
+  "buildId": "R6.9G.10.3.7.1.4.58-20261022-P0-FIX-RC3.44",
+  "extId": "ldlijlaccfeelfdhgnjbibniocefckjj",
+  "matrix": [
+    {
+      "target": "T1",
+      "host": "liveyourtoplife.com",
+      "status": "TIMEOUT_LOCAL",
+      "reason": "TIMEOUT_LOCAL",
+      "stagesSeen": [
+        "START/PREFLIGHT",
+        "EGRESS",
+        "CONTACT_DISCOVERY",
+        "FORM_CLASSIFICATION",
+        "FIELD_MAPPING",
+        "CAPTCHA_DETECT",
+        "OUTCOME",
+        "LEDGER"
+      ],
+      "firstFailStage": "AUTOFILL",
+      "stageTimestamps": {
+        "START/PREFLIGHT": "2026-10-23T05:30:10.657Z",
+        "EGRESS": "2026-10-23T05:30:23.779Z",
+        "CONTACT_DISCOVERY": "2026-10-23T05:30:23.839Z",
+        "FORM_CLASSIFICATION": "2026-10-23T05:30:25.782Z",
+        "FIELD_MAPPING": "2026-10-23T05:30:25.783Z",
+        "CAPTCHA_DETECT": "2026-10-23T05:30:23.795Z",
+        "OUTCOME": "2026-10-23T05:30:40.683Z",
+        "LEDGER": "2026-10-23T05:30:10.659Z"
+      }
+    },
+    {
+      "target": "T2",
+      "host": "martialarts.dedhamhealth.com",
+      "status": "TIMEOUT_LOCAL",
+      "reason": "TIMEOUT_LOCAL",
+      "stagesSeen": [
+        "START/PREFLIGHT",
+        "EGRESS",
+        "CONTACT_DISCOVERY",
+        "CAPTCHA_DETECT",
+        "LEDGER"
+      ],
+      "firstFailStage": "FORM_CLASSIFICATION",
+      "stageTimestamps": {
+        "START/PREFLIGHT": "2026-10-23T05:30:10.657Z",
+        "EGRESS": "2026-10-23T05:32:00.972Z",
+        "CONTACT_DISCOVERY": "2026-10-23T05:32:01.047Z",
+        "CAPTCHA_DETECT": "2026-10-23T05:32:00.998Z",
+        "LEDGER": "2026-10-23T05:30:10.659Z"
+      }
+    },
+    {
+      "target": "T3",
+      "host": "www.otmartialarts.com",
+      "status": "TIMEOUT_LOCAL",
+      "reason": "TIMEOUT_LOCAL",
+      "stagesSeen": [
+        "START/PREFLIGHT",
+        "EGRESS",
+        "CONTACT_DISCOVERY",
+        "FORM_CLASSIFICATION",
+        "FIELD_MAPPING",
+        "AUTOFILL",
+        "CAPTCHA_DETECT",
+        "PROVIDER_REQUEST/TERMINAL",
+        "SUBMIT",
+        "OUTCOME",
+        "LEDGER"
+      ],
+      "firstFailStage": "MANUAL_FALLBACK",
+      "stageTimestamps": {
+        "START/PREFLIGHT": "2026-10-23T05:32:30.234Z",
+        "EGRESS": "2026-10-23T05:32:16.000Z",
+        "CONTACT_DISCOVERY": "2026-10-23T05:32:14.252Z",
+        "FORM_CLASSIFICATION": "2026-10-23T05:32:16.106Z",
+        "FIELD_MAPPING": "2026-10-23T05:32:16.107Z",
+        "AUTOFILL": "2026-10-23T05:32:16.110Z",
+        "CAPTCHA_DETECT": "2026-10-23T05:32:16.042Z",
+        "PROVIDER_REQUEST/TERMINAL": "2026-10-23T05:32:16.135Z",
+        "SUBMIT": "2026-10-23T05:32:29.971Z",
+        "OUTCOME": "2026-10-23T05:32:29.406Z",
+        "LEDGER": "2026-10-23T05:30:10.659Z"
+      }
+    }
+  ]
+}

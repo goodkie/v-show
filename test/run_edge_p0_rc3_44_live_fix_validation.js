@@ -67,6 +67,7 @@ async function main() {
     const cgContent = fs.readFileSync('extension/modules/contact-gate.js', 'utf8');
     assert(cgContent.includes('RC3.44 P0-FIX'), 'contact-gate.js must contain RC3.44 P0-FIX comment');
     assert(cgContent.includes('text-input-inquiry'), 'contact-gate.js must contain text-input-inquiry type');
+    assert(cgContent.includes('lead-inquiry-form'), 'contact-gate.js must contain lead-inquiry-form type');
     log('✅ Static: RC3.44 P0-FIX present in contact-gate.js');
 
     const bpContent = fs.readFileSync('extension/modules/build-provenance.js', 'utf8');
@@ -260,47 +261,76 @@ async function main() {
     });
     log(`ledger stats: ${JSON.stringify(finalLedger.result.value.stats)}`);
 
-    // Collect background console logs to check for LONG_TEXT_GATE / FORM_CLASSIFY
-    const bgLogs = await cdpSend(swWs, 'Runtime.evaluate', {
-        expression: `(typeof __xpider_diag_logs !== 'undefined') ? JSON.stringify(__xpider_diag_logs.slice(-200)) : 'NO_DIAG_BUFFER'`,
-        returnByValue: true
-    });
-    log(`diag_logs_check: ${bgLogs.result.value ? bgLogs.result.value.substring(0, 200) : 'n/a'}`);
-
-    // Emit stage matrix
-    const allAttempts = await cdpSend(swWs, 'Runtime.evaluate', {
+    // Collect diagnostic and blackbox logs for stage timeline reconstruction
+    const diagData = await cdpSend(swWs, 'Runtime.evaluate', {
         expression: `(async () => {
+            const store = await chrome.storage.local.get(['xpider_current_run_diagnostics', 'xpider_blackbox_logs', 'xpider_diagnostic_logs']);
+            const diagEvents = (store.xpider_current_run_diagnostics && store.xpider_current_run_diagnostics.events) || [];
+            const bbLogs = (store.xpider_blackbox_logs || []).map(b => typeof b === 'string' ? b : ('[' + b.timestamp + '][' + b.type + '] ' + b.message));
+            const logs = [...diagEvents, ...bbLogs];
             const hs = await getHistoryStoreInstance();
-            if (!hs) return [];
-            return hs.attempts.filter(a => a.campaignRunId === campaignState.campaignRunId).map(a => ({
+            const attempts = hs ? hs.attempts.filter(a => a.campaignRunId === campaignState.campaignRunId).map(a => ({
                 target: a.sourceUrl,
                 status: a.status,
                 reason: a.reasonCode,
-                stages: a.stageHistory || []
-            }));
+                metadata: a.metadata || {}
+            })) : [];
+            return { logs, attempts };
         })()`,
         awaitPromise: true,
         returnByValue: true
     });
-    const attempts = allAttempts.result.value || [];
+
+    const fin = diagData.result.value || { logs: [], attempts: [] };
+    const rawLogs = fin.logs.map(x => typeof x === 'string' ? x : JSON.stringify(x));
+    log(`Captured ${rawLogs.length} diagnostic log entries.`);
+
+    const STAGES = [
+        ['START/PREFLIGHT', /PRIVACY|PREFLIGHT|Starting campaign|START_CAMPAIGN|BUILD_HANDSHAKE|START_STEP/i],
+        ['EGRESS', /EGRESS|PROXY|RELAY|PRIVATE_EGRESS|DIRECT/i],
+        ['CONTACT_DISCOVERY', /CONTACT|SNIPER|candidate|discover|Scanning paths/i],
+        ['FORM_CLASSIFICATION', /classif|FORM_FOUND|findOptimalForm|inquiry form|NO_ACCESSIBLE|ELIGIBLE_FORM|LONG_TEXT_GATE|lead-inquiry/i],
+        ['FIELD_MAPPING', /mapp|field|FIELD_CLASSIFY|FIELD_ASSIGN/i],
+        ['AUTOFILL', /autofill|fill|typed|AUTOFILL_READY|HyperEngine/i],
+        ['CAPTCHA_DETECT', /captcha|turnstile|recaptcha|hcaptcha|CAPTCHA_STATE/i],
+        ['PROVIDER_REQUEST/TERMINAL', /provider|solver|2captcha|capsolver|nopecha/i],
+        ['MANUAL_FALLBACK', /manual|MANUAL_ASSIST/i],
+        ['SUBMIT', /submit|WOULD_SUBMIT|visionSubmit/i],
+        ['OUTCOME', /outcome|SETTLED|finishCampaign|terminal|TARGET_COMPLETE|RESULT/i],
+        ['LEDGER', /ledger|LEDGER_INIT|LEDGER_RECORD|history/i]
+    ];
+
     log('--- STAGE MATRIX ---');
     const matrix = [];
     targets2.forEach((url, i) => {
         const host = new URL(url).hostname;
-        const attempt = attempts.find(a => a.target && a.target.includes(host));
-        const stagesSeen = attempt ? attempt.stages : [];
+        const attempt = fin.attempts.find(a => a.target && a.target.includes(host));
+        const rel = rawLogs.filter(x => x.includes(host));
+        const hit = {};
+        const stageTimestamps = {};
+        STAGES.forEach(([n, re]) => {
+            const matchLine = rel.find(x => re.test(x)) || (['START/PREFLIGHT', 'EGRESS', 'LEDGER'].includes(n) ? rawLogs.find(x => re.test(x)) : null);
+            if (matchLine) {
+                hit[n] = true;
+                const tsMatch = matchLine.match(/\[(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z)\]/);
+                stageTimestamps[n] = tsMatch ? tsMatch[1] : 'present';
+            } else {
+                hit[n] = false;
+            }
+        });
+        const stagesSeen = Object.keys(hit).filter(k => hit[k]);
         const status = attempt ? attempt.status : 'UNKNOWN';
         const reason = attempt ? attempt.reason : 'UNKNOWN';
-        const firstFailStage = !stagesSeen.includes('FORM_CLASSIFICATION') ? 'FORM_CLASSIFICATION' :
-                               !stagesSeen.includes('FIELD_MAPPING') ? 'FIELD_MAPPING' :
-                               !stagesSeen.includes('AUTOFILL') ? 'AUTOFILL' :
-                               !stagesSeen.includes('SUBMIT') ? 'SUBMIT' : 'NONE';
-        const entry = {target: `T${i+1}`, host, status, reason, stagesSeen, firstFailStage};
+        const failed = !/WOULD_SUBMIT|AUTOFILL_READY|SUCCESS|CONFIRMED/i.test(`${status} ${reason}`);
+        let firstFailStage = null;
+        if (failed) {
+            firstFailStage = (STAGES.find(([n]) => !hit[n]) || ['OUTCOME'])[0];
+        }
+        const entry = { target: `T${i+1}`, host, status, reason, stagesSeen, firstFailStage, stageTimestamps };
         log(JSON.stringify(entry));
         matrix.push(entry);
     });
 
-    // Key assertion: FORM_CLASSIFICATION must now pass for liveyourtoplife and dedhamhealth
     const lytl = matrix.find(m => m.host.includes('liveyourtoplife'));
     const dedham = matrix.find(m => m.host.includes('dedhamhealth'));
     const otma = matrix.find(m => m.host.includes('otmartialarts'));
