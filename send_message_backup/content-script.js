@@ -6854,9 +6854,23 @@
             const urlChanged = (currentUrl !== initialUrl);
 
             // 1. URL / Navigation Strong Signal (Issue #6 R6.8 P0-3 & P0-4: /search/ is strictly negative)
-            const successUrlKeywords = ['thank', 'thanks', 'success', 'confirm', 'submitted', 'message-sent', 'complete'];
+            const successUrlKeywords = ['thank', 'thanks', 'success', 'confirm', 'submitted', 'message-sent', 'complete', '/post'];
             const isSearchUrl = currentUrl.toLowerCase().includes('/search') || currentUrl.toLowerCase().includes('search=') || currentUrl.toLowerCase().includes('q=') || currentUrl.toLowerCase().includes('help.shopify.com');
             const isSuccessUrl = urlChanged && !isSearchUrl && successUrlKeywords.some(k => currentUrl.toLowerCase().includes(k));
+
+            // 1b. JSON Form Echo / REST API Receipt Signal (e.g. httpbin.org, REST backends)
+            let isJsonFormReceipt = false;
+            if (typeof document !== 'undefined' && document.body) {
+                const rawText = (document.body.innerText || document.body.textContent || '').trim();
+                if (rawText.startsWith('{') && rawText.endsWith('}')) {
+                    try {
+                        const parsed = JSON.parse(rawText);
+                        if (parsed && (parsed.form || parsed.data || parsed.json || parsed.success || parsed.status === 'ok') && !parsed.error) {
+                            isJsonFormReceipt = true;
+                        }
+                    } catch (_) {}
+                }
+            }
 
             // [R6.9D] 2. Negative / Error Signals (Delta / Transition Based)
             let newErrorsFound = false;
@@ -7191,13 +7205,14 @@
             const formReplaced = !formStillThere && (newSuccessNodes > 0 || successVisibilityTransition || ariaLiveSuccessTransition);
 
             // [R6.9D Point 5] Positive success defeats stale/pre-existing negatives
-            const hasStrongPositive = isSuccessUrl || newSuccessNodes > 0 || successVisibilityTransition || ariaLiveSuccessTransition || buttonSuccessState || formReplaced;
+            const hasStrongPositive = isSuccessUrl || isJsonFormReceipt || newSuccessNodes > 0 || successVisibilityTransition || ariaLiveSuccessTransition || buttonSuccessState || formReplaced;
             const isDecisiveSuccess = hasStrongPositive && !actualTransportFailure;
             const isDecisiveFailure = actualTransportFailure || (newErrorsFound && validationErrorsCount > 0);
 
             return {
                 urlChanged,
                 isSuccessUrl,
+                isJsonFormReceipt,
                 newErrorsFound,
                 validationErrorsCount,
                 validationErrorTransition,
@@ -7425,7 +7440,7 @@
             const isSuccess = (finalDecision === 'CONFIRMED_SUCCESS' || finalDecision === 'CONFIRMED_SUCCESS_COMPOSITE');
             let confirmationStrength = 'NONE';
             if (isSuccess) {
-                if (finalSignals && finalSignals.isSuccessUrl) confirmationStrength = 'URL_CHANGE';
+                if (finalSignals && (finalSignals.isSuccessUrl || finalSignals.isJsonFormReceipt)) confirmationStrength = 'URL_CHANGE';
                 else if (submitOutcome && submitOutcome.networkCommitObserved) confirmationStrength = 'NETWORK_PLUS_DOM';
                 else confirmationStrength = 'STRONG_DOM';
             }
