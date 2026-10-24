@@ -2,7 +2,7 @@
 # ==============================================================================
 # test/test_wireguard_disposable_runner.sh
 # Automated WireGuard Teardown & Byte-for-Byte Restore Verification in Disposable Linux Runner
-# Target: Ubuntu 22.04+ (GitHub Actions Runner / Disposable CI Container / Nonprod VM)
+# Target: Ubuntu 22.04+ (GitHub-Hosted Actions Runner / Ephemeral Disposable Environment)
 # Safety Boundary: Multi-probe hardcoded refusal to execute if host IP matches production DO proxy 143.198.40.33
 # ==============================================================================
 
@@ -11,15 +11,25 @@ set -euo pipefail
 echo "=== [XPIDER DISPOSABLE LINUX RUNNER] WireGuard System Snapshot & Restore Integration Test ==="
 
 # ------------------------------------------------------------------------------
-# 1. Ephemeral Environment & Destructive Operation Guard
+# 1. Ephemeral Host & Genuine GitHub-Hosted Runner Identity Check
 # ------------------------------------------------------------------------------
-if [[ "${CI:-}" != "true" && "${GITHUB_ACTIONS:-}" != "true" && "${FORCE_EPHEMERAL_DISPOSABLE:-}" != "1" ]]; then
-  echo "FATAL SECURITY BOUNDARY ERROR: Destructive system networking tests are strictly confined"
-  echo "to ephemeral CI runners (CI=true / GITHUB_ACTIONS=true) or explicit FORCE_EPHEMERAL_DISPOSABLE=1."
-  echo "Aborting execution to prevent local host network modification."
+# Environment variables alone (CI=true / GITHUB_ACTIONS=true) can be spoofed.
+# We verify physical GitHub-hosted runner attributes:
+#   1. Running as user 'runner' with home directory '/home/runner'
+#   2. Presence of GitHub-hosted runner workspace and environment paths
+IS_GITHUB_RUNNER=false
+if [[ "$(whoami)" == "runner" && -d "/home/runner" && -n "${GITHUB_WORKSPACE:-}" ]]; then
+  IS_GITHUB_RUNNER=true
+fi
+
+if [[ "${IS_GITHUB_RUNNER}" != "true" && "${FORCE_EPHEMERAL_DISPOSABLE:-}" != "1" ]]; then
+  echo "FATAL SECURITY BOUNDARY ERROR: System networking integration tests are strictly restricted"
+  echo "to authenticated GitHub-hosted ephemeral runners (user: runner, home: /home/runner, GITHUB_WORKSPACE)."
+  echo "Environment variables alone are insufficient to permit system network operations."
+  echo "Refusing execution on non-ephemeral host."
   exit 1
 fi
-echo "✅ Ephemeral Environment Guard: Confirmed running in disposable CI container/runner."
+echo "✅ Ephemeral Host Guard: Verified genuine GitHub-hosted runner identity (user: $(whoami))."
 
 # ------------------------------------------------------------------------------
 # 2. Multi-Probe Public IP Verification & Ambiguity Abort Guard
@@ -89,22 +99,17 @@ cp "${SCRIPT_SRC}" ./setup_wireguard.sh
 chmod +x ./setup_wireguard.sh
 
 # ------------------------------------------------------------------------------
-# 5. Capture Initial System State Baseline
+# 5. Non-Destructive Capture of Initial System State Baseline
 # ------------------------------------------------------------------------------
-echo ">>> STEP 1: Capturing Pristine System State Baseline..."
-sudo ufw --force reset >/dev/null 2>&1 || true
-sudo ufw default deny incoming >/dev/null 2>&1 || true
-sudo ufw default allow outgoing >/dev/null 2>&1 || true
-sudo ufw allow 22/tcp >/dev/null 2>&1 || true
-sudo ufw --force enable >/dev/null 2>&1 || true
-
-BASELINE_UFW=$(sudo ufw status verbose)
+echo ">>> STEP 1: Capturing Non-Destructive System State Baseline..."
+# Note: Never execute 'ufw --force reset' on a shared host. Non-destructively capture existing configuration.
+BASELINE_UFW=$(sudo ufw status verbose || echo "inactive")
 BASELINE_IPTABLES_FILTER=$(sudo iptables-save -t filter | grep -v '^#' || echo "")
 BASELINE_IPTABLES_NAT=$(sudo iptables-save -t nat | grep -v '^#' || echo "")
 BASELINE_SYSCTL_FORWARD=$(sysctl -n net.ipv4.ip_forward)
 BASELINE_RESOLV=$(cat /etc/resolv.conf 2>/dev/null || echo "")
 
-echo "Baseline UFW Status: active with 22/tcp"
+echo "Baseline UFW status: captured non-destructively."
 echo "Baseline iptables filter & nat captured."
 echo "Baseline sysctl net.ipv4.ip_forward: ${BASELINE_SYSCTL_FORWARD}"
 echo "Baseline DNS resolv.conf captured."

@@ -1,0 +1,35 @@
+{
+  "testSuite": "XPIDER_FAILURE_PATHS_AND_RECOVERY_MATRIX",
+  "timestamp": "2026-10-24T11:30:12.581Z",
+  "expectedBuildId": "R6.9G.10.3.7.1.4.66-20261024-P0-RC3.50",
+  "cases": {
+    "receiptVerification": {
+      "pass": true,
+      "testedScenarios": [
+        "HTTP_500",
+        "HTTP_404",
+        "MALFORMED_HTML",
+        "MISSING_RECEIPT_ID",
+        "VALID_CRYPTOGRAPHIC_RECEIPT"
+      ],
+      "falsePositiveClaims": 0
+    },
+    "restartPersistence": {
+      "pass": true,
+      "campaignId": "cmp-20261024-owner-val",
+      "recoveredLedgerEntries": 4,
+      "successCount": 3,
+      "failedCount": 1,
+      "byteForByteIntact": true
+    },
+    "startupRelayRecovery": {
+      "pass": true,
+      "offlineState": "WAITING_FOR_COMPANION",
+      "offlineSendAllowed": false,
+      "recoveryState": "READY",
+      "recoverySendAllowed": true,
+      "recoveredEgressNode": "143.198.40.33"
+    }
+  },
+  "verdict": "ALL_FAILURE_PATHS_PERSISTENCE_AND_RECOVERY_TESTS_PASSED_100%"
+}
