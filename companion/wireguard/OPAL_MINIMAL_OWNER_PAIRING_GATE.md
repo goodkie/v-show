@@ -1,7 +1,7 @@
 # XPIDER Opal Router Minimal Owner-Assisted Pairing Gate & Safety Preconditions
 
 **PROJECT**: XPIDER AutoForm Sender Pro  
-**AUTHORITY**: Issue #6 Comment #6383270546  
+**AUTHORITY**: Issue #6 Comment #6383382800  
 **TARGET RELEASE**: RC3.50  
 **STRICT INVARIANTS**:
 1. Preserve existing production proxy (`143.198.40.33:8443`) untouched.
@@ -14,11 +14,18 @@
 
 ## 1. Safety Gate: Preconditions Required Before Server WG Installation
 
-Per Owner PM Directive #6383270546, Antigravity **does NOT request the Owner to run the server WireGuard installer merely because the script checksum matches**. The following verified preconditions must be confirmed prior to executing any server installation:
+Per Owner PM Directive #6383382800, Antigravity **does NOT request the Owner to run the server WireGuard installer merely because the script checksum matches**. The following verified preconditions must be confirmed prior to executing any server installation:
 
-### A. Console Authentication Precondition
-- **Requirement**: Interactive authentication to Droplet `611293905` must be verified via DigitalOcean Web Console.
-- **Verification**: Owner confirms ability to open Droplet Console (`Access` -> `Launch Droplet Console`) and obtain an active root terminal prompt without requiring SSH keys or opening external network ports.
+### A. Console Authentication: Explicit Distinction (Evidence vs Documented Prerequisite)
+> [!IMPORTANT]
+> **CRITICAL GATE DISTINCTION**:
+> - **Current Status**: DigitalOcean Web Console interactive root access is strictly a **DOCUMENTED PREREQUISITE**. It has **NOT** been empirically demonstrated with live session transcripts or console capture evidence in this session.
+> - **Execution Suspension**: As an absolute safety constraint, **NO server installer instructions or execution requests are issued to the Owner** until:
+>   1. Safe console root recovery is verified and confirmed by the Owner.
+>   2. Complete server snapshot and rollback teardown preconditions are acknowledged.
+>   3. Physical router readiness is confirmed.
+>
+> Server installer execution instructions remain completely dormant and suspended until these preconditions transition from documented to demonstrated.
 
 ### B. Server Baseline Snapshot & Rollback Precondition
 - **Requirement**: Before modifying UFW or sysctl on the server, a pristine snapshot must be recorded, and the rollback path must be provably safe.
@@ -58,9 +65,9 @@ Pending this physical hardware telemetry, the assertion matrix remains strictly:
 
 ---
 
-## 3. Minimal Single Owner Action (When Preconditions Met)
+## 3. Dormant Installer Template (Executed ONLY After Preconditions Transition to Demonstrated)
 
-When all preconditions in Section 1 are satisfied, the Owner executes the single 3-step pinned installation command inside the DigitalOcean Web Console:
+*Notice: This command template is dormant and suspended. Do NOT execute until Section 1 preconditions are formally demonstrated.*
 
 ```bash
 curl -fsSL "https://raw.githubusercontent.com/goodkie/v-show/6a7a786eddf5aba531b8e12f0823875ec277d776/companion/wireguard/setup_wireguard.sh" -o /tmp/setup_wireguard.sh
@@ -68,8 +75,6 @@ echo "7e4eeb91f5c393c7f30babba837c110ca7e5b22f32cdb77d1b29d67fc861826b  /tmp/set
 bash /tmp/setup_wireguard.sh --install
 ```
 
-- **Output**: The console displays the generated client profile and QR code.
-- **Client Configuration**: The Owner pastes the client config or scans the QR code into `http://192.168.8.1` (VPN -> WireGuard Client).
 - **Zero Secret Disclosure**: No private keys or authentication tokens are transmitted outside the owner's trusted console and physical router.
 
 ---
@@ -91,7 +96,7 @@ Once the physical router establishes the connection:
 | Production 8443 Egress Proxy | **VERIFIED (100% HEALTHY)** | Real CONNECT probe to `143.198.40.33:8443` (Untouched) |
 | Native Host Real Registry E2E | **VERIFIED (100% PASS)** | Isolated real registry E2E `test_native_host_isolated_real_registry_e2e.js` |
 | Native Host Crash & Concurrency Safety | **VERIFIED (100% PASS)** | Audit suite `test_native_host_crash_and_race_safety.js` |
-| Console Authentication Precondition | **PENDING OWNER CONFIRMATION** | DO Web Console root session check |
+| Console Authentication Precondition | **PENDING OWNER CONFIRMATION** | Strictly a documented prerequisite (not demonstrated) |
 | Physical WireGuard Handshake | **UNVERIFIED** | Awaiting physical GL.iNet Opal router link |
 | Hardware DNS Leak Protection | **UNVERIFIED** | Awaiting physical packet capture via Opal interface |
 | Hardware Kill-Switch Enforcement | **UNVERIFIED** | Awaiting physical WAN disconnect test |
