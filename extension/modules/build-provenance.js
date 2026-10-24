@@ -15,21 +15,21 @@
 
     const BUILD_INFO = {
         branch: 'upgrade/phase-0-1',
-        channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.50',
+        channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.51',
         testOnly: false,
-        // [R6.9G.10.3.7.1.4.66] XPIDER AutoForm Sender Pro — Private Egress Release Candidate 3.50 (Companion Identity Parity & Disposable CI Sandbox)
-        implementationHead: 'f1ea7fa2dee53fca7427a69cd6bb164c8d26153e',
-        implementationHeadShort: 'f1ea7fa2',
-        head: 'f1ea7fa2dee53fca7427a69cd6bb164c8d26153e',
-        headShort: 'f1ea7fa2',
+        // [R6.9G.10.3.7.1.4.67] XPIDER AutoForm Sender Pro — Private Egress Release Candidate 3.51 (Pause/Resume & Counter Parity Hotfix)
+        implementationHead: '6de933b8e00f24260aea31d0b6a424a0e70e7ffd',
+        implementationHeadShort: '6de933b8',
+        head: '6de933b8e00f24260aea31d0b6a424a0e70e7ffd',
+        headShort: '6de933b8',
         rollbackBase: '55cd543be5ebe7a4553cac0cbfcf933a00e4c8a5',
-        previousFunctionalRestorePoint: '3b7436fd9d5b327cea7615abfb59dc0e1a8acfed',
+        previousFunctionalRestorePoint: 'b2af1c9bf614b9f572acec910265d8132d2043aa',
         manifestVersion: 3,
-        buildId: 'R6.9G.10.3.7.1.4.66-20261024-P0-RC3.50',
-        builtAt: '2026-10-24T08:28:00.000Z',
+        buildId: 'R6.9G.10.3.7.1.4.67-20261024-P0-RC3.51',
+        builtAt: '2026-10-24T12:28:00.000Z',
         provenanceSchema: 2,
         modules: {
-            backgroundSha: '26b1f824e3763ddef81d12eb07dcf86daac3e37ce0bb49d82879500958093f28',
+            backgroundSha: '6ee3bdfe8f37fb3678ad087b593e08e77db6b29b82059081e14febd234dbc6d1',
             contentScriptSha: '64f333d5f7f913fd4363dedf5ed292992519518e6d309ea4ee56b1dcac7bc810',
             popupSha: 'dd02b0cf62d406c13e4fa5958d42011d6ddadbb6d8463ff95244ba83db4b15cd',
             solverContentSha: '6a1ff7154efaeb6dbd5946ac4f9be1ce5b5ff43bce2db06d0dca32950edd3bdb',
