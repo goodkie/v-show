@@ -2517,6 +2517,7 @@ class PrivacyRelayService {
       const httpModule = isUpstreamTls ? https : http;
       if (isUpstreamTls) {
         options.rejectUnauthorized = true; // Strictly hardcoded (Blocker 9)
+        options.servername = active.host;
         if (active.ca) {
           options.ca = active.ca;
         }
