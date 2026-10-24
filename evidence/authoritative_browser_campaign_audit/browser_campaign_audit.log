@@ -1,0 +1,72 @@
+[2026-10-24T12:05:18.913Z] === STARTING AUTHORITATIVE END-TO-END BROWSER CAMPAIGN AUDIT ===
+[2026-10-24T12:05:18.966Z] 
+--- STEP 1: Verifying Privacy Relay Invariant & Transport Health ---
+[2026-10-24T12:05:18.984Z] Companion Privacy Relay Health: {"status":"OK","relayReady":true,"lifecycleState":"READY","reconnectAttempt":0,"physicalGateEnabled":false,"physicalGateReady":true,"physicalGateFresh":true,"service":"XPIDER Privacy Relay","version":"1.0.3","pid":26712,"companionBuildId":"R6.9G.10.3.7.1.4.66-20261024-P0-RC3.50","companionImplementationHead":"3b7436fd9d5b327cea7615abfb59dc0e1a8acfed","apiCapabilities":["verify-plan","provision-egress","provision-progress","destroy-egress","egress-telemetry","shutdown","stop","physical-gate","recovery-status","repair-egress"],"controlPort":18989,"proxyPort":18988,"selectedEgressId":"do-egress-tor1-611293905","uptimeSeconds":4922,"runtimeRoot":"E:\\vivpr\\ai\\extension-form-sender","companionDir":"E:\\vivpr\\ai\\extension-form-sender\\companion","watchdogRoot":null,"rootParity":false,"watchdog":{"active":false,"pid":null,"root":null,"rootParity":false},"recovery":{"recoveryRequired":false,"status":"ACTIVE","stage":"COMPLETED"}}
+[2026-10-24T12:05:18.991Z] Privacy Relay Operational State: HEALTHY (143.198.40.33)
+[2026-10-24T12:05:18.998Z] 
+--- STEP 2: Spawning Owned Local Fixture Server on port 8088 ---
+[2026-10-24T12:05:19.341Z] Fixture server responsive: {"ok":true,"service":"XPIDER_OWNER_TEST_SERVER","channel":"TEST_ONLY","port":8088,"fixtureSet":"OWNER_7_V1","version":"R6.9G.10.3.7.1.4.5","pid":27636,"timestamp":1792843519338,"submissionsCount":0}
+[2026-10-24T12:05:19.350Z] ✅ Owned fixture server ready with clean submission log.
+[2026-10-24T12:05:19.357Z] 
+--- STEP 3: Spawning Microsoft Edge with Unpacked RC3.50 Extension ---
+[2026-10-24T12:05:19.365Z] Isolated Profile Directory: C:\Users\oPus\AppData\Local\Temp\xpider-authoritative-e2e-TTh2cT
+[2026-10-24T12:05:20.198Z] Discovered RC3.50 Extension ID: ldlijlaccfeelfdhgnjbibniocefckjj
+[2026-10-24T12:05:20.481Z] 
+--- STEP 4: Driving Full Real Campaign via Popup Context ---
+[2026-10-24T12:05:20.637Z] Acquired BuildProvenance Handshake: buildId=R6.9G.10.3.7.1.4.66-20261024-P0-RC3.50, head=f1ea7fa2dee53fca7427a69cd6bb164c8d26153e
+[2026-10-24T12:05:21.267Z] [SW_CONSOLE] [COUNTER_RECONCILE] legacySuccess=0 ledgerSuccess=0 action=LEDGER_WINS
+[2026-10-24T12:05:22.728Z] Sending START_CAMPAIGN from popup...
+[2026-10-24T12:05:22.799Z] [SW_CONSOLE] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=0 testMode=false result=PASS
+[2026-10-24T12:05:22.809Z] [SW_CONSOLE] [BG_LOG][tab=none] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=0 testMode=false result=PASS
+[2026-10-24T12:05:22.823Z] START_CAMPAIGN Acknowledgment: {"success":true,"status":"acknowledged","queueCount":2,"campaignRunId":"run_1792843522807_t5ymn"}
+[2026-10-24T12:05:22.832Z] Awaiting Campaign Execution & Native Submissions...
+[2026-10-24T12:05:22.845Z] [SW_CONSOLE] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedBefore=0
+[2026-10-24T12:05:22.861Z] [SW_CONSOLE] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedAfter=0 result=PASS
+[2026-10-24T12:05:22.877Z] [SW_CONSOLE] [BG_LOG][tab=none] [CAMPAIGN_START] buildId=R6.9G.10.3.7.1.4.66-20261024-P0-RC3.50 campaignRunId=run_1792843522807_t5ymn totalTargets=2 mode=NORMAL delayMs=1000 fillDelayMs=100 submitDelayMs=400
+[2026-10-24T12:05:25.854Z] Poll: Server Received Submissions=0 | Settled Attempts=0 | Active=true
+[2026-10-24T12:05:28.881Z] Poll: Server Received Submissions=0 | Settled Attempts=0 | Active=true
+[2026-10-24T12:05:31.898Z] Poll: Server Received Submissions=0 | Settled Attempts=0 | Active=true
+[2026-10-24T12:05:34.913Z] Poll: Server Received Submissions=0 | Settled Attempts=0 | Active=true
+[2026-10-24T12:05:37.925Z] Poll: Server Received Submissions=0 | Settled Attempts=0 | Active=true
+[2026-10-24T12:05:40.947Z] Poll: Server Received Submissions=1 | Settled Attempts=1 | Active=true
+[2026-10-24T12:05:44.280Z] Poll: Server Received Submissions=1 | Settled Attempts=1 | Active=true
+[2026-10-24T12:05:47.296Z] Poll: Server Received Submissions=1 | Settled Attempts=1 | Active=true
+[2026-10-24T12:05:50.317Z] Poll: Server Received Submissions=1 | Settled Attempts=1 | Active=true
+[2026-10-24T12:05:53.330Z] Poll: Server Received Submissions=1 | Settled Attempts=1 | Active=true
+[2026-10-24T12:05:56.350Z] Poll: Server Received Submissions=1 | Settled Attempts=2 | Active=true
+[2026-10-24T12:05:59.373Z] Poll: Server Received Submissions=1 | Settled Attempts=2 | Active=true
+[2026-10-24T12:05:59.996Z] [SW_CONSOLE] [BG_LOG][tab=none] [FINISH_BARRIER] lastFinalTs=1792843558984 barrierClear. CAMPAIGN_FINISHED proceeding.
+[2026-10-24T12:06:00.005Z] [SW_CONSOLE] [TAB_BARRIER] phase=CAMPAIGN_FINISHED ownedBefore=0
+[2026-10-24T12:06:00.014Z] [SW_CONSOLE] [TAB_BARRIER] phase=CAMPAIGN_FINISHED ownedAfter=0 result=PASS
+[2026-10-24T12:06:02.389Z] Poll: Server Received Submissions=1 | Settled Attempts=2 | Active=true
+[2026-10-24T12:06:05.413Z] Poll: Server Received Submissions=1 | Settled Attempts=2 | Active=true
+[2026-10-24T12:06:08.435Z] Poll: Server Received Submissions=1 | Settled Attempts=2 | Active=true
+[2026-10-24T12:06:11.461Z] Poll: Server Received Submissions=1 | Settled Attempts=2 | Active=true
+[2026-10-24T12:06:14.472Z] Poll: Server Received Submissions=1 | Settled Attempts=2 | Active=true
+[2026-10-24T12:06:17.493Z] Poll: Server Received Submissions=1 | Settled Attempts=2 | Active=true
+[2026-10-24T12:06:20.510Z] Poll: Server Received Submissions=1 | Settled Attempts=2 | Active=true
+[2026-10-24T12:06:23.527Z] Poll: Server Received Submissions=1 | Settled Attempts=2 | Active=true
+[2026-10-24T12:06:23.534Z] 
+--- STEP 5: Testing Zero Duplicate Sends Boundary ---
+[2026-10-24T12:06:23.541Z] Submissions count before duplicate attempt: 1
+[2026-10-24T12:06:23.595Z] [SW_CONSOLE] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=0 testMode=false result=PASS
+[2026-10-24T12:06:23.605Z] [SW_CONSOLE] [BG_LOG][tab=none] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=0 testMode=false result=PASS
+[2026-10-24T12:06:23.615Z] [SW_CONSOLE] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedBefore=0
+[2026-10-24T12:06:23.626Z] [SW_CONSOLE] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedAfter=0 result=PASS
+[2026-10-24T12:06:27.639Z] Submissions count after duplicate attempt: 1
+[2026-10-24T12:06:27.646Z] Zero Duplicate Sends Invariant: ✅ PASS (Zero Duplicate Submissions)
+[2026-10-24T12:06:27.654Z] 
+--- STEP 6: Verifying Pause/Resume Control Plane & Dashboard Counters ---
+[2026-10-24T12:06:27.667Z] [SW_CONSOLE] [TAB_BARRIER] phase=PAUSE_CAMPAIGN ownedBefore=0
+[2026-10-24T12:06:27.677Z] [SW_CONSOLE] [TAB_BARRIER] phase=PAUSE_CAMPAIGN ownedAfter=0 result=PASS
+[2026-10-24T12:06:27.687Z] [SW_CONSOLE] [BG_LOG][tab=none] === CAMPAIGN OUTCOME SUMMARY (currentRun) ===
+[2026-10-24T12:06:27.698Z] [SW_CONSOLE] [CAMPAIGN_SUMMARY] success=2 failure=0 timeoutLocal=0 timeoutGlobal=0 unknown=0 skipped=0 paused=0 completed=2
+[2026-10-24T12:06:27.722Z] Pause Response: {"success":true,"remainingCount":0}
+[2026-10-24T12:06:27.736Z] Final Storage Dashboard Counters: {"captchaFailed":0,"captchaSolved":0,"completed":2,"deliveryUnknown":0,"failed":0,"failureBreakdown":{},"inProgress":0,"paused":0,"remaining":0,"skipped":0,"skippedHistory":0,"success":2,"timeout":0,"total":3}
+[2026-10-24T12:06:27.743Z] Settled Attempts in History: 2
+[2026-10-24T12:06:27.750Z] 
+--- STEP 7: Capturing Dashboard & Popup Screenshot ---
+[2026-10-24T12:06:27.904Z] Screenshot saved to: E:\vivpr\ai\extension-form-sender\evidence\authoritative_browser_campaign_audit\popup_dashboard_e2e_screenshot.png
+[2026-10-24T12:06:27.919Z] 
+=== AUDIT REPORT WRITTEN: E:\vivpr\ai\extension-form-sender\evidence\authoritative_browser_campaign_audit\browser_campaign_audit_report.json ===
+[2026-10-24T12:06:27.926Z] Overall Verdict: 100% PASS

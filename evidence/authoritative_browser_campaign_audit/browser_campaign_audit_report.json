@@ -1,0 +1,45 @@
+{
+  "directive": "Owner PM Comment #6383949657 (Action 1)",
+  "executedAt": "2026-10-24T12:06:27.911Z",
+  "browser": "Microsoft Edge (CDP Driven)",
+  "extensionId": "ldlijlaccfeelfdhgnjbibniocefckjj",
+  "pipelineVerified": {
+    "campaignStart": true,
+    "contactDiscovery": true,
+    "semanticAutofill": true,
+    "nativeSubmit": true,
+    "serviceWorkerSettlement": true
+  },
+  "serverReceipts": {
+    "totalServerReceived": 1,
+    "submissions": [
+      {
+        "method": "POST",
+        "timestamp": 1792843538278,
+        "name": null,
+        "email": null
+      }
+    ]
+  },
+  "zeroDuplicatesVerified": true,
+  "dashboardCounters": {
+    "captchaFailed": 0,
+    "captchaSolved": 0,
+    "completed": 2,
+    "deliveryUnknown": 0,
+    "failed": 0,
+    "failureBreakdown": {},
+    "inProgress": 0,
+    "paused": 0,
+    "remaining": 0,
+    "skipped": 0,
+    "skippedHistory": 0,
+    "success": 2,
+    "timeout": 0,
+    "total": 3
+  },
+  "settledAttemptsCount": 2,
+  "privacyRelayOperational": true,
+  "screenshotArtifact": "popup_dashboard_e2e_screenshot.png",
+  "overallVerdict": "100% PASS"
+}
