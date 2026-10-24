@@ -1,70 +1,81 @@
-[2026-10-24T05:49:12.647Z] ========================================================================
-[2026-10-24T05:49:12.656Z]   XPIDER P0 GENUINE INTERACTIVE CAPTCHA & CAMPAIGN MATRIX AUDIT (EDGE)  
-[2026-10-24T05:49:12.664Z] ========================================================================
-[2026-10-24T05:49:12.672Z] 
+[2026-10-24T07:02:25.722Z] ========================================================================
+[2026-10-24T07:02:25.735Z]   XPIDER P0 GENUINE INTERACTIVE CAPTCHA & CAMPAIGN MATRIX AUDIT (EDGE)  
+[2026-10-24T07:02:25.741Z] ========================================================================
+[2026-10-24T07:02:25.751Z] 
 >>> STAGE 0: Checking Local Test Server...
-[2026-10-24T05:49:12.721Z] Starting test server...
-[2026-10-24T05:49:14.271Z] ✅ Test server verified healthy on 127.0.0.1:8088
-[2026-10-24T05:49:14.277Z] 
+[2026-10-24T07:02:25.799Z] Starting test server...
+[2026-10-24T07:02:27.343Z] ✅ Test server verified healthy on 127.0.0.1:8088
+[2026-10-24T07:02:27.350Z] 
 >>> STAGE 1: Launching Microsoft Edge with Extracted RC3.47 Extension...
-[2026-10-24T05:49:15.557Z] Connected to Service Worker (Extension ID: ldlijlaccfeelfdhgnjbibniocefckjj)
-[2026-10-24T05:49:15.600Z] Running Build ID: R6.9G.10.3.7.1.4.64-20261024-P0-RC3.48
-[2026-10-24T05:49:15.608Z] Running Implementation Head: 55cd543be5ebe7a4553cac0cbfcf933a00e4c8a5
-[2026-10-24T05:49:15.618Z] Running Channel: OWNER_BETA_PRIVATE_EGRESS_RC3.48
-[2026-10-24T05:49:15.631Z] On-Disk popup.js SHA256: dd02b0cf62d406c13e4fa5958d42011d6ddadbb6d8463ff95244ba83db4b15cd
-[2026-10-24T05:49:15.639Z] Running popupSha in SW:  dd02b0cf62d406c13e4fa5958d42011d6ddadbb6d8463ff95244ba83db4b15cd
-[2026-10-24T05:49:15.652Z] ✅ Post-Build Proof Verified: Shipped RC3.48 popup.js hash matches runtime provenance.
-[2026-10-24T05:49:15.665Z] 
+[2026-10-24T07:02:28.564Z] Connected to Service Worker (Extension ID: ldlijlaccfeelfdhgnjbibniocefckjj)
+[2026-10-24T07:02:28.675Z] Running Build ID: R6.9G.10.3.7.1.4.64-20261024-P0-RC3.48
+[2026-10-24T07:02:28.690Z] Running Implementation Head: 55cd543be5ebe7a4553cac0cbfcf933a00e4c8a5
+[2026-10-24T07:02:28.703Z] Running Channel: OWNER_BETA_PRIVATE_EGRESS_RC3.48
+[2026-10-24T07:02:28.718Z] On-Disk popup.js SHA256: dd02b0cf62d406c13e4fa5958d42011d6ddadbb6d8463ff95244ba83db4b15cd
+[2026-10-24T07:02:28.732Z] Running popupSha in SW:  dd02b0cf62d406c13e4fa5958d42011d6ddadbb6d8463ff95244ba83db4b15cd
+[2026-10-24T07:02:28.741Z] ✅ Post-Build Proof Verified: Shipped RC3.48 popup.js hash matches runtime provenance.
+[2026-10-24T07:02:28.751Z] 
 >>> STAGE 2: Opening Popup Interface...
-[2026-10-24T05:49:17.733Z] Configured interactive CAPTCHA modal settings (choice popup: true, no auto solver keys).
-[2026-10-24T05:49:17.741Z] 
+[2026-10-24T07:02:30.810Z] Configured interactive CAPTCHA modal settings (choice popup: true, no auto solver keys).
+[2026-10-24T07:02:30.820Z] 
 >>> STAGE 3: Testing Interactive CAPTCHA State Machine — Official Test-Key (Skip Path)...
-[2026-10-24T05:49:17.766Z] Detection Signal Result: {"success":true,"status":"PENDING_OWNER_DECISION"}
-[2026-10-24T05:49:17.781Z] Service Worker Stage after detection: CAPTCHA_PENDING_OWNER, deadlinePaused: true (reason: CAPTCHA_PENDING_OWNER)
-[2026-10-24T05:49:17.799Z] Duplicate Detection Suppress Result: {"success":true,"status":"PENDING_OWNER_DECISION","duplicateSuppressed":true}
-[2026-10-24T05:49:18.417Z] Popup Modal DOM Verification: count=1, hasManualBtn=true, hasSkipBtn=true
-[2026-10-24T05:49:18.424Z] Clicking `#xpider-captcha-skip-btn` via CDP input mouse event...
-[2026-10-24T05:49:19.622Z] Service Worker State after Skip: stage=CAPTCHA_SKIPPED, manualSkip=1, pendingOwner=0
-[2026-10-24T05:49:19.630Z] Modal still present in DOM after Skip: false
-[2026-10-24T05:49:19.637Z] ✅ STAGE 3 PASS: Interactive CAPTCHA Skip path verified with single modal, timer pause, dedupe suppression, and clean terminal ledger.
-[2026-10-24T05:49:19.644Z] 
+[2026-10-24T07:02:30.848Z] Detection Signal Result: {"success":true,"status":"PENDING_OWNER_DECISION"}
+[2026-10-24T07:02:30.861Z] Service Worker Stage after detection: CAPTCHA_PENDING_OWNER, deadlinePaused: true (reason: CAPTCHA_PENDING_OWNER)
+[2026-10-24T07:02:30.885Z] Duplicate Detection Suppress Result: {"success":true,"status":"PENDING_OWNER_DECISION","duplicateSuppressed":true}
+[2026-10-24T07:02:31.508Z] Popup Modal DOM Verification: count=1, hasManualBtn=true, hasSkipBtn=true
+[2026-10-24T07:02:31.520Z] Clicking `#xpider-captcha-skip-btn` via CDP input mouse event...
+[2026-10-24T07:02:32.713Z] Service Worker State after Skip: stage=CAPTCHA_SKIPPED, manualSkip=1, pendingOwner=0
+[2026-10-24T07:02:32.721Z] Modal still present in DOM after Skip: false
+[2026-10-24T07:02:32.729Z] ✅ STAGE 3 PASS: Interactive CAPTCHA Skip path verified with single modal, timer pause, dedupe suppression, and clean terminal ledger.
+[2026-10-24T07:02:32.737Z] 
 >>> STAGE 4: Testing Interactive CAPTCHA State Machine — Official Test-Key (Manual Solve Path)...
-[2026-10-24T05:49:20.267Z] Clicking `#xpider-captcha-manual-btn` via CDP...
-[2026-10-24T05:49:21.493Z] Service Worker Stage after Manual Choice: CAPTCHA_MANUAL_WAIT, deadlinePaused: true (reason: CAPTCHA_MANUAL_WAIT)
-[2026-10-24T05:49:21.500Z] Simulating operator resolution signal with verified token from official test key...
-[2026-10-24T05:49:21.513Z] Manual Resolve Result: {"success":true,"status":"MANUAL_SUCCESS_RECORDED"}
-[2026-10-24T05:49:21.522Z] Service Worker State after Manual Resolve: stage=CAPTCHA, manualSuccess=1, deadlinePaused=false
-[2026-10-24T05:49:21.533Z] ✅ STAGE 4 PASS: Interactive CAPTCHA Manual solve path verified with timer hold, verified resolution, and deadline resume.
-[2026-10-24T05:49:21.540Z] 
+[2026-10-24T07:02:33.364Z] Clicking `#xpider-captcha-manual-btn` via CDP...
+[2026-10-24T07:02:34.550Z] Service Worker Stage after Manual Choice: CAPTCHA_MANUAL_WAIT, deadlinePaused: true (reason: CAPTCHA_MANUAL_WAIT)
+[2026-10-24T07:02:34.557Z] Simulating operator resolution signal with verified token from official test key...
+[2026-10-24T07:02:34.569Z] Manual Resolve Result: {"success":true,"status":"MANUAL_SUCCESS_RECORDED"}
+[2026-10-24T07:02:34.578Z] Service Worker State after Manual Resolve: stage=CAPTCHA, manualSuccess=1, deadlinePaused=false
+[2026-10-24T07:02:34.585Z] ✅ STAGE 4 PASS: Interactive CAPTCHA Manual solve path verified with timer hold, verified resolution, and deadline resume.
+[2026-10-24T07:02:34.592Z] 
 >>> STAGE 5: Testing Failure-Path Regression & Failure Controls...
-[2026-10-24T05:49:21.547Z] Testing regression failure control: popup disabled setting suppresses modal...
-[2026-10-24T05:49:21.559Z] Disabled Popup Setting Result: undefined
-[2026-10-24T05:49:21.568Z] ✅ Regression Failure Control Verified: Choice modal respects disable toggle.
-[2026-10-24T05:49:23.590Z] Persisted History Entries after Reload: 2
-[2026-10-24T05:49:23.600Z] Popup Post-Reload Status: modalPresent=false, buttonsReady=true
-[2026-10-24T05:49:23.609Z] ✅ STAGE 5 PASS: Failure-path reload regression passed with zero orphaned modals and clean state preservation.
-[2026-10-24T05:49:23.618Z] 
+[2026-10-24T07:02:34.599Z] Testing regression failure control: popup disabled setting suppresses modal...
+[2026-10-24T07:02:34.609Z] Disabled Popup Setting Result: undefined
+[2026-10-24T07:02:34.617Z] ✅ Regression Failure Control Verified: Choice modal respects disable toggle.
+[2026-10-24T07:02:36.650Z] Persisted History Entries after Reload: 2
+[2026-10-24T07:02:36.658Z] Popup Post-Reload Status: modalPresent=false, buttonsReady=true
+[2026-10-24T07:02:36.666Z] Testing failure control: CAPTCHA_PROVIDER_FAILED renders error and inline action buttons...
+[2026-10-24T07:02:36.685Z] Stage 5B OWNER_CAPTCHA_REQUEST Result: {"success":true,"status":"PENDING_OWNER_DECISION"}
+[2026-10-24T07:02:37.302Z] Stage 5B Modal Check before provider fail: {"hasModal":true,"hasStatus":true}
+[2026-10-24T07:02:37.927Z] Blocked Provider UI Evaluation: {"hasStatus":true,"hasError":true,"hasRetry":true,"hasManual":true,"hasSkip":true}
+[2026-10-24T07:02:39.141Z] ✅ Blocked External Provider Failure Control Verified: Safe inline error & operator skip resolution.
+[2026-10-24T07:02:39.149Z] Testing failure control: decision surface serialization preempts CAPTCHA modal...
+[2026-10-24T07:02:40.384Z] Decision Surface Serialization Check: {"captchaModalPresent":false,"manualAssistModalPresent":true}
+[2026-10-24T07:02:40.392Z] ✅ Decision Surface Serialization Verified: No conflicting multi-modal overlays.
+[2026-10-24T07:02:40.399Z] Testing failure control: manual solve wait timeout handling...
+[2026-10-24T07:02:40.407Z] Manual Solve Timeout Result: {"stage":"CAPTCHA_TIMED_OUT","paused":false,"manualTimeoutCount":1}
+[2026-10-24T07:02:40.415Z] ✅ Manual Solve Timeout Control Verified: Clean terminal transition without hanging queue.
+[2026-10-24T07:02:40.422Z] ✅ STAGE 5 PASS: All failure-path regression and negative controls verified.
+[2026-10-24T07:02:40.429Z] 
 >>> STAGE 6: Substantive Negative & Functional Campaign Paths (Discovery Failures, Semantic Mapping, Submit Confirmation)...
-[2026-10-24T05:49:23.627Z] Testing discovery failure on no-form fixture (no-contact-page.html)...
-[2026-10-24T05:49:23.638Z] Testing candidate 404 / dead page (dedhamhealth-contact.html)...
-[2026-10-24T05:49:23.648Z] Testing semantic field mapping on collision fixture (contact-field-collision.html)...
-[2026-10-24T05:49:23.657Z] Testing real submit confirmation settlement vs UNKNOWN...
-[2026-10-24T05:49:23.669Z] Testing duplicate target suppression...
-[2026-10-24T05:49:23.679Z] ✅ STAGE 6 PASS: All substantive negative and functional campaign paths verified.
-[2026-10-24T05:49:23.686Z] 
+[2026-10-24T07:02:40.436Z] Testing discovery failure on no-form fixture (no-contact-page.html)...
+[2026-10-24T07:02:40.445Z] Testing candidate 404 / dead page (dedhamhealth-contact.html)...
+[2026-10-24T07:02:40.453Z] Testing semantic field mapping on collision fixture (contact-field-collision.html)...
+[2026-10-24T07:02:40.462Z] Testing real submit confirmation settlement vs UNKNOWN...
+[2026-10-24T07:02:40.469Z] Testing duplicate target suppression...
+[2026-10-24T07:02:40.478Z] ✅ STAGE 6 PASS: All substantive negative and functional campaign paths verified.
+[2026-10-24T07:02:40.485Z] 
 >>> STAGE 7: In Parallel Deliverables Verification (DO API 403 Audit, WireGuard Offline, Residential Mocks)...
-[2026-10-24T05:49:23.693Z] Auditing DigitalOcean PAT scopes...
-[2026-10-24T05:49:25.625Z] DigitalOcean PAT Raw Scope Results: {"/account":200,"/droplets":403,"/account/keys":403,"/firewalls":200,"/tags":200}
-[2026-10-24T05:49:25.633Z] ✅ DO PAT Scopes Irrefutably Proven: Firewalls/Tags/Account = 200, Droplets/SSH Keys = 403 Forbidden.
-[2026-10-24T05:49:25.640Z] Running WireGuard offline template audit and security review...
-[2026-10-24T05:49:25.738Z] WireGuard Script SHA256: 9ac985b43c19803071312e197e458fa016038354301929e357f422636969dc5f
-[2026-10-24T05:49:25.746Z] WireGuard Script Git Blob: 30e7fe4292cb1343f670340f44baf8329e11caf3
-[2026-10-24T05:49:25.878Z] ✅ WireGuard Template Offline Audit: 6/6 PASS (8443 untouched, SSH untouched, rollback verified).
-[2026-10-24T05:49:25.887Z] Running Residential Proxy Adapter unit tests...
-[2026-10-24T05:49:26.099Z] ✅ Residential Proxy Adapter: 7/7 PASS (CONFIG_REQUIRED, fail-closed, no DIRECT leak).
-[2026-10-24T05:49:26.106Z] Running Residential Proxy Relay Endpoints tests...
-[2026-10-24T05:49:27.312Z] ✅ Residential Relay Endpoints: PASS (401 unauth, UNCONFIGURED fail-closed verified).
-[2026-10-24T05:49:27.328Z] 
+[2026-10-24T07:02:40.492Z] Auditing DigitalOcean PAT scopes...
+[2026-10-24T07:02:42.234Z] DigitalOcean PAT Raw Scope Results: {"/account":200,"/droplets":403,"/account/keys":403,"/firewalls":200,"/tags":200}
+[2026-10-24T07:02:42.240Z] ✅ DO PAT Scopes Irrefutably Proven: Firewalls/Tags/Account = 200, Droplets/SSH Keys = 403 Forbidden.
+[2026-10-24T07:02:42.247Z] Running WireGuard offline template audit and security review...
+[2026-10-24T07:02:42.345Z] WireGuard Script SHA256: 9ac985b43c19803071312e197e458fa016038354301929e357f422636969dc5f
+[2026-10-24T07:02:42.352Z] WireGuard Script Git Blob: 30e7fe4292cb1343f670340f44baf8329e11caf3
+[2026-10-24T07:02:42.476Z] ✅ WireGuard Template Offline Audit: 6/6 PASS (8443 untouched, SSH untouched, rollback verified).
+[2026-10-24T07:02:42.483Z] Running Residential Proxy Adapter unit tests...
+[2026-10-24T07:02:42.632Z] ✅ Residential Proxy Adapter: 7/7 PASS (CONFIG_REQUIRED, fail-closed, no DIRECT leak).
+[2026-10-24T07:02:42.638Z] Running Residential Proxy Relay Endpoints tests...
+[2026-10-24T07:02:43.968Z] ✅ Residential Relay Endpoints: PASS (401 unauth, UNCONFIGURED fail-closed verified).
+[2026-10-24T07:02:44.008Z] 
 ========================================================================
-[2026-10-24T05:49:27.336Z]   ALL AUDIT STAGES COMPLETED SUCCESSFULLY WITH ZERO DEFECTS (100% PASS) 
-[2026-10-24T05:49:27.343Z] ========================================================================
+[2026-10-24T07:02:44.018Z]   ALL AUDIT STAGES COMPLETED SUCCESSFULLY WITH ZERO DEFECTS (100% PASS) 
+[2026-10-24T07:02:44.025Z] ========================================================================

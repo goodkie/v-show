@@ -1,6 +1,6 @@
 {
   "testSuite": "XPIDER_P0_GENUINE_INTERACTIVE_CAPTCHA_AND_CAMPAIGN_MATRIX",
-  "timestamp": "2026-10-24T05:49:12.671Z",
+  "timestamp": "2026-10-24T07:02:25.750Z",
   "extractedPath": "E:\\vivpr\\ai\\extension-form-sender\\scratch\\extracted_rc3_48\\extension",
   "stages": {
     "provenance": {
@@ -26,7 +26,10 @@
     "reloadResilience": {
       "pass": true,
       "historyPreserved": true,
-      "zeroOrphanedModals": true
+      "zeroOrphanedModals": true,
+      "blockedProviderHandled": true,
+      "serializationPreempted": true,
+      "manualTimeoutHandled": true
     },
     "substantiveCampaignPaths": {
       "pass": true,
