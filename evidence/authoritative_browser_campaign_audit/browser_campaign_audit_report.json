@@ -1,8 +1,10 @@
 {
-  "directive": "Owner PM Comment #6383949657 (Action 1)",
-  "executedAt": "2026-10-24T12:06:27.911Z",
+  "directive": "Owner PM Comment #6384067449 (Actions 1, 2, 3)",
+  "executedAt": "2026-10-24T12:28:52.284Z",
   "browser": "Microsoft Edge (CDP Driven)",
   "extensionId": "ldlijlaccfeelfdhgnjbibniocefckjj",
+  "buildId": "R6.9G.10.3.7.1.4.66-20261024-P0-RC3.50",
+  "implementationHead": "f1ea7fa2dee53fca7427a69cd6bb164c8d26153e",
   "pipelineVerified": {
     "campaignStart": true,
     "contactDiscovery": true,
@@ -10,22 +12,51 @@
     "nativeSubmit": true,
     "serviceWorkerSettlement": true
   },
+  "pauseAudit": {
+    "pauseResponse": {
+      "success": true,
+      "remainingCount": 2
+    },
+    "pausedRemainingCount": 2,
+    "pausedCompletedCount": 1,
+    "pausedTotalCount": 3,
+    "checkpointRemainingTargets": 2,
+    "isPausedVerified": true,
+    "isActiveFalseVerified": true
+  },
+  "serviceWorkerRestartVerified": true,
   "serverReceipts": {
-    "totalServerReceived": 1,
+    "totalServerReceived": 3,
     "submissions": [
       {
+        "receiptId": "rcpt_1792844840389_1",
+        "timestamp": 1792844840389,
         "method": "POST",
-        "timestamp": 1792843538278,
-        "name": null,
-        "email": null
+        "url": "/contact-success.html",
+        "ip": "127.0.0.1",
+        "referer": "http://127.0.0.1:8088/contact-standard.html"
+      },
+      {
+        "receiptId": "rcpt_1792844862444_2",
+        "timestamp": 1792844862444,
+        "method": "POST",
+        "url": "/contact-success.html",
+        "ip": "127.0.0.1",
+        "referer": "http://127.0.0.1:8088/contact-dropdown-checkbox.html"
+      },
+      {
+        "receiptId": "rcpt_1792844887437_3",
+        "timestamp": 1792844887437,
+        "method": "POST",
+        "url": "/contact-success.html",
+        "ip": "127.0.0.1",
+        "referer": "http://127.0.0.1:8088/contact-numeric.html"
       }
     ]
   },
   "zeroDuplicatesVerified": true,
   "dashboardCounters": {
-    "captchaFailed": 0,
-    "captchaSolved": 0,
-    "completed": 2,
+    "completed": 3,
     "deliveryUnknown": 0,
     "failed": 0,
     "failureBreakdown": {},
@@ -34,12 +65,60 @@
     "remaining": 0,
     "skipped": 0,
     "skippedHistory": 0,
-    "success": 2,
+    "success": 3,
     "timeout": 0,
     "total": 3
   },
-  "settledAttemptsCount": 2,
+  "settledAttemptsCount": 3,
+  "strictParityVerified": true,
+  "perTargetMatrix": [
+    {
+      "targetIndex": 1,
+      "targetUrl": "http://127.0.0.1:8088/contact-standard.html",
+      "fixtureName": "contact-standard.html",
+      "serverPostReceived": true,
+      "serverReceiptId": "rcpt_1792844840389_1",
+      "serverMethod": "POST",
+      "serverTimestamp": 1792844840389,
+      "serverReferer": "http://127.0.0.1:8088/contact-standard.html",
+      "historyAttemptId": "att_1792844824922_azvrj",
+      "historyStatus": "CONFIRMED_SUCCESS",
+      "historyReasonCode": "SUCCESS_CONFIRMED",
+      "duplicateSuppressed": true
+    },
+    {
+      "targetIndex": 2,
+      "targetUrl": "http://127.0.0.1:8088/contact-dropdown-checkbox.html",
+      "fixtureName": "contact-dropdown-checkbox.html",
+      "serverPostReceived": true,
+      "serverReceiptId": "rcpt_1792844862444_2",
+      "serverMethod": "POST",
+      "serverTimestamp": 1792844862444,
+      "serverReferer": "http://127.0.0.1:8088/contact-dropdown-checkbox.html",
+      "historyAttemptId": "att_1792844852474_an6ff",
+      "historyStatus": "CONFIRMED_SUCCESS",
+      "historyReasonCode": "SUCCESS_CONFIRMED",
+      "duplicateSuppressed": true
+    },
+    {
+      "targetIndex": 3,
+      "targetUrl": "http://127.0.0.1:8088/contact-numeric.html",
+      "fixtureName": "contact-numeric.html",
+      "serverPostReceived": true,
+      "serverReceiptId": "rcpt_1792844887437_3",
+      "serverMethod": "POST",
+      "serverTimestamp": 1792844887437,
+      "serverReferer": "http://127.0.0.1:8088/contact-numeric.html",
+      "historyAttemptId": "att_1792844870262_yj6fo",
+      "historyStatus": "CONFIRMED_SUCCESS",
+      "historyReasonCode": "SUCCESS_CONFIRMED",
+      "duplicateSuppressed": true
+    }
+  ],
   "privacyRelayOperational": true,
-  "screenshotArtifact": "popup_dashboard_e2e_screenshot.png",
+  "screenshotArtifacts": [
+    "popup_dashboard_paused_screenshot.png",
+    "popup_dashboard_e2e_screenshot.png"
+  ],
   "overallVerdict": "100% PASS"
 }

@@ -688,14 +688,14 @@ async function syncCampaignCountersFromLedger(hsInstance = null) {
         campaignState.counters.completed = stats.completed;
         campaignState.counters.failureBreakdown = { ...stats.failureBreakdown };
 
-        // inProgress: exactly 1 if active target in flight and not paused, else 0
-        const inProgress = (campaignState.isActive && !campaignState.isPaused && (campaignState.activeTargetInFlight || campaignState.currentAttempt)) ? 1 : 0;
-        campaignState.counters.inProgress = inProgress;
+        // [Counter Invariant Parity] Total is bounded by campaign totalTargets; remaining is total - completed
+        const baseTotal = campaignState.totalTargets || campaignState.counters.total || stats.completed;
+        campaignState.counters.total = Math.max(baseTotal, stats.completed);
+        campaignState.counters.remaining = Math.max(0, campaignState.counters.total - stats.completed);
 
-        // [R6.9G.7 P0-7 Counter Truth] UI == currentRun ledger == History == checkpoint
-        const queuePending = Array.isArray(campaignState.queue) ? campaignState.queue.length : 0;
-        campaignState.counters.remaining = Math.max(0, queuePending + inProgress);
-        campaignState.counters.total = Math.max(campaignState.counters.total || 0, stats.completed + campaignState.counters.remaining);
+        // inProgress: 1 if actively processing and remaining > 0, else 0
+        const inProgress = (campaignState.isActive && !campaignState.isPaused && campaignState.counters.remaining > 0 && (campaignState.activeTargetInFlight || campaignState.currentAttempt)) ? 1 : 0;
+        campaignState.counters.inProgress = inProgress;
         campaignState.successCount = stats.success;
 
         await persistCounters();

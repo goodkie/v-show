@@ -1,0 +1,125 @@
+[2026-10-24T00:31:45.858Z] ================================================================
+[2026-10-24T00:31:45.867Z] STARTING POST-PACKAGE EXTRACTION SMOKE TEST (REAL ZIP EXTRACTION)
+[2026-10-24T00:31:45.874Z] ================================================================
+[2026-10-24T00:31:45.881Z] Step 1: Unpacking E:\vivpr\ai\extension-form-sender\XPIDER_R6.9G.10.3.7.1.4.61_PRIVATE_EGRESS_RC3.45.zip into E:\vivpr\ai\extension-form-sender\scratch\extracted_rc345_smoke...
+[2026-10-24T00:33:55.331Z] ✅ Successfully extracted release ZIP
+[2026-10-24T00:33:55.338Z] Step 2: Inspecting extracted build-provenance.js:
+[2026-10-24T00:33:55.345Z]    buildId: R6.9G.10.3.7.1.4.61-20261023-P0-RC3.45
+[2026-10-24T00:33:55.352Z]    implementationHead: 0984a9b885ce9d3ee11857469a30cd41818bf947
+[2026-10-24T00:33:55.359Z] ✅ Extracted package provenance matches functional commit 0984a9b8 100%
+[2026-10-24T00:33:55.366Z] 
+Step 3: Checking local test fixture server on port 8088...
+[2026-10-24T00:33:55.416Z] Starting test server...
+[2026-10-24T00:33:55.768Z] ✅ Fixture server ready on port 8088
+[2026-10-24T00:33:55.774Z] 
+Step 4: Launching Microsoft Edge loading EXTRACTED extension (E:\vivpr\ai\extension-form-sender\scratch\extracted_rc345_smoke\extension)...
+[2026-10-24T00:33:56.929Z] ✅ Connected to Extracted Service Worker: chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/background.js
+[2026-10-24T00:33:56.973Z] 
+Step 5: Configuring extracted extension to PRIVACY_RELAY (no DIRECT)...
+[2026-10-24T00:33:56.999Z] ✅ PrivacyGateway State: {"pgEnabled":true,"pgMode":"PRIVACY_RELAY","pgFailClosed":true,"webrtcValue":"disable_non_proxied_udp"}
+[2026-10-24T00:33:57.011Z] 
+Step 6: Executing live in-browser egress probes through extracted package...
+[2026-10-24T00:33:57.563Z]    Cloudflare Trace Status: 200
+[2026-10-24T00:33:57.572Z]    Cloudflare IP: 143.198.40.33
+[2026-10-24T00:33:57.583Z]    Cloudflare Colo: YYZ
+[2026-10-24T00:33:57.592Z]    ipify IP: 143.198.40.33
+[2026-10-24T00:33:57.600Z] ✅ [REMOTE EGRESS PASS] Extracted extension verified exiting via 143.198.40.33 (Toronto YYZ)
+[2026-10-24T00:33:57.610Z] 
+Step 7: Testing disconnect fail-closed barrier...
+[2026-10-24T00:33:57.689Z] ✅ [FAIL-CLOSED PASS] Zero DIRECT bypass on disconnect
+[2026-10-24T00:33:57.698Z] 
+Step 8: Testing control-plane lifecycle (Popup Start / Pause / Resume / Stop)...
+[2026-10-24T00:33:59.761Z]    Popup Controls: {"hasAutoSetup":true,"hasRunBtn":true,"hasPauseBtn":false,"hasStopBtn":false}
+[2026-10-24T00:33:59.768Z] ✅ Popup control plane DOM elements verified
+[2026-10-24T00:33:59.776Z] 
+Step 9: Executing 7-target campaign on extracted extension under PRIVACY_RELAY...
+[2026-10-24T00:34:01.303Z]    Poll: settled=0/7, totalAttempts=1, active=true
+[2026-10-24T00:34:02.822Z]    Poll: settled=0/7, totalAttempts=1, active=true
+[2026-10-24T00:34:04.343Z]    Poll: settled=0/7, totalAttempts=1, active=true
+[2026-10-24T00:34:05.866Z]    Poll: settled=0/7, totalAttempts=1, active=true
+[2026-10-24T00:34:07.388Z]    Poll: settled=0/7, totalAttempts=1, active=true
+[2026-10-24T00:34:08.907Z]    Poll: settled=0/7, totalAttempts=1, active=true
+[2026-10-24T00:34:10.423Z]    Poll: settled=0/7, totalAttempts=1, active=true
+[2026-10-24T00:34:11.938Z]    Poll: settled=0/7, totalAttempts=1, active=true
+[2026-10-24T00:34:13.460Z]    Poll: settled=0/7, totalAttempts=1, active=true
+[2026-10-24T00:34:14.972Z]    Poll: settled=1/7, totalAttempts=1, active=true
+[2026-10-24T00:34:16.483Z]    Poll: settled=1/7, totalAttempts=1, active=true
+[2026-10-24T00:34:17.997Z]    Poll: settled=1/7, totalAttempts=1, active=true
+[2026-10-24T00:34:19.513Z]    Poll: settled=1/7, totalAttempts=2, active=true
+[2026-10-24T00:34:21.038Z]    Poll: settled=1/7, totalAttempts=2, active=true
+[2026-10-24T00:34:22.558Z]    Poll: settled=1/7, totalAttempts=2, active=true
+[2026-10-24T00:34:24.068Z]    Poll: settled=1/7, totalAttempts=2, active=true
+[2026-10-24T00:34:25.586Z]    Poll: settled=1/7, totalAttempts=2, active=true
+[2026-10-24T00:34:27.108Z]    Poll: settled=1/7, totalAttempts=2, active=true
+[2026-10-24T00:34:28.621Z]    Poll: settled=1/7, totalAttempts=2, active=true
+[2026-10-24T00:34:30.136Z]    Poll: settled=2/7, totalAttempts=2, active=true
+[2026-10-24T00:34:31.652Z]    Poll: settled=2/7, totalAttempts=2, active=true
+[2026-10-24T00:34:33.161Z]    Poll: settled=2/7, totalAttempts=2, active=true
+[2026-10-24T00:34:34.684Z]    Poll: settled=2/7, totalAttempts=3, active=true
+[2026-10-24T00:34:36.206Z]    Poll: settled=2/7, totalAttempts=3, active=true
+[2026-10-24T00:34:37.720Z]    Poll: settled=2/7, totalAttempts=3, active=true
+[2026-10-24T00:34:39.229Z]    Poll: settled=2/7, totalAttempts=3, active=true
+[2026-10-24T00:34:40.748Z]    Poll: settled=2/7, totalAttempts=3, active=true
+[2026-10-24T00:34:42.267Z]    Poll: settled=2/7, totalAttempts=3, active=true
+[2026-10-24T00:34:43.784Z]    Poll: settled=2/7, totalAttempts=3, active=true
+[2026-10-24T00:34:45.303Z]    Poll: settled=2/7, totalAttempts=3, active=true
+[2026-10-24T00:34:46.821Z]    Poll: settled=2/7, totalAttempts=3, active=true
+[2026-10-24T00:34:48.341Z]    Poll: settled=3/7, totalAttempts=3, active=true
+[2026-10-24T00:34:49.853Z]    Poll: settled=3/7, totalAttempts=3, active=true
+[2026-10-24T00:34:51.369Z]    Poll: settled=3/7, totalAttempts=3, active=true
+[2026-10-24T00:34:52.885Z]    Poll: settled=3/7, totalAttempts=4, active=true
+[2026-10-24T00:34:54.408Z]    Poll: settled=3/7, totalAttempts=4, active=true
+[2026-10-24T00:34:55.917Z]    Poll: settled=3/7, totalAttempts=4, active=true
+[2026-10-24T00:34:57.438Z]    Poll: settled=3/7, totalAttempts=4, active=true
+[2026-10-24T00:34:58.949Z]    Poll: settled=3/7, totalAttempts=4, active=true
+[2026-10-24T00:35:00.459Z]    Poll: settled=3/7, totalAttempts=4, active=true
+[2026-10-24T00:35:01.974Z]    Poll: settled=4/7, totalAttempts=4, active=true
+[2026-10-24T00:35:03.497Z]    Poll: settled=4/7, totalAttempts=4, active=true
+[2026-10-24T00:35:05.021Z]    Poll: settled=4/7, totalAttempts=5, active=true
+[2026-10-24T00:35:06.537Z]    Poll: settled=4/7, totalAttempts=5, active=true
+[2026-10-24T00:35:08.051Z]    Poll: settled=4/7, totalAttempts=5, active=true
+[2026-10-24T00:35:09.565Z]    Poll: settled=4/7, totalAttempts=5, active=true
+[2026-10-24T00:35:11.075Z]    Poll: settled=4/7, totalAttempts=5, active=true
+[2026-10-24T00:35:12.596Z]    Poll: settled=5/7, totalAttempts=5, active=true
+[2026-10-24T00:35:14.120Z]    Poll: settled=5/7, totalAttempts=5, active=true
+[2026-10-24T00:35:15.633Z]    Poll: settled=5/7, totalAttempts=6, active=true
+[2026-10-24T00:35:17.156Z]    Poll: settled=5/7, totalAttempts=6, active=true
+[2026-10-24T00:35:18.674Z]    Poll: settled=5/7, totalAttempts=6, active=true
+[2026-10-24T00:35:20.188Z]    Poll: settled=5/7, totalAttempts=6, active=true
+[2026-10-24T00:35:21.707Z]    Poll: settled=5/7, totalAttempts=6, active=true
+[2026-10-24T00:35:23.235Z]    Poll: settled=5/7, totalAttempts=6, active=true
+[2026-10-24T00:35:24.764Z]    Poll: settled=6/7, totalAttempts=6, active=true
+[2026-10-24T00:35:26.289Z]    Poll: settled=6/7, totalAttempts=6, active=true
+[2026-10-24T00:35:27.822Z]    Poll: settled=6/7, totalAttempts=7, active=true
+[2026-10-24T00:35:29.337Z]    Poll: settled=6/7, totalAttempts=7, active=true
+[2026-10-24T00:35:30.848Z]    Poll: settled=6/7, totalAttempts=7, active=true
+[2026-10-24T00:35:32.358Z]    Poll: settled=6/7, totalAttempts=7, active=true
+[2026-10-24T00:35:33.870Z]    Poll: settled=6/7, totalAttempts=7, active=true
+[2026-10-24T00:35:35.388Z]    Poll: settled=6/7, totalAttempts=7, active=true
+[2026-10-24T00:35:36.899Z]    Poll: settled=6/7, totalAttempts=7, active=true
+[2026-10-24T00:35:38.416Z]    Poll: settled=6/7, totalAttempts=7, active=true
+[2026-10-24T00:35:39.938Z]    Poll: settled=6/7, totalAttempts=7, active=true
+[2026-10-24T00:35:41.458Z]    Poll: settled=6/7, totalAttempts=7, active=true
+[2026-10-24T00:35:42.979Z]    Poll: settled=7/7, totalAttempts=7, active=true
+[2026-10-24T00:35:44.998Z] 
+Step 10: Ledger Invariants Audit on Extracted Package...
+[2026-10-24T00:35:45.011Z] 
+Extracted Package 7 Fixtures Breakdown:
+[2026-10-24T00:35:45.019Z]   [Fixture 1/7] contact-standard.html: STATUS=CONFIRMED_SUCCESS (Reason: SUCCESS_CONFIRMED)
+[2026-10-24T00:35:45.026Z]   [Fixture 2/7] contact-dropdown-checkbox.html: STATUS=CONFIRMED_SUCCESS (Reason: SUCCESS_CONFIRMED)
+[2026-10-24T00:35:45.033Z]   [Fixture 3/7] contact-numeric.html: STATUS=CONFIRMED_SUCCESS (Reason: SUCCESS_CONFIRMED)
+[2026-10-24T00:35:45.040Z]   [Fixture 4/7] subscribe-no-message.html: STATUS=SKIPPED (Reason: NON_INQUIRY_SUBSCRIBE_FORM)
+[2026-10-24T00:35:45.046Z]   [Fixture 5/7] reservation-no-message.html: STATUS=SKIPPED (Reason: NON_INQUIRY_RESERVATION_FORM)
+[2026-10-24T00:35:45.053Z]   [Fixture 6/7] no-contact-page.html: STATUS=FAILURE (Reason: NO_ACCESSIBLE_INQUIRY_FORM)
+[2026-10-24T00:35:45.061Z]   [Fixture 7/7] index.html: STATUS=CONFIRMED_SUCCESS (Reason: SUCCESS_CONFIRMED)
+[2026-10-24T00:35:45.068Z] 
+Counters on Extracted Package:
+[2026-10-24T00:35:45.076Z]    success: 4
+[2026-10-24T00:35:45.083Z]    failed: 1
+[2026-10-24T00:35:45.090Z]    skipped: 2
+[2026-10-24T00:35:45.100Z] 
+Server Submissions Count: 2
+[2026-10-24T00:35:45.107Z] 
+================================================================
+[2026-10-24T00:35:45.114Z] POST-PACKAGE EXTRACTION SMOKE TEST PASSED 100%
+[2026-10-24T00:35:45.123Z] ================================================================

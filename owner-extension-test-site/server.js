@@ -93,13 +93,17 @@ const server = http.createServer((req, res) => {
 
   // Intercept form landing / submission target page
   if (reqPath === '/contact-success.html') {
+    const receiptId = `rcpt_${Date.now()}_${submissionLog.length + 1}`;
+    const referer = req.headers['referer'] || req.headers['origin'] || null;
     submissionLog.push({
+      receiptId,
       timestamp: Date.now(),
       method: req.method,
       url: req.url,
-      ip: req.socket.remoteAddress
+      ip: req.socket.remoteAddress,
+      referer
     });
-    console.log(`[XPIDER_FIXTURE] Form submission recorded (#${submissionLog.length}): ${req.method} ${req.url}`);
+    console.log(`[XPIDER_FIXTURE] Form submission recorded (#${submissionLog.length}, id=${receiptId}): ${req.method} ${req.url} referer=${referer}`);
   }
 
   // Deterministic Health Identity endpoint (Issue #6 Section A)

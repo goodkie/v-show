@@ -1,0 +1,136 @@
+[2026-10-23T23:56:18.699Z] ================================================================
+[2026-10-23T23:56:18.708Z] STARTING RC3.45 CHECKPOINT AUDIT TEST SUITE
+[2026-10-23T23:56:18.716Z] ================================================================
+[2026-10-23T23:56:18.723Z] Step 1: Checking/Starting local test fixture server on port 8088...
+[2026-10-23T23:56:18.782Z] Starting test server...
+[2026-10-23T23:56:19.132Z] ✅ Test server verified ready on port 8088
+[2026-10-23T23:56:19.139Z] Step 2: Launching isolated Microsoft Edge (CDP port 9477)...
+[2026-10-23T23:56:20.306Z] ✅ Connected to Service Worker: chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/background.js
+[2026-10-23T23:56:20.356Z] ✅ Active Build: R6.9G.10.3.7.1.4.61-20261023-P0-RC3.45 (Head: 27fb8444ea774f6d2b0b7779cb1d904489321d8b)
+[2026-10-23T23:56:20.373Z] 
+Step 3: Initializing PrivacyGateway to PRIVACY_RELAY (runScopedDirectPrivacy = false)...
+[2026-10-23T23:56:20.544Z] ✅ PrivacyGateway State: {"pgEnabled":true,"pgMode":"PRIVACY_RELAY","pgFailClosed":true}
+[2026-10-23T23:56:20.552Z] 
+Step 4: Executing in-browser remote egress verification via Privacy Relay (HTTPS & HTTP)...
+[2026-10-23T23:56:21.071Z]    Cloudflare trace status: 200
+[2026-10-23T23:56:21.082Z]    Cloudflare trace content:
+     fl=29f264
+     h=cloudflare.com
+     ip=143.198.40.33
+     ts=1792799781.000
+     visit_scheme=https
+     uag=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36 Edg/155.0.0.0
+     colo=YYZ
+     sliver=050-tier1
+     http=http/2
+     loc=CA
+     tls=TLSv1.3
+     sni=plaintext
+     warp=off
+     gateway=off
+     rbi=off
+     kex=X25519MLKEM768
+[2026-10-23T23:56:21.093Z]    ipify text: 143.198.40.33 (Status: 200)
+[2026-10-23T23:56:21.101Z] ✅ [REMOTE EGRESS PASS] Live in-browser egress verified through Privacy Relay (127.0.0.1:18988 -> 143.198.40.33). Zero DIRECT fallback.
+[2026-10-23T23:56:21.206Z] 
+Step 5: Verifying fail-closed policy (zero fallback to DIRECT)...
+[2026-10-23T23:56:21.246Z]    Fail-closed result: blockedOrFailed=true, directLeakDetected=false
+[2026-10-23T23:56:21.255Z] ✅ [FAIL-CLOSED PASS] Fail-closed barrier verified: zero direct fallback on disconnected relay.
+[2026-10-23T23:56:21.264Z] 
+Step 6: Executing campaign across all 7 fixtures under PRIVACY_RELAY...
+[2026-10-23T23:56:21.272Z]    Queue:
+[2026-10-23T23:56:21.291Z]      [1] http://127.0.0.1:8088/contact-standard.html
+[2026-10-23T23:56:21.303Z]      [2] http://127.0.0.1:8088/contact-dropdown-checkbox.html
+[2026-10-23T23:56:21.313Z]      [3] http://127.0.0.1:8088/contact-numeric.html
+[2026-10-23T23:56:21.322Z]      [4] http://127.0.0.1:8088/subscribe-no-message.html
+[2026-10-23T23:56:21.333Z]      [5] http://127.0.0.1:8088/reservation-no-message.html
+[2026-10-23T23:56:21.357Z]      [6] http://127.0.0.1:8088/no-contact-page.html
+[2026-10-23T23:56:21.366Z]      [7] http://127.0.0.1:8088/index.html
+[2026-10-23T23:56:21.382Z]    Campaign launched. Monitoring pipeline until all 7 fixtures settle...
+[2026-10-23T23:56:22.906Z]    Poll: settled=0/7, totalAttempts=1, active=true
+[2026-10-23T23:56:24.430Z]    Poll: settled=0/7, totalAttempts=1, active=true
+[2026-10-23T23:56:25.945Z]    Poll: settled=0/7, totalAttempts=1, active=true
+[2026-10-23T23:56:27.458Z]    Poll: settled=0/7, totalAttempts=1, active=true
+[2026-10-23T23:56:28.978Z]    Poll: settled=0/7, totalAttempts=1, active=true
+[2026-10-23T23:56:30.487Z]    Poll: settled=0/7, totalAttempts=1, active=true
+[2026-10-23T23:56:32.007Z]    Poll: settled=0/7, totalAttempts=1, active=true
+[2026-10-23T23:56:33.519Z]    Poll: settled=0/7, totalAttempts=1, active=true
+[2026-10-23T23:56:35.037Z]    Poll: settled=0/7, totalAttempts=1, active=true
+[2026-10-23T23:56:36.547Z]    Poll: settled=0/7, totalAttempts=1, active=true
+[2026-10-23T23:56:38.061Z]    Poll: settled=1/7, totalAttempts=1, active=true
+[2026-10-23T23:56:39.575Z]    Poll: settled=1/7, totalAttempts=1, active=true
+[2026-10-23T23:56:41.083Z]    Poll: settled=1/7, totalAttempts=1, active=true
+[2026-10-23T23:56:42.602Z]    Poll: settled=1/7, totalAttempts=2, active=true
+[2026-10-23T23:56:44.111Z]    Poll: settled=1/7, totalAttempts=2, active=true
+[2026-10-23T23:56:45.628Z]    Poll: settled=1/7, totalAttempts=2, active=true
+[2026-10-23T23:56:47.146Z]    Poll: settled=1/7, totalAttempts=2, active=true
+[2026-10-23T23:56:48.660Z]    Poll: settled=1/7, totalAttempts=2, active=true
+[2026-10-23T23:56:50.179Z]    Poll: settled=1/7, totalAttempts=2, active=true
+[2026-10-23T23:56:51.696Z]    Poll: settled=2/7, totalAttempts=2, active=true
+[2026-10-23T23:56:53.219Z]    Poll: settled=2/7, totalAttempts=2, active=true
+[2026-10-23T23:56:54.732Z]    Poll: settled=2/7, totalAttempts=2, active=true
+[2026-10-23T23:56:56.255Z]    Poll: settled=2/7, totalAttempts=3, active=true
+[2026-10-23T23:56:57.777Z]    Poll: settled=2/7, totalAttempts=3, active=true
+[2026-10-23T23:56:59.294Z]    Poll: settled=2/7, totalAttempts=3, active=true
+[2026-10-23T23:57:00.803Z]    Poll: settled=2/7, totalAttempts=3, active=true
+[2026-10-23T23:57:02.312Z]    Poll: settled=2/7, totalAttempts=3, active=true
+[2026-10-23T23:57:03.825Z]    Poll: settled=2/7, totalAttempts=3, active=true
+[2026-10-23T23:57:05.343Z]    Poll: settled=2/7, totalAttempts=3, active=true
+[2026-10-23T23:57:06.866Z]    Poll: settled=2/7, totalAttempts=3, active=true
+[2026-10-23T23:57:08.376Z]    Poll: settled=2/7, totalAttempts=3, active=true
+[2026-10-23T23:57:09.891Z]    Poll: settled=2/7, totalAttempts=3, active=true
+[2026-10-23T23:57:11.401Z]    Poll: settled=2/7, totalAttempts=3, active=true
+[2026-10-23T23:57:12.912Z]    Poll: settled=3/7, totalAttempts=3, active=true
+[2026-10-23T23:57:14.421Z]    Poll: settled=3/7, totalAttempts=3, active=true
+[2026-10-23T23:57:15.938Z]    Poll: settled=3/7, totalAttempts=3, active=true
+[2026-10-23T23:57:17.454Z]    Poll: settled=3/7, totalAttempts=4, active=true
+[2026-10-23T23:57:18.968Z]    Poll: settled=3/7, totalAttempts=4, active=true
+[2026-10-23T23:57:20.491Z]    Poll: settled=3/7, totalAttempts=4, active=true
+[2026-10-23T23:57:22.010Z]    Poll: settled=3/7, totalAttempts=4, active=true
+[2026-10-23T23:57:23.532Z]    Poll: settled=3/7, totalAttempts=4, active=true
+[2026-10-23T23:57:25.044Z]    Poll: settled=3/7, totalAttempts=4, active=true
+[2026-10-23T23:57:26.566Z]    Poll: settled=4/7, totalAttempts=4, active=true
+[2026-10-23T23:57:28.080Z]    Poll: settled=4/7, totalAttempts=5, active=true
+[2026-10-23T23:57:29.596Z]    Poll: settled=4/7, totalAttempts=5, active=true
+[2026-10-23T23:57:31.105Z]    Poll: settled=4/7, totalAttempts=5, active=true
+[2026-10-23T23:57:32.614Z]    Poll: settled=4/7, totalAttempts=5, active=true
+[2026-10-23T23:57:34.128Z]    Poll: settled=4/7, totalAttempts=5, active=true
+[2026-10-23T23:57:35.647Z]    Poll: settled=4/7, totalAttempts=5, active=true
+[2026-10-23T23:57:37.160Z]    Poll: settled=5/7, totalAttempts=5, active=true
+[2026-10-23T23:57:38.674Z]    Poll: settled=5/7, totalAttempts=5, active=true
+[2026-10-23T23:57:40.196Z]    Poll: settled=5/7, totalAttempts=6, active=true
+[2026-10-23T23:57:41.708Z]    Poll: settled=5/7, totalAttempts=6, active=true
+[2026-10-23T23:57:43.223Z]    Poll: settled=5/7, totalAttempts=6, active=true
+[2026-10-23T23:57:44.737Z]    Poll: settled=5/7, totalAttempts=6, active=true
+[2026-10-23T23:57:46.258Z]    Poll: settled=5/7, totalAttempts=6, active=true
+[2026-10-23T23:57:47.779Z]    Poll: settled=5/7, totalAttempts=6, active=true
+[2026-10-23T23:57:49.294Z]    Poll: settled=6/7, totalAttempts=6, active=true
+[2026-10-23T23:57:50.802Z]    Poll: settled=6/7, totalAttempts=6, active=true
+[2026-10-23T23:57:52.322Z]    Poll: settled=6/7, totalAttempts=7, active=true
+[2026-10-23T23:57:53.834Z]    Poll: settled=6/7, totalAttempts=7, active=true
+[2026-10-23T23:57:55.350Z]    Poll: settled=6/7, totalAttempts=7, active=true
+[2026-10-23T23:57:56.859Z]    Poll: settled=6/7, totalAttempts=7, active=true
+[2026-10-23T23:57:58.371Z]    Poll: settled=6/7, totalAttempts=7, active=true
+[2026-10-23T23:57:59.892Z]    Poll: settled=6/7, totalAttempts=7, active=true
+[2026-10-23T23:58:01.409Z]    Poll: settled=6/7, totalAttempts=7, active=true
+[2026-10-23T23:58:02.926Z]    Poll: settled=6/7, totalAttempts=7, active=true
+[2026-10-23T23:58:04.448Z]    Poll: settled=6/7, totalAttempts=7, active=true
+[2026-10-23T23:58:05.963Z]    Poll: settled=6/7, totalAttempts=7, active=true
+[2026-10-23T23:58:07.479Z]    Poll: settled=7/7, totalAttempts=7, active=true
+[2026-10-23T23:58:09.498Z] 
+Step 7: Enumerating All 7 Fixture Outcomes from HistoryStore Ledger:
+[2026-10-23T23:58:09.504Z] ----------------------------------------------------------------
+[2026-10-23T23:58:09.516Z] All 7 Target Outcomes Breakdown:
+[2026-10-23T23:58:09.523Z]   [Fixture 1/7] contact-standard.html: STATUS=CONFIRMED_SUCCESS (Reason: SUCCESS_CONFIRMED)
+[2026-10-23T23:58:09.530Z]   [Fixture 2/7] contact-dropdown-checkbox.html: STATUS=CONFIRMED_SUCCESS (Reason: SUCCESS_CONFIRMED)
+[2026-10-23T23:58:09.537Z]   [Fixture 3/7] contact-numeric.html: STATUS=CONFIRMED_SUCCESS (Reason: SUCCESS_CONFIRMED)
+[2026-10-23T23:58:09.544Z]   [Fixture 4/7] subscribe-no-message.html: STATUS=SKIPPED (Reason: NON_INQUIRY_SUBSCRIBE_FORM)
+[2026-10-23T23:58:09.551Z]   [Fixture 5/7] reservation-no-message.html: STATUS=SKIPPED (Reason: NON_INQUIRY_RESERVATION_FORM)
+[2026-10-23T23:58:09.558Z]   [Fixture 6/7] no-contact-page.html: STATUS=FAILURE (Reason: NO_ACCESSIBLE_INQUIRY_FORM)
+[2026-10-23T23:58:09.565Z]   [Fixture 7/7] index.html: STATUS=CONFIRMED_SUCCESS (Reason: SUCCESS_CONFIRMED)
+[2026-10-23T23:58:09.575Z] 
+Fixture server independent submissions received: 2
+[2026-10-23T23:58:09.582Z] 
+================================================================
+[2026-10-23T23:58:09.589Z] ALL RC3.45 CHECKPOINT AUDIT VERIFICATIONS PASSED 100%
+[2026-10-23T23:58:09.596Z] ================================================================

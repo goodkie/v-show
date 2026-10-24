@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Contact Us - Strict Fixture</title></head>
+<body>
+<h1>Contact Us</h1>
+<p>Send us an inquiry about our services. Required fields are marked.</p>
+<!-- RC3.45 strict fixture: REAL POST navigation, server records every field value. Owner-controlled. -->
+<form id="strict-contact-form" action="/__rc345_receive" method="POST">
+  <label for="your-name">Your Name *</label>
+  <input type="text" id="your-name" name="your-name" required><br>
+  <label for="your-email">Email Address *</label>
+  <input type="email" id="your-email" name="your-email" required><br>
+  <label for="your-phone">Phone</label>
+  <input type="tel" id="your-phone" name="your-phone"><br>
+  <label for="your-title">Title *</label>
+  <input type="text" id="your-title" name="your-title" required><br>
+  <label for="your-message">Message *</label>
+  <textarea id="your-message" name="your-message" required></textarea><br>
+  <label><input type="checkbox" id="accept-terms" name="accept-terms" value="agree" required> I agree to the privacy policy and terms *</label><br>
+  <button type="submit" id="submit-btn">Send Inquiry</button>
+</form>
+</body></html>

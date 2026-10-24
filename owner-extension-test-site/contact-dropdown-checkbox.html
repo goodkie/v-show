@@ -74,6 +74,10 @@
             e.preventDefault();
             document.getElementById('submit-btn').disabled = true;
             document.getElementById('submit-btn').textContent = 'Submitting...';
+            // Authoritative server notification for fixture accounting (RC3.19 Test B)
+            fetch('/contact-success.html', { method: 'POST' }).catch(function() {
+                fetch('/contact-success.html').catch(function() {});
+            });
             setTimeout(function() {
                 document.getElementById('submit-btn').textContent = 'Sent!';
                 document.getElementById('success-banner').style.display = 'block';

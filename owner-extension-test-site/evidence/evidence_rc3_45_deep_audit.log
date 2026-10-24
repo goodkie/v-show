@@ -1,0 +1,153 @@
+[2026-10-24T00:17:46.649Z] ================================================================
+[2026-10-24T00:17:46.659Z] STARTING RC3.45 DEEP PROVENANCE & SEMANTIC AUDIT SUITE
+[2026-10-24T00:17:46.666Z] ================================================================
+[2026-10-24T00:17:46.673Z] 
+[STAGE 1] Local Test Fixture Server Verification...
+[2026-10-24T00:17:46.728Z] Starting test server on port 8088...
+[2026-10-24T00:17:47.076Z] ✅ Test fixture server active on port 8088
+[2026-10-24T00:17:47.083Z] 
+[STAGE 2] Launching Isolated Microsoft Edge (CDP port 9488)...
+[2026-10-24T00:17:48.249Z] ✅ Connected to Extension Service Worker: chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/background.js
+[2026-10-24T00:17:48.280Z] 
+[STAGE 3] Provenance Inspection (Build Info & Module Hashes)...
+[2026-10-24T00:17:48.292Z]    buildId: R6.9G.10.3.7.1.4.61-20261023-P0-RC3.45
+[2026-10-24T00:17:48.304Z]    implementationHead: 27fb8444ea774f6d2b0b7779cb1d904489321d8b
+[2026-10-24T00:17:48.313Z]    branch: upgrade/phase-0-1
+[2026-10-24T00:17:48.325Z]    channel: OWNER_BETA_PRIVATE_EGRESS_RC3.45
+[2026-10-24T00:17:48.336Z]    rollbackBase: 3cc1be6b436b1d68f948927df88a2c73c1ae5011
+[2026-10-24T00:17:48.349Z] ✅ Build provenance verified
+[2026-10-24T00:17:48.362Z] 
+[STAGE 4] PrivacyGateway Initialization & WebRTC Hardening...
+[2026-10-24T00:17:48.386Z]    PrivacyGateway Mode: PRIVACY_RELAY (failClosed: true)
+[2026-10-24T00:17:48.395Z]    WebRTC Policy: disable_non_proxied_udp
+[2026-10-24T00:17:48.405Z] ✅ [WEBRTC PASS] WebRTC non-proxied UDP leak protection verified
+[2026-10-24T00:17:48.413Z] 
+[STAGE 5] In-Browser Real Egress Probes (HTTPS & Secondary)...
+[2026-10-24T00:17:48.968Z]    Cloudflare Trace Status: 200
+[2026-10-24T00:17:48.980Z]    Cloudflare Observed IP: 143.198.40.33
+[2026-10-24T00:17:48.989Z]    Cloudflare Colo: YYZ
+[2026-10-24T00:17:49.002Z]    Cloudflare Location: CA
+[2026-10-24T00:17:49.015Z]    ipify Probe Status: 200, Observed IP: 143.198.40.33
+[2026-10-24T00:17:49.024Z] ✅ [REMOTE EGRESS PASS] Browser fetch through Privacy Relay verified at 143.198.40.33 (Toronto YYZ)
+[2026-10-24T00:17:49.035Z] 
+[STAGE 6] Disconnect & Fail-Closed Barrier Verification...
+[2026-10-24T00:17:49.307Z]    Fail-Closed Result: blocked=true, directLeak=false
+[2026-10-24T00:17:49.318Z] ✅ [FAIL-CLOSED PASS] Zero DIRECT bypass on disconnect confirmed
+[2026-10-24T00:17:49.329Z] 
+[STAGE 7] Service Worker Restart & Storage Safety Check...
+[2026-10-24T00:17:49.405Z] ✅ Storage & privacy configuration verified persistent across lifecycle
+[2026-10-24T00:17:49.415Z] 
+[STAGE 8] Executing Full 7-Fixture Campaign with Semantic Inspection...
+[2026-10-24T00:17:49.451Z]    Campaign launched. Monitoring pipeline settlement across all 7 fixtures...
+[2026-10-24T00:17:50.974Z]    Poll: settled=0/7, totalAttempts=1, active=true
+[2026-10-24T00:17:52.487Z]    Poll: settled=0/7, totalAttempts=1, active=true
+[2026-10-24T00:17:53.996Z]    Poll: settled=0/7, totalAttempts=1, active=true
+[2026-10-24T00:17:55.505Z]    Poll: settled=0/7, totalAttempts=1, active=true
+[2026-10-24T00:17:57.029Z]    Poll: settled=0/7, totalAttempts=1, active=true
+[2026-10-24T00:17:58.554Z]    Poll: settled=0/7, totalAttempts=1, active=true
+[2026-10-24T00:18:00.070Z]    Poll: settled=0/7, totalAttempts=1, active=true
+[2026-10-24T00:18:01.587Z]    Poll: settled=0/7, totalAttempts=1, active=true
+[2026-10-24T00:18:03.106Z]    Poll: settled=0/7, totalAttempts=1, active=true
+[2026-10-24T00:18:04.622Z]    Poll: settled=1/7, totalAttempts=1, active=true
+[2026-10-24T00:18:06.132Z]    Poll: settled=1/7, totalAttempts=1, active=true
+[2026-10-24T00:18:07.648Z]    Poll: settled=1/7, totalAttempts=1, active=true
+[2026-10-24T00:18:09.165Z]    Poll: settled=1/7, totalAttempts=2, active=true
+[2026-10-24T00:18:10.681Z]    Poll: settled=1/7, totalAttempts=2, active=true
+[2026-10-24T00:18:12.193Z]    Poll: settled=1/7, totalAttempts=2, active=true
+[2026-10-24T00:18:13.701Z]    Poll: settled=1/7, totalAttempts=2, active=true
+[2026-10-24T00:18:15.223Z]    Poll: settled=1/7, totalAttempts=2, active=true
+[2026-10-24T00:18:16.740Z]    Poll: settled=1/7, totalAttempts=2, active=true
+[2026-10-24T00:18:18.260Z]    Poll: settled=2/7, totalAttempts=2, active=true
+[2026-10-24T00:18:19.782Z]    Poll: settled=2/7, totalAttempts=2, active=true
+[2026-10-24T00:18:21.290Z]    Poll: settled=2/7, totalAttempts=2, active=true
+[2026-10-24T00:18:22.799Z]    Poll: settled=2/7, totalAttempts=2, active=true
+[2026-10-24T00:18:24.310Z]    Poll: settled=2/7, totalAttempts=3, active=true
+[2026-10-24T00:18:25.826Z]    Poll: settled=2/7, totalAttempts=3, active=true
+[2026-10-24T00:18:27.336Z]    Poll: settled=2/7, totalAttempts=3, active=true
+[2026-10-24T00:18:28.850Z]    Poll: settled=2/7, totalAttempts=3, active=true
+[2026-10-24T00:18:30.362Z]    Poll: settled=2/7, totalAttempts=3, active=true
+[2026-10-24T00:18:31.876Z]    Poll: settled=2/7, totalAttempts=3, active=true
+[2026-10-24T00:18:33.390Z]    Poll: settled=2/7, totalAttempts=3, active=true
+[2026-10-24T00:18:34.902Z]    Poll: settled=2/7, totalAttempts=3, active=true
+[2026-10-24T00:18:36.422Z]    Poll: settled=2/7, totalAttempts=3, active=true
+[2026-10-24T00:18:37.933Z]    Poll: settled=3/7, totalAttempts=3, active=true
+[2026-10-24T00:18:39.450Z]    Poll: settled=3/7, totalAttempts=3, active=true
+[2026-10-24T00:18:40.960Z]    Poll: settled=3/7, totalAttempts=3, active=true
+[2026-10-24T00:18:42.478Z]    Poll: settled=3/7, totalAttempts=4, active=true
+[2026-10-24T00:18:43.988Z]    Poll: settled=3/7, totalAttempts=4, active=true
+[2026-10-24T00:18:45.503Z]    Poll: settled=3/7, totalAttempts=4, active=true
+[2026-10-24T00:18:47.018Z]    Poll: settled=3/7, totalAttempts=4, active=true
+[2026-10-24T00:18:48.537Z]    Poll: settled=3/7, totalAttempts=4, active=true
+[2026-10-24T00:18:50.057Z]    Poll: settled=3/7, totalAttempts=4, active=true
+[2026-10-24T00:18:51.572Z]    Poll: settled=4/7, totalAttempts=4, active=true
+[2026-10-24T00:18:53.089Z]    Poll: settled=4/7, totalAttempts=4, active=true
+[2026-10-24T00:18:54.610Z]    Poll: settled=4/7, totalAttempts=5, active=true
+[2026-10-24T00:18:56.127Z]    Poll: settled=4/7, totalAttempts=5, active=true
+[2026-10-24T00:18:57.643Z]    Poll: settled=4/7, totalAttempts=5, active=true
+[2026-10-24T00:18:59.165Z]    Poll: settled=4/7, totalAttempts=5, active=true
+[2026-10-24T00:19:00.684Z]    Poll: settled=4/7, totalAttempts=5, active=true
+[2026-10-24T00:19:02.202Z]    Poll: settled=4/7, totalAttempts=5, active=true
+[2026-10-24T00:19:03.720Z]    Poll: settled=5/7, totalAttempts=5, active=true
+[2026-10-24T00:19:05.233Z]    Poll: settled=5/7, totalAttempts=6, active=true
+[2026-10-24T00:19:06.747Z]    Poll: settled=5/7, totalAttempts=6, active=true
+[2026-10-24T00:19:08.264Z]    Poll: settled=5/7, totalAttempts=6, active=true
+[2026-10-24T00:19:09.780Z]    Poll: settled=5/7, totalAttempts=6, active=true
+[2026-10-24T00:19:11.291Z]    Poll: settled=5/7, totalAttempts=6, active=true
+[2026-10-24T00:19:12.811Z]    Poll: settled=5/7, totalAttempts=6, active=true
+[2026-10-24T00:19:14.341Z]    Poll: settled=5/7, totalAttempts=6, active=true
+[2026-10-24T00:19:15.863Z]    Poll: settled=6/7, totalAttempts=6, active=true
+[2026-10-24T00:19:17.383Z]    Poll: settled=6/7, totalAttempts=7, active=true
+[2026-10-24T00:19:18.902Z]    Poll: settled=6/7, totalAttempts=7, active=true
+[2026-10-24T00:19:20.422Z]    Poll: settled=6/7, totalAttempts=7, active=true
+[2026-10-24T00:19:21.930Z]    Poll: settled=6/7, totalAttempts=7, active=true
+[2026-10-24T00:19:23.445Z]    Poll: settled=6/7, totalAttempts=7, active=true
+[2026-10-24T00:19:24.966Z]    Poll: settled=6/7, totalAttempts=7, active=true
+[2026-10-24T00:19:26.489Z]    Poll: settled=6/7, totalAttempts=7, active=true
+[2026-10-24T00:19:28.005Z]    Poll: settled=6/7, totalAttempts=7, active=true
+[2026-10-24T00:19:29.515Z]    Poll: settled=6/7, totalAttempts=7, active=true
+[2026-10-24T00:19:31.032Z]    Poll: settled=6/7, totalAttempts=7, active=true
+[2026-10-24T00:19:32.544Z]    Poll: settled=7/7, totalAttempts=7, active=true
+[2026-10-24T00:19:34.558Z] 
+[STAGE 9] Detailed Semantic Validation & Ledger Invariant Audit...
+[2026-10-24T00:19:34.570Z] 
+Detailed Breakdown of All 7 Fixtures:
+[2026-10-24T00:19:34.578Z]   [Target 1/7] contact-standard.html:
+[2026-10-24T00:19:34.585Z]       Status: CONFIRMED_SUCCESS
+[2026-10-24T00:19:34.592Z]       Reason: SUCCESS_CONFIRMED
+[2026-10-24T00:19:34.598Z]       Stage:  undefined
+[2026-10-24T00:19:34.607Z]   [Target 2/7] contact-dropdown-checkbox.html:
+[2026-10-24T00:19:34.615Z]       Status: CONFIRMED_SUCCESS
+[2026-10-24T00:19:34.622Z]       Reason: SUCCESS_CONFIRMED
+[2026-10-24T00:19:34.631Z]       Stage:  undefined
+[2026-10-24T00:19:34.639Z]   [Target 3/7] contact-numeric.html:
+[2026-10-24T00:19:34.646Z]       Status: CONFIRMED_SUCCESS
+[2026-10-24T00:19:34.653Z]       Reason: SUCCESS_CONFIRMED
+[2026-10-24T00:19:34.659Z]       Stage:  undefined
+[2026-10-24T00:19:34.667Z]   [Target 4/7] subscribe-no-message.html:
+[2026-10-24T00:19:34.675Z]       Status: SKIPPED
+[2026-10-24T00:19:34.682Z]       Reason: NON_INQUIRY_SUBSCRIBE_FORM
+[2026-10-24T00:19:34.689Z]       Stage:  undefined
+[2026-10-24T00:19:34.697Z]   [Target 5/7] reservation-no-message.html:
+[2026-10-24T00:19:34.706Z]       Status: SKIPPED
+[2026-10-24T00:19:34.712Z]       Reason: NON_INQUIRY_RESERVATION_FORM
+[2026-10-24T00:19:34.719Z]       Stage:  undefined
+[2026-10-24T00:19:34.726Z]   [Target 6/7] no-contact-page.html:
+[2026-10-24T00:19:34.733Z]       Status: FAILURE
+[2026-10-24T00:19:34.740Z]       Reason: NO_ACCESSIBLE_INQUIRY_FORM
+[2026-10-24T00:19:34.747Z]       Stage:  undefined
+[2026-10-24T00:19:34.754Z]   [Target 7/7] index.html:
+[2026-10-24T00:19:34.763Z]       Status: CONFIRMED_SUCCESS
+[2026-10-24T00:19:34.769Z]       Reason: SUCCESS_CONFIRMED
+[2026-10-24T00:19:34.776Z]       Stage:  undefined
+[2026-10-24T00:19:34.783Z] 
+Counters Audit:
+[2026-10-24T00:19:34.791Z]    success: 4
+[2026-10-24T00:19:34.798Z]    failed: 1
+[2026-10-24T00:19:34.804Z]    skipped: 2
+[2026-10-24T00:19:34.811Z] ✅ Negative counter protection verified (zero negative values)
+[2026-10-24T00:19:34.821Z] 
+Fixture Server Submissions Count: 2
+[2026-10-24T00:19:34.828Z] 
+================================================================
+[2026-10-24T00:19:34.835Z] ALL RC3.45 DEEP AUDIT VERIFICATIONS PASSED 100%
+[2026-10-24T00:19:34.842Z] ================================================================
