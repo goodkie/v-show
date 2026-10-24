@@ -1,0 +1,61 @@
+[2026-10-24T08:08:07.731Z] ========================================================================
+[2026-10-24T08:08:07.742Z]   XPIDER RC3.49 ISOLATED FRESH WINDOWS INSTALL & FAILURE MATRIX AUDIT   
+[2026-10-24T08:08:07.750Z] ========================================================================
+
+[2026-10-24T08:08:07.757Z] >>> STEP 1: Shutting Down Running Companion & Verifying Clean Slate...
+[2026-10-24T08:08:08.278Z] Companion port 18989 closed: true
+[2026-10-24T08:08:08.293Z] ✅ STEP 1 PASS: Zero running companion / pristine clean state verified.
+
+[2026-10-24T08:08:08.302Z] >>> STEP 2: Extracting Authoritative RC3.49 Release ZIP...
+[2026-10-24T08:08:08.457Z] RC3.49 ZIP SHA256 verified: 52a7d08f7d01ec61a33e2c186dcb478a4ad743614399a8ff7923aeae851a8f0d
+[2026-10-24T08:08:46.007Z] ✅ STEP 2 PASS: Fresh RC3.49 release unpacked cleanly.
+
+[2026-10-24T08:08:46.014Z] >>> STEP 3: Initial Native Host Manifest Registration & Hygiene Audit...
+[2026-10-24T08:08:46.156Z] Registration Output:
+[NATIVE_HOST] Auto-discovered stable extension ID from manifest key: ldlijlaccfeelfdhgnjbibniocefckjj
+[NATIVE_HOST] Isolated dry-run mode active; skipping Windows Registry modification.
+[2026-10-24T08:08:46.165Z] Generated Native Host Manifest: name=com.xpider.privacy_relay, type=stdio
+[2026-10-24T08:08:46.172Z] ✅ STEP 3 PASS: Initial registration and manifest hygiene confirmed.
+
+[2026-10-24T08:08:46.179Z] >>> STEP 4: Testing Auth Token Provisioning & Endpoint Secrecy...
+[2026-10-24T08:08:47.764Z] Companion started: status=OK, relayReady=false
+[2026-10-24T08:08:47.777Z] Provisioned Token verified (entropy=64 chars)
+[2026-10-24T08:08:47.797Z] Unauthorized request response: HTTP 401
+[2026-10-24T08:08:47.807Z] Forged token response: HTTP 401
+[2026-10-24T08:08:47.818Z] Authorized token response: HTTP 200
+[2026-10-24T08:08:47.825Z] ✅ STEP 4 PASS: Token provisioning and DPAPI secrecy verified.
+
+[2026-10-24T08:08:47.832Z] >>> STEP 5: Testing Inaccessible Localhost Listener & Privacy Fail-Closed Invariant...
+[2026-10-24T08:08:48.855Z] Inaccessible Listener State: listenerReachable=false, sendAllowed=false
+[2026-10-24T08:08:48.862Z] ✅ STEP 5 PASS: Inaccessible localhost listener cleanly triggers fail-closed.
+
+[2026-10-24T08:08:48.869Z] >>> STEP 6: Testing Malformed Config Handling...
+[2026-10-24T08:08:52.890Z] Malformed config rejected safely: spawnSync C:\WINDOWS\system32\cmd.exe ETIMEDOUT
+[2026-10-24T08:08:52.897Z] ✅ STEP 6 PASS: Malformed configuration handled safely.
+
+[2026-10-24T08:08:52.904Z] >>> STEP 7: Testing Upgrade & Rollback Transitions (RC3.48 <-> RC3.49)...
+[2026-10-24T08:09:32.053Z] RC3.48 Build ID: R6.9G.10.3.7.1.4.64-20261024-P0-RC3.48 (Schema: 2)
+[2026-10-24T08:09:32.060Z] RC3.49 Build ID: R6.9G.10.3.7.1.4.65-20261024-P0-RC3.49 (Schema: 2)
+[2026-10-24T08:09:32.067Z] ✅ STEP 7 PASS: Upgrade/rollback version detection and schema compatibility verified.
+
+[2026-10-24T08:09:32.076Z] >>> STEP 8: Restoring Production Companion Service (Recovery)...
+[2026-10-24T08:09:34.496Z] Recovery Output:
+[COMPANION_CHECK] Checking Privacy Relay Companion status on 127.0.0.1:18989...
+   [UPGRADE] Stale, divergent or unauthenticated Companion detected on port 18989:
+             Current: R6.9G.10.3.7.1.4.63-20261023-P0-RC3.47 (Expected: R6.9G.10.3.7.1.4.65-20261024-P0-RC3.49)
+             Root Parity: DIVERGENT (E:\vivpr\ai\extension-form-sender\scratch\fresh_isolated_rc3_49)
+             Capabilities: [verify-plan, provision-egress, provision-progress, destroy-egress, egress-telemetry, shutdown, stop, physical-gate, recovery-status, repair-egress] (Required: [verify-plan, provision-egress, provision-progress, recovery-status])
+             Local Control Token: REJECTED (401)
+   [UPGRADE] Upgrading to canonical current build...
+   [UPGRADE] Terminating stale XPIDER node process (PID 16276)...
+   [COMPANION_START] Launching bundled Privacy Relay Companion...
+   [OK] Privacy Relay Companion successfully bound ports and verified healthy (PID: 20964, Build: R6.9G.10.3.7.1.4.65-20261024-P0-RC3.49).
+   [OK] Verified API Capabilities: [verify-plan, provision-egress, provision-progress, destroy-egress, egress-telemetry, shutdown, stop, physical-gate, recovery-status, repair-egress]
+   [OK] Local control token verified (64 chars, authenticated /status HTTP 200).
+   [OK] Companion Watchdog supervisor active in background.
+[2026-10-24T08:09:36.583Z] Restored Companion Health: status=OK, relayReady=true, lifecycleState=READY
+[2026-10-24T08:09:36.590Z] ✅ STEP 8 PASS: Companion service cleanly recovered to READY state.
+
+[2026-10-24T08:09:36.597Z] ========================================================================
+[2026-10-24T08:09:36.606Z]   ALL FRESH INSTALL & FAILURE MATRIX TESTS PASSED (100% VERIFIED)      
+[2026-10-24T08:09:36.613Z] ========================================================================

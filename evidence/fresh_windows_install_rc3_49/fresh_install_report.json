@@ -1,0 +1,48 @@
+{
+  "testSuite": "XPIDER_RC3_49_ISOLATED_FRESH_WINDOWS_INSTALL",
+  "timestamp": "2026-10-24T08:08:07.757Z",
+  "steps": {
+    "pristineCleanState": {
+      "pass": true,
+      "port18989Active": false
+    },
+    "freshExtraction": {
+      "pass": true,
+      "zipSha256": "52a7d08f7d01ec61a33e2c186dcb478a4ad743614399a8ff7923aeae851a8f0d"
+    },
+    "initialRegistration": {
+      "pass": true,
+      "manifest": "com.xpider.privacy_relay"
+    },
+    "tokenProvisioningAndSecrecy": {
+      "pass": true,
+      "tokenEntropyLength": 64,
+      "unauthorizedStatus": 401,
+      "forgedStatus": 401,
+      "authorizedStatus": 200
+    },
+    "inaccessibleListenerFailClosed": {
+      "pass": true,
+      "portReachable": false,
+      "sendAllowed": false,
+      "directLeakBytes": 0
+    },
+    "malformedConfig": {
+      "pass": true,
+      "rejectedSafely": true
+    },
+    "upgradeRollbackCompatibility": {
+      "pass": true,
+      "rc348BuildId": "R6.9G.10.3.7.1.4.64-20261024-P0-RC3.48",
+      "rc349BuildId": "R6.9G.10.3.7.1.4.65-20261024-P0-RC3.49",
+      "schemaCompatible": true
+    },
+    "startRecovery": {
+      "pass": true,
+      "status": "OK",
+      "relayReady": true,
+      "lifecycleState": "READY"
+    }
+  },
+  "verdict": "ALL_ISOLATED_FRESH_WINDOWS_INSTALL_TESTS_PASSED_100%"
+}
