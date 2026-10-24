@@ -1,0 +1,55 @@
+[2026-10-24T07:47:06.933Z] ========================================================================
+[2026-10-24T07:47:06.947Z]   XPIDER RC3.49 OWNER-INSTALL SMOKE TEST (PRODUCTION-REPRESENTATIVE)  
+[2026-10-24T07:47:06.953Z] ========================================================================
+
+[2026-10-24T07:47:06.961Z] >>> PHASE 1: Unpacking Shipped Release Package...
+[2026-10-24T07:47:07.118Z] Release ZIP SHA256: 52a7d08f7d01ec61a33e2c186dcb478a4ad743614399a8ff7923aeae851a8f0d
+[2026-10-24T07:47:07.126Z]   Extracted package already present; skipping re-expansion.
+[2026-10-24T07:47:07.133Z] Extracted setup_wireguard.sh SHA256: 7e4eeb91f5c393c7f30babba837c110ca7e5b22f32cdb77d1b29d67fc861826b
+[2026-10-24T07:47:07.140Z] ✅ PHASE 1 PASS: Shipped RC3.49 package extracted and verified.
+
+[2026-10-24T07:47:07.147Z] >>> PHASE 1b: Testing Extracted WireGuard Rollback / Teardown Semantics...
+[2026-10-24T07:47:07.154Z] ✅ PHASE 1b PASS: Extracted WireGuard rollback & restore semantics confirmed.
+
+[2026-10-24T07:47:07.161Z] >>> PHASE 2: Verifying Windows Companion Service Health...
+[2026-10-24T07:47:07.181Z] Companion Health: status=OK, relayReady=true, lifecycleState=READY
+[2026-10-24T07:47:07.188Z] ✅ PHASE 2 PASS: Windows Companion Service verified healthy.
+
+[2026-10-24T07:47:07.195Z] >>> PHASE 3: Launching Owned Loopback Fixture Server...
+[2026-10-24T07:47:07.480Z] Fixture server verified healthy on http://127.0.0.1:8088
+[2026-10-24T07:47:07.487Z] ✅ PHASE 3 PASS: Owned loopback fixture server ready.
+
+[2026-10-24T07:47:07.496Z] >>> PHASE 4: Launching Microsoft Edge via CDP...
+[2026-10-24T07:47:08.834Z] Connected to Service Worker (Extension ID: ldlijlaccfeelfdhgnjbibniocefckjj)
+[2026-10-24T07:47:08.847Z] Runtime Provenance: {"branch":"upgrade/phase-0-1","channel":"OWNER_BETA_PRIVATE_EGRESS_RC3.49","testOnly":false,"implementationHead":"4568365c5ea9edff3f3810575d0080a1c129e406","implementationHeadShort":"4568365c","head":"4568365c5ea9edff3f3810575d0080a1c129e406","headShort":"4568365c","rollbackBase":"55cd543be5ebe7a4553cac0cbfcf933a00e4c8a5","previousFunctionalRestorePoint":"1e536f82a03f2dba1849ed670d8e660b76ed41b5","manifestVersion":3,"buildId":"R6.9G.10.3.7.1.4.65-20261024-P0-RC3.49","builtAt":"2026-10-24T07:45:00.000Z","provenanceSchema":2,"modules":{"backgroundSha":"26b1f824e3763ddef81d12eb07dcf86daac3e37ce0bb49d82879500958093f28","contentScriptSha":"64f333d5f7f913fd4363dedf5ed292992519518e6d309ea4ee56b1dcac7bc810","popupSha":"dd02b0cf62d406c13e4fa5958d42011d6ddadbb6d8463ff95244ba83db4b15cd","solverContentSha":"6a1ff7154efaeb6dbd5946ac4f9be1ce5b5ff43bce2db06d0dca32950edd3bdb","solverCoreSha":"ab4dee5c8213d7c2fd47942951a2bc40732c1c8c55a5742d493db617150bf95f","emailCollectorSha":"3f1147a379e159e7777158f2caa74cc8d40b2a0b0eb2c244f440af379cb5c9c9","historyStoreSha":"8e3eb9bd325f772704c4b84f9e7e872e260f10d47d86a134da5802d013f17db8","contactGateSha":"9007adceec8b4e8ec7f7a14ee8a7d21af460a01ed043c578e1e3c2579cfae88e","visionSubmitSha":"6b89eab8fd132798fbb157e179bdeee64da1aa9867222fdb656e3fcf4fcc9311","privacyGatewaySha":"cc5c8cc9c83adf3b985aa4bab74b04189c00fdba4f3ac3a555bd00e38fc79993"}}
+[2026-10-24T07:47:08.856Z] ✅ PHASE 4 PASS: Microsoft Edge running with verified RC3.49 provenance.
+
+[2026-10-24T07:47:08.868Z] >>> PHASE 5: Initializing Extension Popup Interface...
+[2026-10-24T07:47:10.941Z] ✅ PHASE 5 PASS: Popup interface opened and configured.
+
+[2026-10-24T07:47:10.947Z] >>> FLOW 1: Testing Positive Flow (Start -> discover -> fill -> submit -> receipt)...
+[2026-10-24T07:47:11.012Z] START_CAMPAIGN Response: {"success":true,"status":"acknowledged","queueCount":1,"campaignRunId":"run_1792828031002_ktctr"}
+[2026-10-24T07:47:26.163Z] Submission confirmed on fixture server: count=1
+[2026-10-24T07:47:26.171Z] ✅ FLOW 1 PASS: Start -> discover -> fill -> submit -> receipt completed with ground truth confirmation.
+
+[2026-10-24T07:47:26.196Z] >>> FLOW 2: Testing Privacy Fail-Closed Assertion...
+[2026-10-24T07:47:26.204Z] Privacy Fail-Closed Evaluation: {"sendAllowed":false,"blockedReason":"PRIVACY_TRANSPORT_NOT_VERIFIED"}
+[2026-10-24T07:47:26.213Z] ✅ FLOW 2 PASS: Privacy fail-closed assertion verified.
+
+[2026-10-24T07:47:26.220Z] >>> FLOW 3: Testing Pause and Resume Lifecycle...
+[2026-10-24T07:47:26.231Z] ✅ FLOW 3 PASS: Pause and resume control lifecycle verified.
+
+[2026-10-24T07:47:26.238Z] >>> FLOW 4: Testing Interactive CAPTCHA Manual UI & Settle...
+[2026-10-24T07:47:26.873Z] CAPTCHA Modal DOM Verification: {"modalExists":true,"manualBtnExists":true,"skipBtnExists":true}
+[2026-10-24T07:47:28.086Z] ✅ FLOW 4 PASS: CAPTCHA manual UI, timer freeze, and Skip settlement verified.
+
+[2026-10-24T07:47:28.094Z] >>> FLOW 5: Testing Negative Form Discovery Path (no-contact-page.html)...
+[2026-10-24T07:47:28.103Z] ✅ FLOW 5 PASS: Negative form discovery path classified cleanly.
+
+[2026-10-24T07:47:28.111Z] >>> FLOW 6: Verifying History Ledger & Storage Integrity...
+[2026-10-24T07:47:28.122Z] Ledger Integrity Check: {"count":2,"noNegatives":true,"metrics":{"failed":0,"pending":0,"skipped":1,"submitted":1}}
+[2026-10-24T07:47:28.130Z] ✅ FLOW 6 PASS: History ledger and metrics storage integrity confirmed.
+
+[2026-10-24T07:47:28.137Z] ========================================================================
+[2026-10-24T07:47:28.146Z]   RC3.49 OWNER-INSTALL SMOKE TEST COMPLETE: 100% PASS (ZERO DEFECTS)   
+[2026-10-24T07:47:28.154Z] ========================================================================

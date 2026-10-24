@@ -21,6 +21,7 @@ WG_PORT=51820
 WG_SERVER_ADDR="10.66.66.1/24"
 WG_CLIENT_ADDR="10.66.66.2/32"
 WG_CONF="/etc/wireguard/wg0.conf"
+SNAPSHOT_DIR="/etc/wireguard/snapshots"
 SERVER_PUB_IP="143.198.40.33"
 
 detect_wan_if() {
@@ -31,6 +32,54 @@ detect_wan_if() {
         echo "WARNING: Could not detect WAN interface, defaulting to eth0" >&2
     fi
     echo "$wan"
+}
+
+capture_system_snapshot() {
+    local snap_id="pre_xpider.$(date +%s)"
+    local snap_path="${SNAPSHOT_DIR}/${snap_id}"
+    echo "Capturing full system state snapshot to ${snap_path}..."
+    mkdir -p "$snap_path"
+    chmod 700 "$snap_path"
+
+    # 1. wg0.conf
+    if [ -f "$WG_CONF" ]; then
+        cp -a "$WG_CONF" "${snap_path}/wg0.conf"
+        chmod 600 "${snap_path}/wg0.conf"
+    fi
+
+    # 2. Service state
+    if command -v systemctl >/dev/null 2>&1; then
+        systemctl is-enabled "wg-quick@${WG_IFACE}" 2>/dev/null > "${snap_path}/service_enabled" || echo "disabled" > "${snap_path}/service_enabled"
+        systemctl is-active "wg-quick@${WG_IFACE}" 2>/dev/null > "${snap_path}/service_active" || echo "inactive" > "${snap_path}/service_active"
+    else
+        echo "unknown" > "${snap_path}/service_enabled"
+        echo "unknown" > "${snap_path}/service_active"
+    fi
+
+    # 3. UFW rules
+    if command -v ufw >/dev/null 2>&1; then
+        ufw status numbered 2>/dev/null > "${snap_path}/ufw_rules" || true
+    fi
+
+    # 4. iptables NAT rules
+    if command -v iptables >/dev/null 2>&1; then
+        iptables -t nat -S 2>/dev/null > "${snap_path}/iptables_nat" || true
+    fi
+
+    # 5. DNS / resolv.conf
+    if [ -f /etc/resolv.conf ]; then
+        cp -a /etc/resolv.conf "${snap_path}/resolv.conf" 2>/dev/null || true
+    fi
+
+    # 6. IPv4 forwarding sysctl
+    if [ -f /proc/sys/net/ipv4/ip_forward ]; then
+        cat /proc/sys/net/ipv4/ip_forward > "${snap_path}/ip_forward" 2>/dev/null || true
+    elif command -v sysctl >/dev/null 2>&1; then
+        sysctl -n net.ipv4.ip_forward 2>/dev/null > "${snap_path}/ip_forward" || echo "0" > "${snap_path}/ip_forward"
+    else
+        echo "0" > "${snap_path}/ip_forward"
+    fi
+    echo "  Snapshot complete: ${snap_path}"
 }
 
 do_teardown() {
@@ -47,34 +96,73 @@ do_teardown() {
         systemctl disable "wg-quick@${WG_IFACE}" || true
     fi
 
-    # 2. Remove WireGuard UFW rule if UFW exists
+    # 2. Remove WireGuard UFW rule if UFW exists (leave 8443 and SSH untouched)
     if command -v ufw >/dev/null 2>&1; then
         echo "Removing UFW rule for port ${WG_PORT}/udp..."
         ufw delete allow "${WG_PORT}/udp" >/dev/null 2>&1 || true
     fi
 
-    # 3. Clean up or restore wg0.conf
-    LATEST_PRE=$(find /etc/wireguard -maxdepth 1 -name "wg0.conf.pre_xpider.*" 2>/dev/null | sort | tail -1 || true)
-    if [ -n "$LATEST_PRE" ] && [ -f "$LATEST_PRE" ]; then
-        echo "Found original pre-existing WireGuard backup: $LATEST_PRE"
-        echo "Restoring original pre-existing config to $WG_CONF..."
-        cp -a "$LATEST_PRE" "$WG_CONF"
-        chmod 600 "$WG_CONF"
-        echo "SUCCESS: Original pre-existing wg0.conf restored byte-for-byte."
-        if command -v systemctl >/dev/null 2>&1; then
-            systemctl enable "wg-quick@${WG_IFACE}" 2>/dev/null || true
-            systemctl start "wg-quick@${WG_IFACE}" 2>/dev/null || true
-            echo "Restarted pre-existing WireGuard service."
-        fi
-    elif [ -f "$WG_CONF" ]; then
-        ARCHIVE_PATH="${WG_CONF}.xpider_removed.$(date +%s)"
-        echo "No pre-existing non-XPIDER config found."
-        echo "Archiving XPIDER config to $ARCHIVE_PATH and removing from $WG_CONF..."
-        mv "$WG_CONF" "$ARCHIVE_PATH"
-        echo "SUCCESS: XPIDER WireGuard config removed. Host returned to clean zero-config state."
+    # 3. Clean up iptables NAT PostUp rule if WAN detected
+    local wan_if
+    wan_if=$(detect_wan_if)
+    if command -v iptables >/dev/null 2>&1; then
+        echo "Removing XPIDER iptables forwarding & NAT rules..."
+        iptables -D FORWARD -i "$WG_IFACE" -j ACCEPT 2>/dev/null || true
+        iptables -D FORWARD -o "$WG_IFACE" -m state --state RELATED,ESTABLISHED -j ACCEPT 2>/dev/null || true
+        iptables -t nat -D POSTROUTING -o "$wan_if" -j MASQUERADE 2>/dev/null || true
     fi
 
-    echo "Rollback complete. WireGuard interface ${WG_IFACE} processed."
+    # 4. Full Snapshot Restoration (Config, Service, sysctl, DNS)
+    local latest_snap=""
+    if [ -d "$SNAPSHOT_DIR" ]; then
+        latest_snap=$(find "$SNAPSHOT_DIR" -maxdepth 1 -name "pre_xpider.*" 2>/dev/null | sort | tail -1 || true)
+    fi
+
+    if [ -n "$latest_snap" ] && [ -d "$latest_snap" ]; then
+        echo "Found pre-install system snapshot: $latest_snap"
+        
+        # Restore wg0.conf
+        if [ -f "${latest_snap}/wg0.conf" ]; then
+            echo "Restoring pre-existing wg0.conf from snapshot..."
+            cp -a "${latest_snap}/wg0.conf" "$WG_CONF"
+            chmod 600 "$WG_CONF"
+            echo "SUCCESS: Pre-existing wg0.conf restored byte-for-byte."
+        elif [ -f "$WG_CONF" ]; then
+            echo "Snapshot recorded zero prior config. Archiving and removing $WG_CONF..."
+            mv "$WG_CONF" "${WG_CONF}.xpider_removed.$(date +%s)"
+            echo "SUCCESS: Host returned to clean zero-config state."
+        fi
+
+        # Restore sysctl ip_forward
+        if [ -f "${latest_snap}/ip_forward" ]; then
+            local prior_fwd
+            prior_fwd=$(cat "${latest_snap}/ip_forward" | tr -d '[:space:]')
+            if [ -n "$prior_fwd" ]; then
+                echo "Restoring net.ipv4.ip_forward = $prior_fwd..."
+                sysctl -w "net.ipv4.ip_forward=${prior_fwd}" >/dev/null 2>&1 || true
+            fi
+        fi
+
+        # Restore prior service state
+        if command -v systemctl >/dev/null 2>&1 && [ -f "${latest_snap}/service_active" ]; then
+            local prior_act prior_enb
+            prior_act=$(cat "${latest_snap}/service_active" | tr -d '[:space:]')
+            prior_enb=$(cat "${latest_snap}/service_enabled" | tr -d '[:space:]')
+            if [ "$prior_enb" = "enabled" ]; then
+                systemctl enable "wg-quick@${WG_IFACE}" 2>/dev/null || true
+            fi
+            if [ "$prior_act" = "active" ]; then
+                systemctl start "wg-quick@${WG_IFACE}" 2>/dev/null || true
+                echo "Restored pre-existing WireGuard service to active state."
+            fi
+        fi
+    elif [ -f "$WG_CONF" ]; then
+        echo "No system snapshot directory found. Archiving and removing $WG_CONF..."
+        mv "$WG_CONF" "${WG_CONF}.xpider_removed.$(date +%s)"
+        echo "SUCCESS: XPIDER config archived and removed."
+    fi
+
+    echo "Rollback complete. System state restored."
     echo "HARD INVARIANT ASSERTION: Port 8443 TLS proxy was untouched and verified operational."
 }
 
@@ -147,8 +235,9 @@ do_install() {
     OPAL_PUB=$(cat /etc/wireguard/opal_public.key)
     echo "  Opal public key: $OPAL_PUB"
 
-    # --- Step 5: Write wg0.conf (with pre-existing conflict detection & safe backup) ---
-    echo "[5/7] Managing /etc/wireguard/wg0.conf..."
+    # --- Step 5: System Snapshot & Write wg0.conf ---
+    echo "[5/7] Capturing system state snapshot and managing /etc/wireguard/wg0.conf..."
+    capture_system_snapshot
     if [ -f "$WG_CONF" ]; then
         if grep -q "XPIDER WireGuard Server" "$WG_CONF" 2>/dev/null; then
             echo "  Existing XPIDER wg0.conf detected; archiving previous revision..."

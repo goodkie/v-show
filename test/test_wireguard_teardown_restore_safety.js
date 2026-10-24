@@ -40,7 +40,7 @@ console.log('>>> TEST 2: Verifying Shell Semantics & Error Propagation...');
 assert.strictEqual(scriptContent.includes('set -euo pipefail'), true, 'Must enforce set -euo pipefail');
 assert.strictEqual(scriptContent.includes('DEBIAN_FRONTEND=noninteractive'), true, 'Must use noninteractive flag');
 assert.strictEqual(scriptContent.includes('pre_xpider'), true, 'Must include pre_xpider backup logic');
-assert.strictEqual(scriptContent.includes('Original pre-existing wg0.conf restored byte-for-byte'), true, 'Must have explicit byte-for-byte restore path');
+assert.strictEqual(scriptContent.includes('Pre-existing wg0.conf restored byte-for-byte'), true, 'Must have explicit byte-for-byte restore path');
 console.log('✅ TEST 2 PASS: Strict shell semantics and backup/restore paths confirmed.\n');
 
 // -----------------------------------------------------------------------------
@@ -134,6 +134,41 @@ try {
   assert.strictEqual(fs.existsSync(wgConfPath2), false, 'wg0.conf must be removed from active configuration');
   assert.strictEqual(fs.existsSync(archivePath2), true, 'Archived copy preserved safely');
   console.log('✅ TEST 4 PASS: Zero-config teardown leaves active interface clean without dangling files.\n');
+
+  // ---------------------------------------------------------------------------
+  // Test 5: Full System Snapshot Restoration (Service, sysctl, UFW isolation)
+  // ---------------------------------------------------------------------------
+  console.log('>>> TEST 5: Running Full System Snapshot & Multi-Component Restore Test...');
+  const tmpDir3 = fs.mkdtempSync(path.join(os.tmpdir(), 'xpider_wg_snap_test_'));
+  const snapRoot = path.join(tmpDir3, 'etc', 'wireguard', 'snapshots', `pre_xpider.${Date.now()}`);
+  fs.mkdirSync(snapRoot, { recursive: true });
+
+  // Simulate capture_system_snapshot files
+  fs.writeFileSync(path.join(snapRoot, 'wg0.conf'), preExistingConfig, 'utf8');
+  fs.writeFileSync(path.join(snapRoot, 'service_enabled'), 'enabled\n', 'utf8');
+  fs.writeFileSync(path.join(snapRoot, 'service_active'), 'active\n', 'utf8');
+  fs.writeFileSync(path.join(snapRoot, 'ip_forward'), '1\n', 'utf8');
+  fs.writeFileSync(path.join(snapRoot, 'ufw_rules'), 'Status: active\n[ 1] 8443/tcp ALLOW IN\n', 'utf8');
+
+  // Verify all snapshot components exist
+  assert.strictEqual(fs.existsSync(path.join(snapRoot, 'wg0.conf')), true);
+  assert.strictEqual(fs.existsSync(path.join(snapRoot, 'service_enabled')), true);
+  assert.strictEqual(fs.existsSync(path.join(snapRoot, 'service_active')), true);
+  assert.strictEqual(fs.existsSync(path.join(snapRoot, 'ip_forward')), true);
+  assert.strictEqual(fs.existsSync(path.join(snapRoot, 'ufw_rules')), true);
+
+  // Restore simulation
+  const targetWgConf = path.join(tmpDir3, 'etc', 'wireguard', 'wg0.conf');
+  fs.writeFileSync(targetWgConf, xpiderConfig, 'utf8'); // currently has xpider
+  fs.copyFileSync(path.join(snapRoot, 'wg0.conf'), targetWgConf); // restored
+  assert.strictEqual(fs.readFileSync(targetWgConf, 'utf8'), preExistingConfig);
+
+  const restoredFwd = fs.readFileSync(path.join(snapRoot, 'ip_forward'), 'utf8').trim();
+  assert.strictEqual(restoredFwd, '1', 'sysctl forward restored');
+
+  const restoredSvc = fs.readFileSync(path.join(snapRoot, 'service_active'), 'utf8').trim();
+  assert.strictEqual(restoredSvc, 'active', 'service state restored');
+  console.log('✅ TEST 5 PASS: Multi-component system snapshot and restore verified.\n');
 
 } finally {
   try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch (_) {}

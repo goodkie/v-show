@@ -1,0 +1,37 @@
+{
+  "testSuite": "XPIDER_RC3_49_OWNER_INSTALL_SMOKE",
+  "timestamp": "2026-10-24T07:47:06.960Z",
+  "zipPath": "E:\\vivpr\\ai\\extension-form-sender\\XPIDER_R6.9G.10.3.7.1.4.65_PRIVATE_EGRESS_RC3.49.zip",
+  "flows": {
+    "positiveSubmission": {
+      "pass": true,
+      "fixture": "http://127.0.0.1:8088/contact-standard.html",
+      "receiptConfirmed": true
+    },
+    "privacyFailClosed": {
+      "pass": true,
+      "failClosedVerified": true
+    },
+    "pauseResume": {
+      "pass": true,
+      "pauseVerified": true,
+      "resumeVerified": true
+    },
+    "captchaManualUI": {
+      "pass": true,
+      "modalMounted": true,
+      "manualBtnPresent": true,
+      "cleanlyDismissed": true
+    },
+    "negativeDiscovery": {
+      "pass": true,
+      "outcome": "NO_ACCESSIBLE_INQUIRY_FORM"
+    },
+    "ledgerIntegrity": {
+      "pass": true,
+      "recordsCount": 2,
+      "noNegatives": true
+    }
+  },
+  "verdict": "ALL_OWNER_INSTALL_SMOKE_FLOWS_PASSED_100%"
+}

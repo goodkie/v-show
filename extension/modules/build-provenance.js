@@ -15,18 +15,18 @@
 
     const BUILD_INFO = {
         branch: 'upgrade/phase-0-1',
-        channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.48',
+        channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.49',
         testOnly: false,
-        // [R6.9G.10.3.7.1.4.64] XPIDER AutoForm Sender Pro — Private Egress Release Candidate 3.48 (Interactive CAPTCHA Scoping Fix + Genuine Edge Matrix Verified)
-        implementationHead: '55cd543be5ebe7a4553cac0cbfcf933a00e4c8a5',
-        implementationHeadShort: '55cd543b',
-        head: '55cd543be5ebe7a4553cac0cbfcf933a00e4c8a5',
-        headShort: '55cd543b',
-        rollbackBase: '3cc1be6b436b1d68f948927df88a2c73c1ae5011',
-        previousFunctionalRestorePoint: '7c0dabbad43e276c0ff8e24eedc8935609ab8ef1',
+        // [R6.9G.10.3.7.1.4.65] XPIDER AutoForm Sender Pro — Private Egress Release Candidate 3.49 (WireGuard Multi-Component System Snapshot & Restore Hardening)
+        implementationHead: '4568365c5ea9edff3f3810575d0080a1c129e406',
+        implementationHeadShort: '4568365c',
+        head: '4568365c5ea9edff3f3810575d0080a1c129e406',
+        headShort: '4568365c',
+        rollbackBase: '55cd543be5ebe7a4553cac0cbfcf933a00e4c8a5',
+        previousFunctionalRestorePoint: '1e536f82a03f2dba1849ed670d8e660b76ed41b5',
         manifestVersion: 3,
-        buildId: 'R6.9G.10.3.7.1.4.64-20261024-P0-RC3.48',
-        builtAt: '2026-10-24T05:25:00.000Z',
+        buildId: 'R6.9G.10.3.7.1.4.65-20261024-P0-RC3.49',
+        builtAt: '2026-10-24T07:45:00.000Z',
         provenanceSchema: 2,
         modules: {
             backgroundSha: '26b1f824e3763ddef81d12eb07dcf86daac3e37ce0bb49d82879500958093f28',
