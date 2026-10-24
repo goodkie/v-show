@@ -22,7 +22,7 @@ const assert = require('assert');
 const { spawn, execSync } = require('child_process');
 
 const CDP_PORT = 9523;
-const EXTRACT_DIR = path.resolve('scratch/extracted_rc345_deep_audit');
+const EXTRACT_DIR = path.resolve('scratch/extracted_rc3_47');
 const EXTENSION_DIR = path.join(EXTRACT_DIR, 'extension');
 const EVIDENCE_DIR = path.resolve('evidence/p0_remote_genuine_orchestration');
 
@@ -424,6 +424,100 @@ async function main() {
 
     assert.ok(ledgerSettled, `Ledger must settle to CONFIRMED_SUCCESS (got: ${ledgerData?.lastStatus})`);
     report.gates.canonicalLedgerSettled = 'PASS';
+    if (remoteReceipt?.form?.comments) {
+      assert.ok(!remoteReceipt.form.comments.includes('415-555-0199'), 'Never Phone In Message violated');
+      report.gates.neverPhoneInMessage = 'PASS';
+    }
+
+    // -------------------------------------------------------------------------
+    // Step 8: Interactive Control-Plane Audit (Pause -> Resume -> Stop -> Restart)
+    // -------------------------------------------------------------------------
+    log('Step 8: Auditing Control-Plane button clicks (Pause, Resume, Stop, Restart)...');
+    
+    // Seed a multi-target queue to exercise interactive button states
+    await ev(swWs, `(async () => {
+      await chrome.storage.local.set({
+        xpider_queue: ['https://httpbin.org/forms/post', 'https://httpbin.org/forms/post'],
+        xpider_total: 2,
+        xpider_isActive: false,
+        xpider_isPaused: false
+      });
+    })()`, swMsgId);
+
+    // Check if #start-btn is visible; if hidden, click #end-campaign-btn to reset to idle
+    const startVisible = await ev(popupWs, `(() => {
+      const b = document.getElementById('start-btn');
+      return b && b.style.display !== 'none' && !b.classList.contains('hidden');
+    })()`, popMsgId);
+
+    if (!startVisible) {
+      log('#start-btn is currently hidden; resetting campaign state via #end-campaign-btn...');
+      await clickElementBySelector(popupWs, '#end-campaign-btn', popMsgId);
+      await sleep(1500);
+    }
+
+    // Click #start-btn to initiate campaign lifecycle
+    log('Clicking #start-btn to initiate campaign lifecycle...');
+    await clickElementBySelector(popupWs, '#start-btn', popMsgId);
+    await sleep(1500);
+
+    // 8a. Pause click
+    log('Clicking #pause-btn to pause...');
+    await clickElementBySelector(popupWs, '#pause-btn', popMsgId);
+    await sleep(1500);
+    const isPaused = await ev(popupWs, `campaignPaused`, popMsgId);
+    log(`Observed campaignPaused: ${isPaused}`);
+    assert.strictEqual(isPaused, true, 'Campaign must enter paused state on #pause-btn click');
+    report.gates.controlPlanePause = 'PASS';
+
+    // 8b. Resume click
+    log('Clicking #pause-btn to resume...');
+    await clickElementBySelector(popupWs, '#pause-btn', popMsgId);
+    await sleep(1500);
+    const isResumed = await ev(popupWs, `!campaignPaused`, popMsgId);
+    log(`Observed campaignResumed: ${isResumed}`);
+    assert.strictEqual(isResumed, true, 'Campaign must resume on second #pause-btn click');
+    report.gates.controlPlaneResume = 'PASS';
+
+    // 8c. Stop click (#end-campaign-btn)
+    log('Clicking #end-campaign-btn to stop campaign...');
+    await clickElementBySelector(popupWs, '#end-campaign-btn', popMsgId);
+    await sleep(1500);
+    const isStopped = await ev(popupWs, `!campaignActive`, popMsgId);
+    log(`Observed campaignStopped: ${isStopped}`);
+    assert.strictEqual(isStopped, true, 'Campaign must stop on #end-campaign-btn click');
+    report.gates.controlPlaneStop = 'PASS';
+
+    // 8d. Restart click (#start-btn)
+    log('Clicking #start-btn to restart campaign...');
+    await clickElementBySelector(popupWs, '#start-btn', popMsgId);
+    await sleep(1500);
+    const isRestarted = await ev(popupWs, `campaignActive`, popMsgId);
+    log(`Observed campaignRestarted: ${isRestarted}`);
+    assert.strictEqual(isRestarted, true, 'Campaign must restart on #start-btn click');
+    report.gates.controlPlaneRestart = 'PASS';
+
+    // Terminate campaign cleanly
+    await clickElementBySelector(popupWs, '#end-campaign-btn', popMsgId);
+    await sleep(1000);
+
+    // -------------------------------------------------------------------------
+    // Step 9: Verify CAPTCHA Official Test Fixture / Manual Fallback
+    // -------------------------------------------------------------------------
+    log('Step 9: Verifying CAPTCHA solver manual fallback & zero external leakage...');
+    const solverState = await ev(swWs, `(async () => {
+      const data = await chrome.storage.local.get(['xpider_settings']);
+      const settings = data.xpider_settings || {};
+      return {
+        hasExternalKey: !!(settings.anticaptcha_key || settings.twocaptcha_key || settings.nopecha_key),
+        fallbackEnabled: settings.captcha_manual_fallback !== false
+      };
+    })()`, swMsgId);
+
+    log(`Solver Config State: hasExternalKey=${solverState.hasExternalKey}, fallbackEnabled=${solverState.fallbackEnabled}`);
+    assert.strictEqual(solverState.hasExternalKey, false, 'Zero external solver keys configured in production package');
+    assert.strictEqual(solverState.fallbackEnabled, true, 'Manual fallback must be enabled');
+    report.gates.captchaManualFallback = 'PASS';
 
     // -------------------------------------------------------------------------
     // Save Final Evidence
