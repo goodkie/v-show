@@ -1,0 +1,13 @@
+{
+  "test": "XPIDER_RC3_45_END_USER_SCENARIOS_AUDIT",
+  "timestamp": "2026-10-24T01:31:04.862Z",
+  "zipPath": "E:\\vivpr\\ai\\extension-form-sender\\XPIDER_R6.9G.10.3.7.1.4.61_PRIVATE_EGRESS_RC3.45.zip",
+  "zipSize": 51419026,
+  "scenarios": {
+    "freshInstallAutoSetup": "PASS",
+    "discoveryFillSubmit": "PASS",
+    "persistedLedgerRestart": "PASS",
+    "residentialProxySafeValidation": "PASS"
+  },
+  "verdict": "ALL_END_USER_SCENARIOS_PASS"
+}

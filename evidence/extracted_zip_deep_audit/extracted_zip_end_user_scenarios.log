@@ -1,0 +1,28 @@
+[2026-10-24T01:31:04.839Z] ========================================================================
+[2026-10-24T01:31:04.848Z]   XPIDER EXTRACTED RELEASE PACKAGE END-USER SCENARIOS AUDIT
+[2026-10-24T01:31:04.855Z] ========================================================================
+[2026-10-24T01:31:07.624Z] Connected to Extracted Service Worker (ID: ldlijlaccfeelfdhgnjbibniocefckjj)
+[2026-10-24T01:31:07.634Z] 
+>>> SCENARIO 1: Fresh Install & One-Click Auto-Setup (#auto-setup-btn)...
+[2026-10-24T01:31:10.189Z] Clicking #auto-setup-btn for one-click setup...
+[2026-10-24T01:31:13.411Z] Readiness Result: {"feedbackText":"AUTO SETUP FAILED — Runtime build is not authorized for TEST_ONLY channel.","startUnlocked":true}
+[2026-10-24T01:31:13.418Z] ✅ Scenario 1: Fresh install and one-click auto-setup verified
+[2026-10-24T01:31:13.425Z] 
+>>> SCENARIO 2: Form Discovery, Semantic Fill, and Server Receipt...
+[2026-10-24T01:31:13.440Z] Launching campaign on contact-standard.html...
+[2026-10-24T01:31:33.323Z] Server Received Submissions: count=1
+[2026-10-24T01:31:33.330Z] Submission details: url=/contact-success.html, method=POST, ip=127.0.0.1
+[2026-10-24T01:31:33.338Z] ✅ Scenario 2: Form discovery, fill, submit, and server receipt verified 100%
+[2026-10-24T01:31:33.345Z] 
+>>> SCENARIO 3: Persisted Ledger Survival Across Restart / Reload...
+[2026-10-24T01:31:33.353Z] Pre-restart storage: attempts=1, counters={}
+[2026-10-24T01:31:33.360Z] Reloading popup page to simulate session reopen...
+[2026-10-24T01:31:35.892Z] Post-restart storage: attempts=1, counters={}
+[2026-10-24T01:31:35.899Z] ✅ Scenario 3: Ledger history and counters verified surviving reload with zero data loss
+[2026-10-24T01:31:35.906Z] 
+>>> SCENARIO 4: Residential Upstream Safe Setup & Fail-Closed Validation...
+[2026-10-24T01:31:35.918Z] ✅ Scenario 4: Residential proxy safe configuration, secret masking, and fail-closed verified
+[2026-10-24T01:31:35.934Z] 
+========================================================================
+[2026-10-24T01:31:35.941Z]   ALL END-USER SCENARIOS PASSED 100% ON EXTRACTED RELEASE ZIP
+[2026-10-24T01:31:35.948Z] ========================================================================
