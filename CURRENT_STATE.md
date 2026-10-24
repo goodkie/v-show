@@ -6,21 +6,26 @@
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issues #6 & #10
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-23.136
-- Authority Cursor: 6378253508
+- State Rev: 2026-10-23.137
+- Authority Cursor: 6378563163
 - Last Directives / Audits:
   - `[CHATGPT AUDIT / SHA CORRECTION + FINAL OWNER READINESS / ISSUE #6 / 2026-10-23] Comment #6377908204`
   - `[OWNER FOLLOW-UP — COMMITTED EVIDENCE ARTIFACTS / ISSUE #6 / 2026-10-23] Comment #6378025521`
   - `[OWNER FOLLOW-UP — EXECUTE LAST DIRECTIVE / ISSUE #6 / 2026-10-23] Comment #6378137595`
+  - `[CHATGPT P0 ESCALATION DIRECTIVE / ISSUE #6 / 2026-10-24] Comment #6378317747`
+  - `[OWNER NEXT EXECUTION ORDER / ISSUE #6 / 2026-10-24] Comment #6378329770`
 - Last Receipts:
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][P0-CONTROLLED-ENDUSER-SCENARIOS-AND-RECOVERY-PATH-VERIFIED][2026-10-23] Comment #6378216726`
   - `[ANTIGRAVITY][STATUS-CHECK-AND-RE-BRIEFING][ISSUE-6][P0-END-USER-SCENARIOS-AND-RECOVERY-PATH-VERIFIED] Comment #6378253508`
+  - `[ANTIGRAVITY][RECEIPT][ISSUE-6][P0-HARD-GATES-GENUINE-ORCHESTRATION-VERIFIED][2026-10-24T02:15Z] Comment #6378563163`
 - Build ID: `R6.9G.10.3.7.1.4.61-20261023-P0-RC3.45`
 - Active Functional Commit (F): `0984a9b885ce9d3ee11857469a30cd41818bf947`
 - Active Provenance Commit (P): `2524a2bb7bfaca0dad9ff1a803311c3ea5eaac7e`
 - Active Acceptance Evidence Commit: `8ab6e10a7e7ed87ad98ba55e8672ee6e7a535279`
 - Active Audit Evidence Commit: `3594a61a34e57984d622d0f42b5d6c110e98e661`
-- Remote Git HEAD: `a6ad5e640feea1b4f420cf6725359a33bb58c5f0`
+- Active P0 Genuine Orchestration Commit: `1b653374167a0c8fdca8eb061ebc2c37bb5b873d`
+- Active WireGuard / Opal Templates Commit: `e6f8617b077a989ef855365516a81a176e73685f`
+- Remote Git HEAD: `e6f8617b077a989ef855365516a81a176e73685f`
 - Rollback Anchor: `3cc1be6b436b1d68f948927df88a2c73c1ae5011`
 - Previous Functional Restore Point: `3cc1be6b436b1d68f948927df88a2c73c1ae5011`
 - Preserved Verified Release: `XPIDER_R6.9G.10.3.7.1.4.61_PRIVATE_EGRESS_RC3.45.zip` (Tag: `v6.9g.10.3-rc3.45.7.1.4.61`, SHA256: `2f09dba4bbeb75c1ab5ad8a68c9d103af23bf8b40c73ecda58f6f87705d10e93`, Size: 51,419,026 bytes, Asset ID: `670833853`)
