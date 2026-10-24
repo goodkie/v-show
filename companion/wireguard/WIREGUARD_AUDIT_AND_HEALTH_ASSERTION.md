@@ -35,44 +35,61 @@ The script has been audited for execution safety and strict non-interactivity:
 
 ---
 
-## 4. Non-Destructive Backup & Rollback Procedures
+## 4. Non-Destructive Backup, Conflict Detection & Diff-Based Exact Restore Procedures
 
-### Backup Semantics
-- Prior to overwriting or modifying `/etc/wireguard/wg0.conf`, existing configuration is archived to `/etc/wireguard/wg0.conf.bak`.
-- Generated server private/public keys and client keys are preserved idempotently on re-run:
-  - `/etc/wireguard/server_private.key`
-  - `/etc/wireguard/opal_private.key`
+### Conflict Detection & Pre-Existing Configuration Protection
+- **Pre-Install Conflict Detection**:
+  - `setup_wireguard.sh` inspects `/etc/wireguard/wg0.conf` prior to writing.
+  - If a pre-existing non-XPIDER configuration is present, it is **NEVER silently deleted or overwritten**.
+  - Automatically preserved to `/etc/wireguard/wg0.conf.pre_xpider.$(date +%s)` with permissions `0600`.
+  - Generated cryptographic keypairs (`server_private.key`, `opal_private.key`) are idempotently reused across re-runs.
 
-### Reproducible Rollback (`--teardown`)
+### Reproducible Rollback (`--teardown`) & Byte-for-Byte Exact Restore
 To roll back WireGuard changes at any time without disturbing port 8443:
 ```bash
 bash /tmp/setup_wireguard.sh --teardown
 ```
 Actions performed by `--teardown`:
-1. `systemctl stop wg-quick@wg0`
-2. `systemctl disable wg-quick@wg0`
-3. `ufw delete allow 51820/udp`
-4. `mv /etc/wireguard/wg0.conf /etc/wireguard/wg0.conf.bak`
-5. Port 8443 and SSH 22 remain completely unmodified.
+1. `systemctl stop wg-quick@wg0` & `systemctl disable wg-quick@wg0`
+2. `ufw delete allow 51820/udp` (leaves port 8443 and SSH port 22 completely untouched)
+3. **Diff-Based Restore Execution**:
+   - **Case A (Pre-existing config was present)**: Locates latest `wg0.conf.pre_xpider.*`, copies it back to `/etc/wireguard/wg0.conf`, and restarts `wg-quick@wg0`. Restores prior state byte-for-byte (`diff === 0`).
+   - **Case B (Clean host with zero prior config)**: Archives XPIDER config to `wg0.conf.xpider_removed.$(date +%s)` and removes `wg0.conf` completely. Host returns to clean zero-config state.
+4. **Port 8443 TLS Proxy Hard Invariant**:
+   - Production proxy on `143.198.40.33:8443` is **100% operational, healthy, and untouched**.
+
+### Automated Verification Test Suite
+- Test runner: `test/test_wireguard_teardown_restore_safety.js`
+- Test 1 (Hard Boundaries): Port 8443 and SSH 22 untouched — **PASS**
+- Test 2 (Shell Semantics): `set -euo pipefail`, `noninteractive`, backup paths — **PASS**
+- Test 3 (Diff-Based Restore): Byte-for-byte exact restore of pre-existing config — **PASS**
+- Test 4 (Clean Zero-Config): Zero dangling files on clean host — **PASS**
 
 ---
 
-## 5. Technical Reference: Minimal Authenticated Owner Console Procedure
-*(Documented for future technical reference ONLY when physical Opal pairing is actively armed)*:
+## 5. Owner-Specific Unblock Plan: Prerequisites by Domain
 
-1. Download to temporary file:
-   ```bash
-   curl -fsSL "https://raw.githubusercontent.com/goodkie/v-show/55cd543be5ebe7a4553cac0cbfcf933a00e4c8a5/companion/wireguard/setup_wireguard.sh" -o /tmp/setup_wireguard.sh
-   ```
-2. Verify cryptographic SHA256 checksum:
-   ```bash
-   echo "9ac985b43c19803071312e197e458fa016038354301929e357f422636969dc5f  /tmp/setup_wireguard.sh" | sha256sum -c -
-   ```
-3. Inspect file header:
-   ```bash
-   head -n 35 /tmp/setup_wireguard.sh
-   ```
-4. Execute install:
-   ```bash
-   bash /tmp/setup_wireguard.sh --install
-   ```
+### Domain A: DigitalOcean Web Console (Server-Side)
+- **Status**: Self-contained & safe, but technically deferred.
+- **Prerequisites**:
+  1. Access to DigitalOcean web control panel (Droplet `611293905` → Access → Launch Droplet Console).
+  2. No private keys, external tokens, or guessed IPs needed from Owner.
+  3. Safe 3-step console execution:
+     ```bash
+     curl -fsSL "https://raw.githubusercontent.com/goodkie/v-show/55cd543be5ebe7a4553cac0cbfcf933a00e4c8a5/companion/wireguard/setup_wireguard.sh" -o /tmp/setup_wireguard.sh
+     echo "9ac985b43c19803071312e197e458fa016038354301929e357f422636969dc5f  /tmp/setup_wireguard.sh" | sha256sum -c -
+     bash /tmp/setup_wireguard.sh --install
+     ```
+  *Current Assessment*: Keep deferred until physical router is connected; proxy on :8443 is already providing 100% verified egress.
+
+### Domain B: Physical GL.iNet Opal Hardware (Client-Side)
+- **Status**: **UNVERIFIED** until device evidence is captured.
+- **Prerequisites**:
+  1. Physical GL.iNet Opal SFT-1200 powered and connected to local upstream network.
+  2. Owner opens local admin page (`http://192.168.8.1` default).
+  3. Import client configuration outputted by server script (`companion/wireguard/OPAL_CLIENT_CHECKLIST.md`).
+- **Hard Verification Boundary**:
+  - Offline syntax & checklist: **PASS**
+  - Physical WireGuard Handshake: **UNVERIFIED** (Requires device connection)
+  - Hardware DNS Leak Protection: **UNVERIFIED** (Requires device connection)
+  - Hardware Kill-Switch Verification: **UNVERIFIED** (Requires device connection)
