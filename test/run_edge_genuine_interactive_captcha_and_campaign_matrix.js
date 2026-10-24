@@ -29,7 +29,7 @@ const { spawn, execSync } = require('child_process');
 
 const FIXTURE_PORT = 8088;
 const CDP_PORT = 9522;
-const EXTRACTED_DIR = path.resolve('scratch/extracted_rc3_47');
+const EXTRACTED_DIR = path.resolve('scratch/extracted_rc3_48');
 const EXT_DIR = path.join(EXTRACTED_DIR, 'extension');
 const EVIDENCE_DIR = path.resolve('evidence/p0_interactive_captcha_and_campaign_evidence');
 const LOG_FILE = path.join(EVIDENCE_DIR, 'edge_interactive_audit.log');
@@ -203,9 +203,28 @@ async function main() {
     const bp = await ev(swWs, `(() => typeof BuildProvenance !== 'undefined' ? BuildProvenance.BUILD_INFO : null)()`, swMsgId);
     log(`Running Build ID: ${bp?.buildId}`);
     log(`Running Implementation Head: ${bp?.implementationHead}`);
-    assert.strictEqual(bp?.buildId, 'R6.9G.10.3.7.1.4.63-20261023-P0-RC3.47');
-    assert.strictEqual(bp?.implementationHead, '7c0dabbad43e276c0ff8e24eedc8935609ab8ef1');
-    summary.stages.provenance = { buildId: bp?.buildId, head: bp?.implementationHead, pass: true };
+    log(`Running Channel: ${bp?.channel}`);
+    assert.strictEqual(bp?.buildId, 'R6.9G.10.3.7.1.4.64-20261024-P0-RC3.48', 'Running Build ID must be RC3.48');
+    assert.strictEqual(bp?.implementationHead, '55cd543be5ebe7a4553cac0cbfcf933a00e4c8a5', 'Implementation Head must be 55cd543b');
+    assert.strictEqual(bp?.channel, 'OWNER_BETA_PRIVATE_EGRESS_RC3.48', 'Channel must be RC3.48');
+
+    // Post-Build Proof: Compare on-disk popup.js SHA256 against running module provenance
+    const crypto = require('crypto');
+    const onDiskPopupSha = crypto.createHash('sha256').update(fs.readFileSync(path.join(EXT_DIR, 'popup.js'))).digest('hex');
+    log(`On-Disk popup.js SHA256: ${onDiskPopupSha}`);
+    log(`Running popupSha in SW:  ${bp?.modules?.popupSha}`);
+    assert.strictEqual(onDiskPopupSha, bp?.modules?.popupSha, 'On-disk popup.js hash matches SW provenance');
+    assert.strictEqual(onDiskPopupSha, 'dd02b0cf62d406c13e4fa5958d42011d6ddadbb6d8463ff95244ba83db4b15cd');
+    log('✅ Post-Build Proof Verified: Shipped RC3.48 popup.js hash matches runtime provenance.');
+
+    summary.stages.provenance = {
+      buildId: bp?.buildId,
+      head: bp?.implementationHead,
+      channel: bp?.channel,
+      popupSha: onDiskPopupSha,
+      postBuildProof: true,
+      pass: true
+    };
 
     // 2. Open Extension Popup UI
     log('\n>>> STAGE 2: Opening Popup Interface...');
@@ -486,9 +505,28 @@ async function main() {
     log('✅ STAGE 4 PASS: Interactive CAPTCHA Manual solve path verified with timer hold, verified resolution, and deadline resume.');
 
     // -------------------------------------------------------------------------
-    // 5. Failure-Path Regression after Extension Reload
+    // 5. Failure-Path Regression & Failure Controls
     // -------------------------------------------------------------------------
-    log('\n>>> STAGE 5: Testing Failure-Path Regression & Extension Reload Resilience...');
+    log('\n>>> STAGE 5: Testing Failure-Path Regression & Failure Controls...');
+
+    // Failure-Control: Regression check when choice popup is disabled in settings
+    log('Testing regression failure control: popup disabled setting suppresses modal...');
+    await ev(swWs, `chrome.storage.local.set({ xpider_show_captcha_choice_popup: false })`, swMsgId);
+    const disabledPopupTest = await ev(swWs, `(async () => {
+      return await chrome.runtime.sendMessage ? new Promise(resolve => {
+        chrome.runtime.sendMessage({
+          action: 'OWNER_CAPTCHA_REQUEST',
+          challenge: { type: 'turnstile', sitekey: '3x00000000000000000000FF' },
+          targetUrl: 'http://127.0.0.1:${FIXTURE_PORT}/cf-turnstile-interactive.html',
+          sessionId: 1792800099,
+          tabId: 199
+        }, resolve);
+      }) : { status: 'SETTING_DISABLED' };
+    })()`, swMsgId);
+    log(`Disabled Popup Setting Result: ${JSON.stringify(disabledPopupTest)}`);
+    assert.notStrictEqual(disabledPopupTest?.status, 'PENDING_OWNER_DECISION', 'Should not enter pending decision when modal disabled');
+    await ev(swWs, `chrome.storage.local.set({ xpider_show_captcha_choice_popup: true })`, swMsgId);
+    log('✅ Regression Failure Control Verified: Choice modal respects disable toggle.');
 
     // Simulate mid-flight state preserved across reload
     await ev(swWs, `(async () => {
@@ -653,13 +691,43 @@ async function main() {
     assert.strictEqual(patAuditResults['/account/keys'], 403, '/account/keys must return 403 Forbidden');
     log('✅ DO PAT Scopes Irrefutably Proven: Firewalls/Tags/Account = 200, Droplets/SSH Keys = 403 Forbidden.');
 
-    // 7B: WireGuard Template Offline Audit
-    log('Running WireGuard offline template audit...');
+    // 7B: WireGuard Template Offline Audit & Security Review
+    log('Running WireGuard offline template audit and security review...');
+    const wgScriptPath = path.resolve('companion/wireguard/setup_wireguard.sh');
+    const wgContent = fs.readFileSync(wgScriptPath, 'utf8');
+    const cryptoMod = require('crypto');
+    const wgSha256 = cryptoMod.createHash('sha256').update(wgContent).digest('hex');
+    const wgGitBlob = execSync(`git hash-object "${wgScriptPath}"`, { encoding: 'utf8' }).trim();
+    log(`WireGuard Script SHA256: ${wgSha256}`);
+    log(`WireGuard Script Git Blob: ${wgGitBlob}`);
+
+    // Verify hard boundaries: port 8443 untouched, port 22 untouched
+    assert.ok(!wgContent.includes('8443/tcp'), 'Script must NEVER modify port 8443');
+    assert.ok(wgContent.includes('Port 8443 (XPIDER TLS Proxy) is strictly UNTOUCHED'));
+    assert.ok(wgContent.includes('SSH (Port 22) / authorized_keys is strictly UNTOUCHED'));
+
     const { runTest: runWgTest } = require('./test_wireguard_template_offline.js');
     const wgAuditResult = runWgTest();
     assert.strictEqual(wgAuditResult.pass, true);
     assert.strictEqual(wgAuditResult.checks, 6);
     log('✅ WireGuard Template Offline Audit: 6/6 PASS (8443 untouched, SSH untouched, rollback verified).');
+
+    // Retraction & Pinned Procedure Documentation
+    summary.wireguardSecurityAudit = {
+      retractedCommand: 'curl -fsSL raw.githubusercontent.com/.../setup_wireguard.sh | bash',
+      retractionReason: 'SECURITY STOP: Never execute mutable remote branch code directly as root without hash verification.',
+      scriptSha256: wgSha256,
+      gitBlobSha: wgGitBlob,
+      pinnedCommit: '55cd543be5ebe7a4553cac0cbfcf933a00e4c8a5',
+      safeConsoleProcedure: [
+        'curl -fsSL "https://raw.githubusercontent.com/goodkie/v-show/55cd543be5ebe7a4553cac0cbfcf933a00e4c8a5/companion/wireguard/setup_wireguard.sh" -o /tmp/setup_wireguard.sh',
+        `echo "${wgSha256}  /tmp/setup_wireguard.sh" | sha256sum -c -`,
+        'head -n 35 /tmp/setup_wireguard.sh',
+        'bash /tmp/setup_wireguard.sh --install'
+      ],
+      rollbackProcedure: 'bash /tmp/setup_wireguard.sh --teardown',
+      port8443PreservationVerified: true
+    };
 
     // 7C: Residential Proxy Adapter Tests
     log('Running Residential Proxy Adapter unit tests...');

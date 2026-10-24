@@ -1,11 +1,14 @@
 {
   "testSuite": "XPIDER_P0_GENUINE_INTERACTIVE_CAPTCHA_AND_CAMPAIGN_MATRIX",
-  "timestamp": "2026-10-24T05:21:22.389Z",
-  "extractedPath": "E:\\vivpr\\ai\\extension-form-sender\\scratch\\extracted_rc3_47\\extension",
+  "timestamp": "2026-10-24T05:49:12.671Z",
+  "extractedPath": "E:\\vivpr\\ai\\extension-form-sender\\scratch\\extracted_rc3_48\\extension",
   "stages": {
     "provenance": {
-      "buildId": "R6.9G.10.3.7.1.4.63-20261023-P0-RC3.47",
-      "head": "7c0dabbad43e276c0ff8e24eedc8935609ab8ef1",
+      "buildId": "R6.9G.10.3.7.1.4.64-20261024-P0-RC3.48",
+      "head": "55cd543be5ebe7a4553cac0cbfcf933a00e4c8a5",
+      "channel": "OWNER_BETA_PRIVATE_EGRESS_RC3.48",
+      "popupSha": "dd02b0cf62d406c13e4fa5958d42011d6ddadbb6d8463ff95244ba83db4b15cd",
+      "postBuildProof": true,
       "pass": true
     },
     "interactiveCaptchaSkip": {
@@ -51,5 +54,20 @@
       "residentialRelayEndpoints": "PASS"
     }
   },
-  "verdict": "ALL_AUDIT_STAGES_PASSED_100%"
+  "verdict": "ALL_AUDIT_STAGES_PASSED_100%",
+  "wireguardSecurityAudit": {
+    "retractedCommand": "curl -fsSL raw.githubusercontent.com/.../setup_wireguard.sh | bash",
+    "retractionReason": "SECURITY STOP: Never execute mutable remote branch code directly as root without hash verification.",
+    "scriptSha256": "9ac985b43c19803071312e197e458fa016038354301929e357f422636969dc5f",
+    "gitBlobSha": "30e7fe4292cb1343f670340f44baf8329e11caf3",
+    "pinnedCommit": "55cd543be5ebe7a4553cac0cbfcf933a00e4c8a5",
+    "safeConsoleProcedure": [
+      "curl -fsSL \"https://raw.githubusercontent.com/goodkie/v-show/55cd543be5ebe7a4553cac0cbfcf933a00e4c8a5/companion/wireguard/setup_wireguard.sh\" -o /tmp/setup_wireguard.sh",
+      "echo \"9ac985b43c19803071312e197e458fa016038354301929e357f422636969dc5f  /tmp/setup_wireguard.sh\" | sha256sum -c -",
+      "head -n 35 /tmp/setup_wireguard.sh",
+      "bash /tmp/setup_wireguard.sh --install"
+    ],
+    "rollbackProcedure": "bash /tmp/setup_wireguard.sh --teardown",
+    "port8443PreservationVerified": true
+  }
 }
