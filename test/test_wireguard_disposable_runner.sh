@@ -13,23 +13,48 @@ echo "=== [XPIDER DISPOSABLE LINUX RUNNER] WireGuard System Snapshot & Restore I
 # ------------------------------------------------------------------------------
 # 1. Ephemeral Host & Genuine GitHub-Hosted Runner Identity Check
 # ------------------------------------------------------------------------------
-# Environment variables alone (CI=true / GITHUB_ACTIONS=true) can be spoofed.
-# We verify physical GitHub-hosted runner attributes:
+# Username and home directory alone are not cryptographic identity proof.
+# We enforce full GitHub Actions execution context, repository binding,
+# disposable runner filesystem markers, and local interface invariants:
 #   1. Running as user 'runner' with home directory '/home/runner'
-#   2. Presence of GitHub-hosted runner workspace and environment paths
-IS_GITHUB_RUNNER=false
-if [[ "$(whoami)" == "runner" && -d "/home/runner" && -n "${GITHUB_WORKSPACE:-}" ]]; then
-  IS_GITHUB_RUNNER=true
+#   2. Presence of '/home/runner/work' and genuine GITHUB_WORKSPACE
+#   3. GITHUB_ACTIONS="true" and RUNNER_OS="Linux"
+#   4. Explicit repository binding: GITHUB_REPOSITORY="goodkie/v-show"
+#   5. Valid GitHub Actions execution run IDs (GITHUB_RUN_ID, GITHUB_RUN_NUMBER)
+#   6. Zero tolerance for production IP on any local network interface
+IS_GENUINE_GH_RUNNER=false
+if [[ "$(whoami)" == "runner" && -d "/home/runner" && -d "/home/runner/work" && -n "${GITHUB_WORKSPACE:-}" ]]; then
+  if [[ "${GITHUB_ACTIONS:-}" == "true" && "${RUNNER_OS:-}" == "Linux" ]]; then
+    if [[ "${GITHUB_REPOSITORY:-}" == "goodkie/v-show" && -n "${GITHUB_RUN_ID:-}" && -n "${GITHUB_RUN_NUMBER:-}" ]]; then
+      IS_GENUINE_GH_RUNNER=true
+    fi
+  fi
 fi
 
-if [[ "${IS_GITHUB_RUNNER}" != "true" && "${FORCE_EPHEMERAL_DISPOSABLE:-}" != "1" ]]; then
+if [[ "${IS_GENUINE_GH_RUNNER}" != "true" && "${FORCE_EPHEMERAL_DISPOSABLE:-}" != "1" ]]; then
   echo "FATAL SECURITY BOUNDARY ERROR: System networking integration tests are strictly restricted"
-  echo "to authenticated GitHub-hosted ephemeral runners (user: runner, home: /home/runner, GITHUB_WORKSPACE)."
-  echo "Environment variables alone are insufficient to permit system network operations."
-  echo "Refusing execution on non-ephemeral host."
+  echo "to authenticated GitHub-hosted ephemeral runners bound to repository 'goodkie/v-show'."
+  echo "Required invariants failed:"
+  echo "  - whoami == runner (actual: $(whoami))"
+  echo "  - /home/runner and /home/runner/work exist (actual: home=$(test -d /home/runner && echo yes || echo no), work=$(test -d /home/runner/work && echo yes || echo no))"
+  echo "  - GITHUB_ACTIONS == true (actual: ${GITHUB_ACTIONS:-unset})"
+  echo "  - RUNNER_OS == Linux (actual: ${RUNNER_OS:-unset})"
+  echo "  - GITHUB_REPOSITORY == goodkie/v-show (actual: ${GITHUB_REPOSITORY:-unset})"
+  echo "  - GITHUB_RUN_ID present (actual: ${GITHUB_RUN_ID:-unset})"
+  echo "Refusing execution on non-ephemeral host. Aborting fail-closed."
   exit 1
 fi
-echo "✅ Ephemeral Host Guard: Verified genuine GitHub-hosted runner identity (user: $(whoami))."
+echo "✅ Ephemeral Host Guard: Verified genuine GitHub-hosted runner identity & repository context (repo: ${GITHUB_REPOSITORY:-goodkie/v-show}, run_id: ${GITHUB_RUN_ID:-ephemeral})."
+
+# 1b. Direct Local Interface Audit — Ensure host does NOT locally own production IP
+PROD_DO_IP="143.198.40.33"
+if command -v ip >/dev/null 2>&1; then
+  LOCAL_IF_IPS=$(ip -o addr show 2>/dev/null || true)
+  if echo "${LOCAL_IF_IPS}" | grep -q "${PROD_DO_IP}"; then
+    echo "FATAL SECURITY BOUNDARY ERROR: Host locally owns production IP ${PROD_DO_IP}! ABORTING IMMEDIATELY."
+    exit 1
+  fi
+fi
 
 # ------------------------------------------------------------------------------
 # 2. Multi-Probe Public IP Verification & Ambiguity Abort Guard

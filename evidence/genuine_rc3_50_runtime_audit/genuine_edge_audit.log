@@ -1,0 +1,51 @@
+[2026-10-24T11:43:14.787Z] === STARTING GENUINE RC3.50 UNPACKED RUNTIME AUDIT IN MICROSOFT EDGE ===
+[2026-10-24T11:43:14.802Z] HTTP Fixture Server listening on http://127.0.0.1:8991
+[2026-10-24T11:43:14.809Z] Found Edge at: C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe
+[2026-10-24T11:43:14.817Z] Isolated Profile Directory: C:\Users\oPus\AppData\Local\Temp\xpider-rc350-genuine-audit-32wb9g
+[2026-10-24T11:43:14.823Z] Loading Actual Unpacked Extension: E:\vivpr\ai\extension-form-sender\scratch\unpacked_rc3_50\extension
+[2026-10-24T11:43:16.270Z] Discovered Genuine RC3.50 Extension ID: ldlijlaccfeelfdhgnjbibniocefckjj
+[2026-10-24T11:43:16.371Z] 
+--- Executing Test Case: HTTP 500 Server Error (/case1_500_server_error) ---
+[2026-10-24T11:43:16.635Z] [SW_CONSOLE] [BootStep] restoring_campaign_state
+[2026-10-24T11:43:16.646Z] [SW_CONSOLE] [Boot] Initializing campaign state...
+[2026-10-24T11:43:16.658Z] [SW_CONSOLE] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
+[2026-10-24T11:43:16.667Z] [SW_CONSOLE] [BG_LOG][tab=none] [OWNER_TEST_GUARD] declarativeNetRequest session rules removed cleanly
+[2026-10-24T11:43:16.677Z] [SW_CONSOLE] [COUNTER_RECONCILE] legacySuccess=0 ledgerSuccess=0 action=LEDGER_WINS
+[2026-10-24T11:43:16.691Z] [SW_CONSOLE] [BootStep] restore_complete
+[2026-10-24T11:43:16.701Z] [SW_CONSOLE] [Boot] Privacy Relay configured — checking status and auto-recovering if offline...
+[2026-10-24T11:43:17.321Z] Saved screenshot: E:\vivpr\ai\extension-form-sender\evidence\genuine_rc3_50_runtime_audit\screenshot_case1.png
+[2026-10-24T11:43:17.330Z] Result for case1: {"isJsonFormReceipt":false,"jsonReceiptErrorFound":true,"matchedServerError":"JSON_HTTP_500","validationErrorsCount":1,"verdict":"REJECTED_AS_FAILURE"}
+[2026-10-24T11:43:17.337Z] Verdict: REJECTED_AS_FAILURE (Expected: REJECTED_AS_FAILURE) -> ✅ PASS
+[2026-10-24T11:43:17.347Z] 
+--- Executing Test Case: HTTP 404 Not Found (/case2_404_not_found) ---
+[2026-10-24T11:43:18.268Z] Saved screenshot: E:\vivpr\ai\extension-form-sender\evidence\genuine_rc3_50_runtime_audit\screenshot_case2.png
+[2026-10-24T11:43:18.280Z] Result for case2: {"isJsonFormReceipt":false,"jsonReceiptErrorFound":false,"matchedServerError":"HTML_HTTP_ERROR","validationErrorsCount":0,"verdict":"REJECTED_AS_FAILURE"}
+[2026-10-24T11:43:18.289Z] Verdict: REJECTED_AS_FAILURE (Expected: REJECTED_AS_FAILURE) -> ✅ PASS
+[2026-10-24T11:43:18.299Z] 
+--- Executing Test Case: HTTP 502 Bad Gateway (/case3_502_bad_gateway) ---
+[2026-10-24T11:43:19.287Z] Saved screenshot: E:\vivpr\ai\extension-form-sender\evidence\genuine_rc3_50_runtime_audit\screenshot_case3.png
+[2026-10-24T11:43:19.296Z] Result for case3: {"isJsonFormReceipt":false,"jsonReceiptErrorFound":false,"matchedServerError":"HTML_HTTP_ERROR","validationErrorsCount":0,"verdict":"REJECTED_AS_FAILURE"}
+[2026-10-24T11:43:19.303Z] Verdict: REJECTED_AS_FAILURE (Expected: REJECTED_AS_FAILURE) -> ✅ PASS
+[2026-10-24T11:43:19.310Z] 
+--- Executing Test Case: JSON Validation Failure (/case4_json_validation_fail) ---
+[2026-10-24T11:43:20.218Z] Saved screenshot: E:\vivpr\ai\extension-form-sender\evidence\genuine_rc3_50_runtime_audit\screenshot_case4.png
+[2026-10-24T11:43:20.227Z] Result for case4: {"isJsonFormReceipt":false,"jsonReceiptErrorFound":true,"matchedServerError":null,"validationErrorsCount":1,"verdict":"REJECTED_AS_FAILURE"}
+[2026-10-24T11:43:20.234Z] Verdict: REJECTED_AS_FAILURE (Expected: REJECTED_AS_FAILURE) -> ✅ PASS
+[2026-10-24T11:43:20.241Z] 
+--- Executing Test Case: Missing Receipt ID (Unacknowledged) (/case5_missing_receipt_id) ---
+[2026-10-24T11:43:21.164Z] Saved screenshot: E:\vivpr\ai\extension-form-sender\evidence\genuine_rc3_50_runtime_audit\screenshot_case5.png
+[2026-10-24T11:43:21.172Z] Result for case5: {"isJsonFormReceipt":false,"jsonReceiptErrorFound":false,"matchedServerError":null,"validationErrorsCount":0,"verdict":"REJECTED_INSUFFICIENT_RECEIPT"}
+[2026-10-24T11:43:21.179Z] Verdict: REJECTED_INSUFFICIENT_RECEIPT (Expected: REJECTED_INSUFFICIENT_RECEIPT) -> ✅ PASS
+[2026-10-24T11:43:21.186Z] 
+--- Executing Test Case: Authentic Receipt with Valid Payload (/case6_authentic_receipt) ---
+[2026-10-24T11:43:22.101Z] Saved screenshot: E:\vivpr\ai\extension-form-sender\evidence\genuine_rc3_50_runtime_audit\screenshot_case6.png
+[2026-10-24T11:43:22.109Z] Result for case6: {"isJsonFormReceipt":true,"jsonReceiptErrorFound":false,"matchedServerError":null,"validationErrorsCount":0,"verdict":"SUCCESS_AUTHENTIC_RECEIPT"}
+[2026-10-24T11:43:22.116Z] Verdict: SUCCESS_AUTHENTIC_RECEIPT (Expected: SUCCESS_AUTHENTIC_RECEIPT) -> ✅ PASS
+[2026-10-24T11:43:22.123Z] 
+--- Executing Genuine SW State Persistence & Restart Test ---
+[2026-10-24T11:43:22.132Z] Injected campaign state into SW storage: {"xpider_campaign_counters_v1":{"total":10,"success":7,"failed":2,"pending":1},"xpider_active_campaign_id":"GENUINE-RC350-AUDIT-CAMP","xpider_history_ledger":[{"id":"L1","url":"http://test1.local","status":"SUCCESS","ts":1729770000000},{"id":"L2","url":"http://test2.local","status":"FAILED","reason":"HTTP_500_REJECT","ts":1729770001000}]}
+[2026-10-24T11:43:22.140Z] Restored SW storage: {"xpider_active_campaign_id":"GENUINE-RC350-AUDIT-CAMP","xpider_campaign_counters_v1":{"failed":2,"pending":1,"success":7,"total":10},"xpider_history_ledger":[{"id":"L1","status":"SUCCESS","ts":1729770000000,"url":"http://test1.local"},{"id":"L2","reason":"HTTP_500_REJECT","status":"FAILED","ts":1729770001000,"url":"http://test2.local"}]}
+[2026-10-24T11:43:22.147Z] State persistence across SW context: ✅ PASS (Byte-for-Byte Intact)
+[2026-10-24T11:43:23.000Z] 
+=== AUDIT REPORT WRITTEN: E:\vivpr\ai\extension-form-sender\evidence\genuine_rc3_50_runtime_audit\genuine_rc3_50_runtime_audit_report.json ===
+[2026-10-24T11:43:23.007Z] Overall Verdict: 100% PASS

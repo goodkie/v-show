@@ -1,0 +1,51 @@
+{
+  "zipPath": "E:\\vivpr\\ai\\extension-form-sender\\XPIDER_R6.9G.10.3.7.1.4.66_PRIVATE_EGRESS_RC3.50.zip",
+  "zipSha256": "5d22d4f4c654dee63243e24b9dec381662970e6c42348dee5cdff2960ababef2",
+  "unpackedRoot": "E:\\vivpr\\ai\\extension-form-sender\\scratch\\unpacked_rc3_50\\extension",
+  "auditedAt": "2026-10-24T11:41:58.751Z",
+  "files": [
+    {
+      "file": "manifest.json",
+      "unpackedSha": "021812732c5d29191537909757b937bef8159f4a7bdd0b6805a445de1d37f651",
+      "workspaceSha": "021812732c5d29191537909757b937bef8159f4a7bdd0b6805a445de1d37f651",
+      "exactMatch": true
+    },
+    {
+      "file": "background.js",
+      "unpackedSha": "26b1f824e3763ddef81d12eb07dcf86daac3e37ce0bb49d82879500958093f28",
+      "workspaceSha": "26b1f824e3763ddef81d12eb07dcf86daac3e37ce0bb49d82879500958093f28",
+      "exactMatch": true
+    },
+    {
+      "file": "content-script.js",
+      "unpackedSha": "64f333d5f7f913fd4363dedf5ed292992519518e6d309ea4ee56b1dcac7bc810",
+      "workspaceSha": "64f333d5f7f913fd4363dedf5ed292992519518e6d309ea4ee56b1dcac7bc810",
+      "exactMatch": true
+    },
+    {
+      "file": "popup.js",
+      "unpackedSha": "dd02b0cf62d406c13e4fa5958d42011d6ddadbb6d8463ff95244ba83db4b15cd",
+      "workspaceSha": "dd02b0cf62d406c13e4fa5958d42011d6ddadbb6d8463ff95244ba83db4b15cd",
+      "exactMatch": true
+    },
+    {
+      "file": "popup.html",
+      "unpackedSha": "153ac71d034ad9d823f625ffb534e4dfae07e167f0e3a59b18b5bfd9d1ec1c14",
+      "workspaceSha": "153ac71d034ad9d823f625ffb534e4dfae07e167f0e3a59b18b5bfd9d1ec1c14",
+      "exactMatch": true
+    },
+    {
+      "file": "modules/build-provenance.js",
+      "unpackedSha": "45be7bf10cb712da64f70457325fc6951f9d9397f6f1a935b7897cf40b13b61e",
+      "workspaceSha": "45be7bf10cb712da64f70457325fc6951f9d9397f6f1a935b7897cf40b13b61e",
+      "exactMatch": true
+    },
+    {
+      "file": "modules/privacy-gateway.js",
+      "unpackedSha": "cc5c8cc9c83adf3b985aa4bab74b04189c00fdba4f3ac3a555bd00e38fc79993",
+      "workspaceSha": "cc5c8cc9c83adf3b985aa4bab74b04189c00fdba4f3ac3a555bd00e38fc79993",
+      "exactMatch": true
+    }
+  ],
+  "sourceBuildParity": "FULL_PARITY"
+}

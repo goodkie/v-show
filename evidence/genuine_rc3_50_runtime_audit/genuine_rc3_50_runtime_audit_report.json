@@ -1,0 +1,107 @@
+{
+  "directive": "Owner PM Comment #6383729854",
+  "buildId": "R6.9G.10.3.7.1.4.66-20261024-P0-RC3.50",
+  "unpackedExtensionDir": "E:\\vivpr\\ai\\extension-form-sender\\scratch\\unpacked_rc3_50\\extension",
+  "browser": "Microsoft Edge (CDP)",
+  "executedAt": "2026-10-24T11:43:22.993Z",
+  "testCases": [
+    {
+      "caseId": "case1",
+      "name": "HTTP 500 Server Error",
+      "url": "http://127.0.0.1:8991/case1_500_server_error",
+      "classification": {
+        "isJsonFormReceipt": false,
+        "jsonReceiptErrorFound": true,
+        "matchedServerError": "JSON_HTTP_500",
+        "validationErrorsCount": 1,
+        "verdict": "REJECTED_AS_FAILURE"
+      },
+      "expected": "REJECTED_AS_FAILURE",
+      "passed": true,
+      "screenshot": "screenshot_case1.png"
+    },
+    {
+      "caseId": "case2",
+      "name": "HTTP 404 Not Found",
+      "url": "http://127.0.0.1:8991/case2_404_not_found",
+      "classification": {
+        "isJsonFormReceipt": false,
+        "jsonReceiptErrorFound": false,
+        "matchedServerError": "HTML_HTTP_ERROR",
+        "validationErrorsCount": 0,
+        "verdict": "REJECTED_AS_FAILURE"
+      },
+      "expected": "REJECTED_AS_FAILURE",
+      "passed": true,
+      "screenshot": "screenshot_case2.png"
+    },
+    {
+      "caseId": "case3",
+      "name": "HTTP 502 Bad Gateway",
+      "url": "http://127.0.0.1:8991/case3_502_bad_gateway",
+      "classification": {
+        "isJsonFormReceipt": false,
+        "jsonReceiptErrorFound": false,
+        "matchedServerError": "HTML_HTTP_ERROR",
+        "validationErrorsCount": 0,
+        "verdict": "REJECTED_AS_FAILURE"
+      },
+      "expected": "REJECTED_AS_FAILURE",
+      "passed": true,
+      "screenshot": "screenshot_case3.png"
+    },
+    {
+      "caseId": "case4",
+      "name": "JSON Validation Failure",
+      "url": "http://127.0.0.1:8991/case4_json_validation_fail",
+      "classification": {
+        "isJsonFormReceipt": false,
+        "jsonReceiptErrorFound": true,
+        "matchedServerError": null,
+        "validationErrorsCount": 1,
+        "verdict": "REJECTED_AS_FAILURE"
+      },
+      "expected": "REJECTED_AS_FAILURE",
+      "passed": true,
+      "screenshot": "screenshot_case4.png"
+    },
+    {
+      "caseId": "case5",
+      "name": "Missing Receipt ID (Unacknowledged)",
+      "url": "http://127.0.0.1:8991/case5_missing_receipt_id",
+      "classification": {
+        "isJsonFormReceipt": false,
+        "jsonReceiptErrorFound": false,
+        "matchedServerError": null,
+        "validationErrorsCount": 0,
+        "verdict": "REJECTED_INSUFFICIENT_RECEIPT"
+      },
+      "expected": "REJECTED_INSUFFICIENT_RECEIPT",
+      "passed": true,
+      "screenshot": "screenshot_case5.png"
+    },
+    {
+      "caseId": "case6",
+      "name": "Authentic Receipt with Valid Payload",
+      "url": "http://127.0.0.1:8991/case6_authentic_receipt",
+      "classification": {
+        "isJsonFormReceipt": true,
+        "jsonReceiptErrorFound": false,
+        "matchedServerError": null,
+        "validationErrorsCount": 0,
+        "verdict": "SUCCESS_AUTHENTIC_RECEIPT"
+      },
+      "expected": "SUCCESS_AUTHENTIC_RECEIPT",
+      "passed": true,
+      "screenshot": "screenshot_case6.png"
+    }
+  ],
+  "statePersistence": {
+    "tested": true,
+    "passed": true,
+    "injectedCampaignId": "GENUINE-RC350-AUDIT-CAMP",
+    "restoredCount": 2
+  },
+  "swConsoleLogsCaptured": 7,
+  "overallVerdict": "100% PASS"
+}

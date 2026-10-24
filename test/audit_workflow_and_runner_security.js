@@ -78,6 +78,12 @@ assert.strictEqual(runnerContent.includes('POST_SYSCTL_FORWARD'), true, 'Runner 
 assert.strictEqual(runnerContent.includes('POST_IPTABLES_NAT'), true, 'Runner must assert iptables NAT rules cleaned');
 assert.strictEqual(runnerContent.includes('POST_RESOLV'), true, 'Runner must assert DNS resolv.conf restored');
 assert.strictEqual(runnerContent.includes('/etc/xpider/wireguard_system_snapshot.json'), true, 'Runner must assert system snapshot creation');
-console.log('   ✅ PASS: Comprehensive UFW, iptables, sysctl, and DNS baseline & restore assertions verified.');
+// 7. Audit Ephemeral Runner Identity & Repository Context Binding
+console.log('7. Auditing Runner Identity & Repository Binding Guards...');
+assert.strictEqual(runnerContent.includes('GITHUB_REPOSITORY="goodkie/v-show"'), true, 'Runner must strictly bind to goodkie/v-show repository');
+assert.strictEqual(runnerContent.includes('GITHUB_RUN_ID'), true, 'Runner must require valid GitHub Actions execution run ID');
+assert.strictEqual(runnerContent.includes('/home/runner/work'), true, 'Runner must verify runner work directory presence');
+assert.strictEqual(runnerContent.includes('LOCAL_IF_IPS'), true, 'Runner must audit local interfaces against production IP');
+console.log('   ✅ PASS: Genuine GitHub-hosted runner identity, repository binding, and local interface audit verified.');
 
 console.log('\n=== [AUDIT RESULT] 100% PASS: All workflow and runner security requirements verified. ===');
