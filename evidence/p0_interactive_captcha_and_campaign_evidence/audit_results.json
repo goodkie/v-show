@@ -1,0 +1,55 @@
+{
+  "testSuite": "XPIDER_P0_GENUINE_INTERACTIVE_CAPTCHA_AND_CAMPAIGN_MATRIX",
+  "timestamp": "2026-10-24T05:21:22.389Z",
+  "extractedPath": "E:\\vivpr\\ai\\extension-form-sender\\scratch\\extracted_rc3_47\\extension",
+  "stages": {
+    "provenance": {
+      "buildId": "R6.9G.10.3.7.1.4.63-20261023-P0-RC3.47",
+      "head": "7c0dabbad43e276c0ff8e24eedc8935609ab8ef1",
+      "pass": true
+    },
+    "interactiveCaptchaSkip": {
+      "pass": true,
+      "dedupeSuppressed": true,
+      "singleModal": true,
+      "ledgerUpdated": true
+    },
+    "interactiveCaptchaManual": {
+      "pass": true,
+      "manualHold": true,
+      "verifiedResume": true,
+      "ledgerUpdated": true
+    },
+    "reloadResilience": {
+      "pass": true,
+      "historyPreserved": true,
+      "zeroOrphanedModals": true
+    },
+    "substantiveCampaignPaths": {
+      "pass": true,
+      "discoveryFailuresHandled": true,
+      "deadPageClassified": true,
+      "semanticMappingVerified": true,
+      "submitConfirmationVerified": true,
+      "duplicateSuppressed": true
+    },
+    "parallelDeliverables": {
+      "pass": true,
+      "doPatAudit": {
+        "/account": 200,
+        "/droplets": 403,
+        "/account/keys": 403,
+        "/firewalls": 200,
+        "/tags": 200
+      },
+      "wireGuardTemplateOffline": {
+        "pass": true,
+        "scriptSha256": "9ac985b43c19803071312e197e458fa016038354301929e357f422636969dc5f",
+        "checks": 6
+      },
+      "residentialProxyAdapter": "7/7 PASS",
+      "residentialRelayEndpoints": "PASS"
+    }
+  },
+  "verdict": "ALL_AUDIT_STAGES_PASSED_100%"
+}
