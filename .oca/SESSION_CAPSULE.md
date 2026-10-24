@@ -6,17 +6,17 @@ PROJECT_NAME: XPIDER AutoForm Sender Pro
 WORKSPACE_ROOT: E:\vivpr\ai\extension-form-sender
 AUTHORITY_SOURCE: goodkie/v-show Issues #6 & #10
 ACTIVE_BRANCH: upgrade/phase-0-1
-STATE_REV: 2026-10-24.146
-AUTHORITY_CURSOR: 5925452645
+STATE_REV: 2026-10-24.147
+AUTHORITY_CURSOR: 6381855826
 LAST_AUDIT: [CHATGPT RC3.48 AUDIT / NEXT EXECUTION][ISSUE #6][2026-10-24] Comment #6380501639
 LAST_DIRECTIVE: [OWNER PM REACTIVATION + NEXT ENGINEERING MILESTONE][ISSUE #6][2026-10-24] Comment #5925452645
-LAST_RECEIPT: [ANTIGRAVITY][RECEIPT][ISSUE-6][P0-RC3.49-RELEASE-PARITY-WG-SYSTEM-SNAPSHOT-AND-OWNER-SMOKE-VERIFIED][2026-10-24T07:50Z] Comment #6381654082
+LAST_RECEIPT: [ANTIGRAVITY][RECEIPT][ISSUE-6][P0-ISOLATED-FRESH-WINDOWS-INSTALL-COMPANION-BUILD-SYNC-AND-OPAL-PLAN-VERIFIED][2026-10-24T08:12Z] Comment #6381855826
 BUILD_ID: R6.9G.10.3.7.1.4.65-20261024-P0-RC3.49
-FUNCTIONAL_COMMIT: 535707782fac87e6a5dbdde13649e104a3033d91
-PROVENANCE_COMMIT: 535707782fac87e6a5dbdde13649e104a3033d91
+FUNCTIONAL_COMMIT: 3b7436fd9d5b327cea7615abfb59dc0e1a8acfed
+PROVENANCE_COMMIT: 3b7436fd9d5b327cea7615abfb59dc0e1a8acfed
 ROLLBACK_ANCHOR: 55cd543be5ebe7a4553cac0cbfcf933a00e4c8a5
-PREVIOUS_FUNCTIONAL_RESTORE_POINT: 1e536f82a03f2dba1849ed670d8e660b76ed41b5
-NEXT_ACTION: Post substantive receipt on Comment #6381477535 with verified git rev-parse SHA, RC3.49 package parity audit, fresh profile native host test, and full smoke test trace.
+PREVIOUS_FUNCTIONAL_RESTORE_POINT: 535707782fac87e6a5dbdde13649e104a3033d91
+NEXT_ACTION: Awaiting ChatGPT / Owner PM audit of Comment #6381855826. Maintain 8443 proxy stability, isolated fresh Windows install test suite ready.
 BLOCKERS: Droplet SSH 22 blocked by internal host UFW & wiped authorized_keys (RC3.37 invariant); provided PAT is scoped to firewalls/tags only (verified raw 403 on droplets/keys). Droplet Egress Proxy on 8443 is VERIFIED HEALTHY (relayReady: true, end-to-end egress verified: 143.198.40.33). Single minimal Owner authentication request provided for server WG setup via DO web console; GL.iNet Opal physical hardware tunnel unverified pending physical deployment; residential CONFIG_REQUIRED remains.
 OWNER_ACTION: none for daily form operations (8443 proxy and privacy relay active and verified; console SSH recovery requires web console and Owner's actual public key only if console access is desired).
 RELEASE_ASSET_TAG: v6.9g.10.3-rc3.49.7.1.4.65
