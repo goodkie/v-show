@@ -10,25 +10,66 @@ set -euo pipefail
 
 echo "=== [XPIDER DISPOSABLE LINUX RUNNER] WireGuard System Snapshot & Restore Integration Test ==="
 
-# 1. Multi-Probe Environment Safety Assertion: NEVER run against production proxy
-PROD_DO_IP="143.198.40.33"
-HOST_IP_1=$(curl -s --max-time 3 https://api.ipify.org || echo "")
-HOST_IP_2=$(curl -s --max-time 3 https://ifconfig.me || echo "")
-HOST_IP_3=$(curl -s --max-time 3 https://icanhazip.com || echo "")
+# ------------------------------------------------------------------------------
+# 1. Ephemeral Environment & Destructive Operation Guard
+# ------------------------------------------------------------------------------
+if [[ "${CI:-}" != "true" && "${GITHUB_ACTIONS:-}" != "true" && "${FORCE_EPHEMERAL_DISPOSABLE:-}" != "1" ]]; then
+  echo "FATAL SECURITY BOUNDARY ERROR: Destructive system networking tests are strictly confined"
+  echo "to ephemeral CI runners (CI=true / GITHUB_ACTIONS=true) or explicit FORCE_EPHEMERAL_DISPOSABLE=1."
+  echo "Aborting execution to prevent local host network modification."
+  exit 1
+fi
+echo "✅ Ephemeral Environment Guard: Confirmed running in disposable CI container/runner."
 
+# ------------------------------------------------------------------------------
+# 2. Multi-Probe Public IP Verification & Ambiguity Abort Guard
+# ------------------------------------------------------------------------------
+PROD_DO_IP="143.198.40.33"
+HOST_IP_1=$(curl -s --max-time 3 https://api.ipify.org 2>/dev/null || echo "")
+HOST_IP_2=$(curl -s --max-time 3 https://ifconfig.me 2>/dev/null || echo "")
+HOST_IP_3=$(curl -s --max-time 3 https://icanhazip.com 2>/dev/null || echo "")
+
+VALID_IPS=()
 for IP in "${HOST_IP_1}" "${HOST_IP_2}" "${HOST_IP_3}"; do
   IP_TRIMMED=$(echo "${IP}" | tr -d '[:space:]')
-  if [[ -n "${IP_TRIMMED}" ]]; then
-    echo "Probed Host Public IP: ${IP_TRIMMED}"
-    if [[ "${IP_TRIMMED}" == "${PROD_DO_IP}"* ]]; then
-      echo "FATAL SECURITY BOUNDARY ERROR: Host IP matches production DO proxy ${PROD_DO_IP}! ABORTING IMMEDIATELY."
-      exit 1
-    fi
+  if [[ -n "${IP_TRIMMED}" && "${IP_TRIMMED}" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
+    VALID_IPS+=("${IP_TRIMMED}")
   fi
 done
-echo "✅ Safety Guard: Verified host is NOT production node ${PROD_DO_IP}."
 
-# 2. Dependency Check / Installation in Disposable Environment
+# If all probes failed or returned ambiguous output, abort safely
+if [[ ${#VALID_IPS[@]} -eq 0 ]]; then
+  echo "FATAL SECURITY ERROR: Unable to definitively determine host public IP (all external probes failed or ambiguous)."
+  echo "Refusing execution to prevent running on an unverified production node."
+  exit 1
+fi
+
+for CHECK_IP in "${VALID_IPS[@]}"; do
+  echo "Probed Host Public IP: ${CHECK_IP}"
+  if [[ "${CHECK_IP}" == "${PROD_DO_IP}"* ]]; then
+    echo "FATAL SECURITY BOUNDARY ERROR: Host IP matches production DO proxy ${PROD_DO_IP}! ABORTING IMMEDIATELY."
+    exit 1
+  fi
+done
+echo "✅ Production Invariant Guard: Verified host is NOT production node ${PROD_DO_IP}."
+
+# ------------------------------------------------------------------------------
+# 3. Emergency Cleanup Trap on Unexpected Failure
+# ------------------------------------------------------------------------------
+cleanup_on_error() {
+  local exit_code=$?
+  echo ">>> [TRAP] Encountered failure or premature exit (exit code: ${exit_code})."
+  echo ">>> [TRAP] Executing emergency teardown and snapshot restoration..."
+  if [[ -f "${WORKDIR:-}/setup_wireguard.sh" ]] && [[ -f /etc/xpider/wireguard_system_snapshot.json ]]; then
+    sudo "${WORKDIR}/setup_wireguard.sh" --teardown || true
+    echo ">>> [TRAP] Emergency teardown executed."
+  fi
+}
+trap cleanup_on_error ERR
+
+# ------------------------------------------------------------------------------
+# 4. Dependency Check / Installation in Disposable Environment
+# ------------------------------------------------------------------------------
 if ! command -v ufw >/dev/null 2>&1 || ! command -v wg >/dev/null 2>&1 || ! command -v iptables >/dev/null 2>&1; then
   echo "Installing test dependencies (ufw, wireguard-tools, iptables)..."
   sudo apt-get update -qq && sudo apt-get install -y -qq ufw wireguard-tools iptables
@@ -47,7 +88,9 @@ fi
 cp "${SCRIPT_SRC}" ./setup_wireguard.sh
 chmod +x ./setup_wireguard.sh
 
-# 3. Capture Initial System State Baseline
+# ------------------------------------------------------------------------------
+# 5. Capture Initial System State Baseline
+# ------------------------------------------------------------------------------
 echo ">>> STEP 1: Capturing Pristine System State Baseline..."
 sudo ufw --force reset >/dev/null 2>&1 || true
 sudo ufw default deny incoming >/dev/null 2>&1 || true
@@ -66,7 +109,9 @@ echo "Baseline iptables filter & nat captured."
 echo "Baseline sysctl net.ipv4.ip_forward: ${BASELINE_SYSCTL_FORWARD}"
 echo "Baseline DNS resolv.conf captured."
 
-# 4. Execute WireGuard Installation & Verify Snapshot Generation
+# ------------------------------------------------------------------------------
+# 6. Execute WireGuard Installation & Verify Snapshot Generation
+# ------------------------------------------------------------------------------
 echo ">>> STEP 2: Executing setup_wireguard.sh --install..."
 sudo ./setup_wireguard.sh --install
 
@@ -77,7 +122,9 @@ if [[ ! -f /etc/xpider/wireguard_system_snapshot.json ]]; then
 fi
 echo "✅ WireGuard system snapshot verified."
 
-# 5. Verify Active Configuration & Firewall Alterations
+# ------------------------------------------------------------------------------
+# 7. Verify Active Configuration & Firewall Alterations
+# ------------------------------------------------------------------------------
 echo ">>> STEP 3: Verifying Active WireGuard Configuration & Firewall Changes..."
 if ! sudo ufw status | grep -q "51820/udp"; then
   echo "FATAL: Port 51820/udp was not allowed in UFW!"
@@ -92,11 +139,15 @@ if ! sudo wg show wg0 >/dev/null 2>&1; then
 fi
 echo "✅ WireGuard interface wg0 active."
 
-# 6. Execute Teardown & System Restoration
+# ------------------------------------------------------------------------------
+# 8. Execute Teardown & System Restoration
+# ------------------------------------------------------------------------------
 echo ">>> STEP 4: Executing setup_wireguard.sh --teardown..."
 sudo ./setup_wireguard.sh --teardown
 
-# 7. Comprehensive State Restoration Assertions
+# ------------------------------------------------------------------------------
+# 9. Comprehensive State Restoration Assertions
+# ------------------------------------------------------------------------------
 echo ">>> STEP 5: Verifying Clean State Restoration across all Subsystems..."
 
 # Check 1: UFW rules

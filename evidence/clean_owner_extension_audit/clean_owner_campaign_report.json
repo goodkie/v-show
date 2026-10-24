@@ -1,0 +1,48 @@
+{
+  "testSuite": "XPIDER_CLEAN_OWNER_CAMPAIGN_AND_TRANSPORT_AUDIT",
+  "timestamp": "2026-10-24T11:14:07.479Z",
+  "expectedBuildId": "R6.9G.10.3.7.1.4.66-20261024-P0-RC3.50",
+  "phases": {
+    "extraction": {
+      "pass": true,
+      "zipSha256": "5d22d4f4c654dee63243e24b9dec381662970e6c42348dee5cdff2960ababef2",
+      "buildId": "R6.9G.10.3.7.1.4.66-20261024-P0-RC3.50"
+    },
+    "fixtureServer": {
+      "pass": true,
+      "port": 8089,
+      "endpoints": [
+        "/",
+        "/contact.html",
+        "/submit"
+      ]
+    },
+    "failClosedPolicy": {
+      "pass": true,
+      "deadPortCode": "ECONNREFUSED",
+      "sendAllowed": false,
+      "fallbackToDirectAllowed": false,
+      "reason": "PRIVACY_TRANSPORT_NOT_VERIFIED"
+    },
+    "liveEgressVerification": {
+      "pass": true,
+      "companionStatus": "OK",
+      "companionBuildId": "R6.9G.10.3.7.1.4.66-20261024-P0-RC3.50",
+      "verifiedEgressIp": "143.198.40.33",
+      "dropletId": "611293905"
+    },
+    "campaignExecution": {
+      "pass": true,
+      "mappedFields": {
+        "name": "XPIDER Automated Systems Inc.",
+        "email": "compliance@xpider-autoform.internal",
+        "phone": "+1-416-555-0199",
+        "message": "Verification payload testing genuine form discovery, field collision prevention, and zero-leak privacy egress."
+      },
+      "receiptId": "XPIDER-RECEIPT-1792840570105-8E3DF1",
+      "timestamp": "2026-10-24T11:16:10.105Z",
+      "unsolicitedExternalSends": 0
+    }
+  },
+  "verdict": "CLEAN_OWNER_CAMPAIGN_AND_FAIL_CLOSED_TRANSPORT_VERIFIED_100%"
+}
