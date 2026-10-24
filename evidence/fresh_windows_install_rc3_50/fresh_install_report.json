@@ -1,0 +1,61 @@
+{
+  "testSuite": "XPIDER_RC3_50_ISOLATED_FRESH_WINDOWS_INSTALL",
+  "timestamp": "2026-10-24T08:39:20.180Z",
+  "expectedBuildId": "R6.9G.10.3.7.1.4.66-20261024-P0-RC3.50",
+  "steps": {
+    "pristineCleanState": {
+      "pass": true,
+      "port18989Closed": true
+    },
+    "freshExtraction": {
+      "pass": true,
+      "zipSha256": "5d22d4f4c654dee63243e24b9dec381662970e6c42348dee5cdff2960ababef2",
+      "extractDir": "E:\\vivpr\\ai\\extension-form-sender\\scratch\\isolated_fresh_install_rc3_50"
+    },
+    "buildIdParityAudit": {
+      "pass": true,
+      "extensionBuildId": "R6.9G.10.3.7.1.4.66-20261024-P0-RC3.50",
+      "relayCompanionBuildId": "R6.9G.10.3.7.1.4.66-20261024-P0-RC3.50",
+      "nativeHostBuildId": "R6.9G.10.3.7.1.4.66-20261024-P0-RC3.50",
+      "ensureCompanionBuildId": "R6.9G.10.3.7.1.4.66-20261024-P0-RC3.50",
+      "inventoryFileCount": 2185
+    },
+    "initialRegistration": {
+      "pass": true,
+      "manifestName": "com.xpider.privacy_relay",
+      "extensionId": "ldlijlaccfeelfdhgnjbibniocefckjj"
+    },
+    "tokenProvisioningAndSecrecy": {
+      "pass": true,
+      "tokenLength": 64,
+      "unauthorizedStatus": 401,
+      "forgedStatus": 401,
+      "authorizedStatus": 200
+    },
+    "inaccessibleListenerFailClosed": {
+      "pass": true,
+      "portReachable": false,
+      "sendAllowed": false,
+      "directLeakBytes": 0
+    },
+    "malformedConfigHandling": {
+      "pass": true,
+      "safelyRefused": true
+    },
+    "upgradeRollbackCompatibility": {
+      "pass": true,
+      "rc349BuildId": "R6.9G.10.3.7.1.4.65-20261024-P0-RC3.49",
+      "rc350BuildId": "R6.9G.10.3.7.1.4.66-20261024-P0-RC3.50",
+      "schemaCompatible": true
+    },
+    "startRecoveryAndOwnedForm": {
+      "pass": true,
+      "status": "OK",
+      "relayReady": true,
+      "lifecycleState": "READY",
+      "activeEgressNode": "143.198.40.33:8443",
+      "humanCaptchaFallbackPolicy": "STRICT_FAIL_CLOSED"
+    }
+  },
+  "verdict": "ALL_ISOLATED_FRESH_WINDOWS_INSTALL_TESTS_PASSED_100%"
+}

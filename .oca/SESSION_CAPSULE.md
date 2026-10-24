@@ -6,24 +6,24 @@ PROJECT_NAME: XPIDER AutoForm Sender Pro
 WORKSPACE_ROOT: E:\vivpr\ai\extension-form-sender
 AUTHORITY_SOURCE: goodkie/v-show Issues #6 & #10
 ACTIVE_BRANCH: upgrade/phase-0-1
-STATE_REV: 2026-10-24.147
-AUTHORITY_CURSOR: 6381855826
+STATE_REV: 2026-10-24.148
+AUTHORITY_CURSOR: 6381905489
 LAST_AUDIT: [CHATGPT RC3.48 AUDIT / NEXT EXECUTION][ISSUE #6][2026-10-24] Comment #6380501639
-LAST_DIRECTIVE: [OWNER PM REACTIVATION + NEXT ENGINEERING MILESTONE][ISSUE #6][2026-10-24] Comment #5925452645
+LAST_DIRECTIVE: [OWNER PM AUDIT / NEXT EXECUTION POST #6381855826][ISSUE #6] Comment #6381905489
 LAST_RECEIPT: [ANTIGRAVITY][RECEIPT][ISSUE-6][P0-ISOLATED-FRESH-WINDOWS-INSTALL-COMPANION-BUILD-SYNC-AND-OPAL-PLAN-VERIFIED][2026-10-24T08:12Z] Comment #6381855826
-BUILD_ID: R6.9G.10.3.7.1.4.65-20261024-P0-RC3.49
-FUNCTIONAL_COMMIT: 3b7436fd9d5b327cea7615abfb59dc0e1a8acfed
-PROVENANCE_COMMIT: 3b7436fd9d5b327cea7615abfb59dc0e1a8acfed
+BUILD_ID: R6.9G.10.3.7.1.4.66-20261024-P0-RC3.50
+FUNCTIONAL_COMMIT: 6a7a786eddf5aba531b8e12f0823875ec277d776
+PROVENANCE_COMMIT: 6a7a786eddf5aba531b8e12f0823875ec277d776
 ROLLBACK_ANCHOR: 55cd543be5ebe7a4553cac0cbfcf933a00e4c8a5
-PREVIOUS_FUNCTIONAL_RESTORE_POINT: 535707782fac87e6a5dbdde13649e104a3033d91
-NEXT_ACTION: Awaiting ChatGPT / Owner PM audit of Comment #6381855826. Maintain 8443 proxy stability, isolated fresh Windows install test suite ready.
+PREVIOUS_FUNCTIONAL_RESTORE_POINT: 3b7436fd9d5b327cea7615abfb59dc0e1a8acfed
+NEXT_ACTION: Post substantive receipt on Comment #6381905489 with verified git rev-parse SHA, RC3.50 package parity audit, fresh isolated install test suite results, and disposable Linux CI harness.
 BLOCKERS: Droplet SSH 22 blocked by internal host UFW & wiped authorized_keys (RC3.37 invariant); provided PAT is scoped to firewalls/tags only (verified raw 403 on droplets/keys). Droplet Egress Proxy on 8443 is VERIFIED HEALTHY (relayReady: true, end-to-end egress verified: 143.198.40.33). Single minimal Owner authentication request provided for server WG setup via DO web console; GL.iNet Opal physical hardware tunnel unverified pending physical deployment; residential CONFIG_REQUIRED remains.
 OWNER_ACTION: none for daily form operations (8443 proxy and privacy relay active and verified; console SSH recovery requires web console and Owner's actual public key only if console access is desired).
-RELEASE_ASSET_TAG: v6.9g.10.3-rc3.49.7.1.4.65
-RELEASE_ASSET_ZIP: XPIDER_R6.9G.10.3.7.1.4.65_PRIVATE_EGRESS_RC3.49.zip
-RELEASE_ASSET_SIZE: 51705083
-RELEASE_ASSET_SHA256: 52a7d08f7d01ec61a33e2c186dcb478a4ad743614399a8ff7923aeae851a8f0d
-RELEASE_ASSET_URL: https://github.com/goodkie/v-show/releases/download/v6.9g.10.3-rc3.49.7.1.4.65/XPIDER_R6.9G.10.3.7.1.4.65_PRIVATE_EGRESS_RC3.49.zip
+RELEASE_ASSET_TAG: v6.9g.10.3-rc3.50.7.1.4.66
+RELEASE_ASSET_ZIP: XPIDER_R6.9G.10.3.7.1.4.66_PRIVATE_EGRESS_RC3.50.zip
+RELEASE_ASSET_SIZE: 51707779
+RELEASE_ASSET_SHA256: 5d22d4f4c654dee63243e24b9dec381662970e6c42348dee5cdff2960ababef2
+RELEASE_ASSET_URL: https://github.com/goodkie/v-show/releases/download/v6.9g.10.3-rc3.50.7.1.4.66/XPIDER_R6.9G.10.3.7.1.4.66_PRIVATE_EGRESS_RC3.50.zip
 IMMUTABLE_DAILY_USE_BASELINE: XPIDER_R6.9G.10.3.7.1.4.11_OWNER_BETA.zip (commit 50aee353, SHA256: 2149a760fb614140b297d3c57abcf4aa396b376bfb9459682fc0d323fc7c3532)
 
 CONTINUITY_RULE: On every new ChatGPT or Antigravity window, search the current project for prior work, recover the latest valid state, and continue existing work instead of restarting.

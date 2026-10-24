@@ -1,0 +1,74 @@
+[2026-10-24T08:39:20.146Z] ========================================================================
+[2026-10-24T08:39:20.157Z]   XPIDER RC3.50 ISOLATED FRESH WINDOWS INSTALL & FAILURE MATRIX AUDIT   
+[2026-10-24T08:39:20.169Z] ========================================================================
+
+[2026-10-24T08:39:20.180Z] >>> STEP 1: Establishing Pristine Clean State (Zero Running Relays)...
+[2026-10-24T08:39:20.827Z] Port 18989 initially open: false
+[2026-10-24T08:39:20.836Z] ✅ STEP 1 PASS: Pristine clean slate confirmed. Port 18989 is closed.
+
+[2026-10-24T08:39:20.845Z] >>> STEP 2: Extracting Authoritative RC3.50 Release ZIP...
+[2026-10-24T08:39:21.058Z] RC3.50 ZIP SHA256 verified: 5d22d4f4c654dee63243e24b9dec381662970e6c42348dee5cdff2960ababef2
+[2026-10-24T08:40:18.297Z] ✅ STEP 2 PASS: Fresh RC3.50 release unpacked cleanly into isolated directory.
+
+[2026-10-24T08:40:18.309Z] >>> STEP 3: Auditing Component Build IDs & Package Inventory Manifest...
+[2026-10-24T08:40:18.348Z] Extracted extension buildId: R6.9G.10.3.7.1.4.66-20261024-P0-RC3.50
+[2026-10-24T08:40:18.393Z] Extracted privacy-relay-service COMPANION_BUILD_ID: R6.9G.10.3.7.1.4.66-20261024-P0-RC3.50
+[2026-10-24T08:40:18.430Z] Extracted native_host COMPANION_BUILD_ID: R6.9G.10.3.7.1.4.66-20261024-P0-RC3.50
+[2026-10-24T08:40:18.467Z] Extracted ensure_companion_service EXPECTED_BUILD_ID: R6.9G.10.3.7.1.4.66-20261024-P0-RC3.50
+[2026-10-24T08:40:18.477Z] Verified PACKAGE_INVENTORY_SHA256.txt contains 2185 files.
+[2026-10-24T08:40:18.483Z] ✅ STEP 3 PASS: 100% build identity parity across all companion and extension modules.
+
+[2026-10-24T08:40:18.490Z] >>> STEP 4: Testing Native Host Registration Manifest & Discovery...
+[2026-10-24T08:40:18.644Z] Native Host Registration Dry-Run:
+[NATIVE_HOST] Auto-discovered stable extension ID from manifest key: ldlijlaccfeelfdhgnjbibniocefckjj
+[NATIVE_HOST] Isolated dry-run mode active; skipping Windows Registry modification.
+[2026-10-24T08:40:18.652Z] Generated Native Host Manifest: name=com.xpider.privacy_relay, type=stdio
+[2026-10-24T08:40:18.659Z] ✅ STEP 4 PASS: Native host manifest hygiene and extension discovery verified.
+
+[2026-10-24T08:40:18.666Z] >>> STEP 5: Testing Auth Token Provisioning & Secrecy Enforcement...
+[2026-10-24T08:40:20.998Z] Companion service started: status=OK, relayReady=false
+[2026-10-24T08:40:21.006Z] Provisioned Token length: 64 chars (Hex verified, value redacted).
+[2026-10-24T08:40:21.014Z] Probing /status without token (Expect HTTP 401)...
+[2026-10-24T08:40:21.023Z] Unauthorized request response: HTTP 401
+[2026-10-24T08:40:21.030Z] Probing /status with forged invalid token (Expect HTTP 401)...
+[2026-10-24T08:40:21.041Z] Forged token response: HTTP 401
+[2026-10-24T08:40:21.048Z] Probing /status with valid Bearer token (Expect HTTP 200)...
+[2026-10-24T08:40:21.059Z] Authorized token response: HTTP 200
+[2026-10-24T08:40:21.066Z] ✅ STEP 5 PASS: Token provisioning, entropy, and HTTP 401 authorization barrier verified.
+
+[2026-10-24T08:40:21.073Z] >>> STEP 6: Testing Inaccessible Listener & Privacy Fail-Closed...
+[2026-10-24T08:40:23.705Z] Inaccessible Listener State: listenerReachable=false, sendAllowed=false
+[2026-10-24T08:40:23.712Z] ✅ STEP 6 PASS: Inaccessible localhost listener cleanly triggers fail-closed.
+
+[2026-10-24T08:40:23.719Z] >>> STEP 7: Testing Malformed Config Refusal (Safe Termination)...
+[2026-10-24T08:40:27.747Z] Malformed config rejected safely: spawnSync C:\WINDOWS\system32\cmd.exe ETIMEDOUT
+[2026-10-24T08:40:27.754Z] ✅ STEP 7 PASS: Corrupt config safely terminated without exposing open unencrypted relay.
+
+[2026-10-24T08:40:27.761Z] >>> STEP 8: Testing Upgrade & Rollback Transitions (RC3.49 <-> RC3.50)...
+[2026-10-24T08:41:02.684Z] RC3.49 Build ID: R6.9G.10.3.7.1.4.65-20261024-P0-RC3.49 (Schema: 2)
+[2026-10-24T08:41:02.691Z] RC3.50 Build ID: R6.9G.10.3.7.1.4.66-20261024-P0-RC3.50 (Schema: 2)
+[2026-10-24T08:41:02.698Z] ✅ STEP 8 PASS: Upgrade/rollback version detection and schema compatibility verified.
+
+[2026-10-24T08:41:02.705Z] >>> STEP 9: Restoring Production Companion Service & Owned-Form Verification...
+[2026-10-24T08:41:06.147Z] Recovery Output:
+[COMPANION_CHECK] Checking Privacy Relay Companion status on 127.0.0.1:18989...
+   [UPGRADE] Stale, divergent or unauthenticated Companion detected on port 18989:
+             Current: R6.9G.10.3.7.1.4.66-20261024-P0-RC3.50 (Expected: R6.9G.10.3.7.1.4.66-20261024-P0-RC3.50)
+             Root Parity: DIVERGENT (E:\vivpr\ai\extension-form-sender\scratch\isolated_fresh_install_rc3_50)
+             Capabilities: [verify-plan, provision-egress, provision-progress, destroy-egress, egress-telemetry, shutdown, stop, physical-gate, recovery-status, repair-egress] (Required: [verify-plan, provision-egress, provision-progress, recovery-status])
+             Local Control Token: REJECTED (401)
+   [UPGRADE] Upgrading to canonical current build...
+   [UPGRADE] Terminating stale XPIDER node process (PID 26292)...
+   [COMPANION_START] Launching bundled Privacy Relay Companion...
+   [OK] Privacy Relay Companion successfully bound ports and verified healthy (PID: 26092, Build: R6.9G.10.3.7.1.4.66-20261024-P0-RC3.50).
+   [OK] Verified API Capabilities: [verify-plan, provision-egress, provision-progress, destroy-egress, egress-telemetry, shutdown, stop, physical-gate, recovery-status, repair-egress]
+   [OK] Local control token verified (64 chars, authenticated /status HTTP 200).
+   [OK] Companion Watchdog supervisor active in background.
+[2026-10-24T08:41:07.861Z] Restored Companion Health: status=OK, relayReady=true, lifecycleState=READY
+[2026-10-24T08:41:07.868Z] Verifying active privacy transport egress telemetry...
+[2026-10-24T08:41:07.877Z] Egress Relay Active: dropletId=611293905, egressIP=143.198.40.33:8443
+[2026-10-24T08:41:07.884Z] ✅ STEP 9 PASS: Companion service cleanly recovered to READY state with active verified egress.
+
+[2026-10-24T08:41:07.891Z] ========================================================================
+[2026-10-24T08:41:07.897Z]   ALL FRESH INSTALL & FAILURE MATRIX TESTS PASSED (100% VERIFIED)      
+[2026-10-24T08:41:07.905Z] ========================================================================
