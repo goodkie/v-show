@@ -116,12 +116,42 @@ async function main() {
   const RC350_ZIP = path.resolve('XPIDER_R6.9G.10.3.7.1.4.66_PRIVATE_EGRESS_RC3.50.zip');
   const ISOLATED_DIR = path.resolve('scratch/isolated_native_host_e2e');
 
-  // Baseline Registry Capture
+  // Baseline Registry Capture & Emergency Crash Protection
   log('>>> BASELINE: Capturing Owner Active Registry Configuration...');
   const ownerEdgeBaseline = queryRegistryValue(EDGE_KEY);
   const ownerChromeBaseline = queryRegistryValue(CHROME_KEY);
   log(`Owner Edge Baseline: ${ownerEdgeBaseline || '(NOT REGISTERED)'}`);
   log(`Owner Chrome Baseline: ${ownerChromeBaseline || '(NOT REGISTERED)'}`);
+
+  const EMERGENCY_LOCK = path.join(EVIDENCE_DIR, 'owner_registry_baseline.json');
+  fs.writeFileSync(EMERGENCY_LOCK, JSON.stringify({
+    timestamp: new Date().toISOString(),
+    ownerEdgeBaseline,
+    ownerChromeBaseline
+  }, null, 2), 'utf8');
+
+  let restored = false;
+  function performEmergencyRestore() {
+    if (restored) return;
+    restored = true;
+    try {
+      if (ownerEdgeBaseline) {
+        execSync(`reg add "${EDGE_KEY}" /ve /t REG_SZ /d "${ownerEdgeBaseline}" /f`, { stdio: 'ignore' });
+      } else {
+        execSync(`reg delete "${EDGE_KEY}" /f`, { stdio: 'ignore' });
+      }
+      if (ownerChromeBaseline) {
+        execSync(`reg add "${CHROME_KEY}" /ve /t REG_SZ /d "${ownerChromeBaseline}" /f`, { stdio: 'ignore' });
+      } else {
+        execSync(`reg delete "${CHROME_KEY}" /f`, { stdio: 'ignore' });
+      }
+      try { if (fs.existsSync(EMERGENCY_LOCK)) fs.unlinkSync(EMERGENCY_LOCK); } catch (_) {}
+    } catch (_) {}
+  }
+
+  process.once('SIGINT', () => { performEmergencyRestore(); process.exit(130); });
+  process.once('SIGTERM', () => { performEmergencyRestore(); process.exit(143); });
+  process.once('uncaughtException', (err) => { performEmergencyRestore(); console.error(err); process.exit(1); });
 
   report.phases.baselineCapture = {
     edgeValue: ownerEdgeBaseline,
@@ -294,19 +324,7 @@ async function main() {
     // -------------------------------------------------------------------------
     log('>>> RESTORATION: Restoring Owner Original Active Registry Baseline...');
     try {
-      if (ownerEdgeBaseline) {
-        execSync(`reg add "${EDGE_KEY}" /ve /t REG_SZ /d "${ownerEdgeBaseline}" /f`, { stdio: 'ignore' });
-        log(`Restored Owner Edge Registry Key: ${ownerEdgeBaseline}`);
-      } else {
-        execSync(`reg delete "${EDGE_KEY}" /f`, { stdio: 'ignore' });
-      }
-
-      if (ownerChromeBaseline) {
-        execSync(`reg add "${CHROME_KEY}" /ve /t REG_SZ /d "${ownerChromeBaseline}" /f`, { stdio: 'ignore' });
-        log(`Restored Owner Chrome Registry Key: ${ownerChromeBaseline}`);
-      } else {
-        execSync(`reg delete "${CHROME_KEY}" /f`, { stdio: 'ignore' });
-      }
+      performEmergencyRestore();
 
       const finalEdge = queryRegistryValue(EDGE_KEY);
       const finalChrome = queryRegistryValue(CHROME_KEY);

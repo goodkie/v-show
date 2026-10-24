@@ -1,0 +1,21 @@
+[2026-10-24T10:51:25.131Z] ========================================================================
+[2026-10-24T10:51:25.141Z]   XPIDER NATIVE HOST CRASH RECOVERY & CONCURRENCY RACE AUDIT            
+[2026-10-24T10:51:25.147Z] ========================================================================
+
+[2026-10-24T10:51:25.241Z] Initial Owner Baseline - Edge:   E:\vivpr\ai\extension-form-sender\companion\native_host\com.xpider.privacy_relay.edge.json
+[2026-10-24T10:51:25.248Z] Initial Owner Baseline - Chrome: E:\vivpr\ai\extension-form-sender\companion\native_host\com.xpider.privacy_relay.chrome.json
+[2026-10-24T10:51:25.255Z] 
+>>> TEST 1: Simulating Mid-Execution Process Crash & Signal Interception...
+[2026-10-24T10:51:25.466Z] Simulated crash process exited with code: 1
+[2026-10-24T10:51:25.544Z] ✅ TEST 1 PASS: Crash recovery intercepted simulated failure and restored baseline.
+
+[2026-10-24T10:51:25.550Z] >>> TEST 2: Stressing Native Host Under Concurrent Invocations & Stdio Framing...
+[2026-10-24T10:51:25.911Z] ✅ TEST 2 PASS: 6 concurrent native hosts processed framing cleanly without race or deadlock.
+
+[2026-10-24T10:51:25.918Z] >>> TEST 3: Verifying Final Registry Invariant (Pre vs Post Byte-for-Byte)...
+[2026-10-24T10:51:25.994Z] ✅ TEST 3 PASS: Zero mutation observed. Active owner installation is byte-for-byte identical.
+
+[2026-10-24T10:51:26.001Z] ========================================================================
+[2026-10-24T10:51:26.009Z]   NATIVE HOST CRASH & RACE SAFETY AUDIT: 100% PASS                      
+[2026-10-24T10:51:26.016Z] ========================================================================
+

@@ -1,47 +1,45 @@
-[2026-10-24T10:37:31.406Z] ========================================================================
-[2026-10-24T10:37:31.415Z]   XPIDER RC3.50 REAL WINDOWS NATIVE HOST REGISTRY & PROTOCOL E2E AUDIT 
-[2026-10-24T10:37:31.422Z] ========================================================================
+[2026-10-24T10:51:32.959Z] ========================================================================
+[2026-10-24T10:51:32.968Z]   XPIDER RC3.50 REAL WINDOWS NATIVE HOST REGISTRY & PROTOCOL E2E AUDIT 
+[2026-10-24T10:51:32.975Z] ========================================================================
 
-[2026-10-24T10:37:31.429Z] >>> BASELINE: Capturing Owner Active Registry Configuration...
-[2026-10-24T10:37:31.529Z] Owner Edge Baseline: E:\vivpr\ai\extension-form-sender\companion\native_host\com.xpider.privacy_relay.edge.json
-[2026-10-24T10:37:31.536Z] Owner Chrome Baseline: E:\vivpr\ai\extension-form-sender\companion\native_host\com.xpider.privacy_relay.chrome.json
-[2026-10-24T10:37:31.543Z] 
+[2026-10-24T10:51:32.983Z] >>> BASELINE: Capturing Owner Active Registry Configuration...
+[2026-10-24T10:51:33.080Z] Owner Edge Baseline: E:\vivpr\ai\extension-form-sender\companion\native_host\com.xpider.privacy_relay.edge.json
+[2026-10-24T10:51:33.088Z] Owner Chrome Baseline: E:\vivpr\ai\extension-form-sender\companion\native_host\com.xpider.privacy_relay.chrome.json
+[2026-10-24T10:51:33.103Z] 
 >>> PHASE 1: Unpacking Authoritative RC3.50 Distributable...
-[2026-10-24T10:38:06.546Z] ✅ PHASE 1 PASS: RC3.50 distributable extracted cleanly.
+[2026-10-24T10:52:09.748Z] ✅ PHASE 1 PASS: RC3.50 distributable extracted cleanly.
 
-[2026-10-24T10:38:06.552Z] >>> PHASE 2: Executing Real Windows Registry Registration (HKCU)...
-[2026-10-24T10:38:06.765Z] Registration Execution Output:
+[2026-10-24T10:52:09.755Z] >>> PHASE 2: Executing Real Windows Registry Registration (HKCU)...
+[2026-10-24T10:52:09.973Z] Registration Execution Output:
 [NATIVE_HOST] Auto-discovered stable extension ID from manifest key: ldlijlaccfeelfdhgnjbibniocefckjj
 [NATIVE_HOST] Registered for Chrome: E:\vivpr\ai\extension-form-sender\scratch\isolated_native_host_e2e\companion\native_host\com.xpider.privacy_relay.chrome.json
 [NATIVE_HOST] Registered for Edge: E:\vivpr\ai\extension-form-sender\scratch\isolated_native_host_e2e\companion\native_host\com.xpider.privacy_relay.edge.json
-[2026-10-24T10:38:06.839Z] Registered Edge Key Value: E:\vivpr\ai\extension-form-sender\scratch\isolated_native_host_e2e\companion\native_host\com.xpider.privacy_relay.edge.json
-[2026-10-24T10:38:06.845Z] Registered Chrome Key Value: E:\vivpr\ai\extension-form-sender\scratch\isolated_native_host_e2e\companion\native_host\com.xpider.privacy_relay.chrome.json
-[2026-10-24T10:38:06.854Z] ✅ PHASE 2 PASS: Real HKCU Windows Registry keys successfully created and verified.
+[2026-10-24T10:52:10.048Z] Registered Edge Key Value: E:\vivpr\ai\extension-form-sender\scratch\isolated_native_host_e2e\companion\native_host\com.xpider.privacy_relay.edge.json
+[2026-10-24T10:52:10.057Z] Registered Chrome Key Value: E:\vivpr\ai\extension-form-sender\scratch\isolated_native_host_e2e\companion\native_host\com.xpider.privacy_relay.chrome.json
+[2026-10-24T10:52:10.068Z] ✅ PHASE 2 PASS: Real HKCU Windows Registry keys successfully created and verified.
 
-[2026-10-24T10:38:06.860Z] >>> PHASE 3: Invoking Native Host via Chrome/Edge Stdio Framing Protocol...
-[2026-10-24T10:38:06.880Z] Sending native framing message: {"action": "PING"}...
-[2026-10-24T10:38:07.679Z] Native Host Response (PING): action=PONG, companionBuildId=undefined
-[2026-10-24T10:38:07.686Z] Sending native framing message: {"action": "STATUS"}...
-[2026-10-24T10:38:07.706Z] Native Host Response (STATUS): action=STATUS_RESPONSE, running=false, expectedBuildId=R6.9G.10.3.7.1.4.66-20261024-P0-RC3.50
-[2026-10-24T10:38:07.713Z] Terminated native host stdio process.
-[2026-10-24T10:38:07.721Z] ✅ PHASE 3 PASS: Native host stdio framing protocol successfully exercised.
+[2026-10-24T10:52:10.077Z] >>> PHASE 3: Invoking Native Host via Chrome/Edge Stdio Framing Protocol...
+[2026-10-24T10:52:10.101Z] Sending native framing message: {"action": "PING"}...
+[2026-10-24T10:52:11.053Z] Native Host Response (PING): action=PONG, companionBuildId=undefined
+[2026-10-24T10:52:11.062Z] Sending native framing message: {"action": "STATUS"}...
+[2026-10-24T10:52:11.090Z] Native Host Response (STATUS): action=STATUS_RESPONSE, running=false, expectedBuildId=R6.9G.10.3.7.1.4.66-20261024-P0-RC3.50
+[2026-10-24T10:52:11.097Z] Terminated native host stdio process.
+[2026-10-24T10:52:11.105Z] ✅ PHASE 3 PASS: Native host stdio framing protocol successfully exercised.
 
-[2026-10-24T10:38:07.728Z] >>> PHASE 4: Testing Real Uninstallation (Registry Key Deletion)...
-[2026-10-24T10:38:07.930Z] Uninstall Execution Output:
+[2026-10-24T10:52:11.113Z] >>> PHASE 4: Testing Real Uninstallation (Registry Key Deletion)...
+[2026-10-24T10:52:11.319Z] Uninstall Execution Output:
 [NATIVE_HOST] Unregistered from Chrome & Edge.
-[2026-10-24T10:38:08.014Z] Post-Uninstall Edge Key: (DELETED)
-[2026-10-24T10:38:08.020Z] Post-Uninstall Chrome Key: (DELETED)
-[2026-10-24T10:38:08.027Z] ✅ PHASE 4 PASS: Registry keys completely removed upon uninstallation.
+[2026-10-24T10:52:11.396Z] Post-Uninstall Edge Key: (DELETED)
+[2026-10-24T10:52:11.403Z] Post-Uninstall Chrome Key: (DELETED)
+[2026-10-24T10:52:11.409Z] ✅ PHASE 4 PASS: Registry keys completely removed upon uninstallation.
 
-[2026-10-24T10:38:08.034Z] >>> PHASE 5: Testing Reinstallation from Scratch...
-[2026-10-24T10:38:08.275Z] Reinstalled Edge Key: E:\vivpr\ai\extension-form-sender\scratch\isolated_native_host_e2e\companion\native_host\com.xpider.privacy_relay.edge.json
-[2026-10-24T10:38:08.282Z] ✅ PHASE 5 PASS: Reinstallation cleanly recreated registry bindings.
+[2026-10-24T10:52:11.416Z] >>> PHASE 5: Testing Reinstallation from Scratch...
+[2026-10-24T10:52:11.661Z] Reinstalled Edge Key: E:\vivpr\ai\extension-form-sender\scratch\isolated_native_host_e2e\companion\native_host\com.xpider.privacy_relay.edge.json
+[2026-10-24T10:52:11.668Z] ✅ PHASE 5 PASS: Reinstallation cleanly recreated registry bindings.
 
-[2026-10-24T10:38:08.288Z] ========================================================================
-[2026-10-24T10:38:08.295Z]   REAL REGISTRY INSTALL/UNINSTALL/REINSTALL E2E 100% VERIFIED           
-[2026-10-24T10:38:08.301Z] ========================================================================
+[2026-10-24T10:52:11.675Z] ========================================================================
+[2026-10-24T10:52:11.682Z]   REAL REGISTRY INSTALL/UNINSTALL/REINSTALL E2E 100% VERIFIED           
+[2026-10-24T10:52:11.689Z] ========================================================================
 
-[2026-10-24T10:38:08.308Z] >>> RESTORATION: Restoring Owner Original Active Registry Baseline...
-[2026-10-24T10:38:08.358Z] Restored Owner Edge Registry Key: E:\vivpr\ai\extension-form-sender\companion\native_host\com.xpider.privacy_relay.edge.json
-[2026-10-24T10:38:08.410Z] Restored Owner Chrome Registry Key: E:\vivpr\ai\extension-form-sender\companion\native_host\com.xpider.privacy_relay.chrome.json
-[2026-10-24T10:38:08.485Z] ✅ RESTORATION COMPLETE: Owner registry baseline is 100% intact and untouched.
+[2026-10-24T10:52:11.696Z] >>> RESTORATION: Restoring Owner Original Active Registry Baseline...
+[2026-10-24T10:52:11.866Z] ✅ RESTORATION COMPLETE: Owner registry baseline is 100% intact and untouched.

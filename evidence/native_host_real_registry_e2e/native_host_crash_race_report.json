@@ -1,0 +1,33 @@
+{
+  "testSuite": "XPIDER_NATIVE_HOST_CRASH_AND_RACE_AUDIT",
+  "timestamp": "2026-10-24T10:51:25.154Z",
+  "tests": {
+    "crashRecovery": {
+      "pass": true,
+      "exitCode": 1,
+      "restoredSuccessfully": true
+    },
+    "concurrencyAndRace": {
+      "pass": true,
+      "concurrentClients": 6,
+      "allSucceeded": true
+    },
+    "zeroMutationInvariant": {
+      "pass": true,
+      "initial": {
+        "edge": "E:\\vivpr\\ai\\extension-form-sender\\companion\\native_host\\com.xpider.privacy_relay.edge.json",
+        "chrome": "E:\\vivpr\\ai\\extension-form-sender\\companion\\native_host\\com.xpider.privacy_relay.chrome.json"
+      },
+      "final": {
+        "edge": "E:\\vivpr\\ai\\extension-form-sender\\companion\\native_host\\com.xpider.privacy_relay.edge.json",
+        "chrome": "E:\\vivpr\\ai\\extension-form-sender\\companion\\native_host\\com.xpider.privacy_relay.chrome.json"
+      },
+      "byteForByteIdentical": true
+    }
+  },
+  "verdict": "ALL_CRASH_AND_RACE_SAFETY_TESTS_PASSED_100%",
+  "initialBaseline": {
+    "edge": "E:\\vivpr\\ai\\extension-form-sender\\companion\\native_host\\com.xpider.privacy_relay.edge.json",
+    "chrome": "E:\\vivpr\\ai\\extension-form-sender\\companion\\native_host\\com.xpider.privacy_relay.chrome.json"
+  }
+}
