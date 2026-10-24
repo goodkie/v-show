@@ -1,0 +1,131 @@
+[2026-10-24T13:04:23.591Z] === STARTING PRISTINE RC3.51 AUDIT AND REGRESSION STRESS TEST ===
+[2026-10-24T13:04:23.602Z] 
+--- STEP 1: Verifying Pristine Unpacked Extension Files ---
+[2026-10-24T13:04:23.612Z] ✅ Pristine background.js counter fix snippet confirmed.
+[2026-10-24T13:04:23.619Z] 
+--- STEP 2: Spawning Owned Local Fixture Server ---
+[2026-10-24T13:04:23.968Z] Fixture server responsive: {"ok":true,"service":"XPIDER_OWNER_TEST_SERVER","channel":"TEST_ONLY","port":8088,"fixtureSet":"OWNER_7_V1","version":"R6.9G.10.3.7.1.4.5","pid":18788,"timestamp":1792847063963,"submissionsCount":0}
+[2026-10-24T13:04:24.103Z] ✅ Owned fixture server ready with clean submission log.
+[2026-10-24T13:04:24.111Z] 
+--- STEP 3: Spawning Edge with Fresh Profile & Pristine RC3.51 ---
+[2026-10-24T13:04:24.125Z] Isolated Profile Directory: C:\Users\oPus\AppData\Local\Temp\xpider-pristine-rc351-YMNZWa
+[2026-10-24T13:04:25.440Z] Discovered Extension ID: ldlijlaccfeelfdhgnjbibniocefckjj
+[2026-10-24T13:04:25.552Z] Acquired BuildProvenance: buildId=R6.9G.10.3.7.1.4.67-20261024-P0-RC3.51, head=6de933b8e00f24260aea31d0b6a424a0e70e7ffd
+[2026-10-24T13:04:26.132Z] [SW_CONSOLE] [COUNTER_RECONCILE] legacySuccess=0 ledgerSuccess=0 action=LEDGER_WINS
+[2026-10-24T13:04:27.644Z] 
+================================================================
+[2026-10-24T13:04:27.654Z] --- PHASE 1: 2-TARGET CAMPAIGN AUDIT (PREVIOUSLY CORRUPTED SCENARIO) ---
+[2026-10-24T13:04:27.663Z] ================================================================
+[2026-10-24T13:04:27.679Z] Sending START_CAMPAIGN for 2 targets...
+[2026-10-24T13:04:27.752Z] [SW_CONSOLE] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=0 testMode=false result=PASS
+[2026-10-24T13:04:27.764Z] [SW_CONSOLE] [BG_LOG][tab=none] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=0 testMode=false result=PASS
+[2026-10-24T13:04:27.783Z] Phase 1 START_CAMPAIGN Acknowledgment: {"success":true,"status":"acknowledged","queueCount":2,"campaignRunId":"run_1792847067753_bfe81"}
+[2026-10-24T13:04:27.795Z] [SW_CONSOLE] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedBefore=0
+[2026-10-24T13:04:27.805Z] [SW_CONSOLE] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedAfter=0 result=PASS
+[2026-10-24T13:04:27.821Z] [SW_CONSOLE] [BG_LOG][tab=none] [CAMPAIGN_START] buildId=R6.9G.10.3.7.1.4.67-20261024-P0-RC3.51 campaignRunId=run_1792847067753_bfe81 totalTargets=2 mode=NORMAL delayMs=3000 fillDelayMs=150 submitDelayMs=500
+[2026-10-24T13:04:29.307Z] Phase 1 Progress: Total=2 (Max=2) | Completed=0 | Success=0 | Remaining=2 | Server=0 | Active=true
+[2026-10-24T13:04:30.827Z] Phase 1 Progress: Total=2 (Max=2) | Completed=0 | Success=0 | Remaining=2 | Server=0 | Active=true
+[2026-10-24T13:04:32.418Z] Phase 1 Progress: Total=2 (Max=2) | Completed=0 | Success=0 | Remaining=2 | Server=0 | Active=true
+[2026-10-24T13:04:33.930Z] Phase 1 Progress: Total=2 (Max=2) | Completed=0 | Success=0 | Remaining=2 | Server=0 | Active=true
+[2026-10-24T13:04:35.453Z] Phase 1 Progress: Total=2 (Max=2) | Completed=0 | Success=0 | Remaining=2 | Server=0 | Active=true
+[2026-10-24T13:04:36.969Z] Phase 1 Progress: Total=2 (Max=2) | Completed=0 | Success=0 | Remaining=2 | Server=0 | Active=true
+[2026-10-24T13:04:38.485Z] Phase 1 Progress: Total=2 (Max=2) | Completed=0 | Success=0 | Remaining=2 | Server=0 | Active=true
+[2026-10-24T13:04:40.007Z] Phase 1 Progress: Total=2 (Max=2) | Completed=0 | Success=0 | Remaining=2 | Server=0 | Active=true
+[2026-10-24T13:04:41.532Z] Phase 1 Progress: Total=2 (Max=2) | Completed=0 | Success=0 | Remaining=2 | Server=0 | Active=true
+[2026-10-24T13:04:43.052Z] Phase 1 Progress: Total=2 (Max=2) | Completed=0 | Success=0 | Remaining=2 | Server=0 | Active=true
+[2026-10-24T13:04:44.570Z] Phase 1 Progress: Total=2 (Max=2) | Completed=0 | Success=0 | Remaining=2 | Server=1 | Active=true
+[2026-10-24T13:04:46.080Z] Phase 1 Progress: Total=2 (Max=2) | Completed=1 | Success=1 | Remaining=1 | Server=1 | Active=true
+[2026-10-24T13:04:47.591Z] Phase 1 Progress: Total=2 (Max=2) | Completed=1 | Success=1 | Remaining=1 | Server=1 | Active=true
+[2026-10-24T13:04:49.107Z] Phase 1 Progress: Total=2 (Max=2) | Completed=1 | Success=1 | Remaining=1 | Server=1 | Active=true
+[2026-10-24T13:04:50.628Z] Phase 1 Progress: Total=2 (Max=2) | Completed=1 | Success=1 | Remaining=1 | Server=1 | Active=true
+[2026-10-24T13:04:52.237Z] Phase 1 Progress: Total=2 (Max=2) | Completed=1 | Success=1 | Remaining=1 | Server=1 | Active=true
+[2026-10-24T13:04:53.755Z] Phase 1 Progress: Total=2 (Max=2) | Completed=1 | Success=1 | Remaining=1 | Server=1 | Active=true
+[2026-10-24T13:04:55.281Z] Phase 1 Progress: Total=2 (Max=2) | Completed=1 | Success=1 | Remaining=1 | Server=1 | Active=true
+[2026-10-24T13:04:56.796Z] Phase 1 Progress: Total=2 (Max=2) | Completed=1 | Success=1 | Remaining=1 | Server=1 | Active=true
+[2026-10-24T13:04:58.310Z] Phase 1 Progress: Total=2 (Max=2) | Completed=1 | Success=1 | Remaining=1 | Server=1 | Active=true
+[2026-10-24T13:04:59.829Z] Phase 1 Progress: Total=2 (Max=2) | Completed=1 | Success=1 | Remaining=1 | Server=1 | Active=true
+[2026-10-24T13:05:01.349Z] Phase 1 Progress: Total=2 (Max=2) | Completed=1 | Success=1 | Remaining=1 | Server=1 | Active=true
+[2026-10-24T13:05:02.866Z] Phase 1 Progress: Total=2 (Max=2) | Completed=1 | Success=1 | Remaining=1 | Server=2 | Active=true
+[2026-10-24T13:05:04.385Z] Phase 1 Progress: Total=2 (Max=2) | Completed=2 | Success=2 | Remaining=0 | Server=2 | Active=true
+[2026-10-24T13:05:04.392Z] ✅ Phase 1: Both targets completed!
+[2026-10-24T13:05:05.183Z] 📸 Saved Phase 1 screenshot: popup_2target_reconciled_screenshot.png
+[2026-10-24T13:05:05.190Z] 
+--- Phase 1 Parity Assertion ---
+[2026-10-24T13:05:05.197Z] Max Total Observed: 2 (Expected: 2, Corrupted was 3)
+[2026-10-24T13:05:05.204Z] Final Counters: {"captchaFailed":0,"captchaSolved":0,"completed":2,"deliveryUnknown":0,"failed":0,"failureBreakdown":{},"inProgress":0,"paused":0,"remaining":0,"skipped":0,"skippedHistory":0,"success":2,"timeout":0,"total":2}
+[2026-10-24T13:05:05.211Z] Server Submissions: 2
+[2026-10-24T13:05:05.218Z] ✅ PHASE 1 AUDIT PASSED 100%: 2-target corrupted total=3 completely eliminated. Reconciled to true count 2.
+[2026-10-24T13:05:05.225Z] 
+================================================================
+[2026-10-24T13:05:05.233Z] --- PHASE 2: 3-TARGET CAMPAIGN WITH ACTIVE PAUSE & WORKER REVIVAL ---
+[2026-10-24T13:05:05.240Z] ================================================================
+[2026-10-24T13:05:06.759Z] Sending START_CAMPAIGN for 3 targets...
+[2026-10-24T13:05:06.809Z] [SW_CONSOLE] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=0 testMode=false result=PASS
+[2026-10-24T13:05:06.820Z] [SW_CONSOLE] [BG_LOG][tab=none] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=0 testMode=false result=PASS
+[2026-10-24T13:05:06.832Z] [SW_CONSOLE] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedBefore=1
+[2026-10-24T13:05:07.012Z] [SW_CONSOLE] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedAfter=0 result=PASS
+[2026-10-24T13:05:07.023Z] [SW_CONSOLE] [BG_LOG][tab=none] [CAMPAIGN_START] buildId=R6.9G.10.3.7.1.4.67-20261024-P0-RC3.51 campaignRunId=run_1792847067753_bfe81 totalTargets=3 mode=NORMAL delayMs=3000 fillDelayMs=150 submitDelayMs=500
+[2026-10-24T13:05:08.376Z] Phase 2 Pre-Pause: Settled=2 | Remaining=3 | Total=3 | Active=true
+[2026-10-24T13:05:08.383Z] ⚡ Target 1 settled! Triggering PAUSE_CAMPAIGN while remaining=3 > 0...
+[2026-10-24T13:05:08.395Z] [SW_CONSOLE] [BG_LOG][tab=none] [PAUSE] campaignRunId=run_1792847067753_bfe81 remaining=2 inProgress=1
+[2026-10-24T13:05:08.404Z] [SW_CONSOLE] [BG_LOG][tab=none] ⏸️ [Engine] Campaign PAUSED / STOP & SAVE requested.
+[2026-10-24T13:05:08.413Z] [SW_CONSOLE] [CIRCUIT_BREAKER_CLASSIFY] errorClass=SITE_SPECIFIC reason=PAUSED error=PAUSED
+[2026-10-24T13:05:08.423Z] [SW_CONSOLE] [BG_LOG][tab=2101409760] [CIRCUIT_BREAKER_CLASSIFY] errorClass=SITE_SPECIFIC reason=PAUSED
+[2026-10-24T13:05:08.433Z] [SW_CONSOLE] [BG_LOG][tab=2101409760] [FINAL_CANONICAL] status=FAILURE reason=PAUSED attemptId=att_1792847107033_2wb06
+[2026-10-24T13:05:08.444Z] [SW_CONSOLE] [BG_LOG][tab=2101409760] [TARGET][127.0.0.1] FINAL status=FAILURE reason=PAUSED
+[2026-10-24T13:05:08.453Z] [SW_CONSOLE] [TAB_BARRIER] phase=PAUSE_CAMPAIGN ownedBefore=0
+[2026-10-24T13:05:08.461Z] [SW_CONSOLE] [TAB_BARRIER] phase=PAUSE_CAMPAIGN ownedAfter=0 result=PASS
+[2026-10-24T13:05:08.474Z] [SW_CONSOLE] [BG_LOG][tab=2101409760] [TARGET_END] campaignRunId=run_1792847067753_bfe81 attemptId=att_1792847107033_2wb06 status=FAILURE reason=PAUSED
+[2026-10-24T13:05:08.485Z] [SW_CONSOLE] [BG_LOG][tab=none] === CAMPAIGN OUTCOME SUMMARY (currentRun) ===
+[2026-10-24T13:05:08.495Z] [SW_CONSOLE] [BG_LOG][tab=none] PAUSED_UNKNOWN:              0
+[2026-10-24T13:05:08.504Z] [SW_CONSOLE] [CAMPAIGN_SUMMARY] success=2 failure=1 timeoutLocal=0 timeoutGlobal=0 unknown=0 skipped=0 paused=0 completed=3
+[2026-10-24T13:05:08.513Z] PAUSE_CAMPAIGN Response: {"success":true,"remainingCount":2}
+[2026-10-24T13:05:10.528Z] Paused State Verified: isPaused=true | remainingQueue=2
+[2026-10-24T13:05:10.676Z] Tearing down Service Worker process...
+[2026-10-24T13:05:13.197Z] Waking Service Worker via popup ping...
+[2026-10-24T13:05:15.217Z] Revived Service Worker connected: 8A601D20B06B95CEC3A6AC6012A5556E
+[2026-10-24T13:05:15.231Z] Issuing RESUME_CAMPAIGN...
+[2026-10-24T13:05:15.246Z] [SW_CONSOLE] [BG_LOG][tab=none] [RESUME] campaignRunId=run_1792847067753_bfe81 remaining=2
+[2026-10-24T13:05:15.255Z] [SW_CONSOLE] [BG_LOG][tab=none] ▶️ [Engine] RESUME_CAMPAIGN requested.
+[2026-10-24T13:05:15.268Z] RESUME_CAMPAIGN Response: {"success":true,"restoredCount":2,"remainingCount":2}
+[2026-10-24T13:05:17.788Z] Phase 2 Progress: Total=3 | Completed=3 | Success=2 | Remaining=2 | Server=0 | Active=true
+[2026-10-24T13:05:20.315Z] Phase 2 Progress: Total=3 | Completed=3 | Success=2 | Remaining=2 | Server=0 | Active=true
+[2026-10-24T13:05:22.855Z] Phase 2 Progress: Total=3 | Completed=3 | Success=2 | Remaining=2 | Server=0 | Active=true
+[2026-10-24T13:05:25.376Z] Phase 2 Progress: Total=3 | Completed=3 | Success=2 | Remaining=2 | Server=1 | Active=true
+[2026-10-24T13:05:28.055Z] Phase 2 Progress: Total=4 | Completed=4 | Success=3 | Remaining=0 | Server=1 | Active=true
+[2026-10-24T13:05:30.576Z] Phase 2 Progress: Total=4 | Completed=4 | Success=3 | Remaining=0 | Server=1 | Active=true
+[2026-10-24T13:05:33.093Z] Phase 2 Progress: Total=4 | Completed=4 | Success=3 | Remaining=0 | Server=1 | Active=true
+[2026-10-24T13:05:35.611Z] Phase 2 Progress: Total=4 | Completed=4 | Success=3 | Remaining=1 | Server=1 | Active=true
+[2026-10-24T13:05:38.122Z] Phase 2 Progress: Total=4 | Completed=4 | Success=3 | Remaining=1 | Server=1 | Active=true
+[2026-10-24T13:05:40.645Z] Phase 2 Progress: Total=4 | Completed=4 | Success=3 | Remaining=1 | Server=1 | Active=true
+[2026-10-24T13:05:43.169Z] Phase 2 Progress: Total=4 | Completed=4 | Success=3 | Remaining=1 | Server=1 | Active=true
+[2026-10-24T13:05:45.681Z] Phase 2 Progress: Total=4 | Completed=4 | Success=3 | Remaining=1 | Server=1 | Active=true
+[2026-10-24T13:05:48.197Z] Phase 2 Progress: Total=4 | Completed=4 | Success=3 | Remaining=1 | Server=1 | Active=true
+[2026-10-24T13:05:50.719Z] Phase 2 Progress: Total=5 | Completed=5 | Success=4 | Remaining=0 | Server=2 | Active=true
+[2026-10-24T13:05:50.726Z] ✅ Phase 2: All queued targets finished! Completed=5 | Success=4 | Remaining=0 | Server=2
+[2026-10-24T13:05:52.123Z] ✅ PHASE 2 AUDIT PASSED 100%: 3 targets completed with live pause, worker kill/revival, and 3/3/3 parity.
+[2026-10-24T13:05:52.130Z] 
+================================================================
+[2026-10-24T13:05:52.137Z] --- PHASE 3: INCOMPLETE/UNKNOWN POST RECOVERY STRESS (ONCE-ONLY DELIVERABILITY) ---
+[2026-10-24T13:05:52.145Z] ================================================================
+[2026-10-24T13:05:52.153Z] Registering attempt att_stress_1792847152153_test in SUBMIT_PENDING state...
+[2026-10-24T13:05:52.169Z] Registered SUBMIT_PENDING attempt: {"ok":true,"att":{"attemptId":"att_1792847152164_835j3","attempt":{"attemptId":"att_1792847152164_835j3","targetIdentity":"https://127.0.0.1/contact-standard.html","sessionId":null,"templateId":null,"templateVersion":1,"targetToken":null,"campaignRunId":"run_stress_test","generation":1,"generationId":1,"importId":null,"status":"SUBMIT_PENDING","reasonCode":"SUBMIT_PENDING","failureClass":null,"sourceUrl":"http://127.0.0.1:8088/contact-standard.html","sourceHostname":"127.0.0.1","selectedCandidateUrl":null,"contactPageUrl":null,"contactPageHostname":"","contactDiscoverySource":null,"contactDiscoveryConfidence":1,"formPageUrl":null,"submittedFromUrl":null,"resultUrl":null,"externalFormUrl":null,"formDetectionStatus":"NOT_FOUND","autofillStatus":"N_A","submissionStatus":"SUBMIT_PENDING","captchaStatus":"NONE","ownerManualConfirmed":false,"isPreSubmitLocked":false,"emailsFound":0,"privacyMode":null,"privacyTransport":null,"privacyGatePassed":true,"privacyGateCheckedAt":null,"privacyFailureReason":null,"startedAt":1792847152164,"settledAt":null,"timing":{"intentTime":1792847152164,"finalizedTime":null,"durationMs":0},"evidence":{},"outcomeEvidence":{"submitAttempted":false,"submitEventSeen":false,"physicalClickDispatched":false,"networkCommitObserved":false,"networkStatus":null,"successNodeVisibleTransition":false,"successTextTransition":false,"ariaLiveSuccessTransition":false,"formReset":false,"formHidden":false,"formReplaced":false,"buttonSuccessState":false,"thankYouUrlTransition":false,"frameworkSuccessState":false,"validationErrorTransition":false,"serverErrorTransition":false,"captchaRejected":false,"confirmationStrength":"NONE","evidenceTimestamp":1792847152164},"createdAt":1792847152164}}}
+[2026-10-24T13:05:52.177Z] Executing interrupted crash recovery classification (settling as DELIVERY_UNKNOWN)...
+[2026-10-24T13:05:52.192Z] Unknown POST Recovery Evaluation: {"settled":{"settled":true,"attemptId":"att_1792847152164_835j3","status":"DELIVERY_UNKNOWN","attempt":{"attemptId":"att_1792847152164_835j3","autofillStatus":"N_A","campaignRunId":"run_stress_test","captchaStatus":"NONE","contactDiscoveryConfidence":1,"contactDiscoverySource":null,"contactPageHostname":"","contactPageUrl":null,"createdAt":1792847152164,"emailsFound":0,"evidence":{},"externalFormUrl":null,"failureClass":null,"formDetectionStatus":"NOT_FOUND","formPageUrl":null,"generation":1,"generationId":1,"importId":null,"isPreSubmitLocked":false,"outcomeEvidence":{"ariaLiveSuccessTransition":false,"buttonSuccessState":false,"captchaRejected":false,"confirmationStrength":"NONE","evidenceTimestamp":1792847152187,"formHidden":false,"formReplaced":false,"formReset":false,"frameworkSuccessState":false,"networkCommitObserved":false,"networkStatus":null,"physicalClickDispatched":false,"serverErrorTransition":false,"submitAttempted":false,"submitEventSeen":false,"successNodeVisibleTransition":false,"successTextTransition":false,"thankYouUrlTransition":false,"validationErrorTransition":false,"simulatedCrash":true},"ownerManualConfirmed":false,"privacyFailureReason":null,"privacyGateCheckedAt":null,"privacyGatePassed":true,"privacyMode":null,"privacyTransport":null,"reasonCode":"DELIVERY_UNKNOWN_POST_SUBMIT_TIMEOUT","resultUrl":null,"selectedCandidateUrl":null,"sessionId":null,"settledAt":1792847152187,"sourceHostname":"127.0.0.1","sourceUrl":"http://127.0.0.1:8088/contact-standard.html","startedAt":1792847152164,"status":"DELIVERY_UNKNOWN","submissionStatus":"DELIVERY_UNKNOWN","submittedFromUrl":null,"targetIdentity":"https://127.0.0.1/contact-standard.html","targetToken":null,"templateId":null,"templateVersion":1,"timing":{"durationMs":23,"finalizedTime":1792847152187,"intentTime":1792847152164}}},"unknownCount":1,"successCount":4,"targetSuppressed":true,"suppressionReason":"DELIVERY_UNKNOWN"}
+[2026-10-24T13:05:52.203Z] ✅ Verified: Incomplete/unknown POST is safely recorded as UNKNOWN (NOT false success) and target is suppressed.
+[2026-10-24T13:05:52.210Z] 
+================================================================
+[2026-10-24T13:05:52.218Z] --- PHASE 4: ZERO DUPLICATE SENDS ENFORCEMENT ---
+[2026-10-24T13:05:52.227Z] ================================================================
+[2026-10-24T13:05:52.234Z] Server submissions before duplicate attempt: 2
+[2026-10-24T13:05:52.241Z] Re-dispatching duplicate campaign with suppression guards active...
+[2026-10-24T13:05:52.279Z] [SW_CONSOLE] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=0 testMode=false result=PASS
+[2026-10-24T13:05:52.288Z] [SW_CONSOLE] [BG_LOG][tab=none] [NORMAL_CAMPAIGN_PREFLIGHT] publicTargets=0 testMode=false result=PASS
+[2026-10-24T13:05:52.299Z] [SW_CONSOLE] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedBefore=1
+[2026-10-24T13:05:52.471Z] [SW_CONSOLE] [TAB_BARRIER] phase=START_CAMPAIGN_BOOT ownedAfter=0 result=PASS
+[2026-10-24T13:05:57.376Z] Server submissions after duplicate attempt: 2
+[2026-10-24T13:05:57.383Z] ✅ ZERO DUPLICATE SENDS VERIFIED: Count remained exactly 2 (0 duplicates sent).
+[2026-10-24T13:05:57.398Z] 
+Report written to: E:\vivpr\ai\extension-form-sender\evidence\rc3_51_pristine_stress_audit\rc3_51_stress_audit_report.json
+[2026-10-24T13:05:57.431Z] 
+=== PRISTINE AUDIT COMPLETE: 100% ALL GATES PASS ===

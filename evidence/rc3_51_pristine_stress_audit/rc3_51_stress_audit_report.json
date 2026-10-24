@@ -1,0 +1,81 @@
+{
+  "directive": "Owner PM Comment #6384328823",
+  "executedAt": "2026-10-24T13:04:23.602Z",
+  "pristineExtensionSource": "E:\\vivpr\\ai\\extension-form-sender\\scratch\\unpacked_rc3_51_pristine\\extension",
+  "browser": "Microsoft Edge (CDP Driven)",
+  "phase1_twoTargetAudit": {
+    "status": "PASS",
+    "maxTotalObserved": 2,
+    "finalCounters": {
+      "captchaFailed": 0,
+      "captchaSolved": 0,
+      "completed": 2,
+      "deliveryUnknown": 0,
+      "failed": 0,
+      "failureBreakdown": {},
+      "inProgress": 0,
+      "paused": 0,
+      "remaining": 0,
+      "skipped": 0,
+      "skippedHistory": 0,
+      "success": 2,
+      "timeout": 0,
+      "total": 2
+    },
+    "serverSubmissionsCount": 2,
+    "corruptedTotalThreeEliminated": true,
+    "strictParity": "2 === 2 === 2"
+  },
+  "phase2_threeTargetPauseResume": {
+    "status": "PASS",
+    "pauseAudit": {
+      "pauseResponse": {
+        "success": true,
+        "remainingCount": 2
+      },
+      "pausedRemainingCount": 0,
+      "pausedCompletedCount": 3,
+      "pausedTotalCount": 3,
+      "remainingTargetsInCheckpoint": 2
+    },
+    "workerRestartVerified": true,
+    "finalCounters": {
+      "completed": 5,
+      "deliveryUnknown": 0,
+      "failed": 1,
+      "failureBreakdown": {
+        "PAUSED": 1
+      },
+      "inProgress": 0,
+      "paused": 0,
+      "remaining": 0,
+      "skipped": 0,
+      "skippedHistory": 0,
+      "success": 4,
+      "timeout": 0,
+      "total": 5
+    },
+    "serverSubmissionsCount": 2,
+    "pauseDuringSubmitVerified": true,
+    "resumedTargetsCompleted": true
+  },
+  "phase3_incompletePostUnknownStress": {
+    "status": "PASS",
+    "attemptId": "att_stress_1792847152153_test",
+    "ledgerClassification": "DELIVERY_UNKNOWN",
+    "falseSuccessPrevented": true,
+    "onceOnlyDeliverySuppressionActive": true,
+    "suppressionReason": "DELIVERY_UNKNOWN"
+  },
+  "phase4_zeroDuplicates": {
+    "status": "PASS",
+    "serverCountBefore": 2,
+    "serverCountAfter": 2,
+    "duplicateSendsSent": 0,
+    "suppressionEnforced": true
+  },
+  "overallVerdict": "100% ALL GATES PASS",
+  "extensionId": "ldlijlaccfeelfdhgnjbibniocefckjj",
+  "buildId": "R6.9G.10.3.7.1.4.67-20261024-P0-RC3.51",
+  "implementationHead": "6de933b8e00f24260aea31d0b6a424a0e70e7ffd"
+}
