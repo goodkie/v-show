@@ -6,17 +6,17 @@ PROJECT_NAME: XPIDER AutoForm Sender Pro
 WORKSPACE_ROOT: E:\vivpr\ai\extension-form-sender
 AUTHORITY_SOURCE: goodkie/v-show Issues #6 & #10
 ACTIVE_BRANCH: upgrade/phase-0-1
-STATE_REV: 2026-10-24.149
-AUTHORITY_CURSOR: 6382136318
+STATE_REV: 2026-10-24.150
+AUTHORITY_CURSOR: 6382911314
 LAST_AUDIT: [CHATGPT RC3.48 AUDIT / NEXT EXECUTION][ISSUE #6][2026-10-24] Comment #6380501639
-LAST_DIRECTIVE: [OWNER PM AUDIT / NEXT EXECUTION POST #6381855826][ISSUE #6] Comment #6381905489
+LAST_DIRECTIVE: [OWNER PM REACTIVATE + EXECUTION GATE][ISSUE #6][2026-10-24] Comment #6382911314
 LAST_RECEIPT: [ANTIGRAVITY][RECEIPT][ISSUE-6][P0-RC3.50-PUBLISHED-ZIP-ISOLATED-INSTALL-PARITY-AND-DISPOSABLE-CI-VERIFIED][2026-10-24T08:44Z] Comment #6382136318
 BUILD_ID: R6.9G.10.3.7.1.4.66-20261024-P0-RC3.50
 FUNCTIONAL_COMMIT: 1c9d9830a405d186434daab43314869bcf248f2d
 PROVENANCE_COMMIT: 1c9d9830a405d186434daab43314869bcf248f2d
 ROLLBACK_ANCHOR: 55cd543be5ebe7a4553cac0cbfcf933a00e4c8a5
 PREVIOUS_FUNCTIONAL_RESTORE_POINT: 6a7a786eddf5aba531b8e12f0823875ec277d776
-NEXT_ACTION: Awaiting ChatGPT / Owner PM audit of Comment #6382136318 (RC3.50). Maintain 8443 proxy stability, verified release asset 671712025.
+NEXT_ACTION: Post substantive receipt on Comment #6382911314 with native host real registry E2E evidence, exact OAuth workflow scope blocker details, and Opal minimal pairing gate.
 BLOCKERS: Droplet SSH 22 blocked by internal host UFW & wiped authorized_keys (RC3.37 invariant); provided PAT is scoped to firewalls/tags only (verified raw 403 on droplets/keys). Droplet Egress Proxy on 8443 is VERIFIED HEALTHY (relayReady: true, end-to-end egress verified: 143.198.40.33). Single minimal Owner authentication request provided for server WG setup via DO web console; GL.iNet Opal physical hardware tunnel unverified pending physical deployment; residential CONFIG_REQUIRED remains.
 OWNER_ACTION: none for daily form operations (8443 proxy and privacy relay active and verified; console SSH recovery requires web console and Owner's actual public key only if console access is desired).
 RELEASE_ASSET_TAG: v6.9g.10.3-rc3.50.7.1.4.66

@@ -1,0 +1,42 @@
+{
+  "testSuite": "XPIDER_RC3_50_NATIVE_HOST_REAL_REGISTRY_E2E",
+  "timestamp": "2026-10-24T10:37:31.429Z",
+  "expectedBuildId": "R6.9G.10.3.7.1.4.66-20261024-P0-RC3.50",
+  "phases": {
+    "baselineCapture": {
+      "edgeValue": "E:\\vivpr\\ai\\extension-form-sender\\companion\\native_host\\com.xpider.privacy_relay.edge.json",
+      "chromeValue": "E:\\vivpr\\ai\\extension-form-sender\\companion\\native_host\\com.xpider.privacy_relay.chrome.json"
+    },
+    "extraction": {
+      "pass": true,
+      "zipSha256": "5d22d4f4c654dee63243e24b9dec381662970e6c42348dee5cdff2960ababef2"
+    },
+    "realRegistration": {
+      "pass": true,
+      "edgeRegistryPath": "E:\\vivpr\\ai\\extension-form-sender\\scratch\\isolated_native_host_e2e\\companion\\native_host\\com.xpider.privacy_relay.edge.json",
+      "chromeRegistryPath": "E:\\vivpr\\ai\\extension-form-sender\\scratch\\isolated_native_host_e2e\\companion\\native_host\\com.xpider.privacy_relay.chrome.json",
+      "manifestName": "com.xpider.privacy_relay",
+      "manifestType": "stdio"
+    },
+    "stdioProtocolInvocation": {
+      "pass": true,
+      "pingResponse": "PONG",
+      "statusResponse": "STATUS_RESPONSE",
+      "expectedBuildId": "R6.9G.10.3.7.1.4.66-20261024-P0-RC3.50"
+    },
+    "realUninstallation": {
+      "pass": true,
+      "edgeKeyDeleted": true,
+      "chromeKeyDeleted": true
+    },
+    "realReinstallation": {
+      "pass": true,
+      "recreated": true
+    },
+    "baselineRestoration": {
+      "pass": true,
+      "restored": true
+    }
+  },
+  "verdict": "ALL_NATIVE_HOST_REAL_REGISTRY_TESTS_PASSED_100%"
+}
