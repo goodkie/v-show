@@ -1,0 +1,35 @@
+{
+  "test": "XPIDER_RC3_45_EXTRACTED_PACKAGE_DEEP_AUDIT",
+  "timestamp": "2026-10-24T00:55:01.631Z",
+  "zipPath": "E:\\vivpr\\ai\\extension-form-sender\\XPIDER_R6.9G.10.3.7.1.4.61_PRIVATE_EGRESS_RC3.45.zip",
+  "zipSize": 51419026,
+  "provenance": {
+    "buildId": "R6.9G.10.3.7.1.4.61-20261023-P0-RC3.45",
+    "implementationHead": "0984a9b885ce9d3ee11857469a30cd41818bf947",
+    "matchesCommit0984a9b8": true
+  },
+  "controlPlaneLifecycle": {
+    "start": "PASS",
+    "pause": "PASS",
+    "resume": "PASS",
+    "stop": "PASS"
+  },
+  "captchaManualFallback": {
+    "singlePromptEmitted": true,
+    "duplicateLoopSuppressed": true,
+    "cleanTerminalSettlement": true,
+    "verdict": "PASS"
+  },
+  "counterIntegrity": {
+    "success": 4,
+    "failed": 1,
+    "skipped": 2,
+    "allNonNegative": true
+  },
+  "nonUiTests": {
+    "solverCoreRedaction": "PASS",
+    "inBrowserRemoteEgress": "143.198.40.33 (PASS)",
+    "disconnectFailClosed": "PASS (Zero DIRECT Leak)"
+  },
+  "verdict": "ALL_P0_GATES_PASS"
+}

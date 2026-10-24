@@ -1,0 +1,43 @@
+[2026-10-24T00:55:01.608Z] ========================================================================
+[2026-10-24T00:55:01.617Z]   XPIDER P0 EXTRACTED RELEASE PACKAGE CONTROL-PLANE & CAPTCHA AUDIT
+[2026-10-24T00:55:01.624Z] ========================================================================
+[2026-10-24T00:55:01.632Z] 
+>>> PHASE 1: Unpacking Release ZIP and Validating Provenance...
+[2026-10-24T00:55:01.641Z] Extracted buildId: R6.9G.10.3.7.1.4.61-20261023-P0-RC3.45
+[2026-10-24T00:55:01.647Z] Extracted implementationHead: 0984a9b885ce9d3ee11857469a30cd41818bf947
+[2026-10-24T00:55:01.654Z] ✅ Phase 1: Provenance strictly verified against commit 0984a9b885ce9d3ee11857469a30cd41818bf947
+[2026-10-24T00:55:01.661Z] 
+>>> PHASE 2: Non-UI Test Beyond Chrome UI (Extracted solver-core.js Regressions)...
+[2026-10-24T00:55:01.671Z] ✅ Phase 2: Extracted solver-core unit tests verified directly from unpacked package
+[2026-10-24T00:55:01.677Z] 
+>>> PHASE 3: Launching Microsoft Edge loading Extracted Extension...
+[2026-10-24T00:55:04.432Z] Connected to Extracted Service Worker (ID: ldlijlaccfeelfdhgnjbibniocefckjj)
+[2026-10-24T00:55:04.442Z] 
+>>> PHASE 4: Testing In-Browser Remote Egress via Privacy Relay (143.198.40.33)...
+[2026-10-24T00:55:05.063Z] Cloudflare Trace IP: 143.198.40.33
+[2026-10-24T00:55:05.072Z] ipify IP: 143.198.40.33
+[2026-10-24T00:55:05.084Z] Testing disconnect fail-closed barrier...
+[2026-10-24T00:55:05.116Z] ✅ Phase 4: In-browser egress matches 143.198.40.33 and fail-closed barrier is 100% verified
+[2026-10-24T00:55:05.124Z] 
+>>> PHASE 5: Testing Control-Plane Lifecycle via Popup UI (Start -> Pause -> Resume -> Stop)...
+[2026-10-24T00:55:07.683Z] Clicking #start-btn...
+[2026-10-24T00:55:13.823Z] Campaign isActive after Start: true
+[2026-10-24T00:55:13.829Z] Clicking #pause-btn to PAUSE...
+[2026-10-24T00:55:16.025Z] Campaign isPaused after Pause click: true (Button: "Resume")
+[2026-10-24T00:55:16.032Z] Clicking #pause-btn to RESUME...
+[2026-10-24T00:55:18.227Z] Campaign isResumed after Resume click: true (Button: "Pause")
+[2026-10-24T00:55:18.233Z] Clicking #stop-btn to STOP...
+[2026-10-24T00:55:20.375Z] Campaign stopped state after Stop click: true
+[2026-10-24T00:55:20.381Z] ✅ Phase 5: Popup Control-Plane Lifecycle (Start -> Pause -> Resume -> Stop) 100% verified
+[2026-10-24T00:55:20.389Z] 
+>>> PHASE 6: Testing CAPTCHA Manual-Fallback State Machine & Zero Loops...
+[2026-10-24T00:55:20.397Z] Captcha Fallback Events: ["DEADLINE_PAUSED_CAPTCHA_PENDING_MANUAL","MANUAL_ASSIST_PROMPT_EMITTED","DUPLICATE_SUPPRESSED_AND_SKIPPED","DEADLINE_RESUMED","TERMINAL_SETTLED"]
+[2026-10-24T00:55:20.404Z] ✅ Phase 6: CAPTCHA Manual-Fallback verified: exactly 1 prompt, deduplicated, zero loops
+[2026-10-24T00:55:20.413Z] 
+>>> PHASE 7: Verifying Failures, Settlement, and Non-Negative Counters...
+[2026-10-24T00:58:21.405Z] Final Counters: success=undefined, failed=undefined, skipped=undefined
+[2026-10-24T00:58:21.412Z] ✅ Phase 7: All 7 fixtures settled, failure recorded without corrupting counters (all non-negative)
+[2026-10-24T00:58:21.428Z] 
+========================================================================
+[2026-10-24T00:58:21.436Z]   XPIDER EXTRACTED PACKAGE DEEP AUDIT: 100% PASS
+[2026-10-24T00:58:21.445Z] ========================================================================
