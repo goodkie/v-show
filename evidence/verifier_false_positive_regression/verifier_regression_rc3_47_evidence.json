@@ -1,0 +1,638 @@
+{
+  "testSuite": "INDEPENDENT_VERIFIER_REGRESSION_RC3.47",
+  "targetFile": "E:\\vivpr\\ai\\extension-form-sender\\scratch\\extracted_rc3_47\\extension\\content-script.js",
+  "targetSha256": "64f333d5f7f913fd4363dedf5ed292992519518e6d309ea4ee56b1dcac7bc810",
+  "executedAt": "2026-10-24T03:38:20.851Z",
+  "totalTests": 13,
+  "passedCount": 13,
+  "failedCount": 0,
+  "allPassed": true,
+  "results": [
+    {
+      "id": "NEG-01",
+      "category": "NEGATIVE_REJECTION",
+      "name": "Generic /post URL change with HTTP 200 alone and loading body must NOT confer isDecisiveSuccess",
+      "timestamp": "2026-10-24T03:38:20.842Z",
+      "status": "PASS",
+      "signalsEvaluated": {
+        "networkStatus": 200,
+        "url": "https://example.com/post",
+        "isSuccessUrl": false,
+        "isJsonFormReceipt": false,
+        "newSuccessNodes": 0,
+        "successVisibilityTransition": false,
+        "newErrorsFound": false,
+        "validationErrorsCount": 0,
+        "serverErrorFound": false,
+        "captchaRejected": false,
+        "actualTransportFailure": false,
+        "hasStrongPositive": false,
+        "isDecisiveSuccess": false,
+        "isDecisiveFailure": false
+      },
+      "checks": [
+        {
+          "signal": "isSuccessUrl",
+          "expected": false,
+          "actual": false,
+          "pass": true
+        },
+        {
+          "signal": "isJsonFormReceipt",
+          "expected": false,
+          "actual": false,
+          "pass": true
+        },
+        {
+          "signal": "isDecisiveSuccess",
+          "expected": false,
+          "actual": false,
+          "pass": true
+        },
+        {
+          "signal": "isDecisiveFailure",
+          "expected": false,
+          "actual": false,
+          "pass": true
+        }
+      ],
+      "error": null
+    },
+    {
+      "id": "NEG-02",
+      "category": "NEGATIVE_REJECTION",
+      "name": "HTTP 400 Bad Request status with error body must assert failure and block decisive success",
+      "timestamp": "2026-10-24T03:38:20.846Z",
+      "status": "PASS",
+      "signalsEvaluated": {
+        "networkStatus": 400,
+        "url": "https://example.com/api/contact",
+        "isSuccessUrl": false,
+        "isJsonFormReceipt": false,
+        "newSuccessNodes": 0,
+        "successVisibilityTransition": false,
+        "newErrorsFound": true,
+        "validationErrorsCount": 1,
+        "serverErrorFound": true,
+        "captchaRejected": false,
+        "actualTransportFailure": true,
+        "hasStrongPositive": false,
+        "isDecisiveSuccess": false,
+        "isDecisiveFailure": true
+      },
+      "checks": [
+        {
+          "signal": "actualTransportFailure",
+          "expected": true,
+          "actual": true,
+          "pass": true
+        },
+        {
+          "signal": "isJsonFormReceipt",
+          "expected": false,
+          "actual": false,
+          "pass": true
+        },
+        {
+          "signal": "isDecisiveSuccess",
+          "expected": false,
+          "actual": false,
+          "pass": true
+        },
+        {
+          "signal": "isDecisiveFailure",
+          "expected": true,
+          "actual": true,
+          "pass": true
+        }
+      ],
+      "error": null
+    },
+    {
+      "id": "NEG-03",
+      "category": "NEGATIVE_REJECTION",
+      "name": "HTTP 422 Unprocessable Entity must assert failure and block decisive success",
+      "timestamp": "2026-10-24T03:38:20.846Z",
+      "status": "PASS",
+      "signalsEvaluated": {
+        "networkStatus": 422,
+        "url": "https://example.com/api/contact",
+        "isSuccessUrl": false,
+        "isJsonFormReceipt": false,
+        "newSuccessNodes": 0,
+        "successVisibilityTransition": false,
+        "newErrorsFound": true,
+        "validationErrorsCount": 1,
+        "serverErrorFound": true,
+        "captchaRejected": false,
+        "actualTransportFailure": true,
+        "hasStrongPositive": false,
+        "isDecisiveSuccess": false,
+        "isDecisiveFailure": true
+      },
+      "checks": [
+        {
+          "signal": "actualTransportFailure",
+          "expected": true,
+          "actual": true,
+          "pass": true
+        },
+        {
+          "signal": "isJsonFormReceipt",
+          "expected": false,
+          "actual": false,
+          "pass": true
+        },
+        {
+          "signal": "isDecisiveSuccess",
+          "expected": false,
+          "actual": false,
+          "pass": true
+        },
+        {
+          "signal": "isDecisiveFailure",
+          "expected": true,
+          "actual": true,
+          "pass": true
+        }
+      ],
+      "error": null
+    },
+    {
+      "id": "NEG-04",
+      "category": "NEGATIVE_REJECTION",
+      "name": "HTTP 500 transport error must flag serverErrorFound and trigger decisive failure",
+      "timestamp": "2026-10-24T03:38:20.847Z",
+      "status": "PASS",
+      "signalsEvaluated": {
+        "networkStatus": 500,
+        "url": "https://example.com/contact",
+        "isSuccessUrl": false,
+        "isJsonFormReceipt": false,
+        "newSuccessNodes": 0,
+        "successVisibilityTransition": false,
+        "newErrorsFound": false,
+        "validationErrorsCount": 0,
+        "serverErrorFound": true,
+        "captchaRejected": false,
+        "actualTransportFailure": true,
+        "hasStrongPositive": false,
+        "isDecisiveSuccess": false,
+        "isDecisiveFailure": true
+      },
+      "checks": [
+        {
+          "signal": "actualTransportFailure",
+          "expected": true,
+          "actual": true,
+          "pass": true
+        },
+        {
+          "signal": "serverErrorFound",
+          "expected": true,
+          "actual": true,
+          "pass": true
+        },
+        {
+          "signal": "isDecisiveSuccess",
+          "expected": false,
+          "actual": false,
+          "pass": true
+        },
+        {
+          "signal": "isDecisiveFailure",
+          "expected": true,
+          "actual": true,
+          "pass": true
+        }
+      ],
+      "error": null
+    },
+    {
+      "id": "NEG-05",
+      "category": "NEGATIVE_REJECTION",
+      "name": "HTTP 503 text pattern in DOM node must flag serverErrorFound and trigger decisive failure",
+      "timestamp": "2026-10-24T03:38:20.847Z",
+      "status": "PASS",
+      "signalsEvaluated": {
+        "networkStatus": 200,
+        "url": "https://example.com/gateway/submit",
+        "isSuccessUrl": false,
+        "isJsonFormReceipt": false,
+        "newSuccessNodes": 0,
+        "successVisibilityTransition": false,
+        "newErrorsFound": false,
+        "validationErrorsCount": 0,
+        "serverErrorFound": true,
+        "captchaRejected": false,
+        "actualTransportFailure": false,
+        "hasStrongPositive": false,
+        "isDecisiveSuccess": false,
+        "isDecisiveFailure": false
+      },
+      "checks": [
+        {
+          "signal": "serverErrorFound",
+          "expected": true,
+          "actual": true,
+          "pass": true
+        },
+        {
+          "signal": "isDecisiveSuccess",
+          "expected": false,
+          "actual": false,
+          "pass": true
+        }
+      ],
+      "error": null
+    },
+    {
+      "id": "NEG-06",
+      "category": "NEGATIVE_REJECTION",
+      "name": "SPA JSON validation failure payload with HTTP 200 must flag newErrorsFound and reject success",
+      "timestamp": "2026-10-24T03:38:20.848Z",
+      "status": "PASS",
+      "signalsEvaluated": {
+        "networkStatus": 200,
+        "url": "https://example.com/api/v1/submit",
+        "isSuccessUrl": false,
+        "isJsonFormReceipt": false,
+        "newSuccessNodes": 0,
+        "successVisibilityTransition": false,
+        "newErrorsFound": true,
+        "validationErrorsCount": 1,
+        "serverErrorFound": false,
+        "captchaRejected": false,
+        "actualTransportFailure": false,
+        "hasStrongPositive": false,
+        "isDecisiveSuccess": false,
+        "isDecisiveFailure": true
+      },
+      "checks": [
+        {
+          "signal": "isJsonFormReceipt",
+          "expected": false,
+          "actual": false,
+          "pass": true
+        },
+        {
+          "signal": "newErrorsFound",
+          "expected": true,
+          "actual": true,
+          "pass": true
+        },
+        {
+          "signal": "isDecisiveSuccess",
+          "expected": false,
+          "actual": false,
+          "pass": true
+        },
+        {
+          "signal": "isDecisiveFailure",
+          "expected": true,
+          "actual": true,
+          "pass": true
+        }
+      ],
+      "error": null
+    },
+    {
+      "id": "NEG-07",
+      "category": "NEGATIVE_REJECTION",
+      "name": "Empty form echo { form: {} } without positive submitted data must NOT confer decisive success",
+      "timestamp": "2026-10-24T03:38:20.848Z",
+      "status": "PASS",
+      "signalsEvaluated": {
+        "networkStatus": 200,
+        "url": "https://httpbin.org/post",
+        "isSuccessUrl": false,
+        "isJsonFormReceipt": false,
+        "newSuccessNodes": 0,
+        "successVisibilityTransition": false,
+        "newErrorsFound": false,
+        "validationErrorsCount": 0,
+        "serverErrorFound": false,
+        "captchaRejected": false,
+        "actualTransportFailure": false,
+        "hasStrongPositive": false,
+        "isDecisiveSuccess": false,
+        "isDecisiveFailure": false
+      },
+      "checks": [
+        {
+          "signal": "isJsonFormReceipt",
+          "expected": false,
+          "actual": false,
+          "pass": true
+        },
+        {
+          "signal": "isDecisiveSuccess",
+          "expected": false,
+          "actual": false,
+          "pass": true
+        }
+      ],
+      "error": null
+    },
+    {
+      "id": "NEG-08",
+      "category": "NEGATIVE_REJECTION",
+      "name": "SPA JSON status: \"fail\" payload must flag newErrorsFound and trigger decisive failure",
+      "timestamp": "2026-10-24T03:38:20.849Z",
+      "status": "PASS",
+      "signalsEvaluated": {
+        "networkStatus": 200,
+        "url": "https://example.com/api/post",
+        "isSuccessUrl": false,
+        "isJsonFormReceipt": false,
+        "newSuccessNodes": 0,
+        "successVisibilityTransition": false,
+        "newErrorsFound": true,
+        "validationErrorsCount": 1,
+        "serverErrorFound": false,
+        "captchaRejected": false,
+        "actualTransportFailure": false,
+        "hasStrongPositive": false,
+        "isDecisiveSuccess": false,
+        "isDecisiveFailure": true
+      },
+      "checks": [
+        {
+          "signal": "isJsonFormReceipt",
+          "expected": false,
+          "actual": false,
+          "pass": true
+        },
+        {
+          "signal": "newErrorsFound",
+          "expected": true,
+          "actual": true,
+          "pass": true
+        },
+        {
+          "signal": "isDecisiveSuccess",
+          "expected": false,
+          "actual": false,
+          "pass": true
+        },
+        {
+          "signal": "isDecisiveFailure",
+          "expected": true,
+          "actual": true,
+          "pass": true
+        }
+      ],
+      "error": null
+    },
+    {
+      "id": "NEG-09",
+      "category": "NEGATIVE_REJECTION",
+      "name": "CAPTCHA rejection error node in DOM must flag captchaRejected and trigger decisive failure",
+      "timestamp": "2026-10-24T03:38:20.849Z",
+      "status": "PASS",
+      "signalsEvaluated": {
+        "networkStatus": 200,
+        "url": "https://example.com/contact",
+        "isSuccessUrl": false,
+        "isJsonFormReceipt": false,
+        "newSuccessNodes": 0,
+        "successVisibilityTransition": false,
+        "newErrorsFound": true,
+        "validationErrorsCount": 1,
+        "serverErrorFound": false,
+        "captchaRejected": true,
+        "actualTransportFailure": false,
+        "hasStrongPositive": false,
+        "isDecisiveSuccess": false,
+        "isDecisiveFailure": true
+      },
+      "checks": [
+        {
+          "signal": "captchaRejected",
+          "expected": true,
+          "actual": true,
+          "pass": true
+        },
+        {
+          "signal": "isDecisiveSuccess",
+          "expected": false,
+          "actual": false,
+          "pass": true
+        },
+        {
+          "signal": "isDecisiveFailure",
+          "expected": true,
+          "actual": true,
+          "pass": true
+        }
+      ],
+      "error": null
+    },
+    {
+      "id": "POS-10",
+      "category": "POSITIVE_AFFIRMATION",
+      "name": "Genuine JSON form receipt with filled fields and origin IP MUST confer isDecisiveSuccess",
+      "timestamp": "2026-10-24T03:38:20.849Z",
+      "status": "PASS",
+      "signalsEvaluated": {
+        "networkStatus": 200,
+        "url": "https://httpbin.org/post",
+        "isSuccessUrl": false,
+        "isJsonFormReceipt": true,
+        "newSuccessNodes": 0,
+        "successVisibilityTransition": false,
+        "newErrorsFound": false,
+        "validationErrorsCount": 0,
+        "serverErrorFound": false,
+        "captchaRejected": false,
+        "actualTransportFailure": false,
+        "hasStrongPositive": true,
+        "isDecisiveSuccess": true,
+        "isDecisiveFailure": false
+      },
+      "checks": [
+        {
+          "signal": "isJsonFormReceipt",
+          "expected": true,
+          "actual": true,
+          "pass": true
+        },
+        {
+          "signal": "newErrorsFound",
+          "expected": false,
+          "actual": false,
+          "pass": true
+        },
+        {
+          "signal": "serverErrorFound",
+          "expected": false,
+          "actual": false,
+          "pass": true
+        },
+        {
+          "signal": "hasStrongPositive",
+          "expected": true,
+          "actual": true,
+          "pass": true
+        },
+        {
+          "signal": "isDecisiveSuccess",
+          "expected": true,
+          "actual": true,
+          "pass": true
+        },
+        {
+          "signal": "isDecisiveFailure",
+          "expected": false,
+          "actual": false,
+          "pass": true
+        }
+      ],
+      "error": null
+    },
+    {
+      "id": "POS-11",
+      "category": "POSITIVE_AFFIRMATION",
+      "name": "Explicit success: true JSON payload MUST confer isDecisiveSuccess",
+      "timestamp": "2026-10-24T03:38:20.850Z",
+      "status": "PASS",
+      "signalsEvaluated": {
+        "networkStatus": 200,
+        "url": "https://example.com/api/v2/contact",
+        "isSuccessUrl": false,
+        "isJsonFormReceipt": true,
+        "newSuccessNodes": 0,
+        "successVisibilityTransition": false,
+        "newErrorsFound": false,
+        "validationErrorsCount": 0,
+        "serverErrorFound": false,
+        "captchaRejected": false,
+        "actualTransportFailure": false,
+        "hasStrongPositive": true,
+        "isDecisiveSuccess": true,
+        "isDecisiveFailure": false
+      },
+      "checks": [
+        {
+          "signal": "isJsonFormReceipt",
+          "expected": true,
+          "actual": true,
+          "pass": true
+        },
+        {
+          "signal": "hasStrongPositive",
+          "expected": true,
+          "actual": true,
+          "pass": true
+        },
+        {
+          "signal": "isDecisiveSuccess",
+          "expected": true,
+          "actual": true,
+          "pass": true
+        },
+        {
+          "signal": "isDecisiveFailure",
+          "expected": false,
+          "actual": false,
+          "pass": true
+        }
+      ],
+      "error": null
+    },
+    {
+      "id": "POS-12",
+      "category": "POSITIVE_AFFIRMATION",
+      "name": "Navigation to /thank-you with positive URL change MUST confer isDecisiveSuccess",
+      "timestamp": "2026-10-24T03:38:20.850Z",
+      "status": "PASS",
+      "signalsEvaluated": {
+        "networkStatus": 200,
+        "url": "https://example.com/contact/thank-you",
+        "isSuccessUrl": true,
+        "isJsonFormReceipt": false,
+        "newSuccessNodes": 1,
+        "successVisibilityTransition": false,
+        "newErrorsFound": false,
+        "validationErrorsCount": 0,
+        "serverErrorFound": false,
+        "captchaRejected": false,
+        "actualTransportFailure": false,
+        "hasStrongPositive": true,
+        "isDecisiveSuccess": true,
+        "isDecisiveFailure": false
+      },
+      "checks": [
+        {
+          "signal": "isSuccessUrl",
+          "expected": true,
+          "actual": true,
+          "pass": true
+        },
+        {
+          "signal": "hasStrongPositive",
+          "expected": true,
+          "actual": true,
+          "pass": true
+        },
+        {
+          "signal": "isDecisiveSuccess",
+          "expected": true,
+          "actual": true,
+          "pass": true
+        },
+        {
+          "signal": "isDecisiveFailure",
+          "expected": false,
+          "actual": false,
+          "pass": true
+        }
+      ],
+      "error": null
+    },
+    {
+      "id": "POS-13",
+      "category": "POSITIVE_AFFIRMATION",
+      "name": "Appearance of .message-success element in DOM MUST confer isDecisiveSuccess",
+      "timestamp": "2026-10-24T03:38:20.851Z",
+      "status": "PASS",
+      "signalsEvaluated": {
+        "networkStatus": 200,
+        "url": "https://example.com/contact",
+        "isSuccessUrl": false,
+        "isJsonFormReceipt": false,
+        "newSuccessNodes": 2,
+        "successVisibilityTransition": false,
+        "newErrorsFound": false,
+        "validationErrorsCount": 0,
+        "serverErrorFound": false,
+        "captchaRejected": false,
+        "actualTransportFailure": false,
+        "hasStrongPositive": true,
+        "isDecisiveSuccess": true,
+        "isDecisiveFailure": false
+      },
+      "checks": [
+        {
+          "signal": "hasStrongPositive",
+          "expected": true,
+          "actual": true,
+          "pass": true
+        },
+        {
+          "signal": "isDecisiveSuccess",
+          "expected": true,
+          "actual": true,
+          "pass": true
+        },
+        {
+          "signal": "isDecisiveFailure",
+          "expected": false,
+          "actual": false,
+          "pass": true
+        }
+      ],
+      "error": null
+    }
+  ]
+}

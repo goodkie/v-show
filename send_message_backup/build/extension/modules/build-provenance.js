@@ -18,9 +18,9 @@
         channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.47',
         testOnly: false,
         // [R6.9G.10.3.7.1.4.62] XPIDER AutoForm Sender Pro — Private Egress Release Candidate 3.46 (Remote HTTP POST Echo + Genuine Orchestration Verified)
-        implementationHead: '7c0dabba02974b706c3da985a9ee91b9f67a2114',
+        implementationHead: '7c0dabbad43e276c0ff8e24eedc8935609ab8ef1',
         implementationHeadShort: '7c0dabba',
-        head: '7c0dabba02974b706c3da985a9ee91b9f67a2114',
+        head: '7c0dabbad43e276c0ff8e24eedc8935609ab8ef1',
         headShort: '7c0dabba',
         rollbackBase: '3cc1be6b436b1d68f948927df88a2c73c1ae5011',
         previousFunctionalRestorePoint: 'ee5c76b37c519d337a727975c404e384c5692658',
