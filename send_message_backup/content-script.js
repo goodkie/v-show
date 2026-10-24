@@ -6854,23 +6854,10 @@
             const urlChanged = (currentUrl !== initialUrl);
 
             // 1. URL / Navigation Strong Signal (Issue #6 R6.8 P0-3 & P0-4: /search/ is strictly negative)
-            const successUrlKeywords = ['thank', 'thanks', 'success', 'confirm', 'submitted', 'message-sent', 'complete', '/post'];
+            // [False-Positive Hardening]: Generic '/post' alone is strictly excluded from success keywords.
+            const successUrlKeywords = ['thank', 'thanks', 'success', 'confirm', 'submitted', 'message-sent', 'complete'];
             const isSearchUrl = currentUrl.toLowerCase().includes('/search') || currentUrl.toLowerCase().includes('search=') || currentUrl.toLowerCase().includes('q=') || currentUrl.toLowerCase().includes('help.shopify.com');
             const isSuccessUrl = urlChanged && !isSearchUrl && successUrlKeywords.some(k => currentUrl.toLowerCase().includes(k));
-
-            // 1b. JSON Form Echo / REST API Receipt Signal (e.g. httpbin.org, REST backends)
-            let isJsonFormReceipt = false;
-            if (typeof document !== 'undefined' && document.body) {
-                const rawText = (document.body.innerText || document.body.textContent || '').trim();
-                if (rawText.startsWith('{') && rawText.endsWith('}')) {
-                    try {
-                        const parsed = JSON.parse(rawText);
-                        if (parsed && (parsed.form || parsed.data || parsed.json || parsed.success || parsed.status === 'ok') && !parsed.error) {
-                            isJsonFormReceipt = true;
-                        }
-                    } catch (_) {}
-                }
-            }
 
             // [R6.9D] 2. Negative / Error Signals (Delta / Transition Based)
             let newErrorsFound = false;
@@ -6897,6 +6884,63 @@
                     serverErrorTransition = true;
                     matchedServerError = isNet5xx ? `HTTP_${nStatus}` : (isNet4xx ? `HTTP_${nStatus}_REJECT` : 'FRAMEWORK_TRANSPORT_REJECTED');
                     logDev(`[NEGATIVE_SIGNAL] type=SERVER_ERROR source=NETWORK phrase="${matchedServerError}" preExisting=false transition=true visible=true firstSeenMs=${elapsedNow}`, 'error');
+                }
+            }
+
+            // 2a-2. JSON Form Echo / REST API Receipt Signal & False-Positive Hardening (Evaluated post-transport)
+            let isJsonFormReceipt = false;
+            let jsonReceiptErrorFound = false;
+
+            if (typeof document !== 'undefined' && document.body) {
+                const rawText = (document.body.innerText || document.body.textContent || '').trim();
+                if (rawText.startsWith('{') && rawText.endsWith('}')) {
+                    try {
+                        const parsed = JSON.parse(rawText);
+                        if (parsed && typeof parsed === 'object') {
+                            // Check for error properties or HTTP error status codes in JSON payload
+                            const hasErrorCode = (typeof parsed.statusCode === 'number' && parsed.statusCode >= 400) ||
+                                                 (typeof parsed.status === 'number' && parsed.status >= 400) ||
+                                                 (typeof parsed.code === 'number' && parsed.code >= 400);
+                            const hasErrorProp = !!(parsed.error || parsed.err || 
+                                                 (Array.isArray(parsed.errors) && parsed.errors.length > 0) || 
+                                                 (parsed.errors && typeof parsed.errors === 'object' && Object.keys(parsed.errors).length > 0) ||
+                                                 (Array.isArray(parsed.validation_errors) && parsed.validation_errors.length > 0) ||
+                                                 (parsed.validation_errors && typeof parsed.validation_errors === 'object' && Object.keys(parsed.validation_errors).length > 0));
+                            const hasNegativeStatus = parsed.success === false || 
+                                                      parsed.status === 'error' || 
+                                                      parsed.status === 'fail' || 
+                                                      parsed.status === 'failed' || 
+                                                      parsed.result === 'error' || 
+                                                      parsed.result === 'failed';
+
+                            // Check document title for HTTP errors (e.g. 400, 401, 403, 404, 422, 500, 502, 503)
+                            const docTitle = (typeof document.title === 'string' ? document.title.toLowerCase() : '');
+                            const titleHasHttpError = ['400', '401', '403', '404', '422', '500', '502', '503'].some(code => docTitle.includes(code));
+
+                            if (hasErrorCode || hasErrorProp || hasNegativeStatus || titleHasHttpError || actualTransportFailure) {
+                                jsonReceiptErrorFound = true;
+                                newErrorsFound = true;
+                                validationErrorsCount++;
+                                validationErrorTransition = true;
+                                if (hasErrorCode || titleHasHttpError || actualTransportFailure) {
+                                    serverErrorFound = true;
+                                    serverErrorTransition = true;
+                                    matchedServerError = `JSON_HTTP_${parsed.statusCode || parsed.status || parsed.code || 'ERROR'}`;
+                                }
+                                logDev(`[NEGATIVE_SIGNAL] type=JSON_RECEIPT_ERROR error="${parsed.error || JSON.stringify(parsed.errors) || parsed.message || 'VALIDATION_OR_HTTP_ERROR'}"`, 'error');
+                            } else {
+                                // Must have positive evidence: non-empty form echo with fields, or non-empty data/json echo, or explicit success flag
+                                const hasFormFields = parsed.form && typeof parsed.form === 'object' && Object.keys(parsed.form).length > 0;
+                                const hasJsonFields = parsed.json && typeof parsed.json === 'object' && Object.keys(parsed.json).length > 0;
+                                const hasDataContent = typeof parsed.data === 'string' && parsed.data.trim().length > 0 && !parsed.data.includes('error');
+                                const hasExplicitSuccess = parsed.success === true || parsed.status === 'ok' || parsed.status === 'success' || parsed.result === 'ok' || parsed.result === 'success';
+
+                                if ((hasFormFields || hasJsonFields || hasDataContent || hasExplicitSuccess) && !actualTransportFailure) {
+                                    isJsonFormReceipt = true;
+                                }
+                            }
+                        }
+                    } catch (_) {}
                 }
             }
 
@@ -7206,7 +7250,7 @@
 
             // [R6.9D Point 5] Positive success defeats stale/pre-existing negatives
             const hasStrongPositive = isSuccessUrl || isJsonFormReceipt || newSuccessNodes > 0 || successVisibilityTransition || ariaLiveSuccessTransition || buttonSuccessState || formReplaced;
-            const isDecisiveSuccess = hasStrongPositive && !actualTransportFailure;
+            const isDecisiveSuccess = hasStrongPositive && !actualTransportFailure && !newErrorsFound && validationErrorsCount === 0;
             const isDecisiveFailure = actualTransportFailure || (newErrorsFound && validationErrorsCount > 0);
 
             return {
