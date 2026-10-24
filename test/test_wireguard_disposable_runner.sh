@@ -93,14 +93,14 @@ echo "✅ Production Invariant Guard: Verified host is NOT production node ${PRO
 # ------------------------------------------------------------------------------
 cleanup_on_error() {
   local exit_code=$?
-  echo ">>> [TRAP] Encountered failure or premature exit (exit code: ${exit_code})."
+  echo ">>> [TRAP] Encountered failure, interruption, or premature exit (exit code: ${exit_code})."
   echo ">>> [TRAP] Executing emergency teardown and snapshot restoration..."
   if [[ -f "${WORKDIR:-}/setup_wireguard.sh" ]] && [[ -f /etc/xpider/wireguard_system_snapshot.json ]]; then
     sudo "${WORKDIR}/setup_wireguard.sh" --teardown || true
     echo ">>> [TRAP] Emergency teardown executed."
   fi
 }
-trap cleanup_on_error ERR
+trap cleanup_on_error ERR INT TERM
 
 # ------------------------------------------------------------------------------
 # 4. Dependency Check / Installation in Disposable Environment

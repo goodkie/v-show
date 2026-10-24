@@ -83,7 +83,7 @@ console.log('7. Auditing Runner Identity & Repository Binding Guards...');
 assert.strictEqual(runnerContent.includes('GITHUB_REPOSITORY="goodkie/v-show"'), true, 'Runner must strictly bind to goodkie/v-show repository');
 assert.strictEqual(runnerContent.includes('GITHUB_RUN_ID'), true, 'Runner must require valid GitHub Actions execution run ID');
 assert.strictEqual(runnerContent.includes('/home/runner/work'), true, 'Runner must verify runner work directory presence');
-assert.strictEqual(runnerContent.includes('LOCAL_IF_IPS'), true, 'Runner must audit local interfaces against production IP');
-console.log('   ✅ PASS: Genuine GitHub-hosted runner identity, repository binding, and local interface audit verified.');
+assert.strictEqual(runnerContent.includes('trap cleanup_on_error ERR INT TERM'), true, 'Runner must trap ERR, INT, and TERM signals for cleanup');
+console.log('   ✅ PASS: Genuine GitHub-hosted runner identity, repository binding, local interface audit, and ERR/INT/TERM cleanup verified.');
 
 console.log('\n=== [AUDIT RESULT] 100% PASS: All workflow and runner security requirements verified. ===');

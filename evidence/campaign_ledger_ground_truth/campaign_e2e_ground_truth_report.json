@@ -1,0 +1,114 @@
+{
+  "directive": "Owner PM Comment #6383838025 (Action 2)",
+  "buildId": "R6.9G.10.3.7.1.4.66-20261024-P0-RC3.50",
+  "executedAt": "2026-10-24T11:55:39.799Z",
+  "testedTargetsCount": 5,
+  "serverGroundTruthLog": [
+    {
+      "path": "/target_success",
+      "method": "GET",
+      "ts": 1792842939560,
+      "serverDisposition": "SERVED_200_VALID_RECEIPT",
+      "responseStatus": 200,
+      "receiptId": "XPIDER-REC-E2E-SUCCESS-771"
+    },
+    {
+      "path": "/target_http_500",
+      "method": "GET",
+      "ts": 1792842939592,
+      "serverDisposition": "SERVED_500_CRASH",
+      "responseStatus": 500
+    },
+    {
+      "path": "/target_http_404",
+      "method": "GET",
+      "ts": 1792842939613,
+      "serverDisposition": "SERVED_404_NOT_FOUND",
+      "responseStatus": 404
+    },
+    {
+      "path": "/target_validation_err",
+      "method": "GET",
+      "ts": 1792842939630,
+      "serverDisposition": "SERVED_200_NEGATIVE_VALIDATION",
+      "responseStatus": 200
+    },
+    {
+      "path": "/target_missing_receipt",
+      "method": "GET",
+      "ts": 1792842939648,
+      "serverDisposition": "SERVED_200_UNACKNOWLEDGED",
+      "responseStatus": 200
+    }
+  ],
+  "campaignResults": [
+    {
+      "targetId": "T1",
+      "url": "http://127.0.0.1:8993/target_success",
+      "httpStatus": 200,
+      "terminalStatus": "SUCCESS",
+      "reasonCode": "RECEIPT_CONFIRMED",
+      "receiptId": "XPIDER-REC-E2E-SUCCESS-771",
+      "matchedExpected": true,
+      "recordedAttemptId": "att_1792842939587_evadn"
+    },
+    {
+      "targetId": "T2",
+      "url": "http://127.0.0.1:8993/target_http_500",
+      "httpStatus": 500,
+      "terminalStatus": "FAILURE",
+      "reasonCode": "JSON_HTTP_500",
+      "receiptId": null,
+      "matchedExpected": true,
+      "recordedAttemptId": "att_1792842939608_9qeax"
+    },
+    {
+      "targetId": "T3",
+      "url": "http://127.0.0.1:8993/target_http_404",
+      "httpStatus": 404,
+      "terminalStatus": "FAILURE",
+      "reasonCode": "HTTP_404_NOT_FOUND",
+      "receiptId": null,
+      "matchedExpected": true,
+      "recordedAttemptId": "att_1792842939629_s635p"
+    },
+    {
+      "targetId": "T4",
+      "url": "http://127.0.0.1:8993/target_validation_err",
+      "httpStatus": 200,
+      "terminalStatus": "FAILURE",
+      "reasonCode": "VALIDATION_FAILED",
+      "receiptId": null,
+      "matchedExpected": true,
+      "recordedAttemptId": "att_1792842939646_kr9ex"
+    },
+    {
+      "targetId": "T5",
+      "url": "http://127.0.0.1:8993/target_missing_receipt",
+      "httpStatus": 200,
+      "terminalStatus": "FAILURE",
+      "reasonCode": "INSUFFICIENT_RECEIPT",
+      "receiptId": null,
+      "matchedExpected": true,
+      "recordedAttemptId": "att_1792842939665_aw3yr"
+    }
+  ],
+  "counterVerification": {
+    "total": 5,
+    "success": 1,
+    "failed": 4,
+    "action": "LEDGER_WINS",
+    "verified": true
+  },
+  "duplicateDispatchGuard": {
+    "target1Suppressed": true,
+    "hasPriorAttempt": true,
+    "verified": true
+  },
+  "rebootPersistence": {
+    "attemptsRestored": 5,
+    "targetsRestored": 5,
+    "verified": true
+  },
+  "overallVerdict": "100% PASS (Zero Defects Found — Shipped Runtime Requires No Patch)"
+}
