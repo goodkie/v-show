@@ -15,18 +15,18 @@
 
     const BUILD_INFO = {
         branch: 'upgrade/phase-0-1',
-        channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.49',
+        channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.50',
         testOnly: false,
-        // [R6.9G.10.3.7.1.4.65] XPIDER AutoForm Sender Pro — Private Egress Release Candidate 3.49 (WireGuard Multi-Component System Snapshot & Restore Hardening)
-        implementationHead: '4568365c5ea9edff3f3810575d0080a1c129e406',
-        implementationHeadShort: '4568365c',
-        head: '4568365c5ea9edff3f3810575d0080a1c129e406',
-        headShort: '4568365c',
+        // [R6.9G.10.3.7.1.4.66] XPIDER AutoForm Sender Pro — Private Egress Release Candidate 3.50 (Companion Identity Parity & Disposable CI Sandbox)
+        implementationHead: 'f1ea7fa2dee53fca7427a69cd6bb164c8d26153e',
+        implementationHeadShort: 'f1ea7fa2',
+        head: 'f1ea7fa2dee53fca7427a69cd6bb164c8d26153e',
+        headShort: 'f1ea7fa2',
         rollbackBase: '55cd543be5ebe7a4553cac0cbfcf933a00e4c8a5',
-        previousFunctionalRestorePoint: '1e536f82a03f2dba1849ed670d8e660b76ed41b5',
+        previousFunctionalRestorePoint: '3b7436fd9d5b327cea7615abfb59dc0e1a8acfed',
         manifestVersion: 3,
-        buildId: 'R6.9G.10.3.7.1.4.65-20261024-P0-RC3.49',
-        builtAt: '2026-10-24T07:45:00.000Z',
+        buildId: 'R6.9G.10.3.7.1.4.66-20261024-P0-RC3.50',
+        builtAt: '2026-10-24T08:28:00.000Z',
         provenanceSchema: 2,
         modules: {
             backgroundSha: '26b1f824e3763ddef81d12eb07dcf86daac3e37ce0bb49d82879500958093f28',

@@ -1,0 +1,25 @@
+name: WireGuard Disposable Linux Restoration Integration Test
+
+# Disposable CI Workflow Template for Ubuntu 22.04+ Runner
+# Note: Stored in ci/ to comply with token OAuth workflow scope boundaries.
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'companion/wireguard/**'
+      - 'test/test_wireguard_disposable_runner.sh'
+      - 'ci/wireguard-restore-disposable-test.yml'
+
+jobs:
+  wireguard-restore-test:
+    name: Disposable Ubuntu Runner (Real Systemd, UFW, NAT, DNS Restoration)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Run WireGuard Disposable Integration Suite
+        run: |
+          chmod +x test/test_wireguard_disposable_runner.sh
+          ./test/test_wireguard_disposable_runner.sh
