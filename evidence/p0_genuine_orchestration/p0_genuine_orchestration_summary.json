@@ -1,0 +1,57 @@
+{
+  "test": "P0_GENUINE_ORCHESTRATION_AND_HARD_GATES_AUDIT",
+  "timestamp": "2026-10-24T02:05:20.308Z",
+  "gates": {
+    "gateA_genuineOrchestration": "PASS",
+    "gateA_controlPlaneLifecycle": "PASS",
+    "gateA_captchaLoopSuppression": "PASS",
+    "gateA_ledgerRestartPersistence": "PASS",
+    "gateB_privateEgress8443": "PASS",
+    "gateB_sshForensicsAndMinimalOwnerStep": "PASS",
+    "gateC_residentialFailClosed": "PASS"
+  },
+  "evidence": {
+    "egressProxy8443": {
+      "status": "HEALTHY",
+      "exitIp": "143.198.40.33",
+      "port": 8443
+    },
+    "sshForensics": {
+      "sshPort22": "TIMEOUT",
+      "rootCause": "Host UFW default-deny incoming + RC3.37 zero-trust authorized_keys wipe",
+      "patLimitation": "Provided PAT scoped strictly to Firewalls & Tags (Droplet API returns 403 Forbidden)",
+      "minimalOwnerStep": {
+        "platform": "DigitalOcean Web Console (VNC)",
+        "dropletId": "611293905",
+        "command": "ufw allow 22/tcp && echo \"<owner_ssh_public_key>\" >> /root/.ssh/authorized_keys",
+        "whyUnavoidable": "UFW opens port 22; authorized_keys injects public key so SSH does not reject with Permission denied (publickey). Both are strictly necessary."
+      }
+    },
+    "residentialAdapter": {
+      "status": "CONFIG_REQUIRED",
+      "sendAllowed": false,
+      "credentialMaskingVerified": true,
+      "datacenterVsResidentialClarification": "Droplet 143.198.40.33 is DATACENTER (DigitalOcean), NOT residential."
+    },
+    "genuineOrchestration": {
+      "method": "PASSIVE_CDP_OBSERVATION",
+      "harnessManualClicksOnForm": 0,
+      "harnessManualPost": 0,
+      "serverReceiptCount": 1,
+      "serverLandingUrl": "/contact-success.html",
+      "neverPhoneInMessageVerified": true,
+      "canonicalLedgerAttempts": 1,
+      "successCount": 1
+    },
+    "controlPlane": {
+      "pauseVerified": true,
+      "resumeVerified": true,
+      "stopVerified": true
+    },
+    "captchaLoopSuppression": {
+      "promptEmittedOnce": true,
+      "subsequentDuplicateLoopsSuppressed": true,
+      "keyFormat": "attemptId:targetToken"
+    }
+  }
+}
