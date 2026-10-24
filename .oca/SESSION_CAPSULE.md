@@ -6,24 +6,24 @@ PROJECT_NAME: XPIDER AutoForm Sender Pro
 WORKSPACE_ROOT: E:\vivpr\ai\extension-form-sender
 AUTHORITY_SOURCE: goodkie/v-show Issues #6 & #10
 ACTIVE_BRANCH: upgrade/phase-0-1
-STATE_REV: 2026-10-23.139
-AUTHORITY_CURSOR: 6378707892
-LAST_AUDIT: [CHATGPT P0 AUDIT / NEXT ACTION / ISSUE #6 / 2026-10-23] Comment #6378606832
-LAST_DIRECTIVE: [OWNER NEXT EXECUTION / POST-#6378670033][ISSUE #6][2026-10-23] Comment #6378707892
+STATE_REV: 2026-10-23.140
+AUTHORITY_CURSOR: 6378917786
+LAST_AUDIT: [CHATGPT NEXT EXECUTION / POST-#6378881711][ISSUE #6][2026-10-24] Comment #6378917786
+LAST_DIRECTIVE: [CHATGPT NEXT EXECUTION / POST-#6378881711][ISSUE #6][2026-10-24] Comment #6378917786
 LAST_RECEIPT: [ANTIGRAVITY][RECEIPT][ISSUE-6][P0-REMOTE-GENUINE-ORCHESTRATION-AND-RC3.46-RELEASE-VERIFIED][2026-10-24T02:45Z] Comment #6378881711
-BUILD_ID: R6.9G.10.3.7.1.4.62-20261023-P0-RC3.46
-FUNCTIONAL_COMMIT: ee5c76b37c519d337a727975c404e384c5692658
-PROVENANCE_COMMIT: 34e9e60d703e4881fa6ca035db8cfb08ea73789b
+BUILD_ID: R6.9G.10.3.7.1.4.63-20261023-P0-RC3.47
+FUNCTIONAL_COMMIT: 7c0dabba02974b706c3da985a9ee91b9f67a2114
+PROVENANCE_COMMIT: ba54b0377484dfab51ee076329c3621415fa9d0e
 ROLLBACK_ANCHOR: 3cc1be6b436b1d68f948927df88a2c73c1ae5011
-PREVIOUS_FUNCTIONAL_RESTORE_POINT: 0984a9b885ce9d3ee11857469a30cd41818bf947
-NEXT_ACTION: Post substantive receipt on Comment #6378707892 with remote genuine orchestration results and WireGuard audit; await ChatGPT audit/gate evaluation.
+PREVIOUS_FUNCTIONAL_RESTORE_POINT: ee5c76b37c519d337a727975c404e384c5692658
+NEXT_ACTION: Post substantive receipt on Comment #6378917786; await ChatGPT audit/gate evaluation.
 BLOCKERS: Droplet SSH 22 blocked by internal host UFW & wiped authorized_keys (RC3.37 invariant); provided PAT is scoped to firewalls/tags only (403 on droplets/keys). Droplet Egress Proxy on 8443 is VERIFIED HEALTHY (relayReady: true, end-to-end egress verified: 143.198.40.33).
 OWNER_ACTION: none (Software layers, genuine remote orchestration, control-plane lifecycle, residential proxy fail-closed, WireGuard/Opal templates, and 8443 private egress fully operational; Droplet SSH recovery requires web console only when console access is desired).
-RELEASE_ASSET_TAG: v6.9g.10.3-rc3.46.7.1.4.62
-RELEASE_ASSET_ZIP: XPIDER_R6.9G.10.3.7.1.4.62_PRIVATE_EGRESS_RC3.46.zip
-RELEASE_ASSET_SIZE: 51423120
-RELEASE_ASSET_SHA256: 617bbfef524ba12858acdad98965a64641768fd11934f422a96b9e9489ce6b8a
-RELEASE_ASSET_URL: https://github.com/goodkie/v-show/releases/download/v6.9g.10.3-rc3.46.7.1.4.62/XPIDER_R6.9G.10.3.7.1.4.62_PRIVATE_EGRESS_RC3.46.zip
+RELEASE_ASSET_TAG: v6.9g.10.3-rc3.47.7.1.4.63
+RELEASE_ASSET_ZIP: XPIDER_R6.9G.10.3.7.1.4.63_PRIVATE_EGRESS_RC3.47.zip
+RELEASE_ASSET_SIZE: 51423888
+RELEASE_ASSET_SHA256: cf9ba34170fe2a08a173f077940483881711bd8350193390ac3ace8fab37b7d5
+RELEASE_ASSET_URL: https://github.com/goodkie/v-show/releases/download/v6.9g.10.3-rc3.47.7.1.4.63/XPIDER_R6.9G.10.3.7.1.4.63_PRIVATE_EGRESS_RC3.47.zip
 IMMUTABLE_DAILY_USE_BASELINE: XPIDER_R6.9G.10.3.7.1.4.11_OWNER_BETA.zip (commit 50aee353, SHA256: 2149a760fb614140b297d3c57abcf4aa396b376bfb9459682fc0d323fc7c3532)
 
 CONTINUITY_RULE: On every new ChatGPT or Antigravity window, search the current project for prior work, recover the latest valid state, and continue existing work instead of restarting.
