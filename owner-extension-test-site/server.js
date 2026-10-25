@@ -126,7 +126,8 @@ const server = http.createServer((req, res) => {
       html = html.replace('</body>', `    <div id="xpider-receipt-id" data-receipt-id="${receiptId}" style="display:none;">${receiptId}</div>\n</body>`);
       res.writeHead(200, {
         'Content-Type': 'text/html; charset=UTF-8',
-        'X-XPIDER-Receipt-Id': receiptId
+        'X-XPIDER-Receipt-Id': receiptId,
+        'Access-Control-Expose-Headers': 'X-XPIDER-Receipt-Id'
       });
       res.end(html);
       return;

@@ -7554,15 +7554,27 @@
                 }
 
                 let extractedReceiptId = null;
-                const rcptEl = (typeof document !== 'undefined') ? document.querySelector('[data-receipt-id], #xpider-receipt-id, meta[name="receipt-id"]') : null;
-                if (rcptEl) {
-                    extractedReceiptId = rcptEl.getAttribute('data-receipt-id') || rcptEl.getAttribute('content') || rcptEl.textContent.trim();
-                }
-                if (!extractedReceiptId && typeof window !== 'undefined' && window.location.search) {
-                    try {
-                        const params = new URLSearchParams(window.location.search);
-                        extractedReceiptId = params.get('receipt_id') || params.get('rcpt') || null;
-                    } catch (_) {}
+                const extractReceiptFn = () => {
+                    const rcptEl = (typeof document !== 'undefined') ? document.querySelector('[data-receipt-id], #xpider-receipt-id, meta[name="receipt-id"]') : null;
+                    if (rcptEl) {
+                        return rcptEl.getAttribute('data-receipt-id') || rcptEl.getAttribute('content') || (rcptEl.textContent ? rcptEl.textContent.trim() : null);
+                    }
+                    if (typeof window !== 'undefined' && window.location.search) {
+                        try {
+                            const params = new URLSearchParams(window.location.search);
+                            return params.get('receipt_id') || params.get('rcpt') || null;
+                        } catch (_) {}
+                    }
+                    return null;
+                };
+
+                extractedReceiptId = extractReceiptFn();
+                if (!extractedReceiptId && postSubmitGraceMs > 0) {
+                    const pollStart = Date.now();
+                    while (!extractedReceiptId && (Date.now() - pollStart < Math.min(postSubmitGraceMs, 3000))) {
+                        await new Promise(r => setTimeout(r, 100));
+                        extractedReceiptId = extractReceiptFn();
+                    }
                 }
                 if (extractedReceiptId) {
                     outcomeEvidence.receiptId = extractedReceiptId;

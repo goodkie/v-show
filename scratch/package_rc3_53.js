@@ -81,6 +81,11 @@ if (fs.existsSync('companion/wireguard/OPAL_PHYSICAL_PAIRING_AND_AUTH_PLAN.md'))
   );
 }
 
+// Sync owner-extension-test-site
+if (fs.existsSync('owner-extension-test-site')) {
+  fs.cpSync(path.resolve('owner-extension-test-site'), path.join(STAGING_DIR, 'owner-extension-test-site'), { recursive: true });
+}
+
 // 3. Generate inventory for extension
 function hashFile(p) {
   return crypto.createHash('sha256').update(fs.readFileSync(p)).digest('hex');

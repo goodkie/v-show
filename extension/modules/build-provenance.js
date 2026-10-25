@@ -30,7 +30,7 @@
         provenanceSchema: 2,
         modules: {
             backgroundSha: 'dd03a1c586eebd1cf93b9d27babea9d2b4e17d94f1152fb7749828fd76bab839',
-            contentScriptSha: '5a93837ca547c78401c61c54aff9660e521896d37774262bd31d70d8d60844e2',
+            contentScriptSha: 'd1e28bbece777a441213728d393a2314f8cd5148511ceea8b7947197564b0f4b',
             popupSha: 'dd02b0cf62d406c13e4fa5958d42011d6ddadbb6d8463ff95244ba83db4b15cd',
             solverContentSha: '6a1ff7154efaeb6dbd5946ac4f9be1ce5b5ff43bce2db06d0dca32950edd3bdb',
             solverCoreSha: 'ab4dee5c8213d7c2fd47942951a2bc40732c1c8c55a5742d493db617150bf95f',

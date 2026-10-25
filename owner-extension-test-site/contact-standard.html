@@ -65,7 +65,20 @@
             document.getElementById('submit-btn').disabled = true;
             document.getElementById('submit-btn').textContent = 'Submitting...';
             // Authoritative server notification for fixture accounting (RC3.19 Test B)
-            fetch('/contact-success.html', { method: 'POST' }).catch(function() {
+            fetch('/contact-success.html', { method: 'POST' }).then(function(res) {
+                var rcpt = res.headers.get('X-XPIDER-Receipt-Id');
+                if (rcpt) {
+                    var el = document.getElementById('xpider-receipt-id');
+                    if (!el) {
+                        el = document.createElement('div');
+                        el.id = 'xpider-receipt-id';
+                        el.style.display = 'none';
+                        document.body.appendChild(el);
+                    }
+                    el.setAttribute('data-receipt-id', rcpt);
+                    el.textContent = rcpt;
+                }
+            }).catch(function() {
                 fetch('/contact-success.html').catch(function() {});
             });
             setTimeout(function() {
