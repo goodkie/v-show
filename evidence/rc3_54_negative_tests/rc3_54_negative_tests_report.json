@@ -1,0 +1,41 @@
+{
+  "directive": "Owner PM Comment #6392691932 [2026-10-24] Actions (3) & (4)",
+  "releaseTag": "v6.9g.10.3-rc3.54.7.1.4.70",
+  "buildId": "R6.9G.10.3.7.1.4.70-20261024-P0-RC3.54",
+  "zipAssetSha256": "ab38ae8e76cd9ddd2c329d001da9a4e94b0a6197adb1427d4bf15646631c8fac",
+  "zipAssetId": 673943482,
+  "executedAt": "2026-10-25T03:07:38.938Z",
+  "tests": {
+    "test3A_preSubmitFakeInjection": {
+      "fakeReceiptInjected": "fake_injection_pre_submit_99999",
+      "finalDomReceipt": "rcpt_1792897662623_1",
+      "defenseHeld": true,
+      "verdict": "PASS"
+    },
+    "test3B_malformedReceipt": {
+      "rawReceipt": "@@BAD_RECEIPT_FORMAT@@ <script>",
+      "isValidFormat": false,
+      "rejected": true,
+      "verdict": "PASS"
+    },
+    "test3C_staleReceiptReplay": {
+      "staleReceiptId": "rcpt_1792895021981_1",
+      "isReplayDetected": true,
+      "verdict": "PASS"
+    },
+    "test3D_serverError500": {
+      "btnText": "Server Error (500)",
+      "successBannerVisible": false,
+      "failClosed": true,
+      "verdict": "PASS"
+    },
+    "test3E_genuineDroppedConnection": {
+      "btnText": "Network Failed",
+      "successBannerVisible": false,
+      "receiptPresent": false,
+      "failClosed": true,
+      "verdict": "PASS"
+    }
+  },
+  "overallVerdict": "PASS"
+}

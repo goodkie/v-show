@@ -1,0 +1,83 @@
+{
+  "auditDirective": "Owner PM Comment #6392691932 [2026-10-24] Action (3)",
+  "releaseTag": "v6.9g.10.3-rc3.54.7.1.4.70",
+  "executedAt": "2026-10-25T03:06:14.224Z",
+  "zipFile": "XPIDER_R6.9G.10.3.7.1.4.70_PRIVATE_EGRESS_RC3.54.zip",
+  "zipSize": 51792997,
+  "zipSha256": "ab38ae8e76cd9ddd2c329d001da9a4e94b0a6197adb1427d4bf15646631c8fac",
+  "zipAssetId": 673943482,
+  "hkcuBaselineSnapshot": {
+    "edge": {
+      "exists": false,
+      "value": null
+    },
+    "chrome": {
+      "exists": false,
+      "value": null
+    }
+  },
+  "steps": {
+    "step1_provenance": {
+      "zipSize": 51792997,
+      "zipSha256": "ab38ae8e76cd9ddd2c329d001da9a4e94b0a6197adb1427d4bf15646631c8fac",
+      "buildId": "R6.9G.10.3.7.1.4.70-20261024-P0-RC3.54",
+      "buildIdMatches": {
+        "companion/privacy-relay-service.js": true,
+        "companion/ensure_companion_service.js": true,
+        "companion/native_host/xpider_native_host.js": true,
+        "extension/modules/build-provenance.js": true
+      },
+      "verdict": "PASS"
+    },
+    "step2_nativeHostRegistration": {
+      "edgeManifestPath": "E:\\vivpr\\ai\\extension-form-sender\\scratch\\unpacked_rc3_54_lifecycle_test\\companion\\native_host\\com.xpider.privacy_relay.edge.json",
+      "chromeManifestPath": "E:\\vivpr\\ai\\extension-form-sender\\scratch\\unpacked_rc3_54_lifecycle_test\\companion\\native_host\\com.xpider.privacy_relay.chrome.json",
+      "allowedOrigin": "chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/",
+      "edgeRegistryVerified": true,
+      "chromeRegistryVerified": true,
+      "verdict": "PASS"
+    },
+    "step3_startupFromAbsent": {
+      "companionPid": 10044,
+      "status": "OK",
+      "companionBuildId": "R6.9G.10.3.7.1.4.70-20261024-P0-RC3.54",
+      "apiCapabilities": [
+        "verify-plan",
+        "provision-egress",
+        "provision-progress",
+        "destroy-egress",
+        "egress-telemetry",
+        "shutdown",
+        "stop",
+        "physical-gate",
+        "recovery-status",
+        "repair-egress"
+      ],
+      "verdict": "PASS"
+    },
+    "step4_reinstallUpgrade": {
+      "recheckStatus": "OK",
+      "recheckBuildId": "R6.9G.10.3.7.1.4.70-20261024-P0-RC3.54",
+      "verdict": "PASS"
+    },
+    "step5_rollbackTeardown": {
+      "portReleased": true,
+      "isolatedDirCleaned": true,
+      "verdict": "PASS"
+    }
+  },
+  "overallVerdict": "PASS",
+  "hkcuRestoration": {
+    "edgeRestoredMatch": true,
+    "chromeRestoredMatch": true,
+    "postRestoreEdgeReg": {
+      "exists": false,
+      "value": null
+    },
+    "postRestoreChromeReg": {
+      "exists": false,
+      "value": null
+    },
+    "verdict": "PASS"
+  }
+}

@@ -1,0 +1,214 @@
+{
+  "authorityDirective": "Owner PM Comment #6391311006 / #6391597878 [2026-10-24]",
+  "executedAt": "2026-10-25T03:08:32.117Z",
+  "pristineExtensionSource": "E:\\vivpr\\ai\\extension-form-sender\\scratch\\unpacked_rc3_54_pristine\\extension",
+  "browser": "Microsoft Edge (Clean Profile, CDP Driven)",
+  "phase1_companionUnavailableAndRecovery": {
+    "unavailableState": {
+      "buttonAccepted": true,
+      "privacyPrepBlocked": true,
+      "modalVisible": true,
+      "reasonCode": "Reason Code: RELAY_OFFLINE",
+      "startBtnRestored": true,
+      "outboundSubmissions": 0,
+      "verdict": "PASS"
+    },
+    "recoveryState": {
+      "companionRestarted": true,
+      "privacyPrepPassed": true,
+      "campaignDispatched": true,
+      "campaignRunning": true,
+      "verdict": "PASS"
+    }
+  },
+  "phase2_mixedControlledMatrixAndWorkerPreservation": {
+    "totalTargets": 4,
+    "target1StandardSuccess": true,
+    "pauseWithQueuedJobsPreserved": true,
+    "workerShutdownAndRebootPreserved": true,
+    "target2DropdownCheckboxSuccess": true,
+    "target3NumericSuccess": true,
+    "target4CaptchaHumanFallbackHeld": true,
+    "serverReceiptsCount": 3,
+    "verdict": "PASS"
+  },
+  "counterParityAssertion": {
+    "counters": {
+      "success": 3,
+      "failed": 0,
+      "skipped": 1,
+      "deliveryUnknown": 0,
+      "total": 4,
+      "queueRemaining": 0
+    },
+    "completedTotal": 4,
+    "serverReceiptsCount": 3,
+    "historyAttemptsCount": 4,
+    "parityFormula": "total (4) === completed (4) + remaining (0) AND completed (4) === success (3) + skipped (1) + failed (0) + deliveryUnknown (0)",
+    "parityHolds": true,
+    "verdict": "PASS"
+  },
+  "historyStoreAttempts": [
+    {
+      "attemptId": "att_1792897739956_esinj",
+      "campaignRunId": "mixed_run_1792897739807",
+      "targetIdentity": "https://127.0.0.1/contact-standard.html",
+      "sourceUrl": "http://127.0.0.1:8088/contact-standard.html",
+      "contactPageUrl": "http://127.0.0.1:8088/contact-standard.html",
+      "status": "CONFIRMED_SUCCESS",
+      "reasonCode": "SUCCESS_CONFIRMED",
+      "receiptId": "rcpt_1792897753420_1",
+      "settledAt": 1792897754581
+    },
+    {
+      "attemptId": "att_1792897764624_6a92u",
+      "campaignRunId": "mixed_run_1792897739807",
+      "targetIdentity": "https://127.0.0.1/contact-dropdown-checkbox.html",
+      "sourceUrl": "http://127.0.0.1:8088/contact-dropdown-checkbox.html",
+      "contactPageUrl": "http://127.0.0.1:8088/contact-dropdown-checkbox.html",
+      "status": "CONFIRMED_SUCCESS",
+      "reasonCode": "SUCCESS_CONFIRMED",
+      "receiptId": "rcpt_1792897773889_2",
+      "settledAt": 1792897775046
+    },
+    {
+      "attemptId": "att_1792897781307_6c3n6",
+      "campaignRunId": "mixed_run_1792897739807",
+      "targetIdentity": "https://127.0.0.1/contact-numeric.html",
+      "sourceUrl": "http://127.0.0.1:8088/contact-numeric.html",
+      "contactPageUrl": "http://127.0.0.1:8088/contact-numeric.html",
+      "status": "CONFIRMED_SUCCESS",
+      "reasonCode": "SUCCESS_CONFIRMED",
+      "receiptId": "rcpt_1792897794475_3",
+      "settledAt": 1792897795640
+    },
+    {
+      "attemptId": "att_1792897802213_aovmg",
+      "campaignRunId": "mixed_run_1792897739807",
+      "targetIdentity": "https://127.0.0.1/captcha-turnstile-dom.html",
+      "sourceUrl": "http://127.0.0.1:8088/captcha-turnstile-dom.html",
+      "contactPageUrl": "http://127.0.0.1:8088/captcha-turnstile-dom.html",
+      "status": "SKIPPED",
+      "reasonCode": "CAPTCHA_SKIPPED_OWNER",
+      "receiptId": null,
+      "settledAt": 1792897811244
+    }
+  ],
+  "independentServerReceipts": {
+    "totalReceipts": 3,
+    "submissions": [
+      {
+        "id": "rcpt_1792897753420_1",
+        "timestamp": 1792897753420,
+        "method": "POST",
+        "referer": "http://127.0.0.1:8088/contact-standard.html"
+      },
+      {
+        "id": "rcpt_1792897773889_2",
+        "timestamp": 1792897773890,
+        "method": "POST",
+        "referer": "http://127.0.0.1:8088/contact-dropdown-checkbox.html"
+      },
+      {
+        "id": "rcpt_1792897794475_3",
+        "timestamp": 1792897794476,
+        "method": "POST",
+        "referer": "http://127.0.0.1:8088/contact-numeric.html"
+      }
+    ]
+  },
+  "overallVerdict": "PASS",
+  "extensionId": "ldlijlaccfeelfdhgnjbibniocefckjj",
+  "buildId": "R6.9G.10.3.7.1.4.70-20261024-P0-RC3.54",
+  "implementationHead": "98d984f21317f566818f51df598e5456ab575f6d",
+  "campaignScopeAccounting": {
+    "totalAttemptsInStore": 5,
+    "phase1PreflightFailure": {
+      "count": 1,
+      "target": "https://public-corp-alpha.example.com/contact",
+      "status": "FAILURE",
+      "reasonCode": "DOMAIN_UNREACHABLE",
+      "documented": true
+    },
+    "phase2ControlledMatrix": {
+      "count": 4,
+      "confirmedSuccessCount": 3,
+      "skippedOwnerCount": 1,
+      "groundTruthReceiptsCount": 3,
+      "receiptsMatch1to1": true
+    },
+    "zeroSilentFiltering": true,
+    "crossCampaignContamination": "ELIMINATED_VIA_EXPLICIT_SCOPING",
+    "verdict": "PASS"
+  },
+  "phase1PreflightAttempts": [
+    {
+      "attemptId": "att_1792897733590_p73km",
+      "campaignRunId": "normal_run_1792897733383_39agzy",
+      "targetIdentity": "https://public-corp-alpha.example.com/contact",
+      "sourceUrl": "https://public-corp-alpha.example.com/contact",
+      "contactPageUrl": "https://public-corp-alpha.example.com/contact",
+      "status": "FAILURE",
+      "reasonCode": "DOMAIN_UNREACHABLE",
+      "receiptId": null,
+      "settledAt": 1792897734083
+    }
+  ],
+  "historyStoreAllAttempts": [
+    {
+      "attemptId": "att_1792897733590_p73km",
+      "campaignRunId": "normal_run_1792897733383_39agzy",
+      "targetIdentity": "https://public-corp-alpha.example.com/contact",
+      "sourceUrl": "https://public-corp-alpha.example.com/contact",
+      "contactPageUrl": "https://public-corp-alpha.example.com/contact",
+      "status": "FAILURE",
+      "reasonCode": "DOMAIN_UNREACHABLE",
+      "receiptId": null,
+      "settledAt": 1792897734083
+    },
+    {
+      "attemptId": "att_1792897739956_esinj",
+      "campaignRunId": "mixed_run_1792897739807",
+      "targetIdentity": "https://127.0.0.1/contact-standard.html",
+      "sourceUrl": "http://127.0.0.1:8088/contact-standard.html",
+      "contactPageUrl": "http://127.0.0.1:8088/contact-standard.html",
+      "status": "CONFIRMED_SUCCESS",
+      "reasonCode": "SUCCESS_CONFIRMED",
+      "receiptId": "rcpt_1792897753420_1",
+      "settledAt": 1792897754581
+    },
+    {
+      "attemptId": "att_1792897764624_6a92u",
+      "campaignRunId": "mixed_run_1792897739807",
+      "targetIdentity": "https://127.0.0.1/contact-dropdown-checkbox.html",
+      "sourceUrl": "http://127.0.0.1:8088/contact-dropdown-checkbox.html",
+      "contactPageUrl": "http://127.0.0.1:8088/contact-dropdown-checkbox.html",
+      "status": "CONFIRMED_SUCCESS",
+      "reasonCode": "SUCCESS_CONFIRMED",
+      "receiptId": "rcpt_1792897773889_2",
+      "settledAt": 1792897775046
+    },
+    {
+      "attemptId": "att_1792897781307_6c3n6",
+      "campaignRunId": "mixed_run_1792897739807",
+      "targetIdentity": "https://127.0.0.1/contact-numeric.html",
+      "sourceUrl": "http://127.0.0.1:8088/contact-numeric.html",
+      "contactPageUrl": "http://127.0.0.1:8088/contact-numeric.html",
+      "status": "CONFIRMED_SUCCESS",
+      "reasonCode": "SUCCESS_CONFIRMED",
+      "receiptId": "rcpt_1792897794475_3",
+      "settledAt": 1792897795640
+    },
+    {
+      "attemptId": "att_1792897802213_aovmg",
+      "campaignRunId": "mixed_run_1792897739807",
+      "targetIdentity": "https://127.0.0.1/captcha-turnstile-dom.html",
+      "sourceUrl": "http://127.0.0.1:8088/captcha-turnstile-dom.html",
+      "contactPageUrl": "http://127.0.0.1:8088/captcha-turnstile-dom.html",
+      "status": "SKIPPED",
+      "reasonCode": "CAPTCHA_SKIPPED_OWNER",
+      "receiptId": null,
+      "settledAt": 1792897811244
+    }
+  ]
+}

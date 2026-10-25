@@ -1,0 +1,33 @@
+[2026-10-25T03:07:38.929Z] === STARTING RC3.54 NEGATIVE RECEIPT & FAILURE CONTROLS AUDIT ===
+
+[2026-10-25T03:07:38.938Z] --- STEP 1: Launching Owned Fixture Server ---
+[2026-10-25T03:07:39.485Z] Fixture server responsive on port 8088
+[2026-10-25T03:07:39.492Z] 
+--- STEP 2: Spawning Edge via CDP for Negative Tests ---
+[2026-10-25T03:07:40.441Z] Connected to Service Worker: chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/background.js
+[2026-10-25T03:07:40.450Z] 
+--- TEST 3A: Pre-Submit Fake Receipt DOM Injection Guard ---
+[2026-10-25T03:07:42.569Z] Injected fake receipt into DOM before submit: fake_injection_pre_submit_99999
+[2026-10-25T03:07:44.627Z] DOM Receipt after submit: rcpt_1792897662623_1
+[2026-10-25T03:07:44.634Z] ✅ TEST 3A PASS: Fake pre-submit receipt was successfully replaced/rejected; defense held.
+[2026-10-25T03:07:44.643Z] 
+--- TEST 3B: Malformed Receipt Format Guard ---
+[2026-10-25T03:07:48.434Z] Malformed Receipt Result: {"raw":"@@BAD_RECEIPT_FORMAT@@ <script>","isValid":false}
+[2026-10-25T03:07:48.441Z] ✅ TEST 3B PASS: Malformed receipt format rejected by validation regex.
+[2026-10-25T03:07:48.451Z] 
+--- TEST 3C: Cross-Target Stale Receipt Replay Guard ---
+[2026-10-25T03:07:50.245Z] Stale Replay Evaluation: {"incoming":"rcpt_1792895021981_1","lastRunReceipt":"rcpt_1792895021981_1","isReplay":true}
+[2026-10-25T03:07:50.252Z] ✅ TEST 3C PASS: Stale cross-target receipt replay detected and rejected.
+[2026-10-25T03:07:50.263Z] 
+--- TEST 3D: Server HTTP 500 Error Guard (Fail-Closed) ---
+[2026-10-25T03:07:53.523Z] Server 500 State: {"btnText":"Server Error (500)","bannerVisible":false}
+[2026-10-25T03:07:53.532Z] ✅ TEST 3D PASS: HTTP 500 error failed closed; zero false confirmation.
+[2026-10-25T03:07:53.556Z] 
+--- TEST 3E: Genuine Dropped Connection / TCP Socket Destroy Guard ---
+[2026-10-25T03:07:56.874Z] Dropped Connection State: {"btnText":"Network Failed","bannerVisible":false,"receiptPresent":false}
+[2026-10-25T03:07:56.882Z] ✅ TEST 3E PASS: Genuine dropped connection (TCP reset) failed closed; zero false confirmation.
+[2026-10-25T03:07:56.890Z] 
+======================================================================
+[2026-10-25T03:07:56.900Z] 🎉 ALL RC3.54 NEGATIVE TESTS & FAILURE CONTROLS PASSED (5/5)!
+[2026-10-25T03:07:56.908Z] ======================================================================
+[2026-10-25T03:07:56.925Z] Saved negative tests report to E:\vivpr\ai\extension-form-sender\evidence\rc3_54_negative_tests\rc3_54_negative_tests_report.json

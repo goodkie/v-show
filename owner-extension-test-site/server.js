@@ -108,6 +108,11 @@ const server = http.createServer((req, res) => {
 
   // Intercept form landing / submission target page
   if (reqPath === '/contact-success.html') {
+    if (req.url.includes('scenario=dropped_response') || (req.headers['referer'] && req.headers['referer'].includes('scenario=dropped_response'))) {
+      console.log(`[XPIDER_FIXTURE] Simulating genuine dropped connection post-submit (socket destroy)`);
+      try { req.socket.destroy(); } catch (_) {}
+      return;
+    }
     if (req.url.includes('scenario=server_error_500') || (req.headers['referer'] && req.headers['referer'].includes('scenario=server_error_500'))) {
       console.log(`[XPIDER_FIXTURE] Simulating 500 Internal Server Error for negative test`);
       res.writeHead(500, { 'Content-Type': 'text/plain' });
