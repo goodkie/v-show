@@ -6,8 +6,8 @@
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issues #6 & #10
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-25.177
-- Authority Cursor: 6395688323
+- State Rev: 2026-10-25.178
+- Authority Cursor: 6396513441
 - Last Directives / Audits:
   - `[CHATGPT RC3.48 AUDIT / NEXT EXECUTION][ISSUE #6][2026-10-24] Comment #6380501639`
   - `[OWNER PM REACTIVATE — ISSUE #6][2026-10-24] Comment #6391011709`
@@ -29,6 +29,7 @@
   - `[OWNER PM CRITICAL DIAGNOSTIC AUDIT — FALSE PHYSICAL CLASSIFICATION / COMPANION OFFLINE][ISSUE #6][2026-10-25] Comment #6394909358`
   - `[OWNER PM REACTIVATE AFTER NO NEW RECEIPT][ISSUE #6][2026-10-25] Comment #6395042864`
   - `[OWNER ACTUAL WINDOWS QA — RC3.56 REBOOT RELAY FAILURE / P0][ISSUE #6][2026-10-25] Comment #6395688323`
+  - `[OWNER REAL-PC RC3.57 RECOVERY & EGRESS IP RECEIPT][ISSUE #6][2026-10-25] Comment #6396513441`
 - Last Receipts:
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.54-IMMUTABLE-RELEASE-DIGEST-HKCU-SNAPSHOT-AND-GENUINE-DROPPED-RESPONSE-PASS][2026-10-24T23:15Z] Comment #6392829509`
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][SIX-HOUR-PRIVATE-OWNER-RELEASE-PLAN-MILESTONE-QUICK-START-AND-10-FIXTURE-SMOKE-PASS][2026-10-24T23:45Z] Comment #6393104892`
@@ -40,6 +41,7 @@
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][CLEAN-STATE-COMPANION-STOP-START-LIFECYCLE-SMOKE-PASS][2026-10-25T03:55Z] Comment #6395106199`
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.57-RESTART-PROBE-PHASE-AWARENESS-SELF-HEAL-RECOVERY-AND-IMMUTABLE-PACKAGE-PASS][2026-10-25T09:30Z] Comment #6395971591`
   - `[ANTIGRAVITY][BRIEFING][ISSUE-6][RC3.57-RESTART-PROBE-PHASE-TELEMETRY-SELF-HEAL-RECOVERY-AND-IMMUTABLE-PACKAGE-STATUS][2026-10-25T09:45Z] Comment #6396100402`
+  - `[ANTIGRAVITY][RECEIPT][ISSUE-6][OWNER-REAL-PC-RC3.57-ACCEPTANCE-ACK-404-CLARIFICATION-AND-LEAST-PRIVILEGE-STRATEGY][2026-10-25T10:45Z] Comment #6396587737`
 - Functional QA Commit: `741dfe44536031dff13ac6d8e310d4f72fbca42b`
 - Active Git Commit (Release): `741dfe44536031dff13ac6d8e310d4f72fbca42b`
 - Previous Functional Restore Point: `cd8c8a5b68a069cab46b372775bacacb0f22425f`
@@ -47,7 +49,7 @@
 - Build ID: `R6.9G.10.3.7.1.4.73-20261025-P0-RC3.57`
 - Verified Release Asset: `XPIDER_R6.9G.10.3.7.1.4.73_PRIVATE_EGRESS_RC3.57.zip` (Tag: `v6.9g.10.3-rc3.57.7.1.4.73`, Size: 51,808,072 bytes, SHA256: `b0bb98cf1245c38db61c4d1de9d7f4c3dad1bf4a02bc61f2faab62f21a07ea0f`)
 - Release URL: `https://github.com/goodkie/v-show/releases/tag/v6.9g.10.3-rc3.57.7.1.4.73`
-- Software Status: **RC3.57 RELEASE CUT — STARTUP PROBE TIMEOUT RECOVERY & PHASE TELEMETRY VERIFIED** (Bounded sub-phase probe tracking, immediate socket destruction on timeout/error, self-healing reconnect scheduling on startup failure eliminating permanent DEGRADED deadlock, continuous health monitor automatic resumption on reconnect, regression test suite 6/6 PASS).
+- Software Status: **REAL PHYSICAL WINDOWS PC ACCEPTANCE PASS (RC3.57 FROZEN & IMMUTABLE)**: Core local fixtures PASS, phase telemetry accurately diagnosed `UPSTREAM_TLS`, 30s zero-restart self-recovery verified PASS, private egress route verified to `143.198.40.33`. 'Not Found' 404 proxy behavior explained (HTTP CONNECT tunnel vs plain HTTP GET). Dynamic IP least-privilege strategy proposed.
 
 ---
 
