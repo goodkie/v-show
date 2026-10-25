@@ -6,19 +6,19 @@ PROJECT_NAME: XPIDER AutoForm Sender Pro
 WORKSPACE_ROOT: E:\vivpr\ai\extension-form-sender
 AUTHORITY_SOURCE: goodkie/v-show Issues #6 & #10
 ACTIVE_BRANCH: upgrade/phase-0-1
-STATE_REV: 2026-10-24.168
-AUTHORITY_CURSOR: 6392691932
-LAST_AUDIT: [OWNER PM RELEASE-INTEGRITY ALERT + NEXT EXECUTION][ISSUE #6][2026-10-24] Comment #6392691932
-LAST_DIRECTIVE: [OWNER PM RELEASE-INTEGRITY ALERT + NEXT EXECUTION][ISSUE #6][2026-10-24] Comment #6392691932
-LAST_RECEIPT: [ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.54-IMMUTABLE-RELEASE-DIGEST-HKCU-SNAPSHOT-AND-GENUINE-DROPPED-RESPONSE-PASS][2026-10-24T23:15Z]
+STATE_REV: 2026-10-24.170
+AUTHORITY_CURSOR: 6392919419
+LAST_AUDIT: [OWNER PM SIX-HOUR PRIVATE RELEASE — CONTINUE EXECUTION][ISSUE #6][2026-10-24] Comment #6392919419
+LAST_DIRECTIVE: [OWNER PM SIX-HOUR PRIVATE RELEASE — CONTINUE EXECUTION][ISSUE #6][2026-10-24] Comment #6392919419
+LAST_RECEIPT: [ANTIGRAVITY][RECEIPT][ISSUE-6][SIX-HOUR-PRIVATE-OWNER-RELEASE-PLAN-MILESTONE-QUICK-START-AND-10-FIXTURE-SMOKE-PASS][2026-10-24T23:45Z]
 BUILD_ID: R6.9G.10.3.7.1.4.70-20261024-P0-RC3.54
-FUNCTIONAL_COMMIT: 8e9b2e51ac6b5d205fb4ff51cf05d1410ea48602
-PROVENANCE_COMMIT: 8e9b2e51ac6b5d205fb4ff51cf05d1410ea48602
+FUNCTIONAL_COMMIT: 83be9bdfc833329c5881325eb32493506b0080f1
+PROVENANCE_COMMIT: 83be9bdfc833329c5881325eb32493506b0080f1
 ROLLBACK_ANCHOR: 55cd543be5ebe7a4553cac0cbfcf933a00e4c8a5
-PREVIOUS_FUNCTIONAL_RESTORE_POINT: 9f82f49cb493c7a44cf8a7e5c00b521ffbc8e147
-NEXT_ACTION: Await Owner PM / ChatGPT Audit & Gate on RC3.54 Immutable Release, HKCU Snapshot Restore, and Genuine Dropped Response Audit.
-BLOCKERS: Droplet SSH 22 blocked by internal host UFW & wiped authorized_keys (RC3.37 invariant); provided PAT is scoped to firewalls/tags only (verified raw 403 on droplets/keys). Droplet Egress Proxy on 8443 is VERIFIED HEALTHY (relayReady: true, end-to-end egress verified: 143.198.40.33). Single minimal Owner authentication request provided for server WG setup via DO web console; GL.iNet Opal physical hardware tunnel unverified pending physical deployment; residential CONFIG_REQUIRED remains.
-OWNER_ACTION: None for daily form operations (8443 proxy and privacy relay active and verified).
+PREVIOUS_FUNCTIONAL_RESTORE_POINT: 8e9b2e51ac6b5d205fb4ff51cf05d1410ea48602
+NEXT_ACTION: Six-Hour Plan Milestone Complete: Await Owner PM / ChatGPT Audit on QUICK_START_KO.md, 1-Click install/rollback/preflight, and 10-fixture smoke matrix PASS report.
+BLOCKERS: Droplet SSH 22 blocked by internal host UFW & wiped authorized_keys (RC3.37 invariant); provided PAT is scoped to firewalls/tags only (verified raw 403 on droplets/keys). Droplet Egress Proxy on 8443 is VERIFIED HEALTHY (relayReady: true, end-to-end egress verified: 143.198.40.33). GL.iNet Opal physical hardware tunnel unverified pending physical deployment (fails closed safely); residential CONFIG_REQUIRED remains.
+OWNER_ACTION: Use private package via QUICK_START_KO.md (3 simple Windows steps). None required for automated daily forms.
 RELEASE_ASSET_TAG: v6.9g.10.3-rc3.54.7.1.4.70
 RELEASE_ASSET_ZIP: XPIDER_R6.9G.10.3.7.1.4.70_PRIVATE_EGRESS_RC3.54.zip
 RELEASE_ASSET_SIZE: 51792997
