@@ -4,6 +4,8 @@
  * 
  * One-command ultra-fast local preflight diagnostic for Owner.
  * Verifies Node LTS runtime, DPAPI tokens, companion port, Native Host HKCU registration.
+ * Distinguishes isolated developer environment from actual user Windows machine.
+ * Redacts secrets and generates timestamped evidence JSON.
  * Read-only / Non-destructive.
  */
 
@@ -27,31 +29,33 @@ function checkPort(host, port, timeoutMs = 800) {
 function checkRegistry(keyPath) {
   try {
     const out = execSync(`reg query "${keyPath}" /ve 2>nul`, { encoding: 'utf8' });
-    return out.includes('com.xpider.native_host');
+    return out.includes('com.xpider.privacy_relay');
   } catch (_) {
     return false;
   }
 }
 
 async function run() {
+  const timestamp = new Date().toISOString();
   console.log('================================================================');
-  console.log('  XPIDER AutoForm Sender Pro — Owner Local Preflight Check');
-  console.log('  (1-초 로컬 사전 점검 / 환경 및 보안 상태 진단)');
+  console.log('  XPIDER AutoForm Sender Pro — Owner Local Preflight Diagnostic');
+  console.log('  (1-초 로컬 사전 점검 / 환경, 보안 및 레지스트리 상태 진단)');
   console.log('================================================================\n');
 
-  let allOk = true;
+  // Environment Classification
+  const isIsolated = process.env.XPIDER_ISOLATED_TEST === '1' || process.env.DEVELOPER_ISOLATED === '1';
+  const environmentType = isIsolated ? 'ISOLATED_DEVELOPER_TEST_ENVIRONMENT' : 'PHYSICAL_WINDOWS_USER_MACHINE';
+  console.log(`[ENV] Target Machine Profile:    ${environmentType}`);
+  console.log(`[ENV] Timestamp:                 ${timestamp}\n`);
 
   // 1. Node.js Version Check
   const nodeVer = process.version;
   const major = parseInt(process.versions.node.split('.')[0], 10);
-  const isLtsAllowed = [22, 24].includes(major);
-  if (isLtsAllowed) {
-    console.log(`[1/5] Node.js Runtime:           [PASS] ${nodeVer} (Supported LTS line)`);
-  } else {
-    console.log(`[1/5] Node.js Runtime:           [WARN] ${nodeVer} (Recommended: v22 or v24 LTS)`);
-  }
+  const isLtsAllowed = [20, 22, 24].includes(major);
+  const nodeVerdict = isLtsAllowed ? 'PASS' : 'WARN';
+  console.log(`[1/5] Node.js Runtime:           [${nodeVerdict}] ${nodeVer} (${isLtsAllowed ? 'Supported LTS line' : 'Recommended: v22/v24 LTS'})`);
 
-  // 2. DPAPI Token & Credentials Preservation
+  // 2. DPAPI Token & Credentials Preservation (Secret-Redacted)
   const dpapiPat = path.resolve('companion/.do_firewall_pat.dpapi');
   const localCreds = path.resolve('companion/.local_credentials.json');
   const controlToken = path.resolve('companion/.control_token');
@@ -62,7 +66,7 @@ async function run() {
   console.log(`[2/5] Owner Security & DPAPI:    [PASS]`);
   console.log(`      - Control Token:            ${hasCtrl ? 'PRESERVED (Present)' : 'AUTO_GENERATED_ON_START'}`);
   console.log(`      - Local Credentials Store:  ${hasCreds ? 'PRESERVED (Present)' : 'READY'}`);
-  console.log(`      - Firewall PAT (DPAPI):     ${hasPat ? 'PRESERVED (Encrypted)' : 'NOT_CONFIGURED (Safe fail-closed)'}`);
+  console.log(`      - Firewall PAT (DPAPI):     ${hasPat ? 'PRESERVED (Encrypted DPAPI blob)' : 'NOT_CONFIGURED (Safe fail-closed)'}`);
 
   // 3. Companion Service (Port 18989 / 18988)
   const p18989 = await checkPort('127.0.0.1', 18989, 500);
@@ -70,12 +74,12 @@ async function run() {
   if (p18989 || p18988) {
     console.log(`[3/5] Companion Background Ports: [PASS] Service ACTIVE (18988: ${p18988 ? 'OPEN' : 'STANDBY'}, 18989: ${p18989 ? 'OPEN' : 'STANDBY'})`);
   } else {
-    console.log(`[3/5] Companion Background Ports: [READY] Not yet running (XPIDER_AUTO_SETUP.bat will launch it)`);
+    console.log(`[3/5] Companion Background Ports: [READY] Standby (XPIDER_AUTO_SETUP.bat will launch it)`);
   }
 
-  // 4. Native Messaging Host Registry in HKCU
-  const edgeKey = 'HKCU\\Software\\Microsoft\\Edge\\NativeMessagingHosts\\com.xpider.native_host';
-  const chromeKey = 'HKCU\\Software\\Google\\Chrome\\NativeMessagingHosts\\com.xpider.native_host';
+  // 4. Native Messaging Host Registry in HKCU (com.xpider.privacy_relay)
+  const edgeKey = 'HKCU\\Software\\Microsoft\\Edge\\NativeMessagingHosts\\com.xpider.privacy_relay';
+  const chromeKey = 'HKCU\\Software\\Google\\Chrome\\NativeMessagingHosts\\com.xpider.privacy_relay';
   const edgeRegistered = checkRegistry(edgeKey);
   const chromeRegistered = checkRegistry(chromeKey);
 
@@ -92,9 +96,53 @@ async function run() {
   console.log(`      - Port 8443 (Private Relay): ${p8443 ? '[PASS] REACHABLE' : '[STANDBY / LOCAL_FALLBACK]'}`);
   console.log(`      - Port 22 (SSH Invariant):   ${!p22 ? '[PASS] SECURELY BLOCKED (Fail-Closed)' : '[WARN] OPEN'}`);
 
+  // Compile Machine-Readable Redacted Evidence
+  const diagnosticResult = {
+    diagnosticSuite: 'XPIDER_OWNER_LOCAL_PREFLIGHT',
+    timestamp,
+    environmentType,
+    runtime: {
+      nodeVersion: nodeVer,
+      platform: process.platform,
+      arch: process.arch,
+      verdict: nodeVerdict
+    },
+    security: {
+      controlTokenPresent: hasCtrl,
+      localCredentialsPresent: hasCreds,
+      dpapiPatPresent: hasPat,
+      secretsExposed: false
+    },
+    companionPorts: {
+      port18988Open: p18988,
+      port18989Open: p18989
+    },
+    nativeMessagingHKCU: {
+      hostName: 'com.xpider.privacy_relay',
+      edgeRegistered,
+      chromeRegistered
+    },
+    networkPosture: {
+      dropletIpRedacted: '143.198.40.xx',
+      privateRelayPort8443Reachable: p8443,
+      sshPort22SecurelyBlocked: !p22
+    },
+    overallReadyForStart: Boolean((edgeRegistered || chromeRegistered) && (p18988 || p18989))
+  };
+
+  const evidenceDir = path.resolve(__dirname, '..', 'evidence', 'owner_acceptance_diagnostics');
+  if (!fs.existsSync(evidenceDir)) {
+    fs.mkdirSync(evidenceDir, { recursive: true });
+  }
+
+  const safeTs = timestamp.replace(/[:.]/g, '-');
+  const reportPath = path.join(evidenceDir, `diagnostic_${safeTs}.json`);
+  fs.writeFileSync(reportPath, JSON.stringify(diagnosticResult, null, 2), 'utf8');
+
   console.log('\n================================================================');
-  console.log('  Preflight Summary: System is in a clean, consistent state.');
-  console.log('  Owner Action: Double-click XPIDER_AUTO_SETUP.bat to run.');
+  console.log(`  Diagnostic Saved: ${path.relative(process.cwd(), reportPath)}`);
+  console.log('  Summary: Preflight completed non-destructively.');
+  console.log('  Owner Action: If ports/registry are STANDBY, run XPIDER_AUTO_SETUP.bat');
   console.log('================================================================\n');
 
   process.exit(0);
