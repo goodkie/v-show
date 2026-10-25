@@ -108,7 +108,16 @@ const server = http.createServer((req, res) => {
 
   // Intercept form landing / submission target page
   if (reqPath === '/contact-success.html') {
-    const receiptId = `rcpt_${Date.now()}_${submissionLog.length + 1}`;
+    if (req.url.includes('scenario=server_error_500') || (req.headers['referer'] && req.headers['referer'].includes('scenario=server_error_500'))) {
+      console.log(`[XPIDER_FIXTURE] Simulating 500 Internal Server Error for negative test`);
+      res.writeHead(500, { 'Content-Type': 'text/plain' });
+      res.end('INTERNAL_SERVER_ERROR');
+      return;
+    }
+    let receiptId = `rcpt_${Date.now()}_${submissionLog.length + 1}`;
+    if (req.url.includes('scenario=malformed_receipt') || (req.headers['referer'] && req.headers['referer'].includes('scenario=malformed_receipt'))) {
+      receiptId = '@@BAD_RECEIPT_FORMAT@@ <script>';
+    }
     const referer = req.headers['referer'] || req.headers['origin'] || null;
     submissionLog.push({
       receiptId,

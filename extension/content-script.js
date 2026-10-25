@@ -6307,6 +6307,17 @@
                 return { success: false, reasonCode: readiness.reasonCode };
             }
 
+            // [Receipt Integrity Defense] Snapshot any pre-existing receipt identifiers before submission
+            // to prevent accepting fake pre-submit DOM injections as genuine post-submit receipts
+            let preSubmitReceiptSnapshot = null;
+            try {
+                const existingRcptEl = (typeof document !== 'undefined') ? document.querySelector('[data-receipt-id], #xpider-receipt-id, meta[name="receipt-id"]') : null;
+                if (existingRcptEl) {
+                    preSubmitReceiptSnapshot = existingRcptEl.getAttribute('data-receipt-id') || existingRcptEl.getAttribute('content') || (existingRcptEl.textContent ? existingRcptEl.textContent.trim() : null);
+                }
+            } catch (_) {}
+            this.preSubmitReceiptSnapshot = preSubmitReceiptSnapshot;
+
             // [R6.9G.10.3.5.1 Section 3] SubmitExecutorR5 Defense-in-Depth Privacy Barrier
             if (typeof window !== 'undefined' && window.__xpider_sendExecutionMessage) {
                 const privCheck = await new Promise(res => {
@@ -7556,16 +7567,39 @@
                 let extractedReceiptId = null;
                 const extractReceiptFn = () => {
                     const rcptEl = (typeof document !== 'undefined') ? document.querySelector('[data-receipt-id], #xpider-receipt-id, meta[name="receipt-id"]') : null;
+                    let found = null;
                     if (rcptEl) {
-                        return rcptEl.getAttribute('data-receipt-id') || rcptEl.getAttribute('content') || (rcptEl.textContent ? rcptEl.textContent.trim() : null);
+                        found = rcptEl.getAttribute('data-receipt-id') || rcptEl.getAttribute('content') || (rcptEl.textContent ? rcptEl.textContent.trim() : null);
                     }
-                    if (typeof window !== 'undefined' && window.location.search) {
+                    if (!found && typeof window !== 'undefined' && window.location.search) {
                         try {
                             const params = new URLSearchParams(window.location.search);
-                            return params.get('receipt_id') || params.get('rcpt') || null;
+                            found = params.get('receipt_id') || params.get('rcpt') || null;
                         } catch (_) {}
                     }
-                    return null;
+                    if (!found) return null;
+                    found = String(found).trim();
+
+                    // 1. Format and length validation: must be safe identifier (3-128 chars, allowed charset)
+                    if (found.length < 3 || found.length > 128 || !/^[A-Za-z0-9_\-\.:#]+$/.test(found)) {
+                        logDev(`⚠️ [RECEIPT_REJECTED] Invalid format or length: "${found}"`, "warning");
+                        return null;
+                    }
+
+                    // 2. Pre-submit fake injection guard: reject if identical to element present BEFORE submit
+                    if (this.preSubmitReceiptSnapshot && found === this.preSubmitReceiptSnapshot) {
+                        logDev(`⚠️ [RECEIPT_REJECTED] Receipt "${found}" was pre-existing before form submission (fake/stale injection guard)`, "warning");
+                        return null;
+                    }
+
+                    // 3. Cross-target stale receipt guard: reject if carried over from prior target run
+                    const lastRunReceipt = (typeof sessionStorage !== 'undefined') ? sessionStorage.getItem('xpider_last_settled_receipt_id') : null;
+                    if (lastRunReceipt && found === lastRunReceipt) {
+                        logDev(`⚠️ [RECEIPT_REJECTED] Receipt "${found}" matches prior target settled receipt (cross-target stale replay guard)`, "warning");
+                        return null;
+                    }
+
+                    return found;
                 };
 
                 extractedReceiptId = extractReceiptFn();
@@ -7577,6 +7611,7 @@
                     }
                 }
                 if (extractedReceiptId) {
+                    try { sessionStorage.setItem('xpider_last_settled_receipt_id', extractedReceiptId); } catch (_) {}
                     outcomeEvidence.receiptId = extractedReceiptId;
                     logDev(`[RECEIPT_DISCOVERED] receiptId=${extractedReceiptId}`, "info");
                 }

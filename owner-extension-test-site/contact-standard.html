@@ -64,8 +64,12 @@
             e.preventDefault();
             document.getElementById('submit-btn').disabled = true;
             document.getElementById('submit-btn').textContent = 'Submitting...';
-            // Authoritative server notification for fixture accounting (RC3.19 Test B)
-            fetch('/contact-success.html', { method: 'POST' }).then(function(res) {
+            var postUrl = '/contact-success.html' + (window.location.search || '');
+            fetch(postUrl, { method: 'POST' }).then(function(res) {
+                if (!res.ok) {
+                    document.getElementById('submit-btn').textContent = 'Server Error (500)';
+                    return;
+                }
                 var rcpt = res.headers.get('X-XPIDER-Receipt-Id');
                 if (rcpt) {
                     var el = document.getElementById('xpider-receipt-id');
@@ -78,15 +82,14 @@
                     el.setAttribute('data-receipt-id', rcpt);
                     el.textContent = rcpt;
                 }
+                setTimeout(function() {
+                    document.getElementById('submit-btn').textContent = 'Sent!';
+                    document.getElementById('success-banner').style.display = 'block';
+                    window.dispatchEvent(new CustomEvent('form-submitted', { detail: { status: 'SUCCESS' } }));
+                }, 300);
             }).catch(function() {
-                fetch('/contact-success.html').catch(function() {});
+                document.getElementById('submit-btn').textContent = 'Network Failed';
             });
-            setTimeout(function() {
-                document.getElementById('submit-btn').textContent = 'Sent!';
-                document.getElementById('success-banner').style.display = 'block';
-                // Trigger event for listeners
-                window.dispatchEvent(new CustomEvent('form-submitted', { detail: { status: 'SUCCESS' } }));
-            }, 300);
         });
     </script>
 </body>

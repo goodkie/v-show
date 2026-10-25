@@ -1,0 +1,29 @@
+[2026-10-25T02:43:31.100Z] === STARTING RC3.53 NEGATIVE RECEIPT & FAILURE CONTROLS AUDIT ===
+
+[2026-10-25T02:43:31.140Z] --- STEP 1: Launching Owned Fixture Server ---
+[2026-10-25T02:43:31.679Z] Fixture server responsive on port 8088
+[2026-10-25T02:43:31.688Z] 
+--- STEP 2: Spawning Edge via CDP for Negative Tests ---
+[2026-10-25T02:43:32.575Z] Connected to Service Worker: chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/background.js
+[2026-10-25T02:43:32.587Z] 
+--- TEST 3A: Pre-Submit Fake Receipt DOM Injection Guard ---
+[2026-10-25T02:43:34.480Z] Injected fake receipt into DOM before submit: fake_injection_pre_submit_99999
+[2026-10-25T02:43:36.541Z] DOM Receipt after submit: rcpt_1792896214529_1
+[2026-10-25T02:43:36.549Z] ✅ TEST 3A PASS: Fake pre-submit receipt was successfully replaced/rejected; defense held.
+[2026-10-25T02:43:36.559Z] 
+--- TEST 3B: Malformed Receipt Format Guard ---
+[2026-10-25T02:43:40.365Z] Malformed Receipt Result: {"raw":"@@BAD_RECEIPT_FORMAT@@ <script>","isValid":false}
+[2026-10-25T02:43:40.372Z] ✅ TEST 3B PASS: Malformed receipt format rejected by validation regex.
+[2026-10-25T02:43:40.420Z] 
+--- TEST 3C: Cross-Target Stale Receipt Replay Guard ---
+[2026-10-25T02:43:42.180Z] Stale Replay Evaluation: {"incoming":"rcpt_1792895021981_1","lastRunReceipt":"rcpt_1792895021981_1","isReplay":true}
+[2026-10-25T02:43:42.188Z] ✅ TEST 3C PASS: Stale cross-target receipt replay detected and rejected.
+[2026-10-25T02:43:42.197Z] 
+--- TEST 3D: Dropped Response / HTTP 500 Server Error (Fail-Closed) ---
+[2026-10-25T02:43:45.425Z] Server 500 State: {"btnText":"Server Error (500)","bannerVisible":false}
+[2026-10-25T02:43:45.431Z] ✅ TEST 3D PASS: Dropped response/500 error failed closed; zero false confirmation.
+[2026-10-25T02:43:45.477Z] 
+======================================================================
+[2026-10-25T02:43:45.489Z] 🎉 ALL RC3.53 NEGATIVE TESTS & FAILURE CONTROLS PASSED (4/4)!
+[2026-10-25T02:43:45.499Z] ======================================================================
+[2026-10-25T02:43:45.520Z] Saved negative tests report to E:\vivpr\ai\extension-form-sender\evidence\rc3_53_negative_tests\rc3_53_negative_tests_report.json

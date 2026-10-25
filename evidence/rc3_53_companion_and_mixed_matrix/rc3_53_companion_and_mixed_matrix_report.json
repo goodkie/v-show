@@ -1,6 +1,6 @@
 {
   "authorityDirective": "Owner PM Comment #6391311006 / #6391597878 [2026-10-24]",
-  "executedAt": "2026-10-25T02:22:59.085Z",
+  "executedAt": "2026-10-25T02:48:43.327Z",
   "pristineExtensionSource": "E:\\vivpr\\ai\\extension-form-sender\\scratch\\unpacked_rc3_53_pristine\\extension",
   "browser": "Microsoft Edge (Clean Profile, CDP Driven)",
   "phase1_companionUnavailableAndRecovery": {
@@ -50,64 +50,68 @@
   },
   "historyStoreAttempts": [
     {
-      "attemptId": "att_1792895009133_u3ndf",
+      "attemptId": "att_1792896550013_2vt19",
+      "campaignRunId": "mixed_run_1792896549861",
       "targetIdentity": "https://127.0.0.1/contact-standard.html",
       "sourceUrl": "http://127.0.0.1:8088/contact-standard.html",
       "contactPageUrl": "http://127.0.0.1:8088/contact-standard.html",
       "status": "CONFIRMED_SUCCESS",
       "reasonCode": "SUCCESS_CONFIRMED",
-      "receiptId": "rcpt_1792895021981_1",
-      "settledAt": 1792895023095
+      "receiptId": "rcpt_1792896562890_1",
+      "settledAt": 1792896564009
     },
     {
-      "attemptId": "att_1792895033176_54w0v",
+      "attemptId": "att_1792896573855_49lv9",
+      "campaignRunId": "mixed_run_1792896549861",
       "targetIdentity": "https://127.0.0.1/contact-dropdown-checkbox.html",
       "sourceUrl": "http://127.0.0.1:8088/contact-dropdown-checkbox.html",
       "contactPageUrl": "http://127.0.0.1:8088/contact-dropdown-checkbox.html",
       "status": "CONFIRMED_SUCCESS",
       "reasonCode": "SUCCESS_CONFIRMED",
-      "receiptId": "rcpt_1792895041329_2",
-      "settledAt": 1792895042470
+      "receiptId": "rcpt_1792896582677_2",
+      "settledAt": 1792896583827
     },
     {
-      "attemptId": "att_1792895048716_fncu9",
+      "attemptId": "att_1792896590062_ntb0a",
+      "campaignRunId": "mixed_run_1792896549861",
       "targetIdentity": "https://127.0.0.1/contact-numeric.html",
       "sourceUrl": "http://127.0.0.1:8088/contact-numeric.html",
       "contactPageUrl": "http://127.0.0.1:8088/contact-numeric.html",
       "status": "CONFIRMED_SUCCESS",
       "reasonCode": "SUCCESS_CONFIRMED",
-      "receiptId": "rcpt_1792895063937_3",
-      "settledAt": 1792895065105
+      "receiptId": "rcpt_1792896605025_3",
+      "settledAt": 1792896606176
     },
     {
-      "attemptId": "att_1792895071502_d384l",
+      "attemptId": "att_1792896612433_lx5tx",
+      "campaignRunId": "mixed_run_1792896549861",
       "targetIdentity": "https://127.0.0.1/captcha-turnstile-dom.html",
       "sourceUrl": "http://127.0.0.1:8088/captcha-turnstile-dom.html",
       "contactPageUrl": "http://127.0.0.1:8088/captcha-turnstile-dom.html",
       "status": "SKIPPED",
       "reasonCode": "CAPTCHA_SKIPPED_OWNER",
       "receiptId": null,
-      "settledAt": 1792895081182
+      "settledAt": 1792896620699
     }
   ],
   "independentServerReceipts": {
     "totalReceipts": 3,
     "submissions": [
       {
-        "id": "rcpt_1792895021981_1",
-        "timestamp": 1792895021981,
+        "id": "rcpt_1792896562890_1",
+        "timestamp": 1792896562890,
         "method": "POST",
         "referer": "http://127.0.0.1:8088/contact-standard.html"
       },
       {
-        "id": "rcpt_1792895041329_2",
-        "timestamp": 1792895041329,
+        "id": "rcpt_1792896582677_2",
+        "timestamp": 1792896582678,
         "method": "POST",
         "referer": "http://127.0.0.1:8088/contact-dropdown-checkbox.html"
       },
       {
-        "id": "rcpt_1792895063937_3",
-        "timestamp": 1792895063937,
+        "id": "rcpt_1792896605025_3",
+        "timestamp": 1792896605025,
         "method": "POST",
         "referer": "http://127.0.0.1:8088/contact-numeric.html"
       }
@@ -117,56 +121,94 @@
   "extensionId": "ldlijlaccfeelfdhgnjbibniocefckjj",
   "buildId": "R6.9G.10.3.7.1.4.69-20261024-P0-RC3.53",
   "implementationHead": "98d984f21317f566818f51df598e5456ab575f6d",
-  "historyStoreAllAttempts": [
+  "campaignScopeAccounting": {
+    "totalAttemptsInStore": 5,
+    "phase1PreflightFailure": {
+      "count": 1,
+      "target": "https://public-corp-alpha.example.com/contact",
+      "status": "FAILURE",
+      "reasonCode": "DOMAIN_UNREACHABLE",
+      "documented": true
+    },
+    "phase2ControlledMatrix": {
+      "count": 4,
+      "confirmedSuccessCount": 3,
+      "skippedOwnerCount": 1,
+      "groundTruthReceiptsCount": 3,
+      "receiptsMatch1to1": true
+    },
+    "zeroSilentFiltering": true,
+    "crossCampaignContamination": "ELIMINATED_VIA_EXPLICIT_SCOPING",
+    "verdict": "PASS"
+  },
+  "phase1PreflightAttempts": [
     {
-      "attemptId": "att_1792895002882_h1ncb",
+      "attemptId": "att_1792896543701_778es",
+      "campaignRunId": "normal_run_1792896543484_gtba3k",
       "targetIdentity": "https://public-corp-alpha.example.com/contact",
       "sourceUrl": "https://public-corp-alpha.example.com/contact",
       "contactPageUrl": "https://public-corp-alpha.example.com/contact",
       "status": "FAILURE",
       "reasonCode": "DOMAIN_UNREACHABLE",
       "receiptId": null,
-      "settledAt": 1792895003365
+      "settledAt": 1792896544118
+    }
+  ],
+  "historyStoreAllAttempts": [
+    {
+      "attemptId": "att_1792896543701_778es",
+      "campaignRunId": "normal_run_1792896543484_gtba3k",
+      "targetIdentity": "https://public-corp-alpha.example.com/contact",
+      "sourceUrl": "https://public-corp-alpha.example.com/contact",
+      "contactPageUrl": "https://public-corp-alpha.example.com/contact",
+      "status": "FAILURE",
+      "reasonCode": "DOMAIN_UNREACHABLE",
+      "receiptId": null,
+      "settledAt": 1792896544118
     },
     {
-      "attemptId": "att_1792895009133_u3ndf",
+      "attemptId": "att_1792896550013_2vt19",
+      "campaignRunId": "mixed_run_1792896549861",
       "targetIdentity": "https://127.0.0.1/contact-standard.html",
       "sourceUrl": "http://127.0.0.1:8088/contact-standard.html",
       "contactPageUrl": "http://127.0.0.1:8088/contact-standard.html",
       "status": "CONFIRMED_SUCCESS",
       "reasonCode": "SUCCESS_CONFIRMED",
-      "receiptId": "rcpt_1792895021981_1",
-      "settledAt": 1792895023095
+      "receiptId": "rcpt_1792896562890_1",
+      "settledAt": 1792896564009
     },
     {
-      "attemptId": "att_1792895033176_54w0v",
+      "attemptId": "att_1792896573855_49lv9",
+      "campaignRunId": "mixed_run_1792896549861",
       "targetIdentity": "https://127.0.0.1/contact-dropdown-checkbox.html",
       "sourceUrl": "http://127.0.0.1:8088/contact-dropdown-checkbox.html",
       "contactPageUrl": "http://127.0.0.1:8088/contact-dropdown-checkbox.html",
       "status": "CONFIRMED_SUCCESS",
       "reasonCode": "SUCCESS_CONFIRMED",
-      "receiptId": "rcpt_1792895041329_2",
-      "settledAt": 1792895042470
+      "receiptId": "rcpt_1792896582677_2",
+      "settledAt": 1792896583827
     },
     {
-      "attemptId": "att_1792895048716_fncu9",
+      "attemptId": "att_1792896590062_ntb0a",
+      "campaignRunId": "mixed_run_1792896549861",
       "targetIdentity": "https://127.0.0.1/contact-numeric.html",
       "sourceUrl": "http://127.0.0.1:8088/contact-numeric.html",
       "contactPageUrl": "http://127.0.0.1:8088/contact-numeric.html",
       "status": "CONFIRMED_SUCCESS",
       "reasonCode": "SUCCESS_CONFIRMED",
-      "receiptId": "rcpt_1792895063937_3",
-      "settledAt": 1792895065105
+      "receiptId": "rcpt_1792896605025_3",
+      "settledAt": 1792896606176
     },
     {
-      "attemptId": "att_1792895071502_d384l",
+      "attemptId": "att_1792896612433_lx5tx",
+      "campaignRunId": "mixed_run_1792896549861",
       "targetIdentity": "https://127.0.0.1/captcha-turnstile-dom.html",
       "sourceUrl": "http://127.0.0.1:8088/captcha-turnstile-dom.html",
       "contactPageUrl": "http://127.0.0.1:8088/captcha-turnstile-dom.html",
       "status": "SKIPPED",
       "reasonCode": "CAPTCHA_SKIPPED_OWNER",
       "receiptId": null,
-      "settledAt": 1792895081182
+      "settledAt": 1792896620699
     }
   ]
 }

@@ -1,0 +1,60 @@
+{
+  "auditDirective": "Owner PM Comment #6392477312 [2026-10-24] Item (2)",
+  "executedAt": "2026-10-25T02:40:05.742Z",
+  "zipFile": "XPIDER_R6.9G.10.3.7.1.4.69_PRIVATE_EGRESS_RC3.53.zip",
+  "zipSize": 51792833,
+  "zipSha256": "093868f551fbb711d4324f738b4a449e40a97f1a42f20aa67317368ad8ec6ffb",
+  "steps": {
+    "step1_provenance": {
+      "zipSize": 51792833,
+      "zipSha256": "093868f551fbb711d4324f738b4a449e40a97f1a42f20aa67317368ad8ec6ffb",
+      "buildId": "R6.9G.10.3.7.1.4.69-20261024-P0-RC3.53",
+      "buildIdMatches": {
+        "companion/privacy-relay-service.js": true,
+        "companion/ensure_companion_service.js": true,
+        "companion/native_host/xpider_native_host.js": true,
+        "extension/modules/build-provenance.js": true
+      },
+      "verdict": "PASS"
+    },
+    "step2_nativeHostRegistration": {
+      "edgeManifestPath": "E:\\vivpr\\ai\\extension-form-sender\\scratch\\unpacked_lifecycle_test\\companion\\native_host\\com.xpider.privacy_relay.edge.json",
+      "chromeManifestPath": "E:\\vivpr\\ai\\extension-form-sender\\scratch\\unpacked_lifecycle_test\\companion\\native_host\\com.xpider.privacy_relay.chrome.json",
+      "allowedOrigin": "chrome-extension://ldlijlaccfeelfdhgnjbibniocefckjj/",
+      "edgeRegistryVerified": true,
+      "chromeRegistryVerified": true,
+      "verdict": "PASS"
+    },
+    "step3_startupFromAbsent": {
+      "companionPid": 28652,
+      "status": "OK",
+      "companionBuildId": "R6.9G.10.3.7.1.4.69-20261024-P0-RC3.53",
+      "apiCapabilities": [
+        "verify-plan",
+        "provision-egress",
+        "provision-progress",
+        "destroy-egress",
+        "egress-telemetry",
+        "shutdown",
+        "stop",
+        "physical-gate",
+        "recovery-status",
+        "repair-egress"
+      ],
+      "verdict": "PASS"
+    },
+    "step4_reinstallUpgrade": {
+      "recheckStatus": "OK",
+      "recheckBuildId": "R6.9G.10.3.7.1.4.69-20261024-P0-RC3.53",
+      "verdict": "PASS"
+    },
+    "step5_rollbackTeardown": {
+      "edgeRegDeleted": true,
+      "chromeRegDeleted": true,
+      "portReleased": true,
+      "isolatedDirCleaned": true,
+      "verdict": "PASS"
+    }
+  },
+  "overallVerdict": "PASS"
+}

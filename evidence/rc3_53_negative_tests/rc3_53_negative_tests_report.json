@@ -1,0 +1,30 @@
+{
+  "directive": "Owner PM Comment #6392477312 [2026-10-24] Item (3)",
+  "executedAt": "2026-10-25T02:43:31.139Z",
+  "tests": {
+    "test3A_preSubmitFakeInjection": {
+      "fakeReceiptInjected": "fake_injection_pre_submit_99999",
+      "finalDomReceipt": "rcpt_1792896214529_1",
+      "defenseHeld": true,
+      "verdict": "PASS"
+    },
+    "test3B_malformedReceipt": {
+      "rawReceipt": "@@BAD_RECEIPT_FORMAT@@ <script>",
+      "isValidFormat": false,
+      "rejected": true,
+      "verdict": "PASS"
+    },
+    "test3C_staleReceiptReplay": {
+      "staleReceiptId": "rcpt_1792895021981_1",
+      "isReplayDetected": true,
+      "verdict": "PASS"
+    },
+    "test3D_droppedResponse500": {
+      "btnText": "Server Error (500)",
+      "successBannerVisible": false,
+      "failClosed": true,
+      "verdict": "PASS"
+    }
+  },
+  "overallVerdict": "PASS"
+}

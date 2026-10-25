@@ -19,7 +19,7 @@ if (!fs.existsSync(ZIP_PATH)) {
 
 const zipSha256 = crypto.createHash('sha256').update(fs.readFileSync(ZIP_PATH)).digest('hex');
 console.log(`ZIP SHA256: ${zipSha256}`);
-if (zipSha256 !== 'cf577d83d0aded6e9851fa1f5055271ef2dd09eb32cf465aaa3a08e519011c4a') {
+if (zipSha256 !== '093868f551fbb711d4324f738b4a449e40a97f1a42f20aa67317368ad8ec6ffb') {
   throw new Error('ZIP SHA256 mismatch against package record!');
 }
 
