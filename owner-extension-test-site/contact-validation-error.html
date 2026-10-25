@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Contact Us - Form Validation Error Fixture</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #f8fafc; padding: 40px; margin: 0; }
+        .container { max-width: 600px; margin: 0 auto; background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 32px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        h1 { font-size: 22px; color: #f87171; margin-top: 0; margin-bottom: 8px; }
+        p { color: #94a3b8; font-size: 14px; margin-bottom: 24px; }
+        .form-group { margin-bottom: 18px; }
+        label { display: block; font-size: 13px; font-weight: 600; color: #cbd5e1; margin-bottom: 6px; }
+        input[type="text"], input[type="email"], textarea { width: 100%; box-sizing: border-box; background: #0f172a; border: 1px solid #475569; border-radius: 6px; padding: 10px 12px; color: #f8fafc; font-size: 14px; outline: none; }
+        input:focus, textarea:focus { border-color: #f87171; }
+        button[type="submit"] { background: #dc2626; color: white; border: none; border-radius: 6px; padding: 12px 24px; font-size: 15px; font-weight: 600; cursor: pointer; width: 100%; transition: background 0.2s; }
+        button[type="submit"]:hover { background: #b91c1c; }
+        .error-box { display: none; background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #f87171; padding: 14px 18px; border-radius: 8px; margin-top: 20px; font-weight: 600; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Contact Support - Validation Error Fixture</h1>
+        <p>This form simulates a strict client-side validation failure where submission is blocked and an error alert is presented.</p>
+
+        <form id="validation-contact-form">
+            <div class="form-group">
+                <label for="name">Contact Name *</label>
+                <input type="text" id="name" name="name" required placeholder="Valued Partner">
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email Address *</label>
+                <input type="email" id="email" name="email" required placeholder="partner@example.com">
+            </div>
+
+            <div class="form-group">
+                <label for="message">Detailed Inquiry *</label>
+                <textarea id="message" name="message" rows="5" required placeholder="Inquiry details..."></textarea>
+            </div>
+
+            <button type="submit" id="submit-btn" class="submit-btn">Submit Request</button>
+
+            <div id="validation-error-box" class="error-box form-error validation-error wpcf7-not-valid-tip" role="alert" aria-live="assertive">
+                Validation Error: Submission blocked by site policy. Required security verification token missing.
+            </div>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById('validation-contact-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            // Block submission and display error alert
+            document.getElementById('validation-error-box').style.display = 'block';
+            document.getElementById('submit-btn').disabled = false;
+        });
+    </script>
+</body>
+</html>

@@ -77,19 +77,31 @@ const server = http.createServer((req, res) => {
     return;
   }
   if (reqPath === '/__rc345_reset') { global.__rc345 = []; res.writeHead(200); res.end('ok'); return; }
-  if (reqPath === '/__rc345_receive' && req.method === 'POST') {
+  // [Controlled Server Response Loss Endpoint]
+  // Records the POST in submissionLog, but destroys the socket immediately,
+  // simulating server response loss / timeout after client delivered the POST.
+  if (reqPath === '/__xpider_drop_response' && req.method === 'POST') {
     let body = '';
     req.on('data', c => { body += c; if (body.length > 65536) req.destroy(); });
     req.on('end', () => {
-      const fields = {};
-      for (const [k, v] of new URLSearchParams(body)) { (fields[k] = fields[k] || []).push(v); }
-      (global.__rc345 = global.__rc345 || []).push({ timestamp: Date.now(), fields, remoteAddress: req.socket.remoteAddress, referer: req.headers.referer || null });
-      console.log(`[XPIDER_FIXTURE] RC3.45 strict receipt #${global.__rc345.length}`);
-      res.writeHead(200, { 'Content-Type': 'text/html; charset=UTF-8' });
-      res.end('<!doctype html><title>Thank you</title><h1>Thank you</h1><p>Your message has been received.</p>');
+      const receiptId = `rcpt_drop_${Date.now()}_${submissionLog.length + 1}`;
+      const referer = req.headers['referer'] || req.headers['origin'] || null;
+      submissionLog.push({
+        receiptId,
+        timestamp: Date.now(),
+        method: req.method,
+        url: req.url,
+        ip: req.socket.remoteAddress,
+        referer,
+        droppedResponse: true,
+        bodyLength: body.length
+      });
+      console.log(`[XPIDER_FIXTURE] Controlled response loss recorded (#${submissionLog.length}, id=${receiptId}): ${req.method} ${req.url} -> socket destroyed`);
+      try { req.socket.destroy(); } catch (_) {}
     });
     return;
   }
+
 
   // Intercept form landing / submission target page
   if (reqPath === '/contact-success.html') {

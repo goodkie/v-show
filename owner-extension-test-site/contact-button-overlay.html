@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Contact Us - Button Overlay Test</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #f8fafc; padding: 40px; margin: 0; }
+        .container { max-width: 600px; margin: 0 auto; background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 32px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        h1 { font-size: 22px; color: #38bdf8; margin-top: 0; margin-bottom: 8px; }
+        p { color: #94a3b8; font-size: 14px; margin-bottom: 24px; }
+        .form-group { margin-bottom: 18px; }
+        label { display: block; font-size: 13px; font-weight: 600; color: #cbd5e1; margin-bottom: 6px; }
+        input[type="text"], input[type="email"], textarea { width: 100%; box-sizing: border-box; background: #0f172a; border: 1px solid #475569; border-radius: 6px; padding: 10px 12px; color: #f8fafc; font-size: 14px; outline: none; }
+        input:focus, textarea:focus { border-color: #38bdf8; }
+        button[type="submit"] { background: #0284c7; color: white; border: none; border-radius: 6px; padding: 12px 24px; font-size: 15px; font-weight: 600; cursor: pointer; width: 100%; transition: background 0.2s; }
+        button[type="submit"]:hover { background: #0369a1; }
+        .success-box { display: none; background: rgba(74, 222, 128, 0.15); border: 1px solid #4ade80; color: #4ade80; padding: 14px 18px; border-radius: 8px; margin-top: 20px; font-weight: 600; text-align: center; }
+        
+        /* Intrusive Overlay Banner */
+        .cookie-banner {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #1e293b;
+            border-top: 2px solid #38bdf8;
+            padding: 16px 24px;
+            z-index: 9999;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.4);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .cookie-banner span { font-size: 14px; color: #e2e8f0; }
+        .cookie-accept {
+            background: #38bdf8;
+            color: #0f172a;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Contact Support - Overlay Protection</h1>
+        <p>This page features a cookie banner overlay covering the bottom interface. The extension cleaner must clear it and successfully submit.</p>
+
+        <form id="overlay-contact-form" action="contact-success.html" method="GET">
+            <div class="form-group">
+                <label for="name">Contact Name *</label>
+                <input type="text" id="name" name="name" required placeholder="Samantha Reed">
+            </div>
+
+            <div class="form-group">
+                <label for="email">Direct Email *</label>
+                <input type="email" id="email" name="email" required placeholder="samantha@example.com">
+            </div>
+
+            <div class="form-group">
+                <label for="message">Message *</label>
+                <textarea id="message" name="message" rows="5" required placeholder="Testing overlay dismissal and form dispatch..."></textarea>
+            </div>
+
+            <button type="submit" id="submit-btn" class="submit-btn">Send Message</button>
+
+            <div id="success-banner" class="success-box wpcf7-mail-sent-ok gform_confirmation_message" role="status" aria-live="polite">
+                Thank you! Your message has been sent successfully.
+            </div>
+        </form>
+    </div>
+
+    <!-- Intrusive cookie banner overlay -->
+    <div id="cookie-notice" class="cookie-banner modal-overlay">
+        <span>🍪 We use essential cookies to enhance site functionality.</span>
+        <button id="accept-cookies" class="cookie-accept" onclick="document.getElementById('cookie-notice').style.display='none'">Accept All</button>
+    </div>
+
+    <script>
+        document.getElementById('overlay-contact-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            document.getElementById('submit-btn').disabled = true;
+            document.getElementById('submit-btn').textContent = 'Submitting...';
+            fetch('/contact-success.html', { method: 'POST' }).catch(function() {
+                fetch('/contact-success.html').catch(function() {});
+            });
+            setTimeout(function() {
+                document.getElementById('submit-btn').textContent = 'Sent!';
+                document.getElementById('success-banner').style.display = 'block';
+                window.dispatchEvent(new CustomEvent('form-submitted', { detail: { status: 'SUCCESS' } }));
+            }, 300);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,93 @@
+{
+  "authorityDirective": "Owner PM Comment #6391011709 [2026-10-24]",
+  "executedAt": "2026-10-24T23:58:18.362Z",
+  "pristineExtensionSource": "E:\\vivpr\\ai\\extension-form-sender\\scratch\\unpacked_rc3_51_pristine\\extension",
+  "browser": "Microsoft Edge (Clean Profile, CDP Driven)",
+  "phase1_controlledResponseLossAudit": {
+    "status": "PASS",
+    "targetUrl": "http://127.0.0.1:8088/contact-response-loss.html",
+    "serverRecordedPost": true,
+    "serverReceiptId": "rcpt_drop_1792886312554_1",
+    "socketDroppedResponse": true,
+    "ledgerClassification": "DELIVERY_UNKNOWN",
+    "falseSuccessPrevented": true,
+    "targetSuppressionActive": true,
+    "suppressionReason": "DELIVERY_UNKNOWN",
+    "duplicateSendsAttempted": 1,
+    "duplicateSendsSent": 0,
+    "beforeSubmitSafeRetryContrast": {
+      "targetUrl": "http://127.0.0.1:8088/no-contact-page.html?contrast=1",
+      "status": "FAILURE",
+      "isSuppressed": false
+    }
+  },
+  "phase2_randomizedFixtureMatrix": {
+    "status": "PASS",
+    "targetCount": 7,
+    "randomizedOrder": [
+      "http://127.0.0.1:8088/contact-standard.html?matrix=1",
+      "http://127.0.0.1:8088/contact-button-overlay.html?matrix=1",
+      "http://127.0.0.1:8088/contact-validation-error.html?matrix=1",
+      "http://127.0.0.1:8088/subscribe-no-message.html?matrix=1",
+      "http://127.0.0.1:8088/no-contact-page.html?matrix=1",
+      "http://127.0.0.1:8088/contact-dropdown-checkbox.html?matrix=1",
+      "http://127.0.0.1:8088/contact-numeric.html?matrix=1"
+    ],
+    "serverSubmissionsCount": 4,
+    "serverReceipts": [
+      {
+        "receiptId": "rcpt_1792886372713_1",
+        "url": "/contact-success.html",
+        "method": "POST",
+        "timestamp": 1792886372713
+      },
+      {
+        "receiptId": "rcpt_1792886387996_2",
+        "url": "/contact-success.html",
+        "method": "POST",
+        "timestamp": 1792886387996
+      },
+      {
+        "receiptId": "rcpt_1792886441711_3",
+        "url": "/contact-success.html",
+        "method": "POST",
+        "timestamp": 1792886441711
+      },
+      {
+        "receiptId": "rcpt_1792886463109_4",
+        "url": "/contact-success.html",
+        "method": "POST",
+        "timestamp": 1792886463109
+      }
+    ],
+    "breakdown": {
+      "standardContact": "CONFIRMED_SUCCESS",
+      "dropdownCheckbox": "CONFIRMED_SUCCESS",
+      "numericPhone": "CONFIRMED_SUCCESS",
+      "buttonOverlayCleared": "CONFIRMED_SUCCESS",
+      "subscribeNoMessage": "SKIPPED",
+      "validationErrorBlocked": "FAILURE",
+      "noContactPage": "FAILURE"
+    }
+  },
+  "dashboardParityAssertion": {
+    "status": "PASS",
+    "total": 7,
+    "completed": 7,
+    "remaining": 0,
+    "success": 4,
+    "failed": 2,
+    "skipped": 1,
+    "deliveryUnknown": 0,
+    "parityFormulaVerified": "7 === 4 + 2 + 1 + 0"
+  },
+  "failClosedProxyAssertion": {
+    "status": "PASS",
+    "state": "CONFIG_REQUIRED",
+    "failClosedInvariant": "CONFIRMED"
+  },
+  "overallVerdict": "100% ALL GATES PASS",
+  "extensionId": "ldlijlaccfeelfdhgnjbibniocefckjj",
+  "buildId": "R6.9G.10.3.7.1.4.67-20261024-P0-RC3.51",
+  "implementationHead": "6de933b8e00f24260aea31d0b6a424a0e70e7ffd"
+}
