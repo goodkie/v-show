@@ -1,11 +1,11 @@
 # XPIDER AutoForm Sender Pro — 오너 승인 및 인수 안내서 (Owner Acceptance)
 
-> **버전**: v6.9g.10.3 (RC3.57 Private Owner Release)  
-> **빌드 ID**: `R6.9G.10.3.7.1.4.73-20261025-P0-RC3.57`  
+> **버전**: v6.9g.10.3 (RC3.58 Private Owner Release)  
+> **빌드 ID**: `R6.9G.10.3.7.1.4.74-20261025-P0-RC3.58`  
 > **지원 환경**: Windows 10 / 11 64-bit, Microsoft Edge / Google Chrome, Node.js LTS (v22 / v24)  
-> **공식 배포 URL**: https://github.com/goodkie/v-show/releases/tag/v6.9g.10.3-rc3.57.7.1.4.73  
-> **에셋 파일**: `XPIDER_R6.9G.10.3.7.1.4.73_PRIVATE_EGRESS_RC3.57.zip`  
-> **패키지 SHA256**: `b0bb98cf1245c38db61c4d1de9d7f4c3dad1bf4a02bc61f2faab62f21a07ea0f`  
+> **공식 배포 URL**: https://github.com/goodkie/v-show/releases/tag/v6.9g.10.3-rc3.58.7.1.4.74  
+> **에셋 파일**: `XPIDER_R6.9G.10.3.7.1.4.74_PRIVATE_EGRESS_RC3.58.zip`  
+> **패키지 SHA256**: `d9c49c83aa1aa11b5a1736612f670981e19bc1d938c8f10da7918a43ada2feaf`  
 
 ---
 
@@ -74,12 +74,32 @@
 
 ---
 
-## 🛡️ 동적 VPN IP 변경 시 최소 권한 방화벽 갱신 전략 (Proposed Strategy)
+## 🛡️ 동적 VPN IP 변경 시 오너 승인형 방화벽 갱신 (RC3.58 구현 완료)
 
-Proton VPN 재접속 시 공인 IP가 수시로 변경되는 환경에서 안전하게 인바운드를 갱신하기 위한 전략입니다:
-1. **0.0.0.0/0 완전 금지 & TLS 무력화 금지**: 전체 개방을 절대 하지 않으며 `rejectUnauthorized=true`를 엄격히 유지합니다.
-2. **사전 자동 감지 (Pre-flight IP Discovery)**: `UPSTREAM_TLS` 타임아웃 감지 시 컴패니언이 현재 로컬 PC의 공인 IP(`159.26.98.242`)를 안전하게 판별합니다.
-3. **오너 승인 기반 단일 클릭 스크립트 제공**:
-   - 오너가 직접 실행할 수 있는 `QUICK_UPDATE_FIREWALL_IP.bat` 스크립트를 제공하여, 변경된 IP를 오너 화면에 명시적으로 확인(`승인하시겠습니까? (Y/N)`)받은 후 DO API를 통해 단일 `/32` 규칙만 갱신(기존 안전 IP 보존, 불필요 IP 자동 정리)합니다.
-   - 무단 백그라운드 변조나 토큰 노출이 원천 차단됩니다.
+Proton VPN 재접속 시 공인 IP가 변경되어 `RECONNECTING` 또는 `REMOTE_EGRESS_REPAIR_REQUIRED` 상태가 될 때, 오너가 직접 안전하게 방화벽을 갱신하는 3단계 절차입니다:
+
+### 3단계 동적 방화벽 IP 갱신 절차 (<= 3 Simple Steps)
+
+1. **배치 파일 실행**:
+   - 압축 해제 폴더 내 **`QUICK_UPDATE_FIREWALL_IP.bat`**를 더블 클릭합니다.
+2. **사전 점검 화면(Dry-Run Diff) 확인**:
+   - 스크립트가 로컬 Proton VPN 터널(`ProTUN`)과 현재 공인 IPv4(`/32`), 대상 Droplet(`611293905` / `143.198.40.33`), 방화벽 규칙 변경 전/후 비교(Diff)를 화면에 출력합니다.
+   - 기존 안전 정적 IP(`74.39.42.139/32`)는 자동 보존되며, 불필요하거나 비인가된 `0.0.0.0/0`은 원천 배제됩니다.
+3. **오너 명시적 승인 (`YES` 입력)**:
+   - 프롬프트 안내에 따라 대문자 **`YES`**를 입력하고 Enter를 누르면 DigitalOcean API를 통해 원자적(Atomic)으로 `/32` 규칙이 안전하게 갱신 및 검증됩니다.
+   - 방화벽 갱신 완료 즉시 RC3.57/RC3.58 내장 자가 치유(Self-Healing) 엔진에 의해 프로세스 재시작 없이 30초 내 `READY` 상태로 자동 복구됩니다.
+   - *(취소 시 `YES`가 아닌 키를 누르거나 창을 닫으면 0건의 변경으로 안전 종료됩니다.)*
+
+---
+
+## 📌 오너 최종 검증 상태 (Verification State)
+
+- **소프트웨어 코어 로직 & 목(Mock) 회귀 테스트**: **PASS (11/11 단위/통합 회귀 테스트 100% 통과)**
+  - 비 Proton 네트워크 및 무효 IP 감지, 기존 allowlist 중복 시 no-op, 타겟 Droplet/Firewall ID 불일치 감지, 401/403 토큰 스코프 부족 시 안전 차단, 동시 수정 경합(Concurrency Conflict) 감지, 불필요 All IPv4(`0.0.0.0/0`) 원천 배제, 오너 승인 거부 시 0-Write 무변조 보장, 토큰/시크릿 마스킹 검증 완료.
+- **실물 물리 환경 검증**: **OWNER_VALIDATION_PENDING (오너 실제 PC 실행 대기)**
+  - 본 RC3.58 패키지는 오너의 실제 Proton VPN 환경에서 `QUICK_UPDATE_FIREWALL_IP.bat`를 실행하여 최종 승인(`YES`)을 거치는 물리 검증 단계를 대기하고 있습니다. (인공적 임의 승인 시뮬레이션 절대 금지 원칙 준수)
+- **보안 및 아키텍처 한계 명시**:
+  - HTTPS CONNECT 터널링 정상 동작, 일반 HTTP non-CONNECT 요청은 의도된 `404 Not Found` 보안 차단 유지.
+  - DNS/WebRTC 누수 방지 계측 및 GL.iNet Opal 물리 라우터/주거용 프록시 연동은 물리 배포 전까지 `UNVERIFIED` 상태를 유지합니다.
+
 
