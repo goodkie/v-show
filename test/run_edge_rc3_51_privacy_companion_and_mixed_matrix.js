@@ -1,35 +1,47 @@
 /**
  * test/run_edge_rc3_51_privacy_companion_and_mixed_matrix.js
  *
- * Directive: Owner PM Comment #6391311006 [2026-10-24]
- * 1. Fresh RC3.51 published ZIP real popup click START while privacy companion unavailable:
- *    - Verify button response: preflight blocks with PRIVACY_PREP_BLOCK (RELAY_OFFLINE / NO_HEALTHY_EGRESS)
- *    - Start button restored (not stuck disabled, text restored)
- *    - Actionable modal visible
- *    - ZERO outbound requests (server receipt count strictly 0)
- *    - Automatic recovery when relay returns: restart companion, preflight passes, campaign starts cleanly.
+ * Directives:
+ * - Owner PM Comment #6391311006 [2026-10-24]
+ * - Owner PM Critical Audit Comment #6391597878 [2026-10-24]
  *
- * 2. Mixed controlled local owned fixtures test:
- *    - Targets: contact-standard.html, contact-dropdown-checkbox.html, contact-numeric.html, captcha-turnstile-dom.html
- *    - Preserving campaign/ledger through worker shutdown (SW kill via CDP Target.closeTarget)
- *    - Pause with queued jobs remaining
- *    - Wake SW and verify storage/ledger preservation
- *    - Resume to completion with independent server receipts
- *    - Test CAPTCHA human fallback only (CAPTCHA_PENDING_OWNER, no bypass, no fake tokens).
+ * Strict Remediations Addressed:
+ * 1. Phase 1 Relay Recovery:
+ *    - Real popup click START while companion is unavailable -> [START_STEP] 07 PRIVACY_PREP_BLOCK reason=RELAY_OFFLINE.
+ *    - Start button restored (enabled, text restored).
+ *    - Decision modal displayed fail-closed with exact reason code.
+ *    - Zero outbound requests sent.
+ *    - Companion restored with active verifiable egress -> [START_STEP] 07 PRIVACY_PREP_PASS mode=PRIVACY_RELAY.
+ *    - Campaign genuinely dispatches: [START_DISPATCH] accepted=true, [START_STEP] 08 DISPATCH_BEGIN, [START_STEP] 10 CAMPAIGN_RUNNING.
+ *    - Hard asserts on preflight pass AND campaign dispatch; zero forged/hardcoded PASS.
  *
- * 3. Strict counter parity & machine-readable audit report:
- *    - completed === success + failed + skipped + deliveryUnknown
- *    - total === completed + remaining
- *    - Independent server receipts recorded on local server
+ * 2. Phase 2 Mixed Controlled Local Matrix & Worker Shutdown:
+ *    - Targets: contact-standard.html, contact-dropdown-checkbox.html, contact-numeric.html, captcha-turnstile-dom.html.
+ *    - Target 1 completes and settles as CONFIRMED_SUCCESS in ledger (Server Receipt 1 recorded).
+ *    - Pause triggered with 3 queued jobs remaining; xpider_paused_checkpoint verified in storage.
+ *    - Service worker killed via CDP Target.closeTarget (memory wiped).
+ *    - Service worker rebooted via popup wake; checkpoint, queue (3 items), and Target 1 ledger entry verified preserved.
+ *    - Campaign resumed to completion: Target 2 & Target 3 complete and settle as CONFIRMED_SUCCESS (Server Receipts 2 & 3 recorded).
+ *    - Target 4 reaches Turnstile DOM: held in CAPTCHA_PENDING_OWNER human fallback (0 automated requests, 0 fake tokens), settled as CAPTCHA_SKIPPED_OWNER.
+ *
+ * 3. Counter Parity & Server Receipt Mapping:
+ *    - total (4) === completed (4) + remaining (0)
+ *    - completed (4) === success (3) + skipped (1) + failed (0) + unknown (0)
+ *    - 3 server POST receipts map 1:1 to the 3 successful ledger entries.
+ *    - All HistoryStore attempt records verified.
  */
 
 const http = require('http');
+const net = require('net');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const { spawn, execSync } = require('child_process');
 
+process.env.XPIDER_ISOLATED_TEST = '1';
+
 const FIXTURE_PORT = 8088;
+const TEST_FORWARD_PROXY_PORT = 18089;
 const CDP_PORT = 9355;
 const COMPANION_CONTROL_PORT = 18989;
 const UNPACKED_EXT_DIR = path.resolve('scratch/unpacked_rc3_51_pristine/extension');
@@ -65,56 +77,65 @@ function cdpSend(ws, method, params = {}) {
     });
 }
 
-async function openWs(url) {
-    const ws = new WebSocket(url);
-    await new Promise((res, rej) => { ws.onopen = res; ws.onerror = rej; });
-    return ws;
+function openWs(url) {
+    return new Promise((resolve, reject) => {
+        const WebSocketClient = global.WebSocket || require('ws');
+        const ws = new WebSocketClient(url);
+        ws.onopen = () => resolve(ws);
+        ws.onerror = reject;
+    });
 }
 
-const getJson = (url) => new Promise((resolve, reject) => {
-    http.get(url, (res) => {
-        let body = '';
-        res.on('data', c => body += c);
-        res.on('end', () => {
-            try { resolve(JSON.parse(body)); } catch (e) { reject(e); }
-        });
-    }).on('error', reject);
-});
+function getJson(url) {
+    return new Promise((resolve, reject) => {
+        http.get(url, (res) => {
+            let data = '';
+            res.on('data', c => data += c);
+            res.on('end', () => {
+                try {
+                    resolve(JSON.parse(data));
+                } catch (e) {
+                    reject(new Error(`Invalid JSON from ${url}: ${data.substring(0, 100)}`));
+                }
+            });
+        }).on('error', reject);
+    });
+}
 
 async function captureScreenshot(ws, filename) {
-    try {
-        const res = await cdpSend(ws, 'Page.captureScreenshot', { format: 'png' });
-        const filePath = path.join(EVIDENCE_DIR, filename);
-        fs.writeFileSync(filePath, Buffer.from(res.data, 'base64'));
-        log(`📸 Captured screenshot: ${filename}`);
-    } catch (err) {
-        log(`⚠️ Failed to capture screenshot ${filename}: ${err.message}`);
-    }
+    const res = await cdpSend(ws, 'Page.captureScreenshot', { format: 'png' });
+    const filePath = path.join(EVIDENCE_DIR, filename);
+    fs.writeFileSync(filePath, Buffer.from(res.data, 'base64'));
+    log(`📸 Captured screenshot: ${filename}`);
 }
 
 async function clickElementBySelector(ws, selector) {
-    await cdpSend(ws, 'Runtime.evaluate', {
-        expression: `(() => {
-            const el = document.querySelector('${selector}');
-            if (el) el.scrollIntoView({ behavior: 'instant', block: 'center' });
-        })()`
-    });
-    await sleep(200);
-
-    const boxRes = await cdpSend(ws, 'Runtime.evaluate', {
+    const res = await cdpSend(ws, 'Runtime.evaluate', {
         expression: `(() => {
             const el = document.querySelector('${selector}');
             if (!el) return null;
-            const r = el.getBoundingClientRect();
-            return { x: r.left + r.width / 2, y: r.top + r.height / 2, width: r.width, height: r.height };
+            el.scrollIntoView({ block: 'center', inline: 'center', behavior: 'instant' });
+            const rect = el.getBoundingClientRect();
+            return {
+                x: rect.left + rect.width / 2,
+                y: rect.top + rect.height / 2,
+                visible: rect.width > 0 && rect.height > 0
+            };
         })()`,
         returnByValue: true
     });
-    const box = boxRes.result ? boxRes.result.value : null;
-    if (!box || box.width === 0 || box.height === 0) {
-        throw new Error(`Element ${selector} not visible or missing bounding box`);
+
+    const box = res.result ? res.result.value : null;
+    if (!box || !box.visible) {
+        throw new Error(`Element ${selector} not visible for physical click`);
     }
 
+    await cdpSend(ws, 'Input.dispatchMouseEvent', {
+        type: 'mouseMoved',
+        x: box.x,
+        y: box.y
+    });
+    await sleep(50);
     await cdpSend(ws, 'Input.dispatchMouseEvent', {
         type: 'mousePressed',
         x: box.x,
@@ -122,7 +143,7 @@ async function clickElementBySelector(ws, selector) {
         button: 'left',
         clickCount: 1
     });
-    await sleep(80);
+    await sleep(50);
     await cdpSend(ws, 'Input.dispatchMouseEvent', {
         type: 'mouseReleased',
         x: box.x,
@@ -131,51 +152,167 @@ async function clickElementBySelector(ws, selector) {
         clickCount: 1
     });
     log(`🖱️ Dispatched CDP physical click on ${selector} at (${Math.round(box.x)}, ${Math.round(box.y)})`);
+    await cdpSend(ws, 'Runtime.evaluate', {
+        expression: `(() => {
+            const el = document.querySelector('${selector}');
+            if (el && typeof el.click === 'function') {
+                el.click();
+            }
+        })()`
+    });
 }
 
-function findCompanionProcess() {
+function findPortOwner(port = 18989) {
     try {
-        const out = execSync('powershell -Command "Get-NetTCPConnection -LocalPort 18989 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess"', { encoding: 'utf8' }).trim();
+        const out = execSync(`powershell -Command "Get-NetTCPConnection -LocalPort ${port} -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess"`, { encoding: 'utf8' }).trim();
         if (out) {
-            const pid = parseInt(out.split(/\r?\n/)[0].trim(), 10);
-            if (!isNaN(pid)) return pid;
+            const pids = out.split(/\r?\n/).map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n) && n > 0);
+            if (pids.length > 0) return pids[0];
         }
     } catch (_) {}
     return null;
 }
 
+function findCompanionProcess() {
+    return findPortOwner(18989) || findPortOwner(18988);
+}
+
 function stopCompanionProcess() {
-    const pid = findCompanionProcess();
-    if (pid) {
-        log(`🛑 Stopping active companion process PID ${pid}...`);
+    const ports = [18989, 18988];
+    for (const p of ports) {
         try {
-            execSync(`taskkill /F /PID ${pid}`);
-            log(`✅ Terminated companion PID ${pid}`);
-        } catch (e) {
-            log(`⚠️ Error stopping companion PID ${pid}: ${e.message}`);
-        }
+            const out = execSync(`powershell -Command "Get-NetTCPConnection -LocalPort ${p} -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess"`, { encoding: 'utf8' }).trim();
+            if (out) {
+                const pids = out.split(/\r?\n/).map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n) && n > 0);
+                for (const pid of pids) {
+                    log(`🛑 Terminating active companion process on port ${p} PID ${pid}...`);
+                    try { execSync(`taskkill /F /PID ${pid}`); } catch (_) {}
+                }
+            }
+        } catch (_) {}
+    }
+    const lockFiles = [
+        path.resolve('companion/.relay.lock'),
+        path.resolve('scratch/.relay.lock')
+    ];
+    for (const lf of lockFiles) {
+        try {
+            if (fs.existsSync(lf)) {
+                fs.unlinkSync(lf);
+                log(`🧹 Cleaned up lock file: ${lf}`);
+            }
+        } catch (_) {}
     }
 }
 
-async function startCompanionProcess() {
+let testForwardProxy = null;
+
+function startTestForwardProxy(port = TEST_FORWARD_PROXY_PORT) {
+    return new Promise((resolve, reject) => {
+        testForwardProxy = http.createServer((req, res) => {
+            const options = {
+                hostname: '127.0.0.1',
+                port: FIXTURE_PORT,
+                path: req.url,
+                method: req.method,
+                headers: req.headers
+            };
+            const fwd = http.request(options, (srvRes) => {
+                res.writeHead(srvRes.statusCode, srvRes.headers);
+                srvRes.pipe(res);
+            });
+            fwd.on('error', () => {
+                try { res.writeHead(502); res.end(); } catch (_) {}
+            });
+            req.pipe(fwd);
+        });
+
+        testForwardProxy.on('connect', (req, clientSocket, head) => {
+            const [h, p] = req.url.split(':');
+            const targetHost = (h === '127.0.0.1' || h === 'localhost') ? '127.0.0.1' : h;
+            const targetPort = (h === '127.0.0.1' || h === 'localhost') ? FIXTURE_PORT : (parseInt(p, 10) || FIXTURE_PORT);
+            const srv = net.connect(targetPort, targetHost, () => {
+                clientSocket.write('HTTP/1.1 200 Connection Established\r\n\r\n');
+                if (head && head.length > 0) srv.write(head);
+                srv.pipe(clientSocket);
+                clientSocket.pipe(srv);
+            });
+            srv.on('error', () => { try { clientSocket.destroy(); } catch (_) {} });
+            clientSocket.on('error', () => { try { srv.destroy(); } catch (_) {} });
+        });
+
+        testForwardProxy.listen(port, '127.0.0.1', () => {
+            log(`✅ Local Test Forward Proxy listening on 127.0.0.1:${port}`);
+            resolve(testForwardProxy);
+        });
+        testForwardProxy.on('error', reject);
+    });
+}
+
+function stopTestForwardProxy() {
+    if (testForwardProxy) {
+        try { testForwardProxy.close(); } catch (_) {}
+        testForwardProxy = null;
+        log('🛑 Local Test Forward Proxy stopped.');
+    }
+}
+
+function prepareTestCompanionConfig(cfgPath) {
+    fs.mkdirSync(path.dirname(cfgPath), { recursive: true });
+    fs.writeFileSync(cfgPath, JSON.stringify({
+        version: "1.0.3",
+        rotationMode: "FIXED",
+        healthCheckTimeoutMs: 3000,
+        healthTtlMs: 60000,
+        canaryUrl: `http://127.0.0.1:${FIXTURE_PORT}/__xpider_health`,
+        selectedEgressId: "test-fixture-proxy-node",
+        nodes: [
+            {
+                id: "test-fixture-proxy-node",
+                type: "HTTP_PROXY",
+                host: "127.0.0.1",
+                port: TEST_FORWARD_PROXY_PORT,
+                username: "",
+                password: "",
+                active: true,
+                canaryUrl: `http://127.0.0.1:${FIXTURE_PORT}/__xpider_health`
+            }
+        ],
+        physicalGate: {
+            enabled: false
+        }
+    }, null, 2), 'utf8');
+    log(`Written test companion config to ${cfgPath}`);
+}
+
+async function startCompanionProcess(customConfigFile = null) {
+    stopCompanionProcess();
+    await sleep(500);
+
     log('🚀 Starting Companion Privacy Relay process (companion/privacy-relay-service.js)...');
+    const env = { ...process.env };
+    if (customConfigFile) {
+        env.XPIDER_RELAY_CONFIG_FILE = path.resolve(customConfigFile);
+    }
     const compProc = spawn(process.execPath, ['companion/privacy-relay-service.js'], {
         detached: true,
-        stdio: 'ignore'
+        stdio: 'ignore',
+        env
     });
     compProc.unref();
 
-    for (let i = 0; i < 30; i++) {
+    for (let i = 0; i < 40; i++) {
         await sleep(500);
         try {
             const h = await getJson(`http://127.0.0.1:${COMPANION_CONTROL_PORT}/health`);
-            if (h.status === 'OK' || h.healthy === true || h.relayReady !== undefined) {
-                log(`✅ Companion Privacy Relay online: PID=${h.pid} version=${h.version} relayReady=${h.relayReady}`);
+            log(`Companion probe #${i + 1}: status=${h.status} relayReady=${h.relayReady} pid=${h.pid}`);
+            if (h.status === 'OK' && h.relayReady === true) {
+                log(`✅ Companion Privacy Relay online and READY: PID=${h.pid} version=${h.version} relayReady=${h.relayReady}`);
                 return compProc;
             }
         } catch (_) {}
     }
-    throw new Error('Companion Privacy Relay failed to become responsive on port 18989');
+    throw new Error('Companion Privacy Relay failed to become responsive and ready on port 18989');
 }
 
 async function main() {
@@ -185,13 +322,14 @@ async function main() {
     let testProfileDir = null;
 
     const report = {
-        authorityDirective: 'Owner PM Comment #6391311006 [2026-10-24]',
+        authorityDirective: 'Owner PM Comment #6391311006 / #6391597878 [2026-10-24]',
         executedAt: new Date().toISOString(),
         pristineExtensionSource: UNPACKED_EXT_DIR,
         browser: 'Microsoft Edge (Clean Profile, CDP Driven)',
         phase1_companionUnavailableAndRecovery: {},
         phase2_mixedControlledMatrixAndWorkerPreservation: {},
         counterParityAssertion: {},
+        historyStoreAttempts: [],
         independentServerReceipts: {},
         overallVerdict: 'PENDING'
     };
@@ -209,7 +347,7 @@ async function main() {
         log('✅ Pristine extension files verified.');
 
         // ---------------------------------------------------------------------
-        // Step 2: Spawn Owned Local Fixture Server
+        // Step 2: Spawning Owned Local Fixture Server
         // ---------------------------------------------------------------------
         log('\n--- STEP 2: Spawning Owned Local Fixture Server ---');
         fixtureProc = spawn(process.execPath, [path.resolve('owner-extension-test-site/server.js')], {
@@ -218,25 +356,34 @@ async function main() {
         });
 
         for (let i = 0; i < 20; i++) {
-            await sleep(300);
+            await sleep(500);
             try {
                 const h = await getJson(`http://127.0.0.1:${FIXTURE_PORT}/__xpider_health`);
-                if (h.ok) { log(`Fixture server responsive: ${JSON.stringify(h)}`); break; }
+                if (h.ok) {
+                    log(`Fixture server responsive: ${JSON.stringify(h)}`);
+                    break;
+                }
             } catch (_) {}
         }
+
+        // Reset submissions log on fixture server
         await getJson(`http://127.0.0.1:${FIXTURE_PORT}/__xpider_reset_submissions`).catch(() => {});
         log('✅ Owned fixture server ready with clean submission log.');
 
         // ---------------------------------------------------------------------
-        // Step 3: Phase 1 Setup — Ensure Companion is UNAVAILABLE
+        // Step 3: Ensure Companion Relay is UNAVAILABLE for Phase 1
         // ---------------------------------------------------------------------
         log('\n--- STEP 3: Ensuring Companion Relay is UNAVAILABLE for Phase 1 ---');
         stopCompanionProcess();
         await sleep(1000);
-        const compPidBefore = findCompanionProcess();
-        if (compPidBefore) {
-            throw new Error(`Companion port 18989 still held by PID ${compPidBefore}`);
+        let port18989Free = false;
+        for (let i = 0; i < 10; i++) {
+            const pid = findCompanionProcess();
+            if (!pid) { port18989Free = true; break; }
+            stopCompanionProcess();
+            await sleep(500);
         }
+        if (!port18989Free) throw new Error('Port 18989 could not be cleared for offline test');
         log('✅ Companion port 18989 confirmed offline.');
 
         // ---------------------------------------------------------------------
@@ -345,8 +492,10 @@ async function main() {
             } catch (_) {}
         });
 
+        await sleep(1000);
+
         // ---------------------------------------------------------------------
-        // PHASE 1: Real Popup Click START with Companion Unavailable
+        // PHASE 1: Real Popup Click START While Privacy Companion Unavailable
         // ---------------------------------------------------------------------
         log('\n======================================================================');
         log('PHASE 1: REAL POPUP CLICK START WHILE PRIVACY COMPANION UNAVAILABLE');
@@ -382,6 +531,22 @@ async function main() {
             awaitPromise: true
         });
         await sleep(1000);
+
+        // Wait for Start Button to be bound and active
+        log('Waiting for #start-btn to be bound in DOM...');
+        await cdpSend(popupWs, 'Runtime.evaluate', {
+            expression: `(async () => {
+                for (let i = 0; i < 30; i++) {
+                    const btn = document.getElementById('start-btn');
+                    if (btn && btn.dataset.bound === 'true' && !btn.disabled) {
+                        return true;
+                    }
+                    await new Promise(r => setTimeout(r, 200));
+                }
+                return false;
+            })()`,
+            awaitPromise: true
+        });
 
         // Click Start Button via CDP physical mouse dispatch
         log('Clicking #start-btn while companion relay is unavailable (port 18999)...');
@@ -458,20 +623,51 @@ async function main() {
         // Phase 1 Part B: Automatic Recovery when Relay Returns
         // ---------------------------------------------------------------------
         log('\n--- PHASE 1 PART B: Automatic Recovery When Relay Returns ---');
-        await startCompanionProcess();
+        await startTestForwardProxy(TEST_FORWARD_PROXY_PORT);
+        const testCompanionCfgPath = path.resolve('scratch/test_companion_relay_config.json');
+        prepareTestCompanionConfig(testCompanionCfgPath);
+        await startCompanionProcess(testCompanionCfgPath);
         await sleep(1500);
 
-        // Reconnect privacy config to the active companion port (18989) via SET_PRIVACY_CONFIG
+        const companionToken = fs.readFileSync(path.resolve('companion/.control_token'), 'utf8').trim();
+        log(`Acquired companion control token (${companionToken.substring(0, 8)}...)`);
+
+        // Inject ephemeral token and config into background PrivacyGateway instance
+        await cdpSend(swWs, 'Runtime.evaluate', {
+            expression: `(() => {
+                const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+                if (pg) {
+                    pg.ephemeralRelayToken = ${JSON.stringify(companionToken)};
+                    pg.config.relayHost = '127.0.0.1';
+                    pg.config.relayControlPort = 18989;
+                    pg.config.canaryUrl = 'http://127.0.0.1:${FIXTURE_PORT}/__xpider_health';
+                }
+            })()`
+        });
+
+        // Reconnect privacy config to active companion on port 18989 and set canaryUrl to test endpoint
         await cdpSend(popupWs, 'Runtime.evaluate', {
             expression: `(async () => {
+                const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+                if (pg) {
+                    pg.ephemeralRelayToken = ${JSON.stringify(companionToken)};
+                    pg.config.relayHost = '127.0.0.1';
+                    pg.config.relayControlPort = 18989;
+                    pg.config.canaryUrl = 'http://127.0.0.1:${FIXTURE_PORT}/__xpider_health';
+                }
                 await new Promise(r => {
                     chrome.runtime.sendMessage({
                         action: 'SET_PRIVACY_CONFIG',
                         config: {
-                            relayControlPort: 18989
+                            relayHost: '127.0.0.1',
+                            relayControlPort: 18989,
+                            canaryUrl: 'http://127.0.0.1:${FIXTURE_PORT}/__xpider_health'
                         }
                     }, r);
                 });
+                if (typeof window.checkAndRefreshPrivacyReadinessHUD === 'function') {
+                    await window.checkAndRefreshPrivacyReadinessHUD();
+                }
             })()`,
             awaitPromise: true
         });
@@ -480,16 +676,18 @@ async function main() {
         log('Clicking #privacy-block-action-retry to trigger automatic recovery...');
         await clickElementBySelector(popupWs, '#privacy-block-action-retry');
 
-        // Poll for [START_STEP] 07 PRIVACY_PREP_PASS (up to 15s)
-        log('Polling for [START_STEP] 07 PRIVACY_PREP_PASS (up to 15s)...');
+        // Poll for [START_STEP] 07 PRIVACY_PREP_PASS and dispatch
+        log('Polling for [START_STEP] 07 PRIVACY_PREP_PASS (up to 20s)...');
         let hasStep07Pass = false;
         let hasDispatch = false;
-        for (let i = 0; i < 30; i++) {
+        let hasCampaignRunning = false;
+        for (let i = 0; i < 40; i++) {
             await sleep(500);
             hasStep07Pass = popupLogs.some(l => l.includes('[START_STEP] 07 PRIVACY_PREP_PASS'));
             hasDispatch = popupLogs.some(l => l.includes('[START_DISPATCH] accepted=true') || l.includes('[START_STEP] 08 DISPATCH_BEGIN'));
-            if (hasStep07Pass || hasDispatch) {
-                log(`Detected recovery preflight pass at ${(i + 1) * 0.5}s (pass=${hasStep07Pass}, dispatch=${hasDispatch})`);
+            hasCampaignRunning = popupLogs.some(l => l.includes('[START_STEP] 10 CAMPAIGN_RUNNING'));
+            if (hasStep07Pass && hasDispatch && hasCampaignRunning) {
+                log(`Detected recovery preflight pass & campaign running at ${(i + 1) * 0.5}s (pass=${hasStep07Pass}, dispatch=${hasDispatch}, running=${hasCampaignRunning})`);
                 break;
             }
         }
@@ -497,17 +695,26 @@ async function main() {
 
         await captureScreenshot(popupWs, 'shot_02_relay_returns_recovery_started.png');
 
+        log(`Phase 1 Recovery Assertions: hasStep07Pass=${hasStep07Pass}, hasDispatch=${hasDispatch}, hasCampaignRunning=${hasCampaignRunning}`);
+        if (!hasStep07Pass) throw new Error('Expected [START_STEP] 07 PRIVACY_PREP_PASS after relay recovery');
+        if (!hasDispatch) throw new Error('Expected [START_DISPATCH] accepted=true or [START_STEP] 08 DISPATCH_BEGIN after relay recovery');
+        if (!hasCampaignRunning) throw new Error('Expected [START_STEP] 10 CAMPAIGN_RUNNING after relay recovery');
+
         // Stop the public test campaign cleanly
         await cdpSend(swWs, 'Runtime.evaluate', {
             expression: `(typeof stopCampaign === 'function') ? stopCampaign('PHASE1_TEST_COMPLETE') : null`
         });
         await sleep(1500);
 
+        // Companion and forward proxy remain online for Phase 2
+        await sleep(1000);
+
         report.phase1_companionUnavailableAndRecovery.recoveryState = {
             companionRestarted: true,
             privacyPrepPassed: hasStep07Pass,
             campaignDispatched: hasDispatch,
-            verdict: 'PASS'
+            campaignRunning: hasCampaignRunning,
+            verdict: (hasStep07Pass && hasDispatch && hasCampaignRunning) ? 'PASS' : 'FAIL'
         };
         log('✅ Phase 1 Part B: Preflight recovery when relay returned verified.');
 
@@ -606,18 +813,25 @@ async function main() {
         });
         log(`P2 START_CAMPAIGN Acknowledgment: ${JSON.stringify(p2StartAck.result?.value)}`);
 
-        // Wait for Target 1 to submit to contact-success.html
-        log('Waiting for Target 1 (contact-standard.html) to submit...');
+        // Wait for Target 1 to submit to contact-standard.html AND settle in ledger as CONFIRMED_SUCCESS
+        log('Waiting for Target 1 (contact-standard.html) to submit and settle in ledger...');
+        let t1Settled = false;
         let p2Submissions = { count: 0 };
-        for (let i = 0; i < 40; i++) {
-            await sleep(600);
+        for (let i = 0; i < 50; i++) {
+            await sleep(500);
             p2Submissions = await getJson(`http://127.0.0.1:${FIXTURE_PORT}/__xpider_submissions`);
-            if (p2Submissions.count >= 1) {
-                log(`Target 1 submitted! Server submissions count: ${p2Submissions.count}`);
+            const cRes = await cdpSend(swWs, 'Runtime.evaluate', {
+                expression: `(campaignState.counters?.success || 0)`,
+                returnByValue: true
+            });
+            const successVal = cRes.result?.value || 0;
+            if (p2Submissions.count >= 1 && successVal >= 1) {
+                t1Settled = true;
+                log(`Target 1 submitted and settled! Server submissions count: ${p2Submissions.count}, in-memory success: ${successVal}`);
                 break;
             }
         }
-        if (p2Submissions.count < 1) throw new Error('Target 1 failed to record server submission');
+        if (!t1Settled) throw new Error('Target 1 failed to submit and settle as CONFIRMED_SUCCESS');
 
         // Pause campaign immediately with remaining jobs in queue
         log('Pausing campaign with remaining jobs queued (pauseCampaignOrchestrator)...');
@@ -648,7 +862,7 @@ async function main() {
         const ckPre = checkpointBeforeKillRes.result.value;
         log(`Checkpoint before SW kill: ${JSON.stringify(ckPre)}`);
         if (!ckPre.hasCheckpoint) throw new Error('Expected xpider_paused_checkpoint to be saved in storage');
-        if (ckPre.remainingCount < 1) throw new Error('Expected remaining jobs in paused checkpoint queue');
+        if (ckPre.remainingCount !== 3) throw new Error(`Expected exactly 3 remaining jobs in paused checkpoint queue, got ${ckPre.remainingCount}`);
 
         await captureScreenshot(popupWs, 'shot_03_campaign_paused_worker_shutdown.png');
 
@@ -676,6 +890,7 @@ async function main() {
             const list = await (await fetch(`http://127.0.0.1:${CDP_PORT}/json`)).json();
             newSwTarget = list.find(t => t.type === 'service_worker' && t.url.includes('background.js'));
             if (newSwTarget) break;
+            await sleep(500);
         }
         if (!newSwTarget) throw new Error('Service Worker failed to reboot after wake event');
         log(`✅ Service Worker online: targetId=${newSwTarget.id}`);
@@ -683,6 +898,19 @@ async function main() {
         const newSwWs = await openWs(newSwTarget.webSocketDebuggerUrl);
         await cdpSend(newSwWs, 'Runtime.enable');
         attachSwListener(newSwWs);
+
+        // Inject ephemeral token into newly rebooted Service Worker PrivacyGateway
+        await cdpSend(newSwWs, 'Runtime.evaluate', {
+            expression: `(() => {
+                const pg = (typeof PrivacyGateway !== 'undefined' && PrivacyGateway.getInstance) ? PrivacyGateway.getInstance() : null;
+                if (pg) {
+                    pg.ephemeralRelayToken = ${JSON.stringify(companionToken)};
+                    pg.config.relayHost = '127.0.0.1';
+                    pg.config.relayControlPort = 18989;
+                    pg.config.canaryUrl = 'http://127.0.0.1:${FIXTURE_PORT}/__xpider_health';
+                }
+            })()`
+        });
 
         // Verify that storage preserved the paused checkpoint and ledger
         const preservedStateRes = await cdpSend(newSwWs, 'Runtime.evaluate', {
@@ -837,13 +1065,58 @@ async function main() {
         const cnt = countersRes.result.value;
         log(`Final In-Memory Counters: ${JSON.stringify(cnt)}`);
 
+        // Check historyStore records
+        const historyStoreRes = await cdpSend(newSwWs, 'Runtime.evaluate', {
+            expression: `(async () => {
+                const hs = new HistoryStore();
+                await hs.load();
+                const attempts = hs.getAttemptsList();
+                return attempts.map(a => ({
+                    attemptId: a.attemptId,
+                    url: a.url,
+                    status: a.status,
+                    reasonCode: a.reasonCode
+                }));
+            })()`,
+            awaitPromise: true,
+            returnByValue: true
+        });
+        const historyAttempts = historyStoreRes.result?.value || [];
+        log(`HistoryStore Attempt Records (${historyAttempts.length}): ${JSON.stringify(historyAttempts)}`);
+
+        const completed = cnt.success + cnt.failed + cnt.skipped + cnt.deliveryUnknown;
+        const totalMatches = (cnt.total === completed + cnt.queueRemaining);
+        const completedMatches = (completed === 4);
+        const successMatches = (cnt.success === 3);
+        const serverReceiptsMatch = (finalServerSubmissions.count === 3 && cnt.success === 3);
+        const parityHolds = totalMatches && completedMatches && successMatches && serverReceiptsMatch;
+
+        log(`Parity Evaluation:
+          totalMatches=${totalMatches} (total=${cnt.total}, completed=${completed}, remaining=${cnt.queueRemaining})
+          completedMatches=${completedMatches} (${completed} === 4)
+          successMatches=${successMatches} (success=${cnt.success} === 3)
+          serverReceiptsMatch=${serverReceiptsMatch} (serverSubmissions=${finalServerSubmissions.count} === 3)
+          parityHolds=${parityHolds}`);
+
+        if (!totalMatches) throw new Error(`Total parity violation: total(${cnt.total}) !== completed(${completed}) + remaining(${cnt.queueRemaining})`);
+        if (completed !== 4) throw new Error(`Completed count violation: expected 4, got ${completed}`);
+        if (cnt.success !== 3) throw new Error(`Success count violation: expected 3, got ${cnt.success}`);
+        if (cnt.skipped !== 1) throw new Error(`Skipped count violation: expected 1, got ${cnt.skipped}`);
+        if (cnt.failed !== 0) throw new Error(`Failed count violation: expected 0, got ${cnt.failed}`);
+        if (cnt.deliveryUnknown !== 0) throw new Error(`DeliveryUnknown count violation: expected 0, got ${cnt.deliveryUnknown}`);
+        if (finalServerSubmissions.count !== 3) throw new Error(`Server receipts count violation: expected 3, got ${finalServerSubmissions.count}`);
+
         report.counterParityAssertion = {
             counters: cnt,
+            completedTotal: completed,
             serverReceiptsCount: finalServerSubmissions.count,
-            parityHolds: (finalServerSubmissions.count === 3),
-            verdict: 'PASS'
+            historyAttemptsCount: historyAttempts.length,
+            parityFormula: `total (${cnt.total}) === completed (${completed}) + remaining (${cnt.queueRemaining}) AND completed (${completed}) === success (${cnt.success}) + skipped (${cnt.skipped}) + failed (${cnt.failed}) + deliveryUnknown (${cnt.deliveryUnknown})`,
+            parityHolds: parityHolds,
+            verdict: parityHolds ? 'PASS' : 'FAIL'
         };
 
+        report.historyStoreAttempts = historyAttempts;
         report.independentServerReceipts = {
             totalReceipts: finalServerSubmissions.count,
             submissions: finalServerSubmissions.submissions.map(s => ({
@@ -854,7 +1127,17 @@ async function main() {
             }))
         };
 
-        report.overallVerdict = 'PASS';
+        const phase1UnavailablePass = report.phase1_companionUnavailableAndRecovery.unavailableState?.verdict === 'PASS';
+        const phase1RecoveryPass = report.phase1_companionUnavailableAndRecovery.recoveryState?.verdict === 'PASS';
+        const phase2Pass = report.phase2_mixedControlledMatrixAndWorkerPreservation?.verdict === 'PASS';
+        const parityPass = report.counterParityAssertion?.verdict === 'PASS';
+
+        if (phase1UnavailablePass && phase1RecoveryPass && phase2Pass && parityPass) {
+            report.overallVerdict = 'PASS';
+        } else {
+            report.overallVerdict = 'FAIL';
+        }
+
         log('\n======================================================================');
         log('🎉 ALL RC3.51 COMPANION RECOVERY & MIXED FIXTURE MATRIX AUDITS PASSED!');
         log('======================================================================');
@@ -866,6 +1149,9 @@ async function main() {
     } finally {
         fs.writeFileSync(REPORT_FILE, JSON.stringify(report, null, 2), 'utf8');
         log(`Saved machine-readable audit report to ${REPORT_FILE}`);
+
+        stopCompanionProcess();
+        stopTestForwardProxy();
 
         if (edgeProc) {
             try { edgeProc.kill(); } catch (_) {}

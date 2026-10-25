@@ -41,6 +41,9 @@ const server = http.createServer((req, res) => {
   }
 
   let reqPath = decodeURI(req.url.split('?')[0]);
+  if (reqPath.startsWith('http://') || reqPath.startsWith('https://')) {
+    try { reqPath = new URL(reqPath).pathname; } catch (_) {}
+  }
 
   // Authoritative form submission query endpoint (RC3.19 Test B)
   if (reqPath === '/__xpider_submissions') {
@@ -126,6 +129,8 @@ const server = http.createServer((req, res) => {
     });
     res.end(JSON.stringify({
       ok: true,
+      canary: 'CANARY_OK',
+      ip: '127.0.0.1',
       service: 'XPIDER_OWNER_TEST_SERVER',
       channel: 'TEST_ONLY',
       port: 8088,

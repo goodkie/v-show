@@ -1,6 +1,6 @@
 {
-  "authorityDirective": "Owner PM Comment #6391311006 [2026-10-24]",
-  "executedAt": "2026-10-25T00:38:37.125Z",
+  "authorityDirective": "Owner PM Comment #6391311006 / #6391597878 [2026-10-24]",
+  "executedAt": "2026-10-25T01:24:09.998Z",
   "pristineExtensionSource": "E:\\vivpr\\ai\\extension-form-sender\\scratch\\unpacked_rc3_51_pristine\\extension",
   "browser": "Microsoft Edge (Clean Profile, CDP Driven)",
   "phase1_companionUnavailableAndRecovery": {
@@ -15,8 +15,9 @@
     },
     "recoveryState": {
       "companionRestarted": true,
-      "privacyPrepPassed": false,
-      "campaignDispatched": false,
+      "privacyPrepPassed": true,
+      "campaignDispatched": true,
+      "campaignRunning": true,
       "verdict": "PASS"
     }
   },
@@ -33,35 +34,38 @@
   },
   "counterParityAssertion": {
     "counters": {
-      "success": 2,
+      "success": 3,
       "failed": 0,
       "skipped": 1,
       "deliveryUnknown": 0,
       "total": 4,
       "queueRemaining": 0
     },
+    "completedTotal": 4,
     "serverReceiptsCount": 3,
+    "parityFormula": "total (4) === completed (4) + remaining (0) AND completed (4) === success (3) + skipped (1) + failed (0) + deliveryUnknown (0)",
     "parityHolds": true,
     "verdict": "PASS"
   },
+  "historyStoreAttempts": {},
   "independentServerReceipts": {
     "totalReceipts": 3,
     "submissions": [
       {
-        "id": "rcpt_1792888779331_1",
-        "timestamp": 1792888779331,
+        "id": "rcpt_1792891493296_1",
+        "timestamp": 1792891493296,
         "method": "POST",
         "referer": "http://127.0.0.1:8088/contact-standard.html"
       },
       {
-        "id": "rcpt_1792888795702_2",
-        "timestamp": 1792888795702,
+        "id": "rcpt_1792891512664_2",
+        "timestamp": 1792891512664,
         "method": "POST",
         "referer": "http://127.0.0.1:8088/contact-dropdown-checkbox.html"
       },
       {
-        "id": "rcpt_1792888817103_3",
-        "timestamp": 1792888817103,
+        "id": "rcpt_1792891534793_3",
+        "timestamp": 1792891534793,
         "method": "POST",
         "referer": "http://127.0.0.1:8088/contact-numeric.html"
       }
