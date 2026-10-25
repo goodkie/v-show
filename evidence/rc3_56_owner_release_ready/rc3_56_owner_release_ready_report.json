@@ -1,0 +1,153 @@
+{
+  "testSuite": "RC3.56_OWNER_RELEASE_READY_AUDIT",
+  "timestamp": "2026-10-25T06:59:18.785Z",
+  "buildId": "R6.9G.10.3.7.1.4.72-20261025-P0-RC3.56",
+  "targetArchive": "XPIDER_R6.9G.10.3.7.1.4.72_PRIVATE_EGRESS_RC3.56.zip",
+  "unpackedPath": "E:\\vivpr\\ai\\extension-form-sender\\scratch\\unpacked_rc3_56_pristine",
+  "browser": "Microsoft Edge (CDP)",
+  "cleanInstallAudit": {
+    "quickStartFileParity": "PASS",
+    "autoSetupExecution": "PASS",
+    "nativeMessagingRegistry": {
+      "chrome": true,
+      "edge": true,
+      "verdict": "PASS"
+    }
+  },
+  "companionLifecycle": {
+    "offlineFailClosedPass": true,
+    "companionRestartPass": true
+  },
+  "popupUserClicks": {
+    "startClicked": true,
+    "pauseClicked": true,
+    "resumeClicked": true,
+    "stopClicked": true
+  },
+  "matrixResults": [
+    {
+      "id": "T01",
+      "path": "/contact-standard.html",
+      "category": "Standard Form",
+      "expected": "SUCCESS",
+      "serverSubmissions": 1,
+      "receiptId": "rcpt_1792911595264_1",
+      "status": "CONFIRMED_SUCCESS",
+      "reasonCode": "SUCCESS_CONFIRMED",
+      "verdict": "PASS"
+    },
+    {
+      "id": "T02",
+      "path": "/contact-dropdown-checkbox.html",
+      "category": "Select & Checkbox Form",
+      "expected": "SUCCESS",
+      "serverSubmissions": 1,
+      "receiptId": "rcpt_1792911609124_2",
+      "status": "CONFIRMED_SUCCESS",
+      "reasonCode": "SUCCESS_CONFIRMED",
+      "verdict": "PASS"
+    },
+    {
+      "id": "T03",
+      "path": "/contact-numeric.html",
+      "category": "Tel & Number Form",
+      "expected": "SUCCESS",
+      "serverSubmissions": 1,
+      "receiptId": "rcpt_1792911628986_3",
+      "status": "CONFIRMED_SUCCESS",
+      "reasonCode": "SUCCESS_CONFIRMED",
+      "verdict": "PASS"
+    },
+    {
+      "id": "T04",
+      "path": "/subscribe-no-message.html",
+      "category": "Intent Filter (Non-Inquiry Newsletter)",
+      "expected": "SKIPPED",
+      "serverSubmissions": 0,
+      "receiptId": null,
+      "status": "SKIPPED",
+      "reasonCode": "NON_INQUIRY_SUBSCRIBE_FORM",
+      "verdict": "PASS"
+    },
+    {
+      "id": "T05",
+      "path": "/reservation-no-message.html",
+      "category": "Intent Filter (Booking Form)",
+      "expected": "SKIPPED",
+      "serverSubmissions": 0,
+      "receiptId": null,
+      "status": "SKIPPED",
+      "reasonCode": "NON_INQUIRY_RESERVATION_FORM",
+      "verdict": "PASS"
+    },
+    {
+      "id": "T06",
+      "path": "/no-contact-page.html",
+      "category": "Discovery (No Form Present)",
+      "expected": "FAILURE",
+      "serverSubmissions": 0,
+      "receiptId": null,
+      "status": "FAILURE",
+      "reasonCode": "NO_ACCESSIBLE_INQUIRY_FORM",
+      "verdict": "PASS"
+    },
+    {
+      "id": "T07",
+      "path": "/contact-validation-error.html",
+      "category": "Fail-Closed (Validation Error)",
+      "expected": "FAILURE",
+      "serverSubmissions": 0,
+      "receiptId": null,
+      "status": "FAILURE",
+      "reasonCode": "SUBMIT_VALIDATION_BLOCKED",
+      "verdict": "PASS"
+    },
+    {
+      "id": "T08",
+      "path": "/contact-standard.html?scenario=server_error_500",
+      "category": "Fail-Closed (HTTP 500)",
+      "expected": "DELIVERY_UNKNOWN",
+      "serverSubmissions": 0,
+      "receiptId": null,
+      "status": "DELIVERY_UNKNOWN",
+      "reasonCode": "DELIVERY_UNKNOWN",
+      "verdict": "PASS"
+    },
+    {
+      "id": "T09",
+      "path": "/contact-standard.html?scenario=dropped_response",
+      "category": "Fail-Closed (TCP Drop)",
+      "expected": "DELIVERY_UNKNOWN",
+      "serverSubmissions": 0,
+      "receiptId": null,
+      "status": "DELIVERY_UNKNOWN",
+      "reasonCode": "DELIVERY_UNKNOWN",
+      "verdict": "PASS"
+    },
+    {
+      "id": "T10",
+      "path": "/captcha-turnstile-dom.html",
+      "category": "Security Guard (Cloudflare Turnstile)",
+      "expected": "SKIPPED",
+      "serverSubmissions": 0,
+      "receiptId": null,
+      "status": "SKIPPED",
+      "reasonCode": "CAPTCHA_PENDING_OWNER",
+      "verdict": "PASS"
+    }
+  ],
+  "accountingSummary": {
+    "totalFixturesTested": 10,
+    "successTargetsVerified": 3,
+    "negativeTargetsVerified": 7,
+    "serverGroundTruthReceipts": 3,
+    "duplicatesFound": false,
+    "noDuplicatesInvariant": "PASS",
+    "zeroPreparingInvariant": "PASS",
+    "failClosedRelayOfflineInvariant": "PASS",
+    "companionRestartInvariant": "PASS",
+    "popupUserClicksLifecycle": "PASS"
+  },
+  "overallVerdict": "PASS",
+  "extensionId": "ldlijlaccfeelfdhgnjbibniocefckjj"
+}

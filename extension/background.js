@@ -6624,8 +6624,9 @@ function normalizeUrl(url) {
     if (!url) return '';
     try {
         const u = new URL(url);
-        // Remove hash, trailing slashes, and standardize lowercase
-        return (u.origin + u.pathname).replace(/\/$/, '').toLowerCase();
+        // Remove hash, trailing slash on pathname, preserve query string, standardize lowercase
+        const path = u.pathname.replace(/\/$/, '');
+        return (u.origin + path + (u.search || '')).toLowerCase();
     } catch (e) {
         // [v14.0.0] Silent Fallback: Prevent crash if URL is malformed
         return (url || '').split('#')[0].replace(/\/$/, '').toLowerCase();

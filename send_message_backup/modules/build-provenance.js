@@ -15,7 +15,7 @@
 
     const BUILD_INFO = {
         branch: 'upgrade/phase-0-1',
-        channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.55',
+        channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.56',
         testOnly: false,
         // [R6.9G.10.3.7.1.4.69] XPIDER AutoForm Sender Pro — Private Egress Release Candidate 3.53 (Immutable Receipt-ID Ledger Binding & DOM Confirmation Parity)
         implementationHead: '98d984f21317f566818f51df598e5456ab575f6d',
@@ -25,11 +25,11 @@
         rollbackBase: '55cd543be5ebe7a4553cac0cbfcf933a00e4c8a5',
         previousFunctionalRestorePoint: 'b2af1c9bf614b9f572acec910265d8132d2043aa',
         manifestVersion: 3,
-        buildId: 'R6.9G.10.3.7.1.4.71-20261024-P0-RC3.55',
-        builtAt: '2026-10-25T04:09:03.890Z',
+        buildId: 'R6.9G.10.3.7.1.4.72-20261025-P0-RC3.56',
+        builtAt: '2026-10-25T06:48:34.344Z',
         provenanceSchema: 2,
         modules: {
-            backgroundSha: '3a50e8375523f42558673ae7dac2113cc514b696e358d68b3b2242a230c06e6a',
+            backgroundSha: '9012f722dd5794dae16f9fe69452bce0c6aa29d8cf7c9e6ffcd47f25aca3d23a',
             contentScriptSha: '68ecc67c55c2bf8bd3e8ec75e1b7495772095c959507f05cd33ffc6ea7aa1cd9',
             popupSha: 'dd02b0cf62d406c13e4fa5958d42011d6ddadbb6d8463ff95244ba83db4b15cd',
             solverContentSha: '6a1ff7154efaeb6dbd5946ac4f9be1ce5b5ff43bce2db06d0dca32950edd3bdb',
