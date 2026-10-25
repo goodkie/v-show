@@ -67,7 +67,7 @@ process.on('unhandledRejection', (reason) => {
 });
 
 // [Defect Q2 Hardening - Issue #6 Comment #6244711545] Authoritative companion build identity & capabilities
-const COMPANION_BUILD_ID = 'R6.9G.10.3.7.1.4.74-20261025-P0-RC3.58';
+const COMPANION_BUILD_ID = 'R6.9G.10.3.7.1.4.75-20261025-P0-RC3.59';
 const COMPANION_IMPLEMENTATION_HEAD = '741dfe44536031dff13ac6d8e310d4f72fbca42b';
 
 function isCompatibleExtensionBuild(extBuildId, companionBuildId) {
@@ -1474,9 +1474,15 @@ class PrivacyRelayService {
       if (pathname === '/firewall-guardian/reconcile' && req.method === 'POST') {
         const { FirewallGuardian } = require('./firewall-guardian');
         this.firewallGuardian = this.firewallGuardian || new FirewallGuardian({ dir: path.dirname(this.configFile || TOKEN_FILE) });
-        const gr = await this.firewallGuardian.reconcile();
-        res.writeHead(gr.ok ? 200 : 409);
-        res.end(JSON.stringify({ success: gr.ok, status: gr.status, ip: gr.ip || null }));
+        // Strictly read-only: return status and note that interactive QUICK_UPDATE_FIREWALL_IP.bat is required.
+        const status = this.firewallGuardian.getStatus();
+        res.writeHead(200);
+        res.end(JSON.stringify({
+          success: true,
+          status: 'APPROVAL_REQUIRED',
+          guardian: status,
+          note: 'Automatic firewall mutations via HTTP endpoint are strictly prohibited. Interactive owner approval via QUICK_UPDATE_FIREWALL_IP.bat is required.'
+        }));
         return;
       }
 
@@ -2985,16 +2991,15 @@ class PrivacyRelayService {
       this.log(`[PRIVACY_RELAY_ACTIVE_NODE] Active private-egress node found: droplet=${recStatus.dropletId} ip=${recStatus.publicIp}`);
     }
 
-    // [RC3.45] Firewall Guardian: repair 8443 /32 for current owner IP BEFORE startup egress probe (no-op without local PAT)
+    // [RC3.45 / RC3.59] Firewall Guardian: strictly read-only on startup (unattended mutations strictly prohibited)
     try {
       const { FirewallGuardian } = require('./firewall-guardian');
       this.firewallGuardian = this.firewallGuardian || new FirewallGuardian({ dir: path.dirname(this.configFile || TOKEN_FILE) });
       if (this.firewallGuardian.hasToken()) {
-        const gr = await this.firewallGuardian.reconcile();
-        this.log(`[FIREWALL_GUARDIAN] startup reconcile status=${gr.status}${gr.ip ? ' ip=' + gr.ip : ''}`);
-        this.firewallGuardian.start(60000);
+        const gStatus = this.firewallGuardian.getStatus();
+        this.log(`[FIREWALL_GUARDIAN] guardian initialized (read-only); interactive approval required for mutations (status=${gStatus.status})`);
       } else {
-        this.log('[FIREWALL_GUARDIAN] no local PAT stored; guardian idle (run companion/firewall-guardian-ui.js once)');
+        this.log('[FIREWALL_GUARDIAN] no local PAT stored; guardian idle');
       }
     } catch (gErr) {
       this.log(`[FIREWALL_GUARDIAN] init error: ${gErr.message}`);

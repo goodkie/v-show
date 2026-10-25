@@ -4,10 +4,16 @@
  * scripts/quick_update_firewall_ip.js
  *
  * XPIDER AutoForm Sender Pro — Owner Approval-Gated Dynamic VPN Firewall Update
- * Protocol: OCA-DEV-1.4 (Issue #6 RC3.58 - Directive #6396720543)
+ * Protocol: OCA-DEV-1.4 (Issue #6 RC3.59 - P0 Security Hold Directive #6397334700)
+ *
+ * Security Policies:
+ *  1. Zero CLI Bypass: --yes / --confirm flags are strictly removed. Interactive TTY confirmation is mandatory.
+ *  2. Zero Process-Table Leakage: --token CLI argument is strictly removed. Token must come from DPAPI or env.
+ *  3. Network & Routing Verification: On Windows, verifies active default route is on Proton VPN (10.2.0.x).
+ *  4. Pre-Write Concurrency Guard: Enforces snapshot matching between preview and live state before PUT.
  *
  * Usage:
- *   node scripts/quick_update_firewall_ip.js [--dry-run] [--yes] [--token <pat>]
+ *   node scripts/quick_update_firewall_ip.js [--dry-run]
  */
 
 const readline = require('readline');
@@ -34,30 +40,36 @@ function askQuestion(query) {
 async function main() {
   const args = process.argv.slice(2);
   const isDryRun = args.includes('--dry-run');
-  const isConfirmedArg = args.includes('--yes') || args.includes('--confirm');
 
-  let tokenArg = null;
-  const tokenIdx = args.indexOf('--token');
-  if (tokenIdx !== -1 && args[tokenIdx + 1]) {
-    tokenArg = args[tokenIdx + 1];
+  // Security policy enforcement: reject command-line bypass attempts
+  if (args.includes('--yes') || args.includes('--confirm')) {
+    console.warn('⚠️ [SECURITY POLICY NOTICE] Command-line confirmation bypass (--yes/--confirm) is strictly prohibited under P0 security rules.');
+    console.warn('   Interactive human verification on a valid TTY is non-bypassable.\n');
+  }
+
+  // Security policy enforcement: reject PAT passed via CLI arguments to prevent process-table exposure
+  if (args.includes('--token')) {
+    console.warn('⚠️ [SECURITY POLICY NOTICE] Passing API tokens via command-line arguments (--token) is strictly prohibited.');
+    console.warn('   Arguments are visible in OS process tables (tasklist / ps). Token will NOT be read from command line.\n');
   }
 
   console.log('========================================================================');
-  console.log('  XPIDER PRIVATE EGRESS — OWNER FIREWALL ALLOWLIST UPDATE');
+  console.log('  XPIDER PRIVATE EGRESS — OWNER FIREWALL ALLOWLIST UPDATE (RC3.59)');
   console.log('========================================================================\n');
 
   const companionDir = path.resolve(__dirname, '..', 'companion');
   const guardian = new FirewallGuardian({ dir: companionDir });
 
-  // Resolve API Token
-  let token = tokenArg || process.env.XPIDER_DO_TOKEN || process.env.DO_TOKEN;
+  // Resolve API Token securely: ONLY from DPAPI storage or secure environment variable
+  let token = process.env.XPIDER_DO_TOKEN || process.env.DO_TOKEN;
   if (!token && guardian.hasToken()) {
     token = guardian._token();
   }
 
   if (!token) {
     if (isDryRun || !process.stdin.isTTY) {
-      console.error('[FAIL] No DigitalOcean API token found in DPAPI storage or environment.');
+      console.error('❌ [FAIL-CLOSED] No DigitalOcean API token found in DPAPI storage or environment variable (XPIDER_DO_TOKEN).');
+      console.error('   Non-interactive or dry-run execution requires pre-configured DPAPI token.');
       process.exit(1);
     }
     console.log('No stored DPAPI token found. Please provide a DigitalOcean Personal Access Token.');
@@ -79,32 +91,40 @@ async function main() {
 
   try {
     // 1. Detect Network & Generate Preview
-    console.log('[1/3] Detecting public exit IPv4 and network interface...');
+    console.log('[1/4] Detecting public exit IPv4 and verifying network routing...');
     const previewRes = await guardian.preview({ token });
-    const { network, firewall, diff } = previewRes;
+    const { network, firewall, diff, snapshot } = previewRes;
 
-    console.log(`    - Public Exit IPv4:  ${network.ip}`);
-    console.log(`    - Interface / Route: ${network.adapter} (${network.isProton ? 'Proton VPN Active: YES' : 'Physical Network / Non-Proton'})`);
-    if (!network.isProton) {
-      console.log('    ⚠️ [NOTICE] Active network is not identified as Proton VPN (ProTUN).');
+    console.log(`    - Public Exit IPv4:     ${network.ip}`);
+    console.log(`    - Adapter:              ${network.adapter}`);
+    console.log(`    - Active Default Route: ${network.defaultRoute ? network.defaultRoute.interfaceIp : 'N/A'} (Metric ${network.defaultRoute ? network.defaultRoute.metric : 'N/A'})`);
+    console.log(`    - Proton VPN Route:     ${network.isProtonDefaultRoute ? 'VERIFIED (10.2.0.x default route)' : 'NOT DETECTED / UNCERTAIN'}`);
+
+    // Enforce network routing validation on Windows
+    if (process.platform === 'win32' && !network.isProtonDefaultRoute) {
+      console.error('\n❌ [FAIL-CLOSED] NETWORK_ROUTE_UNCERTAIN: Active default route does not use Proton VPN (10.2.0.x).');
+      console.error('   Active default route interface: ' + (network.defaultRoute ? network.defaultRoute.interfaceIp : 'unknown'));
+      console.error('   Firewall allowlist updates are strictly prohibited unless traffic is routed through Proton VPN.');
+      process.exit(1);
     }
 
-    console.log('\n[2/3] Validating Cloud Infrastructure Association...');
-    console.log(`    - Target Droplet ID:  ${DEFAULT_DROPLET_ID} (143.198.40.33)`);
-    console.log(`    - Target Firewall ID: ${firewall.id} (${firewall.name})`);
-    console.log(`    - Associated Tags:    ${firewall.tags.join(', ') || 'none'}`);
+    console.log('\n[2/4] Validating Cloud Infrastructure Association...');
+    console.log(`    - Target Droplet ID:     ${DEFAULT_DROPLET_ID} (143.198.40.33)`);
+    console.log(`    - Target Firewall ID:    ${firewall.id} (${firewall.name})`);
+    console.log(`    - Associated Tags:       ${firewall.tags.join(', ') || 'none'}`);
+    console.log(`    - Live Firewall SHA256:  ${snapshot.slice(0, 16)}...`);
 
-    console.log('\n[3/3] Cloud Firewall Rule Diff (TCP Port 8443):');
-    console.log(`    - Current Allowlist:   ${JSON.stringify(diff.currentAddresses)}`);
-    console.log(`    - Proposed Allowlist:  ${JSON.stringify(diff.proposedAddresses)}`);
+    console.log('\n[3/4] Cloud Firewall Rule Diff (TCP Port 8443):');
+    console.log(`    - Current Allowlist:      ${JSON.stringify(diff.currentAddresses)}`);
+    console.log(`    - Proposed Allowlist:     ${JSON.stringify(diff.proposedAddresses)}`);
     if (diff.added.length > 0) {
-      console.log(`    + Adding New /32:      ${JSON.stringify(diff.added)}`);
+      console.log(`    + Adding New /32:         ${JSON.stringify(diff.added)}`);
     }
     if (diff.removed.length > 0) {
-      console.log(`    - Removing Old /32:    ${JSON.stringify(diff.removed)}`);
+      console.log(`    - Removing /32:           ${JSON.stringify(diff.removed)}`);
     }
-    console.log(`    * Preserved Static:    ${JSON.stringify(diff.preserved)}`);
-    console.log(`    * Rogue 0.0.0.0/0:     ${diff.hasRogue ? 'DETECTED & BEING REMOVED' : 'NONE (STRICT /32 ONLY)'}`);
+    console.log(`    * Preserved Static:       ${JSON.stringify(diff.preserved)}`);
+    console.log(`    * Mode:                   Strictly Additive-Only (Unrelated ports & rules preserved)`);
 
     if (diff.noop) {
       console.log('\n========================================================================');
@@ -121,13 +141,15 @@ async function main() {
       process.exit(0);
     }
 
-    // 2. Explicit Owner Approval Gate
+    // 2. Explicit Owner Approval Gate (Strict TTY & uppercase YES required)
     console.log('\n------------------------------------------------------------------------');
-    let confirmed = isConfirmedArg;
-    if (!confirmed) {
-      const answer = await askQuestion("Type 'YES' to authorize this firewall update on DigitalOcean: ");
-      confirmed = answer.trim() === 'YES';
+    if (!process.stdin.isTTY) {
+      console.error('❌ [FAIL-CLOSED] Interactive TTY required for Owner confirmation. Aborting with 0 changes.');
+      process.exit(1);
     }
+
+    const answer = await askQuestion("Type 'YES' (exact uppercase) to authorize this firewall update on DigitalOcean: ");
+    const confirmed = answer.trim() === 'YES';
 
     if (!confirmed) {
       console.log('\n========================================================================');
@@ -136,18 +158,20 @@ async function main() {
       process.exit(0);
     }
 
-    // 3. Mutate and Verify
-    console.log('\n[MUTATING] Submitting scoped firewall update and verifying persisted state...');
+    // 3. Mutate with Pre-Write Concurrency Guard and Verify
+    console.log('\n[4/4] Submitting scoped firewall update and verifying persisted state...');
     const applyRes = await guardian.applyUpdate({
       token,
       confirmed: true,
+      expectedSnapshot: diff.snapshot,
       networkInfo: network
     });
 
     console.log('\n========================================================================');
     console.log('✅ [PASS] DigitalOcean Cloud Firewall successfully updated and verified.');
-    console.log(`   Status:               ${applyRes.status}`);
-    console.log(`   Persisted /32 Rules:  ${JSON.stringify(applyRes.persistedAddresses)}`);
+    console.log(`   Status:                  ${applyRes.status}`);
+    console.log(`   Persisted /32 Rules:     ${JSON.stringify(applyRes.persistedAddresses)}`);
+    console.log(`   Persisted Snapshot:      ${applyRes.snapshot ? applyRes.snapshot.slice(0, 16) + '...' : 'OK'}`);
     console.log('   Self-healing reconnect will automatically restore connection within 30s.');
     console.log('========================================================================\n');
     process.exit(0);

@@ -1,25 +1,25 @@
 'use strict';
 /**
- * XPIDER Firewall Guardian & Dynamic VPN IP Allowlist (RC3.58)
+ * XPIDER Firewall Guardian & Dynamic VPN IP Allowlist (RC3.59)
  *
  * Keeps the DigitalOcean Cloud Firewall inbound TCP 8443 rule scoped to the owner's
  * CURRENT verified public IPv4 /32 and preserved static allowlist.
  *
- * Security invariants (RC3.58 - Directive #6396720543):
+ * Security invariants (RC3.59 - P0 Security Hold Directive #6397334700):
  *  - Explicit Owner Approval Gate: NO unattended automatic firewall writes. Mutation strictly requires confirmed=true.
- *  - Default Preview / Dry-Run: Every change calculates exact before/after diff for human audit.
- *  - Narrow Allowlist Only: Never broadens. Strictly /32 addresses only. 0.0.0.0/0, ::/0,
- *    private/loopback IPs and broad CIDRs are rejected and stripped.
- *  - Preserved Static Allowlist: Always preserves prior primary IP (74.39.42.139/32) across dynamic IP rotations.
- *  - Association Verification: Verifies target firewall is associated with expected Droplet/tag before mutation.
- *  - Concurrency & Persistence Check: Re-fetches firewall immediately before write and verifies persisted /32 after write.
+ *  - Read-Only Reconcile & Startup: Service startup and background reconcile have 0 mutations (preview/status only).
+ *  - Additive-Only Preservation: Preserves ALL unrelated ports/rules (port 22, 80, ICMP, outbound) verbatim.
+ *  - Rogue Wildcard Fail-Closed: 0.0.0.0/0 or ::/0 anywhere triggers ROGUE_WILDCARD_DETECTED and fails closed (NO silent purge).
+ *  - Pre-Write Concurrency Guard: Computes canonical SHA256 snapshot on preview; strictly aborts on snapshot mismatch.
+ *  - Network & Routing Validation: Verifies active default route interface on Windows uses Proton VPN (10.2.0.x).
  *  - Zero Secret Leakage: PAT is encrypted via Windows DPAPI (winsec), never logged, and redacted from all errors.
- *  - Non-Negotiable Fail-Closed: Port 22 is strictly absent. Inbound TCP 8443 is strictly filtered.
  */
 const fs = require('fs');
 const path = require('path');
 const https = require('https');
 const os = require('os');
+const crypto = require('crypto');
+const cp = require('child_process');
 const winsec = require('./winsec');
 
 const DEFAULT_DIR = __dirname;
@@ -104,9 +104,51 @@ async function detectPublicIp(sources = IP_SOURCES) {
 }
 
 /**
- * Detect network interface context on Windows/Linux to distinguish Proton VPN (ProTUN) from local physical network.
+ * Inspect active default IPv4 route on Windows routing table.
  */
-function detectNetworkContext() {
+function getActiveDefaultRoute(routeOutput = null) {
+  let output = routeOutput;
+  if (!output && process.platform === 'win32') {
+    try {
+      output = cp.execSync('route print 0.0.0.0', { encoding: 'utf8', timeout: 5000 });
+    } catch (e) {
+      const err = new Error(`ROUTE_PRINT_FAILED: ${e.message}`);
+      err.code = 'NETWORK_ROUTE_UNCERTAIN';
+      throw err;
+    }
+  }
+  if (!output || typeof output !== 'string') {
+    return null;
+  }
+  const lines = output.split(/\r?\n/);
+  const routes = [];
+  for (const line of lines) {
+    const m = /^\s*0\.0\.0\.0\s+0\.0\.0\.0\s+\S+\s+(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\s+(\d+)\s*$/.exec(line);
+    if (m) {
+      routes.push({
+        interfaceIp: m[1],
+        metric: parseInt(m[2], 10)
+      });
+    }
+  }
+  if (routes.length === 0) {
+    const err = new Error('NETWORK_ROUTE_UNCERTAIN: No default IPv4 route found in routing table.');
+    err.code = 'NETWORK_ROUTE_UNCERTAIN';
+    throw err;
+  }
+  routes.sort((a, b) => a.metric - b.metric);
+  if (routes.length > 1 && routes[0].metric === routes[1].metric && routes[0].interfaceIp !== routes[1].interfaceIp) {
+    const err = new Error(`NETWORK_ROUTE_UNCERTAIN: Ambiguous default routes with identical metric ${routes[0].metric}: ${routes[0].interfaceIp} vs ${routes[1].interfaceIp}`);
+    err.code = 'NETWORK_ROUTE_UNCERTAIN';
+    throw err;
+  }
+  return routes[0];
+}
+
+/**
+ * Detect network interface context and verify default route interface.
+ */
+function detectNetworkContext(routeOutput = null, options = {}) {
   const ifaces = os.networkInterfaces();
   let protonAdapter = null;
   let localAdapter = null;
@@ -125,25 +167,101 @@ function detectNetworkContext() {
   }
 
   const isProtonActive = Boolean(protonAdapter);
+  let defaultRoute = null;
+  let isProtonDefaultRoute = false;
+
+  if (process.platform === 'win32' || routeOutput) {
+    try {
+      defaultRoute = getActiveDefaultRoute(routeOutput);
+      if (defaultRoute) {
+        const is10_2 = /^10\.2\.0\./.test(defaultRoute.interfaceIp);
+        const matchesAdapter = protonAdapter && protonAdapter.address === defaultRoute.interfaceIp;
+        isProtonDefaultRoute = Boolean(is10_2 || matchesAdapter);
+      }
+    } catch (e) {
+      if (options.failClosedOnRoute) {
+        throw e;
+      }
+      defaultRoute = { error: e.message, code: e.code };
+    }
+  }
+
   return {
     isProton: isProtonActive,
+    isProtonDefaultRoute,
+    defaultRoute,
     activeAdapter: isProtonActive ? protonAdapter.name : (localAdapter ? localAdapter.name : 'Unknown'),
     adapterDetails: isProtonActive ? protonAdapter : localAdapter
   };
 }
 
 /**
- * Full network detection combining public IPv4 canary with adapter classification.
+ * Full network detection combining public IPv4 canary with adapter & routing classification.
  */
-async function detectNetworkInfo(sources = IP_SOURCES) {
+async function detectNetworkInfo(sources = IP_SOURCES, options = {}) {
   const ip = await detectPublicIp(sources);
-  const netCtx = detectNetworkContext();
+  const netCtx = detectNetworkContext(options.routeOutput, options);
+
+  if (options.requireProtonRoute && !netCtx.isProtonDefaultRoute) {
+    const err = new Error(`NETWORK_ROUTE_UNCERTAIN: Active default route interface (${netCtx.defaultRoute ? netCtx.defaultRoute.interfaceIp : 'unknown'}) is not Proton VPN adapter (10.2.0.x).`);
+    err.code = 'NETWORK_ROUTE_UNCERTAIN';
+    throw err;
+  }
+
   return {
     ip,
     isProton: netCtx.isProton,
+    isProtonDefaultRoute: netCtx.isProtonDefaultRoute,
+    defaultRoute: netCtx.defaultRoute,
     adapter: netCtx.activeAdapter,
     adapterDetails: netCtx.adapterDetails
   };
+}
+
+function canonicalizeSourcesOrDests(obj) {
+  if (!obj || typeof obj !== 'object') return {};
+  const res = {};
+  if (Array.isArray(obj.addresses)) res.addresses = obj.addresses.slice().sort();
+  if (Array.isArray(obj.droplet_ids)) res.droplet_ids = obj.droplet_ids.slice().sort();
+  if (Array.isArray(obj.load_balancer_uids)) res.load_balancer_uids = obj.load_balancer_uids.slice().sort();
+  if (Array.isArray(obj.tags)) res.tags = obj.tags.slice().sort();
+  return res;
+}
+
+function canonicalizeRule(rule) {
+  if (!rule || typeof rule !== 'object') return {};
+  const res = {
+    protocol: String(rule.protocol || '').toLowerCase(),
+    ports: String(rule.ports || '')
+  };
+  if (rule.sources) res.sources = canonicalizeSourcesOrDests(rule.sources);
+  if (rule.destinations) res.destinations = canonicalizeSourcesOrDests(rule.destinations);
+  return res;
+}
+
+/**
+ * Pure: Deterministic SHA256 canonical snapshot of firewall state.
+ */
+function computeFirewallSnapshot(firewall) {
+  if (!firewall || typeof firewall !== 'object') return null;
+  const canonicalInbound = (firewall.inbound_rules || []).map(canonicalizeRule).sort((a, b) => {
+    const kA = `${a.protocol}:${a.ports}:${JSON.stringify(a.sources || {})}`;
+    const kB = `${b.protocol}:${b.ports}:${JSON.stringify(b.sources || {})}`;
+    return kA.localeCompare(kB);
+  });
+  const canonicalOutbound = (firewall.outbound_rules || []).map(canonicalizeRule).sort((a, b) => {
+    const kA = `${a.protocol}:${a.ports}:${JSON.stringify(a.destinations || {})}`;
+    const kB = `${b.protocol}:${b.ports}:${JSON.stringify(b.destinations || {})}`;
+    return kA.localeCompare(kB);
+  });
+  const canonicalObj = {
+    name: String(firewall.name || ''),
+    droplet_ids: (firewall.droplet_ids || []).slice().map(Number).sort((a, b) => a - b),
+    tags: (firewall.tags || []).slice().map(String).sort(),
+    inbound_rules: canonicalInbound,
+    outbound_rules: canonicalOutbound
+  };
+  return crypto.createHash('sha256').update(JSON.stringify(canonicalObj)).digest('hex');
 }
 
 function doRequest(token, method, apiPath, body) {
@@ -173,7 +291,11 @@ function doRequest(token, method, apiPath, body) {
 }
 
 /**
- * Pure: compute desired firewall inbound rules for a given IP with static allowlist preservation.
+ * Pure: compute desired firewall inbound rules.
+ * Invariant (RC3.59):
+ *  - Must preserve ALL existing rules on ALL ports (port 22, 80, ICMP, etc.) verbatim.
+ *  - In TCP 8443: preserve ALL existing addresses verbatim; add new ip/32 additively.
+ *  - Rogue wildcard detection: If 0.0.0.0/0 or ::/0 is found in ANY rule, throw ROGUE_WILDCARD_DETECTED and fail closed.
  */
 function buildDesiredInbound(existingInbound, ip, staticSources = []) {
   if (!isValidPublicIPv4(ip)) {
@@ -182,46 +304,61 @@ function buildDesiredInbound(existingInbound, ip, staticSources = []) {
     throw err;
   }
   const targetCidr = `${ip.trim()}/32`;
+  const inbound = Array.isArray(existingInbound) ? existingInbound : [];
 
-  // Start with static sources
-  const addressesSet = new Set(staticSources.map(s => s.trim()));
-  addressesSet.add(targetCidr);
-
-  // Preserve other non-rogue /32 addresses from existing rule if any
-  for (const r of existingInbound || []) {
-    if (String(r.ports) === PORT && r.protocol === 'tcp') {
-      const addrs = (r.sources && r.sources.addresses) || [];
-      for (const a of addrs) {
-        const clean = String(a).trim();
-        // Skip rogue wildcards or broad ranges
-        if (clean === '0.0.0.0/0' || clean === '::/0' || clean === '0' || clean === 'all') continue;
-        if (/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\/32$/.test(clean)) {
-          // If it's a valid /32, we can retain it or allow owner rotation
-          // For owner dynamic IP rotation: we keep staticSources + targetCidr
-        }
+  // 1. Rogue wildcard detection across ALL existing inbound rules
+  for (const rule of inbound) {
+    const addresses = (rule.sources && Array.isArray(rule.sources.addresses)) ? rule.sources.addresses : [];
+    for (const a of addresses) {
+      const clean = String(a).trim();
+      if (clean === '0.0.0.0/0' || clean === '::/0') {
+        const err = new Error(`ROGUE_WILDCARD_DETECTED: Inbound rule for protocol ${rule.protocol} port ${rule.ports || 'any'} contains rogue wildcard "${clean}". Refusing update and failing closed.`);
+        err.code = 'ROGUE_WILDCARD_DETECTED';
+        throw err;
       }
     }
   }
 
-  // Filter out any 8443 rule or dangerous port 22/all-ports rules
-  const kept = (existingInbound || []).filter(r => {
-    const ports = String(r.ports || '');
-    if (ports === PORT && r.protocol === 'tcp') return false; // Replaced with controlled rule
-    if (ports === '22' || ports === '0' || ports === 'all' || ports === '1-65535' || ports === '') {
-      return !(ports === '22' || (r.protocol === 'tcp' && /^(0|all|1-65535|)$/.test(ports)));
+  // 2. Additive-only preservation
+  // Deep clone all rules to ensure unrelated rules (port 22, 80, icmp, etc.) are preserved verbatim
+  const clonedRules = JSON.parse(JSON.stringify(inbound));
+  let found8443 = false;
+
+  for (const rule of clonedRules) {
+    if (String(rule.ports) === PORT && rule.protocol === 'tcp') {
+      found8443 = true;
+      const existingAddresses = (rule.sources && Array.isArray(rule.sources.addresses)) ? rule.sources.addresses : [];
+      const addrSet = new Set(existingAddresses.map(s => String(s).trim()));
+
+      // Add target IP
+      addrSet.add(targetCidr);
+      // Add static sources if any
+      for (const s of staticSources) {
+        if (s) addrSet.add(String(s).trim());
+      }
+
+      rule.sources = Object.assign({}, rule.sources, {
+        addresses: Array.from(addrSet).sort()
+      });
     }
-    return true;
-  });
+  }
 
-  // Add the strictly controlled 8443 rule
-  const sortedAddresses = Array.from(addressesSet).sort();
-  kept.push({
-    protocol: 'tcp',
-    ports: PORT,
-    sources: { addresses: sortedAddresses }
-  });
+  // If no 8443 rule exists, add it
+  if (!found8443) {
+    const addrSet = new Set([targetCidr]);
+    for (const s of staticSources) {
+      if (s) addrSet.add(String(s).trim());
+    }
+    clonedRules.push({
+      protocol: 'tcp',
+      ports: PORT,
+      sources: {
+        addresses: Array.from(addrSet).sort()
+      }
+    });
+  }
 
-  return kept;
+  return clonedRules;
 }
 
 /**
@@ -238,10 +375,11 @@ function generatePreviewDiff(firewall, newIp, staticSources = STATIC_ALLOWLIST) 
   }
 
   const existingInbound = firewall.inbound_rules || [];
+  const desiredInbound = buildDesiredInbound(existingInbound, newIp, staticSources);
+
   const current8443 = existingInbound.find(r => String(r.ports) === PORT && r.protocol === 'tcp');
   const currentAddresses = (current8443 && current8443.sources && current8443.sources.addresses) ? current8443.sources.addresses.slice().sort() : [];
 
-  const desiredInbound = buildDesiredInbound(existingInbound, newIp, staticSources);
   const proposed8443 = desiredInbound.find(r => String(r.ports) === PORT && r.protocol === 'tcp');
   const proposedAddresses = (proposed8443 && proposed8443.sources && proposed8443.sources.addresses) ? proposed8443.sources.addresses.slice().sort() : [];
 
@@ -249,8 +387,8 @@ function generatePreviewDiff(firewall, newIp, staticSources = STATIC_ALLOWLIST) 
   const removed = currentAddresses.filter(a => !proposedAddresses.includes(a));
   const preserved = proposedAddresses.filter(a => currentAddresses.includes(a));
 
-  const hasRogue = currentAddresses.some(a => a === '0.0.0.0/0' || a === '::/0');
-  const isNoop = added.length === 0 && removed.length === 0 && !hasRogue;
+  const isNoop = added.length === 0 && removed.length === 0;
+  const snapshot = computeFirewallSnapshot(firewall);
 
   const proposedPayload = {
     name: firewall.name,
@@ -271,8 +409,9 @@ function generatePreviewDiff(firewall, newIp, staticSources = STATIC_ALLOWLIST) 
     added,
     removed,
     preserved,
-    hasRogue,
+    hasRogue: false,
     noop: isNoop,
+    snapshot,
     proposedPayload
   };
 }
@@ -288,7 +427,7 @@ class FirewallGuardian {
     this.detectNetwork = options.detectNetwork || (async () => {
       if (this.detectIp) {
         const ip = await this.detectIp();
-        return { ip, isProton: false, adapter: 'mock' };
+        return { ip, isProton: false, isProtonDefaultRoute: false, adapter: 'mock' };
       }
       return detectNetworkInfo();
     });
@@ -424,7 +563,11 @@ class FirewallGuardian {
   }
 
   /**
-   * Backward-compatible reconcile (used by status and existing tests).
+   * Read-only reconcile: Checks sync status without mutating.
+   * Invariant (RC3.59):
+   *  - Purely read-only diagnostic/preview.
+   *  - Returns IN_SYNC or APPROVAL_REQUIRED with 0 writes.
+   *  - Never calls applyUpdate unattended.
    */
   reconcile() {
     if (this.inflight) return this.inflight;
@@ -444,23 +587,37 @@ class FirewallGuardian {
       return { ok: false, status: 'NO_FIREWALL_ID' };
     }
     try {
-      const netInfo = await this.detectNetwork();
-      if (!isValidPublicIPv4(netInfo.ip)) {
-        throw Object.assign(new Error('IP_UNVERIFIED'), { code: 'IP_UNVERIFIED' });
+      const previewRes = await this.preview({ token, firewallId: fwId });
+      const { diff, network } = previewRes;
+      if (diff.noop) {
+        this._saveState({
+          status: 'IN_SYNC',
+          lastIp: network.ip,
+          lastAppliedAt: this.state.lastAppliedAt || new Date().toISOString(),
+          lastError: null
+        });
+        return {
+          ok: true,
+          status: 'IN_SYNC',
+          ip: network.ip,
+          changed: false,
+          diff
+        };
+      } else {
+        this._saveState({
+          status: 'APPROVAL_REQUIRED',
+          lastIp: network.ip,
+          lastError: null
+        });
+        return {
+          ok: true,
+          status: 'APPROVAL_REQUIRED',
+          ip: network.ip,
+          changed: false,
+          diff,
+          note: '0 mutations made. Unattended automatic firewall updates are disabled. Owner interactive approval via quick_update_firewall_ip.js is required.'
+        };
       }
-      const res = await this.applyUpdate({
-        token,
-        firewallId: fwId,
-        ip: netInfo.ip,
-        confirmed: true,
-        staticSources: this.staticSources
-      });
-      return {
-        ok: true,
-        status: res.status,
-        ip: res.ip,
-        changed: res.changed
-      };
     } catch (e) {
       const code = e.code || 'ERROR';
       const status = (code === 'TOKEN_INVALID' || code === 'MISSING_SCOPE') ? code : 'FAIL_CLOSED_' + code;
@@ -489,17 +646,24 @@ class FirewallGuardian {
         droplets: fw.droplet_ids || [],
         tags: fw.tags || []
       },
-      diff
+      diff,
+      snapshot: diff.snapshot
     };
   }
 
   /**
-   * Mutate DigitalOcean Cloud Firewall with explicit Owner confirmation requirement.
+   * Mutate DigitalOcean Cloud Firewall with explicit Owner confirmation requirement and snapshot concurrency guard.
    */
   async applyUpdate(options = {}) {
     if (options.confirmed !== true) {
       const err = new Error('CONFIRMATION_REQUIRED: Owner explicit confirmation (confirmed: true) is strictly required to mutate firewall rules.');
       err.code = 'CONFIRMATION_REQUIRED';
+      throw err;
+    }
+
+    if (!options.expectedSnapshot) {
+      const err = new Error('EXPECTED_SNAPSHOT_REQUIRED: options.expectedSnapshot is strictly required for pre-write concurrency guard.');
+      err.code = 'EXPECTED_SNAPSHOT_REQUIRED';
       throw err;
     }
 
@@ -523,14 +687,22 @@ class FirewallGuardian {
 
     // 1. Fetch live firewall state immediately before write
     const currentFw = await this.fetchFirewallState(token, fwId);
+    const liveSnapshot = computeFirewallSnapshot(currentFw);
 
-    // Concurrency guard: verify live rules have not been modified since preview
+    // Concurrency guard: verify live rules snapshot matches preview snapshot
+    if (liveSnapshot !== options.expectedSnapshot) {
+      const err = new Error(`CONCURRENT_MODIFICATION_DETECTED: Live firewall snapshot (${liveSnapshot.slice(0, 12)}) does not match expected snapshot (${options.expectedSnapshot.slice(0, 12)}). Concurrently modified.`);
+      err.code = 'CONCURRENT_MODIFICATION_DETECTED';
+      throw err;
+    }
+
+    // Concurrency guard (address array check if provided)
     if (options.expectedPreviousAddresses && Array.isArray(options.expectedPreviousAddresses)) {
       const current8443 = (currentFw.inbound_rules || []).find(r => String(r.ports) === PORT && r.protocol === 'tcp');
       const curAddresses = (current8443 && current8443.sources && current8443.sources.addresses) ? current8443.sources.addresses.slice().sort() : [];
       const expAddresses = options.expectedPreviousAddresses.slice().sort();
       if (JSON.stringify(curAddresses) !== JSON.stringify(expAddresses)) {
-        const err = new Error(`CONCURRENT_MODIFICATION_DETECTED: Live firewall rules changed since preview was generated (Expected ${JSON.stringify(expAddresses)}, found ${JSON.stringify(curAddresses)}).`);
+        const err = new Error(`CONCURRENT_MODIFICATION_DETECTED: Live firewall rules changed since preview was generated.`);
         err.code = 'CONCURRENT_MODIFICATION_DETECTED';
         throw err;
       }
@@ -552,7 +724,8 @@ class FirewallGuardian {
         status: 'IN_SYNC',
         ip: targetIp,
         changed: false,
-        diff
+        diff,
+        snapshot: liveSnapshot
       };
     }
 
@@ -573,11 +746,10 @@ class FirewallGuardian {
 
     const expectedAddresses = diff.proposedAddresses.slice().sort();
     const isExactMatch = JSON.stringify(vAddresses) === JSON.stringify(expectedAddresses);
-    const hasRogue = vAddresses.some(a => a === '0.0.0.0/0' || a === '::/0');
-    const hasSsh = (verifyFw.inbound_rules || []).some(r => String(r.ports) === '22');
+    const hasRogue = (verifyFw.inbound_rules || []).some(r => (r.sources?.addresses || []).some(a => a === '0.0.0.0/0' || a === '::/0'));
 
-    if (!isExactMatch || hasRogue || hasSsh) {
-      const err = new Error('VERIFY_FAILED: Persisted firewall rules do not match expected /32 allowlist or contain prohibited ports.');
+    if (!isExactMatch || hasRogue) {
+      const err = new Error('VERIFY_FAILED: Persisted firewall rules do not match expected /32 allowlist or contain rogue wildcards.');
       err.code = 'VERIFY_FAILED';
       this._saveState({ status: 'FAIL_CLOSED_VERIFY_FAILED', lastError: err.message });
       throw err;
@@ -596,7 +768,8 @@ class FirewallGuardian {
       ip: targetIp,
       changed: true,
       diff,
-      persistedAddresses: vAddresses
+      persistedAddresses: vAddresses,
+      snapshot: computeFirewallSnapshot(verifyFw)
     };
   }
 }
@@ -606,6 +779,8 @@ module.exports = {
   detectPublicIp,
   detectNetworkContext,
   detectNetworkInfo,
+  getActiveDefaultRoute,
+  computeFirewallSnapshot,
   isValidPublicIPv4,
   buildDesiredInbound,
   generatePreviewDiff,
