@@ -1,0 +1,77 @@
+{
+  "testSuite": "XPIDER_COMPANION_STOP_START_SMOKE",
+  "timestamp": "2026-10-25T07:52:55.561Z",
+  "environmentType": "UNATTESTED_WINDOWS_HOST",
+  "steps": [
+    {
+      "name": "INITIAL_PORT_RELEASE",
+      "step1Pass": true,
+      "ports": {
+        "18988": false,
+        "18989": false
+      }
+    },
+    {
+      "name": "CLEAN_LAUNCH_AND_BIND",
+      "step2Pass": true,
+      "ports": {
+        "18988": true,
+        "18989": true
+      }
+    },
+    {
+      "name": "HEALTH_AND_AUTH_STATUS_PROBE",
+      "healthOk": true,
+      "statusOk": true,
+      "companionPid": 34112,
+      "companionBuild": "R6.9G.10.3.7.1.4.72-20261025-P0-RC3.56",
+      "apiCapabilities": [
+        "verify-plan",
+        "provision-egress",
+        "provision-progress",
+        "destroy-egress",
+        "egress-telemetry",
+        "shutdown",
+        "stop",
+        "physical-gate",
+        "recovery-status",
+        "repair-egress"
+      ]
+    },
+    {
+      "name": "DPAPI_AND_CREDENTIALS_PRESERVATION",
+      "hasPat": true,
+      "hasCreds": true,
+      "hasToken": true,
+      "secretsExposed": false
+    },
+    {
+      "name": "INTENTIONAL_STOP_AND_RELEASE",
+      "step5Pass": true,
+      "ports": {
+        "18988": false,
+        "18989": false
+      }
+    },
+    {
+      "name": "RESTART_AND_REVERIFY",
+      "step6Pass": true,
+      "ports": {
+        "18988": true,
+        "18989": true
+      },
+      "restartStatusCode": 200
+    }
+  ],
+  "nativeMessaging": {
+    "edgeRegistered": true,
+    "chromeRegistered": true,
+    "hostName": "com.xpider.privacy_relay"
+  },
+  "remoteCloudPosture": {
+    "dropletIpRedacted": "143.198.40.xx",
+    "port8443Reachable": true,
+    "port22SecurelyBlocked": true
+  },
+  "overallVerdict": "PASS"
+}

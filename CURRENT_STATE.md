@@ -6,8 +6,8 @@
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issues #6 & #10
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-24.175
-- Authority Cursor: 6394909358
+- State Rev: 2026-10-24.176
+- Authority Cursor: 6395042864
 - Last Directives / Audits:
   - `[CHATGPT RC3.48 AUDIT / NEXT EXECUTION][ISSUE #6][2026-10-24] Comment #6380501639`
   - `[OWNER PM REACTIVATE — ISSUE #6][2026-10-24] Comment #6391011709`
@@ -27,6 +27,7 @@
   - `[OWNER PM REACTIVATE CURRENT SIX-HOUR PRIVATE OWNER RELEASE GATE][ISSUE #6][2026-10-25] Comment #6394769663`
   - `[OWNER PM FINAL HANDOFF AUDIT / FIX PROVENANCE][ISSUE #6][2026-10-25] Comment #6394837760`
   - `[OWNER PM CRITICAL DIAGNOSTIC AUDIT — FALSE PHYSICAL CLASSIFICATION / COMPANION OFFLINE][ISSUE #6][2026-10-25] Comment #6394909358`
+  - `[OWNER PM REACTIVATE AFTER NO NEW RECEIPT][ISSUE #6][2026-10-25] Comment #6395042864`
 - Last Receipts:
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.54-IMMUTABLE-RELEASE-DIGEST-HKCU-SNAPSHOT-AND-GENUINE-DROPPED-RESPONSE-PASS][2026-10-24T23:15Z] Comment #6392829509`
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][SIX-HOUR-PRIVATE-OWNER-RELEASE-PLAN-MILESTONE-QUICK-START-AND-10-FIXTURE-SMOKE-PASS][2026-10-24T23:45Z] Comment #6393104892`
@@ -35,6 +36,7 @@
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.56-OWNER-ACCEPTANCE-HANDOFF-FINALIZATION][2026-10-25T03:20Z] Comment #6394806276`
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.56-PROVENANCE-FIX-AND-OWNER-DIAGNOSTIC-EVIDENCE][2026-10-25T03:30Z] Comment #6394881032`
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][UNATTESTED-HOST-CLASSIFICATION-LOCAL-PORTS-VERIFIED-DIAGNOSTIC-REPORT][2026-10-25T03:40Z] Comment #6394967184`
+  - `[ANTIGRAVITY][RECEIPT][ISSUE-6][CLEAN-STATE-COMPANION-STOP-START-LIFECYCLE-SMOKE-PASS][2026-10-25T03:55Z]`
 - Functional QA Commit: `cd8c8a5b68a069cab46b372775bacacb0f22425f`
 - Active Git Commit (Release): `cd8c8a5b68a069cab46b372775bacacb0f22425f`
 - Previous Functional Restore Point: `0291f22d73316163ee5158590cde9ae105c2943c`
@@ -42,7 +44,7 @@
 - Build ID: `R6.9G.10.3.7.1.4.72-20261025-P0-RC3.56`
 - Verified Release Asset: `XPIDER_R6.9G.10.3.7.1.4.72_PRIVATE_EGRESS_RC3.56.zip` (Tag: `v6.9g.10.3-rc3.56.7.1.4.72`, Size: 51,802,228 bytes, SHA256: `212109049085e3c5f42f7f9b192aa83c66bcefe33a9c3ed5f64cc6ad7788e5c1`, Asset ID: `674319044`)
 - Release URL: `https://github.com/goodkie/v-show/releases/tag/v6.9g.10.3-rc3.56.7.1.4.72`
-- Software Status: **PRIVATE SOFTWARE READY FOR OWNER ACCEPTANCE, pending owner-PC check** (Diagnostic strictly classifies UNATTESTED_WINDOWS_HOST by default, localhost companion ports 18988 & 18989 verified open with overallReadyForStart: true, fail behavior returns exit code 2 with Korean guidance, RC3.56 preserved without gratuitous rebuild).
+- Software Status: **PRIVATE SOFTWARE READY FOR OWNER ACCEPTANCE, pending owner-PC check** (Clean-state STOP/START lifecycle smoke PASS, ports 18988 & 18989 verified released on /shutdown and rebound on launch, authenticated HTTP 200 on /status, DPAPI preserved, HKCU registry verified, RC3.56 immutable release asset preserved without gratuitous RC3.57).
 
 ---
 
