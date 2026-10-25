@@ -7553,12 +7553,29 @@
                     await new Promise(r => setTimeout(r, postSubmitGraceMs));
                 }
 
+                let extractedReceiptId = null;
+                const rcptEl = (typeof document !== 'undefined') ? document.querySelector('[data-receipt-id], #xpider-receipt-id, meta[name="receipt-id"]') : null;
+                if (rcptEl) {
+                    extractedReceiptId = rcptEl.getAttribute('data-receipt-id') || rcptEl.getAttribute('content') || rcptEl.textContent.trim();
+                }
+                if (!extractedReceiptId && typeof window !== 'undefined' && window.location.search) {
+                    try {
+                        const params = new URLSearchParams(window.location.search);
+                        extractedReceiptId = params.get('receipt_id') || params.get('rcpt') || null;
+                    } catch (_) {}
+                }
+                if (extractedReceiptId) {
+                    outcomeEvidence.receiptId = extractedReceiptId;
+                    logDev(`[RECEIPT_DISCOVERED] receiptId=${extractedReceiptId}`, "info");
+                }
+
                 finishCampaign(true, null, finalDecision, {
                     resultUrl: (typeof window !== 'undefined') ? window.location.href : '',
                     decision: finalDecision,
                     latencyMs: totalLatency,
                     outcomeEvidence,
-                    confirmationStrength
+                    confirmationStrength,
+                    receiptId: extractedReceiptId
                 });
                 return { success: true, reasonCode: 'SUBMISSION_CONFIRMED_SUCCESS', decision: finalDecision, latencyMs: totalLatency, outcomeEvidence };
             } else if (finalDecision === 'CAPTCHA_TOKEN_REJECTED_BY_SITE') {

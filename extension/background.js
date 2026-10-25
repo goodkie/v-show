@@ -8697,6 +8697,7 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
 
                 await hs.settleCanonicalAttempt(_attemptId, terminalStatus, settleReason, evidence, {
                     campaignRunId: campaignState.campaignRunId,
+                    receiptId: res?.metadata?.receiptId || evidence?.receiptId || null,
                     resultUrl: actualResultUrl,
                     targetToken: targetToken,
                     submittedFromUrl: res?.metadata?.submittedFromUrl || null,

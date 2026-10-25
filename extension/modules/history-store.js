@@ -493,6 +493,7 @@
                 formPageUrl: descriptor.formPageUrl || null,
                 submittedFromUrl: descriptor.submittedFromUrl || null,
                 resultUrl: descriptor.resultUrl || null,
+                receiptId: descriptor.receiptId || null,
                 externalFormUrl: descriptor.externalFormUrl || null,
                 formDetectionStatus: descriptor.formDetectionStatus || 'NOT_FOUND',
                 autofillStatus: descriptor.autofillStatus || 'N_A',
@@ -761,6 +762,8 @@
             }
 
             if (extra) {
+                if (extra.receiptId) attempt.receiptId = extra.receiptId;
+                else if (evidence && evidence.receiptId) attempt.receiptId = evidence.receiptId;
                 if (extra.resultUrl) attempt.resultUrl = extra.resultUrl;
                 if (extra.selectedCandidateUrl && !attempt.selectedCandidateUrl) attempt.selectedCandidateUrl = extra.selectedCandidateUrl;
                 if (extra.submittedFromUrl && !attempt.submittedFromUrl) attempt.submittedFromUrl = extra.submittedFromUrl;

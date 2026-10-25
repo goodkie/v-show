@@ -15,9 +15,9 @@
 
     const BUILD_INFO = {
         branch: 'upgrade/phase-0-1',
-        channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.52',
+        channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.53',
         testOnly: false,
-        // [R6.9G.10.3.7.1.4.68] XPIDER AutoForm Sender Pro — Private Egress Release Candidate 3.52 (Companion/Native Host Sync + Authoritative History Ledger Assertions)
+        // [R6.9G.10.3.7.1.4.69] XPIDER AutoForm Sender Pro — Private Egress Release Candidate 3.53 (Immutable Receipt-ID Ledger Binding & DOM Confirmation Parity)
         implementationHead: '98d984f21317f566818f51df598e5456ab575f6d',
         implementationHeadShort: '98d984f2',
         head: '98d984f21317f566818f51df598e5456ab575f6d',
@@ -25,17 +25,17 @@
         rollbackBase: '55cd543be5ebe7a4553cac0cbfcf933a00e4c8a5',
         previousFunctionalRestorePoint: 'b2af1c9bf614b9f572acec910265d8132d2043aa',
         manifestVersion: 3,
-        buildId: 'R6.9G.10.3.7.1.4.68-20261024-P0-RC3.52',
-        builtAt: '2026-10-25T01:40:00.000Z',
+        buildId: 'R6.9G.10.3.7.1.4.69-20261024-P0-RC3.53',
+        builtAt: '2026-10-25T02:03:53.428Z',
         provenanceSchema: 2,
         modules: {
-            backgroundSha: '6ee3bdfe8f37fb3678ad087b593e08e77db6b29b82059081e14febd234dbc6d1',
-            contentScriptSha: '64f333d5f7f913fd4363dedf5ed292992519518e6d309ea4ee56b1dcac7bc810',
+            backgroundSha: 'dd03a1c586eebd1cf93b9d27babea9d2b4e17d94f1152fb7749828fd76bab839',
+            contentScriptSha: '5a93837ca547c78401c61c54aff9660e521896d37774262bd31d70d8d60844e2',
             popupSha: 'dd02b0cf62d406c13e4fa5958d42011d6ddadbb6d8463ff95244ba83db4b15cd',
             solverContentSha: '6a1ff7154efaeb6dbd5946ac4f9be1ce5b5ff43bce2db06d0dca32950edd3bdb',
             solverCoreSha: 'ab4dee5c8213d7c2fd47942951a2bc40732c1c8c55a5742d493db617150bf95f',
             emailCollectorSha: '3f1147a379e159e7777158f2caa74cc8d40b2a0b0eb2c244f440af379cb5c9c9',
-            historyStoreSha: '8e3eb9bd325f772704c4b84f9e7e872e260f10d47d86a134da5802d013f17db8',
+            historyStoreSha: '2b34f9c8c1a4c62d07dd406e0e304f179ac68b6d8fbf4bb0614038770fbc4138',
             contactGateSha: '9007adceec8b4e8ec7f7a14ee8a7d21af460a01ed043c578e1e3c2579cfae88e',
             visionSubmitSha: '6b89eab8fd132798fbb157e179bdeee64da1aa9867222fdb656e3fcf4fcc9311',
             privacyGatewaySha: 'cc5c8cc9c83adf3b985aa4bab74b04189c00fdba4f3ac3a555bd00e38fc79993'

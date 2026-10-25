@@ -119,6 +119,20 @@ const server = http.createServer((req, res) => {
       referer
     });
     console.log(`[XPIDER_FIXTURE] Form submission recorded (#${submissionLog.length}, id=${receiptId}): ${req.method} ${req.url} referer=${referer}`);
+
+    try {
+      let html = fs.readFileSync(path.join(BASE_DIR, 'contact-success.html'), 'utf8');
+      html = html.replace('</head>', `    <meta name="receipt-id" content="${receiptId}">\n</head>`);
+      html = html.replace('</body>', `    <div id="xpider-receipt-id" data-receipt-id="${receiptId}" style="display:none;">${receiptId}</div>\n</body>`);
+      res.writeHead(200, {
+        'Content-Type': 'text/html; charset=UTF-8',
+        'X-XPIDER-Receipt-Id': receiptId
+      });
+      res.end(html);
+      return;
+    } catch (err) {
+      console.error('Failed to read contact-success.html:', err);
+    }
   }
 
   // Deterministic Health Identity endpoint (Issue #6 Section A)
