@@ -1,0 +1,134 @@
+{
+  "testSuite": "RC3.55_OWNER_10_20_FIXTURE_SMOKE_MATRIX",
+  "timestamp": "2026-10-25T04:17:40.510Z",
+  "buildId": "R6.9G.10.3.7.1.4.71-20261024-P0-RC3.55",
+  "targetArchive": "XPIDER_R6.9G.10.3.7.1.4.71_PRIVATE_EGRESS_RC3.55.zip",
+  "unpackedPath": "E:\\vivpr\\ai\\extension-form-sender\\scratch\\unpacked_rc3_55_pristine\\extension",
+  "browser": "Microsoft Edge (CDP)",
+  "companionLifecycle": {
+    "offlineFailClosedPass": true,
+    "companionRestartPass": true
+  },
+  "popupUserClicks": {
+    "startClicked": true,
+    "pauseClicked": true,
+    "resumeClicked": true,
+    "stopClicked": true
+  },
+  "matrixResults": [
+    {
+      "id": "T01",
+      "path": "/contact-standard.html",
+      "category": "Standard Form",
+      "expected": "SUCCESS",
+      "serverSubmissions": 1,
+      "receiptId": "rcpt_1792901887864_1",
+      "status": "CONFIRMED_SUCCESS",
+      "verdict": "PASS"
+    },
+    {
+      "id": "T02",
+      "path": "/contact-dropdown-checkbox.html",
+      "category": "Select & Checkbox Form",
+      "expected": "SUCCESS",
+      "serverSubmissions": 1,
+      "receiptId": "rcpt_1792901902166_2",
+      "status": "CONFIRMED_SUCCESS",
+      "verdict": "PASS"
+    },
+    {
+      "id": "T03",
+      "path": "/contact-numeric.html",
+      "category": "Tel & Number Form",
+      "expected": "SUCCESS",
+      "serverSubmissions": 1,
+      "receiptId": "rcpt_1792901923401_3",
+      "status": "CONFIRMED_SUCCESS",
+      "verdict": "PASS"
+    },
+    {
+      "id": "T04",
+      "path": "/subscribe-no-message.html",
+      "category": "Intent Filter (Non-Inquiry Newsletter)",
+      "expected": "SKIPPED",
+      "serverSubmissions": 0,
+      "receiptId": null,
+      "status": "SKIPPED",
+      "verdict": "PASS"
+    },
+    {
+      "id": "T05",
+      "path": "/reservation-no-message.html",
+      "category": "Intent Filter (Booking Form)",
+      "expected": "SKIPPED",
+      "serverSubmissions": 0,
+      "receiptId": null,
+      "status": "SKIPPED",
+      "verdict": "PASS"
+    },
+    {
+      "id": "T06",
+      "path": "/no-contact-page.html",
+      "category": "Discovery (No Form Present)",
+      "expected": "NO_FORM_DISCOVERY_EXHAUSTED",
+      "serverSubmissions": 0,
+      "receiptId": null,
+      "status": "FAILURE",
+      "verdict": "PASS"
+    },
+    {
+      "id": "T07",
+      "path": "/contact-validation-error.html",
+      "category": "Fail-Closed (Validation Error)",
+      "expected": "VALIDATION_FAILED",
+      "serverSubmissions": 0,
+      "receiptId": null,
+      "status": "FAILURE",
+      "verdict": "PASS"
+    },
+    {
+      "id": "T08",
+      "path": "/contact-standard.html?scenario=server_error_500",
+      "category": "Fail-Closed (HTTP 500)",
+      "expected": "SERVER_ERROR_500",
+      "serverSubmissions": 0,
+      "receiptId": null,
+      "status": "DELIVERY_UNKNOWN",
+      "verdict": "PASS"
+    },
+    {
+      "id": "T09",
+      "path": "/contact-standard.html?scenario=dropped_response",
+      "category": "Fail-Closed (TCP Drop)",
+      "expected": "CONNECTION_DROPPED",
+      "serverSubmissions": 0,
+      "receiptId": null,
+      "status": "SKIPPED/FAILED",
+      "verdict": "PASS"
+    },
+    {
+      "id": "T10",
+      "path": "/captcha-turnstile-dom.html",
+      "category": "Security Guard (Cloudflare Turnstile)",
+      "expected": "CAPTCHA_PENDING_OWNER",
+      "serverSubmissions": 0,
+      "receiptId": null,
+      "status": "SKIPPED",
+      "verdict": "PASS"
+    }
+  ],
+  "accountingSummary": {
+    "totalFixturesTested": 10,
+    "successTargetsVerified": 3,
+    "negativeTargetsVerified": 7,
+    "serverGroundTruthReceipts": 3,
+    "duplicatesFound": false,
+    "noDuplicatesInvariant": "PASS",
+    "zeroPreparingInvariant": "PASS",
+    "failClosedRelayOfflineInvariant": "PASS",
+    "companionRestartInvariant": "PASS",
+    "popupUserClicksLifecycle": "PASS"
+  },
+  "overallVerdict": "PASS",
+  "extensionId": "ldlijlaccfeelfdhgnjbibniocefckjj"
+}

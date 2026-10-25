@@ -6851,12 +6851,26 @@ async function startCampaignOrchestrator(queue, template, delayMs, fillDelayMs =
 
 async function pauseCampaignOrchestrator(saveCheckpoint = true) {
     // [R6.9G.7 P0-8 Quiescent Pause Barrier]
-    // 1. Invalidate scheduler generation so any pending setTimeout / alarm no-ops immediately
+    // 1. Snapshot in-flight state BEFORE any aborts or resets
+    const inFlightAtt = campaignState.currentAttempt ? { ...campaignState.currentAttempt } : null;
+    const inFlightStage = campaignState.currentTargetStage || '';
+    const inFlightSubmitState = campaignState.currentSubmitState || '';
+    const isSubmitInFlight = Boolean(campaignState.submitLock || inFlightSubmitState === 'TRIGGERED' || inFlightStage.includes('SUBMIT') || inFlightStage === 'VERIFYING');
+
     campaignState.schedulerGeneration = (campaignState.schedulerGeneration || 0) + 1;
     campaignState.isPaused = true;
     campaignState.captchaEpoch = (campaignState.captchaEpoch || 0) + 1;
     logBg(null, `[PAUSE] campaignRunId=${campaignState.campaignRunId} remaining=${campaignState.queue ? campaignState.queue.length : 0} inProgress=${campaignState.counters ? campaignState.counters.inProgress : 0}`, "info");
     logBg(null, "⏸️ [Engine] Campaign PAUSED / STOP & SAVE requested.", "info");
+
+    // If submit is already in flight, allow a brief grace period (up to 1500ms) for outcome verifier / tab redirect to finalize
+    if (isSubmitInFlight && campaignState.activeTargetInFlight) {
+        logBg(null, `⏳ [Pause] Submit in-flight detected (stage=${inFlightStage}). Awaiting confirmation barrier (up to 1500ms)...`, "info");
+        const graceStart = Date.now();
+        while (campaignState.activeTargetInFlight && (Date.now() - graceStart < 1500)) {
+            await new Promise(r => setTimeout(r, 50));
+        }
+    }
 
     // 2. Abort active target orchestration and content script
     if (campaignState.currentTargetAbortController) {
@@ -6911,37 +6925,73 @@ async function pauseCampaignOrchestrator(saveCheckpoint = true) {
         return { success: false, status: 'HOLD_FAULT', reason: 'PAUSE_QUIESCENCE_TIMEOUT' };
     }
 
-    // [Issue #6 R6.9E B5] 4. Inspect currentAttempt state BEFORE closing tabs
-    const currentAtt = campaignState.currentAttempt;
-    if (currentAtt && currentAtt.url) {
-        if (currentAtt.status === 'PREPARING') {
-            // [Issue #6 R6.9E B5] PREPARING -> retryable/requeue, NOT failure and NOT delivery unknown!
-            const normUrl = normalizeUrl(currentAtt.url);
-            campaignState.visitedUrls = campaignState.visitedUrls.filter(u => u !== normUrl && u !== currentAtt.url);
-            if (!campaignState.queue.includes(currentAtt.url)) {
-                campaignState.queue.unshift(currentAtt.url);
-            }
-            logBg(null, `🔄 [Pause] Current target PREPARING re-queued to front: ${currentAtt.url}`, "info");
-        } else if (currentAtt.status === 'SUBMIT_PENDING') {
-            // [Issue #6 R6.9E B5] SUBMIT_PENDING -> PAUSED_UNKNOWN (delivery-uncertain)
+    // 4. Resolve in-flight attempt state canonically
+    const hs = await getHistoryStoreInstance();
+    const effectiveAtt = inFlightAtt || campaignState.currentAttempt;
+    if (effectiveAtt && effectiveAtt.attemptId && hs) {
+        const existingAttempt = hs.attempts.find(a => a.attemptId === effectiveAtt.attemptId);
+        if (existingAttempt && !hs.isTerminalStatus(existingAttempt.status)) {
+            // Check if post-submit proof exists (e.g. redirected to success URL)
+            let hasProof = false;
+            let successResultUrl = null;
             try {
-                const hs = await getHistoryStoreInstance();
-                if (currentAtt.attemptId && hs) {
-                    await hs.settleCanonicalAttempt(currentAtt.attemptId, 'PAUSED_UNKNOWN', REASON_CODES.DELIVERY_UNKNOWN, {}, {
-                        campaignRunId: campaignState.campaignRunId
-                    });
-                    await hs.persist();
+                if (campaignState.currentTabId) {
+                    const finalTab = await safeTabs.get(campaignState.currentTabId);
+                    if (finalTab && finalTab.url && (finalTab.url.includes('success') || finalTab.url.includes('thank'))) {
+                        hasProof = true;
+                        successResultUrl = finalTab.url;
+                    }
                 }
             } catch (_) {}
-            if (!campaignState.outcomeHistogram) campaignState.outcomeHistogram = {};
-            campaignState.outcomeHistogram[REASON_CODES.DELIVERY_UNKNOWN] = (campaignState.outcomeHistogram[REASON_CODES.DELIVERY_UNKNOWN] || 0) + 1;
-            logBg(null, `⚠️ [Pause] In-flight target settled as PAUSED_UNKNOWN (not requeued): ${currentAtt.url}`, "warning");
+
+            if (hasProof) {
+                await hs.settleCanonicalAttempt(effectiveAtt.attemptId, 'CONFIRMED_SUCCESS', 'SUCCESS_CONFIRMED', {}, {
+                    campaignRunId: campaignState.campaignRunId,
+                    resultUrl: successResultUrl
+                });
+                logBg(null, `🎉 [Pause] In-flight target confirmed success before pause: ${effectiveAtt.url}`, "success");
+            } else if (isSubmitInFlight || effectiveAtt.status === 'SUBMIT_PENDING') {
+                // Submit was dispatched or locked -> ambiguous delivery, cannot re-queue
+                await hs.settleCanonicalAttempt(effectiveAtt.attemptId, 'DELIVERY_UNKNOWN', REASON_CODES.DELIVERY_UNKNOWN, {}, {
+                    campaignRunId: campaignState.campaignRunId
+                });
+                if (!campaignState.outcomeHistogram) campaignState.outcomeHistogram = {};
+                campaignState.outcomeHistogram[REASON_CODES.DELIVERY_UNKNOWN] = (campaignState.outcomeHistogram[REASON_CODES.DELIVERY_UNKNOWN] || 0) + 1;
+                logBg(null, `⚠️ [Pause] In-flight target settled as DELIVERY_UNKNOWN (not requeued): ${effectiveAtt.url}`, "warning");
+            } else {
+                // Pure pre-submit PREPARING: target was not submitted. Re-queue and remove uncommitted attempt from ledger
+                const normUrl = normalizeUrl(effectiveAtt.url);
+                campaignState.visitedUrls = campaignState.visitedUrls.filter(u => u !== normUrl && u !== effectiveAtt.url);
+                if (!campaignState.queue.includes(effectiveAtt.url)) {
+                    campaignState.queue.unshift(effectiveAtt.url);
+                }
+                // Cleanly remove uncommitted pre-submit placeholder attempt from HistoryStore
+                hs.attempts = hs.attempts.filter(a => a.attemptId !== effectiveAtt.attemptId);
+                logBg(null, `🔄 [Pause] Current target PREPARING re-queued to front: ${effectiveAtt.url}`, "info");
+            }
+            await hs.persist();
+            await syncCampaignCountersFromLedger(hs);
         }
-        campaignState.currentAttempt = null;
-        campaignState.currentTargetStage = null;
     }
 
+    // Failsafe sweep: ensure zero attempts remain with status PREPARING for this run
+    if (hs) {
+        const orphaned = hs.attempts.filter(a => a.campaignRunId === campaignState.campaignRunId && a.status === 'PREPARING');
+        if (orphaned.length > 0) {
+            for (const o of orphaned) {
+                await hs.settleCanonicalAttempt(o.attemptId, 'DELIVERY_UNKNOWN', REASON_CODES.DELIVERY_UNKNOWN, {}, {
+                    campaignRunId: campaignState.campaignRunId
+                });
+            }
+            await hs.persist();
+            await syncCampaignCountersFromLedger(hs);
+        }
+    }
+
+    campaignState.currentAttempt = null;
+    campaignState.currentTargetStage = null;
     campaignState.activeTargetInFlight = false;
+    campaignState.activeTargetCount = 0;
     campaignState.activeTargetCount = 0;
 
     // [Issue #6 R6.9E B5] 4. Persist ledger/counters/checkpoint
@@ -7135,6 +7185,21 @@ async function endCampaignOrchestrator() {
     if (campaignState.ownerFunctionTestMode) {
         await removeOwnerTestNetworkGuard();
     }
+    try {
+        const hs = await getHistoryStoreInstance();
+        if (hs) {
+            const orphaned = hs.attempts.filter(a => a.campaignRunId === campaignState.campaignRunId && a.status === 'PREPARING');
+            if (orphaned.length > 0) {
+                for (const o of orphaned) {
+                    await hs.settleCanonicalAttempt(o.attemptId, 'DELIVERY_UNKNOWN', REASON_CODES.DELIVERY_UNKNOWN, {}, {
+                        campaignRunId: campaignState.campaignRunId
+                    });
+                }
+                await hs.persist();
+                await syncCampaignCountersFromLedger(hs);
+            }
+        }
+    } catch (_) {}
     printCampaignOutcomeSummary();
     return { success: true };
 }
@@ -7632,6 +7697,23 @@ async function processNextCampaignTarget(loopSessionId, loopGeneration) {
                     campaignState.currentTabId = null;
                     await closeOwnedTabVerified(orphanId, 'TARGET_FINALLY_CLEANUP');
                 }
+
+                try {
+                    const hs = await getHistoryStoreInstance();
+                    if (hs && campaignState.currentAttempt && campaignState.currentAttempt.attemptId) {
+                        const att = hs.attempts.find(a => a.attemptId === campaignState.currentAttempt.attemptId);
+                        if (att && att.status === 'PREPARING') {
+                            const isSubmitDone = campaignState.submitLock || campaignState.currentSubmitState === 'TRIGGERED';
+                            const terminalSt = isSubmitDone ? 'DELIVERY_UNKNOWN' : 'SKIPPED';
+                            const termReason = isSubmitDone ? REASON_CODES.DELIVERY_UNKNOWN : 'PRE_SUBMIT_TERMINATED';
+                            await hs.settleCanonicalAttempt(att.attemptId, terminalSt, termReason, {}, {
+                                campaignRunId: campaignState.campaignRunId
+                            });
+                            await hs.persist();
+                            await syncCampaignCountersFromLedger(hs);
+                        }
+                    }
+                } catch (_) {}
 
                 campaignState.currentTargetAbortController = null;
                 campaignState.currentTargetStage = null;
@@ -8521,9 +8603,22 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
         }
 
         if (isFinished) return;
-        isFinished = true;
+        let isConfirmedProof = Boolean(res && res.success);
+        let actualResultUrl = null;
+        try {
+            const finalTab = await safeTabs.get(tabId);
+            actualResultUrl = finalTab?.url || null;
+        } catch (_) {}
+        if (!actualResultUrl && res?.metadata?.resultUrl) {
+            actualResultUrl = res.metadata.resultUrl;
+        }
+        if (!isConfirmedProof && actualResultUrl && (actualResultUrl.includes('success') || actualResultUrl.includes('thank'))) {
+            isConfirmedProof = true;
+            if (!res) res = { success: true, metadata: { resultUrl: actualResultUrl } };
+            else { res.success = true; if (!res.metadata) res.metadata = {}; res.metadata.resultUrl = actualResultUrl; }
+        }
 
-        if (abortSignal && abortSignal.aborted) {
+        if (abortSignal && abortSignal.aborted && !isConfirmedProof) {
             logBg(tabId, `[ORCHESTRATION_ABORTED] abortSignal was triggered externally (${abortSignal.reason || 'ABORTED'}). Delegating terminal settlement to outer target lifecycle.`, "info");
             if (chrome.alarms) chrome.alarms.clear(`xpider_watchdog_${tabId}_${currentSession}`);
             if (injectionTimer) clearTimeout(injectionTimer);
@@ -8646,11 +8741,12 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
         } catch (_) {
             hostName = targetUrl;
         }
-        let actualResultUrl = null;
-        try {
-            const finalTab = await safeTabs.get(tabId);
-            actualResultUrl = finalTab?.url || null;
-        } catch (_) {}
+        if (!actualResultUrl) {
+            try {
+                const finalTab = await safeTabs.get(tabId);
+                actualResultUrl = finalTab?.url || null;
+            } catch (_) {}
+        }
         if (!actualResultUrl && res?.metadata?.resultUrl) {
             actualResultUrl = res.metadata.resultUrl;
         }

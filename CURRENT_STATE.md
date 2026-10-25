@@ -6,8 +6,8 @@
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issues #6 & #10
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-24.170
-- Authority Cursor: 6392919419
+- State Rev: 2026-10-24.171
+- Authority Cursor: 6393271279
 - Last Directives / Audits:
   - `[CHATGPT RC3.48 AUDIT / NEXT EXECUTION][ISSUE #6][2026-10-24] Comment #6380501639`
   - `[OWNER PM REACTIVATE — ISSUE #6][2026-10-24] Comment #6391011709`
@@ -20,17 +20,20 @@
   - `[OWNER PM RELEASE-INTEGRITY ALERT + NEXT EXECUTION][ISSUE #6][2026-10-24] Comment #6392691932`
   - `[OWNER PM OVERRIDE — SIX-HOUR PRIVATE OWNER RELEASE PLAN][ISSUE #6][2026-10-24] Comment #6392801165`
   - `[OWNER PM SIX-HOUR PRIVATE RELEASE — CONTINUE EXECUTION][ISSUE #6][2026-10-24] Comment #6392919419`
+  - `[OWNER PM P0 REAL DEFECT FOUND / SIX-HOUR DEADLINE UNCHANGED][ISSUE #6][2026-10-24] Comment #6393131720`
+  - `[OWNER PM IMMEDIATE REACTIVATION — P0 PREPARING UNSETTLED][ISSUE #6][2026-10-25 00:07 EDT] Comment #6393271279`
 - Last Receipts:
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.54-IMMUTABLE-RELEASE-DIGEST-HKCU-SNAPSHOT-AND-GENUINE-DROPPED-RESPONSE-PASS][2026-10-24T23:15Z] Comment #6392829509`
-  - `[ANTIGRAVITY][RECEIPT][ISSUE-6][SIX-HOUR-PRIVATE-OWNER-RELEASE-PLAN-MILESTONE-QUICK-START-AND-10-FIXTURE-SMOKE-PASS][2026-10-24T23:45Z]`
-- Functional QA Commit: `83be9bdfc833329c5881325eb32493506b0080f1`
-- Active Git Commit (Release): `83be9bdfc833329c5881325eb32493506b0080f1`
-- Previous Functional Restore Point: `8e9b2e51ac6b5d205fb4ff51cf05d1410ea48602`
+  - `[ANTIGRAVITY][RECEIPT][ISSUE-6][SIX-HOUR-PRIVATE-OWNER-RELEASE-PLAN-MILESTONE-QUICK-START-AND-10-FIXTURE-SMOKE-PASS][2026-10-24T23:45Z] Comment #6393104892`
+  - `[ANTIGRAVITY][RECEIPT][ISSUE-6][P0-PREPARING-RACE-FIX-RC3.55-PACKAGE-AND-PRISTINE-SMOKE-PASS][2026-10-25T00:25Z]`
+- Functional QA Commit: pending commit
+- Active Git Commit (Release): pending commit
+- Previous Functional Restore Point: `2c667879d95c0c09213aa66662a5385f7a3fbf95`
 - Rollback Anchor: `55cd543be5ebe7a4553cac0cbfcf933a00e4c8a5`
-- Build ID: `R6.9G.10.3.7.1.4.70-20261024-P0-RC3.54`
-- Verified Release Asset: `XPIDER_R6.9G.10.3.7.1.4.70_PRIVATE_EGRESS_RC3.54.zip` (Tag: `v6.9g.10.3-rc3.54.7.1.4.70`, Size: 51,792,997 bytes, SHA256: `ab38ae8e76cd9ddd2c329d001da9a4e94b0a6197adb1427d4bf15646631c8fac`, Asset ID: `673943482`)
-- Release URL: `https://github.com/goodkie/v-show/releases/tag/v6.9g.10.3-rc3.54.7.1.4.70`
-- Six-Hour Plan Status: Milestone Completed (Task 1: QUICK_START_KO.md, 1-click clean install/rollback, 1-command local preflight; Task 2: 10-fixture smoke matrix executed on extracted RC3.54 pristine ZIP with Start/Pause/Resume/Stop clicks, companion restart, fail-closed offline, zero duplicates: PASS).
+- Build ID: `R6.9G.10.3.7.1.4.71-20261024-P0-RC3.55`
+- Verified Release Asset: `XPIDER_R6.9G.10.3.7.1.4.71_PRIVATE_EGRESS_RC3.55.zip` (Tag: `v6.9g.10.3-rc3.55.7.1.4.71`, Size: 51,799,880 bytes, SHA256: `77efcf5a946feaa7ad791c06da8fa3e4151f1eccc1bf4d87f72abfaed24628d3`, Asset ID: `674055856`)
+- Release URL: `https://github.com/goodkie/v-show/releases/tag/v6.9g.10.3-rc3.55.7.1.4.71`
+- Six-Hour Plan Status: P0 Defect Resolved & RC3.55 Pristine Matrix PASS (Root cause: pause/stop handler racing against in-flight attempt completion, leaving PREPARING; Fixed in background.js with snapshotting, 1500ms confirmation barrier, failsafe sweep ensuring 0 PREPARING; Pristine extracted RC3.55 ZIP verified via real Edge CDP with Start/Pause/Resume/Stop clicks: 10/10 PASS, 0 PREPARING, exactly 3 server submissions matching 3 CONFIRMED_SUCCESS receipts).
 
 ---
 
