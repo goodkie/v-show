@@ -1,0 +1,32 @@
+{
+  "diagnosticSuite": "XPIDER_OWNER_LOCAL_PREFLIGHT",
+  "timestamp": "2026-10-25T07:36:39.440Z",
+  "environmentType": "UNATTESTED_WINDOWS_HOST",
+  "runtime": {
+    "nodeVersion": "v24.11.1",
+    "platform": "win32",
+    "arch": "x64",
+    "verdict": "PASS"
+  },
+  "security": {
+    "controlTokenPresent": true,
+    "localCredentialsPresent": true,
+    "dpapiPatPresent": true,
+    "secretsExposed": false
+  },
+  "companionPorts": {
+    "port18988Open": true,
+    "port18989Open": true
+  },
+  "nativeMessagingHKCU": {
+    "hostName": "com.xpider.privacy_relay",
+    "edgeRegistered": true,
+    "chromeRegistered": true
+  },
+  "networkPosture": {
+    "dropletIpRedacted": "143.198.40.xx",
+    "privateRelayPort8443Reachable": true,
+    "sshPort22SecurelyBlocked": true
+  },
+  "overallReadyForStart": true
+}
