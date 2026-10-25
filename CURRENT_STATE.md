@@ -6,32 +6,28 @@
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issues #6 & #10
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-24.163
-- Authority Cursor: 6391597878
+- State Rev: 2026-10-24.164
+- Authority Cursor: 6391983085
 - Last Directives / Audits:
   - `[CHATGPT RC3.48 AUDIT / NEXT EXECUTION][ISSUE #6][2026-10-24] Comment #6380501639`
   - `[OWNER PM REACTIVATE — ISSUE #6][2026-10-24] Comment #6391011709`
   - `[OWNER PM PROVENANCE BLOCKER / IMMEDIATE FIX][ISSUE #6][2026-10-24] Comment #6391226001`
   - `[OWNER PM VERIFIED PROVENANCE / NEXT EXECUTION][ISSUE #6][2026-10-24] Comment #6391311006`
   - `[OWNER PM CRITICAL AUDIT — FALSE PASS / IMMEDIATE REMEDIATION][ISSUE #6][2026-10-24] Comment #6391597878`
+  - `[OWNER PM AUDIT / NEXT RELEASE GATE][ISSUE #6][2026-10-24] Comment #6391983085`
 - Last Receipts:
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][P0-RESPONSE-LOSS-BOUNDARY-AUDIT-AND-RANDOMIZED-FIXTURE-MATRIX-VERIFIED][2026-10-24T20:05Z] Comment #6391188849`
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][P0-PROVENANCE-REPAIR-AND-EXACT-COMMIT-SHA-VERIFIED][2026-10-24T20:15Z] Comment #6391273523`
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][P0-COMPANION-OFFLINE-FAIL-CLOSED-RECOVERY-AND-MIXED-FIXTURE-MATRIX-VERIFIED][2026-10-24T20:45Z] Comment #6391565220`
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][P0-COMPANION-OFFLINE-RECOVERY-AND-STRICT-COUNTER-PARITY-REMEDIATION-VERIFIED][2026-10-24T21:26Z]`
+  - `[ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.52-RELEASE-PUBLISHED-PRISTINE-EXTRACTED-ZIP-VERIFIED-AND-AUTHORITATIVE-HISTORY-STORE-ASSERTIONS-PASS][2026-10-24T21:50Z]`
 - Functional QA Commit: `98d984f21317f566818f51df598e5456ab575f6d`
-- Previous Functional Restore Point: `fec5e68890b74f0b7d3db153030122b9df68f065`
-  - `[ANTIGRAVITY][RECEIPT][ISSUE-6][P0-GENUINE-RC3.50-EDGE-RUNTIME-AUDIT-AND-RUNNER-CONTEXT-VERIFIED][2026-10-24T11:45Z] Comment #6383798303`
-  - `[ANTIGRAVITY][RECEIPT][ISSUE-6][P0-CAMPAIGN-LEDGER-VS-SERVER-GROUND-TRUTH-AND-IDEMPOTENCY-VERIFIED][2026-10-24T11:58Z] Comment #6383906380`
-  - `[ANTIGRAVITY][RECEIPT][ISSUE-6][P0-AUTHORITATIVE-BROWSER-E2E-CAMPAIGN-PIPELINE-AND-DASHBOARD-VERIFIED][2026-10-24T12:08Z] Comment #6384008497`
-  - `[ANTIGRAVITY][RECEIPT][ISSUE-6][P0-COUNTER-PARITY-HOTFIX-RC3.51-AND-LIVE-PAUSE-RESUME-SW-RESTART-VERIFIED][2026-10-24T12:35Z] Comment #6384287270`
-  - `[ANTIGRAVITY][RECEIPT][ISSUE-6][P0-PRISTINE-RC3.51-INSTALL-AUDIT-AND-REGRESSION-STRESS-VERIFIED][2026-10-24T13:08Z] Comment #6384585352`
-  - `[ANTIGRAVITY][RECEIPT][ISSUE-6][P0-RESPONSE-LOSS-BOUNDARY-AUDIT-AND-RANDOMIZED-FIXTURE-MATRIX-VERIFIED][2026-10-24T20:05Z]`
-- Build ID: `R6.9G.10.3.7.1.4.67-20261024-P0-RC3.51`
-- Active Functional Commit (F): `b8134b8a82255580a191c8939255d02eba59b25d`
-- Previous Functional Restore Point: `862fda43cbf9009870575fa40e1e2488616c5c55`
+- Active Git Commit (Release): `b4118ffb593eb4ee390ec9cb994784c980277df6`
+- Previous Functional Restore Point: `6de933b8e00f24260aea31d0b6a424a0e70e7ffd`
 - Rollback Anchor: `55cd543be5ebe7a4553cac0cbfcf933a00e4c8a5`
-- Verified Release Asset: `XPIDER_R6.9G.10.3.7.1.4.67_PRIVATE_EGRESS_RC3.51.zip` (Tag: `v6.9g.10.3-rc3.51.7.1.4.67`, Asset ID: `672222780`, Size: 51,707,772 bytes, SHA256: `141d1eccf9acd19ba0d37bc1477759fc1cfdd45aba3adb3035a1e1afc0190ff0`)
+- Build ID: `R6.9G.10.3.7.1.4.68-20261024-P0-RC3.52`
+- Verified Release Asset: `XPIDER_R6.9G.10.3.7.1.4.68_PRIVATE_EGRESS_RC3.52.zip` (Tag: `v6.9g.10.3-rc3.52.7.1.4.68`, Size: 51,707,799 bytes, SHA256: `cadcf3a66ae250943b509118f082392372a6f10beefed270217452d14b8178dc`)
+- Release URL: `https://github.com/goodkie/v-show/releases/tag/v6.9g.10.3-rc3.52.7.1.4.68`
 
 ---
 
@@ -168,4 +164,23 @@ Firewall 8443 = 74.39.42.139/32 via guardian; probe verified exit IP 143.198.40.
   - Report: `evidence/rc3_51_companion_and_mixed_matrix/rc3_51_companion_and_mixed_matrix_report.json`
   - Log: `evidence/rc3_51_companion_and_mixed_matrix/rc3_51_companion_and_mixed_matrix.log`
   - Screenshots: `shot_01_privacy_block_modal.png`, `shot_02_relay_returns_recovery_started.png`, `shot_03_campaign_paused_worker_shutdown.png`, `shot_04_mixed_matrix_settled.png`
+
+## RC3.52 Companion/Native-Host Sync & Authoritative HistoryStore Assertions (2026-10-24 Rev 164)
+- **Suite**: `test/run_edge_rc3_52_privacy_companion_and_mixed_matrix.js`
+- **Release Package**: `XPIDER_R6.9G.10.3.7.1.4.68_PRIVATE_EGRESS_RC3.52.zip` (Tag: `v6.9g.10.3-rc3.52.7.1.4.68`, SHA256: `cadcf3a66ae250943b509118f082392372a6f10beefed270217452d14b8178dc`).
+- **Proof Gap (A) Resolution**: Shipped release package contains synchronized `ensure_companion_service.js`, `xpider_native_host.js`, `privacy-relay-service.js`, and `build-provenance.js` with Build ID `R6.9G.10.3.7.1.4.68-20261024-P0-RC3.52`. Extracted pristine package verified 100%.
+- **Proof Gap (B) Resolution**: Hard-asserted `HistoryStore` attempts array from authoritative backing store & runtime. Filtered Phase 2 matrix attempts strictly match:
+  - 4 total target attempts:
+    1. `contact-standard.html` -> `CONFIRMED_SUCCESS` (`SUCCESS_CONFIRMED`)
+    2. `contact-dropdown-checkbox.html` -> `CONFIRMED_SUCCESS` (`SUCCESS_CONFIRMED`)
+    3. `contact-numeric.html` -> `CONFIRMED_SUCCESS` (`SUCCESS_CONFIRMED`)
+    4. `captcha-turnstile-dom.html` -> `SKIPPED` (`CAPTCHA_SKIPPED_OWNER`)
+  - 3 `CONFIRMED_SUCCESS` map 1:1 to independent server POST receipts (`rcpt_1792892901333_1`, `rcpt_1792892921078_2`, `rcpt_1792892941338_3`).
+  - Strict parity verified: `total (4) === completed (4) + remaining (0) AND completed (4) === success (3) + skipped (1) + failed (0) + deliveryUnknown (0)`.
+- **Overall Verdict**: **PASS** (100% genuine Microsoft Edge clean-room execution).
+- **Evidence Files**:
+  - Report: `evidence/rc3_52_companion_and_mixed_matrix/rc3_52_companion_and_mixed_matrix_report.json`
+  - Log: `evidence/rc3_52_companion_and_mixed_matrix/rc3_52_companion_and_mixed_matrix.log`
+  - Screenshots: `shot_01_privacy_block_modal.png`, `shot_02_relay_returns_recovery_started.png`, `shot_03_campaign_paused_worker_shutdown.png`, `shot_04_mixed_matrix_settled.png`
+
 

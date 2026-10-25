@@ -1,0 +1,172 @@
+{
+  "authorityDirective": "Owner PM Comment #6391311006 / #6391597878 [2026-10-24]",
+  "executedAt": "2026-10-25T01:47:36.906Z",
+  "pristineExtensionSource": "E:\\vivpr\\ai\\extension-form-sender\\scratch\\unpacked_rc3_52_pristine\\extension",
+  "browser": "Microsoft Edge (Clean Profile, CDP Driven)",
+  "phase1_companionUnavailableAndRecovery": {
+    "unavailableState": {
+      "buttonAccepted": true,
+      "privacyPrepBlocked": true,
+      "modalVisible": true,
+      "reasonCode": "Reason Code: RELAY_OFFLINE",
+      "startBtnRestored": true,
+      "outboundSubmissions": 0,
+      "verdict": "PASS"
+    },
+    "recoveryState": {
+      "companionRestarted": true,
+      "privacyPrepPassed": true,
+      "campaignDispatched": true,
+      "campaignRunning": true,
+      "verdict": "PASS"
+    }
+  },
+  "phase2_mixedControlledMatrixAndWorkerPreservation": {
+    "totalTargets": 4,
+    "target1StandardSuccess": true,
+    "pauseWithQueuedJobsPreserved": true,
+    "workerShutdownAndRebootPreserved": true,
+    "target2DropdownCheckboxSuccess": true,
+    "target3NumericSuccess": true,
+    "target4CaptchaHumanFallbackHeld": true,
+    "serverReceiptsCount": 3,
+    "verdict": "PASS"
+  },
+  "counterParityAssertion": {
+    "counters": {
+      "success": 3,
+      "failed": 0,
+      "skipped": 1,
+      "deliveryUnknown": 0,
+      "total": 4,
+      "queueRemaining": 0
+    },
+    "completedTotal": 4,
+    "serverReceiptsCount": 3,
+    "historyAttemptsCount": 4,
+    "parityFormula": "total (4) === completed (4) + remaining (0) AND completed (4) === success (3) + skipped (1) + failed (0) + deliveryUnknown (0)",
+    "parityHolds": true,
+    "verdict": "PASS"
+  },
+  "historyStoreAttempts": [
+    {
+      "attemptId": "att_1792892888257_bwr85",
+      "targetIdentity": "https://127.0.0.1/contact-standard.html",
+      "sourceUrl": "http://127.0.0.1:8088/contact-standard.html",
+      "contactPageUrl": "http://127.0.0.1:8088/contact-standard.html",
+      "status": "CONFIRMED_SUCCESS",
+      "reasonCode": "SUCCESS_CONFIRMED",
+      "receiptId": null,
+      "settledAt": 1792892902447
+    },
+    {
+      "attemptId": "att_1792892912373_0y6gf",
+      "targetIdentity": "https://127.0.0.1/contact-dropdown-checkbox.html",
+      "sourceUrl": "http://127.0.0.1:8088/contact-dropdown-checkbox.html",
+      "contactPageUrl": "http://127.0.0.1:8088/contact-dropdown-checkbox.html",
+      "status": "CONFIRMED_SUCCESS",
+      "reasonCode": "SUCCESS_CONFIRMED",
+      "receiptId": null,
+      "settledAt": 1792892922226
+    },
+    {
+      "attemptId": "att_1792892928532_eblv0",
+      "targetIdentity": "https://127.0.0.1/contact-numeric.html",
+      "sourceUrl": "http://127.0.0.1:8088/contact-numeric.html",
+      "contactPageUrl": "http://127.0.0.1:8088/contact-numeric.html",
+      "status": "CONFIRMED_SUCCESS",
+      "reasonCode": "SUCCESS_CONFIRMED",
+      "receiptId": null,
+      "settledAt": 1792892942486
+    },
+    {
+      "attemptId": "att_1792892948752_wkef5",
+      "targetIdentity": "https://127.0.0.1/captcha-turnstile-dom.html",
+      "sourceUrl": "http://127.0.0.1:8088/captcha-turnstile-dom.html",
+      "contactPageUrl": "http://127.0.0.1:8088/captcha-turnstile-dom.html",
+      "status": "SKIPPED",
+      "reasonCode": "CAPTCHA_SKIPPED_OWNER",
+      "receiptId": null,
+      "settledAt": 1792892957606
+    }
+  ],
+  "independentServerReceipts": {
+    "totalReceipts": 3,
+    "submissions": [
+      {
+        "id": "rcpt_1792892901333_1",
+        "timestamp": 1792892901333,
+        "method": "POST",
+        "referer": "http://127.0.0.1:8088/contact-standard.html"
+      },
+      {
+        "id": "rcpt_1792892921078_2",
+        "timestamp": 1792892921078,
+        "method": "POST",
+        "referer": "http://127.0.0.1:8088/contact-dropdown-checkbox.html"
+      },
+      {
+        "id": "rcpt_1792892941338_3",
+        "timestamp": 1792892941338,
+        "method": "POST",
+        "referer": "http://127.0.0.1:8088/contact-numeric.html"
+      }
+    ]
+  },
+  "overallVerdict": "PASS",
+  "extensionId": "ldlijlaccfeelfdhgnjbibniocefckjj",
+  "buildId": "R6.9G.10.3.7.1.4.68-20261024-P0-RC3.52",
+  "implementationHead": "98d984f21317f566818f51df598e5456ab575f6d",
+  "historyStoreAllAttempts": [
+    {
+      "attemptId": "att_1792892881987_5qbaz",
+      "targetIdentity": "https://public-corp-alpha.example.com/contact",
+      "sourceUrl": "https://public-corp-alpha.example.com/contact",
+      "contactPageUrl": "https://public-corp-alpha.example.com/contact",
+      "status": "FAILURE",
+      "reasonCode": "DOMAIN_UNREACHABLE",
+      "receiptId": null,
+      "settledAt": 1792892882481
+    },
+    {
+      "attemptId": "att_1792892888257_bwr85",
+      "targetIdentity": "https://127.0.0.1/contact-standard.html",
+      "sourceUrl": "http://127.0.0.1:8088/contact-standard.html",
+      "contactPageUrl": "http://127.0.0.1:8088/contact-standard.html",
+      "status": "CONFIRMED_SUCCESS",
+      "reasonCode": "SUCCESS_CONFIRMED",
+      "receiptId": null,
+      "settledAt": 1792892902447
+    },
+    {
+      "attemptId": "att_1792892912373_0y6gf",
+      "targetIdentity": "https://127.0.0.1/contact-dropdown-checkbox.html",
+      "sourceUrl": "http://127.0.0.1:8088/contact-dropdown-checkbox.html",
+      "contactPageUrl": "http://127.0.0.1:8088/contact-dropdown-checkbox.html",
+      "status": "CONFIRMED_SUCCESS",
+      "reasonCode": "SUCCESS_CONFIRMED",
+      "receiptId": null,
+      "settledAt": 1792892922226
+    },
+    {
+      "attemptId": "att_1792892928532_eblv0",
+      "targetIdentity": "https://127.0.0.1/contact-numeric.html",
+      "sourceUrl": "http://127.0.0.1:8088/contact-numeric.html",
+      "contactPageUrl": "http://127.0.0.1:8088/contact-numeric.html",
+      "status": "CONFIRMED_SUCCESS",
+      "reasonCode": "SUCCESS_CONFIRMED",
+      "receiptId": null,
+      "settledAt": 1792892942486
+    },
+    {
+      "attemptId": "att_1792892948752_wkef5",
+      "targetIdentity": "https://127.0.0.1/captcha-turnstile-dom.html",
+      "sourceUrl": "http://127.0.0.1:8088/captcha-turnstile-dom.html",
+      "contactPageUrl": "http://127.0.0.1:8088/captcha-turnstile-dom.html",
+      "status": "SKIPPED",
+      "reasonCode": "CAPTCHA_SKIPPED_OWNER",
+      "receiptId": null,
+      "settledAt": 1792892957606
+    }
+  ]
+}
