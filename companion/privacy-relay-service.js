@@ -67,7 +67,7 @@ process.on('unhandledRejection', (reason) => {
 });
 
 // [Defect Q2 Hardening - Issue #6 Comment #6244711545] Authoritative companion build identity & capabilities
-const COMPANION_BUILD_ID = 'R6.9G.10.3.7.1.4.72-20261025-P0-RC3.56';
+const COMPANION_BUILD_ID = 'R6.9G.10.3.7.1.4.73-20261025-P0-RC3.57';
 const COMPANION_IMPLEMENTATION_HEAD = '3b7436fd9d5b327cea7615abfb59dc0e1a8acfed';
 
 function isCompatibleExtensionBuild(extBuildId, companionBuildId) {
@@ -163,6 +163,7 @@ class PrivacyRelayService {
     this.reconnectTimer = null;
     this.lastDisconnectReason = null;
     this.lastDisconnectTime = null;
+    this.lastProbeResult = null;
     this.consecutiveFailures = 0;
     this.failureThreshold = 2; // Require 2 consecutive probe failures before revoking ready
     this.controlToken = this.loadOrGenerateControlToken(options.controlToken);
@@ -558,17 +559,77 @@ class PrivacyRelayService {
     const isHttps = parsedTarget.protocol === 'https:';
     const targetPort = parsedTarget.port ? parseInt(parsedTarget.port, 10) : (isHttps ? 443 : 80);
 
+    const probeStartTime = Date.now();
+    let currentPhase = 'INIT';
+    let phaseStartTime = probeStartTime;
+
+    const phaseTiming = {
+      dnsMs: 0,
+      tcpConnectMs: 0,
+      upstreamTlsMs: 0,
+      proxyConnectMs: 0,
+      targetTlsMs: 0,
+      canaryHttpMs: 0,
+      totalElapsedMs: 0
+    };
+
+    const recordPhase = (phaseName) => {
+      const now = Date.now();
+      const elapsed = Math.max(0, now - phaseStartTime);
+      if (phaseName === 'DNS') phaseTiming.dnsMs = elapsed;
+      else if (phaseName === 'TCP_CONNECT') phaseTiming.tcpConnectMs = elapsed;
+      else if (phaseName === 'UPSTREAM_TLS') phaseTiming.upstreamTlsMs = elapsed;
+      else if (phaseName === 'PROXY_CONNECT') phaseTiming.proxyConnectMs = elapsed;
+      else if (phaseName === 'TARGET_TLS') phaseTiming.targetTlsMs = elapsed;
+      else if (phaseName === 'CANARY_HTTP') phaseTiming.canaryHttpMs = elapsed;
+      phaseStartTime = now;
+    };
+
     return new Promise((resolve) => {
       let resolved = false;
+      let activeSock = null;
+      let clientSock = null;
+
       const done = (res) => {
         if (!resolved) {
           resolved = true;
+          clearTimeout(timer);
+          recordPhase(currentPhase);
+          phaseTiming.totalElapsedMs = Date.now() - probeStartTime;
+          res.phaseTiming = phaseTiming;
+          if (!res.phase) res.phase = currentPhase;
+
+          if (!res.verified) {
+            if (activeSock && !activeSock.destroyed) {
+              try { activeSock.destroy(); } catch (_) {}
+            }
+            if (clientSock && !clientSock.destroyed) {
+              try { clientSock.destroy(); } catch (_) {}
+            }
+          }
+
+          this.lastProbeResult = {
+            timestamp: Date.now(),
+            nodeId: node.id,
+            verified: Boolean(res.verified),
+            reason: res.reason || (res.verified ? 'OK' : 'UNKNOWN'),
+            phase: res.phase,
+            phaseTiming: { ...phaseTiming },
+            observedEgressIp: res.observedEgressIp || null,
+            fingerprint: res.fingerprint || null
+          };
+
           resolve(res);
         }
       };
 
       const timer = setTimeout(() => {
-        done({ verified: false, reason: 'EGRESS_PROBE_TIMEOUT' });
+        done({
+          verified: false,
+          reason: `EGRESS_PROBE_TIMEOUT: Phase ${currentPhase} timed out after ${timeoutMs}ms`,
+          timeoutPhase: currentPhase,
+          phase: currentPhase
+        });
       }, timeoutMs);
 
       // Connect to node proxy
@@ -578,18 +639,28 @@ class PrivacyRelayService {
         '\r\n';
 
       const onSocketConnected = (sock) => {
+        currentPhase = 'PROXY_CONNECT';
+        phaseStartTime = Date.now();
+        activeSock = sock;
+
         sock.write(connectReq);
         sock.once('data', (buf) => {
+          recordPhase('PROXY_CONNECT');
           const respStr = buf.toString('utf8');
           if (!respStr.includes('200')) {
             sock.destroy();
-            clearTimeout(timer);
-            return done({ verified: false, reason: `PROXY_CONNECT_STATUS: ${respStr.split('\r\n')[0]}` });
+            return done({
+              verified: false,
+              reason: `PROXY_CONNECT_STATUS: ${respStr.split('\r\n')[0]}`,
+              phase: 'PROXY_CONNECT'
+            });
           }
 
           // Tunnel established. Now make HTTP/HTTPS request over tunnel.
-          let clientSock = sock;
+          clientSock = sock;
           if (isHttps) {
+            currentPhase = 'TARGET_TLS';
+            phaseStartTime = Date.now();
             // [X1 Fix] Layer B: Tunneled request to public canary target (e.g. cloudflare.com).
             // MUST validate public target certificate against system/public WebPKI trust roots.
             // DO NOT inject proxyTlsCa (node.ca, which is private proxy CA for Layer A only).
@@ -601,82 +672,110 @@ class PrivacyRelayService {
               targetTlsOptions.servername = parsedTarget.hostname;
             }
             clientSock = tls.connect(targetTlsOptions);
+            clientSock.on('secureConnect', () => {
+              recordPhase('TARGET_TLS');
+              sendCanaryHttp();
+            });
             clientSock.on('error', (tlsErr) => {
-              clearTimeout(timer);
               done({
                 verified: false,
                 reason: `TARGET_TLS_HANDSHAKE_ERROR: ${tlsErr.message}`,
-                details: tlsErr.message
+                details: tlsErr.message,
+                phase: 'TARGET_TLS'
               });
             });
+          } else {
+            sendCanaryHttp();
           }
 
-          let responseBody = '';
-          clientSock.on('data', (chunk) => {
-            responseBody += chunk.toString('utf8');
-          });
+          function sendCanaryHttp() {
+            currentPhase = 'CANARY_HTTP';
+            phaseStartTime = Date.now();
 
-          clientSock.on('end', () => {
-            clearTimeout(timer);
-            const bodyIdx = responseBody.indexOf('\r\n\r\n');
-            const body = bodyIdx !== -1 ? responseBody.substring(bodyIdx + 4) : responseBody;
+            let responseBody = '';
+            clientSock.on('data', (chunk) => {
+              responseBody += chunk.toString('utf8');
+            });
 
-            // Extract observed IP or canary string
-            let observed = null;
-            const mIp = body.match(/ip=([^\r\n]+)/);
-            if (mIp && mIp[1]) {
-              observed = mIp[1].trim();
-            } else if (body.includes('CANARY_OK')) {
-              observed = `${node.id}:${node.host}:${node.port}:canary_ok`;
-            } else if (body.trim().length > 0 && body.trim().length < 64) {
-              observed = body.trim();
-            }
+            clientSock.on('end', () => {
+              recordPhase('CANARY_HTTP');
+              currentPhase = 'IDENTITY_VERIFY';
+              phaseStartTime = Date.now();
 
-            if (observed) {
-              const fp = crypto.createHash('sha256').update(observed).digest('hex').substring(0, 16);
+              const bodyIdx = responseBody.indexOf('\r\n\r\n');
+              const body = bodyIdx !== -1 ? responseBody.substring(bodyIdx + 4) : responseBody;
 
-              // [P0-6 Hardening] Verify observed egress identity against expectedEgressFingerprint
-              if (node.expectedEgressFingerprint && node.expectedEgressFingerprint !== fp) {
-                node.lastHealth = 'UNHEALTHY';
-                node.observedFingerprint = null;
-                done({
-                  verified: false,
-                  reason: `EGRESS_IDENTITY_MISMATCH: observed fingerprint ${fp} does not match expected ${node.expectedEgressFingerprint}`
-                });
-                return;
+              // Extract observed IP or canary string
+              let observed = null;
+              const mIp = body.match(/ip=([^\r\n]+)/);
+              if (mIp && mIp[1]) {
+                observed = mIp[1].trim();
+              } else if (body.includes('CANARY_OK')) {
+                observed = `${node.id}:${node.host}:${node.port}:canary_ok`;
+              } else if (body.trim().length > 0 && body.trim().length < 64) {
+                observed = body.trim();
               }
 
-              if (node.expectedEgressIp && node.expectedEgressIp !== observed) {
+              if (observed) {
+                const fp = crypto.createHash('sha256').update(observed).digest('hex').substring(0, 16);
+
+                // [P0-6 Hardening] Verify observed egress identity against expectedEgressFingerprint
+                if (node.expectedEgressFingerprint && node.expectedEgressFingerprint !== fp) {
+                  node.lastHealth = 'UNHEALTHY';
+                  node.observedFingerprint = null;
+                  return done({
+                    verified: false,
+                    reason: `EGRESS_IDENTITY_MISMATCH: observed fingerprint ${fp} does not match expected ${node.expectedEgressFingerprint}`,
+                    phase: 'IDENTITY_VERIFY'
+                  });
+                }
+
+                if (node.expectedEgressIp && node.expectedEgressIp !== observed) {
+                  node.lastHealth = 'UNHEALTHY';
+                  node.observedFingerprint = null;
+                  return done({
+                    verified: false,
+                    reason: `EGRESS_IP_MISMATCH: observed IP ${observed} does not match expected ${node.expectedEgressIp}`,
+                    phase: 'IDENTITY_VERIFY'
+                  });
+                }
+
+                node.observedEgressIp = observed;
+                node.observedFingerprint = fp;
+                node.lastHealth = 'HEALTHY';
+                node.lastVerifiedAt = Date.now();
+                done({
+                  verified: true,
+                  fingerprint: fp,
+                  observed,
+                  ip: observed,
+                  observedEgressIp: observed,
+                  phase: 'SUCCESS'
+                });
+              } else {
                 node.lastHealth = 'UNHEALTHY';
-                node.observedFingerprint = null;
                 done({
                   verified: false,
-                  reason: `EGRESS_IP_MISMATCH: observed IP ${observed} does not match expected ${node.expectedEgressIp}`
+                  reason: 'NO_VALID_EGRESS_PAYLOAD',
+                  phase: 'IDENTITY_VERIFY'
                 });
-                return;
               }
+            });
 
-              node.observedEgressIp = observed;
-              node.observedFingerprint = fp;
-              node.lastHealth = 'HEALTHY';
-              node.lastVerifiedAt = Date.now();
-              done({ verified: true, fingerprint: fp, observed, ip: observed, observedEgressIp: observed });
-            } else {
-              node.lastHealth = 'UNHEALTHY';
-              done({ verified: false, reason: 'NO_VALID_EGRESS_PAYLOAD' });
-            }
-          });
+            clientSock.on('error', (err) => {
+              done({
+                verified: false,
+                reason: `TUNNEL_READ_ERROR: ${err.message}`,
+                phase: 'CANARY_HTTP'
+              });
+            });
 
-          clientSock.on('error', (err) => {
-            clearTimeout(timer);
-            done({ verified: false, reason: `TUNNEL_READ_ERROR: ${err.message}` });
-          });
-
-          // Send GET request to target
-          const getReq = `GET ${parsedTarget.pathname || '/'}${parsedTarget.search || ''} HTTP/1.1\r\n` +
-            `Host: ${parsedTarget.hostname}\r\n` +
-            `Connection: close\r\n\r\n`;
-          clientSock.write(getReq);
+            // Send GET request to target
+            const getReq = `GET ${parsedTarget.pathname || '/'}${parsedTarget.search || ''} HTTP/1.1\r\n` +
+              `Host: ${parsedTarget.hostname}\r\n` +
+              `Connection: close\r\n\r\n`;
+            clientSock.write(getReq);
+          }
         });
       };
 
@@ -685,7 +784,8 @@ class PrivacyRelayService {
         if (node.privateOnly && (!node.ca || typeof node.ca !== 'string' || !node.ca.trim())) {
           return done({
             verified: false,
-            reason: 'MISSING_PINNED_PROXY_CA: Managed private HTTPS proxy must have pinned private CA certificate; fallback to system CA is strictly prohibited.'
+            reason: 'MISSING_PINNED_PROXY_CA: Managed private HTTPS proxy must have pinned private CA certificate; fallback to system CA is strictly prohibited.',
+            phase: 'UPSTREAM_TLS'
           });
         }
 
@@ -704,45 +804,73 @@ class PrivacyRelayService {
           proxyConnectOptions.servername = node.host;
         }
 
+        currentPhase = 'TCP_CONNECT';
+        phaseStartTime = Date.now();
+
         const tlsSock = tls.connect(proxyConnectOptions, () => {
+          recordPhase('UPSTREAM_TLS');
           // [Z3 Fix] Verify peer server certificate SPKI fingerprint against node.tlsSpkiFingerprint
           if (node.tlsSpkiFingerprint) {
             try {
               const peerCert = tlsSock.getPeerX509Certificate();
               if (!peerCert || !peerCert.publicKey) {
                 tlsSock.destroy();
-                clearTimeout(timer);
-                return done({ verified: false, reason: 'PEER_CERTIFICATE_MISSING: Upstream proxy did not present X509 certificate' });
+                return done({
+                  verified: false,
+                  reason: 'PEER_CERTIFICATE_MISSING: Upstream proxy did not present X509 certificate',
+                  phase: 'UPSTREAM_TLS'
+                });
               }
               const spkiDer = peerCert.publicKey.export({ type: 'spki', format: 'der' });
               const actualSpkiFp = crypto.createHash('sha256').update(spkiDer).digest('hex').toLowerCase();
               const expectedSpkiFp = node.tlsSpkiFingerprint.replace(/:/g, '').toLowerCase();
               if (actualSpkiFp !== expectedSpkiFp) {
                 tlsSock.destroy();
-                clearTimeout(timer);
                 return done({
                   verified: false,
-                  reason: `PEER_SPKI_PIN_MISMATCH: Peer server certificate SPKI fingerprint ${actualSpkiFp} does not match expected pin ${expectedSpkiFp}`
+                  reason: `PEER_SPKI_PIN_MISMATCH: Peer server certificate SPKI fingerprint ${actualSpkiFp} does not match expected pin ${expectedSpkiFp}`,
+                  phase: 'UPSTREAM_TLS'
                 });
               }
             } catch (spkiErr) {
               tlsSock.destroy();
-              clearTimeout(timer);
-              return done({ verified: false, reason: `SPKI_VERIFICATION_ERROR: ${spkiErr.message}` });
+              return done({
+                verified: false,
+                reason: `SPKI_VERIFICATION_ERROR: ${spkiErr.message}`,
+                phase: 'UPSTREAM_TLS'
+              });
             }
           }
           onSocketConnected(tlsSock);
         });
 
+        tlsSock.on('connect', () => {
+          recordPhase('TCP_CONNECT');
+          currentPhase = 'UPSTREAM_TLS';
+          phaseStartTime = Date.now();
+        });
+
         tlsSock.on('error', (err) => {
-          clearTimeout(timer);
-          done({ verified: false, reason: `UPSTREAM_TLS_CONNECT_ERROR: ${err.message}` });
+          done({
+            verified: false,
+            reason: `UPSTREAM_TLS_CONNECT_ERROR: ${err.message}`,
+            phase: currentPhase
+          });
         });
       } else {
-        const rawSock = net.connect(node.port, node.host, () => onSocketConnected(rawSock));
+        currentPhase = 'TCP_CONNECT';
+        phaseStartTime = Date.now();
+
+        const rawSock = net.connect(node.port, node.host, () => {
+          recordPhase('TCP_CONNECT');
+          onSocketConnected(rawSock);
+        });
         rawSock.on('error', (err) => {
-          clearTimeout(timer);
-          done({ verified: false, reason: `UPSTREAM_CONNECT_ERROR: ${err.message}` });
+          done({
+            verified: false,
+            reason: `UPSTREAM_CONNECT_ERROR: ${err.message}`,
+            phase: 'TCP_CONNECT'
+          });
         });
       }
     });
@@ -821,7 +949,13 @@ class PrivacyRelayService {
     }
 
     this.relayReady = false;
+    this.lifecycleState = 'DEGRADED';
+    this.lastDisconnectReason = 'ALL_CANDIDATES_FAILED';
+    this.lastDisconnectTime = Date.now();
     this.log(`[PRIVACY_RELAY_FAIL_CLOSED] All candidate egress nodes failed health check during rotation`);
+    if (!this.reconnectTimer) {
+      this.scheduleSelfHealingReconnect('ALL_CANDIDATES_FAILED');
+    }
     return {
       success: false,
       verified: false,
@@ -934,6 +1068,25 @@ class PrivacyRelayService {
     if (this.reconnectAttempt >= this.maxReconnectAttempts) {
       this.lifecycleState = 'REMOTE_EGRESS_REPAIR_REQUIRED';
       this.log(`[SELF_HEALING_RECONNECT_EXHAUSTED] Max attempts (${this.maxReconnectAttempts}) reached. State: REMOTE_EGRESS_REPAIR_REQUIRED reason=${reason}`);
+      this.reconnectTimer = setTimeout(async () => {
+        this.reconnectTimer = null;
+        const active = this.getActiveNode();
+        if (!active) return;
+        this.log(`[SELF_HEALING_KEEPALIVE_PROBE] Testing active node=${active.id} in REMOTE_EGRESS_REPAIR_REQUIRED state...`);
+        const vRes = await this.verifyNodeEgress(active, this.pool.healthCheckTimeoutMs || 5000);
+        if (vRes.verified) {
+          this.relayReady = true;
+          this.lifecycleState = 'READY';
+          this.reconnectAttempt = 0;
+          this.consecutiveFailures = 0;
+          active.lastHealth = 'HEALTHY';
+          active.lastVerifiedAt = Date.now();
+          this.startContinuousHealthMonitor();
+          this.log(`[SELF_HEALING_RECONNECT_SUCCESS] Node ${active.id} recovered from repair state. Lifecycle: READY`);
+        } else {
+          this.scheduleSelfHealingReconnect(vRes.reason);
+        }
+      }, this.reconnectMaxBackoffMs);
       return;
     }
 
@@ -960,9 +1113,10 @@ class PrivacyRelayService {
         this.consecutiveFailures = 0;
         active.lastHealth = 'HEALTHY';
         active.lastVerifiedAt = Date.now();
+        this.startContinuousHealthMonitor();
         this.log(`[SELF_HEALING_RECONNECT_SUCCESS] Node ${active.id} reconnected and verified HEALTHY. Lifecycle: READY`);
       } else {
-        this.log(`[SELF_HEALING_RECONNECT_FAILED] attempt=${attempt} failed: ${vRes.reason}`);
+        this.log(`[SELF_HEALING_RECONNECT_FAILED] attempt=${attempt} failed: ${vRes.reason} (phase=${vRes.phase || 'UNKNOWN'})`);
         this.scheduleSelfHealingReconnect(vRes.reason);
       }
     }, delayMs);
@@ -1093,6 +1247,7 @@ class PrivacyRelayService {
       maxReconnectAttempts: this.maxReconnectAttempts || 10,
       lastDisconnectReason: this.lastDisconnectReason || null,
       lastDisconnectTime: this.lastDisconnectTime || null,
+      lastProbeResult: this.lastProbeResult || null,
       paused: this.isPaused,
       controlPort: this.controlPort,
       proxyPort: this.proxyPort,
@@ -1254,7 +1409,13 @@ class PrivacyRelayService {
             root: watchdogRoot,
             rootParity
           },
-          recovery: coarseRec
+          recovery: coarseRec,
+          lastProbe: this.lastProbeResult ? {
+            verified: Boolean(this.lastProbeResult.verified),
+            reason: this.lastProbeResult.reason,
+            phase: this.lastProbeResult.phase,
+            totalElapsedMs: this.lastProbeResult.phaseTiming?.totalElapsedMs || 0
+          } : null
         }));
         return;
       }
@@ -2853,12 +3014,24 @@ class PrivacyRelayService {
       } else {
         this.relayReady = false;
         this.lifecycleState = 'DEGRADED';
-        this.log(`[PRIVACY_RELAY_STARTUP_PROBE] Sticky active node=${active.id} probe FAILED: ${vRes.reason}`);
-        if (this.pool.rotationMode === 'FIXED' || this.pool.rotationMode === 'MANUAL') {
-          this.log(`[PRIVACY_RELAY_FAIL_CLOSED] rotationMode=${this.pool.rotationMode} sticky node failed, maintaining fail-closed without silent switching`);
-        } else if (this.pool.rotationMode === 'HEALTH_FAILOVER') {
+        this.lastDisconnectReason = vRes.reason;
+        this.lastDisconnectTime = Date.now();
+        this.log(`[PRIVACY_RELAY_STARTUP_PROBE] Sticky active node=${active.id} probe FAILED: ${vRes.reason} (phase=${vRes.phase || 'UNKNOWN'})`);
+        let failoverSucceeded = false;
+        if (this.pool.rotationMode === 'HEALTH_FAILOVER' && this.pool.nodes && this.pool.nodes.length > 1) {
           this.log(`[PRIVACY_RELAY_STARTUP_FAILOVER] Attempting failover to another healthy node...`);
-          await this.rotateEgress('HEALTH_FAILOVER');
+          const rotRes = await this.rotateEgress('HEALTH_FAILOVER');
+          if (rotRes && rotRes.success) {
+            failoverSucceeded = true;
+          }
+        } else if (this.pool.rotationMode === 'FIXED' || this.pool.rotationMode === 'MANUAL') {
+          this.log(`[PRIVACY_RELAY_FAIL_CLOSED] rotationMode=${this.pool.rotationMode} sticky node failed, maintaining fail-closed without silent switching`);
+        }
+
+        // [RC3.57 P0 FIX] If failover was not possible or candidate failed, schedule self-healing reconnect
+        // so the companion retries with bounded backoff and automatically recovers to READY when network is ready
+        if (!failoverSucceeded && !this.reconnectTimer) {
+          this.scheduleSelfHealingReconnect(vRes.reason);
         }
       }
     } else {

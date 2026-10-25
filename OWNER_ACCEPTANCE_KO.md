@@ -1,11 +1,11 @@
 # XPIDER AutoForm Sender Pro — 오너 승인 및 인수 안내서 (Owner Acceptance)
 
-> **버전**: v6.9g.10.3 (RC3.56 Private Owner Release)  
-> **빌드 ID**: `R6.9G.10.3.7.1.4.72-20261025-P0-RC3.56`  
+> **버전**: v6.9g.10.3 (RC3.57 Private Owner Release)  
+> **빌드 ID**: `R6.9G.10.3.7.1.4.73-20261025-P0-RC3.57`  
 > **지원 환경**: Windows 10 / 11 64-bit, Microsoft Edge / Google Chrome, Node.js LTS (v22 / v24)  
-> **공식 배포 URL**: https://github.com/goodkie/v-show/releases/tag/v6.9g.10.3-rc3.56.7.1.4.72  
-> **에셋 파일**: `XPIDER_R6.9G.10.3.7.1.4.72_PRIVATE_EGRESS_RC3.56.zip`  
-> **패키지 SHA256**: `212109049085e3c5f42f7f9b192aa83c66bcefe33a9c3ed5f64cc6ad7788e5c1`  
+> **공식 배포 URL**: https://github.com/goodkie/v-show/releases/tag/v6.9g.10.3-rc3.57.7.1.4.73  
+> **에셋 파일**: `XPIDER_R6.9G.10.3.7.1.4.73_PRIVATE_EGRESS_RC3.57.zip`  
+> **패키지 SHA256**: `d9b41fae2a5926eab5c7086c600ec37d0db7f81d9d4f4e0c7ae5bbbc320a8c7b`  
 
 ---
 
