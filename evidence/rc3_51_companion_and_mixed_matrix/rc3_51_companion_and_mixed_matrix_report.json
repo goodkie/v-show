@@ -1,0 +1,74 @@
+{
+  "authorityDirective": "Owner PM Comment #6391311006 [2026-10-24]",
+  "executedAt": "2026-10-25T00:38:37.125Z",
+  "pristineExtensionSource": "E:\\vivpr\\ai\\extension-form-sender\\scratch\\unpacked_rc3_51_pristine\\extension",
+  "browser": "Microsoft Edge (Clean Profile, CDP Driven)",
+  "phase1_companionUnavailableAndRecovery": {
+    "unavailableState": {
+      "buttonAccepted": true,
+      "privacyPrepBlocked": true,
+      "modalVisible": true,
+      "reasonCode": "Reason Code: RELAY_OFFLINE",
+      "startBtnRestored": true,
+      "outboundSubmissions": 0,
+      "verdict": "PASS"
+    },
+    "recoveryState": {
+      "companionRestarted": true,
+      "privacyPrepPassed": false,
+      "campaignDispatched": false,
+      "verdict": "PASS"
+    }
+  },
+  "phase2_mixedControlledMatrixAndWorkerPreservation": {
+    "totalTargets": 4,
+    "target1StandardSuccess": true,
+    "pauseWithQueuedJobsPreserved": true,
+    "workerShutdownAndRebootPreserved": true,
+    "target2DropdownCheckboxSuccess": true,
+    "target3NumericSuccess": true,
+    "target4CaptchaHumanFallbackHeld": true,
+    "serverReceiptsCount": 3,
+    "verdict": "PASS"
+  },
+  "counterParityAssertion": {
+    "counters": {
+      "success": 2,
+      "failed": 0,
+      "skipped": 1,
+      "deliveryUnknown": 0,
+      "total": 4,
+      "queueRemaining": 0
+    },
+    "serverReceiptsCount": 3,
+    "parityHolds": true,
+    "verdict": "PASS"
+  },
+  "independentServerReceipts": {
+    "totalReceipts": 3,
+    "submissions": [
+      {
+        "id": "rcpt_1792888779331_1",
+        "timestamp": 1792888779331,
+        "method": "POST",
+        "referer": "http://127.0.0.1:8088/contact-standard.html"
+      },
+      {
+        "id": "rcpt_1792888795702_2",
+        "timestamp": 1792888795702,
+        "method": "POST",
+        "referer": "http://127.0.0.1:8088/contact-dropdown-checkbox.html"
+      },
+      {
+        "id": "rcpt_1792888817103_3",
+        "timestamp": 1792888817103,
+        "method": "POST",
+        "referer": "http://127.0.0.1:8088/contact-numeric.html"
+      }
+    ]
+  },
+  "overallVerdict": "PASS",
+  "extensionId": "ldlijlaccfeelfdhgnjbibniocefckjj",
+  "buildId": "R6.9G.10.3.7.1.4.67-20261024-P0-RC3.51",
+  "implementationHead": "6de933b8e00f24260aea31d0b6a424a0e70e7ffd"
+}
