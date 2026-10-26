@@ -17,7 +17,7 @@
         branch: 'upgrade/phase-0-1',
         channel: 'OWNER_BETA_PRIVATE_EGRESS_RC3.59',
         testOnly: false,
-        // [R6.9G.10.3.7.1.4.69] XPIDER AutoForm Sender Pro — Private Egress Release Candidate 3.53 (Immutable Receipt-ID Ledger Binding & DOM Confirmation Parity)
+        // [R6.9G.10.3.7.1.4.77] AI Required Field Completion & Constraint Inference + Turnstile 5/5 Settlement Accounting
         implementationHead: '741dfe44536031dff13ac6d8e310d4f72fbca42b',
         implementationHeadShort: '741dfe44',
         head: '741dfe44536031dff13ac6d8e310d4f72fbca42b',
@@ -25,13 +25,13 @@
         rollbackBase: '55cd543be5ebe7a4553cac0cbfcf933a00e4c8a5',
         previousFunctionalRestorePoint: 'b2af1c9bf614b9f572acec910265d8132d2043aa',
         manifestVersion: 3,
-        buildId: 'R6.9G.10.3.7.1.4.76-20261025-P0-RC3.59-HOTFIX',
-        builtAt: '2026-10-26T03:20:22.390Z',
+        buildId: 'R6.9G.10.3.7.1.4.77-20261026-P0-RC3.59-AI-REQUIRED-FIELDS',
+        builtAt: '2026-10-26T05:53:52.314Z',
         provenanceSchema: 2,
         modules: {
             backgroundSha: '7dcfe61f2508ed6cec2d496c7e24a79f965ae6f93f10370776692bc8975d4c8c',
-            contentScriptSha: '68ecc67c55c2bf8bd3e8ec75e1b7495772095c959507f05cd33ffc6ea7aa1cd9',
-            popupSha: 'ecd7c70bc75aa6bf00c7138b123c45cadf53758572a5dfa53a3490f8ca001feb',
+            contentScriptSha: '1679c1af0ddacb11ff1e22e2ee726f305192ebd45e3331423c03b327f9c2b155',
+            popupSha: 'deb2346943a79f89e832b8e6570c95aa1a9b3ec8861dce0bd973b5e9bcf9163b',
             solverContentSha: '6a1ff7154efaeb6dbd5946ac4f9be1ce5b5ff43bce2db06d0dca32950edd3bdb',
             solverCoreSha: 'ab4dee5c8213d7c2fd47942951a2bc40732c1c8c55a5742d493db617150bf95f',
             emailCollectorSha: '3f1147a379e159e7777158f2caa74cc8d40b2a0b0eb2c244f440af379cb5c9c9',

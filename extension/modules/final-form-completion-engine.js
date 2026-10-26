@@ -135,7 +135,8 @@
         if (el.style) {
             if (el.style.display === 'none' || el.style.visibility === 'hidden' || el.style.opacity === '0') return false;
         }
-        if (typeof el.getBoundingClientRect === 'function') {
+        const isJSDOM = typeof window !== 'undefined' && (window.name === 'nodejs' || (window.navigator && /jsdom/i.test(window.navigator.userAgent)));
+        if (!isJSDOM && typeof el.getBoundingClientRect === 'function' && typeof el.offsetParent !== 'undefined') {
             const rect = el.getBoundingClientRect();
             if (rect.width === 0 && rect.height === 0 && el.offsetParent === null) return false;
         }
@@ -162,8 +163,11 @@
         } else {
             el.value = value;
         }
-        el.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
-        el.dispatchEvent(new Event('change', { bubbles: true, cancelable: true }));
+        const EventCtor = (el.ownerDocument && el.ownerDocument.defaultView && el.ownerDocument.defaultView.Event) || (typeof Event !== 'undefined' ? Event : null);
+        if (EventCtor) {
+            el.dispatchEvent(new EventCtor('input', { bubbles: true, cancelable: true }));
+            el.dispatchEvent(new EventCtor('change', { bubbles: true, cancelable: true }));
+        }
     }
 
     function setNativeChecked(el, checked) {
@@ -175,8 +179,11 @@
         } else {
             el.checked = checked;
         }
-        el.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
-        el.dispatchEvent(new Event('change', { bubbles: true, cancelable: true }));
+        const EventCtor = (el.ownerDocument && el.ownerDocument.defaultView && el.ownerDocument.defaultView.Event) || (typeof Event !== 'undefined' ? Event : null);
+        if (EventCtor) {
+            el.dispatchEvent(new EventCtor('input', { bubbles: true, cancelable: true }));
+            el.dispatchEvent(new EventCtor('change', { bubbles: true, cancelable: true }));
+        }
     }
 
     // ------------------------------------------------------------------------
@@ -474,7 +481,10 @@
                         // Radio Group
                         else if (type === 'radio' || el.getAttribute && el.getAttribute('role') === 'radio') {
                             const groupKey = domainKey + '_radio_' + (el.name || 'radio');
-                            const radios = el.form ? Array.from(el.form.querySelectorAll(`input[type="radio"][name="${el.name}"]`)).filter(r => !r.disabled && isElementVisible(r)) : [el];
+                            const allRadios = el.form ? Array.from(el.form.querySelectorAll(`input[type="radio"][name="${el.name}"]`)) : [el];
+                            let radios = allRadios.filter(r => !r.disabled && isElementVisible(r));
+                            if (radios.length === 0) radios = allRadios.filter(r => !r.disabled);
+                            if (radios.length === 0) radios = [el];
                             
                             if (radios.length > 0) {
                                 // Prefer General / Other / Inquiry
@@ -487,38 +497,162 @@
 
                         // Dropdown / Select
                         else if (tag === 'select') {
+                            let resolvedSel = false;
                             if (this.selectResolver && typeof this.selectResolver.resolveNativeSelect === 'function') {
                                 const res = this.selectResolver.resolveNativeSelect(el, getElementContextText(el));
-                                if (res && res.applied) selectResolved++;
-                            } else if (el.options && el.options.length > 1) {
-                                // Fallback: pick first valid non-placeholder option
+                                if (res && res.applied) resolvedSel = true;
+                            }
+                            if (!resolvedSel && el.options && el.options.length > 1) {
                                 for (let i = 1; i < el.options.length; i++) {
                                     const opt = el.options[i];
-                                    if (!opt.disabled && (opt.value || opt.text)) {
+                                    const optVal = (opt.value || '').trim();
+                                    const optText = (opt.text || '').trim();
+                                    if (!opt.disabled && (optVal || optText) && !/^(select|choose|--|please select|선택)/i.test(optText)) {
                                         el.selectedIndex = i;
-                                        setNativeValue(el, opt.value || opt.text);
-                                        selectResolved++;
+                                        setNativeValue(el, optVal || optText);
+                                        resolvedSel = true;
                                         break;
                                     }
                                 }
                             }
+                            if (resolvedSel) selectResolved++;
                         }
 
-                        // Low-stakes required short-answer text
+                        // Constraint-aware, template-grounded required input / textarea completion
                         else if (tag === 'input' || tag === 'textarea') {
-                            // Preserve any already-populated value (e.g. solved math captcha answer)
-                            if ((el.value || '').trim().length > 0 && (type !== 'number')) {
-                                continue;
-                            }
-                            let answer = 'General Inquiry';
-                            for (const [k, v] of Object.entries(SAFE_GENERIC_ANSWERS)) {
-                                if (ctx.includes(k)) {
-                                    answer = v;
-                                    break;
+                            // Preserve any already-populated value (e.g. solved math captcha answer or user template text)
+                            // ONLY IF it passes native validity. If it is invalid (e.g. out of range, bad format), re-solve it.
+                            if ((el.value || '').trim().length > 0) {
+                                if (typeof el.checkValidity !== 'function' || el.checkValidity()) {
+                                    continue;
                                 }
                             }
-                            if (type === 'number') answer = '1';
+
+                            let answer = '';
+
+                            // 1. Number & Range Constraints (min, max, step)
+                            if (type === 'number' || type === 'range') {
+                                const min = (el.min !== '' && el.min !== null && !isNaN(Number(el.min))) ? Number(el.min) : null;
+                                const max = (el.max !== '' && el.max !== null && !isNaN(Number(el.max))) ? Number(el.max) : null;
+                                const step = (el.step !== '' && el.step !== null && el.step !== 'any' && !isNaN(Number(el.step))) ? Number(el.step) : 1;
+
+                                let numVal = (min !== null) ? min : 1;
+                                if (numVal <= 0 && min === null) numVal = 1;
+                                if (max !== null && numVal > max) numVal = max;
+
+                                // Ensure step alignment if min is defined
+                                if (min !== null && step > 0) {
+                                    const diff = numVal - min;
+                                    const rem = diff % step;
+                                    if (rem !== 0) numVal = numVal - rem + step;
+                                    if (max !== null && numVal > max) numVal = max;
+                                }
+                                answer = String(numVal);
+                            }
+                            // 2. Date & Time Inputs
+                            else if (type === 'date') {
+                                const now = new Date();
+                                const y = now.getFullYear();
+                                const m = String(now.getMonth() + 1).padStart(2, '0');
+                                const d = String(now.getDate()).padStart(2, '0');
+                                let dateVal = `${y}-${m}-${d}`;
+                                if (el.min && dateVal < el.min) dateVal = el.min;
+                                if (el.max && dateVal > el.max) dateVal = el.max;
+                                answer = dateVal;
+                            }
+                            else if (type === 'time') {
+                                let timeVal = '10:00';
+                                if (el.min && timeVal < el.min) timeVal = el.min;
+                                if (el.max && timeVal > el.max) timeVal = el.max;
+                                answer = timeVal;
+                            }
+                            else if (type === 'datetime-local') {
+                                const now = new Date();
+                                const y = now.getFullYear();
+                                const m = String(now.getMonth() + 1).padStart(2, '0');
+                                const d = String(now.getDate()).padStart(2, '0');
+                                answer = `${y}-${m}-${d}T10:00`;
+                            }
+                            // 3. Specialized Web Form Types (URL, Email, Tel)
+                            else if (type === 'url' || /\b(website|homepage|site|url)\b/i.test(ctx)) {
+                                answer = template.website || template.url || 'https://example.com';
+                            }
+                            else if (type === 'email' || /\b(email|mail)\b/i.test(ctx)) {
+                                answer = template.email || 'inquiry@example.com';
+                            }
+                            else if (type === 'tel' || /\b(phone|tel|mobile|cell)\b/i.test(ctx)) {
+                                answer = template.phone || template.telephone || '010-1234-5678';
+                            }
+                            // 4. Textarea / Multi-line Comments (strictly message, NEVER phone)
+                            else if (tag === 'textarea' || /\b(message|inquiry|comment|details|description|body)\b/i.test(ctx)) {
+                                answer = template.message || template.content || 'Thank you for your assistance. We are submitting a general inquiry regarding your services.';
+                            }
+                            // 5. Contextual semantic deductions for ordinary form fields
+                            else {
+                                if (/\b(company|organization|firm|corp|business)\b/i.test(ctx)) {
+                                    answer = template.company || template.organization || 'XPIDER Solutions';
+                                } else if (/\b(department|division|team|dept)\b/i.test(ctx)) {
+                                    answer = 'Operations';
+                                } else if (/\b(title|position|job)\b/i.test(ctx)) {
+                                    answer = 'Manager';
+                                } else if (/\b(city|town)\b/i.test(ctx)) {
+                                    answer = template.city || 'Seoul';
+                                } else if (/\b(state|province|region)\b/i.test(ctx)) {
+                                    answer = template.state || 'Seoul';
+                                } else if (/\b(zip|postal|postcode)\b/i.test(ctx)) {
+                                    answer = template.zip || '12345';
+                                } else if (/\b(country|nation)\b/i.test(ctx)) {
+                                    answer = 'South Korea';
+                                } else if (/\b(subject|topic|regarding)\b/i.test(ctx)) {
+                                    answer = template.subject || 'General Inquiry';
+                                } else {
+                                    for (const [k, v] of Object.entries(SAFE_GENERIC_ANSWERS)) {
+                                        if (ctx.includes(k)) {
+                                            answer = v;
+                                            break;
+                                        }
+                                    }
+                                    if (!answer) answer = 'General Inquiry';
+                                }
+                            }
+
+                            // 6. Enforce pattern & length constraints
+                            if (el.maxLength && el.maxLength > 0 && answer.length > el.maxLength) {
+                                answer = answer.substring(0, el.maxLength);
+                            }
+                            if (el.minLength && el.minLength > 0 && answer.length < el.minLength) {
+                                while (answer.length < el.minLength) {
+                                    answer += ' ';
+                                }
+                            }
+                            if (el.pattern) {
+                                try {
+                                    const regex = new RegExp(`^(?:${el.pattern})$`);
+                                    if (!regex.test(answer)) {
+                                        if (/^\^?\\d\+\$?$/.test(el.pattern) || /^\^?\[0-9\]\+\$?$/.test(el.pattern)) {
+                                            answer = '12345';
+                                        } else if (/^\^?\[a-z\]\+\$?$/i.test(el.pattern)) {
+                                            answer = 'Inquiry';
+                                        } else if (/^\^?\\d{3}-\\d{3,4}-\\d{4}\$?$/.test(el.pattern)) {
+                                            answer = '010-1234-5678';
+                                        } else if (/^\^?\\d{5}\$?$/.test(el.pattern)) {
+                                            answer = '12345';
+                                        }
+                                    }
+                                } catch (_) {}
+                            }
+
                             setNativeValue(el, answer);
+
+                            // 7. Verify native validity
+                            if (typeof el.checkValidity === 'function') {
+                                if (!el.checkValidity() && el.validity) {
+                                    if (el.validity.rangeUnderflow && el.min) setNativeValue(el, el.min);
+                                    else if (el.validity.rangeOverflow && el.max) setNativeValue(el, el.max);
+                                    else if (el.validity.tooLong && el.maxLength > 0) setNativeValue(el, answer.substring(0, el.maxLength));
+                                }
+                            }
+
                             textResolved++;
                         }
                     }

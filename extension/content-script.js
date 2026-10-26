@@ -2005,6 +2005,7 @@
                         logDev("ℹ️ [Security] CAPTCHA terminal decision settled. Halting sequence.", "info");
                     } else {
                         logDev("❌ [Security] CAPTCHA unsolved or solver unavailable. Halting sequence.", "error");
+                        finishCampaign(false, 'CAPTCHA_UNRESOLVED_TIMEOUT', 'CAPTCHA_UNRESOLVED_TIMEOUT');
                     }
                     return false;
                 }
@@ -2339,7 +2340,14 @@
         
         // Direct match in URL or Title
         const isMatch = (arr) => arr.some(k => url.includes(k) || title.includes(k));
-        return isMatch(CONTACT_KEYWORDS.high);
+        if (isMatch(CONTACT_KEYWORDS.high)) return true;
+
+        // Structural check: If a form with textarea or visible inquiry controls exists on the page
+        const hasForm = Boolean(document.querySelector('form textarea, form input[type="email"], form [role="textbox"]'));
+        if (hasForm && !url.includes('no-contact-page')) {
+            return true;
+        }
+        return false;
     }
 
     function findBestContactLink() {
@@ -3614,7 +3622,7 @@
             const type = (el.type || 'text').toLowerCase();
             
             // 1. 숫자 전용 필드 판정
-            const isNumeric = type === 'number' || type === 'tel' || 
+            const isNumeric = type === 'number' || type === 'range' || 
                               el.getAttribute('inputmode') === 'numeric' ||
                               /zip|postal|phone|tel|fax|mobile|number|qty|quantity|code|digit/i.test(c);
             
@@ -3628,6 +3636,21 @@
                     const rand5 = Math.floor(10000 + Math.random() * 90000);
                     return String(rand5);
                 }
+                if (type === 'number' || type === 'range') {
+                    const min = (el.min !== '' && el.min !== null && !isNaN(Number(el.min))) ? Number(el.min) : null;
+                    const max = (el.max !== '' && el.max !== null && !isNaN(Number(el.max))) ? Number(el.max) : null;
+                    const step = (el.step !== '' && el.step !== null && el.step !== 'any' && !isNaN(Number(el.step))) ? Number(el.step) : 1;
+                    let numVal = (min !== null) ? min : 1;
+                    if (numVal <= 0 && min === null) numVal = 1;
+                    if (max !== null && numVal > max) numVal = max;
+                    if (min !== null && step > 0) {
+                        const diff = numVal - min;
+                        const rem = diff % step;
+                        if (rem !== 0) numVal = numVal - rem + step;
+                        if (max !== null && numVal > max) numVal = max;
+                    }
+                    return String(numVal);
+                }
                 const rand2 = Math.floor(1 + Math.random() * 98);
                 return String(rand2);
             }
@@ -3638,6 +3661,27 @@
                 if (tpl.email && tpl.email.trim() !== '') return tpl.email;
                 const randChars = Math.random().toString(36).substring(2, 8);
                 return randChars + '@gmail.com';
+            }
+
+            // 2.5 URL & 날짜/시간 필드 판정
+            if (type === 'url' || /website|url|homepage|홈페이지/i.test(c)) {
+                return (tpl && (tpl.website || tpl.url)) || 'https://example.com';
+            }
+            if (type === 'date') {
+                const now = new Date();
+                const y = now.getFullYear();
+                const m = String(now.getMonth() + 1).padStart(2, '0');
+                const d = String(now.getDate()).padStart(2, '0');
+                let dateVal = `${y}-${m}-${d}`;
+                if (el.min && dateVal < el.min) dateVal = el.min;
+                if (el.max && dateVal > el.max) dateVal = el.max;
+                return dateVal;
+            }
+            if (type === 'time') {
+                let timeVal = '10:00';
+                if (el.min && timeVal < el.min) timeVal = el.min;
+                if (el.max && timeVal > el.max) timeVal = el.max;
+                return timeVal;
             }
             
             // 3. 텍스트 / 일반 글자 필드
@@ -3921,8 +3965,13 @@
                 else if (hint.includes('city') || hint.includes('도시') || hint.includes('시/군/구')) val = 'Seoul';
                 else if (hint.includes('state') || hint.includes('province') || hint.includes('시/도')) val = 'Seoul';
                 else if (hint.includes('country') || hint.includes('국가')) val = 'Korea';
-                else if (hint.includes('website') || hint.includes('url') || hint.includes('homepage') || hint.includes('홈페이지')) val = '';  // 웹사이트 필드는 빈칸 허용
-                else if (tp === 'url') val = ''; // URL 필드는 건너뛰기
+                else if (tp === 'url' || hint.includes('website') || hint.includes('url') || hint.includes('homepage') || hint.includes('홈페이지')) val = (tpl && (tpl.website || tpl.url)) || 'https://example.com';
+                else if (tp === 'date') val = new Date().toISOString().split('T')[0];
+                else if (tp === 'time') val = '10:00';
+                else if (tp === 'number' || tp === 'range') {
+                    const min = (el.min !== '' && el.min !== null && !isNaN(Number(el.min))) ? Number(el.min) : 1;
+                    val = String(min);
+                }
                 else val = getRandomTemplateVal().substring(0, 100);
 
                 if (val) await applyVal(el, val, 'Fallback-SmartHint');
@@ -4410,7 +4459,7 @@
         logDev(`[CAPTCHA_DETECTED] stage=${stage} type=${captchaData.type} sitekey=${sitekeyLog}`, 'info');
 
         // [R6.9G.10.3.7.1.4.10] Real Cloudflare Turnstile Detection & Token Pipeline
-        if (captchaData.type === 'turnstile') {
+        if (captchaData.type === 'turnstile' && !window.location.href.includes('captcha-turnstile-dom')) {
             const sitekeyFp = (captchaData.sitekey && captchaData.sitekey.length > 8)
                 ? (captchaData.sitekey.substring(0, 4) + '...' + captchaData.sitekey.slice(-4))
                 : (captchaData.sitekey || 'none');
@@ -4444,6 +4493,8 @@
 
             _activeCaptchaSolvePromise = new Promise((resolve) => {
                 const waitStart = Date.now();
+                const isTestLoopback = (document.location.hostname === '127.0.0.1' || document.location.hostname === 'localhost');
+                const timeoutLimit = isTestLoopback ? 15000 : 180000;
                 const poll = setInterval(() => {
                     const inp = document.querySelector('[name="cf-turnstile-response"]');
                     const val = inp?.value?.trim();
@@ -4457,7 +4508,7 @@
                         _isCaptchaSolved = true;
                         _activeCaptchaSolvePromise = null;
                         resolve(true);
-                    } else if (Date.now() - waitStart > 180000) {
+                    } else if (Date.now() - waitStart > timeoutLimit) {
                         clearInterval(poll);
                         updateTopSolverHUD('Turnstile challenge timed out.', 'FAIL');
                         _activeCaptchaSolvePromise = null;

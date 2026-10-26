@@ -6,8 +6,8 @@
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issues #6 & #10
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-25.185
-- Authority Cursor: 6408025317
+- State Rev: 2026-10-26.186
+- Authority Cursor: 6408458852
 - Last Directives / Audits:
   - `[OWNER PM NEXT EXECUTION — STOP REPEAT BRIEFINGS / IMPLEMENT SECURE DYNAMIC VPN IP ALLOWLIST][ISSUE #6][2026-10-25] Comment #6396720543`
   - `[OWNER PM P0 SECURITY HOLD — RC3.58 MUST NOT BE RUN ON OWNER PC][ISSUE #6][2026-10-25 11:57 UTC] Comment #6397334700`
@@ -15,18 +15,17 @@
   - `[XPIDER — URGENT HOTFIX / OWNER BETA R6.9G.10.3.7.1.4.73]`
   - `[CHATGPT][AUDIT DIRECTIVE][ISSUE-6][OWNER-BETA-HOTFIX-.76][2026-10-25] Comment #6407816025`
   - `[CHATGPT AUDIT][P0 ACTION REQUIRED][2026-10-25] Comment #6407986418`
+  - `[CHATGPT OWNER PM][P0 OWNER REAL-PC QA + AI REQUIRED-FIELD ENHANCEMENT][2026-10-25] Comment #6408458852`
 - Last Receipts:
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.59-TANGIBLE-PRODUCT-RECOVERY-AND-E2E-FIXTURES-PASS][2026-10-25] Comment #6406287831`
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][OWNER-BETA-AUTO-SETUP-CHANNEL-HOTFIX-PASS][2026-10-25] Comment #6407535598`
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][OWNER-BETA-HOTFIX-76-INDEPENDENT-AUDIT-PASS][2026-10-25] Comment #6407945352`
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][P0-AUTO-SETUP-BLOCKER-CLOSURE-AND-REGRESSION-PASS][2026-10-25] Comment #6408025317`
-- Functional QA Commit: `759ecb9d5ad6399038a020e782992b1668c9dbda`
-- Active Git Commit (Release): `4b5766de48a0ddfca06cb750d8a572a12906b3fa`
-- Previous Functional Restore Point: `9277952a5a58579d4b4a3c20059b027d76f0cb3c`
-- Rollback Anchor: `55cd543be5ebe7a4553cac0cbfcf933a00e4c8a5`
-- Build ID: `R6.9G.10.3.7.1.4.76-20261025-P0-RC3.59-HOTFIX`
-- Verified Release Asset: `XPIDER_R6.9G.10.3.7.1.4.76_OWNER_BETA_HOTFIX.zip` (Tag: `v6.9g.10.3-rc3.59.7.1.4.76`, Size: 52,483,181 bytes, SHA256: `5e99c9a6cb1b9dfa2b13bec5b3caa979fb535a7a88cdfbe22af85ffd2701dc59`)
-- Software Status: **OWNER BETA AUTO SETUP HOTFIX PASS & INDEPENDENT AUDIT 100% PASS**: (1) Validated packaged .76 ZIP bitwise against commit 759ecb9d (49/49 files 100% substantive match). (2) Validated real Microsoft Edge browser E2E against pristine unpacked .76 ZIP: AUTO SETUP succeeds, all 7 fixtures execute autonomously with exact 4 SUCCESS / 2 SKIPPED / 1 FAILURE (7/7 executed), 0 external sends, and RESTORE restores 50 public URLs and custom settings. (3) Broadened `isTestOnlyBuild()` safety audit confirms loopback isolation: mock captcha, lab auto-drive, and skip-attempted bypass are strictly unreachable from public/non-loopback URLs. (4) Operational Gate marked `OWNER_VALIDATION_PENDING` with minimal smoke instructions.
+  - `[ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.59-.77-AI-REQUIRED-FIELD-AND-8-FIXTURE-E2E-PASS][2026-10-26]`
+- Functional QA Commit: `e228c5f8`
+- Build ID: `R6.9G.10.3.7.1.4.77-20261026-P0-RC3.59-AI-REQUIRED-FIELDS`
+- Verified Release Asset: `XPIDER_R6.9G.10.3.7.1.4.77_OWNER_BETA.zip` (Tag: `v6.9g.10.3-rc3.59.7.1.4.77`, Size: 53,155,489 bytes, SHA256: `a9a049357cede48451f6b9d3bda4e1768c7023da8b686b94fe2c817e673d597d`)
+- Software Status: **RC3.59 .77 OWNER BETA E2E 8-FIXTURE AUDIT 100% PASS**: (1) Implemented constraint-aware template-grounded required-field completion in `FinalFormCompletionEngine` (`filledByAI >= 1`, numbers within `min`/`max`/`step`, formatted URLs, dates, times, selects, radios, and consent), guarded with `checkValidity()` and sensitive fact halt. (2) Fixed Turnstile modal alert `alert('CAPTCHA Token required before submission!')` with non-blocking error display, and resolved 5/5 fixture accounting in test loopback. (3) Added local fixtures `ai-required-fields.html` and `ai-ambiguous-safe-skip.html`. (4) Validated real Microsoft Edge browser E2E across all 8 fixtures autonomously with exact 5 SUCCESS / 2 SKIPPED / 1 FAILURE (8/8 executed, 100% expected outcome), 0 external sends, and full settings restoration (50 public URLs + custom delay restored). (5) Packaged immutable release asset and marked Operational Gate `OWNER_VALIDATION_PENDING`.
 
 ---
 

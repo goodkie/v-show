@@ -50,8 +50,20 @@
         var frm = document.querySelector('form');
         if (frm) frm.addEventListener('submit', function (e) {
             e.preventDefault(); mark();
-            if (window.__captcha_challenge_resolved === true) { document.getElementById('success-banner').style.display = 'block'; window.dispatchEvent(new CustomEvent('form-submitted', { detail: { status: 'SUCCESS' } })); }
-            else { alert('CAPTCHA Token required before submission!'); }
+            if (window.__captcha_challenge_resolved === true) {
+                document.getElementById('success-banner').style.display = 'block';
+                window.dispatchEvent(new CustomEvent('form-submitted', { detail: { status: 'SUCCESS' } }));
+            } else {
+                console.warn('[FIXTURE_REJECT] CAPTCHA Token required before submission!');
+                var eb = document.getElementById('error-banner');
+                if (!eb) {
+                    eb = document.createElement('div');
+                    eb.id = 'error-banner';
+                    eb.style.cssText = 'color:#ef4444;background:#450a0a;border:1px solid #b91c1c;padding:8px;border-radius:4px;margin-top:10px;font-size:12px;font-weight:bold;';
+                    frm.appendChild(eb);
+                }
+                eb.textContent = 'CAPTCHA Token required before submission!';
+            }
         });
     })();
     </script>
