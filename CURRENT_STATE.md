@@ -6,8 +6,8 @@
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issues #6 & #10
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-26.186
-- Authority Cursor: 6408458852
+- State Rev: 2026-10-26.187
+- Authority Cursor: 6409475473
 - Last Directives / Audits:
   - `[OWNER PM NEXT EXECUTION — STOP REPEAT BRIEFINGS / IMPLEMENT SECURE DYNAMIC VPN IP ALLOWLIST][ISSUE #6][2026-10-25] Comment #6396720543`
   - `[OWNER PM P0 SECURITY HOLD — RC3.58 MUST NOT BE RUN ON OWNER PC][ISSUE #6][2026-10-25 11:57 UTC] Comment #6397334700`
@@ -16,16 +16,18 @@
   - `[CHATGPT][AUDIT DIRECTIVE][ISSUE-6][OWNER-BETA-HOTFIX-.76][2026-10-25] Comment #6407816025`
   - `[CHATGPT AUDIT][P0 ACTION REQUIRED][2026-10-25] Comment #6407986418`
   - `[CHATGPT OWNER PM][P0 OWNER REAL-PC QA + AI REQUIRED-FIELD ENHANCEMENT][2026-10-25] Comment #6408458852`
+  - `[CHATGPT OWNER PM][RC3.59 .77 SECURITY/QUALITY FOLLOW-UP][2026-10-25] Comment #6409475473`
 - Last Receipts:
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.59-TANGIBLE-PRODUCT-RECOVERY-AND-E2E-FIXTURES-PASS][2026-10-25] Comment #6406287831`
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][OWNER-BETA-AUTO-SETUP-CHANNEL-HOTFIX-PASS][2026-10-25] Comment #6407535598`
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][OWNER-BETA-HOTFIX-76-INDEPENDENT-AUDIT-PASS][2026-10-25] Comment #6407945352`
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][P0-AUTO-SETUP-BLOCKER-CLOSURE-AND-REGRESSION-PASS][2026-10-25] Comment #6408025317`
-  - `[ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.59-.77-AI-REQUIRED-FIELD-AND-8-FIXTURE-E2E-PASS][2026-10-26]`
-- Functional QA Commit: `e228c5f8`
+  - `[ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.59-.77-AI-REQUIRED-FIELD-AND-8-FIXTURE-E2E-PASS][2026-10-26] Comment #6409360606`
+  - `[ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.59-.77-LEGAL-CONSENT-AND-TRUTHFUL-BUSINESS-FACTS-PASS][2026-10-26]`
+- Functional QA Commit: `5db57007`
 - Build ID: `R6.9G.10.3.7.1.4.77-20261026-P0-RC3.59-AI-REQUIRED-FIELDS`
-- Verified Release Asset: `XPIDER_R6.9G.10.3.7.1.4.77_OWNER_BETA.zip` (Tag: `v6.9g.10.3-rc3.59.7.1.4.77`, Size: 53,155,489 bytes, SHA256: `a9a049357cede48451f6b9d3bda4e1768c7023da8b686b94fe2c817e673d597d`)
-- Software Status: **RC3.59 .77 OWNER BETA E2E 8-FIXTURE AUDIT 100% PASS**: (1) Implemented constraint-aware template-grounded required-field completion in `FinalFormCompletionEngine` (`filledByAI >= 1`, numbers within `min`/`max`/`step`, formatted URLs, dates, times, selects, radios, and consent), guarded with `checkValidity()` and sensitive fact halt. (2) Fixed Turnstile modal alert `alert('CAPTCHA Token required before submission!')` with non-blocking error display, and resolved 5/5 fixture accounting in test loopback. (3) Added local fixtures `ai-required-fields.html` and `ai-ambiguous-safe-skip.html`. (4) Validated real Microsoft Edge browser E2E across all 8 fixtures autonomously with exact 5 SUCCESS / 2 SKIPPED / 1 FAILURE (8/8 executed, 100% expected outcome), 0 external sends, and full settings restoration (50 public URLs + custom delay restored). (5) Packaged immutable release asset and marked Operational Gate `OWNER_VALIDATION_PENDING`.
+- Verified Release Asset: `XPIDER_R6.9G.10.3.7.1.4.77_OWNER_BETA.zip` (Tag: `v6.9g.10.3-rc3.59.7.1.4.77`, Size: 53,158,983 bytes, SHA256: `c47ac0655a9ac89f02303ecbf7d1c16156dfdf2b6cdda20aec83ff6fcb4fd73f`)
+- Software Status: **RC3.59 .77 OWNER BETA REVISED PASS (LEGAL CONSENT & TRUTHFUL BUSINESS FACTS GUARD)**: (1) Enforced explicit owner authorization opt-in for terms/privacy/consent checkboxes; halts with `OWNER_ACTION_REQUIRED` and zero fabricated agreements when unconfirmed, verified against consent-negative fixture. (2) Removed `https://example.com` fallback; halts with `UNRESOLVED_BUSINESS_FACT` if template URL is missing. Grounded select and radio options in template or neutral inquiry categories, halting with `UNRESOLVED_BUSINESS_CHOICE` to prevent false business facts. (3) Fixed sensitive fact classification with word-boundary matching. (4) Re-ran unit suite (4/4 PASS) and Microsoft Edge E2E suite (8 fixtures, 5 SUCCESS / 2 SKIPPED / 1 FAILURE, 0 external network requests leaked, settings restored). (5) Revised immutable release asset packaged and uploaded with SHA256 `c47ac065...`. Gate remains `OWNER_VALIDATION_PENDING`.
 
 ---
 
