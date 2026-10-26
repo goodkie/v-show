@@ -7743,6 +7743,18 @@
 
     function finishCampaign(success, error = null, reasonCode = null, metadata = {}) {
         currentTargetLifecycleState = TargetLifecycleState.SETTLED;
+        // [RC3.60 P0] Stop heartbeat immediately so no more SENDER_LOG fires after terminal settlement
+        if (window.__xpider_heartbeat_interval) {
+            clearInterval(window.__xpider_heartbeat_interval);
+            window.__xpider_heartbeat_interval = null;
+        }
+        // [RC3.60 P0] Mark aborted so logDev short-circuits and running latch is cleared
+        window.__xpider_aborted = true;
+        window.__xpider_running = false;
+        if (window.__xpider_releaseProcessingLock) {
+            try { window.__xpider_releaseProcessingLock(typeof window !== 'undefined' && window.location ? window.location.href : null); } catch (_) {}
+        }
+        window.__xpider_active_single_flight = null; // [RC3.60 P0] Allow next START_SENDING on same URL
         // [RC3.33 P0-B] Attempt-scoped reset upon terminal settlement
         if (typeof resetCaptchaRuntimeState === 'function') {
             resetCaptchaRuntimeState('finishCampaign');

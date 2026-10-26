@@ -4897,7 +4897,14 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                 const curStage = campaignState.currentTargetStage;
                 // Stage authority: must be at allowed terminal stage or explicit failure/skip
                 const allowedTerminalStages = ['VERIFYING', 'CONFIRMED_SUCCESS', 'SUBMITTING', 'SUBMIT_TRIGGERED', 'SUBMIT_ATTEMPT_STARTED', 'POST_SUBMIT_CONFIRMING', 'SETTLED', 'READY_TO_SUBMIT', 'CAPTCHA_AUTO_SUCCESS'];
+                // [RC3.60 P0] Non-inquiry / SKIPPED settlements arrive before any STAGE_PROGRESSION (stage is null/PREPARING).
+                // They must ALWAYS be allowed through — blocking them causes the infinite heartbeat hang.
+                const isNonInquiryOrSkipResult = request.result && !request.result.success && (
+                    (typeof request.result.reasonCode === 'string' && (request.result.reasonCode.startsWith('NON_INQUIRY') || request.result.reasonCode === 'SKIPPED' || request.result.reasonCode.includes('SKIPPED'))) ||
+                    (typeof request.result.error === 'string' && (request.result.error.startsWith('NON_INQUIRY') || request.result.error === 'SKIPPED' || request.result.error.includes('SKIPPED')))
+                );
                 const isTerminalStageAllowed = allowedTerminalStages.includes(curStage) || 
+                    isNonInquiryOrSkipResult ||
                     (request.result && (!request.result.success || request.result.error || request.result.reasonCode === 'PREPARING_REQUEUE'));
 
                 if (!isTerminalStageAllowed) {
@@ -8615,6 +8622,7 @@ async function orchestrateSending(urlInput, template, abortSignal = null) {
         }
 
         if (isFinished) return;
+        isFinished = true; // [RC3.60 P0] Immediately latch — prevents re-entry across async gaps
         let isConfirmedProof = Boolean(res && res.success);
         let actualResultUrl = null;
         try {
