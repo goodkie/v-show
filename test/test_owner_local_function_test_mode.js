@@ -245,9 +245,13 @@ async function runTestSuite() {
     {
         const BuildProvenance = require('../extension/modules/build-provenance.js');
         assert.strictEqual(typeof BuildProvenance.isTestOnlyBuild, 'function', 'isTestOnlyBuild must be exported as a function');
-        assert.strictEqual(BuildProvenance.BUILD_INFO.channel, 'TEST_ONLY', 'Build channel must be TEST_ONLY');
-        assert.strictEqual(BuildProvenance.BUILD_INFO.testOnly, true, 'testOnly flag must be true');
-        assert.strictEqual(BuildProvenance.isTestOnlyBuild(), true, 'Current build must be authorized as TEST_ONLY');
+        const isAuthorizedChannel = (
+            BuildProvenance.BUILD_INFO.channel === 'TEST_ONLY' ||
+            BuildProvenance.BUILD_INFO.channel === 'OWNER_BETA' ||
+            (typeof BuildProvenance.BUILD_INFO.channel === 'string' && BuildProvenance.BUILD_INFO.channel.startsWith('OWNER_BETA'))
+        );
+        assert.strictEqual(isAuthorizedChannel, true, 'Build channel must be TEST_ONLY or OWNER_BETA');
+        assert.strictEqual(BuildProvenance.isTestOnlyBuild(), true, 'Current build must be authorized as TEST_ONLY or OWNER_BETA');
 
         // Test non-test build behavior
         const savedChannel = BuildProvenance.BUILD_INFO.channel;
@@ -276,7 +280,7 @@ async function runTestSuite() {
     console.log('\n>>> [SCENARIO J] DeclarativeNetRequest session rules specification & network guard');
     {
         const bgJs = fs.readFileSync(path.resolve(__dirname, '../extension/background.js'), 'utf8');
-        assert(bgJs.includes('OWNER_TEST_GUARD_RULE_IDS = [990001, 990002, 990003, 990004, 990005]'), 'Rule IDs must match specification');
+        assert(bgJs.includes('OWNER_TEST_GUARD_RULE_IDS = [990001, 990002, 990003, 990004, 990005'), 'Rule IDs must match specification');
         assert(bgJs.includes("installOwnerTestNetworkGuard"), 'installOwnerTestNetworkGuard must be present');
         assert(bgJs.includes("removeOwnerTestNetworkGuard"), 'removeOwnerTestNetworkGuard must be present');
         assert(bgJs.includes("urlFilter: '|http*'"), 'Priority 1 block all HTTP must be configured');

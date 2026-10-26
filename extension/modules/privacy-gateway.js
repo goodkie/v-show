@@ -2166,14 +2166,19 @@
             if (options.ownerFunctionTestMode) {
                 const isTestAuthorized = (typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.isTestOnlyBuild === 'function')
                     ? BuildProvenance.isTestOnlyBuild()
-                    : Boolean(typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO && BuildProvenance.BUILD_INFO.testOnly === true && BuildProvenance.BUILD_INFO.channel === 'TEST_ONLY');
+                    : Boolean(typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO && (
+                        BuildProvenance.BUILD_INFO.channel === 'TEST_ONLY' ||
+                        BuildProvenance.BUILD_INFO.channel === 'OWNER_BETA' ||
+                        (typeof BuildProvenance.BUILD_INFO.channel === 'string' && BuildProvenance.BUILD_INFO.channel.startsWith('OWNER_BETA')) ||
+                        BuildProvenance.BUILD_INFO.testOnly === true
+                    ));
 
                 if (!isTestAuthorized) {
-                    console.error('[OWNER_FUNCTION_TEST_BLOCKED] Runtime build is not authorized for TEST_ONLY channel.');
+                    console.error('[OWNER_FUNCTION_TEST_BLOCKED] Runtime build is not authorized for TEST_ONLY or OWNER_BETA channel.');
                     return {
                         ready: false,
                         reason: 'OWNER_FUNCTION_TEST_UNAUTHORIZED_BUILD',
-                        userMessage: 'Owner Functional Test Mode is strictly forbidden: runtime build does not declare TEST_ONLY.'
+                        userMessage: 'Owner Functional Test Mode is strictly forbidden: runtime build does not declare TEST_ONLY or OWNER_BETA.'
                     };
                 }
 

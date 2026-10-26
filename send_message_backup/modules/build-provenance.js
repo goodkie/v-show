@@ -25,25 +25,28 @@
         rollbackBase: '55cd543be5ebe7a4553cac0cbfcf933a00e4c8a5',
         previousFunctionalRestorePoint: 'b2af1c9bf614b9f572acec910265d8132d2043aa',
         manifestVersion: 3,
-        buildId: 'R6.9G.10.3.7.1.4.75-20261025-P0-RC3.59',
-        builtAt: '2026-10-25T12:14:45.946Z',
+        buildId: 'R6.9G.10.3.7.1.4.76-20261025-P0-RC3.59-HOTFIX',
+        builtAt: '2026-10-26T03:20:22.390Z',
         provenanceSchema: 2,
         modules: {
-            backgroundSha: '9012f722dd5794dae16f9fe69452bce0c6aa29d8cf7c9e6ffcd47f25aca3d23a',
+            backgroundSha: '7dcfe61f2508ed6cec2d496c7e24a79f965ae6f93f10370776692bc8975d4c8c',
             contentScriptSha: '68ecc67c55c2bf8bd3e8ec75e1b7495772095c959507f05cd33ffc6ea7aa1cd9',
-            popupSha: 'dd02b0cf62d406c13e4fa5958d42011d6ddadbb6d8463ff95244ba83db4b15cd',
+            popupSha: 'ecd7c70bc75aa6bf00c7138b123c45cadf53758572a5dfa53a3490f8ca001feb',
             solverContentSha: '6a1ff7154efaeb6dbd5946ac4f9be1ce5b5ff43bce2db06d0dca32950edd3bdb',
             solverCoreSha: 'ab4dee5c8213d7c2fd47942951a2bc40732c1c8c55a5742d493db617150bf95f',
             emailCollectorSha: '3f1147a379e159e7777158f2caa74cc8d40b2a0b0eb2c244f440af379cb5c9c9',
             historyStoreSha: '2b34f9c8c1a4c62d07dd406e0e304f179ac68b6d8fbf4bb0614038770fbc4138',
             contactGateSha: '9007adceec8b4e8ec7f7a14ee8a7d21af460a01ed043c578e1e3c2579cfae88e',
             visionSubmitSha: '6b89eab8fd132798fbb157e179bdeee64da1aa9867222fdb656e3fcf4fcc9311',
-            privacyGatewaySha: 'cc5c8cc9c83adf3b985aa4bab74b04189c00fdba4f3ac3a555bd00e38fc79993'
+            privacyGatewaySha: 'fa9b779bd2cbce94dd9b9f369c301c3482b5f90f10cdb487f8761a50b75bf116'
         }
     };
 
     function isTestOnlyBuild() {
-        return Boolean(BUILD_INFO.testOnly === true && (BUILD_INFO.channel === 'TEST_ONLY' || BUILD_INFO.channel === 'OWNER_BETA' || BUILD_INFO.channel.startsWith('OWNER_BETA')));
+        const ch = (BUILD_INFO && BUILD_INFO.channel) ? String(BUILD_INFO.channel) : '';
+        const isOwnerBeta = ch === 'OWNER_BETA' || ch.startsWith('OWNER_BETA');
+        const isTestChannel = ch === 'TEST_ONLY' || BUILD_INFO.testOnly === true;
+        return Boolean(isOwnerBeta || isTestChannel);
     }
 
     function getBuildProvenanceLogs() {

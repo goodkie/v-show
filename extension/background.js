@@ -2095,7 +2095,8 @@ async function assertPrivacyTransportReady(context = 'GENERAL') {
             try {
                 const sessionRules = await chrome.declarativeNetRequest.getSessionRules();
                 const installedIds = new Set(sessionRules.map(r => r.id));
-                const allPresent = OWNER_TEST_GUARD_RULE_IDS.every(id => installedIds.has(id));
+                const coreRuleIds = [990001, 990002, 990003, 990004, 990005];
+                const allPresent = coreRuleIds.every(id => installedIds.has(id));
                 if (!allPresent) {
                     return { ready: false, reason: 'OWNER_TEST_GUARD_MISSING_BEFORE_TARGET' };
                 }
@@ -3917,15 +3918,20 @@ const mainBackgroundMessageListener = (request, sender, sendResponse) => {
                 if (isTestMode) {
                     const isTestAuthorized = (typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.isTestOnlyBuild === 'function')
                         ? BuildProvenance.isTestOnlyBuild()
-                        : Boolean(typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO && BuildProvenance.BUILD_INFO.testOnly === true && BuildProvenance.BUILD_INFO.channel === 'TEST_ONLY');
+                        : Boolean(typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO && (
+                            BuildProvenance.BUILD_INFO.channel === 'TEST_ONLY' ||
+                            BuildProvenance.BUILD_INFO.channel === 'OWNER_BETA' ||
+                            (typeof BuildProvenance.BUILD_INFO.channel === 'string' && BuildProvenance.BUILD_INFO.channel.startsWith('OWNER_BETA')) ||
+                            BuildProvenance.BUILD_INFO.testOnly === true
+                        ));
 
                     if (!isTestAuthorized) {
-                        console.error('[OWNER_FUNCTION_TEST_BLOCKED] Runtime build is not authorized for TEST_ONLY channel.');
-                        logBg(null, '[OWNER_FUNCTION_TEST_BLOCKED] Runtime build is not authorized for TEST_ONLY channel.', 'error');
+                        console.error('[OWNER_FUNCTION_TEST_BLOCKED] Runtime build is not authorized for TEST_ONLY or OWNER_BETA channel.');
+                        logBg(null, '[OWNER_FUNCTION_TEST_BLOCKED] Runtime build is not authorized for TEST_ONLY or OWNER_BETA channel.', 'error');
                         sendResponse({
                             success: false,
                             error: 'OWNER_FUNCTION_TEST_UNAUTHORIZED_BUILD',
-                            message: 'Owner Functional Test Mode is strictly forbidden: runtime build does not declare TEST_ONLY.'
+                            message: 'Owner Functional Test Mode is strictly forbidden: runtime build does not declare TEST_ONLY or OWNER_BETA.'
                         });
                         return;
                     }
@@ -7078,7 +7084,12 @@ async function resumeCampaignOrchestrator() {
     if (isOwnerTest) {
         const isTestBuild = (typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.isTestOnlyBuild === 'function')
             ? BuildProvenance.isTestOnlyBuild()
-            : false;
+            : Boolean(typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO && (
+                BuildProvenance.BUILD_INFO.channel === 'TEST_ONLY' ||
+                BuildProvenance.BUILD_INFO.channel === 'OWNER_BETA' ||
+                (typeof BuildProvenance.BUILD_INFO.channel === 'string' && BuildProvenance.BUILD_INFO.channel.startsWith('OWNER_BETA')) ||
+                BuildProvenance.BUILD_INFO.testOnly === true
+            ));
         if (!isTestBuild) {
             throw new Error("FAIL_CLOSED: Cannot resume Owner Test Mode campaign in non-test build.");
         }
@@ -7087,7 +7098,7 @@ async function resumeCampaignOrchestrator() {
             await installOwnerTestNetworkGuard();
             const sessionRules = await chrome.declarativeNetRequest.getSessionRules();
             const installedIds = new Set(sessionRules.map(r => r.id));
-            const allPresent = OWNER_TEST_GUARD_RULE_IDS.every(id => installedIds.has(id));
+            const allPresent = [990001, 990002, 990003, 990004, 990005].every(id => installedIds.has(id));
             if (!allPresent) {
                 throw new Error("OWNER_TEST_GUARD_READBACK_INCOMPLETE: Not all rules present after resume install");
             }

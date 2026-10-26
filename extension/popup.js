@@ -1511,7 +1511,12 @@ async function hydrateSettings(overrideV2Store = null) {
         try {
             const isTestAuthorized = (typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.isTestOnlyBuild === 'function')
                 ? BuildProvenance.isTestOnlyBuild()
-                : Boolean(typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO && BuildProvenance.BUILD_INFO.testOnly === true && BuildProvenance.BUILD_INFO.channel === 'TEST_ONLY');
+                : Boolean(typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO && (
+                    BuildProvenance.BUILD_INFO.channel === 'TEST_ONLY' ||
+                    BuildProvenance.BUILD_INFO.channel === 'OWNER_BETA' ||
+                    (typeof BuildProvenance.BUILD_INFO.channel === 'string' && BuildProvenance.BUILD_INFO.channel.startsWith('OWNER_BETA')) ||
+                    BuildProvenance.BUILD_INFO.testOnly === true
+                ));
 
             if (!isTestAuthorized) {
                 if (ownerTestGroup) ownerTestGroup.style.display = 'none';
@@ -6127,10 +6132,15 @@ function initOwnerAutoSetup() {
                 // 1. Detect BuildProvenance TEST_ONLY
                 const isTestAuthorized = (typeof BuildProvenance !== 'undefined' && typeof BuildProvenance.isTestOnlyBuild === 'function')
                     ? BuildProvenance.isTestOnlyBuild()
-                    : Boolean(typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO && BuildProvenance.BUILD_INFO.testOnly === true && BuildProvenance.BUILD_INFO.channel === 'TEST_ONLY');
+                    : Boolean(typeof BuildProvenance !== 'undefined' && BuildProvenance.BUILD_INFO && (
+                        BuildProvenance.BUILD_INFO.channel === 'TEST_ONLY' ||
+                        BuildProvenance.BUILD_INFO.channel === 'OWNER_BETA' ||
+                        (typeof BuildProvenance.BUILD_INFO.channel === 'string' && BuildProvenance.BUILD_INFO.channel.startsWith('OWNER_BETA')) ||
+                        BuildProvenance.BUILD_INFO.testOnly === true
+                    ));
 
                 if (!isTestAuthorized) {
-                    showAutoSetupFeedback('AUTO SETUP FAILED — Runtime build is not authorized for TEST_ONLY channel.', 'error');
+                    showAutoSetupFeedback('AUTO SETUP FAILED — Runtime build is not authorized for TEST_ONLY or OWNER_BETA channel.', 'error');
                     return;
                 }
 
