@@ -1000,6 +1000,14 @@
             logDev(`⚠️ [Recovery] Error/404 page detected on candidate: ${window.location.href}`, "warning");
             logDev(`[PAGE_CLASS] ERROR_404_PAGE`, "info");
 
+            const isLoopbackTarget = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost';
+            // Explicit fixture pages on loopback (e.g. ai-required-fields.html) must not advance to imaginary /about/contact aliases
+            if (isLoopbackTarget && !window.location.pathname.includes('no-contact-page') && window.location.pathname !== '/' && window.location.pathname !== '/index.html') {
+                logDev(`[LOOPBACK_FIXTURE_ERROR] Candidate ${window.location.href} is 404/dead. Settle cleanly without alias deviation.`, "error");
+                finishCampaign(false, "FIXTURE_PAGE_ERROR_404", "NO_ACCESSIBLE_INQUIRY_FORM");
+                return true;
+            }
+
             // Directive B #7 & Directive F: Automatic candidate advance on 404/dead page
             const visited = JSON.parse(sessionStorage.getItem('xpider_guessed_paths') || '[]');
             const currentNorm = normalizeUrl(window.location.href);
@@ -1038,6 +1046,16 @@
             const speed = getSpeedProfile(delayMs, fillDelayMs, submitDelayMs);
             const currentUrl = window.location.href;
             
+            // [Target Isolation] Reset guessed paths from prior queue targets to prevent state bleeding
+            const targetToken = (window.__xpider_exec_identity && window.__xpider_exec_identity.targetToken) || triedUrl || currentUrl;
+            const prevTargetToken = sessionStorage.getItem('xpider_active_target_token');
+            if (prevTargetToken && prevTargetToken !== targetToken) {
+                sessionStorage.removeItem('xpider_guessed_paths');
+                sessionStorage.removeItem('xpider_visited_subs');
+                sessionStorage.removeItem('xpider_recursion_debt');
+            }
+            sessionStorage.setItem('xpider_active_target_token', targetToken);
+
             // [v2.9.8] Navigation Registry: Mark background-opened and current pages as visited
             const visited = JSON.parse(sessionStorage.getItem('xpider_guessed_paths') || '[]');
             const normalizedTried = normalizeUrl(triedUrl);
@@ -1393,7 +1411,9 @@
             }
 
             // 3. Direct Path Guessing & Known Contact Aliases (Directive B #6)
-            if (recursionDebt === 0) {
+            const isLoopback = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost';
+            const isDedicatedFixture = isLoopback && (currentUrl.includes('ai-required-fields') || currentUrl.includes('contact-') || currentUrl.includes('subscribe') || currentUrl.includes('reservation'));
+            if (recursionDebt === 0 && !isDedicatedFixture) {
                 logDev("⚡ [Discovery] No form or links on current page. Trying common contact aliases...");
                 const COMMON_CONTACT_ALIASES = ['/contact', '/contact-us', '/contactus', '/get-in-touch', '/inquiry', '/about/contact'];
                 const visited = JSON.parse(sessionStorage.getItem('xpider_guessed_paths') || '[]');

@@ -19,7 +19,7 @@ const SILENT_RUNNER_VBS = path.join(RELAY_DIR, 'start_relay_silent.vbs');
 const RELAY_SCRIPT = path.join(RELAY_DIR, 'privacy-relay-service.js');
 const TOKEN_FILE = path.join(RELAY_DIR, '.control_token');
 const EXPOSED_RC3_6_TOKEN_SHA256 = '597a70b99c11c7f4d13a075204ac240bb08a7a1d6c08c78268328e0bb59daeda';
-const COMPANION_BUILD_ID = 'R6.9G.10.3.7.1.4.80-20261026-P0-RC3.60-TRANSLATE-MODAL-EXCLUSION-CHROME-PASS';
+const COMPANION_BUILD_ID = 'R6.9G.10.3.7.1.4.81-20261026-P0-RC3.60-FIXTURE8-UPGRADE-CHROME-PASS';
 const CONTROL_PORT = 18989;
 const PROXY_PORT = 18988;
 
@@ -588,14 +588,21 @@ async function startOwnerTestServer() {
   // 1. Check if already running
   const currentHealth = await probeOwnerTestServerHealth(1000);
   if (currentHealth.ok) {
-    return {
-      success: true,
-      message: 'ALREADY_RUNNING',
-      serverReady: true,
-      port: TEST_SERVER_PORT,
-      fixtureSet: 'OWNER_7_V1',
-      health: currentHealth.health
-    };
+    if (currentHealth.health && currentHealth.health.fixtureSet !== 'OWNER_8_V1') {
+      try {
+        await stopOwnerTestServer();
+        await new Promise(r => setTimeout(r, 400));
+      } catch (_) {}
+    } else {
+      return {
+        success: true,
+        message: 'ALREADY_RUNNING',
+        serverReady: true,
+        port: TEST_SERVER_PORT,
+        fixtureSet: 'OWNER_8_V1',
+        health: currentHealth.health
+      };
+    }
   }
   if (currentHealth.running && currentHealth.error === 'OWNER_TEST_PORT_COLLISION') {
     return {
@@ -651,7 +658,7 @@ async function startOwnerTestServer() {
         serverReady: true,
         pid: spawnedOwnerTestServerPid,
         port: TEST_SERVER_PORT,
-        fixtureSet: 'OWNER_7_V1',
+        fixtureSet: 'OWNER_8_V1',
         health: h.health
       };
     }

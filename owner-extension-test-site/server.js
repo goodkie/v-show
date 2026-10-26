@@ -163,8 +163,10 @@ const server = http.createServer((req, res) => {
       service: 'XPIDER_OWNER_TEST_SERVER',
       channel: 'TEST_ONLY',
       port: 8088,
-      fixtureSet: 'OWNER_7_V1',
-      version: 'R6.9G.10.3.7.1.4.5',
+      fixtureSet: 'OWNER_8_V1',
+      totalFixtures: 8,
+      hasAiRequiredFields: true,
+      version: 'R6.9G.10.3.7.1.4.81',
       pid: process.pid,
       timestamp: Date.now(),
       submissionsCount: submissionLog.length

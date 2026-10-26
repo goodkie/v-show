@@ -5792,7 +5792,8 @@ async function probeAndEnsureOwnerTestServer() {
             if (resp.ok) {
                 const data = await resp.json();
                 if (data && data.ok === true && data.service === 'XPIDER_OWNER_TEST_SERVER') {
-                    return { ok: true, health: data };
+                    const is8Set = (data.fixtureSet === 'OWNER_8_V1' || data.totalFixtures === 8 || data.hasAiRequiredFields === true);
+                    return { ok: true, health: data, is8Set };
                 }
                 return { ok: false, error: 'PORT_COLLISION', details: data };
             }
@@ -5802,11 +5803,30 @@ async function probeAndEnsureOwnerTestServer() {
         }
     };
 
+    const verifyAiFixtureReachable = async () => {
+        try {
+            const r = await fetch('http://127.0.0.1:8088/ai-required-fields.html', { method: 'HEAD', cache: 'no-store' });
+            return r.status === 200;
+        } catch (_) {
+            return false;
+        }
+    };
+
     updateAutoSetupUI('CHECKING');
     showAutoSetupFeedback('🔍 Checking local test fixture runtime (127.0.0.1:8088)...', 'info');
     let health = await probeHealth(1200);
     if (health.ok) {
-        return { success: true, health: health.health };
+        const fixtureOk = health.is8Set && (await verifyAiFixtureReachable());
+        if (fixtureOk) {
+            return { success: true, health: health.health };
+        }
+        // Stale test server detected on 8088 (lacks 8-fixture suite). Gracefully shut down and upgrade.
+        console.warn('[AUTO_SETUP] Stale test server detected on 8088 (missing ai-required-fields.html). Upgrading...');
+        showAutoSetupFeedback('🔄 Upgrading local test fixture runtime to 8-fixture suite...', 'info');
+        try {
+            await fetch('http://127.0.0.1:8088/__xpider_shutdown', { method: 'POST' });
+            await new Promise(r => setTimeout(r, 400));
+        } catch (_) {}
     }
     if (health.error === 'PORT_COLLISION') {
         updateAutoSetupUI('COLLISION');
@@ -5867,10 +5887,13 @@ async function probeAndEnsureOwnerTestServer() {
     // 3. Verify health bounded
     updateAutoSetupUI('VERIFYING');
     showAutoSetupFeedback('⏳ Verifying test server health identity on 127.0.0.1:8088...', 'info');
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < 15; i++) {
         await new Promise(r => setTimeout(r, 250));
         health = await probeHealth(800);
-        if (health.ok) break;
+        if (health.ok) {
+            const isAiOk = await verifyAiFixtureReachable();
+            if (isAiOk) break;
+        }
     }
 
     if (!health.ok) {
@@ -5879,13 +5902,19 @@ async function probeAndEnsureOwnerTestServer() {
         return { success: false, error: 'SERVER_VERIFICATION_FAILED' };
     }
 
-    // 4. Verify /contact-standard.html fixture returns 200
+    // 4. Verify /contact-standard.html and /ai-required-fields.html fixtures return 200
     try {
         const fixtureCheck = await fetch('http://127.0.0.1:8088/contact-standard.html', { method: 'HEAD', cache: 'no-store' });
         if (!fixtureCheck.ok) {
             updateAutoSetupUI('ERROR');
             showAutoSetupFeedback('🛑 LOCAL TEST SERVER INCOMPLETE\nFixture /contact-standard.html returned ' + fixtureCheck.status, 'error');
             return { success: false, error: 'FIXTURE_NOT_FOUND' };
+        }
+        const aiCheck = await fetch('http://127.0.0.1:8088/ai-required-fields.html', { method: 'HEAD', cache: 'no-store' });
+        if (!aiCheck.ok) {
+            updateAutoSetupUI('ERROR');
+            showAutoSetupFeedback('🛑 LOCAL TEST SERVER INCOMPLETE\nFixture /ai-required-fields.html returned ' + aiCheck.status, 'error');
+            return { success: false, error: 'AI_FIXTURE_NOT_FOUND' };
         }
     } catch (_) {}
 
