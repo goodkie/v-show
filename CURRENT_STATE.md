@@ -6,8 +6,8 @@
 - Workspace: E:\vivpr\ai\extension-form-sender
 - Authority: goodkie/v-show Issues #6 & #10
 - Branch: upgrade/phase-0-1
-- State Rev: 2026-10-26.187
-- Authority Cursor: 6409475473
+- State Rev: 2026-10-26.188
+- Authority Cursor: 6410024386
 - Last Directives / Audits:
   - `[OWNER PM NEXT EXECUTION — STOP REPEAT BRIEFINGS / IMPLEMENT SECURE DYNAMIC VPN IP ALLOWLIST][ISSUE #6][2026-10-25] Comment #6396720543`
   - `[OWNER PM P0 SECURITY HOLD — RC3.58 MUST NOT BE RUN ON OWNER PC][ISSUE #6][2026-10-25 11:57 UTC] Comment #6397334700`
@@ -17,17 +17,19 @@
   - `[CHATGPT AUDIT][P0 ACTION REQUIRED][2026-10-25] Comment #6407986418`
   - `[CHATGPT OWNER PM][P0 OWNER REAL-PC QA + AI REQUIRED-FIELD ENHANCEMENT][2026-10-25] Comment #6408458852`
   - `[CHATGPT OWNER PM][RC3.59 .77 SECURITY/QUALITY FOLLOW-UP][2026-10-25] Comment #6409475473`
+  - `[CHATGPT OWNER PM][P0 RELEASE INTEGRITY GATE][2026-10-25] Comment #6410024386`
 - Last Receipts:
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.59-TANGIBLE-PRODUCT-RECOVERY-AND-E2E-FIXTURES-PASS][2026-10-25] Comment #6406287831`
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][OWNER-BETA-AUTO-SETUP-CHANNEL-HOTFIX-PASS][2026-10-25] Comment #6407535598`
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][OWNER-BETA-HOTFIX-76-INDEPENDENT-AUDIT-PASS][2026-10-25] Comment #6407945352`
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][P0-AUTO-SETUP-BLOCKER-CLOSURE-AND-REGRESSION-PASS][2026-10-25] Comment #6408025317`
   - `[ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.59-.77-AI-REQUIRED-FIELD-AND-8-FIXTURE-E2E-PASS][2026-10-26] Comment #6409360606`
-  - `[ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.59-.77-LEGAL-CONSENT-AND-TRUTHFUL-BUSINESS-FACTS-PASS][2026-10-26]`
-- Functional QA Commit: `5db57007`
-- Build ID: `R6.9G.10.3.7.1.4.77-20261026-P0-RC3.59-AI-REQUIRED-FIELDS`
-- Verified Release Asset: `XPIDER_R6.9G.10.3.7.1.4.77_OWNER_BETA.zip` (Tag: `v6.9g.10.3-rc3.59.7.1.4.77`, Size: 53,158,983 bytes, SHA256: `c47ac0655a9ac89f02303ecbf7d1c16156dfdf2b6cdda20aec83ff6fcb4fd73f`)
-- Software Status: **RC3.59 .77 OWNER BETA REVISED PASS (LEGAL CONSENT & TRUTHFUL BUSINESS FACTS GUARD)**: (1) Enforced explicit owner authorization opt-in for terms/privacy/consent checkboxes; halts with `OWNER_ACTION_REQUIRED` and zero fabricated agreements when unconfirmed, verified against consent-negative fixture. (2) Removed `https://example.com` fallback; halts with `UNRESOLVED_BUSINESS_FACT` if template URL is missing. Grounded select and radio options in template or neutral inquiry categories, halting with `UNRESOLVED_BUSINESS_CHOICE` to prevent false business facts. (3) Fixed sensitive fact classification with word-boundary matching. (4) Re-ran unit suite (4/4 PASS) and Microsoft Edge E2E suite (8 fixtures, 5 SUCCESS / 2 SKIPPED / 1 FAILURE, 0 external network requests leaked, settings restored). (5) Revised immutable release asset packaged and uploaded with SHA256 `c47ac065...`. Gate remains `OWNER_VALIDATION_PENDING`.
+  - `[ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.59-.77-LEGAL-CONSENT-AND-TRUTHFUL-BUSINESS-FACTS-PASS][2026-10-26] Comment #6409998295`
+  - `[ANTIGRAVITY][RECEIPT][ISSUE-6][RC3.59-.78-PACKAGING-INTEGRITY-AND-UNPACKED-E2E-PASS][2026-10-26]`
+- Functional QA Commit: `5db57007` (Core fix) / Target Release Commit (.78)
+- Build ID: `R6.9G.10.3.7.1.4.78-20261026-P0-RC3.59-AI-REQUIRED-FIELDS`
+- Verified Release Asset: `XPIDER_R6.9G.10.3.7.1.4.78_OWNER_BETA.zip` (Tag: `v6.9g.10.3-rc3.59.7.1.4.78`, Size: 53,158,978 bytes, SHA256: `8e1536c3053fcd17b83f89e0da31540d61061bd6aa18bacc007e488742002dcb`)
+- Software Status: **RC3.59 .78 OWNER BETA PACKAGING INTEGRITY & UNPACKED E2E PASS**: (1) Published new distinct version/tag `.78` with unique archive `XPIDER_R6.9G.10.3.7.1.4.78_OWNER_BETA.zip`, fully resolving the packaging provenance conflict. (2) Independently unpacked into isolated environment and verified 2,223 files byte-for-byte against package inventory. (3) Ran 4 AI constraint, legal consent opt-in, and truthful business fact tests directly on unpacked extension code (100% PASS). (4) Ran full Microsoft Edge browser E2E test loading unpacked extension, achieving exact 5 SUCCESS / 2 SKIPPED / 1 FAILURE across 8 fixtures, 0 external network requests leaked, and clean settings restoration. (5) Operational Gate marked `OWNER_VALIDATION_PENDING`.
 
 ---
 
