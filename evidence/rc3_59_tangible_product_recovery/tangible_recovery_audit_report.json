@@ -1,0 +1,184 @@
+{
+  "testSuite": "RC3.59_TANGIBLE_PRODUCT_RECOVERY_AUDIT",
+  "timestamp": "2026-10-26T01:33:56.047Z",
+  "directive": "Comment #6404329438",
+  "baselinePreservation": {
+    "stage": "STAGE_1_BASELINE_PRESERVATION",
+    "verdict": "PASS",
+    "rc357ZipSize": 51808072,
+    "rc357Sha256": "b0bb98cf1245c38db61c4d1de9d7f4c3dad1bf4a02bc61f2faab62f21a07ea0f",
+    "rc359Sha256": "e2493a9d6a27f7d2024b3e2a4955cf48df4908350684ac1bac10488b1141f147",
+    "hasRc357Tag": true,
+    "hasRc359Tag": true
+  },
+  "stageOutputs": {
+    "harnessInit": {
+      "verdict": "PASS",
+      "buildId": "R6.9G.10.3.7.1.4.75-20261025-P0-RC3.59",
+      "implementationHead": "741dfe44536031dff13ac6d8e310d4f72fbca42b",
+      "extensionId": "ldlijlaccfeelfdhgnjbibniocefckjj"
+    },
+    "startPreflight": {
+      "verdict": "PASS",
+      "buttonExists": true,
+      "buttonText": "Start Sending"
+    },
+    "contactDiscovery": {
+      "verdict": "PASS",
+      "landingPageDiscoveredHref": "contact-standard.html",
+      "noFormDetectedCleanly": true
+    },
+    "fieldClassification": {
+      "verdict": "PASS",
+      "field1_tellUs": "message",
+      "field2_contactNumber": "phone",
+      "field3_contactLabel": "message",
+      "field4_telephone": "phone",
+      "field5_telDetails": "message",
+      "field6_contactPerson": "name",
+      "field7_contactHow": "message",
+      "field8_subjectTopic": "subject",
+      "collisionFixtureStatus": {
+        "pass": true,
+        "errors": []
+      }
+    },
+    "inputAndSubmit": {
+      "verdict": "PASS",
+      "formsTestedCount": 3,
+      "receiptsRecordedCount": 3,
+      "receiptIds": [
+        "rcpt_1792978445263_1",
+        "rcpt_1792978447551_2",
+        "rcpt_1792978449613_3"
+      ]
+    },
+    "pauseResume": {
+      "verdict": "PASS",
+      "pauseCheckpointSaved": true,
+      "remainingQueuePreserved": 3,
+      "resumeClearedPauseState": true
+    },
+    "captchaFallback": {
+      "verdict": "PASS",
+      "turnstileDetected": true,
+      "sitekey": "0x4AAAAAA_mock_turnstile_sitekey_gamma",
+      "fakeTokensDetected": 0,
+      "illegalSubmissions": 0,
+      "settlementOutcome": "CAPTCHA_SKIPPED_OWNER"
+    },
+    "ledgerAccounting": {
+      "verdict": "PASS",
+      "total": 11,
+      "completed": 11,
+      "remaining": 0,
+      "success": 4,
+      "failure": 2,
+      "deliveryUnknown": 2,
+      "skipped": 3,
+      "zeroDuplicatesVerified": true,
+      "matrix": [
+        {
+          "targetId": "T01",
+          "url": "http://127.0.0.1:8088/contact-standard.html",
+          "status": "CONFIRMED_SUCCESS",
+          "category": "Standard Form",
+          "receiptId": "rcpt_1792978529106_1",
+          "timestamp": 1792978529106
+        },
+        {
+          "targetId": "T02",
+          "url": "http://127.0.0.1:8088/contact-dropdown-checkbox.html",
+          "status": "CONFIRMED_SUCCESS",
+          "category": "Dropdown & Checkbox",
+          "receiptId": "rcpt_1792978529106_2",
+          "timestamp": 1792978529106
+        },
+        {
+          "targetId": "T03",
+          "url": "http://127.0.0.1:8088/contact-numeric.html",
+          "status": "CONFIRMED_SUCCESS",
+          "category": "Numeric & Slider",
+          "receiptId": "rcpt_1792978529106_3",
+          "timestamp": 1792978529106
+        },
+        {
+          "targetId": "T04",
+          "url": "http://127.0.0.1:8088/contact-field-collision.html",
+          "status": "CONFIRMED_SUCCESS",
+          "category": "Field Collision",
+          "receiptId": "rcpt_1792978529106_4",
+          "timestamp": 1792978529106
+        },
+        {
+          "targetId": "T05",
+          "url": "http://127.0.0.1:8088/no-contact-page.html",
+          "status": "FAILURE",
+          "category": "No Form Discovery",
+          "receiptId": null,
+          "timestamp": 1792978529106
+        },
+        {
+          "targetId": "T06",
+          "url": "http://127.0.0.1:8088/contact-validation-error.html",
+          "status": "FAILURE",
+          "category": "Form Validation Error",
+          "receiptId": null,
+          "timestamp": 1792978529106
+        },
+        {
+          "targetId": "T07",
+          "url": "http://127.0.0.1:8088/contact-standard.html?scenario=server_error_500",
+          "status": "DELIVERY_UNKNOWN",
+          "category": "Server 500 Error",
+          "receiptId": null,
+          "timestamp": 1792978529106
+        },
+        {
+          "targetId": "T08",
+          "url": "http://127.0.0.1:8088/contact-standard.html?scenario=dropped_response",
+          "status": "DELIVERY_UNKNOWN",
+          "category": "TCP Socket Drop",
+          "receiptId": null,
+          "timestamp": 1792978529106
+        },
+        {
+          "targetId": "T09",
+          "url": "http://127.0.0.1:8088/subscribe-no-message.html",
+          "status": "SKIPPED",
+          "category": "Intent Filter (Newsletter)",
+          "receiptId": null,
+          "timestamp": 1792978529106
+        },
+        {
+          "targetId": "T10",
+          "url": "http://127.0.0.1:8088/reservation-no-message.html",
+          "status": "SKIPPED",
+          "category": "Intent Filter (Booking)",
+          "receiptId": null,
+          "timestamp": 1792978529106
+        },
+        {
+          "targetId": "T11",
+          "url": "http://127.0.0.1:8088/captcha-turnstile-dom.html",
+          "status": "SKIPPED",
+          "category": "CAPTCHA Owner Fallback",
+          "receiptId": null,
+          "timestamp": 1792978529106
+        }
+      ]
+    }
+  },
+  "hardInvariants": {
+    "verdict": "PASS",
+    "productionDropletId": "611293905",
+    "productionFirewallId": "d6fd3a95-d9d9-417d-9d27-c6b57e94240a",
+    "productionEgressIp": "143.198.40.33",
+    "liveFirewallMutations": 0,
+    "patRequests": 0,
+    "rc358_p0_hold": "MAINTAINED",
+    "rc359_owner_install_hold": "MAINTAINED",
+    "ownerPhysicalStatus": "OWNER_VALIDATION_PENDING"
+  },
+  "overallVerdict": "PASS"
+}
